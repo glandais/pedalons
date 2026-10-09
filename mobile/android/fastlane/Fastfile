@@ -58,6 +58,19 @@ platform :android do
     UI.success("Data safety form updated for #{package}")
   end
 
+  desc "Push the store listing alone — titles, descriptions, feature graphic, icon and phone screenshots from metadata/android/ — with no build and no release. The screenshots come from mobile/screenshots/ (capture-android.sh, koubou/play.yaml, assemble-play.sh). Play then holds the change in « Vue d'ensemble de la publication » until it is sent for review. `validate:true` asks Google to check it all without committing anything."
+  lane :listing do |options|
+    upload_to_play_store(
+      validate_only: options[:validate] == true, # `fastlane listing validate:true`: Google checks, nothing changes
+      # supply looks for a release on a track even with no changelog to upload; the listing itself
+      # is per app, not per track, so internal (always populated by `internal`) serves.
+      track: "internal",
+      skip_upload_aab: true,
+      skip_upload_apk: true,
+      skip_upload_changelogs: true,
+    )
+  end
+
   desc "Deploy a new version to the Google Play production track"
   lane :deploy do
     upload_to_play_store(

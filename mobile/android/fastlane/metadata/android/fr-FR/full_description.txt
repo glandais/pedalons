@@ -1,3 +1,21 @@
-Pédalons est la plateforme des clubs et groupes cyclistes pour organiser leurs sorties, partager leurs parcours, coordonner leurs événements et fédérer leur communauté.
+Pédalons est l'espace de votre club ou de votre groupe cycliste : les sorties, les parcours, l'agenda et les nouvelles de l'équipe, au même endroit.
 
-Chaque club dispose de son propre espace : sorties avec groupes d'allure, parcours GPX consultables sur la carte, profil d'élévation, calendrier des événements et publications pour garder tout le monde informé.
+LES SORTIES
+• Chaque sortie propose ses groupes d'allure : on s'inscrit dans le sien en un geste, et on voit qui roule avec qui.
+• Lieu et heure de départ, parcours prévu, commentaires : tout ce qu'il faut savoir avant de partir.
+• La météo de la sortie dans la semaine qui la précède : au départ, puis le long du parcours à l'allure de votre groupe — pluie, température, et vent de face ou dans le dos, point par point.
+• Les voyages de plusieurs jours, étape par étape, avec la météo de chaque étape.
+
+LES PARCOURS
+• La bibliothèque de parcours du club, sur la carte ou en liste, avec des filtres par distance et dénivelé.
+• Le profil altimétrique coloré par pente, et les cols et montées du tracé.
+• Téléchargement en GPX ou en FIT, et envoi du parcours vers votre compteur Hammerhead Karoo ou Garmin.
+
+L'ÉQUIPE
+• Le tableau de bord de chaque équipe : vos prochaines sorties, les dernières publications, les nouveaux parcours et les annonces.
+• L'agenda des sorties et des voyages, en liste ou en calendrier, abonnable depuis votre application d'agenda.
+• Les publications du club, pour que tout le monde soit au courant.
+• Les petites annonces entre membres, sans que votre adresse e-mail ne soit jamais affichée.
+• Des notifications pour les rappels de sortie, les changements de programme et les réponses à vos commentaires, à régler type par type.
+
+Un compte Pédalons se crée avec une adresse e-mail ; la connexion accepte le mot de passe, le code à usage unique et les clés d'accès (passkeys).

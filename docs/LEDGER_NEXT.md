@@ -130,12 +130,15 @@ données en prod), `MOB-15` pas faite, et le 500 du contact vendeur (`MOB-47`).
 
 ### Fiches des stores
 
-- [ ] `MOB-64` **Refaire la fiche Google Play sur l'app d'octobre (S)** — l'App Store est à jour
-      depuis `MOB-63`, pas Play : `android/fastlane/metadata/` date du 2 août 2026 (description
-      sans météo, tableau de bord ni Agenda), et les captures anglaises restent les françaises
-      (« TODO » de `store-metadata/README.md`). `seed.py` et `capture.sh` ne visent que des
-      simulateurs iOS : il faudrait l'équivalent émulateur Android, ou des captures téléphone
-      prises à la main sur le même jeu de démo.
+- [ ] `MOB-64` **Publier Pédalons sur Google Play (S)** — la fiche est prête et validée par Google
+      (`fastlane listing validate:true`, 9 octobre 2026) : description FR/EN reprise de l'App Store,
+      sept cartes 1080 × 1920 capturées sur l'émulateur (`screenshots/capture-android.sh`,
+      `koubou/play.yaml`, `assemble-play.sh`) et une bannière refaite (`koubou/feature.yaml`) — mais
+      pas encore poussée (`fastlane listing`). L'app n'existe que sur la piste interne (version 73).
+      Restent : pousser la fiche, une version de production (ou d'abord un test fermé, si le compte
+      développeur est personnel : douze testeurs pendant quatorze jours), et les formulaires de la
+      Console qu'aucune API ne remplit (accès à l'application avec le compte de démo, classification
+      du contenu, public cible, publicités), plus la sécurité des données (`fastlane data_safety`).
 
 ### Couverture e2e Patrol — ce que les tests ne couvrent pas encore
 

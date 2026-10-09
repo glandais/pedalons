@@ -1,0 +1,27 @@
+# Google Play feature graphic — Koubou source. Run from screenshots/koubou/:
+#   cd screenshots/koubou && kou generate feature.yaml
+# Output: out/feature/<locale>/…/featureGraphic.png, copied by assemble-play.sh into
+#         android/fastlane/metadata/android/<locale>/images/featureGraphic.png. 1024 x 500.
+
+project:
+  name: Pedalons
+  output_dir: out/feature
+  device: iPhone 17 Pro Max - Deep Blue - Portrait
+  output_size:
+  - 1024
+  - 500
+localization:
+  base_language: en-US
+  languages:
+  - en-US
+  - fr-FR
+  xcstrings_path: koubou-strings.xcstrings
+screenshots:
+  featureGraphic:
+    template: templates/feature.html
+    frame: false
+    variables:
+      headline: Pédalons
+      subtitle: Your cycling club's rides, routes, weather and agenda.
+    assets:
+      app_screenshot: ../../../assets/icon-1024.png

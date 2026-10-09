@@ -100,6 +100,18 @@ class PdlAppBar extends StatelessWidget implements PreferredSizeWidget {
       );
     }
 
+    // La barre système prend le style de la dernière région qui en déclare
+    // un : sans celle-ci, un écran poussé au-dessus d'une barre `overlay`
+    // gardait ses icônes blanches, sur le fond clair de `surface` (Android).
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: Theme.of(context).brightness == Brightness.dark
+          ? SystemUiOverlayStyle.light
+          : SystemUiOverlayStyle.dark,
+      child: _surface(c, bar),
+    );
+  }
+
+  Widget _surface(PdlColors c, Widget bar) {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: c.surface,

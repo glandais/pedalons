@@ -257,6 +257,38 @@
           }
         }
       }
+    },
+    "Pédalons": {
+      "localizations": {
+        "en-US": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pédalons"
+          }
+        },
+        "fr-FR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pédalons"
+          }
+        }
+      }
+    },
+    "Your cycling club's rides, routes, weather and agenda.": {
+      "localizations": {
+        "en-US": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your cycling club's rides, routes, weather and agenda."
+          }
+        },
+        "fr-FR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les sorties, les parcours, la météo et l'agenda de votre club."
+          }
+        }
+      }
     }
   }
 }

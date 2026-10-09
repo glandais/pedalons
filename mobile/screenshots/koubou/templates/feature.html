@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<!--
+  Google Play feature graphic, 1024 x 500 (screenshots/koubou/feature.yaml): the launcher icon, the
+  name, one line of tagline — the site's Open Graph image (frontend/public/og-image.png)
+  in Play's proportions. Play may crop the edges and lay a play button over the centre on some
+  surfaces: everything stays inside the middle 80 %, nothing under the centre point matters.
+-->
+<style>
+  :root { --blue: #228be6; --blue-deep: #1864ab; --orange: #fd7e14; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 100vw; height: 100vh; overflow: hidden; position: relative;
+    background: linear-gradient(160deg, #4c9cea 0%, var(--blue) 45%, var(--blue-deep) 100%);
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    display: flex; align-items: center; justify-content: center; gap: 5.5vw;
+  }
+  .terrain {
+    position: absolute; inset: 0; opacity: 0.10;
+    background: repeating-radial-gradient(circle at 88% 20%, transparent 0 2.4vw, #fff 2.4vw 2.55vw);
+  }
+  .tile { position: relative; z-index: 2; width: 27vw; height: 27vw; }
+  /* assets/icon-1024.png is the launcher icon itself, blue tile included: a white ring and a
+     shadow lift it off the blue background. */
+  .tile img {
+    width: 100%; height: 100%; border-radius: 19%;
+    box-shadow: 0 0 0 0.6vw rgba(255,255,255,0.95), 0 2vw 5vw rgba(8,30,66,0.4);
+  }
+  .copy { position: relative; z-index: 2; max-width: 52vw; }
+  h1 { font-weight: 800; color: #fff; font-size: 10.5vw; line-height: 1; letter-spacing: -0.03em; }
+  .bar { width: 9vw; height: 0.9vw; border-radius: 1vw; background: var(--orange); margin: 2.4vw 0 2.2vw; }
+  p { font-weight: 500; color: rgba(255,255,255,0.9); font-size: 3.4vw; line-height: 1.25; text-wrap: balance; }
+</style>
+</head>
+<body>
+  <div class="terrain"></div>
+  <div class="tile"><img data-kou-id="device" data-kou-role="device" src="{{app_screenshot}}" alt=""></div>
+  <div class="copy">
+    <h1 data-kou-id="headline" data-kou-role="headline">{{headline}}</h1>
+    <div class="bar"></div>
+    <p data-kou-id="subtitle" data-kou-role="supporting">{{subtitle}}</p>
+  </div>
+</body>
+</html>

@@ -1,3 +1,21 @@
-Pédalons is the platform for cycling clubs and groups to organize their rides, share their routes, coordinate their events and bring their community together.
+Pédalons is the home of your cycling club or group: rides, routes, the agenda and team news, all in one place.
 
-Each club gets its own space: rides with pace groups, GPX routes viewable on the map, elevation profiles, an event calendar and posts to keep everyone in the loop.
+RIDES
+• Every ride offers its pace groups: sign up for yours in one tap, and see who is riding with whom.
+• Start location and time, planned route, comments: everything you need to know before heading out.
+• The ride's weather in the week before it: at the start, then along the route at your group's pace — rain, temperature, and headwind or tailwind, point by point.
+• Multi-day trips, stage by stage, with the weather for each stage.
+
+ROUTES
+• The club's route library, on the map or as a list, filtered by distance and elevation.
+• An elevation profile coloured by gradient, and the climbs along the way.
+• Download as GPX or FIT, and send a route to your Hammerhead Karoo or Garmin bike computer.
+
+THE TEAM
+• Each team's dashboard: your next rides, the latest posts, new routes and ads.
+• The agenda of rides and trips, as a list or a calendar, which you can subscribe to from your own calendar app.
+• Club posts, to keep everyone in the loop.
+• Classified ads between members, without your e-mail address ever being shown.
+• Notifications for ride reminders, schedule changes and replies to your comments, set type by type.
+
+A Pédalons account is created with an e-mail address; sign-in works with a password, a one-time code or passkeys.

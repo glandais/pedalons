@@ -39,6 +39,14 @@ Upload a new build to Play Store internal track. Run `flutter build appbundle --
 
 Push the Data safety form from store-metadata/data-safety.csv (Play Console CSV format). The API is write-only: there is no pull, so the CSV in git is the record, and a hand edit in the Console is overwritten by the next run.
 
+### android listing
+
+```sh
+[bundle exec] fastlane android listing
+```
+
+Push the store listing alone — titles, descriptions, feature graphic, icon and phone screenshots from metadata/android/ — with no build and no release. The screenshots come from mobile/screenshots/ (capture-android.sh, koubou/play.yaml, assemble-play.sh). Play then holds the change in « Vue d'ensemble de la publication » until it is sent for review. `validate:true` asks Google to check it all without committing anything.
+
 ### android deploy
 
 ```sh

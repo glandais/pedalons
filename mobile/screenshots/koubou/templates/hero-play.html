@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<!--
+  Google Play cards (screenshots/koubou/play.yaml): hero.html with the device
+  drawn here, in CSS — a neutral phone outline, since Koubou has no Android frame
+  and a Play listing must not show an Apple device. 1080 x 1920 (9:16).
+
+  The App Store original: the headline at the top, the device
+  coming up from the bottom edge, so the top of the screen — where the app puts
+  what matters — is what shows. Brand colours from docs/BRANDING.md: blue #228be6
+  (icon background) and orange #fd7e14 (the "P"), Inter-like system type.
+  Two canvases: iPhone 1242 x 2688 (iPhone6_5) and iPad 2048 x 2732
+  (iPadPro12_9); the second, almost square, is recognised by min-aspect-ratio
+  and takes its own sizes — in vw, an iPhone headline would be twice too big.
+-->
+<style>
+  :root { --blue: #228be6; --blue-deep: #1864ab; --orange: #fd7e14; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 100vw; height: 100vh; overflow: hidden; position: relative;
+    background: linear-gradient(170deg, var(--blue) 0%, var(--blue-deep) 100%);
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  /* Contour lines, faint: the terrain the routes cross. */
+  .terrain {
+    position: absolute; inset: 0; opacity: 0.12;
+    background:
+      repeating-radial-gradient(circle at 78% 18%, transparent 0 2.2vw, #fff 2.2vw 2.35vw),
+      repeating-radial-gradient(circle at 10% 60%, transparent 0 2.8vw, #fff 2.8vw 2.95vw);
+    -webkit-mask-image: linear-gradient(180deg, #000 0%, rgba(0,0,0,0.5) 40%, transparent 70%);
+  }
+  h1 { font-weight: 800; color: #fff; line-height: 1.05; letter-spacing: -0.025em; text-wrap: balance; }
+  p { font-weight: 500; color: rgba(255,255,255,0.86); line-height: 1.3; text-wrap: balance; }
+  .bar { width: 14vw; height: 1.1vw; border-radius: 1vw; background: var(--orange); }
+  .copy { position: absolute; top: 6%; left: 7%; right: 7%; z-index: 3; }
+  .copy .bar { margin: 2.6vh 0 2.4vh; }
+  .device { position: absolute; bottom: -12%; left: 50%; transform: translateX(-50%); z-index: 2; }
+  .device { top: 33.5%; bottom: auto; }
+  .device img {
+    display: block; width: 78vw; height: auto;
+    border: 1.5vw solid #101418; border-radius: 6.5vw; background: #101418;
+    box-shadow: 0 0 0 0.35vw #3a424c, 0 40px 80px rgba(8,30,66,0.55);
+  }
+  @media (min-aspect-ratio: 3/5) {
+    .bar { width: 9vw; height: 0.7vw; }
+    .copy { top: 5.5%; left: 9%; right: 9%; }
+    .copy .bar { margin: 2vh 0 1.8vh; }
+    .device { bottom: -20%; }
+    .device img { width: auto; height: 86vh; }
+  }
+</style>
+</head>
+<body>
+  <div class="terrain"></div>
+  <div class="copy" data-fit-budget="26" data-fit-budget-ipad="26"
+       data-fit-start="10.4" data-fit-min="8.6" data-fit-sub="4.8" data-fit-sub-min="4.2"
+       data-fit-start-ipad="7.6" data-fit-min-ipad="6.4" data-fit-sub-ipad="3.4" data-fit-sub-min-ipad="3">
+    <h1 data-kou-id="headline" data-kou-role="headline">{{headline}}</h1>
+    <div class="bar"></div>
+    <p data-kou-id="subtitle" data-kou-role="supporting">{{subtitle}}</p>
+  </div>
+  <div class="device"><img data-kou-id="device" data-kou-role="device" src="{{app_screenshot}}" alt=""></div>
+<script>
+/* Text fitting: one template serves two languages, and French runs 15-30 %
+   longer than English. The text block declares the share of the canvas it owns
+   (data-fit-budget, % of the height); this shrinks the headline, then the
+   subtitle, until it fits — including width, where a long word overflows
+   without the height noticing. Sizes in vw; the iPad declares its own. */
+(function () {
+  var box = document.querySelector('[data-fit-budget]');
+  if (!box) return;
+  var ipad = window.innerWidth / window.innerHeight > 0.6;
+  var d = function (k) { return parseFloat(box.dataset[ipad ? k + 'Ipad' : k] || box.dataset[k]); };
+  var budget = d('fitBudget') / 100 * window.innerHeight;
+  var h1 = box.querySelector('h1'), p = box.querySelector('p');
+  var size = d('fitStart'), min = d('fitMin'), sub = d('fitSub'), subMin = d('fitSubMin');
+  h1.style.fontSize = size + 'vw';
+  if (p) p.style.fontSize = sub + 'vw';
+  var over = function () {
+    return box.getBoundingClientRect().height > budget ||
+           h1.scrollWidth > h1.clientWidth ||
+           (p && p.scrollWidth > p.clientWidth);
+  };
+  while (over() && size > min) { size -= 0.15; h1.style.fontSize = size.toFixed(2) + 'vw'; }
+  if (p) { while (over() && sub > subMin) { sub -= 0.1; p.style.fontSize = sub.toFixed(2) + 'vw'; } }
+})();
+</script>
+</body>
+</html>

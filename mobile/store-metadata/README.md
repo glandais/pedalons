@@ -71,10 +71,27 @@ App Store Connect create the version one, and the version half of the same plan 
 been used" — re-plan and apply again). `review-notes.md` is pushed with
 `asc review details-update --id d8cc0005-f535-4475-a720-a00eeb844adb --notes "$(cat metadata/review-notes.md)"`.
 
-**TODO**: `android/fastlane/metadata/android/en-US/images/phoneScreenshots/` currently reuses the
-`fr-FR` screenshots as a placeholder (French UI copy, dev seed data — "Bonjour, Gaby!", "Publi
-test"). Retake them from a clean English-locale device/simulator before the English listing goes
-live.
+## Google Play listing
+
+`mobile/android/fastlane/metadata/android/<locale>/` holds the Play copy (`title.txt`,
+`short_description.txt` — 80 characters —, `full_description.txt`, the App Store description) and
+images. The phone screenshots and the feature graphic are generated, never edited by hand:
+
+```bash
+cd mobile
+python3 screenshots/seed.py                     # the demo clubs, as for the App Store set
+./screenshots/capture-android.sh                # pedalons_e2e emulator -> screenshots/flat/android/
+(cd screenshots/koubou && kou generate play.yaml && kou generate feature.yaml)
+./screenshots/assemble-play.sh                  # -> metadata/android/<locale>/images/
+cd android
+PATH=/opt/homebrew/opt/ruby/bin:$PATH bundle exec fastlane listing validate:true   # Google checks, nothing changes
+PATH=/opt/homebrew/opt/ruby/bin:$PATH bundle exec fastlane listing                 # then pushes the listing
+```
+
+The cards are the App Store ones (same captions, `koubou-strings.xcstrings`) at 1080 x 1920 — Play
+refuses a side more than twice the other, which a raw 1080 x 2400 capture is — with a phone drawn in
+CSS (`templates/hero-play.html`): Koubou has no Android frame, and a Play listing must not show an
+Apple device.
 
 ## Rule
 
