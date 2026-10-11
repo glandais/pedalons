@@ -630,21 +630,6 @@ Ce que les tests ne prouvent pas, parce qu'ils ne passent ni par Flyway ni par u
       frontend SSR (ni métriques Node ni temps de rendu : seul Caddy le voit, par hôte), et les
       erreurs côté client web et mobile (un GlitchTip, compatible Sentry, pèserait une base et un
       Redis de plus : à ne faire que si le besoin se confirme). Taille : M.
-- [ ] `OPS-23` **Les alertes partent par le relais de l'application** — `ALERT_SMTP_*` (`.env` de
-      `~/shared`) pointe sur Scaleway TEM, comme `QUARKUS_MAILER_*` : une panne de TEM, ou un
-      compte suspendu, tairait les alertes qui devraient la signaler. Le `Watchdog`, qui passe par
-      Healthchecks, n'en dépend pas, mais aucune autre alerte n'arriverait. Prendre un relais
-      indépendant (le SMTP d'une messagerie personnelle, avec un mot de passe d'application), le
-      mettre dans le `.env`, `deploy.sh --monitoring`, puis un `amtool alert add` pour voir arriver
-      le courriel ([`OPERATIONS.md`](OPERATIONS.md#alerts)). Taille : XS.
-- [ ] `OPS-8` **Exercice de restauration** (audit de février, I20) — la procédure est écrite
-      ([`OPERATIONS.md`](OPERATIONS.md), « Restore drill from another machine ») mais rien ne dit
-      qu'elle a été menée de bout en bout sur une autre machine.
-- [ ] `OPS-9` **Copie à froid des données Valhalla** — `~/shared/data/valhalla` (~17 Go, des heures
-      à reconstruire) est hors des sauvegardes nocturnes : la copier **une fois** vers l'hôte de
-      sauvegarde, puis à chaque changement d'extrait OSM. Rien ne dit que c'est fait, et les données
-      tileserver, nommées comme « à reconstruire à la main », ne sont couvertes par aucune
-      procédure. Source : [`OPERATIONS.md`](OPERATIONS.md#cold-backup-of-the-shared-stack).
 - [ ] `OPS-30` **Check Healthchecks du rafraîchissement des données des relecteurs des stores**
       (scindé de `OPS-28`) — `~/.config/pedalons/store-demo.env` n'a pas de `STORE_DEMO_PING_URL` :
       le cron tourne sans que personne ne voie qu'il échoue, et il a échoué sans bruit du 3 au
