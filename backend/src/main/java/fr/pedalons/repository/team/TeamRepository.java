@@ -39,6 +39,15 @@ public class TeamRepository implements BaseRepository<Team> {
     return find("domain.id = ?1 and slug = ?2", domainId, slug).firstResultOptional();
   }
 
+  /**
+   * Whether a trashed team of the domain has a slug ending with {@code suffix}. For the biketeam
+   * migration, whose set-aside slug ends with the job's id: a set-aside team is always trashed in
+   * the transaction that renames it, so a live team renamed by hand cannot pass for one.
+   */
+  public boolean existsTrashedBySlugSuffixAndDomain(Long domainId, String suffix) {
+    return count("domain.id = ?1 and deleted = true and slug like ?2", domainId, "%" + suffix) > 0;
+  }
+
   public Optional<Team> findActiveById(Long id) {
     return find("id = ?1 and deleted = false", id).firstResultOptional();
   }
