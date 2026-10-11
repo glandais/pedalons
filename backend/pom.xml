@@ -22,7 +22,7 @@
         <spotless-plugin.version>3.10.3</spotless-plugin.version>
         <git-commit-id-plugin.version>10.0.1</git-commit-id-plugin.version>
         <hypersistence-utils-hibernate.version>3.16.0</hypersistence-utils-hibernate.version>
-        <gpx.version>1.5.2</gpx.version>
+        <vcyclist.version>6.0.1</vcyclist.version>
         <lombok.version>1.18.48</lombok.version>
         <jspecify.version>1.0.0</jspecify.version>
         <magika.version>0.6.1</magika.version>
@@ -151,17 +151,24 @@
             <artifactId>quarkus-smallrye-openapi</artifactId>
         </dependency>
 
-        <!-- GPX Processing -->
+        <!-- GPX Processing (vcyclist: -jvm artifacts, the root ones are Gradle-metadata poms) -->
         <dependency>
-            <groupId>io.github.glandais.gpx2web</groupId>
-            <artifactId>gpx</artifactId>
-            <version>${gpx.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.github.haifengl</groupId>
-                    <artifactId>smile-core</artifactId>
-                </exclusion>
-            </exclusions>
+            <groupId>io.github.glandais</groupId>
+            <artifactId>vcyclist-engine-jvm</artifactId>
+            <version>${vcyclist.version}</version>
+        </dependency>
+        <!-- Map rendering: pure JVM (no -jvm suffix) and not a dependency of :engine -->
+        <dependency>
+            <groupId>io.github.glandais</groupId>
+            <artifactId>vcyclist-map</artifactId>
+            <version>${vcyclist.version}</version>
+        </dependency>
+        <!-- FIT decoding of attached files (TrackAttachmentSanitizer): runtime-only through
+             vcyclist-fit, declared to compile against it. Keep the version vcyclist brings. -->
+        <dependency>
+            <groupId>io.github.glandais</groupId>
+            <artifactId>fit-kotlin-sdk-jvm</artifactId>
+            <version>21.215.0</version>
         </dependency>
 
         <!-- Timezone lookup from GPS coordinates -->

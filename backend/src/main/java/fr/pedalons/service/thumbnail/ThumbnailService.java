@@ -10,17 +10,16 @@ import fr.pedalons.domain.trip.TripStage;
 import fr.pedalons.enums.AssetType;
 import fr.pedalons.service.asset.AssetService;
 import fr.pedalons.service.asset.response.AssetWithFile;
-import io.github.glandais.gpx.data.GPX;
-import io.github.glandais.gpx.data.GPXPath;
-import io.github.glandais.gpx.data.GPXPathType;
-import io.github.glandais.gpx.data.Point;
+import io.github.glandais.elevation.CoordinatesElevation;
+import io.github.glandais.elevation.LatLonElevation;
+import io.github.glandais.engine.path.Path;
+import io.github.glandais.engine.path.PathJvm;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.awt.Color;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -209,17 +208,15 @@ public class ThumbnailService {
       }
     }
 
-    List<GPXPath> paths = buildPaths(tracks);
+    List<Path> paths = buildPaths(tracks);
     if (paths.isEmpty()) {
       return;
     }
 
-    GPX gpx = new GPX("thumbnail", paths, List.of());
-
     generateThumbnail(
-        entity, gpx, MapThumbnailRenderer.LIGHT_STYLE, colors, lightType, "thumbnail-light.png");
+        entity, paths, MapThumbnailRenderer.LIGHT_STYLE, colors, lightType, "thumbnail-light.png");
     generateThumbnail(
-        entity, gpx, MapThumbnailRenderer.DARK_STYLE, colors, darkType, "thumbnail-dark.png");
+        entity, paths, MapThumbnailRenderer.DARK_STYLE, colors, darkType, "thumbnail-dark.png");
   }
 
   /** Track geometry reduced to what the map renderer needs — decoupled from {@code Asset}/team. */
@@ -233,13 +230,12 @@ public class ThumbnailService {
    * callers treat a thumbnail as best-effort.
    */
   public boolean renderLightThumbnail(File output, List<ThumbnailTrack> tracks) {
-    List<GPXPath> paths = buildPaths(tracks);
+    List<Path> paths = buildPaths(tracks);
     if (paths.isEmpty()) {
       return false;
     }
-    GPX gpx = new GPX("thumbnail", paths, List.of());
     try {
-      renderer.render(output, gpx, MapThumbnailRenderer.LIGHT_STYLE, ROUTE_COLORS);
+      renderer.render(output, paths, MapThumbnailRenderer.LIGHT_STYLE, ROUTE_COLORS);
       return true;
     } catch (Exception e) {
       LOG.warnv("Preview thumbnail generation failed: {0}", e.getMessage());
@@ -247,20 +243,22 @@ public class ThumbnailService {
     }
   }
 
-  static List<GPXPath> buildPaths(List<ThumbnailTrack> tracks) {
-    List<GPXPath> paths = new ArrayList<>();
+  /**
+   * Rebuilds renderable geometry from stored track points. {@code public} so {@code
+   * GpxProcessingService} draws its route thumbnails from exactly the same geometry the rest of the
+   * app renders, instead of maintaining a second conversion.
+   */
+  public static List<Path> buildPaths(List<ThumbnailTrack> tracks) {
+    List<Path> paths = new ArrayList<>();
     for (ThumbnailTrack track : tracks) {
-      GPXPath gpxPath = new GPXPath(track.name(), GPXPathType.TRACK);
+      List<CoordinatesElevation> coordinates = new ArrayList<>(track.points().size());
       for (GpxTrack.TrackPoint tp : track.points()) {
-        Point p = new Point();
-        p.setLon(Math.toRadians(tp.lng()));
-        p.setLat(Math.toRadians(tp.lat()));
-        p.setEle(tp.ele());
-        p.setInstant(null, Instant.EPOCH);
-        gpxPath.addPoint(p);
+        coordinates.add(new LatLonElevation(tp.lat(), tp.lng(), tp.ele()));
       }
-      gpxPath.computeArrays();
-      paths.add(gpxPath);
+      if (coordinates.isEmpty()) {
+        continue;
+      }
+      paths.add(PathJvm.fromCoordinates(coordinates));
     }
     return paths;
   }
@@ -271,7 +269,7 @@ public class ThumbnailService {
    */
   private void generateThumbnail(
       TeamEntity entity,
-      GPX gpx,
+      List<Path> paths,
       String style,
       List<Color> colors,
       AssetType assetType,
@@ -279,7 +277,7 @@ public class ThumbnailService {
     File rendered = null;
     try {
       rendered = File.createTempFile("thumbnail-", ".png");
-      renderer.render(rendered, gpx, style, colors);
+      renderer.render(rendered, paths, style, colors);
       AssetWithFile assetFile = assetService.addAsset(entity, assetType, fileName);
       entity.getAssets().add(assetFile.asset());
       try {

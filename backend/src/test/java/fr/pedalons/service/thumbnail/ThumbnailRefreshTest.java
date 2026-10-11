@@ -20,7 +20,6 @@ import fr.pedalons.dto.rides.response.RideDto;
 import fr.pedalons.dto.trips.request.TripRequest;
 import fr.pedalons.enums.Status;
 import fr.pedalons.enums.Visibility;
-import io.github.glandais.gpx.data.GPX;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import java.awt.image.BufferedImage;
@@ -58,14 +57,14 @@ class ThumbnailRefreshTest extends AbstractResourceTest {
                 return null;
               })
           .when(renderer)
-          .render(any(File.class), any(GPX.class), anyString(), anyList());
+          .render(any(File.class), anyList(), anyString(), anyList());
     } catch (Exception e) {
       throw new IllegalStateException(e);
     }
   }
 
   private void verifyDraws(int count) throws Exception {
-    verify(renderer, times(count)).render(any(File.class), any(GPX.class), anyString(), anyList());
+    verify(renderer, times(count)).render(any(File.class), anyList(), anyString(), anyList());
   }
 
   private RideRequest ride(String name, @Nullable String routeSlug) {
@@ -141,7 +140,7 @@ class ThumbnailRefreshTest extends AbstractResourceTest {
         .put("/api/teams/" + team1Slug + "/rides/" + created.getSlug())
         .then()
         .statusCode(200);
-    verify(renderer, never()).render(any(File.class), any(GPX.class), anyString(), anyList());
+    verify(renderer, never()).render(any(File.class), anyList(), anyString(), anyList());
 
     // Another route: drawn again.
     given()
@@ -185,7 +184,7 @@ class ThumbnailRefreshTest extends AbstractResourceTest {
         .put("/api/teams/" + team1Slug + "/trips/" + slug)
         .then()
         .statusCode(200);
-    verify(renderer, never()).render(any(File.class), any(GPX.class), anyString(), anyList());
+    verify(renderer, never()).render(any(File.class), anyList(), anyString(), anyList());
 
     given()
         .auth()

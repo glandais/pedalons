@@ -44,7 +44,7 @@ import fr.pedalons.service.security.annotation.CheckAccess;
 import fr.pedalons.service.security.annotation.Public;
 import fr.pedalons.service.tag.TagLookup;
 import fr.pedalons.service.tag.TagService;
-import io.github.glandais.gpx.data.GPX;
+import io.github.glandais.engine.gpx.GpxDocument;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -292,7 +292,7 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
 
     try {
 
-      GPX gpx;
+      GpxDocument gpx;
       if (gpxPath != null) {
         gpx = gpxProcessingService.parseGpx(gpxPath);
       } else {
@@ -369,7 +369,7 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
 
     // Read before the try below: a file refused here (unparseable, or too long — SEC-6) keeps its
     // own error code and leaves the route's current files alone, which the catch would delete.
-    GPX gpx = null;
+    GpxDocument gpx = null;
     if (gpxPath != null) {
       gpx = gpxProcessingService.parseGpx(gpxPath);
     } else {

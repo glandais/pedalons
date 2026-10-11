@@ -13,6 +13,7 @@ import fr.pedalons.domain.user.User;
 import fr.pedalons.dto.common.asset.AssetDto;
 import fr.pedalons.enums.AssetType;
 import fr.pedalons.enums.Visibility;
+import fr.pedalons.infrastructure.gpx.FitExporter;
 import fr.pedalons.infrastructure.storage.StorageService;
 import fr.pedalons.repository.asset.AssetRepository;
 import fr.pedalons.service.asset.AssetService;
@@ -22,14 +23,13 @@ import fr.pedalons.service.security.PedalonsQueryContext;
 import fr.pedalons.util.GpxPrivacyAssertions;
 import fr.pedalons.util.TestDataCleaner;
 import fr.pedalons.util.TestDataService;
-import io.github.glandais.gpx.data.GPX;
-import io.github.glandais.gpx.io.read.GPXFileReader;
-import io.github.glandais.gpx.io.write.FitFileWriter;
+import io.github.glandais.engine.gpx.GpxDocument;
+import io.github.glandais.engine.gpx.GpxParserJvm;
+import io.github.glandais.engine.gpx.GpxToPathJvm;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import java.io.ByteArrayInputStream;
-import java.io.FileInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -53,8 +53,6 @@ class GpxSanitizationBackfillTest extends AbstractBaseTest {
   @Inject AssetService assetService;
   @Inject AssetRepository assetRepository;
   @Inject StorageService storageService;
-  @Inject GPXFileReader gpxFileReader;
-  @Inject FitFileWriter fitFileWriter;
   @Inject PedalonsQueryContext context;
   @Inject DomainResolver domainResolver;
   @Inject TestDataService dataService;
@@ -169,7 +167,7 @@ class GpxSanitizationBackfillTest extends AbstractBaseTest {
 
   @Test
   void sanitizeAll_rewritesAFitAttachmentStoredAsUploaded() throws Exception {
-    String key = attachmentStoredRaw("sortie.fit", activityFit());
+    String key = attachmentStoredRaw("sortie.fit", GpxPrivacyAssertions.activityFit());
 
     GpxSanitizationBackfill.Report report = backfill.sanitizeAll();
 
@@ -316,38 +314,17 @@ class GpxSanitizationBackfillTest extends AbstractBaseTest {
     return key;
   }
 
-  /** The activity fixture as a device would record it in FIT: with its clock and power. */
-  private byte[] activityFit() throws Exception {
-    GPX dirty;
-    try (InputStream is = new FileInputStream(activity().toFile())) {
-      dirty = gpxFileReader.parseGPX(is);
-    }
-    Path fit = Files.createTempFile("backfill-test-", ".fit");
-    try {
-      fitFileWriter.writeGPX(dirty, fit.toFile());
-      return Files.readAllBytes(fit);
-    } finally {
-      Files.deleteIfExists(fit);
-    }
-  }
-
   /** What an upload stored before API-44: the raw activity, and a FIT carrying its clock. */
   private void putRawActivityBack(String originalKey, String filteredKey, String fitKey)
       throws Exception {
     byte[] raw = Files.readAllBytes(activity());
     store(originalKey, raw, "application/gpx+xml");
     store(filteredKey, raw, "application/gpx+xml");
-    GPX dirty;
-    try (InputStream is = new FileInputStream(activity().toFile())) {
-      dirty = gpxFileReader.parseGPX(is);
-    }
-    Path fit = Files.createTempFile("backfill-test-", ".fit");
-    try {
-      fitFileWriter.writeGPX(dirty, fit.toFile());
-      store(fitKey, Files.readAllBytes(fit), "application/vnd.ant.fit");
-    } finally {
-      Files.deleteIfExists(fit);
-    }
+    GpxDocument dirty = GpxParserJvm.parse(new String(raw, StandardCharsets.UTF_8));
+    store(
+        fitKey,
+        FitExporter.toFitBytes(GpxToPathJvm.tracksAsPaths(dirty), dirty.getName()),
+        "application/vnd.ant.fit");
     assertTrue(GpxSanitizationBackfill.isDirty(new String(raw, StandardCharsets.UTF_8)));
   }
 

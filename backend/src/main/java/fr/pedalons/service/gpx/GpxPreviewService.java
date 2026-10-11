@@ -30,8 +30,7 @@ import fr.pedalons.service.security.PedalonsQueryContext;
 import fr.pedalons.service.security.annotation.Logged;
 import fr.pedalons.service.security.annotation.Public;
 import fr.pedalons.service.thumbnail.ThumbnailService;
-import io.github.glandais.gpx.data.GPX;
-import io.github.glandais.gpx.io.write.FitFileWriter;
+import io.github.glandais.engine.gpx.GpxDocument;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -81,8 +80,6 @@ public class GpxPreviewService {
 
   @Inject GpxProcessingService gpxProcessingService;
 
-  @Inject FitFileWriter fitFileWriter;
-
   @Inject GpxPreviewRepository gpxPreviewRepository;
 
   @Inject StorageService storageService;
@@ -109,11 +106,11 @@ public class GpxPreviewService {
   }
 
   /**
-   * Shared core: analyses an already-parsed {@link GPX} (from an uploaded file or from planner
-   * points), stores it, and returns the persisted preview. See {@link #create(Path, String)} for
-   * why this is deliberately not {@code @Transactional}.
+   * Shared core: analyses an already-parsed {@link GpxDocument} (from an uploaded file or from
+   * planner points), stores it, and returns the persisted preview. See {@link #create(Path,
+   * String)} for why this is deliberately not {@code @Transactional}.
    */
-  public GpxPreview create(GPX gpx, String fallbackName) {
+  public GpxPreview create(GpxDocument gpx, String fallbackName) {
     User creator = pedalonsContext.getUser();
     Domain domain = pedalonsContext.getDomain();
     UUID publicId = UUID.randomUUID();
@@ -124,7 +121,7 @@ public class GpxPreviewService {
     try (ComputedGpx computed = gpxProcessingService.computeGpx(gpx)) {
       upload(publicId, ORIGINAL_GPX, computed.originalGpx());
       upload(publicId, FILTERED_GPX, computed.filteredGpx());
-      uploadFit(publicId, gpx);
+      upload(publicId, FIT, computed.fitFile(), FIT_CONTENT_TYPE);
 
       tracks = toPreviewTracks(computed);
       waypoints = toPreviewWaypoints(computed);
@@ -137,7 +134,7 @@ public class GpxPreviewService {
       throw e;
     }
 
-    String name = gpx.name() != null && !gpx.name().isBlank() ? gpx.name() : fallbackName;
+    String name = documentName(gpx, fallbackName);
     GpxPreview preview =
         new GpxPreview(
             publicId,
@@ -189,6 +186,16 @@ public class GpxPreviewService {
   }
 
   /**
+   * {@code GpxDocument.getName()} is never null — it falls back to the literal {@code "noname"} —
+   * so that placeholder has to be treated as "no name" too, or every unnamed file would be titled
+   * "noname" instead of the caller's fallback.
+   */
+  private static String documentName(GpxDocument gpx, String fallbackName) {
+    String name = gpx.getName();
+    return !name.isBlank() && !"noname".equals(name) ? name : fallbackName;
+  }
+
+  /**
    * Renames a preview and, when a new GPX file or planner points are supplied, replays the full
    * pipeline to recompute its track and overwrite the stored files. Only the creator may edit.
    *
@@ -205,7 +212,7 @@ public class GpxPreviewService {
     }
     UUID pid = preview.getPublicId();
 
-    GPX gpx = null;
+    GpxDocument gpx = null;
     if (gpxPath != null) {
       gpx = gpxProcessingService.parseGpx(gpxPath);
     } else if (points != null && !points.isEmpty()) {
@@ -230,7 +237,7 @@ public class GpxPreviewService {
     try (ComputedGpx computed = gpxProcessingService.computeGpx(gpx)) {
       upload(pid, ORIGINAL_GPX, computed.originalGpx());
       upload(pid, FILTERED_GPX, computed.filteredGpx());
-      uploadFit(pid, gpx);
+      upload(pid, FIT, computed.fitFile(), FIT_CONTENT_TYPE);
       tracks = toPreviewTracks(computed);
       waypoints = toPreviewWaypoints(computed);
       metadata = computed.aggregated();
@@ -475,25 +482,6 @@ public class GpxPreviewService {
           LOG.warnf(e, "Failed to delete temp thumbnail %s", temp);
         }
       }
-    }
-  }
-
-  /**
-   * Generates the FIT export from the (already filtered) GPX and stores it beside the GPX files,
-   * mirroring how a route's FIT is produced. Mandatory: a failure aborts the upload rather than
-   * leaving a preview whose advertised FIT download would 404.
-   */
-  private void uploadFit(UUID publicId, GPX gpx) throws IOException {
-    Path temp = Files.createTempFile("gpx-preview-fit-", ".fit");
-    try {
-      fitFileWriter.writeGPX(gpx, temp.toFile());
-      upload(publicId, FIT, temp.toFile(), FIT_CONTENT_TYPE);
-    } catch (IOException e) {
-      throw e;
-    } catch (Exception e) {
-      throw new IOException(e);
-    } finally {
-      Files.deleteIfExists(temp);
     }
   }
 

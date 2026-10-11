@@ -7,6 +7,7 @@ import fr.pedalons.common.GeoPoint;
 import fr.pedalons.common.exception.BusinessException;
 import fr.pedalons.common.exception.PedalonsException;
 import fr.pedalons.domain.asset.Asset;
+import fr.pedalons.domain.route.ClimbData;
 import fr.pedalons.domain.route.GpxTrack;
 import fr.pedalons.domain.route.GpxWaypoint;
 import fr.pedalons.domain.route.Route;
@@ -17,39 +18,35 @@ import fr.pedalons.enums.AssetType;
 import fr.pedalons.enums.EntityType;
 import fr.pedalons.enums.WindDirection;
 import fr.pedalons.infrastructure.exception.NotFoundException;
+import fr.pedalons.infrastructure.gpx.FitExporter;
 import fr.pedalons.infrastructure.storage.StorageService;
 import fr.pedalons.service.asset.AssetService;
 import fr.pedalons.service.route.response.TrackMetadata;
 import fr.pedalons.service.security.PedalonsQueryContext;
 import fr.pedalons.service.thumbnail.MapThumbnailRenderer;
-import io.github.glandais.gpx.climb.Climb;
-import io.github.glandais.gpx.climb.ClimbDetector;
-import io.github.glandais.gpx.data.*;
-import io.github.glandais.gpx.filter.GPXFilter;
-import io.github.glandais.gpx.filter.GPXPerDistance;
-import io.github.glandais.gpx.io.read.GPXFileReader;
-import io.github.glandais.gpx.io.write.FitFileWriter;
-import io.github.glandais.gpx.io.write.GPXFileWriter;
-import io.github.glandais.gpx.srtm.GPXElevationFixer;
-import io.github.glandais.gpx.util.GPXDataComputer;
-import io.github.glandais.gpx.util.Vector;
+import fr.pedalons.service.thumbnail.ThumbnailService;
+import io.github.glandais.engine.gpx.GpxDocument;
+import io.github.glandais.engine.gpx.GpxModelJvm;
+import io.github.glandais.engine.gpx.GpxParserJvm;
+import io.github.glandais.engine.gpx.GpxToPathJvm;
+import io.github.glandais.engine.gpx.GpxTrackPoint;
+import io.github.glandais.engine.gpx.GpxWriterJvm;
+import io.github.glandais.engine.path.Path;
 import io.hypersistence.tsid.TSID;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import java.awt.Color;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.MalformedInputException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Stream;
+import java.util.Objects;
 import org.geolatte.geom.G2D;
 import org.geolatte.geom.LineString;
 import org.jboss.logging.Logger;
@@ -58,6 +55,10 @@ import org.jspecify.annotations.Nullable;
 /**
  * Service for processing GPX files for route management.
  * Handles the complete GPX processing pipeline from upload to storage.
+ *
+ * <p>{@link Path} in this file is vcyclist's immutable point array, <b>not</b>
+ * {@code java.nio.file.Path} — the latter is spelled out in full wherever it appears, since the
+ * geometry type is by far the more frequent of the two here.
  */
 @ApplicationScoped
 public class GpxProcessingService {
@@ -67,19 +68,7 @@ public class GpxProcessingService {
   /** Sibling of the asset temp dir, so temp files can be moved across without copying bytes. */
   private static final String TEMP_DIR = "pedalons-gpx";
 
-  @Inject GPXFileReader gpxFileReader;
-
-  @Inject GPXDataComputer gpxDataComputer;
-
-  @Inject GPXPerDistance gpxPerDistance;
-
-  @Inject GPXElevationFixer gpxElevationFixer;
-
-  @Inject ClimbDetector climbDetector;
-
-  @Inject GPXFileWriter gpxFileWriter;
-
-  @Inject FitFileWriter fitFileWriter;
+  @Inject GpxPipeline pipeline;
 
   @Inject MapThumbnailRenderer mapThumbnailRenderer;
 
@@ -94,12 +83,11 @@ public class GpxProcessingService {
    * GpxLimits#MAX_TRACK_DISTANCE_METERS} (SEC-6). The size of an uploaded file is bounded before
    * this, by the resource ({@code api.gpx.GpxUploads}).
    */
-  public GPX parseGpx(Path path) {
-    // Step 1: Parse GPX
+  public GpxDocument parseGpx(java.nio.file.Path path) {
     LOG.infov("Processing GPX file");
-    GPX gpx;
-    try (FileInputStream fis = new FileInputStream(path.toFile())) {
-      gpx = gpxFileReader.parseGPX(fis);
+    GpxDocument gpx;
+    try {
+      gpx = GpxParserJvm.parse(readGpx(path));
     } catch (Exception e) {
       LOG.errorv("Failed to parse GPX file", e);
       throw new BusinessException(ErrorCode.GPX_FAILURE, e);
@@ -109,25 +97,30 @@ public class GpxProcessingService {
   }
 
   /**
-   * A one-track GPX from planner points, refused like {@link #parseGpx} when too long. The request
-   * DTOs bound the number of points and their coordinates; the check here repeats the latter for
-   * any other caller.
+   * vcyclist's parser takes a {@code String}, so the encoding has to be decided here. UTF-8 first,
+   * ISO-8859-1 as a fallback: GPX files inherited from biketeam are frequently latin-1, and the
+   * previous {@code InputStream}-based parser absorbed them silently.
    */
-  public GPX fromPoints(String name, List<GeoPoint> points) {
-    GPXPath gpxPath = new GPXPath(name, GPXPathType.TRACK);
-    points.stream().map(this::createGpxPoint).forEach(gpxPath::addPoint);
-    GpxLimits.checkTracks(List.of(gpxPath));
-    gpxPath.computeArrays();
-    return new GPX(name, List.of(gpxPath), List.of());
+  private static String readGpx(java.nio.file.Path path) throws IOException {
+    try {
+      return Files.readString(path, StandardCharsets.UTF_8);
+    } catch (MalformedInputException e) {
+      LOG.debugv("GPX {0} is not valid UTF-8, retrying as ISO-8859-1", path);
+      return Files.readString(path, StandardCharsets.ISO_8859_1);
+    }
   }
 
-  private Point createGpxPoint(GeoPoint geoPoint) {
-    Point p = new Point();
-    p.setLon(Math.toRadians(geoPoint.lng()));
-    p.setLat(Math.toRadians(geoPoint.lat()));
-    p.setEle(0.0);
-    p.setInstant(null, Instant.EPOCH);
-    return p;
+  /**
+   * A one-track document from planner points — no source file, hence no elevation and no time —
+   * refused like {@link #parseGpx} when too long. The request DTOs bound the number of points and
+   * their coordinates; the check here repeats the latter for any other caller.
+   */
+  public GpxDocument fromPoints(String name, List<GeoPoint> points) {
+    List<GpxTrackPoint> trackPoints =
+        points.stream().map(p -> GpxModelJvm.trackPoint(p.lat(), p.lng())).toList();
+    GpxDocument gpx = GpxModelJvm.document(List.of(GpxModelJvm.track(trackPoints, name)), name);
+    GpxLimits.checkTracks(gpx);
+    return gpx;
   }
 
   /** A single track, fully computed but not yet bound to any entity. */
@@ -135,22 +128,27 @@ public class GpxProcessingService {
       String name,
       LineString<G2D> line,
       List<GpxTrack.TrackPoint> trackPoints,
-      List<Climb> climbs,
+      List<ClimbData> climbs,
       TrackMetadata metadata) {}
 
   /** A single waypoint, fully computed but not yet bound to any entity. */
   public record ComputedWaypoint(String name, org.geolatte.geom.Point<G2D> location) {}
 
   /**
-   * Outcome of {@link #computeGpx(GPX)}: the two GPX serializations as temp files, plus the
-   * computed tracks, waypoints and aggregated metadata.
+   * Outcome of {@link #computeGpx}: the two GPX serializations and the FIT export as temp files,
+   * plus the computed tracks, waypoints and aggregated metadata.
    *
    * <p>Closing deletes any temp file still present. {@link #processGpxData} consumes the files by
    * moving them, so closing is then a no-op — but on the error path it releases them.
+   *
+   * <p>The FIT file is produced here rather than by each caller because the export is built from
+   * the <b>processed</b> geometry, which only exists inside {@link #computeGpx}: paths are
+   * immutable, so the source {@link GpxDocument} never carries the pipeline's output.
    */
   public record ComputedGpx(
       File originalGpx,
       File filteredGpx,
+      File fitFile,
       List<ComputedTrack> tracks,
       List<ComputedWaypoint> waypoints,
       TrackMetadata aggregated)
@@ -160,6 +158,7 @@ public class GpxProcessingService {
     public void close() {
       deleteQuietly(originalGpx);
       deleteQuietly(filteredGpx);
+      deleteQuietly(fitFile);
     }
   }
 
@@ -170,74 +169,96 @@ public class GpxProcessingService {
   }
 
   /**
-   * The pure GPX pipeline: resample to one point per 10m, fix elevation with SRTM data, simplify
-   * with Douglas-Peucker, detect climbs, and aggregate metadata.
+   * The pure GPX pipeline: resample, fix elevation, simplify, detect climbs, aggregate metadata,
+   * and serialize the three artefacts (original GPX, filtered GPX, FIT).
    *
    * <p>No database, no S3, no entities, no {@link Team} — which is what lets GPX previews (which
    * belong to no team) reuse it. Callers own the returned temp files.
    *
-   * <p>The GPX object is mutated in place by the pipeline, so {@code original.gpx} must be written
-   * before the loop and {@code filtered.gpx} after it. Keeping both serializations here makes that
-   * ordering a local property of this method rather than a rule callers must remember.
+   * <p>Nothing is mutated: the pipeline runs on immutable paths, so {@code original.gpx} (the raw
+   * paths re-serialized), {@code filtered.gpx} and the FIT export (both from the processed paths)
+   * can be written in any order.
    *
    * <p><b>This is where timestamps and sensor data are stripped</b> ({@link GpxSanitizer},
-   * docs/LEDGER_*.md API-44), before anything is written: every stored GPX and FIT file of a route
-   * or a GPX-tool preview comes out of this method — or, for the FIT, out of the same mutated
-   * {@code gpx} right after it — whatever the entry point (upload, planner, GPX-tool promotion,
-   * biketeam import). {@code original.gpx} is therefore not the uploaded bytes but the sanitized
-   * parse of them; don't write a file from a {@link GPX} that has not been through here.
+   * docs/LEDGER_*.md API-44), before anything is computed or written: every stored GPX and FIT
+   * file of a route or a GPX-tool preview comes out of this method, whatever the entry point
+   * (upload, planner, GPX-tool promotion, biketeam import). {@code original.gpx} is therefore
+   * <b>not</b> the uploaded bytes but the sanitized parse of them; never store the source file.
    */
-  public ComputedGpx computeGpx(GPX gpx) {
-    if (gpx.paths().isEmpty()) {
+  public ComputedGpx computeGpx(GpxDocument source) {
+    GpxDocument doc;
+    try {
+      doc = GpxSanitizer.sanitize(source);
+    } catch (Exception e) {
+      throw new BusinessException(ErrorCode.GPX_FAILURE, e);
+    }
+    // Tracks and routes alike, as GPXFileReader did: a <rte>-only file is a valid route — the
+    // facade's default, which is the one thing a Java caller could not spell before g33.
+    List<Path> unfiltered = GpxToPathJvm.tracksAsPaths(doc);
+    String name = doc.getName();
+    // Derived from the same filtered view tracksAsPaths applies, or the indices would drift.
+    List<String> unfilteredNames = trackNames(doc);
+
+    // tracksAsPaths only drops empty tracks; gpx2web dropped anything under two points
+    // (GPXFileReader.toGPX). Keeping a one-point track would make toLineString throw and take the
+    // whole import down with it, valid tracks of the same file included.
+    List<Path> raw = new ArrayList<>(unfiltered.size());
+    List<String> trackNames = new ArrayList<>(unfiltered.size());
+    for (int i = 0; i < unfiltered.size(); i++) {
+      if (unfiltered.get(i).getSize() >= 2) {
+        raw.add(unfiltered.get(i));
+        trackNames.add(unfilteredNames.get(i));
+      }
+    }
+    if (raw.isEmpty()) {
       throw new BusinessException(ErrorCode.GPX_EMPTY);
     }
-    // Before the resampling below allocates one point per 10 m of track (SEC-6): parseGpx and
-    // fromPoints already checked, but this is the funnel every GPX goes through.
-    GpxLimits.checkTracks(gpx);
+    // Before the resampling of the pipeline allocates one point per 10 m of track (SEC-6):
+    // parseGpx and fromPoints already checked, but this is the funnel every GPX goes through.
+    GpxLimits.checkTracks(raw);
+
     File original = null;
     File filtered = null;
+    File fit = null;
     try {
-      GpxSanitizer.sanitize(gpx);
-      original = writeGpxToTempFile(gpx, false);
+      original = writeToTempFile(GpxWriterJvm.write(raw, name, trackNames), ".gpx");
 
       List<ComputedWaypoint> waypoints = new ArrayList<>();
-      for (GPXWaypoint waypoint : gpx.waypoints()) {
+      for (io.github.glandais.engine.gpx.GpxWaypoint waypoint : doc.getWaypoints()) {
         waypoints.add(
             new ComputedWaypoint(
-                waypoint.name(),
-                point(WGS84, g(waypoint.point().getLonDeg(), waypoint.point().getLatDeg()))));
+                // Nullable in vcyclist, empty string in gpx2web, and not-null in gpx_waypoints:
+                // without this fallback a <wpt> with no <name> fails the insert at flush time.
+                Objects.requireNonNullElse(waypoint.getName(), ""),
+                point(WGS84, g(waypoint.getLongitudeDeg(), waypoint.getLatitudeDeg()))));
       }
+
+      List<Path> processed = new ArrayList<>(raw.size());
+      for (int i = 0; i < raw.size(); i++) {
+        processed.add(pipeline.process(raw.get(i), trackNames.get(i)));
+      }
+
+      filtered =
+          writeToTempFile(
+              GpxWriterJvm.write(processed, name, trackNames, doc.getWaypoints()), ".gpx");
+      fit = writeFitToTempFile(processed, name);
 
       List<ComputedTrack> tracks = new ArrayList<>();
       List<TrackMetadata> tracksMetadata = new ArrayList<>();
-      for (GPXPath path : gpx.paths()) {
-        gpxPerDistance.computeOnePointPerDistance(path, GpxLimits.RESAMPLING_STEP_METERS);
-        LOG.infov("Resampled to {0} points (10m intervals)", path.getPoints().size());
-
-        try {
-          gpxElevationFixer.fixElevation(path);
-          LOG.infov("Fixed elevation with SRTM data");
-        } catch (Exception e) {
-          LOG.warnf(e, "SRTM elevation fix failed for %s, using original elevations", gpx.name());
-        }
-
-        GPXFilter.filterPointsDouglasPeucker(path);
-        LOG.infov("Simplified to {0} points (Douglas-Peucker)", path.getPoints().size());
-
-        List<Climb> climbs = new ArrayList<>(climbDetector.getClimbs(path));
-        LOG.infov("Detected {0} climbs", climbs.size());
-
+      for (int i = 0; i < processed.size(); i++) {
+        Path path = processed.get(i);
         TrackMetadata metadata = extractMetadata(path);
         tracks.add(
             new ComputedTrack(
-                path.getName(), toLineString(path), toTrackPoints(path), climbs, metadata));
+                trackNames.get(i),
+                toLineString(path),
+                toTrackPoints(path),
+                pipeline.climbs(path),
+                metadata));
         tracksMetadata.add(metadata);
       }
 
-      filtered = writeGpxToTempFile(gpx, true);
-
-      Vector wind = gpxDataComputer.getWind(gpx);
-      WindDirection windDirection = findDirectionFromVector(wind);
+      WindDirection windDirection = WindEstimator.estimate(processed);
 
       float distance = (float) tracksMetadata.stream().mapToDouble(TrackMetadata::distance).sum();
       float elevationGain =
@@ -254,24 +275,59 @@ public class GpxProcessingService {
               tracksMetadata.getLast().end(),
               windDirection);
 
-      return new ComputedGpx(original, filtered, tracks, waypoints, aggregated);
+      return new ComputedGpx(original, filtered, fit, tracks, waypoints, aggregated);
     } catch (PedalonsException e) {
       deleteQuietly(original);
       deleteQuietly(filtered);
+      deleteQuietly(fit);
       throw e;
     } catch (Exception e) {
       deleteQuietly(original);
       deleteQuietly(filtered);
-      LOG.errorv("GPX computation failed for {0}", gpx.name(), e);
+      deleteQuietly(fit);
+      LOG.errorv("GPX computation failed for {0}", name, e);
       throw new BusinessException(ErrorCode.GPX_FAILURE, e);
     }
   }
 
-  private File writeGpxToTempFile(GPX gpx, boolean filtered) throws IOException {
-    Path tempDir = Files.createDirectories(Path.of(System.getProperty("java.io.tmpdir"), TEMP_DIR));
-    File file = Files.createTempFile(tempDir, "gpx-", ".gpx").toFile();
+  /**
+   * Track names aligned with {@code tracksAsPaths}, which skips point-less tracks — building them
+   * from {@code doc.getTracks()} unfiltered would shift every name by one on such a file. A track
+   * name is nullable in the GPX schema, the document name is not, and the entity column is not
+   * either: hence the two fallbacks.
+   */
+  private static List<String> trackNames(GpxDocument doc) {
+    return doc.getTracks().stream()
+        .filter(t -> !t.getPoints().isEmpty())
+        .map(t -> t.getName() != null && !t.getName().isBlank() ? t.getName() : doc.getName())
+        .toList();
+  }
+
+  private static File createTempFile(String suffix) throws IOException {
+    java.nio.file.Path tempDir =
+        Files.createDirectories(
+            java.nio.file.Path.of(System.getProperty("java.io.tmpdir"), TEMP_DIR));
+    return Files.createTempFile(tempDir, "gpx-", suffix).toFile();
+  }
+
+  /** vcyclist's writers return a {@code String}; choosing the encoding is on us. */
+  private static File writeToTempFile(String content, String suffix) throws IOException {
+    File file = createTempFile(suffix);
     try {
-      gpxFileWriter.writeGPX(gpx, file, filtered);
+      Files.writeString(file.toPath(), content, StandardCharsets.UTF_8);
+    } catch (Exception e) {
+      deleteQuietly(file);
+      throw new BusinessException(ErrorCode.GPX_FAILURE, e);
+    }
+    return file;
+  }
+
+  /** FIT export of the processed geometry — see {@link FitExporter} for what it guards against. */
+  private static File writeFitToTempFile(List<Path> paths, String name) throws IOException {
+    byte[] bytes = FitExporter.toFitBytes(paths, name);
+    File file = createTempFile(".fit");
+    try {
+      Files.write(file.toPath(), bytes);
     } catch (Exception e) {
       deleteQuietly(file);
       throw new BusinessException(ErrorCode.GPX_FAILURE, e);
@@ -291,12 +347,12 @@ public class GpxProcessingService {
 
   /**
    * Phase 1: CPU and S3 work — runs with the caller's transaction SUSPENDED so the DB connection
-   * is released during the heavy processing (SRTM, file generation, 5 S3 uploads).
+   * is released during the heavy processing (elevation, file generation, 5 S3 uploads).
    *
    * <p>All entities returned are transient (not yet attached to Hibernate session).
    */
   @Transactional(Transactional.TxType.NOT_SUPPORTED)
-  public GpxProcessingResult processGpxData(Route route, GPX gpx) {
+  public GpxProcessingResult processGpxData(Route route, GpxDocument gpx) {
     User creator = pedalonsContext.getUser();
     Long routeId = route.getId();
     Team team = route.getTeam();
@@ -322,19 +378,18 @@ public class GpxProcessingService {
       // Save FIT file
       uploadedAssets.add(
           prepareAndUpload(
-              team,
-              AssetType.ROUTE_FIT,
-              "route.fit",
-              tmp -> {
-                fitFileWriter.writeGPX(gpx, tmp);
-              }));
+              team, AssetType.ROUTE_FIT, "route.fit", tmp -> moveInto(computed.fitFile(), tmp)));
       LOG.infov("Saved FIT file to S3");
 
       // Generate thumbnails (failures are non-fatal)
-      GPX thumbnailGpx = new GPX(gpx.name(), gpx.paths(), List.of());
+      List<Path> thumbnailPaths =
+          ThumbnailService.buildPaths(
+              computed.tracks().stream()
+                  .map(t -> new ThumbnailService.ThumbnailTrack(t.name(), t.trackPoints()))
+                  .toList());
       generateThumbnailAsset(
           team,
-          thumbnailGpx,
+          thumbnailPaths,
           routeId,
           MapThumbnailRenderer.LIGHT_STYLE,
           AssetType.ROUTE_THUMBNAIL_LIGHT,
@@ -342,7 +397,7 @@ public class GpxProcessingService {
           uploadedAssets);
       generateThumbnailAsset(
           team,
-          thumbnailGpx,
+          thumbnailPaths,
           routeId,
           MapThumbnailRenderer.DARK_STYLE,
           AssetType.ROUTE_THUMBNAIL_DARK,
@@ -443,26 +498,29 @@ public class GpxProcessingService {
    * legacy call sites until they are migrated.
    */
   @Transactional
-  public TrackMetadata createTracks(Route route, GPX gpx) {
+  public TrackMetadata createTracks(Route route, GpxDocument gpx) {
     GpxProcessingResult result = processGpxData(route, gpx);
     return persistGpxData(route, result);
   }
 
   private void generateThumbnailAsset(
       Team team,
-      GPX gpx,
+      List<Path> paths,
       Long routeId,
       String style,
       AssetType assetType,
       String fileName,
       List<PreparedAsset> uploadedAssets) {
+    if (paths.isEmpty()) {
+      return;
+    }
     try {
       PreparedAsset pa =
           prepareAndUpload(
               team,
               assetType,
               fileName,
-              tmp -> mapThumbnailRenderer.render(tmp, gpx, style, List.of(Color.RED)));
+              tmp -> mapThumbnailRenderer.render(tmp, paths, style, List.of(Color.RED)));
       uploadedAssets.add(pa);
       LOG.infov("Generated and saved {0} thumbnail to S3", style);
     } catch (Exception e) {
@@ -472,76 +530,50 @@ public class GpxProcessingService {
     }
   }
 
-  @Nullable
-  public static WindDirection findDirectionFromVector(Vector windVector) {
-    return Stream.of(WindDirection.values())
-        .map(
-            wd -> {
-              double angle = Math.toRadians(90 - wd.getAngle());
-              double x1 = Math.cos(angle);
-              double y1 = Math.sin(angle) * -1;
-              double x2 = windVector.x();
-              double y2 = windVector.y();
-              double dotProduct = (x1 * x2) + (y1 * y2);
-              return new WindScore(wd, 0.5 + (0.5 * dotProduct));
-            })
-        .sorted(Comparator.comparing(WindScore::score))
-        .map(WindScore::wd)
-        .findFirst()
-        .orElse(null);
-  }
-
-  record WindScore(WindDirection wd, double score) {}
-
   /**
-   * Convert GPXPath to PostGIS LineString in WKT format.
+   * Convert a path to a PostGIS LineString in WKT format.
    * Format: "LINESTRING(lng lat, lng lat, ...)"
    */
-  private LineString<G2D> toLineString(GPXPath path) {
-    G2D[] geomPoints =
-        path.getPoints().stream()
-            .map(p -> g(Math.toDegrees(p.getLon()), Math.toDegrees(p.getLat())))
-            .toArray(G2D[]::new);
+  private static LineString<G2D> toLineString(Path path) {
+    G2D[] geomPoints = new G2D[path.getSize()];
+    for (int i = 0; i < path.getSize(); i++) {
+      geomPoints[i] = g(path.longitudeDeg(i), path.latitudeDeg(i));
+    }
     return linestring(WGS84, geomPoints);
   }
 
   /**
-   * Convert GPXPath to simplified track points for frontend JSONB storage.
+   * Convert a path to simplified track points for frontend JSONB storage.
    */
-  private List<GpxTrack.TrackPoint> toTrackPoints(GPXPath path) {
-    List<GpxTrack.TrackPoint> trackPoints = new ArrayList<>();
-    List<Point> points = path.getPoints();
-
-    for (Point p : points) {
+  private static List<GpxTrack.TrackPoint> toTrackPoints(Path path) {
+    List<GpxTrack.TrackPoint> trackPoints = new ArrayList<>(path.getSize());
+    for (int i = 0; i < path.getSize(); i++) {
       trackPoints.add(
           new GpxTrack.TrackPoint(
-              Math.toDegrees(p.getLat()), Math.toDegrees(p.getLon()), p.getEle(), p.getDist()));
+              path.latitudeDeg(i), path.longitudeDeg(i), path.elevation(i), path.distance(i)));
     }
-
     return trackPoints;
   }
 
   /**
-   * Extract route metadata from processed GPXPath.
+   * Extract route metadata from a processed path.
    */
-  private TrackMetadata extractMetadata(GPXPath path) {
-    List<Point> points = path.getPoints();
-    Point start = points.getFirst();
-    Point end = points.getLast();
-
-    float distance = (float) path.getDist();
-    float elevationGain = (float) path.getTotalElevation();
+  private static TrackMetadata extractMetadata(Path path) {
+    int last = path.getSize() - 1;
+    float distance = (float) path.getTotalDistance();
+    float elevationGain = (float) path.getElevationGain();
     return new TrackMetadata(
         distance,
         elevationGain,
         getHilliness(distance, elevationGain),
-        (int) Math.round(path.getTotalElevationNegative()),
-        point(WGS84, g(start.getLonDeg(), start.getLatDeg())),
-        point(WGS84, g(end.getLonDeg(), end.getLatDeg())),
+        // Already negative, like gpx2web's getTotalElevationNegative().
+        (int) Math.round(path.getElevationLoss()),
+        point(WGS84, g(path.longitudeDeg(0), path.latitudeDeg(0))),
+        point(WGS84, g(path.longitudeDeg(last), path.latitudeDeg(last))),
         null);
   }
 
-  private float getHilliness(float distance, float elevationGain) {
+  private static float getHilliness(float distance, float elevationGain) {
     if (distance == 0) {
       return 0;
     }

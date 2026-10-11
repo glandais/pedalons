@@ -1,9 +1,9 @@
 package fr.pedalons.dto.routes.response;
 
+import fr.pedalons.domain.route.ClimbData;
+import fr.pedalons.domain.route.ClimbPartData;
 import fr.pedalons.dto.validation.ValidateSchema;
 import fr.pedalons.enums.ClimbCategory;
-import io.github.glandais.gpx.climb.Climb;
-import io.github.glandais.gpx.climb.ClimbPart;
 import java.math.BigDecimal;
 import java.util.List;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -34,7 +34,7 @@ public record ClimbDto(
                     + " — clients then number the climb (\"Climb N\"). Never a geocoded guess.")
         String name) {
   /** A climb with no name — what a track without waypoints yields. */
-  public static ClimbDto from(Climb climb) {
+  public static ClimbDto from(ClimbData climb) {
     return from(climb, null);
   }
 
@@ -42,7 +42,7 @@ public record ClimbDto(
    * @param name the climb's name, from {@code ClimbNaming} (docs/LEDGER_*.md API-10), or {@code
    *     null}
    */
-  public static ClimbDto from(Climb climb, @Nullable String name) {
+  public static ClimbDto from(ClimbData climb, @Nullable String name) {
 
     return new ClimbDto(
         (int) Math.round(climb.startDist()),
@@ -65,7 +65,7 @@ public record ClimbDto(
    * - CAT3: 300-500m elevation
    * - CAT4: < 300m elevation
    */
-  private static ClimbCategory categorizeClimb(Climb climb) {
+  private static ClimbCategory categorizeClimb(ClimbData climb) {
     int elevationGain = (int) Math.round(climb.positiveElevation());
     double avgGrade = climb.grade();
 
@@ -82,10 +82,10 @@ public record ClimbDto(
     }
   }
 
-  private static double getMaxGrade(Climb climb) {
+  private static double getMaxGrade(ClimbData climb) {
     if (climb.parts().isEmpty()) {
       return climb.grade();
     }
-    return climb.parts().stream().mapToDouble(ClimbPart::grade).max().orElse(climb.grade());
+    return climb.parts().stream().mapToDouble(ClimbPartData::grade).max().orElse(climb.grade());
   }
 }

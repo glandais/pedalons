@@ -9,7 +9,7 @@ Quarkus REST API backend for the Pedalons cycling team management platform.
 - **Auth**: JWT (SmallRye JWT) + WebAuthn/Passkeys (webauthn4j)
 - **Storage**: S3-compatible (MinIO in dev)
 - **API**: OpenAPI 3.1 contract-first (SmallRye OpenAPI)
-- **GPX**: gpx2web library for track processing, timeshape for timezone lookup
+- **GPX**: vcyclist library for track processing, timeshape for timezone lookup
 - **Images**: imgproxy for on-the-fly optimization (WebP, AVIF, JXL)
 - **Routing**: valhalla for cycling route computation and elevation profiles
 

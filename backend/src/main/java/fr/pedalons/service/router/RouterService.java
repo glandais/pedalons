@@ -15,17 +15,16 @@ import fr.pedalons.infrastructure.valhalla.ValhallaLocation;
 import fr.pedalons.infrastructure.valhalla.ValhallaRequest;
 import fr.pedalons.infrastructure.valhalla.ValhallaResponse;
 import fr.pedalons.service.route.GpxLimits;
+import fr.pedalons.service.route.GpxPipeline;
 import fr.pedalons.service.security.annotation.Logged;
-import io.github.glandais.gpx.data.GPXPath;
-import io.github.glandais.gpx.data.GPXPathType;
-import io.github.glandais.gpx.data.Point;
-import io.github.glandais.gpx.filter.GPXFilter;
-import io.github.glandais.gpx.filter.GPXPerDistance;
-import io.github.glandais.gpx.srtm.GPXElevationFixer;
+import io.github.glandais.elevation.CoordinatesElevation;
+import io.github.glandais.elevation.LatLonElevation;
+import io.github.glandais.engine.path.Path;
+import io.github.glandais.engine.path.PathJvm;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.WebApplicationException;
-import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
@@ -44,9 +43,7 @@ public class RouterService {
 
   @Inject @RestClient ValhallaClient valhallaClient;
 
-  @Inject GPXPerDistance gpxPerDistance;
-
-  @Inject GPXElevationFixer gpxElevationFixer;
+  @Inject GpxPipeline gpxPipeline;
 
   @Logged
   public RouterResponse getRoute(RouterRequest routerRequest) {
@@ -78,31 +75,19 @@ public class RouterService {
     G3D[] geomPoints = allCoords.stream().map(c -> g(c[0], c[1], 0.0)).toArray(G3D[]::new);
     LineString<G3D> rawRoute = linestring(WGS84_3D, geomPoints);
 
-    // Convert to GPXPath for processing
-    GPXPath path = toGpxPath(rawRoute);
+    // Valhalla bounds the length of a route; the check repeats it before the resampling
+    // allocates (SEC-6).
+    Path raw = toPath(rawRoute);
+    GpxLimits.checkTracks(List.of(raw));
 
-    // Step 1: Resample to 10m intervals — Valhalla bounds the length of a route, the check
-    // repeats it before the resampling allocates (SEC-6).
-    GpxLimits.checkTracks(List.of(path));
-    gpxPerDistance.computeOnePointPerDistance(path, GpxLimits.RESAMPLING_STEP_METERS);
-    LOG.debugv("Resampled to {0} points (10m intervals)", path.getPoints().size());
-
-    // Step 2: Fix elevation with SRTM (with graceful degradation)
-    try {
-      gpxElevationFixer.fixElevation(path);
-      LOG.debugv("Fixed elevation with SRTM data");
-    } catch (Exception e) {
-      LOG.warnv("SRTM elevation fix failed, using original elevations: {0}", e.getMessage());
-    }
-
-    // Step 3: Simplify with Douglas-Peucker
-    GPXFilter.filterPointsDouglasPeucker(path);
-    LOG.debugv("Simplified to {0} points (Douglas-Peucker)", path.getPoints().size());
+    // Resample / fix elevation / simplify — the very same pipeline route import runs, shared
+    // rather than duplicated so the planner and an uploaded GPX cannot drift apart.
+    Path path = gpxPipeline.process(raw, "route");
 
     // Convert back to LineString and compute metrics
     LineString<G3D> filteredRoute = toLineString3D(path);
-    double dist = path.getDist();
-    double ascend = path.getTotalElevation();
+    double dist = path.getTotalDistance();
+    double ascend = path.getElevationGain();
 
     return new RouterResponse(filteredRoute, dist, ascend);
   }
@@ -123,27 +108,21 @@ public class RouterService {
         costingOptions);
   }
 
-  private GPXPath toGpxPath(LineString<G3D> geometry) {
-    GPXPath path = new GPXPath("route", GPXPathType.TRACK);
+  private static Path toPath(LineString<G3D> geometry) {
     var positions = geometry.getPositions();
+    List<CoordinatesElevation> coordinates = new ArrayList<>(positions.size());
     for (int i = 0; i < positions.size(); i++) {
       G3D pos = positions.getPositionN(i);
-      Point p = new Point();
-      p.setLon(Math.toRadians(pos.getLon()));
-      p.setLat(Math.toRadians(pos.getLat()));
-      p.setEle(pos.getCoordinate(2));
-      p.setInstant(null, Instant.EPOCH);
-      path.addPoint(p);
+      coordinates.add(new LatLonElevation(pos.getLat(), pos.getLon(), pos.getCoordinate(2)));
     }
-    path.computeArrays();
-    return path;
+    return PathJvm.fromCoordinates(coordinates);
   }
 
-  private LineString<G3D> toLineString3D(GPXPath path) {
-    G3D[] geomPoints =
-        path.getPoints().stream()
-            .map(p -> g(Math.toDegrees(p.getLon()), Math.toDegrees(p.getLat()), p.getEle()))
-            .toArray(G3D[]::new);
+  private static LineString<G3D> toLineString3D(Path path) {
+    G3D[] geomPoints = new G3D[path.getSize()];
+    for (int i = 0; i < path.getSize(); i++) {
+      geomPoints[i] = g(path.longitudeDeg(i), path.latitudeDeg(i), path.elevation(i));
+    }
     return linestring(WGS84_3D, geomPoints);
   }
 }

@@ -8,24 +8,24 @@ import fr.pedalons.common.exception.InternalException;
 import fr.pedalons.domain.gps.DomainGpsCredential;
 import fr.pedalons.dto.error.ErrorCode;
 import fr.pedalons.enums.GpsServiceType;
+import fr.pedalons.infrastructure.gpx.FitExporter;
 import fr.pedalons.service.gps.DomainGpsCredentialService;
-import io.github.glandais.gpx.data.GPX;
-import io.github.glandais.gpx.data.GPXPath;
-import io.github.glandais.gpx.data.Point;
-import io.github.glandais.gpx.io.read.GPXFileReader;
-import io.github.glandais.gpx.io.write.FitFileWriter;
+import io.github.glandais.engine.gpx.GpxDocument;
+import io.github.glandais.engine.gpx.GpxParserJvm;
+import io.github.glandais.engine.gpx.GpxToPathJvm;
+import io.github.glandais.engine.path.Path;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
@@ -46,7 +46,8 @@ import org.jboss.logging.Logger;
  * Unlike Hammerhead (which accepts raw GPX as a multipart part), Wahoo's {@code POST /v1/routes} is
  * an ordinary form post carrying a FIT file base64-encoded into a {@code data:} URI, plus the
  * route's start point, distance and ascent as separate required fields. The GPX is therefore parsed
- * once here and used twice: written out as FIT, and measured for those fields.
+ * once here and used twice: exported as FIT through {@link FitExporter}, and measured for those
+ * fields.
  *
  * <p>Wahoo has no companion device application: the route is pushed to the user's Wahoo account and
  * syncs to their ELEMNT head unit from the cloud. Wahoo's own docs note that Cloud API routes reach
@@ -76,10 +77,6 @@ public class WahooClient implements GpsServiceClient {
   @Inject HttpClient httpClient;
 
   @Inject ObjectMapper objectMapper;
-
-  @Inject GPXFileReader gpxFileReader;
-
-  @Inject FitFileWriter fitFileWriter;
 
   private DomainGpsCredential getCredential() {
     return credentialService
@@ -192,13 +189,11 @@ public class WahooClient implements GpsServiceClient {
 
   @Override
   public RouteUploadResult uploadRoute(String accessToken, byte[] gpxContent, String routeName) {
-    File fitFile = null;
     try {
-      GPX gpx = parseGpx(gpxContent);
-      fitFile = writeFit(gpx);
-      byte[] fitContent = Files.readAllBytes(fitFile.toPath());
+      List<Path> paths = parsePaths(gpxContent);
+      byte[] fitContent = FitExporter.toFitBytes(paths, routeName);
 
-      String body = buildRouteForm(gpx, gpxContent, fitContent, routeName);
+      String body = buildRouteForm(paths, gpxContent, fitContent, routeName);
 
       HttpRequest request =
           HttpRequest.newBuilder()
@@ -222,30 +217,38 @@ public class WahooClient implements GpsServiceClient {
     } catch (IOException | InterruptedException e) {
       LOG.error("Failed to upload route to Wahoo", e);
       return RouteUploadResult.failure("Upload failed: " + e.getMessage());
-    } finally {
-      if (fitFile != null && fitFile.exists() && !fitFile.delete()) {
-        LOG.warnf("Failed to delete temp FIT file %s", fitFile.getAbsolutePath());
-      }
     }
   }
 
-  private GPX parseGpx(byte[] gpxContent) throws IOException {
+  /**
+   * The tracks of {@code gpxContent} as vcyclist paths, derived data included — the FIT export and
+   * the form's distance/ascent fields both read them, so parsing happens once.
+   */
+  private static List<Path> parsePaths(byte[] gpxContent) throws IOException {
     try {
-      return gpxFileReader.parseGPX(new ByteArrayInputStream(gpxContent));
-    } catch (Exception e) {
+      GpxDocument doc = GpxParserJvm.parse(decodeGpx(gpxContent));
+      return GpxToPathJvm.tracksAsPaths(doc);
+    } catch (RuntimeException e) {
       throw new IOException("Failed to parse GPX", e);
     }
   }
 
-  /** Writes a parsed GPX to a temporary FIT file the caller is responsible for deleting. */
-  private File writeFit(GPX gpx) throws IOException {
-    File fitFile = File.createTempFile("wahoo-route-", ".fit");
+  /**
+   * vcyclist's parser takes a {@code String}, so the encoding has to be decided here — UTF-8 first,
+   * ISO-8859-1 as a fallback, exactly as route import does. Routes inherited from biketeam are
+   * frequently latin-1, and a route that imported fine must stay uploadable.
+   */
+  private static String decodeGpx(byte[] gpxContent) {
     try {
-      fitFileWriter.writeGPX(gpx, fitFile);
-      return fitFile;
-    } catch (Exception e) {
-      fitFile.delete();
-      throw new IOException("Failed to convert GPX to FIT", e);
+      return StandardCharsets.UTF_8
+          .newDecoder()
+          .onMalformedInput(CodingErrorAction.REPORT)
+          .onUnmappableCharacter(CodingErrorAction.REPORT)
+          .decode(ByteBuffer.wrap(gpxContent))
+          .toString();
+    } catch (CharacterCodingException e) {
+      LOG.debug("GPX is not valid UTF-8, retrying as ISO-8859-1");
+      return new String(gpxContent, StandardCharsets.ISO_8859_1);
     }
   }
 
@@ -260,16 +263,15 @@ public class WahooClient implements GpsServiceClient {
    * Editing the route changes the hash and therefore creates a new entry, which is the safe way
    * round — an upload can never overwrite a different route.
    */
-  private String buildRouteForm(GPX gpx, byte[] gpxContent, byte[] fitContent, String routeName)
-      throws IOException {
-    List<GPXPath> paths = gpx.paths();
-    if (paths.isEmpty() || paths.getFirst().getPoints().isEmpty()) {
+  private String buildRouteForm(
+      List<Path> paths, byte[] gpxContent, byte[] fitContent, String routeName) throws IOException {
+    if (paths.isEmpty() || paths.getFirst().getSize() == 0) {
       throw new IOException("GPX holds no track point");
     }
-    Point start = paths.getFirst().getPoints().getFirst();
-    double distance = paths.stream().mapToDouble(GPXPath::getDist).sum();
-    double ascent = paths.stream().mapToDouble(GPXPath::getTotalElevation).sum();
-    double descent = paths.stream().mapToDouble(GPXPath::getTotalElevationNegative).sum();
+    Path first = paths.getFirst();
+    double distance = paths.stream().mapToDouble(Path::getTotalDistance).sum();
+    double ascent = paths.stream().mapToDouble(Path::getElevationGain).sum();
+    double descent = paths.stream().mapToDouble(Path::getElevationLoss).sum();
 
     String dataUri =
         "data:" + FIT_CONTENT_TYPE + ";base64," + Base64.getEncoder().encodeToString(fitContent);
@@ -281,8 +283,8 @@ public class WahooClient implements GpsServiceClient {
     params.put("route[external_id]", sha256Hex(gpxContent));
     params.put("route[provider_updated_at]", PROVIDER_UPDATED_AT.format(Instant.now()));
     params.put("route[workout_type_family_id]", Integer.toString(WORKOUT_TYPE_FAMILY_BIKING));
-    params.put("route[start_lat]", Double.toString(start.getLatDeg()));
-    params.put("route[start_lng]", Double.toString(start.getLonDeg()));
+    params.put("route[start_lat]", Double.toString(first.latitudeDeg(0)));
+    params.put("route[start_lng]", Double.toString(first.longitudeDeg(0)));
     params.put("route[distance]", Double.toString(distance));
     params.put("route[ascent]", Double.toString(ascent));
     params.put("route[descent]", Double.toString(descent));

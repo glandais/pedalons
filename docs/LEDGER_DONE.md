@@ -2203,6 +2203,22 @@ Le détail de chacune est dans l'historique git de ce fichier et de `LEDGER_NEXT
   connues : un GPX/FIT déposé en pièce jointe (`API-49`, `API-55`, depuis nettoyés) ; le rédacteur de la bibliothèque
   (`API-50`) ; la pose du marqueur n'a pas de test (`API-51`) ; les copies déjà envoyées à Garmin,
   Wahoo ou Hammerhead avant le correctif ne se réparent pas de notre côté.
+  **Porté sur vcyclist** (migration gpx2web → vcyclist, rebasée sur ce correctif le 2026-09-29) :
+  le modèle étant immuable, `GpxSanitizer.sanitize` rend un **nouveau** `GpxDocument` (position,
+  altitude, noms, nature trace/route et segments ; plus aucun instant, capteur, type, largeur de
+  route ni champ de waypoint autre que position et nom) et `computeGpx` poursuit avec lui. Un point
+  sans horloge n'a plus de `<time>` du tout, et le FIT d'un parcours sans horloge part de l'epoch
+  FIT (1989-12-31, `FitExporter`) : partir de l'epoch Unix le datait de 2106 par débordement.
+  `original.gpx` reste une resérialisation — l'arbitrage « octets uploadés verbatim » de la
+  migration a été abandonné pour ce ledger. Le rattrapage lit et réécrit avec vcyclist ;
+  `isDirty` accepte l'epoch des fichiers nettoyés du temps de gpx2web comme leur absence. Les
+  décisions « en place » et « `EPOCH` et non `null` » ci-dessus ne valaient que pour gpx2web ;
+  « un seul point d'entrée » et « pas de rejeu du pipeline » restent.
+- `API-50` **Le rédacteur GPX n'écrit plus de `creator` trompeur ni d'heure epoch** (2026-09-29,
+  migration vers vcyclist) — gpx2web écrivait `creator="https://www.mapstogpx.com/strava"` et, depuis
+  `API-44`, `<time>1970-01-01T00:00:00Z</time>` sur chaque point. vcyclist écrit
+  `creator="@glandais/vcyclist"` et omet `<time>` pour un point sans horloge. Test :
+  `GpxSanitizerTest` (aucun `<time>` dans les deux sérialisations).
 
 - `API-51` **La pose du marqueur du rattrapage GPX est testée** (2026-09-30) — trois tests dans
   `GpxSanitizationBackfillTest` sur `runOnce` : après une passe sans échec, les fichiers sont
@@ -2277,6 +2293,15 @@ Le détail de chacune est dans l'historique git de ce fichier et de `LEDGER_NEXT
   `GpxSanitizationBackfillTest.sanitizeAll_rewritesAFitAttachmentStoredAsUploaded` (réécrit une
   fois, laissé la seconde), **écrits sans avoir été lancés**. Ne pas comparer un FIT aux octets pour
   décider de le réécrire : il serait réécrit à chaque passe.
+  **Porté sur vcyclist** (migration gpx2web → vcyclist) : le SDK Garmin Java ne vient plus avec
+  gpx2web, et `fit-kotlin-sdk` (amené par vcyclist) occupe le même package `com.garmin.fit` — les
+  deux ne cohabitent pas. Le FIT est décodé par `FitDecoder` et réécrit par `FitExporter`, comme
+  `route.fit`. Ce rédacteur est **déterministe** (chaque enregistrement et la création du fichier à
+  l'epoch FIT) : la règle ci-dessus s'inverse, un FIT est propre exactement quand sa réécriture le
+  rend octet pour octet, comme un GPX, et le test de forme (`file_id`, messages, capteurs) disparaît.
+  Perte assumée : vcyclist n'écrit pas de `course_point`, les points d'intérêt d'un FIT joint
+  disparaissent, et un FIT qui n'a qu'eux est refusé (`GPX_EMPTY`). Ne pas redonner au SDK Garmin
+  Java une place à côté de `fit-kotlin-sdk`.
 
 - `API-45` **Plus de jeton dans un chemin d'URL** (2026-09-30, **API 6.5.0**) — le masquage du
   journal d'accès (`LEGAL-10`) ne porte que sur les paramètres de requête : deux jetons passaient
@@ -3145,6 +3170,16 @@ plus la colonne. Le départ d'un groupe n'existe plus que dans `ride_groups.star
   levée ; **le cache reste par environnement**, partager entre environnements serait un choix
   d'exploitation, pas fait. Condition à garder : un seul système de fichiers (le renommage n'est
   atomique que là), et ne pas redescendre sous gpx2web 1.5.2. Pas de test (revue de code).
+  **Porté sur vcyclist** (migration gpx2web → vcyclist) : les tuiles d'élévation sont écrites dans
+  un fichier temporaire du répertoire cible puis renommées (`ATOMIC_MOVE`), et seulement une fois
+  décodées (`DemTileFetcher`, qui garde le layout de cache de gpx2web) ; les tuiles de carte le sont
+  aussi depuis vcyclist 5.1.0, qui supprime et retélécharge une entrée de cache illisible. Le rendu
+  des vignettes est en `MissingTilePolicy.FAIL` (`VcyclistProducer`) : une tuile introuvable fait
+  échouer la vignette, jamais un fond troué. vcyclist 5.1.1 range chaque tuile sous sa source
+  entière (hôte, port, chemin du style) : jusqu'en 5.1.0, la clé n'était que l'hôte, et les styles
+  clair et sombre partageaient leurs tuiles — ce que `MapThumbnailRendererTest` a révélé en suite
+  complète. La condition devient : ne pas redescendre sous vcyclist 5.1.1. Tests :
+  `DemTileFetcherTest`, `MapThumbnailRendererTest`.
 - `OPS-15` **Restaurer MinIO sous une base plus récente : la marche à suivre écrite** (2026-09-30) —
   la section « Restoring » d'[`OPERATIONS.md`](OPERATIONS.md#restoring) dit qu'un volume MinIO
   plus ancien que la base (une copie antérieure à la fin du rattrapage `API-43`) ramène des photos

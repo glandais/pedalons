@@ -1,7 +1,7 @@
 package fr.pedalons.dto.routes.response;
 
+import fr.pedalons.domain.route.ClimbPartData;
 import fr.pedalons.dto.validation.ValidateSchema;
-import io.github.glandais.gpx.climb.ClimbPart;
 import java.math.BigDecimal;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
@@ -22,7 +22,7 @@ public record ClimbPartDto(
    * (the climb's own start distance from the route start) shifts them into route-absolute meters so
    * they share the same frame as track points and {@link ClimbDto} distances.
    */
-  public static ClimbPartDto from(ClimbPart part, double climbStartDist) {
+  public static ClimbPartDto from(ClimbPartData part, double climbStartDist) {
     return new ClimbPartDto(
         (int) Math.round(climbStartDist + part.startDist()),
         (int) Math.round(climbStartDist + part.endDist()),

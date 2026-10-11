@@ -3,9 +3,8 @@
 #
 # What it changes, and why:
 #
-#   1. No bind mount into ./data. The workstation stack owns data/storage and data/cache, and two
-#      backends writing the same gpx2web cache corrupt it for good (see DATA_CACHE_PATH in
-#      .env.example). Storage, cache and JWT keys live under .e2e/ instead, which e2e.sh
+#   1. No bind mount into ./data. The workstation stack owns data/storage and data/cache.
+#      Storage, cache and JWT keys live under .e2e/ instead, which e2e.sh
 #      creates as the invoking user (the backend runs as PUID; a named volume would start root-owned)
 #      and `e2e.sh reset` empties.
 #   2. The backend reads .env.e2e, not the .env next to it — which may be a real one.

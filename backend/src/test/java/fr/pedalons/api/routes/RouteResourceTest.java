@@ -8,6 +8,7 @@ import fr.pedalons.common.GeoPoint;
 import fr.pedalons.common.TsidUtils;
 import fr.pedalons.domain.ride.Ride;
 import fr.pedalons.domain.ride.RideGroup;
+import fr.pedalons.domain.route.ClimbData;
 import fr.pedalons.domain.route.GpxTrack;
 import fr.pedalons.domain.route.Route;
 import fr.pedalons.domain.trip.Trip;
@@ -19,8 +20,6 @@ import fr.pedalons.enums.Status;
 import fr.pedalons.enums.SurfaceType;
 import fr.pedalons.enums.Visibility;
 import fr.pedalons.service.security.TileTokenService;
-import io.github.glandais.gpx.climb.Climb;
-import io.github.glandais.gpx.climb.ClimbParts;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.MediaType;
@@ -444,8 +443,8 @@ class RouteResourceTest extends AbstractResourceTest {
             "Route des cols",
             points,
             List.of(
-                new Climb(500, 125, 2000, 200, 1500, 75, 75, 0, 5, 5, new ClimbParts()),
-                new Climb(4000, 300, 6000, 400, 2000, 100, 100, 0, 5, 5, new ClimbParts())));
+                new ClimbData(500, 125, 2000, 200, 1500, 75, 75, 0, 5, 5, List.of()),
+                new ClimbData(4000, 300, 6000, 400, 2000, 100, 100, 0, 5, 5, List.of())));
     // At the top of the second climb (6000 m, point 60), a few metres off the track.
     dataService.addWaypoint(route, user1, "Col du Test", 45.0 + 60 * step, 6.0005);
 

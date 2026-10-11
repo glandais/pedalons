@@ -1,9 +1,9 @@
 package fr.pedalons.domain.gpx;
 
 import fr.pedalons.domain.platform.Domain;
+import fr.pedalons.domain.route.ClimbData;
 import fr.pedalons.domain.route.GpxTrack;
 import fr.pedalons.domain.user.User;
-import io.github.glandais.gpx.climb.Climb;
 import io.hypersistence.utils.hibernate.id.Tsid;
 import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.*;
@@ -124,7 +124,7 @@ public class GpxPreview {
   public record PreviewTrack(
       String name,
       List<GpxTrack.TrackPoint> trackPoints,
-      List<Climb> climbs,
+      List<ClimbData> climbs,
       float distance,
       float elevationGain,
       float elevationLoss)

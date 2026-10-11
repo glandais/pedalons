@@ -3,12 +3,11 @@ package fr.pedalons.service.route;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import fr.pedalons.domain.route.ClimbData;
 import fr.pedalons.domain.route.GpxTrack.TrackPoint;
 import fr.pedalons.dto.routes.response.ClimbDto;
 import fr.pedalons.dto.routes.response.TrackDto;
 import fr.pedalons.service.route.ClimbNaming.NamedPoint;
-import io.github.glandais.gpx.climb.Climb;
-import io.github.glandais.gpx.climb.ClimbParts;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -30,9 +29,9 @@ class ClimbNamingTest {
     return track;
   }
 
-  private static Climb climb(double startDist, double endDist) {
+  private static ClimbData climb(double startDist, double endDist) {
     double length = endDist - startDist;
-    return new Climb(
+    return new ClimbData(
         startDist,
         100,
         endDist,
@@ -43,7 +42,7 @@ class ClimbNamingTest {
         0,
         5,
         5,
-        new ClimbParts());
+        List.of());
   }
 
   private static NamedPoint near(TrackPoint p, double metersEast, String name) {
@@ -54,7 +53,7 @@ class ClimbNamingTest {
   @Test
   void aWaypointAtTheSummit_namesTheClimb() {
     List<TrackPoint> track = track(50);
-    Climb climb = climb(1000, 3000);
+    ClimbData climb = climb(1000, 3000);
 
     assertEquals(
         "Col du Test",

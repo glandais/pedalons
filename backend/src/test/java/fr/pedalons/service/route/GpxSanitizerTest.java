@@ -3,121 +3,116 @@ package fr.pedalons.service.route;
 import static org.junit.jupiter.api.Assertions.*;
 
 import fr.pedalons.util.GpxPrivacyAssertions;
-import io.github.glandais.gpx.data.GPX;
-import io.github.glandais.gpx.data.GPXPath;
-import io.github.glandais.gpx.data.Point;
-import io.github.glandais.gpx.io.read.GPXFileReader;
-import io.github.glandais.gpx.io.write.GPXFileWriter;
-import java.io.FileInputStream;
-import java.io.InputStream;
-import java.io.StringWriter;
-import java.time.Instant;
+import io.github.glandais.engine.gpx.GpxDocument;
+import io.github.glandais.engine.gpx.GpxModelJvm;
+import io.github.glandais.engine.gpx.GpxParserJvm;
+import io.github.glandais.engine.gpx.GpxToPathJvm;
+import io.github.glandais.engine.gpx.GpxTrackPoint;
+import io.github.glandais.engine.gpx.GpxWaypoint;
+import io.github.glandais.engine.gpx.GpxWriterJvm;
+import io.github.glandais.engine.path.Path;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
 /**
  * docs/LEDGER_*.md API-44: what survives {@link GpxSanitizer} — geometry and waypoint names — and
  * what does not — timestamps, heart rate, cadence, power, temperature, document metadata. A plain
- * unit test: the reader and writer are the library's, no Quarkus needed.
+ * unit test: the parser and writer are the library's, no Quarkus needed.
  */
 class GpxSanitizerTest {
 
-  static GPX parseActivity() throws Exception {
-    try (InputStream is = new FileInputStream(GpxPrivacyAssertions.ACTIVITY)) {
-      return new GPXFileReader().parseGPX(is);
-    }
+  static GpxDocument parseActivity() throws Exception {
+    return GpxParserJvm.parse(
+        Files.readString(GpxPrivacyAssertions.activityGpx(), StandardCharsets.UTF_8));
   }
 
-  /** Both serializations the pipeline stores: {@code filtered = true} is the one with extensions. */
-  static String write(GPX gpx, boolean filtered) throws Exception {
-    StringWriter writer = new StringWriter();
-    new GPXFileWriter().writeGPX(gpx, writer, filtered);
-    return writer.toString();
+  /** Both ways the pipeline serializes: the document as-is, and its paths (what it stores). */
+  static List<String> serializations(GpxDocument doc) {
+    return List.of(
+        GpxWriterJvm.write(doc),
+        GpxWriterJvm.write(
+            GpxToPathJvm.tracksAsPaths(doc), doc.getName(), null, doc.getWaypoints()));
   }
 
   @Test
   void fixtureReallyCarriesTheDataToStrip() throws Exception {
-    // Guards the test itself: if the reader stopped picking these up, every other test here
+    // Guards the test itself: if the parser stopped picking these up, every other test here
     // would pass for the wrong reason.
-    String raw = write(parseActivity(), true);
-
-    assertTrue(raw.contains("<time>2025-11-22T07:00:00Z</time>"));
-    assertTrue(raw.contains("<gpxtpx:hr>"));
-    assertTrue(raw.contains("<power>"));
+    for (String raw : serializations(parseActivity())) {
+      assertTrue(raw.contains("<time>2025-11-22T07:00:00Z</time>"), raw);
+      assertTrue(raw.contains("<gpxtpx:hr>"), raw);
+      assertTrue(raw.contains("<power>"), raw);
+    }
   }
 
   @Test
-  void sanitize_stripsTimestampsAndSensorsFromBothSerializations() throws Exception {
-    GPX gpx = parseActivity();
+  void sanitize_stripsTimestampsAndSensorsFromEverySerialization() throws Exception {
+    GpxDocument doc = GpxSanitizer.sanitize(parseActivity());
 
-    GpxSanitizer.sanitize(gpx);
-
-    GpxPrivacyAssertions.assertGpxHasNoPersonalData(write(gpx, false));
-    GpxPrivacyAssertions.assertGpxHasNoPersonalData(write(gpx, true));
+    for (String written : serializations(doc)) {
+      GpxPrivacyAssertions.assertGpxHasNoPersonalData(written);
+      // docs/LEDGER_*.md API-50: no epoch placeholder either, and no borrowed creator.
+      assertFalse(written.contains("<time>"), written);
+      assertFalse(written.contains("mapstogpx"), written);
+    }
   }
 
   @Test
   void sanitize_keepsGeometry() throws Exception {
-    GPX raw = parseActivity();
-    List<Point> before = raw.paths().getFirst().getPoints();
-    GPX gpx = parseActivity();
+    GpxDocument raw = parseActivity();
+    GpxDocument doc = GpxSanitizer.sanitize(raw);
 
-    GpxSanitizer.sanitize(gpx);
-
-    List<Point> after = gpx.paths().getFirst().getPoints();
+    List<GpxTrackPoint> before = raw.getTracks().getFirst().getPoints();
+    List<GpxTrackPoint> after = doc.getTracks().getFirst().getPoints();
     assertEquals(before.size(), after.size());
     for (int i = 0; i < before.size(); i++) {
-      assertEquals(before.get(i).getLat(), after.get(i).getLat());
-      assertEquals(before.get(i).getLon(), after.get(i).getLon());
-      assertEquals(before.get(i).getEle(), after.get(i).getEle());
+      assertEquals(before.get(i).getLatitudeDeg(), after.get(i).getLatitudeDeg());
+      assertEquals(before.get(i).getLongitudeDeg(), after.get(i).getLongitudeDeg());
+      assertEquals(before.get(i).getElevationM(), after.get(i).getElevationM());
+      assertNull(after.get(i).getTimeEpochMs());
       assertNull(after.get(i).getHeartRate());
-      assertNull(after.get(i).getPower());
-      assertEquals(Instant.EPOCH, after.get(i).getInstant());
+      assertNull(after.get(i).getCadence());
+      assertNull(after.get(i).getTemperatureC());
+      assertNull(after.get(i).getPowerW());
     }
-    assertEquals(
-        raw.paths().getFirst().getDist(), gpx.paths().getFirst().getDist(), 0.001, "distance");
+    Path rawPath = GpxToPathJvm.tracksAsPaths(raw).getFirst();
+    Path path = GpxToPathJvm.tracksAsPaths(doc).getFirst();
+    assertEquals(rawPath.getTotalDistance(), path.getTotalDistance(), 0.001, "distance");
   }
 
   @Test
   void sanitize_keepsNamesAndWaypoints() throws Exception {
-    GPX gpx = parseActivity();
+    GpxDocument doc = GpxSanitizer.sanitize(parseActivity());
 
-    GpxSanitizer.sanitize(gpx);
-
-    assertEquals("Morning Ride", gpx.name());
-    assertEquals("Morning Ride", gpx.paths().getFirst().getName());
-    assertEquals(1, gpx.waypoints().size());
-    assertEquals("Café stop", gpx.waypoints().getFirst().name());
-    assertEquals(47.21, gpx.waypoints().getFirst().point().getLatDeg(), 1e-9);
-    assertEquals(-1.545, gpx.waypoints().getFirst().point().getLonDeg(), 1e-9);
-    assertTrue(write(gpx, true).contains("<wpt lat=\"47.21\" lon=\"-1.545\">"));
+    assertEquals("Morning Ride", doc.getName());
+    assertEquals("Morning Ride", doc.getTracks().getFirst().getName());
+    assertEquals(1, doc.getWaypoints().size());
+    GpxWaypoint waypoint = doc.getWaypoints().getFirst();
+    assertEquals("Café stop", waypoint.getName());
+    assertEquals(47.21, waypoint.getLatitudeDeg(), 1e-9);
+    assertEquals(-1.545, waypoint.getLongitudeDeg(), 1e-9);
+    assertNull(waypoint.getTimeEpochMs());
+    assertNull(waypoint.getDescription());
   }
 
   @Test
   void sanitize_isIdempotent() throws Exception {
-    GPX gpx = parseActivity();
-    GpxSanitizer.sanitize(gpx);
-    String once = write(gpx, true);
+    GpxDocument once = GpxSanitizer.sanitize(parseActivity());
 
-    GpxSanitizer.sanitize(gpx);
-
-    assertEquals(once, write(gpx, true));
+    assertEquals(once, GpxSanitizer.sanitize(once));
   }
 
   @Test
-  void sanitize_acceptsAGpxWithImmutableEmptyWaypoints() {
+  void sanitize_acceptsADocumentWithNoWaypoints() {
     // What GpxProcessingService.fromPoints builds for a drawn route.
-    GPXPath path = new GPXPath("drawn", io.github.glandais.gpx.data.GPXPathType.TRACK);
-    Point point = new Point();
-    point.setLat(Math.toRadians(47.2));
-    point.setLon(Math.toRadians(-1.5));
-    point.setEle(0.0);
-    point.setInstant(null, Instant.EPOCH);
-    path.addPoint(point);
-    path.computeArrays();
-    GPX gpx = new GPX("drawn", List.of(path), List.of());
+    GpxDocument drawn =
+        GpxModelJvm.document(
+            List.of(GpxModelJvm.track(List.of(GpxModelJvm.trackPoint(47.2, -1.5)), "drawn")),
+            "drawn");
 
-    assertDoesNotThrow(() -> GpxSanitizer.sanitize(gpx));
-    assertEquals(1, gpx.paths().getFirst().getPoints().size());
+    GpxDocument doc = assertDoesNotThrow(() -> GpxSanitizer.sanitize(drawn));
+    assertEquals(drawn, doc);
   }
 }

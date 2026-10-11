@@ -2,9 +2,9 @@ package fr.pedalons.service.route;
 
 import fr.pedalons.common.exception.BusinessException;
 import fr.pedalons.dto.error.ErrorCode;
-import io.github.glandais.gpx.data.GPX;
-import io.github.glandais.gpx.data.GPXPath;
-import io.github.glandais.gpx.data.Point;
+import io.github.glandais.engine.gpx.GpxDocument;
+import io.github.glandais.engine.gpx.GpxToPathJvm;
+import io.github.glandais.engine.path.Path;
 import java.util.List;
 
 /**
@@ -36,7 +36,7 @@ import java.util.List;
  */
 public final class GpxLimits {
 
-  /** The step of the resampling the pipeline applies to every track. */
+  /** The step of the resampling the pipeline applies to every track ({@link GpxPipeline}). */
   public static final double RESAMPLING_STEP_METERS = 10.0;
 
   /**
@@ -56,9 +56,12 @@ public final class GpxLimits {
 
   private GpxLimits() {}
 
-  /** {@link #checkTracks(List)} on every track of the GPX. */
-  public static void checkTracks(GPX gpx) {
-    checkTracks(gpx.paths());
+  /** Mean Earth radius, the one a haversine distance is usually computed with. */
+  private static final double EARTH_RADIUS_METERS = 6_371_000.0;
+
+  /** {@link #checkTracks(List)} on every track (and route) of the document. */
+  public static void checkTracks(GpxDocument doc) {
+    checkTracks(GpxToPathJvm.tracksAsPaths(doc));
   }
 
   /**
@@ -66,19 +69,22 @@ public final class GpxLimits {
    * bounds (or not a number) is a {@code GPX_FAILURE}, a summed length over {@link
    * #MAX_TRACK_DISTANCE_METERS} a {@code GPX_TOO_LONG}. Linear in the number of points already
    * there, and allocates nothing.
+   *
+   * <p>The distance is computed here rather than read from the path's derived data, so the check
+   * does not depend on whether a given vcyclist factory computed it.
    */
-  public static void checkTracks(List<GPXPath> paths) {
+  public static void checkTracks(List<Path> paths) {
     double total = 0.0;
-    for (GPXPath path : paths) {
-      Point previous = null;
-      for (Point point : path.getPoints()) {
-        if (!isValidCoordinate(point.getLatDeg(), point.getLonDeg())) {
+    for (Path path : paths) {
+      for (int i = 0; i < path.getSize(); i++) {
+        double lat = path.latitudeDeg(i);
+        double lng = path.longitudeDeg(i);
+        if (!isValidCoordinate(lat, lng)) {
           throw new BusinessException(ErrorCode.GPX_FAILURE);
         }
-        if (previous != null) {
-          total += previous.distanceTo(point);
+        if (i > 0) {
+          total += haversine(path.latitudeDeg(i - 1), path.longitudeDeg(i - 1), lat, lng);
         }
-        previous = point;
       }
       // Checked per track so that a pathological file stops at the first one past the bound.
       // Written as a negation so that a NaN distance is refused too.
@@ -86,6 +92,18 @@ public final class GpxLimits {
         throw new BusinessException(ErrorCode.GPX_TOO_LONG);
       }
     }
+  }
+
+  private static double haversine(double lat1, double lng1, double lat2, double lng2) {
+    double dLat = Math.toRadians(lat2 - lat1);
+    double dLng = Math.toRadians(lng2 - lng1);
+    double a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2)
+            + Math.cos(Math.toRadians(lat1))
+                * Math.cos(Math.toRadians(lat2))
+                * Math.sin(dLng / 2)
+                * Math.sin(dLng / 2);
+    return 2 * EARTH_RADIUS_METERS * Math.asin(Math.min(1.0, Math.sqrt(a)));
   }
 
   private static boolean isValidCoordinate(double lat, double lng) {

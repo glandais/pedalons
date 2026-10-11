@@ -1,7 +1,7 @@
 package fr.pedalons.service.route;
 
+import fr.pedalons.domain.route.ClimbData;
 import fr.pedalons.domain.route.GpxTrack.TrackPoint;
-import io.github.glandais.gpx.climb.Climb;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 
@@ -43,7 +43,7 @@ public final class ClimbNaming {
    *     #MAX_SUMMIT_DISTANCE_METERS}, or {@code null}
    */
   public static @Nullable String nameOf(
-      Climb climb, List<TrackPoint> trackPoints, List<NamedPoint> waypoints) {
+      ClimbData climb, List<TrackPoint> trackPoints, List<NamedPoint> waypoints) {
     if (trackPoints.isEmpty() || waypoints.isEmpty()) {
       return null;
     }

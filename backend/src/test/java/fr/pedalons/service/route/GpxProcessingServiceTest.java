@@ -3,6 +3,7 @@ package fr.pedalons.service.route;
 import static org.junit.jupiter.api.Assertions.*;
 
 import fr.pedalons.AbstractBaseTest;
+import fr.pedalons.common.GeoPoint;
 import fr.pedalons.common.exception.PedalonsException;
 import fr.pedalons.domain.asset.Asset;
 import fr.pedalons.domain.platform.Domain;
@@ -19,7 +20,7 @@ import fr.pedalons.service.security.PedalonsQueryContext;
 import fr.pedalons.util.GpxPrivacyAssertions;
 import fr.pedalons.util.TestDataCleaner;
 import fr.pedalons.util.TestDataService;
-import io.github.glandais.gpx.data.GPX;
+import io.github.glandais.engine.gpx.GpxDocument;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import java.io.File;
@@ -71,7 +72,7 @@ class GpxProcessingServiceTest extends AbstractBaseTest {
   void createTracks_shouldProcessValidGpx() {
     Path gpxPath = getExampleGpxPath();
 
-    GPX gpx = gpxProcessingService.parseGpx(gpxPath);
+    GpxDocument gpx = gpxProcessingService.parseGpx(gpxPath);
     context.setUserForTest(user);
     TrackMetadata result = gpxProcessingService.createTracks(route, gpx);
 
@@ -90,7 +91,7 @@ class GpxProcessingServiceTest extends AbstractBaseTest {
   void createTracks_shouldExtractCorrectMetadata() {
     Path gpxPath = getExampleGpxPath();
 
-    GPX gpx = gpxProcessingService.parseGpx(gpxPath);
+    GpxDocument gpx = gpxProcessingService.parseGpx(gpxPath);
     context.setUserForTest(user);
     TrackMetadata result = gpxProcessingService.createTracks(route, gpx);
 
@@ -112,7 +113,7 @@ class GpxProcessingServiceTest extends AbstractBaseTest {
   void createTracks_shouldGenerateValidGeometry() {
     Path gpxPath = getExampleGpxPath();
 
-    GPX gpx = gpxProcessingService.parseGpx(gpxPath);
+    GpxDocument gpx = gpxProcessingService.parseGpx(gpxPath);
     context.setUserForTest(user);
     gpxProcessingService.createTracks(route, gpx);
 
@@ -132,7 +133,7 @@ class GpxProcessingServiceTest extends AbstractBaseTest {
   void createTracks_shouldGenerateTrackPoints() {
     Path gpxPath = getExampleGpxPath();
 
-    GPX gpx = gpxProcessingService.parseGpx(gpxPath);
+    GpxDocument gpx = gpxProcessingService.parseGpx(gpxPath);
     context.setUserForTest(user);
     gpxProcessingService.createTracks(route, gpx);
 
@@ -152,7 +153,7 @@ class GpxProcessingServiceTest extends AbstractBaseTest {
   void createTracks_shouldStoreTrackMetrics() {
     Path gpxPath = getExampleGpxPath();
 
-    GPX gpx = gpxProcessingService.parseGpx(gpxPath);
+    GpxDocument gpx = gpxProcessingService.parseGpx(gpxPath);
     context.setUserForTest(user);
     gpxProcessingService.createTracks(route, gpx);
 
@@ -167,7 +168,7 @@ class GpxProcessingServiceTest extends AbstractBaseTest {
   void createTracks_shouldUploadFilesToS3() {
     Path gpxPath = getExampleGpxPath();
 
-    GPX gpx = gpxProcessingService.parseGpx(gpxPath);
+    GpxDocument gpx = gpxProcessingService.parseGpx(gpxPath);
     context.setUserForTest(user);
     gpxProcessingService.createTracks(route, gpx);
 
@@ -195,7 +196,7 @@ class GpxProcessingServiceTest extends AbstractBaseTest {
    */
   @Test
   void createTracks_shouldStripTimestampsAndSensorsFromEveryStoredFile() throws Exception {
-    GPX gpx = gpxProcessingService.parseGpx(GpxPrivacyAssertions.activityGpx());
+    GpxDocument gpx = gpxProcessingService.parseGpx(GpxPrivacyAssertions.activityGpx());
     context.setUserForTest(user);
     TrackMetadata result = gpxProcessingService.createTracks(route, gpx);
 
@@ -225,9 +226,13 @@ class GpxProcessingServiceTest extends AbstractBaseTest {
     }
     try (InputStream is = gpxProcessingService.getFilteredGpxContent(route)) {
       String filtered = new String(is.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
-      // The writer escapes every non-ASCII character.
-      assertTrue(
-          filtered.contains("<name>Caf&#233; stop</name>"), "the waypoint's name must survive");
+      // Read back rather than grepped: whether the writer escapes non-ASCII is not the point.
+      assertEquals(
+          List.of("Café stop"),
+          io.github.glandais.engine.gpx.GpxParserJvm.parse(filtered).getWaypoints().stream()
+              .map(io.github.glandais.engine.gpx.GpxWaypoint::getName)
+              .toList(),
+          "the waypoint's name must survive");
     }
   }
 
@@ -237,7 +242,7 @@ class GpxProcessingServiceTest extends AbstractBaseTest {
   void createTracks_shouldProcessMultipleTracks() {
     Path gpxPath = getTwoTracksGpxPath();
 
-    GPX gpx = gpxProcessingService.parseGpx(gpxPath);
+    GpxDocument gpx = gpxProcessingService.parseGpx(gpxPath);
     context.setUserForTest(user);
     TrackMetadata result = gpxProcessingService.createTracks(route, gpx);
 
@@ -258,7 +263,7 @@ class GpxProcessingServiceTest extends AbstractBaseTest {
   void createTracks_shouldAggregateMetadataFromMultipleTracks() {
     Path gpxPath = getTwoTracksGpxPath();
 
-    GPX gpx = gpxProcessingService.parseGpx(gpxPath);
+    GpxDocument gpx = gpxProcessingService.parseGpx(gpxPath);
     context.setUserForTest(user);
     TrackMetadata result = gpxProcessingService.createTracks(route, gpx);
 
@@ -280,7 +285,7 @@ class GpxProcessingServiceTest extends AbstractBaseTest {
   void createTracks_shouldUseFirstTrackStartAndLastTrackEnd() {
     Path gpxPath = getTwoTracksGpxPath();
 
-    GPX gpx = gpxProcessingService.parseGpx(gpxPath);
+    GpxDocument gpx = gpxProcessingService.parseGpx(gpxPath);
     context.setUserForTest(user);
     TrackMetadata result = gpxProcessingService.createTracks(route, gpx);
 
@@ -302,18 +307,22 @@ class GpxProcessingServiceTest extends AbstractBaseTest {
   // ==================== computeGpx (pure pipeline) ====================
 
   @Test
-  void computeGpx_shouldSerializeOriginalBeforeAndFilteredAfterTheMutatingPipeline()
-      throws Exception {
-    GPX gpx = gpxProcessingService.parseGpx(getExampleGpxPath());
+  void computeGpx_shouldWriteOriginalAndFilteredGpxAndFit() throws Exception {
+    Path gpxPath = getExampleGpxPath();
+    GpxDocument gpx = gpxProcessingService.parseGpx(gpxPath);
 
     try (GpxProcessingService.ComputedGpx computed = gpxProcessingService.computeGpx(gpx)) {
       assertTrue(computed.originalGpx().exists(), "Original GPX should be written");
       assertTrue(computed.filteredGpx().exists(), "Filtered GPX should be written");
-      assertTrue(computed.originalGpx().length() > 0);
       assertTrue(computed.filteredGpx().length() > 0);
+      assertTrue(computed.fitFile().length() > 0, "FIT export should be written");
 
       byte[] original = java.nio.file.Files.readAllBytes(computed.originalGpx().toPath());
       byte[] filtered = java.nio.file.Files.readAllBytes(computed.filteredGpx().toPath());
+      assertFalse(
+          java.util.Arrays.equals(java.nio.file.Files.readAllBytes(gpxPath), original),
+          "original.gpx must be the sanitized re-serialization, never the uploaded bytes"
+              + " (docs/LEDGER_*.md API-44)");
       assertFalse(
           java.util.Arrays.equals(original, filtered),
           "Filtered GPX must differ from the original: it is written after resampling,"
@@ -322,23 +331,45 @@ class GpxProcessingServiceTest extends AbstractBaseTest {
   }
 
   @Test
+  void computeGpx_shouldSerializeTheOriginalOfPlannerPoints() throws Exception {
+    // The planner path: points, no uploaded file, no elevation and no time.
+    GpxDocument gpx =
+        gpxProcessingService.fromPoints(
+            "planner", List.of(new GeoPoint(6.0, 45.0), new GeoPoint(6.01, 45.01)));
+
+    try (GpxProcessingService.ComputedGpx computed = gpxProcessingService.computeGpx(gpx)) {
+      String original = java.nio.file.Files.readString(computed.originalGpx().toPath());
+      assertTrue(original.contains("<gpx"), "Original GPX should be a serialized document");
+      assertTrue(computed.filteredGpx().length() > 0);
+      assertTrue(computed.fitFile().length() > 0);
+      assertEquals(1, computed.tracks().size());
+    }
+  }
+
+  @Test
   void computeGpx_shouldDeleteTempFilesOnClose() {
-    GPX gpx = gpxProcessingService.parseGpx(getExampleGpxPath());
+    Path gpxPath = getExampleGpxPath();
+    GpxDocument gpx = gpxProcessingService.parseGpx(gpxPath);
 
     File original;
     File filtered;
+    File fit;
     try (GpxProcessingService.ComputedGpx computed = gpxProcessingService.computeGpx(gpx)) {
       original = computed.originalGpx();
       filtered = computed.filteredGpx();
+      fit = computed.fitFile();
+      assertTrue(fit.exists(), "FIT temp file should exist before close");
     }
 
     assertFalse(original.exists(), "Original temp file should be deleted on close");
     assertFalse(filtered.exists(), "Filtered temp file should be deleted on close");
+    assertFalse(fit.exists(), "FIT temp file should be deleted on close");
   }
 
   @Test
   void computeGpx_shouldComputeTracksAndAggregateMetadata() {
-    GPX gpx = gpxProcessingService.parseGpx(getTwoTracksGpxPath());
+    Path gpxPath = getTwoTracksGpxPath();
+    GpxDocument gpx = gpxProcessingService.parseGpx(gpxPath);
 
     try (GpxProcessingService.ComputedGpx computed = gpxProcessingService.computeGpx(gpx)) {
       assertEquals(2, computed.tracks().size());
@@ -361,7 +392,8 @@ class GpxProcessingServiceTest extends AbstractBaseTest {
   @Test
   void computeGpx_shouldNotRequireAUserOrTeam() {
     // No context.setUserForTest(...): the pure pipeline must not touch the security context.
-    GPX gpx = gpxProcessingService.parseGpx(getExampleGpxPath());
+    Path gpxPath = getExampleGpxPath();
+    GpxDocument gpx = gpxProcessingService.parseGpx(gpxPath);
 
     try (GpxProcessingService.ComputedGpx computed = gpxProcessingService.computeGpx(gpx)) {
       assertFalse(computed.tracks().isEmpty());
@@ -370,7 +402,8 @@ class GpxProcessingServiceTest extends AbstractBaseTest {
 
   @Test
   void computeGpx_shouldThrowForEmptyGpx() {
-    GPX gpx = gpxProcessingService.parseGpx(new File("src/test/resources/empty.gpx").toPath());
+    Path gpxPath = new File("src/test/resources/empty.gpx").toPath();
+    GpxDocument gpx = gpxProcessingService.parseGpx(gpxPath);
 
     PedalonsException exception =
         assertThrows(PedalonsException.class, () -> gpxProcessingService.computeGpx(gpx));
@@ -384,7 +417,7 @@ class GpxProcessingServiceTest extends AbstractBaseTest {
   void createTracks_shouldThrowForEmptyGpx() {
     Path gpxPath = new File("src/test/resources/empty.gpx").toPath();
 
-    GPX gpx = gpxProcessingService.parseGpx(gpxPath);
+    GpxDocument gpx = gpxProcessingService.parseGpx(gpxPath);
     context.setUserForTest(user);
     PedalonsException exception =
         assertThrows(PedalonsException.class, () -> gpxProcessingService.createTracks(route, gpx));
@@ -403,7 +436,7 @@ class GpxProcessingServiceTest extends AbstractBaseTest {
   @Test
   void getFilteredGpxContent_shouldReturnStreamIfExists() {
     Path gpxPath = getExampleGpxPath();
-    GPX gpx = gpxProcessingService.parseGpx(gpxPath);
+    GpxDocument gpx = gpxProcessingService.parseGpx(gpxPath);
     context.setUserForTest(user);
     gpxProcessingService.createTracks(route, gpx);
 
@@ -420,7 +453,7 @@ class GpxProcessingServiceTest extends AbstractBaseTest {
   @Test
   void getFitContent_shouldReturnStreamIfExists() {
     Path gpxPath = getExampleGpxPath();
-    GPX gpx = gpxProcessingService.parseGpx(gpxPath);
+    GpxDocument gpx = gpxProcessingService.parseGpx(gpxPath);
     context.setUserForTest(user);
     gpxProcessingService.createTracks(route, gpx);
 

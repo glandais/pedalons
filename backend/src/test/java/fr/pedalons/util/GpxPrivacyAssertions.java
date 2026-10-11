@@ -2,15 +2,19 @@ package fr.pedalons.util;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.garmin.fit.Decode;
-import com.garmin.fit.MesgBroadcaster;
+import com.garmin.fit.DecodeOptions;
+import com.garmin.fit.FitDecoder;
 import com.garmin.fit.RecordMesg;
-import com.garmin.fit.RecordMesgListener;
-import java.io.ByteArrayInputStream;
+import fr.pedalons.infrastructure.gpx.FitExporter;
+import io.github.glandais.engine.gpx.GpxDocument;
+import io.github.glandais.engine.gpx.GpxParserJvm;
+import io.github.glandais.engine.gpx.GpxToPathJvm;
 import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -28,6 +32,12 @@ public final class GpxPrivacyAssertions {
     return new File(ACTIVITY).toPath();
   }
 
+  /** The fixture as a device would record it in FIT: with its clock, unsanitized. */
+  public static byte[] activityFit() throws IOException {
+    GpxDocument dirty = GpxParserJvm.parse(Files.readString(activityGpx(), StandardCharsets.UTF_8));
+    return FitExporter.toFitBytes(GpxToPathJvm.tracksAsPaths(dirty), dirty.getName());
+  }
+
   /** A GPX serialization with nothing of the fixture's clock, sensors or author left in it. */
   public static void assertGpxHasNoPersonalData(String xml) {
     assertFalse(xml.contains("2025-"), "a recorded timestamp survived");
@@ -43,27 +53,27 @@ public final class GpxPrivacyAssertions {
 
   /**
    * A FIT course with no recorded time, power, heart rate or cadence on any record. A sanitized
-   * point's time is the epoch placeholder, which FIT (epoch 1989) cannot represent and decodes as
-   * absent — the same as for any route drawn or imported without times.
+   * track has no clock, so the course starts at the FIT epoch (1989-12-31, see {@code
+   * FitExporter}): long before any recording.
+   *
+   * <p>Sensor fields are looked up by their profile name: the typed getters return Kotlin unsigned
+   * types, whose mangled names Java cannot call.
    */
-  public static void assertFitHasNoPersonalData(byte[] fit) throws Exception {
-    Decode decode = new Decode();
-    MesgBroadcaster broadcaster = new MesgBroadcaster(decode);
-    List<RecordMesg> records = new ArrayList<>();
-    broadcaster.addListener((RecordMesgListener) records::add);
-    decode.read(new ByteArrayInputStream(fit), broadcaster, broadcaster);
+  public static void assertFitHasNoPersonalData(byte[] fit) {
+    List<RecordMesg> records =
+        new FitDecoder(fit).decode(new DecodeOptions()).getMessages().getRecordMesgs();
 
     assertFalse(records.isEmpty(), "the FIT course has no record");
     Instant recorded = Instant.parse("2000-01-01T00:00:00Z");
     for (RecordMesg record : records) {
       assertTrue(
           record.getTimestamp() == null
-              || record.getTimestamp().getDate().toInstant().isBefore(recorded),
+              || Instant.ofEpochMilli(record.getTimestamp().toEpochMilliseconds())
+                  .isBefore(recorded),
           "a recorded timestamp survived: " + record.getTimestamp());
-      assertNull(record.getPower(), "power survived");
-      assertNull(record.getHeartRate(), "heart rate survived");
-      assertNull(record.getCadence(), "cadence survived");
-      assertNull(record.getTemperature(), "temperature survived");
+      for (String field : List.of("power", "heart_rate", "cadence", "temperature")) {
+        assertNull(record.getField(field), field + " survived");
+      }
     }
   }
 }

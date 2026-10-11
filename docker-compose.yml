@@ -97,7 +97,7 @@ services:
     volumes:
       - ./data/storage:/mnt/storage
       - ./data/keys:/mnt/keys:ro
-      # gpx2web's tile + elevation cache (DATA_CACHE_PATH), kept outside the container so it outlives
+      # vcyclist's tile + elevation cache (DATA_CACHE_PATH), kept outside the container so it outlives
       # `down`.
       - ./data/cache:/mnt/cache
     # Container labels for compose's Docker provider, the same list as service labels for Swarm's.

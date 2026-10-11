@@ -30,9 +30,6 @@ import fr.pedalons.service.security.PedalonsQueryContext;
 import fr.pedalons.util.GpxPrivacyAssertions;
 import fr.pedalons.util.TestDataCleaner;
 import fr.pedalons.util.TestDataService;
-import io.github.glandais.gpx.data.GPX;
-import io.github.glandais.gpx.io.read.GPXFileReader;
-import io.github.glandais.gpx.io.write.FitFileWriter;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
@@ -60,8 +57,6 @@ class AssetServiceTest extends AbstractBaseTest {
   @Inject StorageService storageService;
   @Inject AssetRepository assetRepository;
   @Inject PostRepository postRepository;
-  @Inject GPXFileReader gpxFileReader;
-  @Inject FitFileWriter fitFileWriter;
 
   private Domain domain;
   private Team team;
@@ -110,21 +105,6 @@ class AssetServiceTest extends AbstractBaseTest {
     InputStream resourceAsStream = getClass().getClassLoader().getResourceAsStream("image.png");
     assertNotNull(resourceAsStream, "image.png not found in test resources");
     return resourceAsStream;
-  }
-
-  /** What a device records: the activity fixture as a FIT, with its clock and power. */
-  private byte[] activityFit() throws Exception {
-    GPX dirty;
-    try (InputStream is = Files.newInputStream(GpxPrivacyAssertions.activityGpx())) {
-      dirty = gpxFileReader.parseGPX(is);
-    }
-    java.nio.file.Path fit = Files.createTempFile("attachment-test-", ".fit");
-    try {
-      fitFileWriter.writeGPX(dirty, fit.toFile());
-      return Files.readAllBytes(fit);
-    } finally {
-      Files.deleteIfExists(fit);
-    }
   }
 
   private byte[] readStored(Asset asset) throws IOException {
@@ -231,7 +211,7 @@ class AssetServiceTest extends AbstractBaseTest {
               team,
               AssetType.ATTACHMENT,
               null,
-              new ByteArrayInputStream(activityFit()),
+              new ByteArrayInputStream(GpxPrivacyAssertions.activityFit()),
               "sortie.fit");
 
       assertEquals("application/vnd.ant.fit", result.asset().getContentType());

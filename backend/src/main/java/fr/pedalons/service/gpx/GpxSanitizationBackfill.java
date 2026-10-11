@@ -4,26 +4,23 @@ import fr.pedalons.common.Crons;
 import fr.pedalons.common.TsidUtils;
 import fr.pedalons.common.exception.BusinessException;
 import fr.pedalons.enums.AssetType;
+import fr.pedalons.infrastructure.gpx.FitExporter;
 import fr.pedalons.infrastructure.storage.StorageService;
 import fr.pedalons.repository.asset.AssetRepository;
 import fr.pedalons.repository.gpx.GpxPreviewRepository;
 import fr.pedalons.service.asset.AssetService;
 import fr.pedalons.service.route.GpxSanitizer;
-import io.github.glandais.gpx.data.GPX;
-import io.github.glandais.gpx.io.read.GPXFileReader;
-import io.github.glandais.gpx.io.write.FitFileWriter;
-import io.github.glandais.gpx.io.write.GPXFileWriter;
+import io.github.glandais.engine.gpx.GpxDocument;
+import io.github.glandais.engine.gpx.GpxParserJvm;
+import io.github.glandais.engine.gpx.GpxToPathJvm;
+import io.github.glandais.engine.gpx.GpxWriterJvm;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.scheduler.Scheduled;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -48,7 +45,8 @@ import org.jspecify.annotations.Nullable;
  * re-running it could shift distances and elevations under routes people already know.
  *
  * <p><b>Idempotent.</b> A file is rewritten only when it still holds an {@code <extensions>} block
- * or a {@code <time>} other than the epoch placeholder a sanitized file carries; a clean file is
+ * or a {@code <time>} other than the epoch placeholder the gpx2web-era sanitizer wrote (a file
+ * sanitized since vcyclist carries no {@code <time>} at all); a clean file is
  * read and left alone. Once a full pass ends without an error, a marker object in the bucket turns
  * the nightly trigger into a single existence check — and a bucket restored from a backup taken
  * before the pass comes back without it, so the pass simply runs again.
@@ -72,7 +70,7 @@ public class GpxSanitizationBackfill {
   private static final String FILTERED_GPX = "filtered.gpx";
   private static final String FIT = "route.fit";
 
-  /** What a sanitized point carries: see {@link GpxSanitizer} on why it is the epoch. */
+  /** What a point sanitized before vcyclist carries — the epoch, gpx2web needing an instant. */
   private static final Pattern REAL_TIME = Pattern.compile("<time>(?!1970-01-01T00:00:00Z<)");
 
   @Inject StorageService storageService;
@@ -84,12 +82,6 @@ public class GpxSanitizationBackfill {
   @Inject GpxPreviewRepository gpxPreviewRepository;
 
   @Inject GpxPreviewService gpxPreviewService;
-
-  @Inject GPXFileReader gpxFileReader;
-
-  @Inject GPXFileWriter gpxFileWriter;
-
-  @Inject FitFileWriter fitFileWriter;
 
   @Inject TrackAttachmentSanitizer trackAttachmentSanitizer;
 
@@ -170,14 +162,14 @@ public class GpxSanitizationBackfill {
   boolean sanitize(FileSet set) throws Exception {
     boolean changed = false;
     if (set.original() != null) {
-      GPX original = readIfDirty(set.original());
+      GpxDocument original = readIfDirty(set.original());
       if (original != null) {
-        store(set.original(), toGpxBytes(original, false));
+        store(set.original(), toGpxBytes(original));
         changed = true;
       }
     }
     if (set.filtered() != null) {
-      GPX filtered = readIfDirty(set.filtered());
+      GpxDocument filtered = readIfDirty(set.filtered());
       if (filtered != null) {
         // Written from the same in-memory track as the filtered GPX, so dirty exactly when it is.
         // The FIT goes first: the filtered GPX is the only dirtiness signal for the pair, so if
@@ -185,7 +177,7 @@ public class GpxSanitizationBackfill {
         if (set.fit() != null) {
           store(set.fit(), toFitBytes(filtered));
         }
-        store(set.filtered(), toGpxBytes(filtered, true));
+        store(set.filtered(), toGpxBytes(filtered));
         changed = true;
       }
     }
@@ -225,7 +217,7 @@ public class GpxSanitizationBackfill {
   }
 
   /** The sanitized parse of a stored GPX, or null when it is missing or already clean. */
-  private @Nullable GPX readIfDirty(StoredFile file) throws Exception {
+  private @Nullable GpxDocument readIfDirty(StoredFile file) throws Exception {
     if (!storageService.exists(file.key())) {
       return null;
     }
@@ -236,29 +228,20 @@ public class GpxSanitizationBackfill {
     if (!isDirty(new String(raw, StandardCharsets.UTF_8))) {
       return null;
     }
-    GPX gpx = gpxFileReader.parseGPX(new ByteArrayInputStream(raw));
-    GpxSanitizer.sanitize(gpx);
-    return gpx;
+    // Every stored GPX was written by gpx2web's writer, which only ever emitted UTF-8.
+    return GpxSanitizer.sanitize(GpxParserJvm.parse(new String(raw, StandardCharsets.UTF_8)));
   }
 
   static boolean isDirty(String gpxXml) {
     return gpxXml.contains("<extensions>") || REAL_TIME.matcher(gpxXml).find();
   }
 
-  private byte[] toGpxBytes(GPX gpx, boolean filtered) throws IOException {
-    StringWriter writer = new StringWriter();
-    gpxFileWriter.writeGPX(gpx, writer, filtered);
-    return writer.toString().getBytes(StandardCharsets.UTF_8);
+  private static byte[] toGpxBytes(GpxDocument gpx) {
+    return GpxWriterJvm.write(gpx, false).getBytes(StandardCharsets.UTF_8);
   }
 
-  private byte[] toFitBytes(GPX gpx) throws IOException {
-    Path temp = Files.createTempFile("gpx-sanitize-", ".fit");
-    try {
-      fitFileWriter.writeGPX(gpx, temp.toFile());
-      return Files.readAllBytes(temp);
-    } finally {
-      Files.deleteIfExists(temp);
-    }
+  private static byte[] toFitBytes(GpxDocument gpx) {
+    return FitExporter.toFitBytes(GpxToPathJvm.tracksAsPaths(gpx), gpx.getName());
   }
 
   private void store(StoredFile file, byte[] content) {

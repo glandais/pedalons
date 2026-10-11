@@ -3,7 +3,6 @@ package fr.pedalons.domain.route;
 import fr.pedalons.domain.common.BaseEntity;
 import fr.pedalons.domain.common.NotNullableDbValue;
 import fr.pedalons.domain.user.User;
-import io.github.glandais.gpx.climb.Climb;
 import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.*;
 import java.io.Serializable;
@@ -44,7 +43,7 @@ public class GpxTrack extends BaseEntity {
 
   @Type(JsonBinaryType.class)
   @Column(name = "climbs", columnDefinition = "jsonb", nullable = false)
-  private List<Climb> climbs;
+  private List<ClimbData> climbs;
 
   @Column(name = "distance", nullable = false)
   @NotNullableDbValue
@@ -63,7 +62,7 @@ public class GpxTrack extends BaseEntity {
       String name,
       LineString<G2D> geometry,
       List<TrackPoint> trackPoints,
-      List<Climb> climbs,
+      List<ClimbData> climbs,
       float distance,
       float elevationGain,
       float elevationLoss) {

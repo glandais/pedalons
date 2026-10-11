@@ -91,7 +91,7 @@ to), and drops the older ones; `--rev` of a dropped commit means `git checkout` 
 - **Scheduled jobs may run on both.** Those that claim their work in the database
   (`for update skip locked`: notifications, webhooks, user exports) are safe; any other job must be
   idempotent, since `concurrentExecution = SKIP` only guards within one JVM.
-- **`data/cache` is shared** by the two for that while — the gpx2web race described below.
+- **`data/cache` is shared** by the two for that while — the cache race described below.
 
 A `.env` value changed on the host takes effect on the next `scripts/deploy.sh`: `env_file` is read
 at deploy time and a new value rolls the backend.
@@ -203,11 +203,11 @@ Two services stay per-environment on purpose, even though they look shareable:
 
 - **imgproxy/varnish** — imgproxy only takes a single global `IMGPROXY_S3_ENDPOINT`, so one instance
   cannot serve two MinIO backends. They become shareable if and when MinIO is shared.
-- **the gpx2web cache** (`DATA_CACHE_PATH`) — per environment by choice, not by necessity. Two
+- **the vcyclist cache** (`DATA_CACHE_PATH`) — per environment by choice, not by necessity. Two
   backends can share it safely (two of the same environment already do during a start-first
-  update): since gpx2web 1.5.2, map tiles and elevation tiles alike are downloaded to a unique temp
-  file, kept only on a 2xx, and renamed atomically into place, so a reader never sees a partial file
-  and the in-JVM lock only saves a duplicate download (ledger `OPS-10`). Sharing it across
+  update): map tiles (vcyclist ≥ 5.1.1) and elevation tiles (`DemTileFetcher`) are both written to a
+  temp file then renamed into place, and only once they decode, so a reader never sees a partial
+  file and an unreadable cached tile is fetched again (ledger `OPS-10`). Sharing it across
   environments would save the downloads; it is not done. The directory must stay on one filesystem
   (the rename is atomic only there). Keep it at
   `/mnt/cache`: pointed at `/tmp` it lives inside the container and is re-downloaded in full on every
