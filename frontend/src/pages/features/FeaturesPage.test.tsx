@@ -41,7 +41,17 @@ describe('FeaturesPage', () => {
   it('renders every section, each reachable from its jump chip', () => {
     renderPage()
     const chips = within(screen.getByRole('navigation', { name: 'features.jump.label' }))
-    const ids = ['rides', 'routes', 'trips', 'posts', 'ads', 'calendar', 'devices', 'privacy']
+    const ids = [
+      'rides',
+      'routes',
+      'trips',
+      'weather',
+      'posts',
+      'ads',
+      'calendar',
+      'devices',
+      'privacy',
+    ]
     expect(chips.getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual(
       ids.map((id) => `#${id}`)
     )
@@ -88,7 +98,7 @@ describe('FeaturesPage', () => {
   it('renders its illustrations inert: hidden from assistive tech, nothing focusable', () => {
     const { container } = renderPage()
     const frames = container.querySelectorAll('[aria-hidden="true"]')
-    expect(frames.length).toBeGreaterThanOrEqual(8)
+    expect(frames.length).toBeGreaterThanOrEqual(9)
     for (const frame of frames) {
       expect(frame.querySelector('a, button, input, [tabindex]')).toBeNull()
     }

@@ -19,6 +19,7 @@ import {
   IconBike,
   IconCalendar,
   IconCheck,
+  IconCloudRain,
   IconDeviceWatch,
   IconLock,
   IconLogin,
@@ -44,6 +45,7 @@ import { AdVisual } from './visuals/AdVisual'
 import { CalendarVisual } from './visuals/CalendarVisual'
 import { DevicesVisual } from './visuals/DevicesVisual'
 import { PrivacyVisual } from './visuals/PrivacyVisual'
+import { WeatherVisual } from './visuals/WeatherVisual'
 
 type Section = Omit<FeatureSectionProps, 'reverse'> & { chip: string }
 
@@ -103,6 +105,7 @@ export function FeaturesPage() {
         t('features.routes.point2'),
         t('features.routes.point3'),
         t('features.routes.point4'),
+        t('features.routes.point5'),
       ],
       visual: <RouteVisual />,
     },
@@ -114,8 +117,30 @@ export function FeaturesPage() {
       eyebrow: t('features.trips.eyebrow'),
       title: t('features.trips.title'),
       lead: t('features.trips.lead'),
-      points: [t('features.trips.point1'), t('features.trips.point2'), t('features.trips.point3')],
+      points: [
+        t('features.trips.point1'),
+        t('features.trips.point2'),
+        t('features.trips.point3'),
+        t('features.trips.point4'),
+      ],
       visual: <TripVisual />,
+    },
+    {
+      id: 'weather',
+      // Weather has no business colour of its own (contracts/brand-colors.yaml): a sky tint.
+      color: 'cyan',
+      icon: IconCloudRain,
+      chip: t('features.weather.eyebrow'),
+      eyebrow: t('features.weather.eyebrow'),
+      title: t('features.weather.title'),
+      lead: t('features.weather.lead'),
+      points: [
+        t('features.weather.point1'),
+        t('features.weather.point2'),
+        t('features.weather.point3'),
+        t('features.weather.point4'),
+      ],
+      visual: <WeatherVisual />,
     },
     {
       id: 'posts',
@@ -152,6 +177,7 @@ export function FeaturesPage() {
         t('features.calendar.point2'),
         t('features.calendar.point3'),
         t('features.calendar.point4'),
+        t('features.calendar.point5'),
       ],
       visual: <CalendarVisual />,
     },
@@ -196,6 +222,7 @@ export function FeaturesPage() {
         t('features.roles.member.point1'),
         t('features.roles.member.point2'),
         t('features.roles.member.point3'),
+        t('features.roles.member.point4'),
       ],
     },
     {
@@ -205,6 +232,7 @@ export function FeaturesPage() {
         t('features.roles.organizer.point1'),
         t('features.roles.organizer.point2'),
         t('features.roles.organizer.point3'),
+        t('features.roles.organizer.point4'),
       ],
     },
     {
@@ -214,6 +242,7 @@ export function FeaturesPage() {
         t('features.roles.admin.point1'),
         t('features.roles.admin.point2'),
         t('features.roles.admin.point3'),
+        t('features.roles.admin.point4'),
       ],
     },
   ]
