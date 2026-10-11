@@ -284,17 +284,23 @@ class AuthServiceTest extends AbstractBaseTest {
   }
 
   @Test
-  void refreshToken_previousTokenAfterTheGrace_revokesTheSession() {
+  void refreshToken_previousTokenAfterTheGrace_rotatesAgainFromIt() {
     User user = dataService.createVerifiedUser("replay@example.com", "Replay User");
     String first = dataService.createRefreshTokenForUser(user);
     String second = authService.refreshToken(first).refreshToken();
     assertNotNull(second);
     backdateRotation(first, Duration.ofMinutes(5));
 
-    assertThrows(ForbiddenException.class, () -> authService.refreshToken(first));
+    // The response that carried the second token was lost (docs/LEDGER_*.md API-94): the first
+    // rotates again instead of revoking the session.
+    String third = authService.refreshToken(first).refreshToken();
+    assertNotNull(third);
+    assertNotEquals(second, third);
 
-    // A replayed copy ends the session for everyone holding it, the owner included.
+    // The successor it replaced is dead; the new one rotates, and retires the first.
     assertThrows(ForbiddenException.class, () -> authService.refreshToken(second));
+    assertNotNull(authService.refreshToken(third).refreshToken());
+    assertThrows(ForbiddenException.class, () -> authService.refreshToken(first));
   }
 
   @Test

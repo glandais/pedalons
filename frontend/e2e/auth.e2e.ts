@@ -30,8 +30,9 @@ test('concurrent refreshes of one session all succeed', async () => {
 /**
  * The server render refreshes the session of every document it renders, and the refresh rotates
  * the token (docs/LEDGER_*.md SEC-27): the document must hand the browser its new cookie. Kept from
- * it, the browser would present the old token again on its next document — a replay once the
- * rotation's minute is over, which revokes the session.
+ * it, the browser would present the old token again on its next document — refreshed without a new
+ * token within the rotation's minute, rotated again from the old one after it (docs/LEDGER_*.md
+ * API-94).
  */
 test('each server-rendered document hands the browser its rotated session cookie', async ({
   page,

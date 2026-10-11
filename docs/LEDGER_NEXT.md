@@ -9,7 +9,7 @@ portage web livré à trois tâches près, et tenu à jour depuis (dernière rel
 Rien ici ne bloque quoi que ce soit. C'est la propriété qui compte : la v2 est livrable en l'état,
 et chaque ligne ci-dessous supprime une dégradation nommée plutôt que de réparer une panne.
 
-**Contrat d'API au 6 octobre 2026 : `10.9.0`.** Toute évolution d'API listée ici demande un bump de
+**Contrat d'API au 11 octobre 2026 : `11.0.1`.** Toute évolution d'API listée ici demande un bump de
 `pedalons.api.version` dans `backend/src/main/resources/application.properties`, puis la
 régénération des deux clients (compétence `contract-first-api`).
 

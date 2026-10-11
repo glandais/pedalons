@@ -35,10 +35,23 @@ public class AuthSessionRepository implements PanacheRepository<AuthSession> {
         nextHash);
   }
 
-  public int revokeById(Long sessionId) {
+  /**
+   * Replaces the session's token once more from its previous one, which stays the previous token and
+   * starts a new grace: the client whose refresh response was lost (docs/LEDGER_*.md API-94).
+   * Conditional on the session still holding both {@code previousHash} and {@code currentHash}: of
+   * two refreshes racing with the same previous token, exactly one rotates (0 is returned to the
+   * other), and none overwrites a concurrent rotation or revocation.
+   */
+  public int rotateFromPrevious(
+      Long sessionId, String previousHash, String currentHash, String nextHash) {
     return update(
-        "revoked = true, revokedAt = CURRENT_TIMESTAMP where id = ?1 and revoked = false",
-        sessionId);
+        "refreshTokenHash = ?4, rotatedAt = CURRENT_TIMESTAMP, lastUsedAt = CURRENT_TIMESTAMP"
+            + " where id = ?1 and previousRefreshTokenHash = ?2 and refreshTokenHash = ?3"
+            + " and revoked = false",
+        sessionId,
+        previousHash,
+        currentHash,
+        nextHash);
   }
 
   public List<AuthSession> findActiveByUserId(Long userId) {

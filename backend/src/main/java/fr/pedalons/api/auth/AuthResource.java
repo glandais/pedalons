@@ -290,7 +290,9 @@ public class AuthResource {
               + " header on mobile). The refresh token is rotated: the new one comes back in the"
               + " cookie, or in refreshToken for the header flow, and the one presented is then"
               + " only honoured for a short grace, without rotating again (refreshToken absent)."
-              + " Presented after that grace, it revokes the session.")
+              + " Presented after that grace, it is rotated again from itself: the successor it"
+              + " had (lost by the client) is dropped, and it is refused once the new one is"
+              + " presented.")
   @APIResponses({
     @APIResponse(
         responseCode = "200",

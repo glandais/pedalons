@@ -37,7 +37,8 @@ export function unique(label: string): string {
 /**
  * `test.use(as('rider'))` — the tests of that block start signed in as that role, each context with
  * a session of its own: the refresh token rotates (docs/LEDGER_*.md SEC-27), so one saved session
- * shared by every test would be revoked as a replay the first time two of them refreshed it.
+ * shared by every test would get all but one of them refused once two of them refreshed it
+ * (docs/LEDGER_*.md API-94).
  */
 export const as = (role: Role) => ({
   storageState: async (

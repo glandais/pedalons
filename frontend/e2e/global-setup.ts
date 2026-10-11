@@ -19,8 +19,8 @@ import type { Seed } from './support/fixtures'
  * data every test may rely on.
  *
  * No session is saved for the tests to share: the refresh token rotates at every refresh
- * (docs/LEDGER_*.md SEC-27), and a token shared by several tests turns into a replay — which revokes
- * the session — as soon as one of them refreshes. Each browser context and each worker signs in on
+ * (docs/LEDGER_*.md SEC-27), and with a token shared by several tests, the one that refreshes last
+ * takes the chain over (API-94): the others are refused at their next refresh. Each browser context and each worker signs in on
  * its own instead (fixtures.ts `as`, data.ts `roleSession`), by password, which nothing rate-limits
  * but failures; hence a password for the admin too, whom the bootstrap creates without one.
  *

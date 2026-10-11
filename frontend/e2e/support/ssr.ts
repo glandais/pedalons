@@ -49,7 +49,8 @@ const cookieHolders = new Map<string, { refreshToken: string }>()
  * The server render refreshes the session a document is fetched with, and the refresh rotates its
  * token (docs/LEDGER_*.md SEC-27): the new one comes back in the document's `Set-Cookie`. Kept in
  * the AuthResponse the cookie was built from, so that the test's next document or refresh presents
- * the current token — the old one, presented after a minute, is a replay and revokes the session.
+ * the current token — the old one, presented after a minute, takes the chain over and drops the
+ * successor (docs/LEDGER_*.md API-94).
  */
 export function keepRotatedSession(
   cookie: string | undefined,

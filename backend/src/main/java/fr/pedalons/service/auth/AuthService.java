@@ -588,7 +588,7 @@ public class AuthService {
           new RefreshResult(
               refreshResponse(Objects.requireNonNull(refresh.session()).getUser()),
               refresh.nextToken());
-      case REPLAYED, UNKNOWN -> throw new ForbiddenException();
+      case UNKNOWN -> throw new ForbiddenException();
     };
   }
 

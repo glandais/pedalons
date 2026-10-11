@@ -229,8 +229,7 @@ public class DeviceAuthService {
                 throw new BadRequestException(ErrorCode.SESSION_EXPIRED);
               }
             });
-    if (refresh.outcome() == RefreshTokenRotation.Outcome.REPLAYED
-        || refresh.outcome() == RefreshTokenRotation.Outcome.UNKNOWN) {
+    if (refresh.outcome() == RefreshTokenRotation.Outcome.UNKNOWN) {
       throw new BadRequestException(ErrorCode.TOKEN_INVALID);
     }
     AuthSession session = Objects.requireNonNull(refresh.session());

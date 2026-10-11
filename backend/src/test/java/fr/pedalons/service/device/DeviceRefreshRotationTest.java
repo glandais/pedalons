@@ -65,7 +65,7 @@ class DeviceRefreshRotationTest extends AbstractBaseTest {
   }
 
   @Test
-  void refresh_previousTokenAfterTheGrace_revokesTheDevicesSession() {
+  void refresh_previousTokenAfterTheGrace_rotatesAgainFromIt() {
     User user = dataService.createVerifiedUser("replay@example.com", "Replay User");
     String first = dataService.createRefreshTokenForUser(user);
     String second = deviceAuthService.refreshToken(first, "karoo").refreshToken();
@@ -77,7 +77,12 @@ class DeviceRefreshRotationTest extends AbstractBaseTest {
                     Instant.now().minus(Duration.ofMinutes(5)),
                     hashToken(first)));
 
-    assertThrows(BadRequestException.class, () -> deviceAuthService.refreshToken(first, "karoo"));
+    // The response that carried the second token was lost (docs/LEDGER_*.md API-94): the device
+    // stays paired, on a third token; the second is dead.
+    String third = deviceAuthService.refreshToken(first, "karoo").refreshToken();
+    assertNotNull(third);
+    assertNotEquals(second, third);
     assertThrows(BadRequestException.class, () -> deviceAuthService.refreshToken(second, "karoo"));
+    assertNotNull(deviceAuthService.refreshToken(third, "karoo").refreshToken());
   }
 }

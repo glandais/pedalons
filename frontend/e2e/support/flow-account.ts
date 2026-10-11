@@ -67,7 +67,8 @@ export type Session = BrowserContext | { refreshToken: string } | string
 /**
  * Refreshes `session` and keeps the rotated token where it came from (docs/LEDGER_*.md SEC-27): in
  * the browser's cookie, or in the AuthResponse. Left behind, the old token would be presented again
- * later — a replay, which revokes the session. A bare token cannot be kept: pass it once.
+ * later, after the grace: rotated again from itself, it kills the successor whoever held it
+ * (docs/LEDGER_*.md API-94). A bare token cannot be kept: pass it once.
  */
 async function refreshSession(session: Session): Promise<AuthResponse | null> {
   if (typeof session === 'string') return refresh(session)

@@ -70,8 +70,8 @@ export function roleSession(role: Role): Promise<AuthResponse & Credentials> {
  *
  * The browser gets **a session of its own** whenever `auth` carries its password (newUser(),
  * roleSession()): the refresh token rotates at every refresh (docs/LEDGER_*.md SEC-27), and the
- * browser refreshes on every document — a token the test keeps using meanwhile would turn into a
- * replay, which revokes the session. Without a password the browser takes over `auth`'s session,
+ * browser refreshes on every document — a token the test keeps using meanwhile would, once
+ * presented again, take the chain over and get the browser refused (API-94). Without a password the browser takes over `auth`'s session,
  * which the test must then no longer refresh.
  */
 export async function signIn(context: BrowserContext, auth: AuthResponse & Partial<Credentials>) {

@@ -174,8 +174,9 @@ helper — reuse before writing a new one, and keep journey-only helpers in thei
 ## How sessions work
 
 **The refresh token rotates at every refresh** (ledger `SEC-27`): the refresh answers with a new
-token, the one presented is honoured for another minute, and presented after that it is taken for a
-stolen copy and **revokes the session**. The browser refreshes on every document (the SSR server
+token, the one presented is honoured for another minute, and presented after that it **rotates again
+from itself** (ledger `API-94`: the client lost the answer) — the token it had been replaced by
+dies, and whoever holds it is refused at its next refresh. The browser refreshes on every document (the SSR server
 does, and hands it the new cookie). So a session has **one owner** — the test, or one browser
 context — and never a token saved and shared:
 

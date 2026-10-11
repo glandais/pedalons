@@ -106,7 +106,7 @@ abstract class AuthenticationClient {
 
   /// Refresh access token.
   ///
-  /// Get a new access token from the refresh token (cookie on the web, X-Refresh-Token header on mobile). The refresh token is rotated: the new one comes back in the cookie, or in refreshToken for the header flow, and the one presented is then only honoured for a short grace, without rotating again (refreshToken absent). Presented after that grace, it revokes the session.
+  /// Get a new access token from the refresh token (cookie on the web, X-Refresh-Token header on mobile). The refresh token is rotated: the new one comes back in the cookie, or in refreshToken for the header flow, and the one presented is then only honoured for a short grace, without rotating again (refreshToken absent). Presented after that grace, it is rotated again from itself: the successor it had (lost by the client) is dropped, and it is refused once the new one is presented.
   @POST('/api/auth/refresh')
   Future<AuthResponse> refresh({
     @Header('X-Forwarded-For') String? xForwardedFor,

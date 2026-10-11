@@ -21,8 +21,9 @@ const TIMEOUT_MS = 3_000
  *
  * The refresh rotates the session's token (docs/LEDGER_*.md SEC-27): the backend's `Set-Cookie`
  * is handed to `onSetCookie` as soon as the answer arrives, whatever becomes of the render, and the
- * document response must carry it. Lost, the browser would keep a token that turns into a replay
- * once the rotation's grace is over — and a replay revokes the session.
+ * document response must carry it. Lost, the browser would keep the old token: past the rotation's
+ * grace it rotates again from it (docs/LEDGER_*.md API-94), and whoever held the lost successor —
+ * another tab that did get it — is refused at its next refresh.
  *
  * Note on migration: sessions created before the cookie moved to `path=/` are invisible here (the
  * browser does not send them on a document request). Those renders stay anonymous until the client's
