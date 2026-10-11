@@ -88,6 +88,13 @@ public class UserExportService {
   @ConfigProperty(name = "pedalons.export.history-days", defaultValue = "90")
   int historyDays;
 
+  /**
+   * How long a freshly minted link with no recorded mail failure is left to the worker sending it
+   * before {@link #retryPendingEmails} assumes that worker died. Must exceed an SMTP round trip.
+   */
+  @ConfigProperty(name = "pedalons.export.email-retry-grace-minutes", defaultValue = "10")
+  int emailRetryGraceMinutes;
+
   // ------------------------------------------------------------------ requests
 
   /** Queues an export for the current user, or refuses with 429 if one is running or too recent. */
@@ -225,6 +232,7 @@ public class UserExportService {
 
     Path zipFile = null;
     String storageKey = null;
+    boolean ready = false;
     try {
       zipFile = exportBuilder.build(ctx);
       long size = Files.size(zipFile);
@@ -246,14 +254,17 @@ public class UserExportService {
       String token = TokenUtils.generateSecureToken();
       Instant expiresAt = Instant.now().plus(expiryDays, ChronoUnit.DAYS);
       markReady(exportId, storageKey, size, TokenUtils.hashToken(token), expiresAt);
-
-      // Deliberately after the commit above: a mail failure must not roll back a good export. The
-      // row keeps emailSentAt null and retryPendingEmails picks it up on a later tick.
-      exportEmailService.sendExportReady(ctx, token, expiresAt, size);
-      markEmailSent(exportId);
+      ready = true;
       LOG.infof("Export %s ready (%d bytes)", ctx.exportTsid(), size);
+      // From here on the export is good and owned by its READY row: sendReadyMail never throws, and
+      // the `ready` guard below keeps anything else that does from resetting the row and deleting
+      // the archive (docs/LEDGER_*.md API-95).
+      sendReadyMail(ctx, token, expiresAt, size);
     } catch (Exception e) {
       LOG.errorf(e, "Export %s failed", ctx.exportTsid());
+      if (ready) {
+        return;
+      }
       markFailed(exportId, e);
       // The only way an orphaned object can exist is a failure after the upload.
       safeDelete(storageKey);
@@ -262,16 +273,54 @@ public class UserExportService {
     }
   }
 
+  /**
+   * Mails the link of a READY export and records the outcome. Never throws: on failure the row
+   * stays READY with emailSentAt null and the failure in errorMessage, which is what lets {@link
+   * #retryPendingEmails} take it over on its next tick rather than after the grace period.
+   */
+  private void sendReadyMail(ExportJobContext ctx, String token, Instant expiresAt, long size) {
+    try {
+      exportEmailService.sendExportReady(ctx, token, expiresAt, size);
+    } catch (Exception e) {
+      LOG.warnf(e, "Export %s: ready email failed, left for retryPendingEmails", ctx.exportTsid());
+      try {
+        markEmailFailed(ctx.exportId(), e);
+      } catch (Exception recordFailure) {
+        // Unrecorded, the failure is still caught up with once the grace period is over.
+        LOG.warnf(recordFailure, "Export %s: recording the email failure failed", ctx.exportTsid());
+      }
+      return;
+    }
+    try {
+      markEmailSent(ctx.exportId());
+    } catch (Exception e) {
+      // The mail is out. The row is left as if it were not, and the grace period ends in a retry
+      // with a fresh link — a second mail beats an export that is never announced.
+      LOG.warnf(e, "Export %s: recording the sent email failed", ctx.exportTsid());
+    }
+  }
+
   /** A READY export still owed its notification email. */
   private record PendingEmail(ExportJobContext ctx, long fileSize) {}
 
-  /** Re-sends the ready-notification for jobs whose email never went out. */
+  /**
+   * Re-sends the ready-notification for jobs whose email never went out.
+   *
+   * <p>Only rows whose last send failed, or whose link is older than the grace period, are taken
+   * over, and each one through a compare-and-set: a mail still in flight on another instance — the
+   * old and new backends share the database during a rolling deploy — keeps its link
+   * (docs/LEDGER_*.md API-96).
+   */
   public void retryPendingEmails() {
+    Instant expiresBefore =
+        Instant.now()
+            .minus(emailRetryGraceMinutes, ChronoUnit.MINUTES)
+            .plus(expiryDays, ChronoUnit.DAYS);
     List<PendingEmail> pending =
         QuarkusTransaction.requiringNew()
             .call(
                 () ->
-                    userExportRepository.findWithUnsentEmail().stream()
+                    userExportRepository.findEmailRetryDue(expiresBefore).stream()
                         .map(
                             e ->
                                 new PendingEmail(
@@ -285,26 +334,20 @@ public class UserExportService {
       String token = TokenUtils.generateSecureToken();
       Instant expiresAt = Instant.now().plus(expiryDays, ChronoUnit.DAYS);
       try {
-        boolean rotated =
+        boolean claimed =
             QuarkusTransaction.requiringNew()
                 .call(
-                    () -> {
-                      UserExport export = userExportRepository.findById(ctx.exportId());
-                      if (export == null || export.getStatus() != UserExportStatus.READY) {
-                        return false;
-                      }
-                      export.setDownloadTokenHash(TokenUtils.hashToken(token));
-                      export.setExpiresAt(expiresAt);
-                      return true;
-                    });
-        if (!rotated) {
+                    () ->
+                        userExportRepository.claimEmailRetry(
+                            ctx.exportId(), TokenUtils.hashToken(token), expiresAt, expiresBefore));
+        if (!claimed) {
           continue;
         }
-        exportEmailService.sendExportReady(ctx, token, expiresAt, item.fileSize());
-        markEmailSent(ctx.exportId());
       } catch (Exception e) {
         LOG.warnf(e, "Retrying export email for %s failed", ctx.exportTsid());
+        continue;
       }
+      sendReadyMail(ctx, token, expiresAt, item.fileSize());
     }
   }
 
@@ -380,12 +423,28 @@ public class UserExportService {
             });
   }
 
+  /** Records a failed ready-mail on a row still owed it, making it due for a retry right away. */
+  void markEmailFailed(long exportId, Exception cause) {
+    QuarkusTransaction.requiringNew()
+        .run(
+            () -> {
+              UserExport export = userExportRepository.findById(exportId);
+              if (export != null
+                  && export.getStatus() == UserExportStatus.READY
+                  && export.getEmailSentAt() == null) {
+                export.setErrorMessage(truncate("Ready email failed: " + cause));
+              }
+            });
+  }
+
   void markFailed(long exportId, Exception cause) {
     QuarkusTransaction.requiringNew()
         .run(
             () -> {
               UserExport export = userExportRepository.findById(exportId);
-              if (export == null) {
+              // Only a job still being built can fail: a READY row holds a good archive and a live
+              // link, and must never be sent back to the queue (docs/LEDGER_*.md API-95).
+              if (export == null || export.getStatus() != UserExportStatus.PROCESSING) {
                 return;
               }
               export.setStorageKey(null);

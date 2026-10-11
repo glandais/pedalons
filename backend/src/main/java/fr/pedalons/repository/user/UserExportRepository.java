@@ -112,6 +112,46 @@ public class UserExportRepository implements PanacheRepository<UserExport> {
     return list("status = ?1 and emailSentAt is null", UserExportStatus.READY);
   }
 
+  /**
+   * READY exports owed their email that a retry may take over: either the last send failed and said
+   * so ({@code errorMessage} set), or the current link was minted before the grace cutoff — a worker
+   * that died mid-send. A link just minted with no recorded failure is a mail still in flight on
+   * some instance (another replica during a rolling deploy); minting a new one would kill the link
+   * that mail carries (docs/LEDGER_*.md API-96).
+   *
+   * <p>The mint time is not stored: it is {@code expiresAt - expiryDays}, since both {@code
+   * markReady} and a retry set {@code expiresAt = now + expiryDays}. The caller therefore passes
+   * {@code mintedBefore + expiryDays} as {@code expiresBefore}.
+   */
+  public List<UserExport> findEmailRetryDue(Instant expiresBefore) {
+    return list(
+        "status = ?1 and emailSentAt is null and (errorMessage is not null or expiresAt < ?2)",
+        UserExportStatus.READY,
+        expiresBefore);
+  }
+
+  /**
+   * Compare-and-set that hands an export's email to the caller: replaces the link and clears the
+   * recorded failure, only while the row still matches {@link #findEmailRetryDue}. Returns true if
+   * this caller won it.
+   *
+   * <p>Same reasoning as {@link #claim}: a concurrent retrier blocks on the row lock, re-evaluates
+   * the predicate once the winner commits — {@code errorMessage} now null, {@code expiresAt} fresh —
+   * and updates 0 rows, so it neither supersedes the winner's link nor sends a second mail.
+   */
+  public boolean claimEmailRetry(
+      Long id, String tokenHash, Instant expiresAt, Instant expiresBefore) {
+    return update(
+            "downloadTokenHash = ?1, expiresAt = ?2, errorMessage = null where id = ?3 and status ="
+                + " ?4 and emailSentAt is null and (errorMessage is not null or expiresAt < ?5)",
+            tokenHash,
+            expiresAt,
+            id,
+            UserExportStatus.READY,
+            expiresBefore)
+        == 1;
+  }
+
   /** Hard-deletes long-finished rows; the S3 objects are already gone by then. */
   public long deleteOlderThan(Instant cutoff) {
     return delete(
