@@ -8,10 +8,10 @@ import fr.pedalons.repository.weather.WeatherCellRepository;
 import fr.pedalons.service.weather.RideWeatherCalculator.LegInput;
 import fr.pedalons.service.weather.RideWeatherPlans.RidePlan;
 import fr.pedalons.service.weather.TripWeatherPlans.StagePlan;
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.scheduler.Scheduled;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -60,29 +60,45 @@ public class WeatherPlanner {
     }
   }
 
-  /** One planning pass. Public for the tests, which run with the scheduler off. */
-  @Transactional
+  /**
+   * One planning pass. Public for the tests, which run with the scheduler off.
+   *
+   * <p>The demand is read in one transaction, then each cell is upserted in its own: the planner
+   * never holds a {@code weather_cells} row lock while it waits for another. One pass holding them
+   * all to the end, in {@code HashMap} order, closed a cycle with the fetch worker's store
+   * transaction — which locks the same rows, in its own order, until it commits — and PostgreSQL
+   * aborted one side: the worker's, the provider's answer was thrown away and the batch put into
+   * backoff. The same between the two planners of a rolling deploy. Each upsert is idempotent, so a
+   * pass cut short loses nothing the next tick does not write again (docs/LEDGER_*.md API-100).
+   */
   public int plan(Instant now) {
+    Map<CellKey, Instant> demand = QuarkusTransaction.requiringNew().call(() -> demand(now));
+    for (Map.Entry<CellKey, Instant> entry : demand.entrySet()) {
+      CellKey key = entry.getKey();
+      Instant need = entry.getValue();
+      QuarkusTransaction.requiringNew()
+          .run(
+              () ->
+                  cellRepository.upsertDemand(
+                      key.latIdx(),
+                      key.lonIdx(),
+                      key.eleBand(),
+                      key.centerLat(),
+                      key.centerLon(),
+                      need,
+                      WeatherRefreshPolicy.ttl(need, now),
+                      now));
+    }
+    return demand.size();
+  }
+
+  private Map<CellKey, Instant> demand(Instant now) {
     Instant until = now.plus(RideWeatherCalculator.HORIZON);
     List<Ride> rides = rideRepository.findForWeather(now, until);
     List<StagePlan> stages =
         new ArrayList<>(tripPlans.stagePlans(tripStageRepository.findForWeather(now, until)));
     stages.addAll(tripPlans.tripPlans(tripRepository.findStagelessForWeather(now, until)));
-    Map<CellKey, Instant> demand = demand(plans.plans(rides), stages, now);
-    for (Map.Entry<CellKey, Instant> entry : demand.entrySet()) {
-      CellKey key = entry.getKey();
-      Instant need = entry.getValue();
-      cellRepository.upsertDemand(
-          key.latIdx(),
-          key.lonIdx(),
-          key.eleBand(),
-          key.centerLat(),
-          key.centerLon(),
-          need,
-          WeatherRefreshPolicy.ttl(need, now),
-          now);
-    }
-    return demand.size();
+    return demand(plans.plans(rides), stages, now);
   }
 
   /**
