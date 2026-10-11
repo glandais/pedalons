@@ -224,7 +224,7 @@ class _DeepLinkHandlerState extends ConsumerState<_DeepLinkHandler> {
       log('Push route received: $next', name: 'main');
       ref.read(pendingPushRouteProvider.notifier).state = null;
       // Un chemin que l'app ne route pas — la file de signalements, qui
-      // n'existe que sur le site — s'ouvre dans le navigateur intégré plutôt
+      // n'existe que sur le site — s'ouvre dans le navigateur de l'appareil plutôt
       // que sur l'écran « page introuvable ».
       if (internalLocationFor(next) == null) {
         unawaited(openWebPage(next));

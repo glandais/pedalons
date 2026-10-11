@@ -101,7 +101,7 @@ class DashboardCardColumn extends StatelessWidget {
 }
 
 /// Ouvre une page du site que l'application n'a pas (créer, modifier,
-/// administrer) dans le navigateur intégré, et dit quand le système refuse.
+/// administrer) dans le navigateur de l'appareil, et dit quand le système refuse.
 Future<void> openTeamWebPage(BuildContext context, String path) async {
   final bool opened = await openWebPage(path);
   if (!opened && context.mounted) showUnopenableLinkBanner(context, path);

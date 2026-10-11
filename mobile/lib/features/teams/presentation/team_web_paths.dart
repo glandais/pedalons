@@ -5,7 +5,7 @@ import '../../../config/paths.dart';
 /// Créer ou modifier une sortie, une publication ou un voyage, traiter un
 /// signalement, gérer les membres et les réglages de l'équipe : l'application
 /// n'a d'écran pour aucun de ces gestes. Le tableau de bord les propose
-/// néanmoins — parité avec le web —, et les ouvre dans le navigateur intégré
+/// néanmoins — parité avec le web —, et les ouvre dans le navigateur de l'appareil
 /// par `openWebPage`.
 ///
 /// Les chemins viennent de `contracts/routes.yaml`, où ces routes sont

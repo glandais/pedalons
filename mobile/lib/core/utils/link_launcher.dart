@@ -1,4 +1,5 @@
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -224,21 +225,41 @@ Future<LinkOutcome> openLink(BuildContext context, String href) async {
 /// Ouvre une page **du site** que l'app ne sait pas afficher — la file de
 /// signalements d'une équipe, par exemple.
 ///
-/// Dans le navigateur intégré et non par [openLink] : le domaine est celui
-/// des liens d'app, et une adresse `/teams/*` confiée au système reviendrait
-/// dans l'app — sur une route qu'elle n'a pas. `false` si le système a
-/// refusé, ce que l'appelant peut dire.
+/// Dans le **navigateur de l'appareil**, pas dans un navigateur intégré : ce
+/// dernier ne partage la session ni de l'app ni du navigateur, et le membre
+/// devait s'y reconnecter à chaque page (docs/LEDGER_*.md MOB-58). Le
+/// navigateur garde au moins sa propre connexion d'une fois sur l'autre.
+///
+/// Pas par [openLink] pour autant : le domaine est celui des liens d'app, et
+/// les motifs `/equipes/*` captent toute l'équipe (docs/LEDGER_*.md MOB-59) —
+/// une adresse confiée au système reviendrait dans l'app, sur une route
+/// qu'elle n'a pas. Sous Android, `MainActivity` nomme donc le navigateur ;
+/// sous iOS, l'AASA exclut ces pages (`NOT …`, `generate-routes.mjs`).
+/// `false` si le système a refusé, ce que l'appelant peut dire.
 Future<bool> openWebPage(String path) async {
   final Uri url = Uri.parse(
     '${AppConfig.deepLinkScheme}://${AppConfig.deepLinkHost}$path',
   );
   try {
-    return await (debugLinkOpener ??
-        (Uri u) => launchUrl(u, mode: LaunchMode.inAppBrowserView))(url);
+    return await (debugLinkOpener ?? _launchInBrowser)(url);
   } on Object catch (error) {
     debugPrint('openWebPage: $url refusé par le système ($error)');
     return false;
   }
+}
+
+const MethodChannel _browserChannel = MethodChannel(
+  'fr.pedalons.mobile/browser',
+);
+
+Future<bool> _launchInBrowser(Uri url) async {
+  if (defaultTargetPlatform == TargetPlatform.android) {
+    return await _browserChannel.invokeMethod<bool>('open', <String, String>{
+          'url': url.toString(),
+        }) ??
+        false;
+  }
+  return launchUrl(url, mode: LaunchMode.externalApplication);
 }
 
 /// Le bandeau du troisième temps : `warn`, **l'URL en clair**, et de quoi la

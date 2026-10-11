@@ -325,17 +325,31 @@ function generatePathsDart(routes) {
   return lines.join('\n')
 }
 
+/** The AASA pattern of one locale path: every parameter becomes `*`. */
+function aasaPattern(route, locale) {
+  let pattern = localePathMap(route)[locale]
+  for (const p of route.params) {
+    pattern = pattern.split(`{${p.name}}`).join('*')
+  }
+  return pattern
+}
+
+/** AASA matching: `*` matches any run of characters, `/` included. */
+function aasaMatches(pattern, path) {
+  const source = pattern
+    .split('*')
+    .map((part) => part.replace(/[.+?^${}()|[\]\\]/g, '\\$&'))
+    .join('.*')
+  return new RegExp(`^${source}$`).test(path)
+}
+
 function aasaPatterns(routes) {
   const seen = new Set()
   const patterns = []
   for (const route of routes) {
     if (!route.deeplink) continue
-    const map = localePathMap(route)
     for (const locale of LOCALES) {
-      let pattern = map[locale]
-      for (const p of route.params) {
-        pattern = pattern.split(`{${p.name}}`).join('*')
-      }
+      const pattern = aasaPattern(route, locale)
       if (!seen.has(pattern)) {
         seen.add(pattern)
         patterns.push(pattern)
@@ -345,14 +359,54 @@ function aasaPatterns(routes) {
   return patterns
 }
 
+/**
+ * `NOT` entries for the site's pages a deeplink wildcard would otherwise capture.
+ *
+ * `*` crosses `/`, so `/equipes/*` claims the whole team subtree, including pages the app has no
+ * screen for (administration, ride or post forms…). The app opens those in the device's browser
+ * (`openWebPage`, docs/LEDGER_*.md MOB-58), and iOS would hand them straight back to the app. The
+ * first matching entry wins, so they go before the deeplinks. A deeplink's own path (each
+ * parameter as `x`) must never be excluded — checked here rather than discovered on a phone.
+ */
+function aasaExclusions(routes, deeplinkPatterns) {
+  const deeplinks = new Set(deeplinkPatterns)
+  const seen = new Set()
+  const exclusions = []
+  for (const route of routes) {
+    // A page the app has a screen for stays with the app, deeplink or not.
+    if (!route.web || route.deeplink || (route.mobile && route.appScreen)) continue
+    for (const locale of LOCALES) {
+      const pattern = aasaPattern(route, locale)
+      if (seen.has(pattern) || deeplinks.has(pattern)) continue
+      if (!deeplinkPatterns.some((d) => aasaMatches(d, pattern))) continue
+      seen.add(pattern)
+      exclusions.push(pattern)
+    }
+  }
+  for (const route of routes) {
+    if (!route.deeplink) continue
+    for (const locale of LOCALES) {
+      const sample = aasaPattern(route, locale).split('*').join('x')
+      const culprit = exclusions.find((e) => aasaMatches(e, sample))
+      if (culprit) {
+        throw new Error(
+          `route ${route.id}: its deeplink ${sample} would be excluded by NOT ${culprit}`
+        )
+      }
+    }
+  }
+  return exclusions.map((e) => `NOT ${e}`)
+}
+
 function generateAasa(routes) {
+  const deeplinkPatterns = aasaPatterns(routes)
   const payload = {
     applinks: {
       apps: [],
       details: [
         {
           appID: IOS_APP_ID,
-          paths: aasaPatterns(routes),
+          paths: [...aasaExclusions(routes, deeplinkPatterns), ...deeplinkPatterns],
         },
       ],
     },

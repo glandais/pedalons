@@ -59,7 +59,7 @@ Champs :
 - `params` : liste de noms de paramètres. Chaque nom doit apparaître comme `{name}` dans toutes les locales.
 - `web` / `mobile` : émettre un builder dans `paths.generated.ts` / `paths.generated.dart` (défauts : `web: true`, `mobile: false`)
 - `mobileName` (optionnel) : nom de méthode Dart différent de `id` (ex. `ads` → `Paths.teamAds`)
-- `appScreen` : `false` pour une page **du site** que l'app ouvre dans le navigateur intégré (`openWebPage`) sans en avoir l'écran — formulaires de sortie, de publication, administration de l'équipe que propose le tableau de bord (`team_web_paths.dart`, ledger `MOB-54`). Exige `web: true` et `mobile: true`, interdit `deeplink: true`. Le builder Dart est émis comme les autres, et son nom rejoint le `webOnlyRouteIds` de `paths.generated.dart` : `link_launcher_test.dart` exige que toute entrée de `PathVariants` soit soit un motif interne (`internalRouteTemplates`), soit dans cet ensemble. Une adresse du site ouverte depuis l'app passe par là plutôt que d'être écrite à la main : un renommage côté web la suit (défaut `true`)
+- `appScreen` : `false` pour une page **du site** que l'app ouvre dans le navigateur de l'appareil (`openWebPage`) sans en avoir l'écran — formulaires de sortie, de publication, administration de l'équipe que propose le tableau de bord (`team_web_paths.dart`, ledger `MOB-54`). Exige `web: true` et `mobile: true`, interdit `deeplink: true`. Le builder Dart est émis comme les autres, et son nom rejoint le `webOnlyRouteIds` de `paths.generated.dart` : `link_launcher_test.dart` exige que toute entrée de `PathVariants` soit soit un motif interne (`internalRouteTemplates`), soit dans cet ensemble. Une adresse du site ouverte depuis l'app passe par là plutôt que d'être écrite à la main : un renommage côté web la suit (défaut `true`)
 - `deeplink` : inclure dans AASA + AndroidManifest (défaut `false`)
 - `webFallback` : pour un deeplink `web: false`, l'`id` de la route web vers laquelle un navigateur est redirigé (sans l'app, le lien universel aboutit sur le web et ne doit pas finir en 404). Ses paramètres doivent être un sous-ensemble de ceux de la route.
 
@@ -73,6 +73,7 @@ Le générateur :
 - Émet des builders locale-aware : `paths.ride(a, b)` retourne l'URL dans la locale courante (`getCurrentLocale()`).
 - Émet `pathVariants.ride(a, b)` retournant `{en: '...', fr: '...'}` pour enregistrer toutes les variantes dans les routeurs.
 - Agrège et déduplique les patterns dans AASA et AndroidManifest (`*` pour iOS, `.*` pour Android).
+- Place en tête de l'AASA une entrée `NOT …` pour chaque page du site **sans écran dans l'app** (`web: true`, ni `deeplink` ni écran mobile) qu'un joker de deeplink capterait : `*` traverse les `/`, et `/equipes/*` revendique toute l'équipe. Sans elles, iOS rendrait à l'app la page que `openWebPage` confie au navigateur (ledger `MOB-58`). Le générateur échoue si une exclusion couvrait le chemin d'un deeplink. Android n'a pas d'équivalent avant l'API 35 : `MainActivity` y nomme le navigateur à la place.
 
 ### 3. Câbler la page dans les routeurs
 

@@ -181,18 +181,6 @@ navigateur), et la connexion par code e-mailé (la préférence de fuseau existe
         `notConfigured` / `replace`, `notifications.preferences.inAppAlwaysOn`.
         **`profile.participations.count` reste** : `my_participations_page.dart` l'emploie.
 
-### Tableau de bord d'équipe
-
-- [ ] `MOB-58` **Le navigateur intégré redemande la connexion sur les pages du site (S–M)** — reste
-      de `MOB-54`. Les actions du tableau de bord d'équipe (`dashboard_section.dart`) et la
-      notification de signalement ouvrent des pages du site sans écran dans l'app (`appScreen:
-      false` : création de sortie ou d'article, membres, signalements, paramètres…) par
-      `openWebPage` (`mobile/lib/core/utils/link_launcher.dart`), dans un
-      `LaunchMode.inAppBrowserView` qui ne partage pas la session de l'app : le membre, déjà
-      connecté dans l'app, doit se reconnecter sur le site avant d'agir. Piste : un jeton
-      d'échange court et à usage unique, émis par l'API pour la session de l'app et consommé par
-      le site (changement de contrat), ou à défaut le dire dans l'app avant d'ouvrir la page.
-
 ### Liens profonds
 
 - [ ] `MOB-61` **Une ancienne adresse du fil perd sa recherche et ses tags dans l'app (S)** — reste
@@ -205,27 +193,24 @@ navigateur), et la connexion par code e-mailé (la préférence de fuseau existe
       `team_agenda_test.dart`.
 
 - [ ] `MOB-59` **Les liens vers les pages du site sans écran dans l'app ouvrent l'app sur sa page
-      d'erreur (S–M)** — relevé avec `WEB-64`. `scripts/generate-routes.mjs` (lancé par
-      `pnpm generate-routes`) traduit chaque paramètre d'une route `deeplink` en `*` dans l'AASA
-      (`frontend/public/.well-known/apple-app-site-association`) et en `.*` dans les
-      `android:pathPattern` du manifeste (`mobile/android/app/src/main/AndroidManifest.xml`) ; or
-      les deux jokers traversent les `/`. La seule route `/equipes/{teamSlug}` donne donc
-      `/equipes/*` et `/equipes/.*`, qui captent **tout** le sous-arbre de l'équipe, y compris les
-      pages `appScreen: false` : administration, création ou modification de sortie, de voyage,
-      d'article, de parcours, d'annonce, cartes… Le système ouvre l'app, aucune route du
-      `GoRouter` ne correspond, et c'est l'`errorBuilder` de `mobile/lib/config/router.dart` qui
-      s'affiche (« page introuvable ») au lieu de la page du site ; le commentaire au-dessus
-      d'`openWebPage` (`mobile/lib/core/utils/link_launcher.dart`) le reconnaît. Deux pistes,
-      cumulables : (1) à la source, faire générer par le script des motifs exacts — dans l'AASA,
-      une exclusion `"NOT /equipes/*/…"` par route `appScreen: false` placée avant les motifs
-      larges (l'ordre compte), ou le format `components` avec `exclude` ; côté Android,
+      d'erreur, sous Android (S–M)** — relevé avec `WEB-64`, moitié iOS résolue avec `MOB-58`.
+      `scripts/generate-routes.mjs` (lancé par `pnpm generate-routes`) traduit chaque paramètre
+      d'une route `deeplink` en `.*` dans les `android:pathPattern` du manifeste
+      (`mobile/android/app/src/main/AndroidManifest.xml`), et ce joker traverse les `/` : la seule
+      route `/equipes/{teamSlug}` donne `/equipes/.*`, qui capte **tout** le sous-arbre de
+      l'équipe, y compris les pages sans écran dans l'app (administration, création ou
+      modification de sortie, de voyage, d'article, de parcours, d'annonce, cartes…). Un lien
+      tapé hors de l'app (un e-mail, une messagerie) ouvre donc l'app, aucune route du `GoRouter`
+      ne correspond, et c'est l'`errorBuilder` de `mobile/lib/config/router.dart` qui s'affiche
+      (« page introuvable »). L'AASA, lui, exclut déjà ces pages (`NOT …`, `MOB-58`), et
+      `openWebPage` contourne le manifeste en nommant le navigateur (`MainActivity.kt`). Deux
+      pistes, cumulables : (1) `<uri-relative-filter-group android:allow="false">` (API 35+) ou
       `android:pathAdvancedPattern` (`[^/]+`, API 31+) à la place de `pathPattern`, les versions
       antérieures gardant le motif large ; (2) en filet, faire de l'`errorBuilder` un renvoi : un
       chemin qui correspond à une route `webOnlyRouteIds` de `routes.yaml` part au navigateur
       (`openWebPage`) et la pile revient où elle était, la page d'erreur restant pour les chemins
-      réellement inconnus. (2) seul suffit à supprimer la dégradation visible ; (1) évite en plus
-      l'aller-retour par l'app. Test : un test Dart qui confronte les motifs générés aux routes
-      `appScreen: false` de `routes.yaml`, et un test widget de l'`errorBuilder`.
+      réellement inconnus. (2) seul suffit à supprimer la dégradation visible. Test : un test
+      widget de l'`errorBuilder`.
 
 ---
 
