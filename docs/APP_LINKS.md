@@ -73,7 +73,7 @@ Le générateur :
 - Émet des builders locale-aware : `paths.ride(a, b)` retourne l'URL dans la locale courante (`getCurrentLocale()`).
 - Émet `pathVariants.ride(a, b)` retournant `{en: '...', fr: '...'}` pour enregistrer toutes les variantes dans les routeurs.
 - Agrège et déduplique les patterns dans AASA et AndroidManifest (`*` pour iOS, `.*` pour Android).
-- Place en tête de l'AASA une entrée `NOT …` pour chaque page du site **sans écran dans l'app** (`web: true`, ni `deeplink` ni écran mobile) qu'un joker de deeplink capterait : `*` traverse les `/`, et `/equipes/*` revendique toute l'équipe. Sans elles, iOS rendrait à l'app la page que `openWebPage` confie au navigateur (ledger `MOB-58`). Le générateur échoue si une exclusion couvrait le chemin d'un deeplink. Android n'a pas d'équivalent avant l'API 35 : `MainActivity` y nomme le navigateur à la place.
+- Place en tête de l'AASA une entrée `NOT …` pour chaque page du site **sans écran dans l'app** (`web: true`, ni `deeplink` ni écran mobile) qu'un joker de deeplink capterait : `*` traverse les `/`, et `/equipes/*` revendique toute l'équipe. Sans elles, iOS rendrait à l'app la page que `openWebPage` confie au navigateur (ledger `MOB-58`). Le générateur échoue si une exclusion couvrait le chemin d'un deeplink. La même liste est émise dans `paths.generated.dart` (`sitePagePathPatterns`) : le manifeste Android ne sait pas exclure (avant l'API 35), donc l'app reçoit ces liens et `openDeepLink` les passe au navigateur (ledger `MOB-59`) ; `openWebPage` nomme le navigateur dans `MainActivity` pour ne pas se les renvoyer.
 
 ### 3. Câbler la page dans les routeurs
 

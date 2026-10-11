@@ -183,26 +183,6 @@ navigateur), et la connexion par code e-mailé (la préférence de fuseau existe
 
 ### Liens profonds
 
-- [ ] `MOB-59` **Les liens vers les pages du site sans écran dans l'app ouvrent l'app sur sa page
-      d'erreur, sous Android (S–M)** — relevé avec `WEB-64`, moitié iOS résolue avec `MOB-58`.
-      `scripts/generate-routes.mjs` (lancé par `pnpm generate-routes`) traduit chaque paramètre
-      d'une route `deeplink` en `.*` dans les `android:pathPattern` du manifeste
-      (`mobile/android/app/src/main/AndroidManifest.xml`), et ce joker traverse les `/` : la seule
-      route `/equipes/{teamSlug}` donne `/equipes/.*`, qui capte **tout** le sous-arbre de
-      l'équipe, y compris les pages sans écran dans l'app (administration, création ou
-      modification de sortie, de voyage, d'article, de parcours, d'annonce, cartes…). Un lien
-      tapé hors de l'app (un e-mail, une messagerie) ouvre donc l'app, aucune route du `GoRouter`
-      ne correspond, et c'est l'`errorBuilder` de `mobile/lib/config/router.dart` qui s'affiche
-      (« page introuvable »). L'AASA, lui, exclut déjà ces pages (`NOT …`, `MOB-58`), et
-      `openWebPage` contourne le manifeste en nommant le navigateur (`MainActivity.kt`). Deux
-      pistes, cumulables : (1) `<uri-relative-filter-group android:allow="false">` (API 35+) ou
-      `android:pathAdvancedPattern` (`[^/]+`, API 31+) à la place de `pathPattern`, les versions
-      antérieures gardant le motif large ; (2) en filet, faire de l'`errorBuilder` un renvoi : un
-      chemin qui correspond à une route `webOnlyRouteIds` de `routes.yaml` part au navigateur
-      (`openWebPage`) et la pile revient où elle était, la page d'erreur restant pour les chemins
-      réellement inconnus. (2) seul suffit à supprimer la dégradation visible. Test : un test
-      widget de l'`errorBuilder`.
-
 ---
 
 ## WEB — Site web
@@ -781,6 +761,7 @@ redevient une entrée de sa section sous le même identifiant.
 | `MOB-24` | **Édition et création de contenu au mobile** | Hors brief : la v2 est une version de consultation et de participation | Le sélecteur de meneur dans l'éditeur de groupes existe **côté web** (livré hors plan) ; l'équivalent mobile n'est pas ouvert |
 | `MOB-50` | **Cloche des notifications dans l'en-tête du Profil** | Non (décidé le 4 octobre 2026 avec le propriétaire, refonte `MOB-48`) | La boîte de réception est dans une autre branche du shell : un `push` depuis le Profil empilerait les branches, un `go` y ferait perdre la place. Elle reste à un onglet ; les réglages de notifications sont dans `/profil/notifications`. Ne pas ajouter de cloche au Profil |
 | `MOB-61` | **Recherche et tags des anciennes adresses du fil dans l'app** (`team?tab=publications&type=…&q=…&tags=…`) | Non (décidé le 11 octobre 2026 avec le propriétaire) | Aucune de ces anciennes adresses n'a été partagée : l'app garde le type et la période (`resolveTeamRootSection`, `agendaTarget` dans `team_sections.dart`) et ignore `q` et `tags`, que seul le site reporte (`teamLegacyRedirects.ts`). À rouvrir seulement si une telle adresse circule |
+| `MOB-59` | **Exclure du manifeste Android les pages du site sans écran dans l'app** (`<uri-relative-filter-group android:allow="false">`, API 35+) | Non (11 octobre 2026) | L'app reçoit ces liens et les passe au navigateur (`isSitePageLocation` dans `openDeepLink`) : il ne reste qu'un bref passage par l'app. L'exclusion ne vaudrait que sous Android 15+, ne se vérifie que sur un appareil avec la vérification des App Links, et un manifeste faux casse tous les liens d'app. À rouvrir si le passage par l'app gêne |
 | `OPS-18` | **Rotation des secrets exposés par les sauvegardes en clair** (`ENCRYPTION_KEY`, clé JWT, compte de service FCM) | Non (décidé le 29 septembre 2026, avec `OPS-13`) | Les 30 copies antérieures à `OPS-13` les contenaient en clair sur l'hôte de sauvegarde. Rotation jugée disproportionnée : ces copies sont supprimées et le SSD trimé. Reste un résidu physique possible sur le SSD de l'hôte ; à rouvrir si le matériel est perdu ou volé |
 | `NOTIF-5` | **Badge iOS du push** | Écarté, côté serveur comme côté app | Serveur : il faudrait recompter les non-lues à l'envoi, et `NotificationMessage` ne porte ni le domaine ni ce compteur. App : `flutter_local_notifications` ne pose un badge qu'en affichant une notification, et en arrière-plan c'est le système qui affiche celle de FCM — une dépendance de plus pour un compteur que la cloche montre déjà. D'où l'absence de `content-available` (voir `NOTIF-9`) |
 | `NOTIF-6` | **Isolat de fond du push (`onBackgroundMessage`)** | Non écrit | Le serveur envoie `notification` **et** `data` : le système affiche la bannière sans l'app, un isolat n'aurait rien à faire de plus |

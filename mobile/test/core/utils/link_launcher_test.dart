@@ -146,6 +146,44 @@ void main() {
     });
   });
 
+  group('isSitePageLocation', () {
+    // Les pages du site qu'ouvre le tableau de bord, dans les deux locales :
+    // `/equipes/.*` les donne à l'app sous Android (docs/LEDGER_*.md MOB-59).
+    final List<String> sitePages = <String>[
+      ...PathVariants.teamAdminMembers('vc').values,
+      ...PathVariants.teamAdminReports('vc').values,
+      ...PathVariants.teamSettings('vc').values,
+      ...PathVariants.rideNew('vc').values,
+      ...PathVariants.rideEdit('vc', 'rando').values,
+      ...PathVariants.rideTemplates('vc').values,
+      ...PathVariants.tripEdit('vc', 'ete').values,
+      ...PathVariants.postNew('vc').values,
+      ...PathVariants.postEdit('vc', 'news').values,
+    ];
+
+    test('reconnaît les pages du site sans écran, requête comprise', () {
+      for (final String page in sitePages) {
+        expect(isSitePageLocation(page), isTrue, reason: page);
+        expect(isSitePageLocation('$page?invite=1'), isTrue, reason: page);
+        expect(internalLocationFor(page), isNull, reason: page);
+      }
+    });
+
+    test('ne prend aucune route de l\'app pour une page du site', () {
+      for (final MapEntry<String, List<String>> entry
+          in internalRouteTemplates.entries) {
+        for (final String template in entry.value) {
+          final String location = template.split('\u0001').join('x');
+          expect(
+            isSitePageLocation(location),
+            isFalse,
+            reason: '${entry.key} : $location',
+          );
+        }
+      }
+    });
+  });
+
   group('aucun lien inerte', () {
     testWidgets('chaque span de lien porte un TapGestureRecognizer', (
       WidgetTester tester,
@@ -206,6 +244,26 @@ void main() {
         reason: 'Le lien interne empile, il ne remplace pas.',
       );
       expect(launched, isEmpty, reason: 'Une route interne ne sort pas.');
+    });
+
+    testWidgets('une page du site part au navigateur, pas sur la sortie '
+        '« nouvelle » (MOB-59)', (WidgetTester tester) async {
+      final List<Uri> launched = <Uri>[];
+      debugLinkOpener = (Uri url) async {
+        launched.add(url);
+        return true;
+      };
+
+      final GoRouter router = await _pumpMarkdown(
+        tester,
+        'Proposez une [sortie](https://www.pedalons.fr/equipes/vc/sorties/nouvelle).',
+      );
+
+      await _tapLink(tester, 'sortie');
+
+      expect(find.text('page de la sortie'), findsNothing);
+      expect(router.routerDelegate.currentConfiguration.matches, hasLength(1));
+      expect(launched.single.path, '/equipes/vc/sorties/nouvelle');
     });
 
     testWidgets('un lien externe part au système, jamais dans le routeur', (

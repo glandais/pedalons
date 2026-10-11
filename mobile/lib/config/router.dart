@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -29,6 +31,7 @@ import '../features/profile/presentation/pages/profile_security_page.dart';
 import '../features/notifications/presentation/pages/notification_settings_page.dart';
 import '../core/logging/client_context.dart';
 import '../core/pdl/pdl.dart';
+import '../core/utils/link_launcher.dart';
 import '../features/ads/presentation/pages/ad_detail_page.dart';
 import '../features/posts/domain/post_neighbours.dart';
 import '../features/posts/presentation/pages/post_detail_page.dart';
@@ -355,6 +358,12 @@ void openDeepLink(
   required bool signedIn,
   required PendingSignInLink pending,
 }) {
+  // Une page du site que le manifeste Android n'a pas su exclure : au
+  // navigateur, sans session requise ni pile touchée (docs/LEDGER_*.md MOB-59).
+  if (isSitePageLocation(path)) {
+    unawaited(openWebPage(path));
+    return;
+  }
   if (!signedIn && !isAuthAdjacent(path)) {
     pending.location = path;
     router.go(Paths.login());

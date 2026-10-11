@@ -322,6 +322,20 @@ function generatePathsDart(routes) {
   }
   lines.push('};')
   lines.push('')
+  lines.push('/// Pages of the **site** a deeplink wildcard captures although the app has no')
+  lines.push('/// screen for them, as anchored regular expressions. The OS hands such a link')
+  lines.push('/// to the app, which opens it in the browser (docs/LEDGER_*.md MOB-59). The')
+  lines.push('/// AASA excludes the same pages (`NOT …`); the Android manifest cannot.')
+  lines.push('const List<String> sitePagePathPatterns = <String>[')
+  for (const pattern of sitePagePatterns(routes, aasaPatterns(routes))) {
+    const source = pattern
+      .split('*')
+      .map((part) => part.replace(/[.+?^${}()|[\]\\]/g, '\\$&'))
+      .join('[^/]+')
+    lines.push(`  r'^${source}/?$',`)
+  }
+  lines.push('];')
+  lines.push('')
   return lines.join('\n')
 }
 
@@ -360,15 +374,17 @@ function aasaPatterns(routes) {
 }
 
 /**
- * `NOT` entries for the site's pages a deeplink wildcard would otherwise capture.
+ * The site's pages a deeplink wildcard would otherwise capture.
  *
  * `*` crosses `/`, so `/equipes/*` claims the whole team subtree, including pages the app has no
  * screen for (administration, ride or post forms…). The app opens those in the device's browser
- * (`openWebPage`, docs/LEDGER_*.md MOB-58), and iOS would hand them straight back to the app. The
- * first matching entry wins, so they go before the deeplinks. A deeplink's own path (each
- * parameter as `x`) must never be excluded — checked here rather than discovered on a phone.
+ * (`openWebPage`, docs/LEDGER_*.md MOB-58), and the OS would hand them straight back to the app.
+ * They become `NOT` entries at the head of the AASA (the first matching entry wins) and
+ * `sitePagePathPatterns` in Dart, which sends them to the browser when Android — whose manifest
+ * cannot exclude them — delivers one anyway (MOB-59). A deeplink's own path (each parameter as
+ * `x`) must never be excluded — checked here rather than discovered on a phone.
  */
-function aasaExclusions(routes, deeplinkPatterns) {
+function sitePagePatterns(routes, deeplinkPatterns) {
   const deeplinks = new Set(deeplinkPatterns)
   const seen = new Set()
   const exclusions = []
@@ -395,18 +411,19 @@ function aasaExclusions(routes, deeplinkPatterns) {
       }
     }
   }
-  return exclusions.map((e) => `NOT ${e}`)
+  return exclusions
 }
 
 function generateAasa(routes) {
   const deeplinkPatterns = aasaPatterns(routes)
+  const exclusions = sitePagePatterns(routes, deeplinkPatterns).map((e) => `NOT ${e}`)
   const payload = {
     applinks: {
       apps: [],
       details: [
         {
           appID: IOS_APP_ID,
-          paths: [...aasaExclusions(routes, deeplinkPatterns), ...deeplinkPatterns],
+          paths: [...exclusions, ...deeplinkPatterns],
         },
       ],
     },

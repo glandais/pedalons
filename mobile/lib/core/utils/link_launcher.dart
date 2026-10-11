@@ -165,6 +165,9 @@ String? internalLocationFor(String href) {
   if (!_isCurrentHost(uri.host)) return null;
 
   final String path = uri.path.isEmpty ? '/' : uri.path;
+  // Avant les motifs de l'app : `/equipes/x/sorties/nouvelle` est aussi la
+  // sortie de slug `nouvelle`, et c'est la page du site qui est visée.
+  if (isSitePageLocation(path)) return null;
   if (!_routePatterns.any((RegExp pattern) => pattern.hasMatch(path))) {
     return null;
   }
@@ -173,6 +176,20 @@ String? internalLocationFor(String href) {
   if (uri.hasQuery && uri.query.isNotEmpty) location.write('?${uri.query}');
   if (uri.fragment.isNotEmpty) location.write('#${uri.fragment}');
   return location.toString();
+}
+
+final List<RegExp> _sitePagePatterns = <RegExp>[
+  for (final String source in sitePagePathPatterns) RegExp(source),
+];
+
+/// `true` si [location] est une page **du site** que l'app n'a pas mais que
+/// ses liens d'app revendiquent quand même : le manifeste Android ne sait pas
+/// l'exclure de `/equipes/.*` (docs/LEDGER_*.md MOB-59). Le système la confie
+/// alors à l'app, qui doit la passer au navigateur ([openWebPage]) plutôt que
+/// d'afficher « page introuvable ».
+bool isSitePageLocation(String location) {
+  final String path = Uri.tryParse(location)?.path ?? location;
+  return _sitePagePatterns.any((RegExp pattern) => pattern.hasMatch(path));
 }
 
 /// Le lanceur système, substituable en test.
@@ -202,6 +219,19 @@ Future<LinkOutcome> openLink(BuildContext context, String href) async {
   final Uri? uri = trimmed.isEmpty ? null : Uri.tryParse(trimmed);
   if (uri == null) {
     showUnopenableLinkBanner(context, href);
+    return LinkOutcome.refused;
+  }
+
+  // Une page du site que revendiquent les liens d'app : confiée telle quelle
+  // au système, elle reviendrait dans l'app (docs/LEDGER_*.md MOB-59).
+  if ((uri.scheme == 'http' || uri.scheme == 'https' || !uri.hasScheme) &&
+      _isCurrentHost(uri.host) &&
+      isSitePageLocation(uri.path)) {
+    final String location = uri.hasQuery
+        ? '${uri.path}?${uri.query}'
+        : uri.path;
+    if (await openWebPage(location)) return LinkOutcome.external;
+    if (context.mounted) showUnopenableLinkBanner(context, href);
     return LinkOutcome.refused;
   }
 

@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pedalons/config/paths.dart';
 import 'package:pedalons/config/router.dart';
+import 'package:pedalons/core/utils/link_launcher.dart';
 import 'package:pedalons/features/auth/data/auth_repository.dart';
 import 'package:pedalons/features/auth/data/secure_storage.dart';
 import 'package:pedalons/features/auth/providers/auth_provider.dart';
@@ -73,6 +74,33 @@ void main() {
           anyOf('go $path', 'push $path'),
           reason: '$path opens as is',
         );
+      }
+    });
+  });
+
+  group('openDeepLink, page du site sans écran (MOB-59)', () {
+    late List<Uri> opened;
+
+    setUp(() {
+      opened = <Uri>[];
+      debugLinkOpener = (Uri url) async {
+        opened.add(url);
+        return true;
+      };
+    });
+    tearDown(() => debugLinkOpener = null);
+
+    test('part au navigateur, la pile et le lien en attente intacts', () async {
+      final members = PathVariants.teamAdminMembers('velo-club')['fr']!;
+
+      for (final signedIn in [true, false]) {
+        opened.clear();
+        openDeepLink(router, members, signedIn: signedIn, pending: pending);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(router.calls, isEmpty, reason: 'signedIn: $signedIn');
+        expect(pending.location, isNull, reason: 'signedIn: $signedIn');
+        expect(opened.single.path, members);
       }
     });
   });
