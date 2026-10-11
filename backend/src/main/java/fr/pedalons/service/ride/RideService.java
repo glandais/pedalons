@@ -268,7 +268,7 @@ public class RideService extends TeamEntityService<Ride, RideRepository, RideDto
       int sortOrder,
       ZoneId zone) {
     RideGroup group = new RideGroup(user, ride, groupRequest.name());
-    setProperties(teamSlug, ride, group, groupRequest, sortOrder, user, zone);
+    setProperties(teamSlug, ride, group, groupRequest, sortOrder, user, zone, 0);
     ride.addGroup(group);
     rideGroupRepository.persist(group);
   }
@@ -280,11 +280,13 @@ public class RideService extends TeamEntityService<Ride, RideRepository, RideDto
       GroupRequest groupRequest,
       int sortOrder,
       User user,
-      ZoneId zone) {
+      ZoneId zone,
+      long dayOffset) {
     group.setRide(ride);
     group.setName(groupRequest.name());
-    // The ride's date and zone are final by now: its groups leave on its local date, in its zone.
-    EventTimezoneResolver.setStart(group, ride.getDateTime(), groupRequest.time(), zone);
+    // The ride's date and zone are final by now: its groups leave on its local date, in its zone —
+    // shifted by the day offset an existing group already had (docs/LEDGER_*.md API-101).
+    EventTimezoneResolver.setStart(group, ride.getDateTime(), groupRequest.time(), zone, dayOffset);
     Route groupRoute = getRoute(teamSlug, groupRequest.routeSlug(), ride.getVisibility());
     group.setAverageSpeed(groupRequest.averageSpeed());
     group.setMaxParticipants(groupRequest.maxParticipants());
@@ -353,6 +355,7 @@ public class RideService extends TeamEntityService<Ride, RideRepository, RideDto
     User user = pedalonsContext.getUser();
     Status previousStatus = ride.getStatus();
     Instant previousDateTime = ride.getDateTime();
+    ZoneId previousZone = ride.zone();
     Long previousStartPlaceId = ride.getStart() != null ? ride.getStart().getId() : null;
     List<List<Long>> previousThumbnailInput = ThumbnailService.rideInput(ride);
 
@@ -396,7 +399,12 @@ public class RideService extends TeamEntityService<Ride, RideRepository, RideDto
         if (existingRideGroup == null) {
           throw new NotFoundException(EntityType.RIDE_GROUP, groupRequest.id());
         }
-        setProperties(teamSlug, ride, existingRideGroup, groupRequest, sortOrder, user, zone);
+        // Read before the save, like the time the client sends back (docs/LEDGER_*.md API-101).
+        long dayOffset =
+            EventTimezoneResolver.dayOffset(
+                previousDateTime, existingRideGroup.getStartAt(), previousZone);
+        setProperties(
+            teamSlug, ride, existingRideGroup, groupRequest, sortOrder, user, zone, dayOffset);
       }
       sortOrder++;
     }

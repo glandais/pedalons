@@ -130,7 +130,9 @@ public class TeamTimezoneChange {
 
   /**
    * A ride and its groups. Upcoming, the ride keeps its wall time and so does each group's own
-   * time; past or under way, the ride and its groups keep their instants.
+   * time; past or under way, the ride and its groups keep their instants — which may leave a group
+   * on another local date than its ride, a day offset that its next save keeps
+   * (docs/LEDGER_*.md API-101).
    */
   private static void rewriteRide(Ride ride, ZoneId from, ZoneId to, Instant now) {
     Instant previousDateTime = ride.getDateTime();
@@ -141,7 +143,8 @@ public class TeamTimezoneChange {
     }
     for (RideGroup group : ride.getGroups()) {
       LocalTime own = EventTimezoneResolver.ownTime(previousDateTime, group.getStartAt(), from);
-      EventTimezoneResolver.setStart(group, ride.getDateTime(), own, to);
+      long days = EventTimezoneResolver.dayOffset(previousDateTime, group.getStartAt(), from);
+      EventTimezoneResolver.setStart(group, ride.getDateTime(), own, to, days);
     }
   }
 

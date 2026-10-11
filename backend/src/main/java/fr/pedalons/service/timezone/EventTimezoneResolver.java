@@ -13,6 +13,7 @@ import jakarta.inject.Inject;
 import java.time.Instant;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -151,7 +152,20 @@ public class EventTimezoneResolver {
    */
   public static void setStart(
       RideGroup group, Instant rideDateTime, @Nullable LocalTime time, ZoneId zone) {
-    group.setStartAt(groupStart(rideDateTime, time, zone));
+    setStart(group, rideDateTime, time, zone, 0);
+  }
+
+  /**
+   * {@link #setStart(RideGroup, Instant, LocalTime, ZoneId)} for a group that leaves {@code
+   * dayOffset} days after its ride's local date — see {@link #dayOffset}.
+   */
+  public static void setStart(
+      RideGroup group,
+      Instant rideDateTime,
+      @Nullable LocalTime time,
+      ZoneId zone,
+      long dayOffset) {
+    group.setStartAt(groupStart(rideDateTime, time, zone, dayOffset));
   }
 
   /**
@@ -160,19 +174,48 @@ public class EventTimezoneResolver {
    * gap, one in the autumn overlap takes the earlier offset ({@link java.time.ZonedDateTime}).
    */
   public static Instant groupStart(Instant rideDateTime, @Nullable LocalTime time, ZoneId zone) {
+    return groupStart(rideDateTime, time, zone, 0);
+  }
+
+  /**
+   * {@link #groupStart(Instant, LocalTime, ZoneId)}, {@code dayOffset} days after the ride's local
+   * date.
+   */
+  public static Instant groupStart(
+      Instant rideDateTime, @Nullable LocalTime time, ZoneId zone, long dayOffset) {
     if (time == null) {
       return rideDateTime;
     }
-    return rideDateTime.atZone(zone).toLocalDate().atTime(time).atZone(zone).toInstant();
+    return rideDateTime
+        .atZone(zone)
+        .toLocalDate()
+        .plusDays(dayOffset)
+        .atTime(time)
+        .atZone(zone)
+        .toInstant();
   }
 
   /**
    * The group's own wall time, read back from its stored start: null when it leaves with the ride,
    * else its start in the ride's zone — what a client edits and sends back as {@code
-   * GroupRequest.time}, which {@link #groupStart} turns into the same instant.
+   * GroupRequest.time}, which {@link #groupStart} turns into the same instant once given the
+   * group's {@link #dayOffset}.
    */
   public static @Nullable LocalTime ownTime(Instant rideDateTime, Instant startAt, ZoneId zone) {
     return startAt.equals(rideDateTime) ? null : startAt.atZone(zone).toLocalTime();
+  }
+
+  /**
+   * How many days after its ride's local date a group leaves, in the ride's zone: 0 for a group
+   * entered through {@link #groupStart}, which always lands on the ride's date. Only a past ride
+   * relabelled at constant instant by a change of the team's zone leaves a group on another date
+   * (−1 or +1): {@link #ownTime} drops the date, so a save of the ride must put the time back on
+   * this date, not on the ride's, or an unchanged save moves the group by 24 h
+   * (docs/LEDGER_*.md API-101).
+   */
+  public static long dayOffset(Instant rideDateTime, Instant startAt, ZoneId zone) {
+    return ChronoUnit.DAYS.between(
+        rideDateTime.atZone(zone).toLocalDate(), startAt.atZone(zone).toLocalDate());
   }
 
   /**
