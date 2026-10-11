@@ -574,7 +574,7 @@ through, whose outage would then silence its own alert. Severity only says how s
 | Alert | Fires when | First look |
 |---|---|---|
 | `HighErrorRate` (critical) | over 5 % of a site's requests end in 5xx for 5 min | `docker stack ps`, backend logs in Loki |
-| `SlowResponses` | a site's p95 above 3 s for 15 min | the dashboard's CPU and connection pool panels |
+| `SlowResponses` | a site's p95 above 3 s for 15 min (not `auth.pedalons.fr`: strava-auth-proxy's latency is Strava's) | the dashboard's CPU and connection pool panels |
 | `OomKill` (critical) | the kernel killed a process in the last 10 min | `docker stack ps` (`exit (137)`), then [Memory](#memory) |
 | `ContainerNearMemoryLimit` | a container's working set above 90 % of its limit for 30 min | raise that limit, or `VARNISH_SIZE` down |
 | `DiskAlmostFull` (critical) | a filesystem under 15 % free | `docker system df`, `data/cache`, old images |

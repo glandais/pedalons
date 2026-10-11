@@ -56,12 +56,14 @@ groups:
         annotations:
           summary: "{{ $labels.host }}: {{ $value | humanizePercentage }} of requests end in 5xx."
 
+      # auth.pedalons.fr is excluded: strava-auth-proxy relays Strava verbatim, so its latency is
+      # Strava's own (full /athlete/activities pages take 2–6 s) and nothing we can act on.
       - alert: SlowResponses
         expr: |
           histogram_quantile(0.95,
-            sum by (host, le) (rate(caddy_http_request_duration_seconds_bucket{host!="_other"}[10m])))
+            sum by (host, le) (rate(caddy_http_request_duration_seconds_bucket{host!~"_other|auth\\.pedalons\\.fr"}[10m])))
             > 3
-          and sum by (host) (rate(caddy_http_request_duration_seconds_count{host!="_other"}[10m])) > 0.05
+          and sum by (host) (rate(caddy_http_request_duration_seconds_count{host!~"_other|auth\\.pedalons\\.fr"}[10m])) > 0.05
         for: 15m
         labels:
           severity: warning

@@ -51,6 +51,36 @@ tests:
 
   - interval: 1m
     input_series:
+      # 60 requests a minute, all between 1 and 5 s, on www and on auth: p95 4.8 s on both. Only www
+      # fires — auth.pedalons.fr's latency is Strava's.
+      - series: 'caddy_http_request_duration_seconds_bucket{host="www.pedalons.fr", le="1"}'
+        values: '0x40'
+      - series: 'caddy_http_request_duration_seconds_bucket{host="www.pedalons.fr", le="5"}'
+        values: '0+60x40'
+      - series: 'caddy_http_request_duration_seconds_bucket{host="www.pedalons.fr", le="+Inf"}'
+        values: '0+60x40'
+      - series: 'caddy_http_request_duration_seconds_count{host="www.pedalons.fr"}'
+        values: '0+60x40'
+      - series: 'caddy_http_request_duration_seconds_bucket{host="auth.pedalons.fr", le="1"}'
+        values: '0x40'
+      - series: 'caddy_http_request_duration_seconds_bucket{host="auth.pedalons.fr", le="5"}'
+        values: '0+60x40'
+      - series: 'caddy_http_request_duration_seconds_bucket{host="auth.pedalons.fr", le="+Inf"}'
+        values: '0+60x40'
+      - series: 'caddy_http_request_duration_seconds_count{host="auth.pedalons.fr"}'
+        values: '0+60x40'
+    alert_rule_test:
+      - eval_time: 30m
+        alertname: SlowResponses
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              host: www.pedalons.fr
+            exp_annotations:
+              summary: "www.pedalons.fr: p95 latency 4.8s."
+
+  - interval: 1m
+    input_series:
       - series: 'container_memory_working_set_bytes{id="/a", name="x", container_label_com_docker_stack_namespace="pedalons-prod", container_label_com_docker_swarm_service_name="pedalons-prod_backend"}'
         values: '1500x40'
       - series: 'container_spec_memory_limit_bytes{id="/a", name="x", container_label_com_docker_stack_namespace="pedalons-prod", container_label_com_docker_swarm_service_name="pedalons-prod_backend"}'
