@@ -18,7 +18,8 @@ rendus Koubou et `accounts.local.json` (les mots de passe des comptes de démo) 
 Deux clubs fictifs autour du lac d'Annecy, un par langue de la fiche (`VC du Lac d'Annecy`,
 `Annecy Lakeside Cycling`), en visibilité `TEAM` sur **staging** : sept parcours tracés par le
 Valhalla de staging (dénivelé et cols calculés par le serveur), quatre sorties à venir à trois
-groupes d'allure, un voyage en deux étapes, des publications, des annonces, des commentaires. Huit
+groupes d'allure, un voyage en deux étapes, des publications, des annonces, des commentaires, et
+un vocabulaire de tags par type de contenu (`TAGS`) posé sur tout ce qui est créé. Huit
 membres fictifs communs aux deux clubs, et un compte « spectateur » par langue — celui sous lequel
 on capture, membre de son club seulement.
 
@@ -76,7 +77,9 @@ chaque jour depuis la crontab de l'hôte de production
   d'un club, le passage échoue en le disant : seul un admin de plateforme peut l'y remettre ;
 - les sorties qui approchent se remplissent avec les membres qu'elles ont toujours tirés ;
 - un voyage est toujours à venir, le mois a sa publication « Le programme de … » (lue sur le
-  calendrier), et la fin du calendrier avance d'un jour par jour.
+  calendrier, cherchée **par son titre** : une publication datée du mois précédent ne doit pas la
+  faire écrire deux fois), et la fin du calendrier avance d'un jour par jour ;
+- les tags manquants du vocabulaire sont recréés ; ce qui est créé les porte.
 
 L'historique s'accumule tout seul : l'API refuse l'inscription à une sortie passée (`80670273`),
 donc une reconstruction ne crée plus de passé — elle part de demain, et le passé est ce que les

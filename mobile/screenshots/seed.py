@@ -132,45 +132,60 @@ PLACES = {
 
 # Waypoints, routed leg by leg with the staging Valhalla (/api/router).
 ROUTES = [
-    {"key": "lac", "surface": "ROAD", "profile": "BIKE",
+    {"key": "lac", "surface": "ROAD", "profile": "BIKE", "tags": ["lakeside", "flat"],
      "fr": "Tour du lac d'Annecy", "en": "Lake Annecy loop",
      "md": {"fr": "Le grand classique, à plat : parfait pour une reprise ou une sortie récupération.",
             "en": "The flat classic: ideal to get back on the bike or for a recovery ride."},
      "via": [ANNECY, (45.8640, 6.1400), (45.8290, 6.2010), (45.7760, 6.2230), (45.8410, 6.2130),
              (45.8830, 6.1720), ANNECY]},
-    {"key": "forclaz", "surface": "ROAD", "profile": "BIKE",
+    {"key": "forclaz", "surface": "ROAD", "profile": "BIKE", "tags": ["col", "lakeside"],
      "fr": "Col de la Forclaz par Talloires", "en": "Col de la Forclaz via Talloires",
      "md": {"fr": "Montée par Talloires, descente sur Doussard et retour par la rive ouest.",
             "en": "Up from Talloires, down to Doussard and back along the west shore."},
      "via": [ANNECY, (45.8830, 6.1720), (45.8410, 6.2130), (45.8134, 6.2466), (45.7760, 6.2230),
              (45.8640, 6.1400), ANNECY]},
-    {"key": "semnoz", "surface": "ROAD", "profile": "BIKE",
+    {"key": "semnoz", "surface": "ROAD", "profile": "BIKE", "tags": ["col"],
      "fr": "Semnoz et col de Leschaux", "en": "Semnoz and Col de Leschaux",
      "md": {"fr": "Le Semnoz par Quintal, puis la descente sur Leschaux. Vue sur le Mont-Blanc au sommet.",
             "en": "The Semnoz from Quintal, then down to Leschaux. Mont Blanc views at the top."},
      "via": [ANNECY, (45.8290, 6.0880), (45.7990, 6.1010), (45.7720, 6.1130), (45.8640, 6.1400), ANNECY]},
-    {"key": "bauges", "surface": "ROAD", "profile": "BIKE",
+    {"key": "bauges", "surface": "ROAD", "profile": "BIKE", "tags": ["col", "long"],
      "fr": "Boucle des Bauges", "en": "Bauges loop",
      "md": {"fr": "Leschaux, Lescheraines et le cœur des Bauges : une longue sortie vallonnée.",
             "en": "Leschaux, Lescheraines and the heart of the Bauges: a long rolling ride."},
      "via": [ANNECY, (45.8640, 6.1400), (45.7720, 6.1130), (45.7110, 6.1060), (45.7410, 6.1400),
              (45.7720, 6.1130), ANNECY]},
-    {"key": "glieres", "surface": "GRAVEL", "profile": "GRAVEL",
+    {"key": "glieres", "surface": "GRAVEL", "profile": "GRAVEL", "tags": ["gravel", "col"],
      "fr": "Plateau des Glières en gravel", "en": "Glières plateau gravel",
      "md": {"fr": "Départ de Thorens, montée au plateau et pistes d'alpage. Pneus de 40 mm conseillés.",
             "en": "From Thorens up to the plateau and its alpine tracks. 40 mm tyres recommended."},
      "via": [(45.9957, 6.2478), (45.9650, 6.3310), (45.9757, 6.3197), (45.9957, 6.2478)]},
-    {"key": "beaufort", "surface": "ROAD", "profile": "BIKE",
+    {"key": "beaufort", "surface": "ROAD", "profile": "BIKE", "tags": ["stage", "long"],
      "fr": "Annecy – Beaufort", "en": "Annecy to Beaufort",
      "md": {"fr": "Première étape : la vallée jusqu'à Albertville, puis la montée vers Beaufort.",
             "en": "Stage one: down the valley to Albertville, then up to Beaufort."},
      "via": [ANNECY, (45.7760, 6.2230), (45.6760, 6.3920), (45.7190, 6.5730)]},
-    {"key": "roselend", "surface": "ROAD", "profile": "BIKE",
+    {"key": "roselend", "surface": "ROAD", "profile": "BIKE", "tags": ["stage", "col"],
      "fr": "Beaufort – Cormet de Roselend", "en": "Beaufort to Cormet de Roselend",
      "md": {"fr": "Deuxième étape : le lac de Roselend et le Cormet, descente sur Bourg-Saint-Maurice.",
             "en": "Stage two: Lake Roselend and the Cormet, down to Bourg-Saint-Maurice."},
      "via": [(45.7190, 6.5730), (45.6880, 6.6720), (45.6180, 6.7690)]},
 ]
+
+# Each club's tag vocabulary, by kind of content: key -> (fr, en, colour). The
+# seed puts them on what it creates; a club admin's tag of the same label is reused.
+TAGS = {
+    "ROUTE": {"col": ("Col", "Climb", "ORANGE"), "lakeside": ("Bord du lac", "Lakeside", "BLUE"),
+              "flat": ("Plat", "Flat", "GREEN"), "long": ("Longue distance", "Long distance", "GRAPE"),
+              "gravel": ("Gravel", "Gravel", "YELLOW"), "stage": ("Étape", "Stage", "TEAL")},
+    "RIDE": {"mountain": ("Montagne", "Mountain", "ORANGE"), "afterwork": ("Afterwork", "After work", "INDIGO"),
+             "gravel": ("Gravel", "Gravel", "YELLOW"), "winter": ("Hiver", "Winter", "BLUE"),
+             "easy": ("Allure cool", "Easy pace", "GREEN")},
+    "TRIP": {"mountain": ("Montagne", "Mountain", "ORANGE"), "weekend": ("Week-end", "Weekend", "TEAL")},
+    "POST": {"programme": ("Programme", "Schedule", "INDIGO"), "club": ("Vie du club", "Club life", "GRAPE")},
+    "AD": {"bike": ("Vélo", "Bike", "BLUE"), "gear": ("Équipement", "Gear", "TEAL"),
+           "parts": ("Pièces", "Parts", "GRAY")},
+}
 
 # ---------------------------------------------------------------- HTTP
 
@@ -218,6 +233,41 @@ def media(markdown: str = "") -> dict:
 
 def point(lat: float, lon: float) -> dict:
     return {"type": "Point", "coordinates": [lon, lat]}
+
+
+def ensure_tags(base: str, org: str, lang: str) -> dict:
+    """The club's TAGS, created when missing; (kind, key) -> tag id."""
+    existing = {(t["type"], t["label"].lower()): t["id"] for t in call("GET", f"{base}/tags", token=org)}
+    out = {}
+    for kind, vocabulary in TAGS.items():
+        for key, (fr_label, en_label, color) in vocabulary.items():
+            label = fr_label if lang == "fr" else en_label
+            tag_id = existing.get((kind, label.lower()))
+            if not tag_id:
+                tag_id = call("POST", f"{base}/tags", {"type": kind, "label": label, "color": color}, org)["id"]
+                print(f"  tag {kind} {label}")
+            out[(kind, key)] = tag_id
+    return out
+
+
+def tag_ids(tags: dict, kind: str, keys) -> list:
+    return [tags[(kind, k)] for k in keys]
+
+
+def ride_tags(route: str, when: datetime) -> list:
+    """A ride's RIDE tags, read off its route and its date."""
+    keys = []
+    if route in ("forclaz", "semnoz", "bauges"):
+        keys.append("mountain")
+    if route == "glieres":
+        keys.append("gravel")
+    if when.weekday() == 2:
+        keys.append("afterwork")
+    elif route == "lac":
+        keys.append("easy")
+    if not 4 <= when.month <= 10:
+        keys.append("winter")
+    return keys
 
 
 # ---------------------------------------------------------------- accounts
@@ -440,13 +490,15 @@ def ride_groups(acc: dict, fr: bool, route: str, leaders: tuple, when: datetime)
     return out
 
 
-def create_ride(base: str, acc: dict, fr: bool, routes: dict, places: dict, spec: tuple, joins: dict) -> tuple:
+def create_ride(base: str, acc: dict, fr: bool, routes: dict, places: dict, tags: dict, spec: tuple,
+                joins: dict) -> tuple:
     """Publishes one `rides_spec` entry and registers `joins` (member -> group index)."""
     route, place, when, leaders, title, text = spec
     ride = call("POST", f"{base}/rides", {
         "name": title, "media": media(text), "dateTime": wall(when), "status": "PUBLISHED",
         "visibility": "TEAM", "routeSlug": routes[route], "startPlaceId": places[place],
-        "endPlaceId": places[place], "groups": ride_groups(acc, fr, routes[route], leaders, when)},
+        "endPlaceId": places[place], "groups": ride_groups(acc, fr, routes[route], leaders, when),
+        "tagIds": tag_ids(tags, "RIDE", ride_tags(route, when))},
                 acc["julien"]["token"])
     gids = [g["id"] for g in ride["groups"]]
     for key, g in joins.items():
@@ -466,9 +518,10 @@ def join_ride(base: str, ride_slug: str, group_id: str, token: str) -> bool:
         raise
 
 
-def create_trip(base: str, acc: dict, fr: bool, routes: dict, places: dict, day: datetime) -> str:
+def create_trip(base: str, acc: dict, fr: bool, routes: dict, places: dict, tags: dict, day: datetime) -> str:
     trip = call("POST", f"{base}/trips", {
         "name": "Week-end dans le Beaufortain" if fr else "Beaufortain weekend",
+        "tagIds": tag_ids(tags, "TRIP", ["mountain", "weekend"]),
         "media": media("Deux jours, deux étapes, une nuit à Beaufort. Voiture d'assistance pour les sacs." if fr
                        else "Two days, two stages, one night in Beaufort. A support car carries the bags."),
         "dateTime": wall(day), "status": "PUBLISHED", "visibility": "TEAM",
@@ -592,13 +645,15 @@ def seed_club(locale: str, acc: dict, viewer: dict) -> list:
             "name": p[lang], "address": p["address"], "startPlace": True, "endPlace": True,
             "geometry": point(*p["at"])}, org)["id"]
 
+    tags = ensure_tags(base, org, lang)
+
     routes = {}
     for r in ROUTES:
         pts = routed_points(r["via"], r["profile"], org)
         preview = call("POST", "/api/gpx-previews/from-points", {"name": r[lang], "points": pts}, org)
         route = call("POST", f"/api/gpx-previews/{preview['id']}/routes/{slug}", {
             "name": r[lang], "media": media(r["md"][lang]), "surfaceType": r["surface"],
-            "visibility": "TEAM"}, org)
+            "visibility": "TEAM", "tagIds": tag_ids(tags, "ROUTE", r["tags"])}, org)
         routes[r["key"]] = route["slug"]
         print(f"  route {route['slug']}  {preview['distance'] / 1000:.0f} km, +{preview['elevationGain']:.0f} m")
 
@@ -638,42 +693,47 @@ def seed_club(locale: str, acc: dict, viewer: dict) -> list:
     ride0 = None
     rides = []
     for spec, joins in zip(rides_spec, signups):
-        rides.append(create_ride(base, acc, fr, routes, places, spec, joins))
+        rides.append(create_ride(base, acc, fr, routes, places, tags, spec, joins))
         if joins is signups[0]:
             ride0 = rides[-1][0]
 
-    trip_slug = create_trip(base, acc, fr, routes, places, next_weekday(5, time(8, 0), 15))
+    trip_slug = create_trip(base, acc, fr, routes, places, tags, next_weekday(5, time(8, 0), 15))
 
     now = datetime.now(TZ)
+    month = now.date().replace(day=1)
     posts = [
-        (*month_post(fr, now.date().replace(day=1)), now - timedelta(days=2)),
+        # Dated within its month, which --refresh then finds it in.
+        (*month_post(fr, month), min(now, max(now - timedelta(days=2), datetime.combine(month, time(7), TZ))),
+         ["programme"]),
         ("Nouveaux maillots du club" if fr else "New club jerseys",
          ("Les maillots du club sont commandés ! Livraison prévue dans un mois, distribution à la "
           "sortie du samedi suivant." if fr else
           "The club jerseys are ordered! Delivery expected in a month, handed out at the following "
           "Saturday ride."),
-         now - timedelta(days=6)),
+         now - timedelta(days=6), ["club"]),
     ]
     post_slugs = []
-    for title, text, when in posts:
+    for title, text, when, keys in posts:
         post = call("POST", f"{base}/posts", {"name": title, "media": media(text), "dateTime": wall(when),
-                                              "status": "PUBLISHED", "visibility": "TEAM"}, org)
+                                              "status": "PUBLISHED", "visibility": "TEAM",
+                                              "tagIds": tag_ids(tags, "POST", keys)}, org)
         post_slugs.append(post["slug"])
 
     ads = [
         ("emma", "SALE", 1450, None, "Vélo route carbone, taille M" if fr else "Carbon road bike, size M",
          "Groupe Shimano 105 12 vitesses, freins à disque, 4 000 km. Révisé cet été." if fr else
-         "Shimano 105 12-speed, disc brakes, 4,000 km. Serviced this summer.", (45.9050, 6.1250)),
+         "Shimano 105 12-speed, disc brakes, 4,000 km. Serviced this summer.", (45.9050, 6.1250), ["bike"]),
         ("marc", "RENTAL", 15, "DAY", "Porte-vélos d'attelage 3 vélos" if fr else "Tow-bar bike rack, 3 bikes",
          "Idéal pour le week-end dans le Beaufortain." if fr else "Just right for the Beaufortain weekend.",
-         (45.8700, 6.1100)),
+         (45.8700, 6.1100), ["gear"]),
         ("nicolas", "WANTED", None, None, "Cherche roues gravel 700C" if fr else "Looking for 700C gravel wheels",
          "Axe traversant 12 mm, compatibles tubeless." if fr else "12 mm thru-axle, tubeless-ready.",
-         (45.9200, 6.1500)),
+         (45.9200, 6.1500), ["parts"]),
     ]
-    for key, ad_type, price, period, title, text, at in ads:
+    for key, ad_type, price, period, title, text, at, keys in ads:
         body = {"name": title, "media": media(text), "status": "PUBLISHED", "adType": ad_type,
-                "locationDescription": "Annecy", "locationGeometry": point(*at)}
+                "locationDescription": "Annecy", "locationGeometry": point(*at),
+                "tagIds": tag_ids(tags, "AD", keys)}
         if price is not None:
             body["price"] = price
         if period:
@@ -726,13 +786,14 @@ def seed_club(locale: str, acc: dict, viewer: dict) -> list:
 
 
 def listing(base: str, token: str, **params) -> list:
-    """Every page of a club's publications matching `params`."""
+    """Every page of a club's publications matching `params`, the deleted ones left out:
+    the API lists them too to a club admin, which the organizer is."""
     out, page = [], 0
     while True:
         query = "&".join(f"{k}={urllib.parse.quote(str(v))}" for k, v in
                          {**params, "status": "PUBLISHED", "view": "FULL", "page": page, "size": 100}.items())
         resp = call("GET", f"{base}/publications?{query}", token=token)
-        out += resp["publications"]
+        out += [p for p in resp["publications"] if not p.get("deleted")]
         page += 1
         if page * 100 >= resp["total"]:
             return out
@@ -775,6 +836,7 @@ def refresh_club(locale: str, acc: dict, viewer: dict) -> None:
     base = f"/api/teams/{slug}"
     print(f"  club {slug}")
     ensure_member(slug, viewer)
+    tags = ensure_tags(base, org, lang)
     now = datetime.now(TZ)
     today = now.date()
 
@@ -794,7 +856,7 @@ def refresh_club(locale: str, acc: dict, viewer: dict) -> None:
     if new:
         routes, places = club_assets(base, org, lang)
         for spec in new:
-            create_ride(base, acc, fr, routes, places, spec,
+            create_ride(base, acc, fr, routes, places, tags, spec,
                         random_signups(spec[2], len(spec[3]), f"{locale}-{spec[2]:%Y%m%d}"))
         rides = upcoming_rides()
 
@@ -831,14 +893,15 @@ def refresh_club(locale: str, acc: dict, viewer: dict) -> None:
     # A trip always ahead.
     if not listing(base, org, type="TRIP", **{"from": iso(now)}):
         routes, places = club_assets(base, org, lang)
-        create_trip(base, acc, fr, routes, places, next_weekday(5, time(8, 0), 15))
+        create_trip(base, acc, fr, routes, places, tags, next_weekday(5, time(8, 0), 15))
 
-    # The month's programme, on its first refresh.
-    month = today.replace(day=1)
-    if not listing(base, org, type="POST", **{"from": iso(datetime.combine(month, time(0), TZ))}):
-        title, text = month_post(fr, month)
+    # The month's programme, on its first refresh. Found by its title, not its date:
+    # a post dated in the previous month would otherwise be written twice.
+    title, text = month_post(fr, today.replace(day=1))
+    if not any(p["name"] == title for p in listing(base, org, type="POST")):
         call("POST", f"{base}/posts", {"name": title, "media": media(text), "dateTime": wall(now),
-                                       "status": "PUBLISHED", "visibility": "TEAM"}, org)
+                                       "status": "PUBLISHED", "visibility": "TEAM",
+                                       "tagIds": tag_ids(tags, "POST", ["programme"])}, org)
         print(f"  post {title!r}")
 
 
