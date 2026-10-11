@@ -16,8 +16,19 @@ const TIMEOUT_MS = 3_000
  * fallback only authenticates `@PermitAll` endpoints while a bearer token behaves exactly like the
  * browser's, which is what keeps server-rendered DTOs identical to the client's.
  *
- * Any failure returns undefined and the page renders anonymously, exactly as it did before SSR
- * became session-aware. A revoked or expired token is the normal case here, not an incident.
+ * Two ways of rendering without a session, which must not be confused (docs/LEDGER_*.md WEB-39):
+ *
+ * - **no session** — no cookie, or the backend refused it (401/403): {@link ANONYMOUS}. The page
+ *   is rendered anonymously and says so to the client, which then skips its own refresh. A revoked
+ *   or expired token is the normal case here, not an incident.
+ * - **session unknown** — the refresh timed out, the network failed, the backend answered anything
+ *   else: undefined. The page is still rendered anonymously, but the client is told nothing and
+ *   makes its own refresh after hydration; a member must not be shown signed out, nor their private
+ *   team as missing, because the backend was slow.
+ *
+ * A refresh abandoned at the timeout may still rotate the token on the backend, its `Set-Cookie`
+ * lost: the browser then presents the old token again, which the rotation's grace, then a new
+ * rotation from it, still honour (docs/LEDGER_*.md API-94). Nothing is lost by giving up on it.
  *
  * The refresh rotates the session's token (docs/LEDGER_*.md SEC-27): the backend's `Set-Cookie`
  * is handed to `onSetCookie` as soon as the answer arrives, whatever becomes of the render, and the
@@ -30,13 +41,16 @@ const TIMEOUT_MS = 3_000
  * own `/api/auth/refresh` call re-issues the cookie on the new path — from the next navigation on,
  * SSR sees it. No reconnection required.
  */
+/** The snapshot of a render without a session. */
+export const ANONYMOUS: SsrAuthSnapshot = { accessToken: null, user: null, hasPasskeys: false }
+
 export async function resolveSsrSession(
   headers: Record<string, string>,
   onSetCookie: (cookies: string[]) => void = () => {}
 ): Promise<SsrAuthSnapshot | undefined> {
   const cookie = headers['cookie']
   if (!cookie || !new RegExp(`(?:^|;\\s*)${REFRESH_TOKEN_COOKIE}=`).test(cookie)) {
-    return undefined
+    return ANONYMOUS
   }
 
   const baseUrl = process.env.API_BASE_URL || 'http://localhost:8080'
@@ -58,14 +72,13 @@ export async function resolveSsrSession(
 
     if (!response.ok) {
       // 401/403 just means "no usable session" — expected, not worth a log line.
-      if (response.status !== 401 && response.status !== 403) {
-        console.warn(`[SSR] Session refresh returned ${response.status}, rendering anonymously`)
-      }
+      if (response.status === 401 || response.status === 403) return ANONYMOUS
+      console.warn(`[SSR] Session refresh returned ${response.status}, leaving it to the client`)
       return undefined
     }
 
     const data = await response.json()
-    if (!data?.accessToken) return undefined
+    if (!data?.accessToken) return ANONYMOUS
 
     return {
       accessToken: data.accessToken,
@@ -73,7 +86,7 @@ export async function resolveSsrSession(
       hasPasskeys: data.hasPasskeys ?? false,
     }
   } catch (err) {
-    console.error('[SSR] Session refresh failed, rendering anonymously:', err)
+    console.error('[SSR] Session refresh failed, leaving it to the client:', err)
     return undefined
   }
 }

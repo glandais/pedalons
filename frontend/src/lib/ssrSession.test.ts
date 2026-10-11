@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { resolveSsrSession } from './ssrSession'
+import { ANONYMOUS, resolveSsrSession } from './ssrSession'
 
 function answer(status: number, body: unknown, setCookies: string[] = []): Response {
   const headers = new Headers({ 'Content-Type': 'application/json' })
@@ -10,6 +10,7 @@ function answer(status: number, body: unknown, setCookies: string[] = []): Respo
 describe('resolveSsrSession', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
+    vi.restoreAllMocks()
   })
 
   it('hands over the rotated session cookie with the session', async () => {
@@ -41,11 +42,51 @@ describe('resolveSsrSession', () => {
     expect(onSetCookie).not.toHaveBeenCalled()
   })
 
-  it('does not call the backend without a session cookie', async () => {
+  it('renders anonymously without a session cookie, and does not call the backend', async () => {
     const fetch = vi.fn()
     vi.stubGlobal('fetch', fetch)
 
-    expect(await resolveSsrSession({ cookie: 'other=1' })).toBeUndefined()
+    expect(await resolveSsrSession({ cookie: 'other=1' })).toEqual(ANONYMOUS)
     expect(fetch).not.toHaveBeenCalled()
+  })
+
+  // docs/LEDGER_*.md WEB-39: "no session" and "session unknown" are two different answers.
+  it.each([401, 403])(
+    'renders anonymously when the backend refuses the token (%i)',
+    async (status) => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => answer(status, { code: 'TOKEN_INVALID' }))
+      )
+
+      expect(await resolveSsrSession({ cookie: 'refresh_token=revoked' })).toEqual(ANONYMOUS)
+    }
+  )
+
+  it.each([500, 502, 503, 429])(
+    'leaves the session to the client when the backend fails (%i)',
+    async (status) => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {})
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => answer(status, {}))
+      )
+
+      expect(await resolveSsrSession({ cookie: 'refresh_token=live' })).toBeUndefined()
+    }
+  )
+
+  it('leaves the session to the client when the refresh times out', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new DOMException('The operation was aborted due to timeout', 'TimeoutError')
+      })
+    )
+    const onSetCookie = vi.fn()
+
+    expect(await resolveSsrSession({ cookie: 'refresh_token=live' }, onSetCookie)).toBeUndefined()
+    expect(onSetCookie).not.toHaveBeenCalled()
   })
 })

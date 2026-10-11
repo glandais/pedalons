@@ -36,8 +36,13 @@ How one request flows:
 1. `server.js` passes all single-value request headers, cookie included, to `render()`.
 2. `resolveSsrSession()` (`lib/ssrSession.ts`) exchanges the cookie for a 15-minute access
    token via **one** `POST /api/auth/refresh`, run concurrently with the `/api/config`
-   prefetch so it costs no serial round-trip. 3 s timeout; any failure (no cookie, revoked
-   token, backend down) yields `undefined` and the page renders anonymously as before.
+   prefetch so it costs no serial round-trip. 3 s timeout. Two failures, never confused
+   (docs/LEDGER_*.md WEB-39): **no session** (no cookie, or a 401/403) yields the anonymous
+   snapshot `ANONYMOUS`, which the client is told about and trusts; **session unknown**
+   (timeout, network, any other status) yields `undefined`: the page renders anonymously, but
+   without `__AUTH_STATE__`, so the client makes its own refresh after hydration, and a team the
+   API refused is not turned into a 404. A refresh abandoned at the timeout loses nothing: its
+   rotation, if the backend finished it, is honoured again from the old token (`API-94`).
 3. The result lands in `SsrRequestStore.auth`, i.e. in AsyncLocalStorage.
 4. `axiosInstance`'s server branch attaches `Authorization: Bearer` from there, so every
    prefetch is authenticated **exactly like the browser's**. The raw cookie is deliberately
@@ -284,8 +289,8 @@ curl -s http://localhost:8090/ | grep -c '<!--\$[?!]-->'                        
 curl -s http://localhost:8090/equipes/<slug> | grep '<title>'                              # real content, not fallback
 curl -so /dev/null -w '%{http_code}' http://localhost:8090/nonexistent                     # 404
 
-# Session-aware SSR. A junk cookie must render anonymously and embed no session:
-curl -s -H 'Cookie: refresh_token=junk' http://localhost:8090/ | grep -c '__AUTH_STATE__'  # 0
+# Session-aware SSR. A junk cookie must render anonymously and embed no token:
+curl -s -H 'Cookie: refresh_token=junk' http://localhost:8090/ | grep -c '"accessToken":null' # 1
 # A real one must render the visitor's name into the header, not the login button:
 curl -s -H "Cookie: refresh_token=$TOKEN" http://localhost:8090/ | grep -c '__AUTH_STATE__' # 1
 # And the response must never be cacheable:

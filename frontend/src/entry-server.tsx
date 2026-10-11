@@ -102,7 +102,9 @@ export async function render(
       // - the visitor's session, if the request carried a refresh_token cookie. Everything the
       //   route loaders prefetch below then goes out authenticated. If there is no valid session,
       //   we still populate __AUTH_STATE__ with an anonymous session so the client knows the page
-      //   was rendered anonymously and doesn't attempt a fresh /api/auth/refresh.
+      //   was rendered anonymously and doesn't attempt a fresh /api/auth/refresh. If the session
+      //   is unknown — the refresh timed out or failed — __AUTH_STATE__ is left out and the client
+      //   makes that refresh itself (docs/LEDGER_*.md WEB-39).
       //
       // The config and version requests go out before the session is known, i.e. anonymously. That
       // is correct: both are auth-independent (App.tsx excludes config from the post-login refetch
@@ -125,11 +127,9 @@ export async function render(
         }),
       ])
       store.config = configResult
-      store.auth = session ?? {
-        accessToken: null,
-        user: null,
-        hasPasskeys: false,
-      }
+      // Undefined when the session is unknown: rendered as the anonymous default (isLoading on
+      // both sides, so hydration still matches) and serialised as no __AUTH_STATE__ at all.
+      store.auth = session
 
       // Prefer the signed-in visitor's stored language over the cookie/Accept-Language, now that the session
       // is known. store.locale is read live by getSSRLocale() (locale-context.ts), so mutating it
@@ -158,7 +158,7 @@ export async function render(
 
       // The signed-in visitor's stored theme, so the very first render (server and client) already
       // matches it instead of the anonymous 'auto' default — see AppProviders.tsx.
-      const themePreference = mapThemePreference(store.auth.user?.theme)
+      const themePreference = mapThemePreference(session?.user?.theme)
 
       const routes = buildRoutes(queryClient)
       const handler = createStaticHandler(routes)
@@ -208,8 +208,14 @@ export async function render(
         const teamKey = getGetTeamQueryKey(teamSlug)
         const teamError = queryClient.getQueryState(teamKey)?.error
         const team = queryClient.getQueryData<TeamDetailDto>(teamKey)
-        if (teamError instanceof ApiClientError && [401, 403, 404].includes(teamError.status)) {
+        if (
+          teamError instanceof ApiClientError &&
+          [401, 403, 404].includes(teamError.status) &&
+          session
+        ) {
           // A private team is not revealed to be private: same answer as a team that never existed.
+          // Not when the session is unknown: the team may well be the member's, which the client
+          // will find out once its own refresh is through (docs/LEDGER_*.md WEB-39).
           statusCode = 404
         } else if (team && team.slug !== teamSlug) {
           // Reached through a former slug: the API resolved it, the address moves for good.

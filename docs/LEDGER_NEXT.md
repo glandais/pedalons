@@ -266,22 +266,6 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
       doubles déclenchements et aux liens, que le navigateur suit déjà sans JS), ou raccourcir la
       fenêtre (hydratation par îlots, moins de travail au premier rendu). Mesurer d'abord sur un
       vrai téléphone moyen de gamme, hors pile e2e.
-- [ ] `WEB-39` **Un backend lent déconnecte le visiteur au rendu serveur (M)** — quand le
-      `/api/auth/refresh` du SSR dépasse 3 s (`TIMEOUT_MS`, `lib/ssrSession.ts`),
-      `resolveSsrSession` rend `undefined` : la page est rendue **anonyme** et
-      `window.__AUTH_STATE__` le dit, si bien que le client (`authStateFromSnapshot`, déjà
-      `isInitialized`) ne retente pas son propre refresh. Un membre connecté voit alors son équipe
-      privée en **404** (`entry-server.tsx`, statut 404 sur 401/403/404 de l'équipe) et un en-tête
-      anonyme jusqu'à la navigation suivante. Pire : si le backend termine la rotation après
-      l'abandon, son `Set-Cookie` est perdu et le navigateur garde un jeton qui deviendra un rejeu
-      (`SEC-27`), ce qui révoque la session. Observé le 2026-09-30 sous charge e2e :
-      `slug-change.e2e.ts:226` (mobile), `GET /equipes/<ancien>/annonces` → 404 en 7,6 s, et
-      l'unique `[SSR] Session refresh failed … TimeoutError` de la passe, à la même seconde.
-      Pistes : distinguer « pas de session » (401/403) de « session inconnue » (délai, réseau) —
-      la seconde rend la page sans `__AUTH_STATE__` pour que le client fasse son refresh, et
-      n'émet pas de 404 d'équipe ; ne pas abandonner un refresh déjà parti sans en relayer le
-      `Set-Cookie`, ou le laisser finir en arrière-plan.
-
 - [ ] `WEB-56` **Profil refondu (`WEB-55`, `WEB-57`) : e2e à lancer et recette navigateur (S)** —
       écrit le 4 octobre 2026, vérifié seulement par typecheck, lint, i18n, vitest (237 verts) et
       e2e:typecheck. Plus rien à trancher : Utilisateurs bloqués est sous Confidentialité
