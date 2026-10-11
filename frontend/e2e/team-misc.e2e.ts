@@ -28,7 +28,10 @@ test.describe('team page at 1440×900', () => {
     page,
   }) => {
     const owner = await newUser('team-misc layout owner')
-    const team = await newTeam(owner, unique('Budget vertical'))
+    // Not `unique()`: its worker index and counter vary the name's length, and at ~40 characters the
+    // h1, badge and buttons no longer fit on one line — the header wraps and the budget gains 32 px.
+    // The base-36 timestamp keeps it unique at a fixed length (8 characters until 2059).
+    const team = await newTeam(owner, `Budget vertical ${Date.now().toString(36)}`)
     await signIn(context, owner)
 
     await page.goto(`/equipes/${team.slug}/agenda`)
