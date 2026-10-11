@@ -11,8 +11,9 @@ import { getTimezoneOffset } from 'date-fns-tz'
  * so keep the two tables in step.
  *
  * French needs more than the name: « heure de Tokyo » but « heure d'Athènes », « heure du Caire »,
- * « heure des Açores ». `zoneCityOf` builds that « of » phrase; the French catalog uses it
- * (« heure {{ofCity}} »), the English one the bare `city`.
+ * « heure des Açores ». `zoneCityOf` builds that « of » phrase, the bare name in any other
+ * language: both catalogs take it (« heure {{ofCity}} », « {{ofCity}} time »), so a call passes one
+ * parameter that every language uses (`i18n:lint` flags a parameter its string leaves unused).
  */
 
 // Last IANA segment → French name. Only where French differs from the identifier; anything absent

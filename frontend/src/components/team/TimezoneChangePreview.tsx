@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { Stack, Text } from '@mantine/core'
 import type { TeamTimezoneChangePreviewDto } from '@/api/dto'
 import { formatPattern, formatTime } from '@/utils/dateFormat'
-import { zoneCityName, zoneCityOf } from '@/utils/zoneLabel'
+import { zoneCityOf } from '@/utils/zoneLabel'
 
 interface TimezoneChangePreviewProps {
   preview: TeamTimezoneChangePreviewDto
@@ -18,7 +18,6 @@ interface TimezoneChangePreviewProps {
 export function TimezoneChangePreview({ preview }: TimezoneChangePreviewProps) {
   const { t, i18n } = useTranslation()
   const language = i18n.language
-  const city = zoneCityName(preview.to, language)
   const ofCity = zoneCityOf(preview.to, language)
   const first = preview.upcoming[0]
 
@@ -26,8 +25,6 @@ export function TimezoneChangePreview({ preview }: TimezoneChangePreviewProps) {
     <Stack gap="xs">
       <Text size="sm">
         {t('teams.settings.timezoneChange.question', {
-          from: zoneCityName(preview.from, language),
-          to: city,
           ofFrom: zoneCityOf(preview.from, language),
           ofTo: ofCity,
         })}
@@ -46,7 +43,6 @@ export function TimezoneChangePreview({ preview }: TimezoneChangePreviewProps) {
                   preview.from
                 ),
                 time: formatTime(first.dateTime, language, preview.from),
-                city,
                 ofCity,
               }),
             })
@@ -54,7 +50,7 @@ export function TimezoneChangePreview({ preview }: TimezoneChangePreviewProps) {
       </Text>
       {preview.pastCount > 0 && (
         <Text size="sm" c="dimmed">
-          {t('teams.settings.timezoneChange.past', { count: preview.pastCount, city, ofCity })}
+          {t('teams.settings.timezoneChange.past', { count: preview.pastCount, ofCity })}
         </Text>
       )}
       <Text size="sm" c="dimmed">

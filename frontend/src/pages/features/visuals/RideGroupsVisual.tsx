@@ -71,7 +71,10 @@ export function RideGroupsVisual() {
               </Stack>
               <Stack gap={4} style={{ flex: '1 1 110px' }}>
                 <Text size="xs" c="dimmed">
-                  {t('features.demo.ride.participants', { count: group.count, max: group.max })}
+                  {t('features.demo.ride.participants', {
+                    registered: group.count,
+                    max: group.max,
+                  })}
                 </Text>
                 <Progress
                   value={(group.count / group.max) * 100}

@@ -16,13 +16,6 @@ vi.mock('react-i18next', () => {
 
 import { StageWeatherSection } from './StageWeatherSection'
 
-class NoopResizeObserver {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
-}
-vi.stubGlobal('ResizeObserver', NoopResizeObserver)
-
 const conditions = {
   time: '2026-10-08T07:00:00Z',
   weatherCode: 0,

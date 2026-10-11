@@ -24,19 +24,36 @@ describe('translation catalogues', () => {
     expect(baseKeys(en)).toEqual(baseKeys(fr))
   })
 
-  it.each(Object.keys(catalogues))('only use the plural forms %s has', (language) => {
-    // `_zero` is i18next's own, read for a count of 0 in every language.
-    const categories = [
-      'zero',
-      ...new Intl.PluralRules(language).resolvedOptions().pluralCategories,
-    ]
+  it.each(Object.keys(catalogues))('give each plural exactly the forms %s has', (language) => {
+    const categories = new Intl.PluralRules(language).resolvedOptions().pluralCategories as string[]
     const catalogue = catalogues[language]
-    const misplaced = Object.keys(catalogue).filter((key) => {
+    const bases = Object.keys(catalogue)
+      .filter((key) => key.endsWith('_other'))
+      .map((key) => key.slice(0, -'_other'.length))
+    // A missing form shows the raw key: French reads `_many` for a million (« 1 000 000 »).
+    const missing = bases.flatMap((base) =>
+      categories
+        .filter((form) => !(`${base}_${form}` in catalogue))
+        .map((form) => `${base}_${form}`)
+    )
+    // A form the language lacks is never read — `_zero` aside, i18next's own, read for a count of 0.
+    const extra = Object.keys(catalogue).filter((key) => {
       const form = key.match(PLURAL_SUFFIX)?.[1]
       const base = key.replace(PLURAL_SUFFIX, '')
-      return form && `${base}_other` in catalogue && !categories.includes(form)
+      return form && form !== 'zero' && bases.includes(base) && !categories.includes(form)
     })
-    expect(misplaced).toEqual([])
+    expect({ missing, extra }).toEqual({ missing: [], extra: [] })
+  })
+
+  it('hold no untranslated scaffold', () => {
+    // What `pnpm format` (i18next-cli extract) writes for a key used in code but absent here: it
+    // satisfies the typecheck, so only this catches it.
+    for (const catalogue of Object.values(catalogues)) {
+      const scaffolds = Object.keys(catalogue).filter(
+        (key) => catalogue[key] === '___MISSING_TRANSLATION___'
+      )
+      expect(scaffolds).toEqual([])
+    }
   })
 
   it('hold only strings, flat', () => {

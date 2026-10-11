@@ -172,7 +172,7 @@ export function FeedbackModal() {
             />
             <Text size="xs" c="dimmed" ta="right">
               {t('feedback.counter', {
-                count: form.values.message.length,
+                length: form.values.message.length,
                 max: sendFeedbackBodyMessageMax,
               })}
             </Text>

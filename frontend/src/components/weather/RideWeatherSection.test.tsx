@@ -16,15 +16,6 @@ vi.mock('react-i18next', () => {
 
 import { RideWeatherSection } from './RideWeatherSection'
 
-// ScrollArea and SegmentedControl construct a ResizeObserver; the shared setup's mock is an arrow
-// function, which `new` refuses.
-class NoopResizeObserver {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
-}
-vi.stubGlobal('ResizeObserver', NoopResizeObserver)
-
 const plain = (s: string | null | undefined) => (s ?? '').replace(/[  ]/g, ' ')
 
 const ride = (overrides: Partial<RideDto> = {}): RideDto =>

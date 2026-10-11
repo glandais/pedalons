@@ -43,7 +43,7 @@ export function AdGallery({ images, name }: AdGalleryProps) {
         <Box pos="relative">
           <UnstyledButton
             onClick={() => setZoomed(true)}
-            aria-label={t('ads.detail.openImage', { index: index + 1, count: images.length })}
+            aria-label={t('ads.detail.openImage', { index: index + 1, total: images.length })}
             style={{ display: 'block', width: '100%' }}
           >
             <Image src={resolve(current, MAIN_HEIGHT * 2)} alt={name} h={MAIN_HEIGHT} fit="cover" />
@@ -87,7 +87,7 @@ export function AdGallery({ images, name }: AdGalleryProps) {
               <UnstyledButton
                 key={image}
                 onClick={() => setIndex(i)}
-                aria-label={t('ads.detail.openImage', { index: i + 1, count: images.length })}
+                aria-label={t('ads.detail.openImage', { index: i + 1, total: images.length })}
                 aria-current={i === index}
                 style={{
                   flex: '0 0 auto',

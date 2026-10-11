@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { useEffectiveTimezone } from '@/utils/dateFormat'
-import { zoneCityName, zoneCityOf, sameOffsetAt } from '@/utils/zoneLabel'
+import { zoneCityOf, sameOffsetAt } from '@/utils/zoneLabel'
 import { wallTimeToInstant, type WallTime } from '@/utils/wallTime'
 
 /**
@@ -20,8 +20,5 @@ export function useZoneMention(zone: string, wall?: WallTime | null): string | n
     if (!Number.isNaN(parsed.getTime())) instant = parsed
   }
   if (sameOffsetAt(instant, zone, readerZone)) return null
-  return t('timezone.zoneMention', {
-    city: zoneCityName(zone, i18n.language),
-    ofCity: zoneCityOf(zone, i18n.language),
-  })
+  return t('timezone.zoneMention', { ofCity: zoneCityOf(zone, i18n.language) })
 }

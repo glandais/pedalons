@@ -47,12 +47,6 @@ function preferences(overrides: Partial<NotificationPreferencesDto>): Notificati
 describe('NotificationPreferences', () => {
   beforeEach(() => {
     state.data = undefined
-    // The table's scroll container constructs one; the shared setup's stub is not a class.
-    globalThis.ResizeObserver = class {
-      observe() {}
-      unobserve() {}
-      disconnect() {}
-    } as unknown as typeof ResizeObserver
   })
   afterEach(cleanup)
 

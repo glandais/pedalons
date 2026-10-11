@@ -23,14 +23,6 @@ import { useTeamActivity, useWeekSummary, eventPath } from './memberHomeHelpers'
 import { QuickActions } from './QuickActions'
 import { MyTeamsCard } from './MyTeamsCard'
 
-// The Menu's positioning builds a ResizeObserver with `new`, which the arrow-function mock of
-// test/setup.ts cannot be under vitest 4.
-globalThis.ResizeObserver = class {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
-}
-
 function team(overrides: Partial<TeamDetailDto>): TeamDetailDto {
   return {
     id: 't1',

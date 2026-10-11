@@ -169,7 +169,7 @@ export function AdContactModal({
               {...form.getInputProps('message')}
             />
             <Text size="xs" c="dimmed" ta="right">
-              {t('ads.contact.counter', { count: length, max: contactAdAuthorBodyMessageMax })}
+              {t('ads.contact.counter', { length, max: contactAdAuthorBodyMessageMax })}
             </Text>
           </Stack>
 

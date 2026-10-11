@@ -32,14 +32,6 @@ vi.mock('@/config/paths', () => ({
 
 import { TagPicker } from './TagPicker'
 
-// The MultiSelect's dropdown measures itself; the shared setup's ResizeObserver mock is not
-// constructible.
-globalThis.ResizeObserver = class {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
-}
-
 const tag = (id: string, label: string): TagWithUsageDto => ({
   id,
   label,

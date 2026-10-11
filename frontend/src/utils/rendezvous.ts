@@ -1,6 +1,6 @@
 import type { TFunction } from 'i18next'
 import { formatPattern } from './dateFormat'
-import { isSupportedZone, sameOffsetAt, supportedZone, zoneCityName, zoneCityOf } from './zoneLabel'
+import { isSupportedZone, sameOffsetAt, supportedZone, zoneCityOf } from './zoneLabel'
 
 /**
  * The mention a rendezvous carries when its zone does not have the reader's offset
@@ -45,10 +45,7 @@ export function rendezvousMention(
     formatPattern(date, 'yyyy-MM-dd', language, zone) ===
     formatPattern(date, 'yyyy-MM-dd', language, readerZone)
   const time = formatPattern(date, sameDay ? 'p' : 'EEE p', language, readerZone)
-  const label = t('timezone.zoneMention', {
-    city: zoneCityName(zone, language),
-    ofCity: zoneCityOf(zone, language),
-  })
+  const label = t('timezone.zoneMention', { ofCity: zoneCityOf(zone, language) })
   const readerEquivalent = t('timezone.readerEquivalent', { time })
   return {
     label,

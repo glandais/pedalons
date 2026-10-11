@@ -29,14 +29,6 @@ vi.mock('@/store/authStore', () => ({
 import { AdCardActions, PublicationCardActions } from './CardActions'
 import { getGetRideWeatherQueryKey } from '@/api/endpoints/rides/rides'
 
-// The Menu's positioning builds a ResizeObserver with `new`, which the arrow-function mock of
-// test/setup.ts cannot be under vitest 4.
-globalThis.ResizeObserver = class {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
-}
-
 function ride(overrides: Partial<RideDto> = {}): PublicationDto {
   return {
     type: 'RIDE',

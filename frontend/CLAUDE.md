@@ -21,11 +21,12 @@ pnpm generate-routes               # Regenerate path builders + deeplinks from .
 pnpm generate-brand-colors         # Regenerate src/lib/badgeColors.generated.ts (+ mobile) from ../contracts/brand-colors.yaml
 pnpm lint                          # oxlint (includes i18next/no-literal-string via jsPlugins)
 pnpm lint:fix                      # oxlint with auto-fix
-pnpm format                        # Prettier
+pnpm format                        # i18next-cli extract (sorts the catalogues, scaffolds new keys) + Prettier
 pnpm test                          # Vitest (watch mode)
 pnpm e2e                           # Playwright against the e2e stack (scripts/e2e.sh up first) — see e2e/README.md
-pnpm i18n:lint                     # Hardcoded strings + interpolation params (French only) — fails today, see ledger WEB-62
-pnpm i18n:extract                  # DESTRUCTIVE today: drops dynamic keys and rewrites the catalogue (ledger WEB-62) — don't run it
+pnpm i18n:check                    # extract --ci (sorted, nothing missing) + i18n:lint + i18n:status — in CI and `pnpm check`
+pnpm i18n:lint                     # Interpolation params of each t() call vs the French string (+ hardcoded strings)
+pnpm i18n:status                   # English vs French, key by key
 ```
 
 ## Stack
@@ -90,12 +91,29 @@ Custom axios mutator in `lib/axiosInstance.ts` handles: JWT bearer tokens from a
 - i18next with browser language detection. **French is the default/fallback language.**
 - **The SSR server picks the language**, in order: the signed-in user's `language` preference, the `lang` cookie (written by `LanguageSwitcher` via `persistLanguageChoice`), then `Accept-Language`. The client only follows `<html lang>` and caches nothing from detection — so an explicit choice must go through `persistLanguageChoice`, never localStorage, or it is lost on reload (a client-side override would mismatch the hydration).
 - Single `common` namespace per language: `locales/fr/common.json`, `locales/en/common.json`
-- **Keys are stored FLAT with dots** — `"map.tooltip.climb": "…"`, *not* nested `{ "map": { "tooltip": … } }` objects. Add new keys as flat entries next to their siblings; they still resolve via `t('map.tooltip.climb')` (i18next's `ignoreJSONStructure`). Adding a nested object instead is a silent trap — it "works" but breaks the file's convention.
-- **Keys are typed** (`src/i18n/i18next.d.ts`, ledger `WEB-73`): every `t()` call is checked against `fr/common.json`, so a key missing from it fails `pnpm typecheck` — literal keys and keys built from a typed value alike (`` t(`roles.${role}`) `` checks every `TeamRole`, Orval enums included). A key held in a variable or a field is a `TranslationKey` (`src/lib/i18nUtils.ts`), never a `string`; an API error code is an `ErrorCode`, never a `string`, so a new backend code without a translation breaks the typecheck. Passing `defaultValue` turns the check off for that call: keep it for real fallbacks.
-- Add every key to **both** locale files, by hand, next to its siblings. `src/i18n/catalogues.test.ts` fails when English lacks a French key (plural forms aside: French has `_many`, English doesn't).
-- **Interpolation**: `{{var}}` placeholders passed as `t('key', { var })`. Pluralize with `_one`/`_other` key suffixes + a `{{count}}` param (e.g. `form.charCount_one` / `form.charCount_other`).
-- `tRegister(key)` marks a key stored for later (route config, nav items): it types it as a `TranslationKey`.
-- oxlint's `i18next/no-literal-string` (a **warning**, not an error) flags hardcoded user-facing strings — prefer `t()` even where lint wouldn't block.
+- **Keys are stored FLAT with dots** — `"map.tooltip.climb": "…"`, *not* nested `{ "map": { "tooltip": … } }` objects (`keySeparator: false`, in i18next-cli's config and in the types). Adding a nested object is a silent trap — it "works" but breaks the file's convention, and `catalogues.test.ts` rejects it.
+- **The catalogues are sorted** by i18next-cli (alphabetically, plural forms in CLDR order). Add a key anywhere and run `pnpm format` (or `./format.sh frontend`), which sorts it into place; `pnpm i18n:check` fails on an unsorted file.
+
+**What checks what** — every check below runs in CI:
+
+| Check | Catches |
+|---|---|
+| `pnpm typecheck` (`src/i18n/i18next.d.ts`, ledger `WEB-73`) | A `t()` key absent from `fr/common.json` — literal, or built from a typed value |
+| `src/i18n/catalogues.test.ts` | A key in French but not English (or the reverse); a plural missing a form of its language or carrying one it lacks; a `___MISSING_TRANSLATION___` left in; a non-string value |
+| `pnpm i18n:check` | An unsorted catalogue or a key used in code but absent (`extract --ci`); a `t()` call whose params don't match the French string (`lint`); English behind French (`status`) |
+| `pnpm lint` (oxlint `i18next/no-literal-string`, a **warning**) | Hardcoded user-facing JSX text |
+
+**Rules:**
+
+- **Never let a key travel as a `string`.** A key held in a variable, a field or a config is a `TranslationKey` (`src/lib/i18nUtils.ts`) — `tRegister(key)` marks and types one stored for later (route config, nav items). An API error code is an `ErrorCode`, so a backend code without a translation breaks the typecheck. Never cast a key (`as Parameters<typeof t>[0]`, `as any`) to get past the typecheck: add the key.
+- **A key built from a value interpolates a typed value** — `` t(`status.${dto.status}`) ``, `` t(`notifications.typeLabel.${type}`) ``: the typecheck checks every member of the union, Orval enums included, and fails on the one without a key. `satisfies` adds nothing to that check; `.toLowerCase() as Lowercase<X>` keeps it.
+- **`defaultValue` switches the check off** for that call (any string key is accepted): use it only for a real fallback chain (`LoginForm`: `auth.errors.<code>` then `errors.api.<code>`), never to silence the typecheck.
+- **Add every key to both files**, translated. `pnpm format` scaffolds a key used in code but absent with `___MISSING_TRANSLATION___` — that value satisfies the typecheck, and only `catalogues.test.ts` (and `i18n:status`) catches it: replace it before committing.
+- **Plurals**: `_one`/`_other` suffixes + a `count` param, **and `_many` in French** (`Intl.PluralRules('fr')` puts a million there; same text as `_other`). `_zero` is optional (i18next reads it for 0 in any language). English has no `_many`. **`count` is reserved for plurals**: i18next looks for `key_one`/`key_other` as soon as `count` is passed, so a plain counter takes another name (`{{length}} / {{max}}`, `{{index}} sur {{total}}`).
+- **Interpolation**: `{{var}}` placeholders passed as `t('key', { var })`. Every param a call passes must appear in the French string, and every placeholder be passed (`i18n:lint`). Where languages need different words, compute one value that fits all of them rather than passing one param per language: the zone mention passes `ofCity` (« de Tokyo » in French, « Tokyo » in English, `zoneCityOf`), never `city` plus `ofCity`.
+- **A helper that translates takes a `TFunction`** (from `i18next`), not a hand-written `(key: string) => string`; its test reads a real instance (`await createServerI18n('fr')`), not a stub mimicking interpolation.
+- **Never remove a key on i18next-cli's say-so**: it can't resolve a key built from an Orval enum, which is why `removeUnusedKeys` is `false` (ledger `WEB-62`). A key is dead when no literal *and* no built key (`` `prefix.${…}` ``) can produce it — then delete it from both files.
+- oxlint's `i18next/no-literal-string` is a warning: prefer `t()` even where lint wouldn't block.
 
 ### List and detail page shells
 
@@ -180,7 +198,7 @@ Public pages unfurl into rich social/messaging cards via server-rendered OG/Twit
 - **Never use SVG for icons** — use `@tabler/icons-react`. **Never pass it `title`**: the icon renders a `<title>` inside its `<svg>`, React 19 hoists it out of the server HTML, and the page fails to hydrate (#418). Name it with `aria-label`; a hover hint goes on a wrapping element.
 - **Mantine UI exclusively** — check https://mantine.dev/llms.txt for docs.
 - **A calendar event's `color` is a Mantine palette *name*, never a hex** (`components/calendar/CalendarView.tsx`) — `@mantine/schedule` runs it through `theme.variantColorResolver`, which resolves a name to the scheme-aware `--mantine-color-<name>-light` pair and can only blend a raw hex into `rgba(hex, 0.1)` over white. A hex looks right in light mode and renders the event unreadable in dark. Same reflex for any Mantine `color` prop.
-- **A templated i18n key must interpolate a typed value, never a `string`** — `` t(`status.${dto.status}`) `` is checked key by key by the typecheck (see i18n above); `satisfies` adds nothing to that check.
+- **An i18n key never travels as a `string`** — a templated key interpolates a typed value, a stored key is a `TranslationKey`, an error code an `ErrorCode` (see i18n above).
 - **Frontend config comes from `/api/config` endpoint**, not `.env` files.
 - **Logos**: `TeamAvatar` (with initials fallback) vs `EntityLogo` (no fallback).
 - **`MediaEditor` needs `teamSlug` prop** for uploads (hidden during team creation).

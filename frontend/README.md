@@ -58,13 +58,12 @@ mkcert localhost 127.0.0.1 <your LAN IP>   # generates localhost+2.pem and local
 | `pnpm generate-brand-colors` | Regenerate the business colour code (web + mobile) from `../contracts/brand-colors.yaml` |
 | `pnpm generate-icons` | Regenerate PWA icons |
 | `pnpm lint` | oxlint |
-| `pnpm format` | Prettier |
+| `pnpm format` | Sort the translation catalogues (i18next-cli extract), then Prettier |
 | `pnpm test` | Vitest (watch mode) |
 | `pnpm test:coverage` | Vitest with coverage report |
 | `pnpm e2e` | Playwright against the e2e stack — see [e2e/README.md](e2e/README.md) |
-| `pnpm i18n:lint` | Validate i18n key usage |
-| `pnpm i18n:extract` | Extract new translation keys |
-| `pnpm check` | Install, regenerate, format, typecheck, lint and build |
+| `pnpm i18n:check` | Translation catalogues sorted and complete, `t()` params, English vs French — see CLAUDE.md « i18n » |
+| `pnpm check` | Install, regenerate, format, typecheck, lint, i18n:check and build |
 
 ## API Client Generation
 

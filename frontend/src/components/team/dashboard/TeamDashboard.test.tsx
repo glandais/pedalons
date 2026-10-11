@@ -33,13 +33,6 @@ vi.mock('react-i18next', () => ({
 import { TeamDashboard } from './TeamDashboard'
 import { paths } from '@/config/paths'
 
-// Mantine's Menu and Progress build a ResizeObserver with `new`.
-globalThis.ResizeObserver = class {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
-}
-
 const TEAM_REF = {
   id: 't1',
   name: 'VC Craponne',

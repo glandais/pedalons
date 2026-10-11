@@ -63,7 +63,7 @@ describe('TimezoneChangePreview', () => {
     expect(text).toContain('\\"title\\":\\"Boucle\\"')
     expect(text).toContain('\\"date\\":\\"dimanche 11 octobre\\"')
     expect(text).toContain('\\"time\\":\\"09:30\\"')
-    expect(text).toContain('\\"city\\":\\"Montréal\\"')
+    expect(text).toContain('\\"ofCity\\":\\"de Montréal\\"')
   })
 
   it('names the trip of a stage', () => {
@@ -102,9 +102,7 @@ describe('TimezoneChangePreview', () => {
     renderPreview(preview({ pastCount: 2 }))
 
     expect(
-      screen.getByText(
-        'teams.settings.timezoneChange.past{"count":2,"city":"Montréal","ofCity":"de Montréal"}'
-      )
+      screen.getByText('teams.settings.timezoneChange.past{"count":2,"ofCity":"de Montréal"}')
     ).toBeTruthy()
   })
 
@@ -113,7 +111,7 @@ describe('TimezoneChangePreview', () => {
 
     expect(
       screen.getByText(
-        'teams.settings.timezoneChange.question{"from":"Athènes","to":"Le Caire","ofFrom":"d\'Athènes","ofTo":"du Caire"}'
+        'teams.settings.timezoneChange.question{"ofFrom":"d\'Athènes","ofTo":"du Caire"}'
       )
     ).toBeTruthy()
   })
