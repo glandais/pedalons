@@ -431,30 +431,31 @@ public class AuthService {
   /**
    * Past {@code pedalons.auth.password.max-failures} wrong passwords for the address, answers 429
    * without looking further (docs/LEDGER_*.md SEC-7, audit M4). Every failure counts, an unknown
-   * address's too: the limit must not tell which addresses have an account.
+   * address's too: the limit must not tell which addresses have an account. The guess is counted
+   * before the bcrypt and only the right password takes it back (docs/LEDGER_*.md SEC-36).
    */
   @Transactional
   @Public
   public AuthResult loginWithPassword(
       String email, String password, String userAgent, String ipAddress) {
     Domain domain = domainResolver.getDomain();
-    authThrottle.checkPassword(domain.getId(), email);
+    authThrottle.admitPassword(domain.getId(), email);
     User user = userRepository.findByEmailAndDomain(domain.getId(), email).orElse(null);
     if (user == null) {
       logFailedLogin("password", "unknown_account", email, domain.getId(), ipAddress);
-      throw invalidPassword(domain, email);
+      throw invalidPassword();
     }
 
     if (user.getPasswordHash() == null) {
       // Return INVALID_CREDENTIALS to avoid leaking whether the account exists
       // (same response as user-not-found above)
       logFailedLogin("password", "no_password", email, domain.getId(), ipAddress);
-      throw invalidPassword(domain, email);
+      throw invalidPassword();
     }
 
     if (!BcryptUtil.matches(password, user.getPasswordHash())) {
       logFailedLogin("password", "wrong_password", email, domain.getId(), ipAddress);
-      throw invalidPassword(domain, email);
+      throw invalidPassword();
     }
 
     authThrottle.clearPassword(domain.getId(), email);
@@ -648,8 +649,8 @@ public class AuthService {
         method, reason, email, domainId, ipAddress);
   }
 
-  private BadRequestException invalidPassword(Domain domain, String email) {
-    authThrottle.recordPasswordFailure(domain.getId(), email);
+  /** Already counted by {@link AuthThrottle#admitPassword}. */
+  private BadRequestException invalidPassword() {
     return new BadRequestException(ErrorCode.INVALID_CREDENTIALS);
   }
 

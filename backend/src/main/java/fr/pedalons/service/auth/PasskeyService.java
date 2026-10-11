@@ -145,10 +145,13 @@ public class PasskeyService {
             .findValidByUserIdAndType(user.getId(), WebAuthnChallengeType.REGISTRATION)
             .orElseThrow(() -> new BadRequestException(ErrorCode.TOKEN_INVALID));
 
-    // Delete the challenge in separate transaction (single use, survives verification failure)
+    // Consumed in a separate transaction (survives verification failure), and single use only if
+    // this request is the one whose delete hit the row (docs/LEDGER_*.md SEC-37).
     String challengeValue = storedChallenge.getChallenge();
     Long challengeId = storedChallenge.getId();
-    QuarkusTransaction.requiringNew().run(() -> challengeRepository.deleteById(challengeId));
+    if (!QuarkusTransaction.requiringNew().call(() -> challengeRepository.consume(challengeId))) {
+      throw new BadRequestException(ErrorCode.TOKEN_INVALID);
+    }
 
     try {
       @SuppressWarnings("unchecked")
@@ -337,10 +340,14 @@ public class PasskeyService {
               .filter(c -> c.getChallengeType() == WebAuthnChallengeType.AUTHENTICATION)
               .orElseThrow(() -> new BadRequestException(ErrorCode.TOKEN_INVALID));
 
-      // Delete the challenge in separate transaction (single use, survives verification failure)
+      // Consumed in a separate transaction (survives verification failure), and before the
+      // verification: a concurrent request that read the same challenge finds it gone and is
+      // refused, so one signed assertion opens one session (docs/LEDGER_*.md SEC-37).
       String challengeValue = storedChallenge.getChallenge();
       Long challengeId = storedChallenge.getId();
-      QuarkusTransaction.requiringNew().run(() -> challengeRepository.deleteById(challengeId));
+      if (!QuarkusTransaction.requiringNew().call(() -> challengeRepository.consume(challengeId))) {
+        throw new BadRequestException(ErrorCode.TOKEN_INVALID);
+      }
 
       // Build credential record from stored data
       AttestedCredentialData credentialData =

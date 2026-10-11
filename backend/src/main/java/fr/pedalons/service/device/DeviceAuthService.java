@@ -136,17 +136,15 @@ public class DeviceAuthService {
     Long userId = pedalonsQueryContext.getUserId();
     Long domainId = domainResolver.getDomainId();
 
-    authThrottle.checkDeviceCode(domainId, userId);
+    // Counted before the lookup, taken back once the code is known (docs/LEDGER_*.md SEC-36).
+    Long guessId = authThrottle.admitDeviceCode(domainId, userId);
     // Locked: "the first approval stands" below is a check-then-act, and two accounts confirming
     // the same code at once would otherwise both read it unauthorized (docs/LEDGER_*.md AUD-16).
     DeviceCode deviceCode =
         deviceCodeRepository
             .findValidByUserCodeForUpdate(domainId, userCode)
-            .orElseThrow(
-                () -> {
-                  authThrottle.recordDeviceCodeFailure(domainId, userId);
-                  return new BadRequestException(ErrorCode.TOKEN_INVALID);
-                });
+            .orElseThrow(() -> new BadRequestException(ErrorCode.TOKEN_INVALID));
+    authThrottle.forgetDeviceCode(guessId);
 
     if (!deviceCode.isValid()) {
       throw new BadRequestException(ErrorCode.TOKEN_EXPIRED);
@@ -263,13 +261,14 @@ public class DeviceAuthService {
    * <p>Anonymous, so only the domain's budget bounds it: without one, this lookup alone would find
    * the pending codes that completeDeviceCodeFlow then needs a single try to take (SEC-4).
    */
+  @Transactional // takes back the guess of a known code (docs/LEDGER_*.md SEC-36)
   @Public
   public Optional<PendingDeviceCode> findPendingUserCode(String userCode) {
     Long domainId = domainResolver.getDomainId();
-    authThrottle.checkDeviceCode(domainId, null);
+    Long guessId = authThrottle.admitDeviceCode(domainId, null);
     Optional<DeviceCode> deviceCode = deviceCodeRepository.findValidByUserCode(domainId, userCode);
-    if (deviceCode.isEmpty()) {
-      authThrottle.recordDeviceCodeFailure(domainId, null);
+    if (deviceCode.isPresent()) {
+      authThrottle.forgetDeviceCode(guessId);
     }
     return deviceCode.map(
         code ->
@@ -289,15 +288,12 @@ public class DeviceAuthService {
     Long userId = pedalonsQueryContext.getUserId();
     Long domainId = domainResolver.getDomainId();
 
-    authThrottle.checkDeviceCode(domainId, userId);
+    Long guessId = authThrottle.admitDeviceCode(domainId, userId);
     DeviceCode deviceCode =
         deviceCodeRepository
             .findValidByUserCode(domainId, userCode)
-            .orElseThrow(
-                () -> {
-                  authThrottle.recordDeviceCodeFailure(domainId, userId);
-                  return new BadRequestException(ErrorCode.TOKEN_INVALID);
-                });
+            .orElseThrow(() -> new BadRequestException(ErrorCode.TOKEN_INVALID));
+    authThrottle.forgetDeviceCode(guessId);
     deviceCode.setExpiresAt(Instant.now());
 
     LOG.infov(

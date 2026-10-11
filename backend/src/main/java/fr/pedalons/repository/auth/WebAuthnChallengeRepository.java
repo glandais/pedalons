@@ -38,6 +38,17 @@ public class WebAuthnChallengeRepository implements PanacheRepository<WebAuthnCh
     return list("user.id = ?1 order by createdAt", userId);
   }
 
+  /**
+   * Deletes the challenge and tells whether this call is the one that did. One {@code DELETE ...
+   * WHERE id = ?}: it waits on the row lock of a concurrent consumer and reports the rows it hit,
+   * so of two requests that both read the challenge, only one sees {@code true} — the single use a
+   * read-then-{@code deleteById} only claimed, since {@code deleteById} answers {@code false}
+   * without throwing once the row is gone (docs/LEDGER_*.md SEC-37).
+   */
+  public boolean consume(Long id) {
+    return delete("id = ?1", id) == 1;
+  }
+
   public long deleteExpiredChallenges() {
     return delete("expiresAt < CURRENT_TIMESTAMP");
   }
