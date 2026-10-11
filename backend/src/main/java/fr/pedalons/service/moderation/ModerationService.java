@@ -29,6 +29,7 @@ import fr.pedalons.repository.moderation.ContentReportRepository;
 import fr.pedalons.repository.team.UserTeamRepository;
 import fr.pedalons.service.comment.CommentService;
 import fr.pedalons.service.comment.CommentThreads;
+import fr.pedalons.service.publication.PublicationEndCalculator;
 import fr.pedalons.service.security.PedalonsQueryContext;
 import fr.pedalons.service.security.annotation.Admin;
 import fr.pedalons.service.security.annotation.Logged;
@@ -74,6 +75,7 @@ public class ModerationService {
   @Inject CommentRepository commentRepository;
   @Inject UserTeamRepository userTeamRepository;
   @Inject CommentService commentService;
+  @Inject PublicationEndCalculator publicationEndCalculator;
 
   // ------------------------------------------------------------------ team queue
 
@@ -222,6 +224,10 @@ public class ModerationService {
               .ifPresent(
                   entity -> {
                     entity.setDeleted(true);
+                    if (entity instanceof Route route) {
+                      // Its rides and stages lose its length (docs/LEDGER_*.md API-87).
+                      publicationEndCalculator.refreshUsersOf(route);
+                    }
                     // Decided: the reports no longer hide it. Should a platform admin undelete it,
                     // no open report is left to dismiss — it must not stay hidden for good.
                     entity.setModerationHiddenAt(null);

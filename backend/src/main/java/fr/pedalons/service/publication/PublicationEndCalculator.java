@@ -37,9 +37,11 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>The value is stored ({@code team_entities.end_date_time}) so the lists can filter and sort on
  * it. That is its price: every write that changes a departure, a group, a stage or a route's length
- * must call {@link #refresh} — a forgotten one shows an outing as past or upcoming by mistake. The
- * callers are {@code RideService}, {@code TripService}, {@code PublicationPublishScheduler}, {@code
- * RouteService} (through {@link #refreshUsersOf}) and, through the first two, the biketeam import;
+ * — deleting or restoring the route included — must call {@link #refresh} — a forgotten one shows
+ * an outing as past or upcoming by mistake. The callers are {@code RideService}, {@code
+ * TripService}, {@code PublicationPublishScheduler}, {@code RouteService}, {@code
+ * ModerationService} and {@code BiketeamMigrationService} (the last three through {@link
+ * #refreshUsersOf}) and, through the first two, the biketeam import;
  * {@link PublicationEndBackfill} fills what an older backend left null.
  */
 @ApplicationScoped
@@ -88,7 +90,9 @@ public class PublicationEndCalculator {
   /**
    * Refreshes every ride and trip whose end depends on {@code route}: rides that point at it
    * directly or through a group, trips that have a stage on it. Called when the route's track (so
-   * its distance) is replaced. Deleted ones too: an undelete brings them back as they were.
+   * its distance) is replaced, and when the route is deleted or restored — a deleted route counts
+   * as none (docs/LEDGER_*.md API-87). Deleted rides and trips too: an undelete brings them back as
+   * they were.
    */
   public void refreshUsersOf(Route route) {
     List<Ride> rides =

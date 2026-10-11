@@ -250,7 +250,12 @@ public class CalendarService {
         getPublications(teamIds, user, from, to, PublicationType.TRIP).stream()
             .map(Trip.class::cast)
             .toList();
-    List<TripStage> stages = trips.stream().flatMap(trip -> trip.getStages().stream()).toList();
+    // A trip in the window may have stages outside it, now that a trip started before `from` is in.
+    List<TripStage> stages =
+        trips.stream()
+            .flatMap(trip -> trip.getStages().stream())
+            .filter(stage -> !stage.isDeleted() && overlaps(stage, from, to))
+            .toList();
 
     UserParticipations participations =
         participationLookup.forPublications(user.getId(), ids(rides), ids(trips));
@@ -267,6 +272,16 @@ public class CalendarService {
       events.add(toCalendarEvent(stage, participations, thumbnails));
     }
     return new CalendarEventsResponse(events);
+  }
+
+  /**
+   * Whether an event is in the window: under way at some point of it — it ends at or after {@code
+   * from} and starts at or before {@code to} — not merely starting in it (docs/LEDGER_*.md API-88).
+   * The same bounds as {@link #getPublications}, for a stage.
+   */
+  private static boolean overlaps(TripStage stage, Instant from, Instant to) {
+    return !PublicationEndCalculator.effectiveEnd(stage).isBefore(from)
+        && !stage.getDateTime().isAfter(to);
   }
 
   private static List<Long> ids(List<? extends Publication> publications) {
@@ -314,7 +329,11 @@ public class CalendarService {
   private static final ThemedThumbnail NO_THUMBNAIL = new ThemedThumbnail(null, null);
 
   /**
-   * The ICS feeds authenticate through a calendar token rather than a session, so god mode is read
+   * The rides or trips under way at some point of the window: ended at or after {@code from}, by
+   * their stored end, and started at or before {@code to} (docs/LEDGER_*.md API-88) — a trip that
+   * began before {@code from} and still runs is in it.
+   *
+   * <p>The ICS feeds authenticate through a calendar token rather than a session, so god mode is read
    * off the resolved {@code user} — {@link
    * fr.pedalons.service.security.PedalonsQueryContext#isPlatformAdmin()} would see no user there.
    */
@@ -331,7 +350,7 @@ public class CalendarService {
             .userId(user.getId())
             .type(publicationType)
             .teamIds(teamIds)
-            .from(from)
+            .notEndedAt(from)
             .to(to)
             .includeDeleted(false)
             .platformAdmin(user.isPlatformAdmin())

@@ -657,6 +657,9 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
 
     route.setDeleted(true);
     routeRepository.persist(route);
+    // A deleted route no longer gives its length: every ride, group and stage on it falls back to
+    // the default duration (docs/LEDGER_*.md API-87).
+    publicationEndCalculator.refreshUsersOf(route);
   }
 
   @CheckAccess(entityType = EntityType.ROUTE, action = ActionType.DELETE)
@@ -667,6 +670,8 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
     requireNotRemovedByModeration(route);
     route.setDeleted(false);
     routeRepository.persist(route);
+    // And a restored one gives it back (docs/LEDGER_*.md API-87).
+    publicationEndCalculator.refreshUsersOf(route);
     return toDto(route);
   }
 

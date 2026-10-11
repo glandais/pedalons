@@ -7,6 +7,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import fr.pedalons.api.AbstractResourceTest;
 import fr.pedalons.domain.calendar.CalendarToken;
 import fr.pedalons.domain.ride.Ride;
+import fr.pedalons.domain.trip.Trip;
+import fr.pedalons.domain.trip.TripStage;
 import fr.pedalons.repository.calendar.CalendarTokenRepository;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
@@ -123,6 +125,71 @@ class CalendarResourceTest extends AbstractResourceTest {
         .then()
         .statusCode(200)
         .body("events", notNullValue());
+  }
+
+  /**
+   * The window keeps what is under way in it, not only what starts in it (docs/LEDGER_*.md API-88):
+   * a trip begun before {@code from} and still running is there, with its stages that end after
+   * {@code from} — one begun the day before included — and without the ones already over or
+   * removed.
+   */
+  @Test
+  void getEvents_keepsATripStartedBeforeTheWindow_withItsStagesStillUnderWay() {
+    Instant now = Instant.now().truncatedTo(ChronoUnit.SECONDS);
+    Trip trip =
+        dataService.createTrip(team1, user1, "Tour en cours", now.minus(5, ChronoUnit.DAYS));
+    TripStage over =
+        dataService.createTripStage(user1, trip, "Étape finie", 1, now.minus(5, ChronoUnit.DAYS));
+    TripStage overnight =
+        dataService.createTripStage(
+            user1, trip, "Étape de nuit", 2, now.minus(26, ChronoUnit.HOURS));
+    TripStage today =
+        dataService.createTripStage(
+            user1, trip, "Étape du jour", 3, now.minus(1, ChronoUnit.HOURS));
+    TripStage removed =
+        dataService.createTripStage(
+            user1, trip, "Étape retirée", 4, now.minus(2, ChronoUnit.HOURS));
+    dataService.deleteTripStage(removed);
+    dataService.setEndDateTime(
+        over.getId(), now.minus(5, ChronoUnit.DAYS).plus(4, ChronoUnit.HOURS));
+    dataService.setEndDateTime(overnight.getId(), now.minus(1, ChronoUnit.HOURS));
+    dataService.setEndDateTime(today.getId(), now.plus(2, ChronoUnit.HOURS));
+    dataService.setEndDateTime(trip.getId(), now.plus(2, ChronoUnit.HOURS));
+
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .queryParam("from", now.minus(1, ChronoUnit.DAYS).toString())
+        .queryParam("to", now.plus(1, ChronoUnit.DAYS).toString())
+        .when()
+        .get("/api/calendar/events")
+        .then()
+        .statusCode(200)
+        .body(
+            "events.findAll { it.type == 'TRIP_STAGE' }.title",
+            containsInAnyOrder("Étape de nuit", "Étape du jour"));
+  }
+
+  /** A trip over before the window stays out of it. */
+  @Test
+  void getEvents_leavesOutATripOverBeforeTheWindow() {
+    Instant now = Instant.now().truncatedTo(ChronoUnit.SECONDS);
+    Trip trip = dataService.createTrip(team1, user1, "Tour fini", now.minus(5, ChronoUnit.DAYS));
+    TripStage stage =
+        dataService.createTripStage(user1, trip, "Étape", 1, now.minus(5, ChronoUnit.DAYS));
+    dataService.setEndDateTime(stage.getId(), now.minus(2, ChronoUnit.DAYS));
+    dataService.setEndDateTime(trip.getId(), now.minus(2, ChronoUnit.DAYS));
+
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .queryParam("from", now.minus(1, ChronoUnit.DAYS).toString())
+        .queryParam("to", now.plus(1, ChronoUnit.DAYS).toString())
+        .when()
+        .get("/api/calendar/events")
+        .then()
+        .statusCode(200)
+        .body("events.findAll { it.type == 'TRIP_STAGE' }", empty());
   }
 
   @Test

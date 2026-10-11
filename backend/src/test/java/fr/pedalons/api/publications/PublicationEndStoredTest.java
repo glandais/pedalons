@@ -394,6 +394,48 @@ class PublicationEndStoredTest extends AbstractResourceTest {
   }
 
   /**
+   * A deleted route counts as none (docs/LEDGER_*.md API-87): its rides, groups and stages fall back
+   * to the default duration when it is deleted, and get its length back when it is restored.
+   */
+  @Test
+  void deletingThenRestoringARoute_movesTheEndOfEveryRideGroupAndStageOnIt() {
+    Route route = route("Supprimée", 50_000);
+    JsonPath ride =
+        postRide(
+            rideRequest(
+                START, List.of(new GroupRequest(null, "G", null, 25f, null, route.getSlug()))));
+    JsonPath trip = postTrip(tripRequest(List.of(stage(null, "J1", START, 25f, route.getSlug()))));
+    Instant routed = START.plus(Duration.ofHours(2));
+    assertEquals(routed, storedEnd(ride.getString("id")));
+    assertEquals(routed, storedEnd(trip.getString("id")));
+
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .when()
+        .delete("/api/teams/" + team1Slug + "/routes/" + route.getSlug())
+        .then()
+        .statusCode(204);
+
+    assertEquals(START.plus(DEFAULT), storedEnd(ride.getString("id")));
+    assertEquals(START.plus(DEFAULT), storedEnd(trip.getString("id")));
+    assertEquals(START.plus(DEFAULT), storedEnd(trip.getString("stages[0].id")));
+
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .contentType("application/json")
+        .when()
+        .post("/api/teams/" + team1Slug + "/routes/" + route.getSlug() + "/undelete")
+        .then()
+        .statusCode(200);
+
+    assertEquals(routed, storedEnd(ride.getString("id")));
+    assertEquals(routed, storedEnd(trip.getString("id")));
+    assertEquals(routed, storedEnd(trip.getString("stages[0].id")));
+  }
+
+  /**
    * The zone is an entry zone, not a cache (docs/LEDGER_*.md API-60, plan §2.3): a ride located by
    * its route keeps its zone and its start when the route's track is replaced elsewhere — only its
    * end moves.

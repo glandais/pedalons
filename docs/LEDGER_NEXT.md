@@ -392,26 +392,6 @@ arbitrages, ce qui suit est ici (et les recettes des sorties, `WEB-61`, `MOB-52`
       (résumé seul, ou points de passage) avec les contraintes de taille des deux apps. Les aperçus
       de lien (`og:`) ne portent **jamais** de météo.
 
-### Fin stockée d'une sortie : ce qui suit `API-85`
-
-Restes du plan [`2026-10-06-team-agenda.md`](plans/archive/2026-10-06-team-agenda.md), archivé
-le 6 octobre 2026.
-
-- [ ] `API-87` **Supprimer ou restaurer un parcours ne recalcule pas la fin des sorties qui le
-      citent (S)** — `PublicationEndCalculator` traite un parcours supprimé comme absent (départ +
-      3 h), mais seul le remplacement du GPX (`RouteService.updateRoute`) relance le calcul des
-      sorties, groupes et étapes qui le citent. Après une suppression ou une restauration, la fin
-      stockée reste l'ancienne jusqu'au prochain enregistrement de la sortie ou du voyage : une
-      sortie peut sortir trop tôt ou trop tard de « À venir ». Brancher le même recalcul sur la
-      suppression et la restauration du parcours ; test dans `PublicationEndStoredTest`.
-- [ ] `API-88` **La fenêtre du calendrier filtre sur le départ, pas sur la fin (S)** —
-      `CalendarService` (et `from`/`to` de `GET /api/calendar/events`) garde un événement dont le
-      **départ** est dans la fenêtre : un voyage commencé avant `from` (aujourd'hui − 30 jours par
-      défaut, ou le premier du mois au mobile) n'y figure pas alors qu'il dure encore, et son
-      étape du jour non plus si elle a commencé la veille. Filtrer sur
-      `fin ≥ from et départ ≤ to`, avec la fin stockée d'`API-85`. Un voyage **sans étape** reste
-      absent du calendrier et de son ICS : c'est `API-18`.
-
 ### Les chantiers d'infrastructure d'API
 
 Quatre chantiers ont été chiffrés au §4 du

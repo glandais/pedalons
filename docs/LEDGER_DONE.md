@@ -1766,6 +1766,32 @@ Le détail de chacune est dans l'historique git de ce fichier et de `LEDGER_NEXT
   `NotificationTextsTest.formatDateTime_followsTheReadersLanguageAndZone`. **À ne pas défaire** :
   un nouveau cron prend `timeZone = Crons.ZONE` ; les heures des tâches de nuit sont des heures UTC.
 
+- `API-87` **Supprimer ou restaurer un parcours ne recalculait pas la fin des sorties qui le
+  citent** (2026-10-11, sans changement de contrat) — `PublicationEndCalculator` traite un parcours
+  supprimé comme absent (départ + 3 h), mais seul le remplacement du GPX relançait le calcul : après
+  une suppression ou une restauration, la fin stockée restait l'ancienne jusqu'au prochain
+  enregistrement, et une sortie pouvait quitter « À venir » trop tôt ou trop tard. `refreshUsersOf`
+  est désormais appelé par les quatre chemins qui changent le drapeau `deleted` d'un parcours :
+  `RouteService.deleteRoute` et `undeleteRoute`, le retrait par la modération
+  (`ModerationService.remove`) et la suppression relayée par la migration biketeam. Couvert par
+  `PublicationEndStoredTest.deletingThenRestoringARoute_movesTheEndOfEveryRideGroupAndStageOnIt`.
+  **À ne pas défaire** : tout nouveau chemin qui supprime ou restaure un parcours appelle
+  `refreshUsersOf`, comme celui qui remplace son tracé.
+
+- `API-88` **La fenêtre du calendrier filtrait sur le départ, pas sur la fin** (2026-10-11, sans
+  changement de contrat) — `CalendarService` ne gardait qu'un événement **parti** dans
+  `[from, to]` : un voyage commencé avant `from` (aujourd'hui − 30 jours par défaut, le premier du
+  mois au mobile) manquait alors qu'il durait encore, avec son étape du jour. Les sorties et les
+  voyages sont maintenant pris par chevauchement — fin stockée d'`API-85` ≥ `from` (filtre
+  `notEndedAt` de `PublicationQuery`, avec son repli départ + 3 h) et départ ≤ `to` —, pour
+  `GET /api/calendar/events`, l'agenda d'équipe et les deux flux ICS. Les étapes d'un voyage retenu
+  passent le même filtre une à une, ce qui écarte celles déjà finies ; les étapes **retirées** du
+  voyage (`deleted`), que le calendrier listait jusque-là, en sortent aussi. La description de
+  `from` / `to` au contrat n'a pas bougé. Un voyage sans étape reste absent (`API-18`). Couvert par
+  `CalendarResourceTest` (`getEvents_keepsATripStartedBeforeTheWindow_withItsStagesStillUnderWay`,
+  `getEvents_leavesOutATripOverBeforeTheWindow`). **À ne pas défaire** : la fenêtre du calendrier
+  se lit sur la fin, jamais sur le seul départ.
+
 ### Vie privée : les métadonnées retirées à l'import
 
 - `API-43` **Les images perdent leurs métadonnées au stockage** (2026-09-29, contrat inchangé) —

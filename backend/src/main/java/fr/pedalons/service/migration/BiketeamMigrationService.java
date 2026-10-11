@@ -82,6 +82,7 @@ import fr.pedalons.service.migration.live.BiketeamTargetResolver;
 import fr.pedalons.service.notification.NotificationPublisher;
 import fr.pedalons.service.place.PlaceService;
 import fr.pedalons.service.post.PostService;
+import fr.pedalons.service.publication.PublicationEndCalculator;
 import fr.pedalons.service.ride.RideService;
 import fr.pedalons.service.route.RouteService;
 import fr.pedalons.service.security.DomainResolver;
@@ -207,6 +208,7 @@ public class BiketeamMigrationService {
   @Inject PostService postService;
   @Inject AssetService assetService;
   @Inject TagService tagService;
+  @Inject PublicationEndCalculator publicationEndCalculator;
 
   /**
    * Everything one team's run carries, so the per-kind methods below need no ten-argument lists.
@@ -818,6 +820,8 @@ public class BiketeamMigrationService {
               : owned(routeRepository.findByIdOptional(mapped).orElse(null), team);
       if (gone != null) {
         gone.setDeleted(true);
+        // The rides and stages on it lose its length (docs/LEDGER_*.md API-87).
+        publicationEndCalculator.refreshUsersOf(gone);
       }
       return Outcome.SKIPPED;
     }
