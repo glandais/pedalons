@@ -133,11 +133,6 @@ class RideGroupsMap extends ConsumerWidget {
         backgroundSheetTitle: 'map.background'.tr(),
         hillshade: 'map.hillshade'.tr(),
       ),
-      // Encastrée dans la page, pas plein écran : rien ne la recouvre
-      // d'une barre translucide, contrairement au voile par défaut du hero
-      // (pensé pour la barre système sous laquelle glisse la carte plein
-      // écran). Même repli que `TripMap`.
-      topScrim: fullscreen,
       styles: servedMapStyleOptions(ref),
       hillshadeEnabled: servedHillshadeEnabled(ref),
       onHillshadeChanged: (bool on) =>

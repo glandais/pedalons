@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maplibre/maplibre.dart';
 import 'package:pedalons/core/pdl/map/pdl_map_controller.dart';
+import 'package:pedalons/core/pdl/map/pdl_route_arrow.dart';
 
 /// Un style qui applique les deux règles de MapLibre iOS qui comptent ici :
 /// `addSource` lève sur un identifiant déjà pris, et `removeSource` ne fait
@@ -10,6 +12,13 @@ import 'package:pedalons/core/pdl/map/pdl_map_controller.dart';
 class _StrictStyle extends Fake implements StyleController {
   final Set<String> sources = <String>{};
   final Map<String, String?> layers = <String, String?>{};
+  final Map<String, Uint8List> images = <String, Uint8List>{};
+
+  @override
+  Future<void> addImage(String id, Uint8List bytes) async {
+    await Future<void>.delayed(Duration.zero);
+    images[id] = bytes;
+  }
 
   @override
   Future<void> addSource(Source source) async {
@@ -358,6 +367,47 @@ void main() {
         unorderedEquals(<String>['pdl-track-a', 'pdl-track-b']),
       );
       expect(controller.selectedTrackId, 'b');
+    });
+  });
+
+  group('PdlMapController — sens des tracés', () {
+    test('les chevrons passent au-dessus de tous les tracés', () async {
+      final PdlMapController controller = PdlMapController();
+      addTearDown(controller.dispose);
+      final _StrictStyle style = _StrictStyle();
+
+      await controller.setContent(
+        tracks: <PdlMapTrack>[_track('a'), _track('b')],
+      );
+      await controller.attachStyle(style);
+
+      expect(style.images.keys, contains(pdlRouteArrowImageId));
+      expect(style.images[pdlRouteArrowImageId], isNotEmpty);
+      expect(style.layers['pdl-track-arrows-layer'], 'pdl-track-arrows');
+      final List<String> order = style.layers.keys.toList();
+      expect(
+        order.indexOf('pdl-track-arrows-layer'),
+        greaterThan(order.indexOf('pdl-track-b')),
+      );
+
+      // Le tracé sélectionné repasse au premier plan : ses chevrons aussi.
+      await controller.select('a');
+      final List<String> raised = style.layers.keys.toList();
+      expect(
+        raised.indexOf('pdl-track-arrows-layer'),
+        greaterThan(raised.indexOf('pdl-track-a')),
+      );
+    });
+
+    test('sans tracé, ni source ni couche de chevrons', () async {
+      final PdlMapController controller = PdlMapController();
+      addTearDown(controller.dispose);
+      final _StrictStyle style = _StrictStyle();
+
+      await controller.attachStyle(style);
+
+      expect(style.sources, isNot(contains('pdl-track-arrows')));
+      expect(style.layers.keys, isNot(contains('pdl-track-arrows-layer')));
     });
   });
 }

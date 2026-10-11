@@ -107,9 +107,8 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
     return Scaffold(
       body: Stack(
         children: <Widget>[
-          // La carte occupe tout le fond. `PdlMapHero` pose le voile haut et
-          // `SystemUiOverlayStyle.light` : rien n'est jamais écrit à même la
-          // tuile.
+          // La carte occupe tout le fond : elle se manipule librement.
+          // `PdlMapHero` accorde la barre système au thème.
           Positioned.fill(
             child: RouteMap(
               route: route,

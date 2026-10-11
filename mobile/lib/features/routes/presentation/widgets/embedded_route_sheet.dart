@@ -113,6 +113,7 @@ class _EmbeddedRouteSheetState extends ConsumerState<EmbeddedRouteSheet> {
                 route: route,
                 cursor: cursor,
                 onMapTapped: cursor.moveTo,
+                allowFullscreen: true,
               ),
             ),
           ),

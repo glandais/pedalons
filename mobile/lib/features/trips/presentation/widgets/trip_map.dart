@@ -88,7 +88,6 @@ class TripMap extends ConsumerWidget {
               backgroundSheetTitle: 'map.background'.tr(),
               hillshade: 'map.hillshade'.tr(),
             ),
-            topScrim: false,
             styles: servedMapStyleOptions(ref),
             hillshadeEnabled: servedHillshadeEnabled(ref),
             onHillshadeChanged: (bool on) =>
@@ -109,6 +108,9 @@ class TripMap extends ConsumerWidget {
               hillshade: servedHillshade(context, ref),
               styleUrl: resolved.url,
               credit: servedMapCredit(resolved),
+              // Encastrée dans la page qui défile : ni déplacement ni zoom hors
+              // plein écran. Le tap, qui choisit l'étape, reste actif.
+              interactive: fullscreen,
               tracks: mapTracks,
               start: _point(stages.first.startPlace),
               end: _point(stages.last.endPlace),

@@ -84,6 +84,8 @@ class PdlColors extends ThemeExtension<PdlColors> {
     required this.mapWaypoint,
     required this.mapHillshadeShadow,
     required this.mapHillshadeHighlight,
+    required this.mapArrow,
+    required this.mapArrowRim,
   });
 
   // ── Surfaces, bordures, texte ──────────────────────────────────────────
@@ -180,6 +182,14 @@ class PdlColors extends ThemeExtension<PdlColors> {
   /// ailleurs que dans `core/theme` est le défaut que la règle interdit.
   final Color mapHillshadeShadow;
   final Color mapHillshadeHighlight;
+
+  /// Le chevron répété le long d'un tracé pour en montrer le sens, et son
+  /// liseré. Comme l'ombrage, il ne suit pas le thème : il se peint sur le
+  /// tracé, dont la couleur ne change pas, et un trait blanc cerné de sombre
+  /// se lit sur toutes les teintes et tous les fonds (le site dessine le même,
+  /// `frontend/src/components/map/RouteArrows.tsx`).
+  final Color mapArrow;
+  final Color mapArrowRim;
 
   /// Alias de [surface] : la charte nomme `--pdl-bg` le fond de page, qui vaut
   /// la surface dans les deux modes.
@@ -286,6 +296,8 @@ class PdlColors extends ThemeExtension<PdlColors> {
     mapWaypoint: Color(0xFFFAB005),
     mapHillshadeShadow: Color(0xFF727C83),
     mapHillshadeHighlight: Color(0xFFFFFFE4),
+    mapArrow: Color(0xFFFFFFFF),
+    mapArrowRim: Color(0x8C000000),
   );
 
   static const PdlColors dark = PdlColors(
@@ -348,6 +360,8 @@ class PdlColors extends ThemeExtension<PdlColors> {
     mapWaypoint: Color(0xFFFAB005),
     mapHillshadeShadow: Color(0xFF727C83),
     mapHillshadeHighlight: Color(0xFFFFFFE4),
+    mapArrow: Color(0xFFFFFFFF),
+    mapArrowRim: Color(0x8C000000),
   );
 
   static PdlColors of(Brightness brightness) =>
@@ -414,6 +428,8 @@ class PdlColors extends ThemeExtension<PdlColors> {
     Color? mapWaypoint,
     Color? mapHillshadeShadow,
     Color? mapHillshadeHighlight,
+    Color? mapArrow,
+    Color? mapArrowRim,
   }) {
     return PdlColors(
       surface: surface ?? this.surface,
@@ -476,6 +492,8 @@ class PdlColors extends ThemeExtension<PdlColors> {
       mapHillshadeShadow: mapHillshadeShadow ?? this.mapHillshadeShadow,
       mapHillshadeHighlight:
           mapHillshadeHighlight ?? this.mapHillshadeHighlight,
+      mapArrow: mapArrow ?? this.mapArrow,
+      mapArrowRim: mapArrowRim ?? this.mapArrowRim,
     );
   }
 
@@ -546,6 +564,8 @@ class PdlColors extends ThemeExtension<PdlColors> {
         mapHillshadeHighlight,
         other.mapHillshadeHighlight,
       ),
+      mapArrow: c(mapArrow, other.mapArrow),
+      mapArrowRim: c(mapArrowRim, other.mapArrowRim),
     );
   }
 }

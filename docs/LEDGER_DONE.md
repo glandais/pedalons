@@ -71,6 +71,33 @@ fichier garde **ce qui est fait**, et ce qu'il ne faut pas défaire.
   automatisé : relecture des 28 captures. Poussé le jour même : `asc metadata apply` (description et
   mots-clés, FR/EN), puis `asc screenshots upload --replace` sur les quatre jeux. **À ne pas défaire** : la troisième carte suppose une
   sortie à moins de sept jours — le seed la place au samedi suivant, capturer juste après lui.
+- [x] `MOB-65` **Sens des tracés sur les cartes de l'app, comme au web** (11 octobre 2026, contrat
+  inchangé) — le pendant mobile de `WEB-49` : un chevron répété le long de chaque tracé, dans
+  l'ordre de ses points, sur toutes les cartes que dessine `PdlMapController` (sortie, parcours,
+  voyage et étape). Même dessin que le site (`map/pdl_route_arrow.dart`, 16 points), mais
+  `symbol-spacing` à 50 au lieu de 90 : MapLibre natif mesure l'espacement sur la tuile, et au
+  cadrage d'une étape de 65 km il ne posait qu'un chevron, caché sous une borne kilométrique, teintes `mapArrow` / `mapArrowRim` dans `PdlColors`, identiques
+  dans les deux thèmes comme l'ombrage. Pas sur la couche de masse (tous les parcours) : sans
+  survol, il n'y a pas de tracé « courant » à flécher. Couvert par `pdl_map_controller_test.dart`
+  (groupe « sens des tracés »). **À ne pas défaire** : les chevrons ont leur **propre source**, une
+  entité par ligne entière — posés sur les tronçons d'un tracé colorisé par pente, ils tomberaient
+  au hasard des coupures ; l'image est dessinée à 3× puis réduite par `icon-size`, parce que les
+  greffons iOS et Android posent une image à un pixel par point (floue sur un écran 3× sinon) ; elle
+  est reposée à chaque pose, un changement de fond de carte effaçant les images du style ; et
+  `_raise` repasse la couche de chevrons au-dessus du tracé sélectionné qu'il vient de remonter.
+- [x] `MOB-66` **Cartes sans voile sombre, plein écran sur la carte d'une étape** (11 octobre 2026,
+  contrat inchangé) — relevé sur l'iPhone : le haut de la carte d'une étape de voyage était assombri
+  et elle n'offrait pas de plein écran. `PdlMapHero` perd `topScrim` (il assombrissait les cartes de
+  parcours et des pages plein écran) et `bottomScrim`, qui n'avait plus d'appelant. `RouteMap` prend
+  `allowFullscreen`, que passe `EmbeddedRouteSheet` (la vignette d'une étape) : la fiche parcours,
+  qui est déjà la carte en plein écran, reste sans bouton. Sans voile, la barre système suit le
+  thème (icônes sombres en thème clair) au lieu d'être forcée en clair, et la page plein écran garde
+  la barre hors de la carte (`SafeArea`). **Gestes** : une carte encastrée dans une page qui défile
+  ne se déplace ni ne zoome (double tap compris) hors plein écran — la vignette d'une étape
+  (`RouteMap.allowFullscreen`) et la carte d'un voyage (`TripMap`) rejoignent les groupes d'une
+  sortie et l'annonce ; le tap (choix d'étape, réticule) reste actif. La fiche parcours et la carte
+  des parcours, qui occupent l'écran, restent libres. Pas de test automatisé : relu sur
+  simulateur (voile, chevrons) et sur iPhone (gestes).
 
 ### Recette sur une application qui tourne — 4 octobre 2026
 

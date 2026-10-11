@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import '../../theme/pdl_colors.dart';
 import '../../theme/pdl_icons.dart';
 import '../../theme/pdl_tokens.dart';
-import '../pdl_scrim.dart';
 import '../pdl_section_header.dart';
 import '../pdl_setting_row.dart';
 import '../pdl_switch.dart';
@@ -60,16 +59,17 @@ class PdlMapHeroLabels {
   final String? hillshade;
 }
 
-/// La coquille d'une carte occupant une surface, avec ses voiles et ses
+/// La coquille d'une carte occupant une surface, avec ses
 /// commandes.
 ///
 /// Elle tient trois promesses du brief §5 :
 ///
-/// 1. `SystemUiOverlayStyle.light` **dès qu'une carte est en fond** — l'heure
-///    et la batterie en noir sur une tuile sombre était le défaut de la
+/// 1. une barre système accordée au thème **dès qu'une carte est en fond** —
+///    l'heure et la batterie en noir sur une tuile sombre était le défaut de la
 ///    maquette 13 ;
-/// 2. un `PdlScrim` haut, et un bas si demandé, pour que rien ne soit jamais
-///    écrit à même la tuile ;
+/// 2. **aucun voile** sur la tuile : celui du haut assombrissait chaque carte,
+///    encastrée comme plein écran, pour une barre système qui se lit très bien
+///    sans lui, et celui du bas n'avait plus d'appelant ;
 /// 3. plein écran et sélecteur de fond, tous deux à 44 px.
 ///
 /// ## Le plein écran est **une page de l'appelant**, pas une copie du hero
@@ -96,8 +96,6 @@ class PdlMapHero extends StatelessWidget {
     required this.mapBuilder,
     required this.labels,
     this.height,
-    this.topScrim = true,
-    this.bottomScrim = false,
     this.styles = const <PdlMapStyleOption>[],
     this.selectedStyleId,
     this.onStyleSelected,
@@ -125,9 +123,6 @@ class PdlMapHero extends StatelessWidget {
 
   /// Hauteur imposée. `null` = la carte prend la place disponible.
   final double? height;
-
-  final bool topScrim;
-  final bool bottomScrim;
 
   /// Les fonds servis, **dans l'ordre servi**. Vide = pas de sélecteur.
   final List<PdlMapStyleOption> styles;
@@ -191,10 +186,12 @@ class PdlMapHero extends StatelessWidget {
         ? stack
         : SizedBox(height: height, child: stack);
 
-    // Une carte est un fond sombre par nature (et un fond clair l'est aussi
-    // sous le voile) : la barre système passe en clair, sans exception.
+    // Sans voile, la barre système se lit sur la tuile elle-même : le fond
+    // suit le thème (seul `Plan` a une variante nocturne), les icônes aussi.
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
+      value: Theme.of(context).brightness == Brightness.dark
+          ? SystemUiOverlayStyle.light
+          : SystemUiOverlayStyle.dark,
       child: sized,
     );
   }
@@ -225,15 +222,6 @@ class PdlMapHero extends StatelessWidget {
           isFullscreen: isFullscreen,
           child: Builder(builder: mapBuilder),
         ),
-        if (topScrim)
-          const Positioned(left: 0, right: 0, top: 0, child: PdlScrim.top()),
-        if (bottomScrim)
-          const Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: PdlScrim.bottom(),
-          ),
         if (pill != null)
           Positioned(
             left: PdlSpacing.sectionTightH,
@@ -270,8 +258,11 @@ class PdlMapHero extends StatelessWidget {
     Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
         fullscreenDialog: true,
-        builder: (BuildContext context) =>
-            Scaffold(body: Builder(builder: builder)),
+        // La barre système reste hors de la carte : sans voile, elle se lirait
+        // mal sur une tuile.
+        builder: (BuildContext context) => Scaffold(
+          body: SafeArea(bottom: false, child: Builder(builder: builder)),
+        ),
       ),
     );
   }

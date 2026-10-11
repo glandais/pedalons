@@ -8,6 +8,7 @@ import 'package:maplibre/maplibre.dart';
 import '../../geo/polyline_index.dart';
 import 'pdl_map_camera.dart';
 import 'pdl_mass_layer.dart';
+import 'pdl_route_arrow.dart';
 
 /// Un tracé à dessiner, **sans aucun DTO**.
 ///
@@ -422,6 +423,8 @@ class PdlMapController extends ChangeNotifier {
   String get _cursorSourceId => '$layerPrefix-cursor';
   String get _hillshadeSourceId => '$layerPrefix-hillshade';
   String get _massSourceId => '$layerPrefix-mass-src';
+  String get _arrowsSourceId => '$layerPrefix-arrows';
+  String get _arrowsLayerId => '$_arrowsSourceId-layer';
 
   /// L'identifiant de la couche de masse — public parce que l'écran en a besoin
   /// pour interroger les entités sous le doigt.
@@ -790,6 +793,8 @@ class PdlMapController extends ChangeNotifier {
       await _safe(() => style.removeLayer(id));
     }
     _drawnLayers.clear();
+    await _safe(() => style.removeLayer(_arrowsLayerId));
+    await _safe(() => style.removeSource(_arrowsSourceId));
     await _safe(() => style.removeSource(_sourceId));
     if (_tracks.isNotEmpty) {
       await style.addSource(
@@ -803,6 +808,7 @@ class PdlMapController extends ChangeNotifier {
       // premier plan.
       final PdlMapTrack? selected = _selectedTrack;
       if (selected != null) await _addTrackLayer(style, selected);
+      await _addArrowLayer(style);
     }
 
     await _addPointLayers(style);
@@ -990,7 +996,78 @@ class PdlMapController extends ChangeNotifier {
     await _safe(() => style.removeLayer(id));
     _drawnLayers.remove(id);
     await _addTrackLayer(style, track);
+    // Le tracé repassé au premier plan recouvrirait ses propres chevrons.
+    await _safe(() => style.removeLayer(_arrowsLayerId));
+    await _safe(() => _addArrowLayerOnly(style));
   }
+
+  /// Pose les chevrons du sens de parcours, au-dessus de tous les tracés.
+  ///
+  /// Sur une source **à part**, une entité par ligne entière : un tracé
+  /// colorisé par pente est découpé en tronçons de quelques mètres, et un
+  /// placement `line` sur ces tronçons poserait les chevrons au hasard des
+  /// coupures — le site fait de même (`RouteTrackMap`, ledger `WEB-49`). Le
+  /// sens est celui des coordonnées, donc de l'ordre des points du GPX.
+  ///
+  /// Un échec n'emporte pas le reste de la pile : la carte reste lisible sans
+  /// flèches.
+  Future<void> _addArrowLayer(StyleController style) async {
+    try {
+      final Uint8List? png = await _arrowPng();
+      if (png == null) return;
+      // Un changement de fond de carte remplace le style, et ses images avec :
+      // l'image est donc reposée à chaque pose.
+      await style.addImage(pdlRouteArrowImageId, png);
+      await style.addSource(
+        GeoJsonSource(id: _arrowsSourceId, data: _arrowsGeoJson()),
+      );
+      await _addArrowLayerOnly(style);
+    } catch (error) {
+      debugPrint('Route arrows not drawn: $error');
+    }
+  }
+
+  Future<void> _addArrowLayerOnly(StyleController style) => style.addLayer(
+    SymbolStyleLayer(
+      id: _arrowsLayerId,
+      sourceId: _arrowsSourceId,
+      layout: pdlRouteArrowLayout,
+    ),
+  );
+
+  Future<Uint8List?>? _arrowPngCache;
+  Color? _arrowPngFill;
+  Color? _arrowPngRim;
+
+  Future<Uint8List?> _arrowPng() {
+    if (_arrowPngCache == null ||
+        _arrowPngFill != _arrowColor ||
+        _arrowPngRim != _arrowRimColor) {
+      _arrowPngFill = _arrowColor;
+      _arrowPngRim = _arrowRimColor;
+      _arrowPngCache = pdlRouteArrowPng(fill: _arrowColor, rim: _arrowRimColor);
+    }
+    return _arrowPngCache!;
+  }
+
+  String _arrowsGeoJson() => jsonEncode(<String, Object?>{
+    'type': 'FeatureCollection',
+    'features': <Map<String, Object?>>[
+      for (final PdlMapTrack track in _tracks)
+        for (final List<List<double>> line in track.lines)
+          if (line.length >= 2)
+            <String, Object?>{
+              'type': 'Feature',
+              'properties': <String, Object?>{'trackId': track.id},
+              'geometry': <String, Object?>{
+                'type': 'LineString',
+                'coordinates': <List<double>>[
+                  for (final List<double> c in line) <double>[c[0], c[1]],
+                ],
+              },
+            },
+    ],
+  });
 
   Future<void> _addPointLayers(StyleController style) async {
     final List<Map<String, Object?>> features = <Map<String, Object?>>[];
@@ -1067,21 +1144,27 @@ class PdlMapController extends ChangeNotifier {
   Color _waypointColor = const Color(0xFFFAB005);
   Color _pointStroke = const Color(0xFFFFFFFF);
   Color _cursorColor = const Color(0xFF4C6EF5);
+  Color _arrowColor = const Color(0xFFFFFFFF);
+  Color _arrowRimColor = const Color(0x8C000000);
 
   /// Injecte les couleurs de marqueur lues sur le thème.
   ///
   /// `core/pdl` interdit les littéraux de couleur : les valeurs par défaut
   /// ci-dessus ne sont qu'un filet avant le premier `build`, et [PdlMap] les
   /// remplace systématiquement par `context.pdl.mapStart` / `mapEnd` /
-  /// `mapWaypoint` / `surface`.
+  /// `mapWaypoint` / `surface` / `mapArrow` / `mapArrowRim`.
   void setMarkerColors({
     required Color start,
     required Color end,
     required Color waypoint,
     required Color stroke,
     Color? cursor,
+    Color? arrow,
+    Color? arrowRim,
   }) {
     if (cursor != null) _cursorColor = cursor;
+    if (arrow != null) _arrowColor = arrow;
+    if (arrowRim != null) _arrowRimColor = arrowRim;
     _startColor = start;
     _endColor = end;
     _waypointColor = waypoint;

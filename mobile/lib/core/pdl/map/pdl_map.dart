@@ -400,6 +400,8 @@ class _PdlMapState extends State<PdlMap> {
         waypoint: c.mapWaypoint,
         stroke: c.surface,
         cursor: c.primary,
+        arrow: c.mapArrow,
+        arrowRim: c.mapArrowRim,
       )
       ..select(widget.selectedTrackId);
     // Avant `attachStyle` : le contrôleur repose *toutes* les couches à

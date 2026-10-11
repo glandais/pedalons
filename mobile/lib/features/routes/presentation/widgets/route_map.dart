@@ -25,6 +25,8 @@ class RouteMap extends ConsumerStatefulWidget {
     this.cursor,
     this.onMapTapped,
     this.fitPadding = const EdgeInsets.all(50),
+    this.allowFullscreen = false,
+    this.fullscreen = false,
   });
 
   final RouteDetailDto route;
@@ -41,6 +43,17 @@ class RouteMap extends ConsumerStatefulWidget {
   /// sans cela le tracé est cadré sur toute la carte, dont la feuille masque la
   /// moitié — « bien cadré » et pourtant à moitié invisible.
   final EdgeInsets fitPadding;
+
+  /// Vrai quand la carte est une vignette dans une page qui défile (détail
+  /// d'une étape) : elle offre alors le plein écran, et ne se laisse ni
+  /// déplacer ni zoomer tant qu'elle n'y est pas — même repli que les groupes
+  /// d'une sortie. La fiche parcours, elle, **est** déjà la carte plein écran,
+  /// et un bouton de plus n'y mènerait nulle part.
+  final bool allowFullscreen;
+
+  /// Vrai dans la page plein écran, que ce widget construit lui-même — voir
+  /// `PdlMapHero.fullscreenBuilder`.
+  final bool fullscreen;
 
   @override
   ConsumerState<RouteMap> createState() => _RouteMapState();
@@ -130,10 +143,16 @@ class _RouteMapState extends ConsumerState<RouteMap> {
         backgroundSheetTitle: 'map.background'.tr(),
         hillshade: 'map.hillshade'.tr(),
       ),
-      // La fiche parcours **est** déjà la carte plein écran : un bouton de
-      // plus n'y mènerait nulle part.
-      showFullscreenButton: false,
-      topScrim: true,
+      showFullscreenButton: widget.allowFullscreen || widget.fullscreen,
+      isFullscreen: widget.fullscreen,
+      fullscreenBuilder: widget.allowFullscreen && !widget.fullscreen
+          ? (BuildContext context) => RouteMap(
+              route: route,
+              cursor: widget.cursor,
+              onMapTapped: widget.onMapTapped,
+              fullscreen: true,
+            )
+          : null,
       styles: servedMapStyleOptions(ref),
       hillshadeEnabled: servedHillshadeEnabled(ref),
       onHillshadeChanged: (bool on) =>
@@ -144,6 +163,7 @@ class _RouteMapState extends ConsumerState<RouteMap> {
       mapBuilder: (BuildContext context) => PdlMap(
         hillshade: servedHillshade(context, ref),
         controller: _controller,
+        interactive: !widget.allowFullscreen || widget.fullscreen,
         styleUrl: resolved.url,
         credit: servedMapCredit(resolved),
         onMapTapped: widget.onMapTapped == null
