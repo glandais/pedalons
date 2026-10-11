@@ -648,15 +648,6 @@ Ce que les tests ne prouvent pas, parce qu'ils ne passent ni par Flyway ni par u
       objet MinIO inchangé doit avoir un compte de liens > 1 (`stat -c %h`) ; `restore.sh --list`
       depuis la prod le montre. Puis la nuit suivante, la seconde promotion (plancher de 20 h
       franchi) et la purge qui retire le plus ancien. Taille : XS.
-- [ ] `OPS-27` **Healthchecks pour la promotion des sauvegardes** (`SEC-32`) — `backup-promote.sh`
-      sait pinguer `BACKUP_PROMOTE_PING_URL` (un ping par promotion, `/fail` quand un envoi est
-      refusé : nom forgé, `SHA256SUMS` faux, rsync en échec), mais aucun check n'existe : une nuit
-      sans promotion, ou une promotion refusée, ne préviendrait personne — le check de `backup.sh`
-      reste vert, l'envoi vers `incoming/` ayant réussi. Créer un check quotidien (période 1 jour,
-      grâce ~2 h), mettre `BACKUP_PROMOTE_PING_URL=https://hc-ping.com/<uuid>` dans
-      `/etc/default/pedalons-backup-promote` (root, `0600`) sur l'hôte de sauvegarde, puis vérifier
-      qu'il passe au vert à la promotion suivante ([`OPERATIONS.md`](OPERATIONS.md), « Backup and
-      restore »). Taille : XS.
 - [ ] `OPS-8` **Exercice de restauration** (audit de février, I20) — la procédure est écrite
       ([`OPERATIONS.md`](OPERATIONS.md), « Restore drill from another machine ») mais rien ne dit
       qu'elle a été menée de bout en bout sur une autre machine.
