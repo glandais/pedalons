@@ -191,26 +191,6 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
 (`WEB-13` à `WEB-22`, livrés, avec ce que l'automatisation ne voit pas) : voir
 `frontend/e2e/README.md`.
 
-- [ ] `WEB-27` **Le SSR de `/calendrier` croît en carré des sorties d'une semaine, et gèle le
-      serveur Node pendant ce temps (S–M)** — `@mantine/schedule` 9.6.2 place chaque événement du
-      mois en le comparant à tous ceux déjà posés dans sa semaine (`findAvailableRow`, avec un
-      `dayjs()` par comparaison) : 1 000 sorties sur une semaine, 2,7 s de rendu ; 2 400, 10 s. Le
-      rendu est synchrone, et c'est le même processus qui sert `/assets` : un chunk demandé pendant ce
-      temps attend 7,6 s au lieu de 17 ms (mesuré le 29 septembre 2026 sur la pile e2e, où l'admin
-      bootstrap avait accumulé 2 520 équipes). Sans effet à l'échelle d'un vrai compte (quelques
-      dizaines de sorties par semaine), mais rien ne borne le cas. La suite e2e ne l'exerce plus
-      (routes-render promeut un admin plateforme neuf).
-      **Corrigé en amont, reste à mesurer** : `@mantine/schedule` 9.7.1 remplace le rebalayage de
-      la semaine (`findAvailableRow` a disparu) par un index d'occupation de 7 jours
-      (`nextRowByDay`, `reserveRow`), soit O(7) par événement au lieu de O(n), et `frontend/` y est
-      passé le 7 octobre 2026 (`8fa64c44`). La tâche se ferme quand une mesure du rendu serveur de
-      `/calendrier` à 1 000 puis 2 400 sorties sur une semaine confirme le gain
-      (`get-renderable-month-event-segments` reste un balayage par jour, linéaire mais non
-      mesuré) ; noter alors ici les liens de l'issue et de la PR `mantinedev/mantine`. **Piste écartée** : ne passer à `Schedule`
-      que les événements de la grille visible, qui est déjà le cas (`getVisibleRange` borne la
-      requête) et ne change rien quand tout tombe dans une même semaine. **Repli** si l'amont
-      tarde : un seuil au rendu serveur (au-delà de N événements, grille vide au premier rendu et
-      remplie après montage), ou ne pas rendre la grille côté serveur.
 - [ ] `WEB-36` **Un tap juste après l'affichage d'une page, sous charge, est ignoré (M)** — le HTML
       du SSR est à l'écran et cliquable avant que React l'ait adopté ; avec l'hydratation
       concurrente de React 19, un clic qui tombe pendant le rendu d'hydratation, avant son commit,
