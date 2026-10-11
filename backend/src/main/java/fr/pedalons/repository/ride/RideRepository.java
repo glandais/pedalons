@@ -8,6 +8,7 @@ import fr.pedalons.repository.common.TeamEntityQueryBasic;
 import fr.pedalons.repository.common.TeamEntityRepository;
 import fr.pedalons.repository.query.PedalonsQuery;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.persistence.LockModeType;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +25,20 @@ public class RideRepository implements TeamEntityRepository<Ride, TeamEntityQuer
   @Override
   public EntityType getAllEntityType() {
     return EntityType.RIDE;
+  }
+
+  /**
+   * Locks the ride row ({@code SELECT … FOR UPDATE}) until the end of the transaction, and reloads
+   * it. Taken by {@code RideService.joinGroup} before its checks: two joins of the same ride run one
+   * after the other, so the second sees the first's participation — the place it took in a capped
+   * group (docs/LEDGER_*.md API-98) and the rider already registered in another group of the ride
+   * (docs/LEDGER_*.md API-99). Neither rule has a constraint behind it: the only unique index is
+   * {@code (ride_group_id, user_id)}. The ride rather than the group, because API-99 spans two
+   * groups. A refresh rather than {@code lock()}: an organiser's edit committed since the ride was
+   * read would fail a plain lock's version check.
+   */
+  public void lockForJoin(Ride ride) {
+    getEntityManager().refresh(ride, LockModeType.PESSIMISTIC_WRITE);
   }
 
   @Override

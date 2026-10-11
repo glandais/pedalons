@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.pedalons.common.TsidUtils;
 import fr.pedalons.common.exception.BusinessException;
 import fr.pedalons.common.exception.ConflictException;
+import fr.pedalons.common.exception.ForbiddenException;
 import fr.pedalons.domain.place.Place;
 import fr.pedalons.domain.ride.Ride;
 import fr.pedalons.domain.ride.RideGroup;
@@ -493,6 +494,15 @@ public class RideService extends TeamEntityService<Ride, RideRepository, RideDto
   public RideParticipationDto joinGroup(String teamSlug, String rideSlug, Long groupId) {
     Team team = teamService.getTeam(teamSlug);
     Ride ride = findBySlug(team, rideSlug);
+    // Before the group is read and its participations loaded: concurrent joins of this ride queue
+    // here, and each check below sees the joins committed before it (docs/LEDGER_*.md API-98,
+    // API-99).
+    rideRepository.lockForJoin(ride);
+    // The access check read the status before the lock: a cancellation or unpublish committed in
+    // between is only visible now.
+    if (ride.getStatus() != Status.PUBLISHED) {
+      throw new ForbiddenException();
+    }
 
     RideGroup group =
         rideGroupRepository
@@ -532,9 +542,19 @@ public class RideService extends TeamEntityService<Ride, RideRepository, RideDto
   @Transactional
   @CheckAccess(entityType = EntityType.RIDE, action = ActionType.LEAVE)
   public void leaveGroup(String teamSlug, String rideSlug, Long groupId) {
+    // The access check vouched for the ride of the URL only: the group must be one of its own, or a
+    // published ride of a team the caller belongs to would unregister them from any other ride —
+    // cancelled, draft, or of a team they left (docs/LEDGER_*.md SEC-38).
+    Team team = teamService.getTeam(teamSlug);
+    Ride ride = findBySlug(team, rideSlug);
+    RideGroup group =
+        rideGroupRepository
+            .findByIdAndRide(groupId, ride.getId())
+            .orElseThrow(() -> new NotFoundException(EntityType.RIDE_GROUP, groupId));
+
     RideParticipation participation =
         participationRepository
-            .findByUserAndGroup(pedalonsContext.getUserId(), groupId)
+            .findByUserAndGroup(pedalonsContext.getUserId(), group.getId())
             .orElseThrow(() -> new BusinessException(NOT_REGISTERED));
 
     participationRepository.delete(participation);
