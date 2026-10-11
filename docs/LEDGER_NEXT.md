@@ -694,6 +694,11 @@ pièges à ne pas rejouer, sont sous `NOTIF-9` (le ledger du chantier y a été 
 - [ ] `NOTIF-4` **Le canal e-mail des notifications n'a pas de test e2e** : il est coupé en
       production comme sur la stack e2e (`NOTIF-2`). Laissé ouvert par l'audit de couverture e2e
       (`WEB-26`).
+- [ ] `NOTIF-11` **Rejouer `CoalesceRace` sur le correctif exact de `NOTIF-10`** : dans le modèle
+      ([`formal/notif/`](formal/notif/)), la variante la plus proche du correctif livré (`FIX=2`) viole
+      encore l'invariant ; la relecture du code n'a trouvé aucun entrelacement perdant, mais le modèle
+      n'a pas été adapté (réinsertion quand la clé a été rendue). L'adapter, et ajouter le test de la
+      variante « fusion dans la ligne en attente pendant qu'une réservation est tentée ». Taille : S.
 
 ---
 

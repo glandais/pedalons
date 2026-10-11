@@ -1436,8 +1436,8 @@ Plan [`2026-10-06-team-agenda.md`](plans/archive/2026-10-06-team-agenda.md) §4,
 
 ### Concurrence : constats de la modélisation formelle du 11 octobre 2026
 
-Une modélisation TLA+/TLC et Lean 4 du backend (deux instances pendant un déploiement start-first,
-READ COMMITTED) a mis au jour dix-sept défauts ; chacun a été reproduit par un test qui échouait
+Une modélisation TLA+/TLC et Lean 4 du backend ([`formal/`](formal/) ; deux instances pendant un
+déploiement start-first, READ COMMITTED) a mis au jour dix-sept défauts ; chacun a été reproduit par un test qui échouait
 avant le correctif. Les constats de sécurité sont sous `SEC-34` à `SEC-38`, les autres sous `NOTIF-10`,
 `ISSUE-8`, `ISSUE-9`, `MIG-15`.
 
