@@ -42,9 +42,14 @@ public sealed interface NotificationEvent
    * every type: a ride is announced once, ever. True for a change that can happen again — a ride
    * moved twice in a month is two notifications — but whose edits in quick succession should make
    * one: a second edit while the first still waits finds the key taken and is folded into it.
+   *
+   * <p>"Waits" ends at the claim, not at the end of the fan-out: the dispatcher gives the key back as
+   * it claims the row, so an edit made while the fan-out reads the subject queues an event of its
+   * own instead of folding into one that has already read the old state (docs/LEDGER_*.md
+   * NOTIF-10). Decided by {@link NotificationType#coalescesWhilePending()}.
    */
   default boolean coalescesWhilePending() {
-    return false;
+    return type().coalescesWhilePending();
   }
 
   /** The record class a payload of {@code type} deserializes to. */

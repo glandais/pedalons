@@ -26,9 +26,4 @@ public record RideUpdated(
   public String dedupKey() {
     return type().name() + ":" + rideId;
   }
-
-  @Override
-  public boolean coalescesWhilePending() {
-    return true;
-  }
 }

@@ -38,6 +38,12 @@ public class NotificationPublisher {
   private static final Logger LOG = Logger.getLogger(NotificationPublisher.class);
 
   /**
+   * Insert, lock the waiting row, insert again: a claim in between gives the key back, so the
+   * second insert normally wins.
+   */
+  private static final int MAX_FOLD_ATTEMPTS = 3;
+
+  /**
    * Set while a bulk job replays history through the ordinary services. A thread flag rather than a
    * request-scoped bean: {@code PublicationPublishScheduler} publishes with no request context
    * active, and the jobs that need silence run on a single thread.
@@ -86,18 +92,37 @@ public class NotificationPublisher {
       throw new IllegalStateException("Cannot serialize " + event, e);
     }
     Instant now = Instant.now();
-    boolean queued =
-        eventRepository.insertIfAbsent(
-            team.getDomain().getId(),
-            event.type(),
-            event.dedupKey(),
-            payload,
-            actor != null ? actor.getId() : null,
-            team.getId(),
-            now,
-            now.plus(delay));
-    if (!queued) {
-      LOG.debugf("Notification %s already queued once, not again", event.dedupKey());
+    for (int attempt = 1; ; attempt++) {
+      boolean queued =
+          eventRepository.insertIfAbsent(
+              team.getDomain().getId(),
+              event.type(),
+              event.dedupKey(),
+              payload,
+              actor != null ? actor.getId() : null,
+              team.getId(),
+              now,
+              now.plus(delay));
+      if (queued) {
+        return;
+      }
+      if (!event.coalescesWhilePending()) {
+        LOG.debugf("Notification %s already queued once, not again", event.dedupKey());
+        return;
+      }
+      // Folded into a waiting event only if it still waits, and held until this change commits:
+      // otherwise the dispatcher could read the subject before it and announce the old state.
+      // docs/LEDGER_*.md NOTIF-10.
+      if (eventRepository.lockPending(event.dedupKey())) {
+        LOG.debugf("Notification %s folded into the pending one", event.dedupKey());
+        return;
+      }
+      if (attempt == MAX_FOLD_ATTEMPTS) {
+        // A key held by a row in progress, as the previous release claims them — for the minute a
+        // rolling deploy lasts.
+        LOG.warnf("Notification %s neither queued nor folded", event.dedupKey());
+        return;
+      }
     }
   }
 

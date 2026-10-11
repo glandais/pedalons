@@ -137,9 +137,17 @@ public class NotificationDispatchService {
               if (id == null) {
                 return Optional.<Long>empty();
               }
-              return eventRepository.claim(id, Instant.now())
-                  ? Optional.of(id)
-                  : Optional.<Long>empty();
+              if (!eventRepository.claim(id, Instant.now())) {
+                return Optional.<Long>empty();
+              }
+              NotificationEventEntry entry = eventRepository.findById(id);
+              if (entry.getType().coalescesWhilePending()) {
+                // Done waiting as of now, not as of the fan-out's commit: the fan-out is about to
+                // read the subject, so an edit made from here on must queue an event of its own
+                // rather than fold into this one and go unannounced (docs/LEDGER_*.md NOTIF-10).
+                releaseDedupKey(entry);
+              }
+              return Optional.of(id);
             });
   }
 
@@ -213,7 +221,7 @@ public class NotificationDispatchService {
     entry.setProcessedAt(now);
     entry.setErrorMessage(null);
     if (event.coalescesWhilePending()) {
-      // Done waiting: the next edit is a new change, and must be able to queue a new event.
+      // Already given back at the claim; kept for a row claimed by the previous release.
       releaseDedupKey(entry);
     }
     LOG.infof(
@@ -358,7 +366,10 @@ public class NotificationDispatchService {
    * the same change made again later — a ride published for real after a false start — is queued.
    */
   private static void releaseDedupKey(NotificationEventEntry entry) {
-    entry.setDedupKey(entry.getDedupKey() + "#" + TsidUtils.toString(entry.getId()));
+    String suffix = "#" + TsidUtils.toString(entry.getId());
+    if (!entry.getDedupKey().endsWith(suffix)) {
+      entry.setDedupKey(entry.getDedupKey() + suffix);
+    }
   }
 
   /** Exponential from {@code baseSeconds}, doubling per attempt already made, capped. */

@@ -26,9 +26,4 @@ public record ContentReported(
   public String dedupKey() {
     return type().name() + ":" + teamId + ":" + targetType.name() + ":" + targetId;
   }
-
-  @Override
-  public boolean coalescesWhilePending() {
-    return true;
-  }
 }

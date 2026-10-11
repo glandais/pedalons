@@ -69,6 +69,28 @@ public class NotificationEventRepository implements PanacheRepository<Notificati
   }
 
   /**
+   * Locks, for the caller's transaction, the PENDING event holding {@code dedupKey}. Returns
+   * whether there was one.
+   *
+   * <p>For an event that coalesces while pending: an edit that folds into a waiting row holds it
+   * until it commits, so the dispatcher ({@code skip locked}) cannot claim it and read the subject
+   * before the edit is visible. No PENDING row means the key was given back by a claim in between
+   * — the caller inserts again. See docs/LEDGER_*.md NOTIF-10.
+   */
+  public boolean lockPending(String dedupKey) {
+    return !getEntityManager()
+        .createNativeQuery(
+            """
+            select id from notification_events
+            where dedup_key = :dedupKey and status = 'PENDING'
+            for update
+            """)
+        .setParameter("dedupKey", dedupKey)
+        .getResultList()
+        .isEmpty();
+  }
+
+  /**
    * Head of the due queue, locked for this transaction. An event backing off after a failure is not
    * due, so the drain loop moves on to the next one rather than retrying it at once. Same two-part claim as {@code
    * UserExportRepository}: {@code skip locked} for throughput, the compare-and-set in {@link #claim}

@@ -119,4 +119,27 @@ public enum NotificationType {
           false;
     };
   }
+
+  /**
+   * Whether the dedup key is only held while the event waits to be fanned out — see {@code
+   * NotificationEvent.coalescesWhilePending()}, which reads it. On the type rather than the record so
+   * the dispatcher can tell at claim time, before it reads the payload.
+   */
+  public boolean coalescesWhilePending() {
+    return switch (this) {
+      case RIDE_UPDATED, CONTENT_REPORTED -> true;
+      case RIDE_PUBLISHED,
+          RIDE_CANCELLED,
+          TRIP_PUBLISHED,
+          TRIP_CANCELLED,
+          POST_PUBLISHED,
+          COMMENT_REPLY,
+          RIDE_REMINDER,
+          RIDE_GROUP_REMOVED,
+          RIDE_JOINED,
+          COMMENT_ON_MY_PUBLICATION,
+          TEAM_INVITATION ->
+          false;
+    };
+  }
 }
