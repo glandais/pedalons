@@ -16,7 +16,9 @@ import org.jboss.logging.Logger;
  * Scheduled job to clean up orphaned assets (uploaded but never attached to an entity).
  *
  * <p>Runs daily at 3:30 AM. Deletes assets where {@code teamEntity} is null and {@code updatedAt}
- * is older than 1 day. Uses entity-level delete so {@code @PreRemove} listener cleans up S3 files.
+ * is older than 1 day. Uses entity-level delete so {@code AssetRemoveListener} cleans up S3 files,
+ * only after this transaction commits: an asset attached by a concurrent save makes the sweep roll
+ * back, and it keeps its file (docs/LEDGER_*.md API-97).
  */
 @ApplicationScoped
 public class AssetCleanupScheduler {

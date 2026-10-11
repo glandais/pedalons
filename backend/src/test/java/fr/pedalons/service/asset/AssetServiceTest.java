@@ -33,9 +33,9 @@ import fr.pedalons.util.TestDataService;
 import io.github.glandais.gpx.data.GPX;
 import io.github.glandais.gpx.io.read.GPXFileReader;
 import io.github.glandais.gpx.io.write.FitFileWriter;
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -1172,44 +1172,73 @@ class AssetServiceTest extends AbstractBaseTest {
   }
 
   @Test
-  @Transactional
   void shouldDeleteS3WhenAssetIsDeleted() {
     Asset asset = dataService.createAsset(team, admin, AssetType.IMAGE, "file.png");
     String s3Key = getAssetKey(team, asset.getFileId());
     assertTrue(storageService.exists(s3Key), "S3 file should exist before delete");
 
-    Asset managed = assetRepository.findById(asset.getId());
-    assetRepository.delete(managed);
-    assetRepository.flush();
+    QuarkusTransaction.requiringNew()
+        .run(
+            () -> {
+              assetRepository.delete(assetRepository.findById(asset.getId()));
+              assetRepository.flush();
+              // docs/LEDGER_*.md API-97: never before the commit
+              assertTrue(storageService.exists(s3Key), "S3 file must survive until the commit");
+            });
 
-    assertFalse(storageService.exists(s3Key), "S3 file should be deleted by @PreRemove listener");
+    assertFalse(storageService.exists(s3Key), "S3 file should be deleted once the delete commits");
   }
 
   @Test
-  @Transactional
+  void shouldKeepS3WhenAssetDeleteRollsBack() {
+    Asset asset = dataService.createAsset(team, admin, AssetType.IMAGE, "file.png");
+    String s3Key = getAssetKey(team, asset.getFileId());
+
+    assertThrows(
+        IllegalStateException.class,
+        () ->
+            QuarkusTransaction.requiringNew()
+                .run(
+                    () -> {
+                      assetRepository.delete(assetRepository.findById(asset.getId()));
+                      assetRepository.flush();
+                      throw new IllegalStateException("a later step fails, the delete rolls back");
+                    }));
+
+    assertTrue(
+        QuarkusTransaction.requiringNew()
+            .call(() -> assetRepository.findByIdOptional(asset.getId()).isPresent()),
+        "the rolled-back delete keeps the row");
+    assertTrue(storageService.exists(s3Key), "a rolled-back delete must keep the file (API-97)");
+  }
+
+  @Test
   void shouldDeleteS3WhenOrphanRemoved() {
     Post post = dataService.createPost(team, admin, "Test Post", Instant.now(), Visibility.PUBLIC);
     Asset image = dataService.createAsset(team, admin, AssetType.IMAGE, "orphan.png");
     String s3Key = getAssetKey(team, image.getFileId());
 
-    post.getAssets().add(image);
-    dataService.updatePost(post);
+    QuarkusTransaction.requiringNew()
+        .run(
+            () -> {
+              Post managed = postRepository.findById(post.getId());
+              Asset managedImage = assetRepository.findById(image.getId());
+              managedImage.setTeamEntity(managed);
+              managed.getAssets().add(managedImage);
+            });
 
-    postRepository.flush();
-    assetRepository.flush();
+    QuarkusTransaction.requiringNew()
+        .run(
+            () -> {
+              Post managed = postRepository.findById(post.getId());
+              assertTrue(
+                  managed.getAssets().stream().anyMatch(a -> a.getId().equals(image.getId())),
+                  "Image should be in collection before removal");
 
-    // Re-fetch managed post to have a proper managed collection
-    Post managed = dataService.getPost(post.getId());
-    assertTrue(
-        managed.getAssets().stream().anyMatch(a -> a.getId().equals(image.getId())),
-        "Image should be in collection before removal");
-
-    // Remove from collection → orphanRemoval triggers @PreRemove
-    managed.getAssets().removeIf(a -> a.getId().equals(image.getId()));
-    dataService.updatePost(managed);
-
-    postRepository.flush();
-    assetRepository.flush();
+              // Remove from collection → orphanRemoval triggers @PreRemove
+              managed.getAssets().removeIf(a -> a.getId().equals(image.getId()));
+              postRepository.flush();
+            });
 
     assertFalse(
         storageService.exists(s3Key), "S3 file should be deleted by orphanRemoval + @PreRemove");
