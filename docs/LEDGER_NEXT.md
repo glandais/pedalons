@@ -241,6 +241,12 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
       le fournisseur, il faudrait remplir le cache par SQL. Même recette pour la météo des étapes
       (`WEB-67`) : bloc de la page d'étape, ligne des cartes d'étape.
 
+- [ ] `WEB-75` **Hauteur de pluie avec un point décimal en français (XS)** — la météo de départ
+      écrit « Pluie 60 % · 2.3 mm » : `DepartureWeather.tsx` passe `precipitation.toFixed(1)` à la
+      clé `rides.weather.precipitationWithAmount`, sans tenir compte de la langue. Le mobile écrit
+      bien « 2,3 mm » (`AppFormatters.formatPrecipitation`). Formater avec `Intl.NumberFormat`
+      selon la langue de l'interface (une décimale), comme `formatFileSize`.
+
 ### Couverture e2e — ce que l'audit du 27 septembre laisse ouvert
 
 L'audit ([archivé](plans/archive/2026-09-27-e2e-coverage-audit.md), `WEB-26`) est exécuté : P0, P1
@@ -302,6 +308,25 @@ arbitrages, ce qui suit est ici (et les recettes des sorties, `WEB-61`, `MOB-52`
 - [ ] `API-77` **Météo sur Karoo et Garmin (M)** — `DeviceRideDto` ne porte rien ; à concevoir
       (résumé seul, ou points de passage) avec les contraintes de taille des deux apps. Les aperçus
       de lien (`og:`) ne portent **jamais** de météo.
+- [ ] `API-102` **Pluie toujours en millimètres, même en impérial (S, web + mobile, sans contrat)** —
+      le plan météo archivé ne convertit que les températures et les vitesses, si bien qu'un lecteur
+      en `IMPERIAL` lit « 54 °F · 12 mph · 2.3 mm » ; aux États-Unis la pluie se compte en pouces.
+      Lieux : clé `rides.weather.precipitationWithAmount` (mm dans le texte traduit) et
+      `DepartureWeather.tsx` côté web, `UnitSymbols.millimeter` et
+      `AppFormatters.formatPrecipitation` côté mobile (`unit_system.dart`, `formatters.dart`).
+      Convertir en `in` (deux décimales) dans les deux clients ensemble, ou bien assumer le mm
+      partout et le noter dans « Délibérément dehors ».
+- [ ] `API-103` **Pas de réglage d'unités pour le Royaume-Uni (S, contrat + web + mobile)** —
+      `UnitSystem` ne connaît que `METRIC` et `IMPERIAL`. Un cycliste britannique compte en miles,
+      en mph et souvent en pieds, mais en °C et en mm : « Impérial » lui donne des °F et
+      « Métrique » des km. Piste : une troisième valeur `UK` (mi, mph, ft, °C, mm), qui ne fait
+      qu'ajouter une valeur au contrat (le mobile traite déjà une valeur inconnue comme `METRIC`,
+      via `$unknown`), plutôt que des réglages par grandeur à la Garmin. Lieux :
+      `enums/UnitSystem.java`, `frontend/src/utils/unitFormat.ts` (`getUnitConfig`,
+      `temperatureToDisplay`) et les clés `*_imperial` de `useUnits`, `mobile/lib/core/units/unit_system.dart`,
+      les sélecteurs de préférences des deux clients. À ne faire que si le public sort de la France.
+      Le vent en m/s (prévisions scandinaves) relève de la même logique de préréglage, sans
+      demande à ce jour.
 
 ### Les chantiers d'infrastructure d'API
 
