@@ -11,6 +11,7 @@ import java.util.List;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.Type;
 import org.jspecify.annotations.Nullable;
 
@@ -20,6 +21,12 @@ import org.jspecify.annotations.Nullable;
  * <p>Deliberately <em>not</em> scoped to a domain: a bug lives in the code, and every tenant runs
  * the same code. Its {@link ErrorOccurrence}s carry the domain. It is read by the GitHub worker only
  * and never exposed by the API.
+ *
+ * <p>{@code @DynamicUpdate}: two writers share the row, {@code FeedbackService.reportError} (the
+ * counters, {@code versions}, {@code regression_version}) and {@code FeedbackGithubWorker} (the
+ * GitHub fields). A full-row UPDATE made each write back the other's columns as it had read them,
+ * losing a concurrent occurrence (docs/LEDGER_*.md ISSUE-9). Each one now writes only what it
+ * changed, and both lock the row before a read-modify-write.
  */
 @Setter
 @Getter
@@ -34,6 +41,7 @@ import org.jspecify.annotations.Nullable;
           name = "idx_error_signatures_github_status",
           columnList = "github_status, first_seen_at")
     })
+@DynamicUpdate
 @NoArgsConstructor
 public class ErrorSignature {
 
@@ -77,6 +85,14 @@ public class ErrorSignature {
 
   @Column(name = "github_created_at")
   private @Nullable Instant githubCreatedAt;
+
+  /**
+   * The lease of the worker that is calling GitHub for this signature, so that the second backend
+   * of a rolling deploy does not open, reopen or summarize the same issue meanwhile (docs/LEDGER_*.md
+   * ISSUE-8). Null when free; an expired lease is free too.
+   */
+  @Column(name = "github_claimed_until")
+  private @Nullable Instant githubClaimedUntil;
 
   /** Occurrences up to this instant are summed up in a comment of the issue already. */
   @Column(name = "summarized_until")

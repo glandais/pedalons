@@ -89,6 +89,14 @@ public class FeedbackReport {
   @Column(name = "github_issue_number")
   private @Nullable Integer githubIssueNumber;
 
+  /**
+   * The lease of the worker that is opening the issue, so that the second backend of a rolling
+   * deploy does not open another (docs/LEDGER_*.md ISSUE-8). Null when free; an expired lease is free
+   * too.
+   */
+  @Column(name = "github_claimed_until")
+  private @Nullable Instant githubClaimedUntil;
+
   @CreationTimestamp
   @Column(name = "created_at", nullable = false, updatable = false)
   private Instant createdAt = Instant.now();

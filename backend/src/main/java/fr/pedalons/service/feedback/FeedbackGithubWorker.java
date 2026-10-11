@@ -16,13 +16,16 @@ import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.scheduler.Scheduled;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Callable;
+import java.util.function.Supplier;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 import org.jspecify.annotations.Nullable;
@@ -42,6 +45,13 @@ import org.jspecify.annotations.Nullable;
  * <p>No {@code @Transactional} here, as in {@code BiketeamLiveMigrationWorker}: every GitHub call
  * happens between two short transactions, never inside one. A failed call leaves the row {@code
  * PENDING} for the next tick, up to {@value #MAX_ATTEMPTS} attempts.
+ *
+ * <p>{@code ConcurrentExecution.SKIP} only guards one JVM, and for about a minute of a rolling
+ * deploy two backends run these jobs. So each row is leased ({@code github_claimed_until}, a
+ * conditional update, as {@code WeatherFetchWorker}) before its GitHub calls and given back after:
+ * the other backend skips it, then finds it CREATED (docs/LEDGER_*.md ISSUE-8). And every write
+ * to a signature locks it first, as {@code FeedbackService.reportError} does, so that neither loses
+ * the other's columns (docs/LEDGER_*.md ISSUE-9).
  */
 @ApplicationScoped
 public class FeedbackGithubWorker {
@@ -49,6 +59,10 @@ public class FeedbackGithubWorker {
   private static final Logger LOG = Logger.getLogger(FeedbackGithubWorker.class);
 
   static final int MAX_ATTEMPTS = 5;
+
+  /** Far longer than the GitHub calls of one row; a worker that dies leaves it to expire. */
+  static final Duration LEASE = Duration.ofMinutes(5);
+
   private static final int BATCH = 20;
 
   @ConfigProperty(name = "pedalons.feedback.errors.max-new-issues-per-day", defaultValue = "10")
@@ -97,16 +111,57 @@ public class FeedbackGithubWorker {
     }
     // Signatures first: a report opened from an error then links to its freshly opened issue.
     for (Long id : tx(() -> errorSignatureRepository.findPendingIds(BATCH))) {
-      if (!publishSignature(id)) {
+      if (!underSignatureLease(id, true, () -> publishSignature(id))) {
         break;
       }
     }
     for (Long id : tx(() -> feedbackReportRepository.findPendingIds(BATCH))) {
-      publishFeedback(id);
+      underReportLease(id, () -> publishFeedback(id));
     }
     for (Long id : tx(() -> errorSignatureRepository.findRegressionIds())) {
-      reopen(id);
+      underSignatureLease(
+          id,
+          null,
+          () -> {
+            reopen(id);
+            return null;
+          });
     }
+  }
+
+  /**
+   * Runs {@code work} under the signature's lease, or returns {@code whenHeld} when the other
+   * backend holds it. {@code work} re-reads the row: what the lease protects is only decided once
+   * it is held.
+   */
+  private <R> R underSignatureLease(Long id, R whenHeld, Supplier<R> work) {
+    Instant until = leaseEnd();
+    if (!tx(() -> errorSignatureRepository.claim(id, Instant.now(), until))) {
+      return whenHeld;
+    }
+    try {
+      return work.get();
+    } finally {
+      tx(() -> errorSignatureRepository.release(id, until));
+    }
+  }
+
+  /** Runs {@code work} under the report's lease, or not at all when the other backend holds it. */
+  private void underReportLease(Long id, Runnable work) {
+    Instant until = leaseEnd();
+    if (!tx(() -> feedbackReportRepository.claim(id, Instant.now(), until))) {
+      return;
+    }
+    try {
+      work.run();
+    } finally {
+      tx(() -> feedbackReportRepository.release(id, until));
+    }
+  }
+
+  /** Millisecond precision, so that {@code release} matches it exactly once stored. */
+  private static Instant leaseEnd() {
+    return Instant.now().plus(LEASE).truncatedTo(ChronoUnit.MILLIS);
   }
 
   /**
@@ -122,7 +177,7 @@ public class FeedbackGithubWorker {
     Optional<Issue> issue =
         tx(
             () -> {
-              ErrorSignature signature = errorSignatureRepository.findById(id);
+              ErrorSignature signature = errorSignatureRepository.lock(id);
               if (signature == null || signature.getGithubStatus() != GithubSyncStatus.PENDING) {
                 return Optional.empty();
               }
@@ -143,7 +198,7 @@ public class FeedbackGithubWorker {
           github.createIssue(issue.get().title(), issue.get().body(), issue.get().labels());
       tx(
           () -> {
-            ErrorSignature signature = errorSignatureRepository.findById(id);
+            ErrorSignature signature = errorSignatureRepository.lock(id);
             signature.setGithubStatus(GithubSyncStatus.CREATED);
             signature.setGithubIssueNumber(number);
             signature.setGithubCreatedAt(now);
@@ -155,7 +210,7 @@ public class FeedbackGithubWorker {
       LOG.warnf("Crash issue for signature %d not opened: %s", id, e.getMessage());
       tx(
           () -> {
-            ErrorSignature signature = errorSignatureRepository.findById(id);
+            ErrorSignature signature = errorSignatureRepository.lock(id);
             signature.setGithubAttempts(signature.getGithubAttempts() + 1);
             if (signature.getGithubAttempts() >= MAX_ATTEMPTS) {
               signature.setGithubStatus(GithubSyncStatus.FAILED);
@@ -250,7 +305,7 @@ public class FeedbackGithubWorker {
     }
     tx(
         () -> {
-          ErrorSignature signature = errorSignatureRepository.findById(id);
+          ErrorSignature signature = errorSignatureRepository.lock(id);
           signature.setIssueClosed(false);
           signature.setVersionsAtClose(new ArrayList<>());
           signature.setRegressionVersion(null);
@@ -267,7 +322,13 @@ public class FeedbackGithubWorker {
     }
     for (Long id : tx(() -> errorSignatureRepository.findToSummarizeIds())) {
       try {
-        summarize(id);
+        underSignatureLease(
+            id,
+            null,
+            () -> {
+              summarize(id);
+              return null;
+            });
       } catch (GitHubException e) {
         LOG.warnf("Daily summary of signature %d skipped: %s", id, e.getMessage());
       }
@@ -293,7 +354,7 @@ public class FeedbackGithubWorker {
       } else {
         tx(
             () -> {
-              errorSignatureRepository.findById(id).setSummarizedUntil(now);
+              errorSignatureRepository.lock(id).setSummarizedUntil(now);
               return null;
             });
       }
@@ -307,7 +368,7 @@ public class FeedbackGithubWorker {
     }
     tx(
         () -> {
-          ErrorSignature signature = errorSignatureRepository.findById(id);
+          ErrorSignature signature = errorSignatureRepository.lock(id);
           signature.setSummarizedUntil(now);
           // Reopened by hand on GitHub: forget the closure.
           signature.setIssueClosed(false);
@@ -319,11 +380,15 @@ public class FeedbackGithubWorker {
   /**
    * Records that the issue was closed. The versions that appear only after {@code closedAt} are not
    * part of what the fix was about: the first of them is a regression, reopened by the next tick.
+   *
+   * <p>The row is locked before the occurrences are read: a report committed meanwhile would
+   * otherwise be in neither the {@code versions} read here nor {@code findVersions}, and its version
+   * neither covered by the closure nor flagged as a regression (docs/LEDGER_*.md ISSUE-9).
    */
   private void markClosed(Long id, Instant closedAt, Instant now) {
     tx(
         () -> {
-          ErrorSignature signature = errorSignatureRepository.findById(id);
+          ErrorSignature signature = errorSignatureRepository.lock(id);
           List<String> before = errorOccurrenceRepository.findVersions(id, closedAt, false);
           List<String> newAfter = new ArrayList<>();
           for (String v : errorOccurrenceRepository.findVersions(id, closedAt, true)) {

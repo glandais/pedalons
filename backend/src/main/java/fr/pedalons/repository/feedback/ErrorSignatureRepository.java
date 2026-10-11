@@ -50,6 +50,37 @@ public class ErrorSignatureRepository implements PanacheRepository<ErrorSignatur
     return find("fingerprint", fingerprint).withLock(LockModeType.PESSIMISTIC_WRITE).firstResult();
   }
 
+  /**
+   * The signature, locked for the caller's transaction like {@link #lockOrCreate} locks it: the
+   * worker's read-modify-writes must not interleave with a concurrent occurrence (docs/LEDGER_*.md
+   * ISSUE-9).
+   */
+  public ErrorSignature lock(Long id) {
+    return findById(id, LockModeType.PESSIMISTIC_WRITE);
+  }
+
+  /**
+   * Leases the signature to the calling worker until {@code until}, unless another one holds an
+   * unexpired lease — a conditional update, so of two backends only one wins (docs/LEDGER_*.md
+   * ISSUE-8). In its own transaction, committed before the GitHub call.
+   *
+   * @return whether the lease was taken
+   */
+  public boolean claim(Long id, Instant now, Instant until) {
+    return update(
+            "githubClaimedUntil = ?1 where id = ?2"
+                + " and (githubClaimedUntil is null or githubClaimedUntil < ?3)",
+            until,
+            id,
+            now)
+        == 1;
+  }
+
+  /** Gives back the lease {@link #claim} took, unless it expired and another worker took it. */
+  public int release(Long id, Instant until) {
+    return update("githubClaimedUntil = null where id = ?1 and githubClaimedUntil = ?2", id, until);
+  }
+
   /** Signatures whose issue is still to open, oldest first. */
   public List<Long> findPendingIds(int limit) {
     return getEntityManager()

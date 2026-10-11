@@ -27,6 +27,28 @@ public class FeedbackReportRepository implements PanacheRepository<FeedbackRepor
         .getResultList();
   }
 
+  /**
+   * Leases the report to the calling worker until {@code until}, unless another one holds an
+   * unexpired lease — same claim as {@code ErrorSignatureRepository.claim} (docs/LEDGER_*.md
+   * ISSUE-8).
+   *
+   * @return whether the lease was taken
+   */
+  public boolean claim(Long id, Instant now, Instant until) {
+    return update(
+            "githubClaimedUntil = ?1 where id = ?2"
+                + " and (githubClaimedUntil is null or githubClaimedUntil < ?3)",
+            until,
+            id,
+            now)
+        == 1;
+  }
+
+  /** Gives back the lease {@link #claim} took, unless it expired and another worker took it. */
+  public int release(Long id, Instant until) {
+    return update("githubClaimedUntil = null where id = ?1 and githubClaimedUntil = ?2", id, until);
+  }
+
   /** The reports a member filed, for the GDPR export. */
   public List<FeedbackReport> findByUser(Long domainId, Long userId) {
     return list("user.id = ?1 and domain.id = ?2 order by createdAt", userId, domainId);
