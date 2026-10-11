@@ -637,17 +637,6 @@ Ce que les tests ne prouvent pas, parce qu'ils ne passent ni par Flyway ni par u
       indépendant (le SMTP d'une messagerie personnelle, avec un mot de passe d'application), le
       mettre dans le `.env`, `deploy.sh --monitoring`, puis un `amtool alert add` pour voir arriver
       le courriel ([`OPERATIONS.md`](OPERATIONS.md#alerts)). Taille : XS.
-- [ ] `OPS-26` **Recette de la première promotion des sauvegardes** (`SEC-32`) — depuis le
-      1er octobre 2026, la prod ne pousse plus que dans `incoming/` et `backup-promote.sh` (crontab
-      root de l'hôte de sauvegarde, toutes les 15 min) en fait les snapshots. Rien ne l'a encore vu
-      tourner sur une vraie nuit. Après la sauvegarde de 01 h 15 UTC, vérifier sur l'hôte de
-      sauvegarde : `pedalons-backup.log` de la prod sans erreur ; une ligne `promoted <stamp>` vers
-      01 h 30 dans `/var/log/backup/pedalons-backup-promote.log` ; le nouveau snapshot
-      `root:<backup-user>`, `0750`/`0440`, avec son `COMPLETE` ; presque rien de neuf sur le disque
-      (`du -sh` de la racine stable à ~1,7 Go près, le premier envoi remplissant `incoming/`) — un
-      objet MinIO inchangé doit avoir un compte de liens > 1 (`stat -c %h`) ; `restore.sh --list`
-      depuis la prod le montre. Puis la nuit suivante, la seconde promotion (plancher de 20 h
-      franchi) et la purge qui retire le plus ancien. Taille : XS.
 - [ ] `OPS-8` **Exercice de restauration** (audit de février, I20) — la procédure est écrite
       ([`OPERATIONS.md`](OPERATIONS.md), « Restore drill from another machine ») mais rien ne dit
       qu'elle a été menée de bout en bout sur une autre machine.
