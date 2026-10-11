@@ -1,3 +1,4 @@
+import type { TFunction } from 'i18next'
 import { formatPattern } from './dateFormat'
 import { isSupportedZone, sameOffsetAt, supportedZone, zoneCityName, zoneCityOf } from './zoneLabel'
 
@@ -18,8 +19,6 @@ export interface RendezvousMention {
   full: string
 }
 
-type Translate = (key: string, options: Record<string, string>) => string
-
 /**
  * The mention for `instant` read in `zone` by a reader in `readerZone`, or `null` when both zones
  * have the same offset at that instant (offsets, not identifiers: Paris read from Brussels says
@@ -36,7 +35,7 @@ export function rendezvousMention(
   zone: string | null | undefined,
   readerZone: string | null,
   language: string,
-  t: Translate
+  t: TFunction
 ): RendezvousMention | null {
   if (!instant || !readerZone || !isSupportedZone(zone)) return null
   const date = instant instanceof Date ? instant : new Date(instant)

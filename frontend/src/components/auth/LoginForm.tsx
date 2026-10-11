@@ -199,8 +199,8 @@ export function LoginForm({
       console.error('Login failed', error)
       const code = apiErrorCode(error)
       notifications.show({
-        message: t(`auth.errors.${code}` as Parameters<typeof t>[0], {
-          defaultValue: t(`errors.api.${code}` as Parameters<typeof t>[0], {
+        message: t(`auth.errors.${code}`, {
+          defaultValue: t(`errors.api.${code}`, {
             defaultValue: t('auth.errors.loginFailed'),
           }),
         }),
@@ -236,8 +236,8 @@ export function LoginForm({
       console.error('Registration failed', error)
       const code = apiErrorCode(error)
       notifications.show({
-        message: t(`auth.errors.${code}` as Parameters<typeof t>[0], {
-          defaultValue: t(`errors.api.${code}` as Parameters<typeof t>[0], {
+        message: t(`auth.errors.${code}`, {
+          defaultValue: t(`errors.api.${code}`, {
             defaultValue: t('auth.errors.registrationFailed'),
           }),
         }),

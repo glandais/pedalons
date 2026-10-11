@@ -1,10 +1,10 @@
 import { NotificationType } from '@/api/dto'
 import type { NotificationChannel, NotificationPreferencesDto } from '@/api/dto'
-import { tRegister } from '@/lib/i18nUtils'
+import { tRegister, type TranslationKey } from '@/lib/i18nUtils'
 
 export interface NotificationFamily {
   /** i18n key of the family's heading. */
-  labelKey: string
+  labelKey: TranslationKey
   types: NotificationType[]
 }
 

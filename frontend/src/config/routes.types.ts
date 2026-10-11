@@ -2,6 +2,7 @@ import type { ComponentType, LazyExoticComponent } from 'react'
 import type { QueryClient } from '@tanstack/react-query'
 import type { Locale } from './paths'
 import type { RouteMetaFn } from '@/lib/seo'
+import type { TranslationKey } from '@/lib/i18nUtils'
 
 /**
  * Authentication requirement for a route
@@ -36,7 +37,7 @@ export type EntityType =
  * - Dynamic: object with entity type to fetch name from
  */
 export type BreadcrumbLabel =
-  { type: 'static'; i18nKey: string } | { type: 'dynamic'; entity: EntityType }
+  { type: 'static'; i18nKey: TranslationKey } | { type: 'dynamic'; entity: EntityType }
 
 /**
  * A shared navigation group whose (runtime-gated) items feed a breadcrumb crumb's dropdown.

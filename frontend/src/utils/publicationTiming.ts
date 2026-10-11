@@ -1,4 +1,5 @@
 import type { PublicationDto, RideDto, TripDto } from '@/api/dto'
+import type { TFunction } from 'i18next'
 import { formatDateTime, formatPattern, formatTime } from './dateFormat'
 import { tripEndZone } from './rendezvous'
 import { supportedZone } from './zoneLabel'
@@ -37,7 +38,7 @@ export function formatPublicationSpan(
   publication: DatedPublication,
   mode: 'full' | 'time',
   language: string,
-  t: (key: string, options: Record<string, string>) => string,
+  t: TFunction,
   /** For a payload without `timezone` (fixtures) or in a zone `Intl` lacks: the reader's zone. */
   fallbackZone: string = 'UTC'
 ): string {

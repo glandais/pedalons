@@ -797,6 +797,39 @@ l'app. Ne pas déduire les rôles ou l'accès côté client pour élargir ce que
 
 ### Outillage
 
+- `WEB-73` **Les clés de traduction sont typées** (2026-10-12, sans changement de contrat) —
+  `t()` n'était pas typé : une clé absente s'affichait brute, et le `satisfies` des clés
+  construites ne contrôlait que le type de la variable. `frontend/src/i18n/i18next.d.ts` déclare
+  `CustomTypeOptions` sur `fr/common.json` (`keySeparator: false`, les clés étant plates) : tout
+  appel `t()` est vérifié par `pnpm typecheck`, clé littérale comme clé construite d'une valeur
+  typée — TypeScript résout les enums Orval, que l'extracteur d'i18next-cli ne sait pas lire
+  (`WEB-62`). `TranslationKey` (`src/lib/i18nUtils.ts`) type les clés rangées pour plus tard
+  (`labelKey` de `profileNav.ts` et `notificationFamilies.ts`, `i18nKey` des fils d'Ariane de
+  `routes.types.ts`) et `tRegister` la rend. `rendezvousMention` et `formatPublicationSpan`
+  prennent une `TFunction` ; leur test lit une vraie instance i18next (`createServerI18n`) au lieu
+  d'un bouchon qui réimitait l'interpolation. `src/i18n/catalogues.test.ts` tient l'anglais aux
+  mêmes clés que le français, que le typage ne couvre pas, et chaque catalogue aux seules formes
+  plurielles de sa langue (plus `_zero`, propre à i18next) : il a fait retirer 16 clés `_many` de
+  `en/common.json`, que l'anglais ne lit jamais. Typecheck de 3,6 s à 5,8 s. Tests :
+  `catalogues.test.ts`, `rendezvous.test.ts`, `npx vitest run` (411), `pnpm typecheck`, `pnpm lint`.
+  À ne pas défaire : **une clé rangée dans une variable ou un champ est une `TranslationKey`,
+  jamais une `string`** ; ne pas élargir `CustomTypeOptions` ni caster vers `Parameters<typeof t>[0]`
+  pour faire passer un appel. Un `defaultValue` coupe le contrôle de l'appel : il reste réservé aux
+  vrais replis (six appels, dont `LoginForm`, qui tente `auth.errors.<code>` puis
+  `errors.api.<code>`).
+
+- `WEB-74` **Les codes d'erreur de l'API traduits comme des `ErrorCode`** (2026-10-12, sans
+  changement de contrat) — `apiErrorCode` (`src/lib/apiError.ts`), le toast d'`axiosInstance`,
+  `BiketeamMigrationPage` (dont `TERMINAL_CODES`, désormais un `Set<ErrorCode>`) et
+  `AcceptInvitationPage` manipulaient le code comme une `string` (`'errors.api.' + code`) ; les
+  casts `as Parameters<typeof t>[0]` de `LoginForm` sont retirés. Typés, ils ont fait trouver sept
+  codes du contrat sans traduction, ajoutés en français et en anglais :
+  `BIKETEAM_JOB_NOT_FOUND`, `DECRYPTION_FAILED`, `ENCRYPTION_FAILED` (« Erreur interne du
+  serveur », comme `INTERNAL_ERROR`), `FILE_DETECTION_FAILED`, `FILE_TYPE_REJECTED`,
+  `GPS_TOKEN_EXCHANGE_FAILED`, `ROUTE_PLANNER_DISABLED`. Couvert par `pnpm typecheck` : un code
+  ajouté à l'enum `ErrorCode` sans clé `errors.api.<code>` dans `fr/common.json` le fait échouer.
+  À ne pas défaire : le code d'erreur reste un `ErrorCode` de bout en bout, jamais une `string`.
+
 - `WEB-53` **Le crawl SSR manuel retiré, `routes-render` sur des données de vraie équipe**
   (2026-10-04) — `scripts/ssr-audit.mjs`, `scripts/routes-ssr.yml` et les scripts `pnpm ssr-audit*`
   sont supprimés : `routes-render.e2e.ts` (`WEB-52`) les remplace, chaque nuit, sans comptes réels.

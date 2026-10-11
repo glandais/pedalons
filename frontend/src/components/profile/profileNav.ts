@@ -12,7 +12,7 @@ import {
   IconUsersGroup,
 } from '@tabler/icons-react'
 import { paths } from '@/config/paths'
-import { tRegister } from '@/lib/i18nUtils'
+import { tRegister, type TranslationKey } from '@/lib/i18nUtils'
 
 /**
  * The subjects of the profile, one per page (contracts/routes.yaml, « profile's sub-pages »). The
@@ -34,7 +34,7 @@ export type ProfileSection =
 export interface ProfileNavItem {
   section: ProfileSection
   /** i18n key of the label. */
-  labelKey: string
+  labelKey: TranslationKey
   icon: ComponentType<{ size?: number | string; stroke?: number }>
   /** Read at render: `paths.*()` follows the current language. */
   to: () => string
@@ -44,7 +44,7 @@ export interface ProfileNavItem {
 
 export interface ProfileNavGroup {
   /** i18n key of the group's label. The overview stands above the groups, in none of them. */
-  labelKey: string
+  labelKey: TranslationKey
   items: ProfileNavItem[]
 }
 

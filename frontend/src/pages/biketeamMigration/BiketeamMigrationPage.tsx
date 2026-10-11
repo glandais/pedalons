@@ -39,6 +39,7 @@ import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { paths } from '@/config/paths'
 import { useAuthStore } from '@/store/authStore'
 import { useFormattedDate } from '@/utils/dateFormat'
+import type { ErrorCode } from '@/api/dto'
 import { ApiClientError } from '@/lib/apiError'
 import {
   confirmBiketeamMigration,
@@ -66,11 +67,11 @@ import {
  */
 
 /** The request is dead for good: going back to biketeam to start again is the only way on. */
-const TERMINAL_CODES = new Set(['BIKETEAM_REQUEST_INVALID', 'BIKETEAM_REQUEST_EXPIRED'])
+const TERMINAL_CODES = new Set<ErrorCode>(['BIKETEAM_REQUEST_INVALID', 'BIKETEAM_REQUEST_EXPIRED'])
 
 type Phase = 'loading' | 'ready' | 'failed' | 'redirecting'
 
-function errorCodeOf(error: unknown): string | null {
+function errorCodeOf(error: unknown): ErrorCode | null {
   return error instanceof ApiClientError ? error.error.code : null
 }
 
@@ -91,8 +92,8 @@ export function BiketeamMigrationPage() {
   const [requestToken, setRequestToken] = useState<string | null | undefined>(undefined)
   const [phase, setPhase] = useState<Phase>('loading')
   const [preview, setPreview] = useState<BiketeamMigrationPreviewDto | null>(null)
-  const [failureCode, setFailureCode] = useState<string | null>(null)
-  const [confirmErrorCode, setConfirmErrorCode] = useState<string | null>(null)
+  const [failureCode, setFailureCode] = useState<ErrorCode | null>(null)
+  const [confirmErrorCode, setConfirmErrorCode] = useState<ErrorCode | 'unknown' | null>(null)
   const [isConfirming, setIsConfirming] = useState(false)
   const [reloadKey, setReloadKey] = useState(0)
 
@@ -202,7 +203,7 @@ export function BiketeamMigrationPage() {
             </Title>
             <Text c="dimmed" ta="center">
               {failureCode
-                ? t('errors.api.' + failureCode)
+                ? t(`errors.api.${failureCode}`)
                 : t('biketeamMigration.unavailable.missing')}
             </Text>
             {failureCode && (
@@ -313,7 +314,7 @@ export function BiketeamMigrationPage() {
 
           {confirmErrorCode && (
             <Alert color="red" icon={<IconX size={18} />}>
-              {t('errors.api.' + confirmErrorCode)}
+              {t(`errors.api.${confirmErrorCode}`)}
             </Alert>
           )}
 

@@ -1,16 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import fr from '@/locales/fr/common.json'
-import en from '@/locales/en/common.json'
+import { createServerI18n } from '@/i18n'
 import type { PublicationDto } from '@/api/dto'
 import { rendezvousMention, tripEndZone } from './rendezvous'
 import { formatPublicationSpan, type DatedPublication } from './publicationTiming'
 
 // docs/LEDGER_*.md API-60, plan §7 and §11: the catalogs' own wording, interpolated.
-const catalog =
-  (strings: Record<string, string>) => (key: string, options: Record<string, string>) =>
-    (strings[key] ?? key).replace(/\{\{(\w+)\}\}/g, (_, name: string) => options[name] ?? '')
-const tFr = catalog(fr as Record<string, string>)
-const tEn = catalog(en as Record<string, string>)
+const tFr = (await createServerI18n('fr')).t
+const tEn = (await createServerI18n('en')).t
 
 describe('rendezvousMention', () => {
   it('says nothing for Paris read from Brussels, summer and winter', () => {

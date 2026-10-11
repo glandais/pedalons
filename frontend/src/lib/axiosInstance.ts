@@ -221,7 +221,7 @@ export const axiosMutator = <T>(
             (config.method ?? 'get').toLowerCase() === 'get' && axiosError.response?.status === 404
           if (!isServer && !isMissingRead && !options?.skipErrorToast && !config.skipErrorToast) {
             notifications.show({
-              message: i18next.t('errors.api.' + errorData.code, errorData.errorDetails || {}),
+              message: i18next.t(`errors.api.${errorData.code}`, { ...errorData.errorDetails }),
               color: 'red',
             })
           }

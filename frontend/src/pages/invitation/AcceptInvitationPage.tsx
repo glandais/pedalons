@@ -9,7 +9,7 @@ import { useAuthStore } from '@/store/authStore'
 import { preview, accept } from '@/api/endpoints/invitations/invitations'
 import { useGetTeam } from '@/api/endpoints/teams/teams'
 import { ApiClientError } from '@/lib/apiError'
-import type { InvitationPreviewDto } from '@/api/dto'
+import type { ErrorCode, InvitationPreviewDto } from '@/api/dto'
 
 /**
  * Where an invitation e-mail lands.
@@ -38,7 +38,7 @@ export function AcceptInvitationPage() {
 
   const [state, setState] = useState<PageState>(() => (token ? 'loading' : 'error'))
   const [invitation, setInvitation] = useState<InvitationPreviewDto | null>(null)
-  const [failureCode, setFailureCode] = useState<string | null>(null)
+  const [failureCode, setFailureCode] = useState<ErrorCode | null>(null)
   const [isAccepting, setIsAccepting] = useState(false)
   const hasLoaded = useRef(false)
 
@@ -118,7 +118,7 @@ export function AcceptInvitationPage() {
             </Title>
             <Text c="dimmed" ta="center">
               {failureCode
-                ? t('errors.api.' + failureCode)
+                ? t(`errors.api.${failureCode}`)
                 : t('invitations.accept.unavailableBody')}
             </Text>
             {failureCode === 'TEAM_INVITE_EMAIL_MISMATCH' && isAuthenticated && (

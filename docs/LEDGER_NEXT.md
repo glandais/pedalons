@@ -240,11 +240,41 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
       maquette disait « Averse 70 % »). Aucun e2e ne couvre la météo : la pile e2e coupe
       le fournisseur, il faudrait remplir le cache par SQL. Même recette pour la météo des étapes
       (`WEB-67`) : bloc de la page d'étape, ligne des cartes d'étape.
-- [ ] `WEB-62` **`pnpm i18n:extract` réécrit tout le catalogue (S)** — lancé le 5 octobre 2026, il a
-      réécrit les deux `common.json` (~2 000 lignes de diff : clés `_one`/`_many` remplies de
-      `___MISSING_TRANSLATION___`, réordonnancement). Les clés météo ont été insérées à la main.
-      Régler la configuration d'i18next-cli (pluriels, ordre) pour qu'une extraction n'ajoute que
-      les clés nouvelles. Au passage : le mock partagé de `ResizeObserver` (`src/test/setup.ts`)
+- [ ] `WEB-62` **`pnpm i18n:extract` détruit le catalogue, `i18n:lint` et `i18n:status` échouent
+      toujours (M)** — audit du 12 octobre 2026 : `extract`, lancé sur l'arbre propre, retire 248
+      clés de `fr/common.json` (2 256 → 2 059), en ajoute 51 remplies de
+      `___MISSING_TRANSLATION___` et réordonne tout le fichier. La configuration
+      (`frontend/i18next.config.ts`, inchangée depuis janvier 2026) garde les défauts
+      d'i18next-cli `removeUnusedKeys: true` et `sort: true`. Ce qu'il y a à régler :
+      - **Les clés dynamiques sont supprimées** : ~218 des 248 servent encore (`errors.api.*` à
+        lui seul : 99). L'extracteur ne déduit les valeurs d'un `` t(`x.${v}`) `` que d'une union
+        littérale écrite dans l'appel ou d'un alias local ; les enums Orval
+        (`const X = {…} as const` + `type X = (typeof X)[keyof typeof X]`) ne donnent aucune clé,
+        sans avertissement — dix appels annotés `satisfies` perdent ainsi les leurs. Passer à
+        `removeUnusedKeys: false` (ou `preservePatterns`) : depuis `WEB-73`, c'est le typecheck,
+        pas l'extracteur, qui garantit qu'une clé existe ; `extract` ne sert plus qu'à proposer
+        les clés nouvelles.
+      - **Cinq faux pluriels** reçoivent `count` comme simple variable (`ads.contact.counter`
+        « {{count}} / {{max}} », `feedback.counter`, `ads.detail.openImage`,
+        `calendar.schedule.moreLabel`, `features.demo.ride.participants`) : `extract` remplace la
+        clé par `_one`/`_other` vides, qu'i18next préfère ensuite à la clé de base — la page
+        afficherait `___MISSING_TRANSLATION___`. Renommer le paramètre.
+      - **`_many` du français** : `Intl.PluralRules('fr')` range les millions en `many` ; 22 clés
+        ont la forme, 41 non (i18next affiche alors la clé brute).
+      - **Ordre** : le catalogue n'est pas trié, `sort: true` le réordonne en entier — trier une
+        fois ou passer `sort: false`. Exclure aussi les `*.test.tsx` de `extract.input`.
+      - **30 clés mortes** à retirer après vérification (`garmin.*`, `device.*`, `nav.avatar`,
+        `nav.profilePicture`, `buttons.next`/`previous`, `calendar.empty`, `calendar.eventTypes.*`,
+        `calendar.ics.{title,globalFeedDescription,teamFeedDescription}`,
+        `trips.create.form.stages.{add,empty,hint}`, `autocomplete.searchUsers`).
+      - **`i18n:lint`** ne vérifie pas les annotations des clés construites, contrairement à ce que
+        disait `frontend/CLAUDE.md` : il cherche les chaînes en dur (déjà fait par oxlint) et
+        l'interpolation sur le français seul — 4 faux positifs (`{{ofCity}}` en français,
+        `{{city}}` en anglais), plus les fichiers de test. **`i18n:status`** échoue sur les faux
+        pluriels. Ni l'un ni l'autre n'est dans `pnpm check` : à y mettre une fois au vert.
+      - `src/locales/group-by-value.js` n'est référencé nulle part.
+
+      Au passage : le mock partagé de `ResizeObserver` (`src/test/setup.ts`)
       est une classe depuis `99de5185` (`WEB-69`), mais sept tests le remplacent encore localement,
       certains avec un commentaire qui le dit fléché (`RideWeatherSection`, `StageWeatherSection`,
       `CardActions`, `memberHome`, `TagPicker`, `TeamDashboard`, `NotificationPreferences`) : ces

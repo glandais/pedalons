@@ -24,8 +24,8 @@ pnpm lint:fix                      # oxlint with auto-fix
 pnpm format                        # Prettier
 pnpm test                          # Vitest (watch mode)
 pnpm e2e                           # Playwright against the e2e stack (scripts/e2e.sh up first) — see e2e/README.md
-pnpm i18n:lint                     # Validate i18n keys (checks templated keys have type annotations)
-pnpm i18n:extract                  # Extract new keys from t() and tRegister() calls
+pnpm i18n:lint                     # Hardcoded strings + interpolation params (French only) — fails today, see ledger WEB-62
+pnpm i18n:extract                  # DESTRUCTIVE today: drops dynamic keys and rewrites the catalogue (ledger WEB-62) — don't run it
 ```
 
 ## Stack
@@ -91,9 +91,10 @@ Custom axios mutator in `lib/axiosInstance.ts` handles: JWT bearer tokens from a
 - **The SSR server picks the language**, in order: the signed-in user's `language` preference, the `lang` cookie (written by `LanguageSwitcher` via `persistLanguageChoice`), then `Accept-Language`. The client only follows `<html lang>` and caches nothing from detection — so an explicit choice must go through `persistLanguageChoice`, never localStorage, or it is lost on reload (a client-side override would mismatch the hydration).
 - Single `common` namespace per language: `locales/fr/common.json`, `locales/en/common.json`
 - **Keys are stored FLAT with dots** — `"map.tooltip.climb": "…"`, *not* nested `{ "map": { "tooltip": … } }` objects. Add new keys as flat entries next to their siblings; they still resolve via `t('map.tooltip.climb')` (i18next's `ignoreJSONStructure`). Adding a nested object instead is a silent trap — it "works" but breaks the file's convention.
-- Add every key to **both** locale files. `pnpm i18n:extract` scaffolds missing keys from `t()`/`tRegister()` calls; `pnpm i18n:lint` validates them (run both after touching translations).
+- **Keys are typed** (`src/i18n/i18next.d.ts`, ledger `WEB-73`): every `t()` call is checked against `fr/common.json`, so a key missing from it fails `pnpm typecheck` — literal keys and keys built from a typed value alike (`` t(`roles.${role}`) `` checks every `TeamRole`, Orval enums included). A key held in a variable or a field is a `TranslationKey` (`src/lib/i18nUtils.ts`), never a `string`; an API error code is an `ErrorCode`, never a `string`, so a new backend code without a translation breaks the typecheck. Passing `defaultValue` turns the check off for that call: keep it for real fallbacks.
+- Add every key to **both** locale files, by hand, next to its siblings. `src/i18n/catalogues.test.ts` fails when English lacks a French key (plural forms aside: French has `_many`, English doesn't).
 - **Interpolation**: `{{var}}` placeholders passed as `t('key', { var })`. Pluralize with `_one`/`_other` key suffixes + a `{{count}}` param (e.g. `form.charCount_one` / `form.charCount_other`).
-- `tRegister(key)` used in route config for static key tracking.
+- `tRegister(key)` marks a key stored for later (route config, nav items): it types it as a `TranslationKey`.
 - oxlint's `i18next/no-literal-string` (a **warning**, not an error) flags hardcoded user-facing strings — prefer `t()` even where lint wouldn't block.
 
 ### List and detail page shells
@@ -179,7 +180,7 @@ Public pages unfurl into rich social/messaging cards via server-rendered OG/Twit
 - **Never use SVG for icons** — use `@tabler/icons-react`. **Never pass it `title`**: the icon renders a `<title>` inside its `<svg>`, React 19 hoists it out of the server HTML, and the page fails to hydrate (#418). Name it with `aria-label`; a hover hint goes on a wrapping element.
 - **Mantine UI exclusively** — check https://mantine.dev/llms.txt for docs.
 - **A calendar event's `color` is a Mantine palette *name*, never a hex** (`components/calendar/CalendarView.tsx`) — `@mantine/schedule` runs it through `theme.variantColorResolver`, which resolves a name to the scheme-aware `--mantine-color-<name>-light` pair and can only blend a raw hex into `rgba(hex, 0.1)` over white. A hex looks right in light mode and renders the event unreadable in dark. Same reflex for any Mantine `color` prop.
-- **Templated i18n keys require type annotations**: `t(\`status.\${x satisfies 'DRAFT' | 'PUBLISHED'}\`)` (validated by `pnpm i18n:lint`).
+- **A templated i18n key must interpolate a typed value, never a `string`** — `` t(`status.${dto.status}`) `` is checked key by key by the typecheck (see i18n above); `satisfies` adds nothing to that check.
 - **Frontend config comes from `/api/config` endpoint**, not `.env` files.
 - **Logos**: `TeamAvatar` (with initials fallback) vs `EntityLogo` (no fallback).
 - **`MediaEditor` needs `teamSlug` prop** for uploads (hidden during team creation).

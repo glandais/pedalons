@@ -1,5 +1,5 @@
 import Axios from 'axios'
-import { ErrorResponse } from '@/api/dto'
+import type { ErrorCode, ErrorResponse } from '@/api/dto'
 
 export class ApiClientError extends Error {
   constructor(
@@ -27,7 +27,7 @@ export function parseRetryAfter(value: unknown): number | undefined {
  * The API error code carried by a failed call, whatever shape it failed in: the mutator turns an
  * error response into an `ApiClientError`, except a 401, which it rethrows as the raw axios error.
  */
-export function apiErrorCode(error: unknown): string | undefined {
+export function apiErrorCode(error: unknown): ErrorCode | undefined {
   if (error instanceof ApiClientError) return error.error.code
   if (Axios.isAxiosError(error)) return (error.response?.data as ErrorResponse | undefined)?.code
   return undefined
