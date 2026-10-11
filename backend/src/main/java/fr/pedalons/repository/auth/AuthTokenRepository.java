@@ -4,6 +4,7 @@ import fr.pedalons.domain.auth.AuthToken;
 import fr.pedalons.enums.AuthTokenType;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.persistence.LockModeType;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -34,6 +35,27 @@ public class AuthTokenRepository implements PanacheRepository<AuthToken> {
             email,
             tokenType,
             domainId)
+        .firstResultOptional();
+  }
+
+  /**
+   * The newest live code of the address, its row locked ({@code SELECT … FOR UPDATE}) until the
+   * transaction ends. Two guesses at the same code then run one after the other: each counts its
+   * miss on top of the other's, and one that waited on a guess that burnt the code, or on the
+   * owner's login, no longer finds it. Unlocked, a guess that read the row earlier wrote its stale
+   * snapshot back last — counter reset, code alive again (docs/LEDGER_*.md SEC-34). Take {@code
+   * UserRepository.findByEmailAndDomainForUpdate} first: requesting a code locks the account, then
+   * the code.
+   */
+  public Optional<AuthToken> findValidByEmailAndTypeForUpdate(
+      String email, AuthTokenType tokenType, Long domainId) {
+    return find(
+            "email = ?1 and tokenType = ?2 and domainId = ?3 and usedAt is null and expiresAt >"
+                + " CURRENT_TIMESTAMP order by createdAt desc",
+            email,
+            tokenType,
+            domainId)
+        .withLock(LockModeType.PESSIMISTIC_WRITE)
         .firstResultOptional();
   }
 

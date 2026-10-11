@@ -343,7 +343,12 @@ public class AuthService {
   /** Null when no code is issued: unknown or unverified address, or rate limit. */
   private @Nullable String createOtp(OtpRequest request) {
     Domain domain = domainResolver.getDomain();
-    User user = userRepository.findByEmailAndDomain(domain.getId(), request.email()).orElse(null);
+    // The account row stays locked until the commit: the count, the invalidation and the insert
+    // below are a check-then-act, which two concurrent requests would each pass blind to the
+    // other's uncommitted code — more codes than the rate limit, several live at once
+    // (docs/LEDGER_*.md SEC-35).
+    User user =
+        userRepository.findByEmailAndDomainForUpdate(domain.getId(), request.email()).orElse(null);
 
     // Always respond success to prevent email enumeration
     if (user == null || !user.isEmailVerified()) {
@@ -385,9 +390,17 @@ public class AuthService {
   public AuthResult verifyOtp(String email, String code, String userAgent, String ipAddress) {
     Long domainId = domainResolver.getDomainId();
     String tokenHash = hashToken(code);
+    // Account row first, then the code: createOtp locks in the same order (docs/LEDGER_*.md
+    // SEC-35). Taking the code first would deadlock a login against a request for a new code — the
+    // login holding the code and waiting on the account for recordLogin, the request holding the
+    // account and waiting on the code to invalidate it. An address without an account locks
+    // nothing here: it has no code either.
+    userRepository.findByEmailAndDomainForUpdate(domainId, email);
+    // Locked: concurrent guesses would otherwise each write back a stale counter (docs/LEDGER_*.md
+    // SEC-34).
     AuthToken authToken =
         authTokenRepository
-            .findValidByEmailAndType(email, AuthTokenType.OTP, domainId)
+            .findValidByEmailAndTypeForUpdate(email, AuthTokenType.OTP, domainId)
             .orElse(null);
     if (authToken == null) {
       logFailedLogin("otp", "no_valid_code", email, domainId, ipAddress);

@@ -4,6 +4,7 @@ import fr.pedalons.domain.user.User;
 import fr.pedalons.enums.PlatformRole;
 import fr.pedalons.repository.common.BaseRepository;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.persistence.LockModeType;
 import java.util.List;
 import java.util.Optional;
 
@@ -22,6 +23,19 @@ public class UserRepository implements BaseRepository<User> {
 
   public Optional<User> findByEmailAndDomain(Long domainId, String email) {
     return find("domain.id = ?1 and email = ?2 and deleted = false", domainId, email)
+        .firstResultOptional();
+  }
+
+  /**
+   * {@link #findByEmailAndDomain}, the row locked ({@code SELECT … FOR UPDATE}) until the
+   * transaction ends: two requests for a sign-in code to the same address then run one after the
+   * other, and the second counts and invalidates the first's code (docs/LEDGER_*.md SEC-35). Every
+   * path that also locks one of the address's codes takes this lock first, or a login and a
+   * request for a new code would deadlock.
+   */
+  public Optional<User> findByEmailAndDomainForUpdate(Long domainId, String email) {
+    return find("domain.id = ?1 and email = ?2 and deleted = false", domainId, email)
+        .withLock(LockModeType.PESSIMISTIC_WRITE)
         .firstResultOptional();
   }
 
