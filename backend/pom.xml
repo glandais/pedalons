@@ -19,7 +19,7 @@
              Quarkus restarts (~13s) per class, which costs more than the parallelism buys -->
         <surefire.forkCount>1</surefire.forkCount>
         <checkstyle-plugin.version>3.6.0</checkstyle-plugin.version>
-        <spotless-plugin.version>3.10.3</spotless-plugin.version>
+        <spotless-plugin.version>3.10.4</spotless-plugin.version>
         <git-commit-id-plugin.version>10.0.1</git-commit-id-plugin.version>
         <hypersistence-utils-hibernate.version>3.16.0</hypersistence-utils-hibernate.version>
         <gpx.version>1.5.2</gpx.version>
@@ -32,7 +32,7 @@
         <webauthn4j-core.version>0.31.11.RELEASE</webauthn4j-core.version>
         <timeshape.version>2026b.29</timeshape.version>
         <s3mock-testcontainers.version>5.2.3</s3mock-testcontainers.version>
-        <google-java-format.version>1.36.1</google-java-format.version>
+        <google-java-format.version>1.37.0</google-java-format.version>
         <!-- Security overrides of versions quarkus-bom pins too low; drop each one once a Quarkus
              release aligns past it. jackson 3 (via webauthn4j): GHSA ranges [3.2.0,3.2.2).
              log4j-api (via log4j2-jboss-logmanager): [2.26.0,2.26.1). -->
