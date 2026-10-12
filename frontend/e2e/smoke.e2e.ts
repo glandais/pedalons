@@ -129,7 +129,27 @@ test.describe('app links', () => {
     const deeplinks = contractRoutes().filter((route) => route.deeplink)
     const expected = [...new Set(deeplinks.flatMap(patterns))]
     expect(expected, 'the contract declares deeplinks').toContain('/equipes/*/sorties/*')
-    expect([...detail.paths].sort()).toEqual(expected.sort())
+    // Pages without an app screen are excluded first (`NOT …`, docs/LEDGER_*.md MOB-58): the
+    // first matching entry wins, and a deeplink wildcard would otherwise capture them.
+    const exclusions = detail.paths.filter((path) => path.startsWith('NOT '))
+    expect(detail.paths.slice(0, exclusions.length)).toEqual(exclusions)
+    expect(detail.paths.slice(exclusions.length).sort()).toEqual(expected.sort())
+    // `*` crosses `/` in the AASA: no exclusion may cover a deeplink's own path.
+    const matches = (pattern: string, path: string) =>
+      new RegExp(
+        `^${pattern
+          .split('*')
+          .map((part) => part.replace(/[.+?^${}()|[\]\\]/g, '\\$&'))
+          .join('.*')}$`
+      ).test(path)
+    for (const deeplink of expected) {
+      const sample = deeplink.split('*').join('x')
+      for (const exclusion of exclusions) {
+        expect(matches(exclusion.slice('NOT '.length), sample), `${exclusion} vs ${sample}`).toBe(
+          false
+        )
+      }
+    }
   })
 
   test('assetlinks.json is JSON and hands the Android app its links and the credentials', async ({
