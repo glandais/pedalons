@@ -134,6 +134,7 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
     final PdlTypography t = context.pdlText;
     return PdlAppBar(
       onBack: _backToRide,
+      backKey: keys.rideGroup.backButton,
       backSemanticLabel: 'common.back'.tr(),
       titleWidget: group == null || ride == null
           ? null

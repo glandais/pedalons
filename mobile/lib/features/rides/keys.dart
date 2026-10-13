@@ -115,6 +115,9 @@ class _RideGroupKey extends ValueKey<String> {
 class RideGroupPageKeys {
   final page = const _RideGroupKey('page');
 
+  /// Le retour de l'app bar, vers la sortie.
+  final backButton = const _RideGroupKey('backButton');
+
   /// Les trois onglets : Aperçu · Météo · Participants.
   final tabOverview = const _RideGroupKey('tabOverview');
   final tabWeather = const _RideGroupKey('tabWeather');

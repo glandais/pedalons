@@ -4,13 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:pedalons/api/generated/export.dart';
+import 'package:pedalons/config/paths.dart';
 import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/features/rides/data/ride_repository.dart';
+import 'package:pedalons/features/rides/domain/ride_group_tab.dart';
 import 'package:pedalons/features/rides/presentation/pages/ride_detail_page.dart';
-import 'package:pedalons/features/rides/presentation/pages/ride_weather_page.dart';
+import 'package:pedalons/features/rides/presentation/pages/ride_group_page.dart';
 import 'package:pedalons/features/rides/presentation/widgets/ride_group_card.dart';
 import 'package:pedalons/features/teams/data/team_repository.dart';
 import 'package:pedalons/keys.dart';
@@ -312,7 +315,7 @@ void main() {
       ],
     );
 
-    testWidgets('la carte compacte dit le départ, le vent et la pluie', (
+    testWidgets('la carte dit la météo au départ, et elle seule', (
       WidgetTester tester,
     ) async {
       final RideDto ride = fixtureRide();
@@ -323,12 +326,70 @@ void main() {
       );
 
       expect(find.byKey(keys.ride.weatherCard), findsOneWidget);
-      expect(find.text('14\u00a0°C'), findsOneWidget);
-      expect(find.text('Partiellement nuageux'), findsOneWidget);
-      expect(find.byType(PdlSegmentBar), findsOneWidget);
-      expect(find.textContaining('Pluie probable (70\u00a0%)'), findsOneWidget);
+      expect(find.text('Météo au départ'), findsOneWidget);
+      expect(find.text('14\u00a0°C'), findsWidgets);
+      expect(find.text('Partiellement nuageux'), findsWidgets);
+      expect(find.textContaining('Ressenti'), findsOneWidget);
+      // Ni le vent le long du parcours ni l'alerte pluie d'un groupe : ils
+      // vivent dans la page du groupe (ledger `MOB-67`).
+      expect(find.byType(PdlSegmentBar), findsNothing);
+      expect(find.textContaining('Pluie probable'), findsNothing);
+      expect(find.byKey(keys.ride.weatherOpenButton), findsNothing);
+      expect(find.text('Voir la météo du parcours'), findsNothing);
       expect(find.text('Prévision ancienne'), findsNothing);
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('une sortie sans groupe garde son vent et sa pluie', (
+      WidgetTester tester,
+    ) async {
+      final RideDto ride = fixtureRide(groups: const <RideGroupDto>[]);
+      final RideWeatherDto weather = fixtureWeather(
+        status: 'OK',
+        departure: fixtureConditions(),
+        legs: <WeatherLegDto>[
+          fixtureLeg(
+            groupId: null,
+            rainAlert: const WeatherRainAlertDto(
+              probability: 70,
+              time: '2099-07-29T20:05:00Z',
+              condition: 'RAIN',
+              distance: 15000,
+            ),
+          ),
+        ],
+      );
+      await open(
+        tester,
+        ride,
+        repository: _StubRideRepository(ride, weather: weather),
+      );
+
+      expect(find.byKey(keys.ride.weatherCard), findsOneWidget);
+      expect(find.byType(PdlSegmentBar), findsOneWidget);
+      expect(find.textContaining('Pluie probable (70\u00a0%)'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('la carte d\'un groupe porte sa ligne météo', (
+      WidgetTester tester,
+    ) async {
+      final RideDto ride = fixtureRide();
+      await open(
+        tester,
+        ride,
+        repository: _StubRideRepository(ride, weather: ok()),
+      );
+      await scrollToGroups(tester);
+
+      expect(find.byKey(keys.ride.groupWeatherLine('g1')), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(keys.ride.groupWeatherLine('g1')),
+          matching: find.textContaining('PLUIE 70'),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('la carte compacte crédite Open-Meteo (CC BY 4.0)', (
@@ -408,23 +469,66 @@ void main() {
       expect(find.text('PRÉVISION ANCIENNE'), findsOneWidget);
     });
 
-    testWidgets('« Voir la météo du parcours » pousse l\'écran', (
+    testWidgets('toucher la carte d\'un groupe ouvre sa page', (
       WidgetTester tester,
     ) async {
       final RideDto ride = fixtureRide();
-      await open(
-        tester,
-        ride,
-        repository: _StubRideRepository(ride, weather: ok()),
+      final GoRouter router = GoRouter(
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/',
+            builder: (BuildContext _, GoRouterState _) =>
+                RideDetailPage(teamSlug: ride.team.slug, rideSlug: ride.slug),
+          ),
+          for (final String path in PathVariants.rideGroup(
+            ':teamSlug',
+            ':rideSlug',
+            ':groupId',
+          ).values)
+            GoRoute(
+              path: path,
+              builder: (BuildContext _, GoRouterState state) => RideGroupPage(
+                teamSlug: state.pathParameters['teamSlug']!,
+                rideSlug: state.pathParameters['rideSlug']!,
+                groupId: state.pathParameters['groupId']!,
+                initialTab: RideGroupTab.fromQuery(
+                  state.uri.queryParameters['tab'],
+                ),
+              ),
+            ),
+        ],
       );
+      addTearDown(router.dispose);
+      await tester.pumpWidget(
+        ProviderScope(
+          retry: (int _, Object _) => null,
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            rideRepositoryProvider.overrideWithValue(
+              _StubRideRepository(ride, weather: ok()),
+            ),
+            teamRepositoryProvider.overrideWithValue(
+              _StubTeamRepository(member: true),
+            ),
+          ],
+          child: MaterialApp.router(
+            theme: PedalonsTheme.build(Brightness.light),
+            routerConfig: router,
+          ),
+        ),
+      );
+      for (int i = 0; i < 4; i++) {
+        await tester.pump(const Duration(milliseconds: 10));
+      }
+      await scrollToGroups(tester);
 
-      await tester.tap(find.byKey(keys.ride.weatherOpenButton));
+      await tester.tap(find.byKey(keys.ride.group('g1')));
       for (int i = 0; i < 6; i++) {
         await tester.pump(const Duration(milliseconds: 100));
       }
 
-      expect(find.byType(RideWeatherPage), findsOneWidget);
-      expect(find.text('Météo du parcours'), findsWidgets);
+      expect(find.byType(RideGroupPage), findsOneWidget);
+      expect(find.byKey(keys.rideGroup.tabOverview), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 

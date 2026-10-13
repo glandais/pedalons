@@ -186,9 +186,73 @@ final class Ride extends Module {
     }
   }
 
-  /// Taps the card of [groupId] — which selects it for the map, the legend and the profile.
-  Future<void> selectGroup(String groupId) async {
+  /// Taps the card of [groupId], which opens the group's page (ledger `MOB-67`) on its Overview
+  /// tab — or on [tab] (`weather`, `participants`) once it is shown.
+  Future<void> openGroup(String groupId, {String? tab}) async {
     await (await scrolledTo(keys.ride.group(groupId))).tap();
+    await $(keys.rideGroup.page).waitUntilExists();
+    if (tab != null) await openGroupTab(tab);
+  }
+
+  /// Switches the group's page to its `overview`, `weather` or `participants` tab.
+  Future<void> openGroupTab(String tab) async {
+    await $(switch (tab) {
+      'weather' => keys.rideGroup.tabWeather,
+      'participants' => keys.rideGroup.tabParticipants,
+      _ => keys.rideGroup.tabOverview,
+    }).tap();
+  }
+
+  /// Whether the group's page is open, on its Weather tab's sections or its empty state.
+  Future<void> waitUntilGroupWeatherIsShown() async {
+    final deadline = DateTime.now().add(const Duration(seconds: 20));
+    while (!$(keys.ride.weatherCheckpoint(0)).exists &&
+        !$(keys.rideGroup.weatherEmpty).exists &&
+        !$(keys.ride.weatherLegUnavailable).exists &&
+        !$(keys.ride.weatherNotYetAvailable).exists &&
+        !$(keys.ride.weatherUnavailable).exists) {
+      if (DateTime.now().isAfter(deadline)) {
+        throw TestFailure('the group page shows no weather after 20s');
+      }
+      await $.pump(const Duration(milliseconds: 200));
+    }
+  }
+
+  /// Back from the group's page to the ride.
+  Future<void> closeGroup() async {
+    await $(keys.rideGroup.backButton).tap();
+    await waitUntilShown();
+  }
+
+  /// Whether the group's page names [name] as its leader.
+  bool groupPageShowsLeader(String name) => shows(keys.rideGroup.leader, name);
+
+  /// Whether the group's page has a leader row at all.
+  bool get groupPageHasLeader => isShown(keys.rideGroup.leader);
+
+  /// « Rejoindre » of the group page's action bar, then waits for « Quitter ».
+  Future<void> joinFromGroupPage() async {
+    await $(keys.rideGroup.joinButton).tap();
+    await $(keys.rideGroup.leaveButton).waitUntilVisible();
+  }
+
+  /// Whether the group page says the member is registered in another group.
+  bool get groupPageSaysRegisteredElsewhere =>
+      isShown(keys.rideGroup.registeredElsewhere);
+
+  bool get groupPageOffersJoin => isShown(keys.rideGroup.joinButton);
+
+  /// Taps the pill of [groupId] on the group's page.
+  Future<void> switchGroupPageTo(String groupId) async {
+    await $(keys.rideGroup.groupChip(groupId)).tap();
+    await $.pump(const Duration(milliseconds: 300));
+  }
+
+  /// Selects [groupId] for the map, the legend and the profile: its card opens the group's page,
+  /// which shares the selection with the ride, and the way back finds it selected.
+  Future<void> selectGroup(String groupId) async {
+    await openGroup(groupId);
+    await closeGroup();
   }
 
   /// Lets the refetch that follows a registration settle.
