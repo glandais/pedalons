@@ -475,6 +475,46 @@ couvert » ; les tests ne tournent qu'en local (`MOB-37`).
   Pull-to-refresh : le détail de voyage recharge aussi la météo ; l'écran 25 en a gagné un. Aucun
   appel pour un voyage terminé ou annulé. Clés `trips.weather.*` (fr, en). Test :
   `trip_weather_test.dart`. Un voyage sans étape (une entrée sans `stageId`) n'affiche rien.
+- `MOB-67` **Page d'un groupe de sortie au mobile** (13 octobre 2026, contrat inchangé). Route
+  `rideGroup` (commune avec `WEB-77`) imbriquée sous celle de la sortie dans `router.dart`, avec sa
+  hiérarchie de lien profond (`_rideAncestor`) et son motif dans `internalRouteTemplates` ;
+  `?tab=weather|overview|participants` (hors contrat, `RideGroupTab.fromQuery`) choisit l'onglet.
+  `RideGroupPage` : barre avec partage (`Paths.rideGroup`), puces de groupe, `PdlSegmented`
+  Aperçu · Météo · Participants, barre d'inscription en bas (`RideGroupActionBar` :
+  inscrits/max, places restantes, bouton de `rideGroupAction`, bandeau d'échec
+  `registrationFailureBanner` sorti de `RideGroupsSection`). Aperçu : carte des groupes avec le
+  groupe allumé et profil, statistiques (départ avant / avec / après par `groupStartRelation`,
+  arrivée estimée, allure, distance, dénivelé positif, chacune omise si absente), meneur, carte
+  résumé météo qui ouvre l'onglet Météo, avatars et « Voir tous les participants », « Parcours du
+  groupe » (GPX, FIT, envoi vers l'appareil, `ride_group_route_actions.dart`, partagé avec
+  `RideGroupsSection`). Météo : l'ancien contenu de `RideWeatherPage` sans sélecteur
+  (`DepartureWeatherSection`, sortie de `ride_weather_page.dart`, en-tête et corps du leg,
+  attribution), aucun appel pour une sortie terminée ou annulée. Participants :
+  `ParticipantListView`, sorti de `ParticipantsSheet` qui l'enveloppe. La page pose
+  `selectedRideGroupProvider` après la frame, et le détail en dessous retrouve le même groupe.
+  Un groupe inconnu affiche un état vide qui ramène à la sortie. `RideWeatherPage` et son test sont
+  **supprimés** : tout lien vers elle mène à l'onglet Météo de la page du groupe (capture des
+  stores `rideGroupWeather` dans `plan.json`, `seed.py`, `screenshot_mode.dart`). Sur le détail, la
+  carte météo devient `RideDepartureWeatherCard` (départ seulement, sans lien ni groupe) ; une
+  carte de groupe ouvre sa page et porte `RideGroupWeatherLine` (température, ciel, pluie en bleu
+  doux comme au web, Face / Dos colorés par `RelativeWind` généré, libellé toujours écrit). Une
+  inscription ou une désinscription réussie relit toutes les listes de participants
+  (`notifyParticipationChanged`), le pull-to-refresh de la page aussi. `weatherLegFor` et son repli
+  sont remplacés par le strict `weatherLegOfGroup`. Tests : `ride_group_page_test.dart`,
+  `ride_group_weather_line_test.dart`, `ride_detail_page_test.dart` (carte au départ seulement,
+  carte de groupe qui ouvre la page), `ride_weather_display_test.dart`, `ride_group_card_test.dart`,
+  `deep_link_hierarchy_test.dart`, `link_launcher_test.dart` ; Patrol `ride_group_page_test.dart`
+  et `ride_participants_map_test.dart` adaptés (`openGroup`, `selectGroup` = ouvrir puis revenir),
+  non lancés (`MOB-68`). **À ne pas défaire** : la page du groupe remplace l'écran météo du
+  parcours ; la carte météo du détail est limitée au départ — **sauf pour une sortie sans groupe**
+  (`legs.length == 1 && groupId == null`), qui garde vent et alerte pluie sur le détail ; la ligne
+  météo d'une carte n'a pas de tap propre (la carte ouvre la page) ; le meneur n'apparaît que si
+  `group.leader != null`, **jamais de repli** ; inscrit dans un autre groupe, la barre écrit « Vous
+  êtes inscrit dans le groupe X. » avec un lien et n'offre pas « Rejoindre » (un groupe par sortie
+  côté serveur) — le changement de groupe (`switchGroup`) reste sur les cartes du détail ;
+  `WeatherForecastCard`, `weather_leg_sections.dart`, `keys.ride.weatherOpenButton` et
+  `rides.weather.viewRoute` restent pour l'étape de voyage (`stage_weather_card.dart`,
+  `stage_weather_page.dart`).
 
 ---
 
@@ -1494,6 +1534,43 @@ l'app. Ne pas déduire les rôles ou l'accès côté client pour élargir ce que
   page et remonté). Vérifié au navigateur sur une sortie à 10 groupes, sauf le clic sur un tracé.
   **À ne pas défaire** : un choix efface le survol, car la carte réaffirme son tracé cliqué en
   sortie de survol et masquerait sinon le groupe choisi dans la météo.
+- `WEB-77` **Page d'un groupe de sortie au web** (13 octobre 2026, contrat inchangé). Nouvelle
+  route `rideGroup` au contrat des routes (`/equipes/{teamSlug}/sorties/{rideSlug}/groupes/{groupId}`,
+  `groupId` = TSID de `RideGroupDto.id`, web, mobile et deeplink ; commune avec `MOB-67`),
+  `RideGroupPage` sous le détail de la sortie (fil d'Ariane `rideGroup`, méta `rideGroupMeta` en
+  `noindex` selon la visibilité, préchargement SSR `prefetchRideGroup`). Aucun endpoint nouveau :
+  la page lit ce que lit le détail (`useRideGroupData` = `useRideDetailData` + le groupe et son
+  leg), dont elle partage le cache, plus la page 0 des participants du groupe. Elle montre : retour
+  à la sortie, sélecteur de groupe (`SegmentedControl` jusqu'à 4, `Select` au-delà, libellé
+  `nom · inscrits/max`), en-tête (sortie, date, heure dans le fuseau de la sortie), inscription
+  (`useRideGroupMembership`, sorti de `RideDetailPage` et partagé), barre de places, statistiques
+  (départ avant / avec / après la sortie par `groupStartRelation`, allure et arrivée estimée,
+  distance, dénivelé positif — chacune omise si absente), meneur, météo complète du parcours
+  (`GroupWeatherSection` : statuts par `WeatherStatusNotice`, départ, `LegWeather`, attribution),
+  participants paginés et cherchables (`ParticipantList`, sorti de `ParticipantListModal`, qui
+  l'enveloppe), et à droite la carte collante (`.detail-map`) avec profil et « Parcours du
+  groupe » (`RideGroupRouteActions`, sorti de `RideGroupCard`). Un groupe inconnu (supprimé par une
+  édition, vieux lien) affiche un `EmptyState` qui ramène à la sortie. Sur le détail de la sortie,
+  `RideWeatherSection` ne garde que « Météo au départ » : le sélecteur de groupe de `WEB-76` y est
+  retiré (la carte et les cartes de groupe gardent `selectedGroupId`) ; chaque `RideGroupCard`
+  mène à la page de son groupe (nom en lien, « Voir le groupe ») et porte `GroupWeatherLine`
+  (température et ciel au départ du groupe, pluie, badges Face / Dos en km). Tests :
+  `RideGroupPage.test.tsx`, `GroupWeatherSection.test.tsx`, `GroupWeatherLine.test.tsx`,
+  `RideWeatherSection.test.tsx`, `RideGroupCard.test.tsx`, `routeMeta.test.ts`,
+  `useBreadcrumbGroup.test.tsx`, `groupStart.test.ts`, `groupParticipantFilters.test.ts` ; écran
+  `rideGroup` ajouté à `e2e/routes-render.e2e.ts` (non lancé, `WEB-78`). **À ne pas défaire** :
+  le panneau météo de la sortie est limité au départ, la météo le long du parcours vit sur la page
+  du groupe — **sauf pour une sortie sans groupe** (un seul leg sans `groupId`, pas de page de
+  groupe), qui garde son `LegWeather` sur le détail, sans quoi sa météo du parcours disparaîtrait ;
+  la ligne météo des cartes n'est **pas cliquable** (le lien est le nom et « Voir le groupe ») et
+  ses couleurs viennent de `relativeWindColor`, toujours doublées du libellé ; le meneur n'est
+  rendu que si `group.leader` est posé, **jamais de repli sur `createdBy`** ; un inscrit dans un
+  autre groupe lit « Vous êtes inscrit dans le groupe X. » avec un lien, sans « Rejoindre » — le
+  serveur n'admet qu'un groupe par sortie (`RideService.joinGroup`, 409 `ALREADY_REGISTERED`) et
+  ne déplace jamais ; « Rejoindre » est le seul bouton plein ; la clé des participants vient d'une
+  seule fonction (`participantsPageParams` / `groupParticipantsParams`, recherche vide = absente,
+  taille fixe 50, `?size=` ignoré) pour le préchargement et la page, sans quoi l'hydratation
+  relit la liste.
 
 ---
 

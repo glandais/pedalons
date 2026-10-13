@@ -181,6 +181,21 @@ navigateur), et la connexion par code e-mailé (la préférence de fuseau existe
         `notConfigured` / `replace`, `notifications.preferences.inAppAlwaysOn`.
         **`profile.participations.count` reste** : `my_participations_page.dart` l'emploie.
 
+- [ ] `MOB-68` **Page d'un groupe de sortie (`MOB-67`) : Patrol, suite complète et recette sur
+      appareil (S)** — écrit le 13 octobre 2026, vérifié par `flutter analyze` et les fichiers de
+      test touchés lancés un par un. Reste :
+      - **Patrol** : `ride_group_page_test.dart` (nouveau) et `ride_participants_map_test.dart`
+        (`selectGroup` ouvre désormais la page du groupe puis revient), jamais lancés.
+      - **`flutter test` en entier** : un passage groupé de six fichiers a calé neuf minutes avant
+        de finir vert, probablement à cause d'autres processus Flutter en parallèle ; à relancer
+        seul.
+      - **Recette sur appareil**, clair et sombre : onglets et `?tab=weather` depuis un lien profond
+        à froid (le détail de la sortie reconstruit dessous), puces de groupe, barre d'inscription
+        (cibles de 44 px), captures des stores renommées `rideGroupWeather`.
+      - **Mineur** : la pastille pluie de la ligne météo est bleue (comme au web) quand le bandeau
+        pluie de l'onglet Météo reste jaune ; si la pluie doit porter une couleur, la mettre dans
+        `contracts/brand-colors.yaml` pour les deux clients.
+
 ### Liens profonds
 
 ---
@@ -246,6 +261,16 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
       clé `rides.weather.precipitationWithAmount`, sans tenir compte de la langue. Le mobile écrit
       bien « 2,3 mm » (`AppFormatters.formatPrecipitation`). Formater avec `Intl.NumberFormat`
       selon la langue de l'interface (une décimale), comme `formatFileSize`.
+
+- [ ] `WEB-78` **Page d'un groupe de sortie (`WEB-77`) : e2e à lancer et recette navigateur (S)** —
+      écrit le 13 octobre 2026, vérifié seulement par typecheck, lint et vitest. Reste :
+      - **e2e** sur la pile e2e : `scripts/e2e.sh test routes-render` (nouvel écran `rideGroup`,
+        `groupId` dans le jeu de données, audit de préchargement : aucune relecture des
+        participants après hydratation), plus les parcours d'inscription qui passent par le
+        détail de la sortie, les deux projets Playwright.
+      - **Recette à l'œil** : colonne de carte collante à partir de 64em, sélecteur de groupe
+        (4 puis `Select`), un groupe supprimé (état vide), un inscrit dans un autre groupe, mode
+        sombre, téléphone ; la ligne météo des cartes de groupe sur le détail. Recoupe `WEB-61`.
 
 ### Couverture e2e — ce que l'audit du 27 septembre laisse ouvert
 
