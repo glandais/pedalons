@@ -234,7 +234,7 @@ private fun GpsConnectScreen(
                 modifier = Modifier.fillMaxWidth(0.8f),
                 colors =
                     ButtonDefaults.outlinedButtonColors(
-                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                     ),
             ) {
                 Text(stringResource(R.string.disconnect))

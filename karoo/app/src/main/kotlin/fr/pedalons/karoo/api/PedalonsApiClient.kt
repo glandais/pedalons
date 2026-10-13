@@ -62,7 +62,7 @@ class PedalonsApiClient(
                     TokenRequest(
                         grantType = TokenRequest.GRANT_TYPE_DEVICE_CODE,
                         deviceCode = deviceCode,
-                    )
+                    ),
                 )
             }
         when (response.status.value) {
@@ -86,7 +86,7 @@ class PedalonsApiClient(
                     TokenRequest(
                         grantType = TokenRequest.GRANT_TYPE_REFRESH,
                         refreshToken = refreshToken,
-                    )
+                    ),
                 )
             }
         if (response.status.isSuccess()) {

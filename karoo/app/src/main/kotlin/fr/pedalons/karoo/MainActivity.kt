@@ -341,7 +341,7 @@ private fun MainScreen(
                                     distance = entry.distance,
                                     elevationGain = entry.elevationGain,
                                     startDateTime = ride.startOf(entry),
-                                )
+                                ),
                             )
                         } else {
                             navigateTo(NavState.RideEntries(ride))
@@ -359,7 +359,7 @@ private fun MainScreen(
                                 distance = entry.distance,
                                 elevationGain = entry.elevationGain,
                                 startDateTime = state.ride.startOf(entry),
-                            )
+                            ),
                         )
                     }
                 }
@@ -373,7 +373,7 @@ private fun MainScreen(
                                 routeName = route.routeName,
                                 distance = route.distance,
                                 elevationGain = route.elevationGain,
-                            )
+                            ),
                         )
                     }
                 }
@@ -633,7 +633,7 @@ private fun NavigationContent(
                                 distance = entry.distance,
                                 elevationGain = entry.elevationGain,
                                 startDateTime = ride.startOf(entry),
-                            )
+                            ),
                         )
                     } else {
                         onNavigateTo(NavState.RideEntries(ride))
@@ -657,7 +657,7 @@ private fun NavigationContent(
                             distance = entry.distance,
                             elevationGain = entry.elevationGain,
                             startDateTime = navState.ride.startOf(entry),
-                        )
+                        ),
                     )
                 },
                 onBack = onBack,
@@ -677,7 +677,7 @@ private fun NavigationContent(
                             routeName = route.routeName,
                             distance = route.distance,
                             elevationGain = route.elevationGain,
-                        )
+                        ),
                     )
                 },
                 onBack = onBack,
@@ -751,7 +751,7 @@ private fun HomeScreen(
                 },
                 colors =
                     TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface
+                        containerColor = MaterialTheme.colorScheme.surface,
                     ),
             )
 
@@ -876,7 +876,7 @@ private fun RideListScreen(
                 },
                 colors =
                     TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface
+                        containerColor = MaterialTheme.colorScheme.surface,
                     ),
             )
 
@@ -995,7 +995,7 @@ private fun RideEntriesScreen(
                 },
                 colors =
                     TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface
+                        containerColor = MaterialTheme.colorScheme.surface,
                     ),
             )
 
@@ -1107,7 +1107,7 @@ private fun StandaloneRouteListScreen(
                 },
                 colors =
                     TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface
+                        containerColor = MaterialTheme.colorScheme.surface,
                     ),
             )
 
@@ -1235,7 +1235,7 @@ private fun RouteDetailScreen(
                 },
                 colors =
                     TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface
+                        containerColor = MaterialTheme.colorScheme.surface,
                     ),
             )
 
@@ -1465,7 +1465,7 @@ private fun SkeletonScreen(onBack: () -> Unit) {
                 },
                 colors =
                     TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface
+                        containerColor = MaterialTheme.colorScheme.surface,
                     ),
             )
 
@@ -1500,7 +1500,7 @@ private fun ItemSkeleton() {
                             .background(
                                 MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f),
                                 MaterialTheme.shapes.small,
-                            )
+                            ),
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Box(
@@ -1510,7 +1510,7 @@ private fun ItemSkeleton() {
                             .background(
                                 MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.15f),
                                 MaterialTheme.shapes.small,
-                            )
+                            ),
                 )
             }
         }

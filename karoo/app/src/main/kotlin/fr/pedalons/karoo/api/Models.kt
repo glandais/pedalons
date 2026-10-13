@@ -95,7 +95,7 @@ data class SyncResponse(
 // User Status
 @Serializable
 data class UserStatusResponse(
-    @SerialName("connectedGpsServices") val connectedGpsServices: List<String>
+    @SerialName("connectedGpsServices") val connectedGpsServices: List<String>,
 ) {
     fun isHammerheadConnected(): Boolean = connectedGpsServices.contains("HAMMERHEAD")
 }
