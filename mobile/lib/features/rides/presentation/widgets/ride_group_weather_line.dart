@@ -127,7 +127,10 @@ class RideGroupWeatherLine extends StatelessWidget {
             if (rain != null)
               PdlBadge(
                 label: rain,
-                tone: PdlFamily.yellow.soft(c),
+                // Bleu doux, comme la même pastille au web (`GroupWeatherLine`,
+                // `color="blue"`) : la ligne est une seule ligne sur les deux
+                // clients. L'icône parapluie et le libellé portent le sens.
+                tone: PdlFamily.blue.soft(c),
                 icon: PdlIcons.precipitation,
               ),
             for (final (RelativeWind wind, String label) in exposure)
