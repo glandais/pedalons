@@ -146,6 +146,17 @@ export interface RouteConfig {
   redirect?: (params: RouteParams, url: URL) => string | undefined
 
   /**
+   * Optional redirect that depends on the route's data, checked by the loader **after** `prefetch`:
+   * a non-empty return is where the page now lives, thrown as React Router's `replace()` like
+   * {@link redirect} — a 302 from the server, a replaced history entry on the client, never a
+   * permanent redirect. It only READS the cache the prefetch filled, returns `undefined` when the
+   * data it needs is missing (a failed or unauthorised prefetch: the page then falls back on its
+   * own), and never fetches. A ride group's page of a ride with at most one group leaves for the
+   * ride's (ledger WEB-79). Kept apart from `redirect`, whose contract is a pure function of the URL.
+   */
+  dataRedirect?: (queryClient: QueryClient, params: RouteParams, url: URL) => string | undefined
+
+  /**
    * Optional server-side link-preview (Open Graph / Twitter) descriptor. Invoked in entry-server
    * AFTER `prefetch` has populated the per-request QueryClient, so it only READS the cache (zero
    * extra fetches). Returns undefined to fall back to site-wide default tags. Attached to each

@@ -27,10 +27,11 @@ function wrapWithAuth(element: React.ReactNode, auth: AuthRequirement): React.Re
 /**
  * Wrap a route's prefetch into a React Router loader. The running and the error handling live in
  * `runRoutePrefetch`, shared with the hover path (`lib/prefetch.ts`) so a link and the navigation it
- * leads to fetch exactly the same thing. The loader always resolves to null: a failed prefetch never
- * blocks the render.
+ * leads to fetch exactly the same thing. The loader resolves to null — a failed prefetch never
+ * blocks the render — unless `redirect` (before the prefetch) or `dataRedirect` (after it) names
+ * another address, which it throws as a `replace()`.
  */
-function makeLoader(config: RouteConfig, queryClient: QueryClient) {
+export function makeLoader(config: RouteConfig, queryClient: QueryClient) {
   return async ({
     request,
     params,
@@ -43,6 +44,9 @@ function makeLoader(config: RouteConfig, queryClient: QueryClient) {
     const target = config.redirect?.(params as RouteParams, url)
     if (target) throw replace(target)
     await runRoutePrefetch(config, queryClient, params, url, 'loader')
+    // A page its data sends elsewhere (a solo ride's group, WEB-79): read from the cache just filled.
+    const moved = config.dataRedirect?.(queryClient, params as RouteParams, url)
+    if (moved) throw replace(moved)
     return null
   }
 }
@@ -70,7 +74,9 @@ function buildRoutesForConfig(config: RouteConfig, queryClient: QueryClient): Ro
 
   // Gated redirects carry no prefetch: the component never renders here.
   const loader =
-    (config.prefetch || config.redirect) && !gated ? makeLoader(config, queryClient) : undefined
+    (config.prefetch || config.redirect || config.dataRedirect) && !gated
+      ? makeLoader(config, queryClient)
+      : undefined
 
   // Expose the route's SSR meta() (link previews) on `handle` so the static handler's matched leaf
   // carries it — entry-server reads leafMatch.route.handle.meta after the loaders have run. `routeId`

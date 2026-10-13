@@ -59,6 +59,22 @@ describe('RideWeatherSection', () => {
     expect(screen.getByRole('region', { name: 'Prévisions le long du parcours' })).toBeTruthy()
   })
 
+  it("unrolls the group's leg of a ride with one group, which has no group's page (WEB-79)", () => {
+    renderSection({
+      ride: ride({ groups: [{ id: 'g1', name: 'Rapide' }] as RideDto['groups'] }),
+      weather: { ...okWeather, legs: [weatherLeg('g1')] },
+    })
+    const text = plain(document.body.textContent)
+    expect(screen.getByRole('heading', { name: 'Météo au départ' })).toBeTruthy()
+    expect(text).toContain('Exposition au vent')
+    expect(screen.getByRole('region', { name: 'Prévisions le long du parcours' })).toBeTruthy()
+  })
+
+  it('keeps a ride with two groups at the departure (WEB-79)', () => {
+    renderSection({ weather: { ...okWeather, legs: [weatherLeg('g1'), weatherLeg('g2')] } })
+    expect(plain(document.body.textContent)).not.toContain('Exposition au vent')
+  })
+
   it("titles the departure with the ride's own time, not the forecast's round hour", () => {
     renderSection({ weather: okWeather })
     expect(plain(document.body.textContent)).toMatch(/Au départ · \d{1,2}:40/)

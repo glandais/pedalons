@@ -4,7 +4,7 @@ import { pathVariants } from './paths'
 import { tRegister } from '@/lib/i18nUtils'
 import { prefetchGetTeamQuery } from '@/api/endpoints/teams/teams'
 import { prefetchRideDetail } from '@/pages/ride/rideDetailData'
-import { prefetchRideGroup } from '@/pages/ride/rideGroupData'
+import { prefetchRideGroup, rideGroupDataRedirect } from '@/pages/ride/rideGroupData'
 import { prefetchRouteList } from '@/pages/route/routeListData'
 import { prefetchTripDetail } from '@/pages/trip/tripDetailData'
 import { prefetchStageDetail } from '@/pages/trip/stageDetailData'
@@ -699,8 +699,8 @@ export const routesConfig: RoutesConfig = [
     auth: 'public',
     parentId: 'team-agenda',
     breadcrumb: { type: 'dynamic', entity: 'ride' },
-    prefetch: (queryClient, params) =>
-      prefetchRideDetail(queryClient, params.teamSlug!, params.rideSlug!),
+    prefetch: (queryClient, params, url) =>
+      prefetchRideDetail(queryClient, params.teamSlug!, params.rideSlug!, url),
     meta: rideMeta,
   },
   {
@@ -713,6 +713,8 @@ export const routesConfig: RoutesConfig = [
     breadcrumb: { type: 'dynamic', entity: 'rideGroup' },
     prefetch: (queryClient, params, url) =>
       prefetchRideGroup(queryClient, params.teamSlug!, params.rideSlug!, params.groupId!, url),
+    // A ride with at most one group has no group page: its own page is the group's (WEB-79).
+    dataRedirect: rideGroupDataRedirect,
     meta: rideGroupMeta,
   },
   {

@@ -13,6 +13,7 @@ import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../domain/ride_weather_display.dart';
+import '../../domain/solo_group.dart';
 import '../../../../keys.dart';
 import '../../providers/ride_detail_provider.dart';
 import '../../providers/ride_weather_provider.dart';
@@ -28,9 +29,11 @@ import 'ride_weather_widgets.dart';
 /// d'un groupe le long de son parcours vit dans l'onglet Météo de sa page, et
 /// sa ligne courte sur sa carte (ledger `MOB-67`).
 ///
-/// Exception : une sortie **sans groupe** n'a pas de page de groupe, et son
-/// unique leg (sans `groupId`) garde ici le vent le long du parcours et
-/// l'alerte pluie — sans quoi sa météo du parcours disparaîtrait.
+/// Exception : une sortie **sans groupe ou à un seul groupe** n'a pas de page
+/// de groupe (ledger `MOB-69`) : son leg ([rideOwnLeg] — l'unique leg sans
+/// `groupId`, ou celui de son groupe) se déroule ici en entier, sous la météo
+/// au départ — horaires, alerte pluie, exposition au vent, frise des points de
+/// passage —, sans quoi sa météo du parcours disparaîtrait.
 ///
 /// Rien n'est rendu pour une sortie terminée ou annulée — sans même appeler
 /// l'API —, ni pour un statut que l'app ne connaît pas. `NO_LOCATION` n'est
@@ -99,12 +102,9 @@ class RideWeatherCard extends ConsumerWidget {
               RideDepartureWeatherCard(
                 weather: dto,
                 timezone: ride.timezone,
-                // Le leg d'une sortie sans groupe, seul porteur de sa météo
-                // le long du parcours.
-                ungroupedLeg:
-                    dto.legs.length == 1 && dto.legs.single.groupId == null
-                    ? dto.legs.single
-                    : null,
+                // Le leg d'une sortie sans groupe ou solo, seul porteur de sa
+                // météo le long du parcours.
+                ownLeg: rideOwnLeg(dto, ride),
               ),
             );
         }
@@ -139,21 +139,22 @@ class RideWeatherCard extends ConsumerWidget {
 
 /// « Météo au départ » d'une sortie, en carte : les conditions au point de
 /// rendez-vous ([DepartureConditionsBlock]), la marque « Prévision ancienne »,
-/// le crédit et l'heure de la prévision. [ungroupedLeg] ajoute le vent le
-/// long du parcours et l'alerte pluie d'une sortie sans groupe.
+/// le crédit et l'heure de la prévision. [ownLeg] déroule dessous le leg
+/// d'une sortie sans groupe ou solo, comme l'onglet Météo de la page d'un
+/// groupe : en-tête, alerte pluie, exposition, frise des points de passage.
 class RideDepartureWeatherCard extends ConsumerWidget {
   const RideDepartureWeatherCard({
     super.key,
     required this.weather,
     required this.timezone,
-    this.ungroupedLeg,
+    this.ownLeg,
   });
 
   final RideWeatherDto weather;
 
   /// Le fuseau de la sortie : lever, coucher du soleil et alerte s'y lisent.
   final String? timezone;
-  final WeatherLegDto? ungroupedLeg;
+  final WeatherLegDto? ownLeg;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -163,13 +164,12 @@ class RideDepartureWeatherCard extends ConsumerWidget {
     final WeatherConditionsDto? now = weather.departure.conditions;
     final bool stale =
         WeatherStatus.fromJson(weather.status) == WeatherStatus.stale;
-    final WeatherLegDto? leg = ungroupedLeg;
-    final WeatherRainAlertDto? rain = leg?.rainAlert;
+    final WeatherLegDto? leg = ownLeg;
     final DateTime? fetchedAt = weather.fetchedAt == null
         ? null
         : DateTime.tryParse(weather.fetchedAt!);
 
-    return PdlCard(
+    final Widget card = PdlCard(
       key: keys.ride.weatherCard,
       flat: true,
       child: Column(
@@ -199,26 +199,6 @@ class RideDepartureWeatherCard extends ConsumerWidget {
             )
           else
             Text('rides.weather.unavailableTitle'.tr(), style: t.sub),
-          if (leg != null && leg.segments.isNotEmpty) ...<Widget>[
-            const SizedBox(height: PdlSpacing.cardTight),
-            WeatherWindSegments(leg: leg, units: units),
-          ],
-          if (rain != null) ...<Widget>[
-            const SizedBox(height: PdlSpacing.chipGap),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Icon(PdlIcons.precipitation, size: 16, color: c.warning),
-                const SizedBox(width: PdlSpacing.badgeGap),
-                Expanded(
-                  child: Text(
-                    formatRainAlert(rain, units, timezone),
-                    style: t.xs.copyWith(color: c.text),
-                  ),
-                ),
-              ],
-            ),
-          ],
           const SizedBox(height: PdlSpacing.cardTight),
           WeatherAttributionBlock(
             key: keys.ride.weatherAttribution,
@@ -227,6 +207,22 @@ class RideDepartureWeatherCard extends ConsumerWidget {
           ),
         ],
       ),
+    );
+    if (leg == null) return card;
+
+    // Le leg sous la carte, avec les sections de l'onglet Météo de la page
+    // d'un groupe — pas un second bloc « Météo au départ ».
+    Widget spaced(Widget child) => Padding(
+      padding: const EdgeInsets.only(top: PdlSpacing.section),
+      child: child,
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        card,
+        spaced(WeatherLegHeader(leg: leg, title: null, timezone: timezone)),
+        ...weatherLegBody(leg, spaced, timezone),
+      ],
     );
   }
 }

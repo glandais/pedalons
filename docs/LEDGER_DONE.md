@@ -515,6 +515,28 @@ couvert » ; les tests ne tournent qu'en local (`MOB-37`).
   `WeatherForecastCard`, `weather_leg_sections.dart`, `keys.ride.weatherOpenButton` et
   `rides.weather.viewRoute` restent pour l'étape de voyage (`stage_weather_card.dart`,
   `stage_weather_page.dart`).
+- `MOB-69` **Sortie à un seul groupe : le détail est la page du groupe** (13 octobre 2026, contrat
+  inchangé ; même règle que `WEB-79`). Prédicats dans `domain/solo_group.dart` : `soloGroupOf`,
+  `leavesGroupPage` (`<= 1` groupe), `rideOwnLeg` (correspondance stricte du `groupId`). Morceaux
+  sortis de `RideGroupOverviewTab` : `RideGroupStats`, `RideGroupLeaderRow` (seulement si
+  `group.leader`), `RideGroupRouteActions`. Pour une sortie solo, `RideDetailPage` rend
+  `RideSoloGroupSection` à la place de `RideGroupsSection` (en-tête « Groupe X » à la couleur
+  `multiTrackColor(sortOrder)`, sans chevron ni tap ; bandeaux d'échec et d'export ; stats ;
+  meneur ; avatars qui ouvrent `ParticipantsSheet` ; actions du parcours) et pose
+  `RideGroupActionBar` en barre d'action (`onOpenGroup` nul : pas de « Voir mon groupe »). Un refus
+  de « Rejoindre » fait défiler jusqu'à son bandeau. `RideWeatherCard` déroule `rideOwnLeg`
+  (en-tête et corps du leg sous la carte départ), aussi pour une sortie sans groupe. `RideGroupPage`
+  quitte une fois (`_leaving`) quand `leavesGroupPage` : `pop` si le détail de la sortie est juste
+  dessous (lien profond reconstruit), sinon `pushReplacement`, `go` à froid ; `?tab=weather` fait
+  défiler le détail jusqu'à la météo (`ride_scroll_target_provider.dart`), `#meteo` n'est pas lu.
+  La capture `rideGroupWeather` d'une sortie solo devient un défilement du détail. Clés
+  `keys.ride.soloGroupSection`, `soloGroupHeader`, `soloGroupParticipants` ; module Patrol `ride`
+  adapté. Tests : `solo_group_test.dart`, `ride_detail_page_test.dart`,
+  `ride_group_page_test.dart` (dont un routeur imbriqué comme `router.dart` : le lien profond
+  `?tab=weather` revient au détail sans entrée d'historique) ; Patrol `ride_solo_group_test.dart`
+  (non lancé, comme `MOB-68`). **À ne pas défaire** : mêmes décisions que `WEB-79` (météo du
+  parcours sur le détail pour 0 et 1 groupe, aucun lien vers la page groupe d'une sortie solo,
+  remplacement sans entrée d'historique).
 
 ---
 
@@ -1575,7 +1597,33 @@ l'app. Ne pas déduire les rôles ou l'accès côté client pour élargir ce que
   (`lib/routeColors.ts`), la numérotation même de `RoutesMapView` (rang parmi les éléments qui ont
   un tracé, parcours principal compris), **pas de `sortOrder`** comme au mobile : la carte web
   numérote autrement, et la barre n'aurait plus la couleur du tracé.
-
+- `WEB-79` **Sortie à un seul groupe : la page de la sortie est celle du groupe** (13 octobre 2026,
+  contrat inchangé). Prédicats uniques dans `utils/soloGroup.ts` (réexportés par
+  `rideDetailData.ts`) : `soloGroup` (le groupe si `groups.length == 1`), `leavesGroupPage`
+  (`<= 1`), `ownLeg` (leg sans `groupId` d'une sortie sans groupe, ou leg du groupe solo). Pour une
+  sortie solo, `RideDetailPage` remplace la carte de groupe par `RideSoloGroupPanel` : nom et
+  couleur du tracé (sans lien), inscription Rejoindre / Quitter / Complet par `groupAction`,
+  places, meneur seulement si `leader`, actions du parcours, puis les statistiques du groupe
+  (arrivée tirée de `soloLeg`) et les participants en ligne (`?q`/`?p`) ; carte avec profil quand
+  il n'y a qu'un tracé ; `RideWeatherSection` déroule `ownLeg` dans un bloc `#meteo`
+  (`useScrollToAnchor`). Les morceaux de la page groupe sont extraits dans `components/ride/group/`
+  (GroupStats, GroupPlaces, GroupLeader, GroupJoinActions, GroupParticipantsSection,
+  GroupRouteMap). `prefetchRideDetail` prend l'`url` et précharge la page 0 des participants du
+  groupe solo (une requête, clé `groupParticipantsParams`). Redirection : `RouteConfig.dataRedirect`,
+  appelé par `makeLoader` après le prefetch, branché sur `ride-group` (`rideGroupDataRedirect`) —
+  302 vers la sortie, query string gardé, au SSR comme en navigation client ; repli client dans
+  `RideGroupPage` (`useEffect` + `navigate(replace)`, garde search et hash, rejoue si une relecture
+  fait tomber la sortie à un groupe). La méta d'une sortie solo porte allure et km du groupe
+  (`groupFacts`). Clé i18n `rides.detail.groups.soloLabel`. Plusieurs groupes : rien ne change.
+  Tests : `rideDetailData.test.ts`, `rideGroupData.test.ts`, `makeLoader.test.ts`,
+  `RideDetailPage.test.tsx`, `RideGroupPage.test.tsx` (redirections, dont « still leaves when the
+  ride, first read with two groups, comes back with one »), `RideWeatherSection.test.tsx`,
+  `routeMeta.test.ts` ; e2e `rides`, `flow-routes`, `pinned-host` adaptés (non lancés, comme
+  `WEB-78`). **À ne pas défaire** : l'exception « météo du parcours sur la page sortie » couvre
+  **0 et 1** groupe ; aucun lien interne vers la page groupe d'une sortie solo ; la redirection
+  est **302 / replace, jamais 301** (un deuxième groupe ajouté plus tard refait de l'URL une vraie
+  page) ; sur navigation client, le loader perd `#meteo` (React Router retire le fragment de la
+  `Request`), limite acceptée faute de lien interne qui y mène.
 ---
 
 ### Tableau de bord d'équipe

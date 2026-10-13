@@ -15,7 +15,7 @@ import '../../providers/ride_detail_provider.dart';
 import '../../providers/ride_registration_controller.dart';
 
 /// La barre d'inscription de la page d'un groupe, collée en bas (ledger
-/// `MOB-67`).
+/// `MOB-67`) — et celle du détail d'une sortie solo (ledger `MOB-69`).
 ///
 /// À gauche les places — « 11/12 participants », « 1 place restante » —, à
 /// droite **la** seule action pleine de la page : « Rejoindre ». « Quitter »
@@ -33,15 +33,17 @@ class RideGroupActionBar extends ConsumerWidget {
     required this.rideKey,
     required this.ride,
     required this.group,
-    required this.onOpenGroup,
+    this.onOpenGroup,
   });
 
   final RideKey rideKey;
   final RideDto ride;
   final RideGroupDto group;
 
-  /// Passe la page sur un autre groupe de la sortie.
-  final ValueChanged<String> onOpenGroup;
+  /// Passe la page sur un autre groupe de la sortie. `null` sur le détail
+  /// d'une sortie solo (ledger `MOB-69`) : avec un seul groupe, on n'est
+  /// jamais inscrit ailleurs, et il n'y a pas d'autre groupe où aller.
+  final ValueChanged<String>? onOpenGroup;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -136,13 +138,14 @@ class RideGroupActionBar extends ConsumerWidget {
                       key: keys.rideGroup.registeredElsewhere,
                       style: t.xs.copyWith(color: c.text),
                     ),
-                    PdlButton(
-                      key: keys.rideGroup.viewMyGroup,
-                      label: 'rides.groupPage.viewMyGroup'.tr(),
-                      variant: PdlButtonVariant.text,
-                      size: PdlButtonSize.sm,
-                      onPressed: () => onOpenGroup(elsewhere.id),
-                    ),
+                    if (onOpenGroup != null)
+                      PdlButton(
+                        key: keys.rideGroup.viewMyGroup,
+                        label: 'rides.groupPage.viewMyGroup'.tr(),
+                        variant: PdlButtonVariant.text,
+                        size: PdlButtonSize.sm,
+                        onPressed: () => onOpenGroup!(elsewhere.id),
+                      ),
                   ],
                 ],
               ),

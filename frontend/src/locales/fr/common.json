@@ -1579,6 +1579,7 @@
   "rides.detail.groups.route.downloadFit": "FIT",
   "rides.detail.groups.route.downloadGpx": "GPX",
   "rides.detail.groups.route.view": "Voir le parcours",
+  "rides.detail.groups.soloLabel": "Groupe",
   "rides.detail.groups.title": "Groupes",
   "rides.detail.groups.viewAll": "Voir tout",
   "rides.detail.groups.viewParticipants": "Voir tous les participants",

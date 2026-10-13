@@ -12,6 +12,7 @@ import type {
   TeamPageDto,
   TripDto,
   RideDto,
+  RideGroupDto,
 } from '@/api/dto'
 import type { Instant, Visibility } from '@/api/dto'
 import type { Locale } from '@/config/paths'
@@ -34,6 +35,7 @@ import { getGetPostQueryKey } from '@/api/endpoints/posts/posts'
 import { getGetRouteQueryKey } from '@/api/endpoints/routes/routes'
 import { getGetPageQueryKey } from '@/api/endpoints/team-pages/team-pages'
 import { getGetPreviewQueryKey } from '@/api/endpoints/gpx-previews/gpx-previews'
+import { soloGroup } from '@/utils/soloGroup'
 
 // Re-export so routes.config.ts imports its meta wiring from one module.
 export const buildMetaTags = _buildMetaTags
@@ -279,13 +281,19 @@ export const rideMeta: RouteMetaFn = (ctx) => {
     ride.name.length < 48 ? truncate(`${ride.name} · ${teamName}`, 65) : truncate(ride.name, 65)
 
   const stripped = stripMarkdown(ride.media?.markdown ?? '')
+  // A solo ride's page is its group's (WEB-79): the group's facts stand in for the ride's count.
+  const solo = soloGroup(ride)
   const description = stripped
     ? truncate(stripped, 200)
     : joinFacets([
         formatDate(ride.dateTime, ctx.locale, ride.timezone),
         ride.startPlace?.name && `${ctx.t('seo.ride.startPrefix')}${ride.startPlace.name}`,
-        ride.participantCount > 0 &&
-          ctx.t('seo.ride.participants', { count: ride.participantCount }),
+        ...(solo
+          ? groupFacts(solo, ride, ctx)
+          : [
+              ride.participantCount > 0 &&
+                ctx.t('seo.ride.participants', { count: ride.participantCount }),
+            ]),
       ])
 
   const alt = truncate(ctx.t('seo.ride.imageAlt', { name: ride.name, team: teamName }), 100)
@@ -304,6 +312,23 @@ export const rideMeta: RouteMetaFn = (ctx) => {
 }
 
 // === ride-group =============================================================================
+/**
+ * A group's facts for a preview: its departure, pace, distance and riders — the group page's
+ * description, and a solo ride's (ledger WEB-79), whose page is its group's.
+ */
+function groupFacts(group: RideGroupDto, ride: RideDto, ctx: RouteMetaContext) {
+  return [
+    group.startAt &&
+      ctx.t('seo.rideGroup.departure', {
+        time: formatTime(group.startAt, ctx.locale, ride.timezone),
+      }),
+    !!group.averageSpeed && ctx.t('seo.rideGroup.pace', { speed: Math.round(group.averageSpeed) }),
+    group.distance !== undefined && `${formatKm(group.distance)} km`,
+    group.countParticipants > 0 &&
+      ctx.t('seo.ride.participants', { count: group.countParticipants }),
+  ]
+}
+
 export const rideGroupMeta: RouteMetaFn = (ctx) => {
   const ride = ctx.queryClient.getQueryData<RideDto>(
     getGetRideQueryKey(ctx.params.teamSlug!, ctx.params.rideSlug!)
@@ -317,14 +342,7 @@ export const rideGroupMeta: RouteMetaFn = (ctx) => {
 
   const description = joinFacets([
     formatDate(group.startAt ?? ride.dateTime, ctx.locale, ride.timezone),
-    group.startAt &&
-      ctx.t('seo.rideGroup.departure', {
-        time: formatTime(group.startAt, ctx.locale, ride.timezone),
-      }),
-    !!group.averageSpeed && ctx.t('seo.rideGroup.pace', { speed: Math.round(group.averageSpeed) }),
-    group.distance !== undefined && `${formatKm(group.distance)} km`,
-    group.countParticipants > 0 &&
-      ctx.t('seo.ride.participants', { count: group.countParticipants }),
+    ...groupFacts(group, ride, ctx),
   ])
 
   const alt = truncate(

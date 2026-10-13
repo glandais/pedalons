@@ -153,3 +153,24 @@ describe('ride group link preview (WEB-77)', () => {
     expect(rideGroupMeta(ctx)).toEqual(rideMeta(ctx))
   })
 })
+
+describe('solo ride link preview (WEB-79)', () => {
+  it("describes a ride with one group by its group's pace and distance", () => {
+    const ctx = context('PUBLIC', 'PUBLIC')
+    const ride = ctx.queryClient.getQueryData<RideDto>(getGetRideQueryKey('np', 'sortie'))!
+    const solo = { id: 'g1', name: 'Rapide', averageSpeed: 28, distance: 82_400 }
+    ctx.queryClient.setQueryData(getGetRideQueryKey('np', 'sortie'), {
+      ...ride,
+      dateTime: '2026-10-11T06:00:00Z',
+      groups: [{ ...solo, countParticipants: 3 }],
+    })
+    expect(rideMeta(ctx)?.description).toContain('seo.rideGroup.pace')
+    expect(rideMeta(ctx)?.description).toContain('82 km')
+    ctx.queryClient.setQueryData(getGetRideQueryKey('np', 'sortie'), {
+      ...ride,
+      dateTime: '2026-10-11T06:00:00Z',
+      groups: [solo, { ...solo, id: 'g2' }],
+    })
+    expect(rideMeta(ctx)?.description).not.toContain('82 km')
+  })
+})

@@ -1,11 +1,43 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:patrol/patrol.dart';
 
 import 'module.dart';
 
 /// The ride page: its groups, their leaders, and joining one.
+///
+/// A ride with a single group has no group card and no group page (ledger `MOB-69`): its detail
+/// *is* the group's page — a group section ([keys.ride.soloGroupSection]) and the group page's
+/// action bar (`keys.rideGroup.*`). The group helpers below take the same `groupId` either way and
+/// pick the keys of the shape the page has, so a test of joining doesn't care how many groups the
+/// ride has. The group page helpers ([openGroup], [selectGroup]) need two groups or more.
 final class Ride extends Module {
   Ride(super.$);
+
+  /// Whether the ride on screen is a single-group one: the action bar's places line is there
+  /// while no group page is open on top.
+  bool get _solo =>
+      $(keys.rideGroup.participantsCount).exists &&
+      !$(keys.rideGroup.page).exists;
+
+  Key _joinKey(String groupId) =>
+      _solo ? keys.rideGroup.joinButton : keys.ride.groupJoinButton(groupId);
+
+  Key _leaveKey(String groupId) =>
+      _solo ? keys.rideGroup.leaveButton : keys.ride.groupLeaveButton(groupId);
+
+  Key _fullKey(String groupId) =>
+      _solo ? keys.rideGroup.fullBadge : keys.ride.groupFullButton(groupId);
+
+  /// The block of the group: its card, or the single group's section.
+  Key _groupKey(String groupId) =>
+      _solo ? keys.ride.soloGroupSection : keys.ride.group(groupId);
+
+  /// Whether the page is a single-group ride's: its group section instead of group cards.
+  Future<bool> isSoloGroupRide() async {
+    await $(keys.ride.title).waitUntilVisible();
+    return _solo;
+  }
 
   Future<void> waitUntilShown() async {
     await $(keys.ride.title).waitUntilVisible();
@@ -35,25 +67,44 @@ final class Ride extends Module {
   String? get title =>
       $(keys.ride.title).exists ? $(keys.ride.title).text : null;
 
+  Key _leaderKey(String groupId) =>
+      _solo ? keys.rideGroup.leader : keys.ride.groupLeader(groupId);
+
   /// The leader line of the group, or null when the card has none.
   Future<bool> showsLeader(String groupId, String name) async {
-    await scrolledTo(keys.ride.group(groupId));
-    return shows(keys.ride.groupLeader(groupId), name);
+    final Key leader = _leaderKey(groupId);
+    await scrolledTo(_groupKey(groupId));
+    return shows(leader, name);
   }
 
   Future<bool> hasLeaderLine(String groupId) async {
-    await scrolledTo(keys.ride.group(groupId));
-    return isShown(keys.ride.groupLeader(groupId));
+    final Key leader = _leaderKey(groupId);
+    await scrolledTo(_groupKey(groupId));
+    return isShown(leader);
   }
 
-  /// Whether [text] appears anywhere on the group's card.
+  /// Whether [text] appears anywhere on the group's card (or the single group's section).
   bool groupShows(String groupId, String text) =>
-      shows(keys.ride.group(groupId), text);
+      shows(_groupKey(groupId), text);
 
+  /// « Rejoindre » on the group's card — or in the action bar of a single-group ride, which is
+  /// always in view — then waits for « Quitter ».
   Future<void> join(String groupId) async {
-    await (await scrolledTo(keys.ride.groupJoinButton(groupId))).tap();
-    await $(keys.ride.groupLeaveButton(groupId)).waitUntilVisible();
+    final Key leave = _leaveKey(groupId);
+    await (await _actionButton(_joinKey(groupId))).tap();
+    await $(leave).waitUntilVisible();
   }
+
+  /// « Quitter » on the group's card or in the action bar, then waits for « Rejoindre ».
+  Future<void> leave(String groupId) async {
+    final Key join = _joinKey(groupId);
+    await (await _actionButton(_leaveKey(groupId))).tap();
+    await $(join).waitUntilVisible();
+  }
+
+  /// The button of [key]: the action bar's is pinned and needs no scrolling, a card's does.
+  Future<PatrolFinder> _actionButton(Key key) async =>
+      _solo ? $(key) : await scrolledTo(key);
 
   /// Taps « Rejoindre » on [groupId] while registered elsewhere, then takes the banner's way out:
   /// leave the other group and join this one.
@@ -63,15 +114,13 @@ final class Ride extends Module {
     await $(keys.ride.groupLeaveButton(groupId)).waitUntilVisible();
   }
 
-  bool offersJoin(String groupId) =>
-      isShown(keys.ride.groupJoinButton(groupId));
+  bool offersJoin(String groupId) => isShown(_joinKey(groupId));
 
-  bool offersLeave(String groupId) =>
-      isShown(keys.ride.groupLeaveButton(groupId));
+  bool offersLeave(String groupId) => isShown(_leaveKey(groupId));
 
   /// Taps « Rejoindre » on [groupId] and waits for nothing: the answer may be a refusal.
   Future<void> tapJoin(String groupId) async {
-    await (await scrolledTo(keys.ride.groupJoinButton(groupId))).tap();
+    await (await _actionButton(_joinKey(groupId))).tap();
   }
 
   /// Waits until [groupId] is shown as joined — its « Quitter » is there.
@@ -79,18 +128,15 @@ final class Ride extends Module {
     String groupId, {
     Duration timeout = const Duration(seconds: 15),
   }) async {
-    await $(
-      keys.ride.groupLeaveButton(groupId),
-    ).waitUntilExists(timeout: timeout);
+    await $(_leaveKey(groupId)).waitUntilExists(timeout: timeout);
   }
 
-  /// Waits until the card of [groupId] shows the disabled « Complet ».
+  /// Waits until the card of [groupId] (or the action bar) shows the disabled « Complet ».
   Future<void> waitUntilFull(String groupId) async {
-    await $(keys.ride.groupFullButton(groupId)).waitUntilExists();
+    await $(_fullKey(groupId)).waitUntilExists();
   }
 
-  bool offersFull(String groupId) =>
-      isShown(keys.ride.groupFullButton(groupId));
+  bool offersFull(String groupId) => isShown(_fullKey(groupId));
 
   /// Waits for the registration failure banner, and tells whether it names [groupName].
   Future<bool> waitUntilFailureNames(String groupName) async {
@@ -112,9 +158,10 @@ final class Ride extends Module {
     await $(keys.ride.cancelledBanner).waitUntilVisible();
   }
 
-  /// Scrolls the card of [groupId] into view, for the checks made on it afterwards.
+  /// Scrolls the card of [groupId] (or the single group's section) into view, for the checks
+  /// made on it afterwards.
   Future<void> showGroup(String groupId) async {
-    await scrolledTo(keys.ride.group(groupId));
+    await scrolledTo(_groupKey(groupId));
   }
 
   /// Whether the card of [groupId] offers any action at all: « Rejoindre », « Quitter » or
@@ -152,20 +199,26 @@ final class Ride extends Module {
   /// Scrolls to the card of [groupId] and waits for its « GPX »: the exports show once the
   /// group's route — loaded with the map's batch — is there.
   Future<void> waitUntilGpxExportIsOffered(String groupId) async {
-    await scrolledTo(keys.ride.group(groupId));
-    await $(keys.ride.groupExportGpx(groupId)).waitUntilExists();
+    final Key gpx = _exportGpxKey(groupId);
+    await scrolledTo(_groupKey(groupId));
+    await $(gpx).waitUntilExists();
   }
 
-  bool offersFitExport(String groupId) =>
-      isShown(keys.ride.groupExportFit(groupId));
+  Key _exportGpxKey(String groupId) =>
+      _solo ? keys.rideGroup.exportGpx : keys.ride.groupExportGpx(groupId);
 
-  bool offersSendToDevice(String groupId) =>
-      isShown(keys.ride.groupSendToDevice(groupId));
+  bool offersFitExport(String groupId) => isShown(
+    _solo ? keys.rideGroup.exportFit : keys.ride.groupExportFit(groupId),
+  );
+
+  bool offersSendToDevice(String groupId) => isShown(
+    _solo ? keys.rideGroup.sendToDevice : keys.ride.groupSendToDevice(groupId),
+  );
 
   /// Taps « GPX » on the card of [groupId]: the app downloads the file, then hands it to the
   /// system share sheet.
   Future<void> exportGpx(String groupId) async {
-    await (await scrolledTo(keys.ride.groupExportGpx(groupId))).tap();
+    await (await scrolledTo(_exportGpxKey(groupId))).tap();
   }
 
   // ── Groups map ──────────────────────────────────────────────────────────
@@ -187,8 +240,12 @@ final class Ride extends Module {
   }
 
   /// Taps the card of [groupId], which opens the group's page (ledger `MOB-67`) on its Overview
-  /// tab — or on [tab] (`weather`, `participants`) once it is shown.
+  /// tab — or on [tab] (`weather`, `participants`) once it is shown. A ride of two groups or more
+  /// only: a single group has no card and no page (ledger `MOB-69`).
   Future<void> openGroup(String groupId, {String? tab}) async {
+    if (_solo) {
+      throw TestFailure('a single-group ride has no group page to open');
+    }
     await (await scrolledTo(keys.ride.group(groupId))).tap();
     await $(keys.rideGroup.page).waitUntilExists();
     if (tab != null) await openGroupTab(tab);
@@ -249,7 +306,8 @@ final class Ride extends Module {
   }
 
   /// Selects [groupId] for the map, the legend and the profile: its card opens the group's page,
-  /// which shares the selection with the ride, and the way back finds it selected.
+  /// which shares the selection with the ride, and the way back finds it selected. Two groups or
+  /// more: a single group is always the selected one.
   Future<void> selectGroup(String groupId) async {
     await openGroup(groupId);
     await closeGroup();

@@ -126,8 +126,8 @@ test('an agenda card opens the ride on its clean URL, and « back » returns to 
   await entityCard(page.getByRole('main'), ride.name).click()
   await expect(page).toHaveURL(`${origin}${ridePathOnPin()}`)
   const main = page.getByRole('main')
-  // « Groupes »: the ride page itself — the agenda card also holds a heading with the ride's name.
-  await expect(main.getByRole('heading', { name: 'Groupes', exact: true })).toBeVisible()
+  // Its groups: the ride page itself — the agenda card also holds a heading with the ride's name.
+  await expect(main.getByTestId('ride-groups')).toBeVisible()
   await expect(main.getByRole('heading', { name: ride.name, exact: true })).toBeVisible()
   // Rendered by the client: its links are in browser space.
   expect((await mainHrefs(page)).filter((href) => href.startsWith(PREFIX))).toEqual([])

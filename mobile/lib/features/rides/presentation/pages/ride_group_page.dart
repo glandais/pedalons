@@ -17,9 +17,11 @@ import '../../../participants/presentation/widgets/participant_list_view.dart';
 import '../../../participants/providers/participant_list_provider.dart';
 import '../../domain/ride_group_tab.dart';
 import '../../domain/ride_weather_display.dart';
+import '../../domain/solo_group.dart';
 import '../../providers/ride_detail_provider.dart';
 import '../../providers/ride_group_selection_provider.dart';
 import '../../providers/ride_registration_controller.dart';
+import '../../providers/ride_scroll_target_provider.dart';
 import '../../providers/ride_weather_provider.dart';
 import '../widgets/registration_failure_banner.dart';
 import '../widgets/ride_group_action_bar.dart';
@@ -27,6 +29,11 @@ import '../widgets/ride_group_overview_tab.dart';
 import '../widgets/ride_group_weather_tab.dart';
 
 /// La page d'**un** groupe d'une sortie (ledger `MOB-67`).
+///
+/// Seulement pour une sortie à **plusieurs** groupes : celle d'une sortie
+/// solo ou sans groupe cède la place au détail de la sortie dès qu'elle est
+/// chargée ([leavesGroupPage], ledger `MOB-69`) — la route reste valide, pour
+/// les liens déjà partagés et ceux d'une sortie qui regagnerait un groupe.
 ///
 /// Elle remplace l'écran « Météo du parcours », qui faisait doublon : la météo
 /// complète d'un groupe est son onglet Météo. En-tête « Groupe X » sur le nom
@@ -94,6 +101,68 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
     }
   }
 
+  /// Le départ vers le détail est planifié une seule fois : chaque
+  /// reconstruction en attendant ne doit pas empiler une navigation.
+  bool _leaving = false;
+
+  void _scheduleLeaveForRide() {
+    if (_leaving) return;
+    _leaving = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _leaveForRide());
+  }
+
+  /// Remplace cette page par le détail de la sortie, **sans laisser d'entrée
+  /// d'historique** (ledger `MOB-69`) :
+  /// - le détail de la même sortie est juste dessous (ouverte depuis lui, ou
+  ///   lien profond dont la hiérarchie le reconstruit) : `pop` ;
+  /// - autre chose dessous (lien interne d'un texte) : `pushReplacement` ;
+  /// - rien dessous (ouverture à froid) : `go`.
+  ///
+  /// `?tab=` est abandonné ; l'onglet Météo devient un défilement du détail
+  /// jusqu'à sa carte météo, qui déroule le leg du groupe.
+  void _leaveForRide() {
+    if (!mounted) return;
+    if (_tab == RideGroupTab.weather) {
+      ref.read(rideScrollToWeatherProvider(_rideKey).notifier).state = true;
+    }
+    final String ridePath = Paths.ride(widget.teamSlug, widget.rideSlug);
+    if (context.canPop()) {
+      if (_rideDetailIsBelow()) {
+        context.pop();
+      } else {
+        context.pushReplacement(ridePath);
+      }
+    } else {
+      context.go(ridePath);
+    }
+  }
+
+  /// Vrai quand la page juste sous celle-ci est le détail de **cette**
+  /// sortie, quelle que soit la langue de son chemin.
+  bool _rideDetailIsBelow() {
+    final List<String> stack = <String>[];
+    void walk(List<RouteMatchBase> matches) {
+      for (final RouteMatchBase match in matches) {
+        switch (match) {
+          case ImperativeRouteMatch():
+            stack.add(match.matches.uri.path);
+          case ShellRouteMatch():
+            walk(match.matches);
+          default:
+            stack.add(match.matchedLocation);
+        }
+      }
+    }
+
+    walk(GoRouter.of(context).routerDelegate.currentConfiguration.matches);
+    if (stack.length < 2) return false;
+    final Set<String> ridePaths = PathVariants.ride(
+      widget.teamSlug,
+      widget.rideSlug,
+    ).values.toSet();
+    return ridePaths.contains(stack[stack.length - 2]);
+  }
+
   Future<void> _refresh() async {
     ref.invalidate(rideDetailProvider(_rideKey));
     ref.invalidate(rideWeatherProvider(_rideKey));
@@ -120,6 +189,12 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
       loading: () => _skeleton(),
       error: (Object error, StackTrace _) => _error(error),
       data: (RideDto ride) {
+        // Une sortie solo ou sans groupe n'a pas de page de groupe : son
+        // détail l'est (ledger `MOB-69`). Le squelette le temps de partir.
+        if (leavesGroupPage(ride)) {
+          _scheduleLeaveForRide();
+          return _skeleton();
+        }
         final RideGroupDto? group = _groupOf(ride, _groupId);
         if (group == null) return _notFound();
         return _content(ride, group, registration);

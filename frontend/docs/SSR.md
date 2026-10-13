@@ -268,11 +268,16 @@ Consequences of `<Navigate>` worth knowing, both benign here:
   no-op"*).
 - A **real server-side redirect** comes from `handler.query()` returning a `Response`
   (`entry-server.tsx` maps its `Location` back to browser space), i.e. from a React Router
-  *loader*. Every route with a `prefetch` has one (`makeLoader`), but it always resolves to
-  `null`: a failed prefetch must never block the render, so it is not a redirect channel. The
-  one loader that does redirect is `appOnlyFallbackRoutes()` — deeplinks only the app answers
-  (`routes.yaml`, `web: false`) get a real 302 to their web fallback. Guard pages still use
-  `<Navigate>`; moving one to a loader redirect is possible, not done.
+  *loader*. Every route with a `prefetch` has one (`makeLoader`): a failed prefetch never blocks
+  the render, so the prefetch itself is not a redirect channel. Three things do redirect, each
+  with a 302 (`replace()`, never permanent): `appOnlyFallbackRoutes()` — deeplinks only the app
+  answers (`routes.yaml`, `web: false`) go to their web fallback —, a route's `redirect` (a pure
+  function of the URL, checked before the prefetch: the former team feed, ledger `WEB-68`), and
+  a route's `dataRedirect` (checked after the prefetch, reading only its cache: a ride group's
+  page of a ride with at most one group leaves for the ride, ledger `WEB-79`). A `dataRedirect`
+  whose data is missing (an anonymous render of a private team) answers nothing, and the page
+  falls back on `useCanonicalPath` after hydration. Guard pages still use `<Navigate>`; moving one
+  to a loader redirect is possible, not done.
 
 Found by the SSR crawler (since retired for `e2e/routes-render.e2e.ts`) on a guard page since
 removed; open SSR defects are ledger entries (`docs/LEDGER_NEXT.md`, `WEB` prefix).

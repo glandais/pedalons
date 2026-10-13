@@ -161,6 +161,11 @@ Deux règles à ne pas casser :
 Une nouvelle route deeplinkable hors shell doit déclarer sa hiérarchie dans `_deepLinkHierarchies`
 (couvert par `mobile/test/deep_link_hierarchy_test.dart`).
 
+Un lien `rideGroup` vers une sortie à zéro ou un groupe n'a pas de page propre : le web répond par
+une redirection **302** vers la sortie (`dataRedirect`, query string gardé), le mobile remplace la
+page du groupe par le détail de la sortie sans entrée d'historique (ledger `WEB-79`, `MOB-69`).
+Jamais de 301 : un deuxième groupe ajouté plus tard refait de l'URL une vraie page.
+
 ## Passkeys
 
 Les passkeys natives reposent sur les mêmes fichiers `.well-known` que les App Links : l'OS vérifie

@@ -8,6 +8,7 @@ import { WeatherAttribution } from './WeatherAttribution'
 import { WeatherStaleBadge } from './WeatherStaleBadge'
 import { WeatherStatusNotice } from './WeatherStatusNotice'
 import { hasForecast, showsDetailBlock } from './weatherDisplay'
+import { ownLeg } from '@/utils/soloGroup'
 
 interface RideWeatherSectionProps {
   ride: RideDto
@@ -26,8 +27,9 @@ interface RideWeatherSectionProps {
  * provider and the time of the forecast. Each group's route lives on the group's own page
  * (`GroupWeatherSection`, ledger WEB-77), its card carrying a one-line summary.
  *
- * One exception: a ride without groups has no group page, and its single leg (no `groupId`, the
- * ride's own route) stays here — otherwise its along-the-route weather would show nowhere.
+ * One exception, for a ride with no group page — 0 **or** 1 group (ledger WEB-79, `ownLeg`): a
+ * ride without groups unrolls its single leg (no `groupId`, the ride's own route), a solo ride its
+ * one group's leg, under the departure — otherwise that weather would show nowhere.
  *
  * Every number is the server's (docs/plans/archive/2026-10-05-weather.md §1); this only words
  * them and converts the units. A finished or cancelled ride, OUT_OF_RANGE and a status this build
@@ -52,8 +54,7 @@ export function RideWeatherSection({
   const status = !weather ? WeatherStatus.UNAVAILABLE : weather.status
   if (!showsDetailBlock(status, canEdit)) return null
 
-  const legs = weather && hasForecast(status) ? weather.legs : []
-  const ownLeg = legs.length === 1 && !legs[0].groupId ? legs[0] : undefined
+  const leg = weather && hasForecast(status) ? ownLeg(ride, weather) : undefined
 
   return (
     <Paper withBorder p="lg" mb="lg" component="section" aria-labelledby="ride-weather-title">
@@ -80,10 +81,10 @@ export function RideWeatherSection({
           />
         )}
 
-        {ownLeg && (
+        {leg && (
           <>
             <Divider />
-            <LegWeather leg={ownLeg} timezone={ride.timezone} />
+            <LegWeather leg={leg} timezone={ride.timezone} />
           </>
         )}
 

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,12 +10,18 @@ import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/config/paths.dart';
 import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
+import 'package:pedalons/core/theme/pdl_icons.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/features/rides/data/ride_repository.dart';
 import 'package:pedalons/features/rides/domain/ride_group_tab.dart';
 import 'package:pedalons/features/rides/presentation/pages/ride_detail_page.dart';
 import 'package:pedalons/features/rides/presentation/pages/ride_group_page.dart';
+import 'package:pedalons/core/pagination/pagination.dart';
+import 'package:pedalons/features/participants/data/participant_repository.dart';
+import 'package:pedalons/features/participants/domain/participant_query.dart';
+import 'package:pedalons/features/participants/presentation/widgets/participants_sheet.dart';
 import 'package:pedalons/features/rides/presentation/widgets/ride_group_card.dart';
+import 'package:pedalons/features/rides/presentation/widgets/ride_solo_group_section.dart';
 import 'package:pedalons/features/teams/data/team_repository.dart';
 import 'package:pedalons/keys.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -68,12 +75,34 @@ class _StubRideRepository implements RideRepository {
     return Future<RideDto>.value(ride);
   }
 
-  @override
-  Future<RideParticipationDto> joinGroup(String t, String r, String g) async =>
-      const RideParticipationDto(id: 'p', userId: 'u');
+  final List<String> joined = <String>[];
+  final List<String> left = <String>[];
+
+  /// L'erreur que rend l'inscription, à défaut un succès.
+  Object? joinError;
 
   @override
-  Future<void> leaveGroup(String t, String r, String g) async {}
+  Future<RideParticipationDto> joinGroup(String t, String r, String g) async {
+    joined.add(g);
+    if (joinError != null) throw joinError!;
+    return const RideParticipationDto(id: 'p', userId: 'u');
+  }
+
+  @override
+  Future<void> leaveGroup(String t, String r, String g) async => left.add(g);
+}
+
+/// Les participants d'un groupe, pour la feuille qu'ouvrent ses visages.
+class _StubParticipants implements ParticipantRepository {
+  @override
+  Future<PageResult<PublicUserDto>> fetchPage(
+    ParticipantQuery query, {
+    required int page,
+    required int size,
+  }) async => const PageResult<PublicUserDto>(
+    items: <PublicUserDto>[PublicUserDto(id: 'u0', displayName: 'Membre 0')],
+    total: 1,
+  );
 }
 
 class _StubTeamRepository implements TeamRepository {
@@ -156,6 +185,7 @@ void main() {
         teamRepositoryProvider.overrideWithValue(
           _StubTeamRepository(member: member, role: role),
         ),
+        participantRepositoryProvider.overrideWithValue(_StubParticipants()),
       ],
       child: MaterialApp(
         theme: PedalonsTheme.build(brightness ?? Brightness.light),
@@ -198,6 +228,23 @@ void main() {
     await tester.pump();
   }
 
+  /// Une sortie à deux groupes : ses cartes, et la page de chacun (ledger
+  /// `MOB-67`). Une sortie à un seul groupe n'en a pas (ledger `MOB-69`).
+  RideDto twoGroups({
+    String status = 'PUBLISHED',
+    String dateTime = '2099-07-29T19:30:00Z',
+    bool registeredInFirst = false,
+  }) => fixtureRide(
+    status: status,
+    dateTime: dateTime,
+    registered: registeredInFirst,
+    registeredGroupId: registeredInFirst ? 'g1' : null,
+    groups: <RideGroupDto>[
+      fixtureGroup(id: 'g1', registered: registeredInFirst),
+      fixtureGroup(id: 'g2', name: 'Cool', sortOrder: 1),
+    ],
+  );
+
   testWidgets('le squelette est structuré, pas un rond qui tourne', (
     WidgetTester tester,
   ) async {
@@ -211,15 +258,7 @@ void main() {
   testWidgets('une sortie annulée porte son bandeau et aucun bouton', (
     WidgetTester tester,
   ) async {
-    await open(
-      tester,
-      fixtureRide(
-        status: 'CANCELLED',
-        registered: true,
-        registeredGroupId: 'g1',
-        groups: <RideGroupDto>[fixtureGroup(id: 'g1', registered: true)],
-      ),
-    );
+    await open(tester, twoGroups(status: 'CANCELLED', registeredInFirst: true));
 
     // `PdlBanner` compose titre et message dans un seul `RichText`.
     expect(
@@ -230,7 +269,7 @@ void main() {
     await scrollToGroups(tester);
     // Pas même « Quitter » : la sortie n'a plus lieu, s'en désinscrire n'a
     // plus de sens.
-    expect(find.byType(RideGroupCard), findsOneWidget);
+    expect(find.byType(RideGroupCard), findsWidgets);
     expect(find.text('Quitter'), findsNothing);
     expect(find.text('Rejoindre'), findsNothing);
   });
@@ -238,19 +277,19 @@ void main() {
   testWidgets('une sortie passée porte « Terminée » et n\'inscrit plus', (
     WidgetTester tester,
   ) async {
-    await open(tester, fixtureRide(dateTime: '2020-01-01T08:00:00Z'));
+    await open(tester, twoGroups(dateTime: '2020-01-01T08:00:00Z'));
 
     expect(find.text('TERMINÉE'), findsOneWidget);
 
     await scrollToGroups(tester);
-    expect(find.byType(RideGroupCard), findsOneWidget);
+    expect(find.byType(RideGroupCard), findsWidgets);
     expect(find.text('Rejoindre'), findsNothing);
   });
 
   testWidgets('un non-membre voit le bandeau et aucun bouton d\'inscription', (
     WidgetTester tester,
   ) async {
-    await open(tester, fixtureRide(), member: false);
+    await open(tester, twoGroups(), member: false);
 
     expect(
       find.textContaining(
@@ -267,10 +306,11 @@ void main() {
   testWidgets('un membre se voit proposer « Rejoindre »', (
     WidgetTester tester,
   ) async {
-    await open(tester, fixtureRide());
+    await open(tester, twoGroups());
     await scrollToGroups(tester);
 
-    expect(find.text('Rejoindre'), findsOneWidget);
+    expect(find.byKey(keys.ride.groupJoinButton('g1')), findsOneWidget);
+    expect(find.byKey(keys.ride.groupJoinButton('g2')), findsOneWidget);
   });
 
   testWidgets('une sortie sans groupe le dit, plutôt que de ne rien rendre', (
@@ -288,13 +328,24 @@ void main() {
     testWidgets('l\'écran se rend sans débordement — $mode', (
       WidgetTester tester,
     ) async {
-      await open(tester, fixtureRide(), brightness: brightness);
+      await open(tester, twoGroups(), brightness: brightness);
       expect(tester.takeException(), isNull);
       expect(find.text('N-Peloton #665'), findsWidgets);
 
       await scrollToGroups(tester);
       expect(tester.takeException(), isNull);
       expect(find.text('Groupes'), findsOneWidget);
+    });
+
+    testWidgets('une sortie solo se rend sans débordement — $mode', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, fixtureRide(), brightness: brightness);
+      expect(tester.takeException(), isNull);
+
+      await scrollToGroups(tester);
+      expect(tester.takeException(), isNull);
+      expect(find.byKey(keys.ride.soloGroupSection), findsOneWidget);
     });
   }
 
@@ -318,7 +369,7 @@ void main() {
     testWidgets('la carte dit la météo au départ, et elle seule', (
       WidgetTester tester,
     ) async {
-      final RideDto ride = fixtureRide();
+      final RideDto ride = twoGroups();
       await open(
         tester,
         ride,
@@ -371,10 +422,60 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('la carte d\'un groupe porte sa ligne météo', (
+    testWidgets('une sortie à un groupe déroule le leg de son groupe', (
+      WidgetTester tester,
+    ) async {
+      tester.view.physicalSize = const Size(402 * 3, 4000 * 3);
+      tester.view.devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
+      final RideDto ride = fixtureRide();
+      await open(
+        tester,
+        ride,
+        repository: _StubRideRepository(ride, weather: ok()),
+      );
+
+      expect(find.byKey(keys.ride.weatherCard), findsOneWidget);
+      // Un seul « Météo au départ » : le leg se déroule dessous, pas dans un
+      // second bloc.
+      expect(find.text('Météo au départ'), findsOneWidget);
+      expect(find.text('Météo du parcours'), findsOneWidget);
+      expect(find.textContaining('Pluie probable (70\u00a0%)'), findsOneWidget);
+      expect(find.text('Exposition au vent'), findsOneWidget);
+      expect(find.byType(PdlSegmentBar), findsOneWidget);
+      expect(find.byKey(keys.ride.weatherCheckpoint(0)), findsOneWidget);
+      expect(find.byKey(keys.ride.weatherCheckpoint(2)), findsOneWidget);
+      // Ni carte de groupe, ni sa ligne météo courte.
+      expect(find.byKey(keys.ride.groupWeatherLine('g1')), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('une sortie à un groupe ne prête pas le leg d\'un autre', (
       WidgetTester tester,
     ) async {
       final RideDto ride = fixtureRide();
+      await open(
+        tester,
+        ride,
+        repository: _StubRideRepository(
+          ride,
+          weather: fixtureWeather(
+            status: 'OK',
+            departure: fixtureConditions(),
+            legs: <WeatherLegDto>[fixtureLeg(groupId: 'other')],
+          ),
+        ),
+      );
+
+      expect(find.byKey(keys.ride.weatherCard), findsOneWidget);
+      expect(find.byType(PdlSegmentBar), findsNothing);
+      expect(find.byKey(keys.ride.weatherCheckpoint(0)), findsNothing);
+    });
+
+    testWidgets('la carte d\'un groupe porte sa ligne météo', (
+      WidgetTester tester,
+    ) async {
+      final RideDto ride = twoGroups();
       await open(
         tester,
         ride,
@@ -472,7 +573,7 @@ void main() {
     testWidgets('toucher la carte d\'un groupe ouvre sa page', (
       WidgetTester tester,
     ) async {
-      final RideDto ride = fixtureRide();
+      final RideDto ride = twoGroups();
       final GoRouter router = GoRouter(
         routes: <RouteBase>[
           GoRoute(
@@ -509,6 +610,9 @@ void main() {
             ),
             teamRepositoryProvider.overrideWithValue(
               _StubTeamRepository(member: true),
+            ),
+            participantRepositoryProvider.overrideWithValue(
+              _StubParticipants(),
             ),
           ],
           child: MaterialApp.router(
@@ -704,6 +808,275 @@ void main() {
 
       expect(repository.rideCalls, greaterThan(1));
       expect(repository.weatherCalls, greaterThan(before));
+    });
+  });
+
+  // ─────────────────────────────────────────── sortie solo (ledger MOB-69)
+
+  group('sortie à un seul groupe', () {
+    RideWeatherDto ok() => fixtureWeather(
+      status: 'OK',
+      departure: fixtureConditions(),
+      fetchedAt: '2099-07-29T17:00:00Z',
+      legs: <WeatherLegDto>[fixtureLeg()],
+    );
+
+    testWidgets('la section du groupe remplace les cartes, sans lien', (
+      WidgetTester tester,
+    ) async {
+      final RideDto ride = fixtureRide();
+      final GoRouter router = GoRouter(
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/',
+            builder: (BuildContext _, GoRouterState _) =>
+                RideDetailPage(teamSlug: ride.team.slug, rideSlug: ride.slug),
+          ),
+          for (final String path in PathVariants.rideGroup(
+            ':teamSlug',
+            ':rideSlug',
+            ':groupId',
+          ).values)
+            GoRoute(
+              path: path,
+              builder: (BuildContext _, GoRouterState state) => RideGroupPage(
+                teamSlug: state.pathParameters['teamSlug']!,
+                rideSlug: state.pathParameters['rideSlug']!,
+                groupId: state.pathParameters['groupId']!,
+              ),
+            ),
+        ],
+      );
+      addTearDown(router.dispose);
+      await tester.pumpWidget(
+        ProviderScope(
+          retry: (int _, Object _) => null,
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            rideRepositoryProvider.overrideWithValue(
+              _StubRideRepository(ride, weather: ok()),
+            ),
+            teamRepositoryProvider.overrideWithValue(
+              _StubTeamRepository(member: true),
+            ),
+            participantRepositoryProvider.overrideWithValue(
+              _StubParticipants(),
+            ),
+          ],
+          child: MaterialApp.router(
+            theme: PedalonsTheme.build(Brightness.light),
+            routerConfig: router,
+          ),
+        ),
+      );
+      for (int i = 0; i < 4; i++) {
+        await tester.pump(const Duration(milliseconds: 10));
+      }
+      await scrollToGroups(tester);
+
+      expect(find.byType(RideSoloGroupSection), findsOneWidget);
+      expect(find.byKey(keys.ride.soloGroupHeader), findsOneWidget);
+      expect(find.text('Groupe Chill Route Long'), findsOneWidget);
+      expect(find.byType(RideGroupCard), findsNothing);
+      expect(find.text('Groupes'), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byType(RideSoloGroupSection),
+          matching: find.byIcon(PdlIcons.chevronRight),
+        ),
+        findsNothing, // ni lien d'en-tête, ni second « Voir la liste »
+      );
+      // Un seul « voir les participants » : celui du bloc méta, au-dessus.
+      expect(find.byKey(keys.rideGroup.viewAllParticipants), findsNothing);
+
+      await tester.tap(find.byKey(keys.ride.soloGroupHeader));
+      for (int i = 0; i < 4; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(find.byType(RideGroupPage), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('« Rejoindre » est dans la barre d\'action, avec les places', (
+      WidgetTester tester,
+    ) async {
+      final RideDto ride = fixtureRide();
+      final _StubRideRepository repository = _StubRideRepository(ride);
+      await open(tester, ride, repository: repository);
+
+      expect(find.byKey(keys.rideGroup.participantsCount), findsOneWidget);
+      expect(find.text('3/16 participants'), findsOneWidget);
+      expect(find.text('13 places restantes'), findsOneWidget);
+      expect(find.byKey(keys.rideGroup.viewMyGroup), findsNothing);
+
+      await tester.tap(find.byKey(keys.rideGroup.joinButton));
+      await tester.pump();
+      await tester.pump();
+
+      expect(repository.joined, <String>['g1']);
+    });
+
+    testWidgets('un refus de « Rejoindre » fait défiler jusqu\'à son bandeau', (
+      WidgetTester tester,
+    ) async {
+      final RideDto ride = fixtureRide();
+      final _StubRideRepository repository = _StubRideRepository(ride)
+        ..joinError = DioException(
+          requestOptions: RequestOptions(path: '/'),
+          type: DioExceptionType.badResponse,
+          response: Response<Map<String, dynamic>>(
+            requestOptions: RequestOptions(path: '/'),
+            statusCode: 409,
+            data: <String, dynamic>{'code': 'GROUP_FULL'},
+          ),
+        );
+      await open(tester, ride, repository: repository);
+      // La section du groupe est sous le pli : le bandeau n'y est pas bâti.
+      expect(find.byKey(keys.ride.soloGroupSection), findsNothing);
+
+      await tester.tap(find.byKey(keys.rideGroup.joinButton));
+      for (int i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+
+      final Finder banner = find.byKey(keys.ride.registrationFailure);
+      expect(banner, findsOneWidget);
+      final Rect shown = tester.getRect(banner);
+      final Size screen =
+          tester.view.physicalSize / tester.view.devicePixelRatio;
+      expect(shown.top, greaterThanOrEqualTo(0));
+      expect(shown.bottom, lessThanOrEqualTo(screen.height));
+    });
+
+    testWidgets('inscrit : « Quitter » dans la barre', (
+      WidgetTester tester,
+    ) async {
+      final RideDto ride = fixtureRide(
+        registered: true,
+        registeredGroupId: 'g1',
+        groups: <RideGroupDto>[fixtureGroup(registered: true)],
+      );
+      final _StubRideRepository repository = _StubRideRepository(ride);
+      await open(tester, ride, repository: repository);
+
+      expect(find.byKey(keys.rideGroup.joinButton), findsNothing);
+      await tester.tap(find.byKey(keys.rideGroup.leaveButton));
+      await tester.pump();
+      await tester.pump();
+
+      expect(repository.left, <String>['g1']);
+    });
+
+    testWidgets('un groupe complet : le badge, aucun bouton', (
+      WidgetTester tester,
+    ) async {
+      await open(
+        tester,
+        fixtureRide(
+          groups: <RideGroupDto>[
+            fixtureGroup(full: true, countParticipants: 16),
+          ],
+        ),
+      );
+
+      expect(find.byKey(keys.rideGroup.fullBadge), findsOneWidget);
+      expect(find.byKey(keys.rideGroup.joinButton), findsNothing);
+    });
+
+    for (final (String label, RideDto ride, bool member)
+        in <(String, RideDto, bool)>[
+          ('un non-membre', fixtureRide(), false),
+          (
+            'une sortie passée',
+            fixtureRide(dateTime: '2020-01-01T08:00:00Z'),
+            true,
+          ),
+          (
+            'une sortie annulée',
+            fixtureRide(
+              status: 'CANCELLED',
+              registered: true,
+              registeredGroupId: 'g1',
+              groups: <RideGroupDto>[fixtureGroup(registered: true)],
+            ),
+            true,
+          ),
+        ]) {
+      testWidgets('$label : aucun bouton d\'inscription', (
+        WidgetTester tester,
+      ) async {
+        await open(tester, ride, member: member);
+
+        expect(find.byKey(keys.rideGroup.joinButton), findsNothing);
+        expect(find.byKey(keys.rideGroup.leaveButton), findsNothing);
+        expect(find.text('Rejoindre'), findsNothing);
+        expect(find.text('Quitter'), findsNothing);
+        expect(tester.takeException(), isNull);
+      });
+    }
+
+    testWidgets('les chiffres du groupe, et son arrivée estimée', (
+      WidgetTester tester,
+    ) async {
+      final RideDto ride = fixtureRide();
+      await open(
+        tester,
+        ride,
+        repository: _StubRideRepository(ride, weather: ok()),
+      );
+      await scrollToGroups(tester);
+
+      expect(find.text('Départ'), findsOneWidget);
+      expect(find.text('Allure moyenne'), findsOneWidget);
+      expect(find.text('Dénivelé positif'), findsOneWidget);
+      expect(find.textContaining('Arrivée estimée'), findsOneWidget);
+    });
+
+    testWidgets('meneur nul : rien, jamais de repli', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, fixtureRide());
+      await scrollToGroups(tester);
+
+      expect(find.byKey(keys.ride.soloGroupSection), findsOneWidget);
+      expect(find.byKey(keys.rideGroup.leader), findsNothing);
+      expect(find.text('MENEUR'), findsNothing);
+    });
+
+    testWidgets('un meneur désigné : son nom et le badge', (
+      WidgetTester tester,
+    ) async {
+      await open(
+        tester,
+        fixtureRide(
+          groups: <RideGroupDto>[
+            fixtureGroup(
+              leader: const PublicUserDto(id: 'l1', displayName: 'Léa'),
+            ),
+          ],
+        ),
+      );
+      await scrollToGroups(tester);
+
+      expect(find.byKey(keys.rideGroup.leader), findsOneWidget);
+      expect(find.text('Léa'), findsOneWidget);
+      expect(find.text('MENEUR'), findsOneWidget);
+    });
+
+    testWidgets('les visages du groupe ouvrent la feuille du groupe', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, fixtureRide());
+      await scrollToGroups(tester);
+
+      await tester.ensureVisible(find.byKey(keys.ride.soloGroupParticipants));
+      await tester.tap(find.byKey(keys.ride.soloGroupParticipants));
+      for (int i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+
+      expect(find.byType(ParticipantsSheet), findsOneWidget);
+      expect(find.text('Membre 0'), findsWidgets);
     });
   });
 }

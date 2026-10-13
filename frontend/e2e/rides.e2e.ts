@@ -19,6 +19,7 @@ import {
   openRide,
   postComments,
   readRide,
+  ridePath,
 } from './support/rides'
 import { entityCard, homeFeed, hydrated, mainNavLink, toasts } from './support/ui'
 
@@ -579,8 +580,9 @@ test.describe('participants', () => {
   test('the participant list is read and searched on the server', async ({ page }) => {
     const { owner, team, organizer, member } = await ridingTeam('participants')
     const name = unique('Groupe nombreux')
+    // Two groups: a solo ride lists its participants inline instead (WEB-79).
     const ride = await newRide(organizer, team.slug, unique('Sortie fréquentée'), {
-      groups: [{ name }],
+      groups: [{ name }, { name: unique('Groupe calme') }],
     })
     // Ten riders: more than the 8 the detail embeds, so the card and the modal must both go by
     // the server's count, not by the length of the preview.
@@ -609,5 +611,29 @@ test.describe('participants', () => {
     await expect(modal.getByRole('listitem')).toHaveCount(1)
     await expect(modal.getByRole('listitem')).toContainText(wanted)
     await expect(modal.getByTestId('participants-shown-of')).toHaveText('1–1 sur 1')
+  })
+})
+
+test.describe('a ride with one group (WEB-79)', () => {
+  test("its group's URL leads to the ride, and « back » does not return to it", async ({
+    page,
+  }) => {
+    const { team, organizer, member } = await ridingTeam('solo')
+    const ride = await newRide(organizer, team.slug, unique('Sortie à un groupe'))
+    expect(ride.groups, 'precondition: one group').toHaveLength(1)
+
+    await signIn(page.context(), member)
+    await page.goto(ridePath(team.slug, ride.slug))
+    await page.getByRole('heading', { level: 2, name: ride.name }).waitFor()
+    const groupUrl = `${ridePath(team.slug, ride.slug)}/groupes/${ride.groups[0].id}?q=x`
+    await page.goto(groupUrl)
+    await expect(page).toHaveURL(new RegExp(`${ridePath(team.slug, ride.slug)}\\?q=x$`))
+    await expect(page.getByRole('heading', { level: 2, name: ride.name })).toBeVisible()
+    await expect(page.getByTestId('group-stats')).toBeVisible()
+    await expect(page.getByRole('link', { name: /Voir le groupe/ })).toHaveCount(0)
+
+    // A redirect, not a stacked entry: back is the ride page opened before.
+    await page.goBack()
+    await expect(page).toHaveURL(new RegExp(`${ridePath(team.slug, ride.slug)}$`))
   })
 })

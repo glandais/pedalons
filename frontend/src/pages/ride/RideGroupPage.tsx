@@ -1,15 +1,7 @@
-import { lazy, Suspense, useCallback, useEffect, useRef, type ReactNode } from 'react'
+import { useEffect } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import {
-  IconArrowLeft,
-  IconArrowsMaximize,
-  IconArrowUp,
-  IconBolt,
-  IconClock,
-  IconShieldCheck,
-  IconUsersGroup,
-} from '@tabler/icons-react'
+import { IconArrowLeft, IconUsersGroup } from '@tabler/icons-react'
 import {
   Alert,
   Anchor,
@@ -19,47 +11,36 @@ import {
   Container,
   Group,
   Paper,
-  Progress,
   SegmentedControl,
   Select,
   SimpleGrid,
-  Skeleton,
   Stack,
   Text,
   Title,
 } from '@mantine/core'
-import type { RideDto, RideGroupDto } from '@/api/dto'
+import type { RideDto } from '@/api/dto'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { QueryStateBoundary } from '@/components/common/QueryStateBoundary'
 import { DetailPageSkeleton } from '@/components/common/DetailPageSkeleton'
 import { EmptyState } from '@/components/common/EmptyState'
 import { ErrorBoundary } from '@/components/common/ErrorBoundary'
-import { Rendezvous } from '@/components/common/Rendezvous'
 import { ShareButton } from '@/components/common/ShareButton'
-import { UserAvatar } from '@/components/common/UserAvatar'
-import { ParticipantList } from '@/components/ride/ParticipantList'
-import { RideGroupRouteActions } from '@/components/ride/RideGroupRouteActions'
+import { GroupJoinActions } from '@/components/ride/group/GroupJoinActions'
+import { GroupLeader } from '@/components/ride/group/GroupLeader'
+import { GroupParticipantsSection } from '@/components/ride/group/GroupParticipantsSection'
+import { GroupPlaces } from '@/components/ride/group/GroupPlaces'
+import { GroupRouteMap } from '@/components/ride/group/GroupRouteMap'
+import { GroupStats } from '@/components/ride/group/GroupStats'
 import { GroupWeatherSection } from '@/components/weather'
 import { hasForecast } from '@/components/weather/weatherDisplay'
 import { paths } from '@/config/paths'
 import { useAuth } from '@/hooks/useAuth'
 import { useCanonicalPath } from '@/hooks/useCanonicalPath'
-import { useDebouncedSearch } from '@/hooks/useDebouncedSearch'
 import { useRendezvousFormat } from '@/hooks/useRendezvousFormat'
 import { useRideGroupMembership } from '@/hooks/useRideGroupMembership'
-import { useUnits } from '@/hooks/useUnits'
-import { useUrlFilters } from '@/hooks/useUrlFilters'
-import {
-  groupParticipantFiltersAlias,
-  groupParticipantFiltersSchema,
-} from '@/hooks/filters/groupParticipantFilters'
-import { groupStartRelation } from '@/utils/groupStart'
+import { useScrollToAnchor } from '@/hooks/useScrollToAnchor'
+import { leavesGroupPage } from './rideDetailData'
 import { groupAction, useRideGroupData } from './rideGroupData'
-
-// Lazy: the map pulls in map-vendor (~1 MB) and the elevation chart chart-vendor.
-const RouteMapView = lazy(() =>
-  import('@/components/route/RouteMapView').then((m) => ({ default: m.RouteMapView }))
-)
 
 /** Up to this many groups pick from a segmented control; beyond, a select keeps the row short. */
 const SEGMENTED_MAX_GROUPS = 4
@@ -75,6 +56,11 @@ const WEATHER_ANCHOR = 'meteo'
  *
  * Its data is the ride page's (`rideGroupData.ts`): moving between the ride and its groups reads
  * nothing twice. No comments here: the thread is the ride's.
+ *
+ * Only for a ride with several groups: a ride with at most one has no group page (ledger WEB-79) —
+ * the route's loader redirects to the ride (`rideGroupDataRedirect`), and when it could not (no
+ * ride in the cache: a private team rendered anonymously), this page replaces its URL with the
+ * ride's, query string and `#meteo` kept, showing only its skeleton meanwhile.
  */
 export function RideGroupPage() {
   const { t } = useTranslation()
@@ -97,35 +83,28 @@ export function RideGroupPage() {
   } = useRideGroupData(teamSlug, rideSlug, groupId)
   const membership = useRideGroupMembership(teamSlug!, rideSlug!)
 
-  const { filters, setFilters } = useUrlFilters({
-    schema: groupParticipantFiltersSchema,
-    alias: groupParticipantFiltersAlias,
-  })
-  const commitSearch = useCallback(
-    (value: string) => setFilters({ search: value || undefined }),
-    [setFilters]
-  )
-  const [searchInput, setSearchInput] = useDebouncedSearch(filters.search ?? '', commitSearch)
-
+  // A ride with at most one group: its page is the group's (WEB-79), the URL is replaced.
+  // Not through `useCanonicalPath`, which checks once: a ride read with two groups then refetched
+  // with one would otherwise leave this page on its skeleton for good. The ride's page fixes a stale
+  // team slug itself.
+  const leave = ride ? leavesGroupPage(ride) : false
+  const leaveTo = ride && leave ? paths.ride(teamSlug!, ride.slug) : undefined
+  useEffect(() => {
+    if (leaveTo) navigate(leaveTo + location.search + location.hash, { replace: true })
+  }, [leaveTo, navigate, location.search, location.hash])
   useCanonicalPath(
-    team && ride && groupId ? paths.rideGroup(team.slug, ride.slug, groupId) : undefined
+    team && ride && groupId && !leave ? paths.rideGroup(team.slug, ride.slug, groupId) : undefined
   )
 
   // `#meteo` (a card's link, the app's « Météo » tab shared): the section only exists once the
   // ride is read, after the browser gave up looking for it.
-  const scrolledRef = useRef(false)
-  const ready = !!group && !weather.isLoading
-  useEffect(() => {
-    if (scrolledRef.current || !ready || location.hash !== `#${WEATHER_ANCHOR}`) return
-    scrolledRef.current = true
-    document.getElementById(WEATHER_ANCHOR)?.scrollIntoView({ block: 'start' })
-  }, [ready, location.hash])
+  useScrollToAnchor(WEATHER_ANCHOR, !!group && !leave && !weather.isLoading)
 
-  if (isLoadingTeam || isLoadingRide || error || !ride || !team) {
+  if (isLoadingTeam || isLoadingRide || error || !ride || !team || leave) {
     return (
       <Container size="xl" py="xl">
         <QueryStateBoundary
-          isLoading={isLoadingTeam || isLoadingRide}
+          isLoading={isLoadingTeam || isLoadingRide || leave}
           isError={!!error}
           error={error}
           isNotFound={!ride || !team}
@@ -159,7 +138,7 @@ export function RideGroupPage() {
     </Anchor>
   )
 
-  // A group the ride no longer has: an old link, after an edit dropped it.
+  // A group the ride no longer has: an old link, after an edit dropped it (several groups left).
   if (!group) {
     return (
       <Container size="xl" py="xl">
@@ -252,20 +231,7 @@ export function RideGroupPage() {
               </Group>
             </Stack>
             <Group gap="xs" wrap="nowrap">
-              {action === 'join' && (
-                <Button onClick={() => membership.join(group.id)} disabled={membership.isPending}>
-                  {t('rides.detail.groups.join')}
-                </Button>
-              )}
-              {action === 'leave' && (
-                <Button
-                  variant="outline"
-                  onClick={() => membership.leave(group.id)}
-                  disabled={membership.isPending}
-                >
-                  {t('rides.detail.groups.leave')}
-                </Button>
-              )}
+              <GroupJoinActions action={action} group={group} membership={membership} />
               <ShareButton title={t('rides.group.title', { name: group.name })} />
             </Group>
           </Group>
@@ -328,23 +294,7 @@ export function RideGroupPage() {
           />
 
           {/* The leader — only when one is designated, never the ride's creator */}
-          {group.leader && (
-            <Paper withBorder p="md" data-testid="group-leader">
-              <Group gap="sm" wrap="nowrap">
-                <UserAvatar user={group.leader} size="md" />
-                <Text fw={500} truncate>
-                  {group.leader.displayName}
-                </Text>
-                <Badge
-                  variant="light"
-                  leftSection={<IconShieldCheck size={12} aria-hidden />}
-                  style={{ flexShrink: 0 }}
-                >
-                  {t('rides.detail.groups.leader')}
-                </Badge>
-              </Group>
-            </Paper>
-          )}
+          <GroupLeader group={group} />
 
           <Box id={WEATHER_ANCHOR} style={{ scrollMarginTop: 'var(--app-shell-header-height)' }}>
             <ErrorBoundary variant="inline">
@@ -360,70 +310,12 @@ export function RideGroupPage() {
             </ErrorBoundary>
           </Box>
 
-          <Paper withBorder p="lg" component="section" aria-labelledby="group-participants-title">
-            <Stack gap="md">
-              <Group justify="space-between" wrap="wrap" gap="xs">
-                <Title order={3} size="h4" id="group-participants-title">
-                  {t('rides.group.participantsTitle')}
-                </Title>
-                <Text size="sm" c="dimmed">
-                  {t('rides.detail.groups.participantsNoMax', {
-                    current: group.countParticipants,
-                  })}
-                </Text>
-              </Group>
-              <ParticipantList
-                source={{
-                  kind: 'ride',
-                  teamSlug: team.slug,
-                  rideSlug: ride.slug,
-                  groupId: group.id,
-                }}
-                count={group.countParticipants}
-                leaderId={group.leader?.id}
-                search={filters.search}
-                page={filters.page}
-                searchInput={searchInput}
-                onSearchInputChange={setSearchInput}
-                onPageChange={(page) => setFilters({ page })}
-                searchPlaceholder={t('participants.searchByName')}
-                noMatch={t('participants.noMatchGeneric')}
-              />
-            </Stack>
-          </Paper>
+          <GroupParticipantsSection teamSlug={team.slug} ride={ride} group={group} />
         </Stack>
 
         {/* The group's route: the map with its profile, then what to do with it */}
         <Box className="detail-map">
-          {routeSlug && (
-            <Stack gap="md">
-              <ErrorBoundary variant="inline">
-                {route ? (
-                  <Suspense fallback={<Skeleton height={500} radius="md" />}>
-                    <RouteMapView
-                      route={route}
-                      fullscreenPath={paths.routeMap(team.slug, routeSlug)}
-                    />
-                  </Suspense>
-                ) : (
-                  <Skeleton height={500} radius="md" />
-                )}
-              </ErrorBoundary>
-              <Paper withBorder p="md">
-                <Stack gap="xs">
-                  <Title order={3} size="h5">
-                    {t('rides.group.routeTitle')}
-                  </Title>
-                  <RideGroupRouteActions
-                    teamSlug={team.slug}
-                    routeSlug={routeSlug}
-                    route={route}
-                    size="sm"
-                  />
-                </Stack>
-              </Paper>
-            </Stack>
-          )}
+          {routeSlug && <GroupRouteMap teamSlug={team.slug} routeSlug={routeSlug} route={route} />}
         </Box>
       </SimpleGrid>
     </Container>
@@ -442,135 +334,5 @@ function RideHeaderLine({ ride }: { ride: RideDto }) {
         time: rendezvous.formatTime(ride.dateTime),
       })}
     </Text>
-  )
-}
-
-/** The places bar: « 11/12 participants », « 1 place restante ». No max, no bar. */
-function GroupPlaces({ group }: { group: RideGroupDto }) {
-  const { t } = useTranslation()
-  if (!group.maxParticipants) {
-    return (
-      <Text size="sm" c="dimmed">
-        {t('rides.detail.groups.participantsNoMax', { current: group.countParticipants })}
-      </Text>
-    )
-  }
-  const max = group.maxParticipants
-  const left = Math.max(0, max - group.countParticipants)
-  return (
-    <Stack gap={4} data-testid="group-places">
-      <Group justify="space-between" gap="xs">
-        <Text size="sm" fw={500}>
-          {t('rides.detail.groups.participants', { current: group.countParticipants, max })}
-        </Text>
-        <Text size="sm" c="dimmed">
-          {t('rides.group.placesLeft', { count: left })}
-        </Text>
-      </Group>
-      <Progress
-        value={Math.min(100, (group.countParticipants / max) * 100)}
-        color={left === 0 ? 'gray' : 'primary'}
-        aria-label={t('rides.detail.groups.participants', {
-          current: group.countParticipants,
-          max,
-        })}
-      />
-    </Stack>
-  )
-}
-
-/** One figure of the group: its label above, its value, an optional line below. */
-function StatTile({
-  icon,
-  label,
-  children,
-  hint,
-}: {
-  icon: ReactNode
-  label: string
-  children: ReactNode
-  hint?: ReactNode
-}) {
-  return (
-    <Stack gap={2}>
-      <Group gap={4} wrap="nowrap" c="dimmed">
-        {icon}
-        <Text size="xs" tt="uppercase" fw={600} c="dimmed">
-          {label}
-        </Text>
-      </Group>
-      <Text fw={700} size="lg">
-        {children}
-      </Text>
-      {hint && (
-        <Text size="xs" c="dimmed">
-          {hint}
-        </Text>
-      )}
-    </Stack>
-  )
-}
-
-/** Departure, pace, distance and climb — each one only when the group has it. */
-function GroupStats({
-  ride,
-  group,
-  arrival,
-}: {
-  ride: RideDto
-  group: RideGroupDto
-  /** The estimated arrival of the group's leg, when the forecast gives one. */
-  arrival: string | undefined
-}) {
-  const { t } = useTranslation()
-  const { speed, distance, elevation } = useUnits()
-  const rendezvous = useRendezvousFormat(ride.timezone)
-  const relation = groupStartRelation(group.startAt, ride.dateTime)
-
-  return (
-    <Paper withBorder p="lg" data-testid="group-stats">
-      <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="md">
-        {group.startAt && (
-          <StatTile
-            icon={<IconClock size={14} aria-hidden />}
-            label={t('rides.group.stats.departure')}
-            hint={t(`rides.group.stats.${relation}`)}
-          >
-            <Rendezvous date={group.startAt} zone={ride.timezone} format="time" />
-          </StatTile>
-        )}
-        {group.averageSpeed && (
-          <StatTile
-            icon={<IconBolt size={14} aria-hidden />}
-            label={t('rides.group.stats.pace')}
-            hint={
-              arrival && (
-                <span suppressHydrationWarning={rendezvous.isGuessedText}>
-                  {t('rides.group.stats.arrival', { time: rendezvous.formatTime(arrival) })}
-                </span>
-              )
-            }
-          >
-            {speed(group.averageSpeed)}
-          </StatTile>
-        )}
-        {group.distance !== undefined && (
-          <StatTile
-            icon={<IconArrowsMaximize size={14} aria-hidden />}
-            label={t('rides.group.stats.distance')}
-          >
-            {distance(group.distance)}
-          </StatTile>
-        )}
-        {group.elevationGain !== undefined && (
-          <StatTile
-            icon={<IconArrowUp size={14} aria-hidden />}
-            label={t('rides.group.stats.elevation')}
-          >
-            {elevation(group.elevationGain)}
-          </StatTile>
-        )}
-      </SimpleGrid>
-    </Paper>
   )
 }

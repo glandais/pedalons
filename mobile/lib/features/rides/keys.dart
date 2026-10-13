@@ -34,8 +34,22 @@ class RideDetailKeys {
   /// Le bouton du bandeau d'exclusivité : quitter l'autre groupe, puis entrer.
   final switchGroupButton = const _RideDetailKey('switchGroupButton');
 
-  /// La carte météo compacte du détail.
+  /// La carte météo compacte du détail — et la cible du défilement « météo »
+  /// (lien `#meteo`, ou `?tab=weather` d'une page de groupe quittée pour le
+  /// détail, ledger `MOB-69`).
   final weatherCard = const _RideDetailKey('weatherCard');
+
+  /// La section du groupe d'une sortie solo, à la place des cartes de groupe
+  /// (ledger `MOB-69`). Sa présence dit que le détail **est** la page du
+  /// groupe : l'inscription passe par la barre d'action (`keys.rideGroup.*`).
+  final soloGroupSection = const _RideDetailKey('soloGroupSection');
+
+  /// L'en-tête « Groupe X » de cette section, avec la couleur du tracé.
+  final soloGroupHeader = const _RideDetailKey('soloGroupHeader');
+
+  /// Les visages inscrits de cette section, qui ouvrent la feuille des
+  /// participants du groupe.
+  final soloGroupParticipants = const _RideDetailKey('soloGroupParticipants');
 
   /// « Voir la météo du parcours » de la carte météo d'une étape de voyage
   /// (`WeatherForecastCard`) — la carte d'une sortie n'en a plus (ledger

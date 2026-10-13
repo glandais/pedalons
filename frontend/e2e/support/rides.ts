@@ -88,16 +88,22 @@ export async function postComments(
 export const ridePath = (teamSlug: string, rideSlug: string) =>
   `/equipes/${teamSlug}/sorties/${rideSlug}`
 
-/** Opens the ride page and waits for its title: every later absence check needs a loaded page. */
+/**
+ * Opens the ride page and waits for its title and its groups — the « Groupes » list, or a solo
+ * ride's one group (ledger WEB-79), both under `ride-groups`: every later absence check needs a
+ * loaded page.
+ */
 export async function openRide(page: Page, teamSlug: string, ride: RideDto) {
   await page.goto(ridePath(teamSlug, ride.slug))
   await page.getByRole('heading', { level: 2, name: ride.name }).waitFor()
-  await page.getByRole('heading', { level: 4, name: 'Groupes' }).waitFor()
+  await page.getByTestId('ride-groups').waitFor()
 }
 
 /**
  * The card of one ride group (`RideGroupCard`, a Mantine Paper holding the group's name as its own
- * text). Group names are unique per test, so a second match is a strict-mode error, not a guess.
+ * text) — or, on a solo ride's page (ledger WEB-79), its group panel (`RideSoloGroupPanel`, same
+ * shape: name, places, join, leader). A solo ride's figures and participants follow the panel,
+ * outside it. Group names are unique per test, so a second match is a strict-mode error, not a guess.
  * The « Météo » section is a Paper too, and names each group in its picker: it is a `<section>`,
  * a group card is not.
  */

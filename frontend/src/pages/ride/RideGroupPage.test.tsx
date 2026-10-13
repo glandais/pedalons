@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { MantineProvider } from '@mantine/core'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { RideDto, RideGroupDto, RideWeatherDto, TeamDetailDto } from '@/api/dto'
@@ -86,6 +86,9 @@ const group = (overrides: Partial<RideGroupDto> = {}): RideGroupDto =>
     ...overrides,
   }) as RideGroupDto
 
+/** The other group: the page is a ride's with several groups (WEB-79: a solo ride has none). */
+const cool = () => group({ id: 'g2', name: 'Cool', countParticipants: 4 })
+
 const ride = (overrides: Partial<RideDto> = {}): RideDto =>
   ({
     id: 'r1',
@@ -97,18 +100,27 @@ const ride = (overrides: Partial<RideDto> = {}): RideDto =>
     dateTime: '2026-10-08T06:40:00Z',
     timezone: 'UTC',
     routeSlug: 'boucle',
-    groups: [group(), group({ id: 'g2', name: 'Cool', countParticipants: 4 })],
+    groups: [group(), cool()],
     ...overrides,
   }) as RideDto
 
 const member = { slug: 'np', name: 'N Peloton', role: 'MEMBER' } as TeamDetailDto
 
-function renderPage(groupId = 'g1') {
-  return render(
+/** Where a solo ride's group page leads: the ride's, its URL in full. */
+function RideProbe() {
+  const location = useLocation()
+  return <div data-testid="ride-page">{location.pathname + location.search + location.hash}</div>
+}
+
+function pageTree(groupId = 'g1', suffix = '') {
+  return (
     <MantineProvider>
       <QueryClientProvider client={new QueryClient()}>
-        <MemoryRouter initialEntries={[paths.rideGroup('np', 'sortie', groupId)]}>
+        <MemoryRouter initialEntries={[paths.rideGroup('np', 'sortie', groupId) + suffix]}>
           <Routes>
+            {Object.values(pathVariants.ride(':teamSlug', ':rideSlug')).map((path) => (
+              <Route key={path} path={path} element={<RideProbe />} />
+            ))}
             {Object.values(pathVariants.rideGroup(':teamSlug', ':rideSlug', ':groupId')).map(
               (path) => (
                 <Route key={path} path={path} element={<RideGroupPage />} />
@@ -119,6 +131,10 @@ function renderPage(groupId = 'g1') {
       </QueryClientProvider>
     </MantineProvider>
   )
+}
+
+function renderPage(groupId = 'g1', suffix = '') {
+  return render(pageTree(groupId, suffix))
 }
 
 describe('RideGroupPage (WEB-77)', () => {
@@ -152,6 +168,7 @@ describe('RideGroupPage (WEB-77)', () => {
     state.ride = ride({
       groups: [
         group({ averageSpeed: undefined, elevationGain: undefined, maxParticipants: undefined }),
+        cool(),
       ],
     })
     renderPage()
@@ -163,7 +180,7 @@ describe('RideGroupPage (WEB-77)', () => {
   })
 
   it('says when the group leaves before or after the ride', () => {
-    state.ride = ride({ groups: [group({ startAt: '2026-10-08T07:10:00Z' })] })
+    state.ride = ride({ groups: [group({ startAt: '2026-10-08T07:10:00Z' }), cool()] })
     renderPage()
     expect(plain(document.body.textContent)).toContain('après la sortie')
   })
@@ -182,6 +199,7 @@ describe('RideGroupPage (WEB-77)', () => {
     state.ride = ride({
       groups: [
         group({ leader: { id: 'u1', displayName: 'Léa Meneuse' } as RideGroupDto['leader'] }),
+        cool(),
       ],
     })
     renderPage()
@@ -201,7 +219,7 @@ describe('RideGroupPage (WEB-77)', () => {
     state.ride = ride({
       registered: true,
       registeredGroupId: 'g1',
-      groups: [group({ registered: true })],
+      groups: [group({ registered: true }), cool()],
     })
     renderPage()
     expect(screen.getByText('Inscrit')).toBeTruthy()
@@ -211,7 +229,7 @@ describe('RideGroupPage (WEB-77)', () => {
   })
 
   it('offers nothing but its badge on a full group', () => {
-    state.ride = ride({ groups: [group({ full: true, countParticipants: 12 })] })
+    state.ride = ride({ groups: [group({ full: true, countParticipants: 12 }), cool()] })
     renderPage()
     expect(screen.getByText('Complet')).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'Rejoindre' })).toBeNull()
@@ -263,5 +281,39 @@ describe('RideGroupPage (WEB-77)', () => {
     renderPage('gone')
     expect(screen.getByText("Ce groupe n'existe plus")).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Retour à la sortie' })).toBeTruthy()
+  })
+
+  describe('a ride with at most one group has no group page (WEB-79)', () => {
+    it("replaces a solo ride's group URL with the ride's, query string and #meteo kept", async () => {
+      state.ride = ride({ groups: [group()] })
+      renderPage('g1', '?q=a#meteo')
+      const probe = await screen.findByTestId('ride-page')
+      expect(probe.textContent).toBe(paths.ride('np', 'sortie') + '?q=a#meteo')
+    })
+
+    it('never shows the group page meanwhile', () => {
+      state.ride = ride({ groups: [group()] })
+      renderPage()
+      expect(screen.queryByRole('heading', { level: 1, name: 'Groupe Rapide' })).toBeNull()
+      expect(screen.queryByText("Ce groupe n'existe plus")).toBeNull()
+    })
+
+    it('leaves for the ride from a group a solo ride does not have, or a ride without groups', async () => {
+      state.ride = ride({ groups: [group()] })
+      renderPage('gone')
+      expect((await screen.findByTestId('ride-page')).textContent).toBe(paths.ride('np', 'sortie'))
+      cleanup()
+      state.ride = ride({ groups: [] })
+      renderPage('g1')
+      expect((await screen.findByTestId('ride-page')).textContent).toBe(paths.ride('np', 'sortie'))
+    })
+
+    it('still leaves when the ride, first read with two groups, comes back with one', async () => {
+      const { rerender } = renderPage()
+      expect(screen.getByRole('heading', { level: 1, name: 'Groupe Rapide' })).toBeTruthy()
+      state.ride = ride({ groups: [group()] })
+      rerender(pageTree())
+      expect((await screen.findByTestId('ride-page')).textContent).toBe(paths.ride('np', 'sortie'))
+    })
   })
 })

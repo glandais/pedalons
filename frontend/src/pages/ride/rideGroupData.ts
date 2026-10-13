@@ -17,7 +17,14 @@ import {
 import { useAuthStore } from '@/store/authStore'
 import type { RideDto, RideGroupDto } from '@/api/dto'
 import { Status } from '@/api/dto'
-import { rideRouteSlugs, useRideDetailData, WEATHER_REQUEST } from './rideDetailData'
+import type { RouteParams } from '@/config/routes.types'
+import { paths } from '@/config/paths'
+import {
+  leavesGroupPage,
+  rideRouteSlugs,
+  useRideDetailData,
+  WEATHER_REQUEST,
+} from './rideDetailData'
 
 /**
  * The one description of what a ride group's page reads (`RideGroupPage`, route `ride-group`),
@@ -73,6 +80,26 @@ export async function prefetchRideGroup(
       ? prefetchGetAvailableServicesQuery(queryClient)
       : Promise.resolve(queryClient),
   ])
+}
+
+/**
+ * The `ride-group` route's `dataRedirect` (ledger WEB-79): a ride with at most one group has no
+ * group page — a solo ride's own page is its group's, and a group link to a ride without groups can
+ * only be stale —, so the group's URL is replaced by the ride's, query string kept (`?q=`/`?p=` are
+ * the same participants filters there). Reads only the ride `prefetchRideGroup` cached; without it
+ * (a private team rendered anonymously), `undefined`, and `RideGroupPage` leaves on the client.
+ */
+export function rideGroupDataRedirect(
+  queryClient: QueryClient,
+  params: RouteParams,
+  url: URL
+): string | undefined {
+  if (!params.teamSlug || !params.rideSlug) return undefined
+  const ride = queryClient.getQueryData<RideDto>(
+    getGetRideQueryKey(params.teamSlug, params.rideSlug)
+  )
+  if (!ride || !leavesGroupPage(ride)) return undefined
+  return paths.ride(params.teamSlug, ride.slug) + url.search
 }
 
 /**

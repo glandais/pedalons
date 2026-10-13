@@ -37,7 +37,8 @@ import {
   getGetRideQueryKey,
 } from '../../api/endpoints/rides/rides'
 import { getListPublicationsQueryKey } from '../../api/endpoints/publications/publications'
-import { invalidateRideWeather, useRideDetailData } from './rideDetailData'
+import { invalidateRideWeather, rideRouteSlugs, useRideDetailData } from './rideDetailData'
+import { groupAction } from './rideGroupData'
 import { rideStatusRequest } from './rideFormData'
 import { ReportTargetType, Status } from '@/api/dto'
 import { useAuth } from '../../hooks/useAuth'
@@ -68,6 +69,14 @@ import { STATUS_COLORS } from '@/lib/badgeColors.generated'
 import { TagList } from '@/components/tag'
 import { RideWeatherSection } from '@/components/weather'
 import { hasForecast } from '@/components/weather/weatherDisplay'
+import { RideSoloGroupPanel } from '@/components/ride/RideSoloGroupPanel'
+import { GroupParticipantsSection } from '@/components/ride/group/GroupParticipantsSection'
+import { GroupRouteMap } from '@/components/ride/group/GroupRouteMap'
+import { GroupStats } from '@/components/ride/group/GroupStats'
+import { useScrollToAnchor } from '@/hooks/useScrollToAnchor'
+
+/** The anchor of the weather block, as on a group's page: a former group link's `#meteo` lands here. */
+const WEATHER_ANCHOR = 'meteo'
 
 export function RideDetailPage() {
   const { t } = useTranslation()
@@ -93,6 +102,8 @@ export function RideDetailPage() {
     ride: { data: ride, isLoading: isLoadingRide, error, refetch },
     weather,
     routesBySlug: groupRoutesBySlug,
+    soloGroup: solo,
+    soloLeg,
   } = useRideDetailData(teamSlug, rideSlug)
 
   const queryClient = useQueryClient()
@@ -132,6 +143,9 @@ export function RideDetailPage() {
 
   useCanonicalPath(team && ride ? paths.ride(team.slug, ride.slug) : undefined)
 
+  // `#meteo`: a solo ride's former group link (WEB-79), or a shared one.
+  useScrollToAnchor(WEATHER_ANCHOR, !!ride && !!team && !weather.isLoading)
+
   if (isLoadingTeam || isLoadingRide || error || !ride || !team) {
     return (
       <Container size="xl" py="xl">
@@ -166,6 +180,11 @@ export function RideDetailPage() {
   // `ride.full` is deliberately left out: each card already withholds its Join button when its own
   // group is full, and gating the whole zone on it hid every « Complet » badge once all groups filled.
   const canJoinRide = isMember && ride.status === Status.PUBLISHED && !ride.registered && !isPast
+
+  // A solo ride whose ride and group share one route: the group page's single-route map (WEB-79).
+  // Two different routes (the ride's and its group's) keep the multi-route map.
+  const routeSlugs = rideRouteSlugs(ride)
+  const soloRouteSlug = solo && routeSlugs.length === 1 ? routeSlugs[0] : undefined
 
   // A rendezvous, in the ride's zone (docs/LEDGER_*.md API-60).
   const formattedDate = <Rendezvous date={ride.dateTime} zone={ride.timezone} variant="detail" />
@@ -445,17 +464,20 @@ export function RideDetailPage() {
         <TagList tags={ride.tags} mt="md" />
       </Paper>
 
-      {/* Weather at the meeting point; each group's route is on the group's own page (WEB-77) */}
-      <ErrorBoundary variant="inline">
-        <RideWeatherSection
-          ride={ride}
-          weather={weather.data}
-          isLoading={weather.isLoading}
-          isFetching={weather.isFetching}
-          onRetry={() => void weather.refetch()}
-          canEdit={canEdit}
-        />
-      </ErrorBoundary>
+      {/* Weather at the meeting point; each group's route is on the group's own page (WEB-77),
+          except a solo ride's, whose page is its group's (WEB-79) */}
+      <Box id={WEATHER_ANCHOR} style={{ scrollMarginTop: 'var(--app-shell-header-height)' }}>
+        <ErrorBoundary variant="inline">
+          <RideWeatherSection
+            ride={ride}
+            weather={weather.data}
+            isLoading={weather.isLoading}
+            isFetching={weather.isFetching}
+            onRetry={() => void weather.refetch()}
+            canEdit={canEdit}
+          />
+        </ErrorBoundary>
+      </Box>
 
       {/* Map and Groups */}
       <SimpleGrid
@@ -465,63 +487,101 @@ export function RideDetailPage() {
       >
         {/* Map - shown first on mobile, spans 2 cols on xl */}
         <Box className="detail-map" style={{ order: 1 }}>
-          {mapItems.length > 0 && (
-            <ErrorBoundary variant="inline">
-              <Suspense fallback={<Skeleton height={500} radius="md" />}>
-                <RoutesMapView
-                  items={mapItems}
-                  teamSlug={teamSlug!}
-                  highlightedItemId={litGroupId}
-                  onItemHover={setHighlightedGroupId}
-                  selectedItemId={selectedGroupId}
-                  onItemSelect={chooseGroup}
-                />
-              </Suspense>
-            </ErrorBoundary>
+          {soloRouteSlug ? (
+            // A solo ride on one route: the group page's map, its profile and full screen.
+            <GroupRouteMap
+              teamSlug={teamSlug!}
+              routeSlug={soloRouteSlug}
+              route={groupRoutesBySlug.get(soloRouteSlug)}
+              withActions={false}
+            />
+          ) : (
+            mapItems.length > 0 && (
+              <ErrorBoundary variant="inline">
+                <Suspense fallback={<Skeleton height={500} radius="md" />}>
+                  <RoutesMapView
+                    items={mapItems}
+                    teamSlug={teamSlug!}
+                    highlightedItemId={litGroupId}
+                    onItemHover={setHighlightedGroupId}
+                    selectedItemId={selectedGroupId}
+                    onItemSelect={chooseGroup}
+                  />
+                </Suspense>
+              </ErrorBoundary>
+            )
           )}
         </Box>
 
-        {/* Groups list */}
-        <Box style={{ order: 2 }}>
-          <Title order={4} mb="md">
-            {t('rides.detail.groups.title')}
-          </Title>
-          {ride.groups && ride.groups.length > 0 ? (
-            <Stack gap="sm">
-              {ride.groups.map((group) => {
-                return (
-                  <RideGroupCard
-                    key={group.id}
-                    group={group}
-                    rideTimezone={ride.timezone}
-                    rideDateTime={ride.dateTime}
-                    teamSlug={teamSlug!}
-                    rideSlug={ride.slug}
-                    rideRouteSlug={ride.routeSlug}
-                    routesBySlug={groupRoutesBySlug}
-                    trackColor={trackColors.get(group.id)}
-                    weatherLeg={
-                      weather.data && hasForecast(weather.data.status)
-                        ? weather.data.legs.find((leg) => leg.groupId === group.id)
-                        : undefined
-                    }
-                    canJoin={canJoinRide}
-                    onJoin={() => handleJoinGroup(group.id)}
-                    onLeave={() => handleLeaveGroup(group.id)}
-                    onHover={setHighlightedGroupId}
-                    isHighlighted={litGroupId === group.id}
-                    isLoading={membership.isPending}
-                    error={groupError?.groupId === group.id ? groupError.message : undefined}
-                  />
-                )
-              })}
+        {/* Groups list — or, for a solo ride, its one group in full (WEB-79) */}
+        <Box style={{ order: 2 }} data-testid="ride-groups">
+          {solo ? (
+            <Stack gap="md">
+              <RideSoloGroupPanel
+                teamSlug={teamSlug!}
+                ride={ride}
+                group={solo}
+                action={groupAction(ride, solo, isMember)}
+                membership={membership}
+                routesBySlug={groupRoutesBySlug}
+                trackColor={trackColors.get(solo.id)}
+                error={groupError?.groupId === solo.id ? groupError.message : undefined}
+              />
+              <GroupStats
+                ride={ride}
+                group={solo}
+                arrival={soloLeg && hasForecast(soloLeg.status) ? soloLeg.arrivalTime : undefined}
+              />
+              <GroupParticipantsSection
+                teamSlug={teamSlug!}
+                ride={ride}
+                group={solo}
+                titleId="ride-participants-title"
+              />
             </Stack>
           ) : (
-            <EmptyState
-              icon={<IconUsersGroup size={48} />}
-              title={t('rides.detail.groups.emptyTitle')}
-              description={t('rides.detail.groups.empty')}
-            />
+            <>
+              <Title order={4} mb="md">
+                {t('rides.detail.groups.title')}
+              </Title>
+              {ride.groups && ride.groups.length > 0 ? (
+                <Stack gap="sm">
+                  {ride.groups.map((group) => {
+                    return (
+                      <RideGroupCard
+                        key={group.id}
+                        group={group}
+                        rideTimezone={ride.timezone}
+                        rideDateTime={ride.dateTime}
+                        teamSlug={teamSlug!}
+                        rideSlug={ride.slug}
+                        rideRouteSlug={ride.routeSlug}
+                        routesBySlug={groupRoutesBySlug}
+                        trackColor={trackColors.get(group.id)}
+                        weatherLeg={
+                          weather.data && hasForecast(weather.data.status)
+                            ? weather.data.legs.find((leg) => leg.groupId === group.id)
+                            : undefined
+                        }
+                        canJoin={canJoinRide}
+                        onJoin={() => handleJoinGroup(group.id)}
+                        onLeave={() => handleLeaveGroup(group.id)}
+                        onHover={setHighlightedGroupId}
+                        isHighlighted={litGroupId === group.id}
+                        isLoading={membership.isPending}
+                        error={groupError?.groupId === group.id ? groupError.message : undefined}
+                      />
+                    )
+                  })}
+                </Stack>
+              ) : (
+                <EmptyState
+                  icon={<IconUsersGroup size={48} />}
+                  title={t('rides.detail.groups.emptyTitle')}
+                  description={t('rides.detail.groups.empty')}
+                />
+              )}
+            </>
           )}
         </Box>
       </SimpleGrid>

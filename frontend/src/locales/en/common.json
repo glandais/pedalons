@@ -1526,6 +1526,7 @@
   "rides.detail.groups.route.downloadFit": "FIT",
   "rides.detail.groups.route.downloadGpx": "GPX",
   "rides.detail.groups.route.view": "View route",
+  "rides.detail.groups.soloLabel": "Group",
   "rides.detail.groups.title": "Groups",
   "rides.detail.groups.viewAll": "View all",
   "rides.detail.groups.viewParticipants": "View all participants",

@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:pedalons/api/generated/export.dart';
+import 'package:pedalons/config/paths.dart';
 import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
 import 'package:pedalons/core/pagination/pagination.dart';
@@ -10,9 +14,11 @@ import 'package:pedalons/features/participants/data/participant_repository.dart'
 import 'package:pedalons/features/participants/domain/participant_query.dart';
 import 'package:pedalons/features/rides/data/ride_repository.dart';
 import 'package:pedalons/features/rides/domain/ride_group_tab.dart';
+import 'package:pedalons/features/rides/presentation/pages/ride_detail_page.dart';
 import 'package:pedalons/features/rides/presentation/pages/ride_group_page.dart';
 import 'package:pedalons/features/rides/providers/ride_detail_provider.dart';
 import 'package:pedalons/features/rides/providers/ride_group_selection_provider.dart';
+import 'package:pedalons/features/rides/providers/ride_scroll_target_provider.dart';
 import 'package:pedalons/features/teams/data/team_repository.dart';
 import 'package:pedalons/keys.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -120,6 +126,14 @@ class _Teams implements TeamRepository {
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+/// Les paliers asynchrones d'une navigation : traductions, détail,
+/// appartenance, puis le départ planifié après le cadre.
+Future<void> settle(WidgetTester tester) async {
+  for (int i = 0; i < 8; i++) {
+    await tester.pump(const Duration(milliseconds: 50));
+  }
 }
 
 void main() {
@@ -385,7 +399,10 @@ void main() {
         weather(),
         ride: fixtureRide(
           dateTime: '2020-07-29T17:30:00Z',
-          groups: <RideGroupDto>[fixtureGroup(id: 'g1', name: 'Rapide')],
+          groups: <RideGroupDto>[
+            fixtureGroup(id: 'g1', name: 'Rapide'),
+            fixtureGroup(id: 'g2', name: 'Cool', sortOrder: 1),
+          ],
         ),
       );
 
@@ -437,6 +454,7 @@ void main() {
               id: 'g1',
               leader: const PublicUserDto(id: 'l1', displayName: 'Léa'),
             ),
+            fixtureGroup(id: 'g2', name: 'Cool', sortOrder: 1),
           ],
         ),
       );
@@ -474,6 +492,7 @@ void main() {
           dateTime: '2099-07-29T19:30:00Z',
           groups: <RideGroupDto>[
             fixtureGroup(id: 'g1', startAt: '2099-07-29T19:30:00Z'),
+            fixtureGroup(id: 'g2', name: 'Cool', sortOrder: 1),
           ],
         ),
       );
@@ -533,7 +552,10 @@ void main() {
         ride: fixtureRide(
           registered: true,
           registeredGroupId: 'g1',
-          groups: <RideGroupDto>[fixtureGroup(id: 'g1', registered: true)],
+          groups: <RideGroupDto>[
+            fixtureGroup(id: 'g1', registered: true),
+            fixtureGroup(id: 'g2', name: 'Cool', sortOrder: 1),
+          ],
         ),
       );
 
@@ -560,6 +582,7 @@ void main() {
               countParticipants: 16,
               maxParticipants: 16,
             ),
+            fixtureGroup(id: 'g2', name: 'Cool', sortOrder: 1),
           ],
         ),
       );
@@ -628,5 +651,198 @@ void main() {
     expect(find.text('Ce groupe n\'existe plus'), findsOneWidget);
     expect(find.byKey(keys.rideGroup.backToRide), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  // ─────────────────────────────── sortie solo ou sans groupe (ledger MOB-69)
+
+  group('une sortie à un groupe quitte la page pour son détail', () {
+    final RideDto solo = fixtureRide(
+      groups: <RideGroupDto>[fixtureGroup(id: 'g1', name: 'Rapide')],
+    );
+    const Key home = Key('home');
+
+    late GoRouter router;
+
+    Future<void> mount(
+      WidgetTester tester,
+      RideDto ride, {
+      String initialLocation = '/',
+      bool nested = false,
+    }) async {
+      repository = _Repository(ride, weather());
+      participants = _Participants();
+      container = ProviderContainer(
+        retry: (int _, Object _) => null,
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          rideRepositoryProvider.overrideWithValue(repository),
+          participantRepositoryProvider.overrideWithValue(participants),
+          teamRepositoryProvider.overrideWithValue(_Teams(member: true)),
+        ],
+      );
+      addTearDown(container.dispose);
+      GoRoute groupRoute(String path) => GoRoute(
+        path: path,
+        builder: (BuildContext _, GoRouterState state) => RideGroupPage(
+          teamSlug: state.pathParameters['teamSlug']!,
+          rideSlug: state.pathParameters['rideSlug']!,
+          groupId: state.pathParameters['groupId']!,
+          initialTab: RideGroupTab.fromQuery(state.uri.queryParameters['tab']),
+        ),
+      );
+      router = GoRouter(
+        initialLocation: initialLocation,
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/',
+            builder: (BuildContext _, GoRouterState _) =>
+                const Scaffold(body: Text('Accueil', key: home)),
+          ),
+          for (final MapEntry<String, String> ridePath in PathVariants.ride(
+            ':teamSlug',
+            ':rideSlug',
+          ).entries)
+            GoRoute(
+              path: ridePath.value,
+              builder: (BuildContext _, GoRouterState state) => RideDetailPage(
+                teamSlug: state.pathParameters['teamSlug']!,
+                rideSlug: state.pathParameters['rideSlug']!,
+              ),
+              // Comme `router.dart` : la page d'un groupe est une route fille
+              // du détail, qu'un lien profond reconstruit dessous.
+              routes: <RouteBase>[
+                if (nested)
+                  groupRoute(
+                    PathVariants.rideGroup(
+                      ':teamSlug',
+                      ':rideSlug',
+                      ':groupId',
+                    )[ridePath.key]!.substring(ridePath.value.length + 1),
+                  ),
+              ],
+            ),
+          if (!nested)
+            for (final String path in PathVariants.rideGroup(
+              ':teamSlug',
+              ':rideSlug',
+              ':groupId',
+            ).values)
+              groupRoute(path),
+        ],
+      );
+      addTearDown(router.dispose);
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(
+            theme: PedalonsTheme.build(Brightness.light),
+            routerConfig: router,
+          ),
+        ),
+      );
+      await settle(tester);
+    }
+
+    final String ridePath = Paths.ride(key.teamSlug, key.rideSlug);
+    String groupPath(String id) =>
+        Paths.rideGroup(key.teamSlug, key.rideSlug, id);
+
+    testWidgets('poussée au-dessus du détail : elle s\'efface, le détail reste', (
+      WidgetTester tester,
+    ) async {
+      await mount(tester, solo);
+      unawaited(router.push(ridePath));
+      await settle(tester);
+      expect(find.byType(RideDetailPage), findsOneWidget);
+
+      unawaited(router.push('${groupPath('g1')}?tab=weather'));
+      await settle(tester);
+
+      expect(find.byType(RideGroupPage), findsNothing);
+      expect(find.byType(RideDetailPage), findsOneWidget);
+      // L'onglet Météo devient un défilement du détail, consommé par lui.
+      expect(container.read(rideScrollToWeatherProvider(key)), isFalse);
+
+      // Un seul retour mène à l'écran d'avant le détail : pas d'entrée laissée.
+      router.pop();
+      await settle(tester);
+      expect(find.byKey(home), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets(
+      'poussée au-dessus d\'un autre écran : remplacée par le détail',
+      (WidgetTester tester) async {
+        await mount(tester, solo);
+        unawaited(router.push(groupPath('g1')));
+        await settle(tester);
+
+        expect(find.byType(RideGroupPage), findsNothing);
+        expect(find.byType(RideDetailPage), findsOneWidget);
+
+        router.pop();
+        await settle(tester);
+        expect(find.byKey(home), findsOneWidget);
+        expect(find.byType(RideDetailPage), findsNothing);
+      },
+    );
+
+    testWidgets('ouverte à froid : le détail', (WidgetTester tester) async {
+      await mount(tester, solo, initialLocation: groupPath('g1'));
+
+      expect(find.byType(RideGroupPage), findsNothing);
+      expect(find.byType(RideDetailPage), findsOneWidget);
+      expect(router.canPop(), isFalse);
+    });
+
+    testWidgets(
+      'lien profond dans la hiérarchie de l\'app : retour au détail reconstruit dessous',
+      (WidgetTester tester) async {
+        await mount(
+          tester,
+          solo,
+          initialLocation: '${groupPath('g1')}?tab=weather',
+          nested: true,
+        );
+
+        expect(find.byType(RideGroupPage), findsNothing);
+        expect(find.byType(RideDetailPage), findsOneWidget);
+        expect(router.routerDelegate.currentConfiguration.uri.path, ridePath);
+        expect(container.read(rideScrollToWeatherProvider(key)), isFalse);
+        expect(router.canPop(), isFalse);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets('un groupe disparu d\'une sortie solo : le détail aussi', (
+      WidgetTester tester,
+    ) async {
+      await mount(tester, solo, initialLocation: groupPath('gone'));
+
+      expect(find.byKey(keys.rideGroup.notFound), findsNothing);
+      expect(find.byType(RideDetailPage), findsOneWidget);
+    });
+
+    testWidgets('une sortie sans groupe : le détail', (
+      WidgetTester tester,
+    ) async {
+      await mount(
+        tester,
+        fixtureRide(groups: const <RideGroupDto>[]),
+        initialLocation: groupPath('g1'),
+      );
+
+      expect(find.byType(RideGroupPage), findsNothing);
+      expect(find.byType(RideDetailPage), findsOneWidget);
+    });
+
+    testWidgets('deux groupes et un id inconnu : l\'état vide, inchangé', (
+      WidgetTester tester,
+    ) async {
+      await mount(tester, twoGroups, initialLocation: groupPath('gone'));
+
+      expect(find.byType(RideGroupPage), findsOneWidget);
+      expect(find.byKey(keys.rideGroup.notFound), findsOneWidget);
+    });
   });
 }

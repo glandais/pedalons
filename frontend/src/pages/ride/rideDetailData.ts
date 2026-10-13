@@ -8,16 +8,27 @@ import {
   useGetRideWeather,
   prefetchGetRideWeatherQuery,
   getGetRideWeatherQueryKey,
+  prefetchGetRideParticipantsQuery,
 } from '@/api/endpoints/rides/rides'
 import {
   listRideComments,
   getListRideCommentsQueryKey,
 } from '@/api/endpoints/ride-comments/ride-comments'
 import { prefetchGetAvailableServicesQuery } from '@/api/endpoints/gps-services/gps-services'
+import { readUrlFilters } from '@/hooks/useUrlFilters'
+import {
+  groupParticipantFiltersAlias,
+  groupParticipantFiltersSchema,
+  groupParticipantsParams,
+} from '@/hooks/filters/groupParticipantFilters'
+import { ownLeg, soloGroup } from '@/utils/soloGroup'
 import { useRoutesBulk } from '@/hooks/useRoutesBulk'
 import { prefetchMemberComments, prefetchRoutesBulkChunked } from '@/config/prefetchHelpers'
 import { useAuthStore } from '@/store/authStore'
 import type { RideDto, RouteDetailDto } from '@/api/dto'
+
+// The solo-ride predicates (ledger WEB-79), one import for the ride's and the group's pages.
+export { soloGroup, leavesGroupPage, ownLeg } from '@/utils/soloGroup'
 
 /**
  * The one description of what the ride detail screen reads, consumed two ways: `RideDetailPage`
@@ -108,7 +119,11 @@ export function useRideDetailData(teamSlug?: string, rideSlug?: string) {
     return map
   }, [routes.data])
 
-  return { team, ride, weather, routes, routesBySlug }
+  // A solo ride's page is its group's (ledger WEB-79): the group and its leg, from what is read.
+  const solo = soloGroup(ride.data)
+  const soloLeg = solo && ride.data ? ownLeg(ride.data, weather.data) : undefined
+
+  return { team, ride, weather, routes, routesBySlug, soloGroup: solo, soloLeg }
 }
 
 /**
@@ -119,12 +134,16 @@ export function useRideDetailData(teamSlug?: string, rideSlug?: string) {
  *
  * It covers more than the hook does, on purpose: comments and GPS services are fetched by children
  * the page mounts (`CommentSection`, the export menu), not by the page itself — both conditional,
- * comments on membership, services on being signed in, exactly as those children are.
+ * comments on membership, services on being signed in, exactly as those children are. A solo
+ * ride's page lists its group's participants inline (ledger WEB-79): their first page — or the one
+ * `?q=`/`?p=` asks for — is one request, under the key `groupParticipantsParams` builds for the
+ * list, and it waits for phase 2 because the group is only known once the ride is read.
  */
 export async function prefetchRideDetail(
   queryClient: QueryClient,
   teamSlug: string,
-  rideSlug: string
+  rideSlug: string,
+  url: URL
 ): Promise<void> {
   await Promise.all([
     prefetchGetTeamQuery(queryClient, teamSlug),
@@ -133,6 +152,11 @@ export async function prefetchRideDetail(
   ])
 
   const ride = queryClient.getQueryData<RideDto>(getGetRideQueryKey(teamSlug, rideSlug))
+  const solo = soloGroup(ride)
+  const filters = readUrlFilters(url.searchParams, {
+    schema: groupParticipantFiltersSchema,
+    alias: groupParticipantFiltersAlias,
+  })
   await Promise.all([
     prefetchMemberComments(
       queryClient,
@@ -144,6 +168,14 @@ export async function prefetchRideDetail(
     prefetchRoutesBulkChunked(queryClient, teamSlug, rideRouteSlugs(ride)),
     useAuthStore.getState().isAuthenticated
       ? prefetchGetAvailableServicesQuery(queryClient)
+      : Promise.resolve(queryClient),
+    solo
+      ? prefetchGetRideParticipantsQuery(
+          queryClient,
+          teamSlug,
+          rideSlug,
+          groupParticipantsParams(solo.id, filters)
+        )
       : Promise.resolve(queryClient),
   ])
 }

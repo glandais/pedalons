@@ -13,7 +13,7 @@ import { apiGet, apiGetOrNull, apiPost, type AuthResponse, type Caller } from '.
 import { addMember, newTeam, newUser, signIn, type NewTeamOptions } from './support/data'
 import { richText } from './support/editor'
 import { expect, test, unique } from './support/fixtures'
-import { groupCard, newRide, openRide } from './support/rides'
+import { newRide, openRide } from './support/rides'
 import {
   coordinatesOf,
   getRoute,
@@ -982,10 +982,10 @@ test.describe('GPX files in the route forms', () => {
     expect(bulk.routes.map((r) => r.distance)).toEqual([stored.distance])
     expect(coordinatesOf(bulk.routes[0])).toEqual(coordinatesOf(stored))
 
-    // And the ride's group shows the new distance.
+    // And the ride's group shows the new distance — a solo ride's figures, on its page (WEB-79).
     const watcher = watchRouteReads(page, team.slug, route.slug)
     await openRide(page, team.slug, ride)
-    await expect(groupCard(page, 'Groupe A')).toContainText(
+    await expect(page.getByTestId('group-stats')).toContainText(
       `${(stored.distance / 1000).toFixed(1)} km`
     )
     await pageHydrated(page)
