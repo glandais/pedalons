@@ -122,6 +122,8 @@
           "/equipes/*/membres",
           "/teams/*/rides/*",
           "/equipes/*/sorties/*",
+          "/teams/*/rides/*/groups/*",
+          "/equipes/*/sorties/*/groupes/*",
           "/teams/*/trips/*",
           "/equipes/*/voyages/*",
           "/teams/*/trips/*/stages/*",

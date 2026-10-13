@@ -354,6 +354,15 @@ class Paths {
     }
   }
 
+  static String rideGroup(String teamSlug, String rideSlug, String groupId) {
+    switch (getCurrentLocale()) {
+      case 'fr':
+        return '/equipes/$teamSlug/sorties/$rideSlug/groupes/$groupId';
+      default:
+        return '/teams/$teamSlug/rides/$rideSlug/groups/$groupId';
+    }
+  }
+
   static String rideEdit(String teamSlug, String rideSlug) {
     switch (getCurrentLocale()) {
       case 'fr':
@@ -620,6 +629,14 @@ class PathVariants {
   static Map<String, String> ride(String teamSlug, String rideSlug) => {
     'en': '/teams/$teamSlug/rides/$rideSlug',
     'fr': '/equipes/$teamSlug/sorties/$rideSlug',
+  };
+  static Map<String, String> rideGroup(
+    String teamSlug,
+    String rideSlug,
+    String groupId,
+  ) => {
+    'en': '/teams/$teamSlug/rides/$rideSlug/groups/$groupId',
+    'fr': '/equipes/$teamSlug/sorties/$rideSlug/groupes/$groupId',
   };
   static Map<String, String> rideEdit(String teamSlug, String rideSlug) => {
     'en': '/teams/$teamSlug/rides/$rideSlug/edit',
