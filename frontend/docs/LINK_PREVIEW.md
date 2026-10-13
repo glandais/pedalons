@@ -58,6 +58,7 @@ admin, edit, and transient utility routes carry no `meta` and unfurl with site-w
 | team page | `article` | page image → team logo → default |
 | post | `article` | first post image → team logo → default |
 | ride | `article` | route map thumbnail → post image → team logo → default |
+| ride group | `article` | the ride's chain (« Groupe X · <sortie> », departure, pace, distance; a group gone falls back to the ride's preview) |
 | trip | `article` | trip map thumbnail → trip image → team logo → default |
 | stage | `article` | stage route thumbnail → stage image → trip thumbnail → default |
 | route / route map (carte) | `website` | route map thumbnail → team logo → default |
