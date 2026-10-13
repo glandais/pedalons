@@ -4,7 +4,11 @@ import { IconUsers, IconChevronRight, IconShieldCheck } from '@tabler/icons-reac
 import { Stack, Group, Text, Box, ThemeIcon, Center, Loader } from '@mantine/core'
 import { useGetRideParticipants } from '@/api/endpoints/rides/rides'
 import { useGetTripParticipants } from '@/api/endpoints/trips/trips'
-import { PARTICIPANTS_PAGE_SIZE } from '@/hooks/filters/groupParticipantFilters'
+import {
+  PARTICIPANTS_PAGE_SIZE,
+  groupParticipantsParams,
+  participantsPageParams,
+} from '@/hooks/filters/groupParticipantFilters'
 import { UserAvatar } from '../common/UserAvatar'
 import { Pagination } from '../common/Pagination'
 import { SearchInput } from '../common/SearchInput'
@@ -54,12 +58,14 @@ export function ParticipantList({
 }: ParticipantListProps) {
   const { t } = useTranslation()
 
-  const params = { search: search || undefined, page, size: PARTICIPANTS_PAGE_SIZE }
+  const params = participantsPageParams(search, page)
   // Both hooks are called unconditionally (rules of hooks); only the one for this source runs.
   const ride = useGetRideParticipants(
     source.teamSlug,
     source.kind === 'ride' ? source.rideSlug : '',
-    { ...params, groupId: source.kind === 'ride' ? source.groupId : undefined },
+    source.kind === 'ride' && source.groupId
+      ? groupParticipantsParams(source.groupId, { search, page })
+      : params,
     { query: { placeholderData: keepPreviousData, enabled: enabled && source.kind === 'ride' } }
   )
   const trip = useGetTripParticipants(

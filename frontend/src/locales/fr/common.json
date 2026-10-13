@@ -1595,7 +1595,6 @@
   "rides.edit.title": "Modifier la sortie",
   "rides.group.backToRide": "Retour à la sortie",
   "rides.group.header": "{{ride}} · {{date}}, départ {{time}}",
-  "rides.group.leaderTitle": "Meneur du groupe",
   "rides.group.notFound.description": "Il a peut-être été retiré de la sortie. Les autres groupes vous attendent sur la page de la sortie.",
   "rides.group.notFound.title": "Ce groupe n'existe plus",
   "rides.group.option": "{{name}} · {{current}}/{{max}}",

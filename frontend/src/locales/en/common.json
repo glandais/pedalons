@@ -1542,7 +1542,6 @@
   "rides.edit.title": "Edit Ride",
   "rides.group.backToRide": "Back to the ride",
   "rides.group.header": "{{ride}} · {{date}}, leaves at {{time}}",
-  "rides.group.leaderTitle": "Group leader",
   "rides.group.notFound.description": "It may have been removed from the ride. The other groups are waiting for you on the ride's page.",
   "rides.group.notFound.title": "This group no longer exists",
   "rides.group.option": "{{name}} · {{current}}/{{max}}",
