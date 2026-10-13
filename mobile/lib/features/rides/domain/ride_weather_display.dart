@@ -78,20 +78,14 @@ bool showsWeatherSummary(RideWeatherSummaryDto? summary) {
   };
 }
 
-/// L'étape météo d'un groupe : celle qui porte son `groupId`, sinon celle
-/// sans groupe (une sortie sans groupe roule le parcours de la sortie),
-/// sinon la première. `null` sans étape.
-WeatherLegDto? weatherLegFor(List<WeatherLegDto> legs, String? groupId) {
-  if (legs.isEmpty) return null;
-  if (groupId != null) {
-    for (final WeatherLegDto leg in legs) {
-      if (leg.groupId == groupId) return leg;
-    }
-  }
+/// Le leg **de ce groupe** — celui qui porte son `groupId` —, et lui seul :
+/// `null` s'il n'en a pas. Jamais de repli sur un autre leg, qui prêterait au
+/// groupe la météo d'un autre parcours (ledger `MOB-67`).
+WeatherLegDto? weatherLegOfGroup(List<WeatherLegDto> legs, String groupId) {
   for (final WeatherLegDto leg in legs) {
-    if (leg.groupId == null) return leg;
+    if (leg.groupId == groupId) return leg;
   }
-  return legs.first;
+  return null;
 }
 
 /// L'angle d'une flèche de vent **absolu**, nord en haut : le vent souffle

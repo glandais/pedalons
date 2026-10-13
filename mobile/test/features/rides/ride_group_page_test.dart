@@ -4,7 +4,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
+import 'package:pedalons/core/pagination/pagination.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
+import 'package:pedalons/features/participants/data/participant_repository.dart';
+import 'package:pedalons/features/participants/domain/participant_query.dart';
 import 'package:pedalons/features/rides/data/ride_repository.dart';
 import 'package:pedalons/features/rides/domain/ride_group_tab.dart';
 import 'package:pedalons/features/rides/presentation/pages/ride_group_page.dart';
@@ -28,12 +31,16 @@ class _Repository implements RideRepository {
   final RideWeatherDto weather;
   final List<String> joined = <String>[];
   final List<String> left = <String>[];
+  int weatherCalls = 0;
 
   @override
   Future<RideDto> getRide(String teamSlug, String rideSlug) async => ride;
 
   @override
-  Future<RideWeatherDto> getRideWeather(String t, String r) async => weather;
+  Future<RideWeatherDto> getRideWeather(String t, String r) async {
+    weatherCalls++;
+    return weather;
+  }
 
   @override
   Future<RideParticipationDto> joinGroup(String t, String r, String g) async {
@@ -46,6 +53,27 @@ class _Repository implements RideRepository {
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+/// Le serveur des participants : la liste que la barre d'inscription change.
+class _Participants implements ParticipantRepository {
+  final List<PublicUserDto> people = <PublicUserDto>[
+    const PublicUserDto(id: 'u2', displayName: 'Hélène Ebrard'),
+  ];
+  int calls = 0;
+
+  @override
+  Future<PageResult<PublicUserDto>> fetchPage(
+    ParticipantQuery query, {
+    required int page,
+    required int size,
+  }) async {
+    calls++;
+    return PageResult<PublicUserDto>(
+      items: List<PublicUserDto>.of(people),
+      total: people.length,
+    );
+  }
 }
 
 class _Teams implements TeamRepository {
@@ -139,6 +167,7 @@ void main() {
 
   late ProviderContainer container;
   late _Repository repository;
+  late _Participants participants;
 
   Future<void> open(
     WidgetTester tester,
@@ -154,12 +183,14 @@ void main() {
     addTearDown(tester.view.reset);
 
     repository = _Repository(ride ?? twoGroups, dto);
+    participants = _Participants();
     container = ProviderContainer(
       retry: (int _, Object _) => null,
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
         unitSystemProvider.overrideWithValue(units),
         rideRepositoryProvider.overrideWithValue(repository),
+        participantRepositoryProvider.overrideWithValue(participants),
         teamRepositoryProvider.overrideWithValue(_Teams(member: member)),
       ],
     );
@@ -346,6 +377,22 @@ void main() {
       });
     }
 
+    testWidgets('une sortie terminée ne demande pas sa météo', (
+      WidgetTester tester,
+    ) async {
+      await open(
+        tester,
+        weather(),
+        ride: fixtureRide(
+          dateTime: '2020-07-29T17:30:00Z',
+          groups: <RideGroupDto>[fixtureGroup(id: 'g1', name: 'Rapide')],
+        ),
+      );
+
+      expect(find.byKey(keys.rideGroup.weatherEmpty), findsOneWidget);
+      expect(repository.weatherCalls, 0);
+    });
+
     testWidgets('NOT_YET_AVAILABLE donne la date d\'ouverture', (
       WidgetTester tester,
     ) async {
@@ -452,6 +499,28 @@ void main() {
       await tester.pump();
 
       expect(repository.joined, <String>['g1']);
+    });
+
+    testWidgets('rejoindre depuis l\'onglet Participants recharge la liste', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, weather(), tab: RideGroupTab.participants);
+
+      expect(find.text('Hélène Ebrard'), findsOneWidget);
+      expect(find.text('Gaby Landais'), findsNothing);
+      final int before = participants.calls;
+
+      participants.people.add(
+        const PublicUserDto(id: 'u3', displayName: 'Gaby Landais'),
+      );
+      await tester.tap(find.byKey(keys.rideGroup.joinButton));
+      for (int i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 10));
+      }
+
+      expect(repository.joined, <String>['g1']);
+      expect(participants.calls, greaterThan(before));
+      expect(find.text('Gaby Landais'), findsOneWidget);
     });
 
     testWidgets('inscrit dans ce groupe : « Quitter »', (

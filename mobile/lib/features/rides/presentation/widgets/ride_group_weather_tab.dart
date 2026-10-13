@@ -39,6 +39,12 @@ class RideGroupWeatherTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Une sortie terminée ou annulée ne demande pas sa météo — comme le
+    // détail et les cartes de groupe : le serveur répondrait `OUT_OF_RANGE`,
+    // qui mène au même état neutre, mais au prix d'un appel.
+    if (ride.isPast || ride.isCancelled) {
+      return SliverMainAxisGroup(slivers: <Widget>[_empty()]);
+    }
     final AsyncValue<RideWeatherDto> weather = ref.watch(
       rideWeatherProvider(rideKey),
     );
@@ -94,17 +100,7 @@ class RideGroupWeatherTab extends ConsumerWidget {
         // Sortie terminée ou annulée (`OUT_OF_RANGE`), `NO_LOCATION` pour un
         // membre, statut d'une build plus récente : un état neutre, jamais un
         // onglet blanc.
-        return <Widget>[
-          SliverToBoxAdapter(
-            child: PdlEmptyState(
-              key: keys.rideGroup.weatherEmpty,
-              variant: PdlEmptyVariant.empty,
-              icon: PdlIcons.weatherUnknown,
-              title: 'rides.weather.emptyTitle'.tr(),
-              message: 'rides.weather.emptyMessage'.tr(),
-            ),
-          ),
-        ];
+        return <Widget>[_empty()];
       case RideWeatherView.unavailable:
         return <Widget>[
           weatherUnavailableSliver(
@@ -143,12 +139,7 @@ class RideGroupWeatherTab extends ConsumerWidget {
 
     final bool stale =
         WeatherStatus.fromJson(dto.status) == WeatherStatus.stale;
-    // Le leg **de ce groupe**, et lui seul : le repli de `weatherLegFor` sur
-    // un autre leg prêterait au groupe la météo d'un autre parcours.
-    WeatherLegDto? leg;
-    for (final WeatherLegDto l in dto.legs) {
-      if (l.groupId == groupId) leg = l;
-    }
+    final WeatherLegDto? leg = weatherLegOfGroup(dto.legs, groupId);
     String? groupName;
     for (final RideGroupDto g in ride.groups) {
       if (g.id == groupId) groupName = g.name;
@@ -179,4 +170,14 @@ class RideGroupWeatherTab extends ConsumerWidget {
       ),
     ];
   }
+
+  Widget _empty() => SliverToBoxAdapter(
+    child: PdlEmptyState(
+      key: keys.rideGroup.weatherEmpty,
+      variant: PdlEmptyVariant.empty,
+      icon: PdlIcons.weatherUnknown,
+      title: 'rides.weather.emptyTitle'.tr(),
+      message: 'rides.weather.emptyMessage'.tr(),
+    ),
+  );
 }

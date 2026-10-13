@@ -6,6 +6,7 @@ import '../../auth/providers/auth_provider.dart';
 import '../../calendar/providers/calendar_month_provider.dart';
 import '../../home/providers/next_ride_provider.dart';
 import '../../home/providers/week_events_provider.dart';
+import '../../participants/providers/participant_list_provider.dart';
 import '../../profile/providers/participations_provider.dart';
 import '../../profile/providers/profile_summary_provider.dart';
 import '../../teams/providers/team_dashboard_provider.dart';
@@ -70,6 +71,12 @@ void notifyParticipationChanged(
   // sait remplir — une inscription doit y apparaître, une désinscription en
   // sortir —, d'où un rechargement plutôt que [registrationOverridesProvider].
   ref.invalidate(teamDashboardProvider);
+
+  // Listes de participants : la page d'un groupe montre la sienne **à côté**
+  // de sa barre d'inscription — rejoindre ou quitter doit m'y faire paraître
+  // ou disparaître sans attendre (ledger `MOB-67`). Toute la famille : une
+  // liste par source et par recherche, seules les montées rechargent.
+  ref.invalidate(participantListProvider);
 }
 
 /// Ce que l'app sait de mes inscriptions **depuis** le chargement des listes,

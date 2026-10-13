@@ -14,7 +14,9 @@ import '../../../../core/utils/share_link.dart';
 import '../../../../keys.dart';
 import '../../../participants/domain/participant_query.dart';
 import '../../../participants/presentation/widgets/participant_list_view.dart';
+import '../../../participants/providers/participant_list_provider.dart';
 import '../../domain/ride_group_tab.dart';
+import '../../domain/ride_weather_display.dart';
 import '../../providers/ride_detail_provider.dart';
 import '../../providers/ride_group_selection_provider.dart';
 import '../../providers/ride_registration_controller.dart';
@@ -95,6 +97,8 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
   Future<void> _refresh() async {
     ref.invalidate(rideDetailProvider(_rideKey));
     ref.invalidate(rideWeatherProvider(_rideKey));
+    // L'onglet Participants se tire aussi : sa liste n'est pas dans le détail.
+    ref.invalidate(participantListProvider);
     try {
       await ref.read(rideDetailProvider(_rideKey).future);
     } catch (_) {
@@ -186,10 +190,9 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
     final RideWeatherDto? weather = ride.isPast || ride.isCancelled
         ? null
         : ref.watch(rideWeatherProvider(key)).value;
-    WeatherLegDto? leg;
-    for (final WeatherLegDto l in weather?.legs ?? const <WeatherLegDto>[]) {
-      if (l.groupId == group.id) leg = l;
-    }
+    final WeatherLegDto? leg = weather == null
+        ? null
+        : weatherLegOfGroup(weather.legs, group.id);
 
     final Widget body = switch (_tab) {
       RideGroupTab.overview => SliverToBoxAdapter(

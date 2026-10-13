@@ -10,6 +10,7 @@ import '../../../../core/preferences/user_preferences_provider.dart';
 import '../../../auth/domain/auth_state.dart';
 import '../../../auth/providers/auth_provider.dart';
 import '../../domain/ride_group_action.dart';
+import '../../domain/ride_weather_display.dart';
 import '../../providers/ride_detail_provider.dart';
 import '../../providers/ride_group_selection_provider.dart';
 import '../../providers/ride_registration_controller.dart';
@@ -153,7 +154,9 @@ class _RideGroupsSectionState extends ConsumerState<RideGroupsSection>
             controller: controller,
             currentUserId: currentUserId,
             units: units,
-            weatherLeg: _legOf(weather, group.id),
+            weatherLeg: weather == null
+                ? null
+                : weatherLegOfGroup(weather.legs, group.id),
           ),
           const SizedBox(height: PdlSpacing.feedGap),
         ],
@@ -213,15 +216,5 @@ class _RideGroupsSectionState extends ConsumerState<RideGroupsSection>
           ? null
           : () => sendRouteToDevice(ride.team.slug, routeSlug, services),
     );
-  }
-
-  /// Le leg **de ce groupe**, seulement : jamais le repli de [weatherLegFor]
-  /// sur un autre leg, qui prêterait au groupe la météo d'un autre parcours.
-  WeatherLegDto? _legOf(RideWeatherDto? weather, String groupId) {
-    if (weather == null) return null;
-    for (final WeatherLegDto leg in weather.legs) {
-      if (leg.groupId == groupId) return leg;
-    }
-    return null;
   }
 }

@@ -81,24 +81,20 @@ void main() {
     );
   });
 
-  group('weatherLegFor', () {
+  group('weatherLegOfGroup', () {
     final List<WeatherLegDto> legs = <WeatherLegDto>[
       fixtureLeg(groupId: 'g1'),
       fixtureLeg(groupId: 'g2'),
     ];
 
-    test('l\'étape du groupe, sinon la première', () {
-      expect(weatherLegFor(legs, 'g2')!.groupId, 'g2');
-      expect(weatherLegFor(legs, 'gX')!.groupId, 'g1');
-      expect(weatherLegFor(legs, null)!.groupId, 'g1');
-      expect(weatherLegFor(const <WeatherLegDto>[], 'g1'), isNull);
-    });
-
-    test('une sortie sans groupe : l\'étape sans groupId', () {
+    test('le leg du groupe, et lui seul', () {
+      expect(weatherLegOfGroup(legs, 'g2')!.groupId, 'g2');
+      // Jamais de repli sur un autre leg : il prêterait au groupe la météo
+      // d'un autre parcours.
+      expect(weatherLegOfGroup(legs, 'gX'), isNull);
+      expect(weatherLegOfGroup(const <WeatherLegDto>[], 'g1'), isNull);
       expect(
-        weatherLegFor(<WeatherLegDto>[
-          fixtureLeg(groupId: null),
-        ], 'g1')!.groupId,
+        weatherLegOfGroup(<WeatherLegDto>[fixtureLeg(groupId: null)], 'g1'),
         isNull,
       );
     });
