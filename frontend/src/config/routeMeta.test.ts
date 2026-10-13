@@ -7,7 +7,7 @@ import type { RideDto, TeamDetailDto, Visibility } from '@/api/dto'
 import { getGetTeamQueryKey } from '@/api/endpoints/teams/teams'
 import { getGetRideQueryKey } from '@/api/endpoints/rides/rides'
 import { buildMetaTags, type RouteMetaContext } from '@/lib/seo'
-import { rideMeta, teamDetailMeta, withIndexing } from './routeMeta'
+import { rideGroupMeta, rideMeta, teamDetailMeta, withIndexing } from './routeMeta'
 
 const t = ((key: string) => key) as unknown as TFunction
 
@@ -108,5 +108,48 @@ describe('ride date in the link preview (WEB-70)', () => {
       timezone: 'Asia/Tokyo',
     })
     expect(rideMeta(ctx)?.description).toContain('11 octobre 2026')
+  })
+})
+
+describe('ride group link preview (WEB-77)', () => {
+  function groupContext(groupId: string, rideVisibility: Visibility = 'PUBLIC') {
+    const ctx = context('PUBLIC', rideVisibility)
+    const ride = ctx.queryClient.getQueryData<RideDto>(getGetRideQueryKey('np', 'sortie'))!
+    ctx.queryClient.setQueryData(getGetRideQueryKey('np', 'sortie'), {
+      ...ride,
+      dateTime: '2026-10-11T06:00:00Z',
+      timezone: 'Europe/Paris',
+      groups: [
+        {
+          id: 'g1',
+          name: 'Rapide',
+          startAt: '2026-10-11T06:30:00Z',
+          averageSpeed: 28,
+          distance: 82_400,
+          countParticipants: 3,
+        },
+      ],
+    })
+    return { ...ctx, params: { ...ctx.params, groupId } }
+  }
+
+  it('titles the group within its ride and describes its departure, pace and distance', () => {
+    const meta = rideGroupMeta(groupContext('g1'))
+    expect(meta?.title).toBe('rides.group.title · Sortie du dimanche')
+    expect(meta?.description).toContain('11 octobre 2026')
+    expect(meta?.description).toContain('seo.rideGroup.departure')
+    expect(meta?.description).toContain('82 km')
+  })
+
+  it('keeps an unlisted ride out of the index', () => {
+    const ctx = groupContext('g1', 'PUBLIC_UNLISTED')
+    expect(robotsTags(ctx, rideGroupMeta(ctx))).toEqual([
+      '<meta name="robots" content="noindex" />',
+    ])
+  })
+
+  it("falls back to the ride's preview for a group the ride no longer has", () => {
+    const ctx = groupContext('gone')
+    expect(rideGroupMeta(ctx)).toEqual(rideMeta(ctx))
   })
 })
