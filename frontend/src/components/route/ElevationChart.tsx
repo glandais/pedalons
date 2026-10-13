@@ -40,7 +40,7 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, T
 /**
  * chartjs-plugin-zoom transitively imports hammerjs, which reads `window` at module load and
  * crashes SSR (the route's Suspense boundary falls back). Load it dynamically, client-side,
- * only when a chart opts into zoom; the plugin attaches on the re-render after it resolves.
+ * only when a chart opts into zoom; the chart remounts once it resolves (see the `key` on `<Line>`).
  */
 function useZoomPlugin(enabled: boolean): Plugin<'line'> | null {
   const [plugin, setPlugin] = useState<Plugin<'line'> | null>(null)
@@ -395,7 +395,18 @@ export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartPro
       [zoomEnabled, zoomPlugin]
     )
 
-    // The empty-track guard lives in the parent; rendering with 0 points is harmless.
-    return <Line ref={chartRef} data={chartData} options={chartOptions} plugins={plugins} />
+    // docs/LEDGER_*.md WEB-80: react-chartjs-2 hands `plugins` to Chart.js only when it creates the chart, and the zoom
+    // plugin resolves after the mount: without the remount the instance never carries it and the
+    // wheel, pinch and pan do nothing. The x-range lives in this component's state, so the remount
+    // keeps it. The empty-track guard lives in the parent; rendering with 0 points is harmless.
+    return (
+      <Line
+        key={zoomPlugin ? 'zoom' : 'static'}
+        ref={chartRef}
+        data={chartData}
+        options={chartOptions}
+        plugins={plugins}
+      />
+    )
   }
 )

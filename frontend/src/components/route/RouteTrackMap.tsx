@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react'
-import { Source, Layer, MapRef, MapMouseEvent } from 'react-map-gl/maplibre'
+import { Source, Layer, MapRef, MapMouseEvent, ViewStateChangeEvent } from 'react-map-gl/maplibre'
 import type { PaddingOptions } from 'maplibre-gl'
 import { Box } from '@mantine/core'
 import {
@@ -31,7 +31,8 @@ interface RouteTrackMapProps {
   /** Padding used when fitting the track to the viewport. Defaults to 50px on every side. */
   fitPadding?: number | PaddingOptions
   onMoveStart?: () => void
-  onMoveEnd?: () => void
+  /** Gets the MapLibre event, whose `eventData` tells a programmatic move from the user's. */
+  onMoveEnd?: (event: ViewStateChangeEvent) => void
   /**
    * Map controls (`MapControlGroup`). Rendered *inside* the map, where `useControl` can reach the
    * map context — unlike `children`, which sits outside it.

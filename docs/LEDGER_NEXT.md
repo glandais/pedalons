@@ -278,6 +278,16 @@ L'audit ([archivé](plans/archive/2026-09-27-e2e-coverage-audit.md), `WEB-26`) e
 et P2 écrits, 54 défauts relevés, tous corrigés ou tranchés — le dernier, `WEB-6`, le 29 septembre. Le canal e-mail des
 notifications n'a pas de test e2e : c'est `NOTIF-4`.
 
+- [ ] `WEB-81` **GPX à plusieurs traces : profil empilé et synchro faussée (S)** — la distance
+      cumulée de chaque point (`p[3]`) repart à 0 à chaque trace (`GpxProcessingService.toTrackPoints`
+      reprend `path.getDist()` trace par trace ; `RouteSampleLookup.chain` doit d'ailleurs ajouter un
+      décalage pour les mettre bout à bout). Le web aplatit les traces sans ce décalage
+      (`ElevationChart.tsx`, `useMapChartZoomSync`, l'index de survol de `RouteTrackMap`) : les
+      profils s'empilent sur le même axe et une plage de distances désigne plusieurs traces à la
+      fois. Le mobile est à vérifier aussi (`pdl_elevation_profile.dart`, `route_cursor_controller.dart`).
+      À trancher : enchaîner côté client comme `RouteSampleLookup`, ou côté API (contrat). Non
+      reproduit sur un vrai fichier ; `trackDistanceRange` traite déjà chaque trace à part (`WEB-80`).
+
 - [ ] `WEB-7` **Idées de la liste « P2 (à planifier) » qui n'ont pas été retenues** parmi les
       21 tests P2 écrits — quelques-unes peuvent être couvertes au passage par une autre spec, à
       vérifier avant de les écrire :
