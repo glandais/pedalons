@@ -47,6 +47,7 @@ import { DetailPageSkeleton } from '../../components/common/DetailPageSkeleton'
 import { RideGroupCard } from '../../components/ride/RideGroupCard'
 import { TeamContextBanner } from '../../components/team/TeamContextBanner'
 import type { MapRouteItem } from '../../components/route/RoutesMapView'
+import { routeColorsById } from '@/lib/routeColors'
 import { ConfirmDialog } from '../../components/common/ConfirmDialog'
 
 // Lazy load the map component (pulls in map-vendor ~1MB and chart-vendor ~150KB)
@@ -125,6 +126,9 @@ export function RideDetailPage() {
 
     return items
   }, [ride, t])
+
+  // The same numbering as the map's, so each card's bar is the colour of its trace.
+  const trackColors = useMemo(() => routeColorsById(mapItems), [mapItems])
 
   useCanonicalPath(team && ride ? paths.ride(team.slug, ride.slug) : undefined)
 
@@ -495,6 +499,7 @@ export function RideDetailPage() {
                     rideSlug={ride.slug}
                     rideRouteSlug={ride.routeSlug}
                     routesBySlug={groupRoutesBySlug}
+                    trackColor={trackColors.get(group.id)}
                     weatherLeg={
                       weather.data && hasForecast(weather.data.status)
                         ? weather.data.legs.find((leg) => leg.groupId === group.id)

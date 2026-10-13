@@ -31,7 +31,7 @@ const group = {
   full: false,
 } as unknown as RideGroupDto
 
-function renderCard(weather?: WeatherLegDto) {
+function renderCard(weather?: WeatherLegDto, trackColor?: string) {
   return render(
     <MantineProvider>
       <QueryClientProvider client={new QueryClient()}>
@@ -45,6 +45,7 @@ function renderCard(weather?: WeatherLegDto) {
             rideRouteSlug="boucle"
             routesBySlug={new Map()}
             weatherLeg={weather}
+            trackColor={trackColor}
             canJoin
           />
         </MemoryRouter>
@@ -82,5 +83,15 @@ describe('RideGroupCard (WEB-77)', () => {
   it('carries no weather line without a forecast', () => {
     renderCard(undefined)
     expect(screen.queryByTestId('group-weather-line')).toBeNull()
+  })
+
+  it('recalls the colour of its trace on the map in front of its name', () => {
+    renderCard(undefined, '#1d32a8')
+    expect(screen.getByTestId('group-track-color')).toHaveStyle({ backgroundColor: '#1d32a8' })
+  })
+
+  it('shows no colour bar for a group with no trace on the map', () => {
+    renderCard(undefined)
+    expect(screen.queryByTestId('group-track-color')).toBeNull()
   })
 })

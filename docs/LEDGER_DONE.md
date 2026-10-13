@@ -1554,8 +1554,9 @@ l'app. Ne pas déduire les rôles ou l'accès côté client pour élargir ce que
   `RideWeatherSection` ne garde que « Météo au départ » : le sélecteur de groupe de `WEB-76` y est
   retiré (la carte et les cartes de groupe gardent `selectedGroupId`) ; chaque `RideGroupCard`
   mène à la page de son groupe (nom en lien, « Voir le groupe ») et porte `GroupWeatherLine`
-  (température et ciel au départ du groupe, pluie, badges Face / Dos en km). Tests :
-  `RideGroupPage.test.tsx`, `GroupWeatherSection.test.tsx`, `GroupWeatherLine.test.tsx`,
+  (température et ciel au départ du groupe, pluie, badges Face / Dos en km), précédée devant le
+  nom d'une barre 4 × 20 à la couleur du tracé du groupe sur la carte, comme le `PdlColorTrack` du
+  mobile. Tests : `RideGroupPage.test.tsx`, `routeColors.test.ts`, `GroupWeatherSection.test.tsx`, `GroupWeatherLine.test.tsx`,
   `RideWeatherSection.test.tsx`, `RideGroupCard.test.tsx`, `routeMeta.test.ts`,
   `useBreadcrumbGroup.test.tsx`, `groupStart.test.ts`, `groupParticipantFilters.test.ts` ; écran
   `rideGroup` ajouté à `e2e/routes-render.e2e.ts` (non lancé, `WEB-78`). **À ne pas défaire** :
@@ -1570,7 +1571,10 @@ l'app. Ne pas déduire les rôles ou l'accès côté client pour élargir ce que
   ne déplace jamais ; « Rejoindre » est le seul bouton plein ; la clé des participants vient d'une
   seule fonction (`participantsPageParams` / `groupParticipantsParams`, recherche vide = absente,
   taille fixe 50, `?size=` ignoré) pour le préchargement et la page, sans quoi l'hydratation
-  relit la liste.
+  relit la liste ; la couleur de la barre d'une carte de groupe vient de `routeColorsById`
+  (`lib/routeColors.ts`), la numérotation même de `RoutesMapView` (rang parmi les éléments qui ont
+  un tracé, parcours principal compris), **pas de `sortOrder`** comme au mobile : la carte web
+  numérote autrement, et la barre n'aurait plus la couleur du tracé.
 
 ---
 

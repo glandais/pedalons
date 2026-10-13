@@ -38,24 +38,11 @@ import { routeArrowLayout } from '../map/routeArrowLayout'
 import { useHideTrackKey } from '@/hooks/useHideTrackKey'
 import { useUnits } from '../../hooks/useUnits'
 import { getOverlayBg } from '@/lib/colors'
+import { routeColor } from '@/lib/routeColors'
 // maplibre-gl CSS is provided by maplibre-theme in index.css
 
 // Register Chart.js components
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Filler)
-
-// Route colors (matching biketeam)
-const ROUTE_COLORS = [
-  '#566B13',
-  '#1d32a8',
-  '#732C7B',
-  '#bdbd22',
-  '#c90808',
-  '#b81491',
-  '#628de3',
-  '#6dcc5c',
-  '#c694d4',
-  '#e3a209',
-]
 
 /**
  * The chart overlay is 150px at the bottom; the extra bottom padding keeps the traces clear of it.
@@ -187,7 +174,7 @@ export function RoutesMapView({
           {
             itemId: item.id,
             itemName: item.name,
-            color: ROUTE_COLORS[i % ROUTE_COLORS.length],
+            color: routeColor(i),
             route: routeDetail,
             trackPoints,
             distance: routeDetail.distance,

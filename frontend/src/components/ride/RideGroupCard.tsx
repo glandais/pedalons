@@ -48,6 +48,11 @@ interface RideGroupCardProps {
    */
   routesBySlug: Map<string, RouteDetailDto>
   /**
+   * The colour of the group's trace on the ride's map (`routeColorsById`), recalled by a bar in
+   * front of its name; absent when the group has no trace of its own on the map.
+   */
+  trackColor?: string
+  /**
    * The group's leg of the ride's forecast, when it has one (OK or STALE): a line on the card, not
    * a link — the whole weather is on the group's page.
    */
@@ -70,6 +75,7 @@ export function RideGroupCard({
   rideSlug,
   rideRouteSlug,
   routesBySlug,
+  trackColor,
   weatherLeg,
   canJoin,
   onJoin,
@@ -115,6 +121,15 @@ export function RideGroupCard({
       {/* Header row: title + badge + button */}
       <Group justify="space-between" wrap="nowrap">
         <Group gap="sm" style={{ minWidth: 0 }}>
+          {trackColor && (
+            <Box
+              data-testid="group-track-color"
+              aria-hidden
+              w={4}
+              h={20}
+              style={{ flexShrink: 0, borderRadius: 2, backgroundColor: trackColor }}
+            />
+          )}
           <Anchor
             component={PrefetchLink}
             to={paths.rideGroup(teamSlug, rideSlug, group.id)}
