@@ -774,7 +774,7 @@ def seed_club(locale: str, acc: dict, viewer: dict) -> list:
         {"id": "01-home", "path": "/", "devices": ["iphone"]},
         {"id": "01-trip", "path": f"{prefix}/{slug}/{voyages}/{trip_slug}", "devices": ["ipad"], "wait": 12},
         {"id": "02-ride", "path": f"{prefix}/{slug}/{sorties}/{ride0}", "wait": 12},
-        {"id": "03-weather", "path": f"{prefix}/{slug}/{sorties}/{ride0}", "push": "rideWeather", "wait": 12},
+        {"id": "03-weather", "path": f"{prefix}/{slug}/{sorties}/{ride0}", "push": "rideGroupWeather", "wait": 12},
         {"id": "04-route", "path": f"{prefix}/{slug}/{parcours}/{routes['forclaz']}", "wait": 12},
         {"id": "05-dashboard", "path": f"{prefix}/{slug}"},
         {"id": "06-routes", "path": f"{prefix}/{slug}/{parcours}"},

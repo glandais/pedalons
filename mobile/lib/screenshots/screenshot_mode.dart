@@ -65,8 +65,9 @@ Future<void> screenshotSignIn(WidgetRef ref) async {
 }
 
 /// The screen to push over [screenshotInitialPath] once it has loaded, for a
-/// page that has no URL of its own — `rideWeather`, the « Météo du parcours »
-/// pushed from a ride's detail. True once for [name], so a rebuild of the page
+/// page whose URL depends on data the plan does not know —
+/// `rideGroupWeather`, the Météo tab of the selected group's page, pushed
+/// from a ride's detail (ledger `MOB-67`). True once for [name], so a rebuild of the page
 /// underneath does not push it a second time.
 bool screenshotTakePush(String name) {
   if (!kScreenshotMode || _launch['push'] != name) return false;

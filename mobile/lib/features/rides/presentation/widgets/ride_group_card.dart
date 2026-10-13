@@ -12,6 +12,7 @@ import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/zone_mention_line.dart';
 import '../../domain/group_start.dart';
 import '../../domain/ride_group_action.dart';
+import 'ride_group_weather_line.dart';
 import '../../../../keys.dart';
 
 /// La carte d'un groupe de sortie — **le choix de groupe lui-même**.
@@ -35,6 +36,7 @@ class RideGroupCard extends StatelessWidget {
     this.selected = false,
     this.pending = false,
     this.currentUserId,
+    this.weatherLeg,
     this.onTap,
     this.onJoin,
     this.onLeave,
@@ -72,6 +74,11 @@ class RideGroupCard extends StatelessWidget {
   /// dans la grappe.
   final String? currentUserId;
 
+  /// Le leg météo **de ce groupe** (`OK`/`STALE`), pour sa ligne non
+  /// cliquable ; `null` ne rend rien.
+  final WeatherLegDto? weatherLeg;
+
+  /// Ouvre la page du groupe (ledger `MOB-67`) — toute la carte y mène.
   final VoidCallback? onTap;
   final VoidCallback? onJoin;
   final VoidCallback? onLeave;
@@ -104,6 +111,15 @@ class RideGroupCard extends StatelessWidget {
               const SizedBox(height: 4),
               mention,
             ],
+          if (RideGroupWeatherLine.shows(weatherLeg)) ...<Widget>[
+            const SizedBox(height: PdlSpacing.cardTight),
+            RideGroupWeatherLine(
+              key: keys.ride.groupWeatherLine(group.id),
+              leg: weatherLeg,
+              timezone: timezone,
+              units: units,
+            ),
+          ],
           if (group.leader != null) ...<Widget>[
             const SizedBox(height: PdlSpacing.cardTight),
             _leaderRow(t, c),
@@ -145,6 +161,11 @@ class RideGroupCard extends StatelessWidget {
         if (_button != null) ...<Widget>[
           const SizedBox(width: PdlSpacing.chipGap),
           _button!,
+        ],
+        // La carte ouvre la page du groupe : le chevron le dit.
+        if (onTap != null) ...<Widget>[
+          const SizedBox(width: PdlSpacing.badgeGap),
+          Icon(PdlIcons.chevronRight, size: 20, color: c.textDimmed),
         ],
       ],
     );

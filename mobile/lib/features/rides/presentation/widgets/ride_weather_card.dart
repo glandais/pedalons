@@ -16,31 +16,30 @@ import '../../domain/ride_weather_display.dart';
 import '../../../../keys.dart';
 import '../../providers/ride_detail_provider.dart';
 import '../../providers/ride_weather_provider.dart';
-import '../pages/ride_weather_page.dart';
+import 'departure_weather_section.dart';
+import 'weather_leg_sections.dart';
 import 'ride_weather_widgets.dart';
 
-/// La carte météo compacte du détail d'une sortie.
+/// La carte météo du détail d'une sortie : « Météo au départ », seulement.
 ///
-/// Le départ (icône, température, ressenti, pluie, vent), puis le vent le
-/// long du parcours du **groupe sélectionné** (`selectedRideGroupProvider`,
-/// que l'écran passe en [selectedGroupId]) et son alerte pluie. Un appui
-/// ouvre l'écran « Météo du parcours » (`Navigator.push` : pas de route au
-/// contrat, `docs/plans/archive/2026-10-05-weather.md` §1).
+/// Les conditions au point de rendez-vous à l'heure de la sortie — ressenti,
+/// vent et rafales, pluie, lever et coucher du soleil —, puis le crédit et
+/// l'heure de la prévision. Ni lien, ni groupe, ni alerte de groupe : la météo
+/// d'un groupe le long de son parcours vit dans l'onglet Météo de sa page, et
+/// sa ligne courte sur sa carte (ledger `MOB-67`).
+///
+/// Exception : une sortie **sans groupe** n'a pas de page de groupe, et son
+/// unique leg (sans `groupId`) garde ici le vent le long du parcours et
+/// l'alerte pluie — sans quoi sa météo du parcours disparaîtrait.
 ///
 /// Rien n'est rendu pour une sortie terminée ou annulée — sans même appeler
 /// l'API —, ni pour un statut que l'app ne connaît pas. `NO_LOCATION` n'est
 /// dit qu'aux organisateurs : un membre n'y peut rien.
 class RideWeatherCard extends ConsumerWidget {
-  const RideWeatherCard({
-    super.key,
-    required this.rideKey,
-    required this.ride,
-    required this.selectedGroupId,
-  });
+  const RideWeatherCard({super.key, required this.rideKey, required this.ride});
 
   final RideKey rideKey;
   final RideDto ride;
-  final String? selectedGroupId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -97,14 +96,15 @@ class RideWeatherCard extends ConsumerWidget {
           case RideWeatherView.forecast:
           case RideWeatherView.stale:
             return padded(
-              WeatherForecastCard(
-                departure: dto.departure.conditions,
-                attribution: dto.attribution,
-                stale:
-                    WeatherStatus.fromJson(dto.status) == WeatherStatus.stale,
-                leg: weatherLegFor(dto.legs, selectedGroupId),
+              RideDepartureWeatherCard(
+                weather: dto,
                 timezone: ride.timezone,
-                onOpen: () => RideWeatherPage.open(context, rideKey),
+                // Le leg d'une sortie sans groupe, seul porteur de sa météo
+                // le long du parcours.
+                ungroupedLeg:
+                    dto.legs.length == 1 && dto.legs.single.groupId == null
+                    ? dto.legs.single
+                    : null,
               ),
             );
         }
@@ -134,6 +134,100 @@ class RideWeatherCard extends ConsumerWidget {
       ),
       _ => const SizedBox.shrink(),
     };
+  }
+}
+
+/// « Météo au départ » d'une sortie, en carte : les conditions au point de
+/// rendez-vous ([DepartureConditionsBlock]), la marque « Prévision ancienne »,
+/// le crédit et l'heure de la prévision. [ungroupedLeg] ajoute le vent le
+/// long du parcours et l'alerte pluie d'une sortie sans groupe.
+class RideDepartureWeatherCard extends ConsumerWidget {
+  const RideDepartureWeatherCard({
+    super.key,
+    required this.weather,
+    required this.timezone,
+    this.ungroupedLeg,
+  });
+
+  final RideWeatherDto weather;
+
+  /// Le fuseau de la sortie : lever, coucher du soleil et alerte s'y lisent.
+  final String? timezone;
+  final WeatherLegDto? ungroupedLeg;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final PdlColors c = context.pdl;
+    final PdlTypography t = context.pdlText;
+    final UnitSystem units = ref.watch(unitSystemProvider);
+    final WeatherConditionsDto? now = weather.departure.conditions;
+    final bool stale =
+        WeatherStatus.fromJson(weather.status) == WeatherStatus.stale;
+    final WeatherLegDto? leg = ungroupedLeg;
+    final WeatherRainAlertDto? rain = leg?.rainAlert;
+    final DateTime? fetchedAt = weather.fetchedAt == null
+        ? null
+        : DateTime.tryParse(weather.fetchedAt!);
+
+    return PdlCard(
+      key: keys.ride.weatherCard,
+      flat: true,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: Text('rides.weather.atDeparture'.tr(), style: t.xs),
+              ),
+              if (stale)
+                PdlBadge(
+                  label: 'rides.weather.stale'.tr(),
+                  tone: PdlFamily.yellow.soft(c),
+                  icon: PdlIcons.warning,
+                ),
+            ],
+          ),
+          const SizedBox(height: PdlSpacing.badgeGap),
+          if (now != null)
+            DepartureConditionsBlock(
+              conditions: now,
+              units: units,
+              sunrise: weather.departure.sunrise,
+              sunset: weather.departure.sunset,
+              timezone: timezone,
+            )
+          else
+            Text('rides.weather.unavailableTitle'.tr(), style: t.sub),
+          if (leg != null && leg.segments.isNotEmpty) ...<Widget>[
+            const SizedBox(height: PdlSpacing.cardTight),
+            WeatherWindSegments(leg: leg, units: units),
+          ],
+          if (rain != null) ...<Widget>[
+            const SizedBox(height: PdlSpacing.chipGap),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Icon(PdlIcons.precipitation, size: 16, color: c.warning),
+                const SizedBox(width: PdlSpacing.badgeGap),
+                Expanded(
+                  child: Text(
+                    formatRainAlert(rain, units, timezone),
+                    style: t.xs.copyWith(color: c.text),
+                  ),
+                ),
+              ],
+            ),
+          ],
+          const SizedBox(height: PdlSpacing.cardTight),
+          WeatherAttributionBlock(
+            key: keys.ride.weatherAttribution,
+            attribution: weather.attribution,
+            fetchedAt: fetchedAt,
+          ),
+        ],
+      ),
+    );
   }
 }
 

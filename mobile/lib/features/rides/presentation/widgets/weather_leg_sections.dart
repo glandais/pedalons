@@ -19,9 +19,10 @@ import 'ride_weather_widgets.dart';
 
 /// Les sections d'un écran « Météo du parcours » qui ne lisent qu'un
 /// `WeatherLegDto` : partagées par l'écran d'une sortie (un leg par groupe)
-/// et celui d'une étape de voyage (un leg par étape). Ce qui est propre à la
-/// sortie — sélecteur de groupe, bloc « départ » au point de rendez-vous —
-/// reste dans `ride_weather_page.dart`.
+/// et celui d'une étape de voyage (un leg par étape). Côté sortie, elles
+/// forment l'onglet Météo de la page d'un groupe (`ride_group_weather_tab.dart`),
+/// dont le bloc « départ » au point de rendez-vous vit dans
+/// `departure_weather_section.dart` (ledger `MOB-67`).
 
 /// L'état « Météo indisponible » plein écran, avec « Réessayer ».
 Widget weatherUnavailableSliver(VoidCallback onRetry) => SliverToBoxAdapter(

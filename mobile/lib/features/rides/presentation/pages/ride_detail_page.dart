@@ -31,7 +31,6 @@ import '../widgets/ride_elevation_section.dart';
 import '../widgets/ride_groups_map.dart';
 import '../widgets/ride_groups_section.dart';
 import '../widgets/ride_weather_card.dart';
-import 'ride_weather_page.dart';
 import '../../../feedback/presentation/report_problem_button.dart';
 import '../../../../keys.dart';
 import '../../../../core/utils/push_location.dart';
@@ -98,12 +97,23 @@ class _RideDetailContent extends ConsumerWidget {
     void select(String id) =>
         ref.read(selectedRideGroupProvider(rideKey).notifier).state = id;
 
-    // Captures des stores seulement : la météo du parcours n'a pas d'URL, le
-    // mode capture la pousse par-dessus le détail une fois celui-ci chargé.
-    if (screenshotTakePush('rideWeather')) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (context.mounted) RideWeatherPage.open(context, rideKey);
-      });
+    // Ouvre la page d'un groupe : il devient le groupe sélectionné, que le
+    // détail montre encore au retour (ledger `MOB-67`).
+    void openGroup(RideGroupDto group, {String? tab}) {
+      select(group.id);
+      final String path = Paths.rideGroup(ride.team.slug, ride.slug, group.id);
+      context.push(tab == null ? path : '$path?tab=$tab');
+    }
+
+    // Captures des stores seulement : la météo d'un groupe, poussée par-dessus
+    // le détail une fois celui-ci chargé — sur l'onglet Météo de sa page.
+    if (screenshotTakePush('rideGroupWeather')) {
+      final RideGroupDto? group = _groupById(selected);
+      if (group != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (context.mounted) openGroup(group, tab: 'weather');
+        });
+      }
     }
 
     return PdlScreenScaffold(
@@ -178,14 +188,11 @@ class _RideDetailContent extends ConsumerWidget {
             ),
           ),
         SliverToBoxAdapter(child: _meta(context)),
-        // La météo du départ et du groupe sélectionné, sous les faits qui
-        // décident si l'on y va (date, lieu) et avant la carte.
+        // La météo au départ, sous les faits qui décident si l'on y va (date,
+        // lieu) et avant la carte. Celle de chaque groupe est sur sa carte et
+        // dans sa page.
         SliverToBoxAdapter(
-          child: RideWeatherCard(
-            rideKey: rideKey,
-            ride: ride,
-            selectedGroupId: selected,
-          ),
+          child: RideWeatherCard(rideKey: rideKey, ride: ride),
         ),
         SliverToBoxAdapter(
           child: _mapAndProfile(context, ref, selected, select),
@@ -199,6 +206,7 @@ class _RideDetailContent extends ConsumerWidget {
               isMember: isMember,
               selectedGroupId: selected,
               onSelect: select,
+              onOpenGroup: openGroup,
               onShowParticipants: (RideGroupDto g) =>
                   ParticipantsSheet.open(context, ride, g),
               onViewRoute: (RideGroupDto g) {

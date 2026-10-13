@@ -6,15 +6,16 @@ import '../../../../api/generated/export.dart';
 import '../../../../core/pdl/pdl.dart';
 import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
-import '../../../../core/utils/api_error_handler.dart';
 import '../../../../core/preferences/user_preferences_provider.dart';
 import '../../../auth/domain/auth_state.dart';
 import '../../../auth/providers/auth_provider.dart';
-import '../../../routes/presentation/route_export.dart';
 import '../../domain/ride_group_action.dart';
 import '../../providers/ride_detail_provider.dart';
 import '../../providers/ride_group_selection_provider.dart';
 import '../../providers/ride_registration_controller.dart';
+import '../../providers/ride_weather_provider.dart';
+import 'registration_failure_banner.dart';
+import 'ride_group_route_actions.dart';
 import 'ride_group_card.dart';
 import '../../../../keys.dart';
 
@@ -38,6 +39,7 @@ class RideGroupsSection extends ConsumerStatefulWidget {
     required this.isMember,
     required this.selectedGroupId,
     required this.onSelect,
+    this.onOpenGroup,
     this.onShowParticipants,
     this.onViewRoute,
     this.onViewTeam,
@@ -54,6 +56,10 @@ class RideGroupsSection extends ConsumerStatefulWidget {
   final String? selectedGroupId;
   final ValueChanged<String> onSelect;
 
+  /// Ouvre la page du groupe (ledger `MOB-67`) : toute la carte y mène. Sans
+  /// lui, un appui ne fait que sélectionner le groupe.
+  final ValueChanged<RideGroupDto>? onOpenGroup;
+
   final ValueChanged<RideGroupDto>? onShowParticipants;
   final ValueChanged<RideGroupDto>? onViewRoute;
   final VoidCallback? onViewTeam;
@@ -62,14 +68,9 @@ class RideGroupsSection extends ConsumerStatefulWidget {
   ConsumerState<RideGroupsSection> createState() => _RideGroupsSectionState();
 }
 
-class _RideGroupsSectionState extends ConsumerState<RideGroupsSection> {
+class _RideGroupsSectionState extends ConsumerState<RideGroupsSection>
+    with RouteExportRunner<RideGroupsSection> {
   bool _expanded = false;
-
-  /// L'issue du dernier export ou envoi d'un groupe, en bandeau au-dessus des
-  /// cartes — comme sur la fiche parcours, pas en snackbar.
-  Object? _exportError;
-  String? _exportSuccess;
-  bool _exporting = false;
 
   @override
   Widget build(BuildContext context) {
@@ -108,6 +109,13 @@ class _RideGroupsSectionState extends ConsumerState<RideGroupsSection> {
       ),
     );
 
+    // La météo de chaque groupe, pour sa ligne non cliquable — partagée avec
+    // la carte météo du détail, sans appel de plus. Une sortie terminée ou
+    // annulée ne la demande même pas.
+    final RideWeatherDto? weather = ride.isPast || ride.isCancelled
+        ? null
+        : ref.watch(rideWeatherProvider(widget.rideKey)).value;
+
     // Tant qu'on ne sait pas, on propose : un 403 `FORBIDDEN` répondra, et son
     // bandeau est plus juste qu'un bouton absent sans explication.
     final bool isMember = widget.isMember ?? true;
@@ -126,27 +134,14 @@ class _RideGroupsSectionState extends ConsumerState<RideGroupsSection> {
           padding: const EdgeInsets.only(bottom: 10),
         ),
         if (registration.failure != null) ...<Widget>[
-          _failureBanner(registration.failure!, controller),
-          const SizedBox(height: 10),
-        ],
-        if (_exportError != null) ...<Widget>[
-          PdlBanner(
-            tone: PdlBannerTone.danger,
-            message: getErrorMessage(_exportError!),
-            onDismiss: () => setState(() => _exportError = null),
-            dismissSemanticLabel: 'common.close'.tr(),
+          registrationFailureBanner(
+            registration.failure!,
+            controller,
+            onViewTeam: widget.onViewTeam,
           ),
           const SizedBox(height: 10),
         ],
-        if (_exportSuccess != null) ...<Widget>[
-          PdlBanner(
-            tone: PdlBannerTone.info,
-            message: _exportSuccess!,
-            onDismiss: () => setState(() => _exportSuccess = null),
-            dismissSemanticLabel: 'common.close'.tr(),
-          ),
-          const SizedBox(height: 10),
-        ],
+        ...exportBanners(),
         for (final RideGroupDto group in shown) ...<Widget>[
           _groupCard(
             group: group,
@@ -158,6 +153,7 @@ class _RideGroupsSectionState extends ConsumerState<RideGroupsSection> {
             controller: controller,
             currentUserId: currentUserId,
             units: units,
+            weatherLeg: _legOf(weather, group.id),
           ),
           const SizedBox(height: PdlSpacing.feedGap),
         ],
@@ -182,6 +178,7 @@ class _RideGroupsSectionState extends ConsumerState<RideGroupsSection> {
     required RideRegistrationController controller,
     required String? currentUserId,
     required UnitSystem units,
+    required WeatherLegDto? weatherLeg,
   }) {
     final String? routeSlug = group.routeSlug ?? ride.routeSlug;
     final AssetDto? gpx = route?.media.assets.gpx;
@@ -198,7 +195,10 @@ class _RideGroupsSectionState extends ConsumerState<RideGroupsSection> {
       selected: group.id == widget.selectedGroupId,
       pending: registration.pendingGroupId == group.id,
       currentUserId: currentUserId,
-      onTap: () => widget.onSelect(group.id),
+      weatherLeg: weatherLeg,
+      onTap: widget.onOpenGroup == null
+          ? () => widget.onSelect(group.id)
+          : () => widget.onOpenGroup!(group),
       onJoin: () => controller.join(group.id),
       onLeave: () => controller.leave(group.id),
       onShowParticipants: widget.onShowParticipants == null
@@ -207,126 +207,21 @@ class _RideGroupsSectionState extends ConsumerState<RideGroupsSection> {
       onViewRoute: widget.onViewRoute == null || routeSlug == null
           ? null
           : () => widget.onViewRoute!(group),
-      onExportGpx: gpx == null ? null : () => _download(gpx),
-      onExportFit: fit == null ? null : () => _download(fit),
+      onExportGpx: gpx == null ? null : () => downloadRouteAsset(gpx),
+      onExportFit: fit == null ? null : () => downloadRouteAsset(fit),
       onSendToDevice: routeSlug == null || services.isEmpty
           ? null
-          : () => _sendToDevice(ride.team.slug, routeSlug, services),
+          : () => sendRouteToDevice(ride.team.slug, routeSlug, services),
     );
   }
 
-  Future<void> _download(AssetDto asset) async {
-    await _runExport(() async {
-      await downloadAndShareRouteAsset(
-        ref,
-        asset,
-        origin: shareOriginOf(context),
-      );
-      return null;
-    });
-  }
-
-  Future<void> _sendToDevice(
-    String teamSlug,
-    String routeSlug,
-    List<GpsServiceConnectionDto> services,
-  ) async {
-    final GpsServiceConnectionDto? picked = await pickGpsService(
-      context,
-      services,
-    );
-    if (picked == null) return;
-    await _runExport(() async {
-      await uploadRouteToService(
-        ref,
-        picked,
-        teamSlug: teamSlug,
-        routeSlug: routeSlug,
-      );
-      return 'routes.uploadSuccess'.tr();
-    });
-  }
-
-  /// Un export à la fois : un second tap pendant un téléchargement est ignoré
-  /// plutôt que d'empiler deux feuilles de partage.
-  Future<void> _runExport(Future<String?> Function() run) async {
-    if (_exporting) return;
-    setState(() {
-      _exporting = true;
-      _exportError = null;
-      _exportSuccess = null;
-    });
-    try {
-      final String? success = await run();
-      if (mounted) setState(() => _exportSuccess = success);
-    } catch (error) {
-      if (mounted) setState(() => _exportError = error);
-    } finally {
-      if (mounted) setState(() => _exporting = false);
+  /// Le leg **de ce groupe**, seulement : jamais le repli de [weatherLegFor]
+  /// sur un autre leg, qui prêterait au groupe la météo d'un autre parcours.
+  WeatherLegDto? _legOf(RideWeatherDto? weather, String groupId) {
+    if (weather == null) return null;
+    for (final WeatherLegDto leg in weather.legs) {
+      if (leg.groupId == groupId) return leg;
     }
-  }
-
-  /// Le bandeau d'échec — **persistant**, nommant le groupe, et porteur de la
-  /// seule action qui résout le cas d'exclusivité.
-  Widget _failureBanner(
-    RegistrationFailure failure,
-    RideRegistrationController controller,
-  ) {
-    final String title = switch (failure.reason) {
-      RegistrationFailureReason.alreadyRegistered =>
-        'rides.failure.exclusive'.tr(
-          namedArgs: <String, String>{'group': failure.groupName},
-        ),
-      RegistrationFailureReason.groupFull => 'rides.failure.full'.tr(
-        namedArgs: <String, String>{'group': failure.groupName},
-      ),
-      RegistrationFailureReason.notMember => 'rides.failure.notMember'.tr(),
-      RegistrationFailureReason.generic => 'rides.failure.generic'.tr(
-        namedArgs: <String, String>{'group': failure.groupName},
-      ),
-    };
-
-    Widget? action;
-    if (failure.canSwitch) {
-      action = PdlButton(
-        key: keys.ride.switchGroupButton,
-        label: 'rides.failure.leaveAndJoin'.tr(
-          namedArgs: <String, String>{'group': failure.blockingGroupName ?? ''},
-        ),
-        variant: PdlButtonVariant.outline,
-        size: PdlButtonSize.sm,
-        onPressed: () {
-          controller.switchGroup(
-            leaveGroupId: failure.blockingGroupId!,
-            joinGroupId: failure.groupId,
-          );
-        },
-      );
-    } else if (failure.reason == RegistrationFailureReason.notMember &&
-        widget.onViewTeam != null) {
-      action = PdlButton(
-        label: 'teams.viewTeam'.tr(),
-        variant: PdlButtonVariant.outline,
-        size: PdlButtonSize.sm,
-        onPressed: widget.onViewTeam,
-      );
-    } else if (failure.reason == RegistrationFailureReason.generic) {
-      action = PdlButton(
-        label: 'common.retry'.tr(),
-        variant: PdlButtonVariant.outline,
-        size: PdlButtonSize.sm,
-        onPressed: () => controller.join(failure.groupId),
-      );
-    }
-
-    return PdlBanner(
-      key: keys.ride.registrationFailure,
-      tone: PdlBannerTone.danger,
-      title: title,
-      message: failure.message,
-      action: action,
-      onDismiss: controller.dismissFailure,
-      dismissSemanticLabel: 'common.close'.tr(),
-    );
+    return null;
   }
 }
