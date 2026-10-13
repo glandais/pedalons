@@ -36,6 +36,8 @@ import '../features/ads/presentation/pages/ad_detail_page.dart';
 import '../features/posts/domain/post_neighbours.dart';
 import '../features/posts/presentation/pages/post_detail_page.dart';
 import '../features/rides/presentation/pages/ride_detail_page.dart';
+import '../features/rides/domain/ride_group_tab.dart';
+import '../features/rides/presentation/pages/ride_group_page.dart';
 import '../features/trips/presentation/pages/stage_detail_page.dart';
 import '../features/trips/presentation/pages/trip_detail_page.dart';
 import '../features/routes/presentation/pages/all_routes_map_page.dart';
@@ -81,6 +83,8 @@ String _teamAncestor(Map<String, String> p, String locale) =>
     PathVariants.team(p['teamSlug']!)[locale]!;
 String _tripAncestor(Map<String, String> p, String locale) =>
     PathVariants.trip(p['teamSlug']!, p['tripSlug']!)[locale]!;
+String _rideAncestor(Map<String, String> p, String locale) =>
+    PathVariants.ride(p['teamSlug']!, p['rideSlug']!)[locale]!;
 String _profileAncestor(Map<String, String> p, String locale) =>
     PathVariants.profile()[locale]!;
 String _profilePrivacyAncestor(Map<String, String> p, String locale) =>
@@ -241,6 +245,17 @@ final List<_DeepLinkHierarchy> _deepLinkHierarchies = [
   _DeepLinkHierarchy(
     patterns: PathVariants.ride(':teamSlug', ':rideSlug'),
     ancestors: [_teamsAncestor, _teamAncestor, _teamAgendaAncestor],
+  ),
+  // La page d'un groupe sous sa sortie : le détail se reconstruit dessous,
+  // et le groupe y reste sélectionné au retour (ledger `MOB-67`).
+  _DeepLinkHierarchy(
+    patterns: PathVariants.rideGroup(':teamSlug', ':rideSlug', ':groupId'),
+    ancestors: [
+      _teamsAncestor,
+      _teamAncestor,
+      _teamAgendaAncestor,
+      _rideAncestor,
+    ],
   ),
   _DeepLinkHierarchy(
     patterns: PathVariants.post(':teamSlug', ':postSlug'),
@@ -582,6 +597,7 @@ GoRoute _teamTree(String locale) {
           teamSlug: state.pathParameters['teamSlug']!,
           rideSlug: state.pathParameters['rideSlug']!,
         ),
+        routes: [_rideGroupRoute(locale)],
       ),
       GoRoute(
         path: _underTeam(
@@ -615,6 +631,28 @@ GoRoute _teamTree(String locale) {
       ),
       _tripShellRoute(locale, teamBase),
     ],
+  );
+}
+
+/// La page d'un groupe de sortie, sous le détail de la sortie (ledger
+/// `MOB-67`). L'onglet ouvert vient de `?tab=` (`overview`, `weather`,
+/// `participants`) : hors contrat, il ne sert qu'aux liens internes — « la
+/// météo de ce groupe » ouvre `?tab=weather`.
+GoRoute _rideGroupRoute(String locale) {
+  final rideBase = PathVariants.ride(':teamSlug', ':rideSlug')[locale]!;
+  return GoRoute(
+    path: _underTeam(
+      PathVariants.rideGroup(':teamSlug', ':rideSlug', ':groupId'),
+      locale,
+      rideBase,
+    ),
+    parentNavigatorKey: _rootNavigatorKey,
+    builder: (context, state) => RideGroupPage(
+      teamSlug: state.pathParameters['teamSlug']!,
+      rideSlug: state.pathParameters['rideSlug']!,
+      groupId: state.pathParameters['groupId']!,
+      initialTab: RideGroupTab.fromQuery(state.uri.queryParameters['tab']),
+    ),
   );
 }
 

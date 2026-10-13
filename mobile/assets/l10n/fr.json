@@ -725,8 +725,44 @@
       },
       "checkpointNoWeather": "Prévision pas encore disponible ici",
       "prevailingWind": "Vent dominant : {wind}",
-      "group": "Groupe",
       "attribution": "Prévisions : {name}"
+    },
+    "groupPage": {
+      "title": "Groupe {name}",
+      "share": "Partager le groupe",
+      "groups": "Groupes de la sortie",
+      "tabs": {
+        "overview": "Aperçu",
+        "weather": "Météo",
+        "participants": "Participants"
+      },
+      "participantsCount": "{count}/{max} participants",
+      "participantsCountNoMax": "{count} participants",
+      "placesLeft": {
+        "zero": "Plus aucune place",
+        "one": "{} place restante",
+        "other": "{} places restantes"
+      },
+      "registeredElsewhere": "Vous êtes inscrit dans le groupe {group}.",
+      "viewMyGroup": "Voir mon groupe",
+      "stats": {
+        "departure": "Départ",
+        "before": "avant la sortie",
+        "same": "avec la sortie",
+        "after": "après la sortie",
+        "pace": "Allure moyenne",
+        "arrival": "Arrivée estimée {time}",
+        "distance": "Distance",
+        "elevation": "Dénivelé positif"
+      },
+      "leader": "Meneur",
+      "weatherSummary": "Météo au départ du groupe",
+      "participantsTitle": "Participants",
+      "viewAllParticipants": "Voir tous les participants",
+      "routeTitle": "Parcours du groupe",
+      "notFoundTitle": "Ce groupe n'existe plus",
+      "notFoundMessage": "Il a peut-être été retiré de la sortie.",
+      "backToRide": "Retour à la sortie"
     }
   },
   "posts": {
@@ -1650,7 +1686,9 @@
     "groupOrganizer": "Organisateur du groupe",
     "emptyTripMessage": "Personne n'est encore inscrit à ce voyage.",
     "loadMore": "Afficher plus",
-    "noun": "participants"
+    "noun": "participants",
+    "searchByName": "Rechercher par nom...",
+    "noMatchGeneric": "Aucun participant ne correspond à votre recherche."
   },
   "status": {
     "draft": "Brouillon",

@@ -725,8 +725,44 @@
       },
       "checkpointNoWeather": "No forecast here yet",
       "prevailingWind": "Prevailing wind: {wind}",
-      "group": "Group",
       "attribution": "Forecast: {name}"
+    },
+    "groupPage": {
+      "title": "Group {name}",
+      "share": "Share the group",
+      "groups": "Ride groups",
+      "tabs": {
+        "overview": "Overview",
+        "weather": "Weather",
+        "participants": "Participants"
+      },
+      "participantsCount": "{count}/{max} participants",
+      "participantsCountNoMax": "{count} participants",
+      "placesLeft": {
+        "zero": "No places left",
+        "one": "{} place left",
+        "other": "{} places left"
+      },
+      "registeredElsewhere": "You are registered in the {group} group.",
+      "viewMyGroup": "View my group",
+      "stats": {
+        "departure": "Start",
+        "before": "before the ride",
+        "same": "with the ride",
+        "after": "after the ride",
+        "pace": "Average pace",
+        "arrival": "Estimated arrival {time}",
+        "distance": "Distance",
+        "elevation": "Elevation gain"
+      },
+      "leader": "Leader",
+      "weatherSummary": "Weather at the group's start",
+      "participantsTitle": "Participants",
+      "viewAllParticipants": "View all participants",
+      "routeTitle": "Group route",
+      "notFoundTitle": "This group no longer exists",
+      "notFoundMessage": "It may have been removed from the ride.",
+      "backToRide": "Back to the ride"
     }
   },
   "posts": {
@@ -1650,7 +1686,9 @@
     "groupOrganizer": "Group organizer",
     "emptyTripMessage": "Nobody has joined this trip yet.",
     "loadMore": "Show more",
-    "noun": "participants"
+    "noun": "participants",
+    "searchByName": "Search by name...",
+    "noMatchGeneric": "No participant matches your search."
   },
   "status": {
     "draft": "Draft",

@@ -18,6 +18,7 @@ import 'package:pedalons/config/router.dart';
 /// mixed-up parameter shows up in the failure message.
 const _teamSlug = 'velo-club';
 const _rideSlug = 'rando-du-dimanche';
+const _groupId = '0abc1def2ghi3';
 const _tripSlug = 'alpes';
 const _stageSlug = 'etape-1';
 const _postSlug = 'mon-article';
@@ -158,6 +159,16 @@ final List<_LinkCase> _cases = [
     PathVariants.team(_teamSlug),
     PathVariants.teamAgenda(_teamSlug),
   ]),
+  _LinkCase(
+    'rideGroup',
+    PathVariants.rideGroup(_teamSlug, _rideSlug, _groupId),
+    [
+      PathVariants.teams(),
+      PathVariants.team(_teamSlug),
+      PathVariants.teamAgenda(_teamSlug),
+      PathVariants.ride(_teamSlug, _rideSlug),
+    ],
+  ),
   _LinkCase('post', PathVariants.post(_teamSlug, _postSlug), [
     PathVariants.teams(),
     PathVariants.team(_teamSlug),

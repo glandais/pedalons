@@ -21,3 +21,31 @@ String formatGroupStart(String startAt, String timezone) {
   final DateTime? wall = AppFormatters.tryParseZoneTime(startAt, timezone);
   return wall == null ? '—' : AppFormatters.formatTime(wall);
 }
+
+/// Où se place le départ d'un groupe par rapport à celui de sa sortie.
+enum GroupStartRelation {
+  /// Le groupe part avant l'heure de la sortie.
+  before,
+
+  /// Le groupe part avec la sortie — le cas courant.
+  same,
+
+  /// Le groupe part après l'heure de la sortie.
+  after;
+
+  /// La clé de traduction : « avant / avec / après la sortie ».
+  String get labelKey => 'rides.groupPage.stats.$name';
+}
+
+/// [startAt] comparé à [rideDateTime], **en instants** — jamais en chaînes,
+/// qui peuvent s'écrire autrement pour un même instant. Illisible : `same`.
+GroupStartRelation groupStartRelation(String startAt, String rideDateTime) {
+  final DateTime? start = DateTime.tryParse(startAt);
+  final DateTime? ride = DateTime.tryParse(rideDateTime);
+  if (start == null || ride == null || start.isAtSameMomentAs(ride)) {
+    return GroupStartRelation.same;
+  }
+  return start.isBefore(ride)
+      ? GroupStartRelation.before
+      : GroupStartRelation.after;
+}

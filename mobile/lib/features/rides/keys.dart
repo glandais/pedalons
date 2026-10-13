@@ -37,7 +37,9 @@ class RideDetailKeys {
   /// La carte météo compacte du détail.
   final weatherCard = const _RideDetailKey('weatherCard');
 
-  /// « Voir la météo du parcours » de la carte météo.
+  /// « Voir la météo du parcours » de la carte météo d'une étape de voyage
+  /// (`WeatherForecastCard`) — la carte d'une sortie n'en a plus (ledger
+  /// `MOB-67`).
   final weatherOpenButton = const _RideDetailKey('weatherOpenButton');
 
   /// « Météo indisponible » (statut `UNAVAILABLE`, ou échec de l'appel).
@@ -52,8 +54,8 @@ class RideDetailKeys {
   /// Le mot aux organisateurs : il manque un lieu ou un parcours.
   final weatherNoLocation = const _RideDetailKey('weatherNoLocation');
 
-  /// L'état neutre de l'écran « Météo du parcours » quand il n'y a rien à
-  /// montrer (`OUT_OF_RANGE`, `NO_LOCATION` pour un membre, statut inconnu).
+  /// L'état neutre de l'écran météo d'une étape quand il n'y a rien à montrer
+  /// (`OUT_OF_RANGE`, `NO_LOCATION` pour un membre, statut inconnu).
   final weatherEmpty = const _RideDetailKey('weatherEmpty');
 
   /// Le crédit des prévisions (CC BY 4.0) de la carte météo compacte.
@@ -73,9 +75,9 @@ class RideDetailKeys {
   ValueKey<String> weatherCheckpoint(int index) =>
       _RideDetailKey('weatherCheckpoint_$index');
 
-  /// La puce d'un groupe dans le sélecteur de l'écran « Météo du parcours ».
-  ValueKey<String> weatherGroupChip(String groupId) =>
-      _RideDetailKey('weatherGroupChip_$groupId');
+  /// La ligne météo, non cliquable, de la carte d'un groupe.
+  ValueKey<String> groupWeatherLine(String groupId) =>
+      _RideDetailKey('groupWeatherLine_$groupId');
 
   ValueKey<String> group(String groupId) => _RideDetailKey('group_$groupId');
 
@@ -103,4 +105,59 @@ class RideDetailKeys {
   /// Le « Complet » désactivé d'un groupe plein.
   ValueKey<String> groupFullButton(String groupId) =>
       _RideDetailKey('groupFull_$groupId');
+}
+
+class _RideGroupKey extends ValueKey<String> {
+  const _RideGroupKey(String value) : super('rideGroup_$value');
+}
+
+/// La page d'un groupe de sortie (ledger `MOB-67`).
+class RideGroupPageKeys {
+  final page = const _RideGroupKey('page');
+
+  /// Les trois onglets : Aperçu · Météo · Participants.
+  final tabOverview = const _RideGroupKey('tabOverview');
+  final tabWeather = const _RideGroupKey('tabWeather');
+  final tabParticipants = const _RideGroupKey('tabParticipants');
+
+  /// « Rejoindre » et « Quitter » de la barre d'action.
+  final joinButton = const _RideGroupKey('joinButton');
+  final leaveButton = const _RideGroupKey('leaveButton');
+
+  /// Le badge « Complet » qui remplace le bouton d'un groupe plein.
+  final fullBadge = const _RideGroupKey('fullBadge');
+
+  /// « Vous êtes inscrit dans le groupe X. »
+  final registeredElsewhere = const _RideGroupKey('registeredElsewhere');
+
+  /// Le lien vers le groupe où l'on est inscrit.
+  final viewMyGroup = const _RideGroupKey('viewMyGroup');
+
+  /// Le compteur de places de la barre d'action.
+  final participantsCount = const _RideGroupKey('participantsCount');
+
+  /// Le meneur désigné — absent quand `leader` est nul.
+  final leader = const _RideGroupKey('leader');
+
+  /// La carte résumé « Météo au départ du groupe » de l'aperçu.
+  final weatherSummaryCard = const _RideGroupKey('weatherSummaryCard');
+
+  /// « Voir tous les participants » de l'aperçu.
+  final viewAllParticipants = const _RideGroupKey('viewAllParticipants');
+
+  final exportGpx = const _RideGroupKey('exportGpx');
+  final exportFit = const _RideGroupKey('exportFit');
+  final sendToDevice = const _RideGroupKey('sendToDevice');
+
+  /// L'état neutre de l'onglet Météo quand il n'y a rien à montrer
+  /// (`OUT_OF_RANGE`, `NO_LOCATION` pour un membre, statut inconnu).
+  final weatherEmpty = const _RideGroupKey('weatherEmpty');
+
+  /// Le groupe supprimé ou inconnu : un état vide et le retour à la sortie.
+  final notFound = const _RideGroupKey('notFound');
+  final backToRide = const _RideGroupKey('backToRide');
+
+  /// La pastille d'un groupe dans le sélecteur de la page.
+  ValueKey<String> groupChip(String groupId) =>
+      _RideGroupKey('groupChip_$groupId');
 }

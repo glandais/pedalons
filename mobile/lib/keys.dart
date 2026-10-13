@@ -34,6 +34,7 @@ class Keys {
   final teamDashboard = TeamDashboardKeys();
   final teamAgenda = TeamAgendaKeys();
   final ride = RideDetailKeys();
+  final rideGroup = RideGroupPageKeys();
   final participants = ParticipantsSheetKeys();
   final ad = AdDetailKeys();
   final adContact = AdContactKeys();
