@@ -16,7 +16,7 @@ import {
   IconUmbrella,
 } from '@tabler/icons-react'
 import { CompassPoint, RelativeWind, WeatherCondition, WeatherStatus } from '@/api/dto'
-import type { RideWeatherSummaryDto, WeatherLegDto, WindSegmentDto } from '@/api/dto'
+import type { RideWeatherSummaryDto, WindSegmentDto } from '@/api/dto'
 import { RELATIVE_WIND_COLORS } from '@/lib/badgeColors.generated'
 import type { BadgeFamily } from '@/lib/badgeColors.generated'
 
@@ -136,21 +136,6 @@ export function temperatureRange(
   const max = summary.temperatureMax ?? summary.temperature
   if (min === undefined || max === undefined) return undefined
   return { min: Math.min(min, max), max: Math.max(min, max) }
-}
-
-/**
- * The leg shown first: the reader's own group when they are registered in one, else the first.
- * A leg without `groupId` (a ride without groups) is the only one there is.
- */
-export function defaultLegIndex(
-  legs: WeatherLegDto[],
-  registeredGroupId: string | undefined
-): number {
-  if (registeredGroupId) {
-    const index = legs.findIndex((leg) => leg.groupId === registeredGroupId)
-    if (index >= 0) return index
-  }
-  return 0
 }
 
 export function isKnownRelativeWind(value: string | undefined): value is RelativeWind {

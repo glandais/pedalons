@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { IconCloud, IconCloudRain, IconMoon, IconSun } from '@tabler/icons-react'
 import { WeatherCondition, WeatherStatus } from '@/api/dto'
-import type { RideWeatherSummaryDto, WeatherLegDto, WindSegmentDto } from '@/api/dto'
+import type { RideWeatherSummaryDto, WindSegmentDto } from '@/api/dto'
 import {
-  defaultLegIndex,
   exposureSections,
   hasForecast,
   relativeWindColor,
@@ -91,19 +90,6 @@ describe('temperatureRange', () => {
 
   it('has nothing to say without any temperature', () => {
     expect(temperatureRange(summary({}))).toBeUndefined()
-  })
-})
-
-describe('defaultLegIndex', () => {
-  const legs = [{ groupId: 'a' }, { groupId: 'b' }, { groupId: 'c' }] as WeatherLegDto[]
-
-  it("opens on the reader's own group", () => {
-    expect(defaultLegIndex(legs, 'b')).toBe(1)
-  })
-
-  it('opens on the first group otherwise', () => {
-    expect(defaultLegIndex(legs, undefined)).toBe(0)
-    expect(defaultLegIndex(legs, 'gone')).toBe(0)
   })
 })
 

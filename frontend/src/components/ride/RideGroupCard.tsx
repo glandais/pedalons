@@ -8,9 +8,23 @@ import {
   IconArrowUp,
   IconShieldCheck,
   IconAlertTriangle,
+  IconChevronRight,
 } from '@tabler/icons-react'
-import { Alert, Paper, Group, Text, Button, Badge, UnstyledButton, Box } from '@mantine/core'
-import type { RideGroupDto, RouteDetailDto } from '@/api/dto'
+import {
+  Alert,
+  Anchor,
+  Paper,
+  Group,
+  Text,
+  Button,
+  Badge,
+  UnstyledButton,
+  Box,
+} from '@mantine/core'
+import type { RideGroupDto, RouteDetailDto, WeatherLegDto } from '@/api/dto'
+import { PrefetchLink } from '@/components/common/PrefetchLink'
+import { GroupWeatherLine } from '@/components/weather'
+import { paths } from '@/config/paths'
 import { UserAvatar, UserAvatarGroup } from '../common/UserAvatar'
 import { ParticipantListModal } from './ParticipantListModal'
 import { RideGroupRouteActions } from './RideGroupRouteActions'
@@ -33,6 +47,11 @@ interface RideGroupCardProps {
    * than each card issuing its own `getRoute`.
    */
   routesBySlug: Map<string, RouteDetailDto>
+  /**
+   * The group's leg of the ride's forecast, when it has one (OK or STALE): a line on the card, not
+   * a link — the whole weather is on the group's page.
+   */
+  weatherLeg?: WeatherLegDto
   canJoin?: boolean
   onJoin?: () => void
   onLeave?: () => void
@@ -51,6 +70,7 @@ export function RideGroupCard({
   rideSlug,
   rideRouteSlug,
   routesBySlug,
+  weatherLeg,
   canJoin,
   onJoin,
   onLeave,
@@ -95,9 +115,21 @@ export function RideGroupCard({
       {/* Header row: title + badge + button */}
       <Group justify="space-between" wrap="nowrap">
         <Group gap="sm" style={{ minWidth: 0 }}>
-          <Text fw={500} truncate>
-            {group.name}
-          </Text>
+          <Anchor
+            component={PrefetchLink}
+            to={paths.rideGroup(teamSlug, rideSlug, group.id)}
+            fw={500}
+            c="inherit"
+            underline="hover"
+            style={{ minWidth: 0 }}
+          >
+            <Group gap={2} wrap="nowrap">
+              <Text fw={500} truncate inherit>
+                {group.name}
+              </Text>
+              <IconChevronRight size={16} aria-hidden style={{ flexShrink: 0 }} />
+            </Group>
+          </Anchor>
           {isJoined && (
             <Badge size="sm" color="primary" variant="light">
               {t('rides.detail.groups.joined')}
@@ -217,12 +249,27 @@ export function RideGroupCard({
         </UnstyledButton>
       </Group>
 
-      {/* Route actions */}
-      {effectiveRouteSlug && (
-        <Box mt="sm">
+      <Box mt="xs">
+        <GroupWeatherLine leg={weatherLeg} timezone={rideTimezone} />
+      </Box>
+
+      {/* The group's page, then its route */}
+      <Group mt="sm" gap="md" wrap="wrap">
+        <Anchor
+          component={PrefetchLink}
+          to={paths.rideGroup(teamSlug, rideSlug, group.id)}
+          size="xs"
+          fw={500}
+        >
+          <Group gap={2} wrap="nowrap">
+            {t('rides.group.view')}
+            <IconChevronRight size={14} aria-hidden />
+          </Group>
+        </Anchor>
+        {effectiveRouteSlug && (
           <RideGroupRouteActions teamSlug={teamSlug} routeSlug={effectiveRouteSlug} route={route} />
-        </Box>
-      )}
+        )}
+      </Group>
 
       {error && (
         <Alert color="red" variant="light" mt="sm" icon={<IconAlertTriangle size={16} />}>

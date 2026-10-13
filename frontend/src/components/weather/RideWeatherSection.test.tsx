@@ -1,99 +1,22 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { MantineProvider } from '@mantine/core'
-import type { RideDto, RideWeatherDto, WeatherLegDto } from '@/api/dto'
+import type { RideDto, RideWeatherDto } from '@/api/dto'
 import { Status, WeatherStatus } from '@/api/dto'
-import fr from '@/locales/fr/common.json'
+import { okWeather, plain, weatherLeg, weatherRide as ride } from '@/test/weatherFixtures'
 
-vi.mock('react-i18next', () => {
-  const messages = fr as Record<string, string>
-  const t = (key: string, options?: Record<string, unknown>) =>
-    (messages[key] ?? key).replace(/\{\{(\w+)\}\}/g, (_, name: string) =>
-      String(options?.[name] ?? '')
-    )
-  return { useTranslation: () => ({ t, i18n: { language: 'fr' } }) }
+vi.mock('react-i18next', async () => {
+  const { frenchT } = await import('@/test/frenchT')
+  return { useTranslation: () => ({ t: frenchT, i18n: { language: 'fr' } }) }
 })
 
 import { RideWeatherSection } from './RideWeatherSection'
-
-const plain = (s: string | null | undefined) => (s ?? '').replace(/[  ]/g, ' ')
-
-const ride = (overrides: Partial<RideDto> = {}): RideDto =>
-  ({
-    status: Status.PUBLISHED,
-    finished: false,
-    // A 6:40 meeting: the forecast's own hour (conditions.time) is the round 7:00.
-    dateTime: '2026-10-08T06:40:00Z',
-    registeredGroupId: 'g2',
-    groups: [
-      { id: 'g1', name: 'Rapide' },
-      { id: 'g2', name: 'Cool' },
-    ],
-    ...overrides,
-  }) as RideDto
-
-const conditions = {
-  time: '2026-10-08T07:00:00Z',
-  weatherCode: 0,
-  condition: 'CLEAR' as const,
-  daylight: true,
-  temperature: 12,
-  apparentTemperature: 10,
-  precipitationProbability: 10,
-  precipitation: 0,
-  wind: { speed: 15, direction: 225, compass: 'SW' as const },
-}
-
-const leg = (groupId: string, overrides: Partial<WeatherLegDto> = {}): WeatherLegDto => ({
-  groupId,
-  status: WeatherStatus.OK,
-  startTime: '2026-10-08T07:00:00Z',
-  averageSpeed: 25,
-  speedIsDefault: true,
-  distance: 50_000,
-  arrivalTime: '2026-10-08T09:00:00Z',
-  checkpoints: [
-    {
-      index: 0,
-      kind: 'START',
-      distance: 0,
-      time: '2026-10-08T07:00:00Z',
-      weather: conditions,
-      relativeWind: 'HEAD',
-      headwind: 12,
-      relativeWindAngle: 180,
-    },
-    {
-      index: 1,
-      kind: 'FINISH',
-      distance: 50_000,
-      time: '2026-10-08T09:00:00Z',
-      weather: conditions,
-      relativeWind: 'TAIL',
-      headwind: -10,
-      relativeWindAngle: 0,
-    },
-  ],
-  segments: [{ fromDistance: 0, toDistance: 50_000, relativeWind: 'HEAD', headwind: 12 }],
-  windExposure: { head: 50_000, cross: 0, tail: 0 },
-  ...overrides,
-})
-
-const okWeather: RideWeatherDto = {
-  status: WeatherStatus.OK,
-  fetchedAt: '2026-10-07T18:00:00Z',
-  departure: { status: WeatherStatus.OK, conditions },
-  legs: [leg('g1', { speedIsDefault: false, averageSpeed: 30 }), leg('g2')],
-  attribution: { name: 'Open-Meteo.com', url: 'https://open-meteo.com/' },
-}
 
 function renderSection(props: {
   ride?: RideDto
   weather?: RideWeatherDto
   canEdit?: boolean
   onRetry?: () => void
-  selectedGroupId?: string | null
-  onSelectGroup?: (groupId: string) => void
 }) {
   return render(
     <MantineProvider>
@@ -104,8 +27,6 @@ function renderSection(props: {
         isFetching={false}
         onRetry={props.onRetry ?? (() => {})}
         canEdit={props.canEdit ?? false}
-        selectedGroupId={props.selectedGroupId}
-        onSelectGroup={props.onSelectGroup}
       />
     </MantineProvider>
   )
@@ -114,43 +35,28 @@ function renderSection(props: {
 describe('RideWeatherSection', () => {
   afterEach(cleanup)
 
-  it("opens on the reader's group, says the default speed, and turns the arrows", () => {
+  it('keeps to the departure: no group, no route, no selector (WEB-77)', () => {
     renderSection({ weather: okWeather })
     const text = plain(document.body.textContent)
-    expect(text).toContain('vitesse par défaut')
+    expect(screen.getByRole('heading', { name: 'Météo au départ' })).toBeTruthy()
+    expect(text).toContain('ressenti')
     expect(text).toContain('Open-Meteo.com')
-    const headArrow = screen.getByRole('img', { name: 'Vent de face, 15 km/h' })
-    expect(headArrow.style.transform).toBe('rotate(180deg)')
-    expect(screen.getByRole('img', { name: 'Vent dans le dos, 15 km/h' }).style.transform).toBe(
-      'rotate(0deg)'
-    )
+    // Nothing of a group's leg: its schedule, its points, its wind, a group to pick.
+    expect(text).not.toContain('Heures de passage')
+    expect(text).not.toContain('Exposition au vent')
+    expect(screen.queryByRole('region', { name: 'Prévisions le long du parcours' })).toBeNull()
+    expect(screen.queryByText('Rapide')).toBeNull()
+    expect(screen.queryByRole('radiogroup')).toBeNull()
   })
 
-  it("writes the wind speed and gusts on each point, and the leg's prevailing wind", () => {
-    const gusty = {
-      ...conditions,
-      wind: { speed: 18, gusts: 35, direction: 225, compass: 'SW' as const },
-    }
-    const base = leg('g2')
-    const weather: RideWeatherDto = {
-      ...okWeather,
-      legs: [
-        leg('g2', {
-          checkpoints: base.checkpoints.map((c) => ({ ...c, weather: gusty })),
-          prevailingWind: { speed: 16, gusts: 40, direction: 225, compass: 'SW' },
-        }),
-      ],
-    }
-    renderSection({ weather })
-    const points = screen.getAllByRole('listitem').map((li) => plain(li.textContent))
-    expect(points).toHaveLength(2)
-    for (const point of points) {
-      expect(point).toContain('18 km/h')
-      expect(point).toContain('rafales 35 km/h')
-    }
-    expect(plain(document.body.textContent)).toContain(
-      'Vent dominant : SO 16 km/h, rafales 40 km/h'
-    )
+  it("keeps the route of a ride without groups, which has no group's page", () => {
+    renderSection({
+      ride: ride({ groups: [], registeredGroupId: undefined }),
+      weather: { ...okWeather, legs: [weatherLeg(undefined)] },
+    })
+    const text = plain(document.body.textContent)
+    expect(text).toContain('vitesse par défaut')
+    expect(screen.getByRole('region', { name: 'Prévisions le long du parcours' })).toBeTruthy()
   })
 
   it("titles the departure with the ride's own time, not the forecast's round hour", () => {
@@ -158,7 +64,7 @@ describe('RideWeatherSection', () => {
     expect(plain(document.body.textContent)).toMatch(/Au départ · \d{1,2}:40/)
   })
 
-  it('says the day of an update that was not today', () => {
+  it('says the day of an update that was not today, and flags an old forecast', () => {
     renderSection({ weather: { ...okWeather, fetchedAt: new Date().toISOString() } })
     expect(plain(document.body.textContent)).toMatch(/Mise à jour à \d{1,2}:\d{2}/)
     cleanup()
@@ -167,31 +73,19 @@ describe('RideWeatherSection', () => {
     expect(plain(document.body.textContent)).toMatch(
       /Mise à jour le \d{1,2} \S+ \d{4} à \d{1,2}:\d{2}/
     )
+    expect(screen.getByText('Prévision ancienne')).toBeTruthy()
   })
 
-  it('lets the keyboard reach the forecast points: the strip is a focusable, named region', () => {
-    renderSection({ weather: okWeather })
-    const strip = screen.getByRole('region', { name: 'Prévisions le long du parcours' })
-    expect(strip.getAttribute('tabindex')).toBe('0')
-    expect(strip.querySelectorAll('li')).toHaveLength(2)
-  })
-
-  it('switches group', () => {
-    renderSection({ weather: okWeather })
-    fireEvent.click(screen.getByText('Rapide'))
-    expect(plain(document.body.textContent)).not.toContain('vitesse par défaut')
-  })
-
-  it('tells the page which group was chosen, and follows the group the page chose', () => {
-    const onSelectGroup = vi.fn()
-    renderSection({ weather: okWeather, onSelectGroup })
-    fireEvent.click(screen.getByText('Rapide'))
-    expect(onSelectGroup).toHaveBeenCalledWith('g1')
-
-    cleanup()
-    // Chosen on the map: g1, the group at 30 km/h, though the reader rides with g2.
-    renderSection({ weather: okWeather, selectedGroupId: 'g1' })
-    expect(plain(document.body.textContent)).not.toContain('vitesse par défaut')
+  it('says when the forecast opens', () => {
+    renderSection({
+      weather: {
+        ...okWeather,
+        status: WeatherStatus.NOT_YET_AVAILABLE,
+        availableFrom: '2026-10-01T06:40:00Z',
+        legs: [],
+      },
+    })
+    expect(plain(document.body.textContent)).toContain('La météo sera disponible à partir du')
   })
 
   it('offers to retry when there is no forecast to show — a failed read included', () => {

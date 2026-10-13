@@ -66,13 +66,14 @@ import { useCanonicalPath } from '../../hooks/useCanonicalPath'
 import { STATUS_COLORS } from '@/lib/badgeColors.generated'
 import { TagList } from '@/components/tag'
 import { RideWeatherSection } from '@/components/weather'
+import { hasForecast } from '@/components/weather/weatherDisplay'
 
 export function RideDetailPage() {
   const { t } = useTranslation()
   const { teamSlug, rideSlug } = useParams<{ teamSlug: string; rideSlug: string }>()
   const { isAuthenticated } = useAuth()
-  // The hovered group, and the one chosen — in the weather block, or by a click on its trace. The
-  // hover wins while it lasts; the choice stays lit on the map and among the cards.
+  // The hovered group, and the one chosen by a click on its trace. The hover wins while it lasts;
+  // the choice stays lit on the map and among the cards.
   const [highlightedGroupId, setHighlightedGroupId] = useState<string | null>(null)
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
   const litGroupId = highlightedGroupId ?? selectedGroupId
@@ -440,7 +441,7 @@ export function RideDetailPage() {
         <TagList tags={ride.tags} mt="md" />
       </Paper>
 
-      {/* Weather: the meeting point, then one group's route (the reader's own by default) */}
+      {/* Weather at the meeting point; each group's route is on the group's own page (WEB-77) */}
       <ErrorBoundary variant="inline">
         <RideWeatherSection
           ride={ride}
@@ -449,8 +450,6 @@ export function RideDetailPage() {
           isFetching={weather.isFetching}
           onRetry={() => void weather.refetch()}
           canEdit={canEdit}
-          selectedGroupId={selectedGroupId}
-          onSelectGroup={chooseGroup}
         />
       </ErrorBoundary>
 
@@ -496,6 +495,11 @@ export function RideDetailPage() {
                     rideSlug={ride.slug}
                     rideRouteSlug={ride.routeSlug}
                     routesBySlug={groupRoutesBySlug}
+                    weatherLeg={
+                      weather.data && hasForecast(weather.data.status)
+                        ? weather.data.legs.find((leg) => leg.groupId === group.id)
+                        : undefined
+                    }
                     canJoin={canJoinRide}
                     onJoin={() => handleJoinGroup(group.id)}
                     onLeave={() => handleLeaveGroup(group.id)}
