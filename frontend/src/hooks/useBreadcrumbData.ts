@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useGetTeam } from '../api/endpoints/teams/teams'
 import { useGetRide } from '../api/endpoints/rides/rides'
 import { useGetTrip } from '../api/endpoints/trips/trips'
@@ -39,7 +40,9 @@ export function useBreadcrumbData(params: RouteParams): Record<EntityType, Entit
     templateSlug,
     adSlug,
     pageSlug,
+    groupId,
   } = params
+  const { t } = useTranslation()
 
   // Fetch team - needed for all team-related breadcrumbs
   const { data: team, isLoading: isLoadingTeam } = useGetTeam(teamSlug!, {
@@ -71,12 +74,19 @@ export function useBreadcrumbData(params: RouteParams): Record<EntityType, Entit
     query: { enabled: onlyIfNotFailed(!!teamSlug && !!pageSlug) },
   })
 
+  // A group's name comes from its ride's groups — « Groupe Rapide », as its page titles it
+  const group = groupId ? ride?.groups?.find((g) => g.id === groupId) : undefined
+
   // Stage name comes from trip's stages array
   const stage = stageSlug ? trip?.stages?.find((s) => s.slug === stageSlug) : undefined
 
   return {
     team: { name: team?.name, isLoading: isLoadingTeam },
     ride: { name: ride?.name, isLoading: isLoadingRide },
+    rideGroup: {
+      name: group && t('rides.group.title', { name: group.name }),
+      isLoading: isLoadingRide,
+    },
     post: { name: post?.name, isLoading: isLoadingPost },
     trip: { name: trip?.name, isLoading: isLoadingTrip },
     stage: { name: stage?.name, isLoading: isLoadingTrip },

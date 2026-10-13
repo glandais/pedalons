@@ -240,6 +240,8 @@ export async function buildDataset(label: string): Promise<Dataset> {
     params: {
       teamSlug: slug,
       rideSlug: ride.slug,
+      // Groupe A: a leader, a pace, a max, its own route and a rider.
+      groupId: ride.groups.find((g) => g.name === 'Groupe A')!.id,
       routeSlug: route.slug,
       tripSlug: trip.slug,
       stageSlug: trip.stages[0].slug,

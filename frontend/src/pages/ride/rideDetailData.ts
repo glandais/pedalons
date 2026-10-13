@@ -55,7 +55,7 @@ export function rideRouteSlugs(ride: RideDto | undefined): string[] {
  * The weather's request options, one object for the hook and the prefetch. No toast: the block
  * says « unavailable, retry » in place, and a failing forecast must not shout over the ride.
  */
-const WEATHER_REQUEST = { skipErrorToast: true } as const
+export const WEATHER_REQUEST = { skipErrorToast: true } as const
 
 /**
  * After the ride changes (time, groups, route, status), its forecast reads different passages:

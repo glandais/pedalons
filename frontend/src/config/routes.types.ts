@@ -15,6 +15,8 @@ export type AuthRequirement = 'public' | 'authenticated' | 'unauthenticated'
 export interface RouteParams {
   teamSlug?: string
   rideSlug?: string
+  /** A ride group's id (TSID), on the group's own page. */
+  groupId?: string
   postSlug?: string
   tripSlug?: string
   stageSlug?: string
@@ -29,7 +31,16 @@ export interface RouteParams {
  * Entity types that can provide dynamic breadcrumb labels
  */
 export type EntityType =
-  'team' | 'ride' | 'post' | 'trip' | 'stage' | 'route' | 'rideTemplate' | 'ad' | 'teamPage'
+  | 'team'
+  | 'ride'
+  | 'rideGroup'
+  | 'post'
+  | 'trip'
+  | 'stage'
+  | 'route'
+  | 'rideTemplate'
+  | 'ad'
+  | 'teamPage'
 
 /**
  * Breadcrumb label configuration

@@ -99,6 +99,28 @@ function formatDate(
   }
 }
 
+/** Localised time of day (« 08:30 »), in the entity's zone like {@link formatDate}. */
+function formatTime(
+  instant: Instant | undefined,
+  locale: Locale,
+  timeZone: string | undefined
+): string | undefined {
+  if (!instant) return undefined
+  const d = new Date(instant)
+  if (Number.isNaN(d.getTime())) return undefined
+  const format = (zone: string) =>
+    new Intl.DateTimeFormat(locale === 'en' ? 'en-GB' : 'fr-FR', {
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: zone,
+    }).format(d)
+  try {
+    return format(timeZone || META_FALLBACK_TIME_ZONE)
+  } catch {
+    return format(META_FALLBACK_TIME_ZONE)
+  }
+}
+
 /** ISO-8601 publication time, preferring the explicit publish time over creation. */
 function publishedTime(publishAt?: Instant, createdAt?: Instant): string | undefined {
   return publishAt ?? createdAt ?? undefined
@@ -270,6 +292,48 @@ export const rideMeta: RouteMetaFn = (ctx) => {
   return {
     type: 'article',
     title,
+    description,
+    image:
+      imgFromTemplate(ctx.origin, ride.thumbnailLightUrl, alt) ??
+      imgFromAssets(ctx.origin, ride.media?.assets, alt) ??
+      imgFromAsset(ctx.origin, team?.about?.assets?.logo, alt) ??
+      defaultImage(ctx.origin, appNameOf(ctx)),
+    article: { publishedTime: publishedTime(ride.publishAt, ride.createdAt) },
+    noindex: notIndexable(ride.visibility),
+  }
+}
+
+// === ride-group =============================================================================
+export const rideGroupMeta: RouteMetaFn = (ctx) => {
+  const ride = ctx.queryClient.getQueryData<RideDto>(
+    getGetRideQueryKey(ctx.params.teamSlug!, ctx.params.rideSlug!)
+  )
+  const group = ride?.groups?.find((g) => g.id === ctx.params.groupId)
+  // A group the ride no longer has falls back to the ride's own preview.
+  if (!ride || !group) return rideMeta(ctx)
+  const team = ctx.queryClient.getQueryData<TeamDetailDto>(getGetTeamQueryKey(ctx.params.teamSlug!))
+  const teamName = ride.team?.name ?? appNameOf(ctx)
+  const groupTitle = ctx.t('rides.group.title', { name: group.name })
+
+  const description = joinFacets([
+    formatDate(group.startAt ?? ride.dateTime, ctx.locale, ride.timezone),
+    group.startAt &&
+      ctx.t('seo.rideGroup.departure', {
+        time: formatTime(group.startAt, ctx.locale, ride.timezone),
+      }),
+    !!group.averageSpeed && ctx.t('seo.rideGroup.pace', { speed: Math.round(group.averageSpeed) }),
+    group.distance !== undefined && `${formatKm(group.distance)} km`,
+    group.countParticipants > 0 &&
+      ctx.t('seo.ride.participants', { count: group.countParticipants }),
+  ])
+
+  const alt = truncate(
+    ctx.t('seo.rideGroup.imageAlt', { group: group.name, name: ride.name, team: teamName }),
+    100
+  )
+  return {
+    type: 'article',
+    title: truncate(`${groupTitle} · ${ride.name}`, 65),
     description,
     image:
       imgFromTemplate(ctx.origin, ride.thumbnailLightUrl, alt) ??

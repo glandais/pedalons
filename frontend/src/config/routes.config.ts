@@ -4,6 +4,7 @@ import { pathVariants } from './paths'
 import { tRegister } from '@/lib/i18nUtils'
 import { prefetchGetTeamQuery } from '@/api/endpoints/teams/teams'
 import { prefetchRideDetail } from '@/pages/ride/rideDetailData'
+import { prefetchRideGroup } from '@/pages/ride/rideGroupData'
 import { prefetchRouteList } from '@/pages/route/routeListData'
 import { prefetchTripDetail } from '@/pages/trip/tripDetailData'
 import { prefetchStageDetail } from '@/pages/trip/stageDetailData'
@@ -73,6 +74,7 @@ import {
   teamAboutMeta,
   teamPageMeta,
   rideMeta,
+  rideGroupMeta,
   tripMeta,
   stageMeta,
   postMeta,
@@ -700,6 +702,18 @@ export const routesConfig: RoutesConfig = [
     prefetch: (queryClient, params) =>
       prefetchRideDetail(queryClient, params.teamSlug!, params.rideSlug!),
     meta: rideMeta,
+  },
+  {
+    // One group of a ride (ledger WEB-77): the ride page's reads, plus the group's participants.
+    id: 'ride-group',
+    paths: pathVariants.rideGroup(':teamSlug', ':rideSlug', ':groupId'),
+    component: pages.RideGroupPage,
+    auth: 'public',
+    parentId: 'ride-detail',
+    breadcrumb: { type: 'dynamic', entity: 'rideGroup' },
+    prefetch: (queryClient, params, url) =>
+      prefetchRideGroup(queryClient, params.teamSlug!, params.rideSlug!, params.groupId!, url),
+    meta: rideGroupMeta,
   },
   {
     id: 'ride-edit',

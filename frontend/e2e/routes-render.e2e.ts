@@ -457,6 +457,7 @@ const screens: Record<string, Screen> = {
     guards: titled('Créer une sortie'),
   },
   ride: { roles: EVERYONE, sees: (main, d) => heading(d.ride.name)(main) },
+  rideGroup: { roles: EVERYONE, sees: heading('Groupe Groupe A') },
   rideEdit: {
     roles: ORGANIZERS,
     sees: heading('Modifier la sortie'),
