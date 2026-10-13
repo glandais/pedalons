@@ -1,37 +1,20 @@
 import { useState } from 'react'
-import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { useTranslation } from 'react-i18next'
 import {
   IconBolt,
   IconUsers,
   IconClock,
-  IconMap,
-  IconDownload,
-  IconDeviceMobile,
   IconArrowsMaximize,
   IconArrowUp,
   IconShieldCheck,
   IconAlertTriangle,
 } from '@tabler/icons-react'
-import {
-  Alert,
-  Paper,
-  Group,
-  Text,
-  Button,
-  Badge,
-  UnstyledButton,
-  Anchor,
-  Menu,
-  Loader,
-} from '@mantine/core'
-import type { RideGroupDto, GpsServiceType, RouteDetailDto } from '@/api/dto'
+import { Alert, Paper, Group, Text, Button, Badge, UnstyledButton, Box } from '@mantine/core'
+import type { RideGroupDto, RouteDetailDto } from '@/api/dto'
 import { UserAvatar, UserAvatarGroup } from '../common/UserAvatar'
 import { ParticipantListModal } from './ParticipantListModal'
-import { paths } from '@/config/paths'
+import { RideGroupRouteActions } from './RideGroupRouteActions'
 import { useUnits } from '@/hooks/useUnits'
-import { useAuth } from '@/hooks/useAuth'
-import { useGpsConnections } from '@/hooks/useGpsConnections'
 import { Rendezvous } from '../common/Rendezvous'
 import { groupLeavesAtOwnTime } from '@/utils/groupStart'
 
@@ -78,8 +61,6 @@ export function RideGroupCard({
 }: RideGroupCardProps) {
   const { t } = useTranslation()
   const { speed, distance, elevation } = useUnits()
-  const { isAuthenticated } = useAuth()
-  const { connectedServices, uploadRoute, isUploading } = useGpsConnections()
   const [showParticipants, setShowParticipants] = useState(false)
   // `full` and `registered` are computed server-side (contract 1.3.0) — never recompute them here.
   const isFull = group.full
@@ -92,12 +73,6 @@ export function RideGroupCard({
   // needed to build the GPX/FIT links and the device upload; `routesBySlug` was fetched once
   // for every group of the ride in a single bulk call by the parent.
   const route = effectiveRouteSlug ? routesBySlug.get(effectiveRouteSlug) : undefined
-
-  const handleSendToDevice = (serviceType: GpsServiceType) => {
-    if (effectiveRouteSlug) {
-      uploadRoute({ serviceType, teamSlug, routeSlug: effectiveRouteSlug })
-    }
-  }
 
   return (
     <Paper
@@ -244,61 +219,9 @@ export function RideGroupCard({
 
       {/* Route actions */}
       {effectiveRouteSlug && (
-        <Group mt="sm" gap="xs">
-          <Anchor
-            component={PrefetchLink}
-            to={paths.route(teamSlug, effectiveRouteSlug)}
-            size="xs"
-            c="dimmed"
-          >
-            <Group gap={4}>
-              <IconMap size={16} />
-              {t('rides.detail.groups.route.view')}
-            </Group>
-          </Anchor>
-          {route?.media?.assets?.gpx?.url && (
-            <Anchor href={route.media.assets.gpx.url} size="xs" c="dimmed" download>
-              <Group gap={4}>
-                <IconDownload size={16} />
-                {t('rides.detail.groups.route.downloadGpx')}
-              </Group>
-            </Anchor>
-          )}
-          {route?.media?.assets?.fit?.url && (
-            <Anchor href={route.media.assets.fit.url} size="xs" c="dimmed" download>
-              <Group gap={4}>
-                <IconDownload size={16} />
-                {t('rides.detail.groups.route.downloadFit')}
-              </Group>
-            </Anchor>
-          )}
-          {isAuthenticated && connectedServices.length > 0 && (
-            <Menu shadow="md" width={200}>
-              <Menu.Target>
-                <UnstyledButton disabled={isUploading} aria-label={t('routes.detail.sendToDevice')}>
-                  <Group gap={4}>
-                    {isUploading ? <Loader size={16} /> : <IconDeviceMobile size={16} />}
-                    <Text size="xs" c="dimmed">
-                      {t('routes.detail.sendToDevice')}
-                    </Text>
-                  </Group>
-                </UnstyledButton>
-              </Menu.Target>
-              <Menu.Dropdown>
-                {connectedServices.map((service) => (
-                  <Menu.Item
-                    key={service.serviceType}
-                    onClick={() => handleSendToDevice(service.serviceType)}
-                  >
-                    {t(
-                      `gps.services.${service.serviceType.toLowerCase() as Lowercase<GpsServiceType>}`
-                    )}
-                  </Menu.Item>
-                ))}
-              </Menu.Dropdown>
-            </Menu>
-          )}
-        </Group>
+        <Box mt="sm">
+          <RideGroupRouteActions teamSlug={teamSlug} routeSlug={effectiveRouteSlug} route={route} />
+        </Box>
       )}
 
       {error && (

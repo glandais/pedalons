@@ -34,16 +34,12 @@ import {
   useUpdateRide,
   useDeleteRide,
   useUndeleteRide,
-  useJoinGroup,
-  useLeaveGroup,
   getGetRideQueryKey,
 } from '../../api/endpoints/rides/rides'
 import { getListPublicationsQueryKey } from '../../api/endpoints/publications/publications'
 import { invalidateRideWeather, useRideDetailData } from './rideDetailData'
 import { rideStatusRequest } from './rideFormData'
 import { ReportTargetType, Status } from '@/api/dto'
-import type { RideDto } from '@/api/dto'
-import { ApiClientError } from '@/lib/apiError'
 import { useAuth } from '../../hooks/useAuth'
 import { EmptyState } from '../../components/common/EmptyState'
 import { QueryStateBoundary } from '../../components/common/QueryStateBoundary'
@@ -64,7 +60,7 @@ import { ContentActionsMenu } from '../../components/moderation/ContentActionsMe
 import { ShareButton } from '../../components/common/ShareButton'
 import { CommentSection } from '../../components/comment'
 import { paths } from '@/config/paths'
-import { invalidateRideRegistration } from '@/lib/rideRegistration'
+import { useRideGroupMembership } from '@/hooks/useRideGroupMembership'
 import { ErrorBoundary } from '../../components/common/ErrorBoundary'
 import { useCanonicalPath } from '../../hooks/useCanonicalPath'
 import { STATUS_COLORS } from '@/lib/badgeColors.generated'
@@ -75,9 +71,6 @@ export function RideDetailPage() {
   const { t } = useTranslation()
   const { teamSlug, rideSlug } = useParams<{ teamSlug: string; rideSlug: string }>()
   const { isAuthenticated } = useAuth()
-  // Failure message for the group whose join/leave just failed. Kept in the card rather than
-  // in a toast: a toast fires far from the button, then vanishes, leaving the card unchanged.
-  const [groupError, setGroupError] = useState<{ groupId: string; message: string } | null>(null)
   // The hovered group, and the one chosen — in the weather block, or by a click on its trace. The
   // hover wins while it lasts; the choice stays lit on the map and among the cards.
   const [highlightedGroupId, setHighlightedGroupId] = useState<string | null>(null)
@@ -106,8 +99,8 @@ export function RideDetailPage() {
   const updateMutation = useUpdateRide()
   const deleteMutation = useDeleteRide()
   const undeleteMutation = useUndeleteRide()
-  const joinMutation = useJoinGroup()
-  const leaveMutation = useLeaveGroup()
+  const membership = useRideGroupMembership(teamSlug!, rideSlug!)
+  const groupError = membership.error
 
   // Combine ride's main route with group routes for map display
   // Must be before early returns to maintain hook order
@@ -274,70 +267,8 @@ export function RideDetailPage() {
     )
   }
 
-  const rideQueryKey = getGetRideQueryKey(teamSlug!, rideSlug!)
-
-  /**
-   * Flips `registered` on the ride and on one group in the cache, and returns the previous
-   * snapshot so the caller can roll back. `countParticipants` moves with it so the card does
-   * not show "8/20" next to a freshly-added avatar.
-   */
-  const applyOptimisticMembership = (groupId: string, joining: boolean) => {
-    const previous = queryClient.getQueryData<RideDto>(rideQueryKey)
-    if (!previous) return previous
-
-    queryClient.setQueryData<RideDto>(rideQueryKey, {
-      ...previous,
-      registered: joining,
-      registeredGroupId: joining ? groupId : undefined,
-      groups: previous.groups?.map((group) =>
-        group.id === groupId
-          ? {
-              ...group,
-              registered: joining,
-              countParticipants: group.countParticipants + (joining ? 1 : -1),
-            }
-          : group
-      ),
-    })
-    return previous
-  }
-
-  const describeGroupError = (error: unknown) => {
-    const code = error instanceof ApiClientError ? error.error.code : undefined
-    // Codes are open-ended, so a generic fallback is mandatory rather than optional.
-    return code
-      ? t(`errors.api.${code}`, { defaultValue: t('rides.detail.groups.actionFailed') })
-      : t('rides.detail.groups.actionFailed')
-  }
-
-  const mutateMembership = (groupId: string, joining: boolean) => {
-    setGroupError(null)
-    const previous = applyOptimisticMembership(groupId, joining)
-    const mutation = joining ? joinMutation : leaveMutation
-
-    mutation.mutate(
-      { teamSlug: teamSlug!, rideSlug: rideSlug!, groupId },
-      {
-        onSuccess: () => {
-          notifications.show({
-            message: t(joining ? 'rides.notifications.joined' : 'rides.notifications.left'),
-            color: 'green',
-          })
-        },
-        onError: (error) => {
-          if (previous) queryClient.setQueryData(rideQueryKey, previous)
-          setGroupError({ groupId, message: describeGroupError(error) })
-        },
-        onSettled: () => {
-          queryClient.invalidateQueries({ queryKey: rideQueryKey })
-          invalidateRideRegistration(queryClient, teamSlug!)
-        },
-      }
-    )
-  }
-
-  const handleJoinGroup = (groupId: string) => mutateMembership(groupId, true)
-  const handleLeaveGroup = (groupId: string) => mutateMembership(groupId, false)
+  const handleJoinGroup = membership.join
+  const handleLeaveGroup = membership.leave
 
   return (
     <Container size="xl" py="xl">
@@ -570,10 +501,7 @@ export function RideDetailPage() {
                     onLeave={() => handleLeaveGroup(group.id)}
                     onHover={setHighlightedGroupId}
                     isHighlighted={litGroupId === group.id}
-                    // Every card, not only the one acted on: the optimistic update shows the
-                    // other groups joinable before the server has let go of the first one, and
-                    // a join sent then is refused (ALREADY_REGISTERED).
-                    isLoading={joinMutation.isPending || leaveMutation.isPending}
+                    isLoading={membership.isPending}
                     error={groupError?.groupId === group.id ? groupError.message : undefined}
                   />
                 )
