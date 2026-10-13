@@ -87,6 +87,13 @@ export interface RoutesMapViewProps {
   teamSlug: string
   highlightedItemId?: string | null
   onItemHover?: (itemId: string | null) => void
+  /**
+   * The clicked (selected) trace, when the page holds it — the ride page shares it with the weather
+   * block and the group cards. Left undefined, the map keeps its own.
+   */
+  selectedItemId?: string | null
+  /** A trace was clicked. */
+  onItemSelect?: (itemId: string) => void
   /** Map size variant: 'compact' for cards, 'standard' for detail pages, 'full' for full-screen */
   variant?: 'compact' | 'standard' | 'full'
 }
@@ -96,6 +103,8 @@ export function RoutesMapView({
   teamSlug,
   highlightedItemId,
   onItemHover,
+  selectedItemId,
+  onItemSelect,
   variant = 'full',
 }: RoutesMapViewProps) {
   const { t } = useTranslation()
@@ -115,7 +124,8 @@ export function RoutesMapView({
     }),
     [colorScheme, theme.colors.dark, theme.colors.gray]
   )
-  const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null)
+  const [ownSelectedRouteId, setSelectedRouteId] = useState<string | null>(null)
+  const selectedRouteId = selectedItemId !== undefined ? selectedItemId : ownSelectedRouteId
   // Traces the visitor unticked in the basemap panel. Their layers stay mounted, hidden through
   // `visibility`, so the click handler's layer list never names a layer that is gone.
   const [hiddenItemIds, setHiddenItemIds] = useState<ReadonlySet<string>>(() => new Set())
@@ -255,11 +265,12 @@ export function RoutesMapView({
   const handlePolylineClick = useCallback(
     (itemId: string) => {
       setSelectedRouteId(itemId)
+      onItemSelect?.(itemId)
       if (onItemHover) {
         onItemHover(itemId)
       }
     },
-    [onItemHover]
+    [onItemHover, onItemSelect]
   )
 
   // Handle click on route layers

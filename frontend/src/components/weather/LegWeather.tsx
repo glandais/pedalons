@@ -4,6 +4,7 @@ import type { WeatherLegDto } from '@/api/dto'
 import { WeatherStatus } from '@/api/dto'
 import { useUnits } from '@/hooks/useUnits'
 import { useRendezvousFormat } from '@/hooks/useRendezvousFormat'
+import { useWeatherLabels } from './useWeatherLabels'
 import { WeatherCheckpointStrip } from './WeatherCheckpointStrip'
 import { WeatherRainBanner } from './WeatherRainBanner'
 import { WindExposureBar } from './WindExposureBar'
@@ -24,6 +25,7 @@ export function LegWeather({
   const { t } = useTranslation()
   const { distance, speed } = useUnits()
   const { formatTime, isGuessedText } = useRendezvousFormat(timezone)
+  const labels = useWeatherLabels()
 
   if (leg.status === WeatherStatus.NO_LOCATION) {
     return (
@@ -62,6 +64,13 @@ export function LegWeather({
               )
             : t('rides.weather.leg.speed', { speed: speed(leg.averageSpeed) })}
         </Text>
+        {leg.prevailingWind && (
+          <Text size="xs" c="dimmed">
+            {t('rides.weather.leg.prevailingWind', {
+              wind: labels.windWithGusts(leg.prevailingWind),
+            })}
+          </Text>
+        )}
       </Stack>
       <WeatherRainBanner rainAlert={leg.rainAlert} timezone={timezone} />
       <WeatherCheckpointStrip checkpoints={leg.checkpoints} timezone={timezone} />

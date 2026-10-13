@@ -92,6 +92,8 @@ function renderSection(props: {
   weather?: RideWeatherDto
   canEdit?: boolean
   onRetry?: () => void
+  selectedGroupId?: string | null
+  onSelectGroup?: (groupId: string) => void
 }) {
   return render(
     <MantineProvider>
@@ -102,6 +104,8 @@ function renderSection(props: {
         isFetching={false}
         onRetry={props.onRetry ?? (() => {})}
         canEdit={props.canEdit ?? false}
+        selectedGroupId={props.selectedGroupId}
+        onSelectGroup={props.onSelectGroup}
       />
     </MantineProvider>
   )
@@ -119,6 +123,33 @@ describe('RideWeatherSection', () => {
     expect(headArrow.style.transform).toBe('rotate(180deg)')
     expect(screen.getByRole('img', { name: 'Vent dans le dos, 15 km/h' }).style.transform).toBe(
       'rotate(0deg)'
+    )
+  })
+
+  it("writes the wind speed and gusts on each point, and the leg's prevailing wind", () => {
+    const gusty = {
+      ...conditions,
+      wind: { speed: 18, gusts: 35, direction: 225, compass: 'SW' as const },
+    }
+    const base = leg('g2')
+    const weather: RideWeatherDto = {
+      ...okWeather,
+      legs: [
+        leg('g2', {
+          checkpoints: base.checkpoints.map((c) => ({ ...c, weather: gusty })),
+          prevailingWind: { speed: 16, gusts: 40, direction: 225, compass: 'SW' },
+        }),
+      ],
+    }
+    renderSection({ weather })
+    const points = screen.getAllByRole('listitem').map((li) => plain(li.textContent))
+    expect(points).toHaveLength(2)
+    for (const point of points) {
+      expect(point).toContain('18 km/h')
+      expect(point).toContain('rafales 35 km/h')
+    }
+    expect(plain(document.body.textContent)).toContain(
+      'Vent dominant : SO 16 km/h, rafales 40 km/h'
     )
   })
 
@@ -148,6 +179,18 @@ describe('RideWeatherSection', () => {
   it('switches group', () => {
     renderSection({ weather: okWeather })
     fireEvent.click(screen.getByText('Rapide'))
+    expect(plain(document.body.textContent)).not.toContain('vitesse par défaut')
+  })
+
+  it('tells the page which group was chosen, and follows the group the page chose', () => {
+    const onSelectGroup = vi.fn()
+    renderSection({ weather: okWeather, onSelectGroup })
+    fireEvent.click(screen.getByText('Rapide'))
+    expect(onSelectGroup).toHaveBeenCalledWith('g1')
+
+    cleanup()
+    // Chosen on the map: g1, the group at 30 km/h, though the reader rides with g2.
+    renderSection({ weather: okWeather, selectedGroupId: 'g1' })
     expect(plain(document.body.textContent)).not.toContain('vitesse par défaut')
   })
 

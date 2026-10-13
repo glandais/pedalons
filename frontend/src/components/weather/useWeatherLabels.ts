@@ -78,5 +78,14 @@ export function useWeatherLabels() {
     [t, compass, speed]
   )
 
-  return { condition, relativeWind, relativeWindShort, compass, wind }
+  /** « SO 18 km/h, rafales 35 km/h » — the wind with its gusts, when the model gives them. */
+  const windWithGusts = useCallback(
+    (value: WindDto) =>
+      value.gusts !== undefined
+        ? t('rides.weather.wind.withGusts', { wind: wind(value), gusts: speed(value.gusts) })
+        : wind(value),
+    [t, wind, speed]
+  )
+
+  return { condition, relativeWind, relativeWindShort, compass, wind, windWithGusts }
 }

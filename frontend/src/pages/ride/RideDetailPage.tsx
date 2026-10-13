@@ -78,7 +78,16 @@ export function RideDetailPage() {
   // Failure message for the group whose join/leave just failed. Kept in the card rather than
   // in a toast: a toast fires far from the button, then vanishes, leaving the card unchanged.
   const [groupError, setGroupError] = useState<{ groupId: string; message: string } | null>(null)
+  // The hovered group, and the one chosen — in the weather block, or by a click on its trace. The
+  // hover wins while it lasts; the choice stays lit on the map and among the cards.
   const [highlightedGroupId, setHighlightedGroupId] = useState<string | null>(null)
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
+  const litGroupId = highlightedGroupId ?? selectedGroupId
+  // A choice drops a hover the map may have left behind (it re-asserts its clicked trace on leave).
+  const chooseGroup = (groupId: string) => {
+    setSelectedGroupId(groupId)
+    setHighlightedGroupId(null)
+  }
   const [showUnpublishConfirm, setShowUnpublishConfirm] = useState(false)
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
   const [showUncancelConfirm, setShowUncancelConfirm] = useState(false)
@@ -509,6 +518,8 @@ export function RideDetailPage() {
           isFetching={weather.isFetching}
           onRetry={() => void weather.refetch()}
           canEdit={canEdit}
+          selectedGroupId={selectedGroupId}
+          onSelectGroup={chooseGroup}
         />
       </ErrorBoundary>
 
@@ -526,8 +537,10 @@ export function RideDetailPage() {
                 <RoutesMapView
                   items={mapItems}
                   teamSlug={teamSlug!}
-                  highlightedItemId={highlightedGroupId}
+                  highlightedItemId={litGroupId}
                   onItemHover={setHighlightedGroupId}
+                  selectedItemId={selectedGroupId}
+                  onItemSelect={chooseGroup}
                 />
               </Suspense>
             </ErrorBoundary>
@@ -556,7 +569,7 @@ export function RideDetailPage() {
                     onJoin={() => handleJoinGroup(group.id)}
                     onLeave={() => handleLeaveGroup(group.id)}
                     onHover={setHighlightedGroupId}
-                    isHighlighted={highlightedGroupId === group.id}
+                    isHighlighted={litGroupId === group.id}
                     // Every card, not only the one acted on: the optimistic update shows the
                     // other groups joinable before the server has let go of the first one, and
                     // a join sent then is refused (ALREADY_REGISTERED).

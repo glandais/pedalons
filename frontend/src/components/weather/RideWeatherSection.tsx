@@ -39,6 +39,12 @@ interface RideWeatherSectionProps {
   onRetry: () => void
   /** Organisers alone hear about a ride without a place (NO_LOCATION): they can fix it. */
   canEdit: boolean
+  /**
+   * The group chosen on the page — here, on the map or among the group cards. Left undefined, the
+   * block keeps its own choice; either way it opens on the reader's group.
+   */
+  selectedGroupId?: string | null
+  onSelectGroup?: (groupId: string) => void
 }
 
 /**
@@ -58,10 +64,17 @@ export function RideWeatherSection({
   isFetching,
   onRetry,
   canEdit,
+  selectedGroupId,
+  onSelectGroup,
 }: RideWeatherSectionProps) {
   const { t } = useTranslation()
   const { formatDate, isGuessedTimezone } = useFormattedDate()
-  const [selectedLeg, setSelectedLeg] = useState<string | null>(null)
+  const [ownSelectedLeg, setOwnSelectedLeg] = useState<string | null>(null)
+  const selectedLeg = selectedGroupId !== undefined ? selectedGroupId : ownSelectedLeg
+  const setSelectedLeg = (key: string) => {
+    setOwnSelectedLeg(key)
+    onSelectGroup?.(key)
+  }
 
   if (ride.finished || ride.status === Status.CANCELLED || isLoading) return null
 
@@ -172,6 +185,7 @@ export function RideWeatherSection({
                       onChange={(value) => value && setSelectedLeg(value)}
                       label={t('rides.weather.leg.select')}
                       allowDeselect={false}
+                      maxDropdownHeight={400}
                       maw={320}
                     />
                   ))}

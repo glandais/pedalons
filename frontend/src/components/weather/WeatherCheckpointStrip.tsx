@@ -124,6 +124,14 @@ function CheckpointCard({
                 </Text>
               </Group>
             )}
+            <Text size="xs" c="dimmed" ta="center">
+              {speed(weather.wind.speed)}
+            </Text>
+            {weather.wind.gusts !== undefined && (
+              <Text size="xs" c="dimmed" ta="center">
+                {t('rides.weather.wind.gustsShort', { gusts: speed(weather.wind.gusts) })}
+              </Text>
+            )}
           </>
         ) : (
           <Text size="xs" c="dimmed" ta="center">

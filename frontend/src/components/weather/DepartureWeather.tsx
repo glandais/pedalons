@@ -25,7 +25,7 @@ interface DepartureWeatherProps {
 /** The meeting point at departure: sky, temperature and felt temperature, rain, wind, daylight. */
 export function DepartureWeather({ departure, time, timezone }: DepartureWeatherProps) {
   const { t } = useTranslation()
-  const { temperature, speed } = useUnits()
+  const { temperature } = useUnits()
   const { formatTime, isGuessedText } = useRendezvousFormat(timezone)
   const labels = useWeatherLabels()
   const conditions = departure.conditions
@@ -73,14 +73,7 @@ export function DepartureWeather({ departure, time, timezone }: DepartureWeather
                   })}
             </Stat>
           )}
-          <Stat icon={<IconWind size={16} aria-hidden />}>
-            {wind.gusts !== undefined
-              ? t('rides.weather.wind.withGusts', {
-                  wind: labels.wind(wind),
-                  gusts: speed(wind.gusts),
-                })
-              : labels.wind(wind)}
-          </Stat>
+          <Stat icon={<IconWind size={16} aria-hidden />}>{labels.windWithGusts(wind)}</Stat>
           {departure.sunrise && (
             <Stat
               icon={<IconSunrise size={16} role="img" aria-label={t('rides.weather.sunrise')} />}
