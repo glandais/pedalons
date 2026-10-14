@@ -26,9 +26,19 @@ import {
   loginWithPassword,
   register as registerUser,
 } from '@/api/endpoints/authentication/authentication'
-import type { AuthResponse } from '@/api/dto'
+import type { AuthResponse, ErrorCode } from '@/api/dto'
+import type { TranslationKey } from '@/lib/i18nUtils'
 import { OtpLogin } from './OtpLogin'
 import { safeNextPath } from '@/lib/safeNextPath'
+
+/** The codes the sign-in and sign-up forms word their own way; any other gets its `errors.api.*` message. */
+const AUTH_ERROR_KEYS: Partial<Record<ErrorCode, TranslationKey>> = {
+  CONTENT_REJECTED: 'auth.errors.CONTENT_REJECTED',
+  EMAIL_ALREADY_EXISTS: 'auth.errors.EMAIL_ALREADY_EXISTS',
+  EMAIL_NOT_VERIFIED: 'auth.errors.EMAIL_NOT_VERIFIED',
+  INVALID_CREDENTIALS: 'auth.errors.INVALID_CREDENTIALS',
+  LOGIN_RATE_LIMITED: 'auth.errors.LOGIN_RATE_LIMITED',
+}
 
 export type LoginFormMode = 'login' | 'register' | 'otp'
 
@@ -199,11 +209,10 @@ export function LoginForm({
       console.error('Login failed', error)
       const code = apiErrorCode(error)
       notifications.show({
-        message: t(`auth.errors.${code}`, {
-          defaultValue: t(`errors.api.${code}`, {
-            defaultValue: t('auth.errors.loginFailed'),
-          }),
-        }),
+        message:
+          code && AUTH_ERROR_KEYS[code]
+            ? t(AUTH_ERROR_KEYS[code])
+            : t(`errors.api.${code}`, { defaultValue: t('auth.errors.loginFailed') }),
         color: 'red',
       })
     } finally {
@@ -236,11 +245,10 @@ export function LoginForm({
       console.error('Registration failed', error)
       const code = apiErrorCode(error)
       notifications.show({
-        message: t(`auth.errors.${code}`, {
-          defaultValue: t(`errors.api.${code}`, {
-            defaultValue: t('auth.errors.registrationFailed'),
-          }),
-        }),
+        message:
+          code && AUTH_ERROR_KEYS[code]
+            ? t(AUTH_ERROR_KEYS[code])
+            : t(`errors.api.${code}`, { defaultValue: t('auth.errors.registrationFailed') }),
         color: 'red',
       })
     } finally {
