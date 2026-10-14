@@ -47,9 +47,9 @@ does not cover. Never `apply` without reading the plan:
 ```bash
 cd mobile
 asc metadata validate --dir ./metadata
-asc metadata plan     --app 6761760079 --version 1.0.0 --platform IOS --dir ./metadata --review-dir ../.asc/metadata/review
+asc metadata plan     --app 6761760079 --version 1.1.0 --platform IOS --dir ./metadata --review-dir ../.asc/metadata/review
 asc metadata approve  --review-dir ../.asc/metadata/review --all
-asc metadata apply    --app 6761760079 --version 1.0.0 --platform IOS --dir ./metadata --review-dir ../.asc/metadata/review --confirm
+asc metadata apply    --app 6761760079 --version 1.1.0 --platform IOS --dir ./metadata --review-dir ../.asc/metadata/review --confirm
 ```
 
 Name, subtitle and keywords form **one indexed pool**: never repeat a word across them, keep keywords
@@ -69,7 +69,14 @@ Mac/Vision Pro distribution — look at *Pricing and Availability* in the browse
 Pitfalls: adding a locale takes **two** `apply` runs (creating the `app-info` localization makes
 App Store Connect create the version one, and the version half of the same plan fails with "already
 been used" — re-plan and apply again). `review-notes.md` is pushed with
-`asc review details-update --id d8cc0005-f535-4475-a720-a00eeb844adb --notes "$(cat metadata/review-notes.md)"`.
+`asc review details-update --id <detail> --notes "$(cat metadata/review-notes.md)"`. The review
+detail belongs to **one version**: read its ID with `asc review details-for-version --version-id
+<version>` (1.0.0 was `d8cc0005-f535-4475-a720-a00eeb844adb`, 1.1.0 is
+`8ca43e45-9914-439b-bf67-ebccad095826`).
+
+Version 1.1.0 was created on 14 October 2026 (`asc versions create … --copyright "2026 Gabriel
+Landais" --release-type MANUAL`, description and keywords copied from 1.0.0 by App Store Connect),
+after 1.0.0 went on sale with build 74.
 
 ## Google Play listing
 

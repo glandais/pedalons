@@ -27,6 +27,7 @@ import '../widgets/registration_failure_banner.dart';
 import '../widgets/ride_group_action_bar.dart';
 import '../widgets/ride_group_overview_tab.dart';
 import '../widgets/ride_group_weather_tab.dart';
+import '../../domain/group_title.dart';
 
 /// La page d'**un** groupe d'une sortie (ledger `MOB-67`).
 ///
@@ -222,9 +223,7 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Text(
-                  'rides.groupPage.title'.tr(
-                    namedArgs: <String, String>{'name': group.name},
-                  ),
+                  groupTitle(group.name, 'rides.groupPage.title'.tr()),
                   style: t.barTitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,

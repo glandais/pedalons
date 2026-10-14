@@ -55,7 +55,9 @@ display_type_for() {
 
 [ -d "$OUT" ] || { red "aucun rendu sous $OUT — lancer : kou generate screenshots/koubou/iphone.yaml"; exit 1; }
 
-devices=$(find "$OUT" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sort)
+# play/ et feature/ sont les rendus Google Play (koubou/play.yaml, feature.yaml), que
+# assemble-play.sh copie : seuls les appareils App Store passent ici.
+devices=$(find "$OUT" -mindepth 1 -maxdepth 1 -type d \( -name iphone -o -name ipad \) -exec basename {} \; | sort)
 [ -n "$devices" ] || { red "aucun appareil sous $OUT"; exit 1; }
 
 copied=0

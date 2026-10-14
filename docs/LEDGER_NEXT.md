@@ -191,7 +191,8 @@ navigateur), et la connexion par code e-mailé (la préférence de fuseau existe
         seul.
       - **Recette sur appareil**, clair et sombre : onglets et `?tab=weather` depuis un lien profond
         à froid (le détail de la sortie reconstruit dessous), puces de groupe, barre d'inscription
-        (cibles de 44 px), captures des stores renommées `rideGroupWeather`.
+        (cibles de 44 px). Les captures des stores (`rideGroupWeather`) sont refaites le 14 octobre
+        2026.
       - **Mineur** : la pastille pluie de la ligne météo est bleue (comme au web) quand le bandeau
         pluie de l'onglet Météo reste jaune ; si la pluie doit porter une couleur, la mettre dans
         `contracts/brand-colors.yaml` pour les deux clients.
@@ -271,6 +272,15 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
       - **Recette à l'œil** : colonne de carte collante à partir de 64em, sélecteur de groupe
         (4 puis `Select`), un groupe supprimé (état vide), un inscrit dans un autre groupe, mode
         sombre, téléphone ; la ligne météo des cartes de groupe sur le détail. Recoupe `WEB-61`.
+
+- [ ] `WEB-83` **« Groupe Groupe intermédiaire » : le libellé d'un groupe répète son préfixe (XS)** —
+      `rides.group.title` (« Groupe {{name}} », « Group {{name}} ») est posé devant un nom qui
+      commence souvent déjà par ce mot : les groupes de démo, et tout club qui nomme les siens
+      « Groupe A ». Quatre appels : l'en-tête et le partage de `pages/ride/RideGroupPage.tsx`, le
+      fil d'Ariane (`hooks/useBreadcrumbData.ts`), le titre de la page (`config/routeMeta.ts`).
+      Reprendre la règle du mobile, corrigé le 14 octobre 2026 (`mobile/lib/features/rides/domain/group_title.dart`,
+      `group_title_test.dart`) : le nom seul quand il commence par le mot du gabarit, casse ignorée,
+      mot entier (« Groupement » garde le préfixe) ; une fonction partagée et son test vitest.
 
 ### Couverture e2e — ce que l'audit du 27 septembre laisse ouvert
 

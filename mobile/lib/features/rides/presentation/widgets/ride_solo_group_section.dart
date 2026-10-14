@@ -16,6 +16,7 @@ import 'registration_failure_banner.dart';
 import 'ride_group_leader_row.dart';
 import 'ride_group_route_actions.dart';
 import 'ride_group_stats.dart';
+import '../../domain/group_title.dart';
 
 /// Le groupe d'une sortie **solo** — un seul groupe —, à la place de la
 /// section Groupes du détail (ledger `MOB-69`).
@@ -143,9 +144,7 @@ class _RideSoloGroupSectionState extends ConsumerState<RideSoloGroupSection>
         const SizedBox(width: PdlSpacing.chipGap),
         Expanded(
           child: Text(
-            'rides.groupPage.title'.tr(
-              namedArgs: <String, String>{'name': widget.group.name},
-            ),
+            groupTitle(widget.group.name, 'rides.groupPage.title'.tr()),
             style: t.sectionTitle,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,

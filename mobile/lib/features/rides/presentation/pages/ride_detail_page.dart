@@ -104,8 +104,27 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
   /// Un défilement vers la météo est déjà planifié pour ce cadre.
   bool _scrollScheduled = false;
 
+  /// Captures des stores seulement : l'ancre des cartes de groupe, et le
+  /// défilement qui l'attend tant que la météo, au-dessus, n'a pas sa hauteur.
+  final GlobalKey _groupsAnchor = GlobalKey();
+  bool _scrollToGroups = false;
+
   RideKey get rideKey => widget.rideKey;
   RideDto get ride => widget.ride;
+
+  void _maybeScrollToGroups() {
+    if (!_scrollToGroups) return;
+    if (!ride.isPast &&
+        !ride.isCancelled &&
+        ref.watch(rideWeatherProvider(rideKey)).isLoading) {
+      return;
+    }
+    _scrollToGroups = false;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final BuildContext? anchor = _groupsAnchor.currentContext;
+      if (mounted && anchor != null) Scrollable.ensureVisible(anchor);
+    });
+  }
 
   /// Défile jusqu'au bloc météo une fois la prévision là — sans elle, le bloc
   /// n'a pas encore sa hauteur, et l'on s'arrêterait au-dessus.
@@ -181,6 +200,10 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
       }
     }
     _maybeScrollToWeather();
+    // Captures des stores seulement : le détail cadré sur ses cartes de
+    // groupe, que la météo au départ pousse sous la carte.
+    if (screenshotTakePush('rideGroups')) _scrollToGroups = true;
+    _maybeScrollToGroups();
 
     // Le leg du groupe d'une sortie solo, pour son arrivée estimée. Une
     // sortie terminée ou annulée ne demande même pas sa météo.
@@ -287,6 +310,7 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
         ),
         SliverToBoxAdapter(
           child: Padding(
+            key: _groupsAnchor,
             padding: const EdgeInsets.all(PdlSpacing.section),
             child: solo != null
                 ? RideSoloGroupSection(

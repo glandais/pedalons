@@ -9,7 +9,7 @@ WHAT TO LOOK AT
 - Routes: list and map views, a route's elevation profile, GPX/FIT download.
 - Calendar, posts and their comments, classified ads.
 - A team: its dashboard (your next rides, latest posts, new routes, ads), then its Agenda, Posts, Routes, Ads and Members.
-- A ride's weather, once it is less than seven days away: the card under the date, then "See the route weather".
+- A ride's weather, once it is less than seven days away: the "Weather at the start" card under the date; then tap a pace group's card to open its page, whose Weather tab gives rain, temperature and headwind or tailwind along the route at that group's pace.
 - Profile: account settings, and account deletion under Profile > My account > Danger zone.
 
 PERMISSIONS

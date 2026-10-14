@@ -68,7 +68,9 @@ Future<void> screenshotSignIn(WidgetRef ref) async {
 /// page whose URL depends on data the plan does not know —
 /// `rideGroupWeather`, the Météo tab of the selected group's page, pushed
 /// from a ride's detail (ledger `MOB-67`) — or, for a single-group ride, which has no group page,
-/// a scroll of the detail down to its weather (ledger `MOB-69`). True once for [name], so a rebuild of the page
+/// a scroll of the detail down to its weather (ledger `MOB-69`) —, or
+/// `rideGroups`, a scroll of a ride's detail down to its group cards, which
+/// the weather at the start pushes below the map. True once for [name], so a rebuild of the page
 /// underneath does not push it a second time.
 bool screenshotTakePush(String name) {
   if (!kScreenshotMode || _launch['push'] != name) return false;

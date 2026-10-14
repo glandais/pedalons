@@ -21,7 +21,8 @@
         {
           "id": "02-ride",
           "path": "/equipes/vc-du-lac-d-annecy/sorties/sortie-du-samedi-la-forclaz",
-          "wait": 12
+          "wait": 12,
+          "push": "rideGroups"
         },
         {
           "id": "03-weather",
@@ -68,7 +69,8 @@
         {
           "id": "02-ride",
           "path": "/teams/annecy-lakeside-cycling/rides/saturday-ride-the-forclaz",
-          "wait": 12
+          "wait": 12,
+          "push": "rideGroups"
         },
         {
           "id": "03-weather",
