@@ -251,7 +251,7 @@ services:
           memory: 1G
 
   imgproxy:
-    image: ghcr.io/imgproxy/imgproxy:v4.0.17
+    image: ghcr.io/imgproxy/imgproxy:v4.0.18
     container_name: ${ENV_NAME}-imgproxy
     restart: unless-stopped
     networks:
