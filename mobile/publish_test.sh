@@ -3,6 +3,15 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
+# publish_beta.sh sets PUBLISH_CHANNEL=beta: same build, sent further — the
+# external TestFlight group and Play's closed testing track instead of internal
+# testers only.
+case "${PUBLISH_CHANNEL:-test}" in
+  test) IOS_LANE=(beta); ANDROID_LANE=internal ;;
+  beta) IOS_LANE=(beta external:true); ANDROID_LANE=closed ;;
+  *) echo "PUBLISH_CHANNEL must be test or beta" >&2; exit 1 ;;
+esac
+
 ./clean.sh
 
 # Use the Homebrew Ruby (which carries the bundler version pinned in the
@@ -41,7 +50,7 @@ NEW_VERSION=$(grep -E '^version:' pubspec.yaml | awk '{print $2}')
 echo ">>> Building $NEW_VERSION"
 
 flutter build ios --release --no-codesign
-(cd ios && bundle exec fastlane beta --verbose)
+(cd ios && bundle exec fastlane "${IOS_LANE[@]}" --verbose)
 
 export JAVA_HOME="$(/usr/libexec/java_home -v 21)"
 export PATH="$JAVA_HOME/bin:$PATH"
@@ -49,7 +58,7 @@ export PATH="$JAVA_HOME/bin:$PATH"
 # linger holding JDK 21.
 trap '(cd android && ./gradlew --quiet --stop)' EXIT
 flutter build appbundle --release
-(cd android && bundle exec fastlane internal --verbose)
+(cd android && bundle exec fastlane "$ANDROID_LANE" --verbose)
 
 # Both uploads are through: the build number is now real, so record it.
 git add pubspec.yaml

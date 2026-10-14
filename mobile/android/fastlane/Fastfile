@@ -37,6 +37,20 @@ platform :android do
     )
   end
 
+  desc "Upload a new build to the closed testing track (« Test fermé », API name alpha), for the testers of its list. Run `flutter build appbundle --release` from the project root first. No release notes: the version's whatsNew exceeds Play's 500 characters."
+  lane :closed do
+    upload_to_play_store(
+      track: "alpha",
+      aab: "../build/app/outputs/bundle/release/app-release.aab",
+      release_status: "completed",
+      skip_upload_apk: true,
+      skip_upload_metadata: true,
+      skip_upload_changelogs: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+    )
+  end
+
   desc "Push the Data safety form from store-metadata/data-safety.csv (Play Console CSV format). The API is write-only: there is no pull, so the CSV in git is the record, and a hand edit in the Console is overwritten by the next run."
   lane :data_safety do
     require "google/apis/androidpublisher_v3"

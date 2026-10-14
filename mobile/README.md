@@ -157,6 +157,7 @@ Environment variables via `--dart-define`:
 | `clean.sh` | Clean both platforms, reinstall and regenerate |
 | `e2e.sh` | Patrol end-to-end tests against the e2e stack — see [patrol_test/README.md](patrol_test/README.md) |
 | `publish_test.sh` | Bump the build number, upload to TestFlight (`fastlane beta`) and to the Play internal track (`fastlane internal`) |
+| `publish_beta.sh` | Same, for beta testers: external TestFlight group NP (after Apple's beta review) and Play closed testing (`fastlane beta external:true`, `fastlane closed`) |
 
 ## Related Documentation
 

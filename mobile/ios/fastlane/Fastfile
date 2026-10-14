@@ -33,9 +33,19 @@ def asc_api_key
   )
 end
 
+# « What to Test » per TestFlight locale, from the App Store whatsNew of the pubspec.yaml version.
+def testflight_whats_new
+  require "json"
+  app_version = File.read("../../pubspec.yaml")[/^version:\s*(\d+\.\d+\.\d+)/, 1]
+  dir = "../../metadata/version/#{app_version}"
+  files = Dir.glob(File.join(dir, "*.json"))
+  UI.user_error!("No whatsNew for #{app_version}: #{dir}/<locale>.json missing") if files.empty?
+  files.to_h { |f| [File.basename(f, ".json"), { whats_new: JSON.parse(File.read(f)).fetch("whatsNew") }] }
+end
+
 platform :ios do
-  desc "Push a new beta build to TestFlight. Run `flutter build ios --release --no-codesign` from the project root first. Build number comes from pubspec.yaml."
-  lane :beta do
+  desc "Push a new beta build to TestFlight. Run `flutter build ios --release --no-codesign` from the project root first. Build number comes from pubspec.yaml. Internal testers only, unless `external:true` (publish_beta.sh): the build then also goes to the external group NP (public link), which first passes Apple's beta review, with the version's whatsNew from mobile/metadata/version/<version>/ as « What to Test »."
+  lane :beta do |options|
     build_app(
       workspace: "Runner.xcworkspace",
       scheme: "Runner",
@@ -48,7 +58,18 @@ platform :ios do
         signingStyle: "automatic"
       }
     )
-    upload_to_testflight(api_key: asc_api_key, skip_waiting_for_build_processing: true)
+    if options[:external] == true
+      # Distributing to an external group needs the processed build, so this waits (10–30 min).
+      upload_to_testflight(
+        api_key: asc_api_key,
+        distribute_external: true,
+        groups: ["NP"],
+        notify_external_testers: true,
+        localized_build_info: testflight_whats_new
+      )
+    else
+      upload_to_testflight(api_key: asc_api_key, skip_waiting_for_build_processing: true)
+    end
   end
 
   desc "Promote the TestFlight build matching the current pubspec.yaml version to the App Store version in App Store Connect. Run `beta` for that exact version first — this lane does not build or upload a binary. Metadata and screenshots stay untouched (the App Store listing is versioned in mobile/metadata/ and pushed with `asc`, see store-metadata/README.md) and the version is left unsubmitted so you can review it in App Store Connect before submitting for review."
