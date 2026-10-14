@@ -3,6 +3,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import express from 'express'
 import compression from 'compression'
+import expressStaticGzip from 'express-static-gzip'
 import { createProxyMiddleware } from 'http-proxy-middleware'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -247,17 +248,27 @@ async function createServer() {
   })
 
   if (isProduction) {
+    // compression() is for what is rendered per request (SSR pages, sitemap, llms.txt). The static
+    // files come pre-compressed from the build (vite-plugin-compression2, .br/.gz siblings):
+    // express-static-gzip picks the variant the browser accepts and sets Content-Encoding, which
+    // compression() then leaves alone — no more gzipping map-vendor on every request
+    // (docs/LEDGER_*.md WEB-82). A file without a variant falls through to plain serve-static.
     app.use(compression())
     app.use(
-      express.static(path.resolve(__dirname, 'dist/client'), {
+      expressStaticGzip(path.resolve(__dirname, 'dist/client'), {
+        enableBrotli: true,
+        orderPreference: ['br', 'gzip'],
         index: false,
-        setHeaders: (res, filePath) => {
-          // Hashed build assets are immutable and safe to cache for a long time.
-          if (filePath.includes(`${path.sep}assets${path.sep}`)) {
-            res.setHeader('Cache-Control', 'public, max-age=2678400, immutable')
-          } else {
-            res.setHeader('Cache-Control', 'public, max-age=2678400')
-          }
+        serveStatic: {
+          index: false,
+          setHeaders: (res, filePath) => {
+            // Hashed build assets are immutable and safe to cache for a long time.
+            if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+              res.setHeader('Cache-Control', 'public, max-age=2678400, immutable')
+            } else {
+              res.setHeader('Cache-Control', 'public, max-age=2678400')
+            }
+          },
         },
       })
     )

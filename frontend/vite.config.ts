@@ -1,5 +1,6 @@
 import { defineConfig, loadEnv, PluginOption } from 'vite'
 import react from '@vitejs/plugin-react'
+import { compression } from 'vite-plugin-compression2'
 import path from 'path'
 import fs from 'fs'
 // import { visualizer } from 'rollup-plugin-visualizer'
@@ -31,7 +32,7 @@ function requestLogger(): PluginOption {
   }
 }
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ mode, isSsrBuild }) => {
   // API proxy target: from .env (VITE_API_TARGET) or staging by default
   const env = loadEnv(mode, import.meta.dirname, '')
   const apiTarget = env.VITE_API_TARGET || 'https://staging.pedalons.fr'
@@ -59,6 +60,16 @@ export default defineConfig(({ mode }) => {
     plugins: [
       requestLogger(),
       react(),
+      // Brotli + gzip siblings of the client assets, written once at build time and served as-is by
+      // express-static-gzip in server.js — instead of gzipping map-vendor (1 MB) on every request
+      // (docs/LEDGER_*.md WEB-82). Not the SSR bundle, which no browser downloads. index.html is the
+      // SSR template, never served as a file; sw.js has its own no-cache route.
+      !isSsrBuild &&
+        compression({
+          algorithms: ['brotliCompress', 'gzip'],
+          threshold: 1024,
+          exclude: [/\.html$/, /(^|\/)sw\.js$/],
+        }),
       /*
     visualizer({
       open: false,
