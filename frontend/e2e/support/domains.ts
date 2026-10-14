@@ -11,7 +11,7 @@ import type {
   UpdateDomainAliasRequest,
 } from '../../src/api/dto'
 import { ApiError, apiGet, apiPost, apiPut, expectOk, type AuthResponse } from './api'
-import { roleSession, teamRequest } from './data'
+import { roleSession, SESSION_MAX_AGE_MS, teamRequest } from './data'
 import { linkTokenIn, mailbox, waitForNewMail } from './mailpit'
 import { keepRotatedSession, type RawDocument } from './ssr'
 import { stack } from './stack'
@@ -219,7 +219,7 @@ const OTHER_ADMIN = {
   password: 'e2e-autre-admin-password',
 }
 
-let otherAdminSession: Promise<AuthResponse> | undefined
+let otherAdminSession: { auth: Promise<AuthResponse>; at: number } | undefined
 
 /**
  * Runs `call` again (up to three times, after a short random pause) when it fails with a 500.
@@ -274,14 +274,23 @@ export async function ensureOtherAdmin(): Promise<void> {
 
 /**
  * A platform admin of `autre.localhost`, which global-setup created (ensureOtherAdmin): signed in by
- * password, cached per worker — a login per worker, never a session saved between runs, whose token
+ * password, cached per worker for {@link SESSION_MAX_AGE_MS} like roleSession() — a login per worker, never a session saved between runs, whose token
  * would rotate under every worker that refreshed it (docs/LEDGER_*.md SEC-27). Needed for anything
  * only a platform admin may do on that domain (a public team, say).
  */
 export function otherAdmin(): Promise<AuthResponse> {
-  otherAdminSession ??= logInOtherAdmin()
-  otherAdminSession.catch(() => (otherAdminSession = undefined))
-  return otherAdminSession
+  // Renewed like roleSession(): the access token lives 15 minutes, and a worker that signed in for
+  // multi-tenancy.e2e.ts reaches ssr-session.e2e.ts long after — a token cached for good gets a 401.
+  if (otherAdminSession && Date.now() - otherAdminSession.at < SESSION_MAX_AGE_MS)
+    return otherAdminSession.auth
+  const auth = logInOtherAdmin()
+  const entry = { auth, at: Date.now() }
+  otherAdminSession = entry
+  // A failure is not cached: the next caller tries again.
+  auth.catch(() => {
+    if (otherAdminSession === entry) otherAdminSession = undefined
+  })
+  return auth
 }
 
 /**

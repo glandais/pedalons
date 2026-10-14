@@ -27,7 +27,7 @@ import { seedPath, stack, type Role } from './stack'
  */
 
 /** Access tokens live 15 minutes: a cached one is replaced once it is older than this. */
-const SESSION_MAX_AGE_MS = 10 * 60_000
+export const SESSION_MAX_AGE_MS = 10 * 60_000
 
 const sessions = new Map<Role, { auth: Promise<AuthResponse & Credentials>; at: number }>()
 
