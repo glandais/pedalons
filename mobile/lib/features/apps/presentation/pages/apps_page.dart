@@ -17,6 +17,7 @@ import '../../data/beta_signup_repository.dart';
 
 const String _kKarooReleasesUrl =
     'https://github.com/glandais/pedalons/releases?q=karoo';
+const String _kAppStoreUrl = 'https://apps.apple.com/app/id6761760079';
 
 class AppsPage extends ConsumerStatefulWidget {
   const AppsPage({super.key});
@@ -84,6 +85,26 @@ class _AppsPageState extends ConsumerState<AppsPage> {
               ),
               const SizedBox(height: PdlSpacing.section),
               _AppTile(
+                icon: PdlIcons.device,
+                title: 'apps.mobile.title'.tr(),
+                description: 'apps.mobile.description'.tr(),
+                available: true,
+                action: PdlButton(
+                  label: 'apps.mobile.download'.tr(),
+                  icon: PdlIcons.openExternal,
+                  variant: PdlButtonVariant.outline,
+                  onPressed: () => openLink(context, _kAppStoreUrl),
+                ),
+              ),
+              const SizedBox(height: PdlSpacing.cardTight),
+              _AppTile(
+                icon: PdlIcons.devices,
+                title: 'apps.garmin.title'.tr(),
+                description: 'apps.garmin.description'.tr(),
+                available: false,
+              ),
+              const SizedBox(height: PdlSpacing.cardTight),
+              _AppTile(
                 icon: PdlIcons.ride,
                 title: 'apps.karoo.title'.tr(),
                 description: 'apps.karoo.description'.tr(),
@@ -94,20 +115,6 @@ class _AppsPageState extends ConsumerState<AppsPage> {
                   variant: PdlButtonVariant.outline,
                   onPressed: () => openLink(context, _kKarooReleasesUrl),
                 ),
-              ),
-              const SizedBox(height: PdlSpacing.cardTight),
-              _AppTile(
-                icon: PdlIcons.device,
-                title: 'apps.mobile.title'.tr(),
-                description: 'apps.mobile.description'.tr(),
-                available: false,
-              ),
-              const SizedBox(height: PdlSpacing.cardTight),
-              _AppTile(
-                icon: PdlIcons.devices,
-                title: 'apps.garmin.title'.tr(),
-                description: 'apps.garmin.description'.tr(),
-                available: false,
               ),
               const SizedBox(height: PdlSpacing.section),
               PdlCard(

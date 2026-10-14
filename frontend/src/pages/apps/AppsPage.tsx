@@ -27,6 +27,7 @@ import { signUpForBeta } from '@/api/endpoints/beta-signups/beta-signups'
 import { useInstallOffer } from '@/lib/install/useInstallOffer'
 
 const KAROO_RELEASES_URL = 'https://github.com/glandais/pedalons/releases?q=karoo'
+const APP_STORE_URL = 'https://apps.apple.com/app/id6761760079'
 
 type AppStatus = 'available' | 'comingSoon' | 'installed'
 
@@ -125,6 +126,30 @@ export function AppsPage() {
         <SimpleGrid cols={{ base: 1, sm: 2, md: 4 }}>
           <WebAppCard />
           <AppCard
+            icon={<IconDeviceMobile size={28} />}
+            title={t('apps.mobile.title')}
+            description={t('apps.mobile.description')}
+            status="available"
+            action={
+              <Button
+                component="a"
+                href={APP_STORE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                variant="light"
+                rightSection={<IconExternalLink size={16} />}
+              >
+                {t('apps.mobile.download')}
+              </Button>
+            }
+          />
+          <AppCard
+            icon={<IconDeviceWatch size={28} />}
+            title={t('apps.garmin.title')}
+            description={t('apps.garmin.description')}
+            status="comingSoon"
+          />
+          <AppCard
             icon={<IconMountain size={28} />}
             title={t('apps.karoo.title')}
             description={t('apps.karoo.description')}
@@ -141,18 +166,6 @@ export function AppsPage() {
                 {t('apps.karoo.download')}
               </Button>
             }
-          />
-          <AppCard
-            icon={<IconDeviceMobile size={28} />}
-            title={t('apps.mobile.title')}
-            description={t('apps.mobile.description')}
-            status="comingSoon"
-          />
-          <AppCard
-            icon={<IconDeviceWatch size={28} />}
-            title={t('apps.garmin.title')}
-            description={t('apps.garmin.description')}
-            status="comingSoon"
           />
         </SimpleGrid>
 

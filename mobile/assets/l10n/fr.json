@@ -1427,7 +1427,8 @@
     },
     "mobile": {
       "title": "Application mobile",
-      "description": "L'application mobile arrive bientôt."
+      "description": "Disponible sur iPhone dans l'App Store. La version Android arrive bientôt.",
+      "download": "Télécharger sur l'App Store"
     },
     "garmin": {
       "title": "Garmin",
