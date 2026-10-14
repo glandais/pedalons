@@ -276,9 +276,14 @@ final class Ride extends Module {
   }
 
   /// Back from the group's page to the ride.
+  ///
+  /// The ride comes back where it was left — scrolled down to the group's card, its title
+  /// possibly scrolled out of the tree — so what tells it is back is its app bar's `⋯`, which
+  /// no scroll moves, once the group's page is gone.
   Future<void> closeGroup() async {
     await $(keys.rideGroup.backButton).tap();
-    await waitUntilShown();
+    await waitUntilGone(keys.rideGroup.page);
+    await $(keys.ride.moreButton).waitUntilVisible();
   }
 
   /// Whether the group's page names [name] as its leader.

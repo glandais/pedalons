@@ -55,6 +55,12 @@ class _PedalonsAppState extends ConsumerState<PedalonsApp> {
   @override
   Widget build(BuildContext context) {
     setCurrentLocale(context.locale.languageCode);
+    // La locale d'`Intl` suit la langue de l'app, pas celle de l'appareil
+    // qu'easy_localization y laisse (`findSystemLocale`) : sans quoi une app en
+    // français sur un iPhone en anglais lit « heure Paris » au lieu de « heure
+    // de Paris » et « 66.5 km » au lieu de « 66,5 km » — `AppFormatters` lit
+    // `Intl.getCurrentLocale()`, comme le posent ses tests.
+    Intl.defaultLocale = context.locale.languageCode;
     final authState = ref.watch(authProvider);
     final router = ref.watch(routerProvider);
     final preferences = ref.watch(userPreferencesProvider);

@@ -14,6 +14,11 @@ import 'common.dart';
 /// A stage at 08:00 in its team's Paris, read by a member whose preference is `Pacific/Auckland`:
 /// « 08:00 » and that day in Paris, then « heure de Paris (… chez vous) » with the Auckland time —
 /// not the device's, which would read the same instant otherwise.
+///
+/// Clock times are written by [AppFormatters.formatTime], whose shape depends on the phone's
+/// 12/24 h setting and on the app's language (« 8:00 AM » in English on a 12 h phone). The expected
+/// strings go through it too — it reads the same globals the running app set — rather than
+/// hard-coding « 08:00 ».
 void main() {
   const String zone = 'Pacific/Auckland';
   const String teamZone = 'Europe/Paris';
@@ -69,11 +74,20 @@ void main() {
       // The stage's own clock, in Paris.
       final DateTime wall = DateTime(start.year, start.month, start.day, 8);
       expect($(AppFormatters.formatLongDate(wall)).exists, isTrue);
-      expect($(RegExp(r'\b08:00\b')).exists, isTrue);
+      final String at = RegExp.escape(AppFormatters.formatTime(wall));
+      expect($(RegExp('\\b$at\\b')).exists, isTrue);
       // The member's, in Auckland: the day only when it is not the stage's.
-      final String hour =
-          '${inAuckland.hour.toString().padLeft(2, '0')}:'
-          '${inAuckland.minute.toString().padLeft(2, '0')}';
+      final String hour = RegExp.escape(
+        AppFormatters.formatTime(
+          DateTime(
+            inAuckland.year,
+            inAuckland.month,
+            inAuckland.day,
+            inAuckland.hour,
+            inAuckland.minute,
+          ),
+        ),
+      );
       expect(
         $(RegExp('heure de Paris \\((\\S+\\. )?$hour chez vous\\)')).exists,
         isTrue,
