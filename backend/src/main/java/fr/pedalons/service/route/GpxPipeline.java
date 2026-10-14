@@ -57,10 +57,11 @@ public class GpxPipeline {
   @Inject ElevationProvider elevationProvider;
 
   /**
-   * Runs the full pipeline on {@code source}, returning a new path. Elevation failures degrade
-   * gracefully: the original elevations are kept and the rest of the pipeline still runs. A bridge
-   * deck or tunnel step that cannot read its tiles never throws; it leaves the profile as the DEM
-   * read made it, and says so in the path's report, which is logged here.
+   * Runs the full pipeline on {@code source}, returning a new path. An IGN tile that cannot be read
+   * never throws: its points are read from Mapterhorn instead, and a bridge deck or tunnel step
+   * that cannot read its tiles leaves the profile as the DEM read made it — both say so in the
+   * path's report, which is logged here. Only when Mapterhorn fails too does the fix throw; the
+   * original elevations are then kept and the rest of the pipeline still runs.
    *
    * @param name only used for logging, so a failure can be traced back to a track
    */

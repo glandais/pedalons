@@ -466,23 +466,6 @@ calendrier (`API-20`) sont dans
 [`LEDGER_DONE.md`](LEDGER_DONE.md). Les **gabarits de sortie n'ont volontairement pas de meneur** —
 décision produit : `RideTemplateGroupRequest` reste sans champ.
 
-### Profil altimétrique : suites d'`API-104`
-
-- [ ] `API-105` **Un seul rythme de requêtes vers l'IGN** — vcyclist 6.5.0 rythme chaque couche
-      séparément (MNT et MNS à 20 requêtes/s chacune), donc deux imports simultanés qui partagent le
-      provider peuvent cumuler 40/s sur `data.geopf.fr`, le seuil où l'IGN répond 429. Les reprises
-      sur 429 rattrapent le cas, au prix d'imports plus lents. Correctif amont proposé (un rythme
-      par hôte, vcyclist 6.5.1) : monter `vcyclist.version` dans `backend/pom.xml` quand il sort.
-      Taille : XS.
-- [ ] `API-106` **Tunnels hors des zones LiDAR** — la détection des tunnels de vcyclist tourne sur
-      toute la trace, mais sa précision n'est mesurée que sur un terrain issu du LiDAR (IGN, et
-      Mapterhorn en France et en Finlande). Ailleurs, Mapterhorn est le GLO-30 (30 m, un modèle de
-      surface) : non mesuré, et une sonde dans les gorges du Dadès (Maroc) y a trouvé trois faux
-      tunnels — un faux tunnel aplatit une vraie montée. Remède amont possible, à demander s'il y a
-      assez de parcours à l'étranger : une option `tunnelScope = everywhere | primary-data-only`
-      (dans vcyclist, sur ses sept portes). Repli côté backend en attendant : `tunnels = false` pour
-      une trace sans aucun point en France, ce qui ne couvre pas les traces frontalières. Taille : S.
-
 ### Garmin
 
 - [ ] `API-61` **Mettre l'intégration Garmin OAuth 2.0 en conformité** — **bloqué** : le programme
@@ -616,7 +599,8 @@ Ce que les tests ne prouvent pas, parce qu'ils ne passent ni par Flyway ni par u
       surveiller un ×10 sur le débit vers `tiles.mapterhorn.com`. Depuis `API-104`, l'élévation
       vient d'abord de l'IGN (`data.geopf.fr`, MNT + MNS en zoom 15) : environ 70 Mo par tranche de
       130 km à cache froid, sous `{cache}/ign-lidar-hd-mnt/` et `ign-lidar-hd-mns/` — surveiller
-      la place disque du volume de cache, et les 429 dans les journaux (`API-105`).
+      la place disque du volume de cache, et les 429 dans les journaux (le rythme de 20 requêtes/s
+      est commun à tout le processus depuis `API-105`).
 
 ---
 
