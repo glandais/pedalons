@@ -1,6 +1,6 @@
 # Politique de confidentialité
 
-**Dernière mise à jour : 5 octobre 2026**
+**Dernière mise à jour : 14 octobre 2026**
 
 La présente politique de confidentialité décrit la manière dont Pedalons (« nous », « notre », « nos ») collecte, utilise et protège vos données personnelles lorsque vous utilisez notre plateforme (site web, application mobile, extensions pour appareils GPS).
 
@@ -259,8 +259,8 @@ Les prévisions météo des sorties sont demandées à Open-Meteo par notre serv
   - *Rôle* : Tuiles d'altitude et d'ombrage (relief 3D) ; également utilisé par notre serveur pour corriger l'altitude des traces importées
   - *Données concernées* : Votre navigateur ou application, uniquement si vous activez l'ombrage du relief ou le relief 3D (tous deux désactivés par défaut) : adresse IP, zone de carte affichée. Côté serveur : coordonnées de tuiles grossières (~10 km de côté) couvertes par une trace et adresse IP de notre serveur — jamais votre identité, votre compte ni votre adresse IP
 - **IGN / Géoplateforme (data.geopf.fr, France)**
-  - *Rôle* : Fonds IGN, satellite et SCAN 25
-  - *Données concernées* : Adresse IP, zone de carte affichée
+  - *Rôle* : Fonds IGN, satellite et SCAN 25 ; également utilisé par notre serveur (LiDAR HD) pour corriger l'altitude des traces importées en France
+  - *Données concernées* : Votre navigateur ou application : adresse IP, zone de carte affichée. Côté serveur : coordonnées des tuiles (~1 km de côté) couvertes par une trace et adresse IP de notre serveur — jamais votre identité, votre compte ni votre adresse IP
 - **OpenStreetMap Foundation (tile.openstreetmap.org, Royaume-Uni)**
   - *Rôle* : Fond OpenStreetMap
   - *Données concernées* : Adresse IP, zone de carte affichée

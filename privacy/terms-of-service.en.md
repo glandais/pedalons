@@ -1,6 +1,6 @@
 # Terms of Service
 
-**Last updated: October 5, 2026**
+**Last updated: October 14, 2026**
 
 ## 1. Acceptance of Terms
 
@@ -70,7 +70,7 @@ The Pedalons service, its source code, design, and features are protected by int
 
 ### Maps and geographic data
 
-Maps, place search, route calculation and elevation data rely on third-party data: © OpenStreetMap contributors (ODbL licence), which also covers the results of route calculation and place search, together with CyclOSM, VersaTiles, IGN / Géoplateforme, Esri and its sources, Mapterhorn elevation data, and Michelin. Map images, place search results and elevation data are provided as they are, without any guarantee that they are accurate or complete.
+Maps, place search, route calculation and elevation data rely on third-party data: © OpenStreetMap contributors (ODbL licence), which also covers the results of route calculation and place search, together with CyclOSM, VersaTiles, IGN / Géoplateforme, Esri and its sources, Mapterhorn elevation data, and Michelin. Route elevations (profile, elevation gain, climbs) come from IGN's LiDAR HD (IGN — LiDAR HD, Licence Ouverte Etalab 2.0, data read when each route is imported) and, where it does not reach, from Mapterhorn. Map images, place search results and elevation data are provided as they are, without any guarantee that they are accurate or complete.
 
 Ride weather forecasts come from Open-Meteo.com (CC BY 4.0 licence). They are forecasts, provided as they are: they may be wrong or out of date, and do not replace checking the conditions before you set off.
 

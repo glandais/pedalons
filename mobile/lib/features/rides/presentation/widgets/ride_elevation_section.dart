@@ -80,6 +80,7 @@ class RideElevationSection extends ConsumerWidget {
           data: (ElevationSamples? data) => data == null
               ? const SizedBox.shrink()
               : PdlElevationProfile(
+                  credit: 'routes.elevationCredit'.tr(),
                   samples: data,
                   height: PdlMetrics.elevationMedium,
                   // Seule la dernière graduation porte l'unité (§1.3.1).

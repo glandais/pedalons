@@ -769,13 +769,7 @@ Toute modification de
 `privacy/privacy-policy.{fr,en}.md` se fait **en parité FR/EN**, et le texte étant un asset de
 l'app mobile, un changement n'y apparaît qu'avec la build suivante.
 
-- [ ] `LEGAL-18` **Créditer l'IGN pour les altitudes** — depuis `API-104`, les profils
-      altimétriques, D+ et montées calculés par le backend viennent du LiDAR HD de
-      l'IGN, sous Licence Ouverte Etalab 2.0, qui exige de mentionner la source (« IGN — LiDAR HD »)
-      et la date de dernière mise à jour. Aujourd'hui seules les cartes créditent leurs fonds
-      (`MapAttribution.tsx`, `pdl_map_attribution.dart`) ; aucun écran ne crédite la source des
-      altitudes, Mapterhorn compris. Placer la mention près du profil altimétrique (web et mobile)
-      ou dans les mentions légales. Taille : S.
+Aucun point ouvert : `LEGAL-18`, le dernier, a été livré le 14 octobre 2026.
 
 ---
 

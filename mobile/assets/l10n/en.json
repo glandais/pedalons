@@ -1000,6 +1000,7 @@
       "desc": "Descending"
     },
     "exportFit": "FIT",
+    "elevationCredit": "Elevation: IGN LiDAR HD, Mapterhorn",
     "profileLoading": "Loading elevation profile...",
     "profileUnavailable": "Profile unavailable",
     "climbs": {

@@ -48,6 +48,7 @@ class PdlElevationProfile extends StatefulWidget {
     this.height = PdlMetrics.elevationMedium,
     this.cursorDistance,
     this.onCursorChanged,
+    this.credit,
   }) : _mode = _ElevationMode.data,
        label = null,
        actionLabel = null,
@@ -67,6 +68,7 @@ class PdlElevationProfile extends StatefulWidget {
        tipLabel = null,
        cursorDistance = null,
        onCursorChanged = null,
+       credit = null,
        actionLabel = null,
        onRetry = null;
 
@@ -85,7 +87,8 @@ class PdlElevationProfile extends StatefulWidget {
        axisLabel = null,
        tipLabel = null,
        cursorDistance = null,
-       onCursorChanged = null;
+       onCursorChanged = null,
+       credit = null;
 
   final _ElevationMode _mode;
 
@@ -103,6 +106,11 @@ class PdlElevationProfile extends StatefulWidget {
 
   /// Notifié à chaque déplacement du réticule, y compris son effacement.
   final ValueChanged<double?>? onCursorChanged;
+
+  /// La source des altitudes, **déjà localisée**, sous les graduations — une
+  /// licence peut exiger de la nommer (Licence Ouverte de l'IGN,
+  /// docs/LEDGER_*.md LEGAL-18). Nulle : rien.
+  final String? credit;
 
   /// Libellé de chargement ou d'échec.
   final String? label;
@@ -280,6 +288,15 @@ class _PdlElevationProfileState extends State<PdlElevationProfile> {
               ],
             ),
           ),
+          if (widget.credit case final String credit)
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text(
+                credit,
+                textAlign: TextAlign.end,
+                style: t.xs.copyWith(color: c.textDimmed),
+              ),
+            ),
         ],
       ),
     );

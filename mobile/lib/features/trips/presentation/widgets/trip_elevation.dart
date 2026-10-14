@@ -72,6 +72,7 @@ class TripElevationSection extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
                     PdlElevationProfile(
+                      credit: 'routes.elevationCredit'.tr(),
                       samples: data.samples,
                       height: PdlMetrics.elevationMedium,
                       // Le dernier repère porte l'unité, les autres le seul

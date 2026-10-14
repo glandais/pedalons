@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Last updated: October 5, 2026**
+**Last updated: October 14, 2026**
 
 This privacy policy describes how Pedalons ("we", "our", "us") collects, uses, and protects your personal data when you use our platform (website, mobile app, GPS device extensions).
 
@@ -259,8 +259,8 @@ Ride weather forecasts are requested from Open-Meteo by our server, in the backg
   - *Role*: Terrain-elevation and hillshade tiles (3-D relief); also used by our server to correct the altitude of imported tracks
   - *Data Involved*: Your browser or app, only when you switch on relief shading or 3-D terrain (both off by default): IP address, map area viewed. Server-side: coordinates of coarse map tiles (~10 km squares) covered by a track and our server's IP address — never your identity, account or IP address
 - **IGN / Géoplateforme (data.geopf.fr, France)**
-  - *Role*: French IGN map, satellite and SCAN 25 backgrounds
-  - *Data Involved*: IP address, map area viewed
+  - *Role*: French IGN map, satellite and SCAN 25 backgrounds; also used by our server (LiDAR HD) to correct the altitude of tracks imported in France
+  - *Data Involved*: Your browser or app: IP address, map area viewed. Server-side: coordinates of the map tiles (~1 km squares) covered by a track and our server's IP address — never your identity, account or IP address
 - **OpenStreetMap Foundation (tile.openstreetmap.org, United Kingdom)**
   - *Role*: OpenStreetMap map background
   - *Data Involved*: IP address, map area viewed

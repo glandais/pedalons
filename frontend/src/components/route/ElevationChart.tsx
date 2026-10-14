@@ -19,7 +19,7 @@ import {
   ScriptableLineSegmentContext,
 } from 'chart.js'
 import { useTranslation } from 'react-i18next'
-import { useMantineTheme } from '@mantine/core'
+import { Box, Text, useMantineTheme } from '@mantine/core'
 import {
   NEUTRAL_COLOR,
   getColorFromGradient,
@@ -399,14 +399,21 @@ export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartPro
     // plugin resolves after the mount: without the remount the instance never carries it and the
     // wheel, pinch and pan do nothing. The x-range lives in this component's state, so the remount
     // keeps it. The empty-track guard lives in the parent; rendering with 0 points is harmless.
+    // docs/LEDGER_*.md LEGAL-18: the elevations come from IGN's LiDAR HD (Licence Ouverte Etalab
+    // 2.0, which requires naming the source) and Mapterhorn; the credit sits on the profile it covers.
     return (
-      <Line
-        key={zoomPlugin ? 'zoom' : 'static'}
-        ref={chartRef}
-        data={chartData}
-        options={chartOptions}
-        plugins={plugins}
-      />
+      <Box pos="relative" h="100%" w="100%">
+        <Line
+          key={zoomPlugin ? 'zoom' : 'static'}
+          ref={chartRef}
+          data={chartData}
+          options={chartOptions}
+          plugins={plugins}
+        />
+        <Text pos="absolute" top={2} right={8} c="dimmed" fz={10} style={{ pointerEvents: 'none' }}>
+          {t('map.elevationCredit')}
+        </Text>
+      </Box>
     )
   }
 )

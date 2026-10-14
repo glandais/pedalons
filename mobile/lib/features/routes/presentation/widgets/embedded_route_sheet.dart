@@ -159,6 +159,7 @@ class _EmbeddedRouteSheetState extends ConsumerState<EmbeddedRouteSheet> {
           data: (ElevationSamples? samples) => samples == null
               ? const SizedBox.shrink()
               : PdlElevationProfile(
+                  credit: 'routes.elevationCredit'.tr(),
                   samples: samples,
                   height: PdlMetrics.elevationLarge,
                   cursorDistance: cursor.distance,

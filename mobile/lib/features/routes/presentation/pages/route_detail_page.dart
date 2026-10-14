@@ -303,6 +303,7 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
           data: (ElevationSamples? samples) => samples == null
               ? const SizedBox.shrink()
               : PdlElevationProfile(
+                  credit: 'routes.elevationCredit'.tr(),
                   key: keys.routeDetail.elevationProfile,
                   samples: samples,
                   height: PdlMetrics.elevationLarge,
