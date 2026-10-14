@@ -84,6 +84,7 @@ import fr.pedalons.service.place.PlaceService;
 import fr.pedalons.service.post.PostService;
 import fr.pedalons.service.publication.PublicationEndCalculator;
 import fr.pedalons.service.ride.RideService;
+import fr.pedalons.service.route.GpxPipeline;
 import fr.pedalons.service.route.RouteService;
 import fr.pedalons.service.security.DomainResolver;
 import fr.pedalons.service.security.PedalonsQueryContext;
@@ -763,7 +764,7 @@ public class BiketeamMigrationService {
       try {
         SourceFile gpxFile = bt.deletion() ? null : r.source().gpx(bt.id());
         // Computed once for both uses below.
-        String fingerprint = gpxFile == null ? null : gpxFile.fingerprint();
+        String fingerprint = gpxFile == null ? null : routeFingerprint(gpxFile.fingerprint());
         // Downloaded before the transaction opens, and only when the route needs it.
         Fetched gpx = gpxFile == null ? Fetched.NONE : prefetchGpx(r, bt, gpxFile, fingerprint);
         Outcome outcome =
@@ -778,6 +779,16 @@ public class BiketeamMigrationService {
       r.progress().tick();
     }
     return ids;
+  }
+
+  /**
+   * What a route records as built from: the GPX's own fingerprint and the pipeline that processed
+   * it. A route an earlier {@link GpxPipeline#VERSION} built no longer matches, so the next replay
+   * downloads its GPX again and rebuilds it in place (same id, same slug), once. A row the earlier
+   * code wrote holds the bare {@code "<size>:<md5>"}, which matches no version.
+   */
+  static @Nullable String routeFingerprint(@Nullable String gpxFingerprint) {
+    return gpxFingerprint == null ? null : gpxFingerprint + "@p" + GpxPipeline.VERSION;
   }
 
   /**

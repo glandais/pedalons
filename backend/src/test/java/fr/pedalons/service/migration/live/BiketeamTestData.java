@@ -149,6 +149,23 @@ public class BiketeamTestData {
     return mapRepository.list("biketeamTeamId", biketeamTeamId);
   }
 
+  /** Overwrites the fingerprint a migrated route records, as an earlier pipeline would have left it. */
+  @Transactional
+  public void setRouteFingerprint(String biketeamId, @Nullable String fingerprint) {
+    em.createQuery(
+            "update BiketeamMigrationMap m set m.sourceFingerprint = :f"
+                + " where m.entityType = :t and m.biketeamId = :b")
+        .setParameter("f", fingerprint)
+        .setParameter("t", BiketeamMigrationService.T_ROUTE)
+        .setParameter("b", biketeamId)
+        .executeUpdate();
+  }
+
+  @Transactional
+  public @Nullable String routeFingerprint(String biketeamId) {
+    return mapRepository.findFingerprint(BiketeamMigrationService.T_ROUTE, biketeamId);
+  }
+
   public record TeamView(long id, String name, String slug, boolean deleted, long createdById) {}
 
   /** The team at {@code slug} in the domain, trashed ones included, or null. */

@@ -25,8 +25,10 @@ import fr.pedalons.enums.BiketeamMigrationStatus;
 import fr.pedalons.enums.TeamRole;
 import fr.pedalons.enums.Visibility;
 import fr.pedalons.enums.WindDirection;
+import fr.pedalons.service.migration.BiketeamMigrationService;
 import fr.pedalons.service.migration.live.snapshot.BiketeamFileFetcher;
 import fr.pedalons.service.migration.live.snapshot.BiketeamSnapshot;
+import fr.pedalons.service.route.GpxPipeline;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
 import jakarta.inject.Inject;
@@ -317,6 +319,45 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
     assertEquals(List.of(), downloads, "same GPX fingerprint, logo already mapped");
     assertTrue(
         biketeamData.mappingRows(TEAM).size() > 5, "live mapping rows carry biketeam_team_id");
+  }
+
+  @Test
+  void replay_rebuildsInPlace_aRouteAnEarlierGpxPipelineBuilt() throws IOException {
+    migrate(USER4, true, false);
+    long teamId = biketeamData.team(domain, TEAM).id();
+    String current = biketeamData.routeFingerprint("map-1");
+    assertNotNull(current);
+    assertTrue(current.endsWith("@p" + GpxPipeline.VERSION), current);
+    long routeId =
+        biketeamData.mappingRows(TEAM).stream()
+            .filter(m -> m.getEntityType().equals(BiketeamMigrationService.T_ROUTE))
+            .findFirst()
+            .orElseThrow()
+            .getTriblyId();
+    // What the code before the pipeline version recorded: the bare "<size>:<md5>".
+    biketeamData.setRouteFingerprint("map-1", current.substring(0, current.indexOf('@')));
+    downloads.clear();
+
+    BiketeamJobStatusDto replay = migrate(USER4, false, false);
+
+    assertEquals("SUCCEEDED", replay.status(), () -> "error: " + replay.error());
+    assertTrue(
+        downloads.stream().anyMatch(p -> p.contains("/files/gpx/map-1")),
+        "the GPX is fetched again to be rebuilt");
+    assertEquals(1, biketeamData.countLive(Route.class, teamId));
+    assertEquals(
+        routeId,
+        biketeamData.mappingRows(TEAM).stream()
+            .filter(m -> m.getEntityType().equals(BiketeamMigrationService.T_ROUTE))
+            .findFirst()
+            .orElseThrow()
+            .getTriblyId(),
+        "rebuilt in place, not recreated");
+    assertEquals(current, biketeamData.routeFingerprint("map-1"));
+
+    downloads.clear();
+    migrate(USER4, false, false);
+    assertEquals(List.of(), downloads, "rebuilt once, then up to date again");
   }
 
   @Test

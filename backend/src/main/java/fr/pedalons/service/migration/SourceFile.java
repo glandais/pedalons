@@ -15,8 +15,9 @@ public interface SourceFile {
   String fileName();
 
   /**
-   * {@code "<size>:<md5>"} — the exact format {@code biketeam_migration_map.source_fingerprint}
-   * holds — or null when it cannot be computed.
+   * {@code "<size>:<md5>"} — the format {@code biketeam_migration_map.source_fingerprint} holds,
+   * suffixed with {@code "@p<pipeline version>"} for a route ({@code
+   * BiketeamMigrationService.routeFingerprint}) — or null when it cannot be computed.
    */
   @Nullable String fingerprint();
 

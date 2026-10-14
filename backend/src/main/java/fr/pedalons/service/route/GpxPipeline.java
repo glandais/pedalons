@@ -52,6 +52,20 @@ import org.jboss.logging.Logger;
 @ApplicationScoped
 public class GpxPipeline {
 
+  /**
+   * Bumped whenever the pipeline changes what it makes of a GPX (elevations, ascent, climbs), so
+   * that what was built from a GPX by an earlier pipeline can be told apart and rebuilt. The
+   * biketeam migration appends it to the fingerprint it records per route: a replay rebuilds every
+   * route an earlier version built, once.
+   *
+   * <ul>
+   *   <li>1 — gpx2web, then vcyclist 6.0 (Mapterhorn, raw ascent after simplification).
+   *   <li>2 — vcyclist 6.8 (IGN LiDAR HD, bridge decks and tunnels, dead-band ascent before
+   *       simplification; docs/LEDGER_*.md API-104, API-106).
+   * </ul>
+   */
+  public static final int VERSION = 2;
+
   private static final Logger LOG = Logger.getLogger(GpxPipeline.class);
 
   @Inject ElevationProvider elevationProvider;
