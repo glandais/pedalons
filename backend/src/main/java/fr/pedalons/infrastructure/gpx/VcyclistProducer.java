@@ -2,6 +2,7 @@ package fr.pedalons.infrastructure.gpx;
 
 import io.github.glandais.elevation.ElevationProvider;
 import io.github.glandais.elevation.ElevationProviderJvm;
+import io.github.glandais.elevation.ElevationSource;
 import io.github.glandais.map.MapFactoriesJvm;
 import io.github.glandais.map.MissingTilePolicy;
 import io.github.glandais.map.TileMapProducer;
@@ -34,7 +35,7 @@ public class VcyclistProducer {
    * Renders map thumbnails. Its own disk cache is keyed on the whole tile source — since vcyclist
    * 5.1.1, {@code {cache}/tileserver_8080/styles/colorful/256/{z}/{x}/{y}.png}, so the light and
    * dark styles no longer share tiles. A different layout from gpx2web's: carto tiles get
-   * downloaded once more; DEM tiles do not (see {@link DemTileFetcher}).
+   * downloaded once more; DEM tiles do not (see {@link DemTileStore}).
    *
    * <p>{@link MissingTilePolicy#FAIL}: by default vcyclist paints a tile it cannot get in grey and
    * carries on, and a thumbnail with holes is what the tileserver outage of September 2026 produced
@@ -49,13 +50,20 @@ public class VcyclistProducer {
   }
 
   /**
-   * Elevation lookups against mapterhorn, with the defaults gpx2web used (zoom 12, 100-tile memory
-   * LRU, 512 px tiles) and our own disk-backed fetcher in front of the network.
+   * Elevation lookups against IGN LiDAR HD (1 m terrain model over metropolitan France and
+   * Corsica), with Mapterhorn wherever IGN has no data — abroad, at sea, in a survey gap — so a
+   * route crossing a border is IGN up to it and Mapterhorn beyond. At IGN's default zoom (15) the
+   * provider also carries IGN's surface model, which is what lets {@code GpxPipeline} ride bridge
+   * decks instead of the valley under them; tunnels are corrected on either source.
+   *
+   * <p>Every tier is read from {@link DemTileStore} first: the Mapterhorn tiles cached since
+   * gpx2web stay where they were. A cold French route costs about fifteen times Mapterhorn's
+   * download, twice that with the surface model (≈ 70 MB for 130 km), once.
    */
   @Produces
   @Singleton
   public ElevationProvider elevationProvider() {
     return ElevationProviderJvm.newElevationProvider(
-        ElevationProviderJvm.elevationProviderConfig(), new DemTileFetcher(cacheFolder));
+        ElevationSource.IGN_LIDAR_HD, new DemTileStore(cacheFolder));
   }
 }

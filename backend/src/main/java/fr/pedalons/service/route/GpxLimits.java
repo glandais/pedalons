@@ -11,8 +11,8 @@ import java.util.List;
  * Bounds on what the GPX pipeline accepts, so that a request cannot make it allocate without limit
  * (docs/LEDGER_*.md SEC-6, audit M3).
  *
- * <p>The pipeline resamples every track to one point per {@value #RESAMPLING_STEP_METERS} m before
- * anything else: the number of points it allocates follows the <em>distance</em> of the track, not
+ * <p>The pipeline resamples every track to one point every 5 to {@value #RESAMPLING_STEP_METERS} m
+ * ({@link GpxPipeline}): the number of points it allocates follows the <em>distance</em> of the track, not
  * the size of the request. A handful of points far apart (or a GPX file of a few KB) would
  * otherwise produce millions of interpolated points. Hence three bounds, each checked before the
  * resampling allocates:
@@ -25,7 +25,8 @@ import java.util.List;
  *   <li>{@link #MAX_PLANNER_POINTS}: the planner points of a JSON request ({@code @Size} on the DTO
  *       lists), every one of them inside the WGS84 bounds ({@code GeoPoint});
  *   <li>{@link #MAX_TRACK_DISTANCE_METERS}: the summed length of all the tracks of a GPX, whatever
- *       its source, so at most about 400 000 resampled points (a few hundred MB at worst, transient).
+ *       its source, so 400 000 to 800 000 resampled points at 352 bytes each (vcyclist 6.5.0) —
+ *       a few hundred MB at worst, transient.
  * </ul>
  *
  * <p>The values fit real cycling: 4 000 km covers an ultra-distance event in one file (Paris-Brest-
@@ -36,7 +37,11 @@ import java.util.List;
  */
 public final class GpxLimits {
 
-  /** The step of the resampling the pipeline applies to every track ({@link GpxPipeline}). */
+  /**
+   * The widest gap the pipeline leaves between two points ({@link GpxPipeline}), the narrowest
+   * being half of it. Not above 10 m: past it, vcyclist warns, the ramps of a bridge deck or a
+   * tunnel fall between two points.
+   */
   public static final double RESAMPLING_STEP_METERS = 10.0;
 
   /**
@@ -45,7 +50,7 @@ public final class GpxLimits {
    */
   public static final long MAX_GPX_SIZE_BYTES = 10L * 1024 * 1024;
 
-  /** Summed length of all the tracks of one GPX: 4 000 km, about 400 000 resampled points. */
+  /** Summed length of all the tracks of one GPX: 4 000 km, at most about 800 000 resampled points. */
   public static final double MAX_TRACK_DISTANCE_METERS = 4_000_000.0;
 
   /**

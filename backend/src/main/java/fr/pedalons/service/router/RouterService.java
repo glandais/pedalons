@@ -87,7 +87,7 @@ public class RouterService {
     // Convert back to LineString and compute metrics
     LineString<G3D> filteredRoute = toLineString3D(path);
     double dist = path.getTotalDistance();
-    double ascend = path.getElevationGain();
+    double ascend = path.getReportedElevationGain();
 
     return new RouterResponse(filteredRoute, dist, ascend);
   }

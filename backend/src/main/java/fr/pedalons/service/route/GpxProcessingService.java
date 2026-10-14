@@ -561,13 +561,14 @@ public class GpxProcessingService {
   private static TrackMetadata extractMetadata(Path path) {
     int last = path.getSize() - 1;
     float distance = (float) path.getTotalDistance();
-    float elevationGain = (float) path.getElevationGain();
+    // The dead-band ascent GpxPipeline measured before simplifying, bridge decks included.
+    float elevationGain = (float) path.getReportedElevationGain();
     return new TrackMetadata(
         distance,
         elevationGain,
         getHilliness(distance, elevationGain),
         // Already negative, like gpx2web's getTotalElevationNegative().
-        (int) Math.round(path.getElevationLoss()),
+        (int) Math.round(path.getReportedElevationLoss()),
         point(WGS84, g(path.longitudeDeg(0), path.latitudeDeg(0))),
         point(WGS84, g(path.longitudeDeg(last), path.latitudeDeg(last))),
         null);
