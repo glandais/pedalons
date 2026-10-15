@@ -14,6 +14,7 @@
 import {
   UNSAFE_createBrowserHistory,
   createPath,
+  matchPath,
   parsePath,
   type Location,
   type To,
@@ -66,6 +67,21 @@ const GLOBAL_ONLY: ReadonlySet<string> = (() => {
   return result
 })()
 
+/**
+ * The team route templates of each locale (`/equipes/:teamSlug/sorties/:rideSlug` is fr). A clean
+ * path such as `/rides/x` must take the prefix of its own language: under the other one
+ * (`/equipes/n-peloton/rides/x`) no route matches, and the page would 404.
+ */
+const TEAM_PATTERNS: Record<Locale, string[]> = (() => {
+  const result: Record<Locale, string[]> = { fr: [], en: [] }
+  for (const route of routesConfig) {
+    for (const [locale, v] of Object.entries(route.paths) as [Locale, string][]) {
+      if (v.includes(':teamSlug')) result[locale].push(v)
+    }
+  }
+  return result
+})()
+
 /** The team-detail prefix in both locales, e.g. `{ en: '/teams/n-peloton', fr: '/equipes/n-peloton' }`. */
 function getPrefixes(): Record<Locale, string> {
   return pathVariants.team(getPinnedTeamSlug()!)
@@ -83,6 +99,8 @@ export function toBrowser(pathname: string): string {
 
 /**
  * browser → router: prefix team pathnames; leave global ones (and already-prefixed ones) as-is.
+ * The prefix is the current locale's when that makes a team route, else the other locale's when
+ * that one does — so a link in either language resolves whatever the visitor's.
  * Exported for tests.
  */
 export function toRouter(pathname: string): string {
@@ -91,8 +109,15 @@ export function toRouter(pathname: string): string {
     if (pathname === prefix || pathname.startsWith(prefix + '/')) return pathname
   }
   if (GLOBAL_ONLY.has(firstSeg(pathname))) return pathname
-  const prefix = prefixes[getCurrentLocale()]
-  return pathname === '/' ? prefix : prefix + pathname
+  const current = getCurrentLocale()
+  const prefixed = (locale: Locale) =>
+    pathname === '/' ? prefixes[locale] : prefixes[locale] + pathname
+  // The current locale first, so a path both languages share (`/`, `/admin`) keeps it.
+  for (const locale of [current, current === 'fr' ? 'en' : 'fr'] as Locale[]) {
+    const candidate = prefixed(locale)
+    if (TEAM_PATTERNS[locale].some((pattern) => matchPath(pattern, candidate))) return candidate
+  }
+  return prefixed(current)
 }
 
 /** Apply a pathname mapping to a `To` (string or Path object), preserving search/hash. */

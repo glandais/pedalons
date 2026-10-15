@@ -865,9 +865,10 @@ test.describe('English paths', () => {
 
   // The global screens are registered under their English paths too, but only the pages calling
   // useCanonicalPath (the team-scoped ones, and the GPX map) replace the address: /teams, /routes,
-  // /apps, /login, /profile… keep the English path under a French interface, and the server writes
-  // it as og:url. Decided on 2026-09-28 not to canonicalise them (not worth a Layout-wide
-  // canonicalisation): the page must only serve, in French, without an error.
+  // /apps, /login, /profile… keep the English path under a French interface. Decided on 2026-09-28
+  // not to redirect them (not worth a Layout-wide canonicalisation): the page must only serve, in
+  // French, without an error. For crawlers the server's canonical and og:url name the French path
+  // (lib/seo.ts buildCanonicalUrl), which folds the two variants into one.
   const global: { id: string; role: RenderRole }[] = [
     { id: 'teams', role: 'anonymous' },
     { id: 'allRoutes', role: 'anonymous' },

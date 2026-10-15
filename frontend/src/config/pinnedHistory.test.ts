@@ -3,12 +3,15 @@ import { describe, it, expect, vi } from 'vitest'
 vi.mock('./appConfig', () => ({
   getPinnedTeamSlug: () => 'n-peloton',
 }))
+const current = vi.hoisted(() => ({ locale: 'fr' as 'fr' | 'en' }))
 vi.mock('./locale-context', () => ({
-  getCurrentLocale: () => 'fr',
+  getCurrentLocale: () => current.locale,
 }))
 
-import { UNSAFE_createRouter, redirect } from 'react-router-dom'
+import { UNSAFE_createRouter, generatePath, matchPath, redirect } from 'react-router-dom'
 import { getPinnedHistory, toBrowser, toRouter } from './pinnedHistory'
+import { routesConfig } from './routes.config'
+import { buildCanonicalUrl } from '@/lib/seo'
 
 describe('pinnedHistory mapping (pinned to "n-peloton", fr locale)', () => {
   describe('toBrowser (router → browser, strips the prefix)', () => {
@@ -67,6 +70,74 @@ describe('pinnedHistory mapping (pinned to "n-peloton", fr locale)', () => {
   it('round-trips team paths: toBrowser ∘ toRouter = identity for clean paths', () => {
     for (const clean of ['/', '/sorties/x', '/parcours', '/calendrier', '/admin']) {
       expect(toBrowser(toRouter(clean))).toBe(clean)
+    }
+  })
+})
+
+describe("a clean path resolves in its own language, whatever the visitor's", () => {
+  /** Every team route of routesConfig, in each locale, with its params filled in. */
+  const teamPaths = routesConfig.flatMap((route) =>
+    Object.values(route.paths)
+      .filter((pattern) => pattern.includes(':teamSlug'))
+      .map((pattern) => {
+        const params = Object.fromEntries(
+          [...pattern.matchAll(/:(\w+)/g)].map(([, name]) => [
+            name,
+            name === 'teamSlug' ? 'n-peloton' : 'x',
+          ])
+        )
+        return {
+          id: route.id,
+          variants: Object.values(route.paths),
+          path: generatePath(pattern, params),
+        }
+      })
+  )
+
+  for (const locale of ['fr', 'en'] as const)
+    it(`maps every team path back to the same route (visitor in ${locale})`, () => {
+      current.locale = locale
+      try {
+        for (const { id, variants, path } of teamPaths) {
+          const routed = toRouter(toBrowser(path))
+          const matched = variants.some((variant) => matchPath(variant, routed))
+          expect(matched, `${id}: ${path} → ${routed}`).toBe(true)
+        }
+      } finally {
+        current.locale = 'fr'
+      }
+    })
+
+  it('routes an English link under the English prefix for a French visitor', () => {
+    expect(toRouter('/rides/x')).toBe('/teams/n-peloton/rides/x')
+    expect(toRouter('/sorties/x')).toBe('/equipes/n-peloton/sorties/x')
+  })
+
+  it('gives every team route a canonical the pinned host serves, for any visitor', () => {
+    for (const route of routesConfig) {
+      const pattern = route.paths.fr
+      if (!pattern?.includes(':teamSlug')) continue
+      const params = Object.fromEntries(
+        [...pattern.matchAll(/:(\w+)/g)].map(([, name]) => [
+          name,
+          name === 'teamSlug' ? 'n-peloton' : 'x',
+        ])
+      )
+      const canonical = buildCanonicalUrl(route.paths, params, 'https://np.example', {
+        toBrowser,
+        toRouter,
+      })
+      expect(canonical, route.id).toBeDefined()
+      for (const locale of ['fr', 'en'] as const) {
+        current.locale = locale
+        try {
+          const routed = toRouter(canonical!.slice('https://np.example'.length))
+          const matched = Object.values(route.paths).some((variant) => matchPath(variant, routed))
+          expect(matched, `${route.id} (${locale}): ${routed}`).toBe(true)
+        } finally {
+          current.locale = 'fr'
+        }
+      }
     }
   })
 })

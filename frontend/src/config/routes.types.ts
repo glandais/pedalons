@@ -120,6 +120,15 @@ export interface RouteConfig {
   hideWhenSingleTeam?: boolean
 
   /**
+   * Keep this public page out of search indexes (`<meta name="robots" content="noindex">`, no
+   * canonical link). A page that is not `auth: 'public'` is never indexed anyway
+   * (`routeIndexable`): this flag is for public pages that are transactional — a link from an
+   * e-mail, a token in the query string — or deliberately left out of search (docs/LEDGER_*.md
+   * WEB-31: routes and map pages).
+   */
+  noindex?: boolean
+
+  /**
    * Optional data prefetch, run as a React Router loader in BOTH environments (SSR and client).
    *
    * On the server the request carries the visitor's session when the document request resolved one

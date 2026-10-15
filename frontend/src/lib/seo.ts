@@ -10,6 +10,7 @@
 // navigation deliberately does NOT update them (the browser tab title is handled by Layout).
 import type { TFunction } from 'i18next'
 import type { QueryClient } from '@tanstack/react-query'
+import { generatePath } from 'react-router-dom'
 import type { AssetDto, AssetsDto, ConfigDto } from '@/api/dto'
 import type { Locale } from '@/config/paths'
 import type { RouteParams } from '@/config/routes.types'
@@ -49,12 +50,18 @@ export interface RouteMeta {
     priceAmount?: string
     priceCurrency?: string
   }
-  /** Optional <link rel="canonical"> when it should differ from og:url (near-duplicate pages). */
+  /**
+   * Absolute `<link rel="canonical">` overriding the one entry-server derives from the route
+   * ({@link RouteMetaContext.canonical}) — for a near-duplicate page that should point elsewhere.
+   * Ignored on a `noindex` page.
+   */
   canonical?: string
   /**
    * Keep the page out of search indexes (`<meta name="robots" content="noindex">`): set for
    * content or a team that is not `PUBLIC` — `PUBLIC_UNLISTED` is shareable by link, not indexed
-   * (docs/LEDGER_*.md WEB-4). Absent: `index, follow`.
+   * (docs/LEDGER_*.md WEB-4) — and for every route that is not indexable as such (members-only,
+   * transactional, `RouteConfig.noindex`). Absent: `index, follow`. A `noindex` page carries no
+   * canonical link: pointing engines at a URL they are told not to index contradicts.
    */
   noindex?: boolean
 }
@@ -71,9 +78,76 @@ export interface RouteMetaContext {
   config?: ConfigDto
   /** Per-request i18next translator bound to the resolved locale. */
   t: TFunction
+  /**
+   * Absolute canonical URL of the matched route ({@link buildCanonicalUrl}); absent on a page that
+   * has none (404, redirect, unknown route). Dropped by buildMetaTags on a `noindex` page.
+   */
+  canonical?: string
 }
 
 export type RouteMetaFn = (ctx: RouteMetaContext) => RouteMeta | undefined
+
+/**
+ * The site's default language: the one a visitor without a preference — a crawler, which sends no
+ * cookie and usually no Accept-Language — is served (i18n `fallbackLng`, entry-server's fallback).
+ * Canonical URLs name its paths, like the sitemap (docs/LEDGER_*.md WEB-31).
+ */
+export const SITE_DEFAULT_LOCALE: Locale = 'fr'
+
+/** The router ↔ address-bar mapping of a host pinned to one team (config/pinnedHistory.ts). */
+export interface PinnedPathMapping {
+  toBrowser: (path: string) => string
+  toRouter: (path: string) => string
+}
+
+/**
+ * The canonical URL of a page, rebuilt from its route's locale templates (`RouteConfig.paths`,
+ * generated from contracts/routes.yaml) and the params the router matched.
+ *
+ * Both locale variants of a path render the same page, in the language the request resolved
+ * (account preference, `lang` cookie, Accept-Language — not the URL). The canonical must not
+ * follow that: one URL would declare a different canonical from one request to the next. It is
+ * therefore always the path in {@link SITE_DEFAULT_LOCALE} — what a crawler is served — which
+ * folds `/teams/x` and `/equipes/x` into one. Never a query string: filters and pagination are
+ * views of the same page.
+ *
+ * No hreflang alternates: the URL does not choose the language, so `/teams/x` serves French to a
+ * crawler and could not be declared the English version (Google ignores such a cluster).
+ *
+ * @param pinned on a host pinned to one team, the path is mapped to the address bar's
+ *   (`toBrowser`), and dropped unless `toRouter` brings it back to a path of the same route — a
+ *   canonical the host cannot serve would be worse than none.
+ * @returns undefined when the path cannot be rebuilt (a param missing) or served.
+ */
+export function buildCanonicalUrl(
+  routePaths: Partial<Record<Locale, string>>,
+  params: RouteParams,
+  origin: string,
+  pinned?: PinnedPathMapping
+): string | undefined {
+  const pattern =
+    routePaths[SITE_DEFAULT_LOCALE] ??
+    (Object.values(routePaths).find(Boolean) as string | undefined)
+  if (!pattern) return undefined
+  const pathOf = (template: string): string | undefined => {
+    try {
+      return generatePath(template, params as Record<string, string>)
+    } catch {
+      return undefined
+    }
+  }
+  const routerPath = pathOf(pattern)
+  if (!routerPath) return undefined
+  if (!pinned) return origin + routerPath
+  // Either locale variant of the route is the same page (a shared segment such as `admin` takes
+  // the visitor's prefix): any of them counts as served.
+  const browserPath = pinned.toBrowser(routerPath)
+  const routed = pinned.toRouter(browserPath)
+  const served = Object.values(routePaths).some(
+    (template) => template && pathOf(template) === routed
+  )
+  return served ? origin + browserPath : undefined
+}
 
 /** imgproxy fits every image within a 1200x1200 box (rs:fit:1200:1200); this is the width token. */
 const OG_IMAGE_SIZE = 1200
@@ -215,11 +289,13 @@ function named(name: string, content: string | undefined): string | null {
 export function buildMetaTags(meta: RouteMeta | undefined, ctx: RouteMetaContext): string {
   const { origin, path, locale, config, t } = ctx
   const appName = config?.appName || 'Pédalons'
+  const indexable = !meta?.noindex
+  const canonical = indexable ? meta?.canonical || ctx.canonical : undefined
 
   const title = truncate(meta?.title?.trim() || appName, 70)
   const description = truncate(meta?.description?.trim() || t('home.subtitle'), 200)
   const type: OgType = meta?.type || 'website'
-  const url = meta?.url || `${origin}${path}`
+  const url = meta?.url || canonical || `${origin}${path}`
   const image = meta?.image || defaultImage(origin, appName)
 
   const lines: (string | null)[] = [
@@ -238,7 +314,7 @@ export function buildMetaTags(meta: RouteMeta | undefined, ctx: RouteMetaContext
     image.height ? property('og:image:height', String(image.height)) : null,
     // The only robots tag of the page: index.html ships none, so there is never a static
     // `index, follow` left beside a per-page `noindex` (docs/LEDGER_*.md WEB-4).
-    named('robots', meta?.noindex ? 'noindex' : 'index, follow'),
+    named('robots', indexable ? 'index, follow' : 'noindex'),
     named('twitter:card', 'summary_large_image'),
     // The name under the icon once the site is added to an iOS home screen (the manifest's name
     // plays that part elsewhere).
@@ -261,8 +337,8 @@ export function buildMetaTags(meta: RouteMeta | undefined, ctx: RouteMetaContext
     )
   }
 
-  if (meta?.canonical) {
-    lines.push(`<link rel="canonical" href="${escapeHtml(meta.canonical)}" />`)
+  if (canonical) {
+    lines.push(`<link rel="canonical" href="${escapeHtml(canonical)}" />`)
   }
 
   return lines.filter((line): line is string => line !== null).join('\n    ')

@@ -26,8 +26,15 @@ import { ApiClientError } from './lib/apiError'
 import { getPinnedTeamSlug } from './config/appConfig'
 import { toRouter, toBrowser } from './config/pinnedHistory'
 import type { Locale } from './config/paths'
-import { buildMetaTags, type RouteMeta, type RouteMetaContext, type RouteMetaFn } from './lib/seo'
+import {
+  buildMetaTags,
+  buildCanonicalUrl,
+  type RouteMeta,
+  type RouteMetaContext,
+  type RouteMetaFn,
+} from './lib/seo'
 import { withIndexing } from './config/routeMeta'
+import { getRouteById } from './config/routeUtils'
 import type { RouteParams } from './config/routes.types'
 import { mapThemePreference } from './lib/theme'
 import { getSitemap } from './api/endpoints/sitemap/sitemap'
@@ -235,15 +242,29 @@ export async function render(
         config: store.config,
         t: i18nInstance.t,
       }
+      const handle = leafMatch?.route.handle as { routeId?: string; meta?: RouteMetaFn } | undefined
+      const routeConfig = handle?.routeId ? getRouteById(handle.routeId) : undefined
+      // Canonical, rebuilt from the route's templates in the site's default locale (seo.ts
+      // buildCanonicalUrl) — only for a page that is really there: not a 404, not the catch-all.
+      // buildMetaTags drops it again when the page ends up noindex.
+      if (routeConfig && statusCode === 200) {
+        metaCtx.canonical = buildCanonicalUrl(
+          routeConfig.paths,
+          metaCtx.params,
+          origin,
+          pinned ? { toBrowser, toRouter } : undefined
+        )
+      }
       let routeMeta: RouteMeta | undefined
       try {
-        const metaFn = (leafMatch?.route.handle as { meta?: RouteMetaFn } | undefined)?.meta
-        routeMeta = metaFn?.(metaCtx)
+        routeMeta = handle?.meta?.(metaCtx)
       } catch (metaErr) {
         console.error(`[SSR] meta() failed for ${url}:`, metaErr)
       }
-      // noindex for anything not PUBLIC — the content's own visibility (from meta()) or its team's.
-      routeMeta = withIndexing(routeMeta, metaCtx)
+      // noindex for anything not PUBLIC — the content's own visibility (from meta()) or its team's —
+      // and for a route that is not indexable as such (members-only, transactional).
+      routeMeta = withIndexing(routeMeta, metaCtx, routeConfig)
+      if (statusCode !== 200) routeMeta = { ...routeMeta, noindex: true }
       const head = buildMetaTags(routeMeta, metaCtx)
 
       await unreadCount

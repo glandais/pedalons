@@ -8,4 +8,25 @@ Disallow: /notifications
 Disallow: /platform
 Disallow: /plateforme
 
+# The API is not content: JSON, GPX/FIT downloads. The backend also answers X-Robots-Tag: noindex.
+Disallow: /api/
+# …but the images that pages use as og:image / twitter:image (frontend/src/lib/seo.ts) must stay
+# fetchable: link-preview bots that obey robots.txt (Twitterbot, LinkedInBot…) and image search
+# need them. The longest matching rule wins, so each Allow beats /api/.
+#  - public content;
+Allow: /api/download/public/images/
+#  - PUBLIC_UNLISTED content, shareable by link (AssetService.buildImageUrl); its images keep the
+#    backend's X-Robots-Tag: noindex, which does not stop a link preview;
+Allow: /api/download/public_unlisted/images/
+#  - the GPX tools' shared previews (GpxPreviewDto.thumbnailUrl), noindex too.
+Allow: /api/gpx-previews/*/thumbnail/
+# Unresolved `{size}` templates leaked from the serialised React Query state are not URLs: they
+# 404. Longer than the Allow they sit under so they win; both spellings, literal and percent-encoded.
+Disallow: /api/download/public/images/*{size}
+Disallow: /api/download/public/images/*%7Bsize%7D
+Disallow: /api/download/public_unlisted/images/*{size}
+Disallow: /api/download/public_unlisted/images/*%7Bsize%7D
+Disallow: /api/gpx-previews/*/thumbnail/*{size}
+Disallow: /api/gpx-previews/*/thumbnail/*%7Bsize%7D
+
 # The Sitemap line is appended per host by server.js (the protocol wants an absolute URL).

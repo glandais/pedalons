@@ -621,6 +621,17 @@ Ce que les tests ne prouvent pas, parce qu'ils ne passent ni par Flyway ni par u
       130 km à cache froid, sous `{cache}/ign-lidar-hd-mnt/` et `ign-lidar-hd-mns/` — surveiller
       la place disque du volume de cache, et les 429 dans les journaux (le rythme de 20 requêtes/s
       est commun à tout le processus depuis `API-105`).
+- [ ] `OPS-34` **Faire revalider la Search Console après `WEB-85`, `WEB-86` et `API-109`** — le
+      rapport du 15 octobre 2026 sur pedalons.fr listait 122 URL non indexées. Une fois ces trois
+      entrées en production : vérifier à la main `https://pedalons.fr/robots.txt` (les `Allow`
+      d'images et la ligne `Sitemap`), le `<link rel="canonical">` d'une page d'équipe servie sous
+      `/teams/…` et le header `X-Robots-Tag` d'un `/api/version` ; puis, dans la Search Console,
+      cliquer « Valider la correction » sur les motifs « Introuvable (404) », « Page en double sans
+      URL canonique sélectionnée par l'utilisateur » et « Explorée, actuellement non indexée ».
+      Vérifier aussi `auth.pedalons.fr`, signalé en 404 (sous-domaine du strava-auth-proxy
+      d'après `OPERATIONS.md`, sans page à sa racine) : s'il sert encore, lui donner un
+      `robots.txt` `Disallow: /` ; sinon le retirer du DNS. La validation prend
+      plusieurs semaines ; revenir sur le rapport ensuite. Taille : XS (surtout de l'attente).
 
 ---
 

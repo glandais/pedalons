@@ -16,6 +16,7 @@ import type {
 } from '@/api/dto'
 import type { Instant, Visibility } from '@/api/dto'
 import type { Locale } from '@/config/paths'
+import type { RouteConfig } from '@/config/routes.types'
 import {
   buildMetaTags as _buildMetaTags,
   defaultImage,
@@ -51,21 +52,32 @@ const notIndexable = (visibility: Visibility | undefined): boolean =>
   visibility !== undefined && visibility !== 'PUBLIC'
 
 /**
+ * Whether a route may be indexed at all, before its content is looked at: only a public page that
+ * is not flagged `noindex`. A members-only page renders a sign-in redirect for a crawler, and an
+ * `unauthenticated` one (sign-in, forgotten password) is a form with nothing to index.
+ */
+export function routeIndexable(route: Pick<RouteConfig, 'auth' | 'noindex'>): boolean {
+  return route.auth === 'public' && !route.noindex
+}
+
+/**
  * The robots decision for the whole request, applied by entry-server on top of the route's own
- * `meta()`: a page is `noindex` when its content says so, **or** when it belongs to a team that is
- * not `PUBLIC` — every team-scoped page (lists, calendar, members…, most of which have no `meta()`)
- * has the team in the per-request cache, since entry-server reads it for the 404/301 decision.
- * Never throws.
+ * `meta()`: a page is `noindex` when its content says so, when its route is not indexable
+ * ({@link routeIndexable}), **or** when it belongs to a team that is not `PUBLIC` — every
+ * team-scoped page (lists, calendar, members…, most of which have no `meta()`) has the team in the
+ * per-request cache, since entry-server reads it for the 404/301 decision. Never throws.
  */
 export function withIndexing(
   meta: RouteMeta | undefined,
-  ctx: RouteMetaContext
+  ctx: RouteMetaContext,
+  route?: Pick<RouteConfig, 'auth' | 'noindex'>
 ): RouteMeta | undefined {
   const teamSlug = ctx.params.teamSlug
   const team = teamSlug
     ? ctx.queryClient.getQueryData<TeamDetailDto>(getGetTeamQueryKey(teamSlug))
     : undefined
-  if (meta?.noindex || !notIndexable(team?.visibility)) return meta
+  if (meta?.noindex) return meta
+  if (!notIndexable(team?.visibility) && (!route || routeIndexable(route))) return meta
   return { ...meta, noindex: true }
 }
 

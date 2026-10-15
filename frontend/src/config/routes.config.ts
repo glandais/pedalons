@@ -133,6 +133,10 @@ export const routesConfig: RoutesConfig = [
     paths: pathVariants.allRoutes(),
     component: pages.AllRoutesPage,
     auth: 'public',
+    // Not indexed: routes are a map and a GPX rather than a text to index, which is why they are
+    // left out of the sitemap (docs/LEDGER_*.md WEB-31) — and this catalogue lists nothing else,
+    // under as many URLs as there are filter combinations.
+    noindex: true,
     parentId: null,
     navGroup: 'home',
     breadcrumb: { type: 'static', i18nKey: tRegister('nav.routes') },
@@ -147,6 +151,8 @@ export const routesConfig: RoutesConfig = [
     paths: pathVariants.allRoutesMap(),
     component: pages.AllRoutesMapPage,
     auth: 'public',
+    // Not indexed, like `all-routes`: a map page (docs/LEDGER_*.md WEB-31).
+    noindex: true,
     parentId: 'all-routes',
     navGroup: 'home',
     breadcrumb: { type: 'static', i18nKey: tRegister('routes.view.map') },
@@ -187,6 +193,9 @@ export const routesConfig: RoutesConfig = [
     component: pages.GpxPreviewPage,
     // The link is shareable: holding the unguessable id is enough to view it.
     auth: 'public',
+    // Not indexed: a member's own file, shown to whoever holds the link — like unlisted content
+    // (docs/LEDGER_*.md WEB-4).
+    noindex: true,
     parentId: 'gpx-tools',
     breadcrumb: { type: 'static', i18nKey: tRegister('gpxTools.preview.title') },
     // Public/anonymous endpoint — prefetches fine under stateless SSR, and feeds gpxPreviewMeta.
@@ -199,6 +208,9 @@ export const routesConfig: RoutesConfig = [
     component: pages.GpxPreviewFullscreenMapPage,
     // The link is shareable: holding the unguessable id is enough to view it.
     auth: 'public',
+    // Not indexed: a member's own file, shown to whoever holds the link — like unlisted content
+    // (docs/LEDGER_*.md WEB-4).
+    noindex: true,
     layout: 'bare',
     parentId: 'gpx-tools-view',
     breadcrumb: { type: 'static', i18nKey: tRegister('map.fullscreen.title') },
@@ -307,6 +319,8 @@ export const routesConfig: RoutesConfig = [
     paths: pathVariants.verifyEmail(),
     component: pages.VerifyEmailPage,
     auth: 'public',
+    // Not indexed: transactional, opened from a link carrying its token in the query string.
+    noindex: true,
     parentId: null,
     breadcrumb: { type: 'static', i18nKey: tRegister('auth.verifyEmail.title') },
   },
@@ -317,6 +331,8 @@ export const routesConfig: RoutesConfig = [
     paths: pathVariants.invitation(),
     component: pages.AcceptInvitationPage,
     auth: 'public',
+    // Not indexed: transactional, opened from a link carrying its token in the query string.
+    noindex: true,
     parentId: null,
     breadcrumb: { type: 'static', i18nKey: tRegister('invitations.accept.pageTitle') },
   },
@@ -328,6 +344,8 @@ export const routesConfig: RoutesConfig = [
     paths: pathVariants.biketeamMigration(),
     component: pages.BiketeamMigrationPage,
     auth: 'public',
+    // Not indexed: transactional, opened from a link carrying its token in the query string.
+    noindex: true,
     parentId: null,
     breadcrumb: { type: 'static', i18nKey: tRegister('biketeamMigration.pageTitle') },
   },
@@ -344,6 +362,8 @@ export const routesConfig: RoutesConfig = [
     paths: pathVariants.resetPassword(),
     component: pages.ResetPasswordPage,
     auth: 'public',
+    // Not indexed: transactional, opened from a link carrying its token in the query string.
+    noindex: true,
     parentId: null,
     breadcrumb: { type: 'static', i18nKey: tRegister('auth.resetPassword.title') },
   },
@@ -862,6 +882,9 @@ export const routesConfig: RoutesConfig = [
     paths: pathVariants.routes(':teamSlug'),
     component: pages.RouteListPage,
     auth: 'public',
+    // Not indexed, like `all-routes`: a list of maps under as many URLs as filter combinations.
+    // Each route's own page stays indexable (docs/LEDGER_*.md WEB-85).
+    noindex: true,
     parentId: 'team-detail',
     breadcrumb: { type: 'static', i18nKey: tRegister('nav.routes') },
     prefetch: (queryClient, params, url) => prefetchRouteList(queryClient, params.teamSlug!, url),
@@ -871,6 +894,7 @@ export const routesConfig: RoutesConfig = [
     paths: pathVariants.routesMap(':teamSlug'),
     component: pages.RoutesMapPage,
     auth: 'public',
+    noindex: true,
     parentId: 'routes',
     breadcrumb: { type: 'static', i18nKey: tRegister('routes.view.map') },
     prefetch: (queryClient, params, url) => prefetchRoutesMap(queryClient, params.teamSlug!, url),
