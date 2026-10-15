@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="pedalons-tests" xmlns="http://www.topografix.com/GPX/1/1">
+  <trk>
+    <name>   </name>
+    <trkseg>
+      <trkpt lat="47.500000" lon="-1.600000"><ele>20.0</ele></trkpt>
+      <trkpt lat="47.500500" lon="-1.595000"><ele>21.0</ele></trkpt>
+      <trkpt lat="47.500000" lon="-1.590000"><ele>22.0</ele></trkpt>
+      <trkpt lat="47.500500" lon="-1.585000"><ele>23.0</ele></trkpt>
+      <trkpt lat="47.500000" lon="-1.580000"><ele>24.0</ele></trkpt>
+      <trkpt lat="47.500500" lon="-1.575000"><ele>25.0</ele></trkpt>
+      <trkpt lat="47.500000" lon="-1.570000"><ele>26.0</ele></trkpt>
+      <trkpt lat="47.500500" lon="-1.565000"><ele>27.0</ele></trkpt>
+      <trkpt lat="47.500000" lon="-1.560000"><ele>28.0</ele></trkpt>
+      <trkpt lat="47.500500" lon="-1.555000"><ele>29.0</ele></trkpt>
+      <trkpt lat="47.500000" lon="-1.550000"><ele>30.0</ele></trkpt>
+    </trkseg>
+  </trk>
+</gpx>

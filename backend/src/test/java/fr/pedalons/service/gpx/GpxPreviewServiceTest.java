@@ -100,6 +100,37 @@ class GpxPreviewServiceTest extends AbstractBaseTest {
     assertFalse(preview.getName().isBlank());
   }
 
+  /** docs/LEDGER_*.md API-115: most exporters name the track, not the file. */
+  @Test
+  void create_shouldTakeTheTrackNameWhenTheGpxHasNoMetadataName() {
+    Path gpx = new File("src/test/resources/track_name_only.gpx").toPath();
+
+    GpxPreview preview = gpxPreviewService.create(gpx, "trace.gpx");
+
+    assertEquals("Boucle du dimanche", preview.getName());
+  }
+
+  @Test
+  void create_shouldFallBackToTheFileNameWhenTheTrackNameIsBlank() {
+    Path gpx = new File("src/test/resources/blank_track_name.gpx").toPath();
+
+    GpxPreview preview = gpxPreviewService.create(gpx, "trace.gpx");
+
+    assertEquals("trace.gpx", preview.getName());
+  }
+
+  @Test
+  void createMergedPreview_shouldNameEachFileByItsTrackThenItsFileName() {
+    List<Path> gpx =
+        List.of(
+            new File("src/test/resources/track_name_only.gpx").toPath(),
+            new File("src/test/resources/blank_track_name.gpx").toPath());
+
+    var preview = gpxPreviewService.createMergedPreview(gpx, List.of("a.gpx", "sans-nom.gpx"));
+
+    assertEquals("Boucle du dimanche + sans-nom", preview.name());
+  }
+
   @Test
   void create_shouldThrowForEmptyGpx() {
     Path empty = new File("src/test/resources/empty.gpx").toPath();

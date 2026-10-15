@@ -68,6 +68,9 @@ public class GpxProcessingService {
   /** Sibling of the asset temp dir, so temp files can be moved across without copying bytes. */
   private static final String TEMP_DIR = "pedalons-gpx";
 
+  /** What {@code GpxDocument.getName()} returns for a file with no {@code <metadata><name>}. */
+  private static final String NO_NAME = "noname";
+
   @Inject GpxPipeline pipeline;
 
   @Inject MapThumbnailRenderer mapThumbnailRenderer;
@@ -195,7 +198,9 @@ public class GpxProcessingService {
     // Tracks and routes alike, as GPXFileReader did: a <rte>-only file is a valid route — the
     // facade's default, which is the one thing a Java caller could not spell before g33.
     List<Path> unfiltered = GpxToPathJvm.tracksAsPaths(doc);
-    String name = doc.getName();
+    // Written into the stored GPX and FIT files: the track's name when the file has no metadata
+    // name, as gpx2web did, rather than vcyclist's "noname" placeholder.
+    String name = Objects.requireNonNullElse(documentName(doc), doc.getName());
     // Derived from the same filtered view tracksAsPaths applies, or the indices would drift.
     List<String> unfilteredNames = trackNames(doc);
 
@@ -301,6 +306,26 @@ public class GpxProcessingService {
         .filter(t -> !t.getPoints().isEmpty())
         .map(t -> t.getName() != null && !t.getName().isBlank() ? t.getName() : doc.getName())
         .toList();
+  }
+
+  /**
+   * The name a GPX file goes by: its {@code <metadata><name>}, else the name of its first non-empty
+   * track, else {@code null}. {@code GpxDocument.getName()} is never null — it falls back to the
+   * literal {@code "noname"} — so that placeholder counts as no name. gpx2web applied the same
+   * track fallback when parsing; without it, a file named only in its {@code <trk>} — what most
+   * exporters write — is titled after its file name (docs/LEDGER_*.md API-115).
+   */
+  public static @Nullable String documentName(GpxDocument doc) {
+    String name = doc.getName();
+    if (!name.isBlank() && !NO_NAME.equals(name)) {
+      return name;
+    }
+    return doc.getTracks().stream()
+        .filter(t -> !t.getPoints().isEmpty())
+        .map(t -> t.getName())
+        .filter(n -> n != null && !n.isBlank())
+        .findFirst()
+        .orElse(null);
   }
 
   private static File createTempFile(String suffix) throws IOException {

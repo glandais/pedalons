@@ -231,13 +231,12 @@ public class GpxPreviewService {
   }
 
   /**
-   * {@code GpxDocument.getName()} is never null — it falls back to the literal {@code "noname"} —
-   * so that placeholder has to be treated as "no name" too, or every unnamed file would be titled
-   * "noname" instead of the caller's fallback.
+   * The file's own name — metadata, then first track ({@link GpxProcessingService#documentName}) —
+   * else the caller's fallback, the client-side file name.
    */
   private static String documentName(GpxDocument gpx, String fallbackName) {
-    String name = gpx.getName();
-    return !name.isBlank() && !"noname".equals(name) ? name : fallbackName;
+    String name = GpxProcessingService.documentName(gpx);
+    return name != null ? name : fallbackName;
   }
 
   /**

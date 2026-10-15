@@ -9,6 +9,7 @@ import fr.pedalons.infrastructure.storage.StorageService;
 import fr.pedalons.repository.asset.AssetRepository;
 import fr.pedalons.repository.gpx.GpxPreviewRepository;
 import fr.pedalons.service.asset.AssetService;
+import fr.pedalons.service.route.GpxProcessingService;
 import fr.pedalons.service.route.GpxSanitizer;
 import io.github.glandais.engine.gpx.GpxDocument;
 import io.github.glandais.engine.gpx.GpxParserJvm;
@@ -26,6 +27,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Pattern;
 import org.jboss.logging.Logger;
 import org.jspecify.annotations.Nullable;
@@ -241,7 +243,9 @@ public class GpxSanitizationBackfill {
   }
 
   private static byte[] toFitBytes(GpxDocument gpx) {
-    return FitExporter.toFitBytes(GpxToPathJvm.tracksAsPaths(gpx), gpx.getName());
+    return FitExporter.toFitBytes(
+        GpxToPathJvm.tracksAsPaths(gpx),
+        Objects.requireNonNullElse(GpxProcessingService.documentName(gpx), gpx.getName()));
   }
 
   private void store(StoredFile file, byte[] content) {

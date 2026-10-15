@@ -2240,6 +2240,23 @@ Le détail de chacune est dans l'historique git de ce fichier et de `LEDGER_NEXT
   d'images. Celles d'un contenu non listé et les vignettes des aperçus GPX gardent le header : leurs
   pages sont `noindex`, et le header n'empêche pas un aperçu de lien.
 
+- `API-115` **Aperçu GPX nommé d'après le fichier au lieu de la trace** (2026-10-15) — régression de
+  la migration gpx2web → vcyclist (`0143689b`) : un GPX sans `<metadata><name>` mais avec un
+  `<trk><name>` — ce qu'écrivent la plupart des exporteurs — donnait un aperçu « trace.gpx ».
+  `GpxDocument.getName()` vaut `"noname"` en l'absence de nom de métadonnées, là où le
+  `GPXFileReader` de gpx2web retombait sur le nom du premier chemin. Repéré par neuf e2e × deux
+  navigateurs (`flow-gpx-tools`, la pagination « mes fichiers GPX » : `gpxOf()` ne nomme que la
+  trace). `GpxProcessingService.documentName` est désormais la seule règle : nom de métadonnées non
+  vide et ≠ `noname`, sinon premier nom non vide d'une trace non vide, sinon `null`. L'appliquent
+  `GpxPreviewService` (aperçu d'un fichier, puis le nom du fichier client), la fusion multi-fichiers
+  fichier par fichier (`API-112`), le nom écrit dans `original.gpx`, `filtered.gpx` et le FIT
+  (`computeGpx`, qui sinon y écrivait `noname`) et le FIT régénéré par `GpxSanitizationBackfill`. Le
+  nom d'un parcours vient toujours de la saisie du membre, pas du fichier. Pas de changement de
+  contrat. Couvert par `GpxPreviewServiceTest.create_shouldTakeTheTrackNameWhenTheGpxHasNoMetadataName`,
+  `create_shouldFallBackToTheFileNameWhenTheTrackNameIsBlank` et
+  `createMergedPreview_shouldNameEachFileByItsTrackThenItsFileName`. **À ne pas défaire** : ne pas
+  relire `doc.getName()` comme nom visible — passer par `documentName`.
+
 ### Vie privée : les métadonnées retirées à l'import
 
 - `API-43` **Les images perdent leurs métadonnées au stockage** (2026-09-29, contrat inchangé) —
