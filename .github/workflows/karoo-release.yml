@@ -73,14 +73,18 @@ jobs:
         working-directory: ./karoo
         run: rm -f release.keystore keystore.properties
 
-      - name: Rename APK
+      - name: Collect release assets
         working-directory: ./karoo
         run: |
           cp app/build/outputs/apk/release/app-release.apk pedalons.apk
           cp ../frontend/public/pwa-512x512.png pedalons.png
+          for f in $(jq -r '.screenshots[]' metadata/app.json); do
+            cp "metadata/screenshots/$f" "screenshot-$f"
+          done
 
       # karoo-ext's KarooAppManifest. Its URLs are pinned to this tag: the manifest of release N
-      # always names exactly APK N, whichever release is "Latest" in this monorepo.
+      # always names exactly APK N, whichever release is "Latest" in this monorepo. app.json's
+      # `screenshots` (files of metadata/screenshots/, in display order) becomes screenshotUrls.
       - name: Generate Karoo manifest
         env:
           NAME: ${{ steps.version.outputs.name }}
@@ -89,8 +93,9 @@ jobs:
         run: |
           jq --arg v "$NAME" --argjson c "$CODE" --arg base "$BASE" \
              --rawfile notes karoo/release-notes.md \
-             '. + {
+             'del(.screenshots) + {
                iconUrl: "\($base)/pedalons.png",
+               screenshotUrls: [.screenshots[] | "\($base)/screenshot-\(.)"],
                latestApkUrl: "\($base)/pedalons.apk",
                latestVersion: $v,
                latestVersionCode: $c,
@@ -105,6 +110,7 @@ jobs:
           files: |
             karoo/pedalons.apk
             karoo/pedalons.png
+            karoo/screenshot-*.png
             karoo/manifest.json
 
       # The stable URL: every APK's MANIFEST_URL (https://www.pedalons.fr/karoo/manifest.json)

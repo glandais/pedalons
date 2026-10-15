@@ -20,7 +20,9 @@ release notes shown on the Karoo. `.github/workflows/karoo-release.yml` fails wi
 The workflow publishes `pedalons.apk`, `pedalons.png` and `manifest.json` — karoo-ext's
 [`KarooAppManifest`](https://github.com/hammerheadnav/karoo-ext/blob/master/lib/src/main/kotlin/io/hammerhead/karooext/models/KarooAppManifest.kt),
 built from `karoo/metadata/app.json` (label, description, tags…) plus the version, the notes and
-URLs pinned to the tag. Karoo offers an update when the manifest's `latestVersionCode` exceeds the
+URLs pinned to the tag. Screenshots (480×800, taken on the device) live in
+`karoo/metadata/screenshots/`; only those listed in `app.json`'s `screenshots`, in that order, are
+published — the first one is what the store listing shows first. Karoo offers an update when the manifest's `latestVersionCode` exceeds the
 installed one (`MAJOR*10000 + MINOR*100 + PATCH`, from the tag).
 
 How Karoo finds that manifest — three links, none to be changed lightly:
