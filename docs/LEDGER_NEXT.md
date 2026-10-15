@@ -306,6 +306,35 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
       `group_title_test.dart`) : le nom seul quand il commence par le mot du gabarit, casse ignorée,
       mot entier (« Groupement » garde le préfixe) ; une fonction partagée et son test vitest.
 
+### `WEB-90` Mesure d'audience du site : le compteur (M, web)
+
+Plan : [`2026-10-15-web-analytics.md`](plans/2026-10-15-web-analytics.md) (§4). Le site ne sait pas quelles pages sont vues, ni sur quel domaine de club, ni
+d'où viennent les visiteurs : seul Caddy voit des requêtes, par hôte (`OPS-21`). Un module
+`frontend/src/lib/analytics/`, sans le `count.js` de GoatCounter et sans effet à l'import (il est
+dans le bundle SSR), compte chaque page vue depuis `router.subscribe` dans `getRouter()`
+(`App.tsx`), ce qui couvre aussi les routes `bare` et ne tourne qu'au client ; le premier hit est
+compté sur `router.state` à la création. Il n'envoie que l'hôte et le **gabarit** de la route, où
+seul `:teamSlug` est remplacé par le slug de l'équipe, **publique ou privée** (décidé le 15 octobre
+2026 : `/pedalons.fr/equipes/n-peloton/sorties/:rideSlug`, `/outils-gpx/:previewId` ; pris de
+`match.params`, donc aussi sur un hôte épinglé, et gardé seulement s'il a la forme d'un slug ;
+jamais un autre paramètre, la query string ni `document.title`), le `routeId` et la propriété
+statique `auth` de la route (jamais l'état de session), l'hôte du
+référent externe au premier hit seulement, par `fetch` en `credentials: 'omit'` et
+`referrerPolicy: 'no-referrer'` (**jamais `sendBeacon`**, qui enverrait le cookie `refresh_token`
+et l'URL entière en `Referer`). Rien n'est envoyé sous Do Not Track, Global Privacy Control,
+l'opposition locale (`pedalons-analytics-optout`, propre à ce navigateur et à ce site ; interrupteur
+sur `/profil/vie-privee` et dans `PrivacyPolicyPage.tsx` hors du Markdown, lu sans casser
+l'hydratation), un navigateur piloté ou une config sans `analytics` (`API-117`). Une route masquée
+(sans `handle`) est ignorée, `/404` ne vaut que pour la route `*`, et un envoi différé laisse une
+`REPLACE` (redirection vers la connexion) remplacer le hit en attente. Tests : vitest sur toute la
+table des routes avec des paramètres sentinelles (le `teamSlug` sentinelle apparaît tel quel à la
+place de `:teamSlug`, aucune autre sentinelle ; un `teamSlug` mal formé reste un marqueur), options
+du `fetch`, opposition après
+rechargement du module, routeur mémoire (`PUSH`/`POP` comptés, `REPLACE` de même route non,
+redirections rendues comptées une fois), et `e2e/analytics-off.e2e.ts` (aucune requête `/count`
+sur la pile e2e). Dépend de `API-117` ; ne s'allume qu'après `LEGAL-19`, en prod seulement. Un slug
+d'équipe renommé coupe l'historique en deux chemins, accepté.
+
 ### Couverture e2e — ce que l'audit du 27 septembre laisse ouvert
 
 L'audit ([archivé](plans/archive/2026-09-27-e2e-coverage-audit.md), `WEB-26`) est exécuté : P0, P1
@@ -490,6 +519,16 @@ calendrier (`API-20`) sont dans
 [`LEDGER_DONE.md`](LEDGER_DONE.md). Les **gabarits de sortie n'ont volontairement pas de meneur** —
 décision produit : `RideTemplateGroupRequest` reste sans champ.
 
+### Mesure d'audience du site
+
+- [ ] `API-117` **Drapeau de la mesure d'audience dans `/api/config` (XS)** — plan [`2026-10-15-web-analytics.md`](plans/2026-10-15-web-analytics.md)
+      (§3.3). Le site n'a aucun moyen de savoir si le déploiement compte les visites : le
+      conteneur frontend ne reçoit que `API_BASE_URL`. `ConfigDto` gagne `analytics` nullable
+      (`{ countPath }`), alimenté par `pedalons.analytics.count-path` en `Optional<String>` sur le
+      modèle de `webPush` (`ConfigService.java`) : absent en dev, sur un poste et dans `.env.e2e`,
+      donc compteur coupé. Bump mineur de `pedalons.api.version`, compétence `contract-first-api` ;
+      le mobile ignore le champ. Test de `ConfigService` (null sans propriété).
+
 ### Garmin
 
 - [ ] `API-61` **Mettre l'intégration Garmin OAuth 2.0 en conformité** — **bloqué** : le programme
@@ -658,6 +697,32 @@ Ce que les tests ne prouvent pas, parce qu'ils ne passent ni par Flyway ni par u
       d'après `OPERATIONS.md`, sans page à sa racine) : s'il sert encore, lui donner un
       `robots.txt` `Disallow: /` ; sinon le retirer du DNS. La validation prend
       plusieurs semaines ; revenir sur le rapport ensuite. Taille : XS (surtout de l'attente).
+- [ ] `OPS-36` **GoatCounter auto-hébergé pour la mesure d'audience du site (M)** — plan
+      [`2026-10-15-web-analytics.md`](plans/2026-10-15-web-analytics.md) (§3). Un service `goatcounter` dans `docker-compose.yml` (image épinglée, commande
+      en liste YAML pour le DSN, réseau `pedalons` seul, ancre de labels, 128M, `update_config` et
+      `rollback_config` stop-first à cause de `-automigrate`), routé en `Path(/count)` sans
+      `Host()` à la priorité 150 pour que chaque domaine de club l'atteigne sur sa propre origine,
+      avec un middleware qui réécrit le `Host` vers un site unique et retire `Cookie` et `Referer`,
+      et une limite de débit. **Sessions coupées** dans GoatCounter (sinon un site unique relierait
+      les domaines de club entre eux), tableau de bord public et jetons d'API désactivés, région
+      coupée, rétention 24 mois tables agrégées comprises, exigée avant l'activation. Base
+      `goatcounter` sur le PostgreSQL existant, créée par `scripts/goatcounter-init.sh` (`db` sans
+      interaction, SQL par stdin ; `site` interactif) ; **non sauvegardée** (statistiques
+      jetables) : `deploy.sh --hold-app` la garde à 0 et `restore.sh` appelle
+      `goatcounter-init.sh db` après `pg_restore`. **Prod seulement** (décidé le 15 octobre
+      2026) : le `.env` de staging ne pose ni `GOATCOUNTER_*` ni `PEDALONS_ANALYTICS_COUNT_PATH`, et
+      `deploy.sh`, voyant les deux clés vides, ajoute `goatcounter` à 0 réplique dans son overlay
+      (celui de `--hold-app`), sans `profiles:` dans `docker-compose.yml` ; `goatcounter-init.sh`
+      n'y fait rien. `deploy.sh` refuse une seule des deux clés posée, et le drapeau sans elles.
+      Coupé sur la pile e2e (`profiles: [analytics]` dans `docker-compose.e2e.yml`) et sur un poste
+      par défaut. Tableau de bord sans port publié : un
+      routeur `Host(GOATCOUNTER_VHOST)` atteint par un tunnel SSH sur le `HTTP_PORT` de
+      l'environnement. **`/count` n'est pas écrit dans le journal Caddy** (`log_skip` dans le
+      snippet, importé par chaque bloc de club) ; section, ligne mémoire et somme dans
+      `OPERATIONS.md`. L'étape 0 du plan vérifie d'abord les faits notés de mémoire (`Host`,
+      sessions et `hits.session`, `Referer` ignoré, IP lue derrière deux proxys, journal d'accès,
+      routeurs Traefik d'un service à 0 réplique) ;
+      Umami est le repli, avec un *website* par hôte.
 
 ---
 
@@ -851,7 +916,26 @@ Toute modification de
 `privacy/privacy-policy.{fr,en}.md` se fait **en parité FR/EN**, et le texte étant un asset de
 l'app mobile, un changement n'y apparaît qu'avec la build suivante.
 
-Aucun point ouvert : `LEGAL-18`, le dernier, a été livré le 14 octobre 2026.
+- [ ] `LEGAL-19` **Déclarer la mesure d'audience du site (S)** — plan [`2026-10-15-web-analytics.md`](plans/2026-10-15-web-analytics.md) (§5). La
+      politique promet « aucun outil d'analyse ou de suivi » (§3, l.203) et ne prévoit aucune
+      opposition à une mesure d'audience : elle deviendrait fausse le jour où `WEB-90` s'allume. En
+      parité FR/EN : une sous-section « Mesure d'audience du site » au §1 (site seulement, sans
+      cookie ni session, IP non conservée, type de page et, pour une page d'équipe,
+      **l'identifiant de l'équipe tel qu'il figure dans l'adresse**, équipes privées comprises ;
+      pays seul déduit sur nos serveurs),
+      la liste du §2, une ligne d'intérêt légitime exempté au §3 et la réécriture de la l.203, une
+      phrase « auto-hébergé » au §4, la durée de 24 mois au §6 (statistiques agrégées comprises),
+      « les requêtes de mesure n'y figurent pas » aux journaux serveur (§1 l.48, §6 l.337) et « les
+      statistiques d'audience ne sont pas sauvegardées » au paragraphe Sauvegardes (§6 l.342), le
+      mécanisme d'opposition au §7 (DNT et GPC, seul moyen global ; interrupteur « sur le site :
+      Profil → Confidentialité, ou la page Confidentialité », valable **pour ce navigateur et ce
+      site uniquement** ; « l'application ne mesure rien »), la clé `pedalons-analytics-optout` et
+      la conclusion de la l.446 au §8. Relire les conditions d'exemption sur cnil.fr. La politique
+      est en ligne **avant** le drapeau de prod. Annonce (décidée le 15 octobre 2026) : **mise en
+      ligne avant l'ouverture publique, sans e-mail**, à condition qu'au déploiement (étape 5 du
+      plan) aucun domaine de prod n'ait de vrais membres ayant accepté la politique actuelle
+      (équipes migrées de biketeam — `MIG-1` encore ouvert le 15 octobre —, bêta-testeurs) ; sinon
+      l'e-mail du §11 à chaque membre, avant l'activation.
 
 ---
 
@@ -901,6 +985,13 @@ redevient une entrée de sa section sous le même identifiant.
 | `LEGAL-14` | **Notification des changements de politique dans l'app** | Non : l'e-mail seul, comme le dit le §11 (décidé le 29 septembre 2026, scindé de `LEGAL-13`) | Aucun type de notification « politique mise à jour ». Un changement important se signale par e-mail à chaque membre ; ne pas ajouter de promesse au §11 sans créer le type d'abord |
 | `LEGAL-16` | **Journal des accès des admins plateforme** | Non (décidé le 29 septembre 2026, avec `LEGAL-13`) | Il n'y a qu'un admin plateforme, le responsable du traitement lui-même : un journal ne surveillerait que lui. Le §4 dit qui a accès et pourquoi, sans promettre de traçabilité. À rouvrir dès qu'un second compte reçoit `PLATFORM_ADMIN` : écrire le journal (intercepteur sur `@Admin`) **avant** d'en parler au §4 |
 | `LEGAL-17` | **Responsable du traitement par domaine** | Non : un seul responsable pour tous les sites (décidé le 29 septembre 2026, avec `LEGAL-13`) | Le §12 le dit, et que les clubs ne sont pas responsables du traitement. Un club qui voudrait l'être demanderait des champs sur `Domain`, une page légale générée par domaine et un accord de sous-traitance : à rouvrir si un club le demande, pas avant |
+| `OPS-37` | **Plausible CE pour la mesure d'audience** | Écarté le 15 octobre 2026 au profit de GoatCounter ([`2026-10-15-web-analytics.md`](plans/2026-10-15-web-analytics.md)) | Plausible CE demande ClickHouse : une seconde base à sauvegarder, surveiller et mettre à jour, plus gourmande en mémoire que le reste de la pile, pour quelques milliers de visites par mois. À rouvrir si l'audience change d'ordre de grandeur |
+| `OPS-38` | **Matomo pour la mesure d'audience** | Écarté le 15 octobre 2026 au profit de GoatCounter | PHP et MySQL, absents de la pile ; cookies par défaut, à désactiver pour l'exemption CNIL ; des greffons à suivre. Sa présence sur la liste CNIL des outils exemptables n'apporte rien ici : la configuration exemptée de GoatCounter remplit les mêmes conditions |
+| `OPS-39` | **Mesure d'audience par les journaux d'accès** (GoAccess, `goatcounter import` des journaux Caddy) | Écartée le 15 octobre 2026 | Les journaux vivent sur l'hôte, hors dépôt ; ils ne voient que le premier chargement d'une page, pas les navigations côté client du routeur ; ils portent les chemins concrets (`/outils-gpx/{previewId}`, les slugs des sorties, parcours et pages), qu'il faudrait réécrire après coup au lieu de ne jamais les envoyer |
+| `LEGAL-20` | **Mesure d'audience par un service SaaS** (Plausible, Fathom…) | Écartée le 15 octobre 2026 | Un sous-traitant de plus au §4 de la politique, souvent un transfert hors UE au §5, un domaine tiers que les bloqueurs coupent, un contrat à suivre. L'auto-hébergement chez Scaleway reste couvert par le sous-traitant déjà déclaré |
+| `OPS-40` | **Compter des visites plutôt que des pages vues** (un site GoatCounter par domaine et par alias, purge nocturne de `hits.session`) | Non : pages vues seulement, sessions coupées, un seul site (décidé le 15 octobre 2026, [`2026-10-15-web-analytics.md`](plans/2026-10-15-web-analytics.md) §7) | Avec un site unique, une session relierait la navigation d'un site de club à l'autre (condition 3 de la CNIL) ; un site par hôte couplerait la création d'un domaine (`AdminDomainResource`) à GoatCounter, et l'empreinte de session gardée 24 mois sur chaque page vue ferait un quasi-identifiant sur un petit club. À rouvrir si une question réelle ne se résout pas en pages vues, en écrivant d'abord la purge et la création couplée |
+| `API-116` | **Couper la mesure d'audience pour un club** (drapeau par `Domain`, comme `enableGpxPlanner`) | Non, pas avant qu'un club le demande (décidé le 15 octobre 2026, plan §7) | La mesure est exemptée de consentement et chaque visiteur peut s'y opposer (DNT, GPC, interrupteur) ; un drapeau par domaine ajouterait un champ, une migration et une case d'admin sans demande. À rouvrir sur la demande d'un club : le drapeau rejoindrait `analytics` dans `/api/config` (`API-117`), résolu par domaine |
+| `WEB-91` | **Statistiques d'audience pour les admins de club** | Non : tableau de bord pour le seul responsable du traitement, par tunnel SSH (décidé le 15 octobre 2026, plan §7) | La condition 1 de l'exemption CNIL limite la finalité à l'éditeur ; il n'y a qu'un site GoatCounter pour tous les hôtes, si bien qu'il faudrait soit un site par domaine, soit une page Pédalons qui lirait l'API de GoatCounter (aujourd'hui sans jeton) en filtrant par hôte et par slug ; et sur une petite équipe privée, un admin qui connaît ses membres pourrait rapprocher une page vue d'une personne. À rouvrir sur une demande réelle, après relecture de la condition 1 |
 | `BRAND-3` | **Test de concordance des tables de couleurs web et mobile** | Écarté au profit du générateur (`BRAND-2`) | Un test qui parse les deux fichiers et vérifie qu'ils concordent détecte sans unifier, et repose sur des expressions régulières sur du TypeScript et du Dart |
 
 ---
