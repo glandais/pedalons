@@ -604,6 +604,20 @@ Ce que les tests ne prouvent pas, parce qu'ils ne passent ni par Flyway ni par u
 
 ---
 
+### Extension Karoo : fiche, mises à jour, catalogue
+
+- [ ] `OPS-32` **Mettre en service le manifest Karoo** — le workflow `karoo-release.yml` publie
+      désormais un `manifest.json` (karoo-ext `KarooAppManifest`) et le réécrit dans la release fixe
+      `karoo-latest` ; chaque APK y renvoie par `https://www.pedalons.fr/karoo/manifest.json`, redirigé
+      par traefik (`docker-compose.yml`, labels du frontend). Le circuit est décrit dans
+      `karoo/PUBLISH.md`. Reste, dans l'ordre : déployer la stack puis vérifier la 302
+      (`curl -sI https://www.pedalons.fr/karoo/manifest.json`) ; pousser le tag `karoo.1.0.9` (son
+      `whatsNew` est écrit) et vérifier la release `karoo-latest` ; installer la 1.0.9 sur un Karoo et
+      constater la fiche enrichie, puis qu'une 1.0.10 s'y propose en mise à jour ; enfin, déclarer le
+      manifest sur dashboard.hammerhead.io et soumettre l'app à SRAM (accord de licence, plusieurs
+      semaines). Non vérifié : à quelle fréquence le Karoo relit le manifest, et s'il garde le tag
+      `navigation`, hors des quatre que documente karoo-ext. (S)
+
 ## NOTIF — Notifications
 
 Les phases 1 à 5 de [`plans/archive/2026-09-18-notifications.md`](plans/archive/2026-09-18-notifications.md)

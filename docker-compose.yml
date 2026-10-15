@@ -200,6 +200,17 @@ services:
       - "traefik.http.middlewares.site-headers.headers.referrerPolicy=strict-origin-when-cross-origin"
       - "traefik.http.middlewares.site-headers.headers.permissionsPolicy=camera=(), microphone=(), payment=(), usb=(), geolocation=(self)"
       - "traefik.http.middlewares.site-headers.headers.contentSecurityPolicy=frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'"
+      # The Karoo app's manifest (karoo-ext MANIFEST_URL, baked into every APK): a temporary redirect
+      # to the karoo-latest release that .github/workflows/karoo-release.yml rewrites, so where the
+      # manifest lives can change without republishing an APK (karoo/PUBLISH.md). Never reaches the
+      # frontend; the service is only there because traefik wants one per router.
+      - "traefik.http.routers.karoo-manifest.rule=Path(`/karoo/manifest.json`)"
+      - "traefik.http.routers.karoo-manifest.priority=200"
+      - "traefik.http.routers.karoo-manifest.service=frontend"
+      - "traefik.http.routers.karoo-manifest.middlewares=ratelimit-frontend,karoo-manifest"
+      - "traefik.http.middlewares.karoo-manifest.redirectregex.regex=^.*"
+      - "traefik.http.middlewares.karoo-manifest.redirectregex.replacement=https://github.com/glandais/pedalons/releases/download/karoo-latest/manifest.json"
+      - "traefik.http.middlewares.karoo-manifest.redirectregex.permanent=false"
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3000/health"]
       interval: 5s

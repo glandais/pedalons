@@ -22,6 +22,14 @@ jobs:
           echo "name=$TAG" >> "$GITHUB_OUTPUT"
           echo "code=$CODE" >> "$GITHUB_OUTPUT"
 
+      # Before the build, so a release without its notes fails in seconds. The same text is the
+      # GitHub release body and the manifest's releaseNotes, shown on the Karoo.
+      - name: Read whatsNew
+        run: |
+          f="karoo/metadata/version/${{ steps.version.outputs.name }}/fr-FR.json"
+          test -f "$f" || { echo "::error::whatsNew manquant : $f"; exit 1; }
+          jq -r .whatsNew "$f" > karoo/release-notes.md
+
       - name: Set up JDK 17
         uses: actions/setup-java@v6.0.1
         with:
@@ -67,10 +75,48 @@ jobs:
 
       - name: Rename APK
         working-directory: ./karoo
-        run: cp app/build/outputs/apk/release/app-release.apk pedalons.apk
+        run: |
+          cp app/build/outputs/apk/release/app-release.apk pedalons.apk
+          cp ../frontend/public/pwa-512x512.png pedalons.png
+
+      # karoo-ext's KarooAppManifest. Its URLs are pinned to this tag: the manifest of release N
+      # always names exactly APK N, whichever release is "Latest" in this monorepo.
+      - name: Generate Karoo manifest
+        env:
+          NAME: ${{ steps.version.outputs.name }}
+          CODE: ${{ steps.version.outputs.code }}
+          BASE: https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}
+        run: |
+          jq --arg v "$NAME" --argjson c "$CODE" --arg base "$BASE" \
+             --rawfile notes karoo/release-notes.md \
+             '. + {
+               iconUrl: "\($base)/pedalons.png",
+               latestApkUrl: "\($base)/pedalons.apk",
+               latestVersion: $v,
+               latestVersionCode: $c,
+               releaseNotes: ($notes | rtrimstr("\n"))
+             }' karoo/metadata/app.json > karoo/manifest.json
+          cat karoo/manifest.json
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
-          files: karoo/pedalons.apk
-          generate_release_notes: true
+          body_path: karoo/release-notes.md
+          files: |
+            karoo/pedalons.apk
+            karoo/pedalons.png
+            karoo/manifest.json
+
+      # The stable URL: every APK's MANIFEST_URL (https://www.pedalons.fr/karoo/manifest.json)
+      # redirects here. Never "Latest", never deleted; its only asset is rewritten in place, which
+      # requires the repository's immutable releases to stay off. The tag does not match `karoo.*`,
+      # and a tag pushed with GITHUB_TOKEN triggers no workflow anyway.
+      - name: Update the karoo-latest manifest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view karoo-latest >/dev/null 2>&1 ||
+            gh release create karoo-latest --target "$GITHUB_SHA" --latest=false \
+              --title "Karoo — manifest courant" \
+              --notes "Pointeur vers la dernière version Karoo (karoo/PUBLISH.md). Ne pas supprimer."
+          gh release upload karoo-latest karoo/manifest.json --clobber

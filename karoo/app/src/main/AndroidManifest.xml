@@ -11,6 +11,14 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.PedalonsKaroo">
 
+        <!-- Where Karoo fetches the app's details and its updates (karoo-ext KarooAppManifest). Baked
+             into every APK for good: pedalons.fr redirects it (docker-compose.yml, frontend labels)
+             to the karoo-latest release that karoo-release.yml rewrites, so the host can change
+             without breaking installed apps. -->
+        <meta-data
+            android:name="io.hammerhead.karooext.MANIFEST_URL"
+            android:value="https://www.pedalons.fr/karoo/manifest.json" />
+
         <!-- Karoo Extension Service -->
         <service
             android:name=".PedalonsExtension"
