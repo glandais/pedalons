@@ -1,5 +1,6 @@
 package fr.pedalons.service.route;
 
+import fr.pedalons.common.GeoDistance;
 import fr.pedalons.common.exception.BusinessException;
 import fr.pedalons.dto.error.ErrorCode;
 import io.github.glandais.engine.gpx.GpxDocument;
@@ -19,7 +20,8 @@ import java.util.List;
  *
  * <ul>
  *   <li>{@link #MAX_GPX_SIZE_BYTES}: an uploaded file, on every HTTP route that takes one (GPX
- *       tools create and update, team route create and update), through {@code api.gpx.GpxUploads}. The
+ *       tools create, update and merge — whose files are also bound together by {@link
+ *       #MAX_MERGE_TOTAL_BYTES} —, team route create and update), through {@code api.gpx.GpxUploads}. The
  *       biketeam migration reads its files server to server and is not bound by it — the distance
  *       bound below still applies to it;
  *   <li>{@link #MAX_PLANNER_POINTS}: the planner points of a JSON request ({@code @Size} on the DTO
@@ -59,10 +61,28 @@ public final class GpxLimits {
    */
   public static final int MAX_PLANNER_POINTS = 100_000;
 
-  private GpxLimits() {}
+  /** Fewest GPX files one merge takes: merging a single file is just an upload. */
+  public static final int MIN_MERGE_FILES = 2;
 
-  /** Mean Earth radius, the one a haversine distance is usually computed with. */
-  private static final double EARTH_RADIUS_METERS = 6_371_000.0;
+  /** Most GPX files one merge takes. Their summed size is bound by {@link #MAX_MERGE_TOTAL_BYTES}. */
+  public static final int MAX_MERGE_FILES = 10;
+
+  /**
+   * Summed size of all the files of one merge: the same as one upload, so that a merge never feeds
+   * the pipeline more raw points than a single file may (SEC-6) — the distance bound only limits
+   * the resampled output. Well under {@code quarkus.http.limits.max-body-size} too, so a merge
+   * near the bound gets {@code FILE_TOO_LARGE} rather than a bare 413 from Vert.x.
+   */
+  public static final long MAX_MERGE_TOTAL_BYTES = MAX_GPX_SIZE_BYTES;
+
+  /**
+   * Most tracks (all files together) one merge orders. The exact ordering is a dynamic programme in
+   * O(2<sup>n</sup>·n²) time and O(2<sup>n</sup>·n) memory: 16 tracks are about 70 million steps and
+   * 24 MB, transient; each extra track doubles both.
+   */
+  public static final int MAX_MERGE_TRACKS = 16;
+
+  private GpxLimits() {}
 
   /** {@link #checkTracks(List)} on every track (and route) of the document. */
   public static void checkTracks(GpxDocument doc) {
@@ -88,7 +108,9 @@ public final class GpxLimits {
           throw new BusinessException(ErrorCode.GPX_FAILURE);
         }
         if (i > 0) {
-          total += haversine(path.latitudeDeg(i - 1), path.longitudeDeg(i - 1), lat, lng);
+          total +=
+              GeoDistance.haversineMeters(
+                  path.latitudeDeg(i - 1), path.longitudeDeg(i - 1), lat, lng);
         }
       }
       // Checked per track so that a pathological file stops at the first one past the bound.
@@ -97,18 +119,6 @@ public final class GpxLimits {
         throw new BusinessException(ErrorCode.GPX_TOO_LONG);
       }
     }
-  }
-
-  private static double haversine(double lat1, double lng1, double lat2, double lng2) {
-    double dLat = Math.toRadians(lat2 - lat1);
-    double dLng = Math.toRadians(lng2 - lng1);
-    double a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2)
-            + Math.cos(Math.toRadians(lat1))
-                * Math.cos(Math.toRadians(lat2))
-                * Math.sin(dLng / 2)
-                * Math.sin(dLng / 2);
-    return 2 * EARTH_RADIUS_METERS * Math.asin(Math.min(1.0, Math.sqrt(a)));
   }
 
   private static boolean isValidCoordinate(double lat, double lng) {

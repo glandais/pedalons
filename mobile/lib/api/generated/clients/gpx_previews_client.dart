@@ -57,6 +57,17 @@ abstract class GpxPreviewsClient {
     @Body() required GpxPreviewFromPointsRequest body,
   });
 
+  /// Merge several GPX files into one analysed GPX file.
+  ///
+  /// Uploads 2 to 10 GPX files (10 MB together at most) and merges all their tracks into a single track, choosing the order of the tracks and the direction each one is ridden in so that the summed straight-line gaps between them are as short as possible. The result then runs the same pipeline as a single upload and is stored the same way, for 30 days.
+  ///
+  /// [gpxFiles] - Name not received - field will be skipped.
+  @MultiPart()
+  @POST('/api/gpx-previews/merge')
+  Future<GpxPreviewDto> mergePreviews({
+    @Part(name: 'gpxFiles') List<MultipartFile>? gpxFiles,
+  });
+
   /// Update an analysed GPX file.
   ///
   /// Rename the preview and, when a new GPX file or planner points are provided, replay the pipeline to replace its track. Only the creator may edit.

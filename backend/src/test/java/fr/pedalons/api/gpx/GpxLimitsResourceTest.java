@@ -86,6 +86,16 @@ class GpxLimitsResourceTest extends AbstractResourceTest {
     return file;
   }
 
+  /** Under the bound of one file, but two of them together go over the bound of a merge. */
+  private File halfOversizedGpx() throws IOException {
+    File file = Files.createTempFile("half-oversized-", ".gpx").toFile();
+    tempFiles.add(file);
+    try (RandomAccessFile raf = new RandomAccessFile(file, "rw")) {
+      raf.setLength(GpxLimits.MAX_MERGE_TOTAL_BYTES / 2 + 1);
+    }
+    return file;
+  }
+
   private String createPreview() {
     return given()
         .auth()
@@ -141,6 +151,49 @@ class GpxLimitsResourceTest extends AbstractResourceTest {
         .then()
         .statusCode(400)
         .body("code", equalTo("FILE_TOO_LARGE"));
+  }
+
+  @Test
+  void mergePreviews_withOversizedFile_shouldReturn400() throws IOException {
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .multiPart("gpxFiles", EXAMPLE_GPX, "application/gpx+xml")
+        .multiPart("gpxFiles", oversizedGpx(), "application/gpx+xml")
+        .when()
+        .post("/api/gpx-previews/merge")
+        .then()
+        .statusCode(400)
+        .body("code", equalTo("FILE_TOO_LARGE"));
+  }
+
+  @Test
+  void mergePreviews_withFilesOverTheCombinedBound_shouldReturn400() throws IOException {
+    // Each file passes the bound of a single upload; together they would feed the pipeline more.
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .multiPart("gpxFiles", halfOversizedGpx(), "application/gpx+xml")
+        .multiPart("gpxFiles", halfOversizedGpx(), "application/gpx+xml")
+        .when()
+        .post("/api/gpx-previews/merge")
+        .then()
+        .statusCode(400)
+        .body("code", equalTo("FILE_TOO_LARGE"));
+  }
+
+  @Test
+  void mergePreviews_withTooLongTrack_shouldReturn400() throws IOException {
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .multiPart("gpxFiles", EXAMPLE_GPX, "application/gpx+xml")
+        .multiPart("gpxFiles", longGpx(), "application/gpx+xml")
+        .when()
+        .post("/api/gpx-previews/merge")
+        .then()
+        .statusCode(400)
+        .body("code", equalTo("GPX_TOO_LONG"));
   }
 
   @Test

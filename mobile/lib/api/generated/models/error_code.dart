@@ -64,6 +64,10 @@ enum ErrorCode {
   gpxEmpty('GPX_EMPTY'),
   @JsonValue('GPX_TOO_LONG')
   gpxTooLong('GPX_TOO_LONG'),
+  @JsonValue('GPX_MERGE_FILE_COUNT')
+  gpxMergeFileCount('GPX_MERGE_FILE_COUNT'),
+  @JsonValue('GPX_MERGE_TOO_MANY_TRACKS')
+  gpxMergeTooManyTracks('GPX_MERGE_TOO_MANY_TRACKS'),
   @JsonValue('ROUTE_PLANNER_DISABLED')
   routePlannerDisabled('ROUTE_PLANNER_DISABLED'),
   @JsonValue('INVALID_FORMAT')

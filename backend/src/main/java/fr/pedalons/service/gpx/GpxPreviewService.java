@@ -22,6 +22,7 @@ import fr.pedalons.infrastructure.imgproxy.ImgProxyService;
 import fr.pedalons.infrastructure.storage.StorageService;
 import fr.pedalons.repository.gpx.GpxPreviewRepository;
 import fr.pedalons.service.gps.GpsService;
+import fr.pedalons.service.route.GpxLimits;
 import fr.pedalons.service.route.GpxProcessingService;
 import fr.pedalons.service.route.GpxProcessingService.ComputedGpx;
 import fr.pedalons.service.route.RouteService;
@@ -45,7 +46,9 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import org.jboss.logging.Logger;
@@ -163,6 +166,48 @@ public class GpxPreviewService {
   @Logged
   public GpxPreviewDto createPreview(Path gpxPath, String fallbackName) {
     return toDto(create(gpxPath, fallbackName));
+  }
+
+  /**
+   * Merges several uploaded GPX files into one track ({@link GpxTrackMerger}: the order and
+   * direction of the tracks minimising the gaps between them), then runs the same pipeline as a
+   * single upload. Entry point for the API layer (docs/LEDGER_*.md API-112).
+   *
+   * <p>Each file is parsed — and bounded like a single upload — in turn; the distance bound is
+   * checked again on the merged track, gaps included, before the pipeline resamples it. Named after
+   * the files' own names (or their file names) joined by « + »: the member renames it afterwards.
+   *
+   * @param gpxPaths the uploaded files, in upload order
+   * @param fileNames their client-side names, same order (an entry may be null)
+   */
+  @Logged
+  public GpxPreviewDto createMergedPreview(List<Path> gpxPaths, List<@Nullable String> fileNames) {
+    if (gpxPaths.size() < GpxLimits.MIN_MERGE_FILES
+        || gpxPaths.size() > GpxLimits.MAX_MERGE_FILES) {
+      throw new BusinessException(ErrorCode.GPX_MERGE_FILE_COUNT);
+    }
+    List<GpxDocument> docs = new ArrayList<>();
+    List<String> names = new ArrayList<>();
+    for (int i = 0; i < gpxPaths.size(); i++) {
+      GpxDocument doc = gpxProcessingService.parseGpx(gpxPaths.get(i));
+      docs.add(doc);
+      names.add(documentName(doc, baseName(i < fileNames.size() ? fileNames.get(i) : null)));
+    }
+    String name = truncateName(String.join(" + ", names));
+    GpxDocument merged = GpxTrackMerger.merge(docs, name);
+    GpxLimits.checkTracks(merged);
+    return toDto(create(merged, name));
+  }
+
+  /** A client-side file name without its {@code .gpx} extension, or "GPX" when there is none. */
+  private static String baseName(@Nullable String fileName) {
+    if (fileName == null || fileName.isBlank()) {
+      return "GPX";
+    }
+    String trimmed = fileName.strip();
+    return trimmed.toLowerCase(Locale.ROOT).endsWith(".gpx") && trimmed.length() > 4
+        ? trimmed.substring(0, trimmed.length() - 4)
+        : trimmed;
   }
 
   /**

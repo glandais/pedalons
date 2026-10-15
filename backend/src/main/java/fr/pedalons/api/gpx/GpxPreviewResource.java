@@ -12,6 +12,7 @@ import fr.pedalons.dto.routes.request.RouteRequest;
 import fr.pedalons.dto.routes.response.RouteDto;
 import fr.pedalons.enums.GpsServiceType;
 import fr.pedalons.service.gpx.GpxPreviewService;
+import fr.pedalons.service.route.GpxLimits;
 import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -20,6 +21,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import java.util.ArrayList;
+import java.util.List;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -72,6 +75,63 @@ public class GpxPreviewResource {
     }
     GpxPreviewDto preview =
         gpxPreviewService.createPreview(GpxUploads.uploadedGpx(gpxFile), gpxFile.fileName());
+    return Response.status(Response.Status.CREATED).entity(preview).build();
+  }
+
+  @POST
+  @Path("/merge")
+  @Consumes(MediaType.MULTIPART_FORM_DATA)
+  @Operation(
+      summary = "Merge several GPX files into one analysed GPX file",
+      description =
+          "Uploads 2 to 10 GPX files (10 MB together at most) and merges all their tracks into a"
+              + " single track, choosing the order of the tracks and the direction each one is"
+              + " ridden in so that the summed straight-line gaps between them are as short as"
+              + " possible. The result then runs the same pipeline as a single upload and is stored"
+              + " the same way, for 30 days")
+  @APIResponses({
+    @APIResponse(
+        responseCode = "201",
+        description = "GPX files merged and analysed successfully",
+        content = @Content(schema = @Schema(implementation = GpxPreviewDto.class))),
+    @APIResponse(
+        responseCode = "400",
+        description =
+            "No file (FILE_REQUIRED), fewer than 2 or more than 10 files (GPX_MERGE_FILE_COUNT),"
+                + " more than 16 tracks together (GPX_MERGE_TOO_MANY_TRACKS), a file without any"
+                + " point (GPX_EMPTY), oversized — one file or all of them together over 10 MB"
+                + " (FILE_TOO_LARGE), too long (GPX_TOO_LONG) or"
+                + " unparseable (GPX_FAILURE)",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+    @APIResponse(
+        responseCode = "401",
+        description = "Unauthorized",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  @RolesAllowed("user")
+  public Response mergePreviews(@RestForm("gpxFiles") @Nullable List<FileUpload> gpxFiles) {
+    if (gpxFiles == null || gpxFiles.isEmpty()) {
+      throw new BusinessException(ErrorCode.FILE_REQUIRED);
+    }
+    if (gpxFiles.size() > GpxLimits.MAX_MERGE_FILES) {
+      // Refused before any file is touched; the service checks the lower bound too.
+      throw new BusinessException(ErrorCode.GPX_MERGE_FILE_COUNT);
+    }
+    long totalSize = 0;
+    for (FileUpload upload : gpxFiles) {
+      totalSize += upload.size();
+    }
+    if (totalSize > GpxLimits.MAX_MERGE_TOTAL_BYTES) {
+      // All the files together are bound like a single upload (SEC-6), before any of them is read.
+      throw new BusinessException(ErrorCode.FILE_TOO_LARGE);
+    }
+    List<java.nio.file.Path> paths = new ArrayList<>();
+    List<@Nullable String> fileNames = new ArrayList<>();
+    for (FileUpload upload : gpxFiles) {
+      paths.add(GpxUploads.uploadedGpx(upload));
+      fileNames.add(upload.fileName());
+    }
+    GpxPreviewDto preview = gpxPreviewService.createMergedPreview(paths, fileNames);
     return Response.status(Response.Status.CREATED).entity(preview).build();
   }
 

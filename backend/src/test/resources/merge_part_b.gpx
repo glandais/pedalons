@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="pedalons-tests" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata>
+    <name>Retour</name>
+  </metadata>
+  <trk>
+    <name>Retour</name>
+    <trkseg>
+      <trkpt lat="47.500000" lon="-1.500000"><ele>40.0</ele></trkpt>
+      <trkpt lat="47.500500" lon="-1.505000"><ele>39.0</ele></trkpt>
+      <trkpt lat="47.500000" lon="-1.510000"><ele>38.0</ele></trkpt>
+      <trkpt lat="47.500500" lon="-1.515000"><ele>37.0</ele></trkpt>
+      <trkpt lat="47.500000" lon="-1.520000"><ele>36.0</ele></trkpt>
+      <trkpt lat="47.500500" lon="-1.525000"><ele>35.0</ele></trkpt>
+      <trkpt lat="47.500000" lon="-1.530000"><ele>34.0</ele></trkpt>
+      <trkpt lat="47.500500" lon="-1.535000"><ele>33.0</ele></trkpt>
+      <trkpt lat="47.500000" lon="-1.540000"><ele>32.0</ele></trkpt>
+      <trkpt lat="47.500500" lon="-1.545000"><ele>31.0</ele></trkpt>
+      <trkpt lat="47.500000" lon="-1.550000"><ele>30.0</ele></trkpt>
+    </trkseg>
+  </trk>
+</gpx>

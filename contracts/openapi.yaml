@@ -2013,6 +2013,8 @@ components:
       - TOO_MANY_TEAM_PAGES
       - GPX_EMPTY
       - GPX_TOO_LONG
+      - GPX_MERGE_FILE_COUNT
+      - GPX_MERGE_TOO_MANY_TRACKS
       - ROUTE_PLANNER_DISABLED
       - INVALID_FORMAT
       - INVALID_TIMEZONE
@@ -10429,6 +10431,57 @@ paths:
                 $ref: "#/components/schemas/GpxPreviewDto"
         "400":
           description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Not Allowed
+      security:
+      - SecurityScheme:
+        - user
+  /api/gpx-previews/merge:
+    post:
+      summary: Merge several GPX files into one analysed GPX file
+      description: "Uploads 2 to 10 GPX files (10 MB together at most) and merges\
+        \ all their tracks into a single track, choosing the order of the tracks and\
+        \ the direction each one is ridden in so that the summed straight-line gaps\
+        \ between them are as short as possible. The result then runs the same pipeline\
+        \ as a single upload and is stored the same way, for 30 days"
+      operationId: mergePreviews
+      tags:
+      - GPX previews
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                gpxFiles:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+        required: true
+      responses:
+        "201":
+          description: GPX files merged and analysed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GpxPreviewDto"
+        "400":
+          description: "No file (FILE_REQUIRED), fewer than 2 or more than 10 files\
+            \ (GPX_MERGE_FILE_COUNT), more than 16 tracks together (GPX_MERGE_TOO_MANY_TRACKS),\
+            \ a file without any point (GPX_EMPTY), oversized — one file or all of\
+            \ them together over 10 MB (FILE_TOO_LARGE), too long (GPX_TOO_LONG) or\
+            \ unparseable (GPX_FAILURE)"
           content:
             application/json:
               schema:
@@ -19081,7 +19134,7 @@ paths:
                 $ref: "#/components/schemas/VersionDto"
 info:
   title: Pedalons API
-  version: 11.1.0
+  version: 11.2.0
   description: API for Pedalons Cycling Team Management Platform
 servers:
 - url: http://localhost:8080

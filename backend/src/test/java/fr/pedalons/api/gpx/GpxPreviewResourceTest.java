@@ -144,6 +144,128 @@ class GpxPreviewResourceTest extends AbstractResourceTest {
         .statusCode(400);
   }
 
+  // ==================== Merge (API-112) ====================
+
+  private static final File MERGE_PART_A = new File("src/test/resources/merge_part_a.gpx");
+  private static final File MERGE_PART_B = new File("src/test/resources/merge_part_b.gpx");
+
+  @Test
+  void mergePreviews_shouldChainTheTracksIntoOne() {
+    // Part B is the second half of the ride recorded backwards: the merge rides it reversed, so
+    // the result is one track with no gap, about 7.5 km along latitude 47.5.
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .multiPart("gpxFiles", MERGE_PART_B, "application/gpx+xml")
+        .multiPart("gpxFiles", MERGE_PART_A, "application/gpx+xml")
+        .when()
+        .post("/api/gpx-previews/merge")
+        .then()
+        .statusCode(201)
+        .body("id", notNullValue())
+        .body("name", equalTo("Retour + Aller"))
+        .body("owned", equalTo(true))
+        .body("tracks", hasSize(1))
+        .body("distance", allOf(greaterThan(7000.0f), lessThan(8500.0f)));
+  }
+
+  @Test
+  void mergePreviews_shouldBeListedAndReadable() {
+    String id =
+        given()
+            .auth()
+            .oauth2(getAccessToken(USER1))
+            .multiPart("gpxFiles", MERGE_PART_A, "application/gpx+xml")
+            .multiPart("gpxFiles", EXAMPLE_GPX, "application/gpx+xml")
+            .when()
+            .post("/api/gpx-previews/merge")
+            .then()
+            .statusCode(201)
+            .extract()
+            .path("id");
+
+    given().when().get("/api/gpx-previews/" + id).then().statusCode(200).body("id", equalTo(id));
+  }
+
+  @Test
+  void mergePreviews_withOneFile_shouldReturn400() {
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .multiPart("gpxFiles", MERGE_PART_A, "application/gpx+xml")
+        .when()
+        .post("/api/gpx-previews/merge")
+        .then()
+        .statusCode(400)
+        .body("code", equalTo("GPX_MERGE_FILE_COUNT"));
+  }
+
+  @Test
+  void mergePreviews_withElevenFiles_shouldReturn400() {
+    var request = given().auth().oauth2(getAccessToken(USER1));
+    for (int i = 0; i < 11; i++) {
+      request = request.multiPart("gpxFiles", MERGE_PART_A, "application/gpx+xml");
+    }
+    request
+        .when()
+        .post("/api/gpx-previews/merge")
+        .then()
+        .statusCode(400)
+        .body("code", equalTo("GPX_MERGE_FILE_COUNT"));
+  }
+
+  @Test
+  void mergePreviews_withoutFile_shouldReturn400() {
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .multiPart("unused", "x")
+        .when()
+        .post("/api/gpx-previews/merge")
+        .then()
+        .statusCode(400)
+        .body("code", equalTo("FILE_REQUIRED"));
+  }
+
+  @Test
+  void mergePreviews_withAnInvalidFile_shouldReturn400() {
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .multiPart("gpxFiles", MERGE_PART_A, "application/gpx+xml")
+        .multiPart("gpxFiles", new File("src/test/resources/invalid.gpx"), "application/gpx+xml")
+        .when()
+        .post("/api/gpx-previews/merge")
+        .then()
+        .statusCode(400)
+        .body("code", equalTo("GPX_FAILURE"));
+  }
+
+  @Test
+  void mergePreviews_withAFileWithoutPoints_shouldReturn400() {
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .multiPart("gpxFiles", MERGE_PART_A, "application/gpx+xml")
+        .multiPart("gpxFiles", new File("src/test/resources/empty.gpx"), "application/gpx+xml")
+        .when()
+        .post("/api/gpx-previews/merge")
+        .then()
+        .statusCode(400)
+        .body("code", equalTo("GPX_EMPTY"));
+  }
+
+  @Test
+  void mergePreviews_withoutAuth_shouldReturn401() {
+    given()
+        .multiPart("gpxFiles", MERGE_PART_A, "application/gpx+xml")
+        .multiPart("gpxFiles", MERGE_PART_B, "application/gpx+xml")
+        .when()
+        .post("/api/gpx-previews/merge")
+        .then()
+        .statusCode(401);
+  }
+
   // ==================== Read ====================
 
   @Test

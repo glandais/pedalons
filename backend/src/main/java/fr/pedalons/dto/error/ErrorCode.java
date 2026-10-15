@@ -41,6 +41,10 @@ public enum ErrorCode {
   GPX_EMPTY,
   /** The tracks of a GPX add up to more than GpxLimits.MAX_TRACK_DISTANCE_METERS (SEC-6). */
   GPX_TOO_LONG,
+  /** A GPX merge got fewer than GpxLimits.MIN_MERGE_FILES or more than MAX_MERGE_FILES files. */
+  GPX_MERGE_FILE_COUNT,
+  /** The files of a GPX merge hold more than GpxLimits.MAX_MERGE_TRACKS tracks together. */
+  GPX_MERGE_TOO_MANY_TRACKS,
   ROUTE_PLANNER_DISABLED,
   INVALID_FORMAT,
   INVALID_TIMEZONE,

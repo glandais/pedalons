@@ -22,6 +22,7 @@ import type {
   GpxPreviewFromPointsRequest,
   GpxPreviewListResponse,
   ListMyPreviewsParams,
+  MergePreviewsBody,
   RouteDto,
   RouteRequest,
   RouteUploadResponse,
@@ -371,6 +372,97 @@ export const useCreatePreviewFromPoints = <
   TContext
 > => {
   return useMutation(getCreatePreviewFromPointsMutationOptions(options), queryClient)
+}
+/**
+ * Uploads 2 to 10 GPX files (10 MB together at most) and merges all their tracks into a single track, choosing the order of the tracks and the direction each one is ridden in so that the summed straight-line gaps between them are as short as possible. The result then runs the same pipeline as a single upload and is stored the same way, for 30 days
+ * @summary Merge several GPX files into one analysed GPX file
+ */
+export const mergePreviews = (
+  mergePreviewsBody: BodyType<MergePreviewsBody>,
+  options?: SecondParameter<typeof axiosMutator>,
+  signal?: AbortSignal
+) => {
+  const formData = new FormData()
+  if (mergePreviewsBody.gpxFiles !== undefined) {
+    mergePreviewsBody.gpxFiles.forEach((value) => formData.append(`gpxFiles`, value))
+  }
+
+  return axiosMutator<GpxPreviewDto>(
+    {
+      url: `/api/gpx-previews/merge`,
+      method: 'POST',
+      headers: { 'Content-Type': 'multipart/form-data' },
+      data: formData,
+      signal,
+    },
+    options
+  )
+}
+
+export const getMergePreviewsMutationKey = () => ['mergePreviews'] as const
+
+export const getMergePreviewsMutationOptions = <
+  TError = ErrorType<ErrorResponse | void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof mergePreviews>>,
+    TError,
+    MergePreviewsMutationVariables,
+    TContext
+  >
+  request?: SecondParameter<typeof axiosMutator>
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof mergePreviews>>,
+  TError,
+  MergePreviewsMutationVariables,
+  TContext
+> => {
+  const mutationKey = getMergePreviewsMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof mergePreviews>>,
+    MergePreviewsMutationVariables
+  > = (props) => {
+    const { data } = props ?? {}
+
+    return mergePreviews(data, requestOptions)
+  }
+
+  return { mutationFn, ...mutationOptions }
+}
+
+export type MergePreviewsMutationResult = NonNullable<Awaited<ReturnType<typeof mergePreviews>>>
+export type MergePreviewsMutationBody = BodyType<MergePreviewsBody>
+export type MergePreviewsMutationError = ErrorType<ErrorResponse | void>
+export type MergePreviewsMutationVariables = { data: BodyType<MergePreviewsBody> }
+
+/**
+ * @summary Merge several GPX files into one analysed GPX file
+ */
+export const useMergePreviews = <TError = ErrorType<ErrorResponse | void>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof mergePreviews>>,
+      TError,
+      MergePreviewsMutationVariables,
+      TContext
+    >
+    request?: SecondParameter<typeof axiosMutator>
+  },
+  queryClient?: QueryClient
+): UseMutationResult<
+  Awaited<ReturnType<typeof mergePreviews>>,
+  TError,
+  MergePreviewsMutationVariables,
+  TContext
+> => {
+  return useMutation(getMergePreviewsMutationOptions(options), queryClient)
 }
 /**
  * Rename the preview and, when a new GPX file or planner points are provided, replay the pipeline to replace its track. Only the creator may edit.
