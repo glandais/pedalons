@@ -31,6 +31,14 @@ Runs all the tests
 
 Upload a new build to Play Store internal track. Run `flutter build appbundle --release` from the project root first.
 
+### android closed
+
+```sh
+[bundle exec] fastlane android closed
+```
+
+Upload a new build to the closed testing track (« Test fermé », API name alpha), for the testers of its list. Run `flutter build appbundle --release` from the project root first. No release notes: the version's whatsNew exceeds Play's 500 characters.
+
 ### android data_safety
 
 ```sh

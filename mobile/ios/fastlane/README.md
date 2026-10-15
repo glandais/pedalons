@@ -21,7 +21,7 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 [bundle exec] fastlane ios beta
 ```
 
-Push a new beta build to TestFlight. Run `flutter build ios --release --no-codesign` from the project root first. Build number comes from pubspec.yaml.
+Push a new beta build to TestFlight. Run `flutter build ios --release --no-codesign` from the project root first. Build number comes from pubspec.yaml. Internal testers only, unless `external:true` (publish_beta.sh): the build then also goes to the external group NP (public link), which first passes Apple's beta review, with the version's whatsNew from mobile/metadata/version/<version>/ as « What to Test ».
 
 ### ios release
 

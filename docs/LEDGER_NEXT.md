@@ -133,12 +133,32 @@ données en prod), `MOB-15` pas faite, et le 500 du contact vendeur (`MOB-47`).
 - [ ] `MOB-64` **Publier Pédalons sur Google Play (S)** — la fiche est poussée sur Google Play
       (`fastlane listing`, 11 octobre 2026) : description FR/EN reprise de l'App Store, sept cartes
       1080 × 1920 capturées sur l'émulateur (`screenshots/capture-android.sh`, `koubou/play.yaml`,
-      `assemble-play.sh`) et une bannière refaite (`koubou/feature.yaml`). L'app n'existe que sur la
-      piste interne (version 73), qui n'a pas encore le correctif de barre d'état de `PdlAppBar`.
-      Restent : une version de production (ou d'abord un test fermé, si le compte
-      développeur est personnel : douze testeurs pendant quatorze jours), et les formulaires de la
-      Console qu'aucune API ne remplit (accès à l'application avec le compte de démo, classification
-      du contenu, public cible, publicités), plus la sécurité des données (`fastlane data_safety`).
+      `assemble-play.sh`) et une bannière refaite (`koubou/feature.yaml`). État au 15 octobre 2026
+      (fiche et images identiques au dépôt, vérifié par l'API) : aucune version en production ; test
+      interne en 1.0.0 (76) ; test fermé (`alpha`, liste de diffusion « Test Pedalons ») en 1.1.0
+      (79, `publish_beta.sh`), **en cours d'examen chez Google**.
+      **Bloquant** : le compte développeur est personnel, la Console refuse de demander l'accès en
+      production avant **douze testeurs inscrits au test fermé pendant quatorze jours d'affilée**
+      (zéro inscrit au 15 octobre). Inscrire les testeurs : ajouter leur compte Google à la liste
+      « Test Pedalons » (ou cocher « Groupes » et donner un Google Group), puis leur envoyer le lien
+      d'inscription (Tests fermés → Alpha → Testeurs) ; seul un testeur qui a accepté le lien compte.
+      Le canal n'est ouvert que dans un pays, et l'adresse de commentaires y est `dev@pedalons.fr`
+      (TestFlight : `gabriel.landais@gmail.com`). Restent aussi les formulaires de la Console
+      qu'aucune API ne remplit (accès à l'application avec le compte de démo, classification du
+      contenu, public cible, publicités), plus la sécurité des données (`fastlane data_safety`).
+      Une fois l'accès obtenu : promouvoir la release `alpha` depuis la Console plutôt que
+      `fastlane deploy`, qui renverrait le même versionCode.
+- [ ] `MOB-70` **Publier la 1.1.0 sur l'App Store (XS)** — la 1.0.0 (build 74) est en vente ; la
+      version 1.1.0 existe dans App Store Connect, fiche et captures identiques à `mobile/metadata/`
+      et `mobile/screenshots/` (vérifié le 15 octobre 2026), sans build attaché. Le build 79, premier
+      en 1.1.0 (70 à 77 sont des 1.0.0), est en revue bêta TestFlight depuis le 15 octobre pour le
+      groupe externe NP. Les informations de test TestFlight (compte de démo, notes reprises de
+      `mobile/metadata/review-notes.md`, description bêta FR/EN, URL de confidentialité) ont été
+      remplies ce jour-là par l'API : elles ne sont **pas versionnées**, et le compte de démo est à
+      changer aux deux endroits (fiche App Store et TestFlight) s'il change. Reste :
+      `cd mobile/ios && bundle exec fastlane release` (attache le build du `pubspec`), puis soumettre
+      à la revue dans App Store Connect. Le formulaire *App Privacy* n'a pas été comparé
+      (`asc web privacy plan`, session web 2FA).
 
 ### Couverture e2e Patrol — ce que les tests ne couvrent pas encore
 
