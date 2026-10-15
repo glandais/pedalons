@@ -306,35 +306,6 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
       `group_title_test.dart`) : le nom seul quand il commence par le mot du gabarit, casse ignorée,
       mot entier (« Groupement » garde le préfixe) ; une fonction partagée et son test vitest.
 
-### `WEB-90` Mesure d'audience du site : le compteur (M, web)
-
-Plan : [`2026-10-15-web-analytics.md`](plans/2026-10-15-web-analytics.md) (§4). Le site ne sait pas quelles pages sont vues, ni sur quel domaine de club, ni
-d'où viennent les visiteurs : seul Caddy voit des requêtes, par hôte (`OPS-21`). Un module
-`frontend/src/lib/analytics/`, sans le `count.js` de GoatCounter et sans effet à l'import (il est
-dans le bundle SSR), compte chaque page vue depuis `router.subscribe` dans `getRouter()`
-(`App.tsx`), ce qui couvre aussi les routes `bare` et ne tourne qu'au client ; le premier hit est
-compté sur `router.state` à la création. Il n'envoie que l'hôte et le **gabarit** de la route, où
-seul `:teamSlug` est remplacé par le slug de l'équipe, **publique ou privée** (décidé le 15 octobre
-2026 : `/pedalons.fr/equipes/n-peloton/sorties/:rideSlug`, `/outils-gpx/:previewId` ; pris de
-`match.params`, donc aussi sur un hôte épinglé, et gardé seulement s'il a la forme d'un slug ;
-jamais un autre paramètre, la query string ni `document.title`), le `routeId` et la propriété
-statique `auth` de la route (jamais l'état de session), l'hôte du
-référent externe au premier hit seulement, par `fetch` en `credentials: 'omit'` et
-`referrerPolicy: 'no-referrer'` (**jamais `sendBeacon`**, qui enverrait le cookie `refresh_token`
-et l'URL entière en `Referer`). Rien n'est envoyé sous Do Not Track, Global Privacy Control,
-l'opposition locale (`pedalons-analytics-optout`, propre à ce navigateur et à ce site ; interrupteur
-sur `/profil/vie-privee` et dans `PrivacyPolicyPage.tsx` hors du Markdown, lu sans casser
-l'hydratation), un navigateur piloté ou une config sans `analytics` (`API-117`). Une route masquée
-(sans `handle`) est ignorée, `/404` ne vaut que pour la route `*`, et un envoi différé laisse une
-`REPLACE` (redirection vers la connexion) remplacer le hit en attente. Tests : vitest sur toute la
-table des routes avec des paramètres sentinelles (le `teamSlug` sentinelle apparaît tel quel à la
-place de `:teamSlug`, aucune autre sentinelle ; un `teamSlug` mal formé reste un marqueur), options
-du `fetch`, opposition après
-rechargement du module, routeur mémoire (`PUSH`/`POP` comptés, `REPLACE` de même route non,
-redirections rendues comptées une fois), et `e2e/analytics-off.e2e.ts` (aucune requête `/count`
-sur la pile e2e). Dépend de `API-117` ; ne s'allume qu'après `LEGAL-19`, en prod seulement. Un slug
-d'équipe renommé coupe l'historique en deux chemins, accepté.
-
 ### Couverture e2e — ce que l'audit du 27 septembre laisse ouvert
 
 L'audit ([archivé](plans/archive/2026-09-27-e2e-coverage-audit.md), `WEB-26`) est exécuté : P0, P1

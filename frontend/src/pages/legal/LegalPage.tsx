@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Container, Title, Stack } from '@mantine/core'
 import { useTranslation } from 'react-i18next'
 import { MarkdownDisplay } from '@/components/common/MarkdownDisplay'
@@ -17,9 +18,11 @@ const content = {
 
 interface LegalPageProps {
   type: keyof typeof content
+  /** Rendered between the title and the Markdown, which is also an asset of the mobile app. */
+  beforeContent?: ReactNode
 }
 
-export function LegalPage({ type }: LegalPageProps) {
+export function LegalPage({ type, beforeContent }: LegalPageProps) {
   const { t, i18n } = useTranslation()
   const lang = i18n.language.startsWith('fr') ? 'fr' : 'en'
   const markdown = content[type][lang]
@@ -29,6 +32,7 @@ export function LegalPage({ type }: LegalPageProps) {
     <Container size="md" py="xl">
       <Stack gap="md">
         <Title order={1}>{t(titleKey)}</Title>
+        {beforeContent}
         <MarkdownDisplay markdown={markdown} />
       </Stack>
     </Container>

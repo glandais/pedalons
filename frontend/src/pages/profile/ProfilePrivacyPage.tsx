@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { Center, Loader, NavLink, Paper } from '@mantine/core'
 import { IconChevronRight, IconUserOff } from '@tabler/icons-react'
 import { useListMyBlockedUsers } from '@/api/endpoints/moderation/moderation'
+import { AnalyticsPreference } from '@/components/analytics/AnalyticsPreference'
 import { ErrorReportingPreference } from '@/components/feedback/ErrorReportingPreference'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { ContactPreference } from '@/components/profile/ContactPreference'
@@ -12,7 +13,8 @@ import { useAuth } from '@/hooks/useAuth'
 
 /**
  * « Confidentialité »: who may reach the member, whom they blocked (a page of its own), the error
- * reports this browser sends, and the export of their data.
+ * reports this browser sends, the site's audience measurement on this browser, and the export of
+ * their data.
  */
 export function ProfilePrivacyPage() {
   const { t } = useTranslation()
@@ -56,6 +58,10 @@ export function ProfilePrivacyPage() {
 
       <ProfileCard>
         <ErrorReportingPreference />
+      </ProfileCard>
+
+      <ProfileCard>
+        <AnalyticsPreference />
       </ProfileCard>
 
       <ProfileCard>

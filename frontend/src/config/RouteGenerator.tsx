@@ -11,6 +11,7 @@ import { paths } from './paths'
 import { appOnlyFallbacks } from './paths.generated'
 import { getPinnedTeamSlug, isSingleTeam } from './appConfig'
 import { PinnedHrefs } from './PinnedHrefs'
+import { NOT_FOUND_ROUTE_ID } from '@/lib/analytics/countHit'
 
 function wrapWithAuth(element: React.ReactNode, auth: AuthRequirement): React.ReactNode {
   switch (auth) {
@@ -129,7 +130,9 @@ export function buildRoutes(queryClient: QueryClient): RouteObject[] {
       element: <Layout />,
       children: [
         ...appConfigs.flatMap((config) => buildRoutesForConfig(config, queryClient)),
-        { path: '*', element: <NotFoundPage /> },
+        // The handle names the catch-all for the page-view counter, which counts it as `/404`
+        // (lib/analytics, docs/LEDGER_*.md WEB-90): a route without one is never counted.
+        { path: '*', element: <NotFoundPage />, handle: { routeId: NOT_FOUND_ROUTE_ID } },
       ],
     },
   ]

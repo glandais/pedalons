@@ -11,6 +11,7 @@ import { prefetchCommonRoutes } from './lib/prefetch'
 import { installPrefetchAudit } from './lib/prefetchAudit'
 import { getPinnedHistory } from './config/pinnedHistory'
 import { refreshWebPush } from './lib/push/webPush'
+import { installPageViewCounter } from './lib/analytics'
 
 const isServer = typeof window === 'undefined'
 
@@ -43,6 +44,9 @@ function getRouter(queryClient: QueryClient): AppRouter {
     if (__PREFETCH_AUDIT_ENABLED__) {
       installPrefetchAudit(queryClient, router)
     }
+    // Page views, from the matched route's template only — never the URL, the title or the session
+    // (docs/LEDGER_*.md WEB-90). Off unless /api/config carries `analytics`.
+    installPageViewCounter(router)
   }
   return router
 }
