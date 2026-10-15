@@ -136,12 +136,16 @@ données en prod), `MOB-15` pas faite, et le 500 du contact vendeur (`MOB-47`).
       `assemble-play.sh`) et une bannière refaite (`koubou/feature.yaml`). État au 15 octobre 2026
       (fiche et images identiques au dépôt, vérifié par l'API) : aucune version en production ; test
       interne en 1.0.0 (76) ; test fermé (`alpha`, liste de diffusion « Test Pedalons ») en 1.1.0
-      (79, `publish_beta.sh`), **en cours d'examen chez Google**.
+      (79, `publish_beta.sh`), **publiée** (envoi n° 8 du 15 octobre, approuvé le jour même ; la
+      Console coche « Publier une version de test fermé »).
       **Bloquant** : le compte développeur est personnel, la Console refuse de demander l'accès en
       production avant **douze testeurs inscrits au test fermé pendant quatorze jours d'affilée**
-      (zéro inscrit au 15 octobre). Inscrire les testeurs : ajouter leur compte Google à la liste
-      « Test Pedalons » (ou cocher « Groupes » et donner un Google Group), puis leur envoyer le lien
-      d'inscription (Tests fermés → Alpha → Testeurs) ; seul un testeur qui a accepté le lien compte.
+      (zéro inscrit au 15 octobre). Les testeurs passent depuis le 15 octobre par le
+      Google Group `pedalons-testeurs@googlegroups.com` (ouvert à tous, publication réservée aux
+      gestionnaires), déclaré sur le canal Alpha : chacun rejoint
+      https://groups.google.com/g/pedalons-testeurs puis accepte
+      https://play.google.com/apps/testing/fr.pedalons.mobile ; seul un testeur qui a accepté le
+      second lien compte. En viser une quinzaine : sous douze, les quatorze jours repartent de zéro.
       Le canal n'est ouvert que dans un pays, et l'adresse de commentaires y est `dev@pedalons.fr`
       (TestFlight : `gabriel.landais@gmail.com`). Restent aussi les formulaires de la Console
       qu'aucune API ne remplit (accès à l'application avec le compte de démo, classification du
