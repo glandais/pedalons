@@ -273,6 +273,7 @@ describe('routes kept out of the index', () => {
     'routes-map',
     'gpx-tools-view',
     'gpx-tools-map',
+    'gpx-tools-blank-map',
   ])('%s is noindex', (id) => {
     expect(routeIndexable(route(id))).toBe(false)
     const ctx = { ...context('PUBLIC'), params: {} }

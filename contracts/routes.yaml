@@ -294,6 +294,14 @@ routes:
     web: true
     mobile: false
     deeplink: false
+  # Static segment sibling of {previewId}: React Router ranks it first, and a TSID is never "map".
+  - id: gpxToolsBlankMap
+    path:
+      en: /gpx-tools/map
+      fr: /outils-gpx/carte
+    web: true
+    mobile: false
+    deeplink: false
   - id: gpxToolsView
     path:
       en: /gpx-tools/{previewId}

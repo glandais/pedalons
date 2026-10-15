@@ -165,6 +165,12 @@ export const paths = {
       default: return '/gpx-tools/new'
     }
   },
+  gpxToolsBlankMap: () => {
+    switch (getCurrentLocale()) {
+      case 'fr': return '/outils-gpx/carte'
+      default: return '/gpx-tools/map'
+    }
+  },
   gpxToolsView: (previewId: string) => {
     switch (getCurrentLocale()) {
       case 'fr': return `/outils-gpx/${previewId}`
@@ -525,6 +531,7 @@ export const pathVariants = {
   gpxTools: (): Record<Locale, string> => ({ en: '/gpx-tools', fr: '/outils-gpx' }),
   gpxToolsList: (): Record<Locale, string> => ({ en: '/gpx-tools/my-files', fr: '/outils-gpx/mes-fichiers' }),
   gpxToolsNew: (): Record<Locale, string> => ({ en: '/gpx-tools/new', fr: '/outils-gpx/nouveau' }),
+  gpxToolsBlankMap: (): Record<Locale, string> => ({ en: '/gpx-tools/map', fr: '/outils-gpx/carte' }),
   gpxToolsView: (previewId: string): Record<Locale, string> => ({ en: `/gpx-tools/${previewId}`, fr: `/outils-gpx/${previewId}` }),
   gpxToolsMap: (previewId: string): Record<Locale, string> => ({ en: `/gpx-tools/${previewId}/map`, fr: `/outils-gpx/${previewId}/carte` }),
   gpxToolsEdit: (previewId: string): Record<Locale, string> => ({ en: `/gpx-tools/${previewId}/edit`, fr: `/outils-gpx/${previewId}/modifier` }),

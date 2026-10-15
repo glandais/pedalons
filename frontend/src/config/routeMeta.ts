@@ -503,6 +503,17 @@ export const routeMeta: RouteMetaFn = (ctx) => {
 // No ad builder: `ad-detail` is a member-only route (the ad API is `@RolesAllowed("user")`), and
 // every unfurl crawler is anonymous — there is no cache for a builder to read. See docs/LINK_PREVIEW.md.
 
+// === gpx-tools-blank-map ====================================================================
+export const gpxBlankMapMeta: RouteMetaFn = (ctx) => {
+  const appName = appNameOf(ctx)
+  return {
+    type: 'website',
+    title: truncate(`${ctx.t('gpxTools.blankMap.pageTitle')} · ${appName}`, 65),
+    description: ctx.t('gpxTools.blankMap.description'),
+    image: defaultImage(ctx.origin, appName),
+  }
+}
+
 // === gpx-tools-view =========================================================================
 export const gpxPreviewMeta: RouteMetaFn = (ctx) => {
   const preview = ctx.queryClient.getQueryData<GpxPreviewDto>(

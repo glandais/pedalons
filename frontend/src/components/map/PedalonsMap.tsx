@@ -35,13 +35,15 @@ export const PedalonsMap = forwardRef<MapRef, PedalonsMapProps>(
       setHillshade,
     } = useMapStyle()
 
-    // MapLibre's own controls (zoom, compass, fullscreen) label themselves in English otherwise.
+    // MapLibre's own controls (zoom, compass, fullscreen, geolocation) label themselves in English otherwise.
     // `locale` is a map *construction* option: switching language re-labels the next map to mount,
     // not one already on screen. Fine for tooltips, but don't read this as reactive.
     const locale = useMemo(
       () => ({
         'FullscreenControl.Enter': t('map.fullscreen.enter'),
         'FullscreenControl.Exit': t('map.fullscreen.exit'),
+        'GeolocateControl.FindMyLocation': t('map.locate.find'),
+        'GeolocateControl.LocationNotAvailable': t('map.locate.unavailable'),
         'NavigationControl.ZoomIn': t('map.zoomIn'),
         'NavigationControl.ZoomOut': t('map.zoomOut'),
         'NavigationControl.ResetBearing': t('map.resetBearing'),

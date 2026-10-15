@@ -254,6 +254,15 @@ const screens: Record<string, Screen> = {
       sees: heading('Outils GPX'),
     }),
   },
+  // A map with no track: public, reads nothing but /api/config.
+  gpxToolsBlankMap: {
+    roles: EVERYONE,
+    bare: true,
+    sees: fullscreenMap(
+      () => 'Carte',
+      () => '/outils-gpx'
+    ),
+  },
   gpxToolsView: { roles: EVERYONE, sees: (main, d) => heading(d.preview.name)(main) },
   gpxToolsMap: {
     roles: EVERYONE,

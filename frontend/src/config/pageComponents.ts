@@ -154,6 +154,7 @@ export const pages = {
     'MyGpxPreviewsPage',
     () => import('../pages/gpxtool/MyGpxPreviewsPage')
   ),
+  GpxBlankMapPage: lazyPage('GpxBlankMapPage', () => import('../pages/gpxtool/GpxBlankMapPage')),
   GpxPreviewPage: lazyPage('GpxPreviewPage', () => import('../pages/gpxtool/GpxPreviewPage')),
   GpxPreviewFullscreenMapPage: lazyPage(
     'GpxPreviewFullscreenMapPage',

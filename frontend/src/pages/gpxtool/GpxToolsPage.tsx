@@ -2,15 +2,16 @@ import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { IconListDetails, IconMapSearch, IconRoute } from '@tabler/icons-react'
+import { IconListDetails, IconMap, IconMapSearch, IconRoute } from '@tabler/icons-react'
 import { Button, Card, Group, SimpleGrid, Stack, Text, Title } from '@mantine/core'
 import { createPreview, getListMyPreviewsQueryKey } from '@/api/endpoints/gpx-previews/gpx-previews'
 import { paths } from '@/config/paths'
 import { isGpxPlannerEnabled } from '@/config/appConfig'
 
 /**
- * Hub for the GPX tools: view an uploaded file, draw a route from scratch on an empty map, or
- * browse your own previews. The grid is where further tools (merging, URL import) will land.
+ * Hub for the GPX tools: view an uploaded file, draw a route from scratch on an empty map, open a
+ * map with no track on it, or browse your own previews. The grid is where further tools (merging)
+ * will land.
  */
 export function GpxToolsPage() {
   const { t } = useTranslation()
@@ -89,6 +90,24 @@ export function GpxToolsPage() {
             </Stack>
           </Card>
         )}
+
+        <Card withBorder padding="lg">
+          <Stack justify="space-between" h="100%">
+            <Stack gap="xs">
+              <Group gap="xs">
+                <IconMap size={20} />
+                <Text fw={500}>{t('gpxTools.blankMap.title')}</Text>
+              </Group>
+              <Text size="sm" c="dimmed">
+                {t('gpxTools.blankMap.description')}
+              </Text>
+            </Stack>
+
+            <Button variant="default" onClick={() => navigate(paths.gpxToolsBlankMap())}>
+              {t('gpxTools.blankMap.submit')}
+            </Button>
+          </Stack>
+        </Card>
 
         <Card withBorder padding="lg">
           <Stack justify="space-between" h="100%">

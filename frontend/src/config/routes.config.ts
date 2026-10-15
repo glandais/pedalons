@@ -79,6 +79,7 @@ import {
   stageMeta,
   postMeta,
   routeMeta,
+  gpxBlankMapMeta,
   gpxPreviewMeta,
   appsMeta,
   featuresMeta,
@@ -186,6 +187,19 @@ export const routesConfig: RoutesConfig = [
     auth: 'authenticated',
     parentId: 'gpx-tools',
     breadcrumb: { type: 'static', i18nKey: tRegister('gpxTools.createFromScratch.title') },
+  },
+  {
+    id: 'gpx-tools-blank-map',
+    paths: pathVariants.gpxToolsBlankMap(),
+    component: pages.GpxBlankMapPage,
+    // A map with nothing on it reads only /api/config: anyone may open it, signed in or not.
+    auth: 'public',
+    // Nothing to index — an empty map is the same page on every domain.
+    noindex: true,
+    layout: 'bare',
+    parentId: 'gpx-tools',
+    breadcrumb: { type: 'static', i18nKey: tRegister('gpxTools.blankMap.pageTitle') },
+    meta: gpxBlankMapMeta,
   },
   {
     id: 'gpx-tools-view',
