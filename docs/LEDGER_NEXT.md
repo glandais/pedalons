@@ -654,8 +654,8 @@ Ce que les tests ne prouvent pas, parce qu'ils ne passent ni par Flyway ni par u
       de signature trouvée par le `Makefile` est bien celle sauvegardée hors du dépôt ; SDK 9.2.0,
       `make build` passe. Préparé : `garmin-app/PUBLISH.md` (processus, règles de revue Garmin,
       bêta) et `garmin-app/metadata/` (descriptions FR/EN relues contre le code, notes de la
-      1.0.0, liens confidentialité et support). Reste : les captures du simulateur (edge1050 et
-      edge530, QR code brouillé), `make package` (le `bin/Pedalons.iq` du 28 septembre précède
+      1.0.0, liens confidentialité et support, quatre captures 246×322 dont le QR code est
+      brouillé). Reste : `make package` (le `bin/Pedalons.iq` du 28 septembre précède
       `API-64` et `API-84`), un essai sur un vrai Edge, le dépôt et la revue (72 h annoncées), puis
       le lien vers la fiche sur `/applications` et dans l'app mobile, et un mot aux inscrits de la
       bêta. Ne bloque pas mais se verra sur l'appareil : `AUD-26` (AM/PM en dur). `AUD-25` limite

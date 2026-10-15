@@ -10,5 +10,10 @@
     "fr-FR": "https://www.pedalons.fr/confidentialite",
     "en-US": "https://www.pedalons.fr/privacy"
   },
-  "screenshots": []
+  "screenshots": [
+    "rides.png",
+    "routes.png",
+    "downloaded.png",
+    "qrcode.png"
+  ]
 }
