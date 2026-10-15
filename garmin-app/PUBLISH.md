@@ -1,12 +1,15 @@
 # Publishing to the Connect IQ Store
 
 *Garmin information below was gathered on 2026-10-15 from the developer site and the dashboard —
-verify the links and the process before relying on it.* Not published yet (ledger `OPS-35`).
+verify the links and the process before relying on it.* Version 1.0.0 submitted for review on
+2026-10-15 (ledger `OPS-35`).
 
 ## Current Situation
 
 - **Developer account**: [apps.garmin.com/developer/dashboard](https://apps.garmin.com/fr-FR/developer/dashboard),
-  developer name `pedalons.fr`. No app uploaded as of 2026-10-15. The "Compte commerçant" (merchant
+  developer name `pedalons.fr`. Store page:
+  [apps.garmin.com/apps/262ea335-a5b7-4a6a-bb30-fc6f5db9b115](https://apps.garmin.com/fr-FR/apps/262ea335-a5b7-4a6a-bb30-fc6f5db9b115)
+  (the store's own id, distinct from the manifest's). The "Compte commerçant" (merchant
   account) and the "trial" key/secret under Settings only serve paid apps: not needed.
 - **App id**: `d317d3db-6f57-4b75-838f-4cf43a135f79` in `manifest.xml` (set on 2026-09-28). The
   store ties the listing to this UUID: **never change it** once the first version is uploaded.
@@ -26,6 +29,7 @@ verify the links and the process before relying on it.* Not published yet (ledge
 | `metadata/description/fr-FR.txt`, `en-US.txt` | Description, one per store language |
 | `metadata/version/X.Y.Z/fr-FR.json`, `en-US.json` | `whatsNew`: the release notes of version X.Y.Z |
 | `metadata/screenshots/` | Captures, listed in `app.json`'s `screenshots` in display order |
+| `metadata/cover.png` | Cover image, 500×500, from `assets/icon-1024.png` |
 
 Write the version folder **before** packaging, as for Karoo. Nothing reads these files
 automatically: they are the source the form is filled from, so the listing can be reviewed in a diff.
@@ -55,9 +59,30 @@ characters under it may stay, the code expires after ten minutes).
    visible from this developer account, and its store id differs from the real one. Check pairing,
    the ride list, a route download showing up in the Edge's courses, logout.
 4. **Upload**: Dashboard → *Charger une application* → the `.iq`, the version, "Application bêta"
-   unchecked. Once the file is validated, step 2 of the form asks for the description, screenshots
-   and other details: fill them from `metadata/`. Note here which fields the form actually has
-   (sizes, limits, languages) at the first upload.
+   unchecked (sending it accepts the developer licence agreement). Once the file is validated,
+   step 2 asks for, as of 2026-10-15:
+   - **Title and description per language** (title 50 characters, description and "Nouveautés"
+     4000 each): English and Français, from `metadata/`.
+   - Hero image (optional, 1440×720, 2 MB max) — none.
+   - **Category**: Sports (it offers no sub-category).
+   - **User data collected**: yes, with the privacy policy URL — one URL for all languages,
+     `/confidentialite`.
+   - ANT+ profiles: no. Regional limits: no.
+   - **Cover image** 500×500, 300 KB max: `metadata/cover.png`. On-device store icons (128×128):
+     no.
+   - **Screenshots**, 150 KB max each: add them **one at a time**, the input keeps only the first
+     file of a multiple selection.
+   - Video (optional): none. **Public contact e-mail**: `contact@pedalons.fr`. Source code URL:
+     none.
+   - Review notifications: yes. **"Migration de l'application": no** — it is "yes" by default and
+     would let the store add new compatible devices on its own, round watches included, which the
+     UI is not ready for (ledger `API-111`).
+   - Monetisation: no. Companion app and extra hardware: none.
+
+   The first upload showed **"La vérification de la signature a échoué"** next to "Statut :
+   vérifiée", with the right key: a store bug acknowledged by Garmin on first uploads with SDK
+   9.2.0 (forum report CIQQA-4716). Submitting anyway works, and later versions show the
+   signature as verified. On an *update*, the same message means a different key: stop there.
 5. **Review**: "within 72 hours" outside holidays (no ANT+ profile, so no extra certification).
    While pending, the app can be previewed and downloaded from the developer account. A rejection
    comes by e-mail with its reasons; fix, bump, upload again.

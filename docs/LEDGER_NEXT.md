@@ -670,18 +670,17 @@ Ce que les tests ne prouvent pas, parce qu'ils ne passent ni par Flyway ni par u
 
 ### App Garmin : Connect IQ Store
 
-- [ ] `OPS-35` **Publier l'app Garmin sur le Connect IQ Store** — l'app n'est installable nulle
-      part : `/applications` dit « arrive bientôt » (`apps.garmin.description`). État au
-      15 octobre 2026 : compte développeur ouvert (nom `pedalons.fr`), aucune app chargée ; la clé
-      de signature trouvée par le `Makefile` est bien celle sauvegardée hors du dépôt ; SDK 9.2.0,
-      `make build` passe. Préparé : `garmin-app/PUBLISH.md` (processus, règles de revue Garmin,
-      bêta) et `garmin-app/metadata/` (descriptions FR/EN relues contre le code, notes de la
-      1.0.0, liens confidentialité et support, quatre captures 246×322 dont le QR code est
-      brouillé). Reste : `make package` (le `bin/Pedalons.iq` du 28 septembre précède
-      `API-64` et `API-84`), un essai sur un vrai Edge, le dépôt et la revue (72 h annoncées), puis
-      le lien vers la fiche sur `/applications` et dans l'app mobile, et un mot aux inscrits de la
-      bêta. Ne bloque pas mais se verra sur l'appareil : `AUD-26` (AM/PM en dur). `AUD-25` limite
-      l'app à pedalons.fr. Taille : S, plus l'attente de la revue.
+- [ ] `OPS-35` **Publier l'app Garmin sur le Connect IQ Store** — la 1.0.0 (13 Edge) est soumise
+      à la revue le 15 octobre 2026, fiche FR/EN tirée de `garmin-app/metadata/` ; page du store
+      (démo, visible du seul compte tant qu'elle n'est pas validée) :
+      `https://apps.garmin.com/fr-FR/apps/262ea335-a5b7-4a6a-bb30-fc6f5db9b115`. Le formulaire et
+      ses pièges (signature « échouée » au premier dépôt, migration désactivée) sont dans
+      `garmin-app/PUBLISH.md`. Reste : la décision de Garmin (jusqu'à 3 jours ; un rejet arrive par
+      e-mail), un essai sur un vrai Edge depuis la page démo (non fait avant l'envoi), puis le lien
+      vers la fiche sur `/applications` (`apps.garmin.description` dit « arrive bientôt ») et dans
+      l'app mobile, et un mot aux inscrits de la bêta. Ne bloque pas mais se verra sur l'appareil :
+      `AUD-26` (AM/PM en dur). `AUD-25` limite l'app à pedalons.fr. Taille : XS, surtout de
+      l'attente.
 
 ## NOTIF — Notifications
 
