@@ -173,6 +173,11 @@ services:
     environment:
       # The service name, not the container name: a Swarm task has none of its own.
       API_BASE_URL: http://backend:8080
+      # The site's CSP (frontend/server/csp.js, docs/OPERATIONS.md « Content Security Policy »):
+      # report-only until set to `enforce`; extra connect-src origins a map style reaches beyond
+      # what /api/config names.
+      CSP_MODE: ${CSP_MODE:-report-only}
+      CSP_CONNECT_SRC_EXTRA: ${CSP_CONNECT_SRC_EXTRA:-}
     labels: &frontend-labels
       - "traefik.enable=true"
       - "traefik.stack=${ENV_NAME}"
@@ -189,17 +194,15 @@ services:
       - "traefik.http.middlewares.ratelimit-frontend.ratelimit.average=${RATE_LIMIT_FRONTEND_AVERAGE:-100}"
       - "traefik.http.middlewares.ratelimit-frontend.ratelimit.burst=${RATE_LIMIT_FRONTEND_BURST:-400}"
       - "traefik.http.middlewares.ratelimit-frontend.ratelimit.sourcecriterion.ipstrategy.depth=1"
-      # The API's headers (see the backend labels), plus the site's CSP: only the directives that
-      # constrain no script, style or origin — nothing embeds the site, and no page posts a form
-      # elsewhere or loads a plugin. Restricting scripts needs a nonce on the two inline scripts
-      # server.js writes per request (docs/LEDGER_*.md SEC-31).
+      # The API's headers (see the backend labels). No contentSecurityPolicy here: the site's CSP is
+      # server.js's (frontend/server/csp.js, docs/LEDGER_*.md SEC-31) — a per-request nonce cannot
+      # come from a label, and this middleware would overwrite the policy server.js sends.
       - "traefik.http.middlewares.site-headers.headers.stsSeconds=31536000"
       - "traefik.http.middlewares.site-headers.headers.forceSTSHeader=true"
       - "traefik.http.middlewares.site-headers.headers.contentTypeNosniff=true"
       - "traefik.http.middlewares.site-headers.headers.frameDeny=true"
       - "traefik.http.middlewares.site-headers.headers.referrerPolicy=strict-origin-when-cross-origin"
       - "traefik.http.middlewares.site-headers.headers.permissionsPolicy=camera=(), microphone=(), payment=(), usb=(), geolocation=(self)"
-      - "traefik.http.middlewares.site-headers.headers.contentSecurityPolicy=frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'"
       # The Karoo app's manifest (karoo-ext MANIFEST_URL, baked into every APK): a temporary redirect
       # to the karoo-latest release that .github/workflows/karoo-release.yml rewrites, so where the
       # manifest lives can change without republishing an APK (karoo/PUBLISH.md). Never reaches the

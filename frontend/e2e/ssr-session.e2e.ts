@@ -271,7 +271,7 @@ test.describe('hydration, JavaScript enabled', () => {
  * An unfurl crawler or a search engine reads the raw HTML with no session, and a signed-in
  * non-member gets the same HTML rendered for them: neither may find the team's name, its
  * description, nor the name or text of anything it holds — in the markup, in the dehydrated
- * `__REACT_QUERY_STATE__`, or in the `og:*` / `twitter:*` / `<title>` link preview. A member gets all
+ * `#ssr-query-state` block, or in the `og:*` / `twitter:*` / `<title>` link preview. A member gets all
  * of it, which is the positive control that the needles are the right ones.
  *
  * The team goes private the way a real one does: born PUBLIC, its ride, post, route, trip and page
@@ -457,9 +457,9 @@ test.describe('private team: nothing in the server document', () => {
   function expectNothingPrivate(document: RawDocument, where: string) {
     const layers: Record<string, string> = {
       markup: ssrOutlet(document.html),
-      __REACT_QUERY_STATE__: JSON.stringify(reactQueryState(document.html)),
+      'query state': JSON.stringify(reactQueryState(document.html)),
       'link preview': JSON.stringify(ogTags(document.html)),
-      // Anything else: __AUTH_STATE__, the router's hydration data, an attribute.
+      // Anything else: the session block, the router's hydration data, an attribute.
       document: document.html,
     }
     for (const [layer, text] of Object.entries(layers))

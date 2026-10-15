@@ -40,7 +40,7 @@ How one request flows:
    (docs/LEDGER_*.md WEB-39): **no session** (no cookie, or a 401/403) yields the anonymous
    snapshot `ANONYMOUS`, which the client is told about and trusts; **session unknown**
    (timeout, network, any other status) yields `undefined`: the page renders anonymously, but
-   without `__AUTH_STATE__`, so the client makes its own refresh after hydration, and a team the
+   without the `#ssr-auth-state` block, so the client makes its own refresh after hydration, and a team the
    API refused is not turned into a 404. A refresh abandoned at the timeout loses nothing: its
    rotation, if the backend finished it, is honoured again from the old token (`API-94`).
 3. The result lands in `SsrRequestStore.auth`, i.e. in AsyncLocalStorage.
@@ -50,7 +50,9 @@ How one request flows:
    server-rendered DTOs would differ from the client's on anything stricter.
 5. `useAuthStore` reads the same store on the server (see the next paragraph), so `Layout`,
    `useNavItems` and every `isAuthenticated` branch render the real state.
-6. `server.js` serialises the session to `window.__AUTH_STATE__`; `entry-client` calls
+6. `server.js` serialises the session into a `<script type="application/json" id="ssr-auth-state">`
+   data block (and the query cache into `#ssr-query-state`) — data, not inline scripts, so the
+   CSP needs no exception for them (docs/LEDGER_*.md SEC-31); `src/lib/ssrState.ts` reads them. `entry-client` calls
    `hydrateAuthFromSSR()` **before** `hydrateRoot`, so the first client render matches the
    markup. `AuthEffects` then skips both the boot `/api/auth/refresh` and the global
    post-login `invalidateQueries` — skipping that invalidation is the whole point.
@@ -297,7 +299,7 @@ curl -so /dev/null -w '%{http_code}' http://localhost:8090/nonexistent          
 # Session-aware SSR. A junk cookie must render anonymously and embed no token:
 curl -s -H 'Cookie: refresh_token=junk' http://localhost:8090/ | grep -c '"accessToken":null' # 1
 # A real one must render the visitor's name into the header, not the login button:
-curl -s -H "Cookie: refresh_token=$TOKEN" http://localhost:8090/ | grep -c '__AUTH_STATE__' # 1
+curl -s -H "Cookie: refresh_token=$TOKEN" http://localhost:8090/ | grep -c 'id="ssr-auth-state"' # 1
 # And the response must never be cacheable:
 curl -sI http://localhost:8090/ | grep -iE 'cache-control|vary'   # no-store + Vary: Cookie
 

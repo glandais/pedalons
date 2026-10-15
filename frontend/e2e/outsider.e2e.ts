@@ -531,7 +531,7 @@ test.describe("a public team's members-only custom page, seen from outside", () 
 
     test(`${visitor}: nothing of the members-only page in the server documents nor the API`, async () => {
       // Regression (fe40f8f7): TeamDetailDto.from lists a TEAM page to its members only — before,
-      // GET /api/teams/{slug} (and the SSR's __REACT_QUERY_STATE__) handed its title and slug to
+      // GET /api/teams/{slug} (and the SSR's #ssr-query-state block) handed its title and slug to
       // anyone who may read a PUBLIC team; the web hid them on screen only.
       const auth = session()
       const closedPath = pagePath(scene.teamPages.closed)

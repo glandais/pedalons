@@ -5,7 +5,7 @@ import { stack } from './stack'
  * The server-rendered document as a crawler or a link unfurler gets it: one GET, no JavaScript, no
  * browser. `server.js` assembles it from three sources, each of which can carry data on its own —
  * the React markup at `<!--ssr-outlet-->`, the dehydrated query cache in
- * `window.__REACT_QUERY_STATE__`, and the link-preview `<head>` block at `<!--ssr-head-->` — so a
+ * the `#ssr-query-state` block, and the link-preview `<head>` block at `<!--ssr-head-->` — so a
  * privacy check reads all three, not just what a user would see.
  */
 
@@ -74,7 +74,8 @@ export const sessionCookie = (auth: { refreshToken: string }) => {
 
 /**
  * The server-rendered markup only: from `#root` to the first script (StaticRouterProvider's
- * hydration data, then the dehydrated state and `__AUTH_STATE__`, none of which is markup).
+ * hydration data, then the `#ssr-query-state` and `#ssr-auth-state` data blocks, none of which is
+ * markup).
  */
 export function ssrOutlet(html: string): string {
   const start = html.indexOf('<div id="root">')
@@ -83,9 +84,12 @@ export function ssrOutlet(html: string): string {
   return html.slice(start, end < 0 ? undefined : end)
 }
 
-/** The text of the inline `<script>window.<name>=…</script>`, or undefined when there is none. */
-function inlineGlobal(html: string, name: string): string | undefined {
-  const marker = `window.${name}=`
+/**
+ * The text of the `<script type="application/json" id="<id>">…</script>` data block server.js
+ * writes (server/ssrState.js), or undefined when there is none.
+ */
+function dataBlock(html: string, id: string): string | undefined {
+  const marker = `<script type="application/json" id="${id}">`
   const start = html.indexOf(marker)
   if (start < 0) return undefined
   const end = html.indexOf('</script>', start)
@@ -98,11 +102,11 @@ export interface DehydratedQuery {
 }
 
 /**
- * The query cache the server handed over (`window.__REACT_QUERY_STATE__`), parsed — server.js
- * escapes `<` as `<`, which JSON.parse reads back. An empty cache when the document has none.
+ * The query cache the server handed over (`#ssr-query-state`), parsed — server.js escapes `<`, `>`
+ * and `&` as `\u003c`…, which JSON.parse reads back. An empty cache when the document has none.
  */
 export function reactQueryState(html: string): { queries: DehydratedQuery[] } {
-  const json = inlineGlobal(html, '__REACT_QUERY_STATE__')
+  const json = dataBlock(html, 'ssr-query-state')
   if (!json) return { queries: [] }
   return JSON.parse(json) as { queries: DehydratedQuery[] }
 }
@@ -138,8 +142,8 @@ export function ogTags(html: string): Record<string, string[]> {
   return tags
 }
 
-/** The session the server rendered the page for (`window.__AUTH_STATE__`): its user, or null. */
+/** The session the server rendered the page for (`#ssr-auth-state`): its user, or null. */
 export function authState(html: string): { user: { id: string } | null } | undefined {
-  const json = inlineGlobal(html, '__AUTH_STATE__')
+  const json = dataBlock(html, 'ssr-auth-state')
   return json ? (JSON.parse(json) as { user: { id: string } | null }) : undefined
 }

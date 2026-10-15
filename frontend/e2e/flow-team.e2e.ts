@@ -958,8 +958,8 @@ test.describe('the team webhook', () => {
     expect(document.html).not.toContain(secret.token)
     expect(JSON.stringify(reactQueryState(document.html))).not.toContain(secret.token)
     expect(
-      await page.evaluate(() =>
-        JSON.stringify((window as { __REACT_QUERY_STATE__?: unknown }).__REACT_QUERY_STATE__ ?? {})
+      await page.evaluate(
+        () => window.document.getElementById('ssr-query-state')?.textContent ?? '{}'
       )
     ).not.toContain(secret.token)
     expect(await page.content()).not.toContain(secret.token)

@@ -3,16 +3,9 @@ import type { UserDto } from '@/api/dto'
 import { paths } from '@/config/paths'
 import { getSSRAuth } from '@/lib/ssrContext'
 import type { SsrAuthSnapshot } from '@/lib/requestContext'
+import { ssrAuthState as readSsrSession } from '@/lib/ssrState'
 
 const isServer = typeof window === 'undefined'
-
-declare global {
-  interface Window {
-    /** The session the server rendered with, when the request carried one. Set by an inline
-     * script in the HTML, before any module script (including this one) runs. */
-    __AUTH_STATE__?: SsrAuthSnapshot
-  }
-}
 
 export interface AuthState {
   user: UserDto | null
@@ -81,14 +74,14 @@ function authStateFromSnapshot(snapshot: SsrAuthSnapshot) {
  * still after this module evaluates), it was already too late for that first render: the store's
  * frozen `getInitialState()` was still the anonymous default, producing a hydration mismatch on
  * every authenticated visit. The session must be in the state passed to `create()` itself — read
- * here, synchronously, at module load. `window.__AUTH_STATE__` is set by an inline script that runs
- * before any module script (per the HTML spec), so it is already present by the time this
- * (imported, hence deferred-module-executed) code runs.
+ * here, synchronously, at module load. The session is the `#ssr-auth-state` data block server.js
+ * writes into the body (`readSsrSession()`), and a module script runs once the document is parsed,
+ * so it is already there by the time this (imported, hence deferred-module-executed) code runs.
  */
-const initialState: AuthState =
-  !isServer && window.__AUTH_STATE__
-    ? { ...defaultState, ...authStateFromSnapshot(window.__AUTH_STATE__) }
-    : defaultState
+const ssrSession = isServer ? undefined : readSsrSession()
+const initialState: AuthState = ssrSession
+  ? { ...defaultState, ...authStateFromSnapshot(ssrSession) }
+  : defaultState
 
 const authStore = create<AuthStore>()((set, get) => ({
   ...initialState,
@@ -276,7 +269,7 @@ export const useAuthStore: UseAuthStore = Object.assign(
 
 /**
  * Marks that this client hydrated markup the server already rendered with the session — the store's
- * `initialState` above was seeded from `window.__AUTH_STATE__` directly, so by the time this runs
+ * `initialState` above was seeded from the SSR session (`readSsrSession()`) directly, so by the time this runs
  * the state is already correct. This call is now just a record of that fact for
  * {@link wasHydratedFromSSR}, plus a defensive re-assertion of the same state.
  */

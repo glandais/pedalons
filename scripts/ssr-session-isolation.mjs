@@ -36,12 +36,12 @@ if (tokens.length < 2) {
   process.exit(2)
 }
 
-/** The `window.__AUTH_STATE__` the server embedded, or null for an anonymous render. */
+/** The `#ssr-auth-state` block the server embedded, or null for an anonymous render. */
 function extractAuthState(html) {
-  const match = html.match(/window\.__AUTH_STATE__=(\{.*?\})<\/script>/s)
+  const match = html.match(/<script type="application\/json" id="ssr-auth-state">(.*?)<\/script>/s)
   if (!match) return null
   try {
-    return JSON.parse(match[1].replace(/\\u003c/g, '<'))
+    return JSON.parse(match[1])
   } catch {
     return null
   }

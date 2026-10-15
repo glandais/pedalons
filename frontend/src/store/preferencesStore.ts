@@ -1,6 +1,7 @@
 import { create, type StoreApi } from 'zustand'
 import { UnitSystem } from '@/api/dto'
 import { getSSRAuth } from '@/lib/ssrContext'
+import { ssrAuthState } from '@/lib/ssrState'
 
 const STORAGE_KEY = 'pedalons-unit-system'
 const isServer = typeof window === 'undefined'
@@ -21,18 +22,16 @@ function getStoredUnitSystem(): UnitSystem {
 }
 
 /**
- * Mirrors authStore.ts's handling of `window.__AUTH_STATE__`: that global is set by an inline
- * script that runs before any module script, so an authenticated session's unitSystem is already
+ * Mirrors authStore.ts's handling of the SSR session (`ssrAuthState()`, the `#ssr-auth-state` data
+ * block, parsed before any module script runs), so an authenticated session's unitSystem is already
  * known here, synchronously, at module load — the first client render can match the server
  * markup exactly. An anonymous localStorage preference is deliberately NOT read here (see
  * hydrateAnonymousPreferences below): the server has no way to know it, so reading it at module
  * scope would make the first client render diverge from the anonymous server markup (always
  * 'METRIC'), the exact hydration mismatch documented in docs/SSR.md "Finding 4".
  */
-const initialUnitSystem: UnitSystem =
-  !isServer && window.__AUTH_STATE__?.user
-    ? parseUnitSystem(window.__AUTH_STATE__.user.unitSystem)
-    : 'METRIC'
+const ssrUser = isServer ? undefined : ssrAuthState()?.user
+const initialUnitSystem: UnitSystem = ssrUser ? parseUnitSystem(ssrUser.unitSystem) : 'METRIC'
 
 const preferencesStore = create<PreferencesState>()((set) => ({
   unitSystem: initialUnitSystem,
@@ -106,13 +105,13 @@ export const usePreferencesStore: UsePreferencesStore = Object.assign(
 /**
  * Applies a locally-stored preference for a visitor the server rendered anonymously — the only
  * case where the module-load `initialUnitSystem` above couldn't already be correct. Skipped when
- * `__AUTH_STATE__` carried a session, since the store was already seeded from it. Called once,
+ * the SSR session carried a user, since the store was already seeded from it. Called once,
  * post-hydration (see useAuth.ts), so it never affects the first client render compared against
  * the server markup — only a harmless one-off re-render after, same tradeoff as
  * ColorSchemeSwitcher's `hydrated` guard.
  */
 export function hydrateAnonymousPreferences(): void {
-  if (isServer || window.__AUTH_STATE__?.user) return
+  if (isServer || ssrAuthState()?.user) return
   const stored = getStoredUnitSystem()
   if (stored !== preferencesStore.getState().unitSystem) {
     preferencesStore.setState({ unitSystem: stored })

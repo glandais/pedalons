@@ -189,7 +189,7 @@ export interface RouteRead {
  * it before `goto`, then `reads()` once the page has drawn.
  *
  * Both ways matter: a page is server-rendered, and the SSR server prefetches its queries and hands
- * them over in `window.__REACT_QUERY_STATE__` — the browser then sends no request at all for them.
+ * them over in the `#ssr-query-state` data block — the browser then sends no request at all for them.
  * A query the client asks with other parameters than the prefetch has a different key, so it *is*
  * sent from the browser, and caught here.
  */
@@ -226,13 +226,9 @@ export function watchRouteReads(page: Page, teamSlug: string, routeSlug: string)
       const browser = (await Promise.all(pending)).filter((read): read is RouteRead => !!read)
       const ssr = await page.evaluate(
         ({ single, bulk, routeSlug }) => {
-          const state = (
-            window as unknown as {
-              __REACT_QUERY_STATE__?: {
-                queries: { queryKey: unknown[]; state: { data?: unknown } }[]
-              }
-            }
-          ).__REACT_QUERY_STATE__
+          const state = JSON.parse(
+            document.getElementById('ssr-query-state')?.textContent || 'null'
+          ) as { queries: { queryKey: unknown[]; state: { data?: unknown } }[] } | null
           const out: { endpoint: string; params: Record<string, unknown>; route: unknown }[] = []
           for (const { queryKey, state: query } of state?.queries ?? []) {
             const [endpoint, rawParams] = queryKey as [string, Record<string, unknown>?]

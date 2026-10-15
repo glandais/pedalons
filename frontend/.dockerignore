@@ -33,3 +33,6 @@ docs/
 # Playwright suite: never needed in the image, and e2e/.auth holds live session tokens
 e2e/
 playwright.config.ts
+
+# server.js's modules ship in the image (Dockerfile); their unit tests do not
+server/*.test.js

@@ -5,6 +5,18 @@ import express from 'express'
 import compression from 'compression'
 import expressStaticGzip from 'express-static-gzip'
 import { createProxyMiddleware } from 'http-proxy-middleware'
+import {
+  BASE_POLICY,
+  buildDocumentPolicy,
+  createConfigOriginResolver,
+  documentCspHeaders,
+  generateNonce,
+  nonceInlineScripts,
+  parseCspMode,
+  parseExtraSources,
+} from './server/csp.js'
+import { mountCspReportRoute } from './server/cspReport.js'
+import { SSR_AUTH_STATE_ID, SSR_QUERY_STATE_ID, jsonScript } from './server/ssrState.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const isProduction = process.env.NODE_ENV === 'production'
@@ -19,6 +31,18 @@ const wellKnownDir = isProduction
   : path.resolve(__dirname, 'public/.well-known')
 
 const DEFAULT_APP_NAME = 'Pédalons'
+
+// The site's CSP (server/csp.js, docs/LEDGER_*.md SEC-31). CSP_MODE=enforce enforces the document
+// policy; anything else (the default) only reports it, beside SEC-30's four directives. Production
+// only: the Vite dev server injects an inline React Refresh preamble and talks over a websocket.
+const csp = parseCspMode(process.env.CSP_MODE)
+if (csp.invalid !== undefined) {
+  console.warn(`[csp] Unknown CSP_MODE "${csp.invalid}", reporting only`)
+}
+const cspExtraSources = parseExtraSources(process.env.CSP_CONNECT_SRC_EXTRA)
+if (cspExtraSources.rejected.length) {
+  console.warn('[csp] CSP_CONNECT_SRC_EXTRA: not origins, ignored:', cspExtraSources.rejected)
+}
 
 /**
  * The web app manifest. Only the name varies by domain — every tenant shares the icon set of
@@ -91,6 +115,34 @@ async function createServer() {
       },
     })
   )
+
+  // SEC-30's four directives on everything else this server answers, set before any route can end
+  // the response; the SSR handler below adds the document policy (docs/LEDGER_*.md SEC-31). After
+  // the API proxy on purpose: the API must carry no policy of ours (server/csp.js says why), and in
+  // prod Traefik routes /api to the backend anyway.
+  app.use((_req, res, next) => {
+    res.setHeader('Content-Security-Policy', BASE_POLICY)
+    next()
+  })
+
+  // Violation reports of the document policy, one log line each (server/cspReport.js).
+  mountCspReportRoute(app)
+
+  // The map and push hosts of a config, for the document policy's connect-src. The generated raster
+  // styles are read from the backend directly, as the SSR render reads everything else.
+  const configOrigins = createConfigOriginResolver({
+    fetchStyle: async (stylePath) => {
+      const response = await fetch(`${apiTarget}${stylePath}`, {
+        headers: { Accept: 'application/json' },
+        signal: AbortSignal.timeout(2000),
+      })
+      if (!response.ok) throw new Error(`HTTP ${response.status}`)
+      return response.json()
+    },
+    onError: (stylePath, err) => {
+      console.error(`[csp] Failed to read the map style ${stylePath}:`, err.message)
+    },
+  })
 
   // Serve apple-app-site-association as JSON (parity with nginx-spa.conf). Must be
   // registered before the static/Vite middleware so it wins the content type.
@@ -297,6 +349,8 @@ async function createServer() {
     const url = req.originalUrl
     // Filled by render() as soon as the SSR session refresh answers (see relayRotatedSessionCookie).
     const sink = {}
+    // This document's CSP nonce: on the inline scripts of the template and of React Router.
+    const nonce = generateNonce()
 
     try {
       let currentTemplate, currentRender
@@ -315,7 +369,8 @@ async function createServer() {
       const result = await currentRender(
         url,
         Object.fromEntries(Object.entries(req.headers).filter(([, v]) => typeof v === 'string')),
-        sink
+        sink,
+        { nonce }
       )
       relayRotatedSessionCookie(res, sink)
 
@@ -330,14 +385,13 @@ async function createServer() {
         return
       }
 
-      const { html: appHtml, dehydratedState, auth, lang, head, themePreference } = result
+      const { html: appHtml, dehydratedState, auth, lang, head, themePreference, config } = result
 
-      // Escape '<' to prevent XSS via </script> injection in inline JSON
+      // Data blocks, not scripts (server/ssrState.js): they never run, so the CSP needs no exception
+      // for them, and every '<' is escaped so no </script> in the data can close them.
       let stateScript = ''
       try {
-        stateScript = dehydratedState
-          ? `<script>window.__REACT_QUERY_STATE__=${JSON.stringify(dehydratedState).replace(/</g, '\\u003c')}</script>`
-          : ''
+        stateScript = dehydratedState ? jsonScript(SSR_QUERY_STATE_ID, dehydratedState) : ''
       } catch (serErr) {
         console.error(`[SSR] Failed to serialize dehydrated state for "${url}":`, serErr)
         // Continue without SSR state — client will refetch
@@ -348,9 +402,7 @@ async function createServer() {
       // what the Cache-Control/Vary headers below enforce.
       let authScript = ''
       try {
-        authScript = auth
-          ? `<script>window.__AUTH_STATE__=${JSON.stringify(auth).replace(/</g, '\\u003c')}</script>`
-          : ''
+        authScript = auth ? jsonScript(SSR_AUTH_STATE_ID, auth) : ''
       } catch (serErr) {
         console.error(`[SSR] Failed to serialize auth state for "${url}":`, serErr)
         // Continue without it — the client falls back to its own /api/auth/refresh at boot
@@ -359,7 +411,9 @@ async function createServer() {
       // Replacer functions, not strings: a replacement string interprets `$&`, `$'` and `$\``, and
       // the markup carries user content — a title holding `$'` would splice the rest of the
       // template into the page (docs/LEDGER_*.md SEC-12, audit L7).
-      let finalHtml = currentTemplate
+      // The nonce goes on the template's own inline script (the theme script of index.html) before
+      // anything else is spliced in, so only the template's tags can receive it.
+      let finalHtml = nonceInlineScripts(currentTemplate, nonce)
         .replace('<!--ssr-outlet-->', () => appHtml)
         .replace('<!--ssr-state-->', () => stateScript)
         .replace('<!--ssr-auth-->', () => authScript)
@@ -389,9 +443,24 @@ async function createServer() {
         )
       }
 
+      // No config and none seen yet since the process started (configOrigins returns null): the
+      // map and push hosts are unknown, and the SPA keeps this document's policy for the whole
+      // session, so this one document only reports the policy instead of enforcing connect-src 'self'.
+      const knownOrigins = isProduction ? await configOrigins(config) : null
+      const cspHeaders = isProduction
+        ? documentCspHeaders(
+            knownOrigins === null ? 'report-only' : csp.mode,
+            buildDocumentPolicy({
+              nonce,
+              connectOrigins: [...(knownOrigins ?? []), ...cspExtraSources.accepted],
+            })
+          )
+        : {}
+
       res
         .status(result.statusCode || 200)
         .set({
+          ...cspHeaders,
           'Content-Type': 'text/html',
           // The markup is rendered for whoever sent the cookie: it embeds their name, their access
           // token and their view of the data. no-store keeps it out of every cache; Vary states the

@@ -213,7 +213,7 @@ API_BASE_URL=https://staging.pedalons.fr PORT=3111 pnpm dev:ssr
 
 # 1. the right keys are in the dehydrated state (filters included)
 curl -s 'http://localhost:3111/equipes/<team>/parcours?q=gravel&p=2' \
-  | grep -o '__REACT_QUERY_STATE__.*' | head -c 2000
+  | grep -o 'id="ssr-query-state".*' | head -c 2000
 
 # 2. nothing is fetched after hydration
 pnpm e2e routes-render -g '<routeId> /'    # on the e2e stack, every role — or one page in a browser:

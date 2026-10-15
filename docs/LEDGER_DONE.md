@@ -3720,6 +3720,42 @@ envoyé », un redémarrage renotifie tout le monde) et la purge des jetons pér
 Les constats corrigés avant l'ouverture du ledger sont dans l'audit de septembre 2026, archivé :
 [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-09-security-audit.md).
 
+- `SEC-31` **CSP complète du site, d'abord en Report-Only : V4 (suite)** (2026-10-15, contrat
+  inchangé, prend effet au prochain `deploy.sh`) — `SEC-30` n'avait posé que `frame-ancestors`,
+  `base-uri`, `object-src`, `form-action` : rien ne contraignait scripts, styles ni origines. La
+  politique est désormais construite par `frontend/server.js` (`frontend/server/csp.js`), et non plus
+  par un label Traefik : un nonce de 128 bits tiré à chaque page, et les hôtes de carte de la config de la
+  requête. Les deux états SSR ne sont plus des scripts : `__REACT_QUERY_STATE__` et `__AUTH_STATE__`
+  sont devenus des blocs `<script type="application/json">` (`#ssr-query-state`, `#ssr-auth-state`,
+  `server/ssrState.js`, `<`, `>` et `&` échappés), lus par `src/lib/ssrState.ts` (seulement en enfant
+  direct de `<body>`). Le nonce va sur le script de thème d'`index.html` (pas un hash : une retouche
+  du fichier ne le casse pas en silence) et sur le script d'hydratation de React Router
+  (`StaticRouterProvider nonce`), un quatrième script inline que l'entrée ne nommait pas. Politique :
+  `default-src 'self'; script-src 'self' 'nonce-…'; style-src 'self' 'unsafe-inline'; img-src 'self'
+  data: blob: https:; font-src 'self' data:; connect-src 'self' <hôtes>; worker-src 'self';
+  manifest-src 'self'; frame-src 'none'` plus les quatre de `SEC-30`, `report-uri /csp-report` et
+  `report-to csp`. `connect-src` suit `/api/config` : styles et variantes sombres, hôtes de tuiles des
+  fonds raster que le backend enveloppe (`/api/map/styles/{id}.json`, relus par `server.js`, gardés
+  dix minutes), TileJSON du relief, Firebase quand le web push est configuré, et
+  `CSP_CONNECT_SRC_EXTRA` pour un style tiers qui sortirait de son hôte. Un style raster dont la
+  relecture échoue garde ses hôtes de la dernière lecture réussie ; une page rendue sans config (appel
+  SSR en échec) reprend la dernière liste d'hôtes construite par le processus, et s'il n'en a encore
+  vu aucune, cette page-là ne part qu'en Report-Only, même sous `enforce`. Zod tourne `jitless`
+  (`src/lib/zodConfig.ts`), sans quoi chaque formulaire rapportait sa sonde `Function("")`.
+  `CSP_MODE` (défaut `report-only`) : la politique complète part en `Content-Security-Policy-Report-Only`
+  à côté des quatre directives appliquées ; `enforce` l'applique — c'est `SEC-40`. Les rapports
+  arrivent sur `POST /csp-report` (route de `server.js`, pas d'API) : 16 Kio au plus, 120 lignes par
+  minute pour tous les envoyeurs, une ligne JSON par violation, URLs sans requête ni fragment, sans
+  extrait de script. Couvert par `frontend/server/csp.test.js`, `ssrState.test.js` et
+  `cspReport.test.js` ; vérifié sur un `server.js` de production local branché sur staging (en-têtes,
+  nonce différent à chaque page, quatre scripts dont deux blocs JSON, rapport journalisé). **À ne pas
+  défaire** : pas de `contentSecurityPolicy` dans le label `site-headers` — Traefik écrase celle de
+  `server.js` — et toujours aucune CSP sur le routeur de l'API (`SEC-1`, visionneuse PDF) ; pas de
+  nonce ni de hash dans `style-src`, qui ferait ignorer `'unsafe-inline'` aux navigateurs et casserait
+  les attributs `style` de Mantine ; pas de `'strict-dynamic'`, qui ferait ignorer `'self'` et
+  demanderait le nonce sur l'entrée Vite et chaque `modulepreload` ; pas de `'unsafe-eval'`. Aucune
+  politique complète en dev (préambule React Refresh inline, websocket HMR).
+
 - `SEC-34` **compteur d'essais OTP rendu sûr face aux devinettes concurrentes** (2026-10-11, contrat inchangé, constat de la modélisation formelle TLA+/Lean). Avant, `verifyOtp` lisait le code sans verrou. `recordFailedAttempt` incrémentait le compteur en mémoire, puis Hibernate réécrivait toute la ligne depuis cet instantané (pas de `@Version` sur `AuthToken`). Une mauvaise devinette lue avant l'épuisement du code (5 échecs) ou avant la connexion du titulaire, mais validée après, réécrivait donc `failed_attempts=1, used_at=NULL`. Le code redevenait valide et son compteur repartait de zéro : une rafale parallèle obtenait bien plus de 5 essais par code. Désormais, `verifyOtp` verrouille d'abord le compte (`UserRepository.findByEmailAndDomainForUpdate`), puis le code vivant le plus récent (`AuthTokenRepository.findValidByEmailAndTypeForUpdate`, `PESSIMISTIC_WRITE`, même idiome que `AUD-16`). Les devinettes sur une même adresse passent donc l'une après l'autre. Sous READ COMMITTED, une devinette qui attendait relit `used_at is null and expires_at > now` et ne trouve plus un code épuisé ou utilisé. `dontRollbackOn = BadRequestException` reste en place pour que l'échec compté soit validé. Couvert par `OtpFailedAttemptLostUpdateRaceTest` et par `OtpVerifyRequestDeadlockRaceTest`. **À ne pas défaire** : l'ordre des verrous, compte puis code, identique à `createOtp`. Verrouiller le code d'abord interbloque une connexion valide contre une demande de nouveau code : la connexion tient le code et attend le compte pour `recordLogin`, la demande tient le compte et attend le code pour l'invalider. PostgreSQL abandonne alors l'une des deux, d'où une 500 côté connexion ou côté `requestOtp`. Ne pas remplacer ce verrou par un `@Version` (migration, et une 500 `OptimisticLockException` sous contention).
 
 - `SEC-35` **limite de demandes OTP et « un seul code vivant » sérialisées par adresse** (2026-10-11, contrat inchangé, constat de la modélisation formelle TLA+/Lean). Avant, `createOtp` comptait les codes récents, invalidait les codes vivants puis insérait le nouveau, sans verrou : c'était un check-then-act. Deux demandes simultanées (un onglet web et l'app) ne voyaient chacune que les lignes déjà validées. Elles émettaient alors plus de 3 codes par fenêtre et laissaient plusieurs codes vivants à la fois, ce qui multipliait le budget de devinettes de l'audit H1. Désormais, `createOtp` charge le compte avec `UserRepository.findByEmailAndDomainForUpdate` (`SELECT … FOR UPDATE`) avant de compter. La seconde demande attend le commit de la première, puis elle est limitée ou invalide le code de la première. Le verrou ne couvre que la courte transaction de `createOtp` : le mail part après le commit et n'est jamais envoyé sous verrou. Une adresse inconnue ou non vérifiée ne verrouille rien, et l'anti-énumération est inchangée. Aucune migration. Couvert par `OtpRequestRateLimitRaceTest` et par `OtpVerifyRequestDeadlockRaceTest`. **À ne pas défaire** : tout chemin qui verrouille un code OTP prend d'abord ce verrou de compte, sinon on retombe dans l'interblocage décrit en `SEC-34`. Ni verrou consultatif (`pg_advisory_xact_lock`, SQL natif), ni index unique partiel : il demanderait une migration et ne couvrirait que la moitié « un seul code vivant ». `createEmailChangeToken` et `createPasswordResetToken` ont le même motif compter-puis-insérer et restent à traiter à part.

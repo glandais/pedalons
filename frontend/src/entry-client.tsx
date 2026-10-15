@@ -1,6 +1,8 @@
+// First: Zod must not probe for eval before any schema is built (CSP, docs/LEDGER_*.md SEC-31).
+import './lib/zodConfig'
 import { StrictMode } from 'react'
 import { createRoot, hydrateRoot } from 'react-dom/client'
-import { hydrate, type DehydratedState } from '@tanstack/react-query'
+import { hydrate } from '@tanstack/react-query'
 import type { HydrationState } from 'react-router-dom'
 import App from './App'
 import { AppProviders } from './AppProviders'
@@ -11,7 +13,7 @@ import { getGetConfigQueryKey } from './api/endpoints/configuration/configuratio
 import i18n, { i18nReady } from './i18n'
 import type { ConfigDto } from './api/dto'
 import { hydrateAuthFromSSR } from './store/authStore'
-import type { SsrAuthSnapshot } from './lib/requestContext'
+import { ssrAuthState, ssrQueryState } from './lib/ssrState'
 import { mapThemePreference } from './lib/theme'
 import { installConsoleCapture } from './lib/feedback/clientLog'
 import { installErrorCapture } from './lib/feedback/errorReporter'
@@ -21,23 +23,19 @@ import './index.css'
 
 declare global {
   interface Window {
-    __REACT_QUERY_STATE__?: DehydratedState
-    /** The session the server rendered with, when the request carried one. */
-    __AUTH_STATE__?: SsrAuthSnapshot
-    /** Injected by StaticRouterProvider in the SSR markup. */
+    /** Injected by StaticRouterProvider in the SSR markup (an inline script carrying the CSP nonce). */
     __staticRouterHydrationData?: HydrationState
   }
 }
 
 /**
- * Mirrors preferencesStore.ts's `initialUnitSystem`: `window.__AUTH_STATE__` is set by an inline
- * script that runs before this module, so an authenticated visitor's theme is already known here,
+ * Mirrors preferencesStore.ts's `initialUnitSystem`: the SSR session (the `#ssr-auth-state` data
+ * block, parsed before this module runs) gives an authenticated visitor's theme here,
  * synchronously, letting the first client render match the server markup. Anonymous visitors keep
  * `'auto'` — the existing localStorage/prefers-color-scheme resolution is unaffected.
  */
-const initialColorScheme = window.__AUTH_STATE__?.user
-  ? mapThemePreference(window.__AUTH_STATE__.user.theme)
-  : 'auto'
+const ssrSession = ssrAuthState()
+const initialColorScheme = ssrSession?.user ? mapThemePreference(ssrSession.user.theme) : 'auto'
 
 async function bootstrap() {
   // First, so that whatever goes wrong below is in the log of a bug report.
@@ -51,7 +49,7 @@ async function bootstrap() {
   await i18nReady
 
   const queryClient = makeQueryClient()
-  const dehydratedState = window.__REACT_QUERY_STATE__
+  const dehydratedState = ssrQueryState()
 
   // Hydrate the server-dehydrated cache BEFORE the router is created: buildRoutes()/getPinnedHistory
   // read config synchronously via getAppConfig(), so the config must already be present here.
@@ -59,12 +57,12 @@ async function bootstrap() {
     hydrate(queryClient, dehydratedState)
   }
 
-  // The store's initial state is already seeded from window.__AUTH_STATE__ at module load (see
+  // The store's initial state is already seeded from the SSR session at module load (see
   // authStore.ts — that's what the first hydration render actually reads). This call just records
   // that fact via wasHydratedFromSSR(), so AuthEffects skips the post-hydration cache invalidation
   // it would otherwise run to repair an anonymous-then-authenticated render.
-  if (window.__AUTH_STATE__) {
-    hydrateAuthFromSSR(window.__AUTH_STATE__)
+  if (ssrSession) {
+    hydrateAuthFromSSR(ssrSession)
   }
 
   // The config drives single-team rooting and the pinned-team history, so it must be resolvable

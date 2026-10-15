@@ -68,10 +68,19 @@ export interface RenderSink {
   setCookies?: string[]
 }
 
+export interface RenderOptions {
+  /**
+   * The document's CSP nonce (server.js, docs/LEDGER_*.md SEC-31), for the one inline script the
+   * render writes itself: React Router's hydration data.
+   */
+  nonce?: string
+}
+
 export async function render(
   url: string,
   headers: Record<string, string> = {},
-  sink: RenderSink = {}
+  sink: RenderSink = {},
+  { nonce }: RenderOptions = {}
 ) {
   // Resolve the request locale from the explicit choice cookie (LanguageSwitcher), else from
   // Accept-Language (first token, language part only). Both are only the fallback: an
@@ -108,9 +117,9 @@ export async function render(
       //   prefetch(), since Layout wraps the whole app rather than one route).
       // - the visitor's session, if the request carried a refresh_token cookie. Everything the
       //   route loaders prefetch below then goes out authenticated. If there is no valid session,
-      //   we still populate __AUTH_STATE__ with an anonymous session so the client knows the page
+      //   we still populate the #ssr-auth-state block with an anonymous session so the client knows the page
       //   was rendered anonymously and doesn't attempt a fresh /api/auth/refresh. If the session
-      //   is unknown — the refresh timed out or failed — __AUTH_STATE__ is left out and the client
+      //   is unknown — the refresh timed out or failed — the block is left out and the client
       //   makes that refresh itself (docs/LEDGER_*.md WEB-39).
       //
       // The config and version requests go out before the session is known, i.e. anonymously. That
@@ -135,7 +144,7 @@ export async function render(
       ])
       store.config = configResult
       // Undefined when the session is unknown: rendered as the anonymous default (isLoading on
-      // both sides, so hydration still matches) and serialised as no __AUTH_STATE__ at all.
+      // both sides, so hydration still matches) and serialised as no #ssr-auth-state block at all.
       store.auth = session
 
       // Prefer the signed-in visitor's stored language over the cookie/Accept-Language, now that the session
@@ -277,7 +286,7 @@ export async function render(
             defaultColorScheme={themePreference}
           >
             <AppFrame>
-              <StaticRouterProvider router={router} context={context} />
+              <StaticRouterProvider router={router} context={context} nonce={nonce} />
             </AppFrame>
           </AppProviders>
         </React.StrictMode>
@@ -294,6 +303,8 @@ export async function render(
       // doesn't need to wait for index.html's pre-hydration script to derive it from
       // localStorage/matchMedia (which know nothing about this visitor and briefly render the
       // wrong scheme before React corrects it on hydration).
+      //
+      // The config also gives server.js the map and push hosts of the page's CSP.
       return {
         html,
         dehydratedState,
@@ -302,6 +313,7 @@ export async function render(
         lang: locale,
         head,
         themePreference,
+        config: store.config,
       }
     } catch (err) {
       console.error(`[SSR] render failed for ${url}:`, err)
@@ -394,6 +406,8 @@ async function renderAppToString(app: React.ReactElement, timeoutMs = 10_000): P
       // segment + relocation script) so streaming can paint the shell early. We flush once,
       // so outlining only hurts: raise the threshold so all content is emitted inline.
       progressiveChunkSize: Number.MAX_SAFE_INTEGER,
+      // This is also what keeps React from writing inline scripts of its own ($RC relocation), which
+      // the site's CSP would block: only StaticRouterProvider's carries the nonce (docs/LEDGER_*.md SEC-31).
       onError(err) {
         // Boundary-level errors are recoverable (the boundary falls back and hydrates
         // client-side); log and let the render finish.

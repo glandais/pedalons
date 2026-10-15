@@ -243,6 +243,55 @@ and the header is not what this section expects.
 seq 300 | xargs -P 50 -I{} curl -s -o /dev/null -w '%{http_code}\n' https://<host>/api/config | sort | uniq -c
 ```
 
+### Content Security Policy
+
+The site's CSP is set by the frontend's `server.js` (`frontend/server/csp.js`, ledger `SEC-31`), not
+by Traefik: each page carries a fresh nonce for its inline scripts, and the map hosts of its
+`/api/config`. Traefik's `site-headers` middleware therefore sets **no** `contentSecurityPolicy` — it
+would overwrite the one `server.js` sends. The API keeps **no CSP at all**: it would override the
+sandbox policy of downloads (`UploadedContentHeaders`, ledger `SEC-1`) and stop the PDF viewer.
+
+| Response | Header |
+|---|---|
+| Everything `server.js` answers | `Content-Security-Policy: frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'` (ledger `SEC-30`) |
+| SSR pages, `CSP_MODE` unset or `report-only` (the default) | the above, plus the full policy as `Content-Security-Policy-Report-Only` |
+| SSR pages, `CSP_MODE=enforce` | the full policy as `Content-Security-Policy` |
+
+The full policy allows scripts from the site and by nonce only, styles inline (Mantine), images from
+any `https:` host (markdown), and `connect-src` to the site plus the hosts `/api/config` names: style
+documents and dark variants, the tile hosts of the raster basemaps the backend wraps
+(`/api/map/styles/{id}.json`, read by `server.js` and kept ten minutes), the terrain TileJSON, and
+Firebase when web push is configured. A third-party style is assumed to keep its sprite, glyphs and
+tiles on its own host (true of VersaTiles and IGN); one that does not needs its hosts in
+`CSP_CONNECT_SRC_EXTRA` (space-separated origins, in `.env`).
+
+**Violations** are posted by browsers to `POST /csp-report` (a `server.js` route, under the site
+router, not the API) and logged as one JSON line each — URLs without query or fragment, at most
+120 lines a minute for all senders together, then a `{"dropped":n}` line:
+
+```
+{stack="pedalons-prod", service="frontend"} |= "[csp-report]"
+```
+
+Anyone can post to that route, so a report is not proof on its own: read for a pattern across many
+clients and pages. A flood of forged reports can also use up the shared 120-line budget and hide
+real ones for the rest of the minute (ledger `SEC-40`).
+
+**Changing a map provider** under `CSP_MODE=enforce`: the raster tile hosts are cached ten minutes by
+`server.js`, so restart the frontend service with the backend (`docker service update --force
+<stack>_frontend`), or the new basemap stays blocked until the cache expires.
+
+**Going to enforce**: leave report-only in place on staging and prod long enough to see every page
+and basemap used, read the reports (an empty week, or only browser extensions — `blockedURL` of
+`chrome-extension`, `moz-extension` — is the signal), then set `CSP_MODE=enforce` in `.env` and
+`scripts/deploy.sh`. Rolling back is the same variable set back. **Check once deployed**:
+
+```bash
+curl -sI https://<host>/ | grep -i -E '^content-security-policy|^reporting-endpoints'
+curl -sI https://<host>/api/version | grep -ic content-security-policy        # 0
+curl -sI https://<host>/assets/<any>.js | grep -i content-security-policy     # the SEC-30 four only
+```
+
 ### Access logs
 
 The host's Caddy writes the **only** access log: Traefik's is off (`--accesslog=false` in
