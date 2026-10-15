@@ -1,6 +1,6 @@
 # Politique de confidentialité
 
-**Dernière mise à jour : 14 octobre 2026**
+**Dernière mise à jour : 15 octobre 2026**
 
 La présente politique de confidentialité décrit la manière dont Pedalons (« nous », « notre », « nos ») collecte, utilise et protège vos données personnelles lorsque vous utilisez notre plateforme (site web, application mobile, extensions pour appareils GPS).
 
@@ -45,7 +45,19 @@ Pour sécuriser l'accès à votre compte, nous traitons :
 
 - **Adresse IP** et **agent utilisateur** (type de navigateur/appareil) : pour la sécurité du compte et la détection d'activité suspecte.
 - **Date de dernière connexion** et **dernière utilisation de session**.
-- **Journaux serveur** : date et heure, adresse IP, navigateur ou appareil, page demandée et code de réponse, parfois votre adresse e-mail et des identifiants techniques. Ils servent uniquement à la sécurité, à la détection d'abus et au dépannage — jamais au profilage ni à la publicité. Votre position et vos jetons de connexion n'y sont jamais écrits. Conservés 14 jours (voir section 6).
+- **Journaux serveur** : date et heure, adresse IP, navigateur ou appareil, page demandée et code de réponse, parfois votre adresse e-mail et des identifiants techniques. Ils servent uniquement à la sécurité, à la détection d'abus et au dépannage — jamais au profilage ni à la publicité. Votre position et vos jetons de connexion n'y sont jamais écrits. Les requêtes de mesure d'audience du site n'y figurent pas (voir « Mesure d'audience du site » ci-dessous). Conservés 14 jours (voir section 6).
+
+### Mesure d'audience du site
+
+Sur le site web, nous comptons les pages vues, pour savoir quels sites et quelles pages de la plateforme sont utilisés, avec un outil de mesure d'audience que nous hébergeons nous-mêmes. L'application mobile et les extensions pour appareils GPS ne mesurent pas l'audience.
+
+- **Ce qui est compté** : des pages vues, pas des visites ni des visiteurs. Pour chaque page vue : le site (son nom de domaine) ; le type de page (par exemple « fiche d'une sortie ») et si ce type de page est ouvert à tous ou réservé aux membres ; pour une page d'équipe, l'identifiant de l'équipe (celui de son adresse sur pedalons.fr), y compris pour une équipe privée, même sur le domaine propre d'un club ; pour la première page affichée seulement, le site d'où vous venez, réduit à son nom de domaine ; la famille et la version principale de votre navigateur, votre système, la catégorie de taille de votre écran (téléphone, tablette, ordinateur, grand écran ; jamais sa largeur exacte) et votre pays.
+- **Ce qui ne l'est jamais** : l'adresse complète de la page, la sortie, le parcours, la publication ou la page consultés, les paramètres de l'adresse (liens d'invitation, de connexion…), le titre de la page, votre compte, vos équipes, ni le fait que vous soyez connecté ou non.
+- **Sans cookie ni identifiant** : aucun cookie n'est déposé et aucun identifiant de visiteur ou de session n'est calculé : deux pages vues ne peuvent pas être reliées entre elles, ni sur un même site, ni d'un site de club à l'autre.
+- **Votre adresse IP n'est pas conservée** : elle sert quelques secondes, en mémoire, à déduire votre pays sur nos serveurs, sans service tiers, et à écarter les robots et les abus ; elle n'est jamais écrite dans les statistiques.
+- **Des compteurs, pas un enregistrement par page vue** : nous gardons, pour chaque page, des totaux par heure ou par jour, et chaque caractéristique (navigateur, système, écran, pays, site d'origine) est comptée à part. Seul le responsable du traitement consulte ces statistiques ; elles ne sont communiquées à personne, ni recoupées avec les autres données de la plateforme.
+- **Durée** : 24 mois (voir section 6). Les requêtes reconnues comme venant de robots ne sont pas comptées.
+- **Vous y opposer** : voir section 7.
 
 ### Données de localisation et GPS
 
@@ -162,7 +174,7 @@ Si vous connectez un service GPS externe (Hammerhead, Garmin, Wahoo) :
 ## 2. Comment nous collectons vos données
 
 - **Directement auprès de vous** : lorsque vous créez un compte, remplissez votre profil, importez des fichiers GPX, créez du contenu ou connectez un service GPS.
-- **Automatiquement** : adresse IP et agent utilisateur lors de vos connexions ; cookie de session pour maintenir votre authentification ; journaux serveur décrits à la section 1 ; et, sauf si vous les désactivez, rapports d'erreur automatiques (voir « Signalements de problèmes et rapports d'erreur »).
+- **Automatiquement** : adresse IP et agent utilisateur lors de vos connexions ; cookie de session pour maintenir votre authentification ; journaux serveur décrits à la section 1 ; sur le site, mesure d'audience décrite à la section 1 (« Mesure d'audience du site ») ; et, sauf si vous les désactivez, rapports d'erreur automatiques (voir « Signalements de problèmes et rapports d'erreur »).
 - **Depuis la plateforme à laquelle Pedalons succède** : un administrateur d'équipe Biketeam peut faire transférer le contenu de son équipe depuis le serveur de Biketeam, comme décrit à la section 1 (« Équipes venues de Biketeam »).
 - **Auprès d'autres membres** : un administrateur d'équipe qui vous invite nous communique votre adresse e-mail (voir « Invitations dans une équipe ») ; un membre qui vous signale, ou signale votre contenu, nous communique le motif, son message et une copie du texte signalé (voir « Signalements et blocages »).
 - **Depuis le formulaire d'inscription à la bêta** (voir « Inscriptions aux programmes bêta »).
@@ -193,6 +205,7 @@ Pour chaque finalité, la base légale (RGPD) sur laquelle elle repose :
 - **Fournir votre flux calendrier personnel à l'application de calendrier de votre choix** : Consentement (abonnement volontaire)
 - **Vous prévenir de l'ouverture d'une bêta de nos applications** : Consentement (inscription volontaire)
 - **Traiter vos signalements de problème et corriger les erreurs de l'application** : Intérêt légitime (fiabilité du service ; rapports automatiques désactivables)
+- **Mesurer l'audience du site, de façon anonyme et agrégée** : Intérêt légitime (exempté de consentement) ; opposition possible, voir section 7
 - **Assurer la continuité du service pour les équipes venues de la plateforme précédente** : Intérêt légitime
 - **Exploiter et assister la plateforme** : Intérêt légitime
 
@@ -200,7 +213,7 @@ Nous n'utilisons **jamais** vos données pour :
 - De la publicité ciblée
 - La revente, la location ou le partage à des fins commerciales
 - Du profilage automatisé ou de la prise de décision automatisée
-- Des statistiques d'utilisation — nous n'utilisons aucun outil d'analyse ou de suivi
+- Un suivi de votre navigation d'un site à l'autre, ou des statistiques rattachées à votre compte
 
 ---
 
@@ -239,6 +252,8 @@ Nous faisons appel à des services techniques pour le fonctionnement de la plate
 - **Hammerhead, Garmin, Wahoo (États-Unis)**
   - *Rôle* : Envoi de vos itinéraires vers votre appareil GPS, uniquement si vous connectez le service
   - *Données concernées* : Jetons OAuth, et les itinéraires que vous choisissez d'envoyer (trace, nom ; pour Wahoo, aussi le point de départ, la distance et les dénivelés)
+
+L'outil de mesure d'audience du site est hébergé par nos soins chez Scaleway, comme le reste de la plateforme : aucun autre prestataire ne reçoit ces statistiques.
 
 ### Services push des navigateurs
 
@@ -293,7 +308,7 @@ Certains traitements que vous pouvez déclencher impliquent des serveurs situés
 
 - **Services GPS tiers** (Hammerhead, Garmin, Wahoo, États-Unis) : uniquement si vous en connectez un, et seulement pour les itinéraires que vous leur envoyez. Ce transfert est nécessaire au service que vous demandez, l'envoi de l'itinéraire sur votre compte (article 49, paragraphe 1, point b, du RGPD) ; Garmin adhère en outre au cadre de protection des données UE–États-Unis (Data Privacy Framework).
 - **Fonds de carte et relief** : votre appareil envoie votre adresse IP et la zone affichée au fournisseur du fond que vous choisissez (voir section 4). Le fond « Satellite (ESRI) » vient d'Esri (États-Unis), qui adhère au Data Privacy Framework. Les tuiles de relief de Mapterhorn, demandées seulement si vous activez l'ombrage ou le relief 3D, sont servies par Cloudflare (États-Unis), qui y adhère aussi. Le fond OpenStreetMap est servi depuis le Royaume-Uni, qui bénéficie d'une décision d'adéquation de la Commission européenne.
-- **Composant de messagerie Firebase de Google** : l'application mobile l'intègre, et il contacte les serveurs de Google au démarrage de l'application, avant même que vous vous connectiez ou autorisiez les notifications, ce qui révèle l'adresse IP de votre appareil et crée un identifiant d'installation Firebase. L'application et le site n'intègrent que cette partie messagerie de Firebase : aucun composant d'analyse, de publicité ou de suivi. Sur le site, ce composant n'est chargé qu'une fois les notifications activées.
+- **Composant de messagerie Firebase de Google** : l'application mobile l'intègre, et il contacte les serveurs de Google au démarrage de l'application, avant même que vous vous connectiez ou autorisiez les notifications, ce qui révèle l'adresse IP de votre appareil et crée un identifiant d'installation Firebase. L'application et le site n'intègrent que cette partie messagerie de Firebase : aucun composant d'analyse, de publicité ou de suivi de Firebase. Sur le site, ce composant n'est chargé qu'une fois les notifications activées.
 - **Notifications push** : Google (Firebase Cloud Messaging) peut traiter leur titre, leur texte et le jeton push de votre appareil aux États-Unis ; ce transfert est encadré par les clauses contractuelles types de la Commission européenne et par l'adhésion de Google LLC au Data Privacy Framework. Sur iPhone, elles sont remises par Apple (Apple Distribution International, Irlande), dont les transferts vers les États-Unis sont encadrés par les clauses contractuelles types ; dans un navigateur, par le service push de son éditeur, qui ne reçoit que le message chiffré (voir section 4). Cela n'a lieu que tant que vous autorisez les notifications.
 - **Signalements de problème et rapports d'erreur** : transmis à GitHub (États-Unis), sans votre nom ni votre adresse e-mail ; ce transfert est encadré par les clauses contractuelles types de la Commission européenne et par l'adhésion de GitHub, Inc. au Data Privacy Framework.
 - **Canaux de discussion d'équipe** : le service choisi par les administrateurs de l'équipe (par exemple Slack ou Discord, exploités depuis les États-Unis) reçoit les annonces de l'équipe. Ce transfert a lieu sur instruction des administrateurs, qui choisissent le service : Slack et Discord adhèrent au Data Privacy Framework ; tout autre service relève de ses propres conditions.
@@ -334,12 +349,13 @@ Certains traitements que vous pouvez déclencher impliquent des serveurs situés
 - **Inscriptions aux programmes bêta (adresse e-mail, site, date)** : 1 an après l'inscription ; écrivez à privacy@pedalons.fr pour être retiré de la liste plus tôt
 - **Archive d'export de vos données (ZIP)** : 7 jours
 - **Historique des demandes d'export (date de la demande, statut, taille de l'archive, date d'expiration)** : 90 jours
-- **Journaux d'accès du serveur (date et heure, adresse IP, navigateur ou appareil, adresse demandée sans les coordonnées ni les jetons, code de réponse)** : 14 jours
+- **Journaux d'accès du serveur (date et heure, adresse IP, navigateur ou appareil, adresse demandée sans les coordonnées ni les jetons, code de réponse ; hors requêtes de mesure d'audience, qui n'y sont pas écrites)** : 14 jours
+- **Statistiques d'audience du site (compteurs par page, sans adresse IP, ni identifiant, ni session ; statistiques agrégées comprises)** : 24 mois. Pour les requêtes reconnues comme venant de robots, qui ne sont pas comptées, la page demandée et l'agent utilisateur : 30 jours
 - **Données après suppression du compte** : Effacement immédiat (voir section 7)
 
 Les données expirées sont effacées de la base par un nettoyage exécuté chaque nuit : elles peuvent donc rester stockées jusqu'à 24 heures au-delà de la durée indiquée.
 
-**Sauvegardes.** Chaque nuit, nous réalisons une copie complète de la base de données et des fichiers téléversés, stockée sur un serveur séparé situé en France ; les 30 dernières copies sont conservées, les plus anciennes supprimées automatiquement. Une donnée supprimée ou effacée, y compris à la suppression de votre compte, peut donc subsister dans nos sauvegardes pendant 30 jours au maximum. Les sauvegardes sont chiffrées (voir section 9) et ne servent qu'à restaurer le service après un incident.
+**Sauvegardes.** Chaque nuit, nous réalisons une copie complète de la base de données et des fichiers téléversés, stockée sur un serveur séparé situé en France ; les 30 dernières copies sont conservées, les plus anciennes supprimées automatiquement. Une donnée supprimée ou effacée, y compris à la suppression de votre compte, peut donc subsister dans nos sauvegardes pendant 30 jours au maximum. Les sauvegardes sont chiffrées (voir section 9) et ne servent qu'à restaurer le service après un incident. Les statistiques d'audience du site ne sont pas sauvegardées.
 
 ---
 
@@ -352,7 +368,7 @@ Conformément au Règlement Général sur la Protection des Données (RGPD), vou
 - **Droit à l'effacement** (« droit à l'oubli ») : demander la suppression de vos données.
 - **Droit à la limitation du traitement** : restreindre temporairement l'utilisation de vos données.
 - **Droit à la portabilité** : recevoir vos données dans un format structuré et lisible par machine.
-- **Droit d'opposition** : vous opposer au traitement fondé sur l'intérêt légitime.
+- **Droit d'opposition** : vous opposer au traitement fondé sur l'intérêt légitime. Pour la mesure d'audience du site : activez Do Not Track ou Global Privacy Control dans votre navigateur, ce qui vaut pour tous nos sites ; ou, sur le site, utilisez l'interrupteur de **Profil → Confidentialité** ou de la page **Confidentialité** (/confidentialite). Cet interrupteur ne vaut que pour ce navigateur et pour ce site : à refaire sur chaque site de club et sur chaque navigateur. L'application ne mesure rien.
 - **Droit de retirer votre consentement** : à tout moment, sans affecter la licéité du traitement antérieur.
 
 ### Exporter vos données vous-même
@@ -440,10 +456,14 @@ Pedalons utilise un nombre minimal de cookies et de données de stockage local :
   - *Type* : sessionStorage
   - *Finalité* : Garder une invitation à une équipe, ou une demande de transfert d'équipe depuis Biketeam, le temps de vous connecter
   - *Durée* : Jusqu'à la fermeture de l'onglet
+- **pedalons-analytics-optout**
+  - *Type* : localStorage
+  - *Finalité* : Retenir votre opposition à la mesure d'audience, sur ce site et dans ce navigateur seulement
+  - *Durée* : Jusqu'à ce que vous retiriez votre opposition ou effaciez les données du site dans votre navigateur
 
 Lorsque vous êtes connecté, la langue, les unités et le thème enregistrés dans votre compte prévalent sur la copie locale. Pour les autres données conservées par l'application mobile et par les extensions Karoo et Garmin, voir « Données stockées localement sur votre appareil » à la section 1.
 
-**Nous n'utilisons aucun cookie de suivi, d'analyse ou de publicité.** Aucun consentement aux cookies n'est donc requis : le cookie de session est strictement nécessaire au fonctionnement du service, et le cookie lang ne fait que mémoriser un choix que vous avez fait. Notez que l'affichage d'une carte amène votre navigateur à demander des tuiles directement au fournisseur du style sélectionné — voir « Affichage des cartes et recherche d'adresses » à la section 4.
+**Nous n'utilisons aucun cookie de suivi, d'analyse ou de publicité.** La mesure d'audience du site n'utilise aucun cookie et remplit les conditions d'exemption de consentement de la CNIL (voir « Mesure d'audience du site » à la section 1) ; vous pouvez vous y opposer à tout moment (voir section 7). Aucun consentement n'est donc requis : le cookie de session est strictement nécessaire au fonctionnement du service, et le cookie lang ne fait que mémoriser un choix que vous avez fait. Notez que l'affichage d'une carte amène votre navigateur à demander des tuiles directement au fournisseur du style sélectionné — voir « Affichage des cartes et recherche d'adresses » à la section 4.
 
 ---
 

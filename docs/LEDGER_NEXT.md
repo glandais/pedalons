@@ -878,26 +878,9 @@ Toute modification de
 `privacy/privacy-policy.{fr,en}.md` se fait **en parité FR/EN**, et le texte étant un asset de
 l'app mobile, un changement n'y apparaît qu'avec la build suivante.
 
-- [ ] `LEGAL-19` **Déclarer la mesure d'audience du site (S)** — plan [`2026-10-15-web-analytics.md`](plans/2026-10-15-web-analytics.md) (§5). La
-      politique promet « aucun outil d'analyse ou de suivi » (§3, l.203) et ne prévoit aucune
-      opposition à une mesure d'audience : elle deviendrait fausse le jour où `WEB-90` s'allume. En
-      parité FR/EN : une sous-section « Mesure d'audience du site » au §1 (site seulement, sans
-      cookie ni session, IP non conservée, type de page et, pour une page d'équipe,
-      **l'identifiant de l'équipe tel qu'il figure dans l'adresse**, équipes privées comprises ;
-      pays seul déduit sur nos serveurs),
-      la liste du §2, une ligne d'intérêt légitime exempté au §3 et la réécriture de la l.203, une
-      phrase « auto-hébergé » au §4, la durée de 24 mois au §6 (statistiques agrégées comprises),
-      « les requêtes de mesure n'y figurent pas » aux journaux serveur (§1 l.48, §6 l.337) et « les
-      statistiques d'audience ne sont pas sauvegardées » au paragraphe Sauvegardes (§6 l.342), le
-      mécanisme d'opposition au §7 (DNT et GPC, seul moyen global ; interrupteur « sur le site :
-      Profil → Confidentialité, ou la page Confidentialité », valable **pour ce navigateur et ce
-      site uniquement** ; « l'application ne mesure rien »), la clé `pedalons-analytics-optout` et
-      la conclusion de la l.446 au §8. Relire les conditions d'exemption sur cnil.fr. La politique
-      est en ligne **avant** le drapeau de prod. Annonce (décidée le 15 octobre 2026) : **mise en
-      ligne avant l'ouverture publique, sans e-mail**, à condition qu'au déploiement (étape 5 du
-      plan) aucun domaine de prod n'ait de vrais membres ayant accepté la politique actuelle
-      (équipes migrées de biketeam — `MIG-1` encore ouvert le 15 octobre —, bêta-testeurs) ; sinon
-      l'e-mail du §11 à chaque membre, avant l'activation.
+Aucun point ouvert. La mise en ligne de la politique réécrite pour la mesure d'audience
+(`LEGAL-19`), avec sa date d'en-tête recalée et la précondition du §5.3 du plan, fait partie
+d'`OPS-41`.
 
 ---
 

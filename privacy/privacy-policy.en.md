@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Last updated: October 14, 2026**
+**Last updated: October 15, 2026**
 
 This privacy policy describes how Pedalons ("we", "our", "us") collects, uses, and protects your personal data when you use our platform (website, mobile app, GPS device extensions).
 
@@ -45,7 +45,19 @@ Each time you sign in, we record:
 
 - **IP address** and **user agent** (browser/device type): for account security and suspicious activity detection.
 - **Last login date** and **last session usage time**.
-- **Server logs**: date and time, IP address, browser or device, requested page and response code, sometimes your email address and technical identifiers. They are used only for security, abuse detection and troubleshooting — never for profiling or advertising. Your location and your sign-in tokens are never written to them. Kept for 14 days (see section 6).
+- **Server logs**: date and time, IP address, browser or device, requested page and response code, sometimes your email address and technical identifiers. They are used only for security, abuse detection and troubleshooting — never for profiling or advertising. Your location and your sign-in tokens are never written to them. The website's audience measurement requests are not in them (see "Website Audience Measurement" below). Kept for 14 days (see section 6).
+
+### Website Audience Measurement
+
+On the website, we count page views, to know which sites and which pages of the platform are used, with an audience measurement tool we host ourselves. The mobile app and the GPS device extensions do not measure audience.
+
+- **What is counted**: page views, not visits or visitors. For each page view: the site (its domain name); the type of page (for example "ride details") and whether that type of page is open to everyone or members only; for a team page, the team's identifier (the one in its address on pedalons.fr), private teams included, even on a club's own domain; for the first page displayed only, the site you came from, reduced to its domain name; your browser's family and major version, your system, your screen's size category (phone, tablet, computer, large screen; never its exact width) and your country.
+- **What is never counted**: the page's full address, the ride, route, post or page you viewed, the address's parameters (invitation links, sign-in links…), the page title, your account, your teams, or whether you are signed in.
+- **No cookie, no identifier**: no cookie is set and no visitor or session identifier is computed: two page views cannot be linked to each other, neither on the same site nor from one club's site to another.
+- **Your IP address is not kept**: it is used for a few seconds, in memory, to work out your country on our servers, with no third-party service, and to filter out bots and abuse; it is never written to the statistics.
+- **Counters, not a record per page view**: for each page we keep hourly or daily totals, and each characteristic (browser, system, screen, country, referring site) is counted separately. Only the data controller looks at these statistics; they are shared with no one, and not cross-referenced with the platform's other data.
+- **Duration**: 24 months (see section 6). Requests recognised as coming from bots are not counted.
+- **Objecting**: see section 7.
 
 ### Location and GPS Data
 
@@ -162,7 +174,7 @@ If you connect an external GPS service (Hammerhead, Garmin, Wahoo):
 ## 2. How We Collect Your Data
 
 - **Directly from you**: when you create an account, fill in your profile, import GPX files, create content, or connect a GPS service.
-- **Automatically**: IP address and user agent during sign-in; session cookie to maintain your authentication; server logs as described in section 1; and, unless you turn them off, automatic error reports (see "Problem Reports and Error Reports").
+- **Automatically**: IP address and user agent during sign-in; session cookie to maintain your authentication; server logs as described in section 1; on the website, audience measurement as described in section 1 ("Website Audience Measurement"); and, unless you turn them off, automatic error reports (see "Problem Reports and Error Reports").
 - **From the platform Pedalons succeeds**: a Biketeam team administrator can have their team's content transferred from Biketeam's server, as described in section 1 ("Teams Coming from Biketeam").
 - **From other members**: a team administrator who invites you gives us your email address (see "Team Invitations"); a member who reports you or your content gives us the reason, their message and a copy of the reported text (see "Reports and Blocks").
 - **From the beta sign-up form** (see "Beta Programme Sign-ups").
@@ -193,6 +205,7 @@ For each purpose, the legal basis (GDPR) it rests on:
 - **Provide your personal calendar feed to the calendar app you choose**: Consent (voluntary subscription)
 - **Tell you when a beta of our apps opens**: Consent (voluntary sign-up)
 - **Handle your problem reports and fix the app's errors**: Legitimate interest (reliability of the service; automatic reports can be turned off)
+- **Measure the website's audience, anonymously and in aggregate**: Legitimate interest (exempt from consent); you can object, see section 7
 - **Continue the service for teams coming from the previous platform**: Legitimate interest
 - **Operate and support the platform**: Legitimate interest
 
@@ -200,7 +213,7 @@ We **never** use your data for:
 - Targeted advertising
 - Selling, renting or sharing it for commercial purposes
 - Automated profiling or automated decision-making
-- Usage analytics — we run no analytics or tracking tools at all
+- Tracking you across sites, or usage statistics tied to your account
 
 ---
 
@@ -239,6 +252,8 @@ We use technical services to operate the platform:
 - **Hammerhead, Garmin, Wahoo (United States)**
   - *Role*: Sending your routes to your GPS device, only if you connect the service
   - *Data Involved*: OAuth tokens, and the routes you choose to send (track, name; for Wahoo also start point, distance, climb and descent)
+
+The website's audience measurement tool is hosted by us at Scaleway, like the rest of the platform: no other provider receives these statistics.
 
 ### Browser Push Services
 
@@ -293,7 +308,7 @@ Some processing you can trigger involves servers outside the European Union:
 
 - **Third-party GPS services** (Hammerhead, Garmin, Wahoo, United States): only if you connect one, and only for the routes you send them. This transfer is necessary for the service you request, sending the route to your account (Article 49(1)(b) GDPR); Garmin is also certified under the EU–US Data Privacy Framework.
 - **Map backgrounds and terrain**: your device sends your IP address and the area viewed to the provider of the background you choose (see section 4). The "Satellite (ESRI)" background comes from Esri (United States), which is certified under the Data Privacy Framework. Mapterhorn's terrain tiles, requested only if you switch on relief shading or 3-D terrain, are served by Cloudflare (United States), which is certified too. The OpenStreetMap background is served from the United Kingdom, which benefits from a European Commission adequacy decision.
-- **Google's Firebase messaging component**: the mobile app includes it, and it contacts Google's servers when the app starts, even before you sign in or allow notifications, which reveals your device's IP address and creates a Firebase installation identifier. The app and the website include only this messaging part of Firebase: no analytics, advertising or tracking component. On the website, this component is loaded only once you have turned on notifications.
+- **Google's Firebase messaging component**: the mobile app includes it, and it contacts Google's servers when the app starts, even before you sign in or allow notifications, which reveals your device's IP address and creates a Firebase installation identifier. The app and the website include only this messaging part of Firebase: no Firebase analytics, advertising or tracking component. On the website, this component is loaded only once you have turned on notifications.
 - **Push notifications**: Google (Firebase Cloud Messaging) may process their title, their text and your device's push token in the United States; this transfer is covered by the European Commission's standard contractual clauses and by Google LLC's certification under the Data Privacy Framework. On iPhone, they are delivered by Apple (Apple Distribution International, Ireland), whose transfers to the United States are covered by the standard contractual clauses; in a browser, by its vendor's push service, which only receives the encrypted message (see section 4). This happens only while you allow notifications.
 - **Problem reports and error reports**: sent to GitHub (United States), without your name or your e-mail address; this transfer is covered by the European Commission's standard contractual clauses and by GitHub, Inc.'s certification under the Data Privacy Framework.
 - **Team chat channels**: the service chosen by the team's administrators (for example Slack or Discord, operated from the United States) receives the team's announcements. This transfer takes place on the administrators' instructions, who choose the service: Slack and Discord are certified under the Data Privacy Framework; any other service is governed by its own terms.
@@ -334,12 +349,13 @@ Some processing you can trigger involves servers outside the European Union:
 - **Beta programme sign-ups (email address, site, date)**: 1 year after sign-up; ask privacy@pedalons.fr to be removed sooner
 - **Data export archive (ZIP)**: 7 days
 - **Data export request history (request date, status, archive size, expiry date)**: 90 days
-- **Server access logs (date and time, IP address, browser or device, requested address without the coordinates or tokens, response code)**: 14 days
+- **Server access logs (date and time, IP address, browser or device, requested address without the coordinates or tokens, response code; excluding audience measurement requests, which are not written to them)**: 14 days
+- **Website audience statistics (per-page counters, without IP address, identifier or session; aggregated statistics included)**: 24 months. For requests recognised as coming from bots, which are not counted, the requested page and the user agent: 30 days
 - **Data after account deletion**: Erased immediately (see section 7)
 
 Expired data is erased from the database by a clean-up that runs every night, so it may remain stored for up to 24 hours beyond the period shown.
 
-**Backups.** Every night we take a complete copy of the database and of the uploaded files, stored on a separate server in France; the last 30 copies are kept, and older ones are deleted automatically. Data that is deleted or erased, including when you delete your account, can therefore remain in our backups for up to 30 days. Backups are encrypted (see section 9) and used only to restore the service after an incident.
+**Backups.** Every night we take a complete copy of the database and of the uploaded files, stored on a separate server in France; the last 30 copies are kept, and older ones are deleted automatically. Data that is deleted or erased, including when you delete your account, can therefore remain in our backups for up to 30 days. Backups are encrypted (see section 9) and used only to restore the service after an incident. The website's audience statistics are not backed up.
 
 ---
 
@@ -352,7 +368,7 @@ Under the General Data Protection Regulation (GDPR), you have the following righ
 - **Right to erasure** ("right to be forgotten"): request deletion of your data.
 - **Right to restriction of processing**: temporarily restrict the use of your data.
 - **Right to data portability**: receive your data in a structured, machine-readable format.
-- **Right to object**: object to processing based on legitimate interest.
+- **Right to object**: object to processing based on legitimate interest. For the website's audience measurement: turn on Do Not Track or Global Privacy Control in your browser, which applies to all our sites; or, on the website, use the switch under **Profile → Privacy** or on the **Privacy** page (/privacy). That switch applies only to this browser and this site: repeat it on each club's site and in each browser. The app measures nothing.
 - **Right to withdraw consent**: at any time, without affecting the lawfulness of prior processing.
 
 ### Export your data yourself
@@ -440,10 +456,14 @@ Pedalons uses a minimal number of cookies and local storage items:
   - *Type*: sessionStorage
   - *Purpose*: Keep a team invitation, or a team transfer request from Biketeam, while you sign in
   - *Duration*: Until the tab is closed
+- **pedalons-analytics-optout**
+  - *Type*: localStorage
+  - *Purpose*: Remember that you object to audience measurement, on this site and in this browser only
+  - *Duration*: Until you withdraw your objection or clear the site's data in your browser
 
 When you are signed in, the language, units and theme saved in your account take precedence over the local copy. For the other data kept by the mobile app and by the Karoo and Garmin extensions, see "Data Stored Locally on Your Device" in section 1.
 
-**We do not use any tracking, analytics, or advertising cookies.** No cookie consent is therefore required: the session cookie is strictly necessary for the service to function, and the lang cookie only remembers a choice you made. Note that displaying a map causes your browser to request map tiles directly from the provider of the style you selected — see "Map Display and Address Search" in section 4.
+**We do not use any tracking, analytics, or advertising cookies.** The website's audience measurement uses no cookie and meets the CNIL's conditions for exemption from consent (see "Website Audience Measurement" in section 1); you can object to it at any time (see section 7). No consent is therefore required: the session cookie is strictly necessary for the service to function, and the lang cookie only remembers a choice you made. Note that displaying a map causes your browser to request map tiles directly from the provider of the style you selected — see "Map Display and Address Search" in section 4.
 
 ---
 
