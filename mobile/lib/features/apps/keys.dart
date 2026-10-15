@@ -9,4 +9,5 @@ class AppsPageKeys {
   final betaEmailField = const _AppsPageKey('betaEmailField');
   final betaSentState = const _AppsPageKey('betaSentState');
   final betaSubmitButton = const _AppsPageKey('betaSubmitButton');
+  final karooShareButton = const _AppsPageKey('karooShareButton');
 }

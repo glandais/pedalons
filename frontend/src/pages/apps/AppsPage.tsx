@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useForm } from '@mantine/form'
 import {
+  Anchor,
   Container,
   Stack,
   Title,
@@ -26,7 +27,12 @@ import {
 import { signUpForBeta } from '@/api/endpoints/beta-signups/beta-signups'
 import { useInstallOffer } from '@/lib/install/useInstallOffer'
 
-const KAROO_RELEASES_URL = 'https://github.com/glandais/pedalons/releases?q=karoo'
+// The karoo-latest release, rewritten on every karoo.X.Y.Z tag (karoo/PUBLISH.md). A GitHub URL on
+// purpose: the Companion's sideloading is only verified by Hammerhead for GitHub links.
+const KAROO_APK_URL =
+  'https://github.com/glandais/pedalons/releases/download/karoo-latest/pedalons.apk'
+const KAROO_SIDELOADING_URL =
+  'https://support.hammerhead.io/hc/en-us/articles/31576497036827-Companion-App-Sideloading'
 const APP_STORE_URL = 'https://apps.apple.com/app/id6761760079'
 
 type AppStatus = 'available' | 'comingSoon' | 'installed'
@@ -155,16 +161,27 @@ export function AppsPage() {
             description={t('apps.karoo.description')}
             status="available"
             action={
-              <Button
-                component="a"
-                href={KAROO_RELEASES_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                variant="light"
-                rightSection={<IconExternalLink size={16} />}
-              >
-                {t('apps.karoo.download')}
-              </Button>
+              <Stack gap="xs">
+                <Button
+                  component="a"
+                  href={KAROO_APK_URL}
+                  variant="light"
+                  rightSection={<IconDownload size={16} />}
+                >
+                  {t('apps.karoo.download')}
+                </Button>
+                <Text size="xs" c="dimmed">
+                  {t('apps.karoo.install')}
+                </Text>
+                <Anchor
+                  href={KAROO_SIDELOADING_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  size="xs"
+                >
+                  {t('apps.karoo.instructions')}
+                </Anchor>
+              </Stack>
             }
           />
         </SimpleGrid>

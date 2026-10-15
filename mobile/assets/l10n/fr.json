@@ -1424,7 +1424,9 @@
     "karoo": {
       "title": "Karoo",
       "description": "Suivez vos sorties directement sur votre Hammerhead Karoo.",
-      "download": "Télécharger l'APK"
+      "share": "Envoyer au Karoo",
+      "shareHint": "Dans le menu de partage, choisissez Hammerhead Companion : le Karoo, connecté au Wi-Fi, propose alors d'installer l'application, puis ses mises à jour.",
+      "instructions": "Instructions détaillées chez Hammerhead (en anglais)"
     },
     "mobile": {
       "title": "Application mobile",

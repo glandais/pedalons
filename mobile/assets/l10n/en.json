@@ -1424,7 +1424,9 @@
     "karoo": {
       "title": "Karoo",
       "description": "Track your rides directly on your Hammerhead Karoo.",
-      "download": "Download the APK"
+      "share": "Send to the Karoo",
+      "shareHint": "In the share sheet, pick Hammerhead Companion: the Karoo, on Wi-Fi, then offers to install the app, and later its updates.",
+      "instructions": "Detailed instructions from Hammerhead"
     },
     "mobile": {
       "title": "Mobile app",

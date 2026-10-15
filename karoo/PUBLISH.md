@@ -37,6 +37,11 @@ How Karoo finds that manifest — three links, none to be changed lightly:
    here: "Latest" is repository-wide, and the first mobile or backend release would take it. The
    in-place rewrite requires GitHub's immutable releases to stay off on the repository.
 
+`karoo-latest` also holds the current `pedalons.apk`: the stable download link of the site's
+`/applications` page and of the mobile app's « Envoyer au Karoo » button (native share sheet → Hammerhead
+Companion). A GitHub URL rather than a pedalons.fr redirect, since Hammerhead only vouches for GitHub
+links in Companion sideloading.
+
 Moving the manifest elsewhere means changing the redirect only. The Hammerhead dashboard can take the
 GitHub URL directly: it is editable there at any time.
 

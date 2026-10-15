@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../../../core/adaptive/content_width_constraint.dart';
 import '../../../../core/pdl/pdl.dart';
@@ -15,8 +16,13 @@ import '../../../../core/widgets/back_or_home_button.dart';
 import '../../../../keys.dart';
 import '../../data/beta_signup_repository.dart';
 
-const String _kKarooReleasesUrl =
-    'https://github.com/glandais/pedalons/releases?q=karoo';
+/// La release `karoo-latest`, réécrite à chaque tag `karoo.X.Y.Z`
+/// (`karoo/PUBLISH.md`). Une URL GitHub exprès : Hammerhead n'a vérifié
+/// l'installation par le Companion que pour des liens GitHub.
+const String _kKarooApkUrl =
+    'https://github.com/glandais/pedalons/releases/download/karoo-latest/pedalons.apk';
+const String _kKarooSideloadingUrl =
+    'https://support.hammerhead.io/hc/en-us/articles/31576497036827-Companion-App-Sideloading';
 const String _kAppStoreUrl = 'https://apps.apple.com/app/id6761760079';
 
 class AppsPage extends ConsumerStatefulWidget {
@@ -109,11 +115,28 @@ class _AppsPageState extends ConsumerState<AppsPage> {
                 title: 'apps.karoo.title'.tr(),
                 description: 'apps.karoo.description'.tr(),
                 available: true,
-                action: PdlButton(
-                  label: 'apps.karoo.download'.tr(),
-                  icon: PdlIcons.openExternal,
-                  variant: PdlButtonVariant.outline,
-                  onPressed: () => openLink(context, _kKarooReleasesUrl),
+                action: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Builder(
+                      builder: (BuildContext buttonContext) => PdlButton(
+                        key: keys.apps.karooShareButton,
+                        label: 'apps.karoo.share'.tr(),
+                        icon: PdlIcons.share,
+                        variant: PdlButtonVariant.outline,
+                        onPressed: () => _shareKarooApk(buttonContext),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text('apps.karoo.shareHint'.tr(), style: t.sub),
+                    PdlButton(
+                      label: 'apps.karoo.instructions'.tr(),
+                      icon: PdlIcons.openExternal,
+                      variant: PdlButtonVariant.text,
+                      size: PdlButtonSize.sm,
+                      onPressed: () => openLink(context, _kKarooSideloadingUrl),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: PdlSpacing.section),
@@ -186,6 +209,23 @@ class _AppsPageState extends ConsumerState<AppsPage> {
       ),
     );
   }
+}
+
+/// Le Karoo s'installe par la feuille de partage : l'APK partagé vers
+/// Hammerhead Companion fait apparaître « Install » sur le Karoo. Le lien
+/// part en `uri`, que le Companion reçoit tel quel.
+Future<void> _shareKarooApk(BuildContext context) async {
+  final RenderBox? box = context.findRenderObject() as RenderBox?;
+  await SharePlus.instance.share(
+    ShareParams(
+      uri: Uri.parse(_kKarooApkUrl),
+      title: 'apps.karoo.title'.tr(),
+      // Sur iPad la feuille s'ancre au bouton.
+      sharePositionOrigin: box == null
+          ? Rect.zero
+          : box.localToGlobal(Offset.zero) & box.size,
+    ),
+  );
 }
 
 class _SentState extends StatelessWidget {

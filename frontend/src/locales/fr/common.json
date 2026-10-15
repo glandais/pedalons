@@ -211,6 +211,8 @@
   "apps.garmin.title": "Garmin",
   "apps.karoo.description": "Suivez vos sorties directement sur votre Hammerhead Karoo.",
   "apps.karoo.download": "Télécharger l'APK",
+  "apps.karoo.install": "Depuis votre téléphone : appui long sur le bouton, puis Partager → Hammerhead Companion. Le Karoo, connecté au Wi-Fi, propose alors d'installer l'application, puis ses mises à jour.",
+  "apps.karoo.instructions": "Instructions détaillées chez Hammerhead (en anglais)",
   "apps.karoo.title": "Karoo",
   "apps.mobile.description": "Disponible sur iPhone dans l'App Store. La version Android arrive bientôt.",
   "apps.mobile.download": "Télécharger sur l'App Store",

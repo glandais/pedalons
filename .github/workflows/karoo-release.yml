@@ -113,8 +113,9 @@ jobs:
             karoo/screenshot-*.png
             karoo/manifest.json
 
-      # The stable URL: every APK's MANIFEST_URL (https://www.pedalons.fr/karoo/manifest.json)
-      # redirects here. Never "Latest", never deleted; its only asset is rewritten in place, which
+      # The stable URLs: every APK's MANIFEST_URL (https://www.pedalons.fr/karoo/manifest.json)
+      # redirects to its manifest.json, and the site's and the mobile app's install buttons
+      # (frontend AppsPage, mobile apps_page.dart) point at its pedalons.apk. Never "Latest", never deleted; its assets are rewritten in place, which
       # requires the repository's immutable releases to stay off. The tag does not match `karoo.*`,
       # and a tag pushed with GITHUB_TOKEN triggers no workflow anyway.
       - name: Update the karoo-latest manifest
@@ -125,4 +126,4 @@ jobs:
             gh release create karoo-latest --target "$GITHUB_SHA" --latest=false \
               --title "Karoo — manifest courant" \
               --notes "Pointeur vers la dernière version Karoo (karoo/PUBLISH.md). Ne pas supprimer."
-          gh release upload karoo-latest karoo/manifest.json --clobber
+          gh release upload karoo-latest karoo/manifest.json karoo/pedalons.apk --clobber
