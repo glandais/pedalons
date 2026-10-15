@@ -518,6 +518,28 @@ décision produit : `RideTemplateGroupRequest` reste sans champ.
       l'application créée, basculer le domaine se fait dans l'admin (protocole du credential
       Garmin) : les connexions OAuth 1.0a sont alors abandonnées à leur prochain envoi et chacun
       reconnecte Garmin. Taille : M.
+- [ ] `API-110` **App Garmin : rendre les Edge plus anciens éligibles** — `manifest.xml` exige
+      `minApiLevel="3.3.0"` sans raison trouvée dans le code : avec `3.1.0`, `edgeexplore`
+      (240×400), `edge520plus` et `edge820` (200×265) compilent (essai du 15 octobre 2026 sur une
+      copie, SDK 9.2.0), et la référence de l'Edge 1030 restée en API 3.2.5 recevrait aussi l'app.
+      Rien n'a tourné à l'exécution : vérifier sur appareil ou simulateur l'appairage, les listes et
+      le téléchargement FIT, et la lisibilité du petit écran 200×265 (QR code compris). Ajouter les
+      ids au manifest **et** à `DEVICES` du `Makefile`, corriger au passage le commentaire du
+      manifest (« API 3.2.0+ »), et la ligne « Requires Connect IQ API 3.3.0 » du README.
+      Hors d'atteinte : `edge130`/`edge130plus` (pas de type `watch-app`), `edge_1000`/`edge_520`
+      (API 2.4). Taille : S.
+- [ ] `API-111` **App Garmin sur les montres qui suivent un parcours** — l'app ne cible que les
+      Edge, alors qu'elle compile sans changement (essai du 15 octobre 2026) pour Venu X1, fenix 6
+      Pro à 9, epix 2, Enduro 3/4, Forerunner 245 à 970, Instinct 2/3/E, MARQ. Ce qui manque est
+      l'interface : les décalages fixes de `VerticalLayout.mc` (`AUD-27`) sont rognés sur un écran
+      rond, le QR de `LoginView.mc` doit tenir dans le carré inscrit (~0,7 × le diamètre), et la
+      navigation doit marcher aux boutons seuls (fenix 6, FR 745/945, Instinct). Ordre proposé :
+      `venux1` (rectangulaire, tactile) ; puis fenix 7/8, epix 2, Enduro, FR 265/965/970 ; les
+      Instinct à petit écran (163–176 px, 96–128 Ko) en dernier ou jamais. Avant tout ajout,
+      vérifier modèle par modèle que la montre navigue un parcours (non confirmé par une source
+      Garmin) ; Venu 2–4, vivoactive et FR 165/170/55 restent dehors tant que ce n'est pas établi.
+      Les GPS de randonnée (GPSMAP, Montana, Oregon) sont exclus : API trop basse, et ils prennent
+      le GPX, pas le FIT (doc `PersistedContent` du SDK). Taille : M (L avec les Instinct).
 
 ### Vie privée : ce que la politique doit encore décrire faute de mieux
 
