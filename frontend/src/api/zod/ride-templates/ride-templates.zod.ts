@@ -89,6 +89,12 @@ export const ListTemplatesResponse = zod
               .describe(
                 "The team's RIDE tags of the template, sorted by label. Copied onto a ride created from it: a client prefills the ride's tagIds with them, editable before and after."
               ),
+            nextNumber: zod
+              .int()
+              .optional()
+              .describe(
+                "The number the next ride created from this template takes: a client prefills the ride's name with « name #nextNumber » and sends RideRequest.templateId, which raises it by one. Null: the template numbers nothing."
+              ),
           })
           .describe('Ride template response')
       )
@@ -115,6 +121,7 @@ export const createTemplateBodyMarkdownMax = 100000
 export const createTemplateBodyGroupsItemNameMax = 200
 
 export const createTemplateBodyGroupsItemNameRegExp = new RegExp('\\S')
+export const createTemplateBodyNextNumberMin = 0
 
 export const CreateTemplateBody = zod
   .object({
@@ -155,6 +162,13 @@ export const CreateTemplateBody = zod
       .optional()
       .describe(
         "IDs (TSID) of the team's RIDE tags the template carries (copied onto the rides created from it), replacing the whole set — at most 10, each a tag of this team and of kind RIDE, else 400 (TAG_INVALID, TOO_MANY_TAGS). An empty list removes them all. Omitted: none on a creation, left as they are on an update."
+      ),
+    nextNumber: zod
+      .int()
+      .min(createTemplateBodyNextNumberMin)
+      .optional()
+      .describe(
+        'The number the next ride created from this template takes: a client titles it « name #nextNumber » and the creation of that ride (RideRequest.templateId) raises it by one. Null: the template numbers nothing.'
       ),
   })
   .describe('Ride template request')
@@ -215,6 +229,12 @@ export const CreateTemplateResponse = zod
       .describe(
         "The team's RIDE tags of the template, sorted by label. Copied onto a ride created from it: a client prefills the ride's tagIds with them, editable before and after."
       ),
+    nextNumber: zod
+      .int()
+      .optional()
+      .describe(
+        "The number the next ride created from this template takes: a client prefills the ride's name with « name #nextNumber » and sends RideRequest.templateId, which raises it by one. Null: the template numbers nothing."
+      ),
   })
   .describe('Ride template response')
 
@@ -235,6 +255,7 @@ export const updateTemplateBodyMarkdownMax = 100000
 export const updateTemplateBodyGroupsItemNameMax = 200
 
 export const updateTemplateBodyGroupsItemNameRegExp = new RegExp('\\S')
+export const updateTemplateBodyNextNumberMin = 0
 
 export const UpdateTemplateBody = zod
   .object({
@@ -275,6 +296,13 @@ export const UpdateTemplateBody = zod
       .optional()
       .describe(
         "IDs (TSID) of the team's RIDE tags the template carries (copied onto the rides created from it), replacing the whole set — at most 10, each a tag of this team and of kind RIDE, else 400 (TAG_INVALID, TOO_MANY_TAGS). An empty list removes them all. Omitted: none on a creation, left as they are on an update."
+      ),
+    nextNumber: zod
+      .int()
+      .min(updateTemplateBodyNextNumberMin)
+      .optional()
+      .describe(
+        'The number the next ride created from this template takes: a client titles it « name #nextNumber » and the creation of that ride (RideRequest.templateId) raises it by one. Null: the template numbers nothing.'
       ),
   })
   .describe('Ride template request')
@@ -334,6 +362,12 @@ export const UpdateTemplateResponse = zod
       )
       .describe(
         "The team's RIDE tags of the template, sorted by label. Copied onto a ride created from it: a client prefills the ride's tagIds with them, editable before and after."
+      ),
+    nextNumber: zod
+      .int()
+      .optional()
+      .describe(
+        "The number the next ride created from this template takes: a client prefills the ride's name with « name #nextNumber » and sends RideRequest.templateId, which raises it by one. Null: the template numbers nothing."
       ),
   })
   .describe('Ride template response')
@@ -402,6 +436,12 @@ export const GetTemplateResponse = zod
       )
       .describe(
         "The team's RIDE tags of the template, sorted by label. Copied onto a ride created from it: a client prefills the ride's tagIds with them, editable before and after."
+      ),
+    nextNumber: zod
+      .int()
+      .optional()
+      .describe(
+        "The number the next ride created from this template takes: a client prefills the ride's name with « name #nextNumber » and sends RideRequest.templateId, which raises it by one. Null: the template numbers nothing."
       ),
   })
   .describe('Ride template response')

@@ -49,5 +49,41 @@ public record RideRequest(
                     + " most 10, each a tag of this team and of kind RIDE, else 400 (TAG_INVALID,"
                     + " TOO_MANY_TAGS). An empty list removes them all. Omitted: none on a"
                     + " creation, left as they are on an update.")
-        List<String> tagIds)
-    implements WithVisibility {}
+        List<String> tagIds,
+    @Nullable
+        @Schema(
+            description =
+                "ID (TSID) of the team's template the ride is created from. On a creation, raises"
+                    + " the template's nextNumber by one when it has one; ignored on an update, and"
+                    + " when the template no longer exists.")
+        String templateId)
+    implements WithVisibility {
+
+  /** Without a template: the shape this record had before API-108. */
+  public RideRequest(
+      String name,
+      MediaDto media,
+      EventDateTime dateTime,
+      Status status,
+      Visibility visibility,
+      @Nullable String routeSlug,
+      @Nullable String startPlaceId,
+      @Nullable String endPlaceId,
+      @Nullable EventDateTime publishAt,
+      List<GroupRequest> groups,
+      @Nullable List<String> tagIds) {
+    this(
+        name,
+        media,
+        dateTime,
+        status,
+        visibility,
+        routeSlug,
+        startPlaceId,
+        endPlaceId,
+        publishAt,
+        groups,
+        tagIds,
+        null);
+  }
+}

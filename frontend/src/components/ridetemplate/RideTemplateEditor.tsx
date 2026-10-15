@@ -104,6 +104,18 @@ export function RideTemplateEditor({
           />
         </Stack>
 
+        <NumberInput
+          label={t('rideTemplates.form.nextNumber.label')}
+          description={t('rideTemplates.form.nextNumber.description')}
+          placeholder={t('rideTemplates.form.nextNumber.placeholder')}
+          min={0}
+          allowDecimal={false}
+          allowNegative={false}
+          value={form.values.nextNumber ?? ''}
+          onChange={(val) => form.setFieldValue('nextNumber', val === '' ? undefined : Number(val))}
+          disabled={isPending}
+        />
+
         <TagPicker
           teamSlug={teamSlug}
           type="RIDE"

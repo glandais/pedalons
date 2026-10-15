@@ -252,6 +252,17 @@ public class BiketeamTestData {
     return new RideView(ride.getName(), ride.getDateTime(), ride.getCreatedBy().getId(), groups);
   }
 
+  /** The next number of a migrated ride template (docs/LEDGER_*.md API-108). */
+  @Transactional
+  public @Nullable Integer templateNextNumber(long teamId, String name) {
+    return em.createQuery(
+            "select t.nextNumber from RideTemplate t where t.team.id = :t and t.name = :n",
+            Integer.class)
+        .setParameter("t", teamId)
+        .setParameter("n", name)
+        .getSingleResult();
+  }
+
   /** The end stored on a migrated ride or trip, and what the calculator makes of it now. */
   public record EndView(@Nullable Instant stored, Instant computed) {}
 

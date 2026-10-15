@@ -35,4 +35,6 @@ export interface RideRequest {
   groups: GroupRequest[]
   /** IDs (TSID) of the team's RIDE tags the ride carries, replacing the whole set — at most 10, each a tag of this team and of kind RIDE, else 400 (TAG_INVALID, TOO_MANY_TAGS). An empty list removes them all. Omitted: none on a creation, left as they are on an update. */
   tagIds?: string[]
+  /** ID (TSID) of the team's template the ride is created from. On a creation, raises the template's nextNumber by one when it has one; ignored on an update, and when the template no longer exists. */
+  templateId?: string
 }

@@ -11,6 +11,7 @@ import fr.pedalons.enums.Visibility;
 import java.time.Instant;
 import java.util.List;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.jspecify.annotations.Nullable;
 
 @Schema(description = "Ride template response")
 @ValidateSchema
@@ -32,7 +33,14 @@ public record RideTemplateDto(
                     + " from it: a client prefills the ride's tagIds with them, editable before and"
                     + " after.",
             required = true)
-        List<TagDto> tags) {
+        List<TagDto> tags,
+    @Nullable
+        @Schema(
+            description =
+                "The number the next ride created from this template takes: a client prefills the"
+                    + " ride's name with « name #nextNumber » and sends RideRequest.templateId,"
+                    + " which raises it by one. Null: the template numbers nothing.")
+        Integer nextNumber) {
 
   /**
    * @param tags the tags of this whole page of templates, resolved in one query by {@code
@@ -54,6 +62,7 @@ public record RideTemplateDto(
         template.getUpdatedAt(),
         groupDtos.size(),
         groupDtos,
-        tags.forContent(template.getId()));
+        tags.forContent(template.getId()),
+        template.getNextNumber());
   }
 }

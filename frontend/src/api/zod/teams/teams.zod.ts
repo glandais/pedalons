@@ -16117,6 +16117,12 @@ export const GetTeamDashboardResponse = zod
                       .describe(
                         "The team's RIDE tags of the template, sorted by label. Copied onto a ride created from it: a client prefills the ride's tagIds with them, editable before and after."
                       ),
+                    nextNumber: zod
+                      .int()
+                      .optional()
+                      .describe(
+                        "The number the next ride created from this template takes: a client prefills the ride's name with « name #nextNumber » and sends RideRequest.templateId, which raises it by one. Null: the template numbers nothing."
+                      ),
                   })
                   .describe('Ride template response')
               )

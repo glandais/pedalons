@@ -32,6 +32,9 @@ abstract class RideTemplateRequest with _$RideTemplateRequest {
 
     /// IDs (TSID) of the team's RIDE tags the template carries (copied onto the rides created from it), replacing the whole set — at most 10, each a tag of this team and of kind RIDE, else 400 (TAG_INVALID, TOO_MANY_TAGS). An empty list removes them all. Omitted: none on a creation, left as they are on an update.
     List<String>? tagIds,
+
+    /// The number the next ride created from this template takes: a client titles it « name #nextNumber » and the creation of that ride (RideRequest.templateId) raises it by one. Null: the template numbers nothing.
+    int? nextNumber,
   }) = _RideTemplateRequest;
 
   factory RideTemplateRequest.fromJson(Map<String, Object?> json) =>

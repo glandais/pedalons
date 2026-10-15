@@ -254,6 +254,15 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
     assertEquals(Instant.parse("2025-07-02T06:00:00Z"), stages.get(1).dateTime());
   }
 
+  /** Biketeam's increment is the number the template's next ride takes (API-108). */
+  @Test
+  void rideTemplate_keepsBiketeamsIncrement_asItsNextNumber() throws IOException {
+    migrate(USER4, true, false);
+    long teamId = biketeamData.team(domain, TEAM).id();
+
+    assertEquals(Integer.valueOf(7), biketeamData.templateNextNumber(teamId, "Sortie du samedi"));
+  }
+
   /** The import goes through the same creation as the API: every end is stored (API-85). */
   @Test
   void importedRidesAndTrips_haveTheirEndStored() throws IOException {

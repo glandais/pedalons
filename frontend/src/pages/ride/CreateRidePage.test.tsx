@@ -119,6 +119,13 @@ describe('CreateRidePage — « Créer depuis un modèle »', () => {
     expect(screen.getByTestId('editor').textContent).toBe('(vide)')
   })
 
+  it('numbers the ride when the template counts its rides (API-108)', () => {
+    state.template = { ...TEMPLATE, nextNumber: 42 }
+    renderAt('/teams/velo-club/rides/new?template=sortie-du-dimanche')
+
+    expect(screen.getByTestId('editor').textContent).toBe('Sortie du dimanche #42')
+  })
+
   it('prefers the router state, and then reads nothing', () => {
     renderAt('/teams/velo-club/rides/new', { template: { ...TEMPLATE, name: 'Depuis le web' } })
 

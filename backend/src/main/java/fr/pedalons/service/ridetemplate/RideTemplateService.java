@@ -97,6 +97,7 @@ public class RideTemplateService {
     RideTemplate template =
         new RideTemplate(
             creator, team, request.name(), slug, request.markdown(), visibility, request.status());
+    template.setNextNumber(request.nextNumber());
 
     templateRepository.persistAndFlush(template);
 
@@ -141,6 +142,7 @@ public class RideTemplateService {
     template.setMarkdown(request.markdown());
     template.setVisibility(request.visibility());
     template.setStatus(request.status());
+    template.setNextNumber(request.nextNumber());
 
     // Update groups - clear and re-add existing or create new
     Map<Long, RideTemplateGroup> existingGroups =

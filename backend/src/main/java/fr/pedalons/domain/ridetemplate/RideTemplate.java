@@ -11,6 +11,7 @@ import java.util.List;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.jspecify.annotations.Nullable;
 
 @Setter
 @Getter
@@ -49,6 +50,14 @@ public class RideTemplate extends BaseEntity {
   @Enumerated(EnumType.STRING)
   @Column(name = "status", nullable = false, length = 20)
   private Status status = Status.PUBLISHED;
+
+  /**
+   * The number the next ride created from this template takes (« Sortie du jeudi #42 »), raised by
+   * one each time; null when the template numbers nothing (docs/LEDGER_*.md API-108).
+   */
+  @Column(name = "next_number")
+  @Nullable
+  private Integer nextNumber;
 
   // Without it the groups come back in whatever order the table holds them, which an update
   // reshuffles: a renamed group moves to the end.

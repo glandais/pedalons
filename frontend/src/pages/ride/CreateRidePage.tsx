@@ -128,6 +128,8 @@ export function CreateRidePage() {
         data: {
           ...data,
           groups: filteredGroups,
+          // Raises the template's number, if it has one, for the next ride (ledger API-108).
+          templateId: templateValues?.id,
         },
       },
       {
@@ -177,10 +179,14 @@ export function CreateRidePage() {
   )
 }
 
-/** A template's values as a new ride starts from them: the groups are new, and routed nowhere. */
+/**
+ * A template's values as a new ride starts from them: numbered « name #n » when the template counts
+ * its rides (ledger API-108), with new groups routed nowhere.
+ */
 function templateForNewRide(template: RideTemplateDto): RideTemplateDto {
   return {
     ...template,
+    name: template.nextNumber != null ? `${template.name} #${template.nextNumber}` : template.name,
     groups: template.groups.map((g) => ({
       ...g,
       routeSlug: undefined,

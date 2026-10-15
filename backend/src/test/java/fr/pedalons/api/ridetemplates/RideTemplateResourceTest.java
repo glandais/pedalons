@@ -1,16 +1,23 @@
 package fr.pedalons.api.ridetemplates;
 
+import static fr.pedalons.util.WallTimes.wall;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
 
 import fr.pedalons.api.AbstractResourceTest;
 import fr.pedalons.dto.common.asset.MediaDto;
+import fr.pedalons.dto.rides.request.GroupRequest;
+import fr.pedalons.dto.rides.request.RideRequest;
 import fr.pedalons.dto.ridetemplates.request.RideTemplateGroupRequest;
 import fr.pedalons.dto.ridetemplates.request.RideTemplateRequest;
 import fr.pedalons.enums.Status;
 import fr.pedalons.enums.Visibility;
 import io.quarkus.test.junit.QuarkusTest;
+import io.restassured.response.ValidatableResponse;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -134,6 +141,123 @@ class RideTemplateResourceTest extends AbstractResourceTest {
         .then()
         .statusCode(200)
         .body("templates", is(notNullValue()));
+  }
+
+  // ==================== Next number (docs/LEDGER_*.md API-108) ====================
+
+  private String createNumberedTemplate(String name, @Nullable Integer nextNumber) {
+    RideTemplateRequest base = createValidRequest(name);
+    return given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .contentType("application/json")
+        .body(
+            new RideTemplateRequest(
+                base.name(),
+                base.markdown(),
+                base.visibility(),
+                base.status(),
+                base.groups(),
+                null,
+                nextNumber))
+        .when()
+        .post("/api/teams/" + team1Slug + "/ride-templates")
+        .then()
+        .statusCode(201)
+        .body("nextNumber", nextNumber == null ? nullValue() : equalTo(nextNumber))
+        .extract()
+        .path("slug");
+  }
+
+  private void createRideFrom(String teamSlug, @Nullable String templateId) {
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .contentType("application/json")
+        .body(
+            new RideRequest(
+                "Sortie numérotée",
+                MediaDto.builder().build(),
+                wall(Instant.now().plus(3, ChronoUnit.DAYS)),
+                Status.PUBLISHED,
+                Visibility.TEAM,
+                null,
+                null,
+                null,
+                null,
+                List.of(new GroupRequest(null, "A", null, null, null, null)),
+                null,
+                templateId))
+        .when()
+        .post("/api/teams/" + teamSlug + "/rides")
+        .then()
+        .statusCode(201);
+  }
+
+  private ValidatableResponse getTemplateResponse(String slug) {
+    return given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .when()
+        .get("/api/teams/" + team1Slug + "/ride-templates/" + slug)
+        .then()
+        .statusCode(200);
+  }
+
+  @Test
+  void nextNumber_isRaisedByEachRideCreatedFromTheTemplate() {
+    String slug = createNumberedTemplate("Jeudi", 41);
+    String id = getTemplateResponse(slug).extract().path("id");
+
+    createRideFrom(team1Slug, id);
+    createRideFrom(team1Slug, id);
+    // A ride created without the template leaves its number alone.
+    createRideFrom(team1Slug, null);
+
+    getTemplateResponse(slug).body("nextNumber", equalTo(43));
+  }
+
+  @Test
+  void nextNumber_null_staysNullWhenARideIsCreatedFromTheTemplate() {
+    String slug = createNumberedTemplate("Samedi", null);
+    String id = getTemplateResponse(slug).extract().path("id");
+
+    createRideFrom(team1Slug, id);
+
+    getTemplateResponse(slug).body("nextNumber", nullValue());
+  }
+
+  @Test
+  void nextNumber_isNotRaisedByARideOfAnotherTeam() {
+    String slug = createNumberedTemplate("Dimanche", 7);
+    String id = getTemplateResponse(slug).extract().path("id");
+
+    // USER1 can create rides in team2 too, but the template is team1's.
+    createRideFrom(team2Slug, id);
+
+    getTemplateResponse(slug).body("nextNumber", equalTo(7));
+  }
+
+  @Test
+  void nextNumber_negative_shouldReturn400() {
+    RideTemplateRequest base = createValidRequest("Négatif");
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .contentType("application/json")
+        .body(
+            new RideTemplateRequest(
+                base.name(),
+                base.markdown(),
+                base.visibility(),
+                base.status(),
+                base.groups(),
+                null,
+                -1))
+        .when()
+        .post("/api/teams/" + team1Slug + "/ride-templates")
+        .then()
+        .statusCode(400);
   }
 
   // ==================== Create Template Tests ====================

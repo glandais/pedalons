@@ -27,7 +27,8 @@ mixin _$RideRequest {
  String? get startPlaceId;/// End place ID (TSID)
  String? get endPlaceId;/// Publication time (for scheduled publishing), a wall time in the ride's zone like dateTime.
  String? get publishAt;/// IDs (TSID) of the team's RIDE tags the ride carries, replacing the whole set — at most 10, each a tag of this team and of kind RIDE, else 400 (TAG_INVALID, TOO_MANY_TAGS). An empty list removes them all. Omitted: none on a creation, left as they are on an update.
- List<String>? get tagIds;
+ List<String>? get tagIds;/// ID (TSID) of the team's template the ride is created from. On a creation, raises the template's nextNumber by one when it has one; ignored on an update, and when the template no longer exists.
+ String? get templateId;
 /// Create a copy of RideRequest
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -41,20 +42,20 @@ $RideRequestCopyWith<RideRequest> get copyWith => _$RideRequestCopyWithImpl<Ride
 @override
 bool operator ==(Object other) {
   final _this = this as RideRequest;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RideRequest&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.media, _this.media) || other.media == _this.media)&&(identical(other.dateTime, _this.dateTime) || other.dateTime == _this.dateTime)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.visibility, _this.visibility) || other.visibility == _this.visibility)&&const DeepCollectionEquality().equals(other.groups, _this.groups)&&(identical(other.routeSlug, _this.routeSlug) || other.routeSlug == _this.routeSlug)&&(identical(other.startPlaceId, _this.startPlaceId) || other.startPlaceId == _this.startPlaceId)&&(identical(other.endPlaceId, _this.endPlaceId) || other.endPlaceId == _this.endPlaceId)&&(identical(other.publishAt, _this.publishAt) || other.publishAt == _this.publishAt)&&const DeepCollectionEquality().equals(other.tagIds, _this.tagIds));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RideRequest&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.media, _this.media) || other.media == _this.media)&&(identical(other.dateTime, _this.dateTime) || other.dateTime == _this.dateTime)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.visibility, _this.visibility) || other.visibility == _this.visibility)&&const DeepCollectionEquality().equals(other.groups, _this.groups)&&(identical(other.routeSlug, _this.routeSlug) || other.routeSlug == _this.routeSlug)&&(identical(other.startPlaceId, _this.startPlaceId) || other.startPlaceId == _this.startPlaceId)&&(identical(other.endPlaceId, _this.endPlaceId) || other.endPlaceId == _this.endPlaceId)&&(identical(other.publishAt, _this.publishAt) || other.publishAt == _this.publishAt)&&const DeepCollectionEquality().equals(other.tagIds, _this.tagIds)&&(identical(other.templateId, _this.templateId) || other.templateId == _this.templateId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as RideRequest;
-  return Object.hash(runtimeType,_this.name,_this.media,_this.dateTime,_this.status,_this.visibility,const DeepCollectionEquality().hash(_this.groups),_this.routeSlug,_this.startPlaceId,_this.endPlaceId,_this.publishAt,const DeepCollectionEquality().hash(_this.tagIds));
+  return Object.hash(runtimeType,_this.name,_this.media,_this.dateTime,_this.status,_this.visibility,const DeepCollectionEquality().hash(_this.groups),_this.routeSlug,_this.startPlaceId,_this.endPlaceId,_this.publishAt,const DeepCollectionEquality().hash(_this.tagIds),_this.templateId);
 }
 
 @override
 String toString() {
   final _this = this as RideRequest;
-  return 'RideRequest(name: ${_this.name}, media: ${_this.media}, dateTime: ${_this.dateTime}, status: ${_this.status}, visibility: ${_this.visibility}, groups: ${_this.groups}, routeSlug: ${_this.routeSlug}, startPlaceId: ${_this.startPlaceId}, endPlaceId: ${_this.endPlaceId}, publishAt: ${_this.publishAt}, tagIds: ${_this.tagIds})';
+  return 'RideRequest(name: ${_this.name}, media: ${_this.media}, dateTime: ${_this.dateTime}, status: ${_this.status}, visibility: ${_this.visibility}, groups: ${_this.groups}, routeSlug: ${_this.routeSlug}, startPlaceId: ${_this.startPlaceId}, endPlaceId: ${_this.endPlaceId}, publishAt: ${_this.publishAt}, tagIds: ${_this.tagIds}, templateId: ${_this.templateId})';
 }
 
 
@@ -65,7 +66,7 @@ abstract mixin class $RideRequestCopyWith<$Res>  {
   factory $RideRequestCopyWith(RideRequest value, $Res Function(RideRequest) _then) = _$RideRequestCopyWithImpl;
 @useResult
 $Res call({
- String name, MediaDto media, String dateTime, String status, String visibility, List<GroupRequest> groups, String? routeSlug, String? startPlaceId, String? endPlaceId, String? publishAt, List<String>? tagIds
+ String name, MediaDto media, String dateTime, String status, String visibility, List<GroupRequest> groups, String? routeSlug, String? startPlaceId, String? endPlaceId, String? publishAt, List<String>? tagIds, String? templateId
 });
 
 
@@ -82,7 +83,7 @@ class _$RideRequestCopyWithImpl<$Res>
 
 /// Create a copy of RideRequest
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? media = null,Object? dateTime = null,Object? status = null,Object? visibility = null,Object? groups = null,Object? routeSlug = freezed,Object? startPlaceId = freezed,Object? endPlaceId = freezed,Object? publishAt = freezed,Object? tagIds = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? media = null,Object? dateTime = null,Object? status = null,Object? visibility = null,Object? groups = null,Object? routeSlug = freezed,Object? startPlaceId = freezed,Object? endPlaceId = freezed,Object? publishAt = freezed,Object? tagIds = freezed,Object? templateId = freezed,}) {
   return _then(RideRequest(
 name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,media: null == media ? _self.media : media // ignore: cast_nullable_to_non_nullable
@@ -95,7 +96,8 @@ as String?,startPlaceId: freezed == startPlaceId ? _self.startPlaceId : startPla
 as String?,endPlaceId: freezed == endPlaceId ? _self.endPlaceId : endPlaceId // ignore: cast_nullable_to_non_nullable
 as String?,publishAt: freezed == publishAt ? _self.publishAt : publishAt // ignore: cast_nullable_to_non_nullable
 as String?,tagIds: freezed == tagIds ? _self.tagIds : tagIds // ignore: cast_nullable_to_non_nullable
-as List<String>?,
+as List<String>?,templateId: freezed == templateId ? _self.templateId : templateId // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 /// Create a copy of RideRequest
@@ -189,10 +191,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String name,  MediaDto media,  String dateTime,  String status,  String visibility,  List<GroupRequest> groups,  String? routeSlug,  String? startPlaceId,  String? endPlaceId,  String? publishAt,  List<String>? tagIds)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String name,  MediaDto media,  String dateTime,  String status,  String visibility,  List<GroupRequest> groups,  String? routeSlug,  String? startPlaceId,  String? endPlaceId,  String? publishAt,  List<String>? tagIds,  String? templateId)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _RideRequest() when $default != null:
-return $default(_that.name,_that.media,_that.dateTime,_that.status,_that.visibility,_that.groups,_that.routeSlug,_that.startPlaceId,_that.endPlaceId,_that.publishAt,_that.tagIds);case _:
+return $default(_that.name,_that.media,_that.dateTime,_that.status,_that.visibility,_that.groups,_that.routeSlug,_that.startPlaceId,_that.endPlaceId,_that.publishAt,_that.tagIds,_that.templateId);case _:
   return orElse();
 
 }
@@ -210,10 +212,10 @@ return $default(_that.name,_that.media,_that.dateTime,_that.status,_that.visibil
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String name,  MediaDto media,  String dateTime,  String status,  String visibility,  List<GroupRequest> groups,  String? routeSlug,  String? startPlaceId,  String? endPlaceId,  String? publishAt,  List<String>? tagIds)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String name,  MediaDto media,  String dateTime,  String status,  String visibility,  List<GroupRequest> groups,  String? routeSlug,  String? startPlaceId,  String? endPlaceId,  String? publishAt,  List<String>? tagIds,  String? templateId)  $default,) {final _that = this;
 switch (_that) {
 case _RideRequest():
-return $default(_that.name,_that.media,_that.dateTime,_that.status,_that.visibility,_that.groups,_that.routeSlug,_that.startPlaceId,_that.endPlaceId,_that.publishAt,_that.tagIds);case _:
+return $default(_that.name,_that.media,_that.dateTime,_that.status,_that.visibility,_that.groups,_that.routeSlug,_that.startPlaceId,_that.endPlaceId,_that.publishAt,_that.tagIds,_that.templateId);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -230,10 +232,10 @@ return $default(_that.name,_that.media,_that.dateTime,_that.status,_that.visibil
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String name,  MediaDto media,  String dateTime,  String status,  String visibility,  List<GroupRequest> groups,  String? routeSlug,  String? startPlaceId,  String? endPlaceId,  String? publishAt,  List<String>? tagIds)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String name,  MediaDto media,  String dateTime,  String status,  String visibility,  List<GroupRequest> groups,  String? routeSlug,  String? startPlaceId,  String? endPlaceId,  String? publishAt,  List<String>? tagIds,  String? templateId)?  $default,) {final _that = this;
 switch (_that) {
 case _RideRequest() when $default != null:
-return $default(_that.name,_that.media,_that.dateTime,_that.status,_that.visibility,_that.groups,_that.routeSlug,_that.startPlaceId,_that.endPlaceId,_that.publishAt,_that.tagIds);case _:
+return $default(_that.name,_that.media,_that.dateTime,_that.status,_that.visibility,_that.groups,_that.routeSlug,_that.startPlaceId,_that.endPlaceId,_that.publishAt,_that.tagIds,_that.templateId);case _:
   return null;
 
 }
@@ -245,7 +247,7 @@ return $default(_that.name,_that.media,_that.dateTime,_that.status,_that.visibil
 @JsonSerializable()
 
 class _RideRequest implements RideRequest {
-  const _RideRequest({required this.name, required this.media, required this.dateTime, required this.status, required this.visibility, required  List<GroupRequest> groups, this.routeSlug, this.startPlaceId, this.endPlaceId, this.publishAt,  List<String>? tagIds}): _groups = groups,_tagIds = tagIds;
+  const _RideRequest({required this.name, required this.media, required this.dateTime, required this.status, required this.visibility, required  List<GroupRequest> groups, this.routeSlug, this.startPlaceId, this.endPlaceId, this.publishAt,  List<String>? tagIds, this.templateId}): _groups = groups,_tagIds = tagIds;
   factory _RideRequest.fromJson(Map<String, dynamic> json) => _$RideRequestFromJson(json);
 
 /// Ride name
@@ -286,6 +288,8 @@ class _RideRequest implements RideRequest {
   return EqualUnmodifiableListView(value);
 }
 
+/// ID (TSID) of the team's template the ride is created from. On a creation, raises the template's nextNumber by one when it has one; ignored on an update, and when the template no longer exists.
+@override final  String? templateId;
 
 /// Create a copy of RideRequest
 /// with the given fields replaced by the non-null parameter values.
@@ -300,18 +304,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _RideRequest&&(identical(other.name, name) || other.name == name)&&(identical(other.media, media) || other.media == media)&&(identical(other.dateTime, dateTime) || other.dateTime == dateTime)&&(identical(other.status, status) || other.status == status)&&(identical(other.visibility, visibility) || other.visibility == visibility)&&const DeepCollectionEquality().equals(other.groups, _groups)&&(identical(other.routeSlug, routeSlug) || other.routeSlug == routeSlug)&&(identical(other.startPlaceId, startPlaceId) || other.startPlaceId == startPlaceId)&&(identical(other.endPlaceId, endPlaceId) || other.endPlaceId == endPlaceId)&&(identical(other.publishAt, publishAt) || other.publishAt == publishAt)&&const DeepCollectionEquality().equals(other.tagIds, _tagIds));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _RideRequest&&(identical(other.name, name) || other.name == name)&&(identical(other.media, media) || other.media == media)&&(identical(other.dateTime, dateTime) || other.dateTime == dateTime)&&(identical(other.status, status) || other.status == status)&&(identical(other.visibility, visibility) || other.visibility == visibility)&&const DeepCollectionEquality().equals(other.groups, _groups)&&(identical(other.routeSlug, routeSlug) || other.routeSlug == routeSlug)&&(identical(other.startPlaceId, startPlaceId) || other.startPlaceId == startPlaceId)&&(identical(other.endPlaceId, endPlaceId) || other.endPlaceId == endPlaceId)&&(identical(other.publishAt, publishAt) || other.publishAt == publishAt)&&const DeepCollectionEquality().equals(other.tagIds, _tagIds)&&(identical(other.templateId, templateId) || other.templateId == templateId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,name,media,dateTime,status,visibility,const DeepCollectionEquality().hash(_groups),routeSlug,startPlaceId,endPlaceId,publishAt,const DeepCollectionEquality().hash(_tagIds));
+    return Object.hash(runtimeType,name,media,dateTime,status,visibility,const DeepCollectionEquality().hash(_groups),routeSlug,startPlaceId,endPlaceId,publishAt,const DeepCollectionEquality().hash(_tagIds),templateId);
 }
 
 @override
 String toString() {
-    return 'RideRequest(name: $name, media: $media, dateTime: $dateTime, status: $status, visibility: $visibility, groups: $groups, routeSlug: $routeSlug, startPlaceId: $startPlaceId, endPlaceId: $endPlaceId, publishAt: $publishAt, tagIds: $tagIds)';
+    return 'RideRequest(name: $name, media: $media, dateTime: $dateTime, status: $status, visibility: $visibility, groups: $groups, routeSlug: $routeSlug, startPlaceId: $startPlaceId, endPlaceId: $endPlaceId, publishAt: $publishAt, tagIds: $tagIds, templateId: $templateId)';
 }
 
 
@@ -322,7 +326,7 @@ abstract mixin class _$RideRequestCopyWith<$Res> implements $RideRequestCopyWith
   factory _$RideRequestCopyWith(_RideRequest value, $Res Function(_RideRequest) _then) = __$RideRequestCopyWithImpl;
 @override @useResult
 $Res call({
- String name, MediaDto media, String dateTime, String status, String visibility, List<GroupRequest> groups, String? routeSlug, String? startPlaceId, String? endPlaceId, String? publishAt, List<String>? tagIds
+ String name, MediaDto media, String dateTime, String status, String visibility, List<GroupRequest> groups, String? routeSlug, String? startPlaceId, String? endPlaceId, String? publishAt, List<String>? tagIds, String? templateId
 });
 
 
@@ -339,7 +343,7 @@ class __$RideRequestCopyWithImpl<$Res>
 
 /// Create a copy of RideRequest
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? name = null,Object? media = null,Object? dateTime = null,Object? status = null,Object? visibility = null,Object? groups = null,Object? routeSlug = freezed,Object? startPlaceId = freezed,Object? endPlaceId = freezed,Object? publishAt = freezed,Object? tagIds = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? name = null,Object? media = null,Object? dateTime = null,Object? status = null,Object? visibility = null,Object? groups = null,Object? routeSlug = freezed,Object? startPlaceId = freezed,Object? endPlaceId = freezed,Object? publishAt = freezed,Object? tagIds = freezed,Object? templateId = freezed,}) {
   return _then(_RideRequest(
 name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,media: null == media ? _self.media : media // ignore: cast_nullable_to_non_nullable
@@ -352,7 +356,8 @@ as String?,startPlaceId: freezed == startPlaceId ? _self.startPlaceId : startPla
 as String?,endPlaceId: freezed == endPlaceId ? _self.endPlaceId : endPlaceId // ignore: cast_nullable_to_non_nullable
 as String?,publishAt: freezed == publishAt ? _self.publishAt : publishAt // ignore: cast_nullable_to_non_nullable
 as String?,tagIds: freezed == tagIds ? _self._tagIds : tagIds // ignore: cast_nullable_to_non_nullable
-as List<String>?,
+as List<String>?,templateId: freezed == templateId ? _self.templateId : templateId // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

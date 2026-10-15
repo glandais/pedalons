@@ -36,6 +36,17 @@ public class RideTemplateRepository implements BaseRepository<RideTemplate> {
     return getPage(pedalonsQuery, page, size);
   }
 
+  /**
+   * Raises the template's next number by one, in one statement so that two rides created at once
+   * from it take two numbers. A template of another team, gone, or numbering nothing is left alone.
+   */
+  public void raiseNextNumber(Long teamId, Long templateId) {
+    update(
+        "nextNumber = nextNumber + 1 where id = ?1 and team.id = ?2 and nextNumber is not null",
+        templateId,
+        teamId);
+  }
+
   /** Ride templates a user created, for the GDPR data export. */
   public List<RideTemplate> findByCreator(Long domainId, Long userId) {
     return list("createdBy.id = ?2 and team.domain.id = ?1 order by createdAt", domainId, userId);

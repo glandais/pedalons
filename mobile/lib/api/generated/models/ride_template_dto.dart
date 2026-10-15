@@ -53,6 +53,9 @@ abstract class RideTemplateDto with _$RideTemplateDto {
 
     /// The team's RIDE tags of the template, sorted by label. Copied onto a ride created from it: a client prefills the ride's tagIds with them, editable before and after.
     required List<TagDto> tags,
+
+    /// The number the next ride created from this template takes: a client prefills the ride's name with « name #nextNumber » and sends RideRequest.templateId, which raises it by one. Null: the template numbers nothing.
+    int? nextNumber,
   }) = _RideTemplateDto;
 
   factory RideTemplateDto.fromJson(Map<String, Object?> json) =>

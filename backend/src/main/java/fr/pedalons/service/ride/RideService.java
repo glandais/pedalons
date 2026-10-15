@@ -39,6 +39,7 @@ import fr.pedalons.repository.place.PlaceRepository;
 import fr.pedalons.repository.ride.RideGroupRepository;
 import fr.pedalons.repository.ride.RideParticipationRepository;
 import fr.pedalons.repository.ride.RideRepository;
+import fr.pedalons.repository.ridetemplate.RideTemplateRepository;
 import fr.pedalons.repository.team.UserTeamRepository;
 import fr.pedalons.service.asset.ThumbnailLookup;
 import fr.pedalons.service.comment.CommentCountLookup;
@@ -83,6 +84,8 @@ public class RideService extends TeamEntityService<Ride, RideRepository, RideDto
   @Inject RouteService routeService;
 
   @Inject PlaceRepository placeRepository;
+
+  @Inject RideTemplateRepository rideTemplateRepository;
 
   @Inject ThumbnailService thumbnailService;
 
@@ -253,6 +256,11 @@ public class RideService extends TeamEntityService<Ride, RideRepository, RideDto
     // A ride created from a template arrives with the template's tags in tagIds: the client
     // prefilled the form from RideTemplateDto.tags (docs/plans/archive/2026-10-01-tags.md D14).
     tagService.replaceTags(ride, request.tagIds());
+    // The client titled the ride « name #n » from RideTemplateDto.nextNumber: the next one takes
+    // n + 1, whatever name was finally kept, as biketeam did (docs/LEDGER_*.md API-108).
+    if (request.templateId() != null) {
+      rideTemplateRepository.raiseNextNumber(team.getId(), TsidUtils.toLong(request.templateId()));
+    }
 
     thumbnailService.generateRideThumbnails(ride);
     notificationPublisher.publicationStatusChanged(ride, null, creator);

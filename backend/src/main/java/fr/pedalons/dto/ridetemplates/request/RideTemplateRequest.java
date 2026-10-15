@@ -5,6 +5,7 @@ import fr.pedalons.dto.validation.ValidateSchema;
 import fr.pedalons.enums.Status;
 import fr.pedalons.enums.Visibility;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.util.List;
@@ -32,7 +33,15 @@ public record RideTemplateRequest(
                     + " team and of kind RIDE, else 400 (TAG_INVALID, TOO_MANY_TAGS). An empty list"
                     + " removes them all. Omitted: none on a creation, left as they are on an"
                     + " update.")
-        List<String> tagIds) {
+        List<String> tagIds,
+    @Nullable
+        @Min(0)
+        @Schema(
+            description =
+                "The number the next ride created from this template takes: a client titles it"
+                    + " « name #nextNumber » and the creation of that ride (RideRequest.templateId)"
+                    + " raises it by one. Null: the template numbers nothing.")
+        Integer nextNumber) {
 
   /** Without tags: the shape this record had before API-59 — leaves the tags as they are. */
   public RideTemplateRequest(
@@ -41,6 +50,17 @@ public record RideTemplateRequest(
       Visibility visibility,
       Status status,
       List<RideTemplateGroupRequest> groups) {
-    this(name, markdown, visibility, status, groups, null);
+    this(name, markdown, visibility, status, groups, null, null);
+  }
+
+  /** Without a number: the shape this record had before API-108 — the template numbers nothing. */
+  public RideTemplateRequest(
+      String name,
+      String markdown,
+      Visibility visibility,
+      Status status,
+      List<RideTemplateGroupRequest> groups,
+      @Nullable List<String> tagIds) {
+    this(name, markdown, visibility, status, groups, tagIds, null);
   }
 }

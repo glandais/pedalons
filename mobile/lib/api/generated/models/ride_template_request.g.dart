@@ -17,6 +17,7 @@ _RideTemplateRequest _$RideTemplateRequestFromJson(
       .map((e) => RideTemplateGroupRequest.fromJson(e as Map<String, dynamic>))
       .toList(),
   tagIds: (json['tagIds'] as List<dynamic>?)?.map((e) => e as String).toList(),
+  nextNumber: (json['nextNumber'] as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$RideTemplateRequestToJson(
@@ -28,4 +29,5 @@ Map<String, dynamic> _$RideTemplateRequestToJson(
   'status': instance.status,
   'groups': instance.groups.map((e) => e.toJson()).toList(),
   'tagIds': instance.tagIds,
+  'nextNumber': instance.nextNumber,
 };

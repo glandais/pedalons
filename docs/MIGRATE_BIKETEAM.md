@@ -21,7 +21,7 @@ either side.
 
 What comes over: the team (name, visibility, `joinable`), its about page (presentation + contact
 details), its FAQ page, its logo (not the placeholder), places, routes with their GPX and
-their tags, ride templates, publications (as posts), rides with their groups, trips with their stages, and their
+their tags, ride templates (with their numbering: biketeam's `increment` becomes `nextNumber`), publications (as posts), rides with their groups, trips with their stages, and their
 images. What does **not**: users, memberships, participations, comments, registrations, route
 ratings and favourites. The Pédalons account that confirmed becomes the team's **ADMIN** and the
 author (`createdBy`) of everything; members join afterwards through the usual invitation link or,

@@ -951,6 +951,9 @@ public class BiketeamMigrationService {
       target.setMarkdown(biketeamToMarkdown(tpl.description()));
       rideTemplateRepository.persist(target);
     }
+    // Biketeam's increment is already the number its next ride takes, and a re-run brings the one
+    // biketeam has reached since (docs/LEDGER_*.md API-108).
+    target.setNextNumber(tpl.increment());
     map(r, T_RIDE_TEMPLATE, tpl.id(), target.getId());
 
     target.getGroups().clear();

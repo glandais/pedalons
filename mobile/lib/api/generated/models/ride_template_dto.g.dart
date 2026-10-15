@@ -24,6 +24,7 @@ _RideTemplateDto _$RideTemplateDtoFromJson(Map<String, dynamic> json) =>
       tags: (json['tags'] as List<dynamic>)
           .map((e) => TagDto.fromJson(e as Map<String, dynamic>))
           .toList(),
+      nextNumber: (json['nextNumber'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$RideTemplateDtoToJson(_RideTemplateDto instance) =>
@@ -40,4 +41,5 @@ Map<String, dynamic> _$RideTemplateDtoToJson(_RideTemplateDto instance) =>
       'groupCount': instance.groupCount,
       'groups': instance.groups.map((e) => e.toJson()).toList(),
       'tags': instance.tags.map((e) => e.toJson()).toList(),
+      'nextNumber': instance.nextNumber,
     };
