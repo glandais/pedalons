@@ -26,6 +26,9 @@ _ConfigDto _$ConfigDtoFromJson(Map<String, dynamic> json) => _ConfigDto(
   webPush: json['webPush'] == null
       ? null
       : WebPushConfigDto.fromJson(json['webPush'] as Map<String, dynamic>),
+  analytics: json['analytics'] == null
+      ? null
+      : AnalyticsConfigDto.fromJson(json['analytics'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$ConfigDtoToJson(_ConfigDto instance) =>
@@ -41,4 +44,5 @@ Map<String, dynamic> _$ConfigDtoToJson(_ConfigDto instance) =>
       'terrain': instance.terrain?.toJson(),
       'minSupportedAppVersion': instance.minSupportedAppVersion,
       'webPush': instance.webPush?.toJson(),
+      'analytics': instance.analytics?.toJson(),
     };

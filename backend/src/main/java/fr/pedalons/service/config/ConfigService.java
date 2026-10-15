@@ -1,6 +1,7 @@
 package fr.pedalons.service.config;
 
 import fr.pedalons.domain.team.Team;
+import fr.pedalons.dto.config.AnalyticsConfigDto;
 import fr.pedalons.dto.config.ConfigDto;
 import fr.pedalons.dto.config.MapCenterDto;
 import fr.pedalons.dto.config.MapTerrainDto;
@@ -10,9 +11,11 @@ import fr.pedalons.repository.team.TeamRepository;
 import fr.pedalons.service.security.DomainResolver;
 import fr.pedalons.service.security.ResolvedSite;
 import fr.pedalons.service.security.annotation.Public;
+import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.geolatte.geom.G2D;
 import org.geolatte.geom.Point;
@@ -61,6 +64,14 @@ public class ConfigService {
   @ConfigProperty(name = "pedalons.mobile.min-supported-app-version")
   Optional<String> minSupportedAppVersion;
 
+  /**
+   * Same-origin path of the audience counter, blank or absent when the deployment measures nothing
+   * (docs/LEDGER_*.md API-117). {@code Optional} for the same reason as {@link
+   * #minSupportedAppVersion}: the property resolves to the empty string when unset.
+   */
+  @ConfigProperty(name = "pedalons.analytics.count-path")
+  Optional<String> analyticsCountPath;
+
   @Public
   public ConfigDto getConfig() {
     ResolvedSite site = domainResolver.getResolvedSite();
@@ -80,7 +91,37 @@ public class ConfigService {
         defaultCenter(siteTeam.map(Team::getGeometry).orElse(null)),
         terrain(),
         minSupportedAppVersion.filter(version -> !version.isBlank()).orElse(null),
-        webPush());
+        webPush(),
+        analytics(analyticsCountPath));
+  }
+
+  /**
+   * A path of unreserved characters, starting with one slash and never two: nothing a browser could
+   * resolve to another host.
+   */
+  static final Pattern SAME_ORIGIN_PATH = Pattern.compile("/[A-Za-z0-9._~-][A-Za-z0-9._~/-]*");
+
+  /**
+   * The audience counter, or null when the deployment configures none.
+   *
+   * <p>Only a path on the site's own origin is handed out: the counter is served beside the site on
+   * every domain, and a full URL — or a protocol-relative {@code //host} — would send every page
+   * view to whatever host it names. Browsers also read a backslash as a slash and drop tabs and
+   * newlines inside a URL, so {@code /\host} and {@code /<TAB>/host} leave the origin too: the
+   * path is checked against a whitelist ({@link #SAME_ORIGIN_PATH}), not against a list of escapes.
+   * A value of another shape is a misconfiguration, so the counter stays off rather than counting
+   * somewhere unexpected.
+   */
+  static @Nullable AnalyticsConfigDto analytics(Optional<String> countPath) {
+    if (isBlank(countPath)) {
+      return null;
+    }
+    String path = countPath.get().trim();
+    if (!SAME_ORIGIN_PATH.matcher(path).matches()) {
+      Log.warnf("pedalons.analytics.count-path is not a same-origin path, counter off: %s", path);
+      return null;
+    }
+    return new AnalyticsConfigDto(path);
   }
 
   /**

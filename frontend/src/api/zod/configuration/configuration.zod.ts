@@ -103,6 +103,18 @@ export const GetConfigResponse = zod
       .describe(
         'How the site subscribes a browser to push notifications. Null when the push channel is unavailable or the deployment configures no web app — the site then offers no notification on this device.'
       ),
+    analytics: zod
+      .object({
+        countPath: zod
+          .string()
+          .describe(
+            'Same-origin path the site sends a page view to (for example /count), without the query string.'
+          ),
+      })
+      .optional()
+      .describe(
+        'Where the site counts its page views. Null when the deployment measures no audience — the site then sends nothing. The mobile app ignores it.'
+      ),
   })
   .describe('Application configuration')
 

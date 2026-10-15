@@ -810,6 +810,16 @@ components:
           type: integer
           format: int32
           description: Page size
+    AnalyticsConfigDto:
+      description: Audience measurement settings for the site
+      type: object
+      required:
+      - countPath
+      properties:
+        countPath:
+          type: string
+          description: "Same-origin path the site sends a page view to (for example\
+            \ /count), without the query string."
     AssetDimensionsDto:
       type: object
       properties:
@@ -1543,6 +1553,12 @@ components:
             app — the site then offers no notification on this device.
           type: object
           $ref: "#/components/schemas/WebPushConfigDto"
+        analytics:
+          description: Where the site counts its page views. Null when the deployment
+            measures no audience — the site then sends nothing. The mobile app ignores
+            it.
+          type: object
+          $ref: "#/components/schemas/AnalyticsConfigDto"
     CountResponse:
       description: Number of items matching a filter set
       type: object
@@ -19134,7 +19150,7 @@ paths:
                 $ref: "#/components/schemas/VersionDto"
 info:
   title: Pedalons API
-  version: 11.2.0
+  version: 11.3.0
   description: API for Pedalons Cycling Team Management Platform
 servers:
 - url: http://localhost:8080

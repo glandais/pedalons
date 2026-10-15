@@ -816,6 +816,17 @@
           }
         }
       },
+      "AnalyticsConfigDto" : {
+        "description" : "Audience measurement settings for the site",
+        "type" : "object",
+        "required" : [ "countPath" ],
+        "properties" : {
+          "countPath" : {
+            "type" : "string",
+            "description" : "Same-origin path the site sends a page view to (for example /count), without the query string."
+          }
+        }
+      },
       "AssetDimensionsDto" : {
         "type" : "object",
         "properties" : {
@@ -1570,6 +1581,11 @@
             "description" : "How the site subscribes a browser to push notifications. Null when the push channel is unavailable or the deployment configures no web app — the site then offers no notification on this device.",
             "type" : "object",
             "$ref" : "#/components/schemas/WebPushConfigDto"
+          },
+          "analytics" : {
+            "description" : "Where the site counts its page views. Null when the deployment measures no audience — the site then sends nothing. The mobile app ignores it.",
+            "type" : "object",
+            "$ref" : "#/components/schemas/AnalyticsConfigDto"
           }
         }
       },
@@ -23642,7 +23658,7 @@
   },
   "info" : {
     "title" : "Pedalons API",
-    "version" : "11.2.0",
+    "version" : "11.3.0",
     "description" : "API for Pedalons Cycling Team Management Platform"
   },
   "servers" : [ {

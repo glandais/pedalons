@@ -14,6 +14,7 @@ import fr.pedalons.util.TestDataCleaner;
 import fr.pedalons.util.TestDataService;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -92,5 +93,39 @@ class ConfigServiceTest extends AbstractBaseTest {
     // The test profile configures no FCM service account: a browser must not be told to subscribe
     // to a channel that could never send it anything.
     assertNull(configService.getConfig().webPush());
+  }
+
+  @Test
+  void getConfig_withoutCountPath_offersNoAnalytics() {
+    // The test profile sets no PEDALONS_ANALYTICS_COUNT_PATH, like dev, a workstation and e2e: the
+    // site must count nothing (docs/LEDGER_*.md API-117).
+    assertNull(configService.getConfig().analytics());
+  }
+
+  @Test
+  void analytics_isNullWhenAbsentOrBlank() {
+    assertNull(ConfigService.analytics(Optional.empty()));
+    assertNull(ConfigService.analytics(Optional.of("")));
+    assertNull(ConfigService.analytics(Optional.of("   ")));
+  }
+
+  @Test
+  void analytics_carriesTheTrimmedSameOriginPath() {
+    assertEquals("/count", ConfigService.analytics(Optional.of("/count")).countPath());
+    assertEquals("/count", ConfigService.analytics(Optional.of(" /count ")).countPath());
+  }
+
+  @Test
+  void analytics_refusesAPathThatWouldLeaveTheOrigin() {
+    // A full or protocol-relative URL would send every page view to the host it names.
+    assertNull(ConfigService.analytics(Optional.of("https://stats.example.com/count")));
+    assertNull(ConfigService.analytics(Optional.of("//stats.example.com/count")));
+    assertNull(ConfigService.analytics(Optional.of("count")));
+    // Browsers read a backslash as a slash and drop tabs and newlines inside a URL.
+    assertNull(ConfigService.analytics(Optional.of("/\\evil.example/count")));
+    assertNull(ConfigService.analytics(Optional.of("/\t/evil.example/count")));
+    assertNull(ConfigService.analytics(Optional.of("/\n/evil.example/count")));
+    assertNull(ConfigService.analytics(Optional.of("/count?x=1")));
+    assertNull(ConfigService.analytics(Optional.of("/")));
   }
 }

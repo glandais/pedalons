@@ -519,16 +519,6 @@ calendrier (`API-20`) sont dans
 [`LEDGER_DONE.md`](LEDGER_DONE.md). Les **gabarits de sortie n'ont volontairement pas de meneur** —
 décision produit : `RideTemplateGroupRequest` reste sans champ.
 
-### Mesure d'audience du site
-
-- [ ] `API-117` **Drapeau de la mesure d'audience dans `/api/config` (XS)** — plan [`2026-10-15-web-analytics.md`](plans/2026-10-15-web-analytics.md)
-      (§3.3). Le site n'a aucun moyen de savoir si le déploiement compte les visites : le
-      conteneur frontend ne reçoit que `API_BASE_URL`. `ConfigDto` gagne `analytics` nullable
-      (`{ countPath }`), alimenté par `pedalons.analytics.count-path` en `Optional<String>` sur le
-      modèle de `webPush` (`ConfigService.java`) : absent en dev, sur un poste et dans `.env.e2e`,
-      donc compteur coupé. Bump mineur de `pedalons.api.version`, compétence `contract-first-api` ;
-      le mobile ignore le champ. Test de `ConfigService` (null sans propriété).
-
 ### Garmin
 
 - [ ] `API-61` **Mettre l'intégration Garmin OAuth 2.0 en conformité** — **bloqué** : le programme

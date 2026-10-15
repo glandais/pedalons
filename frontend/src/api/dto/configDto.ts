@@ -1,3 +1,4 @@
+import type { AnalyticsConfigDto } from './analyticsConfigDto.ts'
 import type { MapCenterDto } from './mapCenterDto.ts'
 import type { MapStyleDto } from './mapStyleDto.ts'
 import type { MapTerrainDto } from './mapTerrainDto.ts'
@@ -29,4 +30,6 @@ export interface ConfigDto {
   minSupportedAppVersion?: string
   /** How the site subscribes a browser to push notifications. Null when the push channel is unavailable or the deployment configures no web app — the site then offers no notification on this device. */
   webPush?: WebPushConfigDto
+  /** Where the site counts its page views. Null when the deployment measures no audience — the site then sends nothing. The mobile app ignores it. */
+  analytics?: AnalyticsConfigDto
 }

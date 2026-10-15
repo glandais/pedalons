@@ -4,6 +4,7 @@
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'analytics_config_dto.dart';
 import 'map_center_dto.dart';
 import 'map_style_dto.dart';
 import 'map_terrain_dto.dart';
@@ -48,6 +49,9 @@ abstract class ConfigDto with _$ConfigDto {
 
     /// How the site subscribes a browser to push notifications. Null when the push channel is unavailable or the deployment configures no web app — the site then offers no notification on this device.
     WebPushConfigDto? webPush,
+
+    /// Where the site counts its page views. Null when the deployment measures no audience — the site then sends nothing. The mobile app ignores it.
+    AnalyticsConfigDto? analytics,
   }) = _ConfigDto;
 
   factory ConfigDto.fromJson(Map<String, Object?> json) =>

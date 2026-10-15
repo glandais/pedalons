@@ -63,4 +63,10 @@ public record ConfigDto(
                 "How the site subscribes a browser to push notifications. Null when the push"
                     + " channel is unavailable or the deployment configures no web app — the site"
                     + " then offers no notification on this device.")
-        WebPushConfigDto webPush) {}
+        WebPushConfigDto webPush,
+    @Nullable
+        @Schema(
+            description =
+                "Where the site counts its page views. Null when the deployment measures no"
+                    + " audience — the site then sends nothing. The mobile app ignores it.")
+        AnalyticsConfigDto analytics) {}
