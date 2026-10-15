@@ -241,6 +241,12 @@ PG_RC=$?
 set -e
 ((PG_RC == 0)) || log "WARNING: pg_restore exited $PG_RC — read the errors above before continuing"
 
+# GoatCounter's database is not backed up (docs/OPERATIONS.md, « Web analytics »): its role and an
+# empty database are recreated, and GoatCounter, held at 0 by deploy.sh --hold-app, comes back on
+# them. Nothing happens in an environment without it. Not on the site's path: a failure only warns.
+"$SCRIPT_DIR/goatcounter-init.sh" db \
+  || log "WARNING: goatcounter-init.sh db failed — rerun it once the restore is done"
+
 # --- minio ------------------------------------------------------------------
 #
 # Restoring under a live MinIO would corrupt its on-disk index, so it goes down first.
@@ -302,3 +308,7 @@ $KEEP_FETCH || rm -rf "$FETCH"
 
 log "restore complete. Open the site and check that an existing photo still renders: that path goes"
 log "through minio -> imgproxy -> varnish, so it is what proves the objects came back, not just the rows."
+if [[ -n "${GOATCOUNTER_VHOST:-}" ]]; then
+  log "GoatCounter's site and account went with its database: recreate them, from a terminal, with"
+  log "scripts/goatcounter-init.sh site — until then /count refuses every hit, which is harmless."
+fi

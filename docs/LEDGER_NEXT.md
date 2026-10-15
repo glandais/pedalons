@@ -697,32 +697,33 @@ Ce que les tests ne prouvent pas, parce qu'ils ne passent ni par Flyway ni par u
       d'après `OPERATIONS.md`, sans page à sa racine) : s'il sert encore, lui donner un
       `robots.txt` `Disallow: /` ; sinon le retirer du DNS. La validation prend
       plusieurs semaines ; revenir sur le rapport ensuite. Taille : XS (surtout de l'attente).
-- [ ] `OPS-36` **GoatCounter auto-hébergé pour la mesure d'audience du site (M)** — plan
-      [`2026-10-15-web-analytics.md`](plans/2026-10-15-web-analytics.md) (§3). Un service `goatcounter` dans `docker-compose.yml` (image épinglée, commande
-      en liste YAML pour le DSN, réseau `pedalons` seul, ancre de labels, 128M, `update_config` et
-      `rollback_config` stop-first à cause de `-automigrate`), routé en `Path(/count)` sans
-      `Host()` à la priorité 150 pour que chaque domaine de club l'atteigne sur sa propre origine,
-      avec un middleware qui réécrit le `Host` vers un site unique et retire `Cookie` et `Referer`,
-      et une limite de débit. **Sessions coupées** dans GoatCounter (sinon un site unique relierait
-      les domaines de club entre eux), tableau de bord public et jetons d'API désactivés, région
-      coupée, rétention 24 mois tables agrégées comprises, exigée avant l'activation. Base
-      `goatcounter` sur le PostgreSQL existant, créée par `scripts/goatcounter-init.sh` (`db` sans
-      interaction, SQL par stdin ; `site` interactif) ; **non sauvegardée** (statistiques
-      jetables) : `deploy.sh --hold-app` la garde à 0 et `restore.sh` appelle
-      `goatcounter-init.sh db` après `pg_restore`. **Prod seulement** (décidé le 15 octobre
-      2026) : le `.env` de staging ne pose ni `GOATCOUNTER_*` ni `PEDALONS_ANALYTICS_COUNT_PATH`, et
-      `deploy.sh`, voyant les deux clés vides, ajoute `goatcounter` à 0 réplique dans son overlay
-      (celui de `--hold-app`), sans `profiles:` dans `docker-compose.yml` ; `goatcounter-init.sh`
-      n'y fait rien. `deploy.sh` refuse une seule des deux clés posée, et le drapeau sans elles.
-      Coupé sur la pile e2e (`profiles: [analytics]` dans `docker-compose.e2e.yml`) et sur un poste
-      par défaut. Tableau de bord sans port publié : un
-      routeur `Host(GOATCOUNTER_VHOST)` atteint par un tunnel SSH sur le `HTTP_PORT` de
-      l'environnement. **`/count` n'est pas écrit dans le journal Caddy** (`log_skip` dans le
-      snippet, importé par chaque bloc de club) ; section, ligne mémoire et somme dans
-      `OPERATIONS.md`. L'étape 0 du plan vérifie d'abord les faits notés de mémoire (`Host`,
-      sessions et `hits.session`, `Referer` ignoré, IP lue derrière deux proxys, journal d'accès,
-      routeurs Traefik d'un service à 0 réplique) ;
-      Umami est le repli, avec un *website* par hôte.
+- [ ] `OPS-41` **Mettre la mesure d'audience du site en production, puis l'allumer (S)** — plan
+      [`2026-10-15-web-analytics.md`](plans/2026-10-15-web-analytics.md) (§8, étapes 5 et 6 ;
+      scindé d'`OPS-36`, qui a livré le service, les scripts et la procédure). Tout est dans le
+      dépôt, rien n'est en prod, et le compteur reste coupé tant que
+      `PEDALONS_ANALYTICS_COUNT_PATH` n'est pas posé. **Étape 5, déploiement sans drapeau** : poser
+      les clés `GOATCOUNTER_*` dans le `.env` de prod (pas le drapeau) et déployer ; GoatCounter
+      redémarre en boucle jusqu'à `scripts/goatcounter-init.sh db`, puis `goatcounter-init.sh site`
+      (réglages du §3.5, `collect = 30` et `data_retention = 730` relus par le script, page
+      *Settings* vérifiée). Vérifier en prod que le conteneur jetable de `site`, lancé en
+      `--network container:<postgres>`, atteint bien la tâche Swarm de postgres (constaté seulement
+      sur une pile jetable). Lire `caddy version` sur l'hôte (≥ 2.8 pour `log_skip`, sinon
+      `skip_log`), poser la règle dans le snippet Caddy et vérifier **chaque bloc de club et
+      d'alias** : sans elle, `/count` y est journalisé avec l'IP. Vérifier le tunnel SSH jusqu'au
+      tableau de bord, injoignable par Caddy, et que staging n'a ni tâche ni routeur `goatcounter`
+      (service à 0 réplique, aucune clé posée). Mettre la politique (`LEGAL-19`) en ligne en
+      recalant sa date d'en-tête au jour même. **Vérifier en base la précondition du §5.3** :
+      aucun membre réel n'a accepté la politique actuelle (comptes hors test et équipe, inscrits
+      bêta, équipes migrées de biketeam, invitations acceptées) ; sinon l'e-mail du §11 à chaque
+      membre, avant l'étape 6. **Étape 6, activation**, seulement réglages en place et filtre
+      Alloy déployé : `PEDALONS_ANALYTICS_COUNT_PATH=/count` dans le `.env` de prod, redéploiement,
+      puis les vérifications de l'étape 6 (une visite sans DNT comptée sous son gabarit, la même
+      sous DNT non ; aucune IP de visiteur dans le journal du conteneur, aucune ligne `/count` dans
+      celui de Caddy ; `hits` vide ; `store` sans session après un redémarrage ; une panne de base
+      simulée sans ligne `hit =` dans Loki), consignées dans `OPERATIONS.md` ; le lendemain, la
+      purge de rétention a tourné. **Au bout d'un mois** : relire les chiffres contre les cinq
+      questions du §1 du plan, puis l'archiver (`docs/plans/archive/`, avec sa ligne dans le README
+      des archives). Taille : S, surtout manuel sur l'hôte.
 
 ---
 

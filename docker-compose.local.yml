@@ -20,7 +20,8 @@
 #      Docker and expects imgproxy on 38080, valhalla on 8002, tileserver on 18080, MinIO on 9000
 #      and SMTP on 1025, and postgres on POSTGRES_HOST_PORT.
 #   4. an `app` profile on backend/frontend/traefik, so that a plain `up` starts the backing services
-#      alone — see the comment on those three below.
+#      alone — see the comment on those three below — and an `analytics` profile on goatcounter,
+#      which nothing enables: the web analytics run in production only.
 #   5. what Swarm needs and compose cannot use: traefik's Swarm provider becomes the Docker one, its
 #      port goes back to the loopback, and the overlay network becomes a bridge.
 services:
@@ -95,6 +96,13 @@ services:
   imgproxy:
     ports:
       - "127.0.0.1:38080:8080"
+
+  # Web analytics, off on a workstation: nothing starts it unless asked for, by name or with
+  # `--profile analytics`, and it then needs the GOATCOUNTER_* keys and scripts/goatcounter-init.sh
+  # (docs/OPERATIONS.md, « Web analytics »). The site counts nothing anyway while
+  # PEDALONS_ANALYTICS_COUNT_PATH is unset.
+  goatcounter:
+    profiles: [analytics]
 
   minio:
     ports:

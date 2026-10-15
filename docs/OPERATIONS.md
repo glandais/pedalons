@@ -18,7 +18,8 @@ rescheduled rather than left for a `restart:` policy.
 resident). One instance serves every environment. It owns the `pedalons-shared` overlay network.
 
 `docker-compose.yml` holds everything that must stay isolated per environment: traefik, backend,
-frontend, postgres, minio, imgproxy and varnish. Its `backend` also joins `pedalons-shared` to reach
+frontend, postgres, minio, imgproxy and varnish — and goatcounter, which runs in production only
+(see [Web analytics](#web-analytics-goatcounter)). Its `backend` also joins `pedalons-shared` to reach
 the two shared services, by their service names `valhalla` and `tileserver`.
 
 Each environment's `.env` differs from a workstation's in five keys only — see
@@ -73,7 +74,9 @@ that never turns healthy is rolled back on its own (`failure_action: rollback`),
 `scripts/deploy.sh` waits for that outcome: it returns once backend and frontend both run the new
 build, healthy, and exits non-zero on a rollback or after `DEPLOY_TIMEOUT` seconds (600 by default)
 — a deploy that printed no error is one that went through. postgres, minio,
-imgproxy and varnish keep the default stop-first: each owns a volume, one instance at a time.
+imgproxy and varnish keep the default stop-first: each owns a volume, one instance at a time. So does
+goatcounter, spelled out in its file: it migrates its own database at start (`-automigrate`), and two
+instances would migrate it at once. `deploy.sh` does not wait for it.
 
 ```bash
 docker service ps "${ENV_NAME}_backend"           # the rollout, and why a task failed
@@ -112,6 +115,7 @@ limit is killed by the kernel (`OOMKilled` in `docker inspect`, `task: non-zero 
 | minio | 1G | |
 | frontend | 512M | Node sizes its heap from the limit |
 | traefik | 256M | |
+| goatcounter | 128M | production only; 36 to 40 MiB at rest, the rest for CSV exports and the dashboard |
 | tileserver (shared) | 3G | ~1.8 GB resident |
 | valhalla (shared) | none | the rebuild after a `tile_urls` change needs far more than the service |
 | monitoring stack | 2G in all | see [Monitoring](#monitoring); ~1 GB resident |
@@ -134,7 +138,7 @@ resident memory once the cache fills; keep `VARNISH_MEMORY` about half as much a
 20 G with no limit at all. A smaller cache only costs imgproxy CPU on a miss.
 
 **What a host must hold**: these are ceilings, not usage — but a host should hold the sum of them.
-Per environment, 7.3 GB, plus 2 GB during a rolling update (a second backend and frontend run
+Per environment, 7.3 GB (7.4 GB in production, with goatcounter), plus 2 GB during a rolling update (a second backend and frontend run
 beside the old ones, see above); on top, the shared stack's tileserver (3 GB) and valhalla, whose
 17 GB of tiles live in the page cache, and the monitoring stack (2 GB). Two environments with the
 defaults come to about 23 GB with the host's own share (Caddy, Docker, the OS): a 32 GB host holds
@@ -336,6 +340,10 @@ live in the host's Caddy configuration, outside this repository:
 			request>headers>Referer delete
 		}
 	}
+	# The web analytics' pageview requests are not logged at all (see « Web analytics »).
+	# log_skip since Caddy 2.8, skip_log before.
+	@count path /count
+	log_skip @count
 }
 
 # The bare domain only redirects, but {uri} carries the query string: it logs through the snippet too.
@@ -369,6 +377,13 @@ Three traps, each met on the first install (29 September 2026):
   `caddy`) then cannot open on reload. After any `validate`, `chown caddy:caddy` the **files**, not
   just `/var/log/caddy`.
 
+**`/count` never reaches the log** (`log_skip`, in the snippet): one line per pageview, with the
+visitor's IP, user agent, time, host and page, would be each address's browsing history, kept 14
+days here and 14 more in Loki — and the privacy policy says the web analytics keep no IP. The trap
+grows with the platform: **every club domain and every alias has its own Caddy block, and each must
+import the snippet**; a block that does not logs `/count` in clear. Check it on every new domain,
+and check `caddy version` once (`log_skip` needs 2.8; `skip_log` before).
+
 Credentials are replaced rather than deleted, so a line still shows that one was there; the
 position leaves no trace. Caddy already leaves `Authorization` and `Cookie` headers out of its log.
 Rotation, from the repository like the backup logs:
@@ -388,7 +403,9 @@ done
 tail -n 3 /var/log/caddy/pedalons-access.log /var/log/caddy/pedalons-staging-access.log
 ```
 
-Every line must show `t=REDACTED`, no `lat`, and no `Location` header. Keep
+Every line must show `t=REDACTED`, no `lat`, and no `Location` header. And `/count` must leave
+none: `curl -s -o /dev/null "https://$h/count?p=/log-check"` for each host, then
+`grep -c '/count' /var/log/caddy/*-access.log` stays at 0. Keep
 `/etc/caddy/Caddyfile.bak-<date>` until then; rolling back is restoring it and reloading. Installed
 on the production host on 29 September 2026 (ledger `OPS-6`). The short TTL of the tile token is
 what makes any line written before that inert, and the reason that TTL must never be raised to
@@ -430,6 +447,133 @@ a healthy cache has recent `fetched_at` and `attempts = 0`:
 docker exec "$(docker ps -qf name=${ENV_NAME}_postgres)" sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c \
   "select count(*), max(fetched_at), max(attempts), max(last_error) from weather_cells"'
 ```
+
+### Web analytics (GoatCounter)
+
+The site's audience is measured by a self-hosted [GoatCounter](https://www.goatcounter.com), the
+`goatcounter` service of `docker-compose.yml`, with its own database `goatcounter` on the
+environment's postgres. Design, what is counted and why: `docs/plans/2026-10-15-web-analytics.md`
+(ledger `OPS-36`). What this section keeps true is the privacy policy's promise: **pageviews only,
+no cookie, no session, no IP kept**.
+
+- **Production only.** Its `.env` sets `GOATCOUNTER_VHOST`, `GOATCOUNTER_DB_PASSWORD` and
+  `GOATCOUNTER_ADMIN_EMAIL` (`.env.example`); staging sets none, and `deploy.sh` then runs
+  goatcounter at 0 replicas — a service with no task gives Traefik no router, so `/count` there falls
+  to the site's 404 page. `deploy.sh` refuses one of the first two keys without the other, and
+  `PEDALONS_ANALYTICS_COUNT_PATH` (the site's own switch, served in `/api/config`) without them. On a
+  workstation and in the e2e stack it sits behind a profile, `analytics`, that nothing enables.
+- **One GoatCounter site for every host.** Traefik routes `Path(/count)` on every host that reaches
+  it, so a club domain needs nothing here (but see [Access logs](#access-logs)), and its
+  `count-headers` middleware rewrites `Host` to `GOATCOUNTER_VHOST` and strips `Cookie`, `Referer`
+  and the client-settable IP headers (`X-Real-Ip`, `Cf-Connecting-Ip`, `Fly-Client-Ip`,
+  `X-Azure-Socketip`), so the IP GoatCounter reads is the one Caddy wrote. The club's host travels in
+  the counted path.
+- **Not in the backup.** The statistics are disposable: `backup.sh` dumps `POSTGRES_DB` only, and
+  `restore.sh` recreates an empty `goatcounter` database (below).
+- **Not waited for by `deploy.sh`**, and off the site's path: a GoatCounter that does not start fails
+  no deploy.
+
+#### First deployment
+
+The service is deployed before its database role exists, so it **restarts in a loop** until the
+first command below — expected, and harmless (`pq: password authentication failed`; the DSN carries
+no password, which goes through `PGPASSWORD`).
+
+```bash
+# .env: GOATCOUNTER_VHOST=stats.pedalons.internal, GOATCOUNTER_DB_PASSWORD=$(openssl rand -hex 24),
+#       GOATCOUNTER_ADMIN_EMAIL=<the controller's address>
+scripts/deploy.sh
+scripts/goatcounter-init.sh db       # role + database, GoatCounter restarted and migrated
+scripts/goatcounter-init.sh site     # from a terminal: site + account (password prompted), settings
+```
+
+Both are idempotent, and do nothing where `GOATCOUNTER_VHOST` is empty. No secret goes on a command
+line: the SQL reaches `psql` on its standard input, the account's password through GoatCounter's
+prompt. `db` sets the role's password from `.env` on every run — after changing it in `.env`, run
+`deploy.sh` then `db`.
+
+#### Settings
+
+A new GoatCounter site starts with **sessions on** — and with sessions on, GoatCounter writes
+`<user agent>-<IP>-<site>` in clear into its `store` table on every shutdown. `goatcounter-init.sh
+site` therefore stops GoatCounter **before** creating the site (from a one-off container of the same
+image, in the postgres container's network namespace), sets them by SQL, deletes any session a
+shutdown wrote, and only then starts it again: no hit is ever counted with the defaults, even with
+live traffic on `/count` (after a restore, the site's switch still set). GoatCounter caches its
+settings, hence the stop. The script fails unless they read back:
+
+| Setting (*Settings* page, 2.7) | Value | Column |
+|---|---|---|
+| *Data collection* | **Referrer**, **User-Agent**, **Size**, **Country** checked; **Sessions**, **Region**, **Language**, **Individual pageviews** unchecked | `settings.collect = 30` |
+| *Data retention in days* | **730** (24 months, aggregated tables included) | `settings.data_retention = 730` |
+| *Dashboard viewable by* | Only logged in users (the default) | `settings.public = private` |
+| *Allow adding visitor counts on your website* | unchecked (the default) | `settings.allow_counter` |
+| API tokens | none | |
+
+**Never tick a box back on in *Settings***: *Sessions* brings back the clear `<user agent>-<IP>` keys,
+*Individual pageviews* a row per pageview. Re-running `goatcounter-init.sh site` puts the values
+above back. To check them, and that nothing per visitor is kept:
+
+```bash
+pg() { docker exec -i "$(docker ps -qf name=${ENV_NAME}_postgres)" sh -c 'psql -U "$POSTGRES_USER" -d goatcounter -tA'; }
+echo "select settings->>'collect', settings->>'data_retention', settings->>'public' from sites" | pg   # 30|730|private
+echo "select count(*) from hits" | pg                                          # 0
+echo "select value from store where key = 'session'" | pg                      # empty maps only
+echo "select min(day) from hit_stats" | pg                                     # never older than 730 days
+```
+
+**The retention purge** runs once a day, **24 h after GoatCounter starts**, and its timer restarts
+with it: a GoatCounter restarted every day never purges. Look at `min(day)` now and then.
+
+**Once a year, review the retention** (the CNIL recommends reviewing it periodically): is 730 days
+still what the five questions of the plan need? If it changes, change `DATA_RETENTION` in
+`scripts/goatcounter-init.sh`, re-run `site`, and rewrite the privacy policy's « 24 mois » / « 24
+months » (sections 1 and 6, FR and EN) in the same commit.
+
+#### The dashboard
+
+Production only, for the controller alone: no Caddy block serves `GOATCOUNTER_VHOST`, no port is
+published, and the `goatcounter-dash` router answers on that host only, on the environment's
+Traefik — so the way in is a tunnel to `HTTP_PORT`, as for [Grafana](#grafana):
+
+```bash
+ssh -L 8090:127.0.0.1:8090 <host>        # prod's HTTP_PORT; staging (8089) runs no GoatCounter
+# /etc/hosts on the workstation: 127.0.0.1 stats.pedalons.internal
+# then http://stats.pedalons.internal:8090 (GoatCounter drops the port before looking up the site)
+```
+
+Its login cookie has no `Secure` flag over this `http://` tunnel; nothing else reaches it. Check
+once, from another machine, that a request through Caddy with `Host: <GOATCOUNTER_VHOST>` does not
+get the dashboard.
+
+**Never use « Forgot password ».** GoatCounter has no mail relay here: it writes its e-mails to its
+standard output, so the reset link would land in Loki. Change the password with:
+
+```bash
+scripts/goatcounter-init.sh password    # prompted; handed over through docker exec's environment
+```
+
+(`goatcounter db update user -password <value>` takes the value as given, on the command line,
+where `ps` shows it.)
+
+#### Logs
+
+GoatCounter writes no access log (`/count` is excluded even with `-debug=req`). But **when it fails to
+store a hit** — postgres down, a panic — its error log dumps the hit, **raw IP and user agent
+included**, as a `hit = &{…}` line (`paths = …` for the pending ones). Alloy drops those lines
+before Loki (`services/monitoring/alloy/config.alloy`), and the service's Docker log is rotated
+short (2 × 1 MB) to bound the copy left on the host. After every GoatCounter upgrade, check that the
+filter still bites: stop postgres for a few seconds while a hit arrives, then search Loki
+(`{service="goatcounter"} |= "hit ="`) — nothing must come back.
+
+#### Restore
+
+`restore.sh` holds goatcounter at 0 with backend and frontend (`deploy.sh --hold-app`), then, after
+`pg_restore`, runs `goatcounter-init.sh db`: role and empty database recreated, GoatCounter back on
+them. **The site and its account went with the old database**: the script ends by saying so, and
+`scripts/goatcounter-init.sh site` (from a terminal) recreates them — with GoatCounter stopped until
+its settings are in place, so the live hits of the meantime are lost, never counted with a new
+site's defaults. Until then `/count` refuses every hit — the site is unaffected.
 
 ### Seeding the shared Valhalla data
 
@@ -664,7 +808,8 @@ The Caddy access log is read **as Caddy wrote it**, already filtered (see
 [Access logs](#access-logs)), and Loki keeps it, like everything else, **14 days** — the promise of
 the privacy policy for that log. Don't raise `retention_period` in `loki.yml`, and never point Alloy
 at an unfiltered source. The containers' own logs go through the same retention: 14 days, whatever
-they may carry.
+they may carry — except GoatCounter's lines that dump a hit, visitor IP included, which Alloy drops
+(see [Web analytics](#web-analytics-goatcounter), « Logs »).
 
 ## Backup and restore
 
@@ -737,6 +882,9 @@ gets one more rsync pass before it is called failed.
 
 **Not** in a snapshot, and to be rebuilt by hand: the Docker images (`./build.sh` at the MANIFEST's
 commit), `data/cache` (regenerable, just slow), and the shared valhalla/tileserver data (below).
+Nor, by choice, the **`goatcounter` database**: the web analytics are disposable statistics, and a
+restore starts them again from empty (see [Web analytics](#web-analytics-goatcounter)). Backing
+them up one day would mean rewriting the privacy policy's sentence on backups in the same commit.
 
 ### Encryption
 
@@ -938,7 +1086,10 @@ with no `COMPLETE` marker, and refuses one from another `ENV_NAME` unless `--for
 It follows the stack wherever it runs. On a host (a swarm) it removes the stack and redeploys it
 through `scripts/deploy.sh --hold-app` — Swarm cannot start part of a stack, so backend and frontend
 come back at zero replicas, or the backend would bootstrap a fresh Domain on the empty database
-before the dump lands. On a workstation it is `docker compose down -v`, then `up`.
+before the dump lands; goatcounter too, until `goatcounter-init.sh db` recreates its empty database
+after `pg_restore`. On a workstation it is `docker compose down -v`, then `up`. **In production,
+finish with `scripts/goatcounter-init.sh site`**, from a terminal: the analytics site and its
+account are not in the backup.
 
 It needs only `rsync`, `age` and `docker`, no root. The objects go back as `root:root` — the user
 MinIO runs as — through `docker cp` on a workstation, and on a host, where a service scaled to zero

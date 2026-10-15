@@ -53,6 +53,21 @@ loki.process "containers" {
     }
   }
 
+  // GoatCounter logs aligned text, one line per attribute. When it fails to store a hit (database
+  // unreachable, a panic), it dumps the hit, the visitor's raw IP and user agent included, as a
+  // `hit = &{…}` line, or the pending ones as `paths = …` (a dotted key, should a later version
+  // expand them, is caught too). The privacy policy says the IP is never
+  // kept: those lines never reach Loki (docs/plans/2026-10-15-web-analytics.md §3.1). Their format
+  // may change with GoatCounter's: recheck on every upgrade, by stopping postgres for a few seconds.
+  stage.match {
+    selector = "{service=\"goatcounter\"}"
+
+    stage.drop {
+      expression          = "^\\s+(hit|paths)(\\.\\S+)?\\s+="
+      drop_counter_reason = "goatcounter_visitor_data"
+    }
+  }
+
   forward_to = [loki.write.default.receiver]
 }
 

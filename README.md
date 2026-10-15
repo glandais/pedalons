@@ -58,7 +58,8 @@ must not be able to send mail**, for reasons worth reading before the first `up`
 `COMPOSE_FILE` is what turns the checkout into a workstation. The overlay it adds carries mailpit,
 the valhalla and tileserver a server instead gets from the shared stack, the loopback ports
 `mvn quarkus:dev` and `pnpm dev` talk to, and an `app` profile on `backend`/`frontend`/`traefik` so a
-plain `docker compose up -d` starts the backing services alone. `source scripts/dev-env.sh` then
+plain `docker compose up -d` starts the backing services alone. `goatcounter` (the web analytics,
+production only) sits behind an `analytics` profile that nothing enables. `source scripts/dev-env.sh` then
 feeds this same file's `POSTGRES_*` / `MINIO_*` to the dev backend — no second set of credentials to
 keep in sync.
 

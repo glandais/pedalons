@@ -3,7 +3,7 @@
 #
 #   ./build.sh && scripts/deploy.sh   the build of the checked-out commit
 #   scripts/deploy.sh --rev <commit>  an earlier build, without rebuilding (e.g. --rev HEAD~1)
-#   scripts/deploy.sh --hold-app      backend and frontend at 0 replicas (used by restore.sh)
+#   scripts/deploy.sh --hold-app      backend, frontend and goatcounter at 0 replicas (restore.sh)
 #   scripts/deploy.sh --shared        the shared stack instead, from the ~/shared checkout
 #   scripts/deploy.sh --monitoring    the monitoring stack, from the ~/shared checkout too
 #
@@ -137,6 +137,21 @@ set +a
 [[ -z "${COMPOSE_FILE:-}" ]] \
   || die "COMPOSE_FILE is set in .env: that is a workstation, which runs compose, not a stack"
 
+# Web analytics (docs/OPERATIONS.md, « Web analytics »): production sets both keys, staging neither,
+# and GoatCounter then runs at 0 replicas. One without the other would deploy a counter rewriting
+# every /count to an empty Host, or one that can never log in to its database — counting nothing,
+# silently.
+if [[ -n "${GOATCOUNTER_VHOST:-}" && -n "${GOATCOUNTER_DB_PASSWORD:-}" ]]; then
+  GOATCOUNTER=true
+elif [[ -z "${GOATCOUNTER_VHOST:-}" && -z "${GOATCOUNTER_DB_PASSWORD:-}" ]]; then
+  GOATCOUNTER=false
+else
+  die "GOATCOUNTER_VHOST and GOATCOUNTER_DB_PASSWORD go together: set both (production) or neither"
+fi
+# The site would count towards a /count that nothing serves.
+$GOATCOUNTER || [[ -z "${PEDALONS_ANALYTICS_COUNT_PATH:-}" ]] \
+  || die "PEDALONS_ANALYTICS_COUNT_PATH is set but GoatCounter is not (GOATCOUNTER_VHOST, GOATCOUNTER_DB_PASSWORD)"
+
 docker network inspect pedalons-shared >/dev/null 2>&1 \
   || die "network pedalons-shared missing — deploy the shared stack first (scripts/deploy.sh --shared)"
 if [[ -z "$REV" ]] && worktree_dirty; then
@@ -154,10 +169,20 @@ export BACKEND_IMAGE_SUFFIX="$suffix" FRONTEND_IMAGE_SUFFIX="$suffix"
 mkdir -p data/storage data/cache
 
 files=(-c docker-compose.yml)
-if $HOLD_APP; then
+# Services held at 0 replicas by an overlay. --hold-app: the backend would boot on the empty database
+# restore.sh is about to fill, and GoatCounter loop on a role that does not exist yet
+# (goatcounter-init.sh db brings it back). Without the GOATCOUNTER_* keys: GoatCounter, always —
+# the file cannot leave it out, `docker stack deploy` refuses profiles.
+held=()
+$HOLD_APP && held+=(backend frontend goatcounter)
+$GOATCOUNTER || $HOLD_APP || held+=(goatcounter)
+if ((${#held[@]} > 0)); then
   hold="$(mktemp)"
   trap 'rm -f "$hold"' EXIT
-  printf 'services:\n  backend:\n    deploy:\n      replicas: 0\n  frontend:\n    deploy:\n      replicas: 0\n' > "$hold"
+  {
+    printf 'services:\n'
+    printf '  %s:\n    deploy:\n      replicas: 0\n' "${held[@]}"
+  } > "$hold"
   files+=(-c "$hold")
 fi
 
@@ -177,6 +202,9 @@ log "deploying stack $ENV_NAME with the build of ${suffix#-}"
 docker stack deploy --prune "${files[@]}" "$ENV_NAME"
 
 $HOLD_APP && exit 0
+
+# GoatCounter is not waited for: it is off the site's critical path, and on its first deploy it
+# restarts in a loop until scripts/goatcounter-init.sh db creates its role.
 
 # `docker stack deploy` returns once the specs are written, not once they run. A new build that
 # never turns healthy is rolled back by Swarm on its own, and without this wait the deploy would

@@ -44,6 +44,11 @@ services:
     ports:
       - "127.0.0.1:${POSTGRES_HOST_PORT:?set it in .env.e2e}:5432"
 
+  # Web analytics is not part of this stack: behind a profile e2e.sh never enables, and .env.e2e sets
+  # no PEDALONS_ANALYTICS_COUNT_PATH, so the site counts nothing.
+  goatcounter:
+    profiles: [analytics]
+
   mailpit:
     image: axllent/mailpit:v1.31.5
     container_name: ${ENV_NAME}-mailpit
