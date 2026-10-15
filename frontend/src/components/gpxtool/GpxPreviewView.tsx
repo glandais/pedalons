@@ -17,6 +17,7 @@ import { SurfaceType } from '@/api/dto'
 import { createRouteFromPreview, useDeletePreview } from '@/api/endpoints/gpx-previews/gpx-previews'
 import { useListTeams } from '@/api/endpoints/teams/teams'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
+import { ShareButton } from '@/components/common/ShareButton'
 import { RouteMapView } from '@/components/route/RouteMapView'
 import { paths } from '@/config/paths'
 import { useAuth } from '@/hooks/useAuth'
@@ -30,7 +31,8 @@ interface GpxPreviewViewProps {
 
 /**
  * Renders an analysed GPX file: the same map and elevation profile as a route. Anyone holding the
- * link sees those; the actions below need an account, and deletion needs to be the creator.
+ * link sees those, and can share that link; the actions below need an account, and deletion needs
+ * to be the creator.
  */
 export function GpxPreviewView({ preview }: GpxPreviewViewProps) {
   const { t } = useTranslation()
@@ -87,7 +89,11 @@ export function GpxPreviewView({ preview }: GpxPreviewViewProps) {
 
   return (
     <Stack>
-      <Title order={1}>{preview.name}</Title>
+      {/* Sharing is open to anyone: the preview page is public, the link is all it takes. */}
+      <Group justify="space-between" align="flex-start" wrap="nowrap">
+        <Title order={1}>{preview.name}</Title>
+        <ShareButton title={preview.name} />
+      </Group>
 
       <Box>
         <RouteMapView route={preview} fullscreenPath={paths.gpxToolsMap(preview.id)} />
