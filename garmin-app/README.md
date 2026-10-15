@@ -221,8 +221,8 @@ xhost -local:docker
 2. Copy `bin/Pedalons-{device}.prg` to `GARMIN/Apps/` on the device
 3. Safely eject the device
 
-For the Connect IQ Store: create the app listing at https://apps.garmin.com/developer, upload the
-signed `.iq` package built by `make package`, and submit it for review.
+For the Connect IQ Store — listing material in `metadata/`, versions, signing key, beta and
+review — see [PUBLISH.md](PUBLISH.md).
 
 ## Authentication
 

@@ -4,7 +4,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Pédalons Garmin Connect IQ app for Garmin Edge cycling computers. Allows users to browse their teams' upcoming rides and routes and download them to the device.
 
-SDK installation, the developer key, simulator setup and troubleshooting are in [README.md](README.md).
+SDK installation, the developer key, simulator setup and troubleshooting are in [README.md](README.md);
+store publication, its listing material (`metadata/`) and the signing-key rules in [PUBLISH.md](PUBLISH.md).
 
 ## Tech Stack
 

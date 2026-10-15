@@ -646,6 +646,21 @@ Ce que les tests ne prouvent pas, parce qu'ils ne passent ni par Flyway ni par u
       Non vérifié à cette occasion : à quelle fréquence le Karoo relit le manifest, et s'il garde
       le tag `navigation`, hors des quatre que documente karoo-ext. (S, surtout de l'attente)
 
+### App Garmin : Connect IQ Store
+
+- [ ] `OPS-35` **Publier l'app Garmin sur le Connect IQ Store** — l'app n'est installable nulle
+      part : `/applications` dit « arrive bientôt » (`apps.garmin.description`). État au
+      15 octobre 2026 : compte développeur ouvert (nom `pedalons.fr`), aucune app chargée ; la clé
+      de signature trouvée par le `Makefile` est bien celle sauvegardée hors du dépôt ; SDK 9.2.0,
+      `make build` passe. Préparé : `garmin-app/PUBLISH.md` (processus, règles de revue Garmin,
+      bêta) et `garmin-app/metadata/` (descriptions FR/EN relues contre le code, notes de la
+      1.0.0, liens confidentialité et support). Reste : les captures du simulateur (edge1050 et
+      edge530, QR code brouillé), `make package` (le `bin/Pedalons.iq` du 28 septembre précède
+      `API-64` et `API-84`), un essai sur un vrai Edge, le dépôt et la revue (72 h annoncées), puis
+      le lien vers la fiche sur `/applications` et dans l'app mobile, et un mot aux inscrits de la
+      bêta. Ne bloque pas mais se verra sur l'appareil : `AUD-26` (AM/PM en dur). `AUD-25` limite
+      l'app à pedalons.fr. Taille : S, plus l'attente de la revue.
+
 ## NOTIF — Notifications
 
 Les phases 1 à 5 de [`plans/archive/2026-09-18-notifications.md`](plans/archive/2026-09-18-notifications.md)

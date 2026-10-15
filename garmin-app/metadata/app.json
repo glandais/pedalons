@@ -1,0 +1,14 @@
+{
+  "name": "Pédalons",
+  "developer": "pedalons.fr",
+  "appType": "Device App",
+  "price": "free",
+  "website": "https://www.pedalons.fr",
+  "support": "https://www.pedalons.fr/support",
+  "contactEmail": "contact@pedalons.fr",
+  "privacyPolicy": {
+    "fr-FR": "https://www.pedalons.fr/confidentialite",
+    "en-US": "https://www.pedalons.fr/privacy"
+  },
+  "screenshots": []
+}
