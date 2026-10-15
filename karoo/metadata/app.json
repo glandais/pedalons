@@ -2,7 +2,7 @@
   "label": "Pédalons",
   "packageName": "fr.pedalons.karoo",
   "developer": "Pédalons",
-  "description": "Les parcours de vos équipes Pédalons sur votre Karoo.\n\nAssociez le Karoo à votre compte en scannant un QR code, puis parcourez les parcours de vos équipes et de vos prochaines sorties pour les envoyer sur le compteur.",
+  "description": "Les parcours de vos équipes Pédalons sur votre Karoo.\n\nAssociez le Karoo à votre compte en scannant un QR code, puis parcourez les parcours de vos équipes et de vos prochaines sorties pour les envoyer sur le compteur.\n\nYour Pédalons teams' routes on your Karoo.\n\nPair the Karoo with your account by scanning a QR code, then browse the routes of your teams and of your upcoming rides and send them to the bike computer.",
   "tags": [
     "navigation"
   ],

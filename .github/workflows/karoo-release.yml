@@ -22,13 +22,16 @@ jobs:
           echo "name=$TAG" >> "$GITHUB_OUTPUT"
           echo "code=$CODE" >> "$GITHUB_OUTPUT"
 
-      # Before the build, so a release without its notes fails in seconds. The same text is the
+      # Before the build, so a release without its notes fails in seconds. The same text, French
+      # then English (the manifest has no locale, and the Karoo may be set to either), is the
       # GitHub release body and the manifest's releaseNotes, shown on the Karoo.
       - name: Read whatsNew
         run: |
-          f="karoo/metadata/version/${{ steps.version.outputs.name }}/fr-FR.json"
-          test -f "$f" || { echo "::error::whatsNew manquant : $f"; exit 1; }
-          jq -r .whatsNew "$f" > karoo/release-notes.md
+          dir="karoo/metadata/version/${{ steps.version.outputs.name }}"
+          for l in fr-FR en-US; do
+            test -f "$dir/$l.json" || { echo "::error::whatsNew manquant : $dir/$l.json"; exit 1; }
+          done
+          { jq -r .whatsNew "$dir/fr-FR.json"; echo; jq -r .whatsNew "$dir/en-US.json"; } > karoo/release-notes.md
 
       - name: Set up JDK 17
         uses: actions/setup-java@v6.0.1

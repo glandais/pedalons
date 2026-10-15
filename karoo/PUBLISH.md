@@ -13,9 +13,11 @@ an SDK licence agreement, reviewed over several weeks. Not done yet for Pédalon
 
 ## Release, manifest and updates
 
-A release is one tag, `karoo.X.Y.Z`, plus one file written **before** it:
-`karoo/metadata/version/X.Y.Z/fr-FR.json`, whose `whatsNew` is the release body on GitHub and the
-release notes shown on the Karoo. `.github/workflows/karoo-release.yml` fails without it.
+A release is one tag, `karoo.X.Y.Z`, plus two files written **before** it:
+`karoo/metadata/version/X.Y.Z/fr-FR.json` and `en-US.json`, whose `whatsNew`, French then English,
+is the release body on GitHub and the release notes shown on the Karoo.
+`.github/workflows/karoo-release.yml` fails without either. The manifest has no notion of locale,
+so the description in `app.json` is bilingual the same way.
 
 The workflow publishes `pedalons.apk`, `pedalons.png` and `manifest.json` — karoo-ext's
 [`KarooAppManifest`](https://github.com/hammerheadnav/karoo-ext/blob/master/lib/src/main/kotlin/io/hammerhead/karooext/models/KarooAppManifest.kt),
