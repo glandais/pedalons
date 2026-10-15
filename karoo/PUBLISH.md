@@ -9,7 +9,7 @@ Since 2026 Hammerhead has a self-service process ([Extensions: Self-Service for
 Developers](https://support.hammerhead.io/hc/en-us/articles/53739708787099)): a developer account on
 dashboard.hammerhead.io, the app's **manifest URL** entered in its Extension menu (the app then shows
 in the Extension Library of the Karoo devices tied to that account), then a submission to SRAM under
-an SDK licence agreement, reviewed over several weeks. Not done yet for Pédalons (ledger `OPS-32`).
+an SDK licence agreement, reviewed over several weeks. Not done yet for Pédalons (ledger `OPS-33`).
 
 ## Release, manifest and updates
 

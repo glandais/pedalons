@@ -604,19 +604,16 @@ Ce que les tests ne prouvent pas, parce qu'ils ne passent ni par Flyway ni par u
 
 ---
 
-### Extension Karoo : fiche, mises à jour, catalogue
+### Extension Karoo : catalogue Hammerhead
 
-- [ ] `OPS-32` **Mettre en service le manifest Karoo** — le workflow `karoo-release.yml` publie
-      désormais un `manifest.json` (karoo-ext `KarooAppManifest`) et le réécrit dans la release fixe
-      `karoo-latest` ; chaque APK y renvoie par `https://www.pedalons.fr/karoo/manifest.json`, redirigé
-      par traefik (`docker-compose.yml`, labels du frontend). Le circuit est décrit dans
-      `karoo/PUBLISH.md`. Reste, dans l'ordre : déployer la stack puis vérifier la 302
-      (`curl -sI https://www.pedalons.fr/karoo/manifest.json`) ; pousser le tag `karoo.1.0.9` (son
-      `whatsNew` est écrit) et vérifier la release `karoo-latest` ; installer la 1.0.9 sur un Karoo et
-      constater la fiche enrichie, puis qu'une 1.0.10 s'y propose en mise à jour ; enfin, déclarer le
-      manifest sur dashboard.hammerhead.io et soumettre l'app à SRAM (accord de licence, plusieurs
-      semaines). Non vérifié : à quelle fréquence le Karoo relit le manifest, et s'il garde le tag
-      `navigation`, hors des quatre que documente karoo-ext. (S)
+- [ ] `OPS-33` **Publier l'extension Karoo dans l'Extension Library de Hammerhead** (scindé
+      d'`OPS-32`) — l'app ne s'installe aujourd'hui que par sideload. Créer le compte développeur
+      sur dashboard.hammerhead.io, y déclarer l'URL du manifest (la GitHub directe,
+      `releases/download/karoo-latest/manifest.json`, modifiable là-bas à tout moment), vérifier
+      que l'app apparaît dans l'Extension Library des Karoo liés au compte, puis la soumettre à SRAM
+      (accord de licence SDK, plusieurs semaines). Le processus est décrit dans `karoo/PUBLISH.md`.
+      Non vérifié à cette occasion : à quelle fréquence le Karoo relit le manifest, et s'il garde
+      le tag `navigation`, hors des quatre que documente karoo-ext. (S, surtout de l'attente)
 
 ## NOTIF — Notifications
 
