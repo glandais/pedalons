@@ -1,12 +1,13 @@
 # Pédalons Frontend
 
-Web client of the Pédalons cycling team management platform, server-side rendered (see [docs/SSR.md](docs/SSR.md)). Built with TypeScript, React 19, Vite, and Mantine UI.
+Web client of the Pédalons cycling team management platform, server-side rendered (see [docs/SSR.md](docs/SSR.md)). Built with TypeScript 7, React 19, Vite 8 and Mantine UI 9.
 
 ## Prerequisites
 
-- Node.js 22+ (Vite 8 requires ^20.19 or >=22.12)
-- pnpm 11 — pinned by `packageManager` in `package.json`; `corepack enable` honours it
-- An API to talk to — either the staging API (default, no setup) or a local backend on `localhost:8080` (see root [README](../README.md)) with Docker infrastructure up (`docker compose up -d` from repo root)
+- Node.js — the version CI uses is pinned in [`.nvmrc`](.nvmrc); Vite 8 itself needs ^20.19 or >=22.12
+- pnpm — pinned by `packageManager` in `package.json`; `corepack enable` honours it
+- An API to talk to: the staging API (the default, no setup) or a local backend on `localhost:8080`,
+  started as in the root [Quick Start](../README.md#quick-start)
 
 ## Getting Started
 
@@ -15,28 +16,28 @@ pnpm install
 pnpm dev
 ```
 
-The dev server starts at https://localhost:5173 and proxies `/api` requests to the API target.
+The dev server starts at https://localhost:5173 (plain HTTP without the certificates below) and
+proxies `/api` to the API target.
 
 ### API Target
 
-The dev/preview server proxies `/api` to a configurable target, controlled by the `VITE_API_TARGET` env var:
+`pnpm dev` and `pnpm preview` proxy `/api` to `VITE_API_TARGET`, read from `frontend/.env`
+(git-ignored; `.env.example` is the template):
 
-- **No `.env` file** → defaults to the staging API `https://staging.pedalons.fr`. No backend needed locally.
-- **Local backend** → copy `.env.example` to `.env` and set the target:
+- **unset** → the staging API, `https://staging.pedalons.fr`. No backend needed locally.
+- **local backend** → `VITE_API_TARGET=http://localhost:8080` in `.env`.
 
-  ```bash
-  cp .env.example .env
-  # then in .env:
-  VITE_API_TARGET=http://localhost:8080
-  ```
+The proxy sets `X-Forwarded-Host` / `X-Forwarded-Proto` from the target URL, so the backend resolves
+the target's tenant. `pnpm dev:ssr` does not read it: its server takes `API_BASE_URL` from the
+environment (default `http://localhost:8080`), e.g. `API_BASE_URL=https://staging.pedalons.fr pnpm dev:ssr`.
 
-The proxy derives `X-Forwarded-Host` / `X-Forwarded-Proto` from the target URL so multi-tenant domain resolution stays correct. `.env` is git-ignored; `.env.example` is committed.
+Runtime app config comes from the `/api/config` endpoint, not from `.env` files.
 
 ### HTTPS Setup (required for WebAuthn/passkeys)
 
-Vite serves HTTPS only when it finds `localhost+2.pem` and `localhost+2-key.pem` in this folder, and
-plain HTTP otherwise. Generate them with [mkcert](https://github.com/FiloSottile/mkcert) — three
-hosts, since that is what names the files `localhost+2`:
+Vite serves HTTPS only when it finds `localhost+2.pem` and `localhost+2-key.pem` in this folder
+(git-ignored), and plain HTTP otherwise. Generate them with [mkcert](https://github.com/FiloSottile/mkcert) —
+three hosts, since that is what names the files `localhost+2`:
 
 ```bash
 mkcert -install                            # one time: install local CA
@@ -49,35 +50,36 @@ mkcert localhost 127.0.0.1 <your LAN IP>   # generates localhost+2.pem and local
 |--------|-------------|
 | `pnpm dev` | Dev server with HMR (client-side rendering only) |
 | `pnpm dev:ssr` | SSR dev server (`node server.js`, localhost:3000) — see [docs/SSR.md](docs/SSR.md) |
-| `pnpm build` | Production build, client + SSR bundle (no type checking) |
+| `pnpm build` | Production build, client (`dist/client`) + SSR bundle (`dist/server`), no type checking |
 | `pnpm typecheck` | TypeScript check (`tsc -b`) |
-| `pnpm preview` | Preview production build locally |
+| `pnpm preview` | Preview the production build locally |
 | `pnpm serve:ssr` | Build, then run the SSR server in production mode |
-| `pnpm generate-api` | Regenerate API client from OpenAPI contract |
-| `pnpm generate-routes` | Regenerate path builders + deeplinks from `../contracts/routes.yaml` |
+| `pnpm generate-api` | Regenerate the API client from `../contracts/openapi.json` |
+| `pnpm generate-routes` | Regenerate path builders + deeplinks from `../contracts/routes.yaml` ([docs/APP_LINKS.md](../docs/APP_LINKS.md)) |
 | `pnpm generate-brand-colors` | Regenerate the business colour code (web + mobile) from `../contracts/brand-colors.yaml` |
-| `pnpm generate-icons` | Regenerate PWA icons |
-| `pnpm lint` | oxlint |
-| `pnpm format` | Sort the translation catalogues (i18next-cli extract), then Prettier |
-| `pnpm test` | Vitest (watch mode) |
-| `pnpm test:coverage` | Vitest with coverage report |
+| `pnpm generate-icons` | Regenerate PWA icons from `public/icon.svg` |
+| `pnpm lint` | oxlint (`lint:fix` to apply fixes) |
+| `pnpm format` | Sort the translation catalogues (i18next-cli extract), then Prettier (`format:check` to only check) |
+| `pnpm test` | Vitest (watch mode; `test:coverage` for a single run with coverage) |
 | `pnpm e2e` | Playwright against the e2e stack — see [e2e/README.md](e2e/README.md) |
-| `pnpm i18n:check` | Translation catalogues sorted and complete, `t()` params, English vs French — see CLAUDE.md « i18n » |
+| `pnpm i18n:check` | Translation catalogues sorted and complete, `t()` params, English vs French — see [CLAUDE.md](CLAUDE.md) « i18n » |
 | `pnpm check` | Install, regenerate, format, typecheck, lint, i18n:check and build |
+
+`predev` and `prebuild` copy `../privacy/*.md` into `src/assets/legal/` (`pnpm copy-legal`). The
+remaining scripts are in `package.json`.
 
 ## API Client Generation
 
-The API layer is generated from the backend's OpenAPI contract using [Orval](https://orval.dev/):
+The API layer is generated with [Orval](https://orval.dev/) from the contract the backend build
+writes to `../contracts/`:
 
 ```bash
-# 1. Generate OpenAPI spec (from backend/)
-cd ../backend && mvn package -DskipTests
-
-# 2. Generate TypeScript client (from frontend/)
-pnpm generate-api
+cd ../backend && mvn package -DskipTests   # writes contracts/openapi.{json,yaml}
+cd ../frontend && pnpm generate-api
 ```
 
-This produces React Query hooks, TypeScript DTOs, and Zod schemas in `src/api/`. **Do not edit generated files.**
+It produces React Query hooks, TypeScript DTOs and Zod schemas in `src/api/`, which it wipes first.
+**Do not edit generated files.**
 
 ## Stack
 
@@ -87,7 +89,7 @@ This produces React Query hooks, TypeScript DTOs, and Zod schemas in `src/api/`.
 | Routing | React Router 7 |
 | Server State | TanStack React Query 5 |
 | Client State | Zustand 5 |
-| Forms | Mantine Form + Zod validation |
+| Forms | Mantine Form + Zod 4 validation |
 | Rich Text | Tiptap 3 |
 | Maps | MapLibre GL + react-map-gl |
 | Charts | Chart.js + react-chartjs-2 |
@@ -102,7 +104,3 @@ icons, i18n, forms, dates) are in [CLAUDE.md](CLAUDE.md), which is kept up to da
 Topic notes: [docs/SSR.md](docs/SSR.md), [docs/SSR-data-loading.md](docs/SSR-data-loading.md),
 [docs/URL_FILTERS.md](docs/URL_FILTERS.md), [docs/LINK_PREVIEW.md](docs/LINK_PREVIEW.md), and
 [docs/APP_LINKS.md](../docs/APP_LINKS.md) for adding a route.
-
-Runtime app config comes from the `/api/config` endpoint — no `.env` files for app config. The only
-`.env` var is `VITE_API_TARGET`, which just points the dev-server proxy at an API (see
-[API Target](#api-target)).

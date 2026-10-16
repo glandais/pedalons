@@ -1,65 +1,42 @@
 # Pédalons Garmin Connect IQ App
 
-A Garmin Connect IQ app for Edge cycling computers that allows users to browse the upcoming rides and the routes of their teams, and download routes to the device.
+A Garmin Connect IQ app for Edge cycling computers: browse the upcoming rides and the routes of your
+teams, and download routes to the device.
 
 ## Features
 
+- **My next rides**: the groups you are registered in, one select away from downloading their route,
+  with whether that route is already in Garmin Connect
 - Browse the upcoming rides of all your teams, and the routes attached to them
-- Browse the routes of all your teams that are not attached to a ride
-- Routes sorted by proximity to current location
-- Download routes as FIT files directly to your Garmin
-- Device Code Flow authentication (no keyboard needed)
-- Logout from the home menu
-- Supports English and French
+- Browse the routes of all your teams that are not attached to a ride, sorted by proximity to the
+  current location
+- Download routes as FIT files directly to the Edge
+- Device Code Flow login (no keyboard needed), logout from the home menu
+- English and French
 
 ## Supported Devices
 
-| Device | Product ID |
-|--------|------------|
-| Edge 530 | edge530 |
-| Edge 540 | edge540 |
-| Edge 550 | edge550 |
-| Edge 830 | edge830 |
-| Edge 840 | edge840 |
-| Edge 850 | edge850 |
-| Edge 1030 | edge1030 |
-| Edge 1030 Bontrager | edge1030bontrager |
-| Edge 1030 Plus | edge1030plus |
-| Edge 1040 | edge1040 |
-| Edge 1050 | edge1050 |
-| Edge Explore 2 | edgeexplore2 |
-| Edge MTB | edgemtb |
+edge530, edge540, edge550, edge830, edge840, edge850, edge1030, edge1030bontrager, edge1030plus,
+edge1040, edge1050, edgeexplore2, edgemtb — Connect IQ API 3.3.0 or higher (`minApiLevel`).
 
-Requires Connect IQ API 3.3.0 or higher (`minApiLevel` in `manifest.xml`).
+The list lives in `manifest.xml` and in `DEVICES` in the `Makefile`: change both together.
 
-## Quick Start
+## Setup
 
-### Prerequisites
+You need Docker (or Podman), or a native Connect IQ SDK, and a free
+[Garmin developer account](https://developer.garmin.com/).
 
-- Docker (recommended) or Podman, or the native Connect IQ SDK
-- Garmin developer account (free): https://developer.garmin.com/
-- Garmin developer key (see [Generate a Developer Key](#step-4-generate-a-developer-key))
+### SDK (Docker-based)
 
-### SDK Installation (Docker-based)
-
-On modern Linux distributions (Ubuntu 24.04+), the official SDK Manager has compatibility issues with webkit2gtk. The recommended approach is using Docker with Ubuntu 22.04.
-
-#### Step 1: Build the SDK Manager Container
+On Ubuntu 24.04+ the official SDK Manager and simulator need webkit2gtk-4.0, which is no longer
+packaged (the SDK Manager shows a blank window, the simulator fails on
+`libwebkit2gtk-4.0.so.37`). `Dockerfile.sdk-manager` runs them on Ubuntu 22.04 instead:
 
 ```bash
 cd garmin-app
-
-# Build the container
 docker build -t garmin-sdk-manager -f Dockerfile.sdk-manager .
-```
 
-#### Step 2: Run SDK Manager to Download SDK
-
-```bash
-# Allow X11 forwarding
 xhost +local:docker
-
-# Run the SDK Manager GUI
 docker run -it --rm \
   --ipc=host \
   -e DISPLAY=$DISPLAY \
@@ -68,73 +45,43 @@ docker run -it --rm \
   -v ~/.Garmin:/root/.Garmin \
   --security-opt label=disable \
   garmin-sdk-manager
-
-# After done, revoke X11 access
 xhost -local:docker
 ```
 
-In the SDK Manager:
-1. Log in with your Garmin developer account
-2. Download SDK 8.4.0 (or latest)
-3. Download device simulators for the Edge devices you want to test
-4. Close the SDK Manager
-
-The SDK will be installed to `~/.Garmin/ConnectIQ/Sdks/`.
-
-#### Step 3: Fix File Permissions
-
-Files created by Docker are owned by root. Fix ownership:
+In the SDK Manager, log in with your developer account, download the latest SDK and the simulators
+of the Edge devices you want to test, then close it. The SDK lands in `~/.Garmin/ConnectIQ/Sdks/`,
+owned by root — give it back to yourself (this also fixes "Permission denied" later on):
 
 ```bash
 sudo chown -R $USER:$USER ~/.Garmin/ConnectIQ/
 ```
 
-#### Step 4: Generate a Developer Key
+The `Makefile` picks the most recent SDK under `~/.Garmin/ConnectIQ/Sdks/` (or
+`~/Library/Application Support/Garmin/ConnectIQ/Sdks/` on macOS); set `CIQ_HOME` to override.
+
+### Developer key
 
 ```bash
-make keygen
+make keygen   # once
 ```
 
-which runs, once:
+It writes a 4096-bit RSA key in DER format to `~/.Garmin/ConnectIQ/developer_key` (with the PEM
+next to it). The store version is signed with a specific key that must never change — see
+[PUBLISH.md](PUBLISH.md#current-situation).
+
+## Build
+
+Run from `garmin-app/` (`make help` lists every target):
 
 ```bash
-# Generate RSA key pair using OpenSSL
-openssl genrsa -out ~/.Garmin/ConnectIQ/developer_key.pem 4096
-
-# Convert to DER format (required by Connect IQ SDK)
-openssl pkcs8 -topk8 -inform PEM -outform DER \
-  -in ~/.Garmin/ConnectIQ/developer_key.pem \
-  -out ~/.Garmin/ConnectIQ/developer_key \
-  -nocrypt
-```
-
-This creates `~/.Garmin/ConnectIQ/developer_key` (DER format, used for signing builds).
-
-### Build
-
-```bash
-# Build for Edge 1040 (default)
-make build
-
-# Build for a specific device
-make build DEVICE=edge530
-
-# Build for all supported devices
-make build-all
-
-# Build debug version with symbols
-make debug DEVICE=edge1040
-
-# Clean build artifacts
+make build                   # Edge 1040 (default)
+make build DEVICE=edge530    # a specific device
+make build-all               # every supported device
+make debug DEVICE=edge1040   # with debug symbols
 make clean
-
-# Create .iq package for Connect IQ Store
-make package
 ```
 
-The built `.prg` files will be in the `bin/` directory.
-
-To build inside Docker instead of with a native SDK:
+The `.prg` files land in `bin/`. To build inside Docker instead of with a native SDK:
 
 ```bash
 docker build -t pedalons-garmin-builder -f Dockerfile.build .
@@ -146,171 +93,80 @@ docker run --rm \
   make build
 ```
 
-### Run in Simulator
+## Run in the Simulator
 
-#### Using Docker (Ubuntu 24.04+)
-
-On modern Linux distributions, the simulator requires Docker due to webkit2gtk compatibility issues.
+The simulator must be running before an app is loaded into it.
 
 ```bash
-# 1. Start the simulator (runs in background)
+# Ubuntu 24.04+: through the garmin-sdk-manager image built above
 make simulator-docker
-
-# 2. Wait 2-3 seconds for simulator to initialize
-
-# 3. Build and load the app
 make run-docker DEVICE=edge1040
-```
 
-#### Using Native SDK (macOS or older Linux)
-
-If webkit2gtk-4.0 is available on your system:
-
-```bash
-# 1. Start the simulator
+# macOS, or a Linux that still has webkit2gtk-4.0
 make simulator
-
-# 2. Build and load the app
 make run DEVICE=edge1040
 ```
 
-#### Manual Docker Commands
+Use different `DEVICE` values to test other screen sizes. The app always talks to
+`https://www.pedalons.fr` (`BASE_URL` in `source/ApiClient.mc`), simulator included, and login works
+as on a device (see [Authentication](#authentication)).
 
-For more control over the simulator:
+Unit tests (the `(:test)` code, e.g. `QrCodeTest.mc`) run in the native simulator, started first:
 
 ```bash
-# Allow X11 forwarding
-xhost +local:docker
-
-# Start simulator manually
-docker run --rm -d \
-  --ipc=host \
-  --net=host \
-  -e DISPLAY=$DISPLAY \
-  -e NO_AT_BRIDGE=1 \
-  -v /tmp/.X11-unix:/tmp/.X11-unix \
-  -v ~/.Garmin/ConnectIQ:/root/.Garmin/ConnectIQ \
-  --security-opt label=disable \
-  garmin-sdk-manager \
-  /root/.Garmin/ConnectIQ/Sdks/connectiq-sdk-lin-8.4.0-2025-12-03-5122605dc/bin/simulator
-
-# Load app into running simulator
-docker run --rm \
-  --net=host \
-  -v ~/.Garmin/ConnectIQ:/root/.Garmin/ConnectIQ \
-  -v $(pwd):/app \
-  -w /app \
-  garmin-sdk-manager \
-  /root/.Garmin/ConnectIQ/Sdks/connectiq-sdk-lin-8.4.0-2025-12-03-5122605dc/bin/monkeydo bin/Pedalons-edge1040.prg edge1040
-
-# When done, revoke X11 access
-xhost -local:docker
+make test DEVICE=edge1040
 ```
 
-#### Simulator Tips
+## Deploy to a Device
 
-- The simulator must be running before loading an app
-- Use different `DEVICE` values to test on different screen sizes
-- Login works as on a device: the app shows a code, you complete it in any browser, and the app
-  polls until it is done (see [Authentication](#authentication)). The app talks to
-  `https://www.pedalons.fr` (`source/ApiClient.mc`)
+1. Connect the Edge over USB
+2. Copy `bin/Pedalons-<device>.prg` to `GARMIN/Apps/` on the device
+3. Eject the device
 
-### Deploy to Device
-
-1. Connect your Edge device via USB
-2. Copy `bin/Pedalons-{device}.prg` to `GARMIN/Apps/` on the device
-3. Safely eject the device
-
-For the Connect IQ Store — listing material in `metadata/`, versions, signing key, beta and
-review — see [PUBLISH.md](PUBLISH.md).
+Publishing to the Connect IQ Store — the `metadata/` listing material, versions, signing key, beta
+and review — is in [PUBLISH.md](PUBLISH.md); a release is run with the `garmin-release` skill
+(`.claude/skills/garmin-release/`).
 
 ## Authentication
 
-The app uses Device Code Flow (RFC 8628) since Edge devices don't have keyboards:
+The app uses Device Code Flow (RFC 8628), since Edge devices have no keyboard:
 
-1. Open the app on your Garmin
-2. Press SELECT to start login
-3. Note the 6-character code displayed
-4. On your phone or computer, go to `pedalons.fr/garmin`
-5. Enter the code and log in with your Pédalons account
-6. The app automatically detects authentication and shows your rides and routes
+1. Open the app on the Edge and press SELECT
+2. It shows a QR code, the site's address and a 6-character code
+3. Scan the QR code, or open the site's `/garmin` page, on a phone or computer
+4. Check the code and log in with your Pédalons account
+5. The app detects the login and shows your rides and routes
 
 ## Troubleshooting
 
-### SDK Manager Shows Blank Window
-
-This is a known issue on Ubuntu 24.04+. Use the Docker approach described above.
-
-### "Unable to find manifest"
-
-Ensure you're running the build command from the `garmin-app` directory.
-
-### "Key not found"
-
-Generate a developer key as described in [Step 4](#step-4-generate-a-developer-key).
-
-### Build Fails with "Device not supported"
-
-Check that the device ID in your command matches one in `manifest.xml`.
-
-### "Permission denied" or "Permission non accordée"
-
-SDK files are owned by root after Docker installation. Fix with:
-
-```bash
-sudo chown -R $USER:$USER ~/.Garmin/ConnectIQ/
-```
-
-### Simulator: "libwebkit2gtk-4.0.so.37: cannot open shared object file"
-
-On Ubuntu 24.04+, the simulator requires webkit2gtk-4.0 which is not available. Use Docker:
-
-```bash
-make simulator-docker
-make run-docker DEVICE=edge1040
-```
-
-### "Unable to connect to simulator"
-
-The simulator must be running before loading an app. Start it first:
-
-```bash
-make simulator-docker
-# Wait 2-3 seconds for it to start
-make run-docker DEVICE=edge1040
-```
+| Symptom | Fix |
+|---|---|
+| SDK Manager shows a blank window, or the simulator can't open `libwebkit2gtk-4.0.so.37` | Use the Docker setup and the `*-docker` targets above |
+| "Permission denied" (or "Permission non accordée") | `sudo chown -R $USER:$USER ~/.Garmin/ConnectIQ/` |
+| `Developer key not found` | `make keygen` |
+| `Connect IQ SDK not found` | Install an SDK, or set `CIQ_HOME` |
+| Manifest not found | Run `make` from `garmin-app/` |
+| Device not supported | Use a `DEVICE` listed in `manifest.xml` |
+| "Unable to connect to simulator" | Start the simulator first, wait a few seconds, then `make run-docker` |
 
 ## Project Structure
 
 ```
 garmin-app/
-├── manifest.xml               # App manifest (permissions, devices)
-├── monkey.jungle              # Build configuration
-├── Makefile                   # Build automation
-├── Dockerfile.sdk-manager     # Docker image for SDK Manager
-├── Dockerfile.build           # Docker image for building
-├── source/
-│   ├── PedalonsApp.mc         # Main app entry
-│   ├── AuthManager.mc         # Token management
-│   ├── ApiClient.mc           # HTTP API client
-│   ├── LoginView.mc           # Login/auth screen
-│   ├── PedalonsView.mc        # Loading view, then home menu (rides, routes, logout)
-│   ├── PedalonsDelegate.mc    # Input for the loading/error view
-│   ├── HomeMenuDelegate.mc    # Home menu input
-│   ├── RideListMenuDelegate.mc       # Ride list
-│   ├── RideEntryMenuDelegate.mc      # Routes of a ride (one per group)
-│   ├── StandaloneRouteMenuDelegate.mc # Routes not attached to a ride
-│   ├── RouteDetailView.mc     # Route detail and download
-│   ├── RouteDetailDelegate.mc # Route detail input
-│   ├── ErrorView.mc           # Error display
-│   ├── FormatUtils.mc         # Distance, elevation, time and date formatting
-│   └── VerticalLayout.mc      # Vertical text layout helper
-├── resources/
-│   ├── drawables/
-│   └── strings.xml            # English strings
-└── resources-fre/
-    └── strings.xml            # French strings
+├── manifest.xml            # App id, version, devices, permissions, languages
+├── monkey.jungle           # Build configuration
+├── Makefile                # Build, simulator, tests, key, package
+├── Dockerfile.sdk-manager  # SDK Manager and simulator image
+├── Dockerfile.build        # Build image
+├── source/                 # Monkey C sources (file by file in CLAUDE.md)
+├── resources/              # English strings, launcher icon
+├── resources-fre/          # French strings
+├── scripts/qr-vectors.py   # Test vectors for QrCodeTest.mc
+├── metadata/               # Store listing material (PUBLISH.md)
+└── docs/                   # Garmin reference PDFs
 ```
+
+The source layout, API endpoints and code patterns are in [CLAUDE.md](CLAUDE.md).
 
 ## Documentation
 
@@ -318,12 +174,8 @@ garmin-app/
 - [Monkey C Programming Guide](https://developer.garmin.com/connect-iq/monkey-c/)
 - [Connect IQ API Reference](https://developer.garmin.com/connect-iq/api-docs/)
 - [SDK Manager Linux Workaround](https://github.com/pcolby/connectiq-sdk-manager/issues/3)
-
-### Garmin Reference PDFs (in `docs/`)
-
-- `Garmin Developer Program_Start_Guide_1.2.pdf` - Getting started with Garmin development
-- `Courses_API.pdf` - Garmin Courses API for route/course management
-- `OAuth2PKCE_2.pdf` - OAuth 2.0 PKCE flow documentation
+- In `docs/`: the Garmin Developer Program start guide, the Courses API and the OAuth 2.0 PKCE
+  documentation (PDFs)
 
 ## License
 

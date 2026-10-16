@@ -2,42 +2,91 @@
 
 Multi-tenant web platform for cycling teams to organize rides, trips, manage GPX routes with interactive maps, and communicate.
 
-## Tech Stack
+| Module | Stack | Read |
+|---|---|---|
+| `backend/` | Java 25, Quarkus 3.39.x, PostgreSQL 17 + PostGIS | [backend/README.md](backend/README.md) |
+| `frontend/` | TypeScript 7 (tsgo), React 19, Vite 8, Mantine UI 9, server-side rendered | [frontend/README.md](frontend/README.md) |
+| `mobile/` | Flutter, Dart, Riverpod 3 | [mobile/README.md](mobile/README.md) |
+| `karoo/` | Kotlin, Jetpack Compose, ktor-client-karoo | [karoo/README.md](karoo/README.md) |
+| `garmin-app/` | Monkey C, Connect IQ SDK | [garmin-app/README.md](garmin-app/README.md) |
 
-- **Backend**: Java 25, Quarkus 3.39.x, PostgreSQL 17 with PostGIS
-- **Frontend**: TypeScript 7 (tsgo), React 19, Vite 8, Mantine UI 9
-- **Mobile**: Flutter, Dart, Riverpod 3
-- **Karoo**: Kotlin, Jetpack Compose, ktor-client-karoo
-- **Garmin**: Monkey C, Connect IQ SDK
-- **API**: OpenAPI 3.1 contract-driven development
-- **Testing**: JUnit 5, REST Assured, Vitest, Playwright (web e2e), Patrol (mobile e2e)
+The API is OpenAPI 3.1, contract-first: the backend build writes `contracts/openapi.yaml` and
+`openapi.json`, and the clients are generated from them.
 
 ## Quick Start
 
-### Prerequisites
+The usual workstation runs the backing services in Docker and the backend and frontend from source.
 
-- Java 25+
-- Maven 3.9+
-- Node.js 22+ (Vite 8 requires ^20.19 or >=22.12)
-- pnpm — the version is pinned by `packageManager` in `frontend/package.json`; `corepack enable` honours it
-- Docker 24+
-- Docker Compose 2.20+
+**Prerequisites**: Docker 24+ with Compose 2.20+, Java 25+ and Maven 3.9+, Node.js (version in
+`frontend/.nvmrc`) and pnpm (pinned by `packageManager` in `frontend/package.json` — `corepack enable`
+honours it), openssl,
+[mkcert](https://github.com/FiloSottile/mkcert).
 
-### 1. Clone and Setup
+### 1. Clone and write the `.env`
 
 ```bash
-git clone git@github.com:glandais/pedalons.git
+git clone git@github.com:glandais/pedalons.git tribly
 cd tribly
 cp .env.example .env
 ```
+
+Then, in `.env`:
+
+- **uncomment the workstation block at the bottom** (`ENV_NAME=tribly-local`, `COMPOSE_FILE`, the
+  mailpit `QUARKUS_MAILER_*`) — it is what makes this checkout a workstation, and it is not optional:
+  see [below](#the-env-on-a-workstation-and-on-a-server);
+- **replace every `########`**: `POSTGRES_PASSWORD`, `MINIO_ROOT_PASSWORD` and `MINIO_SECRET_KEY`
+  (**equal** — the second is how the backend logs into the first), `ENCRYPTION_KEY`
+  (`openssl rand -base64 32`; change it later and the stored GPS-service tokens stop decrypting),
+  `PEDALONS_BOOTSTRAP_ADMIN_EMAIL` and `_DISPLAY_NAME` (any value: they only matter to the
+  [full stack](#running-the-full-stack-locally)).
+
+Everything else has a working default.
+
+### 2. Start the backing services
+
+```bash
+docker compose up -d   # postgres, MinIO, imgproxy, varnish, valhalla, tileserver, mailpit
+```
+
+The first start of valhalla builds its routing tiles (France by default, `VALHALLA_TILE_URLS`) and
+takes a long while; the rest is up in seconds. Mail, whatever its recipient, lands in mailpit:
+http://127.0.0.1:8025.
+
+### 3. Start the backend
+
+```bash
+cd backend
+./generate-keys.sh             # once: the dev/test JWT key pair, in backend/keys/
+source ../scripts/dev-env.sh   # the stack's postgres + MinIO credentials, nothing else
+mvn quarkus:dev                # http://localhost:8080/api, Swagger UI on /q/swagger-ui
+```
+
+The ports it talks to, why `dev-env.sh` exports so little, and how to log in as the dev admin are in
+[backend/README.md](backend/README.md#getting-started).
+
+### 4. Start the frontend
+
+```bash
+cd frontend
+mkcert -install && mkcert localhost 127.0.0.1 <your LAN IP>   # once, see below
+echo 'VITE_API_TARGET=http://localhost:8080' >> .env          # else /api goes to staging
+pnpm install
+pnpm dev                                                      # https://localhost:5173
+```
+
+Without the certificates Vite falls back to plain HTTP: the site loads, but passkeys and emailed
+links (both built on `https://localhost:5173`) don't work. Without `VITE_API_TARGET` the dev server
+proxies to `https://staging.pedalons.fr`, which is all front-end work needs. Details:
+[frontend/README.md](frontend/README.md#https-setup-required-for-webauthnpasskeys).
 
 ### The `.env`, on a workstation and on a server
 
 There is **one** `.env`, never committed, and one template for both uses. Compose reads it on a
 workstation, `scripts/deploy.sh` on a host, and `docker-compose.yml` hands the whole file to the
-backend container through `env_file` — which is why
-anything that has no business inside the application has no business in it either (the `BACKUP_*`
-settings live in `/root/pedalons-backup.env` instead, see [Backup and restore](docs/OPERATIONS.md#backup-and-restore)).
+backend container through `env_file` — which is why anything that has no business inside the
+application has no business in it either (the `BACKUP_*` settings live in
+`/root/pedalons-backup.env`, see [Backup and restore](docs/OPERATIONS.md#backup-and-restore)).
 
 A workstation and a deployment differ in five keys, and only those:
 
@@ -46,445 +95,197 @@ A workstation and a deployment differ in five keys, and only those:
 | `ENV_NAME` | `pedalons-prod`, `pedalons-staging` | `tribly-local` |
 | `COMPOSE_FILE` | *unset* — `docker-compose.yml` alone | `docker-compose.yml:docker-compose.local.yml` |
 | `QUARKUS_MAILER_*` | the Scaleway TEM SMTP relay | `mailpit` / `1025`, TLS and login `DISABLED` |
-| `PEDALONS_BOOTSTRAP_DOMAIN` / `_BASE_URL` | the public hostname, `https://…` | `localhost` / `http://localhost:8090` |
+| `PEDALONS_BOOTSTRAP_DOMAIN` / `_BASE_URL` | the public hostname, `https://…` | `localhost` / `http://localhost:8090` (full stack only) |
 | `HTTP_PORT` | 8090 prod, 8089 staging, behind Caddy | anything free |
 
-Two of those are not a matter of taste. **`ENV_NAME` names the stack** — containers, network, image
-tags, and the postgres and minio the backup scripts look up; a local stack called `…-prod` is
-indistinguishable from the real one in `docker ps` and to `scripts/restore.sh`. And **a local stack
-must not be able to send mail**, for reasons worth reading before the first `up`:
-[Running the full stack locally](#running-the-full-stack-locally).
+- **`ENV_NAME` names the stack** — containers, network, image tags, and the postgres and minio the
+  backup scripts look up. A local stack called `…-prod` is indistinguishable from the real one in
+  `docker ps` and to `scripts/restore.sh`.
+- **A local stack must not be able to send mail.** The containers run the `%prod` Quarkus profile
+  wherever they run, and its only way out for mail is the relay named by `QUARKUS_MAILER_*`. After a
+  biketeam migration the local database holds thousands of real member addresses, and one OTP or
+  team invitation is enough to reach them.
+- **`COMPOSE_FILE` adds the workstation overlay**, `docker-compose.local.yml`: mailpit, the valhalla
+  and tileserver a host gets from its shared stack, the loopback ports dev mode talks to, and an
+  `app` profile on `backend`/`frontend`/`traefik` so that a plain `docker compose up -d` starts the
+  backing services alone. A deployed `.env` has no `COMPOSE_FILE`, which is why the overlay is a
+  separate file rather than a profile. Its header comment lists what it changes.
 
-`COMPOSE_FILE` is what turns the checkout into a workstation. The overlay it adds carries mailpit,
-the valhalla and tileserver a server instead gets from the shared stack, the loopback ports
-`mvn quarkus:dev` and `pnpm dev` talk to, and an `app` profile on `backend`/`frontend`/`traefik` so a
-plain `docker compose up -d` starts the backing services alone. `goatcounter` (the web analytics,
-production only) sits behind an `analytics` profile that nothing enables. `source scripts/dev-env.sh` then
-feeds this same file's `POSTGRES_*` / `MINIO_*` to the dev backend — no second set of credentials to
-keep in sync.
+## Running the full stack locally
 
-**Fill in before the first `up`:**
-
-| Key | |
-|---|---|
-| `POSTGRES_PASSWORD` | any value; the database is created with it on first start |
-| `MINIO_ROOT_PASSWORD` and `MINIO_SECRET_KEY` | must be **equal** — the second is how the backend authenticates against the first. Same for `MINIO_ROOT_USER` / `MINIO_ACCESS_KEY` |
-| `ENCRYPTION_KEY` | `openssl rand -base64 32`. Encrypts the stored GPS-service tokens: change it later and they stop decrypting |
-| `PEDALONS_BOOTSTRAP_ADMIN_EMAIL` | your address. The account is created without a password; first login is by OTP or passkey |
-
-**Everything else in `.env.example` has a working default**, so a workstation `.env` can be shorter
-than the template: `PUID`/`PGID` (1000:1000), `POSTGRES_HOST_PORT` (5432), `FRONTEND_SOURCEMAP`
-(false), `QUARKUS_MAILER_USERNAME`/`_PASSWORD` (unread when the login is
-`DISABLED`), and `VALHALLA_TILE_URLS` — whose default builds France, and whose every change costs a
-rebuild of several hours.
-
-### 2. Install and configure mkcert
-
-Vite serves HTTPS only when it finds `frontend/localhost+2.pem` and `frontend/localhost+2-key.pem`,
-and falls back to plain HTTP otherwise. The `%dev` bootstrap domain's base URL is
-`https://localhost:5173`, which is both the WebAuthn origin of dev passkeys and the prefix of the
-links sent by email: skip the certificates and the site still loads, but passkeys and emailed links
-don't work against it.
+The same `docker-compose.yml`, run from the built images — for testing a build. It needs the
+production JWT key pair, which `docker-compose.yml` mounts from `data/keys/`:
 
 ```bash
-# Windows (chocolatey)
-choco install mkcert
-
-# Windows (scoop)
-scoop install mkcert
-
-# macOS
-brew install mkcert
+data/keys/generate-keys.sh   # once
+./build.sh && docker compose --profile app up -d
 ```
 
-Install local CA (one time):
+The site is then on `http://localhost:${HTTP_PORT}`, and its bootstrap domain is the `.env`'s
+`PEDALONS_BOOTSTRAP_*`, not the `%dev` one: set them to `localhost` / `http://localhost:8090` (see
+the table above). `--profile app` is what pulls in `backend`, `frontend` and `traefik`; put
+`COMPOSE_PROFILES=app` in the `.env` if this machine mostly runs the full stack.
 
-```bash
-mkcert -install
-```
+A workstation stays on plain `docker compose`, not Swarm, and runs no separate shared stack: the
+overlay turns traefik back to the Docker provider, binds it to the loopback, and declares the
+`shared` network as an ordinary project network. Nothing to start beforehand.
 
-Generate certificates in the frontend folder:
+## Default domain and platform admin
 
-```bash
-cd frontend
-mkcert localhost 127.0.0.1 <your LAN IP>
-# Creates localhost+2.pem and localhost+2-key.pem — Vite looks for exactly these names,
-# so pass three hosts (the LAN IP is what a phone or the Garmin simulator browses with)
-```
+Every request finds its tenant from the `Host` header. On startup the backend creates a default
+`Domain` and a `PLATFORM_ADMIN` `User` if they don't yet exist (idempotent — see
+`BootstrapService`), from `pedalons.bootstrap.*`:
 
+| Variable | `%dev` value | Elsewhere |
+|----------|---------|---|
+| `PEDALONS_BOOTSTRAP_ENABLED` | `true` | `true` |
+| `PEDALONS_BOOTSTRAP_DOMAIN` | `localhost` | required in `.env` |
+| `PEDALONS_BOOTSTRAP_DOMAIN_NAME` | `Pedalons Dev` | required in `.env` |
+| `PEDALONS_BOOTSTRAP_BASE_URL` | `https://localhost:5173` | required in `.env` |
+| `PEDALONS_BOOTSTRAP_ADMIN_EMAIL` / `_DISPLAY_NAME` | `%dev.pedalons.bootstrap.admin-*` in `application.properties` | required in `.env` |
 
-### 3. Start Infrastructure
+The values are read once, when the row is created; later edits go through the admin UI. The admin
+has no password — first login is by OTP (in mailpit, on a workstation) or passkey.
 
-```bash
-# PostgreSQL, MinIO, imgproxy, varnish, valhalla, tileserver, mailpit
-docker compose up -d
-
-# Wait for PostgreSQL to be ready
-docker compose exec postgres pg_isready -U "$POSTGRES_USER"
-```
-
-One stack serves both workflows. `docker-compose.yml` is the deployment file; the workstation
-overlay `docker-compose.local.yml` adds mailpit, folds in the valhalla and tileserver of
-`docker-compose.shared.yml`, and publishes on loopback the ports `mvn quarkus:dev` and `pnpm dev`
-talk to — imgproxy on 38080, valhalla on 8002, tileserver on 18080, MinIO on 9000, SMTP on 1025.
-
-The command above starts the backing services **only**: the overlay puts `backend`, `frontend` and
-`traefik` behind an `app` profile, since in dev those three are what you are replacing. Add
-`--profile app` (or `COMPOSE_PROFILES=app` in `.env`) to run the whole application from the built
-images — see [Running the full stack locally](#running-the-full-stack-locally). A deployment reads
-`docker-compose.yml` alone, where the three carry no profile and always start.
-
-### 4. Start Backend
-
-```bash
-cd backend
-source ../scripts/dev-env.sh   # postgres + MinIO credentials, from the same .env the stack reads
-mvn quarkus:dev
-```
-
-`dev-env.sh` exports those five values and nothing else — on purpose. Quarkus reads environment
-variables at a higher ordinal than `application.properties`, so sourcing the whole `.env` would
-override the `%dev` bootstrap domain (`localhost`, which is the WebAuthn origin of dev passkeys)
-with the stack's own. If the `.env` still holds the `.env.example` credentials, the `%dev` defaults
-already match and the `source` is a no-op.
-
-Backend available at:
-- API: http://localhost:8080/api
-- Swagger UI: http://localhost:8080/q/swagger-ui
-- Health: http://localhost:8080/q/health
-
-### Default domain and platform admin
-
-#### Bootstrapping
-
-
-On startup the backend creates a default `Domain` and a `PLATFORM_ADMIN` `User` if they don't yet
-exist (idempotent — see `BootstrapService`). Defaults match the localhost dev setup; override via
-environment variables for other environments:
-
-| Variable | Default |
-|----------|---------|
-| `PEDALONS_BOOTSTRAP_ENABLED` | `true` |
-| `PEDALONS_BOOTSTRAP_DOMAIN` | `localhost` |
-| `PEDALONS_BOOTSTRAP_DOMAIN_NAME` | `Pedalons Dev` |
-| `PEDALONS_BOOTSTRAP_BASE_URL` | `https://localhost:5173` |
-| `PEDALONS_BOOTSTRAP_ADMIN_EMAIL` | `gabriel.landais@gmail.com` |
-| `PEDALONS_BOOTSTRAP_ADMIN_DISPLAY_NAME` | `Gaby Landais` |
-
-The admin is created with `password_hash = NULL` — first login is via OTP or passkey.
-
-#### SQL
-
-Bootstrapping covers the domain you configured; nothing else resolves. Every request finds its
-tenant from the `Host` header, so browsing through a *second* hostname — a LAN IP, say — needs its
-own `domains` row. Open a `psql` prompt on the dev database:
-
-```bash
-docker exec -it "${ENV_NAME}-postgres" sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
-```
-
-Then insert a domain matching the host you browse the frontend with:
+Browsing through a *second* hostname — a LAN IP, to test the site from a phone — needs its own
+`domains` row. From a [`psql` prompt](#running-sql):
 
 ```sql
 INSERT INTO domains (id, domain, name, base_url, single_team, active, deleted, created_at, updated_at, version)
 VALUES (
     (EXTRACT(EPOCH FROM NOW()) * 1000)::BIGINT * 1000000 + (RANDOM() * 999999)::INT,
-    '192.168.50.20',
-    'Pedalons',
-    'https://192.168.50.20:5173',
-    false,
-    true,
-    false,
-    NOW(),
-    NOW(),
-    0
+    '192.168.50.20',               -- domain: matched against Host / X-Forwarded-Host
+    'Pedalons',                    -- name: shown in emails, the UI, WebAuthn prompts
+    'https://192.168.50.20:5173',  -- base_url: prefix of email and calendar links
+    false,                         -- single_team: if true, the domain has only one team
+    true,                          -- active
+    false,                         -- deleted
+    NOW(), NOW(), 0
 );
 ```
 
-See [Running SQL](#running-sql) for the deployed stack, and [Bootstrapping a new deployment](#bootstrapping-a-new-deployment) for what to do next.
+A known host answers `curl -s -H 'Host: 192.168.50.20' http://localhost:8080/api/config` with
+`200`, an unknown one with `404 DOMAIN_NOT_FOUND`.
 
-### 5. Start Frontend
+## Development
 
-```bash
-cd frontend
-pnpm install
-pnpm dev
-```
+| Task | Command |
+|---|---|
+| Format every module (or one: `backend`, `frontend`, `mobile`, `karoo`, `garmin-app`) | `./format.sh [module]` |
+| Full local gate, mirroring CI (backend tests only with `--backend-tests`) | `./check.sh` |
+| Regenerate the API contract, then the clients | `mvn package -DskipTests` in `backend/`, `pnpm generate-api` in `frontend/` |
+| Regenerate UI route paths, AASA, Android deeplinks from `contracts/routes.yaml` ([docs/APP_LINKS.md](docs/APP_LINKS.md)) | `pnpm generate-routes` in `frontend/` |
+| Regenerate the business colour tables from `contracts/brand-colors.yaml` ([docs/BRANDING.md](docs/BRANDING.md)) | `pnpm generate-brand-colors` in `frontend/` |
 
-Frontend available at https://localhost:5173
-
-The dev server proxies `/api` to **staging** (`https://staging.pedalons.fr`) unless
-`VITE_API_TARGET` says otherwise, so front-end work needs no local backend at all. Point it at the
-one you just started to work against local data:
-
-```bash
-echo 'VITE_API_TARGET=http://localhost:8080' >> frontend/.env
-```
+`format.sh` fails loudly when a toolchain is missing rather than skipping the module. Run it before
+committing, and include its output in the commit. Each module's tests, lint and build commands are
+in its own README.
 
 ## Project Structure
 
 ```
 tribly/
-├── backend/          # Quarkus backend (Java 25)
-├── frontend/         # React 19 + Mantine UI, server-side rendered (see frontend/docs/SSR.md)
-├── mobile/           # Flutter mobile app (iOS/Android)
-├── karoo/            # Hammerhead Karoo extension (Kotlin/Compose)
-├── garmin-app/       # Garmin Connect IQ app (Monkey C)
-├── contracts/        # OpenAPI specification and UI routes (routes.yaml)
-├── services/         # Docker service configs (Varnish)
-├── scripts/          # Utility scripts (backup/restore, e2e, route generation, SSR audit)
-├── docs/             # Plans, roadmap (LEDGER_NEXT.md) and the operations runbook
+├── backend/  frontend/  mobile/  karoo/  garmin-app/   # see the table above
+├── contracts/        # OpenAPI specification, UI routes (routes.yaml), brand colours
+├── services/         # Docker service configs (Varnish, monitoring)
+├── scripts/          # dev-env, deploy, backup/restore, e2e, code generation
+├── docs/             # Ledgers (LEDGER_NEXT.md), plans, the operations runbook
 ├── privacy/          # Privacy policy, terms and support pages (served by the site, bundled in the app)
 ├── assets/           # Logo and icon sources (see docs/BRANDING.md)
-├── data/             # Runtime data (keys, storage, cache, valhalla, tileserver)
+├── data/             # Runtime data of the stack (keys, storage, cache, valhalla, tileserver)
 ├── docker-compose.yml         # One deployed environment (prod, staging, ...): a Swarm stack
-├── docker-compose.local.yml   # Workstation overlay: mailpit, the shared services, the
-│                              #   loopback ports dev mode needs. Never deployed
-├── docker-compose.e2e.yml     # End-to-end test stack (scripts/e2e.sh, .env.e2e)
-└── docker-compose.shared.yml  # Services shared by every environment on the host
+├── docker-compose.local.yml   # Workstation overlay. Never deployed
+├── docker-compose.e2e.yml     # End-to-end test stack (scripts/e2e.sh)
+└── docker-compose.shared.yml  # Services shared by every environment on a host
 ```
 
-## Running the full stack locally
+## Running SQL
 
-The same `docker-compose.yml`, on a workstation — for testing a build. A workstation stays on plain
-`docker compose`, not Swarm: the overlay turns back what only Swarm wants — traefik's Docker provider
-instead of the Swarm one, its port on the loopback, a bridge network instead of an overlay. Two
-things must differ from a deployment, and both live in the local `.env`:
+One PostgreSQL container per environment. Read its credentials from the container's own
+environment, which keeps them out of your shell history. On a workstation it is
+`${ENV_NAME}-postgres`; on a host it is a Swarm task, with no fixed name, so look it up by its
+service:
 
 ```bash
-ENV_NAME=tribly-local
-COMPOSE_FILE=docker-compose.yml:docker-compose.local.yml
-QUARKUS_MAILER_HOST=mailpit       # + the rest of the block in .env.example
+PG="${ENV_NAME}-postgres"                                                                 # workstation
+PG="$(docker ps -q --filter "label=com.docker.swarm.service.name=${ENV_NAME}_postgres")"  # host
+
+docker exec -it "$PG" sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
+docker exec "$PG" sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 -c "SELECT domain, name, active FROM domains;"'
 ```
 
-**`ENV_NAME` names the stack**: keep it `tribly-local` — why is in
-[the `.env` section](#the-env-on-a-workstation-and-on-a-server).
+A workstation also publishes `127.0.0.1:${POSTGRES_HOST_PORT:-5432}`, so any SQL client of yours
+can connect with the `.env` credentials; the stack ships none. A host publishes nothing (see
+[Only Caddy may reach traefik](docs/OPERATIONS.md#only-caddy-may-reach-traefik)).
 
-**A local stack must not be able to send mail.** The containers run the `%prod` Quarkus profile
-wherever they run, and its only way out for mail is the SMTP relay named by `QUARKUS_MAILER_*` —
-Scaleway Transactional Email on a server. A workstation points it at the mailpit of
-`docker-compose.local.yml` (UI on http://127.0.0.1:8025). This is not hygiene: after a biketeam
-migration the local database holds thousands of real member addresses, and one OTP or team
-invitation is enough to reach them.
+Use `-v ON_ERROR_STOP=1` for anything that writes: without it `psql` reports the error and carries
+on, so a failed script looks like it succeeded. And on tables backing a JPA entity, maintain the two
+columns Hibernate otherwise manages:
 
-`COMPOSE_FILE` makes a plain `docker compose` command pick up the overlay here and nowhere else. A
-deployed `.env` has no `COMPOSE_FILE` and reads `docker-compose.yml` alone, which is why the overlay
-is a separate file rather than a profile. What it adds: mailpit (http://127.0.0.1:8025); valhalla
-and tileserver, `extends`-ed from `docker-compose.shared.yml`; and the loopback ports
-[dev mode](#3-start-infrastructure) talks to.
+- `updated_at` — set it to `NOW()` on every UPDATE;
+- `version` — optimistic locking: **increment it on every UPDATE**, or an entity already loaded in
+  memory can silently overwrite your change the next time it is persisted.
 
-**No shared stack on a workstation.** A host runs one for several environments; a laptop has one, so
-the overlay pulls those two services into it and redeclares the `shared` network as an ordinary
-project network (`${ENV_NAME}-shared`) instead of the `external` `pedalons-shared`. Nothing to start
-beforehand:
-
-```bash
-cd ~/code/tribly && ./build.sh && docker compose --profile app up -d
-```
-
-`--profile app` is what pulls in `backend`, `frontend` and `traefik`; without it the overlay starts
-the backing services alone, which is what [dev mode](#3-start-infrastructure) wants. Put
-`COMPOSE_PROFILES=app` in the `.env` if this machine mostly runs the full stack.
+IDs are TSIDs (`bigint`), not sequences: generate one inline with
+`(EXTRACT(EPOCH FROM NOW()) * 1000)::BIGINT * 1000000 + (RANDOM() * 999999)::INT`.
 
 ## Deployment and operations
 
 A host runs one shared stack (`docker-compose.shared.yml`: valhalla and tileserver, on the
 `pedalons-shared` network) plus one `docker-compose.yml` stack per environment, behind Caddy.
-Production is backed up nightly by `scripts/backup.sh` over a restricted `rrsync` channel, and
-`scripts/restore.sh` brings an environment back from a snapshot.
+Production is backed up nightly by `scripts/backup.sh`, and `scripts/restore.sh` brings an
+environment back from a snapshot.
 
 The runbook — deployment, access-log redaction, seeding the shared Valhalla data, network changes,
 backup configuration and restore — is in **[docs/OPERATIONS.md](docs/OPERATIONS.md)**. Read its
 [Deployment](docs/OPERATIONS.md#deployment) section before touching networks or the compose files.
 
+### Bootstrapping a new deployment
+
+A brand-new database needs no SQL: the backend creates the domain and the platform admin named by
+the `.env`'s `PEDALONS_BOOTSTRAP_*` (see [Default domain and platform admin](#default-domain-and-platform-admin)).
+Log in as that admin (OTP or passkey) and use the admin UI (`/admin`: dashboard, domains, teams,
+users) for everything after.
+
+With bootstrapping disabled (`PEDALONS_BOOTSTRAP_ENABLED=false`) you need a domain before you can
+register a user, and a user before anyone can be an admin. Break the cycle with SQL, once:
+
+1. **Create the domain** — the `INSERT` [above](#default-domain-and-platform-admin), with your
+   hostname and `https://` base URL.
+2. **Register a user** through the normal signup flow. This sends a verification email, so the
+   mailer must work: Scaleway TEM refuses a `FROM` whose domain is not verified (SPF, DKIM, MX) and
+   credentials that are not a project id + IAM secret key with `TransactionalEmailEmailFullAccess`.
+   A refused message surfaces as a 500 on `/api/auth/register`, with the SMTP reply in the backend
+   log.
+3. **Grant the platform admin role**:
+
+   ```sql
+   UPDATE users
+      SET platform_role = 'PLATFORM_ADMIN',
+          updated_at    = NOW(),
+          version       = COALESCE(version, 0) + 1
+    WHERE email = 'your-email@example.com'
+      AND deleted = false;
+   ```
+
+   No re-login is needed: the role is not in the JWT, `AdminInterceptor` reads it from the database
+   on every request. It lives on `users`, which is scoped by `domain_id`: despite the name, you are
+   an admin *of that domain* — a second domain needs a fresh account and a fresh `UPDATE`.
+
 ## Features
 
 ### GPS Device Integration
 
-Users can connect GPS devices from their profile to upload routes directly to their devices.
-
-**Supported devices:**
-- Hammerhead Karoo
-- Garmin Edge devices (via Garmin Connect)
-- Wahoo ELEMNT (via the Wahoo Cloud account — no companion app, the head unit syncs from the cloud)
-
-**Setup:**
-
-- Set `ENCRYPTION_KEY` for secure token storage (required in production)
-- Enter each service's OAuth client id and secret for the domain, in the platform admin's domain form
-  — a service with no credentials is not offered
-
-**Usage:**
-1. Navigate to Profile > Devices and services (`/profile/devices`)
-2. Click "Connect" next to your device
-3. Authorize the application on the service's own site (OAuth redirect, with PKCE for Garmin)
-4. On any route detail page, use "Send to Device" to upload routes
+Users connect Hammerhead Karoo, Garmin (via Garmin Connect) and Wahoo ELEMNT (via the Wahoo Cloud
+account) from Profile > Devices and services (`/profile/devices`), by OAuth on the service's own
+site (with PKCE for Garmin); "Send to Device" on a route then uploads it. A service is offered only
+once its OAuth client id and secret are entered in the platform admin's domain form, and the tokens
+are encrypted with `ENCRYPTION_KEY`.
 
 The device code flow (QR code or URL) is something else: it signs in the Karoo extension and the
 Garmin Connect IQ app themselves — see [karoo/](karoo/) and [garmin-app/](garmin-app/).
 
-## Development
-
-### Generate API Client
-
-```bash
-cd frontend
-pnpm generate-api
-```
-
-### Generate UI Route Paths
-
-UI routes (per-locale URL templates, deeplinks, path builders) are declared in `contracts/routes.yaml`. Regenerate `paths.generated.ts` / `paths.generated.dart`, AASA and the AndroidManifest deeplink section with:
-
-```bash
-cd frontend
-pnpm generate-routes
-```
-
-See [docs/APP_LINKS.md](docs/APP_LINKS.md) for the full workflow.
-
-### Run Tests
-
-```bash
-# Backend
-cd backend && mvn test
-
-# Frontend
-cd frontend && pnpm test
-```
-
-### Code Quality
-
-```bash
-# Format every module (Spotless, Prettier, dart format, ktfmt, prettier-plugin-monkeyc)
-./format.sh
-./format.sh mobile          # or one module: backend|frontend|mobile|karoo|garmin-app
-
-# Backend linting
-cd backend && mvn checkstyle:check
-
-# Frontend linting
-cd frontend && pnpm lint
-```
-
-`format.sh` fails loudly when a toolchain is missing rather than skipping the module. Run it before
-committing, and include its output in the commit.
-
-## Running SQL
-
-One PostgreSQL container per environment. Its credentials come from `.env`, which is not versioned:
-read them from the container's own environment, which keeps secrets out of your shell history. On a
-workstation it is `${ENV_NAME}-postgres` (`tribly-local-postgres`); on a host it is a Swarm task,
-with no fixed name and a new one after every restart, so look it up by its service:
-
-```bash
-PG="$(docker ps -q --filter "label=com.docker.swarm.service.name=${ENV_NAME}_postgres")"  # host
-PG="${ENV_NAME}-postgres"                                                                 # workstation
-
-# Interactive session
-docker exec -it "$PG" sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
-
-# One-off statement
-docker exec "$PG" sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 -c "SELECT domain, name, active FROM domains;"'
-```
-
-On a workstation it also publishes `127.0.0.1:${POSTGRES_HOST_PORT:-5432}` — that is how
-`mvn quarkus:dev` reaches it from the host, and how any client of yours can. A host publishes nothing
-(see [Only Caddy may reach traefik](docs/OPERATIONS.md#only-caddy-may-reach-traefik)). **The stack ships no
-SQL browser**: pick your own — psql, pgAdmin, DBeaver, the database panel of your IDE — and point it
-at `localhost:5432` with the `.env` credentials. Nothing to declare in compose for that.
-
-Use `-v ON_ERROR_STOP=1` for anything that writes: without it `psql` reports the error and carries on to the next statement, so a failed migration script looks like it succeeded.
-
-### Writing to entity tables by hand
-
-Tables backing a JPA entity carry two columns Hibernate manages for you, and hand-written SQL has to maintain them:
-
-- `updated_at` — set it to `NOW()` on every UPDATE.
-- `version` — optimistic locking. **Increment it on every UPDATE.** If you don't, an entity already loaded in memory can silently overwrite your change the next time it is persisted.
-
-```sql
-UPDATE users
-   SET platform_role = 'PLATFORM_ADMIN',
-       updated_at    = NOW(),
-       version       = COALESCE(version, 0) + 1
- WHERE email = 'your-email@example.com'
-   AND deleted = false;
-```
-
-IDs are TSIDs (`bigint`), not sequences. Generate one inline when inserting:
-
-```sql
-(EXTRACT(EPOCH FROM NOW()) * 1000)::BIGINT * 1000000 + (RANDOM() * 999999)::INT
-```
-
-## Multi-Tenancy
-
-Pedalons is multi-tenant: each domain (hostname) has isolated teams and users. The domain is resolved from the `Host` or `X-Forwarded-Host` HTTP header.
-
-### Bootstrapping a new deployment
-
-Domains and platform admins are managed from the admin UI (`/admin`). A brand-new database reaches it without SQL: on startup the backend creates the domain and the platform admin named by `PEDALONS_BOOTSTRAP_*` (see [Bootstrapping](#bootstrapping)), which `docker-compose.yml` requires in `.env`. Log in as that admin (OTP or passkey) and use the UI for everything after.
-
-The SQL route below is for when bootstrapping is disabled (`PEDALONS_BOOTSTRAP_ENABLED=false`): you need a domain before you can register a user, and a user before anyone can be an admin. Break the cycle with SQL, once.
-
-**1. Create the first domain** (see [Running SQL](#running-sql) for how to get a `psql` prompt):
-
-```sql
-INSERT INTO domains (id, domain, name, base_url, single_team, active, deleted, created_at, updated_at, version)
-VALUES (
-    (EXTRACT(EPOCH FROM NOW()) * 1000)::BIGINT * 1000000 + (RANDOM() * 999999)::INT,
-    'monclub.fr',                    -- domain: hostname used to access the site
-    'Mon Club Cycliste',             -- name: displayed in emails, UI, WebAuthn prompts
-    'https://monclub.fr',            -- base_url: full URL for email/calendar links
-    false,                           -- single_team: if true, domain has only one team
-    true,                            -- active
-    false,                           -- deleted
-    NOW(),
-    NOW(),
-    0
-);
-```
-
-| Field | Description |
-|-------|-------------|
-| `domain` | HTTP hostname (matched against `Host`/`X-Forwarded-Host` header) |
-| `name` | App name shown in emails, WebAuthn prompts, and UI |
-| `base_url` | Full URL with protocol, used in email links and calendar feeds |
-
-Verify the backend resolves it — a known host returns `200`, an unknown one `404 DOMAIN_NOT_FOUND`:
-
-```bash
-curl -s -H 'Host: monclub.fr' http://localhost:8080/api/config
-```
-
-**2. Register a user** through the normal signup flow. This sends a verification email, so the mailer must work: in `prod` the backend sends through the Scaleway Transactional Email SMTP relay, which refuses a `FROM` whose domain is not verified in TEM (SPF, DKIM, MX) and credentials that are not a project id + IAM secret key with `TransactionalEmailEmailFullAccess`. A refused message surfaces as a 500 on `/api/auth/register`; the backend log carries the SMTP reply.
-
-**3. Grant the platform admin role** via SQL:
-
-```sql
-UPDATE users
-   SET platform_role = 'PLATFORM_ADMIN',
-       updated_at    = NOW(),
-       version       = COALESCE(version, 0) + 1
- WHERE email = 'your-email@example.com'
-   AND deleted = false;
-```
-
-`platform_role` is constrained to `PLATFORM_ADMIN` or `NULL` — it is the only role in the `PlatformRole` enum. No re-login is needed: the role is not carried in the JWT, `AdminInterceptor` reads it from the database on every request.
-
-The role lives on `users`, a table scoped by `domain_id`. You are therefore an admin *of that domain*, despite the "platform admin" name — add a second domain and you'll need a fresh account and a fresh `UPDATE` there.
-
-### Using the admin interface
-
-Once you are a platform admin, the "Admin" link appears in the header menu, providing access to:
-
-- **Dashboard**: Platform statistics
-- **Domains**: Manage domains (create, edit, activate/deactivate)
-- **Teams**: View all teams, archive/restore
-- **Users**: View all users, grant/revoke platform admin role
-
-## Team Governance
+### Team Governance
 
 Platform admins control the following per-team attributes (configurable via the team admin page):
 
@@ -494,14 +295,5 @@ Platform admins control the following per-team attributes (configurable via the 
 | `joinable` | If `true` and the team is public, any domain user can self-join. |
 | `addMemberAllowed` | If `true`, team admins can add members directly. If `false`, only platform admins can. |
 
-When a user creates a team, defaults are:
-- `visibility`: `TEAM` (enforced by the backend)
-- `visibilityEditable`: `false`
-- `joinable`: `false`
-- `addMemberAllowed`: `false`
-
-A non-platform-admin user can create at most one team per domain.
-
-## Garmin Connect IQ App Development
-
-The Garmin app (`garmin-app/`) allows users to browse and download routes directly to their Garmin devices. See README inside `garmin-app/` folder
+A team created by a user starts with `visibility` `TEAM` (enforced by the backend) and the three
+attributes above `false`. A non-platform-admin user can create at most one team per domain.

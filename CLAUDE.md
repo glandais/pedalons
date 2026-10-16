@@ -169,4 +169,4 @@ prettier-plugin-monkeyc). `format.sh` fails loudly if a toolchain is missing rat
 |---------|-----|
 | Backend API | http://localhost:8080/api |
 | Swagger UI | http://localhost:8080/q/swagger-ui |
-| Frontend | https://localhost:5173 (needs the [mkcert certificates](README.md#2-install-and-configure-mkcert) — without them it falls back to http and dev passkeys fail) |
+| Frontend | https://localhost:5173 (needs the [mkcert certificates](frontend/README.md#https-setup-required-for-webauthnpasskeys) — without them it falls back to http and dev passkeys fail) |

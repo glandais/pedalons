@@ -15,28 +15,27 @@ Quarkus REST API backend for the Pedalons cycling team management platform.
 
 ## Prerequisites
 
-- Java 25+
-- Maven 3.9+
-- Docker & Docker Compose
+- Java 25+, Maven 3.9+
+- Docker with Compose (the backing services in dev, the dev services in tests)
+- openssl (`generate-keys.sh`)
 
 ## Getting Started
 
 ### 1. Start infrastructure
 
-The backing services live in the repository-root stack — `docker-compose.yml` plus the workstation
-overlay `docker-compose.local.yml`, which is what publishes the loopback ports below. See
-[Quick Start](../README.md#quick-start) for the `.env` a workstation needs.
+The backing services live in the repository-root stack; the `.env` it needs is described in the
+root [Quick Start](../README.md#quick-start).
 
 ```bash
 cd .. && docker compose up -d
 ```
 
-`backend`, `frontend` and `traefik` sit behind an `app` profile in the overlay, so this starts the
-backing services alone — which is what dev mode wants. They provide:
+The workstation overlay `docker-compose.local.yml` starts the backing services alone (`backend`,
+`frontend` and `traefik` sit behind its `app` profile) and publishes them on the loopback:
 
 | Service | Port | Purpose |
 |---------|------|---------|
-| PostgreSQL + PostGIS | 5432 | Database |
+| PostgreSQL + PostGIS | `POSTGRES_HOST_PORT` (5432) | Database |
 | MinIO | 9000 (API), 9001 (console) | S3-compatible object storage |
 | imgproxy | 38080 | Image transformation |
 | valhalla | 8002 | Cycling route engine |
@@ -46,11 +45,13 @@ backing services alone — which is what dev mode wants. They provide:
 ### 2. Start the backend
 
 ```bash
+./generate-keys.sh             # once: the JWT key pair of dev and test, in keys/ (git-ignored)
 source ../scripts/dev-env.sh   # postgres + MinIO credentials, from the .env the stack reads
 mvn quarkus:dev
 ```
 
-`dev-env.sh` exports those five values and nothing else: Quarkus reads environment variables above
+Without the keys the backend cannot sign a token (`SRJWT05009`). `dev-env.sh` exports the
+`POSTGRES_*` / `MINIO_*` credentials and nothing else: Quarkus reads environment variables above
 `application.properties`, so sourcing the whole `.env` would replace the `%dev` bootstrap domain
 (`localhost`, the WebAuthn origin of dev passkeys) with the stack's own.
 
@@ -74,12 +75,12 @@ README, and [Running SQL](../README.md#running-sql) for the psql prompt (the con
 
 ```bash
 mvn quarkus:dev                                        # Dev mode with live reload
-mvn test                                               # Run all tests (TestContainers)
+mvn test                                               # All tests (Quarkus dev services: needs Docker)
 mvn test -Dtest=RideResourceTest                       # Single test class
-mvn test -Dtest="RideResourceTest#testCreateRide"      # Single test method
-mvn spotless:apply                                     # Format (Google Java Format)
+mvn test -Dtest="RideResourceTest#createRide_asAdmin_shouldSucceed"  # Single test method
 mvn checkstyle:check                                   # Lint
 mvn package -DskipTests                                # Build + generate OpenAPI contract
+./check.sh [--tests]                                   # Format + build + lint (+ tests), as in CI
 ```
 
 ### Code Coverage
@@ -97,20 +98,12 @@ mvn test -Dcoverage=true -Dsurefire.forkCount=1   # instrumentation is opt-in
 
 ```
 src/main/java/fr/pedalons/
-├── api/               # REST resources organized by domain
-│   ├── admin/         #   Platform admin endpoints
-│   ├── auth/          #   Login, passkeys, OTP
-│   ├── device/        #   Device code flow (Karoo, Garmin)
-│   └── ...            #   rides, routes, posts, trips, teams, ads, notifications, moderation, etc.
+├── api/               # REST resources, one package per area (rides, routes, posts, trips, teams,
+│                      #   auth, admin, device, gps, notifications, moderation, migration, ...)
 ├── common/            # TsidUtils, custom exceptions, ErrorCode
-├── domain/            # JPA entities
-│   ├── common/        #   BaseEntity, TeamEntity, Publication
-│   ├── ride/          #   Ride, RideGroup, RideParticipation
-│   ├── route/         #   Route, GpxTrack, GpxWaypoint
-│   ├── trip/          #   Trip, TripStage, TripParticipation
-│   └── ...            #   post, comment, team, user, auth, gps, etc.
-├── dto/               # Request/response DTOs by domain
-├── enums/             # Status, TeamRole, Visibility, AssetType
+├── domain/            # JPA entities, same split (BaseEntity, TeamEntity, Publication in common/)
+├── dto/               # Request/response DTOs
+├── enums/             # Shared enums (status, roles, visibility, ...)
 ├── infrastructure/    # Security, caching, valhalla client, imgproxy
 ├── repository/        # Panache repositories with query builder
 └── service/           # Business logic
@@ -118,77 +111,35 @@ src/main/java/fr/pedalons/
 src/main/resources/
 ├── application.properties    # Configuration (dev/test/prod profiles)
 ├── db/migration/             # Flyway migrations (V1__…, V2__…, one file per version)
-└── templates/                # Qute templates (emails)
+└── templates/mail/           # Qute e-mail templates
 
-keys/                         # JWT key pair for dev and test (backend/keys/, generate-keys.sh)
+keys/                         # JWT key pair for dev and test (generate-keys.sh, git-ignored)
 ```
 
-## API Domains
-
-The API covers these functional areas:
-
-| Domain | Resources | Description |
-|--------|-----------|-------------|
-| Auth | AuthResource, PasskeyResource | Login (password, OTP, passkeys), token refresh |
-| Teams | TeamResource, TeamMemberResource | Team CRUD, member management, roles |
-| Invitations | TeamInvitationResource, InvitationResource, UserInvitationResource | Team invitations |
-| Webhooks | TeamWebhookResource | Team outgoing webhooks |
-| Users | UserResource, UserBlockResource, UserExportDownloadResource | Profile, blocking, data export |
-| Rides | RideResource, RideTemplateResource | Scheduled group rides with participation |
-| Routes | RouteResource, AllRouteResource | GPX routes with tracks, waypoints, elevation |
-| Posts | PostResource | Team blog posts |
-| Trips | TripResource | Multi-day trips with stages |
-| Publications | PublicationResource, TeamPublicationResource | Cross-type publication feeds |
-| Pages | TeamPageResource | Team pages |
-| Ads | AdResource | Classified ads (blurred position, e-mail relay) |
-| Comments | Post/Ride/Route/TripCommentResource | Comments on any entity |
-| Assets | AssetResource, Download*Resource | File uploads (images, GPX) via S3 |
-| Places | PlaceResource | Named locations |
-| Calendar | CalendarResource, TeamCalendarResource | iCal feed generation |
-| GPS | GpsResource | GPS device integrations (Hammerhead, Garmin, Wahoo) |
-| Device | Device*Resource | Device code flow + routes for Karoo/Garmin apps |
-| Admin | Admin*Resource | Platform admin (domains, teams, users) |
-| Config | ConfigResource | Frontend app configuration |
-| Router | RouterResource | valhalla proxy for route computation |
-| Tiles | TileTokenResource | Short-lived tokens for vector tiles |
-| Notifications | NotificationResource, PushDeviceResource | In-app notifications, push device registration |
-| Moderation | ReportResource, TeamReportResource | Content reports |
-| Feedback | FeedbackResource | In-app feedback |
-| Migration | BiketeamMigration*Resource | Biketeam → Pédalons migration (see docs/MIGRATE_BIKETEAM.md) |
+The endpoints themselves are documented by the contract, `../contracts/openapi.yaml`, browsable in
+dev on http://localhost:8080/q/swagger-ui.
 
 ## Configuration
 
 Configuration uses Quarkus profiles (`%dev`, `%test`, `%prod`) in `application.properties`.
 
-**Dev defaults** match `.env.example`, so a stack left at those credentials needs no export at all.
-A stack with its own `POSTGRES_*` / `MINIO_*` values needs `source ../scripts/dev-env.sh` first —
-`%dev` reads them from the environment, defaulting to the `.env.example` ones.
-
-**Production** requires environment variables:
-
-| Variable | Purpose |
-|----------|---------|
-| `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB` | Database |
-| `MINIO_ENDPOINT`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY` | S3 storage |
-| `IMGPROXY_URL` | Image proxy |
-| `VALHALLA_URL` | Route engine |
-| `ENCRYPTION_KEY` | Token encryption (base64-encoded 32-byte key) |
-| `TILESERVER_URL` | Tile server for map thumbnails |
-| `QUARKUS_MAILER_*` | SMTP relay (Scaleway TEM on a server, Mailpit on a workstation) |
-| `PEDALONS_BOOTSTRAP_*` | Default domain and platform admin created on startup |
-| `FCM_PROJECT_ID`, `FCM_CREDENTIALS`, `FCM_WEB_*` | Push notifications (service account defaults to `/mnt/keys/fcm-service-account.json`) |
-
-The JWT key pair is read from `/mnt/keys` (`data/keys` mounted by `docker-compose.yml`). The
-complete, commented list is `../.env.example`; the deployment itself is described in
-[docs/OPERATIONS.md](../docs/OPERATIONS.md).
+- **`%dev`** defaults to the `.env.example` credentials, so a stack left at those needs no export;
+  otherwise `source ../scripts/dev-env.sh` first (see above).
+- **`%prod`** — what the containers run, on a server as on a workstation — reads everything from the
+  environment: the complete, commented list is `../.env.example`. Its JWT key pair is read from
+  `/mnt/keys`, i.e. `data/keys/` mounted by `docker-compose.yml`. The deployment itself is in
+  [docs/OPERATIONS.md](../docs/OPERATIONS.md).
 
 ## Contract-First Workflow
 
 The backend generates the OpenAPI contract consumed by the frontend:
 
 1. Annotate resources with SmallRye OpenAPI (`@Tag`, `@Operation`, `@APIResponses`)
-2. Run `mvn package -DskipTests` — generates `../contracts/openapi.yaml` and `openapi.json`
-3. In `../frontend/`, run `pnpm generate-api` — generates TypeScript client from the contract
+2. Bump `pedalons.api.version` in `application.properties` — it is the contract's `info.version`
+   and what `GET /api/version` returns
+3. Run `mvn package -DskipTests` — generates `../contracts/openapi.yaml` and `openapi.json`
+4. In `../frontend/`, run `pnpm generate-api` — generates the TypeScript client; the mobile client
+   is regenerated as described in [mobile/README.md](../mobile/README.md)
 
 ## Multi-Tenancy
 

@@ -4,9 +4,9 @@ Hammerhead Karoo extension for syncing routes from Pédalons directly to your de
 
 ## Features
 
-- Browse the upcoming rides of your Pédalons teams, and their routes
-- Browse routes from your Pédalons teams
-- One-tap sync to Karoo
+- Browse your upcoming registrations (« My next rides »), the upcoming rides of your Pédalons teams
+  and their routes
+- One-tap sync to Karoo, with each route's state at Hammerhead (already on the Karoo, older version…)
 - Device code authentication (no typing on Karoo)
 - Hammerhead account connection from the Karoo (QR code to the Pédalons profile page), required
   to sync routes
@@ -16,80 +16,64 @@ Hammerhead Karoo extension for syncing routes from Pédalons directly to your de
 
 - Hammerhead Karoo (new generation, not Karoo 2)
 - Pédalons account with team membership
-- ADB for sideloading
 
 ## Installation
 
-### From APK
+Download `pedalons.apk` from the [`karoo-latest`](https://github.com/glandais/pedalons/releases/tag/karoo-latest)
+release (every version is a `karoo.X.Y.Z` [release](https://github.com/glandais/pedalons/releases?q=karoo)),
+then either:
 
-1. Download `pedalons.apk` from the [latest release](https://github.com/glandais/pedalons/releases?q=karoo) —
-   releases are tagged `karoo.X.Y.Z` and built automatically by
-   `.github/workflows/karoo-release.yml`
-2. Enable ADB on your Karoo (Settings > Advanced > Developer Options)
-3. Connect via USB or WiFi ADB
-4. Install:
-   ```bash
-   adb install -r pedalons.apk
-   ```
-
-### From Source
-
-1. Clone the repository
-2. Configure GitHub Packages authentication in `~/.gradle/gradle.properties`:
-   ```properties
-   gpruser=YOUR_GITHUB_USERNAME
-   gprkey=YOUR_GITHUB_TOKEN
-   ```
-3. Build and install:
-   ```bash
-   ./gradlew installDebug
-   ```
+- share the APK link to the [Hammerhead Companion app](https://support.hammerhead.io/hc/en-us/articles/31576497036827)
+  and confirm « Install » on the Karoo — the Karoo then offers later updates itself; or
+- sideload it with ADB: `adb install -r pedalons.apk`.
 
 ## Usage
 
-1. Open the Pédalons app on your Karoo
-2. Tap "Connect" to start authentication
-3. Scan the QR code or visit the URL shown and enter the code
-4. Log in to your Pédalons account on your phone/computer
-5. Once authenticated, browse your routes
-6. Tap a route to sync it to your Karoo
+1. Open the Pédalons app on your Karoo and tap "Connect"
+2. Scan the QR code with your phone, or go to `pedalons.fr/karoo` and enter the code shown
+3. Log in to your Pédalons account and authorize the Karoo
+4. Link your Hammerhead account when the Karoo asks for it (a second QR code)
+5. Pick a ride, a route or one of your next rides, and sync it to your Karoo
 
 ## Authentication
 
-The app uses OAuth Device Code flow (RFC 8628) since Karoo devices don't have a keyboard:
+The app uses the OAuth Device Code flow (RFC 8628), since Karoo devices don't have a keyboard:
 
-1. App requests a device code from the server
-2. Karoo displays a QR code and 6-character code
-3. User scans QR (which carries the code) or visits `pedalons.fr/karoo` and enters the code
-4. User authenticates with their Pédalons account
-5. App polls until authentication completes
-6. Tokens are stored securely on device
+1. The app requests a device code from the server
+2. The Karoo displays a QR code and a 6-character code
+3. The user scans the QR code (which carries the code), or visits `pedalons.fr/karoo` and enters it
+4. The user authenticates with their Pédalons account
+5. The app polls until authentication completes
+6. Tokens are stored on the device (DataStore) and refreshed before they expire
 
 ## Development
 
-### Build
+Prerequisites: JDK 17+ and the Android SDK. A fresh checkout has no `local.properties` (it is
+gitignored): create it with `sdk.dir=/path/to/Android/Sdk`, or set `ANDROID_HOME`.
+
+`ktor-client-karoo` is hosted on GitHub Packages, which needs authentication even for reads. Put a
+GitHub token with the `read:packages` scope in `~/.gradle/gradle.properties`:
+
+```properties
+gpruser=YOUR_GITHUB_USERNAME
+gprkey=YOUR_GITHUB_TOKEN
+```
 
 ```bash
-./gradlew assembleDebug      # Debug build
-./gradlew assembleRelease    # Release build (requires signing config)
+./gradlew installDebug       # build and install on the Karoo connected over ADB
+./gradlew assembleDebug      # debug APK only
+bash check.sh                # local gate: format + assembleDebug
 ```
 
-### Project Structure
+The app talks to production (`https://www.pedalons.fr`, `BASE_URL` in `MainActivity.kt`), debug
+builds included.
 
-```
-app/src/main/kotlin/fr/pedalons/karoo/
-├── PedalonsExtension.kt  # Karoo extension service
-├── MainActivity.kt       # Route browser
-├── auth/
-│   ├── AuthActivity.kt       # Device code auth flow
-│   ├── AuthManager.kt        # Token storage
-│   └── GpsConnectActivity.kt # Hammerhead account connection
-├── api/
-│   ├── PedalonsApiClient.kt  # HTTP client
-│   └── Models.kt             # Data classes
-└── ui/theme/
-    └── Theme.kt          # Dark theme
-```
+A local `assembleRelease` is signed only if `keystore.properties` exists (template:
+`keystore.properties.example`). Real releases are built by CI from a `karoo.X.Y.Z` tag — see
+[PUBLISH.md](PUBLISH.md) for the release process, the manifest Karoo devices poll for updates, and
+the Hammerhead Extensions Library.
+
+Code layout, patterns and the API endpoints used are described in [CLAUDE.md](CLAUDE.md).
 
 ### Key Dependencies
 
