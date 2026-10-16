@@ -6,8 +6,10 @@ import 'package:dio/dio.dart' hide Headers;
 import 'package:retrofit/retrofit.dart';
 import 'package:retrofit/error_logger.dart';
 
+import '../models/gps_auto_sync_request.dart';
 import '../models/gps_connect_return.dart';
 import '../models/gps_o_auth_url_response.dart';
+import '../models/gps_service_connection_dto.dart';
 import '../models/gps_service_type.dart';
 import '../models/route_upload_response.dart';
 
@@ -53,6 +55,19 @@ abstract class GpsServicesClient {
   Future<GpsOAuthUrlResponse> getConnectUrl({
     @Path('serviceType') required GpsServiceType serviceType,
     @Query('returnTo') GpsConnectReturn? returnTo,
+  });
+
+  /// Turn the automatic route sync on or off.
+  ///
+  /// Turns on or off, for one connected service, the automatic sending of the routes of the rides the user is registered in (from 7 days before the departure until a day after it), kept in sync with their changes. Turning it off removes from the service the upcoming routes it sent. A RECONNECT_REQUIRED state is only cleared by connecting the service again.
+  ///
+  /// [serviceType] - GPS service type.
+  ///
+  /// [body] - Name not received - field will be skipped.
+  @PUT('/api/gps/connections/{serviceType}/auto-sync')
+  Future<GpsServiceConnectionDto> setGpsAutoSync({
+    @Path('serviceType') required GpsServiceType serviceType,
+    @Body() required GpsAutoSyncRequest body,
   });
 
   /// Disconnect GPS service.

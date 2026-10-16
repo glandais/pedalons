@@ -19,6 +19,9 @@ _DeviceRegisteredGroupDto _$DeviceRegisteredGroupDtoFromJson(
   elevationGain: (json['elevationGain'] as num).toDouble(),
   startDateTime: json['startDateTime'] as String,
   timezone: json['timezone'] as String,
+  syncStatuses: (json['syncStatuses'] as List<dynamic>?)
+      ?.map((e) => DeviceRouteSyncStatusDto.fromJson(e as Map<String, dynamic>))
+      .toList(),
 );
 
 Map<String, dynamic> _$DeviceRegisteredGroupDtoToJson(
@@ -34,4 +37,5 @@ Map<String, dynamic> _$DeviceRegisteredGroupDtoToJson(
   'elevationGain': instance.elevationGain,
   'startDateTime': instance.startDateTime,
   'timezone': instance.timezone,
+  'syncStatuses': instance.syncStatuses?.map((e) => e.toJson()).toList(),
 };

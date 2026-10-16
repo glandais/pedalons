@@ -28,6 +28,7 @@ import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -38,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.jboss.logging.Logger;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Wahoo Cloud API GPS device integration client.
@@ -71,6 +73,7 @@ public class WahooClient implements GpsServiceClient {
   private static final int WORKOUT_TYPE_FAMILY_BIKING = 0;
   private static final DateTimeFormatter PROVIDER_UPDATED_AT =
       DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").withZone(ZoneOffset.UTC);
+  private static final Duration CALL_TIMEOUT = Duration.ofSeconds(30);
 
   @Inject DomainGpsCredentialService credentialService;
 
@@ -134,14 +137,23 @@ public class WahooClient implements GpsServiceClient {
 
   @Override
   public TokenResponse refreshToken(String refreshToken) {
+    return refreshToken(getCredential(), refreshToken);
+  }
+
+  @Override
+  public TokenResponse refreshToken(DomainGpsCredential credential, String refreshToken) {
+    String secret = credentialService.getDecryptedClientSecret(credential);
+    if (secret == null) {
+      throw new BusinessException(ErrorCode.GPS_SERVICE_NOT_CONFIGURED);
+    }
     String body =
         "grant_type=refresh_token"
             + "&refresh_token="
             + urlEncode(refreshToken)
             + "&client_id="
-            + urlEncode(getClientId())
+            + urlEncode(credential.getClientId())
             + "&client_secret="
-            + urlEncode(getClientSecret());
+            + urlEncode(secret);
 
     return requestToken(body);
   }
@@ -152,6 +164,8 @@ public class WahooClient implements GpsServiceClient {
           HttpRequest.newBuilder()
               .uri(URI.create(TOKEN_URL))
               .header("Content-Type", "application/x-www-form-urlencoded")
+              // Bounded like the route calls: the route sync's lease counts on it (API-120).
+              .timeout(CALL_TIMEOUT)
               .POST(HttpRequest.BodyPublishers.ofString(body))
               .build();
 
@@ -160,6 +174,9 @@ public class WahooClient implements GpsServiceClient {
 
       if (response.statusCode() != 200) {
         LOG.errorf("Wahoo token request failed: %d %s", response.statusCode(), response.body());
+        if (GpsTokenRefusedException.isRefusal(response.statusCode())) {
+          throw new GpsTokenRefusedException("Wahoo", response.statusCode());
+        }
         throw new InternalException(
             ErrorCode.GPS_TOKEN_EXCHANGE_FAILED,
             new IOException("Wahoo token request failed: " + response.statusCode()));
@@ -188,35 +205,116 @@ public class WahooClient implements GpsServiceClient {
   }
 
   @Override
-  public RouteUploadResult uploadRoute(String accessToken, byte[] gpxContent, String routeName) {
+  public GpsCallResult createRoute(GpsAuth auth, byte[] gpxContent, RouteMeta meta) {
+    return send("POST", ROUTE_UPLOAD_URL, auth, gpxContent, meta, true, null);
+  }
+
+  /**
+   * {@code PUT /v1/routes/{id}}: the file, {@code provider_updated_at}, the name, the start point,
+   * the distance and the ascent are all required, as on the creation; {@code external_id} cannot
+   * change and is not sent. A route the user deleted may come back {@code deleted: true} rather
+   * than 404: both are {@link GpsCallResult.NotFound}.
+   */
+  @Override
+  public GpsCallResult updateRoute(
+      GpsAuth auth, String externalId, byte[] gpxContent, RouteMeta meta) {
+    return send("PUT", routeUrl(externalId), auth, gpxContent, meta, false, externalId);
+  }
+
+  @Override
+  public GpsCallResult deleteRoute(GpsAuth auth, String externalId) {
+    String url = routeUrl(externalId);
+    try {
+      HttpRequest request =
+          HttpRequest.newBuilder()
+              .uri(URI.create(url))
+              .timeout(CALL_TIMEOUT)
+              .header("Authorization", auth.authorizationHeader("DELETE", url))
+              .DELETE()
+              .build();
+      HttpResponse<String> response =
+          httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+      if (GpsCallResult.isSuccess(response)) {
+        return new GpsCallResult.Ok(externalId);
+      }
+      LOG.warnf("Wahoo route delete failed: %d %s", response.statusCode(), response.body());
+      return GpsCallResult.ofFailure(response);
+    } catch (IOException e) {
+      LOG.warn("Failed to delete route on Wahoo", e);
+      return new GpsCallResult.Failed(0, e.getMessage() != null ? e.getMessage() : "I/O error");
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      return new GpsCallResult.Failed(0, "Interrupted");
+    }
+  }
+
+  static String routeUrl(String externalId) {
+    return ROUTE_UPLOAD_URL
+        + "/"
+        + URLEncoder.encode(externalId, StandardCharsets.UTF_8).replace("+", "%20");
+  }
+
+  private GpsCallResult send(
+      String method,
+      String url,
+      GpsAuth auth,
+      byte[] gpxContent,
+      RouteMeta meta,
+      boolean withExternalId,
+      @Nullable String knownId) {
     try {
       List<Path> paths = parsePaths(gpxContent);
-      byte[] fitContent = FitExporter.toFitBytes(paths, routeName);
+      byte[] fitContent = FitExporter.toFitBytes(paths, meta.name());
 
-      String body = buildRouteForm(paths, gpxContent, fitContent, routeName);
+      String body =
+          buildRouteForm(
+              paths,
+              fitContent,
+              meta.name(),
+              withExternalId
+                  ? (meta.externalId() != null ? meta.externalId() : sha256Hex(gpxContent))
+                  : null);
 
       HttpRequest request =
           HttpRequest.newBuilder()
-              .uri(URI.create(ROUTE_UPLOAD_URL))
-              .header("Authorization", "Bearer " + accessToken)
+              .uri(URI.create(url))
+              .timeout(CALL_TIMEOUT)
+              .header("Authorization", auth.authorizationHeader(method, url))
               .header("Content-Type", "application/x-www-form-urlencoded")
-              .POST(HttpRequest.BodyPublishers.ofString(body))
+              .method(method, HttpRequest.BodyPublishers.ofString(body))
               .build();
 
       HttpResponse<String> response =
           httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
-      if (response.statusCode() >= 200 && response.statusCode() < 300) {
-        String routeId = jsonString(objectMapper.readTree(response.body()), "id");
-        LOG.infof("Successfully uploaded route to Wahoo: %s", routeId);
-        return RouteUploadResult.success(routeId);
-      } else {
-        LOG.errorf("Wahoo route upload failed: %d %s", response.statusCode(), response.body());
-        return RouteUploadResult.failure("Upload failed: " + response.statusCode());
+      if (GpsCallResult.isSuccess(response)) {
+        JsonNode root = readJson(response.body());
+        if (root != null && root.path("deleted").asBoolean(false)) {
+          return new GpsCallResult.NotFound();
+        }
+        String routeId = root != null ? jsonString(root, "id") : null;
+        LOG.infof("Route %s on Wahoo: %s", "POST".equals(method) ? "created" : "updated", routeId);
+        return new GpsCallResult.Ok(routeId != null ? routeId : knownId);
       }
-    } catch (IOException | InterruptedException e) {
-      LOG.error("Failed to upload route to Wahoo", e);
-      return RouteUploadResult.failure("Upload failed: " + e.getMessage());
+      LOG.errorf("Wahoo route %s failed: %d %s", method, response.statusCode(), response.body());
+      return GpsCallResult.ofFailure(response);
+    } catch (IOException e) {
+      LOG.error("Failed to send route to Wahoo", e);
+      return new GpsCallResult.Failed(0, e.getMessage() != null ? e.getMessage() : "I/O error");
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      return new GpsCallResult.Failed(0, "Interrupted");
+    }
+  }
+
+  private @Nullable JsonNode readJson(@Nullable String body) {
+    if (body == null || body.isBlank()) {
+      return null;
+    }
+    try {
+      return objectMapper.readTree(body);
+    } catch (JsonProcessingException e) {
+      return null;
     }
   }
 
@@ -224,7 +322,7 @@ public class WahooClient implements GpsServiceClient {
    * The tracks of {@code gpxContent} as vcyclist paths, derived data included — the FIT export and
    * the form's distance/ascent fields both read them, so parsing happens once.
    */
-  private static List<Path> parsePaths(byte[] gpxContent) throws IOException {
+  static List<Path> parsePaths(byte[] gpxContent) throws IOException {
     try {
       GpxDocument doc = GpxParserJvm.parse(decodeGpx(gpxContent));
       return GpxToPathJvm.tracksAsPaths(doc);
@@ -258,13 +356,16 @@ public class WahooClient implements GpsServiceClient {
    * multipart part, and requires the route's start point, distance and ascent alongside it — none
    * of which the FIT payload is read for. They are recomputed here from the same parsed GPX.
    *
-   * <p>{@code external_id} is the SHA-256 of the GPX bytes: Wahoo deduplicates on it, so sending
-   * the same route twice updates the one record instead of stacking copies in the user's library.
-   * Editing the route changes the hash and therefore creates a new entry, which is the safe way
-   * round — an upload can never overwrite a different route.
+   * <p>{@code external_id}, sent on a creation only (a {@code PUT} cannot change it): the
+   * provider's own id of the route. A manual upload uses the SHA-256 of the GPX bytes; a route kept
+   * in sync, {@code pedalons-{domainId}-{rideId}} (docs/LEDGER_*.md API-120 D10). Wahoo's
+   * documentation says nothing of what a second {@code POST} with the same {@code external_id}
+   * does — it does <em>not</em> promise to deduplicate on it, which an earlier version of this
+   * comment claimed; a synchronised route is updated by its id instead ({@link #updateRoute}).
    */
-  private String buildRouteForm(
-      List<Path> paths, byte[] gpxContent, byte[] fitContent, String routeName) throws IOException {
+  static String buildRouteForm(
+      List<Path> paths, byte[] fitContent, String routeName, @Nullable String externalId)
+      throws IOException {
     if (paths.isEmpty() || paths.getFirst().getSize() == 0) {
       throw new IOException("GPX holds no track point");
     }
@@ -280,7 +381,9 @@ public class WahooClient implements GpsServiceClient {
     params.put("route[file]", dataUri);
     params.put("route[filename]", sanitiseFileName(routeName) + ".fit");
     params.put("route[name]", routeName);
-    params.put("route[external_id]", sha256Hex(gpxContent));
+    if (externalId != null) {
+      params.put("route[external_id]", externalId);
+    }
     params.put("route[provider_updated_at]", PROVIDER_UPDATED_AT.format(Instant.now()));
     params.put("route[workout_type_family_id]", Integer.toString(WORKOUT_TYPE_FAMILY_BIKING));
     params.put("route[start_lat]", Double.toString(first.latitudeDeg(0)));
@@ -290,7 +393,11 @@ public class WahooClient implements GpsServiceClient {
     params.put("route[descent]", Double.toString(descent));
 
     return params.entrySet().stream()
-        .map(e -> urlEncode(e.getKey()) + "=" + urlEncode(e.getValue()))
+        .map(
+            e ->
+                URLEncoder.encode(e.getKey(), StandardCharsets.UTF_8)
+                    + "="
+                    + URLEncoder.encode(e.getValue(), StandardCharsets.UTF_8))
         .collect(Collectors.joining("&"));
   }
 

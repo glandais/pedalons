@@ -69,4 +69,11 @@ public record ConfigDto(
             description =
                 "Where the site counts its page views. Null when the deployment measures no"
                     + " audience — the site then sends nothing. The mobile app ignores it.")
-        AnalyticsConfigDto analytics) {}
+        AnalyticsConfigDto analytics,
+    @Schema(
+            description =
+                "Whether this deployment sends the routes of a member's rides to their GPS services"
+                    + " on its own (GpsServiceConnectionDto.autoSync). When false the clients offer"
+                    + " no switch: it would promise a sending that never happens.",
+            required = true)
+        boolean gpsAutoSyncEnabled) {}

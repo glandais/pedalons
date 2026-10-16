@@ -18,7 +18,9 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import org.jboss.logging.Logger;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Garmin Connect GPS device integration client.
@@ -33,6 +35,7 @@ public class GarminClient implements GpsServiceClient {
   private static final String AUTH_URL = "https://connect.garmin.com/oauth2Confirm";
   private static final String TOKEN_URL = "https://diauth.garmin.com/di-oauth2-service/oauth/token";
   static final String COURSE_UPLOAD_URL = "https://apis.garmin.com/training-api/courses/v1/course";
+  private static final Duration CALL_TIMEOUT = Duration.ofSeconds(30);
 
   @Inject DomainGpsCredentialService credentialService;
 
@@ -118,14 +121,23 @@ public class GarminClient implements GpsServiceClient {
 
   @Override
   public TokenResponse refreshToken(String refreshToken) {
+    return refreshToken(getCredential(), refreshToken);
+  }
+
+  @Override
+  public TokenResponse refreshToken(DomainGpsCredential credential, String refreshToken) {
+    String secret = credentialService.getDecryptedClientSecret(credential);
+    if (secret == null) {
+      throw new BusinessException(ErrorCode.GPS_SERVICE_NOT_CONFIGURED);
+    }
     String body =
         "grant_type=refresh_token"
             + "&refresh_token="
             + urlEncode(refreshToken)
             + "&client_id="
-            + urlEncode(getClientId())
+            + urlEncode(credential.getClientId())
             + "&client_secret="
-            + urlEncode(getClientSecret());
+            + urlEncode(secret);
 
     return requestToken(body);
   }
@@ -136,6 +148,8 @@ public class GarminClient implements GpsServiceClient {
           HttpRequest.newBuilder()
               .uri(URI.create(TOKEN_URL))
               .header("Content-Type", "application/x-www-form-urlencoded")
+              // Bounded like the route calls: the route sync's lease counts on it (API-120).
+              .timeout(CALL_TIMEOUT)
               .POST(HttpRequest.BodyPublishers.ofString(body))
               .build();
 
@@ -144,6 +158,9 @@ public class GarminClient implements GpsServiceClient {
 
       if (response.statusCode() != 200) {
         LOG.errorf("Garmin token request failed: %d %s", response.statusCode(), response.body());
+        if (GpsTokenRefusedException.isRefusal(response.statusCode())) {
+          throw new GpsTokenRefusedException("Garmin", response.statusCode());
+        }
         throw new InternalException(
             ErrorCode.GPS_TOKEN_EXCHANGE_FAILED,
             new IOException("Garmin token request failed: " + response.statusCode()));
@@ -170,46 +187,112 @@ public class GarminClient implements GpsServiceClient {
     }
   }
 
+  /**
+   * Creates a course on Garmin Connect. The authorization is all that differs between OAuth 2.0 (a
+   * bearer token) and OAuth 1.0a (a signature, see {@link GarminOAuth1Client}).
+   */
   @Override
-  public RouteUploadResult uploadRoute(String accessToken, byte[] gpxContent, String routeName) {
-    return uploadCourse(gpxContent, routeName, "Bearer " + accessToken);
+  public GpsCallResult createRoute(GpsAuth auth, byte[] gpxContent, RouteMeta meta) {
+    return sendCourse("POST", COURSE_UPLOAD_URL, auth, gpxContent, meta, null);
   }
 
   /**
-   * Creates a course on Garmin Connect. The authorization header is all that differs between OAuth
-   * 2.0 (a bearer token) and OAuth 1.0a (a signature, see {@link GarminOAuth1Client}).
+   * {@code PUT …/course/{courseId}}: a full replacement, the whole course JSON again. Garmin answers
+   * 204 with no body.
    */
-  RouteUploadResult uploadCourse(byte[] gpxContent, String routeName, String authorization) {
+  @Override
+  public GpsCallResult updateRoute(
+      GpsAuth auth, String externalId, byte[] gpxContent, RouteMeta meta) {
+    return sendCourse("PUT", courseUrl(externalId), auth, gpxContent, meta, externalId);
+  }
+
+  /** {@code DELETE …/course/{courseId}} → 204. */
+  @Override
+  public GpsCallResult deleteRoute(GpsAuth auth, String externalId) {
+    String url = courseUrl(externalId);
+    try {
+      HttpRequest request =
+          HttpRequest.newBuilder()
+              .uri(URI.create(url))
+              .timeout(CALL_TIMEOUT)
+              .header("Authorization", auth.authorizationHeader("DELETE", url))
+              .DELETE()
+              .build();
+      HttpResponse<String> response =
+          httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+      if (GpsCallResult.isSuccess(response)) {
+        return new GpsCallResult.Ok(externalId);
+      }
+      LOG.warnf("Garmin course delete failed: %d %s", response.statusCode(), response.body());
+      return GpsCallResult.ofFailure(response);
+    } catch (IOException e) {
+      LOG.warn("Failed to delete course on Garmin", e);
+      return new GpsCallResult.Failed(0, e.getMessage() != null ? e.getMessage() : "I/O error");
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      return new GpsCallResult.Failed(0, "Interrupted");
+    }
+  }
+
+  static String courseUrl(String externalId) {
+    return COURSE_UPLOAD_URL
+        + "/"
+        + URLEncoder.encode(externalId, StandardCharsets.UTF_8).replace("+", "%20");
+  }
+
+  private GpsCallResult sendCourse(
+      String method,
+      String url,
+      GpsAuth auth,
+      byte[] gpxContent,
+      RouteMeta meta,
+      @Nullable String knownId) {
     try {
       // Convert GPX to Garmin course JSON format
-      String courseJson = courseConverter.convertToGarminCourse(gpxContent, routeName);
+      String courseJson = courseConverter.convertToGarminCourse(gpxContent, meta.name());
 
       HttpRequest request =
           HttpRequest.newBuilder()
-              .uri(URI.create(COURSE_UPLOAD_URL))
-              .header("Authorization", authorization)
+              .uri(URI.create(url))
+              .timeout(CALL_TIMEOUT)
+              .header("Authorization", auth.authorizationHeader(method, url))
               .header("Content-Type", "application/json")
-              .POST(HttpRequest.BodyPublishers.ofString(courseJson, StandardCharsets.UTF_8))
+              .method(
+                  method, HttpRequest.BodyPublishers.ofString(courseJson, StandardCharsets.UTF_8))
               .build();
 
       HttpResponse<String> response =
           httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
-      if (response.statusCode() >= 200 && response.statusCode() < 300) {
-        JsonNode body = objectMapper.readTree(response.body());
-        String courseId = jsonString(body, "courseId");
-        if (courseId == null) {
-          courseId = jsonString(body, "id");
-        }
-        LOG.infof("Successfully uploaded course to Garmin: %s", courseId);
-        return RouteUploadResult.success(courseId);
-      } else {
-        LOG.errorf("Garmin course upload failed: %d %s", response.statusCode(), response.body());
-        return RouteUploadResult.failure("Upload failed: " + response.statusCode());
+      if (GpsCallResult.isSuccess(response)) {
+        String courseId = readCourseId(response.body());
+        LOG.infof(
+            "Course %s on Garmin: %s",
+            "POST".equals(method) ? "created" : "updated", courseId != null ? courseId : knownId);
+        return new GpsCallResult.Ok(courseId != null ? courseId : knownId);
       }
-    } catch (IOException | InterruptedException e) {
-      LOG.error("Failed to upload course to Garmin", e);
-      return RouteUploadResult.failure("Upload failed: " + e.getMessage());
+      LOG.errorf("Garmin course %s failed: %d %s", method, response.statusCode(), response.body());
+      return GpsCallResult.ofFailure(response);
+    } catch (IOException e) {
+      LOG.error("Failed to send course to Garmin", e);
+      return new GpsCallResult.Failed(0, e.getMessage() != null ? e.getMessage() : "I/O error");
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      return new GpsCallResult.Failed(0, "Interrupted");
+    }
+  }
+
+  /** The id in a creation's answer; null for the empty body of a 204. */
+  private @Nullable String readCourseId(@Nullable String body) {
+    if (body == null || body.isBlank()) {
+      return null;
+    }
+    try {
+      JsonNode root = objectMapper.readTree(body);
+      String courseId = jsonString(root, "courseId");
+      return courseId != null ? courseId : jsonString(root, "id");
+    } catch (JsonProcessingException e) {
+      return null;
     }
   }
 

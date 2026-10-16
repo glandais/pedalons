@@ -72,6 +72,13 @@ public class ConfigService {
   @ConfigProperty(name = "pedalons.analytics.count-path")
   Optional<String> analyticsCountPath;
 
+  /**
+   * Whether the automatic route sync runs on this deployment (docs/LEDGER_*.md API-120): the same
+   * property that starts the planner and the worker ({@code GpsRouteSyncPlanner#isEnabled}).
+   */
+  @ConfigProperty(name = "pedalons.gps-sync.enabled", defaultValue = "false")
+  boolean gpsAutoSyncEnabled;
+
   @Public
   public ConfigDto getConfig() {
     ResolvedSite site = domainResolver.getResolvedSite();
@@ -92,7 +99,8 @@ public class ConfigService {
         terrain(),
         minSupportedAppVersion.filter(version -> !version.isBlank()).orElse(null),
         webPush(),
-        analytics(analyticsCountPath));
+        analytics(analyticsCountPath),
+        gpsAutoSyncEnabled);
   }
 
   /**

@@ -18,6 +18,7 @@ _ConfigDto _$ConfigDtoFromJson(Map<String, dynamic> json) => _ConfigDto(
   defaultCenter: MapCenterDto.fromJson(
     json['defaultCenter'] as Map<String, dynamic>,
   ),
+  gpsAutoSyncEnabled: json['gpsAutoSyncEnabled'] as bool,
   pinnedTeamSlug: json['pinnedTeamSlug'] as String?,
   terrain: json['terrain'] == null
       ? null
@@ -40,6 +41,7 @@ Map<String, dynamic> _$ConfigDtoToJson(_ConfigDto instance) =>
       'mapStyles': instance.mapStyles.map((e) => e.toJson()).toList(),
       'tileServerBaseUrl': instance.tileServerBaseUrl,
       'defaultCenter': instance.defaultCenter.toJson(),
+      'gpsAutoSyncEnabled': instance.gpsAutoSyncEnabled,
       'pinnedTeamSlug': instance.pinnedTeamSlug,
       'terrain': instance.terrain?.toJson(),
       'minSupportedAppVersion': instance.minSupportedAppVersion,

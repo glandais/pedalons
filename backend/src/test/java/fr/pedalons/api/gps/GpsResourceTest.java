@@ -4,9 +4,11 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
 
 import fr.pedalons.api.AbstractResourceTest;
+import fr.pedalons.domain.gps.GpsServiceConnection;
 import fr.pedalons.domain.route.Route;
 import fr.pedalons.enums.GpsServiceType;
 import fr.pedalons.service.security.DomainResolver;
+import fr.pedalons.util.GpsSyncTestData;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
 import jakarta.inject.Inject;
@@ -21,6 +23,7 @@ class GpsResourceTest extends AbstractResourceTest {
   private Route route;
   private String routeSlug;
   @Inject DomainResolver domainResolver;
+  @Inject GpsSyncTestData sync;
 
   @Override
   @BeforeEach
@@ -332,5 +335,143 @@ class GpsResourceTest extends AbstractResourceTest {
         .post("/api/gps/upload/INVALID/" + team1Slug + "/" + routeSlug)
         .then()
         .statusCode(404);
+  }
+
+  // ==================== Automatic route sync (docs/LEDGER_*.md API-120) ====================
+
+  @Test
+  void getConnectUrl_alreadyConnected_isRefused() {
+    dataService.createGpsServiceConnection(user1, GpsServiceType.HAMMERHEAD);
+
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .when()
+        .get("/api/gps/connect/HAMMERHEAD")
+        .then()
+        .statusCode(400);
+  }
+
+  /** The reconnection the clients offer when the service refuses the tokens. */
+  @Test
+  void getConnectUrl_connectionWaitingForAReconnection_isAllowed() {
+    GpsServiceConnection connection =
+        dataService.createGpsServiceConnection(user1, GpsServiceType.HAMMERHEAD);
+    sync.markReconnectRequired(connection.getId());
+
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .when()
+        .get("/api/gps/connect/HAMMERHEAD")
+        .then()
+        .statusCode(200)
+        .body("authorizationUrl", notNullValue());
+  }
+
+  @Test
+  void setAutoSync_turnsItOnThenOff() {
+    dataService.createGpsServiceConnection(user1, GpsServiceType.HAMMERHEAD);
+
+    given()
+        .contentType(ContentType.JSON)
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .body("{\"enabled\": true}")
+        .when()
+        .put("/api/gps/connections/HAMMERHEAD/auto-sync")
+        .then()
+        .statusCode(200)
+        .body("serviceType", equalTo("HAMMERHEAD"))
+        .body("autoSync", equalTo(true))
+        .body("autoSyncState", equalTo("UP_TO_DATE"))
+        .body("autoSyncRouteCount", equalTo(0));
+
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .when()
+        .get("/api/users/me")
+        .then()
+        .statusCode(200)
+        .body("connectedServices[0].autoSync", equalTo(true))
+        .body("connectedServices[0].autoSyncState", equalTo("UP_TO_DATE"));
+
+    given()
+        .contentType(ContentType.JSON)
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .body("{\"enabled\": false}")
+        .when()
+        .put("/api/gps/connections/HAMMERHEAD/auto-sync")
+        .then()
+        .statusCode(200)
+        .body("autoSync", equalTo(false))
+        .body("autoSyncState", equalTo("OFF"));
+  }
+
+  @Test
+  void setAutoSync_notConnected_shouldReturn400() {
+    given()
+        .contentType(ContentType.JSON)
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .body("{\"enabled\": true}")
+        .when()
+        .put("/api/gps/connections/HAMMERHEAD/auto-sync")
+        .then()
+        .statusCode(400);
+  }
+
+  @Test
+  void setAutoSync_touchesOnlyTheCallersConnection() {
+    dataService.createGpsServiceConnection(user1, GpsServiceType.HAMMERHEAD);
+    dataService.createGpsServiceConnection(user2, GpsServiceType.HAMMERHEAD);
+
+    given()
+        .contentType(ContentType.JSON)
+        .auth()
+        .oauth2(getAccessToken(USER2))
+        .body("{\"enabled\": true}")
+        .when()
+        .put("/api/gps/connections/HAMMERHEAD/auto-sync")
+        .then()
+        .statusCode(200);
+
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .when()
+        .get("/api/users/me")
+        .then()
+        .statusCode(200)
+        .body("connectedServices[0].autoSync", equalTo(false))
+        .body("connectedServices[0].autoSyncState", equalTo("OFF"));
+  }
+
+  @Test
+  void setAutoSync_withoutBody_shouldReturn400() {
+    dataService.createGpsServiceConnection(user1, GpsServiceType.HAMMERHEAD);
+
+    given()
+        .contentType(ContentType.JSON)
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .body("{}")
+        .when()
+        .put("/api/gps/connections/HAMMERHEAD/auto-sync")
+        .then()
+        .statusCode(400);
+  }
+
+  @Test
+  void setAutoSync_withoutAuth_shouldReturn401() {
+    given()
+        .contentType(ContentType.JSON)
+        .body("{\"enabled\": true}")
+        .when()
+        .put("/api/gps/connections/HAMMERHEAD/auto-sync")
+        .then()
+        .statusCode(401);
   }
 }

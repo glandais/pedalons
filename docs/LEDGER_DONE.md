@@ -663,6 +663,26 @@ couvert » ; les tests ne tournent qu'en local (`MOB-37`).
   chacun leur `filterScope` ; le calendrier d'une équipe reste aux membres (plan §7) ; « En cours »
   se calcule sur les instants du contrat, jamais sur leur heure de cadran.
 
+### `MOB-71` Interrupteur « envoi automatique » par service GPS connecté (16 octobre 2026, contrat `11.5.0`)
+
+- `MOB-71` **Chaque service GPS connecté porte l'interrupteur « Envoi automatique des parcours » et
+  son état** — suite mobile d'`API-120`, plan
+  [`2026-10-16-gps-route-autosync.md`](plans/2026-10-16-gps-route-autosync.md) §8. Dans
+  `GpsServicesCard` (`features/profile/presentation/widgets/connected_services_section.dart`), une
+  `PdlSettingRow` avec `PdlSwitch` (`keys.profile.gpsAutoSyncSwitch`) sous chaque service connecté,
+  l'état du serveur en sous-titre (`gpsAutoSyncStatus`), mise à jour optimiste puis la connexion
+  rendue par `setGpsAutoSync` écrite dans l'utilisateur courant (`authProvider.setUser`), retour
+  arrière et bandeau sur échec ; la confirmation de déconnexion annonce le retrait des parcours
+  envoyés. Sur `RECONNECT_REQUIRED`, un bouton « Reconnecter » (`keys.profile.gpsReconnect`)
+  relance l'autorisation sur la même connexion. L'interrupteur n'apparaît pas quand
+  `ConfigDto.gpsAutoSyncEnabled` est faux. `profile.gps.autoSync.*` en français et en anglais,
+  `profile.gps.hint` revu. Tests : `gps_services_card_test.dart` (interrupteur du seul service
+  connecté, optimisme et retour arrière, déconnexion, masqué si le déploiement n'envoie rien,
+  « Reconnecter », chaque phrase d'état). **À ne pas défaire** : la valeur affichée vient de
+  `UserDto.connectedServices`, jamais d'une copie locale ; la reconnexion ne passe pas par une
+  déconnexion, qui couperait l'interrupteur et effacerait le suivi ; la ligne « échec » ne promet
+  pas de nouvel essai (`MAX_ATTEMPTS`). Demande une republication de l'app.
+
 ## WEB — Site web
 
 ### La recette web, automatisée
@@ -1918,6 +1938,22 @@ Plan [`2026-10-06-team-agenda.md`](plans/archive/2026-10-06-team-agenda.md) §4,
   compte, aucun état de connexion, base séparée), et que le responsable du traitement est le seul
   lecteur. Si un second lecteur reçoit l'accès, l'analyse tombe et est à refaire avant (`WEB-91`).
   Un slug d'équipe renommé coupe l'historique en deux chemins, accepté.
+
+### `WEB-92` Interrupteur « envoi automatique » par service GPS connecté (16 octobre 2026, contrat `11.5.0`)
+
+- `WEB-92` **Chaque service GPS connecté porte l'interrupteur d'envoi automatique et son état** —
+  suite web d'`API-120`, plan
+  [`2026-10-16-gps-route-autosync.md`](plans/2026-10-16-gps-route-autosync.md) §7. Dans
+  `components/profile/GpsConnectionsManager.tsx`, un `Switch` par service connecté (mutation
+  générée `useSetGpsAutoSync`, `hooks/useGpsConnections.ts`), l'état d'après `autoSyncState`
+  (« À jour · N parcours », envoi en cours, échec, reconnexion nécessaire avec un bouton
+  « Reconnecter » qui relance l'OAuth), une phrase de plus dans la confirmation de déconnexion ;
+  rien quand `ConfigDto.gpsAutoSyncEnabled` est faux (`isGpsAutoSyncEnabled`, `config/appConfig.ts`).
+  Clés `gps.autoSync.*` en français et en anglais, `gps.description` et `profileStatus.ts` revus.
+  Tests vitest : `GpsConnectionsManager.test.tsx` (interrupteur du seul service connecté, mutation,
+  chaque état, masqué si le déploiement n'envoie rien), `profileStatus.test.ts`. **À ne pas
+  défaire** : la reconnexion relance l'OAuth sur la connexion existante, jamais une déconnexion ; la
+  phrase d'échec ne promet pas de nouvel essai automatique.
 
 ## API — Contrat d'API et backend
 
@@ -3303,6 +3339,48 @@ plus la colonne. Le départ d'un groupe n'existe plus que dans `ride_groups.star
   (`DeviceRouteService.findRouteBySlug`), les deux restent en phase ; la sélection charge la trace
   directement, sans écran de parcours ; le nombre de requêtes est fixe quel que soit le nombre
   d'inscriptions (`…QueryCountTest`) — pas de résolution par ligne.
+
+### `API-121` « Prochaines sorties » dit si le parcours est déjà chez le service GPS de l'appareil (contrat `11.5.0`)
+
+- `API-121` **Karoo et Garmin montrent, sur chaque groupe inscrit, où en est son parcours chez
+  Hammerhead / Garmin Connect** (2026-10-16, **API 11.5.0**, mineure, additive ; non commité, avec
+  `API-120`) — un membre qui voyait un groupe inscrit sur son appareil ne savait pas si `API-120` ou
+  un envoi manuel avait déjà mis le parcours chez son service : il le rechargeait en doublon, et ne
+  voyait ni une mise à jour en attente ni une reconnexion nécessaire.
+  `DeviceRegisteredGroupDto.syncStatuses` (facultatif) donne, pour chaque service qui tient la route
+  effective du groupe, `{ serviceType, state }` (`GpsRouteSyncState` : `SENT`, `OUTDATED`,
+  `PENDING`, `FAILING`, `RECONNECT_REQUIRED`), sans id externe ni date (plafond Karoo de 100 Ko) ;
+  vide quand aucun service ne la tient. Résolu pour toute la liste en **deux requêtes au plus**
+  (`GpsRouteSyncService.findRouteStatuses` : les lignes de suivi, puis le GPX courant des routes
+  seulement s'il y a un envoi manuel ou si la synchronisation est éteinte) ;
+  `RegisteredGroupRow.effectiveRouteId()`.
+  - **Ce que dit une ligne** (`GpsRouteSyncService.routeState`) : une ligne automatique, la
+    synchronisation allumée, suit le hash du planificateur (`PENDING`, `FAILING` — qui ne promet
+    plus de nouvel essai : après `MAX_ATTEMPTS` la ligne attend un changement —, `SENT`). Un envoi
+    manuel, que rien ne met à jour, et toute ligne quand `pedalons.gps-sync.enabled` est éteint
+    (planificateur et worker arrêtés) sont comparés au GPX courant de la route : `OUTDATED` si le
+    GPX a changé depuis l'envoi, `SENT` sinon ; une ligne automatique jamais envoyée ne dit alors
+    rien. Plusieurs lignes d'une même route et d'un même service fusionnent sur le pire état.
+  - **Karoo** : `DeviceRegisteredGroup.hammerheadSyncState()` ne lit que l'entrée `HAMMERHEAD` ;
+    une ligne au repos l'affiche (`HammerheadSyncStatusText` : déjà sur le Karoo, ancienne version,
+    mise à jour en attente, envoi en échec, reconnecter Hammerhead). Une route synchronisée depuis
+    le Karoo depuis le chargement de la réponse (`syncedRoutes`, remis à zéro à chaque nouvelle
+    réponse) s'affiche « Déjà sur le Karoo », l'état du serveur étant plus ancien qu'elle.
+  - **Garmin** : `ApiClient.parseRegisteredGroupDto` ne garde que l'état de l'entrée `GARMIN`
+    (`syncState`), que `HomeMenuDelegate.syncStateLabel` place en tête du sous-titre de la ligne.
+  - Les deux : un champ absent (backend antérieur), un service qui ne tient pas la route ou un état
+    inconnu de l'app n'affichent rien — « inconnu », pas « non envoyé ».
+
+  Tests : `DeviceRegisteredGroupsResourceTest` (`syncStatuses_*` : envoyée, en attente +
+  reconnexion, envoi manuel, envoi manuel puis GPX remplacé → `OUTDATED`, non suivie, isolation
+  entre membres), `GpsRouteSyncRouteStateTest` (synchronisation éteinte, envoi manuel périmé),
+  `DeviceRoutesQueryCountTest.registeredGroupsSyncStatuses_costDoesNotScaleWithSyncRows`. Le profil
+  de test allume `pedalons.gps-sync.enabled` (le planificateur n'y tourne pas). Aucun test côté
+  appareils : la recette reste ouverte (`API-122`).
+  **À ne pas défaire** : un appareil ne lit que l'entrée de son propre service ; un champ absent
+  vaut « inconnu » ; un envoi manuel n'est jamais réputé à jour sans comparaison au GPX courant, et
+  la synchronisation éteinte ne promet aucune mise à jour (`PENDING`/`FAILING` réservés aux lignes
+  qu'un worker traite) ; le coût ne dépend pas du nombre de lignes (`…QueryCountTest`).
 
 ## OPS — Exploitation, déploiement, recette du backend
 

@@ -156,6 +156,25 @@ export const LoginWithPasswordResponse = zod
                 connectedAt: zod.iso
                   .datetime({ offset: true })
                   .describe('When the service was connected'),
+                autoSync: zod
+                  .boolean()
+                  .describe(
+                    'Whether the routes of the rides the user is registered in are sent to this service automatically, and kept in sync (new route, corrected GPX, another group), from 7 days before the departure until a day after it'
+                  ),
+                autoSyncState: zod
+                  .enum(['OFF', 'UP_TO_DATE', 'PENDING', 'FAILING', 'RECONNECT_REQUIRED'])
+                  .describe(
+                    'Where the automatic sync stands. OFF when autoSync is false; RECONNECT_REQUIRED is only cleared by connecting the service again'
+                  ),
+                autoSyncRouteCount: zod
+                  .int()
+                  .describe(
+                    'How many routes the automatic sync currently has at the service (removed after the ride, or when the sync is turned off)'
+                  ),
+                lastAutoSyncAt: zod.iso
+                  .datetime({ offset: true })
+                  .optional()
+                  .describe('When the automatic sync last sent a route to this service'),
               })
               .describe('GPS service connection information')
           )
@@ -295,6 +314,25 @@ export const VerifyOtpResponse = zod
                 connectedAt: zod.iso
                   .datetime({ offset: true })
                   .describe('When the service was connected'),
+                autoSync: zod
+                  .boolean()
+                  .describe(
+                    'Whether the routes of the rides the user is registered in are sent to this service automatically, and kept in sync (new route, corrected GPX, another group), from 7 days before the departure until a day after it'
+                  ),
+                autoSyncState: zod
+                  .enum(['OFF', 'UP_TO_DATE', 'PENDING', 'FAILING', 'RECONNECT_REQUIRED'])
+                  .describe(
+                    'Where the automatic sync stands. OFF when autoSync is false; RECONNECT_REQUIRED is only cleared by connecting the service again'
+                  ),
+                autoSyncRouteCount: zod
+                  .int()
+                  .describe(
+                    'How many routes the automatic sync currently has at the service (removed after the ride, or when the sync is turned off)'
+                  ),
+                lastAutoSyncAt: zod.iso
+                  .datetime({ offset: true })
+                  .optional()
+                  .describe('When the automatic sync last sent a route to this service'),
               })
               .describe('GPS service connection information')
           )
@@ -379,6 +417,25 @@ export const RefreshResponse = zod
                 connectedAt: zod.iso
                   .datetime({ offset: true })
                   .describe('When the service was connected'),
+                autoSync: zod
+                  .boolean()
+                  .describe(
+                    'Whether the routes of the rides the user is registered in are sent to this service automatically, and kept in sync (new route, corrected GPX, another group), from 7 days before the departure until a day after it'
+                  ),
+                autoSyncState: zod
+                  .enum(['OFF', 'UP_TO_DATE', 'PENDING', 'FAILING', 'RECONNECT_REQUIRED'])
+                  .describe(
+                    'Where the automatic sync stands. OFF when autoSync is false; RECONNECT_REQUIRED is only cleared by connecting the service again'
+                  ),
+                autoSyncRouteCount: zod
+                  .int()
+                  .describe(
+                    'How many routes the automatic sync currently has at the service (removed after the ride, or when the sync is turned off)'
+                  ),
+                lastAutoSyncAt: zod.iso
+                  .datetime({ offset: true })
+                  .optional()
+                  .describe('When the automatic sync last sent a route to this service'),
               })
               .describe('GPS service connection information')
           )
@@ -524,6 +581,25 @@ export const ResetPasswordResponse = zod
                 connectedAt: zod.iso
                   .datetime({ offset: true })
                   .describe('When the service was connected'),
+                autoSync: zod
+                  .boolean()
+                  .describe(
+                    'Whether the routes of the rides the user is registered in are sent to this service automatically, and kept in sync (new route, corrected GPX, another group), from 7 days before the departure until a day after it'
+                  ),
+                autoSyncState: zod
+                  .enum(['OFF', 'UP_TO_DATE', 'PENDING', 'FAILING', 'RECONNECT_REQUIRED'])
+                  .describe(
+                    'Where the automatic sync stands. OFF when autoSync is false; RECONNECT_REQUIRED is only cleared by connecting the service again'
+                  ),
+                autoSyncRouteCount: zod
+                  .int()
+                  .describe(
+                    'How many routes the automatic sync currently has at the service (removed after the ride, or when the sync is turned off)'
+                  ),
+                lastAutoSyncAt: zod.iso
+                  .datetime({ offset: true })
+                  .optional()
+                  .describe('When the automatic sync last sent a route to this service'),
               })
               .describe('GPS service connection information')
           )
@@ -633,6 +709,25 @@ export const ActivateAccountResponse = zod
                 connectedAt: zod.iso
                   .datetime({ offset: true })
                   .describe('When the service was connected'),
+                autoSync: zod
+                  .boolean()
+                  .describe(
+                    'Whether the routes of the rides the user is registered in are sent to this service automatically, and kept in sync (new route, corrected GPX, another group), from 7 days before the departure until a day after it'
+                  ),
+                autoSyncState: zod
+                  .enum(['OFF', 'UP_TO_DATE', 'PENDING', 'FAILING', 'RECONNECT_REQUIRED'])
+                  .describe(
+                    'Where the automatic sync stands. OFF when autoSync is false; RECONNECT_REQUIRED is only cleared by connecting the service again'
+                  ),
+                autoSyncRouteCount: zod
+                  .int()
+                  .describe(
+                    'How many routes the automatic sync currently has at the service (removed after the ride, or when the sync is turned off)'
+                  ),
+                lastAutoSyncAt: zod.iso
+                  .datetime({ offset: true })
+                  .optional()
+                  .describe('When the automatic sync last sent a route to this service'),
               })
               .describe('GPS service connection information')
           )

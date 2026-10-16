@@ -4,6 +4,7 @@
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'device_route_sync_status_dto.dart';
 import 'instant.dart';
 
 part 'device_registered_group_dto.freezed.dart';
@@ -42,6 +43,9 @@ abstract class DeviceRegisteredGroupDto with _$DeviceRegisteredGroupDto {
 
     /// IANA time zone of the ride (e.g. Europe/Paris)
     required String timezone,
+
+    /// Where the route stands at each of the user's GPS services that hold it (sent automatically or uploaded by hand), so a device does not upload it again. Empty when no service holds it; a device only reads its own service's entry (Karoo: HAMMERHEAD, Garmin: GARMIN).
+    List<DeviceRouteSyncStatusDto>? syncStatuses,
   }) = _DeviceRegisteredGroupDto;
 
   factory DeviceRegisteredGroupDto.fromJson(Map<String, Object?> json) =>

@@ -83,8 +83,8 @@ public class RideParticipationRepository implements BaseRepository<RideParticipa
     String jpql =
         "select new fr.pedalons.repository.ride.RegisteredGroupRow("
             + " t.slug, r.slug, r.name, g.name, g.startAt, r.dateTime, r.timezone,"
-            + " gr.slug, gr.name, gr.distance, gr.elevationGain,"
-            + " rr.slug, rr.name, rr.distance, rr.elevationGain)"
+            + " gr.id, gr.slug, gr.name, gr.distance, gr.elevationGain,"
+            + " rr.id, rr.slug, rr.name, rr.distance, rr.elevationGain)"
             + " from RideParticipation p"
             + " join p.rideGroup g"
             + " join g.ride r"
@@ -137,6 +137,57 @@ public class RideParticipationRepository implements BaseRepository<RideParticipa
 
   public Optional<RideParticipation> findByUserAndRide(Long userId, Long rideId) {
     return find("user.id = ?1 and rideGroup.ride.id = ?2", userId, rideId).firstResultOptional();
+  }
+
+  /**
+   * For the automatic route sync (docs/LEDGER_*.md API-120): every registration of the domain whose
+   * group leaves within {@code [from, to)}, paired with each GPS service connection of the
+   * registered user that asked for the sync and does not wait for a reconnection — in a single
+   * query, whatever their number.
+   *
+   * <p>The selection is <b>exactly that of {@link #findUpcomingRegisteredGroups}</b> (the upcoming
+   * groups a device loads), only across all the users of the domain and as ids rather than slugs:
+   * live teams the user is still a member of (leaving a team does not remove a registration),
+   * published, non-deleted rides — hidden by moderation only for the team's moderators — and groups
+   * that have a route the user can download of their own or, failing that, on their ride. Both
+   * share {@link #routeVisible}: a route deleted, DRAFT or hidden by moderation for a plain member
+   * comes back as null, so it is never sent to that member's service — and one that becomes so is
+   * removed from it. The caller takes the first non-null one ({@link
+   * GpsSyncTargetRow#effectiveRouteId}). A change to either selection goes to both.
+   *
+   * <p>No pinned team: a pin belongs to a host alias, and this runs outside any request.
+   */
+  public List<GpsSyncTargetRow> findGpsSyncTargets(Long domainId, Instant from, Instant to) {
+    return getEntityManager()
+        .createQuery(
+            "select new fr.pedalons.repository.ride.GpsSyncTargetRow("
+                + " c.id, c.serviceType, p.user.id, r.id, g.id, g.name, g.startAt, r.timezone,"
+                + " gr.id, gr.name, rr.id, rr.name)"
+                + " from RideParticipation p"
+                + " join p.rideGroup g"
+                + " join g.ride r"
+                + " join r.team t"
+                + " join UserTeam ut on ut.team = t and ut.user = p.user"
+                + " join GpsServiceConnection c on c.user = p.user"
+                + "   and c.autoSync = true and c.syncReconnectRequiredAt is null"
+                + " left join g.route gr on "
+                + routeVisible("gr")
+                + " left join r.route rr on "
+                + routeVisible("rr")
+                + " where t.domain.id = :domainId and t.deleted = false"
+                + " and r.deleted = false and r.status = :published"
+                + " and (r.moderationHiddenAt is null or ut.role in (:moderators))"
+                + " and g.startAt >= :from and g.startAt < :to"
+                + " and (gr is not null or rr is not null)"
+                + " order by c.id, g.startAt, r.id",
+            GpsSyncTargetRow.class)
+        .setParameter("domainId", domainId)
+        .setParameter("published", Status.PUBLISHED)
+        .setParameter("memberStatuses", List.of(Status.PUBLISHED, Status.CANCELLED))
+        .setParameter("moderators", List.of(TeamRole.ORGANIZER, TeamRole.ADMIN))
+        .setParameter("from", from)
+        .setParameter("to", to)
+        .getResultList();
   }
 
   /** Every ride a user signed up for, for the GDPR data export. */

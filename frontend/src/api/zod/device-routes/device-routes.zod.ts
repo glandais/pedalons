@@ -91,6 +91,25 @@ export const DeviceListRoutesResponse = zod
                 "When the group leaves, as an absolute instant (UTC): the group's startAt, the ride's own start when the group has no time. Devices render it in their own zone."
               ),
             timezone: zod.string().describe('IANA time zone of the ride (e.g. Europe/Paris)'),
+            syncStatuses: zod
+              .array(
+                zod
+                  .object({
+                    serviceType: zod
+                      .enum(['HAMMERHEAD', 'GARMIN', 'WAHOO'])
+                      .describe('GPS service'),
+                    state: zod
+                      .enum(['SENT', 'OUTDATED', 'PENDING', 'FAILING', 'RECONNECT_REQUIRED'])
+                      .describe(
+                        'SENT: at the service, up to date; OUTDATED: at the service in an older version that nothing will update, send it again; PENDING: to be sent or updated shortly; FAILING: the last attempt failed (a few retries, then it waits for the route to change); RECONNECT_REQUIRED: the connection must be renewed'
+                      ),
+                  })
+                  .describe("Where the route stands at one of the user's GPS services")
+              )
+              .optional()
+              .describe(
+                "Where the route stands at each of the user's GPS services that hold it (sent automatically or uploaded by hand), so a device does not upload it again. Empty when no service holds it; a device only reads its own service's entry (Karoo: HAMMERHEAD, Garmin: GARMIN)."
+              ),
           })
           .describe(
             'Upcoming ride group the user is registered in, with the route to load on the device'

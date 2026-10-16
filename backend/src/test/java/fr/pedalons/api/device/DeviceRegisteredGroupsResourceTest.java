@@ -5,18 +5,28 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import fr.pedalons.api.AbstractResourceTest;
+import fr.pedalons.domain.asset.Asset;
+import fr.pedalons.domain.gps.GpsRouteSync;
+import fr.pedalons.domain.gps.GpsServiceConnection;
 import fr.pedalons.domain.platform.Domain;
 import fr.pedalons.domain.ride.Ride;
 import fr.pedalons.domain.ride.RideGroup;
 import fr.pedalons.domain.route.Route;
 import fr.pedalons.domain.team.Team;
+import fr.pedalons.enums.GpsServiceType;
 import fr.pedalons.enums.Status;
 import fr.pedalons.enums.SurfaceType;
 import fr.pedalons.enums.TeamRole;
 import fr.pedalons.enums.Visibility;
 import fr.pedalons.enums.WindDirection;
+import fr.pedalons.repository.gps.GpsRouteSyncRepository;
+import fr.pedalons.service.gps.sync.GpsRouteSyncPlanner;
+import fr.pedalons.service.gps.sync.GpsSyncNames;
+import fr.pedalons.util.GpsSyncTestData;
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.path.json.JsonPath;
+import jakarta.inject.Inject;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -33,6 +43,10 @@ import org.junit.jupiter.api.Test;
  */
 @QuarkusTest
 class DeviceRegisteredGroupsResourceTest extends AbstractResourceTest {
+
+  @Inject GpsSyncTestData sync;
+  @Inject GpsRouteSyncPlanner planner;
+  @Inject GpsRouteSyncRepository syncRepository;
 
   private Route groupRoute;
   private Route rideRoute;
@@ -332,6 +346,127 @@ class DeviceRegisteredGroupsResourceTest extends AbstractResourceTest {
     assertEquals(20, names.size());
     assertEquals("Groupe 0", names.get(0));
     assertTrue(names.contains("Groupe 19"));
+  }
+
+  // ------------------------------------------------------------------ syncStatuses (API-121)
+
+  private static Map<String, String> status(GpsServiceType serviceType, String state) {
+    return Map.of("serviceType", serviceType.name(), "state", state);
+  }
+
+  private List<Map<String, String>> syncStatuses(String user, int index) {
+    return fetch(user).getList("registeredGroups[" + index + "].syncStatuses");
+  }
+
+  /** The planner's automatic row for the ride on that connection. */
+  private GpsRouteSync autoRow(GpsServiceConnection connection, Ride ride) {
+    return sync.row(connection.getId(), ride.getId()).orElseThrow();
+  }
+
+  @Test
+  void syncStatuses_routeSentToTheService_isSent() {
+    sync.attachGpx(rideRoute, user1);
+    Ride ride = ride("Sortie", inTwoDays, rideRoute);
+    dataService.createParticipation(group(ride, "Groupe", null, null), user3);
+    GpsServiceConnection hammerhead = sync.connect(user3, GpsServiceType.HAMMERHEAD, true);
+    planner.plan(Instant.now());
+    sync.markSynced(autoRow(hammerhead, ride).getId(), "ext-1");
+
+    assertEquals(List.of(status(GpsServiceType.HAMMERHEAD, "SENT")), syncStatuses(USER3, 0));
+  }
+
+  @Test
+  void syncStatuses_routeNotSentYet_isPending_andAReconnectionIsReported() {
+    sync.attachGpx(groupRoute, user1);
+    Ride ride = ride("Sortie", inTwoDays, rideRoute);
+    dataService.createParticipation(group(ride, "Groupe", groupRoute, null), user3);
+    sync.connect(user3, GpsServiceType.HAMMERHEAD, true);
+    GpsServiceConnection garmin = sync.connect(user3, GpsServiceType.GARMIN, true);
+    planner.plan(Instant.now());
+    sync.markReconnectRequired(garmin.getId());
+
+    // One entry per service, in a stable order; the group's own route is the one followed.
+    assertEquals(
+        List.of(
+            status(GpsServiceType.HAMMERHEAD, "PENDING"),
+            status(GpsServiceType.GARMIN, "RECONNECT_REQUIRED")),
+        syncStatuses(USER3, 0));
+  }
+
+  @Test
+  void syncStatuses_routeUploadedByHand_isSent() {
+    Ride ride = ride("Sortie", inTwoDays, rideRoute);
+    dataService.createParticipation(group(ride, "Groupe", null, null), user3);
+    GpsServiceConnection hammerhead = sync.connect(user3, GpsServiceType.HAMMERHEAD, false);
+    QuarkusTransaction.requiringNew()
+        .run(
+            () ->
+                syncRepository.upsertManual(
+                    domain.getId(),
+                    user3.getId(),
+                    hammerhead.getId(),
+                    rideRoute.getId(),
+                    "Boucle de la sortie",
+                    "hash",
+                    "ext-manual",
+                    Instant.now()));
+
+    assertEquals(List.of(status(GpsServiceType.HAMMERHEAD, "SENT")), syncStatuses(USER3, 0));
+  }
+
+  @Test
+  void syncStatuses_manualUploadThenGpxReplaced_isOutdated() {
+    Asset sent = sync.attachGpx(rideRoute, user1);
+    Ride ride = ride("Sortie", inTwoDays, rideRoute);
+    dataService.createParticipation(group(ride, "Groupe", null, null), user3);
+    GpsServiceConnection hammerhead = sync.connect(user3, GpsServiceType.HAMMERHEAD, false);
+    String name = "Boucle de la sortie";
+    QuarkusTransaction.requiringNew()
+        .run(
+            () ->
+                syncRepository.upsertManual(
+                    domain.getId(),
+                    user3.getId(),
+                    hammerhead.getId(),
+                    rideRoute.getId(),
+                    name,
+                    GpsSyncNames.hash(sent.getId(), name),
+                    "ext-manual",
+                    Instant.now()));
+    assertEquals(List.of(status(GpsServiceType.HAMMERHEAD, "SENT")), syncStatuses(USER3, 0));
+
+    // The organiser replaces the GPX: nothing updates a manual upload, the Karoo holds the old one.
+    sync.attachGpx(rideRoute, user1);
+
+    assertEquals(List.of(status(GpsServiceType.HAMMERHEAD, "OUTDATED")), syncStatuses(USER3, 0));
+  }
+
+  @Test
+  void syncStatuses_routeNotFollowed_isEmpty() {
+    sync.attachGpx(rideRoute, user1);
+    Ride ride = ride("Sortie", inTwoDays, rideRoute);
+    dataService.createParticipation(group(ride, "Sans service", null, null), user3);
+    // A connection without the automatic sync: nothing sent, nothing to report.
+    sync.connect(user3, GpsServiceType.HAMMERHEAD, false);
+    planner.plan(Instant.now());
+
+    assertEquals(List.of(), syncStatuses(USER3, 0));
+  }
+
+  @Test
+  void syncStatuses_areThoseOfTheUserOnly() {
+    sync.attachGpx(rideRoute, user1);
+    Ride ride = ride("Sortie", inTwoDays, rideRoute);
+    dataService.createParticipation(group(ride, "Groupe de user3", null, null), user3);
+    dataService.createParticipation(group(ride, "Groupe de user2", null, null), user2);
+    GpsServiceConnection hammerhead = sync.connect(user3, GpsServiceType.HAMMERHEAD, true);
+    sync.connect(user2, GpsServiceType.HAMMERHEAD, false);
+    planner.plan(Instant.now());
+    sync.markSynced(autoRow(hammerhead, ride).getId(), "ext-1");
+
+    assertEquals(List.of(status(GpsServiceType.HAMMERHEAD, "SENT")), syncStatuses(USER3, 0));
+    // Same route, same service, another member: user3's row says nothing about user2's device.
+    assertEquals(List.of(), syncStatuses(USER2, 0));
   }
 
   @Test

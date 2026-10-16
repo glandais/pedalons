@@ -490,6 +490,37 @@ calendrier (`API-20`) sont dans
 [`LEDGER_DONE.md`](LEDGER_DONE.md). Les **gabarits de sortie n'ont volontairement pas de meneur** —
 décision produit : `RideTemplateGroupRequest` reste sans champ.
 
+### `API-120` Envoi automatique des parcours de mes sorties vers mes services GPS (L, backend + contrat)
+
+Un membre inscrit doit envoyer lui-même le parcours de son groupe vers Hammerhead, Wahoo ou Garmin,
+et ne voit jamais une route changée ou un GPX corrigé après coup : le code ne savait que créer et
+jetait l'identifiant externe renvoyé par le service. Le plan
+[`2026-10-16-gps-route-autosync.md`](plans/2026-10-16-gps-route-autosync.md) ajoute un opt-in **par
+connexion** (`gps_service_connections.auto_sync`), une table de suivi `gps_route_syncs` (migration
+`V71`), un planificateur qui réconcilie l'état voulu et un worker à bail qui crée, modifie (`PUT`,
+recréation sur 404) ou supprime chez le service ; les envois manuels (web, mobile, Karoo) passent par
+la même table et mettent à jour au lieu d'empiler. **Backend et contrat `11.5.0` implémentés le
+16 octobre 2026, non commités, tests écrits mais pas lancés** (`PUT
+/api/gps/connections/{serviceType}/auto-sync`, `GpsServiceConnectionDto.autoSync`/`autoSyncState`/…).
+Repris après revue le même jour (plan §12) : reprise d'un envoi manuel écrite avant l'appel,
+rafraîchissement de jeton isolé et sérialisé par connexion (refus → reconnexion), essais remis à
+zéro à la reconnexion, bail de 5 min, nettoyage de l'effacement hors transaction, visibilité des
+routes alignée sur `findUpcomingRegisteredGroups`, drapeau `ConfigDto.gpsAutoSyncEnabled` qui masque
+l'interrupteur des clients (`WEB-92`, `MOB-71`, livrés). Reste : lancer les tests, les
+vérifications externes (étape 0), la recette sur appareil (étape 7), puis `GPS_SYNC_ENABLED=true`
+(`OPS-42`) ; le nom envoyé n'applique pas la règle `WEB-83` (« Groupe Groupe A » possible), et un
+envoi manuel d'une route que la synchronisation tient renvoie le nom automatique (« date · groupe ·
+route ») plutôt que celui de la route. Lié à `API-61` et `LEGAL-21`.
+
+- [ ] `API-122` **L'état « déjà chez le service GPS » de « Prochaines sorties » éprouvé sur un
+  vrai Karoo et un vrai Edge (S)** — l'affichage livré par `API-121` (contrat `11.5.0`) n'a aucun
+  test côté appareils. À vérifier sur Karoo : chaque libellé (déjà sur le Karoo, ancienne version,
+  mise à jour en attente, envoi en échec, reconnecter) sur une ligne au repos, et une ligne
+  synchronisée depuis le Karoo qui reste « Déjà sur le Karoo » après la synchro d'une autre ligne
+  et un retour à la liste. Sur Edge (ou simulateur) : le libellé en tête du sous-titre, lisible sur
+  petit écran. Puis une app de la version précédente contre un serveur `11.5.0` (champ inconnu
+  ignoré), et la version courante contre un serveur `11.4.0` (rien d'affiché).
+
 ### Garmin
 
 - [ ] `API-61` **Mettre l'intégration Garmin OAuth 2.0 en conformité** — **bloqué** : le programme
@@ -694,6 +725,13 @@ Ce que les tests ne prouvent pas, parce qu'ils ne passent ni par Flyway ni par u
       purge de rétention a tourné. **Au bout d'un mois** : relire les chiffres contre les cinq
       questions du §1 du plan, puis l'archiver (`docs/plans/archive/`, avec sa ligne dans le README
       des archives). Taille : S, surtout manuel sur l'hôte.
+- [ ] `OPS-42` **Documenter puis allumer l'envoi automatique des parcours (`GPS_SYNC_ENABLED`)
+      (XS)** — `pedalons.gps-sync.enabled` (`API-120`) n'est décrit que dans `.env.example` :
+      `docs/OPERATIONS.md` doit dire ce qu'il allume (planificateur toutes les 60 s, worker toutes
+      les 20 s, `ConfigDto.gpsAutoSyncEnabled` qui montre l'interrupteur aux clients), qu'il vaut
+      `false` par défaut, et qu'on ne le pose qu'après la recette sur appareil (plan
+      [`2026-10-16-gps-route-autosync.md`](plans/2026-10-16-gps-route-autosync.md), étape 7) et la
+      vérification de la politique (`LEGAL-21`). Puis le poser en prod et redéployer.
 
 ---
 
@@ -887,9 +925,16 @@ Toute modification de
 `privacy/privacy-policy.{fr,en}.md` se fait **en parité FR/EN**, et le texte étant un asset de
 l'app mobile, un changement n'y apparaît qu'avec la build suivante.
 
-Aucun point ouvert. La mise en ligne de la politique réécrite pour la mesure d'audience
-(`LEGAL-19`), avec sa date d'en-tête recalée et la précondition du §5.3 du plan, fait partie
-d'`OPS-41`.
+La mise en ligne de la politique réécrite pour la mesure d'audience (`LEGAL-19`), avec sa date
+d'en-tête recalée et la précondition du §5.3 du plan, fait partie d'`OPS-41`.
+
+- [ ] `LEGAL-21` **L'envoi automatique des parcours aux services GPS dans la politique (XS)** —
+      `API-120` envoie, sans geste de l'utilisateur à chaque fois, le tracé et le nom des sorties où
+      il est inscrit à Hammerhead, Wahoo ou Garmin, et les y met à jour puis les retire. Vérifier
+      que la section des services GPS de `privacy/privacy-policy.{fr,en}.md` couvre cet envoi
+      automatique (opt-in par service, fenêtre de 7 jours, retrait après la sortie, à la
+      désactivation, à la déconnexion et à l'effacement du compte), sinon la compléter en parité
+      FR/EN avant d'allumer `GPS_SYNC_ENABLED` (`OPS-42`). Plan §11.
 
 ---
 

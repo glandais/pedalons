@@ -1,7 +1,9 @@
 package fr.pedalons.api.gps;
 
 import fr.pedalons.dto.error.ErrorResponse;
+import fr.pedalons.dto.gps.request.GpsAutoSyncRequest;
 import fr.pedalons.dto.gps.response.GpsOAuthUrlResponse;
+import fr.pedalons.dto.gps.response.GpsServiceConnectionDto;
 import fr.pedalons.dto.gps.response.RouteUploadResponse;
 import fr.pedalons.enums.GpsConnectReturn;
 import fr.pedalons.enums.GpsServiceType;
@@ -9,6 +11,7 @@ import fr.pedalons.service.gps.GpsService;
 import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
+import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -177,6 +180,39 @@ public class GpsResource {
           GpsServiceType serviceType) {
     gpsService.disconnect(serviceType);
     return Response.noContent().build();
+  }
+
+  @PUT
+  @Path("/connections/{serviceType}/auto-sync")
+  @RolesAllowed("user")
+  @Operation(
+      operationId = "setGpsAutoSync",
+      summary = "Turn the automatic route sync on or off",
+      description =
+          "Turns on or off, for one connected service, the automatic sending of the routes of the"
+              + " rides the user is registered in (from 7 days before the departure until a day"
+              + " after it), kept in sync with their changes. Turning it off removes from the"
+              + " service the upcoming routes it sent. A RECONNECT_REQUIRED state is only cleared"
+              + " by connecting the service again.")
+  @APIResponses({
+    @APIResponse(
+        responseCode = "200",
+        description = "The connection, with its new sync state",
+        content = @Content(schema = @Schema(implementation = GpsServiceConnectionDto.class))),
+    @APIResponse(
+        responseCode = "400",
+        description = "Service not connected",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+    @APIResponse(
+        responseCode = "401",
+        description = "Unauthorized",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  public GpsServiceConnectionDto setAutoSync(
+      @Parameter(description = "GPS service type") @PathParam("serviceType")
+          GpsServiceType serviceType,
+      @Valid GpsAutoSyncRequest request) {
+    return gpsService.setAutoSync(serviceType, Boolean.TRUE.equals(request.enabled()));
   }
 
   @POST

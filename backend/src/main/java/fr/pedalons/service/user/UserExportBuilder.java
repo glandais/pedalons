@@ -28,6 +28,7 @@ import fr.pedalons.repository.comment.CommentRepository;
 import fr.pedalons.repository.common.AllPublicationRepository;
 import fr.pedalons.repository.feedback.FeedbackReportRepository;
 import fr.pedalons.repository.gps.GpsOAuthStateRepository;
+import fr.pedalons.repository.gps.GpsRouteSyncRepository;
 import fr.pedalons.repository.gps.GpsServiceConnectionRepository;
 import fr.pedalons.repository.gpx.GpxPreviewRepository;
 import fr.pedalons.repository.moderation.ContentReportRepository;
@@ -112,6 +113,8 @@ public class UserExportBuilder {
   @Inject PasskeyRepository passkeyRepository;
   @Inject CalendarTokenRepository calendarTokenRepository;
   @Inject GpsServiceConnectionRepository gpsServiceConnectionRepository;
+
+  @Inject GpsRouteSyncRepository gpsRouteSyncRepository;
   @Inject AuthTokenRepository authTokenRepository;
   @Inject DeviceCodeRepository deviceCodeRepository;
   @Inject GpsOAuthStateRepository gpsOAuthStateRepository;
@@ -172,6 +175,7 @@ public class UserExportBuilder {
       writeSection(zip, "account/passkeys.json", counts, () -> passkeys(ctx));
       writeSection(zip, "account/calendar-token.json", counts, () -> calendarToken(ctx));
       writeSection(zip, "account/gps-connections.json", counts, () -> gpsConnections(ctx));
+      writeSection(zip, "account/gps-route-syncs.json", counts, () -> gpsRouteSyncs(ctx));
       writeSection(zip, "account/auth-tokens.json", counts, () -> authTokens(ctx));
       writeSection(zip, "account/device-codes.json", counts, () -> deviceCodes(ctx));
       writeSection(zip, "account/oauth-states.json", counts, () -> handshakeStates(ctx));
@@ -263,6 +267,12 @@ public class UserExportBuilder {
   private List<AccountExport.GpsConnection> gpsConnections(ExportJobContext ctx) {
     return gpsServiceConnectionRepository.findByUser(ctx.userId()).stream()
         .map(AccountExport.GpsConnection::from)
+        .toList();
+  }
+
+  private List<AccountExport.GpsRouteSyncEntry> gpsRouteSyncs(ExportJobContext ctx) {
+    return gpsRouteSyncRepository.findByUser(ctx.domainId(), ctx.userId()).stream()
+        .map(AccountExport.GpsRouteSyncEntry::from)
         .toList();
   }
 
@@ -568,7 +578,9 @@ public class UserExportBuilder {
     CONTENU
 
       account/          Votre compte : profil, sessions, clés d'accès (passkeys),
-                        connexions GPS et réseaux sociaux, jetons d'authentification,
+                        connexions GPS et réseaux sociaux, parcours envoyés à vos
+                        services GPS (automatiquement ou à la main) et leur identifiant
+                        chez ces services, jetons d'authentification,
                         choix de notifications (dont le résumé quotidien et les équipes
                         dont vous avez coupé les annonces), appareils inscrits aux
                         notifications push, membres que vous avez bloqués et

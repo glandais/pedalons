@@ -16,6 +16,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import org.jboss.logging.Logger;
@@ -33,6 +34,9 @@ import org.jspecify.annotations.Nullable;
 public class GarminOAuth1Client {
 
   private static final Logger LOG = Logger.getLogger(GarminOAuth1Client.class);
+
+  /** As the route calls': a token request never hangs. */
+  private static final Duration CALL_TIMEOUT = Duration.ofSeconds(30);
 
   private static final String REQUEST_TOKEN_URL =
       "https://connectapi.garmin.com/oauth-service/oauth/request_token";
@@ -71,16 +75,23 @@ public class GarminOAuth1Client {
   public RouteUploadResult uploadRoute(
       String accessToken, String accessTokenSecret, byte[] gpxContent, String routeName) {
     Consumer consumer = consumer();
-    String authorization =
-        OAuth1Signer.authorizationHeader(
-            "POST",
-            GarminClient.COURSE_UPLOAD_URL,
-            consumer.key(),
-            consumer.secret(),
-            accessToken,
-            accessTokenSecret,
-            Map.of());
-    return garminClient.uploadCourse(gpxContent, routeName, authorization);
+    GpsAuth auth =
+        new GpsAuth.OAuth1(consumer.key(), consumer.secret(), accessToken, accessTokenSecret);
+    return garminClient.createRoute(auth, gpxContent, RouteMeta.manual(routeName)).toUploadResult();
+  }
+
+  /**
+   * The signing authorization of a connection made over OAuth 1.0a, with an explicit credential:
+   * for the route calls of {@link GarminClient} ({@code createRoute}, {@code updateRoute}, {@code
+   * deleteRoute}), which sign their own method and URL with it.
+   */
+  public static GpsAuth auth(
+      DomainGpsCredential credential,
+      String consumerSecret,
+      String accessToken,
+      String accessTokenSecret) {
+    return new GpsAuth.OAuth1(
+        credential.getClientId(), consumerSecret, accessToken, accessTokenSecret);
   }
 
   private Token postForToken(
@@ -97,6 +108,7 @@ public class GarminOAuth1Client {
           HttpRequest.newBuilder()
               .uri(URI.create(url))
               .header("Authorization", authorization)
+              .timeout(CALL_TIMEOUT)
               .POST(HttpRequest.BodyPublishers.noBody())
               .build();
       HttpResponse<String> response =

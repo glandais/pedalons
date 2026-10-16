@@ -114,6 +114,37 @@ class _GpsServicesClient implements GpsServicesClient {
   }
 
   @override
+  Future<GpsServiceConnectionDto> setGpsAutoSync({
+    required GpsServiceType serviceType,
+    required GpsAutoSyncRequest body,
+  }) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{};
+    final _headers = <String, dynamic>{};
+    final _data = <String, dynamic>{};
+    _data.addAll(body.toJson());
+    final _options = _setStreamType<GpsServiceConnectionDto>(
+      Options(method: 'PUT', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            '/api/gps/connections/${serviceType.toJson()}/auto-sync',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch<Map<String, Object?>>(_options);
+    late GpsServiceConnectionDto _value;
+    try {
+      _value = GpsServiceConnectionDto.fromJson(_result.data!);
+    } on Object catch (e, s) {
+      errorLogger?.logError(e, s, _options, response: _result);
+      rethrow;
+    }
+    return _value;
+  }
+
+  @override
   Future<void> disconnect({required GpsServiceType serviceType}) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};

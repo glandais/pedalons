@@ -1,8 +1,6 @@
 package fr.pedalons.service.gps;
 
 import fr.pedalons.common.exception.BusinessException;
-import fr.pedalons.common.exception.InternalException;
-import fr.pedalons.domain.asset.Asset;
 import fr.pedalons.domain.gps.DomainGpsCredential;
 import fr.pedalons.domain.gps.GpsOAuthState;
 import fr.pedalons.domain.gps.GpsServiceConnection;
@@ -12,7 +10,6 @@ import fr.pedalons.dto.error.ErrorCode;
 import fr.pedalons.dto.gps.response.GpsOAuthUrlResponse;
 import fr.pedalons.dto.gps.response.GpsServiceConnectionDto;
 import fr.pedalons.dto.gps.response.RouteUploadResponse;
-import fr.pedalons.enums.AssetType;
 import fr.pedalons.enums.GpsConnectReturn;
 import fr.pedalons.enums.GpsOAuthVersion;
 import fr.pedalons.enums.GpsServiceType;
@@ -26,24 +23,25 @@ import fr.pedalons.infrastructure.gps.TokenResponse;
 import fr.pedalons.infrastructure.gps.WahooClient;
 import fr.pedalons.infrastructure.security.TokenEncryptionService;
 import fr.pedalons.repository.gps.GpsOAuthStateRepository;
+import fr.pedalons.repository.gps.GpsRouteSyncRepository;
 import fr.pedalons.repository.gps.GpsServiceConnectionRepository;
 import fr.pedalons.repository.user.UserRepository;
-import fr.pedalons.service.asset.AssetService;
+import fr.pedalons.service.gps.sync.GpsRouteSyncService;
 import fr.pedalons.service.route.RouteService;
 import fr.pedalons.service.security.DomainResolver;
 import fr.pedalons.service.security.PedalonsQueryContext;
 import fr.pedalons.service.security.annotation.Logged;
 import fr.pedalons.service.security.annotation.Public;
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import java.io.IOException;
-import java.io.InputStream;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.List;
 import org.jboss.logging.Logger;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Main service for GPS device integrations.
@@ -57,6 +55,8 @@ public class GpsService {
   @Inject GpsOAuthStateRepository oauthStateRepository;
 
   @Inject GpsServiceConnectionRepository connectionRepository;
+
+  @Inject GpsRouteSyncRepository routeSyncRepository;
 
   @Inject UserRepository userRepository;
 
@@ -74,7 +74,11 @@ public class GpsService {
 
   @Inject RouteService routeService;
 
-  @Inject AssetService assetService;
+  @Inject GpsRouteGpx routeGpx;
+
+  @Inject GpsConnectionTokens tokens;
+
+  @Inject GpsRouteSyncService routeSyncService;
 
   @Inject DomainGpsCredentialService credentialService;
 
@@ -128,10 +132,13 @@ public class GpsService {
     GpsOAuthVersion oauthVersion = oauthVersion(serviceType);
 
     // Check if already connected. A connection made under the other protocol is useless since the
-    // domain switched its credential: the new one replaces it (handleCallback reuses the row).
+    // domain switched its credential: the new one replaces it (handleCallback reuses the row). So
+    // is one whose tokens the service refuses (docs/LEDGER_*.md API-120): authorizing it again is
+    // the reconnection both clients offer, and it keeps the opt-in and the tracking rows.
     connectionRepository
         .findByUserAndService(userId, serviceType)
         .filter(existing -> existing.oauthVersion() == oauthVersion)
+        .filter(existing -> existing.getSyncReconnectRequiredAt() == null)
         .ifPresent(
             existing -> {
               throw new BusinessException(ErrorCode.GPS_SERVICE_ALREADY_CONNECTED);
@@ -268,6 +275,7 @@ public class GpsService {
     }
     connection.setExternalUserId(tokens.userId());
     connection.setConnectedAt(Instant.now());
+    clearSyncBlocks(connection);
 
     connectionRepository.persist(connection);
     LOG.infof("User %d connected to %s", oauthState.getUser().getId(), serviceType);
@@ -299,6 +307,7 @@ public class GpsService {
     connection.setTokenExpiresAt(null);
     connection.setExternalUserId(null);
     connection.setConnectedAt(Instant.now());
+    clearSyncBlocks(connection);
 
     connectionRepository.persist(connection);
     LOG.infof("User %d connected to %s over OAuth 1.0a", oauthState.getUser().getId(), serviceType);
@@ -343,6 +352,22 @@ public class GpsService {
         .orElseGet(() -> new GpsServiceConnection(user, oauthState.getServiceType()));
   }
 
+  /**
+   * A reconnection is what lifts a stop of the route sync (docs/LEDGER_*.md API-120): fresh tokens,
+   * a fresh consent. The opt-in and the tracking rows stay — a reconnection keeps the connection's
+   * id — and every automatic row is due again, its failures forgotten: those that ran out of
+   * attempts while the tokens were refused would otherwise wait for their route to change, and a
+   * removal for good. Bulk updates (the entity never writes the stop columns); a new connection
+   * has nothing to lift.
+   */
+  private void clearSyncBlocks(GpsServiceConnection connection) {
+    if (connection.getId() == null) {
+      return;
+    }
+    connectionRepository.clearSyncBlocks(connection.getId());
+    routeSyncRepository.resetAttempts(connection.getId(), Instant.now());
+  }
+
   private static void requireGarmin(GpsServiceType serviceType) {
     if (serviceType != GpsServiceType.GARMIN) {
       throw new BusinessException(ErrorCode.GPS_INVALID_STATE);
@@ -350,19 +375,63 @@ public class GpsService {
   }
 
   /**
-   * Disconnect a GPS service.
+   * Disconnect a GPS service. The routes the automatic sync placed at the service are removed
+   * first, as far as possible, while the tokens are still there (docs/LEDGER_*.md API-120 D9):
+   *
+   * <ol>
+   *   <li>the sync is turned off, so the planner stops producing for this connection;
+   *   <li>the clean-up calls the service, outside any transaction, errors ignored;
+   *   <li>the tracking rows go, then the connection.
+   * </ol>
    */
-  @Transactional
   @Logged
   public void disconnect(GpsServiceType serviceType) {
+    Long userId = pedalonsContext.getUserId();
+    Long domainId = pedalonsContext.getDomainId();
+    Long connectionId =
+        QuarkusTransaction.requiringNew()
+            .call(
+                () -> {
+                  GpsServiceConnection connection =
+                      connectionRepository
+                          .findByUserAndService(userId, serviceType)
+                          .orElseThrow(
+                              () -> new BusinessException(ErrorCode.GPS_SERVICE_NOT_CONNECTED));
+                  connection.setAutoSync(false);
+                  return connection.getId();
+                });
+
+    routeSyncService.removeAutoSyncedRoutes(domainId, connectionId);
+
+    QuarkusTransaction.requiringNew()
+        .run(
+            () -> {
+              routeSyncRepository.deleteByConnection(connectionId);
+              connectionRepository.deleteById(connectionId);
+            });
+    LOG.infof("User %d disconnected from %s", userId, serviceType);
+  }
+
+  /**
+   * Turns the automatic route sync of one connected service on or off (docs/LEDGER_*.md API-120).
+   * Turning it off removes from the service, within the next minute, the upcoming routes the sync
+   * placed there (D6). Turning it on makes every automatic row due again, failures forgotten. A
+   * connection waiting for a reconnection stays so: only a reconnection lifts it.
+   */
+  @Logged
+  @Transactional
+  public GpsServiceConnectionDto setAutoSync(GpsServiceType serviceType, boolean enabled) {
     Long userId = pedalonsContext.getUserId();
     GpsServiceConnection connection =
         connectionRepository
             .findByUserAndService(userId, serviceType)
             .orElseThrow(() -> new BusinessException(ErrorCode.GPS_SERVICE_NOT_CONNECTED));
-
-    connectionRepository.delete(connection);
-    LOG.infof("User %d disconnected from %s", userId, serviceType);
+    if (enabled && !connection.isAutoSync()) {
+      routeSyncRepository.resetAttempts(connection.getId(), Instant.now());
+    }
+    connection.setAutoSync(enabled);
+    connectionRepository.persist(connection);
+    return routeSyncService.toDtos(pedalonsContext.getDomainId(), List.of(connection)).getFirst();
   }
 
   /**
@@ -371,9 +440,8 @@ public class GpsService {
   @Logged
   public List<GpsServiceConnectionDto> getConnectionsForUser() {
     Long userId = pedalonsContext.getUserId();
-    return connectionRepository.findByUser(userId).stream()
-        .map(GpsServiceConnectionDto::from)
-        .toList();
+    return routeSyncService.toDtos(
+        pedalonsContext.getDomainId(), connectionRepository.findByUser(userId));
   }
 
   /**
@@ -385,14 +453,61 @@ public class GpsService {
   }
 
   /**
-   * Upload a route to a connected GPS service.
+   * Upload a route to a connected GPS service — web, mobile and the Karoo's
+   * {@code POST /api/device/routes/{team}/{route}/sync} alike. Through the route sync's tracking
+   * rows (docs/LEDGER_*.md API-120): a route already at the service, sent by the sync or by an
+   * earlier manual upload, is updated in place rather than copied ({@link
+   * GpsRouteSyncService#uploadManually}).
+   *
+   * <p>Not {@code @Transactional}: the route and the connection are resolved in one short
+   * transaction, the service is called outside any.
    */
-  @Transactional
   @Logged
   public RouteUploadResponse uploadRoute(
       GpsServiceType serviceType, String teamSlug, String routeSlug) {
-    Route route = routeService.get(teamSlug, routeSlug);
-    return uploadGpx(serviceType, getRouteGpxContent(route), route.getName());
+    Long userId = pedalonsContext.getUserId();
+    Long domainId = pedalonsContext.getDomainId();
+    record Resolved(Long routeId, @Nullable Long connectionId) {}
+    Resolved resolved =
+        QuarkusTransaction.requiringNew()
+            .call(
+                () -> {
+                  Route route = routeService.get(teamSlug, routeSlug);
+                  GpsServiceConnection connection =
+                      connectionRepository
+                          .findByUserAndService(userId, serviceType)
+                          .orElseThrow(
+                              () -> new BusinessException(ErrorCode.GPS_SERVICE_NOT_CONNECTED));
+                  if (dropIfStale(connection, userId, serviceType)) {
+                    return new Resolved(route.getId(), null);
+                  }
+                  return new Resolved(route.getId(), connection.getId());
+                });
+    if (resolved.connectionId() == null) {
+      return new RouteUploadResponse(false, "Reconnect " + serviceType.name(), null);
+    }
+    return routeSyncService.uploadManually(
+        domainId, userId, resolved.connectionId(), resolved.routeId());
+  }
+
+  /**
+   * The domain switched its credential to the other protocol since this connection was made: its
+   * tokens are worthless now. Dropped rather than kept — the user is asked to reconnect, and the
+   * failure is returned, not thrown, so that the deletion commits. Its tracking rows go with it
+   * (the foreign key cascades).
+   *
+   * @return true when the connection was dropped
+   */
+  private boolean dropIfStale(
+      GpsServiceConnection connection, Long userId, GpsServiceType serviceType) {
+    if (connection.oauthVersion() == oauthVersion(serviceType)) {
+      return false;
+    }
+    routeSyncRepository.deleteByConnection(connection.getId());
+    connectionRepository.delete(connection);
+    LOG.infof(
+        "Dropped user %d's %s connection made over another OAuth version", userId, serviceType);
+    return true;
   }
 
   /**
@@ -410,14 +525,7 @@ public class GpsService {
             .findByUserAndService(userId, serviceType)
             .orElseThrow(() -> new BusinessException(ErrorCode.GPS_SERVICE_NOT_CONNECTED));
 
-    // The domain switched its credential to the other protocol since this connection was made:
-    // its tokens are worthless now. Dropped rather than kept — the user is asked to reconnect, and
-    // the failure is returned, not thrown, so that the deletion commits.
-    GpsOAuthVersion oauthVersion = oauthVersion(serviceType);
-    if (connection.oauthVersion() != oauthVersion) {
-      connectionRepository.delete(connection);
-      LOG.infof(
-          "Dropped user %d's %s connection made over another OAuth version", userId, serviceType);
+    if (dropIfStale(connection, userId, serviceType)) {
       return new RouteUploadResponse(false, "Reconnect " + serviceType.name(), null);
     }
 
@@ -432,7 +540,11 @@ public class GpsService {
     } else {
       // Refresh token if needed
       if (connection.isTokenExpired() && connection.getRefreshTokenEncrypted() != null) {
-        refreshAccessToken(connection);
+        tokens.refresh(
+            connection,
+            credentialService
+                .getCredentials(serviceType)
+                .orElseThrow(() -> new BusinessException(ErrorCode.GPS_SERVICE_NOT_CONFIGURED)));
         accessToken = encryptionService.decrypt(connection.getAccessTokenEncrypted());
       }
       result = getClient(serviceType).uploadRoute(accessToken, gpxContent, name);
@@ -443,46 +555,6 @@ public class GpsService {
     connectionRepository.persist(connection);
 
     return new RouteUploadResponse(result.success(), result.message(), result.externalRouteId());
-  }
-
-  private void refreshAccessToken(GpsServiceConnection connection) {
-    String refreshToken = encryptionService.decrypt(connection.getRefreshTokenEncrypted());
-    GpsServiceClient client = getClient(connection.getServiceType());
-
-    TokenResponse tokens = client.refreshToken(refreshToken);
-
-    connection.setAccessTokenEncrypted(encryptionService.encrypt(tokens.accessToken()));
-    if (tokens.refreshToken() != null) {
-      connection.setRefreshTokenEncrypted(encryptionService.encrypt(tokens.refreshToken()));
-    }
-    if (tokens.expiresIn() != null) {
-      connection.setTokenExpiresAt(Instant.now().plusSeconds(tokens.expiresIn()));
-    }
-
-    connectionRepository.persist(connection);
-    LOG.infof(
-        "Refreshed access token for user %d on %s",
-        connection.getUser().getId(), connection.getServiceType());
-  }
-
-  private byte[] getRouteGpxContent(Route route) {
-    // Find the filtered GPX asset
-    Asset gpxAsset =
-        route.getAssets().stream()
-            .filter(a -> a.getType() == AssetType.ROUTE_FILTERED_GPX)
-            .findFirst()
-            .orElseGet(
-                () ->
-                    route.getAssets().stream()
-                        .filter(a -> a.getType() == AssetType.ROUTE_ORIGINAL_GPX)
-                        .findFirst()
-                        .orElseThrow(() -> new BusinessException(ErrorCode.GPX_NOT_FOUND)));
-
-    try (InputStream is = assetService.getAssetContent(gpxAsset)) {
-      return is.readAllBytes();
-    } catch (IOException e) {
-      throw new InternalException(ErrorCode.GPX_FAILURE, e);
-    }
   }
 
   @Public

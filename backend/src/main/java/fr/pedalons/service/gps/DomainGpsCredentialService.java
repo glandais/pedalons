@@ -31,7 +31,15 @@ public class DomainGpsCredentialService {
    * @return Optional containing credentials if configured and active
    */
   public Optional<DomainGpsCredential> getCredentials(GpsServiceType serviceType) {
-    Long domainId = domainResolver.getDomainId();
+    return getCredentials(domainResolver.getDomainId(), serviceType);
+  }
+
+  /**
+   * The same for an explicit domain: for a caller outside an HTTP request — the background route
+   * synchronisation (docs/LEDGER_*.md API-120), the account erasure job — which the request-scoped
+   * {@link DomainResolver} cannot serve.
+   */
+  public Optional<DomainGpsCredential> getCredentials(Long domainId, GpsServiceType serviceType) {
     return credentialRepository.findByDomainAndServiceType(domainId, serviceType);
   }
 

@@ -28,6 +28,8 @@ public class AccountErasureScheduler {
     int erased = 0;
     for (Long userId : pending) {
       try {
+        // With no transaction open: it calls the GPS services (docs/LEDGER_*.md API-120).
+        accountErasureService.removeSyncedRoutes(userId);
         accountErasureService.eraseById(userId);
         erased++;
       } catch (RuntimeException e) {

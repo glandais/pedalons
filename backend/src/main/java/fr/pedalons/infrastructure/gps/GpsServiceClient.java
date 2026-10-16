@@ -1,5 +1,6 @@
 package fr.pedalons.infrastructure.gps;
 
+import fr.pedalons.domain.gps.DomainGpsCredential;
 import fr.pedalons.enums.GpsServiceType;
 
 /**
@@ -71,12 +72,35 @@ public interface GpsServiceClient {
   TokenResponse refreshToken(String refreshToken);
 
   /**
-   * Upload a route to the GPS service.
+   * Refresh an expired access token with an explicit credential: for a caller outside an HTTP
+   * request — the background synchronisation (docs/LEDGER_*.md API-120) — whose domain the request
+   * cannot tell.
+   */
+  TokenResponse refreshToken(DomainGpsCredential credential, String refreshToken);
+
+  /**
+   * Upload a route to the GPS service: a manual upload, untracked by the service ({@link
+   * #createRoute} with a {@link RouteMeta#manual} meta).
    *
    * @param accessToken Valid access token
    * @param gpxContent GPX file content as bytes
    * @param routeName Name for the route on the device
    * @return Upload result with success status and external route ID
    */
-  RouteUploadResult uploadRoute(String accessToken, byte[] gpxContent, String routeName);
+  default RouteUploadResult uploadRoute(String accessToken, byte[] gpxContent, String routeName) {
+    return createRoute(new GpsAuth.Bearer(accessToken), gpxContent, RouteMeta.manual(routeName))
+        .toUploadResult();
+  }
+
+  /** Creates a route at the service. {@link GpsCallResult.Ok} carries its id there. */
+  GpsCallResult createRoute(GpsAuth auth, byte[] gpxContent, RouteMeta meta);
+
+  /**
+   * Replaces the route {@code externalId} — trace and name — keeping its id. {@link
+   * GpsCallResult.NotFound} when the user deleted it at the service.
+   */
+  GpsCallResult updateRoute(GpsAuth auth, String externalId, byte[] gpxContent, RouteMeta meta);
+
+  /** Deletes the route {@code externalId}. A route already gone gives {@link GpsCallResult.NotFound}. */
+  GpsCallResult deleteRoute(GpsAuth auth, String externalId);
 }

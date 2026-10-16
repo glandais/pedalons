@@ -2,6 +2,7 @@ package fr.pedalons.dto.device.response;
 
 import fr.pedalons.dto.validation.ValidateSchema;
 import java.time.Instant;
+import java.util.List;
 import lombok.Builder;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
@@ -37,4 +38,13 @@ public record DeviceRegisteredGroupDto(
             required = true)
         Instant startDateTime,
     @Schema(description = "IANA time zone of the ride (e.g. Europe/Paris)", required = true)
-        String timezone) {}
+        String timezone,
+    // Not required: devices installed before docs/LEDGER_*.md API-121 never read it, and a
+    // backend older than it never sends it.
+    @Schema(
+            description =
+                "Where the route stands at each of the user's GPS services that hold it (sent"
+                    + " automatically or uploaded by hand), so a device does not upload it again."
+                    + " Empty when no service holds it; a device only reads its own service's"
+                    + " entry (Karoo: HAMMERHEAD, Garmin: GARMIN).")
+        List<DeviceRouteSyncStatusDto> syncStatuses) {}

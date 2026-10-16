@@ -1499,6 +1499,7 @@ components:
       - mapStyles
       - tileServerBaseUrl
       - defaultCenter
+      - gpsAutoSyncEnabled
       properties:
         webAuthnRpId:
           type: string
@@ -1559,6 +1560,12 @@ components:
             it.
           type: object
           $ref: "#/components/schemas/AnalyticsConfigDto"
+        gpsAutoSyncEnabled:
+          type: boolean
+          description: "Whether this deployment sends the routes of a member's rides\
+            \ to their GPS services on its own (GpsServiceConnectionDto.autoSync).\
+            \ When false the clients offer no switch: it would promise a sending that\
+            \ never happens."
     CountResponse:
       description: Number of items matching a filter set
       type: object
@@ -1808,6 +1815,14 @@ components:
         timezone:
           type: string
           description: IANA time zone of the ride (e.g. Europe/Paris)
+        syncStatuses:
+          type: array
+          items:
+            $ref: "#/components/schemas/DeviceRouteSyncStatusDto"
+          description: "Where the route stands at each of the user's GPS services\
+            \ that hold it (sent automatically or uploaded by hand), so a device does\
+            \ not upload it again. Empty when no service holds it; a device only reads\
+            \ its own service's entry (Karoo: HAMMERHEAD, Garmin: GARMIN)."
     DeviceRequest:
       description: Device auth request
       type: object
@@ -1924,6 +1939,25 @@ components:
           type: number
           format: double
           description: Start longitude
+    DeviceRouteSyncStatusDto:
+      type: object
+      description: Where the route stands at one of the user's GPS services
+      required:
+      - serviceType
+      - state
+      properties:
+        serviceType:
+          description: GPS service
+          type: string
+          $ref: "#/components/schemas/GpsServiceType"
+        state:
+          description: "SENT: at the service, up to date; OUTDATED: at the service\
+            \ in an older version that nothing will update, send it again; PENDING:\
+            \ to be sent or updated shortly; FAILING: the last attempt failed (a few\
+            \ retries, then it waits for the route to change); RECONNECT_REQUIRED:\
+            \ the connection must be renewed"
+          type: string
+          $ref: "#/components/schemas/GpsRouteSyncState"
     DeviceRoutesResponse:
       description: Response containing rides and routes for device applications
       type: object
@@ -2386,6 +2420,25 @@ components:
           type: number
           format: double
           description: Longitude in degrees (WGS 84)
+    GpsAutoSyncRequest:
+      description: Turns the automatic route sync of one GPS service on or off
+      type: object
+      required:
+      - enabled
+      properties:
+        enabled:
+          type: boolean
+          description: "true to send the routes of the user's upcoming rides to this\
+            \ service automatically; false to stop, which also removes from the service\
+            \ the upcoming routes the sync sent"
+    GpsAutoSyncState:
+      type: string
+      enum:
+      - "OFF"
+      - UP_TO_DATE
+      - PENDING
+      - FAILING
+      - RECONNECT_REQUIRED
     GpsConnectReturn:
       type: string
       enum:
@@ -2405,6 +2458,14 @@ components:
       enum:
       - OAUTH1
       - OAUTH2
+    GpsRouteSyncState:
+      type: string
+      enum:
+      - SENT
+      - OUTDATED
+      - PENDING
+      - FAILING
+      - RECONNECT_REQUIRED
     GpsServiceConnectionDto:
       type: object
       description: GPS service connection information
@@ -2412,6 +2473,9 @@ components:
       - serviceType
       - displayName
       - connectedAt
+      - autoSync
+      - autoSyncState
+      - autoSyncRouteCount
       properties:
         serviceType:
           description: Service type identifier
@@ -2422,6 +2486,26 @@ components:
           description: Display name of the service
         connectedAt:
           description: When the service was connected
+          type: string
+          $ref: "#/components/schemas/Instant"
+        autoSync:
+          type: boolean
+          description: "Whether the routes of the rides the user is registered in\
+            \ are sent to this service automatically, and kept in sync (new route,\
+            \ corrected GPX, another group), from 7 days before the departure until\
+            \ a day after it"
+        autoSyncState:
+          description: Where the automatic sync stands. OFF when autoSync is false;
+            RECONNECT_REQUIRED is only cleared by connecting the service again
+          type: string
+          $ref: "#/components/schemas/GpsAutoSyncState"
+        autoSyncRouteCount:
+          type: integer
+          format: int32
+          description: "How many routes the automatic sync currently has at the service\
+            \ (removed after the ride, or when the sync is turned off)"
+        lastAutoSyncAt:
+          description: When the automatic sync last sent a route to this service
           type: string
           $ref: "#/components/schemas/Instant"
     GpsServiceType:
@@ -10294,6 +10378,54 @@ paths:
                 $ref: "#/components/schemas/GpsOAuthUrlResponse"
         "400":
           description: Service already connected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Not Allowed
+      security:
+      - SecurityScheme:
+        - user
+  /api/gps/connections/{serviceType}/auto-sync:
+    put:
+      summary: Turn the automatic route sync on or off
+      description: "Turns on or off, for one connected service, the automatic sending\
+        \ of the routes of the rides the user is registered in (from 7 days before\
+        \ the departure until a day after it), kept in sync with their changes. Turning\
+        \ it off removes from the service the upcoming routes it sent. A RECONNECT_REQUIRED\
+        \ state is only cleared by connecting the service again."
+      operationId: setGpsAutoSync
+      tags:
+      - GPS Services
+      parameters:
+      - description: GPS service type
+        name: serviceType
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/GpsServiceType"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GpsAutoSyncRequest"
+        required: true
+      responses:
+        "200":
+          description: "The connection, with its new sync state"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GpsServiceConnectionDto"
+        "400":
+          description: Service not connected
           content:
             application/json:
               schema:
@@ -19209,7 +19341,7 @@ paths:
                 $ref: "#/components/schemas/VersionDto"
 info:
   title: Pedalons API
-  version: 11.4.0
+  version: 11.5.0
   description: API for Pedalons Cycling Team Management Platform
 servers:
 - url: http://localhost:8080

@@ -17,14 +17,16 @@ import type {
 import type {
   ErrorResponse,
   GetConnectUrlParams,
+  GpsAutoSyncRequest,
   GpsOAuthUrlResponse,
+  GpsServiceConnectionDto,
   GpsServiceType,
   HandleCallbackParams,
   RouteUploadResponse,
 } from '../../dto'
 
 import { axiosMutator } from '../../../lib/axiosInstance.ts'
-import type { ErrorType } from '../../../lib/axiosInstance.ts'
+import type { ErrorType, BodyType } from '../../../lib/axiosInstance.ts'
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]
 
@@ -492,6 +494,96 @@ export const prefetchGetConnectUrlQuery = async <
   return queryClient
 }
 
+/**
+ * Turns on or off, for one connected service, the automatic sending of the routes of the rides the user is registered in (from 7 days before the departure until a day after it), kept in sync with their changes. Turning it off removes from the service the upcoming routes it sent. A RECONNECT_REQUIRED state is only cleared by connecting the service again.
+ * @summary Turn the automatic route sync on or off
+ */
+export const setGpsAutoSync = (
+  serviceType: GpsServiceType,
+  gpsAutoSyncRequest: BodyType<GpsAutoSyncRequest>,
+  options?: SecondParameter<typeof axiosMutator>,
+  signal?: AbortSignal
+) => {
+  return axiosMutator<GpsServiceConnectionDto>(
+    {
+      url: `/api/gps/connections/${serviceType}/auto-sync`,
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      data: gpsAutoSyncRequest,
+      signal,
+    },
+    options
+  )
+}
+
+export const getSetGpsAutoSyncMutationKey = () => ['setGpsAutoSync'] as const
+
+export const getSetGpsAutoSyncMutationOptions = <
+  TError = ErrorType<ErrorResponse | void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof setGpsAutoSync>>,
+    TError,
+    SetGpsAutoSyncMutationVariables,
+    TContext
+  >
+  request?: SecondParameter<typeof axiosMutator>
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof setGpsAutoSync>>,
+  TError,
+  SetGpsAutoSyncMutationVariables,
+  TContext
+> => {
+  const mutationKey = getSetGpsAutoSyncMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof setGpsAutoSync>>,
+    SetGpsAutoSyncMutationVariables
+  > = (props) => {
+    const { serviceType, data } = props ?? {}
+
+    return setGpsAutoSync(serviceType, data, requestOptions)
+  }
+
+  return { mutationFn, ...mutationOptions }
+}
+
+export type SetGpsAutoSyncMutationResult = NonNullable<Awaited<ReturnType<typeof setGpsAutoSync>>>
+export type SetGpsAutoSyncMutationBody = BodyType<GpsAutoSyncRequest>
+export type SetGpsAutoSyncMutationError = ErrorType<ErrorResponse | void>
+export type SetGpsAutoSyncMutationVariables = {
+  serviceType: GpsServiceType
+  data: BodyType<GpsAutoSyncRequest>
+}
+
+/**
+ * @summary Turn the automatic route sync on or off
+ */
+export const useSetGpsAutoSync = <TError = ErrorType<ErrorResponse | void>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof setGpsAutoSync>>,
+      TError,
+      SetGpsAutoSyncMutationVariables,
+      TContext
+    >
+    request?: SecondParameter<typeof axiosMutator>
+  },
+  queryClient?: QueryClient
+): UseMutationResult<
+  Awaited<ReturnType<typeof setGpsAutoSync>>,
+  TError,
+  SetGpsAutoSyncMutationVariables,
+  TContext
+> => {
+  return useMutation(getSetGpsAutoSyncMutationOptions(options), queryClient)
+}
 /**
  * Disconnect a connected GPS service
  * @summary Disconnect GPS service

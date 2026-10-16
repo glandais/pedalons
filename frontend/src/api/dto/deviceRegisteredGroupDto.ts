@@ -1,3 +1,4 @@
+import type { DeviceRouteSyncStatusDto } from './deviceRouteSyncStatusDto.ts'
 import type { Instant } from './instant.ts'
 
 /**
@@ -24,4 +25,6 @@ export interface DeviceRegisteredGroupDto {
   startDateTime: Instant
   /** IANA time zone of the ride (e.g. Europe/Paris) */
   timezone: string
+  /** Where the route stands at each of the user's GPS services that hold it (sent automatically or uploaded by hand), so a device does not upload it again. Empty when no service holds it; a device only reads its own service's entry (Karoo: HAMMERHEAD, Garmin: GARMIN). */
+  syncStatuses?: DeviceRouteSyncStatusDto[]
 }

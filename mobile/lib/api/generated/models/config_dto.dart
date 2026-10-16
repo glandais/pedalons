@@ -38,6 +38,9 @@ abstract class ConfigDto with _$ConfigDto {
     /// Where a map opens before it knows what it is showing. On a site rooted on one team this is that team's location; otherwise the deployment default.
     required MapCenterDto defaultCenter,
 
+    /// Whether this deployment sends the routes of a member's rides to their GPS services on its own (GpsServiceConnectionDto.autoSync). When false the clients offer no switch: it would promise a sending that never happens.
+    required bool gpsAutoSyncEnabled,
+
     /// Slug of the team the site is pinned to (dedicated hostname / alias). Null on a regular multi-team domain. When set, the app roots on this team.
     String? pinnedTeamSlug,
 

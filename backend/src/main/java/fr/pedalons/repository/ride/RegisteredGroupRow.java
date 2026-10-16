@@ -17,10 +17,12 @@ public record RegisteredGroupRow(
     @Nullable Instant groupStartAt,
     Instant rideDateTime,
     String timezone,
+    @Nullable Long groupRouteId,
     @Nullable String groupRouteSlug,
     @Nullable String groupRouteName,
     @Nullable Float groupRouteDistance,
     @Nullable Float groupRouteElevationGain,
+    @Nullable Long rideRouteId,
     @Nullable String rideRouteSlug,
     @Nullable String rideRouteName,
     @Nullable Float rideRouteDistance,
@@ -29,5 +31,15 @@ public record RegisteredGroupRow(
   /** The group's departure: its own start, the ride's when it has none. */
   public Instant startAt() {
     return groupStartAt != null ? groupStartAt : rideDateTime;
+  }
+
+  /** Whether the group's own route is the one to load (it wins over the ride's). */
+  public boolean ownRoute() {
+    return groupRouteSlug != null;
+  }
+
+  /** The id of the route to load: the group's own, the ride's when it has none. */
+  public @Nullable Long effectiveRouteId() {
+    return ownRoute() ? groupRouteId : rideRouteId;
   }
 }

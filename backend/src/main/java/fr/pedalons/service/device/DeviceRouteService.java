@@ -10,6 +10,7 @@ import fr.pedalons.dto.device.response.DeviceRegisteredGroupDto;
 import fr.pedalons.dto.device.response.DeviceRideDto;
 import fr.pedalons.dto.device.response.DeviceRideEntryDto;
 import fr.pedalons.dto.device.response.DeviceRouteDto;
+import fr.pedalons.dto.device.response.DeviceRouteSyncStatusDto;
 import fr.pedalons.dto.device.response.DeviceRoutesResponse;
 import fr.pedalons.dto.device.response.DeviceUserStatusResponse;
 import fr.pedalons.enums.EntityType;
@@ -24,6 +25,8 @@ import fr.pedalons.repository.ride.RideRepository;
 import fr.pedalons.repository.route.RouteQuery;
 import fr.pedalons.repository.route.RouteRepository;
 import fr.pedalons.repository.team.UserTeamRepository;
+import fr.pedalons.service.gps.sync.GpsRouteSyncService;
+import fr.pedalons.service.gps.sync.GpsRouteSyncService.RouteSyncStatus;
 import fr.pedalons.service.route.GpxProcessingService;
 import fr.pedalons.service.security.PedalonsQueryContext;
 import fr.pedalons.service.security.annotation.Logged;
@@ -35,6 +38,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -75,6 +79,7 @@ public class DeviceRouteService {
   @Inject RideParticipationRepository rideParticipationRepository;
   @Inject GpsServiceConnectionRepository gpsServiceConnectionRepository;
   @Inject GpxProcessingService gpxProcessingService;
+  @Inject GpsRouteSyncService gpsRouteSyncService;
 
   /** Internal record for sorting routes by distance while keeping DTO separate. */
   private record RouteWithDistance(DeviceRouteDto dto, @Nullable Double distanceFromUser) {}
@@ -154,25 +159,37 @@ public class DeviceRouteService {
   /**
    * The groups the user is registered in, leaving between 12 hours ago and 7 days ahead, earliest
    * first, each with the route a device loads for it: the group's own, the ride's when it has none;
-   * a group with neither is left out, there is nothing to load. One query whatever their number.
+   * a group with neither is left out, there is nothing to load. Each carries where its route stands
+   * at the user's GPS services (docs/LEDGER_*.md API-121). Two queries whatever their number: the
+   * groups, then the sync state of all their routes.
    */
   private List<DeviceRegisteredGroupDto> getRegisteredGroups(Long userId, Instant now) {
-    return rideParticipationRepository
-        .findUpcomingRegisteredGroups(
-            pedalonsContext.getDomainId(),
+    Long domainId = pedalonsContext.getDomainId();
+    List<RegisteredGroupRow> rows =
+        rideParticipationRepository.findUpcomingRegisteredGroups(
+            domainId,
             userId,
             pedalonsContext.getPinnedTeamIdNullable(),
             now.minus(REGISTERED_GROUPS_PAST),
             now.plus(REGISTERED_GROUPS_AHEAD),
-            MAX_REGISTERED_GROUPS_IN_RESPONSE)
-        .stream()
-        .map(DeviceRouteService::toRegisteredGroup)
+            MAX_REGISTERED_GROUPS_IN_RESPONSE);
+    Set<Long> routeIds =
+        rows.stream()
+            .map(RegisteredGroupRow::effectiveRouteId)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+    Map<Long, List<RouteSyncStatus>> statuses =
+        gpsRouteSyncService.findRouteStatuses(domainId, userId, routeIds);
+    return rows.stream()
+        .map(
+            row -> toRegisteredGroup(row, statuses.getOrDefault(row.effectiveRouteId(), List.of())))
         .toList();
   }
 
-  private static DeviceRegisteredGroupDto toRegisteredGroup(RegisteredGroupRow row) {
+  private static DeviceRegisteredGroupDto toRegisteredGroup(
+      RegisteredGroupRow row, List<RouteSyncStatus> statuses) {
     // The query only returns rows where one of the two routes is live: the group's wins.
-    boolean ownRoute = row.groupRouteSlug() != null;
+    boolean ownRoute = row.ownRoute();
     String routeSlug = ownRoute ? row.groupRouteSlug() : row.rideRouteSlug();
     String routeName = ownRoute ? row.groupRouteName() : row.rideRouteName();
     Float distance = ownRoute ? row.groupRouteDistance() : row.rideRouteDistance();
@@ -188,6 +205,11 @@ public class DeviceRouteService {
         .elevationGain(elevationGain != null ? elevationGain : 0f)
         .startDateTime(row.startAt())
         .timezone(row.timezone())
+        .syncStatuses(
+            statuses.stream()
+                .sorted(Comparator.comparing(RouteSyncStatus::serviceType))
+                .map(st -> new DeviceRouteSyncStatusDto(st.serviceType(), st.state()))
+                .toList())
         .build();
   }
 

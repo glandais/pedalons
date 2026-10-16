@@ -16,9 +16,11 @@ import fr.pedalons.enums.UnitSystem;
 import fr.pedalons.repository.gps.GpsServiceConnectionRepository;
 import fr.pedalons.repository.team.UserTeamRepository;
 import fr.pedalons.repository.user.UserRepository;
+import fr.pedalons.service.gps.sync.GpsRouteSyncService;
 import fr.pedalons.service.security.PedalonsQueryContext;
 import fr.pedalons.service.security.annotation.Logged;
 import fr.pedalons.service.team.TeamService;
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -41,6 +43,8 @@ public class UserService {
 
   @Inject UserTeamRepository userTeamRepository;
 
+  @Inject GpsRouteSyncService gpsRouteSyncService;
+
   @Inject TeamService teamService;
 
   @Logged
@@ -55,10 +59,10 @@ public class UserService {
    * disconnected and send the member to connect them again.
    */
   public UserDto toDto(User user) {
+    // Their route sync state in one query for all of them (docs/LEDGER_*.md API-120).
     List<GpsServiceConnectionDto> connections =
-        gpsConnectionRepository.findByUser(user.getId()).stream()
-            .map(GpsServiceConnectionDto::from)
-            .toList();
+        gpsRouteSyncService.toDtos(
+            user.getDomain().getId(), gpsConnectionRepository.findByUser(user.getId()));
     return UserDto.from(user, connections);
   }
 
@@ -151,34 +155,51 @@ public class UserService {
         migratedTeams);
   }
 
+  /**
+   * Deletes the current account. Three steps, so that no transaction stays open while a GPS service
+   * is called (docs/LEDGER_*.md API-120): the refusals are checked first, in their own transaction,
+   * so that nothing is removed from a service for an account whose deletion is then refused; the
+   * routes the automatic sync placed at the member's services are removed next, with no
+   * transaction open and within a bounded time; the deletion itself runs last, in one transaction,
+   * the refusals checked again.
+   */
   @Logged
-  @Transactional
   public void deleteUser() {
-    User user = pedalonsContext.getUser();
+    Long userId = pedalonsContext.getUser().getId();
     Long domainId = pedalonsContext.getDomainId();
+    QuarkusTransaction.requiringNew().run(() -> checkDeletable(userId, domainId));
+    accountErasureService.removeSyncedRoutes(userId);
+    QuarkusTransaction.requiringNew()
+        .run(
+            () -> {
+              checkDeletable(userId, domainId);
+              // A team they administer alone would be left with no member at all: it goes with the
+              // account, through the same deletion as DELETE /teams/{slug}. The confirmation named
+              // these teams (GET /users/me/deletion-impact).
+              for (Team team : userTeamRepository.findTeamsAdministeredAlone(userId, domainId)) {
+                teamService.delete(team);
+              }
+              // Erased now, not flagged for later: nothing ever came back for a flagged account,
+              // and the policy, the app and the store listings all promise the data is gone.
+              accountErasureService.erase(userRepository.findById(userId));
+            });
+    // The request context memoizes the active user; it is no longer active.
+    pedalonsContext.invalidateUser();
+  }
+
+  private void checkDeletable(Long userId, Long domainId) {
     // A team that came from biketeam is where biketeam redirects its old addresses: the erasure
     // must not trash it, even with no other member (it would, below). Checked first, since what
     // the member must do differs: name another admin, or — a platform admin — cancel the
     // switch-over on biketeam before deleting the team.
-    if (!userTeamRepository.findMigratedTeamsAdministeredAlone(user.getId(), domainId).isEmpty()) {
+    if (!userTeamRepository.findMigratedTeamsAdministeredAlone(userId, domainId).isEmpty()) {
       throw new BusinessException(ErrorCode.SOLE_MIGRATED_TEAM_ADMIN);
     }
     // The erasure drops every membership and promotes nobody: the last admin of a team others
     // still belong to would leave them a team no one can run. They name another admin, or delete
     // the team, first — the same rule as leaving the team (LAST_ADMIN).
-    if (!userTeamRepository.findTeamsLeftWithoutAdmin(user.getId(), domainId).isEmpty()) {
+    if (!userTeamRepository.findTeamsLeftWithoutAdmin(userId, domainId).isEmpty()) {
       throw new BusinessException(ErrorCode.SOLE_TEAM_ADMIN);
     }
-    // A team they administer alone would be left with no member at all: it goes with the account,
-    // through the same deletion as DELETE /teams/{slug}. The confirmation named these teams
-    // (GET /users/me/deletion-impact).
-    for (Team team : userTeamRepository.findTeamsAdministeredAlone(user.getId(), domainId)) {
-      teamService.delete(team);
-    }
-    // Erased now, not flagged for later: nothing ever came back for a flagged account, and the
-    // policy, the app and the store listings all promise the data is gone.
-    accountErasureService.erase(user);
-    // The request context memoizes the active user; it is no longer active.
-    pedalonsContext.invalidateUser();
   }
 }

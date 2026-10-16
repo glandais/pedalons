@@ -55,6 +55,32 @@ public class GpsServiceConnection {
   @Column(name = "last_used_at")
   private @Nullable Instant lastUsedAt;
 
+  /**
+   * Whether the member asked for the routes of their rides to be sent to this service
+   * automatically, and kept in sync (docs/LEDGER_*.md API-120 D1). Per connection: it leaves with
+   * the connection.
+   */
+  @Column(name = "auto_sync", nullable = false)
+  private boolean autoSync;
+
+  /**
+   * Set when the service refused our token even after a refresh, or (Garmin) the permission was
+   * withdrawn: the synchronisation stops for this connection, its rows stay as they are, until a
+   * reconnection clears it.
+   *
+   * <p>This column and the next are written <b>only by bulk updates</b> ({@code
+   * GpsServiceConnectionRepository#markSyncReconnectRequired}, {@code #pauseSync}, {@code
+   * #clearSyncBlocks}), never by the entity ({@code updatable = false}): the worker sets them while
+   * an endpoint, or the other backend, may hold the entity, and the flush of that stale copy would
+   * otherwise put the old value back — {@code @Version} does not see a bulk update.
+   */
+  @Column(name = "sync_reconnect_required_at", updatable = false)
+  private @Nullable Instant syncReconnectRequiredAt;
+
+  /** After a 429: no synchronisation call for this connection before then. Bulk-written only. */
+  @Column(name = "sync_paused_until", updatable = false)
+  private @Nullable Instant syncPausedUntil;
+
   @CreationTimestamp
   @Column(name = "created_at", nullable = false, updatable = false)
   private Instant createdAt;

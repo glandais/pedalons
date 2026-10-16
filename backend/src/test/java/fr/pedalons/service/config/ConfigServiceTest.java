@@ -44,6 +44,15 @@ class ConfigServiceTest extends AbstractBaseTest {
     assertNotNull(config.appName());
   }
 
+  /**
+   * The flag of pedalons.gps-sync.enabled (GPS_SYNC_ENABLED, off by default in production — the
+   * clients then show no switch, API-120), which the test profile turns on.
+   */
+  @Test
+  void getConfig_gpsAutoSyncReflectsTheFlag() {
+    assertTrue(configService.getConfig().gpsAutoSyncEnabled());
+  }
+
   @Test
   void getConfig_onRegularDomain_hasNoPinnedTeamAndReflectsDomain() {
     ConfigDto config = configService.getConfig();

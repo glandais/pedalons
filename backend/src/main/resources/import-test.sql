@@ -12,3 +12,6 @@ CREATE UNIQUE INDEX uk_biketeam_migrations_active ON biketeam_migrations (bikete
 CREATE UNIQUE INDEX uk_weather_cells_key ON weather_cells (lat_idx, lon_idx, ele_band) NULLS NOT DISTINCT;
 ALTER TABLE weather_hourly ADD CONSTRAINT fk_weather_hourly_cell FOREIGN KEY (cell_id) REFERENCES weather_cells ON DELETE CASCADE;
 ALTER TABLE weather_daily ADD CONSTRAINT fk_weather_daily_cell FOREIGN KEY (cell_id) REFERENCES weather_cells ON DELETE CASCADE;
+-- Mirrors V71__gps_route_autosync.sql: one tracked manual upload per (connection, route), which the
+-- manual upload's upsert relies on. Hibernate cannot express a partial index.
+CREATE UNIQUE INDEX uk_gps_route_syncs_manual ON gps_route_syncs (connection_id, desired_route_id) WHERE ride_id IS NULL;

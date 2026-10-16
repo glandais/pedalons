@@ -12,19 +12,24 @@ import fr.pedalons.domain.calendar.CalendarToken;
 import fr.pedalons.domain.feedback.ErrorOccurrence;
 import fr.pedalons.domain.feedback.FeedbackReport;
 import fr.pedalons.domain.gps.GpsOAuthState;
+import fr.pedalons.domain.gps.GpsRouteSync;
 import fr.pedalons.domain.gps.GpsServiceConnection;
 import fr.pedalons.domain.team.UserTeam;
 import fr.pedalons.domain.user.User;
 import fr.pedalons.repository.comment.CommentRepository;
+import fr.pedalons.repository.gps.GpsServiceConnectionRepository;
 import fr.pedalons.repository.moderation.ContentReportRepository;
 import fr.pedalons.repository.moderation.UserBlockRepository;
 import fr.pedalons.repository.user.UserRepository;
+import fr.pedalons.service.gps.sync.GpsRouteSyncService;
 import fr.pedalons.service.gpx.GpxPreviewService;
 import fr.pedalons.service.notification.NotificationService;
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import org.jboss.logging.Logger;
@@ -85,6 +90,8 @@ public class AccountErasureService {
           WebAuthnChallenge.class,
           CalendarToken.class,
           GpsOAuthState.class,
+          // Before the connections: the tracking rows of the routes sent to them (API-120).
+          GpsRouteSync.class,
           GpsServiceConnection.class,
           UserTeam.class);
 
@@ -97,6 +104,53 @@ public class AccountErasureService {
   @Inject UserExportService userExportService;
   @Inject UserAvatarService userAvatarService;
   @Inject GpxPreviewService gpxPreviewService;
+  @Inject GpsServiceConnectionRepository gpsServiceConnectionRepository;
+  @Inject GpsRouteSyncService gpsRouteSyncService;
+
+  /** The time the GPS clean-up of one account may take, all services together. */
+  static final Duration GPS_CLEANUP_BUDGET = Duration.ofSeconds(20);
+
+  /**
+   * Removes from the member's GPS services, as far as possible, the routes the automatic sync
+   * placed there (docs/LEDGER_*.md API-120 §4.6) — while the connections and their tokens are still
+   * there, so before {@link #erase}. <b>To be called with no transaction open</b>: it calls the
+   * services, and a transaction held across those calls would keep its locks and run into its
+   * timeout. Best effort and bounded ({@link #GPS_CLEANUP_BUDGET}), failures logged and ignored: an
+   * erasure never waits on a GPS service.
+   */
+  public void removeSyncedRoutes(Long userId) {
+    record Target(Long domainId, Long connectionId) {}
+    List<Target> targets;
+    try {
+      targets =
+          QuarkusTransaction.requiringNew()
+              .call(
+                  () -> {
+                    User user = userRepository.findById(userId);
+                    if (user == null || isErased(user)) {
+                      return List.<Target>of();
+                    }
+                    Long domainId = user.getDomain().getId();
+                    return gpsServiceConnectionRepository.findByUser(userId).stream()
+                        .map(c -> new Target(domainId, c.getId()))
+                        .toList();
+                  });
+    } catch (RuntimeException e) {
+      LOG.warnf("Synced routes of user %d not removed before erasure: %s", userId, e.getMessage());
+      return;
+    }
+    Instant deadline = Instant.now().plus(GPS_CLEANUP_BUDGET);
+    for (Target target : targets) {
+      try {
+        gpsRouteSyncService.removeAutoSyncedRoutes(
+            target.domainId(), target.connectionId(), deadline);
+      } catch (RuntimeException e) {
+        LOG.warnf(
+            "Synced routes of connection %d not removed before erasure: %s",
+            target.connectionId(), e.getMessage());
+      }
+    }
+  }
 
   /** Whether an account has already been through {@link #erase}. */
   public static boolean isErased(User user) {

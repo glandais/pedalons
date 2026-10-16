@@ -12,6 +12,10 @@ _GpsServiceConnectionDto _$GpsServiceConnectionDtoFromJson(
   serviceType: json['serviceType'] as String,
   displayName: json['displayName'] as String,
   connectedAt: json['connectedAt'] as String,
+  autoSync: json['autoSync'] as bool,
+  autoSyncState: json['autoSyncState'] as String,
+  autoSyncRouteCount: (json['autoSyncRouteCount'] as num).toInt(),
+  lastAutoSyncAt: json['lastAutoSyncAt'] as String?,
 );
 
 Map<String, dynamic> _$GpsServiceConnectionDtoToJson(
@@ -20,4 +24,8 @@ Map<String, dynamic> _$GpsServiceConnectionDtoToJson(
   'serviceType': instance.serviceType,
   'displayName': instance.displayName,
   'connectedAt': instance.connectedAt,
+  'autoSync': instance.autoSync,
+  'autoSyncState': instance.autoSyncState,
+  'autoSyncRouteCount': instance.autoSyncRouteCount,
+  'lastAutoSyncAt': instance.lastAutoSyncAt,
 };

@@ -47,6 +47,51 @@ export const GetConnectUrlResponse = zod
   .describe('OAuth authorization URL response')
 
 /**
+ * Turns on or off, for one connected service, the automatic sending of the routes of the rides the user is registered in (from 7 days before the departure until a day after it), kept in sync with their changes. Turning it off removes from the service the upcoming routes it sent. A RECONNECT_REQUIRED state is only cleared by connecting the service again.
+ * @summary Turn the automatic route sync on or off
+ */
+export const SetGpsAutoSyncParams = zod.object({
+  serviceType: zod.enum(['HAMMERHEAD', 'GARMIN', 'WAHOO']).describe('GPS service type'),
+})
+
+export const SetGpsAutoSyncBody = zod
+  .object({
+    enabled: zod
+      .boolean()
+      .describe(
+        "true to send the routes of the user's upcoming rides to this service automatically; false to stop, which also removes from the service the upcoming routes the sync sent"
+      ),
+  })
+  .describe('Turns the automatic route sync of one GPS service on or off')
+
+export const SetGpsAutoSyncResponse = zod
+  .object({
+    serviceType: zod.enum(['HAMMERHEAD', 'GARMIN', 'WAHOO']).describe('Service type identifier'),
+    displayName: zod.string().describe('Display name of the service'),
+    connectedAt: zod.iso.datetime({ offset: true }).describe('When the service was connected'),
+    autoSync: zod
+      .boolean()
+      .describe(
+        'Whether the routes of the rides the user is registered in are sent to this service automatically, and kept in sync (new route, corrected GPX, another group), from 7 days before the departure until a day after it'
+      ),
+    autoSyncState: zod
+      .enum(['OFF', 'UP_TO_DATE', 'PENDING', 'FAILING', 'RECONNECT_REQUIRED'])
+      .describe(
+        'Where the automatic sync stands. OFF when autoSync is false; RECONNECT_REQUIRED is only cleared by connecting the service again'
+      ),
+    autoSyncRouteCount: zod
+      .int()
+      .describe(
+        'How many routes the automatic sync currently has at the service (removed after the ride, or when the sync is turned off)'
+      ),
+    lastAutoSyncAt: zod.iso
+      .datetime({ offset: true })
+      .optional()
+      .describe('When the automatic sync last sent a route to this service'),
+  })
+  .describe('GPS service connection information')
+
+/**
  * Disconnect a connected GPS service
  * @summary Disconnect GPS service
  */

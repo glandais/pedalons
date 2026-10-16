@@ -18,8 +18,11 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.text.Normalizer;
+import java.time.Duration;
 import java.util.UUID;
 import org.jboss.logging.Logger;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Hammerhead GPS device integration client.
@@ -33,6 +36,8 @@ public class HammerheadClient implements GpsServiceClient {
   private static final String AUTH_URL = "https://api.hammerhead.io/v1/auth/oauth/authorize";
   private static final String TOKEN_URL = "https://api.hammerhead.io/v1/auth/oauth/token";
   private static final String ROUTE_UPLOAD_URL = "https://api.hammerhead.io/v1/api/routes/file";
+  static final String ROUTES_URL = "https://api.hammerhead.io/v1/api/routes";
+  private static final Duration CALL_TIMEOUT = Duration.ofSeconds(30);
   private static final String SCOPE = "route:write";
 
   @Inject DomainGpsCredentialService credentialService;
@@ -97,14 +102,23 @@ public class HammerheadClient implements GpsServiceClient {
 
   @Override
   public TokenResponse refreshToken(String refreshToken) {
+    return refreshToken(getCredential(), refreshToken);
+  }
+
+  @Override
+  public TokenResponse refreshToken(DomainGpsCredential credential, String refreshToken) {
+    String secret = credentialService.getDecryptedClientSecret(credential);
+    if (secret == null) {
+      throw new BusinessException(ErrorCode.GPS_SERVICE_NOT_CONFIGURED);
+    }
     String body =
         "grant_type=refresh_token"
             + "&refresh_token="
             + urlEncode(refreshToken)
             + "&client_id="
-            + urlEncode(getClientId())
+            + urlEncode(credential.getClientId())
             + "&client_secret="
-            + urlEncode(getClientSecret());
+            + urlEncode(secret);
 
     return requestToken(body);
   }
@@ -115,6 +129,8 @@ public class HammerheadClient implements GpsServiceClient {
           HttpRequest.newBuilder()
               .uri(URI.create(TOKEN_URL))
               .header("Content-Type", "application/x-www-form-urlencoded")
+              // Bounded like the route calls: the route sync's lease counts on it (API-120).
+              .timeout(CALL_TIMEOUT)
               .POST(HttpRequest.BodyPublishers.ofString(body))
               .build();
 
@@ -124,6 +140,9 @@ public class HammerheadClient implements GpsServiceClient {
       if (response.statusCode() != 200) {
         LOG.errorf(
             "Hammerhead token request failed: %d %s", response.statusCode(), response.body());
+        if (GpsTokenRefusedException.isRefusal(response.statusCode())) {
+          throw new GpsTokenRefusedException("Hammerhead", response.statusCode());
+        }
         throw new InternalException(
             ErrorCode.GPS_TOKEN_EXCHANGE_FAILED,
             new IOException("Hammerhead token request failed: " + response.statusCode()));
@@ -150,44 +169,111 @@ public class HammerheadClient implements GpsServiceClient {
   }
 
   @Override
-  public RouteUploadResult uploadRoute(String accessToken, byte[] gpxContent, String routeName) {
+  public GpsCallResult createRoute(GpsAuth auth, byte[] gpxContent, RouteMeta meta) {
+    return sendFile("POST", ROUTE_UPLOAD_URL, auth, gpxContent, meta, null);
+  }
+
+  /** {@code PUT /v1/api/routes/{id}/file}: same multipart as the creation, the name included. */
+  @Override
+  public GpsCallResult updateRoute(
+      GpsAuth auth, String externalId, byte[] gpxContent, RouteMeta meta) {
+    return sendFile("PUT", routeUrl(externalId) + "/file", auth, gpxContent, meta, externalId);
+  }
+
+  /** {@code DELETE /v1/api/routes/{id}}: only routes created by our client may be deleted. */
+  @Override
+  public GpsCallResult deleteRoute(GpsAuth auth, String externalId) {
+    String url = routeUrl(externalId);
+    try {
+      HttpRequest request =
+          HttpRequest.newBuilder()
+              .uri(URI.create(url))
+              .timeout(CALL_TIMEOUT)
+              .header("Authorization", auth.authorizationHeader("DELETE", url))
+              .DELETE()
+              .build();
+      HttpResponse<String> response =
+          httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+      if (GpsCallResult.isSuccess(response)) {
+        return new GpsCallResult.Ok(externalId);
+      }
+      LOG.warnf("Hammerhead route delete failed: %d %s", response.statusCode(), response.body());
+      return GpsCallResult.ofFailure(response);
+    } catch (IOException e) {
+      LOG.warn("Failed to delete route on Hammerhead", e);
+      return new GpsCallResult.Failed(0, e.getMessage() != null ? e.getMessage() : "I/O error");
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      return new GpsCallResult.Failed(0, "Interrupted");
+    }
+  }
+
+  static String routeUrl(String externalId) {
+    return ROUTES_URL
+        + "/"
+        + URLEncoder.encode(externalId, StandardCharsets.UTF_8).replace("+", "%20");
+  }
+
+  private GpsCallResult sendFile(
+      String method,
+      String url,
+      GpsAuth auth,
+      byte[] gpxContent,
+      RouteMeta meta,
+      @Nullable String knownId) {
     try {
       String boundary = "----" + UUID.randomUUID().toString().replace("-", "");
 
-      byte[] multipartBody = buildMultipartBody(boundary, gpxContent, routeName);
+      byte[] multipartBody = buildMultipartBody(boundary, gpxContent, meta.name());
 
       HttpRequest request =
           HttpRequest.newBuilder()
-              .uri(URI.create(ROUTE_UPLOAD_URL))
-              .header("Authorization", "Bearer " + accessToken)
+              .uri(URI.create(url))
+              .timeout(CALL_TIMEOUT)
+              .header("Authorization", auth.authorizationHeader(method, url))
               .header("Content-Type", "multipart/form-data; boundary=" + boundary)
-              .POST(HttpRequest.BodyPublishers.ofByteArray(multipartBody))
+              .method(method, HttpRequest.BodyPublishers.ofByteArray(multipartBody))
               .build();
 
       HttpResponse<String> response =
           httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
-      if (response.statusCode() >= 200 && response.statusCode() < 300) {
-        String routeId = jsonString(objectMapper.readTree(response.body()), "id");
-        LOG.infof("Successfully uploaded route to Hammerhead: %s", routeId);
-        return RouteUploadResult.success(routeId);
-      } else {
-        LOG.errorf("Hammerhead route upload failed: %d %s", response.statusCode(), response.body());
-        return RouteUploadResult.failure("Upload failed: " + response.statusCode());
+      if (GpsCallResult.isSuccess(response)) {
+        String routeId = readId(response.body());
+        LOG.infof(
+            "Route %s on Hammerhead: %s", "POST".equals(method) ? "created" : "updated", routeId);
+        return new GpsCallResult.Ok(routeId != null ? routeId : knownId);
       }
-    } catch (IOException | InterruptedException e) {
-      LOG.error("Failed to upload route to Hammerhead", e);
-      return RouteUploadResult.failure("Upload failed: " + e.getMessage());
+      LOG.errorf(
+          "Hammerhead route %s failed: %d %s", method, response.statusCode(), response.body());
+      return GpsCallResult.ofFailure(response);
+    } catch (IOException e) {
+      LOG.error("Failed to send route to Hammerhead", e);
+      return new GpsCallResult.Failed(0, e.getMessage() != null ? e.getMessage() : "I/O error");
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      return new GpsCallResult.Failed(0, "Interrupted");
+    }
+  }
+
+  private @Nullable String readId(@Nullable String body) {
+    if (body == null || body.isBlank()) {
+      return null;
+    }
+    try {
+      return jsonString(objectMapper.readTree(body), "id");
+    } catch (JsonProcessingException e) {
+      return null;
     }
   }
 
   private byte[] buildMultipartBody(String boundary, byte[] gpxContent, String routeName) {
     StringBuilder sb = new StringBuilder();
 
-    // File part
+    // File part. Hammerhead has no name field: the route is named after the file.
     sb.append("--").append(boundary).append("\r\n");
     sb.append("Content-Disposition: form-data; name=\"file\"; filename=\"")
-        .append(routeName.replaceAll("[^a-zA-Z0-9_-]", "_"))
+        .append(fileName(routeName))
         .append(".gpx\"\r\n");
     sb.append("Content-Type: application/gpx+xml\r\n\r\n");
 
@@ -200,6 +286,20 @@ public class HammerheadClient implements GpsServiceClient {
     System.arraycopy(footer, 0, result, header.length + gpxContent.length, footer.length);
 
     return result;
+  }
+
+  /**
+   * The route's name as a file name, which is what Hammerhead shows: accents dropped, then
+   * anything but ASCII letters, digits, spaces, dots, dashes and underscores replaced — no quote
+   * can break the header, no character a filesystem refuses. The « · » separator of the
+   * synchronised names (docs/LEDGER_*.md API-120 §3.5) becomes a dash.
+   */
+  static String fileName(String routeName) {
+    String ascii =
+        Normalizer.normalize(routeName.replace('·', '-'), Normalizer.Form.NFD)
+            .replaceAll("\\p{M}", "");
+    String cleaned = ascii.replaceAll("[^A-Za-z0-9 ._-]", "_").trim();
+    return cleaned.isEmpty() ? "route" : cleaned;
   }
 
   private String urlEncode(String value) {

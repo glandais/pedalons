@@ -8,6 +8,7 @@ import fr.pedalons.domain.auth.Passkey;
 import fr.pedalons.domain.auth.WebAuthnChallenge;
 import fr.pedalons.domain.calendar.CalendarToken;
 import fr.pedalons.domain.gps.GpsOAuthState;
+import fr.pedalons.domain.gps.GpsRouteSync;
 import fr.pedalons.domain.gps.GpsServiceConnection;
 import fr.pedalons.domain.user.User;
 import java.security.MessageDigest;
@@ -162,6 +163,8 @@ public final class AccountExport {
       @Nullable Instant tokenExpiresAt,
       Instant connectedAt,
       @Nullable Instant lastUsedAt,
+      boolean autoSync,
+      @Nullable Instant syncReconnectRequiredAt,
       Instant createdAt,
       Instant updatedAt) {
 
@@ -174,8 +177,49 @@ public final class AccountExport {
           c.getTokenExpiresAt(),
           c.getConnectedAt(),
           c.getLastUsedAt(),
+          c.isAutoSync(),
+          c.getSyncReconnectRequiredAt(),
           c.getCreatedAt(),
           c.getUpdatedAt());
+    }
+  }
+
+  /**
+   * {@code account/gps-route-syncs.json} — the routes Pédalons sent to the member's GPS services
+   * and keeps track of (docs/LEDGER_*.md API-120): automatically for a ride, or a manual upload.
+   */
+  public record GpsRouteSyncEntry(
+      String id,
+      String serviceType,
+      boolean automatic,
+      @Nullable String rideId,
+      @Nullable String rideGroupId,
+      @Nullable String routeId,
+      @Nullable String name,
+      @Nullable Instant groupStartAt,
+      @Nullable String externalRouteId,
+      @Nullable Instant syncedAt,
+      @Nullable String lastError,
+      @Nullable Instant lastErrorAt,
+      Instant createdAt,
+      Instant updatedAt) {
+
+    public static GpsRouteSyncEntry from(GpsRouteSync s) {
+      return new GpsRouteSyncEntry(
+          TsidUtils.toString(s.getId()),
+          s.getConnection().getServiceType().name(),
+          s.isAutomatic(),
+          s.getRideId() != null ? TsidUtils.toString(s.getRideId()) : null,
+          s.getRideGroupId() != null ? TsidUtils.toString(s.getRideGroupId()) : null,
+          s.getDesiredRouteId() != null ? TsidUtils.toString(s.getDesiredRouteId()) : null,
+          s.getDesiredName(),
+          s.getGroupStartAt(),
+          s.getExternalRouteId(),
+          s.getSyncedAt(),
+          s.getLastError() != null ? s.getLastError().name() : null,
+          s.getLastErrorAt(),
+          s.getCreatedAt(),
+          s.getUpdatedAt());
     }
   }
 
