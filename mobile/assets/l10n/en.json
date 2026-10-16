@@ -1449,8 +1449,10 @@
     },
     "mobile": {
       "title": "Mobile app",
-      "description": "Available for iPhone on the App Store. The Android version is coming soon.",
-      "download": "Download on the App Store"
+      "description": "Available for iPhone on the App Store. The Play Store Android version is coming soon; an APK is already available for devices without Google Play.",
+      "download": "Download on the App Store",
+      "apk": "Android APK without Google Play",
+      "apkHint": "For devices without Google services: no push notifications and no automatic updates (download the APK again to update). It does not install over the Play Store version."
     },
     "garmin": {
       "title": "Garmin",

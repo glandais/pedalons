@@ -223,3 +223,8 @@ Avec **Play App Signing**, Google re-signe l'app publiée avec sa propre clé : 
 pour les installations depuis le Play Store est celle de Play Console → l'app → Configuration →
 Signature de l'application (« Certificat de la clé de signature de l'application »), pas celle du
 keystore d'upload.
+
+`assetlinks.json` déclare donc **deux** empreintes : celle de Play (`18:A9:…`) et celle de l'APK hors
+Play (`26:24:…`), signé sur GitHub avec la clé Karoo par `.github/workflows/mobile-release.yml`
+(ledger `MOB-72`). Retirer la seconde casse les liens profonds et les passkeys de toutes les
+installations par APK.

@@ -8,7 +8,8 @@
       "namespace": "android_app",
       "package_name": "fr.pedalons.mobile",
       "sha256_cert_fingerprints": [
-        "18:A9:F7:56:2D:17:9B:C2:F5:56:CD:86:B5:0A:DF:E6:FF:06:04:9B:99:37:A2:CE:A6:84:B3:12:BA:D6:D7:C9"
+        "18:A9:F7:56:2D:17:9B:C2:F5:56:CD:86:B5:0A:DF:E6:FF:06:04:9B:99:37:A2:CE:A6:84:B3:12:BA:D6:D7:C9",
+        "26:24:FF:9B:9E:62:FA:C2:81:62:16:9B:42:6C:7B:38:BD:D5:46:33:50:00:18:35:73:E9:66:00:08:58:D7:72"
       ]
     }
   }

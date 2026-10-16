@@ -662,6 +662,22 @@ couvert » ; les tests ne tournent qu'en local (`MOB-37`).
   dans `publicationFeedTypeProvider` (leçon de `WEB-64`) ; l'Agenda et les Publications gardent
   chacun leur `filterScope` ; le calendrier d'une équipe reste aux membres (plan §7) ; « En cours »
   se calcule sur les instants du contrat, jamais sur leur heure de cadran.
+- [x] `MOB-72` **Un APK signé pour les Android sans Google Play** (16 octobre 2026, contrat
+  inchangé) — `publish_beta.sh` pousse, après son commit de numéro de build, le tag
+  `mobile.X.Y.Z.N` (le `+` de `pubspec.yaml` devient `.`, une URL de release porte le tag) ;
+  `.github/workflows/mobile-release.yml` construit l'APK universel de ce commit, le publie sur la
+  release du tag (notes : le whatsNew FR puis EN de `metadata/version/X.Y.Z/`) et le recopie sur la
+  release fixe `mobile-latest`, cible du bouton « APK Android sans Google Play » de la page
+  Applications de l'app (`apps_page.dart`) et du site (`WEB-93`). Le workflow échoue si le tag ne
+  correspond pas à `pubspec.yaml`, si le whatsNew manque, ou si l'APK sort signé par la clé de
+  debug (repli silencieux de `build.gradle.kts` sans `key.properties`). Firebase échouait déjà sans
+  bruit (`main.dart`, `push_gateway.dart`) : aucun changement de code. Pas de test automatisé ; la
+  recette sur un appareil sans GMS est `MOB-73`. **À ne pas défaire** : l'APK est signé par la **clé
+  Karoo** (secrets `KAROO_KEYSTORE_*`), jamais par la clé d'upload Play, et cette clé ne change
+  plus — une autre clé coupe les mises à jour de toutes les installations par APK ; son empreinte
+  `26:24:…` reste dans `frontend/public/.well-known/assetlinks.json` (liens profonds, passkeys) ;
+  `mobile-latest` n'est jamais marquée « Latest » ni supprimée (immutable releases désactivées) ;
+  seul `publish_beta.sh` tague, pas `publish_test.sh` (les builds internes restent privés).
 
 ### `MOB-71` Interrupteur « envoi automatique » par service GPS connecté (16 octobre 2026, contrat `11.5.0`)
 
@@ -1954,6 +1970,12 @@ Plan [`2026-10-06-team-agenda.md`](plans/archive/2026-10-06-team-agenda.md) §4,
   chaque état, masqué si le déploiement n'envoie rien), `profileStatus.test.ts`. **À ne pas
   défaire** : la reconnexion relance l'OAuth sur la connexion existante, jamais une déconnexion ; la
   phrase d'échec ne promet pas de nouvel essai automatique.
+
+- [x] `WEB-93` **La page Applications propose l'APK Android hors Play** (16 octobre 2026) — la carte
+  de l'application mobile (`AppsPage.tsx`) ajoute, sous le bouton App Store, un lien vers
+  `releases/download/mobile-latest/pedalons-android.apk` (`MOB-72`) et ses limites : ni push ni
+  mise à jour automatique, pas d'installation par-dessus la version Play. Pas de test : un lien
+  statique.
 
 ## API — Contrat d'API et backend
 

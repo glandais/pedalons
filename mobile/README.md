@@ -157,7 +157,23 @@ Environment variables via `--dart-define`:
 | `clean.sh` | Clean both platforms, reinstall and regenerate |
 | `e2e.sh` | Patrol end-to-end tests against the e2e stack — see [patrol_test/README.md](patrol_test/README.md) |
 | `publish_test.sh` | Bump the build number, upload to TestFlight (`fastlane beta`) and to the Play internal track (`fastlane internal`) |
-| `publish_beta.sh` | Same, for beta testers: external TestFlight group NP (after Apple's beta review) and Play closed testing (`fastlane beta external:true`, `fastlane closed`) |
+| `publish_beta.sh` | Same, for beta testers: external TestFlight group NP (after Apple's beta review) and Play closed testing (`fastlane beta external:true`, `fastlane closed`); then tags `mobile.X.Y.Z.N`, which publishes a signed APK for devices without Google Play (below) |
+
+## APK without Google Play
+
+The tag `mobile.X.Y.Z.N` (pushed by `publish_beta.sh` after its commit) triggers
+`.github/workflows/mobile-release.yml`: a universal APK built from that commit, signed with the
+**Karoo key** (secrets `KAROO_KEYSTORE_*`), published on a release of that tag with the version's
+whatsNew, and copied to the fixed release `mobile-latest`, the target of the « APK sans Google
+Play » buttons (site and app). The workflow fails if the tag does not match `pubspec.yaml`, if
+`metadata/version/X.Y.Z/` lacks its whatsNew, or if the APK ends up signed with the debug key.
+
+- Play App Signing re-signs Store builds: an APK install and a Play install never update each other.
+- Never change that key: every APK install would stop accepting updates.
+- `mobile-latest` is never marked "Latest" and never deleted.
+- The key's fingerprint is in `frontend/public/.well-known/assetlinks.json` (App Links, passkeys).
+- Without Google Play Services, Firebase fails softly (`main.dart`, `push_gateway.dart`): no FCM
+  token, so no push; the rest of the app is unaffected.
 
 ## Related Documentation
 

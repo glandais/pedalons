@@ -74,6 +74,7 @@ abstract final class PdlIcons {
   static const IconData comment = Icons.mode_comment_outlined;
   static const IconData attachment = Icons.attach_file;
   static const IconData gpx = Icons.download_outlined;
+  static const IconData download = Icons.download_outlined;
   static const IconData image = Icons.image_outlined;
   static const IconData brokenImage = Icons.broken_image_outlined;
 

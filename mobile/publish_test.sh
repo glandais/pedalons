@@ -64,3 +64,13 @@ flutter build appbundle --release
 git add pubspec.yaml
 git commit -m "chore(mobile): bump build number to $NEW_VERSION"
 git push
+
+# A beta build also goes to Android devices without Google Play: the tag triggers
+# .github/workflows/mobile-release.yml, which builds a signed APK from this very
+# commit and publishes it on a GitHub release (and on mobile-latest, the stable
+# link). « + » becomes « . »: release download URLs carry the tag.
+if [ "${PUBLISH_CHANNEL:-test}" = beta ]; then
+  TAG="mobile.${NEW_VERSION/+/.}"
+  git tag "$TAG"
+  git push origin "$TAG"
+fi

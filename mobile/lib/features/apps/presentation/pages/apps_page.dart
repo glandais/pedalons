@@ -21,6 +21,12 @@ import '../../data/beta_signup_repository.dart';
 /// l'installation par le Companion que pour des liens GitHub.
 const String _kKarooApkUrl =
     'https://github.com/glandais/pedalons/releases/download/karoo-latest/pedalons.apk';
+
+/// La release `mobile-latest`, réécrite à chaque tag `mobile.X.Y.Z.N` poussé
+/// par `mobile/publish_beta.sh` (`.github/workflows/mobile-release.yml`) :
+/// l'app pour les appareils Android sans Google Play.
+const String _kMobileApkUrl =
+    'https://github.com/glandais/pedalons/releases/download/mobile-latest/pedalons-android.apk';
 const String _kKarooSideloadingUrl =
     'https://support.hammerhead.io/hc/en-us/articles/31576497036827-Companion-App-Sideloading';
 const String _kAppStoreUrl = 'https://apps.apple.com/app/id6761760079';
@@ -95,11 +101,24 @@ class _AppsPageState extends ConsumerState<AppsPage> {
                 title: 'apps.mobile.title'.tr(),
                 description: 'apps.mobile.description'.tr(),
                 available: true,
-                action: PdlButton(
-                  label: 'apps.mobile.download'.tr(),
-                  icon: PdlIcons.openExternal,
-                  variant: PdlButtonVariant.outline,
-                  onPressed: () => openLink(context, _kAppStoreUrl),
+                action: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    PdlButton(
+                      label: 'apps.mobile.download'.tr(),
+                      icon: PdlIcons.openExternal,
+                      variant: PdlButtonVariant.outline,
+                      onPressed: () => openLink(context, _kAppStoreUrl),
+                    ),
+                    PdlButton(
+                      label: 'apps.mobile.apk'.tr(),
+                      icon: PdlIcons.download,
+                      variant: PdlButtonVariant.text,
+                      size: PdlButtonSize.sm,
+                      onPressed: () => openLink(context, _kMobileApkUrl),
+                    ),
+                    Text('apps.mobile.apkHint'.tr(), style: t.sub),
+                  ],
                 ),
               ),
               const SizedBox(height: PdlSpacing.cardTight),

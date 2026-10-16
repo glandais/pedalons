@@ -221,6 +221,19 @@ navigateur), et la connexion par code e-mailé (la préférence de fuseau existe
         pluie de l'onglet Météo reste jaune ; si la pluie doit porter une couleur, la mettre dans
         `contracts/brand-colors.yaml` pour les deux clients.
 
+### APK hors Play
+
+- [ ] `MOB-73` **Vérifier l'APK sur un Android sans Google Play Services** — le premier APK de
+      `mobile-release.yml` (`MOB-72`) n'a encore tourné sur aucun appareil sans GMS. Sur un émulateur
+      d'image `default` (sans Google APIs) ou un vrai appareil (/e/OS, Huawei) : démarrage (Firebase
+      doit échouer en silence, `main.dart`), connexion OTP et mot de passe, carte, localisation
+      (`geolocator` doit basculer sur `LocationManager`), écran des notifications sans jeton FCM, lien
+      profond `www.pedalons.fr` (empreinte `26:24:…` de `assetlinks.json`). Les **passkeys** passent par
+      Credential Manager, qui n'a souvent aucun fournisseur sans GMS : si elles échouent, un message
+      clair plutôt qu'une erreur brute. À décider ensuite : l'écran des notifications devrait-il dire
+      que le push est impossible, et faut-il signaler une nouvelle version aux installations par APK
+      (rien ne les met à jour aujourd'hui). Taille : S pour la recette, inconnue pour les suites.
+
 ### Liens profonds
 
 ---

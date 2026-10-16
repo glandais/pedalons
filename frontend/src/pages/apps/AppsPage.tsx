@@ -31,6 +31,10 @@ import { useInstallOffer } from '@/lib/install/useInstallOffer'
 // purpose: the Companion's sideloading is only verified by Hammerhead for GitHub links.
 const KAROO_APK_URL =
   'https://github.com/glandais/pedalons/releases/download/karoo-latest/pedalons.apk'
+// The mobile-latest release, rewritten on every mobile.X.Y.Z.N tag pushed by mobile/publish_beta.sh
+// (.github/workflows/mobile-release.yml): the app for Android devices without Google Play.
+const MOBILE_APK_URL =
+  'https://github.com/glandais/pedalons/releases/download/mobile-latest/pedalons-android.apk'
 const KAROO_SIDELOADING_URL =
   'https://support.hammerhead.io/hc/en-us/articles/31576497036827-Companion-App-Sideloading'
 const APP_STORE_URL = 'https://apps.apple.com/app/id6761760079'
@@ -137,16 +141,29 @@ export function AppsPage() {
             description={t('apps.mobile.description')}
             status="available"
             action={
-              <Button
-                component="a"
-                href={APP_STORE_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                variant="light"
-                rightSection={<IconExternalLink size={16} />}
-              >
-                {t('apps.mobile.download')}
-              </Button>
+              <Stack gap="xs">
+                <Button
+                  component="a"
+                  href={APP_STORE_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  variant="light"
+                  rightSection={<IconExternalLink size={16} />}
+                >
+                  {t('apps.mobile.download')}
+                </Button>
+                <Button
+                  component="a"
+                  href={MOBILE_APK_URL}
+                  variant="subtle"
+                  rightSection={<IconDownload size={16} />}
+                >
+                  {t('apps.mobile.apk')}
+                </Button>
+                <Text size="xs" c="dimmed">
+                  {t('apps.mobile.apkHint')}
+                </Text>
+              </Stack>
             }
           />
           <AppCard
