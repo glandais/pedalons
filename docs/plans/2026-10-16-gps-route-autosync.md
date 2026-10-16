@@ -597,10 +597,11 @@ qualifiés), si bien qu'une fusion à trois voies avec le checkout principal pas
 
 ## 12. État de l'implémentation (16 octobre 2026)
 
-Backend et contrat faits dans le worktree `feat/gps-route-autosync`, rien de commité, **aucun test
-lancé** (à lancer par le propriétaire). Derrière `pedalons.gps-sync.enabled=${GPS_SYNC_ENABLED:false}` :
-l'interrupteur est stocké et l'état exposé, rien n'est envoyé automatiquement tant que la recette
-(étape 7) n'est pas faite ; les envois manuels, eux, passent dès maintenant par la table.
+*Mis à jour le 16 octobre 2026 au soir* : commité (`3b5df12e`, `f91a5264`), tests verts, déployé
+(contrat `11.5.1`, `V71`). `GPS_SYNC_ENABLED=true` a été posé en prod et en staging **avant** la
+recette de l'étape 7, qui reste à faire (`OPS-42`) ; la politique le décrit (`LEGAL-21`), le drapeau
+est documenté dans `docs/OPERATIONS.md`. Premiers envois réels : 3 connexions, 5 parcours, aucune
+erreur. Le texte ci-dessous est l'état au moment de l'implémentation.
 
 | Étape | État |
 |---|---|
@@ -636,6 +637,7 @@ Points laissés ouverts, chacun au ledger :
 
 - Libellé de groupe (règle `WEB-83`) et nom renvoyé par un envoi manuel d'une route tenue par la
   synchronisation : `API-120`, « Reste ».
-- `docs/OPERATIONS.md` ne documente pas encore `GPS_SYNC_ENABLED` : `OPS-42`.
-- Politique de confidentialité (§11) : `LEGAL-21`.
+- `docs/OPERATIONS.md` documente `GPS_SYNC_ENABLED` depuis le 16 octobre (`OPS-42`, dont reste la
+  recette de l'étape 7).
+- Politique de confidentialité (§11) : `LEGAL-21`, publiée le 16 octobre.
 

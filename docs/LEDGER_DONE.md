@@ -3975,6 +3975,19 @@ plus la colonne. Le départ d'un groupe n'existe plus que dans `ride_groups.star
   relecture des chiffres au bout d'un mois restent ouverts sous le même identifiant. **À ne pas
   défaire** : ceux d'`OPS-36` — réglages posés avant l'activation, prod seulement, `/count` jamais
   écrit dans le journal de Caddy.
+- `OPS-42` **`GPS_SYNC_ENABLED` documenté** (2026-10-16, contrat inchangé) — le drapeau qui allume
+  l'envoi automatique des parcours (`API-120`) n'apparaissait que dans `.env.example`, alors qu'il
+  tourne en prod et en staging. `docs/OPERATIONS.md` a une section « Automatic route sync to GPS
+  services » : ce que fait la fonction, le planificateur (60 s) et le worker (20 s, bail de 5 min,
+  30 appels et 10 s par passage), la clé et son défaut, la fenêtre et la rétention qui ne sont pas
+  des clés d'`.env`, les journaux et les colonnes d'état (`sync_reconnect_required_at`,
+  `sync_paused_until`), et une requête de santé sur `gps_route_syncs`. Les commentaires
+  d'`application.properties` et d'`.env.example`, qui le disaient éteint, et le §12 du plan, qui
+  disait « rien de commité », sont corrigés. Pas de test (documentation). **À ne pas défaire** :
+  la doc dit que couper le drapeau **gèle** sans nettoyer — les parcours déjà envoyés restent chez
+  les services et ne sont plus retirés, contrairement à ce que promet la politique (`LEGAL-21`) ;
+  le couper durablement demande donc d'abord de retirer ces parcours ou de revoir la politique. La
+  recette sur appareil reste ouverte sous le même identifiant.
 
 ---
 

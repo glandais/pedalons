@@ -566,10 +566,9 @@ Le cœur d'`API-120` (contrat `11.5.0`, migration `V71`, planificateur et worker
 suivis dans `gps_route_syncs`) est livré et tourne en prod depuis le 16 octobre 2026 : 3 connexions
 en envoi automatique (Hammerhead, Wahoo, Garmin OAuth 1.0a), 5 parcours envoyés sans erreur.
 `GPS_SYNC_ENABLED` vaut `true` en prod et en staging ; la politique le décrit depuis le
-16 octobre 2026 (`LEGAL-21`), mais `docs/OPERATIONS.md` ne documente pas le drapeau (`OPS-42`, qui
-garde aussi la recette sur appareil, étape 7 du plan
-[`2026-10-16-gps-route-autosync.md`](plans/2026-10-16-gps-route-autosync.md)). Le §12 du plan dit encore « rien de
-commité, aucun test lancé » : à mettre à jour.
+16 octobre 2026 (`LEGAL-21`), et `docs/OPERATIONS.md` le documente ; reste la recette sur
+appareil (`OPS-42`, étape 7 du plan
+[`2026-10-16-gps-route-autosync.md`](plans/2026-10-16-gps-route-autosync.md)).
 
 - [ ] `API-125` **Les restes d'`API-120` : nom envoyé, envoi manuel d'une route suivie,
   étape 0 (S)** — trois écarts que la livraison a laissés ouverts :
@@ -806,19 +805,17 @@ Ce que les tests ne prouvent pas, parce qu'ils ne passent ni par Flyway ni par u
       - **vers le 15 novembre 2026** : relire les chiffres contre les cinq questions du §1 du plan,
         puis l'archiver (`docs/plans/archive/`, avec sa ligne dans le README des archives).
       Taille : S, surtout manuel sur l'hôte.
-- [ ] `OPS-42` **Envoi automatique des parcours (`GPS_SYNC_ENABLED`) : allumé avant sa doc et sa
-      recette (XS)** — le drapeau `pedalons.gps-sync.enabled` (`API-120`) devait
-      n'être posé qu'après la recette sur appareil (plan
-      [`2026-10-16-gps-route-autosync.md`](plans/2026-10-16-gps-route-autosync.md), étape 7) et la
-      mise à jour de la politique (`LEGAL-21`). Il est pourtant déjà à `true` dans le `.env` de prod
-      et dans celui de staging (constaté le 16 octobre 2026) : `/api/config` sert
-      `gpsAutoSyncEnabled: true`, trois connexions de prod sont en `auto_sync` et cinq parcours ont
-      été envoyés, sans erreur. La politique, elle, le décrit depuis le 16 octobre 2026
-      (`LEGAL-21`). Reste à documenter le drapeau dans `docs/OPERATIONS.md`, où il n'apparaît pas (seul
-      `.env.example` en parle) : ce qu'il allume (planificateur toutes les 60 s, worker toutes les
-      20 s, `ConfigDto.gpsAutoSyncEnabled` qui montre l'interrupteur aux clients) et qu'il vaut
-      `false` par défaut ; faire la recette sur appareil de l'étape 7 ; corriger le plan, qui le
-      suppose encore éteint.
+- [ ] `OPS-42` **Envoi automatique des parcours : la recette sur appareil, faite après
+      l'allumage (S)** — `GPS_SYNC_ENABLED` est à `true` en prod et en staging depuis le 16 octobre
+      2026, avant la recette que le plan
+      [`2026-10-16-gps-route-autosync.md`](plans/2026-10-16-gps-route-autosync.md) prévoyait
+      (étape 7). Les premiers envois réels (3 connexions, 5 parcours, aucune erreur) établissent la
+      création chez les trois services ; reste à voir, sur un Karoo, un Edge et un ELEMNT, le
+      parcours arriver, changer avec sa route, disparaître après la sortie, à la désinscription, à
+      la désactivation et à la déconnexion, et l'état « à reconnecter » après une révocation chez
+      le service. Ce qui y est seulement supposé est sous `API-125`. Le drapeau est documenté
+      (« Automatic route sync to GPS services » dans `docs/OPERATIONS.md`) et la politique le
+      décrit (`LEGAL-21`).
 
 ---
 

@@ -448,6 +448,50 @@ docker exec "$(docker ps -qf name=${ENV_NAME}_postgres)" sh -c 'psql -U "$POSTGR
   "select count(*), max(fetched_at), max(attempts), max(last_error) from weather_cells"'
 ```
 
+### Automatic route sync to GPS services
+
+A member who connected Hammerhead, Wahoo or Garmin can turn on « envoi automatique » for that
+connection (`gps_service_connections.auto_sync`, off by default): the backend then puts the route of
+every group they are registered in, leaving within 7 days, on their account at the service, updates
+it when the route or its GPX changes, and deletes it 24 h after the group's departure or as soon as
+the registration, the route or the switch goes away. Disconnecting the service and erasing the
+account delete the automatically sent routes too, best effort. Design and decisions: ledger
+`API-120`, plan [`2026-10-16-gps-route-autosync.md`](plans/2026-10-16-gps-route-autosync.md).
+
+Two scheduled jobs do it, never during an HTTP request: a planner (every 60 s) writes the state
+each connection should hold into `gps_route_syncs`, and a worker (every 20 s) makes the calls to
+the services under a 5-minute lease — at most 30 calls and 10 s per tick, to stay under the
+providers' quotas.
+
+| Key | Default | What it does |
+|---|---|---|
+| `GPS_SYNC_ENABLED` | `false` | `true` starts the planner and the worker, and makes `/api/config` serve `gpsAutoSyncEnabled: true`, which shows the switch in the web and mobile clients |
+
+The window (`pedalons.gps-sync.horizon=P7D`) and the retention after departure
+(`pedalons.gps-sync.retention=P1D`) are plain properties, not `.env` keys. **Prod and staging run
+with `GPS_SYNC_ENABLED=true`** since 16 October 2026; the privacy policy describes the feature
+(ledger `LEGAL-21`).
+
+**Turning it off freezes, it does not clean up.** With `false`, the planner and the worker stop:
+routes already sent stay at the services, and are no longer updated or removed, even after the
+ride — the policy promises that removal. The switch disappears from the clients, the stored
+`auto_sync` values are kept, and turning the flag back on resumes from them (the planner catches up
+on its first pass). Manual sends (« Envoyer vers l'appareil ») work either way: they go through the
+same table but never depend on the flag.
+
+What to look for in the backend logs: `Route sync N: <service> <op> failed (…)` (one call failed;
+the row is retried with a backoff), `token refresh refused` (the connection now needs a
+reconnection), `Route sync planning failed` / `Route sync failed` (a whole tick failed). A `401`
+or a Garmin `412` marks the connection « à reconnecter » (`sync_reconnect_required_at`), a `429`
+pauses it until `Retry-After` (`sync_paused_until`). In the database, a healthy sync has rows
+with `attempts = 0` and no `last_error`:
+
+```bash
+docker exec "$(docker ps -qf name=${ENV_NAME}_postgres)" sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c \
+  "select (ride_id is not null) as automatic, count(*), count(external_route_id) as at_service,
+          max(attempts), max(last_error), max(synced_at) from gps_route_syncs group by 1"'
+```
+
 ### Web analytics (GoatCounter)
 
 The site's audience is measured by a self-hosted [GoatCounter](https://www.goatcounter.com), the
