@@ -762,7 +762,8 @@ Ce que les tests ne prouvent pas, parce qu'ils ne passent ni par Flyway ni par u
 ### App Garmin : Connect IQ Store
 
 - [ ] `OPS-35` **Publier l'app Garmin sur le Connect IQ Store** — la 1.0.0 (13 Edge) est soumise
-      à la revue le 15 octobre 2026, fiche FR/EN tirée de `garmin-app/metadata/` ; page du store
+      à la revue le 15 octobre 2026, remplacée en revue par la 1.0.1 (« Prochaines sorties »,
+      tag `garmin.1.0.1`) le 16 octobre, fiche FR/EN tirée de `garmin-app/metadata/` ; page du store
       (démo, visible du seul compte tant qu'elle n'est pas validée) :
       `https://apps.garmin.com/fr-FR/apps/262ea335-a5b7-4a6a-bb30-fc6f5db9b115`. Le formulaire et
       ses pièges (signature « échouée » au premier dépôt, migration désactivée) sont dans
