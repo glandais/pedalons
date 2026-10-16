@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../api/generated/export.dart';
+import '../../../../core/config/config_provider.dart';
 import '../../../../core/pdl/pdl.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
@@ -12,6 +13,7 @@ import '../../../../core/utils/api_error_handler.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../api/pedalons_api_client.dart';
 import '../../../../core/utils/link_launcher.dart';
+import '../../../../keys.dart';
 import '../../../auth/domain/auth_state.dart';
 import '../../../auth/providers/auth_provider.dart';
 import '../../data/profile_repository.dart';
@@ -49,6 +51,12 @@ class GpsServicesCard extends ConsumerStatefulWidget {
 class _GpsServicesCardState extends ConsumerState<GpsServicesCard> {
   GpsServiceType? _busy;
   String? _error;
+
+  /// La valeur demandée d'un interrupteur « Envoi automatique » dont la
+  /// requête est en vol : la mise à jour optimiste. Elle n'est jamais gardée
+  /// au-delà de la réponse — succès, la connexion rendue la remplace ; échec,
+  /// elle disparaît et l'interrupteur revient à la valeur du serveur.
+  final Map<GpsServiceType, bool> _autoSyncInFlight = <GpsServiceType, bool>{};
 
   /// L'OAuth se termine dans le navigateur, et son retour n'y ramène pas
   /// l'app (sur iOS, une redirection sur le même domaine reste dans Safari) :
@@ -93,13 +101,21 @@ class _GpsServicesCardState extends ConsumerState<GpsServicesCard> {
     }
   }
 
-  Future<void> _disconnect(GpsServiceType service, String label) async {
+  Future<void> _disconnect(
+    GpsServiceType service,
+    String label,
+    GpsServiceConnectionDto connection,
+  ) async {
+    final int synced = connection.autoSyncRouteCount;
+    final String message = synced > 0
+        ? '${'profile.gps.disconnectMessage'.tr()} ${'profile.gps.autoSync.disconnectRemoves'.plural(synced, namedArgs: <String, String>{'service': label})}'
+        : 'profile.gps.disconnectMessage'.tr();
     final bool confirmed = await confirmDestructive(
       context,
       title: 'profile.gps.disconnectTitle'.tr(
         namedArgs: <String, String>{'service': label},
       ),
-      message: 'profile.gps.disconnectMessage'.tr(),
+      message: message,
       confirmLabel: 'profile.gps.disconnect'.tr(),
     );
     if (!confirmed || !mounted) return;
@@ -121,6 +137,44 @@ class _GpsServicesCardState extends ConsumerState<GpsServicesCard> {
     }
   }
 
+  /// L'interrupteur est le seul endroit qui écrit `autoSync` : la valeur
+  /// affichée vient de `UserDto.connectedServices`, et rien n'en garde de
+  /// copie locale (docs/LEDGER_*.md MOB-71).
+  Future<void> _setAutoSync(GpsServiceType service, bool enabled) async {
+    if (_autoSyncInFlight.containsKey(service)) return;
+    setState(() {
+      _autoSyncInFlight[service] = enabled;
+      _error = null;
+    });
+    try {
+      final GpsServiceConnectionDto updated = await ref
+          .read(profileRepositoryProvider)
+          .setGpsAutoSync(service, enabled: enabled);
+      final UserDto? user = ref.read(authProvider).user;
+      if (user != null) {
+        ref
+            .read(authProvider.notifier)
+            .setUser(
+              user.copyWith(
+                connectedServices: <GpsServiceConnectionDto>[
+                  for (final GpsServiceConnectionDto c
+                      in user.connectedServices ??
+                          const <GpsServiceConnectionDto>[])
+                    c.serviceType == updated.serviceType ? updated : c,
+                ],
+              ),
+            );
+      }
+      if (mounted) setState(() => _autoSyncInFlight.remove(service));
+    } catch (error, stackTrace) {
+      if (!mounted) return;
+      setState(() {
+        _autoSyncInFlight.remove(service);
+        _error = getErrorMessage(error, stackTrace);
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final PdlTypography t = context.pdlText;
@@ -131,6 +185,11 @@ class _GpsServicesCardState extends ConsumerState<GpsServicesCard> {
           authProvider.select((AuthState s) => s.user?.connectedServices),
         ) ??
         const <GpsServiceConnectionDto>[];
+
+    // Coupé sur ce déploiement (`ConfigDto.gpsAutoSyncEnabled`, docs/LEDGER_*.md
+    // API-120) : aucun interrupteur, plutôt qu'un qui promet un envoi.
+    final bool autoSyncAvailable =
+        ref.watch(appConfigProvider).value?.gpsAutoSyncEnabled ?? false;
 
     if (available.isEmpty) {
       return PdlCard(child: Text('profile.gps.none'.tr(), style: t.sub));
@@ -154,6 +213,7 @@ class _GpsServicesCardState extends ConsumerState<GpsServicesCard> {
                       )
                       .firstOrNull,
                   showDivider: i < available.length - 1,
+                  autoSyncAvailable: autoSyncAvailable,
                 ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(
@@ -180,6 +240,7 @@ class _GpsServicesCardState extends ConsumerState<GpsServicesCard> {
     required GpsServiceType service,
     required GpsServiceConnectionDto? connection,
     required bool showDivider,
+    required bool autoSyncAvailable,
   }) {
     final String label = connection?.displayName ?? 'gps.${service.json}'.tr();
     final DateTime? since = connection == null
@@ -187,8 +248,8 @@ class _GpsServicesCardState extends ConsumerState<GpsServicesCard> {
         : AppFormatters.tryParseDisplayTime(connection.connectedAt);
 
     final String? logo = gpsServiceLogoAsset(service);
-    return PdlSettingRow(
-      showDivider: showDivider,
+    final Widget row = PdlSettingRow(
+      showDivider: showDivider && connection == null,
       // Décoratif : le nom du service est juste à côté.
       leading: logo == null
           ? null
@@ -216,12 +277,119 @@ class _GpsServicesCardState extends ConsumerState<GpsServicesCard> {
         loadingLabel: 'common.loading'.tr(),
         onPressed: connection == null
             ? () => _connect(service)
-            : () => _disconnect(service, label),
+            : () => _disconnect(service, label, connection),
       ),
+    );
+    if (connection == null) return row;
+    if (!autoSyncAvailable) {
+      return showDivider
+          ? Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[row, const Divider(height: 1)],
+            )
+          : row;
+    }
+
+    final bool? inFlight = _autoSyncInFlight[service];
+    final bool enabled = inFlight ?? connection.autoSync;
+    // Le service refuse nos jetons : seule une nouvelle autorisation, sur la
+    // même connexion, reprend l'envoi — l'interrupteur reste tel quel, ce
+    // qu'une déconnexion ne ferait pas.
+    final bool reconnectRequired =
+        inFlight == null &&
+        connection.autoSync &&
+        GpsAutoSyncState.fromJson(connection.autoSyncState) ==
+            GpsAutoSyncState.reconnectRequired;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        row,
+        PdlSettingRow(
+          key: keys.profile.gpsAutoSyncRow(service),
+          showDivider: showDivider && !reconnectRequired,
+          // Aligné sous le nom du service, dont il est un réglage.
+          padding: const EdgeInsetsDirectional.fromSTEB(
+            _autoSyncIndent,
+            0,
+            PdlSpacing.section,
+            PdlSpacing.chipGap,
+          ),
+          title: 'profile.gps.autoSync.title'.tr(),
+          subtitle: inFlight != null
+              ? 'profile.gps.autoSync.saving'.tr()
+              : gpsAutoSyncStatus(connection, serviceLabel: label),
+          trailing: PdlSwitch(
+            key: keys.profile.gpsAutoSyncSwitch(service),
+            value: enabled,
+            onChanged: inFlight != null
+                ? null
+                : (bool value) => _setAutoSync(service, value),
+            semanticLabel: 'profile.gps.autoSync.semantic'.tr(
+              namedArgs: <String, String>{'service': label},
+            ),
+          ),
+        ),
+        if (reconnectRequired) ...<Widget>[
+          Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(
+              _autoSyncIndent,
+              0,
+              PdlSpacing.section,
+              PdlSpacing.cardTight,
+            ),
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: PdlButton(
+                key: keys.profile.gpsReconnect(service),
+                label: 'profile.gps.autoSync.reconnect'.tr(),
+                variant: PdlButtonVariant.outline,
+                size: PdlButtonSize.sm,
+                loading: _busy == service,
+                loadingLabel: 'common.loading'.tr(),
+                onPressed: () => _connect(service),
+              ),
+            ),
+          ),
+          if (showDivider) const Divider(height: 1),
+        ],
+      ],
     );
   }
 
   static const double _logoSize = 32;
+
+  /// Le retrait de la ligne « Envoi automatique » : la marge de la ligne, le
+  /// logo et l'écart qui le suit dans [PdlSettingRow].
+  static const double _autoSyncIndent = PdlSpacing.section + _logoSize + 12;
+}
+
+/// L'état de l'envoi automatique vers un service connecté, tel que le serveur
+/// le calcule (`autoSyncState`, docs/LEDGER_*.md API-120). Coupé, la ligne dit
+/// ce que l'interrupteur ferait ; un état inconnu de ce build retombe sur la
+/// même phrase plutôt que d'afficher une valeur brute.
+String gpsAutoSyncStatus(
+  GpsServiceConnectionDto connection, {
+  required String serviceLabel,
+}) {
+  if (!connection.autoSync) return 'profile.gps.autoSync.off'.tr();
+  return switch (GpsAutoSyncState.fromJson(connection.autoSyncState)) {
+    // Pas de clé `zero` : en français, la règle de pluriel range 0 avec 1.
+    GpsAutoSyncState.upToDate when connection.autoSyncRouteCount == 0 =>
+      'profile.gps.autoSync.upToDateNone'.tr(),
+    GpsAutoSyncState.upToDate => 'profile.gps.autoSync.upToDate'.plural(
+      connection.autoSyncRouteCount,
+    ),
+    GpsAutoSyncState.pending => 'profile.gps.autoSync.pending'.tr(),
+    GpsAutoSyncState.failing => 'profile.gps.autoSync.failing'.tr(),
+    GpsAutoSyncState.reconnectRequired =>
+      'profile.gps.autoSync.reconnectRequired'.tr(
+        namedArgs: <String, String>{'service': serviceLabel},
+      ),
+    GpsAutoSyncState.off ||
+    GpsAutoSyncState.$unknown => 'profile.gps.autoSync.off'.tr(),
+  };
 }
 
 /// Le logo d'un service, embarqué : `GpsServiceType` est un enum fermé, le

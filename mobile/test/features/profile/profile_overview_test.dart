@@ -40,6 +40,9 @@ const UserDto _user = UserDto(
       serviceType: 'GARMIN',
       displayName: 'Garmin Connect',
       connectedAt: '2026-09-01T10:00:00Z',
+      autoSync: false,
+      autoSyncState: 'OFF',
+      autoSyncRouteCount: 0,
     ),
   ],
 );

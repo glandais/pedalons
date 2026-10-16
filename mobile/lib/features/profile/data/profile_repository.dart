@@ -108,6 +108,18 @@ class ProfileRepository {
   Future<void> disconnectGps(GpsServiceType service) =>
       _gps.disconnect(serviceType: service);
 
+  /// Active ou coupe l'envoi automatique des parcours vers [service]
+  /// (docs/LEDGER_*.md API-120). Couper retire de chez le service les
+  /// parcours à venir que l'envoi automatique y a déposés. La connexion
+  /// rendue porte l'état recalculé par le serveur.
+  Future<GpsServiceConnectionDto> setGpsAutoSync(
+    GpsServiceType service, {
+    required bool enabled,
+  }) => _gps.setGpsAutoSync(
+    serviceType: service,
+    body: GpsAutoSyncRequest(enabled: enabled),
+  );
+
   /// Les Karoo et Garmin appairés au compte (docs/LEDGER_*.md API-64).
   Future<List<PairedDeviceDto>> pairedDevices() => _users.listPairedDevices();
 

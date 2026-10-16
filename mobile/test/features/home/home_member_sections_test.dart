@@ -51,6 +51,7 @@ ConfigDto _config({required bool singleTeam}) => ConfigDto(
   mapStyles: const <MapStyleDto>[],
   tileServerBaseUrl: '',
   defaultCenter: const MapCenterDto(lat: 45.7, lon: 4.8, zoom: 9),
+  gpsAutoSyncEnabled: false,
 );
 
 Future<void> _pump(

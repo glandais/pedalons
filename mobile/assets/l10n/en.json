@@ -1199,9 +1199,28 @@
       "connectedOn": "Connected on {date}",
       "notConnected": "Not connected",
       "none": "No GPS service is offered at the moment.",
-      "hint": "Your Hammerhead, Garmin Connect or Wahoo accounts. “Send to device” drops the route there, and your bike computer picks it up at its next sync.",
+      "hint": "Your Hammerhead, Garmin Connect or Wahoo accounts. “Send to device” drops a route there; automatic sending drops those of the rides you joined. Your bike computer picks them up at its next sync.",
       "disconnectTitle": "Disconnect {service}?",
-      "disconnectMessage": "You will no longer be able to send routes to this service until it is reconnected."
+      "disconnectMessage": "You will no longer be able to send routes to this service until it is reconnected.",
+      "autoSync": {
+        "title": "Send routes automatically",
+        "semantic": "Send routes automatically to {service}",
+        "off": "When on, it drops the routes of the rides you joined there from 7 days before the start, updates them when they change, and removes them the day after.",
+        "saving": "Saving…",
+        "upToDateNone": "Up to date · no upcoming route",
+        "upToDate": {
+          "one": "Up to date · {} route sent",
+          "other": "Up to date · {} routes sent"
+        },
+        "pending": "Sending…",
+        "failing": "The last send failed; Pédalons retries for a few hours, then waits for the route to change or for sending to be turned back on.",
+        "reconnectRequired": "{service} refuses access: reconnect the service to resume sending.",
+        "reconnect": "Reconnect",
+        "disconnectRemoves": {
+          "one": "The route sent automatically will be removed from {service}.",
+          "other": "The {} routes sent automatically will be removed from {service}."
+        }
+      }
     },
     "devices": {
       "title": "Paired devices",

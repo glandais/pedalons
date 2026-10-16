@@ -91,6 +91,16 @@ class ProfilePageKeys {
   Key unpairDevice(String id) => _ProfilePageKey('unpairDevice_$id');
   final noPairedDevice = const _ProfilePageKey('noPairedDevice');
 
+  /// Un service GPS connecté : l'interrupteur « Envoi automatique » et la
+  /// ligne qui le porte, dont le sous-titre dit l'état (docs/LEDGER_*.md
+  /// MOB-71).
+  Key gpsAutoSyncSwitch(GpsServiceType service) =>
+      _ProfilePageKey('gpsAutoSyncSwitch_${service.json}');
+  Key gpsAutoSyncRow(GpsServiceType service) =>
+      _ProfilePageKey('gpsAutoSyncRow_${service.json}');
+  Key gpsReconnect(GpsServiceType service) =>
+      _ProfilePageKey('gpsReconnect_${service.json}');
+
   /// « Déconnecter tous les appareils ».
   final logoutAllButton = const _ProfilePageKey('logoutAllButton');
 

@@ -1199,9 +1199,28 @@
       "connectedOn": "Connecté le {date}",
       "notConnected": "Non connecté",
       "none": "Aucun service GPS n'est proposé pour le moment.",
-      "hint": "Vos comptes Hammerhead, Garmin Connect ou Wahoo. « Envoyer vers l'appareil » y dépose le parcours, que votre compteur récupère à sa prochaine synchronisation.",
+      "hint": "Vos comptes Hammerhead, Garmin Connect ou Wahoo. « Envoyer vers l'appareil » y dépose un parcours ; l'envoi automatique y dépose ceux des sorties où vous êtes inscrit. Votre compteur les récupère à sa prochaine synchronisation.",
       "disconnectTitle": "Déconnecter {service} ?",
-      "disconnectMessage": "Vous ne pourrez plus envoyer de parcours vers ce service tant qu'il n'est pas reconnecté."
+      "disconnectMessage": "Vous ne pourrez plus envoyer de parcours vers ce service tant qu'il n'est pas reconnecté.",
+      "autoSync": {
+        "title": "Envoi automatique des parcours",
+        "semantic": "Envoi automatique des parcours vers {service}",
+        "off": "Activé, il y dépose les parcours des sorties où vous êtes inscrit dès 7 jours avant le départ, les met à jour s'ils changent, et les retire le lendemain.",
+        "saving": "Enregistrement…",
+        "upToDateNone": "À jour · aucun parcours à venir",
+        "upToDate": {
+          "one": "À jour · {} parcours envoyé",
+          "other": "À jour · {} parcours envoyés"
+        },
+        "pending": "Envoi en cours…",
+        "failing": "Échec du dernier envoi ; Pédalons réessaie pendant quelques heures, puis attend que le parcours change ou que l'envoi soit réactivé.",
+        "reconnectRequired": "{service} refuse l'accès : reconnectez le service pour reprendre l'envoi.",
+        "reconnect": "Reconnecter",
+        "disconnectRemoves": {
+          "one": "Le parcours envoyé automatiquement sera retiré de {service}.",
+          "other": "Les {} parcours envoyés automatiquement seront retirés de {service}."
+        }
+      }
     },
     "devices": {
       "title": "Appareils appairés",
