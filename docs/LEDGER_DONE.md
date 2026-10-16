@@ -505,7 +505,7 @@ couvert » ; les tests ne tournent qu'en local (`MOB-37`).
   carte de groupe qui ouvre la page), `ride_weather_display_test.dart`, `ride_group_card_test.dart`,
   `deep_link_hierarchy_test.dart`, `link_launcher_test.dart` ; Patrol `ride_group_page_test.dart`
   et `ride_participants_map_test.dart` adaptés (`openGroup`, `selectGroup` = ouvrir puis revenir),
-  non lancés (`MOB-68`). **À ne pas défaire** : la page du groupe remplace l'écran météo du
+  verts au 16 octobre 2026 (`MOB-68`). **À ne pas défaire** : la page du groupe remplace l'écran météo du
   parcours ; la carte météo du détail est limitée au départ — **sauf pour une sortie sans groupe**
   (`legs.length == 1 && groupId == null`), qui garde vent et alerte pluie sur le détail ; la ligne
   météo d'une carte n'a pas de tap propre (la carte ouvre la page) ; le meneur n'apparaît que si
@@ -534,7 +534,7 @@ couvert » ; les tests ne tournent qu'en local (`MOB-37`).
   adapté. Tests : `solo_group_test.dart`, `ride_detail_page_test.dart`,
   `ride_group_page_test.dart` (dont un routeur imbriqué comme `router.dart` : le lien profond
   `?tab=weather` revient au détail sans entrée d'historique) ; Patrol `ride_solo_group_test.dart`
-  (non lancé, comme `MOB-68`). **À ne pas défaire** : mêmes décisions que `WEB-79` (météo du
+  (vert au 16 octobre 2026, comme `MOB-68`). **À ne pas défaire** : mêmes décisions que `WEB-79` (météo du
   parcours sur le détail pour 0 et 1 groupe, aucun lien vers la page groupe d'une sortie solo,
   remplacement sans entrée d'historique).
 
@@ -610,7 +610,7 @@ couvert » ; les tests ne tournent qu'en local (`MOB-37`).
   de l'app prise pour une page du site, un lien markdown vers `sorties/nouvelle`). **À ne pas
   défaire** : la liste vient du générateur (même calcul que les `NOT` de l'AASA), jamais écrite
   à la main ; le test de page du site précède celui des routes de l'app. L'exclusion côté
-  manifeste est dans « Délibérément dehors ».
+  manifeste est dans « Délibérément dehors », sous `MOB-74`.
 
 - `MOB-60` **L'équipe découpée en Agenda et Publications, comme au web** (6 octobre 2026, contrat
   inchangé — il lit `when` et `endDateTime` de la `10.15.0` et le tableau de bord public de la
@@ -698,6 +698,18 @@ couvert » ; les tests ne tournent qu'en local (`MOB-37`).
   `UserDto.connectedServices`, jamais d'une copie locale ; la reconnexion ne passe pas par une
   déconnexion, qui couperait l'interrupteur et effacerait le suivi ; la ligne « échec » ne promet
   pas de nouvel essai (`MAX_ATTEMPTS`). Demande une republication de l'app.
+
+### `MOB-68` Page d'un groupe de sortie : tests Patrol et suite complète lancés (16 octobre 2026, contrat inchangé)
+
+- `MOB-68` **Les tests Patrol de la page d'un groupe et la suite `flutter test` complète sont
+  verts** — part livrée de l'entrée ; la recette sur appareil (sorties à un et à plusieurs groupes)
+  et la décision sur la couleur de la pastille pluie restent ouvertes sous le même ID. Les Patrol
+  `ride_group_page_test.dart` (nouveau avec `MOB-67`), `ride_participants_map_test.dart`
+  (`selectGroup` ouvre la page du groupe puis revient) et `ride_solo_group_test.dart` (`MOB-69`),
+  écrits le 13 octobre 2026 sans avoir été lancés, passent désormais, comme toute la suite
+  `flutter test` qui avait calé lors d'un passage groupé. **À ne pas défaire** : `selectGroup` du
+  module Patrol `ride` ouvre la page du groupe puis revient au détail ; il ne se contente plus de
+  désigner une carte.
 
 ## WEB — Site web
 
@@ -1611,7 +1623,7 @@ l'app. Ne pas déduire les rôles ou l'accès côté client pour élargir ce que
   `ssr-session.e2e.ts` (HTML serveur de `/profil` et de `/profil/sorties` porteur de la sortie,
   hydratation propre), `routes-render.e2e.ts` (une ligne par route du profil), `flow-account`,
   `auth`, `flow-moderation` (`support/moderation.ts`, nouvelle URL des bloqués), `flow-device`,
-  `flow-notifications`, `pwa` repris — **pas encore lancés** (`WEB-56`). **Tranché le 4 octobre**
+  `flow-notifications`, `pwa` repris — verts au 16 octobre 2026 (`WEB-56`). **Tranché le 4 octobre**
   avec le propriétaire : Utilisateurs bloqués sous Confidentialité, même place que dans l'app. **À
   ne pas défaire** : les actions destructives du profil utilisent le jeton `danger`, jamais `red`
   brut ; la cible de 44 px des notifications est le `<label>` de la cellule, pas une case agrandie
@@ -1644,8 +1656,8 @@ l'app. Ne pas déduire les rôles ou l'accès côté client pour élargir ce que
   mot de passe oublié, compte existant, clé d'accès supprimée), `invitations`, `pwa`,
   `flow-device`, `flow-platform-admin` (inscriptions bêta) ; Patrol `modules/peripheral.dart`
   (« Adresse e-mail invalide », `apps_beta_signup_test`) ; widget
-  `test/features/teams/pending_invitations_card_test.dart` — e2e et Patrol **pas encore lancés**
-  (`WEB-56`, `MOB-49`). **À ne pas défaire** : le lexique est le même dans le profil et hors du
+  `test/features/teams/pending_invitations_card_test.dart` — e2e et Patrol verts au
+  16 octobre 2026 (`WEB-56`, `MOB-49`). **À ne pas défaire** : le lexique est le même dans le profil et hors du
   profil, sur le site, l'app et les e-mails ; un terme change partout à la fois.
 
 ### Accueil et page Fonctionnalités
@@ -1811,8 +1823,8 @@ l'app. Ne pas déduire les rôles ou l'accès côté client pour élargir ce que
   Tests : `rideDetailData.test.ts`, `rideGroupData.test.ts`, `makeLoader.test.ts`,
   `RideDetailPage.test.tsx`, `RideGroupPage.test.tsx` (redirections, dont « still leaves when the
   ride, first read with two groups, comes back with one »), `RideWeatherSection.test.tsx`,
-  `routeMeta.test.ts` ; e2e `rides`, `flow-routes`, `pinned-host` adaptés (non lancés, comme
-  `WEB-78`). **À ne pas défaire** : l'exception « météo du parcours sur la page sortie » couvre
+  `routeMeta.test.ts` ; e2e `rides`, `flow-routes`, `pinned-host` adaptés (verts au 16 octobre
+  2026, comme `WEB-78`). **À ne pas défaire** : l'exception « météo du parcours sur la page sortie » couvre
   **0 et 1** groupe ; aucun lien interne vers la page groupe d'une sortie solo ; la redirection
   est **302 / replace, jamais 301** (un deuxième groupe ajouté plus tard refait de l'URL une vraie
   page) ; sur navigation client, le loader perd `#meteo` (React Router retire le fragment de la
@@ -2085,6 +2097,36 @@ Plan [`2026-10-06-team-agenda.md`](plans/archive/2026-10-06-team-agenda.md) §4,
   même arbre ; le client affiche `daylight` tel que l'API l'envoie (`API-123`) ; une probabilité de
   pluie absente n'est jamais lue « 0 % » ni « Sec ».
 
+### `WEB-56` Profil refondu : les e2e passés (constaté le 16 octobre 2026, contrat inchangé)
+
+- `WEB-56` **Les e2e du profil refondu (`WEB-55`) et du lexique commun (`WEB-57`), écrits le
+  4 octobre 2026 sans être lancés, sont passés** — constaté à la relecture du ledger du 16 octobre
+  2026 : toute la suite Playwright est verte, sur les deux projets, et la prod tourne sur
+  `ac130fc5`. Specs concernées : `profile-navigation` (bascule bureau / téléphone en CSS,
+  `aria-current`, fil d'Ariane masqué sous `sm`, nouvelle URL des bloqués
+  `/profil/vie-privee/bloques`), `flow-account` (libellés « Adresse e-mail », « Nom affiché »,
+  « Clé d'accès »), `routes-render` (les dix routes du profil et l'audit de préchargement),
+  `ssr-session`, `auth`, `flow-moderation`, `flow-device`, `flow-notifications`, `pwa`,
+  `invitations`, `flow-platform-admin`, `ad-contact`. **À ne pas défaire** : « Adresse e-mail »
+  reste unique sur la connexion, l'inscription et l'inscription bêta (Playwright compare `name` en
+  sous-chaîne insensible à la casse) ; les états d'un compte neuf que suppose `profile-navigation`
+  (« Métrique », « Aucun service ni appareil », « Aucune clé d'accès ») sont à ajuster avec la spec
+  si le backend change ses défauts. La recette à l'œil (mise en page, `md`, mode sombre, cible des
+  cases sur téléphone, fuseau non enregistré) reste ouverte sous le même identifiant.
+
+### `WEB-78` Page d'un groupe de sortie : les e2e passés (constaté le 16 octobre 2026, contrat inchangé)
+
+- `WEB-78` **Les e2e de la page d'un groupe (`WEB-77`, `WEB-79`), écrits le 13 octobre 2026 sans
+  être lancés, sont passés** — constaté à la relecture du ledger du 16 octobre 2026 : suite
+  Playwright verte sur les deux projets, prod sur `ac130fc5`. `routes-render.e2e.ts` couvre
+  l'écran `rideGroup` (`groupId` dans le jeu de données, audit de préchargement : aucune relecture
+  des participants après hydratation) ; les parcours d'inscription qui passent par le détail de la
+  sortie et les specs adaptées par `WEB-79` (`rides`, `flow-routes`, `pinned-host`) passent aussi.
+  L'écran `rideGroup` attend encore le titre fautif « Groupe Groupe A », à corriger avec `WEB-83`.
+  La section météo de la page a été vérifiée dans un navigateur par `WEB-94` ; la recette à l'œil
+  des autres états (carte collante, sélecteur de groupe, groupe supprimé, inscrit ailleurs) reste
+  ouverte sous le même identifiant.
+
 ## API — Contrat d'API et backend
 
 ### Modèles de sortie numérotés (repris de biketeam)
@@ -2110,8 +2152,7 @@ Plan [`2026-10-06-team-agenda.md`](plans/archive/2026-10-06-team-agenda.md) §4,
   ou `/` seul laissent le drapeau à null. Clients web et mobile régénérés (`contract-first-api`),
   le mobile ignore le champ. Tests : `ConfigServiceTest` (`getConfig_withoutCountPath_offersNoAnalytics`,
   `analytics_isNullWhenAbsentOrBlank`, `analytics_carriesTheTrimmedSameOriginPath`,
-  `analytics_refusesAPathThatWouldLeaveTheOrigin`) — **écrits, pas encore lancés** : à lancer par le
-  propriétaire, `mvn test -Dtest=ConfigServiceTest`. **À ne pas défaire** : seul un chemin de la
+  `analytics_refusesAPathThatWouldLeaveTheOrigin`) — verts au 16 octobre 2026. **À ne pas défaire** : seul un chemin de la
   même origine est servi, vérifié par liste blanche et non par une liste d'échappements ; une
   valeur d'une autre forme coupe le compteur au lieu de compter ailleurs ; aucun drapeau par
   `Domain` (`API-116`) ; le drapeau ne se pose qu'en prod, après la politique (`OPS-41`).
@@ -2163,14 +2204,14 @@ Le détail de chacune est dans l'historique git de ce fichier et de `LEDGER_NEXT
 | `API-1` | URL de tuile authentifiable — **API 2.3.0** : `POST /api/tiles/token` puis `?t=` sur les deux `.mvt`. Le repli GeoJSON et son plafond ont été supprimés, le tap lit les propriétés de la tuile comme le web | 21 |
 | `API-2` | **Logo d'équipe sur `TeamPublicationDto`** (2026-09-30) — **API 5.8.0** : `logoUrl`, nullable, même valeur que `TeamDetailDto.logoUrl` (le logo de la page « À propos », gabarit `{size}`). Il vient de deux `@Formula` de `Team` (`logoAssetId`, `aboutPageVisibility`), des sous-requêtes corrélées lues dans le `SELECT` même qui charge l'équipe : aucune requête ni entité de plus par ligne, ni par équipe, et `Team.aboutPage` reste LAZY. Ne pas le remplacer par une marche sur `aboutPage.assets` (c'est ce que le LAZY évite), ni par une table de correspondance à passer à la douzaine de fabriques qui construisent `TeamPublicationDto`. Le mobile passe le logo à `PdlTeamLine` (fiche et carte de sortie, publication, voyage, annonce via `TeamBanner`, page d'équipe, carrousel, prochaine sortie, carte et fiche de parcours) avec les initiales en repli. Le web n'avait pas ce repli : ses fiches lisent l'équipe entière (`TeamContextBanner`), ses cartes n'ont qu'une icône, rien à changer. Couvert par `PostResourceTest.getPost_carriesTheTeamLogo_sameAsTheTeamDetail` (fiche et liste compacte, identique à la fiche d'équipe), les `…QueryCountTest` verts, et `post_detail_page_test.dart` (logo, puis initiales sans logo) | 11, 12, 13, 24, 31, 32 |
 | `API-3` | **Vignette du parcours du groupe** (2026-09-30) — **API 5.10.0** : `RideGroupDto.thumbnailLightUrl`, `thumbnailDarkUrl` et `thumbnailUrl` (la claire d'abord, sinon la sombre — la règle de `RideDto`), tous nullables, les vignettes du parcours du groupe. Les deux variantes thémées sont là en plus du champ réduit parce que le mobile rend la sombre en thème sombre. Nuls pour un groupe sans parcours : **jamais la vignette de la sortie en repli côté serveur**, le client l'a déjà. Résolues pour tous les groupes de la sortie par **une** requête `ThumbnailLookup.forTeamEntities` (`RideService.toDto`) ; ne pas remplacer par une marche sur `route.getAssets()` par groupe. Les groupes n'étant rendus que sur le détail, la liste n'est pas touchée. Le mobile (`next_ride_card.dart`, « Ma prochaine sortie ») rend la vignette du groupe, celle de la sortie en repli (`nextRideThumbnailUrl`). Le web ne rendait pas de vignette par groupe : rien à changer. Couvert par `RideResourceTest.getRide_groupsCarryTheirOwnRouteThumbnail` (deux variantes, sombre seule, groupe sans parcours), `PublicationQueryCountTest.rideDetail_groupRouteThumbnails_costDoesNotScaleWithGroupCount` (1 puis 6 groupes sur 6 parcours) et `next_ride_thumbnail_test.dart` | 11 |
-| `API-4` | **Le groupe rejoint sur les lignes de liste** (2026-10-01) — **API 9.3.0** : `RideDto.registeredGroup`, nullable, le `RideGroupDto` complet du groupe que l'utilisateur courant a rejoint (nom, horaire, parcours et ses chiffres, vignettes, capacité, aperçu des inscrits, meneur). Forme tranchée : **un seul groupe complet** plutôt que `groups[]` sur chaque ligne — seul celui-là sert à « Ma prochaine sortie », et le type est celui du détail, que la carte rendait déjà. Il est aussi rempli sur le détail (le même objet que l'entrée correspondante de `groups`). Nul pour un anonyme ou un non-inscrit. Résolu **par page** par `ParticipationLookup.forListPage`, que seul le chemin de liste (`PublicationService.list`) appelle : une projection (`RideGroupRepository.findGroupRows`, groupe, chiffres du parcours et meneur par jointures externes, **aucune entité hydratée** — charger `RideGroup` amènerait sa route EAGER, une par ligne), les aperçus d'inscrits en deux requêtes (`ParticipantPreviewLookup`), les vignettes en une (`ThumbnailLookup`) ; rien du tout quand l'appelant n'a rejoint aucune sortie de la page. Le détail et le calendrier gardent `forPublications`, sans ce coût. À ne pas défaire : pas de `getGroups()` ni de chargement d'entité par ligne, et le meneur est celui du groupe, nul s'il n'y en a pas — jamais `createdBy`. Mobile : `nextRideProvider` ne fait plus qu'**un** appel (`listMyParticipations`, `size: 1`, `COMPACT`) et rend la carte depuis la ligne (`rideFromListRow`) ; le bouton « Quitter » de la carte passe par `nextRideLeaveProvider`, pas par `rideRegistrationProvider`, qui écoute `rideDetailProvider` dès sa création et réintroduirait le `getRide`. L'extension `RideTiming.registeredGroup` est renommée `joinedGroup` (le champ généré l'aurait masquée) : `groups` d'abord, que la bascule optimiste tient à jour, `registeredGroup` ensuite ; `_withRegistration` tient aussi `registeredGroup`. Le web ne rendait pas de prochaine sortie : rien à changer. Tests : `RideMeFieldsTest.registeredGroup_onListRowsAndDetail_isTheJoinedGroupInFull` et `registeredGroup_onAListRow_withoutLeaderNorRoute_carriesNeither`, `ParticipationQueryCountTest.listMyParticipations_registeredGroups_costAPageNotARow` (**écrits, non lancés**) ; `participation_changes_test.dart` (« sans getRide », quitter depuis la carte sans détail) | 11 |
+| `API-4` | **Le groupe rejoint sur les lignes de liste** (2026-10-01) — **API 9.3.0** : `RideDto.registeredGroup`, nullable, le `RideGroupDto` complet du groupe que l'utilisateur courant a rejoint (nom, horaire, parcours et ses chiffres, vignettes, capacité, aperçu des inscrits, meneur). Forme tranchée : **un seul groupe complet** plutôt que `groups[]` sur chaque ligne — seul celui-là sert à « Ma prochaine sortie », et le type est celui du détail, que la carte rendait déjà. Il est aussi rempli sur le détail (le même objet que l'entrée correspondante de `groups`). Nul pour un anonyme ou un non-inscrit. Résolu **par page** par `ParticipationLookup.forListPage`, que seul le chemin de liste (`PublicationService.list`) appelle : une projection (`RideGroupRepository.findGroupRows`, groupe, chiffres du parcours et meneur par jointures externes, **aucune entité hydratée** — charger `RideGroup` amènerait sa route EAGER, une par ligne), les aperçus d'inscrits en deux requêtes (`ParticipantPreviewLookup`), les vignettes en une (`ThumbnailLookup`) ; rien du tout quand l'appelant n'a rejoint aucune sortie de la page. Le détail et le calendrier gardent `forPublications`, sans ce coût. À ne pas défaire : pas de `getGroups()` ni de chargement d'entité par ligne, et le meneur est celui du groupe, nul s'il n'y en a pas — jamais `createdBy`. Mobile : `nextRideProvider` ne fait plus qu'**un** appel (`listMyParticipations`, `size: 1`, `COMPACT`) et rend la carte depuis la ligne (`rideFromListRow`) ; le bouton « Quitter » de la carte passe par `nextRideLeaveProvider`, pas par `rideRegistrationProvider`, qui écoute `rideDetailProvider` dès sa création et réintroduirait le `getRide`. L'extension `RideTiming.registeredGroup` est renommée `joinedGroup` (le champ généré l'aurait masquée) : `groups` d'abord, que la bascule optimiste tient à jour, `registeredGroup` ensuite ; `_withRegistration` tient aussi `registeredGroup`. Le web ne rendait pas de prochaine sortie : rien à changer. Tests : `RideMeFieldsTest.registeredGroup_onListRowsAndDetail_isTheJoinedGroupInFull` et `registeredGroup_onAListRow_withoutLeaderNorRoute_carriesNeither`, `ParticipationQueryCountTest.listMyParticipations_registeredGroups_costAPageNotARow` (verts au 16 octobre 2026) ; `participation_changes_test.dart` (« sans getRide », quitter depuis la carte sans détail) | 11 |
 | `API-5` | **Capacité de la sortie sur les lignes de liste** (2026-09-30) — **API 5.11.0** : `RideDto.maxParticipants`, nullable, la **somme des `maxParticipants` des groupes**, **nulle dès qu'un groupe est sans limite** (ou sans groupe) : la sortie n'a alors pas de plafond. C'est exactement l'ensemble des sorties pour lesquelles `full` peut être vrai — ne pas sommer les seuls groupes plafonnés, un « 12/20 » sur une sortie qui a un groupe illimité serait faux. `full` reste la vérité sur « complet » (il compare groupe par groupe). Même règle sur le détail (repli sur `ride.getGroups()`) et sur la liste, où elle est calculée dans `RideSummaryRepository.loadListSummaries` à partir des lignes par groupe déjà lues pour `full` : aucune requête de plus. Le mobile rend « N/M » dans le carrousel de l'accueil (`upcomingParticipants`), le nombre seul quand la capacité est nulle ; la carte de fil garde son compteur brut, sans barre. Le web (`PublicationCardProgress`) sommait `ride.groups`, **vide sur une ligne de liste** : sa barre « N/M places » ne s'affichait jamais ; elle lit désormais `maxParticipants` et `full`. Couvert par `RideMeFieldsTest.maxParticipants_sumsTheGroupCapacities_nullWhenOneGroupIsUncapped_listAndDetailAgree` (liste et détail), les `…QueryCountTest` verts, `upcoming_action_test.dart` et `PublicationCardProgress.test.tsx` | 11 |
 | `API-6` | **Auteur d'une publication, ou signature de l'équipe** (2026-09-30) — **API 7.2.0** : `PostDto.createdBy` (`PublicUserDto` : id, nom, avatar — le même objet que `RouteDetailDto.createdBy`, préféré aux deux scalaires d'abord notés ici parce que la maquette montre l'avatar) et `PostDto.signedAsTeam`. Décision produit : une publication est signée **par son auteur ou par l'équipe** (`Post.signedAsTeam`, `PostRequest.signedAsTeam` optionnel : omis à la création, il prend `Team.postsAsTeamByDefault` ; omis à la modification, il reste tel quel), et le réglage d'équipe `postsAsTeamByDefault` (`TeamRequest` optionnel, `TeamDetailDto`) est **activé par défaut**. Signée par l'équipe, la publication **ne nomme son auteur qu'aux administrateurs de l'équipe (`ADMIN`, pas `ORGANIZER`), à un administrateur de la plateforme et à l'auteur lui-même** ; tout autre lecteur, anonyme compris, reçoit `createdBy` absent. Signée par l'auteur, elle le nomme à quiconque peut la lire. Migration V52 : `team_entities.signed_as_team` et `teams.posts_as_team_by_default`, `not null default true` — **les publications existantes passent au nom de l'équipe** (aucun nom n'apparaît rétroactivement sur des textes écrits quand l'auteur n'était jamais montré), et la version précédente insère sans connaître les colonnes. Ne pas passer le défaut de la colonne à `false` : ce sont les lignes écrites pendant un déploiement progressif qui se mettraient à nommer leur auteur. Résolu **par page** par `PostAuthorLookup` (au plus deux requêtes : les équipes administrées parmi celles qui signent un post de la page, puis les auteurs) ; ne pas le remplacer par `post.getCreatedBy()` dans `PostDto.from`, qui chargerait un utilisateur par ligne au-delà du lot Hibernate. Le mobile (écran 31, `post_detail_page.dart`) rend l'auteur par `PdlPersonRow` (avatar, nom, date ; « Au nom de l'équipe » en sous-titre pour un administrateur), la date seule sinon. Le web : case « Publier au nom de *l'équipe* » dans `PostEditor` (partant du réglage d'équipe), réglage dans `TeamForm`, ligne « Par *nom* » sur `PostDetailPage`. Les cartes de liste restent sans auteur. La case d'équipe (« Publications au nom de l'équipe par défaut ») a un rôle et un nom accessible distincts du champ « Nom de l'équipe » : ce sont les sélecteurs e2e `getByLabel` (sous-chaîne) qu'il a fallu corriger en `getByRole('textbox')`, pas le composant. Couvert par `PostResourceTest` (`aPostSignedByItsAuthor_namesThemToEveryReader`, `aPostSignedByTheTeam_namesItsAuthorOnlyToTheAdminsAndToThemself`, `theTeamDefaultDecidesWhenThePostSaysNothing_andAnUpdateSayingNothingKeepsIt`), `TeamServiceTest.postsAsTeamByDefault_startsOn_andOnlyAnExplicitValueChangesIt`, `PublicationQueryCountTest.listTeamPosts_authorsCostAPageNotARow` (et anonyme : trente auteurs distincts, un sur deux signé par l'équipe) et `post_detail_page_test.dart` | 31 |
 | `API-7` | **Poids des pièces jointes** (2026-09-30) — **API 6.3.0** : `AssetDto.size`, nullable, en octets, **le poids du fichier tel que stocké** — donc de ce qu'un téléchargement renvoie, une image comptée après son ré-encodage (`API-43`), pas telle qu'envoyée. Colonne `assets.file_size` (V49, nullable ; l'attribut s'appelle `fileSize` parce que `size` est une fonction HQL). `StorageService.store` rend désormais le nombre d'octets écrits, et chaque chemin d'écriture le relève : envoi (`addAssetStream`), fichier temporaire (`uploadAssetFile` : vignettes, import biketeam), GPX/FIT d'un parcours (`uploadTempFileToS3` → `persistAsset`), ré-encodage par `AssetMetadataBackfill`, réécriture par `GpxSanitizationBackfill`. L'existant est rempli par `AssetSizeBackfill` (un HEAD par asset, rien de téléchargé, 200 par minute) ; son curseur **ne revient jamais en arrière** — un fichier manquant n'est regardé qu'une fois par démarrage — et les lignes qu'une release précédente écrit pendant un déploiement roulant, d'id plus grand, sont prises au passage suivant. Sa mise à jour ne s'applique **que si la taille est encore nulle** (`recordSizeIfUnknown`) : ne pas la rendre inconditionnelle, un ré-encodage concurrent verrait sa taille écrasée par une lecture antérieure. Nul = inconnu : **les clients omettent le poids, ne l'estiment jamais**. Le mobile (`media_attachments.dart`, les huit écrans à pièces jointes) rend « PDF · 240 ko », « JPG · 1,2 Mo · 1920 × 1080 » ; le web (`MediaDisplay`) le poids à droite du nom. Unités décimales, « ko » en français (`AppFormatters.formatFileSize`, `formatFileSize` web). Couvert par `AssetSizeBackfillTest`, les assertions de taille d'`AssetServiceTest` (envoi, image ré-encodée ≠ taille envoyée, fichier temporaire), `AssetMetadataBackfillTest.aTiffBecomesAJpegAndItsAssetFollows`, `GpxSanitizationBackfillTest.sanitizeAll_rewritesARouteStoredWithTimestampsAndSensors` (import puis réécriture), `formatters_test.dart` et `unitFormat.test.ts` | 31, 32 |
 | `API-9` | **Plage de dates d'un voyage dans « Utilisée dans »** (2026-09-30) — **API 5.9.0** : `RouteUsageDto.endDate`, nullable, la date de la dernière étape non supprimée — la règle de `TripDto.endDate` (le maximum des dates, pas la dernière par rang). Nul pour une sortie et pour un voyage sans étape, qui dure un jour. Aucune requête de plus : `fromTrip` parcourait déjà les étapes pour `viaChildNames`. Le mobile (`route_usages_section.dart`) rend « 1 août → 4 août » comme la carte de voyage, le web (`RouteUsages.tsx`) les deux dates au lieu de la date et l'heure de début ; une sortie garde sa date et son heure. Couvert par `RouteResourceTest.getRouteUsages_trip_carriesItsEndDate_rideDoesNot` (une étape supprimée plus tardive ignorée, voyage sans étape et sortie à nul) et `route_usages_section_test.dart` | 13 |
 | `API-10` | **Nom des montées** (2026-10-01) — **API 9.3.0** : `ClimbDto.name`, nullable, le nom du **waypoint du parcours le plus proche du sommet de la montée, à 300 m au plus** (`ClimbNaming`, point du tracé le plus proche de `endDist`, distance haversine). C'est le nom que l'auteur du GPX a posé au col ; sans waypoint au sommet, pas de nom, et les clients gardent « Montée N ». **Tranché : pas de géocodage inverse** — un appel réseau par montée à chaque lecture (ou une colonne et son rattrapage), et le lieu le plus proche d'un sommet est souvent un hameau en contrebas ; un nom faux est pire que pas de nom. Calcul pur à la lecture, sur ce que le détail charge déjà (points du tracé, waypoints de la route) : aucune requête, aucune migration ; même règle sur l'aperçu GPX (`GpxPreviewDto`). Web : `RouteDetailView` rend le nom, l'infobulle du profil (`ElevationChart`) dit « *Nom* (i/n) : … » (`map.tooltip.climbNamed`). Mobile : `RouteClimbsSection`. Tests : `ClimbNamingTest` (sommet, plus proche gagnant, seuil, pied de montée, nom vide, `TrackDto.of`), `RouteResourceTest.getRoute_climbs_areNamedAfterTheWaypointAtTheirTop` (**écrit, non lancé** — fixe aussi l'ordre latitude/longitude du point PostGIS) ; `route_climbs_section_test.dart` | 13, 25 |
-| `API-11` | **Commentaires d'étape** (2026-10-02) — **API 10.2.0** : `GET/POST /api/teams/{teamSlug}/stages/{stageSlug}/comments` et `DELETE …/{commentId}` (tag `Trip Stage Comments`), et `TripStageDto.commentCount`, nullable, absent pour qui ne peut pas lire les commentaires comme `TripDto.commentCount`. **Le chemin ne nomme pas le voyage** : le slug d'étape est unique dans l'équipe (`uk_team_entity_slug`, la règle qu'utilisait déjà `TripStageAccessChecker`) ; l'étape est lue comme son voyage (`TripService.findStageBySlug` : une étape d'un voyage brouillon, supprimé ou invisible, ou une étape supprimée, répond 404). Le fil est **propre à l'étape**, distinct de celui du voyage. Le compte de chaque étape vient du même `CommentCountLookup.forEntities` que celui du voyage, deux requêtes pour tout le détail. **Une étape n'est pas une publication**, et `CommentThreads.publicationOf` la ramène à son voyage partout où le reste de l'application en attend une : la notification `COMMENT_ON_MY_PUBLICATION` va à l'**auteur du voyage** et ouvre le voyage (`subjectType` `TRIP` — pas de `NotificationSubjectType` d'étape, qui demanderait un second slug dans l'événement stocké), un signalement de commentaire est lu selon la visibilité du voyage, et la file de modération ouvre le voyage ; les voyages de ces étapes y sont chargés par une requête de plus, seulement s'il y en a. Web : `CommentSection` sur `StageDetailPage` (membres seulement) et préchargement SSR dans `prefetchStageDetail`. Mobile : `CommentEntity.stage`, le fil sur l'écran 25 à la place du renvoi « Commenter ce voyage ». À ne pas défaire : un fil par étape, la notification et la modération rapportées au voyage. Tests : `TripStageCommentResourceTest` (le contrat commun d'`AbstractCommentResourceTest`, brouillon et étape supprimée en 404, fil distinct de celui du voyage, `commentCount` par étape), `NotificationPhase5Test.topLevelCommentOnAStage_notifiesTheTripAuthor_andOpensTheTrip`, `ModerationResourceTest.reportedCommentOnAStage_opensItsTrip` (**écrits, non lancés**) ; `trip_screens_test.dart` (« le fil est celui de l'étape, pas celui du voyage ») ; e2e (**écrits, non lancés**) : `flow-trips.e2e.ts` « a member comments on a stage… » (fil propre à l'étape, comptes, notification de l'auteur du voyage), `outsider.e2e.ts` (l'étape publique ajoutée aux entités commentées : rien dans le document serveur ni par l'API pour un visiteur ou un non-membre, et le contrôle positif du membre vérifie le préchargement SSR du fil), Patrol `stage_comments_test` | 25 |
-| `API-12` | **Participants paginés et cherchables côté serveur** (2026-09-30) — **API 9.0.0**, majeure : deux endpoints dédiés, forme tranchée avec le propriétaire, `GET /api/teams/{teamSlug}/rides/{rideSlug}/participants?groupId=&search=&page=&size=` (la sortie entière, ou un groupe ; un groupe d'une autre sortie répond 404) et `GET …/trips/{tripSlug}/participants?search=&page=&size=`, qui renvoient `ParticipantListResponse` `{ participants, total, page, size }` (taille par défaut 50, bornée comme toute page par `BaseRepository.effectivePageSize`). Ordre d'inscription (`registeredAt`, puis id), recherche insensible à la casse sur le nom affiché, `%` et `_` littéraux (`LikePatterns`). Lus comme la sortie ou le voyage (`@CheckAccess` `READ`, 404 pour qui ne la voit pas), `Cache-Control: private, no-store`. **La rupture** : `RideGroupDto.participants` et `TripDto.participants` ne sont plus la liste complète mais un **aperçu des 8 premiers inscrits**, de quoi dessiner des avatars ; `countParticipants` et `participantCount` restent les totaux. Le détail ne parcourt plus `group.getParticipations()` ni `trip.getParticipations()` : `ParticipantPreviewLookup` donne le compte et les premiers de **tous les groupes d'une sortie en deux requêtes** (fonctions de fenêtre, puis les utilisateurs par id), d'où aussi `full`, `participantCount` et `topParticipants`. Les listes sélectionnent les utilisateurs eux-mêmes (`ParticipantPages`), une entité par ligne. Web : `ParticipantListModal` lit l'endpoint page par page, avec recherche et pied « 1–50 sur M » ; « +N » des avatars compté sur le total (`UserAvatarGroup.total`) ; `TripDetailPage` lit `registered` au lieu de chercher l'utilisateur dans la liste. Mobile : `ParticipantsSheet` lit `participantListProvider` (`PagedListNotifier`, 50 par page), recherche serveur, « N participants sur M » et un bouton « Afficher plus » plutôt qu'un préchargement au défilement (la feuille construit toutes ses lignes d'un coup) ; `PdlAvatarStack.total` pour le « +N ». **Les deux ruptures partent dans la même republication mobile que `SEC-2`, `SEC-3` et `MOB-38`.** À ne pas défaire : ne pas recompter ni prévisualiser en parcourant les collections de participations (c'est ce que mesurent les tests de coût), ne pas réembarquer la liste complète. Tests (**écrits, non lancés**) : `ParticipantListResourceTest` (aperçu borné et comptes réels, pagination dans l'ordre d'inscription, filtre par groupe, recherche, `%` littéral, 404 d'un groupe étranger, visibilité), `ParticipantListQueryCountTest` (les deux listes à plat, et le détail de la sortie et du voyage à 3 puis 30 participants avec le budget resserré `MAX_BOUNDED_ENTITY_GROWTH`) ; `participants_sheet_test.dart` (meneur, recherche débattue envoyée au serveur, « Afficher plus ») ; e2e `rides.e2e.ts` « the participant list is read and searched on the server » | 24, 34 |
+| `API-11` | **Commentaires d'étape** (2026-10-02) — **API 10.2.0** : `GET/POST /api/teams/{teamSlug}/stages/{stageSlug}/comments` et `DELETE …/{commentId}` (tag `Trip Stage Comments`), et `TripStageDto.commentCount`, nullable, absent pour qui ne peut pas lire les commentaires comme `TripDto.commentCount`. **Le chemin ne nomme pas le voyage** : le slug d'étape est unique dans l'équipe (`uk_team_entity_slug`, la règle qu'utilisait déjà `TripStageAccessChecker`) ; l'étape est lue comme son voyage (`TripService.findStageBySlug` : une étape d'un voyage brouillon, supprimé ou invisible, ou une étape supprimée, répond 404). Le fil est **propre à l'étape**, distinct de celui du voyage. Le compte de chaque étape vient du même `CommentCountLookup.forEntities` que celui du voyage, deux requêtes pour tout le détail. **Une étape n'est pas une publication**, et `CommentThreads.publicationOf` la ramène à son voyage partout où le reste de l'application en attend une : la notification `COMMENT_ON_MY_PUBLICATION` va à l'**auteur du voyage** et ouvre le voyage (`subjectType` `TRIP` — pas de `NotificationSubjectType` d'étape, qui demanderait un second slug dans l'événement stocké), un signalement de commentaire est lu selon la visibilité du voyage, et la file de modération ouvre le voyage ; les voyages de ces étapes y sont chargés par une requête de plus, seulement s'il y en a. Web : `CommentSection` sur `StageDetailPage` (membres seulement) et préchargement SSR dans `prefetchStageDetail`. Mobile : `CommentEntity.stage`, le fil sur l'écran 25 à la place du renvoi « Commenter ce voyage ». À ne pas défaire : un fil par étape, la notification et la modération rapportées au voyage. Tests : `TripStageCommentResourceTest` (le contrat commun d'`AbstractCommentResourceTest`, brouillon et étape supprimée en 404, fil distinct de celui du voyage, `commentCount` par étape), `NotificationPhase5Test.topLevelCommentOnAStage_notifiesTheTripAuthor_andOpensTheTrip`, `ModerationResourceTest.reportedCommentOnAStage_opensItsTrip` (verts au 16 octobre 2026) ; `trip_screens_test.dart` (« le fil est celui de l'étape, pas celui du voyage ») ; e2e (verts au 16 octobre 2026) : `flow-trips.e2e.ts` « a member comments on a stage… » (fil propre à l'étape, comptes, notification de l'auteur du voyage), `outsider.e2e.ts` (l'étape publique ajoutée aux entités commentées : rien dans le document serveur ni par l'API pour un visiteur ou un non-membre, et le contrôle positif du membre vérifie le préchargement SSR du fil), Patrol `stage_comments_test` | 25 |
+| `API-12` | **Participants paginés et cherchables côté serveur** (2026-09-30) — **API 9.0.0**, majeure : deux endpoints dédiés, forme tranchée avec le propriétaire, `GET /api/teams/{teamSlug}/rides/{rideSlug}/participants?groupId=&search=&page=&size=` (la sortie entière, ou un groupe ; un groupe d'une autre sortie répond 404) et `GET …/trips/{tripSlug}/participants?search=&page=&size=`, qui renvoient `ParticipantListResponse` `{ participants, total, page, size }` (taille par défaut 50, bornée comme toute page par `BaseRepository.effectivePageSize`). Ordre d'inscription (`registeredAt`, puis id), recherche insensible à la casse sur le nom affiché, `%` et `_` littéraux (`LikePatterns`). Lus comme la sortie ou le voyage (`@CheckAccess` `READ`, 404 pour qui ne la voit pas), `Cache-Control: private, no-store`. **La rupture** : `RideGroupDto.participants` et `TripDto.participants` ne sont plus la liste complète mais un **aperçu des 8 premiers inscrits**, de quoi dessiner des avatars ; `countParticipants` et `participantCount` restent les totaux. Le détail ne parcourt plus `group.getParticipations()` ni `trip.getParticipations()` : `ParticipantPreviewLookup` donne le compte et les premiers de **tous les groupes d'une sortie en deux requêtes** (fonctions de fenêtre, puis les utilisateurs par id), d'où aussi `full`, `participantCount` et `topParticipants`. Les listes sélectionnent les utilisateurs eux-mêmes (`ParticipantPages`), une entité par ligne. Web : `ParticipantListModal` lit l'endpoint page par page, avec recherche et pied « 1–50 sur M » ; « +N » des avatars compté sur le total (`UserAvatarGroup.total`) ; `TripDetailPage` lit `registered` au lieu de chercher l'utilisateur dans la liste. Mobile : `ParticipantsSheet` lit `participantListProvider` (`PagedListNotifier`, 50 par page), recherche serveur, « N participants sur M » et un bouton « Afficher plus » plutôt qu'un préchargement au défilement (la feuille construit toutes ses lignes d'un coup) ; `PdlAvatarStack.total` pour le « +N ». **Les deux ruptures partent dans la même republication mobile que `SEC-2`, `SEC-3` et `MOB-38`.** À ne pas défaire : ne pas recompter ni prévisualiser en parcourant les collections de participations (c'est ce que mesurent les tests de coût), ne pas réembarquer la liste complète. Tests (verts au 16 octobre 2026) : `ParticipantListResourceTest` (aperçu borné et comptes réels, pagination dans l'ordre d'inscription, filtre par groupe, recherche, `%` littéral, 404 d'un groupe étranger, visibilité), `ParticipantListQueryCountTest` (les deux listes à plat, et le détail de la sortie et du voyage à 3 puis 30 participants avec le budget resserré `MAX_BOUNDED_ENTITY_GROWTH`) ; `participants_sheet_test.dart` (meneur, recherche débattue envoyée au serveur, « Afficher plus ») ; e2e `rides.e2e.ts` « the participant list is read and searched on the server » | 24, 34 |
 | `API-13` | **Tri de l'annuaire des équipes** (2026-09-30) — **API 5.12.0** : `GET /api/teams?sortBy=NAME\|MEMBER_COUNT&sortDir=ASC\|DESC`, sur le modèle des parcours et des annonces (`TeamSortBy`, `SortDirection`, DESC par défaut quand `sortBy` est donné). Sans `sortBy`, l'ordre historique (nom croissant). **La clé se termine toujours par l'id de l'équipe**, dans le même sens (`TeamRepository.orderClause`), y compris dans l'ordre par défaut qui ne l'avait pas : sans elle, deux équipes à égalité peuvent changer de place d'une page à l'autre, et la pagination par décalage en répète une et en saute une autre. `MEMBER_COUNT` trie sur la **même sous-requête corrélée** que le `memberCount` que portent les lignes — l'ordre correspond aux nombres affichés — dans l'unique requête de liste, sans compte par équipe. Le mobile (écran 34, découverte) demande `MEMBER_COUNT DESC` et rétablit la mention de la maquette, « 3 équipes · triées par nombre de membres » ; la requête et la mention lisent la même constante `kTeamDiscoverySort`. Le web n'annonçait aucun tri : rien à changer. Couvert par `TeamResourceTest.listTeams_sortByMemberCount_isTotalAcrossPages` (trois ex æquo départagés par l'id, page par page, puis ASC), `listTeams_withoutSort_keepsTheNameOrder`, `TeamMemberQueryCountTest.listTeams_sortedByMemberCount_costDoesNotScaleWithRowCount`, `team_repository_sort_test.dart` et `teams_discover_page_test.dart` | 34 |
 | `API-14` | **Logo des services GPS** (2026-10-02) — sans changement de contrat. **Tranché avec le propriétaire : côté clients, pas de `logoUrl` au contrat** — `GpsServiceType` est un enum fermé, une URL n'apporterait rien. Les trois logos (Garmin, Wahoo, Hammerhead) sont des **tuiles carrées à fond sombre**, lisibles dans les deux thèmes ; celui de Hammerhead, fourni en tracé blanc sur fond transparent (invisible sur fond clair), a été posé sur une tuile `#212121`, le fond du logo Wahoo. Web : `frontend/src/assets/gps/*.svg`, `GPS_SERVICE_LOGOS` dans `GpsConnectionsManager` à la place de l'icône générique. Mobile : PNG 32 px en 1x/2x/3x (`mobile/assets/gps/`, rasterisés des mêmes SVG — pas de `flutter_svg` pour trois images), `gpsServiceLogoAsset`, et un emplacement `leading` (un widget) sur `PdlSettingRow`. Le logo est décoratif (`alt=""`, `ExcludeSemantics`) : le nom du service est à côté. `SocialIdentityDto.externalUsername`, l'autre moitié de l'entrée d'origine, était devenu sans objet avec le retrait de Strava (API `5.0.0`). Un nouveau service ajouté à l'enum n'aura pas de logo tant qu'on ne l'aura pas ajouté aux deux tables. Test : `gps_service_logo_test.dart` (chaque service connu a un logo réellement embarqué) | 33 |
 | `API-15` | **Fuseau des dates : celui de l'utilisateur, sinon l'appareil, sur le mobile aussi** (2026-10-02) — sans changement de contrat. **Tranché avec le propriétaire : pas de `Team.timezone` ni de dates zonées au contrat** (`API-60`). **Décision revue le 6 octobre 2026** : `API-60` est rouvert pour les heures de rendez-vous (départs de sortie, de groupe, d'étape), lues dans le fuseau de l'événement ; la préférence et `toDisplayTime` restent la règle pour tout le reste, et la règle « pas de `.toLocal()` » tient toujours. Le mobile applique désormais `UserDto.timezone` comme le web (`useEffectiveTimezone`) : `app.dart` le passe à `AppFormatters.setDisplayTimezone`, et tout instant du contrat est ramené par `AppFormatters.toDisplayTime` / `tryParseDisplayTime` — les 23 `.toLocal()` des écrans y passent. La valeur rendue est une **heure murale** (un `DateTime` local portant les champs du fuseau choisi) : les regroupements par jour et `DateFormat` restent justes sans connaître `package:timezone`, mais elle ne se compare pas à un instant — « passé » vient du serveur (`API-16`). « Maintenant » se prend par `displayNow()` (le calendrier), et les bornes de mois envoyées à l'API repassent par `displayWallClockToUtc`. `package:timezone` redevient une dépendance directe, sans coût de taille : `flutter_local_notifications` l'embarquait déjà ; la base n'est chargée qu'au premier fuseau posé. Un nom inconnu de la base embarquée retombe sur l'appareil. À ne pas défaire : pas de `.toLocal()` ni de `DateTime.now()` comparé à une date convertie (règle dans `mobile/CLAUDE.md`). Tests : `display_timezone_test.dart` (l'étape du lundi à Auckland reste un lundi, dimanche à Los Angeles ; pas de double conversion ; bornes de mois ; repli sur l'appareil), Patrol `user_timezone_test` (**écrit, non lancé** : une étape à 08:00 d'Auckland lue « 08:00 » par un membre réglé sur `Pacific/Auckland`) | 22, 24, 25 |
@@ -2797,7 +2838,7 @@ Le détail de chacune est dans l'historique git de ce fichier et de `LEDGER_NEXT
     reconnecter (la nouvelle remplace l'ancienne), et elle est supprimée à son prochain envoi, qui
     répond `success: false` sans lever d'exception pour que la suppression soit validée.
 
-  Tests (**écrits, non lancés**) : `OAuth1SignerTest` (vecteur publié de Twitter, vérifié à part :
+  Tests (verts au 16 octobre 2026) : `OAuth1SignerTest` (vecteur publié de Twitter, vérifié à part :
   `hCtSmYh+iHYCEqBWrE7C7hYmtUk=`), `GpsServiceOAuth1Test` (Garmin mocké : URL de consentement,
   stockage du jeton et du secret, usage unique, request token inconnu, request token refusé par le
   callback OAuth 2.0, envoi signé avec les bons jetons, connexion OAuth 2.0 abandonnée à l'envoi ou
@@ -3473,8 +3514,8 @@ plus la colonne. Le départ d'un groupe n'existe plus que dans `ride_groups.star
 ### `API-121` « Prochaines sorties » dit si le parcours est déjà chez le service GPS de l'appareil (contrat `11.5.0`)
 
 - `API-121` **Karoo et Garmin montrent, sur chaque groupe inscrit, où en est son parcours chez
-  Hammerhead / Garmin Connect** (2026-10-16, **API 11.5.0**, mineure, additive ; non commité, avec
-  `API-120`) — un membre qui voyait un groupe inscrit sur son appareil ne savait pas si `API-120` ou
+  Hammerhead / Garmin Connect** (2026-10-16, **API 11.5.0**, mineure, additive ; livré avec
+  `API-120`, commits `3b5df12e` et `f91a5264`) — un membre qui voyait un groupe inscrit sur son appareil ne savait pas si `API-120` ou
   un envoi manuel avait déjà mis le parcours chez son service : il le rechargeait en doublon, et ne
   voyait ni une mise à jour en attente ni une reconnexion nécessaire.
   `DeviceRegisteredGroupDto.syncStatuses` (facultatif) donne, pour chaque service qui tient la route
@@ -3516,7 +3557,7 @@ plus la colonne. Le départ d'un groupe n'existe plus que dans `ride_groups.star
 
 - `API-123` **`daylight` se juge au départ ou au passage, plus à l'heure de prévision la plus
   proche** (2026-10-16, **API 11.5.1**, correctif : seules les descriptions de `daylight` changent ;
-  non commité) — `RideWeatherCalculator.conditions(hour)` comparait l'heure ronde du modèle au lever
+  en prod sur `ac130fc5`) — `RideWeatherCalculator.conditions(hour)` comparait l'heure ronde du modèle au lever
   et au coucher, alors que `CellSeries.nearest` lit l'heure la plus proche à 90 min près : un départ
   à 08:30, lever à 08:28, lisait l'heure de 08:00 et affichait une lune ; un passage à 19:20, coucher
   à 19:13, lisait celle de 19:00 et affichait un soleil de nuit. `conditions(hour, at)` reçoit
@@ -3530,10 +3571,56 @@ plus la colonne. Le départ d'un groupe n'existe plus que dans `ride_groups.star
   `departure_justAfterSunrise_shouldBeDaylightThoughItsModelHourIsBefore`,
   `summary_departureJustAfterSunrise_shouldBeDaylight`,
   `leg_checkpointJustAfterSunset_shouldBeNightThoughItsModelHourIsBefore`, et
-  `conditions_shouldTellDayFromNight` passé à la nouvelle signature (écrits, pas encore lancés).
+  `conditions_shouldTellDayFromNight` passé à la nouvelle signature (verts au 16 octobre 2026).
   Les clients générés ne changent que par un commentaire ; aucun client n'a de calcul à retirer.
   **À ne pas défaire** : le jour ou la nuit d'un instant se juge à cet instant, jamais à l'heure
   du modèle qui le renseigne ; les clients n'en recalculent rien.
+
+### `API-120` Envoi automatique des parcours de mes sorties vers mes services GPS (16 octobre 2026, contrat `11.5.0`)
+
+- `API-120` **Un membre inscrit n'envoie plus lui-même le parcours de son groupe vers Hammerhead,
+  Wahoo ou Garmin, et une route changée ou un GPX corrigé suit** (2026-10-16, **API 11.5.0**,
+  mineure, additive ; migration `V71`) — le code ne savait que créer et jetait l'identifiant
+  externe renvoyé par le service. Plan
+  [`2026-10-16-gps-route-autosync.md`](plans/2026-10-16-gps-route-autosync.md).
+  - **Opt-in par connexion** (`gps_service_connections.auto_sync`, faux par défaut ; `PUT
+    /api/gps/connections/{serviceType}/auto-sync`, `GpsServiceConnectionDto.autoSync` /
+    `autoSyncState`/…), interrupteur côté clients livré par `WEB-92` et `MOB-71`, masqué tant que
+    `ConfigDto.gpsAutoSyncEnabled` est faux (`pedalons.gps-sync.enabled=${GPS_SYNC_ENABLED:false}`).
+  - **Table de suivi `gps_route_syncs`** (clé `(connexion, sortie)`), **planificateur** qui
+    réconcilie l'état voulu (groupes inscrits partant d'ici J+7, route effective = celle du groupe,
+    à défaut celle de la sortie, visibilité alignée sur `findUpcomingRegisteredGroups`) et **worker
+    à bail** (5 min) qui crée, modifie (`PUT`, recréation sur 404) ou supprime chez le service,
+    24 h après le départ ou quand l'inscription, la route ou l'interrupteur disparaît. Nom envoyé
+    `AAAA-MM-JJ · groupe · route` (`GpsSyncNames.autoName`).
+  - **Envois manuels** (web, mobile, Karoo) passés par la même table : ils mettent à jour le
+    parcours déjà envoyé au lieu d'en empiler un nouveau, et une ligne automatique reprend un envoi
+    manuel de la même route, l'id externe écrit avant l'appel.
+  - Repris après revue le même jour (plan §12) : rafraîchissement de jeton isolé et sérialisé par
+    connexion (refus → reconnexion), essais remis à zéro à la reconnexion, nettoyage de
+    l'effacement hors transaction ; 401 et 412 mènent à « à reconnecter », 429 à une pause selon
+    `Retry-After` (`GpsCallResult.ofFailure`).
+
+  Tests : `GpsRouteSyncPlannerTest`, `GpsRouteSyncPlannerQueryCountTest`, `GpsRouteSyncWorkerTest`,
+  `GpsRouteSyncWorkerDoubleUploadRaceTest`, `GpsRouteSyncServiceTest` (envois manuels, reprise,
+  déconnexion, effacement), `GpsRouteSyncRouteStateTest`, `GpsResourceTest`, `GpsRouteCallsTest`
+  (requêtes des clients, `DELETE` signé OAuth 1.0a, `PUT` Wahoo), `GpsSyncNamesTest`,
+  `ConfigServiceTest`, `UserExportBuilderTest` ; verts. Commits `3b5df12e` et `f91a5264`.
+  **En prod** depuis le 16 octobre 2026 (`V71` appliquée, `ac130fc5`, contrat `11.5.1`) avec
+  `GPS_SYNC_ENABLED=true`, comme en staging : 3 connexions en envoi automatique sur 7 (Hammerhead,
+  Wahoo, Garmin OAuth 1.0a), 5 parcours envoyés pour 3 membres, aucune erreur ni nouvel essai. Le
+  drapeau a été allumé **avant** la publication de la politique (`LEGAL-21`, publiée le jour même)
+  et la doc d'exploitation (`OPS-42`, ouverte) ; restent aussi la recette sur appareil (étape 7, `OPS-42`), le nom
+  envoyé selon `WEB-83`, le nom d'un envoi manuel d'une route suivie et l'étape 0 non observée
+  (`API-125`), et les codes d'erreur de l'envoi manuel (`API-126`).
+  **À ne pas défaire** : l'opt-in est par connexion, jamais global ; réconciliation périodique,
+  aucun hook dans `RideService`/`RouteService` ; l'empreinte est `asset_id du GPX | nom envoyé`
+  (le backfill qui réécrit un GPX en place ne renvoie rien) ; une ligne manuelle n'est jamais mise
+  sous gestion automatique d'elle-même, et la déconnexion la laisse chez le service ; couper
+  l'interrupteur retire les parcours à venir envoyés par Pédalons ; `external_id` Wahoo stable
+  (`pedalons-{domainId}-{rideId}`) pour l'envoi automatique ; pas de `deauthorize` Hammerhead ; la
+  route effective et sa visibilité restent en phase avec `findUpcomingRegisteredGroups` ; `V71` reste
+  lisible par la release précédente (déploiement start-first).
 
 ## OPS — Exploitation, déploiement, recette du backend
 
@@ -3818,6 +3905,76 @@ plus la colonne. Le départ d'un groupe n'existe plus que dans `ride_groups.star
   script relancé à la main avec ce fichier sort en 0 sans ping (rien à promouvoir). La promotion
   tourne vers 01:30 UTC ; le premier ping d'une vraie promotion est celui du 12 octobre. Pas de
   test automatisé (recette sur l'hôte).
+- `OPS-1` **Les migrations s'appliquent sur la base de prod, et le schéma qu'aucun test ne
+  construit est le bon** (2026-10-16, recette sur l'hôte, contrat inchangé) — les tests construisent
+  le schéma en `drop-and-create` depuis les mappings JPA, sans Flyway : un test vert ne prouve pas
+  qu'une migration passe sur une base existante. En prod, `flyway_schema_history` porte V69, V70 et
+  V71 (`gps_route_autosync`, la dernière du dépôt, appliquée le 16 octobre à 09:29) en
+  `success = t`, après V67 vu passer le 7 octobre (`OPS-29`, lot 5 d'`API-60`). Contrôles du
+  schéma, en lecture seule : la table `ad_contacts` existe ; `users.contactable_by_members` et
+  `ride_groups.leader_id` sont nullables ; la FK `ride_groups_leader_id_fkey` est en
+  `ON DELETE SET NULL` (`confdeltype = 'n'`) ; l'index partiel `idx_ride_groups_leader … WHERE
+  leader_id IS NOT NULL` existe ; `teams.enable_member_directory` est `NOT NULL DEFAULT false` ;
+  `uk_team_invitations_pending` est bien partiel (`WHERE status = 'PENDING'`) — l'objet que les
+  mappings JPA ne savent pas exprimer. Pas de test automatisé (recette sur l'hôte) ; la mise en
+  garde reste vraie et elle est écrite dans `backend/CLAUDE.md` (« Tests use `drop-and-create` (no
+  Flyway) »). **À ne pas défaire** : la FK de `leader_id` en `SET NULL`, jamais `CASCADE` (supprimer
+  un membre ne doit pas supprimer les groupes qu'il menait) ; l'index d'invitation en attente reste
+  partiel, sans quoi une invitation déclinée ou expirée interdit d'en renvoyer une.
+
+- `OPS-2` **Retiré du ledger : c'est une règle permanente, pas une tâche** (2026-10-16) — les tests
+  backend sont lancés par le propriétaire du dépôt, jamais par Claude ; la règle est dans
+  `CLAUDE.md` (« Critical Prohibitions »), avec l'invariant des recherches par page. Le
+  16 octobre 2026, le propriétaire indique que tous les tests passent. Les gardes sont actives,
+  aucune n'est `@Disabled` : les classes `…QueryCountTest` (sur `AbstractQueryCountTest`, dont
+  `GpsRouteSyncPlannerQueryCountTest`, arrivée avec `API-120`) et
+  `RideGroupLeaderTest.groupLeader_isNotTheRideCreator`. **À ne pas défaire** : ne jamais désactiver
+  l'une de ces gardes pour faire passer un build — elles échouent si quelqu'un réintroduit une
+  requête par ligne ou un repli du chef de groupe sur `createdBy`.
+
+- `OPS-5` **Le relais de contact n'est pas contourné** (2026-10-16, contrat `11.5.1`) — le `grep`
+  et le script Python du §5.3 du
+  [document d'API](plans/archive/2026-07-26-api-v2-livraison-et-suites.md), rejoués sur
+  `contracts/openapi.yaml`, sortent « AdDto: OK » : ses propriétés sont `adType`, `createdAt`,
+  `createdByDisplayName`, `createdById`, `deleted`, `excerpt`, `id`, `images`,
+  `locationDescription`, `locationGeometry`, `media`, `name`, `price`, `rentalPeriod`, `slug`,
+  `status`, `tags`, `team`, `thumbnailUrl`, `updatedAt`, `visibility` — ni contact, ni e-mail, ni
+  téléphone ; le contact passe par `POST /api/teams/{teamSlug}/classifieds/{slug}/contact`. Pas de
+  test automatisé : l'invariant ne vit que dans ce script et dans `CLAUDE.md`, d'où la tâche
+  `OPS-44`. **À ne pas défaire** : aucun champ de contact sur `AdDto`, jamais — un seul
+  publierait une adresse personnelle à toute une équipe, irrévocablement.
+
+- `OPS-31` **Le cache de tuiles et le débit vers l'IGN et Mapterhorn tiennent** (2026-10-16,
+  recette sur l'hôte, contrat inchangé ; §11 de
+  [`plans/2026-07-28-migration-vcyclist.md`](plans/2026-07-28-migration-vcyclist.md)) — la
+  récupération d'élévation devenue concurrente (10 tuiles en parallèle) puis l'IGN en premier
+  (`API-104`, MNT + MNS en zoom 15) faisaient craindre un ×10 vers `tiles.mapterhorn.com`, des 429
+  de `data.geopf.fr` et un disque qui se remplit. Constaté le 16 octobre : aucun 429 lié à
+  l'IGN, à Mapterhorn ou à l'élévation dans les journaux du backend de prod sur 72 h ; sous
+  `~/prod/data/cache`, `ign-lidar-hd-mnt` et `ign-lidar-hd-mns` pèsent 3,4 Go chacun et
+  `mapterhorn` 165 Mo ; disque à 15 % (131 Go sur 928). Pas de test automatisé (recette sur
+  l'hôte). Le cache IGN n'a ni plafond ni éviction : la veille manuelle est remplacée par une
+  tâche optionnelle d'alerte, `OPS-46`. **À ne pas défaire** : le rythme de 20 requêtes/s
+  vers l'IGN, commun à tout le processus (`API-105`).
+
+- `OPS-41` **GoatCounter tourne en prod et compte** (constaté le 2026-10-16, étapes 5 et 6 du §8
+  de [`2026-10-15-web-analytics.md`](plans/2026-10-15-web-analytics.md) ; contrat inchangé, le
+  drapeau est `API-117`) — le service livré par `OPS-36` est déployé : `pedalons-prod_goatcounter`
+  à 1/1, après deux tâches tombées sur `password authentication failed`, la boucle attendue avant
+  `scripts/goatcounter-init.sh db`. Le site est créé et réglé (`sites.settings` : `collect = 30`,
+  `data_retention = 730`), ce qui atteste aussi que le conteneur jetable de `site` a atteint la
+  tâche Swarm de postgres. Le `.env` de prod porte les clés `GOATCOUNTER_*` et
+  `PEDALONS_ANALYTICS_COUNT_PATH=/count`, que `/api/config` sert (`analytics.countPath`). En base :
+  `hits` vide, `store` sans ligne, `hit_counts` à 178 lignes pour 502 vues (dernière heure comptée :
+  16 octobre, 17:00). Caddy de l'hôte en v2.11.4, avec `@count path /count` et `log_skip @count`
+  dans le Caddyfile. Staging : `pedalons-staging_goatcounter` à 0/0 et aucune clé `GOATCOUNTER_*`.
+  La politique de `LEGAL-19` (« mesure d'audience ») est en ligne, datée du 15 octobre 2026. Pas
+  de test automatisé (infrastructure). **Scindé** : la consignation des vérifications de l'étape 6
+  dans `OPERATIONS.md` (DNT, journaux sans IP, `/count` absent de chaque bloc Caddy, panne
+  simulée, purge, tunnel), la preuve écrite de la précondition du §5.3, l'en-tête du plan et la
+  relecture des chiffres au bout d'un mois restent ouverts sous le même identifiant. **À ne pas
+  défaire** : ceux d'`OPS-36` — réglages posés avant l'activation, prod seulement, `/count` jamais
+  écrit dans le journal de Caddy.
 
 ---
 
@@ -4059,6 +4216,21 @@ envoyé », un redémarrage renotifie tout le monde) et la purge des jetons pér
   mise à jour au même parcours, aucun ; changement de parcours, deux), où le rendu est remplacé par
   un PNG de 1×1 compté par Mockito. Ne pas comparer la `version` du parcours : le rejeu la fait
   monter (nom, visibilité) sans toucher au tracé.
+- `MIG-1` **Mise en production : secrets posés et essais faits** (11 au 15 octobre 2026, contrat inchangé) — Constaté à la relecture du 16 octobre 2026 (production sur `ac130fc5`). La migration en direct est
+  configurée des deux côtés en production : les variables `PEDALONS_BIKETEAM_*` (export depuis
+  `https://www.prendslaroue.fr`, secrets partagés) et `PEDALONS_MIGRATION_BIKETEAM_TEAM_ID` sont posées
+  sur `pedalons-prod_backend`, et le biketeam de production a déclenché ses jobs vers
+  `https://www.pedalons.fr`, ce qui suppose ses secrets posés aussi. Staging avait été exercé le
+  27 septembre 2026 (`ab`, `n-peloton`, `migration-test1`, dont une bascule réelle de
+  `migration-test1`). En production, six essais (`dryRun`) ont réussi (`SUCCEEDED` dans
+  `biketeam_migrations`) : `gaby` le 11 octobre, `n-peloton` les 11, 13, 14 et 15 octobre, dont un
+  `reset` le 15 ; `biketeam_migration_map` compte 216 lignes pour `gaby` et 7 195 pour `n-peloton`. Un
+  essai migre réellement dans Pédalons, sans bascule (plan §0) : les deux équipes existent donc en
+  production pendant que biketeam reste la source. Pas de test propre, c'est une étape
+  d'exploitation ; le code qu'elle exerce est couvert par `BiketeamLiveMigrationTest` et par la suite
+  e2e de la migration. **Reste ouvert sous le même identifiant** : le passage réel (`dryRun` décoché ;
+  aucun job réel en production au 16 octobre 2026) et la vérification, équipe par équipe, de la
+  redirection des domaines personnalisés.
 
 ---
 
@@ -4232,7 +4404,7 @@ Les constats corrigés avant l'ouverture du ledger sont dans l'audit de septembr
   bibliothèque vcyclist (migration non planifiée). À ne pas défaire : la vérification de la
   distance avant `computeOnePointPerDistance` (elle s'écrit `!(total <= max)` pour refuser aussi
   un NaN) ; relever `MAX_TRACK_DISTANCE_METERS` relève d'autant la mémoire qu'une requête peut
-  prendre. Tests (**écrits, non lancés**) : `GpxLimitsResourceTest` (fichier trop gros sur les
+  prendre. Tests (verts au 16 octobre 2026) : `GpxLimitsResourceTest` (fichier trop gros sur les
   quatre routes, tracé trop long par fichier et par points, trop de points, latitude et longitude
   hors bornes, parcours intact après un refus) et `GpxLimitsTest` (unitaire : tracé réaliste
   accepté, somme sur plusieurs tracés, coordonnée hors bornes ou NaN).
@@ -4499,7 +4671,7 @@ Les constats corrigés avant l'ouverture du ledger sont dans l'audit de septembr
   avoir été lancés** ; `DeviceOAuthThrottleTest` adapté ; e2e `flow-device.e2e.ts` (confirmation
   attendue après connexion, aucun `/complete` avant le clic, nouveau test du refus) et Patrol
   (`device_link_test`, `device_link_signed_out_test`, `device_manual_code_test`, étape
-  `authorize()`) — **non lancés**.
+  `authorize()`) — verts au 16 octobre 2026.
 
 - `SEC-17` **Le jeton du flux ICS meurt après 90 jours de silence** (2026-09-30, contrat
   inchangé, migration `V51__calendar_token_last_used`) — il n'expirait jamais. Chaque consultation
@@ -4734,7 +4906,7 @@ fait.
 | ID | Thème | Audit | Gravité | Livré |
 |---|---|---|---|---|
 | `AUD-2` | CI/CD | I4 | Critique | **Retour arrière par version** (2026-09-29) — les hôtes passent en Docker Swarm mono-nœud. `./build.sh` tague chaque image `${ENV_NAME}-<sha12>`, jamais déplacé, en plus de l'alias `${ENV_NAME}` du poste (depuis un arbre modifié, l'alias seul) ; `scripts/deploy.sh` déploie le tag du commit extrait (`--rev` pour un build antérieur), garde les cinq derniers builds par image et attend la fin du rollout, en erreur sur un rollback ou au bout de `DEPLOY_TIMEOUT`. backend et frontend roulent en start-first avec healthcheck et `failure_action: rollback` ; `docker service rollback` revient à la spec précédente. Pas de registry : sur un seul nœud, les images locales suffisent. Conséquence à ne pas défaire : pendant une minute deux backends partagent la base — migrations Flyway rétrocompatibles, tâches planifiées idempotentes ou réclamant leur travail en base (`PublicationPublishScheduler` réclame chaque brouillon par un update conditionnel sur la version, `AllPublicationRepositoryTest`). Procédure dans [`OPERATIONS.md`](OPERATIONS.md#rolling-updates-and-rollback) |
-| `AUD-3` | CI/CD | — | — | **La suite e2e tourne en CI** (2026-09-30) — `.github/workflows/e2e.yml`, **la nuit sur develop** (02:17 UTC) **et à la main** (`workflow_dispatch`), jamais sur les PR : trop longue pour les bloquer, et un test intermittent (« signing up with an address that has an account » est déjà tombé sous charge) n'y bloque personne à tort. Runner GitHub hébergé (`ubuntu-latest`, gratuit sur un dépôt public, jetable : aucun accès à l'infra ni à la base locale) ; pas de runner auto-hébergé, qui exécuterait le code d'une PR externe chez nous. Le job construit les deux images (`scripts/e2e.sh build all`) et démarre la pile `tribly-e2e` par `scripts/e2e.sh up`, base vide, suite complète sur les deux projets, une relance par test (`retries` sous `CI`) ; rapport, traces et journaux de la pile en artefact sur échec (14 jours). **Aucun secret** : `.env.e2e` est jetable et commité, la paire JWT générée dans le job. **Aucun mail ne sort** : une première étape échoue si `.env.e2e` ne pointe pas le mailer sur `mailpit` ou si l'overlay ne donne plus `.env.e2e` seul au backend. Sans valhalla (17 Go de tuiles), `E2E_NO_ROUTING` fait écarter `gpx-planner.e2e.ts` par `playwright.config.ts` ; le fond de carte est déjà simulé par les tests. `.e2e/` est créé et cédé à l'UID 1000 avant `up` : le backend tourne en `PUID` 1000, pas l'utilisateur du runner. **Pas encore vu tourner** : `workflow_dispatch` n'existe qu'une fois le fichier sur la branche par défaut — au premier run, surveiller la durée (`timeout-minutes: 120`) et les tests intermittents. Pendant mobile : `MOB-37` |
+| `AUD-3` | CI/CD | — | — | **La suite e2e tourne en CI** (2026-09-30) — `.github/workflows/e2e.yml`, **la nuit sur develop** (02:17 UTC) **et à la main** (`workflow_dispatch`), jamais sur les PR : trop longue pour les bloquer, et un test intermittent (« signing up with an address that has an account » est déjà tombé sous charge) n'y bloque personne à tort. Runner GitHub hébergé (`ubuntu-latest`, gratuit sur un dépôt public, jetable : aucun accès à l'infra ni à la base locale) ; pas de runner auto-hébergé, qui exécuterait le code d'une PR externe chez nous. Le job construit les deux images (`scripts/e2e.sh build all`) et démarre la pile `tribly-e2e` par `scripts/e2e.sh up`, base vide, suite complète sur les deux projets, une relance par test (`retries` sous `CI`) ; rapport, traces et journaux de la pile en artefact sur échec (14 jours). **Aucun secret** : `.env.e2e` est jetable et commité, la paire JWT générée dans le job. **Aucun mail ne sort** : une première étape échoue si `.env.e2e` ne pointe pas le mailer sur `mailpit` ou si l'overlay ne donne plus `.env.e2e` seul au backend. Sans valhalla (17 Go de tuiles), `E2E_NO_ROUTING` fait écarter `gpx-planner.e2e.ts` par `playwright.config.ts` ; le fond de carte est déjà simulé par les tests. `.e2e/` est créé et cédé à l'UID 1000 avant `up` : le backend tourne en `PUID` 1000, pas l'utilisateur du runner. **Vu tourner** (relecture du 16 octobre 2026) : environ 1 h par nuit, sous le `timeout-minutes: 120` ; un échec isolé le 15 octobre est à lire comme un test intermittent. Pendant mobile : `MOB-37` |
 | `AUD-4` | CI/CD | I9 | Important | **Même Node en CI que dans l'image** (2026-09-30) — la CI installait Node 24, l'image du frontend tourne sur `node:26.9.0-alpine`. Le Dockerfile fait référence : `frontend/.nvmrc` porte `26.9.0`, et `ci.yml` le lit (`node-version-file`) au lieu d'une version en dur ; le Dockerfile rappelle de changer les deux ensemble (ses deux `FROM`). Pas de champ `engines` : il n'est lu nulle part en CI ni dans l'image, et ne ferait qu'avertir en poste de travail ; `packageManager` (`pnpm@11.20.0`) était déjà la seule source de pnpm, pour la CI (`pnpm/action-setup`) comme pour l'image (corepack). Pas de test : la CI elle-même, au prochain passage |
 | `AUD-5` | Docker | I5 | Critique | **Un healthcheck sur chaque service** (2026-09-30) — minio, imgproxy, varnish et traefik rejoignent backend, frontend et postgres, chacun avec l'outil que son image embarque déjà : `mc ready local` (l'alias `local` est livré avec l'image `pgsty/minio`), `imgproxy health`, `varnishadm ping` (le socket de gestion du `varnishd` en cours, dans le répertoire de travail par défaut, qu'il soit en tmpfs sous compose ou dans l'image sous Swarm), `traefik healthcheck --ping`. traefik prend `--ping=true`, sur son entrypoint interne `:8080`, ni publié ni routé — **jamais sur `web`**, que Caddy ouvre à tout Internet ; les deux overlays (`docker-compose.local.yml`, `docker-compose.e2e.yml`), qui remplacent sa commande, le répètent. 10 s d'intervalle, 3 essais, 10 à 20 s de `start_period`. Sous Swarm, une tâche qui échoue son healthcheck est remplacée : c'est le gain, et le risque si une commande est fausse. Vérifié sur la pile e2e (les quatre `healthy`, `smoke.e2e.ts` et les tests d'avatar, qui passent par MinIO → imgproxy → varnish, verts) et par `docker stack config` ; **pas encore vu sous Swarm** — au premier `deploy.sh`, regarder `docker service ps` des quatre services. Pas de test automatisé |
 | `AUD-31` | Garmin | G6 | Important | **Le Makefile Garmin ne nomme plus de version du SDK** (2026-09-30, scindé de `AUD-27`) — `simulator-docker` et `run-docker` appelaient `connectiq-sdk-lin-8.4.0-2025-12-03-5122605dc` en dur. `DOCKER_CIQ_HOME` prend le nom du répertoire du SDK détecté (`CIQ_HOME`, déjà utilisé par les cibles natives) sous le point de montage du conteneur, `/root/.Garmin/ConnectIQ/Sdks/`. Vérifié par `make -n` avec le SDK installé et avec un `CIQ_HOME` fictif en 9.0.0. Pas de test automatisé |
@@ -4906,3 +5078,30 @@ fait.
   `data.geopf.fr` (coordonnées de tuiles d'~1 km, adresse IP du serveur), en parité FR/EN. Pas de
   test automatisé : texte statique. **À ne pas défaire** : un profil altimétrique, sur quelque
   écran que ce soit, affiche ce crédit ; une nouvelle source d'altitude s'y ajoute.
+- `LEGAL-19` **Suite : la politique en ligne** (2026-10-16, contrat inchangé) — La politique réécrite par `LEGAL-19` (commit `0ea379fd`) est en production : constaté le
+  16 octobre 2026 à la relecture du ledger, avec la prod sur `ac130fc5` (dont `0ea379fd` est un
+  ancêtre). `https://www.pedalons.fr/confidentialite` sert « Dernière mise à jour : 15 octobre 2026 »,
+  et GoatCounter tourne (`pedalons-prod_goatcounter` 1/1, pages vues comptées). La mention « pas
+  encore en ligne » de l'entrée d'origine est donc dépassée ; la date d'en-tête est restée celle du
+  15 octobre. Pas de test automatisé (texte) : vérifié en lisant la page servie. Ce qui reste de la
+  mise en service — confirmer par écrit la précondition du §5.3 du plan (aucun membre réel n'avait
+  accepté la politique précédente), consigner les vérifications de l'étape 6, relire les chiffres au
+  bout d'un mois — est sous `OPS-41`. À ne pas défaire : toute évolution du compteur (`WEB-90`) se
+  relit d'abord contre ce texte et le §5.1 du plan.
+- `LEGAL-21` **L'envoi automatique des parcours aux services GPS dans la politique** (2026-10-16,
+  contrat inchangé) — `API-120` envoyait déjà, en prod, le tracé et le nom des sorties où un membre
+  est inscrit à Hammerhead, Wahoo ou Garmin, alors que la politique disait « uniquement lorsque vous
+  choisissez d'envoyer un itinéraire ». En parité FR/EN : la section des services GPS distingue
+  l'envoi à la demande (qui reste chez le service) de l'envoi automatique — désactivé par défaut,
+  réglé service par service, sorties inscrites partant dans les 7 jours, nom « date · groupe ·
+  itinéraire », mis à jour si l'itinéraire change, retiré 24 h après le départ, à la désinscription
+  ou à l'annulation, à la désactivation, à la déconnexion et à l'effacement du compte — et déclare
+  le suivi des envois (identifiant chez le service, empreinte, dates) ; la base légale (consentement :
+  l'activation, retirable), la ligne Hammerhead / Garmin / Wahoo des destinataires, les transferts
+  hors UE (article 49.1.b) et une ligne de conservation du suivi suivent. Datée du 16 octobre 2026.
+  Pas de test automatisé (texte) ; l'app mobile embarque le texte comme asset, il n'y paraît qu'à la
+  build suivante. Les formulaires des stores ne changent pas : l'envoi part du serveur, aucun
+  fichier ne quitte l'appareil (`mobile/store-metadata/data-safety.md`, point 8). Pas d'e-mail aux
+  membres : l'envoi automatique est un opt-in, rien ne change pour qui ne l'active pas. **À ne pas
+  défaire** : toute évolution de ce qui part chez un service GPS (fenêtre, nom, données Wahoo,
+  nouveau service) se relit d'abord contre cette section.

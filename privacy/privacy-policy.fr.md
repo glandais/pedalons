@@ -1,6 +1,6 @@
 # Politique de confidentialité
 
-**Dernière mise à jour : 15 octobre 2026**
+**Dernière mise à jour : 16 octobre 2026**
 
 La présente politique de confidentialité décrit la manière dont Pedalons (« nous », « notre », « nos ») collecte, utilise et protège vos données personnelles lorsque vous utilisez notre plateforme (site web, application mobile, extensions pour appareils GPS).
 
@@ -151,7 +151,12 @@ Si vous connectez un service GPS externe (Hammerhead, Garmin, Wahoo) :
 
 - **Jetons d'accès OAuth** : chiffrés avant stockage. Nous ne stockons jamais vos identifiants (nom d'utilisateur/mot de passe) de ces services.
 - **Identifiant utilisateur externe** : lorsque le service en renvoie un à la connexion (c'est le cas de Hammerhead, pas de Wahoo), pour le relier à votre compte Pedalons.
-- **Ce que nous envoyons** : uniquement lorsque vous choisissez d'envoyer un itinéraire, sa trace et son nom sur votre compte du service. Wahoo reçoit aussi le point de départ, la distance, les dénivelés et une empreinte du fichier (pour éviter les doublons). La connexion à Wahoo demande l'autorisation de lire votre profil (Wahoo l'exige) et de créer des itinéraires ; nous ne lisons ni votre profil ni vos activités Wahoo.
+- **Ce que nous envoyons** : la trace et le nom d'un itinéraire sur votre compte du service, dans deux cas seulement :
+  - **à votre demande**, lorsque vous choisissez d'envoyer un itinéraire ; il reste ensuite sur votre compte du service ;
+  - **automatiquement**, si vous activez l'« envoi automatique » de ce service (désactivé par défaut, réglé service par service) : l'itinéraire de chaque sortie à laquelle vous êtes inscrit et dont le départ a lieu dans les 7 jours, nommé d'après la date, le groupe et l'itinéraire. Nous le mettons à jour si l'itinéraire change, et nous le retirons de votre compte du service 24 heures après le départ, si vous vous désinscrivez, si la sortie est annulée ou ne vous concerne plus, et dès que vous désactivez l'envoi automatique, déconnectez le service ou supprimez votre compte Pedalons.
+
+  Wahoo reçoit aussi le point de départ, la distance, les dénivelés et une empreinte du fichier (pour éviter les doublons). La connexion à Wahoo demande l'autorisation de lire votre profil (Wahoo l'exige) et de créer des itinéraires ; nous ne lisons ni votre profil ni vos activités Wahoo.
+- **Suivi des envois** : pour chaque itinéraire envoyé, l'identifiant que le service lui a attribué, une empreinte de ce qui a été envoyé et les dates d'envoi, afin de le mettre à jour ou de le retirer plutôt que d'en créer un doublon.
 
 ### Données stockées localement sur votre appareil
 
@@ -199,7 +204,7 @@ Pour chaque finalité, la base légale (RGPD) sur laquelle elle repose :
 - **Modérer les contenus : traiter les signalements, appliquer vos blocages, filtrer les termes injurieux à la publication** : Exécution du contrat (conditions d'utilisation) et intérêt légitime (protéger les membres)
 - **Conserver la preuve de votre acceptation des conditions d'utilisation** : Intérêt légitime
 - **Sécuriser votre compte (détection de sessions suspectes)** : Intérêt légitime
-- **Synchroniser vos itinéraires avec des appareils GPS connectés** : Consentement (connexion volontaire)
+- **Synchroniser vos itinéraires avec des appareils GPS connectés** : Consentement (connexion volontaire ; pour l'envoi automatique, son activation, service par service, que vous pouvez retirer à tout moment en le désactivant)
 - **Afficher les cartes (fonds de carte téléchargés par votre appareil auprès du fournisseur choisi)** : Intérêt légitime
 - **Position approximative (« Autour de moi », facultatif, application mobile)** : Consentement, donné via la demande d'autorisation du système d'exploitation ; vous pouvez le retirer dans les réglages de votre appareil
 - **Fournir votre flux calendrier personnel à l'application de calendrier de votre choix** : Consentement (abonnement volontaire)
@@ -250,8 +255,8 @@ Nous faisons appel à des services techniques pour le fonctionnement de la plate
   - *Rôle* : Acheminement des notifications push vers les iPhone, relayées par Firebase Cloud Messaging
   - *Données concernées* : Le même contenu de notification et le jeton push Apple de votre appareil
 - **Hammerhead, Garmin, Wahoo (États-Unis)**
-  - *Rôle* : Envoi de vos itinéraires vers votre appareil GPS, uniquement si vous connectez le service
-  - *Données concernées* : Jetons OAuth, et les itinéraires que vous choisissez d'envoyer (trace, nom ; pour Wahoo, aussi le point de départ, la distance et les dénivelés)
+  - *Rôle* : Envoi de vos itinéraires vers votre appareil GPS, uniquement si vous connectez le service : à votre demande, ou automatiquement si vous l'activez
+  - *Données concernées* : Jetons OAuth, les itinéraires que vous choisissez d'envoyer et, si vous activez l'envoi automatique, ceux des sorties auxquelles vous êtes inscrit dans les 7 jours (trace, nom — pour un envoi automatique, la date et le nom du groupe s'y ajoutent ; pour Wahoo, aussi le point de départ, la distance et les dénivelés)
 
 L'outil de mesure d'audience du site est hébergé par nos soins chez Scaleway, comme le reste de la plateforme : aucun autre prestataire ne reçoit ces statistiques.
 
@@ -306,7 +311,7 @@ Nos serveurs sont hébergés par **Scaleway** (Scaleway SAS, Vitry-sur-Seine, Fr
 
 Certains traitements que vous pouvez déclencher impliquent des serveurs situés hors de l'Union européenne :
 
-- **Services GPS tiers** (Hammerhead, Garmin, Wahoo, États-Unis) : uniquement si vous en connectez un, et seulement pour les itinéraires que vous leur envoyez. Ce transfert est nécessaire au service que vous demandez, l'envoi de l'itinéraire sur votre compte (article 49, paragraphe 1, point b, du RGPD) ; Garmin adhère en outre au cadre de protection des données UE–États-Unis (Data Privacy Framework).
+- **Services GPS tiers** (Hammerhead, Garmin, Wahoo, États-Unis) : uniquement si vous en connectez un, et seulement pour les itinéraires que vous leur envoyez ou, si vous activez l'envoi automatique, ceux des sorties auxquelles vous êtes inscrit. Ce transfert est nécessaire au service que vous demandez, la mise de l'itinéraire sur votre compte (article 49, paragraphe 1, point b, du RGPD) ; Garmin adhère en outre au cadre de protection des données UE–États-Unis (Data Privacy Framework).
 - **Fonds de carte et relief** : votre appareil envoie votre adresse IP et la zone affichée au fournisseur du fond que vous choisissez (voir section 4). Le fond « Satellite (ESRI) » vient d'Esri (États-Unis), qui adhère au Data Privacy Framework. Les tuiles de relief de Mapterhorn, demandées seulement si vous activez l'ombrage ou le relief 3D, sont servies par Cloudflare (États-Unis), qui y adhère aussi. Le fond OpenStreetMap est servi depuis le Royaume-Uni, qui bénéficie d'une décision d'adéquation de la Commission européenne.
 - **Composant de messagerie Firebase de Google** : l'application mobile l'intègre, et il contacte les serveurs de Google au démarrage de l'application, avant même que vous vous connectiez ou autorisiez les notifications, ce qui révèle l'adresse IP de votre appareil et crée un identifiant d'installation Firebase. L'application et le site n'intègrent que cette partie messagerie de Firebase : aucun composant d'analyse, de publicité ou de suivi de Firebase. Sur le site, ce composant n'est chargé qu'une fois les notifications activées.
 - **Notifications push** : Google (Firebase Cloud Messaging) peut traiter leur titre, leur texte et le jeton push de votre appareil aux États-Unis ; ce transfert est encadré par les clauses contractuelles types de la Commission européenne et par l'adhésion de Google LLC au Data Privacy Framework. Sur iPhone, elles sont remises par Apple (Apple Distribution International, Irlande), dont les transferts vers les États-Unis sont encadrés par les clauses contractuelles types ; dans un navigateur, par le service push de son éditeur, qui ne reçoit que le message chiffré (voir section 4). Cela n'a lieu que tant que vous autorisez les notifications.
@@ -333,6 +338,7 @@ Certains traitements que vous pouvez déclencher impliquent des serveurs situés
 - **Équipes et contenus (sorties, posts, itinéraires, voyages, pages)** : La suppression d'un élément le masque aux membres et aux visiteurs, mais il reste dans notre base : les administrateurs de l'équipe le voient toujours dans leurs listes, marqué « Supprimé », et peuvent le restaurer. L'enregistrement est conservé jusqu'à demande d'effacement définitif
 - **Commentaires** : Effacés dès que vous ou votre équipe les supprimez, avec les réponses qu'ils ont reçues ; l'extrait copié dans une notification subsiste jusqu'à l'expiration de celle-ci (90 jours)
 - **Photos, fichiers téléversés, points d'intérêt, lieux, inscriptions, clés d'accès, connexions aux services GPS** : Effacés immédiatement et définitivement lorsque vous ou votre équipe les supprimez
+- **Suivi des itinéraires envoyés à un service GPS** : Jusqu'au retrait de l'itinéraire envoyé automatiquement, et au plus tard jusqu'à la déconnexion du service, qui l'efface
 - **Fichiers attachés au contenu (images, GPX, FIT, images de carte générées)** : Tant que l'enregistrement associé existe en base. Les fichiers téléversés mais jamais attachés à un contenu sont effacés un jour après l'envoi
 - **Fichiers de l'outil d'analyse GPX** : 30 jours après création (supprimables par vous à tout moment)
 - **Notifications (boîte de réception, statut de lecture, copie du contenu, trace des envois par e-mail, push et canal de discussion)** : 90 jours. Les messages déjà publiés dans le canal de discussion d'une équipe y restent, selon les règles de ce service

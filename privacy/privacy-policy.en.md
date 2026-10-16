@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Last updated: October 15, 2026**
+**Last updated: October 16, 2026**
 
 This privacy policy describes how Pedalons ("we", "our", "us") collects, uses, and protects your personal data when you use our platform (website, mobile app, GPS device extensions).
 
@@ -151,7 +151,12 @@ If you connect an external GPS service (Hammerhead, Garmin, Wahoo):
 
 - **OAuth access tokens**: encrypted before storage. We never store your credentials (username/password) for these services.
 - **External user ID**: where the service returns one when you connect (Hammerhead does, Wahoo does not), to link it to your Pedalons account.
-- **What we send**: only when you choose to send a route, its track and its name to your account on the service. Wahoo also receives the start point, distance, climb and descent, and a fingerprint of the file (to avoid duplicates). Connecting Wahoo asks for permission to read your profile (Wahoo requires it) and to create routes; we do not read your Wahoo profile or activities.
+- **What we send**: a route's track and name to your account on the service, in two cases only:
+  - **on request**, when you choose to send a route; it then stays on your account on the service;
+  - **automatically**, if you turn on "automatic sending" for that service (off by default, set service by service): the route of each ride you are signed up for that starts within 7 days, named after the date, the group and the route. We update it if the route changes, and remove it from your account on the service 24 hours after the start, if you withdraw, if the ride is cancelled or no longer concerns you, and as soon as you turn automatic sending off, disconnect the service or delete your Pedalons account.
+
+  Wahoo also receives the start point, distance, climb and descent, and a fingerprint of the file (to avoid duplicates). Connecting Wahoo asks for permission to read your profile (Wahoo requires it) and to create routes; we do not read your Wahoo profile or activities.
+- **Sending record**: for each route sent, the identifier the service gave it, a fingerprint of what was sent and the sending dates, so that we update or remove it rather than create a duplicate.
 
 ### Data Stored Locally on Your Device
 
@@ -199,7 +204,7 @@ For each purpose, the legal basis (GDPR) it rests on:
 - **Moderate content: handle reports, apply your blocks, filter abusive terms at publication**: Performance of contract (terms of service) and legitimate interest (protecting members)
 - **Keep proof that you accepted the terms of service**: Legitimate interest
 - **Secure your account (suspicious session detection)**: Legitimate interest
-- **Sync your routes with connected GPS devices**: Consent (voluntary connection)
+- **Sync your routes with connected GPS devices**: Consent (voluntary connection; for automatic sending, turning it on, service by service, which you can withdraw at any time by turning it off)
 - **Display maps (map backgrounds downloaded by your device from the chosen provider)**: Legitimate interest
 - **Approximate location ("Around me", optional, mobile app)**: Consent, given through the operating-system permission prompt; you can withdraw it in your device settings
 - **Provide your personal calendar feed to the calendar app you choose**: Consent (voluntary subscription)
@@ -250,8 +255,8 @@ We use technical services to operate the platform:
   - *Role*: Delivering push notifications to iPhones, relayed by Firebase Cloud Messaging
   - *Data Involved*: The same notification content and your device's Apple push token
 - **Hammerhead, Garmin, Wahoo (United States)**
-  - *Role*: Sending your routes to your GPS device, only if you connect the service
-  - *Data Involved*: OAuth tokens, and the routes you choose to send (track, name; for Wahoo also start point, distance, climb and descent)
+  - *Role*: Sending your routes to your GPS device, only if you connect the service: on request, or automatically if you turn it on
+  - *Data Involved*: OAuth tokens, the routes you choose to send and, if you turn on automatic sending, those of the rides you are signed up for within 7 days (track, name — for an automatic send, the date and the group name are added; for Wahoo also start point, distance, climb and descent)
 
 The website's audience measurement tool is hosted by us at Scaleway, like the rest of the platform: no other provider receives these statistics.
 
@@ -306,7 +311,7 @@ Our servers are hosted by **Scaleway** (Scaleway SAS, Vitry-sur-Seine, France) a
 
 Some processing you can trigger involves servers outside the European Union:
 
-- **Third-party GPS services** (Hammerhead, Garmin, Wahoo, United States): only if you connect one, and only for the routes you send them. This transfer is necessary for the service you request, sending the route to your account (Article 49(1)(b) GDPR); Garmin is also certified under the EU–US Data Privacy Framework.
+- **Third-party GPS services** (Hammerhead, Garmin, Wahoo, United States): only if you connect one, and only for the routes you send them or, if you turn on automatic sending, those of the rides you are signed up for. This transfer is necessary for the service you request, putting the route on your account (Article 49(1)(b) GDPR); Garmin is also certified under the EU–US Data Privacy Framework.
 - **Map backgrounds and terrain**: your device sends your IP address and the area viewed to the provider of the background you choose (see section 4). The "Satellite (ESRI)" background comes from Esri (United States), which is certified under the Data Privacy Framework. Mapterhorn's terrain tiles, requested only if you switch on relief shading or 3-D terrain, are served by Cloudflare (United States), which is certified too. The OpenStreetMap background is served from the United Kingdom, which benefits from a European Commission adequacy decision.
 - **Google's Firebase messaging component**: the mobile app includes it, and it contacts Google's servers when the app starts, even before you sign in or allow notifications, which reveals your device's IP address and creates a Firebase installation identifier. The app and the website include only this messaging part of Firebase: no Firebase analytics, advertising or tracking component. On the website, this component is loaded only once you have turned on notifications.
 - **Push notifications**: Google (Firebase Cloud Messaging) may process their title, their text and your device's push token in the United States; this transfer is covered by the European Commission's standard contractual clauses and by Google LLC's certification under the Data Privacy Framework. On iPhone, they are delivered by Apple (Apple Distribution International, Ireland), whose transfers to the United States are covered by the standard contractual clauses; in a browser, by its vendor's push service, which only receives the encrypted message (see section 4). This happens only while you allow notifications.
@@ -333,6 +338,7 @@ Some processing you can trigger involves servers outside the European Union:
 - **Teams and content (rides, posts, routes, trips, pages)**: Deleting an item hides it from members and visitors, but it stays in our database: the team's administrators still see it in their lists, marked "Deleted", and can restore it. The record is kept until permanent erasure is requested
 - **Comments**: Erased as soon as you or your team delete them, together with the replies they received; the extract copied into a notification remains until that notification expires (90 days)
 - **Photos, uploaded files, waypoints, places, sign-ups, passkeys, GPS-service connections**: Erased immediately and permanently when you or your team delete them
+- **Record of routes sent to a GPS service**: Until the automatically sent route is removed, and at the latest until you disconnect the service, which erases it
 - **Files attached to content (images, GPX, FIT, generated map images)**: As long as the associated record exists in our database. Files uploaded but never attached to any content are erased one day after upload
 - **GPX analysis tool files**: 30 days from creation (deletable by you at any time)
 - **Notifications (inbox, read status, copy of the content, record of email, push and chat-channel sends)**: 90 days. Messages already posted to a team's chat channel stay there under that service's rules
