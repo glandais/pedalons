@@ -112,11 +112,12 @@ export function TeamPostsPage() {
         ) : posts.length > 0 ? (
           <Stack gap="xl">
             <SimpleGrid ref={listTopRef} cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
-              {posts.map((publication) => (
+              {posts.map((publication, index) => (
                 <PublicationCard
                   key={publication.id}
                   publication={publication}
                   showTeam={false}
+                  priority={index === 0}
                   actions={
                     <PublicationCardActions publication={publication} canManage={canCreate} />
                   }

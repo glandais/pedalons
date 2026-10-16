@@ -35,6 +35,7 @@ export function LatestPostsList({ posts }: { posts: PostDto[] }) {
                     alt={post.name}
                     type="POST"
                     height={72}
+                    sizes="96px"
                   />
                 </div>
               )}

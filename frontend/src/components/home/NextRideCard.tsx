@@ -120,6 +120,8 @@ export function NextRideCard({ ride, headingId }: NextRideCardProps) {
             type="RIDE"
             height={220}
             thumbnailUrl={thumbnailUrl}
+            sizes="(min-width: 48em) 260px, 100vw"
+            priority
           />
           <Group pos="absolute" top={12} left={12} gap={6}>
             <Badge color="gray" variant="white" leftSection={<IconCalendar size={12} />}>

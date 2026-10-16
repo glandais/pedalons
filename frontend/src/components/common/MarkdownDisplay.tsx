@@ -68,7 +68,16 @@ export function MarkdownDisplay({
           },
           // Regular image URLs
           img: ({ src, alt, ...props }) => (
-            <Image src={src} alt={alt} maw="100%" h="auto" radius="md" my="md" {...props} />
+            <Image
+              src={src}
+              alt={alt}
+              maw="100%"
+              h="auto"
+              radius="md"
+              my="md"
+              loading="lazy"
+              {...props}
+            />
           ),
           // Headings
           h1: ({ children }) => (

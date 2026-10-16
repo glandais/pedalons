@@ -326,12 +326,6 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
       chargement initial ; il reste à ne monter `PedalonsMap` que lorsque son conteneur devient
       visible (IntersectionObserver), place réservée, sur les pages sortie, parcours et voyage.
 
-- [ ] `WEB-97` **Une image de média sans dimensions décale toute la page sortie (XS–S)** — CLS
-      0,57 sur mobile (16 octobre 2026) : l'`<img class="mantine-Image-root">` de `MediaDisplay`
-      (`/api/download/public/images/…/448`) arrive sans `width`/`height` et pousse le `Container`
-      principal. Réserver la place : un `aspect-ratio` sur le conteneur, ou les dimensions de
-      l'image si l'API peut les fournir (contrat).
-
 ### Couverture e2e — ce que l'audit du 27 septembre laisse ouvert
 
 L'audit ([archivé](plans/archive/2026-09-27-e2e-coverage-audit.md), `WEB-26`) est exécuté : P0, P1

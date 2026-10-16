@@ -39,9 +39,16 @@ interface PublicationCardProps {
    * team — a team's own feed. Left out, the card has no actions.
    */
   actions?: ReactNode
+  /** The first card of a page whose list starts on the first screen: see `CardImage.priority`. */
+  priority?: boolean
 }
 
-export function PublicationCard({ publication, showTeam, actions }: PublicationCardProps) {
+export function PublicationCard({
+  publication,
+  showTeam,
+  actions,
+  priority = false,
+}: PublicationCardProps) {
   const { t } = useTranslation()
   // Read the server-computed flag — never recompute registration client-side.
   const isRegistered =
@@ -183,6 +190,7 @@ export function PublicationCard({ publication, showTeam, actions }: PublicationC
         alt={publication.name}
         type={publication.type}
         height={160}
+        priority={priority}
       />
 
       <CardContent>

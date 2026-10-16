@@ -56,6 +56,7 @@ export function RouteThumbnail({
         w={pixelSize}
         h={pixelSize}
         fit="cover"
+        loading="lazy"
         fallbackSrc={undefined}
       />
     </Box>

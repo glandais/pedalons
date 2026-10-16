@@ -78,8 +78,13 @@ export function MyRidesPage() {
       ) : (
         <Stack gap="md">
           <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
-            {publications.map((publication) => (
-              <PublicationCard key={publication.id} publication={publication} showTeam />
+            {publications.map((publication, index) => (
+              <PublicationCard
+                key={publication.id}
+                publication={publication}
+                showTeam
+                priority={index === 0}
+              />
             ))}
           </SimpleGrid>
           <Pagination

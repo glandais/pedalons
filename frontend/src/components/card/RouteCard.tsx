@@ -17,6 +17,7 @@ import {
 import { EntityLogo } from '../common/EntityLogo'
 import { paths } from '@/config/paths'
 import { TagList } from '../tag/TagList'
+import { CARD_GRID_SIZES, sizedUrl, widthSrcSet } from '@/lib/imageSrcSet'
 
 interface RouteCardProps {
   route: RouteDto
@@ -37,7 +38,17 @@ export function RouteCard({ route, showTeam, actions }: RouteCardProps) {
 
   return (
     <Card to={paths.route(route.team.slug, route.slug)} actions={actions}>
-      <Image src={thumbnailUrl?.replace('{size}', '400')} alt={route.name} />
+      {/* Map thumbnails are square: the ratio holds the card's height before the picture loads. */}
+      {thumbnailUrl && (
+        <Image
+          src={sizedUrl(thumbnailUrl, 400)}
+          srcSet={widthSrcSet(thumbnailUrl, [400, 800, 1200])}
+          sizes={CARD_GRID_SIZES}
+          alt={route.name}
+          loading="lazy"
+          style={{ aspectRatio: '1 / 1' }}
+        />
+      )}
 
       <CardContent>
         {showTeam && <CardTeamLink teamSlug={route.team.slug} teamName={route.team.name} />}

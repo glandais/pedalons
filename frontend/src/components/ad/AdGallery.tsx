@@ -2,13 +2,14 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ActionIcon, Box, Group, Image, Modal, Paper, UnstyledButton } from '@mantine/core'
 import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react'
+import { densitySrcSet, sizedUrl, widthSrcSet } from '@/lib/imageSrcSet'
 
 /** Height of the main frame, and the thumbnail strip's edge. */
 const MAIN_HEIGHT = 340
 const THUMB_SIZE = 72
-
-/** `{size}` templates ask for twice the rendered width, for HiDPI. */
-const resolve = (template: string, width: number) => template.replace('{size}', String(width))
+/** The main frame spans the detail page's `Container size="md"` (960 px). */
+const MAIN_SIZES = '(min-width: 60em) 960px, 100vw'
+const MAIN_WIDTHS = [480, 960, 1440, 1920] as const
 
 export interface AdGalleryProps {
   /** `AdDto.images` — URL templates in editor order, the first being the card's thumbnail. */
@@ -46,7 +47,17 @@ export function AdGallery({ images, name }: AdGalleryProps) {
             aria-label={t('ads.detail.openImage', { index: index + 1, total: images.length })}
             style={{ display: 'block', width: '100%' }}
           >
-            <Image src={resolve(current, MAIN_HEIGHT * 2)} alt={name} h={MAIN_HEIGHT} fit="cover" />
+            {/* The ad page's LCP: fetched first, never lazily. */}
+            <Image
+              src={sizedUrl(current, MAIN_HEIGHT * 2)}
+              srcSet={widthSrcSet(current, MAIN_WIDTHS)}
+              sizes={MAIN_SIZES}
+              alt={name}
+              h={MAIN_HEIGHT}
+              fit="cover"
+              loading="eager"
+              fetchPriority="high"
+            />
           </UnstyledButton>
 
           {images.length > 1 && (
@@ -98,12 +109,14 @@ export function AdGallery({ images, name }: AdGalleryProps) {
                 }}
               >
                 <Image
-                  src={resolve(image, THUMB_SIZE * 2)}
+                  src={sizedUrl(image, THUMB_SIZE * 2)}
+                  srcSet={densitySrcSet(image, THUMB_SIZE)}
                   alt={name}
                   w={THUMB_SIZE}
                   h={THUMB_SIZE}
                   fit="cover"
                   radius="sm"
+                  loading="lazy"
                 />
               </UnstyledButton>
             ))}
@@ -119,7 +132,7 @@ export function AdGallery({ images, name }: AdGalleryProps) {
         padding="xs"
         title={t('ads.detail.gallery')}
       >
-        <Image src={resolve(current, 1920)} alt={name} fit="contain" mah="80vh" />
+        <Image src={sizedUrl(current, 1920)} alt={name} fit="contain" mah="80vh" />
       </Modal>
     </>
   )

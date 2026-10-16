@@ -5,10 +5,16 @@ import { IconPhoto } from '@tabler/icons-react'
 import type { AssetDto } from '@/api/dto'
 import {
   getImageSizeStyle,
+  getImageSizeWidth,
   resolveAssetImageUrl,
   type ImageSize,
   DEFAULT_IMAGE_SIZE,
 } from '../../lib/assetMarkdown'
+import { densitySrcSet, widthSrcSet } from '@/lib/imageSrcSet'
+
+/** A `full` picture spans the text column, at most a `Container size="md"` (960 px). */
+const FULL_SIZES = '(min-width: 60em) 960px, 100vw'
+const FULL_WIDTHS = [640, 1280, 1920] as const
 
 export interface AssetImageProps {
   assetId: string
@@ -29,8 +35,26 @@ export function AssetImage({
   const imgRef = useRef<HTMLImageElement>(null)
 
   const url = useMemo(() => resolveAssetImageUrl(assetId, images, size), [assetId, images, size])
+  const asset = useMemo(() => images.find((img) => img.id === assetId), [assetId, images])
 
   const sizeStyle = getImageSizeStyle(size)
+  const targetWidth = getImageSizeWidth(size)
+
+  // With the asset's dimensions known, the frame is sized before the picture arrives — no text
+  // jumping below it once it loads. Without them (a file the backfill has not reached), the
+  // loader stands in, as it always did.
+  const dims = asset?.imageDimensions
+  const ratio = dims?.width && dims?.height ? `${dims.width} / ${dims.height}` : undefined
+  const width =
+    sizeStyle.w ?? (ratio && dims?.width ? Math.min(dims.width, targetWidth) : undefined)
+  // That width is already capped at the size's own: only the column may narrow it further.
+  const maxWidth = width !== undefined && sizeStyle.w === undefined ? '100%' : sizeStyle.maw
+  const template = asset?.imageUrl
+  const srcSet = template
+    ? size === 'full'
+      ? widthSrcSet(template, FULL_WIDTHS)
+      : densitySrcSet(template, targetWidth)
+    : undefined
 
   // SSR renders the <img> already pointing at its final src, so the browser can finish loading it
   // before React hydrates and attaches onLoad — the native load event fires and is missed, leaving
@@ -77,7 +101,7 @@ export function AssetImage({
 
   return (
     <Box display="inline-block">
-      {isLoading && (
+      {isLoading && !ratio && (
         <Center
           p="md"
           bg="var(--mantine-color-default-hover)"
@@ -89,13 +113,20 @@ export function AssetImage({
       <Image
         ref={imgRef}
         src={url}
+        srcSet={srcSet}
+        sizes={size === 'full' ? FULL_SIZES : undefined}
         alt={altText}
-        w={sizeStyle.w}
+        w={width}
         h={sizeStyle.h}
-        maw={sizeStyle.maw}
+        maw={maxWidth}
         fit={sizeStyle.fit}
         radius="md"
-        style={{ display: isLoading ? 'none' : 'block' }}
+        loading="lazy"
+        style={{
+          display: isLoading && !ratio ? 'none' : 'block',
+          aspectRatio: ratio,
+          backgroundColor: isLoading ? 'var(--mantine-color-default-hover)' : undefined,
+        }}
         onLoad={() => setIsLoading(false)}
         onError={() => {
           setIsLoading(false)

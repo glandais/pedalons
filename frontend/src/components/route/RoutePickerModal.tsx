@@ -160,6 +160,7 @@ export function RoutePickerModal({
                     h={128}
                     fit="cover"
                     radius="sm"
+                    loading="lazy"
                   />
                   <Text fw={500} truncate>
                     {route.name}
