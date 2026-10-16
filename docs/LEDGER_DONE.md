@@ -3537,6 +3537,21 @@ plus la colonne. Le départ d'un groupe n'existe plus que dans `ride_groups.star
 
 ## OPS — Exploitation, déploiement, recette du backend
 
+- `OPS-43` **Mise à jour des données Valhalla sans coupure du routage** (2026-10-16, livré dans le
+  dépôt ; la stack partagée doit être redéployée par `scripts/deploy.sh --shared` pour en profiter) —
+  le service `valhalla` de `docker-compose.shared.yml` reçoit un healthcheck (`curl /status`) et
+  `update_config` start-first avec rollback ; la procédure « Updating the shared Valhalla data » de
+  [`OPERATIONS.md`](OPERATIONS.md#updating-the-shared-valhalla-data) construit les tuiles dans
+  `data/valhalla-next` par un conteneur jetable (`serve_tiles=False`, même image par digest), puis
+  bascule par deux `mv` et un `docker service update --force`. Corrige aussi une affirmation fausse
+  de la doc et des commentaires : l'image fixe `use_tiles_ignore_pbf=True`, si bien qu'un changement de
+  `tile_urls` ou du `.pbf` ne reconstruit **rien** une fois des tuiles présentes. Pas de test :
+  `docker compose config` et `docker stack config` acceptent le fichier, la commande du healthcheck
+  rend 0 dans le conteneur de prod. **À ne pas défaire** : le healthcheck compte pour sain un
+  conteneur sans `valhalla_tiles.tar` (il construit ses premières tuiles), sans quoi Docker tuerait
+  ce build de plusieurs heures ; et pas de `force_rebuild` sur le service, que ce même healthcheck
+  tuerait puisque l'ancien `.tar` est encore là.
+
 - `OPS-36` **GoatCounter auto-hébergé pour la mesure d'audience du site** (2026-10-15, livré
   dans le dépôt, pas encore déployé : c'est `OPS-41`) — plan
   [`2026-10-15-web-analytics.md`](plans/2026-10-15-web-analytics.md) (§3, étape 1 du §8, faits

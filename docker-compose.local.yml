@@ -37,8 +37,8 @@ services:
       - "127.0.0.1:1025:1025" # SMTP, for the backend in dev mode
       - "127.0.0.1:8025:8025" # Web UI
 
-  # Image, volumes and the tile_urls whose every change costs a multi-hour rebuild all come from the
-  # shared file — only the container name and the published port are ours.
+  # Image, volumes, tile_urls (read on the first start only, when no tiles exist yet) and the
+  # healthcheck all come from the shared file — only the container name and the published port are ours.
   valhalla:
     extends:
       file: docker-compose.shared.yml

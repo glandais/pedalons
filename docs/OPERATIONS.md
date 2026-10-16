@@ -31,8 +31,8 @@ valid for both tools — its header lists what each one ignores.
 **Always deploy through `scripts/deploy.sh`**, never `docker stack deploy` by hand:
 
 - `docker stack deploy` reads **no `.env`**. Every `${VAR}` of the file would expand to nothing —
-  including, for the shared stack, a `VALHALLA_TILE_URLS` whose silent fallback to the default costs
-  a rebuild of several hours;
+  including, for the shared stack, a `VALHALLA_TILE_URLS` silently replaced by the default, which a
+  host without tiles yet would spend hours building;
 - it picks the **build of the checked-out commit**, `pedalons-backend:${ENV_NAME}-<sha12>` (see
   [Rolling updates](#rolling-updates-and-rollback)), and refuses a checkout with uncommitted changes;
 - the stack must be named after `ENV_NAME`: the backup scripts find its containers and volumes
@@ -117,7 +117,7 @@ limit is killed by the kernel (`OOMKilled` in `docker inspect`, `task: non-zero 
 | traefik | 256M | |
 | goatcounter | 128M | production only; 36 to 40 MiB at rest, the rest for CSV exports and the dashboard |
 | tileserver (shared) | 3G | ~1.8 GB resident |
-| valhalla (shared) | none | the rebuild after a `tile_urls` change needs far more than the service |
+| valhalla (shared) | none | the first start on an empty `data/valhalla` builds the tiles in the service's container, and that build needs far more than the service |
 | monitoring stack | 2G in all | see [Monitoring](#monitoring); ~1 GB resident |
 
 **The backend has no `-Xmx`.** The image's entrypoint (`run-java.sh`, from the Jib base image
@@ -578,8 +578,9 @@ site's defaults. Until then `/count` refuses every hit — the site is unaffecte
 ### Seeding the shared Valhalla data
 
 `~/shared/data/valhalla` is ~17 GB and takes hours to build from the `.osm.pbf`. On first start the
-container hashes the directory and skips the build if it matches — the log then says *"Jumping
-directly to the tile loading!"*, and anything mentioning a rebuild means the check failed. When an
+container builds only if it finds no tiles (`valhalla_tiles.tar` or `valhalla_tiles/`): the image
+sets `use_tiles_ignore_pbf=True`, so once tiles exist it loads them without looking at the `.pbf`,
+its hashes or `tile_urls` — the log then says *"Jumping directly to the tile loading!"*. When an
 environment already holds a built copy, move it rather than rebuild: keep `france-latest.osm.pbf`,
 `valhalla_tiles.tar` and `file_hashes.txt` together, and note that `mv` cannot rename the
 root-owned subdirectories (`elevation_data`, `valhalla_tiles`) out of a user-owned parent — do that
@@ -589,6 +590,56 @@ part from a root context:
 docker run --rm -v /home/pedalons:/h alpine \
   mv /h/staging/data/valhalla/elevation_data /h/shared/data/valhalla/
 ```
+
+### Updating the shared Valhalla data
+
+Routing reads the OSM extract the tiles were built from, never a newer one: refreshing it is a
+build, by hand. **Replacing the `.pbf` or changing `VALHALLA_TILE_URLS` rebuilds nothing** (see
+above), and `force_rebuild=True` on the service would build inside it — routing down for the whole
+build, and the healthcheck killing it as unhealthy, since the old `.tar` is still there. Build
+beside it instead, then switch: the service runs start-first behind a healthcheck
+(`docker-compose.shared.yml`), so the old task serves until the new one has loaded its tiles — a
+few seconds — and the switch cuts nothing.
+
+1. **Build in a sibling directory**, with a one-off container of the image the service runs
+   (pinned by digest: build and service must agree on the tile format) that exits once done:
+
+   ```bash
+   cd ~/shared/data
+   IMG=$(docker service inspect pedalons-shared_valhalla --format '{{.Spec.TaskTemplate.ContainerSpec.Image}}')
+   mkdir valhalla-next
+   cp valhalla/.gitignore valhalla/.gitkeep valhalla-next/            # tracked by git
+   # Reuse the elevation tiles (3 GB, root-owned) rather than download them again.
+   docker run --rm -v "$PWD":/d alpine cp -a /d/valhalla/elevation_data /d/valhalla-next/
+   docker run -d --name valhalla-build -v "$PWD/valhalla-next":/custom_files      -e tile_urls=http://download.geofabrik.de/europe/france-latest.osm.pbf      -e build_elevation=True -e build_admins=True -e build_time_zones=True      -e server_threads=4 -e serve_tiles=False "$IMG"
+   docker logs -f valhalla-build      # ends with "INFO: Not serving tiles. Exiting."
+   docker inspect valhalla-build --format '{{.State.ExitCode}}'   # 0, then: docker rm valhalla-build
+   ```
+
+   With no tiles and no `.pbf` there, it downloads the extract and builds everything.
+   `server_threads=4` keeps cores for production; use the same `tile_urls` as the shared `.env`.
+
+2. **Try it** on a loopback port before switching:
+
+   ```bash
+   docker run -d --rm --name valhalla-test -p 127.0.0.1:8003:8002      -v "$PWD/valhalla-next":/custom_files -e server_threads=2 "$IMG"
+   curl -s localhost:8003/route -d '{"locations":[{"lat":48.11,"lon":-1.68},{"lat":48.2,"lon":-1.6}],"costing":"bicycle"}' | head -c 300
+   docker stop valhalla-test
+   ```
+
+3. **Switch**:
+
+   ```bash
+   mv valhalla valhalla-prev && mv valhalla-next valhalla
+   docker service update --force pedalons-shared_valhalla
+   ```
+
+   The running task keeps serving the old data meanwhile: a bind-mounted *directory* follows its
+   inode through the rename (unlike a single bind-mounted file). Rolling back is the same two `mv`
+   reversed and the same `update --force`. Once the new data has been checked, drop the old copy
+   from a root context — its files are root's —
+   `docker run --rm -v "$PWD":/d alpine rm -rf /d/valhalla-prev`, and refresh the
+   [cold backup](#cold-backup-of-the-shared-stack).
 
 ### Store reviewers' demo data
 

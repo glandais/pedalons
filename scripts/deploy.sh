@@ -11,8 +11,8 @@
 #
 #   - `docker stack deploy` reads no .env. Every ${VAR} of docker-compose.yml would expand to an
 #     empty string, and only the few spelled `${VAR:?}` would stop it. The shared stack is no
-#     exception: a VALHALLA_TILE_URLS set in its .env and silently replaced by the default costs a
-#     rebuild of several hours.
+#     exception: a VALHALLA_TILE_URLS set in its .env would be silently replaced by the default, and
+#     a host without tiles yet would spend hours building the wrong extract.
 #   - backend and frontend run the image tagged with a commit (scripts/_image_tag.sh), which this
 #     script picks. A new tag is a new service spec, which Swarm rolls out start-first: the old task
 #     serves until the new one is healthy, and a new task that never gets there is rolled back. The
