@@ -20,7 +20,7 @@ mixin _$RideWeatherSummaryDto {
  String get status;/// For NOT_YET_AVAILABLE: when the forecast opens, seven days before the departure
  String? get availableFrom;/// WMO code at the departure hour
  int? get weatherCode;/// weatherCode folded into a condition, same table as WeatherConditionsDto.condition
- String? get condition;/// Whether the departure hour is between sunrise and sunset
+ String? get condition;/// Whether the departure itself (not the round model hour read for it) is between sunrise and sunset
  bool? get daylight;/// Air temperature at the departure hour, °C
  double? get temperature;/// Lowest temperature over the window, °C
  double? get temperatureMin;/// Highest temperature over the window, °C
@@ -273,7 +273,7 @@ class _RideWeatherSummaryDto implements RideWeatherSummaryDto {
 @override final  int? weatherCode;
 /// weatherCode folded into a condition, same table as WeatherConditionsDto.condition
 @override final  String? condition;
-/// Whether the departure hour is between sunrise and sunset
+/// Whether the departure itself (not the round model hour read for it) is between sunrise and sunset
 @override final  bool? daylight;
 /// Air temperature at the departure hour, °C
 @override final  double? temperature;

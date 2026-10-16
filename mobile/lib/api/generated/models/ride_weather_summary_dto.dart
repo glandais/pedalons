@@ -29,7 +29,7 @@ abstract class RideWeatherSummaryDto with _$RideWeatherSummaryDto {
     /// weatherCode folded into a condition, same table as WeatherConditionsDto.condition
     String? condition,
 
-    /// Whether the departure hour is between sunrise and sunset
+    /// Whether the departure itself (not the round model hour read for it) is between sunrise and sunset
     bool? daylight,
 
     /// Air temperature at the departure hour, °C

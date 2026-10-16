@@ -1221,7 +1221,9 @@ export const ListMyParticipationsResponse = zod
                     daylight: zod
                       .boolean()
                       .optional()
-                      .describe('Whether the departure hour is between sunrise and sunset'),
+                      .describe(
+                        'Whether the departure itself (not the round model hour read for it) is between sunrise and sunset'
+                      ),
                     temperature: zod
                       .number()
                       .optional()
@@ -2588,7 +2590,9 @@ export const ListMyParticipationsResponse = zod
                     daylight: zod
                       .boolean()
                       .optional()
-                      .describe('Whether the departure hour is between sunrise and sunset'),
+                      .describe(
+                        'Whether the departure itself (not the round model hour read for it) is between sunrise and sunset'
+                      ),
                     temperature: zod
                       .number()
                       .optional()
@@ -3488,7 +3492,9 @@ export const GetMyProfileSummaryResponse = zod
                         daylight: zod
                           .boolean()
                           .optional()
-                          .describe('Whether the departure hour is between sunrise and sunset'),
+                          .describe(
+                            'Whether the departure itself (not the round model hour read for it) is between sunrise and sunset'
+                          ),
                         temperature: zod
                           .number()
                           .optional()
@@ -4870,7 +4876,9 @@ export const GetMyProfileSummaryResponse = zod
                         daylight: zod
                           .boolean()
                           .optional()
-                          .describe('Whether the departure hour is between sunrise and sunset'),
+                          .describe(
+                            'Whether the departure itself (not the round model hour read for it) is between sunrise and sunset'
+                          ),
                         temperature: zod
                           .number()
                           .optional()

@@ -888,7 +888,9 @@ export const CreateRideResponse = zod
         daylight: zod
           .boolean()
           .optional()
-          .describe('Whether the departure hour is between sunrise and sunset'),
+          .describe(
+            'Whether the departure itself (not the round model hour read for it) is between sunrise and sunset'
+          ),
         temperature: zod.number().optional().describe('Air temperature at the departure hour, °C'),
         temperatureMin: zod.number().optional().describe('Lowest temperature over the window, °C'),
         temperatureMax: zod.number().optional().describe('Highest temperature over the window, °C'),
@@ -1854,7 +1856,9 @@ export const UpdateRideResponse = zod
         daylight: zod
           .boolean()
           .optional()
-          .describe('Whether the departure hour is between sunrise and sunset'),
+          .describe(
+            'Whether the departure itself (not the round model hour read for it) is between sunrise and sunset'
+          ),
         temperature: zod.number().optional().describe('Air temperature at the departure hour, °C'),
         temperatureMin: zod.number().optional().describe('Lowest temperature over the window, °C'),
         temperatureMax: zod.number().optional().describe('Highest temperature over the window, °C'),
@@ -2540,7 +2544,9 @@ export const GetRideResponse = zod
         daylight: zod
           .boolean()
           .optional()
-          .describe('Whether the departure hour is between sunrise and sunset'),
+          .describe(
+            'Whether the departure itself (not the round model hour read for it) is between sunrise and sunset'
+          ),
         temperature: zod.number().optional().describe('Air temperature at the departure hour, °C'),
         temperatureMin: zod.number().optional().describe('Lowest temperature over the window, °C'),
         temperatureMax: zod.number().optional().describe('Highest temperature over the window, °C'),
@@ -3337,7 +3343,9 @@ export const ChangeRideSlugResponse = zod
         daylight: zod
           .boolean()
           .optional()
-          .describe('Whether the departure hour is between sunrise and sunset'),
+          .describe(
+            'Whether the departure itself (not the round model hour read for it) is between sunrise and sunset'
+          ),
         temperature: zod.number().optional().describe('Air temperature at the departure hour, °C'),
         temperatureMin: zod.number().optional().describe('Lowest temperature over the window, °C'),
         temperatureMax: zod.number().optional().describe('Highest temperature over the window, °C'),
@@ -4029,7 +4037,9 @@ export const ChangeRideStatusResponse = zod
         daylight: zod
           .boolean()
           .optional()
-          .describe('Whether the departure hour is between sunrise and sunset'),
+          .describe(
+            'Whether the departure itself (not the round model hour read for it) is between sunrise and sunset'
+          ),
         temperature: zod.number().optional().describe('Air temperature at the departure hour, °C'),
         temperatureMin: zod.number().optional().describe('Lowest temperature over the window, °C'),
         temperatureMax: zod.number().optional().describe('Highest temperature over the window, °C'),
@@ -4715,7 +4725,9 @@ export const UndeleteRideResponse = zod
         daylight: zod
           .boolean()
           .optional()
-          .describe('Whether the departure hour is between sunrise and sunset'),
+          .describe(
+            'Whether the departure itself (not the round model hour read for it) is between sunrise and sunset'
+          ),
         temperature: zod.number().optional().describe('Air temperature at the departure hour, °C'),
         temperatureMin: zod.number().optional().describe('Lowest temperature over the window, °C'),
         temperatureMax: zod.number().optional().describe('Highest temperature over the window, °C'),
@@ -4854,7 +4866,7 @@ export const GetRideWeatherResponse = zod
             daylight: zod
               .boolean()
               .describe(
-                'Whether time falls between sunrise and sunset at that place — picks the day or night icon'
+                "Whether the moment asked about (the departure, the checkpoint's passage) falls between sunrise and sunset at that place — not time, the round model hour. Picks the day or night icon"
               ),
             temperature: zod.number().describe('Air temperature at 2 m, °C'),
             apparentTemperature: zod
@@ -4997,7 +5009,7 @@ export const GetRideWeatherResponse = zod
                         daylight: zod
                           .boolean()
                           .describe(
-                            'Whether time falls between sunrise and sunset at that place — picks the day or night icon'
+                            "Whether the moment asked about (the departure, the checkpoint's passage) falls between sunrise and sunset at that place — not time, the round model hour. Picks the day or night icon"
                           ),
                         temperature: zod.number().describe('Air temperature at 2 m, °C'),
                         apparentTemperature: zod

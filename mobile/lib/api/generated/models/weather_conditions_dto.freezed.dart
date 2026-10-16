@@ -19,7 +19,7 @@ mixin _$WeatherConditionsDto {
 /// The forecast hour used: the one nearest the moment asked about
  String get time;/// WMO weather interpretation code, as the model gives it. condition is its folding; a client reads condition, this is for the curious.
  int get weatherCode;/// weatherCode folded into what a rider decides on. WMO code → condition: 0 CLEAR; 1 MOSTLY_CLEAR; 2 PARTLY_CLOUDY; 3 OVERCAST; 45, 48 FOG; 51, 53, 55 DRIZZLE; 56, 57, 66, 67 FREEZING_RAIN; 61, 63 RAIN; 65 HEAVY_RAIN; 71, 73, 75, 77, 85, 86 SNOW; 80, 81, 82 SHOWERS; 95, 96, 99 THUNDERSTORM; any other OVERCAST. A client meeting a value it does not know shows a plain cloud.
- String get condition;/// Whether time falls between sunrise and sunset at that place — picks the day or night icon
+ String get condition;/// Whether the moment asked about (the departure, the checkpoint's passage) falls between sunrise and sunset at that place — not time, the round model hour. Picks the day or night icon
  bool get daylight;/// Air temperature at 2 m, °C
  double get temperature;/// Felt temperature (wind chill, humidity), °C
  double get apparentTemperature;/// Precipitation over the hour (rain, showers, snow), mm
@@ -250,7 +250,7 @@ class _WeatherConditionsDto implements WeatherConditionsDto {
 @override final  int weatherCode;
 /// weatherCode folded into what a rider decides on. WMO code → condition: 0 CLEAR; 1 MOSTLY_CLEAR; 2 PARTLY_CLOUDY; 3 OVERCAST; 45, 48 FOG; 51, 53, 55 DRIZZLE; 56, 57, 66, 67 FREEZING_RAIN; 61, 63 RAIN; 65 HEAVY_RAIN; 71, 73, 75, 77, 85, 86 SNOW; 80, 81, 82 SHOWERS; 95, 96, 99 THUNDERSTORM; any other OVERCAST. A client meeting a value it does not know shows a plain cloud.
 @override final  String condition;
-/// Whether time falls between sunrise and sunset at that place — picks the day or night icon
+/// Whether the moment asked about (the departure, the checkpoint's passage) falls between sunrise and sunset at that place — not time, the round model hour. Picks the day or night icon
 @override final  bool daylight;
 /// Air temperature at 2 m, °C
 @override final  double temperature;

@@ -16,7 +16,7 @@ export interface RideWeatherSummaryDto {
   weatherCode?: number
   /** weatherCode folded into a condition, same table as WeatherConditionsDto.condition */
   condition?: WeatherCondition
-  /** Whether the departure hour is between sunrise and sunset */
+  /** Whether the departure itself (not the round model hour read for it) is between sunrise and sunset */
   daylight?: boolean
   /** Air temperature at the departure hour, °C */
   temperature?: number
