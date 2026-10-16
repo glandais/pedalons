@@ -242,8 +242,9 @@ async function createServer() {
   const robotsPath = isProduction
     ? path.resolve(__dirname, 'dist/client/robots.txt')
     : path.resolve(__dirname, 'public/robots.txt')
+  // Read once: the rules never change while this process runs (a dev edit needs a restart).
+  const rules = fs.readFileSync(robotsPath, 'utf-8').trimEnd()
   app.get('/robots.txt', (req, res) => {
-    const rules = fs.readFileSync(robotsPath, 'utf-8').trimEnd()
     res
       .set({
         'Content-Type': 'text/plain; charset=utf-8',
@@ -402,7 +403,7 @@ async function createServer() {
       try {
         stateScript = dehydratedState ? jsonScript(SSR_QUERY_STATE_ID, dehydratedState) : ''
       } catch (serErr) {
-        console.error(`[SSR] Failed to serialize dehydrated state for "${url}":`, serErr)
+        console.error('[SSR] Failed to serialize dehydrated state for "%s":', url, serErr)
         // Continue without SSR state — client will refetch
       }
 
@@ -413,7 +414,7 @@ async function createServer() {
       try {
         authScript = auth ? jsonScript(SSR_AUTH_STATE_ID, auth) : ''
       } catch (serErr) {
-        console.error(`[SSR] Failed to serialize auth state for "${url}":`, serErr)
+        console.error('[SSR] Failed to serialize auth state for "%s":', url, serErr)
         // Continue without it — the client falls back to its own /api/auth/refresh at boot
       }
 

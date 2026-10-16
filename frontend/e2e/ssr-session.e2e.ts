@@ -205,7 +205,7 @@ test.describe('raw document response', () => {
     // What the anonymous page does render — its breadcrumb and the login link — so that a broken
     // page cannot pass the absence check below.
     expect(anonymousProfile.html, 'the anonymous profile rendered its breadcrumb').toContain(
-      `aria-label="${BREADCRUMB.replace("'", '&#x27;')}"`
+      `aria-label="${BREADCRUMB.replaceAll("'", '&#x27;')}"`
     )
     // Its localized path (paths.login(), since ef9e2c3b), in this French interface.
     expect(anonymousProfile.html, 'the anonymous profile offers a login').toContain(
