@@ -1,14 +1,12 @@
-import i18n from 'i18next'
+import i18n, { type BackendModule } from 'i18next'
 import { initReactI18next } from 'react-i18next'
 import LanguageDetector from 'i18next-browser-languagedetector'
 import dayjs from 'dayjs'
 import 'dayjs/locale/fr'
 import 'dayjs/locale/en'
 
-// French translations
+// Both catalogues, bundled for the server only (see bundledResources below).
 import frCommon from '../locales/fr/common.json'
-
-// English translations
 import enCommon from '../locales/en/common.json'
 
 export const supportedLanguages = ['fr', 'en'] as const
@@ -19,7 +17,11 @@ export const languageNames: Record<SupportedLanguage, string> = {
   en: 'English',
 }
 
-const resources = {
+// Every language ready synchronously, where a render may need any of them: the per-request server
+// instances and the server's global instance. Referenced nowhere the browser bundle reaches (the
+// global init below reads it behind `import.meta.env.SSR`), so the client build drops it and loads
+// only the language it renders, through catalogueBackend.
+const bundledResources = {
   fr: {
     common: frCommon,
   },
@@ -28,11 +30,37 @@ const resources = {
   },
 }
 
+// The browser's catalogues, one `locale-<lang>` chunk per language (vite.config.ts). server.js
+// preloads the rendered language's chunk (and French, the fallback) from the Vite manifest, so it
+// downloads alongside the entry instead of after it.
+const catalogueLoaders: Record<
+  SupportedLanguage,
+  () => Promise<{ default: Record<string, string> }>
+> = {
+  fr: () => import('../locales/fr/common.json'),
+  en: () => import('../locales/en/common.json'),
+}
+
+const catalogueBackend: BackendModule = {
+  type: 'backend',
+  init() {},
+  read(language, _namespace, callback) {
+    const load = catalogueLoaders[language as SupportedLanguage]
+    if (!load) {
+      callback(null, {})
+      return
+    }
+    load().then(
+      (module) => callback(null, module.default),
+      (error: unknown) => callback(error instanceof Error ? error : new Error(String(error)), null)
+    )
+  },
+}
+
 const isServer = typeof window === 'undefined'
 
 // Shared config used by both the client singleton and per-request server instances.
 const i18nBaseConfig = {
-  resources,
   fallbackLng: 'fr' as const, // French is the default
   supportedLngs: supportedLanguages,
   defaultNS: 'common',
@@ -53,6 +81,7 @@ export async function createServerI18n(language: string) {
   const instance = i18n.createInstance()
   await instance.use(initReactI18next).init({
     ...i18nBaseConfig,
+    resources: bundledResources,
     lng: language || 'fr',
   })
   return instance
@@ -94,6 +123,7 @@ async function initClientI18n() {
   try {
     await i18n
       .use(LanguageDetector)
+      .use(catalogueBackend)
       .use(initReactI18next)
       .init({
         ...i18nBaseConfig,
@@ -137,7 +167,12 @@ async function initClientI18n() {
 // explicitly (as useFormattedDate does). initAsync: false makes init synchronous, so the
 // instance is ready before the first render.
 if (isServer) {
-  void i18n.use(initReactI18next).init({ ...i18nBaseConfig, lng: 'fr', initAsync: false })
+  void i18n.use(initReactI18next).init({
+    ...i18nBaseConfig,
+    resources: import.meta.env.SSR ? bundledResources : {},
+    lng: 'fr',
+    initAsync: false,
+  })
 }
 
 // Resolves once client i18n init completes. entry-client awaits this before hydrating so the

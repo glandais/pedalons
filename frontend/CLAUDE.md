@@ -142,7 +142,12 @@ Lists request `view=COMPACT` where they only need `excerpt` + `thumbnailUrl`; in
 ### Build
 
 - Path alias: `@/` → `src/`
-- Manual chunk splitting in `vite.config.ts` (map-vendor, editor-vendor, mantine-vendor, etc.)
+- Vendor chunks are Rolldown `codeSplitting` **priority** groups in `vite.config.ts`: core (react, router, data…) above
+  Mantine above the feature chunks (map, editor, markdown, chart, schedule). A group also captures its modules'
+  dependencies, so a package the page shell needs must outrank every feature group or it lands in one and every page
+  preloads it (docs/LEDGER_*.md WEB-95). Check `dist/client/index.html`'s modulepreload list after changing a group.
+- Translations: the browser loads only its language's `locale-<lang>` chunk (`src/i18n/index.ts`), preloaded by
+  `server.js` from the Vite manifest (`server/cataloguePreload.js`); the server bundles both.
 - Dev proxy: `/api` → `VITE_API_TARGET` (default `https://staging.pedalons.fr`), with `X-Forwarded-Host` forced to the target's host so `DomainResolver` finds its tenant
 - **Dual build output**: `pnpm build` runs Vite twice — client bundle → `dist/client/` (with `index.html` containing `<!--ssr-outlet-->` / `<!--ssr-state-->` placeholders), SSR bundle → `dist/server/entry-server.js`. The Docker runtime image runs `node server.js` (Express) and serves both. There is no separate nginx step.
 - **MapLibre worker**: `src/components/map/setupMaplibreWorker.ts` calls `setWorkerUrl()` with a `maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url` import, and every component that constructs a `Map` imports it for its side effect. maplibre-gl otherwise resolves its worker via `new URL('./maplibre-gl-worker.mjs', import.meta.url)` *inside its own bundled module* — a dynamic expression Rollup can't trace, and one that points at the wrong place once bundled into `map-vendor` anyway. `?worker&url` is Vite's documented fix: it bundles the worker (and the sibling `maplibre-gl-shared.mjs` it imports) into one self-contained chunk. Don't reach for `optimizeDeps.exclude` or a manual copy-the-worker-file plugin instead — both were tried and failed (dev-only fix, or a 404 on the untracked sibling file).

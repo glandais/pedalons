@@ -17,6 +17,7 @@ import {
 } from './server/csp.js'
 import { mountCspReportRoute } from './server/cspReport.js'
 import { SSR_AUTH_STATE_ID, SSR_QUERY_STATE_ID, jsonScript } from './server/ssrState.js'
+import { catalogueChunks, cataloguePreloadLinks } from './server/cataloguePreload.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const isProduction = process.env.NODE_ENV === 'production'
@@ -215,6 +216,9 @@ async function createServer() {
 
   let vite
   let template
+  // Language → catalogue chunk, from the client build's manifest; empty in dev, where Vite serves
+  // the catalogue module on demand.
+  let catalogues = {}
   let render
   let renderSitemap
   let renderLlmsTxt
@@ -325,6 +329,11 @@ async function createServer() {
       })
     )
     template = fs.readFileSync(path.resolve(__dirname, 'dist/client/index.html'), 'utf-8')
+    catalogues = catalogueChunks(
+      JSON.parse(
+        fs.readFileSync(path.resolve(__dirname, 'dist/client/.vite/manifest.json'), 'utf-8')
+      )
+    )
     const serverModule = await import(path.resolve(__dirname, 'dist/server/entry-server.js'))
     render = serverModule.render
     renderSitemap = serverModule.renderSitemap
@@ -417,7 +426,7 @@ async function createServer() {
         .replace('<!--ssr-outlet-->', () => appHtml)
         .replace('<!--ssr-state-->', () => stateScript)
         .replace('<!--ssr-auth-->', () => authScript)
-        .replace('<!--ssr-head-->', () => head || '')
+        .replace('<!--ssr-head-->', () => (head || '') + cataloguePreloadLinks(catalogues, lang))
 
       // The SSR-built link-preview block (injected above) owns the dynamic <title>. index.html also
       // ships a static fallback <title> for the JS-less dev SPA tab; once the block is present there

@@ -32,6 +32,11 @@ function requestLogger(): PluginOption {
   }
 }
 
+/** A `codeSplitting` group test matching modules of the packages whose path starts with a prefix. */
+function fromPackages(...prefixes: string[]) {
+  return (id: string) => prefixes.some((prefix) => id.includes(`node_modules/${prefix}`))
+}
+
 export default defineConfig(({ mode, isSsrBuild }) => {
   // API proxy target: from .env (VITE_API_TARGET) or staging by default
   const env = loadEnv(mode, import.meta.dirname, '')
@@ -96,140 +101,133 @@ export default defineConfig(({ mode, isSsrBuild }) => {
     },
     build: {
       sourcemap: process.env.VITE_BUILD_SOURCEMAP === 'true',
+      // dist/client/.vite/manifest.json: server.js reads it to preload the rendered language's
+      // catalogue chunk (src/i18n/index.ts). The dot directory is never served (send 404s it).
+      manifest: !isSsrBuild,
       rolldownOptions: {
         output: {
-          // Order matters: specific checks MUST come before broad ones
-          manualChunks(id) {
-            if (!id.includes('node_modules/')) {
-              return // Let Rollup handle app code
-            }
+          // Vendor chunks as priority groups (Rolldown `codeSplitting`, which replaced
+          // `manualChunks`). A group also captures the dependencies of what it matches
+          // (`includeDependenciesRecursively`, on by default), so a shared package lands in the
+          // first group that reaches it unless a higher-priority group claims it. With the old
+          // ordered `manualChunks`, `react` ended up in chart-vendor (via react-chartjs-2) and
+          // `use-sync-external-store` in editor-vendor (via @tiptap/react): every page then
+          // preloaded Chart.js and Tiptap. Hence three tiers — the core every page needs, then
+          // Mantine, then the feature chunks that only their pages load — and nothing a page
+          // shell imports may sit in a feature group. Check `index.html`'s modulepreload list
+          // after changing a group.
+          codeSplitting: {
+            groups: [
+              // === TRANSLATIONS: one chunk per language, `locale-<lang>` ===
+              // The browser imports only the language it renders (src/i18n/index.ts), and
+              // server.js finds that chunk in the manifest by this name to preload it.
+              {
+                name: (id) => `locale-${/src[\\/]locales[\\/]([^\\/]+)[\\/]/.exec(id)?.[1]}`,
+                test: /src[\\/]locales[\\/][^\\/]+[\\/]common\.json$/,
+                priority: 50,
+              },
 
-            // === MAPS (check first - react-map-gl must not fall to react checks) ===
-            if (
-              id.includes('node_modules/maplibre-gl/') ||
-              id.includes('node_modules/maplibre-theme/') ||
-              id.includes('node_modules/react-map-gl/') ||
-              id.includes('node_modules/geokdbush/') ||
-              id.includes('node_modules/kdbush/')
-            ) {
-              return 'map-vendor'
-            }
+              // === CORE (every page) ===
+              {
+                name: 'react-vendor',
+                test: fromPackages(
+                  'react/',
+                  'react-dom/',
+                  'scheduler/',
+                  'use-sync-external-store/'
+                ),
+                priority: 40,
+              },
+              { name: 'router-vendor', test: fromPackages('react-router'), priority: 30 },
+              {
+                name: 'i18n-vendor',
+                test: fromPackages('i18next', 'react-i18next/'),
+                priority: 30,
+              },
+              {
+                name: 'data-vendor',
+                test: fromPackages('@tanstack/', 'zustand/', 'axios/', 'zod/'),
+                priority: 30,
+              },
+              { name: 'date-vendor', test: fromPackages('date-fns', 'dayjs/'), priority: 30 },
+              { name: 'icons-vendor', test: fromPackages('@tabler/icons-react/'), priority: 30 },
 
-            // === EDITOR (Tiptap + unified ecosystem for markdown rendering) ===
-            if (
-              // Tiptap editor
-              id.includes('node_modules/@tiptap/') ||
-              id.includes('node_modules/tiptap-markdown/') ||
-              id.includes('node_modules/prosemirror') ||
-              id.includes('node_modules/markdown-it/') ||
-              // React markdown (for MarkdownDisplay)
-              id.includes('node_modules/react-markdown/') ||
-              id.includes('node_modules/remove-markdown/') ||
-              // Unified ecosystem (remark, rehype, mdast, hast, micromark, etc.)
-              id.includes('node_modules/unified/') ||
-              id.includes('node_modules/remark') ||
-              id.includes('node_modules/rehype') ||
-              id.includes('node_modules/mdast') ||
-              id.includes('node_modules/hast') ||
-              id.includes('node_modules/micromark') ||
-              id.includes('node_modules/unist') ||
-              id.includes('node_modules/vfile') ||
-              // Unified utilities
-              id.includes('node_modules/bail/') ||
-              id.includes('node_modules/trough/') ||
-              id.includes('node_modules/devlop/') ||
-              id.includes('node_modules/ccount/') ||
-              id.includes('node_modules/zwitch/') ||
-              id.includes('node_modules/character-entities') ||
-              id.includes('node_modules/character-reference') ||
-              id.includes('node_modules/comma-separated-tokens/') ||
-              id.includes('node_modules/space-separated-tokens/') ||
-              id.includes('node_modules/property-information/') ||
-              id.includes('node_modules/stringify-entities/') ||
-              id.includes('node_modules/decode-named-character-reference/') ||
-              id.includes('node_modules/estree-util-') ||
-              id.includes('node_modules/parse-entities/') ||
-              id.includes('node_modules/trim-lines/') ||
-              id.includes('node_modules/is-plain-obj/')
-            ) {
-              return 'editor-vendor'
-            }
+              // === UI: Mantine, minus the calendar and the editor bindings (feature chunks) ===
+              {
+                name: 'mantine-vendor',
+                test: (id) =>
+                  fromPackages('@mantine/', 'mantine-form-zod-resolver/')(id) &&
+                  !fromPackages('@mantine/schedule/', '@mantine/tiptap/')(id),
+                priority: 20,
+              },
 
-            // (No calendar chunk: the calendar is `@mantine/schedule`, which belongs to
-            // mantine-vendor below. The `@fullcalendar/` rule that used to sit here matched
-            // nothing once the migration landed.)
+              // === FEATURES (loaded by the pages that use them) ===
+              // Markdown *display* (MarkdownDisplay) before the editor, so a page that only
+              // renders markdown never pulls Tiptap through a shared dependency.
+              {
+                name: 'markdown-vendor',
+                test: fromPackages(
+                  'react-markdown/',
+                  'remove-markdown/',
+                  'unified/',
+                  'remark',
+                  'rehype'
+                ),
+                priority: 12,
+              },
+              {
+                name: 'editor-vendor',
+                test: fromPackages(
+                  '@tiptap/',
+                  'tiptap-markdown/',
+                  'prosemirror',
+                  'markdown-it/',
+                  '@mantine/tiptap/'
+                ),
+                priority: 10,
+              },
+              {
+                name: 'map-vendor',
+                test: fromPackages(
+                  'maplibre-gl/',
+                  'maplibre-theme/',
+                  'react-map-gl/',
+                  'geokdbush/',
+                  'kdbush/'
+                ),
+                priority: 10,
+              },
+              {
+                name: 'chart-vendor',
+                test: fromPackages(
+                  'chart.js/',
+                  'react-chartjs-2/',
+                  'chartjs-plugin-zoom/',
+                  'hammerjs/'
+                ),
+                priority: 10,
+              },
+              {
+                name: 'schedule-vendor',
+                test: fromPackages('@mantine/schedule/', 'rrule/'),
+                priority: 10,
+              },
+              // Web push only, imported dynamically by lib/push/webPush.ts: on its own, so it
+              // never rides along with whatever else would share a catch-all chunk.
+              {
+                name: 'firebase-vendor',
+                test: fromPackages('firebase/', '@firebase/'),
+                priority: 10,
+              },
+              {
+                name: 'ui-utils-vendor',
+                test: fromPackages('react-resizable-panels/'),
+                priority: 10,
+              },
 
-            // === CHARTS (check before react - react-chartjs-2 must not fall to react) ===
-            if (
-              id.includes('node_modules/chart.js/') ||
-              id.includes('node_modules/react-chartjs-2/') ||
-              id.includes('node_modules/chartjs-plugin-zoom/') ||
-              id.includes('node_modules/hammerjs/')
-            ) {
-              return 'chart-vendor'
-            }
-
-            // === FIREBASE (web push only, imported dynamically by lib/push/webPush.ts) ===
-            // On its own: in the catch-all `vendor` chunk it would ride along with whatever
-            // else shares that chunk (the login page did), instead of loading on demand.
-            if (id.includes('node_modules/firebase/') || id.includes('node_modules/@firebase/')) {
-              return 'firebase-vendor'
-            }
-
-            // === I18N (check before react - react-i18next must not fall to react) ===
-            if (id.includes('node_modules/i18next') || id.includes('node_modules/react-i18next/')) {
-              return 'i18n-vendor'
-            }
-
-            // === UI: Mantine (large, separate chunk) ===
-            if (
-              id.includes('node_modules/@mantine/') ||
-              id.includes('node_modules/mantine-form-zod-resolver/')
-            ) {
-              return 'mantine-vendor'
-            }
-
-            // === ICONS (project uses @tabler, not @heroicons) ===
-            if (id.includes('node_modules/@tabler/icons-react/')) {
-              return 'icons-vendor'
-            }
-
-            // === REACT CORE (now safe - specific react-* packages already handled) ===
-            if (
-              id.includes('node_modules/react/') ||
-              id.includes('node_modules/react-dom/') ||
-              id.includes('node_modules/scheduler/')
-            ) {
-              return 'react-vendor'
-            }
-
-            // === REACT ROUTER ===
-            if (id.includes('node_modules/react-router')) {
-              return 'router-vendor'
-            }
-
-            // === DATA LAYER (state, fetching, validation) ===
-            if (
-              id.includes('node_modules/@tanstack/') ||
-              id.includes('node_modules/zustand/') ||
-              id.includes('node_modules/axios/') ||
-              id.includes('node_modules/zod/')
-            ) {
-              return 'data-vendor'
-            }
-
-            // === DATES ===
-            if (id.includes('node_modules/date-fns') || id.includes('node_modules/dayjs/')) {
-              return 'date-vendor'
-            }
-
-            // === UI UTILITIES ===
-            if (id.includes('node_modules/react-resizable-panels/')) {
-              return 'ui-utils-vendor'
-            }
-
-            // === REMAINING VENDOR ===
-            return 'vendor'
+              // === REMAINING VENDOR ===
+              { name: 'vendor', test: fromPackages(''), priority: 0 },
+            ],
           },
         },
       },
