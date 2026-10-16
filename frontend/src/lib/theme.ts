@@ -1,4 +1,9 @@
-import { createTheme, virtualColor, type MantineColorScheme } from '@mantine/core'
+import {
+  createTheme,
+  virtualColor,
+  type CSSVariablesResolver,
+  type MantineColorScheme,
+} from '@mantine/core'
 import type { ThemePreference } from '@/api/dto'
 
 /** Maps the backend's `ThemePreference` (SYSTEM/LIGHT/DARK) to Mantine's own scheme type. */
@@ -63,5 +68,38 @@ export const theme = createTheme({
         size: 'lg',
       },
     },
+  },
+})
+
+/**
+ * Overrides of Mantine's scheme-dependent colours that fail WCAG SC 1.4.3 (4.5:1) on our surfaces.
+ *
+ * In light, `primary` renders one shade darker than Mantine's default: indigo-6 (#4c6ef5) is
+ * 4.32:1 on white, for links, primary text and filled-button labels alike; indigo-7 (#4263eb) is
+ * 4.98:1. Links go one shade further, indigo-8 (#3b5bdb): they also sit on tinted fills, and the
+ * blue light-variant one of an `Alert` (#d0ebff) takes indigo-7 down to 4.03:1 (indigo-8: 4.59:1).
+ * Not through `primaryShade`, which is global: it would shift the fill of *every* family,
+ * the business colour code included, away from the mobile app's (docs/BRANDING.md §3.6).
+ *
+ * Mantine's `dimmed` is gray-6 (#868e96, 3.32:1 on white) in light and dark-2 (#828282,
+ * 4.03:1 on #242424) in dark; no palette shade sits between "readable" and "as dark as body
+ * text", hence the two hand-picked greys:
+ * - light #666d75 — 5.24:1 on white, 4.71:1 on gray-1 (#f1f3f5);
+ * - dark #9a9a9a — 5.52:1 on the page (#242424), 4.83:1 on raised surfaces (#2e2e2e).
+ * The dark anchor moves from primary-4 (#748ffc, 4.41:1 on the blue light-variant fill) to
+ * primary-3 (#91a7ff, 5.71:1 there, 6.78:1 on the page).
+ */
+export const cssVariablesResolver: CSSVariablesResolver = () => ({
+  variables: {},
+  light: {
+    '--mantine-color-primary-filled': 'var(--mantine-color-primary-7)',
+    '--mantine-color-primary-filled-hover': 'var(--mantine-color-primary-8)',
+    '--mantine-color-primary-outline': 'var(--mantine-color-primary-7)',
+    '--mantine-color-anchor': 'var(--mantine-color-primary-8)',
+    '--mantine-color-dimmed': '#666d75',
+  },
+  dark: {
+    '--mantine-color-dimmed': '#9a9a9a',
+    '--mantine-color-anchor': 'var(--mantine-color-primary-3)',
   },
 })

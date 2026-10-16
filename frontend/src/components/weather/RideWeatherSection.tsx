@@ -60,7 +60,7 @@ export function RideWeatherSection({
     <Paper withBorder p="lg" mb="lg" component="section" aria-labelledby="ride-weather-title">
       <Stack gap="md">
         <Group justify="space-between" wrap="wrap" gap="xs">
-          <Title order={4} id="ride-weather-title">
+          <Title order={3} size="h4" id="ride-weather-title">
             {t('rides.weather.departureTitle')}
           </Title>
           {status === WeatherStatus.STALE && <WeatherStaleBadge />}

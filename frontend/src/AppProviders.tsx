@@ -5,7 +5,7 @@ import { MantineProvider, type MantineColorScheme } from '@mantine/core'
 import { Notifications } from '@mantine/notifications'
 import { DatesProvider } from '@mantine/dates'
 import { QueryClientProvider, type QueryClient } from '@tanstack/react-query'
-import { theme } from './lib/theme'
+import { cssVariablesResolver, theme } from './lib/theme'
 import { SsrColorSchemeContext } from './hooks/useResolvedColorScheme'
 
 /**
@@ -48,7 +48,11 @@ export function AppProviders({
 }) {
   return (
     <I18nextProvider i18n={i18n}>
-      <MantineProvider theme={theme} defaultColorScheme={defaultColorScheme}>
+      <MantineProvider
+        theme={theme}
+        cssVariablesResolver={cssVariablesResolver}
+        defaultColorScheme={defaultColorScheme}
+      >
         <SsrColorSchemeContext.Provider value={defaultColorScheme === 'dark' ? 'dark' : 'light'}>
           <Notifications position="top-right" />
           <QueryClientProvider client={queryClient}>

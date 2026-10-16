@@ -68,6 +68,7 @@ class PdlColors extends ThemeExtension<PdlColors> {
     required this.accentCyan,
     required this.accentLime,
     required this.accentPink,
+    required this.accentIndigo,
     required this.blueSoft,
     required this.blueOnSoft,
     required this.grapeSoft,
@@ -118,6 +119,10 @@ class PdlColors extends ThemeExtension<PdlColors> {
   final Color sheetBarrier;
 
   // ── Rôles ──────────────────────────────────────────────────────────────
+  /// En clair, indigo-7 (`#4263eb`) et non la nuance 6 de Mantine (`#4c6ef5`,
+  /// 4,32:1 sur blanc) : le texte primaire et le libellé blanc d'un bouton
+  /// plein tiennent ainsi 4,5:1 (WCAG 1.4.3), comme au web. L'aplat métier de
+  /// la famille indigo reste en nuance 6 : [accentIndigo].
   final Color primary;
   final Color primaryHover;
   final Color primarySoft;
@@ -148,6 +153,11 @@ class PdlColors extends ThemeExtension<PdlColors> {
   final Color accentCyan;
   final Color accentLime;
   final Color accentPink;
+
+  /// L'aplat de la famille indigo du code couleur métier (« Location »,
+  /// « Inscrit »), aux valeurs de Mantine comme au web. Distinct de
+  /// [primary], foncé d'une nuance en clair pour le contraste du texte.
+  final Color accentIndigo;
 
   // ── Paires douces de badge propres à une famille ───────────────────────
   // Les familles indigo, verte, rouge et grise sont exactement
@@ -233,7 +243,7 @@ class PdlColors extends ThemeExtension<PdlColors> {
     success,
     warning,
     danger,
-    primary,
+    accentIndigo,
   ];
 
   static const PdlColors light = PdlColors(
@@ -245,15 +255,15 @@ class PdlColors extends ThemeExtension<PdlColors> {
     borderSubtle: Color(0xFFDEE2E6),
     text: Color(0xFF000000),
     textBright: Color(0xFF000000),
-    textDimmed: Color(0xFF868E96),
+    textDimmed: Color(0xFF666D75),
     textPlaceholder: Color(0xFFADB5BD),
-    link: Color(0xFF228BE6),
+    link: Color(0xFF3B5BDB),
     overlay: Color(0xE6FFFFFF),
     overlaySolid: Color(0xF2FFFFFF),
     scrim: Color(0xE6242424),
     sheetBarrier: Color(0x73242424),
-    primary: Color(0xFF4C6EF5),
-    primaryHover: Color(0xFF4263EB),
+    primary: Color(0xFF4263EB),
+    primaryHover: Color(0xFF3B5BDB),
     primarySoft: Color(0xFFDBE4FF),
     primaryOnSoft: Color(0xFF364FC7),
     onPrimary: Color(0xFFFFFFFF),
@@ -280,6 +290,7 @@ class PdlColors extends ThemeExtension<PdlColors> {
     accentCyan: Color(0xFF15AABF),
     accentLime: Color(0xFF82C91E),
     accentPink: Color(0xFFE64980),
+    accentIndigo: Color(0xFF4C6EF5),
     blueSoft: Color(0xFFD0EBFF),
     blueOnSoft: Color(0xFF1864AB),
     grapeSoft: Color(0xFFF3D9FA),
@@ -309,9 +320,9 @@ class PdlColors extends ThemeExtension<PdlColors> {
     borderSubtle: Color(0xFF2E2E2E),
     text: Color(0xFFC9C9C9),
     textBright: Color(0xFFFFFFFF),
-    textDimmed: Color(0xFF828282),
+    textDimmed: Color(0xFF9A9A9A),
     textPlaceholder: Color(0xFF696969),
-    link: Color(0xFF4DABF7),
+    link: Color(0xFF91A7FF),
     overlay: Color(0xE6242424),
     overlaySolid: Color(0xF2242424),
     scrim: Color(0xE6242424),
@@ -344,6 +355,7 @@ class PdlColors extends ThemeExtension<PdlColors> {
     accentCyan: Color(0xFF0C8599),
     accentLime: Color(0xFF66A80F),
     accentPink: Color(0xFFC2255C),
+    accentIndigo: Color(0xFF3B5BDB),
     blueSoft: Color(0xFF0C3255),
     blueOnSoft: Color(0xFFE7F5FF),
     grapeSoft: Color(0xFF43174E),
@@ -412,6 +424,7 @@ class PdlColors extends ThemeExtension<PdlColors> {
     Color? accentCyan,
     Color? accentLime,
     Color? accentPink,
+    Color? accentIndigo,
     Color? blueSoft,
     Color? blueOnSoft,
     Color? grapeSoft,
@@ -475,6 +488,7 @@ class PdlColors extends ThemeExtension<PdlColors> {
       accentCyan: accentCyan ?? this.accentCyan,
       accentLime: accentLime ?? this.accentLime,
       accentPink: accentPink ?? this.accentPink,
+      accentIndigo: accentIndigo ?? this.accentIndigo,
       blueSoft: blueSoft ?? this.blueSoft,
       blueOnSoft: blueOnSoft ?? this.blueOnSoft,
       grapeSoft: grapeSoft ?? this.grapeSoft,
@@ -545,6 +559,7 @@ class PdlColors extends ThemeExtension<PdlColors> {
       accentCyan: c(accentCyan, other.accentCyan),
       accentLime: c(accentLime, other.accentLime),
       accentPink: c(accentPink, other.accentPink),
+      accentIndigo: c(accentIndigo, other.accentIndigo),
       blueSoft: c(blueSoft, other.blueSoft),
       blueOnSoft: c(blueOnSoft, other.blueOnSoft),
       grapeSoft: c(grapeSoft, other.grapeSoft),

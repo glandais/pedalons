@@ -53,7 +53,7 @@
    in the dark scheme: 2.74:1 on the page (#242424), under the 3:1 of WCAG SC 1.4.11. The primary's
    `-text` shade is the one Mantine already uses for primary text on dark — indigo-4 (#748ffc):
    5.23:1 on the page, 4.58:1 on raised surfaces (#2e2e2e). In light it resolves to the filled
-   shade, so the light ring (4.32:1 on white) is unchanged. docs/LEDGER_*.md WEB-2. */
+   shade, indigo-7 (#4263eb, 4.98:1 on white — `cssVariablesResolver` in lib/theme.ts). docs/LEDGER_*.md WEB-2. */
 .mantine-focus-auto:focus-visible,
 .mantine-focus-always:focus {
   outline-color: var(--mantine-color-primary-text);

@@ -541,7 +541,7 @@ export function RideDetailPage() {
             </Stack>
           ) : (
             <>
-              <Title order={4} mb="md">
+              <Title order={3} size="h4" mb="md">
                 {t('rides.detail.groups.title')}
               </Title>
               {ride.groups && ride.groups.length > 0 ? (

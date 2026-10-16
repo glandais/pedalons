@@ -17,11 +17,11 @@
   --pdl-border: #ced4da;
   --pdl-border-subtle: #dee2e6;
   --pdl-text: #000000;
-  --pdl-text-dimmed: #868e96;
+  --pdl-text-dimmed: #666d75;
   --pdl-text-placeholder: #adb5bd;
-  --pdl-link: #228be6;
-  --pdl-primary: #4c6ef5;
-  --pdl-primary-hover: #4263eb;
+  --pdl-link: #3b5bdb;
+  --pdl-primary: #4263eb;
+  --pdl-primary-hover: #3b5bdb;
   --pdl-primary-soft: #dbe4ff;
   --pdl-primary-on-soft: #364fc7;
   --pdl-on-primary: #ffffff;

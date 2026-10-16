@@ -145,7 +145,7 @@ describe('RideDetailPage — a ride with one group is its group page (WEB-79)', 
 
   it('names the group as a block, with no link to a group page', () => {
     renderPage()
-    expect(screen.getByRole('heading', { level: 4, name: 'Rapide' })).toBeTruthy()
+    expect(screen.getByRole('heading', { level: 3, name: 'Rapide' })).toBeTruthy()
     expect(groupLinks()).toHaveLength(0)
     expect(screen.queryByRole('link', { name: /Voir le groupe/ })).toBeNull()
   })

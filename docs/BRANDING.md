@@ -156,12 +156,13 @@ de 48×48 à 192×192, alpha aplati sur fond `#228be6`.
 | Rayon par défaut | `md` (8 px) |
 | Schéma de couleurs | `auto` (suit la préférence système) |
 | Contraste automatique | Activé (`autoContrast: true`, `luminanceThreshold: 0.3`) |
+| Surcharges de contraste | `cssVariablesResolver` (`theme.ts`) : `primary` une nuance plus foncée en clair (aplat 7, liens 8), `dimmed` hors palette, liens en `primary-3` en sombre — pour tenir 4,5:1 (WCAG 1.4.3) |
 
 **Couleurs virtuelles** — à employer plutôt que les couleurs brutes pour tout ce qui porte un sens :
 
 | Jeton | Associé à | Aplat clair | Aplat sombre | Emploi |
 |---|---|---|---|---|
-| `primary` | `indigo` | `#4c6ef5` (6) | `#3b5bdb` (8) | Boutons, liens, états actifs |
+| `primary` | `indigo` | `#4263eb` (7) | `#3b5bdb` (8) | Boutons, liens, états actifs |
 | `success` | `green` | `#40c057` (6) | `#2f9e44` (8) | Actions positives, publié |
 | `warning` | `yellow` | `#fab005` (6) | `#f08c00` (8) | États de vigilance |
 | `danger` | `red` | `#fa5252` (6) | `#e03131` (8) | Actions destructrices, erreurs |
@@ -182,15 +183,15 @@ Valeurs exactes issues de Mantine 9 (palettes par défaut inchangées depuis Man
 | Bordure discrète (séparateur) | `#dee2e6` | `#2e2e2e` | `gray-3` / `dark-6` |
 | Texte primaire | `#000000` | `#c9c9c9` | `--mantine-color-text` |
 | Texte accentué (titres) | `#000000` | `#ffffff` | `--mantine-color-bright` |
-| Texte secondaire / atténué | `#868e96` | `#828282` | `--mantine-color-dimmed` |
+| Texte secondaire / atténué | `#666d75` | `#9a9a9a` | `--mantine-color-dimmed` — hors palette : 4,71:1 sur `gray-1`, 4,83:1 sur `#2e2e2e` |
 | Texte d'espace réservé | `#adb5bd` | `#696969` | `--mantine-color-placeholder` |
-| Lien / ancre | `#228be6` | `#4dabf7` | `--mantine-color-anchor` |
+| Lien / ancre | `#3b5bdb` | `#91a7ff` | `--mantine-color-anchor` (`primary-8` / `primary-3`) |
 | Texte d'erreur | `#fa5252` | `#e03131` | `--mantine-color-error` |
-| **Primaire de marque (indigo)** | `#4c6ef5` | `#3b5bdb` | `primary` rempli |
-| Primaire — survol | `#4263eb` | `#364fc7` | `primary` rempli survol |
+| **Primaire de marque (indigo)** | `#4263eb` | `#3b5bdb` | `primary` rempli |
+| Primaire — survol | `#3b5bdb` | `#364fc7` | `primary` rempli survol |
 | Primaire — fond doux | `#dbe4ff` | `#1b2864` | `primary` variante *light* |
 | Primaire — texte sur fond doux | `#364fc7` | `#edf2ff` | `primary-light-color` |
-| Anneau de focus | `#4c6ef5` | `#748ffc` | `primary-text` (`index.css`) — 4,32:1 sur blanc, 5,23:1 sur `#242424`, 4,58:1 sur `#2e2e2e` |
+| Anneau de focus | `#4263eb` | `#748ffc` | `primary-text` (`index.css`) — 4,98:1 sur blanc, 5,23:1 sur `#242424`, 4,58:1 sur `#2e2e2e` |
 | Succès | `#40c057` | `#2f9e44` | `success` → green |
 | Succès — fond doux | `#d3f9d8` | `#16451f` | green variante *light* |
 | Alerte / avertissement | `#fab005` | `#f08c00` | `warning` → yellow |
@@ -527,7 +528,7 @@ Au mobile, l'Agenda n'a que Liste (`PdlIcons.list`) et Calendrier (`PdlIcons.cal
 `PdlSegment.iconOnly`.
 
 Style : **trait uniquement, jamais de version pleine**, couleur héritée du texte
-(`currentColor`) — donc `#868e96` / `#828282` dans les statistiques atténuées, couleur du badge
+(`currentColor`) — donc `#666d75` / `#9a9a9a` dans les statistiques atténuées, couleur du badge
 quand l'icône est en `leftSection`.
 
 ---
@@ -630,7 +631,7 @@ initiales maximum. En groupe : chevauchement, 5 visibles, puis une pastille gris
   multi-parcours (§3.7).
 - Pas de marqueurs de départ ni d'arrivée.
 - État de chargement : carré de même taille, fond `#f8f9fa` / `#3b3b3b` (`default-hover`),
-  `IconRoute` 24 px centrée en couleur atténuée (`#868e96` / `#828282`). En l'absence de
+  `IconRoute` 24 px centrée en couleur atténuée (`#666d75` / `#9a9a9a`). En l'absence de
   vignette, rien n'est affiché.
 
 Sur la page de détail d'un parcours ou d'une sortie, la carte interactive n'est plus une vignette
@@ -878,13 +879,13 @@ production (voir l'en-tête). [`pedalons.css`](pedalons.css) en est la version c
   /* Texte */
   --pdl-text: #000000;
   --pdl-text-bright: #000000;
-  --pdl-text-dimmed: #868e96;
+  --pdl-text-dimmed: #666d75;
   --pdl-text-placeholder: #adb5bd;
-  --pdl-link: #228be6;
+  --pdl-link: #3b5bdb;
 
   /* Primaire de marque — indigo */
-  --pdl-primary: #4c6ef5;
-  --pdl-primary-hover: #4263eb;
+  --pdl-primary: #4263eb;
+  --pdl-primary-hover: #3b5bdb;
   --pdl-primary-soft: #dbe4ff;
   --pdl-primary-soft-hover: #bac8ff;
   --pdl-primary-on-soft: #364fc7;
@@ -986,9 +987,9 @@ production (voir l'en-tête). [`pedalons.css`](pedalons.css) en est la version c
 
     --pdl-text: #c9c9c9;
     --pdl-text-bright: #ffffff;
-    --pdl-text-dimmed: #828282;
+    --pdl-text-dimmed: #9a9a9a;
     --pdl-text-placeholder: #696969;
-    --pdl-link: #4dabf7;
+    --pdl-link: #91a7ff;
 
     --pdl-primary: #3b5bdb;
     --pdl-primary-hover: #364fc7;
@@ -1079,9 +1080,9 @@ production (voir l'en-tête). [`pedalons.css`](pedalons.css) en est la version c
 
   --pdl-text: #c9c9c9;
   --pdl-text-bright: #ffffff;
-  --pdl-text-dimmed: #828282;
+  --pdl-text-dimmed: #9a9a9a;
   --pdl-text-placeholder: #696969;
-  --pdl-link: #4dabf7;
+  --pdl-link: #91a7ff;
 
   --pdl-primary: #3b5bdb;
   --pdl-primary-hover: #364fc7;

@@ -65,7 +65,7 @@ class PdlTone {
 extension PdlFamilyTone on PdlFamily {
   /// Le fond doux de la famille, et son aplat en trait de rappel.
   PdlTone soft(PdlColors c) => switch (this) {
-    PdlFamily.indigo => PdlTone.pair(c.softIndigo, c.primary),
+    PdlFamily.indigo => PdlTone.pair(c.softIndigo, c.accentIndigo),
     PdlFamily.blue => PdlTone.pair(c.softBlue, c.accentBlue),
     PdlFamily.green => PdlTone.pair(c.softGreen, c.success),
     PdlFamily.red => PdlTone.pair(c.softRed, c.danger),

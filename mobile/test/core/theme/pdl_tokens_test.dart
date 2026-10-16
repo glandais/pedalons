@@ -26,10 +26,12 @@ void expectHsl(Color actual, double h, double s, double l) {
 void main() {
   group('PdlColors', () {
     test(
-      'la primaire vaut exactement la couleur de marque dans les deux modes',
+      'la primaire est foncée d\'une nuance en clair, l\'indigo métier non',
       () {
-        expect(PdlColors.light.primary.toARGB32(), 0xFF4C6EF5);
+        expect(PdlColors.light.primary.toARGB32(), 0xFF4263EB);
         expect(PdlColors.dark.primary.toARGB32(), 0xFF3B5BDB);
+        expect(PdlColors.light.accentIndigo.toARGB32(), 0xFF4C6EF5);
+        expect(PdlColors.dark.accentIndigo.toARGB32(), 0xFF3B5BDB);
       },
     );
 
