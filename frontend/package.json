@@ -19,6 +19,7 @@
     "lint:fix": "oxlint . --fix",
     "format": "i18next-cli extract --quiet && prettier --write --no-cache --log-level warn \"src/**/*.{ts,tsx,css}\" \"!src/components/ui/**\" \"e2e/**/*.ts\" \"*.{ts,js,mjs,cjs}\" \"server/**/*.js\"",
     "format:check": "i18next-cli extract --ci --dry-run --quiet && prettier --check \"src/**/*.{ts,tsx,css}\" \"!src/components/ui/**\" \"e2e/**/*.ts\" \"*.{ts,js,mjs,cjs}\" \"server/**/*.js\"",
+    "pretest": "pnpm copy-legal",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
