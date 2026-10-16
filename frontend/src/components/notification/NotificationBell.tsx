@@ -37,14 +37,16 @@ export function NotificationBell() {
       opened={opened}
       onChange={(next) => (next ? open() : close())}
     >
-      <Menu.Target>
-        <Indicator
-          disabled={unreadCount === 0}
-          label={unreadCount > 99 ? '99+' : unreadCount}
-          size={16}
-          color="danger"
-          offset={4}
-        >
+      <Indicator
+        disabled={unreadCount === 0}
+        label={unreadCount > 99 ? '99+' : unreadCount}
+        size={16}
+        color="danger"
+        offset={4}
+      >
+        {/* The target is the button, not the Indicator: Menu.Target puts aria-haspopup/expanded/controls
+            on its child, which a role-less <div> may not carry (Lighthouse aria-allowed-attr). */}
+        <Menu.Target>
           <ActionIcon
             variant="subtle"
             color="gray"
@@ -56,8 +58,8 @@ export function NotificationBell() {
           >
             <IconBell size={20} />
           </ActionIcon>
-        </Indicator>
-      </Menu.Target>
+        </Menu.Target>
+      </Indicator>
 
       <Menu.Dropdown>
         <Group justify="space-between" px="xs" py={4} wrap="nowrap">
