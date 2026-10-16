@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <iq:manifest xmlns:iq="http://www.garmin.com/xml/connectiq" version="5">
-    <iq:application entry="PedalonsApp" id="d317d3db-6f57-4b75-838f-4cf43a135f79" launcherIcon="@Drawables.LauncherIcon" minApiLevel="3.3.0" name="@Strings.AppName" type="watch-app" version="1.0.0">
+    <iq:application entry="PedalonsApp" id="d317d3db-6f57-4b75-838f-4cf43a135f79" launcherIcon="@Drawables.LauncherIcon" minApiLevel="3.3.0" name="@Strings.AppName" type="watch-app" version="1.0.1">
         <iq:products>
             <!-- Edge cycling computers (API 3.2.0+) -->
             <iq:product id="edge1030"/>
