@@ -50,8 +50,8 @@ const WEATHER_ANCHOR = 'meteo'
 
 /**
  * One group of a ride, on a page of its own (ledger WEB-77): who leads it, when it leaves and at
- * what pace, its places, its whole weather — the departure and its route, point by point — and
- * everyone riding with it. The ride page keeps the departure weather and one card per group,
+ * what pace, its places, everyone riding with it, and — full width under them — its whole
+ * weather, its route point by point. The ride page keeps the departure weather and one card per group,
  * which links here.
  *
  * Its data is the ride page's (`rideGroupData.ts`): moving between the ride and its groups reads
@@ -296,20 +296,6 @@ export function RideGroupPage() {
           {/* The leader — only when one is designated, never the ride's creator */}
           <GroupLeader group={group} />
 
-          <Box id={WEATHER_ANCHOR} style={{ scrollMarginTop: 'var(--app-shell-header-height)' }}>
-            <ErrorBoundary variant="inline">
-              <GroupWeatherSection
-                ride={ride}
-                weather={weather.data}
-                leg={leg}
-                isLoading={weather.isLoading}
-                isFetching={weather.isFetching}
-                onRetry={() => void weather.refetch()}
-                canEdit={canEdit}
-              />
-            </ErrorBoundary>
-          </Box>
-
           <GroupParticipantsSection teamSlug={team.slug} ride={ride} group={group} />
         </Stack>
 
@@ -318,6 +304,25 @@ export function RideGroupPage() {
           {routeSlug && <GroupRouteMap teamSlug={team.slug} routeSlug={routeSlug} route={route} />}
         </Box>
       </SimpleGrid>
+
+      {/* The group's weather, full width under the stats and the map: its timeline needs the room */}
+      <Box
+        id={WEATHER_ANCHOR}
+        mt={{ base: 'md', sm: 'lg' }}
+        style={{ scrollMarginTop: 'var(--app-shell-header-height)' }}
+      >
+        <ErrorBoundary variant="inline">
+          <GroupWeatherSection
+            ride={ride}
+            weather={weather.data}
+            leg={leg}
+            isLoading={weather.isLoading}
+            isFetching={weather.isFetching}
+            onRetry={() => void weather.refetch()}
+            canEdit={canEdit}
+          />
+        </ErrorBoundary>
+      </Box>
     </Container>
   )
 }

@@ -28,7 +28,11 @@ public record RideWeatherSummaryDto(
             description =
                 "weatherCode folded into a condition, same table as WeatherConditionsDto.condition")
         WeatherCondition condition,
-    @Nullable @Schema(description = "Whether the departure hour is between sunrise and sunset")
+    @Nullable
+        @Schema(
+            description =
+                "Whether the departure itself (not the round model hour read for it) is between"
+                    + " sunrise and sunset")
         Boolean daylight,
     @Nullable @Schema(description = "Air temperature at the departure hour, °C") Double temperature,
     @Nullable @Schema(description = "Lowest temperature over the window, °C") Double temperatureMin,

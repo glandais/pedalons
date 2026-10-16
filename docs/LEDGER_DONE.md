@@ -1977,6 +1977,55 @@ Plan [`2026-10-06-team-agenda.md`](plans/archive/2026-10-06-team-agenda.md) §4,
   mise à jour automatique, pas d'installation par-dessus la version Play. Pas de test : un lien
   statique.
 
+### `WEB-94` « Météo du parcours » d'un groupe, refaite (16 octobre 2026)
+
+- `WEB-94` **La page d'un groupe répond d'abord aux quatre questions d'un cycliste, puis détaille
+  le parcours tronçon par tronçon et passage par passage** (2026-10-16, aucun changement de
+  contrat) — l'ancien bloc empilait départ, bande de vent et points de passage sans
+  dire s'il ferait froid, s'il pleuvrait, d'où viendrait le vent ni si le groupe rentrerait avant
+  la nuit. La section `GroupWeatherSection` occupe désormais toute la largeur sous la grille
+  statistiques/carte de `RideGroupPage` (l'ancre `#meteo` et son `ErrorBoundary` l'ont suivie) ;
+  les statuts (terminée, annulée, `OUT_OF_RANGE`, `NO_LOCATION` réservé aux organisateurs, étape
+  sans prévision) se comportent comme avant.
+  - **Quatre verdicts** (`RouteVerdicts.tsx`, calculs purs dans `routeWeather.ts`) : températures
+    (« 7 °C → 16 °C », départ et ressenti, heure la plus chaude), pluie (alerte nommée et « Dès … »,
+    sinon « Sec » avec le pic et sa fenêtre, « 0 % » à part, « — » quand aucun point ne donne de
+    probabilité), vent (dominant sur chaque moitié ; « face jusqu'au km X, dos après le km Y »
+    seulement quand toute phase de face finit avant la première phase de dos, sinon les totaux),
+    jour (marge avant le coucher, « après le coucher », « Arrivée de nuit » passé une heure, départ
+    avant le lever ; tuile absente sans coucher). Un verdict à surveiller prend un pictogramme
+    d'alerte, sa réponse garde la couleur du texte.
+  - **« Le vent, tronçon par tronçon »** : les tronçons fusionnés en phases (`windPhases`), à la
+    largeur de leur distance, en mots et avec une flèche, totaux en légende. Une phase plus courte
+    que l'écart entre deux points n'a **aucun point à elle** (`checkpoints` vide) : son
+    `firstCheckpoint` ne sert qu'à la sélection et aux heures, et la phase cliquée est gardée dans
+    la sélection plutôt que retrouvée depuis le point.
+  - **« Heure par heure, à votre passage »** : au bureau, une table défilante (colonne d'intitulés
+    collante, unité de vitesse dite dans l'intitulé, courbe de température SVG unique, heures
+    12 h sur deux lignes, `scroll-padding` pour qu'un focus ne passe pas sous les intitulés) ; au
+    téléphone, une bande compacte, cinq repères sous le centre de leur colonne, un curseur natif,
+    puis la liste « Par tronçon » (une phase ouverte à la fois) au lieu de la barre, illisible à
+    390 px. Un panneau de détail commun au point choisi ; une ligne masquée l'annonce, sauf quand le
+    curseur, dont `aria-valuetext` le dit déjà, l'a choisi. Un point sans prévision reste
+    sélectionnable.
+  - Contrastes : intitulés en couleur de texte (jamais `dimmed`), courbe et anneaux de sélection en
+    `--mantine-color-primary-text`, anneau de focus à l'intérieur de l'anneau de sélection,
+    `WindArrow` en nuance 9 de sa famille en clair et `-text` en sombre (≥ 3:1 sur blanc et sur sa
+    teinte).
+
+  Tests vitest : `routeWeather.test.ts` (fusion des phases, phase sans point, verdicts, courbe,
+  repères, écart des points), `GroupWeatherSection.test.tsx` (tuiles, alerte de pluie, sec, 0 %,
+  pluie inconnue, arrivée après le coucher et de nuit, sans coucher, barre des phases, phase courte
+  cliquée, sélection au clic, par la barre, la liste et le curseur, annonce, point sans prévision,
+  chaque statut), `RideGroupPage.test.tsx`. Vérifié dans un navigateur sur la vraie « Raymond Ride
+  300 » (clair, sombre, 390 px).
+  **À ne pas défaire** : le vent n'est **jamais dit par la seule couleur** (mot et flèche à côté de
+  chaque bande) ; ses couleurs viennent de `RELATIVE_WIND_COLORS` (`contracts/brand-colors.yaml`),
+  jamais d'une table locale ; les deux mises en page sont dans le balisage et basculées en CSS
+  (`visibleFrom`/`hiddenFrom`), jamais par une mesure JS, pour que serveur et navigateur rendent le
+  même arbre ; le client affiche `daylight` tel que l'API l'envoie (`API-123`) ; une probabilité de
+  pluie absente n'est jamais lue « 0 % » ni « Sec ».
+
 ## API — Contrat d'API et backend
 
 ### Modèles de sortie numérotés (repris de biketeam)
@@ -3403,6 +3452,29 @@ plus la colonne. Le départ d'un groupe n'existe plus que dans `ride_groups.star
   vaut « inconnu » ; un envoi manuel n'est jamais réputé à jour sans comparaison au GPX courant, et
   la synchronisation éteinte ne promet aucune mise à jour (`PENDING`/`FAILING` réservés aux lignes
   qu'un worker traite) ; le coût ne dépend pas du nombre de lignes (`…QueryCountTest`).
+
+### `API-123` Jour ou nuit jugé à l'instant montré, pas à l'heure ronde du modèle (contrat `11.5.1`)
+
+- `API-123` **`daylight` se juge au départ ou au passage, plus à l'heure de prévision la plus
+  proche** (2026-10-16, **API 11.5.1**, correctif : seules les descriptions de `daylight` changent ;
+  non commité) — `RideWeatherCalculator.conditions(hour)` comparait l'heure ronde du modèle au lever
+  et au coucher, alors que `CellSeries.nearest` lit l'heure la plus proche à 90 min près : un départ
+  à 08:30, lever à 08:28, lisait l'heure de 08:00 et affichait une lune ; un passage à 19:20, coucher
+  à 19:13, lisait celle de 19:00 et affichait un soleil de nuit. `conditions(hour, at)` reçoit
+  l'instant réel : le départ pour le bloc de départ (`departure()`) et le résumé des cartes
+  (`summary()`, lu par `RideWeatherLookup` et `TripWeatherLookup`), le passage pour chaque point
+  (`leg()`, donc aussi la carte d'étape de voyage, `legSummary` lisant le premier point).
+  `WeatherConditionsDto.time` reste l'heure du modèle ; les descriptions de `daylight` dans
+  `WeatherConditionsDto` et `RideWeatherSummaryDto` disent à quel instant il se rapporte.
+  Tests : `RideWeatherCalculatorTest` —
+  `conditions_shouldJudgeDaylightAtTheMomentShown_notAtTheModelHour`,
+  `departure_justAfterSunrise_shouldBeDaylightThoughItsModelHourIsBefore`,
+  `summary_departureJustAfterSunrise_shouldBeDaylight`,
+  `leg_checkpointJustAfterSunset_shouldBeNightThoughItsModelHourIsBefore`, et
+  `conditions_shouldTellDayFromNight` passé à la nouvelle signature (écrits, pas encore lancés).
+  Les clients générés ne changent que par un commentaire ; aucun client n'a de calcul à retirer.
+  **À ne pas défaire** : le jour ou la nuit d'un instant se juge à cet instant, jamais à l'heure
+  du modèle qui le renseigne ; les clients n'en recalculent rien.
 
 ## OPS — Exploitation, déploiement, recette du backend
 

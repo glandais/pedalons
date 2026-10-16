@@ -4971,7 +4971,7 @@
           },
           "daylight" : {
             "type" : "boolean",
-            "description" : "Whether the departure hour is between sunrise and sunset"
+            "description" : "Whether the departure itself (not the round model hour read for it) is between sunrise and sunset"
           },
           "temperature" : {
             "type" : "number",
@@ -7516,7 +7516,7 @@
           },
           "daylight" : {
             "type" : "boolean",
-            "description" : "Whether time falls between sunrise and sunset at that place — picks the day or night icon"
+            "description" : "Whether the moment asked about (the departure, the checkpoint's passage) falls between sunrise and sunset at that place — not time, the round model hour. Picks the day or night icon"
           },
           "temperature" : {
             "type" : "number",
@@ -23846,7 +23846,7 @@
   },
   "info" : {
     "title" : "Pedalons API",
-    "version" : "11.5.0",
+    "version" : "11.5.1",
     "description" : "API for Pedalons Cycling Team Management Platform"
   },
   "servers" : [ {

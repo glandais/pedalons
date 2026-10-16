@@ -1,0 +1,7 @@
+/* The arrow carries the head/tail distinction where the colour band is the only other sign, so it
+   needs 3:1 (SC 1.4.11): the family's shade 9 in light (the filled 6 is 2.4–2.6:1 on white and on
+   its own tint), its text shade (4) in dark. The family comes from RELATIVE_WIND_COLORS. */
+.arrow {
+  flex-shrink: 0;
+  color: light-dark(var(--arrow-light), var(--arrow-dark));
+}

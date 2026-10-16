@@ -1,0 +1,396 @@
+/* A group's « Météo du parcours » (RouteWeather.tsx). Colours are Mantine variables only, so both
+   schemes follow; a relative wind's colour comes in as --wind-* from the generated family. */
+
+/* ---- Verdicts ---- */
+
+/* The sign of a verdict to watch. Not the warning yellow (1.8:1 on white): orange-9 is 4.3:1 in
+   light, the warning text shade (yellow-4) in dark. */
+.warnIcon {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  color: light-dark(var(--mantine-color-orange-9), var(--mantine-color-warning-text));
+}
+
+/* ---- The wind, stretch by stretch ---- */
+
+.phaseBar {
+  display: flex;
+  gap: 2px;
+  width: 100%;
+}
+
+.phase {
+  flex-basis: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 8px;
+  border-top: 4px solid var(--wind-filled);
+  border-radius: var(--mantine-radius-sm);
+  background: var(--wind-light);
+  color: var(--mantine-color-text);
+  text-align: left;
+}
+
+.phase:hover {
+  box-shadow: inset 0 0 0 1px var(--wind-filled);
+}
+
+.phase[aria-pressed='true'] {
+  box-shadow: inset 0 0 0 2px var(--mantine-color-primary-text);
+}
+
+.phaseLine {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ellipsis {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* ---- Desktop: hour by hour ---- */
+
+.scroller {
+  overflow-x: auto;
+  /* Focus scrolling stops beside the sticky label column, never under it (SC 2.4.11). */
+  scroll-padding-inline-start: 76px;
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-md);
+}
+
+.table {
+  --row-time: 30px;
+  --row-icon: 30px;
+  --row-curve: 44px;
+  --row-temp: 22px;
+  --row-rain: 40px;
+  --row-band: 10px;
+  --row-arrow: 22px;
+  --row-wind: 20px;
+  --row-gusts: 20px;
+  --row-km: 20px;
+  --table-pad: 6px;
+
+  display: flex;
+  min-width: 900px;
+}
+
+.labels {
+  flex: 0 0 76px;
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  padding: var(--table-pad) 8px;
+  background: var(--mantine-color-body);
+  border-right: 1px solid var(--mantine-color-default-border);
+}
+
+.label {
+  display: flex;
+  align-items: center;
+  font-size: var(--mantine-font-size-xs);
+  font-weight: 600;
+  /* Not dimmed: at 12px it would fall under 4.5:1 in both schemes (docs/LEDGER_*.md WEB-2). */
+  color: var(--mantine-color-text);
+}
+
+.unit {
+  font-weight: 400;
+}
+
+.columns {
+  flex: 1;
+  display: grid;
+  position: relative;
+  padding: var(--table-pad) 2px;
+}
+
+.curve {
+  position: absolute;
+  left: 2px;
+  width: calc(100% - 4px);
+  top: calc(var(--table-pad) + var(--row-time) + var(--row-icon));
+  height: var(--row-curve);
+  overflow: visible;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.curveLine {
+  fill: none;
+  /* -text, not -filled: indigo-8 is 2.74:1 on the dark page, under SC 1.4.11's 3:1. */
+  stroke: var(--mantine-color-primary-text);
+  stroke-width: 2px;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  min-width: 0;
+  border-radius: var(--mantine-radius-sm);
+  color: var(--mantine-color-text);
+  font-size: var(--mantine-font-size-xs);
+  text-align: center;
+}
+
+.column:hover {
+  background: var(--mantine-color-default-hover);
+}
+
+.column[aria-pressed='true'] {
+  background: var(--mantine-primary-color-light);
+  box-shadow: inset 0 0 0 2px var(--mantine-color-primary-text);
+}
+
+/* The focus ring sits inside the selection ring, a pixel apart, so focusing the selected column
+   or phase still changes what is on screen. */
+.column:focus-visible,
+.phase:focus-visible {
+  outline: 2px solid var(--mantine-color-primary-text);
+  outline-offset: -5px;
+}
+
+.phaseItem:focus-visible {
+  outline: 2px solid var(--mantine-color-primary-text);
+  outline-offset: -2px;
+}
+
+.cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+.rTime {
+  height: var(--row-time);
+  font-weight: 600;
+  line-height: 1.1;
+  white-space: pre-line;
+}
+.rIcon {
+  height: var(--row-icon);
+}
+.rCurve {
+  height: var(--row-curve);
+}
+.rTemp {
+  height: var(--row-temp);
+  font-weight: 700;
+  font-size: var(--mantine-font-size-sm);
+}
+.rRain {
+  height: var(--row-rain);
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 2px;
+}
+.rBand {
+  height: var(--row-band);
+  align-items: center;
+}
+.rArrow {
+  height: var(--row-arrow);
+}
+.rWind {
+  height: var(--row-wind);
+}
+.rGusts {
+  height: var(--row-gusts);
+}
+.rKm {
+  height: var(--row-km);
+}
+/* Label rows spanning several cell rows. */
+.rTempLabel {
+  height: calc(var(--row-curve) + var(--row-temp));
+  align-items: flex-end;
+  padding-bottom: 3px;
+}
+.rWindLabel {
+  height: calc(var(--row-band) + var(--row-arrow) + var(--row-wind));
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.rainTrack {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  height: 20px;
+  width: 100%;
+}
+
+.rainBar {
+  width: 10px;
+  min-height: 1px;
+  border-radius: 2px 2px 0 0;
+  background: var(--mantine-color-blue-filled);
+}
+
+.band {
+  width: 100%;
+  height: 4px;
+  background: var(--wind-filled);
+}
+
+/* ---- Phone: the compact strip ---- */
+
+.strip {
+  position: relative;
+  display: grid;
+}
+
+.stripColumn {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border-radius: 2px;
+}
+
+.stripColumn[data-selected] {
+  background: var(--mantine-primary-color-light);
+  box-shadow: inset 0 0 0 1px var(--mantine-color-primary-text);
+}
+
+.stripCurve {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 36px;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.stripTemp {
+  height: 36px;
+}
+
+.stripRain {
+  height: 18px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.stripRainBar {
+  width: 60%;
+  min-height: 1px;
+  background: var(--mantine-color-blue-filled);
+}
+
+.stripBand {
+  height: 6px;
+  margin-top: 2px;
+  background: var(--wind-filled);
+}
+
+/* Each tick is placed under its column's centre (tickStyle in RouteWeather.tsx). */
+.ticks {
+  position: relative;
+  height: calc(var(--mantine-font-size-xs) * 1.5);
+  font-size: var(--mantine-font-size-xs);
+}
+
+.tick {
+  position: absolute;
+  top: 0;
+  white-space: nowrap;
+}
+
+.slider {
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  accent-color: var(--mantine-primary-color-filled);
+}
+
+/* ---- Phone: by stretch ---- */
+
+.phaseList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.phaseItem {
+  width: 100%;
+  min-height: 56px;
+  padding: 8px 10px;
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-md);
+  color: var(--mantine-color-text);
+}
+
+.phaseItem[aria-expanded='true'] {
+  border-color: var(--mantine-primary-color-filled);
+}
+
+.swatch {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--mantine-radius-sm);
+  background: var(--wind-light);
+  border-left: 4px solid var(--wind-filled);
+}
+
+.chevron {
+  flex: 0 0 auto;
+  transition: transform 150ms ease;
+}
+
+.phaseItem[aria-expanded='true'] .chevron {
+  transform: rotate(180deg);
+}
+
+.pointRows {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0 4px;
+}
+
+.pointRow {
+  display: grid;
+  /* The wind cell may shrink and wrap: « Travers 13 (25) » does not fit beside the rest at 360px. */
+  grid-template-columns: 4.4rem 3.6rem 2.8rem 2.4rem minmax(0, 1fr);
+  white-space: nowrap;
+  gap: 4px;
+  padding: 6px 0;
+  font-size: var(--mantine-font-size-sm);
+  border-bottom: 1px solid var(--mantine-color-default-border);
+  font-variant-numeric: tabular-nums;
+}
+
+.pointRow > :last-child {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.pointRow:last-child {
+  border-bottom: 0;
+}
+
+.noPoint {
+  padding: 6px 4px 0;
+}

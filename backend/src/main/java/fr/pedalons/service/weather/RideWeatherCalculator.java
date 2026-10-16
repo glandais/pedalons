@@ -133,12 +133,18 @@ public final class RideWeatherCalculator {
         CompassPoint.fromDegrees(hour.windDirection()));
   }
 
-  public static WeatherConditions conditions(WeatherHourRow hour) {
+  /**
+   * The forecast of {@code hour}, shown for the moment {@code at} — the departure, a checkpoint's
+   * passage. {@code time} stays the model hour; {@code daylight} is judged at {@code at}, not at
+   * that round hour: a 08:30 departure with sunrise at 08:28 reads the 08:00 hour yet leaves by
+   * day, a 19:20 passage with sunset at 19:13 reads the 19:00 hour yet rides at night.
+   */
+  public static WeatherConditions conditions(WeatherHourRow hour, Instant at) {
     return new WeatherConditions(
         hour.time(),
         hour.weatherCode(),
         WeatherCondition.fromWmo(hour.weatherCode()),
-        daylight(hour.time(), hour.sunrise(), hour.sunset()),
+        daylight(at, hour.sunrise(), hour.sunset()),
         round1(hour.temperature()),
         round1(hour.apparentTemperature()),
         hour.precipitationProbability(),
@@ -290,7 +296,7 @@ public final class RideWeatherCalculator {
             ? WeatherStatus.STALE
             : WeatherStatus.OK;
     return new DepartureWeather(
-        status, conditions(hour), hour.sunrise(), hour.sunset(), series.fetchedAt());
+        status, conditions(hour, departureTime), hour.sunrise(), hour.sunset(), series.fetchedAt());
   }
 
   /**
@@ -362,7 +368,7 @@ public final class RideWeatherCalculator {
       }
       stale |= WeatherRefreshPolicy.isStale(series.fetchedAt(), time, now);
 
-      WeatherConditions conditions = conditions(hour);
+      WeatherConditions conditions = conditions(hour, time);
       read.add(conditions);
       // The stretch this checkpoint opens; the finish opens none, so it shows the one it closes.
       RouteSamples.Sample stretch = i < last ? sample : points.get(i - 1);
@@ -457,7 +463,8 @@ public final class RideWeatherCalculator {
   }
 
   /**
-   * A card's summary: the departure hour, and the extremes over {@code [departure, lastArrival]} —
+   * A card's summary: the departure hour (its day or night judged at {@code departure} itself),
+   * and the extremes over {@code [departure, lastArrival]} —
    * each end widened by half an hour so the hours nearest them count. Null when the cache has no
    * hour near the departure.
    */
@@ -500,7 +507,7 @@ public final class RideWeatherCalculator {
         }
       }
     }
-    WeatherConditions start = conditions(first);
+    WeatherConditions start = conditions(first, departure);
     return new RideWeatherSummary(
         WeatherRefreshPolicy.isStale(fetchedAt, departure, now)
             ? WeatherStatus.STALE

@@ -31,8 +31,9 @@ public record WeatherConditionsDto(
         WeatherCondition condition,
     @Schema(
             description =
-                "Whether time falls between sunrise and sunset at that place — picks the day or"
-                    + " night icon",
+                "Whether the moment asked about (the departure, the checkpoint's passage) falls"
+                    + " between sunrise and sunset at that place — not time, the round model hour."
+                    + " Picks the day or night icon",
             required = true)
         boolean daylight,
     @Schema(description = "Air temperature at 2 m, °C", required = true) double temperature,

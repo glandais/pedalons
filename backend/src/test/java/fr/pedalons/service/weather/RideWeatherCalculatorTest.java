@@ -120,14 +120,95 @@ class RideWeatherCalculatorTest {
 
   @Test
   void conditions_shouldTellDayFromNight() {
-    assertTrue(
-        RideWeatherCalculator.conditions(
-                hour(Instant.parse("2026-10-06T12:00:00Z"), 15, null, 5, 0))
-            .daylight());
+    Instant noon = Instant.parse("2026-10-06T12:00:00Z");
+    Instant evening = Instant.parse("2026-10-06T19:00:00Z");
+    assertTrue(RideWeatherCalculator.conditions(hour(noon, 15, null, 5, 0), noon).daylight());
     assertFalse(
-        RideWeatherCalculator.conditions(
-                hour(Instant.parse("2026-10-06T19:00:00Z"), 15, null, 5, 0))
-            .daylight());
+        RideWeatherCalculator.conditions(hour(evening, 15, null, 5, 0), evening).daylight());
+  }
+
+  // 18 October 2026 in Paris (CEST, UTC+2): sunrise 08:28, sunset 19:13 local.
+  private static final Instant SUNRISE_18 = Instant.parse("2026-10-18T06:28:00Z");
+  private static final Instant SUNSET_18 = Instant.parse("2026-10-18T17:13:00Z");
+  private static final Instant NOW_17 = Instant.parse("2026-10-17T12:00:00Z");
+
+  /** Every hour of 18 October, with that day's sunrise and sunset. */
+  private static CellSeries series18() {
+    List<WeatherHourRow> rows = new ArrayList<>();
+    for (int h = 0; h < 24; h++) {
+      rows.add(
+          new WeatherHourRow(
+              0,
+              Instant.parse("2026-10-18T00:00:00Z").plus(Duration.ofHours(h)),
+              12,
+              11,
+              null,
+              0,
+              1,
+              10,
+              0,
+              15d,
+              SUNRISE_18,
+              SUNSET_18));
+    }
+    return CellSeries.of(NOW_17.minus(Duration.ofMinutes(20)), rows);
+  }
+
+  @Test
+  void conditions_shouldJudgeDaylightAtTheMomentShown_notAtTheModelHour() {
+    CellSeries series = series18();
+    // 08:30 local, two minutes after sunrise: the 08:00 model hour is before it, the rider is not.
+    Instant departure = Instant.parse("2026-10-18T06:30:00Z");
+    WeatherHourRow morning = series.nearest(departure);
+    assertEquals(Instant.parse("2026-10-18T06:00:00Z"), morning.time());
+    WeatherConditions atDeparture = RideWeatherCalculator.conditions(morning, departure);
+    assertTrue(atDeparture.daylight());
+    assertEquals(morning.time(), atDeparture.time(), "time stays the model hour");
+
+    // 19:20 local, seven minutes after sunset: the 19:00 model hour is before it, the rider is not.
+    Instant passage = Instant.parse("2026-10-18T17:20:00Z");
+    WeatherHourRow evening = series.nearest(passage);
+    assertEquals(Instant.parse("2026-10-18T17:00:00Z"), evening.time());
+    assertFalse(RideWeatherCalculator.conditions(evening, passage).daylight());
+  }
+
+  @Test
+  void departure_justAfterSunrise_shouldBeDaylightThoughItsModelHourIsBefore() {
+    DepartureWeather departure =
+        RideWeatherCalculator.departure(series18(), Instant.parse("2026-10-18T06:30:00Z"), NOW_17);
+    assertEquals(Instant.parse("2026-10-18T06:00:00Z"), departure.conditions().time());
+    assertTrue(departure.conditions().daylight());
+  }
+
+  @Test
+  void summary_departureJustAfterSunrise_shouldBeDaylight() {
+    CellSeries series = series18();
+    Instant departure = Instant.parse("2026-10-18T06:30:00Z");
+    RideWeatherSummary summary =
+        RideWeatherCalculator.summary(
+            departure,
+            departure.plus(Duration.ofHours(3)),
+            series.fetchedAt(),
+            series.hours().values(),
+            NOW_17);
+    assertNotNull(summary);
+    assertEquals(Boolean.TRUE, summary.daylight());
+  }
+
+  @Test
+  void leg_checkpointJustAfterSunset_shouldBeNightThoughItsModelHourIsBefore() {
+    // A leg leaving at 19:20 local: its start checkpoint passes then, and reads the 19:00 hour.
+    Instant start = Instant.parse("2026-10-18T17:20:00Z");
+    LegInput input = new LegInput(3L, start, RideWeatherCalculator.speed(null), northbound(30));
+
+    WeatherLeg leg = RideWeatherCalculator.leg(input, key -> series18(), NOW_17);
+
+    WeatherCheckpoint first = leg.checkpoints().getFirst();
+    assertEquals(start, first.time());
+    assertEquals(Instant.parse("2026-10-18T17:00:00Z"), first.weather().time());
+    assertFalse(first.weather().daylight());
+    // A trip stage's card reads its first checkpoint: night too.
+    assertEquals(Boolean.FALSE, RideWeatherCalculator.legSummary(leg).daylight());
   }
 
   @Test
