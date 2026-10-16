@@ -43,7 +43,7 @@ dependencies:
   intl: ^0.20.3
   # The user's preferred timezone (UserDto.timezone), applied by AppFormatters.toDisplayTime.
   # Already shipped transitively by flutter_local_notifications.
-  timezone: ^0.11.1
+  timezone: ^0.11.2
 
   # Image caching with auth headers support
   cached_network_image: ^4.0.4
@@ -89,7 +89,7 @@ dependencies:
   # Creates the `pedalons_default` Android channel — the channel_id the server
   # already sends — and shows a notification while the app is in the foreground,
   # which FCM does not do on Android.
-  flutter_local_notifications: ^22.3.1
+  flutter_local_notifications: ^22.3.2
   # The device name sent with the push token, so a member can tell their phones
   # apart in a future device list.
   device_info_plus: ^13.3.0
@@ -104,7 +104,7 @@ dev_dependencies:
   build_runner: ^2.16.2
   freezed: ^4.0.2
   json_serializable: ^6.14.1
-  retrofit_generator: ^10.2.11
+  retrofit_generator: ^10.2.12
   openapi_retrofit_generator: ^2.0.0
   # UI end-to-end tests (patrol_test/), run with `patrol test` — see patrol_test/README.md
   patrol: ^4.10.0
