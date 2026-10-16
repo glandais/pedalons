@@ -65,6 +65,11 @@ app/src/main/kotlin/fr/pedalons/karoo/
 - Selecting a registered group syncs its route straight away (no route detail screen); the status
   shows on the row. The sync itself is `launchSync`, shared with the route detail screen.
 - `registeredGroups` defaults to an empty list, so an older backend still parses.
+- An idle row shows where its route stands at Hammerhead (`syncStatuses`, API-121: already on the
+  Karoo / older version / update pending / sending failed / reconnect). The field is nullable:
+  absent (older backend) means « unknown », not « not sent »; unknown states are ignored rather than
+  failing the parse. A route synced from the Karoo since the response was loaded (`syncedRoutes`,
+  reset with every new response) shows as on the Karoo, the server state being older than it.
 
 **Token Storage:**
 - DataStore preferences for access/refresh tokens

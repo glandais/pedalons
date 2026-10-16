@@ -23,6 +23,11 @@
     <string name="route_syncing">Syncing…</string>
     <string name="route_synced">Route synced!</string>
     <string name="route_sync_error">Sync failed</string>
+    <string name="route_on_karoo">Already on the Karoo</string>
+    <string name="route_outdated_on_karoo">Older version on the Karoo</string>
+    <string name="route_update_pending">Update pending</string>
+    <string name="route_sending_failed">Sending failed</string>
+    <string name="route_reconnect_hammerhead">Reconnect Hammerhead in Pédalons</string>
 
     <!-- GPS Connect -->
     <string name="gps_connect_title">Last step: link Hammerhead</string>

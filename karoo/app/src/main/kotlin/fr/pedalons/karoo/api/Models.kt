@@ -66,7 +66,48 @@ data class DeviceRegisteredGroup(
     @SerialName("startDateTime") val startDateTime: String,
     // The ride's IANA zone, in which the start is displayed.
     @SerialName("timezone") val timezone: String? = null,
+    // Where the route stands at each of the user's GPS services that hold it (docs/LEDGER_*.md
+    // API-121). Null when the server predates the field: that means « unknown », not « not sent ».
+    @SerialName("syncStatuses") val syncStatuses: List<DeviceRouteSyncStatus>? = null,
+) {
+    /**
+     * Where the route stands at Hammerhead, the Karoo's own service: null when unknown (older
+     * server), when Hammerhead does not hold the route, or for a state this build does not know.
+     */
+    fun hammerheadSyncState(): RouteSyncState? =
+        syncStatuses
+            ?.firstOrNull { it.serviceType == GPS_SERVICE_HAMMERHEAD }
+            ?.let { RouteSyncState.parse(it.state) }
+}
+
+/**
+ * Where a route stands at one GPS service. Plain strings, parsed by [RouteSyncState.parse]: a value
+ * added to the contract later must not make the whole routes response unreadable.
+ */
+@Serializable
+data class DeviceRouteSyncStatus(
+    @SerialName("serviceType") val serviceType: String,
+    @SerialName("state") val state: String,
 )
+
+enum class RouteSyncState {
+    // At the service, up to date.
+    SENT,
+    // At the service in an older version, and nothing will update it: sync it again.
+    OUTDATED,
+    // To be sent or updated shortly.
+    PENDING,
+    // The last attempt failed (retried a few times, then waits for the route to change).
+    FAILING,
+    // The connection to the service must be renewed in Pédalons.
+    RECONNECT_REQUIRED;
+
+    companion object {
+        fun parse(value: String): RouteSyncState? = entries.firstOrNull { it.name == value }
+    }
+}
+
+const val GPS_SERVICE_HAMMERHEAD = "HAMMERHEAD"
 
 @Serializable
 data class DeviceRide(
@@ -119,7 +160,7 @@ data class SyncResponse(
 data class UserStatusResponse(
     @SerialName("connectedGpsServices") val connectedGpsServices: List<String>,
 ) {
-    fun isHammerheadConnected(): Boolean = connectedGpsServices.contains("HAMMERHEAD")
+    fun isHammerheadConnected(): Boolean = connectedGpsServices.contains(GPS_SERVICE_HAMMERHEAD)
 }
 
 // Error

@@ -43,6 +43,12 @@ class HomeMenuDelegate extends WatchUi.Menu2InputDelegate {
             for (var i = 0; i < _groups.size(); i++) {
                 var group = _groups[i];
                 var sublabel = _formatUtils.formatDateTime(group.get("startDateTime"));
+                // Where the route stands in Garmin Connect, before the group name: the sublabel
+                // is cut on small screens and this tells whether a download would duplicate it.
+                var syncLabel = syncStateLabel(group.get("syncState"));
+                if (syncLabel != null) {
+                    sublabel = sublabel.length() > 0 ? sublabel + " " + syncLabel : syncLabel;
+                }
                 var groupName = group.get("groupName");
                 if (groupName != null && groupName.length() > 0) {
                     sublabel = sublabel.length() > 0 ? sublabel + " " + groupName : groupName;
@@ -129,6 +135,27 @@ class HomeMenuDelegate extends WatchUi.Menu2InputDelegate {
             var viewPair = app.showLoginView();
             WatchUi.switchToView(viewPair[0], viewPair[1], WatchUi.SLIDE_IMMEDIATE);
         }
+    }
+
+    /**
+     * Short label for a group's route state in Garmin Connect (docs/LEDGER_*.md API-121), or null
+     * when there is nothing to say: not held by Garmin, an older backend, or an unknown state.
+     */
+    private function syncStateLabel(state) {
+        if (state == null) {
+            return null;
+        } else if (state.equals("SENT")) {
+            return WatchUi.loadResource(Rez.Strings.SyncSent);
+        } else if (state.equals("OUTDATED")) {
+            return WatchUi.loadResource(Rez.Strings.SyncOutdated);
+        } else if (state.equals("PENDING")) {
+            return WatchUi.loadResource(Rez.Strings.SyncPending);
+        } else if (state.equals("FAILING")) {
+            return WatchUi.loadResource(Rez.Strings.SyncFailing);
+        } else if (state.equals("RECONNECT_REQUIRED")) {
+            return WatchUi.loadResource(Rez.Strings.SyncReconnect);
+        }
+        return null;
     }
 
     function onBack() {

@@ -39,4 +39,9 @@
     <string id="Routes">Routes</string>
     <string id="NoRides">No upcoming rides</string>
     <string id="Logout">Logout</string>
+    <string id="SyncSent">In Garmin Connect</string>
+    <string id="SyncOutdated">Old version in Connect</string>
+    <string id="SyncPending">Update pending</string>
+    <string id="SyncFailing">Upload failed</string>
+    <string id="SyncReconnect">Reconnect Garmin</string>
 </strings>

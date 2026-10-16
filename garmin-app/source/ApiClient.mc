@@ -434,6 +434,7 @@ class ApiClient {
 
     /**
      * Parse a DeviceRegisteredGroupDto, keeping only what the list and the download need.
+     * Of its syncStatuses only the GARMIN entry's state is kept (docs/LEDGER_*.md API-121).
      */
     private function parseRegisteredGroupDto(raw as Lang.Dictionary) as Lang.Dictionary {
         return {
@@ -442,7 +443,29 @@ class ApiClient {
             "rideName" => raw.get("rideName"),
             "groupName" => raw.get("groupName"),
             "startDateTime" => raw.get("startDateTime"),
+            "syncState" => parseGarminSyncState(raw.get("syncStatuses")),
         };
+    }
+
+    /**
+     * The GARMIN state among a group's syncStatuses (SENT, OUTDATED, PENDING, FAILING, RECONNECT_REQUIRED),
+     * or null when Garmin does not hold the route or the field is absent (older backend: unknown,
+     * not "not sent" — nothing is shown either way).
+     */
+    private function parseGarminSyncState(rawStatuses) {
+        if (rawStatuses == null || !(rawStatuses instanceof Lang.Array)) {
+            return null;
+        }
+        for (var i = 0; i < rawStatuses.size(); i++) {
+            var status = rawStatuses[i];
+            if (status instanceof Lang.Dictionary) {
+                var serviceType = (status as Lang.Dictionary).get("serviceType");
+                if (serviceType != null && serviceType.equals("GARMIN")) {
+                    return (status as Lang.Dictionary).get("state");
+                }
+            }
+        }
+        return null;
     }
 
     /**

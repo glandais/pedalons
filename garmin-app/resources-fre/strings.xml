@@ -39,4 +39,9 @@
     <string id="Routes">Parcours</string>
     <string id="NoRides">Aucune sortie</string>
     <string id="Logout">Déconnexion</string>
+    <string id="SyncSent">Déjà dans Garmin Connect</string>
+    <string id="SyncOutdated">Ancienne version dans Connect</string>
+    <string id="SyncPending">Mise à jour en attente</string>
+    <string id="SyncFailing">Envoi en échec</string>
+    <string id="SyncReconnect">Reconnecter Garmin</string>
 </strings>

@@ -103,6 +103,11 @@ Uses Device Code Flow (RFC 8628) since Edge devices have no keyboard:
 - **Token refresh**: Automatic before API calls when token expires in <10 min
 - **Position-based sorting**: Routes sorted by proximity if GPS available
 - **FIT download**: Uses `HTTP_RESPONSE_CONTENT_TYPE_FIT` for direct device import
+- **Route already in Garmin Connect** (API-121): of a registered group's `syncStatuses`,
+  `ApiClient.parseRegisteredGroupDto` keeps only the GARMIN entry's state as `syncState`;
+  `HomeMenuDelegate.syncStateLabel` puts it in the row's sublabel (in Connect / old version /
+  update pending / upload failed / reconnect). Absent (older backend, or Garmin does not hold the
+  route) means « unknown », not « not sent », and an unknown state shows nothing.
 
 ## Supported Devices
 

@@ -23,6 +23,11 @@
     <string name="route_syncing">Synchronisation…</string>
     <string name="route_synced">Parcours synchronisé !</string>
     <string name="route_sync_error">Échec de la synchronisation</string>
+    <string name="route_on_karoo">Déjà sur le Karoo</string>
+    <string name="route_outdated_on_karoo">Ancienne version sur le Karoo</string>
+    <string name="route_update_pending">Mise à jour en attente</string>
+    <string name="route_sending_failed">Envoi en échec</string>
+    <string name="route_reconnect_hammerhead">Reconnecter Hammerhead dans Pédalons</string>
 
     <!-- GPS Connect -->
     <string name="gps_connect_title">Dernière étape : associer Hammerhead</string>

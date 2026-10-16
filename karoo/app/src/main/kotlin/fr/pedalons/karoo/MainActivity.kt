@@ -66,6 +66,7 @@ import fr.pedalons.karoo.api.DeviceRide
 import fr.pedalons.karoo.api.DeviceRideEntry
 import fr.pedalons.karoo.api.DeviceRoute
 import fr.pedalons.karoo.api.PedalonsApiClient
+import fr.pedalons.karoo.api.RouteSyncState
 import fr.pedalons.karoo.api.RoutesResponse
 import fr.pedalons.karoo.api.UnauthorizedException
 import fr.pedalons.karoo.auth.AuthActivity
@@ -85,6 +86,9 @@ import kotlinx.coroutines.launch
 private const val METERS_PER_MILE = 1609.344
 private const val METERS_PER_FOOT = 0.3048
 private const val METERS_PER_KM = 1000.0
+
+// The key of a route in the routes synced during the session ([MainScreen]).
+private fun routeKey(teamSlug: String, routeSlug: String): String = "$teamSlug/$routeSlug"
 
 // Sync feedback state
 enum class SyncState {
@@ -288,6 +292,13 @@ private fun MainScreen(
     // Bumped by every sync and every navigation: a sync only writes its result while it is still
     // the current one, so one left running behind a Back press cannot mark another row.
     var syncGeneration by remember { mutableStateOf(0) }
+    // The routes ("teamSlug/routeSlug") synced from this Karoo since [routesResponse] was loaded:
+    // the server's Hammerhead state in that response predates them, so the registered groups list
+    // shows them as on the Karoo rather than the stale state (docs/LEDGER_*.md API-121). An
+    // immutable set in a State, read through the delegate: the key callbacks registered once below
+    // must see the current one. Reset with every new response, whose states then supersede it.
+    var syncedRoutes by remember { mutableStateOf(emptySet<String>()) }
+    LaunchedEffect(routesResponse) { syncedRoutes = emptySet() }
 
     // Navigation state
     var navState by remember { mutableStateOf<NavState>(NavState.Home) }
@@ -345,6 +356,11 @@ private fun MainScreen(
                     syncRoute(apiClient, authManager, teamSlug, routeSlug) {
                         activity.startGpsConnectFlow()
                     }
+                // Keyed by route, not by row: recorded even when the rider has moved on, since
+                // the route did reach the Karoo whichever screen is shown now.
+                if (result == SyncState.SUCCESS) {
+                    syncedRoutes = syncedRoutes + routeKey(teamSlug, routeSlug)
+                }
                 if (generation == syncGeneration) {
                     syncState = result
                 }
@@ -591,6 +607,7 @@ private fun MainScreen(
                         userProfile = userProfile,
                         syncState = syncState,
                         syncTargetIndex = syncTargetIndex,
+                        syncedRoutes = syncedRoutes,
                         onNavigateTo = navigateTo,
                         onOpenHomeEntry = { openHomeEntry(response, it) },
                         onBack = navigateBack,
@@ -638,6 +655,7 @@ private fun NavigationContent(
     userProfile: UserProfile?,
     syncState: SyncState,
     syncTargetIndex: Int?,
+    syncedRoutes: Set<String>,
     onNavigateTo: (NavState) -> Unit,
     onOpenHomeEntry: (HomeEntry) -> Unit,
     onBack: () -> Unit,
@@ -665,6 +683,7 @@ private fun NavigationContent(
                 listState = listState,
                 syncState = syncState,
                 syncTargetIndex = syncTargetIndex,
+                syncedRoutes = syncedRoutes,
                 onSelectGroup = { index, group ->
                     onSync(group.teamSlug, group.routeSlug, index)
                 },
@@ -918,6 +937,32 @@ private fun HomeMenuItem(
 // === Registered Group List Screen ===
 
 /**
+ * Where a registered group's route stands at Hammerhead, as sent by the server. Nothing when the
+ * state is unknown (older server) or Hammerhead does not hold the route.
+ */
+@Composable
+private fun HammerheadSyncStatusText(state: RouteSyncState?) {
+    val (textRes, color) =
+        when (state) {
+            RouteSyncState.SENT -> R.string.route_on_karoo to MaterialTheme.colorScheme.primary
+            RouteSyncState.OUTDATED ->
+                R.string.route_outdated_on_karoo to MaterialTheme.colorScheme.onSurfaceVariant
+            RouteSyncState.PENDING ->
+                R.string.route_update_pending to MaterialTheme.colorScheme.onSurfaceVariant
+            RouteSyncState.FAILING ->
+                R.string.route_sending_failed to MaterialTheme.colorScheme.error
+            RouteSyncState.RECONNECT_REQUIRED ->
+                R.string.route_reconnect_hammerhead to MaterialTheme.colorScheme.error
+            null -> return
+        }
+    Text(
+        text = stringResource(textRes),
+        style = MaterialTheme.typography.bodySmall,
+        color = color,
+    )
+}
+
+/**
  * The groups the user is registered in. A row is the action itself: selecting it syncs the group's
  * route to Hammerhead, its status shown on the row, without going through the route detail screen.
  */
@@ -930,6 +975,7 @@ private fun RegisteredGroupListScreen(
     listState: LazyListState,
     syncState: SyncState,
     syncTargetIndex: Int?,
+    syncedRoutes: Set<String>,
     onSelectGroup: (Int, DeviceRegisteredGroup) -> Unit,
     onBack: () -> Unit,
 ) {
@@ -1066,8 +1112,24 @@ private fun RegisteredGroupListScreen(
                                                 style = MaterialTheme.typography.bodySmall,
                                                 color = MaterialTheme.colorScheme.error,
                                             )
+                                        // No sync of this row in progress or just done: where the
+                                        // route already stands at Hammerhead, so the rider does
+                                        // not send it twice (docs/LEDGER_*.md API-121). Syncing
+                                        // stays available — it updates without a duplicate.
+                                        // A route synced from here since the list was loaded is
+                                        // on the Karoo, whatever the older server state says.
                                         SyncState.IDLE,
-                                        null -> {}
+                                        null ->
+                                            HammerheadSyncStatusText(
+                                                if (
+                                                    routeKey(group.teamSlug, group.routeSlug) in
+                                                        syncedRoutes
+                                                ) {
+                                                    RouteSyncState.SENT
+                                                } else {
+                                                    group.hammerheadSyncState()
+                                                },
+                                            )
                                     }
                                 }
                                 when (rowSyncState) {
