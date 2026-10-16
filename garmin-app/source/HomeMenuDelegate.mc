@@ -4,16 +4,18 @@ using Toybox.System;
 
 /**
  * Input delegate for the home Menu2.
- * Handles selection of "Rides" or "Routes" top-level entries.
+ * Handles selection of "My next rides", "Rides" or "Routes" top-level entries.
  */
 class HomeMenuDelegate extends WatchUi.Menu2InputDelegate {
+    private var _groups;
     private var _rides;
     private var _routes;
     private var _apiClient;
     private var _formatUtils;
 
-    function initialize(rides, routes, apiClient, formatUtils) {
+    function initialize(groups, rides, routes, apiClient, formatUtils) {
         Menu2InputDelegate.initialize();
+        _groups = groups;
         _rides = rides;
         _routes = routes;
         _apiClient = apiClient;
@@ -23,7 +25,37 @@ class HomeMenuDelegate extends WatchUi.Menu2InputDelegate {
     function onSelect(item) {
         var id = item.getId();
 
-        if (id.equals("rides")) {
+        if (id.equals("groups")) {
+            if (_groups.size() == 0) {
+                return; // Nothing to show
+            }
+
+            // Build the list of the groups the user is registered in
+            var menu = new WatchUi.Menu2({
+                :title => WatchUi.loadResource(Rez.Strings.RegisteredGroups),
+            });
+            if (menu has :setControlBar) {
+                menu.setControlBar({
+                    :leftButton => WatchUi.CONTROL_BAR_LEFT_BUTTON_BACK,
+                });
+            }
+
+            for (var i = 0; i < _groups.size(); i++) {
+                var group = _groups[i];
+                var sublabel = _formatUtils.formatDateTime(group.get("startDateTime"));
+                var groupName = group.get("groupName");
+                if (groupName != null && groupName.length() > 0) {
+                    sublabel = sublabel.length() > 0 ? sublabel + " " + groupName : groupName;
+                }
+                menu.addItem(new WatchUi.MenuItem(group.get("rideName"), sublabel, i, {}));
+            }
+
+            WatchUi.pushView(
+                menu,
+                new RegisteredGroupListMenuDelegate(_groups, _apiClient),
+                WatchUi.SLIDE_LEFT
+            );
+        } else if (id.equals("rides")) {
             if (_rides.size() == 0) {
                 return; // Nothing to show
             }

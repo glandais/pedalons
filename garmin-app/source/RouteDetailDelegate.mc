@@ -30,7 +30,10 @@ class RouteDetailDelegate extends WatchUi.BehaviorDelegate {
         var routeSlug = _route.get("routeSlug");
 
         if (teamSlug != null && routeSlug != null) {
-            _apiClient.downloadRoute(teamSlug, routeSlug, method(:onDownloadComplete));
+            if (!_apiClient.downloadRoute(teamSlug, routeSlug, method(:onDownloadComplete))) {
+                _view.setDownloadBusy();
+                _isDownloading = false;
+            }
         } else {
             _view.setDownloadComplete(false);
             _isDownloading = false;

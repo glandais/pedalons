@@ -322,6 +322,7 @@ class ApiClient {
             var result = {
                 "rides" => [],
                 "routes" => [],
+                "registeredGroups" => [],
             };
 
             // Parse rides
@@ -348,6 +349,19 @@ class ApiClient {
                     }
                 }
                 result.put("routes", routes);
+            }
+
+            // Parse the groups the user is registered in, absent from an older backend
+            var rawGroups = dict.get("registeredGroups");
+            if (rawGroups != null && rawGroups instanceof Lang.Array) {
+                var groups = [];
+                for (var i = 0; i < rawGroups.size(); i++) {
+                    var raw = rawGroups[i];
+                    if (raw instanceof Lang.Dictionary) {
+                        groups.add(parseRegisteredGroupDto(raw as Lang.Dictionary));
+                    }
+                }
+                result.put("registeredGroups", groups);
             }
 
             if (callback != null) {
@@ -419,9 +433,31 @@ class ApiClient {
     }
 
     /**
-     * Download FIT file for a route.
+     * Parse a DeviceRegisteredGroupDto, keeping only what the list and the download need.
      */
-    function downloadRoute(teamSlug, routeSlug, callback) as Void {
+    private function parseRegisteredGroupDto(raw as Lang.Dictionary) as Lang.Dictionary {
+        return {
+            "teamSlug" => raw.get("teamSlug"),
+            "routeSlug" => raw.get("routeSlug"),
+            "rideName" => raw.get("rideName"),
+            "groupName" => raw.get("groupName"),
+            "startDateTime" => raw.get("startDateTime"),
+        };
+    }
+
+    /**
+     * Download FIT file for a route.
+     *
+     * Only one download at a time: the callback is a single field, so a second download would take
+     * over the first one's callback and leave its caller waiting forever. A download started while
+     * another is in flight (its progress screen closed, say) is refused.
+     *
+     * @return false, without calling back, when another download is still in progress
+     */
+    function downloadRoute(teamSlug, routeSlug, callback) as Lang.Boolean {
+        if (_downloadCallback != null) {
+            return false;
+        }
         _downloadCallback = callback;
 
         // Check if we need to refresh token first
@@ -429,10 +465,11 @@ class ApiClient {
             // Store params for after refresh
             _pendingDownload = [teamSlug, routeSlug];
             refreshToken(method(:onRefreshForDownload));
-            return;
+            return true;
         }
 
         doDownloadRoute(teamSlug, routeSlug);
+        return true;
     }
 
     /**

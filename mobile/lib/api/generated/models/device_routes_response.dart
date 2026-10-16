@@ -4,6 +4,7 @@
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'device_registered_group_dto.dart';
 import 'device_ride_dto.dart';
 import 'device_route_dto.dart';
 
@@ -19,6 +20,9 @@ abstract class DeviceRoutesResponse with _$DeviceRoutesResponse {
 
     /// Latest standalone routes
     required List<DeviceRouteDto> routes,
+
+    /// Upcoming ride groups the user is registered in (from 12 hours ago to 7 days ahead), earliest first, each with the route to load
+    required List<DeviceRegisteredGroupDto> registeredGroups,
   }) = _DeviceRoutesResponse;
 
   factory DeviceRoutesResponse.fromJson(Map<String, Object?> json) =>

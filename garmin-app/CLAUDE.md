@@ -59,9 +59,10 @@ source/
 ├── LoginView.mc                    # Device code display: QR code, site and user code
 ├── QrCode.mc                       # QR encoder (byte mode, level L, versions 3-4, mask 0)
 ├── QrCodeTest.mc                   # (:test) QrCode vs python-qrcode, from scripts/qr-vectors.py
-├── PedalonsView.mc                 # Loads rides + routes, then opens the home menu
+├── PedalonsView.mc                 # Loads registered groups, rides + routes, then opens the home menu
 ├── PedalonsDelegate.mc             # Loading/error view input (retry, refresh menu)
-├── HomeMenuDelegate.mc             # Home menu: Rides, Routes, Logout
+├── HomeMenuDelegate.mc             # Home menu: My next rides, Rides, Routes, Logout
+├── RegisteredGroupListMenuDelegate.mc # Groups the user is registered in (now-12h to +7d); select = download
 ├── RideListMenuDelegate.mc         # Upcoming rides (D-1 to D+7, server side)
 ├── RideEntryMenuDelegate.mc        # A ride's routes (one per group)
 ├── StandaloneRouteMenuDelegate.mc  # Routes not attached to a ride
@@ -92,7 +93,7 @@ Uses Device Code Flow (RFC 8628) since Edge devices have no keyboard:
 |----------|---------|
 | `POST /api/device/oauth/device` | Request device code |
 | `POST /api/device/oauth/token` | Poll for token / refresh token |
-| `GET /api/device/routes` | Fetch `rides` and `routes` (accepts `?lat=&lon=` for proximity sort) |
+| `GET /api/device/routes` | Fetch `registeredGroups`, `rides` and `routes` (accepts `?lat=&lon=` for proximity sort) |
 | `GET /api/device/routes/{teamSlug}/{routeSlug}/fit` | Download FIT file |
 
 ## Key Patterns

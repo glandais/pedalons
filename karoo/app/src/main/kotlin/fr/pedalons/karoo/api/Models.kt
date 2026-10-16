@@ -44,6 +44,28 @@ data class TokenResponse(
 data class RoutesResponse(
     @SerialName("rides") val rides: List<DeviceRide>,
     @SerialName("routes") val routes: List<DeviceRoute>,
+    // The groups the user is registered in, soonest first (API 11.4.0); absent from older servers.
+    @SerialName("registeredGroups") val registeredGroups: List<DeviceRegisteredGroup> = emptyList(),
+)
+
+/**
+ * A ride group the user is registered in, with the route to load: selecting it syncs that route
+ * straight away, without the route detail screen.
+ */
+@Serializable
+data class DeviceRegisteredGroup(
+    @SerialName("teamSlug") val teamSlug: String,
+    @SerialName("rideSlug") val rideSlug: String,
+    @SerialName("rideName") val rideName: String,
+    @SerialName("groupName") val groupName: String,
+    @SerialName("routeSlug") val routeSlug: String,
+    @SerialName("routeName") val routeName: String,
+    @SerialName("distance") val distance: Float,
+    @SerialName("elevationGain") val elevationGain: Float,
+    // The group's start as a UTC instant.
+    @SerialName("startDateTime") val startDateTime: String,
+    // The ride's IANA zone, in which the start is displayed.
+    @SerialName("timezone") val timezone: String? = null,
 )
 
 @Serializable

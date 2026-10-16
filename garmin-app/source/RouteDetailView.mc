@@ -45,6 +45,13 @@ class RouteDetailView extends WatchUi.View {
         WatchUi.requestUpdate();
     }
 
+    /** Another download is still in flight: nothing was started. */
+    function setDownloadBusy() {
+        _isDownloading = false;
+        _downloadStatus = WatchUi.loadResource(Rez.Strings.DownloadBusy);
+        WatchUi.requestUpdate();
+    }
+
     function onLayout(dc) {}
 
     function onUpdate(dc) {

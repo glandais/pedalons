@@ -6,6 +6,7 @@ import fr.pedalons.domain.ride.RideGroup;
 import fr.pedalons.domain.route.Route;
 import fr.pedalons.domain.team.Team;
 import fr.pedalons.domain.team.UserTeam;
+import fr.pedalons.dto.device.response.DeviceRegisteredGroupDto;
 import fr.pedalons.dto.device.response.DeviceRideDto;
 import fr.pedalons.dto.device.response.DeviceRideEntryDto;
 import fr.pedalons.dto.device.response.DeviceRouteDto;
@@ -17,6 +18,8 @@ import fr.pedalons.enums.Status;
 import fr.pedalons.infrastructure.exception.NotFoundException;
 import fr.pedalons.repository.common.TeamEntityQueryBasic;
 import fr.pedalons.repository.gps.GpsServiceConnectionRepository;
+import fr.pedalons.repository.ride.RegisteredGroupRow;
+import fr.pedalons.repository.ride.RideParticipationRepository;
 import fr.pedalons.repository.ride.RideRepository;
 import fr.pedalons.repository.route.RouteQuery;
 import fr.pedalons.repository.route.RouteRepository;
@@ -32,6 +35,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.geolatte.geom.G2D;
@@ -57,10 +61,18 @@ public class DeviceRouteService {
 
   private static final int MAX_ROUTES_IN_RESPONSE = 20;
 
+  private static final int MAX_REGISTERED_GROUPS_IN_RESPONSE = 20;
+
+  /** A group that left up to this long ago is still listed: the ride may be under way. */
+  private static final Duration REGISTERED_GROUPS_PAST = Duration.ofHours(12);
+
+  private static final Duration REGISTERED_GROUPS_AHEAD = Duration.ofDays(7);
+
   @Inject PedalonsQueryContext pedalonsContext;
   @Inject UserTeamRepository userTeamRepository;
   @Inject RideRepository rideRepository;
   @Inject RouteRepository routeRepository;
+  @Inject RideParticipationRepository rideParticipationRepository;
   @Inject GpsServiceConnectionRepository gpsServiceConnectionRepository;
   @Inject GpxProcessingService gpxProcessingService;
 
@@ -81,7 +93,11 @@ public class DeviceRouteService {
     List<UserTeam> memberships = userTeamRepository.findByUserId(userId);
 
     if (memberships.isEmpty()) {
-      return DeviceRoutesResponse.builder().rides(List.of()).routes(List.of()).build();
+      return DeviceRoutesResponse.builder()
+          .rides(List.of())
+          .routes(List.of())
+          .registeredGroups(List.of())
+          .build();
     }
 
     Instant now = Instant.now();
@@ -128,7 +144,51 @@ public class DeviceRouteService {
     List<DeviceRouteDto> boundedRoutes =
         routes.size() > MAX_ROUTES_IN_RESPONSE ? routes.subList(0, MAX_ROUTES_IN_RESPONSE) : routes;
 
-    return DeviceRoutesResponse.builder().rides(boundedRides).routes(boundedRoutes).build();
+    return DeviceRoutesResponse.builder()
+        .rides(boundedRides)
+        .routes(boundedRoutes)
+        .registeredGroups(getRegisteredGroups(userId, now))
+        .build();
+  }
+
+  /**
+   * The groups the user is registered in, leaving between 12 hours ago and 7 days ahead, earliest
+   * first, each with the route a device loads for it: the group's own, the ride's when it has none;
+   * a group with neither is left out, there is nothing to load. One query whatever their number.
+   */
+  private List<DeviceRegisteredGroupDto> getRegisteredGroups(Long userId, Instant now) {
+    return rideParticipationRepository
+        .findUpcomingRegisteredGroups(
+            pedalonsContext.getDomainId(),
+            userId,
+            pedalonsContext.getPinnedTeamIdNullable(),
+            now.minus(REGISTERED_GROUPS_PAST),
+            now.plus(REGISTERED_GROUPS_AHEAD),
+            MAX_REGISTERED_GROUPS_IN_RESPONSE)
+        .stream()
+        .map(DeviceRouteService::toRegisteredGroup)
+        .toList();
+  }
+
+  private static DeviceRegisteredGroupDto toRegisteredGroup(RegisteredGroupRow row) {
+    // The query only returns rows where one of the two routes is live: the group's wins.
+    boolean ownRoute = row.groupRouteSlug() != null;
+    String routeSlug = ownRoute ? row.groupRouteSlug() : row.rideRouteSlug();
+    String routeName = ownRoute ? row.groupRouteName() : row.rideRouteName();
+    Float distance = ownRoute ? row.groupRouteDistance() : row.rideRouteDistance();
+    Float elevationGain = ownRoute ? row.groupRouteElevationGain() : row.rideRouteElevationGain();
+    return DeviceRegisteredGroupDto.builder()
+        .teamSlug(row.teamSlug())
+        .rideSlug(row.rideSlug())
+        .rideName(row.rideName())
+        .groupName(row.groupName())
+        .routeSlug(Objects.requireNonNull(routeSlug))
+        .routeName(Objects.requireNonNull(routeName))
+        .distance(distance != null ? distance : 0f)
+        .elevationGain(elevationGain != null ? elevationGain : 0f)
+        .startDateTime(row.startAt())
+        .timezone(row.timezone())
+        .build();
   }
 
   /**

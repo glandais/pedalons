@@ -13,6 +13,7 @@
     <string id="Downloading">Téléchargement...</string>
     <string id="DownloadComplete">Téléchargement terminé !</string>
     <string id="DownloadFailed">Échec du téléchargement</string>
+    <string id="DownloadBusy">Autre téléchargement en cours</string>
     <string id="ConnectionError">Erreur de connexion</string>
     <string id="Retry">Réessayer</string>
     <string id="Distance">Distance</string>
@@ -31,6 +32,9 @@
     <string id="MenuTitle">Pédalons</string>
     <string id="SelectHint"> - SELECT</string>
     <string id="RoutesTitle">Pédalons</string>
+    <string id="RegisteredGroups">Prochaines sorties</string>
+    <string id="Registrations">inscriptions</string>
+    <string id="NoRegisteredGroups">Aucune inscription</string>
     <string id="Rides">Sorties</string>
     <string id="Routes">Parcours</string>
     <string id="NoRides">Aucune sortie</string>

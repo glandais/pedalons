@@ -11,5 +11,10 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 public record DeviceRoutesResponse(
     @Schema(description = "Upcoming rides with route entries", required = true)
         List<DeviceRideDto> rides,
-    @Schema(description = "Latest standalone routes", required = true)
-        List<DeviceRouteDto> routes) {}
+    @Schema(description = "Latest standalone routes", required = true) List<DeviceRouteDto> routes,
+    @Schema(
+            description =
+                "Upcoming ride groups the user is registered in (from 12 hours ago to 7 days"
+                    + " ahead), earliest first, each with the route to load",
+            required = true)
+        List<DeviceRegisteredGroupDto> registeredGroups) {}

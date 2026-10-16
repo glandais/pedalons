@@ -61,6 +61,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import fr.pedalons.karoo.api.DeviceRegisteredGroup
 import fr.pedalons.karoo.api.DeviceRide
 import fr.pedalons.karoo.api.DeviceRideEntry
 import fr.pedalons.karoo.api.DeviceRoute
@@ -93,9 +94,30 @@ enum class SyncState {
     ERROR,
 }
 
+// The entries of the home screen, in display order (see [homeEntries]).
+enum class HomeEntry {
+    REGISTERED,
+    RIDES,
+    ROUTES,
+}
+
+/**
+ * « My next rides » always comes first; Rides and Routes follow, Routes first when there is no ride
+ * to show.
+ */
+fun homeEntries(response: RoutesResponse): List<HomeEntry> =
+    if (response.rides.isEmpty()) {
+        listOf(HomeEntry.REGISTERED, HomeEntry.ROUTES, HomeEntry.RIDES)
+    } else {
+        listOf(HomeEntry.REGISTERED, HomeEntry.RIDES, HomeEntry.ROUTES)
+    }
+
 // Navigation state machine
 sealed class NavState {
     object Home : NavState()
+
+    // The groups the user is registered in: selecting one syncs its route directly.
+    data class RegisteredGroupList(val groups: List<DeviceRegisteredGroup>) : NavState()
 
     data class RideList(val rides: List<DeviceRide>) : NavState()
 
@@ -261,6 +283,11 @@ private fun MainScreen(
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var syncState by remember { mutableStateOf(SyncState.IDLE) }
+    // Which row of the registered groups list [syncState] is about (null elsewhere).
+    var syncTargetIndex by remember { mutableStateOf<Int?>(null) }
+    // Bumped by every sync and every navigation: a sync only writes its result while it is still
+    // the current one, so one left running behind a Back press cannot mark another row.
+    var syncGeneration by remember { mutableStateOf(0) }
 
     // Navigation state
     var navState by remember { mutableStateOf<NavState>(NavState.Home) }
@@ -278,31 +305,67 @@ private fun MainScreen(
         navState = target
         selectedIndex = 0
         syncState = SyncState.IDLE
+        syncTargetIndex = null
+        syncGeneration++
     }
     val navigateBack: () -> Unit = {
         if (navStack.isNotEmpty()) {
             navState = navStack.removeAt(navStack.lastIndex)
             selectedIndex = 0
             syncState = SyncState.IDLE
+            syncTargetIndex = null
+            syncGeneration++
         } else {
             activity.finish()
         }
     }
 
-    // Compute item count for current nav state
-    val itemCount =
+    // Item count for the current nav state. A function, not a value: the key callbacks below are
+    // registered once and must read the current state, not the one of the first composition.
+    fun currentItemCount(): Int =
         when (val state = navState) {
-            is NavState.Home -> 2
+            is NavState.Home -> routesResponse?.let { homeEntries(it).size } ?: 0
+            is NavState.RegisteredGroupList -> state.groups.size
             is NavState.RideList -> state.rides.size
             is NavState.RideEntries -> state.ride.entries.size
             is NavState.RouteList -> state.routes.size
             is NavState.RouteDetail -> 0
         }
+    val itemCount = currentItemCount()
+
+    // Syncs a route to Hammerhead, the one action shared by the route detail screen and the
+    // registered groups list ([targetIndex] is the row of that list, null from the detail screen).
+    val launchSync: (String, String, Int?) -> Unit = { teamSlug, routeSlug, targetIndex ->
+        if (syncState != SyncState.SYNCING) {
+            val generation = ++syncGeneration
+            syncTargetIndex = targetIndex
+            syncState = SyncState.SYNCING
+            scope.launch {
+                val result =
+                    syncRoute(apiClient, authManager, teamSlug, routeSlug) {
+                        activity.startGpsConnectFlow()
+                    }
+                if (generation == syncGeneration) {
+                    syncState = result
+                }
+            }
+        }
+    }
+
+    val openHomeEntry: (RoutesResponse, HomeEntry) -> Unit = { response, entry ->
+        when (entry) {
+            HomeEntry.REGISTERED ->
+                navigateTo(NavState.RegisteredGroupList(response.registeredGroups))
+            HomeEntry.RIDES -> navigateTo(NavState.RideList(response.rides))
+            HomeEntry.ROUTES -> navigateTo(NavState.RouteList(response.routes))
+        }
+    }
 
     // Register navigation callbacks with Activity
     LaunchedEffect(Unit) {
         activity.onNavigationChanged = { delta ->
-            val newIndex = (selectedIndex + delta).coerceIn(0, (itemCount - 1).coerceAtLeast(0))
+            val newIndex =
+                (selectedIndex + delta).coerceIn(0, (currentItemCount() - 1).coerceAtLeast(0))
             selectedIndex = newIndex
         }
         activity.onSelectRequested = {
@@ -310,21 +373,14 @@ private fun MainScreen(
                 is NavState.Home -> {
                     val response = routesResponse
                     if (response != null) {
-                        val routesFirst = response.rides.isEmpty()
-                        when (selectedIndex) {
-                            0 ->
-                                if (routesFirst) {
-                                    navigateTo(NavState.RouteList(response.routes))
-                                } else {
-                                    navigateTo(NavState.RideList(response.rides))
-                                }
-                            1 ->
-                                if (routesFirst) {
-                                    navigateTo(NavState.RideList(response.rides))
-                                } else {
-                                    navigateTo(NavState.RouteList(response.routes))
-                                }
+                        homeEntries(response).getOrNull(selectedIndex)?.let {
+                            openHomeEntry(response, it)
                         }
+                    }
+                }
+                is NavState.RegisteredGroupList -> {
+                    state.groups.getOrNull(selectedIndex)?.let { group ->
+                        launchSync(group.teamSlug, group.routeSlug, selectedIndex)
                     }
                 }
                 is NavState.RideList -> {
@@ -378,15 +434,7 @@ private fun MainScreen(
                     }
                 }
                 is NavState.RouteDetail -> {
-                    if (syncState != SyncState.SYNCING) {
-                        scope.launch {
-                            syncState = SyncState.SYNCING
-                            syncState =
-                                syncRoute(apiClient, authManager, state.teamSlug, state.routeSlug) {
-                                    activity.startGpsConnectFlow()
-                                }
-                        }
-                    }
+                    launchSync(state.teamSlug, state.routeSlug, null)
                 }
             }
         }
@@ -542,19 +590,11 @@ private fun MainScreen(
                         response = response,
                         userProfile = userProfile,
                         syncState = syncState,
+                        syncTargetIndex = syncTargetIndex,
                         onNavigateTo = navigateTo,
+                        onOpenHomeEntry = { openHomeEntry(response, it) },
                         onBack = navigateBack,
-                        onSync = { teamSlug, routeSlug ->
-                            if (syncState != SyncState.SYNCING) {
-                                scope.launch {
-                                    syncState = SyncState.SYNCING
-                                    syncState =
-                                        syncRoute(apiClient, authManager, teamSlug, routeSlug) {
-                                            activity.startGpsConnectFlow()
-                                        }
-                                }
-                            }
-                        },
+                        onSync = launchSync,
                         onRefresh = {
                             isLoading = true
                             scope.launch {
@@ -597,24 +637,38 @@ private fun NavigationContent(
     response: RoutesResponse,
     userProfile: UserProfile?,
     syncState: SyncState,
+    syncTargetIndex: Int?,
     onNavigateTo: (NavState) -> Unit,
+    onOpenHomeEntry: (HomeEntry) -> Unit,
     onBack: () -> Unit,
-    onSync: (String, String) -> Unit,
+    onSync: (String, String, Int?) -> Unit,
     onRefresh: () -> Unit,
     onDisconnect: () -> Unit,
 ) {
     when (navState) {
         is NavState.Home -> {
             HomeScreen(
-                ridesCount = response.rides.size,
-                routesCount = response.routes.size,
+                response = response,
                 selectedIndex = selectedIndex,
                 listState = listState,
-                onSelectRides = { onNavigateTo(NavState.RideList(response.rides)) },
-                onSelectRoutes = { onNavigateTo(NavState.RouteList(response.routes)) },
+                onSelect = onOpenHomeEntry,
                 onBack = onBack,
                 onRefresh = onRefresh,
                 onDisconnect = onDisconnect,
+            )
+        }
+        is NavState.RegisteredGroupList -> {
+            RegisteredGroupListScreen(
+                groups = navState.groups,
+                userProfile = userProfile,
+                selectedIndex = selectedIndex,
+                listState = listState,
+                syncState = syncState,
+                syncTargetIndex = syncTargetIndex,
+                onSelectGroup = { index, group ->
+                    onSync(group.teamSlug, group.routeSlug, index)
+                },
+                onBack = onBack,
             )
         }
         is NavState.RideList -> {
@@ -688,7 +742,7 @@ private fun NavigationContent(
                 detail = navState,
                 userProfile = userProfile,
                 syncState = syncState,
-                onSync = { onSync(navState.teamSlug, navState.routeSlug) },
+                onSync = { onSync(navState.teamSlug, navState.routeSlug, null) },
                 onBack = onBack,
             )
         }
@@ -700,12 +754,10 @@ private fun NavigationContent(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun HomeScreen(
-    ridesCount: Int,
-    routesCount: Int,
+    response: RoutesResponse,
     selectedIndex: Int,
     listState: LazyListState,
-    onSelectRides: () -> Unit,
-    onSelectRoutes: () -> Unit,
+    onSelect: (HomeEntry) -> Unit,
     onBack: () -> Unit,
     onRefresh: () -> Unit,
     onDisconnect: () -> Unit,
@@ -760,33 +812,44 @@ private fun HomeScreen(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(vertical = 8.dp),
             ) {
-                val ridesItem: @Composable () -> Unit = {
+                itemsIndexed(homeEntries(response), key = { _, entry -> entry.name }) { index, entry
+                    ->
+                    val count =
+                        when (entry) {
+                            HomeEntry.REGISTERED -> response.registeredGroups.size
+                            HomeEntry.RIDES -> response.rides.size
+                            HomeEntry.ROUTES -> response.routes.size
+                        }
                     HomeMenuItem(
-                        title = stringResource(R.string.nav_rides),
-                        subtitle = stringResource(R.string.rides_count, ridesCount),
-                        isSelected = selectedIndex == if (ridesCount == 0) 1 else 0,
-                        isEmpty = ridesCount == 0,
-                        emptyText = stringResource(R.string.no_rides),
-                        onClick = onSelectRides,
+                        title =
+                            stringResource(
+                                when (entry) {
+                                    HomeEntry.REGISTERED -> R.string.nav_registered
+                                    HomeEntry.RIDES -> R.string.nav_rides
+                                    HomeEntry.ROUTES -> R.string.nav_routes
+                                },
+                            ),
+                        subtitle =
+                            stringResource(
+                                when (entry) {
+                                    HomeEntry.REGISTERED -> R.string.registered_count
+                                    HomeEntry.RIDES -> R.string.rides_count
+                                    HomeEntry.ROUTES -> R.string.routes_count
+                                },
+                                count,
+                            ),
+                        isSelected = selectedIndex == index,
+                        isEmpty = count == 0,
+                        emptyText =
+                            stringResource(
+                                when (entry) {
+                                    HomeEntry.REGISTERED -> R.string.no_registered
+                                    HomeEntry.RIDES -> R.string.no_rides
+                                    HomeEntry.ROUTES -> R.string.no_routes
+                                },
+                            ),
+                        onClick = { onSelect(entry) },
                     )
-                }
-                val routesItem: @Composable () -> Unit = {
-                    HomeMenuItem(
-                        title = stringResource(R.string.nav_routes),
-                        subtitle = stringResource(R.string.routes_count, routesCount),
-                        isSelected = selectedIndex == if (ridesCount == 0) 0 else 1,
-                        isEmpty = routesCount == 0,
-                        emptyText = stringResource(R.string.no_routes),
-                        onClick = onSelectRoutes,
-                    )
-                }
-                if (ridesCount == 0) {
-                    // Put Routes first when there are no rides to show
-                    item { routesItem() }
-                    item { ridesItem() }
-                } else {
-                    item { ridesItem() }
-                    item { routesItem() }
                 }
             }
         }
@@ -848,6 +911,190 @@ private fun HomeMenuItem(
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.primary,
             )
+        }
+    }
+}
+
+// === Registered Group List Screen ===
+
+/**
+ * The groups the user is registered in. A row is the action itself: selecting it syncs the group's
+ * route to Hammerhead, its status shown on the row, without going through the route detail screen.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun RegisteredGroupListScreen(
+    groups: List<DeviceRegisteredGroup>,
+    userProfile: UserProfile?,
+    selectedIndex: Int,
+    listState: LazyListState,
+    syncState: SyncState,
+    syncTargetIndex: Int?,
+    onSelectGroup: (Int, DeviceRegisteredGroup) -> Unit,
+    onBack: () -> Unit,
+) {
+    val context = LocalContext.current
+
+    ScreenWithOverlay(onBack = onBack) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = stringResource(R.string.nav_registered),
+                        fontWeight = FontWeight.Bold,
+                    )
+                },
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                    ),
+            )
+
+            if (groups.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = stringResource(R.string.no_registered),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            } else {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(vertical = 8.dp),
+                ) {
+                    itemsIndexed(
+                        groups,
+                        key = { index, group ->
+                            "$index-${group.teamSlug}/${group.rideSlug}/${group.groupName}"
+                        },
+                    ) { index, group ->
+                        val isSelected = index == selectedIndex
+                        val rowSyncState = if (index == syncTargetIndex) syncState else null
+                        val borderModifier =
+                            if (isSelected) {
+                                Modifier.border(
+                                    width = 2.dp,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    shape = MaterialTheme.shapes.medium,
+                                )
+                            } else {
+                                Modifier
+                            }
+
+                        Surface(
+                            modifier =
+                                Modifier.fillMaxWidth()
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                                    .then(borderModifier)
+                                    .focusProperties { canFocus = false }
+                                    .clickable { onSelectGroup(index, group) },
+                            color =
+                                if (isSelected) MaterialTheme.colorScheme.primaryContainer
+                                else MaterialTheme.colorScheme.surfaceVariant,
+                            shape = MaterialTheme.shapes.medium,
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = group.groupName,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Medium,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                    Text(
+                                        text = group.rideName,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                    val startStr = formatDateTime(context, group.startDateTime)
+                                    if (startStr != null) {
+                                        Text(
+                                            text = startStr,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        Text(
+                                            text =
+                                                formatDistance(
+                                                    context,
+                                                    group.distance,
+                                                    userProfile,
+                                                ),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.primary,
+                                        )
+                                        Text(
+                                            text =
+                                                formatElevation(
+                                                    context,
+                                                    group.elevationGain,
+                                                    userProfile,
+                                                ),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.secondary,
+                                        )
+                                    }
+                                    when (rowSyncState) {
+                                        SyncState.SYNCING ->
+                                            Text(
+                                                text = stringResource(R.string.route_syncing),
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                        SyncState.SUCCESS ->
+                                            Text(
+                                                text = stringResource(R.string.route_synced),
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.primary,
+                                                fontWeight = FontWeight.Bold,
+                                            )
+                                        SyncState.ERROR ->
+                                            Text(
+                                                text = stringResource(R.string.route_sync_error),
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.error,
+                                            )
+                                        SyncState.IDLE,
+                                        null -> {}
+                                    }
+                                }
+                                when (rowSyncState) {
+                                    SyncState.SYNCING ->
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(28.dp),
+                                            strokeWidth = 3.dp,
+                                            color = MaterialTheme.colorScheme.primary,
+                                        )
+                                    SyncState.SUCCESS ->
+                                        Text(
+                                            text = stringResource(R.string.success_checkmark),
+                                            style = MaterialTheme.typography.headlineMedium,
+                                            color = MaterialTheme.colorScheme.primary,
+                                        )
+                                    else ->
+                                        Image(
+                                            painter = painterResource(id = R.drawable.sync),
+                                            contentDescription = stringResource(R.string.sync),
+                                            modifier = Modifier.size(32.dp),
+                                        )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -1519,6 +1766,10 @@ private fun ItemSkeleton() {
 
 // === Formatting utilities ===
 
+/**
+ * Formats a UTC instant as a short local date and time in the device's zone — on every screen, as
+ * the Garmin app does and as the API contract describes for `startDateTime`.
+ */
 private fun formatDateTime(context: Context, isoDateTime: String?): String? {
     if (isoDateTime.isNullOrBlank()) return null
 

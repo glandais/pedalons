@@ -3255,6 +3255,55 @@ plus la colonne. Le départ d'un groupe n'existe plus que dans `ride_groups.star
 - **Le backend est la seule autorité du fuseau** : les clients envoient des heures murales et
   n'en calculent aucun ; `…/timezone` ne sert qu'à étiqueter un champ.
 
+### `API-118` « Prochaines sorties » sur Karoo et Garmin : les groupes où l'on est inscrit (contrat `11.4.0`)
+
+- `API-118` **Les appareils listent les groupes où l'utilisateur est inscrit, et un clic charge la
+  trace** (2026-10-16, **API 11.4.0**, mineure, additive ; pas de migration) — sur Karoo comme sur
+  Garmin, retrouver la sortie à laquelle on s'est inscrit demandait de parcourir toutes les sorties
+  de toutes ses équipes, puis le groupe, puis l'écran du parcours. `GET /api/device/routes`
+  (`DeviceRouteService.getRoutesForUser`) porte maintenant un troisième champ requis,
+  `DeviceRoutesResponse.registeredGroups` (`DeviceRegisteredGroupDto` : `teamSlug`, `rideSlug`,
+  `rideName`, `groupName`, `routeSlug`, `routeName`, `distance`, `elevationGain`, `startDateTime`
+  — le `startAt` du groupe, instant UTC —, `timezone` de la sortie ; ~200 octets par ligne, sous la
+  limite de 100 Ko du Karoo). Sélection : les participations de l'utilisateur sur le domaine courant
+  (et l'équipe épinglée d'un alias), dans une équipe non supprimée dont il est **encore membre**
+  (quitter une équipe ne retire pas l'inscription), sortie `PUBLISHED` non supprimée (masquée par la
+  modération : visible des seuls organisateurs/admins), départ du groupe entre **maintenant − 12 h**
+  (une sortie en cours reste listée) et **maintenant + 7 j**, par départ croissant, au plus
+  `MAX_REGISTERED_GROUPS_IN_RESPONSE` (20). La trace est **celle du groupe, à défaut celle de la
+  sortie** ; une route que le téléchargement de l'appareil refuserait (supprimée, brouillon ou
+  masquée pour un simple membre) compte comme absente, et un groupe sans trace chargeable est
+  **exclu**. Le tout en **une seule requête** JPQL à projection scalaire
+  (`RideParticipationRepository.findUpcomingRegisteredGroups` → `RegisteredGroupRow`, deux
+  `left join` de route filtrés par `routeVisible`, rien dans le contexte de persistance).
+  - **Garmin** : entrée « Prochaines sorties » / « My next rides » en tête du menu d'accueil
+    (`PedalonsView`, `HomeMenuDelegate`), toujours présente, « Aucune inscription » quand elle est
+    vide ; sa liste (`RegisteredGroupListMenuDelegate`) affiche la sortie, l'heure et le groupe, et
+    la sélection lance **directement** le téléchargement FIT avec une barre de progression, sans
+    `RouteDetailView`. `ApiClient.downloadRoute` rend maintenant `false` quand un téléchargement est
+    déjà en vol (« Autre téléchargement en cours », chaîne `DownloadBusy`, aussi sur l'écran de
+    parcours) au lieu d'écraser le rappel du premier.
+  - **Karoo** : `homeEntries` met « Prochaines sorties » toujours en premier, avant Sorties et
+    Parcours ; sélectionner un groupe synchronise sa trace vers Hammerhead **directement**
+    (`launchSync`, partagé avec l'écran de parcours), l'état s'affiche sur la ligne.
+    `RoutesResponse.registeredGroups` vaut `emptyList()` par défaut : un serveur antérieur à
+    `11.4.0` se lit toujours, et les apps déjà installées ignorent le champ inconnu.
+  - Clients web et mobile régénérés (`contract-first-api`), sans usage.
+
+  Tests : `DeviceRegisteredGroupsResourceTest` (inscrit listé avec sa trace, non-inscrit absent,
+  hors fenêtre, sortie non publiée ou supprimée, repli sur la trace de la sortie — groupe sans
+  route, route supprimée, route non chargeable —, sortie masquée réservée aux modérateurs, alias
+  épinglé, groupe sans aucune trace exclu, équipe quittée, autre domaine, tri par départ, plafond,
+  utilisateur sans équipe) et `DeviceRoutesQueryCountTest.registeredGroups_costDoesNotScaleWithRegistrations`.
+  Aucun test côté appareils ; la recette sur appareil reste ouverte (`API-119`).
+  **À ne pas défaire** : la liste ne montre **que** les groupes où l'utilisateur est inscrit, jamais
+  tous les groupes à venir (c'est le rôle de « Sorties ») ; la trace d'un groupe sans route est celle
+  de la sortie ; un groupe sans trace chargeable est exclu plutôt que listé avec un slug qui
+  répondrait 404 ; la visibilité de la route suit celle du téléchargement
+  (`DeviceRouteService.findRouteBySlug`), les deux restent en phase ; la sélection charge la trace
+  directement, sans écran de parcours ; le nombre de requêtes est fixe quel que soit le nombre
+  d'inscriptions (`…QueryCountTest`) — pas de résolution par ligne.
+
 ## OPS — Exploitation, déploiement, recette du backend
 
 - `OPS-36` **GoatCounter auto-hébergé pour la mesure d'audience du site** (2026-10-15, livré

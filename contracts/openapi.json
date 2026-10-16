@@ -1802,6 +1802,56 @@
           }
         }
       },
+      "DeviceRegisteredGroupDto" : {
+        "description" : "Upcoming ride group the user is registered in, with the route to load on the device",
+        "type" : "object",
+        "required" : [ "teamSlug", "rideSlug", "rideName", "groupName", "routeSlug", "routeName", "distance", "elevationGain", "startDateTime", "timezone" ],
+        "properties" : {
+          "teamSlug" : {
+            "type" : "string",
+            "description" : "Team slug"
+          },
+          "rideSlug" : {
+            "type" : "string",
+            "description" : "Ride slug"
+          },
+          "rideName" : {
+            "type" : "string",
+            "description" : "Ride name"
+          },
+          "groupName" : {
+            "type" : "string",
+            "description" : "Name of the group the user is registered in"
+          },
+          "routeSlug" : {
+            "type" : "string",
+            "description" : "Slug of the route to load: the group's own route, or the ride's when the group has none"
+          },
+          "routeName" : {
+            "type" : "string",
+            "description" : "Route name"
+          },
+          "distance" : {
+            "type" : "number",
+            "format" : "float",
+            "description" : "Distance in meters"
+          },
+          "elevationGain" : {
+            "type" : "number",
+            "format" : "float",
+            "description" : "Elevation gain in meters"
+          },
+          "startDateTime" : {
+            "description" : "When the group leaves, as an absolute instant (UTC): the group's startAt, the ride's own start when the group has no time. Devices render it in their own zone.",
+            "type" : "string",
+            "$ref" : "#/components/schemas/Instant"
+          },
+          "timezone" : {
+            "type" : "string",
+            "description" : "IANA time zone of the ride (e.g. Europe/Paris)"
+          }
+        }
+      },
       "DeviceRequest" : {
         "description" : "Device auth request",
         "type" : "object",
@@ -1933,7 +1983,7 @@
       "DeviceRoutesResponse" : {
         "description" : "Response containing rides and routes for device applications",
         "type" : "object",
-        "required" : [ "rides", "routes" ],
+        "required" : [ "rides", "routes", "registeredGroups" ],
         "properties" : {
           "rides" : {
             "type" : "array",
@@ -1948,6 +1998,13 @@
               "$ref" : "#/components/schemas/DeviceRouteDto"
             },
             "description" : "Latest standalone routes"
+          },
+          "registeredGroups" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/DeviceRegisteredGroupDto"
+            },
+            "description" : "Upcoming ride groups the user is registered in (from 12 hours ago to 7 days ahead), earliest first, each with the route to load"
           }
         }
       },
@@ -23658,7 +23715,7 @@
   },
   "info" : {
     "title" : "Pedalons API",
-    "version" : "11.3.0",
+    "version" : "11.4.0",
     "description" : "API for Pedalons Cycling Team Management Platform"
   },
   "servers" : [ {

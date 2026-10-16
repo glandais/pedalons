@@ -1707,6 +1707,12 @@ public class TestDataService {
     reloaded.setModerationHiddenAt(Instant.now());
   }
 
+  /** Sets the status of a persisted team entity (route, ride…) in place, without a merge. */
+  @Transactional
+  public void setTeamEntityStatus(TeamEntity entity, Status status) {
+    postRepository.getEntityManager().find(TeamEntity.class, entity.getId()).setStatus(status);
+  }
+
   @Transactional
   public void hideCommentForModeration(Comment comment) {
     commentRepository.findById(comment.getId()).setModerationHiddenAt(Instant.now());

@@ -43,6 +43,9 @@
     <string name="sync">Sync</string>
 
     <!-- Navigation -->
+    <string name="nav_registered">My next rides</string>
+    <string name="registered_count">%d registrations</string>
+    <string name="no_registered">No upcoming registration</string>
     <string name="nav_rides">Rides</string>
     <string name="nav_routes">Routes</string>
     <string name="rides_count">%d rides</string>

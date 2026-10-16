@@ -58,6 +58,14 @@ app/src/main/kotlin/fr/pedalons/karoo/
 - Requires `KarooSystemService.connect()` before making API calls
 - Client created in Activities after system service connects
 
+**Home screen and navigation (`MainActivity.kt`):**
+- `NavState` is a stack-based state machine driven by the Karoo keys (`onKeyDown` → callbacks).
+- Home lists `homeEntries()`: « My next rides » (`registeredGroups`) always first, then Rides and
+  Routes (Routes first when there is no ride). An empty entry stays visible with its empty text.
+- Selecting a registered group syncs its route straight away (no route detail screen); the status
+  shows on the row. The sync itself is `launchSync`, shared with the route detail screen.
+- `registeredGroups` defaults to an empty list, so an older backend still parses.
+
 **Token Storage:**
 - DataStore preferences for access/refresh tokens
 - Auto-refresh when token expires (5-minute buffer)
@@ -122,7 +130,7 @@ Signing secrets (`KAROO_KEYSTORE_BASE64`, `KAROO_KEYSTORE_PASSWORD`, `KAROO_KEY_
 | `POST /api/device/oauth/device` | Request device code for auth |
 | `POST /api/device/oauth/token` | Poll for tokens / refresh token |
 | `GET /api/device/me` | Connected GPS services (is Hammerhead connected?) |
-| `GET /api/device/routes` | Get routes for authenticated user |
+| `GET /api/device/routes` | Rides, standalone routes, and the groups the user is registered in (`registeredGroups`, API 11.4.0) |
 | `POST /api/device/routes/{teamSlug}/{routeSlug}/sync?type=hammerhead` | Sync route to Karoo |
 
 ## String Resources

@@ -37,6 +37,7 @@ class PedalonsView extends WatchUi.View {
         if (result != null && result instanceof Toybox.Lang.Dictionary) {
             var rides = result.get("rides");
             var routes = result.get("routes");
+            var groups = result.get("registeredGroups");
 
             if (rides == null) {
                 rides = [];
@@ -44,14 +45,17 @@ class PedalonsView extends WatchUi.View {
             if (routes == null) {
                 routes = [];
             }
+            if (groups == null) {
+                groups = [];
+            }
 
-            if (rides.size() == 0 && routes.size() == 0) {
+            if (rides.size() == 0 && routes.size() == 0 && groups.size() == 0) {
                 _error = WatchUi.loadResource(Rez.Strings.NoRoutes);
                 WatchUi.requestUpdate();
                 return;
             }
 
-            // Build Home Menu with 2 entries: Rides and Routes
+            // Build Home Menu: My next rides, Rides, Routes, Logout
             var menu = new WatchUi.Menu2({
                 :title => WatchUi.loadResource(Rez.Strings.RoutesTitle),
             });
@@ -64,6 +68,21 @@ class PedalonsView extends WatchUi.View {
                     :leftButton => WatchUi.CONTROL_BAR_LEFT_BUTTON_BACK,
                 });
             }
+
+            // My next rides entry: the groups the user is registered in, always first
+            var groupsSublabel =
+                groups.size() + " " + WatchUi.loadResource(Rez.Strings.Registrations);
+            if (groups.size() == 0) {
+                groupsSublabel = WatchUi.loadResource(Rez.Strings.NoRegisteredGroups);
+            }
+            menu.addItem(
+                new WatchUi.MenuItem(
+                    WatchUi.loadResource(Rez.Strings.RegisteredGroups),
+                    groupsSublabel,
+                    "groups",
+                    {}
+                )
+            );
 
             // Rides entry
             var ridesLabel = WatchUi.loadResource(Rez.Strings.Rides);
@@ -97,7 +116,7 @@ class PedalonsView extends WatchUi.View {
 
             WatchUi.switchToView(
                 menu,
-                new HomeMenuDelegate(rides, routes, _apiClient, _formatUtils),
+                new HomeMenuDelegate(groups, rides, routes, _apiClient, _formatUtils),
                 WatchUi.SLIDE_IMMEDIATE
             );
         } else {

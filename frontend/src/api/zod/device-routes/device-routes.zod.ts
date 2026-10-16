@@ -69,6 +69,36 @@ export const DeviceListRoutesResponse = zod
           .describe('Standalone route information for device applications')
       )
       .describe('Latest standalone routes'),
+    registeredGroups: zod
+      .array(
+        zod
+          .object({
+            teamSlug: zod.string().describe('Team slug'),
+            rideSlug: zod.string().describe('Ride slug'),
+            rideName: zod.string().describe('Ride name'),
+            groupName: zod.string().describe('Name of the group the user is registered in'),
+            routeSlug: zod
+              .string()
+              .describe(
+                "Slug of the route to load: the group's own route, or the ride's when the group has none"
+              ),
+            routeName: zod.string().describe('Route name'),
+            distance: zod.number().describe('Distance in meters'),
+            elevationGain: zod.number().describe('Elevation gain in meters'),
+            startDateTime: zod.iso
+              .datetime({ offset: true })
+              .describe(
+                "When the group leaves, as an absolute instant (UTC): the group's startAt, the ride's own start when the group has no time. Devices render it in their own zone."
+              ),
+            timezone: zod.string().describe('IANA time zone of the ride (e.g. Europe/Paris)'),
+          })
+          .describe(
+            'Upcoming ride group the user is registered in, with the route to load on the device'
+          )
+      )
+      .describe(
+        'Upcoming ride groups the user is registered in (from 12 hours ago to 7 days ahead), earliest first, each with the route to load'
+      ),
   })
   .describe('Response containing rides and routes for device applications')
 

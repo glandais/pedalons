@@ -9,7 +9,7 @@ portage web livré à trois tâches près, et tenu à jour depuis (dernière rel
 Rien ici ne bloque quoi que ce soit. C'est la propriété qui compte : la v2 est livrable en l'état,
 et chaque ligne ci-dessous supprime une dégradation nommée plutôt que de réparer une panne.
 
-**Contrat d'API au 11 octobre 2026 : `11.0.1`.** Toute évolution d'API listée ici demande un bump de
+**Contrat d'API au 16 octobre 2026 : `11.4.0`.** Toute évolution d'API listée ici demande un bump de
 `pedalons.api.version` dans `backend/src/main/resources/application.properties`, puis la
 régénération des deux clients (compétence `contract-first-api`).
 
@@ -544,6 +544,15 @@ décision produit : `RideTemplateGroupRequest` reste sans champ.
       Garmin) ; Venu 2–4, vivoactive et FR 165/170/55 restent dehors tant que ce n'est pas établi.
       Les GPS de randonnée (GPSMAP, Montana, Oregon) sont exclus : API trop basse, et ils prennent
       le GPX, pas le FIT (doc `PersistedContent` du SDK). Taille : M (L avec les Instinct).
+- [ ] `API-119` **« Prochaines sorties » éprouvé sur un vrai Karoo et un vrai Edge (S)** — la
+      liste des groupes inscrits et le chargement direct de leur trace (`API-118`, contrat `11.4.0`)
+      n'ont aucun test côté appareils (le backend est couvert par `DeviceRegisteredGroupsResourceTest`
+      et `DeviceRoutesQueryCountTest`). À vérifier sur Karoo :
+      l'entrée en tête, la synchro Hammerhead depuis la ligne et son état affiché, le retour à
+      l'accueil. Sur Edge (ou simulateur) : l'entrée et « Aucune inscription », la barre de
+      progression, le FIT présent dans les parcours, et « Autre téléchargement en cours » sur un
+      second clic pendant un téléchargement. Puis une app de la version précédente contre un
+      serveur `11.4.0` (champ inconnu ignoré).
 
 ### Vie privée : ce que la politique doit encore décrire faute de mieux
 

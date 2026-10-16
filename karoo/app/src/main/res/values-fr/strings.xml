@@ -43,6 +43,9 @@
     <string name="sync">Synchroniser</string>
 
     <!-- Navigation -->
+    <string name="nav_registered">Prochaines sorties</string>
+    <string name="registered_count">%d inscriptions</string>
+    <string name="no_registered">Aucune inscription à venir</string>
     <string name="nav_rides">Sorties</string>
     <string name="nav_routes">Parcours</string>
     <string name="rides_count">%d sorties</string>

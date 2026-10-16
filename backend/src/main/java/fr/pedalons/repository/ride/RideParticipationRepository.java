@@ -3,9 +3,13 @@ package fr.pedalons.repository.ride;
 import fr.pedalons.domain.ride.RideParticipation;
 import fr.pedalons.domain.user.User;
 import fr.pedalons.dto.common.PedalonsPage;
+import fr.pedalons.enums.Status;
+import fr.pedalons.enums.TeamRole;
 import fr.pedalons.repository.common.BaseRepository;
 import fr.pedalons.repository.common.ParticipantPages;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.persistence.TypedQuery;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -53,6 +57,82 @@ public class RideParticipationRepository implements BaseRepository<RideParticipa
       byRide.putIfAbsent((Long) row[0], (Long) row[1]);
     }
     return byRide;
+  }
+
+  /**
+   * The ride groups a user is registered in that leave within {@code [from, to)}, earliest first,
+   * at most {@code limit} of them — in a single query, whatever their number.
+   *
+   * <p>Only on the given domain, on live teams the user is still a member of (leaving a team does
+   * not remove a registration), on published, non-deleted rides — hidden by moderation only for
+   * the team's moderators — and only groups that have something to load: their own route or,
+   * failing that, their ride's, as long as the user can download it. A route the device download
+   * ({@code DeviceRouteService.findRouteBySlug}) would refuse — deleted, DRAFT for a plain member,
+   * hidden by moderation for a plain member — comes back as null (see {@link #routeVisible}), so
+   * the caller only has to pick the first non-null one and never lists a slug that 404s.
+   *
+   * @param pinnedTeamId the team a pinned domain is restricted to; null for none
+   */
+  public List<RegisteredGroupRow> findUpcomingRegisteredGroups(
+      Long domainId,
+      Long userId,
+      @Nullable Long pinnedTeamId,
+      Instant from,
+      Instant to,
+      int limit) {
+    String jpql =
+        "select new fr.pedalons.repository.ride.RegisteredGroupRow("
+            + " t.slug, r.slug, r.name, g.name, g.startAt, r.dateTime, r.timezone,"
+            + " gr.slug, gr.name, gr.distance, gr.elevationGain,"
+            + " rr.slug, rr.name, rr.distance, rr.elevationGain)"
+            + " from RideParticipation p"
+            + " join p.rideGroup g"
+            + " join g.ride r"
+            + " join r.team t"
+            + " join UserTeam ut on ut.team = t and ut.user.id = :userId"
+            + " left join g.route gr on "
+            + routeVisible("gr")
+            + " left join r.route rr on "
+            + routeVisible("rr")
+            + " where p.user.id = :userId"
+            + " and t.domain.id = :domainId and t.deleted = false"
+            + " and r.deleted = false and r.status = :published"
+            + " and (r.moderationHiddenAt is null or ut.role in (:moderators))"
+            + " and g.startAt >= :from and g.startAt < :to"
+            + " and (gr is not null or rr is not null)"
+            + (pinnedTeamId != null ? " and t.id = :pinnedTeamId" : "")
+            + " order by g.startAt asc, g.sortOrder asc, g.id asc";
+    TypedQuery<RegisteredGroupRow> query =
+        getEntityManager()
+            .createQuery(jpql, RegisteredGroupRow.class)
+            .setParameter("userId", userId)
+            .setParameter("domainId", domainId)
+            .setParameter("published", Status.PUBLISHED)
+            .setParameter("memberStatuses", List.of(Status.PUBLISHED, Status.CANCELLED))
+            .setParameter("moderators", List.of(TeamRole.ORGANIZER, TeamRole.ADMIN))
+            .setParameter("from", from)
+            .setParameter("to", to)
+            .setMaxResults(limit);
+    if (pinnedTeamId != null) {
+      query.setParameter("pinnedTeamId", pinnedTeamId);
+    }
+    return query.getResultList();
+  }
+
+  /**
+   * The left-join condition that keeps a route only when its team member {@code ut} can download
+   * it: the same rules as {@code TeamEntityRepository.getPedalonsQuery} for a team's own route —
+   * not deleted, and either PUBLISHED/CANCELLED and not hidden by moderation, or seen by a
+   * moderator (organizer/admin), who sees drafts and hidden content alike.
+   */
+  private static String routeVisible(String alias) {
+    return "("
+        + alias
+        + ".deleted = false and (ut.role in (:moderators) or ("
+        + alias
+        + ".status in (:memberStatuses) and "
+        + alias
+        + ".moderationHiddenAt is null)))";
   }
 
   public Optional<RideParticipation> findByUserAndRide(Long userId, Long rideId) {

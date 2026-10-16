@@ -15,6 +15,9 @@ _DeviceRoutesResponse _$DeviceRoutesResponseFromJson(
   routes: (json['routes'] as List<dynamic>)
       .map((e) => DeviceRouteDto.fromJson(e as Map<String, dynamic>))
       .toList(),
+  registeredGroups: (json['registeredGroups'] as List<dynamic>)
+      .map((e) => DeviceRegisteredGroupDto.fromJson(e as Map<String, dynamic>))
+      .toList(),
 );
 
 Map<String, dynamic> _$DeviceRoutesResponseToJson(
@@ -22,4 +25,5 @@ Map<String, dynamic> _$DeviceRoutesResponseToJson(
 ) => <String, dynamic>{
   'rides': instance.rides.map((e) => e.toJson()).toList(),
   'routes': instance.routes.map((e) => e.toJson()).toList(),
+  'registeredGroups': instance.registeredGroups.map((e) => e.toJson()).toList(),
 };
