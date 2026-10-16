@@ -2,6 +2,7 @@ Your Pédalons teams' rides and routes on your Edge.
 
 Pédalons (pedalons.fr) is a free platform for cycling clubs and groups: rides, routes, pace groups. This app is its companion for Garmin Edge bike computers.
 
+• "My next rides", at the top: the rides you are registered for, with your group's route, and whether that route is already in Garmin Connect.
 • Your teams' rides, from the day before to the week ahead, with each group's start time and the route attached to it.
 • Your teams' routes that belong to no ride, nearest first.
 • One press downloads a route: it joins the Edge's courses, ready to navigate.

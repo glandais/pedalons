@@ -2,6 +2,7 @@ Les sorties et les parcours de vos équipes Pédalons sur votre Edge.
 
 Pédalons (pedalons.fr) est une plateforme gratuite pour les clubs et les groupes de cyclistes : sorties, parcours, groupes de niveau. Cette application en est le compagnon pour les compteurs Garmin Edge.
 
+• « Prochaines sorties », en tête : les sorties où vous êtes inscrit, avec le parcours de votre groupe, et si ce parcours est déjà dans Garmin Connect.
 • Les sorties de vos équipes, de la veille à la semaine suivante, avec l'heure de départ de chaque groupe et le parcours qui lui est attaché.
 • Les parcours de vos équipes qui ne sont rattachés à aucune sortie, triés du plus proche au plus lointain.
 • Un appui pour télécharger le parcours : il rejoint les parcours de l'Edge, prêt pour la navigation.
