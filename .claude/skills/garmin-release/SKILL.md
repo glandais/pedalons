@@ -23,23 +23,21 @@ git status --short                       # must be clean, on develop
 git fetch origin --tags
 CUR=$(sed -nE 's/.*<iq:application [^>]*version="([0-9.]+)".*/\1/p' garmin-app/manifest.xml)
 LAST=$(git tag --list 'garmin.*' --sort=-v:refname | grep -E '^garmin\.[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
-# No tag yet (1.0.0 was submitted before this skill): fall back to the commit that added its notes
-BASE=${LAST:-$(git log --diff-filter=A --format=%h -1 -- "garmin-app/metadata/version/$CUR")}
-echo "manifest=$CUR last-tag=${LAST:-none} base=$BASE"
-git log --oneline "$BASE"..HEAD -- garmin-app   # what the release ships
+echo "manifest=$CUR last-tag=$LAST"
+git log --oneline "$LAST"..HEAD -- garmin-app   # what the release ships
 ```
 
-- `LAST` must match `garmin.$CUR`, unless there is no tag at all. A mismatch means a version was
-  bumped or uploaded without the skill: show both and ask before going further.
-- No tag yet → `$BASE` is only an approximation (the notes are written before packaging). Offer to
-  tag the baseline `garmin.$CUR` on the commit that version was actually built from — for 1.0.0,
-  the one that recorded its submission, `1b43441e` — and push it in step 6 with the new one, so
-  later releases have a real starting point.
-- Nothing under `garmin-app/` since `$BASE` (metadata-only commits aside) → say so and stop.
+- `LAST` must be `garmin.$CUR`. A mismatch means a version was bumped or uploaded without the
+  skill: show both and ask before going further. (Every version has a tag since 1.0.0, tagged
+  after the fact on `1b43441e`, the commit that recorded its submission.)
+- Nothing under `garmin-app/` since `$LAST` (metadata-only commits aside) → say so and stop.
 - Look in those commits for `API-…` items or `backend/` changes the Garmin change relies on
   (`git show --stat <sha>`). The app tolerates an older backend (absent fields read as « unknown »),
   but a feature needing a new endpoint or field stays invisible until the backend is deployed in
-  prod: tell the user which ones.
+  prod. Check it rather than guess: `curl -s https://www.pedalons.fr/api/version` gives the
+  deployed `apiVersion` and `commit` (the bare `pedalons.fr` answers nothing), then
+  `git merge-base --is-ancestor <backend-sha> <prod-commit>` per backend commit. Tell the user
+  which ones are not live yet.
 - Ask the user whether the **previous version is approved** on the store. One still in review or
   rejected changes what to do (upload over it, or fix the rejection first): their call.
 
@@ -70,7 +68,8 @@ previous version's:
   bullet per change, no commit hashes, ledger IDs or technical terms. A few lines (store limit 4000
   characters).
 - French is the reference (lexicon of [docs/BRANDING.md](../../../docs/BRANDING.md)); English says
-  the same thing.
+  the same thing. French quotes `« … »`, English plain quotes `"…"` (escaped `\"` in the JSON);
+  check both files parse (`python3 -I -c 'import json,sys;[json.load(open(f)) for f in sys.argv[1:]]' …`).
 - Built from the `git log` of step 1; leave out refactors, formatting, docs, build tweaks.
 - If the notes already exist (prepared in a feature commit), reread them against the log instead.
 - If a change alters what the app needs or does (a new permission in `manifest.xml`, new data sent,
@@ -91,8 +90,12 @@ ls -l bin/Pedalons.iq
   **stop** — never run `make keygen` for a release: a new key means a new app id and a new listing
   (PUBLISH.md, « Signing key »).
 - Always `make clean` first: a `.iq` left in `bin/` proves nothing.
-- Unit tests need the simulator running (`make simulator`, then `make test`): ask the user whether
-  to run them; if they are skipped, say so in the report.
+- The build ends on « N OUT OF N DEVICES BUILT » with N above the 13 products of `DEVICES` (the
+  SDK counts device variants): only a count below N, or no « BUILD SUCCESSFUL », is a failure.
+  The « Cannot determine if container access is using container type » warnings are known noise.
+- Unit tests need the simulator running: `make simulator` returns at once while it is still
+  starting, so leave it a few seconds before `make test`. Ask the user whether to run them; if
+  they are skipped, say so in the report. Pass = the `PASSED (…)` line.
 - Remind the user of the on-device check before upload (guideline 2a): copy
   `bin/Pedalons-<device>.prg` to `GARMIN/Apps/` on their Edge over USB, then pairing, ride list, a
   route download showing up in the courses, logout, plus whatever this release changed. Wait for
@@ -116,7 +119,7 @@ Pushing is outward-facing: ask for explicit confirmation right before it.
 ```bash
 git push origin develop
 git tag garmin.X.Y.Z                       # lightweight, on the commit just made
-git push origin garmin.X.Y.Z               # plus the baseline tag of step 1, if created
+git push origin garmin.X.Y.Z
 ```
 
 The tag marks the source of the uploaded `.iq`; it triggers no workflow.
