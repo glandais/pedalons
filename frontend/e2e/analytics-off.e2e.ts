@@ -37,7 +37,7 @@ test('no page view leaves when the deployment configures no counter', async ({ p
   await hydrated(privacy)
   await privacy.click()
   await expect(page).toHaveURL(/\/confidentialite$/)
-  await expect(page.getByRole('heading', { name: "Mesure d'audience" })).toBeVisible()
+  await expect(page.getByRole('heading', { name: "Mesure d'audience", exact: true })).toBeVisible()
   await page.goBack()
   await expect(page).toHaveURL(new RegExp(`/equipes/${seed.team.slug}$`))
   await page.goto('/outils-gpx')
