@@ -5,9 +5,12 @@ import i18next from 'i18next'
 import { useAuth } from './useAuth'
 import { AXIOS_INSTANCE } from '@/lib/axiosInstance'
 import { getGetMeQueryKey } from '@/api/endpoints/users/users'
-import { useGetAvailableServices } from '@/api/endpoints/gps-services/gps-services'
+import {
+  useGetAvailableServices,
+  useSetGpsAutoSync,
+} from '@/api/endpoints/gps-services/gps-services'
 import { uploadToGpsService } from '@/api/endpoints/gpx-previews/gpx-previews'
-import type { GpsConnectReturn, GpsServiceType, GpsServiceConnectionDto } from '@/api/dto'
+import type { GpsConnectReturn, GpsServiceType, GpsServiceConnectionDto, UserDto } from '@/api/dto'
 
 interface GpsOAuthUrlResponse {
   authorizationUrl: string
@@ -101,6 +104,51 @@ export function useGpsConnections() {
     },
   })
 
+  /**
+   * Turn the automatic sending of the member's ride routes on or off for one connected service
+   * (docs/LEDGER_*.md API-120, WEB-92). The answer is the connection as it now stands: it replaces
+   * the one `/me` carries at once, so the switch does not flick back while `/me` is fetched again.
+   */
+  const autoSyncMutation = useSetGpsAutoSync({
+    mutation: {
+      onSuccess: (connection, { data }) => {
+        queryClient.setQueryData<UserDto>(getGetMeQueryKey(), (current) =>
+          current
+            ? {
+                ...current,
+                connectedServices: (current.connectedServices ?? []).map((service) =>
+                  service.serviceType === connection.serviceType ? connection : service
+                ),
+              }
+            : current
+        )
+        queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() })
+        const service = i18next.t(
+          `gps.services.${connection.serviceType.toLowerCase() as Lowercase<GpsServiceType>}`
+        )
+        notifications.show({
+          message: data.enabled
+            ? i18next.t('gps.autoSync.notifications.enabled', { service })
+            : i18next.t('gps.autoSync.notifications.disabled', { service }),
+          color: 'green',
+        })
+      },
+      onError: () => {
+        notifications.show({
+          message: i18next.t('gps.autoSync.notifications.failed'),
+          color: 'red',
+        })
+      },
+    },
+  })
+
+  const mutateAutoSync = autoSyncMutation.mutate
+  const setAutoSync = useCallback(
+    (serviceType: GpsServiceType, enabled: boolean) =>
+      mutateAutoSync({ serviceType, data: { enabled } }),
+    [mutateAutoSync]
+  )
+
   const notifyUploadResult = (data: RouteUploadResponse) => {
     if (data.success) {
       notifications.show({ message: i18next.t('gps.notifications.uploadSuccess'), color: 'green' })
@@ -158,6 +206,14 @@ export function useGpsConnections() {
     initiateConnect,
     disconnect: disconnectMutation.mutate,
     isDisconnecting: disconnectMutation.isPending,
+    setAutoSync,
+    /** The change being saved, if any: the switch it concerns shows it and waits. */
+    autoSyncPending: autoSyncMutation.isPending
+      ? {
+          serviceType: autoSyncMutation.variables.serviceType,
+          enabled: autoSyncMutation.variables.data.enabled,
+        }
+      : undefined,
     uploadRoute: uploadRouteMutation.mutate,
     uploadRouteAsync: uploadRouteMutation.mutateAsync,
     isUploading: uploadRouteMutation.isPending,

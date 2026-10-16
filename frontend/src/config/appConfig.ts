@@ -68,3 +68,12 @@ export function isSingleTeam(): boolean {
 export function isGpxPlannerEnabled(): boolean {
   return getAppConfig()?.enableGpxPlanner ?? false
 }
+
+/**
+ * True when the deployment sends the routes of a member's rides to their GPS services on its own
+ * (docs/LEDGER_*.md API-120). Off, the profile offers no switch: it would promise a sending that
+ * never happens.
+ */
+export function isGpsAutoSyncEnabled(): boolean {
+  return getAppConfig()?.gpsAutoSyncEnabled ?? false
+}

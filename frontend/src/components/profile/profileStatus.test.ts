@@ -80,6 +80,9 @@ describe('profileStatusLines', () => {
             serviceType: 'GARMIN',
             displayName: 'Garmin Connect',
             connectedAt: '2026-01-01T00:00:00Z',
+            autoSync: false,
+            autoSyncState: 'OFF',
+            autoSyncRouteCount: 0,
           },
         ],
       }),
@@ -96,6 +99,38 @@ describe('profileStatusLines', () => {
         'profile.status.devicePaired(count=2,device=gps.devices.types.karoo)'
     )
     expect(profileStatusLines(t, user(), summary(), 'fr').devices).toBe('profile.status.noDevice')
+  })
+
+  it('says which connected service receives the routes on its own', () => {
+    const lines = profileStatusLines(
+      t,
+      user({
+        connectedServices: [
+          {
+            serviceType: 'WAHOO',
+            displayName: 'Wahoo',
+            connectedAt: '2026-01-01T00:00:00Z',
+            autoSync: true,
+            autoSyncState: 'UP_TO_DATE',
+            autoSyncRouteCount: 2,
+          },
+          {
+            serviceType: 'GARMIN',
+            displayName: 'Garmin Connect',
+            connectedAt: '2026-01-01T00:00:00Z',
+            autoSync: false,
+            autoSyncState: 'OFF',
+            autoSyncRouteCount: 0,
+          },
+        ],
+      }),
+      summary(),
+      'fr'
+    )
+    expect(lines.devices).toBe(
+      'profile.status.serviceAutoSync(service=gps.services.wahoo) · ' +
+        'profile.status.serviceConnected(service=gps.services.garmin)'
+    )
   })
 
   it('names the blocked count only when someone is blocked', () => {

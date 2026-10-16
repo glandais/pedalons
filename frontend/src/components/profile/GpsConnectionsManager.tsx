@@ -13,12 +13,14 @@ import {
   Badge,
   Skeleton,
   Image,
+  Switch,
 } from '@mantine/core'
 import { IconLink, IconUnlink } from '@tabler/icons-react'
 import { useGpsConnections } from '@/hooks/useGpsConnections'
 import { ConfirmDialog } from '../common/ConfirmDialog'
-import type { GpsServiceType } from '@/api/dto'
+import type { GpsServiceConnectionDto, GpsServiceType } from '@/api/dto'
 import { useFormattedDate } from '@/utils/dateFormat'
+import { isGpsAutoSyncEnabled } from '@/config/appConfig'
 
 import garminLogo from '@/assets/gps/garmin.svg'
 import hammerheadLogo from '@/assets/gps/hammerhead.svg'
@@ -33,6 +35,103 @@ const GPS_SERVICE_LOGOS: Record<GpsServiceType, string> = {
   WAHOO: wahooLogo,
 }
 
+function serviceKey(type: GpsServiceType) {
+  return `gps.services.${type.toLowerCase() as Lowercase<GpsServiceType>}` as const
+}
+
+interface AutoSyncControlProps {
+  connection: GpsServiceConnectionDto
+  /** The value being saved for this service, while it is. */
+  pending: boolean | undefined
+  onChange: (enabled: boolean) => void
+  onReconnect: () => void
+}
+
+/**
+ * The opt-in to the automatic sending of the routes of the member's rides to one connected service,
+ * and where it stands (docs/LEDGER_*.md API-120, WEB-92). The state line reads `autoSyncState` only:
+ * the server folds the routes sent, waiting and failing into it, per service.
+ */
+function AutoSyncControl({ connection, pending, onChange, onReconnect }: AutoSyncControlProps) {
+  const { t } = useTranslation()
+  const service = t(serviceKey(connection.serviceType))
+  const checked = pending ?? connection.autoSync
+
+  return (
+    <Stack gap={6} mt="sm">
+      <Switch
+        size="sm"
+        checked={checked}
+        disabled={pending !== undefined}
+        onChange={(event) => onChange(event.currentTarget.checked)}
+        label={t('gps.autoSync.label')}
+        description={t('gps.autoSync.description')}
+        aria-label={t('gps.autoSync.ariaLabel', { service })}
+      />
+      {connection.autoSync && pending === undefined && (
+        <AutoSyncStatus connection={connection} service={service} onReconnect={onReconnect} />
+      )}
+    </Stack>
+  )
+}
+
+function AutoSyncStatus({
+  connection,
+  service,
+  onReconnect,
+}: {
+  connection: GpsServiceConnectionDto
+  service: string
+  onReconnect: () => void
+}) {
+  const { t } = useTranslation()
+  const { formatDateTime } = useFormattedDate()
+  const lastSent = connection.lastAutoSyncAt
+    ? t('gps.autoSync.lastSent', { date: formatDateTime(connection.lastAutoSyncAt) })
+    : undefined
+  switch (connection.autoSyncState) {
+    case 'UP_TO_DATE':
+      return (
+        <Text size="xs" c="dimmed" data-testid="gps-auto-sync-status">
+          {[
+            connection.autoSyncRouteCount > 0
+              ? t('gps.autoSync.state.upToDate', { count: connection.autoSyncRouteCount })
+              : t('gps.autoSync.state.upToDateNone'),
+            lastSent,
+          ]
+            .filter(Boolean)
+            .join(' · ')}
+        </Text>
+      )
+    case 'PENDING':
+      return (
+        <Text size="xs" c="dimmed" data-testid="gps-auto-sync-status">
+          {t('gps.autoSync.state.pending')}
+        </Text>
+      )
+    case 'FAILING':
+      return (
+        <Text size="xs" c="danger" data-testid="gps-auto-sync-status">
+          {t('gps.autoSync.state.failing', { service })}
+        </Text>
+      )
+    case 'RECONNECT_REQUIRED':
+      return (
+        <Group gap="xs" justify="space-between" wrap="nowrap">
+          <Text size="xs" c="danger" data-testid="gps-auto-sync-status">
+            {t('gps.autoSync.state.reconnectRequired', { service })}
+          </Text>
+          <Button size="compact-xs" variant="light" onClick={onReconnect}>
+            {t('gps.autoSync.reconnect')}
+          </Button>
+        </Group>
+      )
+    default:
+      // OFF while `autoSync` is true does not happen: say nothing rather than guess.
+      return null
+  }
+}
+
 export function GpsConnectionsManager() {
   const { t } = useTranslation()
   const { formatDate } = useFormattedDate()
@@ -44,9 +143,13 @@ export function GpsConnectionsManager() {
     initiateConnect,
     disconnect,
     isDisconnecting,
+    setAutoSync,
+    autoSyncPending,
   } = useGpsConnections()
 
   const [disconnectServiceType, setDisconnectServiceType] = useState<GpsServiceType | null>(null)
+  // Off on this deployment: no switch at all, rather than one that promises a sending.
+  const autoSyncAvailable = isGpsAutoSyncEnabled()
 
   // The OAuth callback lands here with its outcome in the query (docs/LEDGER_*.md API-63): say it
   // once, then drop it so a reload does not say it again.
@@ -86,6 +189,19 @@ export function GpsConnectionsManager() {
     }
   }
 
+  const disconnectService = disconnectServiceType ? t(serviceKey(disconnectServiceType)) : ''
+  // The routes the automatic sync sent go with the connection: say so before it is cut.
+  const sentRoutes = disconnectServiceType
+    ? (getConnection(disconnectServiceType)?.autoSyncRouteCount ?? 0)
+    : 0
+  const disconnectMessage = [
+    t('gps.disconnectConfirm.message', { service: disconnectService }),
+    sentRoutes > 0 &&
+      t('gps.disconnectConfirm.autoSyncRoutes', { count: sentRoutes, service: disconnectService }),
+  ]
+    .filter(Boolean)
+    .join(' ')
+
   return (
     <Stack>
       <Group justify="space-between">
@@ -121,7 +237,7 @@ export function GpsConnectionsManager() {
                     <Image src={GPS_SERVICE_LOGOS[type]} alt="" w={32} h={32} radius="sm" />
                     <div>
                       <Text size="sm" fw={500}>
-                        {t(`gps.services.${type.toLowerCase() as Lowercase<GpsServiceType>}`)}
+                        {t(serviceKey(type))}
                       </Text>
                       {connected && connection && (
                         <Text size="xs" c="dimmed">
@@ -159,6 +275,16 @@ export function GpsConnectionsManager() {
                     )}
                   </Group>
                 </Group>
+                {autoSyncAvailable && connected && connection && (
+                  <AutoSyncControl
+                    connection={connection}
+                    pending={
+                      autoSyncPending?.serviceType === type ? autoSyncPending.enabled : undefined
+                    }
+                    onChange={(enabled) => setAutoSync(type, enabled)}
+                    onReconnect={() => handleConnect(type)}
+                  />
+                )}
               </Paper>
             )
           })
@@ -170,11 +296,7 @@ export function GpsConnectionsManager() {
         onClose={() => setDisconnectServiceType(null)}
         onConfirm={handleDisconnect}
         title={t('gps.disconnectConfirm.title')}
-        message={t('gps.disconnectConfirm.message', {
-          service: disconnectServiceType
-            ? t(`gps.services.${disconnectServiceType.toLowerCase() as Lowercase<GpsServiceType>}`)
-            : '',
-        })}
+        message={disconnectMessage}
         confirmText={t('gps.disconnectConfirm.confirm')}
         variant="danger"
         isLoading={isDisconnecting}

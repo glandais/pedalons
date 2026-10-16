@@ -94,8 +94,9 @@ function devicesLine(
   user: UserDto,
   summary: ProfileSummaryDto | undefined
 ): string | undefined {
+  // A service that receives the rides' routes on its own says so (docs/LEDGER_*.md WEB-92).
   const services = (user.connectedServices ?? []).map((connection) =>
-    t('profile.status.serviceConnected', {
+    t(connection.autoSync ? 'profile.status.serviceAutoSync' : 'profile.status.serviceConnected', {
       service: t(
         `gps.services.${connection.serviceType.toLowerCase() as Lowercase<GpsServiceType>}`
       ),
