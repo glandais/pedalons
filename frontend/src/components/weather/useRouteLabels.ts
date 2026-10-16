@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import type { WeatherCheckpointDto } from '@/api/dto'
 import { WeatherCheckpointKind } from '@/api/dto'
 import { useUnits } from '@/hooks/useUnits'
-import { durationParts } from './routeWeather'
+import { durationParts } from './windPhases'
 
 /**
  * The words of a route's places and lengths, in the reader's units: « km 150 » (a marker along the

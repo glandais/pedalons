@@ -21,7 +21,7 @@ import {
   temperatureVerdict,
   windVerdict,
   type WindPhase,
-} from './routeWeather'
+} from './windPhases'
 import classes from './RouteWeather.module.css'
 
 interface RouteVerdictsProps {
@@ -33,7 +33,7 @@ interface RouteVerdictsProps {
 
 /**
  * The four answers a rider looks for before the details: how warm, wet or dry, which wind, and
- * whether the group is back before dark. Each is computed from the leg (`routeWeather.ts`); a tile
+ * whether the group is back before dark. Each is computed from the leg (`windPhases.ts`); a tile
  * without data is left out, the daylight one included when the meeting point has no sunset.
  */
 export function RouteVerdicts({ leg, departure, phases, timezone }: RouteVerdictsProps) {

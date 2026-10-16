@@ -40,7 +40,7 @@ import {
   tickPositions,
   windPhases,
   type WindPhase,
-} from './routeWeather'
+} from './windPhases'
 import classes from './RouteWeather.module.css'
 
 interface RouteWeatherProps {

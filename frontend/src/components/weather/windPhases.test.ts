@@ -17,7 +17,7 @@ import {
   tickPositions,
   windPhases,
   windVerdict,
-} from './routeWeather'
+} from './windPhases'
 
 const km = (n: number) => n * 1000
 

@@ -2043,7 +2043,7 @@ Plan [`2026-10-06-team-agenda.md`](plans/archive/2026-10-06-team-agenda.md) §4,
   statistiques/carte de `RideGroupPage` (l'ancre `#meteo` et son `ErrorBoundary` l'ont suivie) ;
   les statuts (terminée, annulée, `OUT_OF_RANGE`, `NO_LOCATION` réservé aux organisateurs, étape
   sans prévision) se comportent comme avant.
-  - **Quatre verdicts** (`RouteVerdicts.tsx`, calculs purs dans `routeWeather.ts`) : températures
+  - **Quatre verdicts** (`RouteVerdicts.tsx`, calculs purs dans `windPhases.ts`) : températures
     (« 7 °C → 16 °C », départ et ressenti, heure la plus chaude), pluie (alerte nommée et « Dès … »,
     sinon « Sec » avec le pic et sa fenêtre, « 0 % » à part, « — » quand aucun point ne donne de
     probabilité), vent (dominant sur chaque moitié ; « face jusqu'au km X, dos après le km Y »
@@ -2055,7 +2055,7 @@ Plan [`2026-10-06-team-agenda.md`](plans/archive/2026-10-06-team-agenda.md) §4,
     mots et avec une flèche, totaux en légende. Au bureau, c'est la **première ligne de la table**,
     chaque phase au-dessus de ses propres colonnes (`phaseColumns`, deux demi-colonnes par point) :
     une barre à part, à la largeur des kilomètres, ne tombait jamais en face des heures (corrigé le
-    16 octobre 2026, `routeWeather.test.ts` « phaseColumns »). Une phase plus courte
+    16 octobre 2026, `windPhases.test.ts` « phaseColumns »). Une phase plus courte
     que l'écart entre deux points n'a **aucun point à elle** (`checkpoints` vide) : son
     `firstCheckpoint` ne sert qu'à la sélection et aux heures, et la phase cliquée est gardée dans
     la sélection plutôt que retrouvée depuis le point.
@@ -2072,7 +2072,7 @@ Plan [`2026-10-06-team-agenda.md`](plans/archive/2026-10-06-team-agenda.md) §4,
     `WindArrow` en nuance 9 de sa famille en clair et `-text` en sombre (≥ 3:1 sur blanc et sur sa
     teinte).
 
-  Tests vitest : `routeWeather.test.ts` (fusion des phases, phase sans point, verdicts, courbe,
+  Tests vitest : `windPhases.test.ts` (fusion des phases, phase sans point, verdicts, courbe,
   repères, écart des points), `GroupWeatherSection.test.tsx` (tuiles, alerte de pluie, sec, 0 %,
   pluie inconnue, arrivée après le coucher et de nuit, sans coucher, barre des phases, phase courte
   cliquée, sélection au clic, par la barre, la liste et le curseur, annonce, point sans prévision,
