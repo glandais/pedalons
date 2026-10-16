@@ -13,15 +13,19 @@
 
 /* ---- The wind, stretch by stretch ---- */
 
-.phaseBar {
-  display: flex;
-  gap: 2px;
-  width: 100%;
+/* The table's top row: two half-columns per point, so each phase sits above its own points. */
+.phaseRow {
+  display: grid;
+  grid-auto-rows: var(--row-phase);
+  column-gap: 0;
+  padding: var(--table-pad) 2px 0;
 }
 
 .phase {
-  flex-basis: 0;
+  container-type: inline-size;
   min-width: 0;
+  /* A hairline between neighbours without shifting them off their columns. */
+  margin-inline: 1px;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -57,6 +61,18 @@
   text-overflow: ellipsis;
 }
 
+/* A one-point block is about an arrow wide: it keeps the arrow, its words go to its label. */
+@container (max-width: 64px) {
+  .phaseName {
+    display: none;
+  }
+}
+@container (max-width: 110px) {
+  .phaseRange {
+    display: none;
+  }
+}
+
 /* ---- Desktop: hour by hour ---- */
 
 .scroller {
@@ -78,6 +94,7 @@
   --row-wind: 20px;
   --row-gusts: 20px;
   --row-km: 20px;
+  --row-phase: 50px;
   --table-pad: 6px;
 
   display: flex;
@@ -107,8 +124,14 @@
   font-weight: 400;
 }
 
-.columns {
+.body {
   flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.columns {
   display: grid;
   position: relative;
   padding: var(--table-pad) 2px;
@@ -174,6 +197,11 @@
   min-width: 0;
 }
 
+.rPhases {
+  height: var(--row-phase);
+  /* The phase row has no bottom padding, the columns their own top one: match both. */
+  margin-bottom: var(--table-pad);
+}
 .rTime {
   height: var(--row-time);
   font-weight: 600;

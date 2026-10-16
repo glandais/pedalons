@@ -1707,6 +1707,7 @@
   "rides.weather.route.timeline.empty": "—",
   "rides.weather.route.timeline.label": "Forecast at each passage",
   "rides.weather.route.timeline.rows.gusts": "Gusts",
+  "rides.weather.route.timeline.rows.phases": "Stretches",
   "rides.weather.route.timeline.rows.rain": "Rain",
   "rides.weather.route.timeline.rows.speedUnit": "km/h",
   "rides.weather.route.timeline.rows.speedUnit_imperial": "mph",

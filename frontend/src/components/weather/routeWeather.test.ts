@@ -7,6 +7,7 @@ import {
   daylightVerdict,
   durationParts,
   phaseAnchor,
+  phaseColumns,
   phaseAt,
   phaseOfCheckpoint,
   phaseStats,
@@ -128,6 +129,34 @@ describe('windPhases', () => {
       temperatureMin: undefined,
       temperatureMax: undefined,
     })
+  })
+})
+
+describe('phaseColumns', () => {
+  it('puts each phase above its own points, in half-columns', () => {
+    const spans = phaseColumns(windPhases(raymondSegments, raymondPoints))
+    // 21 points → 42 half-columns, covered end to end with no overlap.
+    expect(spans).toEqual([
+      { start: 0, end: 2 },
+      { start: 2, end: 6 },
+      { start: 6, end: 12 },
+      { start: 12, end: 20 },
+      { start: 20, end: 24 },
+      { start: 24, end: 42 },
+    ])
+  })
+
+  it('gives a phase without points the last half of the phase before it', () => {
+    const cps = points([10, 14, 12])
+    const phases = windPhases(
+      [segment(0, 20, 'HEAD'), segment(20, 22, 'CROSS'), segment(22, 30, 'TAIL')],
+      cps
+    )
+    expect(phaseColumns(phases)).toEqual([
+      { start: 0, end: 3 },
+      { start: 3, end: 4 },
+      { start: 4, end: 6 },
+    ])
   })
 
   it('sums what the points of a phase forecast', () => {

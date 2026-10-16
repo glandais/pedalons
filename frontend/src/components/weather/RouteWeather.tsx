@@ -33,6 +33,7 @@ import {
   RELATIVE_WIND_ANGLE,
   checkpointSpacing,
   phaseAnchor,
+  phaseColumns,
   phaseOfCheckpoint,
   phaseStats,
   temperaturePolylines,
@@ -126,19 +127,6 @@ export function RouteWeather({ leg, departure, timezone }: RouteWeatherProps) {
     <Stack gap="xl">
       <RouteVerdicts leg={leg} departure={departure} phases={phases} timezone={timezone} />
 
-      {/* On a phone the phases are a list (« Par tronçon »): a bar of them is too narrow to read */}
-      {phases.length > 0 && (
-        <Box visibleFrom="sm">
-          <WindPhaseBar
-            phases={phases}
-            leg={leg}
-            timezone={timezone}
-            selectedPhase={currentPhase}
-            onSelect={selectPhase}
-          />
-        </Box>
-      )}
-
       <Stack gap="sm">
         <Stack gap={2}>
           <Title order={4} size="h5">
@@ -152,6 +140,12 @@ export function RouteWeather({ leg, departure, timezone }: RouteWeatherProps) {
                 ].join(' · ')
               : speedLine}
           </Text>
+          {/* On a phone the totals head the « Par tronçon » list instead */}
+          {phases.length > 0 && (
+            <Box visibleFrom="sm" mt={4}>
+              <WindTotals exposure={leg.windExposure} />
+            </Box>
+          )}
         </Stack>
 
         <Box visibleFrom="sm">
@@ -160,6 +154,9 @@ export function RouteWeather({ leg, departure, timezone }: RouteWeatherProps) {
             timezone={timezone}
             selected={current}
             onSelect={selectPoint}
+            phases={phases}
+            selectedPhase={currentPhase}
+            onSelectPhase={selectPhase}
           />
         </Box>
         <Box hiddenFrom="sm">
@@ -245,15 +242,20 @@ function useCheckpointSummary(timezone: string | undefined) {
 // The wind, phase by phase
 // ---------------------------------------------------------------------------------------------
 
-function WindPhaseBar({
+/**
+ * The phases as the table's top row, each one above its own points (`phaseColumns`): the hours,
+ * the band and the arrows under a block are that block's. A narrow block keeps its arrow and drops
+ * its words (container queries); its name stays in its accessible label.
+ */
+function PhaseRow({
   phases,
-  leg,
+  checkpoints,
   timezone,
   selectedPhase,
   onSelect,
 }: {
   phases: WindPhase[]
-  leg: WeatherLegDto
+  checkpoints: WeatherCheckpointDto[]
   timezone?: string
   selectedPhase: number | undefined
   onSelect: (phase: number) => void
@@ -262,58 +264,59 @@ function WindPhaseBar({
   const { formatTime, isGuessedText } = useRendezvousFormat(timezone)
   const labels = useWeatherLabels()
   const route = useRouteLabels()
-  const titleId = useId()
+  const spans = useMemo(() => phaseColumns(phases), [phases])
 
   return (
-    <Stack gap="xs">
-      <Title order={4} size="h5" id={titleId}>
-        {t('rides.weather.route.phases.title')}
-      </Title>
-      <div className={classes.phaseBar} role="group" aria-labelledby={titleId}>
-        {phases.map((phase, index) => {
-          const times = phaseTimes(t, formatTime, phase, leg.checkpoints)
-          return (
-            <UnstyledButton
-              key={phase.fromDistance}
-              className={classes.phase}
-              style={{
-                ...windStyle(phase.relativeWind),
-                flexGrow: phase.toDistance - phase.fromDistance,
-              }}
-              aria-pressed={selectedPhase === index}
-              aria-label={t('rides.weather.route.phases.block', {
-                relativeWind: labels.relativeWind(phase.relativeWind),
-                from: route.marker(phase.fromDistance),
-                to: route.marker(phase.toDistance),
-                times,
-              })}
-              onClick={() => onSelect(index)}
-            >
-              <span className={classes.phaseLine}>
-                <WindArrow
-                  angle={RELATIVE_WIND_ANGLE[phase.relativeWind]}
-                  relativeWind={phase.relativeWind}
-                  label={labels.relativeWind(phase.relativeWind)}
-                  size={14}
-                />
-                <Text span size="sm" fw={700} className={classes.ellipsis}>
-                  {labels.relativeWindShort(phase.relativeWind)}
-                </Text>
-              </span>
-              <Text
-                span
-                size="xs"
-                className={classes.ellipsis}
-                suppressHydrationWarning={isGuessedText}
-              >
-                {route.range(phase.fromDistance, phase.toDistance)} · {times}
+    <div
+      className={classes.phaseRow}
+      style={{ gridTemplateColumns: `repeat(${checkpoints.length * 2}, minmax(0, 1fr))` }}
+      role="group"
+      aria-label={t('rides.weather.route.phases.title')}
+    >
+      {phases.map((phase, index) => {
+        const span = spans[index]
+        if (!span) return null
+        const times = phaseTimes(t, formatTime, phase, checkpoints)
+        return (
+          <UnstyledButton
+            key={phase.fromDistance}
+            className={classes.phase}
+            style={{
+              ...windStyle(phase.relativeWind),
+              gridColumn: `${span.start + 1} / ${span.end + 1}`,
+            }}
+            aria-pressed={selectedPhase === index}
+            aria-label={t('rides.weather.route.phases.block', {
+              relativeWind: labels.relativeWind(phase.relativeWind),
+              from: route.marker(phase.fromDistance),
+              to: route.marker(phase.toDistance),
+              times,
+            })}
+            onClick={() => onSelect(index)}
+          >
+            <span className={classes.phaseLine}>
+              <WindArrow
+                angle={RELATIVE_WIND_ANGLE[phase.relativeWind]}
+                relativeWind={phase.relativeWind}
+                label={labels.relativeWind(phase.relativeWind)}
+                size={14}
+              />
+              <Text span size="sm" fw={700} className={`${classes.ellipsis} ${classes.phaseName}`}>
+                {labels.relativeWindShort(phase.relativeWind)}
               </Text>
-            </UnstyledButton>
-          )
-        })}
-      </div>
-      <WindTotals exposure={leg.windExposure} />
-    </Stack>
+            </span>
+            <Text
+              span
+              size="xs"
+              className={`${classes.ellipsis} ${classes.phaseRange}`}
+              suppressHydrationWarning={isGuessedText}
+            >
+              {route.range(phase.fromDistance, phase.toDistance)}
+            </Text>
+          </UnstyledButton>
+        )
+      })}
+    </div>
   )
 }
 
@@ -360,7 +363,19 @@ interface TimelineProps {
   onSelect: (position: number) => void
 }
 
-function DesktopTimeline({ checkpoints, timezone, selected, onSelect }: TimelineProps) {
+function DesktopTimeline({
+  checkpoints,
+  timezone,
+  selected,
+  onSelect,
+  phases,
+  selectedPhase,
+  onSelectPhase,
+}: TimelineProps & {
+  phases: WindPhase[]
+  selectedPhase: number | undefined
+  onSelectPhase: (phase: number) => void
+}) {
   const { t } = useTranslation()
   const { temperature, formatSpeed, distanceUnit, unitSystem } = useUnits()
   const { formatTime, isGuessedText } = useRendezvousFormat(timezone)
@@ -377,6 +392,11 @@ function DesktopTimeline({ checkpoints, timezone, selected, onSelect }: Timeline
     <div className={classes.scroller}>
       <div className={classes.table} style={{ minWidth: Math.max(900, checkpoints.length * 48) }}>
         <div className={classes.labels} aria-hidden>
+          {phases.length > 0 && (
+            <div className={`${classes.label} ${classes.rPhases}`}>
+              {t('rides.weather.route.timeline.rows.phases')}
+            </div>
+          )}
           <div className={`${classes.label} ${classes.rTime}`}>
             {t('rides.weather.route.timeline.rows.time')}
           </div>
@@ -405,105 +425,116 @@ function DesktopTimeline({ checkpoints, timezone, selected, onSelect }: Timeline
           <div className={`${classes.label} ${classes.rKm}`}>{distanceUnit()}</div>
         </div>
 
-        <div
-          className={classes.columns}
-          style={{ gridTemplateColumns: `repeat(${checkpoints.length}, minmax(0, 1fr))` }}
-          role="group"
-          aria-label={t('rides.weather.route.timeline.label')}
-        >
-          <svg
-            className={classes.curve}
-            viewBox="0 0 100 100"
-            preserveAspectRatio="none"
-            aria-hidden
-            focusable="false"
+        <div className={classes.body}>
+          {phases.length > 0 && (
+            <PhaseRow
+              phases={phases}
+              checkpoints={checkpoints}
+              timezone={timezone}
+              selectedPhase={selectedPhase}
+              onSelect={onSelectPhase}
+            />
+          )}
+          <div
+            className={classes.columns}
+            style={{ gridTemplateColumns: `repeat(${checkpoints.length}, minmax(0, 1fr))` }}
+            role="group"
+            aria-label={t('rides.weather.route.timeline.label')}
           >
-            {lines.map((points) => (
-              <polyline
-                key={points}
-                points={points}
-                className={classes.curveLine}
-                vectorEffect="non-scaling-stroke"
-              />
-            ))}
-          </svg>
-          {checkpoints.map((checkpoint, position) => {
-            const weather = checkpoint.weather
-            const relativeWind = isKnownRelativeWind(checkpoint.relativeWind)
-              ? checkpoint.relativeWind
-              : undefined
-            return (
-              <UnstyledButton
-                key={checkpoint.index}
-                className={classes.column}
-                aria-pressed={position === selected}
-                aria-label={summarize(checkpoint)}
-                onClick={() => onSelect(position)}
-                suppressHydrationWarning={isGuessedText}
-              >
-                <span
-                  className={`${classes.cell} ${classes.rTime}`}
+            <svg
+              className={classes.curve}
+              viewBox="0 0 100 100"
+              preserveAspectRatio="none"
+              aria-hidden
+              focusable="false"
+            >
+              {lines.map((points) => (
+                <polyline
+                  key={points}
+                  points={points}
+                  className={classes.curveLine}
+                  vectorEffect="non-scaling-stroke"
+                />
+              ))}
+            </svg>
+            {checkpoints.map((checkpoint, position) => {
+              const weather = checkpoint.weather
+              const relativeWind = isKnownRelativeWind(checkpoint.relativeWind)
+                ? checkpoint.relativeWind
+                : undefined
+              return (
+                <UnstyledButton
+                  key={checkpoint.index}
+                  className={classes.column}
+                  aria-pressed={position === selected}
+                  aria-label={summarize(checkpoint)}
+                  onClick={() => onSelect(position)}
                   suppressHydrationWarning={isGuessedText}
                 >
-                  {/* « 1:00 PM » on two lines: a 12-hour time is wider than a column */}
-                  {formatTime(checkpoint.time).replace(/[\s\u202f]+/g, '\n')}
-                </span>
-                <span className={`${classes.cell} ${classes.rIcon}`}>
-                  {weather && (
-                    <WeatherIcon
-                      condition={weather.condition}
-                      daylight={weather.daylight}
-                      size={22}
-                    />
-                  )}
-                </span>
-                <span className={`${classes.cell} ${classes.rCurve}`} />
-                <span className={`${classes.cell} ${classes.rTemp}`}>
-                  {weather ? temperature(weather.temperature) : empty}
-                </span>
-                <span className={`${classes.cell} ${classes.rRain}`}>
-                  {weather?.precipitationProbability !== undefined && (
-                    <>
-                      <span className={classes.rainTrack}>
-                        <span
-                          className={classes.rainBar}
-                          style={{ height: `${weather.precipitationProbability}%` }}
-                        />
-                      </span>
-                      <span>
-                        {t('rides.weather.percent', { value: weather.precipitationProbability })}
-                      </span>
-                    </>
-                  )}
-                </span>
-                <span
-                  className={`${classes.cell} ${classes.rBand}`}
-                  style={relativeWind ? windStyle(relativeWind) : undefined}
-                >
-                  {relativeWind && <span className={classes.band} />}
-                </span>
-                <span className={`${classes.cell} ${classes.rArrow}`}>
-                  {weather && relativeWind && checkpoint.relativeWindAngle !== undefined && (
-                    <WindArrow
-                      angle={checkpoint.relativeWindAngle}
-                      relativeWind={relativeWind}
-                      label={labels.relativeWind(relativeWind)}
-                      size={16}
-                    />
-                  )}
-                </span>
-                <span className={`${classes.cell} ${classes.rWind}`}>
-                  {weather ? formatSpeed(weather.wind.speed) : ''}
-                </span>
-                <span className={`${classes.cell} ${classes.rGusts}`}>
-                  {weather?.wind.gusts !== undefined ? formatSpeed(weather.wind.gusts) : ''}
-                </span>
-                <span className={`${classes.cell} ${classes.rKm}`}>
-                  {route.whole(checkpoint.distance)}
-                </span>
-              </UnstyledButton>
-            )
-          })}
+                  <span
+                    className={`${classes.cell} ${classes.rTime}`}
+                    suppressHydrationWarning={isGuessedText}
+                  >
+                    {/* « 1:00 PM » on two lines: a 12-hour time is wider than a column */}
+                    {formatTime(checkpoint.time).replace(/[\s\u202f]+/g, '\n')}
+                  </span>
+                  <span className={`${classes.cell} ${classes.rIcon}`}>
+                    {weather && (
+                      <WeatherIcon
+                        condition={weather.condition}
+                        daylight={weather.daylight}
+                        size={22}
+                      />
+                    )}
+                  </span>
+                  <span className={`${classes.cell} ${classes.rCurve}`} />
+                  <span className={`${classes.cell} ${classes.rTemp}`}>
+                    {weather ? temperature(weather.temperature) : empty}
+                  </span>
+                  <span className={`${classes.cell} ${classes.rRain}`}>
+                    {weather?.precipitationProbability !== undefined && (
+                      <>
+                        <span className={classes.rainTrack}>
+                          <span
+                            className={classes.rainBar}
+                            style={{ height: `${weather.precipitationProbability}%` }}
+                          />
+                        </span>
+                        <span>
+                          {t('rides.weather.percent', { value: weather.precipitationProbability })}
+                        </span>
+                      </>
+                    )}
+                  </span>
+                  <span
+                    className={`${classes.cell} ${classes.rBand}`}
+                    style={relativeWind ? windStyle(relativeWind) : undefined}
+                  >
+                    {relativeWind && <span className={classes.band} />}
+                  </span>
+                  <span className={`${classes.cell} ${classes.rArrow}`}>
+                    {weather && relativeWind && checkpoint.relativeWindAngle !== undefined && (
+                      <WindArrow
+                        angle={checkpoint.relativeWindAngle}
+                        relativeWind={relativeWind}
+                        label={labels.relativeWind(relativeWind)}
+                        size={16}
+                      />
+                    )}
+                  </span>
+                  <span className={`${classes.cell} ${classes.rWind}`}>
+                    {weather ? formatSpeed(weather.wind.speed) : ''}
+                  </span>
+                  <span className={`${classes.cell} ${classes.rGusts}`}>
+                    {weather?.wind.gusts !== undefined ? formatSpeed(weather.wind.gusts) : ''}
+                  </span>
+                  <span className={`${classes.cell} ${classes.rKm}`}>
+                    {route.whole(checkpoint.distance)}
+                  </span>
+                </UnstyledButton>
+              )
+            })}
+          </div>
         </div>
       </div>
     </div>

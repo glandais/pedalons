@@ -2051,8 +2051,11 @@ Plan [`2026-10-06-team-agenda.md`](plans/archive/2026-10-06-team-agenda.md) §4,
     jour (marge avant le coucher, « après le coucher », « Arrivée de nuit » passé une heure, départ
     avant le lever ; tuile absente sans coucher). Un verdict à surveiller prend un pictogramme
     d'alerte, sa réponse garde la couleur du texte.
-  - **« Le vent, tronçon par tronçon »** : les tronçons fusionnés en phases (`windPhases`), à la
-    largeur de leur distance, en mots et avec une flèche, totaux en légende. Une phase plus courte
+  - **« Le vent, tronçon par tronçon »** : les tronçons fusionnés en phases (`windPhases`), en
+    mots et avec une flèche, totaux en légende. Au bureau, c'est la **première ligne de la table**,
+    chaque phase au-dessus de ses propres colonnes (`phaseColumns`, deux demi-colonnes par point) :
+    une barre à part, à la largeur des kilomètres, ne tombait jamais en face des heures (corrigé le
+    16 octobre 2026, `routeWeather.test.ts` « phaseColumns »). Une phase plus courte
     que l'écart entre deux points n'a **aucun point à elle** (`checkpoints` vide) : son
     `firstCheckpoint` ne sert qu'à la sélection et aux heures, et la phase cliquée est gardée dans
     la sélection plutôt que retrouvée depuis le point.

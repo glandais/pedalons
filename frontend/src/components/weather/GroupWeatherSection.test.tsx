@@ -168,7 +168,8 @@ describe('GroupWeatherSection', () => {
       'Vent de travers du km 45 au km 60, 10:00–10:30',
       'Vent dans le dos du km 60 au km 90, 10:30–11:30',
     ])
-    expect(plain(phases[1].textContent)).toContain('km 15–45 · 09:00–10:00')
+    // The hours are the row under the block: it names its kilometres only.
+    expect(plain(phases[1].textContent)).toBe('Facekm 15–45')
     expect(text()).toContain('Face 30 km')
     expect(text()).toContain('Dos 30 km')
   })

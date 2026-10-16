@@ -1763,6 +1763,7 @@
   "rides.weather.route.timeline.empty": "—",
   "rides.weather.route.timeline.label": "Prévisions à chaque passage",
   "rides.weather.route.timeline.rows.gusts": "Rafales",
+  "rides.weather.route.timeline.rows.phases": "Tronçons",
   "rides.weather.route.timeline.rows.rain": "Pluie",
   "rides.weather.route.timeline.rows.speedUnit": "km/h",
   "rides.weather.route.timeline.rows.speedUnit_imperial": "mph",

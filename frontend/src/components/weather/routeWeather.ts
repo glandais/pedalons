@@ -117,6 +117,49 @@ export function phaseAt(phases: WindPhase[], distance: number): number | undefin
   return ending >= 0 ? ending : undefined
 }
 
+/** Where a phase sits in the table's phase row, in half-columns: `[start, end)`, end exclusive. */
+export interface PhaseSpan {
+  start: number
+  end: number
+}
+
+/**
+ * The phases laid out over the table's columns, so that each one sits exactly above its own
+ * points — the row reads with the hours and the wind band under it, never beside them. The row is
+ * a grid of two half-columns per point: a phase with points spans their whole columns; one shorter
+ * than the spacing of the points (no point of its own) takes the last half-column of the phase
+ * before it, the next phase's first half when it opens the leg. A phase that finds no room gets
+ * `undefined` and is not drawn there (the phone list and the detail panel still name it).
+ */
+export function phaseColumns(phases: WindPhase[]): (PhaseSpan | undefined)[] {
+  const spans: (PhaseSpan | undefined)[] = phases.map((phase) =>
+    phase.checkpoints.length === 0
+      ? undefined
+      : {
+          start: 2 * phase.checkpoints[0],
+          end: 2 * (phase.checkpoints[phase.checkpoints.length - 1] + 1),
+        }
+  )
+  phases.forEach((phase, index) => {
+    if (phase.checkpoints.length > 0) return
+    const before = spans
+      .slice(0, index)
+      .reverse()
+      .find((span) => span !== undefined)
+    if (before && before.end - before.start >= 2) {
+      before.end -= 1
+      spans[index] = { start: before.end, end: before.end + 1 }
+      return
+    }
+    const after = spans.slice(index + 1).find((span) => span !== undefined)
+    if (!before && after && after.end - after.start >= 2) {
+      spans[index] = { start: after.start, end: after.start + 1 }
+      after.start += 1
+    }
+  })
+  return spans
+}
+
 /** The point a click on a phase selects: its first own point, else the one nearest its start. */
 export function phaseAnchor(phase: WindPhase): number {
   return phase.checkpoints[0] ?? phase.firstCheckpoint
