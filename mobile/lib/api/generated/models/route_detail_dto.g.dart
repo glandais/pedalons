@@ -16,6 +16,7 @@ _RouteDetailDto _$RouteDetailDtoFromJson(Map<String, dynamic> json) =>
       distance: (json['distance'] as num).toDouble(),
       elevationGain: (json['elevationGain'] as num).toDouble(),
       elevationLoss: (json['elevationLoss'] as num).toDouble(),
+      elevationState: json['elevationState'] as String,
       surfaceType: json['surfaceType'] as String,
       visibility: json['visibility'] as String,
       createdBy: PublicUserDto.fromJson(
@@ -52,6 +53,7 @@ Map<String, dynamic> _$RouteDetailDtoToJson(_RouteDetailDto instance) =>
       'distance': instance.distance,
       'elevationGain': instance.elevationGain,
       'elevationLoss': instance.elevationLoss,
+      'elevationState': instance.elevationState,
       'surfaceType': instance.surfaceType,
       'visibility': instance.visibility,
       'createdBy': instance.createdBy.toJson(),

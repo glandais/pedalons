@@ -1,3 +1,4 @@
+import type { ElevationState } from './elevationState.ts'
 import type { Instant } from './instant.ts'
 import type { MediaDto } from './mediaDto.ts'
 import type { SurfaceType } from './surfaceType.ts'
@@ -29,6 +30,8 @@ export interface RouteDto {
   elevationGain: number
   /** Total elevation loss in meters */
   elevationLoss: number
+  /** Where the elevation profile stands. PENDING: the fast profile (Mapterhorn) is stored and the precise IGN LiDAR HD recomputation is scheduled. HD: the precise profile. FAST: the fast profile is kept, the HD recomputation failed. */
+  elevationState: ElevationState
   /** Surface type */
   surfaceType: SurfaceType
   /** Whether the route is public */

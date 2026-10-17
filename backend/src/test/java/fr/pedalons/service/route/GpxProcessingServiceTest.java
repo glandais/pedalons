@@ -12,6 +12,7 @@ import fr.pedalons.domain.route.Route;
 import fr.pedalons.domain.team.Team;
 import fr.pedalons.domain.user.User;
 import fr.pedalons.enums.AssetType;
+import fr.pedalons.enums.ElevationQuality;
 import fr.pedalons.enums.Visibility;
 import fr.pedalons.service.asset.AssetService;
 import fr.pedalons.service.route.response.TrackMetadata;
@@ -311,7 +312,8 @@ class GpxProcessingServiceTest extends AbstractBaseTest {
     Path gpxPath = getExampleGpxPath();
     GpxDocument gpx = gpxProcessingService.parseGpx(gpxPath);
 
-    try (GpxProcessingService.ComputedGpx computed = gpxProcessingService.computeGpx(gpx)) {
+    try (GpxProcessingService.ComputedGpx computed =
+        gpxProcessingService.computeGpx(gpx, ElevationQuality.HD)) {
       assertTrue(computed.originalGpx().exists(), "Original GPX should be written");
       assertTrue(computed.filteredGpx().exists(), "Filtered GPX should be written");
       assertTrue(computed.filteredGpx().length() > 0);
@@ -337,7 +339,8 @@ class GpxProcessingServiceTest extends AbstractBaseTest {
         gpxProcessingService.fromPoints(
             "planner", List.of(new GeoPoint(6.0, 45.0), new GeoPoint(6.01, 45.01)));
 
-    try (GpxProcessingService.ComputedGpx computed = gpxProcessingService.computeGpx(gpx)) {
+    try (GpxProcessingService.ComputedGpx computed =
+        gpxProcessingService.computeGpx(gpx, ElevationQuality.HD)) {
       String original = java.nio.file.Files.readString(computed.originalGpx().toPath());
       assertTrue(original.contains("<gpx"), "Original GPX should be a serialized document");
       assertTrue(computed.filteredGpx().length() > 0);
@@ -354,7 +357,8 @@ class GpxProcessingServiceTest extends AbstractBaseTest {
     File original;
     File filtered;
     File fit;
-    try (GpxProcessingService.ComputedGpx computed = gpxProcessingService.computeGpx(gpx)) {
+    try (GpxProcessingService.ComputedGpx computed =
+        gpxProcessingService.computeGpx(gpx, ElevationQuality.HD)) {
       original = computed.originalGpx();
       filtered = computed.filteredGpx();
       fit = computed.fitFile();
@@ -371,7 +375,8 @@ class GpxProcessingServiceTest extends AbstractBaseTest {
     Path gpxPath = getTwoTracksGpxPath();
     GpxDocument gpx = gpxProcessingService.parseGpx(gpxPath);
 
-    try (GpxProcessingService.ComputedGpx computed = gpxProcessingService.computeGpx(gpx)) {
+    try (GpxProcessingService.ComputedGpx computed =
+        gpxProcessingService.computeGpx(gpx, ElevationQuality.HD)) {
       assertEquals(2, computed.tracks().size());
       for (GpxProcessingService.ComputedTrack track : computed.tracks()) {
         assertNotNull(track.line());
@@ -395,7 +400,8 @@ class GpxProcessingServiceTest extends AbstractBaseTest {
     Path gpxPath = getExampleGpxPath();
     GpxDocument gpx = gpxProcessingService.parseGpx(gpxPath);
 
-    try (GpxProcessingService.ComputedGpx computed = gpxProcessingService.computeGpx(gpx)) {
+    try (GpxProcessingService.ComputedGpx computed =
+        gpxProcessingService.computeGpx(gpx, ElevationQuality.HD)) {
       assertFalse(computed.tracks().isEmpty());
     }
   }
@@ -406,7 +412,9 @@ class GpxProcessingServiceTest extends AbstractBaseTest {
     GpxDocument gpx = gpxProcessingService.parseGpx(gpxPath);
 
     PedalonsException exception =
-        assertThrows(PedalonsException.class, () -> gpxProcessingService.computeGpx(gpx));
+        assertThrows(
+            PedalonsException.class,
+            () -> gpxProcessingService.computeGpx(gpx, ElevationQuality.HD));
 
     assertTrue(exception.getMessage().contains("GPX_EMPTY"));
   }

@@ -56,8 +56,9 @@ class GpxPreviewServiceTest extends AbstractBaseTest {
     return new File("src/test/resources/example.gpx").toPath();
   }
 
+  /** A track file's key in the revision the preview is on (the flat layout when it has none). */
   private static String key(GpxPreview preview, String fileName) {
-    return "gpx-previews/" + preview.getPublicId() + "/" + fileName;
+    return GpxPreviewService.trackKey(preview, fileName);
   }
 
   @Test

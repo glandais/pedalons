@@ -15,3 +15,8 @@ ALTER TABLE weather_daily ADD CONSTRAINT fk_weather_daily_cell FOREIGN KEY (cell
 -- Mirrors V71__gps_route_autosync.sql: one tracked manual upload per (connection, route), which the
 -- manual upload's upsert relies on. Hibernate cannot express a partial index.
 CREATE UNIQUE INDEX uk_gps_route_syncs_manual ON gps_route_syncs (connection_id, desired_route_id) WHERE ride_id IS NULL;
+-- Mirrors V74__elevation_refresh.sql: one request per target (Hibernate cannot express a partial index) and
+-- exactly one target per row. The tests' upsert relies on the first index.
+CREATE UNIQUE INDEX elevation_refresh_route ON elevation_refresh (route_id) WHERE route_id IS NOT NULL;
+CREATE UNIQUE INDEX elevation_refresh_preview ON elevation_refresh (preview_id) WHERE preview_id IS NOT NULL;
+ALTER TABLE elevation_refresh ADD CONSTRAINT ck_elevation_refresh_target CHECK ((route_id IS NULL) <> (preview_id IS NULL));

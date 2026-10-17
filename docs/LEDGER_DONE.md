@@ -2154,6 +2154,24 @@ Plan [`2026-10-06-team-agenda.md`](plans/archive/2026-10-06-team-agenda.md) §4,
   répond rien (« Stadia Maps: routing and geocoding » dans
   [`OPERATIONS.md`](OPERATIONS.md#stadia-maps-routing-and-geocoding)).
 
+### `WEB-102` Profil d'altitude provisoire signalé et rafraîchi (17 octobre 2026, contrat `11.8.0`)
+
+- `WEB-102` **Une page de parcours, d'étape ou d'aperçu de l'outil GPX se met à jour seule quand le
+  profil HD arrive** (2026-10-17, **API 11.8.0**, suite web d'`API-131`) — tant que
+  `elevationState === 'PENDING'`, `useElevationRefetchInterval` relance la requête toutes les 30 s,
+  s'arrête au passage en HD (ou en FAST, rattrapage abandonné) ou après 15 min (fenêtre liée au
+  `queryHash`, donc propre à chaque étape). Branché dans `routeDetailData`, `stageDetailData` et `gpxPreviewData`. Mention
+  « Profil d'altitude provisoire » sous la carte du parcours, et près des boutons de
+  téléchargement d'un aperçu (un fichier pris tout de suite porte l'altitude rapide), seulement en
+  `PENDING` : rien en `FAST`, où aucun calcul n'est plus prévu.
+  `RouteTrackMap` garde ses bornes tant que l'étendue ne change pas (clé arrondie à ~100 m) : le
+  passage en HD ne recadre plus la carte. Le planificateur n'a pas changé.
+  Tests : `GpxPreviewView.test.tsx` (mention seulement en `PENDING`),
+  `useElevationRefetchInterval.test.ts` (sondage en `PENDING`, pas en `HD` ni `FAST`, fenêtre de
+  15 min) ; `pnpm check` vert.
+  **À ne pas défaire** : on ne sonde et on n'affiche que `PENDING` ; le sondage reste borné ; ne pas
+  recadrer la carte sur un simple changement de profil.
+
 ## API — Contrat d'API et backend
 
 ### Modèles de sortie numérotés (repris de biketeam)
@@ -3792,6 +3810,91 @@ plus la colonne. Le départ d'un groupe n'existe plus que dans `ride_groups.star
   **À ne pas défaire** : ne jamais attraper une exception dans une méthode `@CacheResult` — ce
   qu'elle rend est stocké 24 heures ; c'est le service, hors du cache, qui convertit la panne en
   liste vide.
+
+### `API-131` Altitude rapide à l'enregistrement, rattrapage HD en arrière-plan (17 octobre 2026, contrat `11.8.0`)
+
+- `API-131` **Tracer ou enregistrer un parcours n'attend plus l'IGN** (2026-10-17, **API 11.8.0**,
+  migration `V74`) — le calcul d'altitude lisait IGN LiDAR HD (MNT + MNS, z15, 20 req/s) dans la
+  requête HTTP, à chaque segment du planificateur comme à chaque enregistrement (130 km à froid :
+  19 s contre 3 s pour Mapterhorn, écart de D+ ~1 %). Plan exécuté et archivé :
+  [`2026-10-17-altitude-hd-asynchrone.md`](plans/archive/2026-10-17-altitude-hd-asynchrone.md)
+  (décisions D1 à D7).
+  - **Deux providers** qualifiés `@ElevationTier(FAST|HD)` sur le même `DemTileStore` :
+    `ElevationSource.MAPTERHORN` et l'IGN d'avant. `GpxPipeline.process(…, quality)` et
+    `GpxProcessingService.computeGpx(…, quality)` ; le reste du pipeline est inchangé. Mapterhorn
+    n'est pas sous le pacer IGN : le rattrapage ne ralentit pas un utilisateur qui trace.
+  - **FAST** : `/api/router` (rien en file), création et modification de tracé d'un parcours (y
+    compris promotion d'un aperçu et migration biketeam, qui passent par `createRoute` /
+    `updateRoute`), aperçus de l'outil GPX ; ces enregistrements posent `elevation_state = PENDING`
+    et une demande dans `elevation_refresh`, dans la même transaction (interrupteur coupé : `HD`,
+    pas de demande). Une modification de titre ne
+    touche ni l'un ni l'autre.
+  - **Debounce** : upsert par cible ; `due_at = least(now + 90 s, first_requested_at + 10 min)` ;
+    une demande en échec ou dont la fenêtre est close en ouvre une nouvelle. Instants passés depuis
+    Java (le `now()` SQL est figé au début de transaction).
+  - **`ElevationRefreshWorker`** (30 s, `SKIP`) : prise `for update skip locked` + bail de 10 min,
+    une cible à la fois, budget par tick. Avant tout téléchargement, une demande dont le tracé a
+    changé sans elle (release précédente, interrupteur coupé) est réalignée, ou supprimée si la cible
+    est déjà HD. Calcul HD hors transaction ; un `fallbackAfterErrorKm > 0` (rapport vcyclist, enfin
+    lu) est un échec. Écriture courte sous `PESSIMISTIC_WRITE` : jeton = `fileId` du
+    `ROUTE_ORIGINAL_GPX` pour un parcours ; s'il a bougé, rien n'est écrit et la demande est
+    réalignée. Sinon `putStoredFile(newContent = true)` sur le GPX filtré et le FIT (liens stables,
+    `API-128`), pistes mises à jour **en place** (points, montées, géométrie, D+/D−), D+/D−,
+    hilliness, distance (`refreshUsersOf` si elle change), `elevation_state = HD`. Échec : backoff
+    2 min, 10 min, 1 h, 6 h, abandon après 5 tentatives (la ligne reste, `WARN`) ; à la 5e, la cible
+    passe en `FAST` dans la transaction même de `recordFailure` (seulement si la révision de la demande
+    est encore la bonne). Un réalignement remet ou garde `PENDING`. Parcours supprimé (doux) : ignoré
+    tant qu'il l'est.
+  - **État porté par la cible, pas déduit de la file** : `elevation_state` (`team_entities`,
+    `gpx_previews`) vaut `PENDING` (profil rapide, rattrapage prévu), `HD` ou `FAST` (profil rapide
+    gardé, rattrapage abandonné) ; `null` = `HD`. L'énumération `ElevationQuality` ne reste que
+    comme paramètre de calcul (pipeline, providers). Une sauvegarde d'une cible abandonnée la remet
+    en `PENDING` avec une demande neuve.
+  - **Relance par l'administrateur** : `POST /api/admin/elevation-refresh/retry` (`?domainId=`
+    comme les miniatures ; corps `dryRun`, `limit` 100 par défaut et 1 000 au plus, `kind`
+    `ROUTE|PREVIEW`) liste les demandes à `attempts >= MAX_ATTEMPTS` du domaine (parcours et équipe
+    non supprimés ; aperçus par leur domaine), avec l'erreur lue avant remise à zéro. Hors essai à
+    blanc, un seul `update` remet tentatives, erreur et bail à zéro, ouvre une fenêtre neuve et
+    échelonne `due_at` d'une minute par demande, les plus anciennes d'abord ; les cibles repassent en
+    `PENDING` dans la même transaction. Idempotent (rien à faire au second appel), lignes jamais
+    purgées, aucune relance automatique.
+  - **Course sauvegarde / worker** : `updateRoute` verrouille la ligne du parcours avant la phase 1 ;
+    le worker attend donc la sauvegarde, voit le nouvel original et réaligne, au lieu de faire
+    échouer la sauvegarde sur le `@Version`.
+  - **Aperçus** : fichiers de tracé sous `gpx-previews/{publicId}/{files_revision}/` (nouvelle
+    colonne, `null` = disposition à plat d'avant, toujours lue) ; création, mise à jour et rattrapage
+    écrivent une révision neuve, basculent en transaction, suppriment l'ancienne après commit. Jeton
+    du rattrapage : `files_revision`. Renommage et mise à jour verrouillent la ligne ; suppression,
+    purge à 30 jours et effacement de compte balaient tout le préfixe (`StorageService.deleteByPrefix`) ;
+    une lecture qui tombe sur une révision qui vient de basculer relit une fois.
+  - **Synchro GPS** : la `contentRevision` du GPX filtré change, l'empreinte aussi : le parcours est
+    renvoyé une seconde fois en HD (D4, voulu). Pas de notification.
+  - **Contrat** : `elevationState: PENDING | HD | FAST`, non nul, sur `RouteDto`, `RouteDetailDto`,
+    `GpxPreviewDto` (`null` en base → `HD`), lu sur l'entité sans requête de plus. Interrupteur `pedalons.elevation.async-hd.enabled`
+    (`false` : HD synchrone, rien en file ; le worker vide ce qui reste), `…quiet`, `…max-wait`.
+  - **Tests hors réseau** (D7) : `FakeElevationProducer` (`@Mock`, tuiles Terrarium synthétiques,
+    FAST plat à 100 m, HD à 200 m, panne HD simulable) remplace les deux providers pour toute la
+    suite ; jusque-là chaque test GPX appelait l'IGN et Mapterhorn.
+  - **Correctif d'aperçu** : un aperçu réécrit à plat par la release précédente (révision `null`,
+    donc HD) voyait sa demande supprimée mais restait `FAST` pour toujours ; `realignPreviewIfStale`
+    et `writePreview` le passent en `HD` avant de supprimer la demande.
+  Tests : `ElevationRefreshTest`, `GpxPreviewElevationRefreshTest` (`PENDING` après
+  sauvegarde, `HD` après le worker, `FAST` après 5 échecs, `PENDING` de nouveau après une sauvegarde,
+  réécriture à plat), `AdminElevationRefreshResourceTest` (403, essai à blanc, domaine cible,
+  supprimés ignorés, second appel vide, `due_at` échelonné, limite, worker → `HD`), `GpxPipelineTest`,
+  `GpxProcessingServiceTest`, `GpxPreviewServiceTest`, `RouteServiceTest`, `RouteResourceTest`,
+  `BiketeamLiveMigrationTest`, `RouteTrackReplacementTest`, `GpsRouteSync*Test`,
+  `ArchitectureTest` ; suite complète verte (3 859 tests). Le test du résultat HD partiel utilise un
+  GPX autour de Sydney pour échapper au cache LRU de tuiles de vcyclist : s'il échoue seul, regarder
+  là d'abord.
+  **À ne pas défaire** : le jeton d'un parcours est le `fileId` de l'original, jamais l'id de ligne
+  ni `Route.version` ; le rattrapage met les pistes à jour en place, jamais `clear()` puis ré-ajout ;
+  un aperçu n'écrit jamais ses fichiers de tracé sur place ; `null` en base pour
+  `elevation_state` veut dire HD, `FAST` veut dire abandonné (le web ne sonde ni n'affiche que
+  `PENDING`) ; la relance administrateur ne touche que `attempts >= MAX` du domaine visé et échelonne
+  `due_at` ; l'état vit sur la cible, jamais déduit de la file ; le rattrapage ne bumpe pas `GpxPipeline.VERSION` (le résultat
+  final est celui de la v2, un bump rejouerait toute la migration biketeam) ; aucun fetcher de
+  tuiles hors de vcyclist dans le code principal (`API-105`), le faux provider vit dans `src/test`.
 
 ## OPS — Exploitation, déploiement, recette du backend
 

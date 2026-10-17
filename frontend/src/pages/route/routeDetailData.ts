@@ -11,6 +11,7 @@ import {
 } from '@/api/endpoints/route-comments/route-comments'
 import { prefetchGetAvailableServicesQuery } from '@/api/endpoints/gps-services/gps-services'
 import { prefetchMemberComments } from '@/config/prefetchHelpers'
+import { useElevationRefetchInterval } from '@/hooks/useElevationRefetchInterval'
 import { useAuthStore } from '@/store/authStore'
 
 /**
@@ -31,8 +32,10 @@ import { useAuthStore } from '@/store/authStore'
  */
 export function useRouteTeamAndRoute(teamSlug?: string, routeSlug?: string) {
   const team = useGetTeam(teamSlug!, { query: { enabled: !!teamSlug } })
+  const refetchInterval = useElevationRefetchInterval()
   const route = useGetRoute(teamSlug!, routeSlug!, {
-    query: { enabled: !!teamSlug && !!routeSlug },
+    // Re-read while the HD elevation is still being computed (WEB-102).
+    query: { enabled: !!teamSlug && !!routeSlug, refetchInterval },
   })
   return { team, route }
 }

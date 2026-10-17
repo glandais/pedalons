@@ -1935,6 +1935,11 @@ export const ListAllPublicationsResponse = zod
                             distance: zod.number().describe('Distance in meters'),
                             elevationGain: zod.number().describe('Total elevation gain in meters'),
                             elevationLoss: zod.number().describe('Total elevation loss in meters'),
+                            elevationState: zod
+                              .enum(['PENDING', 'HD', 'FAST'])
+                              .describe(
+                                'Where the elevation profile stands. PENDING: the fast profile (Mapterhorn) is stored and the precise IGN LiDAR HD recomputation is scheduled. HD: the precise profile. FAST: the fast profile is kept, the HD recomputation failed.'
+                              ),
                             surfaceType: zod
                               .enum(['ROAD', 'GRAVEL', 'MTB', 'MIXED'])
                               .describe('Surface type'),
@@ -4523,6 +4528,11 @@ export const ListPublicationsResponse = zod
                             distance: zod.number().describe('Distance in meters'),
                             elevationGain: zod.number().describe('Total elevation gain in meters'),
                             elevationLoss: zod.number().describe('Total elevation loss in meters'),
+                            elevationState: zod
+                              .enum(['PENDING', 'HD', 'FAST'])
+                              .describe(
+                                'Where the elevation profile stands. PENDING: the fast profile (Mapterhorn) is stored and the precise IGN LiDAR HD recomputation is scheduled. HD: the precise profile. FAST: the fast profile is kept, the HD recomputation failed.'
+                              ),
                             surfaceType: zod
                               .enum(['ROAD', 'GRAVEL', 'MTB', 'MIXED'])
                               .describe('Surface type'),

@@ -7,7 +7,7 @@ import {
   IconDeviceMobile,
 } from '@tabler/icons-react'
 import { Box, Button, Group, Stack, Text, Title, Badge, Menu, Loader } from '@mantine/core'
-import type { RouteDetailDto, GpsServiceType } from '@/api/dto'
+import { ElevationState, type RouteDetailDto, type GpsServiceType } from '@/api/dto'
 import { RouteMapView } from './RouteMapView'
 import { useUnits } from '@/hooks/useUnits'
 import { useGpsConnections } from '@/hooks/useGpsConnections'
@@ -56,6 +56,12 @@ export function RouteDetailView({
       <Box>
         <RouteMapView route={route} fullscreenPath={fullscreenPath} />
       </Box>
+
+      {route.elevationState === ElevationState.PENDING && (
+        <Text size="xs" c="dimmed">
+          {t('routes.detail.elevationRefining')}
+        </Text>
+      )}
 
       {/* Download Buttons - inline without wrapper */}
       {showDownload && (route.media.assets.gpx || route.media.assets.fit) && (

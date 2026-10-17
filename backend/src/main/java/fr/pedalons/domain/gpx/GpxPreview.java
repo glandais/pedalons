@@ -4,6 +4,7 @@ import fr.pedalons.domain.platform.Domain;
 import fr.pedalons.domain.route.ClimbData;
 import fr.pedalons.domain.route.GpxTrack;
 import fr.pedalons.domain.user.User;
+import fr.pedalons.enums.ElevationState;
 import io.hypersistence.utils.hibernate.id.Tsid;
 import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.*;
@@ -17,6 +18,7 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A GPX file uploaded through the GPX tools page, analysed but not attached to any team.
@@ -91,6 +93,21 @@ public class GpxPreview {
    */
   @Column(name = "drawn", nullable = false)
   private boolean drawn;
+
+  /**
+   * Where the stored profile stands (PENDING, HD or FAST); null means HD (docs/LEDGER_*.md API-131). Use
+   * {@link ElevationState#orHd} to read it.
+   */
+  @Enumerated(EnumType.STRING)
+  @Column(name = "elevation_state", length = 8)
+  private @Nullable ElevationState elevationState;
+
+  /**
+   * Token of the track files ({@code gpx-previews/{publicId}/{filesRevision}/…}); null is the flat
+   * layout of the existing previews. Every save of the track writes a new one; the HD catch-up (docs/LEDGER_*.md API-131) switches it.
+   */
+  @Column(name = "files_revision")
+  private @Nullable Long filesRevision;
 
   @CreationTimestamp
   @Column(name = "created_at", nullable = false, updatable = false)

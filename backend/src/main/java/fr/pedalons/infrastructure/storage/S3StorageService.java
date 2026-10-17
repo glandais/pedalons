@@ -31,11 +31,13 @@ import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
 import software.amazon.awssdk.services.s3.model.LifecycleExpiration;
 import software.amazon.awssdk.services.s3.model.LifecycleRule;
 import software.amazon.awssdk.services.s3.model.LifecycleRuleFilter;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.PutBucketLifecycleConfigurationRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
+import software.amazon.awssdk.services.s3.model.S3Object;
 
 /** S3-based implementation of {@link StorageService} for MinIO/S3 storage. */
 @Startup
@@ -241,6 +243,17 @@ public class S3StorageService implements StorageService {
 
     s3Client.deleteObject(request);
     LOG.debugf("Deleted object: s3://%s/%s", bucket, key);
+  }
+
+  @Override
+  public void deleteByPrefix(String prefix) {
+    for (var page :
+        s3Client.listObjectsV2Paginator(
+            ListObjectsV2Request.builder().bucket(bucket).prefix(prefix).build())) {
+      for (S3Object object : page.contents()) {
+        delete(object.key());
+      }
+    }
   }
 
   @Override

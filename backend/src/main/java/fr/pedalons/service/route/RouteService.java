@@ -26,6 +26,9 @@ import fr.pedalons.dto.routes.response.RoutesBulkResponse;
 import fr.pedalons.dto.routes.response.TrackDto;
 import fr.pedalons.dto.tags.response.ContentTags;
 import fr.pedalons.enums.ActionType;
+import fr.pedalons.enums.AssetType;
+import fr.pedalons.enums.ElevationQuality;
+import fr.pedalons.enums.ElevationState;
 import fr.pedalons.enums.EntityType;
 import fr.pedalons.enums.ListViewMode;
 import fr.pedalons.enums.TagTarget;
@@ -38,6 +41,7 @@ import fr.pedalons.repository.route.RouteRepository;
 import fr.pedalons.repository.trip.TripRepository;
 import fr.pedalons.service.comment.CommentCountLookup;
 import fr.pedalons.service.common.TeamEntityService;
+import fr.pedalons.service.elevation.ElevationRefreshService;
 import fr.pedalons.service.publication.PublicationEndCalculator;
 import fr.pedalons.service.route.response.TrackMetadata;
 import fr.pedalons.service.security.annotation.CheckAccess;
@@ -47,6 +51,7 @@ import fr.pedalons.service.tag.TagService;
 import io.github.glandais.engine.gpx.GpxDocument;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.persistence.LockModeType;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import java.nio.file.Path;
@@ -87,6 +92,8 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
   @Inject CommentCountLookup commentCountLookup;
 
   @Inject GpxProcessingService gpxProcessingService;
+
+  @Inject ElevationRefreshService elevationRefreshService;
 
   @Inject AssetRepository assetRepository;
 
@@ -299,8 +306,9 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
         gpx = gpxProcessingService.fromPoints(route.getName(), routePoints);
       }
       // Phase 1: CPU + S3 (transaction suspended, DB connection released)
+      ElevationQuality quality = elevationRefreshService.saveQuality();
       GpxProcessingService.GpxProcessingResult gpxResult =
-          gpxProcessingService.processGpxData(route, gpx);
+          gpxProcessingService.processGpxData(route, gpx, quality);
 
       // Phase 2: DB persist (transaction resumed, short burst)
       TrackMetadata metadata = gpxProcessingService.persistGpxData(route, gpxResult);
@@ -312,6 +320,7 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
       route.setStart(metadata.start());
       route.setEnd(metadata.end());
       route.setWindDirection(getWindDirection(metadata));
+      recordElevationQuality(route, quality, gpxResult);
 
       updateMedia(route, request.media());
       routeRepository.persist(route);
@@ -338,6 +347,28 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
     }
   }
 
+  /**
+   * Stamps the elevation state of a track just saved (PENDING or HD) and, for a fast one, asks for its HD
+   * catch-up in the same transaction (docs/LEDGER_*.md API-131). The request carries the {@code
+   * file_id} of the route's original GPX, which a later save of the track changes and a save of the
+   * title does not (API-128).
+   */
+  private void recordElevationQuality(
+      Route route, ElevationQuality quality, GpxProcessingService.GpxProcessingResult result) {
+    if (quality != ElevationQuality.FAST) {
+      route.setElevationState(ElevationState.HD);
+      return;
+    }
+    route.setElevationState(ElevationState.PENDING);
+    long original =
+        result.uploadedAssets().stream()
+            .filter(pa -> pa.type() == AssetType.ROUTE_ORIGINAL_GPX)
+            .findFirst()
+            .orElseThrow()
+            .fileId();
+    elevationRefreshService.requestRoute(route, original);
+  }
+
   private static WindDirection getWindDirection(TrackMetadata metadata) {
     WindDirection windDirection = metadata.windDirection();
     if (windDirection == null) {
@@ -355,6 +386,10 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
       String teamSlug, String slug, RouteRequest request, @Nullable Path gpxPath) {
     Team team = teamService.getTeam(teamSlug);
     Route route = findBySlug(team, slug);
+    // Held until commit, phase 1 included (its connection stays with the suspended transaction):
+    // the HD catch-up of ElevationRefreshService waits for this save, then sees its new original
+    // and realigns, instead of bumping the versions under it (docs/LEDGER_*.md API-131).
+    routeRepository.getEntityManager().lock(route, LockModeType.PESSIMISTIC_WRITE);
 
     validateVisibility(team, request);
     checkPlannerAllowed(team, gpxPath, request.points());
@@ -388,8 +423,9 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
         route.getWaypoints().clear();
 
         // Phase 1: CPU + S3 (transaction suspended, DB connection released)
+        ElevationQuality quality = elevationRefreshService.saveQuality();
         GpxProcessingService.GpxProcessingResult gpxResult =
-            gpxProcessingService.processGpxData(route, gpx);
+            gpxProcessingService.processGpxData(route, gpx, quality);
 
         // Phase 2: DB persist (transaction resumed, short burst)
         TrackMetadata metadata = gpxProcessingService.persistGpxData(route, gpxResult);
@@ -401,6 +437,7 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
         route.setStart(metadata.start());
         route.setEnd(metadata.end());
         route.setWindDirection(getWindDirection(metadata));
+        recordElevationQuality(route, quality, gpxResult);
       }
     } catch (Exception e) {
       throw new BusinessException(ErrorCode.GPX_FAILURE, e);

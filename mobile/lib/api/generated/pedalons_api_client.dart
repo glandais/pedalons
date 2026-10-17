@@ -6,6 +6,7 @@ import 'package:dio/dio.dart' hide Headers;
 
 import 'clients/admin_beta_signups_client.dart';
 import 'clients/admin_domains_client.dart';
+import 'clients/admin_elevation_client.dart';
 import 'clients/admin_reports_client.dart';
 import 'clients/admin_teams_client.dart';
 import 'clients/admin_thumbnails_client.dart';
@@ -51,7 +52,7 @@ import 'clients/team_webhook_client.dart';
 import 'clients/tiles_client.dart';
 import 'clients/server_version_client.dart';
 
-/// Pedalons API `v11.7.0`.
+/// Pedalons API `v11.8.0`.
 ///
 /// API for Pedalons Cycling Team Management Platform.
 class PedalonsApiClient {
@@ -64,10 +65,11 @@ class PedalonsApiClient {
   final Dio _dio;
   final String? _baseUrl;
 
-  static String get version => '11.7.0';
+  static String get version => '11.8.0';
 
   AdminBetaSignupsClient? _adminBetaSignups;
   AdminDomainsClient? _adminDomains;
+  AdminElevationClient? _adminElevation;
   AdminReportsClient? _adminReports;
   AdminTeamsClient? _adminTeams;
   AdminThumbnailsClient? _adminThumbnails;
@@ -118,6 +120,9 @@ class PedalonsApiClient {
 
   AdminDomainsClient get adminDomains =>
       _adminDomains ??= AdminDomainsClient(_dio, baseUrl: _baseUrl);
+
+  AdminElevationClient get adminElevation =>
+      _adminElevation ??= AdminElevationClient(_dio, baseUrl: _baseUrl);
 
   AdminReportsClient get adminReports =>
       _adminReports ??= AdminReportsClient(_dio, baseUrl: _baseUrl);

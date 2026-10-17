@@ -24,6 +24,7 @@ RouteDto fixtureStageRoute({
   double distance = 78400,
   double elevationGain = 1120,
 }) => RouteDto(
+  elevationState: 'HD',
   tags: const [],
   id: 'route-$slug',
   slug: slug,

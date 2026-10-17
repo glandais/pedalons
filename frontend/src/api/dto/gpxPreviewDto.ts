@@ -1,3 +1,4 @@
+import type { ElevationState } from './elevationState.ts'
 import type { Instant } from './instant.ts'
 import type { TrackDto } from './trackDto.ts'
 import type { WaypointDto } from './waypointDto.ts'
@@ -18,6 +19,8 @@ export interface GpxPreviewDto {
   elevationLoss: number
   /** Elevation gain per kilometer */
   hilliness: number
+  /** Where the elevation profile stands. PENDING: the fast profile (Mapterhorn) is stored and the precise IGN LiDAR HD recomputation is scheduled. HD: the precise profile. FAST: the fast profile is kept, the HD recomputation failed. */
+  elevationState: ElevationState
   /** Whether the current user created this preview */
   owned: boolean
   /** Creation timestamp */

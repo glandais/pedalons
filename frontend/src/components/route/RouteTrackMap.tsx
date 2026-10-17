@@ -89,10 +89,24 @@ export function RouteTrackMap({
 
   // The track is already in hand on the first render — the parent doesn't mount this without one —
   // so the map opens on it via `initialViewState` instead of snapping to it after `onLoad`.
-  const bounds = useMemo(
+  const computedBounds = useMemo(
     () => (trackPoints.length > 0 ? calculateBounds(trackPoints) : null),
     [trackPoints]
   )
+  // The background swap of a fast profile for the precise one (ledger `WEB-102`) hands over new
+  // points with the same extent: keep the previous bounds object (extent rounded to ~100 m) so the
+  // re-centre effect below does not throw away the viewer's zoom and pan.
+  const boundsRef = useRef<{ key: string; bounds: typeof computedBounds }>({
+    key: '',
+    bounds: null,
+  })
+  const boundsKey = computedBounds
+    ? JSON.stringify(computedBounds, (_, v) => (typeof v === 'number' ? Math.round(v * 1e3) : v))
+    : ''
+  if (boundsRef.current.key !== boundsKey) {
+    boundsRef.current = { key: boundsKey, bounds: computedBounds }
+  }
+  const bounds = boundsRef.current.bounds
 
   // Re-center when the route changes (e.g. switching trip stages), which keeps the map mounted so
   // `initialViewState` no longer applies. Skipped on mount, where it would fight the initial frame.

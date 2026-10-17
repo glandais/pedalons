@@ -47,6 +47,7 @@ const preview: GpxPreviewDto = {
   elevationGain: 350,
   elevationLoss: 350,
   hilliness: 8,
+  elevationState: 'HD',
   owned: false,
   drawn: false,
   createdAt: '2026-10-15T08:00:00Z',
@@ -72,6 +73,17 @@ describe('GpxPreviewView', () => {
     teamsState.teams = []
   })
   afterEach(cleanup)
+
+  it('says the precise elevation is still being computed, only while the preview is PENDING', () => {
+    renderView({ ...preview, elevationState: 'PENDING' })
+    expect(screen.getByText(/Profil d'altitude provisoire/)).toBeTruthy()
+    cleanup()
+    renderView()
+    expect(screen.queryByText(/Profil d'altitude provisoire/)).toBeNull()
+    cleanup()
+    renderView({ ...preview, elevationState: 'FAST' })
+    expect(screen.queryByText(/Profil d'altitude provisoire/)).toBeNull()
+  })
 
   it('offers to share the preview to an anonymous visitor holding the link', () => {
     renderView()

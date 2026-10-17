@@ -1,6 +1,7 @@
 import type { QueryClient } from '@tanstack/react-query'
 import { useGetPreview, prefetchGetPreviewQuery } from '@/api/endpoints/gpx-previews/gpx-previews'
 import { prefetchGetAvailableServicesQuery } from '@/api/endpoints/gps-services/gps-services'
+import { useElevationRefetchInterval } from '@/hooks/useElevationRefetchInterval'
 import { useAuthStore } from '@/store/authStore'
 
 /**
@@ -26,7 +27,9 @@ import { useAuthStore } from '@/store/authStore'
  * a divergence.
  */
 export function useGpxPreviewData(previewId?: string) {
-  return useGetPreview(previewId!, { query: { enabled: !!previewId } })
+  const refetchInterval = useElevationRefetchInterval()
+  // Re-read while the HD elevation is still being computed (WEB-102).
+  return useGetPreview(previewId!, { query: { enabled: !!previewId, refetchInterval } })
 }
 
 /**

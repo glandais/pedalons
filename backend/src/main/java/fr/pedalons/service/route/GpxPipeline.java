@@ -1,6 +1,8 @@
 package fr.pedalons.service.route;
 
 import fr.pedalons.domain.route.ClimbData;
+import fr.pedalons.enums.ElevationQuality;
+import fr.pedalons.infrastructure.gpx.ElevationTier;
 import io.github.glandais.elevation.ElevationProvider;
 import io.github.glandais.engine.ElevationCorrectionJvm;
 import io.github.glandais.engine.EngineModelJvm;
@@ -47,7 +49,8 @@ import org.jboss.logging.Logger;
  * <p>{@code fixAndCorrectBlocking} parks the calling thread for the whole elevation fetch (a bare
  * {@code runBlocking}; the hop onto the IO dispatcher happens inside the tile fetcher). That is
  * harmless here because the pipeline runs under {@code @Transactional(NOT_SUPPORTED)}, so no DB
- * connection is held while it blocks.
+ * connection is held while it blocks. The wait is a few seconds for {@code FAST} and up to ~20 s
+ * on a cold {@code HD} route, which is why a caller with a user waiting asks for {@code FAST}.
  */
 @ApplicationScoped
 public class GpxPipeline {
@@ -63,12 +66,22 @@ public class GpxPipeline {
    *   <li>2 — vcyclist 6.8 (IGN LiDAR HD, bridge decks and tunnels, dead-band ascent before
    *       simplification; docs/LEDGER_*.md API-104, API-106).
    * </ul>
+   *
+   * <p>{@link ElevationQuality#FAST} and {@link ElevationQuality#HD} do <b>not</b> change this
+   * number: a track first computed FAST is later recomputed HD, and that final result is the one
+   * this version describes.
    */
   public static final int VERSION = 2;
 
   private static final Logger LOG = Logger.getLogger(GpxPipeline.class);
 
-  @Inject ElevationProvider elevationProvider;
+  @Inject
+  @ElevationTier(ElevationQuality.FAST)
+  ElevationProvider fastElevationProvider;
+
+  @Inject
+  @ElevationTier(ElevationQuality.HD)
+  ElevationProvider hdElevationProvider;
 
   /**
    * Runs the full pipeline on {@code source}, returning a new path. An IGN tile that cannot be read
@@ -78,8 +91,28 @@ public class GpxPipeline {
    * original elevations are then kept and the rest of the pipeline still runs.
    *
    * @param name only used for logging, so a failure can be traced back to a track
+   * @param quality {@code FAST} reads Mapterhorn only, {@code HD} IGN LiDAR HD with Mapterhorn as
+   *     fallback and bridge decks ridden; everything after the elevation fix is identical
    */
-  public Path process(Path source, String name) {
+  public Path process(Path source, String name, ElevationQuality quality) {
+    return processReported(source, name, quality).path();
+  }
+
+  /**
+   * A processed path and how much of it the elevation source failed to serve.
+   *
+   * @param fallbackAfterErrorKm kilometres read from a fallback because the preferred source
+   *     errored (vcyclist's {@code TerrainProvenance.fallbackAfterErrorKm}); the whole length of the
+   *     track when the fix itself threw and the original elevations were kept. Zero means the
+   *     requested quality was really obtained (docs/LEDGER_*.md API-131).
+   */
+  public record Processed(Path path, double fallbackAfterErrorKm) {}
+
+  /** {@link #process}, keeping the part of the elevation report the HD catch-up decides on. */
+  public Processed processReported(Path source, String name, ElevationQuality quality) {
+    double fallbackKm = 0.0;
+    ElevationProvider elevationProvider =
+        quality == ElevationQuality.FAST ? fastElevationProvider : hdElevationProvider;
     double step = GpxLimits.RESAMPLING_STEP_METERS;
     Path p;
     try {
@@ -87,8 +120,13 @@ public class GpxPipeline {
           ElevationCorrectionJvm.fixAndCorrectBlocking(
               source, elevationProvider, EngineModelJvm.elevationCorrectionOptions(), step);
       logCorrections(p.getElevationCorrections(), name);
+      ElevationCorrections report = p.getElevationCorrections();
+      if (report != null && report.getTerrain() != null) {
+        fallbackKm = report.getTerrain().getFallbackAfterErrorKm();
+      }
     } catch (Exception e) {
       LOG.warnf(e, "Elevation fix failed for %s, using original elevations", name);
+      fallbackKm = Math.max(source.getTotalDistance() / 1000.0, Double.MIN_VALUE);
       p = PointPerDistance.INSTANCE.computeOnePointPerDistance(source, step / 2.0, step);
     }
     LOG.debugv("Resampled {0} to {1} points", name, p.getSize());
@@ -98,7 +136,7 @@ public class GpxPipeline {
 
     Path simplified = PathSimplifierJvm.simplify(p, 3.0, 3.0);
     LOG.debugv("Simplified {0} to {1} points (Douglas-Peucker)", name, simplified.getSize());
-    return simplified;
+    return new Processed(simplified, fallbackKm);
   }
 
   /** Detects the climbs of an already-processed path, in the frozen JSONB shape. */

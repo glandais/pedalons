@@ -18,11 +18,15 @@ import fr.pedalons.dto.gpx.response.GpxPreviewSummaryDto;
 import fr.pedalons.dto.routes.request.RouteRequest;
 import fr.pedalons.dto.routes.response.RouteDto;
 import fr.pedalons.enums.ActionType;
+import fr.pedalons.enums.ElevationQuality;
+import fr.pedalons.enums.ElevationState;
 import fr.pedalons.enums.EntityType;
 import fr.pedalons.enums.GpsServiceType;
 import fr.pedalons.infrastructure.imgproxy.ImgProxyService;
 import fr.pedalons.infrastructure.storage.StorageService;
 import fr.pedalons.repository.gpx.GpxPreviewRepository;
+import fr.pedalons.service.asset.AssetService;
+import fr.pedalons.service.elevation.ElevationRefreshService;
 import fr.pedalons.service.gps.GpsService;
 import fr.pedalons.service.route.GpxLimits;
 import fr.pedalons.service.route.GpxProcessingService;
@@ -36,9 +40,11 @@ import fr.pedalons.service.security.annotation.Public;
 import fr.pedalons.service.team.TeamService;
 import fr.pedalons.service.thumbnail.ThumbnailService;
 import io.github.glandais.engine.gpx.GpxDocument;
+import io.hypersistence.tsid.TSID;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.persistence.LockModeType;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.core.Response;
 import java.io.File;
@@ -54,9 +60,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import org.jboss.logging.Logger;
 import org.jspecify.annotations.Nullable;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 
 /**
  * GPX previews: files uploaded through the GPX tools page, analysed and rendered without ever
@@ -67,6 +75,14 @@ import org.jspecify.annotations.Nullable;
  * preview has none. Those keys carry no domain prefix, so <b>every</b> access must resolve the
  * preview through {@link GpxPreviewRepository#findByPublicId} first: that domain-filtered lookup is
  * the only thing standing between a leaked identifier and a cross-tenant read.
+ *
+ * <p>The three track files (original GPX, filtered GPX, FIT) live under {@code
+ * gpx-previews/{publicId}/{filesRevision}/}: every save of the track writes a <b>new</b> revision,
+ * switched in the final transaction, and the old one is deleted after commit, so the HD catch-up
+ * ({@code ElevationRefreshService}, docs/LEDGER_*.md API-131) can tell whether the track it read is
+ * still the current one. A {@code null} {@link GpxPreview#getFilesRevision()} is the flat layout
+ * ({@code gpx-previews/{publicId}/original.gpx}) of the previews that predate it; <b>every</b> key
+ * of a track file goes through {@link #trackKey} to honour both. The thumbnail stays flat.
  */
 @ApplicationScoped
 public class GpxPreviewService {
@@ -78,6 +94,7 @@ public class GpxPreviewService {
   private static final String FILTERED_GPX = "filtered.gpx";
   private static final String FIT = "route.fit";
   private static final String THUMBNAIL_LIGHT = "thumbnail-light.png";
+  private static final List<String> TRACK_FILES = List.of(ORIGINAL_GPX, FILTERED_GPX, FIT);
   private static final String GPX_CONTENT_TYPE = "application/gpx+xml";
   private static final String FIT_CONTENT_TYPE = "application/vnd.ant.fit";
   private static final String PNG_CONTENT_TYPE = "image/png";
@@ -105,10 +122,14 @@ public class GpxPreviewService {
 
   @Inject PedalonsQueryContext pedalonsContext;
 
+  @Inject ElevationRefreshService elevationRefreshService;
+
+  @Inject AssetService assetService;
+
   /**
    * Parses and analyses an uploaded GPX file, stores it, and returns the persisted preview.
    *
-   * <p>Deliberately not {@code @Transactional}: the pipeline (SRTM, Douglas-Peucker, climb
+   * <p>Deliberately not {@code @Transactional}: the pipeline (elevation, Douglas-Peucker, climb
    * detection) and the two S3 uploads run with no DB connection held, and only the final insert
    * opens a transaction.
    */
@@ -133,23 +154,24 @@ public class GpxPreviewService {
     User creator = pedalonsContext.getUser();
     Domain domain = pedalonsContext.getDomain();
     UUID publicId = UUID.randomUUID();
+    long revision = newRevision();
+    ElevationQuality quality = elevationRefreshService.saveQuality();
 
     List<PreviewTrack> tracks;
     List<PreviewWaypoint> waypoints;
     TrackMetadata metadata;
-    try (ComputedGpx computed = gpxProcessingService.computeGpx(gpx)) {
-      upload(publicId, ORIGINAL_GPX, computed.originalGpx());
-      upload(publicId, FILTERED_GPX, computed.filteredGpx());
-      upload(publicId, FIT, computed.fitFile(), FIT_CONTENT_TYPE);
+    try (ComputedGpx computed = gpxProcessingService.computeGpx(gpx, quality)) {
+      uploadTrackFiles(
+          publicId, revision, computed.originalGpx(), computed.filteredGpx(), computed.fitFile());
 
       tracks = toPreviewTracks(computed);
       waypoints = toPreviewWaypoints(computed);
       metadata = computed.aggregated();
     } catch (IOException e) {
-      deleteFiles(publicId);
+      deleteFiles(publicId, revision);
       throw new BusinessException(ErrorCode.GPX_FAILURE, e);
     } catch (RuntimeException e) {
-      deleteFiles(publicId);
+      deleteFiles(publicId, revision);
       throw e;
     }
 
@@ -168,11 +190,22 @@ public class GpxPreviewService {
             waypoints);
     preview.setHasThumbnail(renderAndUploadThumbnail(publicId, tracks));
     preview.setDrawn(drawn);
+    preview.setFilesRevision(revision);
+    preview.setElevationState(stateOf(quality));
 
     try {
-      QuarkusTransaction.requiringNew().run(() -> gpxPreviewRepository.persist(preview));
+      QuarkusTransaction.requiringNew()
+          .run(
+              () -> {
+                gpxPreviewRepository.persist(preview);
+                if (quality == ElevationQuality.FAST) {
+                  // The row first: the request points at it
+                  gpxPreviewRepository.flush();
+                  elevationRefreshService.requestPreview(preview.getId(), revision);
+                }
+              });
     } catch (RuntimeException e) {
-      deleteFiles(publicId);
+      deleteFiles(publicId, revision);
       throw e;
     }
     LOG.infov("Created GPX preview {0}", publicId);
@@ -285,29 +318,37 @@ public class GpxPreviewService {
       drawn = true;
     }
 
+    Long previewId = preview.getId();
     if (gpx == null) {
-      // Rename only: nothing to recompute.
+      // Rename only: nothing to recompute, no request, no new revision. The row is locked first,
+      // or this flush of every column could undo the switch of a catch-up committing meanwhile.
       return QuarkusTransaction.requiringNew()
           .call(
               () -> {
+                lockForUpdate(previewId);
                 GpxPreview managed = getByPublicId(publicId);
                 managed.setName(truncateName(name));
                 return toDto(managed);
               });
     }
 
+    long revision = newRevision();
+    ElevationQuality quality = elevationRefreshService.saveQuality();
     List<PreviewTrack> tracks;
     List<PreviewWaypoint> waypoints;
     TrackMetadata metadata;
-    try (ComputedGpx computed = gpxProcessingService.computeGpx(gpx)) {
-      upload(pid, ORIGINAL_GPX, computed.originalGpx());
-      upload(pid, FILTERED_GPX, computed.filteredGpx());
-      upload(pid, FIT, computed.fitFile(), FIT_CONTENT_TYPE);
+    try (ComputedGpx computed = gpxProcessingService.computeGpx(gpx, quality)) {
+      uploadTrackFiles(
+          pid, revision, computed.originalGpx(), computed.filteredGpx(), computed.fitFile());
       tracks = toPreviewTracks(computed);
       waypoints = toPreviewWaypoints(computed);
       metadata = computed.aggregated();
     } catch (IOException e) {
+      deleteTrackFiles(pid, revision);
       throw new BusinessException(ErrorCode.GPX_FAILURE, e);
+    } catch (RuntimeException e) {
+      deleteTrackFiles(pid, revision);
+      throw e;
     }
 
     boolean hasThumbnail = renderAndUploadThumbnail(pid, tracks);
@@ -316,8 +357,15 @@ public class GpxPreviewService {
     return QuarkusTransaction.requiringNew()
         .call(
             () -> {
+              // Whatever happens below, the new revision must not outlive a rollback
+              deleteTrackFilesUnlessCommitted(pid, revision);
+              lockForUpdate(previewId);
               GpxPreview managed = getByPublicId(publicId);
+              // Read under the lock: a catch-up may have switched revisions since the load above
+              Long previous = managed.getFilesRevision();
               managed.setName(truncateName(name));
+              managed.setFilesRevision(revision);
+              managed.setElevationState(stateOf(quality));
               managed.setDistance(metadata.distance());
               managed.setElevationGain(metadata.elevationGain());
               managed.setElevationLoss(metadata.elevationLoss());
@@ -326,6 +374,11 @@ public class GpxPreviewService {
               managed.setWaypoints(waypoints);
               managed.setHasThumbnail(hasThumbnail);
               managed.setDrawn(newDrawn);
+              if (quality == ElevationQuality.FAST) {
+                gpxPreviewRepository.flush();
+                elevationRefreshService.requestPreview(previewId, revision);
+              }
+              deleteTrackFilesAfterCommit(pid, previous);
               return toDto(managed);
             });
   }
@@ -422,26 +475,55 @@ public class GpxPreviewService {
     if (!preview.getCreatedBy().getId().equals(pedalonsContext.getUserId())) {
       throw new ForbiddenException();
     }
+    lockFresh(preview);
     gpxPreviewRepository.delete(preview);
-    deleteFiles(preview.getPublicId());
+    deleteFiles(preview);
   }
 
   /** The filtered GPX, as sent to GPS services. */
   public byte[] getFilteredGpxContent(GpxPreview preview) {
-    return retrieveBytes(preview.getPublicId(), FILTERED_GPX);
+    return retrieveBytes(preview, FILTERED_GPX);
   }
 
   /** The FIT export, generated at upload time and stored alongside the GPX files. */
   public byte[] getFitContent(GpxPreview preview) {
-    return retrieveBytes(preview.getPublicId(), FIT);
+    return retrieveBytes(preview, FIT);
   }
 
-  private byte[] retrieveBytes(UUID publicId, String fileName) {
-    try (InputStream is = storageService.retrieve(key(publicId, fileName))) {
-      return is.readAllBytes();
+  private byte[] retrieveBytes(GpxPreview preview, String fileName) {
+    try {
+      return readBytes(trackKey(preview, fileName));
+    } catch (NoSuchKeyException e) {
+      GpxPreview fresh = reloadIfRevisionChanged(preview);
+      if (fresh == null) {
+        throw e;
+      }
+      try {
+        return readBytes(trackKey(fresh, fileName));
+      } catch (IOException ioe) {
+        throw new BusinessException(ErrorCode.GPX_FAILURE, ioe);
+      }
     } catch (IOException e) {
       throw new BusinessException(ErrorCode.GPX_FAILURE, e);
     }
+  }
+
+  private byte[] readBytes(String key) throws IOException {
+    try (InputStream is = storageService.retrieve(key)) {
+      return is.readAllBytes();
+    }
+  }
+
+  /**
+   * A reader that loaded the row just before an HD catch-up switched its revision asks for files
+   * that commit has deleted. The preview as committed now, when it is on another revision; null
+   * when it is not (the object is really missing).
+   */
+  private @Nullable GpxPreview reloadIfRevisionChanged(GpxPreview preview) {
+    UUID publicId = preview.getPublicId();
+    GpxPreview fresh =
+        QuarkusTransaction.requiringNew().call(() -> getByPublicId(publicId.toString()));
+    return Objects.equals(fresh.getFilesRevision(), preview.getFilesRevision()) ? null : fresh;
   }
 
   /**
@@ -488,12 +570,26 @@ public class GpxPreviewService {
   public Path downloadOriginalGpx(GpxPreview preview) {
     try {
       Path temp = Files.createTempFile("gpx-preview-", ".gpx");
-      try (InputStream is = storageService.retrieve(key(preview.getPublicId(), ORIGINAL_GPX))) {
-        Files.copy(is, temp, StandardCopyOption.REPLACE_EXISTING);
+      try {
+        copyOriginal(trackKey(preview, ORIGINAL_GPX), temp);
+      } catch (NoSuchKeyException e) {
+        // The row was read just before a catch-up switched revisions: follow it once
+        GpxPreview fresh = reloadIfRevisionChanged(preview);
+        if (fresh == null) {
+          Files.deleteIfExists(temp);
+          throw e;
+        }
+        copyOriginal(trackKey(fresh, ORIGINAL_GPX), temp);
       }
       return temp;
     } catch (IOException e) {
       throw new BusinessException(ErrorCode.GPX_FAILURE, e);
+    }
+  }
+
+  private void copyOriginal(String key, Path temp) throws IOException {
+    try (InputStream is = storageService.retrieve(key)) {
+      Files.copy(is, temp, StandardCopyOption.REPLACE_EXISTING);
     }
   }
 
@@ -503,7 +599,8 @@ public class GpxPreviewService {
     Instant cutoff = Instant.now().minus(RETENTION_DAYS, ChronoUnit.DAYS);
     List<GpxPreview> expired = gpxPreviewRepository.findExpired(cutoff);
     for (GpxPreview preview : expired) {
-      deleteFiles(preview.getPublicId());
+      lockFresh(preview);
+      deleteFiles(preview);
       gpxPreviewRepository.delete(preview);
     }
     return expired.size();
@@ -513,7 +610,8 @@ public class GpxPreviewService {
   @Transactional
   public void forgetCreator(Long domainId, Long userId) {
     for (GpxPreview preview : gpxPreviewRepository.findAllByCreator(domainId, userId)) {
-      deleteFiles(preview.getPublicId());
+      lockFresh(preview);
+      deleteFiles(preview);
       gpxPreviewRepository.delete(preview);
     }
   }
@@ -567,25 +665,110 @@ public class GpxPreviewService {
     }
   }
 
-  private void upload(UUID publicId, String fileName, File file) throws IOException {
-    upload(publicId, fileName, file, GPX_CONTENT_TYPE);
+  /** The state a save computed with {@code quality} leaves the preview in. */
+  private static ElevationState stateOf(ElevationQuality quality) {
+    return quality == ElevationQuality.FAST ? ElevationState.PENDING : ElevationState.HD;
   }
 
+  /** A fresh token for a set of track files. */
+  public static long newRevision() {
+    return TSID.Factory.getTsid().toLong();
+  }
+
+  /** Uploads one flat file (the thumbnail). */
   private void upload(UUID publicId, String fileName, File file, String contentType)
       throws IOException {
+    store(key(publicId, fileName), file, contentType);
+  }
+
+  private void store(String key, File file, String contentType) throws IOException {
     try (InputStream is = new FileInputStream(file)) {
-      storageService.store(key(publicId, fileName), is, contentType, file.length());
+      storageService.store(key, is, contentType, file.length());
     }
   }
 
-  private void deleteFiles(UUID publicId) {
-    for (String fileName : List.of(ORIGINAL_GPX, FILTERED_GPX, FIT, THUMBNAIL_LIGHT)) {
-      try {
-        storageService.delete(key(publicId, fileName));
-      } catch (Exception e) {
-        LOG.warnf(e, "S3 cleanup failed for GPX preview %s/%s", publicId, fileName);
-      }
+  /** Uploads the three track files under {@code revision}: no row points at them yet. */
+  private void uploadTrackFiles(
+      UUID publicId, long revision, File original, File filtered, File fit) throws IOException {
+    store(trackKey(publicId, revision, ORIGINAL_GPX), original, GPX_CONTENT_TYPE);
+    store(trackKey(publicId, revision, FILTERED_GPX), filtered, GPX_CONTENT_TYPE);
+    store(trackKey(publicId, revision, FIT), fit, FIT_CONTENT_TYPE);
+  }
+
+  /**
+   * Uploads the three track files of a preview under {@code revision}, for the HD catch-up. No row
+   * points at them until the caller switches {@code files_revision}.
+   */
+  public void uploadTrackFilesForRefresh(
+      UUID publicId, long revision, File original, File filtered, File fit) throws IOException {
+    uploadTrackFiles(publicId, revision, original, filtered, fit);
+  }
+
+  /** Every file of a freshly created preview, which has no other revision. */
+  private void deleteFiles(UUID publicId, @Nullable Long revision) {
+    deleteTrackFiles(publicId, revision);
+    deleteQuietly(key(publicId, THUMBNAIL_LIGHT));
+  }
+
+  /**
+   * Every file of a stored preview. The current revision and the thumbnail by name, then whatever
+   * else sits under the preview's folder: a revision orphaned by a crash between its upload and its
+   * commit, or by a failed cleanup, would otherwise keep the user's full-resolution track forever
+   * (erasure included).
+   */
+  private void deleteFiles(GpxPreview preview) {
+    deleteFiles(preview.getPublicId(), preview.getFilesRevision());
+    String prefix = KEY_PREFIX + preview.getPublicId() + "/";
+    try {
+      storageService.deleteByPrefix(prefix);
+    } catch (Exception e) {
+      LOG.warnf(e, "S3 prefix cleanup failed for GPX preview folder %s", prefix);
     }
+  }
+
+  /** Deletes the three track files of {@code revision} now ({@code null}: the flat layout). */
+  public void deleteTrackFiles(UUID publicId, @Nullable Long revision) {
+    for (String fileName : TRACK_FILES) {
+      deleteQuietly(trackKey(publicId, revision, fileName));
+    }
+  }
+
+  /** Deletes the track files of {@code revision} once the transaction has committed. */
+  public void deleteTrackFilesAfterCommit(UUID publicId, @Nullable Long revision) {
+    for (String fileName : TRACK_FILES) {
+      assetService.deleteAfterCommit(trackKey(publicId, revision, fileName));
+    }
+  }
+
+  /** Deletes the track files of {@code revision} unless the transaction commits. */
+  public void deleteTrackFilesUnlessCommitted(UUID publicId, @Nullable Long revision) {
+    for (String fileName : TRACK_FILES) {
+      assetService.deleteUnlessCommitted(trackKey(publicId, revision, fileName));
+    }
+  }
+
+  private void deleteQuietly(String key) {
+    try {
+      storageService.delete(key);
+    } catch (Exception e) {
+      LOG.warnf(e, "S3 cleanup failed for GPX preview file %s", key);
+    }
+  }
+
+  /**
+   * Locks the preview's row for the rest of the transaction and loads it from it. Called first in
+   * a transaction that rewrites the row, so it starts from what a concurrent catch-up committed
+   * and the flush does not overwrite its switch of revision.
+   */
+  private void lockForUpdate(Long previewId) {
+    gpxPreviewRepository
+        .getEntityManager()
+        .find(GpxPreview.class, previewId, LockModeType.PESSIMISTIC_WRITE);
+  }
+
+  /** As {@link #lockForUpdate}, for an entity this transaction already holds: reloads it. */
+  private void lockFresh(GpxPreview preview) {
+    gpxPreviewRepository.getEntityManager().refresh(preview, LockModeType.PESSIMISTIC_WRITE);
   }
 
   /**
@@ -596,11 +779,25 @@ public class GpxPreviewService {
    * user supplied or would recognise.
    */
   public Map<String, String> exportKeys(GpxPreview preview) {
-    UUID publicId = preview.getPublicId();
     return Map.of(
-        ORIGINAL_GPX, key(publicId, ORIGINAL_GPX),
-        FILTERED_GPX, key(publicId, FILTERED_GPX),
-        FIT, key(publicId, FIT));
+        ORIGINAL_GPX, trackKey(preview, ORIGINAL_GPX),
+        FILTERED_GPX, trackKey(preview, FILTERED_GPX),
+        FIT, trackKey(preview, FIT));
+  }
+
+  /**
+   * The storage key of a track file ({@code original.gpx}, {@code filtered.gpx}, {@code route.fit})
+   * of a preview, in the revision it currently has: the one place that knows the flat layout of a
+   * preview with no {@code files_revision}.
+   */
+  public static String trackKey(GpxPreview preview, String fileName) {
+    return trackKey(preview.getPublicId(), preview.getFilesRevision(), fileName);
+  }
+
+  public static String trackKey(UUID publicId, @Nullable Long revision, String fileName) {
+    return revision == null
+        ? key(publicId, fileName)
+        : KEY_PREFIX + publicId + "/" + revision + "/" + fileName;
   }
 
   private static String key(UUID publicId, String fileName) {
@@ -619,7 +816,7 @@ public class GpxPreviewService {
     return name.length() <= 250 ? name : name.substring(0, 250);
   }
 
-  private static List<PreviewTrack> toPreviewTracks(ComputedGpx computed) {
+  public static List<PreviewTrack> toPreviewTracks(ComputedGpx computed) {
     return computed.tracks().stream()
         .map(
             t ->
@@ -633,7 +830,7 @@ public class GpxPreviewService {
         .toList();
   }
 
-  private static List<PreviewWaypoint> toPreviewWaypoints(ComputedGpx computed) {
+  public static List<PreviewWaypoint> toPreviewWaypoints(ComputedGpx computed) {
     return computed.waypoints().stream()
         .map(
             w ->

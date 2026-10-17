@@ -8,6 +8,7 @@ import fr.pedalons.domain.gpx.GpxPreview;
 import fr.pedalons.dto.routes.response.TrackDto;
 import fr.pedalons.dto.routes.response.WaypointDto;
 import fr.pedalons.dto.validation.ValidateSchema;
+import fr.pedalons.enums.ElevationState;
 import fr.pedalons.service.route.ClimbNaming.NamedPoint;
 import java.time.Instant;
 import java.util.List;
@@ -27,6 +28,14 @@ public record GpxPreviewDto(
     @Schema(description = "Total elevation gain in meters", required = true) Float elevationGain,
     @Schema(description = "Total elevation loss in meters", required = true) Float elevationLoss,
     @Schema(description = "Elevation gain per kilometer", required = true) Float hilliness,
+    @Schema(
+            description =
+                "Where the elevation profile stands. PENDING: the fast profile (Mapterhorn) is"
+                    + " stored and the precise IGN LiDAR HD recomputation is scheduled. HD: the"
+                    + " precise profile. FAST: the fast profile is kept, the HD recomputation"
+                    + " failed.",
+            required = true)
+        ElevationState elevationState,
     @Schema(description = "Whether the current user created this preview", required = true)
         boolean owned,
     @Schema(description = "Creation timestamp", required = true) Instant createdAt,
@@ -58,6 +67,7 @@ public record GpxPreviewDto(
         preview.getElevationGain(),
         preview.getElevationLoss(),
         preview.getHilliness(),
+        ElevationState.orHd(preview.getElevationState()),
         owned,
         preview.getCreatedAt(),
         preview.isHasThumbnail() ? "/api/gpx-previews/" + publicId + "/thumbnail/{size}" : null,

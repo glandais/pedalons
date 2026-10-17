@@ -5,6 +5,7 @@
 // Clients
 export 'clients/admin_beta_signups_client.dart';
 export 'clients/admin_domains_client.dart';
+export 'clients/admin_elevation_client.dart';
 export 'clients/admin_reports_client.dart';
 export 'clients/admin_teams_client.dart';
 export 'clients/admin_thumbnails_client.dart';
@@ -120,6 +121,11 @@ export 'models/device_routes_response.dart';
 export 'models/device_token_request.dart';
 export 'models/device_token_response.dart';
 export 'models/device_user_status_response.dart';
+export 'models/elevation_refresh_kind.dart';
+export 'models/elevation_refresh_retry_item.dart';
+export 'models/elevation_refresh_retry_request.dart';
+export 'models/elevation_refresh_retry_response.dart';
+export 'models/elevation_state.dart';
 export 'models/email_change_request.dart';
 export 'models/email_link_kind.dart';
 export 'models/email_link_preview_response.dart';

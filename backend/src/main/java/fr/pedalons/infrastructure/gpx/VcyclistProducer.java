@@ -1,5 +1,6 @@
 package fr.pedalons.infrastructure.gpx;
 
+import fr.pedalons.enums.ElevationQuality;
 import io.github.glandais.elevation.ElevationProvider;
 import io.github.glandais.elevation.ElevationProviderJvm;
 import io.github.glandais.elevation.ElevationSource;
@@ -50,7 +51,22 @@ public class VcyclistProducer {
   }
 
   /**
-   * Elevation lookups against IGN LiDAR HD (1 m terrain model over metropolitan France and
+   * The fast tier: Mapterhorn alone (zoom 12, no surface model, so bridge decks are reported
+   * unavailable while tunnels are still corrected). A cold 130 km route is 16 tiles, a few
+   * seconds — what a user waiting on a planner segment or a fresh upload can afford. It shares
+   * {@link DemTileStore} with {@link #hdElevationProvider()}, so the {@code mapterhorn/} level of
+   * the disk cache is common to both.
+   */
+  @Produces
+  @Singleton
+  @ElevationTier(ElevationQuality.FAST)
+  public ElevationProvider fastElevationProvider() {
+    return ElevationProviderJvm.newElevationProvider(
+        ElevationSource.MAPTERHORN, new DemTileStore(cacheFolder));
+  }
+
+  /**
+   * The high-definition tier: elevation lookups against IGN LiDAR HD (1 m terrain model over metropolitan France and
    * Corsica), with Mapterhorn wherever IGN has no data — abroad, at sea, in a survey gap — so a
    * route crossing a border is IGN up to it and Mapterhorn beyond. At IGN's default zoom (15) the
    * provider also carries IGN's surface model, which is what lets {@code GpxPipeline} ride bridge
@@ -62,7 +78,8 @@ public class VcyclistProducer {
    */
   @Produces
   @Singleton
-  public ElevationProvider elevationProvider() {
+  @ElevationTier(ElevationQuality.HD)
+  public ElevationProvider hdElevationProvider() {
     return ElevationProviderJvm.newElevationProvider(
         ElevationSource.IGN_LIDAR_HD, new DemTileStore(cacheFolder));
   }

@@ -9,6 +9,7 @@ import fr.pedalons.dto.publications.response.TeamPublicationDto;
 import fr.pedalons.dto.tags.response.ContentTags;
 import fr.pedalons.dto.tags.response.TagDto;
 import fr.pedalons.dto.validation.ValidateSchema;
+import fr.pedalons.enums.ElevationState;
 import fr.pedalons.enums.ListViewMode;
 import fr.pedalons.enums.SurfaceType;
 import fr.pedalons.enums.Visibility;
@@ -47,6 +48,14 @@ public record RouteDto(
     @Schema(description = "Distance in meters", required = true) Float distance,
     @Schema(description = "Total elevation gain in meters", required = true) Float elevationGain,
     @Schema(description = "Total elevation loss in meters", required = true) Float elevationLoss,
+    @Schema(
+            description =
+                "Where the elevation profile stands. PENDING: the fast profile (Mapterhorn) is"
+                    + " stored and the precise IGN LiDAR HD recomputation is scheduled. HD: the"
+                    + " precise profile. FAST: the fast profile is kept, the HD recomputation"
+                    + " failed.",
+            required = true)
+        ElevationState elevationState,
     @Schema(description = "Surface type", required = true) SurfaceType surfaceType,
     @Schema(description = "Whether the route is public", required = true) Visibility visibility,
     @Schema(description = "Creation timestamp", required = true) Instant createdAt,
@@ -92,6 +101,7 @@ public record RouteDto(
         route.getDistance(),
         route.getElevationGain(),
         route.getElevationLoss(),
+        ElevationState.orHd(route.getElevationState()),
         route.getSurfaceType(),
         route.getVisibility(),
         route.getCreatedAt(),

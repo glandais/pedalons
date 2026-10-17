@@ -7,6 +7,7 @@ import {
   useGetTripWeather,
   prefetchGetTripWeatherQuery,
 } from '@/api/endpoints/trips/trips'
+import { useElevationRefetchInterval } from '@/hooks/useElevationRefetchInterval'
 import { TRIP_WEATHER_REQUEST } from './tripDetailData'
 import { useGetRoute, prefetchGetRouteQuery } from '@/api/endpoints/routes/routes'
 import { prefetchGetAvailableServicesQuery } from '@/api/endpoints/gps-services/gps-services'
@@ -59,8 +60,9 @@ export function useStageDetailData(teamSlug?: string, tripSlug?: string, stageSl
 
   // `routeSlug ?? ''` keeps the hook call unconditional (consistent hook order); `enabled` is what
   // actually gates the fetch.
+  const refetchInterval = useElevationRefetchInterval()
   const route = useGetRoute(teamSlug!, routeSlug ?? '', {
-    query: { enabled: !!teamSlug && !!routeSlug },
+    query: { enabled: !!teamSlug && !!routeSlug, refetchInterval },
   })
 
   // The trip's weather, of which the page shows this stage's leg (docs/LEDGER_*.md API-76).

@@ -15,6 +15,8 @@ import fr.pedalons.domain.team.Team;
 import fr.pedalons.domain.user.User;
 import fr.pedalons.dto.error.ErrorCode;
 import fr.pedalons.enums.AssetType;
+import fr.pedalons.enums.ElevationQuality;
+import fr.pedalons.enums.ElevationState;
 import fr.pedalons.enums.EntityType;
 import fr.pedalons.enums.WindDirection;
 import fr.pedalons.infrastructure.exception.NotFoundException;
@@ -45,6 +47,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import org.geolatte.geom.G2D;
@@ -147,6 +150,9 @@ public class GpxProcessingService {
    * <p>The FIT file is produced here rather than by each caller because the export is built from
    * the <b>processed</b> geometry, which only exists inside {@link #computeGpx}: paths are
    * immutable, so the source {@link GpxDocument} never carries the pipeline's output.
+   *
+   * <p>{@code fallbackAfterErrorKm} sums, over the tracks, what the elevation source failed to
+   * serve ({@link GpxPipeline.Processed}): zero when the requested quality was really obtained.
    */
   public record ComputedGpx(
       File originalGpx,
@@ -154,7 +160,8 @@ public class GpxProcessingService {
       File fitFile,
       List<ComputedTrack> tracks,
       List<ComputedWaypoint> waypoints,
-      TrackMetadata aggregated)
+      TrackMetadata aggregated,
+      double fallbackAfterErrorKm)
       implements AutoCloseable {
 
     @Override
@@ -187,8 +194,10 @@ public class GpxProcessingService {
    * file of a route or a GPX-tool preview comes out of this method, whatever the entry point
    * (upload, planner, GPX-tool promotion, biketeam import). {@code original.gpx} is therefore
    * <b>not</b> the uploaded bytes but the sanitized parse of them; never store the source file.
+   *
+   * @param quality the elevation source of every track ({@link ElevationQuality})
    */
-  public ComputedGpx computeGpx(GpxDocument source) {
+  public ComputedGpx computeGpx(GpxDocument source, ElevationQuality quality) {
     GpxDocument doc;
     try {
       doc = GpxSanitizer.sanitize(source);
@@ -239,8 +248,12 @@ public class GpxProcessingService {
       }
 
       List<Path> processed = new ArrayList<>(raw.size());
+      double fallbackKm = 0.0;
       for (int i = 0; i < raw.size(); i++) {
-        processed.add(pipeline.process(raw.get(i), trackNames.get(i)));
+        GpxPipeline.Processed result =
+            pipeline.processReported(raw.get(i), trackNames.get(i), quality);
+        processed.add(result.path());
+        fallbackKm += result.fallbackAfterErrorKm();
       }
 
       filtered =
@@ -280,7 +293,7 @@ public class GpxProcessingService {
               tracksMetadata.getLast().end(),
               windDirection);
 
-      return new ComputedGpx(original, filtered, fit, tracks, waypoints, aggregated);
+      return new ComputedGpx(original, filtered, fit, tracks, waypoints, aggregated, fallbackKm);
     } catch (PedalonsException e) {
       deleteQuietly(original);
       deleteQuietly(filtered);
@@ -361,7 +374,7 @@ public class GpxProcessingService {
   }
 
   /** Result of the CPU/S3 processing phase, passed to the DB persist phase. */
-  record PreparedAsset(
+  public record PreparedAsset(
       AssetType type, String fileName, long fileId, AssetService.UploadedFile stored) {}
 
   record GpxProcessingResult(
@@ -378,12 +391,22 @@ public class GpxProcessingService {
    */
   @Transactional(Transactional.TxType.NOT_SUPPORTED)
   public GpxProcessingResult processGpxData(Route route, GpxDocument gpx) {
+    return processGpxData(route, gpx, ElevationQuality.HD);
+  }
+
+  /**
+   * {@link #processGpxData(Route, GpxDocument)} with the elevation source of the caller: {@code
+   * FAST} when the HD catch-up will follow, {@code HD} when it is off (docs/LEDGER_*.md API-131).
+   */
+  @Transactional(Transactional.TxType.NOT_SUPPORTED)
+  public GpxProcessingResult processGpxData(
+      Route route, GpxDocument gpx, ElevationQuality quality) {
     User creator = pedalonsContext.getUser();
     Long routeId = route.getId();
     Team team = route.getTeam();
     // Outside the try: the catches below delete what was uploaded before the failure
     List<PreparedAsset> uploadedAssets = new ArrayList<>();
-    try (ComputedGpx computed = computeGpx(gpx)) {
+    try (ComputedGpx computed = computeGpx(gpx, quality)) {
       uploadedAssets.add(
           prepareAndUpload(
               team,
@@ -522,6 +545,117 @@ public class GpxProcessingService {
     }
 
     return result.metadata();
+  }
+
+  // ------------------------------------------------------------------ HD catch-up
+
+  /** Raised when the HD source could not serve the whole track: the profile would not be HD. */
+  public static class ElevationUnavailableException extends RuntimeException {
+    public ElevationUnavailableException(String message) {
+      super(message);
+    }
+  }
+
+  /**
+   * A route's track recomputed with the HD source, its filtered GPX and FIT already uploaded under
+   * new keys (no row points at them yet).
+   */
+  public record ElevationRecompute(
+      TrackMetadata metadata,
+      List<ComputedTrack> tracks,
+      PreparedAsset filtered,
+      PreparedAsset fit) {}
+
+  /**
+   * Phase 1 of the HD catch-up (docs/LEDGER_*.md API-131): recomputes {@code gpx} (the route's
+   * stored original, plus its waypoints, which the original does not carry) with the HD source and
+   * uploads the new filtered GPX and FIT. No transaction, no entity: like {@link #processGpxData}.
+   *
+   * <p>The original and the thumbnails are not rewritten: the 2D track is the same.
+   *
+   * @throws ElevationUnavailableException when the HD source failed on part of the track (a tile
+   *     IGN could not serve and Mapterhorn answered instead, or no source at all): the route stays
+   *     on the fast profile and the attempt is retried later
+   */
+  @Transactional(Transactional.TxType.NOT_SUPPORTED)
+  public ElevationRecompute recomputeHd(Team team, GpxDocument gpx) {
+    List<PreparedAsset> uploaded = new ArrayList<>(2);
+    try (ComputedGpx computed = computeGpx(gpx, ElevationQuality.HD)) {
+      if (computed.fallbackAfterErrorKm() > 0) {
+        throw new ElevationUnavailableException(
+            "HD elevation unavailable for %.2f km of the track"
+                .formatted(computed.fallbackAfterErrorKm()));
+      }
+      PreparedAsset filtered =
+          prepareAndUpload(
+              team,
+              AssetType.ROUTE_FILTERED_GPX,
+              "filtered.gpx",
+              tmp -> moveInto(computed.filteredGpx(), tmp));
+      uploaded.add(filtered);
+      PreparedAsset fit =
+          prepareAndUpload(
+              team, AssetType.ROUTE_FIT, "route.fit", tmp -> moveInto(computed.fitFile(), tmp));
+      uploaded.add(fit);
+      return new ElevationRecompute(computed.aggregated(), computed.tracks(), filtered, fit);
+    } catch (Exception e) {
+      cleanupUploadedAssets(uploaded, team);
+      throw e instanceof RuntimeException re ? re : new BusinessException(ErrorCode.GPX_FAILURE, e);
+    }
+  }
+
+  /** Deletes what {@link #recomputeHd} uploaded, when its result will not be written. */
+  public void discardRecompute(Team team, ElevationRecompute recompute) {
+    cleanupUploadedAssets(List.of(recompute.filtered(), recompute.fit()), team);
+  }
+
+  /**
+   * Phase 2 of the HD catch-up, in the caller's transaction with the route locked: the existing
+   * filtered GPX and FIT rows take the new files (same asset ids, so every URL is stable; new
+   * content revision, so GPS sync pushes them again), the existing tracks are updated <b>in
+   * place</b> — never a clear and refill of the orphan-removal collection, HHH90032003 — and the
+   * route takes the HD figures.
+   *
+   * @return whether the distance changed, in which case the caller refreshes the ends of the
+   *     rides riding the route
+   * @throws IllegalStateException when the route does not have as many tracks as the recompute; the
+   *     transaction is then rolled back and the new files deleted
+   */
+  @Transactional(Transactional.TxType.REQUIRED)
+  public boolean applyRecompute(Route route, ElevationRecompute recompute) {
+    // Before anything can throw, as persistGpxData does
+    for (PreparedAsset pa : List.of(recompute.filtered(), recompute.fit())) {
+      assetService.deleteUnlessCommitted(assetService.getAssetKey(route.getTeam(), pa.fileId()));
+    }
+    List<GpxTrack> tracks =
+        route.getTracks().stream().sorted(Comparator.comparing(GpxTrack::getId)).toList();
+    if (tracks.size() != recompute.tracks().size()) {
+      throw new IllegalStateException(
+          "Route %d has %d track(s), the HD recompute %d"
+              .formatted(route.getId(), tracks.size(), recompute.tracks().size()));
+    }
+    for (PreparedAsset pa : List.of(recompute.filtered(), recompute.fit())) {
+      assetService.putStoredFile(
+          route.getTeam(), route, pa.type(), pa.fileId(), pa.fileName(), pa.stored(), true);
+    }
+    for (int i = 0; i < tracks.size(); i++) {
+      GpxTrack track = tracks.get(i);
+      ComputedTrack computed = recompute.tracks().get(i);
+      track.setGeometry(computed.line());
+      track.setTrackPoints(computed.trackPoints());
+      track.setClimbs(computed.climbs());
+      track.setDistance(computed.metadata().distance());
+      track.setElevationGain(computed.metadata().elevationGain());
+      track.setElevationLoss(computed.metadata().elevationLoss());
+    }
+    TrackMetadata metadata = recompute.metadata();
+    boolean distanceChanged = !Objects.equals(route.getDistance(), metadata.distance());
+    route.setDistance(metadata.distance());
+    route.setElevationGain(metadata.elevationGain());
+    route.setHilliness(metadata.hilliness());
+    route.setElevationLoss(metadata.elevationLoss());
+    route.setElevationState(ElevationState.HD);
+    return distanceChanged;
   }
 
   /**

@@ -2039,6 +2039,98 @@ components:
           items:
             $ref: "#/components/schemas/GpsServiceType"
           description: List of connected GPS services
+    ElevationRefreshKind:
+      type: string
+      enum:
+      - ROUTE
+      - PREVIEW
+    ElevationRefreshRetryItem:
+      type: object
+      description: One abandoned recomputation
+      required:
+      - kind
+      - targetId
+      - attempts
+      - firstRequestedAt
+      properties:
+        kind:
+          description: Kind of target
+          type: string
+          $ref: "#/components/schemas/ElevationRefreshKind"
+        targetId:
+          type: string
+          description: ID of the route or preview
+        teamSlug:
+          type: string
+          description: Team slug (routes)
+        routeSlug:
+          type: string
+          description: Route slug (routes)
+        previewPublicId:
+          type: string
+          description: Public identifier (previews)
+        attempts:
+          type: integer
+          format: int32
+          description: Failed attempts before the retry
+        lastError:
+          type: string
+          description: "Last error recorded, before the retry"
+        firstRequestedAt:
+          description: When the recomputation was first requested
+          type: string
+          $ref: "#/components/schemas/Instant"
+    ElevationRefreshRetryRequest:
+      description: "Which abandoned HD elevation recomputations to start again: the\
+        \ routes and GPX-tool previews whose request used up its attempts and stay\
+        \ on the fast profile."
+      type: object
+      required:
+      - dryRun
+      properties:
+        dryRun:
+          type: boolean
+          description: "List what would be retried, without changing anything"
+          examples:
+          - true
+        limit:
+          type: integer
+          format: int32
+          maximum: 1000
+          minimum: 1
+          description: "Retry at most this many targets, oldest first (default 100)"
+          examples:
+          - 100
+        kind:
+          description: "Only this kind of target (default: both)"
+          type: string
+          $ref: "#/components/schemas/ElevationRefreshKind"
+    ElevationRefreshRetryResponse:
+      description: "Outcome of an HD elevation retry, one entry per target"
+      type: object
+      required:
+      - dryRun
+      - matched
+      - items
+      properties:
+        dryRun:
+          type: boolean
+          description: Whether this was a dry run (nothing changed)
+        matched:
+          type: integer
+          format: int32
+          description: "Number of abandoned targets in the domain, before the limit"
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ElevationRefreshRetryItem"
+          description: "Targets listed, and retried unless dry run; at most the limit"
+    ElevationState:
+      type: string
+      enum:
+      - PENDING
+      - HD
+      - FAST
     EmailChangeRequest:
       description: Request to change the signed-in user's email address
       type: object
@@ -2536,6 +2628,7 @@ components:
       - elevationGain
       - elevationLoss
       - hilliness
+      - elevationState
       - owned
       - createdAt
       - gpxUrl
@@ -2566,6 +2659,13 @@ components:
           type: number
           format: float
           description: Elevation gain per kilometer
+        elevationState:
+          description: "Where the elevation profile stands. PENDING: the fast profile\
+            \ (Mapterhorn) is stored and the precise IGN LiDAR HD recomputation is\
+            \ scheduled. HD: the precise profile. FAST: the fast profile is kept,\
+            \ the HD recomputation failed."
+          type: string
+          $ref: "#/components/schemas/ElevationState"
         owned:
           type: boolean
           description: Whether the current user created this preview
@@ -5076,6 +5176,7 @@ components:
       - distance
       - elevationGain
       - elevationLoss
+      - elevationState
       - surfaceType
       - visibility
       - createdBy
@@ -5115,6 +5216,13 @@ components:
           type: number
           format: float
           description: Total elevation loss in meters
+        elevationState:
+          description: "Where the elevation profile stands. PENDING: the fast profile\
+            \ (Mapterhorn) is stored and the precise IGN LiDAR HD recomputation is\
+            \ scheduled. HD: the precise profile. FAST: the fast profile is kept,\
+            \ the HD recomputation failed."
+          type: string
+          $ref: "#/components/schemas/ElevationState"
         surfaceType:
           description: Surface type
           type: string
@@ -5180,6 +5288,7 @@ components:
       - distance
       - elevationGain
       - elevationLoss
+      - elevationState
       - surfaceType
       - visibility
       - createdAt
@@ -5227,6 +5336,13 @@ components:
           type: number
           format: float
           description: Total elevation loss in meters
+        elevationState:
+          description: "Where the elevation profile stands. PENDING: the fast profile\
+            \ (Mapterhorn) is stored and the precise IGN LiDAR HD recomputation is\
+            \ scheduled. HD: the precise profile. FAST: the fast profile is kept,\
+            \ the HD recomputation failed."
+          type: string
+          $ref: "#/components/schemas/ElevationState"
         surfaceType:
           description: Surface type
           type: string
@@ -7881,6 +7997,8 @@ tags:
   description: "Beta program sign-ups, for platform admins"
 - name: Admin - Domains
   description: Platform admin domain management
+- name: Admin - Elevation
+  description: Platform admin maintenance of the background HD elevation recomputation
 - name: Admin - Reports
   description: Platform moderation queue
 - name: Admin - Teams
@@ -8652,6 +8770,49 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: Not Authorized
+      security:
+      - SecurityScheme:
+        - user
+  /api/admin/elevation-refresh/retry:
+    post:
+      summary: Retry abandoned HD elevation recomputations
+      description: "Start again the HD recomputation of the routes and GPX-tool previews\
+        \ whose request used up its attempts (they stay on the fast profile, state\
+        \ FAST). Their attempts are reset and their due times spread one minute apart,\
+        \ oldest first, so the worker is not flooded; the targets go back to PENDING.\
+        \ Idempotent: a second call finds nothing. Run it with dryRun first."
+      operationId: adminRetryElevationRefresh
+      tags:
+      - Admin - Elevation
+      parameters:
+      - description: Target domain ID (defaults to the request's domain)
+        name: domainId
+        in: query
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ElevationRefreshRetryRequest"
+        required: true
+      responses:
+        "200":
+          description: Retry report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ElevationRefreshRetryResponse"
+        "403":
+          description: Forbidden - not a platform admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Not Authorized
+        "400":
+          description: Bad Request
       security:
       - SecurityScheme:
         - user
@@ -19454,7 +19615,7 @@ paths:
                 $ref: "#/components/schemas/VersionDto"
 info:
   title: Pedalons API
-  version: 11.7.0
+  version: 11.8.0
   description: API for Pedalons Cycling Team Management Platform
 servers:
 - url: http://localhost:8080

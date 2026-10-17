@@ -25,7 +25,15 @@ public class StoredObjects {
 
   /** Every asset key of the team, as {@code AssetService.getAssetKey} spells them. */
   public Set<String> assetKeys(Team team) {
-    String prefix = "assets/" + TsidUtils.toString(team.getId()) + "/";
+    return keysUnder("assets/" + TsidUtils.toString(team.getId()) + "/");
+  }
+
+  /** Every object of a GPX-tool preview, thumbnail and all revisions of its track files. */
+  public Set<String> previewKeys(java.util.UUID publicId) {
+    return keysUnder("gpx-previews/" + publicId + "/");
+  }
+
+  private Set<String> keysUnder(String prefix) {
     Set<String> keys = new TreeSet<>();
     for (S3Object object :
         s3Client

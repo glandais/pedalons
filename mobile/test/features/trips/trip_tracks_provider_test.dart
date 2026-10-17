@@ -47,6 +47,7 @@ class _CountingRouteRepository implements RouteRepository {
         for (final String slug in slugs)
           if (!failFor.contains(slug))
             RouteDetailDto(
+              elevationState: 'HD',
               tags: const [],
               id: 'r-$slug',
               slug: slug,

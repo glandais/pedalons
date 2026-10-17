@@ -14,6 +14,7 @@ import fr.pedalons.dto.router.request.RouterProfile;
 import fr.pedalons.dto.router.request.RouterRequest;
 import fr.pedalons.dto.router.response.RouterResponse;
 import fr.pedalons.enums.ActionType;
+import fr.pedalons.enums.ElevationQuality;
 import fr.pedalons.enums.EntityType;
 import fr.pedalons.infrastructure.valhalla.Polyline6Decoder;
 import fr.pedalons.infrastructure.valhalla.StadiaMapsClient;
@@ -106,7 +107,7 @@ public class RouterService {
       throw new BusinessException(ErrorCode.UNKNOWN);
     }
 
-    // Convert to LineString<G3D> (elevation = 0, will be fixed by SRTM)
+    // Convert to LineString<G3D> (elevation = 0, set by the pipeline below)
     G3D[] geomPoints = allCoords.stream().map(c -> g(c[0], c[1], 0.0)).toArray(G3D[]::new);
     LineString<G3D> rawRoute = linestring(WGS84_3D, geomPoints);
 
@@ -117,7 +118,7 @@ public class RouterService {
 
     // Resample / fix elevation / simplify — the very same pipeline route import runs, shared
     // rather than duplicated so the planner and an uploaded GPX cannot drift apart.
-    Path path = gpxPipeline.process(raw, "route");
+    Path path = gpxPipeline.process(raw, "route", ElevationQuality.FAST);
 
     // Convert back to LineString and compute metrics
     LineString<G3D> filteredRoute = toLineString3D(path);

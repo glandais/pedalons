@@ -1,5 +1,6 @@
 export * from './admin-beta-signups/admin-beta-signups.zod.ts'
 export * from './admin-domains/admin-domains.zod.ts'
+export * from './admin-elevation/admin-elevation.zod.ts'
 export * from './admin-reports/admin-reports.zod.ts'
 export * from './admin-teams/admin-teams.zod.ts'
 export * from './admin-thumbnails/admin-thumbnails.zod.ts'

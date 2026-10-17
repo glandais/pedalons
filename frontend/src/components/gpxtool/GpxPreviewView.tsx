@@ -13,7 +13,7 @@ import {
 import { Box, Button, Group, Loader, Menu, Modal, Select, Stack, Text, Title } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import type { GpsServiceType, GpxPreviewDto } from '@/api/dto'
-import { ErrorCode, SurfaceType } from '@/api/dto'
+import { ElevationState, ErrorCode, SurfaceType } from '@/api/dto'
 import { createRouteFromPreview, useDeletePreview } from '@/api/endpoints/gpx-previews/gpx-previews'
 import { useListTeams } from '@/api/endpoints/teams/teams'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
@@ -218,6 +218,12 @@ export function GpxPreviewView({ preview }: GpxPreviewViewProps) {
           </Button>
         )}
       </Group>
+
+      {preview.elevationState === ElevationState.PENDING && (
+        <Text size="xs" c="dimmed">
+          {t('gpxTools.preview.elevationRefining')}
+        </Text>
+      )}
 
       <Modal
         opened={saveOpened}

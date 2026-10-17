@@ -38,6 +38,7 @@ class _CountingRouteRepository implements RouteRepository {
       routes: <RouteDetailDto>[
         for (final String slug in slugs)
           RouteDetailDto(
+            elevationState: 'HD',
             tags: const [],
             id: 'r-$slug',
             slug: slug,

@@ -63,6 +63,13 @@ public interface StorageService {
   void delete(String key);
 
   /**
+   * Deletes every object whose key starts with {@code prefix}, listing the bucket to find them.
+   *
+   * @param prefix the key prefix, ending with {@code /} to stay inside one folder
+   */
+  void deleteByPrefix(String prefix);
+
+  /**
    * Checks if content exists in the storage backend.
    *
    * @param key the storage key

@@ -4,6 +4,7 @@
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'elevation_state.dart';
 import 'instant.dart';
 import 'track_dto.dart';
 import 'waypoint_dto.dart';
@@ -32,6 +33,9 @@ abstract class GpxPreviewDto with _$GpxPreviewDto {
 
     /// Elevation gain per kilometer
     required double hilliness,
+
+    /// Where the elevation profile stands. PENDING: the fast profile (Mapterhorn) is stored and the precise IGN LiDAR HD recomputation is scheduled. HD: the precise profile. FAST: the fast profile is kept, the HD recomputation failed.
+    required String elevationState,
 
     /// Whether the current user created this preview
     required bool owned,

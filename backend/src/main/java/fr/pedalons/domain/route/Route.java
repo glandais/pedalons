@@ -4,6 +4,7 @@ import fr.pedalons.domain.common.NotNullableDbValue;
 import fr.pedalons.domain.common.TeamEntity;
 import fr.pedalons.domain.team.Team;
 import fr.pedalons.domain.user.User;
+import fr.pedalons.enums.ElevationState;
 import fr.pedalons.enums.EntityType;
 import fr.pedalons.enums.SurfaceType;
 import fr.pedalons.enums.Visibility;
@@ -17,6 +18,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.geolatte.geom.G2D;
 import org.geolatte.geom.Point;
+import org.jspecify.annotations.Nullable;
 
 @Setter
 @Getter
@@ -58,6 +60,15 @@ public class Route extends TeamEntity {
   @Column(name = "wind_direction", length = 20)
   @NotNullableDbValue
   private WindDirection windDirection;
+
+  /**
+   * Where the stored profile stands: PENDING, HD or FAST. Null means HD: a route computed before the column
+   * existed, or saved by the previous release during a rolling deploy (docs/LEDGER_*.md API-131).
+   * Use {@link ElevationState#orHd} to read it.
+   */
+  @Enumerated(EnumType.STRING)
+  @Column(name = "elevation_state", length = 8)
+  private @Nullable ElevationState elevationState;
 
   @OneToMany(mappedBy = "route", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<GpxTrack> tracks = new ArrayList<>();

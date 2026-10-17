@@ -565,6 +565,7 @@ TeamDashboardDto _dashboard({required String role}) {
     newRoutes: RouteListResponse(
       routes: <RouteDto>[
         RouteDto(
+          elevationState: 'HD',
           id: 'r1',
           slug: 'mont-thou',
           team: _team,

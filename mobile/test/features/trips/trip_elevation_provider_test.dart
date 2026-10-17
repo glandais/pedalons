@@ -59,6 +59,7 @@ class _FakeRouteRepository implements RouteRepository {
 /// Une étape rectiligne de quatre sommets, montant de 100 à 130 m, dont la
 /// mesure `M` repart de zéro — comme le fait tout tracé du serveur.
 RouteDetailDto _route(String slug, double distance) => RouteDetailDto(
+  elevationState: 'HD',
   tags: const [],
   id: 'r-$slug',
   slug: slug,

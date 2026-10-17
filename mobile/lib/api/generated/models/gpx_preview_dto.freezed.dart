@@ -22,7 +22,8 @@ mixin _$GpxPreviewDto {
  double get distance;/// Total elevation gain in meters
  double get elevationGain;/// Total elevation loss in meters
  double get elevationLoss;/// Elevation gain per kilometer
- double get hilliness;/// Whether the current user created this preview
+ double get hilliness;/// Where the elevation profile stands. PENDING: the fast profile (Mapterhorn) is stored and the precise IGN LiDAR HD recomputation is scheduled. HD: the precise profile. FAST: the fast profile is kept, the HD recomputation failed.
+ String get elevationState;/// Whether the current user created this preview
  bool get owned;/// Creation timestamp
  String get createdAt;/// URL to download the analysed GPX file
  String get gpxUrl;/// URL to download the analysed track as a FIT file
@@ -44,20 +45,20 @@ $GpxPreviewDtoCopyWith<GpxPreviewDto> get copyWith => _$GpxPreviewDtoCopyWithImp
 @override
 bool operator ==(Object other) {
   final _this = this as GpxPreviewDto;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is GpxPreviewDto&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.distance, _this.distance) || other.distance == _this.distance)&&(identical(other.elevationGain, _this.elevationGain) || other.elevationGain == _this.elevationGain)&&(identical(other.elevationLoss, _this.elevationLoss) || other.elevationLoss == _this.elevationLoss)&&(identical(other.hilliness, _this.hilliness) || other.hilliness == _this.hilliness)&&(identical(other.owned, _this.owned) || other.owned == _this.owned)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt)&&(identical(other.gpxUrl, _this.gpxUrl) || other.gpxUrl == _this.gpxUrl)&&(identical(other.fitUrl, _this.fitUrl) || other.fitUrl == _this.fitUrl)&&(identical(other.drawn, _this.drawn) || other.drawn == _this.drawn)&&const DeepCollectionEquality().equals(other.tracks, _this.tracks)&&const DeepCollectionEquality().equals(other.waypoints, _this.waypoints)&&(identical(other.thumbnailUrl, _this.thumbnailUrl) || other.thumbnailUrl == _this.thumbnailUrl));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is GpxPreviewDto&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.distance, _this.distance) || other.distance == _this.distance)&&(identical(other.elevationGain, _this.elevationGain) || other.elevationGain == _this.elevationGain)&&(identical(other.elevationLoss, _this.elevationLoss) || other.elevationLoss == _this.elevationLoss)&&(identical(other.hilliness, _this.hilliness) || other.hilliness == _this.hilliness)&&(identical(other.elevationState, _this.elevationState) || other.elevationState == _this.elevationState)&&(identical(other.owned, _this.owned) || other.owned == _this.owned)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt)&&(identical(other.gpxUrl, _this.gpxUrl) || other.gpxUrl == _this.gpxUrl)&&(identical(other.fitUrl, _this.fitUrl) || other.fitUrl == _this.fitUrl)&&(identical(other.drawn, _this.drawn) || other.drawn == _this.drawn)&&const DeepCollectionEquality().equals(other.tracks, _this.tracks)&&const DeepCollectionEquality().equals(other.waypoints, _this.waypoints)&&(identical(other.thumbnailUrl, _this.thumbnailUrl) || other.thumbnailUrl == _this.thumbnailUrl));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as GpxPreviewDto;
-  return Object.hash(runtimeType,_this.id,_this.name,_this.distance,_this.elevationGain,_this.elevationLoss,_this.hilliness,_this.owned,_this.createdAt,_this.gpxUrl,_this.fitUrl,_this.drawn,const DeepCollectionEquality().hash(_this.tracks),const DeepCollectionEquality().hash(_this.waypoints),_this.thumbnailUrl);
+  return Object.hash(runtimeType,_this.id,_this.name,_this.distance,_this.elevationGain,_this.elevationLoss,_this.hilliness,_this.elevationState,_this.owned,_this.createdAt,_this.gpxUrl,_this.fitUrl,_this.drawn,const DeepCollectionEquality().hash(_this.tracks),const DeepCollectionEquality().hash(_this.waypoints),_this.thumbnailUrl);
 }
 
 @override
 String toString() {
   final _this = this as GpxPreviewDto;
-  return 'GpxPreviewDto(id: ${_this.id}, name: ${_this.name}, distance: ${_this.distance}, elevationGain: ${_this.elevationGain}, elevationLoss: ${_this.elevationLoss}, hilliness: ${_this.hilliness}, owned: ${_this.owned}, createdAt: ${_this.createdAt}, gpxUrl: ${_this.gpxUrl}, fitUrl: ${_this.fitUrl}, drawn: ${_this.drawn}, tracks: ${_this.tracks}, waypoints: ${_this.waypoints}, thumbnailUrl: ${_this.thumbnailUrl})';
+  return 'GpxPreviewDto(id: ${_this.id}, name: ${_this.name}, distance: ${_this.distance}, elevationGain: ${_this.elevationGain}, elevationLoss: ${_this.elevationLoss}, hilliness: ${_this.hilliness}, elevationState: ${_this.elevationState}, owned: ${_this.owned}, createdAt: ${_this.createdAt}, gpxUrl: ${_this.gpxUrl}, fitUrl: ${_this.fitUrl}, drawn: ${_this.drawn}, tracks: ${_this.tracks}, waypoints: ${_this.waypoints}, thumbnailUrl: ${_this.thumbnailUrl})';
 }
 
 
@@ -68,7 +69,7 @@ abstract mixin class $GpxPreviewDtoCopyWith<$Res>  {
   factory $GpxPreviewDtoCopyWith(GpxPreviewDto value, $Res Function(GpxPreviewDto) _then) = _$GpxPreviewDtoCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, double distance, double elevationGain, double elevationLoss, double hilliness, bool owned, String createdAt, String gpxUrl, String fitUrl, bool drawn, List<TrackDto> tracks, List<WaypointDto> waypoints, String? thumbnailUrl
+ String id, String name, double distance, double elevationGain, double elevationLoss, double hilliness, String elevationState, bool owned, String createdAt, String gpxUrl, String fitUrl, bool drawn, List<TrackDto> tracks, List<WaypointDto> waypoints, String? thumbnailUrl
 });
 
 
@@ -85,7 +86,7 @@ class _$GpxPreviewDtoCopyWithImpl<$Res>
 
 /// Create a copy of GpxPreviewDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? distance = null,Object? elevationGain = null,Object? elevationLoss = null,Object? hilliness = null,Object? owned = null,Object? createdAt = null,Object? gpxUrl = null,Object? fitUrl = null,Object? drawn = null,Object? tracks = null,Object? waypoints = null,Object? thumbnailUrl = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? distance = null,Object? elevationGain = null,Object? elevationLoss = null,Object? hilliness = null,Object? elevationState = null,Object? owned = null,Object? createdAt = null,Object? gpxUrl = null,Object? fitUrl = null,Object? drawn = null,Object? tracks = null,Object? waypoints = null,Object? thumbnailUrl = freezed,}) {
   return _then(GpxPreviewDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -93,7 +94,8 @@ as String,distance: null == distance ? _self.distance : distance // ignore: cast
 as double,elevationGain: null == elevationGain ? _self.elevationGain : elevationGain // ignore: cast_nullable_to_non_nullable
 as double,elevationLoss: null == elevationLoss ? _self.elevationLoss : elevationLoss // ignore: cast_nullable_to_non_nullable
 as double,hilliness: null == hilliness ? _self.hilliness : hilliness // ignore: cast_nullable_to_non_nullable
-as double,owned: null == owned ? _self.owned : owned // ignore: cast_nullable_to_non_nullable
+as double,elevationState: null == elevationState ? _self.elevationState : elevationState // ignore: cast_nullable_to_non_nullable
+as String,owned: null == owned ? _self.owned : owned // ignore: cast_nullable_to_non_nullable
 as bool,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as String,gpxUrl: null == gpxUrl ? _self.gpxUrl : gpxUrl // ignore: cast_nullable_to_non_nullable
 as String,fitUrl: null == fitUrl ? _self.fitUrl : fitUrl // ignore: cast_nullable_to_non_nullable
@@ -186,10 +188,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  double distance,  double elevationGain,  double elevationLoss,  double hilliness,  bool owned,  String createdAt,  String gpxUrl,  String fitUrl,  bool drawn,  List<TrackDto> tracks,  List<WaypointDto> waypoints,  String? thumbnailUrl)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  double distance,  double elevationGain,  double elevationLoss,  double hilliness,  String elevationState,  bool owned,  String createdAt,  String gpxUrl,  String fitUrl,  bool drawn,  List<TrackDto> tracks,  List<WaypointDto> waypoints,  String? thumbnailUrl)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _GpxPreviewDto() when $default != null:
-return $default(_that.id,_that.name,_that.distance,_that.elevationGain,_that.elevationLoss,_that.hilliness,_that.owned,_that.createdAt,_that.gpxUrl,_that.fitUrl,_that.drawn,_that.tracks,_that.waypoints,_that.thumbnailUrl);case _:
+return $default(_that.id,_that.name,_that.distance,_that.elevationGain,_that.elevationLoss,_that.hilliness,_that.elevationState,_that.owned,_that.createdAt,_that.gpxUrl,_that.fitUrl,_that.drawn,_that.tracks,_that.waypoints,_that.thumbnailUrl);case _:
   return orElse();
 
 }
@@ -207,10 +209,10 @@ return $default(_that.id,_that.name,_that.distance,_that.elevationGain,_that.ele
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  double distance,  double elevationGain,  double elevationLoss,  double hilliness,  bool owned,  String createdAt,  String gpxUrl,  String fitUrl,  bool drawn,  List<TrackDto> tracks,  List<WaypointDto> waypoints,  String? thumbnailUrl)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  double distance,  double elevationGain,  double elevationLoss,  double hilliness,  String elevationState,  bool owned,  String createdAt,  String gpxUrl,  String fitUrl,  bool drawn,  List<TrackDto> tracks,  List<WaypointDto> waypoints,  String? thumbnailUrl)  $default,) {final _that = this;
 switch (_that) {
 case _GpxPreviewDto():
-return $default(_that.id,_that.name,_that.distance,_that.elevationGain,_that.elevationLoss,_that.hilliness,_that.owned,_that.createdAt,_that.gpxUrl,_that.fitUrl,_that.drawn,_that.tracks,_that.waypoints,_that.thumbnailUrl);case _:
+return $default(_that.id,_that.name,_that.distance,_that.elevationGain,_that.elevationLoss,_that.hilliness,_that.elevationState,_that.owned,_that.createdAt,_that.gpxUrl,_that.fitUrl,_that.drawn,_that.tracks,_that.waypoints,_that.thumbnailUrl);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -227,10 +229,10 @@ return $default(_that.id,_that.name,_that.distance,_that.elevationGain,_that.ele
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  double distance,  double elevationGain,  double elevationLoss,  double hilliness,  bool owned,  String createdAt,  String gpxUrl,  String fitUrl,  bool drawn,  List<TrackDto> tracks,  List<WaypointDto> waypoints,  String? thumbnailUrl)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  double distance,  double elevationGain,  double elevationLoss,  double hilliness,  String elevationState,  bool owned,  String createdAt,  String gpxUrl,  String fitUrl,  bool drawn,  List<TrackDto> tracks,  List<WaypointDto> waypoints,  String? thumbnailUrl)?  $default,) {final _that = this;
 switch (_that) {
 case _GpxPreviewDto() when $default != null:
-return $default(_that.id,_that.name,_that.distance,_that.elevationGain,_that.elevationLoss,_that.hilliness,_that.owned,_that.createdAt,_that.gpxUrl,_that.fitUrl,_that.drawn,_that.tracks,_that.waypoints,_that.thumbnailUrl);case _:
+return $default(_that.id,_that.name,_that.distance,_that.elevationGain,_that.elevationLoss,_that.hilliness,_that.elevationState,_that.owned,_that.createdAt,_that.gpxUrl,_that.fitUrl,_that.drawn,_that.tracks,_that.waypoints,_that.thumbnailUrl);case _:
   return null;
 
 }
@@ -242,7 +244,7 @@ return $default(_that.id,_that.name,_that.distance,_that.elevationGain,_that.ele
 @JsonSerializable()
 
 class _GpxPreviewDto implements GpxPreviewDto {
-  const _GpxPreviewDto({required this.id, required this.name, required this.distance, required this.elevationGain, required this.elevationLoss, required this.hilliness, required this.owned, required this.createdAt, required this.gpxUrl, required this.fitUrl, required this.drawn, required  List<TrackDto> tracks, required  List<WaypointDto> waypoints, this.thumbnailUrl}): _tracks = tracks,_waypoints = waypoints;
+  const _GpxPreviewDto({required this.id, required this.name, required this.distance, required this.elevationGain, required this.elevationLoss, required this.hilliness, required this.elevationState, required this.owned, required this.createdAt, required this.gpxUrl, required this.fitUrl, required this.drawn, required  List<TrackDto> tracks, required  List<WaypointDto> waypoints, this.thumbnailUrl}): _tracks = tracks,_waypoints = waypoints;
   factory _GpxPreviewDto.fromJson(Map<String, dynamic> json) => _$GpxPreviewDtoFromJson(json);
 
 /// Public identifier used in URLs
@@ -257,6 +259,8 @@ class _GpxPreviewDto implements GpxPreviewDto {
 @override final  double elevationLoss;
 /// Elevation gain per kilometer
 @override final  double hilliness;
+/// Where the elevation profile stands. PENDING: the fast profile (Mapterhorn) is stored and the precise IGN LiDAR HD recomputation is scheduled. HD: the precise profile. FAST: the fast profile is kept, the HD recomputation failed.
+@override final  String elevationState;
 /// Whether the current user created this preview
 @override final  bool owned;
 /// Creation timestamp
@@ -301,18 +305,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _GpxPreviewDto&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.distance, distance) || other.distance == distance)&&(identical(other.elevationGain, elevationGain) || other.elevationGain == elevationGain)&&(identical(other.elevationLoss, elevationLoss) || other.elevationLoss == elevationLoss)&&(identical(other.hilliness, hilliness) || other.hilliness == hilliness)&&(identical(other.owned, owned) || other.owned == owned)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.gpxUrl, gpxUrl) || other.gpxUrl == gpxUrl)&&(identical(other.fitUrl, fitUrl) || other.fitUrl == fitUrl)&&(identical(other.drawn, drawn) || other.drawn == drawn)&&const DeepCollectionEquality().equals(other.tracks, _tracks)&&const DeepCollectionEquality().equals(other.waypoints, _waypoints)&&(identical(other.thumbnailUrl, thumbnailUrl) || other.thumbnailUrl == thumbnailUrl));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _GpxPreviewDto&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.distance, distance) || other.distance == distance)&&(identical(other.elevationGain, elevationGain) || other.elevationGain == elevationGain)&&(identical(other.elevationLoss, elevationLoss) || other.elevationLoss == elevationLoss)&&(identical(other.hilliness, hilliness) || other.hilliness == hilliness)&&(identical(other.elevationState, elevationState) || other.elevationState == elevationState)&&(identical(other.owned, owned) || other.owned == owned)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.gpxUrl, gpxUrl) || other.gpxUrl == gpxUrl)&&(identical(other.fitUrl, fitUrl) || other.fitUrl == fitUrl)&&(identical(other.drawn, drawn) || other.drawn == drawn)&&const DeepCollectionEquality().equals(other.tracks, _tracks)&&const DeepCollectionEquality().equals(other.waypoints, _waypoints)&&(identical(other.thumbnailUrl, thumbnailUrl) || other.thumbnailUrl == thumbnailUrl));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,id,name,distance,elevationGain,elevationLoss,hilliness,owned,createdAt,gpxUrl,fitUrl,drawn,const DeepCollectionEquality().hash(_tracks),const DeepCollectionEquality().hash(_waypoints),thumbnailUrl);
+    return Object.hash(runtimeType,id,name,distance,elevationGain,elevationLoss,hilliness,elevationState,owned,createdAt,gpxUrl,fitUrl,drawn,const DeepCollectionEquality().hash(_tracks),const DeepCollectionEquality().hash(_waypoints),thumbnailUrl);
 }
 
 @override
 String toString() {
-    return 'GpxPreviewDto(id: $id, name: $name, distance: $distance, elevationGain: $elevationGain, elevationLoss: $elevationLoss, hilliness: $hilliness, owned: $owned, createdAt: $createdAt, gpxUrl: $gpxUrl, fitUrl: $fitUrl, drawn: $drawn, tracks: $tracks, waypoints: $waypoints, thumbnailUrl: $thumbnailUrl)';
+    return 'GpxPreviewDto(id: $id, name: $name, distance: $distance, elevationGain: $elevationGain, elevationLoss: $elevationLoss, hilliness: $hilliness, elevationState: $elevationState, owned: $owned, createdAt: $createdAt, gpxUrl: $gpxUrl, fitUrl: $fitUrl, drawn: $drawn, tracks: $tracks, waypoints: $waypoints, thumbnailUrl: $thumbnailUrl)';
 }
 
 
@@ -323,7 +327,7 @@ abstract mixin class _$GpxPreviewDtoCopyWith<$Res> implements $GpxPreviewDtoCopy
   factory _$GpxPreviewDtoCopyWith(_GpxPreviewDto value, $Res Function(_GpxPreviewDto) _then) = __$GpxPreviewDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, double distance, double elevationGain, double elevationLoss, double hilliness, bool owned, String createdAt, String gpxUrl, String fitUrl, bool drawn, List<TrackDto> tracks, List<WaypointDto> waypoints, String? thumbnailUrl
+ String id, String name, double distance, double elevationGain, double elevationLoss, double hilliness, String elevationState, bool owned, String createdAt, String gpxUrl, String fitUrl, bool drawn, List<TrackDto> tracks, List<WaypointDto> waypoints, String? thumbnailUrl
 });
 
 
@@ -340,7 +344,7 @@ class __$GpxPreviewDtoCopyWithImpl<$Res>
 
 /// Create a copy of GpxPreviewDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? distance = null,Object? elevationGain = null,Object? elevationLoss = null,Object? hilliness = null,Object? owned = null,Object? createdAt = null,Object? gpxUrl = null,Object? fitUrl = null,Object? drawn = null,Object? tracks = null,Object? waypoints = null,Object? thumbnailUrl = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? distance = null,Object? elevationGain = null,Object? elevationLoss = null,Object? hilliness = null,Object? elevationState = null,Object? owned = null,Object? createdAt = null,Object? gpxUrl = null,Object? fitUrl = null,Object? drawn = null,Object? tracks = null,Object? waypoints = null,Object? thumbnailUrl = freezed,}) {
   return _then(_GpxPreviewDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -348,7 +352,8 @@ as String,distance: null == distance ? _self.distance : distance // ignore: cast
 as double,elevationGain: null == elevationGain ? _self.elevationGain : elevationGain // ignore: cast_nullable_to_non_nullable
 as double,elevationLoss: null == elevationLoss ? _self.elevationLoss : elevationLoss // ignore: cast_nullable_to_non_nullable
 as double,hilliness: null == hilliness ? _self.hilliness : hilliness // ignore: cast_nullable_to_non_nullable
-as double,owned: null == owned ? _self.owned : owned // ignore: cast_nullable_to_non_nullable
+as double,elevationState: null == elevationState ? _self.elevationState : elevationState // ignore: cast_nullable_to_non_nullable
+as String,owned: null == owned ? _self.owned : owned // ignore: cast_nullable_to_non_nullable
 as bool,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as String,gpxUrl: null == gpxUrl ? _self.gpxUrl : gpxUrl // ignore: cast_nullable_to_non_nullable
 as String,fitUrl: null == fitUrl ? _self.fitUrl : fitUrl // ignore: cast_nullable_to_non_nullable

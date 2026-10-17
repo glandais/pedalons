@@ -1,5 +1,6 @@
 export * from './admin-beta-signups/admin-beta-signups.ts'
 export * from './admin-domains/admin-domains.ts'
+export * from './admin-elevation/admin-elevation.ts'
 export * from './admin-reports/admin-reports.ts'
 export * from './admin-teams/admin-teams.ts'
 export * from './admin-thumbnails/admin-thumbnails.ts'
