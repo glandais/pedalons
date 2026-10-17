@@ -9,11 +9,11 @@ import fr.pedalons.domain.trip.Trip;
 import fr.pedalons.domain.trip.TripStage;
 import fr.pedalons.enums.AssetType;
 import fr.pedalons.service.asset.AssetService;
-import fr.pedalons.service.asset.response.AssetWithFile;
 import io.github.glandais.elevation.CoordinatesElevation;
 import io.github.glandais.elevation.LatLonElevation;
 import io.github.glandais.engine.path.Path;
 import io.github.glandais.engine.path.PathJvm;
+import io.hypersistence.tsid.TSID;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.awt.Color;
@@ -196,10 +196,6 @@ public class ThumbnailService {
       return;
     }
 
-    // Remove old thumbnails: one that no longer matches the routes is worse than none, which the
-    // clients replace with their own placeholder
-    removeExistingThumbnails(entity, lightType, darkType);
-
     // Build combined GPX with one path per route track
     List<ThumbnailTrack> tracks = new ArrayList<>();
     for (Route route : routes) {
@@ -210,6 +206,9 @@ public class ThumbnailService {
 
     List<Path> paths = buildPaths(tracks);
     if (paths.isEmpty()) {
+      // One that no longer matches the routes is worse than none, which the clients replace with
+      // their own placeholder
+      removeExistingThumbnails(entity, lightType, darkType);
       return;
     }
 
@@ -264,8 +263,11 @@ public class ThumbnailService {
   }
 
   /**
-   * Draws first, and only then creates the asset: a failed render leaves the entity without this
-   * thumbnail rather than with an asset whose file is missing or wrong.
+   * Draws first, and only then touches the asset: a failed render leaves the entity without this
+   * thumbnail rather than with an asset whose file is missing or wrong. The asset row of a previous
+   * thumbnail is kept and given the new file, so the URLs already published stay valid
+   * (docs/LEDGER_*.md API-128). Runs in the caller's transaction: {@code replaceStoredFile} cleans
+   * the files up according to its outcome.
    */
   private void generateThumbnail(
       TeamEntity entity,
@@ -275,41 +277,40 @@ public class ThumbnailService {
       AssetType assetType,
       String fileName) {
     File rendered = null;
+    File temp = null;
+    long fileId = TSID.Factory.getTsid().toLong();
+    AssetService.UploadedFile stored;
     try {
       rendered = File.createTempFile("thumbnail-", ".png");
       renderer.render(rendered, paths, style, colors);
-      AssetWithFile assetFile = assetService.addAsset(entity, assetType, fileName);
-      entity.getAssets().add(assetFile.asset());
-      try {
-        Files.move(
-            rendered.toPath(), assetFile.file().toPath(), StandardCopyOption.REPLACE_EXISTING);
-        assetService.uploadAssetFile(assetFile.asset());
-      } catch (Exception e) {
-        entity.getAssets().remove(assetFile.asset());
-        throw e;
-      }
-      LOG.infov(
-          "Generated {0} thumbnail for {1} {2}",
-          style, entity.getClass().getSimpleName(), entity.getId());
+      temp = assetService.createTempFile(fileId);
+      Files.move(rendered.toPath(), temp.toPath(), StandardCopyOption.REPLACE_EXISTING);
+      stored = assetService.uploadTempFileToS3(entity.getTeam(), assetType, fileId, fileName);
     } catch (Exception e) {
       LOG.warnv(
           "Thumbnail generation ({0}) failed for {1} {2}, left without one: {3}",
           style, entity.getClass().getSimpleName(), entity.getId(), e.getMessage());
+      // A missing thumbnail beats a wrong one
+      assetService.removeAssetsOfTypes(entity, List.of(assetType));
+      return;
     } finally {
       if (rendered != null) {
         rendered.delete();
       }
+      // Still there only when the upload did not complete (or does not delete it itself).
+      if (temp != null) {
+        temp.delete();
+      }
     }
+    assetService.putStoredFile(
+        entity.getTeam(), entity, assetType, fileId, fileName, stored, false);
+    LOG.infov(
+        "Generated {0} thumbnail for {1} {2}",
+        style, entity.getClass().getSimpleName(), entity.getId());
   }
 
   private void removeExistingThumbnails(
       TeamEntity entity, AssetType lightType, AssetType darkType) {
-    entity
-        .getAssets()
-        .removeIf(
-            asset -> {
-              AssetType type = asset.getType();
-              return type == lightType || type == darkType;
-            });
+    assetService.removeAssetsOfTypes(entity, List.of(lightType, darkType));
   }
 }

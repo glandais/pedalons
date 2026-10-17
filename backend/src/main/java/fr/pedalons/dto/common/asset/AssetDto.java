@@ -9,8 +9,17 @@ public record AssetDto(
     @Schema(description = "ID (TSID)", required = true) String id,
     @Schema(description = "Filename", required = true) String fileName,
     @Schema(description = "Content-Type", required = true) String contentType,
-    @Schema(description = "url", required = true) String url,
-    @Schema(description = "image template url") @Nullable String imageUrl,
+    @Schema(
+            description =
+                "Download URL. Opaque: it may carry a query string (a cache-buster that changes"
+                    + " when the file is replaced); use it as is.",
+            required = true)
+        String url,
+    @Schema(
+            description =
+                "Image URL template. Opaque: it may carry a query string (a cache-buster that"
+                    + " changes when the file is replaced); substitute {size} only.")
+        @Nullable String imageUrl,
     @Schema(description = "image dimensions") @Nullable AssetDimensionsDto imageDimensions,
     @Schema(
             description =

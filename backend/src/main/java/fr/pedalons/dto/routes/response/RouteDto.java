@@ -42,7 +42,7 @@ public record RouteDto(
             description =
                 "URL template of the route's thumbnail, light variant if there is one, else dark."
                     + " Saves a compact row from carrying media.assets just to find the map"
-                    + " preview.")
+                    + " preview. Opaque URL: may carry a query string; substitute {size} only.")
         String thumbnailUrl,
     @Schema(description = "Distance in meters", required = true) Float distance,
     @Schema(description = "Total elevation gain in meters", required = true) Float elevationGain,

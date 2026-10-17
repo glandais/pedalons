@@ -153,10 +153,10 @@ public class GpsRouteSyncService {
             .map(RouteRow::routeId)
             .distinct()
             .toList();
-    Map<Long, Long> gpxAssets = syncRepository.findGpxAssetIds(domainId, unmanaged);
+    Map<Long, Long> contentKeys = syncRepository.findGpxContentKeys(domainId, unmanaged);
     Map<Long, Map<GpsServiceType, RouteSyncStatus>> merged = new HashMap<>();
     for (RouteRow row : rows) {
-      GpsRouteSyncState state = routeState(row, syncing, gpxAssets.get(row.routeId()));
+      GpsRouteSyncState state = routeState(row, syncing, contentKeys.get(row.routeId()));
       if (state == null) {
         continue;
       }
@@ -188,10 +188,10 @@ public class GpsRouteSyncService {
    * automatic row never sent says nothing.
    *
    * @param syncing the sync is on
-   * @param currentGpxAssetId the route's current GPX, looked up for unmanaged rows only
+   * @param currentGpxContentKey the content key of the route's current GPX, looked up for unmanaged rows only
    */
   static @Nullable GpsRouteSyncState routeState(
-      RouteRow row, boolean syncing, @Nullable Long currentGpxAssetId) {
+      RouteRow row, boolean syncing, @Nullable Long currentGpxContentKey) {
     if (row.reconnectRequired()) {
       return GpsRouteSyncState.RECONNECT_REQUIRED;
     }
@@ -211,10 +211,10 @@ public class GpsRouteSyncService {
     }
     // No GPX left on the route (or no name recorded): nothing to compare with, what was sent
     // stands.
-    if (currentGpxAssetId == null || row.desiredName() == null) {
+    if (currentGpxContentKey == null || row.desiredName() == null) {
       return GpsRouteSyncState.SENT;
     }
-    return GpsSyncNames.hash(currentGpxAssetId, row.desiredName()).equals(row.syncedHash())
+    return GpsSyncNames.hash(currentGpxContentKey, row.desiredName()).equals(row.syncedHash())
         ? GpsRouteSyncState.SENT
         : GpsRouteSyncState.OUTDATED;
   }
@@ -368,7 +368,7 @@ public class GpsRouteSyncService {
         tokens.auth(connection, credential),
         routeGpx.read(asset),
         name,
-        GpsSyncNames.hash(asset.getId(), name),
+        GpsSyncNames.hash(GpsSyncNames.contentKey(asset.getId(), asset.getContentRevision()), name),
         externalId);
   }
 

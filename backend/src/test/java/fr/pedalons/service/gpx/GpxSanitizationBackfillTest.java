@@ -262,6 +262,30 @@ class GpxSanitizationBackfillTest extends AbstractBaseTest {
     assertFalse(GpxSanitizationBackfill.isDirty("<trkpt><ele>12.0</ele></trkpt>"));
   }
 
+  /**
+   * docs/LEDGER_*.md API-128: a track edit may replace the file of an asset while the backfill is
+   * rewriting the old one. The size it read belongs to the old file, so it must not be recorded.
+   */
+  @Test
+  void updateSize_isANoOpWhenTheAssetPointsAtAnotherFile() throws Exception {
+    gpxProcessingService.createTracks(route, gpxProcessingService.parseGpx(activity()));
+    Asset asset = route.getAssets().iterator().next();
+    Long recorded = fileSize(asset);
+
+    QuarkusTransaction.requiringNew()
+        .run(() -> assetRepository.updateSize(asset.getId(), asset.getFileId() + 1, 1L));
+    assertEquals(recorded, fileSize(asset), "a size read from another file must not be recorded");
+
+    QuarkusTransaction.requiringNew()
+        .run(() -> assetRepository.updateSize(asset.getId(), asset.getFileId(), 1L));
+    assertEquals(1L, fileSize(asset), "the size of the current file is recorded");
+  }
+
+  private Long fileSize(Asset asset) {
+    return QuarkusTransaction.requiringNew()
+        .call(() -> assetRepository.findById(asset.getId()).getFileSize());
+  }
+
   // ==================== Helpers ====================
 
   private static Path activity() {

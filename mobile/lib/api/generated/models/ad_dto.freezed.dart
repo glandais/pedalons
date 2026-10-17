@@ -32,7 +32,7 @@ mixin _$AdDto {
  String get createdByDisplayName;/// Whether the ad is soft-deleted
  bool get deleted;/// The team's AD tags the ad carries, sorted by label. Empty when it carries none.
  List<TagDto> get tags;/// Plain-text opening of the description, flattened (links become their label) and cut on a word boundary at about 200 characters. Null when the description holds no text. Lets a list row render its two lines without the description being sent at all — see the 'view' parameter.
- String? get excerpt;/// URL template of the ad's first picture, the one a card shows. Saves a compact row from carrying media.assets just to find it.
+ String? get excerpt;/// URL template of the ad's first picture, the one a card shows. Saves a compact row from carrying media.assets just to find it. Opaque URL: may carry a query string; substitute {size} only.
  String? get thumbnailUrl;/// Price
  num? get price;/// Period the price applies to, for a rental — render as 'price / period'. Null for a sale, and for a rental whose period has not been set.
  String? get rentalPeriod;/// Location description
@@ -335,7 +335,7 @@ class _AdDto implements AdDto {
 
 /// Plain-text opening of the description, flattened (links become their label) and cut on a word boundary at about 200 characters. Null when the description holds no text. Lets a list row render its two lines without the description being sent at all — see the 'view' parameter.
 @override final  String? excerpt;
-/// URL template of the ad's first picture, the one a card shows. Saves a compact row from carrying media.assets just to find it.
+/// URL template of the ad's first picture, the one a card shows. Saves a compact row from carrying media.assets just to find it. Opaque URL: may carry a query string; substitute {size} only.
 @override final  String? thumbnailUrl;
 /// Price
 @override final  num? price;

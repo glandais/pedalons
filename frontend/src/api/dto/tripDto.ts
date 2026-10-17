@@ -58,11 +58,11 @@ export interface TripDto {
   stages: TripStageDto[]
   /** The first participants of the trip (at most 8), earliest registrations first — enough to draw avatars; empty on a list row. participantCount is the total; the whole list is paginated and searched by GET …/trips/{tripSlug}/participants. */
   participants: PublicUserDto[]
-  /** Thumbnail URL (light) */
+  /** Thumbnail URL (light). Opaque URL: may carry a query string; substitute {size} only. */
   thumbnailLightUrl?: string
-  /** Thumbnail URL (dark) */
+  /** Thumbnail URL (dark). Opaque URL: may carry a query string; substitute {size} only. */
   thumbnailDarkUrl?: string
-  /** The one thumbnail to show when the client does not theme its cards: the light variant if there is one, else the dark one. Saves a compact row from carrying media.assets just to find a picture. */
+  /** The one thumbnail to show when the client does not theme its cards: the light variant if there is one, else the dark one. Saves a compact row from carrying media.assets just to find a picture. Opaque URL: may carry a query string; substitute {size} only. */
   thumbnailUrl?: string
   /** Whether the trip is soft-deleted */
   deleted: boolean

@@ -119,14 +119,14 @@ public class GpsRouteSyncPlanner {
         routeIds.add(routeId);
       }
     }
-    Map<Long, Long> gpxAssets = syncRepository.findGpxAssetIds(domainId, routeIds);
+    Map<Long, Long> contentKeys = syncRepository.findGpxContentKeys(domainId, routeIds);
 
     Map<Key, Desired> desired = new LinkedHashMap<>();
     for (GpsSyncTargetRow target : targets) {
       Long routeId = target.effectiveRouteId();
       String routeName = target.effectiveRouteName();
-      Long assetId = routeId != null ? gpxAssets.get(routeId) : null;
-      if (routeId == null || routeName == null || assetId == null) {
+      Long contentKey = routeId != null ? contentKeys.get(routeId) : null;
+      if (routeId == null || routeName == null || contentKey == null) {
         // The group's route has no GPX: nothing to send. Not its ride's route instead — the
         // organiser chose this one for the group (D2).
         continue;
@@ -141,7 +141,7 @@ public class GpsRouteSyncPlanner {
               target.userId(),
               target.groupId(),
               routeId,
-              GpsSyncNames.hash(assetId, name),
+              GpsSyncNames.hash(contentKey, name),
               name,
               target.groupStartAt()));
     }

@@ -368,7 +368,7 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
     tagService.replaceTags(route, request.tagIds());
 
     // Read before the try below: a file refused here (unparseable, or too long — SEC-6) keeps its
-    // own error code and leaves the route's current files alone, which the catch would delete.
+    // own error code instead of being wrapped as GPX_FAILURE by the catch.
     GpxDocument gpx = null;
     if (gpxPath != null) {
       gpx = gpxProcessingService.parseGpx(gpxPath);
@@ -382,8 +382,8 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
     try {
       // If GPX file provided, update track and climbs
       if (gpx != null) {
-        // Delete old GPX files
-        gpxProcessingService.deleteRouteFiles(route);
+        // The asset rows are kept and given the new files by persistGpxData (docs/LEDGER_*.md
+        // API-128); a rollback restores them and the transaction synchronizations clean the files.
         route.getTracks().clear();
         route.getWaypoints().clear();
 
@@ -403,7 +403,6 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
         route.setWindDirection(getWindDirection(metadata));
       }
     } catch (Exception e) {
-      gpxProcessingService.deleteRouteFiles(route);
       throw new BusinessException(ErrorCode.GPX_FAILURE, e);
     }
     if (gpx != null) {

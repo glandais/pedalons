@@ -188,7 +188,7 @@ class CalendarEventFieldsTest extends AbstractResourceTest {
         .then()
         .statusCode(200)
         .body(rideEvent("thumbnailUrl"), startsWith("/api/download/public/images/" + team1Slug))
-        .body(rideEvent("thumbnailUrl"), endsWith("/{size}"));
+        .body(rideEvent("thumbnailUrl"), containsString("/{size}?v="));
   }
 
   @Test
@@ -231,7 +231,7 @@ class CalendarEventFieldsTest extends AbstractResourceTest {
     String lightUrl = response.getString(rideEvent("thumbnailLightUrl"));
     String darkUrl = response.getString(rideEvent("thumbnailDarkUrl"));
 
-    assertThat(lightUrl, endsWith("/{size}"));
+    assertThat(lightUrl, containsString("/{size}?v="));
     assertThat(darkUrl, containsString(TsidUtils.toString(dark.getId())));
     // Two genuinely different assets — the whole reason for exposing both.
     assertThat(darkUrl, not(equalTo(lightUrl)));
@@ -247,7 +247,7 @@ class CalendarEventFieldsTest extends AbstractResourceTest {
     String darkUrl = response.getString(rideEvent("thumbnailDarkUrl"));
 
     assertThat(rideEventFields(response), not(hasKey("thumbnailLightUrl")));
-    assertThat(darkUrl, endsWith("/{size}"));
+    assertThat(darkUrl, containsString("/{size}?v="));
     assertThat(response.getString(rideEvent("thumbnailUrl")), equalTo(darkUrl));
   }
 
@@ -263,7 +263,7 @@ class CalendarEventFieldsTest extends AbstractResourceTest {
 
     JsonPath response = getEvents();
 
-    assertThat(response.getString(rideEvent("thumbnailLightUrl")), endsWith("/{size}"));
+    assertThat(response.getString(rideEvent("thumbnailLightUrl")), containsString("/{size}?v="));
     assertThat(rideEventFields(response), not(hasKey("thumbnailDarkUrl")));
   }
 

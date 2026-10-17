@@ -152,11 +152,15 @@ public class TripDto implements PublicationDto {
   final List<PublicUserDto> participants;
 
   @Nullable
-  @Schema(description = "Thumbnail URL (light)")
+  @Schema(
+      description =
+          "Thumbnail URL (light). Opaque URL: may carry a query string; substitute {size} only.")
   final String thumbnailLightUrl;
 
   @Nullable
-  @Schema(description = "Thumbnail URL (dark)")
+  @Schema(
+      description =
+          "Thumbnail URL (dark). Opaque URL: may carry a query string; substitute {size} only.")
   final String thumbnailDarkUrl;
 
   @Nullable
@@ -164,7 +168,8 @@ public class TripDto implements PublicationDto {
       description =
           "The one thumbnail to show when the client does not theme its cards: the light variant if"
               + " there is one, else the dark one. Saves a compact row from carrying media.assets"
-              + " just to find a picture.")
+              + " just to find a picture. Opaque URL: may carry a query string; substitute {size}"
+              + " only.")
   final String thumbnailUrl;
 
   @Schema(description = "Whether the trip is soft-deleted", required = true)

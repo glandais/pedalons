@@ -19,8 +19,8 @@ mixin _$AssetDto {
 /// ID (TSID)
  String get id;/// Filename
  String get fileName;/// Content-Type
- String get contentType;/// url
- String get url;/// image template url
+ String get contentType;/// Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.
+ String get url;/// Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.
  String? get imageUrl;/// image dimensions
  AssetDimensionsDto? get imageDimensions;/// Size in bytes of the file a download returns (an image as re-encoded on upload); null while not yet known. Ignored in requests.
  int? get size;
@@ -249,9 +249,9 @@ class _AssetDto implements AssetDto {
 @override final  String fileName;
 /// Content-Type
 @override final  String contentType;
-/// url
+/// Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.
 @override final  String url;
-/// image template url
+/// Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.
 @override final  String? imageUrl;
 /// image dimensions
 @override final  AssetDimensionsDto? imageDimensions;

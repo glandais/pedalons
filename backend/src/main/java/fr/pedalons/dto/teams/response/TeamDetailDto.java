@@ -41,7 +41,8 @@ public record TeamDetailDto(
             description =
                 "URL template of the team's logo, when it has one. Same picture as"
                     + " about.assets.logo, hoisted so a card does not have to walk the asset"
-                    + " inventory to find it.")
+                    + " inventory to find it. Opaque URL: may carry a query string; substitute"
+                    + " {size} only.")
         String logoUrl,
     @Schema(description = "Additional team pages") List<TeamPageSummaryDto> pages,
     @Schema(description = "Whether the team is public", required = true) Visibility visibility,

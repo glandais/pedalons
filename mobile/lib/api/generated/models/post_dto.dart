@@ -63,7 +63,7 @@ abstract class PostDto with _$PostDto {
     /// Plain-text opening of the markdown body, flattened (links become their label) and cut on a word boundary at about 200 characters. Null when the body holds no text. Lets a list row render its two lines without the body being sent at all — see the 'view' parameter.
     String? excerpt,
 
-    /// URL template of the post's first image, the one a card shows. Saves a compact row from carrying media.assets just to find a picture.
+    /// URL template of the post's first image, the one a card shows. Saves a compact row from carrying media.assets just to find a picture. Opaque URL: may carry a query string; substitute {size} only.
     String? thumbnailUrl,
 
     /// Publication timestamp

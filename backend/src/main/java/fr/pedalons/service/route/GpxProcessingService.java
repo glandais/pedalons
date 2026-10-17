@@ -381,9 +381,9 @@ public class GpxProcessingService {
     User creator = pedalonsContext.getUser();
     Long routeId = route.getId();
     Team team = route.getTeam();
+    // Outside the try: the catches below delete what was uploaded before the failure
+    List<PreparedAsset> uploadedAssets = new ArrayList<>();
     try (ComputedGpx computed = computeGpx(gpx)) {
-      List<PreparedAsset> uploadedAssets = new ArrayList<>();
-
       uploadedAssets.add(
           prepareAndUpload(
               team,
@@ -453,8 +453,10 @@ public class GpxProcessingService {
 
       return new GpxProcessingResult(computed.aggregated(), tracks, waypoints, uploadedAssets);
     } catch (PedalonsException e) {
+      cleanupUploadedAssets(uploadedAssets, team);
       throw e;
     } catch (Exception e) {
+      cleanupUploadedAssets(uploadedAssets, team);
       LOG.errorv("GPX processing failed for route {0}", routeId, e);
       throw new BusinessException(ErrorCode.GPX_FAILURE, e);
     }
@@ -491,25 +493,43 @@ public class GpxProcessingService {
    */
   @Transactional(Transactional.TxType.REQUIRED)
   public TrackMetadata persistGpxData(Route route, GpxProcessingResult result) {
-    route.getAssets().removeIf(a -> ROUTE_ASSET_TYPES.contains(a.getType()));
-
+    // Before anything can throw: files uploaded outside the transaction must not outlive a
+    // rollback, whatever type the loop below reaches (docs/LEDGER_*.md API-128).
     for (PreparedAsset pa : result.uploadedAssets()) {
-      assetService.persistAsset(
-          route.getTeam(), route, pa.type(), pa.fileId(), pa.fileName(), pa.stored());
+      assetService.deleteUnlessCommitted(assetService.getAssetKey(route.getTeam(), pa.fileId()));
     }
-
+    // First: updateRoute cleared these orphan-removal collections, and no query may run between a
+    // clear and its refill (HHH90032003 would delete the elements for good).
     result.waypoints().forEach(route::addWaypoint);
     result.tracks().forEach(route::addTrack);
+
+    // The asset rows stay (same id, so the published URLs keep working), only their file changes.
+    // In memory only, never a clear-and-refill of the set. docs/LEDGER_*.md API-128.
+    for (AssetType type : ROUTE_ASSET_TYPES) {
+      PreparedAsset pa =
+          result.uploadedAssets().stream().filter(p -> p.type() == type).findFirst().orElse(null);
+      if (pa == null) {
+        // The render failed: a missing thumbnail beats the previous track's
+        assetService.removeAssetsOfTypes(route, List.of(type));
+        continue;
+      }
+      boolean newContent =
+          type == AssetType.ROUTE_ORIGINAL_GPX
+              || type == AssetType.ROUTE_FILTERED_GPX
+              || type == AssetType.ROUTE_FIT;
+      assetService.putStoredFile(
+          route.getTeam(), route, type, pa.fileId(), pa.fileName(), pa.stored(), newContent);
+    }
 
     return result.metadata();
   }
 
   /**
-   * Cleans up S3 objects from a partially completed {@link #processGpxData} call. Call this in
-   * error handlers when the DB persist phase has not yet run (assets not in DB yet).
+   * Deletes the S3 objects a {@link #processGpxData} call uploaded before failing: no row points at
+   * them yet.
    */
-  public void cleanupUploadedAssets(GpxProcessingResult result, Team team) {
-    for (PreparedAsset pa : result.uploadedAssets()) {
+  private void cleanupUploadedAssets(List<PreparedAsset> uploaded, Team team) {
+    for (PreparedAsset pa : uploaded) {
       try {
         storageService.delete(assetService.getAssetKey(team, pa.fileId()));
       } catch (Exception e) {

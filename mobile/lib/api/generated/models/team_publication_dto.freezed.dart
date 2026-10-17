@@ -20,7 +20,7 @@ mixin _$TeamPublicationDto {
  String get id;/// Team name
  String get name;/// Team URL slug
  String get slug;/// Whether the team is public
- String get visibility;/// URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team.
+ String get visibility;/// URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team. Opaque URL: may carry a query string; substitute {size} only.
  String? get logoUrl;
 /// Create a copy of TeamPublicationDto
 /// with the given fields replaced by the non-null parameter values.
@@ -235,7 +235,7 @@ class _TeamPublicationDto implements TeamPublicationDto {
 @override final  String slug;
 /// Whether the team is public
 @override final  String visibility;
-/// URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team.
+/// URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team. Opaque URL: may carry a query string; substitute {size} only.
 @override final  String? logoUrl;
 
 /// Create a copy of TeamPublicationDto

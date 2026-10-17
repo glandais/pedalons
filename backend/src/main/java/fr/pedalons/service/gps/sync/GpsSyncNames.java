@@ -8,6 +8,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.HexFormat;
+import org.jspecify.annotations.Nullable;
 
 /**
  * The names and fingerprints of the routes sent to GPS services (docs/LEDGER_*.md API-120 §3.5,
@@ -57,15 +58,26 @@ public final class GpsSyncNames {
   }
 
   /**
-   * The fingerprint of what is sent: the GPX asset and the name. A new GPX makes a new asset, so the
-   * fingerprint changes exactly when the trace does — the sanitisation backfill, which rewrites a
-   * file in place, sends nothing again (D4).
+   * What identifies the content of a GPX asset: its content revision when the file was replaced in
+   * place by a track edit, else its id. Rows never replaced have no revision, so their key (and
+   * therefore their hash) is what it was before the revision existed: no mass re-push.
+   * docs/LEDGER_*.md API-128.
    */
-  public static String hash(Long gpxAssetId, String name) {
+  public static Long contentKey(Long assetId, @Nullable Long contentRevision) {
+    return contentRevision != null ? contentRevision : assetId;
+  }
+
+  /**
+   * The fingerprint of what is sent: the GPX content key (see {@link #contentKey}) and the name. A
+   * track edit replaces the file under the same asset row but stamps a new content revision, so the
+   * fingerprint changes exactly when the trace does — the sanitisation backfill, which rewrites a
+   * file in place without touching the revision, sends nothing again (D4). docs/LEDGER_*.md API-128.
+   */
+  public static String hash(Long contentKey, String name) {
     try {
       byte[] digest =
           MessageDigest.getInstance("SHA-256")
-              .digest((gpxAssetId + "|" + name).getBytes(StandardCharsets.UTF_8));
+              .digest((contentKey + "|" + name).getBytes(StandardCharsets.UTF_8));
       return HexFormat.of().formatHex(digest);
     } catch (NoSuchAlgorithmException e) {
       throw new IllegalStateException("SHA-256 unavailable", e);

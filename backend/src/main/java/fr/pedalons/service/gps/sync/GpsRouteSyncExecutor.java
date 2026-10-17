@@ -225,7 +225,9 @@ public class GpsRouteSyncExecutor {
     String name = claim.desiredName() != null ? claim.desiredName() : route.getName();
     byte[] gpx = routeGpx.read(asset.get());
     // The hash of what is read now, not the planner's: what reaches the service is this.
-    String hash = GpsSyncNames.hash(asset.get().getId(), name);
+    String hash =
+        GpsSyncNames.hash(
+            GpsSyncNames.contentKey(asset.get().getId(), asset.get().getContentRevision()), name);
     RouteMeta meta =
         new RouteMeta(
             name,

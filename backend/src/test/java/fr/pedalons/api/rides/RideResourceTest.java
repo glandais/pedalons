@@ -828,7 +828,7 @@ class RideResourceTest extends AbstractResourceTest {
         .body("groups[0].thumbnailLightUrl", containsString(TsidUtils.toString(longLight.getId())))
         .body("groups[0].thumbnailDarkUrl", containsString(TsidUtils.toString(longDark.getId())))
         .body("groups[0].thumbnailUrl", containsString(TsidUtils.toString(longLight.getId())))
-        .body("groups[0].thumbnailUrl", endsWith("/{size}"))
+        .body("groups[0].thumbnailUrl", containsString("/{size}?v="))
         // Only a dark variant: the light one is absent and the collapsed one falls to dark.
         .body("groups[1]", not(hasKey("thumbnailLightUrl")))
         .body("groups[1].thumbnailUrl", containsString(TsidUtils.toString(shortDark.getId())))

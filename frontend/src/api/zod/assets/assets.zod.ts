@@ -19,8 +19,17 @@ export const UploadAssetResponse = zod.object({
   id: zod.string().describe('ID (TSID)'),
   fileName: zod.string().describe('Filename'),
   contentType: zod.string().describe('Content-Type'),
-  url: zod.string().describe('url'),
-  imageUrl: zod.string().optional().describe('image template url'),
+  url: zod
+    .string()
+    .describe(
+      'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+    ),
+  imageUrl: zod
+    .string()
+    .optional()
+    .describe(
+      'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+    ),
   imageDimensions: zod
     .object({
       width: zod.int().optional(),

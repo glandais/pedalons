@@ -57,7 +57,7 @@ export const CreatePreviewResponse = zod
       .string()
       .optional()
       .describe(
-        'Rendered map thumbnail template URL (with a {size} placeholder), used for link previews; null when no thumbnail was generated'
+        'Rendered map thumbnail template URL (with a {size} placeholder), used for link previews; null when no thumbnail was generated. Opaque URL: may carry a query string; substitute {size} only.'
       ),
     gpxUrl: zod.string().describe('URL to download the analysed GPX file'),
     fitUrl: zod.string().describe('URL to download the analysed track as a FIT file'),
@@ -192,7 +192,7 @@ export const CreatePreviewFromPointsResponse = zod
       .string()
       .optional()
       .describe(
-        'Rendered map thumbnail template URL (with a {size} placeholder), used for link previews; null when no thumbnail was generated'
+        'Rendered map thumbnail template URL (with a {size} placeholder), used for link previews; null when no thumbnail was generated. Opaque URL: may carry a query string; substitute {size} only.'
       ),
     gpxUrl: zod.string().describe('URL to download the analysed GPX file'),
     fitUrl: zod.string().describe('URL to download the analysed track as a FIT file'),
@@ -292,7 +292,7 @@ export const MergePreviewsResponse = zod
       .string()
       .optional()
       .describe(
-        'Rendered map thumbnail template URL (with a {size} placeholder), used for link previews; null when no thumbnail was generated'
+        'Rendered map thumbnail template URL (with a {size} placeholder), used for link previews; null when no thumbnail was generated. Opaque URL: may carry a query string; substitute {size} only.'
       ),
     gpxUrl: zod.string().describe('URL to download the analysed GPX file'),
     fitUrl: zod.string().describe('URL to download the analysed track as a FIT file'),
@@ -435,7 +435,7 @@ export const UpdatePreviewResponse = zod
       .string()
       .optional()
       .describe(
-        'Rendered map thumbnail template URL (with a {size} placeholder), used for link previews; null when no thumbnail was generated'
+        'Rendered map thumbnail template URL (with a {size} placeholder), used for link previews; null when no thumbnail was generated. Opaque URL: may carry a query string; substitute {size} only.'
       ),
     gpxUrl: zod.string().describe('URL to download the analysed GPX file'),
     fitUrl: zod.string().describe('URL to download the analysed track as a FIT file'),
@@ -535,7 +535,7 @@ export const GetPreviewResponse = zod
       .string()
       .optional()
       .describe(
-        'Rendered map thumbnail template URL (with a {size} placeholder), used for link previews; null when no thumbnail was generated'
+        'Rendered map thumbnail template URL (with a {size} placeholder), used for link previews; null when no thumbnail was generated. Opaque URL: may carry a query string; substitute {size} only.'
       ),
     gpxUrl: zod.string().describe('URL to download the analysed GPX file'),
     fitUrl: zod.string().describe('URL to download the analysed track as a FIT file'),
@@ -681,8 +681,17 @@ export const CreateRouteFromPreviewBody = zod
                 id: zod.string().describe('ID (TSID)'),
                 fileName: zod.string().describe('Filename'),
                 contentType: zod.string().describe('Content-Type'),
-                url: zod.string().describe('url'),
-                imageUrl: zod.string().optional().describe('image template url'),
+                url: zod
+                  .string()
+                  .describe(
+                    'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                  ),
+                imageUrl: zod
+                  .string()
+                  .optional()
+                  .describe(
+                    'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                  ),
                 imageDimensions: zod
                   .object({
                     width: zod.int().optional(),
@@ -705,8 +714,17 @@ export const CreateRouteFromPreviewBody = zod
                   id: zod.string().describe('ID (TSID)'),
                   fileName: zod.string().describe('Filename'),
                   contentType: zod.string().describe('Content-Type'),
-                  url: zod.string().describe('url'),
-                  imageUrl: zod.string().optional().describe('image template url'),
+                  url: zod
+                    .string()
+                    .describe(
+                      'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                    ),
+                  imageUrl: zod
+                    .string()
+                    .optional()
+                    .describe(
+                      'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                    ),
                   imageDimensions: zod
                     .object({
                       width: zod.int().optional(),
@@ -729,8 +747,17 @@ export const CreateRouteFromPreviewBody = zod
                   id: zod.string().describe('ID (TSID)'),
                   fileName: zod.string().describe('Filename'),
                   contentType: zod.string().describe('Content-Type'),
-                  url: zod.string().describe('url'),
-                  imageUrl: zod.string().optional().describe('image template url'),
+                  url: zod
+                    .string()
+                    .describe(
+                      'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                    ),
+                  imageUrl: zod
+                    .string()
+                    .optional()
+                    .describe(
+                      'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                    ),
                   imageDimensions: zod
                     .object({
                       width: zod.int().optional(),
@@ -752,8 +779,17 @@ export const CreateRouteFromPreviewBody = zod
                 id: zod.string().describe('ID (TSID)'),
                 fileName: zod.string().describe('Filename'),
                 contentType: zod.string().describe('Content-Type'),
-                url: zod.string().describe('url'),
-                imageUrl: zod.string().optional().describe('image template url'),
+                url: zod
+                  .string()
+                  .describe(
+                    'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                  ),
+                imageUrl: zod
+                  .string()
+                  .optional()
+                  .describe(
+                    'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                  ),
                 imageDimensions: zod
                   .object({
                     width: zod.int().optional(),
@@ -775,8 +811,17 @@ export const CreateRouteFromPreviewBody = zod
                 id: zod.string().describe('ID (TSID)'),
                 fileName: zod.string().describe('Filename'),
                 contentType: zod.string().describe('Content-Type'),
-                url: zod.string().describe('url'),
-                imageUrl: zod.string().optional().describe('image template url'),
+                url: zod
+                  .string()
+                  .describe(
+                    'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                  ),
+                imageUrl: zod
+                  .string()
+                  .optional()
+                  .describe(
+                    'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                  ),
                 imageDimensions: zod
                   .object({
                     width: zod.int().optional(),
@@ -798,8 +843,17 @@ export const CreateRouteFromPreviewBody = zod
                 id: zod.string().describe('ID (TSID)'),
                 fileName: zod.string().describe('Filename'),
                 contentType: zod.string().describe('Content-Type'),
-                url: zod.string().describe('url'),
-                imageUrl: zod.string().optional().describe('image template url'),
+                url: zod
+                  .string()
+                  .describe(
+                    'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                  ),
+                imageUrl: zod
+                  .string()
+                  .optional()
+                  .describe(
+                    'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                  ),
                 imageDimensions: zod
                   .object({
                     width: zod.int().optional(),
@@ -821,8 +875,17 @@ export const CreateRouteFromPreviewBody = zod
                 id: zod.string().describe('ID (TSID)'),
                 fileName: zod.string().describe('Filename'),
                 contentType: zod.string().describe('Content-Type'),
-                url: zod.string().describe('url'),
-                imageUrl: zod.string().optional().describe('image template url'),
+                url: zod
+                  .string()
+                  .describe(
+                    'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                  ),
+                imageUrl: zod
+                  .string()
+                  .optional()
+                  .describe(
+                    'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                  ),
                 imageDimensions: zod
                   .object({
                     width: zod.int().optional(),
@@ -844,8 +907,17 @@ export const CreateRouteFromPreviewBody = zod
                 id: zod.string().describe('ID (TSID)'),
                 fileName: zod.string().describe('Filename'),
                 contentType: zod.string().describe('Content-Type'),
-                url: zod.string().describe('url'),
-                imageUrl: zod.string().optional().describe('image template url'),
+                url: zod
+                  .string()
+                  .describe(
+                    'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                  ),
+                imageUrl: zod
+                  .string()
+                  .optional()
+                  .describe(
+                    'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                  ),
                 imageDimensions: zod
                   .object({
                     width: zod.int().optional(),
@@ -913,7 +985,7 @@ export const CreateRouteFromPreviewResponse = zod
           .string()
           .optional()
           .describe(
-            "URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team."
+            "URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team. Opaque URL: may carry a query string; substitute {size} only."
           ),
       })
       .describe('Team'),
@@ -931,8 +1003,17 @@ export const CreateRouteFromPreviewResponse = zod
                 id: zod.string().describe('ID (TSID)'),
                 fileName: zod.string().describe('Filename'),
                 contentType: zod.string().describe('Content-Type'),
-                url: zod.string().describe('url'),
-                imageUrl: zod.string().optional().describe('image template url'),
+                url: zod
+                  .string()
+                  .describe(
+                    'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                  ),
+                imageUrl: zod
+                  .string()
+                  .optional()
+                  .describe(
+                    'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                  ),
                 imageDimensions: zod
                   .object({
                     width: zod.int().optional(),
@@ -955,8 +1036,17 @@ export const CreateRouteFromPreviewResponse = zod
                   id: zod.string().describe('ID (TSID)'),
                   fileName: zod.string().describe('Filename'),
                   contentType: zod.string().describe('Content-Type'),
-                  url: zod.string().describe('url'),
-                  imageUrl: zod.string().optional().describe('image template url'),
+                  url: zod
+                    .string()
+                    .describe(
+                      'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                    ),
+                  imageUrl: zod
+                    .string()
+                    .optional()
+                    .describe(
+                      'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                    ),
                   imageDimensions: zod
                     .object({
                       width: zod.int().optional(),
@@ -979,8 +1069,17 @@ export const CreateRouteFromPreviewResponse = zod
                   id: zod.string().describe('ID (TSID)'),
                   fileName: zod.string().describe('Filename'),
                   contentType: zod.string().describe('Content-Type'),
-                  url: zod.string().describe('url'),
-                  imageUrl: zod.string().optional().describe('image template url'),
+                  url: zod
+                    .string()
+                    .describe(
+                      'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                    ),
+                  imageUrl: zod
+                    .string()
+                    .optional()
+                    .describe(
+                      'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                    ),
                   imageDimensions: zod
                     .object({
                       width: zod.int().optional(),
@@ -1002,8 +1101,17 @@ export const CreateRouteFromPreviewResponse = zod
                 id: zod.string().describe('ID (TSID)'),
                 fileName: zod.string().describe('Filename'),
                 contentType: zod.string().describe('Content-Type'),
-                url: zod.string().describe('url'),
-                imageUrl: zod.string().optional().describe('image template url'),
+                url: zod
+                  .string()
+                  .describe(
+                    'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                  ),
+                imageUrl: zod
+                  .string()
+                  .optional()
+                  .describe(
+                    'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                  ),
                 imageDimensions: zod
                   .object({
                     width: zod.int().optional(),
@@ -1025,8 +1133,17 @@ export const CreateRouteFromPreviewResponse = zod
                 id: zod.string().describe('ID (TSID)'),
                 fileName: zod.string().describe('Filename'),
                 contentType: zod.string().describe('Content-Type'),
-                url: zod.string().describe('url'),
-                imageUrl: zod.string().optional().describe('image template url'),
+                url: zod
+                  .string()
+                  .describe(
+                    'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                  ),
+                imageUrl: zod
+                  .string()
+                  .optional()
+                  .describe(
+                    'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                  ),
                 imageDimensions: zod
                   .object({
                     width: zod.int().optional(),
@@ -1048,8 +1165,17 @@ export const CreateRouteFromPreviewResponse = zod
                 id: zod.string().describe('ID (TSID)'),
                 fileName: zod.string().describe('Filename'),
                 contentType: zod.string().describe('Content-Type'),
-                url: zod.string().describe('url'),
-                imageUrl: zod.string().optional().describe('image template url'),
+                url: zod
+                  .string()
+                  .describe(
+                    'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                  ),
+                imageUrl: zod
+                  .string()
+                  .optional()
+                  .describe(
+                    'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                  ),
                 imageDimensions: zod
                   .object({
                     width: zod.int().optional(),
@@ -1071,8 +1197,17 @@ export const CreateRouteFromPreviewResponse = zod
                 id: zod.string().describe('ID (TSID)'),
                 fileName: zod.string().describe('Filename'),
                 contentType: zod.string().describe('Content-Type'),
-                url: zod.string().describe('url'),
-                imageUrl: zod.string().optional().describe('image template url'),
+                url: zod
+                  .string()
+                  .describe(
+                    'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                  ),
+                imageUrl: zod
+                  .string()
+                  .optional()
+                  .describe(
+                    'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                  ),
                 imageDimensions: zod
                   .object({
                     width: zod.int().optional(),
@@ -1094,8 +1229,17 @@ export const CreateRouteFromPreviewResponse = zod
                 id: zod.string().describe('ID (TSID)'),
                 fileName: zod.string().describe('Filename'),
                 contentType: zod.string().describe('Content-Type'),
-                url: zod.string().describe('url'),
-                imageUrl: zod.string().optional().describe('image template url'),
+                url: zod
+                  .string()
+                  .describe(
+                    'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                  ),
+                imageUrl: zod
+                  .string()
+                  .optional()
+                  .describe(
+                    'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                  ),
                 imageDimensions: zod
                   .object({
                     width: zod.int().optional(),
@@ -1126,7 +1270,7 @@ export const CreateRouteFromPreviewResponse = zod
       .string()
       .optional()
       .describe(
-        "URL template of the route's thumbnail, light variant if there is one, else dark. Saves a compact row from carrying media.assets just to find the map preview."
+        "URL template of the route's thumbnail, light variant if there is one, else dark. Saves a compact row from carrying media.assets just to find the map preview. Opaque URL: may carry a query string; substitute {size} only."
       ),
     distance: zod.number().describe('Distance in meters'),
     elevationGain: zod.number().describe('Total elevation gain in meters'),

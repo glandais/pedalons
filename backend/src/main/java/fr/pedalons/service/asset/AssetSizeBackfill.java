@@ -73,7 +73,7 @@ public class AssetSizeBackfill {
       return Outcome.MISSING;
     }
     QuarkusTransaction.requiringNew()
-        .run(() -> assetRepository.recordSizeIfUnknown(row.assetId(), size));
+        .run(() -> assetRepository.recordSizeIfUnknown(row.assetId(), row.fileId(), size));
     return Outcome.RECORDED;
   }
 }

@@ -16,12 +16,22 @@ import fr.pedalons.domain.ride.RideParticipation;
 import fr.pedalons.domain.route.Route;
 import fr.pedalons.domain.team.Team;
 import fr.pedalons.domain.user.User;
+import fr.pedalons.dto.common.asset.MediaDto;
+import fr.pedalons.dto.routes.request.RouteRequest;
+import fr.pedalons.enums.AssetType;
 import fr.pedalons.enums.GpsServiceType;
 import fr.pedalons.enums.Status;
+import fr.pedalons.enums.SurfaceType;
 import fr.pedalons.enums.Visibility;
+import fr.pedalons.repository.asset.AssetRepository;
+import fr.pedalons.service.route.RouteService;
+import fr.pedalons.service.security.DomainResolver;
+import fr.pedalons.service.security.PedalonsQueryContext;
 import fr.pedalons.util.GpsSyncTestData;
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
+import java.io.File;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -36,8 +46,13 @@ import org.junit.jupiter.api.Test;
 @QuarkusTest
 class GpsRouteSyncPlannerTest extends AbstractResourceTest {
 
+  @Inject DomainResolver domainResolver;
+
   @Inject GpsRouteSyncPlanner planner;
   @Inject GpsSyncTestData sync;
+  @Inject RouteService routeService;
+  @Inject PedalonsQueryContext queryContext;
+  @Inject AssetRepository assetRepository;
 
   private Instant now;
   private Ride ride;
@@ -51,6 +66,7 @@ class GpsRouteSyncPlannerTest extends AbstractResourceTest {
   @BeforeEach
   public void setUp() {
     super.setUp();
+    domainResolver.setDomainForTest(domain);
     now = Instant.now().truncatedTo(ChronoUnit.SECONDS);
     // user3 is a member of team1; the ride leaves in two days, within the 7-day horizon.
     ride =
@@ -173,11 +189,53 @@ class GpsRouteSyncPlannerTest extends AbstractResourceTest {
   void newGpx_changesTheHash() {
     planner.plan(now);
     String before = row().getDesiredHash();
-    // A new GPX makes a new asset (RouteService.updateRoute → GpxProcessingService).
+    // A GPX attached to a route without one makes a new asset; a track edit instead stamps a new
+    // content revision on the same row (docs/LEDGER_*.md API-128).
     sync.attachGpx(rideRoute, user1);
 
     planner.plan(now);
 
+    assertNotEquals(before, row().getDesiredHash());
+  }
+
+  private fr.pedalons.domain.asset.Asset filteredGpx() {
+    return QuarkusTransaction.requiringNew()
+        .call(
+            () ->
+                assetRepository
+                    .find(
+                        "teamEntity.id = ?1 and type = ?2",
+                        rideRoute.getId(),
+                        AssetType.ROUTE_FILTERED_GPX)
+                    .firstResult());
+  }
+
+  /** The real update path: a track edit replaces the file of the existing asset row (API-128). */
+  private void editTheTrack() {
+    queryContext.setUserForTest(user1);
+    routeService.updateRoute(
+        team1Slug,
+        rideRoute.getSlug(),
+        new RouteRequest(
+            rideRoute.getName(),
+            MediaDto.builder().build(),
+            SurfaceType.ROAD,
+            rideRoute.getVisibility(),
+            null),
+        new File("src/test/resources/example.gpx").toPath());
+  }
+
+  @Test
+  void gpxReplacedInPlace_throughTheUpdatePath_changesTheHash() {
+    planner.plan(now);
+    String before = row().getDesiredHash();
+    Long assetId = filteredGpx().getId();
+
+    editTheTrack();
+
+    // Same asset row, new file: the asset id alone could not tell.
+    assertEquals(assetId, filteredGpx().getId());
+    planner.plan(now);
     assertNotEquals(before, row().getDesiredHash());
   }
 

@@ -21,7 +21,12 @@ public class AssetRepository implements PanacheRepository<Asset> {
    * @param teamEntityId the ride, trip stage, trip or route the thumbnail belongs to
    */
   public record ThumbnailRow(
-      Long teamEntityId, AssetType type, Long assetId, String teamSlug, Visibility visibility) {}
+      Long teamEntityId,
+      AssetType type,
+      Long assetId,
+      Long fileId,
+      String teamSlug,
+      Visibility visibility) {}
 
   public List<Asset> findOrphanedAssets(Instant olderThan) {
     return list("teamEntity is null and updatedAt < ?1", olderThan);
@@ -92,20 +97,25 @@ public class AssetRepository implements PanacheRepository<Asset> {
   }
 
   /**
-   * Bulk update, only while the size is still unknown: a file rewritten meanwhile (re-encoded by
-   * {@code AssetMetadataBackfill}) keeps the size its writer recorded, not the one read before.
+   * Bulk update, only while the size is still unknown and the asset still points at the file whose
+   * size was read: a file rewritten meanwhile (re-encoded by {@code AssetMetadataBackfill}) keeps
+   * the size its writer recorded, and a replaced file (docs/LEDGER_*.md API-128) is not given the
+   * size of its predecessor.
    * Neither {@code updatedAt} nor the entity listeners are touched.
    */
-  public void recordSizeIfUnknown(Long assetId, long size) {
-    update("fileSize = ?1 where id = ?2 and fileSize is null", size, assetId);
+  public void recordSizeIfUnknown(Long assetId, Long fileId, long size) {
+    update(
+        "fileSize = ?1 where id = ?2 and fileId = ?3 and fileSize is null", size, assetId, fileId);
   }
 
   /**
-   * Bulk update of the size of a file rewritten in place. Neither {@code updatedAt} nor the entity
+   * Bulk update of the size of a file rewritten in place, only if the asset still points at {@code
+   * fileId}, the file the caller read: a concurrent replacement (docs/LEDGER_*.md API-128) is not
+   * overwritten with the old file's size. Neither {@code updatedAt} nor the entity
    * listeners are touched.
    */
-  public void updateSize(Long assetId, long size) {
-    update("fileSize = ?1 where id = ?2", size, assetId);
+  public int updateSize(Long assetId, Long fileId, long size) {
+    return update("fileSize = ?1 where id = ?2 and fileId = ?3", size, assetId, fileId);
   }
 
   /**
@@ -131,11 +141,9 @@ public class AssetRepository implements PanacheRepository<Asset> {
     List<Object[]> rows =
         getEntityManager()
             .createQuery(
-                "select a.teamEntity.id, a.type, a.id, a.team.slug, a.teamEntity.visibility "
-                    + "from Asset a "
-                    + "where a.teamEntity.id in (:ids) "
-                    + "and a.type in (:types) "
-                    + "and a.team.domain.id = :domainId",
+                "select a.teamEntity.id, a.type, a.id, a.fileId, a.team.slug,"
+                    + " a.teamEntity.visibility from Asset a where a.teamEntity.id in (:ids) and"
+                    + " a.type in (:types) and a.team.domain.id = :domainId",
                 Object[].class)
             .setParameter("ids", teamEntityIds)
             .setParameter("types", THUMBNAIL_TYPES)
@@ -148,8 +156,9 @@ public class AssetRepository implements PanacheRepository<Asset> {
               (Long) row[0],
               (AssetType) row[1],
               (Long) row[2],
-              (String) row[3],
-              (Visibility) row[4]));
+              (Long) row[3],
+              (String) row[4],
+              (Visibility) row[5]));
     }
     return thumbnails;
   }

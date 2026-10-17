@@ -29,7 +29,7 @@ mixin _$GpxPreviewDto {
  String get fitUrl;/// Whether the track was drawn in the route planner (true) rather than imported from a GPX file. A drawn preview can only become a route of a team whose route planner is enabled; false when the origin is unknown
  bool get drawn;/// Tracks
  List<TrackDto> get tracks;/// Waypoints
- List<WaypointDto> get waypoints;/// Rendered map thumbnail template URL (with a {size} placeholder), used for link previews; null when no thumbnail was generated
+ List<WaypointDto> get waypoints;/// Rendered map thumbnail template URL (with a {size} placeholder), used for link previews; null when no thumbnail was generated. Opaque URL: may carry a query string; substitute {size} only.
  String? get thumbnailUrl;
 /// Create a copy of GpxPreviewDto
 /// with the given fields replaced by the non-null parameter values.
@@ -285,7 +285,7 @@ class _GpxPreviewDto implements GpxPreviewDto {
   return EqualUnmodifiableListView(_waypoints);
 }
 
-/// Rendered map thumbnail template URL (with a {size} placeholder), used for link previews; null when no thumbnail was generated
+/// Rendered map thumbnail template URL (with a {size} placeholder), used for link previews; null when no thumbnail was generated. Opaque URL: may carry a query string; substitute {size} only.
 @override final  String? thumbnailUrl;
 
 /// Create a copy of GpxPreviewDto

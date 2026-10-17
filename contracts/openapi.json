@@ -115,7 +115,7 @@
           },
           "thumbnailUrl" : {
             "type" : "string",
-            "description" : "URL template of the ad's first picture, the one a card shows. Saves a compact row from carrying media.assets just to find it."
+            "description" : "URL template of the ad's first picture, the one a card shows. Saves a compact row from carrying media.assets just to find it. Opaque URL: may carry a query string; substitute {size} only."
           },
           "images" : {
             "type" : "array",
@@ -858,11 +858,11 @@
           },
           "url" : {
             "type" : "string",
-            "description" : "url"
+            "description" : "Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is."
           },
           "imageUrl" : {
             "type" : "string",
-            "description" : "image template url"
+            "description" : "Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only."
           },
           "imageDimensions" : {
             "description" : "image dimensions",
@@ -1148,15 +1148,15 @@
           },
           "thumbnailUrl" : {
             "type" : "string",
-            "description" : "Thumbnail image URL template (contains a {size} placeholder), light variant preferred. Falls back to the route's thumbnail when the ride or stage has none of its own. For a client that renders one picture and does not follow a colour scheme; prefer thumbnailLightUrl/thumbnailDarkUrl otherwise."
+            "description" : "Thumbnail image URL template (contains a {size} placeholder), light variant preferred. Falls back to the route's thumbnail when the ride or stage has none of its own. For a client that renders one picture and does not follow a colour scheme; prefer thumbnailLightUrl/thumbnailDarkUrl otherwise. Opaque URL: may carry a query string; substitute {size} only."
           },
           "thumbnailLightUrl" : {
             "type" : "string",
-            "description" : "Light-scheme thumbnail image URL template (contains a {size} placeholder). Null when the event's picture exists only in a dark variant."
+            "description" : "Light-scheme thumbnail image URL template (contains a {size} placeholder). Null when the event's picture exists only in a dark variant. Opaque URL: may carry a query string; substitute {size} only."
           },
           "thumbnailDarkUrl" : {
             "type" : "string",
-            "description" : "Dark-scheme thumbnail image URL template (contains a {size} placeholder). Null when the event's picture exists only in a light variant."
+            "description" : "Dark-scheme thumbnail image URL template (contains a {size} placeholder). Null when the event's picture exists only in a light variant. Opaque URL: may carry a query string; substitute {size} only."
           },
           "registered" : {
             "type" : "boolean",
@@ -2504,7 +2504,7 @@
           },
           "thumbnailUrl" : {
             "type" : "string",
-            "description" : "Rendered map thumbnail template URL (with a {size} placeholder), used for link previews; null when no thumbnail was generated"
+            "description" : "Rendered map thumbnail template URL (with a {size} placeholder), used for link previews; null when no thumbnail was generated. Opaque URL: may carry a query string; substitute {size} only."
           },
           "gpxUrl" : {
             "type" : "string",
@@ -3732,7 +3732,7 @@
           },
           "thumbnailUrl" : {
             "type" : "string",
-            "description" : "URL template of the post's first image, the one a card shows. Saves a compact row from carrying media.assets just to find a picture."
+            "description" : "URL template of the post's first image, the one a card shows. Saves a compact row from carrying media.assets just to find a picture. Opaque URL: may carry a query string; substitute {size} only."
           },
           "dateTime" : {
             "description" : "Publication date/time",
@@ -4365,15 +4365,15 @@
           },
           "thumbnailLightUrl" : {
             "type" : "string",
-            "description" : "Thumbnail URL (light)"
+            "description" : "Thumbnail URL (light). Opaque URL: may carry a query string; substitute {size} only."
           },
           "thumbnailDarkUrl" : {
             "type" : "string",
-            "description" : "Thumbnail URL (dark)"
+            "description" : "Thumbnail URL (dark). Opaque URL: may carry a query string; substitute {size} only."
           },
           "thumbnailUrl" : {
             "type" : "string",
-            "description" : "The one thumbnail to show when the client does not theme its cards: the light variant if there is one, else the dark one. Saves a compact row from carrying media.assets just to find a picture."
+            "description" : "The one thumbnail to show when the client does not theme its cards: the light variant if there is one, else the dark one. Saves a compact row from carrying media.assets just to find a picture. Opaque URL: may carry a query string; substitute {size} only."
           },
           "deleted" : {
             "type" : "boolean",
@@ -4499,15 +4499,15 @@
           },
           "thumbnailLightUrl" : {
             "type" : "string",
-            "description" : "Thumbnail URL (light) of the group route, if it has one"
+            "description" : "Thumbnail URL (light) of the group route, if it has one. Opaque URL: may carry a query string; substitute {size} only."
           },
           "thumbnailDarkUrl" : {
             "type" : "string",
-            "description" : "Thumbnail URL (dark) of the group route, if it has one"
+            "description" : "Thumbnail URL (dark) of the group route, if it has one. Opaque URL: may carry a query string; substitute {size} only."
           },
           "thumbnailUrl" : {
             "type" : "string",
-            "description" : "The one thumbnail of the group route to show when the client does not theme its cards: the light variant if there is one, else the dark one. Null when the group has no route or its route has no thumbnail — the ride's own thumbnail is then the one to fall back on."
+            "description" : "The one thumbnail of the group route to show when the client does not theme its cards: the light variant if there is one, else the dark one. Null when the group has no route or its route has no thumbnail — the ride's own thumbnail is then the one to fall back on. Opaque URL: may carry a query string; substitute {size} only."
           }
         }
       },
@@ -5164,7 +5164,7 @@
           },
           "thumbnailUrl" : {
             "type" : "string",
-            "description" : "URL template of the route's thumbnail, light variant if there is one, else dark. Saves a compact row from carrying media.assets just to find the map preview."
+            "description" : "URL template of the route's thumbnail, light variant if there is one, else dark. Saves a compact row from carrying media.assets just to find the map preview. Opaque URL: may carry a query string; substitute {size} only."
           },
           "distance" : {
             "type" : "number",
@@ -5843,7 +5843,7 @@
           },
           "logoUrl" : {
             "type" : "string",
-            "description" : "URL template of the team's logo, when it has one. Same picture as about.assets.logo, hoisted so a card does not have to walk the asset inventory to find it."
+            "description" : "URL template of the team's logo, when it has one. Same picture as about.assets.logo, hoisted so a card does not have to walk the asset inventory to find it. Opaque URL: may carry a query string; substitute {size} only."
           },
           "pages" : {
             "type" : "array",
@@ -6197,7 +6197,7 @@
           },
           "logoUrl" : {
             "type" : "string",
-            "description" : "URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team."
+            "description" : "URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team. Opaque URL: may carry a query string; substitute {size} only."
           }
         }
       },
@@ -6783,15 +6783,15 @@
           },
           "thumbnailLightUrl" : {
             "type" : "string",
-            "description" : "Thumbnail URL (light)"
+            "description" : "Thumbnail URL (light). Opaque URL: may carry a query string; substitute {size} only."
           },
           "thumbnailDarkUrl" : {
             "type" : "string",
-            "description" : "Thumbnail URL (dark)"
+            "description" : "Thumbnail URL (dark). Opaque URL: may carry a query string; substitute {size} only."
           },
           "thumbnailUrl" : {
             "type" : "string",
-            "description" : "The one thumbnail to show when the client does not theme its cards: the light variant if there is one, else the dark one. Saves a compact row from carrying media.assets just to find a picture."
+            "description" : "The one thumbnail to show when the client does not theme its cards: the light variant if there is one, else the dark one. Saves a compact row from carrying media.assets just to find a picture. Opaque URL: may carry a query string; substitute {size} only."
           },
           "deleted" : {
             "type" : "boolean",
@@ -23872,7 +23872,7 @@
   },
   "info" : {
     "title" : "Pedalons API",
-    "version" : "11.6.0",
+    "version" : "11.6.1",
     "description" : "API for Pedalons Cycling Team Management Platform"
   },
   "servers" : [ {

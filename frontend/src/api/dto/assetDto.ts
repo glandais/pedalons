@@ -7,9 +7,9 @@ export interface AssetDto {
   fileName: string
   /** Content-Type */
   contentType: string
-  /** url */
+  /** Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is. */
   url: string
-  /** image template url */
+  /** Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only. */
   imageUrl?: string
   /** image dimensions */
   imageDimensions?: AssetDimensionsDto

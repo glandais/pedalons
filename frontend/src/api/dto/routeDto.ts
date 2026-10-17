@@ -21,7 +21,7 @@ export interface RouteDto {
   media: MediaDto
   /** Plain-text opening of the description, flattened (links become their label) and cut on a word boundary at about 200 characters. Null when the description holds no text. Lets a list row render its two lines without the description being sent at all — see the 'view' parameter. */
   excerpt?: string
-  /** URL template of the route's thumbnail, light variant if there is one, else dark. Saves a compact row from carrying media.assets just to find the map preview. */
+  /** URL template of the route's thumbnail, light variant if there is one, else dark. Saves a compact row from carrying media.assets just to find the map preview. Opaque URL: may carry a query string; substitute {size} only. */
   thumbnailUrl?: string
   /** Distance in meters */
   distance: number

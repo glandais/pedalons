@@ -54,7 +54,7 @@ mixin _$PublicationDto {
  String get visibility;/// Team
  TeamPublicationDto get team;/// The team's RIDE tags the ride carries, sorted by label. Empty when it carries none.
  List<TagDto> get tags;/// Whether the ride is soft-deleted
- bool get deleted;/// The one thumbnail to show when the client does not theme its cards: the light variant if there is one, else the dark one. Saves a compact row from carrying media.assets just to find a picture.
+ bool get deleted;/// The one thumbnail to show when the client does not theme its cards: the light variant if there is one, else the dark one. Saves a compact row from carrying media.assets just to find a picture. Opaque URL: may carry a query string; substitute {size} only.
  String? get thumbnailUrl;/// Creation timestamp
  String? get createdAt;/// Number of comments, replies included. Absent when the caller may not read the comments of this ride — comments are members-only, so an outsider is told nothing, not even zero.
  int? get commentCount;/// Plain-text opening of the markdown body, flattened (links become their label) and cut on a word boundary at about 200 characters. Null when the body holds no text. Lets a list row render its two lines without the body being sent at all — see the 'view' parameter.
@@ -378,11 +378,11 @@ class PublicationDtoRide implements PublicationDto {
  final  PlaceDetailDto? endPlace;
 /// The weather line of a card: the meeting point, over the window from the departure to the estimated arrival of the last group. Absent when there is nothing to show — finished or cancelled ride, no place, forecast not in cache yet; present only with status OK, STALE or NOT_YET_AVAILABLE. The full forecast is getRideWeather.
  final  RideWeatherSummaryDto? weather;
-/// Thumbnail URL (light)
+/// Thumbnail URL (light). Opaque URL: may carry a query string; substitute {size} only.
  final  String? thumbnailLightUrl;
-/// Thumbnail URL (dark)
+/// Thumbnail URL (dark). Opaque URL: may carry a query string; substitute {size} only.
  final  String? thumbnailDarkUrl;
-/// The one thumbnail to show when the client does not theme its cards: the light variant if there is one, else the dark one. Saves a compact row from carrying media.assets just to find a picture.
+/// The one thumbnail to show when the client does not theme its cards: the light variant if there is one, else the dark one. Saves a compact row from carrying media.assets just to find a picture. Opaque URL: may carry a query string; substitute {size} only.
 @override final  String? thumbnailUrl;
 /// Distance in meters of the ride's route — or, when the ride itself has none, of the route of its first group (in sort order) that has one. Null when no route is set anywhere.
  final  double? distance;
@@ -611,7 +611,7 @@ class PublicationDtoPost implements PublicationDto {
 
 /// Plain-text opening of the markdown body, flattened (links become their label) and cut on a word boundary at about 200 characters. Null when the body holds no text. Lets a list row render its two lines without the body being sent at all — see the 'view' parameter.
 @override final  String? excerpt;
-/// URL template of the post's first image, the one a card shows. Saves a compact row from carrying media.assets just to find a picture.
+/// URL template of the post's first image, the one a card shows. Saves a compact row from carrying media.assets just to find a picture. Opaque URL: may carry a query string; substitute {size} only.
 @override final  String? thumbnailUrl;
 /// Publication timestamp
 @override final  String? publishAt;
@@ -813,11 +813,11 @@ class PublicationDtoTrip implements PublicationDto {
  final  double? totalDistance;
 /// Elevation gain in metres over every stage that has a route. Null when no stage has one.
  final  double? totalElevationGain;
-/// Thumbnail URL (light)
+/// Thumbnail URL (light). Opaque URL: may carry a query string; substitute {size} only.
  final  String? thumbnailLightUrl;
-/// Thumbnail URL (dark)
+/// Thumbnail URL (dark). Opaque URL: may carry a query string; substitute {size} only.
  final  String? thumbnailDarkUrl;
-/// The one thumbnail to show when the client does not theme its cards: the light variant if there is one, else the dark one. Saves a compact row from carrying media.assets just to find a picture.
+/// The one thumbnail to show when the client does not theme its cards: the light variant if there is one, else the dark one. Saves a compact row from carrying media.assets just to find a picture. Opaque URL: may carry a query string; substitute {size} only.
 @override final  String? thumbnailUrl;
 /// Number of comments, replies included. Absent when the caller may not read the comments of this trip — comments are members-only, so an outsider is told nothing, not even zero.
 @override final  int? commentCount;

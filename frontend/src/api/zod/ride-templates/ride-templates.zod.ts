@@ -35,7 +35,7 @@ export const ListTemplatesResponse = zod
                   .string()
                   .optional()
                   .describe(
-                    "URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team."
+                    "URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team. Opaque URL: may carry a query string; substitute {size} only."
                   ),
               })
               .describe('Team'),
@@ -187,7 +187,7 @@ export const CreateTemplateResponse = zod
           .string()
           .optional()
           .describe(
-            "URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team."
+            "URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team. Opaque URL: may carry a query string; substitute {size} only."
           ),
       })
       .describe('Team'),
@@ -321,7 +321,7 @@ export const UpdateTemplateResponse = zod
           .string()
           .optional()
           .describe(
-            "URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team."
+            "URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team. Opaque URL: may carry a query string; substitute {size} only."
           ),
       })
       .describe('Team'),
@@ -395,7 +395,7 @@ export const GetTemplateResponse = zod
           .string()
           .optional()
           .describe(
-            "URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team."
+            "URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team. Opaque URL: may carry a query string; substitute {size} only."
           ),
       })
       .describe('Team'),

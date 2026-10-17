@@ -45,4 +45,31 @@ class GpsSyncNamesTest {
     assertNotEquals(base, GpsSyncNames.hash(1L, "b"));
     assertEquals(64, base.length());
   }
+
+  @Test
+  void contentKey_isTheAssetIdUntilARevisionExists() {
+    assertEquals(5L, GpsSyncNames.contentKey(5L, null));
+    assertEquals(9L, GpsSyncNames.contentKey(5L, 9L));
+    // Existing rows (null revision) keep their old fingerprint: no mass re-push (API-128).
+    assertEquals(
+        GpsSyncNames.hash(5L, "n"), GpsSyncNames.hash(GpsSyncNames.contentKey(5L, null), "n"));
+  }
+
+  @Test
+  void hash_ofAnUnrevisedAssetIsTheFormulaBeforeRevisionsExisted() throws Exception {
+    // Neutrality guard (API-128): sha256(assetId + "|" + name), byte for byte, or every synced
+    // route would be pushed again at deployment.
+    byte[] digest =
+        java.security.MessageDigest.getInstance("SHA-256")
+            .digest(
+                "123456789|2026-10-18 · Boucle".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    String legacy = java.util.HexFormat.of().formatHex(digest);
+
+    assertEquals(
+        legacy,
+        GpsSyncNames.hash(GpsSyncNames.contentKey(123456789L, null), "2026-10-18 · Boucle"));
+    assertNotEquals(
+        legacy,
+        GpsSyncNames.hash(GpsSyncNames.contentKey(123456789L, 987L), "2026-10-18 · Boucle"));
+  }
 }

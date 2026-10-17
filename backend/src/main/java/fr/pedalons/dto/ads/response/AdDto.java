@@ -44,7 +44,8 @@ public record AdDto(
         @Schema(
             description =
                 "URL template of the ad's first picture, the one a card shows. Saves a compact row"
-                    + " from carrying media.assets just to find it.")
+                    + " from carrying media.assets just to find it. Opaque URL: may carry a query"
+                    + " string; substitute {size} only.")
         String thumbnailUrl,
     @Schema(
             description =

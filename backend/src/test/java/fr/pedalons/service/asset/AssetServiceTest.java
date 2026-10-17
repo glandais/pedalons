@@ -8,6 +8,7 @@ import fr.pedalons.common.exception.PedalonsException;
 import fr.pedalons.domain.asset.Asset;
 import fr.pedalons.domain.platform.Domain;
 import fr.pedalons.domain.post.Post;
+import fr.pedalons.domain.ride.Ride;
 import fr.pedalons.domain.team.Team;
 import fr.pedalons.domain.user.User;
 import fr.pedalons.dto.assets.response.DownloadableAsset;
@@ -40,7 +41,9 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -57,6 +60,7 @@ class AssetServiceTest extends AbstractBaseTest {
   @Inject StorageService storageService;
   @Inject AssetRepository assetRepository;
   @Inject PostRepository postRepository;
+  @Inject ThumbnailLookup thumbnailLookup;
 
   private Domain domain;
   private Team team;
@@ -1222,5 +1226,146 @@ class AssetServiceTest extends AbstractBaseTest {
 
     assertFalse(
         storageService.exists(s3Key), "S3 file should be deleted by orphanRemoval + @PreRemove");
+  }
+
+  /**
+   * docs/LEDGER_*.md API-128: an asset keeps its id when its file is replaced, so the URLs carry
+   * the file id as a cache-buster.
+   */
+  @Nested
+  class StableUrls {
+
+    @Test
+    void urlAndImageUrl_carryTheFileIdAsVersion() {
+      Asset asset = dataService.createAsset(team, admin, AssetType.IMAGE, "v.png");
+      String version = "?v=" + TsidUtils.toString(asset.getFileId());
+
+      AssetDto result = assetService.map(asset);
+
+      assertTrue(result.url().endsWith("/v.png" + version), result.url());
+      assertTrue(result.imageUrl().endsWith("/{size}" + version), result.imageUrl());
+      // Substituting the size, as every client does, leaves the version in place.
+      assertTrue(result.imageUrl().replace("{size}", "200").endsWith("/200" + version));
+    }
+
+    @Test
+    void thumbnailLookup_buildsTheSameUrlAsGetImageUrl() {
+      Ride ride =
+          dataService.createRide(
+              team, admin, "Sortie", "sortie", Instant.now().plus(2, ChronoUnit.DAYS));
+      Asset light =
+          dataService.attachAsset(ride, admin, AssetType.RIDE_THUMBNAIL_LIGHT, "light.png");
+
+      Map<Long, ThumbnailLookup.ThemedThumbnail> byRide =
+          thumbnailLookup.forTeamEntities(List.of(ride.getId()));
+
+      String expected = assetService.getImageUrl(light);
+      assertEquals(expected, byRide.get(ride.getId()).light());
+      assertTrue(expected.endsWith("?v=" + TsidUtils.toString(light.getFileId())), expected);
+    }
+
+    private Asset persistedAsset() {
+      return dataService.createAsset(team, admin, AssetType.ATTACHMENT, "doc.txt");
+    }
+
+    private void storeNew(long fileId) {
+      byte[] bytes = "new".getBytes(StandardCharsets.UTF_8);
+      storageService.store(
+          getAssetKey(team, fileId), new ByteArrayInputStream(bytes), "text/plain", bytes.length);
+    }
+
+    @Test
+    void replaceStoredFile_withoutTransaction_deletesTheNewFileAndFails() {
+      Asset asset = persistedAsset();
+      long newFileId = asset.getFileId() + 1;
+      storeNew(newFileId);
+
+      assertThrows(
+          IllegalStateException.class,
+          () ->
+              assetService.replaceStoredFile(
+                  asset, newFileId, new AssetService.UploadedFile("text/plain", 3), "n.txt", true));
+
+      assertFalse(storageService.exists(getAssetKey(team, newFileId)));
+      assertTrue(storageService.exists(getAssetKey(team, asset.getFileId())));
+    }
+
+    @Test
+    void replaceStoredFile_onCommit_keepsTheIdSwapsTheFileAndDeletesTheOldKey() {
+      Asset asset = persistedAsset();
+      long oldFileId = asset.getFileId();
+      long newFileId = oldFileId + 1;
+      storeNew(newFileId);
+
+      QuarkusTransaction.requiringNew()
+          .run(
+              () ->
+                  assetService.replaceStoredFile(
+                      assetRepository.findById(asset.getId()),
+                      newFileId,
+                      new AssetService.UploadedFile("text/plain", 3),
+                      "n.txt",
+                      true));
+
+      Asset reloaded =
+          QuarkusTransaction.requiringNew().call(() -> assetRepository.findById(asset.getId()));
+      assertEquals(newFileId, reloaded.getFileId());
+      assertEquals("n.txt", reloaded.getFileName());
+      assertEquals(3L, reloaded.getFileSize());
+      assertEquals(newFileId, reloaded.getContentRevision());
+      assertFalse(storageService.exists(getAssetKey(team, oldFileId)));
+      assertTrue(storageService.exists(getAssetKey(team, newFileId)));
+    }
+
+    @Test
+    void replaceStoredFile_notNewContent_leavesTheRevisionAlone() {
+      Asset asset = persistedAsset();
+      long newFileId = asset.getFileId() + 1;
+      storeNew(newFileId);
+
+      QuarkusTransaction.requiringNew()
+          .run(
+              () ->
+                  assetService.replaceStoredFile(
+                      assetRepository.findById(asset.getId()),
+                      newFileId,
+                      new AssetService.UploadedFile("text/plain", 3),
+                      "n.txt",
+                      false));
+
+      Asset reloaded =
+          QuarkusTransaction.requiringNew().call(() -> assetRepository.findById(asset.getId()));
+      assertEquals(newFileId, reloaded.getFileId());
+      assertNull(reloaded.getContentRevision());
+    }
+
+    @Test
+    void replaceStoredFile_onRollback_keepsTheOldFileAndDeletesTheNewOne() {
+      Asset asset = persistedAsset();
+      long oldFileId = asset.getFileId();
+      long newFileId = oldFileId + 1;
+      storeNew(newFileId);
+
+      assertThrows(
+          IllegalStateException.class,
+          () ->
+              QuarkusTransaction.requiringNew()
+                  .run(
+                      () -> {
+                        assetService.replaceStoredFile(
+                            assetRepository.findById(asset.getId()),
+                            newFileId,
+                            new AssetService.UploadedFile("text/plain", 3),
+                            "n.txt",
+                            true);
+                        throw new IllegalStateException("rolled back");
+                      }));
+
+      Asset reloaded =
+          QuarkusTransaction.requiringNew().call(() -> assetRepository.findById(asset.getId()));
+      assertEquals(oldFileId, reloaded.getFileId());
+      assertTrue(storageService.exists(getAssetKey(team, oldFileId)));
+      assertFalse(storageService.exists(getAssetKey(team, newFileId)));
+    }
   }
 }

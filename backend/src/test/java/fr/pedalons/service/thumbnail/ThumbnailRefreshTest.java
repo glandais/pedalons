@@ -2,6 +2,9 @@ package fr.pedalons.service.thumbnail;
 
 import static fr.pedalons.util.WallTimes.wall;
 import static io.restassured.RestAssured.given;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -12,21 +15,28 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import fr.pedalons.api.AbstractResourceTest;
+import fr.pedalons.domain.asset.Asset;
 import fr.pedalons.domain.route.Route;
 import fr.pedalons.dto.common.asset.MediaDto;
 import fr.pedalons.dto.rides.request.GroupRequest;
 import fr.pedalons.dto.rides.request.RideRequest;
 import fr.pedalons.dto.rides.response.RideDto;
 import fr.pedalons.dto.trips.request.TripRequest;
+import fr.pedalons.enums.AssetType;
 import fr.pedalons.enums.Status;
 import fr.pedalons.enums.Visibility;
+import fr.pedalons.repository.asset.AssetRepository;
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
+import jakarta.inject.Inject;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import javax.imageio.ImageIO;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,6 +52,8 @@ import org.junit.jupiter.api.Test;
 class ThumbnailRefreshTest extends AbstractResourceTest {
 
   @InjectMock MapThumbnailRenderer renderer;
+
+  @Inject AssetRepository assetRepository;
 
   private final Instant nextWeek = Instant.now().plus(7, ChronoUnit.DAYS);
 
@@ -196,5 +208,96 @@ class ThumbnailRefreshTest extends AbstractResourceTest {
         .then()
         .statusCode(200);
     verifyDraws(2);
+  }
+
+  /** Asset id → file id of the thumbnails the ride and trip rows of team1 have. */
+  private Map<Long, Long> thumbnailFiles() {
+    return QuarkusTransaction.requiringNew()
+        .call(
+            () ->
+                assetRepository
+                    .list(
+                        "team.id = ?1 and type in ?2",
+                        team1.getId(),
+                        List.of(
+                            AssetType.RIDE_THUMBNAIL_LIGHT,
+                            AssetType.RIDE_THUMBNAIL_DARK,
+                            AssetType.TRIP_THUMBNAIL_LIGHT,
+                            AssetType.TRIP_THUMBNAIL_DARK))
+                    .stream()
+                    .collect(Collectors.toMap(Asset::getId, Asset::getFileId)));
+  }
+
+  /**
+   * docs/LEDGER_*.md API-128: a redraw gives the thumbnail rows new files — the ids, and so the
+   * URLs clients and caches hold, stay.
+   */
+  @Test
+  void updateRide_withAnotherRoute_keepsTheThumbnailRowsAndChangesTheirFiles() {
+    Route first = dataService.createRoute(team1, user1, "Premier parcours");
+    Route second = dataService.createRoute(team1, user1, "Second parcours");
+    RideDto created =
+        given()
+            .auth()
+            .oauth2(getAccessToken(USER1))
+            .contentType("application/json")
+            .body(ride("Sortie", first.getSlug()))
+            .when()
+            .post("/api/teams/" + team1Slug + "/rides")
+            .then()
+            .statusCode(201)
+            .extract()
+            .as(RideDto.class);
+    Map<Long, Long> before = thumbnailFiles();
+    assertEquals(2, before.size());
+
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .contentType("application/json")
+        .body(ride("Sortie", second.getSlug()))
+        .when()
+        .put("/api/teams/" + team1Slug + "/rides/" + created.getSlug())
+        .then()
+        .statusCode(200);
+
+    Map<Long, Long> after = thumbnailFiles();
+    assertEquals(before.keySet(), after.keySet(), "same asset rows");
+    before.forEach((id, fileId) -> assertNotEquals(fileId, after.get(id), "new file for " + id));
+    assertTrue(after.values().stream().noneMatch(before.values()::contains));
+  }
+
+  @Test
+  void updateTrip_withAnotherRoute_keepsTheThumbnailRows() {
+    Route first = dataService.createRoute(team1, user1, "Premier parcours");
+    Route second = dataService.createRoute(team1, user1, "Second parcours");
+    String slug =
+        given()
+            .auth()
+            .oauth2(getAccessToken(USER1))
+            .contentType("application/json")
+            .body(trip("Voyage", first.getSlug()))
+            .when()
+            .post("/api/teams/" + team1Slug + "/trips")
+            .then()
+            .statusCode(201)
+            .extract()
+            .path("slug");
+    Map<Long, Long> before = thumbnailFiles();
+    assertEquals(2, before.size());
+
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .contentType("application/json")
+        .body(trip("Voyage", second.getSlug()))
+        .when()
+        .put("/api/teams/" + team1Slug + "/trips/" + slug)
+        .then()
+        .statusCode(200);
+
+    Map<Long, Long> after = thumbnailFiles();
+    assertEquals(before.keySet(), after.keySet(), "same asset rows");
+    before.forEach((id, fileId) -> assertNotEquals(fileId, after.get(id), "new file for " + id));
   }
 }

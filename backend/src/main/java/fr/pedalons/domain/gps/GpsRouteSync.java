@@ -83,7 +83,7 @@ public class GpsRouteSync {
   @Column(name = "desired_route_id")
   private @Nullable Long desiredRouteId;
 
-  /** SHA-256 of {@code gpx asset id | name sent} (D4); null with {@link #desiredRouteId}. */
+  /** SHA-256 of {@code gpx content key | name sent} (D4; the key is the asset id until a track edit stamps a content revision, API-128); null with {@link #desiredRouteId}. */
   @Column(name = "desired_hash", length = 64)
   private @Nullable String desiredHash;
 

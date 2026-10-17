@@ -59,7 +59,8 @@ public class PostDto implements PublicationDto {
   @Schema(
       description =
           "URL template of the post's first image, the one a card shows. Saves a compact row from"
-              + " carrying media.assets just to find a picture.")
+              + " carrying media.assets just to find a picture. Opaque URL: may carry a query"
+              + " string; substitute {size} only.")
   final String thumbnailUrl;
 
   @Schema(description = "Publication date/time", required = true)

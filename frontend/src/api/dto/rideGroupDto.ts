@@ -36,10 +36,10 @@ export interface RideGroupDto {
   elevationGain?: number
   /** The member who leads this group, when one is designated. Null means no leader was designated — render nothing rather than falling back on the ride's creator, who is the same person on every group of the ride. */
   leader?: PublicUserDto
-  /** Thumbnail URL (light) of the group route, if it has one */
+  /** Thumbnail URL (light) of the group route, if it has one. Opaque URL: may carry a query string; substitute {size} only. */
   thumbnailLightUrl?: string
-  /** Thumbnail URL (dark) of the group route, if it has one */
+  /** Thumbnail URL (dark) of the group route, if it has one. Opaque URL: may carry a query string; substitute {size} only. */
   thumbnailDarkUrl?: string
-  /** The one thumbnail of the group route to show when the client does not theme its cards: the light variant if there is one, else the dark one. Null when the group has no route or its route has no thumbnail — the ride's own thumbnail is then the one to fall back on. */
+  /** The one thumbnail of the group route to show when the client does not theme its cards: the light variant if there is one, else the dark one. Null when the group has no route or its route has no thumbnail — the ride's own thumbnail is then the one to fall back on. Opaque URL: may carry a query string; substitute {size} only. */
   thumbnailUrl?: string
 }

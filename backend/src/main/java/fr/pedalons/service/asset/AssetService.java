@@ -29,6 +29,9 @@ import fr.pedalons.service.team.TeamService;
 import io.hypersistence.tsid.TSID;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.transaction.Status;
+import jakarta.transaction.Synchronization;
+import jakarta.transaction.TransactionSynchronizationRegistry;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -86,6 +89,8 @@ public class AssetService {
   @Inject TeamService teamService;
 
   @Inject StorageService storageService;
+
+  @Inject TransactionSynchronizationRegistry txRegistry;
 
   @Inject FileTypeDetector fileTypeDetector;
 
@@ -385,7 +390,8 @@ public class AssetService {
             + "/"
             + TsidUtils.toString(asset.getId())
             + "/"
-            + encodePathSegment(asset.getFileName());
+            + encodePathSegment(asset.getFileName())
+            + versionQuery(asset.getFileId());
     return new AssetDto(
         TsidUtils.toString(asset.getId()),
         asset.getFileName(),
@@ -413,7 +419,7 @@ public class AssetService {
     } else {
       visibility = asset.getTeamEntity().getVisibility();
     }
-    return buildImageUrl(teamSlug, visibility, asset.getId());
+    return buildImageUrl(teamSlug, visibility, asset.getId(), asset.getFileId());
   }
 
   /**
@@ -459,14 +465,155 @@ public class AssetService {
    * Bulk callers project those two scalars in their own query and land here, so the URL shape stays
    * defined in exactly one place. See {@code ThumbnailLookup}.
    */
-  public static String buildImageUrl(String teamSlug, Visibility visibility, Long assetId) {
+  public static String buildImageUrl(
+      String teamSlug, Visibility visibility, Long assetId, Long fileId) {
     return "/api/download/"
         + visibility.name().toLowerCase()
         + "/images/"
         + teamSlug
         + "/"
         + TsidUtils.toString(assetId)
-        + "/{size}";
+        + "/{size}"
+        + versionQuery(fileId);
+  }
+
+  /**
+   * The cache-buster of an asset URL. The asset id is stable across a replacement of its file
+   * (docs/LEDGER_*.md API-128) while imgproxy answers with a one-year {@code Cache-Control} and
+   * mobile clients cache images by URL, so the URL must change with the stored file. The download
+   * endpoints ignore it.
+   */
+  private static String versionQuery(Long fileId) {
+    return "?v=" + TsidUtils.toString(fileId);
+  }
+
+  /**
+   * Replaces the stored file of an existing asset row, keeping its id — and so every published URL
+   * — stable. docs/LEDGER_*.md API-128.
+   *
+   * <p>The new file is already uploaded under {@code newFileId}. The old key is deleted after the
+   * commit; on any other outcome (rollback, lost optimistic-lock race) the new key is deleted
+   * instead, so a failed edit leaves neither a dangling row nor an orphaned file. Needs an active
+   * transaction: without one neither outcome could be observed, so the new file is deleted and the
+   * call fails rather than leave state half-done.
+   *
+   * @param newContent the content changed (a track edit) rather than just being re-rendered
+   *     (a thumbnail): sets {@code contentRevision}, which makes GPS sync push the file again
+   */
+  public void replaceStoredFile(
+      Asset asset, long newFileId, UploadedFile stored, String fileName, boolean newContent) {
+    String newKey = getAssetKey(asset.getTeam(), newFileId);
+    if (txRegistry.getTransactionStatus() != Status.STATUS_ACTIVE) {
+      deleteQuietly(newKey);
+      throw new IllegalStateException(
+          "replaceStoredFile needs an active transaction (asset " + asset.getId() + ")");
+    }
+    String oldKey = getAssetKey(asset.getTeam(), asset.getFileId());
+    asset.setFileId(newFileId);
+    asset.setFileName(fileName);
+    asset.setContentType(stored.contentType());
+    asset.setFileSize(stored.size());
+    asset.setWidth(null);
+    asset.setHeight(null);
+    if (newContent) {
+      asset.setContentRevision(newFileId);
+    }
+    deleteAfterCommit(oldKey);
+    deleteUnlessCommitted(newKey);
+  }
+
+  /**
+   * Stores an already uploaded file as the asset of {@code type} on {@code owner}: the existing row
+   * (the newest if several) takes the new file and keeps its id and so its URLs, surplus rows are
+   * removed (the orphan removal deletes their files), and a missing row is created. Works on the
+   * in-memory {@code owner.getAssets()} only, no query: callers may sit between a collection clear
+   * and its refill. docs/LEDGER_*.md API-128.
+   */
+  public void putStoredFile(
+      Team team,
+      TeamEntity owner,
+      AssetType type,
+      long fileId,
+      String fileName,
+      UploadedFile stored,
+      boolean newContent) {
+    List<Asset> existing =
+        owner.getAssets().stream()
+            .filter(a -> a.getType() == type)
+            .sorted(Comparator.comparing(Asset::getId).reversed())
+            .toList();
+    if (existing.isEmpty()) {
+      String newKey = getAssetKey(team, fileId);
+      if (txRegistry.getTransactionStatus() != Status.STATUS_ACTIVE) {
+        // persistAsset would commit the row on its own and the file would then be deleted
+        deleteQuietly(newKey);
+        throw new IllegalStateException("putStoredFile needs an active transaction");
+      }
+      deleteUnlessCommitted(newKey);
+      persistAsset(team, owner, type, fileId, fileName, stored);
+      return;
+    }
+    replaceStoredFile(existing.get(0), fileId, stored, fileName, newContent);
+    owner.getAssets().removeAll(existing.subList(1, existing.size()));
+  }
+
+  /** Removes the assets of the given types from {@code owner}; orphan removal deletes the files. */
+  public void removeAssetsOfTypes(TeamEntity owner, Collection<AssetType> types) {
+    owner.getAssets().removeIf(a -> types.contains(a.getType()));
+  }
+
+  /**
+   * Deletes {@code key} once the current transaction has committed, and only then. Deleted at once
+   * when there is no transaction, as the change is then already committed.
+   */
+  public void deleteAfterCommit(String key) {
+    registerCleanup(key, true);
+  }
+
+  /**
+   * Deletes {@code key} unless the current transaction commits: a file uploaded ahead of its row
+   * must not outlive a rollback. Deleted at once when there is no transaction to wait for.
+   */
+  public void deleteUnlessCommitted(String key) {
+    registerCleanup(key, false);
+  }
+
+  private void registerCleanup(String key, boolean onCommit) {
+    int status = txRegistry.getTransactionStatus();
+    if (status == Status.STATUS_NO_TRANSACTION) {
+      // Nothing to wait for: whatever changed is already committed (same as AssetRemoveListener).
+      deleteQuietly(key);
+      return;
+    }
+    if (status != Status.STATUS_ACTIVE) {
+      // Marked for rollback or completing: the outcome is a rollback.
+      if (!onCommit) {
+        deleteQuietly(key);
+      }
+      return;
+    }
+    txRegistry.registerInterposedSynchronization(
+        new Synchronization() {
+          @Override
+          public void beforeCompletion() {
+            // the outcome is not known yet
+          }
+
+          @Override
+          public void afterCompletion(int outcome) {
+            if ((outcome == Status.STATUS_COMMITTED) == onCommit) {
+              deleteQuietly(key);
+            }
+          }
+        });
+  }
+
+  private void deleteQuietly(String key) {
+    try {
+      storageService.delete(key);
+    } catch (Exception e) {
+      LOG.warnv("Failed to delete {0} from storage: {1}", key, e.getMessage());
+    }
   }
 
   /**

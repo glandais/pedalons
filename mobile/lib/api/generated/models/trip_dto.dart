@@ -101,13 +101,13 @@ abstract class TripDto with _$TripDto {
     /// Elevation gain in metres over every stage that has a route. Null when no stage has one.
     double? totalElevationGain,
 
-    /// Thumbnail URL (light)
+    /// Thumbnail URL (light). Opaque URL: may carry a query string; substitute {size} only.
     String? thumbnailLightUrl,
 
-    /// Thumbnail URL (dark)
+    /// Thumbnail URL (dark). Opaque URL: may carry a query string; substitute {size} only.
     String? thumbnailDarkUrl,
 
-    /// The one thumbnail to show when the client does not theme its cards: the light variant if there is one, else the dark one. Saves a compact row from carrying media.assets just to find a picture.
+    /// The one thumbnail to show when the client does not theme its cards: the light variant if there is one, else the dark one. Saves a compact row from carrying media.assets just to find a picture. Opaque URL: may carry a query string; substitute {size} only.
     String? thumbnailUrl,
 
     /// Number of comments, replies included. Absent when the caller may not read the comments of this trip — comments are members-only, so an outsider is told nothing, not even zero.

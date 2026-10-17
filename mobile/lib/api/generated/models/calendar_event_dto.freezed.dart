@@ -33,9 +33,9 @@ mixin _$CalendarEventDto {
  String? get tripSlug;/// Name of the meeting place, null when the ride or stage has no start place
  String? get startPlaceName;/// Distance in meters of the attached route, null when there is no route
  double? get distance;/// Total elevation gain in meters of the attached route, null when there is no route
- double? get elevationGain;/// Thumbnail image URL template (contains a {size} placeholder), light variant preferred. Falls back to the route's thumbnail when the ride or stage has none of its own. For a client that renders one picture and does not follow a colour scheme; prefer thumbnailLightUrl/thumbnailDarkUrl otherwise.
- String? get thumbnailUrl;/// Light-scheme thumbnail image URL template (contains a {size} placeholder). Null when the event's picture exists only in a dark variant.
- String? get thumbnailLightUrl;/// Dark-scheme thumbnail image URL template (contains a {size} placeholder). Null when the event's picture exists only in a light variant.
+ double? get elevationGain;/// Thumbnail image URL template (contains a {size} placeholder), light variant preferred. Falls back to the route's thumbnail when the ride or stage has none of its own. For a client that renders one picture and does not follow a colour scheme; prefer thumbnailLightUrl/thumbnailDarkUrl otherwise. Opaque URL: may carry a query string; substitute {size} only.
+ String? get thumbnailUrl;/// Light-scheme thumbnail image URL template (contains a {size} placeholder). Null when the event's picture exists only in a dark variant. Opaque URL: may carry a query string; substitute {size} only.
+ String? get thumbnailLightUrl;/// Dark-scheme thumbnail image URL template (contains a {size} placeholder). Null when the event's picture exists only in a light variant. Opaque URL: may carry a query string; substitute {size} only.
  String? get thumbnailDarkUrl;/// Name of the ride group the current user joined. Null when not registered, and always null for trip stages, which have no groups.
  String? get groupName;
 /// Create a copy of CalendarEventDto
@@ -293,11 +293,11 @@ class _CalendarEventDto implements CalendarEventDto {
 @override final  double? distance;
 /// Total elevation gain in meters of the attached route, null when there is no route
 @override final  double? elevationGain;
-/// Thumbnail image URL template (contains a {size} placeholder), light variant preferred. Falls back to the route's thumbnail when the ride or stage has none of its own. For a client that renders one picture and does not follow a colour scheme; prefer thumbnailLightUrl/thumbnailDarkUrl otherwise.
+/// Thumbnail image URL template (contains a {size} placeholder), light variant preferred. Falls back to the route's thumbnail when the ride or stage has none of its own. For a client that renders one picture and does not follow a colour scheme; prefer thumbnailLightUrl/thumbnailDarkUrl otherwise. Opaque URL: may carry a query string; substitute {size} only.
 @override final  String? thumbnailUrl;
-/// Light-scheme thumbnail image URL template (contains a {size} placeholder). Null when the event's picture exists only in a dark variant.
+/// Light-scheme thumbnail image URL template (contains a {size} placeholder). Null when the event's picture exists only in a dark variant. Opaque URL: may carry a query string; substitute {size} only.
 @override final  String? thumbnailLightUrl;
-/// Dark-scheme thumbnail image URL template (contains a {size} placeholder). Null when the event's picture exists only in a light variant.
+/// Dark-scheme thumbnail image URL template (contains a {size} placeholder). Null when the event's picture exists only in a light variant. Opaque URL: may carry a query string; substitute {size} only.
 @override final  String? thumbnailDarkUrl;
 /// Name of the ride group the current user joined. Null when not registered, and always null for trip stages, which have no groups.
 @override final  String? groupName;

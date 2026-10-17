@@ -30,7 +30,7 @@ mixin _$PostDto {
  bool get deleted;/// Whether the post is signed by the team rather than by its author. Readers are then not told who wrote it: createdBy is absent unless the caller administers the team or wrote the post.
  bool get signedAsTeam;/// The team's POST tags the post carries, sorted by label. Empty when it carries none.
  List<TagDto> get tags;/// Plain-text opening of the markdown body, flattened (links become their label) and cut on a word boundary at about 200 characters. Null when the body holds no text. Lets a list row render its two lines without the body being sent at all — see the 'view' parameter.
- String? get excerpt;/// URL template of the post's first image, the one a card shows. Saves a compact row from carrying media.assets just to find a picture.
+ String? get excerpt;/// URL template of the post's first image, the one a card shows. Saves a compact row from carrying media.assets just to find a picture. Opaque URL: may carry a query string; substitute {size} only.
  String? get thumbnailUrl;/// Publication timestamp
  String? get publishAt;/// Creation timestamp
  String? get createdAt;/// Number of comments, replies included. Absent when the caller may not read the comments of this post — comments are members-only, so an outsider is told nothing, not even zero.
@@ -320,7 +320,7 @@ class _PostDto implements PostDto {
 
 /// Plain-text opening of the markdown body, flattened (links become their label) and cut on a word boundary at about 200 characters. Null when the body holds no text. Lets a list row render its two lines without the body being sent at all — see the 'view' parameter.
 @override final  String? excerpt;
-/// URL template of the post's first image, the one a card shows. Saves a compact row from carrying media.assets just to find a picture.
+/// URL template of the post's first image, the one a card shows. Saves a compact row from carrying media.assets just to find a picture. Opaque URL: may carry a query string; substitute {size} only.
 @override final  String? thumbnailUrl;
 /// Publication timestamp
 @override final  String? publishAt;

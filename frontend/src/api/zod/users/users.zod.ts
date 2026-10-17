@@ -383,7 +383,7 @@ export const GetMyDeletionImpactResponse = zod
               .string()
               .optional()
               .describe(
-                "URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team."
+                "URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team. Opaque URL: may carry a query string; substitute {size} only."
               ),
           })
           .describe('Team information')
@@ -405,7 +405,7 @@ export const GetMyDeletionImpactResponse = zod
               .string()
               .optional()
               .describe(
-                "URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team."
+                "URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team. Opaque URL: may carry a query string; substitute {size} only."
               ),
           })
           .describe('Team information')
@@ -427,7 +427,7 @@ export const GetMyDeletionImpactResponse = zod
               .string()
               .optional()
               .describe(
-                "URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team."
+                "URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team. Opaque URL: may carry a query string; substitute {size} only."
               ),
           })
           .describe('Team information')
@@ -593,7 +593,7 @@ export const ListMyParticipationsResponse = zod
                       .string()
                       .optional()
                       .describe(
-                        "URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team."
+                        "URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team. Opaque URL: may carry a query string; substitute {size} only."
                       ),
                   })
                   .describe('Team'),
@@ -613,8 +613,17 @@ export const ListMyParticipationsResponse = zod
                             id: zod.string().describe('ID (TSID)'),
                             fileName: zod.string().describe('Filename'),
                             contentType: zod.string().describe('Content-Type'),
-                            url: zod.string().describe('url'),
-                            imageUrl: zod.string().optional().describe('image template url'),
+                            url: zod
+                              .string()
+                              .describe(
+                                'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                              ),
+                            imageUrl: zod
+                              .string()
+                              .optional()
+                              .describe(
+                                'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                              ),
                             imageDimensions: zod
                               .object({
                                 width: zod.int().optional(),
@@ -637,8 +646,17 @@ export const ListMyParticipationsResponse = zod
                               id: zod.string().describe('ID (TSID)'),
                               fileName: zod.string().describe('Filename'),
                               contentType: zod.string().describe('Content-Type'),
-                              url: zod.string().describe('url'),
-                              imageUrl: zod.string().optional().describe('image template url'),
+                              url: zod
+                                .string()
+                                .describe(
+                                  'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                ),
+                              imageUrl: zod
+                                .string()
+                                .optional()
+                                .describe(
+                                  'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                ),
                               imageDimensions: zod
                                 .object({
                                   width: zod.int().optional(),
@@ -661,8 +679,17 @@ export const ListMyParticipationsResponse = zod
                               id: zod.string().describe('ID (TSID)'),
                               fileName: zod.string().describe('Filename'),
                               contentType: zod.string().describe('Content-Type'),
-                              url: zod.string().describe('url'),
-                              imageUrl: zod.string().optional().describe('image template url'),
+                              url: zod
+                                .string()
+                                .describe(
+                                  'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                ),
+                              imageUrl: zod
+                                .string()
+                                .optional()
+                                .describe(
+                                  'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                ),
                               imageDimensions: zod
                                 .object({
                                   width: zod.int().optional(),
@@ -684,8 +711,17 @@ export const ListMyParticipationsResponse = zod
                             id: zod.string().describe('ID (TSID)'),
                             fileName: zod.string().describe('Filename'),
                             contentType: zod.string().describe('Content-Type'),
-                            url: zod.string().describe('url'),
-                            imageUrl: zod.string().optional().describe('image template url'),
+                            url: zod
+                              .string()
+                              .describe(
+                                'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                              ),
+                            imageUrl: zod
+                              .string()
+                              .optional()
+                              .describe(
+                                'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                              ),
                             imageDimensions: zod
                               .object({
                                 width: zod.int().optional(),
@@ -707,8 +743,17 @@ export const ListMyParticipationsResponse = zod
                             id: zod.string().describe('ID (TSID)'),
                             fileName: zod.string().describe('Filename'),
                             contentType: zod.string().describe('Content-Type'),
-                            url: zod.string().describe('url'),
-                            imageUrl: zod.string().optional().describe('image template url'),
+                            url: zod
+                              .string()
+                              .describe(
+                                'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                              ),
+                            imageUrl: zod
+                              .string()
+                              .optional()
+                              .describe(
+                                'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                              ),
                             imageDimensions: zod
                               .object({
                                 width: zod.int().optional(),
@@ -730,8 +775,17 @@ export const ListMyParticipationsResponse = zod
                             id: zod.string().describe('ID (TSID)'),
                             fileName: zod.string().describe('Filename'),
                             contentType: zod.string().describe('Content-Type'),
-                            url: zod.string().describe('url'),
-                            imageUrl: zod.string().optional().describe('image template url'),
+                            url: zod
+                              .string()
+                              .describe(
+                                'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                              ),
+                            imageUrl: zod
+                              .string()
+                              .optional()
+                              .describe(
+                                'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                              ),
                             imageDimensions: zod
                               .object({
                                 width: zod.int().optional(),
@@ -753,8 +807,17 @@ export const ListMyParticipationsResponse = zod
                             id: zod.string().describe('ID (TSID)'),
                             fileName: zod.string().describe('Filename'),
                             contentType: zod.string().describe('Content-Type'),
-                            url: zod.string().describe('url'),
-                            imageUrl: zod.string().optional().describe('image template url'),
+                            url: zod
+                              .string()
+                              .describe(
+                                'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                              ),
+                            imageUrl: zod
+                              .string()
+                              .optional()
+                              .describe(
+                                'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                              ),
                             imageDimensions: zod
                               .object({
                                 width: zod.int().optional(),
@@ -776,8 +839,17 @@ export const ListMyParticipationsResponse = zod
                             id: zod.string().describe('ID (TSID)'),
                             fileName: zod.string().describe('Filename'),
                             contentType: zod.string().describe('Content-Type'),
-                            url: zod.string().describe('url'),
-                            imageUrl: zod.string().optional().describe('image template url'),
+                            url: zod
+                              .string()
+                              .describe(
+                                'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                              ),
+                            imageUrl: zod
+                              .string()
+                              .optional()
+                              .describe(
+                                'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                              ),
                             imageDimensions: zod
                               .object({
                                 width: zod.int().optional(),
@@ -905,16 +977,20 @@ export const ListMyParticipationsResponse = zod
                         thumbnailLightUrl: zod
                           .string()
                           .optional()
-                          .describe('Thumbnail URL (light) of the group route, if it has one'),
+                          .describe(
+                            'Thumbnail URL (light) of the group route, if it has one. Opaque URL: may carry a query string; substitute {size} only.'
+                          ),
                         thumbnailDarkUrl: zod
                           .string()
                           .optional()
-                          .describe('Thumbnail URL (dark) of the group route, if it has one'),
+                          .describe(
+                            'Thumbnail URL (dark) of the group route, if it has one. Opaque URL: may carry a query string; substitute {size} only.'
+                          ),
                         thumbnailUrl: zod
                           .string()
                           .optional()
                           .describe(
-                            "The one thumbnail of the group route to show when the client does not theme its cards: the light variant if there is one, else the dark one. Null when the group has no route or its route has no thumbnail — the ride's own thumbnail is then the one to fall back on."
+                            "The one thumbnail of the group route to show when the client does not theme its cards: the light variant if there is one, else the dark one. Null when the group has no route or its route has no thumbnail — the ride's own thumbnail is then the one to fall back on. Opaque URL: may carry a query string; substitute {size} only."
                           ),
                       })
                       .describe('Ride group information')
@@ -1038,13 +1114,23 @@ export const ListMyParticipationsResponse = zod
                       .describe('Public user information (limited fields)')
                   )
                   .describe('Preview of first participants (max 5)'),
-                thumbnailLightUrl: zod.string().optional().describe('Thumbnail URL (light)'),
-                thumbnailDarkUrl: zod.string().optional().describe('Thumbnail URL (dark)'),
+                thumbnailLightUrl: zod
+                  .string()
+                  .optional()
+                  .describe(
+                    'Thumbnail URL (light). Opaque URL: may carry a query string; substitute {size} only.'
+                  ),
+                thumbnailDarkUrl: zod
+                  .string()
+                  .optional()
+                  .describe(
+                    'Thumbnail URL (dark). Opaque URL: may carry a query string; substitute {size} only.'
+                  ),
                 thumbnailUrl: zod
                   .string()
                   .optional()
                   .describe(
-                    'The one thumbnail to show when the client does not theme its cards: the light variant if there is one, else the dark one. Saves a compact row from carrying media.assets just to find a picture.'
+                    'The one thumbnail to show when the client does not theme its cards: the light variant if there is one, else the dark one. Saves a compact row from carrying media.assets just to find a picture. Opaque URL: may carry a query string; substitute {size} only.'
                   ),
                 deleted: zod.boolean().describe('Whether the ride is soft-deleted'),
                 registered: zod
@@ -1122,16 +1208,20 @@ export const ListMyParticipationsResponse = zod
                     thumbnailLightUrl: zod
                       .string()
                       .optional()
-                      .describe('Thumbnail URL (light) of the group route, if it has one'),
+                      .describe(
+                        'Thumbnail URL (light) of the group route, if it has one. Opaque URL: may carry a query string; substitute {size} only.'
+                      ),
                     thumbnailDarkUrl: zod
                       .string()
                       .optional()
-                      .describe('Thumbnail URL (dark) of the group route, if it has one'),
+                      .describe(
+                        'Thumbnail URL (dark) of the group route, if it has one. Opaque URL: may carry a query string; substitute {size} only.'
+                      ),
                     thumbnailUrl: zod
                       .string()
                       .optional()
                       .describe(
-                        "The one thumbnail of the group route to show when the client does not theme its cards: the light variant if there is one, else the dark one. Null when the group has no route or its route has no thumbnail — the ride's own thumbnail is then the one to fall back on."
+                        "The one thumbnail of the group route to show when the client does not theme its cards: the light variant if there is one, else the dark one. Null when the group has no route or its route has no thumbnail — the ride's own thumbnail is then the one to fall back on. Opaque URL: may carry a query string; substitute {size} only."
                       ),
                   })
                   .optional()
@@ -1325,7 +1415,7 @@ export const ListMyParticipationsResponse = zod
                       .string()
                       .optional()
                       .describe(
-                        "URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team."
+                        "URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team. Opaque URL: may carry a query string; substitute {size} only."
                       ),
                   })
                   .describe('Team'),
@@ -1345,8 +1435,17 @@ export const ListMyParticipationsResponse = zod
                             id: zod.string().describe('ID (TSID)'),
                             fileName: zod.string().describe('Filename'),
                             contentType: zod.string().describe('Content-Type'),
-                            url: zod.string().describe('url'),
-                            imageUrl: zod.string().optional().describe('image template url'),
+                            url: zod
+                              .string()
+                              .describe(
+                                'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                              ),
+                            imageUrl: zod
+                              .string()
+                              .optional()
+                              .describe(
+                                'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                              ),
                             imageDimensions: zod
                               .object({
                                 width: zod.int().optional(),
@@ -1369,8 +1468,17 @@ export const ListMyParticipationsResponse = zod
                               id: zod.string().describe('ID (TSID)'),
                               fileName: zod.string().describe('Filename'),
                               contentType: zod.string().describe('Content-Type'),
-                              url: zod.string().describe('url'),
-                              imageUrl: zod.string().optional().describe('image template url'),
+                              url: zod
+                                .string()
+                                .describe(
+                                  'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                ),
+                              imageUrl: zod
+                                .string()
+                                .optional()
+                                .describe(
+                                  'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                ),
                               imageDimensions: zod
                                 .object({
                                   width: zod.int().optional(),
@@ -1393,8 +1501,17 @@ export const ListMyParticipationsResponse = zod
                               id: zod.string().describe('ID (TSID)'),
                               fileName: zod.string().describe('Filename'),
                               contentType: zod.string().describe('Content-Type'),
-                              url: zod.string().describe('url'),
-                              imageUrl: zod.string().optional().describe('image template url'),
+                              url: zod
+                                .string()
+                                .describe(
+                                  'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                ),
+                              imageUrl: zod
+                                .string()
+                                .optional()
+                                .describe(
+                                  'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                ),
                               imageDimensions: zod
                                 .object({
                                   width: zod.int().optional(),
@@ -1416,8 +1533,17 @@ export const ListMyParticipationsResponse = zod
                             id: zod.string().describe('ID (TSID)'),
                             fileName: zod.string().describe('Filename'),
                             contentType: zod.string().describe('Content-Type'),
-                            url: zod.string().describe('url'),
-                            imageUrl: zod.string().optional().describe('image template url'),
+                            url: zod
+                              .string()
+                              .describe(
+                                'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                              ),
+                            imageUrl: zod
+                              .string()
+                              .optional()
+                              .describe(
+                                'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                              ),
                             imageDimensions: zod
                               .object({
                                 width: zod.int().optional(),
@@ -1439,8 +1565,17 @@ export const ListMyParticipationsResponse = zod
                             id: zod.string().describe('ID (TSID)'),
                             fileName: zod.string().describe('Filename'),
                             contentType: zod.string().describe('Content-Type'),
-                            url: zod.string().describe('url'),
-                            imageUrl: zod.string().optional().describe('image template url'),
+                            url: zod
+                              .string()
+                              .describe(
+                                'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                              ),
+                            imageUrl: zod
+                              .string()
+                              .optional()
+                              .describe(
+                                'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                              ),
                             imageDimensions: zod
                               .object({
                                 width: zod.int().optional(),
@@ -1462,8 +1597,17 @@ export const ListMyParticipationsResponse = zod
                             id: zod.string().describe('ID (TSID)'),
                             fileName: zod.string().describe('Filename'),
                             contentType: zod.string().describe('Content-Type'),
-                            url: zod.string().describe('url'),
-                            imageUrl: zod.string().optional().describe('image template url'),
+                            url: zod
+                              .string()
+                              .describe(
+                                'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                              ),
+                            imageUrl: zod
+                              .string()
+                              .optional()
+                              .describe(
+                                'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                              ),
                             imageDimensions: zod
                               .object({
                                 width: zod.int().optional(),
@@ -1485,8 +1629,17 @@ export const ListMyParticipationsResponse = zod
                             id: zod.string().describe('ID (TSID)'),
                             fileName: zod.string().describe('Filename'),
                             contentType: zod.string().describe('Content-Type'),
-                            url: zod.string().describe('url'),
-                            imageUrl: zod.string().optional().describe('image template url'),
+                            url: zod
+                              .string()
+                              .describe(
+                                'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                              ),
+                            imageUrl: zod
+                              .string()
+                              .optional()
+                              .describe(
+                                'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                              ),
                             imageDimensions: zod
                               .object({
                                 width: zod.int().optional(),
@@ -1508,8 +1661,17 @@ export const ListMyParticipationsResponse = zod
                             id: zod.string().describe('ID (TSID)'),
                             fileName: zod.string().describe('Filename'),
                             contentType: zod.string().describe('Content-Type'),
-                            url: zod.string().describe('url'),
-                            imageUrl: zod.string().optional().describe('image template url'),
+                            url: zod
+                              .string()
+                              .describe(
+                                'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                              ),
+                            imageUrl: zod
+                              .string()
+                              .optional()
+                              .describe(
+                                'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                              ),
                             imageDimensions: zod
                               .object({
                                 width: zod.int().optional(),
@@ -1540,7 +1702,7 @@ export const ListMyParticipationsResponse = zod
                   .string()
                   .optional()
                   .describe(
-                    "URL template of the post's first image, the one a card shows. Saves a compact row from carrying media.assets just to find a picture."
+                    "URL template of the post's first image, the one a card shows. Saves a compact row from carrying media.assets just to find a picture. Opaque URL: may carry a query string; substitute {size} only."
                   ),
                 dateTime: zod.iso.datetime({ offset: true }).describe('Publication date/time'),
                 timezone: zod
@@ -1626,7 +1788,7 @@ export const ListMyParticipationsResponse = zod
                       .string()
                       .optional()
                       .describe(
-                        "URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team."
+                        "URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team. Opaque URL: may carry a query string; substitute {size} only."
                       ),
                   })
                   .describe('Team'),
@@ -1646,8 +1808,17 @@ export const ListMyParticipationsResponse = zod
                             id: zod.string().describe('ID (TSID)'),
                             fileName: zod.string().describe('Filename'),
                             contentType: zod.string().describe('Content-Type'),
-                            url: zod.string().describe('url'),
-                            imageUrl: zod.string().optional().describe('image template url'),
+                            url: zod
+                              .string()
+                              .describe(
+                                'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                              ),
+                            imageUrl: zod
+                              .string()
+                              .optional()
+                              .describe(
+                                'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                              ),
                             imageDimensions: zod
                               .object({
                                 width: zod.int().optional(),
@@ -1670,8 +1841,17 @@ export const ListMyParticipationsResponse = zod
                               id: zod.string().describe('ID (TSID)'),
                               fileName: zod.string().describe('Filename'),
                               contentType: zod.string().describe('Content-Type'),
-                              url: zod.string().describe('url'),
-                              imageUrl: zod.string().optional().describe('image template url'),
+                              url: zod
+                                .string()
+                                .describe(
+                                  'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                ),
+                              imageUrl: zod
+                                .string()
+                                .optional()
+                                .describe(
+                                  'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                ),
                               imageDimensions: zod
                                 .object({
                                   width: zod.int().optional(),
@@ -1694,8 +1874,17 @@ export const ListMyParticipationsResponse = zod
                               id: zod.string().describe('ID (TSID)'),
                               fileName: zod.string().describe('Filename'),
                               contentType: zod.string().describe('Content-Type'),
-                              url: zod.string().describe('url'),
-                              imageUrl: zod.string().optional().describe('image template url'),
+                              url: zod
+                                .string()
+                                .describe(
+                                  'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                ),
+                              imageUrl: zod
+                                .string()
+                                .optional()
+                                .describe(
+                                  'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                ),
                               imageDimensions: zod
                                 .object({
                                   width: zod.int().optional(),
@@ -1717,8 +1906,17 @@ export const ListMyParticipationsResponse = zod
                             id: zod.string().describe('ID (TSID)'),
                             fileName: zod.string().describe('Filename'),
                             contentType: zod.string().describe('Content-Type'),
-                            url: zod.string().describe('url'),
-                            imageUrl: zod.string().optional().describe('image template url'),
+                            url: zod
+                              .string()
+                              .describe(
+                                'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                              ),
+                            imageUrl: zod
+                              .string()
+                              .optional()
+                              .describe(
+                                'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                              ),
                             imageDimensions: zod
                               .object({
                                 width: zod.int().optional(),
@@ -1740,8 +1938,17 @@ export const ListMyParticipationsResponse = zod
                             id: zod.string().describe('ID (TSID)'),
                             fileName: zod.string().describe('Filename'),
                             contentType: zod.string().describe('Content-Type'),
-                            url: zod.string().describe('url'),
-                            imageUrl: zod.string().optional().describe('image template url'),
+                            url: zod
+                              .string()
+                              .describe(
+                                'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                              ),
+                            imageUrl: zod
+                              .string()
+                              .optional()
+                              .describe(
+                                'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                              ),
                             imageDimensions: zod
                               .object({
                                 width: zod.int().optional(),
@@ -1763,8 +1970,17 @@ export const ListMyParticipationsResponse = zod
                             id: zod.string().describe('ID (TSID)'),
                             fileName: zod.string().describe('Filename'),
                             contentType: zod.string().describe('Content-Type'),
-                            url: zod.string().describe('url'),
-                            imageUrl: zod.string().optional().describe('image template url'),
+                            url: zod
+                              .string()
+                              .describe(
+                                'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                              ),
+                            imageUrl: zod
+                              .string()
+                              .optional()
+                              .describe(
+                                'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                              ),
                             imageDimensions: zod
                               .object({
                                 width: zod.int().optional(),
@@ -1786,8 +2002,17 @@ export const ListMyParticipationsResponse = zod
                             id: zod.string().describe('ID (TSID)'),
                             fileName: zod.string().describe('Filename'),
                             contentType: zod.string().describe('Content-Type'),
-                            url: zod.string().describe('url'),
-                            imageUrl: zod.string().optional().describe('image template url'),
+                            url: zod
+                              .string()
+                              .describe(
+                                'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                              ),
+                            imageUrl: zod
+                              .string()
+                              .optional()
+                              .describe(
+                                'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                              ),
                             imageDimensions: zod
                               .object({
                                 width: zod.int().optional(),
@@ -1809,8 +2034,17 @@ export const ListMyParticipationsResponse = zod
                             id: zod.string().describe('ID (TSID)'),
                             fileName: zod.string().describe('Filename'),
                             contentType: zod.string().describe('Content-Type'),
-                            url: zod.string().describe('url'),
-                            imageUrl: zod.string().optional().describe('image template url'),
+                            url: zod
+                              .string()
+                              .describe(
+                                'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                              ),
+                            imageUrl: zod
+                              .string()
+                              .optional()
+                              .describe(
+                                'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                              ),
                             imageDimensions: zod
                               .object({
                                 width: zod.int().optional(),
@@ -1918,7 +2152,7 @@ export const ListMyParticipationsResponse = zod
                                   .string()
                                   .optional()
                                   .describe(
-                                    "URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team."
+                                    "URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team. Opaque URL: may carry a query string; substitute {size} only."
                                   ),
                               })
                               .describe('Team'),
@@ -1938,11 +2172,17 @@ export const ListMyParticipationsResponse = zod
                                         id: zod.string().describe('ID (TSID)'),
                                         fileName: zod.string().describe('Filename'),
                                         contentType: zod.string().describe('Content-Type'),
-                                        url: zod.string().describe('url'),
+                                        url: zod
+                                          .string()
+                                          .describe(
+                                            'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                          ),
                                         imageUrl: zod
                                           .string()
                                           .optional()
-                                          .describe('image template url'),
+                                          .describe(
+                                            'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                          ),
                                         imageDimensions: zod
                                           .object({
                                             width: zod.int().optional(),
@@ -1965,11 +2205,17 @@ export const ListMyParticipationsResponse = zod
                                           id: zod.string().describe('ID (TSID)'),
                                           fileName: zod.string().describe('Filename'),
                                           contentType: zod.string().describe('Content-Type'),
-                                          url: zod.string().describe('url'),
+                                          url: zod
+                                            .string()
+                                            .describe(
+                                              'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                            ),
                                           imageUrl: zod
                                             .string()
                                             .optional()
-                                            .describe('image template url'),
+                                            .describe(
+                                              'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                            ),
                                           imageDimensions: zod
                                             .object({
                                               width: zod.int().optional(),
@@ -1992,11 +2238,17 @@ export const ListMyParticipationsResponse = zod
                                           id: zod.string().describe('ID (TSID)'),
                                           fileName: zod.string().describe('Filename'),
                                           contentType: zod.string().describe('Content-Type'),
-                                          url: zod.string().describe('url'),
+                                          url: zod
+                                            .string()
+                                            .describe(
+                                              'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                            ),
                                           imageUrl: zod
                                             .string()
                                             .optional()
-                                            .describe('image template url'),
+                                            .describe(
+                                              'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                            ),
                                           imageDimensions: zod
                                             .object({
                                               width: zod.int().optional(),
@@ -2018,11 +2270,17 @@ export const ListMyParticipationsResponse = zod
                                         id: zod.string().describe('ID (TSID)'),
                                         fileName: zod.string().describe('Filename'),
                                         contentType: zod.string().describe('Content-Type'),
-                                        url: zod.string().describe('url'),
+                                        url: zod
+                                          .string()
+                                          .describe(
+                                            'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                          ),
                                         imageUrl: zod
                                           .string()
                                           .optional()
-                                          .describe('image template url'),
+                                          .describe(
+                                            'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                          ),
                                         imageDimensions: zod
                                           .object({
                                             width: zod.int().optional(),
@@ -2044,11 +2302,17 @@ export const ListMyParticipationsResponse = zod
                                         id: zod.string().describe('ID (TSID)'),
                                         fileName: zod.string().describe('Filename'),
                                         contentType: zod.string().describe('Content-Type'),
-                                        url: zod.string().describe('url'),
+                                        url: zod
+                                          .string()
+                                          .describe(
+                                            'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                          ),
                                         imageUrl: zod
                                           .string()
                                           .optional()
-                                          .describe('image template url'),
+                                          .describe(
+                                            'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                          ),
                                         imageDimensions: zod
                                           .object({
                                             width: zod.int().optional(),
@@ -2070,11 +2334,17 @@ export const ListMyParticipationsResponse = zod
                                         id: zod.string().describe('ID (TSID)'),
                                         fileName: zod.string().describe('Filename'),
                                         contentType: zod.string().describe('Content-Type'),
-                                        url: zod.string().describe('url'),
+                                        url: zod
+                                          .string()
+                                          .describe(
+                                            'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                          ),
                                         imageUrl: zod
                                           .string()
                                           .optional()
-                                          .describe('image template url'),
+                                          .describe(
+                                            'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                          ),
                                         imageDimensions: zod
                                           .object({
                                             width: zod.int().optional(),
@@ -2096,11 +2366,17 @@ export const ListMyParticipationsResponse = zod
                                         id: zod.string().describe('ID (TSID)'),
                                         fileName: zod.string().describe('Filename'),
                                         contentType: zod.string().describe('Content-Type'),
-                                        url: zod.string().describe('url'),
+                                        url: zod
+                                          .string()
+                                          .describe(
+                                            'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                          ),
                                         imageUrl: zod
                                           .string()
                                           .optional()
-                                          .describe('image template url'),
+                                          .describe(
+                                            'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                          ),
                                         imageDimensions: zod
                                           .object({
                                             width: zod.int().optional(),
@@ -2122,11 +2398,17 @@ export const ListMyParticipationsResponse = zod
                                         id: zod.string().describe('ID (TSID)'),
                                         fileName: zod.string().describe('Filename'),
                                         contentType: zod.string().describe('Content-Type'),
-                                        url: zod.string().describe('url'),
+                                        url: zod
+                                          .string()
+                                          .describe(
+                                            'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                          ),
                                         imageUrl: zod
                                           .string()
                                           .optional()
-                                          .describe('image template url'),
+                                          .describe(
+                                            'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                          ),
                                         imageDimensions: zod
                                           .object({
                                             width: zod.int().optional(),
@@ -2157,7 +2439,7 @@ export const ListMyParticipationsResponse = zod
                               .string()
                               .optional()
                               .describe(
-                                "URL template of the route's thumbnail, light variant if there is one, else dark. Saves a compact row from carrying media.assets just to find the map preview."
+                                "URL template of the route's thumbnail, light variant if there is one, else dark. Saves a compact row from carrying media.assets just to find the map preview. Opaque URL: may carry a query string; substitute {size} only."
                               ),
                             distance: zod.number().describe('Distance in meters'),
                             elevationGain: zod.number().describe('Total elevation gain in meters'),
@@ -2261,11 +2543,17 @@ export const ListMyParticipationsResponse = zod
                                     id: zod.string().describe('ID (TSID)'),
                                     fileName: zod.string().describe('Filename'),
                                     contentType: zod.string().describe('Content-Type'),
-                                    url: zod.string().describe('url'),
+                                    url: zod
+                                      .string()
+                                      .describe(
+                                        'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                      ),
                                     imageUrl: zod
                                       .string()
                                       .optional()
-                                      .describe('image template url'),
+                                      .describe(
+                                        'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                      ),
                                     imageDimensions: zod
                                       .object({
                                         width: zod.int().optional(),
@@ -2288,11 +2576,17 @@ export const ListMyParticipationsResponse = zod
                                       id: zod.string().describe('ID (TSID)'),
                                       fileName: zod.string().describe('Filename'),
                                       contentType: zod.string().describe('Content-Type'),
-                                      url: zod.string().describe('url'),
+                                      url: zod
+                                        .string()
+                                        .describe(
+                                          'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                        ),
                                       imageUrl: zod
                                         .string()
                                         .optional()
-                                        .describe('image template url'),
+                                        .describe(
+                                          'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                        ),
                                       imageDimensions: zod
                                         .object({
                                           width: zod.int().optional(),
@@ -2315,11 +2609,17 @@ export const ListMyParticipationsResponse = zod
                                       id: zod.string().describe('ID (TSID)'),
                                       fileName: zod.string().describe('Filename'),
                                       contentType: zod.string().describe('Content-Type'),
-                                      url: zod.string().describe('url'),
+                                      url: zod
+                                        .string()
+                                        .describe(
+                                          'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                        ),
                                       imageUrl: zod
                                         .string()
                                         .optional()
-                                        .describe('image template url'),
+                                        .describe(
+                                          'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                        ),
                                       imageDimensions: zod
                                         .object({
                                           width: zod.int().optional(),
@@ -2341,11 +2641,17 @@ export const ListMyParticipationsResponse = zod
                                     id: zod.string().describe('ID (TSID)'),
                                     fileName: zod.string().describe('Filename'),
                                     contentType: zod.string().describe('Content-Type'),
-                                    url: zod.string().describe('url'),
+                                    url: zod
+                                      .string()
+                                      .describe(
+                                        'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                      ),
                                     imageUrl: zod
                                       .string()
                                       .optional()
-                                      .describe('image template url'),
+                                      .describe(
+                                        'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                      ),
                                     imageDimensions: zod
                                       .object({
                                         width: zod.int().optional(),
@@ -2367,11 +2673,17 @@ export const ListMyParticipationsResponse = zod
                                     id: zod.string().describe('ID (TSID)'),
                                     fileName: zod.string().describe('Filename'),
                                     contentType: zod.string().describe('Content-Type'),
-                                    url: zod.string().describe('url'),
+                                    url: zod
+                                      .string()
+                                      .describe(
+                                        'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                      ),
                                     imageUrl: zod
                                       .string()
                                       .optional()
-                                      .describe('image template url'),
+                                      .describe(
+                                        'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                      ),
                                     imageDimensions: zod
                                       .object({
                                         width: zod.int().optional(),
@@ -2393,11 +2705,17 @@ export const ListMyParticipationsResponse = zod
                                     id: zod.string().describe('ID (TSID)'),
                                     fileName: zod.string().describe('Filename'),
                                     contentType: zod.string().describe('Content-Type'),
-                                    url: zod.string().describe('url'),
+                                    url: zod
+                                      .string()
+                                      .describe(
+                                        'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                      ),
                                     imageUrl: zod
                                       .string()
                                       .optional()
-                                      .describe('image template url'),
+                                      .describe(
+                                        'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                      ),
                                     imageDimensions: zod
                                       .object({
                                         width: zod.int().optional(),
@@ -2419,11 +2737,17 @@ export const ListMyParticipationsResponse = zod
                                     id: zod.string().describe('ID (TSID)'),
                                     fileName: zod.string().describe('Filename'),
                                     contentType: zod.string().describe('Content-Type'),
-                                    url: zod.string().describe('url'),
+                                    url: zod
+                                      .string()
+                                      .describe(
+                                        'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                      ),
                                     imageUrl: zod
                                       .string()
                                       .optional()
-                                      .describe('image template url'),
+                                      .describe(
+                                        'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                      ),
                                     imageDimensions: zod
                                       .object({
                                         width: zod.int().optional(),
@@ -2445,11 +2769,17 @@ export const ListMyParticipationsResponse = zod
                                     id: zod.string().describe('ID (TSID)'),
                                     fileName: zod.string().describe('Filename'),
                                     contentType: zod.string().describe('Content-Type'),
-                                    url: zod.string().describe('url'),
+                                    url: zod
+                                      .string()
+                                      .describe(
+                                        'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                      ),
                                     imageUrl: zod
                                       .string()
                                       .optional()
-                                      .describe('image template url'),
+                                      .describe(
+                                        'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                      ),
                                     imageDimensions: zod
                                       .object({
                                         width: zod.int().optional(),
@@ -2504,13 +2834,23 @@ export const ListMyParticipationsResponse = zod
                   .describe(
                     'The first participants of the trip (at most 8), earliest registrations first — enough to draw avatars; empty on a list row. participantCount is the total; the whole list is paginated and searched by GET …/trips/{tripSlug}/participants.'
                   ),
-                thumbnailLightUrl: zod.string().optional().describe('Thumbnail URL (light)'),
-                thumbnailDarkUrl: zod.string().optional().describe('Thumbnail URL (dark)'),
+                thumbnailLightUrl: zod
+                  .string()
+                  .optional()
+                  .describe(
+                    'Thumbnail URL (light). Opaque URL: may carry a query string; substitute {size} only.'
+                  ),
+                thumbnailDarkUrl: zod
+                  .string()
+                  .optional()
+                  .describe(
+                    'Thumbnail URL (dark). Opaque URL: may carry a query string; substitute {size} only.'
+                  ),
                 thumbnailUrl: zod
                   .string()
                   .optional()
                   .describe(
-                    'The one thumbnail to show when the client does not theme its cards: the light variant if there is one, else the dark one. Saves a compact row from carrying media.assets just to find a picture.'
+                    'The one thumbnail to show when the client does not theme its cards: the light variant if there is one, else the dark one. Saves a compact row from carrying media.assets just to find a picture. Opaque URL: may carry a query string; substitute {size} only.'
                   ),
                 deleted: zod.boolean().describe('Whether the trip is soft-deleted'),
                 registered: zod
@@ -2859,7 +3199,7 @@ export const GetMyProfileSummaryResponse = zod
                           .string()
                           .optional()
                           .describe(
-                            "URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team."
+                            "URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team. Opaque URL: may carry a query string; substitute {size} only."
                           ),
                       })
                       .describe('Team'),
@@ -2879,8 +3219,17 @@ export const GetMyProfileSummaryResponse = zod
                                 id: zod.string().describe('ID (TSID)'),
                                 fileName: zod.string().describe('Filename'),
                                 contentType: zod.string().describe('Content-Type'),
-                                url: zod.string().describe('url'),
-                                imageUrl: zod.string().optional().describe('image template url'),
+                                url: zod
+                                  .string()
+                                  .describe(
+                                    'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                  ),
+                                imageUrl: zod
+                                  .string()
+                                  .optional()
+                                  .describe(
+                                    'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                  ),
                                 imageDimensions: zod
                                   .object({
                                     width: zod.int().optional(),
@@ -2903,8 +3252,17 @@ export const GetMyProfileSummaryResponse = zod
                                   id: zod.string().describe('ID (TSID)'),
                                   fileName: zod.string().describe('Filename'),
                                   contentType: zod.string().describe('Content-Type'),
-                                  url: zod.string().describe('url'),
-                                  imageUrl: zod.string().optional().describe('image template url'),
+                                  url: zod
+                                    .string()
+                                    .describe(
+                                      'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                    ),
+                                  imageUrl: zod
+                                    .string()
+                                    .optional()
+                                    .describe(
+                                      'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                    ),
                                   imageDimensions: zod
                                     .object({
                                       width: zod.int().optional(),
@@ -2927,8 +3285,17 @@ export const GetMyProfileSummaryResponse = zod
                                   id: zod.string().describe('ID (TSID)'),
                                   fileName: zod.string().describe('Filename'),
                                   contentType: zod.string().describe('Content-Type'),
-                                  url: zod.string().describe('url'),
-                                  imageUrl: zod.string().optional().describe('image template url'),
+                                  url: zod
+                                    .string()
+                                    .describe(
+                                      'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                    ),
+                                  imageUrl: zod
+                                    .string()
+                                    .optional()
+                                    .describe(
+                                      'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                    ),
                                   imageDimensions: zod
                                     .object({
                                       width: zod.int().optional(),
@@ -2950,8 +3317,17 @@ export const GetMyProfileSummaryResponse = zod
                                 id: zod.string().describe('ID (TSID)'),
                                 fileName: zod.string().describe('Filename'),
                                 contentType: zod.string().describe('Content-Type'),
-                                url: zod.string().describe('url'),
-                                imageUrl: zod.string().optional().describe('image template url'),
+                                url: zod
+                                  .string()
+                                  .describe(
+                                    'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                  ),
+                                imageUrl: zod
+                                  .string()
+                                  .optional()
+                                  .describe(
+                                    'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                  ),
                                 imageDimensions: zod
                                   .object({
                                     width: zod.int().optional(),
@@ -2973,8 +3349,17 @@ export const GetMyProfileSummaryResponse = zod
                                 id: zod.string().describe('ID (TSID)'),
                                 fileName: zod.string().describe('Filename'),
                                 contentType: zod.string().describe('Content-Type'),
-                                url: zod.string().describe('url'),
-                                imageUrl: zod.string().optional().describe('image template url'),
+                                url: zod
+                                  .string()
+                                  .describe(
+                                    'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                  ),
+                                imageUrl: zod
+                                  .string()
+                                  .optional()
+                                  .describe(
+                                    'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                  ),
                                 imageDimensions: zod
                                   .object({
                                     width: zod.int().optional(),
@@ -2996,8 +3381,17 @@ export const GetMyProfileSummaryResponse = zod
                                 id: zod.string().describe('ID (TSID)'),
                                 fileName: zod.string().describe('Filename'),
                                 contentType: zod.string().describe('Content-Type'),
-                                url: zod.string().describe('url'),
-                                imageUrl: zod.string().optional().describe('image template url'),
+                                url: zod
+                                  .string()
+                                  .describe(
+                                    'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                  ),
+                                imageUrl: zod
+                                  .string()
+                                  .optional()
+                                  .describe(
+                                    'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                  ),
                                 imageDimensions: zod
                                   .object({
                                     width: zod.int().optional(),
@@ -3019,8 +3413,17 @@ export const GetMyProfileSummaryResponse = zod
                                 id: zod.string().describe('ID (TSID)'),
                                 fileName: zod.string().describe('Filename'),
                                 contentType: zod.string().describe('Content-Type'),
-                                url: zod.string().describe('url'),
-                                imageUrl: zod.string().optional().describe('image template url'),
+                                url: zod
+                                  .string()
+                                  .describe(
+                                    'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                  ),
+                                imageUrl: zod
+                                  .string()
+                                  .optional()
+                                  .describe(
+                                    'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                  ),
                                 imageDimensions: zod
                                   .object({
                                     width: zod.int().optional(),
@@ -3042,8 +3445,17 @@ export const GetMyProfileSummaryResponse = zod
                                 id: zod.string().describe('ID (TSID)'),
                                 fileName: zod.string().describe('Filename'),
                                 contentType: zod.string().describe('Content-Type'),
-                                url: zod.string().describe('url'),
-                                imageUrl: zod.string().optional().describe('image template url'),
+                                url: zod
+                                  .string()
+                                  .describe(
+                                    'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                  ),
+                                imageUrl: zod
+                                  .string()
+                                  .optional()
+                                  .describe(
+                                    'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                  ),
                                 imageDimensions: zod
                                   .object({
                                     width: zod.int().optional(),
@@ -3171,16 +3583,20 @@ export const GetMyProfileSummaryResponse = zod
                             thumbnailLightUrl: zod
                               .string()
                               .optional()
-                              .describe('Thumbnail URL (light) of the group route, if it has one'),
+                              .describe(
+                                'Thumbnail URL (light) of the group route, if it has one. Opaque URL: may carry a query string; substitute {size} only.'
+                              ),
                             thumbnailDarkUrl: zod
                               .string()
                               .optional()
-                              .describe('Thumbnail URL (dark) of the group route, if it has one'),
+                              .describe(
+                                'Thumbnail URL (dark) of the group route, if it has one. Opaque URL: may carry a query string; substitute {size} only.'
+                              ),
                             thumbnailUrl: zod
                               .string()
                               .optional()
                               .describe(
-                                "The one thumbnail of the group route to show when the client does not theme its cards: the light variant if there is one, else the dark one. Null when the group has no route or its route has no thumbnail — the ride's own thumbnail is then the one to fall back on."
+                                "The one thumbnail of the group route to show when the client does not theme its cards: the light variant if there is one, else the dark one. Null when the group has no route or its route has no thumbnail — the ride's own thumbnail is then the one to fall back on. Opaque URL: may carry a query string; substitute {size} only."
                               ),
                           })
                           .describe('Ride group information')
@@ -3304,13 +3720,23 @@ export const GetMyProfileSummaryResponse = zod
                           .describe('Public user information (limited fields)')
                       )
                       .describe('Preview of first participants (max 5)'),
-                    thumbnailLightUrl: zod.string().optional().describe('Thumbnail URL (light)'),
-                    thumbnailDarkUrl: zod.string().optional().describe('Thumbnail URL (dark)'),
+                    thumbnailLightUrl: zod
+                      .string()
+                      .optional()
+                      .describe(
+                        'Thumbnail URL (light). Opaque URL: may carry a query string; substitute {size} only.'
+                      ),
+                    thumbnailDarkUrl: zod
+                      .string()
+                      .optional()
+                      .describe(
+                        'Thumbnail URL (dark). Opaque URL: may carry a query string; substitute {size} only.'
+                      ),
                     thumbnailUrl: zod
                       .string()
                       .optional()
                       .describe(
-                        'The one thumbnail to show when the client does not theme its cards: the light variant if there is one, else the dark one. Saves a compact row from carrying media.assets just to find a picture.'
+                        'The one thumbnail to show when the client does not theme its cards: the light variant if there is one, else the dark one. Saves a compact row from carrying media.assets just to find a picture. Opaque URL: may carry a query string; substitute {size} only.'
                       ),
                     deleted: zod.boolean().describe('Whether the ride is soft-deleted'),
                     registered: zod
@@ -3390,16 +3816,20 @@ export const GetMyProfileSummaryResponse = zod
                         thumbnailLightUrl: zod
                           .string()
                           .optional()
-                          .describe('Thumbnail URL (light) of the group route, if it has one'),
+                          .describe(
+                            'Thumbnail URL (light) of the group route, if it has one. Opaque URL: may carry a query string; substitute {size} only.'
+                          ),
                         thumbnailDarkUrl: zod
                           .string()
                           .optional()
-                          .describe('Thumbnail URL (dark) of the group route, if it has one'),
+                          .describe(
+                            'Thumbnail URL (dark) of the group route, if it has one. Opaque URL: may carry a query string; substitute {size} only.'
+                          ),
                         thumbnailUrl: zod
                           .string()
                           .optional()
                           .describe(
-                            "The one thumbnail of the group route to show when the client does not theme its cards: the light variant if there is one, else the dark one. Null when the group has no route or its route has no thumbnail — the ride's own thumbnail is then the one to fall back on."
+                            "The one thumbnail of the group route to show when the client does not theme its cards: the light variant if there is one, else the dark one. Null when the group has no route or its route has no thumbnail — the ride's own thumbnail is then the one to fall back on. Opaque URL: may carry a query string; substitute {size} only."
                           ),
                       })
                       .optional()
@@ -3596,7 +4026,7 @@ export const GetMyProfileSummaryResponse = zod
                           .string()
                           .optional()
                           .describe(
-                            "URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team."
+                            "URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team. Opaque URL: may carry a query string; substitute {size} only."
                           ),
                       })
                       .describe('Team'),
@@ -3616,8 +4046,17 @@ export const GetMyProfileSummaryResponse = zod
                                 id: zod.string().describe('ID (TSID)'),
                                 fileName: zod.string().describe('Filename'),
                                 contentType: zod.string().describe('Content-Type'),
-                                url: zod.string().describe('url'),
-                                imageUrl: zod.string().optional().describe('image template url'),
+                                url: zod
+                                  .string()
+                                  .describe(
+                                    'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                  ),
+                                imageUrl: zod
+                                  .string()
+                                  .optional()
+                                  .describe(
+                                    'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                  ),
                                 imageDimensions: zod
                                   .object({
                                     width: zod.int().optional(),
@@ -3640,8 +4079,17 @@ export const GetMyProfileSummaryResponse = zod
                                   id: zod.string().describe('ID (TSID)'),
                                   fileName: zod.string().describe('Filename'),
                                   contentType: zod.string().describe('Content-Type'),
-                                  url: zod.string().describe('url'),
-                                  imageUrl: zod.string().optional().describe('image template url'),
+                                  url: zod
+                                    .string()
+                                    .describe(
+                                      'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                    ),
+                                  imageUrl: zod
+                                    .string()
+                                    .optional()
+                                    .describe(
+                                      'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                    ),
                                   imageDimensions: zod
                                     .object({
                                       width: zod.int().optional(),
@@ -3664,8 +4112,17 @@ export const GetMyProfileSummaryResponse = zod
                                   id: zod.string().describe('ID (TSID)'),
                                   fileName: zod.string().describe('Filename'),
                                   contentType: zod.string().describe('Content-Type'),
-                                  url: zod.string().describe('url'),
-                                  imageUrl: zod.string().optional().describe('image template url'),
+                                  url: zod
+                                    .string()
+                                    .describe(
+                                      'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                    ),
+                                  imageUrl: zod
+                                    .string()
+                                    .optional()
+                                    .describe(
+                                      'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                    ),
                                   imageDimensions: zod
                                     .object({
                                       width: zod.int().optional(),
@@ -3687,8 +4144,17 @@ export const GetMyProfileSummaryResponse = zod
                                 id: zod.string().describe('ID (TSID)'),
                                 fileName: zod.string().describe('Filename'),
                                 contentType: zod.string().describe('Content-Type'),
-                                url: zod.string().describe('url'),
-                                imageUrl: zod.string().optional().describe('image template url'),
+                                url: zod
+                                  .string()
+                                  .describe(
+                                    'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                  ),
+                                imageUrl: zod
+                                  .string()
+                                  .optional()
+                                  .describe(
+                                    'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                  ),
                                 imageDimensions: zod
                                   .object({
                                     width: zod.int().optional(),
@@ -3710,8 +4176,17 @@ export const GetMyProfileSummaryResponse = zod
                                 id: zod.string().describe('ID (TSID)'),
                                 fileName: zod.string().describe('Filename'),
                                 contentType: zod.string().describe('Content-Type'),
-                                url: zod.string().describe('url'),
-                                imageUrl: zod.string().optional().describe('image template url'),
+                                url: zod
+                                  .string()
+                                  .describe(
+                                    'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                  ),
+                                imageUrl: zod
+                                  .string()
+                                  .optional()
+                                  .describe(
+                                    'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                  ),
                                 imageDimensions: zod
                                   .object({
                                     width: zod.int().optional(),
@@ -3733,8 +4208,17 @@ export const GetMyProfileSummaryResponse = zod
                                 id: zod.string().describe('ID (TSID)'),
                                 fileName: zod.string().describe('Filename'),
                                 contentType: zod.string().describe('Content-Type'),
-                                url: zod.string().describe('url'),
-                                imageUrl: zod.string().optional().describe('image template url'),
+                                url: zod
+                                  .string()
+                                  .describe(
+                                    'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                  ),
+                                imageUrl: zod
+                                  .string()
+                                  .optional()
+                                  .describe(
+                                    'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                  ),
                                 imageDimensions: zod
                                   .object({
                                     width: zod.int().optional(),
@@ -3756,8 +4240,17 @@ export const GetMyProfileSummaryResponse = zod
                                 id: zod.string().describe('ID (TSID)'),
                                 fileName: zod.string().describe('Filename'),
                                 contentType: zod.string().describe('Content-Type'),
-                                url: zod.string().describe('url'),
-                                imageUrl: zod.string().optional().describe('image template url'),
+                                url: zod
+                                  .string()
+                                  .describe(
+                                    'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                  ),
+                                imageUrl: zod
+                                  .string()
+                                  .optional()
+                                  .describe(
+                                    'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                  ),
                                 imageDimensions: zod
                                   .object({
                                     width: zod.int().optional(),
@@ -3779,8 +4272,17 @@ export const GetMyProfileSummaryResponse = zod
                                 id: zod.string().describe('ID (TSID)'),
                                 fileName: zod.string().describe('Filename'),
                                 contentType: zod.string().describe('Content-Type'),
-                                url: zod.string().describe('url'),
-                                imageUrl: zod.string().optional().describe('image template url'),
+                                url: zod
+                                  .string()
+                                  .describe(
+                                    'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                  ),
+                                imageUrl: zod
+                                  .string()
+                                  .optional()
+                                  .describe(
+                                    'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                  ),
                                 imageDimensions: zod
                                   .object({
                                     width: zod.int().optional(),
@@ -3811,7 +4313,7 @@ export const GetMyProfileSummaryResponse = zod
                       .string()
                       .optional()
                       .describe(
-                        "URL template of the post's first image, the one a card shows. Saves a compact row from carrying media.assets just to find a picture."
+                        "URL template of the post's first image, the one a card shows. Saves a compact row from carrying media.assets just to find a picture. Opaque URL: may carry a query string; substitute {size} only."
                       ),
                     dateTime: zod.iso.datetime({ offset: true }).describe('Publication date/time'),
                     timezone: zod
@@ -3897,7 +4399,7 @@ export const GetMyProfileSummaryResponse = zod
                           .string()
                           .optional()
                           .describe(
-                            "URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team."
+                            "URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team. Opaque URL: may carry a query string; substitute {size} only."
                           ),
                       })
                       .describe('Team'),
@@ -3919,8 +4421,17 @@ export const GetMyProfileSummaryResponse = zod
                                 id: zod.string().describe('ID (TSID)'),
                                 fileName: zod.string().describe('Filename'),
                                 contentType: zod.string().describe('Content-Type'),
-                                url: zod.string().describe('url'),
-                                imageUrl: zod.string().optional().describe('image template url'),
+                                url: zod
+                                  .string()
+                                  .describe(
+                                    'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                  ),
+                                imageUrl: zod
+                                  .string()
+                                  .optional()
+                                  .describe(
+                                    'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                  ),
                                 imageDimensions: zod
                                   .object({
                                     width: zod.int().optional(),
@@ -3943,8 +4454,17 @@ export const GetMyProfileSummaryResponse = zod
                                   id: zod.string().describe('ID (TSID)'),
                                   fileName: zod.string().describe('Filename'),
                                   contentType: zod.string().describe('Content-Type'),
-                                  url: zod.string().describe('url'),
-                                  imageUrl: zod.string().optional().describe('image template url'),
+                                  url: zod
+                                    .string()
+                                    .describe(
+                                      'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                    ),
+                                  imageUrl: zod
+                                    .string()
+                                    .optional()
+                                    .describe(
+                                      'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                    ),
                                   imageDimensions: zod
                                     .object({
                                       width: zod.int().optional(),
@@ -3967,8 +4487,17 @@ export const GetMyProfileSummaryResponse = zod
                                   id: zod.string().describe('ID (TSID)'),
                                   fileName: zod.string().describe('Filename'),
                                   contentType: zod.string().describe('Content-Type'),
-                                  url: zod.string().describe('url'),
-                                  imageUrl: zod.string().optional().describe('image template url'),
+                                  url: zod
+                                    .string()
+                                    .describe(
+                                      'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                    ),
+                                  imageUrl: zod
+                                    .string()
+                                    .optional()
+                                    .describe(
+                                      'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                    ),
                                   imageDimensions: zod
                                     .object({
                                       width: zod.int().optional(),
@@ -3990,8 +4519,17 @@ export const GetMyProfileSummaryResponse = zod
                                 id: zod.string().describe('ID (TSID)'),
                                 fileName: zod.string().describe('Filename'),
                                 contentType: zod.string().describe('Content-Type'),
-                                url: zod.string().describe('url'),
-                                imageUrl: zod.string().optional().describe('image template url'),
+                                url: zod
+                                  .string()
+                                  .describe(
+                                    'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                  ),
+                                imageUrl: zod
+                                  .string()
+                                  .optional()
+                                  .describe(
+                                    'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                  ),
                                 imageDimensions: zod
                                   .object({
                                     width: zod.int().optional(),
@@ -4013,8 +4551,17 @@ export const GetMyProfileSummaryResponse = zod
                                 id: zod.string().describe('ID (TSID)'),
                                 fileName: zod.string().describe('Filename'),
                                 contentType: zod.string().describe('Content-Type'),
-                                url: zod.string().describe('url'),
-                                imageUrl: zod.string().optional().describe('image template url'),
+                                url: zod
+                                  .string()
+                                  .describe(
+                                    'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                  ),
+                                imageUrl: zod
+                                  .string()
+                                  .optional()
+                                  .describe(
+                                    'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                  ),
                                 imageDimensions: zod
                                   .object({
                                     width: zod.int().optional(),
@@ -4036,8 +4583,17 @@ export const GetMyProfileSummaryResponse = zod
                                 id: zod.string().describe('ID (TSID)'),
                                 fileName: zod.string().describe('Filename'),
                                 contentType: zod.string().describe('Content-Type'),
-                                url: zod.string().describe('url'),
-                                imageUrl: zod.string().optional().describe('image template url'),
+                                url: zod
+                                  .string()
+                                  .describe(
+                                    'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                  ),
+                                imageUrl: zod
+                                  .string()
+                                  .optional()
+                                  .describe(
+                                    'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                  ),
                                 imageDimensions: zod
                                   .object({
                                     width: zod.int().optional(),
@@ -4059,8 +4615,17 @@ export const GetMyProfileSummaryResponse = zod
                                 id: zod.string().describe('ID (TSID)'),
                                 fileName: zod.string().describe('Filename'),
                                 contentType: zod.string().describe('Content-Type'),
-                                url: zod.string().describe('url'),
-                                imageUrl: zod.string().optional().describe('image template url'),
+                                url: zod
+                                  .string()
+                                  .describe(
+                                    'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                  ),
+                                imageUrl: zod
+                                  .string()
+                                  .optional()
+                                  .describe(
+                                    'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                  ),
                                 imageDimensions: zod
                                   .object({
                                     width: zod.int().optional(),
@@ -4082,8 +4647,17 @@ export const GetMyProfileSummaryResponse = zod
                                 id: zod.string().describe('ID (TSID)'),
                                 fileName: zod.string().describe('Filename'),
                                 contentType: zod.string().describe('Content-Type'),
-                                url: zod.string().describe('url'),
-                                imageUrl: zod.string().optional().describe('image template url'),
+                                url: zod
+                                  .string()
+                                  .describe(
+                                    'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                  ),
+                                imageUrl: zod
+                                  .string()
+                                  .optional()
+                                  .describe(
+                                    'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                  ),
                                 imageDimensions: zod
                                   .object({
                                     width: zod.int().optional(),
@@ -4193,7 +4767,7 @@ export const GetMyProfileSummaryResponse = zod
                                       .string()
                                       .optional()
                                       .describe(
-                                        "URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team."
+                                        "URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team. Opaque URL: may carry a query string; substitute {size} only."
                                       ),
                                   })
                                   .describe('Team'),
@@ -4213,11 +4787,17 @@ export const GetMyProfileSummaryResponse = zod
                                             id: zod.string().describe('ID (TSID)'),
                                             fileName: zod.string().describe('Filename'),
                                             contentType: zod.string().describe('Content-Type'),
-                                            url: zod.string().describe('url'),
+                                            url: zod
+                                              .string()
+                                              .describe(
+                                                'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                              ),
                                             imageUrl: zod
                                               .string()
                                               .optional()
-                                              .describe('image template url'),
+                                              .describe(
+                                                'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                              ),
                                             imageDimensions: zod
                                               .object({
                                                 width: zod.int().optional(),
@@ -4240,11 +4820,17 @@ export const GetMyProfileSummaryResponse = zod
                                               id: zod.string().describe('ID (TSID)'),
                                               fileName: zod.string().describe('Filename'),
                                               contentType: zod.string().describe('Content-Type'),
-                                              url: zod.string().describe('url'),
+                                              url: zod
+                                                .string()
+                                                .describe(
+                                                  'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                                ),
                                               imageUrl: zod
                                                 .string()
                                                 .optional()
-                                                .describe('image template url'),
+                                                .describe(
+                                                  'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                                ),
                                               imageDimensions: zod
                                                 .object({
                                                   width: zod.int().optional(),
@@ -4267,11 +4853,17 @@ export const GetMyProfileSummaryResponse = zod
                                               id: zod.string().describe('ID (TSID)'),
                                               fileName: zod.string().describe('Filename'),
                                               contentType: zod.string().describe('Content-Type'),
-                                              url: zod.string().describe('url'),
+                                              url: zod
+                                                .string()
+                                                .describe(
+                                                  'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                                ),
                                               imageUrl: zod
                                                 .string()
                                                 .optional()
-                                                .describe('image template url'),
+                                                .describe(
+                                                  'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                                ),
                                               imageDimensions: zod
                                                 .object({
                                                   width: zod.int().optional(),
@@ -4293,11 +4885,17 @@ export const GetMyProfileSummaryResponse = zod
                                             id: zod.string().describe('ID (TSID)'),
                                             fileName: zod.string().describe('Filename'),
                                             contentType: zod.string().describe('Content-Type'),
-                                            url: zod.string().describe('url'),
+                                            url: zod
+                                              .string()
+                                              .describe(
+                                                'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                              ),
                                             imageUrl: zod
                                               .string()
                                               .optional()
-                                              .describe('image template url'),
+                                              .describe(
+                                                'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                              ),
                                             imageDimensions: zod
                                               .object({
                                                 width: zod.int().optional(),
@@ -4319,11 +4917,17 @@ export const GetMyProfileSummaryResponse = zod
                                             id: zod.string().describe('ID (TSID)'),
                                             fileName: zod.string().describe('Filename'),
                                             contentType: zod.string().describe('Content-Type'),
-                                            url: zod.string().describe('url'),
+                                            url: zod
+                                              .string()
+                                              .describe(
+                                                'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                              ),
                                             imageUrl: zod
                                               .string()
                                               .optional()
-                                              .describe('image template url'),
+                                              .describe(
+                                                'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                              ),
                                             imageDimensions: zod
                                               .object({
                                                 width: zod.int().optional(),
@@ -4345,11 +4949,17 @@ export const GetMyProfileSummaryResponse = zod
                                             id: zod.string().describe('ID (TSID)'),
                                             fileName: zod.string().describe('Filename'),
                                             contentType: zod.string().describe('Content-Type'),
-                                            url: zod.string().describe('url'),
+                                            url: zod
+                                              .string()
+                                              .describe(
+                                                'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                              ),
                                             imageUrl: zod
                                               .string()
                                               .optional()
-                                              .describe('image template url'),
+                                              .describe(
+                                                'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                              ),
                                             imageDimensions: zod
                                               .object({
                                                 width: zod.int().optional(),
@@ -4371,11 +4981,17 @@ export const GetMyProfileSummaryResponse = zod
                                             id: zod.string().describe('ID (TSID)'),
                                             fileName: zod.string().describe('Filename'),
                                             contentType: zod.string().describe('Content-Type'),
-                                            url: zod.string().describe('url'),
+                                            url: zod
+                                              .string()
+                                              .describe(
+                                                'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                              ),
                                             imageUrl: zod
                                               .string()
                                               .optional()
-                                              .describe('image template url'),
+                                              .describe(
+                                                'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                              ),
                                             imageDimensions: zod
                                               .object({
                                                 width: zod.int().optional(),
@@ -4397,11 +5013,17 @@ export const GetMyProfileSummaryResponse = zod
                                             id: zod.string().describe('ID (TSID)'),
                                             fileName: zod.string().describe('Filename'),
                                             contentType: zod.string().describe('Content-Type'),
-                                            url: zod.string().describe('url'),
+                                            url: zod
+                                              .string()
+                                              .describe(
+                                                'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                              ),
                                             imageUrl: zod
                                               .string()
                                               .optional()
-                                              .describe('image template url'),
+                                              .describe(
+                                                'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                              ),
                                             imageDimensions: zod
                                               .object({
                                                 width: zod.int().optional(),
@@ -4432,7 +5054,7 @@ export const GetMyProfileSummaryResponse = zod
                                   .string()
                                   .optional()
                                   .describe(
-                                    "URL template of the route's thumbnail, light variant if there is one, else dark. Saves a compact row from carrying media.assets just to find the map preview."
+                                    "URL template of the route's thumbnail, light variant if there is one, else dark. Saves a compact row from carrying media.assets just to find the map preview. Opaque URL: may carry a query string; substitute {size} only."
                                   ),
                                 distance: zod.number().describe('Distance in meters'),
                                 elevationGain: zod
@@ -4544,11 +5166,17 @@ export const GetMyProfileSummaryResponse = zod
                                         id: zod.string().describe('ID (TSID)'),
                                         fileName: zod.string().describe('Filename'),
                                         contentType: zod.string().describe('Content-Type'),
-                                        url: zod.string().describe('url'),
+                                        url: zod
+                                          .string()
+                                          .describe(
+                                            'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                          ),
                                         imageUrl: zod
                                           .string()
                                           .optional()
-                                          .describe('image template url'),
+                                          .describe(
+                                            'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                          ),
                                         imageDimensions: zod
                                           .object({
                                             width: zod.int().optional(),
@@ -4571,11 +5199,17 @@ export const GetMyProfileSummaryResponse = zod
                                           id: zod.string().describe('ID (TSID)'),
                                           fileName: zod.string().describe('Filename'),
                                           contentType: zod.string().describe('Content-Type'),
-                                          url: zod.string().describe('url'),
+                                          url: zod
+                                            .string()
+                                            .describe(
+                                              'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                            ),
                                           imageUrl: zod
                                             .string()
                                             .optional()
-                                            .describe('image template url'),
+                                            .describe(
+                                              'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                            ),
                                           imageDimensions: zod
                                             .object({
                                               width: zod.int().optional(),
@@ -4598,11 +5232,17 @@ export const GetMyProfileSummaryResponse = zod
                                           id: zod.string().describe('ID (TSID)'),
                                           fileName: zod.string().describe('Filename'),
                                           contentType: zod.string().describe('Content-Type'),
-                                          url: zod.string().describe('url'),
+                                          url: zod
+                                            .string()
+                                            .describe(
+                                              'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                            ),
                                           imageUrl: zod
                                             .string()
                                             .optional()
-                                            .describe('image template url'),
+                                            .describe(
+                                              'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                            ),
                                           imageDimensions: zod
                                             .object({
                                               width: zod.int().optional(),
@@ -4624,11 +5264,17 @@ export const GetMyProfileSummaryResponse = zod
                                         id: zod.string().describe('ID (TSID)'),
                                         fileName: zod.string().describe('Filename'),
                                         contentType: zod.string().describe('Content-Type'),
-                                        url: zod.string().describe('url'),
+                                        url: zod
+                                          .string()
+                                          .describe(
+                                            'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                          ),
                                         imageUrl: zod
                                           .string()
                                           .optional()
-                                          .describe('image template url'),
+                                          .describe(
+                                            'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                          ),
                                         imageDimensions: zod
                                           .object({
                                             width: zod.int().optional(),
@@ -4650,11 +5296,17 @@ export const GetMyProfileSummaryResponse = zod
                                         id: zod.string().describe('ID (TSID)'),
                                         fileName: zod.string().describe('Filename'),
                                         contentType: zod.string().describe('Content-Type'),
-                                        url: zod.string().describe('url'),
+                                        url: zod
+                                          .string()
+                                          .describe(
+                                            'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                          ),
                                         imageUrl: zod
                                           .string()
                                           .optional()
-                                          .describe('image template url'),
+                                          .describe(
+                                            'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                          ),
                                         imageDimensions: zod
                                           .object({
                                             width: zod.int().optional(),
@@ -4676,11 +5328,17 @@ export const GetMyProfileSummaryResponse = zod
                                         id: zod.string().describe('ID (TSID)'),
                                         fileName: zod.string().describe('Filename'),
                                         contentType: zod.string().describe('Content-Type'),
-                                        url: zod.string().describe('url'),
+                                        url: zod
+                                          .string()
+                                          .describe(
+                                            'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                          ),
                                         imageUrl: zod
                                           .string()
                                           .optional()
-                                          .describe('image template url'),
+                                          .describe(
+                                            'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                          ),
                                         imageDimensions: zod
                                           .object({
                                             width: zod.int().optional(),
@@ -4702,11 +5360,17 @@ export const GetMyProfileSummaryResponse = zod
                                         id: zod.string().describe('ID (TSID)'),
                                         fileName: zod.string().describe('Filename'),
                                         contentType: zod.string().describe('Content-Type'),
-                                        url: zod.string().describe('url'),
+                                        url: zod
+                                          .string()
+                                          .describe(
+                                            'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                          ),
                                         imageUrl: zod
                                           .string()
                                           .optional()
-                                          .describe('image template url'),
+                                          .describe(
+                                            'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                          ),
                                         imageDimensions: zod
                                           .object({
                                             width: zod.int().optional(),
@@ -4728,11 +5392,17 @@ export const GetMyProfileSummaryResponse = zod
                                         id: zod.string().describe('ID (TSID)'),
                                         fileName: zod.string().describe('Filename'),
                                         contentType: zod.string().describe('Content-Type'),
-                                        url: zod.string().describe('url'),
+                                        url: zod
+                                          .string()
+                                          .describe(
+                                            'Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.'
+                                          ),
                                         imageUrl: zod
                                           .string()
                                           .optional()
-                                          .describe('image template url'),
+                                          .describe(
+                                            'Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.'
+                                          ),
                                         imageDimensions: zod
                                           .object({
                                             width: zod.int().optional(),
@@ -4787,13 +5457,23 @@ export const GetMyProfileSummaryResponse = zod
                       .describe(
                         'The first participants of the trip (at most 8), earliest registrations first — enough to draw avatars; empty on a list row. participantCount is the total; the whole list is paginated and searched by GET …/trips/{tripSlug}/participants.'
                       ),
-                    thumbnailLightUrl: zod.string().optional().describe('Thumbnail URL (light)'),
-                    thumbnailDarkUrl: zod.string().optional().describe('Thumbnail URL (dark)'),
+                    thumbnailLightUrl: zod
+                      .string()
+                      .optional()
+                      .describe(
+                        'Thumbnail URL (light). Opaque URL: may carry a query string; substitute {size} only.'
+                      ),
+                    thumbnailDarkUrl: zod
+                      .string()
+                      .optional()
+                      .describe(
+                        'Thumbnail URL (dark). Opaque URL: may carry a query string; substitute {size} only.'
+                      ),
                     thumbnailUrl: zod
                       .string()
                       .optional()
                       .describe(
-                        'The one thumbnail to show when the client does not theme its cards: the light variant if there is one, else the dark one. Saves a compact row from carrying media.assets just to find a picture.'
+                        'The one thumbnail to show when the client does not theme its cards: the light variant if there is one, else the dark one. Saves a compact row from carrying media.assets just to find a picture. Opaque URL: may carry a query string; substitute {size} only.'
                       ),
                     deleted: zod.boolean().describe('Whether the trip is soft-deleted'),
                     registered: zod

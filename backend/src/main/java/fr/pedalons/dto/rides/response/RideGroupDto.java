@@ -69,17 +69,26 @@ public record RideGroupDto(
                     + " designated — render nothing rather than falling back on the ride's"
                     + " creator, who is the same person on every group of the ride.")
         PublicUserDto leader,
-    @Nullable @Schema(description = "Thumbnail URL (light) of the group route, if it has one")
+    @Nullable
+        @Schema(
+            description =
+                "Thumbnail URL (light) of the group route, if it has one. Opaque URL: may carry a"
+                    + " query string; substitute {size} only.")
         String thumbnailLightUrl,
-    @Nullable @Schema(description = "Thumbnail URL (dark) of the group route, if it has one")
+    @Nullable
+        @Schema(
+            description =
+                "Thumbnail URL (dark) of the group route, if it has one. Opaque URL: may carry a"
+                    + " query string; substitute {size} only.")
         String thumbnailDarkUrl,
     @Nullable
         @Schema(
             description =
                 "The one thumbnail of the group route to show when the client does not theme its"
                     + " cards: the light variant if there is one, else the dark one. Null when the"
-                    + " group has no route or its route has no thumbnail — the ride's own"
-                    + " thumbnail is then the one to fall back on.")
+                    + " group has no route or its route has no thumbnail — the ride's own thumbnail"
+                    + " is then the one to fall back on. Opaque URL: may carry a query string;"
+                    + " substitute {size} only.")
         String thumbnailUrl) {
 
   /**

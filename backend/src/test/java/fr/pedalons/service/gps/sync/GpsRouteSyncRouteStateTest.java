@@ -57,6 +57,32 @@ class GpsRouteSyncRouteStateTest {
     assertEquals(GpsRouteSyncState.OUTDATED, GpsRouteSyncService.routeState(manual, true, NEW_GPX));
   }
 
+  /**
+   * docs/LEDGER_*.md API-128: a track edit replaces the file under the same asset row, so the
+   * asset id is the same and only the content revision tells it from what was sent.
+   */
+  @Test
+  void manualUpload_thenGpxReplacedInPlace_isOutdated() {
+    RouteRow manual = row(false, "ext", SENT_HASH, SENT_HASH, 0, false);
+    Long replacedInPlace = GpsSyncNames.contentKey(SENT_GPX, 99L);
+
+    assertEquals(
+        GpsRouteSyncState.OUTDATED, GpsRouteSyncService.routeState(manual, true, replacedInPlace));
+  }
+
+  @Test
+  void automaticRow_syncOff_thenGpxReplacedInPlace_isOutdated() {
+    RouteRow automatic = row(true, "ext", SENT_HASH, SENT_HASH, 0, false);
+
+    assertEquals(
+        GpsRouteSyncState.OUTDATED,
+        GpsRouteSyncService.routeState(automatic, false, GpsSyncNames.contentKey(SENT_GPX, 99L)));
+    // Never replaced (revision null): the key is the asset id and the row stays SENT.
+    assertEquals(
+        GpsRouteSyncState.SENT,
+        GpsRouteSyncService.routeState(automatic, false, GpsSyncNames.contentKey(SENT_GPX, null)));
+  }
+
   @Test
   void manualUpload_ofARouteWithoutGpxAnyMore_standsAsSent() {
     RouteRow manual = row(false, "ext", SENT_HASH, SENT_HASH, 0, false);

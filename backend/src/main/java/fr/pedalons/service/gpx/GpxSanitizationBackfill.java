@@ -94,9 +94,15 @@ public class GpxSanitizationBackfill {
    * A stored object, with what it must be written back with.
    *
    * @param assetId the asset whose size to update once rewritten, null for a preview's file
+   * @param fileId the file id read with the asset, the size is only recorded while the asset still
+   *     points at it (docs/LEDGER_*.md API-128); null for a preview's file
    */
   record StoredFile(
-      String key, String contentType, Map<String, String> metadata, @Nullable Long assetId) {}
+      String key,
+      String contentType,
+      Map<String, String> metadata,
+      @Nullable Long assetId,
+      @Nullable Long fileId) {}
 
   /** The three files one route or one preview owns; any of them may be missing. */
   record FileSet(
@@ -257,9 +263,17 @@ public class GpxSanitizationBackfill {
             content.length,
             file.metadata());
     Long assetId = file.assetId();
-    if (assetId != null) {
+    Long fileId = file.fileId();
+    if (assetId != null && fileId != null) {
       // docs/LEDGER_*.md API-7: AssetDto.size is the size of what a download returns
-      QuarkusTransaction.requiringNew().run(() -> assetRepository.updateSize(assetId, size));
+      int updated =
+          QuarkusTransaction.requiringNew()
+              .call(() -> assetRepository.updateSize(assetId, fileId, size));
+      if (updated == 0) {
+        // A track edit replaced the file between our read and our write: its after-commit cleanup
+        // already deleted this key, and the store above recreated it as an orphan (API-128).
+        storageService.delete(file.key());
+      }
     }
   }
 
@@ -306,7 +320,8 @@ public class GpxSanitizationBackfill {
                   assetService.getAssetKey(teamId, fileId),
                   (String) row[4],
                   metadata,
-                  (Long) row[6]));
+                  (Long) row[6],
+                  fileId));
     }
 
     List<FileSet> sets = new ArrayList<>(byRoute.size());
@@ -355,7 +370,11 @@ public class GpxSanitizationBackfill {
               "file-name", (String) row[2]);
       files.add(
           new StoredFile(
-              assetService.getAssetKey(teamId, fileId), (String) row[3], metadata, (Long) row[4]));
+              assetService.getAssetKey(teamId, fileId),
+              (String) row[3],
+              metadata,
+              (Long) row[4],
+              fileId));
     }
     return files;
   }
@@ -372,10 +391,11 @@ public class GpxSanitizationBackfill {
                           return new FileSet(
                               "preview " + preview.getPublicId(),
                               new StoredFile(
-                                  keys.get(ORIGINAL_GPX), GPX_CONTENT_TYPE, Map.of(), null),
+                                  keys.get(ORIGINAL_GPX), GPX_CONTENT_TYPE, Map.of(), null, null),
                               new StoredFile(
-                                  keys.get(FILTERED_GPX), GPX_CONTENT_TYPE, Map.of(), null),
-                              new StoredFile(keys.get(FIT), FIT_CONTENT_TYPE, Map.of(), null));
+                                  keys.get(FILTERED_GPX), GPX_CONTENT_TYPE, Map.of(), null, null),
+                              new StoredFile(
+                                  keys.get(FIT), FIT_CONTENT_TYPE, Map.of(), null, null));
                         })
                     .toList());
   }

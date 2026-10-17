@@ -3649,6 +3649,66 @@ plus la colonne. Le départ d'un groupe n'existe plus que dans `ride_groups.star
   route effective et sa visibilité restent en phase avec `findUpcomingRegisteredGroups` ; `V71` reste
   lisible par la release précédente (déploiement start-first).
 
+### `API-128` Les URLs des fichiers d'un parcours survivent à une modification du tracé (contrat `11.6.1`)
+
+- `API-128` **Modifier le tracé d'un parcours ou régénérer ses vignettes ne casse plus les liens
+  publiés** (2026-10-17, **API 11.6.1**, descriptions seulement ; migration `V73`) — `updateRoute`
+  et `ThumbnailService.generateThumbnails` supprimaient les lignes `assets` et en créaient de
+  nouvelles : `/api/download/{vis}/assets/{team}/{assetId}/{fileName}` et
+  `/api/download/{vis}/images/{team}/{assetId}/{size}` répondaient 404 partout où ils avaient été
+  collés. Désormais **la ligne `Asset` reste (même id), seul son `fileId` (clé S3) change**.
+  - **`AssetService.replaceStoredFile(asset, newFileId, stored, fileName, newContent)`** : met à jour
+    `fileId`, nom, type, taille, efface largeur/hauteur, et inscrit une `Synchronization` JTA
+    (même mécanique que `AssetRemoveListener`, `API-97`) : après commit l'**ancienne** clé est
+    supprimée, sinon la **nouvelle**. Sans transaction active : nouvelle clé supprimée puis
+    `IllegalStateException`. Helpers `deleteAfterCommit` / `deleteUnlessCommitted`. Le `@Version` de
+    `BaseEntity` donne le verrou optimiste : l'éditeur perdant est annulé et ses clés effacées.
+  - **Pipeline GPX** (`GpxProcessingService.persistGpxData`) : waypoints et traces réinjectés
+    d'abord (aucune requête entre `clear()` et le remplissage), puis, par type, la ligne la plus
+    récente est conservée et remplacée, les doublons retirés de `route.getAssets()`, une ligne
+    absente créée, une vignette non rendue supprimée (mieux vaut pas de vignette qu'une fausse).
+    `RouteService.updateRoute` ne supprime plus les fichiers avant traitement ni dans le `catch`
+    (la reprise de transaction restitue les lignes, les synchronisations nettoient les fichiers).
+    Fuite S3 corrigée : `processGpxData` efface ce qu'il a déjà téléversé s'il échoue.
+  - **Vignettes de parcours, de sorties et de séjours** (`ThumbnailService`) : même primitive,
+    `newContent = false`.
+  - **Cache-buster `?v=<fileId>`** ajouté à `AssetDto.url` et à `imageUrl` / `thumbnail*Url` (après
+    `{size}` pour les modèles) : imgproxy répond `Cache-Control: max-age=1y` (relayé par
+    `AssetService.getImage`) et le mobile (`CachedNetworkImage`) cache par URL ; une URL stable au
+    contenu changeant exigeait donc un paramètre qui change. Les endpoints de téléchargement
+    l'ignorent ; les clients ne font que `.replace('{size}', n)`. `buildImageUrl` prend le `fileId`,
+    projeté par `AssetRepository` et `ThumbnailLookup` **sans requête de plus**.
+  - **Signal pour la synchro GPS** : `assets.content_revision` (nullable, `V73`) ; l'empreinte est
+    `GpsSyncNames.hash(contentKey, nom)` avec `contentKey = coalesce(contentRevision, assetId)`
+    (formule `sha256(clé|nom)` inchangée). Les lignes existantes n'ont pas de révision : même
+    empreinte qu'avant, **aucun renvoi en masse**. Une modification de tracé fixe
+    `contentRevision = nouveau fileId` (renvoi voulu) ; les vignettes non. Le planificateur et l'état
+    affiché passent par `GpsRouteSyncRepository.findGpxContentKeys` (ligne d'id max par type, GPX
+    filtré préféré, puis sa clé — pas un max du `coalesce`) ; le worker et l'envoi manuel calculent
+    `GpsSyncNames.contentKey` sur l'actif lu. Pendant le recouvrement start-first d'un déploiement,
+    un parcours dont le tracé est modifié peut être renvoyé une ou deux fois de plus (ancien et
+    nouveau planificateur calculent des empreintes différentes) : sans effet sur le contenu. `GpxSanitizationBackfill` ne touche
+    pas la révision (D4 de `API-44` conservé).
+  - **`AssetRepository.updateSize`** conditionné au `fileId` lu (`where id = :id and fileId =
+    :fileId`) : le backfill n'écrase plus la taille d'un fichier remplacé entre-temps
+    (`GpxSanitizationBackfill`, `AssetSizeBackfill`).
+  - Clients régénérés : seules les descriptions changent. Les liens déjà cassés avant ce
+    changement le restent (aucune correspondance conservée).
+  Tests : `RouteTrackReplacementTest` (cinq lignes conservées et ancienne URL servant le nouveau
+  contenu ; échec après `persistGpxData` → annulation sans nouvel objet ; vignette non rendue
+  supprimée, les autres gardent leur ligne ; doublons historiques ramenés à la plus récente ;
+  `processGpxData` en échec efface ses téléversements), `AssetServiceTest` (remplacement,
+  nettoyage après commit / annulation, absence de transaction, `?v=`), `ThumbnailRefreshTest`,
+  `AdminThumbnailResourceTest`, `GpxSanitizationSyncHashTest` (le backfill n'envoie rien),
+  `GpxSanitizationBackfillTest`, `AssetSizeBackfillTest`, `GpsSyncNamesTest`,
+  `GpsRouteSyncPlannerTest`, `GpsRouteSyncRouteStateTest` et les `…QueryCountTest` inchangés.
+  **À ne pas défaire** : ne jamais recréer les lignes d'actifs d'un parcours à l'édition ; ne jamais
+  `clear()` puis remplir une collection `orphanRemoval` avec une requête entre les deux
+  (HHH90032003) ; ne jamais hacher le `fileId` pour la synchro GPS (il diffère de l'id des lignes
+  existantes : toutes les empreintes changeraient et tout serait renvoyé ; une vignette change aussi
+  de `fileId` sans changer la trace ; le `coalesce(contentRevision, id)` rend le changement neutre) ; le paramètre `?v=` doit rester, sans lui les caches (imgproxy,
+  mobile) servent l'ancienne image un an.
+
 ## OPS — Exploitation, déploiement, recette du backend
 
 - `OPS-43` **Mise à jour des données Valhalla sans coupure du routage** (2026-10-16, livré dans le

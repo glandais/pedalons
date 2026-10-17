@@ -31,9 +31,9 @@ mixin _$RideGroupDto {
  int? get maxParticipants;/// Distance in meters of the group route, if it has one
  double? get distance;/// Total elevation gain in meters of the group route, if it has one
  double? get elevationGain;/// The member who leads this group, when one is designated. Null means no leader was designated — render nothing rather than falling back on the ride's creator, who is the same person on every group of the ride.
- PublicUserDto? get leader;/// Thumbnail URL (light) of the group route, if it has one
- String? get thumbnailLightUrl;/// Thumbnail URL (dark) of the group route, if it has one
- String? get thumbnailDarkUrl;/// The one thumbnail of the group route to show when the client does not theme its cards: the light variant if there is one, else the dark one. Null when the group has no route or its route has no thumbnail — the ride's own thumbnail is then the one to fall back on.
+ PublicUserDto? get leader;/// Thumbnail URL (light) of the group route, if it has one. Opaque URL: may carry a query string; substitute {size} only.
+ String? get thumbnailLightUrl;/// Thumbnail URL (dark) of the group route, if it has one. Opaque URL: may carry a query string; substitute {size} only.
+ String? get thumbnailDarkUrl;/// The one thumbnail of the group route to show when the client does not theme its cards: the light variant if there is one, else the dark one. Null when the group has no route or its route has no thumbnail — the ride's own thumbnail is then the one to fall back on. Opaque URL: may carry a query string; substitute {size} only.
  String? get thumbnailUrl;
 /// Create a copy of RideGroupDto
 /// with the given fields replaced by the non-null parameter values.
@@ -302,11 +302,11 @@ class _RideGroupDto implements RideGroupDto {
 @override final  double? elevationGain;
 /// The member who leads this group, when one is designated. Null means no leader was designated — render nothing rather than falling back on the ride's creator, who is the same person on every group of the ride.
 @override final  PublicUserDto? leader;
-/// Thumbnail URL (light) of the group route, if it has one
+/// Thumbnail URL (light) of the group route, if it has one. Opaque URL: may carry a query string; substitute {size} only.
 @override final  String? thumbnailLightUrl;
-/// Thumbnail URL (dark) of the group route, if it has one
+/// Thumbnail URL (dark) of the group route, if it has one. Opaque URL: may carry a query string; substitute {size} only.
 @override final  String? thumbnailDarkUrl;
-/// The one thumbnail of the group route to show when the client does not theme its cards: the light variant if there is one, else the dark one. Null when the group has no route or its route has no thumbnail — the ride's own thumbnail is then the one to fall back on.
+/// The one thumbnail of the group route to show when the client does not theme its cards: the light variant if there is one, else the dark one. Null when the group has no route or its route has no thumbnail — the ride's own thumbnail is then the one to fall back on. Opaque URL: may carry a query string; substitute {size} only.
 @override final  String? thumbnailUrl;
 
 /// Create a copy of RideGroupDto

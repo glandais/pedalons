@@ -65,19 +65,22 @@ public record CalendarEventDto(
                 "Thumbnail image URL template (contains a {size} placeholder), light variant"
                     + " preferred. Falls back to the route's thumbnail when the ride or stage has"
                     + " none of its own. For a client that renders one picture and does not follow"
-                    + " a colour scheme; prefer thumbnailLightUrl/thumbnailDarkUrl otherwise.")
+                    + " a colour scheme; prefer thumbnailLightUrl/thumbnailDarkUrl otherwise."
+                    + " Opaque URL: may carry a query string; substitute {size} only.")
         String thumbnailUrl,
     @Nullable
         @Schema(
             description =
                 "Light-scheme thumbnail image URL template (contains a {size} placeholder). Null"
-                    + " when the event's picture exists only in a dark variant.")
+                    + " when the event's picture exists only in a dark variant. Opaque URL: may"
+                    + " carry a query string; substitute {size} only.")
         String thumbnailLightUrl,
     @Nullable
         @Schema(
             description =
                 "Dark-scheme thumbnail image URL template (contains a {size} placeholder). Null"
-                    + " when the event's picture exists only in a light variant.")
+                    + " when the event's picture exists only in a light variant. Opaque URL: may"
+                    + " carry a query string; substitute {size} only.")
         String thumbnailDarkUrl,
     @Schema(
             description =

@@ -42,9 +42,9 @@ mixin _$RideDto {
  String? get surfaceType;/// Start place
  PlaceDetailDto? get startPlace;/// The weather line of a card: the meeting point, over the window from the departure to the estimated arrival of the last group. Absent when there is nothing to show — finished or cancelled ride, no place, forecast not in cache yet; present only with status OK, STALE or NOT_YET_AVAILABLE. The full forecast is getRideWeather.
  RideWeatherSummaryDto? get weather;/// Distance in meters of the ride's route — or, when the ride itself has none, of the route of its first group (in sort order) that has one. Null when no route is set anywhere.
- double? get distance;/// Thumbnail URL (light)
- String? get thumbnailLightUrl;/// Thumbnail URL (dark)
- String? get thumbnailDarkUrl;/// The one thumbnail to show when the client does not theme its cards: the light variant if there is one, else the dark one. Saves a compact row from carrying media.assets just to find a picture.
+ double? get distance;/// Thumbnail URL (light). Opaque URL: may carry a query string; substitute {size} only.
+ String? get thumbnailLightUrl;/// Thumbnail URL (dark). Opaque URL: may carry a query string; substitute {size} only.
+ String? get thumbnailDarkUrl;/// The one thumbnail to show when the client does not theme its cards: the light variant if there is one, else the dark one. Saves a compact row from carrying media.assets just to find a picture. Opaque URL: may carry a query string; substitute {size} only.
  String? get thumbnailUrl;/// Plain-text opening of the markdown body, flattened (links become their label) and cut on a word boundary at about 200 characters. Null when the body holds no text. Lets a list row render its two lines without the body being sent at all — see the 'view' parameter.
  String? get excerpt;/// Route slug
  String? get routeSlug;/// ID (TSID) of the group the current user joined, null if not registered
@@ -439,11 +439,11 @@ class _RideDto implements RideDto {
 @override final  RideWeatherSummaryDto? weather;
 /// Distance in meters of the ride's route — or, when the ride itself has none, of the route of its first group (in sort order) that has one. Null when no route is set anywhere.
 @override final  double? distance;
-/// Thumbnail URL (light)
+/// Thumbnail URL (light). Opaque URL: may carry a query string; substitute {size} only.
 @override final  String? thumbnailLightUrl;
-/// Thumbnail URL (dark)
+/// Thumbnail URL (dark). Opaque URL: may carry a query string; substitute {size} only.
 @override final  String? thumbnailDarkUrl;
-/// The one thumbnail to show when the client does not theme its cards: the light variant if there is one, else the dark one. Saves a compact row from carrying media.assets just to find a picture.
+/// The one thumbnail to show when the client does not theme its cards: the light variant if there is one, else the dark one. Saves a compact row from carrying media.assets just to find a picture. Opaque URL: may carry a query string; substitute {size} only.
 @override final  String? thumbnailUrl;
 /// Plain-text opening of the markdown body, flattened (links become their label) and cut on a word boundary at about 200 characters. Null when the body holds no text. Lets a list row render its two lines without the body being sent at all — see the 'view' parameter.
 @override final  String? excerpt;

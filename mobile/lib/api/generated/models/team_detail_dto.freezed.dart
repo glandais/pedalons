@@ -40,7 +40,7 @@ mixin _$TeamDetailDto {
  int get recentPostCount;/// Team creation timestamp
  String get createdAt;/// The team's IANA zone: the one its rides, trips and posts fall back on when no place locates them. Administrators change it through TeamRequest.timezone.
  String get timezone;/// Plain-text opening of the about page, flattened and cut on a word boundary at about 200 characters. Null when the about page holds no text. Lets a team card render its two lines without parsing the markdown client-side.
- String? get excerpt;/// URL template of the team's logo, when it has one. Same picture as about.assets.logo, hoisted so a card does not have to walk the asset inventory to find it.
+ String? get excerpt;/// URL template of the team's logo, when it has one. Same picture as about.assets.logo, hoisted so a card does not have to walk the asset inventory to find it. Opaque URL: may carry a query string; substitute {size} only.
  String? get logoUrl;/// Additional team pages
  List<TeamPageSummaryDto>? get pages;/// Members per role. Only for the team's administrators (platform admins included): null for everyone else, and in the team listings.
  MemberCountByRoleDto? get memberCountByRole;/// Current user's role (null if not a member)
@@ -356,7 +356,7 @@ class _TeamDetailDto implements TeamDetailDto {
 @override final  String timezone;
 /// Plain-text opening of the about page, flattened and cut on a word boundary at about 200 characters. Null when the about page holds no text. Lets a team card render its two lines without parsing the markdown client-side.
 @override final  String? excerpt;
-/// URL template of the team's logo, when it has one. Same picture as about.assets.logo, hoisted so a card does not have to walk the asset inventory to find it.
+/// URL template of the team's logo, when it has one. Same picture as about.assets.logo, hoisted so a card does not have to walk the asset inventory to find it. Opaque URL: may carry a query string; substitute {size} only.
 @override final  String? logoUrl;
 /// Additional team pages
  final  List<TeamPageSummaryDto>? _pages;

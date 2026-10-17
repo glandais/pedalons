@@ -105,13 +105,13 @@ sealed class PublicationDto with _$PublicationDto {
     /// The weather line of a card: the meeting point, over the window from the departure to the estimated arrival of the last group. Absent when there is nothing to show — finished or cancelled ride, no place, forecast not in cache yet; present only with status OK, STALE or NOT_YET_AVAILABLE. The full forecast is getRideWeather.
     RideWeatherSummaryDto? weather,
 
-    /// Thumbnail URL (light)
+    /// Thumbnail URL (light). Opaque URL: may carry a query string; substitute {size} only.
     String? thumbnailLightUrl,
 
-    /// Thumbnail URL (dark)
+    /// Thumbnail URL (dark). Opaque URL: may carry a query string; substitute {size} only.
     String? thumbnailDarkUrl,
 
-    /// The one thumbnail to show when the client does not theme its cards: the light variant if there is one, else the dark one. Saves a compact row from carrying media.assets just to find a picture.
+    /// The one thumbnail to show when the client does not theme its cards: the light variant if there is one, else the dark one. Saves a compact row from carrying media.assets just to find a picture. Opaque URL: may carry a query string; substitute {size} only.
     String? thumbnailUrl,
 
     /// Distance in meters of the ride's route — or, when the ride itself has none, of the route of its first group (in sort order) that has one. Null when no route is set anywhere.
@@ -183,7 +183,7 @@ sealed class PublicationDto with _$PublicationDto {
     /// Plain-text opening of the markdown body, flattened (links become their label) and cut on a word boundary at about 200 characters. Null when the body holds no text. Lets a list row render its two lines without the body being sent at all — see the 'view' parameter.
     String? excerpt,
 
-    /// URL template of the post's first image, the one a card shows. Saves a compact row from carrying media.assets just to find a picture.
+    /// URL template of the post's first image, the one a card shows. Saves a compact row from carrying media.assets just to find a picture. Opaque URL: may carry a query string; substitute {size} only.
     String? thumbnailUrl,
 
     /// Publication timestamp
@@ -276,13 +276,13 @@ sealed class PublicationDto with _$PublicationDto {
     /// Elevation gain in metres over every stage that has a route. Null when no stage has one.
     double? totalElevationGain,
 
-    /// Thumbnail URL (light)
+    /// Thumbnail URL (light). Opaque URL: may carry a query string; substitute {size} only.
     String? thumbnailLightUrl,
 
-    /// Thumbnail URL (dark)
+    /// Thumbnail URL (dark). Opaque URL: may carry a query string; substitute {size} only.
     String? thumbnailDarkUrl,
 
-    /// The one thumbnail to show when the client does not theme its cards: the light variant if there is one, else the dark one. Saves a compact row from carrying media.assets just to find a picture.
+    /// The one thumbnail to show when the client does not theme its cards: the light variant if there is one, else the dark one. Saves a compact row from carrying media.assets just to find a picture. Opaque URL: may carry a query string; substitute {size} only.
     String? thumbnailUrl,
 
     /// Number of comments, replies included. Absent when the caller may not read the comments of this trip — comments are members-only, so an outsider is told nothing, not even zero.

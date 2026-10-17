@@ -4,6 +4,7 @@ import fr.pedalons.domain.gps.GpsRouteSync;
 import fr.pedalons.enums.AssetType;
 import fr.pedalons.enums.GpsServiceType;
 import fr.pedalons.enums.GpsSyncError;
+import fr.pedalons.service.gps.sync.GpsSyncNames;
 import io.hypersistence.tsid.TSID;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -94,16 +95,17 @@ public class GpsRouteSyncRepository implements PanacheRepository<GpsRouteSync> {
    * The GPX asset each route would be sent from — the filtered GPX, failing that the original, as
    * {@code GpsService} picks it; the newest when there are several — in one query for all routes.
    *
-   * @return route id → asset id; routes without a GPX are absent
+   * @return route id → content key ({@link GpsSyncNames#contentKey} of that newest asset); routes
+   *     without a GPX are absent
    */
-  public Map<Long, Long> findGpxAssetIds(Long domainId, Collection<Long> routeIds) {
+  public Map<Long, Long> findGpxContentKeys(Long domainId, Collection<Long> routeIds) {
     if (routeIds.isEmpty()) {
       return Map.of();
     }
     List<Object[]> rows =
         getEntityManager()
             .createQuery(
-                "select a.teamEntity.id, a.id, a.type from Asset a"
+                "select a.teamEntity.id, a.id, a.type, a.contentRevision from Asset a"
                     + " where a.teamEntity.id in (:routeIds) and a.type in (:types)"
                     + " and a.team.domain.id = :domainId",
                 Object[].class)
@@ -112,14 +114,19 @@ public class GpsRouteSyncRepository implements PanacheRepository<GpsRouteSync> {
                 "types", List.of(AssetType.ROUTE_FILTERED_GPX, AssetType.ROUTE_ORIGINAL_GPX))
             .setParameter("domainId", domainId)
             .getResultList();
-    Map<Long, Long> filtered = new HashMap<>();
-    Map<Long, Long> original = new HashMap<>();
+    // The newest row (max id) per type first, then its content key: not a max over the key, which
+    // would pick another row than GpsRouteGpx.pick does.
+    Map<Long, Object[]> filtered = new HashMap<>();
+    Map<Long, Object[]> original = new HashMap<>();
     for (Object[] r : rows) {
-      Map<Long, Long> target = r[2] == AssetType.ROUTE_FILTERED_GPX ? filtered : original;
-      target.merge((Long) r[0], (Long) r[1], Math::max);
+      Map<Long, Object[]> target = r[2] == AssetType.ROUTE_FILTERED_GPX ? filtered : original;
+      target.merge((Long) r[0], r, (a, b) -> (Long) a[1] >= (Long) b[1] ? a : b);
     }
-    Map<Long, Long> result = new HashMap<>(original);
-    result.putAll(filtered);
+    Map<Long, Object[]> chosen = new HashMap<>(original);
+    chosen.putAll(filtered);
+    Map<Long, Long> result = new HashMap<>();
+    chosen.forEach(
+        (routeId, r) -> result.put(routeId, GpsSyncNames.contentKey((Long) r[1], (Long) r[3])));
     return result;
   }
 

@@ -21,10 +21,10 @@ abstract class AssetDto with _$AssetDto {
     /// Content-Type
     required String contentType,
 
-    /// url
+    /// Download URL. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); use it as is.
     required String url,
 
-    /// image template url
+    /// Image URL template. Opaque: it may carry a query string (a cache-buster that changes when the file is replaced); substitute {size} only.
     String? imageUrl,
 
     /// image dimensions

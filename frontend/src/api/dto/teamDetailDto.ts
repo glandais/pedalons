@@ -20,7 +20,7 @@ export interface TeamDetailDto {
   about: MediaDto
   /** Plain-text opening of the about page, flattened and cut on a word boundary at about 200 characters. Null when the about page holds no text. Lets a team card render its two lines without parsing the markdown client-side. */
   excerpt?: string
-  /** URL template of the team's logo, when it has one. Same picture as about.assets.logo, hoisted so a card does not have to walk the asset inventory to find it. */
+  /** URL template of the team's logo, when it has one. Same picture as about.assets.logo, hoisted so a card does not have to walk the asset inventory to find it. Opaque URL: may carry a query string; substitute {size} only. */
   logoUrl?: string
   /** Additional team pages */
   pages?: TeamPageSummaryDto[]

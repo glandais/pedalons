@@ -24,7 +24,7 @@ export interface AdDto {
   media: MediaDto
   /** Plain-text opening of the description, flattened (links become their label) and cut on a word boundary at about 200 characters. Null when the description holds no text. Lets a list row render its two lines without the description being sent at all — see the 'view' parameter. */
   excerpt?: string
-  /** URL template of the ad's first picture, the one a card shows. Saves a compact row from carrying media.assets just to find it. */
+  /** URL template of the ad's first picture, the one a card shows. Saves a compact row from carrying media.assets just to find it. Opaque URL: may carry a query string; substitute {size} only. */
   thumbnailUrl?: string
   /** URL templates of every picture on the ad, in editor order — the gallery. Present whatever the 'view', so a compact row can show a carousel without pulling media.assets. The first entry is the same picture as 'thumbnailUrl'. */
   images: string[]

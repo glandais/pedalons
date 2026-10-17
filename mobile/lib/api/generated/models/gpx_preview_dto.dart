@@ -54,7 +54,7 @@ abstract class GpxPreviewDto with _$GpxPreviewDto {
     /// Waypoints
     required List<WaypointDto> waypoints,
 
-    /// Rendered map thumbnail template URL (with a {size} placeholder), used for link previews; null when no thumbnail was generated
+    /// Rendered map thumbnail template URL (with a {size} placeholder), used for link previews; null when no thumbnail was generated. Opaque URL: may carry a query string; substitute {size} only.
     String? thumbnailUrl,
   }) = _GpxPreviewDto;
 

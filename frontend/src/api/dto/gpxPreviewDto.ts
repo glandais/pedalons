@@ -22,7 +22,7 @@ export interface GpxPreviewDto {
   owned: boolean
   /** Creation timestamp */
   createdAt: Instant
-  /** Rendered map thumbnail template URL (with a {size} placeholder), used for link previews; null when no thumbnail was generated */
+  /** Rendered map thumbnail template URL (with a {size} placeholder), used for link previews; null when no thumbnail was generated. Opaque URL: may carry a query string; substitute {size} only. */
   thumbnailUrl?: string
   /** URL to download the analysed GPX file */
   gpxUrl: string

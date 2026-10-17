@@ -90,10 +90,11 @@ class AssetSizeBackfillTest extends AbstractBaseTest {
   @Test
   void neverOverwritesASizeRecordedMeanwhile() {
     Asset asset = legacyAsset("notes.txt");
-    QuarkusTransaction.requiringNew().run(() -> assetRepository.updateSize(asset.getId(), 42L));
+    QuarkusTransaction.requiringNew()
+        .run(() -> assetRepository.updateSize(asset.getId(), asset.getFileId(), 42L));
 
     QuarkusTransaction.requiringNew()
-        .run(() -> assetRepository.recordSizeIfUnknown(asset.getId(), 7L));
+        .run(() -> assetRepository.recordSizeIfUnknown(asset.getId(), asset.getFileId(), 7L));
 
     assertEquals(42L, fileSize(asset));
   }

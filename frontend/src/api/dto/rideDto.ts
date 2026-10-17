@@ -67,11 +67,11 @@ export interface RideDto {
   endPlace?: PlaceDetailDto
   /** Preview of first participants (max 5) */
   topParticipants: PublicUserDto[]
-  /** Thumbnail URL (light) */
+  /** Thumbnail URL (light). Opaque URL: may carry a query string; substitute {size} only. */
   thumbnailLightUrl?: string
-  /** Thumbnail URL (dark) */
+  /** Thumbnail URL (dark). Opaque URL: may carry a query string; substitute {size} only. */
   thumbnailDarkUrl?: string
-  /** The one thumbnail to show when the client does not theme its cards: the light variant if there is one, else the dark one. Saves a compact row from carrying media.assets just to find a picture. */
+  /** The one thumbnail to show when the client does not theme its cards: the light variant if there is one, else the dark one. Saves a compact row from carrying media.assets just to find a picture. Opaque URL: may carry a query string; substitute {size} only. */
   thumbnailUrl?: string
   /** Whether the ride is soft-deleted */
   deleted: boolean

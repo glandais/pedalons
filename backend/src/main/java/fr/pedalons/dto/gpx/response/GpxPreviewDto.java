@@ -33,7 +33,8 @@ public record GpxPreviewDto(
     @Schema(
             description =
                 "Rendered map thumbnail template URL (with a {size} placeholder), used for link"
-                    + " previews; null when no thumbnail was generated")
+                    + " previews; null when no thumbnail was generated. Opaque URL: may carry a"
+                    + " query string; substitute {size} only.")
         @Nullable String thumbnailUrl,
     @Schema(description = "URL to download the analysed GPX file", required = true) String gpxUrl,
     @Schema(description = "URL to download the analysed track as a FIT file", required = true)

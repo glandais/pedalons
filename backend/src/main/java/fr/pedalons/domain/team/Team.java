@@ -79,6 +79,17 @@ public class Team extends BaseEntity {
   private Long logoAssetId;
 
   /**
+   * File id of the logo, the cache-buster of its image URL ({@code ?v=}); same row as {@link
+   * #logoAssetId}. docs/LEDGER_*.md API-128.
+   */
+  @Formula(
+      "(select a.file_id from assets a where a.id = (select min(l.id) from assets l"
+          + " where l.team_entity_id = description_id and l.type = 'LOGO'))")
+  @Setter(AccessLevel.NONE)
+  @Nullable
+  private Long logoFileId;
+
+  /**
    * Visibility of the about page, which is what an image URL of one of its assets encodes (see
    * {@code AssetService.getImageUrl}). Loaded with {@link #logoAssetId}, for the same reason.
    */

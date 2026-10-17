@@ -77,7 +77,8 @@ public class ThumbnailLookup {
     Map<Long, String> light = new HashMap<>();
     Map<Long, String> dark = new HashMap<>();
     for (ThumbnailRow row : assetRepository.findThumbnails(getDomainId(), teamEntityIds)) {
-      String url = AssetService.buildImageUrl(row.teamSlug(), row.visibility(), row.assetId());
+      String url =
+          AssetService.buildImageUrl(row.teamSlug(), row.visibility(), row.assetId(), row.fileId());
       (isLight(row) ? light : dark).put(row.teamEntityId(), url);
     }
     Map<Long, ThemedThumbnail> thumbnails = new HashMap<>();

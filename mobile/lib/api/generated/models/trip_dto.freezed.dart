@@ -42,9 +42,9 @@ mixin _$TripDto {
  String? get createdAt;/// Route slug
  String? get routeSlug;/// Distance in metres over every stage that has a route. Null when no stage has one — an unrouted trip has no distance, which is not the same as a distance of zero.
  double? get totalDistance;/// Elevation gain in metres over every stage that has a route. Null when no stage has one.
- double? get totalElevationGain;/// Thumbnail URL (light)
- String? get thumbnailLightUrl;/// Thumbnail URL (dark)
- String? get thumbnailDarkUrl;/// The one thumbnail to show when the client does not theme its cards: the light variant if there is one, else the dark one. Saves a compact row from carrying media.assets just to find a picture.
+ double? get totalElevationGain;/// Thumbnail URL (light). Opaque URL: may carry a query string; substitute {size} only.
+ String? get thumbnailLightUrl;/// Thumbnail URL (dark). Opaque URL: may carry a query string; substitute {size} only.
+ String? get thumbnailDarkUrl;/// The one thumbnail to show when the client does not theme its cards: the light variant if there is one, else the dark one. Saves a compact row from carrying media.assets just to find a picture. Opaque URL: may carry a query string; substitute {size} only.
  String? get thumbnailUrl;/// Number of comments, replies included. Absent when the caller may not read the comments of this trip — comments are members-only, so an outsider is told nothing, not even zero.
  int? get commentCount;/// The weather line of a list card: that of the trip's next leg — its first stage still to leave, else the trip itself when it has no stage — at the start of its route, over the window from its departure to its estimated arrival. Absent when there is nothing to show — trip finished, draft or cancelled, next stage without a route, forecast not in cache yet — and on the trip's own detail, which reads getTripWeather; present only with status OK, STALE or NOT_YET_AVAILABLE.
  RideWeatherSummaryDto? get weather;
@@ -382,11 +382,11 @@ class _TripDto implements TripDto {
 @override final  double? totalDistance;
 /// Elevation gain in metres over every stage that has a route. Null when no stage has one.
 @override final  double? totalElevationGain;
-/// Thumbnail URL (light)
+/// Thumbnail URL (light). Opaque URL: may carry a query string; substitute {size} only.
 @override final  String? thumbnailLightUrl;
-/// Thumbnail URL (dark)
+/// Thumbnail URL (dark). Opaque URL: may carry a query string; substitute {size} only.
 @override final  String? thumbnailDarkUrl;
-/// The one thumbnail to show when the client does not theme its cards: the light variant if there is one, else the dark one. Saves a compact row from carrying media.assets just to find a picture.
+/// The one thumbnail to show when the client does not theme its cards: the light variant if there is one, else the dark one. Saves a compact row from carrying media.assets just to find a picture. Opaque URL: may carry a query string; substitute {size} only.
 @override final  String? thumbnailUrl;
 /// Number of comments, replies included. Absent when the caller may not read the comments of this trip — comments are members-only, so an outsider is told nothing, not even zero.
 @override final  int? commentCount;

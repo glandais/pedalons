@@ -50,19 +50,19 @@ export const GetEventsResponse = zod
               .string()
               .optional()
               .describe(
-                "Thumbnail image URL template (contains a {size} placeholder), light variant preferred. Falls back to the route's thumbnail when the ride or stage has none of its own. For a client that renders one picture and does not follow a colour scheme; prefer thumbnailLightUrl/thumbnailDarkUrl otherwise."
+                "Thumbnail image URL template (contains a {size} placeholder), light variant preferred. Falls back to the route's thumbnail when the ride or stage has none of its own. For a client that renders one picture and does not follow a colour scheme; prefer thumbnailLightUrl/thumbnailDarkUrl otherwise. Opaque URL: may carry a query string; substitute {size} only."
               ),
             thumbnailLightUrl: zod
               .string()
               .optional()
               .describe(
-                "Light-scheme thumbnail image URL template (contains a {size} placeholder). Null when the event's picture exists only in a dark variant."
+                "Light-scheme thumbnail image URL template (contains a {size} placeholder). Null when the event's picture exists only in a dark variant. Opaque URL: may carry a query string; substitute {size} only."
               ),
             thumbnailDarkUrl: zod
               .string()
               .optional()
               .describe(
-                "Dark-scheme thumbnail image URL template (contains a {size} placeholder). Null when the event's picture exists only in a light variant."
+                "Dark-scheme thumbnail image URL template (contains a {size} placeholder). Null when the event's picture exists only in a light variant. Opaque URL: may carry a query string; substitute {size} only."
               ),
             registered: zod
               .boolean()
@@ -183,19 +183,19 @@ export const GetTeamEventsResponse = zod
               .string()
               .optional()
               .describe(
-                "Thumbnail image URL template (contains a {size} placeholder), light variant preferred. Falls back to the route's thumbnail when the ride or stage has none of its own. For a client that renders one picture and does not follow a colour scheme; prefer thumbnailLightUrl/thumbnailDarkUrl otherwise."
+                "Thumbnail image URL template (contains a {size} placeholder), light variant preferred. Falls back to the route's thumbnail when the ride or stage has none of its own. For a client that renders one picture and does not follow a colour scheme; prefer thumbnailLightUrl/thumbnailDarkUrl otherwise. Opaque URL: may carry a query string; substitute {size} only."
               ),
             thumbnailLightUrl: zod
               .string()
               .optional()
               .describe(
-                "Light-scheme thumbnail image URL template (contains a {size} placeholder). Null when the event's picture exists only in a dark variant."
+                "Light-scheme thumbnail image URL template (contains a {size} placeholder). Null when the event's picture exists only in a dark variant. Opaque URL: may carry a query string; substitute {size} only."
               ),
             thumbnailDarkUrl: zod
               .string()
               .optional()
               .describe(
-                "Dark-scheme thumbnail image URL template (contains a {size} placeholder). Null when the event's picture exists only in a light variant."
+                "Dark-scheme thumbnail image URL template (contains a {size} placeholder). Null when the event's picture exists only in a light variant. Opaque URL: may carry a query string; substitute {size} only."
               ),
             registered: zod
               .boolean()

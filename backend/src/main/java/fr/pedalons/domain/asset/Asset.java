@@ -64,6 +64,16 @@ public class Asset extends BaseEntity {
   @Nullable
   protected Long fileSize;
 
+  /**
+   * Set to the new file id when the content of the asset was replaced in place (a track edit
+   * rewrites the route's GPX and FIT files under the same asset row), null otherwise. GPS sync
+   * fingerprints use {@code coalesce(contentRevision, id)}, so existing rows keep their hash and
+   * only a real content change re-pushes. docs/LEDGER_*.md API-128.
+   */
+  @Column(name = "content_revision")
+  @Nullable
+  protected Long contentRevision;
+
   @Column(name = "sort_order", nullable = false)
   private int sortOrder = 0;
 

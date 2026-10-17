@@ -20,7 +20,8 @@ public record TeamPublicationDto(
             description =
                 "URL template of the team's logo (with a {size} placeholder), when it has one."
                     + " Same value as TeamDetailDto.logoUrl, so a publication can show its team's"
-                    + " logo without loading the team.")
+                    + " logo without loading the team. Opaque URL: may carry a query string;"
+                    + " substitute {size} only.")
         String logoUrl) {
   public static TeamPublicationDto from(Team team) {
     return new TeamPublicationDto(
@@ -38,9 +39,11 @@ public record TeamPublicationDto(
   private static @Nullable String logoUrl(Team team) {
     Long assetId = team.getLogoAssetId();
     String aboutVisibility = team.getAboutPageVisibility();
-    if (assetId == null || aboutVisibility == null) {
+    Long fileId = team.getLogoFileId();
+    if (assetId == null || fileId == null || aboutVisibility == null) {
       return null;
     }
-    return AssetService.buildImageUrl(team.getSlug(), Visibility.valueOf(aboutVisibility), assetId);
+    return AssetService.buildImageUrl(
+        team.getSlug(), Visibility.valueOf(aboutVisibility), assetId, fileId);
   }
 }
