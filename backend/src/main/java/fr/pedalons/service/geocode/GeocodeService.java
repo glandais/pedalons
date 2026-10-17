@@ -1,6 +1,7 @@
 package fr.pedalons.service.geocode;
 
 import fr.pedalons.common.exception.NotFoundException;
+import fr.pedalons.common.exception.ServiceUnavailableException;
 import fr.pedalons.dto.error.ErrorCode;
 import fr.pedalons.dto.geocode.GeocodeResultDto;
 import fr.pedalons.infrastructure.i18n.LanguageResolver;
@@ -56,6 +57,11 @@ public class GeocodeService {
    *
    * <p>A query shorter than three characters is answered without asking upstream: the clients
    * already gate on it, and a prefix that matches half of France is a billed call for nothing.
+   *
+   * <p>A provider failure is an empty list, never an error: the position is an optional form field,
+   * so an outage upstream (or a spent quota) must not stop someone from saving the rest of the
+   * form. The conversion is here, outside the cache, on purpose: {@link GeocodingLookup#search}
+   * throws, so the failure is not stored and the next query reaches the provider again (API-130).
    */
   @Public
   public List<GeocodeResultDto> search(String query) {
@@ -63,8 +69,13 @@ public class GeocodeService {
     if (normalized.length() < 3) {
       return List.of();
     }
-    List<GeocodingFeature> features =
-        geocodingLookup.search(normalized, languageResolver.getLanguage());
+    List<GeocodingFeature> features;
+    try {
+      features = geocodingLookup.search(normalized, languageResolver.getLanguage());
+    } catch (ServiceUnavailableException e) {
+      // Already logged, once, by the lookup.
+      return List.of();
+    }
     return features.stream().map(GeocodeService::toDto).filter(Objects::nonNull).toList();
   }
 

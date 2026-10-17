@@ -3740,8 +3740,8 @@ plus la colonne. Le départ d'un groupe n'existe plus que dans `ride_groups.star
     (même exposition par requête que la recherche `v1`, donc pas une régression).
   - **Caches** : `geocode-search` inchangé (requête normalisée + langue, 24 h, 2000) ; nouveau
     `geocode-place` (id + langue, 24 h, 1000), déclaré à côté dans `application.properties`. Dans
-    `geocode-place`, une réponse vide est mise en cache, une erreur non ; `geocode-search`, lui,
-    met en cache la liste vide qu'il rend en cas de panne, pour 24 h (`API-130`).
+    `geocode-place`, une réponse vide est mise en cache, une erreur non ; `geocode-search`
+    ne met plus en cache une panne (`API-130`, corrigé le jour même).
   - **Web** : `GeocoderAutocomplete` (formulaire d'équipe, lieux, annonces) appelle `resolvePlace`
     quand le résultat choisi n'a pas de position, sans toast, avec un état de chargement (et une
     croix pour annuler) ; en cas d'échec le champ reste utilisable avec un message traduit
@@ -3774,6 +3774,24 @@ plus la colonne. Le départ d'un groupe n'existe plus que dans `ride_groups.star
   contre le volume) ; le formulaire ne s'enregistre pas pendant une résolution ; les deux `@CacheResult` restent sur
   leur propre bean (`GeocodingLookup`, l'appel d'une méthode sœur contourne l'intercepteur) ; une
   panne du lookup est une erreur montrée, pas une position inventée.
+- `API-130` **Une panne de la recherche d'adresse n'est plus mise en cache 24 heures** (2026-10-17,
+  pas de changement de contrat : l'API reste en `11.7.0`, `GET /api/geocode/search` répond toujours
+  200 et `[]` en cas de panne) — `GeocodingLookup.search` attrapait l'échec amont et rendait
+  `List.of()` *dans* la méthode `@CacheResult` : la liste vide était stockée dans `geocode-search`
+  pour chaque requête tapée pendant la panne (injoignable, délai, 429), et ces requêtes ne
+  proposaient plus rien pendant 24 heures après le retour du fournisseur. Le lookup lève désormais
+  `ServiceUnavailableException(GEOCODING_UNAVAILABLE)` pour tout échec (rien n'est stocké, comme
+  pour `geocode-place`), un seul `warn` par échec, le statut ou le nom de la classe seulement, jamais
+  l'URL ni la clé ; une vraie réponse vide reste mise en cache. `GeocodeService.search` attrape cette
+  exception et rend la liste vide, hors du cache. Javadocs de `GeocodingLookup`, `GeocodeService` et
+  commentaire de `application.properties` mis à jour ; la puce « Caches » d'`API-129` ne dit plus
+  que la panne est mise en cache.
+  Tests : `GeocodingLookupTest` (échec → 503, 429 → 503, un échec puis un succès sur la même requête
+  atteignent deux fois le client, une réponse vide authentique est mise en cache),
+  `GeocodeResourceTest` (`search_whenTheLookupFails_shouldStillAnswer200WithAnEmptyList`).
+  **À ne pas défaire** : ne jamais attraper une exception dans une méthode `@CacheResult` — ce
+  qu'elle rend est stocké 24 heures ; c'est le service, hors du cache, qui convertit la panne en
+  liste vide.
 
 ## OPS — Exploitation, déploiement, recette du backend
 

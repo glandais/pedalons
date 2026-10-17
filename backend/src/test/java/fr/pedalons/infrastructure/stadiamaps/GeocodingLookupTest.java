@@ -39,14 +39,50 @@ class GeocodingLookupTest {
   }
 
   @Test
-  void search_whenTheProviderFails_shouldReturnEmptyRatherThanPropagate() {
-    // A geocoder assists an optional form field. An outage at Stadia Maps (or a spent quota, 429)
-    // must not stop someone from saving their team, so the failure is swallowed here rather than
-    // surfacing as a 500 on a form.
+  void search_whenTheProviderFails_shouldBeA503() {
     when(geocodingClient.autocomplete(anyString(), anyInt(), anyString()))
         .thenThrow(new RuntimeException("upstream down"));
 
-    assertTrue(geocodingLookup.search("chambery-outage", "fr").isEmpty());
+    ServiceUnavailableException e =
+        assertThrows(
+            ServiceUnavailableException.class,
+            () -> geocodingLookup.search("chambery-outage", "fr"));
+    assertEquals(ErrorCode.GEOCODING_UNAVAILABLE, e.getErrorCode());
+  }
+
+  @Test
+  void search_whenTheQuotaIsSpent_shouldBeA503() {
+    when(geocodingClient.autocomplete(anyString(), anyInt(), anyString()))
+        .thenThrow(new WebApplicationException(429));
+
+    assertThrows(
+        ServiceUnavailableException.class, () -> geocodingLookup.search("quota-spent", "fr"));
+  }
+
+  @Test
+  void search_aFailureIsNotCached_theNextCallReachesTheProviderAgain() {
+    // The outage's answer must not be stored for 24 hours: a failure, then a success on the same
+    // query, reach the client twice and the second returns the real features.
+    when(geocodingClient.autocomplete("annecy-recovery", 5, "fr"))
+        .thenThrow(new ProcessingException("timeout"))
+        .thenReturn(new GeocodingResponse(List.of(point("whosonfirst:locality:1", 6.1, 45.9))));
+
+    assertThrows(
+        ServiceUnavailableException.class, () -> geocodingLookup.search("annecy-recovery", "fr"));
+    assertEquals(1, geocodingLookup.search("annecy-recovery", "fr").size());
+
+    verify(geocodingClient, times(2)).autocomplete("annecy-recovery", 5, "fr");
+  }
+
+  @Test
+  void search_aGenuineEmptyAnswerIsCached() {
+    when(geocodingClient.autocomplete("introuvable-cache", 5, "fr"))
+        .thenReturn(new GeocodingResponse(List.of()));
+
+    geocodingLookup.search("introuvable-cache", "fr");
+    geocodingLookup.search("introuvable-cache", "fr");
+
+    verify(geocodingClient, times(1)).autocomplete("introuvable-cache", 5, "fr");
   }
 
   @Test

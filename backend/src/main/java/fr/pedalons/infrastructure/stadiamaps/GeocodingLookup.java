@@ -42,18 +42,26 @@ public class GeocodingLookup {
    * are one entry. No focus point in the request, on purpose: it would have to be part of the key,
    * and a per-deployment constant buys little against a 24-hour shared cache.
    *
-   * <p>Returns an empty list rather than failing when the provider is unreachable (or the quota is
-   * spent: 429): the position is an optional form field, so an outage upstream should not stop
-   * someone from saving the rest of the form. That empty list is cached like any answer — for 24
-   * hours, for every query typed during the outage (docs/LEDGER_*.md API-130).
+   * <p>A genuine empty answer (no match) is cached like any other. A failure — provider
+   * unreachable, timeout, quota spent (429), 5xx, a rejected key — is not: it leaves as a {@link
+   * ServiceUnavailableException} and the interceptor stores nothing, so the first query after the
+   * outage reaches the provider again (docs/LEDGER_*.md API-130). Nothing is caught inside a
+   * {@code @CacheResult} method: whatever it returns is stored for 24 hours. Turning the failure
+   * into the empty list the form tolerates is {@code GeocodeService.search}'s job, outside the
+   * cache. Only the status is logged: the URL and the headers carry the API key.
+   *
+   * @throws ServiceUnavailableException when the provider fails
    */
   @CacheResult(cacheName = "geocode-search")
   public List<GeocodingFeature> search(String normalizedQuery, String language) {
     try {
       return geocodingClient.autocomplete(normalizedQuery, LIMIT, language).featuresOrEmpty();
+    } catch (WebApplicationException e) {
+      LOG.warnv("Stadia Maps search failed with status {0}", e.getResponse().getStatus());
+      throw new ServiceUnavailableException(ErrorCode.GEOCODING_UNAVAILABLE);
     } catch (RuntimeException e) {
-      LOG.warnv("Geocoding failed for \"{0}\": {1}", normalizedQuery, e.getMessage());
-      return List.of();
+      LOG.warnv("Stadia Maps search unreachable: {0}", e.getClass().getSimpleName());
+      throw new ServiceUnavailableException(ErrorCode.GEOCODING_UNAVAILABLE);
     }
   }
 
@@ -66,8 +74,9 @@ public class GeocodingLookup {
    * {@link #search}; an empty answer is cached too (a GID that resolves to nothing today will not
    * tomorrow), a failure is not — the exception leaves the interceptor before anything is stored.
    *
-   * <p>Unlike {@link #search}, a failure is not swallowed: the user has picked a place and is
-   * waiting for its position, so they must be told it did not come. An upstream 400 or 404 is an id
+   * <p>Unlike the search as the user sees it, a failure is not turned into an empty answer by the
+   * caller: the user has picked a place and is waiting for its position, so they must be told it
+   * did not come. An upstream 400 or 404 is an id
    * the provider rejects — empty, like an unknown place; anything else (unreachable, timeout, 429
    * when the quota is spent, 5xx, 401 on a bad key) is a 503. Only the status is logged: the URL and
    * the headers carry the API key.

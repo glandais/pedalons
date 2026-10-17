@@ -79,6 +79,22 @@ class GeocodeResourceTest extends AbstractResourceTest {
   }
 
   @Test
+  void search_whenTheLookupFails_shouldStillAnswer200WithAnEmptyList() {
+    // The promise to the forms: an outage of the search is an empty list, never an error.
+    when(geocodingLookup.search(anyString(), anyString()))
+        .thenThrow(new ServiceUnavailableException(ErrorCode.GEOCODING_UNAVAILABLE));
+
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .when()
+        .get("/api/geocode/search?q=chambery-panne")
+        .then()
+        .statusCode(200)
+        .body("size()", is(0));
+  }
+
+  @Test
   void search_belowThreeCharacters_shouldNotReachTheProvider() {
     // The clients already gate on three characters. Asking upstream anyway would be a billed call
     // for a query that matches half of France.
