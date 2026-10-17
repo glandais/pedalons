@@ -39,6 +39,8 @@ import '../features/rides/presentation/pages/ride_detail_page.dart';
 import '../features/rides/presentation/pages/ride_editor_page.dart';
 import '../features/rides/domain/ride_group_tab.dart';
 import '../features/rides/presentation/pages/ride_group_page.dart';
+import '../features/rides/presentation/pages/ride_template_editor_page.dart';
+import '../features/rides/presentation/pages/ride_template_list_page.dart';
 import '../features/trips/presentation/pages/stage_detail_page.dart';
 import '../features/trips/presentation/pages/trip_detail_page.dart';
 import '../features/routes/presentation/pages/all_routes_map_page.dart';
@@ -86,6 +88,8 @@ String _tripAncestor(Map<String, String> p, String locale) =>
     PathVariants.trip(p['teamSlug']!, p['tripSlug']!)[locale]!;
 String _rideAncestor(Map<String, String> p, String locale) =>
     PathVariants.ride(p['teamSlug']!, p['rideSlug']!)[locale]!;
+String _rideTemplatesAncestor(Map<String, String> p, String locale) =>
+    PathVariants.rideTemplates(p['teamSlug']!)[locale]!;
 String _profileAncestor(Map<String, String> p, String locale) =>
     PathVariants.profile()[locale]!;
 String _profilePrivacyAncestor(Map<String, String> p, String locale) =>
@@ -272,6 +276,20 @@ final List<_DeepLinkHierarchy> _deepLinkHierarchies = [
       _teamAgendaAncestor,
       _rideAncestor,
     ],
+  ),
+  // Les modèles de sortie : la liste sous l'équipe, le formulaire sous la
+  // liste — l'enregistrement y revient par `pop` (ledger `MOB-78`).
+  _DeepLinkHierarchy(
+    patterns: PathVariants.rideTemplates(':teamSlug'),
+    ancestors: [_teamsAncestor, _teamAncestor],
+  ),
+  _DeepLinkHierarchy(
+    patterns: PathVariants.rideTemplateNew(':teamSlug'),
+    ancestors: [_teamsAncestor, _teamAncestor, _rideTemplatesAncestor],
+  ),
+  _DeepLinkHierarchy(
+    patterns: PathVariants.rideTemplateEdit(':teamSlug', ':templateSlug'),
+    ancestors: [_teamsAncestor, _teamAncestor, _rideTemplatesAncestor],
   ),
   _DeepLinkHierarchy(
     patterns: PathVariants.post(':teamSlug', ':postSlug'),
@@ -602,6 +620,19 @@ GoRoute _teamTree(String locale) {
           routeSlug: state.pathParameters['routeSlug']!,
         ),
       ),
+      // Les modèles de sortie : la liste, et dessous son formulaire de
+      // création et de modification (ledger `MOB-78`).
+      GoRoute(
+        path: _underTeam(
+          PathVariants.rideTemplates(':teamSlug'),
+          locale,
+          teamBase,
+        ),
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) =>
+            RideTemplateListPage(teamSlug: state.pathParameters['teamSlug']!),
+        routes: [_rideTemplateNewRoute(locale), _rideTemplateEditRoute(locale)],
+      ),
       // Avant le détail : `…/sorties/nouvelle` est aussi la sortie de slug
       // `nouvelle`, et c'est l'éditeur qui est visé (ledger `MOB-76`).
       GoRoute(
@@ -657,6 +688,41 @@ GoRoute _teamTree(String locale) {
       ),
       _tripShellRoute(locale, teamBase),
     ],
+  );
+}
+
+/// Le formulaire d'un nouveau modèle, sous la liste des modèles : ouvert par un
+/// lien, la liste se reconstruit dessous et l'enregistrement y revient (ledger
+/// `MOB-78`).
+GoRoute _rideTemplateNewRoute(String locale) {
+  final listBase = PathVariants.rideTemplates(':teamSlug')[locale]!;
+  return GoRoute(
+    path: _underTeam(
+      PathVariants.rideTemplateNew(':teamSlug'),
+      locale,
+      listBase,
+    ),
+    parentNavigatorKey: _rootNavigatorKey,
+    builder: (context, state) =>
+        RideTemplateEditorPage(teamSlug: state.pathParameters['teamSlug']!),
+  );
+}
+
+/// Le formulaire d'un modèle existant, sous la liste des modèles (ledger
+/// `MOB-78`).
+GoRoute _rideTemplateEditRoute(String locale) {
+  final listBase = PathVariants.rideTemplates(':teamSlug')[locale]!;
+  return GoRoute(
+    path: _underTeam(
+      PathVariants.rideTemplateEdit(':teamSlug', ':templateSlug'),
+      locale,
+      listBase,
+    ),
+    parentNavigatorKey: _rootNavigatorKey,
+    builder: (context, state) => RideTemplateEditorPage(
+      teamSlug: state.pathParameters['teamSlug']!,
+      templateSlug: state.pathParameters['templateSlug'],
+    ),
   );
 }
 

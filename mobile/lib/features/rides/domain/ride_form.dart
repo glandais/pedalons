@@ -106,6 +106,19 @@ class RideGroupForm {
         maxParticipants: group.maxParticipants,
       );
 
+  /// Le groupe d'un modèle **modifié** : contrairement à [fromTemplate], qui
+  /// en fait un groupe neuf pour une sortie, l'[id] est gardé — le serveur
+  /// réécrit les groupes du modèle par id, et un groupe sans id serait
+  /// supprimé puis recréé (ledger `MOB-78`).
+  factory RideGroupForm.fromTemplateGroup(RideTemplateGroupDto group) =>
+      RideGroupForm(
+        id: group.id,
+        name: group.name,
+        time: group.time,
+        averageSpeed: group.averageSpeed,
+        maxParticipants: group.maxParticipants,
+      );
+
   final String? id;
   final String name;
 
@@ -145,6 +158,16 @@ class RideGroupForm {
     maxParticipants: maxParticipants,
     routeSlug: routeSlug,
     leaderId: leaderId,
+  );
+
+  /// Le groupe d'un **modèle** : ni parcours ni meneur, le modèle n'en porte
+  /// pas (ledger `MOB-78`).
+  RideTemplateGroupRequest toTemplateGroupRequest() => RideTemplateGroupRequest(
+    id: id,
+    name: name.trim(),
+    time: time,
+    averageSpeed: averageSpeed,
+    maxParticipants: maxParticipants,
   );
 
   bool get hasName => name.trim().isNotEmpty;

@@ -381,6 +381,24 @@ class Paths {
     }
   }
 
+  static String rideTemplateNew(String teamSlug) {
+    switch (getCurrentLocale()) {
+      case 'fr':
+        return '/equipes/$teamSlug/admin/modeles-sortie/nouveau';
+      default:
+        return '/teams/$teamSlug/admin/ride-templates/new';
+    }
+  }
+
+  static String rideTemplateEdit(String teamSlug, String templateSlug) {
+    switch (getCurrentLocale()) {
+      case 'fr':
+        return '/equipes/$teamSlug/admin/modeles-sortie/$templateSlug/modifier';
+      default:
+        return '/teams/$teamSlug/admin/ride-templates/$templateSlug/edit';
+    }
+  }
+
   static String trip(String teamSlug, String tripSlug) {
     switch (getCurrentLocale()) {
       case 'fr':
@@ -646,6 +664,17 @@ class PathVariants {
     'en': '/teams/$teamSlug/admin/ride-templates',
     'fr': '/equipes/$teamSlug/admin/modeles-sortie',
   };
+  static Map<String, String> rideTemplateNew(String teamSlug) => {
+    'en': '/teams/$teamSlug/admin/ride-templates/new',
+    'fr': '/equipes/$teamSlug/admin/modeles-sortie/nouveau',
+  };
+  static Map<String, String> rideTemplateEdit(
+    String teamSlug,
+    String templateSlug,
+  ) => {
+    'en': '/teams/$teamSlug/admin/ride-templates/$templateSlug/edit',
+    'fr': '/equipes/$teamSlug/admin/modeles-sortie/$templateSlug/modifier',
+  };
   static Map<String, String> trip(String teamSlug, String tripSlug) => {
     'en': '/teams/$teamSlug/trips/$tripSlug',
     'fr': '/equipes/$teamSlug/voyages/$tripSlug',
@@ -699,7 +728,6 @@ const Set<String> webOnlyRouteIds = <String>{
   'teamAdminMembers',
   'teamAdminReports',
   'teamSettings',
-  'rideTemplates',
   'tripEdit',
   'postNew',
   'postEdit',
@@ -730,12 +758,6 @@ const List<String> sitePagePathPatterns = <String>[
   r'^/equipes/[^/]+/admin/signalements/?$',
   r'^/teams/[^/]+/admin/settings/?$',
   r'^/equipes/[^/]+/admin/parametres/?$',
-  r'^/teams/[^/]+/admin/ride-templates/?$',
-  r'^/equipes/[^/]+/admin/modeles-sortie/?$',
-  r'^/teams/[^/]+/admin/ride-templates/new/?$',
-  r'^/equipes/[^/]+/admin/modeles-sortie/nouveau/?$',
-  r'^/teams/[^/]+/admin/ride-templates/[^/]+/edit/?$',
-  r'^/equipes/[^/]+/admin/modeles-sortie/[^/]+/modifier/?$',
   r'^/teams/[^/]+/trips/new/?$',
   r'^/equipes/[^/]+/voyages/nouveau/?$',
   r'^/teams/[^/]+/trips/[^/]+/edit/?$',

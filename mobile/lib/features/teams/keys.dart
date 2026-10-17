@@ -86,6 +86,12 @@ class TeamDashboardKeys {
   final newRoutes = const _TeamDashboardKey('newRoutes');
   final latestAds = const _TeamDashboardKey('latestAds');
   final templates = const _TeamDashboardKey('templates');
+
+  /// « Gérer les modèles » de la section « Créer depuis un modèle » (ledger
+  /// `MOB-78`).
+  final templatesManageButton = const _TeamDashboardKey(
+    'templatesManageButton',
+  );
   final admin = const _TeamDashboardKey('admin');
 
   /// La carte d'une sortie à venir, par son slug.
@@ -95,6 +101,10 @@ class TeamDashboardKeys {
   /// « Modifier », sur la carte d'une sortie à venir.
   ValueKey<String> rideEditButton(String rideSlug) =>
       _TeamDashboardKey('rideEdit_$rideSlug');
+
+  /// La ligne d'un modèle de « Créer depuis un modèle », par son slug.
+  ValueKey<String> templateRow(String slug) =>
+      _TeamDashboardKey('templateRow_$slug');
 
   /// La ligne d'une de « Vos prochaines sorties », par son slug.
   ValueKey<String> myUpcomingRow(String slug) =>

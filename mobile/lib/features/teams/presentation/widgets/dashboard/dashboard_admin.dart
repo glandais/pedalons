@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../../api/generated/export.dart';
+import '../../../../../config/paths.dart';
 import '../../../../../core/pdl/pdl.dart';
 import '../../../../../core/theme/enum_colors.dart';
 import '../../../../../core/theme/pdl_colors.dart';
@@ -12,13 +13,16 @@ import '../../../../../core/theme/pdl_typography.dart';
 import '../../../../../core/utils/formatters.dart';
 import '../../../../../keys.dart';
 import '../../../../rides/presentation/ride_editor_location.dart';
+import '../../../../rides/presentation/widgets/templates/ride_template_summary.dart';
 import '../../team_web_paths.dart';
 import 'dashboard_section.dart';
 
 // ─────────────────────────────────────────────────── créer depuis un modèle
 
-/// « Créer depuis un modèle » : les modèles de sortie de l'équipe et leur
-/// nombre de groupes. La création elle-même se fait sur le site.
+/// « Créer depuis un modèle » : les modèles de sortie de l'équipe, leur nombre
+/// de groupes et leur prochain numéro. Une ligne ouvre l'éditeur de sortie
+/// partant du modèle ; « Gérer les modèles » ouvre leur liste dans l'app
+/// (ledger `MOB-78`).
 class DashboardTemplates extends StatelessWidget {
   const DashboardTemplates({
     super.key,
@@ -34,8 +38,9 @@ class DashboardTemplates extends StatelessWidget {
     return DashboardSection(
       key: keys.teamDashboard.templates,
       title: 'teams.dashboard.templates.title'.tr(),
-      onViewAll: () =>
-          openTeamWebPage(context, TeamWebPaths.rideTemplates(teamSlug)),
+      onViewAll: () => context.push(Paths.rideTemplates(teamSlug)),
+      actionLabel: 'teams.dashboard.templates.manage'.tr(),
+      actionKey: keys.teamDashboard.templatesManageButton,
       child: list.templates.isEmpty
           ? DashboardEmptyLine(message: 'teams.dashboard.templates.empty'.tr())
           : PdlCard(
@@ -49,11 +54,12 @@ class DashboardTemplates extends StatelessWidget {
                         horizontal: PdlSpacing.cardTight,
                       ),
                       child: PdlSettingRow(
+                        key: keys.teamDashboard.templateRow(
+                          list.templates[i].slug,
+                        ),
                         title: list.templates[i].name,
                         icon: PdlIcons.template,
-                        subtitle: 'rides.groupCount'.plural(
-                          list.templates[i].groupCount,
-                        ),
+                        subtitle: rideTemplateSummary(list.templates[i]),
                         onTap: () => context.push(
                           rideNewLocation(
                             teamSlug,

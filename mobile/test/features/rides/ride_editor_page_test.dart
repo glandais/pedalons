@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/config/locale_context.dart';
+import 'package:pedalons/config/paths.generated.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/features/rides/data/ride_editor_repository.dart';
@@ -51,6 +52,18 @@ class _StubRides implements RideRepository {
 }
 
 class _StubEditor implements RideEditorRepository {
+  @override
+  Future<RideTemplateListResponse> searchTemplates(
+    String teamSlug, {
+    String? search,
+    int page = 0,
+  }) async => const RideTemplateListResponse(
+    templates: <RideTemplateDto>[],
+    total: 0,
+    page: 0,
+    size: 20,
+  );
+
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
@@ -136,6 +149,11 @@ void main() {
           path: '/equipes/:teamSlug/sorties/:rideSlug',
           builder: (BuildContext _, GoRouterState state) =>
               Text('fiche ${state.pathParameters['rideSlug']}'),
+        ),
+        GoRoute(
+          path: PathVariants.rideTemplates(':teamSlug')['fr']!,
+          builder: (BuildContext _, GoRouterState state) =>
+              Text('liste modèles ${state.pathParameters['teamSlug']}'),
         ),
       ],
     );
@@ -255,5 +273,29 @@ void main() {
     expect(request.groups.first.leaderId, 'u9');
     expect(request.startPlaceId, 'p1');
     expect(request.dateTime, '2026-07-29T21:30:00');
+  });
+
+  testWidgets('la feuille « Charger un modèle » mène à la gestion des modèles '
+      '(MOB-78)', (WidgetTester tester) async {
+    await open(tester, rides: _StubRides(fixtureRide()));
+
+    await tester.tap(find.byKey(keys.rideEditor.templateButton));
+    for (int i = 0; i < 6; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+
+    expect(find.text('Choisir un modèle'), findsOneWidget);
+    expect(find.byKey(keys.rideEditor.manageTemplatesButton), findsOneWidget);
+    expect(find.text('Gérer les modèles'), findsOneWidget);
+
+    // Le toucher ferme la feuille et pousse la liste des modèles de l'équipe.
+    await tester.tap(find.byKey(keys.rideEditor.manageTemplatesButton));
+    for (int i = 0; i < 12; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+
+    expect(find.text('liste modèles n-peloton'), findsOneWidget);
+    expect(find.text('Choisir un modèle'), findsNothing);
+    expect(find.byKey(keys.rideEditor.manageTemplatesButton), findsNothing);
   });
 }

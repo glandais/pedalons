@@ -37,6 +37,8 @@ class Keys {
   final rideGroup = RideGroupPageKeys();
   final rideEditor = RideEditorKeys();
   final rideManage = RideManageKeys();
+  final rideTemplates = RideTemplateKeys();
+  final rideTemplateEditor = RideTemplateEditorKeys();
   final participants = ParticipantsSheetKeys();
   final ad = AdDetailKeys();
   final adContact = AdContactKeys();

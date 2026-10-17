@@ -204,14 +204,20 @@ n'ont aucun appelant d'écran).
       stack (certificat mkcert ajouté au simulateur), `PEDALONS_WEBAUTHN_RP_ID` et
       `--dart-define=WEBAUTHN_RP_ID` réglés dessus, une variante d'entitlements de debug
       (`?mode=developer`) et un pas « visage reconnu » lancé par l'hôte.
-- [ ] `MOB-77` **Éditeur de sortie : recette sur appareil et test Patrol (S)** — `MOB-76` est
+- [ ] `MOB-77` **Éditeur de sortie et modèles : recette sur appareil et tests Patrol (S)** — `MOB-76` est
       couvert par les tests unitaires et de widget, et par `ride_editor_test` et
       `ride_editor_member_test` (Patrol, verts le 17 octobre 2026 sur le simulateur iOS et sur
       l'émulateur Android). Reste la recette à la main : créer une sortie depuis le tableau de bord (modèle compris), y
       ajouter une image depuis la photothèque et une pièce jointe depuis le sélecteur de fichiers,
       la modifier depuis sa fiche, la publier puis la supprimer et la restaurer — en organisateur,
       et vérifier qu'un simple membre ne voit ni le crayon ni le menu « Gérer la sortie ». Clés dans
-      `keys.rideEditor` / `keys.rideManage`. Avant la prochaine publication de l'app : pousser le
+      `keys.rideEditor` / `keys.rideManage`. **Modèles de sortie (`MOB-78`)** : les tests Patrol
+      `ride_templates_test` et `ride_templates_member_test` sont verts (17 octobre 2026, simulateur
+      iOS et émulateur Android) ; reste la recette à la main des modèles
+      (« Gérer les modèles » du tableau de bord et de la feuille « Charger un modèle », liste,
+      création, modification, suppression, création d'une sortie numérotée « Nom #n »), en
+      organisateur, et le refus d'un simple membre. Clés dans `keys.rideTemplates` /
+      `keys.rideTemplateEditor`. Avant la prochaine publication de l'app : pousser le
       formulaire *Data safety* de Google Play (`mobile/store-metadata/data-safety.csv`, ligne
       *Fichiers et documents*) ; la phrase d'accès aux photos d'iOS a changé (`Info.plist`).
 - [ ] `MOB-37` **Les tests Patrol ne tournent qu'en local** — aucun workflow de `.github/` ne les
@@ -1136,7 +1142,7 @@ redevient une entrée de sa section sous le même identifiant.
 | `WEB-12` | **Mode sombre dérivé au web** | Sans objet | Le tableau de parité est un livrable **pour Flutter**, parce qu'aucune maquette ne fournit le sombre. Mantine l'a déjà |
 | `MOB-22` | **Jeu d'icônes Tabler côté mobile** | Material outline conservé | L'écart ne porte que sur la graisse du trait des icônes de badge de 11 px. `PdlIcons` (`lib/core/theme/pdl_icons.dart`) devrait être le **seul** fichier à nommer `Icons.*` (17 autres fichiers le font encore au 16 octobre 2026) : une fois ce ménage fait, basculer ne touchera qu'un fichier |
 | `MOB-23` | **Écran de profil public d'un membre** | Aucune maquette ne va au-delà de la liste | Une ligne du trombinoscope ouvre le menu signaler/bloquer (`team_members_page.dart`), jamais un profil. Ne pas inventer l'écran |
-| `MOB-24` | **Édition et création de contenu au mobile — hors sorties** (publications, voyages, parcours, modèles de sortie, administration d'équipe) | Hors brief : la v2 est une version de consultation et de participation | Les **sorties** en ont été détachées et livrées le 17 octobre 2026 (`MOB-76`, éditeur de sortie, sélecteur de meneur compris). Le reste ouvre toujours le site depuis le tableau de bord (`team_web_paths.dart`) ; à rouvrir type par type, sur le modèle de `MOB-76` |
+| `MOB-24` | **Édition et création de contenu au mobile — hors sorties et modèles de sortie** (publications, voyages, parcours, administration d'équipe) | Hors brief : la v2 est une version de consultation et de participation | Les **sorties** en ont été détachées et livrées le 17 octobre 2026 (`MOB-76`, éditeur de sortie, sélecteur de meneur compris), puis les **modèles de sortie** le même jour (`MOB-78`). Le reste ouvre toujours le site depuis le tableau de bord (`team_web_paths.dart`) ; à rouvrir type par type, sur le modèle de `MOB-76` |
 | `MOB-50` | **Cloche des notifications dans l'en-tête du Profil** | Non (décidé le 4 octobre 2026 avec le propriétaire, refonte `MOB-48`) | La boîte de réception est dans une autre branche du shell : un `push` depuis le Profil empilerait les branches, un `go` y ferait perdre la place. Elle reste à un onglet ; les réglages de notifications sont dans `/profil/notifications`. Ne pas ajouter de cloche au Profil |
 | `MOB-61` | **Recherche et tags des anciennes adresses du fil dans l'app** (`team?tab=publications&type=…&q=…&tags=…`) | Non (décidé le 11 octobre 2026 avec le propriétaire) | Aucune de ces anciennes adresses n'a été partagée : l'app garde le type et la période (`resolveTeamRootSection`, `agendaTarget` dans `team_sections.dart`) et ignore `q` et `tags`, que seul le site reporte (`teamLegacyRedirects.ts`). À rouvrir seulement si une telle adresse circule |
 | `MOB-74` | **Exclure du manifeste Android les pages du site sans écran dans l'app** (`<uri-relative-filter-group android:allow="false">`, API 35+) | Non (11 octobre 2026 ; part écartée de `MOB-59`, renumérotée le 16 octobre 2026) | L'app reçoit ces liens et les passe au navigateur (`isSitePageLocation` dans `openDeepLink`) : il ne reste qu'un bref passage par l'app. L'exclusion ne vaudrait que sous Android 15+, ne se vérifie que sur un appareil avec la vérification des App Links, et un manifeste faux casse tous les liens d'app. À rouvrir si le passage par l'app gêne |

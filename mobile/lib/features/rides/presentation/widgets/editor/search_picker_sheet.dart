@@ -18,6 +18,10 @@ typedef PickerLoader<T> =
 /// recherche et chargement à la demande — parcours, lieux, membres, modèles
 /// de l'éditeur de sortie (ledger `MOB-76`). Rend l'élément choisi, ou `null`
 /// si la feuille a été fermée.
+///
+/// [footerBuilder] pose un pied sous la liste, construit avec le contexte de
+/// la feuille — « Gérer les modèles » de l'éditeur de sortie (ledger
+/// `MOB-78`), qui la ferme avant de naviguer.
 Future<T?> showSearchPickerSheet<T>(
   BuildContext context, {
   required String title,
@@ -27,10 +31,12 @@ Future<T?> showSearchPickerSheet<T>(
   required String Function(T item) idOf,
   required Widget Function(BuildContext context, T item, VoidCallback onTap)
   itemBuilder,
+  WidgetBuilder? footerBuilder,
 }) {
   return PdlFullSheet.show<T>(
     context: context,
-    builder: (BuildContext _) => SearchPickerSheet<T>(
+    builder: (BuildContext sheetContext) => SearchPickerSheet<T>(
+      footer: footerBuilder?.call(sheetContext),
       title: title,
       searchHint: searchHint,
       emptyMessage: emptyMessage,
@@ -50,6 +56,7 @@ class SearchPickerSheet<T> extends StatefulWidget {
     required this.load,
     required this.idOf,
     required this.itemBuilder,
+    this.footer,
   });
 
   final String title;
@@ -59,6 +66,9 @@ class SearchPickerSheet<T> extends StatefulWidget {
   final String Function(T item) idOf;
   final Widget Function(BuildContext context, T item, VoidCallback onTap)
   itemBuilder;
+
+  /// Le pied de la feuille, sous la liste.
+  final Widget? footer;
 
   @override
   State<SearchPickerSheet<T>> createState() => _SearchPickerSheetState<T>();
@@ -124,6 +134,7 @@ class _SearchPickerSheetState<T> extends State<SearchPickerSheet<T>> {
   Widget build(BuildContext context) {
     return PdlFullSheet(
       title: widget.title,
+      footer: widget.footer,
       headerAction: PdlButton(
         label: 'common.cancel'.tr(),
         variant: PdlButtonVariant.text,

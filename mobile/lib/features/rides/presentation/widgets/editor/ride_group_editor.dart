@@ -14,6 +14,7 @@ import '../../../../../core/units/unit_system.dart';
 import '../../../../../core/utils/formatters.dart';
 import '../../../../../keys.dart';
 import '../../../domain/ride_form.dart';
+import '../../../keys.dart';
 
 /// Une heure « HH:mm[:ss] » du contrat, à l'affichage (12/24 h du téléphone).
 /// L'heure est déjà murale : `formatTime` laisse un `DateTime` local intact.
@@ -42,22 +43,28 @@ double? parseDecimal(String text) {
 /// Le meneur est `GroupRequest.leaderId` et rien d'autre : sans meneur, la
 /// ligne dit « Aucun meneur », jamais le créateur de la sortie (ledger
 /// `API-30`).
+///
+/// L'éditeur de modèle (ledger `MOB-78`) réutilise la carte **sans** meneur
+/// ni parcours : un modèle n'en porte pas. Un [onPickLeader] ou un
+/// [onPickRoute] nul **ne rend pas** la ligne correspondante. [fieldKeys]
+/// donne les clés de la carte à l'éditeur qui l'héberge.
 class RideGroupEditor extends ConsumerStatefulWidget {
   const RideGroupEditor({
     super.key,
     required this.index,
     required this.group,
-    required this.leaderName,
-    required this.routeName,
+    this.leaderName,
+    this.routeName,
     required this.isFirst,
     required this.isLast,
     required this.onChanged,
     required this.onPickTime,
-    required this.onPickLeader,
-    required this.onPickRoute,
+    this.onPickLeader,
+    this.onPickRoute,
     required this.onMoveUp,
     required this.onMoveDown,
     required this.onRemove,
+    this.fieldKeys,
   });
 
   final int index;
@@ -71,11 +78,15 @@ class RideGroupEditor extends ConsumerStatefulWidget {
   final bool isLast;
   final ValueChanged<RideGroupForm> onChanged;
   final VoidCallback onPickTime;
-  final VoidCallback onPickLeader;
-  final VoidCallback onPickRoute;
+  final VoidCallback? onPickLeader;
+  final VoidCallback? onPickRoute;
   final VoidCallback onMoveUp;
   final VoidCallback onMoveDown;
   final VoidCallback onRemove;
+
+  /// Les clés des champs de la carte ; celles de l'éditeur de sortie par
+  /// défaut. Les lignes meneur et parcours gardent `keys.rideEditor`.
+  final GroupEditorKeys? fieldKeys;
 
   @override
   ConsumerState<RideGroupEditor> createState() => _RideGroupEditorState();
@@ -132,6 +143,7 @@ class _RideGroupEditorState extends ConsumerState<RideGroupEditor> {
     final UnitSystem units = ref.watch(unitSystemProvider);
     final RideGroupForm g = widget.group;
     final int i = widget.index;
+    final GroupEditorKeys k = widget.fieldKeys ?? keys.rideEditor;
 
     final double? speed = parseDecimal(_speed.text);
     final int? max = int.tryParse(_max.text.trim());
@@ -141,7 +153,7 @@ class _RideGroupEditorState extends ConsumerState<RideGroupEditor> {
         _max.text.trim().isNotEmpty && (max == null || max <= 0);
 
     return PdlCard(
-      key: keys.rideEditor.group(i),
+      key: k.group(i),
       padding: PdlCardPadding.tight,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -151,7 +163,7 @@ class _RideGroupEditorState extends ConsumerState<RideGroupEditor> {
             children: <Widget>[
               Expanded(
                 child: TextField(
-                  key: keys.rideEditor.groupName(i),
+                  key: k.groupName(i),
                   controller: _name,
                   textCapitalization: TextCapitalization.sentences,
                   inputFormatters: <TextInputFormatter>[
@@ -165,18 +177,18 @@ class _RideGroupEditorState extends ConsumerState<RideGroupEditor> {
                       widget.onChanged(g.copyWith(name: v)),
                 ),
               ),
-              _IconTool(
+              EditorIconButton(
                 icon: PdlIcons.chevronUp,
                 label: 'rides.editor.groupUp'.tr(),
                 onTap: widget.isFirst ? null : widget.onMoveUp,
               ),
-              _IconTool(
+              EditorIconButton(
                 icon: PdlIcons.chevronDown,
                 label: 'rides.editor.groupDown'.tr(),
                 onTap: widget.isLast ? null : widget.onMoveDown,
               ),
-              _IconTool(
-                key: keys.rideEditor.groupRemove(i),
+              EditorIconButton(
+                key: k.groupRemove(i),
                 icon: PdlIcons.delete,
                 label: 'rides.editor.groupRemove'.tr(),
                 color: c.danger,
@@ -190,7 +202,7 @@ class _RideGroupEditorState extends ConsumerState<RideGroupEditor> {
             children: <Widget>[
               Expanded(
                 child: TextField(
-                  key: keys.rideEditor.groupSpeed(i),
+                  key: k.groupSpeed(i),
                   controller: _speed,
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
@@ -217,7 +229,7 @@ class _RideGroupEditorState extends ConsumerState<RideGroupEditor> {
               const SizedBox(width: PdlSpacing.chipGap),
               Expanded(
                 child: TextField(
-                  key: keys.rideEditor.groupMax(i),
+                  key: k.groupMax(i),
                   controller: _max,
                   keyboardType: TextInputType.number,
                   inputFormatters: <TextInputFormatter>[
@@ -239,7 +251,7 @@ class _RideGroupEditorState extends ConsumerState<RideGroupEditor> {
           ),
           const SizedBox(height: PdlSpacing.badgeGap),
           PdlSettingRow(
-            key: keys.rideEditor.groupTime(i),
+            key: k.groupTime(i),
             padding: EdgeInsets.zero,
             icon: PdlIcons.time,
             title: 'rides.editor.groupTime'.tr(),
@@ -253,46 +265,51 @@ class _RideGroupEditorState extends ConsumerState<RideGroupEditor> {
                   ),
             onTap: widget.onPickTime,
           ),
-          PdlSettingRow(
-            key: keys.rideEditor.groupLeader(i),
-            padding: EdgeInsets.zero,
-            icon: PdlIcons.leader,
-            title: 'rides.editor.groupLeader'.tr(),
-            subtitle: g.leaderId == null
-                ? 'rides.editor.groupLeaderNone'.tr()
-                : (widget.leaderName ?? 'rides.editor.groupLeaderUnknown'.tr()),
-            trailing: g.leaderId == null
-                ? null
-                : _ClearButton(
-                    onTap: () =>
-                        widget.onChanged(g.copyWith(leaderId: () => null)),
-                  ),
-            onTap: widget.onPickLeader,
-          ),
-          PdlSettingRow(
-            key: keys.rideEditor.groupRoute(i),
-            padding: EdgeInsets.zero,
-            icon: PdlIcons.route,
-            title: 'rides.editor.groupRoute'.tr(),
-            subtitle: g.routeSlug == null
-                ? 'rides.editor.routeNone'.tr()
-                : (widget.routeName ?? g.routeSlug!),
-            trailing: g.routeSlug == null
-                ? null
-                : _ClearButton(
-                    onTap: () =>
-                        widget.onChanged(g.copyWith(routeSlug: () => null)),
-                  ),
-            onTap: widget.onPickRoute,
-          ),
+          if (widget.onPickLeader != null)
+            PdlSettingRow(
+              key: keys.rideEditor.groupLeader(i),
+              padding: EdgeInsets.zero,
+              icon: PdlIcons.leader,
+              title: 'rides.editor.groupLeader'.tr(),
+              subtitle: g.leaderId == null
+                  ? 'rides.editor.groupLeaderNone'.tr()
+                  : (widget.leaderName ??
+                        'rides.editor.groupLeaderUnknown'.tr()),
+              trailing: g.leaderId == null
+                  ? null
+                  : _ClearButton(
+                      onTap: () =>
+                          widget.onChanged(g.copyWith(leaderId: () => null)),
+                    ),
+              onTap: widget.onPickLeader,
+            ),
+          if (widget.onPickRoute != null)
+            PdlSettingRow(
+              key: keys.rideEditor.groupRoute(i),
+              padding: EdgeInsets.zero,
+              icon: PdlIcons.route,
+              title: 'rides.editor.groupRoute'.tr(),
+              subtitle: g.routeSlug == null
+                  ? 'rides.editor.routeNone'.tr()
+                  : (widget.routeName ?? g.routeSlug!),
+              trailing: g.routeSlug == null
+                  ? null
+                  : _ClearButton(
+                      onTap: () =>
+                          widget.onChanged(g.copyWith(routeSlug: () => null)),
+                    ),
+              onTap: widget.onPickRoute,
+            ),
         ],
       ),
     );
   }
 }
 
-class _IconTool extends StatelessWidget {
-  const _IconTool({
+/// Un bouton-icône de 44 px, libellé lu par le lecteur d'écran : les gestes
+/// d'une carte de groupe, le `⋯` d'une carte de modèle.
+class EditorIconButton extends StatelessWidget {
+  const EditorIconButton({
     super.key,
     required this.icon,
     required this.label,
@@ -329,7 +346,7 @@ class _ClearButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _IconTool(
+    return EditorIconButton(
       icon: PdlIcons.close,
       label: 'rides.editor.clear'.tr(),
       color: context.pdl.textDimmed,

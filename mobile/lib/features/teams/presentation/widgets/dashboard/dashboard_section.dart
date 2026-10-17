@@ -21,6 +21,8 @@ class DashboardSection extends StatelessWidget {
     required this.child,
     this.count,
     this.onViewAll,
+    this.actionLabel,
+    this.actionKey,
   });
 
   final String title;
@@ -30,6 +32,12 @@ class DashboardSection extends StatelessWidget {
 
   /// « Voir tout » : la page entière de la section.
   final VoidCallback? onViewAll;
+
+  /// Le libellé de cette action ; « Voir tout » par défaut.
+  final String? actionLabel;
+
+  /// La clé du bouton de cette action.
+  final Key? actionKey;
 
   final Widget child;
 
@@ -47,7 +55,8 @@ class DashboardSection extends StatelessWidget {
             action: onViewAll == null
                 ? null
                 : PdlButton(
-                    label: 'common.viewAll'.tr(),
+                    key: actionKey,
+                    label: actionLabel ?? 'common.viewAll'.tr(),
                     variant: PdlButtonVariant.text,
                     size: PdlButtonSize.sm,
                     onPressed: onViewAll,

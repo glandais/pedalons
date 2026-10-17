@@ -21,6 +21,18 @@ final class RideEditor extends Module {
     await $(keys.rideEditor.nameField).enterText(name);
   }
 
+  /// Waits until the name field reads [name] — a ride started from a template (ledger `MOB-78`)
+  /// is titled « Template #n » once the template is loaded.
+  Future<void> waitUntilNameReads(String name) async {
+    final deadline = DateTime.now().add(const Duration(seconds: 20));
+    while (!shows(keys.rideEditor.nameField, name)) {
+      if (DateTime.now().isAfter(deadline)) {
+        throw TestFailure('the name field never read « $name »');
+      }
+      await $.pump(const Duration(milliseconds: 200));
+    }
+  }
+
   /// Opens the ride's route picker and picks the route [routeSlug].
   Future<void> pickRoute(String routeSlug) async {
     await (await scrolledTo(keys.rideEditor.routeRow)).tap();

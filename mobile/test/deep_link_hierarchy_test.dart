@@ -25,6 +25,7 @@ const _postSlug = 'mon-article';
 const _routeSlug = 'col-du-galibier';
 const _adSlug = 'velo-a-vendre';
 const _pageSlug = 'notre-histoire';
+const _templateSlug = 'sortie-du-dimanche';
 
 /// One entry of `_deepLinkHierarchies`, mirrored as concrete URLs.
 ///
@@ -182,6 +183,26 @@ final List<_LinkCase> _cases = [
     PathVariants.teamAgenda(_teamSlug),
     PathVariants.ride(_teamSlug, _rideSlug),
   ]),
+  // Les modèles de sortie (ledger `MOB-78`) : la liste sous l'équipe, le
+  // formulaire sous la liste.
+  _LinkCase('rideTemplates', PathVariants.rideTemplates(_teamSlug), [
+    PathVariants.teams(),
+    PathVariants.team(_teamSlug),
+  ]),
+  _LinkCase('rideTemplateNew', PathVariants.rideTemplateNew(_teamSlug), [
+    PathVariants.teams(),
+    PathVariants.team(_teamSlug),
+    PathVariants.rideTemplates(_teamSlug),
+  ]),
+  _LinkCase(
+    'rideTemplateEdit',
+    PathVariants.rideTemplateEdit(_teamSlug, _templateSlug),
+    [
+      PathVariants.teams(),
+      PathVariants.team(_teamSlug),
+      PathVariants.rideTemplates(_teamSlug),
+    ],
+  ),
   _LinkCase('post', PathVariants.post(_teamSlug, _postSlug), [
     PathVariants.teams(),
     PathVariants.team(_teamSlug),

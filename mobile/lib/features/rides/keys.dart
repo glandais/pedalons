@@ -183,8 +183,20 @@ class _RideEditorKey extends ValueKey<String> {
   const _RideEditorKey(String value) : super('rideEditor_$value');
 }
 
+/// Les six clés d'une carte de groupe, que l'éditeur de sortie et celui de
+/// modèle (ledger `MOB-78`) fournissent chacun avec leur préfixe : les deux
+/// peuvent coexister dans la pile (éditeur de sortie, feuille, liste, modèle).
+abstract interface class GroupEditorKeys {
+  ValueKey<String> group(int index);
+  ValueKey<String> groupName(int index);
+  ValueKey<String> groupSpeed(int index);
+  ValueKey<String> groupMax(int index);
+  ValueKey<String> groupTime(int index);
+  ValueKey<String> groupRemove(int index);
+}
+
 /// L'éditeur de sortie, création et modification (ledger `MOB-76`).
-class RideEditorKeys {
+class RideEditorKeys implements GroupEditorKeys {
   final forbidden = const _RideEditorKey('forbidden');
   final loadError = const _RideEditorKey('loadError');
   final saveButton = const _RideEditorKey('saveButton');
@@ -212,17 +224,88 @@ class RideEditorKeys {
   final addGroupButton = const _RideEditorKey('addGroupButton');
   final pickerSearch = const _RideEditorKey('pickerSearch');
 
+  /// « Gérer les modèles », en pied de la feuille « Choisir un modèle »
+  /// (ledger `MOB-78`).
+  final manageTemplatesButton = const _RideEditorKey('manageTemplatesButton');
+
+  @override
   ValueKey<String> group(int index) => _RideEditorKey('group_$index');
+  @override
   ValueKey<String> groupName(int index) => _RideEditorKey('groupName_$index');
+  @override
   ValueKey<String> groupSpeed(int index) => _RideEditorKey('groupSpeed_$index');
+  @override
   ValueKey<String> groupMax(int index) => _RideEditorKey('groupMax_$index');
+  @override
   ValueKey<String> groupTime(int index) => _RideEditorKey('groupTime_$index');
   ValueKey<String> groupLeader(int index) =>
       _RideEditorKey('groupLeader_$index');
   ValueKey<String> groupRoute(int index) => _RideEditorKey('groupRoute_$index');
+  @override
   ValueKey<String> groupRemove(int index) =>
       _RideEditorKey('groupRemove_$index');
   ValueKey<String> pickerOption(String id) => _RideEditorKey('option_$id');
+}
+
+class _RideTemplateKey extends ValueKey<String> {
+  const _RideTemplateKey(String value) : super('rideTemplates_$value');
+}
+
+/// La liste des modèles de sortie, son menu et ses états (ledger `MOB-78`).
+class RideTemplateKeys {
+  final forbidden = const _RideTemplateKey('forbidden');
+  final loadError = const _RideTemplateKey('loadError');
+  final newButton = const _RideTemplateKey('newButton');
+  final searchField = const _RideTemplateKey('searchField');
+  final count = const _RideTemplateKey('count');
+  final empty = const _RideTemplateKey('empty');
+  final emptyNewButton = const _RideTemplateKey('emptyNewButton');
+  final noResults = const _RideTemplateKey('noResults');
+  final menuCreateRide = const _RideTemplateKey('menuCreateRide');
+  final menuEdit = const _RideTemplateKey('menuEdit');
+  final menuDelete = const _RideTemplateKey('menuDelete');
+
+  /// La carte d'un modèle, par son slug.
+  ValueKey<String> card(String slug) => _RideTemplateKey('card_$slug');
+
+  /// Le `⋯` de la carte d'un modèle, par son slug.
+  ValueKey<String> moreButton(String slug) => _RideTemplateKey('more_$slug');
+}
+
+class _RideTemplateEditorKey extends ValueKey<String> {
+  const _RideTemplateEditorKey(String value)
+    : super('rideTemplateEditor_$value');
+}
+
+/// L'éditeur de modèle de sortie, création et modification (ledger `MOB-78`).
+class RideTemplateEditorKeys implements GroupEditorKeys {
+  final saveButton = const _RideTemplateEditorKey('saveButton');
+  final errorBanner = const _RideTemplateEditorKey('errorBanner');
+  final nameField = const _RideTemplateEditorKey('nameField');
+  final nextNumberField = const _RideTemplateEditorKey('nextNumberField');
+  final markdownField = const _RideTemplateEditorKey('markdownField');
+  final tagsRow = const _RideTemplateEditorKey('tagsRow');
+  final visibility = const _RideTemplateEditorKey('visibility');
+  final status = const _RideTemplateEditorKey('status');
+  final addGroupButton = const _RideTemplateEditorKey('addGroupButton');
+
+  @override
+  ValueKey<String> group(int index) => _RideTemplateEditorKey('group_$index');
+  @override
+  ValueKey<String> groupName(int index) =>
+      _RideTemplateEditorKey('groupName_$index');
+  @override
+  ValueKey<String> groupSpeed(int index) =>
+      _RideTemplateEditorKey('groupSpeed_$index');
+  @override
+  ValueKey<String> groupMax(int index) =>
+      _RideTemplateEditorKey('groupMax_$index');
+  @override
+  ValueKey<String> groupTime(int index) =>
+      _RideTemplateEditorKey('groupTime_$index');
+  @override
+  ValueKey<String> groupRemove(int index) =>
+      _RideTemplateEditorKey('groupRemove_$index');
 }
 
 class _RideManageKey extends ValueKey<String> {

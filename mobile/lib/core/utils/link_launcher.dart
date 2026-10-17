@@ -102,6 +102,12 @@ final Map<String, List<String>> internalRouteTemplates = <String, List<String>>{
   'ride': PathVariants.ride(_slot, _slot).values.toList(),
   'rideEdit': PathVariants.rideEdit(_slot, _slot).values.toList(),
   'rideGroup': PathVariants.rideGroup(_slot, _slot, _slot).values.toList(),
+  'rideTemplates': PathVariants.rideTemplates(_slot).values.toList(),
+  'rideTemplateNew': PathVariants.rideTemplateNew(_slot).values.toList(),
+  'rideTemplateEdit': PathVariants.rideTemplateEdit(
+    _slot,
+    _slot,
+  ).values.toList(),
   'trip': PathVariants.trip(_slot, _slot).values.toList(),
   'stage': PathVariants.stage(_slot, _slot, _slot).values.toList(),
   'post': PathVariants.post(_slot, _slot).values.toList(),

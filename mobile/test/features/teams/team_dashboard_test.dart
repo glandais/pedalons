@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:pedalons/api/generated/export.dart';
+import 'package:pedalons/config/locale_context.dart';
+import 'package:pedalons/config/paths.generated.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
 import 'package:pedalons/core/theme/pdl_icons.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
@@ -49,10 +52,35 @@ void main() {
     TeamDashboardDto dashboard, {
     Brightness brightness = Brightness.light,
     Size size = const Size(1000, 6000),
+    bool routed = false,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
+
+    final Widget body = Scaffold(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: TeamDashboardBody(dashboard: dashboard),
+      ),
+    );
+    // Avec [routed], un routeur d'essai : les liens qui poussent une page de
+    // l'app (`context.push`) trouvent où aller, et le test lit où.
+    final GoRouter? router = routed
+        ? GoRouter(
+            routes: <RouteBase>[
+              GoRoute(
+                path: '/',
+                builder: (BuildContext _, GoRouterState _) => body,
+              ),
+              GoRoute(
+                path: PathVariants.rideTemplates(':teamSlug')['fr']!,
+                builder: (BuildContext _, GoRouterState state) =>
+                    Text('liste modèles ${state.pathParameters['teamSlug']}'),
+              ),
+            ],
+          )
+        : null;
 
     await tester.pumpWidget(
       ProviderScope(
@@ -60,15 +88,12 @@ void main() {
           sharedPreferencesProvider.overrideWithValue(prefs),
           authProvider.overrideWith((ref) => _StubAuthNotifier(ref)),
         ],
-        child: MaterialApp(
-          theme: PedalonsTheme.build(brightness),
-          home: Scaffold(
-            body: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: TeamDashboardBody(dashboard: dashboard),
-            ),
-          ),
-        ),
+        child: router == null
+            ? MaterialApp(theme: PedalonsTheme.build(brightness), home: body)
+            : MaterialApp.router(
+                theme: PedalonsTheme.build(brightness),
+                routerConfig: router,
+              ),
       ),
     );
     await settle(tester);
@@ -189,9 +214,36 @@ void main() {
       );
       expect(find.byKey(keys.teamDashboard.templates), findsOneWidget);
       expect(find.text('Sortie du samedi type'), findsOneWidget);
+      // La section ouvre la liste des modèles dans l'app (MOB-78), et la ligne
+      // dit le nombre de groupes et le prochain numéro.
+      expect(
+        find.descendant(
+          of: find.byKey(keys.teamDashboard.templatesManageButton),
+          matching: find.text('Gérer les modèles'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('3 groupes · prochaine #42'), findsOneWidget);
 
       expect(find.byKey(keys.teamDashboard.admin), findsNothing);
     });
+
+    testWidgets(
+      '« Gérer les modèles » ouvre la liste dans l\'app, pas le site',
+      (WidgetTester tester) async {
+        setCurrentLocale('fr');
+        await renderBody(tester, _dashboard(role: 'ORGANIZER'), routed: true);
+
+        await tester.ensureVisible(
+          find.byKey(keys.teamDashboard.templatesManageButton),
+        );
+        await tester.tap(find.byKey(keys.teamDashboard.templatesManageButton));
+        await settle(tester);
+
+        expect(find.text('liste modèles n-peloton'), findsOneWidget);
+        expect(find.byKey(keys.teamDashboard.templates), findsNothing);
+      },
+    );
 
     testWidgets('le dernier signalement nomme sa cible et sa raison', (
       WidgetTester tester,
@@ -637,6 +689,7 @@ TeamDashboardDto _dashboard({required String role}) {
                   groupCount: 3,
                   groups: const <RideTemplateGroupDto>[],
                   tags: const <TagDto>[],
+                  nextNumber: 42,
                 ),
               ],
               total: 1,

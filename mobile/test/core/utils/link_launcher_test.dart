@@ -153,7 +153,6 @@ void main() {
       ...PathVariants.teamAdminMembers('vc').values,
       ...PathVariants.teamAdminReports('vc').values,
       ...PathVariants.teamSettings('vc').values,
-      ...PathVariants.rideTemplates('vc').values,
       ...PathVariants.tripEdit('vc', 'ete').values,
       ...PathVariants.postNew('vc').values,
       ...PathVariants.postEdit('vc', 'news').values,
@@ -171,6 +170,17 @@ void main() {
       for (final String page in <String>[
         ...PathVariants.rideNew('vc').values,
         ...PathVariants.rideEdit('vc', 'rando').values,
+      ]) {
+        expect(isSitePageLocation(page), isFalse, reason: page);
+        expect(internalLocationFor(page), page, reason: page);
+      }
+    });
+
+    test('les modèles de sortie s\'ouvrent dans l\'app (MOB-78)', () {
+      for (final String page in <String>[
+        ...PathVariants.rideTemplates('vc').values,
+        ...PathVariants.rideTemplateNew('vc').values,
+        ...PathVariants.rideTemplateEdit('vc', 'samedi').values,
       ]) {
         expect(isSitePageLocation(page), isFalse, reason: page);
         expect(internalLocationFor(page), page, reason: page);

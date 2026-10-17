@@ -526,9 +526,8 @@ routes:
     appScreen: false
 
   # --- Rides ---
-  # `rideNew` and `rideEdit` are app screens since MOB-76 (the ride editor); `rideTemplates`
-  # below keeps `appScreen: false` — the app's dashboard opens it on the site
-  # (mobile/…/team_web_paths.dart, docs/LEDGER_*.md MOB-54).
+  # `rideNew` and `rideEdit` are app screens since MOB-76 (the ride editor); the ride
+  # templates below are app screens since MOB-78 (docs/LEDGER_*.md MOB-78).
   - id: rideNew
     path:
       en: /teams/{teamSlug}/rides/new
@@ -571,6 +570,8 @@ routes:
     deeplink: true
 
   # --- Ride templates ---
+  # App screens since MOB-78 (docs/LEDGER_*.md MOB-78): the list, the creation form and the
+  # edit form of a ride template, all under the team.
   - id: rideTemplates
     path:
       en: /teams/{teamSlug}/admin/ride-templates
@@ -579,7 +580,7 @@ routes:
       - teamSlug
     web: true
     mobile: true
-    appScreen: false
+    deeplink: true
   - id: rideTemplateNew
     path:
       en: /teams/{teamSlug}/admin/ride-templates/new
@@ -587,6 +588,8 @@ routes:
     params:
       - teamSlug
     web: true
+    mobile: true
+    deeplink: true
   - id: rideTemplateEdit
     path:
       en: /teams/{teamSlug}/admin/ride-templates/{templateSlug}/edit
@@ -595,6 +598,8 @@ routes:
       - teamSlug
       - templateSlug
     web: true
+    mobile: true
+    deeplink: true
 
   # --- Trips ---
   - id: tripNew

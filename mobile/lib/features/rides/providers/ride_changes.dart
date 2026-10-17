@@ -6,6 +6,7 @@ import '../../home/providers/next_ride_provider.dart';
 import '../../home/providers/week_events_provider.dart';
 import '../../teams/providers/team_dashboard_provider.dart';
 import 'ride_detail_provider.dart';
+import 'ride_template_providers.dart';
 import 'ride_weather_provider.dart';
 
 /// **Le** point où l'app dit « un organisateur vient de changer une sortie »
@@ -16,6 +17,10 @@ import 'ride_weather_provider.dart';
 /// et le calendrier, chacun dans son cache : tous sont invalidés ici, et le
 /// détail de la sortie aussi quand [rideKey] le nomme. Invalider un provider
 /// que personne n'écoute ne coûte rien.
+///
+/// Les modèles de sortie aussi : une sortie créée depuis un modèle
+/// (`templateId`) en fait avancer le `nextNumber`, que la liste des modèles et
+/// leur éditeur affichent (ledger `MOB-78`).
 ///
 /// Les fils paginés repartent du début : contrairement à une inscription, la
 /// liste elle-même change (une sortie y entre, en sort, change de date).
@@ -29,4 +34,6 @@ void notifyRideChanged(WidgetRef ref, {RideKey? rideKey}) {
   ref.invalidate(nextRideProvider);
   ref.invalidate(weekEventsProvider);
   ref.invalidate(calendarMonthProvider);
+  ref.invalidate(rideTemplateListProvider);
+  ref.invalidate(rideTemplateDetailProvider);
 }

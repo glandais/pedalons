@@ -31,10 +31,12 @@ import '../../domain/ride_form.dart';
 import '../../providers/ride_changes.dart';
 import '../../providers/ride_detail_provider.dart';
 import '../../providers/ride_editor_providers.dart';
+import '../widgets/editor/editor_section.dart';
 import '../widgets/editor/markdown_editor_field.dart';
 import '../widgets/editor/ride_group_editor.dart';
 import '../widgets/editor/ride_media_section.dart';
 import '../widgets/editor/search_picker_sheet.dart';
+import '../widgets/templates/ride_template_summary.dart';
 
 /// Créer ([rideSlug] nul) ou modifier une sortie — le pendant mobile de
 /// `CreateRidePage` / `EditRidePage` du site, au même contrat
@@ -355,9 +357,26 @@ class _RideEditorFormState extends ConsumerState<_RideEditorForm> {
                   PdlSettingRow(
                     title: t.name,
                     icon: PdlIcons.template,
-                    subtitle: 'rides.groupCount'.plural(t.groupCount),
+                    subtitle: rideTemplateSummary(t),
                     onTap: onTap,
                   ),
+          footerBuilder: (BuildContext sheetContext) => SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.all(PdlSpacing.section),
+              child: PdlButton(
+                key: keys.rideEditor.manageTemplatesButton,
+                label: 'rides.templates.manage'.tr(),
+                icon: PdlIcons.template,
+                variant: PdlButtonVariant.outline,
+                fullWidth: true,
+                onPressed: () {
+                  Navigator.of(sheetContext).pop();
+                  context.push(Paths.rideTemplates(_teamSlug));
+                },
+              ),
+            ),
+          ),
         );
     if (template == null || !mounted) return;
     // La liste ne porte pas forcément les groupes : on relit le modèle.
@@ -1022,7 +1041,7 @@ class _RideEditorFormState extends ConsumerState<_RideEditorForm> {
                 const SizedBox(height: PdlSpacing.section),
 
                 // ── Description ──
-                _Section(
+                EditorSection(
                   title: 'rides.editor.description'.tr(),
                   child: MarkdownEditorField(
                     controller: _markdown,
@@ -1035,7 +1054,7 @@ class _RideEditorFormState extends ConsumerState<_RideEditorForm> {
                         : 'rides.editor.markdownTooLong'.tr(),
                   ),
                 ),
-                _Section(
+                EditorSection(
                   title: 'rides.editor.media'.tr(),
                   child: RideMediaSection(
                     assets: _form.media.assets,
@@ -1051,7 +1070,7 @@ class _RideEditorFormState extends ConsumerState<_RideEditorForm> {
                 ),
 
                 // ── Date ──
-                _Section(
+                EditorSection(
                   title: 'rides.editor.when'.tr(),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1079,7 +1098,7 @@ class _RideEditorFormState extends ConsumerState<_RideEditorForm> {
                 ),
 
                 // ── Lieux ──
-                _Section(
+                EditorSection(
                   title: 'rides.editor.places'.tr(),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -1153,7 +1172,7 @@ class _RideEditorFormState extends ConsumerState<_RideEditorForm> {
                 // ── Tags ── Rien à proposer sans vocabulaire, sauf à garder
                 // des tags déjà posés.
                 if (vocabulary.isNotEmpty || _form.tagIds.isNotEmpty)
-                  _Section(
+                  EditorSection(
                     title: 'rides.editor.tags'.tr(),
                     child: PdlSettingRow(
                       key: keys.rideEditor.tagsRow,
@@ -1170,7 +1189,7 @@ class _RideEditorFormState extends ConsumerState<_RideEditorForm> {
 
                 // ── Visibilité et statut ──
                 if (!teamOnly)
-                  _Section(
+                  EditorSection(
                     title: 'rides.editor.visibility'.tr(),
                     child: PdlSegmented<Visibility>(
                       key: keys.rideEditor.visibility,
@@ -1186,7 +1205,7 @@ class _RideEditorFormState extends ConsumerState<_RideEditorForm> {
                       ],
                     ),
                   ),
-                _Section(
+                EditorSection(
                   title: 'rides.editor.status'.tr(),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1242,7 +1261,7 @@ class _RideEditorFormState extends ConsumerState<_RideEditorForm> {
                 ),
 
                 // ── Parcours ──
-                _Section(
+                EditorSection(
                   title: 'rides.editor.route'.tr(),
                   child: PdlSettingRow(
                     key: keys.rideEditor.routeRow,
@@ -1277,7 +1296,7 @@ class _RideEditorFormState extends ConsumerState<_RideEditorForm> {
                 ),
 
                 // ── Groupes ──
-                _Section(
+                EditorSection(
                   title: 'rides.editor.groups'.tr(),
                   hint: 'rides.editor.groupsHint'.tr(),
                   child: Column(
@@ -1346,36 +1365,6 @@ class _RideEditorFormState extends ConsumerState<_RideEditorForm> {
         .map((String id) => labels[id])
         .whereType<String>()
         .join(', ');
-  }
-}
-
-class _Section extends StatelessWidget {
-  const _Section({required this.title, required this.child, this.hint});
-
-  final String title;
-  final String? hint;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final PdlColors c = context.pdl;
-    final PdlTypography t = context.pdlText;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: PdlSpacing.section),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          PdlSectionHeader(title: title),
-          if (hint != null)
-            Padding(
-              padding: const EdgeInsets.only(bottom: PdlSpacing.chipGap),
-              child: Text(hint!, style: t.xs.copyWith(color: c.textDimmed)),
-            ),
-          child,
-        ],
-      ),
-    );
   }
 }
 

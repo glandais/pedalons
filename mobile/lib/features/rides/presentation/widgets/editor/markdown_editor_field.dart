@@ -23,12 +23,16 @@ enum _MarkdownMode { write, preview }
 ///
 /// [onInsertImage] envoie une image et rend sa directive, ou `null` si le
 /// membre a renoncé ; [images] sont celles de la sortie, que l'aperçu résout.
+/// Un [onInsertImage] nul **retire** l'outil image : le modèle de sortie n'a
+/// pas de médias (ledger `MOB-78`). [fieldKey] donne sa clé au champ de saisie
+/// (celle de l'éditeur de sortie par défaut).
 class MarkdownEditorField extends StatefulWidget {
   const MarkdownEditorField({
     super.key,
     required this.controller,
-    required this.images,
-    required this.onInsertImage,
+    this.images = const <AssetDto>[],
+    this.onInsertImage,
+    this.fieldKey,
     this.errorText,
     this.enabled = true,
     this.imageBusy = false,
@@ -36,7 +40,8 @@ class MarkdownEditorField extends StatefulWidget {
 
   final TextEditingController controller;
   final List<AssetDto> images;
-  final Future<String?> Function() onInsertImage;
+  final Future<String?> Function()? onInsertImage;
+  final Key? fieldKey;
   final String? errorText;
   final bool enabled;
   final bool imageBusy;
@@ -72,7 +77,9 @@ class _MarkdownEditorFieldState extends State<MarkdownEditorField> {
     // La sélection est lue **avant** l'envoi : le clavier fermé par le
     // sélecteur de photos la remet à -1.
     final TextEditingValue before = widget.controller.value;
-    final String? directive = await widget.onInsertImage();
+    final Future<String?> Function()? insert = widget.onInsertImage;
+    if (insert == null) return;
+    final String? directive = await insert();
     if (directive == null || !mounted) return;
     widget.controller.value = insertBlock(before, directive);
   }
@@ -120,11 +127,11 @@ class _MarkdownEditorFieldState extends State<MarkdownEditorField> {
             onQuote: () =>
                 _apply((TextEditingValue v) => toggleLinePrefix(v, '> ')),
             onLink: _link,
-            onImage: _image,
+            onImage: widget.onInsertImage == null ? null : _image,
           ),
           const SizedBox(height: PdlSpacing.badgeGap),
           TextField(
-            key: keys.rideEditor.markdownField,
+            key: widget.fieldKey ?? keys.rideEditor.markdownField,
             controller: widget.controller,
             focusNode: _focus,
             enabled: widget.enabled,
@@ -188,7 +195,7 @@ class _Toolbar extends StatelessWidget {
   final VoidCallback onNumbers;
   final VoidCallback onQuote;
   final VoidCallback onLink;
-  final VoidCallback onImage;
+  final VoidCallback? onImage;
 
   @override
   Widget build(BuildContext context) {
@@ -229,14 +236,16 @@ class _Toolbar extends StatelessWidget {
           ),
           tool(PdlIcons.formatQuote, 'rides.editor.toolbar.quote', onQuote),
           tool(PdlIcons.link, 'rides.editor.toolbar.link', onLink),
-          if (imageBusy)
+          if (onImage == null)
+            const SizedBox.shrink()
+          else if (imageBusy)
             const SizedBox(
               width: PdlMetrics.tapTarget,
               height: PdlMetrics.tapTarget,
               child: Center(child: CircularProgressIndicator.adaptive()),
             )
           else
-            tool(PdlIcons.imageAdd, 'rides.editor.toolbar.image', onImage),
+            tool(PdlIcons.imageAdd, 'rides.editor.toolbar.image', onImage!),
         ],
       ),
     );
