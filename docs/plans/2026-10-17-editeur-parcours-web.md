@@ -152,7 +152,7 @@ pour que l'éditeur affiche un message utile. À reprendre en A2 s'ils existent.
       les codes, §2). Prérequis de B1.
 - [ ] **A3. Profil mémorisé, `Alt` en plus de `Ctrl`** (S, §8 n° 5) — `useLocalStorage` de
       `@mantine/hooks` pour le profil (`useRoutePlanner.ts:90`) ; `ctrlKeyRef` devient
-      `directKeyRef` et suit aussi `Alt`, pour macOS (décision Q3).
+      `directKeyRef` et suit aussi `Alt`, pour macOS (Q3 tranchée : `Ctrl` et `Alt`).
 - [ ] **A4. Tactile décidé par le pointeur** (S) — `useMediaMatch('(pointer: coarse)')` pour la
       disposition, `pointerType` de l'événement pour chaque geste (tap-insertion, appui long).
       Un portable hybride garde souris et doigt. Prérequis de B5.
@@ -270,7 +270,7 @@ Les parties API sont décrites au §8 de l'état de l'art ; ce plan ne garde que
 |---|---|---|---|
 | Q1 | Forme du plein écran (B4) | `Modal fullScreen` au-dessus du formulaire | Page dédiée en `layout: 'bare'` : URL propre, mais SSR et état à porter ; pseudo-plein écran MapLibre : ne sort pas de l'`AppShell` |
 | Q2 | Ambition du web mobile | Édition complète (B5, B6, B9) | Retouches seulement, l'app Flutter porte le tactile : la moitié du lot 2 tombe |
-| Q3 | Modificateur ligne droite | `Ctrl` et `Alt`, la bascule B6 en plus | `Alt` seul : cohérent avec macOS, rompt l'habitude actuelle |
+| Q3 | Modificateur ligne droite | **Tranché le 17 octobre 2026 : `Ctrl` et `Alt`**, la bascule B6 en plus | `Alt` seul : cohérent avec macOS, rompt l'habitude actuelle |
 | Q4 | Quota de géocodage par utilisateur | Le debounce et le minimum de 3 caractères existants suffisent ; quota si la facture Stadia le justifie | Quota d'emblée : plus sûr, plus de code |
 | Q5 | D+ affiché pendant l'édition | Celui du serveur (`ascend` par segment), cohérent avec le parcours enregistré | Celui du client : instantané, mais diverge à l'enregistrement |
 | Q6 | Inversion | Re-router tous les segments | Inverser la géométrie : gratuit, faux sur les sens uniques |
