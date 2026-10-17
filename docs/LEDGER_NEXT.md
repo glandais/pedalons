@@ -352,6 +352,17 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
       (`GroupRouteMap`), parcours et voyage. Aujourd'hui `RideDetailPage`, `TripDetailPage` et
       `GroupRouteMap` chargent la carte en `React.lazy` mais la montent dès le rendu.
 
+- [ ] `WEB-99` **Éditeur de parcours web, desktop et web mobile (L, en quatre lots)** — le plan est
+      [`plans/2026-10-17-editeur-parcours-web.md`](plans/2026-10-17-editeur-parcours-web.md), et
+      **le suivi fin se fait dans le plan**, pas ici. L'éditeur (`RoutePlanner.tsx`,
+      `useRoutePlanner.ts`, `lib/planner.ts`) est utilisable à la souris, difficilement au doigt
+      (carte en `70dvh` dans un formulaire qui défile, mode tactile figé au montage, cibles de
+      29 px), lance des calculs concurrents sans annulation, et n'a ni profil altimétrique
+      d'édition, ni inverser / aller-retour / boucle, ni recherche d'adresse. Lots : robustesse,
+      disposition et web mobile, standard attendu, différenciation. Le routage passe chez Stadia
+      Maps, facturé à la requête : la partie backend attend ce commit. Huit décisions au §10 du
+      plan.
+
 ### Couverture e2e — ce que l'audit du 27 septembre laisse ouvert
 
 L'audit ([archivé](plans/archive/2026-09-27-e2e-coverage-audit.md), `WEB-26`) est exécuté : P0, P1
