@@ -74,6 +74,8 @@ export function TeamForm({
     initialValues.visibilityEditable ?? false
   )
   const [joinable, setJoinable] = useState(initialValues.joinable ?? false)
+  // A picked place whose position is still being looked up (docs/LEDGER_*.md API-129).
+  const [geocoding, setGeocoding] = useState(false)
   const [addMemberAllowed, setAddMemberAllowed] = useState(initialValues.addMemberAllowed ?? false)
   const [enableRoutePlanner, setEnableRoutePlanner] = useState(
     initialValues.enableRoutePlanner ?? false
@@ -119,6 +121,7 @@ export function TeamForm({
   )
 
   const handleSubmit = (values: TeamRequest) => {
+    if (geocoding) return
     if (zoneChanged) {
       // A preview that failed is cached in error under the same key: ask again rather than reopen
       // on the same error with Confirm disabled.
@@ -246,6 +249,7 @@ export function TeamForm({
           onChange={(point) => form.setFieldValue('geometry', point ?? undefined)}
           label={t('geocoder.label')}
           disabled={mutation.isPending}
+          onResolvingChange={setGeocoding}
         />
 
         <TimezoneSelect
@@ -389,7 +393,7 @@ export function TeamForm({
           </Button>
           <Button
             type="submit"
-            disabled={mutation.isPending || !form.isValid()}
+            disabled={mutation.isPending || geocoding || !form.isValid()}
             loading={mutation.isPending}
           >
             {getSubmitButtonText()}

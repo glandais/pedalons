@@ -699,6 +699,18 @@ appareil (`OPS-42`, étape 7 du plan
       16 octobre 2026, la prod compte 8 PDF parmi ses pièces jointes, et aucun fichier bureautique
       ni PSD ; garder la phrase (« Délibérément dehors ») reste une issue (décision du propriétaire).
 
+### Géocodage : ce qui suit `API-129`
+
+- [ ] `API-130` **Une panne de la recherche d'adresse reste en cache 24 heures (S)** —
+      `GeocodingLookup.search` attrape l'échec amont (injoignable, délai, 429 d'un quota épuisé) et
+      rend `List.of()` *dans* la méthode `@CacheResult` : cette liste vide est stockée dans
+      `geocode-search` pour chaque requête tapée pendant la panne, et ces requêtes ne proposent plus
+      rien pendant 24 heures après le retour du fournisseur. Faire lever l'exception par le lookup
+      (rien n'est alors mis en cache, comme pour `geocode-place`) et la changer en liste vide dans
+      `GeocodeService.search`, qui garde la promesse « une panne de la recherche est une liste vide ».
+      Test : `GeocodingLookupTest` (un échec puis un succès sur la même requête atteignent deux fois
+      le client).
+
 ---
 
 ## OPS — Exploitation, déploiement, recette du backend

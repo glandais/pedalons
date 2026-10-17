@@ -54,6 +54,11 @@ public enum ErrorCode {
   ROUTING_NO_ROUTE,
   /** The routing provider failed, timed out or could not be reached — HTTP 503. */
   ROUTING_UNAVAILABLE,
+  /**
+   * The geocoder failed, timed out, could not be reached or its quota is spent, while resolving the
+   * position of a picked place (GET /api/geocode/place) — HTTP 503.
+   */
+  GEOCODING_UNAVAILABLE,
   INVALID_FORMAT,
   INVALID_TIMEZONE,
   RENTAL_PERIOD_MISSING,

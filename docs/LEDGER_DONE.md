@@ -3709,6 +3709,72 @@ plus la colonne. Le départ d'un groupe n'existe plus que dans `ride_groups.star
   de `fileId` sans changer la trace ; le `coalesce(contentRevision, id)` rend le changement neutre) ; le paramètre `?v=` doit rester, sans lui les caches (imgproxy,
   mobile) servent l'ancienne image un an.
 
+### `API-129` Géocodage des formulaires en `v2`, position résolue à la sélection (17 octobre 2026, contrat `11.7.0`)
+
+- `API-129` **Le géocodeur des formulaires passe de l'autocomplétion Stadia Maps `v1` à la `v2`,
+  la position d'un résultat n'étant demandée que pour celui que l'on choisit** (2026-10-17,
+  **API 11.7.0**, mineure ; pas de migration). Le choix de la `v1` fait par `OPS-49` coûtait
+  20 crédits par requête d'autocomplétion ; la `v2` en coûte 1, et le Place Lookup 20 par GID
+  (stadiamaps.com/pricing au 2026-10-17) : une recherche d'environ quatre frappes suivie d'un choix
+  passe d'environ 80 à environ 24 crédits. La barre de recherche des cartes (`WEB-99`,
+  `MapSearchControl`) était déjà en `v2` depuis le navigateur et n'a pas bougé.
+  - **Serveur** : `StadiaMapsGeocodingClient` appelle `GET /geocoding/v2/autocomplete` (même hôte
+    EU, même en-tête `Stadia-Auth`, même `configKey`, `size=5`, `lang`) et `GET
+    /geocoding/v2/place_details?ids=<gid>`. La `v2` n'a plus de `label` : `GeocodingFeature.displayName()`
+    construit `name, coarse_location` (le nom seul sans `coarse_location`) ; une `geometry` présente
+    est lue quand elle existe. `place_details` peut renvoyer un autre GID que celui demandé
+    (`locality` → `localadmin`, vérifié en direct) : on prend la première feature qui a un point,
+    jamais une comparaison d'id.
+  - **Contrat** : `GeocodeResultDto.lat` / `lon` deviennent des `Double` facultatifs, absents sur une
+    suggestion sans position ; nouveau `GET /api/geocode/place?id=` (`resolvePlace`,
+    `@RolesAllowed("user")`, id en paramètre de requête car il contient des `:`) qui rend le même
+    DTO avec la position, garde l'id demandé, répond 404 `NOT_FOUND` pour un id mal formé ou
+    inconnu du fournisseur (un 400/404 amont compte comme inconnu) et 503 `GEOCODING_UNAVAILABLE`
+    (nouveau code) pour une panne, un délai dépassé ou un quota épuisé (429). La recherche, elle,
+    rend toujours une liste vide en cas de panne. Une suggestion sans nom, ou sans position ni GID,
+    est écartée.
+  - **Validation avant tout appel** : `GeocodeService.isValidId` — 200 caractères au plus et la
+    forme `source:couche:id` (`^[a-z_]+:[a-z_]+:[A-Za-z0-9_.:/-]+$`) ; sinon 404 sans appel amont.
+    Cette validation écarte l'entrée mal formée, pas le volume : un membre connecté qui boucle sur
+    des GID distincts et bien formés paie 20 crédits par appel, faute de limite par utilisateur
+    (même exposition par requête que la recherche `v1`, donc pas une régression).
+  - **Caches** : `geocode-search` inchangé (requête normalisée + langue, 24 h, 2000) ; nouveau
+    `geocode-place` (id + langue, 24 h, 1000), déclaré à côté dans `application.properties`. Dans
+    `geocode-place`, une réponse vide est mise en cache, une erreur non ; `geocode-search`, lui,
+    met en cache la liste vide qu'il rend en cas de panne, pour 24 h (`API-130`).
+  - **Web** : `GeocoderAutocomplete` (formulaire d'équipe, lieux, annonces) appelle `resolvePlace`
+    quand le résultat choisi n'a pas de position, sans toast, avec un état de chargement (et une
+    croix pour annuler) ; en cas d'échec le champ reste utilisable avec un message traduit
+    (`geocoder.resolveFailed`, `errors.api.GEOCODING_UNAVAILABLE`) qui propose de rechercher et
+    choisir de nouveau, ou de laisser le lieu vide — aucun formulaire ne prend de position saisie à
+    la main. Pendant la résolution le formulaire n'a pas encore de position : `onResolvingChange`
+    prévient le parent, et `TeamForm`, `PlaceForm` et `AdEditor` gardent leur bouton
+    d'enregistrement désactivé (et ignorent la soumission) jusqu'à la fin, sans quoi on
+    enregistrerait sans position, ou on effacerait celle qu'avait l'équipe. Le texte affiché reste
+    le `displayName` de la suggestion. Le mobile ne géocode dans aucun écran : seul son client
+    généré change.
+  - **Déploiement** : `lat`/`lon` étaient requis dans la réponse de recherche et n'y sont presque
+    plus. Un onglet web ouvert sur l'ancienne version (ou l'ancien frontend pendant la minute du
+    déploiement start-first) lit encore `[result.lon, result.lat]` sans vérifier et émet
+    `[undefined, undefined]` pour une suggestion sans position ; accepté en connaissance de cause :
+    la fenêtre est courte, le serveur garde la position des suggestions qui en ont une, et le
+    formulaire valide la position à l'enregistrement.
+
+  Tests : `GeocodingResponseJsonTest` (réponses `v2` réelles d'autocomplétion et de
+  `place_details`, construction du nom, géométrie nulle), `GeocodingLookupTest` (première feature
+  avec point, cache du lookup, 400 et 404 amont → vide, 401, 429, 500 et injoignable → 503, non
+  mis en cache),
+  `GeocodeResourceTest` (suggestion sans position gardée avec `lat`/`lon` absents, `/place` nominal,
+  404, 503, ids mal formés refusés sans toucher au lookup, anonyme refusé), `GeocodeServiceIdTest`
+  (forme et longueur des ids) ; côté web `GeocoderAutocomplete.test.tsx`. Tests backend lancés avant
+  le commit : verts.
+  **À ne pas défaire** : la position ne se résout qu'à la sélection, jamais côté serveur pour les
+  cinq suggestions (5 × 20 crédits par frappe, pire que la `v1`) ; l'id est validé avant tout appel
+  amont (entrée utilisateur relayée vers une API facturée — garde contre l'entrée mal formée, pas
+  contre le volume) ; le formulaire ne s'enregistre pas pendant une résolution ; les deux `@CacheResult` restent sur
+  leur propre bean (`GeocodingLookup`, l'appel d'une méthode sœur contourne l'intercepteur) ; une
+  panne du lookup est une erreur montrée, pas une position inventée.
+
 ## OPS — Exploitation, déploiement, recette du backend
 
 - `OPS-43` **Mise à jour des données Valhalla sans coupure du routage** (2026-10-16, livré dans le
@@ -4125,6 +4191,8 @@ plus la colonne. Le départ d'un groupe n'existe plus que dans `ride_groups.star
   `v1`, pas la `v2`** : vérifié en direct, `/geocoding/v2/autocomplete` renvoie `geometry: null` et
   demande un second appel `/geocoding/v2/place?ids=` par sélection ; la `v1` donne coordonnées et
   libellé en un appel, ce que le contrat promet. À revoir seulement si Stadia retire la `v1`.
+  *(Revu le jour même : la `v1` coûte 20 crédits par requête, la `v2` 1 ; le passage à la `v2`
+  avec résolution à la sélection est `API-129`, contrat `11.7.0`.)*
   Disparaissent avec Nominatim : `NOMINATIM_URL`, `GEOCODE_USER_AGENT` et le `User-Agent` imposé
   par la politique d'usage d'OSM (le client Open-Meteo, qui réutilisait cette valeur, reçoit son
   propre `User-Agent` `Pedalons/<version> (+https://www.pedalons.fr)`) ; le bloc « Geocoding »
@@ -4136,8 +4204,9 @@ plus la colonne. Le départ d'un groupe n'existe plus que dans `ride_groups.star
   relevé en direct) et `GeocodeResourceTest`, client mocké ; aucun test n'appelle Stadia Maps. Les textes légaux suivent (`LEGAL-24`), la
   barre de recherche des cartes est `WEB-99`. **À ne pas défaire** : le proxy par le serveur reste
   pour les formulaires (Stadia Maps n'y voit que le texte, la langue et l'IP du serveur — c'est ce
-  que promet la politique) ; la `v1` tant qu'elle existe ; l'hôte EU ; aucune clé ne descend dans
-  un client ; une panne du géocodeur reste une liste vide, jamais une erreur.
+  que promet la politique) ; ~~la `v1` tant qu'elle existe~~ (remplacé par `API-129`) ; l'hôte EU ; aucune clé ne descend dans
+  un client ; une panne de la recherche reste une liste vide, jamais une erreur (la résolution du
+  lieu choisi, `API-129`, répond 503).
 
 ---
 

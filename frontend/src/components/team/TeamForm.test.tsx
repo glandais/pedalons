@@ -33,7 +33,23 @@ vi.mock('@/api/endpoints/admin-teams/admin-teams', () => ({
 }))
 vi.mock('../common/SlugEditor', () => ({ SlugEditor: () => null }))
 vi.mock('../common/MediaEditor', () => ({ MediaEditor: () => null }))
-vi.mock('../common/GeocoderAutocomplete', () => ({ GeocoderAutocomplete: () => null }))
+// Two buttons stand in for a picked place whose position starts, then stops, resolving.
+vi.mock('../common/GeocoderAutocomplete', () => ({
+  GeocoderAutocomplete: ({
+    onResolvingChange,
+  }: {
+    onResolvingChange?: (resolving: boolean) => void
+  }) => (
+    <>
+      <button type="button" onClick={() => onResolvingChange?.(true)}>
+        geocode-start
+      </button>
+      <button type="button" onClick={() => onResolvingChange?.(false)}>
+        geocode-end
+      </button>
+    </>
+  ),
+}))
 // A button per zone stands in for the searchable list.
 vi.mock('../common/TimezoneSelect', () => ({
   TimezoneSelect: ({ onChange }: { onChange: (zone: string) => void }) => (
@@ -105,5 +121,18 @@ describe('TeamForm — change of zone', () => {
 
     const confirm = screen.getByText('teams.settings.timezoneChange.confirm').closest('button')
     expect(confirm?.disabled).toBe(true)
+  })
+})
+
+describe('TeamForm — place being resolved (docs/LEDGER_*.md API-129)', () => {
+  it('keeps Save disabled while a picked place has no position yet', () => {
+    renderForm()
+    const save = () => screen.getByText('actions.save').closest('button')
+
+    fireEvent.click(screen.getByText('geocode-start'))
+    expect(save()?.disabled).toBe(true)
+
+    fireEvent.click(screen.getByText('geocode-end'))
+    expect(save()?.disabled).toBe(false)
   })
 })

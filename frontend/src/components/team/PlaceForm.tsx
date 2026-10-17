@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useForm } from '@mantine/form'
 import { zodFormValidator } from '@/lib/formUtils'
 import { useTranslation } from 'react-i18next'
@@ -40,6 +41,8 @@ export function PlaceForm({ teamSlug, place, onClose }: PlaceFormProps) {
   const updateMutation = useUpdatePlace()
 
   const isEditing = place.id !== ''
+  // A picked place whose position is still being looked up (docs/LEDGER_*.md API-129).
+  const [geocoding, setGeocoding] = useState(false)
 
   const form = useForm<PlaceRequest>({
     validate: (values) => validatePlace(normalizePlace(values)),
@@ -49,6 +52,7 @@ export function PlaceForm({ teamSlug, place, onClose }: PlaceFormProps) {
   })
 
   const handleSubmit = (data: PlaceRequest) => {
+    if (geocoding) return
     if (isEditing) {
       updateMutation.mutate(
         { teamSlug, placeId: place.id, data },
@@ -123,6 +127,7 @@ export function PlaceForm({ teamSlug, place, onClose }: PlaceFormProps) {
             onChange={(point) => form.setFieldValue('geometry', point ?? undefined)}
             label={t('geocoder.label')}
             disabled={mutation.isPending}
+            onResolvingChange={setGeocoding}
           />
 
           <Group>
@@ -144,7 +149,7 @@ export function PlaceForm({ teamSlug, place, onClose }: PlaceFormProps) {
         <Button
           type="submit"
           form="place-form"
-          disabled={mutation.isPending || !form.isValid()}
+          disabled={mutation.isPending || geocoding || !form.isValid()}
           loading={mutation.isPending}
         >
           {isEditing ? t('actions.save') : t('places.form.create')}

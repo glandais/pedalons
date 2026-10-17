@@ -1,8 +1,10 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
-import { Paper, Text, Box, Group, ActionIcon } from '@mantine/core'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { Paper, Text, Box, Group, ActionIcon, Loader } from '@mantine/core'
 import { IconMapPin, IconX } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
-import { useSearchPlaces } from '@/api/endpoints/geocode/geocode'
+import { resolvePlace, useSearchPlaces } from '@/api/endpoints/geocode/geocode'
+import { ErrorCode } from '@/api/dto'
+import { ApiClientError } from '@/lib/apiError'
 import { Autocomplete } from './Autocomplete'
 import type { GeocodeResultDto, GeoJsonPoint } from '@/api/dto'
 
@@ -15,6 +17,14 @@ import type { GeocodeResultDto, GeoJsonPoint } from '@/api/dto'
  * (`components/map/MapSearchControl`) is the opposite choice — it calls Stadia Maps from the
  * browser, as a basemap does — and the privacy policy describes both. What is left for this
  * component is the credit under the results, which the provider's terms want visible.
+ *
+ * A suggestion usually comes without a position (docs/LEDGER_*.md API-129): the search costs the
+ * provider's cheap autocomplete, and the position is a billed lookup, `GET /api/geocode/place`,
+ * made here once — for the suggestion picked, never for the list. If it fails the field stays
+ * usable, with a message: the user can search and pick again, or leave the position empty (no form
+ * takes a position typed by hand). While it runs the form holds no position yet, so a form passes
+ * `onResolvingChange` and keeps its submit disabled until the lookup is over — saving in between
+ * would save no position, or erase the one the form had.
  */
 const NO_RESULTS: GeocodeResultDto[] = []
 
@@ -27,6 +37,8 @@ export interface GeocoderAutocompleteProps {
   error?: string
   required?: boolean
   disabled?: boolean
+  /** Told `true` when a picked suggestion's position starts resolving, `false` once it is over. */
+  onResolvingChange?: (resolving: boolean) => void
 }
 
 export function GeocoderAutocomplete({
@@ -38,11 +50,29 @@ export function GeocoderAutocomplete({
   error,
   required,
   disabled,
+  onResolvingChange,
 }: GeocoderAutocompleteProps) {
   const { t } = useTranslation()
   const [query, setQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const [selectedName, setSelectedName] = useState<string | null>(null)
+  // The suggestion whose position is being fetched, and why the last fetch failed.
+  const [resolving, setResolvingState] = useState<GeocodeResultDto | null>(null)
+  const [resolveError, setResolveError] = useState<string | null>(null)
+  // Only the latest pick may emit: a clear or another pick while a lookup runs discards it.
+  const resolveRequest = useRef<AbortController | null>(null)
+
+  useEffect(() => () => resolveRequest.current?.abort(), [])
+
+  // Set from the handlers, not from an effect on `resolving`: the parent learns it in the same
+  // event, so its submit is disabled before anything else can be clicked.
+  const setResolving = useCallback(
+    (result: GeocodeResultDto | null) => {
+      setResolvingState(result)
+      onResolvingChange?.(result != null)
+    },
+    [onResolvingChange]
+  )
 
   // Debounce query (300ms)
   useEffect(() => {
@@ -72,23 +102,64 @@ export function GeocoderAutocomplete({
     setQuery(newQuery)
   }, [])
 
-  const handleSelect = useCallback(
-    (result: GeocodeResultDto) => {
-      onChange({
-        type: 'Point',
-        coordinates: [result.lon, result.lat],
-      })
-      setSelectedName(result.displayName)
-      setQuery('')
+  const emit = useCallback(
+    (displayName: string, lat: number, lon: number) => {
+      onChange({ type: 'Point', coordinates: [lon, lat] })
+      setSelectedName(displayName)
     },
     [onChange]
   )
 
+  const handleSelect = useCallback(
+    (result: GeocodeResultDto) => {
+      setQuery('')
+      setResolveError(null)
+      resolveRequest.current?.abort()
+      resolveRequest.current = null
+      if (result.lat != null && result.lon != null) {
+        emit(result.displayName, result.lat, result.lon)
+        return
+      }
+      const controller = new AbortController()
+      resolveRequest.current = controller
+      setResolving(result)
+      // The field shows its own message: no toast on top of it.
+      resolvePlace({ id: result.id }, { skipErrorToast: true }, controller.signal)
+        .then((place) => {
+          if (controller.signal.aborted) return
+          if (place.lat == null || place.lon == null) {
+            setResolveError(t('geocoder.resolveFailed'))
+          } else {
+            // The suggestion's name, the one the user read and picked.
+            emit(result.displayName, place.lat, place.lon)
+          }
+        })
+        .catch((e: unknown) => {
+          if (controller.signal.aborted) return
+          setResolveError(
+            e instanceof ApiClientError && e.error.code === ErrorCode.GEOCODING_UNAVAILABLE
+              ? t('errors.api.GEOCODING_UNAVAILABLE')
+              : t('geocoder.resolveFailed')
+          )
+        })
+        .finally(() => {
+          if (resolveRequest.current !== controller) return
+          resolveRequest.current = null
+          setResolving(null)
+        })
+    },
+    [emit, setResolving, t]
+  )
+
   const handleClear = useCallback(() => {
+    resolveRequest.current?.abort()
+    resolveRequest.current = null
+    setResolving(null)
+    setResolveError(null)
     onChange(null)
     setQuery('')
     setSelectedName(null)
-  }, [onChange])
+  }, [onChange, setResolving])
 
   const renderItem = useCallback(
     (result: GeocodeResultDto) => (
@@ -154,6 +225,53 @@ export function GeocoderAutocomplete({
     )
   }
 
+  if (resolving) {
+    return (
+      <Box aria-busy="true">
+        {label && (
+          <Text size="sm" fw={500} mb={4}>
+            {label}
+            {required && (
+              <Text component="span" c="red">
+                {' '}
+                *
+              </Text>
+            )}
+          </Text>
+        )}
+        {description && (
+          <Text size="xs" c="dimmed" mb={4}>
+            {description}
+          </Text>
+        )}
+        <Paper p="sm" withBorder>
+          <Group justify="space-between" wrap="nowrap">
+            <Group gap="xs" wrap="nowrap" style={{ flex: 1, minWidth: 0 }}>
+              <Loader size="xs" aria-label={t('geocoder.resolving')} />
+              <Text size="sm" truncate style={{ flex: 1 }}>
+                {resolving.displayName}
+              </Text>
+            </Group>
+            <ActionIcon
+              variant="subtle"
+              size="sm"
+              onClick={handleClear}
+              disabled={disabled}
+              aria-label={t('geocoder.clear')}
+            >
+              <IconX size={14} />
+            </ActionIcon>
+          </Group>
+        </Paper>
+        {error && (
+          <Text size="xs" c="red" mt={4}>
+            {error}
+          </Text>
+        )}
+      </Box>
+    )
+  }
+
   return (
     <Box>
       <Autocomplete<GeocodeResultDto>
@@ -169,7 +287,7 @@ export function GeocoderAutocomplete({
         clearOnSelect={true}
         label={label}
         description={description}
-        error={error}
+        error={error ?? resolveError ?? undefined}
         required={required}
         disabled={disabled}
         leftSection={<IconMapPin size={16} />}

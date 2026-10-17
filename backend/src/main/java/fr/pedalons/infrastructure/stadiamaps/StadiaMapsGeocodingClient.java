@@ -9,13 +9,17 @@ import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 /**
- * The Stadia Maps geocoder, {@code GET /geocoding/v1/autocomplete}, called from the server for the
- * clients' form fields (docs/LEDGER_*.md OPS-49).
+ * The Stadia Maps geocoder, v2, called from the server for the clients' form fields
+ * (docs/LEDGER_*.md OPS-49, API-129): {@code GET /geocoding/v2/autocomplete} while the user types,
+ * then {@code GET /geocoding/v2/place_details} once, for the one result they picked.
  *
- * <p><b>v1 on purpose, not v2.</b> {@code /geocoding/v2/autocomplete} answers with {@code geometry:
- * null} and expects a second call, {@code /geocoding/v2/place?ids=}, once the user has picked a
- * result. v1 returns the coordinates and the label in one call, which is all a form field that
- * stores a position needs. To revisit if Stadia Maps retires the v1 endpoints.
+ * <p><b>Why two calls rather than v1's one.</b> v1 autocomplete returned coordinates and label in a
+ * single call but costs 20 credits a request; v2 autocomplete costs 1 credit a request and answers
+ * {@code geometry: null} for most hits, the position coming from a Place Lookup at 20 credits per
+ * GID (stadiamaps.com/pricing, as of 2026-10-17). A search of about four keystrokes followed by a
+ * pick is therefore ~80 credits in v1 and ~24 in v2. The arithmetic only holds if the lookup runs
+ * on <em>selection</em>: resolving the five suggestions up front would be 5 × 20 credits per
+ * keystroke, worse than v1.
  *
  * <p>Same host, same key and same header as the routing client ({@code StadiaMapsClient}): the base
  * URL is {@code quarkus.rest-client.stadiamaps.url} ({@code https://api-eu.stadiamaps.com}, the
@@ -23,21 +27,24 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
  * parameter. A config key of its own all the same: two interfaces sharing one config key is not
  * something to bet a feature on.
  *
- * <p>The response is a GeoJSON {@code FeatureCollection}: {@code features[].geometry.coordinates}
- * is {@code [lon, lat]}, {@code features[].properties} carries {@code gid}, {@code label}, {@code
- * name}, {@code layer}… ({@link GeocodingFeature}).
+ * <p>Both endpoints answer a GeoJSON {@code FeatureCollection} ({@link GeocodingResponse}): {@code
+ * features[].geometry} is {@code null} or a point whose {@code coordinates} are {@code [lon, lat]};
+ * {@code features[].properties} carries {@code gid}, {@code name}, {@code coarse_location}, {@code
+ * layer}… — and no {@code label}, unlike v1 ({@link GeocodingFeature}).
  */
 @RegisterRestClient(configKey = "stadiamaps-geocoding")
-@Path("/geocoding/v1")
+@Path("/geocoding/v2")
 @ClientHeaderParam(
     name = "Authorization",
     value = "Stadia-Auth ${pedalons.routing.stadiamaps.api-key}")
 public interface StadiaMapsGeocodingClient {
 
   /**
+   * 1 credit a request.
+   *
    * @param text what is being typed
    * @param size the maximum number of features returned
-   * @param language a BCP 47 tag; localises the labels only, not which places match
+   * @param language a BCP 47 tag; localises the names only, not which places match
    */
   @GET
   @Path("/autocomplete")
@@ -46,4 +53,20 @@ public interface StadiaMapsGeocodingClient {
       @QueryParam("text") String text,
       @QueryParam("size") int size,
       @QueryParam("lang") String language);
+
+  /**
+   * 20 credits per GID: always call it with a single one, the one the user picked.
+   *
+   * <p>The feature returned may carry another {@code gid} than the one asked for (asking for a
+   * {@code locality} can answer the matching {@code localadmin}): take the first feature, never
+   * match on the id.
+   *
+   * @param ids a Pelias global id, e.g. {@code whosonfirst:locality:101750851}
+   * @param language a BCP 47 tag
+   */
+  @GET
+  @Path("/place_details")
+  @Produces(MediaType.APPLICATION_JSON)
+  GeocodingResponse placeDetails(
+      @QueryParam("ids") String ids, @QueryParam("lang") String language);
 }

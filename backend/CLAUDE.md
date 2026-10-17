@@ -43,9 +43,10 @@ Route computation is **not** a local service: `StadiaMapsClient` (package
 `infrastructure.valhalla`, named after the protocol) calls `https://api-eu.stadiamaps.com/route/v1` (the EU-only host)
 with `STADIAMAPS_API_KEY` — exported by `scripts/dev-env.sh`, empty by default in `%dev` and
 `%test` (no backend test calls the router). The same key and host serve the forms' geocoder,
-`GET /api/geocode/search` (`StadiaMapsGeocodingClient`, package `infrastructure.stadiamaps`,
-configKey `stadiamaps-geocoding`, `/geocoding/v1/autocomplete`). Never log the request URL or the
-header: the key would go with them.
+`GET /api/geocode/search` and `GET /api/geocode/place` (`StadiaMapsGeocodingClient`, package
+`infrastructure.stadiamaps`, configKey `stadiamaps-geocoding`, `/geocoding/v2/autocomplete` then
+`/geocoding/v2/place_details` for the one result picked — never for the suggestions, ledger
+`API-129`). Never log the request URL or the header: the key would go with them.
 
 ## Source Layout
 

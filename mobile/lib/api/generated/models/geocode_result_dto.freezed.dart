@@ -16,11 +16,11 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$GeocodeResultDto {
 
-/// Opaque identifier of the result, stable enough to key a list on
+/// Opaque identifier of the result, stable enough to key a list on; what GET /api/geocode/place takes to resolve the position
  String get id;/// Full human-readable name of the place
- String get displayName;/// Latitude in degrees (WGS 84)
- double get lat;/// Longitude in degrees (WGS 84)
- double get lon;
+ String get displayName;/// Latitude in degrees (WGS 84). Null on a search suggestion the provider gave no position for: resolve it with GET /api/geocode/place once the user picks it. Always set in that endpoint's answer.
+ double? get lat;/// Longitude in degrees (WGS 84). Null exactly when lat is null: resolve it with GET /api/geocode/place once the user picks the suggestion.
+ double? get lon;
 /// Create a copy of GeocodeResultDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -58,7 +58,7 @@ abstract mixin class $GeocodeResultDtoCopyWith<$Res>  {
   factory $GeocodeResultDtoCopyWith(GeocodeResultDto value, $Res Function(GeocodeResultDto) _then) = _$GeocodeResultDtoCopyWithImpl;
 @useResult
 $Res call({
- String id, String displayName, double lat, double lon
+ String id, String displayName, double? lat, double? lon
 });
 
 
@@ -75,13 +75,13 @@ class _$GeocodeResultDtoCopyWithImpl<$Res>
 
 /// Create a copy of GeocodeResultDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? displayName = null,Object? lat = null,Object? lon = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? displayName = null,Object? lat = freezed,Object? lon = freezed,}) {
   return _then(GeocodeResultDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,displayName: null == displayName ? _self.displayName : displayName // ignore: cast_nullable_to_non_nullable
-as String,lat: null == lat ? _self.lat : lat // ignore: cast_nullable_to_non_nullable
-as double,lon: null == lon ? _self.lon : lon // ignore: cast_nullable_to_non_nullable
-as double,
+as String,lat: freezed == lat ? _self.lat : lat // ignore: cast_nullable_to_non_nullable
+as double?,lon: freezed == lon ? _self.lon : lon // ignore: cast_nullable_to_non_nullable
+as double?,
   ));
 }
 
@@ -166,7 +166,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String displayName,  double lat,  double lon)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String displayName,  double? lat,  double? lon)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _GeocodeResultDto() when $default != null:
 return $default(_that.id,_that.displayName,_that.lat,_that.lon);case _:
@@ -187,7 +187,7 @@ return $default(_that.id,_that.displayName,_that.lat,_that.lon);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String displayName,  double lat,  double lon)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String displayName,  double? lat,  double? lon)  $default,) {final _that = this;
 switch (_that) {
 case _GeocodeResultDto():
 return $default(_that.id,_that.displayName,_that.lat,_that.lon);case _:
@@ -207,7 +207,7 @@ return $default(_that.id,_that.displayName,_that.lat,_that.lon);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String displayName,  double lat,  double lon)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String displayName,  double? lat,  double? lon)?  $default,) {final _that = this;
 switch (_that) {
 case _GeocodeResultDto() when $default != null:
 return $default(_that.id,_that.displayName,_that.lat,_that.lon);case _:
@@ -222,17 +222,17 @@ return $default(_that.id,_that.displayName,_that.lat,_that.lon);case _:
 @JsonSerializable()
 
 class _GeocodeResultDto implements GeocodeResultDto {
-  const _GeocodeResultDto({required this.id, required this.displayName, required this.lat, required this.lon});
+  const _GeocodeResultDto({required this.id, required this.displayName, this.lat, this.lon});
   factory _GeocodeResultDto.fromJson(Map<String, dynamic> json) => _$GeocodeResultDtoFromJson(json);
 
-/// Opaque identifier of the result, stable enough to key a list on
+/// Opaque identifier of the result, stable enough to key a list on; what GET /api/geocode/place takes to resolve the position
 @override final  String id;
 /// Full human-readable name of the place
 @override final  String displayName;
-/// Latitude in degrees (WGS 84)
-@override final  double lat;
-/// Longitude in degrees (WGS 84)
-@override final  double lon;
+/// Latitude in degrees (WGS 84). Null on a search suggestion the provider gave no position for: resolve it with GET /api/geocode/place once the user picks it. Always set in that endpoint's answer.
+@override final  double? lat;
+/// Longitude in degrees (WGS 84). Null exactly when lat is null: resolve it with GET /api/geocode/place once the user picks the suggestion.
+@override final  double? lon;
 
 /// Create a copy of GeocodeResultDto
 /// with the given fields replaced by the non-null parameter values.
@@ -269,7 +269,7 @@ abstract mixin class _$GeocodeResultDtoCopyWith<$Res> implements $GeocodeResultD
   factory _$GeocodeResultDtoCopyWith(_GeocodeResultDto value, $Res Function(_GeocodeResultDto) _then) = __$GeocodeResultDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String displayName, double lat, double lon
+ String id, String displayName, double? lat, double? lon
 });
 
 
@@ -286,13 +286,13 @@ class __$GeocodeResultDtoCopyWithImpl<$Res>
 
 /// Create a copy of GeocodeResultDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? displayName = null,Object? lat = null,Object? lon = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? displayName = null,Object? lat = freezed,Object? lon = freezed,}) {
   return _then(_GeocodeResultDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,displayName: null == displayName ? _self.displayName : displayName // ignore: cast_nullable_to_non_nullable
-as String,lat: null == lat ? _self.lat : lat // ignore: cast_nullable_to_non_nullable
-as double,lon: null == lon ? _self.lon : lon // ignore: cast_nullable_to_non_nullable
-as double,
+as String,lat: freezed == lat ? _self.lat : lat // ignore: cast_nullable_to_non_nullable
+as double?,lon: freezed == lon ? _self.lon : lon // ignore: cast_nullable_to_non_nullable
+as double?,
   ));
 }
 

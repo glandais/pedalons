@@ -10,8 +10,8 @@ _GeocodeResultDto _$GeocodeResultDtoFromJson(Map<String, dynamic> json) =>
     _GeocodeResultDto(
       id: json['id'] as String,
       displayName: json['displayName'] as String,
-      lat: (json['lat'] as num).toDouble(),
-      lon: (json['lon'] as num).toDouble(),
+      lat: (json['lat'] as num?)?.toDouble(),
+      lon: (json['lon'] as num?)?.toDouble(),
     );
 
 Map<String, dynamic> _$GeocodeResultDtoToJson(_GeocodeResultDto instance) =>

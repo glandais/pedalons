@@ -1,6 +1,7 @@
 package fr.pedalons.infrastructure.stadiamaps;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 
@@ -9,9 +10,12 @@ import org.jspecify.annotations.Nullable;
  * and returns.
  *
  * <p>{@code @JsonIgnoreProperties(ignoreUnknown = true)} is not laziness: {@code properties} carries
- * some forty fields (the whole administrative hierarchy, concordances, confidence…) we have no use
- * for, and the set grows with the Pelias releases behind the API. Coordinates are a GeoJSON
- * position, {@code [lon, lat]} — in that order, which {@link #lat()} and {@link #lon()} hide.
+ * fields (precision, bbox, address components, context…) we have no use for, and the set grows with
+ * the releases behind the API. Coordinates are a GeoJSON position, {@code [lon, lat]} — in that
+ * order, which {@link #lat()} and {@link #lon()} hide.
+ *
+ * <p>In a v2 autocomplete answer {@code geometry} is usually {@code null}: the position comes from
+ * {@code place_details} once a result is picked. It is read whenever present all the same.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record GeocodingFeature(@Nullable Geometry geometry, @Nullable Properties properties) {
@@ -20,12 +24,17 @@ public record GeocodingFeature(@Nullable Geometry geometry, @Nullable Properties
   public record Geometry(@Nullable List<Double> coordinates) {}
 
   /**
-   * @param gid the Pelias global id, e.g. {@code whosonfirst:locality:101749323} — unique across
-   *     sources, which the numeric {@code id} alone is not
-   * @param label the full human-readable name, e.g. {@code Chambéry, France}
+   * @param gid the global id, e.g. {@code whosonfirst:locality:101750851} — unique across sources,
+   *     and what {@code place_details} takes
+   * @param name the place's own name, e.g. {@code Annecy}
+   * @param coarseLocation where it is, e.g. {@code France} or {@code Annecy, France} — v2 has no
+   *     ready-made label, so the display name is {@code name, coarse_location}
    */
   @JsonIgnoreProperties(ignoreUnknown = true)
-  public record Properties(@Nullable String gid, @Nullable String label, @Nullable String name) {}
+  public record Properties(
+      @Nullable String gid,
+      @Nullable String name,
+      @JsonProperty("coarse_location") @Nullable String coarseLocation) {}
 
   /** Latitude, or {@code null} when the feature carries no usable point. */
   public @Nullable Double lat() {
@@ -41,8 +50,17 @@ public record GeocodingFeature(@Nullable Geometry geometry, @Nullable Properties
     return properties == null ? null : properties.gid();
   }
 
-  public @Nullable String label() {
-    return properties == null ? null : properties.label();
+  /**
+   * {@code name, coarse_location} — {@code "Annecy, France"} — or the name alone when there is no
+   * coarse location; {@code null} without a name.
+   */
+  public @Nullable String displayName() {
+    if (properties == null || properties.name() == null || properties.name().isBlank()) {
+      return null;
+    }
+    String name = properties.name().strip();
+    String coarse = properties.coarseLocation();
+    return coarse == null || coarse.isBlank() ? name : name + ", " + coarse.strip();
   }
 
   private @Nullable Double coordinate(int index) {

@@ -11,17 +11,17 @@ part 'geocode_result_dto.g.dart';
 @Freezed()
 abstract class GeocodeResultDto with _$GeocodeResultDto {
   const factory GeocodeResultDto({
-    /// Opaque identifier of the result, stable enough to key a list on
+    /// Opaque identifier of the result, stable enough to key a list on; what GET /api/geocode/place takes to resolve the position
     required String id,
 
     /// Full human-readable name of the place
     required String displayName,
 
-    /// Latitude in degrees (WGS 84)
-    required double lat,
+    /// Latitude in degrees (WGS 84). Null on a search suggestion the provider gave no position for: resolve it with GET /api/geocode/place once the user picks it. Always set in that endpoint's answer.
+    double? lat,
 
-    /// Longitude in degrees (WGS 84)
-    required double lon,
+    /// Longitude in degrees (WGS 84). Null exactly when lat is null: resolve it with GET /api/geocode/place once the user picks the suggestion.
+    double? lon,
   }) = _GeocodeResultDto;
 
   factory GeocodeResultDto.fromJson(Map<String, Object?> json) =>

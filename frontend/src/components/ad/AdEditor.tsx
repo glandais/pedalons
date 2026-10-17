@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useForm } from '@mantine/form'
 import { zodFormValidator } from '@/lib/formUtils'
 import { useTranslation } from 'react-i18next'
@@ -37,6 +37,8 @@ export function AdEditor({
   canEditSlug = false,
 }: AdEditorProps) {
   const { t } = useTranslation()
+  // A picked place whose position is still being looked up (docs/LEDGER_*.md API-129).
+  const [geocoding, setGeocoding] = useState(false)
 
   const adSchema = useMemo(
     () =>
@@ -68,6 +70,7 @@ export function AdEditor({
   }, [adType, form])
 
   const handleSubmit = (values: AdRequest) => {
+    if (geocoding) return
     onSubmit(values)
   }
 
@@ -172,6 +175,7 @@ export function AdEditor({
           onChange={(point) => form.setFieldValue('locationGeometry', point ?? undefined)}
           label={t('geocoder.label')}
           disabled={isPending}
+          onResolvingChange={setGeocoding}
         />
 
         <TagPicker
@@ -193,7 +197,11 @@ export function AdEditor({
           <Button variant="default" onClick={onCancel}>
             {cancelButtonText || t('actions.cancelAction')}
           </Button>
-          <Button type="submit" disabled={isPending || !form.isValid()} loading={isPending}>
+          <Button
+            type="submit"
+            disabled={isPending || geocoding || !form.isValid()}
+            loading={isPending}
+          >
             {submitButtonText || t('actions.save')}
           </Button>
         </Group>

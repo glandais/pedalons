@@ -78,6 +78,8 @@ enum ErrorCode {
   routingNoRoute('ROUTING_NO_ROUTE'),
   @JsonValue('ROUTING_UNAVAILABLE')
   routingUnavailable('ROUTING_UNAVAILABLE'),
+  @JsonValue('GEOCODING_UNAVAILABLE')
+  geocodingUnavailable('GEOCODING_UNAVAILABLE'),
   @JsonValue('INVALID_FORMAT')
   invalidFormat('INVALID_FORMAT'),
   @JsonValue('INVALID_TIMEZONE')

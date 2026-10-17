@@ -2134,7 +2134,7 @@
       },
       "ErrorCode" : {
         "type" : "string",
-        "enum" : [ "BAD_REQUEST", "NOT_FOUND", "UNAUTHORIZED", "FORBIDDEN", "INTERNAL_ERROR", "UNKNOWN", "VALIDATION", "BUSINESS_RULE", "LAST_ADMIN", "SOLE_TEAM_ADMIN", "SOLE_MIGRATED_TEAM_ADMIN", "MIGRATED_TEAM", "ALREADY_REGISTERED", "NOT_REGISTERED", "INVALID_SLUG", "SLUG_TAKEN", "USER_NOT_SYNCED", "GROUP_FULL", "RIDE_PAST", "INVALID_VISIBILITY", "PUBLIC_TRIP_PRIVATE_ROUTE", "GPX_FAILURE", "FILE_REQUIRED", "FILE_TYPE_REJECTED", "FILE_DETECTION_FAILED", "FILE_TOO_LARGE", "TOO_MANY_TEAM_PAGES", "GPX_EMPTY", "GPX_TOO_LONG", "GPX_MERGE_FILE_COUNT", "GPX_MERGE_TOO_MANY_TRACKS", "ROUTE_PLANNER_DISABLED", "ROUTING_QUOTA_EXCEEDED", "ROUTING_SEGMENT_TOO_LONG", "ROUTING_NO_ROUTE", "ROUTING_UNAVAILABLE", "INVALID_FORMAT", "INVALID_TIMEZONE", "RENTAL_PERIOD_MISSING", "STATUS_INVALID", "PUBLIC_RIDE_PRIVATE_ROUTE", "INVALID_CREDENTIALS", "LOGIN_RATE_LIMITED", "EMAIL_NOT_VERIFIED", "EMAIL_ALREADY_EXISTS", "TOKEN_INVALID", "TOKEN_EXPIRED", "SESSION_EXPIRED", "PASSWORD_NOT_SET", "PASSKEY_NOT_FOUND", "USER_NOT_FOUND", "DOMAIN_NOT_FOUND", "TEAM_NOT_FOUND", "TEAM_CREATION_DISABLED", "USER_TEAM_LIMIT_REACHED", "TEAM_JOIN_NOT_ALLOWED", "TEAM_ADD_MEMBER_NOT_ALLOWED", "GPS_SERVICE_ALREADY_CONNECTED", "GPS_SERVICE_NOT_CONNECTED", "GPS_SERVICE_NOT_CONFIGURED", "GPS_INVALID_STATE", "GPS_STATE_EXPIRED", "GPX_NOT_FOUND", "AUTHORIZATION_PENDING", "DEVICE_CODE_RATE_LIMITED", "GPS_CREDENTIAL_ALREADY_EXISTS", "GPS_OAUTH_VERSION_NOT_SUPPORTED", "GPS_CLIENT_SECRET_REQUIRED", "GPS_TOKEN_EXCHANGE_FAILED", "ENCRYPTION_FAILED", "DECRYPTION_FAILED", "DOMAIN_ALIAS_NOT_FOUND", "DOMAIN_ALIAS_HOSTNAME_EXISTS", "DOMAIN_ALIAS_TEAM_MISMATCH", "EXPORT_IN_PROGRESS", "EXPORT_RATE_LIMITED", "RIDE_GROUP_LEADER_NOT_MEMBER", "AD_CONTACT_SELF", "AD_CONTACT_OPTED_OUT", "AD_CONTACT_RATE_LIMITED", "AD_CONTACT_DELIVERY_FAILED", "EMAIL_NOT_SENT", "FEEDBACK_RATE_LIMITED", "TEAM_INVITE_INVALID", "TEAM_INVITE_EXPIRED", "TEAM_INVITE_REVOKED", "TEAM_INVITE_ALREADY_USED", "TEAM_INVITE_ALREADY_MEMBER", "TEAM_INVITE_EMAIL_MISMATCH", "TEAM_INVITE_SELF", "TEAM_INVITE_NOT_PENDING", "TEAM_INVITE_RATE_LIMITED", "TEAM_INVITE_DELIVERY_FAILED", "WEBHOOK_URL_INVALID", "REPORT_SELF", "BLOCK_SELF", "CONTENT_REJECTED", "TAG_LABEL_INVALID", "TAG_LABEL_TAKEN", "TAG_LIMIT_REACHED", "TAG_INVALID", "TOO_MANY_TAGS", "ASSET_NOT_AVAILABLE", "BIKETEAM_REQUEST_INVALID", "BIKETEAM_REQUEST_EXPIRED", "BIKETEAM_REQUEST_ALREADY_USED", "BIKETEAM_SLUG_CONFLICT", "BIKETEAM_MIGRATED_IN_OTHER_DOMAIN", "BIKETEAM_NOT_TEAM_ADMIN", "BIKETEAM_MIGRATION_RUNNING", "BIKETEAM_RESET_BLOCKED", "BIKETEAM_GRANT_INVALID", "BIKETEAM_GRANT_EXPIRED", "BIKETEAM_JOB_NOT_FOUND" ]
+        "enum" : [ "BAD_REQUEST", "NOT_FOUND", "UNAUTHORIZED", "FORBIDDEN", "INTERNAL_ERROR", "UNKNOWN", "VALIDATION", "BUSINESS_RULE", "LAST_ADMIN", "SOLE_TEAM_ADMIN", "SOLE_MIGRATED_TEAM_ADMIN", "MIGRATED_TEAM", "ALREADY_REGISTERED", "NOT_REGISTERED", "INVALID_SLUG", "SLUG_TAKEN", "USER_NOT_SYNCED", "GROUP_FULL", "RIDE_PAST", "INVALID_VISIBILITY", "PUBLIC_TRIP_PRIVATE_ROUTE", "GPX_FAILURE", "FILE_REQUIRED", "FILE_TYPE_REJECTED", "FILE_DETECTION_FAILED", "FILE_TOO_LARGE", "TOO_MANY_TEAM_PAGES", "GPX_EMPTY", "GPX_TOO_LONG", "GPX_MERGE_FILE_COUNT", "GPX_MERGE_TOO_MANY_TRACKS", "ROUTE_PLANNER_DISABLED", "ROUTING_QUOTA_EXCEEDED", "ROUTING_SEGMENT_TOO_LONG", "ROUTING_NO_ROUTE", "ROUTING_UNAVAILABLE", "GEOCODING_UNAVAILABLE", "INVALID_FORMAT", "INVALID_TIMEZONE", "RENTAL_PERIOD_MISSING", "STATUS_INVALID", "PUBLIC_RIDE_PRIVATE_ROUTE", "INVALID_CREDENTIALS", "LOGIN_RATE_LIMITED", "EMAIL_NOT_VERIFIED", "EMAIL_ALREADY_EXISTS", "TOKEN_INVALID", "TOKEN_EXPIRED", "SESSION_EXPIRED", "PASSWORD_NOT_SET", "PASSKEY_NOT_FOUND", "USER_NOT_FOUND", "DOMAIN_NOT_FOUND", "TEAM_NOT_FOUND", "TEAM_CREATION_DISABLED", "USER_TEAM_LIMIT_REACHED", "TEAM_JOIN_NOT_ALLOWED", "TEAM_ADD_MEMBER_NOT_ALLOWED", "GPS_SERVICE_ALREADY_CONNECTED", "GPS_SERVICE_NOT_CONNECTED", "GPS_SERVICE_NOT_CONFIGURED", "GPS_INVALID_STATE", "GPS_STATE_EXPIRED", "GPX_NOT_FOUND", "AUTHORIZATION_PENDING", "DEVICE_CODE_RATE_LIMITED", "GPS_CREDENTIAL_ALREADY_EXISTS", "GPS_OAUTH_VERSION_NOT_SUPPORTED", "GPS_CLIENT_SECRET_REQUIRED", "GPS_TOKEN_EXCHANGE_FAILED", "ENCRYPTION_FAILED", "DECRYPTION_FAILED", "DOMAIN_ALIAS_NOT_FOUND", "DOMAIN_ALIAS_HOSTNAME_EXISTS", "DOMAIN_ALIAS_TEAM_MISMATCH", "EXPORT_IN_PROGRESS", "EXPORT_RATE_LIMITED", "RIDE_GROUP_LEADER_NOT_MEMBER", "AD_CONTACT_SELF", "AD_CONTACT_OPTED_OUT", "AD_CONTACT_RATE_LIMITED", "AD_CONTACT_DELIVERY_FAILED", "EMAIL_NOT_SENT", "FEEDBACK_RATE_LIMITED", "TEAM_INVITE_INVALID", "TEAM_INVITE_EXPIRED", "TEAM_INVITE_REVOKED", "TEAM_INVITE_ALREADY_USED", "TEAM_INVITE_ALREADY_MEMBER", "TEAM_INVITE_EMAIL_MISMATCH", "TEAM_INVITE_SELF", "TEAM_INVITE_NOT_PENDING", "TEAM_INVITE_RATE_LIMITED", "TEAM_INVITE_DELIVERY_FAILED", "WEBHOOK_URL_INVALID", "REPORT_SELF", "BLOCK_SELF", "CONTENT_REJECTED", "TAG_LABEL_INVALID", "TAG_LABEL_TAKEN", "TAG_LIMIT_REACHED", "TAG_INVALID", "TOO_MANY_TAGS", "ASSET_NOT_AVAILABLE", "BIKETEAM_REQUEST_INVALID", "BIKETEAM_REQUEST_EXPIRED", "BIKETEAM_REQUEST_ALREADY_USED", "BIKETEAM_SLUG_CONFLICT", "BIKETEAM_MIGRATED_IN_OTHER_DOMAIN", "BIKETEAM_NOT_TEAM_ADMIN", "BIKETEAM_MIGRATION_RUNNING", "BIKETEAM_RESET_BLOCKED", "BIKETEAM_GRANT_INVALID", "BIKETEAM_GRANT_EXPIRED", "BIKETEAM_JOB_NOT_FOUND" ]
       },
       "ErrorDetails" : {
         "oneOf" : [ {
@@ -2356,11 +2356,11 @@
       "GeocodeResultDto" : {
         "description" : "A place matching a geocoding query",
         "type" : "object",
-        "required" : [ "id", "displayName", "lat", "lon" ],
+        "required" : [ "id", "displayName" ],
         "properties" : {
           "id" : {
             "type" : "string",
-            "description" : "Opaque identifier of the result, stable enough to key a list on"
+            "description" : "Opaque identifier of the result, stable enough to key a list on; what GET /api/geocode/place takes to resolve the position"
           },
           "displayName" : {
             "type" : "string",
@@ -2369,12 +2369,12 @@
           "lat" : {
             "type" : "number",
             "format" : "double",
-            "description" : "Latitude in degrees (WGS 84)"
+            "description" : "Latitude in degrees (WGS 84). Null on a search suggestion the provider gave no position for: resolve it with GET /api/geocode/place once the user picks it. Always set in that endpoint's answer."
           },
           "lon" : {
             "type" : "number",
             "format" : "double",
-            "description" : "Longitude in degrees (WGS 84)"
+            "description" : "Longitude in degrees (WGS 84). Null exactly when lat is null: resolve it with GET /api/geocode/place once the user picks the suggestion."
           }
         }
       },
@@ -11256,10 +11256,68 @@
         } ]
       }
     },
+    "/api/geocode/place" : {
+      "get" : {
+        "summary" : "Resolve the position of a picked place",
+        "description" : "Returns the place whose id a search result carried, with lat and lon always set. Call it only for the result the user picked, never for every suggestion: each call is billed by the provider. The id is a query parameter because it contains ':'. An id that is not shaped like a provider id, or that the provider does not know, is a 404 (NOT_FOUND); a provider failure or spent quota is a 503 (GEOCODING_UNAVAILABLE) — the client should then let the user search and pick again, or leave the position empty.",
+        "operationId" : "resolvePlace",
+        "tags" : [ "Geocode" ],
+        "parameters" : [ {
+          "description" : "The id of a search result, e.g. whosonfirst:locality:101750851",
+          "required" : true,
+          "name" : "id",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "The place, with its position",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GeocodeResultDto"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Malformed id, or no such place at the provider (NOT_FOUND)",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503" : {
+            "description" : "The geocoder failed, could not be reached or its quota is spent (GEOCODING_UNAVAILABLE)",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "user" ]
+        } ]
+      }
+    },
     "/api/geocode/search" : {
       "get" : {
         "summary" : "Search places by name",
-        "description" : "Returns at most 5 places matching the query, or an empty list when the query is shorter than 3 characters or the provider is unreachable. Results come from the Stadia Maps geocoder: a client displaying them must credit 'Stadia Maps, © OpenStreetMap contributors & others'.",
+        "description" : "Returns at most 5 places matching the query, or an empty list when the query is shorter than 3 characters or the provider is unreachable. A result's lat and lon are null when the provider gave no position for it (the usual case): once the user picks it, resolve its position with GET /api/geocode/place?id=. Never resolve every suggestion: each resolution is billed. Results come from the Stadia Maps geocoder: a client displaying them must credit 'Stadia Maps, © OpenStreetMap contributors & others'.",
         "operationId" : "searchPlaces",
         "tags" : [ "Geocode" ],
         "parameters" : [ {
@@ -23872,7 +23930,7 @@
   },
   "info" : {
     "title" : "Pedalons API",
-    "version" : "11.6.1",
+    "version" : "11.7.0",
     "description" : "API for Pedalons Cycling Team Management Platform"
   },
   "servers" : [ {

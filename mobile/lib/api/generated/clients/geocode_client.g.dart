@@ -21,6 +21,33 @@ class _GeocodeClient implements GeocodeClient {
   final ParseErrorLogger? errorLogger;
 
   @override
+  Future<GeocodeResultDto> resolvePlace({required String id}) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{r'id': id};
+    final _headers = <String, dynamic>{};
+    const Map<String, dynamic>? _data = null;
+    final _options = _setStreamType<GeocodeResultDto>(
+      Options(method: 'GET', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            '/api/geocode/place',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch<Map<String, Object?>>(_options);
+    late GeocodeResultDto _value;
+    try {
+      _value = GeocodeResultDto.fromJson(_result.data!);
+    } on Object catch (e, s) {
+      errorLogger?.logError(e, s, _options, response: _result);
+      rethrow;
+    }
+    return _value;
+  }
+
+  @override
   Future<List<GeocodeResultDto>> searchPlaces({String? q}) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{r'q': q};

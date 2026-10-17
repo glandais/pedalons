@@ -632,12 +632,16 @@ nothing else — no account, no client IP — and the privacy policy says so (§
 The same key and the same host serve **geocoding** since 2026-10-17 (ledger `OPS-49`), in two
 ways that must not be confused:
 
-- **The forms' place search** (team location, meeting places, ads) still goes through the backend:
-  `GET /api/geocode/search?q=` (signed in, 3 characters minimum, 5 results, 24 h Caffeine cache)
-  calls `GET https://api-eu.stadiamaps.com/geocoding/v1/autocomplete` with the typed text and the
-  display language, authenticated by the same `Authorization: Stadia-Auth …` header. The `v1`
-  autocomplete is a deliberate choice: it returns coordinates and a label in one call, where `v2`
-  returns `geometry: null` and needs a second `/geocoding/v2/place` call per selection. Nominatim is
+- **The forms' place search** (team location, meeting places, ads) still goes through the backend,
+  authenticated by the same `Authorization: Stadia-Auth …` header, in two steps (ledger `API-129`):
+  `GET /api/geocode/search?q=` (signed in, 3 characters minimum, 5 results, 24 h Caffeine cache
+  `geocode-search`) calls `GET https://api-eu.stadiamaps.com/geocoding/v2/autocomplete` with the
+  typed text and the display language — suggestions, usually without a position; once the user
+  picks one, `GET /api/geocode/place?id=` (24 h cache `geocode-place`) calls
+  `/geocoding/v2/place_details?ids=` for that one. Credits (stadiamaps.com/pricing, 2026-10-17): v2
+  autocomplete 1 per request, Place Lookup 20 per id — about 24 credits for a typed search and a
+  pick, against about 80 with the v1 autocomplete (20 per request) used until then. A failed place
+  lookup is a 503 the form shows (search and pick again, or leave the position empty). Nominatim is
   gone with it: no `NOMINATIM_URL`, no `GEOCODE_USER_AGENT`, no usage-policy `User-Agent` to
   maintain (the Open-Meteo client now has a `User-Agent` of its own, `pedalons.weather.user-agent`, which a fork
   overrides with `PEDALONS_USER_AGENT`; see `.env.example`).
