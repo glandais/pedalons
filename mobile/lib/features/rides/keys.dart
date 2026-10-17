@@ -178,3 +178,66 @@ class RideGroupPageKeys {
   ValueKey<String> groupChip(String groupId) =>
       _RideGroupKey('groupChip_$groupId');
 }
+
+class _RideEditorKey extends ValueKey<String> {
+  const _RideEditorKey(String value) : super('rideEditor_$value');
+}
+
+/// L'éditeur de sortie, création et modification (ledger `MOB-76`).
+class RideEditorKeys {
+  final forbidden = const _RideEditorKey('forbidden');
+  final loadError = const _RideEditorKey('loadError');
+  final saveButton = const _RideEditorKey('saveButton');
+  final errorBanner = const _RideEditorKey('errorBanner');
+  final templateButton = const _RideEditorKey('templateButton');
+  final nameField = const _RideEditorKey('nameField');
+  final slugRow = const _RideEditorKey('slugRow');
+  final slugField = const _RideEditorKey('slugField');
+  final slugSave = const _RideEditorKey('slugSave');
+  final markdownField = const _RideEditorKey('markdownField');
+  final markdownPreview = const _RideEditorKey('markdownPreview');
+  final markdownMode = const _RideEditorKey('markdownMode');
+  final logoButton = const _RideEditorKey('logoButton');
+  final imageAddButton = const _RideEditorKey('imageAddButton');
+  final attachmentAddButton = const _RideEditorKey('attachmentAddButton');
+  final dateRow = const _RideEditorKey('dateRow');
+  final timeRow = const _RideEditorKey('timeRow');
+  final startPlaceRow = const _RideEditorKey('startPlaceRow');
+  final endPlaceRow = const _RideEditorKey('endPlaceRow');
+  final tagsRow = const _RideEditorKey('tagsRow');
+  final visibility = const _RideEditorKey('visibility');
+  final status = const _RideEditorKey('status');
+  final publishAtRow = const _RideEditorKey('publishAtRow');
+  final routeRow = const _RideEditorKey('routeRow');
+  final addGroupButton = const _RideEditorKey('addGroupButton');
+  final pickerSearch = const _RideEditorKey('pickerSearch');
+
+  ValueKey<String> group(int index) => _RideEditorKey('group_$index');
+  ValueKey<String> groupName(int index) => _RideEditorKey('groupName_$index');
+  ValueKey<String> groupSpeed(int index) => _RideEditorKey('groupSpeed_$index');
+  ValueKey<String> groupMax(int index) => _RideEditorKey('groupMax_$index');
+  ValueKey<String> groupTime(int index) => _RideEditorKey('groupTime_$index');
+  ValueKey<String> groupLeader(int index) =>
+      _RideEditorKey('groupLeader_$index');
+  ValueKey<String> groupRoute(int index) => _RideEditorKey('groupRoute_$index');
+  ValueKey<String> groupRemove(int index) =>
+      _RideEditorKey('groupRemove_$index');
+  ValueKey<String> pickerOption(String id) => _RideEditorKey('option_$id');
+}
+
+class _RideManageKey extends ValueKey<String> {
+  const _RideManageKey(String value) : super('rideManage_$value');
+}
+
+/// Les gestes d'organisateur du détail d'une sortie (ledger `MOB-76`).
+class RideManageKeys {
+  final editButton = const _RideManageKey('editButton');
+  final publish = const _RideManageKey('publish');
+  final unpublish = const _RideManageKey('unpublish');
+  final cancel = const _RideManageKey('cancel');
+  final reinstate = const _RideManageKey('reinstate');
+  final delete = const _RideManageKey('delete');
+  final restore = const _RideManageKey('restore');
+  final report = const _RideManageKey('report');
+  final deletedBanner = const _RideManageKey('deletedBanner');
+}

@@ -36,6 +36,7 @@ import '../features/ads/presentation/pages/ad_detail_page.dart';
 import '../features/posts/domain/post_neighbours.dart';
 import '../features/posts/presentation/pages/post_detail_page.dart';
 import '../features/rides/presentation/pages/ride_detail_page.dart';
+import '../features/rides/presentation/pages/ride_editor_page.dart';
 import '../features/rides/domain/ride_group_tab.dart';
 import '../features/rides/presentation/pages/ride_group_page.dart';
 import '../features/trips/presentation/pages/stage_detail_page.dart';
@@ -250,6 +251,21 @@ final List<_DeepLinkHierarchy> _deepLinkHierarchies = [
   // et le groupe y reste sélectionné au retour (ledger `MOB-67`).
   _DeepLinkHierarchy(
     patterns: PathVariants.rideGroup(':teamSlug', ':rideSlug', ':groupId'),
+    ancestors: [
+      _teamsAncestor,
+      _teamAncestor,
+      _teamAgendaAncestor,
+      _rideAncestor,
+    ],
+  ),
+  // L'éditeur d'une sortie : une création sous l'Agenda, une modification
+  // sous la fiche qu'elle réécrit (ledger `MOB-76`).
+  _DeepLinkHierarchy(
+    patterns: PathVariants.rideNew(':teamSlug'),
+    ancestors: [_teamsAncestor, _teamAncestor, _teamAgendaAncestor],
+  ),
+  _DeepLinkHierarchy(
+    patterns: PathVariants.rideEdit(':teamSlug', ':rideSlug'),
     ancestors: [
       _teamsAncestor,
       _teamAncestor,
@@ -586,6 +602,16 @@ GoRoute _teamTree(String locale) {
           routeSlug: state.pathParameters['routeSlug']!,
         ),
       ),
+      // Avant le détail : `…/sorties/nouvelle` est aussi la sortie de slug
+      // `nouvelle`, et c'est l'éditeur qui est visé (ledger `MOB-76`).
+      GoRoute(
+        path: _underTeam(PathVariants.rideNew(':teamSlug'), locale, teamBase),
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => RideEditorPage(
+          teamSlug: state.pathParameters['teamSlug']!,
+          templateSlug: state.uri.queryParameters['template'],
+        ),
+      ),
       GoRoute(
         path: _underTeam(
           PathVariants.ride(':teamSlug', ':rideSlug'),
@@ -597,7 +623,7 @@ GoRoute _teamTree(String locale) {
           teamSlug: state.pathParameters['teamSlug']!,
           rideSlug: state.pathParameters['rideSlug']!,
         ),
-        routes: [_rideGroupRoute(locale)],
+        routes: [_rideGroupRoute(locale), _rideEditRoute(locale)],
       ),
       GoRoute(
         path: _underTeam(
@@ -638,6 +664,24 @@ GoRoute _teamTree(String locale) {
 /// `MOB-67`). L'onglet ouvert vient de `?tab=` (`overview`, `weather`,
 /// `participants`) : hors contrat, il ne sert qu'aux liens internes — « la
 /// météo de ce groupe » ouvre `?tab=weather`.
+/// L'éditeur d'une sortie, sous son détail : ouvert par un lien, la fiche se
+/// reconstruit dessous et l'enregistrement y revient (ledger `MOB-76`).
+GoRoute _rideEditRoute(String locale) {
+  final rideBase = PathVariants.ride(':teamSlug', ':rideSlug')[locale]!;
+  return GoRoute(
+    path: _underTeam(
+      PathVariants.rideEdit(':teamSlug', ':rideSlug'),
+      locale,
+      rideBase,
+    ),
+    parentNavigatorKey: _rootNavigatorKey,
+    builder: (context, state) => RideEditorPage(
+      teamSlug: state.pathParameters['teamSlug']!,
+      rideSlug: state.pathParameters['rideSlug']!,
+    ),
+  );
+}
+
 GoRoute _rideGroupRoute(String locale) {
   final rideBase = PathVariants.ride(':teamSlug', ':rideSlug')[locale]!;
   return GoRoute(

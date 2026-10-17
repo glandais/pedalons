@@ -526,8 +526,9 @@ routes:
     appScreen: false
 
   # --- Rides ---
-  # `mobile: true` + `appScreen: false` on the organizer's pages below: the app's team dashboard
-  # opens them on the site (mobile/…/team_web_paths.dart, docs/LEDGER_*.md MOB-54).
+  # `rideNew` and `rideEdit` are app screens since MOB-76 (the ride editor); `rideTemplates`
+  # below keeps `appScreen: false` — the app's dashboard opens it on the site
+  # (mobile/…/team_web_paths.dart, docs/LEDGER_*.md MOB-54).
   - id: rideNew
     path:
       en: /teams/{teamSlug}/rides/new
@@ -536,7 +537,7 @@ routes:
       - teamSlug
     web: true
     mobile: true
-    appScreen: false
+    deeplink: true
   - id: ride
     path:
       en: /teams/{teamSlug}/rides/{rideSlug}
@@ -567,7 +568,7 @@ routes:
       - rideSlug
     web: true
     mobile: true
-    appScreen: false
+    deeplink: true
 
   # --- Ride templates ---
   - id: rideTemplates

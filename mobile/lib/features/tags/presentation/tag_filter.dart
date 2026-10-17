@@ -71,23 +71,44 @@ class TagFilterChip extends StatelessWidget {
 /// Ouvre la feuille de choix des tags et rend la sélection à appliquer,
 /// triée ([normalizeTagSelection]), ou `null` si elle a été fermée sans
 /// valider.
+///
+/// Sans [title] ni [hint], c'est la feuille du **filtre** ; l'éditeur de
+/// sortie la réutilise pour étiqueter, avec ses propres libellés et la limite
+/// du contrat ([maxSelected], `RideRequest.tagIds` : 10).
 Future<List<String>?> showTagPickerSheet(
   BuildContext context, {
   required List<TagWithUsageDto> vocabulary,
   required List<String> selected,
+  String? title,
+  String? hint,
+  int? maxSelected,
 }) {
   return PdlSheet.show<List<String>>(
     context: context,
-    builder: (BuildContext context) =>
-        _TagPickerSheet(vocabulary: vocabulary, initial: selected),
+    builder: (BuildContext context) => _TagPickerSheet(
+      vocabulary: vocabulary,
+      initial: selected,
+      title: title,
+      hint: hint,
+      maxSelected: maxSelected,
+    ),
   );
 }
 
 class _TagPickerSheet extends StatefulWidget {
-  const _TagPickerSheet({required this.vocabulary, required this.initial});
+  const _TagPickerSheet({
+    required this.vocabulary,
+    required this.initial,
+    this.title,
+    this.hint,
+    this.maxSelected,
+  });
 
   final List<TagWithUsageDto> vocabulary;
   final List<String> initial;
+  final String? title;
+  final String? hint;
+  final int? maxSelected;
 
   @override
   State<_TagPickerSheet> createState() => _TagPickerSheetState();
@@ -102,7 +123,10 @@ class _TagPickerSheetState extends State<_TagPickerSheet> {
   };
 
   void _toggle(String id) => setState(() {
-    if (!_draft.remove(id)) _draft.add(id);
+    if (_draft.remove(id)) return;
+    final int? max = widget.maxSelected;
+    if (max != null && _draft.length >= max) return;
+    _draft.add(id);
   });
 
   @override
@@ -111,7 +135,7 @@ class _TagPickerSheetState extends State<_TagPickerSheet> {
     final PdlTypography t = context.pdlText;
 
     return PdlSheet(
-      title: 'tags.pickerTitle'.tr(),
+      title: widget.title ?? 'tags.pickerTitle'.tr(),
       headerAction: _draft.isEmpty
           ? null
           : PdlButton(
@@ -143,7 +167,7 @@ class _TagPickerSheetState extends State<_TagPickerSheet> {
             PdlSpacing.section,
             PdlSpacing.chipGap,
           ),
-          child: Text('tags.pickerHint'.tr(), style: t.xs),
+          child: Text(widget.hint ?? 'tags.pickerHint'.tr(), style: t.xs),
         ),
         for (final TagWithUsageDto tag in widget.vocabulary)
           _TagPickerRow(

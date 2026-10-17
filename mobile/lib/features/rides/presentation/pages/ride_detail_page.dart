@@ -24,6 +24,8 @@ import '../../../participants/presentation/widgets/participants_sheet.dart';
 import '../../../teams/providers/team_providers.dart';
 import '../../../tags/presentation/content_tags.dart';
 import '../../providers/ride_detail_provider.dart';
+import '../../providers/ride_editor_providers.dart';
+import '../widgets/ride_manage_menu.dart';
 import '../../providers/ride_group_selection_provider.dart';
 import '../../providers/ride_registration_controller.dart';
 import '../../providers/ride_scroll_target_provider.dart';
@@ -156,6 +158,8 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
   @override
   Widget build(BuildContext context) {
     final bool? isMember = ref.watch(teamMembershipProvider(ride.team.slug));
+    final bool canManage =
+        ref.watch(canManageRidesProvider(ride.team.slug)) ?? false;
 
     // Une sortie à un seul groupe : le détail **est** la page de ce groupe
     // (ledger `MOB-69`) — ni carte de groupe, ni lien vers sa page.
@@ -249,24 +253,46 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
             semanticLabel: 'routes.share'.tr(),
             onPressed: () => _share(context),
           ),
+          // L'organisateur modifie d'un geste, et trouve le reste — publier,
+          // annuler, supprimer, signaler — sous `⋯` (ledger `MOB-76`).
+          if (canManage && !ride.deleted)
+            PdlAppBarAction(
+              key: keys.rideManage.editButton,
+              icon: PdlIcons.edit,
+              semanticLabel: 'rides.manage.edit'.tr(),
+              onPressed: () =>
+                  context.push(Paths.rideEdit(ride.team.slug, ride.slug)),
+            ),
           PdlAppBarAction(
             key: keys.ride.moreButton,
             icon: PdlIcons.more,
             semanticLabel: 'moderation.more'.tr(),
-            onPressed: () => showDetailModerationMenu(
-              context,
-              subject: ModerationSubject(
-                teamSlug: ride.team.slug,
-                type: ReportTargetType.ride,
-                id: ride.id,
-                teamName: ride.team.name,
-              ),
-            ),
+            onPressed: canManage
+                ? () => showRideManageMenu(context, ref, ride)
+                : () => showDetailModerationMenu(
+                    context,
+                    subject: ModerationSubject(
+                      teamSlug: ride.team.slug,
+                      type: ReportTargetType.ride,
+                      id: ride.id,
+                      teamName: ride.team.name,
+                    ),
+                  ),
           ),
         ],
       ),
       slivers: <Widget>[
         SliverToBoxAdapter(child: _identity(context)),
+        if (ride.deleted)
+          SliverToBoxAdapter(
+            child: PdlBanner(
+              key: keys.rideManage.deletedBanner,
+              tone: PdlBannerTone.warn,
+              icon: PdlIcons.delete,
+              message: 'rides.manage.deletedBanner'.tr(),
+              fullBleed: true,
+            ),
+          ),
         if (ride.isCancelled)
           SliverToBoxAdapter(
             child: PdlBanner(

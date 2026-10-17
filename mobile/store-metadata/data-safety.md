@@ -24,7 +24,8 @@ from:
 
 ## 1. What the app actually does
 
-The mobile app authenticates, then reads team content. Three capabilities beyond reading touch
+The mobile app authenticates, then reads team content — and, for a team's organizers, writes
+its rides (the ride editor, `MOB-76`, #21–#22). Three capabilities beyond reading touch
 personal data: **picking a profile picture** from the photo library, reading a **coarse
 device position** to sort content by proximity, and registering the device for **push
 notifications**. There is no camera capture and no analytics.
@@ -36,10 +37,17 @@ file did not list; they are declared with the reports below, in the same bucket.
 
 The capabilities added, and their exact boundary:
 
-- **`image_picker`** — photo library only, to feed `POST /api/users/me/avatar`. No camera
+- **`image_picker`** — photo library only, to feed `POST /api/users/me/avatar` and, since
+  `MOB-76` (2026-10-17), a ride's logo and images in the **ride editor** (organizers only,
+  `POST /api/teams/{slug}/assets`, see #22). No camera
   capture (`NSCameraUsageDescription` is deliberately absent, so iOS cannot grant it).
   `NSPhotoLibraryUsageDescription` exists in `mobile/ios/Runner/Info.plist`, localized in
   `Runner/{en,fr}.lproj/InfoPlist.strings`.
+- **`file_picker`** (2026-10-17, `MOB-76`) — the system document picker (Storage Access Framework
+  on Android, `UIDocumentPickerViewController` on iOS), opened only when an organizer taps *Add a
+  file* in the ride editor. The chosen file is uploaded as a ride attachment
+  (`POST /api/teams/{slug}/assets?assetType=ATTACHMENT`, #22). No storage permission is requested
+  on either platform: the picker grants access to the one file picked.
 - **`geolocator`** — `LocationAccuracy.low` only, while the app is in use. The coordinates become
   the `nearLat`/`nearLon`/`nearRadius` query parameters of an existing list endpoint and are never
   written to disk nor attached to the account. `NSLocationWhenInUseUsageDescription` (fr + en);
@@ -89,8 +97,8 @@ The capabilities added, and their exact boundary:
 Verified absent from `mobile/pubspec.yaml`, `mobile/pubspec.lock`, `mobile/lib/`, `mobile/ios/`
 and `mobile/android/`:
 
-- No `camera`, `photo_manager`, `image_cropper`, `file_picker` — the only media entry point is
-  the system photo picker.
+- No `camera`, `photo_manager`, `image_cropper` — the media entry points are the system photo
+  picker and, for ride attachments only, the system document picker (`file_picker`).
 - No precise location, no background location, no `permission_handler` (permission prompts are
   `geolocator`'s own), and no MapLibre user-location layer.
 - No GPX/FIT **import**. Route files are download-only: fetched to `getTemporaryDirectory()` and
@@ -140,6 +148,8 @@ Everything below leaves the device to `https://www.pedalons.fr` unless stated ot
 | 18 | **Crash data** | `lib/core/logging/error_reporter.dart` → `POST /api/feedback/errors`: unhandled error type, message, stack. Opt-out setting | Yes (then to GitHub) | Yes (user id) |
 | 19 | **Diagnostics** | Sent with #17 (if ticked) and #18: app version, OS, device model, screen path, language, in-app log (`lib/core/logging/app_log.dart`) | Yes (then to GitHub) | Yes (user id) |
 | 20 | **Message to an ad's author** | *Contact the seller* sheet (`lib/features/ads/presentation/widgets/ad_contact_sheet.dart`) → `lib/features/ads/data/ad_repository.dart` `contactAdAuthor`: free text, relayed by e-mail with the sender's address as Reply-To. The server keeps no body, only who wrote about which ad and when (`AdContact`, for rate limiting and abuse reports) | Yes (then to the author's inbox, through our e-mail provider) | Yes |
+| 21 | **Rides written by organizers** | Ride editor (`lib/features/rides/presentation/pages/ride_editor_page.dart`) → `POST`/`PUT /api/teams/{slug}/rides`: name, markdown description, date, places, groups, chosen leaders. Organizers and administrators of the team only | Yes | Yes |
+| 22 | **Ride images and attachments** | Same editor → `POST /api/teams/{slug}/assets`: a photo from the library (`image_picker`, logo and images) or any file from the document picker (`file_picker`, attachments) | Yes | Yes |
 | 10 | **Approximate location** | `geolocator` at `LocationAccuracy.low`, while in use, only when the user turns on the "around me" filter — becomes the `nearLat`/`nearLon`/`nearRadius` query parameters | Yes, as query parameters of a read request | **No** — not stored server-side, not written to the account |
 
 Stored **on device only**, never transmitted:
@@ -174,9 +184,9 @@ value is invented.
 | `NSPrivacyCollectedDataTypeEmailAddress` | `true` | `false` | `…PurposeAppFunctionality` | inventory #1 |
 | `NSPrivacyCollectedDataTypeName` | `true` | `false` | `…PurposeAppFunctionality` | #3 |
 | `NSPrivacyCollectedDataTypeUserID` | `true` | `false` | `…PurposeAppFunctionality` | #4, #5, #7 |
-| `NSPrivacyCollectedDataTypeOtherUserContent` | `true` | `false` | `…PurposeAppFunctionality` | #6, #13, #14, #15, #20 |
+| `NSPrivacyCollectedDataTypeOtherUserContent` | `true` | `false` | `…PurposeAppFunctionality` | #6, #13, #14, #15, #20, #21, #22 (attachments) |
 | `NSPrivacyCollectedDataTypeOtherDataTypes` | `true` | `false` | `…PurposeAppFunctionality` | #8 |
-| `NSPrivacyCollectedDataTypePhotosorVideos` | `true` | `false` | `…PurposeAppFunctionality` | #9 |
+| `NSPrivacyCollectedDataTypePhotosorVideos` | `true` | `false` | `…PurposeAppFunctionality` | #9, #22 (images) |
 | `NSPrivacyCollectedDataTypeCoarseLocation` | **`false`** | `false` | `…PurposeAppFunctionality` | #10 |
 | `NSPrivacyCollectedDataTypeDeviceID` | `true` | `false` | `…PurposeAppFunctionality` | #11, #12 |
 | `NSPrivacyCollectedDataTypeCrashData` | `true` | `false` | `…PurposeAppFunctionality` | #18 |
@@ -302,6 +312,7 @@ per-row, because approximate location is the one type that is processed ephemera
 | App activity | Other user-generated content | Yes | No | Optional | App functionality, Fraud prevention, security, and compliance |
 | Messages | Other in-app messages | Yes | No | Optional | App functionality |
 | Photos and videos | Photos | Yes | No | Optional | App functionality |
+| Files and docs | Files and docs | Yes | No | Optional | App functionality |
 | Location | Approximate location | Yes | **Yes** | Optional | App functionality |
 | Device or other IDs | Device or other IDs | Yes | No | Optional | App functionality |
 | App info and performance | Crash logs | Yes | No | Optional | App functionality |
@@ -314,7 +325,13 @@ does not count as sharing. The report's free text (#17) is covered by the *Other
 content* row already declared.
 
 *Photos* is **optional**: the account works without a profile picture, and the photo library is
-only reached when the user taps "change picture".
+only reached when the user taps "change picture" — or, for an organizer, "add an image" or "choose
+a logo" in the ride editor (#22).
+
+*Files and docs* (2026-10-17, `MOB-76`) is **optional** and covers **ride attachments** (#22): an
+organizer picks a file with the system document picker and it is uploaded to the team. Apple has
+no such type; on iOS the attachment is *Other User Content*. Nobody has to attach a file, and it
+is **not shared** beyond the service: it is shown to the ride's readers, inside the app.
 
 *Approximate location* is **optional** and **processed ephemerally**: it is read only when the user
 turns on the "around me" filter, sent as `nearLat`/`nearLon`/`nearRadius` on a read request, and
@@ -455,9 +472,8 @@ a dependency. Do not bring it back — it would re-open a US transfer for a type
 | Not declared | Why |
 |---|---|
 | Precise Location | Only `ACCESS_COARSE_LOCATION` is requested and only `LocationAccuracy.low` is used; `ACCESS_FINE_LOCATION` is stripped from the merged manifest. No background location, no ride recording, no user-location puck. Route coordinates are **downloaded** for display; describing where a *route* is is not describing where the *user* is. |
-| Videos | `image_picker` is restricted to still images for the avatar; no video is ever read. |
+| Videos | `image_picker` is restricted to still images (`pickImage`) for the avatar and a ride's logo and images; no video is ever read. |
 | Camera | No `NSCameraUsageDescription` and no camera permission — the photo library is the only entry point. |
-| Files and docs | GPX/FIT is download-and-share only; there is no import path. |
 | Fitness / Health | No HealthKit, no Motion & Fitness, no activity recording. |
 | Advertising ID | No advertising identifier is read or sent. The declared *Device ID* row covers the FCM registration token only (#11). The passkey `deviceName` is still the constant string `"Mobile"`. |
 | Product Interaction / Usage / Advertising Data | No analytics or advertising SDK of any kind. |
@@ -476,7 +492,7 @@ these ships:
 |---|---|
 | Profile editing (`PUT /api/users/me`) | nothing new — Name/Email already declared |
 | Camera capture for the avatar | `NSCameraUsageDescription` in `Info.plist` (+ its two `InfoPlist.strings`); no new data type — Photos or Videos already covers it |
-| Post / ride / route authoring (comments are already declared, #13) | nothing new — Apple `NSPrivacyCollectedDataTypeOtherUserContent` and Play *Other user-generated content* are both declared; widen the manifest comment and §2 |
+| Post / route authoring (comments are already declared, #13; ride authoring since `MOB-76`, #21–#22) | nothing new — Apple `NSPrivacyCollectedDataTypeOtherUserContent` and Play *Other user-generated content* are both declared; widen the manifest comment and §2 |
 | A screenshot or attachment on a report, or automatic moderation of images or text beyond the word filter | Apple `…PhotosorVideos` already covers images, but re-read §4 for the purpose; Play *Photos*; any third-party moderation service is a new sub-processor for the policy |
 | GPX **import** from the device | Play *Files and docs*; Apple `NSPrivacyCollectedDataTypeOtherUserContent`. If the GPX describes the user's own rides, also Apple `…PreciseLocation` and Play *Location → Precise location* |
 | Live location / "record a ride" / follow-me on the map / a MapLibre user-location puck | Apple `NSPrivacyCollectedDataTypePreciseLocation` (and flip Coarse Location's `Linked` if it becomes persisted); Play *Location → Precise location* and drop the *processed ephemerally* flag; stop stripping `ACCESS_FINE_LOCATION`; `NSLocationAlwaysAndWhenInUseUsageDescription` if it ever runs in the background |
@@ -542,7 +558,7 @@ these ships:
 cd mobile
 
 # capability negatives — these should still print nothing
-grep -rnE "file_picker|^ *camera:|photo_manager|image_cropper|permission_handler" pubspec.yaml
+grep -rnE "^ *camera:|photo_manager|image_cropper|permission_handler" pubspec.yaml
 grep -rn "NSCameraUsageDescription\|LocationAlways" ios/Runner/Info.plist
 grep -rn "READ_MEDIA_IMAGES\|ACCESS_BACKGROUND_LOCATION" android/app/src/main/AndroidManifest.xml
 
@@ -554,8 +570,11 @@ grep -rn "UsageDescription" ios/Runner/Info.plist ios/Runner/en.lproj/InfoPlist.
 grep -rn "ACCESS_.*_LOCATION" android/app/src/main/AndroidManifest.xml
 grep -rniE "LocationAccuracy|getCurrentPosition|getPositionStream" lib | grep -v lib/api/generated
 
-# uploads: only the avatar path should show up outside the generated client
+# uploads: only the avatar and the ride editor's assets should show up outside the generated client
 grep -rn "MultipartFile\|FormData" lib | grep -v lib/api/generated
+
+# file_picker: only the ride editor's attachments (#22)
+grep -rn "FilePicker\." lib
 
 # Every mutating operation the app can actually reach, to confirm §2 is still complete.
 # App code calls generated retrofit clients, so grepping for `.post(` in lib/ finds almost

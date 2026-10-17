@@ -50,7 +50,7 @@
 	<!-- Usage strings below are the en fallback; the localized values live in
 	     Runner/{en,fr}.lproj/InfoPlist.strings. Keep the three in sync. -->
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Pédalons needs access to your photos so you can pick a profile picture.</string>
+	<string>Pédalons needs access to your photos so you can pick a profile picture, or add images to a ride you organize.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Pédalons uses your approximate location only to sort rides and routes by distance from you. It is never stored or shared.</string>
 	<!-- The app only ever asks for when-in-use, but the location plugin links the

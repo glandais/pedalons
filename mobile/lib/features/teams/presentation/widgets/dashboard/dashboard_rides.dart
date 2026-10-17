@@ -19,7 +19,6 @@ import '../../../../auth/domain/auth_state.dart';
 import '../../../../auth/providers/auth_provider.dart';
 import '../../../../rides/providers/participation_changes.dart';
 import '../../../../routes/presentation/route_export.dart';
-import '../../team_web_paths.dart';
 import 'dashboard_section.dart';
 import '../../../../../core/widgets/zone_mention_line.dart';
 import '../../../../rides/domain/group_start.dart';
@@ -597,10 +596,8 @@ class DashboardRideCard extends ConsumerWidget {
                   icon: PdlIcons.edit,
                   variant: PdlButtonVariant.outline,
                   size: PdlButtonSize.sm,
-                  onPressed: () => openTeamWebPage(
-                    context,
-                    TeamWebPaths.rideEdit(ride.team.slug, ride.slug),
-                  ),
+                  onPressed: () =>
+                      context.push(Paths.rideEdit(ride.team.slug, ride.slug)),
                 ),
               ],
             ],

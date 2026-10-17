@@ -54,4 +54,67 @@ class RideRepository {
       groupId: groupId,
     );
   }
+
+  // --- Organisateur (docs/LEDGER_*.md MOB-76) ---------------------------
+  //
+  // Les droits sont ceux du serveur (`RideAccessChecker`) : organisateur ou
+  // administrateur de l'équipe, modules sorties **et** parcours actifs. Le
+  // client les lit par `canManageRides` (`domain/ride_permissions.dart`)
+  // pour ne pas montrer un bouton qui finirait en 403.
+
+  /// Crée une sortie. Les dates de [request] sont des heures murales du
+  /// fuseau de la sortie (`RideForm.toRequest`).
+  Future<RideDto> createRide(String teamSlug, RideRequest request) {
+    return _ridesClient.createRide(teamSlug: teamSlug, body: request);
+  }
+
+  /// Réécrit une sortie. Le serveur applique **tous** les champs du PUT,
+  /// absents compris : `leaderId`, `startPlaceId`, `endPlaceId` et les groupes
+  /// doivent donc y figurer tels qu'ils sont, sinon ils sont effacés.
+  Future<RideDto> updateRide(
+    String teamSlug,
+    String rideSlug,
+    RideRequest request,
+  ) {
+    return _ridesClient.updateRide(
+      teamSlug: teamSlug,
+      rideSlug: rideSlug,
+      body: request,
+    );
+  }
+
+  /// Publier, dépublier, annuler ou rétablir : le `PATCH /status`, qui ne
+  /// touche à rien d'autre — pas même aux tags, qu'un PUT recopié depuis un
+  /// détail périmé pourrait renvoyer supprimés (`TAG_INVALID`).
+  Future<RideDto> changeStatus(
+    String teamSlug,
+    String rideSlug,
+    Status status,
+  ) {
+    return _ridesClient.changeRideStatus(
+      teamSlug: teamSlug,
+      rideSlug: rideSlug,
+      body: StatusChangeRequest(status: status.toJson()),
+    );
+  }
+
+  /// Change l'adresse (le slug) d'une sortie. Les liens vers l'ancienne ne
+  /// mènent plus nulle part : l'écran repart de la nouvelle.
+  Future<RideDto> changeSlug(String teamSlug, String rideSlug, String slug) {
+    return _ridesClient.changeRideSlug(
+      teamSlug: teamSlug,
+      rideSlug: rideSlug,
+      body: SlugChangeRequest(slug: slug),
+    );
+  }
+
+  /// Suppression **douce** : la sortie reste lisible par les organisateurs,
+  /// marquée `deleted`, et [undeleteRide] la ramène.
+  Future<void> deleteRide(String teamSlug, String rideSlug) {
+    return _ridesClient.deleteRide(teamSlug: teamSlug, rideSlug: rideSlug);
+  }
+
+  Future<RideDto> undeleteRide(String teamSlug, String rideSlug) {
+    return _ridesClient.undeleteRide(teamSlug: teamSlug, rideSlug: rideSlug);
+  }
 }

@@ -16,6 +16,7 @@ import '../../../../core/utils/api_error_handler.dart';
 import '../../../../keys.dart';
 import '../../../calendar/presentation/widgets/calendar_subscription_card.dart';
 import '../../providers/team_dashboard_provider.dart';
+import '../../../rides/presentation/ride_editor_location.dart';
 import '../team_web_paths.dart';
 import '../widgets/dashboard/dashboard_admin.dart';
 import '../widgets/dashboard/dashboard_content.dart';
@@ -258,10 +259,7 @@ class _Summary extends StatelessWidget {
                     label: 'teams.dashboard.createRide'.tr(),
                     icon: PdlIcons.add,
                     size: PdlButtonSize.sm,
-                    onPressed: () => openTeamWebPage(
-                      context,
-                      TeamWebPaths.rideNew(team.slug),
-                    ),
+                    onPressed: () => context.push(rideNewLocation(team.slug)),
                   ),
                 if (canPost)
                   PdlButton(

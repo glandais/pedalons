@@ -5,24 +5,12 @@ import 'package:pedalons/features/teams/presentation/team_web_paths.dart';
 
 /// Les pages du site qu'ouvre le tableau de bord viennent de
 /// `contracts/routes.yaml` (docs/LEDGER_*.md MOB-54), dans la langue de l'app.
-/// Deux d'entre elles portent en plus un état que le web passe en état de
-/// routeur, qu'une URL ne transporte pas — le site lit donc ces paramètres
-/// (`CreateRidePage`, `TeamMembersPage`).
+/// L'une d'elles porte en plus un état que le web passe en état de routeur,
+/// qu'une URL ne transporte pas — le site lit donc ce paramètre
+/// (`TeamMembersPage`). Créer et modifier une sortie se font dans l'app
+/// depuis `MOB-76` : ces deux pages ne sont plus du site.
 void main() {
   tearDown(() => setCurrentLocale('fr'));
-
-  test('« Créer depuis un modèle » nomme le modèle dans l\'URL', () {
-    setCurrentLocale('en');
-    expect(
-      TeamWebPaths.rideNewFromTemplate('velo-club', 'sortie du dimanche'),
-      '/teams/velo-club/rides/new?template=sortie+du+dimanche',
-    );
-    setCurrentLocale('fr');
-    expect(
-      TeamWebPaths.rideNewFromTemplate('velo-club', 'sortie du dimanche'),
-      '/equipes/velo-club/sorties/nouvelle?template=sortie+du+dimanche',
-    );
-  });
 
   test('« Inviter » ouvre le dialogue d\'invitation', () {
     setCurrentLocale('en');
@@ -41,8 +29,6 @@ void main() {
     // `appScreen: false` dans le contrat : le lien part dans le navigateur,
     // jamais sur le routeur de l'app.
     for (final String id in <String>[
-      'rideNew',
-      'rideEdit',
       'postNew',
       'postEdit',
       'tripEdit',
@@ -53,5 +39,10 @@ void main() {
     ]) {
       expect(webOnlyRouteIds, contains(id));
     }
+  });
+
+  test('créer et modifier une sortie sont des écrans de l\'app (MOB-76)', () {
+    expect(webOnlyRouteIds, isNot(contains('rideNew')));
+    expect(webOnlyRouteIds, isNot(contains('rideEdit')));
   });
 }

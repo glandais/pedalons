@@ -474,6 +474,25 @@ class AppFormatters {
     return parsed == null ? null : toZoneTime(parsed, zone);
   }
 
+  /// L'inverse de [toZoneTime] : l'instant UTC que l'heure murale [wall]
+  /// désigne dans le fuseau d'entité [zone] — ce qu'un éditeur montre en
+  /// mention « heure de … » pendant qu'on saisit une date (ledger `API-60`).
+  /// Un fuseau inconnu retombe sur le fuseau d'affichage, comme [toZoneTime].
+  static DateTime zoneWallClockToUtc(DateTime wall, String? zone) {
+    if (wall.isUtc) return wall;
+    final tz.Location? location = _entityZone(zone);
+    if (location == null) return displayWallClockToUtc(wall);
+    return tz.TZDateTime(
+      location,
+      wall.year,
+      wall.month,
+      wall.day,
+      wall.hour,
+      wall.minute,
+      wall.second,
+    ).toUtc();
+  }
+
   static DateTime _wall(tz.TZDateTime wall) => DateTime(
     wall.year,
     wall.month,

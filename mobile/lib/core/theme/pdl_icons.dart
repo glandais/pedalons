@@ -173,6 +173,20 @@ abstract final class PdlIcons {
   static const IconData webhook = Icons.webhook_outlined;
   static const IconData template = Icons.content_copy_outlined;
 
+  // ── Édition de contenu (éditeur de sortie, ledger MOB-76) ──────────────
+  static const IconData publish = Icons.publish;
+  static const IconData unpublish = Icons.unpublished_outlined;
+  static const IconData restore = Icons.restore_from_trash_outlined;
+  static const IconData link = Icons.link;
+  static const IconData formatBold = Icons.format_bold;
+  static const IconData formatItalic = Icons.format_italic;
+  static const IconData formatHeading = Icons.title;
+  static const IconData formatBullets = Icons.format_list_bulleted;
+  static const IconData formatNumbers = Icons.format_list_numbered;
+  static const IconData formatQuote = Icons.format_quote;
+  static const IconData imageAdd = Icons.add_photo_alternate_outlined;
+  static const IconData fileAdd = Icons.upload_file_outlined;
+
   // ── Retours ────────────────────────────────────────────────────────────
   static const IconData bug = Icons.bug_report_outlined;
   static const IconData block = Icons.block;

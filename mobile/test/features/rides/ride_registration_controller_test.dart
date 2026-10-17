@@ -67,6 +67,10 @@ class _FakeRideRepository implements RideRepository {
     if (gate != null) await gate!.future;
     if (leaveError != null) throw leaveError!;
   }
+
+  // Les gestes d'organisateur (ledger `MOB-76`) ne sont pas exercés ici.
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 DioException _apiError(String code, {int status = 400}) => DioException(

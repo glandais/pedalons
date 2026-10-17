@@ -73,8 +73,10 @@
 		     content reports (POST /api/reports: reason, optional free-text message, and
 		     the server-side copy of the reported text) and user blocks
 		     (PUT /api/users/me/blocks/{userId}); messages to an ad's author
-		     (contactAdAuthor, relayed by e-mail, body not stored). All user-generated, all stored against
-		     the account, used only to run the app and moderate it. -->
+		     (contactAdAuthor, relayed by e-mail, body not stored); rides an organizer writes in the ride
+		     editor and their attachments (POST/PUT /api/teams/{slug}/rides, POST …/assets, file_picker).
+		     All user-generated, all stored against the account, used only to run the app and moderate
+		     it. -->
 		<dict>
 			<key>NSPrivacyCollectedDataType</key>
 			<string>NSPrivacyCollectedDataTypeOtherUserContent</string>
@@ -88,7 +90,8 @@
 			</array>
 		</dict>
 		<!-- Profile picture picked from the photo library and uploaded to
-		     POST /api/users/me/avatar (image_picker). Stored against the account. -->
+		     POST /api/users/me/avatar (image_picker), and a ride's logo and images an organizer picks
+		     in the ride editor (POST /api/teams/{slug}/assets). Stored against the account. -->
 		<dict>
 			<key>NSPrivacyCollectedDataType</key>
 			<string>NSPrivacyCollectedDataTypePhotosorVideos</string>

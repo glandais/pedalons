@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../../api/generated/export.dart';
 import '../../../../../core/pdl/pdl.dart';
@@ -10,6 +11,7 @@ import '../../../../../core/theme/pdl_tokens.dart';
 import '../../../../../core/theme/pdl_typography.dart';
 import '../../../../../core/utils/formatters.dart';
 import '../../../../../keys.dart';
+import '../../../../rides/presentation/ride_editor_location.dart';
 import '../../team_web_paths.dart';
 import 'dashboard_section.dart';
 
@@ -52,11 +54,10 @@ class DashboardTemplates extends StatelessWidget {
                         subtitle: 'rides.groupCount'.plural(
                           list.templates[i].groupCount,
                         ),
-                        onTap: () => openTeamWebPage(
-                          context,
-                          TeamWebPaths.rideNewFromTemplate(
+                        onTap: () => context.push(
+                          rideNewLocation(
                             teamSlug,
-                            list.templates[i].slug,
+                            templateSlug: list.templates[i].slug,
                           ),
                         ),
                       ),

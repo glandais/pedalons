@@ -90,6 +90,10 @@ class _StubRideRepository implements RideRepository {
 
   @override
   Future<void> leaveGroup(String t, String r, String g) async => left.add(g);
+
+  // Les gestes d'organisateur (ledger `MOB-76`) ne sont pas exercés ici.
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 /// Les participants d'un groupe, pour la feuille qu'ouvrent ses visages.

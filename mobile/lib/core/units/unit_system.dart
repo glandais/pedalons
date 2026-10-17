@@ -90,6 +90,11 @@ extension UnitSystemConversion on UnitSystem {
   double shortDistanceToMeters(num displayed) =>
       isImperial ? displayed * kMetersPerFoot : displayed.toDouble();
 
+  /// Une vitesse saisie dans l'unité affichée, rendue en km/h — l'unité du
+  /// contrat (`GroupRequest.averageSpeed`).
+  double speedToKilometersPerHour(num displayed) =>
+      isImperial ? displayed * kMetersPerMile / 1000 : displayed.toDouble();
+
   /// Clé de traduction du nom du système, pour l'écran de préférences.
   String get labelKey => isImperial ? 'units.imperial' : 'units.metric';
 }

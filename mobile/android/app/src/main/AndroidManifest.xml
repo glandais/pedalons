@@ -131,10 +131,14 @@
                 <data android:pathPattern="/equipes/.*/voyages" />
                 <data android:pathPattern="/teams/.*/members" />
                 <data android:pathPattern="/equipes/.*/membres" />
+                <data android:pathPattern="/teams/.*/rides/new" />
+                <data android:pathPattern="/equipes/.*/sorties/nouvelle" />
                 <data android:pathPattern="/teams/.*/rides/.*" />
                 <data android:pathPattern="/equipes/.*/sorties/.*" />
                 <data android:pathPattern="/teams/.*/rides/.*/groups/.*" />
                 <data android:pathPattern="/equipes/.*/sorties/.*/groupes/.*" />
+                <data android:pathPattern="/teams/.*/rides/.*/edit" />
+                <data android:pathPattern="/equipes/.*/sorties/.*/modifier" />
                 <data android:pathPattern="/teams/.*/trips/.*" />
                 <data android:pathPattern="/equipes/.*/voyages/.*" />
                 <data android:pathPattern="/teams/.*/trips/.*/stages/.*" />

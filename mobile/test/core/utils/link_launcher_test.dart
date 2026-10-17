@@ -153,8 +153,6 @@ void main() {
       ...PathVariants.teamAdminMembers('vc').values,
       ...PathVariants.teamAdminReports('vc').values,
       ...PathVariants.teamSettings('vc').values,
-      ...PathVariants.rideNew('vc').values,
-      ...PathVariants.rideEdit('vc', 'rando').values,
       ...PathVariants.rideTemplates('vc').values,
       ...PathVariants.tripEdit('vc', 'ete').values,
       ...PathVariants.postNew('vc').values,
@@ -166,6 +164,16 @@ void main() {
         expect(isSitePageLocation(page), isTrue, reason: page);
         expect(isSitePageLocation('$page?invite=1'), isTrue, reason: page);
         expect(internalLocationFor(page), isNull, reason: page);
+      }
+    });
+
+    test('l\'éditeur de sortie s\'ouvre dans l\'app (MOB-76)', () {
+      for (final String page in <String>[
+        ...PathVariants.rideNew('vc').values,
+        ...PathVariants.rideEdit('vc', 'rando').values,
+      ]) {
+        expect(isSitePageLocation(page), isFalse, reason: page);
+        expect(internalLocationFor(page), page, reason: page);
       }
     });
 
@@ -246,8 +254,11 @@ void main() {
       expect(launched, isEmpty, reason: 'Une route interne ne sort pas.');
     });
 
-    testWidgets('une page du site part au navigateur, pas sur la sortie '
-        '« nouvelle » (MOB-59)', (WidgetTester tester) async {
+    // `…/sorties/nouvelle` était l'exemple jusqu'à `MOB-76`, qui en a fait
+    // un écran de l'app ; `…/articles/nouveau` a la même ambiguïté avec
+    // l'article de slug `nouveau` et reste une page du site.
+    testWidgets('une page du site part au navigateur, pas sur l\'article '
+        '« nouveau » (MOB-59)', (WidgetTester tester) async {
       final List<Uri> launched = <Uri>[];
       debugLinkOpener = (Uri url) async {
         launched.add(url);
@@ -256,14 +267,14 @@ void main() {
 
       final GoRouter router = await _pumpMarkdown(
         tester,
-        'Proposez une [sortie](https://www.pedalons.fr/equipes/vc/sorties/nouvelle).',
+        'Proposez un [article](https://www.pedalons.fr/equipes/vc/articles/nouveau).',
       );
 
-      await _tapLink(tester, 'sortie');
+      await _tapLink(tester, 'article');
 
-      expect(find.text('page de la sortie'), findsNothing);
+      expect(find.text('page de l\'article'), findsNothing);
       expect(router.routerDelegate.currentConfiguration.matches, hasLength(1));
-      expect(launched.single.path, '/equipes/vc/sorties/nouvelle');
+      expect(launched.single.path, '/equipes/vc/articles/nouveau');
     });
 
     testWidgets('un lien externe part au système, jamais dans le routeur', (
@@ -475,6 +486,11 @@ Future<GoRouter> _pumpMarkdown(
         path: PathVariants.ride(':teamSlug', ':rideSlug')['fr']!,
         builder: (BuildContext context, GoRouterState state) =>
             const Scaffold(body: Text('page de la sortie')),
+      ),
+      GoRoute(
+        path: PathVariants.post(':teamSlug', ':postSlug')['fr']!,
+        builder: (BuildContext context, GoRouterState state) =>
+            const Scaffold(body: Text('page de l\'article')),
       ),
     ],
   );

@@ -172,6 +172,14 @@ final tagsClientProvider = Provider<TagsClient>((ref) {
   return ref.watch(apiClientProvider).tags;
 });
 
+final placesClientProvider = Provider<PlacesClient>((ref) {
+  return ref.watch(apiClientProvider).places;
+});
+
+final rideTemplatesClientProvider = Provider<RideTemplatesClient>((ref) {
+  return ref.watch(apiClientProvider).rideTemplates;
+});
+
 // Les quatre clients de commentaires. Ils partagent la même forme d'API mais
 // pas d'interface commune côté généré : c'est `CommentRepository` qui les
 // unifie derrière un `CommentTarget`.

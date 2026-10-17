@@ -169,6 +169,19 @@ final List<_LinkCase> _cases = [
       PathVariants.ride(_teamSlug, _rideSlug),
     ],
   ),
+  // L'éditeur d'une sortie (ledger `MOB-76`) : la création sous l'Agenda,
+  // la modification sous la fiche qu'elle réécrit.
+  _LinkCase('rideNew', PathVariants.rideNew(_teamSlug), [
+    PathVariants.teams(),
+    PathVariants.team(_teamSlug),
+    PathVariants.teamAgenda(_teamSlug),
+  ]),
+  _LinkCase('rideEdit', PathVariants.rideEdit(_teamSlug, _rideSlug), [
+    PathVariants.teams(),
+    PathVariants.team(_teamSlug),
+    PathVariants.teamAgenda(_teamSlug),
+    PathVariants.ride(_teamSlug, _rideSlug),
+  ]),
   _LinkCase('post', PathVariants.post(_teamSlug, _postSlug), [
     PathVariants.teams(),
     PathVariants.team(_teamSlug),

@@ -88,7 +88,7 @@ class DashboardTodo extends StatelessWidget {
                       PublicationDtoPost() => PdlIcons.post,
                       PublicationDtoTrip() => PdlIcons.trip,
                     },
-                    onTap: () => openTeamWebPage(context, _editPath(p)),
+                    onTap: () => _openEdit(context, p),
                   ),
               ],
             ),
@@ -116,10 +116,8 @@ class DashboardTodo extends StatelessWidget {
                   _PickEntry(
                     title: _rideWithDate(r),
                     icon: PdlIcons.ride,
-                    onTap: () => openTeamWebPage(
-                      context,
-                      TeamWebPaths.rideEdit(r.team.slug, r.slug),
-                    ),
+                    onTap: () =>
+                        context.push(Paths.rideEdit(r.team.slug, r.slug)),
                   ),
               ],
             ),
@@ -226,18 +224,19 @@ class DashboardTodo extends StatelessWidget {
         : '${ride.name}, ${AppFormatters.formatFullDate(at)}';
   }
 
-  static String _editPath(PublicationDto p) => switch (p) {
-    PublicationDtoRide(:final team, :final slug) => TeamWebPaths.rideEdit(
-      team.slug,
-      slug,
+  /// Reprendre un brouillon : une sortie dans l'éditeur de l'app (ledger
+  /// `MOB-76`), une publication ou un voyage sur le site.
+  static void _openEdit(BuildContext context, PublicationDto p) => switch (p) {
+    PublicationDtoRide(:final team, :final slug) => context.push(
+      Paths.rideEdit(team.slug, slug),
     ),
-    PublicationDtoPost(:final team, :final slug) => TeamWebPaths.postEdit(
-      team.slug,
-      slug,
+    PublicationDtoPost(:final team, :final slug) => openTeamWebPage(
+      context,
+      TeamWebPaths.postEdit(team.slug, slug),
     ),
-    PublicationDtoTrip(:final team, :final slug) => TeamWebPaths.tripEdit(
-      team.slug,
-      slug,
+    PublicationDtoTrip(:final team, :final slug) => openTeamWebPage(
+      context,
+      TeamWebPaths.tripEdit(team.slug, slug),
     ),
   };
 

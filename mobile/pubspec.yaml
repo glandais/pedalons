@@ -64,8 +64,13 @@ dependencies:
   # Local mirror of UI preferences (theme, locale, units, map style, list density)
   shared_preferences: ^2.5.6
 
-  # Avatar upload (POST /api/users/me/avatar)
+  # Avatar upload (POST /api/users/me/avatar), and a ride's logo and images in the
+  # ride editor (POST /api/teams/{slug}/assets, ledger MOB-76)
   image_picker: ^1.2.4
+
+  # A ride's attachments in the ride editor (any file the member picks, sent to
+  # POST /api/teams/{slug}/assets?assetType=ATTACHMENT, ledger MOB-76)
+  file_picker: ^13.1.0
 
   # Coarse location for the "around me" proximity filter
   geolocator: ^14.1.1
