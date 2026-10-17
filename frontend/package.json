@@ -33,7 +33,7 @@
     "i18n:status": "i18next-cli status",
     "i18n:check": "i18next-cli extract --ci --dry-run && i18next-cli lint && i18next-cli status",
     "generate-icons": "pwa-assets-generator --config pwa-assets.config.ts",
-    "check": "pnpm install && pnpm generate-api && pnpm generate-routes && pnpm generate-brand-colors && pnpm format && pnpm typecheck && pnpm lint && pnpm i18n:check && pnpm build"
+    "check": "pnpm install && pnpm generate-api && pnpm generate-routes && pnpm generate-brand-colors && pnpm format && pnpm typecheck && pnpm e2e:typecheck && pnpm lint && pnpm i18n:check && pnpm build"
   },
   "dependencies": {
     "@mantine/core": "^9.7.2",

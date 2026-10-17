@@ -114,12 +114,12 @@ const addPhoto = (page: Page, name: string, colour: [number, number, number]) =>
  * so the browser's lookup is answered here; what is under test is the form, the blur and the
  * sector, not the provider's data.
  */
-const RENNES: GeocodeResultDto = {
+const RENNES = {
   id: 'e2e-rennes',
   displayName: 'Rennes, Ille-et-Vilaine, Bretagne, France métropolitaine, France',
   lat: 48.1113387,
   lon: -1.6800198,
-}
+} satisfies GeocodeResultDto
 
 /** « 350,00 € » as Intl formats it in fr-FR (narrow no-break space before the sign). */
 const euros = (amount: number) =>
