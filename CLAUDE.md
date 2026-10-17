@@ -28,7 +28,7 @@ both clients: changing it in one place only makes them diverge silently.
 | Deployment, backups, restore (the runbook) | [docs/OPERATIONS.md](docs/OPERATIONS.md) |
 | What the product does, for whom | [docs/PRODUCT_SHEET.md](docs/PRODUCT_SHEET.md) |
 | Biketeam → Pédalons migration, team by team, server to server over HTTPS (contract with biketeam, operations) | [docs/plans/2026-09-22-biketeam-live-migration.md](docs/plans/2026-09-22-biketeam-live-migration.md) + [docs/MIGRATE_BIKETEAM.md](docs/MIGRATE_BIKETEAM.md) |
-| Monetisation plan (pricing tiers, Stripe, subscription tracking, per-team entitlements) — a proposal, nothing decided | [docs/plans/2026-10-17-monetisation.md](docs/plans/2026-10-17-monetisation.md) |
+| Monetisation plan (pricing tiers, annual invoicing through Qonto, subscription tracking, per-team entitlements) — a proposal, nothing decided | [docs/plans/2026-10-17-monetisation.md](docs/plans/2026-10-17-monetisation.md) |
 | The design brief the v2 came from (state *before* v2) | [docs/plans/archive/audit-ux/](docs/plans/archive/audit-ux/) |
 
 ### Task workflow: `LEDGER_NEXT` → `LEDGER_DONE`
