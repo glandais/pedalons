@@ -84,6 +84,14 @@ public class GpxPreview {
   @Column(name = "has_thumbnail", nullable = false)
   private boolean hasThumbnail;
 
+  /**
+   * Whether the track was drawn in the planner (from points) rather than read from an imported GPX
+   * file. Only a drawing is governed by the team's {@code enableRoutePlanner} when the preview
+   * becomes a route. Previews that predate the column are false: their origin is unknown.
+   */
+  @Column(name = "drawn", nullable = false)
+  private boolean drawn;
+
   @CreationTimestamp
   @Column(name = "created_at", nullable = false, updatable = false)
   private Instant createdAt;

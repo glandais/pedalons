@@ -13,7 +13,7 @@ import {
 import { Box, Button, Group, Loader, Menu, Modal, Select, Stack, Text, Title } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import type { GpsServiceType, GpxPreviewDto } from '@/api/dto'
-import { SurfaceType } from '@/api/dto'
+import { ErrorCode, SurfaceType } from '@/api/dto'
 import { createRouteFromPreview, useDeletePreview } from '@/api/endpoints/gpx-previews/gpx-previews'
 import { useListTeams } from '@/api/endpoints/teams/teams'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
@@ -23,6 +23,7 @@ import { paths } from '@/config/paths'
 import { useAuth } from '@/hooks/useAuth'
 import { useGpsConnections } from '@/hooks/useGpsConnections'
 import { useUnits } from '@/hooks/useUnits'
+import { apiErrorCode, ApiClientError } from '@/lib/apiError'
 import { defaultMedia } from '@/lib/apiUtils'
 
 interface GpxPreviewViewProps {
@@ -55,7 +56,15 @@ export function GpxPreviewView({ preview }: GpxPreviewViewProps) {
   )
   const teamOptions = (teams?.teams ?? [])
     .filter((team) => team.enableRoutes)
-    .map((team) => ({ value: team.slug, label: team.name }))
+    .map((team) => ({
+      value: team.slug,
+      // A drawn track only becomes a route where drawing is open (the backend refuses it with
+      // ROUTE_PLANNER_DISABLED otherwise). Disabled rather than hidden, so the user sees why a team
+      // they belong to is out of reach; an imported file goes anywhere.
+      disabled: preview.drawn && !team.enableRoutePlanner,
+      label: team.name,
+    }))
+  const hasClosedPlanner = teamOptions.some((option) => option.disabled)
 
   const handleSendToDevice = (serviceType: GpsServiceType) => {
     uploadPreview({ serviceType, previewId: preview.id })
@@ -74,14 +83,30 @@ export function GpxPreviewView({ preview }: GpxPreviewViewProps) {
 
     setIsSaving(true)
     try {
-      const route = await createRouteFromPreview(preview.id, selectedTeam, {
-        name: preview.name,
-        media: defaultMedia(),
-        surfaceType: SurfaceType.ROAD,
-        visibility: team.visibility,
-      })
+      const route = await createRouteFromPreview(
+        preview.id,
+        selectedTeam,
+        {
+          name: preview.name,
+          media: defaultMedia(),
+          surfaceType: SurfaceType.ROAD,
+          visibility: team.visibility,
+        },
+        // The global toast would blame the site for a refusal that comes from the team.
+        { skipErrorToast: true }
+      )
       notifications.show({ message: t('routes.notifications.created'), color: 'green' })
       navigate(paths.route(selectedTeam, route.slug))
+    } catch (e) {
+      const code = apiErrorCode(e)
+      if (!code) throw e
+      notifications.show({
+        message:
+          code === ErrorCode.ROUTE_PLANNER_DISABLED
+            ? t('gpxTools.preview.plannerClosedForTeam')
+            : t(`errors.api.${code}`, e instanceof ApiClientError ? e.error.errorDetails : {}),
+        color: 'red',
+      })
     } finally {
       setIsSaving(false)
     }
@@ -207,6 +232,7 @@ export function GpxPreviewView({ preview }: GpxPreviewViewProps) {
             value={selectedTeam}
             onChange={setSelectedTeam}
             nothingFoundMessage={t('gpxTools.preview.noTeam')}
+            description={hasClosedPlanner ? t('gpxTools.preview.drawnNeedsPlanner') : undefined}
             searchable
           />
           <Group justify="flex-end">

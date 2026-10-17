@@ -1,3 +1,4 @@
+import { forwardRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useControl } from 'react-map-gl/maplibre'
 import type { ControlPosition } from 'react-map-gl/maplibre'
@@ -42,7 +43,10 @@ export function MapControlGroup({ children, position = 'top-left' }: MapControlG
   return createPortal(children, control.getElement())
 }
 
-interface MapControlButtonProps {
+interface MapControlButtonProps extends Omit<
+  React.ComponentPropsWithoutRef<'button'>,
+  'children' | 'onClick' | 'disabled' | 'type'
+> {
   /** Tooltip and accessible name — mention the keyboard shortcut here when there is one. */
   label: string
   icon: React.ReactNode
@@ -59,22 +63,28 @@ interface MapControlButtonProps {
  * `.maplibregl-ctrl-group button` rules (and their anchor mirror in index.css), so these look
  * exactly like the zoom buttons above them on every map.
  */
-export function MapControlButton({
-  label,
-  icon,
-  onClick,
-  to,
-  active = false,
-  disabled = false,
-}: MapControlButtonProps) {
+export const MapControlButton = forwardRef<
+  HTMLButtonElement & HTMLAnchorElement,
+  MapControlButtonProps
+>(function MapControlButton(
+  { label, icon, onClick, to, active = false, disabled = false, ...rest },
+  ref
+) {
   return (
     <Tooltip label={label} position="right" withArrow>
       {to ? (
-        <PrefetchLink to={to} aria-label={label} className={active ? 'active' : undefined}>
+        <PrefetchLink
+          ref={ref as React.Ref<HTMLAnchorElement>}
+          to={to}
+          aria-label={label}
+          className={active ? 'active' : undefined}
+        >
           {icon}
         </PrefetchLink>
       ) : (
         <button
+          {...rest}
+          ref={ref}
           type="button"
           className={active ? 'active' : undefined}
           onClick={onClick}
@@ -87,4 +97,4 @@ export function MapControlButton({
       )}
     </Tooltip>
   )
-}
+})

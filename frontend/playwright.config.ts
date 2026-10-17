@@ -12,8 +12,8 @@ export default defineConfig({
   testMatch: '**/*.e2e.ts',
   // E2E_NO_ROUTING: a stack without a Stadia Maps key — scripts/e2e.sh sets it when neither the
   // environment nor the workstation's .env has STADIAMAPS_API_KEY (the CI gets it from a secret).
-  // Only the planner draws through POST /api/router.
-  testIgnore: process.env.E2E_NO_ROUTING ? ['**/gpx-planner.e2e.ts'] : [],
+  // It no longer skips a file: gpx-planner.e2e.ts simulates the router in every test but one, and
+  // that one falls back to the simulation without a key.
   globalSetup: './e2e/global-setup.ts',
   // Wiped at the start of every run: parallel runs need one each (E2E_OUTPUT=/tmp/e2e-mine).
   outputDir: process.env.E2E_OUTPUT ?? './e2e/.results',

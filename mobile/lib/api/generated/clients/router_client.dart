@@ -17,7 +17,7 @@ abstract class RouterClient {
 
   /// Calculate route.
   ///
-  /// Calculate a route between two points using the Stadia Maps routing API.
+  /// Calculate a route between two points using the Stadia Maps routing API. Each call is billed against a monthly quota, so the checks come first: with teamSlug, the caller must be allowed to create routes in that team and the team must have the route planner enabled; without it, the domain's GPX planner must be enabled. Otherwise ROUTE_PLANNER_DISABLED. Routing failures have their own codes: ROUTING_SEGMENT_TOO_LONG and ROUTING_NO_ROUTE (400), ROUTING_QUOTA_EXCEEDED and ROUTING_UNAVAILABLE (503).
   ///
   /// [body] - Name not received - field will be skipped.
   @POST('/api/router')

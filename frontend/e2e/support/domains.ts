@@ -406,29 +406,63 @@ const PLANNER_OWNER = {
   password: 'e2e-planner-password',
 }
 
-let plannerSession: Promise<{ owner: AuthResponse; team: TeamDetailDto }> | undefined
+let plannerSession:
+  Promise<{ owner: AuthResponse & { password: string }; team: TeamDetailDto }> | undefined
 
-/** The planner's user, logged in on {@link PLANNER_HOST} — signed up there on first use. */
-async function logInPlannerOwner(): Promise<AuthResponse> {
-  const login = () => loginOn(PLANNER_HOST, PLANNER_OWNER.email, PLANNER_OWNER.password)
+/**
+ * The planner's user, logged in on {@link PLANNER_HOST} — signed up there on first use. It carries
+ * its password, so that signInOn() gives each browser context a session of its own instead of
+ * handing them all the worker's one, whose token rotates under every context that refreshes it
+ * (e2e/README.md, How sessions work).
+ */
+async function logInPlannerOwner(): Promise<AuthResponse & { password: string }> {
+  const { password } = PLANNER_OWNER
+  const login = () => retryOn429(() => loginOn(PLANNER_HOST, PLANNER_OWNER.email, password))
   try {
-    return await login()
+    return { ...(await login()), password }
   } catch (e) {
     if (!(e instanceof ApiError) || e.status !== 400) throw e
   }
   try {
-    return await registerOn(PLANNER_HOST, PLANNER_OWNER)
+    return { ...(await registerOn(PLANNER_HOST, PLANNER_OWNER)), password }
   } catch (e) {
     if (!(e instanceof ApiError)) throw e
-    return login()
+    return { ...(await login()), password }
   }
+}
+
+/**
+ * Runs a password login again while it gets 429. Every planner test logs the planner's user in, from
+ * every worker at once, and the password throttle counts an admitted login as a failure until it
+ * succeeds (docs/LEDGER_*.md SEC-36): past five logins in flight for one address, the next is
+ * refused although none fails. A refused login records nothing, so it is simply tried again a
+ * moment later; any other error is thrown.
+ */
+async function retryOn429<T>(login: () => Promise<T>): Promise<T> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await login()
+    } catch (e) {
+      if (!(e instanceof ApiError) || e.status !== 429 || attempt === 8) throw e
+      await new Promise((resolve) => setTimeout(resolve, 250 * attempt))
+    }
+  }
+}
+
+/** Signs `context` in as the planner's user, with a session of its own (see retryOn429). */
+export async function signInPlanner(context: BrowserContext) {
+  const { owner } = await plannerSite()
+  await retryOn429(() => signInOn(context, PLANNER_PIN_HOST, owner))
 }
 
 /**
  * The planner's site, ready (cached per worker): the domain with its planner open, its user, the
  * team located in Paris, and the alias pinned to it.
  */
-export function plannerSite(): Promise<{ owner: AuthResponse; team: TeamDetailDto }> {
+export function plannerSite(): Promise<{
+  owner: AuthResponse & { password: string }
+  team: TeamDetailDto
+}> {
   plannerSession ??= (async () => {
     const admin = await roleSession('admin')
     const settings = {

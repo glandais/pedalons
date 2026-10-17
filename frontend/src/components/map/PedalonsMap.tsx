@@ -1,4 +1,4 @@
-import { forwardRef, useMemo } from 'react'
+import { forwardRef, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import Map, { NavigationControl } from 'react-map-gl/maplibre'
 import type { MapProps, MapRef } from 'react-map-gl/maplibre'
@@ -8,6 +8,7 @@ import { Terrain3D } from './Terrain3D'
 import { MapAttribution } from './MapAttribution'
 import { RouteArrowImage } from './RouteArrows'
 import { MapStyleSwitcher, type MapStyleSwitcherProps } from './MapStyleSwitcher'
+import { MapPanelContext } from './mapPanelState'
 import { useMapStyle } from '@/hooks/useMapStyle'
 
 /**
@@ -23,6 +24,12 @@ type PedalonsMapProps = Omit<MapProps, 'mapLib' | 'mapStyle' | 'style'> &
 export const PedalonsMap = forwardRef<MapRef, PedalonsMapProps>(
   ({ children, traces, onTraceToggle, ...props }, ref) => {
     const { t } = useTranslation()
+    // One open panel at a time across the control column (basemap, profile, help…).
+    const [openPanelId, setOpenPanelId] = useState<string | null>(null)
+    const panelState = useMemo(
+      () => ({ openId: openPanelId, setOpenId: setOpenPanelId }),
+      [openPanelId]
+    )
     const {
       styleId,
       styles,
@@ -52,37 +59,39 @@ export const PedalonsMap = forwardRef<MapRef, PedalonsMapProps>(
     )
 
     return (
-      <Map
-        ref={ref}
-        mapLib={maplibregl}
-        mapStyle={style}
-        locale={locale}
-        style={{ width: '100%', height: '100%' }}
-        // Off as a map *option*, on as a child: `MapAttribution` has to rebuild the control when the
-        // basemap changes, which the built-in one — constructed once with the map — cannot do.
-        attributionControl={false}
-        {...props}
-      >
-        <NavigationControl position="top-left" />
-        <MapAttribution />
-        <Terrain3D source={terrainSource} terrain={terrain3d} hillshade={hillshade} />
-        {/* Every trace on the site shows its direction (`routeArrowLayout`): the image is ready on
+      <MapPanelContext.Provider value={panelState}>
+        <Map
+          ref={ref}
+          mapLib={maplibregl}
+          mapStyle={style}
+          locale={locale}
+          style={{ width: '100%', height: '100%' }}
+          // Off as a map *option*, on as a child: `MapAttribution` has to rebuild the control when the
+          // basemap changes, which the built-in one — constructed once with the map — cannot do.
+          attributionControl={false}
+          {...props}
+        >
+          <NavigationControl position="top-left" />
+          <MapAttribution />
+          <Terrain3D source={terrainSource} terrain={terrain3d} hillshade={hillshade} />
+          {/* Every trace on the site shows its direction (`routeArrowLayout`): the image is ready on
           every map rather than registered by each page that draws one. */}
-        <RouteArrowImage />
-        <MapStyleSwitcher
-          styles={styles}
-          currentStyleId={styleId}
-          onStyleChange={setStyleId}
-          terrain3d={terrain3d}
-          hillshade={hillshade}
-          // No served elevation source, no relief controls: the switches would toggle nothing.
-          onTerrain3DChange={terrainSource ? setTerrain3d : undefined}
-          onHillshadeChange={terrainSource ? setHillshade : undefined}
-          traces={traces}
-          onTraceToggle={onTraceToggle}
-        />
-        {children}
-      </Map>
+          <RouteArrowImage />
+          <MapStyleSwitcher
+            styles={styles}
+            currentStyleId={styleId}
+            onStyleChange={setStyleId}
+            terrain3d={terrain3d}
+            hillshade={hillshade}
+            // No served elevation source, no relief controls: the switches would toggle nothing.
+            onTerrain3DChange={terrainSource ? setTerrain3d : undefined}
+            onHillshadeChange={terrainSource ? setHillshade : undefined}
+            traces={traces}
+            onTraceToggle={onTraceToggle}
+          />
+          {children}
+        </Map>
+      </MapPanelContext.Provider>
     )
   }
 )

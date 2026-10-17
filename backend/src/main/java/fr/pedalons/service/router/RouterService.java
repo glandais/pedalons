@@ -4,11 +4,17 @@ import static org.geolatte.geom.builder.DSL.*;
 import static org.geolatte.geom.crs.CoordinateReferenceSystems.WGS84;
 import static org.geolatte.geom.crs.CoordinateReferenceSystems.addVerticalSystem;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.pedalons.common.exception.BusinessException;
+import fr.pedalons.common.exception.PedalonsException;
+import fr.pedalons.common.exception.ServiceUnavailableException;
 import fr.pedalons.dto.error.ErrorCode;
 import fr.pedalons.dto.router.request.RouterProfile;
 import fr.pedalons.dto.router.request.RouterRequest;
 import fr.pedalons.dto.router.response.RouterResponse;
+import fr.pedalons.enums.ActionType;
+import fr.pedalons.enums.EntityType;
 import fr.pedalons.infrastructure.valhalla.Polyline6Decoder;
 import fr.pedalons.infrastructure.valhalla.StadiaMapsClient;
 import fr.pedalons.infrastructure.valhalla.ValhallaLocation;
@@ -16,7 +22,10 @@ import fr.pedalons.infrastructure.valhalla.ValhallaRequest;
 import fr.pedalons.infrastructure.valhalla.ValhallaResponse;
 import fr.pedalons.service.route.GpxLimits;
 import fr.pedalons.service.route.GpxPipeline;
+import fr.pedalons.service.security.PedalonsQueryContext;
+import fr.pedalons.service.security.SecurityVerifier;
 import fr.pedalons.service.security.annotation.Logged;
+import fr.pedalons.service.team.TeamService;
 import io.github.glandais.elevation.CoordinatesElevation;
 import io.github.glandais.elevation.LatLonElevation;
 import io.github.glandais.engine.path.Path;
@@ -25,15 +34,19 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.geolatte.geom.G3D;
 import org.geolatte.geom.LineString;
 import org.geolatte.geom.crs.CoordinateReferenceSystem;
 import org.geolatte.geom.crs.LinearUnit;
 import org.jboss.logging.Logger;
+import org.jspecify.annotations.Nullable;
 
 @ApplicationScoped
 public class RouterService {
@@ -42,27 +55,41 @@ public class RouterService {
   private static final CoordinateReferenceSystem<G3D> WGS84_3D =
       addVerticalSystem(WGS84, G3D.class, LinearUnit.METER);
 
+  /** Valhalla "Path distance exceeds the max distance limit". */
+  private static final int ERROR_PATH_DISTANCE_EXCEEDED = 154;
+
+  /** Valhalla 170, 171, 441, 442: see {@link #toRoutingException}. */
+  private static final Set<Integer> NO_ROUTE_CODES = Set.of(170, 171, 441, 442);
+
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
   @Inject @RestClient StadiaMapsClient stadiaMapsClient;
 
   @Inject GpxPipeline gpxPipeline;
 
+  @Inject PedalonsQueryContext pedalonsContext;
+
+  @Inject SecurityVerifier securityVerifier;
+
+  @Inject TeamService teamService;
+
   @Logged
   public RouterResponse getRoute(RouterRequest routerRequest) {
+    // Every check comes before the call to Stadia Maps, which is billed against a monthly quota.
+    checkPlannerAllowed(routerRequest.teamSlug());
     ValhallaRequest valhallaRequest = getValhallaRequest(routerRequest);
 
     ValhallaResponse response;
     try {
       response = stadiaMapsClient.route(valhallaRequest);
     } catch (WebApplicationException e) {
-      // Status only: the URL and headers carry the API key. A 429 (spent Stadia Maps quota) or a
-      // 5xx has no code of its own in ErrorCode; the planner shows a generic failure either way.
-      LOG.warnv("Stadia Maps routing failed with status {0}", e.getResponse().getStatus());
-      throw new BusinessException(ErrorCode.UNKNOWN);
+      throw toRoutingException(e);
     } catch (ProcessingException e) {
       // A remote API behind a 15 s read timeout: DNS, TLS or a timeout land here, not above. The
-      // message names the host at most, never the header.
+      // exception class only, and no cause on the 503: its message may carry the host and path.
+      // GlobalExceptionMapper logs a ServiceUnavailableException as one WARN line, without stack.
       LOG.warnv("Stadia Maps routing unreachable: {0}", e.getClass().getSimpleName());
-      throw new BusinessException(ErrorCode.UNKNOWN);
+      throw new ServiceUnavailableException(ErrorCode.ROUTING_UNAVAILABLE);
     }
 
     if (response.trip() == null || response.trip().legs().isEmpty()) {
@@ -98,6 +125,77 @@ public class RouterService {
     double ascend = path.getReportedElevationGain();
 
     return new RouterResponse(filteredRoute, dist, ascend);
+  }
+
+  /**
+   * Who may draw. With a team, the caller must be allowed to create routes in it (the very rule of
+   * {@code RouteService.createRoute}, through its {@code RouteAccessChecker}) and the team must have
+   * its route planner on; without one, the domain's GPX planner must be on. The team is looked up
+   * in the current domain only, so a slug of another domain is a 404 like anywhere else. Rights are
+   * checked before the flag, so a non-member learns nothing about the team's settings.
+   */
+  private void checkPlannerAllowed(@Nullable String teamSlug) {
+    if (teamSlug == null || teamSlug.isBlank()) {
+      if (!pedalonsContext.getDomain().isEnableGpxPlanner()) {
+        throw new BusinessException(ErrorCode.ROUTE_PLANNER_DISABLED);
+      }
+      return;
+    }
+    securityVerifier.verifyAccess(EntityType.ROUTE, ActionType.CREATE, List.of(teamSlug));
+    if (!teamService.getTeam(teamSlug).isEnableRoutePlanner()) {
+      throw new BusinessException(ErrorCode.ROUTE_PLANNER_DISABLED);
+    }
+  }
+
+  /**
+   * Maps a Stadia Maps error to a code the planner can tell apart. Only the status and the
+   * Valhalla {@code error_code} are logged: the URL and the headers carry the API key.
+   *
+   * <p>The codes come from the Valhalla route API reference ("Internal error codes and
+   * conditions", https://valhalla.github.io/valhalla/api/route/api-reference/), which Stadia Maps
+   * relays in a JSON body {@code {"error_code": 154, "error": "...", "status_code": 400}}: 154 "Path
+   * distance exceeds the max distance limit"; 170 "Locations are in unconnected regions", 171 "No
+   * suitable edges near location", 441 "Location is unreachable" and 442 "No path could be found
+   * for input" all mean there is no route. A 429 is the spent monthly quota (Stadia Maps
+   * documentation, "Rate limits").
+   */
+  private static PedalonsException toRoutingException(WebApplicationException e) {
+    int status = e.getResponse().getStatus();
+    int valhallaCode = readValhallaErrorCode(e.getResponse());
+    LOG.warnv("Stadia Maps routing failed with status {0}, error_code {1}", status, valhallaCode);
+    if (status == 429) {
+      return new ServiceUnavailableException(ErrorCode.ROUTING_QUOTA_EXCEEDED);
+    }
+    if (status == 400) {
+      if (valhallaCode == ERROR_PATH_DISTANCE_EXCEEDED) {
+        return new BusinessException(ErrorCode.ROUTING_SEGMENT_TOO_LONG, e);
+      }
+      if (NO_ROUTE_CODES.contains(valhallaCode)) {
+        return new BusinessException(ErrorCode.ROUTING_NO_ROUTE, e);
+      }
+      return new BusinessException(ErrorCode.UNKNOWN, e);
+    }
+    // 5xx, and anything unexpected (401/403 on a bad key, 404): the planner is out of order for
+    // the caller, who did nothing wrong.
+    return new ServiceUnavailableException(ErrorCode.ROUTING_UNAVAILABLE);
+  }
+
+  /** The Valhalla {@code error_code} of an error body, or -1 when it is empty or not JSON. */
+  private static int readValhallaErrorCode(Response response) {
+    try {
+      if (!response.hasEntity()) {
+        return -1;
+      }
+      String body = response.readEntity(String.class);
+      if (body == null || body.isBlank()) {
+        return -1;
+      }
+      JsonNode code = OBJECT_MAPPER.readTree(body).path("error_code");
+      return code.isInt() ? code.asInt() : -1;
+    } catch (RuntimeException | IOException ex) {
+      // Empty, truncated or HTML body: the status alone decides.
+      return -1;
+    }
   }
 
   private static ValhallaRequest getValhallaRequest(RouterRequest routerRequest) {

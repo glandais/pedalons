@@ -9,7 +9,8 @@ import {
   MarkerDragEvent,
 } from 'react-map-gl/maplibre'
 import { IconTrash } from '@tabler/icons-react'
-import { ActionIcon, Box, Group, Loader, Skeleton, Stack, Text } from '@mantine/core'
+import { ActionIcon, Box, Group, Loader, Menu, Skeleton, Stack, Text } from '@mantine/core'
+import { useMediaMatch } from '@/hooks/useResponsive'
 import { PedalonsMap } from '../map/PedalonsMap'
 import { HideTrackControl } from '../map/HideTrackControl'
 import { MapSearchControl } from '../map/MapSearchControl'
@@ -19,6 +20,7 @@ import { KmMarkersLayer } from '../map/MapMarkers'
 import { routeArrowLayout } from '../map/routeArrowLayout'
 import { UndoRedoControl } from './UndoRedoControl'
 import { RouterProfileSelector } from './RouterProfileSelector'
+import { PlannerHelpControl } from './PlannerHelpControl'
 import { RoutePlannerMiniMap } from './RoutePlannerMiniMap'
 import { useUnits } from '../../hooks/useUnits'
 import { useHideTrackKey } from '../../hooks/useHideTrackKey'
@@ -31,6 +33,9 @@ import type { GeoPoint } from '@/api/dto'
 // maplibre-gl CSS is provided by maplibre-theme in index.css
 import { RoutePoint } from '@/lib/planner'
 import { getOverlayBg } from '@/lib/colors'
+import { isEditableTarget } from '@/lib/editableTarget'
+import { isApplePlatform } from '@/lib/platform'
+import { panelJustDismissed } from '@/components/map/mapPanelState'
 import { around } from 'geokdbush'
 
 const DEFAULT_ZOOM = 12
@@ -39,9 +44,33 @@ interface RoutePlannerProps {
   onPointsChange: (points: GeoPoint[]) => void
   initialTrack?: number[][] // [lng, lat, ele, dist][] from existing route
   teamLocation?: [number, number] // [lng, lat] from team geometry
+  /** Team the route is drawn for (team route editor); absent from the GPX tools. Sent to the router. */
+  teamSlug?: string
 }
 
-export function RoutePlanner({ onPointsChange, initialTrack, teamLocation }: RoutePlannerProps) {
+// The press is cancelled once the finger moves as far as maplibre needs to start a marker drag
+// (the map's default clickTolerance), so the menu never opens on a press that became a drag.
+const LONG_PRESS_MOVE_TOLERANCE_PX = 3
+/** After a long press opens the menu, the click its release may still produce is ignored this long. */
+const LONG_PRESS_CLICK_GRACE_MS = 700
+
+/** A gesture came from a finger (or pen) when its event says so, whatever the device. */
+function isTouchGesture(event: Event | undefined): boolean {
+  if (!event) return false
+  if (typeof TouchEvent !== 'undefined' && event instanceof TouchEvent) return true
+  const pointerType = (event as PointerEvent).pointerType
+  return pointerType === 'touch' || pointerType === 'pen'
+}
+
+/** Pointer type of the press that started the gesture; `click` itself does not always carry it. */
+type PointerKind = 'mouse' | 'touch' | 'pen' | ''
+
+export function RoutePlanner({
+  onPointsChange,
+  initialTrack,
+  teamLocation,
+  teamSlug,
+}: RoutePlannerProps) {
   const { t } = useTranslation()
   const { distance, elevation } = useUnits()
   const colorScheme = useResolvedColorScheme()
@@ -65,7 +94,7 @@ export function RoutePlanner({ onPointsChange, initialTrack, teamLocation }: Rou
     canRedo,
     undo,
     redo,
-  } = useRoutePlanner({ initialTrack })
+  } = useRoutePlanner({ initialTrack, teamSlug })
 
   const getMapZoom = useCallback(() => mapRef.current?.getZoom() ?? DEFAULT_ZOOM, [])
 
@@ -162,8 +191,10 @@ export function RoutePlanner({ onPointsChange, initialTrack, teamLocation }: Rou
     idx: number
   } | null>(null)
 
-  // Touch device detection
-  const [isTouchDevice] = useState(() => typeof window !== 'undefined' && 'ontouchstart' in window)
+  // Layout (mini-map, help text, sizes) follows the primary pointer. It says nothing about which
+  // device fires a given gesture: a hybrid laptop keeps both mouse and finger, so each gesture
+  // decides from its own event (see isTouchGesture).
+  const isCoarsePointer = useMediaMatch('(pointer: coarse)')
 
   // Long-press context menu state
   const [contextMenu, setContextMenu] = useState<{
@@ -173,6 +204,9 @@ export function RoutePlanner({ onPointsChange, initialTrack, teamLocation }: Rou
   } | null>(null)
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const longPressTouchStart = useRef<{ x: number; y: number } | null>(null)
+
+  const lastPointerType = useRef<PointerKind>('')
+  const longPressOpenedAt = useRef(0)
 
   const clearLongPress = useCallback(() => {
     if (longPressTimer.current) {
@@ -191,6 +225,7 @@ export function RoutePlanner({ onPointsChange, initialTrack, teamLocation }: Rou
         const x = rect ? touch.clientX - rect.left : touch.clientX
         const y = rect ? touch.clientY - rect.top : touch.clientY
         setContextMenu({ x, y, idx })
+        longPressOpenedAt.current = Date.now()
         longPressTimer.current = null
       }, 500)
     },
@@ -203,57 +238,71 @@ export function RoutePlanner({ onPointsChange, initialTrack, teamLocation }: Rou
       const touch = event.touches[0]
       const dx = touch.clientX - longPressTouchStart.current.x
       const dy = touch.clientY - longPressTouchStart.current.y
-      if (Math.sqrt(dx * dx + dy * dy) > 10) {
+      if (Math.sqrt(dx * dx + dy * dy) >= LONG_PRESS_MOVE_TOLERANCE_PX) {
         clearLongPress()
       }
     },
     [clearLongPress]
   )
 
-  const handleMarkerTouchEnd = useCallback(() => {
-    clearLongPress()
-  }, [clearLongPress])
+  const handleMarkerTouchEnd = useCallback(
+    (event: React.TouchEvent) => {
+      // The finger lifted off a press that opened the menu: cancel the click the browser would
+      // synthesise from it, which would reach the map and close the menu it just opened.
+      if (longPressTouchStart.current && !longPressTimer.current) event.preventDefault()
+      clearLongPress()
+    },
+    [clearLongPress]
+  )
 
   const handleContextMenuDelete = useCallback(() => {
     if (!contextMenu) return
-    removeControlPoint(contextMenu.idx, ctrlKeyRef.current, getMapZoom())
+    removeControlPoint(contextMenu.idx, directKeyRef.current, getMapZoom())
     setContextMenu(null)
   }, [contextMenu, removeControlPoint, getMapZoom])
 
-  // Track Ctrl key state for direct line mode + undo/redo shortcuts
-  const ctrlKeyRef = useRef(false)
+  // Straight-line mode: held while Ctrl OR Alt is down (Ctrl+click is a right click on macOS, hence
+  // Alt). Read from the modifier flags of every key event, so a missed keyup cannot leave it stuck,
+  // and cleared when the window loses focus (Alt-Tab, a native dialog) since no keyup follows then.
+  // Undo/redo shortcuts live here too, but never fire from a text field (native text undo there).
+  const directKeyRef = useRef(false)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Control') ctrlKeyRef.current = true
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+      directKeyRef.current = e.ctrlKey || e.altKey
+      if (isEditableTarget(e.target)) return
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
         e.preventDefault()
-        undo()
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && e.shiftKey) {
-        e.preventDefault()
-        redo()
+        if (e.shiftKey) redo()
+        else undo()
       }
     }
     const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.key === 'Control') ctrlKeyRef.current = false
+      directKeyRef.current = e.ctrlKey || e.altKey
+    }
+    const handleBlur = () => {
+      directKeyRef.current = false
     }
     window.addEventListener('keydown', handleKeyDown)
     window.addEventListener('keyup', handleKeyUp)
+    window.addEventListener('blur', handleBlur)
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
       window.removeEventListener('keyup', handleKeyUp)
+      window.removeEventListener('blur', handleBlur)
     }
   }, [undo, redo])
 
   const handleMarkerDragStart = useCallback(
     (idx: number) => (event: MarkerDragEvent) => {
+      clearLongPress()
+      setContextMenu(null)
       setDraggingMarker({ idx, lng: event.lngLat.lng, lat: event.lngLat.lat })
       const zoom = getMapZoom()
       setStartDragPoint(findAnchorStartPoint(route, idx, zoom))
       setEndDragPoint(findAnchorEndPoint(route, idx, zoom))
       setHoverPoint(null)
     },
-    [route, getMapZoom]
+    [route, getMapZoom, clearLongPress]
   )
 
   const handleMarkerDrag = useCallback(
@@ -271,7 +320,7 @@ export function RoutePlanner({ onPointsChange, initialTrack, teamLocation }: Rou
         startDragPoint,
         { lng: event.lngLat.lng, lat: event.lngLat.lat },
         endDragPoint,
-        ctrlKeyRef.current
+        directKeyRef.current
       )
       setDraggingMarker(null)
       setStartDragPoint(undefined)
@@ -283,14 +332,34 @@ export function RoutePlanner({ onPointsChange, initialTrack, teamLocation }: Rou
   const handleMarkerRightClick = useCallback(
     (index: number) => (event: React.MouseEvent) => {
       event.preventDefault()
-      removeControlPoint(index, ctrlKeyRef.current, getMapZoom())
+      // A long press on a finger fires a native contextmenu too: the long-press menu handles it,
+      // deleting here would remove the point (a billed request) under the menu that is opening.
+      const native = event.nativeEvent as PointerEvent
+      if (
+        isTouchGesture(native) ||
+        longPressTouchStart.current !== null ||
+        Date.now() - longPressOpenedAt.current < 1000
+      ) {
+        return
+      }
+      // macOS turns Ctrl+click into a right click: that is the straight-line gesture, not a delete.
+      if (isApplePlatform() && event.ctrlKey && native.button === 0) return
+      removeControlPoint(index, directKeyRef.current, getMapZoom())
     },
     [removeControlPoint, getMapZoom]
   )
 
   const handleMapClick = useCallback(
     (event: MapMouseEvent) => {
-      // Close context menu on any map click
+      // One routing operation at a time: clicks during a calculation are dropped
+      if (isLoading) return
+
+      // The press that dismissed a map panel is not a point to add
+      if (panelJustDismissed()) return
+
+      // Close context menu on any map click — but not on the click a long press ends with, should
+      // the browser still emit one (touchend's preventDefault is the first line of defence)
+      if (contextMenu && Date.now() - longPressOpenedAt.current < LONG_PRESS_CLICK_GRACE_MS) return
       if (contextMenu) {
         setContextMenu(null)
         return
@@ -299,7 +368,11 @@ export function RoutePlanner({ onPointsChange, initialTrack, teamLocation }: Rou
       if (hoverPoint) return
 
       // On touch: check if tap is near the route line for insertion
-      if (isTouchDevice && mapRef.current && routeGeoJson && route.points.length > 0) {
+      const clickType = (event.originalEvent as PointerEvent | undefined)?.pointerType
+      const fromFinger =
+        isTouchGesture(event.originalEvent) ||
+        (!clickType && (lastPointerType.current === 'touch' || lastPointerType.current === 'pen'))
+      if (fromFinger && mapRef.current && routeGeoJson && route.points.length > 0) {
         const TOUCH_BUFFER_PX = 25
         const bbox: [[number, number], [number, number]] = [
           [event.point.x - TOUCH_BUFFER_PX, event.point.y - TOUCH_BUFFER_PX],
@@ -321,7 +394,7 @@ export function RoutePlanner({ onPointsChange, initialTrack, teamLocation }: Rou
         }
       }
 
-      addControlPoint({ lng: event.lngLat.lng, lat: event.lngLat.lat }, ctrlKeyRef.current)
+      addControlPoint({ lng: event.lngLat.lng, lat: event.lngLat.lat }, directKeyRef.current)
     },
     [
       addControlPoint,
@@ -331,13 +404,13 @@ export function RoutePlanner({ onPointsChange, initialTrack, teamLocation }: Rou
       route,
       insertControlPoint,
       getMapZoom,
-      isTouchDevice,
+      isLoading,
     ]
   )
 
   const handleMouseMove = useCallback(
     (event: MapMouseEvent) => {
-      if (!isTouchDevice) {
+      if (!isCoarsePointer && !isTouchGesture(event.originalEvent)) {
         setCursorPosition({ lng: event.lngLat.lng, lat: event.lngLat.lat })
       }
 
@@ -388,7 +461,7 @@ export function RoutePlanner({ onPointsChange, initialTrack, teamLocation }: Rou
 
       setHoverPoint(null)
     },
-    [route, routeGeoJson, draggingGhost, draggingMarker, controlPoints, isTouchDevice]
+    [route, routeGeoJson, draggingGhost, draggingMarker, controlPoints, isCoarsePointer]
   )
 
   const handleMouseLeave = useCallback(() => {
@@ -399,7 +472,7 @@ export function RoutePlanner({ onPointsChange, initialTrack, teamLocation }: Rou
   const handleMapMouseDown = useCallback(
     (event: MapMouseEvent) => {
       if (event.originalEvent.button !== 0) return
-      if (!hoverPoint) return
+      if (!hoverPoint || isLoading) return
 
       event.preventDefault()
 
@@ -413,7 +486,7 @@ export function RoutePlanner({ onPointsChange, initialTrack, teamLocation }: Rou
       setEndDragPoint(findAnchorEndPoint(route, hoverPoint.idx, zoom))
       setHoverPoint(null)
     },
-    [hoverPoint, getMapZoom, route]
+    [hoverPoint, getMapZoom, route, isLoading]
   )
 
   const handleMouseUp = useCallback(() => {
@@ -422,7 +495,7 @@ export function RoutePlanner({ onPointsChange, initialTrack, teamLocation }: Rou
         startDragPoint,
         { lng: draggingGhost.lng, lat: draggingGhost.lat },
         endDragPoint,
-        ctrlKeyRef.current
+        directKeyRef.current
       )
       setDraggingGhost(null)
       setStartDragPoint(undefined)
@@ -533,7 +606,13 @@ export function RoutePlanner({ onPointsChange, initialTrack, teamLocation }: Rou
           )}
         </Group>
         {controlPoints.length > 0 && (
-          <ActionIcon variant="subtle" color="gray" onClick={clearRoute} title={t('planner.clear')}>
+          <ActionIcon
+            variant="subtle"
+            color="gray"
+            onClick={clearRoute}
+            title={t('planner.clear')}
+            aria-label={t('planner.clear')}
+          >
             <IconTrash size={14} />
           </ActionIcon>
         )}
@@ -542,6 +621,9 @@ export function RoutePlanner({ onPointsChange, initialTrack, teamLocation }: Rou
       {/* Map */}
       <Box
         ref={mapContainerRef}
+        onPointerDownCapture={(e: React.PointerEvent) => {
+          lastPointerType.current = e.pointerType as PointerKind
+        }}
         pos="relative"
         className={colorScheme === 'dark' ? 'dark' : undefined}
         style={{ flex: 1 }}
@@ -559,13 +641,23 @@ export function RoutePlanner({ onPointsChange, initialTrack, teamLocation }: Rou
             onMouseLeave={handleMouseLeave}
             onMouseUp={handleMouseUp}
             interactiveLayerIds={routeGeoJson ? ['route-line'] : []}
-            cursor={draggingGhost ? 'grabbing' : hoverPoint ? 'pointer' : 'crosshair'}
+            cursor={
+              isLoading
+                ? 'progress'
+                : draggingGhost || draggingMarker
+                  ? 'grabbing'
+                  : hoverPoint
+                    ? 'pointer'
+                    : 'crosshair'
+            }
           >
             <MapSearchControl />
 
             <UndoRedoControl canUndo={canUndo} canRedo={canRedo} onUndo={undo} onRedo={redo} />
 
             <HideTrackControl hidden={trackHidden} onToggle={toggleTrackHidden} />
+
+            <PlannerHelpControl />
 
             <RouterProfileSelector
               currentProfile={routerProfile}
@@ -649,7 +741,7 @@ export function RoutePlanner({ onPointsChange, initialTrack, teamLocation }: Rou
                       longitude={lng}
                       latitude={lat}
                       anchor="center"
-                      draggable
+                      draggable={!isLoading}
                       onDragStart={handleMarkerDragStart(point.idx)}
                       onDrag={handleMarkerDrag(point.idx)}
                       onDragEnd={handleMarkerDragEnd()}
@@ -659,11 +751,20 @@ export function RoutePlanner({ onPointsChange, initialTrack, teamLocation }: Rou
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          cursor: 'grab',
+                          cursor: isLoading ? 'progress' : isDragging ? 'grabbing' : 'grab',
                           width: 44,
                           height: 44,
                           pointerEvents: 'auto',
                         }}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e: React.KeyboardEvent) => {
+                          if ((e.key === 'Delete' || e.key === 'Backspace') && !isLoading) {
+                            e.preventDefault()
+                            removeControlPoint(point.idx, directKeyRef.current, getMapZoom())
+                          }
+                        }}
+                        aria-label={t('planner.marker.label', { index: index + 1 })}
                         onContextMenu={handleMarkerRightClick(point.idx)}
                         onTouchStart={handleMarkerTouchStart(point.idx)}
                         onTouchMove={handleMarkerTouchMove}
@@ -755,39 +856,64 @@ export function RoutePlanner({ onPointsChange, initialTrack, teamLocation }: Rou
           </PedalonsMap>
         )}
 
-        {/* Long-press context menu for touch devices */}
-        {contextMenu && (
+        {/* Calculation in progress: the map is locked until the router answers */}
+        {isLoading && (
           <Box
             pos="absolute"
-            px="xs"
-            py={4}
-            bg="var(--mantine-color-body)"
+            top="50%"
+            left="50%"
+            p="xs"
+            bg={getOverlayBg(colorScheme)}
+            role="status"
+            aria-label={t('planner.calculating')}
             style={{
-              left: contextMenu.x,
-              top: contextMenu.y,
-              transform: 'translate(-50%, -120%)',
-              zIndex: 10,
+              transform: 'translate(-50%, -50%)',
               borderRadius: 'var(--mantine-radius-md)',
-              boxShadow: 'var(--mantine-shadow-md)',
-              border: '1px solid var(--mantine-color-default-border)',
+              boxShadow: 'var(--mantine-shadow-lg)',
+              pointerEvents: 'none',
+              zIndex: 10,
             }}
           >
-            <Group
-              gap="xs"
-              style={{ cursor: 'pointer' }}
-              c="red"
-              onClick={handleContextMenuDelete}
-              px="xs"
-              py={6}
-            >
-              <IconTrash size={16} />
-              <Text size="sm">{t('planner.menu.delete')}</Text>
-            </Group>
+            <Loader size="md" />
           </Box>
         )}
 
+        {/* Long-press menu: a Mantine Menu anchored on a 1px target at the press point, so it
+            portals out of the map and flips by itself near the edges */}
+        <Menu
+          opened={contextMenu !== null}
+          onChange={(opened) => {
+            if (!opened) setContextMenu(null)
+          }}
+          withinPortal
+          position="top"
+          middlewares={{ flip: true, shift: true }}
+        >
+          <Menu.Target>
+            <Box
+              pos="absolute"
+              w={1}
+              h={1}
+              style={{
+                left: contextMenu?.x ?? 0,
+                top: contextMenu?.y ?? 0,
+                pointerEvents: 'none',
+              }}
+            />
+          </Menu.Target>
+          <Menu.Dropdown>
+            <Menu.Item
+              color="red"
+              leftSection={<IconTrash size={16} />}
+              onClick={handleContextMenuDelete}
+            >
+              {t('planner.menu.delete')}
+            </Menu.Item>
+          </Menu.Dropdown>
+        </Menu>
+
         {/* Mini-map: desktop only, follows cursor */}
-        {!isTouchDevice && cursorPosition && (
+        {!isCoarsePointer && cursorPosition && (
           <RoutePlannerMiniMap center={cursorPosition} routeGeoJson={routeGeoJson} />
         )}
 
@@ -807,7 +933,7 @@ export function RoutePlanner({ onPointsChange, initialTrack, teamLocation }: Rou
             }}
           >
             <Text size="sm" c="dimmed">
-              {isTouchDevice ? t('planner.instructions.touch') : t('planner.instructions')}
+              {isCoarsePointer ? t('planner.instructions.touch') : t('planner.instructions')}
             </Text>
           </Box>
         )}

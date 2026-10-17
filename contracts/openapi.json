@@ -2134,7 +2134,7 @@
       },
       "ErrorCode" : {
         "type" : "string",
-        "enum" : [ "BAD_REQUEST", "NOT_FOUND", "UNAUTHORIZED", "FORBIDDEN", "INTERNAL_ERROR", "UNKNOWN", "VALIDATION", "BUSINESS_RULE", "LAST_ADMIN", "SOLE_TEAM_ADMIN", "SOLE_MIGRATED_TEAM_ADMIN", "MIGRATED_TEAM", "ALREADY_REGISTERED", "NOT_REGISTERED", "INVALID_SLUG", "SLUG_TAKEN", "USER_NOT_SYNCED", "GROUP_FULL", "RIDE_PAST", "INVALID_VISIBILITY", "PUBLIC_TRIP_PRIVATE_ROUTE", "GPX_FAILURE", "FILE_REQUIRED", "FILE_TYPE_REJECTED", "FILE_DETECTION_FAILED", "FILE_TOO_LARGE", "TOO_MANY_TEAM_PAGES", "GPX_EMPTY", "GPX_TOO_LONG", "GPX_MERGE_FILE_COUNT", "GPX_MERGE_TOO_MANY_TRACKS", "ROUTE_PLANNER_DISABLED", "INVALID_FORMAT", "INVALID_TIMEZONE", "RENTAL_PERIOD_MISSING", "STATUS_INVALID", "PUBLIC_RIDE_PRIVATE_ROUTE", "INVALID_CREDENTIALS", "LOGIN_RATE_LIMITED", "EMAIL_NOT_VERIFIED", "EMAIL_ALREADY_EXISTS", "TOKEN_INVALID", "TOKEN_EXPIRED", "SESSION_EXPIRED", "PASSWORD_NOT_SET", "PASSKEY_NOT_FOUND", "USER_NOT_FOUND", "DOMAIN_NOT_FOUND", "TEAM_NOT_FOUND", "TEAM_CREATION_DISABLED", "USER_TEAM_LIMIT_REACHED", "TEAM_JOIN_NOT_ALLOWED", "TEAM_ADD_MEMBER_NOT_ALLOWED", "GPS_SERVICE_ALREADY_CONNECTED", "GPS_SERVICE_NOT_CONNECTED", "GPS_SERVICE_NOT_CONFIGURED", "GPS_INVALID_STATE", "GPS_STATE_EXPIRED", "GPX_NOT_FOUND", "AUTHORIZATION_PENDING", "DEVICE_CODE_RATE_LIMITED", "GPS_CREDENTIAL_ALREADY_EXISTS", "GPS_OAUTH_VERSION_NOT_SUPPORTED", "GPS_CLIENT_SECRET_REQUIRED", "GPS_TOKEN_EXCHANGE_FAILED", "ENCRYPTION_FAILED", "DECRYPTION_FAILED", "DOMAIN_ALIAS_NOT_FOUND", "DOMAIN_ALIAS_HOSTNAME_EXISTS", "DOMAIN_ALIAS_TEAM_MISMATCH", "EXPORT_IN_PROGRESS", "EXPORT_RATE_LIMITED", "RIDE_GROUP_LEADER_NOT_MEMBER", "AD_CONTACT_SELF", "AD_CONTACT_OPTED_OUT", "AD_CONTACT_RATE_LIMITED", "AD_CONTACT_DELIVERY_FAILED", "EMAIL_NOT_SENT", "FEEDBACK_RATE_LIMITED", "TEAM_INVITE_INVALID", "TEAM_INVITE_EXPIRED", "TEAM_INVITE_REVOKED", "TEAM_INVITE_ALREADY_USED", "TEAM_INVITE_ALREADY_MEMBER", "TEAM_INVITE_EMAIL_MISMATCH", "TEAM_INVITE_SELF", "TEAM_INVITE_NOT_PENDING", "TEAM_INVITE_RATE_LIMITED", "TEAM_INVITE_DELIVERY_FAILED", "WEBHOOK_URL_INVALID", "REPORT_SELF", "BLOCK_SELF", "CONTENT_REJECTED", "TAG_LABEL_INVALID", "TAG_LABEL_TAKEN", "TAG_LIMIT_REACHED", "TAG_INVALID", "TOO_MANY_TAGS", "ASSET_NOT_AVAILABLE", "BIKETEAM_REQUEST_INVALID", "BIKETEAM_REQUEST_EXPIRED", "BIKETEAM_REQUEST_ALREADY_USED", "BIKETEAM_SLUG_CONFLICT", "BIKETEAM_MIGRATED_IN_OTHER_DOMAIN", "BIKETEAM_NOT_TEAM_ADMIN", "BIKETEAM_MIGRATION_RUNNING", "BIKETEAM_RESET_BLOCKED", "BIKETEAM_GRANT_INVALID", "BIKETEAM_GRANT_EXPIRED", "BIKETEAM_JOB_NOT_FOUND" ]
+        "enum" : [ "BAD_REQUEST", "NOT_FOUND", "UNAUTHORIZED", "FORBIDDEN", "INTERNAL_ERROR", "UNKNOWN", "VALIDATION", "BUSINESS_RULE", "LAST_ADMIN", "SOLE_TEAM_ADMIN", "SOLE_MIGRATED_TEAM_ADMIN", "MIGRATED_TEAM", "ALREADY_REGISTERED", "NOT_REGISTERED", "INVALID_SLUG", "SLUG_TAKEN", "USER_NOT_SYNCED", "GROUP_FULL", "RIDE_PAST", "INVALID_VISIBILITY", "PUBLIC_TRIP_PRIVATE_ROUTE", "GPX_FAILURE", "FILE_REQUIRED", "FILE_TYPE_REJECTED", "FILE_DETECTION_FAILED", "FILE_TOO_LARGE", "TOO_MANY_TEAM_PAGES", "GPX_EMPTY", "GPX_TOO_LONG", "GPX_MERGE_FILE_COUNT", "GPX_MERGE_TOO_MANY_TRACKS", "ROUTE_PLANNER_DISABLED", "ROUTING_QUOTA_EXCEEDED", "ROUTING_SEGMENT_TOO_LONG", "ROUTING_NO_ROUTE", "ROUTING_UNAVAILABLE", "INVALID_FORMAT", "INVALID_TIMEZONE", "RENTAL_PERIOD_MISSING", "STATUS_INVALID", "PUBLIC_RIDE_PRIVATE_ROUTE", "INVALID_CREDENTIALS", "LOGIN_RATE_LIMITED", "EMAIL_NOT_VERIFIED", "EMAIL_ALREADY_EXISTS", "TOKEN_INVALID", "TOKEN_EXPIRED", "SESSION_EXPIRED", "PASSWORD_NOT_SET", "PASSKEY_NOT_FOUND", "USER_NOT_FOUND", "DOMAIN_NOT_FOUND", "TEAM_NOT_FOUND", "TEAM_CREATION_DISABLED", "USER_TEAM_LIMIT_REACHED", "TEAM_JOIN_NOT_ALLOWED", "TEAM_ADD_MEMBER_NOT_ALLOWED", "GPS_SERVICE_ALREADY_CONNECTED", "GPS_SERVICE_NOT_CONNECTED", "GPS_SERVICE_NOT_CONFIGURED", "GPS_INVALID_STATE", "GPS_STATE_EXPIRED", "GPX_NOT_FOUND", "AUTHORIZATION_PENDING", "DEVICE_CODE_RATE_LIMITED", "GPS_CREDENTIAL_ALREADY_EXISTS", "GPS_OAUTH_VERSION_NOT_SUPPORTED", "GPS_CLIENT_SECRET_REQUIRED", "GPS_TOKEN_EXCHANGE_FAILED", "ENCRYPTION_FAILED", "DECRYPTION_FAILED", "DOMAIN_ALIAS_NOT_FOUND", "DOMAIN_ALIAS_HOSTNAME_EXISTS", "DOMAIN_ALIAS_TEAM_MISMATCH", "EXPORT_IN_PROGRESS", "EXPORT_RATE_LIMITED", "RIDE_GROUP_LEADER_NOT_MEMBER", "AD_CONTACT_SELF", "AD_CONTACT_OPTED_OUT", "AD_CONTACT_RATE_LIMITED", "AD_CONTACT_DELIVERY_FAILED", "EMAIL_NOT_SENT", "FEEDBACK_RATE_LIMITED", "TEAM_INVITE_INVALID", "TEAM_INVITE_EXPIRED", "TEAM_INVITE_REVOKED", "TEAM_INVITE_ALREADY_USED", "TEAM_INVITE_ALREADY_MEMBER", "TEAM_INVITE_EMAIL_MISMATCH", "TEAM_INVITE_SELF", "TEAM_INVITE_NOT_PENDING", "TEAM_INVITE_RATE_LIMITED", "TEAM_INVITE_DELIVERY_FAILED", "WEBHOOK_URL_INVALID", "REPORT_SELF", "BLOCK_SELF", "CONTENT_REJECTED", "TAG_LABEL_INVALID", "TAG_LABEL_TAKEN", "TAG_LIMIT_REACHED", "TAG_INVALID", "TOO_MANY_TAGS", "ASSET_NOT_AVAILABLE", "BIKETEAM_REQUEST_INVALID", "BIKETEAM_REQUEST_EXPIRED", "BIKETEAM_REQUEST_ALREADY_USED", "BIKETEAM_SLUG_CONFLICT", "BIKETEAM_MIGRATED_IN_OTHER_DOMAIN", "BIKETEAM_NOT_TEAM_ADMIN", "BIKETEAM_MIGRATION_RUNNING", "BIKETEAM_RESET_BLOCKED", "BIKETEAM_GRANT_INVALID", "BIKETEAM_GRANT_EXPIRED", "BIKETEAM_JOB_NOT_FOUND" ]
       },
       "ErrorDetails" : {
         "oneOf" : [ {
@@ -2463,7 +2463,7 @@
       "GpxPreviewDto" : {
         "description" : "Analysed GPX file, not attached to any team",
         "type" : "object",
-        "required" : [ "id", "name", "distance", "elevationGain", "elevationLoss", "hilliness", "owned", "createdAt", "gpxUrl", "fitUrl", "tracks", "waypoints" ],
+        "required" : [ "id", "name", "distance", "elevationGain", "elevationLoss", "hilliness", "owned", "createdAt", "gpxUrl", "fitUrl", "drawn", "tracks", "waypoints" ],
         "properties" : {
           "id" : {
             "type" : "string",
@@ -2513,6 +2513,10 @@
           "fitUrl" : {
             "type" : "string",
             "description" : "URL to download the analysed track as a FIT file"
+          },
+          "drawn" : {
+            "type" : "boolean",
+            "description" : "Whether the track was drawn in the route planner (true) rather than imported from a GPX file. A drawn preview can only become a route of a team whose route planner is enabled; false when the origin is unknown"
           },
           "tracks" : {
             "type" : "array",
@@ -5386,6 +5390,11 @@
           },
           "profile" : {
             "$ref" : "#/components/schemas/RouterProfile"
+          },
+          "teamSlug" : {
+            "type" : "string",
+            "description" : "Slug of the team the route is being drawn for. When present, the team must have the route planner enabled and the caller must be allowed to create routes in it. When absent, the domain's GPX planner must be enabled.",
+            "maxLength" : 250
           }
         }
       },
@@ -11756,7 +11765,7 @@
     "/api/gpx-previews/from-points" : {
       "post" : {
         "summary" : "Create an analysed GPX file from planner points",
-        "description" : "Builds a preview from a route drawn with the planner (no GPX file), runs the elevation and climb pipeline, and stores the result under an unguessable identifier for 30 days",
+        "description" : "Builds a preview from a route drawn with the planner (no GPX file; drawn = true), runs the elevation and climb pipeline, and stores the result under an unguessable identifier for 30 days",
         "operationId" : "createPreviewFromPoints",
         "tags" : [ "GPX previews" ],
         "requestBody" : {
@@ -12136,7 +12145,7 @@
     "/api/gpx-previews/{previewId}/routes/{teamSlug}" : {
       "post" : {
         "summary" : "Save an analysed GPX file as a route",
-        "description" : "Creates a team route from the preview's original upload",
+        "description" : "Creates a team route from the preview's original upload. A preview that was drawn in the route planner (drawn = true) is refused with ROUTE_PLANNER_DISABLED when the team has no route planner; an imported GPX file can become a route of any team.",
         "operationId" : "createRouteFromPreview",
         "tags" : [ "GPX previews" ],
         "parameters" : [ {
@@ -12178,7 +12187,7 @@
             }
           },
           "400" : {
-            "description" : "Invalid request",
+            "description" : "Invalid request, or drawn preview and team without route planner",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -12970,7 +12979,7 @@
     "/api/router" : {
       "post" : {
         "summary" : "Calculate route",
-        "description" : "Calculate a route between two points using the Stadia Maps routing API",
+        "description" : "Calculate a route between two points using the Stadia Maps routing API. Each call is billed against a monthly quota, so the checks come first: with teamSlug, the caller must be allowed to create routes in that team and the team must have the route planner enabled; without it, the domain's GPX planner must be enabled. Otherwise ROUTE_PLANNER_DISABLED. Routing failures have their own codes: ROUTING_SEGMENT_TOO_LONG and ROUTING_NO_ROUTE (400), ROUTING_QUOTA_EXCEEDED and ROUTING_UNAVAILABLE (503).",
         "operationId" : "route",
         "tags" : [ "Router" ],
         "requestBody" : {
@@ -12995,7 +13004,27 @@
             }
           },
           "400" : {
-            "description" : "Invalid request parameters",
+            "description" : "Invalid request parameters, planner disabled (ROUTE_PLANNER_DISABLED), segment too long (ROUTING_SEGMENT_TOO_LONG) or no route between the points (ROUTING_NO_ROUTE)",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "User may not create routes in the team",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Team not found in this domain",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -13005,7 +13034,7 @@
             }
           },
           "503" : {
-            "description" : "Routing service unavailable",
+            "description" : "Routing service unavailable (ROUTING_UNAVAILABLE) or its monthly quota is spent (ROUTING_QUOTA_EXCEEDED)",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -13016,9 +13045,6 @@
           },
           "401" : {
             "description" : "Not Authorized"
-          },
-          "403" : {
-            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -23846,7 +23872,7 @@
   },
   "info" : {
     "title" : "Pedalons API",
-    "version" : "11.5.3",
+    "version" : "11.6.0",
     "description" : "API for Pedalons Cycling Team Management Platform"
   },
   "servers" : [ {

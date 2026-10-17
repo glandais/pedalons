@@ -45,6 +45,9 @@ abstract class GpxPreviewDto with _$GpxPreviewDto {
     /// URL to download the analysed track as a FIT file
     required String fitUrl,
 
+    /// Whether the track was drawn in the route planner (true) rather than imported from a GPX file. A drawn preview can only become a route of a team whose route planner is enabled; false when the origin is unknown
+    required bool drawn,
+
     /// Tracks
     required List<TrackDto> tracks,
 

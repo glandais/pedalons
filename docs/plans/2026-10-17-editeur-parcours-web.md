@@ -1,6 +1,7 @@
 # Éditeur de parcours web — desktop et web mobile
 
-Écrit le 17 octobre 2026. **État : proposition, rien n'est implémenté.** Ledger `WEB-99` (une seule
+Écrit le 17 octobre 2026. **État : lot 1 livré le 17 octobre 2026 (§5), A10 compris ; lots 2 à 4 à faire.**
+Ledger `WEB-100` (une seule
 entrée, qui pointe ici) : le suivi fin se fait **dans ce plan**, cases à cocher comprises, pas dans
 le ledger. Une tâche n'en sort vers `LEDGER_NEXT.md` que si elle quitte le périmètre du plan
 (backend partagé, autre client) ou si le plan est archivé avec des restes.
@@ -75,14 +76,18 @@ Ce que ça change pour ce plan :
 - **Les timeouts sont faits** côté Stadia (3 s connexion, 15 s lecture) : §8 n° 3 est à moitié
   fait. Restent un code d'erreur dédié au lieu de `UNKNOWN`, et le contrôle du drapeau sur
   `/api/router` (§8 n° 4).
+- **Livré sur `develop` le 17 octobre 2026** (`1727269d`, contrat `11.5.3`, `OPS-48`, `OPS-49`).
+  Les codes d'erreur distincts n'y étaient pas ; A10 les a ajoutés (§5). Le même commit pose sur le planificateur la barre de recherche de lieux Stadia
+  (`MapSearchControl`, ledger `WEB-99`), appelée depuis le navigateur sans clé : B3 s'en trouve
+  réduit.
 - Limites publiées : 50 points par requête, 500 km à vol d'oiseau à vélo. Le planificateur route
-  segment par segment, il n'est pas gêné ; un « trop long » revient en `400` code `154`, mappé
-  sur `UNKNOWN` aujourd'hui.
+  segment par segment, il n'est pas gêné ; un « trop long » revient en `400` code `154`, que
+  A10 traduit en `ROUTING_SEGMENT_TOO_LONG`.
 - `use_roads` vérifié en direct ; `use_hills` probable, non testé ; `trace_attributes` est un
   endpoint séparé, donc **facturé en plus** ; `exclude_polygons` non vérifié.
 
-Suggéré à la session Stadia : deux codes d'erreur distincts, quota épuisé et segment trop long,
-pour que l'éditeur affiche un message utile. À reprendre en A2 s'ils existent.
+Les codes d'erreur distincts, d'abord suggérés à la session Stadia, ont finalement été faits
+ici, en A10.
 
 ---
 
@@ -132,46 +137,101 @@ pour que l'éditeur affiche un message utile. À reprendre en A2 s'ils existent.
   contextuel (à vérifier en main).
 - **Cadrage initial par heuristique** d'étendue, sans tenir compte du ratio du conteneur : un
   tracé large déborde d'un téléphone en portrait. `RouteTrackMap` fait déjà un `fitBounds`.
-- **Tests** : `e2e/gpx-planner.e2e.ts` couvre deux clics et l'enregistrement, exclu en CI
+- **Tests**, avant le lot 1 : `e2e/gpx-planner.e2e.ts` couvrait deux clics et l'enregistrement, exclu en CI
   (`E2E_NO_ROUTING`) ; aucun drag, insertion, suppression, undo ; aucun test unitaire de
   `lib/planner.ts`.
+
+Les constats ci-dessus décrivent l'état **avant** le lot 1 ; ceux que le lot 1 a levés sont cochés
+au §5.
 
 ---
 
 ## 5. Lot 1 — robustesse
 
-- [ ] **A1. `Ctrl+Z` ignoré dans les champs** (S, §8 n° 1) — extraire le filtre de
+- [x] **A1. `Ctrl+Z` ignoré dans les champs** (S, §8 n° 1) — extraire le filtre de
       `useHideTrackKey` en `isEditableTarget(event.target)` et l'appliquer dans
       `RoutePlanner.tsx:224-245`.
-- [ ] **A2. Annulation, verrou, erreurs traduites** (S/M, §8 n° 2) — un `AbortController` par
+- [x] **A2. Annulation, verrou, erreurs traduites** (S/M, §8 n° 2) — un `AbortController` par
       opération dans `executeRouteOperation`, `signal` passé par `add` / `insert` / `remove`
       jusqu'à `route(…, undefined, signal)` ; une opération abandonnée ne touche ni l'historique
       ni la route. Pendant `isLoading` : `draggable={false}` sur les marqueurs, clics ignorés,
       curseur `progress`, `Loader` en surimpression sur la carte. Erreur traduite
       (`planner.error.routing`, et `quotaExceeded` / `segmentTooLong` si la session Stadia livre
       les codes, §2). Prérequis de B1.
-- [ ] **A3. Profil mémorisé, `Alt` en plus de `Ctrl`** (S, §8 n° 5) — `useLocalStorage` de
+- [x] **A3. Profil mémorisé, `Alt` en plus de `Ctrl`** (S, §8 n° 5) — `useLocalStorage` de
       `@mantine/hooks` pour le profil (`useRoutePlanner.ts:90`) ; `ctrlKeyRef` devient
       `directKeyRef` et suit aussi `Alt`, pour macOS (Q3 tranchée : `Ctrl` et `Alt`).
-- [ ] **A4. Tactile décidé par le pointeur** (S) — `useMediaMatch('(pointer: coarse)')` pour la
+- [x] **A4. Tactile décidé par le pointeur** (S) — `useMediaMatch('(pointer: coarse)')` pour la
       disposition, `pointerType` de l'événement pour chaque geste (tap-insertion, appui long).
       Un portable hybride garde souris et doigt. Prérequis de B5.
-- [ ] **A5. Aide aux gestes complète et permanente** (S, étend §8 n° 5) — bouton « ? » ouvrant un
+- [x] **A5. Aide aux gestes complète et permanente** (S, étend §8 n° 5) — bouton « ? » ouvrant un
       `Popover` Mantine dont le contenu suit le pointeur : ajouter, glisser, insérer, supprimer,
       ligne droite, annuler, `h`. Compléter les deux textes d'accueil, fr et en.
-- [ ] **A6. Un seul panneau ouvert, ancré à son bouton** (S) — profil et fond de carte en
+- [x] **A6. Un seul panneau ouvert, ancré à son bouton** (S) — profil et fond de carte en
       `Popover` Mantine (`closeOnClickOutside`, `position="right-start"`), un état partagé « panneau
       ouvert » ; en `(pointer: coarse)`, `Drawer position="bottom"`.
-- [ ] **A7. Curseurs et libellés** (S) — `grabbing` pendant le drag d'un marqueur, `progress`
+- [x] **A7. Curseurs et libellés** (S) — `grabbing` pendant le drag d'un marqueur, `progress`
       pendant un calcul, `aria-label` sur la corbeille (`title` seul aujourd'hui).
-- [ ] **A8. Menu tactile fiable** (S) — couper le minuteur d'appui long dans
+- [x] **A8. Menu tactile fiable** (S) — couper le minuteur d'appui long dans
       `handleMarkerDragStart` ; remplacer la `Box` placée à la main par un `Menu` Mantine
       (`withinPortal`, retournement auto) ou une feuille d'actions en bas d'écran.
-- [ ] **A9. Tests unitaires de `lib/planner.ts`** (S, §8 n° 6) — module pur, routeur simulé ;
+- [x] **A9. Tests unitaires de `lib/planner.ts`** (S, §8 n° 6) — module pur, routeur simulé ;
       indispensable avant B2 qui y ajoute des opérations.
-- [ ] **A10. Côté backend, après le commit Stadia** (S, §8 n° 3 et 4) — codes d'erreur dédiés au
-      lieu de `UNKNOWN`, drapeau d'équipe ou de domaine vérifié sur `/api/router` (prérequis du
-      `403 PLAN_REQUIRED` de `BILL`). Contrat bumpé.
+
+**Ce qu'a donné le lot 1** (17 octobre 2026, frontend seul, contrat inchangé) :
+
+- **Un défaut existant corrigé** : en ligne droite, `add` et `insert` recalaient le point de
+  contrôle voisin sur la cible, et le tracé s'effondrait sur un point. Ils ne recalent plus que
+  sur un segment routé (`isRouted`, `lib/planner.ts`).
+- **Verrou et annulation** : un geste de routage pendant un calcul est ignoré ; le démontage, un
+  changement de profil, annuler, rétablir et vider abandonnent le calcul en cours. Pendant un
+  calcul, annuler n'abandonne que ce calcul et ne dépile pas le geste précédent. Un signal déjà
+  abandonné n'émet aucune requête.
+- **Panneaux** : `MapPanel` (`components/map/`) sert au fond de carte, au profil et à l'aide :
+  `Popover` au pointeur fin, `Drawer` au doigt, un seul ouvert à la fois (état dans
+  `PedalonsMap`), `zIndex` 1001 au-dessus du profil d'altitude de `RouteMapView`. Le clic qui
+  ferme un panneau ne pose pas de point (fenêtre de 500 ms, approximative).
+- **Appui long** : seuil de 3 px aligné sur MapLibre, minuteur coupé au début d'un drag, `Menu`
+  Mantine ancré au point d'appui ; un `contextmenu` venu d'un doigt, ou de Ctrl+clic sur Mac, ne
+  supprime plus le point.
+- **Aide** : sur Apple elle n'annonce que « ⌥ + clic » pour la ligne droite, Ctrl+clic y étant un
+  clic droit (`lib/platform.ts`).
+- **Marqueurs** : `role="button"`, nom « Point n », `tabIndex`, suppression par `Suppr` ou
+  retour arrière. Départ et arrivée ne sont distingués que par la couleur : reste pour B7.
+- **Tests** : `lib/planner.test.ts` (dont le coût de chaque geste en requêtes),
+  `lib/editableTarget.test.ts`, `hooks/useRoutePlanner.test.tsx` (verrou, abandon, historique) ;
+  `e2e/gpx-planner.e2e.ts` simule le routeur (`stubRouter`) pour ajout, glisser, insertion,
+  suppression, appui long, ligne droite, annuler / rétablir et Ctrl+Z dans un champ, en comptant
+  les requêtes. Seul le premier test de tracé atteint Stadia (`watchRouter`, une requête par
+  projet Playwright) quand une clé est présente ; sans clé il simule aussi, et plus aucun fichier
+  n'est écarté par `E2E_NO_ROUTING`.
+- **Révélé par le premier passage e2e** : le clic que le navigateur émet au lever du doigt,
+  après un appui long, refermait aussitôt le menu ; `touchend` l'annule désormais
+  (`preventDefault`), et la carte ignore encore un clic pendant 700 ms après l'ouverture. Côté
+  tests, chaque contexte a sa propre session du propriétaire, et la connexion est relancée sur
+  `429` : le verrou de `SEC-36` compte une connexion en cours comme un échec, et plus de cinq
+  connexions simultanées sur une adresse se font refuser sans qu'aucune n'échoue.
+- **Non vérifié à la main** : rien n'a été essayé sur un vrai appareil tactile ni sous Safari iOS
+  (repli sur le `pointerType` du dernier `pointerdown` pour le tap d'insertion).
+- [x] **A10. Côté backend, après le commit Stadia** (S, §8 n° 3 et 4) — livré le 17 octobre 2026,
+      contrat `11.6.0`, migration `V72`. Trois décisions du propriétaire :
+      1. **Erreurs distinctes** : `ROUTING_QUOTA_EXCEEDED` (Stadia `429`) et `ROUTING_UNAVAILABLE`
+         (5xx, délai, réseau, clé refusée) sortent en `503` par `ServiceUnavailableException`,
+         journalisée en une ligne WARN sans pile ; `ROUTING_SEGMENT_TOO_LONG` (code Valhalla 154) et
+         `ROUTING_NO_ROUTE` (170, 171, 441, 442) en `400` ; un autre `400` reste `UNKNOWN`. Le
+         planificateur affiche un message par code, sans le toast global (`lib/plannerErrors.ts`).
+      2. **`teamSlug` facultatif sur `/api/router`**, vérifié avant l'appel facturé : avec une
+         équipe, elle doit être du domaine (404 sinon), l'utilisateur doit pouvoir y créer un
+         parcours (`RouteAccessChecker`, 403 sinon), puis son `enableRoutePlanner` doit être vrai ;
+         sans équipe, `enableGpxPlanner` du domaine. Les droits passent avant le drapeau, qui
+         n'est donc pas révélé à un non-membre. `RouteEditor` envoie l'équipe, les outils GPX non.
+      3. **Un aperçu tracé ne devient pas un parcours d'une équipe sans planificateur** : colonne
+         `gpx_previews.drawn` (`V72`, `NOT NULL DEFAULT false`), posée par `from-points` et par une
+         mise à jour à partir de points, retirée par une mise à jour à partir d'un fichier ;
+         `drawn` dans `GpxPreviewDto` ; la page de l'aperçu grise ces équipes avec une
+         explication. Contournable par export puis réimport du GPX, assumé (ledger `API-127`).
+      Tests : `RouterResourceTest` (Stadia simulé, multi-domaine), `GpxPreviewResourceTest`,
+      `plannerErrors.test.ts`, `GpxPreviewView.test.tsx`, scénario e2e du quota épuisé.
 
 ---
 
@@ -188,14 +248,17 @@ pour que l'éditeur affiche un message utile. À reprendre en A2 s'ils existent.
       fixée en bas (`ActionIcon size="xl"`) : annuler, rétablir, ligne droite (B6), inverser (B2),
       profil, aide ; puce distance / D+ au-dessus ; la colonne MapLibre ne garde que zoom et fond,
       boutons à 44 px par une règle `@media (pointer: coarse)` dans `index.css`. Dépend de A4, B4.
-- [ ] **A6** s'il n'est pas déjà fait au lot 1.
-- [ ] **B3. Recherche d'adresse, ma position, partir d'ici** (S/M, §8 n° 9 corrigé) —
-      `GeocoderAutocomplete` dans la barre ; à la sélection, `flyTo`, et « Démarrer ici » si le
-      tracé est vide. `GeolocateControl` comme `GpxBlankMapPage`. Mobile : le champ ouvre un
-      `Drawer position="top"` avec `autoFocus`, `inputMode="search"`, `enterKeyHint="search"` ;
-      ajouter `interactive-widget=resizes-content` à la balise viewport (`frontend/index.html`)
-      pour que `100dvh` suive le clavier virtuel. Le géocodage est facturé chez Stadia ;
-      `GeocoderAutocomplete` attend déjà 300 ms et 3 caractères avant d'appeler.
+- [ ] **B3. Ma position, partir d'ici** (S, §8 n° 9 corrigé) — la recherche de lieux est déjà
+      sur la carte (`MapSearchControl`, ledger `WEB-99`, en haut à droite) ; reste « Démarrer
+      ici » après une sélection si le tracé est vide, et le comportement de la barre sur 360 px
+      et sous le clavier virtuel ; `GeolocateControl` comme `GpxBlankMapPage`. Ajouter
+      `interactive-widget=resizes-content` à la balise viewport (`frontend/index.html`) pour que
+      `100dvh` suive le clavier virtuel.
+- [ ] **B10. La carte bouge sous le curseur au premier point** (S, nouveau, vu en e2e) — la
+      barre au-dessus de la carte change de hauteur quand le premier point est posé, la carte est
+      redimensionnée et son contenu glisse d'une quinzaine de pixels : le point suivant tombe à
+      côté de l'endroit visé. Réserver la hauteur de la barre dès l'ouverture, ou la sortir du
+      flux, dans le même lot que B4.
 - [ ] **B8. Cadrage par `fitBounds`** (S, nouveau) — remplacer l'heuristique de
       `RoutePlanner.tsx:87-118` par `fitBounds(bounds, { padding })` à `onLoad`, comme
       `RouteTrackMap`.
@@ -255,10 +318,10 @@ Les parties API sont décrites au §8 de l'état de l'art ; ce plan ne garde que
 - Unitaires (Vitest) : `lib/planner.ts` avec un routeur simulé (A9) ; chaque nouvelle opération
   (B2, B6) y ajoute ses cas ; le compteur d'appels au routeur simulé vérifie aussi le coût par
   geste du §2.
-- e2e : étendre `e2e/gpx-planner.e2e.ts` avec un drag, une insertion, une suppression et un
-  undo, sur les deux projets Playwright (desktop et Pixel 7). Le routage réel reste hors CI
-  (`E2E_NO_ROUTING`), d'autant plus qu'il est désormais facturé : une route Playwright qui simule
-  `/api/router` permettrait de les faire tourner en CI.
+- e2e : `e2e/gpx-planner.e2e.ts` simule le routeur (`stubRouter`) et compte les requêtes, sur les
+  deux projets Playwright (desktop et Pixel 7) ; chaque nouveau geste y ajoute son scénario et son
+  coût. Un seul test atteint Stadia (`watchRouter`) quand une clé est présente : ne pas en ajouter
+  d'autres, chaque passage de CI est facturé.
 - Recette à l'œil sur un vrai téléphone pour le lot 2 : défilement, clavier virtuel, appui long,
   orientation.
 
@@ -271,7 +334,7 @@ Les parties API sont décrites au §8 de l'état de l'art ; ce plan ne garde que
 | Q1 | Forme du plein écran (B4) | `Modal fullScreen` au-dessus du formulaire | Page dédiée en `layout: 'bare'` : URL propre, mais SSR et état à porter ; pseudo-plein écran MapLibre : ne sort pas de l'`AppShell` |
 | Q2 | Ambition du web mobile | Édition complète (B5, B6, B9) | Retouches seulement, l'app Flutter porte le tactile : la moitié du lot 2 tombe |
 | Q3 | Modificateur ligne droite | **Tranché le 17 octobre 2026 : `Ctrl` et `Alt`**, la bascule B6 en plus | `Alt` seul : cohérent avec macOS, rompt l'habitude actuelle |
-| Q4 | Quota de géocodage par utilisateur | Le debounce et le minimum de 3 caractères existants suffisent ; quota si la facture Stadia le justifie | Quota d'emblée : plus sûr, plus de code |
+| Q4 | Quota de géocodage par utilisateur | **Caduque** : la recherche de la carte (`WEB-99`) appelle Stadia depuis le navigateur, authentifiée par le domaine ; aucune requête ne passe par notre serveur | — |
 | Q5 | D+ affiché pendant l'édition | Celui du serveur (`ascend` par segment), cohérent avec le parcours enregistré | Celui du client : instantané, mais diverge à l'enregistrement |
 | Q6 | Inversion | Re-router tous les segments | Inverser la géométrie : gratuit, faux sur les sens uniques |
 | Q7 | Lier C4 et B6 | Les livrer ensemble | Accepter que les lignes droites se re-routent à la réouverture |

@@ -1,5 +1,7 @@
 import type { Locator, Page, Response } from '@playwright/test'
 import type {
+  RouterRequest,
+  RouterResponse,
   RouteDetailDto,
   RouteDto,
   RouteRequest,
@@ -307,4 +309,73 @@ export async function traceMapPixels(page: Page, canvas: Locator): Promise<numbe
     }
     return saturated
   }, png)
+}
+
+/** Great-circle distance in metres — the formula the planner measures its own route with. */
+function metresBetween(a: [lon: number, lat: number], b: [lon: number, lat: number]): number {
+  const rad = Math.PI / 180
+  const dLat = (b[1] - a[1]) * rad
+  const dLon = (b[0] - a[0]) * rad
+  const h =
+    Math.sin(dLat / 2) ** 2 + Math.cos(a[1] * rad) * Math.cos(b[1] * rad) * Math.sin(dLon / 2) ** 2
+  return 6_371_000 * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h))
+}
+
+/**
+ * A plausible answer of POST /api/router for `request`: a gently bowed line (up to 3 % of its
+ * length off the straight one, so the planner's simplification keeps its points) of 3D points from
+ * `from` to `to`, climbing 50 m along the way.
+ */
+export function routerAnswer({ from, to }: RouterRequest): RouterResponse {
+  const steps = 12
+  const coordinates = Array.from({ length: steps + 1 }, (_, i) => {
+    const t = i / steps
+    const bow = 0.03 * Math.sin(Math.PI * t)
+    // The offset is perpendicular to the straight line, in degrees: good enough at these scales.
+    const dLon = to.lng - from.lng
+    const dLat = to.lat - from.lat
+    return [from.lng + dLon * t - dLat * bow, from.lat + dLat * t + dLon * bow, 100 + 50 * t]
+  })
+  let dist = 0
+  for (let i = 1; i < coordinates.length; i++) {
+    dist += metresBetween(
+      [coordinates[i - 1][0], coordinates[i - 1][1]],
+      [coordinates[i][0], coordinates[i][1]]
+    )
+  }
+  return {
+    route: { type: 'LineString', coordinates },
+    dist: Math.round(dist),
+    ascend: 50,
+  }
+}
+
+/**
+ * Lets POST /api/router reach the backend (and Stadia Maps, billed per request) while recording each
+ * request, so a test can still assert the cost of a gesture.
+ */
+export async function watchRouter(page: Page): Promise<RouterRequest[]> {
+  const requests: RouterRequest[] = []
+  await page.route('**/api/router', async (route) => {
+    if (route.request().method() !== 'POST') return route.fallback()
+    requests.push(route.request().postDataJSON() as RouterRequest)
+    await route.continue()
+  })
+  return requests
+}
+
+/**
+ * Answers POST /api/router in the browser, so a planner test never reaches the real router (the
+ * stack has none in CI, and a real one is billed per request). Returns the requests received, in
+ * order: their count is the cost of a gesture.
+ */
+export async function stubRouter(page: Page): Promise<RouterRequest[]> {
+  const requests: RouterRequest[] = []
+  await page.route('**/api/router', async (route) => {
+    if (route.request().method() !== 'POST') return route.fallback()
+    const request = route.request().postDataJSON() as RouterRequest
+    requests.push(request)
+    await route.fulfill({ json: routerAnswer(request) })
+  })
+  return requests
 }

@@ -49,7 +49,7 @@ abstract class GpxPreviewsClient {
 
   /// Create an analysed GPX file from planner points.
   ///
-  /// Builds a preview from a route drawn with the planner (no GPX file), runs the elevation and climb pipeline, and stores the result under an unguessable identifier for 30 days.
+  /// Builds a preview from a route drawn with the planner (no GPX file; drawn = true), runs the elevation and climb pipeline, and stores the result under an unguessable identifier for 30 days.
   ///
   /// [body] - Name not received - field will be skipped.
   @POST('/api/gpx-previews/from-points')
@@ -120,7 +120,7 @@ abstract class GpxPreviewsClient {
 
   /// Save an analysed GPX file as a route.
   ///
-  /// Creates a team route from the preview's original upload.
+  /// Creates a team route from the preview's original upload. A preview that was drawn in the route planner (drawn = true) is refused with ROUTE_PLANNER_DISABLED when the team has no route planner; an imported GPX file can become a route of any team.
   ///
   /// [previewId] - Public preview identifier.
   ///

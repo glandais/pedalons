@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { MantineProvider } from '@mantine/core'
 import type { GpxPreviewDto } from '@/api/dto'
@@ -13,6 +13,9 @@ vi.mock('react-i18next', async (importOriginal) => {
 })
 
 const state = vi.hoisted(() => ({ isAuthenticated: false }))
+const teamsState = vi.hoisted(() => ({
+  teams: [] as { slug: string; name: string; enableRoutes: boolean; enableRoutePlanner: boolean }[],
+}))
 
 vi.mock('@/hooks/useAuth', () => ({
   useAuth: () => ({ isAuthenticated: state.isAuthenticated }),
@@ -25,7 +28,7 @@ vi.mock('@/hooks/useGpsConnections', () => ({
   }),
 }))
 vi.mock('@/api/endpoints/teams/teams', () => ({
-  useListTeams: () => ({ data: undefined }),
+  useListTeams: () => ({ data: { teams: teamsState.teams } }),
 }))
 vi.mock('@/api/endpoints/gpx-previews/gpx-previews', () => ({
   createRouteFromPreview: vi.fn(),
@@ -45,6 +48,7 @@ const preview: GpxPreviewDto = {
   elevationLoss: 350,
   hilliness: 8,
   owned: false,
+  drawn: false,
   createdAt: '2026-10-15T08:00:00Z',
   gpxUrl: '/api/gpx-previews/0abcdefghijkl/gpx',
   fitUrl: '/api/gpx-previews/0abcdefghijkl/fit',
@@ -52,11 +56,11 @@ const preview: GpxPreviewDto = {
   waypoints: [],
 }
 
-function renderView() {
+function renderView(shown: GpxPreviewDto = preview) {
   render(
     <MantineProvider>
       <MemoryRouter>
-        <GpxPreviewView preview={preview} />
+        <GpxPreviewView preview={shown} />
       </MemoryRouter>
     </MantineProvider>
   )
@@ -65,6 +69,7 @@ function renderView() {
 describe('GpxPreviewView', () => {
   beforeEach(() => {
     state.isAuthenticated = false
+    teamsState.teams = []
   })
   afterEach(cleanup)
 
@@ -80,5 +85,27 @@ describe('GpxPreviewView', () => {
     state.isAuthenticated = true
     renderView()
     expect(screen.getByRole('button', { name: 'Partager' })).toBeTruthy()
+  })
+
+  it('greys out the teams without route planner for a drawn preview, and says why', async () => {
+    state.isAuthenticated = true
+    teamsState.teams = [
+      { slug: 'open', name: 'Équipe ouverte', enableRoutes: true, enableRoutePlanner: true },
+      { slug: 'closed', name: 'Équipe fermée', enableRoutes: true, enableRoutePlanner: false },
+    ]
+    renderView({ ...preview, drawn: true, owned: true })
+    fireEvent.click(screen.getByText('Enregistrer comme parcours'))
+    fireEvent.click(await screen.findByRole('combobox'))
+    expect(screen.getByText(/dont le tracé d'itinéraire est activé/)).toBeTruthy()
+    expect(
+      screen
+        .getByRole('option', { name: 'Équipe ouverte', hidden: true })
+        .hasAttribute('data-combobox-disabled')
+    ).toBe(false)
+    expect(
+      screen
+        .getByRole('option', { name: 'Équipe fermée', hidden: true })
+        .hasAttribute('data-combobox-disabled')
+    ).toBe(true)
   })
 })

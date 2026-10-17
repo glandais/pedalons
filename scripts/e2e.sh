@@ -53,7 +53,8 @@ ensure_shared_network() {
 # Routing goes to the Stadia Maps API, with a key that .env.e2e (committed) must not hold.
 # docker-compose.e2e.yml interpolates STADIAMAPS_API_KEY from this shell: take it from the
 # environment (the CI's secret), else from the workstation's .env — without ever printing it.
-# Without a key the planner test is skipped (E2E_NO_ROUTING, playwright.config.ts).
+# Without a key the planner's one real-router test simulates the router too (E2E_NO_ROUTING,
+# frontend/e2e/gpx-planner.e2e.ts).
 ensure_routing_key() {
   [ -z "${_ROUTING_KEY_CHECKED:-}" ] || return 0
   _ROUTING_KEY_CHECKED=1
@@ -68,7 +69,7 @@ ensure_routing_key() {
     fi
   fi
   if [ -z "${STADIAMAPS_API_KEY:-}" ]; then
-    echo "e2e: STADIAMAPS_API_KEY not set (environment or .env) — no routing, the planner test is skipped" >&2
+    echo "e2e: STADIAMAPS_API_KEY not set (environment or .env) — the planner simulates the router" >&2
     export E2E_NO_ROUTING=1
   fi
 }

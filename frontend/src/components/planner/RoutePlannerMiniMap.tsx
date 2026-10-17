@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useRef, useEffect, useState, useCallback } from 'react'
 import Map, { Source, Layer } from 'react-map-gl/maplibre'
 import * as maplibregl from 'maplibre-gl'
@@ -20,6 +21,7 @@ interface RoutePlannerMiniMapProps {
 }
 
 export function RoutePlannerMiniMap({ center, routeGeoJson }: RoutePlannerMiniMapProps) {
+  const { t } = useTranslation()
   const mapRef = useRef<MapRef>(null)
   const { style } = useMapStyle()
   const [zoom, setZoom] = useState(DEFAULT_ZOOM)
@@ -112,6 +114,7 @@ export function RoutePlannerMiniMap({ center, routeGeoJson }: RoutePlannerMiniMa
           size="xs"
           variant="white"
           onClick={zoomIn}
+          aria-label={t('map.zoomIn')}
           disabled={zoom >= MAX_ZOOM}
           style={{ boxShadow: 'var(--mantine-shadow-xs)' }}
         >
@@ -121,6 +124,7 @@ export function RoutePlannerMiniMap({ center, routeGeoJson }: RoutePlannerMiniMa
           size="xs"
           variant="white"
           onClick={zoomOut}
+          aria-label={t('map.zoomOut')}
           disabled={zoom <= MIN_ZOOM}
           style={{ boxShadow: 'var(--mantine-shadow-xs)' }}
         >

@@ -38,6 +38,13 @@ public record GpxPreviewDto(
     @Schema(description = "URL to download the analysed GPX file", required = true) String gpxUrl,
     @Schema(description = "URL to download the analysed track as a FIT file", required = true)
         String fitUrl,
+    @Schema(
+            description =
+                "Whether the track was drawn in the route planner (true) rather than imported from"
+                    + " a GPX file. A drawn preview can only become a route of a team whose route"
+                    + " planner is enabled; false when the origin is unknown",
+            required = true)
+        boolean drawn,
     @Schema(description = "Tracks", required = true) List<TrackDto> tracks,
     @Schema(description = "Waypoints", required = true) List<WaypointDto> waypoints) {
 
@@ -55,6 +62,7 @@ public record GpxPreviewDto(
         preview.isHasThumbnail() ? "/api/gpx-previews/" + publicId + "/thumbnail/{size}" : null,
         "/api/gpx-previews/" + publicId + "/gpx",
         "/api/gpx-previews/" + publicId + "/fit",
+        preview.isDrawn(),
         preview.getTracks().stream()
             .map(
                 t ->

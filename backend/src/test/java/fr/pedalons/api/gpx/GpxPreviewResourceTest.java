@@ -487,6 +487,148 @@ class GpxPreviewResourceTest extends AbstractResourceTest {
         .statusCode(403);
   }
 
+  // ==================== Drawn previews and the team planner (A10) ====================
+
+  private static RouteRequest routeRequest() {
+    return new RouteRequest(
+        "From drawn preview",
+        MediaDto.builder().build(),
+        SurfaceType.ROAD,
+        Visibility.PUBLIC,
+        null);
+  }
+
+  private String createDrawnPreview(String user) {
+    return given()
+        .auth()
+        .oauth2(getAccessToken(user))
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(FROM_POINTS_BODY)
+        .when()
+        .post("/api/gpx-previews/from-points")
+        .then()
+        .statusCode(201)
+        .body("drawn", equalTo(true))
+        .extract()
+        .path("id");
+  }
+
+  private io.restassured.response.ValidatableResponse saveAsRoute(String previewId, String user) {
+    return saveAsRoute(previewId, user, team1Slug);
+  }
+
+  private io.restassured.response.ValidatableResponse saveAsRoute(
+      String previewId, String user, String teamSlug) {
+    return given()
+        .auth()
+        .oauth2(getAccessToken(user))
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(routeRequest())
+        .when()
+        .post("/api/gpx-previews/" + previewId + "/routes/" + teamSlug)
+        .then();
+  }
+
+  @Test
+  void createPreview_fromFile_shouldNotBeDrawn() {
+    String id = createPreview(USER1);
+
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .when()
+        .get("/api/gpx-previews/" + id)
+        .then()
+        .statusCode(200)
+        .body("drawn", equalTo(false));
+  }
+
+  @Test
+  void createRouteFromPreview_drawn_whenTeamPlannerDisabled_shouldReturn400() {
+    dataService.setDomainEnableGpxPlanner(domain, true);
+    String previewId = createDrawnPreview(USER1);
+
+    saveAsRoute(previewId, USER1).statusCode(400).body("code", equalTo("ROUTE_PLANNER_DISABLED"));
+  }
+
+  @Test
+  void createRouteFromPreview_drawn_whenTeamPlannerEnabled_shouldSucceed() {
+    dataService.setDomainEnableGpxPlanner(domain, true);
+    dataService.setTeamEnableRoutePlanner(team1, true);
+    String previewId = createDrawnPreview(USER1);
+
+    saveAsRoute(previewId, USER1).statusCode(201).body("name", equalTo("From drawn preview"));
+  }
+
+  @Test
+  void createRouteFromPreview_drawn_asNonMember_shouldReturn403NotRevealTheFlag() {
+    dataService.setDomainEnableGpxPlanner(domain, true);
+    String previewId = createDrawnPreview(USER1);
+
+    saveAsRoute(previewId, USER4).statusCode(403);
+  }
+
+  @Test
+  void createRouteFromPreview_drawn_withTeamOfAnotherDomain_shouldReturn404() {
+    dataService.setDomainEnableGpxPlanner(domain, true);
+    var other = dataService.createDomain("other.example.com", "Other", "https://other.example.com");
+    var owner = dataService.createUser(other, "owner@other.example.com", "Owner");
+    var otherTeam =
+        dataService.createTeam(other, owner, "Other team", "other-team", Visibility.PUBLIC);
+    dataService.setTeamEnableRoutePlanner(otherTeam, true);
+    String previewId = createDrawnPreview(USER1);
+
+    saveAsRoute(previewId, USER1, "other-team").statusCode(404);
+  }
+
+  /** Only the drawing is governed: an imported file becomes a route of a team without planner. */
+  @Test
+  void createRouteFromPreview_imported_whenTeamPlannerDisabled_shouldSucceed() {
+    saveAsRoute(createPreview(USER1), USER1).statusCode(201);
+  }
+
+  @Test
+  void updatePreview_withFile_afterDrawing_shouldResetDrawn() {
+    dataService.setDomainEnableGpxPlanner(domain, true);
+    String previewId = createDrawnPreview(USER1);
+
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .multiPart("preview", "{\"name\":\"Imported now\"}", MediaType.APPLICATION_JSON)
+        .multiPart("gpxFile", EXAMPLE_GPX, "application/gpx+xml")
+        .when()
+        .put("/api/gpx-previews/" + previewId)
+        .then()
+        .statusCode(200)
+        .body("drawn", equalTo(false));
+
+    dataService.setTeamEnableRoutePlanner(team1, false);
+    saveAsRoute(previewId, USER1).statusCode(201);
+  }
+
+  @Test
+  void updatePreview_withPoints_shouldSetDrawn() {
+    dataService.setDomainEnableGpxPlanner(domain, true);
+    String previewId = createPreview(USER1);
+
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .multiPart(
+            "preview",
+            "{\"name\":\"Drawn now\",\"points\":[{\"lng\":4.8357,\"lat\":45.7640},"
+                + "{\"lng\":4.85,\"lat\":45.77}]}",
+            MediaType.APPLICATION_JSON)
+        .when()
+        .put("/api/gpx-previews/" + previewId)
+        .then()
+        .statusCode(200)
+        .body("drawn", equalTo(true));
+
+    saveAsRoute(previewId, USER1).statusCode(400).body("code", equalTo("ROUTE_PLANNER_DISABLED"));
+  }
+
   // ==================== Send to GPS service ====================
 
   @Test

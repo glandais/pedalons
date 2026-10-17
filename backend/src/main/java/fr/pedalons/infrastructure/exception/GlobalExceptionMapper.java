@@ -1,6 +1,7 @@
 package fr.pedalons.infrastructure.exception;
 
 import fr.pedalons.common.exception.PedalonsException;
+import fr.pedalons.common.exception.ServiceUnavailableException;
 import fr.pedalons.common.exception.TooManyRequestsException;
 import fr.pedalons.dto.error.ErrorCode;
 import fr.pedalons.dto.error.ErrorResponse;
@@ -91,6 +92,12 @@ public class GlobalExceptionMapper implements ExceptionMapper<Throwable> {
       case IllegalArgumentException e -> {
         warn(e, "Bad request: {0}", getPath());
         return badRequest();
+      }
+      case ServiceUnavailableException sue -> {
+        // An upstream that is down or out of quota (Stadia Maps): expected and transient, already
+        // logged where it happened with what is safe to log. A WARN line, never a stack at ERROR.
+        LOG.warnv("Service unavailable: {0} {1}", sue.getErrorCode(), getPath());
+        return pedalonsError(sue);
       }
       case PedalonsException be -> {
         if (be.getStatus().getFamily() == Response.Status.Family.CLIENT_ERROR) {

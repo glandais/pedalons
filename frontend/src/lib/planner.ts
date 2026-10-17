@@ -97,13 +97,17 @@ export function computeRoute(input: RoutePoint[]): Route {
   }
 }
 
-// add points between route end and p
+// add points between route end and p. `teamSlug` names the team the route is drawn for: the backend
+// checks that team's planner flag and the caller's right to create routes there (absent: GPX tools).
 export async function add(
   route: Route,
   p: Point,
   profile: RouterProfile,
-  direct = false
+  direct = false,
+  signal?: AbortSignal,
+  teamSlug?: string
 ): Promise<Route> {
+  signal?.throwIfAborted()
   if (route.points.length === 0) {
     const point = createPoint(p.lng, p.lat)
     point.manual = true
@@ -111,13 +115,17 @@ export async function add(
   }
 
   const last = route.points[route.points.length - 1]
-  last.manual = true
 
-  const segment = await router(last, p, profile, direct)
+  const segment = await router(last, p, profile, direct, signal, teamSlug)
+  // Nothing of the route is touched before the router answered: an abandoned call leaves it intact.
+  last.manual = true
   if (segment.length > 0) {
-    // Snap the previous control point to the route start (nearest road)
-    last.lng = segment[0].lng
-    last.lat = segment[0].lat
+    // Snap the previous control point to the route start (nearest road). Only a routed leg moves
+    // it: a straight line returns just its target, which is not where the leg starts.
+    if (isRouted(last, p, direct)) {
+      last.lng = segment[0].lng
+      last.lat = segment[0].lat
+    }
     route.points.push(...segment)
   }
   route.points[route.points.length - 1].manual = true
@@ -132,8 +140,11 @@ export async function insert(
   p: Point,
   endPoint: RoutePoint | undefined,
   profile: RouterProfile,
-  direct = false
+  direct = false,
+  signal?: AbortSignal,
+  teamSlug?: string
 ): Promise<Route> {
+  signal?.throwIfAborted()
   const startIdx = startPoint ? route.points.findIndex((pt) => pt.idx === startPoint.idx) : -1
   const endIdx = endPoint
     ? route.points.findIndex((pt) => pt.idx === endPoint.idx)
@@ -144,8 +155,8 @@ export async function insert(
 
   // Route segments (parallel if both needed)
   const [segmentToP, segmentToEnd] = await Promise.all([
-    startPoint ? router(startPoint, p, profile, direct) : Promise.resolve([]),
-    endPoint ? router(p, endPoint, profile, direct) : Promise.resolve([]),
+    startPoint ? router(startPoint, p, profile, direct, signal, teamSlug) : Promise.resolve([]),
+    endPoint ? router(p, endPoint, profile, direct, signal, teamSlug) : Promise.resolve([]),
   ])
 
   // Snap the manual point to the nearest road using segment endpoints
@@ -159,7 +170,7 @@ export async function insert(
   manualPoint.manual = true
 
   // Snap boundary points to route endpoints
-  if (before.length > 0 && segmentToP.length > 0) {
+  if (before.length > 0 && segmentToP.length > 0 && isRouted(startPoint!, p, direct)) {
     const lastBefore = before[before.length - 1]
     lastBefore.lng = segmentToP[0].lng
     lastBefore.lat = segmentToP[0].lat
@@ -168,7 +179,7 @@ export async function insert(
   // Keep points after and including end
   const after = route.points.slice(endIdx)
 
-  if (after.length > 0 && segmentToEnd.length > 0) {
+  if (after.length > 0 && segmentToEnd.length > 0 && isRouted(p, endPoint!, direct)) {
     const firstAfter = after[0]
     firstAfter.lng = segmentToEnd[segmentToEnd.length - 1].lng
     firstAfter.lat = segmentToEnd[segmentToEnd.length - 1].lat
@@ -185,8 +196,11 @@ export async function remove(
   startPoint: RoutePoint | undefined,
   endPoint: RoutePoint | undefined,
   profile: RouterProfile,
-  direct = false
+  direct = false,
+  signal?: AbortSignal,
+  teamSlug?: string
 ): Promise<Route> {
+  signal?.throwIfAborted()
   // Removing first point: just keep from endPoint onwards
   if (!startPoint && endPoint) {
     const endIdx = route.points.findIndex((pt) => pt.idx === endPoint.idx)
@@ -211,7 +225,7 @@ export async function remove(
   const endIdx = route.points.findIndex((pt) => pt.idx === endPoint!.idx)
 
   const before = route.points.slice(0, startIdx + 1)
-  const segment = await router(startPoint!, endPoint!, profile, direct)
+  const segment = await router(startPoint!, endPoint!, profile, direct, signal, teamSlug)
   const after = route.points.slice(endIdx)
 
   return computeRoute([...before, ...segment, ...after])
@@ -224,20 +238,30 @@ export function geojson(route: Route): GeoJSON.LineString {
   }
 }
 
+/** Whether the leg from `from` to `to` goes through the router (a straight line or a hop under 5 m does not). */
+function isRouted(from: Point, to: Point, direct: boolean): boolean {
+  return !direct && distance(from.lng, from.lat, to.lng, to.lat) >= 5
+}
+
 async function router(
   from: Point,
   to: Point,
   profile: RouterProfile,
-  direct: boolean
+  direct: boolean,
+  signal?: AbortSignal,
+  teamSlug?: string
 ): Promise<RoutePoint[]> {
-  if (direct || distance(from.lng, from.lat, to.lng, to.lat) < 5) {
+  if (!isRouted(from, to, direct)) {
     return [createPoint(to.lng, to.lat)]
   }
-  const response = await routerRoute({
-    from,
-    to,
-    profile,
-  })
+  // Routing is billed per request: never send one for an operation already abandoned.
+  signal?.throwIfAborted()
+  // The planner renders the failure itself, by code (plannerErrorMessage): no global toast on top.
+  const response = await routerRoute(
+    { from, to, profile, teamSlug },
+    { skipErrorToast: true },
+    signal
+  )
   return createPoints(response.route.coordinates)
 }
 

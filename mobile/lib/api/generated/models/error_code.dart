@@ -70,6 +70,14 @@ enum ErrorCode {
   gpxMergeTooManyTracks('GPX_MERGE_TOO_MANY_TRACKS'),
   @JsonValue('ROUTE_PLANNER_DISABLED')
   routePlannerDisabled('ROUTE_PLANNER_DISABLED'),
+  @JsonValue('ROUTING_QUOTA_EXCEEDED')
+  routingQuotaExceeded('ROUTING_QUOTA_EXCEEDED'),
+  @JsonValue('ROUTING_SEGMENT_TOO_LONG')
+  routingSegmentTooLong('ROUTING_SEGMENT_TOO_LONG'),
+  @JsonValue('ROUTING_NO_ROUTE')
+  routingNoRoute('ROUTING_NO_ROUTE'),
+  @JsonValue('ROUTING_UNAVAILABLE')
+  routingUnavailable('ROUTING_UNAVAILABLE'),
   @JsonValue('INVALID_FORMAT')
   invalidFormat('INVALID_FORMAT'),
   @JsonValue('INVALID_TIMEZONE')

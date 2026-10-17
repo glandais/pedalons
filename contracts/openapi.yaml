@@ -2125,6 +2125,10 @@ components:
       - GPX_MERGE_FILE_COUNT
       - GPX_MERGE_TOO_MANY_TRACKS
       - ROUTE_PLANNER_DISABLED
+      - ROUTING_QUOTA_EXCEEDED
+      - ROUTING_SEGMENT_TOO_LONG
+      - ROUTING_NO_ROUTE
+      - ROUTING_UNAVAILABLE
       - INVALID_FORMAT
       - INVALID_TIMEZONE
       - RENTAL_PERIOD_MISSING
@@ -2528,6 +2532,7 @@ components:
       - createdAt
       - gpxUrl
       - fitUrl
+      - drawn
       - tracks
       - waypoints
       properties:
@@ -2570,6 +2575,11 @@ components:
         fitUrl:
           type: string
           description: URL to download the analysed track as a FIT file
+        drawn:
+          type: boolean
+          description: Whether the track was drawn in the route planner (true) rather
+            than imported from a GPX file. A drawn preview can only become a route
+            of a team whose route planner is enabled; false when the origin is unknown
         tracks:
           type: array
           items:
@@ -5401,6 +5411,13 @@ components:
           $ref: "#/components/schemas/GeoPoint"
         profile:
           $ref: "#/components/schemas/RouterProfile"
+        teamSlug:
+          type: string
+          description: "Slug of the team the route is being drawn for. When present,\
+            \ the team must have the route planner enabled and the caller must be\
+            \ allowed to create routes in it. When absent, the domain's GPX planner\
+            \ must be enabled."
+          maxLength: 250
     RouterResponse:
       type: object
       required:
@@ -10619,9 +10636,9 @@ paths:
   /api/gpx-previews/from-points:
     post:
       summary: Create an analysed GPX file from planner points
-      description: "Builds a preview from a route drawn with the planner (no GPX file),\
-        \ runs the elevation and climb pipeline, and stores the result under an unguessable\
-        \ identifier for 30 days"
+      description: "Builds a preview from a route drawn with the planner (no GPX file;\
+        \ drawn = true), runs the elevation and climb pipeline, and stores the result\
+        \ under an unguessable identifier for 30 days"
       operationId: createPreviewFromPoints
       tags:
       - GPX previews
@@ -10889,7 +10906,10 @@ paths:
   /api/gpx-previews/{previewId}/routes/{teamSlug}:
     post:
       summary: Save an analysed GPX file as a route
-      description: Creates a team route from the preview's original upload
+      description: Creates a team route from the preview's original upload. A preview
+        that was drawn in the route planner (drawn = true) is refused with ROUTE_PLANNER_DISABLED
+        when the team has no route planner; an imported GPX file can become a route
+        of any team.
       operationId: createRouteFromPreview
       tags:
       - GPX previews
@@ -10920,7 +10940,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/RouteDto"
         "400":
-          description: Invalid request
+          description: "Invalid request, or drawn preview and team without route planner"
           content:
             application/json:
               schema:
@@ -11519,8 +11539,13 @@ paths:
   /api/router:
     post:
       summary: Calculate route
-      description: Calculate a route between two points using the Stadia Maps routing
-        API
+      description: "Calculate a route between two points using the Stadia Maps routing\
+        \ API. Each call is billed against a monthly quota, so the checks come first:\
+        \ with teamSlug, the caller must be allowed to create routes in that team\
+        \ and the team must have the route planner enabled; without it, the domain's\
+        \ GPX planner must be enabled. Otherwise ROUTE_PLANNER_DISABLED. Routing failures\
+        \ have their own codes: ROUTING_SEGMENT_TOO_LONG and ROUTING_NO_ROUTE (400),\
+        \ ROUTING_QUOTA_EXCEEDED and ROUTING_UNAVAILABLE (503)."
       operationId: route
       tags:
       - Router
@@ -11538,21 +11563,34 @@ paths:
               schema:
                 $ref: "#/components/schemas/RouterResponse"
         "400":
-          description: Invalid request parameters
+          description: "Invalid request parameters, planner disabled (ROUTE_PLANNER_DISABLED),\
+            \ segment too long (ROUTING_SEGMENT_TOO_LONG) or no route between the\
+            \ points (ROUTING_NO_ROUTE)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: User may not create routes in the team
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Team not found in this domain
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
         "503":
-          description: Routing service unavailable
+          description: Routing service unavailable (ROUTING_UNAVAILABLE) or its monthly
+            quota is spent (ROUTING_QUOTA_EXCEEDED)
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: Not Authorized
-        "403":
-          description: Not Allowed
       security:
       - SecurityScheme:
         - user
@@ -19344,7 +19382,7 @@ paths:
                 $ref: "#/components/schemas/VersionDto"
 info:
   title: Pedalons API
-  version: 11.5.3
+  version: 11.6.0
   description: API for Pedalons Cycling Team Management Platform
 servers:
 - url: http://localhost:8080

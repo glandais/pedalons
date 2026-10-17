@@ -322,7 +322,7 @@ e-mail au support.
 Trois tables : l'abonnement par équipe, ses factures, le journal des webhooks Qonto.
 
 ```sql
--- V72__billing.sql (nom indicatif)
+-- V<n>__billing.sql (nom indicatif ; V72 est prise par gpx_preview_drawn)
 create table team_subscriptions (
   id                     bigint primary key,
   team_id                bigint not null unique references teams(id),
@@ -555,12 +555,12 @@ GET   /api/admin/billing/unmatched-credits       → virements reçus sans factu
 Qonto, la page de tarifs ne montre aucun bouton de souscription et tout le monde est en « Club » —
 c'est l'état de la phase 1 du lancement, §10).
 
-**Majeure ou mineure ?** Les champs ajoutés sont des ajouts (mineure, `11.6.0`). Ce qui est une
+**Majeure ou mineure ?** Les champs ajoutés sont des ajouts (mineure). Ce qui est une
 rupture, c'est le **comportement** : des actions qui réussissaient répondent `403 PLAN_REQUIRED`
 ou `409 PLAN_MEMBER_LIMIT_REACHED`. Un mobile ancien afficherait une erreur générique. Comme le
 mobile est hors stores et republié avec le backend (`API-42`), on peut rester en mineure pour le
 contrat et traiter la rupture par la republication — **à trancher au §11**. Le plan propose
-`11.6.0` pour l'ajout des champs (phase 1, inerte) et `12.0.0` pour l'activation des refus
+la prochaine mineure pour l'ajout des champs (phase 1, inerte) et `12.0.0` pour l'activation des refus
 (phase 3).
 
 ### 5.7 Admin plateforme
@@ -796,7 +796,7 @@ et laisse le produit entier ; l'ordre suit le lancement (§1).
 | Lot | Ledger | Contenu | Taille | Dépend de |
 |---|---|---|---|---|
 | **0. Décisions et vérifications** | `BILL-1` | Les choix du §11 tranchés ; expert-comptable consulté (TVA, mentions, avoir, facture électronique) ; accès au bac à sable Qonto ; F1, F2, F3 et F6 vérifiés en bac à sable | — | — |
-| **1. Socle inerte** | `BILL-2` | `V72` (les trois tables), `TeamSubscription`, `TeamEntitlements` et son résolveur ; `plan` / `entitlements` / `memberLimit` dans `TeamDetailDto` (`11.6.0`) ; `AdminTeamDto` et `PATCH …/subscription` ; `BILLING_ENABLED=false` ; la migration de lancement qui pose « Club offert jusqu'au 31 mars 2027 » sur toute équipe existante. **Aucun refus actif.** | M | 0 |
+| **1. Socle inerte** | `BILL-2` | la prochaine migration (les trois tables), `TeamSubscription`, `TeamEntitlements` et son résolveur ; `plan` / `entitlements` / `memberLimit` dans `TeamDetailDto` (prochaine mineure) ; `AdminTeamDto` et `PATCH …/subscription` ; `BILLING_ENABLED=false` ; la migration de lancement qui pose « Club offert jusqu'au 31 mars 2027 » sur toute équipe existante. **Aucun refus actif.** | M | 0 |
 | **2. Le moteur Qonto** | `BILL-3` | `QontoGateway`, souscription, `SubscriptionClock`, `SubscriptionScheduler`, `BillingWorker`, émission et envoi, copie des PDF, webhook et file `billing_events`, rapprochement, avoirs, notifications aux admins (`NOTIF`), pages admin plateforme, `GET /api/billing/plans` ; garde-fou « pas de facture hors prod » ; runbook et secrets ; recette en bac à sable sur staging | L | 1 |
 | **3. Web** | `BILL-4` | Page `/tarifs` (routes.yaml), onglet « Abonnement », devis, `PlanRequiredNotice`, compteur de membres, vitrine ; e2e | M | 1 (affichage), 2 (souscription) |
 | **4. Juridique** | `BILL-5` (`LEGAL`) | Article « Abonnements » des CGU, Qonto dans la politique, finalité et conservation, préavis de prix | S | 0 |

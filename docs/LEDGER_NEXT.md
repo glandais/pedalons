@@ -352,16 +352,18 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
       (`GroupRouteMap`), parcours et voyage. Aujourd'hui `RideDetailPage`, `TripDetailPage` et
       `GroupRouteMap` chargent la carte en `React.lazy` mais la montent dès le rendu.
 
-- [ ] `WEB-99` **Éditeur de parcours web, desktop et web mobile (L, en quatre lots)** — le plan est
+- [ ] `WEB-100` **Éditeur de parcours web, desktop et web mobile (L, en quatre lots)** — le plan est
       [`plans/2026-10-17-editeur-parcours-web.md`](plans/2026-10-17-editeur-parcours-web.md), et
       **le suivi fin se fait dans le plan**, pas ici. L'éditeur (`RoutePlanner.tsx`,
       `useRoutePlanner.ts`, `lib/planner.ts`) est utilisable à la souris, difficilement au doigt
       (carte en `70dvh` dans un formulaire qui défile, mode tactile figé au montage, cibles de
       29 px), lance des calculs concurrents sans annulation, et n'a ni profil altimétrique
-      d'édition, ni inverser / aller-retour / boucle, ni recherche d'adresse. Lots : robustesse,
+      d'édition, ni inverser / aller-retour / boucle. Lots : robustesse,
       disposition et web mobile, standard attendu, différenciation. Le routage passe chez Stadia
-      Maps, facturé à la requête : la partie backend attend ce commit. Huit décisions au §10 du
-      plan.
+      Maps (livré), facturé à la requête. Le lot 1 (robustesse) est fait côté frontend le
+      17 octobre 2026, et son volet backend (`A10`) aussi : codes `ROUTING_*`, `teamSlug` sur
+      `/api/router`, colonne `drawn` (`V72`, contrat `11.6.0`).
+      Six décisions restent au §10 du plan.
 
 ### Couverture e2e — ce que l'audit du 27 septembre laisse ouvert
 
@@ -1069,9 +1071,9 @@ et le préfixe `BILL` lui-même (Q12) se tranche avant le premier commit de code
       équipes offertes, droits avant paiement, carte, devis, majeure ou mineure, préfixe, TVA et
       mentions avec l'expert-comptable, rétractation) ; vérifier dans le bac à sable Qonto ce que
       le §9 laisse ouvert (clé d'API suffisante pour les factures et les webhooks, rapprochement
-      automatique des virements, avoirs) ; puis le lot 1 du §10 : `V72` (`team_subscriptions`,
+      automatique des virements, avoirs) ; puis le lot 1 du §10 : la prochaine migration Flyway (`team_subscriptions`,
       `billing_invoices`, `billing_events`), `TeamSubscription`, `TeamEntitlements` et son
-      résolveur, `plan` / `entitlements` / `memberLimit` dans `TeamDetailDto` (`11.6.0`),
+      résolveur, `plan` / `entitlements` / `memberLimit` dans `TeamDetailDto` (prochaine mineure du contrat),
       `AdminTeamDto` et `PATCH /api/admin/teams/{id}/subscription`, `BILLING_ENABLED=false`, et la
       migration de lancement qui pose « Club offert jusqu'au 31 mars 2027 » sur toute équipe
       existante — **aucun refus actif à ce stade**. Les lots suivants (`BILL-2` à `BILL-9`, §10 du
@@ -1096,6 +1098,7 @@ redevient une entrée de sa section sous le même identifiant.
 | `API-32` | **Champ de contact libre sur une annonce** | Écarté au profit du relais e-mail | C'était la solution la moins chère, et elle publie une donnée personnelle **irrévocablement** à toute l'équipe (jusqu'à 1 999 personnes) : ce qui a été lu ne se dépublie pas. Retirer le champ plus tard ne répare rien |
 | `API-33` | **`GET /api/rides` et listes mono-type** | Non créées ; `/api/publications?type=RIDE` est la surface canonique | Deux surfaces = deux jeux de filtres à garder cohérents. `RideListResponse` / `TripListResponse` existent encore comme records retournés par **aucun endpoint** (schémas orphelins du contrat, que rien ne référence) : ils auraient pu partir avec l'une des MAJOR 9.0.0 à 11.0.0. À supprimer avec la prochaine MAJOR, pas pour eux seuls |
 | `API-34` | **`acceptTerms` obligatoire à l'inscription (contrat `4.1.0`)** | Laissé en mineure | Historique : la rupture n'a touché que les builds mobiles d'avant 4.1.0, qui ne circulent plus (le mobile est republié avec le contrat, choix d'`API-42`) |
+| `API-127` | **Contourner `ROUTE_PLANNER_DISABLED` d'un aperçu tracé** | Non étanche, assumé (décision 3 d'`A10`) | Seul le dessin est gouverné. `downloadGpx` d'un aperçu est public : exporter le GPX d'un aperçu tracé puis le réimporter comme fichier (`drawn=false`) le fait entrer dans une équipe sans planificateur. Ne pas présenter le contrôle comme un verrou ; les aperçus antérieurs à `V72` sont aussi `drawn=false` |
 | `API-93` | **Statistiques de voyage stockées en base** (BACKLOG « Trip stats (save in DB) ») | Non (décidé le 9 octobre 2026 avec le propriétaire) | `TripDto.totalDistance` et `totalElevationGain` (contrat `1.3.0`) sont calculés à la lecture, une requête par page (`TripSummaryRepository.loadStageAggregates`), et suffisent aux écrans web et mobile. Une colonne dénormalisée devrait suivre chaque modification d'étape ou de parcours, comme la fin stockée (`API-85`, `API-87`). À rouvrir sur une mesure réelle de coût |
 | `API-89` | **Fin stockée pendant le déploiement à chaud** | Acceptée le 6 octobre 2026 (`API-85`) | Pendant la minute où l'ancien et le nouveau backend partagent la base, une sortie ou un voyage **modifié** par l'ancien garde sa fin précédente, non nulle, que le remplissage au démarrage (`PublicationEndBackfill`, lignes vides seulement) ne corrige pas ; seules les lignes **créées** par l'ancien profitent du repli départ + 3 h. Fenêtre d'une minute, corrigée au prochain enregistrement. À rouvrir si un déploiement long ou un retour arrière le rendait visible |
 | `API-54` | **exiftool pour retirer les métadonnées des images** | Écarté le 29 septembre 2026, après mesure sur un corpus synthétique (métadonnées marquées, pixels comparés) | exiftool (micro-service ou WASM) retire ce qu'il connaît au lieu de ne garder que ce qui est autorisé : il a laissé passer un chunk PNG privé et les octets après le trailer GIF, et refusé un WebP valide. Il ne nettoie pas les PDF, il a des CVE répétées (dont CVE-2026-7580, qui touche la 13.50) et il ajoute un conteneur. En WASM (zeroperl sur Chicory), sa sortie est identique mais il prend 17 à 19 s par image. imgproxy, écarté le même jour parce qu'il n'a pas de mode sans perte, a finalement été retenu : la perte d'un réencodage a été acceptée pour un code plus simple, qui ne laisse rien passer par construction et lit aussi HEIC, AVIF, TIFF et JPEG XL (`API-43`) |

@@ -281,7 +281,7 @@ export const useCreatePreview = <TError = ErrorType<ErrorResponse | void>, TCont
   return useMutation(getCreatePreviewMutationOptions(options), queryClient)
 }
 /**
- * Builds a preview from a route drawn with the planner (no GPX file), runs the elevation and climb pipeline, and stores the result under an unguessable identifier for 30 days
+ * Builds a preview from a route drawn with the planner (no GPX file; drawn = true), runs the elevation and climb pipeline, and stores the result under an unguessable identifier for 30 days
  * @summary Create an analysed GPX file from planner points
  */
 export const createPreviewFromPoints = (
@@ -869,7 +869,7 @@ export const useUploadToGpsService = <TError = ErrorType<ErrorResponse | void>, 
   return useMutation(getUploadToGpsServiceMutationOptions(options), queryClient)
 }
 /**
- * Creates a team route from the preview's original upload
+ * Creates a team route from the preview's original upload. A preview that was drawn in the route planner (drawn = true) is refused with ROUTE_PLANNER_DISABLED when the team has no route planner; an imported GPX file can become a route of any team.
  * @summary Save an analysed GPX file as a route
  */
 export const createRouteFromPreview = (

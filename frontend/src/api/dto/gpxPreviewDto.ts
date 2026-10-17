@@ -28,6 +28,8 @@ export interface GpxPreviewDto {
   gpxUrl: string
   /** URL to download the analysed track as a FIT file */
   fitUrl: string
+  /** Whether the track was drawn in the route planner (true) rather than imported from a GPX file. A drawn preview can only become a route of a team whose route planner is enabled; false when the origin is unknown */
+  drawn: boolean
   /** Tracks */
   tracks: TrackDto[]
   /** Waypoints */

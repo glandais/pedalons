@@ -210,6 +210,7 @@ export function RouteEditor({
               <RoutePlanner
                 onPointsChange={setPlannerPoints}
                 initialTrack={initialTrack}
+                teamSlug={team.slug}
                 teamLocation={team.geometry?.coordinates as [number, number] | undefined}
               />
             </Box>

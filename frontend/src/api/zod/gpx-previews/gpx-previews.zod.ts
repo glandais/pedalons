@@ -61,6 +61,11 @@ export const CreatePreviewResponse = zod
       ),
     gpxUrl: zod.string().describe('URL to download the analysed GPX file'),
     fitUrl: zod.string().describe('URL to download the analysed track as a FIT file'),
+    drawn: zod
+      .boolean()
+      .describe(
+        'Whether the track was drawn in the route planner (true) rather than imported from a GPX file. A drawn preview can only become a route of a team whose route planner is enabled; false when the origin is unknown'
+      ),
     tracks: zod
       .array(
         zod
@@ -131,7 +136,7 @@ export const CreatePreviewResponse = zod
   .describe('Analysed GPX file, not attached to any team')
 
 /**
- * Builds a preview from a route drawn with the planner (no GPX file), runs the elevation and climb pipeline, and stores the result under an unguessable identifier for 30 days
+ * Builds a preview from a route drawn with the planner (no GPX file; drawn = true), runs the elevation and climb pipeline, and stores the result under an unguessable identifier for 30 days
  * @summary Create an analysed GPX file from planner points
  */
 export const createPreviewFromPointsBodyNameMin = 3
@@ -191,6 +196,11 @@ export const CreatePreviewFromPointsResponse = zod
       ),
     gpxUrl: zod.string().describe('URL to download the analysed GPX file'),
     fitUrl: zod.string().describe('URL to download the analysed track as a FIT file'),
+    drawn: zod
+      .boolean()
+      .describe(
+        'Whether the track was drawn in the route planner (true) rather than imported from a GPX file. A drawn preview can only become a route of a team whose route planner is enabled; false when the origin is unknown'
+      ),
     tracks: zod
       .array(
         zod
@@ -286,6 +296,11 @@ export const MergePreviewsResponse = zod
       ),
     gpxUrl: zod.string().describe('URL to download the analysed GPX file'),
     fitUrl: zod.string().describe('URL to download the analysed track as a FIT file'),
+    drawn: zod
+      .boolean()
+      .describe(
+        'Whether the track was drawn in the route planner (true) rather than imported from a GPX file. A drawn preview can only become a route of a team whose route planner is enabled; false when the origin is unknown'
+      ),
     tracks: zod
       .array(
         zod
@@ -424,6 +439,11 @@ export const UpdatePreviewResponse = zod
       ),
     gpxUrl: zod.string().describe('URL to download the analysed GPX file'),
     fitUrl: zod.string().describe('URL to download the analysed track as a FIT file'),
+    drawn: zod
+      .boolean()
+      .describe(
+        'Whether the track was drawn in the route planner (true) rather than imported from a GPX file. A drawn preview can only become a route of a team whose route planner is enabled; false when the origin is unknown'
+      ),
     tracks: zod
       .array(
         zod
@@ -519,6 +539,11 @@ export const GetPreviewResponse = zod
       ),
     gpxUrl: zod.string().describe('URL to download the analysed GPX file'),
     fitUrl: zod.string().describe('URL to download the analysed track as a FIT file'),
+    drawn: zod
+      .boolean()
+      .describe(
+        'Whether the track was drawn in the route planner (true) rather than imported from a GPX file. A drawn preview can only become a route of a team whose route planner is enabled; false when the origin is unknown'
+      ),
     tracks: zod
       .array(
         zod
@@ -616,7 +641,7 @@ export const UploadToGpsServiceResponse = zod
   .describe('Result of uploading a route to a GPS service')
 
 /**
- * Creates a team route from the preview's original upload
+ * Creates a team route from the preview's original upload. A preview that was drawn in the route planner (drawn = true) is refused with ROUTE_PLANNER_DISABLED when the team has no route planner; an imported GPX file can become a route of any team.
  * @summary Save an analysed GPX file as a route
  */
 export const CreateRouteFromPreviewParams = zod.object({

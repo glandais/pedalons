@@ -17,6 +17,8 @@ import fr.pedalons.dto.gpx.response.GpxPreviewListResponse;
 import fr.pedalons.dto.gpx.response.GpxPreviewSummaryDto;
 import fr.pedalons.dto.routes.request.RouteRequest;
 import fr.pedalons.dto.routes.response.RouteDto;
+import fr.pedalons.enums.ActionType;
+import fr.pedalons.enums.EntityType;
 import fr.pedalons.enums.GpsServiceType;
 import fr.pedalons.infrastructure.imgproxy.ImgProxyService;
 import fr.pedalons.infrastructure.storage.StorageService;
@@ -28,8 +30,10 @@ import fr.pedalons.service.route.GpxProcessingService.ComputedGpx;
 import fr.pedalons.service.route.RouteService;
 import fr.pedalons.service.route.response.TrackMetadata;
 import fr.pedalons.service.security.PedalonsQueryContext;
+import fr.pedalons.service.security.SecurityVerifier;
 import fr.pedalons.service.security.annotation.Logged;
 import fr.pedalons.service.security.annotation.Public;
+import fr.pedalons.service.team.TeamService;
 import fr.pedalons.service.thumbnail.ThumbnailService;
 import io.github.glandais.engine.gpx.GpxDocument;
 import io.quarkus.narayana.jta.QuarkusTransaction;
@@ -91,6 +95,10 @@ public class GpxPreviewService {
 
   @Inject RouteService routeService;
 
+  @Inject TeamService teamService;
+
+  @Inject SecurityVerifier securityVerifier;
+
   @Inject ThumbnailService thumbnailService;
 
   @Inject ImgProxyService imgProxyService;
@@ -114,6 +122,14 @@ public class GpxPreviewService {
    * String)} for why this is deliberately not {@code @Transactional}.
    */
   public GpxPreview create(GpxDocument gpx, String fallbackName) {
+    return create(gpx, fallbackName, false);
+  }
+
+  /**
+   * As {@link #create(GpxDocument, String)}, recording whether the track was {@code drawn} in the
+   * planner (true) or comes from an imported file (false).
+   */
+  public GpxPreview create(GpxDocument gpx, String fallbackName, boolean drawn) {
     User creator = pedalonsContext.getUser();
     Domain domain = pedalonsContext.getDomain();
     UUID publicId = UUID.randomUUID();
@@ -151,6 +167,7 @@ public class GpxPreviewService {
             tracks,
             waypoints);
     preview.setHasThumbnail(renderAndUploadThumbnail(publicId, tracks));
+    preview.setDrawn(drawn);
 
     try {
       QuarkusTransaction.requiringNew().run(() -> gpxPreviewRepository.persist(preview));
@@ -217,7 +234,7 @@ public class GpxPreviewService {
   @Logged
   public GpxPreviewDto createPreviewFromPoints(String name, List<GeoPoint> points) {
     checkPlannerAllowed();
-    return toDto(create(gpxProcessingService.fromPoints(name, points), name));
+    return toDto(create(gpxProcessingService.fromPoints(name, points), name, true));
   }
 
   /**
@@ -257,11 +274,15 @@ public class GpxPreviewService {
     UUID pid = preview.getPublicId();
 
     GpxDocument gpx = null;
+    // A file replaces the track with an import, points replace it with a drawing: the origin
+    // follows the last one (A10).
+    boolean drawn = false;
     if (gpxPath != null) {
       gpx = gpxProcessingService.parseGpx(gpxPath);
     } else if (points != null && !points.isEmpty()) {
       checkPlannerAllowed();
       gpx = gpxProcessingService.fromPoints(name, points);
+      drawn = true;
     }
 
     if (gpx == null) {
@@ -290,6 +311,7 @@ public class GpxPreviewService {
     }
 
     boolean hasThumbnail = renderAndUploadThumbnail(pid, tracks);
+    boolean newDrawn = drawn;
 
     return QuarkusTransaction.requiringNew()
         .call(
@@ -303,6 +325,7 @@ public class GpxPreviewService {
               managed.setTracks(tracks);
               managed.setWaypoints(waypoints);
               managed.setHasThumbnail(hasThumbnail);
+              managed.setDrawn(newDrawn);
               return toDto(managed);
             });
   }
@@ -360,10 +383,25 @@ public class GpxPreviewService {
    * processing the preview happened to receive.
    *
    * <p>Team authorization is enforced by {@code RouteService.createRoute}'s {@code @CheckAccess}.
+   * A preview that was drawn in the planner is refused here, before the download, when the team has
+   * no route planner ({@code ROUTE_PLANNER_DISABLED}): the route is rebuilt from the original GPX,
+   * so {@code RouteService} would see a file and let the drawing through. An imported file stays
+   * open to every team, like {@code RouteService.checkPlannerAllowed}. Members' rights are checked
+   * first, so the flag is not revealed to a non-member.
+   *
+   * <p>Not watertight, by decision: the GPX of a preview is public, so a drawn track can be exported
+   * and re-imported as a file ({@code drawn=false}). Only the drawing is governed
+   * (docs/LEDGER_*.md API-127).
    */
   @Logged
   public RouteDto createRoute(String publicId, String teamSlug, RouteRequest request) {
     GpxPreview preview = getByPublicId(publicId);
+    if (preview.isDrawn()) {
+      securityVerifier.verifyAccess(EntityType.ROUTE, ActionType.CREATE, List.of(teamSlug));
+      if (!teamService.getTeam(teamSlug).isEnableRoutePlanner()) {
+        throw new BusinessException(ErrorCode.ROUTE_PLANNER_DISABLED);
+      }
+    }
     Path gpxPath = downloadOriginalGpx(preview);
     try {
       return routeService.createRoute(teamSlug, request, gpxPath);

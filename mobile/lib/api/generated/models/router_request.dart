@@ -16,6 +16,9 @@ abstract class RouterRequest with _$RouterRequest {
     required GeoPoint from,
     required GeoPoint to,
     required RouterProfile profile,
+
+    /// Slug of the team the route is being drawn for. When present, the team must have the route planner enabled and the caller must be allowed to create routes in it. When absent, the domain's GPX planner must be enabled.
+    String? teamSlug,
   }) = _RouterRequest;
 
   factory RouterRequest.fromJson(Map<String, Object?> json) =>

@@ -14,7 +14,7 @@ const getServerSnapshot = () => false
  * With `true` it starts from `initialValue` on every mount, so each client-side navigation would
  * render one frame for the wrong viewport.
  */
-function useMediaMatch(query: string): boolean {
+export function useMediaMatch(query: string): boolean {
   const subscribe = useCallback(
     (onChange: () => void) => {
       const mediaQuery = window.matchMedia(query)

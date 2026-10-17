@@ -140,9 +140,9 @@ public class GpxPreviewResource {
   @Operation(
       summary = "Create an analysed GPX file from planner points",
       description =
-          "Builds a preview from a route drawn with the planner (no GPX file), runs the elevation"
-              + " and climb pipeline, and stores the result under an unguessable identifier for 30"
-              + " days")
+          "Builds a preview from a route drawn with the planner (no GPX file; drawn = true), runs"
+              + " the elevation and climb pipeline, and stores the result under an unguessable"
+              + " identifier for 30 days")
   @APIResponses({
     @APIResponse(
         responseCode = "201",
@@ -371,7 +371,10 @@ public class GpxPreviewResource {
   @Path("/{previewId}/routes/{teamSlug}")
   @Operation(
       summary = "Save an analysed GPX file as a route",
-      description = "Creates a team route from the preview's original upload")
+      description =
+          "Creates a team route from the preview's original upload. A preview that was drawn in the"
+              + " route planner (drawn = true) is refused with ROUTE_PLANNER_DISABLED when the team"
+              + " has no route planner; an imported GPX file can become a route of any team.")
   @APIResponses({
     @APIResponse(
         responseCode = "201",
@@ -379,7 +382,7 @@ public class GpxPreviewResource {
         content = @Content(schema = @Schema(implementation = RouteDto.class))),
     @APIResponse(
         responseCode = "400",
-        description = "Invalid request",
+        description = "Invalid request, or drawn preview and team without route planner",
         content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
     @APIResponse(
         responseCode = "401",

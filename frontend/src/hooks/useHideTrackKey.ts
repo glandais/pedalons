@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { isEditableTarget } from '@/lib/editableTarget'
 
 /**
  * Toggles a "hidden" boolean each time the user presses the "h" key, letting map
@@ -20,16 +21,7 @@ export function useHideTrackKey(): [hidden: boolean, toggle: () => void] {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key !== 'h' && e.key !== 'H') return
       if (e.ctrlKey || e.metaKey || e.altKey) return
-      const target = e.target as HTMLElement | null
-      if (
-        target &&
-        (target.isContentEditable ||
-          target.tagName === 'INPUT' ||
-          target.tagName === 'TEXTAREA' ||
-          target.tagName === 'SELECT')
-      ) {
-        return
-      }
+      if (isEditableTarget(e.target)) return
       toggle()
     }
     window.addEventListener('keydown', handleKeyDown)
