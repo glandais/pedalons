@@ -186,6 +186,11 @@ class _RideEditorFormState extends ConsumerState<_RideEditorForm> {
   /// Les noms des meneurs connus : ceux de la sortie, puis ceux choisis ici.
   final Map<String, String> _leaderNames = <String, String>{};
 
+  /// Les noms des parcours et des lieux choisis dans une feuille : affichés
+  /// tout de suite, le temps que leur détail se charge (sinon la ligne montre
+  /// un slug ou « … » pendant l'aller-retour).
+  final Map<String, String> _pickedNames = <String, String>{};
+
   /// Le dernier fuseau résolu, gardé pendant qu'un nouveau se calcule.
   late String _lastZone;
 
@@ -625,6 +630,7 @@ class _RideEditorFormState extends ConsumerState<_RideEditorForm> {
   Future<void> _editGroupRoute(int index) async {
     final RouteDto? route = await _chooseRoute();
     if (route == null || !mounted) return;
+    _pickedNames[route.slug] = route.name;
     _setGroup(index, _form.groups[index].copyWith(routeSlug: () => route.slug));
   }
 
@@ -1085,7 +1091,9 @@ class _RideEditorFormState extends ConsumerState<_RideEditorForm> {
                         title: 'rides.editor.startPlace'.tr(),
                         subtitle: startPlaceId == null
                             ? 'rides.editor.placeNone'.tr()
-                            : (startPlace?.name ?? '…'),
+                            : (startPlace?.name ??
+                                  _pickedNames[startPlaceId] ??
+                                  '…'),
                         trailing: startPlaceId == null
                             ? null
                             : EditorClearButton(
@@ -1100,6 +1108,7 @@ class _RideEditorFormState extends ConsumerState<_RideEditorForm> {
                                   start: true,
                                 );
                                 if (p != null) {
+                                  _pickedNames[p.id] = p.name;
                                   _update(
                                     _form.copyWith(startPlaceId: () => p.id),
                                   );
@@ -1113,7 +1122,9 @@ class _RideEditorFormState extends ConsumerState<_RideEditorForm> {
                         title: 'rides.editor.endPlace'.tr(),
                         subtitle: endPlaceId == null
                             ? 'rides.editor.placeNone'.tr()
-                            : (endPlace?.name ?? '…'),
+                            : (endPlace?.name ??
+                                  _pickedNames[endPlaceId] ??
+                                  '…'),
                         trailing: endPlaceId == null
                             ? null
                             : EditorClearButton(
@@ -1128,6 +1139,7 @@ class _RideEditorFormState extends ConsumerState<_RideEditorForm> {
                                   start: false,
                                 );
                                 if (p != null) {
+                                  _pickedNames[p.id] = p.name;
                                   _update(
                                     _form.copyWith(endPlaceId: () => p.id),
                                   );
@@ -1238,7 +1250,7 @@ class _RideEditorFormState extends ConsumerState<_RideEditorForm> {
                     icon: PdlIcons.route,
                     title: routeSlug == null
                         ? 'rides.editor.routeNone'.tr()
-                        : (route?.name ?? routeSlug),
+                        : (route?.name ?? _pickedNames[routeSlug] ?? routeSlug),
                     subtitle: route == null
                         ? null
                         : _routeStats(
@@ -1257,6 +1269,7 @@ class _RideEditorFormState extends ConsumerState<_RideEditorForm> {
                         : () async {
                             final RouteDto? r = await _chooseRoute();
                             if (r != null) {
+                              _pickedNames[r.slug] = r.name;
                               _update(_form.copyWith(routeSlug: () => r.slug));
                             }
                           },
@@ -1278,7 +1291,8 @@ class _RideEditorFormState extends ConsumerState<_RideEditorForm> {
                           group: _form.groups[i],
                           leaderName: _leaderNames[_form.groups[i].leaderId],
                           routeName:
-                              groupRoutes[_form.groups[i].routeSlug]?.name,
+                              groupRoutes[_form.groups[i].routeSlug]?.name ??
+                              _pickedNames[_form.groups[i].routeSlug],
                           isFirst: i == 0,
                           isLast: i == _form.groups.length - 1,
                           onChanged: (RideGroupForm g) => _setGroup(i, g),

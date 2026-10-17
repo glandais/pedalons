@@ -205,8 +205,9 @@ n'ont aucun appelant d'écran).
       `--dart-define=WEBAUTHN_RP_ID` réglés dessus, une variante d'entitlements de debug
       (`?mode=developer`) et un pas « visage reconnu » lancé par l'hôte.
 - [ ] `MOB-77` **Éditeur de sortie : recette sur appareil et test Patrol (S)** — `MOB-76` est
-      couvert par les tests unitaires et de widget, mais n'a tourné ni sur un simulateur ni contre
-      la stack e2e. À faire : créer une sortie depuis le tableau de bord (modèle compris), y
+      couvert par les tests unitaires et de widget, et par `ride_editor_test` et
+      `ride_editor_member_test` (Patrol, verts le 17 octobre 2026 sur le simulateur iOS et sur
+      l'émulateur Android). Reste la recette à la main : créer une sortie depuis le tableau de bord (modèle compris), y
       ajouter une image depuis la photothèque et une pièce jointe depuis le sélecteur de fichiers,
       la modifier depuis sa fiche, la publier puis la supprimer et la restaurer — en organisateur,
       et vérifier qu'un simple membre ne voit ni le crayon ni le menu « Gérer la sortie ». Clés dans
