@@ -109,10 +109,10 @@ const addPhoto = (page: Page, name: string, colour: [number, number, number]) =>
   addImage(page, mainOf(page), name, colour)
 
 /**
- * Rennes, as the address lookup answers it. GET /api/geocode/search is the backend's proxy to
- * Nominatim — a third-party service the stack does not include, rate-limited and changing under
- * us — so the browser's lookup is answered here; what is under test is the form, the blur and the
- * sector, not OpenStreetMap's data.
+ * Rennes, as the address lookup answers it. GET /api/geocode/search is the backend's proxy to the
+ * Stadia Maps geocoder — a paid third-party service the stack does not include, changing under us —
+ * so the browser's lookup is answered here; what is under test is the form, the blur and the
+ * sector, not the provider's data.
  */
 const RENNES: GeocodeResultDto = {
   id: 'e2e-rennes',

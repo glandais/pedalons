@@ -4,6 +4,7 @@ import { FullscreenControl, GeolocateControl } from 'react-map-gl/maplibre'
 import { IconArrowLeft } from '@tabler/icons-react'
 import { ActionIcon, Box, Group, Skeleton, Text } from '@mantine/core'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
+import { MapSearchControl } from '@/components/map/MapSearchControl'
 import { PedalonsMap } from '@/components/map/PedalonsMap'
 import { paths } from '@/config/paths'
 import { useAppName } from '@/hooks/useAppName'
@@ -62,6 +63,7 @@ export function GpxBlankMapPage() {
           <Skeleton h="100%" w="100%" radius={0} />
         ) : (
           <PedalonsMap initialViewState={initialViewState}>
+            <MapSearchControl />
             <FullscreenControl position="top-left" />
             <GeolocateControl
               position="top-left"

@@ -21,7 +21,7 @@
 # point BACKUP_AGE_IDENTITY at it, and delete it afterwards. --list does not need it.
 #
 # Not in the backup, and therefore not restored: the docker images (rebuild with ./build.sh at the
-# commit recorded in MANIFEST), data/cache (regenerable), and the shared valhalla/tileserver data.
+# commit recorded in MANIFEST), data/cache (regenerable), and the shared tileserver data.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -168,7 +168,7 @@ mkdir -p "$FETCH/minio"
 rsync_remote -a --delete --info=progress2 "$(remote_url "$SNAPSHOT")/minio/" "$FETCH/minio/"
 
 # On a host the stack declares `pedalons-shared` as external and refuses to start until it exists.
-# A workstation runs valhalla and tileserver itself (docker-compose.local.yml) and needs no such thing.
+# A workstation runs tileserver itself (docker-compose.local.yml) and needs no such thing.
 if is_swarm; then
   docker network inspect pedalons-shared >/dev/null 2>&1 \
     || die "network pedalons-shared missing — deploy the shared stack first (scripts/deploy.sh --shared)"

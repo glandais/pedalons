@@ -20,7 +20,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 @Path("/api/router")
 @Produces(MediaType.APPLICATION_JSON)
 @RolesAllowed("user")
-@Tag(name = "Router", description = "Route calculation using Valhalla")
+@Tag(name = "Router", description = "Route calculation using the Stadia Maps routing API")
 public class RouterResource {
 
   @Inject RouterService routerService;
@@ -28,7 +28,7 @@ public class RouterResource {
   @POST
   @Operation(
       summary = "Calculate route",
-      description = "Calculate a route between two points using Valhalla")
+      description = "Calculate a route between two points using the Stadia Maps routing API")
   @APIResponses({
     @APIResponse(
         responseCode = "200",
@@ -40,7 +40,7 @@ public class RouterResource {
         content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
     @APIResponse(
         responseCode = "503",
-        description = "Valhalla service unavailable",
+        description = "Routing service unavailable",
         content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
   })
   public Response route(@Valid RouterRequest request) {

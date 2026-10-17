@@ -12,6 +12,7 @@ import { IconTrash } from '@tabler/icons-react'
 import { ActionIcon, Box, Group, Loader, Skeleton, Stack, Text } from '@mantine/core'
 import { PedalonsMap } from '../map/PedalonsMap'
 import { HideTrackControl } from '../map/HideTrackControl'
+import { MapSearchControl } from '../map/MapSearchControl'
 import { useResolvedColorScheme } from '@/hooks/useResolvedColorScheme'
 import { useDefaultMapView } from '@/hooks/useDefaultMapView'
 import { KmMarkersLayer } from '../map/MapMarkers'
@@ -560,6 +561,8 @@ export function RoutePlanner({ onPointsChange, initialTrack, teamLocation }: Rou
             interactiveLayerIds={routeGeoJson ? ['route-line'] : []}
             cursor={draggingGhost ? 'grabbing' : hoverPoint ? 'pointer' : 'crosshair'}
           >
+            <MapSearchControl />
+
             <UndoRedoControl canUndo={canUndo} canRedo={canRedo} onUndo={undo} onRedo={redo} />
 
             <HideTrackControl hidden={trackHidden} onToggle={toggleTrackHidden} />

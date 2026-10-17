@@ -112,7 +112,7 @@ Il faut donc **ajouter** une notion de droit au DTO, pas la déduire des drapeau
 
 | Capacité | Où elle vit | Palier proposé |
 |---|---|---|
-| Planificateur de parcours (Valhalla, 17 Go de tuiles partagées) | `Team.enableRoutePlanner`, `Domain.enableGpxPlanner` | Club |
+| Planificateur de parcours (routage Stadia Maps, API facturée à l'usage depuis `OPS-48` : plus de 17 Go de tuiles hébergées, mais chaque calcul compte) | `Team.enableRoutePlanner`, `Domain.enableGpxPlanner` | Club |
 | Envoi vers Garmin/Karoo/Wahoo, envoi automatique (`API-120`, `GPS_SYNC_ENABLED`) | `GpsResource`, `service/gps/sync/` | Club (le lien de compte reste personnel ; c'est l'*équipe* qui ouvre la fonction à ses membres) |
 | Webhook d'équipe Slack/Discord/Mattermost | `service/notification/TeamWebhookService` | Club |
 | Résumé quotidien par e-mail (construit, coupé en prod depuis le 21 septembre 2026, `NOTIF-9`) | `NotificationScheduler` | Club — la réouverture que le rapport demande (§6-G) devient une raison de payer |
@@ -197,7 +197,8 @@ par e-mail, modèles de sortie, tags.
 
 Repères : RWGPS vend son compte club entre 199 et 599 $/an selon la taille (vérifié §9) ; un club
 de 100 membres à 20 €/an de cotisation encaisse 2 000 €. 80 € est 4 % de ce budget. Les coûts
-marginaux par club sont faibles (une base, Valhalla partagé, Open-Meteo), le coût fixe
+marginaux par club sont faibles (une base, Open-Meteo, et le routage Stadia Maps — facturé à
+l'usage depuis `OPS-48`, donc le seul qui grandit avec les clubs qui planifient), le coût fixe
 d'exploitation est l'instance Scaleway, le forfait Qonto et le temps du propriétaire : **la
 première dizaine de clubs payants couvre l'hébergement, pas le travail**. Le prix sert d'abord à
 qualifier (un club qui paie 80 € a une AG, un trésorier et des raisons de rester) et à financer
@@ -453,7 +454,7 @@ Les points de contrôle, chacun avec son code d'erreur nouveau dans `ErrorCode` 
 |---|---|---|
 | Rejoindre, accepter une invitation, être ajouté | `TeamMembershipService.joinTeam`, `TeamInvitationService.accept`, ajout par l'admin, import biketeam (`BiketeamMigrationService` : **exempté**, l'équipe migrée est offerte) | `409 PLAN_MEMBER_LIMIT_REACHED` |
 | Envoyer une invitation | `TeamInvitationService` : refus si `membres + invitations en cours ≥ limite` | idem |
-| Dessiner / modifier un tracé | `RouteResource` (planificateur), `/api/router` (Valhalla) | `403 PLAN_REQUIRED` avec `entitlement: ROUTE_PLANNER` |
+| Dessiner / modifier un tracé | `RouteResource` (planificateur), `/api/router` (Stadia Maps, facturé à l'usage) | `403 PLAN_REQUIRED` avec `entitlement: ROUTE_PLANNER` |
 | Envoyer vers un service GPS, activer l'envoi automatique | `GpsResource.uploadRoute`, `GpsRouteSyncPlanner` (filtre SQL sur les équipes titulaires, **par page, pas par ligne**) | `403 PLAN_REQUIRED` |
 | Configurer / déclencher le webhook d'équipe | `TeamWebhookService` | `403 PLAN_REQUIRED` ; en livraison, une équipe sans droit est sautée silencieusement |
 | Résumé e-mail | `NotificationScheduler` (job quotidien) | filtre par équipe, par page |
@@ -758,8 +759,9 @@ vendre ce droit avant qu'il existe : la page de tarifs ne liste que ce qui est l
 - **Open-Meteo** : devenir payant tranche la question de `OPS-29` — l'offre gratuite est réservée
   à un usage non commercial. **Avant d'encaisser le premier euro**, passer au plan payant
   (`OPEN_METEO_URL` + `OPEN_METEO_API_KEY`, aucun changement de code) ; à vérifier aussi pour
-  les tuiles VersaTiles (`pedalons.map.styles`) et le géocodage (`pedalons.geocode.user-agent`,
-  Nominatim ?) dont les conditions d'usage peuvent exclure le commercial (§9).
+  les tuiles VersaTiles (`pedalons.map.styles`) dont les conditions d'usage peuvent exclure le
+  commercial (§9). Le géocodage ne pose plus la question : il est passé de Nominatim à Stadia Maps
+  le 17 octobre 2026 (`OPS-49`), sur la même clé et le même plan payant que le routage.
 
 ---
 
@@ -779,7 +781,7 @@ vendre ce droit avant qu'il existe : la page de tarifs ne liste que ce qui est l
 | F10 | Facturation électronique : réception obligatoire pour toutes les entreprises en septembre 2026, émission pour les PME et micro-entreprises en septembre 2027 ; Qonto expose l'envoi en facture électronique | Calendrier DGFiP ; [docs.qonto.com, send e-invoice](https://docs.qonto.com/api-reference/business-api/expense-management/client-quotes-notes/client-invoices/send-a-client-invoice-by-e-invoice.md) | Moyenne — le traitement d'une association non assujettie est à confirmer |
 | F11 | App Store 3.1.1 / 3.1.3(b) : un service multi-plateforme peut ouvrir dans l'app ce qui a été acheté ailleurs, sans lien ni incitation à acheter hors de l'app ; Play a une exception équivalente | App Store Review Guidelines, Google Play Payments policy | Moyenne — relire avant la soumission |
 | F12 | Open-Meteo : gratuit « for non-commercial use », plan commercial payant par clé d'API | Conditions Open-Meteo, déjà citées par `OPS-29` | Élevée |
-| F13 | VersaTiles (`tiles.versatiles.org`) et Nominatim : conditions d'usage à relire pour un service commercial | Pages de conditions des deux projets | Moyenne |
+| F13 | VersaTiles (`tiles.versatiles.org`) : conditions d'usage à relire pour un service commercial (Nominatim ne compte plus : géocodage chez Stadia Maps depuis `OPS-49`) | Page de conditions du projet | Moyenne |
 
 Rien ici n'envoie nos données de membres chez Qonto : seuls les coordonnées de facturation du
 club, l'e-mail de facturation et celui de l'admin qui souscrit en sortent.
@@ -798,7 +800,7 @@ et laisse le produit entier ; l'ordre suit le lancement (§1).
 | **2. Le moteur Qonto** | `BILL-3` | `QontoGateway`, souscription, `SubscriptionClock`, `SubscriptionScheduler`, `BillingWorker`, émission et envoi, copie des PDF, webhook et file `billing_events`, rapprochement, avoirs, notifications aux admins (`NOTIF`), pages admin plateforme, `GET /api/billing/plans` ; garde-fou « pas de facture hors prod » ; runbook et secrets ; recette en bac à sable sur staging | L | 1 |
 | **3. Web** | `BILL-4` | Page `/tarifs` (routes.yaml), onglet « Abonnement », devis, `PlanRequiredNotice`, compteur de membres, vitrine ; e2e | M | 1 (affichage), 2 (souscription) |
 | **4. Juridique** | `BILL-5` (`LEGAL`) | Article « Abonnements » des CGU, Qonto dans la politique, finalité et conservation, préavis de prix | S | 0 |
-| **5. Activation des refus** | `BILL-6` | Les points de contrôle du §5.4 avec leurs codes d'erreur ; `12.0.0` ; `BillingLimitsResourceTest`, `BillingQueryCountTest` ; Open-Meteo payant, conditions VersaTiles/Nominatim relues | M | 1, 4 |
+| **5. Activation des refus** | `BILL-6` | Les points de contrôle du §5.4 avec leurs codes d'erreur ; `12.0.0` ; `BillingLimitsResourceTest`, `BillingQueryCountTest` ; Open-Meteo payant, conditions VersaTiles relues | M | 1, 4 |
 | **6. Mobile** | `BILL-7` (`MOB`) | Lecture des droits, actions cachées ou désactivées, rendu des deux erreurs ; republication avec 5 | S | 5 |
 | **7. Bascule** | `BILL-8` | 1er avril 2027 : expiration des paliers offerts (le job quotidien suffit), tableau de bord admin, suivi des impayés | S | 2, 5 |
 | **8. La carte** | `BILL-9` | Application OAuth Qonto, connexion Mollie, lien de paiement par facture, webhook `v1/payment-links`, Mollie dans la politique | M | 2 ; seulement si des clubs la demandent |

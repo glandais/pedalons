@@ -1,8 +1,9 @@
 # Services partages par tous les environnements deployes sur une meme machine.
 #
-# valhalla et tileserver ne portent aucune donnee applicative : jeux de donnees statiques, acces en
-# lecture seule, sollicites uniquement par le backend. Les instancier une seule fois evite de payer
-# deux fois 17 Go de tuiles Valhalla et ~1,8 Go de RSS pour le tileserver.
+# tileserver ne porte aucune donnee applicative : jeu de donnees statique, acces en lecture seule,
+# sollicite uniquement par le backend. L'instancier une seule fois evite de payer deux fois ~1,8 Go
+# de RSS. (Le routage ne tourne plus ici : le backend appelle l'API Stadia Maps avec
+# STADIAMAPS_API_KEY, lue dans le .env de chaque environnement -- docs/LEDGER_*.md OPS-48.)
 #
 # Cette stack est prealable aux stacks d'environnement : elle cree le reseau `pedalons-shared`, que
 # docker-compose.yml declare en `external`. Demarrage :
@@ -13,57 +14,16 @@
 # ignore les deux autres -- le nom de la stack est celui de la commande, et Swarm redemarre de lui-meme
 # une tache qui meurt.
 #
-# Sur un poste de travail, on ne la lance pas : docker-compose.local.yml reprend ces deux services
-# via `extends` et redeclare le reseau en reseau de projet, pour n'avoir qu'une seule stack. C'est
-# aussi lui qui leur redonne un nom de conteneur et une politique de redemarrage.
+# Sur un poste de travail, on ne la lance pas : docker-compose.local.yml reprend ce service via
+# `extends` et redeclare le reseau en reseau de projet, pour n'avoir qu'une seule stack. C'est
+# aussi lui qui lui redonne un nom de conteneur et une politique de redemarrage.
 #
-# Les noms de services `valhalla` et `tileserver` sont les alias DNS sur ce reseau : VALHALLA_URL et
-# TILESERVER_URL des .env d'environnement restent inchanges.
+# Le nom de service `tileserver` est l'alias DNS sur ce reseau : TILESERVER_URL des .env
+# d'environnement reste inchange.
 #
 # NE PAS y ajouter imgproxy/varnish tant que MinIO n'est pas mutualise : imgproxy n'expose qu'un
 # IMGPROXY_S3_ENDPOINT global et ne sait pas servir deux backends S3 distincts.
 services:
-  valhalla:
-    image: ghcr.io/valhalla/valhalla-scripted:latest
-    networks:
-      - shared
-    volumes:
-      - ./data/valhalla:/custom_files
-    environment:
-      # Ne sert qu'au premier demarrage, sur un /custom_files sans tuiles : le conteneur telecharge ce
-      # .pbf et construit (des heures). Ensuite l'image (use_tiles_ignore_pbf=True) charge le .tar
-      # sans regarder ni cette valeur ni les hashes : la changer, ou remplacer le .pbf, ne reconstruit
-      # rien. Mettre les donnees a jour : docs/OPERATIONS.md, « Updating the shared Valhalla data ».
-      tile_urls: ${VALHALLA_TILE_URLS:-http://download.geofabrik.de/europe/france-latest.osm.pbf}
-      build_elevation: "True"
-      build_admins: "True"
-      build_time_zones: "True"
-      server_threads: "4"
-      serve_tiles: "True"
-    # L'image n'en declare aucun. Sans lui, start-first ne servirait a rien : Swarm tiendrait la
-    # nouvelle tache pour prete des son lancement, avant que valhalla_service ecoute. Tant qu'aucun
-    # .tar n'existe, le conteneur construit ses premieres tuiles et ne sert rien : il compte alors
-    # pour sain, sinon Docker le tuerait au milieu d'un build de plusieurs heures.
-    healthcheck:
-      test:
-        - CMD-SHELL
-        - curl -fsS -o /dev/null http://localhost:8002/status || ! test -f /custom_files/valhalla_tiles.tar
-      interval: 5s
-      timeout: 3s
-      retries: 3
-      start_period: 120s
-    deploy:
-      # La nouvelle tache charge le .tar (quelques secondes) a cote de l'ancienne, qui sert jusqu'a ce
-      # qu'elle soit saine : la bascule sur des donnees reconstruites a cote ne coupe pas le routage.
-      # Les deux lisent leurs tuiles par mmap, en cache de pages partage.
-      update_config:
-        order: start-first
-        failure_action: rollback
-    # Pas de limite memoire, a dessein : le meme conteneur reconstruit les tuiles quand tile_urls
-    # change, et ce build de plusieurs heures a besoin de bien plus que le service. Une limite le
-    # tuerait a mi-parcours. En service, les 17 Go de tuiles sont lus par mmap, donc en cache de
-    # pages recuperable, pas en memoire propre (ledger AUD-7).
-
   tileserver:
     image: maptiler/tileserver-gl:v5.6.0
     networks:

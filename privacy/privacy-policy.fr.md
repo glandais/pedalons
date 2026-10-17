@@ -1,6 +1,6 @@
 # Politique de confidentialité
 
-**Dernière mise à jour : 16 octobre 2026**
+**Dernière mise à jour : 17 octobre 2026**
 
 La présente politique de confidentialité décrit la manière dont Pedalons (« nous », « notre », « nos ») collecte, utilise et protège vos données personnelles lorsque vous utilisez notre plateforme (site web, application mobile, extensions pour appareils GPS).
 
@@ -257,6 +257,9 @@ Nous faisons appel à des services techniques pour le fonctionnement de la plate
 - **Hammerhead, Garmin, Wahoo (États-Unis)**
   - *Rôle* : Envoi de vos itinéraires vers votre appareil GPS, uniquement si vous connectez le service : à votre demande, ou automatiquement si vous l'activez
   - *Données concernées* : Jetons OAuth, les itinéraires que vous choisissez d'envoyer et, si vous activez l'envoi automatique, ceux des sorties auxquelles vous êtes inscrit dans les 7 jours (trace, nom — pour un envoi automatique, la date et le nom du groupe s'y ajoutent ; pour Wahoo, aussi le point de départ, la distance et les dénivelés)
+- **Stadia Maps (Stadia Maps, Inc., États-Unis ; point d'entrée européen api-eu.stadiamaps.com, serveurs à Francfort et à Paris)**
+  - *Rôle* : Calcul d'itinéraires du planificateur et recherche de lieux des formulaires, interrogés par notre serveur ; barre de recherche des cartes, interrogée par votre appareil (voir « Affichage des cartes et recherche d'adresses » ci-dessous)
+  - *Données concernées* : Côté serveur : coordonnées des points de l'itinéraire que vous dessinez, profil choisi, texte saisi dans une recherche de lieu, langue d'affichage, adresse IP de notre serveur — jamais votre adresse IP ni votre identité. Depuis votre appareil, uniquement si vous tapez dans la barre de recherche d'une carte : adresse IP, texte saisi, centre de la carte affichée. Stadia Maps conserve ses journaux de requêtes (adresse IP, paramètres de la requête) environ 7 à 14 jours
 
 L'outil de mesure d'audience du site est hébergé par nos soins chez Scaleway, comme le reste de la plateforme : aucun autre prestataire ne reçoit ces statistiques.
 
@@ -268,9 +271,13 @@ Sur le site, une notification push est remise à votre navigateur par le service
 
 Les images de carte sont téléchargées par votre appareil directement auprès du fournisseur du fond de carte que vous avez choisi. Ce fournisseur reçoit votre adresse IP, la version de votre navigateur ou de votre application, et la zone de carte affichée (ce qui révèle approximativement la zone de l'itinéraire que vous regardez) ; nous ne lui transmettons rien vous concernant. Ces fournisseurs agissent en responsables de traitement indépendants, selon leurs propres politiques.
 
-La recherche de lieux (lieu de l'équipe, lieux de rendez-vous, petites annonces ; une fois connecté) passe au contraire par notre serveur, qui interroge Nominatim en votre nom : Nominatim ne reçoit que le texte saisi et votre langue d'affichage, jamais votre adresse IP ni votre identité. Les résultats sont gardés en mémoire sur notre serveur 24 heures au maximum.
+La recherche de lieux des formulaires (lieu de l'équipe, lieux de rendez-vous, petites annonces ; une fois connecté) passe au contraire par notre serveur, qui interroge Stadia Maps en votre nom : Stadia Maps ne reçoit que le texte saisi, votre langue d'affichage et l'adresse IP de notre serveur, jamais votre adresse IP ni votre identité. Les résultats sont gardés en mémoire sur notre serveur 24 heures au maximum.
+
+La barre de recherche des cartes à navigation libre (planificateur, carte des parcours, outil GPX) interroge en revanche Stadia Maps directement depuis votre appareil, comme le fait un fournisseur de fond de carte : Stadia Maps reçoit alors votre adresse IP, le texte que vous tapez et le centre de la carte affichée (qui sert à classer les résultats), et rien tant que vous n'y tapez rien ; nous ne lui transmettons rien vous concernant. Contrairement aux fournisseurs de fond de carte, Stadia Maps agit ici, comme pour la recherche des formulaires et le calcul d'itinéraires, en sous-traitant de Pedalons (article 28 du RGPD), dans le cadre de son avenant de traitement des données : il ne traite ces données que pour nous fournir le service, sans les revendre, les croiser avec d'autres sources ni s'en servir pour vous profiler, et c'est à nous que vous adressez vos demandes (section 7). Il ne reste responsable de traitement que pour ses propres besoins de sécurité, de prévention de la fraude et d'obligations légales. Ses journaux de requêtes sont conservés environ 7 à 14 jours.
 
 Les prévisions météo des sorties sont demandées à Open-Meteo par notre serveur, en tâche de fond et jamais pendant votre visite : Open-Meteo ne reçoit que le centre d'une maille d'environ 5 km autour du départ et des points du parcours (jamais le lieu de rendez-vous exact), parfois une altitude arrondie à 100 m, et l'adresse IP de notre serveur — jamais votre identité, votre compte ni votre adresse IP.
+
+Le calcul d'itinéraires du planificateur passe aussi par notre serveur, qui interroge Stadia Maps en votre nom : Stadia Maps reçoit les coordonnées des points que vous placez (et de ceux déjà calculés entre eux), le profil choisi (vélo de route, VTT, à pied…) et l'adresse IP de notre serveur — jamais votre identité, votre compte ni votre adresse IP. Nous ne conservons rien de cette demande au-delà de la réponse ; le tracé obtenu n'est enregistré que si vous sauvegardez l'itinéraire.
 
 - **VersaTiles (tiles.versatiles.org)**
   - *Rôle* : Fond de carte vectoriel (style par défaut), polices et sprites de carte
@@ -287,9 +294,6 @@ Les prévisions météo des sorties sont demandées à Open-Meteo par notre serv
 - **OpenStreetMap France (tile-cyclosm.openstreetmap.fr)**
   - *Rôle* : Fond CyclOSM
   - *Données concernées* : Adresse IP, zone de carte affichée
-- **OpenStreetMap Nominatim (nominatim.openstreetmap.org)**
-  - *Rôle* : Recherche de lieux, interrogée par notre serveur
-  - *Données concernées* : Le texte que vous saisissez et votre langue d'affichage ; jamais votre adresse IP ni votre identité
 - **Open-Meteo (api.open-meteo.com)**
   - *Rôle* : Prévisions météo des sorties, interrogé par notre serveur
   - *Données concernées* : Coordonnées du centre de mailles d'environ 5 km, altitude arrondie, adresse IP de notre serveur ; jamais votre adresse IP ni votre identité
@@ -297,7 +301,7 @@ Les prévisions météo des sorties sont demandées à Open-Meteo par notre serv
   - *Rôle* : Fond « Satellite (ESRI) »
   - *Données concernées* : Adresse IP, zone de carte affichée
 
-Le fond de carte « Michelin » est servi par nos soins (tiles.pedalons.fr) : le choisir n'implique aucun tiers. Le traitement des images, le rendu des cartes et le calcul d'itinéraires sont également auto-hébergés, et les polices du site et de l'application y sont intégrées (sauf celles des étiquettes de carte, fournies par VersaTiles).
+Le fond de carte « Michelin » est servi par nos soins (tiles.pedalons.fr) : le choisir n'implique aucun tiers. Le traitement des images et le rendu des cartes sont également auto-hébergés, et les polices du site et de l'application y sont intégrées (sauf celles des étiquettes de carte, fournies par VersaTiles).
 
 ### Autorités
 
@@ -312,6 +316,7 @@ Nos serveurs sont hébergés par **Scaleway** (Scaleway SAS, Vitry-sur-Seine, Fr
 Certains traitements que vous pouvez déclencher impliquent des serveurs situés hors de l'Union européenne :
 
 - **Services GPS tiers** (Hammerhead, Garmin, Wahoo, États-Unis) : uniquement si vous en connectez un, et seulement pour les itinéraires que vous leur envoyez ou, si vous activez l'envoi automatique, ceux des sorties auxquelles vous êtes inscrit. Ce transfert est nécessaire au service que vous demandez, la mise de l'itinéraire sur votre compte (article 49, paragraphe 1, point b, du RGPD) ; Garmin adhère en outre au cadre de protection des données UE–États-Unis (Data Privacy Framework).
+- **Calcul d'itinéraires et recherche de lieux** : les points que vous placez dans le planificateur et le profil choisi, ainsi que le texte des recherches de lieux des formulaires et votre langue d'affichage, sont envoyés par notre serveur à Stadia Maps, sans votre identité ni votre adresse IP, uniquement lorsque vous dessinez un itinéraire ou cherchez un lieu. La barre de recherche des cartes, elle, est interrogée depuis votre appareil, qui envoie alors son adresse IP, le texte tapé et le centre de la carte affichée, comme pour un fond de carte (voir section 4). Dans les deux cas nous utilisons le point d'entrée européen de Stadia Maps (api-eu.stadiamaps.com) : les requêtes aboutissent à ses serveurs de Francfort et de Paris. Stadia Maps, Inc. étant établie aux États-Unis et faisant appel à des sous-traitants ultérieurs américains (surveillance technique, suivi des erreurs), un transfert vers les États-Unis reste possible ; il est encadré par les clauses contractuelles types de la Commission européenne (module 2, de responsable de traitement à sous-traitant), incorporées à l'avenant de traitement des données de Stadia Maps.
 - **Fonds de carte et relief** : votre appareil envoie votre adresse IP et la zone affichée au fournisseur du fond que vous choisissez (voir section 4). Le fond « Satellite (ESRI) » vient d'Esri (États-Unis), qui adhère au Data Privacy Framework. Les tuiles de relief de Mapterhorn, demandées seulement si vous activez l'ombrage ou le relief 3D, sont servies par Cloudflare (États-Unis), qui y adhère aussi. Le fond OpenStreetMap est servi depuis le Royaume-Uni, qui bénéficie d'une décision d'adéquation de la Commission européenne.
 - **Composant de messagerie Firebase de Google** : l'application mobile l'intègre, et il contacte les serveurs de Google au démarrage de l'application, avant même que vous vous connectiez ou autorisiez les notifications, ce qui révèle l'adresse IP de votre appareil et crée un identifiant d'installation Firebase. L'application et le site n'intègrent que cette partie messagerie de Firebase : aucun composant d'analyse, de publicité ou de suivi de Firebase. Sur le site, ce composant n'est chargé qu'une fois les notifications activées.
 - **Notifications push** : Google (Firebase Cloud Messaging) peut traiter leur titre, leur texte et le jeton push de votre appareil aux États-Unis ; ce transfert est encadré par les clauses contractuelles types de la Commission européenne et par l'adhésion de Google LLC au Data Privacy Framework. Sur iPhone, elles sont remises par Apple (Apple Distribution International, Irlande), dont les transferts vers les États-Unis sont encadrés par les clauses contractuelles types ; dans un navigateur, par le service push de son éditeur, qui ne reçoit que le message chiffré (voir section 4). Cela n'a lieu que tant que vous autorisez les notifications.

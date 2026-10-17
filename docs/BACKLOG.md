@@ -73,7 +73,8 @@ Features that differentiate and deepen engagement.
 ### Route Features
 - [ ] Route basket (collect routes, display on single map)
 - [ ] Team/global route heatmap
-- [x] Router profile selection — six Valhalla profiles in the web planner (`RouterProfileSelector`)
+- [x] Router profile selection — six routing profiles in the web planner (`RouterProfileSelector`;
+      Valhalla costings, computed by Stadia Maps since October 2026, `OPS-48`)
 - [ ] Custom cycling map style (Maplibre) — CyclOSM (third-party raster) is among the base maps
       in the meantime
 

@@ -22,13 +22,12 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
  *
  * <p>Authenticated on purpose, though the upstream data is public: the three screens that geocode —
  * the ad editor, the place form and the team form — are all behind a login, and an anonymous
- * endpoint here would be a free Nominatim relay pointing at our {@code User-Agent}, which is exactly
- * the abuse the usage policy holds us responsible for.
+ * endpoint here would be a free relay spending our Stadia Maps quota, with our key, for anyone.
  */
 @Path("/api/geocode")
 @Produces(MediaType.APPLICATION_JSON)
 @RolesAllowed("user")
-@Tag(name = "Geocode", description = "Address lookup, proxied to OpenStreetMap Nominatim")
+@Tag(name = "Geocode", description = "Address lookup, proxied to the Stadia Maps geocoder")
 public class GeocodeResource {
 
   @Inject GeocodeService geocodeService;
@@ -39,9 +38,9 @@ public class GeocodeResource {
       summary = "Search places by name",
       description =
           "Returns at most 5 places matching the query, or an empty list when the query is shorter"
-              + " than 3 characters or the provider is unreachable. Results come from OpenStreetMap"
-              + " via Nominatim: a client displaying them must credit '© OpenStreetMap"
-              + " contributors'.")
+              + " than 3 characters or the provider is unreachable. Results come from the Stadia"
+              + " Maps geocoder: a client displaying them must credit 'Stadia Maps,"
+              + " © OpenStreetMap contributors & others'.")
   @APIResponses({
     @APIResponse(
         responseCode = "200",

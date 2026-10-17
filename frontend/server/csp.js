@@ -39,6 +39,14 @@ export const FCM_ORIGINS = [
   'https://fcmregistrations.googleapis.com',
 ]
 
+/**
+ * The place search on the free-navigation maps (`src/components/map/MapSearchControl.tsx`, docs/LEDGER_*.md
+ * WEB-99) calls Stadia Maps' European host straight from the browser, authenticated by the page's
+ * origin rather than a key. It is on every deployment and not in the config, so it is a fixed origin
+ * of the document policy — not a CSP_CONNECT_SRC_EXTRA an operator has to remember.
+ */
+export const STADIA_MAPS_ORIGINS = ['https://api-eu.stadiamaps.com']
+
 /** 128 bits from the CSPRNG, base64: unguessable, and safe inside a double-quoted attribute. */
 export function generateNonce() {
   return crypto.randomBytes(16).toString('base64')
@@ -210,10 +218,11 @@ export function createConfigOriginResolver({
  * - style-src keeps 'unsafe-inline' and no nonce: Mantine writes <style> tags and hundreds of style
  *   attributes, and a nonce in style-src would make browsers ignore 'unsafe-inline'.
  * - img-src https: — markdown images come from any host.
+ * - connect-src: 'self', the map search's host (on every map that offers it), then the config's.
  */
 export function buildDocumentPolicy({ nonce, connectOrigins = [] }) {
   if (!nonce) throw new Error('A document policy needs a nonce')
-  const connect = ["'self'", ...new Set(connectOrigins)]
+  const connect = ["'self'", ...new Set([...STADIA_MAPS_ORIGINS, ...connectOrigins])]
   return [
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}'`,

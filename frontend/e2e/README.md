@@ -18,9 +18,12 @@ scripts/e2e.sh down
 ```
 
 The app is on http://localhost:8190, mailpit on http://localhost:18025 — every port is offset from
-the workstation stack (`tribly-local`), so both run side by side. `valhalla` and `tileserver` are
-borrowed from the workstation stack's network; when it is down the e2e stack still starts, but
-routing and map tiles fail.
+the workstation stack (`tribly-local`), so both run side by side. `tileserver` is borrowed from
+the workstation stack's network; when it is down the e2e stack still starts, but map tiles fail.
+Routing (the planner, `POST /api/router`) goes to the Stadia Maps API: `scripts/e2e.sh` takes
+`STADIAMAPS_API_KEY` from its environment, else from the workstation's `.env`, and hands it to the
+backend through `docker-compose.e2e.yml` — never through `.env.e2e`, which is committed. Without a
+key it exports `E2E_NO_ROUTING=1` and `playwright.config.ts` skips `gpx-planner.e2e.ts`.
 
 From `frontend/`: `pnpm e2e` (same as `scripts/e2e.sh test`), `pnpm e2e:ui` (Playwright's UI mode),
 `pnpm e2e:typecheck`. After a failure: `pnpm exec playwright show-report e2e/.report`, or
@@ -66,9 +69,9 @@ field, give the dataset that field.
 `.github/workflows/e2e.yml` runs the whole suite **every night on `develop`** and **on demand**
 (Actions › E2E › Run workflow), never on pull requests. It builds both images on a GitHub-hosted
 runner, starts this same stack with `scripts/e2e.sh up`, and uploads the report, the traces and the
-stack's logs when something fails. There is no valhalla there: `E2E_NO_ROUTING=1` makes
-`playwright.config.ts` skip `gpx-planner.e2e.ts`. The job's first step fails unless `.env.e2e` still
-points the mailer at mailpit.
+stack's logs when something fails. The routing key comes from the repository secret
+`STADIAMAPS_API_KEY`, so the planner test runs there too (without the secret, `scripts/e2e.sh`
+skips it as above). The job's first step fails unless `.env.e2e` still points the mailer at mailpit.
 
 ## Why a separate stack
 

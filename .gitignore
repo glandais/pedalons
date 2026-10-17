@@ -111,5 +111,7 @@ mobile/screenshots/flat/
 mobile/screenshots/koubou/out/
 # Rendered by scripts/deploy.sh --monitoring (Alertmanager configuration and secrets, Caddy target)
 data/monitoring/
+# Former Valhalla tiles (17 GB, root-owned) until the operator deletes the directory (OPS-48)
+data/valhalla/
 # Launch videos rendered by the /brag skill
 brag-output/

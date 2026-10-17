@@ -17,7 +17,7 @@ rendus Koubou et `accounts.local.json` (les mots de passe des comptes de démo) 
 
 Deux clubs fictifs autour du lac d'Annecy, un par langue de la fiche (`VC du Lac d'Annecy`,
 `Annecy Lakeside Cycling`), en visibilité `TEAM` sur **staging** : sept parcours tracés par le
-Valhalla de staging (dénivelé et cols calculés par le serveur), quatre sorties à venir à trois
+routeur de staging (`/api/router`, Stadia Maps ; dénivelé et cols calculés par le serveur), quatre sorties à venir à trois
 groupes d'allure, un voyage en deux étapes, des publications, des annonces, des commentaires, et
 un vocabulaire de tags par type de contenu (`TAGS`) posé sur tout ce qui est créé. Huit
 membres fictifs communs aux deux clubs, et un compte « spectateur » par langue — celui sous lequel

@@ -27,7 +27,7 @@ import java.util.regex.Pattern;
  */
 public final class ContainerImages {
 
-  // valhalla and tileserver live in the shared file, everything else in the environment one.
+  // tileserver lives in the shared file, everything else in the environment one.
   private static final List<Path> COMPOSE_FILES =
       List.of(Path.of("../docker-compose.yml"), Path.of("../docker-compose.shared.yml"));
   private static final Pattern SERVICE = Pattern.compile("^ {2}([\\w-]+):\\s*$");

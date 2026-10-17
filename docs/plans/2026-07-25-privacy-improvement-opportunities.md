@@ -149,7 +149,11 @@ Each provider removed simplifies policy §4/§5 and strengthens the §8 no-conse
 > **2026-09-21:** ~~(b)~~ **Done (b379128c)** — geocoding goes through `GET /api/geocode/search`
 > (`NominatimLookup`, 24 h in-memory cache) and no longer leaves the browser. Follow-up:
 > `NominatimLookup.java:47` writes the typed (normalised) query to the server log when a lookup fails —
-> drop that value from the log line or mention it in the server-log paragraph. (a) still open, but now
+> drop that value from the log line or mention it in the server-log paragraph.
+> **2026-10-17:** geocoding now goes to Stadia Maps' EU host (ledger `OPS-49`), and the free-roaming
+> maps gained a search bar that queries Stadia Maps from the browser (`WEB-99`, declared in policy
+> §4/§5, `LEGAL-24`) — a new browser-side third party, the reverse of (b). The log follow-up still
+> holds: the class is now `GeocodingLookup` (`fr.pedalons.infrastructure.stadiamaps`), same line. (a) still open, but now
 > much easier: the server already generates the style document of every raster basemap (OSM, CyclOSM,
 > Esri, IGN satellite, SCAN 25, Michelin — `MapStyleService.generatedStyle`, served by
 > `MapStyleResource` at `/api/map/styles/{id}.json`, 4488bd52 / 24eb2632); pointing its `raster.tiles`

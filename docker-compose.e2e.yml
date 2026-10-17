@@ -9,16 +9,23 @@
 #      and `e2e.sh reset` empties.
 #   2. The backend reads .env.e2e, not the .env next to it — which may be a real one.
 #   3. mailpit, publishing only its HTTP API: the tests read OTP codes and verification links there.
-#   4. valhalla + tileserver are not run: the `shared` network is the workstation stack's, joined
-#      from outside (E2E_SHARED_NETWORK).
+#   4. tileserver is not run: the `shared` network is the workstation stack's, joined from outside
+#      (E2E_SHARED_NETWORK). Routing goes to the Stadia Maps API: STADIAMAPS_API_KEY is taken from
+#      the shell's environment (scripts/e2e.sh reads it from the workstation's .env, the CI from a
+#      secret), never from .env.e2e, which is committed and holds no key.
 #   5. what docker-compose.local.yml turns back on a workstation, since docker-compose.yml is written
 #      for Swarm: traefik's Docker provider and loopback port, postgres published on the loopback,
 #      a bridge network instead of an overlay. Not by layering docker-compose.local.yml, whose
-#      mailpit, valhalla, tileserver and fixed dev ports would clash with the workstation stack.
+#      mailpit, tileserver and fixed dev ports would clash with the workstation stack.
 services:
   backend:
     env_file: !override
       - .env.e2e
+    # Compose interpolation from the shell, not from .env.e2e (see 4. above). Empty when unset: the
+    # backend then answers every routing request with an error, and playwright.config.ts skips the
+    # planner test when E2E_NO_ROUTING is set.
+    environment:
+      STADIAMAPS_API_KEY: ${STADIAMAPS_API_KEY:-}
     volumes: !override
       - ./.e2e/storage:/mnt/storage
       - ./.e2e/keys:/mnt/keys:ro

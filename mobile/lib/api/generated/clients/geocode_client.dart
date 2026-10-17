@@ -16,7 +16,7 @@ abstract class GeocodeClient {
 
   /// Search places by name.
   ///
-  /// Returns at most 5 places matching the query, or an empty list when the query is shorter than 3 characters or the provider is unreachable. Results come from OpenStreetMap via Nominatim: a client displaying them must credit '© OpenStreetMap contributors'.
+  /// Returns at most 5 places matching the query, or an empty list when the query is shorter than 3 characters or the provider is unreachable. Results come from the Stadia Maps geocoder: a client displaying them must credit 'Stadia Maps, © OpenStreetMap contributors & others'.
   @GET('/api/geocode/search')
   Future<List<GeocodeResultDto>> searchPlaces({
     @Query('q') String? q,

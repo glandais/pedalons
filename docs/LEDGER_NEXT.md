@@ -9,7 +9,7 @@ portage web livré à trois tâches près, et tenu à jour depuis (dernière rel
 Rien ici ne bloque quoi que ce soit. C'est la propriété qui compte : la v2 est livrable en l'état,
 et chaque ligne ci-dessous supprime une dégradation nommée plutôt que de réparer une panne.
 
-**Contrat d'API au 16 octobre 2026 : `11.5.1`.** Toute évolution d'API listée ici demande un bump de
+**Contrat d'API au 17 octobre 2026 : `11.5.3`.** Toute évolution d'API listée ici demande un bump de
 `pedalons.api.version` dans `backend/src/main/resources/application.properties`, puis la
 régénération des deux clients (compétence `contract-first-api`).
 
@@ -999,7 +999,7 @@ dans « Délibérément dehors ».
 | ID | Thème | Audit | Gravité | Constat |
 |---|---|---|---|---|
 | `AUD-6` | Docker | I10 | Important | `forwardedHeaders.insecure=true` sur Traefik (atténué par les règles `DOCKER-USER` qui ne laissent que Caddy le joindre : sous Swarm il écoute sur toutes les interfaces, voir [`OPERATIONS.md`](OPERATIONS.md#only-caddy-may-reach-traefik)) — voir V3, `SEC-16` |
-| `AUD-30` | Docker | I14 | Mineur | Aucune limite **CPU** dans les compose (la mémoire est bornée : `AUD-7`). À poser une fois les charges mesurées : une limite trop basse sur le backend rallonge le démarrage (Flyway, Magika) au-delà du `start_period`, et le JVM dimensionne ses threads de GC sur elle. valhalla n'a pas non plus de limite mémoire, à dessein (son rebuild) |
+| `AUD-30` | Docker | I14 | Mineur | Aucune limite **CPU** dans les compose (la mémoire est bornée : `AUD-7`). À poser une fois les charges mesurées : une limite trop basse sur le backend rallonge le démarrage (Flyway, Magika) au-delà du `start_period`, et le JVM dimensionne ses threads de GC sur elle |
 | `AUD-8` | Docker | I15 | Important | VCL Varnish réduite à un `backend default` : ni purge, ni grace, ni ban |
 | `AUD-9` | Docker | I17 | Important | imgproxy sans signature d'URL (ni `IMGPROXY_KEY` ni `IMGPROXY_SALT`) — même brique que les URLs signées (`API-24`) |
 | `AUD-10` | Docker | I19 | Important | Aucune procédure de rotation des secrets dans `OPERATIONS.md` (clés JWT, `ENCRYPTION_KEY`, mots de passe postgres et MinIO, SMTP, compte de service FCM, clé age). La rotation d'`ENCRYPTION_KEY` doit **rechiffrer** les jetons des services GPS, que la synchronisation automatique (`API-120`) utilise en continu : une clé changée sans rechiffrement les rend illisibles |
@@ -1065,8 +1065,9 @@ et le préfixe `BILL` lui-même (Q12) se tranche avant le premier commit de code
       migration de lancement qui pose « Club offert jusqu'au 31 mars 2027 » sur toute équipe
       existante — **aucun refus actif à ce stade**. Les lots suivants (`BILL-2` à `BILL-9`, §10 du
       plan) ne sont créés ici qu'une fois `BILL-1` tranché. Prérequis avant le premier euro
-      encaissé : Open-Meteo en plan payant (`OPS-29`), conditions VersaTiles et Nominatim relues
-      (§8 du plan), et aucun environnement hors prod capable d'émettre une facture.
+      encaissé : Open-Meteo en plan payant (`OPS-29`), conditions VersaTiles relues (§8 du plan ;
+      le géocodage est chez Stadia Maps depuis `OPS-49`, un plan payant déjà, plus rien à relire
+      côté Nominatim), et aucun environnement hors prod capable d'émettre une facture.
 
 ---
 

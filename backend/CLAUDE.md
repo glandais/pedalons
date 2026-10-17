@@ -33,12 +33,19 @@ Coverage instrumentation is opt-in (it slows every run by ~10-15%):
 | Service | Port | Purpose |
 |---------|------|---------|
 | imgproxy | 38080 | Image optimization/transformation (WebP, AVIF, JXL) |
-| valhalla | 8002 | Routing engine (Valhalla turn-by-turn) |
 | tileserver | 18080 | Internal map renderer for route thumbnails (never handed to clients) |
 | MinIO | 9000 (console 9001) | S3 storage for assets |
 | mailpit | 1025 (UI 8025) | SMTP sink — no mail leaves a workstation |
 
 All of them come from the root `docker compose up -d` (see [../CLAUDE.md](../CLAUDE.md#infrastructure)).
+
+Route computation is **not** a local service: `StadiaMapsClient` (package
+`infrastructure.valhalla`, named after the protocol) calls `https://api-eu.stadiamaps.com/route/v1` (the EU-only host)
+with `STADIAMAPS_API_KEY` — exported by `scripts/dev-env.sh`, empty by default in `%dev` and
+`%test` (no backend test calls the router). The same key and host serve the forms' geocoder,
+`GET /api/geocode/search` (`StadiaMapsGeocodingClient`, package `infrastructure.stadiamaps`,
+configKey `stadiamaps-geocoding`, `/geocoding/v1/autocomplete`). Never log the request URL or the
+header: the key would go with them.
 
 ## Source Layout
 
@@ -50,7 +57,7 @@ src/main/java/fr/pedalons/
 ├── domain/           # JPA entities organized by subdomain
 │   └── common/       # BaseEntity, TeamEntity, Publication
 ├── enums/            # Shared enums (Status, TeamRole, Visibility, AssetType)
-├── infrastructure/   # Cross-cutting (security, cache, valhalla, imgproxy)
+├── infrastructure/   # Cross-cutting (security, cache, routing client `valhalla/`, geocoder `stadiamaps/`, imgproxy)
 ├── repository/       # Panache repositories
 └── service/          # Business logic
 ```

@@ -28,7 +28,7 @@ import org.junit.jupiter.api.Test;
 
 /**
  * The request {@link OpenMeteoGateway} sends through {@link OpenMeteoClient}, and what it makes of
- * the provider's answers — the REST client mocked, as in {@code NominatimLookupTest}, so nothing
+ * the provider's answers — the REST client mocked, as in {@code GeocodingLookupTest}, so nothing
  * here reaches the network.
  *
  * <p>A plain unit test rather than a {@code @QuarkusTest}: the weather is disabled in the test

@@ -79,7 +79,7 @@ services:
     user: "${PUID:-1000}:${PGID:-1000}"
     networks:
       - pedalons
-      # valhalla + tileserver vivent dans la stack pedalons-shared (docker-compose.shared.yml).
+      # tileserver vit dans la stack pedalons-shared (docker-compose.shared.yml).
       - shared
     # `docker stack deploy` honours env_file too: .env is read at deploy time, and a changed value
     # rolls the service on the next deploy.
@@ -94,6 +94,9 @@ services:
       PEDALONS_BOOTSTRAP_BASE_URL: ${PEDALONS_BOOTSTRAP_BASE_URL:?set it in .env}
       PEDALONS_BOOTSTRAP_ADMIN_EMAIL: ${PEDALONS_BOOTSTRAP_ADMIN_EMAIL:?set it in .env}
       PEDALONS_BOOTSTRAP_ADMIN_DISPLAY_NAME: ${PEDALONS_BOOTSTRAP_ADMIN_DISPLAY_NAME:?set it in .env}
+      # The routing key is read per request, not at startup: without this :? a backend without it
+      # would start healthy and answer 500 to every route (ledger OPS-48).
+      STADIAMAPS_API_KEY: ${STADIAMAPS_API_KEY:?set it in .env}
     volumes:
       - ./data/storage:/mnt/storage
       - ./data/keys:/mnt/keys:ro
@@ -477,7 +480,7 @@ networks:
   pedalons:
     name: ${ENV_NAME}-net
     driver: overlay
-  # Fourni par docker-compose.shared.yml (valhalla, tileserver). Le deploiement echoue tant que la
+  # Fourni par docker-compose.shared.yml (tileserver). Le deploiement echoue tant que la
   # stack partagee n'a pas ete demarree, plutot que de creer un reseau vide.
   shared:
     name: pedalons-shared

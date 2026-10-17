@@ -23,8 +23,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
-      # valhalla n'est pas là (17 Go de tuiles) : playwright.config.ts écarte le planificateur.
-      E2E_NO_ROUTING: '1'
+      # Le routage passe par l'API Stadia Maps : la clé vient d'un secret du dépôt, jamais de .env.e2e
+      # (committé). docker-compose.e2e.yml la transmet au backend ; le test du planificateur tourne
+      # donc ici aussi. Secret absent : scripts/e2e.sh exporte E2E_NO_ROUTING=1 et le planificateur
+      # est écarté par playwright.config.ts.
+      STADIAMAPS_API_KEY: ${{ secrets.STADIAMAPS_API_KEY }}
     steps:
       - uses: actions/checkout@v7
 

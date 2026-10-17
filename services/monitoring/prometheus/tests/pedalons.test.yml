@@ -85,10 +85,11 @@ tests:
         values: '1500x40'
       - series: 'container_spec_memory_limit_bytes{id="/a", name="x", container_label_com_docker_stack_namespace="pedalons-prod", container_label_com_docker_swarm_service_name="pedalons-prod_backend"}'
         values: '1600x40'
-      # valhalla: no limit (0), must not fire.
-      - series: 'container_memory_working_set_bytes{id="/b", name="y", container_label_com_docker_stack_namespace="pedalons-shared", container_label_com_docker_swarm_service_name="pedalons-shared_valhalla"}'
+      # A container without a memory limit (0) must not fire: no deployed service is unlimited any
+      # more (valhalla was, until OPS-48), the case guards the `> 0` of the rule's divisor.
+      - series: 'container_memory_working_set_bytes{id="/b", name="y", container_label_com_docker_stack_namespace="pedalons-shared", container_label_com_docker_swarm_service_name="pedalons-shared_unlimited"}'
         values: '1500x40'
-      - series: 'container_spec_memory_limit_bytes{id="/b", name="y", container_label_com_docker_stack_namespace="pedalons-shared", container_label_com_docker_swarm_service_name="pedalons-shared_valhalla"}'
+      - series: 'container_spec_memory_limit_bytes{id="/b", name="y", container_label_com_docker_stack_namespace="pedalons-shared", container_label_com_docker_swarm_service_name="pedalons-shared_unlimited"}'
         values: '0x40'
     alert_rule_test:
       - eval_time: 35m

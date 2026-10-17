@@ -1,7 +1,7 @@
 import * as zod from 'zod'
 
 /**
- * Calculate a route between two points using Valhalla
+ * Calculate a route between two points using the Stadia Maps routing API
  * @summary Calculate route
  */
 export const routeBodyFromLngMin = -180

@@ -37,17 +37,40 @@ prepare_state() {
   fi
 }
 
-# valhalla + tileserver come from the workstation stack. Without it, start on an empty network of our
-# own: everything works except routing and map tiles.
+# tileserver comes from the workstation stack. Without it, start on an empty network of our own:
+# everything works except map tiles.
 ensure_shared_network() {
   if docker network inspect "$E2E_SHARED_NETWORK" >/dev/null 2>&1; then
     return
   fi
   echo "e2e: network $E2E_SHARED_NETWORK not found (workstation stack down?) —" \
-    "starting without valhalla/tileserver" >&2
+    "starting without tileserver" >&2
   export E2E_SHARED_NETWORK="$ENV_NAME-shared"
   docker network inspect "$E2E_SHARED_NETWORK" >/dev/null 2>&1 ||
     docker network create "$E2E_SHARED_NETWORK" >/dev/null
+}
+
+# Routing goes to the Stadia Maps API, with a key that .env.e2e (committed) must not hold.
+# docker-compose.e2e.yml interpolates STADIAMAPS_API_KEY from this shell: take it from the
+# environment (the CI's secret), else from the workstation's .env — without ever printing it.
+# Without a key the planner test is skipped (E2E_NO_ROUTING, playwright.config.ts).
+ensure_routing_key() {
+  [ -z "${_ROUTING_KEY_CHECKED:-}" ] || return 0
+  _ROUTING_KEY_CHECKED=1
+  if [ -z "${STADIAMAPS_API_KEY:-}" ] && [ -f "$ROOT/.env" ]; then
+    local line
+    line="$(grep -m1 '^STADIAMAPS_API_KEY=' "$ROOT/.env" || true)"
+    if [ -n "$line" ]; then
+      STADIAMAPS_API_KEY="${line#STADIAMAPS_API_KEY=}"
+      STADIAMAPS_API_KEY="${STADIAMAPS_API_KEY%\"}"
+      STADIAMAPS_API_KEY="${STADIAMAPS_API_KEY#\"}"
+      export STADIAMAPS_API_KEY
+    fi
+  fi
+  if [ -z "${STADIAMAPS_API_KEY:-}" ]; then
+    echo "e2e: STADIAMAPS_API_KEY not set (environment or .env) — no routing, the planner test is skipped" >&2
+    export E2E_NO_ROUTING=1
+  fi
 }
 
 ensure_images() {
@@ -89,6 +112,7 @@ wait_for() {
 up() {
   prepare_state
   ensure_shared_network
+  ensure_routing_key
   ensure_images
   compose --profile app up -d --remove-orphans
   wait_for "http://localhost:$HTTP_PORT/api/config"
@@ -97,6 +121,8 @@ up() {
 }
 
 run_tests() {
+  # `test` alone, after an `up` in another shell: decide E2E_NO_ROUTING the same way.
+  ensure_routing_key
   (cd "$ROOT/frontend" && pnpm exec playwright test "$@")
 }
 
@@ -119,7 +145,10 @@ case "$cmd" in
   reset) reset ;;
   down) compose --profile app down --remove-orphans ;;
   logs) compose logs -f "$@" ;;
-  compose) compose "$@" ;;
+  compose)
+    ensure_routing_key
+    compose "$@"
+    ;;
   *)
     sed -n '2,14p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
     exit 1

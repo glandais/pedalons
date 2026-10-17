@@ -7,13 +7,14 @@ import { Autocomplete } from './Autocomplete'
 import type { GeocodeResultDto, GeoJsonPoint } from '@/api/dto'
 
 /**
- * Address lookup, via `GET /api/geocode/search`.
+ * Address lookup in forms, via `GET /api/geocode/search` — the backend's proxy to Stadia Maps'
+ * geocoder (docs/LEDGER_*.md OPS-49).
  *
- * This component used to `fetch` nominatim.openstreetmap.org straight from the browser, which no
- * amount of front-end care could make compliant: the usage policy requires an identifying
- * `User-Agent`, and that is a header `fetch` is forbidden to set. The server sends it, and caches
- * what it gets back. What is left for this component is the other half of the policy — the visible
- * credit under the results.
+ * The proxy is kept on purpose: it caches, it keeps the provider key on the server, and it is the
+ * server's IP the provider sees, never the member's. The place search on the free-navigation maps
+ * (`components/map/MapSearchControl`) is the opposite choice — it calls Stadia Maps from the
+ * browser, as a basemap does — and the privacy policy describes both. What is left for this
+ * component is the credit under the results, which the provider's terms want visible.
  */
 const NO_RESULTS: GeocodeResultDto[] = []
 
@@ -173,7 +174,7 @@ export function GeocoderAutocomplete({
         disabled={disabled}
         leftSection={<IconMapPin size={16} />}
       />
-      {/* The other half of the Nominatim usage policy, the half a proxy cannot cover for us. */}
+      {/* The credit Stadia Maps' terms want next to its results — a proxy cannot show it for us. */}
       <Text size="xs" c="dimmed" mt={4}>
         {t('geocoder.attribution')}
       </Text>

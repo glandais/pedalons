@@ -17,7 +17,7 @@ abstract class RouterClient {
 
   /// Calculate route.
   ///
-  /// Calculate a route between two points using Valhalla.
+  /// Calculate a route between two points using the Stadia Maps routing API.
   ///
   /// [body] - Name not received - field will be skipped.
   @POST('/api/router')

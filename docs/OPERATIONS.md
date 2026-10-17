@@ -13,14 +13,16 @@ Caddy terminates TLS on the host and reverse-proxies each hostname to that envir
 reconciles: a `deploy` converges the running services onto the file, and a task that dies is
 rescheduled rather than left for a `restart:` policy.
 
-`docker-compose.shared.yml` holds the services that carry no application data and are read-only:
-`valhalla` (17 GB of OSM routing tiles) and `tileserver` (server-side raster rendering, ~1.8 GB
-resident). One instance serves every environment. It owns the `pedalons-shared` overlay network.
+`docker-compose.shared.yml` holds what carries no application data and is read-only: `tileserver`
+(server-side raster rendering, ~1.8 GB resident). One instance serves every environment. It owns
+the `pedalons-shared` overlay network. Route computation is not hosted at all any more: it is
+bought from Stadia Maps, with a key per environment, and so is geocoding (see
+[Stadia Maps: routing and geocoding](#stadia-maps-routing-and-geocoding)).
 
 `docker-compose.yml` holds everything that must stay isolated per environment: traefik, backend,
 frontend, postgres, minio, imgproxy and varnish — and goatcounter, which runs in production only
 (see [Web analytics](#web-analytics-goatcounter)). Its `backend` also joins `pedalons-shared` to reach
-the two shared services, by their service names `valhalla` and `tileserver`.
+the shared service, by its service name `tileserver`.
 
 Each environment's `.env` differs from a workstation's in five keys only — see
 [The `.env`, on a workstation and on a server](../README.md#the-env-on-a-workstation-and-on-a-server).
@@ -31,8 +33,7 @@ valid for both tools — its header lists what each one ignores.
 **Always deploy through `scripts/deploy.sh`**, never `docker stack deploy` by hand:
 
 - `docker stack deploy` reads **no `.env`**. Every `${VAR}` of the file would expand to nothing —
-  including, for the shared stack, a `VALHALLA_TILE_URLS` silently replaced by the default, which a
-  host without tiles yet would spend hours building;
+  image tags, memory limits, ports — and a default would silently take its place;
 - it picks the **build of the checked-out commit**, `pedalons-backend:${ENV_NAME}-<sha12>` (see
   [Rolling updates](#rolling-updates-and-rollback)), and refuses a checkout with uncommitted changes;
 - the stack must be named after `ENV_NAME`: the backup scripts find its containers and volumes
@@ -117,7 +118,6 @@ limit is killed by the kernel (`OOMKilled` in `docker inspect`, `task: non-zero 
 | traefik | 256M | |
 | goatcounter | 128M | production only; 36 to 40 MiB at rest, the rest for CSV exports and the dashboard |
 | tileserver (shared) | 3G | ~1.8 GB resident |
-| valhalla (shared) | none | the first start on an empty `data/valhalla` builds the tiles in the service's container, and that build needs far more than the service |
 | monitoring stack | 2G in all | see [Monitoring](#monitoring); ~1 GB resident |
 
 **The backend has no `-Xmx`.** The image's entrypoint (`run-java.sh`, from the Jib base image
@@ -139,10 +139,10 @@ resident memory once the cache fills; keep `VARNISH_MEMORY` about half as much a
 
 **What a host must hold**: these are ceilings, not usage — but a host should hold the sum of them.
 Per environment, 7.3 GB (7.4 GB in production, with goatcounter), plus 2 GB during a rolling update (a second backend and frontend run
-beside the old ones, see above); on top, the shared stack's tileserver (3 GB) and valhalla, whose
-17 GB of tiles live in the page cache, and the monitoring stack (2 GB). Two environments with the
-defaults come to about 23 GB with the host's own share (Caddy, Docker, the OS): a 32 GB host holds
-them with room left for that page cache. A staging environment can take less through its own `.env` (`BACKEND_MEMORY=1G`,
+beside the old ones, see above); on top, the shared stack's tileserver (3 GB) and the monitoring
+stack (2 GB). Two environments with the defaults come to about 23 GB with the host's own share
+(Caddy, Docker, the OS): a 32 GB host holds them with room to spare — since 2026-10-17 no routing
+tiles compete for its page cache (`OPS-48`). A staging environment can take less through its own `.env` (`BACKEND_MEMORY=1G`,
 `VARNISH_SIZE=256M`, `VARNISH_MEMORY=512M`); prod, more `BACKEND_MEMORY` if `docker stats` shows the
 backend near its limit.
 
@@ -619,71 +619,74 @@ them. **The site and its account went with the old database**: the script ends b
 its settings are in place, so the live hits of the meantime are lost, never counted with a new
 site's defaults. Until then `/count` refuses every hit — the site is unaffected.
 
-### Seeding the shared Valhalla data
+### Stadia Maps: routing and geocoding
 
-`~/shared/data/valhalla` is ~17 GB and takes hours to build from the `.osm.pbf`. On first start the
-container builds only if it finds no tiles (`valhalla_tiles.tar` or `valhalla_tiles/`): the image
-sets `use_tiles_ignore_pbf=True`, so once tiles exist it loads them without looking at the `.pbf`,
-its hashes or `tile_urls` — the log then says *"Jumping directly to the tile loading!"*. When an
-environment already holds a built copy, move it rather than rebuild: keep `france-latest.osm.pbf`,
-`valhalla_tiles.tar` and `file_hashes.txt` together, and note that `mv` cannot rename the
-root-owned subdirectories (`elevation_data`, `valhalla_tiles`) out of a user-owned parent — do that
-part from a root context:
+Route computation (`/api/router`, behind the web planner) is done by **Stadia Maps**
+(`POST https://api-eu.stadiamaps.com/route/v1`, a Valhalla-compatible API on Stadia Maps' EU-only
+host: the requests stay on servers in the European Union), not by a service of ours:
+the self-hosted `valhalla` of the shared stack and its 17 GB of OSM tiles left on 2026-10-17
+(ledger `OPS-48`). The backend sends the planner's waypoints, the profile and its costing options,
+nothing else — no account, no client IP — and the privacy policy says so (§4 and §5, ledger
+`LEGAL-23`).
+
+The same key and the same host serve **geocoding** since 2026-10-17 (ledger `OPS-49`), in two
+ways that must not be confused:
+
+- **The forms' place search** (team location, meeting places, ads) still goes through the backend:
+  `GET /api/geocode/search?q=` (signed in, 3 characters minimum, 5 results, 24 h Caffeine cache)
+  calls `GET https://api-eu.stadiamaps.com/geocoding/v1/autocomplete` with the typed text and the
+  display language, authenticated by the same `Authorization: Stadia-Auth …` header. The `v1`
+  autocomplete is a deliberate choice: it returns coordinates and a label in one call, where `v2`
+  returns `geometry: null` and needs a second `/geocoding/v2/place` call per selection. Nominatim is
+  gone with it: no `NOMINATIM_URL`, no `GEOCODE_USER_AGENT`, no usage-policy `User-Agent` to
+  maintain (the Open-Meteo client now has a `User-Agent` of its own, `pedalons.weather.user-agent`, which a fork
+  overrides with `PEDALONS_USER_AGENT`; see `.env.example`).
+- **The search bar of the free-roaming maps** (web planner, routes map, GPX tool; ledger `WEB-99`)
+  calls `api-eu.stadiamaps.com` **from the browser**, with no key at all: Stadia Maps authenticates
+  it by the page's origin (`Origin`/`Referer`), against the domains declared in their dashboard.
+  **`pedalons.fr` and all its subdomains are declared**; `localhost` passes without a key, under a
+  strict quota. A deployment on another hostname needs that hostname added in the Stadia Maps
+  dashboard (*domain-based authentication*), or its search bar answers nothing — the rest of the
+  map is unaffected, and the forms' search, which goes through the backend, keeps working. The
+  frontend's CSP (`frontend/server/csp.js`) always allows `https://api-eu.stadiamaps.com` in
+  `connect-src`, so nothing is to be configured there.
+
+| Key | Where | What it does |
+|---|---|---|
+| `STADIAMAPS_API_KEY` | the `.env` of **each environment** (`~/prod/.env`, `~/staging/.env`), never `~/shared/.env`: the shared stack has no routing any more | One key for routing and the forms' geocoding. Sent as `Authorization: Stadia-Auth …` on every request. **Required** in `%prod`: `docker-compose.yml` restates it with `:?`, so a deploy without it stops before any container starts (the backend itself would start and fail every route with a 500: the header is resolved per request). `scripts/dev-env.sh` exports it for `mvn quarkus:dev`; the e2e stack takes it from the shell or the workstation's `.env` (`scripts/e2e.sh`), the CI from a GitHub secret of the same name |
+| `STADIAMAPS_URL` | optional | `https://api-eu.stadiamaps.com` by default (EU-only host; `https://api.stadiamaps.com` is the global one, same key), used by both the routing and the geocoding REST clients; another Valhalla-compatible host for a test — but then the geocoder points at it too |
+
+One key for prod and staging works (Stadia Maps counts requests per key); a second key makes
+staging's usage readable apart on their dashboard, and revocable alone. **The key never reaches a
+log**: the request URL is not logged, and a failure is logged by its status only —
+`Stadia Maps routing failed with status 429` means the plan's quota is spent (the planner answers
+an error until the quota renews or the plan is raised), `401` a wrong or revoked key, `5xx` their
+outage. The geocoder shares the quota and the key: on any failure it answers an empty list, not an
+error, so a dead key shows up as forms that find no address — check the backend log for the
+geocoding client's warning before suspecting the data. Published limits, which a planner can hit: 50 locations per request, and at most 500 km as
+the crow flies between the farthest two for `bicycle` (250 km for `pedestrian`, 5 000 km for
+`motorcycle`) — a longer route is refused by Stadia Maps, not split by us. Try a host's key
+without printing it:
 
 ```bash
-docker run --rm -v /home/pedalons:/h alpine \
-  mv /h/staging/data/valhalla/elevation_data /h/shared/data/valhalla/
+# A 401 on any path only says the key is missing or wrong; the path itself is /route/v1 (/route/v2 answers 404).
+(set -a; . ./.env; set +a; curl -s https://api-eu.stadiamaps.com/route/v1 \
+  -H "Authorization: Stadia-Auth $STADIAMAPS_API_KEY" -H 'Content-Type: application/json' \
+  -d '{"locations":[{"lat":48.11,"lon":-1.68},{"lat":48.2,"lon":-1.6}],"costing":"bicycle"}' | head -c 300)
 ```
 
-### Updating the shared Valhalla data
+**Switching a host from Valhalla** (the repository switched on 2026-10-17; on a host, in this
+order, because step 2's old backend still talks to `valhalla` until it is replaced):
 
-Routing reads the OSM extract the tiles were built from, never a newer one: refreshing it is a
-build, by hand. **Replacing the `.pbf` or changing `VALHALLA_TILE_URLS` rebuilds nothing** (see
-above), and `force_rebuild=True` on the service would build inside it — routing down for the whole
-build, and the healthcheck killing it as unhealthy, since the old `.tar` is still there. Build
-beside it instead, then switch: the service runs start-first behind a healthcheck
-(`docker-compose.shared.yml`), so the old task serves until the new one has loaded its tiles — a
-few seconds — and the switch cuts nothing.
-
-1. **Build in a sibling directory**, with a one-off container of the image the service runs
-   (pinned by digest: build and service must agree on the tile format) that exits once done:
-
-   ```bash
-   cd ~/shared/data
-   IMG=$(docker service inspect pedalons-shared_valhalla --format '{{.Spec.TaskTemplate.ContainerSpec.Image}}')
-   mkdir valhalla-next
-   cp valhalla/.gitignore valhalla/.gitkeep valhalla-next/            # tracked by git
-   # Reuse the elevation tiles (3 GB, root-owned) rather than download them again.
-   docker run --rm -v "$PWD":/d alpine cp -a /d/valhalla/elevation_data /d/valhalla-next/
-   docker run -d --name valhalla-build -v "$PWD/valhalla-next":/custom_files      -e tile_urls=http://download.geofabrik.de/europe/france-latest.osm.pbf      -e build_elevation=True -e build_admins=True -e build_time_zones=True      -e server_threads=4 -e serve_tiles=False "$IMG"
-   docker logs -f valhalla-build      # ends with "INFO: Not serving tiles. Exiting."
-   docker inspect valhalla-build --format '{{.State.ExitCode}}'   # 0, then: docker rm valhalla-build
-   ```
-
-   With no tiles and no `.pbf` there, it downloads the extract and builds everything.
-   `server_threads=4` keeps cores for production; use the same `tile_urls` as the shared `.env`.
-
-2. **Try it** on a loopback port before switching:
-
-   ```bash
-   docker run -d --rm --name valhalla-test -p 127.0.0.1:8003:8002      -v "$PWD/valhalla-next":/custom_files -e server_threads=2 "$IMG"
-   curl -s localhost:8003/route -d '{"locations":[{"lat":48.11,"lon":-1.68},{"lat":48.2,"lon":-1.6}],"costing":"bicycle"}' | head -c 300
-   docker stop valhalla-test
-   ```
-
-3. **Switch**:
-
-   ```bash
-   mv valhalla valhalla-prev && mv valhalla-next valhalla
-   docker service update --force pedalons-shared_valhalla
-   ```
-
-   The running task keeps serving the old data meanwhile: a bind-mounted *directory* follows its
-   inode through the rename (unlike a single bind-mounted file). Rolling back is the same two `mv`
-   reversed and the same `update --force`. Once the new data has been checked, drop the old copy
-   from a root context — its files are root's —
-   `docker run --rm -v "$PWD":/d alpine rm -rf /d/valhalla-prev`, and refresh the
-   [cold backup](#cold-backup-of-the-shared-stack).
+1. add `STADIAMAPS_API_KEY` to `~/prod/.env` and `~/staging/.env`;
+2. `scripts/deploy.sh` in each environment — the new backend needs no `valhalla`;
+3. `scripts/deploy.sh --shared` from `~/shared` — the `valhalla` service leaves the stack;
+   `tileserver` stays, and so do the `pedalons-shared` network and the backend's membership in it;
+4. by hand, once `docker service ls` no longer lists `pedalons-shared_valhalla`: remove
+   `~/shared/data/valhalla` (17 GB; its files are root's, so from a root context:
+   `docker run --rm -v ~/shared/data:/d alpine rm -rf /d/valhalla`), drop `VALHALLA_TILE_URLS`
+   from `~/shared/.env`, and delete the cold copy `OPS-9` had sent to the backup host
+   (`pedalons-shared/` there).
 
 ### Store reviewers' demo data
 
@@ -976,7 +979,8 @@ does not recognise its own data. A run that still trips 23/24 (an upload landing
 gets one more rsync pass before it is called failed.
 
 **Not** in a snapshot, and to be rebuilt by hand: the Docker images (`./build.sh` at the MANIFEST's
-commit), `data/cache` (regenerable, just slow), and the shared valhalla/tileserver data (below).
+commit), `data/cache` (regenerable, just slow), and the shared tileserver's data
+(`data/tileserver`: a style and a config, tracked by git).
 Nor, by choice, the **`goatcounter` database**: the web analytics are disposable statistics, and a
 restore starts them again from empty (see [Web analytics](#web-analytics-goatcounter)). Backing
 them up one day would mean rewriting the privacy policy's sentence on backups in the same commit.
@@ -1269,19 +1273,3 @@ BACKUP_ENV_FILE=/tmp/drill.env BACKUP_AGE_IDENTITY=/dev/shm/pedalons-backup.key 
 
 The backup host's LUKS volume must be open, and the private key is needed here too — delete it
 from `/dev/shm` afterwards.
-
-### Cold backup of the shared stack
-
-`~/shared/data/valhalla` is ~17 GB and takes hours to rebuild from the `.osm.pbf`. It carries no
-application data, so it stays out of the nightly backup — but copying it **once** (and again
-whenever the OSM extract changes) turns a multi-hour restore into an `rsync` (tracked as
-ledger `OPS-9`):
-
-```bash
-rsync -a ~/shared/data/valhalla/{france-latest.osm.pbf,valhalla_tiles.tar,file_hashes.txt} \
-      ~/shared/data/valhalla/elevation_data \
-      backup-host:/path/to/pedalons-shared/
-```
-
-See [Seeding the shared Valhalla data](#seeding-the-shared-valhalla-data) for the permission trap
-when moving those directories back.

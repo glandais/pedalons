@@ -49,6 +49,82 @@
   border-radius: inherit;
 }
 
+/* The place search box of the free-navigation maps (`MapSearchControl`, @stadiamaps/maplibre-search-box).
+   The package ships light-only colours (#fefefe results, #dfdfdf hover, black links, a browser-default
+   input). Restated against maplibre-theme's variables so the box follows the map's `.dark` scheme
+   like every other control. The field's height matches the 29px buttons of the left column. */
+.maplibregl-ctrl.maplibre-search-box {
+  width: min(280px, calc(100vw - 100px));
+}
+
+.maplibregl-ctrl.maplibre-search-box .input-container input {
+  background: var(--ml-c-bg-1);
+  border: 0;
+  box-shadow: var(--ml-shadow-ctrl);
+  box-sizing: border-box;
+  color: var(--ml-c-icon-1);
+  font: var(--ml-font);
+  font-size: 14px;
+  height: 29px;
+  padding: 0 28px 0 8px;
+  width: 100%;
+}
+
+.maplibregl-ctrl.maplibre-search-box .input-container input::placeholder {
+  color: var(--ml-c-icon-1);
+  opacity: 0.6;
+}
+
+.maplibregl-ctrl.maplibre-search-box .input-container input:focus-visible {
+  box-shadow: var(--ml-outline);
+  outline: none;
+}
+
+.maplibregl-ctrl.maplibre-search-box .input-container .cancel,
+.maplibregl-ctrl.maplibre-search-box .input-container .spinner {
+  top: 4px;
+}
+
+.maplibregl-ctrl.maplibre-search-box .input-container .cancel {
+  background: var(--ml-c-icon-1);
+}
+
+.maplibregl-ctrl.maplibre-search-box .input-container .cancel::before,
+.maplibregl-ctrl.maplibre-search-box .input-container .cancel::after {
+  background-color: var(--ml-c-bg-1);
+}
+
+.maplibregl-ctrl.maplibre-search-box .results {
+  background: var(--ml-c-bg-1);
+  box-shadow: var(--ml-shadow-ctrl);
+  color: var(--ml-c-icon-1);
+  width: 100%;
+}
+
+.maplibregl-ctrl.maplibre-search-box .results .result {
+  border-bottom-color: var(--ml-c-bg-3);
+  font-size: 14px;
+}
+
+.maplibregl-ctrl.maplibre-search-box .results .result:hover,
+.maplibregl-ctrl.maplibre-search-box .results .result.hover {
+  background: var(--ml-c-bg-2);
+}
+
+.maplibregl-ctrl.maplibre-search-box .results .no-result:hover,
+.maplibregl-ctrl.maplibre-search-box .results .no-result.hover {
+  background: inherit;
+}
+
+.maplibregl-ctrl.maplibre-search-box .search-attribution {
+  border-top-color: var(--ml-c-bg-3);
+}
+
+.maplibregl-ctrl.maplibre-search-box .search-attribution a,
+.maplibregl-ctrl.maplibre-search-box .search-attribution a:visited {
+  color: var(--ml-c-link-1);
+}
+
 /* The global focus ring. Mantine draws it in `--mantine-primary-color-filled`, indigo-8 (#3b5bdb)
    in the dark scheme: 2.74:1 on the page (#242424), under the 3:1 of WCAG SC 1.4.11. The primary's
    `-text` shade is the one Mantine already uses for primary text on dark — indigo-4 (#748ffc):

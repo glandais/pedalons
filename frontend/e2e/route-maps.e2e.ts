@@ -34,7 +34,7 @@ import {
  *    end to end;
  *  - MapLibre actually drew it: the map canvas shows the trace's colours on a stubbed basemap.
  *
- * Nothing depends on routing (valhalla): the route comes from a GPX, not from the planner.
+ * Nothing depends on routing (Stadia Maps): the route comes from a GPX, not from the planner.
  */
 
 /**

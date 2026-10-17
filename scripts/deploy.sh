@@ -10,9 +10,8 @@
 # Never run `docker stack deploy` by hand on this file, for two reasons this script exists for:
 #
 #   - `docker stack deploy` reads no .env. Every ${VAR} of docker-compose.yml would expand to an
-#     empty string, and only the few spelled `${VAR:?}` would stop it. The shared stack is no
-#     exception: a VALHALLA_TILE_URLS set in its .env would be silently replaced by the default, and
-#     a host without tiles yet would spend hours building the wrong extract.
+#     empty string, and only the few spelled `${VAR:?}` would stop it — STADIAMAPS_API_KEY among
+#     them: the backend would start without a routing key, or not start at all.
 #   - backend and frontend run the image tagged with a commit (scripts/_image_tag.sh), which this
 #     script picks. A new tag is a new service spec, which Swarm rolls out start-first: the old task
 #     serves until the new one is healthy, and a new task that never gets there is rolled back. The
@@ -54,8 +53,8 @@ cd "$REPO_ROOT"
   || die "this node is not in a swarm — run 'docker swarm init' once (see docs/OPERATIONS.md, Deployment)"
 
 if $MONITORING; then
-  # The .env of the ~/shared checkout: the ALERT_* and GRAFANA_* keys of
-  # services/monitoring/env.example sit beside VALHALLA_TILE_URLS.
+  # The .env of the ~/shared checkout: it carries the ALERT_* and GRAFANA_* keys of
+  # services/monitoring/env.example, and nothing the shared stack itself reads.
   [[ -f .env ]] || die "no .env in $REPO_ROOT — add the keys of services/monitoring/env.example"
   set -a
   . ./.env
@@ -117,7 +116,8 @@ if $MONITORING; then
 fi
 
 if $SHARED; then
-  # Its .env is optional: it carries VALHALLA_TILE_URLS, and the keys of the monitoring stack.
+  # Its .env is optional: the shared stack reads no variable of its own any more, the file only
+  # carries the keys of the monitoring stack (--monitoring).
   if [[ -f .env ]]; then
     set -a
     . ./.env

@@ -14,7 +14,7 @@ import org.jspecify.annotations.Nullable;
 /**
  * The forecast points of a route, cached.
  *
- * <p>Its own bean, like {@code NominatimLookup}, because {@code @CacheResult} is an interceptor: a
+ * <p>Its own bean, like {@code GeocodingLookup}, because {@code @CacheResult} is an interceptor: a
  * call from a sibling method of the same bean would bypass the proxy and never hit the cache. The
  * key is the route's <b>sorted track ids</b>: a GPX upload replaces the tracks with new rows rather
  * than editing them ({@code RouteService}), so an entry can never describe a geometry that changed

@@ -6,8 +6,9 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 /**
  * One place matching a geocoding query.
  *
- * <p>Coordinates are numbers here, where the upstream provider serves them as strings — a client
- * should not have to parse them, nor to know which provider answered.
+ * <p>Latitude and longitude are two named numbers here, whatever shape the upstream provider gives
+ * them (a GeoJSON {@code [lon, lat]} position today) — a client should not have to know which
+ * provider answered.
  */
 @Schema(description = "A place matching a geocoding query")
 @ValidateSchema

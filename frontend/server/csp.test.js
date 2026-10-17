@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   BASE_POLICY,
   FCM_ORIGINS,
+  STADIA_MAPS_ORIGINS,
   buildDocumentPolicy,
   createConfigOriginResolver,
   documentCspHeaders,
@@ -106,7 +107,25 @@ describe('buildDocumentPolicy', () => {
         connectOrigins: ['https://a.example', 'https://b.example', 'https://a.example'],
       })
     )
-    expect(policy['connect-src']).toEqual(["'self'", 'https://a.example', 'https://b.example'])
+    expect(policy['connect-src']).toEqual([
+      "'self'",
+      ...STADIA_MAPS_ORIGINS,
+      'https://a.example',
+      'https://b.example',
+    ])
+  })
+
+  it('always lets the browser reach the map search host, config or not (WEB-99)', () => {
+    // The search box on the free-navigation maps calls api-eu.stadiamaps.com from the browser, on
+    // every deployment: it is not in /api/config, so the policy must carry it on its own.
+    expect(STADIA_MAPS_ORIGINS).toEqual(['https://api-eu.stadiamaps.com'])
+    const bare = directives(buildDocumentPolicy({ nonce: 'n' }))
+    expect(bare['connect-src']).toEqual(["'self'", 'https://api-eu.stadiamaps.com'])
+    // Listed once even when an operator also names it in CSP_CONNECT_SRC_EXTRA.
+    const twice = directives(
+      buildDocumentPolicy({ nonce: 'n', connectOrigins: ['https://api-eu.stadiamaps.com'] })
+    )
+    expect(twice['connect-src']).toEqual(["'self'", 'https://api-eu.stadiamaps.com'])
   })
 
   it('refuses to build a policy without a nonce', () => {

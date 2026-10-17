@@ -595,7 +595,7 @@
           "legendFormat": "totale"
         }
       ],
-      "description": "Le cache de pages sert notamment les 17 Go de tuiles de Valhalla."
+      "description": "Le cache de pages sert notamment les tuiles du tileserver (data/tileserver)."
     },
     {
       "type": "timeseries",

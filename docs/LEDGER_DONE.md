@@ -2127,6 +2127,33 @@ Plan [`2026-10-06-team-agenda.md`](plans/archive/2026-10-06-team-agenda.md) §4,
   des autres états (carte collante, sélecteur de groupe, groupe supprimé, inscrit ailleurs) reste
   ouverte sous le même identifiant.
 
+### `WEB-99` Barre de recherche de lieux sur les cartes à navigation libre (17 octobre 2026, contrat inchangé)
+
+- `WEB-99` **Les trois cartes qui s'ouvrent sur `useDefaultMapView()` — le planificateur
+  (`RoutePlanner`), la carte des parcours (`RoutesTileMap`) et la carte vierge de l'outil GPX
+  (`GpxBlankMapPage`) — ont une barre de recherche de lieux** : le composant
+  `components/map/MapSearchControl.tsx` monte `MapLibreSearchControl` de
+  `@stadiamaps/maplibre-search-box` 3.2.0 via `useControl` de react-map-gl/maplibre, langue de
+  `i18n.language`, `placeholder` / `noResults` traduits (`map.search.placeholder`,
+  `map.search.noResults`, fr/en en parité), `baseUrl` sur l'hôte européen
+  `https://api-eu.stadiamaps.com`. Le contrôle interroge Stadia Maps **depuis le navigateur**
+  (autocomplete `v2` + search `v1`), authentifié par le domaine de la page (`Origin`/`Referer` ;
+  pedalons.fr et tous ses sous-domaines sont déclarés côté Stadia, localhost passe sans clé sous
+  quota strict) — **aucune clé côté client** —, affiche lui-même « Powered by Stadia Maps,
+  © OpenStreetMap contributors & others » sous ses résultats et cadre la carte à la sélection.
+  Les cartes cadrées sur une trace ou une annonce n'en ont pas. `frontend/server/csp.js` ajoute
+  `https://api-eu.stadiamaps.com` à `connect-src` comme origine fixe (cas ajouté dans
+  `csp.test.js`) ; les icônes du paquet sont des SVG embarqués par Vite, rien pour `img-src`. SSR :
+  le paquet s'importe sans toucher au DOM, `pnpm build` (client + SSR) passe. Le mode sombre est
+  repris dans `index.css`. `gpx-planner.e2e.ts` ne dépend pas de la barre, qui n'appelle Stadia que
+  si l'on tape. Le géocodage des formulaires (`GeocoderAutocomplete` → `/api/geocode/search`)
+  reste côté serveur (`OPS-49`) ; seuls son commentaire et la clé `geocoder.attribution` changent.
+  La politique dit ce qui part de l'appareil (`LEGAL-24`). **À ne pas défaire** : aucune clé Stadia
+  dans le bundle ; l'hôte EU dans `baseUrl` ; la barre ne va que sur les cartes à navigation libre ;
+  un nouveau nom d'hôte de déploiement se déclare dans le tableau de bord Stadia, sinon la barre ne
+  répond rien (« Stadia Maps: routing and geocoding » dans
+  [`OPERATIONS.md`](OPERATIONS.md#stadia-maps-routing-and-geocoding)).
+
 ## API — Contrat d'API et backend
 
 ### Modèles de sortie numérotés (repris de biketeam)
@@ -3628,7 +3655,7 @@ plus la colonne. Le départ d'un groupe n'existe plus que dans `ride_groups.star
   dépôt ; la stack partagée doit être redéployée par `scripts/deploy.sh --shared` pour en profiter) —
   le service `valhalla` de `docker-compose.shared.yml` reçoit un healthcheck (`curl /status`) et
   `update_config` start-first avec rollback ; la procédure « Updating the shared Valhalla data » de
-  [`OPERATIONS.md`](OPERATIONS.md#updating-the-shared-valhalla-data) construit les tuiles dans
+  `OPERATIONS.md` (retirée avec le service le 17 octobre 2026, `OPS-48`) construisait les tuiles dans
   `data/valhalla-next` par un conteneur jetable (`serve_tiles=False`, même image par digest), puis
   bascule par deux `mv` et un `docker service update --force`. Corrige aussi une affirmation fausse
   de la doc et des commentaires : l'image fixe `use_tiles_ignore_pbf=True`, si bien qu'un changement de
@@ -3988,6 +4015,69 @@ plus la colonne. Le départ d'un groupe n'existe plus que dans `ride_groups.star
   les services et ne sont plus retirés, contrairement à ce que promet la politique (`LEGAL-21`) ;
   le couper durablement demande donc d'abord de retirer ces parcours ou de revoir la politique. La
   recette sur appareil reste ouverte sous le même identifiant.
+- `OPS-48` **Le routage passe de Valhalla auto-hébergé à l'API Stadia Maps** (2026-10-17, contrat
+  `11.5.2` : seules les descriptions OpenAPI de `RouterResource` changent) — le service `valhalla`
+  de la stack partagée (17 Go de tuiles OSM, des heures de rebuild, aucune limite mémoire) est
+  remplacé par `POST https://api-eu.stadiamaps.com/route/v1` (hôte européen de Stadia Maps : les
+  requêtes restent sur des serveurs de l'Union européenne ; `/route/v2` n'existe pas, 404), API compatible Valhalla (mêmes
+  `locations`, `costing`, `costing_options`, même `shape` en polyline6) : le package
+  `fr.pedalons.infrastructure.valhalla` garde son nom (celui du protocole), `Polyline6Decoder` et
+  les records ; le client devient `StadiaMapsClient` (`configKey` `stadiamaps`), en-tête
+  `Authorization: Stadia-Auth ${pedalons.routing.stadiamaps.api-key}`, timeouts 3 s / 15 s comme
+  Open-Meteo. Clé `STADIAMAPS_API_KEY` : sans défaut en `%prod` et reprise avec `:?` dans le bloc
+  `environment` du backend de `docker-compose.yml` (un déploiement sans clé s'arrête avant de
+  démarrer quoi que ce soit — l'en-tête étant résolu à chaque requête, le backend seul démarrerait
+  et répondrait 500 à chaque tracé), vide en `%dev` et `%test` (aucun test backend
+  n'appelle le routeur), exportée par `scripts/dev-env.sh`, lue par `scripts/e2e.sh` dans
+  l'environnement puis dans le `.env` du poste, secret GitHub du même nom en CI — où
+  `gpx-planner.e2e.ts` tourne désormais, `E2E_NO_ROUTING` ne restant que pour un poste sans clé.
+  `.env.e2e` ne porte aucune clé. Le tileserver reste dans `docker-compose.shared.yml`, et le
+  backend sur le réseau `shared` ; `docker-compose.local.yml` perd son valhalla et le port 8002.
+  Bascule d'un hôte, dans l'ordre (« Stadia Maps: routing and geocoding » dans
+  [`OPERATIONS.md`](OPERATIONS.md#stadia-maps-routing-and-geocoding)) : clé dans le `.env` de chaque
+  environnement, `deploy.sh` par environnement, `deploy.sh --shared`, puis suppression à la main de
+  `data/valhalla` et de la copie froide (`OPS-9`). Limites publiées : 50 points, 500 km à vol
+  d'oiseau en `bicycle` ; au-delà du quota, 429, logué par son statut seul (l'URL et l'en-tête ne
+  sont jamais logués). Les coordonnées du planificateur quittent désormais le serveur : politique
+  et CGU mises à jour (`LEGAL-23`). Pas de test backend réseau (`Polyline6DecoderTest` reste, hors réseau ;
+  aucun test n'appelle le routeur) ; le test réel est `gpx-planner.e2e.ts` en CI. **À ne pas défaire** : la clé n'a pas de défaut en `%prod`,
+  et aucun log n'imprime l'URL ni l'en-tête `Authorization` ; `.env.e2e` reste sans clé (la CI le
+  vérifie par grep) ; le réseau partagé reste au backend pour le tileserver.
+- `OPS-9` **Copie à froid des données Valhalla : caduque** (close le 2026-10-17 avec `OPS-48`) —
+  l'entrée (copier une fois `~/shared/data/valhalla`, ~17 Go, vers l'hôte de sauvegarde, puis à
+  chaque changement d'extrait OSM) avait été retirée de `LEDGER_NEXT.md` le 11 octobre 2026 sans
+  arriver ici, alors qu'`OPERATIONS.md` la citait encore. Sans objet depuis que le routage n'est
+  plus hébergé : la section « Cold backup of the shared stack » est retirée, et la copie qui existe
+  peut-être sur l'hôte de sauvegarde est à supprimer avec `data/valhalla` (étape 4 de la bascule).
+  Les données du tileserver (`data/tileserver` : style et config) sont dans git, rien à copier.
+- `OPS-49` **Le géocodeur passe de Nominatim à l'API Stadia Maps** (2026-10-17, contrat `11.5.3` :
+  seules les descriptions OpenAPI de `GeocodeResource` changent — plus de « proxied to OpenStreetMap
+  Nominatim », crédit « Stadia Maps, © OpenStreetMap contributors & others ») — `GET
+  /api/geocode/search?q=` garde tout son contrat (`GeocodeResultDto` id / displayName / lat / lon,
+  `@RolesAllowed("user")`, 3 caractères minimum, 5 résultats, normalisation, cache Caffeine
+  `geocode-search` 24 h, liste vide en cas de panne) mais le serveur interroge désormais `GET
+  https://api-eu.stadiamaps.com/geocoding/v1/autocomplete?text=…&size=5&lang=…` (hôte européen,
+  même clé `STADIAMAPS_API_KEY` et même en-tête `Authorization: Stadia-Auth …` qu'`OPS-48`), par un
+  client REST de géocodage distinct du client de routage (un `configKey` par interface, URL et
+  timeouts repris de celui du routage : deux interfaces sur un même `configKey`, on ne parie pas
+  dessus). La réponse est un FeatureCollection GeoJSON : `features[].geometry.coordinates` =
+  [lon, lat], `properties.gid` sert d'`id`, `properties.label` de `displayName`. **L'autocomplétion
+  `v1`, pas la `v2`** : vérifié en direct, `/geocoding/v2/autocomplete` renvoie `geometry: null` et
+  demande un second appel `/geocoding/v2/place?ids=` par sélection ; la `v1` donne coordonnées et
+  libellé en un appel, ce que le contrat promet. À revoir seulement si Stadia retire la `v1`.
+  Disparaissent avec Nominatim : `NOMINATIM_URL`, `GEOCODE_USER_AGENT` et le `User-Agent` imposé
+  par la politique d'usage d'OSM (le client Open-Meteo, qui réutilisait cette valeur, reçoit son
+  propre `User-Agent` `Pedalons/<version> (+https://www.pedalons.fr)`) ; le bloc « Geocoding »
+  d'`.env.example` ne porte plus rien à configurer. Pas de biais `focus.point` vers le centre par
+  défaut du déploiement : la clé de cache devrait alors inclure le focus, le gain ne le vaut pas
+  pour des formulaires. Le package `infrastructure.nominatim` devient `infrastructure.stadiamaps`
+  (`StadiaMapsGeocodingClient`, `GeocodingLookup`, records `GeocodingResponse` / `GeocodingFeature`).
+  Tests : `GeocodingLookupTest` (ex-`NominatimLookupTest`), `GeocodingResponseJsonTest` (le GeoJSON
+  relevé en direct) et `GeocodeResourceTest`, client mocké ; aucun test n'appelle Stadia Maps. Les textes légaux suivent (`LEGAL-24`), la
+  barre de recherche des cartes est `WEB-99`. **À ne pas défaire** : le proxy par le serveur reste
+  pour les formulaires (Stadia Maps n'y voit que le texte, la langue et l'IP du serveur — c'est ce
+  que promet la politique) ; la `v1` tant qu'elle existe ; l'hôte EU ; aucune clé ne descend dans
+  un client ; une panne du géocodeur reste une liste vide, jamais une erreur.
 
 ---
 
@@ -4924,7 +5014,7 @@ fait.
 | `AUD-5` | Docker | I5 | Critique | **Un healthcheck sur chaque service** (2026-09-30) — minio, imgproxy, varnish et traefik rejoignent backend, frontend et postgres, chacun avec l'outil que son image embarque déjà : `mc ready local` (l'alias `local` est livré avec l'image `pgsty/minio`), `imgproxy health`, `varnishadm ping` (le socket de gestion du `varnishd` en cours, dans le répertoire de travail par défaut, qu'il soit en tmpfs sous compose ou dans l'image sous Swarm), `traefik healthcheck --ping`. traefik prend `--ping=true`, sur son entrypoint interne `:8080`, ni publié ni routé — **jamais sur `web`**, que Caddy ouvre à tout Internet ; les deux overlays (`docker-compose.local.yml`, `docker-compose.e2e.yml`), qui remplacent sa commande, le répètent. 10 s d'intervalle, 3 essais, 10 à 20 s de `start_period`. Sous Swarm, une tâche qui échoue son healthcheck est remplacée : c'est le gain, et le risque si une commande est fausse. Vérifié sur la pile e2e (les quatre `healthy`, `smoke.e2e.ts` et les tests d'avatar, qui passent par MinIO → imgproxy → varnish, verts) et par `docker stack config` ; **pas encore vu sous Swarm** — au premier `deploy.sh`, regarder `docker service ps` des quatre services. Pas de test automatisé |
 | `AUD-31` | Garmin | G6 | Important | **Le Makefile Garmin ne nomme plus de version du SDK** (2026-09-30, scindé de `AUD-27`) — `simulator-docker` et `run-docker` appelaient `connectiq-sdk-lin-8.4.0-2025-12-03-5122605dc` en dur. `DOCKER_CIQ_HOME` prend le nom du répertoire du SDK détecté (`CIQ_HOME`, déjà utilisé par les cibles natives) sous le point de montage du conteneur, `/root/.Garmin/ConnectIQ/Sdks/`. Vérifié par `make -n` avec le SDK installé et avec un `CIQ_HOME` fictif en 9.0.0. Pas de test automatisé |
 | `AUD-32` | Karoo | K13 | Mineur | **`navigation-compose` retiré** (2026-09-30, scindé de `AUD-24`) — déclaré dans `app/build.gradle.kts` et `gradle/libs.versions.toml`, importé nulle part (ni `NavHost` ni `androidx.navigation`). À redéclarer le jour où le découpage de `MainActivity` (`AUD-22`) en fait usage. Vérifié : `./gradlew assembleDebug` et `testDebugUnitTest` passent |
-| `AUD-7` | Docker | I14 | Important | **Limites mémoire** (2026-09-29) — chaque service de `docker-compose.yml` porte `deploy.resources.limits.memory`, appliqué par Swarm comme par compose : backend `BACKEND_MEMORY` (1536M), varnish `VARNISH_MEMORY` (1536M), imgproxy 1536M, postgres et minio 1G, frontend 512M, traefik 256M ; le tileserver de la stack partagée 3G. Le heap du backend n'a **pas de `-Xmx`** : l'entrypoint `run-java.sh` de l'image Jib (`ubi9/openjdk-25-runtime`) passe `-XX:MaxRAMPercentage=$JAVA_MAX_MEM_RATIO`, que `application.properties` fixe à 60 dans l'image (`quarkus.jib.environment-variables`, avec `GC_MAX_METASPACE_SIZE=256`) — sans limite, ce même entrypoint prenait 80 % de la RAM de l'hôte, ~24 Go mesurés sur un poste de 30 Go. Le cache Varnish, en mémoire (malloc), passe de 20G sans limite à `VARNISH_SIZE` 1G par défaut ; imgproxy est plafonné à 4 images simultanées (`IMGPROXY_WORKERS`, au lieu de deux par CPU de l'hôte) pour que sa limite tienne. À ne pas défaire : pas de `-Xmx` en dur (il faudrait le tenir à la main en phase avec la limite), ni de ratio à 80 (le non-heap — metaspace ~115 Mo mesurés, threads, buffers Netty, runtime ONNX de Magika — n'y tiendrait plus, et un kill par le cgroup ne passe pas par `ExitOnOutOfMemoryError`) ; pas de limite sur valhalla, dont le rebuild en demande bien plus que le service. Pas de test : `docker compose config` et `docker stack config` acceptent les deux fichiers. Tableau et budget d'un hôte dans [`OPERATIONS.md`](OPERATIONS.md#memory). La limite CPU reste ouverte (`AUD-30`) |
+| `AUD-7` | Docker | I14 | Important | **Limites mémoire** (2026-09-29) — chaque service de `docker-compose.yml` porte `deploy.resources.limits.memory`, appliqué par Swarm comme par compose : backend `BACKEND_MEMORY` (1536M), varnish `VARNISH_MEMORY` (1536M), imgproxy 1536M, postgres et minio 1G, frontend 512M, traefik 256M ; le tileserver de la stack partagée 3G. Le heap du backend n'a **pas de `-Xmx`** : l'entrypoint `run-java.sh` de l'image Jib (`ubi9/openjdk-25-runtime`) passe `-XX:MaxRAMPercentage=$JAVA_MAX_MEM_RATIO`, que `application.properties` fixe à 60 dans l'image (`quarkus.jib.environment-variables`, avec `GC_MAX_METASPACE_SIZE=256`) — sans limite, ce même entrypoint prenait 80 % de la RAM de l'hôte, ~24 Go mesurés sur un poste de 30 Go. Le cache Varnish, en mémoire (malloc), passe de 20G sans limite à `VARNISH_SIZE` 1G par défaut ; imgproxy est plafonné à 4 images simultanées (`IMGPROXY_WORKERS`, au lieu de deux par CPU de l'hôte) pour que sa limite tienne. À ne pas défaire : pas de `-Xmx` en dur (il faudrait le tenir à la main en phase avec la limite), ni de ratio à 80 (le non-heap — metaspace ~115 Mo mesurés, threads, buffers Netty, runtime ONNX de Magika — n'y tiendrait plus, et un kill par le cgroup ne passe pas par `ExitOnOutOfMemoryError`) ; pas de limite sur valhalla, dont le rebuild en demande bien plus que le service (service retiré le 2026-10-17, `OPS-48`). Pas de test : `docker compose config` et `docker stack config` acceptent les deux fichiers. Tableau et budget d'un hôte dans [`OPERATIONS.md`](OPERATIONS.md#memory). La limite CPU reste ouverte (`AUD-30`) |
 | `AUD-11` | Observabilité | I6 | Critique | **Métriques** (2026-09-29) — une stack `pedalons-monitoring` (`docker-compose.monitoring.yml`), déployée depuis `~/shared` par `scripts/deploy.sh --monitoring` : Prometheus (15 jours, 4 Go au plus), node-exporter, cAdvisor, Grafana et son tableau de bord « Pédalons — vue d'ensemble » provisionné depuis le dépôt (`services/monitoring/grafana/`). Le backend expose `/q/metrics` (`quarkus-micrometer-registry-prometheus`, pool Agroal compris par `quarkus.datasource.metrics.enabled`) ; Prometheus trouve chaque tâche backend de chaque environnement par l'API Swarm, sur `pedalons-shared`, étiquetée `env` du nom de la stack — un nouvel environnement ne demande aucun changement. Le trafic se mesure chez **Caddy** (`metrics { per_host }`, site `:2020`), seul point d'entrée de tous les environnements, pas chez traefik. À ne pas défaire : `/q` n'est pas routé par traefik, ce qui garde `/q/metrics` privé — ne pas y ajouter de route ; Grafana n'est publié que derrière la règle `DOCKER-USER` de `MONITORING_PORTS` (Swarm publie sur toutes les interfaces), et le port de métriques de Caddy derrière celle d'`HOST_PORTS` — jamais l'admin `:2019`, qui réécrit la configuration. Pas de test automatisé du déploiement : configurations validées par `promtool check config`, `amtool check-config`, `loki -verify-config`, `alloy validate` et `docker stack config`, et la chaîne Loki/Alloy/Grafana essayée hors Swarm. Mise en service sur l'hôte : `OPS-22` ; ce qui reste hors champ (PostgreSQL, frontend, erreurs client) : `OPS-21`. Procédure dans [`OPERATIONS.md`](OPERATIONS.md#monitoring) |
 | `AUD-12` | Observabilité | I7 | Critique | **Alertes** (2026-09-29) — Alertmanager envoie par courriel (`ALERT_SMTP_*`) onze règles de `services/monitoring/prometheus/rules/pedalons.yml` (5xx et latence par site vus de Caddy, OOM, conteneur près de sa limite mémoire, disque, mémoire de l'hôte, heap après GC, pool de connexions saturé, cible injoignable) et une règle de journaux évaluée par Loki (`BackendErrors`). Deux pièces **hors de l'hôte**, parce qu'une alerte levée sur un hôte tombé n'en sort pas : l'alerte `Watchdog`, toujours active, pingue Healthchecks toutes les 5 minutes, qui écrit quand elle cesse ; Gatus, sur l'hôte de sauvegarde (`services/monitoring/gatus/`), sonde l'API, l'accueil, la redirection du domaine nu et staging, et l'expiration des certificats. Les sauvegardes n'y sont pas : leur propre check Healthchecks les couvre déjà. Alertmanager ne lit pas l'environnement : `deploy.sh` rend sa configuration dans `data/monitoring/` et y écrit le mot de passe SMTP et l'URL de ping **en fichiers** (`smtp_auth_password_file`, `url_file`), pour qu'aucune valeur ne casse le YAML. Couvert par `services/monitoring/prometheus/tests/pedalons.test.yml` (`promtool test rules` : les rapports dont les deux membres doivent partager leurs labels, faute de quoi l'alerte ne se déclenche jamais) ; Gatus essayé contre les vrais sites, quatre succès |
 | `AUD-13` | Observabilité | §9.3 | — | **Journaux JSON centralisés** (2026-09-29) — le backend journalise en JSON en `%prod` (`quarkus-logging-json`, `quarkus.log.console.json.enabled` faux hors `%prod`), une entrée par événement, trace de pile comprise. Alloy envoie à Loki les journaux de tous les conteneurs de toutes les stacks (labels `stack`, `service`, et `level` pour le backend) et les journaux d'accès de Caddy, **lus tels que Caddy les écrit, donc déjà filtrés** (`OPS-6`). À ne pas défaire : la rétention de Loki est de **14 jours**, la promesse de la politique de confidentialité pour le journal d'accès — ne pas la relever, et ne jamais brancher Alloy sur une source non filtrée ; peu de labels (ni statut, ni chemin, ni utilisateur), le reste se cherche dans la ligne avec `\| json`. Conséquence acceptée : la pile complète d'un poste de travail tourne en `%prod`, donc journalise aussi en JSON. Essayé hors Swarm : un conteneur étiqueté comme une tâche Swarm et un fichier d'accès Caddy arrivent dans Loki avec les labels attendus, la règle du ruler est chargée |
@@ -5118,6 +5208,82 @@ fait.
   membres : l'envoi automatique est un opt-in, rien ne change pour qui ne l'active pas. **À ne pas
   défaire** : toute évolution de ce qui part chez un service GPS (fenêtre, nom, données Wahoo,
   nouveau service) se relit d'abord contre cette section.
+- `LEGAL-23` **Stadia Maps déclaré pour le calcul d'itinéraires** (2026-10-17, contrat `11.5.2`
+  par ailleurs, `OPS-48`) — la politique disait « le calcul d'itinéraires [est] auto-hébergé » ;
+  depuis `OPS-48`, les points placés dans le planificateur, le profil choisi et l'adresse IP de notre
+  serveur partent chez Stadia Maps (États-Unis). En parité FR/EN, `privacy/privacy-policy.{fr,en}.md` :
+  un paragraphe au §4 « Affichage des cartes et recherche d'adresses » sur le même modèle que
+  Nominatim et Open-Meteo (interrogé par notre serveur, jamais votre identité, votre compte ni
+  votre adresse IP ; un calcul n'est pas conservé chez nous au-delà de la réponse), une ligne
+  « Stadia Maps (api-eu.stadiamaps.com, serveurs dans l'Union européenne, société établie aux
+  États-Unis) » dans la liste des destinataires, la phrase sur
+  l'auto-hébergement réduite au traitement des images et au rendu des cartes, et une ligne
+  « Calcul d'itinéraires » au §5 (article 49, paragraphe 1, point b : nécessaire au calcul demandé —
+  remplacé par les clauses contractuelles types le même jour, `LEGAL-25` ;
+  aucune adhésion au Data Privacy Framework n'est affirmée, faute de l'avoir vérifiée) ; en-tête
+  daté du 17 octobre 2026. `privacy/terms-of-service.{fr,en}.md`, § « Cartes et données
+  géographiques » : le calcul d'itinéraires est attribué à Stadia Maps, sur données OpenStreetMap
+  (ODbL), même date. Pas de test automatisé (texte statique ; `PrivacyPolicyPage.test.tsx` simule le
+  rendu Markdown). L'app mobile embarque `privacy/` comme asset : le texte n'y paraît qu'à la build
+  suivante. Pas d'e-mail aux membres : même donnée, même finalité, un prestataire de plus. **À ne
+  pas défaire** : tout changement de ce que le backend envoie au routeur (nouveau champ, identité,
+  IP du client) se relit d'abord contre ce paragraphe.
+- `LEGAL-24` **Stadia Maps déclaré pour la recherche de lieux, par le serveur et depuis l'appareil**
+  (2026-10-17, contrat `11.5.3` par ailleurs, `OPS-49` et `WEB-99`) — la politique décrivait
+  Nominatim, interrogé par notre serveur ; depuis `OPS-49` c'est Stadia Maps, et depuis `WEB-99` la
+  barre de recherche des cartes l'interroge directement depuis l'appareil, ce qui est une donnée
+  de plus (l'adresse IP de l'utilisateur et le centre de la carte) à déclarer. En parité FR/EN,
+  `privacy/privacy-policy.{fr,en}.md`, §4 « Affichage des cartes et recherche d'adresses » :
+  (a) le paragraphe de la recherche de lieux des formulaires nomme Stadia Maps (texte saisi,
+  langue, adresse IP de notre serveur ; jamais l'identité ni l'IP de l'utilisateur ; cache 24 h
+  inchangé) ; (b) un paragraphe neuf, sur le modèle de « Fonds de carte et relief », pour la barre
+  des cartes à navigation libre : interrogée depuis votre appareil, Stadia Maps reçoit votre adresse
+  IP, le texte tapé et le centre de la carte, rien tant que vous ne tapez rien, responsable de
+  traitement indépendant (corrigé le même jour : sous-traitant, `LEGAL-25`) ; la ligne « OpenStreetMap Nominatim » des destinataires disparaît et la
+  ligne « Stadia Maps » porte les deux rôles (serveur / appareil) avec leurs données séparées ; au
+  §5, la ligne « Calcul d'itinéraires » devient « Calcul d'itinéraires et recherche de lieux », et
+  dit que la barre des cartes part de l'appareil comme un fond de carte (hôte EU, article 49,
+  paragraphe 1, point b, inchangés). (c) `privacy/terms-of-service.{fr,en}.md`, § « Cartes et
+  données géographiques » : le calcul d'itinéraires et la recherche de lieux sont fournis par
+  Stadia Maps, sur des données OpenStreetMap et d'autres sources
+  (https://stadiamaps.com/attribution/). En-têtes déjà datés du 17 octobre 2026. Pas de test
+  automatisé (texte statique ; `PrivacyPolicyPage.test.tsx` simule le rendu Markdown). L'app
+  mobile embarque `privacy/` comme asset : le texte n'y paraît qu'à la build suivante ; elle
+  n'appelle ni le géocodage ni la barre. Pas d'e-mail aux membres : la recherche des formulaires
+  change de prestataire à données égales ; la barre des cartes est une fonction nouvelle, qui
+  n'envoie rien tant qu'on n'y tape pas, au même titre qu'un fond de carte. **À ne pas défaire** :
+  si la barre arrive sur une carte cadrée sur une trace, ou si le serveur se met à envoyer un
+  `focus.point` ou l'IP du client, ce paragraphe se relit d'abord ; la recherche des formulaires
+  reste décrite comme passant par notre serveur tant que c'est vrai.
+- `LEGAL-25` **Stadia Maps relu contre son avenant de traitement des données : sous-traitant, clauses
+  contractuelles types** (2026-10-17, sans changement de contrat d'API) — `LEGAL-23` et `LEGAL-24`
+  avaient décrit Stadia Maps sans avoir lu son DPA (https://stadiamaps.com/legal/data-processing-addendum/,
+  version du 18 mars 2026, relue le 17 octobre 2026), qui contredit deux affirmations. Le DPA fait
+  partie des conditions d'utilisation et s'applique dès le premier appel, sans signature (préambule,
+  « Acceptance », CGU §4). Stadia Maps y est **sous-traitant** du client responsable de traitement
+  (§2.1(a)), y compris pour les utilisateurs finaux et leurs adresses IP (annexe I.B), donc aussi
+  pour la barre de recherche appelée depuis le navigateur ; il ne reste responsable que pour ses
+  propres finalités : facturation, fraude, sécurité, obligations légales (§2.2). Les transferts hors
+  UE reposent sur les **clauses contractuelles types, module 2** (§2.3, §6.2(a) ; droit et
+  juridiction de l'État membre du client) ; le Data Privacy Framework n'y est qu'une possibilité
+  future (§6.4), et aucune adhésion de Stadia n'a été trouvée. Journaux de requêtes : environ 7 à
+  14 jours (annexe I.B). L'hôte européen garantit la connexion (Francfort, Paris), pas tout le
+  traitement : le DPA autorise un traitement partout où Stadia ou ses sous-traitants opèrent
+  (§6.1), et cinq de ses huit sous-traitants ultérieurs sont américains (dont Grafana et Sentry).
+  En parité FR/EN, `privacy/privacy-policy.{fr,en}.md` : l'entrée Stadia Maps quitte la liste des
+  fournisseurs de cartes pour le tableau des sous-traitants techniques (règle de `LEGAL-5` : nous le
+  choisissons et il lit les données), sous le nom « Stadia Maps, Inc., États-Unis ; point d'entrée
+  européen api-eu.stadiamaps.com, serveurs à Francfort et à Paris », avec la durée des journaux ; au
+  §4, la barre de recherche n'est plus « responsable de traitement indépendant » mais sous-traitant
+  de Pedalons (article 28), et les demandes des personnes nous sont adressées (section 7) ; au §5,
+  l'article 49, paragraphe 1, point b, cède la place aux clauses contractuelles types, avec la
+  mention des sous-traitants ultérieurs américains. Pas de test automatisé (texte statique).
+  **À ne pas défaire** : ne pas revenir à l'article 49 (une dérogation pour transferts
+  occasionnels, alors qu'une garantie de l'article 46 existe) ; ne pas affirmer d'adhésion au DPF
+  tant que Stadia ne s'en prévaut pas ; relire le DPA et https://stadiamaps.com/legal/subprocessors/
+  quand Stadia les modifie (§9.5 : modification unilatérale avec avis ; la page des sous-traitants
+  laisse au client le soin de la surveiller). La version du 9 novembre 2026 de la politique de
+  Stadia ne touche que les données du compte client, pas celles des utilisateurs.
 
 ## BILL — Monétisation
 

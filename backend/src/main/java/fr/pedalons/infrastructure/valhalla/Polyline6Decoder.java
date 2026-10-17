@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 
-/** Decodes Google-style encoded polylines with 6 digits of precision (Valhalla format). */
+/** Decodes Google-style encoded polylines with 6 digits of precision (the Valhalla protocol, as served by Stadia Maps). */
 public final class Polyline6Decoder {
 
   private static final double PRECISION = 1e6;

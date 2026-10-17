@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Last updated: October 16, 2026**
+**Last updated: October 17, 2026**
 
 This privacy policy describes how Pedalons ("we", "our", "us") collects, uses, and protects your personal data when you use our platform (website, mobile app, GPS device extensions).
 
@@ -257,6 +257,9 @@ We use technical services to operate the platform:
 - **Hammerhead, Garmin, Wahoo (United States)**
   - *Role*: Sending your routes to your GPS device, only if you connect the service: on request, or automatically if you turn it on
   - *Data Involved*: OAuth tokens, the routes you choose to send and, if you turn on automatic sending, those of the rides you are signed up for within 7 days (track, name — for an automatic send, the date and the group name are added; for Wahoo also start point, distance, climb and descent)
+- **Stadia Maps (Stadia Maps, Inc., United States; EU endpoint api-eu.stadiamaps.com, servers in Frankfurt and Paris)**
+  - *Role*: Route calculation for the planner and place search in forms, queried by our server; map search bar, queried by your device (see "Map Display and Address Search" below)
+  - *Data Involved*: Server-side: coordinates of the points of the route you draw, chosen profile, text typed in a place search, display language, our server's IP address — never your IP address or your identity. From your device, only if you type in a map's search bar: IP address, text typed, centre of the map being viewed. Stadia Maps keeps its request logs (IP address, request parameters) for about 7 to 14 days
 
 The website's audience measurement tool is hosted by us at Scaleway, like the rest of the platform: no other provider receives these statistics.
 
@@ -268,9 +271,13 @@ On the website, a push notification is delivered to your browser by its vendor's
 
 Map images are downloaded by your device directly from the provider of the map background you selected. That provider receives your IP address, your browser or app version, and the map area you are viewing (which reveals, roughly, the area of the route you are looking at); we send them nothing about you. These providers act as independent controllers, under their own policies.
 
-Place search (team location, meeting places, classified ads; when signed in), by contrast, goes through our server, which queries Nominatim on your behalf: Nominatim receives only the search text and your display language, never your IP address or your identity. Results are kept in our server's memory for up to 24 hours.
+Place search in forms (team location, meeting places, classified ads; when signed in), by contrast, goes through our server, which queries Stadia Maps on your behalf: Stadia Maps receives only the search text, your display language and our server's IP address, never your IP address or your identity. Results are kept in our server's memory for up to 24 hours.
+
+The search bar of the free-roaming maps (planner, routes map, GPX tool), on the other hand, queries Stadia Maps directly from your device, as a map-background provider does: Stadia Maps then receives your IP address, the text you type and the centre of the map being viewed (used to rank the results), and nothing as long as you type nothing in it; we send them nothing about you. Unlike the map-background providers, Stadia Maps acts here, as for place search in forms and route calculation, as a processor for Pedalons (Article 28 GDPR), under its data processing addendum: it processes this data only to provide the service to us, without selling it, combining it with other sources or using it to profile you, and your requests go to us (section 7). It remains a controller only for its own security, fraud-prevention and legal-compliance needs. Its request logs are kept for about 7 to 14 days.
 
 Ride weather forecasts are requested from Open-Meteo by our server, in the background and never while you browse: Open-Meteo receives only the centre of a cell of about 5 km around the start and the route's points (never the exact meeting place), sometimes an altitude rounded to 100 m, and our server's IP address — never your identity, account or IP address.
+
+Route calculation in the planner also goes through our server, which queries Stadia Maps on your behalf: Stadia Maps receives the coordinates of the points you place (and of those already calculated between them), the profile you chose (road bike, mountain bike, on foot…) and our server's IP address — never your identity, account or IP address. We keep nothing of that request beyond the answer; the resulting track is stored only if you save the route.
 
 - **VersaTiles (tiles.versatiles.org)**
   - *Role*: Vector map background (default style), map fonts and sprites
@@ -287,9 +294,6 @@ Ride weather forecasts are requested from Open-Meteo by our server, in the backg
 - **OpenStreetMap France (tile-cyclosm.openstreetmap.fr)**
   - *Role*: CyclOSM map background
   - *Data Involved*: IP address, map area viewed
-- **OpenStreetMap Nominatim (nominatim.openstreetmap.org)**
-  - *Role*: Place search, queried by our server
-  - *Data Involved*: The text you type and your display language; never your IP address or identity
 - **Open-Meteo (api.open-meteo.com)**
   - *Role*: Ride weather forecasts, queried by our server
   - *Data Involved*: Coordinates of the centre of cells of about 5 km, rounded altitude, our server's IP address; never your IP address or identity
@@ -297,7 +301,7 @@ Ride weather forecasts are requested from Open-Meteo by our server, in the backg
   - *Role*: "Satellite (ESRI)" map background
   - *Data Involved*: IP address, map area viewed
 
-The "Michelin" map background is served by us (tiles.pedalons.fr): choosing it involves no third party. Image processing, map rendering and route calculation are also self-hosted, and the site's and the app's typefaces are bundled with them (except the map-label fonts, provided by VersaTiles).
+The "Michelin" map background is served by us (tiles.pedalons.fr): choosing it involves no third party. Image processing and map rendering are also self-hosted, and the site's and the app's typefaces are bundled with them (except the map-label fonts, provided by VersaTiles).
 
 ### Authorities
 
@@ -312,6 +316,7 @@ Our servers are hosted by **Scaleway** (Scaleway SAS, Vitry-sur-Seine, France) a
 Some processing you can trigger involves servers outside the European Union:
 
 - **Third-party GPS services** (Hammerhead, Garmin, Wahoo, United States): only if you connect one, and only for the routes you send them or, if you turn on automatic sending, those of the rides you are signed up for. This transfer is necessary for the service you request, putting the route on your account (Article 49(1)(b) GDPR); Garmin is also certified under the EU–US Data Privacy Framework.
+- **Route calculation and place search**: the points you place in the planner and the chosen profile, as well as the text of place searches in forms and your display language, are sent by our server to Stadia Maps, without your identity or IP address, only while you draw a route or search for a place. The map search bar, for its part, is queried from your device, which then sends its IP address, the text typed and the centre of the map being viewed, as for a map background (see section 4). In both cases we use Stadia Maps' EU endpoint (api-eu.stadiamaps.com): requests reach its servers in Frankfurt and Paris. As Stadia Maps, Inc. is established in the United States and uses US sub-processors (technical monitoring, error tracking), a transfer to the United States remains possible; it is covered by the European Commission's standard contractual clauses (Module Two, controller to processor), incorporated into Stadia Maps' data processing addendum.
 - **Map backgrounds and terrain**: your device sends your IP address and the area viewed to the provider of the background you choose (see section 4). The "Satellite (ESRI)" background comes from Esri (United States), which is certified under the Data Privacy Framework. Mapterhorn's terrain tiles, requested only if you switch on relief shading or 3-D terrain, are served by Cloudflare (United States), which is certified too. The OpenStreetMap background is served from the United Kingdom, which benefits from a European Commission adequacy decision.
 - **Google's Firebase messaging component**: the mobile app includes it, and it contacts Google's servers when the app starts, even before you sign in or allow notifications, which reveals your device's IP address and creates a Firebase installation identifier. The app and the website include only this messaging part of Firebase: no Firebase analytics, advertising or tracking component. On the website, this component is loaded only once you have turned on notifications.
 - **Push notifications**: Google (Firebase Cloud Messaging) may process their title, their text and your device's push token in the United States; this transfer is covered by the European Commission's standard contractual clauses and by Google LLC's certification under the Data Privacy Framework. On iPhone, they are delivered by Apple (Apple Distribution International, Ireland), whose transfers to the United States are covered by the standard contractual clauses; in a browser, by its vendor's push service, which only receives the encrypted message (see section 4). This happens only while you allow notifications.

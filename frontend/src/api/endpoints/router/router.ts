@@ -14,7 +14,7 @@ import type { ErrorType, BodyType } from '../../../lib/axiosInstance.ts'
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]
 
 /**
- * Calculate a route between two points using Valhalla
+ * Calculate a route between two points using the Stadia Maps routing API
  * @summary Calculate route
  */
 export const route = (

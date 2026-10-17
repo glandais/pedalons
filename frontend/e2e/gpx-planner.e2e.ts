@@ -20,7 +20,7 @@ import { hydrated } from './support/ui'
  * (ConfigService.java defaultCenter) — support/domains.ts plannerSite.
  *
  * Two clicks on the map are two control points; the segment between them is routed by the backend
- * (POST /api/router → Valhalla, borrowed from the workstation stack: see e2e/README.md) and drawn;
+ * (POST /api/router → the Stadia Maps API, with the key scripts/e2e.sh passes on: see e2e/README.md) and drawn;
  * saving sends the routed points to POST /api/gpx-previews/from-points, which runs the GPX pipeline
  * and returns the preview the page then opens.
  */
@@ -77,7 +77,7 @@ test('a user draws a route from two points on the map, sees it routed and traced
   await canvas.click({ position: { x: x + 40, y: y + 20 } })
   await expect(main.getByText('2 points', { exact: true })).toBeVisible()
   const router = await routed
-  expect(router.ok(), 'the router (Valhalla) answers').toBe(true)
+  expect(router.ok(), 'the router (Stadia Maps) answers').toBe(true)
   const segment = (await router.json()) as RouterResponse
   const segmentLength = segment.dist ?? 0
   expect(segmentLength).toBeGreaterThan(1_000)

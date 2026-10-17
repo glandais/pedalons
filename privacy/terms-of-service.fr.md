@@ -1,6 +1,6 @@
 # Conditions d'utilisation
 
-**Dernière mise à jour : 14 octobre 2026**
+**Dernière mise à jour : 17 octobre 2026**
 
 ## 1. Acceptation des conditions
 
@@ -70,7 +70,7 @@ Le service Pedalons, son code source, son design et ses fonctionnalités sont pr
 
 ### Cartes et données géographiques
 
-Les cartes, la recherche de lieux, le calcul d'itinéraires et les données d'altitude s'appuient sur des données de tiers : © les contributeurs d'OpenStreetMap (licence ODbL), qui couvre aussi les résultats du calcul d'itinéraires et de la recherche de lieux, ainsi que CyclOSM, VersaTiles, IGN / Géoplateforme, Esri et ses sources, les données d'altitude Mapterhorn, et Michelin. Les altitudes des parcours (profil, dénivelé, montées) viennent du LiDAR HD de l'IGN (IGN — LiDAR HD, Licence Ouverte Etalab 2.0, données lues à l'import de chaque parcours) et, là où il ne couvre pas, de Mapterhorn. Les images de carte, les résultats de recherche de lieux et les données d'altitude sont fournis en l'état, sans garantie d'exactitude ni d'exhaustivité.
+Les cartes, la recherche de lieux, le calcul d'itinéraires et les données d'altitude s'appuient sur des données de tiers : © les contributeurs d'OpenStreetMap (licence ODbL), qui couvre aussi les résultats du calcul d'itinéraires et de la recherche de lieux, ainsi que CyclOSM, VersaTiles, IGN / Géoplateforme, Esri et ses sources, les données d'altitude Mapterhorn, et Michelin. Le calcul d'itinéraires et la recherche de lieux (dans les formulaires comme sur les cartes) sont fournis par Stadia Maps, sur des données OpenStreetMap et d'autres sources (https://stadiamaps.com/attribution/). Les altitudes des parcours (profil, dénivelé, montées) viennent du LiDAR HD de l'IGN (IGN — LiDAR HD, Licence Ouverte Etalab 2.0, données lues à l'import de chaque parcours) et, là où il ne couvre pas, de Mapterhorn. Les images de carte, les résultats de recherche de lieux et les données d'altitude sont fournis en l'état, sans garantie d'exactitude ni d'exhaustivité.
 
 Les prévisions météo des sorties viennent d'Open-Meteo.com (licence CC BY 4.0). Ce sont des prévisions, fournies en l'état : elles peuvent être fausses ou dépassées, et ne dispensent pas de vérifier les conditions avant de partir.
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Exports the handful of .env values the dev backend needs, and nothing else.
+# Exports the handful of .env values the dev backend needs (postgres, MinIO, the Stadia Maps
+# routing key), and nothing else.
 #
 #   cd backend && source ../scripts/dev-env.sh && mvn quarkus:dev
 #
@@ -23,8 +24,8 @@ else
     _dev_env_value="${_dev_env_value%\"}"
     _dev_env_value="${_dev_env_value#\"}"
     export "$_dev_env_key=$_dev_env_value"
-  done < <(grep -E '^(POSTGRES_(DB|USER|PASSWORD|HOST_PORT)|MINIO_(ACCESS_KEY|SECRET_KEY)|STORAGE_BUCKET)=' "$_dev_env_file")
-  echo "dev-env.sh: exported postgres + MinIO credentials from $_dev_env_file"
+  done < <(grep -E '^(POSTGRES_(DB|USER|PASSWORD|HOST_PORT)|MINIO_(ACCESS_KEY|SECRET_KEY)|STORAGE_BUCKET|STADIAMAPS_API_KEY)=' "$_dev_env_file")
+  echo "dev-env.sh: exported postgres + MinIO credentials and STADIAMAPS_API_KEY from $_dev_env_file"
 fi
 
 unset _dev_env_file _dev_env_key _dev_env_value

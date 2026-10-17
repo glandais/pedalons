@@ -11,7 +11,8 @@ Quarkus REST API backend for the Pedalons cycling team management platform.
 - **API**: OpenAPI 3.1 contract-first (SmallRye OpenAPI)
 - **GPX**: vcyclist library for track processing, timeshape for timezone lookup
 - **Images**: imgproxy for on-the-fly optimization (WebP, AVIF, JXL)
-- **Routing**: valhalla for cycling route computation and elevation profiles
+- **Routing**: Stadia Maps (Valhalla-compatible API, `STADIAMAPS_API_KEY`) for the planner's route computation
+- **Geocoding**: Stadia Maps autocomplete behind `GET /api/geocode/search`, same key
 
 ## Prerequisites
 
@@ -38,7 +39,6 @@ The workstation overlay `docker-compose.local.yml` starts the backing services a
 | PostgreSQL + PostGIS | `POSTGRES_HOST_PORT` (5432) | Database |
 | MinIO | 9000 (API), 9001 (console) | S3-compatible object storage |
 | imgproxy | 38080 | Image transformation |
-| valhalla | 8002 | Cycling route engine |
 | tileserver | 18080 | Server-side raster map rendering |
 | Mailpit | 1025 (SMTP), 8025 (web) | Email testing |
 
@@ -104,7 +104,7 @@ src/main/java/fr/pedalons/
 ├── domain/            # JPA entities, same split (BaseEntity, TeamEntity, Publication in common/)
 ├── dto/               # Request/response DTOs
 ├── enums/             # Shared enums (status, roles, visibility, ...)
-├── infrastructure/    # Security, caching, valhalla client, imgproxy
+├── infrastructure/    # Security, caching, Stadia Maps routing (package `valhalla`) and geocoding (`stadiamaps`) clients, imgproxy
 ├── repository/        # Panache repositories with query builder
 └── service/           # Business logic
 

@@ -11,13 +11,14 @@
 #
 #   1. mailpit. No SQL client here: postgres is published on the loopback, so bring your own —
 #      psql, pgAdmin, DBeaver, an IDE. See "Running SQL" in README.md.
-#   2. valhalla and tileserver, pulled from docker-compose.shared.yml with `extends`. A host runs
-#      that stack once and shares it between every environment; a workstation has one environment,
-#      so it runs one stack instead of two — and the `shared` network becomes an ordinary project
-#      network (see the bottom of this file) instead of one that must exist beforehand.
+#   2. tileserver, pulled from docker-compose.shared.yml with `extends`. A host runs that stack
+#      once and shares it between every environment; a workstation has one environment, so it
+#      runs one stack instead of two — and the `shared` network becomes an ordinary project
+#      network (see the bottom of this file) instead of one that must exist beforehand. Routing
+#      is not a container: the backend calls the Stadia Maps API with STADIAMAPS_API_KEY (.env).
 #   3. the host ports `mvn quarkus:dev` and `pnpm dev` talk to. A deployed backend reaches every
 #      service over the compose network and publishes none of them; the %dev profile runs outside
-#      Docker and expects imgproxy on 38080, valhalla on 8002, tileserver on 18080, MinIO on 9000
+#      Docker and expects imgproxy on 38080, tileserver on 18080, MinIO on 9000
 #      and SMTP on 1025, and postgres on POSTGRES_HOST_PORT.
 #   4. an `app` profile on backend/frontend/traefik, so that a plain `up` starts the backing services
 #      alone — see the comment on those three below — and an `analytics` profile on goatcounter,
@@ -37,17 +38,8 @@ services:
       - "127.0.0.1:1025:1025" # SMTP, for the backend in dev mode
       - "127.0.0.1:8025:8025" # Web UI
 
-  # Image, volumes, tile_urls (read on the first start only, when no tiles exist yet) and the
-  # healthcheck all come from the shared file — only the container name and the published port are ours.
-  valhalla:
-    extends:
-      file: docker-compose.shared.yml
-      service: valhalla
-    container_name: ${ENV_NAME}-valhalla
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:8002:8002"
-
+  # Image, volumes and memory limit come from the shared file — only the container name and the
+  # published port are ours.
   tileserver:
     extends:
       file: docker-compose.shared.yml
@@ -115,8 +107,8 @@ networks:
   pedalons:
     driver: !reset null
   # docker-compose.yml declares this one `external`, so a deployed environment refuses to start
-  # until the shared stack has created it. Here valhalla and tileserver belong to *this* project, so
-  # the network is ours to create — and there is no shared stack on a workstation to create it.
+  # until the shared stack has created it. Here tileserver belongs to *this* project, so the
+  # network is ours to create — and there is no shared stack on a workstation to create it.
   shared:
     name: ${ENV_NAME}-shared
     external: false

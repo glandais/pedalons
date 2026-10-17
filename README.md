@@ -46,12 +46,15 @@ Everything else has a working default.
 ### 2. Start the backing services
 
 ```bash
-docker compose up -d   # postgres, MinIO, imgproxy, varnish, valhalla, tileserver, mailpit
+docker compose up -d   # postgres, MinIO, imgproxy, varnish, tileserver, mailpit
 ```
 
-The first start of valhalla builds its routing tiles (France by default, `VALHALLA_TILE_URLS`) and
-takes a long while; the rest is up in seconds. Mail, whatever its recipient, lands in mailpit:
-http://127.0.0.1:8025.
+Everything is up in seconds. Mail, whatever its recipient, lands in mailpit:
+http://127.0.0.1:8025. Route computation and address search are not containers: the backend calls
+Stadia Maps with `STADIAMAPS_API_KEY` from `.env` (`scripts/dev-env.sh` exports it to dev mode);
+without it the planner cannot compute a route and the forms find no address, everything else
+works. The search bar on the maps needs no key: Stadia Maps lets `localhost` through on its own
+(strict quota).
 
 ### 3. Start the backend
 
@@ -105,8 +108,8 @@ A workstation and a deployment differ in five keys, and only those:
   wherever they run, and its only way out for mail is the relay named by `QUARKUS_MAILER_*`. After a
   biketeam migration the local database holds thousands of real member addresses, and one OTP or
   team invitation is enough to reach them.
-- **`COMPOSE_FILE` adds the workstation overlay**, `docker-compose.local.yml`: mailpit, the valhalla
-  and tileserver a host gets from its shared stack, the loopback ports dev mode talks to, and an
+- **`COMPOSE_FILE` adds the workstation overlay**, `docker-compose.local.yml`: mailpit, the
+  tileserver a host gets from its shared stack, the loopback ports dev mode talks to, and an
   `app` profile on `backend`/`frontend`/`traefik` so that a plain `docker compose up -d` starts the
   backing services alone. A deployed `.env` has no `COMPOSE_FILE`, which is why the overlay is a
   separate file rather than a profile. Its header comment lists what it changes.
@@ -192,7 +195,7 @@ tribly/
 ├── docs/             # Ledgers (LEDGER_NEXT.md), plans, the operations runbook
 ├── privacy/          # Privacy policy, terms and support pages (served by the site, bundled in the app)
 ├── assets/           # Logo and icon sources (see docs/BRANDING.md)
-├── data/             # Runtime data of the stack (keys, storage, cache, valhalla, tileserver)
+├── data/             # Runtime data of the stack (keys, storage, cache, tileserver)
 ├── docker-compose.yml         # One deployed environment (prod, staging, ...): a Swarm stack
 ├── docker-compose.local.yml   # Workstation overlay. Never deployed
 ├── docker-compose.e2e.yml     # End-to-end test stack (scripts/e2e.sh)
@@ -231,12 +234,15 @@ IDs are TSIDs (`bigint`), not sequences: generate one inline with
 
 ## Deployment and operations
 
-A host runs one shared stack (`docker-compose.shared.yml`: valhalla and tileserver, on the
+A host runs one shared stack (`docker-compose.shared.yml`: the tileserver, on the
 `pedalons-shared` network) plus one `docker-compose.yml` stack per environment, behind Caddy.
+Route computation and geocoding are bought from Stadia Maps, with a key per environment; the
+maps' search bar calls Stadia Maps from the browser, authenticated by the page's domain, so a new
+hostname has to be declared on their dashboard.
 Production is backed up nightly by `scripts/backup.sh`, and `scripts/restore.sh` brings an
 environment back from a snapshot.
 
-The runbook — deployment, access-log redaction, seeding the shared Valhalla data, network changes,
+The runbook — deployment, access-log redaction, the Stadia Maps key and domains, network changes,
 backup configuration and restore — is in **[docs/OPERATIONS.md](docs/OPERATIONS.md)**. Read its
 [Deployment](docs/OPERATIONS.md#deployment) section before touching networks or the compose files.
 

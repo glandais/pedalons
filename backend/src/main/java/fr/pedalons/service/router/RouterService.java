@@ -10,7 +10,7 @@ import fr.pedalons.dto.router.request.RouterProfile;
 import fr.pedalons.dto.router.request.RouterRequest;
 import fr.pedalons.dto.router.response.RouterResponse;
 import fr.pedalons.infrastructure.valhalla.Polyline6Decoder;
-import fr.pedalons.infrastructure.valhalla.ValhallaClient;
+import fr.pedalons.infrastructure.valhalla.StadiaMapsClient;
 import fr.pedalons.infrastructure.valhalla.ValhallaLocation;
 import fr.pedalons.infrastructure.valhalla.ValhallaRequest;
 import fr.pedalons.infrastructure.valhalla.ValhallaResponse;
@@ -23,6 +23,7 @@ import io.github.glandais.engine.path.Path;
 import io.github.glandais.engine.path.PathJvm;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.WebApplicationException;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,7 +42,7 @@ public class RouterService {
   private static final CoordinateReferenceSystem<G3D> WGS84_3D =
       addVerticalSystem(WGS84, G3D.class, LinearUnit.METER);
 
-  @Inject @RestClient ValhallaClient valhallaClient;
+  @Inject @RestClient StadiaMapsClient stadiaMapsClient;
 
   @Inject GpxPipeline gpxPipeline;
 
@@ -51,9 +52,16 @@ public class RouterService {
 
     ValhallaResponse response;
     try {
-      response = valhallaClient.route(valhallaRequest);
+      response = stadiaMapsClient.route(valhallaRequest);
     } catch (WebApplicationException e) {
-      LOG.warnv("Valhalla routing failed with status {0}", e.getResponse().getStatus());
+      // Status only: the URL and headers carry the API key. A 429 (spent Stadia Maps quota) or a
+      // 5xx has no code of its own in ErrorCode; the planner shows a generic failure either way.
+      LOG.warnv("Stadia Maps routing failed with status {0}", e.getResponse().getStatus());
+      throw new BusinessException(ErrorCode.UNKNOWN);
+    } catch (ProcessingException e) {
+      // A remote API behind a 15 s read timeout: DNS, TLS or a timeout land here, not above. The
+      // message names the host at most, never the header.
+      LOG.warnv("Stadia Maps routing unreachable: {0}", e.getClass().getSimpleName());
       throw new BusinessException(ErrorCode.UNKNOWN);
     }
 
@@ -75,8 +83,8 @@ public class RouterService {
     G3D[] geomPoints = allCoords.stream().map(c -> g(c[0], c[1], 0.0)).toArray(G3D[]::new);
     LineString<G3D> rawRoute = linestring(WGS84_3D, geomPoints);
 
-    // Valhalla bounds the length of a route; the check repeats it before the resampling
-    // allocates (SEC-6).
+    // Stadia Maps bounds a bicycle route (500 km as the crow flies); the check repeats it on the
+    // actual track before the resampling allocates (SEC-6).
     Path raw = toPath(rawRoute);
     GpxLimits.checkTracks(List.of(raw));
 

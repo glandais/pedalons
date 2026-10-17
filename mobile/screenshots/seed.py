@@ -130,7 +130,7 @@ PLACES = {
                 "address": "74570 Thorens-Glières"},
 }
 
-# Waypoints, routed leg by leg with the staging Valhalla (/api/router).
+# Waypoints, routed leg by leg by the staging backend (/api/router, Stadia Maps).
 ROUTES = [
     {"key": "lac", "surface": "ROAD", "profile": "BIKE", "tags": ["lakeside", "flat"],
      "fr": "Tour du lac d'Annecy", "en": "Lake Annecy loop",

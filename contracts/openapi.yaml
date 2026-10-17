@@ -7875,7 +7875,7 @@ tags:
 - name: GPX previews
   description: Analyse a GPX file outside of any team
 - name: Geocode
-  description: "Address lookup, proxied to OpenStreetMap Nominatim"
+  description: "Address lookup, proxied to the Stadia Maps geocoder"
 - name: Invitations
   description: Redeem a team invitation
 - name: Moderation
@@ -7901,7 +7901,7 @@ tags:
 - name: Route Comments
   description: Comment operations for routes
 - name: Router
-  description: Route calculation using Valhalla
+  description: Route calculation using the Stadia Maps routing API
 - name: Routes
   description: GPX route management operations
 - name: Server Version
@@ -10254,8 +10254,8 @@ paths:
       summary: Search places by name
       description: "Returns at most 5 places matching the query, or an empty list\
         \ when the query is shorter than 3 characters or the provider is unreachable.\
-        \ Results come from OpenStreetMap via Nominatim: a client displaying them\
-        \ must credit '© OpenStreetMap contributors'."
+        \ Results come from the Stadia Maps geocoder: a client displaying them must\
+        \ credit 'Stadia Maps, © OpenStreetMap contributors & others'."
       operationId: searchPlaces
       tags:
       - Geocode
@@ -11519,7 +11519,8 @@ paths:
   /api/router:
     post:
       summary: Calculate route
-      description: Calculate a route between two points using Valhalla
+      description: Calculate a route between two points using the Stadia Maps routing
+        API
       operationId: route
       tags:
       - Router
@@ -11543,7 +11544,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
         "503":
-          description: Valhalla service unavailable
+          description: Routing service unavailable
           content:
             application/json:
               schema:
@@ -19343,7 +19344,7 @@ paths:
                 $ref: "#/components/schemas/VersionDto"
 info:
   title: Pedalons API
-  version: 11.5.1
+  version: 11.5.3
   description: API for Pedalons Cycling Team Management Platform
 servers:
 - url: http://localhost:8080
