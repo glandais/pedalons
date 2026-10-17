@@ -14,6 +14,8 @@ import { MapPanel } from '@/components/map/MapPanel'
 interface RouterProfileSelectorProps {
   currentProfile: RouterProfile
   onProfileChange: (profile: RouterProfile) => void
+  /** `'bar'`: a button of the touch toolbar instead of the map's control column. */
+  trigger?: 'map' | 'bar'
 }
 
 const PROFILE_ICONS: Record<RouterProfile, React.ComponentType<{ size?: number }>> = {
@@ -37,6 +39,7 @@ const PROFILES: RouterProfile[] = [
 export function RouterProfileSelector({
   currentProfile,
   onProfileChange,
+  trigger,
 }: RouterProfileSelectorProps) {
   const { t } = useTranslation()
   const CurrentIcon = PROFILE_ICONS[currentProfile]
@@ -47,6 +50,7 @@ export function RouterProfileSelector({
       label={t('planner.profile.label')}
       title={t('planner.profile.label')}
       icon={<CurrentIcon size={20} />}
+      trigger={trigger}
     >
       {(close) => (
         <Stack gap={4}>

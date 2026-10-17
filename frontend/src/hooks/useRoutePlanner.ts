@@ -21,7 +21,8 @@ export interface UseRoutePlannerOptions {
   teamSlug?: string
 }
 
-interface UseRoutePlannerReturn {
+/** Everything the planner hook returns: the state a view of the planner is given. */
+export interface RoutePlannerState {
   routeGeoJson: GeoJSON.LineString | null
   route: Route
   controlPoints: RoutePoint[]
@@ -96,7 +97,7 @@ function isRouterProfile(value: unknown): value is RouterProfile {
   return Object.values(RouterProfile).includes(value as RouterProfile)
 }
 
-export function useRoutePlanner(options?: UseRoutePlannerOptions): UseRoutePlannerReturn {
+export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerState {
   const { initialTrack, teamSlug } = options || {}
   const { t } = useTranslation()
   // Remembered across sessions; a stale or hand-edited value falls back to the default.

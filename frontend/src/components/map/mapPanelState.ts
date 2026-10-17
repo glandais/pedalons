@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useState } from 'react'
+import { createContext, useCallback, useContext, useMemo, useState } from 'react'
 
 /**
  * Which panel of the map's control column is open, if any. One state for the whole map, so opening
@@ -40,4 +40,14 @@ export function useMapPanel(id: string) {
     if (opened) setOpenId(null)
   }, [setOpenId, opened])
   return { opened, toggle, close, setOpened: (v: boolean) => setOpenId(v ? id : null) }
+}
+
+/**
+ * The open-panel state of one map's control column. {@link PedalonsMap} owns one; a page whose
+ * panels live outside the map too (the planner's bottom bar) creates it higher and provides it
+ * with {@link MapPanelContext}, which the map then reuses instead of making its own.
+ */
+export function useMapPanelState(): MapPanelState {
+  const [openId, setOpenId] = useState<string | null>(null)
+  return useMemo(() => ({ openId, setOpenId }), [openId])
 }

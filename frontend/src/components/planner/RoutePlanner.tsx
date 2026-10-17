@@ -1,6 +1,7 @@
 import { useCallback, useRef, useMemo, useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
+  GeolocateControl,
   Source,
   Layer,
   MapRef,
@@ -8,12 +9,13 @@ import {
   Marker,
   MarkerDragEvent,
 } from 'react-map-gl/maplibre'
-import { IconTrash } from '@tabler/icons-react'
-import { ActionIcon, Box, Group, Loader, Menu, Skeleton, Stack, Text } from '@mantine/core'
+import { IconMaximize, IconTrash } from '@tabler/icons-react'
+import { ActionIcon, Box, Button, Group, Loader, Menu, Skeleton, Stack, Text } from '@mantine/core'
 import { useMediaMatch } from '@/hooks/useResponsive'
 import { PedalonsMap } from '../map/PedalonsMap'
+import { MapControlButton, MapControlGroup } from '../map/MapControl'
 import { HideTrackControl } from '../map/HideTrackControl'
-import { MapSearchControl } from '../map/MapSearchControl'
+import { MapSearchControl, type SearchedPlace } from '../map/MapSearchControl'
 import { useResolvedColorScheme } from '@/hooks/useResolvedColorScheme'
 import { useDefaultMapView } from '@/hooks/useDefaultMapView'
 import { KmMarkersLayer } from '../map/MapMarkers'
@@ -22,14 +24,14 @@ import { UndoRedoControl } from './UndoRedoControl'
 import { RouterProfileSelector } from './RouterProfileSelector'
 import { PlannerHelpControl } from './PlannerHelpControl'
 import { RoutePlannerMiniMap } from './RoutePlannerMiniMap'
-import { useUnits } from '../../hooks/useUnits'
+import { PlannerStatus, PlannerStatusChip } from './PlannerStatus'
+import { calculateBounds } from '../map/mapUtils'
 import { useHideTrackKey } from '../../hooks/useHideTrackKey'
 import {
-  useRoutePlanner,
   findAnchorStartPoint,
   findAnchorEndPoint,
+  type RoutePlannerState,
 } from '../../hooks/useRoutePlanner'
-import type { GeoPoint } from '@/api/dto'
 // maplibre-gl CSS is provided by maplibre-theme in index.css
 import { RoutePoint } from '@/lib/planner'
 import { getOverlayBg } from '@/lib/colors'
@@ -41,11 +43,22 @@ import { around } from 'geokdbush'
 const DEFAULT_ZOOM = 12
 
 interface RoutePlannerProps {
-  onPointsChange: (points: GeoPoint[]) => void
+  /** The planner's state, owned by the parent so it outlives this view being moved or hidden. */
+  planner: RoutePlannerState
+  /**
+   * `inline`: in the form, with its status bar above the map. `fullscreen`: the map fills the
+   * editor's dialog, the status lives in a chip (here on a mouse, in the parent on a finger).
+   */
+  layout: 'inline' | 'fullscreen'
+  /**
+   * Whether this view is on screen. A view kept mounted off-screen (a finger, fullscreen closed)
+   * must not answer keyboard shortcuts: they would edit a route nobody sees.
+   */
+  active: boolean
+  /** Given on a mouse, inline: adds the « Expand » button to the control column. */
+  onExpand?: () => void
   initialTrack?: number[][] // [lng, lat, ele, dist][] from existing route
   teamLocation?: [number, number] // [lng, lat] from team geometry
-  /** Team the route is drawn for (team route editor); absent from the GPX tools. Sent to the router. */
-  teamSlug?: string
 }
 
 // The press is cancelled once the finger moves as far as maplibre needs to start a marker drag
@@ -66,13 +79,14 @@ function isTouchGesture(event: Event | undefined): boolean {
 type PointerKind = 'mouse' | 'touch' | 'pen' | ''
 
 export function RoutePlanner({
-  onPointsChange,
+  planner,
+  layout,
+  active,
+  onExpand,
   initialTrack,
   teamLocation,
-  teamSlug,
 }: RoutePlannerProps) {
   const { t } = useTranslation()
-  const { distance, elevation } = useUnits()
   const colorScheme = useResolvedColorScheme()
   const mapRef = useRef<MapRef>(null)
   const mapContainerRef = useRef<HTMLDivElement>(null)
@@ -94,14 +108,14 @@ export function RoutePlanner({
     canRedo,
     undo,
     redo,
-  } = useRoutePlanner({ initialTrack, teamSlug })
+  } = planner
 
   const getMapZoom = useCallback(() => mapRef.current?.getZoom() ?? DEFAULT_ZOOM, [])
 
   const defaultView = useDefaultMapView()
 
   // Press "h" to hide the trace and its markers, revealing the basemap underneath
-  const [trackHidden, toggleTrackHidden] = useHideTrackKey()
+  const [trackHidden, toggleTrackHidden] = useHideTrackKey(active)
 
   // Calculate initial view state from track bounds, team location, or the server's default centre.
   // Null while none of the three is known yet — the map waits rather than opening somewhere wrong.
@@ -114,52 +128,48 @@ export function RoutePlanner({
       return defaultView
     }
 
-    // Calculate bounds
-    let minLng = Infinity,
-      maxLng = -Infinity,
-      minLat = Infinity,
-      maxLat = -Infinity
-    for (const coord of initialTrack) {
-      minLng = Math.min(minLng, coord[0])
-      maxLng = Math.max(maxLng, coord[0])
-      minLat = Math.min(minLat, coord[1])
-      maxLat = Math.max(maxLat, coord[1])
-    }
-
-    // Center and approximate zoom
-    const centerLng = (minLng + maxLng) / 2
-    const centerLat = (minLat + maxLat) / 2
-    const lngSpan = maxLng - minLng
-    const latSpan = maxLat - minLat
-    const maxSpan = Math.max(lngSpan, latSpan)
-
-    // Approximate zoom level based on span
-    let zoom = 12
-    if (maxSpan > 1) zoom = 7
-    else if (maxSpan > 0.5) zoom = 8
-    else if (maxSpan > 0.2) zoom = 9
-    else if (maxSpan > 0.1) zoom = 10
-    else if (maxSpan > 0.05) zoom = 11
-
+    // Fit the whole trace in the frame. The container has its real size when the map is built, so
+    // the ratio of the screen (a phone in portrait included) is respected.
     return {
-      longitude: centerLng,
-      latitude: centerLat,
-      zoom,
+      bounds: calculateBounds(initialTrack),
+      fitBoundsOptions: { padding: 40, maxZoom: 15 },
     }
   }, [initialTrack, teamLocation, defaultView])
 
-  // Notify parent when route changes - pass the complete computed path
+  // The map lives in a container that changes size when this view moves between the form and the
+  // fullscreen dialog. MapLibre's own observer notices; this also covers the frame the container
+  // is re-attached, whose size the observer reports a tick late.
   useEffect(() => {
-    if (!routeGeoJson || routeGeoJson.coordinates.length < 2) {
-      onPointsChange([])
-      return
-    }
-    const allPoints: GeoPoint[] = routeGeoJson.coordinates.map((coords) => ({
-      lng: coords[0],
-      lat: coords[1],
-    }))
-    onPointsChange(allPoints)
-  }, [routeGeoJson, onPointsChange])
+    const frame = requestAnimationFrame(() => mapRef.current?.resize())
+    return () => cancelAnimationFrame(frame)
+  }, [layout])
+
+  // A place found by the search or by « my position », offered as the start of an empty trace:
+  // the first point costs no routing request. Only proposed while the trace is empty.
+  const [startCandidate, setStartCandidate] = useState<{ lng: number; lat: number } | null>(null)
+  const noPointYet = controlPoints.length === 0
+  const noPointYetRef = useRef(noPointYet)
+  useEffect(() => {
+    noPointYetRef.current = noPointYet
+    // Whatever way the first point comes (this button or a click), the proposal is spent.
+    if (!noPointYet) setStartCandidate(null)
+  }, [noPointYet])
+  // Moving between the form and the editor drops a proposal left on the map.
+  useEffect(() => {
+    setStartCandidate(null)
+  }, [layout])
+  const proposeStart = useCallback((place: { lng: number; lat: number }) => {
+    if (noPointYetRef.current) setStartCandidate({ lng: place.lng, lat: place.lat })
+  }, [])
+  const handleSearchSelected = useCallback(
+    (place: SearchedPlace) => proposeStart(place),
+    [proposeStart]
+  )
+  const handleStartHere = useCallback(() => {
+    if (!startCandidate) return
+    addControlPoint({ lng: startCandidate.lng, lat: startCandidate.lat }, false)
+    setStartCandidate(null)
+  }, [startCandidate, addControlPoint])
 
   // Cursor position for mini-map (desktop only)
   const [cursorPosition, setCursorPosition] = useState<{ lng: number; lat: number } | null>(null)
@@ -216,6 +226,13 @@ export function RoutePlanner({
     longPressTouchStart.current = null
   }, [])
 
+  // The long-press menu is portalled to body and this view outlives the fullscreen editor: when
+  // the editor closes (browser back) or the view moves, the menu would hang on a detached target.
+  useEffect(() => {
+    setContextMenu(null)
+    clearLongPress()
+  }, [layout, active, clearLongPress])
+
   const handleMarkerTouchStart = useCallback(
     (idx: number) => (event: React.TouchEvent) => {
       const touch = event.touches[0]
@@ -269,7 +286,7 @@ export function RoutePlanner({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       directKeyRef.current = e.ctrlKey || e.altKey
-      if (isEditableTarget(e.target)) return
+      if (!active || isEditableTarget(e.target)) return
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
         e.preventDefault()
         if (e.shiftKey) redo()
@@ -290,7 +307,7 @@ export function RoutePlanner({
       window.removeEventListener('keyup', handleKeyUp)
       window.removeEventListener('blur', handleBlur)
     }
-  }, [undo, redo])
+  }, [undo, redo, active])
 
   const handleMarkerDragStart = useCallback(
     (idx: number) => (event: MarkerDragEvent) => {
@@ -356,6 +373,12 @@ export function RoutePlanner({
 
       // The press that dismissed a map panel is not a point to add
       if (panelJustDismissed()) return
+
+      // Nor is the one on the « Start here » button (it adds the point itself, and stops the
+      // click; this guard is the fallback should a click still come through)
+      if ((event.originalEvent?.target as HTMLElement | null)?.closest?.('.planner-start-here')) {
+        return
+      }
 
       // Close context menu on any map click — but not on the click a long press ends with, should
       // the browser still emit one (touchend's preventDefault is the first line of defence)
@@ -503,6 +526,9 @@ export function RoutePlanner({
     }
   }, [insertControlPoint, draggingGhost, startDragPoint, endDragPoint])
 
+  // A finger in the fullscreen editor: its tools are in the dialog's bottom bar, not on the map.
+  const touchFullscreen = layout === 'fullscreen' && isCoarsePointer
+
   const routeStats = {
     distance: route.dist,
     ascend: route.ascend,
@@ -569,54 +595,40 @@ export function RoutePlanner({
 
   return (
     <Stack gap={0} h="100%">
-      {/* Compact toolbar */}
-      <Group
-        justify="space-between"
-        px="sm"
-        py="xs"
-        bg="var(--mantine-color-body)"
-        style={{ borderBottom: '1px solid var(--mantine-color-default-border)' }}
-      >
-        <Group>
+      {/* Compact toolbar: a fixed height (the tallest content, the clear button), so the map below
+          is not resized when the first point makes the bar grow. Fullscreen has none: the dialog's
+          toolbar and a status chip say the same. */}
+      {layout === 'inline' && (
+        <Group
+          h={48}
+          justify="space-between"
+          align="center"
+          wrap="nowrap"
+          gap="sm"
+          px="sm"
+          bg="var(--mantine-color-body)"
+          style={{ flexShrink: 0, borderBottom: '1px solid var(--mantine-color-default-border)' }}
+        >
+          <PlannerStatus
+            pointCount={controlPoints.length}
+            isLoading={isLoading}
+            error={error}
+            stats={route.points.length >= 2 ? routeStats : undefined}
+          />
           {controlPoints.length > 0 && (
-            <Text size="sm" c="dimmed">
-              {t('planner.pointCount', { count: controlPoints.length })}
-            </Text>
-          )}
-          {isLoading && (
-            <Group gap="xs" c="primary">
-              <Loader size="xs" />
-              <Text size="sm">{t('planner.calculating')}</Text>
-            </Group>
-          )}
-          {error && (
-            <Text size="sm" c="red">
-              {error}
-            </Text>
-          )}
-          {route.points.length >= 2 && (
-            <Group gap="xs">
-              <Text size="sm" fw={500}>
-                {distance(routeStats.distance)}
-              </Text>
-              <Text size="sm" c="green">
-                +{elevation(routeStats.ascend)}
-              </Text>
-            </Group>
+            <ActionIcon
+              variant="subtle"
+              color="gray"
+              onClick={clearRoute}
+              title={t('planner.clear')}
+              aria-label={t('planner.clear')}
+              style={{ flexShrink: 0 }}
+            >
+              <IconTrash size={14} />
+            </ActionIcon>
           )}
         </Group>
-        {controlPoints.length > 0 && (
-          <ActionIcon
-            variant="subtle"
-            color="gray"
-            onClick={clearRoute}
-            title={t('planner.clear')}
-            aria-label={t('planner.clear')}
-          >
-            <IconTrash size={14} />
-          </ActionIcon>
-        )}
-      </Group>
+      )}
 
       {/* Map */}
       <Box
@@ -624,9 +636,16 @@ export function RoutePlanner({
         onPointerDownCapture={(e: React.PointerEvent) => {
           lastPointerType.current = e.pointerType as PointerKind
         }}
+        onKeyDownCapture={(e: React.KeyboardEvent) => {
+          // Inline, this map sits inside the editor's <form>: Enter in the search box would submit
+          // it (implicit submission). The search box still gets the key and selects its result.
+          if (e.key === 'Enter' && (e.target as HTMLElement).closest?.('.maplibre-search-box')) {
+            e.preventDefault()
+          }
+        }}
         pos="relative"
         className={colorScheme === 'dark' ? 'dark' : undefined}
-        style={{ flex: 1 }}
+        style={{ flex: 1, minHeight: 0 }}
       >
         {!initialViewState ? (
           // No track, no team location, and /api/config hasn't said where to open yet.
@@ -651,18 +670,41 @@ export function RoutePlanner({
                     : 'crosshair'
             }
           >
-            <MapSearchControl />
+            <MapSearchControl onResultSelected={handleSearchSelected} />
 
-            <UndoRedoControl canUndo={canUndo} canRedo={canRedo} onUndo={undo} onRedo={redo} />
-
-            <HideTrackControl hidden={trackHidden} onToggle={toggleTrackHidden} />
-
-            <PlannerHelpControl />
-
-            <RouterProfileSelector
-              currentProfile={routerProfile}
-              onProfileChange={setRouterProfile}
+            {/* One shot, not tracked: it is only there to find where to start. */}
+            <GeolocateControl
+              position="top-left"
+              positionOptions={{ enableHighAccuracy: true }}
+              onGeolocate={(e) => proposeStart({ lng: e.coords.longitude, lat: e.coords.latitude })}
             />
+
+            {/* On a finger, fullscreen, undo / redo / profile / help live in the dialog's bottom
+                bar (44 px targets): the column keeps the zoom and the basemap only. */}
+            {!touchFullscreen && (
+              <>
+                <UndoRedoControl canUndo={canUndo} canRedo={canRedo} onUndo={undo} onRedo={redo} />
+
+                <HideTrackControl hidden={trackHidden} onToggle={toggleTrackHidden} />
+
+                <PlannerHelpControl />
+
+                <RouterProfileSelector
+                  currentProfile={routerProfile}
+                  onProfileChange={setRouterProfile}
+                />
+              </>
+            )}
+
+            {onExpand && (
+              <MapControlGroup>
+                <MapControlButton
+                  label={t('planner.expand')}
+                  icon={<IconMaximize size={20} />}
+                  onClick={onExpand}
+                />
+              </MapControlGroup>
+            )}
 
             {!trackHidden && (
               <>
@@ -784,6 +826,43 @@ export function RoutePlanner({
                     </Marker>
                   )
                 })}
+
+                {/* « Start here »: offered on a found place while the trace is empty */}
+                {startCandidate && noPointYet && (
+                  <Marker
+                    longitude={startCandidate.lng}
+                    latitude={startCandidate.lat}
+                    anchor="bottom"
+                    className="planner-start-here"
+                  >
+                    <Stack gap={4} align="center">
+                      <Button
+                        size="xs"
+                        onClick={(event) => {
+                          // React listens on the marker's element (the portal it renders into),
+                          // below MapLibre's listener on the canvas container. Stop the click
+                          // here: the marker is gone once the point is added, so the map would
+                          // see a detached target and add a second point of its own.
+                          event.stopPropagation()
+                          handleStartHere()
+                        }}
+                      >
+                        {t('planner.startHere')}
+                      </Button>
+                      <Box
+                        w={14}
+                        h={14}
+                        style={{
+                          backgroundColor: 'var(--mantine-color-green-filled)',
+                          border: '2px solid white',
+                          borderRadius: '50%',
+                          boxShadow: 'var(--mantine-shadow-md)',
+                          marginBottom: -7,
+                        }}
+                      />
+                    </Stack>
+                  </Marker>
+                )}
 
                 {/* Ghost marker for inserting new points on route */}
                 {(hoverPoint || draggingGhost) && (
@@ -917,25 +996,43 @@ export function RoutePlanner({
           <RoutePlannerMiniMap center={cursorPosition} routeGeoJson={routeGeoJson} />
         )}
 
-        {/* Instructions overlay */}
-        {controlPoints.length === 0 && (
-          <Box
+        {/* Bottom centre: the status chip (fullscreen, mouse) and the first-use instructions. */}
+        {(controlPoints.length === 0 || (layout === 'fullscreen' && !isCoarsePointer)) && (
+          <Stack
             pos="absolute"
             bottom={16}
-            left="50%"
-            px="md"
-            py="xs"
-            bg={getOverlayBg(colorScheme)}
-            style={{
-              transform: 'translateX(-50%)',
-              borderRadius: 'var(--mantine-radius-md)',
-              boxShadow: 'var(--mantine-shadow-lg)',
-            }}
+            left={16}
+            right={16}
+            gap="xs"
+            align="center"
+            style={{ pointerEvents: 'none' }}
           >
-            <Text size="sm" c="dimmed">
-              {isCoarsePointer ? t('planner.instructions.touch') : t('planner.instructions')}
-            </Text>
-          </Box>
+            {layout === 'fullscreen' &&
+              !isCoarsePointer &&
+              (controlPoints.length > 0 || isLoading || error) && (
+                <PlannerStatusChip
+                  pointCount={controlPoints.length}
+                  isLoading={isLoading}
+                  error={error}
+                  stats={route.points.length >= 2 ? routeStats : undefined}
+                />
+              )}
+            {controlPoints.length === 0 && (
+              <Box
+                px="md"
+                py="xs"
+                bg={getOverlayBg(colorScheme)}
+                style={{
+                  borderRadius: 'var(--mantine-radius-md)',
+                  boxShadow: 'var(--mantine-shadow-lg)',
+                }}
+              >
+                <Text size="sm" c="dimmed">
+                  {isCoarsePointer ? t('planner.instructions.touch') : t('planner.instructions')}
+                </Text>
+              </Box>
+            )}
+          </Stack>
         )}
       </Box>
     </Stack>

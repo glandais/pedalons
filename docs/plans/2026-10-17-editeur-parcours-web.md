@@ -237,31 +237,89 @@ au §5.
 
 ## 6. Lot 2 — disposition et web mobile
 
-- [ ] **B4. Mode édition plein écran** (M, nouveau) — un contrôle « Agrandir » ouvre le
+- [x] **B4. Mode édition plein écran** (M, nouveau) — un contrôle « Agrandir » ouvre le
       planificateur seul, en `100dvh` flex comme `RouteFullscreenView` : barre de 48 px avec
       « Terminer », carte `flex: 1`, bandeau profil (B1). En `(pointer: coarse)`, ouverture en
       plein écran par défaut ; le formulaire ne garde qu'une vignette non interactive (distance,
       D+) et un bouton « Modifier le tracé ». L'état de `useRoutePlanner` doit survivre : remonter
       le hook dans `RouteEditor` / `GpxPreviewEditor`, ou rendre le même sous-arbre par `Portal`.
-      Forme : décision Q1.
-- [ ] **B5. Barre sous le pouce, cibles de 44 px** (S/M, nouveau) — en `(pointer: coarse)`, barre
+      Forme tranchée (Q1) : l'aspect de `RouteFullscreenView`, dont on extrait une coque commune,
+      au-dessus du formulaire, sans URL propre ; le retour du navigateur le ferme.
+- [x] **B5. Barre sous le pouce, cibles de 44 px** (S/M, nouveau) — en `(pointer: coarse)`, barre
       fixée en bas (`ActionIcon size="xl"`) : annuler, rétablir, ligne droite (B6), inverser (B2),
       profil, aide ; puce distance / D+ au-dessus ; la colonne MapLibre ne garde que zoom et fond,
       boutons à 44 px par une règle `@media (pointer: coarse)` dans `index.css`. Dépend de A4, B4.
-- [ ] **B3. Ma position, partir d'ici** (S, §8 n° 9 corrigé) — la recherche de lieux est déjà
+- [x] **B3. Ma position, partir d'ici** (S, §8 n° 9 corrigé) — la recherche de lieux est déjà
       sur la carte (`MapSearchControl`, ledger `WEB-99`, en haut à droite) ; reste « Démarrer
       ici » après une sélection si le tracé est vide, et le comportement de la barre sur 360 px
       et sous le clavier virtuel ; `GeolocateControl` comme `GpxBlankMapPage`. Ajouter
       `interactive-widget=resizes-content` à la balise viewport (`frontend/index.html`) pour que
       `100dvh` suive le clavier virtuel.
-- [ ] **B10. La carte bouge sous le curseur au premier point** (S, nouveau, vu en e2e) — la
+- [x] **B10. La carte bouge sous le curseur au premier point** (S, nouveau, vu en e2e) — la
       barre au-dessus de la carte change de hauteur quand le premier point est posé, la carte est
       redimensionnée et son contenu glisse d'une quinzaine de pixels : le point suivant tombe à
       côté de l'endroit visé. Réserver la hauteur de la barre dès l'ouverture, ou la sortir du
       flux, dans le même lot que B4.
-- [ ] **B8. Cadrage par `fitBounds`** (S, nouveau) — remplacer l'heuristique de
+- [x] **B8. Cadrage par `fitBounds`** (S, nouveau) — remplacer l'heuristique de
       `RoutePlanner.tsx:87-118` par `fitBounds(bounds, { padding })` à `onLoad`, comme
       `RouteTrackMap`.
+
+**Ce qu'a donné le lot 2** (17 octobre 2026, frontend seul, contrat inchangé, ledger `WEB-100`) :
+
+- **À ne pas défaire** : une seule instance MapLibre, jamais remontée ; ouvrir, fermer ou
+  remonter le plein écran ne fait aucun appel au routeur (facturé à la requête) ; le retour du
+  navigateur ferme le plein écran par un `pushState` qui recopie `history.state`, pas par
+  `navigate()` ; Échap ne ferme ni le plein écran ni, à travers lui, le formulaire de création
+  (`closeOnEscape` coupé) ; au doigt le plein écran ne s'ouvre que sur un geste, jamais au
+  chargement ; « Démarrer ici » ne pose que le premier point (zéro requête).
+
+- **Un seul MapLibre, déplacé** : `useRoutePlanner` remonte dans `RoutePlannerField`, qui rend
+  `RoutePlanner` (désormais une vue) dans un `div` hôte que React ne gère pas, déplacé à la main
+  entre l'emplacement du formulaire et celui du plein écran. Le canvas, la vue, l'historique
+  annuler / rétablir et le geste en cours survivent ; ouvrir, fermer ou remonter n'appelle jamais
+  le routeur (test : même objet `route` avant et après, e2e : `routerRequests` constant). Au doigt
+  la carte n'est construite qu'à la première ouverture, puis reste montée hors du DOM, inactive
+  (`active=false` coupe Ctrl+Z et `h`).
+- **Plein écran** : `Modal.Root` Mantine sur la coque `MapFullscreenShell`, extraite de
+  `RouteFullscreenView` (page carte inchangée, `GpxBlankMapPage` l'adopte). Pas de route : le
+  retour du navigateur le ferme par `useHistoryOverlay` (`pushState` à la main qui recopie
+  `history.state`, jamais `navigate()` : pas de saut en haut de page, pas de page vue comptée).
+  Emplacement `bottom` prêt pour le profil d'édition du lot 3.
+- **Au doigt** : le formulaire n'a qu'une vignette (`RoutePlannerPreview`, silhouette SVG de
+  `trackSilhouette.ts`, distance, D+, points) ; « Modifier le tracé », « Tracer le parcours » et
+  « Tracer sur la carte » ouvrent le plein écran, jamais le chargement. Barre du bas
+  (`PlannerBottomBar`) en cibles de 44 px, statut dans une puce au-dessus ; règle
+  `@media (pointer: coarse)` de 44 px pour les contrôles de **toutes** les cartes.
+- **B10, B8** : barre de statut en ligne à hauteur fixe (`PlannerStatus` sur une ligne, tronquée
+  avec infobulle) ; `initialViewState = { bounds, fitBoundsOptions: { padding: 40, maxZoom: 15 } }`
+  dans un conteneur qui a déjà sa taille, ce qui respecte le ratio d'un téléphone en portrait.
+- **B3** : `MapSearchControl` accepte `onResultSelected` (dans un ref), `GeolocateControl` en haut à
+  gauche sans suivi ; une sélection ou une position sur un tracé vide propose « Démarrer ici »
+  (marqueur et bouton) qui pose le premier point : zéro requête. Résultats de recherche bornés par
+  `50dvh`, `interactive-widget=resizes-content` dans la balise viewport.
+- **Réponses aux questions de l'architecte** (propriétaire, 17 octobre 2026) : **L2-1** Échap est
+  sans effet sur le plein écran (`closeOnEscape` faux) et, tant qu'il est ouvert, ne ferme pas le
+  formulaire de création dessous ; il ferme toujours un panneau de carte, le menu d'appui long et
+  les résultats de recherche. **L2-2** « Terminer » et la flèche retour ferment en gardant le
+  tracé, pas d'« Abandonner ». **L2-3** au doigt le plein écran s'ouvre sur un geste seulement.
+  **L2-4** aperçu = silhouette + chiffres, un toucher ouvre. **L2-5** barre du bas : annuler,
+  rétablir, profil, aide, vider (rouge, sans confirmation, notification « Tracé effacé » avec
+  « Annuler »), « Terminer » ; pas de « Masquer le tracé » au doigt. **L2-6** statut dans une puce
+  (au-dessus de la barre au doigt, en bas au centre de la carte à la souris). **L2-7** 44 px sur
+  toutes les cartes. **L2-8** la vue est conservée à l'ouverture et à la fermeture. **L2-9**
+  « Démarrer ici » après une recherche ou une position, tracé vide seulement. **L2-10** la bascule
+  GPX / tracé perd toujours le tracé (hors lot).
+- **Tests** : `useHistoryOverlay.test.ts`, `RoutePlannerField.test.tsx`,
+  `RoutePlannerPreview.test.tsx`, `MapFullscreenShell.test.tsx`, `trackSilhouette.test.ts` ;
+  `gpx-planner.e2e.ts` passe par le dialogue sur Pixel 7 et ajoute agrandir / terminer, retour et
+  avancer du navigateur, Échap, carte unique, cibles de 44 px, « Démarrer ici » (recherche et
+  position), cadrage d'un long aperçu.
+- **Non vérifié, à faire à la recette (§9)** : un vrai téléphone Android **et** un iPhone. Safari
+  iOS ignore `interactive-widget=resizes-content` : le clavier y recouvre la barre du bas et les
+  résultats. À regarder aussi : le canvas WebGL après déplacement dans le DOM, le retour système
+  Android, l'orientation, l'appui long, le défilement des panneaux sous le verrou de la modale.
+  Pas de scénario e2e de création de parcours d'équipe : l'Échap depuis `CreateRouteModal`
+  (`closeOnEscape={!plannerFullscreen}`) reste à essayer à la main.
 
 ---
 
@@ -331,14 +389,14 @@ Les parties API sont décrites au §8 de l'état de l'art ; ce plan ne garde que
 
 | # | Question | Proposition | Ce que l'autre choix implique |
 |---|---|---|---|
-| Q1 | Forme du plein écran (B4) | `Modal fullScreen` au-dessus du formulaire | Page dédiée en `layout: 'bare'` : URL propre, mais SSR et état à porter ; pseudo-plein écran MapLibre : ne sort pas de l'`AppShell` |
-| Q2 | Ambition du web mobile | Édition complète (B5, B6, B9) | Retouches seulement, l'app Flutter porte le tactile : la moitié du lot 2 tombe |
+| Q1 | Forme du plein écran (B4) | **Tranché le 17 octobre 2026 : l'aspect de la page carte d'un parcours (`RouteFullscreenView` : barre de 48 px, carte sur toute la hauteur, bande de profil au lot 3), rendu au-dessus du formulaire sans URL propre**, le retour du navigateur le ferme | Page dédiée en `layout: 'bare'` : URL propre, mais tracé non enregistré à faire transiter, routes, SSR et liens profonds à ajouter |
+| Q2 | Ambition du web mobile | **Tranché le 17 octobre 2026 : édition complète** (B5, B6, B9) ; au doigt, l'éditeur s'ouvre directement en plein écran | Retouches seulement : la moitié du lot 2 tombe |
 | Q3 | Modificateur ligne droite | **Tranché le 17 octobre 2026 : `Ctrl` et `Alt`**, la bascule B6 en plus | `Alt` seul : cohérent avec macOS, rompt l'habitude actuelle |
 | Q4 | Quota de géocodage par utilisateur | **Caduque** : la recherche de la carte (`WEB-99`) appelle Stadia depuis le navigateur, authentifiée par le domaine ; aucune requête ne passe par notre serveur | — |
 | Q5 | D+ affiché pendant l'édition | Celui du serveur (`ascend` par segment), cohérent avec le parcours enregistré | Celui du client : instantané, mais diverge à l'enregistrement |
 | Q6 | Inversion | Re-router tous les segments | Inverser la géométrie : gratuit, faux sur les sens uniques |
 | Q7 | Lier C4 et B6 | Les livrer ensemble | Accepter que les lignes droites se re-routent à la réouverture |
-| Q8 | Mini-carte | La retirer quand le bandeau profil occupe le bas | La garder, la rendre débrayable |
+| Q8 | Mini-carte | **Tranché le 17 octobre 2026 : gardée avec une souris, absente au doigt** (déjà le cas depuis A4) | La rendre débrayable, ou la retirer |
 
 ---
 

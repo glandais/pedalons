@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import { notifications } from '@mantine/notifications'
@@ -21,6 +22,9 @@ export function CreateRouteModal({ isOpen, onClose, onRouteCreated, team }: Crea
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const createRouteMutation = useCreateRoute()
+  // Escape closes every Mantine modal at once: while the planner's fullscreen editor is open, it
+  // must not take this form (and the unsaved route) down with it.
+  const [plannerFullscreen, setPlannerFullscreen] = useState(false)
 
   const initialValues = {
     name: '',
@@ -53,7 +57,13 @@ export function CreateRouteModal({ isOpen, onClose, onRouteCreated, team }: Crea
   }
 
   return (
-    <Modal opened={isOpen} onClose={onClose} title={t('routes.create.title')} fullScreen>
+    <Modal
+      opened={isOpen}
+      onClose={onClose}
+      title={t('routes.create.title')}
+      fullScreen
+      closeOnEscape={!plannerFullscreen}
+    >
       <RouteEditor
         team={team}
         teamSlug={team.slug}
@@ -65,6 +75,7 @@ export function CreateRouteModal({ isOpen, onClose, onRouteCreated, team }: Crea
         error={createRouteMutation.error}
         submitButtonText={t('routes.create.submit')}
         showCancelButton={false}
+        onPlannerFullscreenChange={setPlannerFullscreen}
       />
     </Modal>
   )

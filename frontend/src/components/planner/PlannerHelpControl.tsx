@@ -6,7 +6,12 @@ import { useMediaMatch } from '@/hooks/useResponsive'
 import { isApplePlatform } from '@/lib/platform'
 
 /** The planner's gestures, in the map's control column; the list follows the primary pointer. */
-export function PlannerHelpControl() {
+interface PlannerHelpControlProps {
+  /** `'bar'`: a button of the touch toolbar instead of the map's control column. */
+  trigger?: 'map' | 'bar'
+}
+
+export function PlannerHelpControl({ trigger }: PlannerHelpControlProps) {
   const { t } = useTranslation()
   const isCoarsePointer = useMediaMatch('(pointer: coarse)')
   const pointer = isCoarsePointer ? 'touch' : 'mouse'
@@ -42,6 +47,7 @@ export function PlannerHelpControl() {
       title={t('planner.help.title')}
       icon={<IconHelp size={20} />}
       width={300}
+      trigger={trigger}
     >
       <Stack gap="xs">
         {rows.map((row) => (

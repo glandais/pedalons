@@ -1,4 +1,4 @@
-import { forwardRef, useMemo, useState } from 'react'
+import { forwardRef, useContext, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import Map, { NavigationControl } from 'react-map-gl/maplibre'
 import type { MapProps, MapRef } from 'react-map-gl/maplibre'
@@ -8,7 +8,7 @@ import { Terrain3D } from './Terrain3D'
 import { MapAttribution } from './MapAttribution'
 import { RouteArrowImage } from './RouteArrows'
 import { MapStyleSwitcher, type MapStyleSwitcherProps } from './MapStyleSwitcher'
-import { MapPanelContext } from './mapPanelState'
+import { MapPanelContext, useMapPanelState } from './mapPanelState'
 import { useMapStyle } from '@/hooks/useMapStyle'
 
 /**
@@ -24,12 +24,10 @@ type PedalonsMapProps = Omit<MapProps, 'mapLib' | 'mapStyle' | 'style'> &
 export const PedalonsMap = forwardRef<MapRef, PedalonsMapProps>(
   ({ children, traces, onTraceToggle, ...props }, ref) => {
     const { t } = useTranslation()
-    // One open panel at a time across the control column (basemap, profile, help…).
-    const [openPanelId, setOpenPanelId] = useState<string | null>(null)
-    const panelState = useMemo(
-      () => ({ openId: openPanelId, setOpenId: setOpenPanelId }),
-      [openPanelId]
-    )
+    // One open panel at a time across the control column (basemap, profile, help…). A page that
+    // has panels outside the map as well provides the state higher up: the map then shares it.
+    const ownPanelState = useMapPanelState()
+    const panelState = useContext(MapPanelContext) ?? ownPanelState
     const {
       styleId,
       styles,

@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react'
 import { useForm } from '@mantine/form'
 import { zodFormValidator } from '@/lib/formUtils'
 import { useTranslation } from 'react-i18next'
+import { useMediaMatch } from '@/hooks/useResponsive'
 import {
   TextInput,
   Radio,
@@ -19,7 +20,7 @@ import type { TeamDetailDto, GeoPoint } from '@/api/dto'
 import { MediaEditor } from '../common/MediaEditor'
 import { SlugEditor } from '../common/SlugEditor'
 import { paths } from '@/config/paths'
-import { RoutePlanner } from '../planner/RoutePlanner'
+import { RoutePlannerField } from '../planner/RoutePlannerField'
 import { CreateRouteBody } from '@/api/zod/routes/routes.zod'
 import { TagPicker } from '@/components/tag'
 
@@ -43,6 +44,8 @@ interface RouteEditorProps {
   currentSlug?: string
   onSlugChange?: (newSlug: string) => Promise<void>
   canEditSlug?: boolean
+  /** Tells the host dialog whether the planner's fullscreen editor is open (its Escape must wait). */
+  onPlannerFullscreenChange?: (opened: boolean) => void
 }
 
 export function RouteEditor({
@@ -61,8 +64,11 @@ export function RouteEditor({
   currentSlug,
   onSlugChange,
   canEditSlug = false,
+  onPlannerFullscreenChange,
 }: RouteEditorProps) {
   const { t } = useTranslation()
+  // On a finger the preview card already says how many points there are.
+  const isCoarse = useMediaMatch('(pointer: coarse)')
 
   const form = useForm<RouteRequest>({
     validate: zodFormValidator<RouteRequest>(routeSchema),
@@ -78,6 +84,8 @@ export function RouteEditor({
   )
 
   const name = form.values.name
+  // Bumped by the « draw on the map » button: on a finger it opens the fullscreen editor.
+  const [drawRequest, setDrawRequest] = useState(0)
 
   const [gpxFile, setGpxFile] = useState<File | null>(null)
   const [plannerPoints, setPlannerPoints] = useState<GeoPoint[]>([])
@@ -161,7 +169,10 @@ export function RouteEditor({
               </Button>
               <Button
                 variant={sourceMode === 'planner' ? 'filled' : 'default'}
-                onClick={() => setSourceMode('planner')}
+                onClick={() => {
+                  setSourceMode('planner')
+                  setDrawRequest((n) => n + 1)
+                }}
               >
                 {t('routes.create.form.sourceModePlanner')}
               </Button>
@@ -200,21 +211,16 @@ export function RouteEditor({
                 </Text>
               )}
             </Text>
-            <Box
-              h="70dvh"
-              style={{
-                borderTop: '1px solid var(--mantine-color-default-border)',
-                borderBottom: '1px solid var(--mantine-color-default-border)',
-              }}
-            >
-              <RoutePlanner
-                onPointsChange={setPlannerPoints}
-                initialTrack={initialTrack}
-                teamSlug={team.slug}
-                teamLocation={team.geometry?.coordinates as [number, number] | undefined}
-              />
-            </Box>
-            {plannerPoints.length > 0 && (
+            <RoutePlannerField
+              onPointsChange={setPlannerPoints}
+              initialTrack={initialTrack}
+              teamSlug={team.slug}
+              teamLocation={team.geometry?.coordinates as [number, number] | undefined}
+              title={name}
+              onFullscreenChange={onPlannerFullscreenChange}
+              openRequest={drawRequest}
+            />
+            {plannerPoints.length > 0 && !isCoarse && (
               <Text size="sm" c="dimmed" mt="xs" px="md">
                 {t('routes.create.form.pointCount', { count: plannerPoints.length })}
               </Text>

@@ -1,8 +1,9 @@
 import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useMediaMatch } from '@/hooks/useResponsive'
 import { Alert, Box, Button, FileInput, Group, Stack, Text, TextInput } from '@mantine/core'
 import type { GeoPoint } from '@/api/dto'
-import { RoutePlanner } from '../planner/RoutePlanner'
+import { RoutePlannerField } from '../planner/RoutePlannerField'
 import { isGpxPlannerEnabled } from '@/config/appConfig'
 
 type SourceMode = 'gpx' | 'planner'
@@ -35,6 +36,8 @@ export function GpxPreviewEditor({
   isPending,
 }: GpxPreviewEditorProps) {
   const { t } = useTranslation()
+  // On a finger the preview card already says how many points there are.
+  const isCoarse = useMediaMatch('(pointer: coarse)')
 
   const [name, setName] = useState(initialName)
   // Same rule as RouteEditor, one level up: the domain decides whether drawing is open at all.
@@ -43,6 +46,8 @@ export function GpxPreviewEditor({
   const [gpxFile, setGpxFile] = useState<File | null>(null)
   const [plannerPoints, setPlannerPoints] = useState<GeoPoint[]>([])
   const [error, setError] = useState<string | null>(null)
+  // Bumped by the « draw on the map » button: on a finger it opens the fullscreen editor.
+  const [drawRequest, setDrawRequest] = useState(0)
 
   const handleFileChange = useCallback(
     (file: File | null) => {
@@ -93,7 +98,10 @@ export function GpxPreviewEditor({
             </Button>
             <Button
               variant={sourceMode === 'planner' ? 'filled' : 'default'}
-              onClick={() => setSourceMode('planner')}
+              onClick={() => {
+                setSourceMode('planner')
+                setDrawRequest((n) => n + 1)
+              }}
             >
               {t('routes.create.form.sourceModePlanner')}
             </Button>
@@ -117,16 +125,13 @@ export function GpxPreviewEditor({
           <Text size="sm" fw={500} mb="xs" px="md">
             {t('routes.create.form.plannerLabel')}
           </Text>
-          <Box
-            h="70dvh"
-            style={{
-              borderTop: '1px solid var(--mantine-color-default-border)',
-              borderBottom: '1px solid var(--mantine-color-default-border)',
-            }}
-          >
-            <RoutePlanner onPointsChange={setPlannerPoints} initialTrack={initialTrack} />
-          </Box>
-          {plannerPoints.length > 0 && (
+          <RoutePlannerField
+            onPointsChange={setPlannerPoints}
+            initialTrack={initialTrack}
+            title={name}
+            openRequest={drawRequest}
+          />
+          {plannerPoints.length > 0 && !isCoarse && (
             <Text size="sm" c="dimmed" mt="xs" px="md">
               {t('routes.create.form.pointCount', { count: plannerPoints.length })}
             </Text>

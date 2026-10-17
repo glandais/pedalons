@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
-import { IconArrowLeft, IconArrowUp, IconArrowDown, IconRoute } from '@tabler/icons-react'
-import { ActionIcon, Box, Center, Group, Text } from '@mantine/core'
+import { IconArrowLeft } from '@tabler/icons-react'
+import { ActionIcon, Box, Center, Text } from '@mantine/core'
 import { getOverlayBg } from '@/lib/colors'
-import { useUnits } from '@/hooks/useUnits'
 import { useResolvedColorScheme } from '@/hooks/useResolvedColorScheme'
 import { useMapChartZoomSync } from '@/hooks/useMapChartZoomSync'
+import { MapFullscreenShell } from '@/components/map/MapFullscreenShell'
 import { RouteTrackMap } from './RouteTrackMap'
 import { ElevationChart } from './ElevationChart'
 import type { MappableRoute } from './RouteMapView'
@@ -34,7 +34,6 @@ interface RouteFullscreenViewProps {
 export function RouteFullscreenView({ route, title, backTo }: RouteFullscreenViewProps) {
   const { t } = useTranslation()
   const colorScheme = useResolvedColorScheme()
-  const { distance, elevation } = useUnits()
   const [hoveredPointIndex, setHoveredPointIndex] = useState<number>(-1)
 
   const {
@@ -68,18 +67,8 @@ export function RouteFullscreenView({ route, title, backTo }: RouteFullscreenVie
   const stripBg = getOverlayBg(colorScheme, true)
 
   return (
-    <Box h="100dvh" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      {/* Toolbar */}
-      <Group
-        h={48}
-        px="sm"
-        gap="sm"
-        wrap="nowrap"
-        style={{
-          flexShrink: 0,
-          borderBottom: '1px solid var(--mantine-color-default-border)',
-        }}
-      >
+    <MapFullscreenShell
+      leading={
         <ActionIcon
           component={PrefetchLink}
           to={backTo}
@@ -89,61 +78,46 @@ export function RouteFullscreenView({ route, title, backTo }: RouteFullscreenVie
         >
           <IconArrowLeft size={20} />
         </ActionIcon>
-
-        <Text fw={600} truncate style={{ flex: 1, minWidth: 0 }}>
-          {title}
-        </Text>
-
-        <Group gap="xs" wrap="nowrap" c="dimmed">
-          <Group gap={4} wrap="nowrap">
-            <IconRoute size={16} />
-            <Text size="sm">{distance(route.distance)}</Text>
-          </Group>
-          <Group gap={4} wrap="nowrap" visibleFrom="sm">
-            <IconArrowUp size={16} />
-            <Text size="sm">{elevation(route.elevationGain)}</Text>
-          </Group>
-          <Group gap={4} wrap="nowrap" visibleFrom="sm">
-            <IconArrowDown size={16} />
-            <Text size="sm">{elevation(route.elevationLoss)}</Text>
-          </Group>
-        </Group>
-      </Group>
-
-      {/* Map fills the remaining space above the chart strip */}
-      <Box style={{ flex: 1, minHeight: 0 }}>
-        <RouteTrackMap
-          route={route}
-          mapRef={mapRef}
-          hoveredPointIndex={hoveredPointIndex}
-          onHoverPoint={handleHoverPoint}
-          fitPadding={50}
-          onMoveStart={onMapMoveStart}
-          onMoveEnd={onMapMoveEnd}
-        />
-      </Box>
-
-      {/* Fixed elevation strip below the map (no overlap) */}
-      <Box
-        h={160}
-        style={{
-          flexShrink: 0,
-          borderTop: '1px solid var(--mantine-color-default-border)',
-          backgroundColor: stripBg,
-        }}
-      >
-        <ElevationChart
-          ref={chartRef}
-          route={route}
-          hoveredPointIndex={hoveredPointIndex}
-          onHoverPoint={handleHoverPoint}
-          filled
-          zoom={{
-            onMoveStart: onChartMoveStart,
-            onMoveComplete: onChartMoveComplete,
+      }
+      title={title}
+      stats={{
+        distance: route.distance,
+        gain: route.elevationGain,
+        loss: route.elevationLoss,
+      }}
+      bottom={
+        // Fixed elevation strip below the map (no overlap)
+        <Box
+          h={160}
+          style={{
+            flexShrink: 0,
+            borderTop: '1px solid var(--mantine-color-default-border)',
+            backgroundColor: stripBg,
           }}
-        />
-      </Box>
-    </Box>
+        >
+          <ElevationChart
+            ref={chartRef}
+            route={route}
+            hoveredPointIndex={hoveredPointIndex}
+            onHoverPoint={handleHoverPoint}
+            filled
+            zoom={{
+              onMoveStart: onChartMoveStart,
+              onMoveComplete: onChartMoveComplete,
+            }}
+          />
+        </Box>
+      }
+    >
+      <RouteTrackMap
+        route={route}
+        mapRef={mapRef}
+        hoveredPointIndex={hoveredPointIndex}
+        onHoverPoint={handleHoverPoint}
+        fitPadding={50}
+        onMoveStart={onMapMoveStart}
+        onMoveEnd={onMapMoveEnd}
+      />
+    </MapFullscreenShell>
   )
 }

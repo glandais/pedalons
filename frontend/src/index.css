@@ -95,6 +95,9 @@
 }
 
 .maplibregl-ctrl.maplibre-search-box .results {
+  /* Bounded by the viewport, so by the virtual keyboard too (interactive-widget=resizes-content): the list scrolls. */
+  max-height: calc(50dvh - 60px);
+  overflow-y: auto;
   background: var(--ml-c-bg-1);
   box-shadow: var(--ml-shadow-ctrl);
   color: var(--ml-c-icon-1);
@@ -133,6 +136,38 @@
 .mantine-focus-auto:focus-visible,
 .mantine-focus-always:focus {
   outline-color: var(--mantine-color-primary-text);
+}
+
+/* A finger needs 44 px targets (the size Mantine's buttons take on mobile). The rule is for every
+   map of the site, not only the planner: a map with 29 px buttons next to one with 44 px would
+   look broken. The compact maps (ride cards) have room for it. maplibre-theme draws the icons
+   as font glyphs sized for 29 px, enlarged here with the buttons. */
+@media (pointer: coarse) {
+  .maplibregl-ctrl-group button,
+  .maplibregl-ctrl-group > a {
+    height: 44px;
+    width: 44px;
+  }
+
+  .maplibregl-ctrl button .maplibregl-ctrl-icon:before,
+  .maplibregl-ctrl button.maplibregl-ctrl-compass .maplibregl-ctrl-icon:after,
+  .maplibregl-ctrl button.maplibregl-ctrl-geolocate:disabled .maplibregl-ctrl-icon:after {
+    font-size: 26px;
+    height: 32px;
+    width: 32px;
+    line-height: 32px;
+  }
+
+  .maplibregl-ctrl button svg,
+  .maplibregl-ctrl-group > a svg {
+    height: 28px;
+    width: 28px;
+  }
+
+  .maplibregl-ctrl.maplibre-search-box .input-container input {
+    height: 44px;
+    font-size: 16px; /* below 16px iOS zooms the page when the field takes focus */
+  }
 }
 
 /* MapLibre's canvas carries tabindex=0, so clicking the map focuses it — silently, since a

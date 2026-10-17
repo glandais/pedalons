@@ -19,6 +19,11 @@ interface MapPanelProps {
   title: string
   /** Panel width in px on a fine pointer. */
   width?: number
+  /**
+   * Where the button lives: `'map'` (default) in the map's control column; `'bar'` as a 44 px
+   * button in a toolbar outside the map. The panel is then always the bottom sheet.
+   */
+  trigger?: 'map' | 'bar'
   /** Receives a function closing the panel, for content that picks a value and is done. */
   children: React.ReactNode | ((close: () => void) => React.ReactNode)
 }
@@ -28,22 +33,34 @@ interface MapPanelProps {
  * (see {@link useMapPanel}); closes on outside click and Escape. On a coarse pointer the panel is a
  * bottom sheet, within thumb reach, as the button sits at the top of the map.
  */
-export function MapPanel({ id, label, icon, title, width = 200, children }: MapPanelProps) {
+export function MapPanel({
+  id,
+  label,
+  icon,
+  title,
+  width = 200,
+  trigger = 'map',
+  children,
+}: MapPanelProps) {
   const { t } = useTranslation()
   const { opened, toggle, close, setOpened } = useMapPanel(id)
   const isCoarsePointer = useMediaMatch('(pointer: coarse)')
 
-  const isPopover = !isCoarsePointer
+  const fromBar = trigger === 'bar'
+  const isPopover = !isCoarsePointer && !fromBar
 
   // Mantine closes a Popover on Escape only while focus is inside it; the focus stays on the button
-  // of the control column, so listen on the window while the panel is open.
+  // of the control column, so listen on the window while the panel is open. In the capture phase:
+  // the button's tooltip (Floating UI's useDismiss) stops Escape's propagation while it shows, which
+  // it does as long as the pointer rests on the button — a bubbling listener would need a second
+  // Escape.
   useEffect(() => {
     if (!opened || !isPopover) return
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') close()
     }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
+    window.addEventListener('keydown', onKeyDown, true)
+    return () => window.removeEventListener('keydown', onKeyDown, true)
   }, [opened, isPopover, close])
 
   const content = typeof children === 'function' ? children(close) : children
@@ -72,12 +89,25 @@ export function MapPanel({ id, label, icon, title, width = 200, children }: MapP
     </Group>
   )
 
-  if (isCoarsePointer) {
+  if (!isPopover) {
     return (
       <>
-        <MapControlGroup>
-          <MapControlButton label={label} icon={icon} onClick={toggle} active={opened} />
-        </MapControlGroup>
+        {fromBar ? (
+          <ActionIcon
+            variant={opened ? 'light' : 'subtle'}
+            color="gray"
+            size="xl"
+            onClick={toggle}
+            aria-label={label}
+            aria-pressed={opened}
+          >
+            {icon}
+          </ActionIcon>
+        ) : (
+          <MapControlGroup>
+            <MapControlButton label={label} icon={icon} onClick={toggle} active={opened} />
+          </MapControlGroup>
+        )}
         <Drawer
           opened={opened}
           onClose={close}

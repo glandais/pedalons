@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useControl } from 'react-map-gl/maplibre'
 import { MapLibreSearchControl } from '@stadiamaps/maplibre-search-box'
@@ -31,14 +32,36 @@ export const STADIA_MAPS_ORIGIN = 'https://api-eu.stadiamaps.com'
  * buttons (undo/redo, routing profile…). A search field is not a button: visitors look for it
  * where every map application puts it, in a corner of its own.
  */
-export function MapSearchControl() {
+export function MapSearchControl({ onResultSelected }: MapSearchControlProps) {
   const { i18n } = useTranslation()
   // The control reads its options once, when constructed: a language change rebuilds it.
-  return <SearchControl key={i18n.resolvedLanguage ?? i18n.language} />
+  return (
+    <SearchControl
+      key={i18n.resolvedLanguage ?? i18n.language}
+      onResultSelected={onResultSelected}
+    />
+  )
 }
 
-function SearchControl() {
+/** A place the visitor picked in the results. */
+export interface SearchedPlace {
+  lng: number
+  lat: number
+  label: string
+}
+
+interface MapSearchControlProps {
+  /** Called once a result is chosen (after the map has flown there). */
+  onResultSelected?: (place: SearchedPlace) => void
+}
+
+function SearchControl({ onResultSelected }: MapSearchControlProps) {
   const { t, i18n } = useTranslation()
+  // The control reads its options once, when constructed: the callback goes through a ref.
+  const callback = useRef(onResultSelected)
+  useEffect(() => {
+    callback.current = onResultSelected
+  })
   useControl(
     () =>
       new MapLibreSearchControl({
@@ -50,6 +73,15 @@ function SearchControl() {
         maxResults: 5,
         minInputLength: 3,
         hideResultsOnBlur: true,
+        onResultSelected: (feature) => {
+          const coordinates = feature.geometry?.coordinates
+          if (!callback.current || !coordinates || coordinates.length < 2) return
+          callback.current({
+            lng: coordinates[0],
+            lat: coordinates[1],
+            label: feature.properties.name,
+          })
+        },
       }),
     { position: 'top-right' }
   )

@@ -2,8 +2,9 @@ import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FullscreenControl, GeolocateControl } from 'react-map-gl/maplibre'
 import { IconArrowLeft } from '@tabler/icons-react'
-import { ActionIcon, Box, Group, Skeleton, Text } from '@mantine/core'
+import { ActionIcon, Box, Skeleton } from '@mantine/core'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
+import { MapFullscreenShell } from '@/components/map/MapFullscreenShell'
 import { MapSearchControl } from '@/components/map/MapSearchControl'
 import { PedalonsMap } from '@/components/map/PedalonsMap'
 import { paths } from '@/config/paths'
@@ -29,17 +30,8 @@ export function GpxBlankMapPage() {
   }, [title, appName])
 
   return (
-    <Box h="100dvh" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      <Group
-        h={48}
-        px="sm"
-        gap="sm"
-        wrap="nowrap"
-        style={{
-          flexShrink: 0,
-          borderBottom: '1px solid var(--mantine-color-default-border)',
-        }}
-      >
+    <MapFullscreenShell
+      leading={
         <ActionIcon
           component={PrefetchLink}
           to={paths.gpxTools()}
@@ -49,15 +41,10 @@ export function GpxBlankMapPage() {
         >
           <IconArrowLeft size={20} />
         </ActionIcon>
-        <Text fw={600} truncate style={{ flex: 1, minWidth: 0 }}>
-          {title}
-        </Text>
-      </Group>
-
-      <Box
-        className={colorScheme === 'dark' ? 'dark' : undefined}
-        style={{ flex: 1, minHeight: 0 }}
-      >
+      }
+      title={title}
+    >
+      <Box className={colorScheme === 'dark' ? 'dark' : undefined} h="100%">
         {!initialViewState ? (
           // /api/config hasn't said where to open yet: no map at an invented position.
           <Skeleton h="100%" w="100%" radius={0} />
@@ -73,6 +60,6 @@ export function GpxBlankMapPage() {
           </PedalonsMap>
         )}
       </Box>
-    </Box>
+    </MapFullscreenShell>
   )
 }
