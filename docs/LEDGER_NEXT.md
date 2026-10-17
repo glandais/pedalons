@@ -46,6 +46,7 @@ jamais un titre ni une position dans le fichier.
 | `SEC` | Sécurité applicative — dont les suites de l'audit de septembre 2026 ([`plans/archive/2026-09-security-audit.md`](plans/archive/2026-09-security-audit.md)) |
 | `AUD` | Suivi de l'audit d'infrastructure de février ([`plans/2026-02-14-project-audit.md`](plans/2026-02-14-project-audit.md)) |
 | `LEGAL` | Politique de confidentialité, CGU, déclarations des stores |
+| `BILL` | Monétisation : paliers, paiement Stripe, suivi des abonnements, droits par équipe ([`plans/2026-10-17-monetisation.md`](plans/2026-10-17-monetisation.md)) |
 
 Un préfixe nouveau s'ajoute à cette table (et une section aux deux fichiers) ; un préfixe existant
 ne se renomme pas.
@@ -1038,6 +1039,31 @@ en service (précondition du §5.3 du plan, vérifications de l'étape 6) est so
       annonces → **Profil → Confidentialité**) et l.170 (« Déconnecter tous les appareils » →
       **Profil → Connexion et sécurité**). `privacy/terms-of-service.{fr,en}.md` et
       `privacy/privacy-policy.{fr,en}.md`, en parité FR/EN, comme le fait déjà `support.{fr,en}.md`.
+
+---
+
+## BILL — Monétisation
+
+Le plan est [`plans/2026-10-17-monetisation.md`](plans/2026-10-17-monetisation.md) : qui paie
+(l'équipe, jamais le membre), trois paliers (Peloton gratuit ≤ 25 membres, Club 80 €/an HT,
+Fédération sur devis), Stripe en self-service et sur facture par virement, une table
+`team_subscriptions` alimentée par les webhooks, et une seule fonction `TeamEntitlements` qui
+combine l'abonnement avec les drapeaux de gouvernance existants (`enableRoutePlanner`,
+`addMemberAllowed`…). **Rien n'est décidé** : les onze questions du §11 sont au propriétaire,
+et le préfixe `BILL` lui-même (Q9) se tranche avant le premier commit.
+
+- [ ] `BILL-1` **Décider, puis poser le socle (M)** — trancher le §11 du plan (objectif, prix,
+      seuil du gratuit, date de bascule, équipes offertes, parcours facture, majeure ou mineure,
+      préfixe, TVA avec l'expert-comptable, rétractation) ; créer le catalogue Stripe en mode test
+      (`lookup_key` `club_monthly`, `club_yearly`, …) ; puis le lot 1 du §10 : `V72`
+      (`team_subscriptions`, `stripe_events`), `TeamSubscription`, `TeamEntitlements` et son
+      résolveur, `plan` / `entitlements` / `memberLimit` dans `TeamDetailDto` (`11.6.0`),
+      `AdminTeamDto` et `PATCH /api/admin/teams/{id}/subscription`, `BILLING_ENABLED=false`, et la
+      migration de lancement qui pose « Club offert jusqu'au 31 mars 2027 » sur toute équipe
+      existante — **aucun refus actif à ce stade**. Les lots suivants (`BILL-2` à `BILL-8`,
+      §10 du plan) ne sont créés ici qu'une fois `BILL-1` tranché. Prérequis avant le premier
+      euro encaissé : Open-Meteo en plan payant (`OPS-29`), conditions VersaTiles et Nominatim
+      relues (§8 du plan).
 
 ---
 

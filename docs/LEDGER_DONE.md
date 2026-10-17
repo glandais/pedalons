@@ -5118,3 +5118,8 @@ fait.
   membres : l'envoi automatique est un opt-in, rien ne change pour qui ne l'active pas. **À ne pas
   défaire** : toute évolution de ce qui part chez un service GPS (fenêtre, nom, données Wahoo,
   nouveau service) se relit d'abord contre cette section.
+
+## BILL — Monétisation
+
+Rien de livré : le plan [`plans/2026-10-17-monetisation.md`](plans/2026-10-17-monetisation.md)
+est une proposition (`BILL-1` dans `LEDGER_NEXT.md`).
