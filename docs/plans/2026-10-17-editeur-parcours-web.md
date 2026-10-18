@@ -446,7 +446,9 @@ servent), puis B6 (la ligne droite visible), puis B1 et B2.
       `lib/planner.ts`, passées par `executeRouteOperation` pour l'historique. Boutons dans la
       barre, raccourci dans le libellé. Dépend de A9 et de l'endpoint de recalage ci-dessous.
       - **Barre du bas pleine à 360 px depuis B6** (« Effacer » est déjà sorti dans l'en-tête du
-        plein écran) : sortir un autre bouton de la barre ou prévoir un menu « Plus ».
+        plein écran) : **menu « Plus »** (D8) — un bouton « … » de la barre ouvre un menu qui porte
+        les trois opérations de B2 (et plus tard C3, C7) ; la barre garde annuler, rétablir, ligne
+        droite, aide et « Terminer ».
       - **Retour au départ** (et non « boucle », que Komoot et Strava emploient pour un circuit
         proposé d'office, §11) : route un dernier segment du dernier point au premier, par le
         profil choisi. 1 requête.
@@ -582,9 +584,9 @@ servent), puis B6 (la ligne droite visible), puis B1 et B2.
         n'est perdu, 0 requête. Tronçons mixtes ou portion importée : 1 requête. Coupure du départ
         ou de l'arrivée : pas de raccord.
       - **Insertion et déplacement : mode courant, sans héritage** (touche OU bascule).
-        **Point à faire trancher par le propriétaire** : l'alternative « hériter OU mode » est plus
-        proche de Komoot pour un polygone hors réseau, mais rend impossible de re-router un tronçon
-        droit autrement qu'en supprimant puis rajoutant le point.
+        **Tranché par le propriétaire (D6)** : l'alternative « hériter OU mode », plus proche de
+        Komoot pour un polygone hors réseau, est écartée : elle rendrait impossible de re-router un
+        tronçon droit autrement qu'en supprimant puis rajoutant le point.
       - **Avertissement à l'enregistrement, par tronçon** : dès qu'**un** tronçon droit dépasse
         300 m (`DIRECT_WARNING_METERS`), une alerte jaune non bloquante sous la carte (souris) ou
         l'aperçu (doigt) donne le total et le plus long. Le critère est le tronçon, pas le cumul :
@@ -594,7 +596,7 @@ servent), puis B6 (la ligne droite visible), puis B1 et B2.
         plein, sans avertissement ; C4 rétablira ses pointillés.
       - **Barre du bas à 360 px** : avec la bascule elle débordait (≈ 382 px) ; « Effacer » est passé
         dans la barre d'outils du plein écran au doigt (≈ 328 px). **B2 (inverser) retombera sur ce
-        problème** : prévoir de sortir un autre bouton de la barre, ou un menu « Plus ».
+        problème** : réglé par le menu « Plus » (D8).
       - **Reste pour B1** : un point de ligne droite n'a pas d'`ele`, `getAscend` le compte à 0 m
         (défaut existant) ; B1 pourra colorer les tronçons `direct` d'après le même champ.
       - Tests : `lib/planner.test.ts` (`B6 straight lines`), `useRoutePlanner.test.tsx`,
@@ -605,7 +607,7 @@ servent), puis B6 (la ligne droite visible), puis B1 et B2.
         héritage à la suppression, avertissement par tronçon à l'enregistrement. Tests : 1030
         unitaires (114 fichiers) ; e2e `gpx-planner` 50 passés, 14 ignorés (projets desktop et
         mobile), 0 échec. Écarts : « Effacer » déplacé dans l'en-tête du plein écran au doigt ;
-        l'insertion et le déplacement n'héritent pas (point soumis au propriétaire). Pièges : au
+        l'insertion et le déplacement n'héritent pas (confirmé, D6). Pièges : au
         doigt, après « Terminer », avec un point déjà posé le bouton d'ouverture s'appelle « Modifier
         le tracé » et non « Tracer le parcours » ; un test de borne sur un tracé importé ne prouve
         rien sur `direct` (tout y vaut `false`), partir d'un tracé qui a déjà un tronçon droit.
@@ -709,7 +711,7 @@ servent), puis B6 (la ligne droite visible), puis B1 et B2.
       (`RoutePlanner.tsx`), textes fr et en. Tests : les dix cas de `planner.test.ts` (plus un
       onzième pour `nearestSegment`), quatre cas de `useRoutePlanner.test.tsx` (borne de
       `removeControlPoint`, refus de coupe, `removeAnchor` et son annulation à 0 requête) et les
-      scénarios de `gpx-planner.e2e.ts`. **Écarts à confirmer** : (1) le refus de couper ne vaut
+      scénarios de `gpx-planner.e2e.ts`. **Écarts, confirmés par le propriétaire** (D5, D7) : (1) le refus de couper ne vaut
       que pour un tracé qui contient des points importés, pas pour tout tracé qui tomberait sous deux
       points (sur un tracé dessiné, supprimer un à un les derniers points reste possible) ;
       (2) `nearestSegment` teste les segments voisins de six sommets proches, pas du seul plus
@@ -964,6 +966,15 @@ questions ouvertes viennent du §10 de
   sous la carte en mode intégré au desktop. Q-C : D+ d'une ligne droite = max(0, altitude d'arrivée
   − départ), altitudes remplies par interpolation ; tracé de lignes droites seules = 0 et « altitude
   inconnue ».
+- **D5.** Supprimer le départ ou l'arrivée n'est refusé que sur un tracé qui contient des points
+  importés et tomberait sous deux points ; sur un tracé dessiné, on peut supprimer les derniers
+  points un à un. (B12.)
+- **D6.** Insérer ou déplacer un point sur un tronçon droit suit le mode courant (touche OU
+  bascule), sans hériter du mode du tronçon : glisser un tronçon droit hors mode le re-route. (B6.)
+- **D7.** `nearestSegment` reste une approximation (segments voisins des six sommets les plus
+  proches) ; une recherche exacte n'est pas justifiée pour un cas aussi rare. (B12.)
+- **D8.** Les opérations de B2 (inverser, aller-retour, retour au départ) vont dans un menu
+  « Plus » de la barre du bas au doigt, qui accueillera aussi C3 et C7. (B2.)
 - **D4.** Les volets backend de B2 (l'endpoint de recalage) et de C4 **restent sous `WEB-100`**,
   comme A10. Les versions de contrat et les migrations seront notées au passage dans
   `LEDGER_DONE.md`.
