@@ -74,7 +74,12 @@
 		     the server-side copy of the reported text) and user blocks
 		     (PUT /api/users/me/blocks/{userId}); messages to an ad's author
 		     (contactAdAuthor, relayed by e-mail, body not stored); rides an organizer writes in the ride
-		     editor and their attachments (POST/PUT /api/teams/{slug}/rides, POST …/assets, file_picker).
+		     editor and their attachments (POST/PUT /api/teams/{slug}/rides, POST …/assets, file_picker);
+		     routes an organizer writes in the route editor, and the GPX file they import to give the
+		     route its track (POST/PUT /api/teams/{slug}/routes, multipart, file_picker; the server keeps
+		     only the track and its waypoints). The GPX may come from a recorded ride but is
+		     published as a team route and kept without timestamps (the server keeps only the geometry),
+		     so it is not a location history and adds no PreciseLocation row (data-safety.md §7).
 		     All user-generated, all stored against the account, used only to run the app and moderate
 		     it. -->
 		<dict>

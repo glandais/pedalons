@@ -463,8 +463,19 @@ class PdlMapController extends ChangeNotifier {
     _styleReady = false;
     _drawnLayers.clear();
     await _applyAll();
+    // L'écran a pu se fermer pendant que les couches se posaient (un lien
+    // ouvert juste après, ledger `MOB-79`) : plus personne à prévenir.
+    if (_disposed) return;
     _styleReady = true;
     notifyListeners();
+  }
+
+  bool _disposed = false;
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
   }
 
   void detachStyle() {

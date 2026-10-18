@@ -55,6 +55,8 @@ class Keys {
   final calendar = CalendarKeys();
   final routes = RoutesKeys();
   final routeDetail = RouteDetailKeys();
+  final routeEditor = RouteEditorKeys();
+  final routeManage = RouteManageKeys();
   final feed = FeedKeys();
   final adsList = AdsListKeys();
   final tags = TagKeys();

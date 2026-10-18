@@ -25,11 +25,28 @@ bool refreshesOn401(String path) {
   return path.contains('/api/auth/passkeys') && !path.contains('authenticat');
 }
 
+/// Les options à rejouer après un 401.
+///
+/// Un `FormData` (avatar, assets, GPX d'un parcours) est **finalisé** par le
+/// premier envoi : le rejouer tel quel lève `StateError`, que le `catch` du
+/// rejeu prendrait pour un échec du rafraîchissement et déconnecterait
+/// l'utilisateur. On rejoue donc une copie neuve (docs/LEDGER_*.md MOB-79).
+@visibleForTesting
+RequestOptions retryableOptions(RequestOptions options) {
+  final Object? data = options.data;
+  if (data is FormData) options.data = data.clone();
+  return options;
+}
+
 /// Interceptor that handles authentication tokens and refresh
 /// Mirrors frontend/src/lib/axiosInstance.ts
 class AuthInterceptor extends Interceptor {
   final Ref _ref;
   final Dio _dio;
+
+  // Adaptateur du Dio de rafraîchissement : null en production (réseau réel),
+  // un faux dans les tests.
+  final HttpClientAdapter? _refreshAdapter;
 
   // Track if we're currently refreshing to avoid multiple refresh calls
   bool _isRefreshing = false;
@@ -37,7 +54,11 @@ class AuthInterceptor extends Interceptor {
   // Queue of failed requests to retry after refresh
   final List<_QueuedRequest> _failedQueue = [];
 
-  AuthInterceptor(this._ref, this._dio);
+  AuthInterceptor(
+    this._ref,
+    this._dio, {
+    @visibleForTesting HttpClientAdapter? refreshAdapter,
+  }) : _refreshAdapter = refreshAdapter;
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
@@ -101,6 +122,7 @@ class AuthInterceptor extends Interceptor {
     requestOptions.extra['_retry'] = true;
     _isRefreshing = true;
 
+    final String newAccessToken;
     try {
       final storage = _ref.read(secureStorageProvider);
       final refreshToken = await storage.getRefreshToken();
@@ -118,6 +140,9 @@ class AuthInterceptor extends Interceptor {
           headers: {'Content-Type': 'application/json'},
         ),
       );
+      if (_refreshAdapter != null) {
+        refreshDio.httpClientAdapter = _refreshAdapter;
+      }
 
       final refreshResponse = await refreshDio.post(
         '/api/auth/refresh',
@@ -125,32 +150,46 @@ class AuthInterceptor extends Interceptor {
       );
 
       final authResponse = AuthResponse.fromJson(refreshResponse.data);
+      final String? fresh = authResponse.accessToken;
+      // Une réponse sans jeton vaut un rafraîchissement raté.
+      if (fresh == null) throw StateError('refresh sans jeton d\'accès');
 
       // Update token in the simple holder
-      _ref.read(accessTokenHolderProvider.notifier).state =
-          authResponse.accessToken;
+      _ref.read(accessTokenHolderProvider.notifier).state = fresh;
 
       // Save new refresh token if provided
       if (authResponse.refreshToken != null) {
         await storage.saveRefreshToken(authResponse.refreshToken!);
       }
 
-      // Retry original request with new token
-      requestOptions.headers['Authorization'] =
-          'Bearer ${authResponse.accessToken}';
+      newAccessToken = fresh;
 
       // Process queued requests
-      _processQueue(null, authResponse.accessToken);
-
-      // Retry the original request using the main dio instance
-      final retryResponse = await _dio.fetch(requestOptions);
-      return handler.resolve(retryResponse);
+      _processQueue(null, newAccessToken);
     } catch (e) {
+      // Seul l'échec du rafraîchissement déconnecte.
       _processQueue(err);
       _clearAuth();
       return handler.next(err);
     } finally {
       _isRefreshing = false;
+    }
+
+    // Rejeu de la requête d'origine, **hors** du try du rafraîchissement : le
+    // jeton est bon, une erreur du rejeu (400 GPX_FAILURE, 413, coupure réseau
+    // pendant l'envoi d'un fichier) est celle de la requête, pas une session
+    // perdue. Elle remonte telle quelle, sans déconnecter (docs/LEDGER_*.md
+    // MOB-79).
+    requestOptions.headers['Authorization'] = 'Bearer $newAccessToken';
+    try {
+      final retryResponse = await _dio.fetch(retryableOptions(requestOptions));
+      return handler.resolve(retryResponse);
+    } on DioException catch (e) {
+      return handler.next(e);
+    } catch (e) {
+      return handler.next(
+        DioException(requestOptions: requestOptions, error: e),
+      );
     }
   }
 
@@ -161,7 +200,7 @@ class AuthInterceptor extends Interceptor {
       } else if (token != null) {
         request.requestOptions.headers['Authorization'] = 'Bearer $token';
         _dio
-            .fetch(request.requestOptions)
+            .fetch(retryableOptions(request.requestOptions))
             .then(
               request.completer.complete,
               onError: request.completer.completeError,

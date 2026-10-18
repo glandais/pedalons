@@ -22,6 +22,79 @@ void main() {
     });
   });
 
+  group('canManageTeamRoutes (MOB-79)', () {
+    TeamDetailDto team({bool routes = true, bool rides = true}) =>
+        TeamDetailDto(
+          timezone: 'Europe/Paris',
+          id: 't1',
+          slug: 'n-peloton',
+          name: 'N-Peloton',
+          about: const MediaDto(
+            markdown: '',
+            assets: AssetsDto(images: <AssetDto>[], attachments: <AssetDto>[]),
+          ),
+          visibility: 'PUBLIC',
+          enableTrips: true,
+          enableAds: true,
+          enablePosts: true,
+          enableRides: rides,
+          enableRoutes: routes,
+          visibilityEditable: true,
+          joinable: true,
+          addMemberAllowed: true,
+          enableMemberDirectory: false,
+          postsAsTeamByDefault: true,
+          enableRoutePlanner: false,
+          memberCount: 40,
+          upcomingRideCount: 3,
+          routeCount: 12,
+          upcomingTripCount: 0,
+          recentPostCount: 0,
+          createdAt: '2024-01-01T00:00:00Z',
+        );
+
+    test('organisateur et administrateur, module parcours actif', () {
+      expect(canManageTeamRoutes(team(), teamRole: TeamRole.organizer), isTrue);
+      expect(canManageTeamRoutes(team(), teamRole: TeamRole.admin), isTrue);
+      expect(canManageTeamRoutes(team(), teamRole: TeamRole.member), isFalse);
+      expect(canManageTeamRoutes(team(), teamRole: null), isFalse);
+      // Un rôle inconnu de cette version n'ouvre rien.
+      expect(canManageTeamRoutes(team(), teamRole: TeamRole.$unknown), isFalse);
+    });
+
+    test(
+      'seul le module parcours compte : les sorties coupées ne gênent pas',
+      () {
+        expect(
+          canManageTeamRoutes(team(rides: false), teamRole: TeamRole.organizer),
+          isTrue,
+        );
+        expect(
+          canManageTeamRoutes(
+            team(routes: false),
+            teamRole: TeamRole.organizer,
+          ),
+          isFalse,
+        );
+      },
+    );
+
+    test("l'admin de plateforme passe, module parcours actif", () {
+      expect(
+        canManageTeamRoutes(team(), teamRole: null, platformAdmin: true),
+        isTrue,
+      );
+      expect(
+        canManageTeamRoutes(
+          team(routes: false),
+          teamRole: null,
+          platformAdmin: true,
+        ),
+        isFalse,
+      );
+    });
+  });
+
   group('rideManageActions', () {
     test('selon le statut, comme le menu du site', () {
       expect(

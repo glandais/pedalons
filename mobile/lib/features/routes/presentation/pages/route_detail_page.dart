@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../api/generated/export.dart';
+import '../../../../config/paths.dart';
 import '../../../../core/pdl/pdl.dart';
 import '../../../../keys.dart';
 import '../../../../core/preferences/user_preferences_provider.dart';
@@ -14,6 +15,7 @@ import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/units/unit_system.dart';
 import '../../../../core/utils/api_error_handler.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../core/utils/share_link.dart';
 import '../../../../core/widgets/markdown_content.dart';
 import '../../../../core/widgets/media_attachments.dart';
 import '../../../auth/domain/auth_state.dart';
@@ -21,10 +23,12 @@ import '../../../auth/providers/auth_provider.dart';
 import '../../../moderation/presentation/moderation_menu.dart';
 import '../../../tags/presentation/content_tags.dart';
 import '../../providers/route_detail_provider.dart';
+import '../../providers/route_editor_providers.dart';
 import '../../providers/route_elevation_provider.dart';
 import '../widgets/route_climbs_section.dart';
 import '../widgets/route_cursor_controller.dart';
 import '../widgets/route_download_actions.dart';
+import '../widgets/route_manage_menu.dart';
 import '../widgets/route_map.dart';
 import '../widgets/route_sheet_header.dart';
 import '../widgets/route_usages_section.dart';
@@ -165,6 +169,8 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
     final String? currentUserId = ref.watch(
       authProvider.select((AuthState s) => s.user?.id),
     );
+    final bool canManage =
+        ref.watch(canManageRoutesProvider(route.team.slug)) ?? false;
     return Positioned(
       top: 0,
       left: 0,
@@ -187,8 +193,55 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
                   label: route.name,
                 ),
               ),
-              // Son propre parcours ne se signale pas : le menu serait vide.
-              if (currentUserId != null &&
+              // Un organisateur : partager, modifier (le crayon), puis le `⋯` qui
+              // porte tous ses gestes (ledger `MOB-79`). Le pied de la fiche
+              // garde son propre partage.
+              if (canManage) ...<Widget>[
+                const SizedBox(width: PdlSpacing.chipGap),
+                // `Builder` : la feuille de partage s'ancre au bouton (iPad).
+                Builder(
+                  builder: (BuildContext buttonContext) => PdlMapButton(
+                    key: keys.routeDetail.shareButton,
+                    icon: PdlIcons.share,
+                    semanticLabel: 'routes.share'.tr(),
+                    onPressed: () => shareAppLink(
+                      buttonContext,
+                      title: route.name,
+                      path: Paths.route(route.team.slug, route.slug),
+                    ),
+                  ),
+                ),
+              ],
+              if (canManage && !route.deleted) ...<Widget>[
+                const SizedBox(width: PdlSpacing.chipGap),
+                PdlMapButton(
+                  key: keys.routeManage.editButton,
+                  icon: PdlIcons.edit,
+                  semanticLabel: 'routes.manage.edit'.tr(),
+                  onPressed: () => context.push(
+                    Paths.routeEdit(route.team.slug, route.slug),
+                  ),
+                ),
+              ],
+              if (canManage) ...<Widget>[
+                const SizedBox(width: PdlSpacing.chipGap),
+                PdlMapButton(
+                  key: keys.routeDetail.moreButton,
+                  icon: PdlIcons.more,
+                  semanticLabel: 'routes.manage.menuTitle'.tr(),
+                  onPressed: () => showRouteManageMenu(
+                    context,
+                    ref,
+                    route,
+                    canReport:
+                        currentUserId != null &&
+                        currentUserId != route.createdBy.id,
+                  ),
+                ),
+              ]
+              // Sinon, la modération — mais son propre parcours ne se signale
+              // pas : le menu serait vide.
+              else if (currentUserId != null &&
                   currentUserId != route.createdBy.id) ...<Widget>[
                 const SizedBox(width: PdlSpacing.chipGap),
                 PdlMapButton(
@@ -225,6 +278,21 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
       controller: controller,
       padding: EdgeInsets.only(bottom: footerInset),
       children: <Widget>[
+        if (route.deleted)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              PdlSpacing.section,
+              0,
+              PdlSpacing.section,
+              PdlSpacing.section,
+            ),
+            child: PdlBanner(
+              key: keys.routeManage.deletedBanner,
+              tone: PdlBannerTone.warn,
+              icon: PdlIcons.delete,
+              message: 'routes.manage.deletedBanner'.tr(),
+            ),
+          ),
         // Les tags en tête du corps et non dans l'en-tête de la feuille : à
         // son cran bas, l'en-tête ne garde que le nom et un badge (ledger
         // `MOB-39`).

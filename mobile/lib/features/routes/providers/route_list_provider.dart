@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../api/generated/export.dart';
 import '../../../core/pagination/pagination.dart';
+import '../../../core/pdl/map/pdl_map_controller.dart';
 import '../../../core/preferences/user_preferences_provider.dart';
 import '../data/route_repository.dart';
 import '../domain/route_filters.dart';
@@ -72,6 +73,17 @@ final routePreviewProvider = FutureProvider.autoDispose
       );
       return page.items;
     });
+
+/// Le cadrage initial de la carte, **figé au montage**.
+///
+/// `GET …/routes/bounds` est lu une fois, avec les filtres tels qu'ils sont à
+/// l'ouverture, et n'est **jamais rejoué** sur changement de filtre (§3.1) :
+/// une carte qui se recadre toute seule pendant qu'on la déplace est une carte
+/// qu'on ne peut pas lire.
+final routeBoundsProvider = FutureProvider.autoDispose
+    .family<PdlMapBox?, RouteFilters>(
+      (ref, filters) => ref.watch(routeRepositoryProvider).fetchBounds(filters),
+    );
 
 // ── Vue et densité ───────────────────────────────────────────────────────────
 //

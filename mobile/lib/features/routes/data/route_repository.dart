@@ -1,9 +1,11 @@
+import 'package:dio/dio.dart' show DioMediaType, MultipartFile;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../api/generated/export.dart';
 import '../../../api/pedalons_api_client.dart';
 import '../../../core/pagination/pagination.dart';
 import '../../../core/pdl/map/pdl_map_controller.dart';
+import '../domain/gpx_check.dart';
 import '../domain/route_filters.dart';
 
 final routeRepositoryProvider = Provider<RouteRepository>((ref) {
@@ -220,6 +222,76 @@ class RouteRepository {
       geometry: geometry,
     );
   }
+
+  // ── Écriture (docs/LEDGER_*.md MOB-79) ─────────────────────────────────
+
+  /// Crée un parcours de [teamSlug] depuis le fichier [gpx].
+  ///
+  /// **La forme sur le fil est celle du site** : la requête en champ `route`
+  /// (JSON), le fichier en partie `gpxFile` (`application/gpx+xml`). Le client
+  /// généré l'émet ainsi, et un test (`route_repository_write_test`) la fige
+  /// pour qu'une régénération qui la changerait casse un test et non la
+  /// production. Le serveur calcule distance, dénivelé, carte et vignettes ;
+  /// il refuse un fichier illisible (`GPX_FAILURE`, `GPX_EMPTY`…).
+  Future<RouteDto> createRoute(
+    String teamSlug,
+    RouteRequest request, {
+    required GpxFile gpx,
+  }) {
+    return _routesClient.createRoute(
+      teamSlug: teamSlug,
+      route: request,
+      gpxFile: _gpxPart(gpx),
+    );
+  }
+
+  /// Réécrit le parcours [routeSlug]. Le serveur veut la requête **entière**.
+  /// Avec [gpx], le nouveau fichier remplace tout le tracé ; sans, aucune
+  /// partie fichier ne part et le tracé reste.
+  Future<RouteDto> updateRoute(
+    String teamSlug,
+    String routeSlug,
+    RouteRequest request, {
+    GpxFile? gpx,
+  }) {
+    return _routesClient.updateRoute(
+      teamSlug: teamSlug,
+      routeSlug: routeSlug,
+      route: request,
+      gpxFile: gpx == null ? null : _gpxPart(gpx),
+    );
+  }
+
+  /// Change l'adresse du parcours ; le détail rendu porte le nouveau slug.
+  Future<RouteDetailDto> changeSlug(
+    String teamSlug,
+    String routeSlug,
+    String slug,
+  ) {
+    return _routesClient.changeRouteSlug(
+      teamSlug: teamSlug,
+      routeSlug: routeSlug,
+      body: SlugChangeRequest(slug: slug),
+    );
+  }
+
+  /// Suppression douce : un organisateur peut le restaurer.
+  Future<void> deleteRoute(String teamSlug, String routeSlug) {
+    return _routesClient.deleteRoute(teamSlug: teamSlug, routeSlug: routeSlug);
+  }
+
+  Future<RouteDetailDto> undeleteRoute(String teamSlug, String routeSlug) {
+    return _routesClient.undeleteRoute(
+      teamSlug: teamSlug,
+      routeSlug: routeSlug,
+    );
+  }
+
+  static MultipartFile _gpxPart(GpxFile gpx) => MultipartFile.fromFileSync(
+    gpx.path,
+    filename: gpx.name,
+    contentType: DioMediaType('application', 'gpx+xml'),
+  );
 
   /// Les tags ne partent qu'aux endpoints d'équipe : les listes
   /// inter-équipes n'en ont pas (plan des tags, D7).

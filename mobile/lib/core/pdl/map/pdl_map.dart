@@ -408,6 +408,7 @@ class _PdlMapState extends State<PdlMap> {
     // l'attache, et l'ombrage comme la masse doivent être connus à ce
     // moment-là pour sortir sous les tracés plutôt qu'au-dessus.
     await _controller.setHillshade(widget.hillshade);
+    if (!mounted) return;
     _pushMassTiles();
     await _controller.setContent(
       tracks: widget.tracks,
@@ -415,7 +416,9 @@ class _PdlMapState extends State<PdlMap> {
       start: widget.start,
       end: widget.end,
     );
+    if (!mounted) return;
     await _controller.attachStyle(style);
+    if (!mounted) return;
     // **Le premier cadrage part d'ici** : c'est le premier moment où la vue
     // native a une taille et un style. Plus de `Future.delayed`. Les suivants
     // partent de `didUpdateWidget`, quand la donnée arrive.

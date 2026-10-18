@@ -108,7 +108,8 @@ class RideRepository {
     );
   }
 
-  /// Suppression **douce** : la sortie reste lisible par les organisateurs,
+  /// Suppression **douce** : la sortie reste lisible par les administrateurs
+  /// de l'équipe (`IncludeDeletedService` : rôle ADMIN, pas organisateur),
   /// marquée `deleted`, et [undeleteRide] la ramène.
   Future<void> deleteRide(String teamSlug, String rideSlug) {
     return _ridesClient.deleteRide(teamSlug: teamSlug, rideSlug: rideSlug);

@@ -224,6 +224,20 @@ final List<_LinkCase> _cases = [
     PathVariants.team(_teamSlug),
     PathVariants.teamAds(_teamSlug),
   ]),
+  // L'éditeur d'un parcours (ledger `MOB-79`) : la création sous la liste des
+  // parcours, la modification sous la fiche qu'elle réécrit. `routeNew` et
+  // `routeEdit` avant `route`, comme dans le routeur.
+  _LinkCase('routeNew', PathVariants.routeNew(_teamSlug), [
+    PathVariants.teams(),
+    PathVariants.team(_teamSlug),
+    PathVariants.routes(_teamSlug),
+  ]),
+  _LinkCase('routeEdit', PathVariants.routeEdit(_teamSlug, _routeSlug), [
+    PathVariants.teams(),
+    PathVariants.team(_teamSlug),
+    PathVariants.routes(_teamSlug),
+    PathVariants.route(_teamSlug, _routeSlug),
+  ]),
   _LinkCase('route', PathVariants.route(_teamSlug, _routeSlug), [
     PathVariants.teams(),
     PathVariants.team(_teamSlug),

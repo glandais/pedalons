@@ -19,6 +19,7 @@ import 'profile_settings.dart';
 import 'ride.dart';
 import 'ride_editor.dart';
 import 'ride_templates.dart';
+import 'route_editor.dart';
 import 'routes.dart';
 import 'share_sheet.dart';
 import 'teams.dart';
@@ -48,6 +49,7 @@ final class Modules {
   late final ride = Ride(_$);
   late final rideEditor = RideEditor(_$);
   late final rideTemplates = RideTemplates(_$);
+  late final routeEditor = RouteEditor(_$);
   late final routes = Routes(_$);
   late final shareSheet = ShareSheet(_$);
   late final teams = Teams(_$);

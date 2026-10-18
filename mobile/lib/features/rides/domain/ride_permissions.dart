@@ -26,3 +26,16 @@ bool canManageTeamRides(
       team.enableRoutes &&
       canManageRides(teamRole: teamRole, platformAdmin: platformAdmin);
 }
+
+/// Qui peut créer, modifier ou supprimer un parcours : la même règle de rôle
+/// ([canManageRides] — `RouteAccessChecker` demande `teamRole.isOrganizer()`),
+/// et le **seul** module parcours, pas celui des sorties : un parcours n'en a
+/// pas besoin pour exister (docs/LEDGER_*.md MOB-79).
+bool canManageTeamRoutes(
+  TeamDetailDto team, {
+  required TeamRole? teamRole,
+  bool platformAdmin = false,
+}) {
+  return team.enableRoutes &&
+      canManageRides(teamRole: teamRole, platformAdmin: platformAdmin);
+}

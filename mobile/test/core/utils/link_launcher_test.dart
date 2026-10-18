@@ -176,6 +176,16 @@ void main() {
       }
     });
 
+    test('l\'éditeur de parcours s\'ouvre dans l\'app (MOB-79)', () {
+      for (final String page in <String>[
+        ...PathVariants.routeNew('vc').values,
+        ...PathVariants.routeEdit('vc', 'boucle').values,
+      ]) {
+        expect(isSitePageLocation(page), isFalse, reason: page);
+        expect(internalLocationFor(page), page, reason: page);
+      }
+    });
+
     test('les modèles de sortie s\'ouvrent dans l\'app (MOB-78)', () {
       for (final String page in <String>[
         ...PathVariants.rideTemplates('vc').values,

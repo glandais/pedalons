@@ -37,6 +37,7 @@ class RoutesToolbar extends ConsumerWidget {
     required this.view,
     required this.onViewChanged,
     this.showScopeSelector = true,
+    this.trailing,
   });
 
   final RouteFilters filters;
@@ -48,6 +49,10 @@ class RoutesToolbar extends ConsumerWidget {
   /// Faux quand l'écran impose déjà sa portée — la section Parcours d'une
   /// équipe, où changer d'équipe n'aurait pas de sens.
   final bool showScopeSelector;
+
+  /// Un bouton à droite du filtre : « Ajouter » pour un organisateur de la
+  /// section Parcours d'une équipe (ledger `MOB-79`).
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -78,6 +83,10 @@ class RoutesToolbar extends ConsumerWidget {
                 semanticLabel: 'routes.filters.title'.tr(),
                 activeCount: filters.activeCount,
               ),
+              if (trailing != null) ...<Widget>[
+                const SizedBox(width: PdlSpacing.chipGap),
+                trailing!,
+              ],
             ],
           ),
         ),

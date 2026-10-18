@@ -48,6 +48,38 @@ extension RoutesSeed on BackendClient {
     return response.data!;
   }
 
+  /// The route [routeSlug] of [teamSlug] as [who] reads it, or `null` once it is out of reach.
+  /// An organizer still reads a deleted route (`deleted: true`); anyone else gets 403 or 404 —
+  /// the pattern of `rideTemplateOrNull` (ledger `MOB-79`).
+  Future<Json?> teamRouteOrNull(
+    TestUser who,
+    String teamSlug,
+    String routeSlug,
+  ) async {
+    final path = '/api/teams/$teamSlug/routes/$routeSlug';
+    final code = await status(who, 'GET', path);
+    if (code == 403 || code == 404) return null;
+    return get(who, path);
+  }
+
+  /// The route named [name] in [teamSlug], found by `GET …/routes?search=` as [who] reads the
+  /// list, or `null` while the API doesn't list it (ledger `MOB-79`).
+  Future<Json?> teamRouteNamed(
+    TestUser who,
+    String teamSlug,
+    String name,
+  ) async {
+    final list = await get(
+      who,
+      '/api/teams/$teamSlug/routes',
+      query: {'search': name, 'size': 20},
+    );
+    for (final route in (list['routes'] as List).cast<Json>()) {
+      if (route['name'] == name) return route;
+    }
+    return null;
+  }
+
   /// A published ride two days ahead whose one group, « Groupe A », rides [routeSlug].
   Future<Json> newRideOnRoute(
     TestUser by,

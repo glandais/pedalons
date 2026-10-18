@@ -682,6 +682,8 @@ routes:
     appScreen: false
 
   # --- Team routes (GPX) ---
+  # `routeNew` and `routeEdit` are app screens since MOB-79 (GPX upload; the route planner
+  # stays web-only) (docs/LEDGER_*.md MOB-79).
   - id: routes
     path:
       en: /teams/{teamSlug}/routes
@@ -705,6 +707,8 @@ routes:
     params:
       - teamSlug
     web: true
+    mobile: true
+    deeplink: true
   - id: route
     path:
       en: /teams/{teamSlug}/routes/{routeSlug}
@@ -731,6 +735,8 @@ routes:
       - teamSlug
       - routeSlug
     web: true
+    mobile: true
+    deeplink: true
 
   # --- Ads (classifieds) ---
   - id: ads

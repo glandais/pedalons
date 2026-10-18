@@ -33,6 +33,7 @@ class MarkdownEditorField extends StatefulWidget {
     this.images = const <AssetDto>[],
     this.onInsertImage,
     this.fieldKey,
+    this.hintText,
     this.errorText,
     this.enabled = true,
     this.imageBusy = false,
@@ -42,6 +43,9 @@ class MarkdownEditorField extends StatefulWidget {
   final List<AssetDto> images;
   final Future<String?> Function()? onInsertImage;
   final Key? fieldKey;
+
+  /// Le texte d'invite du champ vide ; celui de la sortie par défaut.
+  final String? hintText;
   final String? errorText;
   final bool enabled;
   final bool imageBusy;
@@ -141,7 +145,8 @@ class _MarkdownEditorFieldState extends State<MarkdownEditorField> {
             textCapitalization: TextCapitalization.sentences,
             style: t.body,
             decoration: InputDecoration(
-              hintText: 'rides.editor.markdownPlaceholder'.tr(),
+              hintText:
+                  widget.hintText ?? 'rides.editor.markdownPlaceholder'.tr(),
               errorText: widget.errorText,
             ),
           ),

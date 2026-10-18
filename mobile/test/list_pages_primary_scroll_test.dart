@@ -14,6 +14,7 @@ import 'package:pedalons/features/routes/presentation/pages/routes_page.dart';
 import 'package:pedalons/features/routes/domain/route_filters.dart';
 import 'package:pedalons/features/routes/providers/route_list_provider.dart';
 import 'package:pedalons/features/tags/providers/team_tags_provider.dart';
+import 'package:pedalons/features/teams/providers/team_providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// The paginated lists must stay the primary scrollable of their route,
@@ -81,6 +82,9 @@ void main() {
           teamTagsProvider.overrideWith(
             (ref, key) async => const <TagWithUsageDto>[],
           ),
+          // Le bouton « Ajouter » lit « Mes équipes » pour savoir si
+          // l'utilisateur est organisateur (MOB-79).
+          myTeamsProvider.overrideWith((ref) async => <TeamDetailDto>[]),
         ],
         child: iosApp(const RoutesPage(teamSlug: 'n-peloton')),
       ),

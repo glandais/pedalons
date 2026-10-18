@@ -13,8 +13,9 @@ from:
 
 - **App**: Pédalons, `fr.pedalons.mobile`, version `1.0.0+57` (`mobile/pubspec.yaml`)
 - **Backend**: `https://www.pedalons.fr` (`mobile/lib/config/app_config.dart`)
-- **Last verified against the code**: 2026-09-27 (problem reports and automatic error reports
-  added — `lib/features/feedback/`, `lib/core/logging/`; backend `FeedbackService`)
+- **Last verified against the code**: 2026-10-17 (route editor and GPX import, `MOB-79` —
+  `lib/features/routes/`; before that 2026-09-27: problem reports and automatic error reports,
+  `lib/features/feedback/`, `lib/core/logging/`, backend `FeedbackService`)
 
 > Scope note. These declarations describe **the mobile app binary**, not the whole Pedalons
 > platform. The web frontend can do considerably more than the app (see §7). Declaring platform
@@ -25,8 +26,9 @@ from:
 ## 1. What the app actually does
 
 The mobile app authenticates, then reads team content — and, for a team's organizers, writes
-its rides (the ride editor, `MOB-76`, #21–#22). Three capabilities beyond reading touch
-personal data: **picking a profile picture** from the photo library, reading a **coarse
+its rides and routes (the ride editor, `MOB-76`, #21–#22; the route editor, `MOB-79`, #23). Four capabilities beyond reading touch
+personal data: **picking a profile picture** from the photo library, **picking a document**
+(a ride's attachments and a route's GPX file) with the system document picker, reading a **coarse
 device position** to sort content by proximity, and registering the device for **push
 notifications**. There is no camera capture and no analytics.
 
@@ -43,11 +45,24 @@ The capabilities added, and their exact boundary:
   capture (`NSCameraUsageDescription` is deliberately absent, so iOS cannot grant it).
   `NSPhotoLibraryUsageDescription` exists in `mobile/ios/Runner/Info.plist`, localized in
   `Runner/{en,fr}.lproj/InfoPlist.strings`.
-- **`file_picker`** (2026-10-17, `MOB-76`) — the system document picker (Storage Access Framework
-  on Android, `UIDocumentPickerViewController` on iOS), opened only when an organizer taps *Add a
-  file* in the ride editor. The chosen file is uploaded as a ride attachment
-  (`POST /api/teams/{slug}/assets?assetType=ATTACHMENT`, #22). No storage permission is requested
-  on either platform: the picker grants access to the one file picked.
+- **`file_picker`** (2026-10-17, `MOB-76`, `MOB-79`) — the system document picker (Storage Access
+  Framework on Android, `UIDocumentPickerViewController` on iOS), opened only by an organizer, for
+  two things. *Add a file* in the ride editor uploads the file as a ride attachment
+  (`POST /api/teams/{slug}/assets?assetType=ATTACHMENT`, #22). *Choose a GPX file* (or *Replace the
+  GPX*) in the route editor picks the track of a route (`FilePicker.pickFile(type: FileType.any)`:
+  `gpx` has no uniform type identifier on iOS), checked locally for a `.gpx` extension and an
+  opening `<gpx` element before anything is sent (`lib/features/routes/domain/gpx_check.dart`).
+  No storage permission is requested on either platform: the picker grants access to the one file
+  picked.
+- **GPX import** (2026-10-17, `MOB-79`) — the route editor (organizers and administrators of the
+  team only, `lib/features/routes/presentation/pages/route_editor_page.dart`) sends the chosen file
+  with `POST /api/teams/{slug}/routes` (creation) or `PUT …/routes/{routeSlug}` (when replacing the
+  track), as the `gpxFile` part of a multipart request beside the route's name, description,
+  surface, visibility and tags (#23). The exact boundary: the file is one the organizer chose to
+  publish as a **team route** for the members to ride; the app never reads the device's position
+  for it and draws or edits nothing on a map (the route planner stays on the web); and the
+  **server** keeps only the track and its waypoints — timestamps, sensor measurements and the file's
+  metadata are removed before anything is stored (`GpxSanitizer`; policy § *GPX files you import*).
 - **`geolocator`** — `LocationAccuracy.low` only, while the app is in use. The coordinates become
   the `nearLat`/`nearLon`/`nearRadius` query parameters of an existing list endpoint and are never
   written to disk nor attached to the account. `NSLocationWhenInUseUsageDescription` (fr + en);
@@ -98,12 +113,16 @@ Verified absent from `mobile/pubspec.yaml`, `mobile/pubspec.lock`, `mobile/lib/`
 and `mobile/android/`:
 
 - No `camera`, `photo_manager`, `image_cropper` — the media entry points are the system photo
-  picker and, for ride attachments only, the system document picker (`file_picker`).
+  picker and, for ride attachments and the GPX of a route only, the system document picker
+  (`file_picker`).
 - No precise location, no background location, no `permission_handler` (permission prompts are
   `geolocator`'s own), and no MapLibre user-location layer.
-- No GPX/FIT **import**. Route files are download-only: fetched to `getTemporaryDirectory()` and
-  handed to the OS share sheet (`lib/features/routes/presentation/pages/route_detail_page.dart`).
-  Coordinates flow server → device, never device → server.
+- No FIT import, and no GPX import outside the route editor: the only file the app reads to send
+  coordinates is the GPX an organizer picks to create or replace a team route (`MOB-79`, #23). No
+  reading of the device's position for it, no recording of a ride, no track drawn or edited on a
+  map. Everywhere else route files are download-only: fetched to `getTemporaryDirectory()` and
+  handed to the OS share sheet (`lib/features/routes/presentation/widgets/route_download_actions.dart`).
+  Coordinates flow server → device, except for that one organizer's GPX.
 - No analytics, crash-reporting, advertising or attribution SDK (no Crashlytics/Sentry/Amplitude/
   AppsFlyer/Adjust). Crash reports exist since 2026-09-27, but through our own endpoint (#18),
   not an SDK. Firebase **is** present, but only `firebase_core` and `firebase_messaging` —
@@ -113,9 +132,11 @@ and `mobile/android/`:
   dependency of `passkeys` and is on no executed code path; `device_info_plus` no longer is —
   it names the device at push registration.
 - No StoreKit / `in_app_purchase` / payment SDK.
-- The only multipart / `FormData` upload reachable from the UI is the avatar upload
-  (`POST /api/users/me/avatar`). Every other multipart operation in the generated client stays
-  unreachable.
+- The multipart / `FormData` uploads reachable from the UI are the avatar
+  (`POST /api/users/me/avatar`), the ride and route editors' assets
+  (`POST /api/teams/{slug}/assets`) and the creation and modification of a route with its GPX
+  (`POST`/`PUT /api/teams/{slug}/routes`). Every other multipart operation in the generated client
+  stays unreachable.
 
 The generated client in `mobile/lib/api/generated/` mirrors the **entire** backend API (avatar
 upload, post/comment/route CRUD, admin). Almost none of it is wired to UI — it is dead code and
@@ -150,6 +171,7 @@ Everything below leaves the device to `https://www.pedalons.fr` unless stated ot
 | 20 | **Message to an ad's author** | *Contact the seller* sheet (`lib/features/ads/presentation/widgets/ad_contact_sheet.dart`) → `lib/features/ads/data/ad_repository.dart` `contactAdAuthor`: free text, relayed by e-mail with the sender's address as Reply-To. The server keeps no body, only who wrote about which ad and when (`AdContact`, for rate limiting and abuse reports) | Yes (then to the author's inbox, through our e-mail provider) | Yes |
 | 21 | **Rides written by organizers** | Ride editor (`lib/features/rides/presentation/pages/ride_editor_page.dart`) → `POST`/`PUT /api/teams/{slug}/rides`: name, markdown description, date, places, groups, chosen leaders. Organizers and administrators of the team only | Yes | Yes |
 | 22 | **Ride images and attachments** | Same editor → `POST /api/teams/{slug}/assets`: a photo from the library (`image_picker`, logo and images) or any file from the document picker (`file_picker`, attachments) | Yes | Yes |
+| 23 | **Routes written by organizers** | Route editor (`lib/features/routes/presentation/pages/route_editor_page.dart`) → `POST`/`PUT /api/teams/{slug}/routes`, multipart: name, markdown description, surface, visibility, tags, images and attachments through the path of #22, and the **GPX file** (`file_picker`) — its track and waypoints, the timestamps, sensor measurements and metadata being removed by the server before anything is stored. Organizers and administrators of the team only | Yes | Yes |
 | 10 | **Approximate location** | `geolocator` at `LocationAccuracy.low`, while in use, only when the user turns on the "around me" filter — becomes the `nearLat`/`nearLon`/`nearRadius` query parameters | Yes, as query parameters of a read request | **No** — not stored server-side, not written to the account |
 
 Stored **on device only**, never transmitted:
@@ -161,7 +183,9 @@ Stored **on device only**, never transmitted:
 - The in-app log (`lib/core/logging/app_log.dart`): ≤ 200 entries in a JSONL file of the app
   support directory, so it survives a crash; the queued error reports and the last crash flag in
   `shared_preferences`. They leave the device only as #17–#19.
-- Disk caches: downloaded avatars/images (`cached_network_image`) and temp GPX/FIT files.
+- Disk caches: downloaded avatars/images (`cached_network_image`) and temp GPX/FIT files —
+  including the copy of the GPX that the system document picker hands the route editor (#23),
+  which the app reads once for the local check and once for the upload, and never keeps elsewhere.
 
 **Password note.** Neither store's form has a "password" data type. Apple's guidance is that
 credentials are covered by the account data types already declared; Google's form likewise has no
@@ -184,7 +208,7 @@ value is invented.
 | `NSPrivacyCollectedDataTypeEmailAddress` | `true` | `false` | `…PurposeAppFunctionality` | inventory #1 |
 | `NSPrivacyCollectedDataTypeName` | `true` | `false` | `…PurposeAppFunctionality` | #3 |
 | `NSPrivacyCollectedDataTypeUserID` | `true` | `false` | `…PurposeAppFunctionality` | #4, #5, #7 |
-| `NSPrivacyCollectedDataTypeOtherUserContent` | `true` | `false` | `…PurposeAppFunctionality` | #6, #13, #14, #15, #20, #21, #22 (attachments) |
+| `NSPrivacyCollectedDataTypeOtherUserContent` | `true` | `false` | `…PurposeAppFunctionality` | #6, #13, #14, #15, #20, #21, #22 (attachments), #23 |
 | `NSPrivacyCollectedDataTypeOtherDataTypes` | `true` | `false` | `…PurposeAppFunctionality` | #8 |
 | `NSPrivacyCollectedDataTypePhotosorVideos` | `true` | `false` | `…PurposeAppFunctionality` | #9, #22 (images) |
 | `NSPrivacyCollectedDataTypeCoarseLocation` | **`false`** | `false` | `…PurposeAppFunctionality` | #10 |
@@ -195,6 +219,10 @@ value is invented.
 
 `…Purpose` above abbreviates `NSPrivacyCollectedDataTypePurpose`. Note the lowercase `or` in
 `PhotosorVideos` — that is Apple's literal spelling, not a typo.
+
+#23 (routes and their GPX) has no row of its own either: a route's name, description, tags and
+attachments are *Other User Content* like the rides of #21, its images are *Photos or Videos* like
+#22, and its GPX is covered in §4 (*GPX import adds no data type*).
 
 #16 (terms acceptance) has no row of its own: it is a timestamp on the account created at sign-up,
 covered by the account rows (`EmailAddress`, `Name`, `UserID`) like the account's creation date.
@@ -270,6 +298,18 @@ data type was added, deliberately:
 Consequently `app-privacy.json` is **unchanged** by the reporting feature: the `OTHER_USER_CONTENT`
 entry it already carries is the right one.
 
+**GPX import adds no data type** (2026-10-17, `MOB-79`, #23). The routes an organizer writes, and
+the GPX file that gives one its track, are *Other User Content* — the row already declared, as for
+a ride (#21) — and the route's images are *Photos or Videos* (#22). *Precise Location* was
+considered and rejected, deliberately, against the trigger of §8. The file may well come from a
+ride the organizer recorded (the screen suggests exporting it from a mapping tool or a bike
+computer), but what the app does with it is publish it as a **team route** for the members: the
+app reads no position from the device to produce it, and the server strips timestamps, sensor
+measurements and the file's metadata before storing anything (`GpxSanitizer`, policy § *GPX files
+you import*). What is collected is therefore a geometry, which no longer says *when* anyone was
+*where* — neither a location history nor a log of movements. *Coarse Location* is untouched.
+`app-privacy.json` is **unchanged**.
+
 *Device ID* covers the **push registration token** and the device model sent with it (#11, #12) —
 not an advertising identifier, which the app still never reads.
 
@@ -328,10 +368,13 @@ content* row already declared.
 only reached when the user taps "change picture" — or, for an organizer, "add an image" or "choose
 a logo" in the ride editor (#22).
 
-*Files and docs* (2026-10-17, `MOB-76`) is **optional** and covers **ride attachments** (#22): an
-organizer picks a file with the system document picker and it is uploaded to the team. Apple has
-no such type; on iOS the attachment is *Other User Content*. Nobody has to attach a file, and it
-is **not shared** beyond the service: it is shown to the ride's readers, inside the app.
+*Files and docs* (2026-10-17, `MOB-76`, `MOB-79`) is **optional** and covers **ride attachments**
+(#22) and the **GPX file of a route** (#23): an organizer picks a file with the system document
+picker and it is uploaded to the team. Apple has no such type; on iOS the attachment and the GPX
+are *Other User Content*. Nobody has to attach a file or create a route, and the file is **not
+shared** beyond the service: it is shown to the ride's or the route's readers, inside the app. The
+GPX adds no *Location* row: it is published as a team route and stored without timestamps, and
+the app reads no device position for it (see §4, *GPX import adds no data type*, and §7).
 
 *Approximate location* is **optional** and **processed ephemerally**: it is read only when the user
 turns on the "around me" filter, sent as `nearLat`/`nearLon`/`nearRadius` on a read request, and
@@ -363,7 +406,7 @@ sign-out deletes it. It is **not** an advertising ID — none is read — and Go
 finer bucket for a messaging token.
 
 Everything else in the form is **not collected**: Precise location, Financial info, Health and
-fitness, Emails, SMS or MMS, Videos, Audio files, Files and docs, Calendar, Contacts, App interactions,
+fitness, Emails, SMS or MMS, Videos, Audio files, Calendar, Contacts, App interactions,
 In-app search history, Installed apps, Web browsing history, Other app performance data.
 
 **Deliberate divergences from §4**
@@ -471,7 +514,7 @@ a dependency. Do not bring it back — it would re-open a US transfer for a type
 
 | Not declared | Why |
 |---|---|
-| Precise Location | Only `ACCESS_COARSE_LOCATION` is requested and only `LocationAccuracy.low` is used; `ACCESS_FINE_LOCATION` is stripped from the merged manifest. No background location, no ride recording, no user-location puck. Route coordinates are **downloaded** for display; describing where a *route* is is not describing where the *user* is. |
+| Precise Location | Only `ACCESS_COARSE_LOCATION` is requested and only `LocationAccuracy.low` is used; `ACCESS_FINE_LOCATION` is stripped from the merged manifest. No background location, no ride recording, no user-location puck. Route coordinates are **downloaded** for display; describing where a *route* is is not describing where the *user* is. **The GPX an organizer imports (`MOB-79`, #23) does not change that**: the file may come from a ride the organizer recorded, but it is published as a team route for the members, the app reads no device position to produce it, and the server keeps only the geometry — timestamps, sensor measurements and file metadata are removed before storing (`GpxSanitizer`, policy § *GPX files you import*) — so what is collected is neither a location history nor a log of movements. |
 | Videos | `image_picker` is restricted to still images (`pickImage`) for the avatar and a ride's logo and images; no video is ever read. |
 | Camera | No `NSCameraUsageDescription` and no camera permission — the photo library is the only entry point. |
 | Fitness / Health | No HealthKit, no Motion & Fitness, no activity recording. |
@@ -492,9 +535,9 @@ these ships:
 |---|---|
 | Profile editing (`PUT /api/users/me`) | nothing new — Name/Email already declared |
 | Camera capture for the avatar | `NSCameraUsageDescription` in `Info.plist` (+ its two `InfoPlist.strings`); no new data type — Photos or Videos already covers it |
-| Post / route authoring (comments are already declared, #13; ride authoring since `MOB-76`, #21–#22) | nothing new — Apple `NSPrivacyCollectedDataTypeOtherUserContent` and Play *Other user-generated content* are both declared; widen the manifest comment and §2 |
+| Post authoring (comments are already declared, #13; ride authoring since `MOB-76`, #21–#22; route authoring since `MOB-79`, #23) | nothing new — Apple `NSPrivacyCollectedDataTypeOtherUserContent` and Play *Other user-generated content* are both declared; widen the manifest comment and §2 |
 | A screenshot or attachment on a report, or automatic moderation of images or text beyond the word filter | Apple `…PhotosorVideos` already covers images, but re-read §4 for the purpose; Play *Photos*; any third-party moderation service is a new sub-processor for the policy |
-| GPX **import** from the device | Play *Files and docs*; Apple `NSPrivacyCollectedDataTypeOtherUserContent`. If the GPX describes the user's own rides, also Apple `…PreciseLocation` and Play *Location → Precise location* |
+| GPX **import** from the device | Delivered by `MOB-79` for a team route an organizer publishes (#23): Play *Files and docs* and Apple `…OtherUserContent`, both declared; no Precise Location: the file may come from a recorded ride, but it is published as a route for the members, no device position is read and the server keeps only the geometry (timestamps, sensor data and metadata are stripped before storing). **Precise Location (Apple `…PreciseLocation`, Play *Location → Precise location*) becomes due** if the app imports **activities** as the user's own history, if the server starts keeping timestamps, or if the app records a ride. Any other import (FIT, a GPX outside the route editor) is a new audit |
 | Live location / "record a ride" / follow-me on the map / a MapLibre user-location puck | Apple `NSPrivacyCollectedDataTypePreciseLocation` (and flip Coarse Location's `Linked` if it becomes persisted); Play *Location → Precise location* and drop the *processed ephemerally* flag; stop stripping `ACCESS_FINE_LOCATION`; `NSLocationAlwaysAndWhenInUseUsageDescription` if it ever runs in the background |
 | Storing the user's position server-side (saved "home area", proximity history) | flip Apple `NSPrivacyCollectedDataTypeCoarseLocation` → `Linked: true` and clear Play's *processed ephemerally* |
 | Any other Firebase product (Analytics, Crashlytics, Remote Config, In-App Messaging) | It is no longer "no Firebase, full stop": re-read §1, and expect Apple `…ProductInteraction` / `…CrashData` and Play *App info and performance* to become due |
@@ -570,10 +613,13 @@ grep -rn "UsageDescription" ios/Runner/Info.plist ios/Runner/en.lproj/InfoPlist.
 grep -rn "ACCESS_.*_LOCATION" android/app/src/main/AndroidManifest.xml
 grep -rniE "LocationAccuracy|getCurrentPosition|getPositionStream" lib | grep -v lib/api/generated
 
-# uploads: only the avatar and the ride editor's assets should show up outside the generated client
+# uploads: only the avatar, the editors' assets and a route's GPX should show up outside the
+# generated client (the route editor's repository, route_repository.dart, builds the GPX part).
+# auth_interceptor.dart also matches: it clones a FormData before replaying a request after a 401
+# (retryableOptions), it sends nothing new.
 grep -rn "MultipartFile\|FormData" lib | grep -v lib/api/generated
 
-# file_picker: only the ride editor's attachments (#22)
+# file_picker: exactly two calls — the ride editor's attachments (#22) and a route's GPX (#23)
 grep -rn "FilePicker\." lib
 
 # Every mutating operation the app can actually reach, to confirm §2 is still complete.
@@ -585,6 +631,10 @@ grep -rhA3 "@\(POST\|PUT\|PATCH\|DELETE\)(" lib/api/generated \
   | while read -r m; do
       grep -rqE "\.${m}\(" lib/features lib/core && echo "USED: $m"
     done
+
+# the route editor's mutations (#23) — createRoute/updateRoute are in the loop above; the editor
+# page reaches them through route_repository.dart
+grep -rnE "\.(createRoute|updateRoute)\(" lib/features lib/core
 
 # push stays messaging-only: exactly firebase_core and firebase_messaging, nothing else
 grep -n "firebase" pubspec.yaml

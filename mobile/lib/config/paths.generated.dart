@@ -462,12 +462,30 @@ class Paths {
     }
   }
 
+  static String routeNew(String teamSlug) {
+    switch (getCurrentLocale()) {
+      case 'fr':
+        return '/equipes/$teamSlug/parcours/nouveau';
+      default:
+        return '/teams/$teamSlug/routes/new';
+    }
+  }
+
   static String route(String teamSlug, String routeSlug) {
     switch (getCurrentLocale()) {
       case 'fr':
         return '/equipes/$teamSlug/parcours/$routeSlug';
       default:
         return '/teams/$teamSlug/routes/$routeSlug';
+    }
+  }
+
+  static String routeEdit(String teamSlug, String routeSlug) {
+    switch (getCurrentLocale()) {
+      case 'fr':
+        return '/equipes/$teamSlug/parcours/$routeSlug/modifier';
+      default:
+        return '/teams/$teamSlug/routes/$routeSlug/edit';
     }
   }
 
@@ -707,9 +725,17 @@ class PathVariants {
     'en': '/teams/$teamSlug/routes',
     'fr': '/equipes/$teamSlug/parcours',
   };
+  static Map<String, String> routeNew(String teamSlug) => {
+    'en': '/teams/$teamSlug/routes/new',
+    'fr': '/equipes/$teamSlug/parcours/nouveau',
+  };
   static Map<String, String> route(String teamSlug, String routeSlug) => {
     'en': '/teams/$teamSlug/routes/$routeSlug',
     'fr': '/equipes/$teamSlug/parcours/$routeSlug',
+  };
+  static Map<String, String> routeEdit(String teamSlug, String routeSlug) => {
+    'en': '/teams/$teamSlug/routes/$routeSlug/edit',
+    'fr': '/equipes/$teamSlug/parcours/$routeSlug/modifier',
   };
   static Map<String, String> teamAds(String teamSlug) => {
     'en': '/teams/$teamSlug/classifieds',
@@ -770,12 +796,8 @@ const List<String> sitePagePathPatterns = <String>[
   r'^/equipes/[^/]+/articles/[^/]+/modifier/?$',
   r'^/teams/[^/]+/routes/map/?$',
   r'^/equipes/[^/]+/parcours/carte/?$',
-  r'^/teams/[^/]+/routes/new/?$',
-  r'^/equipes/[^/]+/parcours/nouveau/?$',
   r'^/teams/[^/]+/routes/[^/]+/map/?$',
   r'^/equipes/[^/]+/parcours/[^/]+/carte/?$',
-  r'^/teams/[^/]+/routes/[^/]+/edit/?$',
-  r'^/equipes/[^/]+/parcours/[^/]+/modifier/?$',
   r'^/teams/[^/]+/classifieds/new/?$',
   r'^/equipes/[^/]+/annonces/nouvelle/?$',
   r'^/teams/[^/]+/classifieds/[^/]+/edit/?$',

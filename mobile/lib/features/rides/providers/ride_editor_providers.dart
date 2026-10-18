@@ -7,17 +7,24 @@ import '../../teams/providers/team_providers.dart';
 import '../data/ride_editor_repository.dart';
 import '../domain/ride_permissions.dart';
 
-/// L'utilisateur peut-il gérer les sorties de [teamSlug] ? `null` tant que
+/// L'utilisateur peut-il gérer [teamSlug] selon [rule] ? `null` tant que
 /// « Mes équipes » n'est pas chargé et qu'il n'est pas admin de plateforme :
-/// l'écran n'affiche alors ni bouton ni refus (docs/LEDGER_*.md MOB-76).
+/// l'écran n'affiche alors ni bouton ni refus.
 ///
-/// La règle est celle du serveur ([canManageTeamRides]) : organisateur ou
-/// administrateur, modules sorties **et** parcours actifs. L'admin de
-/// plateforme qui n'est pas membre n'a pas l'équipe dans « Mes équipes » :
-/// ses modules se relisent alors sur l'équipe elle-même, à l'écran.
-final canManageRidesProvider = Provider.family<bool?, String>((
+/// Partagé par les sorties ([canManageRidesProvider]) et les parcours
+/// (`canManageRoutesProvider`, ledger `MOB-79`) : seule la règle change.
+/// L'admin de plateforme qui n'est pas membre n'a pas l'équipe dans « Mes
+/// équipes » : il passe alors, et les modules se relisent sur l'équipe elle-
+/// même, à l'écran.
+bool? teamManagePermission(
   Ref ref,
   String teamSlug,
+  bool Function(
+    TeamDetailDto team, {
+    required TeamRole? teamRole,
+    required bool platformAdmin,
+  })
+  rule,
 ) {
   final bool platformAdmin = ref.watch(
     authProvider.select(
@@ -29,7 +36,7 @@ final canManageRidesProvider = Provider.family<bool?, String>((
       ?.where((TeamDetailDto t) => t.slug == teamSlug)
       .firstOrNull;
   if (team != null) {
-    return canManageTeamRides(
+    return rule(
       team,
       teamRole: ref.watch(teamRoleProvider(teamSlug)),
       platformAdmin: platformAdmin,
@@ -37,7 +44,18 @@ final canManageRidesProvider = Provider.family<bool?, String>((
   }
   if (platformAdmin) return true;
   return teams == null ? null : false;
-});
+}
+
+/// L'utilisateur peut-il gérer les sorties de [teamSlug] ? `null` tant que
+/// « Mes équipes » n'est pas chargé et qu'il n'est pas admin de plateforme :
+/// l'écran n'affiche alors ni bouton ni refus (docs/LEDGER_*.md MOB-76).
+///
+/// La règle est celle du serveur ([canManageTeamRides]) : organisateur ou
+/// administrateur, modules sorties **et** parcours actifs.
+final canManageRidesProvider = Provider.family<bool?, String>(
+  (Ref ref, String teamSlug) =>
+      teamManagePermission(ref, teamSlug, canManageTeamRides),
+);
 
 typedef TeamItemKey = ({String teamSlug, String id});
 

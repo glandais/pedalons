@@ -46,6 +46,8 @@ import '../features/trips/presentation/pages/trip_detail_page.dart';
 import '../features/routes/presentation/pages/all_routes_map_page.dart';
 import '../features/routes/presentation/pages/all_routes_page.dart';
 import '../features/routes/presentation/pages/route_detail_page.dart';
+import '../features/routes/presentation/pages/route_editor_page.dart';
+import '../features/routes/presentation/route_editor_location.dart';
 import '../features/teams/presentation/pages/team_custom_page.dart';
 import '../features/teams/presentation/pages/team_home_page.dart';
 import '../features/teams/presentation/pages/teams_discover_page.dart';
@@ -102,6 +104,8 @@ String _teamAdsAncestor(Map<String, String> p, String locale) =>
     PathVariants.teamAds(p['teamSlug']!)[locale]!;
 String _teamRoutesAncestor(Map<String, String> p, String locale) =>
     PathVariants.routes(p['teamSlug']!)[locale]!;
+String _routeAncestor(Map<String, String> p, String locale) =>
+    PathVariants.route(p['teamSlug']!, p['routeSlug']!)[locale]!;
 String _allRoutesAncestor(Map<String, String> p, String locale) =>
     PathVariants.allRoutes()[locale]!;
 
@@ -311,6 +315,23 @@ final List<_DeepLinkHierarchy> _deepLinkHierarchies = [
   _DeepLinkHierarchy(
     patterns: PathVariants.ad(':teamSlug', ':adSlug'),
     ancestors: [_teamsAncestor, _teamAncestor, _teamAdsAncestor],
+  ),
+  // L'éditeur d'un parcours : une création sous la liste des parcours, une
+  // modification sous la fiche qu'elle réécrit (ledger `MOB-79`). `routeNew`
+  // **avant** `route` : `parcours/nouveau` est aussi le parcours de slug
+  // `nouveau`, et la première entrée qui correspond l'emporte.
+  _DeepLinkHierarchy(
+    patterns: PathVariants.routeNew(':teamSlug'),
+    ancestors: [_teamsAncestor, _teamAncestor, _teamRoutesAncestor],
+  ),
+  _DeepLinkHierarchy(
+    patterns: PathVariants.routeEdit(':teamSlug', ':routeSlug'),
+    ancestors: [
+      _teamsAncestor,
+      _teamAncestor,
+      _teamRoutesAncestor,
+      _routeAncestor,
+    ],
   ),
   _DeepLinkHierarchy(
     patterns: PathVariants.route(':teamSlug', ':routeSlug'),
@@ -608,6 +629,14 @@ GoRoute _teamTree(String locale) {
           pageSlug: state.pathParameters['pageSlug']!,
         ),
       ),
+      // Avant le détail : `…/parcours/nouveau` est aussi le parcours de slug
+      // `nouveau`, et c'est l'éditeur qui est visé (ledger `MOB-79`).
+      GoRoute(
+        path: _underTeam(PathVariants.routeNew(':teamSlug'), locale, teamBase),
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) =>
+            RouteEditorPage(teamSlug: state.pathParameters['teamSlug']!),
+      ),
       GoRoute(
         path: _underTeam(
           PathVariants.route(':teamSlug', ':routeSlug'),
@@ -619,6 +648,7 @@ GoRoute _teamTree(String locale) {
           teamSlug: state.pathParameters['teamSlug']!,
           routeSlug: state.pathParameters['routeSlug']!,
         ),
+        routes: [_routeEditRoute(locale)],
       ),
       // Les modèles de sortie : la liste, et dessous son formulaire de
       // création et de modification (ledger `MOB-78`).
@@ -744,6 +774,27 @@ GoRoute _rideEditRoute(String locale) {
     builder: (context, state) => RideEditorPage(
       teamSlug: state.pathParameters['teamSlug']!,
       rideSlug: state.pathParameters['rideSlug']!,
+    ),
+  );
+}
+
+/// L'éditeur d'un parcours, sous sa fiche : ouvert par un lien, la fiche se
+/// reconstruit dessous et l'enregistrement y revient (ledger `MOB-79`).
+/// `?gpx=replace` fait ouvrir le sélecteur de fichier dès l'ouverture.
+GoRoute _routeEditRoute(String locale) {
+  final routeBase = PathVariants.route(':teamSlug', ':routeSlug')[locale]!;
+  return GoRoute(
+    path: _underTeam(
+      PathVariants.routeEdit(':teamSlug', ':routeSlug'),
+      locale,
+      routeBase,
+    ),
+    parentNavigatorKey: _rootNavigatorKey,
+    builder: (context, state) => RouteEditorPage(
+      teamSlug: state.pathParameters['teamSlug']!,
+      routeSlug: state.pathParameters['routeSlug']!,
+      replaceGpx:
+          state.uri.queryParameters[kRouteEditGpxQuery] == kRouteEditGpxReplace,
     ),
   );
 }

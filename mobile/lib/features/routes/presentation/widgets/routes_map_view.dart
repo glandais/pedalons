@@ -18,22 +18,11 @@ import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/api_error_handler.dart';
 import '../../../../core/utils/formatters.dart';
-import '../../data/route_repository.dart';
 import '../../data/route_tile_urls.dart';
 import '../../data/tile_token_repository.dart';
 import '../../domain/route_filters.dart';
+import '../../providers/route_list_provider.dart';
 import 'routes_near_me_controls.dart';
-
-/// Le cadrage initial de la carte, **figé au montage**.
-///
-/// `GET …/routes/bounds` est lu une fois, avec les filtres tels qu'ils sont à
-/// l'ouverture, et n'est **jamais rejoué** sur changement de filtre (§3.1) :
-/// une carte qui se recadre toute seule pendant qu'on la déplace est une carte
-/// qu'on ne peut pas lire.
-final routeBoundsProvider = FutureProvider.autoDispose
-    .family<PdlMapBox?, RouteFilters>(
-      (ref, filters) => ref.watch(routeRepositoryProvider).fetchBounds(filters),
-    );
 
 /// La vue Carte de la parcothèque.
 ///

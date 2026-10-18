@@ -46,6 +46,11 @@ void main() {
     expect(webOnlyRouteIds, isNot(contains('rideEdit')));
   });
 
+  test('créer et modifier un parcours sont des écrans de l\'app (MOB-79)', () {
+    expect(webOnlyRouteIds, isNot(contains('routeNew')));
+    expect(webOnlyRouteIds, isNot(contains('routeEdit')));
+  });
+
   test('les modèles de sortie sont des écrans de l\'app (MOB-78)', () {
     expect(webOnlyRouteIds, isNot(contains('rideTemplates')));
     expect(webOnlyRouteIds, isNot(contains('rideTemplateNew')));

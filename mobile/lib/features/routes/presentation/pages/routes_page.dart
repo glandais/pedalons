@@ -17,6 +17,7 @@ import '../../../../core/utils/api_error_handler.dart';
 import '../../domain/route_filter_labels.dart';
 import '../../domain/route_filters.dart';
 import '../../providers/route_count_provider.dart';
+import '../../providers/route_editor_providers.dart';
 import '../../providers/route_list_provider.dart';
 import '../widgets/compact_route_row.dart';
 import '../widgets/route_card.dart';
@@ -112,6 +113,7 @@ class _RoutesPageState extends ConsumerState<RoutesPage> {
       onViewChanged: (RouteViewMode next) =>
           ref.read(routeViewModeProvider.notifier).select(next),
       showScopeSelector: widget.teamSlug == null,
+      trailing: _addButton(),
     );
 
     final Widget body = view == RouteViewMode.map
@@ -123,6 +125,31 @@ class _RoutesPageState extends ConsumerState<RoutesPage> {
     return Scaffold(
       appBar: PdlAppBar(title: 'routes.title'.tr()),
       body: body,
+    );
+  }
+
+  /// « Ajouter » : créer un parcours, pour un organisateur de la section
+  /// Parcours d'une équipe seulement — ni pour un simple membre, ni sur
+  /// l'onglet Parcours de toutes les équipes (ledger `MOB-79`).
+  Widget? _addButton() {
+    final String? teamSlug = widget.teamSlug;
+    if (teamSlug == null) return null;
+    if (!(ref.watch(canManageRoutesProvider(teamSlug)) ?? false)) return null;
+    void open() => context.push(Paths.routeNew(teamSlug));
+    // Le libellé visible est court (« Ajouter ») ; le lecteur d'écran lit
+    // « Ajouter un parcours ».
+    return Semantics(
+      label: 'routes.editor.addSemantic'.tr(),
+      excludeSemantics: true,
+      button: true,
+      onTap: open,
+      child: PdlButton(
+        key: keys.routes.addButton,
+        label: 'routes.editor.add'.tr(),
+        icon: PdlIcons.add,
+        size: PdlButtonSize.sm,
+        onPressed: open,
+      ),
     );
   }
 

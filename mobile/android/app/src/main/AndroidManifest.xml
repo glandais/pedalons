@@ -153,8 +153,12 @@
                 <data android:pathPattern="/equipes/.*/articles/.*" />
                 <data android:pathPattern="/teams/.*/routes" />
                 <data android:pathPattern="/equipes/.*/parcours" />
+                <data android:pathPattern="/teams/.*/routes/new" />
+                <data android:pathPattern="/equipes/.*/parcours/nouveau" />
                 <data android:pathPattern="/teams/.*/routes/.*" />
                 <data android:pathPattern="/equipes/.*/parcours/.*" />
+                <data android:pathPattern="/teams/.*/routes/.*/edit" />
+                <data android:pathPattern="/equipes/.*/parcours/.*/modifier" />
                 <data android:pathPattern="/teams/.*/classifieds/.*" />
                 <data android:pathPattern="/equipes/.*/annonces/.*" />
                 <!-- END generated-deeplinks -->

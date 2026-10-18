@@ -1,12 +1,10 @@
 import 'dart:convert';
 
 import 'package:easy_localization/easy_localization.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart' hide Visibility;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../../../../api/generated/export.dart';
 import '../../../../config/paths.dart';
@@ -26,16 +24,17 @@ import '../../../tags/providers/team_tags_provider.dart';
 import '../../../teams/providers/team_providers.dart';
 import '../../data/ride_editor_repository.dart';
 import '../../data/ride_repository.dart';
-import '../../domain/markdown_edit.dart';
 import '../../domain/ride_form.dart';
 import '../../providers/ride_changes.dart';
 import '../../providers/ride_detail_provider.dart';
 import '../../providers/ride_editor_providers.dart';
+import '../widgets/editor/editor_media_actions.dart';
 import '../widgets/editor/editor_section.dart';
 import '../widgets/editor/markdown_editor_field.dart';
 import '../widgets/editor/ride_group_editor.dart';
 import '../widgets/editor/ride_media_section.dart';
 import '../widgets/editor/search_picker_sheet.dart';
+import '../widgets/editor/slug_edit_sheet.dart';
 import '../widgets/templates/ride_template_summary.dart';
 
 /// Créer ([rideSlug] nul) ou modifier une sortie — le pendant mobile de
@@ -172,7 +171,8 @@ class _RideEditorForm extends ConsumerStatefulWidget {
   ConsumerState<_RideEditorForm> createState() => _RideEditorFormState();
 }
 
-class _RideEditorFormState extends ConsumerState<_RideEditorForm> {
+class _RideEditorFormState extends ConsumerState<_RideEditorForm>
+    with EditorMediaActions<_RideEditorForm> {
   late RideForm _form;
   late final RideForm _initial;
   late String _initialJson;
@@ -654,146 +654,30 @@ class _RideEditorFormState extends ConsumerState<_RideEditorForm> {
   }
 
   // ── Médias ─────────────────────────────────────────────────────────────
+  //
+  // Les gestes sont ceux de [EditorMediaActions] ; l'écran dit où vivent le
+  // formulaire et le texte.
 
-  Future<AssetDto?> _upload(
-    String path,
-    AssetTypeRequest type, {
-    String? name,
-  }) async {
-    setState(() {
-      _uploading = true;
-      _error = null;
-    });
-    try {
-      return await _repo.uploadAsset(
-        _teamSlug,
-        filePath: path,
-        type: type,
-        fileName: name,
-      );
-    } catch (error, stackTrace) {
-      if (mounted) {
-        setState(
-          () => _error =
-              '${'rides.editor.uploadFailed'.tr()} : ${getErrorMessage(error, stackTrace)}',
-        );
-      }
-      return null;
-    } finally {
-      if (mounted) setState(() => _uploading = false);
-    }
-  }
+  @override
+  String get mediaTeamSlug => _teamSlug;
 
-  Future<XFile?> _pickImage() async {
-    try {
-      // 1920 px : la plus grande variante que le serveur sert (visionneuse).
-      return await ImagePicker().pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 2560,
-        maxHeight: 2560,
-      );
-    } on PlatformException catch (error, stackTrace) {
-      if (mounted) setState(() => _error = getErrorMessage(error, stackTrace));
-      return null;
-    }
-  }
+  @override
+  MediaDto get editedMedia => _form.media;
 
-  void _setAssets(AssetsDto assets) =>
-      _update(_form.copyWith(media: _form.media.copyWith(assets: assets)));
+  @override
+  void applyMedia(MediaDto media) => _update(_form.copyWith(media: media));
 
-  Future<void> _pickLogo() async {
-    final XFile? file = await _pickImage();
-    if (file == null) return;
-    final AssetDto? asset = await _upload(
-      file.path,
-      AssetTypeRequest.logo,
-      name: file.name,
-    );
-    if (asset == null || !mounted) return;
-    _setAssets(_form.media.assets.copyWith(logo: asset));
-  }
+  @override
+  TextEditingController get markdownController => _markdown;
 
-  /// Une image envoyée rejoint `assets.images` **et** rend sa directive,
-  /// pour la barre d'outils qui l'insère dans le texte — le geste du site.
-  Future<String?> _addImage() async {
-    final XFile? file = await _pickImage();
-    if (file == null) return null;
-    final AssetDto? asset = await _upload(
-      file.path,
-      AssetTypeRequest.image,
-      name: file.name,
-    );
-    if (asset == null || !mounted) return null;
-    final AssetsDto assets = _form.media.assets;
-    _setAssets(assets.copyWith(images: <AssetDto>[...assets.images, asset]));
-    return assetDirective(asset.id);
-  }
+  @override
+  void setMediaUploading(bool uploading) => setState(() {
+    _uploading = uploading;
+    if (uploading) _error = null;
+  });
 
-  Future<void> _addImageFromSection() async {
-    final TextEditingValue before = _markdown.value;
-    final String? directive = await _addImage();
-    if (directive == null) return;
-    _markdown.value = insertBlock(
-      before.selection.isValid
-          ? before
-          : before.copyWith(
-              selection: TextSelection.collapsed(offset: before.text.length),
-            ),
-      directive,
-    );
-  }
-
-  void _removeImage(AssetDto image) {
-    final AssetsDto assets = _form.media.assets;
-    _setAssets(
-      assets.copyWith(
-        images: <AssetDto>[
-          for (final AssetDto a in assets.images)
-            if (a.id != image.id) a,
-        ],
-      ),
-    );
-    _markdown.text = removeAssetDirectives(_markdown.text, image.id);
-  }
-
-  Future<void> _addAttachments() async {
-    final List<PlatformFile> files;
-    try {
-      files = await FilePicker.pickFiles();
-    } on PlatformException catch (error, stackTrace) {
-      if (mounted) setState(() => _error = getErrorMessage(error, stackTrace));
-      return;
-    }
-    final List<AssetDto> added = <AssetDto>[];
-    for (final PlatformFile file in files) {
-      final String? path = file.path;
-      if (path == null) continue;
-      final AssetDto? asset = await _upload(
-        path,
-        AssetTypeRequest.attachment,
-        name: file.name,
-      );
-      if (asset == null) break;
-      added.add(asset);
-    }
-    if (added.isEmpty || !mounted) return;
-    final AssetsDto assets = _form.media.assets;
-    _setAssets(
-      assets.copyWith(attachments: <AssetDto>[...assets.attachments, ...added]),
-    );
-  }
-
-  void _removeAttachment(AssetDto file) {
-    final AssetsDto assets = _form.media.assets;
-    _setAssets(
-      assets.copyWith(
-        attachments: <AssetDto>[
-          for (final AssetDto a in assets.attachments)
-            if (a.id != file.id) a,
-        ],
-      ),
-    );
-  }
+  @override
+  void showMediaError(String message) => setState(() => _error = message);
 
   // ── Adresse (slug) ─────────────────────────────────────────────────────
 
@@ -801,7 +685,7 @@ class _RideEditorFormState extends ConsumerState<_RideEditorForm> {
     final RideDto ride = _ride!;
     if (_dirty && !await _confirmDiscard()) return;
     if (!mounted) return;
-    final String? slug = await _askSlug(context, ride.slug);
+    final String? slug = await showSlugEditSheet(context, ride.slug);
     if (slug == null || slug == ride.slug || !mounted) return;
     try {
       final RideDto updated = await ref
@@ -1048,7 +932,7 @@ class _RideEditorFormState extends ConsumerState<_RideEditorForm> {
                     images: _form.media.assets.images,
                     enabled: !_saving,
                     imageBusy: _uploading,
-                    onInsertImage: _addImage,
+                    onInsertImage: addImage,
                     errorText: _form.markdownValid
                         ? null
                         : 'rides.editor.markdownTooLong'.tr(),
@@ -1059,13 +943,12 @@ class _RideEditorFormState extends ConsumerState<_RideEditorForm> {
                   child: RideMediaSection(
                     assets: _form.media.assets,
                     busy: busy,
-                    onPickLogo: _pickLogo,
-                    onRemoveLogo: () =>
-                        _setAssets(_form.media.assets.copyWith(logo: null)),
-                    onAddImage: _addImageFromSection,
-                    onRemoveImage: _removeImage,
-                    onAddAttachment: _addAttachments,
-                    onRemoveAttachment: _removeAttachment,
+                    onPickLogo: pickLogo,
+                    onRemoveLogo: removeLogo,
+                    onAddImage: addImageFromSection,
+                    onRemoveImage: removeImage,
+                    onAddAttachment: addAttachments,
+                    onRemoveAttachment: removeAttachment,
                   ),
                 ),
 
@@ -1366,61 +1249,4 @@ class _RideEditorFormState extends ConsumerState<_RideEditorForm> {
         .whereType<String>()
         .join(', ');
   }
-}
-
-/// La feuille « Changer l'adresse » : le slug actuel, modifiable.
-Future<String?> _askSlug(BuildContext context, String current) {
-  final TextEditingController controller = TextEditingController(text: current);
-  return PdlSheet.show<String>(
-    context: context,
-    builder: (BuildContext sheetContext) {
-      void submit() {
-        final String slug = controller.text.trim().toLowerCase();
-        if (slug.isEmpty) return;
-        Navigator.of(sheetContext).pop(slug);
-      }
-
-      return PdlSheet(
-        title: 'rides.editor.slugEdit'.tr(),
-        body: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: PdlSpacing.section),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              TextField(
-                key: keys.rideEditor.slugField,
-                controller: controller,
-                autofocus: true,
-                autocorrect: false,
-                inputFormatters: <TextInputFormatter>[
-                  FilteringTextInputFormatter.allow(RegExp('[a-zA-Z0-9-]')),
-                ],
-                onSubmitted: (_) => submit(),
-              ),
-              const SizedBox(height: PdlSpacing.chipGap),
-              Text(
-                'rides.editor.slugHint'.tr(),
-                style: sheetContext.pdlText.xs.copyWith(
-                  color: sheetContext.pdl.textDimmed,
-                ),
-              ),
-            ],
-          ),
-        ),
-        footer: SafeArea(
-          top: false,
-          child: Padding(
-            padding: const EdgeInsets.all(PdlSpacing.section),
-            child: PdlButton(
-              key: keys.rideEditor.slugSave,
-              label: 'rides.editor.save'.tr(),
-              fullWidth: true,
-              onPressed: submit,
-            ),
-          ),
-        ),
-      );
-    },
-  );
 }

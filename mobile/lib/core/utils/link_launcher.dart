@@ -112,7 +112,9 @@ final Map<String, List<String>> internalRouteTemplates = <String, List<String>>{
   'stage': PathVariants.stage(_slot, _slot, _slot).values.toList(),
   'post': PathVariants.post(_slot, _slot).values.toList(),
   'routes': PathVariants.routes(_slot).values.toList(),
+  'routeNew': PathVariants.routeNew(_slot).values.toList(),
   'route': PathVariants.route(_slot, _slot).values.toList(),
+  'routeEdit': PathVariants.routeEdit(_slot, _slot).values.toList(),
   'teamAds': PathVariants.teamAds(_slot).values.toList(),
   'ad': PathVariants.ad(_slot, _slot).values.toList(),
 };
