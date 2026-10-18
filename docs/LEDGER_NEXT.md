@@ -381,7 +381,7 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
       `useRoutePlanner.ts`, `lib/planner.ts`) est utilisable à la souris, difficilement au doigt
       (carte en `70dvh` dans un formulaire qui défile, mode tactile figé au montage, cibles de
       29 px), lance des calculs concurrents sans annulation, et n'a ni profil altimétrique
-      d'édition, ni inverser / aller-retour / boucle. Lots : robustesse,
+      d'édition, ni inverser / aller-retour / retour au départ. Lots : robustesse,
       disposition et web mobile, standard attendu, différenciation. Le routage passe chez Stadia
       Maps (livré), facturé à la requête. Le lot 1 (robustesse) est fait côté frontend le
       17 octobre 2026, et son volet backend (`A10`) aussi : codes `ROUTING_*`, `teamSlug` sur
