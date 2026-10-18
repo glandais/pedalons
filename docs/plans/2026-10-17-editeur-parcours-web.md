@@ -1,20 +1,28 @@
 # Éditeur de parcours web — desktop et web mobile
 
-Écrit le 17 octobre 2026. **État : lot 1 livré le 17 octobre 2026 (§5), A10 compris ; lots 2 à 4 à faire.**
+Écrit le 17 octobre 2026, mis à jour le 18 octobre 2026. **État : lots 1 et 2 livrés le
+17 octobre 2026 (§5 et §6, A10 compris) ; dans le lot 3, B11 est livré (18 octobre) ; restent le
+lot 3 (B1, B2, B6, B7, B9, B12) et le lot 4 (C1 à C5, C7 ; C6 non attribué).**
 Ledger `WEB-100` (une seule
 entrée, qui pointe ici) : le suivi fin se fait **dans ce plan**, cases à cocher comprises, pas dans
 le ledger. Une tâche n'en sort vers `LEDGER_NEXT.md` que si elle quitte le périmètre du plan
-(backend partagé, autre client) ou si le plan est archivé avec des restes.
+(backend partagé, autre client) ou si le plan est archivé avec des restes. **Les volets backend
+du lot 3 et du lot 4** (l'endpoint de recalage de B2, l'état d'édition de C4) **restent sous
+`WEB-100`**, comme A10 (D4, §10) : les versions de contrat et les migrations seront notées au
+passage dans `LEDGER_DONE.md`.
 
 Fait suite aux deux documents de recherche du même jour :
 [l'existant](../research/2026-10-17-editeur-parcours-existant.md) et
 [l'état de l'art](../research/2026-10-17-editeur-parcours-etat-de-l-art.md), dont le §8 numérote
 dix-huit propositions (citées ici « §8 n° x »). Ce plan les reprend pour le **web seulement**, les
 vérifie dans le code et ajoute l'ergonomie desktop et web mobile que la recherche ne couvrait pas.
-L'app Flutter (§8 n° 18) est hors périmètre.
+L'app Flutter (§8 n° 18) est hors périmètre. Deux études plus récentes alimentent le lot 3 :
+[le recalage Stadia](../research/2026-10-17-stadia-map-matching.md) (B2) et
+[la suppression des points et des ancres](../research/2026-10-18-editeur-parcours-suppression.md) (B12).
 
-Chemins relatifs à `frontend/src/` sauf mention contraire. Lignes lues le 17 octobre 2026 sur
-`feat/routing-web-mobile` (base `ecfa45ab`).
+Chemins relatifs à `frontend/src/` sauf mention contraire. Noms et chemins vérifiés dans le code
+le 18 octobre 2026 sur `feat/routing-web-mobile` (base `111acaef`). Les numéros de ligne, qui ne
+tombaient plus juste après les lots 1 et 2, sont retirés : chercher par le nom.
 
 ---
 
@@ -45,12 +53,13 @@ Quatre lots, chacun livrable seul :
 
 | Lot | Contenu | Taille | Dépend de |
 |---|---|---|---|
-| **1. Robustesse** | Annulation et verrou pendant le calcul, `Ctrl+Z` hors des champs, tactile décidé par le pointeur, aide aux gestes, menus fiables, tests de `lib/planner.ts` | S à M (≈ 1 semaine) | — (la partie backend attend Stadia, §2) |
-| **2. Disposition** | Plein écran d'édition, barre sous le pouce, cibles 44 px, un seul panneau ouvert, recherche d'adresse, cadrage `fitBounds` | M | 1 |
-| **3. Standard** | Profil altimétrique d'édition, inverser / aller-retour / retour au départ, ligne droite visible, clavier, défilement au bord | M | 1, 2 |
-| **4. Différenciation** | Éviter côtes / trafic, points d'auteur conservés, surface par point, points de parcours | M à L | 3, API |
+| **1. Robustesse** (livré) | Annulation et verrou pendant le calcul, `Ctrl+Z` hors des champs, tactile décidé par le pointeur, aide aux gestes, menus fiables, tests de `lib/planner.ts` | S à M (≈ 1 semaine) | — (volet backend A10 livré) |
+| **2. Disposition** (livré) | Plein écran d'édition, barre sous le pouce, cibles 44 px, un seul panneau ouvert, recherche d'adresse, cadrage `fitBounds` | M | 1 |
+| **3. Standard** | Profil altimétrique d'édition (B1), inverser / aller-retour / retour au départ avec recalage (B2), ligne droite visible (B6), clavier (B7), défilement au bord (B9), glisser une ancre au doigt (B11, **livré**), bornes indépendantes du zoom et suppression d'une ancre (B12) | **L** | 1, 2 ; API pour B2 (endpoint de recalage) |
+| **4. Différenciation** | Éviter côtes / trafic (C2), état d'édition conservé (C4), surface par point (C1), points de parcours (C3), popularité interne (C5), zones à éviter (C7) ; C6 non attribué | M à L | C4 : B6 et B12 ; C2 : aucun morceau du lot 3 ; API pour C1, C2, C4, C7 |
 
-Le lot 2 passe **avant** les fonctions : sans lui, chaque bouton du lot 3 serait à placer deux fois
+Dans le lot 4, **C4 dépend de B6** (seul B6 crée l'information « ligne droite ») **et de B12**
+(la provenance des points) ; B6 et B12 ne dépendent pas de C4. Le lot 2 passe **avant** les fonctions : sans lui, chaque bouton du lot 3 serait à placer deux fois
 (barre du haut, puis barre du bas).
 
 Tailles : S = quelques heures à un jour, M = quelques jours, L = une à deux semaines.
@@ -59,20 +68,35 @@ Tailles : S = quelques heures à un jour, M = quelques jours, L = une à deux se
 
 ## 2. Le moteur de routage passe chez Stadia Maps
 
-Échange du 17 octobre 2026 avec la session qui fait le travail. Valhalla auto-hébergé est
-**remplacé** par l'API Stadia Maps (compatible Valhalla), sur `develop`, pas encore committé au
-moment d'écrire. **Ne pas toucher `RouterService` ni le client de routage avant ce commit.**
+Échange du 17 octobre 2026 avec la session qui a fait le travail. Valhalla auto-hébergé a été
+**remplacé** par l'API Stadia Maps (compatible Valhalla), livré sur `develop` (`1727269d`, voir
+plus bas) : l'interdiction de toucher `RouterService` et le client de routage avant ce commit est
+levée.
 
 Ce qui ne change pas : `/api/router` garde la même forme (`RouterRequest`, `RouterProfile`,
-`RouterResponse` avec `route` LineString 3D, `dist`, `ascend`). Le contrat passe en `11.5.2`
-(routage) puis `11.5.3` (géocodage), descriptions seules. Le géocodage passe aussi chez Stadia.
+`RouterResponse` avec `route` LineString 3D, `dist`, `ascend`). Le contrat est passé en `11.5.2`
+(routage) puis `11.5.3` (géocodage), descriptions seules ; il est à `11.8.0` le 18 octobre 2026. Le géocodage passe aussi chez Stadia.
 
 Ce que ça change pour ce plan :
 
 - **Chaque requête est facturée sur un quota mensuel**, `429` une fois épuisé. L'annulation, le
-  verrou et l'absence de doublons du lot 1 deviennent une question d'argent. Coût actuel par
-  geste : ajout = 1 requête, insertion ou déplacement = 2, suppression d'un point intérieur = 1.
-  Annuler / rétablir ne coûte rien (instantanés en mémoire), il faut le garder ainsi.
+  verrou et l'absence de doublons du lot 1 deviennent une question d'argent. Annuler / rétablir
+  ne coûte rien (instantanés en mémoire), il faut le garder ainsi. Coût de chaque geste, livré
+  puis à venir :
+
+  | Geste | Requêtes facturées | État |
+  |---|---|---|
+  | Ajouter un point (le premier : aucune) | 1 | livré |
+  | Insérer, déplacer un point de contrôle, glisser une ancre au doigt (B11) | 2 (1 à une extrémité, 0 en ligne droite) | livré |
+  | Supprimer un point de contrôle intermédiaire | 1 (0 en ligne droite) ; **0 entre deux raccords du même import** une fois `sourceIdx` livré (C4) | livré ; B12 le garde |
+  | Supprimer le départ ou l'arrivée | 0 | livré |
+  | Annuler, rétablir, ouvrir ou fermer le plein écran | 0 | livré, à garder |
+  | Supprimer une ancre importée (B12) | 1, **0 avec `Alt`** (ligne droite) | à faire |
+  | Restituer une portion du fichier en supprimant un point (C4) | 0 | à faire |
+  | Déplacer un point au clavier (B7) | 2 (1 à une extrémité), **au relâchement seulement**, jamais à chaque flèche | à faire |
+  | Inverser, aller-retour (B2) | **1 ou 2** : un recalage, plus un raccord s'il reste des trous ; 0 en repli sur la géométrie inversée | à faire |
+  | Retour au départ (B2) | 1 | à faire |
+  | Surface par point (C1) | 1, **une fois à l'enregistrement** (`trace_attributes`, facturé à part) | à concevoir |
 - **Les timeouts sont faits** côté Stadia (3 s connexion, 15 s lecture) : §8 n° 3 est à moitié
   fait. Restent un code d'erreur dédié au lieu de `UNKNOWN`, et le contrôle du drapeau sur
   `/api/router` (§8 n° 4).
@@ -93,27 +117,28 @@ ici, en A10.
 
 ## 3. Corrections aux documents de recherche
 
-1. **§8 n° 9 cite le mauvais composant.** `components/common/PlaceAutocomplete.tsx:37` interroge
+1. **§8 n° 9 cite le mauvais composant.** `components/common/PlaceAutocomplete.tsx` interroge
    `useListPlaces` : les lieux de l'équipe. Le géocodeur d'adresses est
    `components/common/GeocoderAutocomplete.tsx` (`GET /api/geocode/search`), déjà utilisé par
    `TeamForm.tsx`.
 2. **L'altitude est déjà dans l'éditeur.** `/api/router` renvoie des coordonnées 3D,
-   `lib/planner.ts:81` les garde et `getAscend` (`:46-53`) les lit. Le profil d'édition (§8 n° 7)
-   ne demande aucun changement d'API. Seul le D+ diverge : somme client sans bande morte après
-   Douglas-Peucker, `dist` / `ascend` du serveur ignorés (`lib/planner.ts:227-242`).
+   `lib/planner.ts` les garde (`createPoints`) et `getAscend` les lit. Le profil d'édition (§8 n° 7)
+   ne demande aucun changement d'API. Seul le D+ diverge : `computeRoute` le somme côté client, sans bande morte, sur
+   les points **après** Douglas-Peucker, et `router()` ne renvoie que les points, donc le `dist` et
+   l'`ascend` du serveur sont ignorés. B1 donne la règle (D2).
 3. **Annuler une requête est purement frontend.** Le client généré
-   (`api/endpoints/router/router.ts:20`) accepte un `AbortSignal` ; `router()` dans
+   (`api/endpoints/router/router.ts`) accepte un `AbortSignal` ; `router()` dans
    `lib/planner.ts` ne le transmet pas.
 
 ---
 
 ## 4. Constats dans le code
 
-- **La carte vit dans un formulaire qui défile**, en `h="70dvh"` (`components/route/RouteEditor.tsx:204`,
-  `components/gpxtool/GpxPreviewEditor.tsx:121`). Nom, description, surface et « Enregistrer »
+- **La carte vit dans un formulaire qui défile**, en `h="70dvh"` (`components/route/RouteEditor.tsx`,
+  `components/gpxtool/GpxPreviewEditor.tsx`). Nom, description, surface et « Enregistrer »
   sont dessous. MapLibre capte le toucher sur le canvas : au doigt, la page ne défile que par les
   30 % restants. `CreateRouteModal` est `fullScreen` mais enferme tout le formulaire.
-- **Le mode tactile est figé au montage** (`RoutePlanner.tsx:165`, `'ontouchstart' in window`).
+- **Le mode tactile est figé au montage** (`RoutePlanner.tsx`, `'ontouchstart' in window`).
   Un portable tactile passe entièrement en mode tactile : plus de mini-carte, plus de fantôme au
   survol. Le dépôt a mieux : `useMediaMatch` (`hooks/useResponsive.ts`), `(pointer: coarse)`
   (`NotificationPreferences.module.css`).
@@ -127,11 +152,11 @@ ici, en A10.
   Mantine sur mobile. La barre est en haut de la carte, hors de portée du pouce.
 - **Aucun retour pendant un calcul** hormis « Calcul… » dans la barre ; la carte reste cliquable,
   deux gestes rapides lancent deux calculs concurrents sur le même état
-  (`useRoutePlanner.ts:113-133`). L'erreur affichée est `err.message` ou `'Failed'`, non traduite.
+  (`useRoutePlanner.ts`). L'erreur affichée est `err.message` ou `'Failed'`, non traduite.
 - **L'appui long ouvre le menu en plein glisser** : annulé seulement au-delà de 10 px, alors que
   le drag du marqueur démarre à 3 px (seuil MapLibre, lu dans sa doc) ; `handleMarkerDragStart` ne
   coupe pas le minuteur. Le menu est placé à la main et sort du conteneur près du bord haut.
-- **Clavier** : `Ctrl+Z` capturé partout, champs texte compris (`RoutePlanner.tsx:224-245`), alors
+- **Clavier** : `Ctrl+Z` capturé partout, champs texte compris (`RoutePlanner.tsx`), alors
   que `useHideTrackKey` filtre déjà les champs ; marqueurs sans rôle ni `tabIndex` ; pas d'`Échap`
   pour abandonner un fantôme ; seul `Control` est suivi — sur macOS, Ctrl+clic ouvre le menu
   contextuel (à vérifier en main).
@@ -150,7 +175,7 @@ au §5.
 
 - [x] **A1. `Ctrl+Z` ignoré dans les champs** (S, §8 n° 1) — extraire le filtre de
       `useHideTrackKey` en `isEditableTarget(event.target)` et l'appliquer dans
-      `RoutePlanner.tsx:224-245`.
+      `RoutePlanner.tsx`.
 - [x] **A2. Annulation, verrou, erreurs traduites** (S/M, §8 n° 2) — un `AbortController` par
       opération dans `executeRouteOperation`, `signal` passé par `add` / `insert` / `remove`
       jusqu'à `route(…, undefined, signal)` ; une opération abandonnée ne touche ni l'historique
@@ -159,7 +184,7 @@ au §5.
       (`planner.error.routing`, et `quotaExceeded` / `segmentTooLong` si la session Stadia livre
       les codes, §2). Prérequis de B1.
 - [x] **A3. Profil mémorisé, `Alt` en plus de `Ctrl`** (S, §8 n° 5) — `useLocalStorage` de
-      `@mantine/hooks` pour le profil (`useRoutePlanner.ts:90`) ; `ctrlKeyRef` devient
+      `@mantine/hooks` pour le profil (`useRoutePlanner.ts`) ; `ctrlKeyRef` devient
       `directKeyRef` et suit aussi `Alt`, pour macOS (Q3 tranchée : `Ctrl` et `Alt`).
 - [x] **A4. Tactile décidé par le pointeur** (S) — `useMediaMatch('(pointer: coarse)')` pour la
       disposition, `pointerType` de l'événement pour chaque geste (tap-insertion, appui long).
@@ -211,8 +236,21 @@ au §5.
   tests, chaque contexte a sa propre session du propriétaire, et la connexion est relancée sur
   `429` : le verrou de `SEC-36` compte une connexion en cours comme un échec, et plus de cinq
   connexions simultanées sur une adresse se font refuser sans qu'aucune n'échoue.
+- **Correctifs du 18 octobre 2026** (`abcc83c5`, frontend seul) :
+  - **Un toucher insère un point sur iPhone.** Au doigt, Safari émet un `mousemove` de
+    compatibilité avant le clic d'un toucher, sans type de pointeur : le planificateur y voyait une
+    souris qui survole le tracé, affichait le point fantôme, et le clic qui suivait était abandonné
+    (il fallait un second toucher, sur le fantôme). Le **type du dernier pointeur vu**
+    (`pointerdown` et `pointermove`) décide désormais : pas de fantôme pour un doigt, et le clic
+    d'un doigt n'est plus bloqué. Le scénario e2e (`frontend/e2e/gpx-planner.e2e.ts`) **rejoue la
+    séquence d'événements de Safari**, que le toucher de Chromium ne produit pas, et **il échoue
+    sans la correction**.
+  - **« Me localiser » devient une bascule** (`components/map/LocateControl.tsx`) : le premier appui
+    localise, le suivant retire la position sans déplacer la carte. Il sert au planificateur, à la
+    carte vierge des outils GPX (`GpxBlankMapPage`) et, ajouté par ce commit, à la carte des
+    parcours (`RoutesTileMap`).
 - **Non vérifié à la main** : rien n'a été essayé sur un vrai appareil tactile ni sous Safari iOS
-  (repli sur le `pointerType` du dernier `pointerdown` pour le tap d'insertion).
+  (le tap d'insertion se décide sur le type du dernier pointeur, voir ci-dessus).
 - [x] **A10. Côté backend, après le commit Stadia** (S, §8 n° 3 et 4) — livré le 17 octobre 2026,
       contrat `11.6.0`, migration `V72`. Trois décisions du propriétaire :
       1. **Erreurs distinctes** : `ROUTING_QUOTA_EXCEEDED` (Stadia `429`) et `ROUTING_UNAVAILABLE`
@@ -239,8 +277,9 @@ au §5.
 
 - [x] **B4. Mode édition plein écran** (M, nouveau) — un contrôle « Agrandir » ouvre le
       planificateur seul, en `100dvh` flex comme `RouteFullscreenView` : barre de 48 px avec
-      « Terminer », carte `flex: 1`, bandeau profil (B1). En `(pointer: coarse)`, ouverture en
-      plein écran par défaut ; le formulaire ne garde qu'une vignette non interactive (distance,
+      « Terminer », carte `flex: 1`, bandeau profil (B1). En `(pointer: coarse)`, le
+      plein écran s'ouvre **sur un geste** (« Modifier le tracé », « Tracer le parcours »), jamais
+      au chargement (L2-3) ; le formulaire ne garde qu'une vignette non interactive (distance,
       D+) et un bouton « Modifier le tracé ». L'état de `useRoutePlanner` doit survivre : remonter
       le hook dans `RouteEditor` / `GpxPreviewEditor`, ou rendre le même sous-arbre par `Portal`.
       Forme tranchée (Q1) : l'aspect de `RouteFullscreenView`, dont on extrait une coque commune,
@@ -252,7 +291,8 @@ au §5.
 - [x] **B3. Ma position, partir d'ici** (S, §8 n° 9 corrigé) — la recherche de lieux est déjà
       sur la carte (`MapSearchControl`, ledger `WEB-99`, en haut à droite) ; reste « Démarrer
       ici » après une sélection si le tracé est vide, et le comportement de la barre sur 360 px
-      et sous le clavier virtuel ; `GeolocateControl` comme `GpxBlankMapPage`. Ajouter
+      et sous le clavier virtuel ; `LocateControl` (`components/map/LocateControl.tsx`, une
+      bascule depuis `abcc83c5`) comme `GpxBlankMapPage`. Ajouter
       `interactive-widget=resizes-content` à la balise viewport (`frontend/index.html`) pour que
       `100dvh` suive le clavier virtuel.
 - [x] **B10. La carte bouge sous le curseur au premier point** (S, nouveau, vu en e2e) — la
@@ -261,7 +301,7 @@ au §5.
       côté de l'endroit visé. Réserver la hauteur de la barre dès l'ouverture, ou la sortir du
       flux, dans le même lot que B4.
 - [x] **B8. Cadrage par `fitBounds`** (S, nouveau) — remplacer l'heuristique de
-      `RoutePlanner.tsx:87-118` par `fitBounds(bounds, { padding })` à `onLoad`, comme
+      `RoutePlanner.tsx` par `fitBounds(bounds, { padding })` à `onLoad`, comme
       `RouteTrackMap`.
 
 **Ce qu'a donné le lot 2** (17 octobre 2026, frontend seul, contrat inchangé, ledger `WEB-100`) :
@@ -293,7 +333,7 @@ au §5.
 - **B10, B8** : barre de statut en ligne à hauteur fixe (`PlannerStatus` sur une ligne, tronquée
   avec infobulle) ; `initialViewState = { bounds, fitBoundsOptions: { padding: 40, maxZoom: 15 } }`
   dans un conteneur qui a déjà sa taille, ce qui respecte le ratio d'un téléphone en portrait.
-- **B3** : `MapSearchControl` accepte `onResultSelected` (dans un ref), `GeolocateControl` en haut à
+- **B3** : `MapSearchControl` accepte `onResultSelected` (dans un ref), `LocateControl` (bascule, `components/map/LocateControl.tsx`) en haut à
   gauche sans suivi ; une sélection ou une position sur un tracé vide propose « Démarrer ici »
   (marqueur et bouton) qui pose le premier point : zéro requête. Résultats de recherche bornés par
   `50dvh`, `interactive-widget=resizes-content` dans la balise viewport.
@@ -325,59 +365,176 @@ au §5.
 
 ## 7. Lot 3 — le standard attendu
 
+Ordre conseillé : **B12** d'abord (il pose la provenance `imported` et les bornes dont B2 et C4 se
+servent), puis B6 (la ligne droite visible), puis B1 et B2.
+
 - [ ] **B1. Profil altimétrique pendant l'édition** (M, §8 n° 7) — adaptateur pur
       `plannerRouteToMappable(route)` dans `lib/planner.ts` (distance cumulée, `climbs: []`,
       `waypoints: []`) pour alimenter `ElevationChart` tel quel. Survol synchronisé par
       `HoverMarker`, comme `RouteTrackMap`. Desktop : bandeau fixe de 160 px sous la carte.
       Mobile : bandeau repliable d'environ 110 px au-dessus de la barre B5, pas une modale, le
-      profil doit rester visible pendant qu'on tape. D+ affiché : décision Q5. Dépend de A2, B4.
-- [ ] **B2. Inverser, aller-retour, retour au départ** (M, §8 n° 8) — trois opérations dans
-      `lib/planner.ts`, passées par `executeRouteOperation` pour l'historique. **Coût Stadia** :
-      l'aller-retour recale son retour sur le réseau (1 requête, voir plus bas) ; le retour au départ route un
-      seul segment ; l'inversion re-route tous les segments (sens uniques), soit N requêtes,
-      ou se contente d'inverser la géométrie (0 requête, faux sur les sens uniques). **Q6 tranchée** :
-      l'inversion recale la trace inversée sur le réseau (`map_match/v1` de Stadia, une requête),
-      ce qui demande un endpoint backend de recalage (contrat bumpé, limites du service à
-      vérifier, recalage puis ré-ancrage des points de contrôle). **Tranché le même jour** : le
-      retour de l'aller-retour, qui pose le même problème de sens uniques, est recalé de la même
-      façon (une requête au lieu de zéro), avec le même repli.
-      **Essais du 17 octobre 2026** (37 requêtes, GPX réels de 6 à 197 km, dont Nantes) :
+      profil doit rester visible pendant qu'on tape (emplacement `bottom` de `MapFullscreenShell`).
+      Dépend de A2, B4. **Règle du D+ affiché** (D2, 18 octobre 2026 ; remplace Q5) :
+      - **Source des altitudes** : le serveur, en mode FAST (Mapterhorn, `API-131`), partout.
+        Segment routé : `RouterService.getRoute` appelle `gpxPipeline.process(raw, "route",
+        ElevationQuality.FAST)` et renvoie `dist` et `ascend` (fait depuis `6cbce899`). Fichier
+        importé : le serveur calcule la trace source **dès l'envoi initial du fichier**, en FAST
+        aussi (voir C4, « Qui produit la trace source »). Routé et importé sont donc cohérents.
+      - **Un segment routé garde l'`ascend` de sa réponse** : `router()` de `lib/planner.ts` ne
+        renvoie aujourd'hui que les points, il doit rendre aussi `ascend`. Il se range **sur le
+        point qui termine le segment** (champ `legAscend` sur `RoutePoint`, nom proposé) ; un point
+        d'une portion importée ou d'un tracé chargé n'en porte pas. Une ligne droite : D+ à
+        concevoir (ses points n'ont pas d'altitude, `ele` absent, aujourd'hui compté 0).
+      - **Une portion importée** : somme des montées de la trace source entre l'indice de début
+        et l'indice de fin de la portion (`sourceIdx`, voir C4), sans autre appel. Pour que deux
+        portions voisines redonnent exactement le D+ de la trace, la trace source peut porter un
+        cumul de montée par point, calculé par le serveur ; à concevoir (sinon, somme des
+        différences positives des altitudes déjà filtrées par le pipeline).
+      - **Après un re-routage partiel** (insertion, déplacement, suppression, B12) : seuls les
+        segments remplacés reçoivent le `legAscend` de leur réponse ; les segments gardés, routés
+        ou importés, gardent le leur. **D+ du tracé = somme des `legAscend` des segments routés +
+        D+ des portions importées**, additionné à chaque `computeRoute`.
+      - **Douglas-Peucker ne touche pas au chiffre** : il simplifie la géométrie, le D+ ne se
+        recalcule jamais à partir des points simplifiés (c'est le défaut actuel de `getAscend`).
+        Le point qui porte un `legAscend` (fin de segment) doit donc survivre à la simplification :
+        un point de contrôle l'est déjà (`manual`), une borne de portion importée est à marquer de
+        même (à concevoir).
+      - **Écart assumé** avec le D+ du parcours enregistré, qui passe ensuite en HD (rattrapage
+        d'`API-131`) : l'affichage d'édition est une estimation en FAST.
+- [ ] **B2. Inverser, aller-retour, retour au départ** (L, §8 n° 8) — trois opérations dans
+      `lib/planner.ts`, passées par `executeRouteOperation` pour l'historique. Boutons dans la
+      barre, raccourci dans le libellé. Dépend de A9 et de l'endpoint de recalage ci-dessous.
+      - **Retour au départ** (et non « boucle », que Komoot et Strava emploient pour un circuit
+        proposé d'office, §11) : route un dernier segment du dernier point au premier, par le
+        profil choisi. 1 requête.
+      - **Inverser** : la trace inversée est recalée sur le réseau par un endpoint backend (Q6).
+        **1 ou 2 requêtes** (un recalage, plus un raccord s'il reste des trous). Re-router entre les
+        points de contrôle est écarté (Q6) ; inverser la géométrie seule (0 requête, faux sur les
+        sens uniques) n'est que le repli.
+      - **Aller-retour** : le retour est recalé de la même façon, avec le même repli (1 ou 2
+        requêtes). Seul le retour est recalé, donc un aller-retour de plus de 200 km au total
+        reste possible ; une inversion de plus de 200 km demande en revanche le découpage ci-dessous.
+      - **Provenance (D1, 18 octobre 2026)** : un tracé recalé par B2, inversé ou aller-retour, est
+        traité **comme un import**. C'est un morceau importé, avec sa propre trace source (la trace
+        recalée que renvoie l'endpoint) ; ses points sont `imported` ; ses ancres servent de
+        bornes, comme celles d'un fichier GPX (`spanBounds`, B12), et une suppression peut
+        restituer la portion recalée (C4). Les points de contrôle de l'auteur, ré-ancrés sur la
+        trace recalée, restent des points de contrôle (`manual`). Cela lève le conflit avec B12 :
+        sans cela, `spanBounds` sauterait ces points et re-router irait d'un point de contrôle à
+        l'autre. Pour l'inversion, tout le tracé devient un morceau importé ; pour l'aller-retour,
+        l'aller garde sa provenance et seul le retour est un morceau importé.
+
+      **Essais du 17 octobre 2026** (37 requêtes, GPX réels de 6 à 197 km, dont Nantes ; rapport
+      complet, paramètres et seuils compris :
+      [`../research/2026-10-17-stadia-map-matching.md`](../research/2026-10-17-stadia-map-matching.md),
+      cité « étude » plus bas) :
       - `POST https://api-eu.stadiamaps.com/map_match/v1`, même en-tête `Stadia-Auth` et même
-        costing vélo que `/api/router`, `encoded_polyline` en précision 6, `shape_match:
-        "map_snap"` (`walk_or_snap` donne la même réponse, `edge_walk` échoue en 443) ; les
-        `trace_options` essayées sont sans effet. 0,1 à 0,5 s.
-      - Limites mesurées, absentes de la doc : 16 000 points (sinon 400, code 153), 200 km (400,
-        code 154, comme le routage) ; deux points à plus de 2 km coupent la trace sans erreur :
-        densifier les segments de plus de 1 km.
-      - Sens normal : fidèle à quelques mètres (+0,01 à +0,7 % de distance).
-      - **Trace inversée : un recalage seul ne suffit pas.** Avec des points espacés il parcourt
-        deux fois des boucles et fait des demi-tours (+11 à +18 %) ; avec des points denses il se
-        coupe aux sens uniques, aux ronds-points, aux bretelles et aux points de contrôle (5 à 13
-        morceaux).
-      - **Chaîne retenue**, 1 ou 2 requêtes : (1) recaler en `map_snap` la trace simplifiée à 5 m
-        (celle du planificateur ; 5 ou 20 m donnent la même fidélité) ; (2) s'il reste des trous,
-        les relier par une requête `route/v1` après avoir rogné 100 m de chaque côté ; (3)
-        supprimer les boucles par un calcul géométrique, sans requête. Résultat continu, sans
-        passage répété : +0,1 à +2,6 % de distance sur quatre parcours.
-      - Cas limites : une portion hors réseau est sautée sans erreur (un morceau de plus) ; une
-        trace de points identiques rend une longueur nulle en 200, à traiter comme un échec.
-      - Risques : le nettoyage des boucles a supprimé un éperon de 950 m menant à un point de
-        contrôle, il doit protéger les points de contrôle ; certains détours légaux sont longs
-        (3,5 km pour un trou de 500 m) et doivent être signalés à l'auteur ; le découpage au-delà
-        de 200 km n'est pas testé ; les seuils du nettoyage ne sont réglés que sur cinq cas.
-      Taille de B2 révisée : **L**, la chaîne vivant dans un endpoint backend.
-      Boutons dans la barre, raccourci dans le libellé. Dépend de A9. « Retour au départ » (et
-      non « boucle », que Komoot et Strava emploient pour un circuit proposé d'office, §11) route
-      un dernier segment du dernier point au premier, par le profil choisi.
+        costing que `/api/router`, `encoded_polyline` en précision 6, `shape_match: "map_snap"`
+        (`walk_or_snap` donne la même réponse, `edge_walk` échoue en 443). 0,1 à 0,5 s.
+      - Sens normal : fidèle à quelques mètres (+0,01 à +0,7 % de distance). **Trace inversée : un
+        recalage seul ne suffit pas** (boucles et demi-tours à points espacés, +11 à +18 % ;
+        coupures aux sens uniques, ronds-points, bretelles et points de contrôle à points denses,
+        5 à 13 morceaux). La chaîne ci-dessous donne +0,1 à +2,6 % de distance sur quatre parcours,
+        sans passage répété.
+      - **Les GPX d'essai sont personnels et ne sont pas versés au dépôt public** (ils révéleraient
+        des trajets) : les tests s'écrivent sur des **fixtures synthétiques** (traces et réponses
+        Stadia fabriquées à la main, avec des `alternates` et une boucle).
+
+      **Chaîne de recalage** (étude §4b et « Paramètres recommandés » ; à implémenter côté backend,
+      1 ou 2 requêtes) :
+      1. **Préparation** : la trace est inversée, dédoublonnée, simplifiée par Douglas-Peucker à 5 m
+         (ce que fait déjà le planificateur ; 5 ou 20 m donnent la même fidélité) et **densifiée
+         sur les segments de plus de 1 km** (deux points à plus de 2 km coupent la trace sans
+         erreur) ; au moins 2 points. Corps : `costing` et `costing_options` du profil courant
+         (comme `RouterProfile.getCostingOptions()`), `shape_match: "map_snap"`, `units:
+         "kilometers"`, `encoded_polyline` en précision 6, pas de `trace_options` (sans effet
+         mesuré). `directions_type: "none"` pour alléger la réponse (300 Ko pour 197 km) : **à
+         essayer**, non testé.
+      2. **Détection des trous** : on rassemble `trip` **et** `alternates[].trip` ; chaque
+         discontinuité du recalage y renvoie un morceau de plus, qui est la suite de la trace, pas
+         une variante. On les trie le long de la trace, on **écarte ceux de moins de 50 m** et on
+         **rogne 100 m de chaque côté** de chaque trou. (`ValhallaResponse` ne lit aujourd'hui que
+         `trip.legs[].shape` : il faut y ajouter `alternates` et `trip.summary.length`.)
+      3. **Raccord** : **une seule** requête `route/v1` dont les locations sont `[fin₀, début₁,
+         fin₁, début₂, …]`, en ne gardant que les legs pairs (0, 2, 4…), c'est-à-dire les trous,
+         **sans `heading`** (la requête échoue en 442 avec). Au plus **24 trous** par requête (limite
+         de 50 locations). Sans le rognage, un trou de 287 m a été relié par 8,6 km.
+      4. **Nettoyage des boucles**, sans requête : quand le tracé repasse à **moins de 6 m** d'un
+         point déjà parcouru, **entre 30 m et 3 km plus loin**, on coupe ce qui est entre les deux
+         passages. Il **ne coupe ni un passage que la trace brute fait elle-même deux fois** (protégé
+         si elle passe deux fois au même endroit à moins de 8 m), **ni un point de contrôle** : il a
+         supprimé un éperon de 950 m qui menait à un point de contrôle, d'où l'écart de 356 m de
+         `plan2_rev_final`.
+      5. **Pipeline et ré-ancrage** : le résultat passe dans `GpxPipeline.process(…, "route",
+         ElevationQuality.FAST)` (3D, `dist`, `ascend`, comme `/api/router`), puis chaque point de
+         contrôle est ré-ancré sur le point le plus proche de la trace recalée, en gardant l'ordre.
+      6. **Repli** sur la géométrie inversée brute, avec un avertissement (`fallback`), en cas
+         d'**erreur Stadia**, de **longueur nulle** (trois points identiques rendent un 200 de
+         longueur 0), de **raccord échoué**, ou de **résultat plus long de 25 %** que la trace
+         inversée (**seuil à calibrer**).
+      7. **Avertissement de détour** : tout écart de plus de 50 m avec la trace inversée est
+         signalé à l'auteur (3,5 km de détour pour un trou de 500 m ont été vus sur une piste
+         cyclable unidirectionnelle) ; le client les surligne.
+      8. **Au-delà de 200 km** (code 154, comme le routage ; 16 000 points, code 153) : découper en
+         tronçons de **190 km au plus, recouvrants d'environ 1 km**, recoller au premier point du
+         recouvrement où les deux recalages coïncident (moins de 5 m), puis passer le même nettoyage.
+         **Non testé** : le budget d'essai ne le permettait pas. Tant qu'il n'est pas fait, une
+         inversion de plus de 200 km est refusée en `ROUTING_SEGMENT_TOO_LONG`.
+      9. **Risques connus** : seuils (6 m, 30 m à 3 km, 100 m, 50 m) réglés sur cinq cas seulement ;
+         une portion hors réseau est sautée sans erreur et le raccord peut y inventer un itinéraire ;
+         un changement de version de Valhalla chez Stadia peut changer les boucles et les coupures.
+
+      **Endpoint de recalage — proposition, à valider par le propriétaire** (volet backend, reste
+      sous `WEB-100`, D4) :
+      - **Chemin** : `POST /api/router/match`, dans `RouterResource` (`@Path("/api/router")`,
+        `@RolesAllowed("user")`), service `RouterMatchService` voisin de `RouterService`, avec le
+        post-traitement géométrique (boucles, rognage, ré-ancrage) dans une classe pure testable sans
+        Stadia.
+      - **Requête** `RouterMatchRequest` : `track` (`List<GeoPoint>`, de 2 à
+        `GpxLimits.MAX_PLANNER_POINTS` points, **dans le sens à recaler** : le client inverse),
+        `profile` (`RouterProfile`, le profil courant du planificateur), `teamSlug` facultatif (mêmes
+        règles que `RouterRequest`), `controlPointIndices` facultatif (indices dans `track` des
+        points de contrôle à protéger du nettoyage et à ré-ancrer ; triés, dans les bornes, sinon
+        400).
+      - **Réponse** `RouterMatchResponse` : `route` (LineString 3D, `GeoJsonLineString` comme
+        `RouterResponse`), `dist`, `ascend` (FAST), `controlPointIndices` (indices dans `route` des
+        points de contrôle ré-ancrés, même ordre), `fallback` (booléen) et `detours` (liste de
+        `{fromIndex, toIndex, length}` pour les écarts de plus de 50 m).
+      - **Contrôles avant tout appel facturé**, les mêmes que `/api/router` : `checkPlannerAllowed`
+        de `RouterService` (privé aujourd'hui : à partager, par exemple en l'extrayant dans un
+        composant commun) — avec équipe, du domaine (404 sinon), droit de créer un parcours (403
+        sinon) puis `enableRoutePlanner` ; sans équipe, `enableGpxPlanner` du domaine
+        (`ROUTE_PLANNER_DISABLED`) —, puis les bornes de taille.
+      - **Erreurs** (réutiliser `RouterService.toRoutingException` pour la lecture du code
+        Valhalla) : `429` → `ROUTING_QUOTA_EXCEEDED` (503) ; code 154 → `ROUTING_SEGMENT_TOO_LONG`
+        (400, tant que le découpage n'est pas fait) ; les autres refus de recalage (443, 444, 445,
+        171, 442) et les 5xx ou délais ne sont **pas** des erreurs pour l'auteur : repli en 200 avec
+        `fallback = true`, pour qu'inverser reste possible. À valider : `ROUTING_UNAVAILABLE` n'est
+        alors renvoyé que si le repli lui-même est impossible.
+      - **Client Stadia** : `StadiaMapsClient` porte `@Path("/route/v1")` sur l'interface, donc une
+        seconde méthode en `/map_match/v1` y donnerait `/route/v1/map_match/v1`. Proposition : une
+        **seconde interface** `StadiaMapsMatchClient` (`@Path("/map_match/v1")`, même `configKey =
+        "stadiamaps"` donc mêmes URL et délais, même `@ClientHeaderParam` d'autorisation), et un
+        record de requête propre (`ValhallaMatchRequest`). Le raccord réutilise
+        `StadiaMapsClient.route`.
+      - **Contrat** : la version actuelle est `11.8.0` (`pedalons.api.version`, `application.properties`) ;
+        un nouvel endpoint est une mineure, donc **`11.9.0`** si rien d'autre ne passe avant. Passer
+        par la skill `contract-first-api`. Côté client, `signal` transmis comme pour `router()`.
+      - **Coût** : 1 ou 2 requêtes facturées (jamais N). Annuler, rétablir et refaire ne rejouent
+        rien.
 - [ ] **B6. Ligne droite comme état visible** (M, §8 n° 10) — bascule dans la barre en plus du
       modificateur ; `direct: boolean` sur `RoutePoint`, posé par `router()` ; `geojson()` produit
       une feature par segment et une seconde couche en `line-dasharray` les rend en pointillés.
       Avertissement à l'enregistrement au-delà d'environ 300 m de ligne droite. C'est l'équivalent
-      tactile du `Ctrl`.
-- [ ] **B7. Clavier et accessibilité des points** (M, §8 n° 12) — marqueurs `role="button"`,
-      `tabIndex={0}`, `aria-label` « Point n sur m » ; `Suppr` supprime, flèches déplacent,
-      `Échap` abandonne un fantôme et ferme les panneaux. Un déplacement au clavier ne route
-      qu'au relâchement, pas à chaque flèche (coût Stadia).
+      tactile du `Ctrl`. **C4 en dépend** (seul B6 crée l'information « ligne droite ») ; B6 ne
+      dépend pas de C4 (Q7).
+- [ ] **B7. Clavier et accessibilité des points** (S/M, §8 n° 12) — **en partie livré au lot 1** :
+      marqueurs `role="button"`, `tabIndex`, nom « Point n », `Suppr` ou retour arrière pour
+      supprimer ; `Échap` ferme déjà les panneaux de carte, le menu d'appui long et les résultats de
+      recherche (L2-1). **Reste** : `aria-label` « Point n sur m » ; départ et arrivée distingués
+      autrement que par la couleur ; les flèches déplacent le point, en ne routant **qu'au
+      relâchement** (2 requêtes, 1 à une extrémité, jamais une par flèche) ; `Échap` abandonne un
+      fantôme.
 - [ ] **B9. Défilement au bord pendant un drag** (S/M, nouveau) — à moins de 40 px du bord,
       `panBy` à chaque frame ; sans lui, sortir un point du cadre est impossible au doigt.
 - [x] **B11. Glisser une ancre au doigt** (S, nouveau, 18 octobre 2026) — un appui à moins de
@@ -388,7 +545,7 @@ au §5.
       « Démarrer ici » écartent le geste : une borne kilométrique posée sur une ancre ne
       l'empêche pas. Test : `gpx-planner.e2e.ts`, angle d'un tracé en L.
 - [ ] **B12. Bornes d'un geste indépendantes du zoom, et suppression d'une ancre** (M, nouveau) —
-      étude du 18 octobre 2026. Aujourd'hui chaque geste recalcule entre le premier point de
+      étude du 18 octobre 2026 ([`../research/2026-10-18-editeur-parcours-suppression.md`](../research/2026-10-18-editeur-parcours-suppression.md)). Aujourd'hui chaque geste recalcule entre le premier point de
       contrôle ou la **première ancre visible au zoom courant** de part et d'autre
       (`findAnchorStartPoint` / `findAnchorEndPoint`, `hooks/useRoutePlanner.ts`) : le même geste
       donne un autre résultat selon le zoom. Mesures, routeur simulé : supprimer un point
@@ -398,16 +555,24 @@ au §5.
       sur tout le tracé après chaque geste fait apparaître ou disparaître des ancres loin du geste.
       **Décisions du propriétaire** (18 octobre 2026) :
       - **Provenance des points** : un champ `imported` sur `RoutePoint`, vrai pour les points
-        d'un tracé chargé ou importé, faux pour ceux du routeur. Deux fonctions de bornes pures
-        dans `lib/planner.ts` : `legBounds` (premier point manual ou importé de chaque côté, sans
-        zoom) et `spanBounds` (premier point manual, ou importé et visible au zoom courant ; les
-        points du routeur toujours sautés).
+        d'un tracé chargé ou importé **et pour ceux d'un tracé recalé par B2** (D1), faux pour ceux
+        du routeur. Deux fonctions de bornes pures dans `lib/planner.ts` : `legBounds` (premier
+        point manual ou importé de chaque côté, sans zoom) et `spanBounds` (premier point manual, ou
+        importé et visible au zoom courant ; les points du routeur toujours sautés).
       - **Supprimer ou déplacer un point de contrôle intermédiaire** : `legBounds`, d'un point de
         contrôle au suivant sur un tracé dessiné, aux raccords sur un import (1 requête, 2 pour un
         déplacement). « De point de contrôle à point de contrôle » à la lettre est écarté : un point
         inséré puis supprimé re-routerait tout un import, une boucle importée s'effondrerait.
+        Quand C4 aura livré `sourceIdx` (indice source par point), supprimer entre deux raccords du
+        **même import** rend la portion du fichier : **0 requête au lieu de 1** ; B12 se livre
+        d'abord avec la requête.
       - **Supprimer le départ ou l'arrivée** : couper jusqu'à l'ancre visible (0 requête), refuser
-        si le tracé tomberait sous deux points.
+        si le tracé tomberait sous deux points. **La fonction de bornes est `spanBounds`**, prise en
+        partant du point supprimé vers l'intérieur du tracé, au zoom figé au début du geste. **Les
+        points du routeur ne comptent jamais comme borne** : sur un tracé dessiné, la borne est donc
+        le point de contrôle suivant, à tout zoom ; sur un tracé importé, c'est la première ancre
+        visible (étude, R3). Sur un tracé mixte, la première borne rencontrée, point de contrôle ou
+        ancre importée visible.
       - **Supprimer une ancre** : seulement sur un tracé importé (sur un tronçon routé, re-router
         entre ses voisines redonne le même chemin ; l'ancre y reste une poignée à glisser) ; entre
         les ancres visibles, au zoom figé au début du geste ; 1 requête, 0 avec Alt (ligne droite).
@@ -415,7 +580,10 @@ au §5.
         la priorité ; Ctrl + clic sur Mac ignoré) et par appui long de 500 ms au doigt (22 px,
         annulé au-delà de 3 px), avec les deux bornes affichées pendant le menu ; le relâchement
         n'insère rien et ne ferme pas le menu. Ce menu accueillera « Ajouter un point de parcours »
-        (C3).
+        (C3). **Le clic droit sur un point de contrôle garde son comportement actuel** : suppression
+        immédiate, sans menu (`handleMarkerRightClick` dans `RoutePlanner.tsx`, qui ignore un
+        `contextmenu` venu d'un doigt et Ctrl + clic sur Apple) ; l'étude (S5) ne le change pas, le
+        menu ne concerne que les ancres.
       - **Retenus par défaut, sauf avis contraire** : insérer et glisser sans dépendre du zoom sur
         un tronçon routé (`spanBounds`) ; Douglas-Peucker recalculé seulement entre les bornes du
         geste ; raccord en ligne droite selon la touche tenue lors de la suppression (hérité des
@@ -424,32 +592,65 @@ au §5.
         point de contrôle et le remplacer (la recherche des bornes exclut le point visé) ; un
         second doigt pendant le glisser d'une ancre ne l'annule pas.
       Aucun geste ne coûte plus qu'avant ; des requêtes plus longues rendent possible
-      `ROUTING_SEGMENT_TOO_LONG`, qui laisse le tracé intact avec son message. Tests : dix cas de
-      `lib/planner.test.ts` (bornes, provenance, zoom figé, refus sous deux points) et six
-      scénarios e2e (clic droit et Alt + clic droit sur l'angle du tracé en L, appui long dont le
-      relâchement n'insère rien, appui puis mouvement qui reste un glisser, suppression après un
-      zoom avant, annulation gratuite).
+      `ROUTING_SEGMENT_TOO_LONG`, qui laisse le tracé intact avec son message.
+      **Tests : dix cas de `lib/planner.test.ts`** (étude §5), avec un routeur simulé qui trace un
+      arc et une fixture importée aux ancres de niveaux connus :
+      1. `createRoute` marque les points importés ; `add`, `insert` et `remove` produisent des
+         points non importés ; l'instantané garde le champ ;
+      2. `legBounds` sur un tracé dessiné rend les points manual voisins, au même résultat aux zooms
+         0, 12 et 22 ;
+      3. suppression d'un point de contrôle sur A → M → C au zoom 16 : une seule requête de A à C et
+         le détour disparaît (la régression actuelle) ;
+      4. la même sur un import : M inséré puis supprimé, les points importés hors des bornes gardent
+         leur `id` et leurs coordonnées ; sur une boucle importée, le tracé ne s'effondre pas ;
+      5. suppression du départ ou de l'arrivée : sur un tracé dessiné, coupe au point manual suivant
+         à tout zoom, sans requête ; sur un import sans ancre visible, refus (tracé inchangé, aucune
+         requête) ; avec une ancre visible, coupe à cette ancre ;
+      6. suppression d'une ancre importée : une requête entre les voisines visibles, l'ancre et les
+         points cachés disparaissent, 0 requête en ligne droite, un signal déjà abandonné n'envoie
+         rien ;
+      7. insertion : sur un tronçon routé, 2 requêtes depuis A et vers B à tout zoom ; sur un import,
+         la portée visible est conservée (deux zooms, deux portées) ;
+      8. déplacement d'un point de contrôle : utilise `legBounds` ;
+      9. défaut 1 : une insertion près d'un point manual garde ce point ;
+      10. recalcul local de Douglas-Peucker : les niveaux de zoom des points hors des bornes ne
+          changent pas.
+
+      Les cas existants de `remove` restent ; on y ajoute les vérifications de `from` et `to`, et le
+      cas « insert used as a move » passe à `legBounds`. Et six scénarios e2e (clic droit et Alt +
+      clic droit sur l'angle du tracé en L, appui long dont le relâchement n'insère rien, appui puis
+      mouvement qui reste un glisser, suppression après un zoom avant, annulation gratuite).
 
 ---
 
 ## 8. Lot 4 — différenciation
 
-Les parties API sont décrites au §8 de l'état de l'art ; ce plan ne garde que la face web.
+Les parties API sont décrites au §8 de l'état de l'art ; ce plan ne garde que la face web, plus,
+pour C4, le volet backend. **C6 n'est pas attribué.** Les tâches C1, C2, C3, C5 et C7 sont **à concevoir avant de commencer** : leurs
+questions ouvertes viennent du §10 de
+[l'état de l'art](../research/2026-10-17-editeur-parcours-etat-de-l-art.md).
 
-- [ ] **C2. Éviter les côtes, éviter le trafic** (S côté web, §8 n° 14) — deux `Slider` dans le
-      panneau de profil (A6), `use_hills` / `use_roads` dans `RouterRequest`, contrat bumpé.
-      `use_hills` à vérifier chez Stadia (§2).
+- [ ] **C2. Éviter les côtes, éviter le trafic** (S côté web, §8 n° 14) — **à concevoir avant de
+      commencer.** Deux `Slider` dans le panneau de profil (A6), `use_hills` / `use_roads` dans
+      `RouterRequest`, contrat bumpé. **Ne dépend d'aucun morceau du lot 3.** Questions ouvertes :
+      `use_hills` est **probable mais non vérifié** chez Stadia (§2) — un essai d'une requête
+      d'abord ; comment un curseur entre dans `RouterProfile` (aujourd'hui un enum de profils figés
+      avec leurs `costingOptions`, `FASTBIKE` posant déjà `use_roads` à 1) ; mémorisation du réglage
+      (A3 mémorise le profil).
 - [ ] **C4. Conserver l'état d'édition à l'enregistrement** (L, §8 n° 11, élargi le 18 octobre
       2026) — aujourd'hui le client n'envoie qu'une liste de points (`fromPoints`,
       `GpxProcessingService`), que la chaîne GPX rééchantillonne et simplifie ; à la réouverture,
       seuls le départ et l'arrivée redeviennent des points de contrôle, et les points
       intermédiaires de l'auteur, la provenance des points et les lignes droites sont perdus.
-      **Décisions du propriétaire** (18 octobre 2026) :
-      - **Un état du planificateur stocké à part**, colonne JSONB facultative `planner_state` sur
-        les parcours d'équipe et sur les aperçus des outils GPX (migration additive). Il contient
-        une version de format, le profil de routage, et **une suite de morceaux** : chacun a un
-        mode (routé, ligne droite, importé) et une géométrie (polyline précision 6) ; chaque
-        jonction est soit un point de contrôle, soit un raccord (là où un import a été coupé).
+      **Dépend de B6** (seul B6 crée l'information « ligne droite », `direct` sur `RoutePoint`) **et
+      de B12** (la provenance `imported`) ; B6 et B12 ne dépendent pas de C4 (Q7). **Décisions du propriétaire** (18 octobre 2026) :
+      - **Un état du planificateur stocké à part**, colonne JSONB facultative sur les pistes d'un
+        parcours d'équipe (`gpx_tracks`, D3) et sur les aperçus des outils GPX (`gpx_previews`,
+        colonne propre ; migration additive). Il contient une version de format, le profil de
+        routage, et **une suite de morceaux** : chacun a un mode (routé, ligne droite, importé) et
+        une géométrie (polyline précision 6) ; chaque jonction est soit un point de contrôle, soit
+        un raccord (là où un import a été coupé). **Un morceau issu d'un recalage de B2 a le mode
+        « importé »** (D1) : sa trace recalée est sa trace source.
       - **Trace source + plages** : l'état garde une fois la trace du fichier importé (simplifiée à
         quelques mètres) ; un morceau importé en désigne une plage d'indices au lieu de recopier sa
         géométrie.
@@ -468,31 +669,162 @@ Les parties API sont décrites au §8 de l'état de l'art ; ce plan ne garde que
       Exemple : un GPX de A à B, puis un glisser jusqu'à P entre les ancres a1 et a2, donne quatre
       morceaux — A→a1 importé, a1→P routé, P→a2 routé, a2→B importé —, A, P et B points de
       contrôle, a1 et a2 raccords. Supprimer P rend la portion du fichier entre a1 et a2.
+
+      **Règle d'éditeur** : « rendre la portion du fichier » suppose un **indice source par point**
+      (`sourceIdx` sur `RoutePoint`, indice du point dans la trace source de son import) et la
+      **trace source gardée en mémoire** par l'éditeur (lue de l'état, ou de la réponse du serveur
+      à l'envoi du fichier). Cela **modifie la suppression de B12** : entre deux raccords du même
+      import (deux `sourceIdx` du même import), supprimer un point de contrôle recopie les points
+      source de a1 à a2, **0 requête au lieu de 1** ; la requête de B12 ne reste que pour des bornes
+      qui ne viennent pas du même import. `sourceIdx` sert aussi à B1 (D+ d'une portion importée).
       Lien avec B12 : la provenance d'un point se déduit du mode de son morceau ; B12 se livre sans
       C4 (un parcours rouvert est alors tout entier importé), C4 lui apporte la fidélité après
-      enregistrement. Indépendant de B6 (Q7).
-- [ ] **C1. Surface par point** (L, §8 n° 13) — `ElevationChart` colore déjà par segment, un
-      second mode suffit ; sur la carte, même mécanique de couches que B6. Côté API,
-      `trace_attributes` est facturé à part chez Stadia : l'appeler **une fois à
-      l'enregistrement**, pas à chaque geste.
-- [ ] **C3. Points de parcours d'auteur** (L, §8 n° 15) — appui long ou clic droit sur le tracé,
-      « Ajouter un point de parcours » ; `WaypointMarker` existe déjà.
-- [ ] **C5. Popularité interne** (§8 n° 17) et **C7. zones à éviter** (§8 n° 16) — sans apport
-      UI propre ici ; `exclude_polygons` à vérifier chez Stadia.
+      enregistrement.
+
+      **Backend — propositions à valider par le propriétaire** (volet qui reste sous `WEB-100`, D4 ;
+      aucun code écrit) :
+      - **Colonnes** : `planner_state jsonb` (facultative) sur `gpx_tracks` (D3 : un tracé
+        remplacé emporte son état) et sur `gpx_previews` (colonne propre aux aperçus des outils
+        GPX). Dans les entités `GpxTrack` et `GpxPreview`, en `JsonBinaryType` comme `track_points`
+        et `tracks`. Pour un parcours, l'état se range sur la **première piste** : le planificateur
+        n'en produit qu'une ; un parcours à plusieurs pistes (GPX multi-traces) n'a pas d'état.
+      - **Migration** : la dernière est `V74__elevation_refresh.sql`, la prochaine est donc
+        `V75__planner_state.sql`, **purement additive** : deux `alter table … add column
+        planner_state jsonb`, nullable et sans défaut. La version précédente ignore la colonne
+        (déploiement roulant, start-first) : elle ne la lit ni ne l'écrit. Même forme que `V72`.
+      - **Lecture** (réservée à l'édition) : `GET /api/teams/{teamSlug}/routes/{routeSlug}/planner-state`,
+        avec les droits de l'édition du parcours (`@CheckAccess(entityType = ROUTE, action =
+        UPDATE)`, comme `updateRoute`) ; `GET /api/gpx-previews/{previewId}/planner-state` pour un
+        aperçu. 404 (ou corps vide) s'il n'y a pas d'état ou s'il est périmé (voir le jeton) : le
+        client retombe sur un import d'un seul morceau. **À décider pour l'aperçu** : `getPreview`
+        est `@Public` (le lien suffit à lire), mais l'état ne sert qu'à l'édition et la trace source
+        n'a pas à être publique ; proposition : **le créateur seul lit**, comme lui seul écrit
+        (`updatePreview` refuse les autres en 403). L'état n'apparaît ni dans `RouteDto`,
+        `RouteDetailDto`, `GpxPreviewDto` ni dans les listes.
+      - **Écriture** : pas d'endpoint dédié, l'état voyage avec le tracé pour que les deux soient
+        écrits dans la même transaction. `RouteRequest` (création et modification d'un parcours),
+        `GpxPreviewFromPointsRequest` et `GpxPreviewUpdateRequest` reçoivent `plannerState`
+        (facultatif). Le serveur en dérive le tracé (concaténation des morceaux, puis
+        `GpxProcessingService.fromPoints` et la chaîne habituelle, comme pour `points`). **Que
+        devient `points`** : il reste accepté tel quel pour les clients sans état (ancien bundle
+        pendant un déploiement roulant) et laisse l'état vide ; envoyé avec un état, c'est une
+        erreur 400 (`PLANNER_STATE_INVALID`) ; `@NotEmpty` de `GpxPreviewFromPointsRequest.points`
+        devient « `points` ou `plannerState` ». Un fichier (`gpxFile`) l'emporte sur l'un et l'autre,
+        comme il l'emporte sur `points` aujourd'hui.
+      - **Bornes de taille** : nombre de morceaux maximal **à fixer** (à mesurer sur des parcours
+        réels) ; points de la trace source au plus `GpxLimits.MAX_PLANNER_POINTS` (100 000, le plafond
+        de `points`) ; poids maximal du JSONB **à fixer** (à mesurer : trace source en polyline
+        précision 6, plus les morceaux). La distance reste bornée par `GpxLimits.checkTracks`
+        (SEC-6), puisque le tracé dérivé passe dans la chaîne GPX. **Validation des plages** :
+        version de format connue, profil connu, indices de début et de fin dans la trace source avec
+        début ≤ fin, morceaux contigus, polylines décodables, coordonnées dans les bornes WGS84
+        comme `GeoPoint` ; tout manquement répond 400 avec un nouveau code `PLANNER_STATE_INVALID`
+        (à ajouter à `ErrorCode`).
+      - **Cohérence entre l'état et le tracé.** Chemins qui **remplacent un tracé**, et ce que
+        devient l'état :
+        1. *Import web d'un fichier à la modification* (`PUT …/routes/{routeSlug}` avec `gpxFile`) :
+           `RouteService.updateRoute` vide `route.getTracks()` et en recrée ; la colonne étant sur
+           la piste, **l'état part avec elle** (D3).
+        2. *Remplacement par GPX depuis l'app mobile (`MOB-79`)* : `RouteRepository.updateRoute` envoie
+           `gpxFile` au même `PUT` (l'app n'envoie jamais `points` ni d'état) : même chemin que 1,
+           l'état est effacé.
+        3. *Migration biketeam* : `BiketeamMigrationService` appelle `routeService.updateRoute` ou
+           `createRoute` avec un fichier : même chemin, l'état est effacé (ou absent).
+        4. *Modification avec `points`, sans état* : nouvelle piste, donc état effacé.
+        5. *Mise à jour d'un aperçu* (`GpxPreviewService.updatePreview`, avec fichier ou points) :
+           la colonne n'est pas une piste ; elle est **à vider explicitement** dans la transaction qui
+           fait `setTracks`, sauf si la requête porte un état.
+        Ne l'efface pas : un changement de titre ou d'adresse, le renommage d'un aperçu, et le
+        **rattrapage HD** (`ElevationRefreshService` met les pistes à jour en place, géométrie 2D
+        inchangée) ; l'état garde alors ses altitudes FAST, écart assumé (D2).
+        **Jeton de révision** (proposition) : l'état porte un `trackRevision`, comparé à la lecture ;
+        s'il ne correspond plus, l'état est ignoré (404). Pour un parcours, c'est le `fileId` du
+        `ROUTE_ORIGINAL_GPX`, le jeton d'`API-131` : il change à chaque enregistrement du tracé, pas
+        à un changement de titre, et le rattrapage HD ne réécrit pas l'original. Pour un aperçu,
+        `files_revision` ne convient pas (le rattrapage HD en écrit une neuve) : proposition, une
+        empreinte du tracé 2D enregistré (nombre de points de `tracks`, premier et dernier point),
+        que le rattrapage ne change pas ; à valider. Le jeton couvre le déploiement roulant, où la
+        version précédente remplace un tracé sans connaître l'état (pour un aperçu, elle laisse la
+        colonne en place ; pour un parcours, elle recrée les pistes et l'état part de lui-même).
+      - **Promotion d'un aperçu en parcours d'équipe** : `GpxPreviewService.createRoute` rejoue le
+        GPX d'origine par `routeService.createRoute(teamSlug, request, gpxPath)`, qui n'a aucun
+        état. Il faut donc **recopier l'état explicitement** : un paramètre facultatif de
+        `RouteService.createRoute` qui l'écrit sur la première piste dans la même transaction, avec le
+        `trackRevision` du nouveau parcours. Le contrôle `drawn` (`API-127`) ne change pas.
+      - **Qui produit la trace source** : le serveur, **à l'envoi du fichier, en FAST** (D2) ; la
+        trace est simplifiée à quelques mètres et ses altitudes sont celles du pipeline (un cumul de
+        montée par point est à concevoir, B1). Les aperçus passent déjà par `computeGpx` en FAST. À
+        concevoir : comment l'éditeur d'un parcours reçoit cette trace avant l'enregistrement (le
+        fichier part aujourd'hui avec le formulaire) — endpoint de lecture sans enregistrement, ou
+        aperçu implicite.
+      - **`drawn` pour un état sans morceau routé** (proposition) : `drawn` suit l'état — vrai dès
+        qu'il contient au moins un morceau routé ou en ligne droite, **faux pour un état fait de
+        seuls morceaux importés** (un fichier, ou un tracé recalé par B2, D1), comme un fichier
+        importé aujourd'hui. Contournement déjà assumé (`API-127`).
+      - **Purge des aperçus** : `GpxPreviewCleanupScheduler` (tous les jours à 4 h) supprime les
+        aperçus créés il y a plus de `GpxPreviewService.RETENTION_DAYS` = **30 jours** (`findExpired`
+        sur `created_at`, pas sur la dernière sauvegarde). La ligne part avec sa colonne : l'état d'un
+        aperçu disparaît avec lui, sans traitement propre ; un aperçu promu en parcours en a gardé
+        une copie.
+      - **Contrat** : la version suivante (mineure, après celle de B2 si elle passe d'abord), via la
+        skill `contract-first-api` ; migration `V75`. Notées au passage dans `LEDGER_DONE.md` (D4).
+- [ ] **C1. Surface par point** (L, §8 n° 13) — **à concevoir avant de commencer.**
+      `ElevationChart` colore déjà par segment, un second mode suffit ; sur la carte, même mécanique
+      de couches que B6. Côté API, `trace_attributes` est facturé à part chez Stadia : l'appeler
+      **une fois à l'enregistrement**, pas à chaque geste. Questions ouvertes (état de l'art §10, n°
+      1) : les noms exacts des clés `edge.*` de `trace_attributes` dans la version déployée, leur
+      coût par point en JSONB, et si la réponse `route` peut les porter sans second appel.
+- [ ] **C3. Points de parcours d'auteur** (L, §8 n° 15) — **à concevoir avant de commencer.** Appui
+      long ou clic droit sur le tracé, « Ajouter un point de parcours » (dans le menu de B12) ;
+      `WaypointMarker` existe déjà. Questions ouvertes (état de l'art §10, n° 2 et 3) : les types
+      utiles à un club (regroupement, ravitaillement, danger) et leur correspondance avec les
+      `course_point` FIT que reconnaissent Garmin, Wahoo et Karoo ; le comportement de Hammerhead
+      sur les `<wpt>` GPX ; l'insertion « au meilleur endroit » (projection sur le segment le plus
+      proche, ou minimisation de la longueur totale).
+- [ ] **C5. Popularité interne** (§8 n° 17) et **C7. zones à éviter** (§8 n° 16) — **à concevoir
+      avant de commencer** ; sans apport UI propre ici. C7 : `exclude_polygons` est **non vérifié**
+      chez Stadia (§2), et la forme du stockage par équipe est à concevoir. C5 : surligner les
+      tronçons déjà empruntés par les parcours de l'équipe (les tuiles MVT existent) ; le §10 de
+      l'état de l'art n'a pas de question ouverte sur C5, à poser avant de chiffrer.
 
 ---
 
 ## 9. Tests
 
 - Unitaires (Vitest) : `lib/planner.ts` avec un routeur simulé (A9) ; chaque nouvelle opération
-  (B2, B6) y ajoute ses cas ; le compteur d'appels au routeur simulé vérifie aussi le coût par
+  (B2, B6, B12) y ajoute ses cas ; le compteur d'appels au routeur simulé vérifie aussi le coût par
   geste du §2.
 - e2e : `e2e/gpx-planner.e2e.ts` simule le routeur (`stubRouter`) et compte les requêtes, sur les
   deux projets Playwright (desktop et Pixel 7) ; chaque nouveau geste y ajoute son scénario et son
   coût. Un seul test atteint Stadia (`watchRouter`) quand une clé est présente : ne pas en ajouter
   d'autres, chaque passage de CI est facturé.
-- Recette à l'œil sur un vrai téléphone pour le lot 2 : défilement, clavier virtuel, appui long,
-  orientation.
+  - **Recalage (B2)** : ajouter un stub de `POST /api/router/match` à côté de `stubRouter`
+    (`e2e/support/routes.ts`), qui répond une `RouterMatchResponse` fabriquée (avec et sans
+    `fallback`, avec des `detours`) et compte les requêtes : inverser, aller-retour, repli et
+    avertissement de détour s'y testent sans rien facturer.
+  - **Règle : aucun test e2e n'appelle `map_match` pour de vrai.** Le recalage se teste chez Stadia
+    à la main, une fois, pas en CI ; la chaîne elle-même (trous, raccord, boucles) se teste côté
+    backend avec Stadia simulé.
+- **Backend, à lancer par le propriétaire** (l'agent ne lance jamais les tests backend), Stadia
+  simulé par `@InjectMock @RestClient` comme `RouterResourceTest` :
+  - *Endpoint de recalage* (`StadiaMapsClient` pour le raccord, `StadiaMapsMatchClient` pour le
+    recalage) : drapeau, équipe et droits refusés **avant tout appel** (aucune interaction avec les
+    clients simulés), y compris entre domaines ; trace continue = 1 recalage et 0 raccord ; trous =
+    1 recalage et 1 raccord, avec les legs pairs et sans `heading` ; repli sur erreur, sur longueur
+    nulle, sur raccord échoué et sur résultat plus long de 25 % ; `429` → `ROUTING_QUOTA_EXCEEDED` ;
+    ré-ancrage des points de contrôle ; plafonds de points. Le nettoyage des boucles, le rognage
+    et le ré-ancrage sont des fonctions pures, testées à part sur des **fixtures synthétiques** (les
+    GPX d'essai ne sont pas au dépôt).
+  - *État d'édition (C4)*, dans `RouteResourceTest` et `GpxPreviewResourceTest` : aller-retour de
+    l'état ; lecture réservée aux droits d'édition (membre sans droit : 403 ; aperçu : autre que le
+    créateur) ; absent de `RouteDto`, `RouteDetailDto`, `GpxPreviewDto` et des listes ; remplacement
+    du tracé par fichier ou par `points` qui efface l'état ; changement de titre et rattrapage HD qui
+    le gardent ; jeton périmé = état ignoré ; promotion d'un aperçu en parcours qui recopie l'état ;
+    plages ou version invalides et bornes de taille → 400 `PLANNER_STATE_INVALID` ; `points` et état
+    ensemble → 400 ; `drawn` selon l'état.
+- Recette à l'œil sur un vrai téléphone, **Android et iPhone**, pour le lot 2, B11 et la suite :
+  défilement, clavier virtuel, appui long, orientation. Safari iOS ignore
+  `interactive-widget=resizes-content` : à regarder en priorité sur l'iPhone.
 
 ---
 
@@ -501,13 +833,42 @@ Les parties API sont décrites au §8 de l'état de l'art ; ce plan ne garde que
 | # | Question | Proposition | Ce que l'autre choix implique |
 |---|---|---|---|
 | Q1 | Forme du plein écran (B4) | **Tranché le 17 octobre 2026 : l'aspect de la page carte d'un parcours (`RouteFullscreenView` : barre de 48 px, carte sur toute la hauteur, bande de profil au lot 3), rendu au-dessus du formulaire sans URL propre**, le retour du navigateur le ferme | Page dédiée en `layout: 'bare'` : URL propre, mais tracé non enregistré à faire transiter, routes, SSR et liens profonds à ajouter |
-| Q2 | Ambition du web mobile | **Tranché le 17 octobre 2026 : édition complète** (B5, B6, B9) ; au doigt, l'éditeur s'ouvre directement en plein écran | Retouches seulement : la moitié du lot 2 tombe |
+| Q2 | Ambition du web mobile | **Tranché le 17 octobre 2026 : édition complète** (B5, B6, B9) ; au doigt, le plein écran s'ouvre **sur un geste** (« Modifier le tracé », « Tracer le parcours »), jamais au chargement (L2-3) | Retouches seulement : la moitié du lot 2 tombe |
 | Q3 | Modificateur ligne droite | **Tranché le 17 octobre 2026 : `Ctrl` et `Alt`**, la bascule B6 en plus | `Alt` seul : cohérent avec macOS, rompt l'habitude actuelle |
 | Q4 | Quota de géocodage par utilisateur | **Caduque** : la recherche de la carte (`WEB-99`) appelle Stadia depuis le navigateur, authentifiée par le domaine ; aucune requête ne passe par notre serveur | — |
-| Q5 | D+ affiché pendant l'édition | **Tranché le 17 octobre 2026 : celui du serveur** (`ascend` par segment, calculé en altitude rapide une fois `feat/async-hd-elevation` sur develop), cohérent avec le parcours enregistré | Celui du client : instantané, mais diverge à l'enregistrement |
-| Q6 | Inversion | **Tranché le 17 octobre 2026 : recaler la trace inversée sur le réseau** (`map_match/v1` de Stadia, profil vélo, une requête facturée) : mêmes routes sauf là où le sens l'interdit, plus court détour légal ailleurs ; repli sur la géométrie inversée seule, avec un avertissement, si le recalage échoue. Re-router entre les points de contrôle est écarté : deux ancres éloignées laissent le routeur changer de routes, et une ancre de Douglas-Peucker tombe volontiers sur une intersection ou un rond-point à sens unique | Inverser la géométrie seule : 0 requête, sens uniques ignorés |
-| Q7 | Lignes droites à la réouverture | **Tranché le 17 octobre 2026** : au chargement, le parcours n'est pas recalculé ; une ligne droite reste telle quelle tant que ses points ne sont pas modifiés. B6 ne dépend donc pas de C4 | Lier B6 et C4 pour retrouver les lignes droites en pointillés à la réouverture |
+| Q5 | D+ affiché pendant l'édition | **Tranché le 17 octobre 2026, précisé le 18 (D2) : celui du serveur, en altitude rapide** (FAST, `API-131`) : `ascend` de chaque segment routé, altitudes de la trace source pour une portion importée, calculées par le serveur dès l'envoi du fichier. Satisfaite pour le routeur depuis `6cbce899` ; la règle de calcul est à B1. Écart assumé avec le parcours enregistré, qui passe en HD | Celui du client : instantané, mais diverge à l'enregistrement |
+| Q6 | Inversion | **Tranché le 17 octobre 2026 : recaler la trace inversée sur le réseau** (`map_match/v1` de Stadia, avec le profil courant du planificateur, 1 ou 2 requêtes facturées, voir B2) : mêmes routes sauf là où le sens l'interdit, plus court détour légal ailleurs ; repli sur la géométrie inversée seule, avec un avertissement, si le recalage échoue. Le tracé recalé est traité comme un import (D1). Re-router entre les points de contrôle est écarté : deux ancres éloignées laissent le routeur changer de routes, et une ancre de Douglas-Peucker tombe volontiers sur une intersection ou un rond-point à sens unique | Inverser la géométrie seule : 0 requête, sens uniques ignorés |
+| Q7 | Lignes droites à la réouverture | **Tranché le 17 octobre 2026** : au chargement, le parcours n'est pas recalculé ; une ligne droite reste telle quelle tant que ses points ne sont pas modifiés. B6 ne dépend donc pas de C4 (c'est C4 qui dépend de B6) | Lier B6 et C4 pour retrouver les lignes droites en pointillés à la réouverture |
 | Q8 | Mini-carte | **Tranché le 17 octobre 2026 : gardée avec une souris, absente au doigt** (déjà le cas depuis A4) | La rendre débrayable, ou la retirer |
+
+### Décisions du propriétaire du 18 octobre 2026
+
+- **D1.** Un tracé recalé par B2, inversé ou aller-retour, est traité **comme un import** : un
+  morceau importé, avec sa propre trace source. Ses ancres servent de bornes, comme celles d'un
+  fichier GPX, et une suppression peut restituer la portion recalée. Cela lève le conflit entre B2 et
+  B12 : sans cela, `spanBounds` sauterait ces points et re-router irait d'un point de contrôle à
+  l'autre. (B2, B12, C4.)
+- **D2.** Le D+ des portions importées vient d'altitudes **calculées côté serveur en mode FAST**
+  (l'altitude rapide d'`API-131`), **dès l'envoi initial du fichier** : la trace source porte des
+  altitudes cohérentes avec celles du routeur, et le client en déduit le D+ des portions importées
+  sans autre appel. Pour les segments routés, le client garde l'`ascend` que `/api/router` renvoie
+  déjà en FAST. La règle de somme est à B1 ; l'écart avec le D+ du parcours enregistré, qui passe en
+  HD, est assumé. Q5 est satisfaite depuis `6cbce899`.
+- **D3.** L'état d'édition de C4 est stocké dans **`gpx_tracks`**, en colonne JSONB facultative : un
+  tracé remplacé emporte son état. Les aperçus des outils GPX ont leur propre colonne dans
+  `gpx_previews`.
+- **D4.** Les volets backend de B2 (l'endpoint de recalage) et de C4 **restent sous `WEB-100`**,
+  comme A10. Les versions de contrat et les migrations seront notées au passage dans
+  `LEDGER_DONE.md`.
+
+### Propositions de ce plan à valider
+
+Écrites le 18 octobre 2026 sans décision du propriétaire : le chemin, les DTO et la gestion des
+erreurs de l'endpoint de recalage et la seconde interface Stadia (B2) ; la version de contrat
+`11.9.0` ; les endpoints, la forme d'écriture, les codes d'erreur, les bornes, le jeton de révision
+(empreinte pour les aperçus), la lecture d'un aperçu réservée au créateur, la migration `V75` et la
+valeur de `drawn` de l'état d'édition (C4) ; le nom `legAscend` et le cumul de montée de la trace
+source (B1).
 
 ---
 
