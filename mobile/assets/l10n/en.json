@@ -1291,7 +1291,8 @@
       "deleteTitle": "Delete the route?",
       "deleteMessage": "“{name}” will disappear from lists. A team administrator can restore it.",
       "deletedBanner": "This route is deleted. Only team administrators can see it."
-    }
+    },
+    "elevationRefining": "Provisional elevation profile"
   },
   "tags": {
     "title": "Tags",

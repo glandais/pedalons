@@ -282,13 +282,6 @@ n'ont aucun appelant d'écran).
       impossible, et faut-il signaler une nouvelle version aux installations par APK (rien ne les
       met à jour aujourd'hui). Taille : S pour la recette, inconnue pour les suites.
 
-- [ ] `MOB-76` **Profil d'altitude provisoire dans l'app (S, optionnel)** — l'app lit
-      `elevationState` (`API-131`, contrat `11.8.0`) mais n'en fait rien : un parcours qui vient
-      d'être enregistré montre le profil Mapterhorn jusqu'au rechargement suivant, sans le dire.
-      L'app devrait afficher la mention et se rafraîchir seulement quand `elevationState` vaut
-      `PENDING` (rien en `FAST`), comme le web (`WEB-102`). Lieu : `route_detail_provider.dart`,
-      `pdl_elevation_profile.dart`.
-
 ---
 
 ## WEB — Site web

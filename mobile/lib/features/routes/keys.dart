@@ -40,6 +40,9 @@ class _RouteDetailKey extends ValueKey<String> {
 }
 
 class RouteDetailKeys {
+  /// « Profil d'altitude provisoire » au-dessus du profil (ledger `MOB-76`).
+  final elevationRefining = const _RouteDetailKey('elevationRefining');
+
   /// Le profil altimétrique, tiré du tracé.
   final elevationProfile = const _RouteDetailKey('elevationProfile');
 

@@ -23,6 +23,7 @@ import '../../../auth/providers/auth_provider.dart';
 import '../../../moderation/presentation/moderation_menu.dart';
 import '../../../tags/presentation/content_tags.dart';
 import '../../providers/route_detail_provider.dart';
+import '../../domain/elevation_refresh.dart';
 import '../../providers/route_editor_providers.dart';
 import '../../providers/route_elevation_provider.dart';
 import '../widgets/route_climbs_section.dart';
@@ -76,8 +77,29 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
   RouteKey get _key =>
       RouteKey(teamSlug: widget.teamSlug, routeSlug: widget.routeSlug);
 
+  /// Redemande le parcours tant que son profil est l'altitude rapide
+  /// (`elevationState` `PENDING`, ledger `MOB-76`) : la fiche passe d'elle-même
+  /// au profil HD quand le serveur l'a recalculé.
+  late final ElevationRefreshPoller _elevationPoller = ElevationRefreshPoller(
+    refresh: () => ref.invalidate(routeDetailProvider(_key)),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    // Un rechargement garde la valeur précédente : le minuteur ne s'arrête
+    // pas pendant l'aller-retour.
+    ref.listenManual<AsyncValue<RouteDetailDto>>(
+      routeDetailProvider(_key),
+      (AsyncValue<RouteDetailDto>? _, AsyncValue<RouteDetailDto> next) =>
+          _elevationPoller.update(next.value?.elevationState),
+      fireImmediately: true,
+    );
+  }
+
   @override
   void dispose() {
+    _elevationPoller.dispose();
     _cursor?.dispose();
     super.dispose();
   }
@@ -370,26 +392,29 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
           // se ferait passer pour un terrain.
           data: (ElevationSamples? samples) => samples == null
               ? const SizedBox.shrink()
-              : PdlElevationProfile(
-                  credit: 'routes.elevationCredit'.tr(),
-                  key: keys.routeDetail.elevationProfile,
-                  samples: samples,
-                  height: PdlMetrics.elevationLarge,
-                  // Le **seul** état partagé avec la carte, et il ne passe pas
-                  // par Riverpod : le réticule bouge à chaque frame de
-                  // glissement.
-                  cursorDistance: cursor.distance,
-                  axisLabel: (double meters, {required bool isLast}) => isLast
-                      ? AppFormatters.formatDistance(meters, units)
-                      : AppFormatters.formatNumber(
-                          units.longDistance(meters),
-                          fractionDigits: 1,
-                        ),
-                  tipLabel: (ElevationReading r) => <String>[
-                    AppFormatters.formatDistance(r.distance, units),
-                    AppFormatters.formatAltitude(r.elevation, units),
-                    if (r.grade != null) AppFormatters.formatGrade(r.grade!),
-                  ].join(' · '),
+              : _withRefiningNote(
+                  route,
+                  PdlElevationProfile(
+                    credit: 'routes.elevationCredit'.tr(),
+                    key: keys.routeDetail.elevationProfile,
+                    samples: samples,
+                    height: PdlMetrics.elevationLarge,
+                    // Le **seul** état partagé avec la carte, et il ne passe pas
+                    // par Riverpod : le réticule bouge à chaque frame de
+                    // glissement.
+                    cursorDistance: cursor.distance,
+                    axisLabel: (double meters, {required bool isLast}) => isLast
+                        ? AppFormatters.formatDistance(meters, units)
+                        : AppFormatters.formatNumber(
+                            units.longDistance(meters),
+                            fractionDigits: 1,
+                          ),
+                    tipLabel: (ElevationReading r) => <String>[
+                      AppFormatters.formatDistance(r.distance, units),
+                      AppFormatters.formatAltitude(r.elevation, units),
+                      if (r.grade != null) AppFormatters.formatGrade(r.grade!),
+                    ].join(' · '),
+                  ),
                 ),
           loading: () => PdlElevationProfile.loading(
             label: 'routes.profileLoading'.tr(),
@@ -402,6 +427,26 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
             onRetry: () => ref.invalidate(routeDetailProvider(_key)),
           ),
         );
+  }
+
+  /// Le profil, précédé de « Profil d'altitude provisoire » tant que c'est
+  /// l'altitude rapide (`PENDING`) : comme au site, la mention se tait en
+  /// `FAST` (le recalcul a été abandonné) et en `HD`.
+  Widget _withRefiningNote(RouteDetailDto route, Widget profile) {
+    if (!isElevationPending(route.elevationState)) return profile;
+    return Column(
+      key: keys.routeDetail.elevationRefining,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Text(
+          'routes.elevationRefining'.tr(),
+          style: context.pdlText.xs.copyWith(color: context.pdl.textDimmed),
+        ),
+        const SizedBox(height: PdlSpacing.badgeGap),
+        profile,
+      ],
+    );
   }
 
   Widget _information(RouteDetailDto route) {

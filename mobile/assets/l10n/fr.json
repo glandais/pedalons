@@ -1291,7 +1291,8 @@
       "deleteTitle": "Supprimer le parcours ?",
       "deleteMessage": "« {name} » disparaîtra des listes. Un administrateur de l'équipe pourra le restaurer.",
       "deletedBanner": "Ce parcours est supprimé. Seuls les administrateurs de l'équipe le voient."
-    }
+    },
+    "elevationRefining": "Profil d'altitude provisoire"
   },
   "tags": {
     "title": "Tags",
