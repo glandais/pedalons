@@ -11,6 +11,7 @@ import { useDefaultMapView } from '@/hooks/useDefaultMapView'
 import { useResolvedColorScheme } from '@/hooks/useResolvedColorScheme'
 import { PedalonsMap } from '../map/PedalonsMap'
 import { MapSearchControl } from '../map/MapSearchControl'
+import { LocateControl } from '../map/LocateControl'
 import { routeArrowLayout } from '../map/routeArrowLayout'
 import {
   ROUTES_FIT_OPTIONS,
@@ -129,6 +130,7 @@ export function RoutesTileMap({ tilesUrl, bounds, boundsPending }: RoutesTileMap
       onClick={handleClick}
     >
       <MapSearchControl />
+      <LocateControl />
       <Source id={SOURCE_ID} type="vector" tiles={tiles} minzoom={0} maxzoom={14}>
         <Layer
           id={LINES_LAYER}

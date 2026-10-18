@@ -1,7 +1,6 @@
 import { useCallback, useRef, useMemo, useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  GeolocateControl,
   Source,
   Layer,
   MapRef,
@@ -15,6 +14,7 @@ import { useMediaMatch } from '@/hooks/useResponsive'
 import { PedalonsMap } from '../map/PedalonsMap'
 import { MapControlButton, MapControlGroup } from '../map/MapControl'
 import { HideTrackControl } from '../map/HideTrackControl'
+import { LocateControl } from '../map/LocateControl'
 import { MapSearchControl, type SearchedPlace } from '../map/MapSearchControl'
 import { useResolvedColorScheme } from '@/hooks/useResolvedColorScheme'
 import { useDefaultMapView } from '@/hooks/useDefaultMapView'
@@ -216,6 +216,15 @@ export function RoutePlanner({
   const longPressTouchStart = useRef<{ x: number; y: number } | null>(null)
 
   const lastPointerType = useRef<PointerKind>('')
+  /**
+   * The event comes from a finger or a pen: its own pointer type says so, or, for the events that
+   * carry none (`click`, the compatibility `mousemove` of a tap), the last pointer seen on the map.
+   */
+  const isFingerEvent = useCallback((event: Event | undefined) => {
+    if (isTouchGesture(event)) return true
+    if ((event as PointerEvent | undefined)?.pointerType) return false
+    return lastPointerType.current === 'touch' || lastPointerType.current === 'pen'
+  }, [])
   const longPressOpenedAt = useRef(0)
 
   const clearLongPress = useCallback(() => {
@@ -388,13 +397,12 @@ export function RoutePlanner({
         return
       }
 
-      if (hoverPoint) return
-
       // On touch: check if tap is near the route line for insertion
-      const clickType = (event.originalEvent as PointerEvent | undefined)?.pointerType
-      const fromFinger =
-        isTouchGesture(event.originalEvent) ||
-        (!clickType && (lastPointerType.current === 'touch' || lastPointerType.current === 'pen'))
+      const fromFinger = isFingerEvent(event.originalEvent)
+
+      // A mouse over the trace inserts by dragging the ghost point, not by clicking
+      if (hoverPoint && !fromFinger) return
+
       if (fromFinger && mapRef.current && routeGeoJson && route.points.length > 0) {
         const TOUCH_BUFFER_PX = 25
         const bbox: [[number, number], [number, number]] = [
@@ -428,6 +436,7 @@ export function RoutePlanner({
       insertControlPoint,
       getMapZoom,
       isLoading,
+      isFingerEvent,
     ]
   )
 
@@ -445,6 +454,15 @@ export function RoutePlanner({
       }
 
       if (draggingMarker) return
+
+      // The ghost point is a mouse affordance (hover the trace, drag the ghost out). A tap sends a
+      // compatibility mousemove before its click, with no pointer type of its own: showing the
+      // ghost then would make the click below bail out, and the finger need a second tap on the
+      // ghost to insert (seen on an iPhone). A finger inserts with one tap instead.
+      if (isFingerEvent(event.originalEvent)) {
+        if (hoverPoint) setHoverPoint(null)
+        return
+      }
 
       if (!mapRef.current || !routeGeoJson) return
 
@@ -484,7 +502,16 @@ export function RoutePlanner({
 
       setHoverPoint(null)
     },
-    [route, routeGeoJson, draggingGhost, draggingMarker, controlPoints, isCoarsePointer]
+    [
+      route,
+      routeGeoJson,
+      draggingGhost,
+      draggingMarker,
+      controlPoints,
+      isCoarsePointer,
+      isFingerEvent,
+      hoverPoint,
+    ]
   )
 
   const handleMouseLeave = useCallback(() => {
@@ -636,6 +663,11 @@ export function RoutePlanner({
         onPointerDownCapture={(e: React.PointerEvent) => {
           lastPointerType.current = e.pointerType as PointerKind
         }}
+        // Moves too: a mouse hovering after a finger tap must be recognised as a mouse again, and
+        // the compatibility mousemove a tap produces (Safari sends one before its click) as a finger.
+        onPointerMoveCapture={(e: React.PointerEvent) => {
+          lastPointerType.current = e.pointerType as PointerKind
+        }}
         onKeyDownCapture={(e: React.KeyboardEvent) => {
           // Inline, this map sits inside the editor's <form>: Enter in the search box would submit
           // it (implicit submission). The search box still gets the key and selects its result.
@@ -673,9 +705,7 @@ export function RoutePlanner({
             <MapSearchControl onResultSelected={handleSearchSelected} />
 
             {/* One shot, not tracked: it is only there to find where to start. */}
-            <GeolocateControl
-              position="top-left"
-              positionOptions={{ enableHighAccuracy: true }}
+            <LocateControl
               onGeolocate={(e) => proposeStart({ lng: e.coords.longitude, lat: e.coords.latitude })}
             />
 

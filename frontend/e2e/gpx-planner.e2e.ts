@@ -446,6 +446,50 @@ test.describe('the planner gestures, with a simulated router', () => {
     await expect(page.getByText("Le service de calcul d'itinéraire a atteint")).toHaveCount(0)
   })
 
+  test('one tap on the trace inserts a point (touch), with no ghost to tap a second time', async ({
+    context,
+    page,
+    isMobile,
+  }) => {
+    test.skip(!isMobile, 'a tap is a touch gesture: covered by the mobile project')
+    const planner = await openPlanner({ context, page, isMobile })
+    const { surface, marker, points, settled, routerRequests } = planner
+    await drawThreePoints(planner)
+
+    const centre = async (n: number) => {
+      const b = await marker(n).boundingBox()
+      if (!b) throw new Error(`marker ${n} has no box`)
+      return { x: b.x + b.width / 2, y: b.y + b.height / 2 }
+    }
+    const [first, second] = [await centre(1), await centre(2)]
+    // Safari's sequence for a tap, which Chromium's own tap does not reproduce: touch pointer
+    // events, then a compatibility mousemove and mouse button events, and a click that carries no
+    // pointer type. That mousemove used to show the mouse's ghost point, the click then bailed
+    // out, and a second tap, on the ghost, was needed to insert (seen on an iPhone).
+    await page.evaluate(
+      async ({ x, y }) => {
+        const target = document.elementFromPoint(x, y)
+        if (!target) throw new Error('nothing under the tap')
+        const at = { clientX: x, clientY: y, bubbles: true, cancelable: true, view: window }
+        const touch = { ...at, pointerId: 7, pointerType: 'touch', isPrimary: true }
+        target.dispatchEvent(new PointerEvent('pointerdown', touch))
+        target.dispatchEvent(new PointerEvent('pointerup', touch))
+        target.dispatchEvent(new MouseEvent('mousemove', at))
+        // Safari sends the click a moment later: long enough for React to render what the move did.
+        await new Promise((resolve) => setTimeout(resolve, 50))
+        target.dispatchEvent(new MouseEvent('mousedown', { ...at, button: 0, buttons: 1 }))
+        target.dispatchEvent(new MouseEvent('mouseup', { ...at, button: 0 }))
+        target.dispatchEvent(new MouseEvent('click', { ...at, button: 0, detail: 1 }))
+      },
+      { x: (first.x + second.x) / 2, y: (first.y + second.y) / 2 }
+    )
+
+    await settled()
+    await expect(points(4)).toBeVisible()
+    await expect(surface.getByRole('button', { name: 'Point 4', exact: true })).toBeVisible()
+    expect(routerRequests, 'the cut segment, before and after the new point').toHaveLength(2)
+  })
+
   test('a long press deletes a point from its menu (touch)', async ({
     context,
     page,
@@ -769,6 +813,39 @@ test.describe('starting from a place', () => {
     await startHere.click()
     await expect(points(1)).toBeVisible()
     expect(routerRequests).toHaveLength(0)
+  })
+
+  test('« Me localiser » is a toggle: a second click hides the position without moving the map', async ({
+    context,
+    page,
+    isMobile,
+  }) => {
+    await context.grantPermissions(['geolocation'])
+    await context.setGeolocation({ latitude: 48.86, longitude: 2.35 })
+    const { surface } = await openPlanner({ context, page, isMobile })
+    const locate = surface.getByRole('button', { name: 'Me localiser' })
+    const dot = surface.locator('.maplibregl-user-location-dot')
+
+    await locate.click()
+    await expect(dot).toBeVisible()
+    await expect(locate).toHaveAttribute('aria-pressed', 'true')
+    const startHere = surface.getByRole('button', { name: 'Démarrer ici' })
+    await expect(startHere).toBeVisible()
+
+    // Pan away from the position: a click that flew back would carry the popup along.
+    const located = await startHere.boundingBox()
+    await surface.locator('canvas.maplibregl-canvas').first().focus()
+    await page.keyboard.press('ArrowRight')
+    await page.keyboard.press('ArrowDown')
+    await page.waitForTimeout(500) // the keyboard pan eases
+    const before = await startHere.boundingBox()
+    expect(before, 'the keyboard pan moved the map').not.toEqual(located)
+
+    await locate.click()
+    await expect(dot).toHaveCount(0)
+    await expect(locate).toHaveAttribute('aria-pressed', 'false')
+    await page.waitForTimeout(500)
+    expect(await startHere.boundingBox()).toEqual(before)
   })
 })
 

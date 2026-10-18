@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { FullscreenControl, GeolocateControl } from 'react-map-gl/maplibre'
+import { FullscreenControl } from 'react-map-gl/maplibre'
+import { LocateControl } from '@/components/map/LocateControl'
 import { IconArrowLeft } from '@tabler/icons-react'
 import { ActionIcon, Box, Skeleton } from '@mantine/core'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
@@ -52,11 +53,7 @@ export function GpxBlankMapPage() {
           <PedalonsMap initialViewState={initialViewState}>
             <MapSearchControl />
             <FullscreenControl position="top-left" />
-            <GeolocateControl
-              position="top-left"
-              trackUserLocation
-              positionOptions={{ enableHighAccuracy: true }}
-            />
+            <LocateControl trackUserLocation />
           </PedalonsMap>
         )}
       </Box>
