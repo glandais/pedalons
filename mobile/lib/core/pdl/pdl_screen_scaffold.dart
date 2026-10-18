@@ -93,21 +93,44 @@ class PdlScreenScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final PdlColors c = context.pdl;
+    final double keyboard = MediaQuery.viewInsetsOf(context).bottom;
+    final bool keyboardUp = keyboard > 0;
+
+    // Clavier ouvert, le [Scaffold] laisse son `bottomNavigationBar` dessous :
+    // le bouton « Enregistrer » d'un formulaire disparaissait pendant la
+    // saisie de la description. La barre d'action remonte donc au-dessus du
+    // clavier — sans l'inset système, que le clavier recouvre — et les
+    // onglets, eux, restent dessous.
+    final Widget? bottomBar;
+    if (keyboardUp && actionBar != null) {
+      bottomBar = Padding(
+        padding: EdgeInsets.only(bottom: keyboard),
+        child: MediaQuery.removeViewPadding(
+          context: context,
+          removeBottom: true,
+          child: actionBar!,
+        ),
+      );
+    } else if (actionBar == null && bottomTabs == null) {
+      bottomBar = null;
+    } else {
+      bottomBar = Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[?actionBar, ?bottomTabs],
+      );
+    }
 
     return Scaffold(
       backgroundColor: backgroundColor ?? c.bg,
       // Le contenu passe **sous** les barres basses : sans cela, leur flou n'a
-      // rien à flouter et leur transparence ne veut rien dire.
-      extendBody: true,
+      // rien à flouter et leur transparence ne veut rien dire. Sauf clavier
+      // ouvert : le corps doit alors s'arrêter au-dessus de la barre remontée,
+      // sinon le champ en cours de saisie se cache sous le clavier.
+      extendBody: !keyboardUp,
       extendBodyBehindAppBar: _overlayBar,
       appBar: _overlayBar ? null : appBar,
-      bottomNavigationBar: (actionBar == null && bottomTabs == null)
-          ? null
-          : Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[?actionBar, ?bottomTabs],
-            ),
+      bottomNavigationBar: bottomBar,
       body: Builder(
         builder: (BuildContext context) {
           // `extendBody: true` fait porter au `MediaQuery` du corps la hauteur
