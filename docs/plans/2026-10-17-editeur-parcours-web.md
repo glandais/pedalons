@@ -1,8 +1,8 @@
 # Éditeur de parcours web — desktop et web mobile
 
 Écrit le 17 octobre 2026, mis à jour le 18 octobre 2026. **État : lots 1 et 2 livrés le
-17 octobre 2026 (§5 et §6, A10 compris) ; dans le lot 3, B11 est livré (18 octobre) ; restent le
-lot 3 (B1, B2, B6, B7, B9, B12) et le lot 4 (C1 à C5, C7 ; C6 non attribué).**
+17 octobre 2026 (§5 et §6, A10 compris) ; dans le lot 3, B11 et B12 sont livrés (18 octobre) ;
+restent le lot 3 (B1, B2, B6, B7, B9) et le lot 4 (C1 à C5, C7 ; C6 non attribué).**
 Ledger `WEB-100` (une seule
 entrée, qui pointe ici) : le suivi fin se fait **dans ce plan**, cases à cocher comprises, pas dans
 le ledger. Une tâche n'en sort vers `LEDGER_NEXT.md` que si elle quitte le périmètre du plan
@@ -55,7 +55,7 @@ Quatre lots, chacun livrable seul :
 |---|---|---|---|
 | **1. Robustesse** (livré) | Annulation et verrou pendant le calcul, `Ctrl+Z` hors des champs, tactile décidé par le pointeur, aide aux gestes, menus fiables, tests de `lib/planner.ts` | S à M (≈ 1 semaine) | — (volet backend A10 livré) |
 | **2. Disposition** (livré) | Plein écran d'édition, barre sous le pouce, cibles 44 px, un seul panneau ouvert, recherche d'adresse, cadrage `fitBounds` | M | 1 |
-| **3. Standard** | Profil altimétrique d'édition (B1), inverser / aller-retour / retour au départ avec recalage (B2), ligne droite visible (B6), clavier (B7), défilement au bord (B9), glisser une ancre au doigt (B11, **livré**), bornes indépendantes du zoom et suppression d'une ancre (B12) | **L** | 1, 2 ; API pour B2 (endpoint de recalage) |
+| **3. Standard** | Profil altimétrique d'édition (B1), inverser / aller-retour / retour au départ avec recalage (B2), ligne droite visible (B6), clavier (B7), défilement au bord (B9), glisser une ancre au doigt (B11, **livré**), bornes indépendantes du zoom et suppression d'une ancre (B12, **livré**) | **L** | 1, 2 ; API pour B2 (endpoint de recalage) |
 | **4. Différenciation** | Éviter côtes / trafic (C2), état d'édition conservé (C4), surface par point (C1), points de parcours (C3), popularité interne (C5), zones à éviter (C7) ; C6 non attribué | M à L | C4 : B6 et B12 ; C2 : aucun morceau du lot 3 ; API pour C1, C2, C4, C7 |
 
 Dans le lot 4, **C4 dépend de B6** (seul B6 crée l'information « ligne droite ») **et de B12**
@@ -88,10 +88,10 @@ Ce que ça change pour ce plan :
   |---|---|---|
   | Ajouter un point (le premier : aucune) | 1 | livré |
   | Insérer, déplacer un point de contrôle, glisser une ancre au doigt (B11) | 2 (1 à une extrémité, 0 en ligne droite) | livré |
-  | Supprimer un point de contrôle intermédiaire | 1 (0 en ligne droite) ; **0 entre deux raccords du même import** une fois `sourceIdx` livré (C4) | livré ; B12 le garde |
+  | Supprimer un point de contrôle intermédiaire | 1 (0 en ligne droite) ; **0 entre deux raccords du même import** une fois `sourceIdx` livré (C4) | livré ; B12 le garde (livré) |
   | Supprimer le départ ou l'arrivée | 0 | livré |
   | Annuler, rétablir, ouvrir ou fermer le plein écran | 0 | livré, à garder |
-  | Supprimer une ancre importée (B12) | 1, **0 avec `Alt`** (ligne droite) | à faire |
+  | Supprimer une ancre importée (B12) | 1, **0 avec `Alt`** (ligne droite) | livré |
   | Restituer une portion du fichier en supprimant un point (C4) | 0 | à faire |
   | Déplacer un point au clavier (B7) | 2 (1 à une extrémité), **au relâchement seulement**, jamais à chaque flèche | à faire |
   | Inverser, aller-retour (B2) | **1 ou 2** : un recalage, plus un raccord s'il reste des trous ; 0 en repli sur la géométrie inversée | à faire |
@@ -544,7 +544,7 @@ servent), puis B6 (la ligne droite visible), puis B1 et B2.
       insertion. Ancres plus grosses au doigt (rayon 8 px). Seuls les points de contrôle et
       « Démarrer ici » écartent le geste : une borne kilométrique posée sur une ancre ne
       l'empêche pas. Test : `gpx-planner.e2e.ts`, angle d'un tracé en L.
-- [ ] **B12. Bornes d'un geste indépendantes du zoom, et suppression d'une ancre** (M, nouveau) —
+- [x] **B12. Bornes d'un geste indépendantes du zoom, et suppression d'une ancre** (M, nouveau) —
       étude du 18 octobre 2026 ([`../research/2026-10-18-editeur-parcours-suppression.md`](../research/2026-10-18-editeur-parcours-suppression.md)). Aujourd'hui chaque geste recalcule entre le premier point de
       contrôle ou la **première ancre visible au zoom courant** de part et d'autre
       (`findAnchorStartPoint` / `findAnchorEndPoint`, `hooks/useRoutePlanner.ts`) : le même geste
@@ -620,6 +620,27 @@ servent), puis B6 (la ligne droite visible), puis B1 et B2.
       cas « insert used as a move » passe à `legBounds`. Et six scénarios e2e (clic droit et Alt +
       clic droit sur l'angle du tracé en L, appui long dont le relâchement n'insère rien, appui puis
       mouvement qui reste un glisser, suppression après un zoom avant, annulation gratuite).
+
+      **Livré le 18 octobre 2026.** Champ `imported` sur `RoutePoint`, `legBounds` / `spanBounds` /
+      `nearestSegment` dans `lib/planner.ts` (Douglas-Peucker recalculé entre les bornes seulement,
+      `PlannerRefusedError` pour la coupe refusée), `removeControlPoint` / `removeAnchor` dans le
+      hook, menu « Supprimer » au clic droit et à l'appui long, bornes affichées pendant le menu
+      (`RoutePlanner.tsx`), textes fr et en. Tests : les dix cas de `planner.test.ts` (plus un
+      onzième pour `nearestSegment`), quatre cas de `useRoutePlanner.test.tsx` (borne de
+      `removeControlPoint`, refus de coupe, `removeAnchor` et son annulation à 0 requête) et les
+      scénarios de `gpx-planner.e2e.ts`. **Écarts à confirmer** : (1) le refus de couper ne vaut
+      que pour un tracé qui contient des points importés, pas pour tout tracé qui tomberait sous deux
+      points (sur un tracé dessiné, supprimer un à un les derniers points reste possible) ;
+      (2) `nearestSegment` teste les segments voisins de six sommets proches, pas du seul plus
+      proche : une approximation, qui suffit tant que les sommets sont répartis (jamais deux fois le
+      même détour sur un très long segment droit) ; (3) le glisser d'un point de contrôle ignore un
+      relâchement dont les bornes ont été effacées par un second doigt.
+      **Pièges trouvés par l'e2e** : Chrome retient les `touchmove` d'un toucher dont le
+      `touchstart` n'a pas été annulé tant qu'ils restent sous ~15 px, donc l'appui sur une ancre
+      est aussi suivi par ses événements pointeur (`followAnchorPress`), sans quoi un mouvement de
+      4 px laisserait le menu s'ouvrir ; et les bornes kilométriques (`KmMarker`, partagé avec les
+      cartes en lecture) passent en `pointerEvents: 'none'`, sans quoi un doigt posé sur l'une
+      d'elles fait défiler la page au lieu d'attraper l'ancre dessous.
 
 ---
 

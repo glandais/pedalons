@@ -7,10 +7,12 @@ import {
   createRoute,
   geojson,
   insert,
+  legBounds,
   Point,
   remove,
   Route,
   RoutePoint,
+  spanBounds,
 } from '@/lib/planner'
 import { RouterProfile } from '@/api/dto'
 import { plannerErrorMessage } from '@/lib/plannerErrors'
@@ -46,49 +48,11 @@ export interface RoutePlannerState {
     direct?: boolean
   ) => void
   removeControlPoint: (index: number, direct?: boolean, zoom?: number) => void
+  /** Removes what lies between two bounds frozen by the caller (a menu opened on an imported anchor). */
+  removeAnchor: (start: RoutePoint, end: RoutePoint, direct?: boolean) => void
   clearRoute: () => void
   undo: () => void
   redo: () => void
-}
-
-/**
- * Find the start anchor for a zoom-scoped operation.
- * Walks backward through route.points from fromRouteIdx,
- * returns the nearest point that is an anchor at the given zoom level.
- */
-export function findAnchorStartPoint(
-  route: Route,
-  fromRouteIdx: number,
-  zoom: number
-): RoutePoint | undefined {
-  if (fromRouteIdx <= 0) return undefined
-
-  for (let i = fromRouteIdx - 1; i >= 0; i--) {
-    const p = route.points[i]
-    if (p.manual || p.zoom <= zoom) return p
-  }
-
-  return route.points[0]
-}
-
-/**
- * Find the end anchor for a zoom-scoped operation.
- * Walks forward through route.points from fromRouteIdx,
- * returns the nearest point that is an anchor at the given zoom level.
- */
-export function findAnchorEndPoint(
-  route: Route,
-  fromRouteIdx: number,
-  zoom: number
-): RoutePoint | undefined {
-  if (fromRouteIdx >= route.points.length - 1) return undefined
-
-  for (let i = fromRouteIdx + 1; i < route.points.length; i++) {
-    const p = route.points[i]
-    if (p.manual || p.zoom <= zoom) return p
-  }
-
-  return route.points[route.points.length - 1]
 }
 
 const ROUTER_PROFILE_STORAGE_KEY = 'pedalons-router-profile'
@@ -227,13 +191,27 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
 
   const removeControlPoint = useCallback(
     (index: number, direct = false, zoom = 0) => {
-      const start = findAnchorStartPoint(route, index, zoom)
-      const end = findAnchorEndPoint(route, index, zoom)
+      // Bounds on the route the operation works on, not on a render's closure
+      const r = routeRef.current
+      const last = r.points.length - 1
+      const { start, end } =
+        index > 0 && index < last
+          ? legBounds(r, index - 1, index + 1) // an inner point: the leg between its neighbours
+          : spanBounds(r, index - 1, index + 1, zoom) // first or last: cut at the zoom of the gesture
       executeRouteOperation((route, signal) =>
         remove(route, start, end, routerProfile, direct, signal, teamSlug)
       )
     },
-    [executeRouteOperation, route, routerProfile, teamSlug]
+    [executeRouteOperation, routerProfile, teamSlug]
+  )
+
+  const removeAnchor = useCallback(
+    (start: RoutePoint, end: RoutePoint, direct = false) => {
+      executeRouteOperation((route, signal) =>
+        remove(route, start, end, routerProfile, direct, signal, teamSlug)
+      )
+    },
+    [executeRouteOperation, routerProfile, teamSlug]
   )
 
   const clearRoute = useCallback(() => {
@@ -291,6 +269,7 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
     insertControlPoint,
     updateControlPoint,
     removeControlPoint,
+    removeAnchor,
     clearRoute,
     canUndo,
     canRedo,

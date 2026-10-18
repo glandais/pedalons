@@ -2,6 +2,7 @@ import type { TFunction } from 'i18next'
 import { ErrorCode } from '@/api/dto'
 import { apiErrorCode } from '@/lib/apiError'
 import { isApplePlatform } from '@/lib/platform'
+import { PlannerRefusedError } from '@/lib/planner'
 import { tRegister, type TranslationKey } from '@/lib/i18nUtils'
 
 /** The router's own failures (no-route aside: it carries the shortcut), each with the advice that unblocks the user. Anything else falls back on the generic message. */
@@ -27,6 +28,7 @@ function directShortcut(t: TFunction): string {
  * refused a ROUTE_PLANNER_DISABLED: the team's with one, the site's (GPX tools) without.
  */
 export function plannerErrorMessage(error: unknown, t: TFunction, teamSlug?: string): string {
+  if (error instanceof PlannerRefusedError) return t(error.messageKey)
   const code = apiErrorCode(error)
   if (code === ErrorCode.ROUTE_PLANNER_DISABLED)
     return t(teamSlug ? 'planner.error.disabled' : 'planner.error.disabledSite')

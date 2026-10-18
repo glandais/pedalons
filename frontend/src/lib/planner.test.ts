@@ -13,7 +13,11 @@ import {
   createRoute,
   geojson,
   insert,
+  legBounds,
+  nearestSegment,
+  PlannerRefusedError,
   remove,
+  spanBounds,
   type Point,
   type Route,
   type RoutePoint,
@@ -365,11 +369,18 @@ describe('insert', () => {
 describe('insert used as a move (drag of an interior control point)', () => {
   it('costs two router calls and keeps the number of control points', async () => {
     const route = await threePointRoute()
-    const [pa, , pc] = manualPoints(route)
+    const [pa, pb, pc] = manualPoints(route)
     const moved: Point = { lng: 5.01, lat: 45.003 }
-    // The hook's updateControlPoint calls insert with the neighbours of the dragged point:
-    // the old geometry between them is replaced, not the dragged point itself.
-    const result = await insert(route, pa, moved, pc, PROFILE)
+    // The planner moves a point with the leg bounds of the dragged point: the old geometry
+    // between them is replaced, not the dragged point itself.
+    const { start, end } = legBounds(
+      route,
+      route.points.indexOf(pb) - 1,
+      route.points.indexOf(pb) + 1
+    )
+    expect(start!.id).toBe(pa.id)
+    expect(end!.id).toBe(pc.id)
+    const result = await insert(route, start, moved, end, PROFILE)
     expect(routeMock).toHaveBeenCalledTimes(2)
     // Not an insertion: everything between the two neighbours (here B) is replaced by the moved point
     expect(manualCoords(result)).toEqual([
@@ -395,8 +406,8 @@ describe('remove', () => {
     expect(routeMock).toHaveBeenCalledTimes(1)
     expect(routeMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        from: expect.objectContaining({ lng: A.lng }),
-        to: expect.objectContaining({ lng: C.lng }),
+        from: expect.objectContaining({ lng: A.lng, lat: A.lat }),
+        to: expect.objectContaining({ lng: C.lng, lat: C.lat }),
       }),
       { skipErrorToast: true },
       undefined
@@ -412,6 +423,8 @@ describe('remove', () => {
     const pb = manualPoints(route)[1]
     const result = await remove(route, undefined, pb, PROFILE)
     expect(routeMock).not.toHaveBeenCalled()
+    expect(result.points[0].id).toBe(pb.id)
+    expect(result.points[0].manual).toBe(true)
     expect(manualCoords(result)).toEqual([
       [B.lng, B.lat],
       [C.lng, C.lat],
@@ -423,6 +436,8 @@ describe('remove', () => {
     const pb = manualPoints(route)[1]
     const result = await remove(route, pb, undefined, PROFILE)
     expect(routeMock).not.toHaveBeenCalled()
+    expect(result.points.at(-1)!.id).toBe(pb.id)
+    expect(result.points.at(-1)!.manual).toBe(true)
     expect(manualCoords(result)).toEqual([
       [A.lng, A.lat],
       [B.lng, B.lat],
@@ -525,5 +540,437 @@ describe('abandoned operations (AbortSignal)', () => {
     )
     expect(first.points).toHaveLength(lengthBefore)
     expect(first.points[0].manual).toBe(true)
+  })
+})
+
+// ---------------------------------------------------------------------------------------------
+// B12: gesture bounds independent of the zoom, local simplification, anchor removal
+
+interface Leg {
+  from: Point
+  to: Point
+}
+
+/** Router answer along an arc: n + 1 points, exactly `from` first and `to` last, bulging to the left. */
+function arcAnswer({ from, to }: Leg, n = 8, bulge = 0.1) {
+  const dLng = to.lng - from.lng
+  const dLat = to.lat - from.lat
+  const chord = Math.hypot(dLng, dLat)
+  const coordinates: number[][] = []
+  for (let i = 0; i <= n; i++) {
+    const t = i / n
+    let lng = to.lng
+    let lat = to.lat
+    if (i === 0) {
+      lng = from.lng
+      lat = from.lat
+    } else if (i < n) {
+      const off = bulge * chord * 4 * t * (1 - t)
+      lng = from.lng + t * dLng + (-dLat / chord) * off
+      lat = from.lat + t * dLat + (dLng / chord) * off
+    }
+    coordinates.push([lng, lat, groundEle(lng)])
+  }
+  return { route: { coordinates } }
+}
+
+const VERTICES: number[][] = [
+  [5.0, 45.0],
+  [5.02, 45.02],
+  [5.04, 45.0],
+  [5.05, 45.003],
+  [5.06, 45.0],
+  [5.08, 45.0],
+]
+
+/** Straight legs between the corners, `perLeg` intervals each (so perLeg * legs + 1 points). */
+function densify(corners: number[][], perLeg: number): number[][] {
+  const out: number[][] = []
+  for (let i = 0; i < corners.length - 1; i++) {
+    for (let k = 0; k < perLeg; k++) {
+      const t = k / perLeg
+      out.push([
+        corners[i][0] + t * (corners[i + 1][0] - corners[i][0]),
+        corners[i][1] + t * (corners[i + 1][1] - corners[i][1]),
+        100,
+      ])
+    }
+  }
+  out.push([...corners[corners.length - 1], 100])
+  return out
+}
+
+const IMPORT = densify(VERTICES, 10)
+
+function importedRoute(): Route {
+  return createRoute(IMPORT)
+}
+
+const snapshot = (route: Route) => route.points.map((p) => ({ ...p }))
+const near = (a: Point, b: Point) => {
+  expect(a.lng).toBeCloseTo(b.lng, 6)
+  expect(a.lat).toBeCloseTo(b.lat, 6)
+}
+
+describe('B12 gesture bounds', () => {
+  let legs: Leg[]
+
+  beforeEach(() => {
+    legs = []
+    routeMock.mockReset()
+    routeMock.mockImplementation(async ({ from, to }: RouteRequest) => {
+      // Copies: the planner moves the points the request was built from
+      legs.push({ from: { lng: from.lng, lat: from.lat }, to: { lng: to.lng, lat: to.lat } })
+      return arcAnswer({ from, to })
+    })
+  })
+
+  async function drawn(...points: Point[]): Promise<Route> {
+    let route = computeRoute([])
+    for (const p of points) route = await add(route, p, PROFILE)
+    legs.length = 0
+    routeMock.mockClear()
+    return route
+  }
+
+  const levels = (route: Route) => route.points.map((p) => ({ id: p.id, zoom: p.zoom }))
+
+  it('1. tracks where the imported points come from', async () => {
+    const imported = importedRoute()
+    expect(imported.points.every((p) => p.imported)).toBe(true)
+    // known levels of the zigzag
+    expect(imported.points).toHaveLength(6)
+    imported.points.forEach((p, i) => {
+      expect(p.lng).toBeCloseTo(VERTICES[i][0], 9)
+      expect(p.lat).toBeCloseTo(VERTICES[i][1], 9)
+    })
+    expect(imported.points.map((p) => p.zoom)).toEqual([0, 11, 12, 14, 14, 0])
+    expect(imported.points.map((p) => p.manual)).toEqual([true, false, false, false, false, true])
+
+    const first = await add(computeRoute([]), A, PROFILE)
+    expect(first.points[0].imported).toBe(false)
+
+    let route = await drawn(A, B, C)
+    const [pa, , pc] = manualPoints(route)
+    route = await insert(route, pa, { lng: 5.005, lat: 45.002 }, pc, PROFILE)
+    const m = route.points.find((p) => p.manual && p.lng === 5.005)
+    expect(m).toBeDefined()
+    const { start, end } = legBounds(
+      route,
+      route.points.indexOf(m!) - 1,
+      route.points.indexOf(m!) + 1
+    )
+    route = await remove(route, start, end, PROFILE)
+    expect(route.points.some((p) => p.imported)).toBe(false)
+
+    const extended = await add(imported, { lng: 5.1, lat: 45.01 }, PROFILE)
+    const oldEnd = extended.points.find((p) => p.lng === 5.08 && p.lat === 45.0)!
+    expect(oldEnd.imported).toBe(true)
+    expect(oldEnd.manual).toBe(true)
+    expect(extended.points.slice(6).every((p) => !p.imported)).toBe(true)
+    expect(extended.points.at(-1)!.imported).toBe(false)
+
+    // what the router adds on an import is not imported: insert...
+    const base = importedRoute()
+    const [, , , v3, v4] = base.points
+    const ins = await insert(base, v3, { lng: 5.055, lat: 45.05 }, v4, PROFILE)
+    const i3 = ins.points.findIndex((p) => p.id === v3.id)
+    const i4 = ins.points.findIndex((p) => p.id === v4.id)
+    expect(i4 - i3).toBeGreaterThan(1)
+    expect(ins.points.slice(i3 + 1, i4).every((p) => !p.imported)).toBe(true)
+    expect(ins.points.slice(0, i3 + 1).every((p) => p.imported)).toBe(true)
+    expect(ins.points.slice(i4).every((p) => p.imported)).toBe(true)
+
+    // ... and remove
+    const base2 = importedRoute()
+    const [, w1, , , , w5] = base2.points
+    const rem = await remove(base2, w1, w5, PROFILE)
+    const j1 = rem.points.findIndex((p) => p.id === w1.id)
+    const j5 = rem.points.findIndex((p) => p.id === w5.id)
+    expect(j5 - j1).toBeGreaterThan(1)
+    expect(rem.points.slice(j1 + 1, j5).every((p) => !p.imported)).toBe(true)
+    expect(rem.points.slice(0, j1 + 1).every((p) => p.imported)).toBe(true)
+    expect(rem.points.slice(j5).every((p) => p.imported)).toBe(true)
+
+    // the copy the hook keeps for undo/redo keeps the field
+    expect(snapshot(ins).map((p) => p.imported)).toEqual(ins.points.map((p) => p.imported))
+  })
+
+  it('2. legBounds ignores the zoom, spanBounds ignores routed points', async () => {
+    const route = await drawn(A, B, C)
+    const [pa, pb, pc] = manualPoints(route)
+    const iB = route.points.indexOf(pb)
+    const leg = legBounds(route, iB - 1, iB + 1)
+    expect(leg.start!.id).toBe(pa.id)
+    expect(leg.end!.id).toBe(pc.id)
+    for (const z of [0, 12, 22]) {
+      const span = spanBounds(route, iB - 1, iB + 1, z)
+      expect(span.start!.id).toBe(pa.id)
+      expect(span.end!.id).toBe(pc.id)
+    }
+    const j = 1
+    expect(route.points[j].manual).toBe(false)
+    const around = legBounds(route, j, j)
+    expect(around.start!.id).toBe(pa.id)
+    expect(around.end!.id).toBe(pb.id)
+    // nothing on one side
+    expect(legBounds(route, -1, 1).start).toBeUndefined()
+    expect(legBounds(route, 1, route.points.length).end).toBeUndefined()
+  })
+
+  it('3. removing an inner point reroutes once between its neighbours', async () => {
+    const M = { lng: 5.01, lat: 45.03 }
+    const route = await drawn(A, M, C)
+    const iM = route.points.findIndex((p) => p.lat === M.lat)
+    const { start, end } = legBounds(route, iM - 1, iM + 1)
+    const result = await remove(route, start, end, PROFILE)
+    expect(legs).toHaveLength(1)
+    near(legs[0].from, A)
+    near(legs[0].to, C)
+    expect(Math.max(...result.points.map((p) => p.lat))).toBeLessThan(45.005)
+    expect(manualPoints(result)).toHaveLength(2)
+
+    // a router refusal leaves the route as it was
+    const again = await drawn(A, M, C)
+    const before = snapshot(again)
+    routeMock.mockRejectedValueOnce(new Error('ROUTING_SEGMENT_TOO_LONG'))
+    const iM2 = again.points.findIndex((p) => p.lat === M.lat)
+    const b = legBounds(again, iM2 - 1, iM2 + 1)
+    await expect(remove(again, b.start, b.end, PROFILE)).rejects.toThrow()
+    expect(again.points).toEqual(before)
+  })
+
+  it('4. removing an inserted point on an import keeps the track around it', async () => {
+    const r = importedRoute()
+    const [v0, v1, v2, v3, v4, v5] = r.points
+    const outside = [v0, v3, v4, v5].map((p) => ({ id: p.id, lng: p.lng, lat: p.lat }))
+    const M = { lng: 5.03, lat: 45.012 }
+    const { start: s0, end: e0 } = spanBounds(r, 1, 2, 16)
+    expect([s0!.id, e0!.id]).toEqual([v1.id, v2.id])
+    const inserted = await insert(r, s0, M, e0, PROFILE, false)
+    legs.length = 0
+    const iM = inserted.points.findIndex((p) => p.manual && !p.imported)
+    const { start, end } = legBounds(inserted, iM - 1, iM + 1)
+    expect([start!.id, end!.id]).toEqual([v1.id, v2.id])
+    const result = await remove(inserted, start, end, PROFILE)
+    expect(legs).toHaveLength(1)
+    near(legs[0].from, { lng: 5.02, lat: 45.02 })
+    near(legs[0].to, { lng: 5.04, lat: 45.0 })
+    for (const o of outside) {
+      const p = result.points.find((q) => q.id === o.id)!
+      expect(p).toBeDefined()
+      expect([p.lng, p.lat]).toEqual([o.lng, o.lat])
+    }
+  })
+
+  it('4. a loop keeps its length when an inserted point is removed', async () => {
+    const dLat = 2000 / 111320
+    const dLng = 2000 / (111320 * Math.cos((45 * Math.PI) / 180))
+    const square = [
+      [5, 45],
+      [5 + dLng, 45],
+      [5 + dLng, 45 + dLat],
+      [5, 45 + dLat],
+      [5, 45.00002],
+    ]
+    const loop = createRoute(densify(square, 20))
+    const initial = loop.dist
+    const M = { lng: 5 + dLng / 2, lat: 45.0005 }
+    const iSeg = nearestSegment(loop, M)!.index
+    const { start: s0, end: e0 } = spanBounds(loop, iSeg, iSeg + 1, 16)
+    const inserted = await insert(loop, s0, M, e0, PROFILE)
+    legs.length = 0
+    const iM = inserted.points.findIndex((p) => p.manual && !p.imported)
+    const { start, end } = legBounds(inserted, iM - 1, iM + 1)
+    const result = await remove(inserted, start, end, PROFILE)
+    const last = legs.at(-1)!
+    const dStart = Math.hypot(last.from.lng - 5, last.from.lat - 45)
+    const dEnd = Math.hypot(last.to.lng - 5, last.to.lat - 45.00002)
+    expect(dStart < 1e-4 && dEnd < 1e-4).toBe(false)
+    expect(result.dist).toBeGreaterThan(0.8 * initial)
+  })
+
+  it('5. cutting an end of a drawn route does not depend on the zoom', async () => {
+    for (const z of [0, 22]) {
+      const route = await drawn(A, B, C)
+      const [, pb] = manualPoints(route)
+      const { start, end } = spanBounds(route, -1, 1, z)
+      expect(start).toBeUndefined()
+      const result = await remove(route, start, end, PROFILE)
+      expect(routeMock).not.toHaveBeenCalled()
+      expect(result.points[0].id).toBe(pb.id)
+      expect(result.points[0].manual).toBe(true)
+    }
+  })
+
+  it('5. cutting an import: refused when no anchor shows, else cut at the first one', async () => {
+    const r = importedRoute()
+    const before = snapshot(r)
+    const low = spanBounds(r, -1, 1, 10)
+    await expect(remove(r, low.start, low.end, PROFILE)).rejects.toBeInstanceOf(PlannerRefusedError)
+    expect(r.points).toEqual(before)
+    expect(routeMock).not.toHaveBeenCalled()
+
+    const at11 = spanBounds(r, -1, 1, 11)
+    const cut = await remove(r, at11.start, at11.end, PROFILE)
+    expect(routeMock).not.toHaveBeenCalled()
+    expect(cut.points[0].id).toBe(before[1].id)
+    expect(cut.points[0].manual).toBe(true)
+
+    const r2 = importedRoute()
+    const last = r2.points.length - 1
+    const at12 = spanBounds(r2, last - 1, last + 1, 12)
+    expect(at12.start!.id).toBe(r2.points[2].id)
+    const cutEnd = await remove(r2, at12.start, at12.end, PROFILE)
+    expect(cutEnd.points.at(-1)!.id).toBe(r2.points[2].id)
+    expect(cutEnd.points.at(-1)!.manual).toBe(true)
+  })
+
+  it('6. removing an anchor reroutes once between the visible anchors', async () => {
+    const r = importedRoute()
+    const [, v1, v2, v3, v4, v5] = r.points
+    const bounds = spanBounds(r, 1, 3, 12)
+    expect([bounds.start!.id, bounds.end!.id]).toEqual([v1.id, v5.id])
+    const result = await remove(r, bounds.start, bounds.end, PROFILE)
+    expect(legs).toHaveLength(1)
+    near(legs[0].from, { lng: 5.02, lat: 45.02 })
+    near(legs[0].to, { lng: 5.08, lat: 45.0 })
+    const ids = result.points.map((p) => p.id)
+    for (const gone of [v2, v3, v4]) expect(ids).not.toContain(gone.id)
+
+    const direct = importedRoute()
+    legs.length = 0
+    const b2 = spanBounds(direct, 1, 3, 12)
+    await remove(direct, b2.start, b2.end, PROFILE, true)
+    expect(legs).toHaveLength(0)
+  })
+
+  it('6. an abandoned signal rejects, even in a straight line', async () => {
+    const controller = new AbortController()
+    controller.abort()
+    for (const direct of [false, true]) {
+      const r = importedRoute()
+      const before = snapshot(r)
+      const b = spanBounds(r, 1, 3, 12)
+      await expect(remove(r, b.start, b.end, PROFILE, direct, controller.signal)).rejects.toThrow()
+      expect(legs).toHaveLength(0)
+      expect(r.points).toEqual(before)
+    }
+  })
+
+  it('7. inserting on a routed leg always routes between the manual points', async () => {
+    for (const z of [0, 12, 22]) {
+      const route = await drawn(A, B, C)
+      const seg = nearestSegment(route, { lng: 5.005, lat: 45.0 })!
+      const { start, end } = spanBounds(route, seg.index, seg.index + 1, z)
+      await insert(route, start, seg.point, end, PROFILE)
+      expect(legs).toHaveLength(2)
+      near(legs[0].from, A)
+      near(legs[1].to, B)
+      legs.length = 0
+    }
+  })
+
+  it('7. inserting on an import is bounded by the anchors visible at the zoom', async () => {
+    const target = { lng: 5.055, lat: 45.0015 }
+    const expected: Array<[number, Point, Point]> = [
+      [12, { lng: 5.04, lat: 45.0 }, { lng: 5.08, lat: 45.0 }],
+      [14, { lng: 5.05, lat: 45.003 }, { lng: 5.06, lat: 45.0 }],
+    ]
+    for (const [z, from, to] of expected) {
+      legs.length = 0
+      const r = importedRoute()
+      const seg = nearestSegment(r, target)!
+      expect(seg.index).toBe(3)
+      const { start, end } = spanBounds(r, seg.index, seg.index + 1, z)
+      await insert(r, start, seg.point, end, PROFILE)
+      expect(legs).toHaveLength(2)
+      near(legs[0].from, from)
+      near(legs[1].to, to)
+    }
+  })
+
+  it('8. moving a point re-routes between its neighbours', async () => {
+    const route = await drawn(A, B, C)
+    const [pa, pb, pc] = manualPoints(route)
+    const iB = route.points.indexOf(pb)
+    const { start, end } = legBounds(route, iB - 1, iB + 1)
+    expect([start!.id, end!.id]).toEqual([pa.id, pc.id])
+    const result = await insert(route, start, { lng: 5.01, lat: 45.003 }, end, PROFILE)
+    expect(legs).toHaveLength(2)
+    expect(manualPoints(result)).toHaveLength(3)
+  })
+
+  it('9. a point set next to a control point does not replace it', async () => {
+    const route = await drawn(A, B, C)
+    const pb = manualPoints(route)[1]
+    const keep = { id: pb.id, lng: pb.lng, lat: pb.lat }
+    const p = { lng: B.lng + 0.01 * (C.lng - B.lng), lat: B.lat }
+    const seg = nearestSegment(route, p)!
+    const { start, end } = spanBounds(route, seg.index, seg.index + 1, 22)
+    expect([start!.id, end!.id]).toContain(pb.id)
+    const result = await insert(route, start, p, end, PROFILE)
+    const b = result.points.find((q) => q.id === keep.id)!
+    expect([b.lng, b.lat]).toEqual([keep.lng, keep.lat])
+    expect(manualPoints(result)).toHaveLength(4)
+  })
+
+  it('10. the simplification stays local to the bounds', async () => {
+    const r = importedRoute()
+    const [, , , v3, v4] = r.points
+    const before = levels(r)
+    const { start, end } = spanBounds(r, 3, 4, 14)
+    expect([start!.id, end!.id]).toEqual([v3.id, v4.id])
+    const result = await insert(r, start, { lng: 5.055, lat: 45.05 }, end, PROFILE)
+    const after = levels(result)
+    const i3 = after.findIndex((p) => p.id === v3.id)
+    const i4 = after.findIndex((p) => p.id === v4.id)
+    expect(after.slice(0, i3 + 1)).toEqual(before.slice(0, 4))
+    expect(after.slice(i4)).toEqual(before.slice(4))
+    // a bound that is not manual stays unmarked
+    expect(result.points[i3].manual).toBe(false)
+    // the span between the bounds is simplified again and holds the new manual point
+    const middle = result.points.slice(i3 + 1, i4)
+    expect(middle.length).toBeGreaterThan(0)
+    expect(middle.some((p) => p.manual)).toBe(true)
+  })
+
+  it('11. the nearest segment is not always next to the nearest vertex', () => {
+    // A long straight leg, then a detour that comes back near its middle
+    const route = createRoute([
+      [5.0, 45.0, 0],
+      [5.1, 45.0, 0],
+      [5.1, 45.0005, 0],
+      [5.05, 45.0006, 0],
+      [5.0, 45.0005, 0],
+    ])
+    const seg = nearestSegment(route, { lng: 5.05, lat: 45.0001 })!
+    expect(seg.index).toBe(0)
+    expect(seg.point.lat).toBeCloseTo(45.0, 9)
+  })
+
+  it('10. remove and add leave the levels outside their bounds alone', async () => {
+    // remove between two anchors
+    const r = importedRoute()
+    const [, v1, , , , v5] = r.points
+    const before = levels(r)
+    const removed = await remove(r, v1, v5, PROFILE)
+    const after = levels(removed)
+    const i1 = after.findIndex((p) => p.id === v1.id)
+    const i5 = after.findIndex((p) => p.id === v5.id)
+    expect(after.slice(0, i1 + 1)).toEqual(before.slice(0, 2))
+    expect(after.slice(i5)).toEqual(before.slice(5))
+
+    // a cut keeps the levels of what stays
+    const c = importedRoute()
+    const cutBefore = levels(c)
+    const cut = await remove(c, undefined, c.points[2], PROFILE)
+    expect(levels(cut).slice(1)).toEqual(cutBefore.slice(3))
+
+    // add extends the route: the points before the old end keep their level
+    const a = importedRoute()
+    const addBefore = levels(a)
+    const added = await add(a, { lng: 5.1, lat: 45.01 }, PROFILE)
+    expect(levels(added).slice(0, addBefore.length - 1)).toEqual(addBefore.slice(0, -1))
   })
 })

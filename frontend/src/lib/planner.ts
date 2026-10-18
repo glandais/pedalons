@@ -1,7 +1,9 @@
 import { distance } from '@/components/map/mapUtils'
 import { route as routerRoute } from '@/api/endpoints/router/router'
 import KDBush from 'kdbush'
+import { around } from 'geokdbush'
 import { RouterProfile } from '@/api/dto'
+import { tRegister, type TranslationKey } from '@/lib/i18nUtils'
 
 export interface Point {
   lng: number
@@ -15,6 +17,8 @@ export interface RoutePoint {
   lat: number
   ele?: number
   manual: boolean
+  /** Comes from a loaded track (file, existing route), not from the router or a gesture. */
+  imported: boolean
   rdpDistance?: number
   zoom: number
 }
@@ -28,9 +32,96 @@ export interface Route {
 
 let pointIdCounter = 0
 
+// The only place where points become `imported`: a loaded track (initialTrack, imported file).
+// The re-fit of a track onto the road network (B2, D1) will go through createPoints(…, true) too.
 export function createRoute(coords: number[][]): Route {
-  const points = createPoints(coords)
+  const points = createPoints(coords, true)
   return computeRoute(points)
+}
+
+/** A gesture refused before any request: the route is left as it was; `messageKey` is shown. */
+export class PlannerRefusedError extends Error {
+  constructor(readonly messageKey: TranslationKey) {
+    super(messageKey)
+  }
+}
+
+const CUT_NEEDS_ZOOM_KEY = tRegister('planner.error.cutNeedsZoom')
+
+/** The anchors enclosing a gesture; undefined where the route has nothing on that side. */
+export interface Bounds {
+  start?: RoutePoint
+  end?: RoutePoint
+}
+
+function findBounds(
+  route: Route,
+  before: number,
+  after: number,
+  isBound: (p: RoutePoint) => boolean
+): Bounds {
+  const points = route.points
+  const last = points.length - 1
+  let start: RoutePoint | undefined
+  if (before >= 0 && last >= 0) {
+    start = points[0]
+    for (let i = Math.min(before, last); i >= 0; i--) {
+      if (isBound(points[i])) {
+        start = points[i]
+        break
+      }
+    }
+  }
+  let end: RoutePoint | undefined
+  if (after <= last && last >= 0) {
+    end = points[last]
+    for (let i = Math.max(after, 0); i <= last; i++) {
+      if (isBound(points[i])) {
+        end = points[i]
+        break
+      }
+    }
+  }
+  return { start, end }
+}
+
+/**
+ * Leg bounds: the first point that is manual or imported, searched backward from `before` and
+ * forward from `after` (both inclusive). Zoom-independent.
+ */
+export function legBounds(route: Route, before: number, after: number): Bounds {
+  return findBounds(route, before, after, (p) => p.manual || p.imported)
+}
+
+/**
+ * Span bounds: the first point that is manual, or imported and visible at `zoom`
+ * (`p.zoom <= zoom`, as the layer filter), searched the same way. Routed points never bound a span.
+ */
+export function spanBounds(route: Route, before: number, after: number, zoom: number): Bounds {
+  return findBounds(route, before, after, (p) => p.manual || (p.imported && p.zoom <= zoom))
+}
+
+const NEAREST_VERTICES = 6
+
+/** The route segment nearest to `p`: its start index and the projection of `p` on it. */
+export function nearestSegment(route: Route, p: Point): { index: number; point: Point } | null {
+  const points = route.points
+  if (points.length < 2) return null
+  // The nearest vertex is not always on the nearest segment (a long straight leg, a route coming
+  // back near itself): test the segments next to several close vertices.
+  const nearest = around(route.index, p.lng, p.lat, NEAREST_VERTICES)
+  if (nearest.length === 0) return null
+  const tried = new Set<number>()
+  let best: { index: number; point: Point; distance: number } | null = null
+  for (const k of nearest) {
+    for (const index of [k - 1, k]) {
+      if (tried.has(index) || index < 0 || index + 1 >= points.length) continue
+      tried.add(index)
+      const projection = projectOnSegment(points[index], points[index + 1], p)
+      if (!best || projection.distance < best.distance) best = { index, ...projection }
+    }
+  }
+  return best && { index: best.index, point: best.point }
 }
 
 function getDist(points: RoutePoint[]): number {
@@ -65,7 +156,7 @@ function getZoomLevelForDistance(lat: number, dist?: number): number {
   )
 }
 
-function createPoint(lng: number, lat: number, ele?: number): RoutePoint {
+function createPoint(lng: number, lat: number, ele?: number, imported = false): RoutePoint {
   return {
     id: `p-${++pointIdCounter}`,
     idx: 0,
@@ -73,19 +164,48 @@ function createPoint(lng: number, lat: number, ele?: number): RoutePoint {
     lat,
     ele,
     manual: false,
+    imported,
     zoom: 0,
   }
 }
 
-function createPoints(coords: number[][]): RoutePoint[] {
-  return coords.map((coord) => createPoint(coord[0], coord[1], coord[2]))
+function createPoints(coords: number[][], imported = false): RoutePoint[] {
+  return coords.map((coord) => createPoint(coord[0], coord[1], coord[2], imported))
 }
 
-export function computeRoute(input: RoutePoint[]): Route {
-  const points = ramerDouglasPeucker(input, 5)
+/**
+ * Simplifies `input` into a route. With `changed`, only the span between the two bounds is
+ * simplified again (they are objects of `input`, found by identity): everything outside keeps its
+ * points and its zoom levels, so a gesture does not reshuffle the anchors far from it.
+ */
+export function computeRoute(input: RoutePoint[], changed?: Bounds): Route {
+  let points: RoutePoint[]
+  if (!changed || input.length < 2) {
+    points = ramerDouglasPeucker(input, 5)
+    points.forEach((p) => {
+      p.zoom = p.manual ? MIN_ANCHOR_ZOOM : getZoomLevelForDistance(p.lat, p.rdpDistance)
+    })
+  } else {
+    const s = changed.start ? input.indexOf(changed.start) : 0
+    const e = changed.end ? input.indexOf(changed.end) : input.length - 1
+    if (s < 0 || e < 0) throw new Error('planner: bound not in route')
+    if (e <= s) {
+      points = [...input]
+    } else {
+      // The recursion is called directly: ramerDouglasPeucker would make the bounds manual, and an
+      // imported anchor used as a bound would become a marker.
+      const middle: RoutePoint[] = []
+      ramerDouglasPeuckerRecursive(input, middle, 5, s, e)
+      points = [...input.slice(0, s + 1), ...middle, ...input.slice(e)]
+      for (const p of middle) p.zoom = getZoomLevelForDistance(p.lat, p.rdpDistance)
+    }
+    points[0].manual = true
+    points[points.length - 1].manual = true
+    // Other points, the bounds included, keep their zoom: only a manual one is always visible
+    for (const p of points) if (p.manual) p.zoom = MIN_ANCHOR_ZOOM
+  }
   points.forEach((p, idx) => {
     p.idx = idx
-    p.zoom = p.manual ? MIN_ANCHOR_ZOOM : getZoomLevelForDistance(p.lat, p.rdpDistance)
   })
   const index = new KDBush(points.length)
   for (const { lng, lat } of points) index.add(lng, lat)
@@ -130,7 +250,7 @@ export async function add(
   }
   route.points[route.points.length - 1].manual = true
 
-  return computeRoute(route.points)
+  return computeRoute(route.points, { start: last })
 }
 
 // keep route up to startPoint, compute points between startPoint and p, compute points between p and endPoint, keep route after endPoint
@@ -145,10 +265,10 @@ export async function insert(
   teamSlug?: string
 ): Promise<Route> {
   signal?.throwIfAborted()
-  const startIdx = startPoint ? route.points.findIndex((pt) => pt.idx === startPoint.idx) : -1
-  const endIdx = endPoint
-    ? route.points.findIndex((pt) => pt.idx === endPoint.idx)
-    : route.points.length
+  // Bounds are found by id: `idx` is renumbered by every computation, and the bounds may have been
+  // frozen when a menu opened.
+  const startIdx = startPoint ? indexOfPoint(route, startPoint) : -1
+  const endIdx = endPoint ? indexOfPoint(route, endPoint) : route.points.length
 
   // Keep points up to and including start
   const before = route.points.slice(0, startIdx + 1)
@@ -186,8 +306,14 @@ export async function insert(
   }
 
   // Build new points array
-  route.points = [...before, ...segmentToP, ...[manualPoint], ...segmentToEnd, ...after]
-  return computeRoute(route.points)
+  const points = [...before, ...segmentToP, manualPoint, ...segmentToEnd, ...after]
+  return computeRoute(points, { start: before.at(-1), end: after[0] })
+}
+
+function indexOfPoint(route: Route, point: RoutePoint): number {
+  const i = route.points.findIndex((pt) => pt.id === point.id)
+  if (i < 0) throw new Error('planner: bound not in route')
+  return i
 }
 
 // keep route up to startPoint, compute points between startPoint and endPoint, keep route after endPoint
@@ -201,18 +327,26 @@ export async function remove(
   teamSlug?: string
 ): Promise<Route> {
   signal?.throwIfAborted()
+  const startIdx = startPoint ? indexOfPoint(route, startPoint) : -1
+  const endIdx = endPoint ? indexOfPoint(route, endPoint) : -1
+
   // Removing first point: just keep from endPoint onwards
   if (!startPoint && endPoint) {
-    const endIdx = route.points.findIndex((pt) => pt.idx === endPoint.idx)
-    route.points = route.points.slice(endIdx)
-    return computeRoute(route.points)
+    const kept = route.points.slice(endIdx)
+    // A loaded track must not collapse to a stub because no anchor was visible at this zoom
+    if (kept.length < 2 && route.points.slice(0, endIdx).some((p) => p.imported)) {
+      throw new PlannerRefusedError(CUT_NEEDS_ZOOM_KEY)
+    }
+    return computeRoute(kept, { start: kept[0], end: kept[0] })
   }
 
   // Removing last point: just keep up to startPoint
   if (startPoint && !endPoint) {
-    const startIdx = route.points.findIndex((pt) => pt.idx === startPoint.idx)
-    route.points = route.points.slice(0, startIdx + 1)
-    return computeRoute(route.points)
+    const kept = route.points.slice(0, startIdx + 1)
+    if (kept.length < 2 && route.points.slice(startIdx + 1).some((p) => p.imported)) {
+      throw new PlannerRefusedError(CUT_NEEDS_ZOOM_KEY)
+    }
+    return computeRoute(kept, { start: kept.at(-1), end: kept.at(-1) })
   }
 
   // Both undefined: clear route
@@ -220,15 +354,19 @@ export async function remove(
     return computeRoute([])
   }
 
-  // Normal case: reroute around removed point
-  const startIdx = route.points.findIndex((pt) => pt.idx === startPoint!.idx)
-  const endIdx = route.points.findIndex((pt) => pt.idx === endPoint!.idx)
-
+  // Normal case: reroute around removed point. The request goes out before the array is cut.
+  const segment = await router(
+    route.points[startIdx],
+    route.points[endIdx],
+    profile,
+    direct,
+    signal,
+    teamSlug
+  )
   const before = route.points.slice(0, startIdx + 1)
-  const segment = await router(startPoint!, endPoint!, profile, direct, signal, teamSlug)
   const after = route.points.slice(endIdx)
 
-  return computeRoute([...before, ...segment, ...after])
+  return computeRoute([...before, ...segment, ...after], { start: before.at(-1), end: after[0] })
 }
 
 export function geojson(route: Route): GeoJSON.LineString {
@@ -316,12 +454,20 @@ function getMetersPerLongitudeDegree(latitude: number): number {
   return Math.cos((latitude * Math.PI) / 180) * metersPerLatitudeDegree
 }
 
-function crossarc(coord1: RoutePoint, coord2: RoutePoint, coord3: RoutePoint): number {
-  // Calculates the perpendicular distance in meters
-  // between a line segment (defined by p1 and p2) and a third point, p3.
-  // Uses simple planar geometry (ignores earth curvature).
+function crossarc(coord1: Point, coord2: Point, coord3: Point): number {
+  // Perpendicular distance in meters between the segment [coord1, coord2] and coord3.
+  return projectOnSegment(coord1, coord2, coord3).distance
+}
 
-  // Convert to meters using approximate scaling
+/**
+ * Projection of p3 onto the segment [p1, p2] and the distance to it, in meters. Uses simple planar
+ * geometry (ignores earth curvature).
+ */
+function projectOnSegment(
+  coord1: Point,
+  coord2: Point,
+  coord3: Point
+): { distance: number; point: Point } {
   const metersPerLongitudeDegree = getMetersPerLongitudeDegree(coord1.lat)
 
   const x1 = coord1.lng * metersPerLongitudeDegree
@@ -335,18 +481,20 @@ function crossarc(coord1: RoutePoint, coord2: RoutePoint, coord3: RoutePoint): n
   const dy = y2 - y1
   const segmentLengthSquared = dx * dx + dy * dy
 
-  if (segmentLengthSquared === 0) {
-    // p1 and p2 are the same point
-    return Math.sqrt((x3 - x1) * (x3 - x1) + (y3 - y1) * (y3 - y1))
-  }
+  // p1 and p2 are the same point: t = 0
+  const t =
+    segmentLengthSquared === 0
+      ? 0
+      : Math.max(0, Math.min(1, ((x3 - x1) * dx + (y3 - y1) * dy) / segmentLengthSquared))
 
-  // Project p3 onto the line defined by p1-p2
-  const t = Math.max(0, Math.min(1, ((x3 - x1) * dx + (y3 - y1) * dy) / segmentLengthSquared))
-
-  // Find the closest point on the segment
   const projX = x1 + t * dx
   const projY = y1 + t * dy
 
-  // Return distance from p3 to the projected point
-  return Math.sqrt((x3 - projX) * (x3 - projX) + (y3 - projY) * (y3 - projY))
+  return {
+    distance: Math.sqrt((x3 - projX) * (x3 - projX) + (y3 - projY) * (y3 - projY)),
+    point: {
+      lng: coord1.lng + t * (coord2.lng - coord1.lng),
+      lat: coord1.lat + t * (coord2.lat - coord1.lat),
+    },
+  }
 }

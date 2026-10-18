@@ -118,3 +118,94 @@ describe('useRoutePlanner router errors and team', () => {
     await waitFor(() => expect(result.current.error).toBe('planner.error.routing'))
   })
 })
+
+describe('useRoutePlanner deletions (B12)', () => {
+  /** A router answer that bows the segment, so that it holds routed points between its ends. */
+  function bowedRouter() {
+    routeMock.mockImplementation(async ({ from, to }: { from: typeof A; to: typeof A }) => {
+      const coordinates = [[from.lng, from.lat]]
+      for (let i = 1; i < 8; i++) {
+        const t = i / 8
+        coordinates.push([
+          from.lng + t * (to.lng - from.lng),
+          from.lat + t * (to.lat - from.lat) + 0.002 * Math.sin(Math.PI * t),
+        ])
+      }
+      coordinates.push([to.lng, to.lat])
+      return { route: { coordinates } }
+    })
+  }
+
+  beforeEach(() => {
+    routeMock.mockReset()
+    localStorage.clear()
+  })
+
+  async function drawThree() {
+    bowedRouter()
+    const hook = renderHook(() => useRoutePlanner())
+    act(() => hook.result.current.addControlPoint(A, false))
+    await waitFor(() => expect(hook.result.current.controlPoints).toHaveLength(1))
+    act(() => hook.result.current.addControlPoint(B, false))
+    await waitFor(() => expect(hook.result.current.controlPoints).toHaveLength(2))
+    act(() => hook.result.current.addControlPoint(C, false))
+    await waitFor(() => expect(hook.result.current.controlPoints).toHaveLength(3))
+    routeMock.mockClear()
+    return hook
+  }
+
+  /** A track loaded from a file: six well spread corners, so that its anchors show at several zooms. */
+  const TRACK = [
+    [5.0, 45.0, 100],
+    [5.02, 45.02, 100],
+    [5.04, 45.0, 100],
+    [5.05, 45.003, 100],
+    [5.06, 45.0, 100],
+    [5.08, 45.0, 100],
+  ]
+
+  it('removes an inner point with one request from its neighbour to the next, at any zoom', async () => {
+    const { result } = await drawThree()
+    act(() => result.current.removeControlPoint(result.current.controlPoints[1].idx, false, 16))
+    await waitFor(() => expect(result.current.controlPoints).toHaveLength(2))
+    expect(routeMock).toHaveBeenCalledTimes(1)
+    const body = routeMock.mock.calls[0][0]
+    expect(body.from.lng).toBeCloseTo(A.lng, 6)
+    expect(body.to.lng).toBeCloseTo(C.lng, 6)
+    expect(result.current.canUndo).toBe(true)
+  })
+
+  it('cuts the start of a drawn route at the next control point, whatever the zoom', async () => {
+    const { result } = await drawThree()
+    const next = result.current.controlPoints[1]
+    act(() => result.current.removeControlPoint(result.current.controlPoints[0].idx, false, 0))
+    await waitFor(() => expect(result.current.controlPoints).toHaveLength(2))
+    expect(routeMock).not.toHaveBeenCalled()
+    expect(result.current.route.points[0].id).toBe(next.id)
+  })
+
+  it('refuses to cut the start of an import at a zoom where no anchor shows', async () => {
+    const hook = renderHook(() => useRoutePlanner({ initialTrack: TRACK }))
+    const before = hook.result.current.route
+    act(() => hook.result.current.removeControlPoint(0, false, 9))
+    await waitFor(() => expect(hook.result.current.error).toBe('planner.error.cutNeedsZoom'))
+    expect(hook.result.current.canUndo).toBe(false)
+    expect(hook.result.current.route).toBe(before)
+    expect(routeMock).not.toHaveBeenCalled()
+  })
+
+  it('removes an anchor with one request, and undoing it costs none', async () => {
+    bowedRouter()
+    const hook = renderHook(() => useRoutePlanner({ initialTrack: TRACK }))
+    const points = hook.result.current.route.points
+    act(() => hook.result.current.removeAnchor(points[1], points[5]))
+    await waitFor(() => expect(hook.result.current.canUndo).toBe(true))
+    expect(routeMock).toHaveBeenCalledTimes(1)
+    expect(hook.result.current.route.points.some((p) => p.id === points[3].id)).toBe(false)
+
+    act(() => hook.result.current.undo())
+    await waitFor(() => expect(hook.result.current.canUndo).toBe(false))
+    expect(routeMock).toHaveBeenCalledTimes(1)
+    expect(hook.result.current.route.points.some((p) => p.id === points[3].id)).toBe(true)
+  })
+})

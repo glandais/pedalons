@@ -24,6 +24,10 @@ export function PlannerHelpControl({ trigger }: PlannerHelpControlProps) {
     { action: t('planner.help.move'), gesture: t(`planner.help.move.${pointer}`) },
     { action: t('planner.help.insert'), gesture: t(`planner.help.insert.${pointer}`) },
     { action: t('planner.help.remove'), gesture: t(`planner.help.remove.${pointer}`) },
+    {
+      action: t('planner.help.removeAnchor'),
+      gesture: t(`planner.help.removeAnchor.${pointer}`),
+    },
   ]
   if (!isCoarsePointer) {
     rows.push(

@@ -69,7 +69,14 @@ export function KmMarker({ longitude, latitude, label }: KmMarkerProps) {
   const labelColor = colorScheme === 'dark' ? 'var(--mantine-color-gray-0)' : '#000000'
 
   return (
-    <Marker longitude={longitude} latitude={latitude} anchor="center">
+    // A mere label: a press on it is the map's (touch-action auto on the marker would let the
+    // browser take the touch for a page scroll, and keep its moves from the planner's anchor drag)
+    <Marker
+      longitude={longitude}
+      latitude={latitude}
+      anchor="center"
+      style={{ pointerEvents: 'none' }}
+    >
       <Box
         w={22}
         h={22}

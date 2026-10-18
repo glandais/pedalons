@@ -28,18 +28,13 @@ import { RoutePlannerMiniMap } from './RoutePlannerMiniMap'
 import { PlannerStatus, PlannerStatusChip } from './PlannerStatus'
 import { calculateBounds } from '../map/mapUtils'
 import { useHideTrackKey } from '../../hooks/useHideTrackKey'
-import {
-  findAnchorStartPoint,
-  findAnchorEndPoint,
-  type RoutePlannerState,
-} from '../../hooks/useRoutePlanner'
+import { type RoutePlannerState } from '../../hooks/useRoutePlanner'
 // maplibre-gl CSS is provided by maplibre-theme in index.css
-import { RoutePoint } from '@/lib/planner'
+import { legBounds, nearestSegment, Route, RoutePoint, spanBounds } from '@/lib/planner'
 import { getOverlayBg } from '@/lib/colors'
 import { isEditableTarget } from '@/lib/editableTarget'
 import { isApplePlatform } from '@/lib/platform'
 import { panelJustDismissed } from '@/components/map/mapPanelState'
-import { around } from 'geokdbush'
 
 const DEFAULT_ZOOM = 12
 
@@ -71,6 +66,54 @@ const ANCHOR_TOUCH_RADIUS_PX = 22
 const ANCHOR_DRAG_TOLERANCE_PX = 3
 /** After a long press opens the menu, the click its release may still produce is ignored this long. */
 const LONG_PRESS_CLICK_GRACE_MS = 700
+
+/** A long press on a finger opens the menu after this long without movement. */
+const LONG_PRESS_MS = 500
+/** A marker within this distance of the pointer has priority over the trace under it. */
+const MARKER_PROXIMITY_PX = 20
+/** A mouse targets an anchor within this distance (circle 5 px + 2 px stroke). */
+const ANCHOR_CLICK_RADIUS_PX = 10
+
+/** What the planner's menu is open on: a control point, or an anchor of a loaded track. */
+type PlannerMenu =
+  | { kind: 'marker'; x: number; y: number; idx: number; zoom: number }
+  | {
+      kind: 'anchor'
+      x: number
+      y: number
+      start: RoutePoint
+      end: RoutePoint
+      direct: boolean
+      /** The route the bounds were taken on: a menu left open over another route does nothing. */
+      route: Route
+    }
+
+/**
+ * Index of the visible anchor nearest `at` within `radiusPx`, or null (shared by a finger's touch
+ * and a mouse's right click). Manual points are markers, not anchors; `importedOnly` also skips
+ * the routed ones.
+ */
+function anchorAt(
+  map: MapRef,
+  route: Route,
+  at: { x: number; y: number },
+  radiusPx: number,
+  zoom: number,
+  importedOnly: boolean
+): number | null {
+  let grabbed: { idx: number; distance: number } | null = null
+  for (let i = 0; i < route.points.length; i++) {
+    const p = route.points[i]
+    // The anchors the map shows at this zoom (the layer filter)
+    if (p.manual || p.zoom > zoom || (importedOnly && !p.imported)) continue
+    const projected = map.project([p.lng, p.lat])
+    const distance = Math.hypot(projected.x - at.x, projected.y - at.y)
+    if (distance < radiusPx && (!grabbed || distance < grabbed.distance)) {
+      grabbed = { idx: i, distance }
+    }
+  }
+  return grabbed ? grabbed.idx : null
+}
 
 /** A gesture came from a finger (or pen) when its event says so, whatever the device. */
 function isTouchGesture(event: Event | undefined): boolean {
@@ -108,6 +151,7 @@ export function RoutePlanner({
     insertControlPoint,
     updateControlPoint,
     removeControlPoint,
+    removeAnchor,
     clearRoute,
     canUndo,
     canRedo,
@@ -189,7 +233,8 @@ export function RoutePlanner({
   const [hoverPoint, setHoverPoint] = useState<{
     lng: number
     lat: number
-    idx: number
+    /** Start index of the segment the ghost sits on */
+    seg: number
   } | null>(null)
 
   // State for dragging a ghost point (before insertion)
@@ -212,11 +257,7 @@ export function RoutePlanner({
   const isCoarsePointer = useMediaMatch('(pointer: coarse)')
 
   // Long-press context menu state
-  const [contextMenu, setContextMenu] = useState<{
-    x: number
-    y: number
-    idx: number
-  } | null>(null)
+  const [contextMenu, setContextMenu] = useState<PlannerMenu | null>(null)
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const longPressTouchStart = useRef<{ x: number; y: number } | null>(null)
 
@@ -232,6 +273,15 @@ export function RoutePlanner({
   }, [])
   const longPressOpenedAt = useRef(0)
 
+  // A press on an imported anchor opens its menu after LONG_PRESS_MS (its own timer: the markers'
+  // long press has others), and the touchend that follows must not become a click.
+  const anchorPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const anchorMenuOpenedByPress = useRef(false)
+  const clearAnchorPress = useCallback(() => {
+    if (anchorPressTimer.current) clearTimeout(anchorPressTimer.current)
+    anchorPressTimer.current = null
+  }, [])
+
   const clearLongPress = useCallback(() => {
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current)
@@ -245,22 +295,26 @@ export function RoutePlanner({
   useEffect(() => {
     setContextMenu(null)
     clearLongPress()
-  }, [layout, active, clearLongPress])
+    clearAnchorPress()
+    anchorMenuOpenedByPress.current = false
+  }, [layout, active, clearLongPress, clearAnchorPress])
 
   const handleMarkerTouchStart = useCallback(
     (idx: number) => (event: React.TouchEvent) => {
       const touch = event.touches[0]
+      // The zoom is frozen at the press: the delete acts on what the finger saw
+      const zoom = getMapZoom()
       longPressTouchStart.current = { x: touch.clientX, y: touch.clientY }
       longPressTimer.current = setTimeout(() => {
         const rect = mapContainerRef.current?.getBoundingClientRect()
         const x = rect ? touch.clientX - rect.left : touch.clientX
         const y = rect ? touch.clientY - rect.top : touch.clientY
-        setContextMenu({ x, y, idx })
+        setContextMenu({ kind: 'marker', x, y, idx, zoom })
         longPressOpenedAt.current = Date.now()
         longPressTimer.current = null
-      }, 500)
+      }, LONG_PRESS_MS)
     },
-    []
+    [getMapZoom]
   )
 
   const handleMarkerTouchMove = useCallback(
@@ -287,10 +341,16 @@ export function RoutePlanner({
   )
 
   const handleContextMenuDelete = useCallback(() => {
-    if (!contextMenu) return
-    removeControlPoint(contextMenu.idx, directKeyRef.current, getMapZoom())
+    const m = contextMenu
+    if (!m) return
     setContextMenu(null)
-  }, [contextMenu, removeControlPoint, getMapZoom])
+    if (m.kind === 'marker') {
+      removeControlPoint(m.idx, directKeyRef.current, m.zoom)
+    } else if (m.route === route) {
+      removeAnchor(m.start, m.end, m.direct || directKeyRef.current)
+    }
+    // else: the route changed while the menu was open, its bounds are stale
+  }, [contextMenu, removeControlPoint, removeAnchor, route])
 
   // Straight-line mode: held while Ctrl OR Alt is down (Ctrl+click is a right click on macOS, hence
   // Alt). Read from the modifier flags of every key event, so a missed keyup cannot leave it stuck,
@@ -328,12 +388,12 @@ export function RoutePlanner({
       clearLongPress()
       setContextMenu(null)
       setDraggingMarker({ idx, lng: event.lngLat.lng, lat: event.lngLat.lat })
-      const zoom = getMapZoom()
-      setStartDragPoint(findAnchorStartPoint(route, idx, zoom))
-      setEndDragPoint(findAnchorEndPoint(route, idx, zoom))
+      const { start, end } = legBounds(route, idx - 1, idx + 1)
+      setStartDragPoint(start)
+      setEndDragPoint(end)
       setHoverPoint(null)
     },
-    [route, getMapZoom, clearLongPress]
+    [route, clearLongPress]
   )
 
   const handleMarkerDrag = useCallback(
@@ -347,6 +407,12 @@ export function RoutePlanner({
 
   const handleMarkerDragEnd = useCallback(
     () => (event: MarkerDragEvent) => {
+      // A drag whose bounds were cleared (a second finger cancelled it) must not rebuild the route
+      // around the moved point alone
+      if (!startDragPoint && !endDragPoint && route.points.length > 1) {
+        setDraggingMarker(null)
+        return
+      }
       updateControlPoint(
         startDragPoint,
         { lng: event.lngLat.lng, lat: event.lngLat.lat },
@@ -357,7 +423,7 @@ export function RoutePlanner({
       setStartDragPoint(undefined)
       setEndDragPoint(undefined)
     },
-    [updateControlPoint, startDragPoint, endDragPoint]
+    [updateControlPoint, startDragPoint, endDragPoint, route]
   )
 
   const handleMarkerRightClick = useCallback(
@@ -378,6 +444,63 @@ export function RoutePlanner({
       removeControlPoint(index, directKeyRef.current, getMapZoom())
     },
     [removeControlPoint, getMapZoom]
+  )
+
+  // Right click on an imported anchor (a white point of a loaded track): offers to delete it. The
+  // bounds are frozen now, at the zoom the pointer saw, and shown while the menu is open.
+  const handleMapContextMenu = useCallback(
+    (event: MapMouseEvent) => {
+      const native = event.originalEvent
+      // MapLibre's simulated long press, or a finger's native one: the finger has its own menu
+      if (isFingerEvent(native)) return
+      // A marker is a child of the map's container: its own handler owns the event
+      // Only the control points and « Start here » are interactive: the hover ghost and the km
+      // labels are markers too, but their wrapper must not swallow the click (same selector as the
+      // touch start).
+      if (
+        (native.target as HTMLElement | null)?.closest?.(
+          '.maplibregl-marker [role="button"], .planner-start-here'
+        )
+      ) {
+        return
+      }
+      // macOS turns Ctrl+click into a right click: that is the straight-line gesture
+      if (isApplePlatform() && native.ctrlKey && native.button === 0) return
+      const map = mapRef.current
+      if (isLoading || !map) return
+      // A marker has priority over the anchor under it
+      if (
+        controlPoints.some((p) => {
+          const projected = map.project([p.lng, p.lat])
+          return (
+            Math.hypot(projected.x - event.point.x, projected.y - event.point.y) <
+            MARKER_PROXIMITY_PX
+          )
+        })
+      ) {
+        return
+      }
+      const zoom = getMapZoom()
+      const i = anchorAt(map, route, event.point, ANCHOR_CLICK_RADIUS_PX, zoom, true)
+      if (i === null) return
+      const { start, end } = spanBounds(route, i - 1, i + 1, zoom)
+      if (!start || !end) return
+      native.preventDefault()
+      const rect = mapContainerRef.current?.getBoundingClientRect()
+      const x = rect ? native.clientX - rect.left : native.clientX
+      const y = rect ? native.clientY - rect.top : native.clientY
+      setHoverPoint(null)
+      setContextMenu({
+        kind: 'anchor',
+        x,
+        y,
+        start,
+        end,
+        direct: native.altKey || (!isApplePlatform() && native.ctrlKey),
+        route,
+      })
+    },
+    [isFingerEvent, isLoading, controlPoints, getMapZoom, route]
   )
 
   const handleMapClick = useCallback(
@@ -421,12 +544,9 @@ export function RoutePlanner({
           layers: ['route-line'],
         })
         if (features.length > 0) {
-          const nearestIds = around(route.index, event.lngLat.lng, event.lngLat.lat, 1, 1)
-          if (nearestIds.length === 1) {
-            const nearestId = nearestIds[0]
-            const zoom = getMapZoom()
-            const start = findAnchorStartPoint(route, nearestId, zoom)
-            const end = findAnchorEndPoint(route, nearestId, zoom)
+          const seg = nearestSegment(route, event.lngLat)
+          if (seg) {
+            const { start, end } = spanBounds(route, seg.index, seg.index + 1, getMapZoom())
             insertControlPoint(start, { lng: event.lngLat.lng, lat: event.lngLat.lat }, end, false)
             return
           }
@@ -474,7 +594,6 @@ export function RoutePlanner({
 
       if (!mapRef.current || !routeGeoJson) return
 
-      const MARKER_PROXIMITY_PX = 20
       for (const point of controlPoints) {
         const projected = mapRef.current.project([point.lng, point.lat])
         const dx = projected.x - event.point.x
@@ -496,14 +615,9 @@ export function RoutePlanner({
       })
 
       if (features.length > 0) {
-        const nearestIds = around(route.index, event.lngLat.lng, event.lngLat.lat, 1, 1)
-        if (nearestIds.length === 1) {
-          const nearestId = nearestIds[0]
-          setHoverPoint({
-            lng: route.points[nearestId].lng,
-            lat: route.points[nearestId].lat,
-            idx: nearestIds[0],
-          })
+        const seg = nearestSegment(route, event.lngLat)
+        if (seg) {
+          setHoverPoint({ lng: seg.point.lng, lat: seg.point.lat, seg: seg.index })
           return
         }
       }
@@ -537,11 +651,11 @@ export function RoutePlanner({
       setDraggingGhost({
         lng: hoverPoint.lng,
         lat: hoverPoint.lat,
-        idx: hoverPoint.idx,
+        idx: hoverPoint.seg,
       })
-      const zoom = getMapZoom()
-      setStartDragPoint(findAnchorStartPoint(route, hoverPoint.idx, zoom))
-      setEndDragPoint(findAnchorEndPoint(route, hoverPoint.idx, zoom))
+      const { start, end } = spanBounds(route, hoverPoint.seg, hoverPoint.seg + 1, getMapZoom())
+      setStartDragPoint(start)
+      setEndDragPoint(end)
       setHoverPoint(null)
     },
     [hoverPoint, getMapZoom, route, isLoading]
@@ -567,19 +681,60 @@ export function RoutePlanner({
   const anchorTouchStart = useRef<{ x: number; y: number } | null>(null)
   const anchorTouchMoved = useRef(false)
   const anchorDragEndedAt = useRef(0)
+  // The finger's moves are read from its pointer events too: the browser holds back the touchmoves
+  // of a touch whose touchstart it was not asked to cancel until they leave its slop (about 15 px),
+  // so a short move would never stop the long press. The touchstart is left alone: its click is
+  // what inserts a point on a tap.
+  const lastTouchPointerId = useRef<number | null>(null)
+  const anchorPointerId = useRef<number | null>(null)
+
+  /** Follows the finger of an anchor press: past the tolerance it is a drag, never a long press. */
+  const followAnchorPress = useCallback(
+    (point: { x: number; y: number }) => {
+      const start = anchorTouchStart.current
+      const map = mapRef.current
+      if (!start || !map) return
+      if (Math.hypot(point.x - start.x, point.y - start.y) > ANCHOR_DRAG_TOLERANCE_PX) {
+        anchorTouchMoved.current = true
+        clearAnchorPress()
+      }
+      const { lng, lat } = map.unproject([point.x, point.y])
+      setDraggingGhost((prev) => (prev ? { ...prev, lng, lat } : null))
+    },
+    [clearAnchorPress]
+  )
+
+  const handleAnchorPointerMove = useCallback(
+    (event: React.PointerEvent) => {
+      if (anchorPointerId.current === null || event.pointerId !== anchorPointerId.current) return
+      const rect = mapRef.current?.getContainer().getBoundingClientRect()
+      if (!rect) return
+      followAnchorPress({ x: event.clientX - rect.left, y: event.clientY - rect.top })
+    },
+    [followAnchorPress]
+  )
 
   const cancelAnchorDrag = useCallback(() => {
+    clearAnchorPress()
     anchorTouchStart.current = null
+    anchorPointerId.current = null
     anchorTouchMoved.current = false
     setDraggingGhost(null)
     setStartDragPoint(undefined)
     setEndDragPoint(undefined)
-  }, [])
+  }, [clearAnchorPress])
 
   const handleMapTouchStart = useCallback(
     (event: MapLayerTouchEvent) => {
       const map = mapRef.current
-      if (!map || isLoading || draggingMarker || event.points.length !== 1) return
+      if (!map) return
+      // A second finger is a pinch or a pan: whatever the first one had started is over
+      if (event.points.length !== 1) {
+        clearAnchorPress()
+        if (anchorTouchStart.current) cancelAnchorDrag()
+        return
+      }
+      if (isLoading || draggingMarker) return
       // A control point is a marker of its own, with its own drag and long press; « Start here »
       // is a button. Other markers (the km labels) are mere labels: one may sit on an anchor, and
       // must not keep the finger from grabbing it.
@@ -587,54 +742,96 @@ export function RoutePlanner({
       if (target?.closest?.('.maplibregl-marker [role="button"], .planner-start-here')) return
 
       const zoom = getMapZoom()
-      let grabbed: { idx: number; distance: number } | null = null
-      for (let i = 0; i < route.points.length; i++) {
-        const p = route.points[i]
-        // The anchors the map shows at this zoom (the layer filter below)
-        if (p.manual || p.zoom > zoom) continue
-        const projected = map.project([p.lng, p.lat])
-        const distance = Math.hypot(projected.x - event.point.x, projected.y - event.point.y)
-        if (distance < ANCHOR_TOUCH_RADIUS_PX && (!grabbed || distance < grabbed.distance)) {
-          grabbed = { idx: i, distance }
-        }
-      }
-      if (!grabbed) return
+      const grabbed = anchorAt(map, route, event.point, ANCHOR_TOUCH_RADIUS_PX, zoom, false)
+      if (grabbed === null) return
 
       // The press is the anchor's: the map does not pan
       event.preventDefault()
-      const anchor = route.points[grabbed.idx]
+      const anchor = route.points[grabbed]
       anchorTouchStart.current = { x: event.point.x, y: event.point.y }
+      anchorPointerId.current = lastTouchPointerId.current
       anchorTouchMoved.current = false
-      setDraggingGhost({ lng: anchor.lng, lat: anchor.lat, idx: grabbed.idx })
-      setStartDragPoint(findAnchorStartPoint(route, grabbed.idx, zoom))
-      setEndDragPoint(findAnchorEndPoint(route, grabbed.idx, zoom))
+      setDraggingGhost({ lng: anchor.lng, lat: anchor.lat, idx: grabbed })
+      const { start, end } = spanBounds(route, grabbed - 1, grabbed + 1, zoom)
+      setStartDragPoint(start)
+      setEndDragPoint(end)
+
+      // Held still on an imported anchor, the press opens its delete menu; the bounds are the
+      // ones frozen now.
+      clearAnchorPress()
+      if (anchor.imported && start && end) {
+        const touch = event.originalEvent.touches[0]
+        anchorPressTimer.current = setTimeout(() => {
+          anchorPressTimer.current = null
+          anchorMenuOpenedByPress.current = true
+          anchorTouchStart.current = null
+          anchorPointerId.current = null
+          anchorTouchMoved.current = false
+          // The drag stops; its bounds stay, shown through the menu
+          setDraggingGhost(null)
+          setStartDragPoint(undefined)
+          setEndDragPoint(undefined)
+          const rect = mapContainerRef.current?.getBoundingClientRect()
+          setContextMenu({
+            kind: 'anchor',
+            x: rect ? touch.clientX - rect.left : touch.clientX,
+            y: rect ? touch.clientY - rect.top : touch.clientY,
+            start,
+            end,
+            direct: false,
+            route,
+          })
+          longPressOpenedAt.current = Date.now()
+        }, LONG_PRESS_MS)
+      }
     },
-    [isLoading, draggingMarker, getMapZoom, route]
+    [isLoading, draggingMarker, getMapZoom, route, clearAnchorPress, cancelAnchorDrag]
   )
 
-  const handleMapTouchMove = useCallback((event: MapLayerTouchEvent) => {
-    const start = anchorTouchStart.current
-    if (!start) return
-    event.preventDefault()
-    if (Math.hypot(event.point.x - start.x, event.point.y - start.y) > ANCHOR_DRAG_TOLERANCE_PX) {
-      anchorTouchMoved.current = true
-    }
-    const { lng, lat } = event.lngLat
-    setDraggingGhost((prev) => (prev ? { ...prev, lng, lat } : null))
-  }, [])
+  const handleMapTouchMove = useCallback(
+    (event: MapLayerTouchEvent) => {
+      if (event.points.length > 1) {
+        clearAnchorPress()
+        // Only what this gesture started: a marker drag has its own bounds, a pinch must not clear them
+        if (anchorTouchStart.current) cancelAnchorDrag()
+        return
+      }
+      if (!anchorTouchStart.current) return
+      event.preventDefault()
+      followAnchorPress(event.point)
+    },
+    [clearAnchorPress, cancelAnchorDrag, followAnchorPress]
+  )
 
-  const handleMapTouchEnd = useCallback(() => {
-    if (!anchorTouchStart.current) return
-    if (anchorTouchMoved.current) {
-      anchorDragEndedAt.current = Date.now()
-      anchorTouchStart.current = null
-      anchorTouchMoved.current = false
-      handleMouseUp()
-    } else {
-      // A tap on an anchor: no drag, the tap inserts a point there like anywhere on the trace
-      cancelAnchorDrag()
-    }
-  }, [handleMouseUp, cancelAnchorDrag])
+  const handleMapTouchEnd = useCallback(
+    (event: MapLayerTouchEvent) => {
+      if (anchorMenuOpenedByPress.current) {
+        anchorMenuOpenedByPress.current = false
+        // The browser's event, not MapLibre's: this is what cancels the click the touch would
+        // synthesise, which would close the menu and insert a point
+        event.originalEvent.preventDefault()
+        return
+      }
+      clearAnchorPress()
+      if (!anchorTouchStart.current) return
+      if (anchorTouchMoved.current) {
+        anchorDragEndedAt.current = Date.now()
+        anchorTouchStart.current = null
+        anchorPointerId.current = null
+        anchorTouchMoved.current = false
+        handleMouseUp()
+      } else {
+        // A tap on an anchor: no drag, the tap inserts a point there like anywhere on the trace
+        cancelAnchorDrag()
+      }
+    },
+    [handleMouseUp, cancelAnchorDrag, clearAnchorPress]
+  )
+
+  const handleMapTouchCancel = useCallback(() => {
+    anchorMenuOpenedByPress.current = false
+    cancelAnchorDrag()
+  }, [cancelAnchorDrag])
 
   // A finger in the fullscreen editor: its tools are in the dialog's bottom bar, not on the map.
   const touchFullscreen = layout === 'fullscreen' && isCoarsePointer
@@ -659,6 +856,11 @@ export function RoutePlanner({
         })),
     }
   }, [route.points, routeGeoJson])
+
+  // While an anchor's menu is open its bounds show, joined by the line the delete would route
+  const menuBounds = contextMenu?.kind === 'anchor' ? contextMenu : null
+  const shownStart = startDragPoint ?? menuBounds?.start
+  const shownEnd = endDragPoint ?? menuBounds?.end
 
   // Compute connection lines and boundary points when dragging
   const { dragConnectionLines } = useMemo(() => {
@@ -700,8 +902,29 @@ export function RoutePlanner({
       }
     }
 
+    if (menuBounds) {
+      return {
+        dragConnectionLines: {
+          type: 'FeatureCollection' as const,
+          features: [
+            {
+              type: 'Feature' as const,
+              geometry: {
+                type: 'LineString' as const,
+                coordinates: [
+                  [menuBounds.start.lng, menuBounds.start.lat],
+                  [menuBounds.end.lng, menuBounds.end.lat],
+                ],
+              },
+              properties: {},
+            },
+          ],
+        },
+      }
+    }
+
     return { dragConnectionLines: null }
-  }, [draggingMarker, draggingGhost, startDragPoint, endDragPoint])
+  }, [draggingMarker, draggingGhost, startDragPoint, endDragPoint, menuBounds])
 
   return (
     <Stack gap={0} h="100%">
@@ -745,11 +968,16 @@ export function RoutePlanner({
         ref={mapContainerRef}
         onPointerDownCapture={(e: React.PointerEvent) => {
           lastPointerType.current = e.pointerType as PointerKind
+          // Comes before its touchstart: the pointer an anchor press will follow
+          if (e.pointerType === 'touch' || e.pointerType === 'pen') {
+            lastTouchPointerId.current = e.pointerId
+          }
         }}
         // Moves too: a mouse hovering after a finger tap must be recognised as a mouse again, and
         // the compatibility mousemove a tap produces (Safari sends one before its click) as a finger.
         onPointerMoveCapture={(e: React.PointerEvent) => {
           lastPointerType.current = e.pointerType as PointerKind
+          handleAnchorPointerMove(e)
         }}
         onKeyDownCapture={(e: React.KeyboardEvent) => {
           // Inline, this map sits inside the editor's <form>: Enter in the search box would submit
@@ -777,7 +1005,8 @@ export function RoutePlanner({
             onTouchStart={handleMapTouchStart}
             onTouchMove={handleMapTouchMove}
             onTouchEnd={handleMapTouchEnd}
-            onTouchCancel={cancelAnchorDrag}
+            onTouchCancel={handleMapTouchCancel}
+            onContextMenu={handleMapContextMenu}
             interactiveLayerIds={routeGeoJson ? ['route-line'] : []}
             cursor={
               isLoading
@@ -1008,14 +1237,15 @@ export function RoutePlanner({
                 )}
 
                 {/* Bbox boundary markers showing effective start/end during drag */}
-                {startDragPoint && (
+                {shownStart && (
                   <Marker
                     key={`bbox-boundary-start`}
-                    longitude={startDragPoint.lng}
-                    latitude={startDragPoint.lat}
+                    longitude={shownStart.lng}
+                    latitude={shownStart.lat}
                     anchor="center"
                   >
                     <Box
+                      data-testid="planner-bound"
                       w={14}
                       h={14}
                       style={{
@@ -1028,14 +1258,15 @@ export function RoutePlanner({
                     />
                   </Marker>
                 )}
-                {endDragPoint && (
+                {shownEnd && (
                   <Marker
                     key={`bbox-boundary-end`}
-                    longitude={endDragPoint.lng}
-                    latitude={endDragPoint.lat}
+                    longitude={shownEnd.lng}
+                    latitude={shownEnd.lat}
                     anchor="center"
                   >
                     <Box
+                      data-testid="planner-bound"
                       w={14}
                       h={14}
                       style={{

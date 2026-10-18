@@ -15,6 +15,7 @@ import { expect, test, unique } from './support/fixtures'
 import type { BrowserContext, Page } from '@playwright/test'
 import {
   gpxOf,
+  routerAnswer,
   stubBasemap,
   stubRouter,
   traceMapPixels,
@@ -279,7 +280,9 @@ async function drawThreePoints(planner: Awaited<ReturnType<typeof openPlanner>>)
   await expect(points(3)).toBeVisible()
   await settled()
   expect(routerRequests, 'one routed segment per added point').toHaveLength(2)
+  const legs = [...routerRequests]
   routerRequests.length = 0
+  return legs
 }
 
 test.describe('the planner gestures, with a simulated router', () => {
@@ -904,20 +907,27 @@ test('opening a long preview for editing frames the whole track, on any screen',
   expect(routerRequests, 'framing a track asks nothing of the router').toHaveLength(0)
 })
 
-test('a finger drags an anchor of a loaded track: the trace is routed again through it', async ({
+/**
+ * A loaded track shaped like an L, opened in the planner: 3 km east, then 3 km north, its corner an
+ * anchor (one of the small white points a loaded track is pinned by) drawn where the end's x meets
+ * the start's y. The corner is about 2 121 m off the straight line from the start to the end, so
+ * it shows from zoom 11, within the frame of the whole track. The router is simulated and counted.
+ */
+async function openLTrack({
   context,
   page,
   isMobile,
-}) => {
-  test.skip(!isMobile, 'a finger gesture: covered by the mobile project')
+}: {
+  context: BrowserContext
+  page: Page
+  isMobile: boolean
+}) {
   test.setTimeout(90_000)
   const { owner } = await plannerSite()
   await signInPlanner(context)
   await stubBasemap(page)
   const routerRequests = await stubRouter(page)
 
-  // An L: 3 km east, then 3 km north. Its corner is an anchor (one of the small white points a
-  // loaded track is pinned by), drawn where the end's x meets the start's y.
   const [lat0, lon0] = [48.4469, 1.4875]
   const perLat = 111_320
   const perLon = perLat * Math.cos((lat0 * Math.PI) / 180)
@@ -944,13 +954,20 @@ test('a finger drags an anchor of a loaded track: the trace is routed again thro
   )
 
   await page.goto(`${origin}/outils-gpx/${preview.id}/modifier`)
-  const edit = page.getByRole('main').getByRole('button', { name: 'Modifier le tracé' })
-  await hydrated(edit)
-  await edit.click()
+  // A finger opens the editor from the form, a mouse already has the map in the page.
+  if (isMobile) {
+    const edit = page.getByRole('main').getByRole('button', { name: 'Modifier le tracé' })
+    await hydrated(edit)
+    await edit.click()
+  }
   const surface = editorOf(page, isMobile, name)
   const marker = (n: number) => surface.getByRole('button', { name: `Point ${n}`, exact: true })
   await expect(marker(2)).toBeVisible()
   await expect(marker(3)).toHaveCount(0)
+  // On a mouse the map sits in the form, below the fold of a 1280x720 window: raw mouse and touch
+  // events land where they are told, never scrolling, so the map is brought into view first.
+  const canvas = surface.locator('canvas.maplibregl-canvas').first()
+  await canvas.evaluate((el) => el.scrollIntoView({ block: 'center', inline: 'center' }))
   const centre = async (n: number) => {
     const b = await marker(n).boundingBox()
     if (!b) throw new Error(`marker ${n} has no box`)
@@ -958,12 +975,53 @@ test('a finger drags an anchor of a loaded track: the trace is routed again thro
   }
   const [start, end] = [await centre(1), await centre(2)]
   const corner = { x: end.x, y: start.y }
-  const drop = { x: corner.x - 60, y: corner.y - 60 }
+  const viewport = page.viewportSize()
+  if (!viewport) throw new Error('the page has no viewport')
+  for (const p of [start, end, corner]) {
+    expect(p.x, 'the L is inside the window').toBeGreaterThan(0)
+    expect(p.x).toBeLessThan(viewport.width)
+    expect(p.y, 'the L is inside the window').toBeGreaterThan(0)
+    expect(p.y).toBeLessThan(viewport.height)
+  }
+  const settled = async () => {
+    await expect(surface.getByRole('status', { name: "Calcul de l'itinéraire..." })).toHaveCount(0)
+  }
 
-  // A finger press on the corner, a drag, a lift: raw touch events (Playwright can only tap).
+  // A finger press, a drag, a lift: raw touch events (Playwright can only tap).
   const cdp = await context.newCDPSession(page)
   const touch = (type: 'touchStart' | 'touchMove' | 'touchEnd', at?: { x: number; y: number }) =>
     cdp.send('Input.dispatchTouchEvent', { type, touchPoints: at ? [at] : [] })
+
+  return {
+    page,
+    isMobile,
+    surface,
+    marker,
+    centre,
+    corner,
+    start,
+    end,
+    settled,
+    routerRequests,
+    startLonLat: [lon0, lat0] as const,
+    endLonLat: [lon0 + 3000 / perLon, lat0 + 3000 / perLat] as const,
+    touch,
+  }
+}
+
+test('a finger drags an anchor of a loaded track: the trace is routed again through it', async ({
+  context,
+  page,
+  isMobile,
+}) => {
+  test.skip(!isMobile, 'a finger gesture: covered by the mobile project')
+  const { marker, centre, corner, start, touch, routerRequests } = await openLTrack({
+    context,
+    page,
+    isMobile,
+  })
+  const drop = { x: corner.x - 60, y: corner.y - 60 }
+
   await touch('touchStart', corner)
   for (let i = 1; i <= 8; i++) {
     await touch('touchMove', {
@@ -980,6 +1038,225 @@ test('a finger drags an anchor of a loaded track: the trace is routed again thro
   const moved = await centre(2)
   expect(Math.abs(moved.x - drop.x), 'the new point is where the finger lifted').toBeLessThan(20)
   expect(Math.abs(moved.y - drop.y)).toBeLessThan(20)
-  const [startAfter] = [await centre(1)]
+  const startAfter = await centre(1)
   expect(Math.abs(startAfter.x - start.x), 'the map did not pan').toBeLessThan(2)
+})
+
+test.describe('deleting an anchor of a loaded track', () => {
+  test.setTimeout(90_000)
+
+  const DELETE = 'Supprimer le point'
+
+  test('a right click on the corner offers to delete it: one request, from the start to the end', async ({
+    context,
+    page,
+    isMobile,
+  }) => {
+    test.skip(isMobile, 'a mouse gesture: the finger has its own long press')
+    const l = await openLTrack({ context, page, isMobile })
+    const { marker, corner, routerRequests, settled, startLonLat, endLonLat } = l
+
+    await page.mouse.click(corner.x, corner.y, { button: 'right' })
+    const item = page.getByRole('menuitem', { name: DELETE })
+    await expect(item).toBeVisible()
+    // The two points the trace would be routed between, joined while the menu is open.
+    await expect(page.getByTestId('planner-bound')).toHaveCount(2)
+
+    await item.click()
+    await settled()
+    expect(routerRequests, 'one segment from the start to the end').toHaveLength(1)
+    expect(routerRequests[0].from.lng).toBeCloseTo(startLonLat[0], 4)
+    expect(routerRequests[0].from.lat).toBeCloseTo(startLonLat[1], 4)
+    expect(routerRequests[0].to.lng).toBeCloseTo(endLonLat[0], 4)
+    expect(routerRequests[0].to.lat).toBeCloseTo(endLonLat[1], 4)
+    await expect(marker(2)).toBeVisible()
+    await expect(marker(3)).toHaveCount(0)
+
+    // The new trace is routed, not loaded: a right click on it offers nothing, nor does a click
+    // far from any trace.
+    const sample = routerAnswer({
+      from: { lng: startLonLat[0], lat: startLonLat[1] },
+      to: { lng: endLonLat[0], lat: endLonLat[1] },
+    } as Parameters<typeof routerAnswer>[0]).route.coordinates[6]
+    const [s, e] = [await l.centre(1), await l.centre(2)]
+    const pxPerLon = (e.x - s.x) / (endLonLat[0] - startLonLat[0])
+    const pxPerLat = (e.y - s.y) / (endLonLat[1] - startLonLat[1])
+    const onTrace = {
+      x: s.x + (sample[0] - startLonLat[0]) * pxPerLon,
+      y: s.y + (sample[1] - startLonLat[1]) * pxPerLat,
+    }
+    await page.mouse.click(onTrace.x, onTrace.y, { button: 'right' })
+    await page.mouse.click(s.x, e.y, { button: 'right' })
+    await page.waitForTimeout(300)
+    await expect(page.getByRole('menuitem', { name: DELETE })).toHaveCount(0)
+    expect(routerRequests).toHaveLength(1)
+  })
+
+  test('Alt + right click deletes the corner in a straight line: no request', async ({
+    context,
+    page,
+    isMobile,
+  }) => {
+    test.skip(isMobile, 'a mouse gesture')
+    const { corner, routerRequests, settled } = await openLTrack({ context, page, isMobile })
+
+    await page.keyboard.down('Alt')
+    await page.mouse.click(corner.x, corner.y, { button: 'right' })
+    await page.keyboard.up('Alt')
+    await page.getByRole('menuitem', { name: DELETE }).click()
+    await settled()
+    expect(routerRequests, 'a straight line is never routed').toHaveLength(0)
+
+    await page.mouse.click(corner.x, corner.y, { button: 'right' })
+    await page.waitForTimeout(300)
+    await expect(page.getByRole('menuitem', { name: DELETE })).toHaveCount(0)
+  })
+
+  test('a long press on the corner opens its menu, and lifting the finger inserts nothing', async ({
+    context,
+    page,
+    isMobile,
+  }) => {
+    test.skip(!isMobile, 'a finger gesture')
+    const { marker, corner, touch, routerRequests, settled } = await openLTrack({
+      context,
+      page,
+      isMobile,
+    })
+
+    await touch('touchStart', corner)
+    await page.waitForTimeout(800) // the menu opens after 500 ms without movement
+    await touch('touchEnd')
+
+    const item = page.getByRole('menuitem', { name: DELETE })
+    await expect(item).toBeVisible()
+    await page.waitForTimeout(900) // past the grace in which a synthesised click is ignored
+    await expect(item).toBeVisible()
+    await expect(page.getByTestId('planner-bound')).toHaveCount(2)
+    await expect(marker(3)).toHaveCount(0)
+    expect(routerRequests, 'the release inserted no point').toHaveLength(0)
+
+    await item.click()
+    await settled()
+    expect(routerRequests).toHaveLength(1)
+  })
+
+  test('a press that moves is a drag, not a long press', async ({ context, page, isMobile }) => {
+    test.skip(!isMobile, 'a finger gesture')
+    const { marker, corner, touch, routerRequests } = await openLTrack({
+      context,
+      page,
+      isMobile,
+    })
+    const drop = { x: corner.x - 60, y: corner.y - 60 }
+
+    // 4 px: past the drag's tolerance (3 px), within the browser's slop (its touchmove is held
+    // back, the pointermove is not). Sent at once: the press redraws the map, and on a busy machine
+    // a move sent later can reach the page after the 500 ms of the long press.
+    await touch('touchStart', corner)
+    await touch('touchMove', { x: corner.x + 4, y: corner.y })
+    await page.waitForTimeout(700)
+    await expect(page.getByRole('menuitem', { name: DELETE })).toHaveCount(0)
+    for (let i = 1; i <= 8; i++) {
+      await touch('touchMove', {
+        x: corner.x + ((drop.x - corner.x) * i) / 8,
+        y: corner.y + ((drop.y - corner.y) * i) / 8,
+      })
+    }
+    await touch('touchEnd')
+
+    await expect(marker(3)).toBeVisible()
+    await expect.poll(() => routerRequests.length).toBe(2)
+  })
+
+  test('deleting after zooming in routes between the neighbours, never around a routed anchor', async ({
+    context,
+    page,
+    isMobile,
+  }) => {
+    test.skip(isMobile, 'a mouse gesture')
+    const planner = await openPlanner({ context, page, isMobile })
+    const { marker, settled, routerRequests } = planner
+    const legs = await drawThreePoints(planner)
+
+    // The simulated router bows its segments: their routed anchors show from zoom 14, and the old
+    // bounds (the nearest visible anchors) stopped there instead of at the markers.
+    const where = async () => {
+      const b = await marker(2).boundingBox()
+      if (!b) throw new Error('the second marker has no box')
+      return { x: b.x + b.width / 2, y: b.y + b.height / 2 }
+    }
+    // The map opens at zoom 9: each zoom level doubles the distance between two markers on screen.
+    const gap = async () => {
+      const [a, b] = await Promise.all([marker(1).boundingBox(), marker(2).boundingBox()])
+      if (!a || !b) throw new Error('a marker has no box')
+      return Math.hypot(a.x - b.x, a.y - b.y)
+    }
+    const initialGap = await gap()
+    const at = await where()
+    await page.mouse.move(at.x, at.y)
+    for (let i = 0; i < 40 && (await gap()) < initialGap * 2 ** 5; i++) {
+      await page.mouse.wheel(0, -500)
+      await page.waitForTimeout(100)
+    }
+    // The zoom eases: wait for the marker to stop moving.
+    let previous = await marker(2).boundingBox()
+    await expect
+      .poll(async () => {
+        const now = await marker(2).boundingBox()
+        const still = JSON.stringify(now) === JSON.stringify(previous)
+        previous = now
+        return still
+      })
+      .toBe(true)
+    // The precondition: zoom 14 or more, where the routed anchors show (and the old bounds broke)
+    expect(await gap(), 'zoomed in to level 14').toBeGreaterThanOrEqual(initialGap * 2 ** 5)
+
+    await marker(2).click({ button: 'right' })
+    await settled()
+    expect(routerRequests, 'one segment joins the neighbours').toHaveLength(1)
+    expect(routerRequests[0].from.lng).toBeCloseTo(legs[0].from.lng, 6)
+    expect(routerRequests[0].from.lat).toBeCloseTo(legs[0].from.lat, 6)
+    expect(routerRequests[0].to.lng).toBeCloseTo(legs[1].to.lng, 6)
+    expect(routerRequests[0].to.lat).toBeCloseTo(legs[1].to.lat, 6)
+  })
+
+  test('undoing a deleted corner brings it back without a request', async ({
+    context,
+    page,
+    isMobile,
+  }) => {
+    const { surface, corner, touch, routerRequests, settled } = await openLTrack({
+      context,
+      page,
+      isMobile,
+    })
+    const item = page.getByRole('menuitem', { name: DELETE })
+    const openMenu = async () => {
+      if (isMobile) {
+        await touch('touchStart', corner)
+        await page.waitForTimeout(800)
+        await touch('touchEnd')
+      } else {
+        await page.mouse.click(corner.x, corner.y, { button: 'right' })
+      }
+      await expect(item).toBeVisible()
+    }
+
+    await openMenu()
+    await item.click()
+    await settled()
+    expect(routerRequests).toHaveLength(1)
+
+    const shortcut = (label: string, keys: string) => (isMobile ? label : `${label} (${keys})`)
+    await surface.getByRole('button', { name: shortcut('Annuler', 'Ctrl+Z'), exact: true }).click()
+    await settled()
+    expect(routerRequests, 'history replays what it kept').toHaveLength(1)
+
+    // The anchor is back: its menu opens again.
+    await openMenu()
+    await page.keyboard.press('Escape')
+    await expect(item).toHaveCount(0)
+    expect(routerRequests).toHaveLength(1)
+  })
 })
