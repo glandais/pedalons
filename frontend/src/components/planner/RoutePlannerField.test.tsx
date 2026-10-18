@@ -23,6 +23,10 @@ const plannerState = vi.hoisted(() => ({
   clearRoute: () => {},
   canUndo: false,
   canRedo: false,
+  directStats: { total: 0, longest: 0, count: 0 },
+  directMode: false,
+  setDirectMode: () => {},
+  routeLegsGeoJson: null,
   undo: () => {},
   redo: () => {},
 }))
@@ -99,6 +103,7 @@ describe('RoutePlannerField', () => {
     onPointsChange.mockClear()
     seenRoutes.length = 0
     plannerState.routeGeoJson = null
+    plannerState.directStats = { total: 0, longest: 0, count: 0 }
   })
   afterEach(() => {
     cleanup()
@@ -125,6 +130,18 @@ describe('RoutePlannerField', () => {
       { lng: 2.35, lat: 48.85 },
       { lng: 2.4, lat: 48.9 },
     ])
+  })
+
+  it('warns about a long straight leg, and not about a short one', () => {
+    setCoarse(false)
+    plannerState.directStats = { total: 200, longest: 200, count: 1 }
+    renderField()
+    expect(screen.queryByText('planner.directWarning')).toBeNull()
+    cleanup()
+
+    plannerState.directStats = { total: 400, longest: 400, count: 1 }
+    renderField()
+    expect(screen.getByText('planner.directWarning')).toBeTruthy()
   })
 
   describe('with a mouse', () => {

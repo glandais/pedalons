@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { IconArrowBackUp, IconArrowForwardUp, IconTrash } from '@tabler/icons-react'
+import { IconArrowBackUp, IconArrowForwardUp, IconLineDashed } from '@tabler/icons-react'
 import { ActionIcon, Button, Group } from '@mantine/core'
 import { RouterProfile } from '@/api/dto'
 import { PlannerHelpControl } from './PlannerHelpControl'
@@ -12,15 +12,16 @@ interface PlannerBottomBarProps {
   onRedo: () => void
   routerProfile: RouterProfile
   onProfileChange: (profile: RouterProfile) => void
-  /** Control points on the map; the clear button is disabled without any. */
-  pointCount: number
-  onClear: () => void
+  /** "Straight line" toggle: the next gestures are drawn without the router. */
+  directMode: boolean
+  onDirectModeChange: (on: boolean) => void
   onDone: () => void
 }
 
 /**
- * The fullscreen editor's tools on a finger, in thumb reach: undo, redo, routing profile, help,
- * clear (red, apart) and « Done ». Every target is 44 px (`size="xl"`). Undo and redo carry no
+ * The fullscreen editor's tools on a finger, in thumb reach: undo, redo, the straight-line toggle,
+ * routing profile, help and « Done ». Every target is 44 px (`size="xl"`). « Clear » is in the
+ * toolbar above: at 360 px the bar has no room for one more button (B2 will hit this again). Undo and redo carry no
  * keyboard shortcut in their label, there is no keyboard.
  */
 export function PlannerBottomBar({
@@ -30,8 +31,8 @@ export function PlannerBottomBar({
   onRedo,
   routerProfile,
   onProfileChange,
-  pointCount,
-  onClear,
+  directMode,
+  onDirectModeChange,
   onDone,
 }: PlannerBottomBarProps) {
   const { t } = useTranslation()
@@ -71,6 +72,16 @@ export function PlannerBottomBar({
         >
           <IconArrowForwardUp size={22} />
         </ActionIcon>
+        <ActionIcon
+          variant={directMode ? 'filled' : 'subtle'}
+          color={directMode ? undefined : 'gray'}
+          size="xl"
+          onClick={() => onDirectModeChange(!directMode)}
+          aria-pressed={directMode}
+          aria-label={t('planner.direct.toggle')}
+        >
+          <IconLineDashed size={22} />
+        </ActionIcon>
         <RouterProfileSelector
           currentProfile={routerProfile}
           onProfileChange={onProfileChange}
@@ -79,21 +90,9 @@ export function PlannerBottomBar({
         <PlannerHelpControl trigger="bar" />
       </Group>
 
-      <Group gap="xs" wrap="nowrap">
-        <ActionIcon
-          variant="subtle"
-          color="red"
-          size="xl"
-          onClick={onClear}
-          disabled={pointCount === 0}
-          aria-label={t('planner.clear')}
-        >
-          <IconTrash size={22} />
-        </ActionIcon>
-        <Button size="md" px="sm" onClick={onDone}>
-          {t('planner.done')}
-        </Button>
-      </Group>
+      <Button size="md" px="sm" onClick={onDone}>
+        {t('planner.done')}
+      </Button>
     </Group>
   )
 }

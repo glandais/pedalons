@@ -19,6 +19,12 @@ export interface RoutePoint {
   manual: boolean
   /** Comes from a loaded track (file, existing route), not from the router or a gesture. */
   imported: boolean
+  /**
+   * The edge `points[i-1] -> points[i]` is a straight line (requested mode, not "no router call").
+   * Carried by the arrival point, like the leg data of the profile; always false on the first point.
+   * A straight leg has no inner point: it is exactly one edge.
+   */
+  direct: boolean
   rdpDistance?: number
   zoom: number
 }
@@ -156,7 +162,13 @@ function getZoomLevelForDistance(lat: number, dist?: number): number {
   )
 }
 
-function createPoint(lng: number, lat: number, ele?: number, imported = false): RoutePoint {
+function createPoint(
+  lng: number,
+  lat: number,
+  ele?: number,
+  imported = false,
+  direct = false
+): RoutePoint {
   return {
     id: `p-${++pointIdCounter}`,
     idx: 0,
@@ -165,6 +177,7 @@ function createPoint(lng: number, lat: number, ele?: number, imported = false): 
     ele,
     manual: false,
     imported,
+    direct,
     zoom: 0,
   }
 }
@@ -207,6 +220,7 @@ export function computeRoute(input: RoutePoint[], changed?: Bounds): Route {
   points.forEach((p, idx) => {
     p.idx = idx
   })
+  if (points.length) points[0].direct = false
   const index = new KDBush(points.length)
   for (const { lng, lat } of points) index.add(lng, lat)
   return {
@@ -240,6 +254,8 @@ export async function add(
   // Nothing of the route is touched before the router answered: an abandoned call leaves it intact.
   last.manual = true
   if (segment.length > 0) {
+    // Written after the await, on the point that stays (the router's last one)
+    segment[segment.length - 1].direct = direct
     // Snap the previous control point to the route start (nearest road). Only a routed leg moves
     // it: a straight line returns just its target, which is not where the leg starts.
     if (isRouted(last, p, direct)) {
@@ -288,6 +304,7 @@ export async function insert(
         : null
   const manualPoint = createPoint(snappedP?.lng ?? p.lng, snappedP?.lat ?? p.lat)
   manualPoint.manual = true
+  manualPoint.direct = startPoint ? direct : false
 
   // Snap boundary points to route endpoints
   if (before.length > 0 && segmentToP.length > 0 && isRouted(startPoint!, p, direct)) {
@@ -298,6 +315,11 @@ export async function insert(
 
   // Keep points after and including end
   const after = route.points.slice(endIdx)
+
+  // The mode of the gesture wins over what the leg was (no inheritance). A point carrying `direct`
+  // is manual or a bound (manualPoint, after[0]): it never enters the simplified middle, and the
+  // duplicates the router leaves next to them, which Douglas-Peucker drops, carry nothing.
+  if (endPoint && after.length > 0) after[0].direct = direct
 
   if (after.length > 0 && segmentToEnd.length > 0 && isRouted(p, endPoint!, direct)) {
     const firstAfter = after[0]
@@ -355,18 +377,30 @@ export async function remove(
   }
 
   // Normal case: reroute around removed point. The request goes out before the array is cut.
+  // The reconnection is straight when asked, or when no routed leg is lost (the replaced legs are
+  // all straight); if the router fails the route is left intact.
+  const straight = direct || isStraightSpan(route, startIdx, endIdx)
   const segment = await router(
     route.points[startIdx],
     route.points[endIdx],
     profile,
-    direct,
+    straight,
     signal,
     teamSlug
   )
   const before = route.points.slice(0, startIdx + 1)
   const after = route.points.slice(endIdx)
+  // Written after the await. A bound (manual or imported) never enters the simplified middle, so
+  // the flag survives the simplification; the router's own duplicate of it is dropped.
+  after[0].direct = straight
 
   return computeRoute([...before, ...segment, ...after], { start: before.at(-1), end: after[0] })
+}
+
+/** Whether every edge of `points[startIdx..endIdx]` is a straight line (false for an empty or inverted range). */
+export function isStraightSpan(route: Route, startIdx: number, endIdx: number): boolean {
+  if (endIdx <= startIdx) return false
+  return route.points.slice(startIdx + 1, endIdx + 1).every((p) => p.direct)
 }
 
 export function geojson(route: Route): GeoJSON.LineString {
@@ -374,6 +408,63 @@ export function geojson(route: Route): GeoJSON.LineString {
     type: 'LineString',
     coordinates: route.points.map((p) => [p.lng, p.lat]),
   }
+}
+
+export type LegProperties = { direct: boolean }
+
+/**
+ * The route as a FeatureCollection of LineStrings, consecutive edges of the same kind (straight or
+ * not) grouped; each feature repeats the shared vertex so the line stays continuous.
+ */
+export function legsGeojson(
+  route: Route
+): GeoJSON.FeatureCollection<GeoJSON.LineString, LegProperties> {
+  const features: GeoJSON.Feature<GeoJSON.LineString, LegProperties>[] = []
+  const points = route.points
+  for (let i = 1; i < points.length; i++) {
+    const direct = points[i].direct
+    const last = features.at(-1)
+    if (last && last.properties.direct === direct) {
+      last.geometry.coordinates.push([points[i].lng, points[i].lat])
+    } else {
+      features.push({
+        type: 'Feature',
+        properties: { direct },
+        geometry: {
+          type: 'LineString',
+          coordinates: [
+            [points[i - 1].lng, points[i - 1].lat],
+            [points[i].lng, points[i].lat],
+          ],
+        },
+      })
+    }
+  }
+  return { type: 'FeatureCollection', features }
+}
+
+/** Above this length, one straight leg is worth a warning at save time. */
+export const DIRECT_WARNING_METERS = 300
+
+export interface DirectStats {
+  total: number
+  longest: number
+  count: number
+}
+
+export function directStats(route: Route): DirectStats {
+  let total = 0
+  let longest = 0
+  let count = 0
+  const points = route.points
+  for (let i = 1; i < points.length; i++) {
+    if (!points[i].direct) continue
+    const d = distance(points[i - 1].lng, points[i - 1].lat, points[i].lng, points[i].lat)
+    total += d
+    longest = Math.max(longest, d)
+    count++
+  }
+  return { total, longest, count }
 }
 
 /** Whether the leg from `from` to `to` goes through the router (a straight line or a hop under 5 m does not). */
@@ -390,7 +481,7 @@ async function router(
   teamSlug?: string
 ): Promise<RoutePoint[]> {
   if (!isRouted(from, to, direct)) {
-    return [createPoint(to.lng, to.lat)]
+    return [createPoint(to.lng, to.lat, undefined, false, direct)]
   }
   // Routing is billed per request: never send one for an operation already abandoned.
   signal?.throwIfAborted()

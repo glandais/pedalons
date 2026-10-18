@@ -11,9 +11,12 @@ import {
   add,
   computeRoute,
   createRoute,
+  directStats,
   geojson,
   insert,
+  isStraightSpan,
   legBounds,
+  legsGeojson,
   nearestSegment,
   PlannerRefusedError,
   remove,
@@ -458,6 +461,7 @@ describe('remove', () => {
     const result = await remove(route, pa, pc, PROFILE, true)
     expect(routeMock).not.toHaveBeenCalled()
     expect(result.points).toHaveLength(2)
+    expect(result.points[1].direct).toBe(true)
     expect(result.dist).toBeGreaterThan(1570)
     expect(result.dist).toBeLessThan(1575)
   })
@@ -972,5 +976,167 @@ describe('B12 gesture bounds', () => {
     const addBefore = levels(a)
     const added = await add(a, { lng: 5.1, lat: 45.01 }, PROFILE)
     expect(levels(added).slice(0, addBefore.length - 1)).toEqual(addBefore.slice(0, -1))
+  })
+})
+
+describe('B6 straight lines', () => {
+  const P: Point = { lng: 5.005, lat: 45.0005 }
+
+  /** A, then B and C each drawn in the given mode. */
+  async function drawn(...modes: boolean[]): Promise<Route> {
+    let route = await add(computeRoute([]), A, PROFILE)
+    const targets = [B, C, D]
+    for (const [i, direct] of modes.entries()) {
+      route = await add(route, targets[i], PROFILE, direct)
+    }
+    routeMock.mockClear()
+    return route
+  }
+
+  it('1. add flags the arrival point of a straight leg only', async () => {
+    const straight = await drawn(true)
+    expect(routeMock).not.toHaveBeenCalled()
+    expect(straight.points.map((p) => p.direct)).toEqual([false, true])
+
+    const routed = await drawn(false)
+    expect(routed.points.every((p) => !p.direct)).toBe(true)
+
+    // A hop under 5 m skips the router without being a requested straight line
+    const hop = await add(await drawn(), { lng: 5.00001, lat: 45.0 }, PROFILE)
+    expect(routeMock).not.toHaveBeenCalled()
+    expect(hop.points.every((p) => !p.direct)).toBe(true)
+  })
+
+  it('2. a straight insert needs no request and leaves no duplicate', async () => {
+    const route = await threePointRoute()
+    const [pa, pb] = manualPoints(route)
+    const result = await insert(route, pa, P, pb, PROFILE, true)
+    expect(routeMock).not.toHaveBeenCalled()
+    const inserted = result.points.find((p) => p.lng === P.lng && p.lat === P.lat)!
+    expect(inserted.direct).toBe(true)
+    expect(result.points.find((p) => p.id === pb.id)!.direct).toBe(true)
+    expect(result.points.filter((p) => p.lng === P.lng && p.lat === P.lat)).toHaveLength(1)
+    expect(result.points.filter((p) => p.lng === B.lng && p.lat === B.lat)).toHaveLength(1)
+    // the leg after B stays routed
+    expect(result.points.at(-1)!.direct).toBe(false)
+  })
+
+  it('3. the mode of the gesture wins: a routed insert in a straight leg is routed', async () => {
+    const route = await drawn(true)
+    const [pa, pb] = route.points
+    const result = await insert(route, pa, P, pb, PROFILE)
+    expect(routeMock).toHaveBeenCalledTimes(2)
+    expect(result.points.some((p) => p.direct)).toBe(false)
+  })
+
+  it('4. adding at the end or at the head keeps the first point not direct', async () => {
+    const end = await add(await drawn(true), C, PROFILE, true)
+    expect(end.points.map((p) => p.direct)).toEqual([false, true, true])
+
+    const route = await drawn(true)
+    const head = await insert(route, undefined, P, route.points[0], PROFILE, true)
+    expect(routeMock).not.toHaveBeenCalled()
+    expect(head.points.map((p) => p.direct)).toEqual([false, true, true])
+  })
+
+  it('5. remove inherits straight legs, never loses a routed one', async () => {
+    const straight = await drawn(true, true)
+    const [pa, , pc] = manualPoints(straight)
+    const merged = await remove(straight, pa, pc, PROFILE)
+    expect(routeMock).not.toHaveBeenCalled()
+    expect(merged.points.map((p) => p.direct)).toEqual([false, true])
+
+    const mixed = await drawn(false, true)
+    const [ma, , mc] = manualPoints(mixed)
+    const rerouted = await remove(mixed, ma, mc, PROFILE)
+    expect(routeMock).toHaveBeenCalledTimes(1)
+    expect(rerouted.points.at(-1)!.direct).toBe(false)
+
+    routeMock.mockClear()
+    const routed = await drawn(false, false)
+    const [ra, , rc] = manualPoints(routed)
+    const forced = await remove(routed, ra, rc, PROFILE, true)
+    expect(routeMock).not.toHaveBeenCalled()
+    expect(forced.points.at(-1)!.direct).toBe(true)
+  })
+
+  it('6. cutting the start of a straight route resets the first point', async () => {
+    const route = await drawn(true, true)
+    const result = await remove(route, undefined, route.points[1], PROFILE)
+    expect(result.points.map((p) => p.direct)).toEqual([false, true])
+  })
+
+  it('7. removing an imported anchor in straight mode leaves imported / straight / imported', async () => {
+    const base = importedRoute()
+    const [, w1, , , w4] = base.points
+    const result = await remove(base, w1, w4, PROFILE, true)
+    expect(routeMock).not.toHaveBeenCalled()
+    expect(result.points.find((p) => p.id === w4.id)!.direct).toBe(true)
+    const legs = legsGeojson(result)
+    expect(legs.features.map((f) => f.properties.direct)).toEqual([false, true, false])
+  })
+
+  it('8. a loaded track is entirely not direct', () => {
+    expect(importedRoute().points.every((p) => !p.direct)).toBe(true)
+  })
+
+  it('9. a local insertion leaves the points outside its bounds untouched', async () => {
+    // A straight leg exists outside the bounds, so `direct` is not trivially false everywhere
+    const loaded = importedRoute()
+    const [, w1, , , w4] = loaded.points
+    const base = await remove(loaded, w1, w4, PROFILE, true)
+    expect(base.points.find((p) => p.id === w4.id)!.direct).toBe(true)
+    const before = snapshot(base)
+    const [v0, v1] = base.points
+    const mid = { lng: (v0.lng + v1.lng) / 2 + 0.0005, lat: (v0.lat + v1.lat) / 2 + 0.0005 }
+    const result = await insert(base, v0, mid, v1, PROFILE, true)
+    const i3 = result.points.findIndex((p) => p.id === v0.id)
+    const i4 = result.points.findIndex((p) => p.id === v1.id)
+    expect(result.points.find((p) => p.id === w4.id)!.direct).toBe(true)
+    for (let k = 0; k <= i3; k++) {
+      expect(result.points[k].id).toBe(before[k].id)
+      expect(result.points[k].direct).toBe(before[k].direct)
+    }
+    for (let k = i4 + 1; k < result.points.length; k++) {
+      const old = before[before.length - (result.points.length - k)]
+      expect(result.points[k].id).toBe(old.id)
+      expect(result.points[k].direct).toBe(old.direct)
+    }
+  })
+
+  it('10. legsGeojson groups consecutive edges of the same kind', async () => {
+    const route = await drawn(false, true, false)
+    const { features } = legsGeojson(route)
+    expect(features.map((f) => f.properties.direct)).toEqual([false, true, false])
+    expect(features[0].geometry.coordinates.at(-1)).toEqual(features[1].geometry.coordinates[0])
+    expect(features[1].geometry.coordinates.at(-1)).toEqual(features[2].geometry.coordinates[0])
+    expect(features[1].geometry.coordinates).toHaveLength(2)
+
+    const allRouted = await drawn(false, false)
+    const single = legsGeojson(allRouted)
+    expect(single.features).toHaveLength(1)
+    expect(single.features[0].geometry.coordinates).toEqual(geojson(allRouted).coordinates)
+
+    expect(legsGeojson(computeRoute([])).features).toEqual([])
+    expect(legsGeojson(await add(computeRoute([]), A, PROFILE)).features).toEqual([])
+  })
+
+  it('11. directStats sums the straight legs', async () => {
+    expect(directStats(await drawn(false))).toEqual({ total: 0, longest: 0, count: 0 })
+    const stats = directStats(await drawn(true, true))
+    expect(stats.count).toBe(2)
+    expect(stats.longest).toBeGreaterThan(785)
+    expect(stats.longest).toBeLessThan(787)
+    expect(stats.total).toBeGreaterThan(1570)
+    expect(stats.total).toBeLessThan(1574)
+  })
+
+  it('12. isStraightSpan is false for an empty or inverted range', async () => {
+    const route = await drawn(true, true)
+    expect(isStraightSpan(route, 0, 2)).toBe(true)
+    expect(isStraightSpan(route, 1, 1)).toBe(false)
+    expect(isStraightSpan(route, 2, 1)).toBe(false)
+    const mixed = await drawn(false, true)
+    expect(isStraightSpan(mixed, 0, mixed.points.length - 1)).toBe(false)
   })
 })

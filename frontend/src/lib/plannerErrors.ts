@@ -17,7 +17,9 @@ const PLANNER_ERROR_KEYS: Partial<Record<ErrorCode, TranslationKey>> = {
 }
 
 /** The straight-line gesture, spelled for the platform (the same as the help panel's). */
-function directShortcut(t: TFunction): string {
+export function directShortcut(t: TFunction): string {
+  // No modifier key on a finger: the bar's toggle is the way
+  if (window.matchMedia?.('(pointer: coarse)')?.matches) return t('planner.help.direct.touch')
   return isApplePlatform()
     ? t('planner.help.direct.apple', { alt: '⌥' })
     : t('planner.help.direct.mouse', { alt: 'Alt' })

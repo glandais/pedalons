@@ -575,6 +575,145 @@ test.describe('the planner gestures, with a simulated router', () => {
   })
 })
 
+/** The « Ligne droite » toggle: the bar's button on a finger, the map's control on a mouse. */
+const directToggle = (page: Page, isMobile: boolean) =>
+  isMobile
+    ? page.getByRole('dialog').getByRole('button', { name: 'Ligne droite', exact: true })
+    : page.getByRole('button', { name: /^Ligne droite \(ou /, exact: false })
+
+/** The non-blocking warning about a long straight leg, in the form. */
+const directWarning = (page: Page) =>
+  page.getByRole('main').getByText(/en ligne droite \(pointillés\)/)
+
+test.describe('straight lines, visible (B6)', () => {
+  test.setTimeout(90_000)
+
+  test('the toggle draws without the router, and warns about a long straight leg', async ({
+    context,
+    page,
+    isMobile,
+  }) => {
+    const planner = await openPlanner({ context, page, isMobile })
+    const { surface, clickMap, points, settled, routerRequests } = planner
+    const toggle = directToggle(page, isMobile)
+
+    await clickMap(-120, 0)
+    await expect(points(1)).toBeVisible()
+    await expect(toggle).toHaveAttribute('aria-pressed', 'false')
+    await toggle.click()
+    await expect(toggle).toHaveAttribute('aria-pressed', 'true')
+    await clickMap(0, 60)
+    await expect(points(2)).toBeVisible()
+    await settled()
+    await clickMap(100, 0)
+    await expect(points(3)).toBeVisible()
+    await settled()
+    expect(routerRequests, 'straight-line mode never asks the router').toHaveLength(0)
+
+    await toggle.click()
+    await expect(toggle).toHaveAttribute('aria-pressed', 'false')
+    await clickMap(60, -80)
+    await expect(points(4)).toBeVisible()
+    await settled()
+    expect(routerRequests, 'back to routing').toHaveLength(1)
+
+    if (isMobile) {
+      await surface.getByRole('button', { name: 'Terminer' }).click()
+      await expect(surface).toBeHidden()
+    }
+    await expect(directWarning(page)).toBeVisible()
+  })
+
+  test('the toggle survives the move of the map between the form and the editor', async ({
+    context,
+    page,
+    isMobile,
+  }) => {
+    const planner = await openPlanner({ context, page, isMobile })
+    const { main, surface, clickMap, points, settled, routerRequests } = planner
+    const toggle = directToggle(page, isMobile)
+    await clickMap(-120, 0)
+    await expect(points(1)).toBeVisible()
+    await toggle.click()
+    await expect(toggle).toHaveAttribute('aria-pressed', 'true')
+
+    if (isMobile) {
+      await surface.getByRole('button', { name: 'Terminer' }).click()
+      await expect(surface).toBeHidden()
+      await main.getByRole('button', { name: 'Modifier le tracé' }).click()
+      await expect(surface).toBeVisible()
+    } else {
+      await main.getByRole('button', { name: 'Agrandir' }).click()
+      const dialog = page.getByRole('dialog', { name: 'Tracé', exact: true })
+      await expect(dialog).toBeVisible()
+      await expect(toggle).toHaveAttribute('aria-pressed', 'true')
+      await dialog.getByRole('button', { name: 'Terminer' }).first().click()
+      await expect(dialog).toBeHidden()
+    }
+    await expect(toggle).toHaveAttribute('aria-pressed', 'true')
+
+    await clickMap(100, 40)
+    await expect(points(2)).toBeVisible()
+    await settled()
+    expect(routerRequests).toHaveLength(0)
+  })
+
+  test('deleting a point between two straight legs asks nothing of the router', async ({
+    context,
+    page,
+    isMobile,
+  }) => {
+    const { marker, clickMap, points, settled, routerRequests } = await openPlanner({
+      context,
+      page,
+      isMobile,
+    })
+    const toggle = directToggle(page, isMobile)
+    await clickMap(-120, 0)
+    await expect(points(1)).toBeVisible()
+    await toggle.click()
+    await clickMap(0, 40)
+    await expect(points(2)).toBeVisible()
+    await settled()
+    await clickMap(100, 0)
+    await expect(points(3)).toBeVisible()
+    await settled()
+    await toggle.click()
+    await expect(toggle).toHaveAttribute('aria-pressed', 'false')
+
+    // Neither the key nor the toggle: the legs it replaces are all straight
+    await marker(2).click({ button: 'right' })
+    await settled()
+    await expect(points(2)).toBeVisible()
+    await expect(marker(3)).toHaveCount(0)
+    expect(routerRequests).toHaveLength(0)
+  })
+
+  test('undo and redo bring a straight line back and take it away, with no request', async ({
+    context,
+    page,
+    isMobile,
+  }) => {
+    test.skip(isMobile, 'the keyboard shortcuts of a mouse')
+    const planner = await openPlanner({ context, page, isMobile })
+    const { clickMap, points, settled, routerRequests } = planner
+    await drawThreePoints(planner)
+
+    await clickMap(-130, 90, ['Alt'])
+    await expect(points(4)).toBeVisible()
+    await settled()
+    await expect(directWarning(page)).toBeVisible()
+
+    await page.keyboard.press('Control+z')
+    await expect(points(3)).toBeVisible()
+    await expect(directWarning(page)).toBeHidden()
+    await page.keyboard.press('Control+Shift+z')
+    await expect(points(4)).toBeVisible()
+    await expect(directWarning(page)).toBeVisible()
+    expect(routerRequests).toHaveLength(0)
+  })
+})
+
 test.describe('the fullscreen editor, over the form', () => {
   test.setTimeout(90_000)
 
@@ -715,8 +854,10 @@ test.describe('the fullscreen editor, over the form', () => {
     const targets = [
       surface.getByRole('button', { name: 'Annuler' }),
       surface.getByRole('button', { name: 'Rétablir' }),
+      surface.getByRole('button', { name: 'Ligne droite', exact: true }),
       surface.getByRole('button', { name: 'Profil' }),
       surface.getByRole('button', { name: 'Aide : gestes' }),
+      // In the toolbar above the map, out of the bar (no room left for it at 360 px)
       surface.getByRole('button', { name: 'Effacer' }),
       surface.getByRole('button', { name: 'Terminer' }),
       surface.getByRole('button', { name: 'Zoomer', exact: true }),

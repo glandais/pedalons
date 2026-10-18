@@ -21,6 +21,7 @@ import { useResolvedColorScheme } from '@/hooks/useResolvedColorScheme'
 import { useDefaultMapView } from '@/hooks/useDefaultMapView'
 import { KmMarkersLayer } from '../map/MapMarkers'
 import { routeArrowLayout } from '../map/routeArrowLayout'
+import { DirectModeControl } from './DirectModeControl'
 import { UndoRedoControl } from './UndoRedoControl'
 import { RouterProfileSelector } from './RouterProfileSelector'
 import { PlannerHelpControl } from './PlannerHelpControl'
@@ -88,6 +89,9 @@ type PlannerMenu =
       route: Route
     }
 
+/** Both layers of the route line (plain and dashed): what hit tests and hover queries must target. */
+const ROUTE_LINE_LAYERS = ['route-line', 'route-line-direct']
+
 /**
  * Index of the visible anchor nearest `at` within `radiusPx`, or null (shared by a finger's touch
  * and a mouse's right click). Manual points are markers, not anchors; `importedOnly` also skips
@@ -143,6 +147,9 @@ export function RoutePlanner({
     route,
     controlPoints,
     routeGeoJson,
+    routeLegsGeoJson,
+    directMode,
+    setDirectMode,
     isLoading,
     error,
     routerProfile,
@@ -541,7 +548,7 @@ export function RoutePlanner({
           [event.point.x + TOUCH_BUFFER_PX, event.point.y + TOUCH_BUFFER_PX],
         ]
         const features = mapRef.current.queryRenderedFeatures(bbox, {
-          layers: ['route-line'],
+          layers: ROUTE_LINE_LAYERS,
         })
         if (features.length > 0) {
           const seg = nearestSegment(route, event.lngLat)
@@ -611,7 +618,7 @@ export function RoutePlanner({
         [event.point.x + ROUTE_BUFFER_PX, event.point.y + ROUTE_BUFFER_PX],
       ]
       const features = mapRef.current.queryRenderedFeatures(bbox, {
-        layers: ['route-line'],
+        layers: ROUTE_LINE_LAYERS,
       })
 
       if (features.length > 0) {
@@ -1007,7 +1014,7 @@ export function RoutePlanner({
             onTouchEnd={handleMapTouchEnd}
             onTouchCancel={handleMapTouchCancel}
             onContextMenu={handleMapContextMenu}
-            interactiveLayerIds={routeGeoJson ? ['route-line'] : []}
+            interactiveLayerIds={routeGeoJson ? ROUTE_LINE_LAYERS : []}
             cursor={
               isLoading
                 ? 'progress'
@@ -1030,6 +1037,8 @@ export function RoutePlanner({
             {!touchFullscreen && (
               <>
                 <UndoRedoControl canUndo={canUndo} canRedo={canRedo} onUndo={undo} onRedo={redo} />
+
+                <DirectModeControl directMode={directMode} onToggle={setDirectMode} />
 
                 <HideTrackControl hidden={trackHidden} onToggle={toggleTrackHidden} />
 
@@ -1055,15 +1064,29 @@ export function RoutePlanner({
             {!trackHidden && (
               <>
                 {/* Route line */}
-                {routeGeoJson && (
-                  <Source id="route" type="geojson" data={routeGeoJson}>
+                {routeGeoJson && routeLegsGeoJson && (
+                  <Source id="route" type="geojson" data={routeLegsGeoJson}>
                     <Layer
                       id="route-line"
                       type="line"
+                      filter={['!=', ['get', 'direct'], true]}
                       paint={{
                         'line-color': '#4F46E5',
                         'line-width': 5,
                         'line-opacity': 0.8,
+                      }}
+                    />
+                    {/* Straight legs: dashed (dash lengths in line widths), apart from the green
+                        4 px connection lines of a drag */}
+                    <Layer
+                      id="route-line-direct"
+                      type="line"
+                      filter={['==', ['get', 'direct'], true]}
+                      paint={{
+                        'line-color': '#4F46E5',
+                        'line-width': 5,
+                        'line-opacity': 0.8,
+                        'line-dasharray': [1.5, 1.5],
                       }}
                     />
                     <Layer id="route-arrows" type="symbol" layout={routeArrowLayout} />

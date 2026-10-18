@@ -5,9 +5,13 @@ import {
   add,
   computeRoute,
   createRoute,
+  directStats as computeDirectStats,
+  DirectStats,
   geojson,
   insert,
   legBounds,
+  legsGeojson,
+  LegProperties,
   Point,
   remove,
   Route,
@@ -26,6 +30,13 @@ export interface UseRoutePlannerOptions {
 /** Everything the planner hook returns: the state a view of the planner is given. */
 export interface RoutePlannerState {
   routeGeoJson: GeoJSON.LineString | null
+  /** The route cut into straight / routed legs (rendering: dashed straight legs); null under two points. */
+  routeLegsGeoJson: GeoJSON.FeatureCollection<GeoJSON.LineString, LegProperties> | null
+  /** Length of the straight legs: total, longest one, count. */
+  directStats: DirectStats
+  /** "Straight line" toggle: every following gesture is drawn without the router, until switched off. */
+  directMode: boolean
+  setDirectMode: (on: boolean) => void
   route: Route
   controlPoints: RoutePoint[]
   isLoading: boolean
@@ -70,6 +81,14 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
     defaultValue: RouterProfile.FASTBIKE,
     getInitialValueInEffect: false,
   })
+  // Lasts the editing session only: not stored (a forgotten mode would silently draw straight
+  // lines next time) and not part of the history. The ref keeps the callbacks stable.
+  const [directMode, setDirectModeState] = useState(false)
+  const directModeRef = useRef(false)
+  const setDirectMode = useCallback((on: boolean) => {
+    directModeRef.current = on
+    setDirectModeState(on)
+  }, [])
   const routerProfile = isRouterProfile(storedProfile) ? storedProfile : RouterProfile.FASTBIKE
 
   const [route, setRoute] = useState<Route>(
@@ -163,8 +182,9 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
 
   const addControlPoint = useCallback(
     (p: Point, direct = false) => {
+      const straight = direct || directModeRef.current
       executeRouteOperation((route, signal) =>
-        add(route, p, routerProfile, direct, signal, teamSlug)
+        add(route, p, routerProfile, straight, signal, teamSlug)
       )
     },
     [executeRouteOperation, routerProfile, teamSlug]
@@ -172,18 +192,20 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
 
   // Insert a new control point after the given index (returns the new point for immediate dragging)
   const insertControlPoint = useCallback(
-    (start: RoutePoint | undefined, p: Point, end: RoutePoint | undefined, direct?: boolean) => {
+    (start: RoutePoint | undefined, p: Point, end: RoutePoint | undefined, direct = false) => {
+      const straight = direct || directModeRef.current
       executeRouteOperation((route, signal) =>
-        insert(route, start, p, end, routerProfile, direct, signal, teamSlug)
+        insert(route, start, p, end, routerProfile, straight, signal, teamSlug)
       )
     },
     [executeRouteOperation, routerProfile, teamSlug]
   )
 
   const updateControlPoint = useCallback(
-    (start: RoutePoint | undefined, p: Point, end: RoutePoint | undefined, direct?: boolean) => {
+    (start: RoutePoint | undefined, p: Point, end: RoutePoint | undefined, direct = false) => {
+      const straight = direct || directModeRef.current
       executeRouteOperation((route, signal) =>
-        insert(route, start, p, end, routerProfile, direct, signal, teamSlug)
+        insert(route, start, p, end, routerProfile, straight, signal, teamSlug)
       )
     },
     [executeRouteOperation, routerProfile, teamSlug]
@@ -198,8 +220,9 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
         index > 0 && index < last
           ? legBounds(r, index - 1, index + 1) // an inner point: the leg between its neighbours
           : spanBounds(r, index - 1, index + 1, zoom) // first or last: cut at the zoom of the gesture
+      const straight = direct || directModeRef.current
       executeRouteOperation((route, signal) =>
-        remove(route, start, end, routerProfile, direct, signal, teamSlug)
+        remove(route, start, end, routerProfile, straight, signal, teamSlug)
       )
     },
     [executeRouteOperation, routerProfile, teamSlug]
@@ -207,8 +230,9 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
 
   const removeAnchor = useCallback(
     (start: RoutePoint, end: RoutePoint, direct = false) => {
+      const straight = direct || directModeRef.current
       executeRouteOperation((route, signal) =>
-        remove(route, start, end, routerProfile, direct, signal, teamSlug)
+        remove(route, start, end, routerProfile, straight, signal, teamSlug)
       )
     },
     [executeRouteOperation, routerProfile, teamSlug]
@@ -257,8 +281,19 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
     return geojson(route)
   }, [route])
 
+  const routeLegsGeoJson = useMemo(() => {
+    if (route.points.length < 2) return null
+    return legsGeojson(route)
+  }, [route])
+
+  const directStats = useMemo(() => computeDirectStats(route), [route])
+
   return {
     route,
+    routeLegsGeoJson,
+    directStats,
+    directMode,
+    setDirectMode,
     controlPoints,
     routeGeoJson,
     isLoading,

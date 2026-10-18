@@ -1,8 +1,8 @@
 # Éditeur de parcours web — desktop et web mobile
 
 Écrit le 17 octobre 2026, mis à jour le 18 octobre 2026. **État : lots 1 et 2 livrés le
-17 octobre 2026 (§5 et §6, A10 compris) ; dans le lot 3, B11 et B12 sont livrés (18 octobre) ;
-restent le lot 3 (B1, B2, B6, B7, B9) et le lot 4 (C1 à C5, C7 ; C6 non attribué).**
+17 octobre 2026 (§5 et §6, A10 compris) ; dans le lot 3, B11, B12 et B6 sont livrés (18 octobre) ;
+restent le lot 3 (B1, B2, B7, B9) et le lot 4 (C1 à C5, C7 ; C6 non attribué).**
 Ledger `WEB-100` (une seule
 entrée, qui pointe ici) : le suivi fin se fait **dans ce plan**, cases à cocher comprises, pas dans
 le ledger. Une tâche n'en sort vers `LEDGER_NEXT.md` que si elle quitte le périmètre du plan
@@ -55,7 +55,7 @@ Quatre lots, chacun livrable seul :
 |---|---|---|---|
 | **1. Robustesse** (livré) | Annulation et verrou pendant le calcul, `Ctrl+Z` hors des champs, tactile décidé par le pointeur, aide aux gestes, menus fiables, tests de `lib/planner.ts` | S à M (≈ 1 semaine) | — (volet backend A10 livré) |
 | **2. Disposition** (livré) | Plein écran d'édition, barre sous le pouce, cibles 44 px, un seul panneau ouvert, recherche d'adresse, cadrage `fitBounds` | M | 1 |
-| **3. Standard** | Profil altimétrique d'édition (B1), inverser / aller-retour / retour au départ avec recalage (B2), ligne droite visible (B6), clavier (B7), défilement au bord (B9), glisser une ancre au doigt (B11, **livré**), bornes indépendantes du zoom et suppression d'une ancre (B12, **livré**) | **L** | 1, 2 ; API pour B2 (endpoint de recalage) |
+| **3. Standard** | Profil altimétrique d'édition (B1), inverser / aller-retour / retour au départ avec recalage (B2), ligne droite visible (B6, **livré**), clavier (B7), défilement au bord (B9), glisser une ancre au doigt (B11, **livré**), bornes indépendantes du zoom et suppression d'une ancre (B12, **livré**) | **L** | 1, 2 ; API pour B2 (endpoint de recalage) |
 | **4. Différenciation** | Éviter côtes / trafic (C2), état d'édition conservé (C4), surface par point (C1), points de parcours (C3), popularité interne (C5), zones à éviter (C7) ; C6 non attribué | M à L | C4 : B6 et B12 ; C2 : aucun morceau du lot 3 ; API pour C1, C2, C4, C7 |
 
 Dans le lot 4, **C4 dépend de B6** (seul B6 crée l'information « ligne droite ») **et de B12**
@@ -404,6 +404,8 @@ servent), puis B6 (la ligne droite visible), puis B1 et B2.
 - [ ] **B2. Inverser, aller-retour, retour au départ** (L, §8 n° 8) — trois opérations dans
       `lib/planner.ts`, passées par `executeRouteOperation` pour l'historique. Boutons dans la
       barre, raccourci dans le libellé. Dépend de A9 et de l'endpoint de recalage ci-dessous.
+      - **Barre du bas pleine à 360 px depuis B6** (« Effacer » est déjà sorti dans l'en-tête du
+        plein écran) : sortir un autre bouton de la barre ou prévoir un menu « Plus ».
       - **Retour au départ** (et non « boucle », que Komoot et Strava emploient pour un circuit
         proposé d'office, §11) : route un dernier segment du dernier point au premier, par le
         profil choisi. 1 requête.
@@ -522,12 +524,50 @@ servent), puis B6 (la ligne droite visible), puis B1 et B2.
         par la skill `contract-first-api`. Côté client, `signal` transmis comme pour `router()`.
       - **Coût** : 1 ou 2 requêtes facturées (jamais N). Annuler, rétablir et refaire ne rejouent
         rien.
-- [ ] **B6. Ligne droite comme état visible** (M, §8 n° 10) — bascule dans la barre en plus du
-      modificateur ; `direct: boolean` sur `RoutePoint`, posé par `router()` ; `geojson()` produit
-      une feature par segment et une seconde couche en `line-dasharray` les rend en pointillés.
-      Avertissement à l'enregistrement au-delà d'environ 300 m de ligne droite. C'est l'équivalent
-      tactile du `Ctrl`. **C4 en dépend** (seul B6 crée l'information « ligne droite ») ; B6 ne
-      dépend pas de C4 (Q7).
+- [x] **B6. Ligne droite comme état visible** (M, §8 n° 10, 18 octobre 2026) — bascule « Ligne
+      droite » (colonne de contrôles à la souris, barre du bas au doigt) en plus du modificateur ;
+      `direct: boolean` sur `RoutePoint`, porté par le point d'arrivée de l'arête, posé après
+      l'`await` de chaque opération (`add`, `insert`, `remove`) ; `legsGeojson()` (`geojson()` reste
+      une LineString, cinq consommateurs en dépendent) regroupe les arêtes de même nature, et la
+      couche `route-line-direct` (`line-dasharray`) rend les tronçons droits en pointillés. C'est
+      l'équivalent tactile du `Ctrl`. **C4 en dépend** (seul B6 crée l'information « ligne droite ») ;
+      B6 ne dépend pas de C4 (Q7).
+      - **Mode effectif** = touche OU bascule, fait dans le hook (`directModeRef`), pour `add`,
+        `insert`, déplacement, suppression d'un point et d'une ancre. La bascule dure la session
+        d'édition (survit au passage formulaire / plein écran), n'est ni stockée ni dans
+        l'historique.
+      - **Héritage à la suppression** : le raccord est droit si la touche ou la bascule le demande,
+        **ou si tous les tronçons remplacés sont droits** (`isStraightSpan`) : aucun tronçon routé
+        n'est perdu, 0 requête. Tronçons mixtes ou portion importée : 1 requête. Coupure du départ
+        ou de l'arrivée : pas de raccord.
+      - **Insertion et déplacement : mode courant, sans héritage** (touche OU bascule).
+        **Point à faire trancher par le propriétaire** : l'alternative « hériter OU mode » est plus
+        proche de Komoot pour un polygone hors réseau, mais rend impossible de re-router un tronçon
+        droit autrement qu'en supprimant puis rajoutant le point.
+      - **Avertissement à l'enregistrement, par tronçon** : dès qu'**un** tronçon droit dépasse
+        300 m (`DIRECT_WARNING_METERS`), une alerte jaune non bloquante sous la carte (souris) ou
+        l'aperçu (doigt) donne le total et le plus long. Le critère est le tronçon, pas le cumul :
+        une ligne droite courte franchit un trou du routeur, une place, une passerelle ; un cumul
+        gênerait à tort un parcours gravel fait de petits raccords.
+      - **Q7** : un tracé chargé ou importé est entièrement « importé » et se dessine en trait
+        plein, sans avertissement ; C4 rétablira ses pointillés.
+      - **Barre du bas à 360 px** : avec la bascule elle débordait (≈ 382 px) ; « Effacer » est passé
+        dans la barre d'outils du plein écran au doigt (≈ 328 px). **B2 (inverser) retombera sur ce
+        problème** : prévoir de sortir un autre bouton de la barre, ou un menu « Plus ».
+      - **Reste pour B1** : un point de ligne droite n'a pas d'`ele`, `getAscend` le compte à 0 m
+        (défaut existant) ; B1 pourra colorer les tronçons `direct` d'après le même champ.
+      - Tests : `lib/planner.test.ts` (`B6 straight lines`), `useRoutePlanner.test.tsx`,
+        `RoutePlannerField.test.tsx`, `gpx-planner.e2e.ts` (`straight lines, visible (B6)`).
+      - **Livré le 18 octobre 2026.** `direct` sur `RoutePoint`, `legsGeojson()` et la couche
+        `route-line-direct` en pointillés, bascule `DirectModeControl` (colonne de contrôles à la
+        souris, barre du bas au doigt, aide `PlannerHelpControl`), mode effectif dans le hook,
+        héritage à la suppression, avertissement par tronçon à l'enregistrement. Tests : 1030
+        unitaires (114 fichiers) ; e2e `gpx-planner` 50 passés, 14 ignorés (projets desktop et
+        mobile), 0 échec. Écarts : « Effacer » déplacé dans l'en-tête du plein écran au doigt ;
+        l'insertion et le déplacement n'héritent pas (point soumis au propriétaire). Pièges : au
+        doigt, après « Terminer », avec un point déjà posé le bouton d'ouverture s'appelle « Modifier
+        le tracé » et non « Tracer le parcours » ; un test de borne sur un tracé importé ne prouve
+        rien sur `direct` (tout y vaut `false`), partir d'un tracé qui a déjà un tronçon droit.
 - [ ] **B7. Clavier et accessibilité des points** (S/M, §8 n° 12) — **en partie livré au lot 1** :
       marqueurs `role="button"`, `tabIndex`, nom « Point n », `Suppr` ou retour arrière pour
       supprimer ; `Échap` ferme déjà les panneaux de carte, le menu d'appui long et les résultats de
@@ -587,7 +627,7 @@ servent), puis B6 (la ligne droite visible), puis B1 et B2.
       - **Retenus par défaut, sauf avis contraire** : insérer et glisser sans dépendre du zoom sur
         un tronçon routé (`spanBounds`) ; Douglas-Peucker recalculé seulement entre les bornes du
         geste ; raccord en ligne droite selon la touche tenue lors de la suppression (hérité des
-        tronçons une fois B6 livré).
+        tronçons depuis B6, livré).
       - **Défauts trouvés par l'étude, à corriger avec** : un toucher sur le tracé peut viser un
         point de contrôle et le remplacer (la recherche des bornes exclut le point visé) ; un
         second doigt pendant le glisser d'une ancre ne l'annule pas.

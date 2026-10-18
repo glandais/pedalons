@@ -4,6 +4,7 @@ import { Group, Stack, Text } from '@mantine/core'
 import { MapPanel } from '@/components/map/MapPanel'
 import { useMediaMatch } from '@/hooks/useResponsive'
 import { isApplePlatform } from '@/lib/platform'
+import { directShortcut } from '@/lib/plannerErrors'
 
 /** The planner's gestures, in the map's control column; the list follows the primary pointer. */
 interface PlannerHelpControlProps {
@@ -29,20 +30,22 @@ export function PlannerHelpControl({ trigger }: PlannerHelpControlProps) {
       gesture: t(`planner.help.removeAnchor.${pointer}`),
     },
   ]
-  if (!isCoarsePointer) {
+  if (isCoarsePointer) {
+    rows.push({ action: t('planner.help.direct'), gesture: t('planner.help.direct.touch') })
+  } else {
     rows.push(
       {
         action: t('planner.help.direct'),
         // On macOS Ctrl+click is a right click: only Option draws a straight line.
-        gesture: apple
-          ? t('planner.help.direct.apple', { alt: '⌥' })
-          : t('planner.help.direct.mouse', { alt: 'Alt' }),
+        gesture: directShortcut(t),
       },
+      { action: t('planner.help.directMode'), gesture: t('planner.help.directMode.mouse') },
       { action: t('planner.help.undo'), gesture: `${mod}+Z` },
       { action: t('planner.help.redo'), gesture: `${shift}+${mod}+Z` },
       { action: t('planner.help.hide'), gesture: 'H' }
     )
   }
+  rows.push({ action: t('planner.help.dashed'), gesture: t('planner.help.dashed.gesture') })
 
   return (
     <MapPanel

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useRoutePlanner } from './useRoutePlanner'
 import { ApiClientError } from '@/lib/apiError'
 import { ErrorCode } from '@/api/dto'
+import { DIRECT_WARNING_METERS } from '@/lib/planner'
 
 const routeMock = vi.hoisted(() => vi.fn())
 vi.mock('@/api/endpoints/router/router', () => ({ route: routeMock }))
@@ -207,5 +208,86 @@ describe('useRoutePlanner deletions (B12)', () => {
     await waitFor(() => expect(hook.result.current.canUndo).toBe(false))
     expect(routeMock).toHaveBeenCalledTimes(1)
     expect(hook.result.current.route.points.some((p) => p.id === points[3].id)).toBe(true)
+  })
+})
+
+describe('useRoutePlanner straight lines (B6)', () => {
+  beforeEach(() => {
+    routeMock.mockReset()
+    localStorage.clear()
+  })
+
+  it('keeps a session-long toggle that draws without the router and is not in the history', async () => {
+    const setItem = vi.spyOn(localStorage, 'setItem')
+    const { result } = renderHook(() => useRoutePlanner())
+    expect(result.current.directMode).toBe(false)
+    act(() => result.current.setDirectMode(true))
+    expect(result.current.directMode).toBe(true)
+
+    act(() => result.current.addControlPoint(A))
+    await waitFor(() => expect(result.current.controlPoints).toHaveLength(1))
+    act(() => result.current.addControlPoint(B))
+    await waitFor(() => expect(result.current.controlPoints).toHaveLength(2))
+    expect(routeMock).not.toHaveBeenCalled()
+
+    act(() => result.current.undo())
+    act(() => result.current.redo())
+    act(() => result.current.clearRoute())
+    expect(result.current.directMode).toBe(true)
+    expect(setItem.mock.calls.some(([key]) => /direct/i.test(String(key)))).toBe(false)
+    setItem.mockRestore()
+  })
+
+  it('exposes straight and routed legs, and undo / redo keep them without a request', async () => {
+    routeMock.mockResolvedValue({
+      route: {
+        coordinates: [
+          [B.lng, B.lat],
+          [(B.lng + C.lng) / 2, B.lat + 0.001],
+          [C.lng, C.lat],
+        ],
+      },
+    })
+    const { result } = renderHook(() => useRoutePlanner())
+    act(() => result.current.addControlPoint(A, true))
+    await waitFor(() => expect(result.current.controlPoints).toHaveLength(1))
+    act(() => result.current.addControlPoint(B, true))
+    await waitFor(() => expect(result.current.controlPoints).toHaveLength(2))
+    act(() => result.current.addControlPoint(C, false))
+    await waitFor(() => expect(result.current.controlPoints).toHaveLength(3))
+    expect(routeMock).toHaveBeenCalledTimes(1)
+    expect(result.current.routeLegsGeoJson?.features.map((f) => f.properties.direct)).toEqual([
+      true,
+      false,
+    ])
+
+    act(() => result.current.undo())
+    expect(result.current.route.points.at(-1)!.direct).toBe(true)
+    act(() => result.current.redo())
+    expect(result.current.route.points.at(-1)!.direct).toBe(false)
+    expect(routeMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('inherits straight legs on removal, through the hook', async () => {
+    const { result } = renderHook(() => useRoutePlanner())
+    for (const p of [A, B, C]) {
+      act(() => result.current.addControlPoint(p, true))
+      await waitFor(() => expect(result.current.route.points.length).toBeGreaterThan(0))
+    }
+    await waitFor(() => expect(result.current.controlPoints).toHaveLength(3))
+    act(() => result.current.removeControlPoint(1))
+    await waitFor(() => expect(result.current.controlPoints).toHaveLength(2))
+    expect(routeMock).not.toHaveBeenCalled()
+  })
+
+  it('reports a straight leg longer than the warning threshold', async () => {
+    const { result } = renderHook(() => useRoutePlanner())
+    act(() => result.current.addControlPoint(A, true))
+    await waitFor(() => expect(result.current.controlPoints).toHaveLength(1))
+    expect(result.current.directStats.longest).toBe(0)
+    act(() => result.current.addControlPoint(B, true))
+    await waitFor(() => expect(result.current.controlPoints).toHaveLength(2))
+    expect(result.current.directStats.longest).toBeGreaterThan(DIRECT_WARNING_METERS)
+    expect(result.current.directStats.count).toBe(1)
   })
 })

@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
-import { IconArrowLeft, IconTrash } from '@tabler/icons-react'
-import { ActionIcon, Box, Button, Group, Modal, Text } from '@mantine/core'
+import { IconAlertTriangle, IconArrowLeft, IconTrash } from '@tabler/icons-react'
+import { ActionIcon, Alert, Box, Button, Group, Modal, Text } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import type { GeoPoint } from '@/api/dto'
 import { useHistoryOverlay } from '@/hooks/useHistoryOverlay'
 import { useMediaMatch } from '@/hooks/useResponsive'
 import { useRoutePlanner } from '@/hooks/useRoutePlanner'
+import { useUnits } from '@/hooks/useUnits'
+import { DIRECT_WARNING_METERS } from '@/lib/planner'
 import { MapFullscreenShell } from '@/components/map/MapFullscreenShell'
 import { MapPanelContext, useMapPanelState } from '@/components/map/mapPanelState'
 import { PlannerBottomBar } from './PlannerBottomBar'
@@ -54,7 +56,8 @@ export function RoutePlannerField({
 }: RoutePlannerFieldProps) {
   const { t } = useTranslation()
   const planner = useRoutePlanner({ initialTrack, teamSlug })
-  const { routeGeoJson, controlPoints, route, isLoading, error } = planner
+  const { routeGeoJson, controlPoints, route, isLoading, error, directStats } = planner
+  const { distance } = useUnits()
   const isCoarse = useMediaMatch('(pointer: coarse)')
   const { opened, open, close } = useHistoryOverlay()
   const panelState = useMapPanelState()
@@ -180,6 +183,23 @@ export function RoutePlannerField({
     route.points.length >= 2 ? { distance: route.dist, ascend: route.ascend } : undefined
   const showStatusChip = controlPoints.length > 0 || isLoading || error !== null
 
+  // Non-blocking: one long straight leg is a forgotten key or a crossing to check, short ones are
+  // normal (a gap in the network, a square).
+  const directWarning = directStats.longest > DIRECT_WARNING_METERS && (
+    <Alert
+      color="yellow"
+      variant="light"
+      icon={<IconAlertTriangle />}
+      mx={isCoarse ? 'md' : undefined}
+      mt="sm"
+    >
+      {t('planner.directWarning', {
+        total: distance(directStats.total),
+        longest: distance(directStats.longest),
+      })}
+    </Alert>
+  )
+
   return (
     <MapPanelContext.Provider value={panelState}>
       {isCoarse ? (
@@ -200,6 +220,8 @@ export function RoutePlannerField({
           }}
         />
       )}
+
+      {directWarning}
 
       {host &&
         attachedHost === host &&
@@ -248,7 +270,20 @@ export function RoutePlannerField({
             }
             stats={{ distance: route.dist, gain: route.ascend }}
             actions={
-              !isCoarse && (
+              isCoarse ? (
+                // Out of the bottom bar, which has no room left for it at 360 px; away from the
+                // thumb is also where a destructive action belongs.
+                <ActionIcon
+                  variant="subtle"
+                  color="red"
+                  size="xl"
+                  onClick={handleClear}
+                  disabled={controlPoints.length === 0}
+                  aria-label={t('planner.clear')}
+                >
+                  <IconTrash size={22} />
+                </ActionIcon>
+              ) : (
                 <Group gap="xs" wrap="nowrap">
                   <ActionIcon
                     variant="subtle"
@@ -299,8 +334,8 @@ export function RoutePlannerField({
                     onRedo={planner.redo}
                     routerProfile={planner.routerProfile}
                     onProfileChange={planner.setRouterProfile}
-                    pointCount={controlPoints.length}
-                    onClear={handleClear}
+                    directMode={planner.directMode}
+                    onDirectModeChange={planner.setDirectMode}
                     onDone={close}
                   />
                 </Box>
