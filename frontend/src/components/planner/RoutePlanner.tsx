@@ -19,7 +19,7 @@ import { LocateControl } from '../map/LocateControl'
 import { MapSearchControl, type SearchedPlace } from '../map/MapSearchControl'
 import { useResolvedColorScheme } from '@/hooks/useResolvedColorScheme'
 import { useDefaultMapView } from '@/hooks/useDefaultMapView'
-import { KmMarkersLayer } from '../map/MapMarkers'
+import { HoverMarker, KmMarkersLayer } from '../map/MapMarkers'
 import { routeArrowLayout } from '../map/routeArrowLayout'
 import { DirectModeControl } from './DirectModeControl'
 import { UndoRedoControl } from './UndoRedoControl'
@@ -56,6 +56,10 @@ interface RoutePlannerProps {
   onExpand?: () => void
   initialTrack?: number[][] // [lng, lat, ele, dist][] from existing route
   teamLocation?: [number, number] // [lng, lat] from team geometry
+  /** Index in `planner.route.points` of the point the elevation profile (not the map) is hovering; -1 for none. */
+  hoveredIndex?: number
+  /** Reports the point of the route the cursor is nearest to on the map (-1: none). */
+  onHoverIndex?: (index: number) => void
 }
 
 // The press is cancelled once the finger moves as far as maplibre needs to start a marker drag
@@ -137,6 +141,8 @@ export function RoutePlanner({
   onExpand,
   initialTrack,
   teamLocation,
+  hoveredIndex = -1,
+  onHoverIndex,
 }: RoutePlannerProps) {
   const { t } = useTranslation()
   const colorScheme = useResolvedColorScheme()
@@ -582,13 +588,17 @@ export function RoutePlanner({
       }
 
       if (draggingGhost) {
+        onHoverIndex?.(-1)
         setDraggingGhost((prev) =>
           prev ? { ...prev, lng: event.lngLat.lng, lat: event.lngLat.lat } : null
         )
         return
       }
 
-      if (draggingMarker) return
+      if (draggingMarker) {
+        onHoverIndex?.(-1)
+        return
+      }
 
       // The ghost point is a mouse affordance (hover the trace, drag the ghost out). A tap sends a
       // compatibility mousemove before its click, with no pointer type of its own: showing the
@@ -596,10 +606,14 @@ export function RoutePlanner({
       // ghost to insert (seen on an iPhone). A finger inserts with one tap instead.
       if (isFingerEvent(event.originalEvent)) {
         if (hoverPoint) setHoverPoint(null)
+        onHoverIndex?.(-1)
         return
       }
 
-      if (!mapRef.current || !routeGeoJson) return
+      if (!mapRef.current || !routeGeoJson) {
+        onHoverIndex?.(-1)
+        return
+      }
 
       for (const point of controlPoints) {
         const projected = mapRef.current.project([point.lng, point.lat])
@@ -608,6 +622,7 @@ export function RoutePlanner({
         const distance = Math.sqrt(dx * dx + dy * dy)
         if (distance < MARKER_PROXIMITY_PX) {
           setHoverPoint(null)
+          onHoverIndex?.(-1)
           return
         }
       }
@@ -625,11 +640,19 @@ export function RoutePlanner({
         const seg = nearestSegment(route, event.lngLat)
         if (seg) {
           setHoverPoint({ lng: seg.point.lng, lat: seg.point.lat, seg: seg.index })
+          // The profile follows the end of the segment nearest to the cursor
+          const a = route.points[seg.index]
+          const b = route.points[seg.index + 1]
+          const cos = Math.cos((event.lngLat.lat * Math.PI) / 180)
+          const dist2 = (p: RoutePoint) =>
+            ((p.lng - event.lngLat.lng) * cos) ** 2 + (p.lat - event.lngLat.lat) ** 2
+          onHoverIndex?.(dist2(a) <= dist2(b) ? seg.index : seg.index + 1)
           return
         }
       }
 
       setHoverPoint(null)
+      onHoverIndex?.(-1)
     },
     [
       route,
@@ -640,13 +663,15 @@ export function RoutePlanner({
       isCoarsePointer,
       isFingerEvent,
       hoverPoint,
+      onHoverIndex,
     ]
   )
 
   const handleMouseLeave = useCallback(() => {
     setHoverPoint(null)
     setCursorPosition(null)
-  }, [])
+    onHoverIndex?.(-1)
+  }, [onHoverIndex])
 
   const handleMapMouseDown = useCallback(
     (event: MapMouseEvent) => {
@@ -1131,6 +1156,16 @@ export function RoutePlanner({
                       }}
                     />
                   </Source>
+                )}
+
+                {/* The point the elevation profile is hovering; never takes the pointer */}
+                {hoveredIndex >= 0 && route.points[hoveredIndex] && (
+                  <HoverMarker
+                    longitude={route.points[hoveredIndex].lng}
+                    latitude={route.points[hoveredIndex].lat}
+                    style={{ pointerEvents: 'none' }}
+                    testId="planner-hover-marker"
+                  />
                 )}
 
                 {/* Control point markers */}

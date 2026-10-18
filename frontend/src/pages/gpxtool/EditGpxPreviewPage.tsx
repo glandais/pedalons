@@ -57,6 +57,7 @@ export function EditGpxPreviewPage() {
       <GpxPreviewEditor
         initialName={preview.name}
         initialTrack={initialTrack}
+        initialAscend={preview.elevationGain}
         onSubmit={handleSubmit}
         onCancel={() => navigate(paths.gpxToolsView(preview.id))}
         isPending={updateMutation.isPending}

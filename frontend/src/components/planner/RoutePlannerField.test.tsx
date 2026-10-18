@@ -55,11 +55,15 @@ vi.mock('./RoutePlanner', () => ({
     layout,
     active,
     onExpand,
+    hoveredIndex,
+    onHoverIndex,
   }: {
     planner: { route: unknown }
     layout: string
     active: boolean
     onExpand?: () => void
+    hoveredIndex?: number
+    onHoverIndex?: (index: number) => void
   }) => {
     const [taps, setTaps] = useState(0)
     seenRoutes.push(planner.route)
@@ -68,12 +72,40 @@ vi.mock('./RoutePlanner', () => ({
       return () => unmounts()
     }, [])
     return (
-      <div data-testid="planner" data-layout={layout} data-active={String(active)}>
+      <div
+        data-testid="planner"
+        data-layout={layout}
+        data-active={String(active)}
+        data-hovered={String(hoveredIndex)}
+      >
+        <button onClick={() => onHoverIndex?.(3)}>map hover</button>
         <button onClick={() => setTaps((n) => n + 1)}>tap {taps}</button>
         {onExpand && <button onClick={onExpand}>expand</button>}
       </div>
     )
   },
+}))
+
+// The chart needs a canvas: the strip is replaced by a stub that exposes what the field gives it.
+vi.mock('./PlannerElevationStrip', () => ({
+  PlannerElevationStrip: ({
+    hoveredIndex,
+    onHoverIndex,
+    collapsible,
+  }: {
+    hoveredIndex: number
+    onHoverIndex: (index: number) => void
+    collapsible?: { collapsed: boolean; onToggle: () => void }
+  }) => (
+    <div
+      data-testid="strip"
+      data-hovered={hoveredIndex}
+      data-collapsed={String(collapsible?.collapsed)}
+    >
+      <button onClick={() => onHoverIndex(2)}>profile hover</button>
+      {collapsible && <button onClick={collapsible.onToggle}>toggle strip</button>}
+    </div>
+  ),
 }))
 
 import { RoutePlannerField } from './RoutePlannerField'
@@ -104,6 +136,7 @@ describe('RoutePlannerField', () => {
     seenRoutes.length = 0
     plannerState.routeGeoJson = null
     plannerState.directStats = { total: 0, longest: 0, count: 0 }
+    localStorage.clear()
   })
   afterEach(() => {
     cleanup()
@@ -171,6 +204,28 @@ describe('RoutePlannerField', () => {
       expect(hookMounts).toHaveBeenCalledTimes(1)
     })
 
+    it('shows the elevation strip under the map, and hands its hover to the map', async () => {
+      renderField()
+      const strip = await screen.findByTestId('strip')
+      expect(strip.dataset.collapsed).toBe('undefined')
+      expect(screen.getByTestId('planner').dataset.hovered).toBe('-1')
+
+      fireEvent.click(screen.getByText('profile hover'))
+      expect(screen.getByTestId('planner').dataset.hovered).toBe('2')
+      expect(screen.getByTestId('strip').dataset.hovered).toBe('2')
+
+      // and the other way round: the map reports its point to the strip
+      fireEvent.click(screen.getByText('map hover'))
+      expect(screen.getByTestId('strip').dataset.hovered).toBe('3')
+    })
+
+    it('shows one strip at a time while the editor is open', async () => {
+      renderField()
+      fireEvent.click(await screen.findByText('expand'))
+      await screen.findByRole('dialog')
+      expect(screen.getAllByTestId('strip')).toHaveLength(1)
+    })
+
     it('Escape does not close the fullscreen editor', async () => {
       renderField()
       fireEvent.click(await screen.findByText('expand'))
@@ -209,6 +264,20 @@ describe('RoutePlannerField', () => {
       expect(planner.dataset.active).toBe('true')
       expect(screen.getByRole('button', { name: 'planner.done' })).toBeTruthy()
       expect(screen.getByRole('dialog', { name: 'Ma sortie' })).toBeTruthy()
+    })
+
+    it('folds the strip above the bottom bar, and remembers the choice', async () => {
+      renderField()
+      fireEvent.click(screen.getByRole('button', { name: 'planner.draw' }))
+      await screen.findByRole('dialog')
+      expect(screen.getByTestId('strip').dataset.collapsed).toBe('false')
+
+      fireEvent.click(screen.getByText('toggle strip'))
+      expect(screen.getByTestId('strip').dataset.collapsed).toBe('true')
+      expect(localStorage.setItem).toHaveBeenCalledWith('pedalons-planner-profile-collapsed', '1')
+
+      fireEvent.click(screen.getByText('toggle strip'))
+      expect(screen.getByTestId('strip').dataset.collapsed).toBe('false')
     })
 
     it('keeps the planner mounted, off screen and inactive, after closing', async () => {

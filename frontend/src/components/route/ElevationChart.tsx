@@ -69,6 +69,8 @@ export interface ElevationChartProps {
   onHoverPoint: (index: number) => void
   /** Fill each segment with its gradient color (prendslaroue look). Defaults to true. */
   filled?: boolean
+  /** Draws the segment starting at this data index dashed (a straight line of the route planner). */
+  dashedSegment?: (p0Index: number) => boolean
   /**
    * When provided, registers chartjs-plugin-zoom on this chart instance (wheel/pinch/pan, x-axis
    * only) and reports gesture boundaries so a parent can keep a map viewport in sync.
@@ -80,7 +82,10 @@ export interface ElevationChartProps {
 }
 
 export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartProps>(
-  function ElevationChart({ route, hoveredPointIndex, onHoverPoint, filled = true, zoom }, ref) {
+  function ElevationChart(
+    { route, hoveredPointIndex, onHoverPoint, filled = true, dashedSegment, zoom },
+    ref
+  ) {
     const { t } = useTranslation()
     const colorScheme = useResolvedColorScheme()
     const theme = useMantineTheme()
@@ -166,11 +171,13 @@ export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartPro
                 const gradient = getPointClimbGradient(trackPoints[ctx.p0DataIndex], climbs)
                 return getColorFromGradient(gradient)
               },
+              borderDash: (ctx: ScriptableLineSegmentContext) =>
+                dashedSegment?.(ctx.p0DataIndex) ? [6, 4] : undefined,
             },
           },
         ],
       }),
-      [trackPoints, climbs, filled]
+      [trackPoints, climbs, filled, dashedSegment]
     )
 
     const chartOptions: ChartOptions<'line'> = useMemo(

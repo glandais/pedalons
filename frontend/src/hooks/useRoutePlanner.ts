@@ -23,6 +23,8 @@ import { plannerErrorMessage } from '@/lib/plannerErrors'
 
 export interface UseRoutePlannerOptions {
   initialTrack?: number[][] // [lng, lat, ele, dist][] from existing route
+  /** D+ (m) stored for `initialTrack`: the loaded track's climb is scaled to it. */
+  initialAscend?: number
   /** Team the route is drawn for; sent to the router, which checks the team's planner flag and rights. Absent from the GPX tools. */
   teamSlug?: string
 }
@@ -73,7 +75,7 @@ function isRouterProfile(value: unknown): value is RouterProfile {
 }
 
 export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerState {
-  const { initialTrack, teamSlug } = options || {}
+  const { initialTrack, initialAscend, teamSlug } = options || {}
   const { t } = useTranslation()
   // Remembered across sessions; a stale or hand-edited value falls back to the default.
   const [storedProfile, setStoredProfile] = useLocalStorage<RouterProfile>({
@@ -92,7 +94,7 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
   const routerProfile = isRouterProfile(storedProfile) ? storedProfile : RouterProfile.FASTBIKE
 
   const [route, setRoute] = useState<Route>(
-    initialTrack ? createRoute(initialTrack) : computeRoute([])
+    initialTrack ? createRoute(initialTrack, initialAscend) : computeRoute([])
   )
   const [history, setHistory] = useState<Route[]>([])
   const [future, setFuture] = useState<Route[]>([])

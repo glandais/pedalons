@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { IconAlertTriangle, IconArrowLeft, IconTrash } from '@tabler/icons-react'
@@ -9,18 +9,33 @@ import { useHistoryOverlay } from '@/hooks/useHistoryOverlay'
 import { useMediaMatch } from '@/hooks/useResponsive'
 import { useRoutePlanner } from '@/hooks/useRoutePlanner'
 import { useUnits } from '@/hooks/useUnits'
-import { DIRECT_WARNING_METERS } from '@/lib/planner'
+import { DIRECT_WARNING_METERS, type Route } from '@/lib/planner'
 import { MapFullscreenShell } from '@/components/map/MapFullscreenShell'
 import { MapPanelContext, useMapPanelState } from '@/components/map/mapPanelState'
 import { PlannerBottomBar } from './PlannerBottomBar'
+import { PlannerElevationStrip } from './PlannerElevationStrip'
 import { PlannerStatusChip } from './PlannerStatus'
 import { RoutePlanner } from './RoutePlanner'
 import { RoutePlannerPreview } from './RoutePlannerPreview'
+
+const STRIP_COLLAPSED_KEY = 'pedalons-planner-profile-collapsed'
+const STRIP_HEIGHT = 160
+const STRIP_BODY_HEIGHT_TOUCH = 110
+
+function readStripCollapsed(): boolean {
+  try {
+    return localStorage.getItem(STRIP_COLLAPSED_KEY) === '1'
+  } catch {
+    return false
+  }
+}
 
 interface RoutePlannerFieldProps {
   /** Receives the computed path whenever it changes; empty below two points. */
   onPointsChange: (points: GeoPoint[]) => void
   initialTrack?: number[][] // [lng, lat, ele, dist][] from existing route
+  /** D+ (m) stored for that track: the reference the loaded track's climb is scaled to. */
+  initialAscend?: number
   teamLocation?: [number, number] // [lng, lat] from team geometry
   /** Team the route is drawn for (team route editor); absent from the GPX tools. Sent to the router. */
   teamSlug?: string
@@ -48,6 +63,7 @@ interface RoutePlannerFieldProps {
 export function RoutePlannerField({
   onPointsChange,
   initialTrack,
+  initialAscend,
   teamLocation,
   teamSlug,
   title,
@@ -55,11 +71,42 @@ export function RoutePlannerField({
   openRequest,
 }: RoutePlannerFieldProps) {
   const { t } = useTranslation()
-  const planner = useRoutePlanner({ initialTrack, teamSlug })
+  const planner = useRoutePlanner({ initialTrack, initialAscend, teamSlug })
   const { routeGeoJson, controlPoints, route, isLoading, error, directStats } = planner
   const { distance } = useUnits()
   const isCoarse = useMediaMatch('(pointer: coarse)')
   const { opened, open, close } = useHistoryOverlay()
+  // The point hovered, on the map or on the profile: an index of route.points, valid for the
+  // route it was reported on only (any edit drops it). The source matters: the profile follows
+  // both, but only a profile hover draws a marker on the map (the ghost point is the map's own).
+  const [hover, setHover] = useState<{
+    route: Route
+    index: number
+    source: 'map' | 'profile'
+  }>({ route, index: -1, source: 'map' })
+  const hoveredIndex = hover.route === route ? hover.index : -1
+  const profileHoveredIndex = hover.source === 'profile' ? hoveredIndex : -1
+  const reportHover = useCallback(
+    (source: 'map' | 'profile') => (index: number) =>
+      setHover((prev) =>
+        prev.route === route && prev.index === index && prev.source === source
+          ? prev
+          : { route, index, source }
+      ),
+    [route]
+  )
+  const handleHoverIndex = useMemo(() => reportHover('profile'), [reportHover])
+  const handleMapHoverIndex = useMemo(() => reportHover('map'), [reportHover])
+  const [stripCollapsed, setStripCollapsed] = useState(readStripCollapsed)
+  const toggleStrip = useCallback(() => {
+    const next = !stripCollapsed
+    setStripCollapsed(next)
+    try {
+      localStorage.setItem(STRIP_COLLAPSED_KEY, next ? '1' : '0')
+    } catch {
+      // storage unavailable: the choice lasts the session only
+    }
+  }, [stripCollapsed])
   const panelState = useMapPanelState()
   const { setOpenId } = panelState
 
@@ -211,14 +258,27 @@ export function RoutePlannerField({
           onOpen={open}
         />
       ) : (
-        <Box
-          ref={setInlineSlot}
-          h="70dvh"
-          style={{
-            borderTop: '1px solid var(--mantine-color-default-border)',
-            borderBottom: '1px solid var(--mantine-color-default-border)',
-          }}
-        />
+        <>
+          <Box
+            ref={setInlineSlot}
+            h="70dvh"
+            style={{
+              borderTop: '1px solid var(--mantine-color-default-border)',
+              borderBottom: opened ? '1px solid var(--mantine-color-default-border)' : undefined,
+            }}
+          />
+          {/* Under the dialog the editor shows its own strip: one chart at a time */}
+          {!opened && (
+            <Box style={{ borderBottom: '1px solid var(--mantine-color-default-border)' }}>
+              <PlannerElevationStrip
+                route={route}
+                hoveredIndex={hoveredIndex}
+                onHoverIndex={handleHoverIndex}
+                height={STRIP_HEIGHT}
+              />
+            </Box>
+          )}
+        </>
       )}
 
       {directWarning}
@@ -233,6 +293,8 @@ export function RoutePlannerField({
             onExpand={!isCoarse && !opened ? open : undefined}
             initialTrack={initialTrack}
             teamLocation={teamLocation}
+            hoveredIndex={profileHoveredIndex}
+            onHoverIndex={handleMapHoverIndex}
           />,
           host
         )}
@@ -303,7 +365,14 @@ export function RoutePlannerField({
               )
             }
             bottom={
-              isCoarse && (
+              !isCoarse ? (
+                <PlannerElevationStrip
+                  route={route}
+                  hoveredIndex={hoveredIndex}
+                  onHoverIndex={handleHoverIndex}
+                  height={STRIP_HEIGHT}
+                />
+              ) : (
                 <Box pos="relative" style={{ flexShrink: 0 }}>
                   {showStatusChip && (
                     <Box
@@ -327,6 +396,13 @@ export function RoutePlannerField({
                       />
                     </Box>
                   )}
+                  <PlannerElevationStrip
+                    route={route}
+                    hoveredIndex={hoveredIndex}
+                    onHoverIndex={handleHoverIndex}
+                    height={STRIP_BODY_HEIGHT_TOUCH}
+                    collapsible={{ collapsed: stripCollapsed, onToggle: toggleStrip }}
+                  />
                   <PlannerBottomBar
                     canUndo={planner.canUndo}
                     canRedo={planner.canRedo}

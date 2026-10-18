@@ -4,6 +4,7 @@ import KDBush from 'kdbush'
 import { around } from 'geokdbush'
 import { RouterProfile } from '@/api/dto'
 import { tRegister, type TranslationKey } from '@/lib/i18nUtils'
+import type { MappableRoute } from '@/components/route/RouteMapView'
 
 export interface Point {
   lng: number
@@ -25,6 +26,16 @@ export interface RoutePoint {
    * A straight leg has no inner point: it is exactly one edge.
    */
   direct: boolean
+  /**
+   * Climb (m) of the routed leg arriving at this point, as /api/router measured it. Absent: this
+   * point does not end a routed leg. Carried by the leg's last point, like `direct`.
+   */
+  legAscend?: number
+  /**
+   * Cumulative climb (m) of the loaded track from its start to this point, scaled to the track's
+   * reference D+. Imported points only.
+   */
+  importAscend?: number
   rdpDistance?: number
   zoom: number
 }
@@ -40,9 +51,31 @@ let pointIdCounter = 0
 
 // The only place where points become `imported`: a loaded track (initialTrack, imported file).
 // The re-fit of a track onto the road network (B2, D1) will go through createPoints(…, true) too.
-export function createRoute(coords: number[][]): Route {
+export function createRoute(coords: number[][], referenceAscend?: number): Route {
   const points = createPoints(coords, true)
+  assignImportAscend(points, referenceAscend)
   return computeRoute(points)
+}
+
+/**
+ * Cumulative climb of the whole loaded track, computed before the simplification (which drops
+ * vertices and their climb), then scaled to the reference D+ of the stored route when known.
+ * Points without elevation are skipped: they carry the running total.
+ */
+function assignImportAscend(points: RoutePoint[], referenceAscend?: number) {
+  let cumul = 0
+  let previous: number | undefined
+  for (const p of points) {
+    if (p.ele !== undefined && p.ele !== null) {
+      if (previous !== undefined && p.ele > previous) cumul += p.ele - previous
+      previous = p.ele
+    }
+    p.importAscend = cumul
+  }
+  if (referenceAscend !== undefined && referenceAscend > 0 && cumul > 0) {
+    const k = referenceAscend / cumul
+    for (const p of points) p.importAscend = (p.importAscend ?? 0) * k
+  }
 }
 
 /** A gesture refused before any request: the route is left as it was; `messageKey` is shown. */
@@ -140,13 +173,103 @@ function getDist(points: RoutePoint[]): number {
   return dist
 }
 
-function getAscend(points: RoutePoint[]): number {
+/**
+ * Elevation of every point, the missing ones filled by linear interpolation along the distance
+ * between the neighbours that have one (the nearest known one at the ends). All undefined when no
+ * point has an elevation.
+ */
+export function fillElevations(points: RoutePoint[]): (number | undefined)[] {
+  const n = points.length
+  const cum = cumulativeDistances(points)
+  const known: number[] = []
+  for (let i = 0; i < n; i++) if (typeof points[i].ele === 'number') known.push(i)
+  if (known.length === 0) return points.map(() => undefined)
+  const result: (number | undefined)[] = new Array(n)
+  let k = 0
+  for (let i = 0; i < n; i++) {
+    const ele = points[i].ele
+    if (typeof ele === 'number') {
+      result[i] = ele
+      continue
+    }
+    while (k + 1 < known.length && known[k + 1] < i) k++
+    const prev = known[k] < i ? known[k] : undefined
+    const next = known.find((j) => j > i)
+    if (prev === undefined) result[i] = points[next!].ele
+    else if (next === undefined) result[i] = points[prev].ele
+    else {
+      const span = cum[next] - cum[prev]
+      const t = span > 0 ? (cum[i] - cum[prev]) / span : 0
+      result[i] = points[prev].ele! + t * (points[next].ele! - points[prev].ele!)
+    }
+  }
+  return result
+}
+
+function cumulativeDistances(points: RoutePoint[]): number[] {
+  const cum: number[] = new Array(points.length)
+  let dist = 0
+  for (let i = 0; i < points.length; i++) {
+    if (i > 0) {
+      const p1 = points[i - 1]
+      const p2 = points[i]
+      dist += distance(p1.lng, p1.lat, p2.lng, p2.lat)
+    }
+    cum[i] = dist
+  }
+  return cum
+}
+
+/**
+ * D+ of a route, edge by edge (the first point never counts). The arrival point of an edge says
+ * where its climb comes from: a straight line is the net climb between its filled elevations; a
+ * routed leg is the router's own figure, counted once at its end; two consecutive points of a
+ * loaded track are the difference of their cumulative climb. The interior of a routed leg counts 0.
+ */
+export function routeAscend(points: RoutePoint[]): number {
+  const eleF = fillElevations(points)
   let ascend = 0
   for (let i = 1; i < points.length; i++) {
-    const diff = (points[i].ele ?? 0) - (points[i - 1].ele ?? 0)
-    if (diff > 0) ascend += diff
+    const p = points[i]
+    const q = points[i - 1]
+    if (p.direct) {
+      const a = eleF[i]
+      const b = eleF[i - 1]
+      if (a !== undefined && b !== undefined) ascend += Math.max(0, a - b)
+    } else if (p.legAscend !== undefined) {
+      ascend += p.legAscend
+    } else if (
+      p.imported &&
+      q.imported &&
+      p.importAscend !== undefined &&
+      q.importAscend !== undefined
+    ) {
+      ascend += Math.max(0, p.importAscend - q.importAscend)
+    }
   }
   return ascend
+}
+
+/** The elevation profile of a route being drawn, in the shape ElevationChart reads; indexes match `route.points`. */
+export function plannerRouteToMappable(route: Route): MappableRoute | null {
+  const points = route.points
+  if (points.length < 2) return null
+  const eleF = fillElevations(points)
+  if (eleF.every((e) => e === undefined)) return null
+  const cum = cumulativeDistances(points)
+  return {
+    distance: route.dist,
+    waypoints: [],
+    tracks: [
+      {
+        line: {
+          type: 'LineString',
+          coordinates: points.map((p, i) => [p.lng, p.lat, eleF[i] as number, cum[i]]),
+        },
+        climbs: [],
+      },
+    ],
+  } as MappableRoute
 }
 
 const EARTH_RADIUS = 6371008.8
@@ -226,7 +349,7 @@ export function computeRoute(input: RoutePoint[], changed?: Bounds): Route {
   return {
     points,
     dist: getDist(points),
-    ascend: getAscend(points),
+    ascend: routeAscend(points),
     index: index.finish(),
   }
 }
@@ -250,17 +373,21 @@ export async function add(
 
   const last = route.points[route.points.length - 1]
 
-  const segment = await router(last, p, profile, direct, signal, teamSlug)
+  const leg = await router(last, p, profile, direct, signal, teamSlug)
+  const segment = leg.points
   // Nothing of the route is touched before the router answered: an abandoned call leaves it intact.
   last.manual = true
   if (segment.length > 0) {
     // Written after the await, on the point that stays (the router's last one)
     segment[segment.length - 1].direct = direct
+    segment[segment.length - 1].legAscend = leg.ascend
     // Snap the previous control point to the route start (nearest road). Only a routed leg moves
     // it: a straight line returns just its target, which is not where the leg starts.
     if (isRouted(last, p, direct)) {
       last.lng = segment[0].lng
       last.lat = segment[0].lat
+      // The first point of a route is created without elevation: it takes the road's
+      last.ele ??= segment[0].ele
     }
     route.points.push(...segment)
   }
@@ -290,10 +417,13 @@ export async function insert(
   const before = route.points.slice(0, startIdx + 1)
 
   // Route segments (parallel if both needed)
-  const [segmentToP, segmentToEnd] = await Promise.all([
-    startPoint ? router(startPoint, p, profile, direct, signal, teamSlug) : Promise.resolve([]),
-    endPoint ? router(p, endPoint, profile, direct, signal, teamSlug) : Promise.resolve([]),
+  const emptyLeg: Leg = { points: [] }
+  const [toP, toEnd] = await Promise.all([
+    startPoint ? router(startPoint, p, profile, direct, signal, teamSlug) : emptyLeg,
+    endPoint ? router(p, endPoint, profile, direct, signal, teamSlug) : emptyLeg,
   ])
+  const segmentToP = toP.points
+  const segmentToEnd = toEnd.points
 
   // Snap the manual point to the nearest road using segment endpoints
   const snappedP =
@@ -305,12 +435,16 @@ export async function insert(
   const manualPoint = createPoint(snappedP?.lng ?? p.lng, snappedP?.lat ?? p.lat)
   manualPoint.manual = true
   manualPoint.direct = startPoint ? direct : false
+  // The inserted point sits on the road: it takes its elevation, and closes the leg that reached it
+  manualPoint.ele = snappedP?.ele
+  manualPoint.legAscend = startPoint && segmentToP.length > 0 ? toP.ascend : undefined
 
   // Snap boundary points to route endpoints
   if (before.length > 0 && segmentToP.length > 0 && isRouted(startPoint!, p, direct)) {
     const lastBefore = before[before.length - 1]
     lastBefore.lng = segmentToP[0].lng
     lastBefore.lat = segmentToP[0].lat
+    lastBefore.ele ??= segmentToP[0].ele
   }
 
   // Keep points after and including end
@@ -319,7 +453,10 @@ export async function insert(
   // The mode of the gesture wins over what the leg was (no inheritance). A point carrying `direct`
   // is manual or a bound (manualPoint, after[0]): it never enters the simplified middle, and the
   // duplicates the router leaves next to them, which Douglas-Peucker drops, carry nothing.
-  if (endPoint && after.length > 0) after[0].direct = direct
+  if (endPoint && after.length > 0) {
+    after[0].direct = direct
+    after[0].legAscend = toEnd.ascend
+  }
 
   if (after.length > 0 && segmentToEnd.length > 0 && isRouted(p, endPoint!, direct)) {
     const firstAfter = after[0]
@@ -380,7 +517,7 @@ export async function remove(
   // The reconnection is straight when asked, or when no routed leg is lost (the replaced legs are
   // all straight); if the router fails the route is left intact.
   const straight = direct || isStraightSpan(route, startIdx, endIdx)
-  const segment = await router(
+  const leg = await router(
     route.points[startIdx],
     route.points[endIdx],
     profile,
@@ -388,11 +525,15 @@ export async function remove(
     signal,
     teamSlug
   )
+  const segment = leg.points
   const before = route.points.slice(0, startIdx + 1)
   const after = route.points.slice(endIdx)
   // Written after the await. A bound (manual or imported) never enters the simplified middle, so
   // the flag survives the simplification; the router's own duplicate of it is dropped.
   after[0].direct = straight
+  // Neither routed nor straight (a hop between bounds a few metres apart): no climb, and not the
+  // imported fallback either, which would credit the span that was just removed
+  after[0].legAscend = leg.ascend ?? (straight ? undefined : 0)
 
   return computeRoute([...before, ...segment, ...after], { start: before.at(-1), end: after[0] })
 }
@@ -472,6 +613,12 @@ function isRouted(from: Point, to: Point, direct: boolean): boolean {
   return !direct && distance(from.lng, from.lat, to.lng, to.lat) >= 5
 }
 
+/** A leg answered by the router: its points and its climb (absent for a straight line or a hop). */
+interface Leg {
+  points: RoutePoint[]
+  ascend?: number
+}
+
 async function router(
   from: Point,
   to: Point,
@@ -479,9 +626,9 @@ async function router(
   direct: boolean,
   signal?: AbortSignal,
   teamSlug?: string
-): Promise<RoutePoint[]> {
+): Promise<Leg> {
   if (!isRouted(from, to, direct)) {
-    return [createPoint(to.lng, to.lat, undefined, false, direct)]
+    return { points: [createPoint(to.lng, to.lat, undefined, false, direct)] }
   }
   // Routing is billed per request: never send one for an operation already abandoned.
   signal?.throwIfAborted()
@@ -491,7 +638,14 @@ async function router(
     { skipErrorToast: true },
     signal
   )
-  return createPoints(response.route.coordinates)
+  const points = createPoints(response.route.coordinates)
+  let positive = 0
+  for (let i = 1; i < points.length; i++) {
+    const a = points[i - 1].ele
+    const b = points[i].ele
+    if (a !== undefined && b !== undefined && b > a) positive += b - a
+  }
+  return { points, ascend: response.ascend ?? positive }
 }
 
 function ramerDouglasPeucker(points: RoutePoint[], epsilon: number = 50): RoutePoint[] {
@@ -523,7 +677,8 @@ function ramerDouglasPeuckerRecursive(
 
   for (let i = start + 1; i < end; i++) {
     const p = points[i]
-    const distance = p.manual ? 100000 : crossarc(points[start], points[end], p)
+    const distance =
+      p.manual || p.legAscend !== undefined ? 100000 : crossarc(points[start], points[end], p)
     if (distance > largest.distance) {
       largest.index = i
       largest.distance = distance

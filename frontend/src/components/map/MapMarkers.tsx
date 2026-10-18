@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import { Marker } from 'react-map-gl/maplibre'
 import { Box, Text } from '@mantine/core'
 import { getOverlayBg } from '@/lib/colors'
@@ -43,13 +44,19 @@ export function EndMarker({ longitude, latitude }: MarkerProps) {
   )
 }
 
-export function HoverMarker({ longitude, latitude }: MarkerProps) {
+export function HoverMarker({
+  longitude,
+  latitude,
+  style,
+  testId,
+}: MarkerProps & { style?: CSSProperties; testId?: string }) {
   return (
-    <Marker longitude={longitude} latitude={latitude} anchor="center">
+    <Marker longitude={longitude} latitude={latitude} anchor="center" style={style}>
       <Box
         w={24}
         h={24}
         bg="var(--mantine-color-blue-filled)"
+        data-testid={testId}
         style={{
           borderRadius: '50%',
           border: '2px solid white',

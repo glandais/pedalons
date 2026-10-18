@@ -1058,10 +1058,13 @@ async function openLTrack({
   context,
   page,
   isMobile,
+  elevation = () => 150,
 }: {
   context: BrowserContext
   page: Page
   isMobile: boolean
+  /** Elevation of the i-th of the 121 points of the track (default: flat). */
+  elevation?: (i: number) => number
 }) {
   test.setTimeout(90_000)
   const { owner } = await plannerSite()
@@ -1074,11 +1077,11 @@ async function openLTrack({
   const perLon = perLat * Math.cos((lat0 * Math.PI) / 180)
   const leg = Array.from({ length: 61 }, (_, i) => i * 50)
   const track: [number, number, number][] = [
-    ...leg.map((east): [number, number, number] => [lat0, lon0 + east / perLon, 150]),
+    ...leg.map((east): [number, number, number] => [lat0, lon0 + east / perLon, 0]),
     ...leg
       .slice(1)
-      .map((north): [number, number, number] => [lat0 + north / perLat, lon0 + 3000 / perLon, 150]),
-  ]
+      .map((north): [number, number, number] => [lat0 + north / perLat, lon0 + 3000 / perLon, 0]),
+  ].map(([lat, lon], i): [number, number, number] => [lat, lon, elevation(i)])
   const name = unique('Tracé en L')
   const preview = await onHost(PLANNER_HOST, owner, async (api) =>
     expectOk<GpxPreviewDto>(
@@ -1136,6 +1139,7 @@ async function openLTrack({
   return {
     page,
     isMobile,
+    preview,
     surface,
     marker,
     centre,
@@ -1399,5 +1403,164 @@ test.describe('deleting an anchor of a loaded track', () => {
     await page.keyboard.press('Escape')
     await expect(item).toHaveCount(0)
     expect(routerRequests).toHaveLength(1)
+  })
+})
+
+test.describe('elevation profile while editing (B1)', () => {
+  test.setTimeout(90_000)
+
+  /** The planner's D+, as the status shows it (the chip on a finger, the bar on a mouse). */
+  const ascendOf = (page: Page, text: string) => page.getByText(text, { exact: true }).first()
+  const strip = (page: Page) => page.getByTestId('planner-elevation-strip').first()
+
+  test('the D+ is the routers: +100 m for two legs, +150 m for a third', async ({
+    context,
+    page,
+    isMobile,
+  }) => {
+    const planner = await openPlanner({ context, page, isMobile })
+    const { clickMap, points, settled, routerRequests } = planner
+    await clickMap(-120, 0)
+    await expect(points(1)).toBeVisible()
+    await clickMap(0, 40)
+    await expect(points(2)).toBeVisible()
+    await settled()
+    await clickMap(100, 0)
+    await expect(points(3)).toBeVisible()
+    await settled()
+    await expect(ascendOf(page, '+100 m')).toBeVisible()
+    expect(routerRequests).toHaveLength(2)
+
+    await clickMap(130, 60)
+    await expect(points(4)).toBeVisible()
+    await settled()
+    await expect(ascendOf(page, '+150 m')).toBeVisible()
+    expect(routerRequests).toHaveLength(3)
+  })
+
+  test('a straight line after a routed leg leaves the D+ as it was and costs no request', async ({
+    context,
+    page,
+    isMobile,
+  }) => {
+    const planner = await openPlanner({ context, page, isMobile })
+    const { clickMap, points, settled, routerRequests } = planner
+    await drawThreePoints(planner)
+    await expect(ascendOf(page, '+100 m')).toBeVisible()
+
+    const toggle = directToggle(page, isMobile)
+    await toggle.click()
+    await expect(toggle).toHaveAttribute('aria-pressed', 'true')
+    await clickMap(130, 60)
+    await expect(points(4)).toBeVisible()
+    await settled()
+    // The straight line ends past the last elevation known: nothing climbed
+    await expect(ascendOf(page, '+100 m')).toBeVisible()
+    expect(routerRequests).toHaveLength(0)
+  })
+
+  test('undoing a point brings the previous D+ back, with no request', async ({
+    context,
+    page,
+    isMobile,
+  }) => {
+    const planner = await openPlanner({ context, page, isMobile })
+    const { surface, points, settled, routerRequests } = planner
+    await drawThreePoints(planner)
+    await expect(ascendOf(page, '+100 m')).toBeVisible()
+    const shortcut = (label: string, keys: string) => (isMobile ? label : `${label} (${keys})`)
+    await surface.getByRole('button', { name: shortcut('Annuler', 'Ctrl+Z'), exact: true }).click()
+    await settled()
+    await expect(points(2)).toBeVisible()
+    await expect(ascendOf(page, '+50 m')).toBeVisible()
+    expect(routerRequests).toHaveLength(0)
+  })
+
+  test('hovering the profile shows its point on the map, and the map still takes a click after', async ({
+    context,
+    page,
+    isMobile,
+  }) => {
+    test.skip(isMobile, 'a mouse hover')
+    const planner = await openPlanner({ context, page, isMobile })
+    const { clickMap, points, settled } = planner
+    await drawThreePoints(planner)
+    const marker = page.getByTestId('planner-hover-marker')
+    await expect(marker).toHaveCount(0)
+
+    await strip(page).scrollIntoViewIfNeeded()
+    const box = await strip(page).boundingBox()
+    if (!box) throw new Error('the elevation strip has no box')
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+    await page.mouse.move(box.x + box.width / 2 + 5, box.y + box.height / 2)
+    await expect(marker).toBeVisible()
+
+    await page.mouse.move(box.x + box.width / 2, box.y - 400)
+    await expect(marker).toHaveCount(0)
+
+    await clickMap(130, 60)
+    await expect(points(4)).toBeVisible()
+    await settled()
+  })
+
+  test('on a finger the profile sits above the bar, folds and unfolds, and the map keeps its room', async ({
+    context,
+    page,
+    isMobile,
+  }) => {
+    test.skip(!isMobile, 'a finger-only layout')
+    await page.setViewportSize({ width: 360, height: 640 })
+    const planner = await openPlanner({ context, page, isMobile })
+    const { surface, canvas, clickMap, points, settled } = planner
+    await clickMap(-60, 0)
+    await expect(points(1)).toBeVisible()
+    await clickMap(40, 40)
+    await expect(points(2)).toBeVisible()
+    await settled()
+
+    const fold = surface.getByRole('button', { name: "Replier le graphe d'altitude" })
+    await expect(strip(page)).toBeVisible()
+    const stripBox = await strip(page).boundingBox()
+    const undo = await surface.getByRole('button', { name: 'Annuler' }).boundingBox()
+    if (!stripBox || !undo) throw new Error('missing box')
+    expect(stripBox.y + stripBox.height, 'the profile is above the bar').toBeLessThanOrEqual(
+      undo.y + 1
+    )
+    await expect(surface.getByRole('button', { name: 'Terminer' })).toBeVisible()
+    const mapOpen = await canvas.boundingBox()
+    expect(mapOpen!.height, 'the map keeps room with the profile open').toBeGreaterThanOrEqual(200)
+
+    await fold.click()
+    const unfold = surface.getByRole('button', { name: "Déplier le graphe d'altitude" })
+    await expect(unfold).toBeVisible()
+    // The canvas resizes on a later frame (map.resize from its ResizeObserver)
+    await expect
+      .poll(async () => (await canvas.boundingBox())!.height)
+      .toBeGreaterThan(mapOpen!.height)
+    await unfold.click()
+    await expect(fold).toBeVisible()
+  })
+
+  test('a reopened track starts at the stored D+, and deleting its corner counts the new leg', async ({
+    context,
+    page,
+    isMobile,
+  }) => {
+    test.skip(isMobile, 'a mouse gesture: the finger has its own long press')
+    // 100 m -> 200 m east, then 200 m -> 230 m north
+    const { preview, corner, settled, routerRequests } = await openLTrack({
+      context,
+      page,
+      isMobile,
+      elevation: (i) => (i <= 60 ? 100 + (100 * i) / 60 : 200 + (30 * (i - 60)) / 60),
+    })
+    await expect(ascendOf(page, `+${Math.round(preview.elevationGain)} m`)).toBeVisible()
+
+    await page.mouse.click(corner.x, corner.y, { button: 'right' })
+    await page.getByRole('menuitem', { name: 'Supprimer le point' }).click()
+    await settled()
+    expect(routerRequests).toHaveLength(1)
+    // Both ends are bounds: only the new leg (the stub's +50 m) is left
+    await expect(ascendOf(page, '+50 m')).toBeVisible()
   })
 })

@@ -12,6 +12,8 @@ interface GpxPreviewEditorProps {
   initialName: string
   /** Existing track ([lng, lat, ele, dist][]); enables the planner when the preview has one track. */
   initialTrack?: number[][]
+  /** D+ (m) stored for `initialTrack`. */
+  initialAscend?: number
   /** Create-from-scratch: planner on an empty map, no GPX upload, no source toggle. */
   create?: boolean
   onSubmit: (name: string, points?: GeoPoint[], gpxFile?: File) => void | Promise<void>
@@ -30,6 +32,7 @@ interface GpxPreviewEditorProps {
 export function GpxPreviewEditor({
   initialName,
   initialTrack,
+  initialAscend,
   create = false,
   onSubmit,
   onCancel,
@@ -128,6 +131,7 @@ export function GpxPreviewEditor({
           <RoutePlannerField
             onPointsChange={setPlannerPoints}
             initialTrack={initialTrack}
+            initialAscend={initialAscend}
             title={name}
             openRequest={drawRequest}
           />

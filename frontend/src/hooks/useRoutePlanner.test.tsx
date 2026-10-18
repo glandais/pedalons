@@ -291,3 +291,38 @@ describe('useRoutePlanner straight lines (B6)', () => {
     expect(result.current.directStats.count).toBe(1)
   })
 })
+
+describe('useRoutePlanner elevation (B1)', () => {
+  beforeEach(() => {
+    routeMock.mockReset()
+    localStorage.clear()
+  })
+
+  it('undo and redo hand back the climb of the legs', async () => {
+    routeMock.mockImplementation(async ({ from, to }: { from: typeof A; to: typeof A }) => ({
+      route: {
+        coordinates: [
+          [from.lng, from.lat, 100],
+          [to.lng, to.lat, 150],
+        ],
+      },
+      ascend: 50,
+    }))
+    const { result } = renderHook(() => useRoutePlanner())
+    act(() => result.current.addControlPoint(A, false))
+    await waitFor(() => expect(result.current.controlPoints).toHaveLength(1))
+    act(() => result.current.addControlPoint(B, false))
+    await waitFor(() => expect(result.current.route.ascend).toBe(50))
+    act(() => result.current.addControlPoint(C, false))
+    await waitFor(() => expect(result.current.route.ascend).toBe(100))
+
+    act(() => result.current.undo())
+    await waitFor(() => expect(result.current.route.ascend).toBe(50))
+    expect(result.current.route.points.at(-1)?.legAscend).toBe(50)
+
+    act(() => result.current.redo())
+    await waitFor(() => expect(result.current.route.ascend).toBe(100))
+    expect(result.current.route.points.at(-1)?.legAscend).toBe(50)
+    expect(routeMock).toHaveBeenCalledTimes(2)
+  })
+})

@@ -1,8 +1,8 @@
 # Éditeur de parcours web — desktop et web mobile
 
 Écrit le 17 octobre 2026, mis à jour le 18 octobre 2026. **État : lots 1 et 2 livrés le
-17 octobre 2026 (§5 et §6, A10 compris) ; dans le lot 3, B11, B12 et B6 sont livrés (18 octobre) ;
-restent le lot 3 (B1, B2, B7, B9) et le lot 4 (C1 à C5, C7 ; C6 non attribué).**
+17 octobre 2026 (§5 et §6, A10 compris) ; dans le lot 3, B11, B12, B6 et B1a (profil d'édition) sont livrés (18 octobre) ;
+restent B1b, le reste du lot 3 (B2, B7, B9) et le lot 4 (C1 à C5, C7 ; C6 non attribué).**
 Ledger `WEB-100` (une seule
 entrée, qui pointe ici) : le suivi fin se fait **dans ce plan**, cases à cocher comprises, pas dans
 le ledger. Une tâche n'en sort vers `LEDGER_NEXT.md` que si elle quitte le périmètre du plan
@@ -55,7 +55,7 @@ Quatre lots, chacun livrable seul :
 |---|---|---|---|
 | **1. Robustesse** (livré) | Annulation et verrou pendant le calcul, `Ctrl+Z` hors des champs, tactile décidé par le pointeur, aide aux gestes, menus fiables, tests de `lib/planner.ts` | S à M (≈ 1 semaine) | — (volet backend A10 livré) |
 | **2. Disposition** (livré) | Plein écran d'édition, barre sous le pouce, cibles 44 px, un seul panneau ouvert, recherche d'adresse, cadrage `fitBounds` | M | 1 |
-| **3. Standard** | Profil altimétrique d'édition (B1), inverser / aller-retour / retour au départ avec recalage (B2), ligne droite visible (B6, **livré**), clavier (B7), défilement au bord (B9), glisser une ancre au doigt (B11, **livré**), bornes indépendantes du zoom et suppression d'une ancre (B12, **livré**) | **L** | 1, 2 ; API pour B2 (endpoint de recalage) |
+| **3. Standard** | Profil altimétrique d'édition (B1, **B1a livré**, B1b à faire), inverser / aller-retour / retour au départ avec recalage (B2), ligne droite visible (B6, **livré**), clavier (B7), défilement au bord (B9), glisser une ancre au doigt (B11, **livré**), bornes indépendantes du zoom et suppression d'une ancre (B12, **livré**) | **L** | 1, 2 ; API pour B2 (endpoint de recalage) |
 | **4. Différenciation** | Éviter côtes / trafic (C2), état d'édition conservé (C4), surface par point (C1), points de parcours (C3), popularité interne (C5), zones à éviter (C7) ; C6 non attribué | M à L | C4 : B6 et B12 ; C2 : aucun morceau du lot 3 ; API pour C1, C2, C4, C7 |
 
 Dans le lot 4, **C4 dépend de B6** (seul B6 crée l'information « ligne droite ») **et de B12**
@@ -368,7 +368,7 @@ au §5.
 Ordre conseillé : **B12** d'abord (il pose la provenance `imported` et les bornes dont B2 et C4 se
 servent), puis B6 (la ligne droite visible), puis B1 et B2.
 
-- [ ] **B1. Profil altimétrique pendant l'édition** (M, §8 n° 7) — adaptateur pur
+- [x] **B1. Profil altimétrique pendant l'édition — B1a livré** (M, §8 n° 7) — adaptateur pur
       `plannerRouteToMappable(route)` dans `lib/planner.ts` (distance cumulée, `climbs: []`,
       `waypoints: []`) pour alimenter `ElevationChart` tel quel. Survol synchronisé par
       `HoverMarker`, comme `RouteTrackMap`. Desktop : bandeau fixe de 160 px sous la carte.
@@ -401,6 +401,47 @@ servent), puis B6 (la ligne droite visible), puis B1 et B2.
         même (à concevoir).
       - **Écart assumé** avec le D+ du parcours enregistré, qui passe ensuite en HD (rattrapage
         d'`API-131`) : l'affichage d'édition est une estimation en FAST.
+      - **Livré le 18 octobre 2026 (B1a).** Frontend seul, contrat inchangé.
+        `PlannerElevationStrip` (bandeau de 160 px sous la carte : en bas du plein écran au
+        desktop, sous l'emplacement de la carte en mode intégré ; au doigt, en-tête de 44 px avec
+        bouton replier / déplier et D+, corps de 110 px au-dessus de `PlannerBottomBar`, choix
+        mémorisé en `localStorage` sous try/catch). `plannerRouteToMappable` (index 1:1 avec
+        `route.points`), `fillElevations`, `routeAscend` (remplace `getAscend`). `router()` rend
+        `{ points, ascend }` ; `legAscend` se range sur le point qui termine la jambe, `importAscend`
+        (cumul brut de `initialTrack` avant Douglas-Peucker, recalé sur `elevationGain` de la
+        fiche, fil `initialAscend` jusqu'à `createRoute`). Survol : le profil pose un `HoverMarker`
+        sur la carte (`planner-hover-marker`, `pointerEvents: none`), la carte surligne l'extrémité
+        la plus proche du fantôme dans le profil ; la source du survol est mémorisée, seul un
+        survol du profil dessine un marqueur. Défauts corrigés au passage : premier point sans
+        altitude, `insert` qui ajoutait l'altitude du point inséré.
+        - **Décisions du propriétaire (18 octobre 2026)** : **Q-A** D+ d'un tracé rouvert = cumul
+          de montée par point sur tout `initialTrack`, recalé sur `elevationGain` (altitudes HD
+          mêlées aux jambes FAST jusqu'à C4, écart assumé) ; **Q-B** bandeau de 160 px aussi en
+          mode intégré au desktop ; **Q-C** D+ d'une ligne droite = max(0, altitude d'arrivée −
+          départ) avec altitudes remplies par interpolation linéaire en distance, aux extrémités la
+          plus proche connue ; tracé fait de lignes droites seules = 0 et bandeau « altitude
+          inconnue ».
+        - **Par défaut (non soumis)** : Q-D lignes droites en pointillés dans le profil
+          (`dashedSegment`, prop facultative d'`ElevationChart`) ; Q-E bandeau mobile déplié par
+          défaut ; Q-F pas de « ≈ » ; Q-G pas de zoom synchronisé carte / profil.
+        - **Tests** : `planner.test.ts` (`describe('B1 elevation')`, trois tests qui figeaient les
+          défauts réécrits, mock du routeur avec `ascend: 50`), `useRoutePlanner.test.tsx` (annuler /
+          rétablir rend `legAscend` et `ascend`), `RoutePlannerField.test.tsx` (bandeau, repli au
+          doigt, survol du profil vers le marqueur), `gpx-planner.e2e.ts` (`elevation profile while
+          editing (B1)`, 6 scénarios dont le tracé rouvert aux valeurs réécrites).
+        - **Écarts avec la spec** : survol à source (map / profile) plutôt qu'un simple index ;
+          `onTouchEnd` / `onTouchCancel` sur le cadre (Chart.js n'écoute pas touchend) ;
+          en-tête tactile de 44 px (et non 32) pour contenir le bouton ; `remove` entre deux
+          bornes importées à moins de 5 m (saut sans appel au routeur) met `legAscend` à 0.
+        - **Pièges** : `legAscend` doit être écrit après l'`await` comme `direct` ; il vaut
+          `undefined` pour une ligne droite (la branche `direct` de `routeAscend` passe avant) ; la
+          course du redimensionnement de la carte rend l'e2e du repli asynchrone (`expect.poll`) ;
+          le test e2e « a user draws a route » peut échouer en `LOGIN_RATE_LIMITED` (429) en fin de
+          longue série, il repasse seul.
+        - **Reste (B1b)** : trace source FAST à l'envoi d'un GPX et sa remise au planificateur ;
+          `sourceIdx` (C4, indispensable dès plusieurs imports) ; altitudes FAST d'un tracé rouvert
+          déjà en HD ; cumul dead-band par point côté serveur ; endpoint d'altitude FAST pour
+          échantillonner une ligne droite.
 - [ ] **B2. Inverser, aller-retour, retour au départ** (L, §8 n° 8) — trois opérations dans
       `lib/planner.ts`, passées par `executeRouteOperation` pour l'historique. Boutons dans la
       barre, raccourci dans le libellé. Dépend de A9 et de l'endpoint de recalage ci-dessous.
@@ -897,7 +938,7 @@ questions ouvertes viennent du §10 de
 | Q2 | Ambition du web mobile | **Tranché le 17 octobre 2026 : édition complète** (B5, B6, B9) ; au doigt, le plein écran s'ouvre **sur un geste** (« Modifier le tracé », « Tracer le parcours »), jamais au chargement (L2-3) | Retouches seulement : la moitié du lot 2 tombe |
 | Q3 | Modificateur ligne droite | **Tranché le 17 octobre 2026 : `Ctrl` et `Alt`**, la bascule B6 en plus | `Alt` seul : cohérent avec macOS, rompt l'habitude actuelle |
 | Q4 | Quota de géocodage par utilisateur | **Caduque** : la recherche de la carte (`WEB-99`) appelle Stadia depuis le navigateur, authentifiée par le domaine ; aucune requête ne passe par notre serveur | — |
-| Q5 | D+ affiché pendant l'édition | **Tranché le 17 octobre 2026, précisé le 18 (D2) : celui du serveur, en altitude rapide** (FAST, `API-131`) : `ascend` de chaque segment routé, altitudes de la trace source pour une portion importée, calculées par le serveur dès l'envoi du fichier. Satisfaite pour le routeur depuis `6cbce899` ; la règle de calcul est à B1. Écart assumé avec le parcours enregistré, qui passe en HD | Celui du client : instantané, mais diverge à l'enregistrement |
+| Q5 | D+ affiché pendant l'édition | **Tranché le 17 octobre 2026, précisé le 18 (D2) : celui du serveur, en altitude rapide** (FAST, `API-131`) : `ascend` de chaque segment routé, altitudes de la trace source pour une portion importée, calculées par le serveur dès l'envoi du fichier. Satisfaite pour le routeur depuis `6cbce899` ; la règle de calcul est livrée par B1a. Écart assumé avec le parcours enregistré, qui passe en HD | Celui du client : instantané, mais diverge à l'enregistrement |
 | Q6 | Inversion | **Tranché le 17 octobre 2026 : recaler la trace inversée sur le réseau** (`map_match/v1` de Stadia, avec le profil courant du planificateur, 1 ou 2 requêtes facturées, voir B2) : mêmes routes sauf là où le sens l'interdit, plus court détour légal ailleurs ; repli sur la géométrie inversée seule, avec un avertissement, si le recalage échoue. Le tracé recalé est traité comme un import (D1). Re-router entre les points de contrôle est écarté : deux ancres éloignées laissent le routeur changer de routes, et une ancre de Douglas-Peucker tombe volontiers sur une intersection ou un rond-point à sens unique | Inverser la géométrie seule : 0 requête, sens uniques ignorés |
 | Q7 | Lignes droites à la réouverture | **Tranché le 17 octobre 2026** : au chargement, le parcours n'est pas recalculé ; une ligne droite reste telle quelle tant que ses points ne sont pas modifiés. B6 ne dépend donc pas de C4 (c'est C4 qui dépend de B6) | Lier B6 et C4 pour retrouver les lignes droites en pointillés à la réouverture |
 | Q8 | Mini-carte | **Tranché le 17 octobre 2026 : gardée avec une souris, absente au doigt** (déjà le cas depuis A4) | La rendre débrayable, ou la retirer |
@@ -918,6 +959,11 @@ questions ouvertes viennent du §10 de
 - **D3.** L'état d'édition de C4 est stocké dans **`gpx_tracks`**, en colonne JSONB facultative : un
   tracé remplacé emporte son état. Les aperçus des outils GPX ont leur propre colonne dans
   `gpx_previews`.
+- **Q-A, Q-B, Q-C (B1, 18 octobre 2026).** Q-A : le D+ d'un tracé rouvert est le cumul de montée par
+  point de tout `initialTrack`, recalé sur `elevationGain` de la fiche. Q-B : bandeau de 160 px aussi
+  sous la carte en mode intégré au desktop. Q-C : D+ d'une ligne droite = max(0, altitude d'arrivée
+  − départ), altitudes remplies par interpolation ; tracé de lignes droites seules = 0 et « altitude
+  inconnue ».
 - **D4.** Les volets backend de B2 (l'endpoint de recalage) et de C4 **restent sous `WEB-100`**,
   comme A10. Les versions de contrat et les migrations seront notées au passage dans
   `LEDGER_DONE.md`.

@@ -12,14 +12,17 @@ import {
   computeRoute,
   createRoute,
   directStats,
+  fillElevations,
   geojson,
   insert,
   isStraightSpan,
   legBounds,
   legsGeojson,
   nearestSegment,
+  plannerRouteToMappable,
   PlannerRefusedError,
   remove,
+  routeAscend,
   spanBounds,
   type Point,
   type Route,
@@ -51,6 +54,7 @@ beforeEach(() => {
           [to.lng, to.lat, groundEle(to.lng)],
         ],
       },
+      ascend: 50,
     }
   })
 })
@@ -121,13 +125,13 @@ describe('computeRoute', () => {
     expect(route.dist).toBeLessThan(900)
   })
 
-  it('counts a missing elevation as 0 m', () => {
+  it('skips a missing elevation instead of inventing a climb from 0 m', () => {
     const route = createRoute([
       [5.0, 45.0],
       [5.005, 45.001, 40],
       [5.01, 45.0, 40],
     ])
-    expect(route.ascend).toBe(40)
+    expect(route.ascend).toBe(0)
   })
 
   it('exposes a GeoJSON line made of lng/lat pairs without elevation', () => {
@@ -201,13 +205,10 @@ describe('add', () => {
   it('computes the ascent from the elevation of the routed geometry', async () => {
     const first = await add(computeRoute([]), A, PROFILE)
     const route = await add(first, B, PROFILE)
-    // The first control point has no elevation (counted as 0 m) while the router returns it at
-    // 100 m, so that step counts as a climb too: the ascent is the sum of the positive steps.
-    const climbs = route.points
-      .slice(1)
-      .reduce((sum, p, i) => sum + Math.max(0, (p.ele ?? 0) - (route.points[i].ele ?? 0)), 0)
-    expect(route.ascend).toBe(climbs)
-    expect(route.ascend).toBeGreaterThan(0)
+    // The router's own figure for the leg, not the elevation steps of its geometry, and the first
+    // control point takes the road's elevation instead of counting from 0 m.
+    expect(route.ascend).toBe(50)
+    expect(route.points[0].ele).toBe(100)
   })
 
   it('snaps the previous control point to the first coordinate returned by the router', async () => {
@@ -476,10 +477,9 @@ describe('remove', () => {
 })
 
 describe('distance and ascent of a routed line', () => {
-  it('matches the sum of the legs and the positive elevation steps', async () => {
+  it('matches the sum of the legs and the climb the router measured for each', async () => {
     const route = await threePointRoute()
     let dist = 0
-    let up = 0
     for (let i = 1; i < route.points.length; i++) {
       const p = route.points[i - 1]
       const q = route.points[i]
@@ -491,10 +491,9 @@ describe('distance and ascent of a routed line', () => {
           Math.cos((q.lat * Math.PI) / 180) *
           Math.sin(dLng / 2) ** 2
       dist += 2 * 6371000 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-      up += Math.max(0, (q.ele ?? 0) - (p.ele ?? 0))
     }
     expect(route.dist).toBeCloseTo(dist, 6)
-    expect(route.ascend).toBe(up)
+    expect(route.ascend).toBe(100)
     expect(route.dist).toBeGreaterThan(1572)
   })
 })
@@ -1138,5 +1137,160 @@ describe('B6 straight lines', () => {
     expect(isStraightSpan(route, 2, 1)).toBe(false)
     const mixed = await drawn(false, true)
     expect(isStraightSpan(mixed, 0, mixed.points.length - 1)).toBe(false)
+  })
+})
+
+describe('B1 elevation', () => {
+  /** One router answer: a flat two-point geometry carrying the climb the router measured. */
+  const answer =
+    (ascend: number | undefined) =>
+    async ({ from, to }: RouteRequest) => ({
+      route: {
+        coordinates: [
+          [from.lng, from.lat, groundEle(from.lng)],
+          [to.lng, to.lat, groundEle(to.lng)],
+        ],
+      },
+      ascend,
+    })
+
+  it('adds the climb of each routed leg once, and gives the first point an elevation', async () => {
+    const route = await threePointRoute()
+    expect(route.ascend).toBe(100)
+    expect(route.points[0].ele).toBeDefined()
+    const [, pb, pc] = manualPoints(route)
+    expect(pb.legAscend).toBe(50)
+    expect(pc.legAscend).toBe(50)
+  })
+
+  it('falls back on the positive steps of the geometry when the router gives no climb', async () => {
+    routeMock.mockImplementation(answer(undefined))
+    let route = await add(computeRoute([]), A, PROFILE)
+    route = await add(route, B, PROFILE)
+    // 100 m -> 200 m
+    expect(route.ascend).toBe(100)
+  })
+
+  it('insert takes the climb of both new legs, and the inserted point adds no elevation of its own', async () => {
+    const route = await threePointRoute()
+    const [pa, pb, pc] = manualPoints(route)
+    routeMock.mockReset()
+    routeMock.mockImplementationOnce(answer(30)).mockImplementationOnce(answer(70))
+    const next = await insert(route, pa, { lng: 5.005, lat: 45.0 }, pb, PROFILE)
+    const inserted = next.points.find((p) => p.lng === 5.005 && p.manual)!
+    expect(inserted.legAscend).toBe(30)
+    // The inserted point takes the snapped router elevation
+    expect(inserted.ele).toBe(groundEle(5.005))
+    expect(next.points.find((p) => p.id === pb.id)!.legAscend).toBe(70)
+    expect(next.points.find((p) => p.id === pc.id)!.legAscend).toBe(50)
+    expect(next.ascend).toBe(150)
+  })
+
+  it('remove reconnects with the climb of the new leg', async () => {
+    const route = await threePointRoute()
+    const [pa, , pc] = manualPoints(route)
+    routeMock.mockReset()
+    routeMock.mockImplementation(answer(80))
+    const next = await remove(route, pa, pc, PROFILE)
+    expect(next.ascend).toBe(80)
+  })
+
+  it('removing the start does not count the leg that was cut', async () => {
+    const route = await threePointRoute()
+    const [, pb] = manualPoints(route)
+    const next = await remove(route, undefined, pb, PROFILE)
+    expect(next.ascend).toBe(50)
+  })
+
+  it('counts the net climb of a straight line after a routed leg, and 0 for a final one', async () => {
+    const route = await threePointRoute()
+    const [pa, pb] = manualPoints(route)
+    routeMock.mockClear()
+    // A straight point between A (100 m) and B (200 m): +100 m net, then B->C is still 50
+    const inserted = await insert(route, pa, { lng: 5.005, lat: 45.0 }, pb, PROFILE, true)
+    expect(inserted.ascend).toBeCloseTo(150, 6)
+    expect(routeMock).not.toHaveBeenCalled()
+    // A straight line at the end has no elevation to reach: nothing climbed
+    const ended = await add(await threePointRoute(), D, PROFILE, true)
+    expect(ended.ascend).toBe(100)
+    expect(routeMock).not.toHaveBeenCalled()
+  })
+
+  it('a route of straight lines only has 0 m and no profile', async () => {
+    let route = await add(computeRoute([]), A, PROFILE)
+    route = await add(route, B, PROFILE, true)
+    route = await add(route, C, PROFILE, true)
+    expect(route.ascend).toBe(0)
+    expect(plannerRouteToMappable(route)).toBeNull()
+  })
+
+  it('scales the climb of a loaded track to the reference D+, whatever the simplification drops', () => {
+    // Collinear: Douglas-Peucker keeps the two ends, the peak in the middle is dropped
+    const coords = [
+      [5.0, 45.0, 100],
+      [5.005, 45.0, 150],
+      [5.01, 45.0, 100],
+      [5.015, 45.0, 100],
+    ]
+    const scaled = createRoute(coords, 1234)
+    expect(scaled.points).toHaveLength(2)
+    expect(scaled.ascend).toBeCloseTo(1234, 6)
+    // No reference: the raw cumulative climb of the whole input, not of the kept points
+    expect(createRoute(coords).ascend).toBeCloseTo(50, 6)
+  })
+
+  it('removing an angle of a loaded track keeps the portions around it and adds the new leg', async () => {
+    const route = createRoute([
+      [5.0, 45.0, 100],
+      [5.01, 45.0, 150],
+      [5.01, 45.01, 200],
+      [5.02, 45.01, 230],
+      [5.02, 45.02, 260],
+    ])
+    expect(route.points).toHaveLength(5)
+    expect(route.ascend).toBeCloseTo(160, 6)
+    routeMock.mockReset()
+    routeMock.mockImplementation(answer(20))
+    const next = await remove(route, route.points[1], route.points[3], PROFILE)
+    // 100 -> 150 kept, the new leg, then 230 -> 260 kept
+    expect(next.ascend).toBeCloseTo(50 + 20 + 30, 6)
+  })
+
+  it('a computation replayed on the same points keeps the ascent', async () => {
+    const route = await threePointRoute()
+    expect(computeRoute(route.points.map((p) => ({ ...p }))).ascend).toBe(route.ascend)
+    expect(routeAscend(route.points)).toBe(route.ascend)
+  })
+
+  it('exposes the profile with one entry per point, increasing distances and filled elevations', async () => {
+    const route = await threePointRoute()
+    const mappable = plannerRouteToMappable(route)!
+    const coords = mappable.tracks[0].line.coordinates
+    expect(coords).toHaveLength(route.points.length)
+    expect(mappable.distance).toBe(route.dist)
+    for (let i = 1; i < coords.length; i++) expect(coords[i][3]).toBeGreaterThan(coords[i - 1][3])
+    expect(coords.at(-1)![3]).toBeCloseTo(route.dist, 6)
+  })
+
+  it('fills a missing elevation linearly along the distance, the nearest known at the ends', () => {
+    const at = (lng: number, ele?: number) =>
+      ({
+        id: `x${lng}`,
+        idx: 0,
+        lng,
+        lat: 45,
+        ele,
+        manual: false,
+        imported: false,
+        direct: false,
+        zoom: 0,
+      }) satisfies RoutePoint
+    const filled = fillElevations([at(5.0), at(5.01, 100), at(5.02), at(5.03, 200), at(5.04)])
+    expect(filled[0]).toBe(100)
+    expect(filled[1]).toBe(100)
+    expect(filled[2]).toBeCloseTo(150, 3)
+    expect(filled[3]).toBe(200)
+    expect(filled[4]).toBe(200)
+    expect(fillElevations([at(5.0), at(5.01)])).toEqual([undefined, undefined])
   })
 })

@@ -38,6 +38,8 @@ interface RouteEditorProps {
   error?: Error | null
   isCreateMode?: boolean
   initialTrack?: number[][]
+  /** D+ (m) stored for `initialTrack`. */
+  initialAscend?: number
   submitButtonText?: string
   cancelButtonText?: string
   showCancelButton?: boolean
@@ -58,6 +60,7 @@ export function RouteEditor({
   error: _error,
   isCreateMode = false,
   initialTrack,
+  initialAscend,
   submitButtonText,
   cancelButtonText,
   showCancelButton = true,
@@ -214,6 +217,7 @@ export function RouteEditor({
             <RoutePlannerField
               onPointsChange={setPlannerPoints}
               initialTrack={initialTrack}
+              initialAscend={initialAscend}
               teamSlug={team.slug}
               teamLocation={team.geometry?.coordinates as [number, number] | undefined}
               title={name}

@@ -125,6 +125,7 @@ export function EditRoutePage() {
         teamSlug={teamSlug!}
         initialValues={initialValues}
         initialTrack={initialTrack}
+        initialAscend={route.elevationGain}
         onSubmit={handleSubmit}
         onCancel={() => navigate(paths.route(teamSlug!, routeSlug!))}
         isPending={updateRouteMutation.isPending}
