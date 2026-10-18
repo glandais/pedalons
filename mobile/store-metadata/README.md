@@ -54,7 +54,7 @@ asc metadata apply    --app 6761760079 --version 1.1.0 --platform IOS --dir ./me
 
 Name, subtitle and keywords form **one indexed pool**: never repeat a word across them, keep keywords
 comma-separated without spaces, near 100 characters. The description must only claim what the app
-does (guideline 2.3.1) — no GPX *import* on mobile, for instance. At the next version, rename the
+does (guideline 2.3.1) — GPX *import* on mobile, for instance, exists only in the route editor reserved to organizers (`MOB-79`). At the next version, rename the
 `version/` folder and add `whatsNew`, which does not exist on a first version.
 
 Set outside `metadata/`, on 24 September 2026: version renamed `1.0` → `1.0.0` (it must match the
