@@ -903,3 +903,83 @@ test('opening a long preview for editing frames the whole track, on any screen',
   }
   expect(routerRequests, 'framing a track asks nothing of the router').toHaveLength(0)
 })
+
+test('a finger drags an anchor of a loaded track: the trace is routed again through it', async ({
+  context,
+  page,
+  isMobile,
+}) => {
+  test.skip(!isMobile, 'a finger gesture: covered by the mobile project')
+  test.setTimeout(90_000)
+  const { owner } = await plannerSite()
+  await signInPlanner(context)
+  await stubBasemap(page)
+  const routerRequests = await stubRouter(page)
+
+  // An L: 3 km east, then 3 km north. Its corner is an anchor (one of the small white points a
+  // loaded track is pinned by), drawn where the end's x meets the start's y.
+  const [lat0, lon0] = [48.4469, 1.4875]
+  const perLat = 111_320
+  const perLon = perLat * Math.cos((lat0 * Math.PI) / 180)
+  const leg = Array.from({ length: 61 }, (_, i) => i * 50)
+  const track: [number, number, number][] = [
+    ...leg.map((east): [number, number, number] => [lat0, lon0 + east / perLon, 150]),
+    ...leg
+      .slice(1)
+      .map((north): [number, number, number] => [lat0 + north / perLat, lon0 + 3000 / perLon, 150]),
+  ]
+  const name = unique('Tracé en L')
+  const preview = await onHost(PLANNER_HOST, owner, async (api) =>
+    expectOk<GpxPreviewDto>(
+      await api.post('/api/gpx-previews', {
+        multipart: {
+          gpxFile: {
+            name: 'l.gpx',
+            mimeType: 'application/gpx+xml',
+            buffer: Buffer.from(gpxOf(name, track)),
+          },
+        },
+      })
+    )
+  )
+
+  await page.goto(`${origin}/outils-gpx/${preview.id}/modifier`)
+  const edit = page.getByRole('main').getByRole('button', { name: 'Modifier le tracé' })
+  await hydrated(edit)
+  await edit.click()
+  const surface = editorOf(page, isMobile, name)
+  const marker = (n: number) => surface.getByRole('button', { name: `Point ${n}`, exact: true })
+  await expect(marker(2)).toBeVisible()
+  await expect(marker(3)).toHaveCount(0)
+  const centre = async (n: number) => {
+    const b = await marker(n).boundingBox()
+    if (!b) throw new Error(`marker ${n} has no box`)
+    return { x: b.x + b.width / 2, y: b.y + b.height / 2 }
+  }
+  const [start, end] = [await centre(1), await centre(2)]
+  const corner = { x: end.x, y: start.y }
+  const drop = { x: corner.x - 60, y: corner.y - 60 }
+
+  // A finger press on the corner, a drag, a lift: raw touch events (Playwright can only tap).
+  const cdp = await context.newCDPSession(page)
+  const touch = (type: 'touchStart' | 'touchMove' | 'touchEnd', at?: { x: number; y: number }) =>
+    cdp.send('Input.dispatchTouchEvent', { type, touchPoints: at ? [at] : [] })
+  await touch('touchStart', corner)
+  for (let i = 1; i <= 8; i++) {
+    await touch('touchMove', {
+      x: corner.x + ((drop.x - corner.x) * i) / 8,
+      y: corner.y + ((drop.y - corner.y) * i) / 8,
+    })
+  }
+  await touch('touchEnd')
+
+  // The corner is now a control point of its own, between the two ends: the two segments on
+  // either side of it are routed, and the map did not pan under the finger.
+  await expect(marker(3)).toBeVisible()
+  await expect.poll(() => routerRequests.length).toBe(2)
+  const moved = await centre(2)
+  expect(Math.abs(moved.x - drop.x), 'the new point is where the finger lifted').toBeLessThan(20)
+  expect(Math.abs(moved.y - drop.y)).toBeLessThan(20)
+  const [startAfter] = [await centre(1)]
+  expect(Math.abs(startAfter.x - start.x), 'the map did not pan').toBeLessThan(2)
+})

@@ -7,6 +7,7 @@ import {
   MapMouseEvent,
   Marker,
   MarkerDragEvent,
+  MapLayerTouchEvent,
 } from 'react-map-gl/maplibre'
 import { IconMaximize, IconTrash } from '@tabler/icons-react'
 import { ActionIcon, Box, Button, Group, Loader, Menu, Skeleton, Stack, Text } from '@mantine/core'
@@ -64,6 +65,10 @@ interface RoutePlannerProps {
 // The press is cancelled once the finger moves as far as maplibre needs to start a marker drag
 // (the map's default clickTolerance), so the menu never opens on a press that became a drag.
 const LONG_PRESS_MOVE_TOLERANCE_PX = 3
+/** A finger grabs an anchor (the small white points of a loaded track) within this distance. */
+const ANCHOR_TOUCH_RADIUS_PX = 22
+/** An anchor grabbed but not moved further than this is a tap, not a drag. */
+const ANCHOR_DRAG_TOLERANCE_PX = 3
 /** After a long press opens the menu, the click its release may still produce is ignored this long. */
 const LONG_PRESS_CLICK_GRACE_MS = 700
 
@@ -383,6 +388,9 @@ export function RoutePlanner({
       // The press that dismissed a map panel is not a point to add
       if (panelJustDismissed()) return
 
+      // Nor is a click the browser may still derive from a finger's anchor drag
+      if (Date.now() - anchorDragEndedAt.current < 400) return
+
       // Nor is the one on the « Start here » button (it adds the point itself, and stops the
       // click; this guard is the fallback should a click still come through)
       if ((event.originalEvent?.target as HTMLElement | null)?.closest?.('.planner-start-here')) {
@@ -553,6 +561,81 @@ export function RoutePlanner({
     }
   }, [insertControlPoint, draggingGhost, startDragPoint, endDragPoint])
 
+  // A finger drags an anchor the way a mouse drags the ghost point: the trace between the two
+  // neighbouring anchors is routed again through where the finger lifts (two requests). Only a
+  // press on an anchor starts it; anywhere else on the trace, the finger pans the map as usual.
+  const anchorTouchStart = useRef<{ x: number; y: number } | null>(null)
+  const anchorTouchMoved = useRef(false)
+  const anchorDragEndedAt = useRef(0)
+
+  const cancelAnchorDrag = useCallback(() => {
+    anchorTouchStart.current = null
+    anchorTouchMoved.current = false
+    setDraggingGhost(null)
+    setStartDragPoint(undefined)
+    setEndDragPoint(undefined)
+  }, [])
+
+  const handleMapTouchStart = useCallback(
+    (event: MapLayerTouchEvent) => {
+      const map = mapRef.current
+      if (!map || isLoading || draggingMarker || event.points.length !== 1) return
+      // A control point is a marker of its own, with its own drag and long press; « Start here »
+      // is a button. Other markers (the km labels) are mere labels: one may sit on an anchor, and
+      // must not keep the finger from grabbing it.
+      const target = event.originalEvent.target as HTMLElement | null
+      if (target?.closest?.('.maplibregl-marker [role="button"], .planner-start-here')) return
+
+      const zoom = getMapZoom()
+      let grabbed: { idx: number; distance: number } | null = null
+      for (let i = 0; i < route.points.length; i++) {
+        const p = route.points[i]
+        // The anchors the map shows at this zoom (the layer filter below)
+        if (p.manual || p.zoom > zoom) continue
+        const projected = map.project([p.lng, p.lat])
+        const distance = Math.hypot(projected.x - event.point.x, projected.y - event.point.y)
+        if (distance < ANCHOR_TOUCH_RADIUS_PX && (!grabbed || distance < grabbed.distance)) {
+          grabbed = { idx: i, distance }
+        }
+      }
+      if (!grabbed) return
+
+      // The press is the anchor's: the map does not pan
+      event.preventDefault()
+      const anchor = route.points[grabbed.idx]
+      anchorTouchStart.current = { x: event.point.x, y: event.point.y }
+      anchorTouchMoved.current = false
+      setDraggingGhost({ lng: anchor.lng, lat: anchor.lat, idx: grabbed.idx })
+      setStartDragPoint(findAnchorStartPoint(route, grabbed.idx, zoom))
+      setEndDragPoint(findAnchorEndPoint(route, grabbed.idx, zoom))
+    },
+    [isLoading, draggingMarker, getMapZoom, route]
+  )
+
+  const handleMapTouchMove = useCallback((event: MapLayerTouchEvent) => {
+    const start = anchorTouchStart.current
+    if (!start) return
+    event.preventDefault()
+    if (Math.hypot(event.point.x - start.x, event.point.y - start.y) > ANCHOR_DRAG_TOLERANCE_PX) {
+      anchorTouchMoved.current = true
+    }
+    const { lng, lat } = event.lngLat
+    setDraggingGhost((prev) => (prev ? { ...prev, lng, lat } : null))
+  }, [])
+
+  const handleMapTouchEnd = useCallback(() => {
+    if (!anchorTouchStart.current) return
+    if (anchorTouchMoved.current) {
+      anchorDragEndedAt.current = Date.now()
+      anchorTouchStart.current = null
+      anchorTouchMoved.current = false
+      handleMouseUp()
+    } else {
+      // A tap on an anchor: no drag, the tap inserts a point there like anywhere on the trace
+      cancelAnchorDrag()
+    }
+  }, [handleMouseUp, cancelAnchorDrag])
+
   // A finger in the fullscreen editor: its tools are in the dialog's bottom bar, not on the map.
   const touchFullscreen = layout === 'fullscreen' && isCoarsePointer
 
@@ -691,6 +774,10 @@ export function RoutePlanner({
             onMouseMove={handleMouseMove}
             onMouseLeave={handleMouseLeave}
             onMouseUp={handleMouseUp}
+            onTouchStart={handleMapTouchStart}
+            onTouchMove={handleMapTouchMove}
+            onTouchEnd={handleMapTouchEnd}
+            onTouchCancel={cancelAnchorDrag}
             interactiveLayerIds={routeGeoJson ? ['route-line'] : []}
             cursor={
               isLoading
@@ -762,9 +849,10 @@ export function RoutePlanner({
                       type="circle"
                       filter={['>=', ['zoom'], ['get', 'zoom']]}
                       paint={{
-                        'circle-radius': 5,
+                        // Bigger on a finger, which can grab them (handleMapTouchStart)
+                        'circle-radius': isCoarsePointer ? 8 : 5,
                         'circle-color': 'white',
-                        'circle-stroke-width': 2,
+                        'circle-stroke-width': isCoarsePointer ? 3 : 2,
                         'circle-stroke-color': '#4F46E5',
                         'circle-opacity': 0.9,
                       }}
