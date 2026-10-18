@@ -18,7 +18,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../support/localization.dart';
 import 'ride_fixtures.dart';
 
-/// L'éditeur de sortie (ledger `MOB-76`) : le refus pour qui n'organise pas,
+/// L'éditeur de sortie (ledger `MOB-80`) : le refus pour qui n'organise pas,
 /// et surtout **ce qui part** — la requête que le serveur appliquera champ par
 /// champ, absents compris.
 class _StubRides implements RideRepository {

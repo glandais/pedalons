@@ -5,7 +5,7 @@ import '../../../config/paths.dart';
 /// Créer ou modifier une publication ou un voyage, traiter un signalement,
 /// gérer les membres et les réglages de l'équipe : l'application n'a d'écran
 /// pour aucun de ces gestes. Créer et modifier une **sortie** se fait dans
-/// l'app depuis `MOB-76` (`rideNewLocation`, `Paths.rideEdit`), et gérer les
+/// l'app depuis `MOB-80` (`rideNewLocation`, `Paths.rideEdit`), et gérer les
 /// **modèles de sortie** depuis `MOB-78` (`Paths.rideTemplates`). Le tableau de bord les propose
 /// néanmoins — parité avec le web —, et les ouvre dans le navigateur de l'appareil
 /// par `openWebPage`.

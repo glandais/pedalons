@@ -18,7 +18,7 @@ import '../../providers/ride_detail_provider.dart';
 /// Les gestes d'un organisateur sur une sortie, selon son statut — ceux du
 /// menu de la fiche au site (`RideDetailPage`) : publier un brouillon,
 /// dépublier ou annuler une sortie publiée, rétablir une sortie annulée,
-/// supprimer, restaurer une sortie supprimée (ledger `MOB-76`).
+/// supprimer, restaurer une sortie supprimée (ledger `MOB-80`).
 enum RideManageAction {
   publish,
   unpublish,

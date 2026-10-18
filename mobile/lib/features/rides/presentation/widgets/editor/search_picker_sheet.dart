@@ -16,7 +16,7 @@ typedef PickerLoader<T> =
 
 /// Ouvre une feuille plein rideau de choix dans une liste serveur, avec
 /// recherche et chargement à la demande — parcours, lieux, membres, modèles
-/// de l'éditeur de sortie (ledger `MOB-76`). Rend l'élément choisi, ou `null`
+/// de l'éditeur de sortie (ledger `MOB-80`). Rend l'élément choisi, ou `null`
 /// si la feuille a été fermée.
 ///
 /// [footerBuilder] pose un pied sous la liste, construit avec le contexte de

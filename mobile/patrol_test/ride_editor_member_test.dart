@@ -1,7 +1,7 @@
 import 'common.dart';
 
 /// Web counterpart: `EditRidePage` redirects a plain member to the ride. In the app (ledger
-/// `MOB-76`), a member reads the ride with no pencil, and an editor link opened by hand shows the
+/// `MOB-80`), a member reads the ride with no pencil, and an editor link opened by hand shows the
 /// organizers-only refusal rather than a form that would end in a 403.
 void main() {
   testApp(

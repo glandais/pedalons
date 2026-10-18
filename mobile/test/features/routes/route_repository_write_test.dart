@@ -47,6 +47,7 @@ const MediaDto _media = MediaDto(
 RouteDto _route({String slug = 'col', bool deleted = false}) => RouteDto(
   id: 'r1',
   slug: slug,
+  elevationState: 'HD',
   team: const TeamPublicationDto(
     id: 't1',
     slug: 'x',
@@ -69,6 +70,7 @@ RouteDetailDto _detail({String slug = 'col', bool deleted = false}) =>
     RouteDetailDto(
       id: 'r1',
       slug: slug,
+      elevationState: 'HD',
       team: const TeamPublicationDto(
         id: 't1',
         slug: 'x',

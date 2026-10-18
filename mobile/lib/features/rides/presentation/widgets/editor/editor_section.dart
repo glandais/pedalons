@@ -6,7 +6,7 @@ import '../../../../../core/theme/pdl_tokens.dart';
 import '../../../../../core/theme/pdl_typography.dart';
 
 /// Une section d'un éditeur — l'éditeur de sortie et celui de modèle (ledger
-/// `MOB-76`, `MOB-78`) : un titre de section, une phrase d'aide facultative,
+/// `MOB-80`, `MOB-78`) : un titre de section, une phrase d'aide facultative,
 /// puis le contenu.
 class EditorSection extends StatelessWidget {
   const EditorSection({

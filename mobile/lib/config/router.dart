@@ -267,7 +267,7 @@ final List<_DeepLinkHierarchy> _deepLinkHierarchies = [
     ],
   ),
   // L'éditeur d'une sortie : une création sous l'Agenda, une modification
-  // sous la fiche qu'elle réécrit (ledger `MOB-76`).
+  // sous la fiche qu'elle réécrit (ledger `MOB-80`).
   _DeepLinkHierarchy(
     patterns: PathVariants.rideNew(':teamSlug'),
     ancestors: [_teamsAncestor, _teamAncestor, _teamAgendaAncestor],
@@ -664,7 +664,7 @@ GoRoute _teamTree(String locale) {
         routes: [_rideTemplateNewRoute(locale), _rideTemplateEditRoute(locale)],
       ),
       // Avant le détail : `…/sorties/nouvelle` est aussi la sortie de slug
-      // `nouvelle`, et c'est l'éditeur qui est visé (ledger `MOB-76`).
+      // `nouvelle`, et c'est l'éditeur qui est visé (ledger `MOB-80`).
       GoRoute(
         path: _underTeam(PathVariants.rideNew(':teamSlug'), locale, teamBase),
         parentNavigatorKey: _rootNavigatorKey,
@@ -761,7 +761,7 @@ GoRoute _rideTemplateEditRoute(String locale) {
 /// `participants`) : hors contrat, il ne sert qu'aux liens internes — « la
 /// météo de ce groupe » ouvre `?tab=weather`.
 /// L'éditeur d'une sortie, sous son détail : ouvert par un lien, la fiche se
-/// reconstruit dessous et l'enregistrement y revient (ledger `MOB-76`).
+/// reconstruit dessous et l'enregistrement y revient (ledger `MOB-80`).
 GoRoute _rideEditRoute(String locale) {
   final rideBase = PathVariants.ride(':teamSlug', ':rideSlug')[locale]!;
   return GoRoute(

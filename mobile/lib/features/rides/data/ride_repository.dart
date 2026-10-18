@@ -55,7 +55,7 @@ class RideRepository {
     );
   }
 
-  // --- Organisateur (docs/LEDGER_*.md MOB-76) ---------------------------
+  // --- Organisateur (docs/LEDGER_*.md MOB-80) ---------------------------
   //
   // Les droits sont ceux du serveur (`RideAccessChecker`) : organisateur ou
   // administrateur de l'équipe, modules sorties **et** parcours actifs. Le

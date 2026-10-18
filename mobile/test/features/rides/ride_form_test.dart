@@ -5,7 +5,7 @@ import 'package:pedalons/features/rides/domain/ride_form.dart';
 
 import 'ride_fixtures.dart';
 
-/// Le formulaire de l'éditeur de sortie (ledger `MOB-76`) : ce qu'il envoie
+/// Le formulaire de l'éditeur de sortie (ledger `MOB-80`) : ce qu'il envoie
 /// doit être ce que le site envoie (`rideToRequest`, `templateForNewRide`),
 /// parce que le PUT applique **tous** les champs, absents compris.
 void main() {

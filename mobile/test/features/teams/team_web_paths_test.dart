@@ -8,7 +8,7 @@ import 'package:pedalons/features/teams/presentation/team_web_paths.dart';
 /// L'une d'elles porte en plus un état que le web passe en état de routeur,
 /// qu'une URL ne transporte pas — le site lit donc ce paramètre
 /// (`TeamMembersPage`). Créer et modifier une sortie se font dans l'app
-/// depuis `MOB-76`, les modèles de sortie depuis `MOB-78` : ces pages ne sont
+/// depuis `MOB-80`, les modèles de sortie depuis `MOB-78` : ces pages ne sont
 /// plus du site.
 void main() {
   tearDown(() => setCurrentLocale('fr'));
@@ -41,7 +41,7 @@ void main() {
     }
   });
 
-  test('créer et modifier une sortie sont des écrans de l\'app (MOB-76)', () {
+  test('créer et modifier une sortie sont des écrans de l\'app (MOB-80)', () {
     expect(webOnlyRouteIds, isNot(contains('rideNew')));
     expect(webOnlyRouteIds, isNot(contains('rideEdit')));
   });

@@ -225,7 +225,7 @@ class DashboardTodo extends StatelessWidget {
   }
 
   /// Reprendre un brouillon : une sortie dans l'éditeur de l'app (ledger
-  /// `MOB-76`), une publication ou un voyage sur le site.
+  /// `MOB-80`), une publication ou un voyage sur le site.
   static void _openEdit(BuildContext context, PublicationDto p) => switch (p) {
     PublicationDtoRide(:final team, :final slug) => context.push(
       Paths.rideEdit(team.slug, slug),

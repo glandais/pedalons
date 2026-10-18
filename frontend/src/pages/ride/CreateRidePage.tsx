@@ -34,7 +34,7 @@ export function CreateRidePage() {
   const [editorKey, setEditorKey] = useState(0)
   // « Créer depuis un modèle » on the team dashboard hands the template over as router state; a link
   // cannot carry router state, so it names the template in the URL instead (`?template=<slug>`, the
-  // address the mobile app's own editor reads too, `rideNewLocation`, docs/LEDGER_*.md MOB-76), and
+  // address the mobile app's own editor reads too, `rideNewLocation`, docs/LEDGER_*.md MOB-80), and
   // it is loaded.
   const location = useLocation()
   const stateTemplate = (location.state as { template?: RideTemplateDto } | null)?.template

@@ -195,7 +195,7 @@ abstract interface class GroupEditorKeys {
   ValueKey<String> groupRemove(int index);
 }
 
-/// L'éditeur de sortie, création et modification (ledger `MOB-76`).
+/// L'éditeur de sortie, création et modification (ledger `MOB-80`).
 class RideEditorKeys implements GroupEditorKeys {
   final forbidden = const _RideEditorKey('forbidden');
   final loadError = const _RideEditorKey('loadError');
@@ -312,7 +312,7 @@ class _RideManageKey extends ValueKey<String> {
   const _RideManageKey(String value) : super('rideManage_$value');
 }
 
-/// Les gestes d'organisateur du détail d'une sortie (ledger `MOB-76`).
+/// Les gestes d'organisateur du détail d'une sortie (ledger `MOB-80`).
 class RideManageKeys {
   final editButton = const _RideManageKey('editButton');
   final publish = const _RideManageKey('publish');

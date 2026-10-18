@@ -26,7 +26,7 @@ from:
 ## 1. What the app actually does
 
 The mobile app authenticates, then reads team content — and, for a team's organizers, writes
-its rides and routes (the ride editor, `MOB-76`, #21–#22; the route editor, `MOB-79`, #23). Four capabilities beyond reading touch
+its rides and routes (the ride editor, `MOB-80`, #21–#22; the route editor, `MOB-79`, #23). Four capabilities beyond reading touch
 personal data: **picking a profile picture** from the photo library, **picking a document**
 (a ride's attachments and a route's GPX file) with the system document picker, reading a **coarse
 device position** to sort content by proximity, and registering the device for **push
@@ -40,12 +40,12 @@ file did not list; they are declared with the reports below, in the same bucket.
 The capabilities added, and their exact boundary:
 
 - **`image_picker`** — photo library only, to feed `POST /api/users/me/avatar` and, since
-  `MOB-76` (2026-10-17), a ride's logo and images in the **ride editor** (organizers only,
+  `MOB-80` (2026-10-17), a ride's logo and images in the **ride editor** (organizers only,
   `POST /api/teams/{slug}/assets`, see #22). No camera
   capture (`NSCameraUsageDescription` is deliberately absent, so iOS cannot grant it).
   `NSPhotoLibraryUsageDescription` exists in `mobile/ios/Runner/Info.plist`, localized in
   `Runner/{en,fr}.lproj/InfoPlist.strings`.
-- **`file_picker`** (2026-10-17, `MOB-76`, `MOB-79`) — the system document picker (Storage Access
+- **`file_picker`** (2026-10-17, `MOB-80`, `MOB-79`) — the system document picker (Storage Access
   Framework on Android, `UIDocumentPickerViewController` on iOS), opened only by an organizer, for
   two things. *Add a file* in the ride editor uploads the file as a ride attachment
   (`POST /api/teams/{slug}/assets?assetType=ATTACHMENT`, #22). *Choose a GPX file* (or *Replace the
@@ -368,7 +368,7 @@ content* row already declared.
 only reached when the user taps "change picture" — or, for an organizer, "add an image" or "choose
 a logo" in the ride editor (#22).
 
-*Files and docs* (2026-10-17, `MOB-76`, `MOB-79`) is **optional** and covers **ride attachments**
+*Files and docs* (2026-10-17, `MOB-80`, `MOB-79`) is **optional** and covers **ride attachments**
 (#22) and the **GPX file of a route** (#23): an organizer picks a file with the system document
 picker and it is uploaded to the team. Apple has no such type; on iOS the attachment and the GPX
 are *Other User Content*. Nobody has to attach a file or create a route, and the file is **not
@@ -535,7 +535,7 @@ these ships:
 |---|---|
 | Profile editing (`PUT /api/users/me`) | nothing new — Name/Email already declared |
 | Camera capture for the avatar | `NSCameraUsageDescription` in `Info.plist` (+ its two `InfoPlist.strings`); no new data type — Photos or Videos already covers it |
-| Post authoring (comments are already declared, #13; ride authoring since `MOB-76`, #21–#22; route authoring since `MOB-79`, #23) | nothing new — Apple `NSPrivacyCollectedDataTypeOtherUserContent` and Play *Other user-generated content* are both declared; widen the manifest comment and §2 |
+| Post authoring (comments are already declared, #13; ride authoring since `MOB-80`, #21–#22; route authoring since `MOB-79`, #23) | nothing new — Apple `NSPrivacyCollectedDataTypeOtherUserContent` and Play *Other user-generated content* are both declared; widen the manifest comment and §2 |
 | A screenshot or attachment on a report, or automatic moderation of images or text beyond the word filter | Apple `…PhotosorVideos` already covers images, but re-read §4 for the purpose; Play *Photos*; any third-party moderation service is a new sub-processor for the policy |
 | GPX **import** from the device | Delivered by `MOB-79` for a team route an organizer publishes (#23): Play *Files and docs* and Apple `…OtherUserContent`, both declared; no Precise Location: the file may come from a recorded ride, but it is published as a route for the members, no device position is read and the server keeps only the geometry (timestamps, sensor data and metadata are stripped before storing). **Precise Location (Apple `…PreciseLocation`, Play *Location → Precise location*) becomes due** if the app imports **activities** as the user's own history, if the server starts keeping timestamps, or if the app records a ride. Any other import (FIT, a GPX outside the route editor) is a new audit |
 | Live location / "record a ride" / follow-me on the map / a MapLibre user-location puck | Apple `NSPrivacyCollectedDataTypePreciseLocation` (and flip Coarse Location's `Linked` if it becomes persisted); Play *Location → Precise location* and drop the *processed ephemerally* flag; stop stripping `ACCESS_FINE_LOCATION`; `NSLocationAlwaysAndWhenInUseUsageDescription` if it ever runs in the background |

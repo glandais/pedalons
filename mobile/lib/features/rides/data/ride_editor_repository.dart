@@ -22,7 +22,7 @@ const int kRideEditorPageSize = 20;
 
 /// Ce que l'éditeur de sortie va chercher **autour** de la sortie : les
 /// parcours, lieux, membres, tags et modèles de l'équipe, l'envoi d'un
-/// fichier, et le fuseau d'un point (docs/LEDGER_*.md MOB-76).
+/// fichier, et le fuseau d'un point (docs/LEDGER_*.md MOB-80).
 ///
 /// Un seul dépôt plutôt que six : ces appels n'ont de sens qu'ensemble, dans
 /// ce formulaire, et un test qui le remplace n'a qu'une classe à bouchonner.

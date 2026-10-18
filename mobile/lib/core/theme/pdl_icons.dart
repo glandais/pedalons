@@ -173,7 +173,7 @@ abstract final class PdlIcons {
   static const IconData webhook = Icons.webhook_outlined;
   static const IconData template = Icons.content_copy_outlined;
 
-  // ── Édition de contenu (éditeur de sortie, ledger MOB-76) ──────────────
+  // ── Édition de contenu (éditeur de sortie, ledger MOB-80) ──────────────
   static const IconData publish = Icons.publish;
   static const IconData unpublish = Icons.unpublished_outlined;
   static const IconData restore = Icons.restore_from_trash_outlined;

@@ -39,7 +39,7 @@ import '../widgets/templates/ride_template_summary.dart';
 
 /// Créer ([rideSlug] nul) ou modifier une sortie — le pendant mobile de
 /// `CreateRidePage` / `EditRidePage` du site, au même contrat
-/// (docs/LEDGER_*.md MOB-76).
+/// (docs/LEDGER_*.md MOB-80).
 ///
 /// Ouvert aux organisateurs et administrateurs de l'équipe (et à l'admin de
 /// plateforme), modules sorties **et** parcours actifs : la règle de

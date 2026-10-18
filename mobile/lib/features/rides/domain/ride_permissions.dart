@@ -2,7 +2,7 @@ import '../../../api/generated/export.dart';
 
 /// Qui peut créer, modifier, publier ou supprimer une sortie — la règle du
 /// serveur (`RideAccessChecker` : `teamRole.isOrganizer()`), recopiée pour ne
-/// pas montrer un bouton qui finirait en 403 (docs/LEDGER_*.md MOB-76).
+/// pas montrer un bouton qui finirait en 403 (docs/LEDGER_*.md MOB-80).
 ///
 /// `ORGANIZER` et `ADMIN` seulement : un rôle que cette version de l'app ne
 /// connaît pas ([TeamRole.$unknown]) n'ouvre rien, comme partout ailleurs. Le

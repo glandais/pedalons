@@ -7,7 +7,7 @@ TextEditingValue _v(String text, int start, [int? end]) => TextEditingValue(
   selection: TextSelection(baseOffset: start, extentOffset: end ?? start),
 );
 
-/// La barre d'outils markdown de l'éditeur de sortie (ledger `MOB-76`).
+/// La barre d'outils markdown de l'éditeur de sortie (ledger `MOB-80`).
 void main() {
   group('wrapSelection', () {
     test('entoure la sélection et la garde sélectionnée', () {

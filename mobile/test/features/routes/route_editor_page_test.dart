@@ -45,6 +45,7 @@ class _StubRoutes implements RouteRepository {
   RouteDto _dto(String slug, String name) => RouteDto(
     id: 'r1',
     slug: slug,
+    elevationState: 'HD',
     team: detail.team,
     name: name,
     media: detail.media,

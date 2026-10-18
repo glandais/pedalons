@@ -12,7 +12,7 @@ import '../../../domain/markdown_edit.dart';
 
 /// Les gestes sur les médias d'un contenu édité — logo, images, pièces
 /// jointes, image insérée dans le texte —, partagés par l'éditeur de sortie
-/// (ledger `MOB-76`) et celui de parcours (`MOB-79`) : même `MediaDto`, même
+/// (ledger `MOB-80`) et celui de parcours (`MOB-79`) : même `MediaDto`, même
 /// `POST …/assets` de l'équipe, mêmes messages.
 ///
 /// L'écran qui l'adopte dit où vivent le formulaire et le texte (les crochets

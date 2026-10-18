@@ -12,7 +12,7 @@ import '../../../../../core/widgets/authenticated_image.dart';
 import '../../../../../keys.dart';
 
 /// Le logo, les images et les pièces jointes d'une sortie (`media.assets`),
-/// comme le `MediaEditor` du site (ledger `MOB-76`). Chaque ajout est un
+/// comme le `MediaEditor` du site (ledger `MOB-80`). Chaque ajout est un
 /// envoi immédiat (`POST …/assets`) : l'asset rendu n'est rattaché à la
 /// sortie qu'à l'enregistrement, et un asset retiré ici n'y sera pas.
 class RideMediaSection extends StatelessWidget {

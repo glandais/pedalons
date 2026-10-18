@@ -48,7 +48,7 @@ bool? teamManagePermission(
 
 /// L'utilisateur peut-il gérer les sorties de [teamSlug] ? `null` tant que
 /// « Mes équipes » n'est pas chargé et qu'il n'est pas admin de plateforme :
-/// l'écran n'affiche alors ni bouton ni refus (docs/LEDGER_*.md MOB-76).
+/// l'écran n'affiche alors ni bouton ni refus (docs/LEDGER_*.md MOB-80).
 ///
 /// La règle est celle du serveur ([canManageTeamRides]) : organisateur ou
 /// administrateur, modules sorties **et** parcours actifs.

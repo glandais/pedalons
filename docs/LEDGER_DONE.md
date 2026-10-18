@@ -790,9 +790,9 @@ couvert » ; les tests ne tournent qu'en local (`MOB-37`).
   `notifyRideChanged` invalide aussi les listes et détails de modèles, parce qu'une sortie créée
   depuis un modèle en avance le `nextNumber`.
 
-### `MOB-76` Créer et modifier une sortie dans l'app (17 octobre 2026, contrat d'API inchangé)
+### `MOB-80` Créer et modifier une sortie dans l'app (17 octobre 2026, contrat d'API inchangé)
 
-- `MOB-76` **Éditeur de sortie, à parité avec le site sauf la création de parcours** — détaché de
+- `MOB-80` **Éditeur de sortie, à parité avec le site sauf la création de parcours** — détaché de
   `MOB-24`, qui reste dehors pour le reste du contenu. Un organisateur ou un administrateur de
   l'équipe (et l'admin de plateforme), modules sorties **et** parcours actifs — la règle de
   `RideAccessChecker`, recopiée dans `canManageRides` / `canManageTeamRides`

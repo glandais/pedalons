@@ -12,7 +12,7 @@ import '../../../../../keys.dart';
 /// saisi (minuscules, sans espaces), ou `null` si la feuille est fermée sans
 /// enregistrer.
 ///
-/// Partagée par l'éditeur de sortie (ledger `MOB-76`) et celui de parcours
+/// Partagée par l'éditeur de sortie (ledger `MOB-80`) et celui de parcours
 /// (`MOB-79`) ; [fieldKey] et [saveKey] donnent leurs clés au champ et au
 /// bouton (celles de l'éditeur de sortie par défaut).
 Future<String?> showSlugEditSheet(

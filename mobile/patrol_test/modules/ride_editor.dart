@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'module.dart';
 
-/// The ride editor (ledger `MOB-76`) and the organizer's gestures on a ride page: the pencil,
+/// The ride editor (ledger `MOB-80`) and the organizer's gestures on a ride page: the pencil,
 /// and the « Gérer la sortie » menu behind `⋯`.
 final class RideEditor extends Module {
   RideEditor(super.$);

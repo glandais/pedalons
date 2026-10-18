@@ -1,6 +1,6 @@
 import 'backend_client.dart';
 
-/// Reads for the ride editor tests (ledger `MOB-76`): the ride the app created, found by its
+/// Reads for the ride editor tests (ledger `MOB-80`): the ride the app created, found by its
 /// unique name, and its state after the organizer's gestures.
 extension RideEditorSeed on BackendClient {
   /// The slug of the ride named [name] in [teamSlug] — a draft, as the editor creates it unless

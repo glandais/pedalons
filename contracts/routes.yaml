@@ -526,7 +526,7 @@ routes:
     appScreen: false
 
   # --- Rides ---
-  # `rideNew` and `rideEdit` are app screens since MOB-76 (the ride editor); the ride
+  # `rideNew` and `rideEdit` are app screens since MOB-80 (the ride editor); the ride
   # templates below are app screens since MOB-78 (docs/LEDGER_*.md MOB-78).
   - id: rideNew
     path:

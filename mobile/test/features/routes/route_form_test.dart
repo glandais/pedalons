@@ -42,6 +42,7 @@ RouteDetailDto _route({
 }) => RouteDetailDto(
   id: 'r1',
   slug: 'col',
+  elevationState: 'HD',
   team: const TeamPublicationDto(
     id: 't1',
     slug: 'n-peloton',

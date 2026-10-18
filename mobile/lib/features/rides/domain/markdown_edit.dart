@@ -1,7 +1,7 @@
 import 'package:flutter/services.dart';
 
 /// Les gestes de la barre d'outils markdown de l'éditeur de sortie, en
-/// fonctions pures sur un [TextEditingValue] (docs/LEDGER_*.md MOB-76).
+/// fonctions pures sur un [TextEditingValue] (docs/LEDGER_*.md MOB-80).
 ///
 /// **Le texte reste du markdown brut**, celui que le site écrit avec Tiptap :
 /// un éditeur riche mobile passerait par son propre modèle et réécrirait, à

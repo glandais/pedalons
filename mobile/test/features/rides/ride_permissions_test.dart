@@ -5,7 +5,7 @@ import 'package:pedalons/features/rides/presentation/widgets/ride_manage_menu.da
 
 import 'ride_fixtures.dart';
 
-/// La règle de `RideAccessChecker`, recopiée côté app (ledger `MOB-76`).
+/// La règle de `RideAccessChecker`, recopiée côté app (ledger `MOB-80`).
 void main() {
   group('canManageRides', () {
     test('organisateur et administrateur seulement', () {

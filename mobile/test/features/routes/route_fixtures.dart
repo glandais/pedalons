@@ -47,6 +47,7 @@ RouteDetailDto fixtureRouteDetail({
 }) => RouteDetailDto(
   id: 'r1',
   slug: slug,
+  elevationState: 'HD',
   team: const TeamPublicationDto(
     id: 't1',
     slug: 'n-peloton',

@@ -3,7 +3,7 @@ import 'api/routes_seed.dart';
 import 'common.dart';
 
 /// Web counterpart: `flow-rides.e2e.ts` › an organizer creates, edits, publishes and deletes a
-/// ride. In the app since ledger `MOB-76`: the ride editor, the pencil of the ride page and its
+/// ride. In the app since ledger `MOB-80`: the ride editor, the pencil of the ride page and its
 /// « Gérer la sortie » menu. What leaves the app is checked through the API — the PUT rewrites
 /// every field, so an edit must keep the group the creation made.
 ///

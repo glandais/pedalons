@@ -254,7 +254,7 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
             onPressed: () => _share(context),
           ),
           // L'organisateur modifie d'un geste, et trouve le reste — publier,
-          // annuler, supprimer, signaler — sous `⋯` (ledger `MOB-76`).
+          // annuler, supprimer, signaler — sous `⋯` (ledger `MOB-80`).
           if (canManage && !ride.deleted)
             PdlAppBarAction(
               key: keys.rideManage.editButton,

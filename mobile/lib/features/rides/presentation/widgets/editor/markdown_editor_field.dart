@@ -15,7 +15,7 @@ enum _MarkdownMode { write, preview }
 
 /// La description d'une sortie : du **markdown brut**, une barre d'outils
 /// qui l'écrit à la place du membre, et un aperçu rendu par le même
-/// [MarkdownContent] que la fiche (ledger `MOB-76`).
+/// [MarkdownContent] que la fiche (ledger `MOB-80`).
 ///
 /// Pas d'éditeur riche : le site écrit ce texte avec Tiptap, et un éditeur
 /// mobile à modèle propre le réécrirait à l'enregistrement — directives

@@ -166,7 +166,7 @@ void main() {
       }
     });
 
-    test('l\'éditeur de sortie s\'ouvre dans l\'app (MOB-76)', () {
+    test('l\'éditeur de sortie s\'ouvre dans l\'app (MOB-80)', () {
       for (final String page in <String>[
         ...PathVariants.rideNew('vc').values,
         ...PathVariants.rideEdit('vc', 'rando').values,
@@ -274,7 +274,7 @@ void main() {
       expect(launched, isEmpty, reason: 'Une route interne ne sort pas.');
     });
 
-    // `…/sorties/nouvelle` était l'exemple jusqu'à `MOB-76`, qui en a fait
+    // `…/sorties/nouvelle` était l'exemple jusqu'à `MOB-80`, qui en a fait
     // un écran de l'app ; `…/articles/nouveau` a la même ambiguïté avec
     // l'article de slug `nouveau` et reste une page du site.
     testWidgets('une page du site part au navigateur, pas sur l\'article '

@@ -11,7 +11,7 @@ import 'ride_weather_provider.dart';
 
 /// **Le** point où l'app dit « un organisateur vient de changer une sortie »
 /// — créée, réécrite, publiée, annulée, supprimée ou restaurée (ledger
-/// `MOB-76`). Le pendant de `notifyParticipationChanged` pour l'écriture.
+/// `MOB-80`). Le pendant de `notifyParticipationChanged` pour l'écriture.
 ///
 /// Une sortie paraît dans le fil de l'équipe, son tableau de bord, l'accueil
 /// et le calendrier, chacun dans son cache : tous sont invalidés ici, et le
