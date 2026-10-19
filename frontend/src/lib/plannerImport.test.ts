@@ -2,7 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { RouterProfile, type GpxImportTrack } from '@/api/dto'
 
 const routeMock = vi.hoisted(() => vi.fn())
-vi.mock('@/api/endpoints/router/router', () => ({ route: routeMock }))
+const lineElevationMock = vi.hoisted(() => vi.fn())
+vi.mock('@/api/endpoints/router/router', () => ({
+  route: routeMock,
+  lineElevation: lineElevationMock,
+}))
 
 import {
   add,

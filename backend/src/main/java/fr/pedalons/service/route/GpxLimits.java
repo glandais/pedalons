@@ -61,6 +61,21 @@ public final class GpxLimits {
    */
   public static final int MAX_PLANNER_POINTS = 100_000;
 
+  /**
+   * Longest straight line the elevation endpoint reads (docs/LEDGER_*.md WEB-100, B1b): 100 km, a
+   * point every 30 m after the densification.
+   */
+  public static final double MAX_STRAIGHT_LINE_METERS = 100_000.0;
+
+  /**
+   * Summed length of the straight lines of one elevation request, checked before any elevation is
+   * read: 200 km is about 20 000 dense points at 352 bytes each, some 7 MB, transient.
+   */
+  public static final double MAX_STRAIGHT_LINES_TOTAL_METERS = 200_000.0;
+
+  /** Straight lines in one elevation request. */
+  public static final int MAX_STRAIGHT_LINES = 50;
+
   /** The one version of the planner state format this release reads (docs/LEDGER_*.md WEB-100, C4a). */
   public static final int PLANNER_STATE_VERSION = 1;
 

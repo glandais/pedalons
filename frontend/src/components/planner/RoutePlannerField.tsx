@@ -18,7 +18,7 @@ import { useHistoryOverlay } from '@/hooks/useHistoryOverlay'
 import { useMediaMatch } from '@/hooks/useResponsive'
 import { useRoutePlanner, type PlannerSnapshot } from '@/hooks/useRoutePlanner'
 import { useUnits } from '@/hooks/useUnits'
-import { DIRECT_WARNING_METERS, type Route } from '@/lib/planner'
+import { DIRECT_WARNING_METERS, plannerRouteToMappable, type Route } from '@/lib/planner'
 import { MapFullscreenShell } from '@/components/map/MapFullscreenShell'
 import { MapPanelContext, useMapPanelState } from '@/components/map/mapPanelState'
 import { PlannerBottomBar } from './PlannerBottomBar'
@@ -107,7 +107,10 @@ export function RoutePlannerField({
   const { distance } = useUnits()
   const isCoarse = useMediaMatch('(pointer: coarse)')
   const { opened, open, close } = useHistoryOverlay()
-  // The point hovered, on the map or on the profile: an index of route.points, valid for the
+  // The profile of the route: one entry per point, and the samples of the straight edges whose
+  // relief was read. Shared by the strip (which draws it) and the hover (which translates it).
+  const mappable = useMemo(() => plannerRouteToMappable(route), [route])
+  // The point hovered, on the map or on the profile: an index of the profile, valid for the
   // route it was reported on only (any edit drops it). The source matters: the profile follows
   // both, but only a profile hover draws a marker on the map (the ghost point is the map's own).
   const [hover, setHover] = useState<{
@@ -116,7 +119,10 @@ export function RoutePlannerField({
     source: 'map' | 'profile'
   }>({ route, index: -1, source: 'map' })
   const hoveredIndex = hover.route === route ? hover.index : -1
-  const profileHoveredIndex = hover.source === 'profile' ? hoveredIndex : -1
+  const hoverPosition =
+    hover.source === 'profile' && hoveredIndex >= 0
+      ? (mappable?.positions[hoveredIndex] ?? null)
+      : null
   const reportHover = useCallback(
     (source: 'map' | 'profile') => (index: number) =>
       setHover((prev) =>
@@ -127,7 +133,13 @@ export function RoutePlannerField({
     [route]
   )
   const handleHoverIndex = useMemo(() => reportHover('profile'), [reportHover])
-  const handleMapHoverIndex = useMemo(() => reportHover('map'), [reportHover])
+  const reportMapHover = useMemo(() => reportHover('map'), [reportHover])
+  // The map reports an index of route.points: the profile has more entries than the route
+  const handleMapHoverIndex = useCallback(
+    (index: number) =>
+      reportMapHover(index < 0 ? -1 : (mappable?.profileIndexOfRoute[index] ?? -1)),
+    [reportMapHover, mappable]
+  )
   const [stripCollapsed, setStripCollapsed] = useState(readStripCollapsed)
   const toggleStrip = useCallback(() => {
     const next = !stripCollapsed
@@ -351,6 +363,7 @@ export function RoutePlannerField({
           {!opened && (
             <Box style={{ borderBottom: '1px solid var(--mantine-color-default-border)' }}>
               <PlannerElevationStrip
+                mappable={mappable}
                 route={route}
                 hoveredIndex={hoveredIndex}
                 onHoverIndex={handleHoverIndex}
@@ -405,7 +418,7 @@ export function RoutePlannerField({
             fitRequest={fitRequest}
             initialTrack={initialTrack}
             teamLocation={teamLocation}
-            hoveredIndex={profileHoveredIndex}
+            hoverPosition={hoverPosition}
             onHoverIndex={handleMapHoverIndex}
           />,
           host
@@ -490,6 +503,7 @@ export function RoutePlannerField({
             bottom={
               !isCoarse ? (
                 <PlannerElevationStrip
+                  mappable={mappable}
                   route={route}
                   hoveredIndex={hoveredIndex}
                   onHoverIndex={handleHoverIndex}
@@ -520,6 +534,7 @@ export function RoutePlannerField({
                     </Box>
                   )}
                   <PlannerElevationStrip
+                    mappable={mappable}
                     route={route}
                     hoveredIndex={hoveredIndex}
                     onHoverIndex={handleHoverIndex}

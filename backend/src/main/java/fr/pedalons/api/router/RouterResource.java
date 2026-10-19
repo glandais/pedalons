@@ -4,14 +4,18 @@ import fr.pedalons.api.gpx.GpxUploads;
 import fr.pedalons.common.exception.BusinessException;
 import fr.pedalons.dto.error.ErrorCode;
 import fr.pedalons.dto.error.ErrorResponse;
+import fr.pedalons.dto.router.request.LineElevationRequest;
 import fr.pedalons.dto.router.request.RouterRequest;
 import fr.pedalons.dto.router.response.GpxImportResponse;
+import fr.pedalons.dto.router.response.LineElevationResponse;
 import fr.pedalons.dto.router.response.RouterResponse;
 import fr.pedalons.service.router.GpxImportService;
+import fr.pedalons.service.router.LineElevationService;
 import fr.pedalons.service.router.RouterService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
@@ -35,6 +39,8 @@ public class RouterResource {
   @Inject RouterService routerService;
 
   @Inject GpxImportService gpxImportService;
+
+  @Inject LineElevationService lineElevationService;
 
   @POST
   @Operation(
@@ -132,5 +138,47 @@ public class RouterResource {
             },
             gpxFile == null ? null : gpxFile.fileName());
     return Response.ok(resp).build();
+  }
+
+  @POST
+  @Path("/elevation")
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Operation(
+      operationId = "lineElevation",
+      summary = "Read the relief of straight lines",
+      description =
+          "Processes each straight line with the FAST elevations, as a routed leg, and returns its"
+              + " densified track with the ascent accumulated up to each point. Nothing is stored"
+              + " and the routing provider is not called. Same rights as the route calculation:"
+              + " with teamSlug, the caller must be allowed to create routes in that team and the"
+              + " team must have the route planner enabled; without it, the domain's GPX planner"
+              + " must be enabled.")
+  @APIResponses({
+    @APIResponse(
+        responseCode = "200",
+        description = "Relief of the lines, in the order of the request",
+        content = @Content(schema = @Schema(implementation = LineElevationResponse.class))),
+    @APIResponse(
+        responseCode = "400",
+        description =
+            "Invalid request (no line, more than 50, coordinates out of bounds), planner disabled"
+                + " (ROUTE_PLANNER_DISABLED), or a line over 100 km or lines over 200 km together"
+                + " (ROUTING_SEGMENT_TOO_LONG)",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+    @APIResponse(
+        responseCode = "401",
+        description = "Unauthorized",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+    @APIResponse(
+        responseCode = "403",
+        description = "User may not create routes in the team",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+    @APIResponse(
+        responseCode = "404",
+        description = "Team not found in this domain",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  public Response lineElevation(@Valid @NotNull LineElevationRequest request) {
+    return Response.ok(lineElevationService.lineElevation(request)).build();
   }
 }

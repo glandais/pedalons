@@ -69,6 +69,101 @@ export const RouteResponse = zod.object({
 })
 
 /**
+ * Processes each straight line with the FAST elevations, as a routed leg, and returns its densified track with the ascent accumulated up to each point. Nothing is stored and the routing provider is not called. Same rights as the route calculation: with teamSlug, the caller must be allowed to create routes in that team and the team must have the route planner enabled; without it, the domain's GPX planner must be enabled.
+ * @summary Read the relief of straight lines
+ */
+export const lineElevationBodyTeamSlugMax = 250
+
+export const lineElevationBodyLinesItemFromLngMin = -180
+export const lineElevationBodyLinesItemFromLngMax = 180
+
+export const lineElevationBodyLinesItemFromLatMin = -90
+export const lineElevationBodyLinesItemFromLatMax = 90
+
+export const lineElevationBodyLinesItemToLngMin = -180
+export const lineElevationBodyLinesItemToLngMax = 180
+
+export const lineElevationBodyLinesItemToLatMin = -90
+export const lineElevationBodyLinesItemToLatMax = 90
+
+export const lineElevationBodyLinesMax = 50
+
+export const LineElevationBody = zod.object({
+  teamSlug: zod
+    .string()
+    .max(lineElevationBodyTeamSlugMax)
+    .optional()
+    .describe(
+      "Slug of the team the route is being drawn for. When present, the team must have the route planner enabled and the caller must be allowed to create routes in it. When absent, the domain's GPX planner must be enabled."
+    ),
+  lines: zod
+    .array(
+      zod.object({
+        from: zod.object({
+          lng: zod
+            .number()
+            .min(lineElevationBodyLinesItemFromLngMin)
+            .max(lineElevationBodyLinesItemFromLngMax),
+          lat: zod
+            .number()
+            .min(lineElevationBodyLinesItemFromLatMin)
+            .max(lineElevationBodyLinesItemFromLatMax),
+        }),
+        to: zod.object({
+          lng: zod
+            .number()
+            .min(lineElevationBodyLinesItemToLngMin)
+            .max(lineElevationBodyLinesItemToLngMax),
+          lat: zod
+            .number()
+            .min(lineElevationBodyLinesItemToLatMin)
+            .max(lineElevationBodyLinesItemToLatMax),
+        }),
+      })
+    )
+    .min(1)
+    .max(lineElevationBodyLinesMax)
+    .describe(
+      'Straight lines to read the relief of, 1 to 50, at most 100 km each and 200 km together'
+    ),
+})
+
+export const LineElevationResponse = zod
+  .object({
+    lines: zod
+      .array(
+        zod
+          .object({
+            line: zod
+              .string()
+              .describe(
+                'Polyline (precision 6, latitude then longitude) of the processed track, as PlannerSource.line'
+              ),
+            ele: zod
+              .string()
+              .optional()
+              .describe(
+                'One-dimension polyline (tenths of a metre), one value per point of line; absent when an elevation is not finite'
+              ),
+            climb: zod
+              .string()
+              .optional()
+              .describe(
+                'One-dimension polyline (tenths of a metre): the ascent accumulated up to each point of line (dead-band, non-decreasing, first 0, last = ascend); absent when ele is'
+              ),
+            dist: zod.number().describe('Length in metres'),
+            ascend: zod.number().describe('Reported ascent in metres'),
+          })
+          .describe('A track of an imported GPX file')
+      )
+      .describe('One track per requested line, in the same order, from its start to its end'),
+    elevationFallback: zod
+      .boolean()
+      .describe('True when part of the elevations could not be read from the elevation source'),
+  })
+  .describe('The relief of straight lines, processed with the FAST elevations')
+
+/**
  * Processes a GPX file with the FAST elevations and returns its tracks as polylines, with the ascent accumulated up to each point. Nothing is stored and the routing provider is not called. Same rights as the route calculation: with teamSlug, the caller must be allowed to create routes in that team and the team must have the route planner enabled; without it, the domain's GPX planner must be enabled.
  * @summary Load a GPX file into the route editor
  */

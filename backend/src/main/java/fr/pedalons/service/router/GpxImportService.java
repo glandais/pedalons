@@ -9,7 +9,6 @@ import fr.pedalons.service.route.GpxLimits;
 import fr.pedalons.service.route.GpxPipeline;
 import fr.pedalons.service.route.GpxProcessingService;
 import fr.pedalons.service.route.GpxProcessingService.RawTracks;
-import fr.pedalons.service.route.planner.PolylineCodec;
 import fr.pedalons.service.security.annotation.Logged;
 import io.github.glandais.engine.gpx.GpxDocument;
 import io.github.glandais.engine.path.Path;
@@ -70,7 +69,7 @@ public class GpxImportService {
         throw new BusinessException(ErrorCode.PLANNER_IMPORT_TOO_LARGE);
       }
       fallback |= result.processed().fallbackAfterErrorKm() > 0.0;
-      tracks.add(toTrack(path, result.climb()));
+      tracks.add(PlannerTracks.toTrack(path, result.climb()));
     }
 
     String documentName = GpxProcessingService.documentName(parsed);
@@ -92,24 +91,6 @@ public class GpxImportService {
       cleaned = cleaned.substring(0, end).strip();
     }
     return cleaned.isEmpty() ? "GPX" : cleaned;
-  }
-
-  private static GpxImportTrack toTrack(Path path, double[] climb) {
-    int n = path.getSize();
-    double[][] lngLat = new double[n][];
-    double[] ele = new double[n];
-    boolean finite = true;
-    for (int i = 0; i < n; i++) {
-      lngLat[i] = new double[] {path.longitudeDeg(i), path.latitudeDeg(i)};
-      ele[i] = path.elevation(i);
-      finite &= Double.isFinite(ele[i]) && Double.isFinite(climb[i]);
-    }
-    return new GpxImportTrack(
-        PolylineCodec.encode2(lngLat),
-        finite ? PolylineCodec.encode1(ele) : null,
-        finite ? PolylineCodec.encode1(climb) : null,
-        path.getTotalDistance(),
-        path.getReportedElevationGain());
   }
 
   /** A client-side file name without its {@code .gpx} extension, or "GPX" when there is none. */

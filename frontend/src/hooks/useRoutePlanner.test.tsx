@@ -1,12 +1,17 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useRoutePlanner } from './useRoutePlanner'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { ELEVATION_DEBOUNCE_MS, useRoutePlanner } from './useRoutePlanner'
 import { ApiClientError } from '@/lib/apiError'
 import { ErrorCode } from '@/api/dto'
 import { DIRECT_WARNING_METERS } from '@/lib/planner'
+import { encode1, encode2 } from '@/lib/polyline'
 
 const routeMock = vi.hoisted(() => vi.fn())
-vi.mock('@/api/endpoints/router/router', () => ({ route: routeMock }))
+const lineElevationMock = vi.hoisted(() => vi.fn())
+vi.mock('@/api/endpoints/router/router', () => ({
+  route: routeMock,
+  lineElevation: lineElevationMock,
+}))
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k }) }))
 
 function apiError(code: ErrorCode, status: number) {
@@ -572,5 +577,182 @@ describe('useRoutePlanner saved state (C4a)', () => {
     act(() => result.current.removeAnchor(points[1], points[5]))
     await waitFor(() => expect(result.current.canUndo).toBe(true))
     expect(routeMock).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('useRoutePlanner relief of straight lines (B1b)', () => {
+  type Pt = typeof A
+  const D = { lng: 5.03, lat: 45 }
+
+  /** The elevation service: 3 samples per line, 100 m, 130 m, 110 m, 30 m climbed. */
+  function elevationService() {
+    lineElevationMock.mockImplementation(async (body: { lines: { from: Pt; to: Pt }[] }) => ({
+      lines: body.lines.map(({ from, to }) => ({
+        line: encode2([
+          [from.lng, from.lat],
+          [(from.lng + to.lng) / 2, from.lat],
+          [to.lng, to.lat],
+        ]),
+        ele: encode1([100, 130, 110]),
+        climb: encode1([0, 30, 30]),
+        dist: 700,
+        ascend: 30,
+      })),
+      elevationFallback: false,
+    }))
+  }
+
+  async function straight(result: { current: ReturnType<typeof useRoutePlanner> }, ...pts: Pt[]) {
+    for (const p of pts) {
+      await act(async () => {
+        result.current.addControlPoint(p, true)
+      })
+    }
+  }
+
+  async function settle(ms = ELEVATION_DEBOUNCE_MS) {
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(ms)
+    })
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+    routeMock.mockReset()
+    lineElevationMock.mockReset()
+    localStorage.clear()
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('reads the relief 300 ms after a straight line, with no routing call', async () => {
+    elevationService()
+    const { result } = renderHook(() => useRoutePlanner({ teamSlug: 'club' }))
+    await straight(result, A, B)
+    await settle(ELEVATION_DEBOUNCE_MS - 1)
+    expect(lineElevationMock).not.toHaveBeenCalled()
+    await settle(1)
+    expect(routeMock).not.toHaveBeenCalled()
+    expect(lineElevationMock).toHaveBeenCalledTimes(1)
+    expect(lineElevationMock.mock.calls[0][0]).toMatchObject({ teamSlug: 'club' })
+    expect(lineElevationMock.mock.calls[0][0].lines).toHaveLength(1)
+    // the climb of the service, not the net climb between the ends
+    expect(result.current.route.ascend).toBe(30)
+    expect(result.current.route.points[1].directProfile).toBeDefined()
+    expect(result.current.error).toBeNull()
+  })
+
+  it('groups a burst of straight lines in one request', async () => {
+    elevationService()
+    const { result } = renderHook(() => useRoutePlanner())
+    await straight(result, A, B)
+    await settle(100)
+    await straight(result, C, D)
+    await settle(100)
+    await straight(result, { lng: 5.04, lat: 45 })
+    await settle()
+    expect(lineElevationMock).toHaveBeenCalledTimes(1)
+    expect(lineElevationMock.mock.calls[0][0].lines).toHaveLength(4)
+    expect(result.current.route.ascend).toBe(120)
+  })
+
+  it('undo and redo ask for nothing again, and the relief is not in the history', async () => {
+    elevationService()
+    const { result } = renderHook(() => useRoutePlanner())
+    await straight(result, A, B, C)
+    await settle()
+    expect(lineElevationMock).toHaveBeenCalledTimes(1)
+    expect(result.current.route.ascend).toBe(60)
+    // Three gestures, three history entries; the relief added none
+    act(() => result.current.undo())
+    await settle()
+    expect(result.current.route.ascend).toBe(30)
+    act(() => result.current.undo())
+    act(() => result.current.undo())
+    await settle()
+    expect(result.current.canUndo).toBe(false)
+    expect(result.current.isDirty).toBe(false)
+    for (let i = 0; i < 3; i++) act(() => result.current.redo())
+    await settle()
+    expect(result.current.route.ascend).toBe(60)
+    expect(result.current.canRedo).toBe(false)
+    expect(result.current.canUndo).toBe(true)
+    expect(lineElevationMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps the net climb and says nothing when the service fails, and does not ask again', async () => {
+    lineElevationMock.mockRejectedValue(apiError(ErrorCode.UNKNOWN, 503))
+    const { result } = renderHook(() => useRoutePlanner())
+    await straight(result, A, B)
+    await settle()
+    expect(lineElevationMock).toHaveBeenCalledTimes(1)
+    expect(result.current.error).toBeNull()
+    expect(result.current.route.points[1].directProfile).toBeUndefined()
+    expect(result.current.route.ascend).toBe(0)
+    await settle(2000)
+    expect(lineElevationMock).toHaveBeenCalledTimes(1)
+    // another edge is asked for, the failed one is not
+    await straight(result, C)
+    await settle()
+    expect(lineElevationMock).toHaveBeenCalledTimes(2)
+    expect(lineElevationMock.mock.calls[1][0].lines).toHaveLength(1)
+  })
+
+  it('switches off for the session on a 404 (old backend)', async () => {
+    lineElevationMock.mockRejectedValue(new ApiClientError(404, { code: ErrorCode.NOT_FOUND }))
+    const { result } = renderHook(() => useRoutePlanner())
+    await straight(result, A, B)
+    await settle()
+    expect(lineElevationMock).toHaveBeenCalledTimes(1)
+    await straight(result, C)
+    await settle(2000)
+    expect(lineElevationMock).toHaveBeenCalledTimes(1)
+    expect(result.current.error).toBeNull()
+  })
+
+  it('applies an answer that came back during an operation once it is over', async () => {
+    elevationService()
+    const { result } = renderHook(() => useRoutePlanner())
+    await straight(result, A, B)
+    // The answer is held back until the operation below is running
+    let release: () => void = () => {}
+    const held = new Promise<void>((resolve) => (release = resolve))
+    const service = lineElevationMock.getMockImplementation()!
+    lineElevationMock.mockImplementation(async (body: never) => {
+      await held
+      return service(body)
+    })
+    await settle()
+    expect(lineElevationMock).toHaveBeenCalledTimes(1)
+    // A routed gesture starts and stays pending
+    let finish: (v: unknown) => void = () => {}
+    routeMock.mockImplementation(() => new Promise((resolve) => (finish = resolve)))
+    act(() => result.current.addControlPoint(C, false))
+    await settle(0)
+    expect(result.current.isLoading).toBe(true)
+    await act(async () => {
+      release()
+      await vi.advanceTimersByTimeAsync(0)
+    })
+    // not applied under the operation
+    expect(result.current.route.points[1].directProfile).toBeUndefined()
+    await act(async () => {
+      finish({
+        route: {
+          coordinates: [
+            [B.lng, B.lat, 110],
+            [C.lng, C.lat, 115],
+          ],
+        },
+        ascend: 5,
+      })
+      await vi.advanceTimersByTimeAsync(0)
+    })
+    await settle(0)
+    expect(result.current.isLoading).toBe(false)
+    expect(result.current.route.points[1].directProfile).toBeDefined()
+    // 30 m of the straight line + 5 m of the routed leg
+    expect(result.current.route.ascend).toBe(35)
   })
 })

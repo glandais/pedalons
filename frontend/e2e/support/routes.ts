@@ -1,5 +1,7 @@
 import type { Locator, Page, Response } from '@playwright/test'
 import type {
+  LineElevationRequest,
+  LineElevationResponse,
   RouterRequest,
   RouterResponse,
   RouteDetailDto,
@@ -13,6 +15,7 @@ import type {
 import { apiGet, apiGetOrNull, apiPost, expectOk, withApi, type AuthResponse } from './api'
 import { markdownMedia } from './data'
 import { wallTimeOf } from './dates'
+import { encode1, encode2 } from '../../src/lib/polyline'
 
 /**
  * Routes, trips and stages seeded through the REST API, and what a page read of a route's
@@ -376,6 +379,57 @@ export async function stubRouter(page: Page): Promise<RouterRequest[]> {
     const request = route.request().postDataJSON() as RouterRequest
     requests.push(request)
     await route.fulfill({ json: routerAnswer(request) })
+  })
+  return requests
+}
+
+/**
+ * A plausible answer of POST /api/router/elevation for `request`: per line, three points (start,
+ * middle, end) at 100 m, 130 m and 110 m, so the line climbs 30 m.
+ */
+export function elevationAnswer({ lines }: LineElevationRequest): LineElevationResponse {
+  return {
+    lines: lines.map(({ from, to }) => ({
+      line: encode2([
+        [from.lng, from.lat],
+        [(from.lng + to.lng) / 2, (from.lat + to.lat) / 2],
+        [to.lng, to.lat],
+      ]),
+      ele: encode1([100, 130, 110]),
+      climb: encode1([0, 30, 30]),
+      dist: Math.round(metresBetween([from.lng, from.lat], [to.lng, to.lat])),
+      ascend: 30,
+    })),
+    elevationFallback: false,
+  }
+}
+
+/**
+ * Answers POST /api/router/elevation (the relief of the straight lines, read in the background)
+ * in the browser. Returns the requests received, in order: their count is kept apart from the
+ * router's, which is the billed one (the glob of stubRouter does not match this URL).
+ */
+export async function stubElevation(page: Page): Promise<LineElevationRequest[]> {
+  const requests: LineElevationRequest[] = []
+  await page.route('**/api/router/elevation', async (route) => {
+    if (route.request().method() !== 'POST') return route.fallback()
+    const request = route.request().postDataJSON() as LineElevationRequest
+    requests.push(request)
+    await route.fulfill({ json: elevationAnswer(request) })
+  })
+  return requests
+}
+
+/**
+ * Lets POST /api/router/elevation reach the backend (the FAST elevations, read from the terrain
+ * model; nothing is billed) while recording each request.
+ */
+export async function watchElevation(page: Page): Promise<LineElevationRequest[]> {
+  const requests: LineElevationRequest[] = []
+  await page.route('**/api/router/elevation', async (route) => {
+    if (route.request().method() !== 'POST') return route.fallback()
+    requests.push(route.request().postDataJSON() as LineElevationRequest)
+    await route.continue()
   })
   return requests
 }

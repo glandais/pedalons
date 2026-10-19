@@ -1,8 +1,8 @@
 # Éditeur de parcours web — desktop et web mobile
 
 Écrit le 17 octobre 2026, mis à jour le 19 octobre 2026. **État : lots 1 et 2 livrés le
-17 octobre 2026 (§5 et §6, A10 compris) ; dans le lot 3, B11, B12, B6, B1a (profil d'édition), B7 et B9 sont livrés (18 octobre) ;
-le lot 4 est entamé par C2 et C4 (C4a et C4b, livrés le 19 octobre) ; restent B1b (ses restes), le reste du lot 3 (B2, mis de côté) et le lot 4 (C1, C3, C5, C7 ; C6 non attribué).**
+17 octobre 2026 (§5 et §6, A10 compris) ; dans le lot 3, B11, B12, B6, B1 (profil d'édition : B1a le 18, B1b le 19 octobre), B7 et B9 sont livrés ;
+le lot 4 est entamé par C2 et C4 (C4a et C4b, livrés le 19 octobre) ; restent le reste du lot 3 (B2, mis de côté) et le lot 4 (C1, C3, C5, C7 ; C6 non attribué).**
 Ledger `WEB-100` (une seule
 entrée, qui pointe ici) : le suivi fin se fait **dans ce plan**, cases à cocher comprises, pas dans
 le ledger. Une tâche n'en sort vers `LEDGER_NEXT.md` que si elle quitte le périmètre du plan
@@ -55,7 +55,7 @@ Quatre lots, chacun livrable seul :
 |---|---|---|---|
 | **1. Robustesse** (livré) | Annulation et verrou pendant le calcul, `Ctrl+Z` hors des champs, tactile décidé par le pointeur, aide aux gestes, menus fiables, tests de `lib/planner.ts` | S à M (≈ 1 semaine) | — (volet backend A10 livré) |
 | **2. Disposition** (livré) | Plein écran d'édition, barre sous le pouce, cibles 44 px, un seul panneau ouvert, recherche d'adresse, cadrage `fitBounds` | M | 1 |
-| **3. Standard** | Profil altimétrique d'édition (B1, **B1a livré**, B1b à faire), inverser / aller-retour / retour au départ avec recalage (B2), ligne droite visible (B6, **livré**), clavier (B7, **livré**), défilement au bord (B9, **livré**), glisser une ancre au doigt (B11, **livré**), bornes indépendantes du zoom et suppression d'une ancre (B12, **livré**) | **L** | 1, 2 ; API pour B2 (endpoint de recalage) |
+| **3. Standard** | Profil altimétrique d'édition (B1, **livré**), inverser / aller-retour / retour au départ avec recalage (B2), ligne droite visible (B6, **livré**), clavier (B7, **livré**), défilement au bord (B9, **livré**), glisser une ancre au doigt (B11, **livré**), bornes indépendantes du zoom et suppression d'une ancre (B12, **livré**) | **L** | 1, 2 ; API pour B2 (endpoint de recalage) |
 | **4. Différenciation** | Éviter côtes / trafic (C2, **livré**), état d'édition conservé (C4 : **C4a et C4b livrés**), surface par point (C1), points de parcours (C3), popularité interne (C5), zones à éviter (C7) ; C6 non attribué | M à L | C4 : B6 et B12 ; C2 : aucun morceau du lot 3 ; API pour C1, C2, C4, C7 |
 
 Dans le lot 4, **C4 dépend de B6** (seul B6 crée l'information « ligne droite ») **et de B12**
@@ -368,7 +368,7 @@ au §5.
 Ordre conseillé : **B12** d'abord (il pose la provenance `imported` et les bornes dont B2 et C4 se
 servent), puis B6 (la ligne droite visible), puis B1 et B2.
 
-- [x] **B1. Profil altimétrique pendant l'édition — B1a livré** (M, §8 n° 7) — adaptateur pur
+- [x] **B1. Profil altimétrique pendant l'édition — B1a et B1b livrés** (M, §8 n° 7) — adaptateur pur
       `plannerRouteToMappable(route)` dans `lib/planner.ts` (distance cumulée, `climbs: []`,
       `waypoints: []`) pour alimenter `ElevationChart` tel quel. Survol synchronisé par
       `HoverMarker`, comme `RouteTrackMap`. Desktop : bandeau fixe de 160 px sous la carte.
@@ -438,9 +438,37 @@ servent), puis B6 (la ligne droite visible), puis B1 et B2.
           course du redimensionnement de la carte rend l'e2e du repli asynchrone (`expect.poll`) ;
           le test e2e « a user draws a route » peut échouer en `LOGIN_RATE_LIMITED` (429) en fin de
           longue série, il repasse seul.
-        - **Reste (B1b)** : altitudes FAST d'un tracé rouvert déjà en HD ; endpoint d'altitude FAST
-          pour échantillonner une ligne droite. (La trace source FAST à l'envoi d'un GPX, `sourceIdx`
+        - **Reste (B1b)** : livré, ci-dessous. (La trace source FAST à l'envoi d'un GPX, `sourceIdx`
           et le cumul dead-band par point côté serveur sont livrés par C4a et C4b.)
+      - **B1b livré le 19 octobre 2026.** Contrat **11.12.0**, pas de migration.
+        - **Fait** : `POST /api/router/elevation` (`lineElevation`, `LineElevationService`) : pour
+          chaque ligne droite (1 à 50), le chemin de 2 points passe par la chaîne complète de
+          vcyclist (`processWithClimb` FAST : densification à 30 m, tunnels, lissage), sans Stadia ni
+          stockage ; réponse `LineElevationResponse(lines: GpxImportTrack[], elevationFallback)`, un
+          élément par ligne dans l'ordre. `PlannerTracks.toTrack` extrait de `GpxImportService`.
+          Côté web : `RoutePoint.directProfile` (clé d'arête, échantillons, `ascend`) porté par le
+          point d'arrivée, `withDirectProfiles` (sans Douglas-Peucker, mêmes `id`/`idx`),
+          `straightEdgesMissingProfile`, `lib/plannerElevation.ts` (découpage, décodage, cache de
+          session), effet de `useRoutePlanner` (application immédiate du cache, une requête groupée
+          300 ms après le dernier changement, hors historique), bandeau qui déplie le relief sous une
+          ligne droite (survol par indice du profil, `hoverPosition`).
+        - **Décisions** : Q-C devient le **repli** (D+ du serveur quand on l'a, Q-C sinon ou en cas
+          d'échec, sans message) ; appel paresseux en arrière-plan (A2) plutôt que dans le geste ;
+          nouvel endpoint plutôt qu'un mode de `/api/router` (un ancien backend facturerait Stadia)
+          ; bornes 50 lignes / 100 km par ligne / 200 km par requête (`ROUTING_SEGMENT_TOO_LONG`,
+          contrôlées avant toute lecture du MNT), rien sous 10 m côté client ; profil non stocké dans
+          l'état (version 1 inchangée, redemandé à la réouverture) ; pas d'indicateur de chargement ;
+          tunnels aplanis acceptés ; un 404 ou 405 (ancien backend) coupe la fonction pour la session.
+        - **Tests** : `RouterElevationResourceTest` (droits, validation dont `from` ou `to` absent et
+          corps vide, bornes sans lecture d'altitude, forme de la réponse), `ArchitectureTest` ;
+          `planner.test.ts`, `plannerElevation.test.ts`, `useRoutePlanner.test.tsx`,
+          `useRoutePlannerImport.test.tsx`, `RoutePlannerField.test.tsx` ; e2e `gpx-planner`
+          (`stubElevation`, décompte `elevationRequests` à côté de `routerRequests`, qui ne change pas :
+          le glob `**/api/router` ne capte pas le nouvel endpoint).
+        - **Écarts** : le survol d'un échantillon est perdu quand un profil arrive en arrière-plan
+          (l'objet `Route` change) jusqu'au prochain mouvement de souris, accepté ; le routeur réel
+          recale le point précédent sur la route, ce qui fait relire (gratuitement) la ligne droite
+          qui y arrive, là où le routeur factice ne le fait pas.
 - [ ] **B2. Inverser, aller-retour, retour au départ** (L, §8 n° 8) — trois opérations dans
       `lib/planner.ts`, passées par `executeRouteOperation` pour l'historique. Boutons dans la
       barre, raccourci dans le libellé. Dépend de A9 et de l'endpoint de recalage ci-dessous.
@@ -1167,6 +1195,17 @@ questions ouvertes viennent du §10 de
   comme A10. Les versions de contrat et les migrations seront notées au passage dans
   `LEDGER_DONE.md`.
 
+### Décisions du propriétaire du 19 octobre 2026 (B1b)
+
+- **Point 1** (altitudes FAST d'un tracé rouvert sans état) : **Délibérément dehors** (§11, `WEB-103`).
+- **Point 2** : appel paresseux en arrière-plan, groupé, 300 ms après le dernier changement, vers un
+  nouvel endpoint `POST /api/router/elevation` (FAST, sans Stadia) ; **Q-C devient le repli** ; le
+  bandeau déplie le relief sous une ligne droite. Le relief passe par la chaîne complète de vcyclist
+  (`processWithClimb`), sans densification ni lecture du MNT côté Pedalons.
+- Défauts retenus : 50 lignes / 100 km par ligne / 200 km par requête / rien sous 10 m côté client,
+  `ROUTING_SEGMENT_TOO_LONG` au-delà ; réponse en `GpxImportTrack` ; profil non stocké (état en
+  version 1) ; pas d'indicateur de chargement ; tunnels aplanis acceptés ; contrat `11.12.0`.
+
 ### Propositions de ce plan à valider
 
 Écrites le 18 octobre 2026 sans décision du propriétaire : le chemin, les DTO et la gestion des
@@ -1187,6 +1226,17 @@ validées (19 octobre 2026, ci-dessus).
   en est le banc d'essai.
 - **Heatmap d'activités, navigation guidée, photos, import par URL** : voir §8.4 de l'état de
   l'art.
+- **Altitudes FAST d'un tracé rouvert sans état** (B1b, point 1, décidé le 19 octobre 2026) : il
+  faudrait un appel à chaque ouverture (quelques secondes à froid sur un long parcours) et un échange
+  de source délicat (le FAST simplifie avec d'autres sommets que `initialTrack`, d'où une course sur
+  `sourceIdx` ou une ouverture retardée), pour un chiffre qui s'éloignerait de celui de
+  l'enregistrement : les portions non retouchées gardent un D+ HD recalé sur `elevationGain`, vers
+  lequel le tracé enregistré converge (il repasse en HD), et les portions retouchées sont déjà en
+  FAST. Rouvert sous `WEB-103`.
+- **Plafond de tuiles MNT et limite de débit propres à `/api/router/elevation`** : 50 lignes de
+  quelques mètres dans 50 tuiles z12 distinctes coûtent 50 téléchargements à froid, écrits sans
+  éviction dans `DemTileStore`. Même risque, plus étroit, que celui accepté pour `import-gpx` (C4b) ;
+  seul `SEC-28` (proxy) limite le débit. Rouvert sous `WEB-104`.
 - **Cache client des segments** entre sessions : annuler / rétablir ne coûte déjà rien, et le
   cache serveur suggéré par la session Stadia est plus rentable ; à reconsidérer si la facture le
   demande.

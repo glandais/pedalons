@@ -72,7 +72,7 @@ vi.mock('./RoutePlanner', () => ({
     active,
     onExpand,
     onImport,
-    hoveredIndex,
+    hoverPosition,
     onHoverIndex,
   }: {
     planner: { route: unknown }
@@ -80,7 +80,7 @@ vi.mock('./RoutePlanner', () => ({
     active: boolean
     onExpand?: () => void
     onImport?: () => void
-    hoveredIndex?: number
+    hoverPosition?: { lng: number; lat: number } | null
     onHoverIndex?: (index: number) => void
   }) => {
     const [taps, setTaps] = useState(0)
@@ -94,9 +94,9 @@ vi.mock('./RoutePlanner', () => ({
         data-testid="planner"
         data-layout={layout}
         data-active={String(active)}
-        data-hovered={String(hoveredIndex)}
+        data-hover-position={hoverPosition ? `${hoverPosition.lng},${hoverPosition.lat}` : ''}
       >
-        <button onClick={() => onHoverIndex?.(3)}>map hover</button>
+        <button onClick={() => onHoverIndex?.(1)}>map hover</button>
         <button onClick={() => setTaps((n) => n + 1)}>tap {taps}</button>
         {onExpand && <button onClick={onExpand}>expand</button>}
         {onImport && <button onClick={onImport}>map import</button>}
@@ -121,12 +121,13 @@ vi.mock('./PlannerElevationStrip', () => ({
       data-hovered={hoveredIndex}
       data-collapsed={String(collapsible?.collapsed)}
     >
-      <button onClick={() => onHoverIndex(2)}>profile hover</button>
+      <button onClick={() => onHoverIndex(1)}>profile hover</button>
       {collapsible && <button onClick={collapsible.onToggle}>toggle strip</button>}
     </div>
   ),
 }))
 
+import { computeRoute, createPoint, edgeKey } from '@/lib/planner'
 import { RoutePlannerField, type RoutePlannerHandle } from './RoutePlannerField'
 
 function setCoarse(coarse: boolean) {
@@ -337,18 +338,37 @@ describe('RoutePlannerField', () => {
     })
 
     it('shows the elevation strip under the map, and hands its hover to the map', async () => {
+      // A straight edge whose relief was read: the profile has a sample between the two points
+      const start = createPoint(5, 45, 100)
+      start.manual = true
+      const end = createPoint(5.002, 45, 110, false, true)
+      end.manual = true
+      end.directProfile = {
+        key: edgeKey(start, end),
+        lngLat: [
+          [5, 45],
+          [5.001, 45],
+          [5.002, 45],
+        ],
+        ele: [100, 130, 110],
+        ascend: 30,
+      }
+      plannerState.route = computeRoute([start, end]) as never
       renderField()
       const strip = await screen.findByTestId('strip')
       expect(strip.dataset.collapsed).toBe('undefined')
-      expect(screen.getByTestId('planner').dataset.hovered).toBe('-1')
+      expect(screen.getByTestId('planner').dataset.hoverPosition).toBe('')
 
+      // The sample of the profile is between the two ends: the marker goes there
       fireEvent.click(screen.getByText('profile hover'))
-      expect(screen.getByTestId('planner').dataset.hovered).toBe('2')
-      expect(screen.getByTestId('strip').dataset.hovered).toBe('2')
+      expect(screen.getByTestId('planner').dataset.hoverPosition).toBe('5.001,45')
+      expect(screen.getByTestId('strip').dataset.hovered).toBe('1')
 
-      // and the other way round: the map reports its point to the strip
+      // and the other way round: the map reports a point of the route, the strip gets its entry
+      // of the profile (the second point is the third entry)
       fireEvent.click(screen.getByText('map hover'))
-      expect(screen.getByTestId('strip').dataset.hovered).toBe('3')
+      expect(screen.getByTestId('strip').dataset.hovered).toBe('2')
+      expect(screen.getByTestId('planner').dataset.hoverPosition).toBe('')
     })
 
     it('shows one strip at a time while the editor is open', async () => {

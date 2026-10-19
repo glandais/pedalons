@@ -2337,7 +2337,7 @@ Plan [`2026-10-06-team-agenda.md`](plans/archive/2026-10-06-team-agenda.md) §4,
   **À ne pas défaire** : on ne sonde et on n'affiche que `PENDING` ; le sondage reste borné ; ne pas
   recadrer la carte sur un simple changement de profil.
 
-### `WEB-100` Éditeur de parcours : réglage côtes / trafic, état d'édition (19 octobre 2026, contrat `11.11.0`)
+### `WEB-100` Éditeur de parcours : réglage côtes / trafic, état d'édition, altitudes des lignes droites (19 octobre 2026, contrat `11.12.0`)
 
 - `WEB-100` **Volet C2** (2026-10-19, **API 11.9.0**) — `RouterRequest` accepte `useHills` et
   `useRoads` (0 à 1, facultatifs), fusionnés dans les `costing_options` du profil vélo ; absents,
@@ -2383,6 +2383,24 @@ Plan [`2026-10-06-team-agenda.md`](plans/archive/2026-10-06-team-agenda.md) §4,
   s'enregistre comme le fichier (waypoints, pistes, original), y compris après un annuler ;
   l'endpoint ne stocke rien ; droits avant `FILE_REQUIRED` et la taille ; pas de limite de débit
   propre (`SEC-28` au proxy, plafond de points contrôlé après le pipeline, risque accepté).
+- `WEB-100` **Volet B1b** (2026-10-19, **API 11.12.0**, pas de migration) — le relief d'une ligne droite
+  vient du serveur : `POST /api/router/elevation` (`lineElevation`, 1 à 50 lignes `from`/`to`,
+  `teamSlug` facultatif, mêmes droits que le routeur via `PlannerAccess`) passe chaque ligne par
+  `processWithClimb` FAST (chaîne complète de vcyclist, sans Stadia ni stockage) et rend
+  `LineElevationResponse` (`GpxImportTrack` par ligne, dans l'ordre, `elevationFallback`) ; plus de
+  100 km par ligne ou 200 km ensemble : `ROUTING_SEGMENT_TOO_LONG`, avant toute lecture du MNT. Web :
+  `directProfile` sur le point d'arrivée, appel groupé en arrière-plan 300 ms après le dernier
+  changement, hors historique, bandeau qui déplie le relief ; Q-C reste le repli. Les altitudes FAST
+  d'un tracé rouvert sans état sont « Délibérément dehors » (`WEB-103`). Détail dans
+  [le plan](plans/2026-10-17-editeur-parcours-web.md) (§7 B1). Tests : `RouterElevationResourceTest`,
+  `ArchitectureTest` ; `planner.test.ts`, `plannerElevation.test.ts`, `useRoutePlanner.test.tsx`,
+  `useRoutePlannerImport.test.tsx`, `RoutePlannerField.test.tsx`, e2e `gpx-planner`.
+  **À ne pas défaire** : le relief passe par la chaîne de vcyclist, aucune densification ni lecture
+  du MNT côté Pedalons ; la clé d'arête rend un profil périmé inoffensif (rien à nettoyer) ; le profil
+  n'est pas dans l'état (version 1) ; un échec ou un 404 / 405 laisse Q-C sans message (déploiement
+  roulant) ; `from` et `to` sont `@NotNull` (400, pas 500) ; l'endpoint n'appelle jamais Stadia ; pas de
+  plafond de tuiles propre (`WEB-104`, `SEC-28` au proxy).
+
 
 ## API — Contrat d'API et backend
 

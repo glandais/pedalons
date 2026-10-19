@@ -12,6 +12,22 @@ export interface Point {
   lat: number
 }
 
+/**
+ * The relief of a straight edge, as the elevation service read it (FAST, like a routed leg): the
+ * densified line from one end to the other, its elevations and its climb. Display data only: it is
+ * never part of the route's geometry, nor of the saved state.
+ */
+export interface DirectProfile {
+  /** {@link edgeKey} of the edge it was read for: a profile whose edge changed no longer matches. */
+  key: string
+  /** [lng, lat] of every sample, the two ends included. */
+  lngLat: number[][]
+  /** Elevation (m) of every sample. */
+  ele: number[]
+  /** Climb (m) of the edge, dead-band like a routed leg's. */
+  ascend: number
+}
+
 export interface RoutePoint {
   id: string
   idx: number
@@ -32,6 +48,11 @@ export interface RoutePoint {
    * point does not end a routed leg. Carried by the leg's last point, like `direct`.
    */
   legAscend?: number
+  /**
+   * Relief of the straight edge arriving at this point, once the elevation service answered. Carried
+   * by the arrival point like `direct`; ignored (stale) as soon as its `key` is not the edge's.
+   */
+  directProfile?: DirectProfile
   /**
    * Cumulative climb (m) of the loaded track from its start to this point, scaled to the track's
    * reference D+. Imported points only.
@@ -391,7 +412,9 @@ export function edgeMode(points: RoutePoint[], i: number): EdgeMode {
 
 /**
  * D+ of a route, edge by edge (the first point never counts). The arrival point of an edge says
- * where its climb comes from: a straight line is the net climb between its filled elevations; a
+ * where its climb comes from: a straight line is the climb the elevation service measured for it
+ * (`directProfile`, same dead-band as a routed leg) and, until it answered or if it failed, the net
+ * climb between its filled elevations; a
  * routed leg is the router's own figure, counted once at its end; two consecutive points of a
  * loaded track are the difference of their cumulative climb. The interior of a routed leg counts 0.
  */
@@ -403,6 +426,10 @@ export function routeAscend(points: RoutePoint[]): number {
     const q = points[i - 1]
     const mode = edgeMode(points, i)
     if (mode === 'DIRECT') {
+      if (p.directProfile && p.directProfile.key === edgeKey(q, p)) {
+        ascend += p.directProfile.ascend
+        continue
+      }
       const a = eleF[i]
       const b = eleF[i - 1]
       if (a !== undefined && b !== undefined) ascend += Math.max(0, a - b)
@@ -415,26 +442,158 @@ export function routeAscend(points: RoutePoint[]): number {
   return ascend
 }
 
-/** The elevation profile of a route being drawn, in the shape ElevationChart reads; indexes match `route.points`. */
-export function plannerRouteToMappable(route: Route): MappableRoute | null {
+/** Identity of a straight edge: its two ends rounded to 1e-6 degrees (0.11 m). */
+export function edgeKey(from: Point, to: Point): string {
+  const r = (v: number) => v.toFixed(6)
+  return `${r(from.lng)},${r(from.lat)}>${r(to.lng)},${r(to.lat)}`
+}
+
+/** The profile of the straight edge `points[i-1] -> points[i]`, when it is still the one that was read. */
+function validProfile(points: RoutePoint[], i: number): DirectProfile | undefined {
+  const p = points[i]
+  if (i < 1 || !p.direct || !p.directProfile) return undefined
+  return p.directProfile.key === edgeKey(points[i - 1], p) ? p.directProfile : undefined
+}
+
+/**
+ * The route with the relief of its straight edges that `lookup` knows (by {@link edgeKey}) put on
+ * their arrival points, and the ends of those edges given an elevation when they have none. A new
+ * `Route` made of copies of the points that change (the others are shared), through `finishRoute`
+ * and never `computeRoute`: same points, same `id` and `idx`, no simplification. The very same
+ * object when nothing changes.
+ */
+export function withDirectProfiles(
+  route: Route,
+  lookup: (key: string) => DirectProfile | undefined
+): Route {
+  const points = route.points
+  const out = points.slice()
+  const own = (i: number): RoutePoint =>
+    out[i] === points[i] ? (out[i] = { ...points[i] }) : out[i]
+  let changed = false
+  for (let i = 1; i < points.length; i++) {
+    if (!points[i].direct) continue
+    const profile = lookup(edgeKey(points[i - 1], points[i]))
+    if (!profile) continue
+    const n = profile.ele.length
+    if (n < 2 || profile.lngLat.length !== n) continue
+    const needsProfile = out[i].directProfile !== profile
+    const needsStart = out[i - 1].ele === undefined
+    const needsEnd = out[i].ele === undefined
+    if (!needsProfile && !needsStart && !needsEnd) continue
+    changed = true
+    if (needsProfile) own(i).directProfile = profile
+    if (needsStart) own(i - 1).ele = profile.ele[0]
+    if (needsEnd) own(i).ele = profile.ele[n - 1]
+  }
+  return changed ? finishRoute(out) : route
+}
+
+/** A straight edge whose relief is still to read. */
+export interface StraightEdge {
+  key: string
+  from: Point
+  to: Point
+  /** Length in metres. */
+  meters: number
+}
+
+/** Under this length a straight edge has no relief worth a request. */
+export const MIN_PROFILE_METERS = 10
+/** Over this length the server refuses the edge (GpxLimits.MAX_STRAIGHT_LINE_METERS). */
+export const MAX_PROFILE_METERS = 100_000
+
+/** The straight edges of 10 m to 100 km that have no valid profile yet. */
+export function straightEdgesMissingProfile(route: Route): StraightEdge[] {
+  const points = route.points
+  const edges: StraightEdge[] = []
+  for (let i = 1; i < points.length; i++) {
+    const p = points[i]
+    if (!p.direct || validProfile(points, i)) continue
+    const q = points[i - 1]
+    const meters = distance(q.lng, q.lat, p.lng, p.lat)
+    if (meters < MIN_PROFILE_METERS || meters > MAX_PROFILE_METERS) continue
+    edges.push({
+      key: edgeKey(q, p),
+      from: { lng: q.lng, lat: q.lat },
+      to: { lng: p.lng, lat: p.lat },
+      meters,
+    })
+  }
+  return edges
+}
+
+/**
+ * The elevation profile of a route being drawn, in the shape ElevationChart reads, plus what the
+ * planner needs to follow it. The profile has one entry per point of `route.points`, and under a
+ * straight edge whose relief was read, the samples of that relief between the two ends.
+ */
+export type PlannerMappable = MappableRoute & {
+  /** [lng, lat] of every entry of the profile. */
+  positions: Point[]
+  /** Index in `route.points` of every entry: itself for a point, the edge's arrival for a sample. */
+  routeIndex: number[]
+  /** Index in the profile of every point of `route.points`. */
+  profileIndexOfRoute: number[]
+  /** Whether the segment starting at this entry is a straight line (drawn dashed). */
+  dashed: boolean[]
+}
+
+export function plannerRouteToMappable(route: Route): PlannerMappable | null {
   const points = route.points
   if (points.length < 2) return null
-  const eleF = fillElevations(points)
+  // The ends of an edge whose relief is known take its elevations, so a route of straight lines
+  // only has a profile as soon as one was read.
+  const ends = points.map((p) => ({ ...p }))
+  for (let i = 1; i < points.length; i++) {
+    const profile = validProfile(points, i)
+    if (!profile) continue
+    ends[i - 1].ele ??= profile.ele[0]
+    ends[i].ele ??= profile.ele[profile.ele.length - 1]
+  }
+  const eleF = fillElevations(ends)
   if (eleF.every((e) => e === undefined)) return null
   const cum = cumulativeDistances(points)
+  const coordinates: number[][] = []
+  const positions: Point[] = []
+  const routeIndex: number[] = []
+  const profileIndexOfRoute: number[] = []
+  const dashed: boolean[] = []
+  for (let i = 0; i < points.length; i++) {
+    const profile = validProfile(points, i)
+    if (profile && profile.lngLat.length > 2) {
+      // Samples: the distance along the sampled line, scaled onto the edge so the profile stays
+      // monotonic and ends exactly on the next point
+      const line = profile.lngLat
+      const along: number[] = [0]
+      for (let k = 1; k < line.length; k++) {
+        along.push(along[k - 1] + distance(line[k - 1][0], line[k - 1][1], line[k][0], line[k][1]))
+      }
+      const total = along[along.length - 1]
+      const edge = cum[i] - cum[i - 1]
+      for (let k = 1; k < line.length - 1; k++) {
+        const x = total > 0 ? (along[k] / total) * edge : (k / (line.length - 1)) * edge
+        coordinates.push([line[k][0], line[k][1], profile.ele[k], cum[i - 1] + x])
+        positions.push({ lng: line[k][0], lat: line[k][1] })
+        routeIndex.push(i)
+        dashed.push(true)
+      }
+    }
+    profileIndexOfRoute.push(coordinates.length)
+    coordinates.push([points[i].lng, points[i].lat, eleF[i] as number, cum[i]])
+    positions.push({ lng: points[i].lng, lat: points[i].lat })
+    routeIndex.push(i)
+    dashed.push(!!points[i + 1]?.direct)
+  }
   return {
     distance: route.dist,
     waypoints: [],
-    tracks: [
-      {
-        line: {
-          type: 'LineString',
-          coordinates: points.map((p, i) => [p.lng, p.lat, eleF[i] as number, cum[i]]),
-        },
-        climbs: [],
-      },
-    ],
-  } as MappableRoute
+    tracks: [{ line: { type: 'LineString', coordinates }, climbs: [] }],
+    positions,
+    routeIndex,
+    profileIndexOfRoute,
+    dashed,
+  } as PlannerMappable
 }
 
 const EARTH_RADIUS = 6371008.8

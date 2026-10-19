@@ -23,8 +23,16 @@ import {
   sourceFromImport,
   sourceOf,
   spanBounds,
+  straightEdgesMissingProfile,
+  withDirectProfiles,
+  type DirectProfile,
   type PlannerSource,
 } from '@/lib/planner'
+import {
+  isElevationUnsupported,
+  readDirectProfiles,
+  type ElevationCache,
+} from '@/lib/plannerElevation'
 import { MAX_PLANNER_SOURCES, restorePlannerState, serializePlannerState } from '@/lib/plannerState'
 import { RouterProfile } from '@/api/dto'
 import type { GeoPoint, GpxImportResponse, PlannerState } from '@/api/dto'
@@ -80,6 +88,9 @@ export interface GpxImportInfo {
 
 /** Biggest file the server takes (GpxLimits.MAX_GPX_SIZE_BYTES). */
 export const MAX_IMPORT_BYTES = 10 * 1024 * 1024
+
+/** Quiet time after the last change of the route before the relief of its straight edges is read. */
+export const ELEVATION_DEBOUNCE_MS = 300
 
 const IMPORT_TOO_BIG_KEY = tRegister('planner.import.tooBig')
 const IMPORT_FAILED_KEY = tRegister('planner.import.failed')
@@ -343,6 +354,77 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
     },
     [t, teamSlug]
   )
+
+  // The relief of the straight edges (POST /api/router/elevation), read in the background and kept
+  // for the session whatever the gestures do (undo, redo and a re-drawn edge find it again). It is
+  // display data: applied to the route outside the history, never part of isDirty / canUndo.
+  const elevationCacheRef = useRef<ElevationCache>(new Map())
+  // An old backend (rolling deployment) answers 404/405: the feature is off for the session.
+  const elevationOffRef = useRef(false)
+  const elevationRunningRef = useRef(false)
+  const elevationAbortRef = useRef<AbortController | null>(null)
+  // Bumped when the cache changed: the effect below applies it
+  const [elevationTick, setElevationTick] = useState(0)
+
+  useEffect(
+    () => () => {
+      elevationAbortRef.current?.abort()
+      elevationAbortRef.current = null
+    },
+    []
+  )
+
+  useEffect(() => {
+    const cache = elevationCacheRef.current
+    // (i) what the cache already knows, at once; not during an operation (it would replace the
+    // route under it; the effect runs again with the route it produced)
+    if (!inFlightRef.current) {
+      const next = withDirectProfiles(route, (key) => {
+        const known = cache.get(key)
+        return known === 'failed' ? undefined : known
+      })
+      if (next !== route) {
+        // An intact import is recognised by the identity of its route: the enriched one is the same file
+        if (importedRef.current?.routes.has(route)) importedRef.current.routes.add(next)
+        setRoute(next)
+        return
+      }
+    }
+    if (elevationOffRef.current) return
+    if (!straightEdgesMissingProfile(route).some((edge) => !cache.has(edge.key))) return
+
+    // (ii) one grouped request once the route stopped changing
+    const timer = setTimeout(async () => {
+      if (elevationRunningRef.current || elevationOffRef.current) return
+      const edges = straightEdgesMissingProfile(routeRef.current).filter(
+        (edge) => !cache.has(edge.key)
+      )
+      if (edges.length === 0) return
+      elevationRunningRef.current = true
+      const controller = new AbortController()
+      elevationAbortRef.current = controller
+      const read = new Map<string, DirectProfile>()
+      let unsupported = false
+      try {
+        await readDirectProfiles(edges, teamSlug, read, controller.signal)
+      } catch (e) {
+        if (controller.signal.aborted) return
+        // (iv) silent: the climb stays the net one between the ends
+        unsupported = isElevationUnsupported(e)
+        if (unsupported) elevationOffRef.current = true
+      } finally {
+        elevationRunningRef.current = false
+      }
+      for (const edge of edges) {
+        const profile = read.get(edge.key)
+        if (profile) cache.set(edge.key, profile)
+        else if (!unsupported) cache.set(edge.key, 'failed')
+      }
+      // (iii) applied by the effect, which also waits for an operation in progress
+      setElevationTick((n) => n + 1)
+    }, ELEVATION_DEBOUNCE_MS)
+    return () => clearTimeout(timer)
+  }, [route, isLoading, elevationTick, teamSlug])
 
   const addControlPoint = useCallback(
     (p: Point, direct = false) => {

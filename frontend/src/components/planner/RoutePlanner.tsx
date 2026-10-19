@@ -71,8 +71,8 @@ interface RoutePlannerProps {
   onImport?: () => void
   initialTrack?: number[][] // [lng, lat, ele, dist][] from existing route
   teamLocation?: [number, number] // [lng, lat] from team geometry
-  /** Index in `planner.route.points` of the point the elevation profile (not the map) is hovering; -1 for none. */
-  hoveredIndex?: number
+  /** Position of the entry of the elevation profile (not the map) that is hovered; null for none. */
+  hoverPosition?: Point | null
   /** Reports the point of the route the cursor is nearest to on the map (-1: none). */
   onHoverIndex?: (index: number) => void
 }
@@ -158,7 +158,7 @@ export function RoutePlanner({
   fitRequest = 0,
   initialTrack,
   teamLocation,
-  hoveredIndex = -1,
+  hoverPosition = null,
   onHoverIndex,
 }: RoutePlannerProps) {
   const { t } = useTranslation()
@@ -1464,10 +1464,10 @@ export function RoutePlanner({
                 )}
 
                 {/* The point the elevation profile is hovering; never takes the pointer */}
-                {hoveredIndex >= 0 && route.points[hoveredIndex] && (
+                {hoverPosition && (
                   <HoverMarker
-                    longitude={route.points[hoveredIndex].lng}
-                    latitude={route.points[hoveredIndex].lat}
+                    longitude={hoverPosition.lng}
+                    latitude={hoverPosition.lat}
                     style={{ pointerEvents: 'none' }}
                     testId="planner-hover-marker"
                   />

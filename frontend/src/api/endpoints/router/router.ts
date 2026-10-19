@@ -10,6 +10,8 @@ import type {
   ErrorResponse,
   GpxImportResponse,
   ImportGpxBody,
+  LineElevationRequest,
+  LineElevationResponse,
   RouterRequest,
   RouterResponse,
 } from '../../dto'
@@ -103,6 +105,92 @@ export const useRoute = <TError = ErrorType<ErrorResponse | void>, TContext = un
   TContext
 > => {
   return useMutation(getRouteMutationOptions(options), queryClient)
+}
+/**
+ * Processes each straight line with the FAST elevations, as a routed leg, and returns its densified track with the ascent accumulated up to each point. Nothing is stored and the routing provider is not called. Same rights as the route calculation: with teamSlug, the caller must be allowed to create routes in that team and the team must have the route planner enabled; without it, the domain's GPX planner must be enabled.
+ * @summary Read the relief of straight lines
+ */
+export const lineElevation = (
+  lineElevationRequest: BodyType<LineElevationRequest>,
+  options?: SecondParameter<typeof axiosMutator>,
+  signal?: AbortSignal
+) => {
+  return axiosMutator<LineElevationResponse>(
+    {
+      url: `/api/router/elevation`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: lineElevationRequest,
+      signal,
+    },
+    options
+  )
+}
+
+export const getLineElevationMutationKey = () => ['lineElevation'] as const
+
+export const getLineElevationMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof lineElevation>>,
+    TError,
+    LineElevationMutationVariables,
+    TContext
+  >
+  request?: SecondParameter<typeof axiosMutator>
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof lineElevation>>,
+  TError,
+  LineElevationMutationVariables,
+  TContext
+> => {
+  const mutationKey = getLineElevationMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof lineElevation>>,
+    LineElevationMutationVariables
+  > = (props) => {
+    const { data } = props ?? {}
+
+    return lineElevation(data, requestOptions)
+  }
+
+  return { mutationFn, ...mutationOptions }
+}
+
+export type LineElevationMutationResult = NonNullable<Awaited<ReturnType<typeof lineElevation>>>
+export type LineElevationMutationBody = BodyType<LineElevationRequest>
+export type LineElevationMutationError = ErrorType<ErrorResponse>
+export type LineElevationMutationVariables = { data: BodyType<LineElevationRequest> }
+
+/**
+ * @summary Read the relief of straight lines
+ */
+export const useLineElevation = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof lineElevation>>,
+      TError,
+      LineElevationMutationVariables,
+      TContext
+    >
+    request?: SecondParameter<typeof axiosMutator>
+  },
+  queryClient?: QueryClient
+): UseMutationResult<
+  Awaited<ReturnType<typeof lineElevation>>,
+  TError,
+  LineElevationMutationVariables,
+  TContext
+> => {
+  return useMutation(getLineElevationMutationOptions(options), queryClient)
 }
 /**
  * Processes a GPX file with the FAST elevations and returns its tracks as polylines, with the ascent accumulated up to each point. Nothing is stored and the routing provider is not called. Same rights as the route calculation: with teamSlug, the caller must be allowed to create routes in that team and the team must have the route planner enabled; without it, the domain's GPX planner must be enabled.

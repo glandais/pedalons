@@ -5,13 +5,18 @@ import { RouterProfile } from '@/api/dto'
 // detour through a midpoint 0.001 degree north (~111 m) that is 50 m higher, then the end.
 // The elevation of a point on the ground is 100 + 1 m per 0.0001 degree of longitude east of 5.0.
 const routeMock = vi.hoisted(() => vi.fn())
-vi.mock('@/api/endpoints/router/router', () => ({ route: routeMock }))
+const lineElevationMock = vi.hoisted(() => vi.fn())
+vi.mock('@/api/endpoints/router/router', () => ({
+  route: routeMock,
+  lineElevation: lineElevationMock,
+}))
 
 import {
   add,
   computeRoute,
   createRoute,
   directStats,
+  edgeKey,
   fillElevations,
   geojson,
   insert,
@@ -26,6 +31,9 @@ import {
   routeAscend,
   sourceOf,
   spanBounds,
+  straightEdgesMissingProfile,
+  withDirectProfiles,
+  type DirectProfile,
   type Point,
   type Route,
   type RouterSettings,
@@ -1304,6 +1312,112 @@ describe('B1 elevation', () => {
     route = await add(route, C, PROFILE, true)
     expect(route.ascend).toBe(0)
     expect(plannerRouteToMappable(route)).toBeNull()
+  })
+
+  describe('relief of straight edges (B1b)', () => {
+    /** A -> B straight, then B -> C straight: no elevation anywhere. */
+    async function straightRoute(): Promise<Route> {
+      let route = await add(computeRoute([]), A, PROFILE)
+      route = await add(route, B, PROFILE, true)
+      return add(route, C, PROFILE, true)
+    }
+
+    /** The profile of the edge `from -> to`: 3 samples, 100 m, 130 m, 110 m, climbing 30 m. */
+    function profileOf(from: Point, to: Point, ascend = 30): DirectProfile {
+      return {
+        key: edgeKey(from, to),
+        lngLat: [
+          [from.lng, from.lat],
+          [(from.lng + to.lng) / 2, (from.lat + to.lat) / 2],
+          [to.lng, to.lat],
+        ],
+        ele: [100, 130, 110],
+        ascend,
+      }
+    }
+
+    const lookupOf = (profiles: DirectProfile[]) => (key: string) =>
+      profiles.find((p) => p.key === key)
+
+    it('takes the climb of a straight edge from its profile when the key matches', async () => {
+      const route = await straightRoute()
+      const enriched = withDirectProfiles(route, lookupOf([profileOf(A, B)]))
+      // A -> B measured (30); B -> C has no profile: net climb between its filled elevations (110 -> 110)
+      expect(enriched.ascend).toBeCloseTo(30, 6)
+      expect(route.ascend).toBe(0)
+    })
+
+    it('ignores a stale profile (a point moved) and falls back on the net climb', async () => {
+      const route = await straightRoute()
+      const enriched = withDirectProfiles(route, lookupOf([profileOf(A, B)]))
+      const moved = enriched.points.map((p) => ({ ...p }))
+      moved[1].lng += 0.001
+      // net climb between the filled ends (100 m -> 110 m), not the 30 m of the profile
+      expect(routeAscend(moved)).toBeCloseTo(10, 6)
+    })
+
+    it('is idempotent and changes neither the points, nor their ids and indices', async () => {
+      const route = await straightRoute()
+      const lookup = lookupOf([profileOf(A, B), profileOf(B, C, 5)])
+      const once = withDirectProfiles(route, lookup)
+      expect(once).not.toBe(route)
+      expect(once.points.map((p) => [p.id, p.idx, p.lng, p.lat])).toEqual(
+        route.points.map((p) => [p.id, p.idx, p.lng, p.lat])
+      )
+      expect(withDirectProfiles(once, lookup)).toBe(once)
+      expect(withDirectProfiles(route, () => undefined)).toBe(route)
+      expect(once.ascend).toBeCloseTo(35, 6)
+    })
+
+    it('copies the points it changes: the history copies and the old route stay intact', async () => {
+      const route = await straightRoute()
+      const history = route.points.map((p) => ({ ...p }))
+      const enriched = withDirectProfiles(route, lookupOf([profileOf(A, B)]))
+      expect(route.points.every((p) => p.directProfile === undefined && p.ele === undefined)).toBe(
+        true
+      )
+      expect(history.every((p) => p.directProfile === undefined)).toBe(true)
+      expect(enriched.points[1].directProfile).toBeDefined()
+      expect(enriched.points[0].ele).toBe(100)
+      expect(enriched.points[1].ele).toBe(110)
+    })
+
+    it('lists the straight edges of 10 m to 100 km without a valid profile', async () => {
+      const route = await straightRoute()
+      const missing = straightEdgesMissingProfile(route)
+      expect(missing.map((e) => e.key)).toEqual([edgeKey(A, B), edgeKey(B, C)])
+      expect(missing[0].meters).toBeGreaterThan(700)
+      const enriched = withDirectProfiles(route, lookupOf([profileOf(A, B)]))
+      expect(straightEdgesMissingProfile(enriched).map((e) => e.key)).toEqual([edgeKey(B, C)])
+      // under 10 m and over 100 km: nothing to read
+      const hop = await add(route, { lng: C.lng + 0.00005, lat: C.lat }, PROFILE, true)
+      expect(straightEdgesMissingProfile(hop)).toHaveLength(2)
+      const far = await add(route, { lng: 7, lat: 45 }, PROFILE, true)
+      expect(straightEdgesMissingProfile(far)).toHaveLength(2)
+    })
+
+    it('unfolds the samples in the profile, with their positions, route indices and dashes', async () => {
+      const route = withDirectProfiles(await straightRoute(), lookupOf([profileOf(A, B)]))
+      const mappable = plannerRouteToMappable(route)!
+      const coords = mappable.tracks[0].line.coordinates
+      // A, the sample, B, C
+      expect(coords).toHaveLength(4)
+      expect(coords.map((c) => c[2])).toEqual([100, 130, 110, 110])
+      expect(mappable.positions[1]).toEqual({ lng: 5.005, lat: 45 })
+      expect(mappable.routeIndex).toEqual([0, 1, 1, 2])
+      expect(mappable.profileIndexOfRoute).toEqual([0, 2, 3])
+      expect(mappable.dashed).toEqual([true, true, true, false])
+      for (let i = 1; i < coords.length; i++) expect(coords[i][3]).toBeGreaterThan(coords[i - 1][3])
+      expect(coords[2][3]).toBeCloseTo(mappable.distance - (coords[3][3] - coords[2][3]), 6)
+    })
+
+    it('a route of straight lines only has a profile once one was read', async () => {
+      const route = await straightRoute()
+      expect(plannerRouteToMappable(route)).toBeNull()
+      expect(
+        plannerRouteToMappable(withDirectProfiles(route, lookupOf([profileOf(A, B)])))
+      ).not.toBeNull()
+    })
   })
 
   it('scales the climb of a loaded track to the reference D+, whatever the simplification drops', () => {

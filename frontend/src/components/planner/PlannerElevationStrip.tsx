@@ -3,12 +3,14 @@ import { useTranslation } from 'react-i18next'
 import { IconChevronDown, IconChevronUp } from '@tabler/icons-react'
 import { ActionIcon, Box, Group, Text } from '@mantine/core'
 import { useUnits } from '@/hooks/useUnits'
-import { plannerRouteToMappable, type Route } from '@/lib/planner'
+import type { PlannerMappable, Route } from '@/lib/planner'
 import { ElevationChart } from '../route/ElevationChart'
 
 interface PlannerElevationStripProps {
   route: Route
-  /** Index in `route.points` of the point hovered (on the map or on the profile); -1 for none. */
+  /** The profile of `route` (lib/planner.ts plannerRouteToMappable); null when its elevations are unknown. */
+  mappable: PlannerMappable | null
+  /** Index in the profile of the entry hovered (on the map or on the profile); -1 for none. */
   hoveredIndex: number
   onHoverIndex: (index: number) => void
   /** Height of the chart body, in px. */
@@ -20,10 +22,13 @@ interface PlannerElevationStripProps {
 /**
  * The elevation profile of the route being drawn, under the map. It follows every edit (the
  * route's own points, elevations filled in along straight lines) and shares its hovered point with
- * the map: the chart reports an index of `route.points`, the map draws a marker there.
+ * the map: the chart reports an index of the profile, whose entries are the route's points and, under a
+ * straight line whose relief was read, the samples between them; the map draws a marker at its
+ * position.
  */
 export function PlannerElevationStrip({
   route,
+  mappable,
   hoveredIndex,
   onHoverIndex,
   height,
@@ -31,9 +36,8 @@ export function PlannerElevationStrip({
 }: PlannerElevationStripProps) {
   const { t } = useTranslation()
   const { elevation } = useUnits()
-  const mappable = useMemo(() => plannerRouteToMappable(route), [route])
-  // The edge arriving at point i+1 is straight when that point says so
-  const dashedSegment = useMemo(() => (i: number) => !!route.points[i + 1]?.direct, [route.points])
+  // The segment starting at entry i is dashed when it is (part of) a straight line
+  const dashedSegment = useMemo(() => (i: number) => !!mappable?.dashed[i], [mappable])
 
   const collapsed = !!collapsible?.collapsed
   return (

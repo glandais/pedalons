@@ -2967,6 +2967,43 @@ components:
       - ACCEPTED
       - REVOKED
       - EXPIRED
+    LineElevationRequest:
+      type: object
+      properties:
+        teamSlug:
+          type: string
+          description: "Slug of the team the route is being drawn for. When present,\
+            \ the team must have the route planner enabled and the caller must be\
+            \ allowed to create routes in it. When absent, the domain's GPX planner\
+            \ must be enabled."
+          maxLength: 250
+        lines:
+          type: array
+          items:
+            $ref: "#/components/schemas/StraightLine"
+          description: "Straight lines to read the relief of, 1 to 50, at most 100\
+            \ km each and 200 km together"
+          maxItems: 50
+          minItems: 1
+      required:
+      - lines
+    LineElevationResponse:
+      description: "The relief of straight lines, processed with the FAST elevations"
+      type: object
+      required:
+      - lines
+      - elevationFallback
+      properties:
+        lines:
+          type: array
+          items:
+            $ref: "#/components/schemas/GpxImportTrack"
+          description: "One track per requested line, in the same order, from its\
+            \ start to its end"
+        elevationFallback:
+          type: boolean
+          description: True when part of the elevations could not be read from the
+            elevation source
     ListViewMode:
       type: string
       enum:
@@ -5941,6 +5978,16 @@ components:
           description: New status
           type: string
           $ref: "#/components/schemas/Status"
+    StraightLine:
+      type: object
+      required:
+      - from
+      - to
+      properties:
+        from:
+          $ref: "#/components/schemas/GeoPoint"
+        to:
+          $ref: "#/components/schemas/GeoPoint"
     SurfaceType:
       type: string
       enum:
@@ -12093,6 +12140,60 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: Not Authorized
+      security:
+      - SecurityScheme:
+        - user
+  /api/router/elevation:
+    post:
+      summary: Read the relief of straight lines
+      description: "Processes each straight line with the FAST elevations, as a routed\
+        \ leg, and returns its densified track with the ascent accumulated up to each\
+        \ point. Nothing is stored and the routing provider is not called. Same rights\
+        \ as the route calculation: with teamSlug, the caller must be allowed to create\
+        \ routes in that team and the team must have the route planner enabled; without\
+        \ it, the domain's GPX planner must be enabled."
+      operationId: lineElevation
+      tags:
+      - Router
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LineElevationRequest"
+        required: true
+      responses:
+        "200":
+          description: "Relief of the lines, in the order of the request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LineElevationResponse"
+        "400":
+          description: "Invalid request (no line, more than 50, coordinates out of\
+            \ bounds), planner disabled (ROUTE_PLANNER_DISABLED), or a line over 100\
+            \ km or lines over 200 km together (ROUTING_SEGMENT_TOO_LONG)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: User may not create routes in the team
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Team not found in this domain
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
       security:
       - SecurityScheme:
         - user
@@ -19998,7 +20099,7 @@ paths:
                 $ref: "#/components/schemas/VersionDto"
 info:
   title: Pedalons API
-  version: 11.11.0
+  version: 11.12.0
   description: API for Pedalons Cycling Team Management Platform
 servers:
 - url: http://localhost:8080

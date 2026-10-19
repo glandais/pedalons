@@ -27,6 +27,8 @@ key it exports `E2E_NO_ROUTING=1`. Routing is billed per request: `gpx-planner.e
 `POST /api/router` itself (`stubRouter`, `support/routes.ts`) and counts the requests, except its
 first drawing test, which reaches the real router (one request per Playwright project) when a key is present and
 simulates it otherwise (`E2E_NO_ROUTING`).
+The relief of straight lines (`POST /api/router/elevation`, nothing billed) is answered by `stubElevation` and
+counted apart from the router's; one test reaches the real endpoint.
 
 From `frontend/`: `pnpm e2e` (same as `scripts/e2e.sh test`), `pnpm e2e:ui` (Playwright's UI mode),
 `pnpm e2e:typecheck`. After a failure: `pnpm exec playwright show-report e2e/.report`, or
@@ -58,7 +60,7 @@ queries that only fire when the data exists are audited too: when a screen start
 field, give the dataset that field.
 
 - **The audit is compiled in**: `.env.e2e` sets `FRONTEND_PREFETCH_AUDIT=true`, read at image build
-  time. `scripts/e2e.sh up` only builds a *missing* image, so a `tribly-e2e` frontend image built
+  time. `scripts/e2e.sh up` only builds a _missing_ image, so a `tribly-e2e` frontend image built
   before that line fails every rendering test with « no [prefetch-audit] verdict »: rebuild it
   (`scripts/e2e.sh build frontend`).
 - **One route**: `pnpm e2e routes-render -g '<routeId> /'` (every role, both projects).

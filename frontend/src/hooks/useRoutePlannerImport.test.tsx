@@ -6,8 +6,13 @@ import { encode1, encode2 } from '@/lib/polyline'
 import { useRoutePlanner, MAX_IMPORT_BYTES } from './useRoutePlanner'
 
 const routeMock = vi.hoisted(() => vi.fn())
+const lineElevationMock = vi.hoisted(() => vi.fn())
 const importMock = vi.hoisted(() => vi.fn())
-vi.mock('@/api/endpoints/router/router', () => ({ route: routeMock, importGpx: importMock }))
+vi.mock('@/api/endpoints/router/router', () => ({
+  route: routeMock,
+  importGpx: importMock,
+  lineElevation: lineElevationMock,
+}))
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k }) }))
 
 function track(lng: number, lat: number, n = 20) {
@@ -85,6 +90,46 @@ describe('useRoutePlanner importGpx', () => {
     // undo goes back to a copy of the import, which is still exactly the import: the file again
     act(() => result.current.undo())
     expect(result.current.snapshot().file).toBe(file)
+  })
+
+  it('keeps the file when the relief of the join between two tracks is read in the background', async () => {
+    vi.useFakeTimers()
+    try {
+      importMock.mockResolvedValue(response([track(5, 45), track(5.05, 45.01)]))
+      lineElevationMock.mockImplementation(
+        async (body: { lines: { from: typeof A; to: typeof A }[] }) => ({
+          lines: body.lines.map(({ from, to }) => ({
+            line: encode2([
+              [from.lng, from.lat],
+              [to.lng, to.lat],
+            ]),
+            ele: encode1([100, 120]),
+            climb: encode1([0, 20]),
+            dist: 5000,
+            ascend: 20,
+          })),
+          elevationFallback: false,
+        })
+      )
+      const file = fileOf()
+      const { result } = renderHook(() => useRoutePlanner())
+      await act(async () => {
+        await result.current.importGpx(file, 'replace')
+      })
+      const imported = result.current.route
+      expect(result.current.snapshot().file).toBe(file)
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(300)
+      })
+      // One edge to read: the join. The route was enriched, and is still the import.
+      expect(lineElevationMock).toHaveBeenCalledTimes(1)
+      expect(result.current.route).not.toBe(imported)
+      expect(result.current.route.points.some((p) => p.directProfile)).toBe(true)
+      expect(result.current.snapshot().file).toBe(file)
+      expect(result.current.canUndo).toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('undoing the import then redoing it gives the file back', async () => {

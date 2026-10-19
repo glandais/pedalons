@@ -9,6 +9,8 @@ import 'package:retrofit/retrofit.dart';
 import 'package:retrofit/error_logger.dart';
 
 import '../models/gpx_import_response.dart';
+import '../models/line_elevation_request.dart';
+import '../models/line_elevation_response.dart';
 import '../models/router_request.dart';
 import '../models/router_response.dart';
 
@@ -26,6 +28,16 @@ abstract class RouterClient {
   @POST('/api/router')
   Future<RouterResponse> route({
     @Body() required RouterRequest body,
+  });
+
+  /// Read the relief of straight lines.
+  ///
+  /// Processes each straight line with the FAST elevations, as a routed leg, and returns its densified track with the ascent accumulated up to each point. Nothing is stored and the routing provider is not called. Same rights as the route calculation: with teamSlug, the caller must be allowed to create routes in that team and the team must have the route planner enabled; without it, the domain's GPX planner must be enabled.
+  ///
+  /// [body] - Name not received - field will be skipped.
+  @POST('/api/router/elevation')
+  Future<LineElevationResponse> lineElevation({
+    @Body() required LineElevationRequest body,
   });
 
   /// Load a GPX file into the route editor.

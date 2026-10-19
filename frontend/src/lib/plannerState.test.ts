@@ -3,7 +3,11 @@ import { RouterProfile, PlannerJunctionKind, PlannerPieceMode } from '@/api/dto'
 
 // Router simulated: a bowed line of 8 intervals between the two points, 100 m of ground.
 const routeMock = vi.hoisted(() => vi.fn())
-vi.mock('@/api/endpoints/router/router', () => ({ route: routeMock }))
+const lineElevationMock = vi.hoisted(() => vi.fn())
+vi.mock('@/api/endpoints/router/router', () => ({
+  route: routeMock,
+  lineElevation: lineElevationMock,
+}))
 
 import {
   add,

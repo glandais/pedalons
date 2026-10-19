@@ -1,5 +1,11 @@
 import { ErrorCode } from '../src/api/dto'
-import type { ErrorResponse, GpxPreviewDto, RouterResponse } from '../src/api/dto'
+import type {
+  ErrorResponse,
+  GpxPreviewDto,
+  LineElevationResponse,
+  RouterResponse,
+} from '../src/api/dto'
+import { decode2 } from '../src/lib/polyline'
 import { expectOk } from './support/api'
 import { newTeam, newUser, setTeamAttributes, signIn } from './support/data'
 import {
@@ -20,8 +26,10 @@ import {
   routePath,
   routerAnswer,
   stubBasemap,
+  stubElevation,
   stubRouter,
   traceMapPixels,
+  watchElevation,
   watchRouter,
   windingTrack,
   type GpxPoint,
@@ -43,6 +51,10 @@ import { hydrated } from './support/ui'
  * POST /api/router itself (stubRouter, support/routes.ts) and counts the requests, which is also the
  * cost of each gesture — except the first drawing test, which reaches the real router (one request
  * per Playwright project, watchRouter) when scripts/e2e.sh found a key, and simulates it otherwise (E2E_NO_ROUTING).
+ *
+ * The relief of the straight lines is read in the background (POST /api/router/elevation, 300 ms
+ * after the last change, FAST, nothing billed): stubElevation answers it and counts the requests
+ * apart from the router's (`elevationRequests`), except in the one test that reaches the real endpoint.
  */
 
 const origin = originOf(PLANNER_PIN_HOST)
@@ -220,6 +232,7 @@ async function openPlanner(
   await signInPlanner(context)
   await stubBasemap(page)
   const routerRequests = await stubRouter(page)
+  const elevationRequests = await stubElevation(page)
   const main = page.getByRole('main')
 
   await page.goto(`${origin}/outils-gpx/nouveau`)
@@ -284,6 +297,7 @@ async function openPlanner(
     touch,
     nameField,
     routerRequests,
+    elevationRequests,
     at,
     onPage,
     marker,
@@ -621,7 +635,7 @@ test.describe('straight lines, visible (B6)', () => {
     isMobile,
   }) => {
     const planner = await openPlanner({ context, page, isMobile })
-    const { surface, clickMap, points, settled, routerRequests } = planner
+    const { surface, clickMap, points, settled, routerRequests, elevationRequests } = planner
     const toggle = directToggle(page, isMobile)
 
     await clickMap(-120, 0)
@@ -636,6 +650,10 @@ test.describe('straight lines, visible (B6)', () => {
     await expect(points(3)).toBeVisible()
     await settled()
     expect(routerRequests, 'straight-line mode never asks the router').toHaveLength(0)
+    // The relief of the two straight lines is read in the background, once for each, in one request
+    // or two depending on how long the gestures took (the wait restarts at each change)
+    await expect.poll(() => elevationRequests.flatMap((r) => r.lines).length).toBe(2)
+    expect(elevationRequests.length).toBeLessThanOrEqual(2)
 
     await toggle.click()
     await expect(toggle).toHaveAttribute('aria-pressed', 'false')
@@ -643,6 +661,14 @@ test.describe('straight lines, visible (B6)', () => {
     await expect(points(4)).toBeVisible()
     await settled()
     expect(routerRequests, 'back to routing').toHaveLength(1)
+    // Past the 300 ms wait of the background read, so that a request would have been sent. The stub
+    // router starts its leg exactly at the previous point; the real one snaps that point onto the
+    // road, which makes the straight line arriving there be read again (correct, and free).
+    await page.waitForTimeout(600)
+    expect(
+      elevationRequests.flatMap((r) => r.lines),
+      'a routed leg has its own climb: nothing more to read'
+    ).toHaveLength(2)
 
     if (isMobile) {
       await surface.getByRole('button', { name: 'Terminer' }).click()
@@ -723,21 +749,29 @@ test.describe('straight lines, visible (B6)', () => {
   }) => {
     test.skip(isMobile, 'the keyboard shortcuts of a mouse')
     const planner = await openPlanner({ context, page, isMobile })
-    const { clickMap, points, settled, routerRequests } = planner
+    const { clickMap, points, settled, routerRequests, elevationRequests } = planner
     await drawThreePoints(planner)
 
     await clickMap(-130, 90, ['Alt'])
     await expect(points(4)).toBeVisible()
     await settled()
     await expect(directWarning(page)).toBeVisible()
+    // The relief of the straight line arrives in the background: 100 m routed + 30 m measured
+    await expect(page.getByText('+130 m', { exact: true }).first()).toBeVisible()
+    expect(elevationRequests).toHaveLength(1)
 
     await page.keyboard.press('Control+z')
     await expect(points(3)).toBeVisible()
     await expect(directWarning(page)).toBeHidden()
+    await expect(page.getByText('+100 m', { exact: true }).first()).toBeVisible()
     await page.keyboard.press('Control+Shift+z')
     await expect(points(4)).toBeVisible()
     await expect(directWarning(page)).toBeVisible()
+    // The line is back with its relief, which the session kept: nothing asked again
+    await expect(page.getByText('+130 m', { exact: true }).first()).toBeVisible()
+    await page.waitForTimeout(600)
     expect(routerRequests).toHaveLength(0)
+    expect(elevationRequests).toHaveLength(1)
   })
 })
 
@@ -1030,6 +1064,7 @@ test('opening a long preview for editing frames the whole track, on any screen',
   await signInPlanner(context)
   await stubBasemap(page)
   const routerRequests = await stubRouter(page)
+  await stubElevation(page)
 
   // 80 km of winding road: wider than any phone screen at the zoom the old heuristic picked.
   const name = unique('Long tracé')
@@ -1098,6 +1133,7 @@ async function openLTrack({
   await signInPlanner(context)
   await stubBasemap(page)
   const routerRequests = await stubRouter(page)
+  await stubElevation(page)
 
   const [lat0, lon0] = [48.4469, 1.4875]
   const perLat = 111_320
@@ -1467,13 +1503,13 @@ test.describe('elevation profile while editing (B1)', () => {
     expect(routerRequests).toHaveLength(3)
   })
 
-  test('a straight line after a routed leg leaves the D+ as it was and costs no request', async ({
+  test('a straight line after a routed leg takes its climb from the elevation service: +30 m, no routing request', async ({
     context,
     page,
     isMobile,
   }) => {
     const planner = await openPlanner({ context, page, isMobile })
-    const { clickMap, points, settled, routerRequests } = planner
+    const { clickMap, points, settled, routerRequests, elevationRequests } = planner
     await drawThreePoints(planner)
     await expect(ascendOf(page, '+100 m')).toBeVisible()
 
@@ -1483,9 +1519,118 @@ test.describe('elevation profile while editing (B1)', () => {
     await clickMap(130, 60)
     await expect(points(4)).toBeVisible()
     await settled()
-    // The straight line ends past the last elevation known: nothing climbed
-    await expect(ascendOf(page, '+100 m')).toBeVisible()
+    // The service measured the line (stub: 100 m -> 130 m -> 110 m, 30 m climbed)
+    await expect(ascendOf(page, '+130 m')).toBeVisible()
+    expect(routerRequests, 'the billed router is not involved').toHaveLength(0)
+    expect(elevationRequests, 'one grouped request for the one straight line').toHaveLength(1)
+    expect(elevationRequests[0].lines).toHaveLength(1)
+  })
+
+  test('a route of straight lines only has no altitude until the service answered, then a profile', async ({
+    context,
+    page,
+    isMobile,
+  }) => {
+    const planner = await openPlanner({ context, page, isMobile })
+    const { clickMap, points, settled, routerRequests } = planner
+    // The answer is held back so the state before it can be seen
+    let release: () => void = () => {}
+    const gate = new Promise<void>((resolve) => (release = resolve))
+    await page.route('**/api/router/elevation', async (route) => {
+      if (route.request().method() !== 'POST') return route.fallback()
+      await gate
+      await route.fallback()
+    })
+    const toggle = directToggle(page, isMobile)
+    await toggle.click()
+    await clickMap(-120, 0)
+    await expect(points(1)).toBeVisible()
+    await clickMap(0, 40)
+    await expect(points(2)).toBeVisible()
+    await clickMap(100, 0)
+    await expect(points(3)).toBeVisible()
+    await settled()
+    await expect(strip(page).getByText('Altitude inconnue')).toBeVisible()
+
+    release()
+    await expect(strip(page).getByText('Altitude inconnue')).toHaveCount(0)
+    await expect(ascendOf(page, '+60 m')).toBeVisible()
     expect(routerRequests).toHaveLength(0)
+  })
+
+  test('a failing elevation service (503, then 404) leaves the net climb and says nothing', async ({
+    context,
+    page,
+    isMobile,
+  }) => {
+    const planner = await openPlanner({ context, page, isMobile })
+    const { surface, clickMap, points, settled } = planner
+    await drawThreePoints(planner)
+    await expect(ascendOf(page, '+100 m')).toBeVisible()
+
+    let status = 503
+    const asked: number[] = []
+    await page.route('**/api/router/elevation', async (route) => {
+      if (route.request().method() !== 'POST') return route.fallback()
+      asked.push(status)
+      const body: ErrorResponse = { code: ErrorCode.ROUTING_UNAVAILABLE }
+      await route.fulfill({ status, json: status === 404 ? {} : body })
+    })
+    const toggle = directToggle(page, isMobile)
+    await toggle.click()
+    await clickMap(130, 60)
+    await expect(points(4)).toBeVisible()
+    await settled()
+    await expect.poll(() => asked.length).toBe(1)
+    // Past the last known elevation the net climb is nothing: the D+ is what it was
+    await expect(ascendOf(page, '+100 m')).toBeVisible()
+    await expect(surface.getByText(/échoué|indisponible/)).toHaveCount(0)
+
+    // An old backend does not know the endpoint: asked once more, then never again
+    status = 404
+    await clickMap(-100, 90)
+    await expect(points(5)).toBeVisible()
+    await settled()
+    await expect.poll(() => asked.length).toBe(2)
+    await clickMap(-60, -90)
+    await expect(points(6)).toBeVisible()
+    await settled()
+    await page.waitForTimeout(800)
+    expect(asked, 'switched off for the session').toHaveLength(2)
+    await expect(ascendOf(page, '+100 m')).toBeVisible()
+    await expect(surface.getByText(/échoué|indisponible/)).toHaveCount(0)
+  })
+
+  test('the real elevation endpoint reads the relief of a straight line: 200 and a densified line', async ({
+    context,
+    page,
+    isMobile,
+  }) => {
+    const planner = await openPlanner({ context, page, isMobile })
+    // Through to the backend this time (FAST elevations from the terrain model, nothing billed)
+    await page.unroute('**/api/router/elevation')
+    const elevationRequests = await watchElevation(page)
+    const { clickMap, points, settled } = planner
+    const toggle = directToggle(page, isMobile)
+    await toggle.click()
+    await clickMap(-120, 0)
+    await expect(points(1)).toBeVisible()
+    const answered = page.waitForResponse(
+      (r) => r.url().endsWith('/api/router/elevation') && r.request().method() === 'POST'
+    )
+    // A few kilometres at the planner's zoom
+    await clickMap(100, 0)
+    await expect(points(2)).toBeVisible()
+    await settled()
+    const response = await answered
+    expect(response.status()).toBe(200)
+    expect(elevationRequests).toHaveLength(1)
+    const body = (await response.json()) as LineElevationResponse
+    expect(body.lines).toHaveLength(1)
+    expect(decode2(body.lines[0].line).length, 'densified by the elevation chain').toBeGreaterThan(
+      2
+    )
+    expect(body.lines[0].dist).toBeGreaterThan(1_000)
   })
 
   test('undoing a point brings the previous D+ back, with no request', async ({
@@ -2165,7 +2310,7 @@ test.describe('planner state saved and read back (C4a)', () => {
     isMobile,
   }) => {
     const planner = await openPlanner({ context, page, isMobile })
-    const { main, surface, clickMap, points, settled, routerRequests } = planner
+    const { main, surface, clickMap, points, settled, routerRequests, elevationRequests } = planner
     await drawThreePoints(planner)
     const toggle = directToggle(page, isMobile)
     await toggle.click()
@@ -2194,6 +2339,7 @@ test.describe('planner state saved and read back (C4a)', () => {
     const preview = (await response.json()) as GpxPreviewDto
 
     routerRequests.length = 0
+    elevationRequests.length = 0
     const reads = watchStateReads(page)
     await page.goto(`${origin}/outils-gpx/${preview.id}/modifier`)
     await expect(directWarning(page)).toBeVisible()
@@ -2203,6 +2349,9 @@ test.describe('planner state saved and read back (C4a)', () => {
       await expect(editor.getByRole('button', { name: markerName(n) })).toBeVisible()
     }
     expect(routerRequests, 'reading the state asks nothing of the router').toHaveLength(0)
+    // The relief of the straight leg is not stored: it is read again, for free
+    await expect.poll(() => elevationRequests.length).toBe(1)
+    expect(elevationRequests[0].lines).toHaveLength(1)
     expect(reads, 'one read of the saved state').toHaveLength(1)
   })
 
@@ -2268,6 +2417,7 @@ test.describe('planner state saved and read back (C4a)', () => {
     await signIn(context, owner)
     await stubBasemap(page)
     const routerRequests = await stubRouter(page)
+    await stubElevation(page)
     const settled = (surface: ReturnType<typeof editorOf>) =>
       expect(surface.getByRole('status', { name: "Calcul de l'itinéraire..." })).toHaveCount(0)
 
@@ -2311,6 +2461,7 @@ test.describe('planner state saved and read back (C4a)', () => {
     await signIn(context, owner)
     await stubBasemap(page)
     const routerRequests = await stubRouter(page)
+    await stubElevation(page)
 
     await page.goto(`${routePath(team.slug, route.slug)}/modifier`)
     let surface = await openEditor(page, isMobile, name)
@@ -2506,20 +2657,36 @@ test.describe('importing a GPX file in the planner (C4b)', () => {
     await expect(points(3)).toBeVisible()
   })
 
-  test('a file of two tracks keeps both, joined by a straight line that asks nothing of the router', async ({
+  test('a file of two tracks keeps both, joined by a straight line that asks nothing of the router, and is still saved as the file', async ({
     context,
     page,
     isMobile,
   }) => {
     const planner = await openPlanner({ context, page, isMobile }, { enter: false })
-    const { routerRequests } = planner
+    const { main, nameField, routerRequests, elevationRequests } = planner
     await importInput(page).setInputFiles(twoTracks(unique('Deux pistes'), 4000))
+    await expect(nameField).not.toHaveValue('')
     await planner.enterEditor()
     // The two ends of each track
     await expect(planner.points(4)).toBeVisible()
     // 4 km between the tracks: the straight leg is long enough for the warning
     await expect(directWarning(page)).toBeVisible()
     expect(routerRequests).toHaveLength(0)
+    // The relief of the join is read in the background, once
+    await expect.poll(() => elevationRequests.length).toBe(1)
+    expect(elevationRequests[0].lines).toHaveLength(1)
+    await page.waitForTimeout(500)
+    expect(elevationRequests).toHaveLength(1)
+
+    // Enriched with that relief, the route is still exactly the import: the file itself is saved
+    await backToForm(planner.surface, isMobile)
+    const upload = page.waitForRequest(
+      (r) => r.method() === 'POST' && r.url().endsWith('/api/gpx-previews')
+    )
+    await main.getByRole('button', { name: 'Enregistrer' }).click()
+    const request = await upload
+    expect(request.headers()['content-type']).toContain('multipart/form-data')
+    expect(request.postDataBuffer()?.toString('latin1')).toContain('name="gpxFile"')
   })
 
   test('a team route is replaced by a file and saved as an upload of it', async ({
@@ -2533,6 +2700,7 @@ test.describe('importing a GPX file in the planner (C4b)', () => {
     await signIn(context, owner)
     await stubBasemap(page)
     const routerRequests = await stubRouter(page)
+    await stubElevation(page)
 
     await page.goto(`${routePath(team.slug, route.slug)}/modifier`)
     await hydrated(importInput(page))
