@@ -2,7 +2,7 @@
 
 Écrit le 17 octobre 2026, mis à jour le 19 octobre 2026. **État : lots 1 et 2 livrés le
 17 octobre 2026 (§5 et §6, A10 compris) ; dans le lot 3, B11, B12, B6, B1 (profil d'édition : B1a le 18, B1b le 19 octobre), B7 et B9 sont livrés ;
-le lot 4 est entamé par C2 et C4 (C4a et C4b, livrés le 19 octobre) ; restent le reste du lot 3 (B2, mis de côté) et le lot 4 (C1, C3, C5, C7 ; C6 non attribué).**
+le lot 4 est entamé par C2 et C4 (C4a et C4b, livrés le 19 octobre) ; restent le reste du lot 3 (B2, mis de côté) et le lot 4 (C1 conçu le 19 octobre — C1a prêt, C1b en attente des conditions Stadia —, C3, C5, C7 ; C6 non attribué).**
 Ledger `WEB-100` (une seule
 entrée, qui pointe ici) : le suivi fin se fait **dans ce plan**, cases à cocher comprises, pas dans
 le ledger. Une tâche n'en sort vers `LEDGER_NEXT.md` que si elle quitte le périmètre du plan
@@ -1067,12 +1067,40 @@ questions ouvertes viennent du §10 de
         coupé au milieu d'une paire de substituts ; `teamSlug` du multipart borné à 250.
         *É4* : le plafond de 100 000 points est contrôlé après le pipeline (risque accepté : coût
         borné par 4 000 km et 10 Mo, limite de débit au proxy, `SEC-28`).
-- [ ] **C1. Surface par point** (L, §8 n° 13) — **à concevoir avant de commencer.**
-      `ElevationChart` colore déjà par segment, un second mode suffit ; sur la carte, même mécanique
-      de couches que B6. Côté API, `trace_attributes` est facturé à part chez Stadia : l'appeler
-      **une fois à l'enregistrement**, pas à chaque geste. Questions ouvertes (état de l'art §10, n°
-      1) : les noms exacts des clés `edge.*` de `trace_attributes` dans la version déployée, leur
-      coût par point en JSONB, et si la réponse `route` peut les porter sans second appel.
+- [ ] **C1. Surface par point** (L, §8 n° 13) — **conçu le 19 octobre 2026** (essais réels :
+      [`../research/2026-10-19-stadia-surfaces.md`](../research/2026-10-19-stadia-surfaces.md) ;
+      décisions au §10, « C1 »). Découpé en trois :
+      - [ ] **C1a — « non revêtu » en direct dans l'éditeur, 0 crédit** (contrat mineur, sans
+            migration). Chaque manœuvre de `/route/v1` porte `rough` (compacté et pire) avec ses
+            indices de shape : il ne rate jamais un passage non revêtu et en signale un peu trop
+            (0 à 4,5 % de la distance sur 5 parcours). `ValhallaResponse` lit `maneuvers[]` ;
+            `RouterService` reporte les plages sur les points de sortie du pipeline par la distance
+            cumulée ; `RouterResponse.unpaved` facultatif. `PlannerPiece.unpaved` facultatif pour les
+            morceaux ROUTED (état en version 1, `ignoreUnknown` déjà déployé). Client :
+            `RoutePoint.unpaved` porté par le point d'arrivée comme `direct` ; importé = inconnu,
+            ligne droite = hors réseau ; mode « Pente / Revêtement » du profil (`ElevationChart`
+            `colorBy`), couleur sur la carte par expression `match` (le pointillé reste à B6).
+      - [ ] **C1b — surface détaillée après l'enregistrement** (contrat mineur, migration
+            `V76__track_surfaces.sql` additive). **En attente** de la vérification des conditions
+            Stadia (§10, « C1 »). `trace_attributes/v1` en `map_snap` sur le tracé stocké
+            (`edge_walk` échoue sur un tracé simplifié, code 443), 190 km et 16 000 points au plus
+            par tranche, 500 m de recouvrement ; costing `bicycle` **sans** `avoid_bad_surfaces`
+            (qui rend les passages non revêtus `unmatched`), `pedestrian` pour RUN_HIKE, `auto` pour
+            MOTORCYCLE ; projection en plages par distance (interpolation entre changements
+            d'arête, intervalle coupé à mi-chemin quand la distance recalée dépasse 1,2 × + 30 m, ce
+            qui neutralise les détours que `map_snap` insère aux demi-tours) ; morceaux DIRECT de
+            l'état forcés à « hors réseau ». Plages `[de, à, code]` dans `gpx_tracks.surfaces` et
+            `gpx_previews.surfaces` (JSONB à part : `PreviewTrack` n'a pas `ignoreUnknown`),
+            document en `@JsonIgnoreProperties(ignoreUnknown = true)` avec `osmChangeset` et la
+            longueur de calcul (rescale au rattrapage HD) ; file `surface_refresh` calquée sur
+            `elevation_refresh` (délai de calme, jeton de révision, reprises, 400 définitif →
+            « indisponible ») ; `TrackDto.surfaces` et `ways` facultatifs, rien dans les listes ;
+            fiche et aperçu : mode « Revêtement », carte, barre de répartition, attribution OSM.
+            Coût : 20 crédits par tranche de 190 km, une par enregistrement dans le délai de calme.
+            Exports GPX et FIT inchangés (pas de champ standard).
+      - [ ] **C1c — après C1b** : rattrapage des anciens parcours (biketeam compris), plafonné et
+            déclenché par l'exploitation ; suggestion de `surfaceType` dans le formulaire d'après
+            les parts (seuils à valider), jamais automatique ; affichage mobile (tâche MOB à part).
 - [ ] **C3. Points de parcours d'auteur** (L, §8 n° 15) — **à concevoir avant de commencer.** Appui
       long ou clic droit sur le tracé, « Ajouter un point de parcours » (dans le menu de B12) ;
       `WaypointMarker` existe déjà. Questions ouvertes (état de l'art §10, n° 2 et 3) : les types
@@ -1205,6 +1233,16 @@ questions ouvertes viennent du §10 de
 - Défauts retenus : 50 lignes / 100 km par ligne / 200 km par requête / rien sous 10 m côté client,
   `ROUTING_SEGMENT_TOO_LONG` au-delà ; réponse en `GpxImportTrack` ; profil non stocké (état en
   version 1) ; pas d'indicateur de chargement ; tunnels aplanis acceptés ; contrat `11.12.0`.
+- **C1 (19 octobre 2026).** Deux niveaux : « non revêtu » gratuit dans l'éditeur d'après `rough` de
+  `/route` (C1a), surface détaillée calculée après l'enregistrement par `trace_attributes` en
+  `map_snap` (C1b) ; calcul en arrière-plan sur le modèle du rattrapage HD (V74) ; les aperçus des
+  outils GPX enrichis aussi ; cinq classes plus « inconnu » (asphalte gris, revêtement dégradé
+  jaune, compacté et gravier orange, terre vert, sentier violet, inconnu gris clair), déclarées
+  dans `contracts/brand-colors.yaml` ; le type de voie (`use`, `cycle_lane`) stocké sans être
+  affiché ; C1c = rattrapage des anciens parcours (plafonné, déclenché par l'exploitation),
+  suggestion de `surfaceType` dans le formulaire (jamais automatique), affichage mobile (tâche MOB
+  à part). **C1b attend une vérification** : plan Stadia payant et compatibilité du stockage des
+  plages dérivées avec les conditions d'utilisation (« cache »). C1a peut partir sans.
 
 ### Propositions de ce plan à valider
 
