@@ -7,10 +7,8 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
-import java.time.DateTimeException;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
@@ -193,7 +191,8 @@ public class OpenMeteoGateway {
 
   private static OpenMeteoForecast parseLocation(JsonNode node) {
     String timezone = node.hasNonNull("timezone") ? node.get("timezone").asText() : null;
-    ZoneId zone = zone(timezone, node.path("utc_offset_seconds").asInt(0));
+    // Open-Meteo shifts the whole answer by today's offset, DST changes in the window included.
+    ZoneOffset offset = ZoneOffset.ofTotalSeconds(node.path("utc_offset_seconds").asInt(0));
 
     JsonNode hourly = node.path("hourly");
     JsonNode times = hourly.path("time");
@@ -236,9 +235,10 @@ public class OpenMeteoGateway {
       if (!dates.get(i).isNumber()) {
         continue;
       }
-      // With timeformat=unixtime a date is its local midnight: read back in the location's zone,
-      // not with the fixed offset of today, which a DST change in the window would shift a day.
-      LocalDate date = LocalDate.ofInstant(Instant.ofEpochSecond(dates.get(i).asLong()), zone);
+      // With timeformat=unixtime a date is its midnight at the answer's single offset, not in the
+      // location's zone: past a DST change the zone would put it at 23:00 the day before, and two
+      // days on one date make the daily upsert fail (21000) and the whole batch with it.
+      LocalDate date = LocalDate.ofInstant(Instant.ofEpochSecond(dates.get(i).asLong()), offset);
       days.add(
           new OpenMeteoForecast.Day(date, epoch(daily, "sunrise", i), epoch(daily, "sunset", i)));
     }
@@ -250,17 +250,6 @@ public class OpenMeteoGateway {
         timezone,
         hours,
         days);
-  }
-
-  private static ZoneId zone(@Nullable String timezone, int offsetSeconds) {
-    if (timezone != null) {
-      try {
-        return ZoneId.of(timezone);
-      } catch (DateTimeException e) {
-        // Fall through to the offset.
-      }
-    }
-    return ZoneOffset.ofTotalSeconds(offsetSeconds);
   }
 
   private static @Nullable Double number(JsonNode block, String field, int i) {

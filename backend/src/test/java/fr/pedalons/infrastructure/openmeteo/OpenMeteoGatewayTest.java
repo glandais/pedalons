@@ -18,10 +18,13 @@ class OpenMeteoGatewayTest {
 
   private OpenMeteoGateway gateway;
 
-  /** One location in Paris, over a DST change: 25 and 26 October 2026 local midnights. */
+  /**
+   * One location in Paris, over a DST change, as Open-Meteo really answers on 19 October 2026: one
+   * offset (+02:00) for the whole window, 26 October included although Paris is then at +01:00.
+   */
   private static final String ONE =
       """
-      {"latitude":48.85,"longitude":2.35,"elevation":42.0,"utc_offset_seconds":3600,
+      {"latitude":48.85,"longitude":2.35,"elevation":42.0,"utc_offset_seconds":7200,
        "timezone":"Europe/Paris",
        "hourly":{"time":[1792908000,1792911600,1792915200],
                  "temperature_2m":[12.3,12.1,null],
@@ -32,7 +35,7 @@ class OpenMeteoGatewayTest {
                  "wind_speed_10m":[14.2,15.0,13.0],
                  "wind_direction_10m":[250,260,270],
                  "wind_gusts_10m":[30.1,null,25.0]},
-       "daily":{"time":[1792879200,1792969200],
+       "daily":{"time":[1792879200,1792965600],
                 "sunrise":[1792908720,1792995180],
                 "sunset":[1792946640,1793032920]}}
       """;
@@ -59,11 +62,11 @@ class OpenMeteoGatewayTest {
   }
 
   @Test
-  void parse_dailyDates_shouldBeLocalToTheZoneAcrossADstChange() {
+  void parse_dailyDates_shouldReadTheAnswersOffsetAcrossADstChange() {
     OpenMeteoForecast paris = gateway.parse(ONE, 1).getFirst();
 
-    // 1792879200 = 2026-10-25T00:00+02:00, 1792969200 = 2026-10-26T00:00+01:00. Read with a single
-    // fixed offset (+01:00 here), the first would land on the 24th at 23:00.
+    // 1792879200 = 2026-10-25T00:00+02:00, 1792965600 = 2026-10-26T00:00+02:00. Read in
+    // Europe/Paris, the second is 2026-10-25T23:00+01:00: two days on the 25th.
     assertEquals(LocalDate.of(2026, 10, 25), paris.days().getFirst().date());
     assertEquals(LocalDate.of(2026, 10, 26), paris.days().get(1).date());
   }

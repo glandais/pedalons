@@ -3794,6 +3794,22 @@ plus la colonne. Le départ d'un groupe n'existe plus que dans `ride_groups.star
   **À ne pas défaire** : le jour ou la nuit d'un instant se juge à cet instant, jamais à l'heure
   du modèle qui le renseigne ; les clients n'en recalculent rien.
 
+### `API-132` Dates journalières d'Open-Meteo lues au décalage de la réponse (contrat inchangé)
+
+- `API-132` **Le changement d'heure du 25 octobre bloquait toute la météo en prod** (2026-10-19,
+  contrat inchangé) — depuis le 18 octobre à 23:07 UTC, `WeatherFetchWorker` logguait `Weather:
+  storing N cell(s) failed` (`ON CONFLICT DO UPDATE command cannot affect row a second time`,
+  SQLState 21000). Open-Meteo, en `timeformat=unixtime`, décale toute la fenêtre par le seul
+  `utc_offset_seconds` du jour (vérifié sur l'API le 19 octobre : le 26 arrive à
+  `2026-10-25T22:00Z`, minuit à +02:00 alors que Paris est à +01:00) ; `OpenMeteoGateway` relisait
+  les dates dans `Europe/Paris`, posait deux jours sur le 25, et l'upsert de `weather_daily` faisait
+  échouer le lot entier, prévisions horaires comprises. Les dates se lisent désormais au
+  `ZoneOffset` de la réponse ; heures et lever/coucher, vrais instants UTC, n'étaient pas touchés.
+  Test : `OpenMeteoGatewayTest.parse_dailyDates_shouldReadTheAnswersOffsetAcrossADstChange`, dont
+  la fixture inventait des minuits locaux exacts et reprend la vraie forme de la réponse.
+  **À ne pas défaire** : une date journalière d'Open-Meteo se lit au décalage unique de la réponse,
+  jamais dans le fuseau du lieu.
+
 ### `API-120` Envoi automatique des parcours de mes sorties vers mes services GPS (16 octobre 2026, contrat `11.5.0`)
 
 - `API-120` **Un membre inscrit n'envoie plus lui-même le parcours de son groupe vers Hammerhead,
