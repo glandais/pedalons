@@ -405,7 +405,8 @@ export async function insert(
   profile: RouterProfile,
   direct = false,
   signal?: AbortSignal,
-  teamSlug?: string
+  teamSlug?: string,
+  keepId?: string
 ): Promise<Route> {
   signal?.throwIfAborted()
   // Bounds are found by id: `idx` is renumbered by every computation, and the bounds may have been
@@ -433,6 +434,10 @@ export async function insert(
         ? segmentToEnd[0]
         : null
   const manualPoint = createPoint(snappedP?.lng ?? p.lng, snappedP?.lat ?? p.lat)
+  // A move keeps the id of the point it replaces (a real insertion never passes one): the marker is
+  // not remounted, so it keeps the focus and its place in the tab order. The old point lies
+  // strictly between the bounds, hence is dropped below: no two points share the id.
+  if (keepId) manualPoint.id = keepId
   manualPoint.manual = true
   manualPoint.direct = startPoint ? direct : false
   // The inserted point sits on the road: it takes its elevation, and closes the leg that reached it

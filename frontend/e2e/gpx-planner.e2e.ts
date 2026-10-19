@@ -187,6 +187,12 @@ async function startDrawing(page: Page, isMobile: boolean) {
 }
 
 /**
+ * Accessible name of the n-th control point: « Point 2 sur 3 », the start and the finish told in
+ * words (« Départ, point 1 sur 3 », « Arrivée, point 3 sur 3 »).
+ */
+const markerName = (n: number) => new RegExp(`^(?:(?:Départ|Arrivée), p|P)oint ${n} sur \\d+$`)
+
+/**
  * The planner, opened straight on its page with the basemap and the router simulated. Gestures are
  * driven on the map's canvas; the markers are found by their accessible name (« Point 2 »), the
  * routed segments counted on `routerRequests`. On a finger the map lives in the fullscreen editor,
@@ -230,7 +236,7 @@ async function openPlanner(
     const { x, y } = at(dx, dy)
     return { x: measured!.x + x, y: measured!.y + y }
   }
-  const marker = (n: number) => surface.getByRole('button', { name: `Point ${n}`, exact: true })
+  const marker = (n: number) => surface.getByRole('button', { name: markerName(n) })
   const points = (n: number) =>
     surface.getByText(n === 1 ? '1 point' : `${n} points`, { exact: true })
   /** The calculation overlay is gone: the gesture's routing is over and the map answers again. */
@@ -249,12 +255,18 @@ async function openPlanner(
     measured = await box()
   }
 
+  // A finger press, a drag, a lift: raw touch events (Playwright can only tap).
+  const cdp = await context.newCDPSession(page)
+  const touch = (type: 'touchStart' | 'touchMove' | 'touchEnd', at?: { x: number; y: number }) =>
+    cdp.send('Input.dispatchTouchEvent', { type, touchPoints: at ? [at] : [] })
+
   return {
     main,
     surface,
     page,
     isMobile,
     canvas,
+    touch,
     nameField,
     routerRequests,
     at,
@@ -372,7 +384,7 @@ test.describe('the planner gestures, with a simulated router', () => {
     isMobile,
   }) => {
     const planner = await openPlanner({ context, page, isMobile })
-    const { page: p, surface, marker, points, settled, routerRequests } = planner
+    const { page: p, marker, points, settled, routerRequests } = planner
     await drawThreePoints(planner)
 
     // Grab the trace halfway between the first two points, read where they are drawn now: the map
@@ -395,7 +407,7 @@ test.describe('the planner gestures, with a simulated router', () => {
 
     await settled()
     await expect(points(4)).toBeVisible()
-    await expect(surface.getByRole('button', { name: 'Point 4', exact: true })).toBeVisible()
+    await expect(marker(4)).toBeVisible()
     // The two halves of the cut segment: before the new point and after it. The click the mouse-up
     // ends with must not have added a point of its own (the operation lock drops it).
     expect(routerRequests).toHaveLength(2)
@@ -456,7 +468,7 @@ test.describe('the planner gestures, with a simulated router', () => {
   }) => {
     test.skip(!isMobile, 'a tap is a touch gesture: covered by the mobile project')
     const planner = await openPlanner({ context, page, isMobile })
-    const { surface, marker, points, settled, routerRequests } = planner
+    const { marker, points, settled, routerRequests } = planner
     await drawThreePoints(planner)
 
     const centre = async (n: number) => {
@@ -489,7 +501,7 @@ test.describe('the planner gestures, with a simulated router', () => {
 
     await settled()
     await expect(points(4)).toBeVisible()
-    await expect(surface.getByRole('button', { name: 'Point 4', exact: true })).toBeVisible()
+    await expect(marker(4)).toBeVisible()
     expect(routerRequests, 'the cut segment, before and after the new point').toHaveLength(2)
   })
 
@@ -736,8 +748,8 @@ test.describe('the fullscreen editor, over the form', () => {
     const dialog = page.getByRole('dialog', { name: 'Tracé', exact: true })
     await expect(dialog).toBeVisible()
     // The same map moved, not rebuilt: its points are all there, and nothing was asked of the router.
-    await expect(dialog.getByRole('button', { name: 'Point 1', exact: true })).toBeVisible()
-    await expect(dialog.getByRole('button', { name: 'Point 2', exact: true })).toBeVisible()
+    await expect(dialog.getByRole('button', { name: markerName(1) })).toBeVisible()
+    await expect(dialog.getByRole('button', { name: markerName(2) })).toBeVisible()
     await expect(dialog.getByText('2 points', { exact: true })).toBeVisible()
     expect(routerRequests).toHaveLength(1)
 
@@ -1030,9 +1042,9 @@ test('opening a long preview for editing frames the whole track, on any screen',
   const surface = editorOf(page, isMobile, name)
   const canvas = surface.locator('canvas.maplibregl-canvas').first()
   await expect(canvas).toBeVisible()
-  const first = surface.getByRole('button', { name: 'Point 1', exact: true })
+  const first = surface.getByRole('button', { name: markerName(1) })
   await expect(first).toBeVisible()
-  const last = surface.getByRole('button', { name: /^Point \d+$/ }).last()
+  const last = surface.getByRole('button', { name: /point \d+ sur \d+$/i }).last()
 
   const frame = await canvas.boundingBox()
   if (!frame) throw new Error('the planner map has no box')
@@ -1105,7 +1117,7 @@ async function openLTrack({
     await edit.click()
   }
   const surface = editorOf(page, isMobile, name)
-  const marker = (n: number) => surface.getByRole('button', { name: `Point ${n}`, exact: true })
+  const marker = (n: number) => surface.getByRole('button', { name: markerName(n) })
   await expect(marker(2)).toBeVisible()
   await expect(marker(3)).toHaveCount(0)
   // On a mouse the map sits in the form, below the fold of a 1280x720 window: raw mouse and touch
@@ -1141,6 +1153,8 @@ async function openLTrack({
     isMobile,
     preview,
     surface,
+    canvas,
+    cdp,
     marker,
     centre,
     corner,
@@ -1564,3 +1578,428 @@ test.describe('elevation profile while editing (B1)', () => {
     await expect(ascendOf(page, '+50 m')).toBeVisible()
   })
 })
+
+type Planner = Awaited<ReturnType<typeof openPlanner>>
+
+/** Centre of the n-th marker, in page coordinates. */
+async function centreOf(planner: Planner, n: number) {
+  const b = await planner.marker(n).boundingBox()
+  if (!b) throw new Error(`marker ${n} has no box`)
+  return { x: b.x + b.width / 2, y: b.y + b.height / 2 }
+}
+
+/** The same, from the top-left corner of the map: immune to the page scrolling between two reads. */
+async function inMap(planner: Planner, n: number) {
+  const [c, frame] = [await centreOf(planner, n), await planner.canvas.boundingBox()]
+  if (!frame) throw new Error('the planner map has no box')
+  return { x: c.x - frame.x, y: c.y - frame.y }
+}
+
+test.describe('keyboard and accessibility of the points (B7)', () => {
+  test.setTimeout(90_000)
+
+  test('the points are named “Point n sur m”, start and finish in words and in shape', async ({
+    context,
+    page,
+    isMobile,
+  }) => {
+    test.skip(isMobile, 'a keyboard matter')
+    const planner = await openPlanner({ context, page, isMobile })
+    const { surface, clickMap, points } = planner
+
+    await clickMap(-120, 0)
+    await expect(points(1)).toBeVisible()
+    await expect(
+      surface.getByRole('button', { name: 'Départ, point 1 sur 1', exact: true })
+    ).toBeVisible()
+
+    await clickMap(0, 40)
+    await planner.settled()
+    await clickMap(100, 0)
+    await expect(points(3)).toBeVisible()
+    await planner.settled()
+    await expect(
+      surface.getByRole('button', { name: 'Départ, point 1 sur 3', exact: true })
+    ).toBeVisible()
+    await expect(surface.getByRole('button', { name: 'Point 2 sur 3', exact: true })).toBeVisible()
+    await expect(
+      surface.getByRole('button', { name: 'Arrivée, point 3 sur 3', exact: true })
+    ).toBeVisible()
+    // The start and the finish carry an icon, a via point is a plain disc
+    await expect(planner.marker(1).locator('svg')).toHaveCount(1)
+    await expect(planner.marker(2).locator('svg')).toHaveCount(0)
+    await expect(planner.marker(3).locator('svg')).toHaveCount(1)
+  })
+
+  test('arrows move the focused point and route once, on release: two requests, one undo', async ({
+    context,
+    page,
+    isMobile,
+  }) => {
+    test.skip(isMobile, 'a keyboard matter')
+    const planner = await openPlanner({ context, page, isMobile })
+    const { page: p, marker, canvas, settled, routerRequests } = planner
+    await drawThreePoints(planner)
+    await canvas.evaluate((el) => el.scrollIntoView({ block: 'center', inline: 'center' }))
+
+    const [first0, second0] = [await inMap(planner, 1), await inMap(planner, 2)]
+    await marker(2).focus()
+    for (let i = 0; i < 5; i++) await p.keyboard.press('ArrowRight')
+    // Nothing is routed while the arrows come; one burst, two requests (both neighbours)
+    await expect.poll(() => routerRequests.length).toBe(2)
+    await settled()
+    // The stub puts the routed point exactly where it was asked to
+    const second1 = await inMap(planner, 2)
+    expect(Math.abs(second1.x - second0.x - 50)).toBeLessThan(3)
+    expect(Math.abs(second1.y - second0.y)).toBeLessThan(3)
+    // The arrows did not pan the map: MapLibre never saw them
+    const first1 = await inMap(planner, 1)
+    expect(Math.abs(first1.x - first0.x)).toBeLessThan(2)
+    expect(Math.abs(first1.y - first0.y)).toBeLessThan(2)
+    await expect(marker(2)).toBeFocused()
+
+    // Shift: five times further
+    await p.keyboard.down('Shift')
+    await p.keyboard.press('ArrowDown')
+    await p.keyboard.press('ArrowDown')
+    await p.keyboard.up('Shift')
+    await expect.poll(() => routerRequests.length).toBe(4)
+    await settled()
+    const second2 = await inMap(planner, 2)
+    expect(Math.abs(second2.y - second1.y - 100)).toBeLessThan(3)
+
+    // A key held down is one burst, however many repeats it sends
+    for (let i = 0; i < 4; i++) await p.keyboard.down('ArrowLeft')
+    await p.keyboard.up('ArrowLeft')
+    await expect.poll(() => routerRequests.length).toBe(6)
+    await settled()
+    expect(routerRequests).toHaveLength(6)
+    const second3 = await inMap(planner, 2)
+    expect(Math.abs(second3.x - second2.x + 40)).toBeLessThan(3)
+
+    // One undo gives the last burst back, with no request, and the focus stays on a point
+    await p.keyboard.press('Control+z')
+    await expect.poll(async () => Math.abs((await inMap(planner, 2)).x - second2.x)).toBeLessThan(3)
+    expect(routerRequests).toHaveLength(6)
+    await expect(planner.surface.locator('[data-planner-index]:focus')).toHaveCount(1)
+  })
+
+  test('moving the start by keyboard costs one request', async ({ context, page, isMobile }) => {
+    test.skip(isMobile, 'a keyboard matter')
+    const planner = await openPlanner({ context, page, isMobile })
+    const { page: p, marker, routerRequests, settled } = planner
+    await drawThreePoints(planner)
+
+    await marker(1).focus()
+    for (let i = 0; i < 3; i++) await p.keyboard.press('ArrowUp')
+    await expect.poll(() => routerRequests.length).toBe(1)
+    await settled()
+    expect(routerRequests).toHaveLength(1)
+  })
+
+  test('Escape abandons a keyboard move, a ghost drag and a marker drag, with no request', async ({
+    context,
+    page,
+    isMobile,
+  }) => {
+    test.skip(isMobile, 'a keyboard matter')
+    const planner = await openPlanner({ context, page, isMobile })
+    const { page: p, marker, points, canvas, settled, routerRequests } = planner
+    await drawThreePoints(planner)
+    await canvas.evaluate((el) => el.scrollIntoView({ block: 'center', inline: 'center' }))
+
+    // A burst of arrows
+    const origin = await inMap(planner, 2)
+    await marker(2).focus()
+    for (let i = 0; i < 3; i++) await p.keyboard.press('ArrowRight')
+    await p.keyboard.press('Escape')
+    // Absence of a deferred commit: only waiting proves it
+    await p.waitForTimeout(800)
+    expect(routerRequests).toHaveLength(0)
+    const back = await inMap(planner, 2)
+    expect(Math.abs(back.x - origin.x)).toBeLessThan(2)
+    expect(Math.abs(back.y - origin.y)).toBeLessThan(2)
+    await expect(marker(2)).toBeFocused()
+
+    // The ghost point dragged out of the trace
+    const [first, second] = [await centreOf(planner, 1), await centreOf(planner, 2)]
+    const grab = { x: (first.x + second.x) / 2, y: (first.y + second.y) / 2 }
+    await p.mouse.move(grab.x - 10, grab.y - 10)
+    await p.mouse.move(grab.x, grab.y, { steps: 3 })
+    await p.mouse.move(grab.x + 1, grab.y, { steps: 2 })
+    await p.mouse.down()
+    await p.mouse.move(grab.x, grab.y - 110, { steps: 8 })
+    await p.keyboard.press('Escape')
+    await p.mouse.up()
+    await settled()
+    await expect(points(3)).toBeVisible()
+    await p.waitForTimeout(500)
+    expect(routerRequests).toHaveLength(0)
+    await expect(points(3)).toBeVisible()
+
+    // A marker dragged with the mouse
+    const m2 = await centreOf(planner, 2)
+    await p.mouse.move(m2.x, m2.y)
+    await p.mouse.down()
+    await p.mouse.move(m2.x + 10, m2.y + 110, { steps: 8 })
+    await p.keyboard.press('Escape')
+    await p.mouse.move(m2.x + 20, m2.y + 120, { steps: 3 })
+    await p.mouse.up()
+    await settled()
+    expect(routerRequests).toHaveLength(0)
+    await expect.poll(async () => Math.abs((await centreOf(planner, 2)).y - m2.y)).toBeLessThan(3)
+  })
+
+  test('Delete keeps the focus on the points', async ({ context, page, isMobile }) => {
+    test.skip(isMobile, 'a keyboard matter')
+    const planner = await openPlanner({ context, page, isMobile })
+    const { page: p, surface, marker, settled, routerRequests } = planner
+    await drawThreePoints(planner)
+
+    await marker(2).focus()
+    await p.keyboard.press('Delete')
+    await settled()
+    expect(routerRequests).toHaveLength(1)
+    await expect(
+      surface.getByRole('button', { name: 'Arrivée, point 2 sur 2', exact: true })
+    ).toBeFocused()
+  })
+
+  test('Tab follows the order of the points after an insertion', async ({
+    context,
+    page,
+    isMobile,
+  }) => {
+    test.skip(isMobile, 'a keyboard matter')
+    const planner = await openPlanner({ context, page, isMobile })
+    const { page: p, marker, points, settled } = planner
+    await drawThreePoints(planner)
+
+    // A point inserted between the first two, by the ghost point
+    const [first, second] = [await centreOf(planner, 1), await centreOf(planner, 2)]
+    const grab = { x: (first.x + second.x) / 2, y: (first.y + second.y) / 2 }
+    await p.mouse.move(grab.x - 10, grab.y - 10)
+    await p.mouse.move(grab.x, grab.y, { steps: 3 })
+    await p.mouse.move(grab.x + 1, grab.y, { steps: 2 })
+    await p.mouse.down()
+    await p.mouse.move(grab.x, grab.y - 110, { steps: 8 })
+    await p.mouse.up()
+    await settled()
+    await expect(points(4)).toBeVisible()
+
+    await marker(1).focus()
+    await p.keyboard.press('Tab')
+    await expect(marker(2)).toBeFocused()
+    await p.keyboard.press('Tab')
+    await expect(marker(3)).toBeFocused()
+  })
+})
+
+test.describe('scrolling at the edge during a drag (B9)', () => {
+  test.setTimeout(90_000)
+
+  /** The shift of marker 1 since `from`, once it exceeds 150 px (the map scrolled under the pointer). */
+  async function scrolled(planner: Planner, from: { x: number; y: number }) {
+    await expect
+      .poll(
+        async () => {
+          const now = await centreOf(planner, 1)
+          return Math.hypot(now.x - from.x, now.y - from.y)
+        },
+        { timeout: 15_000 }
+      )
+      .toBeGreaterThan(150)
+    const now = await centreOf(planner, 1)
+    return { x: now.x - from.x, y: now.y - from.y }
+  }
+
+  /** The map stopped scrolling: marker 1 does not move for 300 ms. */
+  async function stable(planner: Planner) {
+    const before = await centreOf(planner, 1)
+    await planner.page.waitForTimeout(300)
+    const after = await centreOf(planner, 1)
+    expect(Math.hypot(after.x - before.x, after.y - before.y)).toBeLessThan(1)
+  }
+
+  /** A point put where the first frame would have shown `shifted`: outside the box measured before. */
+  function outside(
+    box: { x: number; y: number; width: number; height: number },
+    point: { x: number; y: number },
+    shift: { x: number; y: number }
+  ) {
+    const [x, y] = [point.x - shift.x, point.y - shift.y]
+    return x < box.x || x > box.x + box.width || y < box.y || y > box.y + box.height
+  }
+
+  test('a marker dragged to the edge scrolls the map under the still mouse (mouse)', async ({
+    context,
+    page,
+    isMobile,
+  }) => {
+    test.skip(isMobile, 'a mouse gesture')
+    const planner = await openPlanner({ context, page, isMobile })
+    const { page: p, canvas, settled, routerRequests } = planner
+    await drawThreePoints(planner)
+    await canvas.evaluate((el) => el.scrollIntoView({ block: 'center', inline: 'center' }))
+    const frame = (await canvas.boundingBox())!
+    const p1 = await centreOf(planner, 1)
+    const from = await centreOf(planner, 2)
+
+    await p.mouse.move(from.x, from.y)
+    await p.mouse.down()
+    // The top edge, at the middle: the left edge is under the map controls, which swallow the release
+    const top = frame.x + frame.width / 2
+    await p.mouse.move(top, frame.y + 60, { steps: 6 })
+    await p.mouse.move(top, frame.y + 10, { steps: 6 })
+    // The mouse stays still: the animation frames do the scrolling
+    const shift = await scrolled(planner, p1)
+    await p.mouse.up()
+    await settled()
+    await expect.poll(() => routerRequests.length).toBe(2)
+    expect(outside(frame, await centreOf(planner, 2), shift)).toBe(true)
+    await stable(planner)
+  })
+
+  test('a ghost point dragged to the edge scrolls the map under the still mouse (mouse)', async ({
+    context,
+    page,
+    isMobile,
+  }) => {
+    test.skip(isMobile, 'a mouse gesture')
+    const planner = await openPlanner({ context, page, isMobile })
+    const { page: p, canvas, points, settled, routerRequests } = planner
+    await drawThreePoints(planner)
+    await canvas.evaluate((el) => el.scrollIntoView({ block: 'center', inline: 'center' }))
+    const frame = (await canvas.boundingBox())!
+    const p1 = await centreOf(planner, 1)
+    const [first, second] = [p1, await centreOf(planner, 2)]
+    const grab = { x: (first.x + second.x) / 2, y: (first.y + second.y) / 2 }
+
+    await p.mouse.move(grab.x - 10, grab.y - 10)
+    await p.mouse.move(grab.x, grab.y, { steps: 3 })
+    await p.mouse.move(grab.x + 1, grab.y, { steps: 2 })
+    await p.mouse.down()
+    const top = frame.x + frame.width / 2
+    await p.mouse.move(top, frame.y + 60, { steps: 6 })
+    await p.mouse.move(top, frame.y + 10, { steps: 6 })
+    const shift = await scrolled(planner, p1)
+    await p.mouse.up()
+    await settled()
+    await expect(points(4)).toBeVisible()
+    await expect.poll(() => routerRequests.length).toBe(2)
+    expect(outside(frame, await centreOf(planner, 2), shift)).toBe(true)
+    await stable(planner)
+  })
+
+  test('a marker dragged to the edge scrolls the map under the still finger (touch)', async ({
+    context,
+    page,
+    isMobile,
+  }) => {
+    test.skip(!isMobile, 'a finger gesture')
+    const planner = await openPlanner({ context, page, isMobile })
+    const { canvas, touch, settled, routerRequests } = planner
+    await drawThreePoints(planner)
+    const frame = (await canvas.boundingBox())!
+    const p1 = await centreOf(planner, 1)
+    const from = await centreOf(planner, 2)
+    const to = { x: frame.x + frame.width - 10, y: from.y }
+
+    await touch('touchStart', from)
+    for (let i = 1; i <= 8; i++) {
+      await touch('touchMove', {
+        x: from.x + ((to.x - from.x) * i) / 8,
+        y: from.y,
+      })
+    }
+    const shift = await scrolled(planner, p1)
+    await touch('touchEnd')
+    await settled()
+    await expect.poll(() => routerRequests.length).toBe(2)
+    expect(outside(frame, await centreOf(planner, 2), shift)).toBe(true)
+    await stable(planner)
+  })
+
+  test('an anchor dragged to the edge scrolls the map under the still finger (touch)', async ({
+    context,
+    page,
+    isMobile,
+  }) => {
+    test.skip(!isMobile, 'a finger gesture')
+    const l = await openLTrack({ context, page, isMobile })
+    const { canvas, marker, corner, start, touch, settled, routerRequests } = l
+    const frame = (await canvas.boundingBox())!
+    const to = { x: corner.x, y: frame.y + 10 }
+
+    await touch('touchStart', corner)
+    for (let i = 1; i <= 8; i++) {
+      await touch('touchMove', {
+        x: corner.x,
+        y: corner.y + ((to.y - corner.y) * i) / 8,
+      })
+    }
+    await expect
+      .poll(async () => Math.hypot(...Object.values(await relativeToStart(l, start))), {
+        timeout: 15_000,
+      })
+      .toBeGreaterThan(150)
+    const shift = await relativeToStart(l, start)
+    await touch('touchEnd')
+    await settled()
+    await expect(marker(3)).toBeVisible()
+    await expect.poll(() => routerRequests.length).toBe(2)
+    const dropped = await l.centre(2)
+    expect(outside(frame, dropped, shift)).toBe(true)
+  })
+
+  test('a second finger stops the scrolling and the drag is abandoned (touch)', async ({
+    context,
+    page,
+    isMobile,
+  }) => {
+    test.skip(!isMobile, 'a finger gesture')
+    const l = await openLTrack({ context, page, isMobile })
+    const { canvas, cdp, marker, corner, start, touch, routerRequests } = l
+    const frame = (await canvas.boundingBox())!
+    const to = { x: corner.x, y: frame.y + 10 }
+
+    await touch('touchStart', corner)
+    for (let i = 1; i <= 8; i++) {
+      await touch('touchMove', {
+        x: corner.x,
+        y: corner.y + ((to.y - corner.y) * i) / 8,
+      })
+    }
+    await expect
+      .poll(async () => Math.hypot(...Object.values(await relativeToStart(l, start))), {
+        timeout: 15_000,
+      })
+      .toBeGreaterThan(150)
+
+    // A second finger lands: a pinch, whatever the first one had started is over
+    const fingers = [
+      { ...to, id: 0 },
+      // In the middle of the map: away from the controls, which would swallow the touch
+      { x: frame.x + frame.width / 2, y: frame.y + frame.height / 2, id: 1 },
+    ]
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: fingers })
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: fingers })
+    const before = await l.centre(1)
+    await page.waitForTimeout(300)
+    const after = await l.centre(1)
+    expect(Math.hypot(after.x - before.x, after.y - before.y), 'the map stopped').toBeLessThan(1)
+
+    await touch('touchEnd')
+    await expect(marker(3)).toHaveCount(0)
+    expect(routerRequests).toHaveLength(0)
+  })
+})
+
+/** How far marker 1 of an L track moved, in page pixels, since it was at `start`. */
+async function relativeToStart(
+  l: { centre: (n: number) => Promise<{ x: number; y: number }> },
+  start: { x: number; y: number }
+) {
+  const now = await l.centre(1)
+  return { x: now.x - start.x, y: now.y - start.y }
+}

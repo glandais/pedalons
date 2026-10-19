@@ -326,3 +326,33 @@ describe('useRoutePlanner elevation (B1)', () => {
     expect(routeMock).toHaveBeenCalledTimes(2)
   })
 })
+
+describe('useRoutePlanner move keeping the id of the point', () => {
+  beforeEach(() => {
+    routeMock.mockReset()
+    localStorage.clear()
+  })
+
+  it('is one history entry; undo hands back the old point with no request', async () => {
+    const { result } = renderHook(() => useRoutePlanner())
+    for (const p of [A, B, C]) {
+      act(() => result.current.addControlPoint(p, true))
+      await waitFor(() => expect(result.current.controlPoints.length).toBeGreaterThan(0))
+    }
+    await waitFor(() => expect(result.current.controlPoints).toHaveLength(3))
+    const [pa, pb, pc] = result.current.controlPoints
+    const moved = { lng: B.lng, lat: B.lat + 0.01 }
+
+    act(() => result.current.updateControlPoint(pa, moved, pc, true, pb.id))
+    await waitFor(() => expect(result.current.controlPoints[1].lat).toBeCloseTo(moved.lat))
+    expect(result.current.controlPoints.map((p) => p.id)).toEqual([pa.id, pb.id, pc.id])
+
+    act(() => result.current.undo())
+    expect(result.current.controlPoints[1].lat).toBeCloseTo(B.lat)
+    expect(result.current.controlPoints[1].id).toBe(pb.id)
+    // 3 additions, 1 move: undoing the move leaves the 3 additions to undo
+    act(() => result.current.undo())
+    expect(result.current.controlPoints).toHaveLength(2)
+    expect(routeMock).not.toHaveBeenCalled()
+  })
+})

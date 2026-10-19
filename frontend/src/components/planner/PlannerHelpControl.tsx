@@ -30,6 +30,13 @@ export function PlannerHelpControl({ trigger }: PlannerHelpControlProps) {
       gesture: t(`planner.help.removeAnchor.${pointer}`),
     },
   ]
+  // Moving a point by keyboard is a mouse-and-keyboard matter
+  if (!isCoarsePointer) {
+    rows.splice(4, 0, {
+      action: t('planner.help.keyboard'),
+      gesture: t('planner.help.keyboard.mouse'),
+    })
+  }
   if (isCoarsePointer) {
     rows.push({ action: t('planner.help.direct'), gesture: t('planner.help.direct.touch') })
   } else {

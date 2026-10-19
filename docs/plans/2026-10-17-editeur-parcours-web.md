@@ -1,8 +1,8 @@
 # Éditeur de parcours web — desktop et web mobile
 
 Écrit le 17 octobre 2026, mis à jour le 18 octobre 2026. **État : lots 1 et 2 livrés le
-17 octobre 2026 (§5 et §6, A10 compris) ; dans le lot 3, B11, B12, B6 et B1a (profil d'édition) sont livrés (18 octobre) ;
-restent B1b, le reste du lot 3 (B2, B7, B9) et le lot 4 (C1 à C5, C7 ; C6 non attribué).**
+17 octobre 2026 (§5 et §6, A10 compris) ; dans le lot 3, B11, B12, B6, B1a (profil d'édition), B7 et B9 sont livrés (18 octobre) ;
+restent B1b, le reste du lot 3 (B2) et le lot 4 (C1 à C5, C7 ; C6 non attribué).**
 Ledger `WEB-100` (une seule
 entrée, qui pointe ici) : le suivi fin se fait **dans ce plan**, cases à cocher comprises, pas dans
 le ledger. Une tâche n'en sort vers `LEDGER_NEXT.md` que si elle quitte le périmètre du plan
@@ -55,7 +55,7 @@ Quatre lots, chacun livrable seul :
 |---|---|---|---|
 | **1. Robustesse** (livré) | Annulation et verrou pendant le calcul, `Ctrl+Z` hors des champs, tactile décidé par le pointeur, aide aux gestes, menus fiables, tests de `lib/planner.ts` | S à M (≈ 1 semaine) | — (volet backend A10 livré) |
 | **2. Disposition** (livré) | Plein écran d'édition, barre sous le pouce, cibles 44 px, un seul panneau ouvert, recherche d'adresse, cadrage `fitBounds` | M | 1 |
-| **3. Standard** | Profil altimétrique d'édition (B1, **B1a livré**, B1b à faire), inverser / aller-retour / retour au départ avec recalage (B2), ligne droite visible (B6, **livré**), clavier (B7), défilement au bord (B9), glisser une ancre au doigt (B11, **livré**), bornes indépendantes du zoom et suppression d'une ancre (B12, **livré**) | **L** | 1, 2 ; API pour B2 (endpoint de recalage) |
+| **3. Standard** | Profil altimétrique d'édition (B1, **B1a livré**, B1b à faire), inverser / aller-retour / retour au départ avec recalage (B2), ligne droite visible (B6, **livré**), clavier (B7, **livré**), défilement au bord (B9, **livré**), glisser une ancre au doigt (B11, **livré**), bornes indépendantes du zoom et suppression d'une ancre (B12, **livré**) | **L** | 1, 2 ; API pour B2 (endpoint de recalage) |
 | **4. Différenciation** | Éviter côtes / trafic (C2), état d'édition conservé (C4), surface par point (C1), points de parcours (C3), popularité interne (C5), zones à éviter (C7) ; C6 non attribué | M à L | C4 : B6 et B12 ; C2 : aucun morceau du lot 3 ; API pour C1, C2, C4, C7 |
 
 Dans le lot 4, **C4 dépend de B6** (seul B6 crée l'information « ligne droite ») **et de B12**
@@ -93,7 +93,7 @@ Ce que ça change pour ce plan :
   | Annuler, rétablir, ouvrir ou fermer le plein écran | 0 | livré, à garder |
   | Supprimer une ancre importée (B12) | 1, **0 avec `Alt`** (ligne droite) | livré |
   | Restituer une portion du fichier en supprimant un point (C4) | 0 | à faire |
-  | Déplacer un point au clavier (B7) | 2 (1 à une extrémité), **au relâchement seulement**, jamais à chaque flèche | à faire |
+  | Déplacer un point au clavier (B7) | 2 (1 à une extrémité), **au relâchement seulement**, jamais à chaque flèche | **livré** (B7) |
   | Inverser, aller-retour (B2) | **1 ou 2** : un recalage, plus un raccord s'il reste des trous ; 0 en repli sur la géométrie inversée | à faire |
   | Retour au départ (B2) | 1 | à faire |
   | Surface par point (C1) | 1, **une fois à l'enregistrement** (`trace_attributes`, facturé à part) | à concevoir |
@@ -611,15 +611,65 @@ servent), puis B6 (la ligne droite visible), puis B1 et B2.
         doigt, après « Terminer », avec un point déjà posé le bouton d'ouverture s'appelle « Modifier
         le tracé » et non « Tracer le parcours » ; un test de borne sur un tracé importé ne prouve
         rien sur `direct` (tout y vaut `false`), partir d'un tracé qui a déjà un tronçon droit.
-- [ ] **B7. Clavier et accessibilité des points** (S/M, §8 n° 12) — **en partie livré au lot 1** :
-      marqueurs `role="button"`, `tabIndex`, nom « Point n », `Suppr` ou retour arrière pour
-      supprimer ; `Échap` ferme déjà les panneaux de carte, le menu d'appui long et les résultats de
-      recherche (L2-1). **Reste** : `aria-label` « Point n sur m » ; départ et arrivée distingués
-      autrement que par la couleur ; les flèches déplacent le point, en ne routant **qu'au
-      relâchement** (2 requêtes, 1 à une extrémité, jamais une par flèche) ; `Échap` abandonne un
-      fantôme.
-- [ ] **B9. Défilement au bord pendant un drag** (S/M, nouveau) — à moins de 40 px du bord,
-      `panBy` à chaque frame ; sans lui, sortir un point du cadre est impossible au doigt.
+- [x] **B7. Clavier et accessibilité des points** (S/M, §8 n° 12) — marqueurs `role="button"`,
+      `tabIndex`, `Suppr` ou retour arrière pour supprimer, `Échap` qui ferme panneaux, menu et
+      recherche (L2-1, lot 1) ; **livré avec B9 le 18 octobre 2026** :
+      - Nom « Point n sur m », « Départ, point 1 sur m », « Arrivée, point m sur m » (variable
+        `total`, jamais `count`) ; départ en disque vert avec une flèche de lecture, arrivée en
+        carré rouge avec un drapeau, via en disque bleu (`markerRole`, `plannerMarker.ts`).
+        `StartMarker` et `EndMarker` (lecture seule) ne changent pas : hors périmètre.
+      - Les flèches déplacent le point focalisé (10 px, 50 px avec Maj, `useKeyboardPointMove`) :
+        l'aperçu est celui du glisser (marqueur, lignes de liaison, bornes figées au premier pas),
+        le routage a lieu **une fois par rafale** (500 ms après le dernier relâchement, ou à
+        `Entrée` ou à la perte du focus) : 2 requêtes, 1 à une extrémité. Le point garde son `id`
+        (`insert(…, keepId)`, aussi au glisser souris) : le marqueur n'est pas remonté, le focus
+        reste. Alt, Ctrl et Meta + flèche ne sont pas traités. `Échap` abandonne, sans requête.
+        Une rafale est annulée si la route change (Ctrl+Z) ou au premier geste au pointeur.
+      - Après `Suppr`, le focus va au voisin ; après une insertion, les enveloppes MapLibre sont
+        remises dans l'ordre des points (l'ordre de Tab suit les points).
+      - `Échap` pendant un geste au pointeur : le fantôme est abandonné sans requête ; le marqueur
+        glissé à la souris est retenu à son origine jusqu'au relâchement (MapLibre n'a pas d'API
+        d'annulation), sans requête ; l'ancre au doigt est abandonnée.
+      - Aide : une ligne clavier, à la souris seulement.
+      - Tests : `useKeyboardPointMove.test.ts`, `plannerMarker.test.ts`, `planner.test.ts`
+        (`keepId`), `useRoutePlanner.test.tsx` (une entrée d'historique), `gpx-planner.e2e.ts`
+        (`keyboard and accessibility of the points (B7)`, lancé le 18 octobre, 0 échec).
+      - **Écarts** : (1) `Échap` pendant un glisser **à la souris** dans `CreateRouteModal` en
+        mode intégré ferme aussi le formulaire : Mantine écoute `Échap` sur `window` en capture et
+        passe avant nous, seule la cible `data-mantine-stop-propagation` l'évite (posée pendant une
+        rafale de flèches, impossible pour un glisser souris) ; la recette manuelle reste à faire.
+        (2) L'ordre du DOM est rétabli par un effet passif (pas `useLayoutEffect`) pour
+        remettre le DOM dans l'ordre : le `addTo` de react-map-gl est lui-même passif, un marqueur
+        inséré n'existe pas encore au moment d'un effet de mise en page. (3) L'origine du marqueur retenu est `route.points[idx]`, pas `event.lngLat` de `dragstart`
+        (émis après le premier mouvement : décalage d'environ 14 px). (4) Le contournement
+        d'`Échap` sur un marqueur glissé à la souris n'a pas pu être éprouvé sans e2e : à
+        retirer, en gardant le fantôme, s'il se bat avec MapLibre.
+- [x] **B9. Défilement au bord pendant un drag** (S/M, nouveau) — **livré le 18 octobre 2026** :
+      à moins de 40 px du bord (au plus le quart de la carte), `panBy(…, { animate: false })` à
+      chaque frame, vitesse linéaire jusqu'à 600 px/s sur le bord (`lib/edgePan.ts`,
+      `useEdgeAutoPan`) ; le point reste sous le doigt ou la souris (`flushSync`). Marqueur
+      (souris et doigt), fantôme (souris), ancre (doigt). Armé après 3 px de mouvement (une simple
+      saisie près du bord ne défile pas) ; un second doigt bloque (`block`) ; la sortie de la carte
+      à la souris suspend (`onPointerLeave`), un `pointerup` sur `window` termine. Les bornes
+      restent celles du début du geste (aucune requête pendant le défilement) : un dépôt lointain
+      peut donner `ROUTING_SEGMENT_TOO_LONG`, voulu. Tests : `edgePan.test.ts`,
+      `useEdgeAutoPan.test.ts`, `gpx-planner.e2e.ts` (`scrolling at the edge during a drag (B9)`,
+      lancé le 18 octobre : 5 cas par projet, 0 échec). Écart : le second doigt est envoyé en e2e par `touchStart` puis
+      `touchMove` à deux points CDP (éprouvé depuis : voir les pièges).
+      **Livré le 18 octobre 2026** (corrections de revue) : l'armement (3 px) se mesure depuis le
+      **pointeur** (`event.lngLat` à la souris, `map.unproject(event.point)` au doigt), jamais
+      depuis l'ancre ou le point accroché de la trace (jusqu'à 22 et 15 px du doigt ou de la
+      souris : une simple saisie près du bord aurait défilé, puis le clic d'un toucher aurait
+      inséré ailleurs). Les écouteurs `pointerup`/`pointercancel` de `window` sont posés de
+      `begin` à `end` (plus seulement pendant la boucle) : un relâchement hors de la carte, après
+      la sortie de la souris, désarme (sinon le retour dans la zone de bord, bouton relevé,
+      relançait le défilement). Tests : `useEdgeAutoPan.test.ts` (relâchement après `stop`),
+      e2e 70 passés, 28 ignorés (desktop et mobile). **Pièges** : (1) les contrôles de la carte
+      (zoom, annuler…) avalent `mouseup`/`mousemove` : un glisser à la souris vers le bord
+      gauche ne se relâche jamais pour MapLibre, les tests visent le milieu du bord haut ;
+      (2) le second doigt doit atterrir au milieu de la carte, hors contrôles, sinon aucun
+      `touchstart` n'atteint la carte ; (3) relâcher un marqueur au-dessus d'un contrôle laisse
+      le glisser en cours (antérieur à B9, non traité).
 - [x] **B11. Glisser une ancre au doigt** (S, nouveau, 18 octobre 2026) — un appui à moins de
       22 px d'une ancre visible la saisit au lieu de faire défiler la carte (`preventDefault` sur
       le `touchstart` MapLibre) ; au relâchement, les deux segments voisins sont routés à nouveau

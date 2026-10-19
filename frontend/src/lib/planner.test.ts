@@ -400,6 +400,69 @@ describe('insert used as a move (drag of an interior control point)', () => {
     await insert(route, undefined, { lng: 4.995, lat: 45.0 }, pb, PROFILE)
     expect(routeMock).toHaveBeenCalledTimes(1)
   })
+
+  it('gives the moved point a new id, unless keepId says otherwise', async () => {
+    const route = await threePointRoute()
+    const [pa, pb, pc] = manualPoints(route)
+    const { start, end } = legBounds(
+      route,
+      route.points.indexOf(pb) - 1,
+      route.points.indexOf(pb) + 1
+    )
+    const plain = await insert(route, start, { lng: 5.01, lat: 45.003 }, end, PROFILE)
+    expect(manualPoints(plain).map((p) => p.id)).not.toContain(pb.id)
+
+    routeMock.mockClear()
+    const kept = await insert(
+      route,
+      start,
+      { lng: 5.01, lat: 45.003 },
+      end,
+      PROFILE,
+      false,
+      undefined,
+      undefined,
+      pb.id
+    )
+    expect(routeMock).toHaveBeenCalledTimes(2)
+    expect(manualPoints(kept).map((p) => p.id)).toEqual([pa.id, pb.id, pc.id])
+    // No two points share an id
+    expect(new Set(kept.points.map((p) => p.id)).size).toBe(kept.points.length)
+  })
+
+  it('keeps the id of the first and of the last point moved, with one router call', async () => {
+    const route = await threePointRoute()
+    const [pa, pb, pc] = manualPoints(route)
+    routeMock.mockClear()
+    const first = await insert(
+      route,
+      undefined,
+      { lng: 4.995, lat: 45 },
+      pb,
+      PROFILE,
+      false,
+      undefined,
+      undefined,
+      pa.id
+    )
+    expect(routeMock).toHaveBeenCalledTimes(1)
+    expect(first.points[0].id).toBe(pa.id)
+    routeMock.mockClear()
+    const last = await insert(
+      route,
+      pb,
+      { lng: 5.03, lat: 45 },
+      undefined,
+      PROFILE,
+      false,
+      undefined,
+      undefined,
+      pc.id
+    )
+    expect(routeMock).toHaveBeenCalledTimes(1)
+    expect(last.points.at(-1)!.id).toBe(pc.id)
+    expect(new Set(last.points.map((p) => p.id)).size).toBe(last.points.length)
+  })
 })
 
 describe('remove', () => {

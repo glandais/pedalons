@@ -58,7 +58,9 @@ export interface RoutePlannerState {
     start: RoutePoint | undefined,
     p: Point,
     end: RoutePoint | undefined,
-    direct?: boolean
+    direct?: boolean,
+    /** Id of the point being moved: the moved point keeps it (marker not remounted, focus kept). */
+    keepId?: string
   ) => void
   removeControlPoint: (index: number, direct?: boolean, zoom?: number) => void
   /** Removes what lies between two bounds frozen by the caller (a menu opened on an imported anchor). */
@@ -204,10 +206,16 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
   )
 
   const updateControlPoint = useCallback(
-    (start: RoutePoint | undefined, p: Point, end: RoutePoint | undefined, direct = false) => {
+    (
+      start: RoutePoint | undefined,
+      p: Point,
+      end: RoutePoint | undefined,
+      direct = false,
+      keepId?: string
+    ) => {
       const straight = direct || directModeRef.current
       executeRouteOperation((route, signal) =>
-        insert(route, start, p, end, routerProfile, straight, signal, teamSlug)
+        insert(route, start, p, end, routerProfile, straight, signal, teamSlug, keepId)
       )
     },
     [executeRouteOperation, routerProfile, teamSlug]

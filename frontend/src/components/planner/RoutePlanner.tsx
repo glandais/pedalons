@@ -1,4 +1,5 @@
 import { useCallback, useRef, useMemo, useState, useEffect } from 'react'
+import { flushSync } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import {
   Source,
@@ -9,7 +10,7 @@ import {
   MarkerDragEvent,
   MapLayerTouchEvent,
 } from 'react-map-gl/maplibre'
-import { IconMaximize, IconTrash } from '@tabler/icons-react'
+import { IconFlagFilled, IconMaximize, IconPlayerPlayFilled, IconTrash } from '@tabler/icons-react'
 import { ActionIcon, Box, Button, Group, Loader, Menu, Skeleton, Stack, Text } from '@mantine/core'
 import { useMediaMatch } from '@/hooks/useResponsive'
 import { PedalonsMap } from '../map/PedalonsMap'
@@ -29,9 +30,13 @@ import { RoutePlannerMiniMap } from './RoutePlannerMiniMap'
 import { PlannerStatus, PlannerStatusChip } from './PlannerStatus'
 import { calculateBounds } from '../map/mapUtils'
 import { useHideTrackKey } from '../../hooks/useHideTrackKey'
+import { useEdgeAutoPan } from '../../hooks/useEdgeAutoPan'
+import { useKeyboardPointMove } from '../../hooks/useKeyboardPointMove'
+import { markerRole } from './plannerMarker'
+import { EDGE_PAN_ZONE_PX } from '@/lib/edgePan'
 import { type RoutePlannerState } from '../../hooks/useRoutePlanner'
 // maplibre-gl CSS is provided by maplibre-theme in index.css
-import { legBounds, nearestSegment, Route, RoutePoint, spanBounds } from '@/lib/planner'
+import { legBounds, nearestSegment, Point, Route, RoutePoint, spanBounds } from '@/lib/planner'
 import { getOverlayBg } from '@/lib/colors'
 import { isEditableTarget } from '@/lib/editableTarget'
 import { isApplePlatform } from '@/lib/platform'
@@ -264,6 +269,26 @@ export function RoutePlanner({
     idx: number
   } | null>(null)
 
+  // Scrolls the map while a dragged point sits at its edge. Each frame it moves the point with the
+  // map (it stays under the finger or the mouse); the bounds of the gesture are frozen at its start
+  // and never recomputed (panBy changes neither the route nor the zoom). flushSync: without it
+  // React renders after the paint and the point trembles by a frame. A pointer gesture drags a
+  // marker or a ghost, never both, so whichever is dragged follows.
+  const handleAutoPan = useCallback((lngLat: Point) => {
+    flushSync(() => {
+      setDraggingMarker((prev) => (prev ? { ...prev, lng: lngLat.lng, lat: lngLat.lat } : prev))
+      setDraggingGhost((prev) => (prev ? { ...prev, lng: lngLat.lng, lat: lngLat.lat } : prev))
+    })
+  }, [])
+  const autoPan = useEdgeAutoPan(mapRef, handleAutoPan)
+
+  // Where a mouse- or finger-dragged marker started, and whether Escape abandoned that drag
+  // (MapLibre has no way to cancel a marker drag: the marker is held at its origin until release)
+  const markerDragOriginRef = useRef<Point | null>(null)
+  const markerDragCancelledRef = useRef<{ origin: Point } | null>(null)
+  // A mouse ghost drag abandoned by Escape: the click that may follow the release is not a point
+  const gestureCancelledAt = useRef(0)
+
   // Layout (mini-map, help text, sizes) follows the primary pointer. It says nothing about which
   // device fires a given gesture: a hybrid laptop keeps both mouse and finger, so each gesture
   // decides from its own event (see isTouchGesture).
@@ -310,7 +335,8 @@ export function RoutePlanner({
     clearLongPress()
     clearAnchorPress()
     anchorMenuOpenedByPress.current = false
-  }, [layout, active, clearLongPress, clearAnchorPress])
+    autoPan.end()
+  }, [layout, active, clearLongPress, clearAnchorPress, autoPan])
 
   const handleMarkerTouchStart = useCallback(
     (idx: number) => (event: React.TouchEvent) => {
@@ -370,10 +396,16 @@ export function RoutePlanner({
   // and cleared when the window loses focus (Alt-Tab, a native dialog) since no keyup follows then.
   // Undo/redo shortcuts live here too, but never fire from a text field (native text undo there).
   const directKeyRef = useRef(false)
+  // Abandons the pointer gesture in progress, if any (set at every render: it reads their state)
+  const cancelGestureRef = useRef<() => boolean>(() => false)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       directKeyRef.current = e.ctrlKey || e.altKey
       if (!active || isEditableTarget(e.target)) return
+      if (e.key === 'Escape') {
+        if (cancelGestureRef.current()) e.preventDefault()
+        return
+      }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
         e.preventDefault()
         if (e.shiftKey) redo()
@@ -396,30 +428,145 @@ export function RoutePlanner({
     }
   }, [undo, redo, active])
 
+  // Moving a point with the arrow keys. A burst of arrows moves the preview (the same one a drag
+  // shows: marker, connection lines, bounds frozen at the first step); the route is computed once,
+  // when the burst ends. The point keeps its id, so its marker keeps the focus.
+  const keyboardMoveRef = useRef<{
+    id: string
+    idx: number
+    route: Route
+    start: RoutePoint | undefined
+    end: RoutePoint | undefined
+    origin: Point
+    pos: Point
+  } | null>(null)
+  const keyboardTargetRef = useRef<RoutePoint | null>(null)
+  const [keyboardMoving, setKeyboardMoving] = useState(false)
+
+  const resetKeyboardMove = useCallback(() => {
+    keyboardMoveRef.current = null
+    setKeyboardMoving(false)
+    setDraggingMarker(null)
+    setStartDragPoint(undefined)
+    setEndDragPoint(undefined)
+  }, [])
+
+  const keyboard = useKeyboardPointMove({
+    onStep: (dx, dy) => {
+      const map = mapRef.current
+      if (!map) return
+      let move = keyboardMoveRef.current
+      if (!move) {
+        const target = keyboardTargetRef.current
+        // One routing operation at a time: the arrows are inert during a calculation
+        if (!target || isLoading) return
+        const { start, end } = legBounds(route, target.idx - 1, target.idx + 1)
+        move = {
+          id: target.id,
+          idx: target.idx,
+          route,
+          start,
+          end,
+          origin: { lng: target.lng, lat: target.lat },
+          pos: { lng: target.lng, lat: target.lat },
+        }
+        keyboardMoveRef.current = move
+        clearLongPress()
+        setContextMenu(null)
+        setHoverPoint(null)
+        setStartDragPoint(start)
+        setEndDragPoint(end)
+        setKeyboardMoving(true)
+      }
+      const p = map.project([move.pos.lng, move.pos.lat])
+      const x = p.x + dx
+      const y = p.y + dy
+      const next = map.unproject([x, y])
+      move.pos = { lng: next.lng, lat: next.lat }
+      // Keeps the point in the frame: a point entering the edge zone brings the map along with it
+      const container = map.getContainer()
+      const zoneX = Math.min(EDGE_PAN_ZONE_PX, container.clientWidth / 4)
+      const zoneY = Math.min(EDGE_PAN_ZONE_PX, container.clientHeight / 4)
+      const overshoot = (v: number, zone: number, length: number) =>
+        v < zone ? v - zone : v > length - zone ? v - (length - zone) : 0
+      const panX = overshoot(x, zoneX, container.clientWidth)
+      const panY = overshoot(y, zoneY, container.clientHeight)
+      if (panX !== 0 || panY !== 0) map.panBy([panX, panY], { animate: false })
+      setDraggingMarker({ idx: move.idx, lng: move.pos.lng, lat: move.pos.lat })
+    },
+    onCommit: () => {
+      const move = keyboardMoveRef.current
+      if (!move) return
+      // Another gesture or an undo changed the route meanwhile: the bounds are not in it any more
+      const stale = move.route !== route
+      resetKeyboardMove()
+      if (stale) return
+      updateControlPoint(move.start, move.pos, move.end, false, move.id)
+    },
+    onCancel: resetKeyboardMove,
+  })
+
+  /** A pointer gesture, a new route or a change of view abandons a burst of arrows. */
+  const cancelKeyboardMove = useCallback(() => {
+    keyboard.cancel()
+    if (keyboardMoveRef.current) resetKeyboardMove()
+  }, [keyboard, resetKeyboardMove])
+
+  // The route changed under an uncommitted burst (Ctrl+Z, another gesture): its bounds are stale
+  useEffect(() => {
+    if (keyboardMoveRef.current && keyboardMoveRef.current.route !== route) cancelKeyboardMove()
+  }, [route, cancelKeyboardMove])
+  useEffect(() => {
+    cancelKeyboardMove()
+  }, [layout, active, cancelKeyboardMove])
+
   const handleMarkerDragStart = useCallback(
     (idx: number) => (event: MarkerDragEvent) => {
+      cancelKeyboardMove()
       clearLongPress()
       setContextMenu(null)
+      // MapLibre emits dragstart after the first move: the origin is the point, not the event
+      markerDragOriginRef.current = { lng: route.points[idx].lng, lat: route.points[idx].lat }
+      markerDragCancelledRef.current = null
       setDraggingMarker({ idx, lng: event.lngLat.lng, lat: event.lngLat.lat })
       const { start, end } = legBounds(route, idx - 1, idx + 1)
       setStartDragPoint(start)
       setEndDragPoint(end)
       setHoverPoint(null)
+      autoPan.begin(event.lngLat)
     },
-    [route, clearLongPress]
+    [route, clearLongPress, cancelKeyboardMove, autoPan]
   )
 
   const handleMarkerDrag = useCallback(
     (idx: number) => (event: MarkerDragEvent) => {
+      const cancelled = markerDragCancelledRef.current
+      if (cancelled) {
+        // Escape abandoned the drag: the marker is held at its origin until the button is released
+        event.target.setLngLat([cancelled.origin.lng, cancelled.origin.lat])
+        return
+      }
+      autoPan.follow(event.lngLat)
       setDraggingMarker((prev) =>
         prev && prev.idx === idx ? { idx, lng: event.lngLat.lng, lat: event.lngLat.lat } : prev
       )
     },
-    []
+    [autoPan]
   )
 
   const handleMarkerDragEnd = useCallback(
-    () => (event: MarkerDragEvent) => {
+    (id: string) => (event: MarkerDragEvent) => {
+      autoPan.end()
+      const cancelled = markerDragCancelledRef.current
+      markerDragOriginRef.current = null
+      markerDragCancelledRef.current = null
+      if (cancelled) {
+        event.target.setLngLat([cancelled.origin.lng, cancelled.origin.lat])
+        setDraggingMarker(null)
+        setStartDragPoint(undefined)
+        setEndDragPoint(undefined)
+        return
+      }
       // A drag whose bounds were cleared (a second finger cancelled it) must not rebuild the route
       // around the moved point alone
       if (!startDragPoint && !endDragPoint && route.points.length > 1) {
@@ -430,13 +577,14 @@ export function RoutePlanner({
         startDragPoint,
         { lng: event.lngLat.lng, lat: event.lngLat.lat },
         endDragPoint,
-        directKeyRef.current
+        directKeyRef.current,
+        id
       )
       setDraggingMarker(null)
       setStartDragPoint(undefined)
       setEndDragPoint(undefined)
     },
-    [updateControlPoint, startDragPoint, endDragPoint, route]
+    [updateControlPoint, startDragPoint, endDragPoint, route, autoPan]
   )
 
   const handleMarkerRightClick = useCallback(
@@ -527,6 +675,9 @@ export function RoutePlanner({
       // Nor is a click the browser may still derive from a finger's anchor drag
       if (Date.now() - anchorDragEndedAt.current < 400) return
 
+      // Nor is the one ending a ghost drag that Escape abandoned
+      if (Date.now() - gestureCancelledAt.current < 400) return
+
       // Nor is the one on the « Start here » button (it adds the point itself, and stops the
       // click; this guard is the fallback should a click still come through)
       if ((event.originalEvent?.target as HTMLElement | null)?.closest?.('.planner-start-here')) {
@@ -589,6 +740,7 @@ export function RoutePlanner({
 
       if (draggingGhost) {
         onHoverIndex?.(-1)
+        autoPan.follow(event.lngLat)
         setDraggingGhost((prev) =>
           prev ? { ...prev, lng: event.lngLat.lng, lat: event.lngLat.lat } : null
         )
@@ -664,6 +816,7 @@ export function RoutePlanner({
       isFingerEvent,
       hoverPoint,
       onHoverIndex,
+      autoPan,
     ]
   )
 
@@ -679,6 +832,7 @@ export function RoutePlanner({
       if (!hoverPoint || isLoading) return
 
       event.preventDefault()
+      cancelKeyboardMove()
 
       setDraggingGhost({
         lng: hoverPoint.lng,
@@ -689,11 +843,14 @@ export function RoutePlanner({
       setStartDragPoint(start)
       setEndDragPoint(end)
       setHoverPoint(null)
+      // Armed from the pointer, not from the snapped point (up to ROUTE_BUFFER_PX away)
+      autoPan.begin(event.lngLat)
     },
-    [hoverPoint, getMapZoom, route, isLoading]
+    [hoverPoint, getMapZoom, route, isLoading, autoPan, cancelKeyboardMove]
   )
 
   const handleMouseUp = useCallback(() => {
+    autoPan.end()
     if (draggingGhost) {
       insertControlPoint(
         startDragPoint,
@@ -705,7 +862,7 @@ export function RoutePlanner({
       setStartDragPoint(undefined)
       setEndDragPoint(undefined)
     }
-  }, [insertControlPoint, draggingGhost, startDragPoint, endDragPoint])
+  }, [insertControlPoint, draggingGhost, startDragPoint, endDragPoint, autoPan])
 
   // A finger drags an anchor the way a mouse drags the ghost point: the trace between the two
   // neighbouring anchors is routed again through where the finger lifts (two requests). Only a
@@ -731,9 +888,11 @@ export function RoutePlanner({
         clearAnchorPress()
       }
       const { lng, lat } = map.unproject([point.x, point.y])
+      // The hook arms itself at the same 3 px as anchorTouchMoved
+      autoPan.follow({ lng, lat })
       setDraggingGhost((prev) => (prev ? { ...prev, lng, lat } : null))
     },
-    [clearAnchorPress]
+    [clearAnchorPress, autoPan]
   )
 
   const handleAnchorPointerMove = useCallback(
@@ -751,10 +910,43 @@ export function RoutePlanner({
     anchorTouchStart.current = null
     anchorPointerId.current = null
     anchorTouchMoved.current = false
+    autoPan.end()
     setDraggingGhost(null)
     setStartDragPoint(undefined)
     setEndDragPoint(undefined)
-  }, [clearAnchorPress])
+  }, [clearAnchorPress, autoPan])
+
+  // Escape during a pointer gesture: the ghost, the finger's anchor or the dragged marker goes back
+  // to where it was, with no request. (A burst of arrows handles its own Escape, on the marker.)
+  // With no gesture in progress Escape does nothing here: panels, the menu and the search close
+  // themselves.
+  const cancelGesture = (): boolean => {
+    if (draggingGhost) {
+      if (anchorTouchStart.current) {
+        cancelAnchorDrag()
+      } else {
+        autoPan.end()
+        setDraggingGhost(null)
+        setStartDragPoint(undefined)
+        setEndDragPoint(undefined)
+        gestureCancelledAt.current = Date.now()
+      }
+      return true
+    }
+    const origin = markerDragOriginRef.current
+    if (draggingMarker && origin && !markerDragCancelledRef.current) {
+      autoPan.end()
+      markerDragCancelledRef.current = { origin }
+      setDraggingMarker((prev) => (prev ? { ...prev, lng: origin.lng, lat: origin.lat } : prev))
+      setStartDragPoint(undefined)
+      setEndDragPoint(undefined)
+      return true
+    }
+    return false
+  }
+  useEffect(() => {
+    cancelGestureRef.current = cancelGesture
+  })
 
   const handleMapTouchStart = useCallback(
     (event: MapLayerTouchEvent) => {
@@ -762,11 +954,14 @@ export function RoutePlanner({
       if (!map) return
       // A second finger is a pinch or a pan: whatever the first one had started is over
       if (event.points.length !== 1) {
+        // Also stops the scrolling of a marker drag: its next drag events must not restart it
+        autoPan.block()
         clearAnchorPress()
         if (anchorTouchStart.current) cancelAnchorDrag()
         return
       }
       if (isLoading || draggingMarker) return
+      cancelKeyboardMove()
       // A control point is a marker of its own, with its own drag and long press; « Start here »
       // is a button. Other markers (the km labels) are mere labels: one may sit on an anchor, and
       // must not keep the finger from grabbing it.
@@ -787,6 +982,9 @@ export function RoutePlanner({
       const { start, end } = spanBounds(route, grabbed - 1, grabbed + 1, zoom)
       setStartDragPoint(start)
       setEndDragPoint(end)
+      // Armed from the finger, not from the anchor (up to ANCHOR_TOUCH_RADIUS_PX away)
+      const finger = map.unproject(event.point)
+      autoPan.begin({ lng: finger.lng, lat: finger.lat })
 
       // Held still on an imported anchor, the press opens its delete menu; the bounds are the
       // ones frozen now.
@@ -799,6 +997,7 @@ export function RoutePlanner({
           anchorTouchStart.current = null
           anchorPointerId.current = null
           anchorTouchMoved.current = false
+          autoPan.end()
           // The drag stops; its bounds stay, shown through the menu
           setDraggingGhost(null)
           setStartDragPoint(undefined)
@@ -817,12 +1016,22 @@ export function RoutePlanner({
         }, LONG_PRESS_MS)
       }
     },
-    [isLoading, draggingMarker, getMapZoom, route, clearAnchorPress, cancelAnchorDrag]
+    [
+      isLoading,
+      draggingMarker,
+      getMapZoom,
+      route,
+      clearAnchorPress,
+      cancelAnchorDrag,
+      autoPan,
+      cancelKeyboardMove,
+    ]
   )
 
   const handleMapTouchMove = useCallback(
     (event: MapLayerTouchEvent) => {
       if (event.points.length > 1) {
+        autoPan.block()
         clearAnchorPress()
         // Only what this gesture started: a marker drag has its own bounds, a pinch must not clear them
         if (anchorTouchStart.current) cancelAnchorDrag()
@@ -832,11 +1041,12 @@ export function RoutePlanner({
       event.preventDefault()
       followAnchorPress(event.point)
     },
-    [clearAnchorPress, cancelAnchorDrag, followAnchorPress]
+    [clearAnchorPress, cancelAnchorDrag, followAnchorPress, autoPan]
   )
 
   const handleMapTouchEnd = useCallback(
     (event: MapLayerTouchEvent) => {
+      autoPan.end()
       if (anchorMenuOpenedByPress.current) {
         anchorMenuOpenedByPress.current = false
         // The browser's event, not MapLibre's: this is what cancels the click the touch would
@@ -857,13 +1067,50 @@ export function RoutePlanner({
         cancelAnchorDrag()
       }
     },
-    [handleMouseUp, cancelAnchorDrag, clearAnchorPress]
+    [handleMouseUp, cancelAnchorDrag, clearAnchorPress, autoPan]
   )
 
   const handleMapTouchCancel = useCallback(() => {
     anchorMenuOpenedByPress.current = false
     cancelAnchorDrag()
   }, [cancelAnchorDrag])
+
+  // After a Delete the focus goes to the neighbour point (the removed marker took it with it)
+  const pendingFocusRef = useRef<number | null>(null)
+  useEffect(() => {
+    if (isLoading || pendingFocusRef.current === null) return
+    const index = pendingFocusRef.current
+    // Whatever the outcome (an error included), the wish is spent
+    pendingFocusRef.current = null
+    const focused = document.activeElement
+    if (focused && focused !== document.body) return
+    mapContainerRef.current
+      ?.querySelector<HTMLElement>(`[data-planner-index="${index}"]`)
+      ?.focus({ preventScroll: true })
+  }, [isLoading, route])
+
+  // MapLibre appends each new marker at the end of its container: the Tab order would not follow
+  // the points once one is inserted in the middle. Put the wrappers back in the order of the points
+  // (child effects ran first: a new marker is in the DOM). Moving an element drops its focus.
+  const orderKey = controlPoints.map((p) => p.id).join()
+  useEffect(() => {
+    const container = mapContainerRef.current
+    if (!container) return
+    const wrappers = Array.from(container.querySelectorAll<HTMLElement>('[data-planner-index]'))
+      .sort((a, b) => Number(a.dataset.plannerIndex) - Number(b.dataset.plannerIndex))
+      .map((el) => el.closest<HTMLElement>('.maplibregl-marker'))
+      .filter((el): el is HTMLElement => el !== null)
+    const focused = document.activeElement as HTMLElement | null
+    for (let i = 1; i < wrappers.length; i++) {
+      const prev = wrappers[i - 1]
+      if (!(prev.compareDocumentPosition(wrappers[i]) & Node.DOCUMENT_POSITION_FOLLOWING)) {
+        prev.after(wrappers[i])
+      }
+    }
+    if (focused && focused !== document.activeElement && focused.isConnected) {
+      focused.focus({ preventScroll: true })
+    }
+  }, [orderKey])
 
   // A finger in the fullscreen editor: its tools are in the dialog's bottom bar, not on the map.
   const touchFullscreen = layout === 'fullscreen' && isCoarsePointer
@@ -1007,6 +1254,11 @@ export function RoutePlanner({
         }}
         // Moves too: a mouse hovering after a finger tap must be recognised as a mouse again, and
         // the compatibility mousemove a tap produces (Safari sends one before its click) as a finger.
+        // Leaving the map with the mouse: the map no longer receives its moves, the scrolling
+        // stops (the gesture stays armed, coming back resumes it)
+        onPointerLeave={(e: React.PointerEvent) => {
+          if (e.pointerType === 'mouse') autoPan.stop()
+        }}
         onPointerMoveCapture={(e: React.PointerEvent) => {
           lastPointerType.current = e.pointerType as PointerKind
           handleAnchorPointerMove(e)
@@ -1170,12 +1422,8 @@ export function RoutePlanner({
 
                 {/* Control point markers */}
                 {controlPoints.map((point, index) => {
-                  const isFirst = index === 0
-                  const isLast = index === controlPoints.length - 1 && controlPoints.length > 1
-
-                  let markerColor = 'var(--mantine-color-blue-filled)'
-                  if (isFirst) markerColor = 'var(--mantine-color-green-filled)'
-                  else if (isLast) markerColor = 'var(--mantine-color-red-filled)'
+                  const total = controlPoints.length
+                  const role = markerRole(index, total)
 
                   // Use dragging position if this marker is being dragged
                   const isDragging = draggingMarker?.idx === point.idx
@@ -1191,7 +1439,7 @@ export function RoutePlanner({
                       draggable={!isLoading}
                       onDragStart={handleMarkerDragStart(point.idx)}
                       onDrag={handleMarkerDrag(point.idx)}
-                      onDragEnd={handleMarkerDragEnd()}
+                      onDragEnd={handleMarkerDragEnd(point.id)}
                     >
                       <Box
                         style={{
@@ -1205,13 +1453,34 @@ export function RoutePlanner({
                         }}
                         role="button"
                         tabIndex={0}
+                        className="mantine-focus-auto"
+                        data-planner-index={index}
+                        aria-keyshortcuts="ArrowUp ArrowDown ArrowLeft ArrowRight Delete"
+                        // Escape during a burst of arrows must not close a dialog around the map
+                        // (Mantine listens on window, in the capture phase, and skips this target)
+                        data-mantine-stop-propagation={keyboardMoving ? 'true' : undefined}
                         onKeyDown={(e: React.KeyboardEvent) => {
-                          if ((e.key === 'Delete' || e.key === 'Backspace') && !isLoading) {
+                          keyboardTargetRef.current = point
+                          // First: it stops the arrows, Escape and Enter of a burst, which MapLibre
+                          // (it pans the map by the arrows whatever the target) must never see
+                          keyboard.onKeyDown(e)
+                          if (e.key === 'Delete' || e.key === 'Backspace') {
+                            if (isLoading || keyboard.pending()) return
                             e.preventDefault()
+                            // The point after the removed one takes the focus, else the one before
+                            if (total > 1) pendingFocusRef.current = Math.min(index, total - 2)
                             removeControlPoint(point.idx, directKeyRef.current, getMapZoom())
                           }
                         }}
-                        aria-label={t('planner.marker.label', { index: index + 1 })}
+                        onKeyUp={keyboard.onKeyUp}
+                        onBlur={keyboard.onBlur}
+                        aria-label={
+                          role === 'start'
+                            ? t('planner.marker.label.start', { index: index + 1, total })
+                            : role === 'end'
+                              ? t('planner.marker.label.end', { index: index + 1, total })
+                              : t('planner.marker.label', { index: index + 1, total })
+                        }
                         onContextMenu={handleMarkerRightClick(point.idx)}
                         onTouchStart={handleMarkerTouchStart(point.idx)}
                         onTouchMove={handleMarkerTouchMove}
@@ -1221,12 +1490,25 @@ export function RoutePlanner({
                           w={24}
                           h={24}
                           style={{
-                            backgroundColor: markerColor,
+                            backgroundColor:
+                              role === 'start'
+                                ? 'var(--mantine-color-green-filled)'
+                                : role === 'end'
+                                  ? 'var(--mantine-color-red-filled)'
+                                  : 'var(--mantine-color-blue-filled)',
                             border: '2px solid white',
-                            borderRadius: '50%',
+                            // Start and finish differ by shape as well as colour
+                            borderRadius: role === 'end' ? 4 : '50%',
                             boxShadow: 'var(--mantine-shadow-lg)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: 'white',
                           }}
-                        />
+                        >
+                          {role === 'start' && <IconPlayerPlayFilled size={12} aria-hidden />}
+                          {role === 'end' && <IconFlagFilled size={12} aria-hidden />}
+                        </Box>
                       </Box>
                     </Marker>
                   )
