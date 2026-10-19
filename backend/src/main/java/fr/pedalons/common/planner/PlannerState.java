@@ -1,5 +1,6 @@
 package fr.pedalons.common.planner;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import fr.pedalons.dto.router.request.RouterProfile;
 import fr.pedalons.dto.validation.ValidateSchema;
 import fr.pedalons.service.route.GpxLimits;
@@ -16,6 +17,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
  */
 @Schema(description = "Editing state of the route planner")
 @ValidateSchema
+@JsonIgnoreProperties(ignoreUnknown = true)
 public record PlannerState(
     @Schema(required = true) int version,
     @Schema(required = true) RouterProfile profile,

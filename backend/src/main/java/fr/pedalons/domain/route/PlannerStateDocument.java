@@ -1,5 +1,6 @@
 package fr.pedalons.domain.route;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import fr.pedalons.common.planner.PlannerState;
 import java.io.Serializable;
 
@@ -12,6 +13,9 @@ import java.io.Serializable;
  *     read from a client. A state is only read back while it equals the current revision of the
  *     track, so a save that bypassed the state (an older release, a file) leaves it stale.
  */
+// The JSONB column is read by hypersistence's own ObjectMapper, which fails on unknown
+// properties: a release must read a state written by a later one (rolling deploy, rollback).
+@JsonIgnoreProperties(ignoreUnknown = true)
 public record PlannerStateDocument(long trackRevision, PlannerState state) implements Serializable {
 
   public PlannerStateDocument withTrackRevision(long revision) {

@@ -1,5 +1,6 @@
 package fr.pedalons.common.planner;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import fr.pedalons.service.route.GpxLimits;
 import jakarta.validation.constraints.Size;
 import java.io.Serializable;
@@ -7,6 +8,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.jspecify.annotations.Nullable;
 
 /** A source track of a planner state: a stored track an imported piece refers to by index. */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public record PlannerSource(
     @Schema(
             description = "Polyline (precision 6, latitude then longitude) of the source track",

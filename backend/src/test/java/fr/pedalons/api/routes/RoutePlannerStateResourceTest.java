@@ -149,6 +149,33 @@ class RoutePlannerStateResourceTest extends AbstractResourceTest {
   }
 
   @Test
+  void aStoredStateWithUnknownFields_isStillReadBack() {
+    // A later release may add fields to the stored document: this one must still read it, during a
+    // rolling deploy and after a rollback.
+    PlannerState state = example();
+    String slug = createWithState(state);
+    Long id = routeId(slug);
+    QuarkusTransaction.requiringNew()
+        .run(
+            () ->
+                em.createNativeQuery(
+                        """
+                        update gpx_tracks set planner_state =
+                          jsonb_set(jsonb_set(jsonb_set(jsonb_set(
+                            planner_state || '{"later": 1}',
+                            '{state,later}', '1'),
+                            '{state,sources,0,later}', '1'),
+                            '{state,junctions,0,later}', '1'),
+                            '{state,pieces,0,later}', '1')
+                        where route_id = :id
+                        """)
+                    .setParameter("id", id)
+                    .executeUpdate());
+
+    assertStateIs(slug, state);
+  }
+
+  @Test
   void theSavedTrackFollowsTheDerivation() {
     PlannerState state = drawn();
     String slug = createWithState(state);

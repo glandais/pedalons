@@ -1,5 +1,6 @@
 package fr.pedalons.common.planner;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import fr.pedalons.service.route.GpxLimits;
 import jakarta.validation.constraints.Size;
 import java.io.Serializable;
@@ -7,6 +8,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.jspecify.annotations.Nullable;
 
 /** A piece of a planner track between two junctions. Flat rather than a oneOf, for the generators. */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public record PlannerPiece(
     @Schema(required = true) PlannerPieceMode mode,
     @Nullable

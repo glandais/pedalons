@@ -1,5 +1,6 @@
 package fr.pedalons.common.planner;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.io.Serializable;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.jspecify.annotations.Nullable;
@@ -8,6 +9,7 @@ import org.jspecify.annotations.Nullable;
  * A point between two pieces (or at an end of the track). Piece {@code k} runs from junction {@code
  * k} to junction {@code k + 1}.
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public record PlannerJunction(
     @Schema(required = true) PlannerJunctionKind kind,
     @Schema(required = true) double lng,
