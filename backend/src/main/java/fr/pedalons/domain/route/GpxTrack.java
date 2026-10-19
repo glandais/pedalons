@@ -13,6 +13,7 @@ import lombok.Setter;
 import org.geolatte.geom.G2D;
 import org.geolatte.geom.LineString;
 import org.hibernate.annotations.Type;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Represents a GPX track associated with a route.
@@ -56,6 +57,15 @@ public class GpxTrack extends BaseEntity {
   @Column(name = "elevation_loss", nullable = false)
   @NotNullableDbValue
   private Float elevationLoss;
+
+  /**
+   * Editing state of the planner, read by the edit page only (docs/LEDGER_*.md WEB-100). Lazy: up
+   * to a few MB, and every path that loads the track must not pay for it.
+   */
+  @Basic(fetch = FetchType.LAZY)
+  @Type(JsonBinaryType.class)
+  @Column(name = "planner_state", columnDefinition = "jsonb")
+  private @Nullable PlannerStateDocument plannerState;
 
   public GpxTrack(
       User createdBy,

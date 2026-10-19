@@ -8,10 +8,12 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import fr.pedalons.common.planner.PlannerState;
 import fr.pedalons.domain.gpx.GpxPreview;
 import fr.pedalons.domain.platform.Domain;
 import fr.pedalons.domain.route.ElevationRefresh;
 import fr.pedalons.domain.route.GpxTrack;
+import fr.pedalons.domain.route.PlannerStateDocument;
 import fr.pedalons.domain.user.User;
 import fr.pedalons.dto.gpx.response.GpxPreviewDto;
 import fr.pedalons.enums.ElevationState;
@@ -21,11 +23,15 @@ import fr.pedalons.repository.gpx.GpxPreviewRepository;
 import fr.pedalons.repository.route.ElevationRefreshRepository;
 import fr.pedalons.repository.route.ElevationRefreshRepository.PreviewClaim;
 import fr.pedalons.service.gpx.GpxPreviewService;
+import fr.pedalons.service.route.GpxProcessingService;
+import fr.pedalons.service.route.planner.PlannerStateFixtures;
+import fr.pedalons.service.route.planner.PlannerStates;
 import fr.pedalons.service.security.DomainResolver;
 import fr.pedalons.service.security.PedalonsQueryContext;
 import fr.pedalons.util.StoredObjects;
 import fr.pedalons.util.TestDataCleaner;
 import fr.pedalons.util.TestDataService;
+import io.github.glandais.engine.gpx.GpxDocument;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
@@ -543,6 +549,72 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
 
     assertNull(refresh(created), "nothing left to catch up on");
     assertEquals(keysOf(current), trackKeys(current), "no IGN round trip, no new revision");
+  }
+
+  // ------------------------------------------------------------------ planner state (WEB-100, C4a)
+
+  @Inject GpxProcessingService processing;
+  @Inject PlannerStates plannerStates;
+
+  private GpxPreview createWithState(PlannerState state) {
+    GpxDocument gpx = processing.fromPoints("Drawn", plannerStates.validateAndDerive(state));
+    return previewService.create(gpx, "Drawn", state.drawn(), state);
+  }
+
+  private PlannerStateDocument storedState(GpxPreview preview) {
+    return QuarkusTransaction.requiringNew()
+        .call(() -> previewRepository.findById(preview.getId()).getPlannerState());
+  }
+
+  @Test
+  void aPlannerState_isNotReadableAcrossDomains() {
+    GpxPreview created = createWithState(PlannerStateFixtures.example());
+    Domain other =
+        dataService.createDomain("other.example.org", "Other", "https://other.example.org");
+    domainResolver.setDomainForTest(other);
+
+    org.junit.jupiter.api.Assertions.assertThrows(
+        fr.pedalons.common.exception.NotFoundException.class,
+        () -> previewService.getPlannerState(created.getPublicId().toString()));
+  }
+
+  @Test
+  void theHdCatchUp_carriesThePlannerState_toTheNewRevision() {
+    GpxPreview created = createWithState(PlannerStateFixtures.example());
+    Long fastRevision = reload(created).getFilesRevision();
+    assertEquals(fastRevision, storedState(created).trackRevision());
+    makeDue(created);
+
+    assertEquals(1, worker.processDue());
+
+    GpxPreview after = reload(created);
+    assertNotEquals(fastRevision, after.getFilesRevision());
+    assertEquals(after.getFilesRevision(), storedState(created).trackRevision());
+    assertNotNull(
+        previewService.getPlannerState(created.getPublicId().toString()).state(),
+        "still readable after the catch-up");
+  }
+
+  @Test
+  void aTrackSavedDuringTheCompute_carriesNothing() {
+    GpxPreview created = createWithState(PlannerStateFixtures.example());
+    makeDue(created);
+    PreviewClaim claim = service.claimNextPreview(Instant.now()).orElseThrow();
+    ElevationRefreshService.PreviewRecomputed recomputed;
+    try {
+      recomputed = service.computePreview(claim);
+    } catch (Exception e) {
+      throw new IllegalStateException(e);
+    }
+    // Saved again meanwhile, by a path that carries no state
+    previewService.updatePreview(created.getPublicId().toString(), "Deux", TWO_TRACKS, null);
+    Long current = reload(created).getFilesRevision();
+
+    assertEquals(
+        ElevationRefreshService.Outcome.REALIGNED, service.writePreview(claim, recomputed));
+
+    assertNull(storedState(created), "cleared by the save, not rewritten by the catch-up");
+    assertEquals(current, reload(created).getFilesRevision());
   }
 
   // ------------------------------------------------------------------ removal

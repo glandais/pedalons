@@ -13,6 +13,7 @@ import '../models/gpx_preview_dto.dart';
 import '../models/gpx_preview_from_points_request.dart';
 import '../models/gpx_preview_list_response.dart';
 import '../models/gpx_preview_update_request.dart';
+import '../models/planner_state_response.dart';
 import '../models/route_dto.dart';
 import '../models/route_request.dart';
 import '../models/route_upload_response.dart';
@@ -116,6 +117,16 @@ abstract class GpxPreviewsClient {
   Future<RouteUploadResponse> uploadToGpsService({
     @Path('previewId') required String previewId,
     @Path('serviceType') required GpsServiceType serviceType,
+  });
+
+  /// Get the planner state of an analysed GPX file.
+  ///
+  /// The control points, routed pieces and imported ranges the preview was last saved with, for its edit page. Only the creator may read it. 'state' is absent when there is none to read back.
+  ///
+  /// [previewId] - Public preview identifier.
+  @GET('/api/gpx-previews/{previewId}/planner-state')
+  Future<PlannerStateResponse> getPreviewPlannerState({
+    @Path('previewId') required String previewId,
   });
 
   /// Save an analysed GPX file as a route.

@@ -1,6 +1,7 @@
 package fr.pedalons.repository.route;
 
 import fr.pedalons.domain.route.GpxTrack;
+import fr.pedalons.domain.route.PlannerStateDocument;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.ArrayList;
@@ -8,6 +9,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Direct reads of the GPX tracks, for what must not go through {@code Route#getTracks()}: loading
@@ -46,5 +48,18 @@ public class GpxTrackRepository implements PanacheRepository<GpxTrack> {
       return List.of();
     }
     return list("id in ?1 order by id", ids);
+  }
+
+  /**
+   * The planner state column of each track of a route, in id order: a projection, so no {@code
+   * track_points} is read (docs/LEDGER_*.md WEB-100). A track without state is a null element.
+   */
+  public List<@Nullable PlannerStateDocument> findPlannerStates(Long routeId) {
+    return getEntityManager()
+        .createQuery(
+            "select t.plannerState from GpxTrack t where t.route.id = :routeId order by t.id",
+            PlannerStateDocument.class)
+        .setParameter("routeId", routeId)
+        .getResultList();
   }
 }

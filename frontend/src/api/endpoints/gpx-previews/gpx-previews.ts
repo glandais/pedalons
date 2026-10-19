@@ -23,6 +23,7 @@ import type {
   GpxPreviewListResponse,
   ListMyPreviewsParams,
   MergePreviewsBody,
+  PlannerStateResponse,
   RouteDto,
   RouteRequest,
   RouteUploadResponse,
@@ -868,6 +869,163 @@ export const useUploadToGpsService = <TError = ErrorType<ErrorResponse | void>, 
 > => {
   return useMutation(getUploadToGpsServiceMutationOptions(options), queryClient)
 }
+/**
+ * The control points, routed pieces and imported ranges the preview was last saved with, for its edit page. Only the creator may read it. 'state' is absent when there is none to read back.
+ * @summary Get the planner state of an analysed GPX file
+ */
+export const getPreviewPlannerState = (
+  previewId: string,
+  options?: SecondParameter<typeof axiosMutator>,
+  signal?: AbortSignal
+) => {
+  return axiosMutator<PlannerStateResponse>(
+    { url: `/api/gpx-previews/${previewId}/planner-state`, method: 'GET', signal },
+    options
+  )
+}
+
+export const getGetPreviewPlannerStateQueryKey = (previewId: string) => {
+  return [`/api/gpx-previews/${previewId}/planner-state`] as const
+}
+
+export const getGetPreviewPlannerStateQueryOptions = <
+  TData = Awaited<ReturnType<typeof getPreviewPlannerState>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  previewId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getPreviewPlannerState>>, TError, TData>
+    >
+    request?: SecondParameter<typeof axiosMutator>
+  }
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getGetPreviewPlannerStateQueryKey(previewId)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getPreviewPlannerState>>> = ({ signal }) =>
+    getPreviewPlannerState(previewId, requestOptions, signal)
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: previewId !== null && previewId !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getPreviewPlannerState>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+}
+
+export type GetPreviewPlannerStateQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getPreviewPlannerState>>
+>
+export type GetPreviewPlannerStateQueryError = ErrorType<ErrorResponse>
+
+export function useGetPreviewPlannerState<
+  TData = Awaited<ReturnType<typeof getPreviewPlannerState>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  previewId: string,
+  options: {
+    query: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getPreviewPlannerState>>, TError, TData>
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getPreviewPlannerState>>,
+          TError,
+          Awaited<ReturnType<typeof getPreviewPlannerState>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof axiosMutator>
+  },
+  queryClient?: QueryClient
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetPreviewPlannerState<
+  TData = Awaited<ReturnType<typeof getPreviewPlannerState>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  previewId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getPreviewPlannerState>>, TError, TData>
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getPreviewPlannerState>>,
+          TError,
+          Awaited<ReturnType<typeof getPreviewPlannerState>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof axiosMutator>
+  },
+  queryClient?: QueryClient
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetPreviewPlannerState<
+  TData = Awaited<ReturnType<typeof getPreviewPlannerState>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  previewId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getPreviewPlannerState>>, TError, TData>
+    >
+    request?: SecondParameter<typeof axiosMutator>
+  },
+  queryClient?: QueryClient
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get the planner state of an analysed GPX file
+ */
+
+export function useGetPreviewPlannerState<
+  TData = Awaited<ReturnType<typeof getPreviewPlannerState>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  previewId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getPreviewPlannerState>>, TError, TData>
+    >
+    request?: SecondParameter<typeof axiosMutator>
+  },
+  queryClient?: QueryClient
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getGetPreviewPlannerStateQueryOptions(previewId, options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+/**
+ * @summary Get the planner state of an analysed GPX file
+ */
+export const prefetchGetPreviewPlannerStateQuery = async <
+  TData = Awaited<ReturnType<typeof getPreviewPlannerState>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  queryClient: QueryClient,
+  previewId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getPreviewPlannerState>>, TError, TData>
+    >
+    request?: SecondParameter<typeof axiosMutator>
+  }
+): Promise<QueryClient> => {
+  const queryOptions = getGetPreviewPlannerStateQueryOptions(previewId, options)
+
+  await queryClient.query(queryOptions).catch(() => {})
+
+  return queryClient
+}
+
 /**
  * Creates a team route from the preview's original upload. A preview that was drawn in the route planner (drawn = true) is refused with ROUTE_PLANNER_DISABLED when the team has no route planner; an imported GPX file can become a route of any team.
  * @summary Save an analysed GPX file as a route

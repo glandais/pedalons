@@ -1,6 +1,10 @@
 import type { QueryClient } from '@tanstack/react-query'
 import { useGetTeam } from '@/api/endpoints/teams/teams'
-import { useGetRoute, prefetchGetRouteQuery } from '@/api/endpoints/routes/routes'
+import {
+  useGetRoute,
+  useGetRoutePlannerState,
+  prefetchGetRouteQuery,
+} from '@/api/endpoints/routes/routes'
 import { prefetchTeamTags } from '@/config/prefetchHelpers'
 
 /**
@@ -31,13 +35,37 @@ export function useCreateRouteFormData(teamSlug?: string) {
 /**
  * Every query `EditRoutePage` itself owns, returned as the raw query results so the page keeps
  * reading `.data` / `.isLoading` directly.
+ *
+ * <p>`plannerState` is the editing state saved with the track (control points, pieces), read only
+ * to edit: for a team that has the planner, a member who can edit, a route of a single track. It is
+ * deliberately NOT prefetched server-side (see {@link prefetchEditRouteForm}): the page is
+ * authenticated, and the state may weigh hundreds of KB, which would land in the HTML. It is never
+ * served from the cache either (`gcTime: 0`): the planner takes its state once, on mounting, and
+ * must not open on one from before a save.
  */
 export function useEditRouteFormData(teamSlug?: string, routeSlug?: string) {
   const team = useGetTeam(teamSlug!, { query: { enabled: !!teamSlug } })
   const route = useGetRoute(teamSlug!, routeSlug!, {
     query: { enabled: !!teamSlug && !!routeSlug },
   })
-  return { team, route }
+  const canEdit = team.data?.role === 'ADMIN' || team.data?.role === 'ORGANIZER'
+  const plannerState = useGetRoutePlannerState(teamSlug!, routeSlug!, {
+    query: {
+      enabled:
+        !!teamSlug &&
+        !!routeSlug &&
+        !!team.data?.enableRoutePlanner &&
+        canEdit &&
+        route.data?.tracks.length === 1,
+      staleTime: 0,
+      gcTime: 0,
+      retry: false,
+      refetchOnWindowFocus: false,
+    },
+    // A failed read is shown by the page itself (the track opens as an import)
+    request: { skipErrorToast: true },
+  })
+  return { team, route, plannerState }
 }
 
 /** Server-side counterpart of what `RouteEditor` reads on a new route: its `TagPicker`'s tags. */

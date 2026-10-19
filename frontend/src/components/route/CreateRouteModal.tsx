@@ -34,7 +34,7 @@ export function CreateRouteModal({ isOpen, onClose, onRouteCreated, team }: Crea
   }
 
   const handleSubmit = async (data: RouteRequest, gpxFile?: File) => {
-    if (!gpxFile && (!data.points || data.points.length < 2)) return
+    if (!gpxFile && !data.plannerState && (!data.points || data.points.length < 2)) return
 
     const route = await createRouteMutation.mutateAsync(
       {

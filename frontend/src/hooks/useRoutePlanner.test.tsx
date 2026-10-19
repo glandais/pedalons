@@ -430,3 +430,147 @@ describe('useRoutePlanner router tuning (C2)', () => {
     expect(result.current.routerTuning).toEqual({ useHills: 1 })
   })
 })
+
+describe('useRoutePlanner saved state (C4a)', () => {
+  const TRACK = [
+    [5.0, 45.0, 100],
+    [5.02, 45.02, 100],
+    [5.04, 45.0, 100],
+    [5.05, 45.003, 100],
+    [5.06, 45.0, 100],
+    [5.08, 45.0, 100],
+  ]
+  const P = { lng: 5.03, lat: 45.03 }
+
+  beforeEach(() => {
+    routeMock.mockReset()
+    localStorage.clear()
+    routeMock.mockImplementation(async ({ from, to }: { from: typeof A; to: typeof A }) => {
+      const coordinates = [[from.lng, from.lat, 100]]
+      for (let i = 1; i < 8; i++) {
+        const t = i / 8
+        coordinates.push([
+          from.lng + t * (to.lng - from.lng),
+          from.lat + t * (to.lat - from.lat) + 0.002 * Math.sin(Math.PI * t),
+          100,
+        ])
+      }
+      coordinates.push([to.lng, to.lat, 100])
+      return { route: { coordinates }, ascend: 0 }
+    })
+  })
+
+  /** A track opened as an import, a point dragged out between its anchors 1 and 3, and saved. */
+  async function savedState() {
+    const hook = renderHook(() => useRoutePlanner({ initialTrack: TRACK }))
+    const points = hook.result.current.route.points
+    act(() => hook.result.current.insertControlPoint(points[1], P, points[3]))
+    await waitFor(() => expect(hook.result.current.isDirty).toBe(true))
+    return hook.result.current.snapshot().plannerState!
+  }
+
+  it('opens on a saved state without any request, clean, with the profile of the state', async () => {
+    const state = await savedState()
+    routeMock.mockClear()
+    const { result } = renderHook(() => useRoutePlanner({ initialState: state }))
+    expect(routeMock).not.toHaveBeenCalled()
+    expect(result.current.isDirty).toBe(false)
+    expect(result.current.canUndo).toBe(false)
+    expect(result.current.controlPoints.map((p) => p.manual)).toEqual([true, true, true])
+    await waitFor(() => expect(result.current.routerProfile).toBe(state.profile))
+  })
+
+  it('adopts the profile of the saved state, whatever the stored one', async () => {
+    const state = { ...(await savedState()), profile: 'MTB' as never }
+    localStorage.setItem('pedalons-router-profile', JSON.stringify('GRAVEL'))
+    const { result } = renderHook(() => useRoutePlanner({ initialState: state }))
+    await waitFor(() => expect(result.current.routerProfile).toBe('MTB'))
+    expect(result.current.snapshot().plannerState?.profile).toBe('MTB')
+  })
+
+  it('falls back on the loaded track when the saved state cannot be read', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const state = { version: 2, profile: 'GRAVEL', sources: [], junctions: [], pieces: [] }
+    const { result } = renderHook(() =>
+      useRoutePlanner({ initialState: state as never, initialTrack: TRACK })
+    )
+    expect(warn).toHaveBeenCalled()
+    expect(result.current.route.points.every((p) => p.imported)).toBe(true)
+    warn.mockRestore()
+  })
+
+  it('is dirty after a gesture and clean again once undone to the start', async () => {
+    const { result } = renderHook(() => useRoutePlanner({ initialTrack: TRACK }))
+    expect(result.current.isDirty).toBe(false)
+    const points = result.current.route.points
+    act(() => result.current.insertControlPoint(points[1], P, points[3]))
+    await waitFor(() => expect(result.current.isDirty).toBe(true))
+    act(() => result.current.undo())
+    await waitFor(() => expect(result.current.isDirty).toBe(false))
+  })
+
+  it('snapshots the state and the points on demand, with no error', async () => {
+    const { result } = renderHook(() => useRoutePlanner({ initialTrack: TRACK }))
+    const clean = result.current.snapshot()
+    expect(clean.dirty).toBe(false)
+    expect(clean.plannerState?.pieces).toHaveLength(1)
+    expect(clean.points.length).toBe(result.current.route.points.length)
+    expect(result.current.error).toBeNull()
+
+    expect(renderHook(() => useRoutePlanner()).result.current.snapshot()).toEqual({
+      dirty: false,
+      plannerState: null,
+      points: [],
+    })
+  })
+
+  it('opens a track without a saved state as an import that can give its file back', async () => {
+    const { result } = renderHook(() => useRoutePlanner({ initialTrack: TRACK }))
+    const points = result.current.route.points
+    act(() => result.current.insertControlPoint(points[1], P, points[3]))
+    await waitFor(() => expect(result.current.controlPoints).toHaveLength(3))
+    routeMock.mockClear()
+    const index = result.current.route.points.findIndex((p) => p.manual && p.lng === P.lng)
+    act(() => result.current.removeControlPoint(index))
+    await waitFor(() => expect(result.current.controlPoints).toHaveLength(2))
+    expect(routeMock).not.toHaveBeenCalled()
+    expect(result.current.route.points.every((p) => p.imported)).toBe(true)
+
+    act(() => result.current.undo())
+    expect(result.current.controlPoints).toHaveLength(3)
+    expect(routeMock).not.toHaveBeenCalled()
+  })
+
+  it('does the same after a save and a reopening: the joins and their provenance survived', async () => {
+    const state = await savedState()
+    const { result } = renderHook(() => useRoutePlanner({ initialState: state }))
+    routeMock.mockClear()
+    const index = result.current.route.points.findIndex((p) => p.manual && p.lng === P.lng)
+    expect(index).toBeGreaterThan(0)
+    act(() => result.current.removeControlPoint(index))
+    await waitFor(() => expect(result.current.controlPoints).toHaveLength(2))
+    expect(routeMock).not.toHaveBeenCalled()
+    expect(result.current.route.points.every((p) => p.imported)).toBe(true)
+  })
+
+  it('draws a straight line, not the file, when the straight mode is asked', async () => {
+    const { result } = renderHook(() => useRoutePlanner({ initialTrack: TRACK }))
+    const points = result.current.route.points
+    act(() => result.current.insertControlPoint(points[1], P, points[3]))
+    await waitFor(() => expect(result.current.controlPoints).toHaveLength(3))
+    routeMock.mockClear()
+    const index = result.current.route.points.findIndex((p) => p.manual && p.lng === P.lng)
+    act(() => result.current.removeControlPoint(index, true))
+    await waitFor(() => expect(result.current.controlPoints).toHaveLength(2))
+    expect(routeMock).not.toHaveBeenCalled()
+    expect(result.current.route.points.some((p) => p.direct)).toBe(true)
+  })
+
+  it('still routes when an anchor is removed', async () => {
+    const { result } = renderHook(() => useRoutePlanner({ initialTrack: TRACK }))
+    const points = result.current.route.points
+    act(() => result.current.removeAnchor(points[1], points[5]))
+    await waitFor(() => expect(result.current.canUndo).toBe(true))
+    expect(routeMock).toHaveBeenCalledTimes(1)
+  })
+})

@@ -1,4 +1,5 @@
 import type { GeoPoint } from './geoPoint.ts'
+import type { PlannerState } from './plannerState.ts'
 
 /**
  * GPX preview creation request from planner points
@@ -12,9 +13,10 @@ export interface GpxPreviewFromPointsRequest {
    */
   name: string
   /**
-   * Points from frontend routing
-   * @minItems 1
+   * Points from frontend routing; points or plannerState, never both (400 PLANNER_STATE_INVALID), and one of them (400 GPX_EMPTY)
    * @maxItems 100000
    */
-  points: GeoPoint[]
+  points?: GeoPoint[]
+  /** Editing state of the planner; the server derives the track from it. Not with points */
+  plannerState?: PlannerState
 }

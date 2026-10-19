@@ -70,6 +70,8 @@ enum ErrorCode {
   gpxMergeTooManyTracks('GPX_MERGE_TOO_MANY_TRACKS'),
   @JsonValue('ROUTE_PLANNER_DISABLED')
   routePlannerDisabled('ROUTE_PLANNER_DISABLED'),
+  @JsonValue('PLANNER_STATE_INVALID')
+  plannerStateInvalid('PLANNER_STATE_INVALID'),
   @JsonValue('ROUTING_QUOTA_EXCEEDED')
   routingQuotaExceeded('ROUTING_QUOTA_EXCEEDED'),
   @JsonValue('ROUTING_SEGMENT_TOO_LONG')

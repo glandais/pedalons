@@ -1,13 +1,22 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type Ref,
+} from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { IconAlertTriangle, IconArrowLeft, IconTrash } from '@tabler/icons-react'
 import { ActionIcon, Alert, Box, Button, Group, Modal, Text } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
-import type { GeoPoint } from '@/api/dto'
+import type { GeoPoint, PlannerState } from '@/api/dto'
 import { useHistoryOverlay } from '@/hooks/useHistoryOverlay'
 import { useMediaMatch } from '@/hooks/useResponsive'
-import { useRoutePlanner } from '@/hooks/useRoutePlanner'
+import { useRoutePlanner, type PlannerSnapshot } from '@/hooks/useRoutePlanner'
 import { useUnits } from '@/hooks/useUnits'
 import { DIRECT_WARNING_METERS, type Route } from '@/lib/planner'
 import { MapFullscreenShell } from '@/components/map/MapFullscreenShell'
@@ -30,7 +39,19 @@ function readStripCollapsed(): boolean {
   }
 }
 
+/** What a form reads from the planner when it saves. */
+export interface RoutePlannerHandle {
+  snapshot: () => PlannerSnapshot
+}
+
 interface RoutePlannerFieldProps {
+  /**
+   * The saved editing state of the route being edited: the planner opens on it, without any
+   * request. Wins over `initialTrack`, which still frames the map.
+   */
+  initialState?: PlannerState
+  /** Read at submit time: the state to save, and whether the route changed. */
+  plannerRef?: Ref<RoutePlannerHandle>
   /** Receives the computed path whenever it changes; empty below two points. */
   onPointsChange: (points: GeoPoint[]) => void
   initialTrack?: number[][] // [lng, lat, ele, dist][] from existing route
@@ -61,6 +82,8 @@ interface RoutePlannerFieldProps {
  * routing request. On a finger the map is not even built until the editor is first opened.
  */
 export function RoutePlannerField({
+  initialState,
+  plannerRef,
   onPointsChange,
   initialTrack,
   initialAscend,
@@ -71,7 +94,9 @@ export function RoutePlannerField({
   openRequest,
 }: RoutePlannerFieldProps) {
   const { t } = useTranslation()
-  const planner = useRoutePlanner({ initialTrack, initialAscend, teamSlug })
+  const planner = useRoutePlanner({ initialState, initialTrack, initialAscend, teamSlug })
+  const { snapshot } = planner
+  useImperativeHandle(plannerRef, () => ({ snapshot }), [snapshot])
   const { routeGeoJson, controlPoints, route, isLoading, error, directStats } = planner
   const { distance } = useUnits()
   const isCoarse = useMediaMatch('(pointer: coarse)')

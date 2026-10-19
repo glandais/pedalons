@@ -9,6 +9,7 @@ import fr.pedalons.dto.gpx.request.GpxPreviewUpdateRequest;
 import fr.pedalons.dto.gpx.response.GpxPreviewDto;
 import fr.pedalons.dto.gpx.response.GpxPreviewListResponse;
 import fr.pedalons.dto.routes.request.RouteRequest;
+import fr.pedalons.dto.routes.response.PlannerStateResponse;
 import fr.pedalons.dto.routes.response.RouteDto;
 import fr.pedalons.enums.GpsServiceType;
 import fr.pedalons.service.gpx.GpxPreviewService;
@@ -19,6 +20,7 @@ import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.util.ArrayList;
@@ -160,7 +162,8 @@ public class GpxPreviewResource {
   @RolesAllowed("user")
   public Response createPreviewFromPoints(@Valid @NotNull GpxPreviewFromPointsRequest request) {
     GpxPreviewDto preview =
-        gpxPreviewService.createPreviewFromPoints(request.name(), request.points());
+        gpxPreviewService.createPreviewFromPoints(
+            request.name(), request.points(), request.plannerState());
     return Response.status(Response.Status.CREATED).entity(preview).build();
   }
 
@@ -210,6 +213,42 @@ public class GpxPreviewResource {
       @Parameter(description = "Public preview identifier") @PathParam("previewId")
           String previewId) {
     return gpxPreviewService.getPreview(previewId);
+  }
+
+  @GET
+  @Path("/{previewId}/planner-state")
+  @Operation(
+      operationId = "getPreviewPlannerState",
+      summary = "Get the planner state of an analysed GPX file",
+      description =
+          "The control points, routed pieces and imported ranges the preview was last saved with,"
+              + " for its edit page. Only the creator may read it. 'state' is absent when there is"
+              + " none to read back.")
+  @APIResponses({
+    @APIResponse(
+        responseCode = "200",
+        description = "State retrieved (or absent)",
+        content = @Content(schema = @Schema(implementation = PlannerStateResponse.class))),
+    @APIResponse(
+        responseCode = "401",
+        description = "Unauthorized",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+    @APIResponse(
+        responseCode = "403",
+        description = "User is not the creator",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+    @APIResponse(
+        responseCode = "404",
+        description = "Preview not found or expired",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  @RolesAllowed("user")
+  public Response getPlannerState(
+      @Parameter(description = "Public preview identifier") @PathParam("previewId")
+          String previewId) {
+    return Response.ok(gpxPreviewService.getPlannerState(previewId))
+        .header(HttpHeaders.CACHE_CONTROL, "private, no-store")
+        .build();
   }
 
   @GET
@@ -305,7 +344,11 @@ public class GpxPreviewResource {
           GpxPreviewUpdateRequest request,
       @RestForm("gpxFile") @Nullable FileUpload gpxFile) {
     return gpxPreviewService.updatePreview(
-        previewId, request.name(), GpxUploads.uploadedGpx(gpxFile), request.points());
+        previewId,
+        request.name(),
+        GpxUploads.uploadedGpx(gpxFile),
+        request.points(),
+        request.plannerState());
   }
 
   @DELETE

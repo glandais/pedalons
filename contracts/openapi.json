@@ -2232,7 +2232,7 @@
       },
       "ErrorCode" : {
         "type" : "string",
-        "enum" : [ "BAD_REQUEST", "NOT_FOUND", "UNAUTHORIZED", "FORBIDDEN", "INTERNAL_ERROR", "UNKNOWN", "VALIDATION", "BUSINESS_RULE", "LAST_ADMIN", "SOLE_TEAM_ADMIN", "SOLE_MIGRATED_TEAM_ADMIN", "MIGRATED_TEAM", "ALREADY_REGISTERED", "NOT_REGISTERED", "INVALID_SLUG", "SLUG_TAKEN", "USER_NOT_SYNCED", "GROUP_FULL", "RIDE_PAST", "INVALID_VISIBILITY", "PUBLIC_TRIP_PRIVATE_ROUTE", "GPX_FAILURE", "FILE_REQUIRED", "FILE_TYPE_REJECTED", "FILE_DETECTION_FAILED", "FILE_TOO_LARGE", "TOO_MANY_TEAM_PAGES", "GPX_EMPTY", "GPX_TOO_LONG", "GPX_MERGE_FILE_COUNT", "GPX_MERGE_TOO_MANY_TRACKS", "ROUTE_PLANNER_DISABLED", "ROUTING_QUOTA_EXCEEDED", "ROUTING_SEGMENT_TOO_LONG", "ROUTING_NO_ROUTE", "ROUTING_UNAVAILABLE", "GEOCODING_UNAVAILABLE", "INVALID_FORMAT", "INVALID_TIMEZONE", "RENTAL_PERIOD_MISSING", "STATUS_INVALID", "PUBLIC_RIDE_PRIVATE_ROUTE", "INVALID_CREDENTIALS", "LOGIN_RATE_LIMITED", "EMAIL_NOT_VERIFIED", "EMAIL_ALREADY_EXISTS", "TOKEN_INVALID", "TOKEN_EXPIRED", "SESSION_EXPIRED", "PASSWORD_NOT_SET", "PASSKEY_NOT_FOUND", "USER_NOT_FOUND", "DOMAIN_NOT_FOUND", "TEAM_NOT_FOUND", "TEAM_CREATION_DISABLED", "USER_TEAM_LIMIT_REACHED", "TEAM_JOIN_NOT_ALLOWED", "TEAM_ADD_MEMBER_NOT_ALLOWED", "GPS_SERVICE_ALREADY_CONNECTED", "GPS_SERVICE_NOT_CONNECTED", "GPS_SERVICE_NOT_CONFIGURED", "GPS_INVALID_STATE", "GPS_STATE_EXPIRED", "GPX_NOT_FOUND", "AUTHORIZATION_PENDING", "DEVICE_CODE_RATE_LIMITED", "GPS_CREDENTIAL_ALREADY_EXISTS", "GPS_OAUTH_VERSION_NOT_SUPPORTED", "GPS_CLIENT_SECRET_REQUIRED", "GPS_TOKEN_EXCHANGE_FAILED", "ENCRYPTION_FAILED", "DECRYPTION_FAILED", "DOMAIN_ALIAS_NOT_FOUND", "DOMAIN_ALIAS_HOSTNAME_EXISTS", "DOMAIN_ALIAS_TEAM_MISMATCH", "EXPORT_IN_PROGRESS", "EXPORT_RATE_LIMITED", "RIDE_GROUP_LEADER_NOT_MEMBER", "AD_CONTACT_SELF", "AD_CONTACT_OPTED_OUT", "AD_CONTACT_RATE_LIMITED", "AD_CONTACT_DELIVERY_FAILED", "EMAIL_NOT_SENT", "FEEDBACK_RATE_LIMITED", "TEAM_INVITE_INVALID", "TEAM_INVITE_EXPIRED", "TEAM_INVITE_REVOKED", "TEAM_INVITE_ALREADY_USED", "TEAM_INVITE_ALREADY_MEMBER", "TEAM_INVITE_EMAIL_MISMATCH", "TEAM_INVITE_SELF", "TEAM_INVITE_NOT_PENDING", "TEAM_INVITE_RATE_LIMITED", "TEAM_INVITE_DELIVERY_FAILED", "WEBHOOK_URL_INVALID", "REPORT_SELF", "BLOCK_SELF", "CONTENT_REJECTED", "TAG_LABEL_INVALID", "TAG_LABEL_TAKEN", "TAG_LIMIT_REACHED", "TAG_INVALID", "TOO_MANY_TAGS", "ASSET_NOT_AVAILABLE", "BIKETEAM_REQUEST_INVALID", "BIKETEAM_REQUEST_EXPIRED", "BIKETEAM_REQUEST_ALREADY_USED", "BIKETEAM_SLUG_CONFLICT", "BIKETEAM_MIGRATED_IN_OTHER_DOMAIN", "BIKETEAM_NOT_TEAM_ADMIN", "BIKETEAM_MIGRATION_RUNNING", "BIKETEAM_RESET_BLOCKED", "BIKETEAM_GRANT_INVALID", "BIKETEAM_GRANT_EXPIRED", "BIKETEAM_JOB_NOT_FOUND" ]
+        "enum" : [ "BAD_REQUEST", "NOT_FOUND", "UNAUTHORIZED", "FORBIDDEN", "INTERNAL_ERROR", "UNKNOWN", "VALIDATION", "BUSINESS_RULE", "LAST_ADMIN", "SOLE_TEAM_ADMIN", "SOLE_MIGRATED_TEAM_ADMIN", "MIGRATED_TEAM", "ALREADY_REGISTERED", "NOT_REGISTERED", "INVALID_SLUG", "SLUG_TAKEN", "USER_NOT_SYNCED", "GROUP_FULL", "RIDE_PAST", "INVALID_VISIBILITY", "PUBLIC_TRIP_PRIVATE_ROUTE", "GPX_FAILURE", "FILE_REQUIRED", "FILE_TYPE_REJECTED", "FILE_DETECTION_FAILED", "FILE_TOO_LARGE", "TOO_MANY_TEAM_PAGES", "GPX_EMPTY", "GPX_TOO_LONG", "GPX_MERGE_FILE_COUNT", "GPX_MERGE_TOO_MANY_TRACKS", "ROUTE_PLANNER_DISABLED", "PLANNER_STATE_INVALID", "ROUTING_QUOTA_EXCEEDED", "ROUTING_SEGMENT_TOO_LONG", "ROUTING_NO_ROUTE", "ROUTING_UNAVAILABLE", "GEOCODING_UNAVAILABLE", "INVALID_FORMAT", "INVALID_TIMEZONE", "RENTAL_PERIOD_MISSING", "STATUS_INVALID", "PUBLIC_RIDE_PRIVATE_ROUTE", "INVALID_CREDENTIALS", "LOGIN_RATE_LIMITED", "EMAIL_NOT_VERIFIED", "EMAIL_ALREADY_EXISTS", "TOKEN_INVALID", "TOKEN_EXPIRED", "SESSION_EXPIRED", "PASSWORD_NOT_SET", "PASSKEY_NOT_FOUND", "USER_NOT_FOUND", "DOMAIN_NOT_FOUND", "TEAM_NOT_FOUND", "TEAM_CREATION_DISABLED", "USER_TEAM_LIMIT_REACHED", "TEAM_JOIN_NOT_ALLOWED", "TEAM_ADD_MEMBER_NOT_ALLOWED", "GPS_SERVICE_ALREADY_CONNECTED", "GPS_SERVICE_NOT_CONNECTED", "GPS_SERVICE_NOT_CONFIGURED", "GPS_INVALID_STATE", "GPS_STATE_EXPIRED", "GPX_NOT_FOUND", "AUTHORIZATION_PENDING", "DEVICE_CODE_RATE_LIMITED", "GPS_CREDENTIAL_ALREADY_EXISTS", "GPS_OAUTH_VERSION_NOT_SUPPORTED", "GPS_CLIENT_SECRET_REQUIRED", "GPS_TOKEN_EXCHANGE_FAILED", "ENCRYPTION_FAILED", "DECRYPTION_FAILED", "DOMAIN_ALIAS_NOT_FOUND", "DOMAIN_ALIAS_HOSTNAME_EXISTS", "DOMAIN_ALIAS_TEAM_MISMATCH", "EXPORT_IN_PROGRESS", "EXPORT_RATE_LIMITED", "RIDE_GROUP_LEADER_NOT_MEMBER", "AD_CONTACT_SELF", "AD_CONTACT_OPTED_OUT", "AD_CONTACT_RATE_LIMITED", "AD_CONTACT_DELIVERY_FAILED", "EMAIL_NOT_SENT", "FEEDBACK_RATE_LIMITED", "TEAM_INVITE_INVALID", "TEAM_INVITE_EXPIRED", "TEAM_INVITE_REVOKED", "TEAM_INVITE_ALREADY_USED", "TEAM_INVITE_ALREADY_MEMBER", "TEAM_INVITE_EMAIL_MISMATCH", "TEAM_INVITE_SELF", "TEAM_INVITE_NOT_PENDING", "TEAM_INVITE_RATE_LIMITED", "TEAM_INVITE_DELIVERY_FAILED", "WEBHOOK_URL_INVALID", "REPORT_SELF", "BLOCK_SELF", "CONTENT_REJECTED", "TAG_LABEL_INVALID", "TAG_LABEL_TAKEN", "TAG_LIMIT_REACHED", "TAG_INVALID", "TOO_MANY_TAGS", "ASSET_NOT_AVAILABLE", "BIKETEAM_REQUEST_INVALID", "BIKETEAM_REQUEST_EXPIRED", "BIKETEAM_REQUEST_ALREADY_USED", "BIKETEAM_SLUG_CONFLICT", "BIKETEAM_MIGRATED_IN_OTHER_DOMAIN", "BIKETEAM_NOT_TEAM_ADMIN", "BIKETEAM_MIGRATION_RUNNING", "BIKETEAM_RESET_BLOCKED", "BIKETEAM_GRANT_INVALID", "BIKETEAM_GRANT_EXPIRED", "BIKETEAM_JOB_NOT_FOUND" ]
       },
       "ErrorDetails" : {
         "oneOf" : [ {
@@ -2640,7 +2640,7 @@
       "GpxPreviewFromPointsRequest" : {
         "description" : "GPX preview creation request from planner points",
         "type" : "object",
-        "required" : [ "name", "points" ],
+        "required" : [ "name" ],
         "properties" : {
           "name" : {
             "type" : "string",
@@ -2654,9 +2654,13 @@
             "items" : {
               "$ref" : "#/components/schemas/GeoPoint"
             },
-            "description" : "Points from frontend routing",
-            "maxItems" : 100000,
-            "minItems" : 1
+            "description" : "Points from frontend routing; points or plannerState, never both (400 PLANNER_STATE_INVALID), and one of them (400 GPX_EMPTY)",
+            "maxItems" : 100000
+          },
+          "plannerState" : {
+            "description" : "Editing state of the planner; the server derives the track from it. Not with points",
+            "type" : "object",
+            "$ref" : "#/components/schemas/PlannerState"
           }
         }
       },
@@ -2748,6 +2752,11 @@
             },
             "description" : "Points from frontend routing",
             "maxItems" : 100000
+          },
+          "plannerState" : {
+            "description" : "Editing state of the planner; the server derives the track from it. Not with points (400 PLANNER_STATE_INVALID); a gpxFile wins over it",
+            "type" : "object",
+            "$ref" : "#/components/schemas/PlannerState"
           }
         }
       },
@@ -3790,6 +3799,151 @@
                 "examples" : [ [ 2.3522, 48.8566 ] ]
               }
             }
+          }
+        }
+      },
+      "PlannerJunction" : {
+        "type" : "object",
+        "required" : [ "kind", "lng", "lat" ],
+        "properties" : {
+          "kind" : {
+            "$ref" : "#/components/schemas/PlannerJunctionKind"
+          },
+          "lng" : {
+            "type" : "number",
+            "format" : "double"
+          },
+          "lat" : {
+            "type" : "number",
+            "format" : "double"
+          },
+          "ele" : {
+            "type" : "number",
+            "format" : "double"
+          },
+          "source" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Index of the source track this point comes from; with idx or not at all"
+          },
+          "idx" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Index of this point in that source track"
+          }
+        }
+      },
+      "PlannerJunctionKind" : {
+        "type" : "string",
+        "enum" : [ "CONTROL", "JOIN" ]
+      },
+      "PlannerPiece" : {
+        "type" : "object",
+        "required" : [ "mode" ],
+        "properties" : {
+          "mode" : {
+            "$ref" : "#/components/schemas/PlannerPieceMode"
+          },
+          "line" : {
+            "type" : "string",
+            "description" : "ROUTED and DIRECT: polyline6 of the points strictly inside the piece",
+            "maxLength" : 2000000
+          },
+          "ele" : {
+            "type" : "string",
+            "description" : "ROUTED and DIRECT: one-dimension polyline of their elevations",
+            "maxLength" : 2000000
+          },
+          "ascend" : {
+            "type" : "number",
+            "format" : "double",
+            "description" : "ROUTED: climb of the piece in metres"
+          },
+          "source" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "IMPORTED: index of the source track"
+          },
+          "from" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "IMPORTED: index in the source of the first junction"
+          },
+          "to" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "IMPORTED: index in the source of the last junction"
+          }
+        }
+      },
+      "PlannerPieceMode" : {
+        "type" : "string",
+        "enum" : [ "ROUTED", "DIRECT", "IMPORTED" ]
+      },
+      "PlannerSource" : {
+        "type" : "object",
+        "required" : [ "line", "ascendScale" ],
+        "properties" : {
+          "line" : {
+            "type" : "string",
+            "description" : "Polyline (precision 6, latitude then longitude) of the source track",
+            "maxLength" : 2000000
+          },
+          "ele" : {
+            "type" : "string",
+            "description" : "One-dimension polyline (tenths of a metre), one value per point of line; absent: no elevation",
+            "maxLength" : 2000000
+          },
+          "ascendScale" : {
+            "type" : "number",
+            "format" : "double",
+            "description" : "Factor that recalibrates the raw climb of the source on a reference ascent (1 without reference); in ]0, 100]"
+          }
+        }
+      },
+      "PlannerState" : {
+        "description" : "Editing state of the route planner",
+        "type" : "object",
+        "required" : [ "version", "profile", "sources", "junctions", "pieces" ],
+        "properties" : {
+          "version" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "profile" : {
+            "$ref" : "#/components/schemas/RouterProfile"
+          },
+          "sources" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PlannerSource"
+            },
+            "maxItems" : 8
+          },
+          "junctions" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PlannerJunction"
+            },
+            "maxItems" : 2001
+          },
+          "pieces" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PlannerPiece"
+            },
+            "maxItems" : 2000
+          }
+        }
+      },
+      "PlannerStateResponse" : {
+        "description" : "Editing state of the planner of a route or a preview, if any",
+        "type" : "object",
+        "properties" : {
+          "state" : {
+            "description" : "The state; absent when there is none to read back",
+            "type" : "object",
+            "$ref" : "#/components/schemas/PlannerState"
           }
         }
       },
@@ -5397,6 +5551,11 @@
               "type" : "string"
             },
             "description" : "IDs (TSID) of the team's ROUTE tags the route carries, replacing the whole set — at most 10, each a tag of this team and of kind ROUTE, else 400 (TAG_INVALID, TOO_MANY_TAGS). An empty list removes them all. Omitted: none on a creation, left as they are on an update."
+          },
+          "plannerState" : {
+            "description" : "Editing state of the planner; the server derives the track from it. Not with points (400 PLANNER_STATE_INVALID); a gpxFile wins over it",
+            "type" : "object",
+            "$ref" : "#/components/schemas/PlannerState"
           }
         }
       },
@@ -12380,6 +12539,68 @@
           },
           "403" : {
             "description" : "Not Allowed"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "user" ]
+        } ]
+      }
+    },
+    "/api/gpx-previews/{previewId}/planner-state" : {
+      "get" : {
+        "summary" : "Get the planner state of an analysed GPX file",
+        "description" : "The control points, routed pieces and imported ranges the preview was last saved with, for its edit page. Only the creator may read it. 'state' is absent when there is none to read back.",
+        "operationId" : "getPreviewPlannerState",
+        "tags" : [ "GPX previews" ],
+        "parameters" : [ {
+          "description" : "Public preview identifier",
+          "name" : "previewId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "State retrieved (or absent)",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PlannerStateResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "User is not the creator",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Preview not found or expired",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         },
         "security" : [ {
@@ -20901,6 +21122,76 @@
         } ]
       }
     },
+    "/api/teams/{teamSlug}/routes/{routeSlug}/planner-state" : {
+      "get" : {
+        "summary" : "Get the planner state of a route",
+        "description" : "The control points, routed pieces and imported ranges the route was last saved with, for its edit page. Reserved to those who may edit the route. 'state' is absent when there is none to read back (never saved with one, track replaced since by a path that does not carry it, several tracks): the editor then opens the saved track as an import.",
+        "operationId" : "getRoutePlannerState",
+        "tags" : [ "Routes" ],
+        "parameters" : [ {
+          "description" : "Route slug",
+          "name" : "routeSlug",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "description" : "Team URL slug",
+          "name" : "teamSlug",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "State retrieved (or absent)",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PlannerStateResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "User is not authorized to update this route",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Team or route not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "user" ]
+        } ]
+      }
+    },
     "/api/teams/{teamSlug}/routes/{routeSlug}/slug" : {
       "patch" : {
         "summary" : "Change route slug",
@@ -24117,7 +24408,7 @@
   },
   "info" : {
     "title" : "Pedalons API",
-    "version" : "11.9.0",
+    "version" : "11.10.0",
     "description" : "API for Pedalons Cycling Team Management Platform"
   },
   "servers" : [ {

@@ -273,6 +273,35 @@ class _GpxPreviewsClient implements GpxPreviewsClient {
   }
 
   @override
+  Future<PlannerStateResponse> getPreviewPlannerState({
+    required String previewId,
+  }) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{};
+    final _headers = <String, dynamic>{};
+    const Map<String, dynamic>? _data = null;
+    final _options = _setStreamType<PlannerStateResponse>(
+      Options(method: 'GET', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            '/api/gpx-previews/${previewId}/planner-state',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch<Map<String, Object?>>(_options);
+    late PlannerStateResponse _value;
+    try {
+      _value = PlannerStateResponse.fromJson(_result.data!);
+    } on Object catch (e, s) {
+      errorLogger?.logError(e, s, _options, response: _result);
+      rethrow;
+    }
+    return _value;
+  }
+
+  @override
   Future<RouteDto> createRouteFromPreview({
     required String previewId,
     required String teamSlug,

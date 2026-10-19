@@ -26,6 +26,7 @@ import type {
   GetRoutesBulkParams,
   ListAllRoutesParams,
   ListRoutesParams,
+  PlannerStateResponse,
   RouteBoundsResponse,
   RouteDetailDto,
   RouteDto,
@@ -1876,6 +1877,171 @@ export const useDeleteRoute = <TError = ErrorType<ErrorResponse>, TContext = unk
 > => {
   return useMutation(getDeleteRouteMutationOptions(options), queryClient)
 }
+/**
+ * The control points, routed pieces and imported ranges the route was last saved with, for its edit page. Reserved to those who may edit the route. 'state' is absent when there is none to read back (never saved with one, track replaced since by a path that does not carry it, several tracks): the editor then opens the saved track as an import.
+ * @summary Get the planner state of a route
+ */
+export const getRoutePlannerState = (
+  teamSlug: string,
+  routeSlug: string,
+  options?: SecondParameter<typeof axiosMutator>,
+  signal?: AbortSignal
+) => {
+  return axiosMutator<PlannerStateResponse>(
+    { url: `/api/teams/${teamSlug}/routes/${routeSlug}/planner-state`, method: 'GET', signal },
+    options
+  )
+}
+
+export const getGetRoutePlannerStateQueryKey = (teamSlug: string, routeSlug: string) => {
+  return [`/api/teams/${teamSlug}/routes/${routeSlug}/planner-state`] as const
+}
+
+export const getGetRoutePlannerStateQueryOptions = <
+  TData = Awaited<ReturnType<typeof getRoutePlannerState>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  teamSlug: string,
+  routeSlug: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getRoutePlannerState>>, TError, TData>
+    >
+    request?: SecondParameter<typeof axiosMutator>
+  }
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getGetRoutePlannerStateQueryKey(teamSlug, routeSlug)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getRoutePlannerState>>> = ({ signal }) =>
+    getRoutePlannerState(teamSlug, routeSlug, requestOptions, signal)
+
+  return {
+    queryKey,
+    queryFn,
+    enabled:
+      teamSlug !== null && teamSlug !== undefined && routeSlug !== null && routeSlug !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getRoutePlannerState>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+}
+
+export type GetRoutePlannerStateQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getRoutePlannerState>>
+>
+export type GetRoutePlannerStateQueryError = ErrorType<ErrorResponse>
+
+export function useGetRoutePlannerState<
+  TData = Awaited<ReturnType<typeof getRoutePlannerState>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  teamSlug: string,
+  routeSlug: string,
+  options: {
+    query: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getRoutePlannerState>>, TError, TData>
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getRoutePlannerState>>,
+          TError,
+          Awaited<ReturnType<typeof getRoutePlannerState>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof axiosMutator>
+  },
+  queryClient?: QueryClient
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetRoutePlannerState<
+  TData = Awaited<ReturnType<typeof getRoutePlannerState>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  teamSlug: string,
+  routeSlug: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getRoutePlannerState>>, TError, TData>
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getRoutePlannerState>>,
+          TError,
+          Awaited<ReturnType<typeof getRoutePlannerState>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof axiosMutator>
+  },
+  queryClient?: QueryClient
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetRoutePlannerState<
+  TData = Awaited<ReturnType<typeof getRoutePlannerState>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  teamSlug: string,
+  routeSlug: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getRoutePlannerState>>, TError, TData>
+    >
+    request?: SecondParameter<typeof axiosMutator>
+  },
+  queryClient?: QueryClient
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get the planner state of a route
+ */
+
+export function useGetRoutePlannerState<
+  TData = Awaited<ReturnType<typeof getRoutePlannerState>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  teamSlug: string,
+  routeSlug: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getRoutePlannerState>>, TError, TData>
+    >
+    request?: SecondParameter<typeof axiosMutator>
+  },
+  queryClient?: QueryClient
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getGetRoutePlannerStateQueryOptions(teamSlug, routeSlug, options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+/**
+ * @summary Get the planner state of a route
+ */
+export const prefetchGetRoutePlannerStateQuery = async <
+  TData = Awaited<ReturnType<typeof getRoutePlannerState>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  queryClient: QueryClient,
+  teamSlug: string,
+  routeSlug: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getRoutePlannerState>>, TError, TData>
+    >
+    request?: SecondParameter<typeof axiosMutator>
+  }
+): Promise<QueryClient> => {
+  const queryOptions = getGetRoutePlannerStateQueryOptions(teamSlug, routeSlug, options)
+
+  await queryClient.query(queryOptions).catch(() => {})
+
+  return queryClient
+}
+
 /**
  * Change route URL slug. Requires organizer permissions.
  * @summary Change route slug

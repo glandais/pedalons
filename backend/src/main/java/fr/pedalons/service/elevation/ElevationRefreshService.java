@@ -3,12 +3,14 @@ package fr.pedalons.service.elevation;
 import fr.pedalons.domain.asset.Asset;
 import fr.pedalons.domain.gpx.GpxPreview;
 import fr.pedalons.domain.gpx.GpxPreview.PreviewTrack;
+import fr.pedalons.domain.route.PlannerStateDocument;
 import fr.pedalons.domain.route.Route;
 import fr.pedalons.domain.team.Team;
 import fr.pedalons.enums.AssetType;
 import fr.pedalons.enums.ElevationQuality;
 import fr.pedalons.enums.ElevationState;
 import fr.pedalons.infrastructure.storage.StorageService;
+import fr.pedalons.repository.asset.AssetRepository;
 import fr.pedalons.repository.route.ElevationRefreshRepository;
 import fr.pedalons.repository.route.ElevationRefreshRepository.Claim;
 import fr.pedalons.repository.route.ElevationRefreshRepository.PreviewClaim;
@@ -115,6 +117,7 @@ public class ElevationRefreshService {
   @Inject ElevationRefreshRepository refreshRepository;
   @Inject GpxProcessingService gpxProcessingService;
   @Inject AssetService assetService;
+  @Inject AssetRepository assetRepository;
   @Inject StorageService storageService;
   @Inject PublicationEndCalculator publicationEndCalculator;
   @Inject GpxPreviewService gpxPreviewService;
@@ -208,17 +211,9 @@ public class ElevationRefreshService {
   private @Nullable Outcome realignIfStale(Claim claim) {
     return tx(
         () -> {
-          List<Long> originals =
-              entityManager
-                  .createQuery(
-                      "select a.fileId from Asset a where a.teamEntity.id = :routeId"
-                          + " and a.type = :type order by a.id desc",
-                      Long.class)
-                  .setParameter("routeId", claim.routeId())
-                  .setParameter("type", AssetType.ROUTE_ORIGINAL_GPX)
-                  .setMaxResults(1)
-                  .getResultList();
-          if (originals.isEmpty() || originals.getFirst() == claim.sourceRevision()) {
+          Long original =
+              assetRepository.findCurrentFileId(claim.routeId(), AssetType.ROUTE_ORIGINAL_GPX);
+          if (original == null || original == claim.sourceRevision()) {
             return null;
           }
           Route route = entityManager.find(Route.class, claim.routeId());
@@ -230,7 +225,7 @@ public class ElevationRefreshService {
             route.setElevationState(ElevationState.PENDING);
           }
           Instant now = Instant.now();
-          refreshRepository.realign(claim.id(), originals.getFirst(), now, now.plus(quiet));
+          refreshRepository.realign(claim.id(), original, now, now.plus(quiet));
           LOG.debugf(
               "Route %d changed since its HD elevation was requested, request realigned",
               claim.routeId());
@@ -601,6 +596,12 @@ public class ElevationRefreshService {
           }
           TrackMetadata metadata = recomputed.metadata();
           preview.setFilesRevision(recomputed.revision());
+          // The planner state follows the track it describes onto its new revision (WEB-100, C4a):
+          // the catch-up changes the elevations and the simplification, not the drawing.
+          PlannerStateDocument planner = preview.getPlannerState();
+          if (planner != null && planner.trackRevision() == claim.sourceRevision()) {
+            preview.setPlannerState(planner.withTrackRevision(recomputed.revision()));
+          }
           preview.setTracks(recomputed.tracks());
           preview.setDistance(metadata.distance());
           preview.setElevationGain(metadata.elevationGain());

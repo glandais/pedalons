@@ -1,5 +1,9 @@
 import type { QueryClient } from '@tanstack/react-query'
-import { useGetPreview, prefetchGetPreviewQuery } from '@/api/endpoints/gpx-previews/gpx-previews'
+import {
+  useGetPreview,
+  useGetPreviewPlannerState,
+  prefetchGetPreviewQuery,
+} from '@/api/endpoints/gpx-previews/gpx-previews'
 import { useAuthStore } from '@/store/authStore'
 
 /**
@@ -19,6 +23,24 @@ import { useAuthStore } from '@/store/authStore'
  */
 export function useGpxPreviewFormData(previewId?: string) {
   return useGetPreview(previewId!, { query: { enabled: !!previewId } })
+}
+
+/**
+ * The editing state saved with a preview (control points, pieces), readable by its creator only.
+ * `enabled` is the page's call (owner, planner open on the domain, a single track). Not prefetched
+ * server-side, never served from the cache: same reasons as `useEditRouteFormData`'s.
+ */
+export function useGpxPreviewPlannerState(previewId: string | undefined, enabled: boolean) {
+  return useGetPreviewPlannerState(previewId!, {
+    query: {
+      enabled: enabled && !!previewId,
+      staleTime: 0,
+      gcTime: 0,
+      retry: false,
+      refetchOnWindowFocus: false,
+    },
+    request: { skipErrorToast: true },
+  })
 }
 
 /** Server-side counterpart of {@link useGpxPreviewFormData}. */

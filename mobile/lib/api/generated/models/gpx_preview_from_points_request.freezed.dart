@@ -17,8 +17,9 @@ T _$identity<T>(T value) => value;
 mixin _$GpxPreviewFromPointsRequest {
 
 /// Preview name
- String get name;/// Points from frontend routing
- List<GeoPoint> get points;
+ String get name;/// Points from frontend routing; points or plannerState, never both (400 PLANNER_STATE_INVALID), and one of them (400 GPX_EMPTY)
+ List<GeoPoint>? get points;/// Editing state of the planner; the server derives the track from it. Not with points
+ PlannerState? get plannerState;
 /// Create a copy of GpxPreviewFromPointsRequest
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -32,20 +33,20 @@ $GpxPreviewFromPointsRequestCopyWith<GpxPreviewFromPointsRequest> get copyWith =
 @override
 bool operator ==(Object other) {
   final _this = this as GpxPreviewFromPointsRequest;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is GpxPreviewFromPointsRequest&&(identical(other.name, _this.name) || other.name == _this.name)&&const DeepCollectionEquality().equals(other.points, _this.points));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is GpxPreviewFromPointsRequest&&(identical(other.name, _this.name) || other.name == _this.name)&&const DeepCollectionEquality().equals(other.points, _this.points)&&(identical(other.plannerState, _this.plannerState) || other.plannerState == _this.plannerState));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as GpxPreviewFromPointsRequest;
-  return Object.hash(runtimeType,_this.name,const DeepCollectionEquality().hash(_this.points));
+  return Object.hash(runtimeType,_this.name,const DeepCollectionEquality().hash(_this.points),_this.plannerState);
 }
 
 @override
 String toString() {
   final _this = this as GpxPreviewFromPointsRequest;
-  return 'GpxPreviewFromPointsRequest(name: ${_this.name}, points: ${_this.points})';
+  return 'GpxPreviewFromPointsRequest(name: ${_this.name}, points: ${_this.points}, plannerState: ${_this.plannerState})';
 }
 
 
@@ -56,11 +57,11 @@ abstract mixin class $GpxPreviewFromPointsRequestCopyWith<$Res>  {
   factory $GpxPreviewFromPointsRequestCopyWith(GpxPreviewFromPointsRequest value, $Res Function(GpxPreviewFromPointsRequest) _then) = _$GpxPreviewFromPointsRequestCopyWithImpl;
 @useResult
 $Res call({
- String name, List<GeoPoint> points
+ String name, List<GeoPoint>? points, PlannerState? plannerState
 });
 
 
-
+$PlannerStateCopyWith<$Res>? get plannerState;
 
 }
 /// @nodoc
@@ -73,14 +74,27 @@ class _$GpxPreviewFromPointsRequestCopyWithImpl<$Res>
 
 /// Create a copy of GpxPreviewFromPointsRequest
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? points = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? points = freezed,Object? plannerState = freezed,}) {
   return _then(GpxPreviewFromPointsRequest(
 name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as String,points: null == points ? _self.points : points // ignore: cast_nullable_to_non_nullable
-as List<GeoPoint>,
+as String,points: freezed == points ? _self.points : points // ignore: cast_nullable_to_non_nullable
+as List<GeoPoint>?,plannerState: freezed == plannerState ? _self.plannerState : plannerState // ignore: cast_nullable_to_non_nullable
+as PlannerState?,
   ));
 }
+/// Create a copy of GpxPreviewFromPointsRequest
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$PlannerStateCopyWith<$Res>? get plannerState {
+    if (_self.plannerState == null) {
+    return null;
+  }
 
+  return $PlannerStateCopyWith<$Res>(_self.plannerState!, (value) {
+    return _then(_self.copyWith(plannerState: value));
+  });
+}
 }
 
 
@@ -162,10 +176,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String name,  List<GeoPoint> points)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String name,  List<GeoPoint>? points,  PlannerState? plannerState)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _GpxPreviewFromPointsRequest() when $default != null:
-return $default(_that.name,_that.points);case _:
+return $default(_that.name,_that.points,_that.plannerState);case _:
   return orElse();
 
 }
@@ -183,10 +197,10 @@ return $default(_that.name,_that.points);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String name,  List<GeoPoint> points)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String name,  List<GeoPoint>? points,  PlannerState? plannerState)  $default,) {final _that = this;
 switch (_that) {
 case _GpxPreviewFromPointsRequest():
-return $default(_that.name,_that.points);case _:
+return $default(_that.name,_that.points,_that.plannerState);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -203,10 +217,10 @@ return $default(_that.name,_that.points);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String name,  List<GeoPoint> points)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String name,  List<GeoPoint>? points,  PlannerState? plannerState)?  $default,) {final _that = this;
 switch (_that) {
 case _GpxPreviewFromPointsRequest() when $default != null:
-return $default(_that.name,_that.points);case _:
+return $default(_that.name,_that.points,_that.plannerState);case _:
   return null;
 
 }
@@ -218,20 +232,24 @@ return $default(_that.name,_that.points);case _:
 @JsonSerializable()
 
 class _GpxPreviewFromPointsRequest implements GpxPreviewFromPointsRequest {
-  const _GpxPreviewFromPointsRequest({required this.name, required  List<GeoPoint> points}): _points = points;
+  const _GpxPreviewFromPointsRequest({required this.name,  List<GeoPoint>? points, this.plannerState}): _points = points;
   factory _GpxPreviewFromPointsRequest.fromJson(Map<String, dynamic> json) => _$GpxPreviewFromPointsRequestFromJson(json);
 
 /// Preview name
 @override final  String name;
-/// Points from frontend routing
- final  List<GeoPoint> _points;
-/// Points from frontend routing
-@override List<GeoPoint> get points {
+/// Points from frontend routing; points or plannerState, never both (400 PLANNER_STATE_INVALID), and one of them (400 GPX_EMPTY)
+ final  List<GeoPoint>? _points;
+/// Points from frontend routing; points or plannerState, never both (400 PLANNER_STATE_INVALID), and one of them (400 GPX_EMPTY)
+@override List<GeoPoint>? get points {
+  final value = _points;
+  if (value == null) return null;
   if (_points is EqualUnmodifiableListView) return _points;
   // ignore: implicit_dynamic_type
-  return EqualUnmodifiableListView(_points);
+  return EqualUnmodifiableListView(value);
 }
 
+/// Editing state of the planner; the server derives the track from it. Not with points
+@override final  PlannerState? plannerState;
 
 /// Create a copy of GpxPreviewFromPointsRequest
 /// with the given fields replaced by the non-null parameter values.
@@ -246,18 +264,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _GpxPreviewFromPointsRequest&&(identical(other.name, name) || other.name == name)&&const DeepCollectionEquality().equals(other.points, _points));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _GpxPreviewFromPointsRequest&&(identical(other.name, name) || other.name == name)&&const DeepCollectionEquality().equals(other.points, _points)&&(identical(other.plannerState, plannerState) || other.plannerState == plannerState));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,name,const DeepCollectionEquality().hash(_points));
+    return Object.hash(runtimeType,name,const DeepCollectionEquality().hash(_points),plannerState);
 }
 
 @override
 String toString() {
-    return 'GpxPreviewFromPointsRequest(name: $name, points: $points)';
+    return 'GpxPreviewFromPointsRequest(name: $name, points: $points, plannerState: $plannerState)';
 }
 
 
@@ -268,11 +286,11 @@ abstract mixin class _$GpxPreviewFromPointsRequestCopyWith<$Res> implements $Gpx
   factory _$GpxPreviewFromPointsRequestCopyWith(_GpxPreviewFromPointsRequest value, $Res Function(_GpxPreviewFromPointsRequest) _then) = __$GpxPreviewFromPointsRequestCopyWithImpl;
 @override @useResult
 $Res call({
- String name, List<GeoPoint> points
+ String name, List<GeoPoint>? points, PlannerState? plannerState
 });
 
 
-
+@override $PlannerStateCopyWith<$Res>? get plannerState;
 
 }
 /// @nodoc
@@ -285,15 +303,28 @@ class __$GpxPreviewFromPointsRequestCopyWithImpl<$Res>
 
 /// Create a copy of GpxPreviewFromPointsRequest
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? name = null,Object? points = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? name = null,Object? points = freezed,Object? plannerState = freezed,}) {
   return _then(_GpxPreviewFromPointsRequest(
 name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as String,points: null == points ? _self._points : points // ignore: cast_nullable_to_non_nullable
-as List<GeoPoint>,
+as String,points: freezed == points ? _self._points : points // ignore: cast_nullable_to_non_nullable
+as List<GeoPoint>?,plannerState: freezed == plannerState ? _self.plannerState : plannerState // ignore: cast_nullable_to_non_nullable
+as PlannerState?,
   ));
 }
 
+/// Create a copy of GpxPreviewFromPointsRequest
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$PlannerStateCopyWith<$Res>? get plannerState {
+    if (_self.plannerState == null) {
+    return null;
+  }
 
+  return $PlannerStateCopyWith<$Res>(_self.plannerState!, (value) {
+    return _then(_self.copyWith(plannerState: value));
+  });
+}
 }
 
 // dart format on

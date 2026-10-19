@@ -61,6 +61,24 @@ public final class GpxLimits {
    */
   public static final int MAX_PLANNER_POINTS = 100_000;
 
+  /** The one version of the planner state format this release reads (docs/LEDGER_*.md WEB-100, C4a). */
+  public static final int PLANNER_STATE_VERSION = 1;
+
+  /**
+   * Pieces in one planner state: a control point every 100 m over 200 km. Junctions are one more.
+   */
+  public static final int MAX_PLANNER_PIECES = 2_000;
+
+  /** Source tracks in one planner state: C4a writes at most one, the rest is room for later. */
+  public static final int MAX_PLANNER_SOURCES = 8;
+
+  /**
+   * Summed length of every {@code line} and {@code ele} string of a planner state: the worst case
+   * (100 000 routed points and 100 000 source points) is about 1.6 MB; this also bounds the cost of
+   * decoding.
+   */
+  public static final int MAX_PLANNER_STATE_CHARS = 2_000_000;
+
   /** Fewest GPX files one merge takes: merging a single file is just an upload. */
   public static final int MIN_MERGE_FILES = 2;
 

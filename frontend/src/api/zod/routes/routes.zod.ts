@@ -1050,6 +1050,20 @@ export const createRouteBodyRoutePointsItemLatMax = 90
 
 export const createRouteBodyRoutePointsMax = 100000
 
+export const createRouteBodyRoutePlannerStateSourcesItemLineMax = 2000000
+
+export const createRouteBodyRoutePlannerStateSourcesItemEleMax = 2000000
+
+export const createRouteBodyRoutePlannerStateSourcesMax = 8
+
+export const createRouteBodyRoutePlannerStateJunctionsMax = 2001
+
+export const createRouteBodyRoutePlannerStatePiecesItemLineMax = 2000000
+
+export const createRouteBodyRoutePlannerStatePiecesItemEleMax = 2000000
+
+export const createRouteBodyRoutePlannerStatePiecesMax = 2000
+
 export const CreateRouteBody = zod.object({
   route: zod
     .object({
@@ -1351,6 +1365,81 @@ export const CreateRouteBody = zod.object({
         .optional()
         .describe(
           "IDs (TSID) of the team's ROUTE tags the route carries, replacing the whole set — at most 10, each a tag of this team and of kind ROUTE, else 400 (TAG_INVALID, TOO_MANY_TAGS). An empty list removes them all. Omitted: none on a creation, left as they are on an update."
+        ),
+      plannerState: zod
+        .object({
+          version: zod.int(),
+          profile: zod.enum(['BIKE', 'FASTBIKE', 'GRAVEL', 'MTB', 'RUN_HIKE', 'MOTORCYCLE']),
+          sources: zod
+            .array(
+              zod.object({
+                line: zod
+                  .string()
+                  .max(createRouteBodyRoutePlannerStateSourcesItemLineMax)
+                  .describe('Polyline (precision 6, latitude then longitude) of the source track'),
+                ele: zod
+                  .string()
+                  .max(createRouteBodyRoutePlannerStateSourcesItemEleMax)
+                  .optional()
+                  .describe(
+                    'One-dimension polyline (tenths of a metre), one value per point of line; absent: no elevation'
+                  ),
+                ascendScale: zod
+                  .number()
+                  .describe(
+                    'Factor that recalibrates the raw climb of the source on a reference ascent (1 without reference); in ]0, 100]'
+                  ),
+              })
+            )
+            .max(createRouteBodyRoutePlannerStateSourcesMax),
+          junctions: zod
+            .array(
+              zod.object({
+                kind: zod.enum(['CONTROL', 'JOIN']),
+                lng: zod.number(),
+                lat: zod.number(),
+                ele: zod.number().optional(),
+                source: zod
+                  .int()
+                  .optional()
+                  .describe(
+                    'Index of the source track this point comes from; with idx or not at all'
+                  ),
+                idx: zod.int().optional().describe('Index of this point in that source track'),
+              })
+            )
+            .max(createRouteBodyRoutePlannerStateJunctionsMax),
+          pieces: zod
+            .array(
+              zod.object({
+                mode: zod.enum(['ROUTED', 'DIRECT', 'IMPORTED']),
+                line: zod
+                  .string()
+                  .max(createRouteBodyRoutePlannerStatePiecesItemLineMax)
+                  .optional()
+                  .describe('ROUTED and DIRECT: polyline6 of the points strictly inside the piece'),
+                ele: zod
+                  .string()
+                  .max(createRouteBodyRoutePlannerStatePiecesItemEleMax)
+                  .optional()
+                  .describe('ROUTED and DIRECT: one-dimension polyline of their elevations'),
+                ascend: zod.number().optional().describe('ROUTED: climb of the piece in metres'),
+                source: zod.int().optional().describe('IMPORTED: index of the source track'),
+                from: zod
+                  .int()
+                  .optional()
+                  .describe('IMPORTED: index in the source of the first junction'),
+                to: zod
+                  .int()
+                  .optional()
+                  .describe('IMPORTED: index in the source of the last junction'),
+              })
+            )
+            .max(createRouteBodyRoutePlannerStatePiecesMax),
+        })
+        .optional()
+        .describe(
+          'Editing state of the planner; the server derives the track from it. Not with points (400 PLANNER_STATE_INVALID); a gpxFile wins over it'
         ),
     })
     .optional()
@@ -2381,6 +2470,20 @@ export const updateRouteBodyRoutePointsItemLatMax = 90
 
 export const updateRouteBodyRoutePointsMax = 100000
 
+export const updateRouteBodyRoutePlannerStateSourcesItemLineMax = 2000000
+
+export const updateRouteBodyRoutePlannerStateSourcesItemEleMax = 2000000
+
+export const updateRouteBodyRoutePlannerStateSourcesMax = 8
+
+export const updateRouteBodyRoutePlannerStateJunctionsMax = 2001
+
+export const updateRouteBodyRoutePlannerStatePiecesItemLineMax = 2000000
+
+export const updateRouteBodyRoutePlannerStatePiecesItemEleMax = 2000000
+
+export const updateRouteBodyRoutePlannerStatePiecesMax = 2000
+
 export const UpdateRouteBody = zod.object({
   route: zod
     .object({
@@ -2682,6 +2785,81 @@ export const UpdateRouteBody = zod.object({
         .optional()
         .describe(
           "IDs (TSID) of the team's ROUTE tags the route carries, replacing the whole set — at most 10, each a tag of this team and of kind ROUTE, else 400 (TAG_INVALID, TOO_MANY_TAGS). An empty list removes them all. Omitted: none on a creation, left as they are on an update."
+        ),
+      plannerState: zod
+        .object({
+          version: zod.int(),
+          profile: zod.enum(['BIKE', 'FASTBIKE', 'GRAVEL', 'MTB', 'RUN_HIKE', 'MOTORCYCLE']),
+          sources: zod
+            .array(
+              zod.object({
+                line: zod
+                  .string()
+                  .max(updateRouteBodyRoutePlannerStateSourcesItemLineMax)
+                  .describe('Polyline (precision 6, latitude then longitude) of the source track'),
+                ele: zod
+                  .string()
+                  .max(updateRouteBodyRoutePlannerStateSourcesItemEleMax)
+                  .optional()
+                  .describe(
+                    'One-dimension polyline (tenths of a metre), one value per point of line; absent: no elevation'
+                  ),
+                ascendScale: zod
+                  .number()
+                  .describe(
+                    'Factor that recalibrates the raw climb of the source on a reference ascent (1 without reference); in ]0, 100]'
+                  ),
+              })
+            )
+            .max(updateRouteBodyRoutePlannerStateSourcesMax),
+          junctions: zod
+            .array(
+              zod.object({
+                kind: zod.enum(['CONTROL', 'JOIN']),
+                lng: zod.number(),
+                lat: zod.number(),
+                ele: zod.number().optional(),
+                source: zod
+                  .int()
+                  .optional()
+                  .describe(
+                    'Index of the source track this point comes from; with idx or not at all'
+                  ),
+                idx: zod.int().optional().describe('Index of this point in that source track'),
+              })
+            )
+            .max(updateRouteBodyRoutePlannerStateJunctionsMax),
+          pieces: zod
+            .array(
+              zod.object({
+                mode: zod.enum(['ROUTED', 'DIRECT', 'IMPORTED']),
+                line: zod
+                  .string()
+                  .max(updateRouteBodyRoutePlannerStatePiecesItemLineMax)
+                  .optional()
+                  .describe('ROUTED and DIRECT: polyline6 of the points strictly inside the piece'),
+                ele: zod
+                  .string()
+                  .max(updateRouteBodyRoutePlannerStatePiecesItemEleMax)
+                  .optional()
+                  .describe('ROUTED and DIRECT: one-dimension polyline of their elevations'),
+                ascend: zod.number().optional().describe('ROUTED: climb of the piece in metres'),
+                source: zod.int().optional().describe('IMPORTED: index of the source track'),
+                from: zod
+                  .int()
+                  .optional()
+                  .describe('IMPORTED: index in the source of the first junction'),
+                to: zod
+                  .int()
+                  .optional()
+                  .describe('IMPORTED: index in the source of the last junction'),
+              })
+            )
+            .max(updateRouteBodyRoutePlannerStatePiecesMax),
+        })
+        .optional()
+        .describe(
+          'Editing state of the planner; the server derives the track from it. Not with points (400 PLANNER_STATE_INVALID); a gpxFile wins over it'
         ),
     })
     .optional()
@@ -3466,6 +3644,107 @@ export const DeleteRouteParams = zod.object({
 })
 
 export const DeleteRouteResponse = zod.void()
+
+/**
+ * The control points, routed pieces and imported ranges the route was last saved with, for its edit page. Reserved to those who may edit the route. 'state' is absent when there is none to read back (never saved with one, track replaced since by a path that does not carry it, several tracks): the editor then opens the saved track as an import.
+ * @summary Get the planner state of a route
+ */
+export const GetRoutePlannerStateParams = zod.object({
+  routeSlug: zod.string().describe('Route slug'),
+  teamSlug: zod.string().describe('Team URL slug'),
+})
+
+export const getRoutePlannerStateResponseStateSourcesItemLineMax = 2000000
+
+export const getRoutePlannerStateResponseStateSourcesItemEleMax = 2000000
+
+export const getRoutePlannerStateResponseStateSourcesMax = 8
+
+export const getRoutePlannerStateResponseStateJunctionsMax = 2001
+
+export const getRoutePlannerStateResponseStatePiecesItemLineMax = 2000000
+
+export const getRoutePlannerStateResponseStatePiecesItemEleMax = 2000000
+
+export const getRoutePlannerStateResponseStatePiecesMax = 2000
+
+export const GetRoutePlannerStateResponse = zod
+  .object({
+    state: zod
+      .object({
+        version: zod.int(),
+        profile: zod.enum(['BIKE', 'FASTBIKE', 'GRAVEL', 'MTB', 'RUN_HIKE', 'MOTORCYCLE']),
+        sources: zod
+          .array(
+            zod.object({
+              line: zod
+                .string()
+                .max(getRoutePlannerStateResponseStateSourcesItemLineMax)
+                .describe('Polyline (precision 6, latitude then longitude) of the source track'),
+              ele: zod
+                .string()
+                .max(getRoutePlannerStateResponseStateSourcesItemEleMax)
+                .optional()
+                .describe(
+                  'One-dimension polyline (tenths of a metre), one value per point of line; absent: no elevation'
+                ),
+              ascendScale: zod
+                .number()
+                .describe(
+                  'Factor that recalibrates the raw climb of the source on a reference ascent (1 without reference); in ]0, 100]'
+                ),
+            })
+          )
+          .max(getRoutePlannerStateResponseStateSourcesMax),
+        junctions: zod
+          .array(
+            zod.object({
+              kind: zod.enum(['CONTROL', 'JOIN']),
+              lng: zod.number(),
+              lat: zod.number(),
+              ele: zod.number().optional(),
+              source: zod
+                .int()
+                .optional()
+                .describe(
+                  'Index of the source track this point comes from; with idx or not at all'
+                ),
+              idx: zod.int().optional().describe('Index of this point in that source track'),
+            })
+          )
+          .max(getRoutePlannerStateResponseStateJunctionsMax),
+        pieces: zod
+          .array(
+            zod.object({
+              mode: zod.enum(['ROUTED', 'DIRECT', 'IMPORTED']),
+              line: zod
+                .string()
+                .max(getRoutePlannerStateResponseStatePiecesItemLineMax)
+                .optional()
+                .describe('ROUTED and DIRECT: polyline6 of the points strictly inside the piece'),
+              ele: zod
+                .string()
+                .max(getRoutePlannerStateResponseStatePiecesItemEleMax)
+                .optional()
+                .describe('ROUTED and DIRECT: one-dimension polyline of their elevations'),
+              ascend: zod.number().optional().describe('ROUTED: climb of the piece in metres'),
+              source: zod.int().optional().describe('IMPORTED: index of the source track'),
+              from: zod
+                .int()
+                .optional()
+                .describe('IMPORTED: index in the source of the first junction'),
+              to: zod
+                .int()
+                .optional()
+                .describe('IMPORTED: index in the source of the last junction'),
+            })
+          )
+          .max(getRoutePlannerStateResponseStatePiecesMax),
+      })
+      .optional()
+      .describe('The state; absent when there is none to read back'),
+  })
+  .describe('Editing state of the planner of a route or a preview, if any')
 
 /**
  * Change route URL slug. Requires organizer permissions.

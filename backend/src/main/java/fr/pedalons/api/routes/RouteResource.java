@@ -383,6 +383,47 @@ public class RouteResource {
   }
 
   /**
+   * The editing state of the route planner, for the edit page only.
+   */
+  @GET
+  @Path("/{routeSlug}/planner-state")
+  @RolesAllowed("user")
+  @Operation(
+      operationId = "getRoutePlannerState",
+      summary = "Get the planner state of a route",
+      description =
+          "The control points, routed pieces and imported ranges the route was last saved with,"
+              + " for its edit page. Reserved to those who may edit the route. 'state' is absent"
+              + " when there is none to read back (never saved with one, track replaced since by"
+              + " a path that does not carry it, several tracks): the editor then opens the saved"
+              + " track as an import.")
+  @APIResponses({
+    @APIResponse(
+        responseCode = "200",
+        description = "State retrieved (or absent)",
+        content = @Content(schema = @Schema(implementation = PlannerStateResponse.class))),
+    @APIResponse(
+        responseCode = "401",
+        description = "Unauthorized",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+    @APIResponse(
+        responseCode = "403",
+        description = "User is not authorized to update this route",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+    @APIResponse(
+        responseCode = "404",
+        description = "Team or route not found",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  public Response getRoutePlannerState(
+      @Parameter(description = "Team URL slug") @PathParam("teamSlug") String teamSlug,
+      @Parameter(description = "Route slug") @PathParam("routeSlug") String routeSlug) {
+    return Response.ok(routeService.getPlannerState(teamSlug, routeSlug))
+        .header(HttpHeaders.CACHE_CONTROL, PRIVATE_NO_STORE)
+        .build();
+  }
+
+  /**
    * Update route metadata and optionally GPX file.
    */
   @PUT

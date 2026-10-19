@@ -46,6 +46,8 @@ public enum ErrorCode {
   /** The files of a GPX merge hold more than GpxLimits.MAX_MERGE_TRACKS tracks together. */
   GPX_MERGE_TOO_MANY_TRACKS,
   ROUTE_PLANNER_DISABLED,
+  /** The planner state of a request is malformed, out of bounds or sent with points — HTTP 400. */
+  PLANNER_STATE_INVALID,
   /** The routing provider's monthly quota is spent (Stadia Maps answered 429) — HTTP 503. */
   ROUTING_QUOTA_EXCEEDED,
   /** The two points are further apart than the provider routes (Valhalla code 154) — HTTP 400. */

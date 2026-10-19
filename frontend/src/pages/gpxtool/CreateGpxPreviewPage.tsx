@@ -3,7 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { Stack, Text, Title } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
-import type { GeoPoint } from '@/api/dto'
+import type { GeoPoint, PlannerState } from '@/api/dto'
 import {
   getListMyPreviewsQueryKey,
   useCreatePreviewFromPoints,
@@ -14,7 +14,7 @@ import { isGpxPlannerEnabled } from '@/config/appConfig'
 
 /**
  * Draws a GPX preview from scratch: an empty planner map, a name, and nothing else. On submit the
- * planner points (already routed on the frontend) are sent to the backend, which runs the same
+ * planner's editing state (already routed on the frontend) is sent to the backend, which runs the same
  * elevation/climb pipeline as an uploaded file and returns a shareable preview.
  */
 export function CreateGpxPreviewPage() {
@@ -23,11 +23,14 @@ export function CreateGpxPreviewPage() {
   const queryClient = useQueryClient()
   const createMutation = useCreatePreviewFromPoints()
 
-  const handleSubmit = async (name: string, points?: GeoPoint[]) => {
-    if (!points || points.length < 2) return
+  const handleSubmit = async (
+    name: string,
+    track?: { points?: GeoPoint[]; plannerState?: PlannerState }
+  ) => {
+    if (!track?.plannerState && (!track?.points || track.points.length < 2)) return
 
     const preview = await createMutation.mutateAsync(
-      { data: { name, points } },
+      { data: { name, points: track.points, plannerState: track.plannerState } },
       {
         onSuccess: () => {
           // Refresh "my files": the key prefix matches every paginated variant.

@@ -1,9 +1,11 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useMediaMatch } from '@/hooks/useResponsive'
 import { Alert, Box, Button, FileInput, Group, Stack, Text, TextInput } from '@mantine/core'
-import type { GeoPoint } from '@/api/dto'
-import { RoutePlannerField } from '../planner/RoutePlannerField'
+import type { GeoPoint, PlannerState } from '@/api/dto'
+import { notifications } from '@mantine/notifications'
+import { plannerPayload } from '@/lib/plannerSubmit'
+import { RoutePlannerField, type RoutePlannerHandle } from '../planner/RoutePlannerField'
 import { isGpxPlannerEnabled } from '@/config/appConfig'
 
 type SourceMode = 'gpx' | 'planner'
@@ -14,9 +16,19 @@ interface GpxPreviewEditorProps {
   initialTrack?: number[][]
   /** D+ (m) stored for `initialTrack`. */
   initialAscend?: number
+  /** The saved editing state of the preview (control points, pieces): the planner opens on it. */
+  initialPlannerState?: PlannerState
   /** Create-from-scratch: planner on an empty map, no GPX upload, no source toggle. */
   create?: boolean
-  onSubmit: (name: string, points?: GeoPoint[], gpxFile?: File) => void | Promise<void>
+  /**
+   * `track` is set when the planner's route is to be saved: its editing state, or its points past
+   * the bounds of the state. Absent for a rename, which leaves the track as it is.
+   */
+  onSubmit: (
+    name: string,
+    track?: { points?: GeoPoint[]; plannerState?: PlannerState },
+    gpxFile?: File
+  ) => void | Promise<void>
   onCancel: () => void
   isPending: boolean
 }
@@ -33,6 +45,7 @@ export function GpxPreviewEditor({
   initialName,
   initialTrack,
   initialAscend,
+  initialPlannerState,
   create = false,
   onSubmit,
   onCancel,
@@ -49,6 +62,7 @@ export function GpxPreviewEditor({
   const [gpxFile, setGpxFile] = useState<File | null>(null)
   const [plannerPoints, setPlannerPoints] = useState<GeoPoint[]>([])
   const [error, setError] = useState<string | null>(null)
+  const plannerRef = useRef<RoutePlannerHandle>(null)
   // Bumped by the « draw on the map » button: on a finger it opens the fullscreen editor.
   const [drawRequest, setDrawRequest] = useState(0)
 
@@ -74,9 +88,20 @@ export function GpxPreviewEditor({
       return
     }
     setError(null)
-    const points = sourceMode === 'planner' && plannerPoints.length >= 2 ? plannerPoints : undefined
+    const payload =
+      sourceMode === 'planner' && canUsePlanner
+        ? plannerPayload(plannerRef.current?.snapshot(), create)
+        : {}
+    const track =
+      payload.plannerState || payload.points
+        ? { points: payload.points, plannerState: payload.plannerState }
+        : undefined
     const file = sourceMode === 'gpx' ? gpxFile || undefined : undefined
-    await onSubmit(name.trim(), points, file)
+    await onSubmit(name.trim(), track, file)
+    // Only once the save went through: a failed save did not drop anything
+    if (payload.tooLarge) {
+      notifications.show({ message: t('planner.state.tooLarge'), color: 'yellow' })
+    }
   }
 
   const showPlanner = canUsePlanner && sourceMode === 'planner'
@@ -129,6 +154,8 @@ export function GpxPreviewEditor({
             {t('routes.create.form.plannerLabel')}
           </Text>
           <RoutePlannerField
+            plannerRef={plannerRef}
+            initialState={initialPlannerState}
             onPointsChange={setPlannerPoints}
             initialTrack={initialTrack}
             initialAscend={initialAscend}

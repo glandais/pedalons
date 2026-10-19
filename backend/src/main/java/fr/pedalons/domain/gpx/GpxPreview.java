@@ -3,6 +3,7 @@ package fr.pedalons.domain.gpx;
 import fr.pedalons.domain.platform.Domain;
 import fr.pedalons.domain.route.ClimbData;
 import fr.pedalons.domain.route.GpxTrack;
+import fr.pedalons.domain.route.PlannerStateDocument;
 import fr.pedalons.domain.user.User;
 import fr.pedalons.enums.ElevationState;
 import io.hypersistence.utils.hibernate.id.Tsid;
@@ -108,6 +109,16 @@ public class GpxPreview {
    */
   @Column(name = "files_revision")
   private @Nullable Long filesRevision;
+
+  /**
+   * Editing state of the planner, read by its creator on the edit page only (docs/LEDGER_*.md WEB-100). Valid
+   * while its track revision is {@link #filesRevision}. Lazy: up
+   * to a few MB, and every path that loads the track must not pay for it.
+   */
+  @Basic(fetch = FetchType.LAZY)
+  @Type(JsonBinaryType.class)
+  @Column(name = "planner_state", columnDefinition = "jsonb")
+  private @Nullable PlannerStateDocument plannerState;
 
   @CreationTimestamp
   @Column(name = "created_at", nullable = false, updatable = false)

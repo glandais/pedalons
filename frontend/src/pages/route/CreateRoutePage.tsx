@@ -26,8 +26,8 @@ export function CreateRoutePage() {
   useCanonicalPath(team ? paths.routeNew(team.slug) : undefined)
 
   const handleSubmit = async (data: RouteRequest, gpxFile?: File) => {
-    // Either gpxFile or points must be provided
-    if (!gpxFile && (!data.points || data.points.length < 2)) return
+    // Either gpxFile, planner state or points must be provided
+    if (!gpxFile && !data.plannerState && (!data.points || data.points.length < 2)) return
 
     const route = await createRouteMutation.mutateAsync(
       {

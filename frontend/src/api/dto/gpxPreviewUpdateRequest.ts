@@ -1,4 +1,5 @@
 import type { GeoPoint } from './geoPoint.ts'
+import type { PlannerState } from './plannerState.ts'
 
 /**
  * GPX preview update request
@@ -16,4 +17,6 @@ export interface GpxPreviewUpdateRequest {
    * @maxItems 100000
    */
   points?: GeoPoint[]
+  /** Editing state of the planner; the server derives the track from it. Not with points (400 PLANNER_STATE_INVALID); a gpxFile wins over it */
+  plannerState?: PlannerState
 }

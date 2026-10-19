@@ -13,6 +13,7 @@ import static org.mockito.Mockito.doAnswer;
 
 import fr.pedalons.api.AbstractResourceTest;
 import fr.pedalons.common.TsidUtils;
+import fr.pedalons.common.planner.PlannerState;
 import fr.pedalons.domain.route.ElevationRefresh;
 import fr.pedalons.domain.route.GpxTrack;
 import fr.pedalons.domain.route.Route;
@@ -33,6 +34,7 @@ import fr.pedalons.repository.route.RouteRepository;
 import fr.pedalons.service.asset.AssetService;
 import fr.pedalons.service.gps.sync.GpsSyncNames;
 import fr.pedalons.service.route.RouteService;
+import fr.pedalons.service.route.planner.PlannerStateFixtures;
 import fr.pedalons.service.security.DomainResolver;
 import fr.pedalons.service.security.PedalonsQueryContext;
 import fr.pedalons.service.thumbnail.MapThumbnailRenderer;
@@ -445,6 +447,72 @@ class ElevationRefreshTest extends AbstractResourceTest {
     assertEquals(trackIds, after);
     assertFlat(created, FakeElevationProducer.HD_ELEVATION);
     assertEquals(ElevationState.HD, storedState(created));
+  }
+
+  @Test
+  void worker_keepsThePlannerState_andItsRevisionStaysValid() {
+    dataService.setTeamEnableRoutePlanner(team1, true);
+    queryContext.setUserForTest(user1);
+    PlannerState state = PlannerStateFixtures.example();
+    RouteDto created =
+        routeService.createRoute(
+            team1Slug,
+            new RouteRequest(
+                "Boucle",
+                MediaDto.builder().build(),
+                SurfaceType.ROAD,
+                Visibility.PUBLIC,
+                null,
+                null,
+                state),
+            null);
+    assertEquals(
+        state.pieces().size(),
+        QuarkusTransaction.requiringNew()
+            .call(() -> routeService.getPlannerState(team1Slug, created.slug()))
+            .state()
+            .pieces()
+            .size());
+    Long original = byType(snaps(created)).get(AssetType.ROUTE_ORIGINAL_GPX).fileId();
+    makeDue(created);
+
+    worker.processDue();
+
+    assertEquals(ElevationState.HD, storedState(created));
+    assertEquals(
+        original,
+        byType(snaps(created)).get(AssetType.ROUTE_ORIGINAL_GPX).fileId(),
+        "the original is not rewritten");
+    assertNotNull(
+        QuarkusTransaction.requiringNew()
+            .call(() -> routeService.getPlannerState(team1Slug, created.slug()))
+            .state(),
+        "still readable");
+  }
+
+  @Test
+  void aPlannerState_isNotReadableAcrossDomains() {
+    dataService.setTeamEnableRoutePlanner(team1, true);
+    queryContext.setUserForTest(user1);
+    RouteDto created =
+        routeService.createRoute(
+            team1Slug,
+            new RouteRequest(
+                "Boucle",
+                MediaDto.builder().build(),
+                SurfaceType.ROAD,
+                Visibility.PUBLIC,
+                null,
+                null,
+                PlannerStateFixtures.example()),
+            null);
+    fr.pedalons.domain.platform.Domain other =
+        dataService.createDomain("other.example.org", "Other", "https://other.example.org");
+    domainResolver.setDomainForTest(other);
+
+    org.junit.jupiter.api.Assertions.assertThrows(
+        fr.pedalons.infrastructure.exception.NotFoundException.class,
+        () -> routeService.getPlannerState(team1Slug, created.slug()));
   }
 
   @Test

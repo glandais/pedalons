@@ -3,8 +3,10 @@ package fr.pedalons.service.route;
 import fr.pedalons.common.GeoPoint;
 import fr.pedalons.common.exception.BadRequestException;
 import fr.pedalons.common.exception.BusinessException;
+import fr.pedalons.common.planner.PlannerState;
 import fr.pedalons.domain.asset.Asset;
 import fr.pedalons.domain.common.TeamEntity;
+import fr.pedalons.domain.route.PlannerStateDocument;
 import fr.pedalons.domain.route.Route;
 import fr.pedalons.domain.team.Team;
 import fr.pedalons.domain.user.User;
@@ -16,6 +18,7 @@ import fr.pedalons.dto.error.ErrorCode;
 import fr.pedalons.dto.routes.request.RouteRequest;
 import fr.pedalons.dto.routes.request.RouteSearchParams;
 import fr.pedalons.dto.routes.response.BoundsDto;
+import fr.pedalons.dto.routes.response.PlannerStateResponse;
 import fr.pedalons.dto.routes.response.RouteBoundsResponse;
 import fr.pedalons.dto.routes.response.RouteDetailDto;
 import fr.pedalons.dto.routes.response.RouteDto;
@@ -36,6 +39,7 @@ import fr.pedalons.enums.WindDirection;
 import fr.pedalons.repository.asset.AssetRepository;
 import fr.pedalons.repository.common.TeamEntityQueryBasic;
 import fr.pedalons.repository.ride.RideRepository;
+import fr.pedalons.repository.route.GpxTrackRepository;
 import fr.pedalons.repository.route.RouteQuery;
 import fr.pedalons.repository.route.RouteRepository;
 import fr.pedalons.repository.trip.TripRepository;
@@ -43,6 +47,7 @@ import fr.pedalons.service.comment.CommentCountLookup;
 import fr.pedalons.service.common.TeamEntityService;
 import fr.pedalons.service.elevation.ElevationRefreshService;
 import fr.pedalons.service.publication.PublicationEndCalculator;
+import fr.pedalons.service.route.planner.PlannerStates;
 import fr.pedalons.service.route.response.TrackMetadata;
 import fr.pedalons.service.security.annotation.CheckAccess;
 import fr.pedalons.service.security.annotation.Public;
@@ -96,6 +101,10 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
   @Inject ElevationRefreshService elevationRefreshService;
 
   @Inject AssetRepository assetRepository;
+
+  @Inject GpxTrackRepository gpxTrackRepository;
+
+  @Inject PlannerStates plannerStates;
 
   @Inject RideRepository rideRepository;
 
@@ -274,17 +283,48 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
   @Transactional
   @CheckAccess(entityType = EntityType.ROUTE, action = ActionType.CREATE)
   public RouteDto createRoute(String teamSlug, RouteRequest request, @Nullable Path gpxPath) {
+    return doCreateRoute(teamSlug, request, gpxPath, null);
+  }
+
+  /**
+   * As {@link #createRoute(String, RouteRequest, Path)}, for the promotion of a preview: {@code
+   * copiedState} is the planner state of the preview, written with the track of the new route
+   * (docs/LEDGER_*.md WEB-100, C4a). The track comes from the preview's original GPX, which is the
+   * one derived from that state, so the two agree by construction.
+   */
+  @Transactional
+  @CheckAccess(entityType = EntityType.ROUTE, action = ActionType.CREATE)
+  public RouteDto createRoute(
+      String teamSlug,
+      RouteRequest request,
+      @Nullable Path gpxPath,
+      @Nullable PlannerState copiedState) {
+    return doCreateRoute(teamSlug, request, gpxPath, copiedState);
+  }
+
+  private RouteDto doCreateRoute(
+      String teamSlug,
+      RouteRequest request,
+      @Nullable Path gpxPath,
+      @Nullable PlannerState copiedState) {
     Team team = teamService.getTeam(teamSlug);
     User creator = pedalonsContext.getUser();
 
     validateVisibility(team, request);
 
-    // Validate GPX file
+    // Validate GPX file. A file wins over a planner state, which is then ignored, not even
+    // validated.
     List<GeoPoint> routePoints = request.points();
-    if (gpxPath == null && (routePoints == null || routePoints.isEmpty())) {
+    rejectPointsWithState(request);
+    PlannerState requestedState = gpxPath == null ? request.plannerState() : null;
+    if (gpxPath == null
+        && requestedState == null
+        && (routePoints == null || routePoints.isEmpty())) {
       throw new BusinessException(ErrorCode.GPX_EMPTY);
     }
-    checkPlannerAllowed(team, gpxPath, routePoints);
+    checkPlannerAllowed(team, gpxPath, routePoints, requestedState);
+    List<GeoPoint> statePoints =
+        requestedState == null ? null : plannerStates.validateAndDerive(requestedState);
 
     String slug = slugService.generateSlug(request.name(), team.getId(), routeRepository);
 
@@ -303,7 +343,9 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
       if (gpxPath != null) {
         gpx = gpxProcessingService.parseGpx(gpxPath);
       } else {
-        gpx = gpxProcessingService.fromPoints(route.getName(), routePoints);
+        gpx =
+            gpxProcessingService.fromPoints(
+                route.getName(), statePoints != null ? statePoints : routePoints);
       }
       // Phase 1: CPU + S3 (transaction suspended, DB connection released)
       ElevationQuality quality = elevationRefreshService.saveQuality();
@@ -321,6 +363,7 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
       route.setEnd(metadata.end());
       route.setWindDirection(getWindDirection(metadata));
       recordElevationQuality(route, quality, gpxResult);
+      storePlannerState(route, requestedState != null ? requestedState : copiedState, gpxResult);
 
       updateMedia(route, request.media());
       routeRepository.persist(route);
@@ -335,16 +378,51 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
    * Refuse a drawn track when the team's planner is closed.
    *
    * <p>The two sources are told apart the same way the processing below does it: a {@code gpxPath}
-   * means an imported file and always wins, so points only matter when no file came with the
-   * request. This deliberately lives here and not in {@code RouteAccessChecker} — the checker only
-   * ever sees the team slug and the entity slug, never the payload, so it cannot distinguish a
-   * drawing from an import.
+   * means an imported file and always wins, so points or a planner state only matter when no file
+   * came with the request. This deliberately lives here and not in {@code RouteAccessChecker} — the
+   * checker only ever sees the team slug and the entity slug, never the payload, so it cannot
+   * distinguish a drawing from an import.
    */
   private void checkPlannerAllowed(
-      Team team, @Nullable Path gpxPath, @Nullable List<GeoPoint> points) {
-    if (gpxPath == null && points != null && !points.isEmpty() && !team.isEnableRoutePlanner()) {
+      Team team,
+      @Nullable Path gpxPath,
+      @Nullable List<GeoPoint> points,
+      @Nullable PlannerState plannerState) {
+    boolean drawing = plannerState != null || (points != null && !points.isEmpty());
+    if (gpxPath == null && drawing && !team.isEnableRoutePlanner()) {
       throw new BusinessException(ErrorCode.ROUTE_PLANNER_DISABLED);
     }
+  }
+
+  /** Points and a planner state are two sources for one track: never both (WEB-100, C4a). */
+  private static void rejectPointsWithState(RouteRequest request) {
+    List<GeoPoint> points = request.points();
+    if (request.plannerState() != null && points != null && !points.isEmpty()) {
+      throw new BusinessException(ErrorCode.PLANNER_STATE_INVALID);
+    }
+  }
+
+  /**
+   * Writes the planner state on the one track just saved, with the revision token of this save: the
+   * {@code file_id} of the original GPX. Nothing for a state without exactly one track.
+   */
+  private void storePlannerState(
+      Route route, @Nullable PlannerState state, GpxProcessingService.GpxProcessingResult result) {
+    if (state == null || route.getTracks().size() != 1) {
+      return;
+    }
+    route
+        .getTracks()
+        .getFirst()
+        .setPlannerState(new PlannerStateDocument(originalFileId(result), state));
+  }
+
+  private static long originalFileId(GpxProcessingService.GpxProcessingResult result) {
+    return result.uploadedAssets().stream()
+        .filter(pa -> pa.type() == AssetType.ROUTE_ORIGINAL_GPX)
+        .findFirst()
+        .orElseThrow()
+        .fileId();
   }
 
   /**
@@ -360,13 +438,7 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
       return;
     }
     route.setElevationState(ElevationState.PENDING);
-    long original =
-        result.uploadedAssets().stream()
-            .filter(pa -> pa.type() == AssetType.ROUTE_ORIGINAL_GPX)
-            .findFirst()
-            .orElseThrow()
-            .fileId();
-    elevationRefreshService.requestRoute(route, original);
+    elevationRefreshService.requestRoute(route, originalFileId(result));
   }
 
   private static WindDirection getWindDirection(TrackMetadata metadata) {
@@ -392,7 +464,10 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
     routeRepository.getEntityManager().lock(route, LockModeType.PESSIMISTIC_WRITE);
 
     validateVisibility(team, request);
-    checkPlannerAllowed(team, gpxPath, request.points());
+    rejectPointsWithState(request);
+    // A file wins over a planner state, which is then ignored, not even validated.
+    PlannerState requestedState = gpxPath == null ? request.plannerState() : null;
+    checkPlannerAllowed(team, gpxPath, request.points(), requestedState);
 
     // Update basic metadata
     route.setName(request.name());
@@ -407,6 +482,10 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
     GpxDocument gpx = null;
     if (gpxPath != null) {
       gpx = gpxProcessingService.parseGpx(gpxPath);
+    } else if (requestedState != null) {
+      gpx =
+          gpxProcessingService.fromPoints(
+              route.getName(), plannerStates.validateAndDerive(requestedState));
     } else {
       List<GeoPoint> points = request.points();
       if (points != null && !points.isEmpty()) {
@@ -438,6 +517,9 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
         route.setEnd(metadata.end());
         route.setWindDirection(getWindDirection(metadata));
         recordElevationQuality(route, quality, gpxResult);
+        // The new tracks carry no state of their own: the old state left with the old tracks
+        // (WEB-100, C4a). A state is only written when this save was made of one.
+        storePlannerState(route, requestedState, gpxResult);
       }
     } catch (Exception e) {
       throw new BusinessException(ErrorCode.GPX_FAILURE, e);
@@ -451,6 +533,29 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
     updateMedia(route, request.media());
     routeRepository.persist(route);
     return RouteDto.from(route, assetService, commentCountLookup.forEntity(route), tagsOf(route));
+  }
+
+  /**
+   * The planner state of a route, for its edit page (docs/LEDGER_*.md WEB-100, C4a). Null when there
+   * is none to read back: never saved with one, or saved since by a path that does not carry it (its
+   * revision token no longer matches the original GPX), or several tracks.
+   */
+  @Transactional
+  @CheckAccess(entityType = EntityType.ROUTE, action = ActionType.UPDATE)
+  public PlannerStateResponse getPlannerState(String teamSlug, String slug) {
+    Team team = teamService.getTeam(teamSlug);
+    Route route = findBySlug(team, slug);
+    List<@Nullable PlannerStateDocument> documents =
+        gpxTrackRepository.findPlannerStates(route.getId());
+    if (documents.size() != 1 || documents.getFirst() == null) {
+      return new PlannerStateResponse(null);
+    }
+    PlannerStateDocument document = documents.getFirst();
+    Long current = assetRepository.findCurrentFileId(route.getId(), AssetType.ROUTE_ORIGINAL_GPX);
+    if (current == null || current != document.trackRevision()) {
+      return new PlannerStateResponse(null);
+    }
+    return new PlannerStateResponse(document.state());
   }
 
   @CheckAccess(entityType = EntityType.ROUTE, action = ActionType.UPDATE)

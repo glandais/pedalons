@@ -1,6 +1,7 @@
 import { ErrorCode } from '../src/api/dto'
 import type { ErrorResponse, GpxPreviewDto, RouterResponse } from '../src/api/dto'
 import { expectOk } from './support/api'
+import { newTeam, newUser, setTeamAttributes, signIn } from './support/data'
 import {
   PLANNER_CENTER,
   PLANNER_HOST,
@@ -12,9 +13,11 @@ import {
   signInPlanner,
 } from './support/domains'
 import { expect, test, unique } from './support/fixtures'
-import type { BrowserContext, Page } from '@playwright/test'
+import type { BrowserContext, Locator, Page } from '@playwright/test'
 import {
   gpxOf,
+  newRoute,
+  routePath,
   routerAnswer,
   stubBasemap,
   stubRouter,
@@ -121,12 +124,10 @@ test('a user draws a route from two points on the map, sees it routed and traced
   ).toBeVisible()
   // On a finger the form shows the preview card instead, whose count is the control points: the
   // routed points are then only checked in what is sent.
-  let routedPoints: number | undefined
   if (!isMobile) {
     const pointCount = main.getByText(/^Tracé de \d+ points$/)
     await expect(pointCount).toBeVisible()
-    routedPoints = Number((await pointCount.textContent())!.match(/\d+/)![0])
-    expect(routedPoints).toBeGreaterThan(2)
+    expect(Number((await pointCount.textContent())!.match(/\d+/)![0])).toBeGreaterThan(2)
   }
 
   // Named and saved: the preview opens, drawn from those points.
@@ -138,13 +139,20 @@ test('a user draws a route from two points on the map, sees it routed and traced
   await main.getByRole('button', { name: 'Enregistrer' }).click()
   const savedResponse = await saved
   expect(savedResponse.ok()).toBe(true)
+  // The editing state goes with the name (the server derives the track from it), never the points
   const sent = savedResponse.request().postDataJSON() as {
     name: string
-    points: { lat: number; lng: number }[]
+    points?: unknown
+    plannerState?: {
+      junctions: { kind: string }[]
+      pieces: { mode: string; line?: string }[]
+    }
   }
   expect(sent.name).toBe(name)
-  if (routedPoints === undefined) expect(sent.points.length).toBeGreaterThan(2)
-  else expect(sent.points).toHaveLength(routedPoints)
+  expect(sent.points).toBeUndefined()
+  expect(sent.plannerState?.junctions.map((j) => j.kind)).toEqual(['CONTROL', 'CONTROL'])
+  expect(sent.plannerState?.pieces.map((piece) => piece.mode)).toEqual(['ROUTED'])
+  expect(sent.plannerState?.pieces[0].line?.length).toBeGreaterThan(0)
   const preview = (await savedResponse.json()) as GpxPreviewDto
 
   await expect(page.getByText('Parcours créé', { exact: true })).toBeVisible()
@@ -2041,5 +2049,291 @@ test.describe('avoiding hills and traffic (C2)', () => {
     await startDrawing(page, isMobile)
     await surface.getByRole('button', { name: 'Profil' }).click()
     await expect(page.getByRole('slider', { name: 'Côtes' })).toHaveAttribute('aria-valuenow', '0')
+  })
+})
+
+/**
+ * The editing state saved with the track and read back (C4a, ledger WEB-100): control points, joins,
+ * straight legs and the loaded file survive a save, and reopening a route asks the router for
+ * nothing. Nothing here reaches Stadia Maps (the router is simulated).
+ */
+test.describe('planner state saved and read back (C4a)', () => {
+  test.setTimeout(120_000)
+
+  /** Counts the reads of the saved editing state (GET …/planner-state) a page makes. */
+  const watchStateReads = (page: Page) => {
+    const reads: string[] = []
+    page.on('request', (r) => {
+      if (r.method() === 'GET' && r.url().includes('/planner-state')) reads.push(r.url())
+    })
+    return reads
+  }
+
+  /** On a finger the map is in the fullscreen editor, opened from the form; on a mouse it is in the page. */
+  async function openEditor(page: Page, isMobile: boolean, name: string) {
+    if (isMobile) {
+      const edit = page.getByRole('main').getByRole('button', { name: 'Modifier le tracé' })
+      await hydrated(edit)
+      await edit.click()
+    }
+    return editorOf(page, isMobile, name)
+  }
+
+  test('a drawn track with a straight leg is read back as it was, with no routing request', async ({
+    context,
+    page,
+    isMobile,
+  }) => {
+    const planner = await openPlanner({ context, page, isMobile })
+    const { main, surface, clickMap, points, settled, routerRequests } = planner
+    await drawThreePoints(planner)
+    const toggle = directToggle(page, isMobile)
+    await toggle.click()
+    await expect(toggle).toHaveAttribute('aria-pressed', 'true')
+    // Far enough for a long straight leg (the warning shows from 300 m)
+    await clickMap(-100, 90)
+    await expect(points(4)).toBeVisible()
+    await settled()
+
+    if (isMobile) {
+      await surface.getByRole('button', { name: 'Terminer' }).click()
+      await expect(surface).toBeHidden()
+    }
+    const name = unique('Tracé relu')
+    await main.getByRole('textbox', { name: 'Nom du parcours' }).fill(name)
+    const saved = page.waitForResponse(
+      (r) => r.url().endsWith('/api/gpx-previews/from-points') && r.request().method() === 'POST'
+    )
+    await main.getByRole('button', { name: 'Enregistrer' }).click()
+    const response = await saved
+    expect(response.ok()).toBe(true)
+    // The editing state goes, not the points: the server derives the track from it
+    const sent = response.request().postDataJSON() as Record<string, unknown>
+    expect(sent.points).toBeUndefined()
+    expect(sent.plannerState).toMatchObject({ version: 1 })
+    const preview = (await response.json()) as GpxPreviewDto
+
+    routerRequests.length = 0
+    const reads = watchStateReads(page)
+    await page.goto(`${origin}/outils-gpx/${preview.id}/modifier`)
+    await expect(directWarning(page)).toBeVisible()
+    const editor = await openEditor(page, isMobile, name)
+    await expect(editor.getByText('4 points', { exact: true })).toBeVisible()
+    for (const n of [1, 2, 3, 4]) {
+      await expect(editor.getByRole('button', { name: markerName(n) })).toBeVisible()
+    }
+    expect(routerRequests, 'reading the state asks nothing of the router').toHaveLength(0)
+    expect(reads, 'one read of the saved state').toHaveLength(1)
+  })
+
+  test('a new title sends neither the points nor the state, and the control points stay', async ({
+    context,
+    page,
+    isMobile,
+  }) => {
+    const planner = await openPlanner({ context, page, isMobile })
+    const { main, surface, routerRequests } = planner
+    await drawThreePoints(planner)
+    if (isMobile) {
+      await surface.getByRole('button', { name: 'Terminer' }).click()
+      await expect(surface).toBeHidden()
+    }
+    const name = unique('Tracé renommé')
+    await main.getByRole('textbox', { name: 'Nom du parcours' }).fill(name)
+    const created = page.waitForResponse(
+      (r) => r.url().endsWith('/api/gpx-previews/from-points') && r.request().method() === 'POST'
+    )
+    await main.getByRole('button', { name: 'Enregistrer' }).click()
+    const preview = (await (await created).json()) as GpxPreviewDto
+
+    await page.goto(`${origin}/outils-gpx/${preview.id}/modifier`)
+    const field = main.getByRole('textbox', { name: 'Nom du parcours' })
+    await hydrated(field)
+    await expect(field).toHaveValue(name)
+    const renamed = `${name} bis`
+    await field.fill(renamed)
+    const update = page.waitForRequest(
+      (r) => r.method() === 'PUT' && r.url().endsWith(`/api/gpx-previews/${preview.id}`)
+    )
+    await main.getByRole('button', { name: 'Enregistrer' }).click()
+    const body = (await update).postData() ?? ''
+    expect(body).not.toContain('"points"')
+    expect(body).not.toContain('plannerState')
+    await expect(page).toHaveURL(`${origin}/outils-gpx/${preview.id}`)
+
+    routerRequests.length = 0
+    await page.goto(`${origin}/outils-gpx/${preview.id}/modifier`)
+    const editor = await openEditor(page, isMobile, renamed)
+    await expect(editor.getByText('3 points', { exact: true })).toBeVisible()
+    expect(routerRequests).toHaveLength(0)
+  })
+
+  /** A team of its own with the planner open, and an L-shaped route in it (3 km east, 3 km north). */
+  async function lRoute() {
+    const owner = await newUser(unique('Admin tracé'))
+    const team = await newTeam(owner, unique('Équipe tracé'))
+    await setTeamAttributes(team, { enableRoutePlanner: true })
+    const [lat0, lon0] = [48.4469, 1.4875]
+    const perLat = 111_320
+    const perLon = perLat * Math.cos((lat0 * Math.PI) / 180)
+    const leg = Array.from({ length: 61 }, (_, i) => i * 50)
+    const track: [number, number, number][] = [
+      ...leg.map((east): [number, number, number] => [lat0, lon0 + east / perLon, 150]),
+      ...leg
+        .slice(1)
+        .map((north): [number, number, number] => [
+          lat0 + north / perLat,
+          lon0 + 3000 / perLon,
+          150,
+        ]),
+    ]
+    const name = unique('Boucle en L')
+    const route = await newRoute(owner, team.slug, name, track)
+    return { owner, team, route, name }
+  }
+
+  /** A tap on the trace between the first two anchors, then the dropped point is the second marker. */
+  async function insertOnTrace(
+    page: Page,
+    isMobile: boolean,
+    surface: ReturnType<typeof editorOf>
+  ) {
+    const marker = (n: number) => surface.getByRole('button', { name: markerName(n) })
+    const centre = async (n: number) => {
+      const b = await marker(n).boundingBox()
+      if (!b) throw new Error(`marker ${n} has no box`)
+      return { x: b.x + b.width / 2, y: b.y + b.height / 2 }
+    }
+    const canvas = surface.locator('canvas.maplibregl-canvas').first()
+    await canvas.evaluate((el) => el.scrollIntoView({ block: 'center', inline: 'center' }))
+    const [start, end] = [await centre(1), await centre(2)]
+    // Half way along the first leg of the L, east from the start
+    const grab = { x: (start.x + end.x) / 2, y: start.y }
+    if (isMobile) {
+      await page.evaluate(async ({ x, y }) => {
+        const target = document.elementFromPoint(x, y)
+        if (!target) throw new Error('nothing under the tap')
+        const at = { clientX: x, clientY: y, bubbles: true, cancelable: true, view: window }
+        const touch = { ...at, pointerId: 7, pointerType: 'touch', isPrimary: true }
+        target.dispatchEvent(new PointerEvent('pointerdown', touch))
+        target.dispatchEvent(new PointerEvent('pointerup', touch))
+        target.dispatchEvent(new MouseEvent('mousemove', at))
+        await new Promise((resolve) => setTimeout(resolve, 50))
+        target.dispatchEvent(new MouseEvent('mousedown', { ...at, button: 0, buttons: 1 }))
+        target.dispatchEvent(new MouseEvent('mouseup', { ...at, button: 0 }))
+        target.dispatchEvent(new MouseEvent('click', { ...at, button: 0, detail: 1 }))
+      }, grab)
+    } else {
+      await page.mouse.move(grab.x - 10, grab.y - 10)
+      await page.mouse.move(grab.x, grab.y, { steps: 3 })
+      await page.mouse.move(grab.x + 1, grab.y, { steps: 2 })
+      await page.mouse.down()
+      await page.mouse.move(grab.x, grab.y - 110, { steps: 8 })
+      await page.mouse.up()
+    }
+    return marker
+  }
+
+  /** Deletes the n-th control point: a right click on a mouse, a long press and its menu on a finger. */
+  async function deleteMarker(
+    page: Page,
+    context: BrowserContext,
+    isMobile: boolean,
+    marker: Locator
+  ) {
+    if (!isMobile) {
+      await marker.click({ button: 'right' })
+      return
+    }
+    const box = await marker.boundingBox()
+    if (!box) throw new Error('the marker has no box')
+    const at = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+    const cdp = await context.newCDPSession(page)
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [at] })
+    await page.waitForTimeout(800)
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+    await page.getByRole('menuitem', { name: 'Supprimer le point' }).click()
+  }
+
+  test('a route without a saved state opens as an import: a point inserted on it is deleted with no request', async ({
+    context,
+    page,
+    isMobile,
+  }) => {
+    const { owner, team, route, name } = await lRoute()
+    await signIn(context, owner)
+    await stubBasemap(page)
+    const routerRequests = await stubRouter(page)
+    const settled = (surface: ReturnType<typeof editorOf>) =>
+      expect(surface.getByRole('status', { name: "Calcul de l'itinéraire..." })).toHaveCount(0)
+
+    await page.goto(`${routePath(team.slug, route.slug)}/modifier`)
+    let surface = await openEditor(page, isMobile, name)
+    await expect(surface.getByText('2 points', { exact: true })).toBeVisible()
+
+    const marker = await insertOnTrace(page, isMobile, surface)
+    await settled(surface)
+    await expect(surface.getByText('3 points', { exact: true })).toBeVisible()
+    expect(routerRequests, 'the cut leg, before and after the new point').toHaveLength(2)
+
+    routerRequests.length = 0
+    await deleteMarker(page, context, isMobile, marker(2))
+    await settled(surface)
+    await expect(surface.getByText('2 points', { exact: true })).toBeVisible()
+    expect(routerRequests, 'the file between two of its points is given back').toHaveLength(0)
+
+    // Saved and reopened: still the two points, and nothing routed
+    if (isMobile) {
+      await surface.getByRole('button', { name: 'Terminer' }).click()
+      await expect(surface).toBeHidden()
+    }
+    const saved = page.waitForResponse(
+      (r) => r.request().method() === 'PUT' && r.url().endsWith(`/routes/${route.slug}`)
+    )
+    await page.getByRole('main').getByRole('button', { name: 'Enregistrer' }).click()
+    expect((await saved).ok()).toBe(true)
+    await page.goto(`${routePath(team.slug, route.slug)}/modifier`)
+    surface = await openEditor(page, isMobile, name)
+    await expect(surface.getByText('2 points', { exact: true })).toBeVisible()
+    expect(routerRequests).toHaveLength(0)
+  })
+
+  test('the joins of an import survive a save: after reopening, deleting the inserted point is free', async ({
+    context,
+    page,
+    isMobile,
+  }) => {
+    const { owner, team, route, name } = await lRoute()
+    await signIn(context, owner)
+    await stubBasemap(page)
+    const routerRequests = await stubRouter(page)
+
+    await page.goto(`${routePath(team.slug, route.slug)}/modifier`)
+    let surface = await openEditor(page, isMobile, name)
+    await insertOnTrace(page, isMobile, surface)
+    await expect(surface.getByText('3 points', { exact: true })).toBeVisible()
+    if (isMobile) {
+      await surface.getByRole('button', { name: 'Terminer' }).click()
+      await expect(surface).toBeHidden()
+    }
+    const saved = page.waitForRequest(
+      (r) => r.method() === 'PUT' && r.url().endsWith(`/routes/${route.slug}`)
+    )
+    await page.getByRole('main').getByRole('button', { name: 'Enregistrer' }).click()
+    expect(await saved).toBeTruthy()
+    await expect(page).toHaveURL(routePath(team.slug, route.slug))
+
+    routerRequests.length = 0
+    await page.goto(`${routePath(team.slug, route.slug)}/modifier`)
+    surface = await openEditor(page, isMobile, name)
+    await expect(surface.getByText('3 points', { exact: true })).toBeVisible()
+    await deleteMarker(
+      page,
+      context,
+      isMobile,
+      surface.getByRole('button', { name: markerName(2) })
+    )
+    await expect(surface.getByText('2 points', { exact: true })).toBeVisible()
+    expect(routerRequests, 'the joins and their provenance were saved').toHaveLength(0)
   })
 })

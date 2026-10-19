@@ -5,7 +5,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { notifications } from '@mantine/notifications'
 import i18next from 'i18next'
 import { paths } from '../../config/paths'
-import { Box, Skeleton, Stack, Text, Title } from '@mantine/core'
+import { Alert, Box, Skeleton, Stack, Text, Title } from '@mantine/core'
 import { useUpdateRoute, useChangeRouteSlug } from '@/api/endpoints/routes/routes'
 import { invalidateRouteQueries } from '@/lib/routeCacheInvalidation'
 import { SurfaceType, RouteRequest } from '@/api/dto'
@@ -19,7 +19,11 @@ export function EditRoutePage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
-  const { team: teamQuery, route: routeQuery } = useEditRouteFormData(teamSlug, routeSlug)
+  const {
+    team: teamQuery,
+    route: routeQuery,
+    plannerState: plannerStateQuery,
+  } = useEditRouteFormData(teamSlug, routeSlug)
   const { data: team, isLoading: isLoadingTeam } = teamQuery
   const { data: route, isLoading } = routeQuery
   const updateRouteMutation = useUpdateRoute()
@@ -45,7 +49,8 @@ export function EditRoutePage() {
     return <Navigate to={paths.routes(teamSlug!)} replace />
   }
 
-  if (isLoading) {
+  // The planner takes its initial state once, on mounting: the editor waits for the saved state
+  if (isLoading || plannerStateQuery.isLoading) {
     return (
       <Box maw={768} mx="auto" px="md" py="xl">
         <Stack>
@@ -120,12 +125,19 @@ export function EditRoutePage() {
         <Text c="dimmed">{t('routes.edit.subtitle')}</Text>
       </Stack>
 
+      {plannerStateQuery.isError && (
+        <Alert color="yellow" variant="light">
+          {t('planner.state.readFailed')}
+        </Alert>
+      )}
+
       <RouteEditor
         team={team}
         teamSlug={teamSlug!}
         initialValues={initialValues}
         initialTrack={initialTrack}
         initialAscend={route.elevationGain}
+        initialPlannerState={plannerStateQuery.data?.state}
         onSubmit={handleSubmit}
         onCancel={() => navigate(paths.route(teamSlug!, routeSlug!))}
         isPending={updateRouteMutation.isPending}

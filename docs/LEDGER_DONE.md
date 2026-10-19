@@ -2337,13 +2337,35 @@ Plan [`2026-10-06-team-agenda.md`](plans/archive/2026-10-06-team-agenda.md) §4,
   **À ne pas défaire** : on ne sonde et on n'affiche que `PENDING` ; le sondage reste borné ; ne pas
   recadrer la carte sur un simple changement de profil.
 
-### `WEB-100` Éditeur de parcours : réglage côtes / trafic du routeur (19 octobre 2026, contrat `11.9.0`)
+### `WEB-100` Éditeur de parcours : réglage côtes / trafic, état d'édition (19 octobre 2026, contrat `11.10.0`)
 
 - `WEB-100` **Volet C2** (2026-10-19, **API 11.9.0**) — `RouterRequest` accepte `useHills` et
   `useRoads` (0 à 1, facultatifs), fusionnés dans les `costing_options` du profil vélo ; absents,
   l'appel Stadia est inchangé. Détail et décisions dans
   [le plan](plans/2026-10-17-editeur-parcours-web.md) (§8 C2). Test : `RouterResourceTest`.
   **À ne pas défaire** : absent = valeur du profil ; hors costing `bicycle`, les champs sont ignorés.
+- `WEB-100` **Volet C4a** (2026-10-19, **API 11.10.0**, Flyway `V75`) — l'éditeur enregistre et
+  relit son état : `plannerState` (version, profil, sources, jonctions, morceaux routés / droits /
+  importés) dans `RouteRequest`, `GpxPreviewFromPointsRequest` et `GpxPreviewUpdateRequest` ; le
+  serveur en dérive le tracé, `points` avec un état est un 400 `PLANNER_STATE_INVALID`.
+  `GET /api/teams/{teamSlug}/routes/{routeSlug}/planner-state` (droits d'édition) et
+  `GET /api/gpx-previews/{id}/planner-state` (créateur seul) rendent `null` sans état ou état
+  périmé ; l'état n'est dans aucun DTO ni liste. `V75__planner_state.sql` ajoute `planner_state
+  jsonb` à `gpx_tracks` et `gpx_previews` (additive, ignorée par la version précédente). Jeton de
+  révision : `fileId` du `ROUTE_ORIGINAL_GPX` (parcours), empreinte du tracé 2D (aperçu). Côté web :
+  restauration sans requête, `sourceIdx`, suppression à 0 requête entre deux raccords du même import,
+  état copié à la promotion d'un aperçu. Détail, bornes et écarts dans
+  [le plan](plans/2026-10-17-editeur-parcours-web.md) (§8 C4a) ; reste **C4b** (trace source FAST à
+  l'envoi d'un fichier) dans `LEDGER_NEXT.md`. Tests : `RoutePlannerStateResourceTest`,
+  `GpxPreviewPlannerStateResourceTest`, `PlannerStatesTest`, `PolylineCodecTest`,
+  `ElevationRefreshTest`, `GpxPreviewElevationRefreshTest` ; `plannerState.test.ts`,
+  `plannerSubmit.test.ts`, `useRoutePlanner.test.tsx`, `RouteEditor.test.tsx`,
+  `GpxPreviewEditor.test.tsx`, e2e `gpx-planner`.
+  **À ne pas défaire** : le jeton de révision est reporté par le rattrapage HD (l'état survit au
+  HD, altitudes FAST) ; un tracé non touché n'envoie rien ; seul le créateur lit l'état d'un aperçu
+  et le copie à la promotion ; `drawn` est faux pour un état de seuls morceaux importés
+  (`API-127`) ; remplacer le tracé efface l'état ; les listes et chaînes de l'état restent bornées
+  (`@Size`, `GpxLimits`) ; la migration reste additive (déploiement roulant).
 
 ## API — Contrat d'API et backend
 

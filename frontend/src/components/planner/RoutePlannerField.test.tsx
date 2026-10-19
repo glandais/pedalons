@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { createRef, useEffect, useState } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MantineProvider } from '@mantine/core'
@@ -12,7 +12,12 @@ const seenRoutes: unknown[] = []
 const hookMounts = vi.fn()
 
 // One state object for the whole file, as the real hook returns one per component instance.
+const hookOptions = vi.hoisted(() => ({ last: undefined as unknown }))
+const snapshotMock = vi.hoisted(() => vi.fn())
+
 const plannerState = vi.hoisted(() => ({
+  snapshot: () => snapshotMock(),
+  isDirty: false,
   route: { points: [], dist: 0, ascend: 0 },
   controlPoints: [] as unknown[],
   routeGeoJson: null as { type: 'LineString'; coordinates: number[][] } | null,
@@ -37,7 +42,8 @@ const plannerState = vi.hoisted(() => ({
 // The planner state is a plain object: no routing, no map. What is under test is where the view
 // lives and that the state above it survives.
 vi.mock('@/hooks/useRoutePlanner', () => ({
-  useRoutePlanner: () => {
+  useRoutePlanner: (options: unknown) => {
+    hookOptions.last = options
     useEffect(() => {
       hookMounts()
     }, [])
@@ -111,7 +117,7 @@ vi.mock('./PlannerElevationStrip', () => ({
   ),
 }))
 
-import { RoutePlannerField } from './RoutePlannerField'
+import { RoutePlannerField, type RoutePlannerHandle } from './RoutePlannerField'
 
 function setCoarse(coarse: boolean) {
   window.matchMedia = vi.fn().mockImplementation((query: string) => ({
@@ -166,6 +172,20 @@ describe('RoutePlannerField', () => {
       { lng: 2.35, lat: 48.85 },
       { lng: 2.4, lat: 48.9 },
     ])
+  })
+
+  it('gives the hook the saved state, and the form the snapshot of the planner on demand', () => {
+    setCoarse(false)
+    const state = { version: 1 } as never
+    const snapshot = { dirty: true, plannerState: null, points: [] }
+    snapshotMock.mockReturnValue(snapshot)
+    const ref = createRef<RoutePlannerHandle>()
+    renderField({ initialState: state, plannerRef: ref, initialTrack: [[1, 2, 3]] })
+    expect(hookOptions.last).toMatchObject({ initialState: state, initialTrack: [[1, 2, 3]] })
+    // Taken at the call, not while drawing
+    expect(snapshotMock).not.toHaveBeenCalled()
+    expect(ref.current!.snapshot()).toBe(snapshot)
+    expect(snapshotMock).toHaveBeenCalledTimes(1)
   })
 
   it('warns about a long straight leg, and not about a short one', () => {

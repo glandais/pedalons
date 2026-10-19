@@ -36,6 +36,10 @@ export interface RoutePoint {
    * reference D+. Imported points only.
    */
   importAscend?: number
+  /** Index of the loaded track this point comes from, in the editor's `sources` (imported points only). */
+  sourceId?: number
+  /** Index of this point in that source track: lets a deletion give back the file between two of its points. */
+  sourceIdx?: number
   rdpDistance?: number
   zoom: number
 }
@@ -71,33 +75,59 @@ function definedSettings(settings: RouterSettings): RouterSettings {
 
 let pointIdCounter = 0
 
-// The only place where points become `imported`: a loaded track (initialTrack, imported file).
-// The re-fit of a track onto the road network (B2, D1) will go through createPoints(…, true) too.
-export function createRoute(coords: number[][], referenceAscend?: number): Route {
-  const points = createPoints(coords, true)
-  assignImportAscend(points, referenceAscend)
-  return computeRoute(points)
+/**
+ * A loaded track kept whole, beside the simplified route: what the editor gives back when the
+ * portion of the file between two of its points is restored, and what the planner state saves.
+ */
+export interface PlannerSource {
+  /** [lng, lat, ele?] of the loaded track, unsimplified. */
+  coords: number[][]
+  /** Raw cumulative climb (m) per point: the sum of the positive steps between points that have an elevation. */
+  cumul: number[]
+  /** Factor that scales the raw climb onto the stored D+ of the route (1 without reference). */
+  ascendScale: number
 }
 
 /**
- * Cumulative climb of the whole loaded track, computed before the simplification (which drops
- * vertices and their climb), then scaled to the reference D+ of the stored route when known.
- * Points without elevation are skipped: they carry the running total.
+ * Cumulative climb of the whole loaded track, computed before any simplification (which drops
+ * vertices and their climb). Points without elevation are skipped: they carry the running total.
  */
-function assignImportAscend(points: RoutePoint[], referenceAscend?: number) {
-  let cumul = 0
+export function cumulativeClimb(coords: number[][]): number[] {
+  const cumul: number[] = new Array(coords.length)
+  let total = 0
   let previous: number | undefined
-  for (const p of points) {
-    if (p.ele !== undefined && p.ele !== null) {
-      if (previous !== undefined && p.ele > previous) cumul += p.ele - previous
-      previous = p.ele
+  for (let i = 0; i < coords.length; i++) {
+    const ele = coords[i][2]
+    if (ele !== undefined && ele !== null) {
+      if (previous !== undefined && ele > previous) total += ele - previous
+      previous = ele
     }
-    p.importAscend = cumul
+    cumul[i] = total
   }
-  if (referenceAscend !== undefined && referenceAscend > 0 && cumul > 0) {
-    const k = referenceAscend / cumul
-    for (const p of points) p.importAscend = (p.importAscend ?? 0) * k
-  }
+  return cumul
+}
+
+/** A loaded track as a source; its climb is scaled to the reference D+ of the stored route when known. */
+export function sourceOf(coords: number[][], referenceAscend?: number): PlannerSource {
+  const cumul = cumulativeClimb(coords)
+  const total = cumul.length > 0 ? cumul[cumul.length - 1] : 0
+  const ascendScale =
+    referenceAscend !== undefined && referenceAscend > 0 && total > 0 ? referenceAscend / total : 1
+  return { coords, cumul, ascendScale }
+}
+
+// The only place where points become `imported` from a file or an existing route (restoring a saved
+// planner state and giving a source span back do too). The re-fit of a track onto the road network
+// (B2, D1) will go through createPoints(…, true) as well.
+export function createRoute(coords: number[][], referenceAscend?: number, sourceId = 0): Route {
+  const points = createPoints(coords, true)
+  const source = sourceOf(coords, referenceAscend)
+  points.forEach((p, i) => {
+    p.sourceId = sourceId
+    p.sourceIdx = i
+    p.importAscend = source.cumul[i] * source.ascendScale
+  })
+  return computeRoute(points)
 }
 
 /** A gesture refused before any request: the route is left as it was; `messageKey` is shown. */
@@ -242,6 +272,38 @@ function cumulativeDistances(points: RoutePoint[]): number[] {
   return cum
 }
 
+/** What an edge of a route is made of. */
+export type EdgeMode = 'DIRECT' | 'ROUTED' | 'IMPORTED'
+
+/**
+ * What the edge `points[i-1] -> points[i]` is. Exported for the planner state and the D+.
+ *
+ * <p>Relies on an invariant of the planner: a point carrying `legAscend` ends a routed leg (`add`,
+ * `insert` and `remove` write it after the router answered; a hop under 5 m writes 0), and an
+ * imported point never carries one otherwise. Without that condition, a routed leg whose interior
+ * Douglas-Peucker dropped entirely, between two imported points, would be taken for the portion of
+ * the file it replaced.
+ */
+export function edgeMode(points: RoutePoint[], i: number): EdgeMode {
+  const p = points[i]
+  const q = points[i - 1]
+  if (p.direct) return 'DIRECT'
+  if (p.legAscend !== undefined) return 'ROUTED' // closes a routed leg (or a hop: legAscend 0)
+  if (
+    q &&
+    p.imported &&
+    q.imported &&
+    p.sourceId !== undefined &&
+    p.sourceId === q.sourceId &&
+    p.sourceIdx !== undefined &&
+    q.sourceIdx !== undefined &&
+    p.sourceIdx > q.sourceIdx
+  ) {
+    return 'IMPORTED'
+  }
+  return 'ROUTED'
+}
+
 /**
  * D+ of a route, edge by edge (the first point never counts). The arrival point of an edge says
  * where its climb comes from: a straight line is the net climb between its filled elevations; a
@@ -254,18 +316,14 @@ export function routeAscend(points: RoutePoint[]): number {
   for (let i = 1; i < points.length; i++) {
     const p = points[i]
     const q = points[i - 1]
-    if (p.direct) {
+    const mode = edgeMode(points, i)
+    if (mode === 'DIRECT') {
       const a = eleF[i]
       const b = eleF[i - 1]
       if (a !== undefined && b !== undefined) ascend += Math.max(0, a - b)
-    } else if (p.legAscend !== undefined) {
-      ascend += p.legAscend
-    } else if (
-      p.imported &&
-      q.imported &&
-      p.importAscend !== undefined &&
-      q.importAscend !== undefined
-    ) {
+    } else if (mode === 'ROUTED') {
+      ascend += p.legAscend ?? 0
+    } else if (p.importAscend !== undefined && q.importAscend !== undefined) {
       ascend += Math.max(0, p.importAscend - q.importAscend)
     }
   }
@@ -307,7 +365,7 @@ function getZoomLevelForDistance(lat: number, dist?: number): number {
   )
 }
 
-function createPoint(
+export function createPoint(
   lng: number,
   lat: number,
   ele?: number,
@@ -362,6 +420,11 @@ export function computeRoute(input: RoutePoint[], changed?: Bounds): Route {
     // Other points, the bounds included, keep their zoom: only a manual one is always visible
     for (const p of points) if (p.manual) p.zoom = MIN_ANCHOR_ZOOM
   }
+  return finishRoute(points)
+}
+
+/** Indexes the points and measures the route: the end of every computation of a route. */
+function finishRoute(points: RoutePoint[]): Route {
   points.forEach((p, idx) => {
     p.idx = idx
   })
@@ -374,6 +437,28 @@ export function computeRoute(input: RoutePoint[], changed?: Bounds): Route {
     ascend: routeAscend(points),
     index: index.finish(),
   }
+}
+
+/**
+ * A route from points already cut into pieces (a saved planner state): `junctions` are the indices,
+ * ascending, of the points that bound the pieces: the first and the last of `input` among them.
+ * Each piece is simplified on its own and the junctions are always kept, visible at every zoom (a
+ * control point, or a join which is a handle that means something). Nothing is requested.
+ */
+export function computeRouteFromPieces(input: RoutePoint[], junctions: number[]): Route {
+  const points: RoutePoint[] = []
+  for (let k = 0; k < junctions.length; k++) {
+    const a = junctions[k]
+    points.push(input[a])
+    input[a].zoom = MIN_ANCHOR_ZOOM
+    const b = junctions[k + 1]
+    if (b === undefined) break
+    const middle: RoutePoint[] = []
+    ramerDouglasPeuckerRecursive(input, middle, 5, a, b)
+    for (const p of middle) p.zoom = getZoomLevelForDistance(p.lat, p.rdpDistance)
+    points.push(...middle)
+  }
+  return finishRoute(points)
 }
 
 // add points between route end and p. `teamSlug` names the team the route is drawn for: the backend
@@ -563,6 +648,38 @@ export async function remove(
   after[0].legAscend = leg.ascend ?? (straight ? undefined : 0)
 
   return computeRoute([...before, ...segment, ...after], { start: before.at(-1), end: after[0] })
+}
+
+/**
+ * Gives back the source track between two imported bounds of the same import: no request. What lies
+ * strictly between `start` and `end` is replaced by `source.coords[start.sourceIdx + 1 ..
+ * end.sourceIdx - 1]`, and the edge into `end` is the file's again. The bounds do not move (one
+ * snapped on the road network by a routing stays where it is: a few metres from the source point).
+ */
+export function restoreSourceSpan(
+  route: Route,
+  start: RoutePoint,
+  end: RoutePoint,
+  source: PlannerSource
+): Route {
+  const startIdx = indexOfPoint(route, start)
+  const endIdx = indexOfPoint(route, end)
+  const from = start.sourceIdx!
+  const to = end.sourceIdx!
+  const given: RoutePoint[] = []
+  for (let i = from + 1; i < to; i++) {
+    const c = source.coords[i]
+    const p = createPoint(c[0], c[1], c[2], true)
+    p.sourceId = start.sourceId
+    p.sourceIdx = i
+    p.importAscend = source.cumul[i] * source.ascendScale
+    given.push(p)
+  }
+  const target = route.points[endIdx]
+  target.direct = false
+  target.legAscend = undefined
+  const points = [...route.points.slice(0, startIdx + 1), ...given, ...route.points.slice(endIdx)]
+  return computeRoute(points, { start: route.points[startIdx], end: target })
 }
 
 /** Whether every edge of `points[startIdx..endIdx]` is a straight line (false for an empty or inverted range). */

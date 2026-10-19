@@ -13,6 +13,7 @@ import '../models/hilliness.dart';
 import '../models/list_view_mode.dart';
 import '../models/min_role.dart';
 import '../models/near_type.dart';
+import '../models/planner_state_response.dart';
 import '../models/route_bounds_response.dart';
 import '../models/route_detail_dto.dart';
 import '../models/route_dto.dart';
@@ -541,6 +542,19 @@ abstract class RoutesClient {
   /// [teamSlug] - Team URL slug.
   @DELETE('/api/teams/{teamSlug}/routes/{routeSlug}')
   Future<void> deleteRoute({
+    @Path('routeSlug') required String routeSlug,
+    @Path('teamSlug') required String teamSlug,
+  });
+
+  /// Get the planner state of a route.
+  ///
+  /// The control points, routed pieces and imported ranges the route was last saved with, for its edit page. Reserved to those who may edit the route. 'state' is absent when there is none to read back (never saved with one, track replaced since by a path that does not carry it, several tracks): the editor then opens the saved track as an import.
+  ///
+  /// [routeSlug] - Route slug.
+  ///
+  /// [teamSlug] - Team URL slug.
+  @GET('/api/teams/{teamSlug}/routes/{routeSlug}/planner-state')
+  Future<PlannerStateResponse> getRoutePlannerState({
     @Path('routeSlug') required String routeSlug,
     @Path('teamSlug') required String teamSlug,
   });

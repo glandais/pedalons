@@ -28,6 +28,27 @@ public class AssetRepository implements PanacheRepository<Asset> {
       String teamSlug,
       Visibility visibility) {}
 
+  /**
+   * The {@code file_id} of the latest asset of this type on a content (a route, a ride…), or null
+   * when it has none. For a route's {@code ROUTE_ORIGINAL_GPX} this is the revision token of its
+   * track: it changes at every save of the track, not at a save of the title (docs/LEDGER_*.md
+   * API-128, API-131, WEB-100).
+   */
+  public @Nullable Long findCurrentFileId(Long teamEntityId, AssetType type) {
+    return getEntityManager()
+        .createQuery(
+            "select a.fileId from Asset a where a.teamEntity.id = :teamEntityId"
+                + " and a.type = :type order by a.id desc",
+            Long.class)
+        .setParameter("teamEntityId", teamEntityId)
+        .setParameter("type", type)
+        .setMaxResults(1)
+        .getResultList()
+        .stream()
+        .findFirst()
+        .orElse(null);
+  }
+
   public List<Asset> findOrphanedAssets(Instant olderThan) {
     return list("teamEntity is null and updatedAt < ?1", olderThan);
   }

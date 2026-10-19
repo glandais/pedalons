@@ -1,6 +1,7 @@
 package fr.pedalons.dto.gpx.request;
 
 import fr.pedalons.common.GeoPoint;
+import fr.pedalons.common.planner.PlannerState;
 import fr.pedalons.dto.validation.ValidateSchema;
 import fr.pedalons.service.route.GpxLimits;
 import jakarta.validation.Valid;
@@ -23,4 +24,17 @@ public record GpxPreviewUpdateRequest(
         @Schema(description = "Points from frontend routing")
         @Size(max = GpxLimits.MAX_PLANNER_POINTS)
         @Valid
-        List<GeoPoint> points) {}
+        List<GeoPoint> points,
+    @Nullable
+        @Schema(
+            description =
+                "Editing state of the planner; the server derives the track from it. Not with"
+                    + " points (400 PLANNER_STATE_INVALID); a gpxFile wins over it")
+        @Valid
+        PlannerState plannerState) {
+
+  /** Without a planner state: the shape this record had before WEB-100 (C4a). */
+  public GpxPreviewUpdateRequest(String name, @Nullable List<GeoPoint> points) {
+    this(name, points, null);
+  }
+}

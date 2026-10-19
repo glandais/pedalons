@@ -4,10 +4,12 @@ import fr.pedalons.common.GeoPoint;
 import fr.pedalons.common.exception.BusinessException;
 import fr.pedalons.common.exception.ForbiddenException;
 import fr.pedalons.common.exception.NotFoundException;
+import fr.pedalons.common.planner.PlannerState;
 import fr.pedalons.domain.gpx.GpxPreview;
 import fr.pedalons.domain.gpx.GpxPreview.PreviewTrack;
 import fr.pedalons.domain.gpx.GpxPreview.PreviewWaypoint;
 import fr.pedalons.domain.platform.Domain;
+import fr.pedalons.domain.route.PlannerStateDocument;
 import fr.pedalons.domain.user.User;
 import fr.pedalons.dto.common.PedalonsPage;
 import fr.pedalons.dto.error.ErrorCode;
@@ -16,6 +18,7 @@ import fr.pedalons.dto.gpx.response.GpxPreviewDto;
 import fr.pedalons.dto.gpx.response.GpxPreviewListResponse;
 import fr.pedalons.dto.gpx.response.GpxPreviewSummaryDto;
 import fr.pedalons.dto.routes.request.RouteRequest;
+import fr.pedalons.dto.routes.response.PlannerStateResponse;
 import fr.pedalons.dto.routes.response.RouteDto;
 import fr.pedalons.enums.ActionType;
 import fr.pedalons.enums.ElevationQuality;
@@ -32,6 +35,7 @@ import fr.pedalons.service.route.GpxLimits;
 import fr.pedalons.service.route.GpxProcessingService;
 import fr.pedalons.service.route.GpxProcessingService.ComputedGpx;
 import fr.pedalons.service.route.RouteService;
+import fr.pedalons.service.route.planner.PlannerStates;
 import fr.pedalons.service.route.response.TrackMetadata;
 import fr.pedalons.service.security.PedalonsQueryContext;
 import fr.pedalons.service.security.SecurityVerifier;
@@ -126,6 +130,8 @@ public class GpxPreviewService {
 
   @Inject AssetService assetService;
 
+  @Inject PlannerStates plannerStates;
+
   /**
    * Parses and analyses an uploaded GPX file, stores it, and returns the persisted preview.
    *
@@ -151,6 +157,15 @@ public class GpxPreviewService {
    * planner (true) or comes from an imported file (false).
    */
   public GpxPreview create(GpxDocument gpx, String fallbackName, boolean drawn) {
+    return create(gpx, fallbackName, drawn, null);
+  }
+
+  /**
+   * As {@link #create(GpxDocument, String, boolean)}, also keeping the planner {@code state} the
+   * track was derived from, for the edit page to read back (docs/LEDGER_*.md WEB-100, C4a).
+   */
+  public GpxPreview create(
+      GpxDocument gpx, String fallbackName, boolean drawn, @Nullable PlannerState state) {
     User creator = pedalonsContext.getUser();
     Domain domain = pedalonsContext.getDomain();
     UUID publicId = UUID.randomUUID();
@@ -192,6 +207,9 @@ public class GpxPreviewService {
     preview.setDrawn(drawn);
     preview.setFilesRevision(revision);
     preview.setElevationState(stateOf(quality));
+    if (state != null) {
+      preview.setPlannerState(new PlannerStateDocument(revision, state));
+    }
 
     try {
       QuarkusTransaction.requiringNew()
@@ -266,8 +284,31 @@ public class GpxPreviewService {
    */
   @Logged
   public GpxPreviewDto createPreviewFromPoints(String name, List<GeoPoint> points) {
+    return createPreviewFromPoints(name, points, null);
+  }
+
+  /**
+   * As {@link #createPreviewFromPoints(String, List)}, from the planner state instead of points:
+   * the track is derived from the state, which is kept for the edit page (docs/LEDGER_*.md WEB-100,
+   * C4a). Points and a state together are refused, and so is neither.
+   */
+  @Logged
+  public GpxPreviewDto createPreviewFromPoints(
+      String name, @Nullable List<GeoPoint> points, @Nullable PlannerState plannerState) {
+    boolean hasPoints = points != null && !points.isEmpty();
+    if (hasPoints && plannerState != null) {
+      throw new BusinessException(ErrorCode.PLANNER_STATE_INVALID);
+    }
+    if (!hasPoints && plannerState == null) {
+      throw new BusinessException(ErrorCode.GPX_EMPTY);
+    }
     checkPlannerAllowed();
-    return toDto(create(gpxProcessingService.fromPoints(name, points), name, true));
+    if (plannerState == null) {
+      return toDto(create(gpxProcessingService.fromPoints(name, points), name, true));
+    }
+    GpxDocument gpx =
+        gpxProcessingService.fromPoints(name, plannerStates.validateAndDerive(plannerState));
+    return toDto(create(gpx, name, plannerState.drawn(), plannerState));
   }
 
   /**
@@ -300,19 +341,45 @@ public class GpxPreviewService {
   @Logged
   public GpxPreviewDto updatePreview(
       String publicId, String name, @Nullable Path gpxPath, @Nullable List<GeoPoint> points) {
+    return updatePreview(publicId, name, gpxPath, points, null);
+  }
+
+  /**
+   * As {@link #updatePreview(String, String, Path, List)}, also taking the planner state the new
+   * track is derived from (docs/LEDGER_*.md WEB-100, C4a). A file wins over it, and the state is
+   * then ignored. Every replacement of the track rewrites or clears the stored state; a rename
+   * leaves it.
+   */
+  @Logged
+  public GpxPreviewDto updatePreview(
+      String publicId,
+      String name,
+      @Nullable Path gpxPath,
+      @Nullable List<GeoPoint> points,
+      @Nullable PlannerState plannerState) {
     GpxPreview preview = getByPublicId(publicId);
     if (!preview.getCreatedBy().getId().equals(pedalonsContext.getUserId())) {
       throw new ForbiddenException();
     }
     UUID pid = preview.getPublicId();
+    boolean hasPoints = points != null && !points.isEmpty();
+    if (hasPoints && plannerState != null) {
+      throw new BusinessException(ErrorCode.PLANNER_STATE_INVALID);
+    }
 
     GpxDocument gpx = null;
     // A file replaces the track with an import, points replace it with a drawing: the origin
-    // follows the last one (A10).
+    // follows the last one (A10). A file also wins over a planner state.
     boolean drawn = false;
+    PlannerState newState = null;
     if (gpxPath != null) {
       gpx = gpxProcessingService.parseGpx(gpxPath);
-    } else if (points != null && !points.isEmpty()) {
+    } else if (plannerState != null) {
+      checkPlannerAllowed();
+      gpx = gpxProcessingService.fromPoints(name, plannerStates.validateAndDerive(plannerState));
+      drawn = plannerState.drawn();
+      newState = plannerState;
+    } else if (hasPoints) {
       checkPlannerAllowed();
       gpx = gpxProcessingService.fromPoints(name, points);
       drawn = true;
@@ -353,6 +420,7 @@ public class GpxPreviewService {
 
     boolean hasThumbnail = renderAndUploadThumbnail(pid, tracks);
     boolean newDrawn = drawn;
+    PlannerState stateToStore = newState;
 
     return QuarkusTransaction.requiringNew()
         .call(
@@ -374,6 +442,9 @@ public class GpxPreviewService {
               managed.setWaypoints(waypoints);
               managed.setHasThumbnail(hasThumbnail);
               managed.setDrawn(newDrawn);
+              // Written or cleared with the track it describes, never left over a new one
+              managed.setPlannerState(
+                  stateToStore == null ? null : new PlannerStateDocument(revision, stateToStore));
               if (quality == ElevationQuality.FAST) {
                 gpxPreviewRepository.flush();
                 elevationRefreshService.requestPreview(previewId, revision);
@@ -392,6 +463,37 @@ public class GpxPreviewService {
   @Public
   public GpxPreviewDto getPreview(String publicId) {
     return toDto(getByPublicId(publicId));
+  }
+
+  /**
+   * The planner state of a preview, for its edit page (docs/LEDGER_*.md WEB-100, C4a). Only the
+   * creator reads it: a preview is readable by anyone holding its link, its editing state is not.
+   * Null when there is none to read back, or when the track was replaced since by a path that does
+   * not carry it ({@code files_revision} no longer matches).
+   */
+  @Logged
+  @Transactional
+  public PlannerStateResponse getPlannerState(String publicId) {
+    GpxPreview preview = getByPublicId(publicId);
+    if (!isCreator(preview)) {
+      throw new ForbiddenException();
+    }
+    PlannerStateDocument document = readableState(preview);
+    return new PlannerStateResponse(document == null ? null : document.state());
+  }
+
+  private boolean isCreator(GpxPreview preview) {
+    return preview.getCreatedBy().getId().equals(pedalonsContext.getUserIdNullable());
+  }
+
+  /** The stored state when it still describes the current track of the preview, else null. */
+  private static @Nullable PlannerStateDocument readableState(GpxPreview preview) {
+    PlannerStateDocument document = preview.getPlannerState();
+    Long revision = preview.getFilesRevision();
+    if (document == null || revision == null || document.trackRevision() != revision) {
+      return null;
+    }
+    return document;
   }
 
   /**
@@ -444,7 +546,10 @@ public class GpxPreviewService {
    *
    * <p>Not watertight, by decision: the GPX of a preview is public, so a drawn track can be exported
    * and re-imported as a file ({@code drawn=false}). Only the drawing is governed
-   * (docs/LEDGER_*.md API-127).
+   * (docs/LEDGER_*.md API-127). Same for a planner state made only of imported pieces
+   * ({@code PlannerState#drawn()} is false): its source geometry comes from the client, which the
+   * server cannot tell from a file it stored, and the effect is that of exporting and re-importing
+   * the GPX. Deliberate, owner's decision (WEB-100, C4a).
    */
   @Logged
   public RouteDto createRoute(String publicId, String teamSlug, RouteRequest request) {
@@ -455,9 +560,20 @@ public class GpxPreviewService {
         throw new BusinessException(ErrorCode.ROUTE_PLANNER_DISABLED);
       }
     }
+    // Only the creator takes the planner state along: promoting someone else's preview must not
+    // make its editing state readable by the editors of the team (WEB-100, C4a).
+    PlannerState copied =
+        isCreator(preview)
+            ? QuarkusTransaction.requiringNew()
+                .call(
+                    () -> {
+                      PlannerStateDocument document = readableState(getByPublicId(publicId));
+                      return document == null ? null : document.state();
+                    })
+            : null;
     Path gpxPath = downloadOriginalGpx(preview);
     try {
-      return routeService.createRoute(teamSlug, request, gpxPath);
+      return routeService.createRoute(teamSlug, request, gpxPath, copied);
     } finally {
       try {
         Files.deleteIfExists(gpxPath);

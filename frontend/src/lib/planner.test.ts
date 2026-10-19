@@ -22,7 +22,9 @@ import {
   plannerRouteToMappable,
   PlannerRefusedError,
   remove,
+  restoreSourceSpan,
   routeAscend,
+  sourceOf,
   spanBounds,
   type Point,
   type Route,
@@ -1372,5 +1374,62 @@ describe('B1 elevation', () => {
     expect(filled[3]).toBe(200)
     expect(filled[4]).toBe(200)
     expect(fillElevations([at(5.0), at(5.01)])).toEqual([undefined, undefined])
+  })
+})
+
+describe('C4a source span', () => {
+  beforeEach(() => {
+    routeMock.mockReset()
+    routeMock.mockImplementation(async (leg: RouteRequest) => arcAnswer(leg))
+  })
+
+  /** An import with a P dragged out between its anchors 1 and 3, and the bounds of P's leg. */
+  async function detour(coords: number[][] = IMPORT) {
+    const source = sourceOf(coords)
+    let route = createRoute(coords)
+    const [, a1, , a2] = route.points
+    route = await insert(route, a1, { lng: 5.03, lat: 45.03 }, a2, PROFILE)
+    const p = route.points.find((q) => q.manual && q.lng === 5.03)!
+    const at = route.points.indexOf(p)
+    const { start, end } = legBounds(route, at - 1, at + 1)
+    routeMock.mockClear()
+    return { source, route, p, start: start!, end: end! }
+  }
+
+  it('gives the file back between two anchors of the same import, without any request', async () => {
+    const { source, route, start, end } = await detour()
+    expect([start.sourceIdx, end.sourceIdx]).toEqual([10, 30])
+    const outside = route.points.filter((q) => q.idx <= start.idx || q.idx >= end.idx)
+    const ids = outside.map((q) => [q.id, q.lng, q.lat])
+
+    const next = restoreSourceSpan(route, start, end, source)
+    expect(routeMock).not.toHaveBeenCalled()
+    const a = next.points.findIndex((q) => q.id === start.id)
+    const b = next.points.findIndex((q) => q.id === end.id)
+    const between = next.points.slice(a + 1, b)
+    expect(between.length).toBeGreaterThan(0)
+    for (const q of between) {
+      expect(q.imported).toBe(true)
+      expect(q.manual).toBe(false)
+      expect(q.sourceIdx).toBeGreaterThan(10)
+      expect(q.sourceIdx).toBeLessThan(30)
+      near(q, { lng: IMPORT[q.sourceIdx!][0], lat: IMPORT[q.sourceIdx!][1] })
+    }
+    expect(next.points.some((q) => q.manual && q.lng === 5.03)).toBe(false)
+    // The rest of the route is the same points
+    expect(
+      next.points.filter((q) => q.idx <= a || q.idx >= b).map((q) => [q.id, q.lng, q.lat])
+    ).toEqual(ids)
+    // The edge into the end is the file's again
+    expect(end.direct).toBe(false)
+    expect(end.legAscend).toBeUndefined()
+  })
+
+  it('credits the climb of the file that was given back', async () => {
+    const climbing = IMPORT.map((c, i) => [c[0], c[1], 100 + (i % 5) * 3])
+    const { source, route, start, end } = await detour(climbing)
+    const next = restoreSourceSpan(route, start, end, source)
+    expect(next.ascend).toBeCloseTo(createRoute(climbing).ascend, 6)
+    expect(next.ascend).toBeGreaterThan(0)
   })
 })

@@ -2,12 +2,12 @@
 
 Écrit le 17 octobre 2026, mis à jour le 19 octobre 2026. **État : lots 1 et 2 livrés le
 17 octobre 2026 (§5 et §6, A10 compris) ; dans le lot 3, B11, B12, B6, B1a (profil d'édition), B7 et B9 sont livrés (18 octobre) ;
-le lot 4 est entamé par C2 (livré le 19 octobre) ; restent B1b, le reste du lot 3 (B2, mis de côté) et le lot 4 (C1, C3 à C5, C7 ; C6 non attribué).**
+le lot 4 est entamé par C2 et C4a (livrés le 19 octobre) ; restent B1b, le reste du lot 3 (B2, mis de côté), C4b (trace source FAST à l'envoi d'un fichier) et le lot 4 (C1, C3, C5, C7 ; C6 non attribué).**
 Ledger `WEB-100` (une seule
 entrée, qui pointe ici) : le suivi fin se fait **dans ce plan**, cases à cocher comprises, pas dans
 le ledger. Une tâche n'en sort vers `LEDGER_NEXT.md` que si elle quitte le périmètre du plan
 (backend partagé, autre client) ou si le plan est archivé avec des restes. **Les volets backend
-du lot 3 et du lot 4** (l'endpoint de recalage de B2, l'état d'édition de C4) **restent sous
+du lot 3 et du lot 4** (l'endpoint de recalage de B2, l'état d'édition de C4 ; C4a est livré, voir §8) **restent sous
 `WEB-100`**, comme A10 (D4, §10) : les versions de contrat et les migrations seront notées au
 passage dans `LEDGER_DONE.md`.
 
@@ -56,7 +56,7 @@ Quatre lots, chacun livrable seul :
 | **1. Robustesse** (livré) | Annulation et verrou pendant le calcul, `Ctrl+Z` hors des champs, tactile décidé par le pointeur, aide aux gestes, menus fiables, tests de `lib/planner.ts` | S à M (≈ 1 semaine) | — (volet backend A10 livré) |
 | **2. Disposition** (livré) | Plein écran d'édition, barre sous le pouce, cibles 44 px, un seul panneau ouvert, recherche d'adresse, cadrage `fitBounds` | M | 1 |
 | **3. Standard** | Profil altimétrique d'édition (B1, **B1a livré**, B1b à faire), inverser / aller-retour / retour au départ avec recalage (B2), ligne droite visible (B6, **livré**), clavier (B7, **livré**), défilement au bord (B9, **livré**), glisser une ancre au doigt (B11, **livré**), bornes indépendantes du zoom et suppression d'une ancre (B12, **livré**) | **L** | 1, 2 ; API pour B2 (endpoint de recalage) |
-| **4. Différenciation** | Éviter côtes / trafic (C2, **livré**), état d'édition conservé (C4), surface par point (C1), points de parcours (C3), popularité interne (C5), zones à éviter (C7) ; C6 non attribué | M à L | C4 : B6 et B12 ; C2 : aucun morceau du lot 3 ; API pour C1, C2, C4, C7 |
+| **4. Différenciation** | Éviter côtes / trafic (C2, **livré**), état d'édition conservé (C4 : **C4a livré**, C4b à faire), surface par point (C1), points de parcours (C3), popularité interne (C5), zones à éviter (C7) ; C6 non attribué | M à L | C4 : B6 et B12 ; C2 : aucun morceau du lot 3 ; API pour C1, C2, C4, C7 |
 
 Dans le lot 4, **C4 dépend de B6** (seul B6 crée l'information « ligne droite ») **et de B12**
 (la provenance des points) ; B6 et B12 ne dépendent pas de C4. Le lot 2 passe **avant** les fonctions : sans lui, chaque bouton du lot 3 serait à placer deux fois
@@ -88,11 +88,11 @@ Ce que ça change pour ce plan :
   |---|---|---|
   | Ajouter un point (le premier : aucune) | 1 | livré |
   | Insérer, déplacer un point de contrôle, glisser une ancre au doigt (B11) | 2 (1 à une extrémité, 0 en ligne droite) | livré |
-  | Supprimer un point de contrôle intermédiaire | 1 (0 en ligne droite) ; **0 entre deux raccords du même import** une fois `sourceIdx` livré (C4) | livré ; B12 le garde (livré) |
+  | Supprimer un point de contrôle intermédiaire | 1 (0 en ligne droite) ; **0 entre deux raccords du même import** depuis `sourceIdx` (C4a) | **livré** (C4a) ; B12 le garde (livré) |
   | Supprimer le départ ou l'arrivée | 0 | livré |
   | Annuler, rétablir, ouvrir ou fermer le plein écran | 0 | livré, à garder |
   | Supprimer une ancre importée (B12) | 1, **0 avec `Alt`** (ligne droite) | livré |
-  | Restituer une portion du fichier en supprimant un point (C4) | 0 | à faire |
+  | Restituer une portion du fichier en supprimant un point (C4) | 0 | **livré** (C4a) |
   | Déplacer un point au clavier (B7) | 2 (1 à une extrémité), **au relâchement seulement**, jamais à chaque flèche | **livré** (B7) |
   | Inverser, aller-retour (B2) | **1 ou 2** : un recalage, plus un raccord s'il reste des trous ; 0 en repli sur la géométrie inversée | à faire |
   | Retour au départ (B2) | 1 | à faire |
@@ -696,8 +696,8 @@ servent), puis B6 (la ligne droite visible), puis B1 et B2.
         contrôle au suivant sur un tracé dessiné, aux raccords sur un import (1 requête, 2 pour un
         déplacement). « De point de contrôle à point de contrôle » à la lettre est écarté : un point
         inséré puis supprimé re-routerait tout un import, une boucle importée s'effondrerait.
-        Quand C4 aura livré `sourceIdx` (indice source par point), supprimer entre deux raccords du
-        **même import** rend la portion du fichier : **0 requête au lieu de 1** ; B12 se livre
+        Depuis C4a (`sourceIdx`, indice source par point), supprimer entre deux raccords du
+        **même import** rend la portion du fichier : **0 requête au lieu de 1** ; B12 s'est livré
         d'abord avec la requête.
       - **Supprimer le départ ou l'arrivée** : couper jusqu'à l'ancre visible (0 requête), refuser
         si le tracé tomberait sous deux points. **La fonction de bornes est `spanBounds`**, prise en
@@ -870,8 +870,8 @@ questions ouvertes viennent du §10 de
       C4 (un parcours rouvert est alors tout entier importé), C4 lui apporte la fidélité après
       enregistrement.
 
-      **Backend — propositions à valider par le propriétaire** (volet qui reste sous `WEB-100`, D4 ;
-      aucun code écrit) :
+      **Backend — propositions, validées telles quelles par le propriétaire le 19 octobre 2026** (volet
+      qui reste sous `WEB-100`, D4 ; livré par C4a, ci-dessous) :
       - **Colonnes** : `planner_state jsonb` (facultative) sur `gpx_tracks` (D3 : un tracé
         remplacé emporte son état) et sur `gpx_previews` (colonne propre aux aperçus des outils
         GPX). Dans les entités `GpxTrack` et `GpxPreview`, en `JsonBinaryType` comme `track_points`
@@ -957,6 +957,52 @@ questions ouvertes viennent du §10 de
         une copie.
       - **Contrat** : la version suivante (mineure, après celle de B2 si elle passe d'abord), via la
         skill `contract-first-api` ; migration `V75`. Notées au passage dans `LEDGER_DONE.md` (D4).
+      - [x] **C4a. Enregistrer et relire l'état** — **livré le 19 octobre 2026** (C4 est découpé le
+        même jour : C4a maintenant, C4b plus tard).
+        **Fait.** *Backend* : `PlannerState` (version, profil, sources, jonctions, morceaux
+        ROUTED / DIRECT / IMPORTED) et sa validation (`PlannerStates` : version, profil, plages,
+        contiguïté, polylines décodables, WGS84, bornes) ; `RouteRequest`,
+        `GpxPreviewFromPointsRequest` et `GpxPreviewUpdateRequest` reçoivent `plannerState`, le
+        serveur en dérive le tracé (`PlannerStates.validateAndDerive`, puis la chaîne GPX) ;
+        `points` avec un état = 400 `PLANNER_STATE_INVALID`. `GET …/routes/{slug}/planner-state`
+        (droits d'édition) et `GET /api/gpx-previews/{id}/planner-state` (créateur seul), `null`
+        quand il n'y a pas d'état ou qu'il est périmé ; absent des DTO et des listes. Colonne
+        `planner_state jsonb` sur `gpx_tracks` (première piste) et `gpx_previews` (migration
+        `V75__planner_state.sql`, additive). Jeton de révision : `fileId` du `ROUTE_ORIGINAL_GPX`
+        pour un parcours, empreinte du tracé 2D pour un aperçu. Remplacer le tracé (fichier,
+        `points`) efface l'état ; titre, adresse et rattrapage HD le gardent. Promotion d'un aperçu :
+        l'état est recopié, par son créateur seul. `drawn` faux pour un état de seuls morceaux
+        importés. *Frontend* : `lib/plannerState.ts` (sérialisation à l'enregistrement,
+        restauration sans requête), `lib/polyline.ts`, `lib/plannerSubmit.ts` (ce que chaque
+        formulaire envoie), `sourceIdx` et trace source dans `useRoutePlanner` (`initialState`,
+        `snapshot()`), suppression à 0 requête entre deux raccords du même import
+        (`restoreSourceSpan`), profil de l'état adopté à l'ouverture ; pages de modification et
+        d'aperçu qui lisent l'état avant d'ouvrir l'éditeur, un parcours rouvert sans état s'ouvre
+        sur son tracé enregistré comme un import.
+        **Bornes** (`GpxLimits`) : 2 000 morceaux (un point de contrôle tous les 100 m sur 200 km),
+        8 sources (C4a n'en écrit qu'une), 100 000 points, 2 000 000 caractères de polylines ; pire cas
+        estimé à 1,6 Mo de JSONB (100 000 points routés et 100 000 points source), **estimation, non
+        mesurée sur de vrais parcours** ; les listes et les chaînes portent aussi `@Size` et
+        `@Valid`, pour refuser avant la construction de tout le graphe. Au-delà des bornes côté
+        client, l'éditeur envoie les points et le dit (« tracé enregistré sans ses points de
+        contrôle »), après l'enregistrement réussi seulement. **Contrat `11.10.0`**, `V75`.
+        **Tests** : backend `RoutePlannerStateResourceTest`, `GpxPreviewPlannerStateResourceTest`,
+        `PlannerStatesTest`, `PolylineCodecTest`, `ElevationRefreshTest`,
+        `GpxPreviewElevationRefreshTest` (aller-retour, droits, domaines, jeton, rattrapage HD,
+        promotion, bornes) ; frontend `plannerState.test.ts`, `polyline.test.ts`,
+        `plannerSubmit.test.ts`, `useRoutePlanner.test.tsx`, `RouteEditor.test.tsx`,
+        `GpxPreviewEditor.test.tsx`, `RoutePlannerField.test.tsx`, e2e `gpx-planner`.
+        **Écarts.** *É1* : le rattrapage HD reporte le jeton de l'aperçu sur la nouvelle révision,
+        l'état garde donc ses altitudes FAST (D2). *É2* : un tracé non touché n'envoie rien à la
+        modification (ni état ni points), la piste et son état restent. Sans état, la trace source
+        est le tracé déjà enregistré (HD) : ses altitudes ne sont pas celles du FAST, et son D+ vient
+        de la fiche. Un état de seuls morceaux importés vient du client : le serveur ne peut pas le
+        distinguer d'un fichier qu'il a stocké, l'effet est celui d'un export puis d'un
+        réimport du GPX (`API-127`, noté dans `GpxPreviewService.createRoute`).
+        **Reste (C4b).** La trace source **FAST à l'envoi d'un fichier avant enregistrement**
+        (endpoint de lecture sans enregistrement, ou aperçu implicite) : aujourd'hui un fichier
+        envoyé à la modification remplace le tracé sans que l'éditeur en ait la trace avant
+        l'enregistrement.
 - [ ] **C1. Surface par point** (L, §8 n° 13) — **à concevoir avant de commencer.**
       `ElevationChart` colore déjà par segment, un second mode suffit ; sur la carte, même mécanique
       de couches que B6. Côté API, `trace_attributes` est facturé à part chez Stadia : l'appeler
@@ -1064,6 +1110,16 @@ questions ouvertes viennent du §10 de
   mémorisation par profil ; Q3 cinq crans, mots, pas de chiffre, lien « Valeurs du profil » ; Q4
   contrat `11.9.0` ; défauts Q5 (rien pour RUN_HIKE), Q7 (C4 n'enregistre pas le réglage), Q8 (pas de
   re-routage du tracé existant), Q9 (pastille).
+- **C4a (19 octobre 2026).** C4 est découpé : C4a maintenant (enregistrer et relire l'état :
+  morceaux, points de contrôle, raccords, `sourceIdx` et trace source = le tracé déjà enregistré pour
+  un parcours rouvert sans état, suppression à 0 requête, copie de l'état à la promotion), C4b plus
+  tard (trace source FAST à l'envoi d'un fichier). Propositions backend **validées telles quelles** :
+  `GET …/planner-state` séparé et réservé à l'édition ; état écrit avec le tracé (`RouteRequest`,
+  `GpxPreviewFromPointsRequest`, `GpxPreviewUpdateRequest`), le serveur dérive le tracé ; points +
+  état = 400 `PLANNER_STATE_INVALID` ; `V75` additive, `planner_state jsonb` sur `gpx_tracks` et
+  `gpx_previews` ; jeton `fileId` du `ROUTE_ORIGINAL_GPX` (parcours) ou empreinte du tracé 2D
+  (aperçu) ; `drawn` faux pour un état de seuls morceaux importés ; contrat `11.10.0`. **L'état d'un
+  aperçu n'est lisible que par son créateur.**
 - **D4.** Les volets backend de B2 (l'endpoint de recalage) et de C4 **restent sous `WEB-100`**,
   comme A10. Les versions de contrat et les migrations seront notées au passage dans
   `LEDGER_DONE.md`.
@@ -1072,10 +1128,9 @@ questions ouvertes viennent du §10 de
 
 Écrites le 18 octobre 2026 sans décision du propriétaire : le chemin, les DTO et la gestion des
 erreurs de l'endpoint de recalage et la seconde interface Stadia (B2) ; la version de contrat
-`11.9.0` pour B2 si elle passe avant (C2 a pris `11.9.0`, B2 prendra la suivante) ; les endpoints, la forme d'écriture, les codes d'erreur, les bornes, le jeton de révision
-(empreinte pour les aperçus), la lecture d'un aperçu réservée au créateur, la migration `V75` et la
-valeur de `drawn` de l'état d'édition (C4) ; le nom `legAscend` et le cumul de montée de la trace
-source (B1).
+pour B2 si elle passe avant (C2 a pris `11.9.0`, C4a `11.10.0`, B2 prendra la suivante) ; le nom
+`legAscend` et le cumul de montée de la trace source (B1). Celles du volet backend de C4 sont
+validées (19 octobre 2026, ci-dessus).
 
 ---
 

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { useForm } from '@mantine/form'
 import { zodFormValidator } from '@/lib/formUtils'
 import { useTranslation } from 'react-i18next'
@@ -16,11 +16,13 @@ import {
   Box,
 } from '@mantine/core'
 import { RouteRequest, SurfaceType } from '@/api/dto'
-import type { TeamDetailDto, GeoPoint } from '@/api/dto'
+import type { TeamDetailDto, GeoPoint, PlannerState } from '@/api/dto'
+import { notifications } from '@mantine/notifications'
+import { plannerPayload } from '@/lib/plannerSubmit'
 import { MediaEditor } from '../common/MediaEditor'
 import { SlugEditor } from '../common/SlugEditor'
 import { paths } from '@/config/paths'
-import { RoutePlannerField } from '../planner/RoutePlannerField'
+import { RoutePlannerField, type RoutePlannerHandle } from '../planner/RoutePlannerField'
 import { CreateRouteBody } from '@/api/zod/routes/routes.zod'
 import { TagPicker } from '@/components/tag'
 
@@ -40,6 +42,8 @@ interface RouteEditorProps {
   initialTrack?: number[][]
   /** D+ (m) stored for `initialTrack`. */
   initialAscend?: number
+  /** The saved editing state of the route (control points, pieces): the planner opens on it. */
+  initialPlannerState?: PlannerState
   submitButtonText?: string
   cancelButtonText?: string
   showCancelButton?: boolean
@@ -61,6 +65,7 @@ export function RouteEditor({
   isCreateMode = false,
   initialTrack,
   initialAscend,
+  initialPlannerState,
   submitButtonText,
   cancelButtonText,
   showCancelButton = true,
@@ -93,6 +98,7 @@ export function RouteEditor({
   const [gpxFile, setGpxFile] = useState<File | null>(null)
   const [plannerPoints, setPlannerPoints] = useState<GeoPoint[]>([])
   const [error, setError] = useState<string | null>(null)
+  const plannerRef = useRef<RoutePlannerHandle>(null)
 
   const handleFileChange = useCallback(
     (file: File | null) => {
@@ -129,13 +135,25 @@ export function RouteEditor({
 
     setError(null)
 
-    onSubmit(
+    // The planner's track goes as its editing state (the server derives the track from it), or as
+    // points past the bounds of the state; nothing when the route was not touched. Never both.
+    const track =
+      sourceMode === 'planner'
+        ? plannerPayload(plannerRef.current?.snapshot(), isCreateMode)
+        : undefined
+
+    await onSubmit(
       {
         ...values,
-        points: sourceMode === 'planner' ? plannerPoints : undefined,
+        points: track?.points,
+        plannerState: track?.plannerState,
       },
       sourceMode === 'gpx' ? gpxFile || undefined : undefined
     )
+    // Only once the save went through: a failed save did not drop anything
+    if (track?.tooLarge) {
+      notifications.show({ message: t('planner.state.tooLarge'), color: 'yellow' })
+    }
   }
 
   const showPlanner = canUsePlanner && sourceMode === 'planner'
@@ -215,6 +233,8 @@ export function RouteEditor({
               )}
             </Text>
             <RoutePlannerField
+              plannerRef={plannerRef}
+              initialState={initialPlannerState}
               onPointsChange={setPlannerPoints}
               initialTrack={initialTrack}
               initialAscend={initialAscend}

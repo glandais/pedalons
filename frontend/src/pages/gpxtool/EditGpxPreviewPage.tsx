@@ -1,14 +1,15 @@
 import { useTranslation } from 'react-i18next'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { Stack, Text, Title } from '@mantine/core'
+import { Alert, Stack, Text, Title } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
-import type { GeoPoint } from '@/api/dto'
+import type { GeoPoint, PlannerState } from '@/api/dto'
 import { getGetPreviewQueryKey, useUpdatePreview } from '@/api/endpoints/gpx-previews/gpx-previews'
 import { GpxPreviewEditor } from '@/components/gpxtool/GpxPreviewEditor'
 import { LoadingPage } from '@/components/common/LoadingSpinner'
 import { paths } from '@/config/paths'
-import { useGpxPreviewFormData } from './gpxPreviewFormData'
+import { isGpxPlannerEnabled } from '@/config/appConfig'
+import { useGpxPreviewFormData, useGpxPreviewPlannerState } from './gpxPreviewFormData'
 
 export function EditGpxPreviewPage() {
   const { previewId } = useParams<{ previewId: string }>()
@@ -18,8 +19,13 @@ export function EditGpxPreviewPage() {
 
   const { data: preview, isLoading } = useGpxPreviewFormData(previewId)
   const updateMutation = useUpdatePreview()
+  const plannerStateQuery = useGpxPreviewPlannerState(
+    previewId,
+    isGpxPlannerEnabled() && !!preview?.owned && preview.tracks.length === 1
+  )
 
-  if (isLoading) {
+  // The planner takes its initial state once, on mounting: the editor waits for the saved state
+  if (isLoading || plannerStateQuery.isLoading) {
     return <LoadingPage message={t('gpxTools.edit.title')} />
   }
 
@@ -34,9 +40,19 @@ export function EditGpxPreviewPage() {
 
   const initialTrack = preview.tracks.length === 1 ? preview.tracks[0].line.coordinates : undefined
 
-  const handleSubmit = async (name: string, points?: GeoPoint[], gpxFile?: File) => {
+  const handleSubmit = async (
+    name: string,
+    track?: { points?: GeoPoint[]; plannerState?: PlannerState },
+    gpxFile?: File
+  ) => {
     await updateMutation.mutateAsync(
-      { previewId: preview.id, data: { preview: { name, points }, gpxFile } },
+      {
+        previewId: preview.id,
+        data: {
+          preview: { name, points: track?.points, plannerState: track?.plannerState },
+          gpxFile,
+        },
+      },
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetPreviewQueryKey(preview.id) })
@@ -54,10 +70,17 @@ export function EditGpxPreviewPage() {
         <Text c="dimmed">{t('gpxTools.edit.subtitle')}</Text>
       </Stack>
 
+      {plannerStateQuery.isError && (
+        <Alert color="yellow" variant="light">
+          {t('planner.state.readFailed')}
+        </Alert>
+      )}
+
       <GpxPreviewEditor
         initialName={preview.name}
         initialTrack={initialTrack}
         initialAscend={preview.elevationGain}
+        initialPlannerState={plannerStateQuery.data?.state}
         onSubmit={handleSubmit}
         onCancel={() => navigate(paths.gpxToolsView(preview.id))}
         isPending={updateMutation.isPending}
