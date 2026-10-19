@@ -2,11 +2,16 @@ package fr.pedalons.api.router;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.pedalons.api.AbstractResourceTest;
 import fr.pedalons.enums.Visibility;
 import fr.pedalons.infrastructure.valhalla.StadiaMapsClient;
@@ -19,9 +24,11 @@ import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import java.util.Map;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 /**
@@ -244,5 +251,107 @@ class RouterResourceTest extends AbstractResourceTest {
     when(stadiaMapsClient.route(any())).thenThrow(new ProcessingException("read timed out"));
 
     route(USER1, team1Slug).statusCode(503).body("code", equalTo("ROUTING_UNAVAILABLE"));
+  }
+
+  // ==================== Tuning: useHills / useRoads (C2) ====================
+
+  private ValhallaRequest routeWith(String profile, String extra) {
+    dataService.setDomainEnableGpxPlanner(domain, true);
+    emptyRouteFromStadia();
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(
+            "{\"from\": {\"lng\": 4.8357, \"lat\": 45.7640},"
+                + " \"to\": {\"lng\": 4.8500, \"lat\": 45.7700}, \"profile\": \""
+                + profile
+                + "\""
+                + extra
+                + "}")
+        .when()
+        .post("/api/router")
+        .then()
+        .statusCode(200);
+    ArgumentCaptor<ValhallaRequest> captor = ArgumentCaptor.forClass(ValhallaRequest.class);
+    verify(stadiaMapsClient).route(captor.capture());
+    return captor.getValue();
+  }
+
+  @Test
+  void route_withoutTuning_shouldSendTheProfileOptionsUntouched() {
+    assertEquals(
+        Map.of("bicycle", Map.of("bicycle_type", "hybrid")),
+        routeWith("BIKE", "").costingOptions());
+  }
+
+  @Test
+  void route_fastbikeWithoutTuning_shouldSendTheProfileOptionsUntouched() {
+    assertEquals(
+        Map.of("bicycle", Map.of("bicycle_type", "road", "use_roads", 1, "avoid_bad_surfaces", 1)),
+        routeWith("FASTBIKE", "").costingOptions());
+  }
+
+  @Test
+  void route_fastbikeWithUseRoads_shouldReplaceOnlyThatValue() {
+    Map<String, Object> options =
+        routeWith("FASTBIKE", ", \"useRoads\": 0.25").costingOptions().get("bicycle");
+
+    assertEquals(0.25, options.get("use_roads"));
+    assertEquals("road", options.get("bicycle_type"));
+    assertEquals(1, options.get("avoid_bad_surfaces"));
+  }
+
+  @Test
+  void route_bikeWithUseHills_shouldAddUseHillsOnly() {
+    Map<String, Object> options =
+        routeWith("BIKE", ", \"useHills\": 0").costingOptions().get("bicycle");
+
+    assertEquals(0.0, options.get("use_hills"));
+    assertFalse(options.containsKey("use_roads"));
+    assertEquals("hybrid", options.get("bicycle_type"));
+  }
+
+  @Test
+  void route_withOutOfRangeTuning_shouldReturn400BeforeCallingStadia() {
+    dataService.setDomainEnableGpxPlanner(domain, true);
+    for (String extra : new String[] {", \"useHills\": 1.5", ", \"useRoads\": -0.1"}) {
+      given()
+          .auth()
+          .oauth2(getAccessToken(USER1))
+          .contentType(MediaType.APPLICATION_JSON)
+          .body(
+              "{\"from\": {\"lng\": 4.8357, \"lat\": 45.7640},"
+                  + " \"to\": {\"lng\": 4.8500, \"lat\": 45.7700}, \"profile\": \"BIKE\""
+                  + extra
+                  + "}")
+          .when()
+          .post("/api/router")
+          .then()
+          .statusCode(400);
+    }
+
+    verify(stadiaMapsClient, never()).route(any());
+  }
+
+  @Test
+  void route_runHikeAndMotorcycleWithTuning_shouldIgnoreIt() {
+    String both = ", \"useHills\": 0.5, \"useRoads\": 0.5";
+    assertTrue(routeWith("RUN_HIKE", both).costingOptions().isEmpty());
+    Mockito.reset(stadiaMapsClient);
+    assertTrue(routeWith("MOTORCYCLE", both).costingOptions().isEmpty());
+  }
+
+  @Test
+  void valhallaRequest_shouldSerializeSnakeCaseKeys() throws Exception {
+    ValhallaRequest request = routeWith("FASTBIKE", ", \"useHills\": 0.5, \"useRoads\": 0.75");
+
+    JsonNode bicycle =
+        new ObjectMapper()
+            .readTree(new ObjectMapper().writeValueAsString(request))
+            .path("costing_options")
+            .path("bicycle");
+    assertEquals(0.5, bicycle.path("use_hills").asDouble());
+    assertEquals(0.75, bicycle.path("use_roads").asDouble());
   }
 }

@@ -38,6 +38,7 @@ import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -199,13 +200,31 @@ public class RouterService {
     }
   }
 
-  private static ValhallaRequest getValhallaRequest(RouterRequest routerRequest) {
+  /**
+   * The profile's costing options, with the request's {@code useHills} / {@code useRoads} replacing
+   * the profile's value. Both apply to the bicycle costing only; absent, the result is the
+   * profile's options untouched.
+   */
+  static Map<String, Object> mergeCostingOptions(RouterRequest routerRequest) {
+    RouterProfile profile = routerRequest.profile();
+    Map<String, Object> options = new HashMap<>(profile.getCostingOptions());
+    if ("bicycle".equals(profile.getCosting())) {
+      if (routerRequest.useHills() != null) {
+        options.put("use_hills", routerRequest.useHills());
+      }
+      if (routerRequest.useRoads() != null) {
+        options.put("use_roads", routerRequest.useRoads());
+      }
+    }
+    return options;
+  }
+
+  static ValhallaRequest getValhallaRequest(RouterRequest routerRequest) {
     RouterProfile profile = routerRequest.profile();
 
+    Map<String, Object> options = mergeCostingOptions(routerRequest);
     Map<String, Map<String, Object>> costingOptions =
-        profile.getCostingOptions().isEmpty()
-            ? Map.of()
-            : Map.of(profile.getCosting(), profile.getCostingOptions());
+        options.isEmpty() ? Map.of() : Map.of(profile.getCosting(), options);
 
     return new ValhallaRequest(
         List.of(

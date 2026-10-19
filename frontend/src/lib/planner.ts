@@ -47,6 +47,28 @@ export interface Route {
   index: KDBush
 }
 
+/**
+ * What the router is asked: the profile and, for the bicycle ones, the two tuning knobs (0..1).
+ * An absent knob means « the profile's value » and is not sent, so the call stays what it was
+ * before the knobs existed.
+ */
+export interface RouterSettings {
+  profile: RouterProfile
+  /** 0 avoids hills, 1 ignores them. */
+  useHills?: number
+  /** 0 prefers cycleways and paths, 1 roads. */
+  useRoads?: number
+}
+
+function definedSettings(settings: RouterSettings): RouterSettings {
+  const { profile, useHills, useRoads } = settings
+  return {
+    profile,
+    ...(useHills !== undefined && { useHills }),
+    ...(useRoads !== undefined && { useRoads }),
+  }
+}
+
 let pointIdCounter = 0
 
 // The only place where points become `imported`: a loaded track (initialTrack, imported file).
@@ -359,7 +381,7 @@ export function computeRoute(input: RoutePoint[], changed?: Bounds): Route {
 export async function add(
   route: Route,
   p: Point,
-  profile: RouterProfile,
+  settings: RouterSettings,
   direct = false,
   signal?: AbortSignal,
   teamSlug?: string
@@ -373,7 +395,7 @@ export async function add(
 
   const last = route.points[route.points.length - 1]
 
-  const leg = await router(last, p, profile, direct, signal, teamSlug)
+  const leg = await router(last, p, settings, direct, signal, teamSlug)
   const segment = leg.points
   // Nothing of the route is touched before the router answered: an abandoned call leaves it intact.
   last.manual = true
@@ -402,7 +424,7 @@ export async function insert(
   startPoint: RoutePoint | undefined,
   p: Point,
   endPoint: RoutePoint | undefined,
-  profile: RouterProfile,
+  settings: RouterSettings,
   direct = false,
   signal?: AbortSignal,
   teamSlug?: string,
@@ -420,8 +442,8 @@ export async function insert(
   // Route segments (parallel if both needed)
   const emptyLeg: Leg = { points: [] }
   const [toP, toEnd] = await Promise.all([
-    startPoint ? router(startPoint, p, profile, direct, signal, teamSlug) : emptyLeg,
-    endPoint ? router(p, endPoint, profile, direct, signal, teamSlug) : emptyLeg,
+    startPoint ? router(startPoint, p, settings, direct, signal, teamSlug) : emptyLeg,
+    endPoint ? router(p, endPoint, settings, direct, signal, teamSlug) : emptyLeg,
   ])
   const segmentToP = toP.points
   const segmentToEnd = toEnd.points
@@ -485,7 +507,7 @@ export async function remove(
   route: Route,
   startPoint: RoutePoint | undefined,
   endPoint: RoutePoint | undefined,
-  profile: RouterProfile,
+  settings: RouterSettings,
   direct = false,
   signal?: AbortSignal,
   teamSlug?: string
@@ -525,7 +547,7 @@ export async function remove(
   const leg = await router(
     route.points[startIdx],
     route.points[endIdx],
-    profile,
+    settings,
     straight,
     signal,
     teamSlug
@@ -627,7 +649,7 @@ interface Leg {
 async function router(
   from: Point,
   to: Point,
-  profile: RouterProfile,
+  settings: RouterSettings,
   direct: boolean,
   signal?: AbortSignal,
   teamSlug?: string
@@ -639,7 +661,7 @@ async function router(
   signal?.throwIfAborted()
   // The planner renders the failure itself, by code (plannerErrorMessage): no global toast on top.
   const response = await routerRoute(
-    { from, to, profile, teamSlug },
+    { from, to, ...definedSettings(settings), teamSlug },
     { skipErrorToast: true },
     signal
   )

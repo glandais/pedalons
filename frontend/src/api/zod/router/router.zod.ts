@@ -18,6 +18,12 @@ export const routeBodyToLatMax = 90
 
 export const routeBodyTeamSlugMax = 250
 
+export const routeBodyUseHillsMin = 0
+export const routeBodyUseHillsMax = 1
+
+export const routeBodyUseRoadsMin = 0
+export const routeBodyUseRoadsMax = 1
+
 export const RouteBody = zod.object({
   from: zod.object({
     lng: zod.number().min(routeBodyFromLngMin).max(routeBodyFromLngMax),
@@ -34,6 +40,22 @@ export const RouteBody = zod.object({
     .optional()
     .describe(
       "Slug of the team the route is being drawn for. When present, the team must have the route planner enabled and the caller must be allowed to create routes in it. When absent, the domain's GPX planner must be enabled."
+    ),
+  useHills: zod
+    .number()
+    .min(routeBodyUseHillsMin)
+    .max(routeBodyUseHillsMax)
+    .optional()
+    .describe(
+      "Propensity to climb, 0 (avoid hills) to 1 (no fear). Absent: the profile's value. Bicycle profiles only; ignored otherwise."
+    ),
+  useRoads: zod
+    .number()
+    .min(routeBodyUseRoadsMin)
+    .max(routeBodyUseRoadsMax)
+    .optional()
+    .describe(
+      "Propensity to ride with traffic, 0 (cycleways and paths) to 1 (roads). Absent: the profile's value (1 for FASTBIKE). Bicycle profiles only; ignored otherwise."
     ),
 })
 

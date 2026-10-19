@@ -26,10 +26,11 @@ import {
   spanBounds,
   type Point,
   type Route,
+  type RouterSettings,
   type RoutePoint,
 } from './planner'
 
-const PROFILE = RouterProfile.FASTBIKE
+const PROFILE: RouterSettings = { profile: RouterProfile.FASTBIKE }
 
 function groundEle(lng: number): number {
   return 100 + Math.round((lng - 5) * 10000)
@@ -171,9 +172,25 @@ describe('add', () => {
     )
   })
 
+  it('sends the tuning knobs that are set, and only those', async () => {
+    const first = await add(computeRoute([]), A, PROFILE)
+    await add(first, B, { profile: RouterProfile.BIKE, useHills: 0 })
+    const body = routeMock.mock.calls[0][0]
+    expect(body).toMatchObject({ profile: RouterProfile.BIKE, useHills: 0 })
+    expect(Object.keys(body)).not.toContain('useRoads')
+  })
+
+  it('sends neither knob when the settings carry none', async () => {
+    const first = await add(computeRoute([]), A, PROFILE)
+    await add(first, B, { profile: RouterProfile.BIKE, useHills: undefined, useRoads: undefined })
+    const keys = Object.keys(routeMock.mock.calls[0][0])
+    expect(keys).not.toContain('useHills')
+    expect(keys).not.toContain('useRoads')
+  })
+
   it('adds the second point with exactly one router call carrying the profile', async () => {
     const first = await add(computeRoute([]), A, PROFILE)
-    const route = await add(first, B, RouterProfile.FASTBIKE)
+    const route = await add(first, B, PROFILE)
     expect(routeMock).toHaveBeenCalledTimes(1)
     expect(routeMock).toHaveBeenCalledWith(
       {

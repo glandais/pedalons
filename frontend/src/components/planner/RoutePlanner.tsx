@@ -165,6 +165,9 @@ export function RoutePlanner({
     error,
     routerProfile,
     setRouterProfile,
+    routerTuning,
+    setRouterTuning,
+    resetRouterTuning,
     addControlPoint,
     insertControlPoint,
     updateControlPoint,
@@ -1324,6 +1327,9 @@ export function RoutePlanner({
                 <RouterProfileSelector
                   currentProfile={routerProfile}
                   onProfileChange={setRouterProfile}
+                  tuning={routerTuning}
+                  onTuningChange={setRouterTuning}
+                  onTuningReset={resetRouterTuning}
                 />
               </>
             )}

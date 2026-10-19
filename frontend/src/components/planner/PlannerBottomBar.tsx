@@ -3,6 +3,7 @@ import { IconArrowBackUp, IconArrowForwardUp, IconLineDashed } from '@tabler/ico
 import { ActionIcon, Button, Group } from '@mantine/core'
 import { RouterProfile } from '@/api/dto'
 import { PlannerHelpControl } from './PlannerHelpControl'
+import type { RouterTuning, TuningKey } from '@/lib/routerTuning'
 import { RouterProfileSelector } from './RouterProfileSelector'
 
 interface PlannerBottomBarProps {
@@ -12,6 +13,9 @@ interface PlannerBottomBarProps {
   onRedo: () => void
   routerProfile: RouterProfile
   onProfileChange: (profile: RouterProfile) => void
+  routerTuning: RouterTuning
+  onTuningChange: (key: TuningKey, value: number) => void
+  onTuningReset: () => void
   /** "Straight line" toggle: the next gestures are drawn without the router. */
   directMode: boolean
   onDirectModeChange: (on: boolean) => void
@@ -31,6 +35,9 @@ export function PlannerBottomBar({
   onRedo,
   routerProfile,
   onProfileChange,
+  routerTuning,
+  onTuningChange,
+  onTuningReset,
   directMode,
   onDirectModeChange,
   onDone,
@@ -85,6 +92,9 @@ export function PlannerBottomBar({
         <RouterProfileSelector
           currentProfile={routerProfile}
           onProfileChange={onProfileChange}
+          tuning={routerTuning}
+          onTuningChange={onTuningChange}
+          onTuningReset={onTuningReset}
           trigger="bar"
         />
         <PlannerHelpControl trigger="bar" />

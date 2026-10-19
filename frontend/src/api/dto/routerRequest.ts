@@ -10,4 +10,16 @@ export interface RouterRequest {
    * @maxLength 250
    */
   teamSlug?: string
+  /**
+   * Propensity to climb, 0 (avoid hills) to 1 (no fear). Absent: the profile's value. Bicycle profiles only; ignored otherwise.
+   * @minimum 0
+   * @maximum 1
+   */
+  useHills?: number
+  /**
+   * Propensity to ride with traffic, 0 (cycleways and paths) to 1 (roads). Absent: the profile's value (1 for FASTBIKE). Bicycle profiles only; ignored otherwise.
+   * @minimum 0
+   * @maximum 1
+   */
+  useRoads?: number
 }

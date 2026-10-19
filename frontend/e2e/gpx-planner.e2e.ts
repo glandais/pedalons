@@ -2003,3 +2003,43 @@ async function relativeToStart(
   const now = await l.centre(1)
   return { x: now.x - start.x, y: now.y - start.y }
 }
+
+test.describe('avoiding hills and traffic (C2)', () => {
+  test.setTimeout(90_000)
+
+  test('a setting asks nothing of the router, applies to the next leg, and is remembered', async ({
+    context,
+    page,
+    isMobile,
+  }) => {
+    const { surface, clickMap, points, settled, routerRequests } = await openPlanner({
+      context,
+      page,
+      isMobile,
+    })
+    await clickMap(-100, 0)
+    await expect(points(1)).toBeVisible()
+
+    await surface.getByRole('button', { name: 'Profil' }).click()
+    const hills = page.getByRole('slider', { name: 'Côtes' })
+    await expect(hills).toBeVisible()
+    await hills.focus()
+    await page.keyboard.press('Home')
+    await expect(hills).toHaveAttribute('aria-valuenow', '0')
+    expect(routerRequests, 'turning a knob routes nothing').toHaveLength(0)
+    await page.keyboard.press('Escape')
+    await expect(hills).toBeHidden()
+
+    await clickMap(100, 30)
+    await expect(points(2)).toBeVisible()
+    await settled()
+    expect(routerRequests).toHaveLength(1)
+    expect(routerRequests.at(-1)?.useHills).toBe(0)
+    expect(routerRequests.at(-1)?.useRoads, 'the other knob stays the profile’s').toBeUndefined()
+
+    await page.reload()
+    await startDrawing(page, isMobile)
+    await surface.getByRole('button', { name: 'Profil' }).click()
+    await expect(page.getByRole('slider', { name: 'Côtes' })).toHaveAttribute('aria-valuenow', '0')
+  })
+})

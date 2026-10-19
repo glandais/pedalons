@@ -5551,6 +5551,21 @@ components:
             \ allowed to create routes in it. When absent, the domain's GPX planner\
             \ must be enabled."
           maxLength: 250
+        useHills:
+          type: number
+          format: double
+          description: "Propensity to climb, 0 (avoid hills) to 1 (no fear). Absent:\
+            \ the profile's value. Bicycle profiles only; ignored otherwise."
+          maximum: 1.0
+          minimum: 0.0
+        useRoads:
+          type: number
+          format: double
+          description: "Propensity to ride with traffic, 0 (cycleways and paths) to\
+            \ 1 (roads). Absent: the profile's value (1 for FASTBIKE). Bicycle profiles\
+            \ only; ignored otherwise."
+          maximum: 1.0
+          minimum: 0.0
     RouterResponse:
       type: object
       required:
@@ -19615,7 +19630,7 @@ paths:
                 $ref: "#/components/schemas/VersionDto"
 info:
   title: Pedalons API
-  version: 11.8.0
+  version: 11.9.0
   description: API for Pedalons Cycling Team Management Platform
 servers:
 - url: http://localhost:8080

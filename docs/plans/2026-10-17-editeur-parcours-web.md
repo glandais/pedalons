@@ -1,8 +1,8 @@
 # Éditeur de parcours web — desktop et web mobile
 
-Écrit le 17 octobre 2026, mis à jour le 18 octobre 2026. **État : lots 1 et 2 livrés le
+Écrit le 17 octobre 2026, mis à jour le 19 octobre 2026. **État : lots 1 et 2 livrés le
 17 octobre 2026 (§5 et §6, A10 compris) ; dans le lot 3, B11, B12, B6, B1a (profil d'édition), B7 et B9 sont livrés (18 octobre) ;
-restent B1b, le reste du lot 3 (B2) et le lot 4 (C1 à C5, C7 ; C6 non attribué).**
+le lot 4 est entamé par C2 (livré le 19 octobre) ; restent B1b, le reste du lot 3 (B2, mis de côté) et le lot 4 (C1, C3 à C5, C7 ; C6 non attribué).**
 Ledger `WEB-100` (une seule
 entrée, qui pointe ici) : le suivi fin se fait **dans ce plan**, cases à cocher comprises, pas dans
 le ledger. Une tâche n'en sort vers `LEDGER_NEXT.md` que si elle quitte le périmètre du plan
@@ -56,7 +56,7 @@ Quatre lots, chacun livrable seul :
 | **1. Robustesse** (livré) | Annulation et verrou pendant le calcul, `Ctrl+Z` hors des champs, tactile décidé par le pointeur, aide aux gestes, menus fiables, tests de `lib/planner.ts` | S à M (≈ 1 semaine) | — (volet backend A10 livré) |
 | **2. Disposition** (livré) | Plein écran d'édition, barre sous le pouce, cibles 44 px, un seul panneau ouvert, recherche d'adresse, cadrage `fitBounds` | M | 1 |
 | **3. Standard** | Profil altimétrique d'édition (B1, **B1a livré**, B1b à faire), inverser / aller-retour / retour au départ avec recalage (B2), ligne droite visible (B6, **livré**), clavier (B7, **livré**), défilement au bord (B9, **livré**), glisser une ancre au doigt (B11, **livré**), bornes indépendantes du zoom et suppression d'une ancre (B12, **livré**) | **L** | 1, 2 ; API pour B2 (endpoint de recalage) |
-| **4. Différenciation** | Éviter côtes / trafic (C2), état d'édition conservé (C4), surface par point (C1), points de parcours (C3), popularité interne (C5), zones à éviter (C7) ; C6 non attribué | M à L | C4 : B6 et B12 ; C2 : aucun morceau du lot 3 ; API pour C1, C2, C4, C7 |
+| **4. Différenciation** | Éviter côtes / trafic (C2, **livré**), état d'édition conservé (C4), surface par point (C1), points de parcours (C3), popularité interne (C5), zones à éviter (C7) ; C6 non attribué | M à L | C4 : B6 et B12 ; C2 : aucun morceau du lot 3 ; API pour C1, C2, C4, C7 |
 
 Dans le lot 4, **C4 dépend de B6** (seul B6 crée l'information « ligne droite ») **et de B12**
 (la provenance des points) ; B6 et B12 ne dépendent pas de C4. Le lot 2 passe **avant** les fonctions : sans lui, chaque bouton du lot 3 serait à placer deux fois
@@ -784,13 +784,48 @@ pour C4, le volet backend. **C6 n'est pas attribué.** Les tâches C1, C2, C3, C
 questions ouvertes viennent du §10 de
 [l'état de l'art](../research/2026-10-17-editeur-parcours-etat-de-l-art.md).
 
-- [ ] **C2. Éviter les côtes, éviter le trafic** (S côté web, §8 n° 14) — **à concevoir avant de
-      commencer.** Deux `Slider` dans le panneau de profil (A6), `use_hills` / `use_roads` dans
-      `RouterRequest`, contrat bumpé. **Ne dépend d'aucun morceau du lot 3.** Questions ouvertes :
-      `use_hills` est **probable mais non vérifié** chez Stadia (§2) — un essai d'une requête
-      d'abord ; comment un curseur entre dans `RouterProfile` (aujourd'hui un enum de profils figés
-      avec leurs `costingOptions`, `FASTBIKE` posant déjà `use_roads` à 1) ; mémorisation du réglage
-      (A3 mémorise le profil).
+- [x] **C2. Éviter les côtes, éviter le trafic** (S côté web, §8 n° 14) — **livré le 19 octobre 2026.**
+      Deux `Slider` (« Côtes », « Trafic ») dans le panneau de profil (A6), `useHills` / `useRoads`
+      facultatifs dans `RouterRequest`, contrat **`11.9.0`**. Ne dépend d'aucun morceau du lot 3.
+      - **Livré le 19 octobre 2026.** Décisions du propriétaire : **Q1** le curseur remplace la valeur
+        du profil, absent = valeur du profil (appel Valhalla identique à l'octet près), les autres
+        options du profil restent ; **Q2** mémorisation par profil ; **Q3** 5 crans (0, .25, .5, .75,
+        1), mots aux extrémités (« Éviter » / « Indifférent », « Pistes » / « Routes »), aucun chiffre,
+        lien « Valeurs du profil » ; **Q4** contrat `11.9.0`. Défauts : **Q5** rien pour RUN_HIKE ni
+        MOTORCYCLE (curseurs cachés, champs ignorés par le backend hors costing `bicycle`) ; **Q7** C4
+        n'enregistre pas le réglage par tronçon ; **Q8** pas de re-routage du tracé existant ; **Q9**
+        pastille sur le bouton du panneau si réglage non standard.
+      - **Backend** : `RouterRequest.useHills` / `useRoads` (`@DecimalMin 0`, `@DecimalMax 1`,
+        nullables) ; `RouterService` fusionne dans une copie des `costingOptions` du profil
+        (`use_hills`, `use_roads`) seulement si le costing est `bicycle`. Hors bornes : 400 avant tout
+        appel Stadia. Un ancien backend ignore les champs (Jackson), donc déploiement roulant sans
+        erreur. Clients Dart et TS régénérés.
+      - **Frontend** : `lib/routerTuning.ts` (`PROFILE_DEFAULTS`, miroir de `RouterProfile.java`,
+        nettoyage de la valeur stockée : non numérique, hors [0, 1] ou égale à celle du profil =
+        absente), `RouterSettings` dans `planner.ts`, `useRoutePlanner` (`routerTuning`,
+        `setRouterTuning`, clé `pedalons-router-tuning`, par profil ; un curseur annule le vol en
+        cours, ne re-route rien, hors historique). Curseurs : valeur validée au relâchement
+        (`onChangeEnd`), `size="lg"` au doigt, `aria-valuetext` en mots (`thumbValueText`), régler ne
+        ferme pas le panneau. La pastille est visuelle ; l'état « réglage différent » est dans le nom
+        accessible du bouton.
+      - **Essais Stadia** (Givors → Lyon Confluence, environ 19 km, `bicycle` `road`, `use_roads`
+        0,5, seul `use_hills` change) : 0,0 donne 19,44 km, 3023 s, altitude 156 à 199 m, tracé de
+        vallée (D315, Vernaison, Irigny) ; 1,0 donne 18,90 km, 2879 s, 155 à 298 m, tracé par le plateau
+        (Millery, Charly), jusqu'à 2,9 km d'écart au milieu. **Les curseurs changent donc bien le
+        tracé sur un long tronçon**, pas sur un court (premier essai, 3,7 km à Lyon : seul le coût
+        change). La réponse ne porte aucune montée : il faudrait la calculer à partir de
+        `legs[].elevation` (un point tous les 30 m), avec un seuil d'hystérésis de 5 à 10 m (somme
+        brute : 300 m pour un tracé entre 156 et 199 m). Le coût ne se compare pas d'un réglage à
+        l'autre. Effet contre-intuitif : `use_hills` 1,0 est ici le plus court et le plus rapide,
+        éviter les côtes coûte des kilomètres. L'aide l'écrit honnêtement (« Éviter les côtes peut
+        rallonger la sortie »).
+      - **Tests** : `planner.test.ts`, `routerTuning.test.ts`, `useRoutePlanner.test.tsx`,
+        `RouterProfileSelector.test.tsx`, e2e « avoiding hills and traffic (C2) » (réglage sans
+        requête, appliqué au tronçon suivant, mémorisé au rechargement). Backend, **écrits mais non
+        lancés** (règle du CLAUDE.md) : `RouterResourceTest` (champs absents = options du profil,
+        FASTBIKE + `useRoads`, BIKE + `useHills` 0, 400 hors bornes sans appel Stadia, profils non
+        vélo, clés Jackson) ; à lancer par le propriétaire.
+      - **Écart** : pas de D+ affiché pour le réglage (le routeur ne le renvoie pas, voir ci-dessus).
 - [ ] **C4. Conserver l'état d'édition à l'enregistrement** (L, §8 n° 11, élargi le 18 octobre
       2026) — aujourd'hui le client n'envoie qu'une liste de points (`fromPoints`,
       `GpxProcessingService`), que la chaîne GPX rééchantillonne et simplifie ; à la réouverture,
@@ -1025,6 +1060,10 @@ questions ouvertes viennent du §10 de
   proches) ; une recherche exacte n'est pas justifiée pour un cas aussi rare. (B12.)
 - **D8.** Les opérations de B2 (inverser, aller-retour, retour au départ) vont dans un menu
   « Plus » de la barre du bas au doigt, qui accueillera aussi C3 et C7. (B2.)
+- **C2 (19 octobre 2026).** Q1 le curseur remplace la valeur du profil, absent = profil ; Q2
+  mémorisation par profil ; Q3 cinq crans, mots, pas de chiffre, lien « Valeurs du profil » ; Q4
+  contrat `11.9.0` ; défauts Q5 (rien pour RUN_HIKE), Q7 (C4 n'enregistre pas le réglage), Q8 (pas de
+  re-routage du tracé existant), Q9 (pastille).
 - **D4.** Les volets backend de B2 (l'endpoint de recalage) et de C4 **restent sous `WEB-100`**,
   comme A10. Les versions de contrat et les migrations seront notées au passage dans
   `LEDGER_DONE.md`.
@@ -1033,7 +1072,7 @@ questions ouvertes viennent du §10 de
 
 Écrites le 18 octobre 2026 sans décision du propriétaire : le chemin, les DTO et la gestion des
 erreurs de l'endpoint de recalage et la seconde interface Stadia (B2) ; la version de contrat
-`11.9.0` ; les endpoints, la forme d'écriture, les codes d'erreur, les bornes, le jeton de révision
+`11.9.0` pour B2 si elle passe avant (C2 a pris `11.9.0`, B2 prendra la suivante) ; les endpoints, la forme d'écriture, les codes d'erreur, les bornes, le jeton de révision
 (empreinte pour les aperçus), la lecture d'un aperçu réservée au créateur, la migration `V75` et la
 valeur de `drawn` de l'état d'édition (C4) ; le nom `legAscend` et le cumul de montée de la trace
 source (B1).

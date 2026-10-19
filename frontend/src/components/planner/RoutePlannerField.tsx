@@ -410,6 +410,9 @@ export function RoutePlannerField({
                     onRedo={planner.redo}
                     routerProfile={planner.routerProfile}
                     onProfileChange={planner.setRouterProfile}
+                    routerTuning={planner.routerTuning}
+                    onTuningChange={planner.setRouterTuning}
+                    onTuningReset={planner.resetRouterTuning}
                     directMode={planner.directMode}
                     onDirectModeChange={planner.setDirectMode}
                     onDone={close}

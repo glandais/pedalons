@@ -2337,6 +2337,14 @@ Plan [`2026-10-06-team-agenda.md`](plans/archive/2026-10-06-team-agenda.md) §4,
   **À ne pas défaire** : on ne sonde et on n'affiche que `PENDING` ; le sondage reste borné ; ne pas
   recadrer la carte sur un simple changement de profil.
 
+### `WEB-100` Éditeur de parcours : réglage côtes / trafic du routeur (19 octobre 2026, contrat `11.9.0`)
+
+- `WEB-100` **Volet C2** (2026-10-19, **API 11.9.0**) — `RouterRequest` accepte `useHills` et
+  `useRoads` (0 à 1, facultatifs), fusionnés dans les `costing_options` du profil vélo ; absents,
+  l'appel Stadia est inchangé. Détail et décisions dans
+  [le plan](plans/2026-10-17-editeur-parcours-web.md) (§8 C2). Test : `RouterResourceTest`.
+  **À ne pas défaire** : absent = valeur du profil ; hors costing `bicycle`, les champs sont ignorés.
+
 ## API — Contrat d'API et backend
 
 ### Modèles de sortie numérotés (repris de biketeam)

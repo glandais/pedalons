@@ -17,7 +17,9 @@ T _$identity<T>(T value) => value;
 mixin _$RouterRequest {
 
  GeoPoint get from; GeoPoint get to; RouterProfile get profile;/// Slug of the team the route is being drawn for. When present, the team must have the route planner enabled and the caller must be allowed to create routes in it. When absent, the domain's GPX planner must be enabled.
- String? get teamSlug;
+ String? get teamSlug;/// Propensity to climb, 0 (avoid hills) to 1 (no fear). Absent: the profile's value. Bicycle profiles only; ignored otherwise.
+ double? get useHills;/// Propensity to ride with traffic, 0 (cycleways and paths) to 1 (roads). Absent: the profile's value (1 for FASTBIKE). Bicycle profiles only; ignored otherwise.
+ double? get useRoads;
 /// Create a copy of RouterRequest
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -31,20 +33,20 @@ $RouterRequestCopyWith<RouterRequest> get copyWith => _$RouterRequestCopyWithImp
 @override
 bool operator ==(Object other) {
   final _this = this as RouterRequest;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RouterRequest&&(identical(other.from, _this.from) || other.from == _this.from)&&(identical(other.to, _this.to) || other.to == _this.to)&&(identical(other.profile, _this.profile) || other.profile == _this.profile)&&(identical(other.teamSlug, _this.teamSlug) || other.teamSlug == _this.teamSlug));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RouterRequest&&(identical(other.from, _this.from) || other.from == _this.from)&&(identical(other.to, _this.to) || other.to == _this.to)&&(identical(other.profile, _this.profile) || other.profile == _this.profile)&&(identical(other.teamSlug, _this.teamSlug) || other.teamSlug == _this.teamSlug)&&(identical(other.useHills, _this.useHills) || other.useHills == _this.useHills)&&(identical(other.useRoads, _this.useRoads) || other.useRoads == _this.useRoads));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as RouterRequest;
-  return Object.hash(runtimeType,_this.from,_this.to,_this.profile,_this.teamSlug);
+  return Object.hash(runtimeType,_this.from,_this.to,_this.profile,_this.teamSlug,_this.useHills,_this.useRoads);
 }
 
 @override
 String toString() {
   final _this = this as RouterRequest;
-  return 'RouterRequest(from: ${_this.from}, to: ${_this.to}, profile: ${_this.profile}, teamSlug: ${_this.teamSlug})';
+  return 'RouterRequest(from: ${_this.from}, to: ${_this.to}, profile: ${_this.profile}, teamSlug: ${_this.teamSlug}, useHills: ${_this.useHills}, useRoads: ${_this.useRoads})';
 }
 
 
@@ -55,7 +57,7 @@ abstract mixin class $RouterRequestCopyWith<$Res>  {
   factory $RouterRequestCopyWith(RouterRequest value, $Res Function(RouterRequest) _then) = _$RouterRequestCopyWithImpl;
 @useResult
 $Res call({
- GeoPoint from, GeoPoint to, RouterProfile profile, String? teamSlug
+ GeoPoint from, GeoPoint to, RouterProfile profile, String? teamSlug, double? useHills, double? useRoads
 });
 
 
@@ -72,13 +74,15 @@ class _$RouterRequestCopyWithImpl<$Res>
 
 /// Create a copy of RouterRequest
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? from = null,Object? to = null,Object? profile = null,Object? teamSlug = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? from = null,Object? to = null,Object? profile = null,Object? teamSlug = freezed,Object? useHills = freezed,Object? useRoads = freezed,}) {
   return _then(RouterRequest(
 from: null == from ? _self.from : from // ignore: cast_nullable_to_non_nullable
 as GeoPoint,to: null == to ? _self.to : to // ignore: cast_nullable_to_non_nullable
 as GeoPoint,profile: null == profile ? _self.profile : profile // ignore: cast_nullable_to_non_nullable
 as RouterProfile,teamSlug: freezed == teamSlug ? _self.teamSlug : teamSlug // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,useHills: freezed == useHills ? _self.useHills : useHills // ignore: cast_nullable_to_non_nullable
+as double?,useRoads: freezed == useRoads ? _self.useRoads : useRoads // ignore: cast_nullable_to_non_nullable
+as double?,
   ));
 }
 /// Create a copy of RouterRequest
@@ -181,10 +185,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( GeoPoint from,  GeoPoint to,  RouterProfile profile,  String? teamSlug)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( GeoPoint from,  GeoPoint to,  RouterProfile profile,  String? teamSlug,  double? useHills,  double? useRoads)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _RouterRequest() when $default != null:
-return $default(_that.from,_that.to,_that.profile,_that.teamSlug);case _:
+return $default(_that.from,_that.to,_that.profile,_that.teamSlug,_that.useHills,_that.useRoads);case _:
   return orElse();
 
 }
@@ -202,10 +206,10 @@ return $default(_that.from,_that.to,_that.profile,_that.teamSlug);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( GeoPoint from,  GeoPoint to,  RouterProfile profile,  String? teamSlug)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( GeoPoint from,  GeoPoint to,  RouterProfile profile,  String? teamSlug,  double? useHills,  double? useRoads)  $default,) {final _that = this;
 switch (_that) {
 case _RouterRequest():
-return $default(_that.from,_that.to,_that.profile,_that.teamSlug);case _:
+return $default(_that.from,_that.to,_that.profile,_that.teamSlug,_that.useHills,_that.useRoads);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -222,10 +226,10 @@ return $default(_that.from,_that.to,_that.profile,_that.teamSlug);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( GeoPoint from,  GeoPoint to,  RouterProfile profile,  String? teamSlug)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( GeoPoint from,  GeoPoint to,  RouterProfile profile,  String? teamSlug,  double? useHills,  double? useRoads)?  $default,) {final _that = this;
 switch (_that) {
 case _RouterRequest() when $default != null:
-return $default(_that.from,_that.to,_that.profile,_that.teamSlug);case _:
+return $default(_that.from,_that.to,_that.profile,_that.teamSlug,_that.useHills,_that.useRoads);case _:
   return null;
 
 }
@@ -237,7 +241,7 @@ return $default(_that.from,_that.to,_that.profile,_that.teamSlug);case _:
 @JsonSerializable()
 
 class _RouterRequest implements RouterRequest {
-  const _RouterRequest({required this.from, required this.to, required this.profile, this.teamSlug});
+  const _RouterRequest({required this.from, required this.to, required this.profile, this.teamSlug, this.useHills, this.useRoads});
   factory _RouterRequest.fromJson(Map<String, dynamic> json) => _$RouterRequestFromJson(json);
 
 @override final  GeoPoint from;
@@ -245,6 +249,10 @@ class _RouterRequest implements RouterRequest {
 @override final  RouterProfile profile;
 /// Slug of the team the route is being drawn for. When present, the team must have the route planner enabled and the caller must be allowed to create routes in it. When absent, the domain's GPX planner must be enabled.
 @override final  String? teamSlug;
+/// Propensity to climb, 0 (avoid hills) to 1 (no fear). Absent: the profile's value. Bicycle profiles only; ignored otherwise.
+@override final  double? useHills;
+/// Propensity to ride with traffic, 0 (cycleways and paths) to 1 (roads). Absent: the profile's value (1 for FASTBIKE). Bicycle profiles only; ignored otherwise.
+@override final  double? useRoads;
 
 /// Create a copy of RouterRequest
 /// with the given fields replaced by the non-null parameter values.
@@ -259,18 +267,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _RouterRequest&&(identical(other.from, from) || other.from == from)&&(identical(other.to, to) || other.to == to)&&(identical(other.profile, profile) || other.profile == profile)&&(identical(other.teamSlug, teamSlug) || other.teamSlug == teamSlug));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _RouterRequest&&(identical(other.from, from) || other.from == from)&&(identical(other.to, to) || other.to == to)&&(identical(other.profile, profile) || other.profile == profile)&&(identical(other.teamSlug, teamSlug) || other.teamSlug == teamSlug)&&(identical(other.useHills, useHills) || other.useHills == useHills)&&(identical(other.useRoads, useRoads) || other.useRoads == useRoads));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,from,to,profile,teamSlug);
+    return Object.hash(runtimeType,from,to,profile,teamSlug,useHills,useRoads);
 }
 
 @override
 String toString() {
-    return 'RouterRequest(from: $from, to: $to, profile: $profile, teamSlug: $teamSlug)';
+    return 'RouterRequest(from: $from, to: $to, profile: $profile, teamSlug: $teamSlug, useHills: $useHills, useRoads: $useRoads)';
 }
 
 
@@ -281,7 +289,7 @@ abstract mixin class _$RouterRequestCopyWith<$Res> implements $RouterRequestCopy
   factory _$RouterRequestCopyWith(_RouterRequest value, $Res Function(_RouterRequest) _then) = __$RouterRequestCopyWithImpl;
 @override @useResult
 $Res call({
- GeoPoint from, GeoPoint to, RouterProfile profile, String? teamSlug
+ GeoPoint from, GeoPoint to, RouterProfile profile, String? teamSlug, double? useHills, double? useRoads
 });
 
 
@@ -298,13 +306,15 @@ class __$RouterRequestCopyWithImpl<$Res>
 
 /// Create a copy of RouterRequest
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? from = null,Object? to = null,Object? profile = null,Object? teamSlug = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? from = null,Object? to = null,Object? profile = null,Object? teamSlug = freezed,Object? useHills = freezed,Object? useRoads = freezed,}) {
   return _then(_RouterRequest(
 from: null == from ? _self.from : from // ignore: cast_nullable_to_non_nullable
 as GeoPoint,to: null == to ? _self.to : to // ignore: cast_nullable_to_non_nullable
 as GeoPoint,profile: null == profile ? _self.profile : profile // ignore: cast_nullable_to_non_nullable
 as RouterProfile,teamSlug: freezed == teamSlug ? _self.teamSlug : teamSlug // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,useHills: freezed == useHills ? _self.useHills : useHills // ignore: cast_nullable_to_non_nullable
+as double?,useRoads: freezed == useRoads ? _self.useRoads : useRoads // ignore: cast_nullable_to_non_nullable
+as double?,
   ));
 }
 

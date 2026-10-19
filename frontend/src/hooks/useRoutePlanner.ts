@@ -20,6 +20,16 @@ import {
 } from '@/lib/planner'
 import { RouterProfile } from '@/api/dto'
 import { plannerErrorMessage } from '@/lib/plannerErrors'
+import {
+  isTunable,
+  PROFILE_DEFAULTS,
+  sanitizeStore,
+  sanitizeTuning,
+  toRouterSettings,
+  type RouterTuning,
+  type RouterTuningStore,
+  type TuningKey,
+} from '@/lib/routerTuning'
 
 export interface UseRoutePlannerOptions {
   initialTrack?: number[][] // [lng, lat, ele, dist][] from existing route
@@ -47,6 +57,12 @@ export interface RoutePlannerState {
   canRedo: boolean
   routerProfile: RouterProfile
   setRouterProfile: (profile: RouterProfile) => void
+  /** The knobs the user set for the current profile; absent ones are the profile's values. */
+  routerTuning: RouterTuning
+  /** Sets one knob for the current profile; a value equal to the profile's is stored as absent. */
+  setRouterTuning: (key: TuningKey, value: number) => void
+  /** Back to the profile's values (current profile only). */
+  resetRouterTuning: () => void
   addControlPoint: (p: Point, direct?: boolean) => void
   insertControlPoint: (
     start: RoutePoint | undefined,
@@ -71,6 +87,7 @@ export interface RoutePlannerState {
 }
 
 const ROUTER_PROFILE_STORAGE_KEY = 'pedalons-router-profile'
+const ROUTER_TUNING_STORAGE_KEY = 'pedalons-router-tuning'
 
 function isRouterProfile(value: unknown): value is RouterProfile {
   return Object.values(RouterProfile).includes(value as RouterProfile)
@@ -85,6 +102,12 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
     defaultValue: RouterProfile.FASTBIKE,
     getInitialValueInEffect: false,
   })
+  // Per profile: the knobs of the bicycle profiles. Same distrust of the stored value.
+  const [storedTuning, setStoredTuning] = useLocalStorage<RouterTuningStore>({
+    key: ROUTER_TUNING_STORAGE_KEY,
+    defaultValue: {},
+    getInitialValueInEffect: false,
+  })
   // Lasts the editing session only: not stored (a forgotten mode would silently draw straight
   // lines next time) and not part of the history. The ref keeps the callbacks stable.
   const [directMode, setDirectModeState] = useState(false)
@@ -94,6 +117,19 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
     setDirectModeState(on)
   }, [])
   const routerProfile = isRouterProfile(storedProfile) ? storedProfile : RouterProfile.FASTBIKE
+  const useHills = sanitizeTuning(storedTuning, routerProfile).useHills
+  const useRoads = sanitizeTuning(storedTuning, routerProfile).useRoads
+  const routerTuning = useMemo<RouterTuning>(
+    () => ({
+      ...(useHills !== undefined && { useHills }),
+      ...(useRoads !== undefined && { useRoads }),
+    }),
+    [useHills, useRoads]
+  )
+  const routerSettings = useMemo(
+    () => toRouterSettings(routerProfile, routerTuning),
+    [routerProfile, routerTuning]
+  )
 
   const [route, setRoute] = useState<Route>(
     initialTrack ? createRoute(initialTrack, initialAscend) : computeRoute([])
@@ -148,6 +184,28 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
     [cancelInFlight, setStoredProfile]
   )
 
+  // Like a profile change: no re-routing, no request, not in the history. Only what is drawn next
+  // is routed with the new setting.
+  const setRouterTuning = useCallback(
+    (key: TuningKey, value: number) => {
+      if (!isTunable(routerProfile) || !Number.isFinite(value)) return
+      cancelInFlight()
+      const clamped = Math.min(1, Math.max(0, value))
+      setStoredTuning((previous) => {
+        const next = { ...sanitizeTuning(previous, routerProfile) }
+        if (clamped === PROFILE_DEFAULTS[routerProfile]?.[key]) delete next[key]
+        else next[key] = clamped
+        return { ...sanitizeStore(previous), [routerProfile]: next }
+      })
+    },
+    [cancelInFlight, routerProfile, setStoredTuning]
+  )
+
+  const resetRouterTuning = useCallback(() => {
+    cancelInFlight()
+    setStoredTuning((previous) => ({ ...sanitizeStore(previous), [routerProfile]: {} }))
+  }, [cancelInFlight, routerProfile, setStoredTuning])
+
   // Generic executor for all route operations
   const executeRouteOperation = useCallback(
     async (operation: (route: Route, signal: AbortSignal) => Promise<Route>) => {
@@ -188,10 +246,10 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
     (p: Point, direct = false) => {
       const straight = direct || directModeRef.current
       executeRouteOperation((route, signal) =>
-        add(route, p, routerProfile, straight, signal, teamSlug)
+        add(route, p, routerSettings, straight, signal, teamSlug)
       )
     },
-    [executeRouteOperation, routerProfile, teamSlug]
+    [executeRouteOperation, routerSettings, teamSlug]
   )
 
   // Insert a new control point after the given index (returns the new point for immediate dragging)
@@ -199,10 +257,10 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
     (start: RoutePoint | undefined, p: Point, end: RoutePoint | undefined, direct = false) => {
       const straight = direct || directModeRef.current
       executeRouteOperation((route, signal) =>
-        insert(route, start, p, end, routerProfile, straight, signal, teamSlug)
+        insert(route, start, p, end, routerSettings, straight, signal, teamSlug)
       )
     },
-    [executeRouteOperation, routerProfile, teamSlug]
+    [executeRouteOperation, routerSettings, teamSlug]
   )
 
   const updateControlPoint = useCallback(
@@ -215,10 +273,10 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
     ) => {
       const straight = direct || directModeRef.current
       executeRouteOperation((route, signal) =>
-        insert(route, start, p, end, routerProfile, straight, signal, teamSlug, keepId)
+        insert(route, start, p, end, routerSettings, straight, signal, teamSlug, keepId)
       )
     },
-    [executeRouteOperation, routerProfile, teamSlug]
+    [executeRouteOperation, routerSettings, teamSlug]
   )
 
   const removeControlPoint = useCallback(
@@ -232,20 +290,20 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
           : spanBounds(r, index - 1, index + 1, zoom) // first or last: cut at the zoom of the gesture
       const straight = direct || directModeRef.current
       executeRouteOperation((route, signal) =>
-        remove(route, start, end, routerProfile, straight, signal, teamSlug)
+        remove(route, start, end, routerSettings, straight, signal, teamSlug)
       )
     },
-    [executeRouteOperation, routerProfile, teamSlug]
+    [executeRouteOperation, routerSettings, teamSlug]
   )
 
   const removeAnchor = useCallback(
     (start: RoutePoint, end: RoutePoint, direct = false) => {
       const straight = direct || directModeRef.current
       executeRouteOperation((route, signal) =>
-        remove(route, start, end, routerProfile, straight, signal, teamSlug)
+        remove(route, start, end, routerSettings, straight, signal, teamSlug)
       )
     },
-    [executeRouteOperation, routerProfile, teamSlug]
+    [executeRouteOperation, routerSettings, teamSlug]
   )
 
   const clearRoute = useCallback(() => {
@@ -310,6 +368,9 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
     error,
     routerProfile,
     setRouterProfile,
+    routerTuning,
+    setRouterTuning,
+    resetRouterTuning,
     addControlPoint,
     insertControlPoint,
     updateControlPoint,

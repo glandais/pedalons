@@ -12,6 +12,8 @@ _RouterRequest _$RouterRequestFromJson(Map<String, dynamic> json) =>
       to: GeoPoint.fromJson(json['to'] as Map<String, dynamic>),
       profile: RouterProfile.fromJson(json['profile'] as String),
       teamSlug: json['teamSlug'] as String?,
+      useHills: (json['useHills'] as num?)?.toDouble(),
+      useRoads: (json['useRoads'] as num?)?.toDouble(),
     );
 
 Map<String, dynamic> _$RouterRequestToJson(_RouterRequest instance) =>
@@ -20,4 +22,6 @@ Map<String, dynamic> _$RouterRequestToJson(_RouterRequest instance) =>
       'to': instance.to.toJson(),
       'profile': instance.profile.toJson(),
       'teamSlug': instance.teamSlug,
+      'useHills': instance.useHills,
+      'useRoads': instance.useRoads,
     };

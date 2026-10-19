@@ -356,3 +356,77 @@ describe('useRoutePlanner move keeping the id of the point', () => {
     expect(routeMock).not.toHaveBeenCalled()
   })
 })
+
+describe('useRoutePlanner router tuning (C2)', () => {
+  beforeEach(() => {
+    routeMock.mockReset()
+    routeMock.mockResolvedValue({ route: { coordinates: [[B.lng, B.lat]] } })
+    localStorage.clear()
+  })
+
+  async function drawFirstPoint(profile = 'BIKE') {
+    const hook = renderHook(() => useRoutePlanner())
+    act(() => hook.result.current.setRouterProfile(profile as never))
+    act(() => hook.result.current.addControlPoint(A, true))
+    await waitFor(() => expect(hook.result.current.controlPoints).toHaveLength(1))
+    return hook
+  }
+
+  it('sends no knob until one is set', async () => {
+    const { result } = await drawFirstPoint()
+    act(() => result.current.addControlPoint(B, false))
+    await waitFor(() => expect(routeMock).toHaveBeenCalledTimes(1))
+    const keys = Object.keys(routeMock.mock.calls[0][0])
+    expect(keys).not.toContain('useHills')
+    expect(keys).not.toContain('useRoads')
+  })
+
+  it('setting a knob sends no request, leaves the history alone, and applies to the next gesture', async () => {
+    const { result } = await drawFirstPoint()
+    const canUndo = result.current.canUndo
+    act(() => result.current.setRouterTuning('useHills', 0))
+    expect(routeMock).not.toHaveBeenCalled()
+    expect(result.current.canUndo).toBe(canUndo)
+    expect(result.current.routerTuning).toEqual({ useHills: 0 })
+    act(() => result.current.addControlPoint(B, false))
+    await waitFor(() => expect(routeMock).toHaveBeenCalledTimes(1))
+    expect(routeMock.mock.calls[0][0]).toMatchObject({ profile: 'BIKE', useHills: 0 })
+    expect(Object.keys(routeMock.mock.calls[0][0])).not.toContain('useRoads')
+  })
+
+  it('remembers the knobs per profile', async () => {
+    const { result } = await drawFirstPoint()
+    act(() => result.current.setRouterTuning('useHills', 0))
+    act(() => result.current.setRouterProfile('GRAVEL' as never))
+    expect(result.current.routerTuning).toEqual({})
+    act(() => result.current.setRouterTuning('useRoads', 1))
+    act(() => result.current.setRouterProfile('BIKE' as never))
+    expect(result.current.routerTuning).toEqual({ useHills: 0 })
+  })
+
+  it('stores a value equal to the profile as absent', async () => {
+    const { result } = await drawFirstPoint()
+    act(() => result.current.setRouterTuning('useRoads', 0.75))
+    expect(result.current.routerTuning).toEqual({ useRoads: 0.75 })
+    act(() => result.current.setRouterTuning('useRoads', 0.25)) // BIKE's own value
+    expect(result.current.routerTuning).toEqual({})
+  })
+
+  it('treats FASTBIKE use_roads 1 as the profile value', async () => {
+    const { result } = await drawFirstPoint()
+    act(() => result.current.setRouterProfile('FASTBIKE' as never))
+    act(() => result.current.setRouterTuning('useRoads', 1))
+    expect(result.current.routerTuning).toEqual({})
+  })
+
+  it('resets the current profile only', async () => {
+    const { result } = await drawFirstPoint()
+    act(() => result.current.setRouterTuning('useHills', 1))
+    act(() => result.current.setRouterProfile('MTB' as never))
+    act(() => result.current.setRouterTuning('useHills', 0))
+    act(() => result.current.resetRouterTuning())
+    expect(result.current.routerTuning).toEqual({})
+    act(() => result.current.setRouterProfile('BIKE' as never))
+    expect(result.current.routerTuning).toEqual({ useHills: 1 })
+  })
+})
