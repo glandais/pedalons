@@ -154,6 +154,32 @@ class GpxLimitsResourceTest extends AbstractResourceTest {
   }
 
   @Test
+  void importGpx_withTooLongTrack_shouldReturn400() throws IOException {
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .multiPart("gpxFile", longGpx(), "application/gpx+xml")
+        .when()
+        .post("/api/router/import-gpx")
+        .then()
+        .statusCode(400)
+        .body("code", equalTo("GPX_TOO_LONG"));
+  }
+
+  @Test
+  void importGpx_withOversizedFile_shouldReturn400() throws IOException {
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .multiPart("gpxFile", oversizedGpx(), "application/gpx+xml")
+        .when()
+        .post("/api/router/import-gpx")
+        .then()
+        .statusCode(400)
+        .body("code", equalTo("FILE_TOO_LARGE"));
+  }
+
+  @Test
   void mergePreviews_withOversizedFile_shouldReturn400() throws IOException {
     given()
         .auth()

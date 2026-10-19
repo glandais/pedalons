@@ -1,12 +1,13 @@
 import { useEffect, type Ref } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MantineProvider } from '@mantine/core'
 import type { TeamDetailDto } from '@/api/dto'
 import type { PlannerSnapshot } from '@/hooks/useRoutePlanner'
 
 const snapshotMock = vi.hoisted(() => vi.fn())
 const notify = vi.hoisted(() => vi.fn())
+const fieldProps = vi.hoisted(() => ({ last: undefined as Record<string, unknown> | undefined }))
 
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k }) }))
 vi.mock('@mantine/notifications', () => ({ notifications: { show: notify } }))
@@ -21,6 +22,7 @@ vi.mock('../planner/RoutePlannerField', () => ({
     plannerRef?: Ref<{ snapshot: () => PlannerSnapshot }>
     onPointsChange: (points: { lng: number; lat: number }[]) => void
   }) => {
+    fieldProps.last = props as never
     const { onPointsChange } = props
     useEffect(() => {
       onPointsChange([
@@ -130,5 +132,59 @@ describe('RouteEditor planner state (C4a)', () => {
     const [data] = onSubmit.mock.calls[0]
     expect(data.plannerState).toBe(STATE)
     expect(data.points).toBeUndefined()
+  })
+})
+
+describe('RouteEditor import in the planner (C4b)', () => {
+  beforeEach(() => {
+    snapshotMock.mockReset()
+    notify.mockReset()
+  })
+  afterEach(cleanup)
+
+  it('an import left untouched is submitted as the file, without points nor state', async () => {
+    const file = new File(['<gpx/>'], 'sortie.gpx')
+    snapshotMock.mockReturnValue({ dirty: true, plannerState: STATE, points: POINTS, file })
+    const onSubmit = renderEditor()
+    save()
+    await waitFor(() => expect(onSubmit).toHaveBeenCalled())
+    const [data, sent] = onSubmit.mock.calls[0]
+    expect(sent).toBe(file)
+    expect(data.points).toBeUndefined()
+    expect(data.plannerState).toBeUndefined()
+  })
+
+  it('a modified import is submitted as the state', async () => {
+    snapshotMock.mockReturnValue({ dirty: true, plannerState: STATE, points: POINTS })
+    const onSubmit = renderEditor()
+    save()
+    await waitFor(() => expect(onSubmit).toHaveBeenCalled())
+    const [data, sent] = onSubmit.mock.calls[0]
+    expect(sent).toBeUndefined()
+    expect(data.plannerState).toBe(STATE)
+  })
+
+  it('names the route after the file only when the name is empty', async () => {
+    snapshotMock.mockReturnValue({ dirty: false, plannerState: STATE, points: POINTS })
+    renderEditor()
+    act(() => (fieldProps.last!.onImportName as (n: string) => void)('Du fichier'))
+    expect((screen.getByLabelText(/routes.create.form.name/) as HTMLInputElement).value).toBe(
+      'Boucle du lac'
+    )
+    cleanup()
+
+    renderEditor({
+      initialValues: {
+        name: '',
+        media: defaultMedia(),
+        surfaceType: 'ROAD',
+        visibility: 'TEAM',
+        tagIds: [],
+      },
+    })
+    act(() => (fieldProps.last!.onImportName as (n: string) => void)('Du fichier'))
+    expect((screen.getByLabelText(/routes.create.form.name/) as HTMLInputElement).value).toBe(
+      'Du fichier'
+    )
   })
 })

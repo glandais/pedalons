@@ -48,6 +48,8 @@ public enum ErrorCode {
   ROUTE_PLANNER_DISABLED,
   /** The planner state of a request is malformed, out of bounds or sent with points — HTTP 400. */
   PLANNER_STATE_INVALID,
+  /** A GPX file too long or with too many tracks to be loaded in the editor — HTTP 400. */
+  PLANNER_IMPORT_TOO_LARGE,
   /** The routing provider's monthly quota is spent (Stadia Maps answered 429) — HTTP 503. */
   ROUTING_QUOTA_EXCEEDED,
   /** The two points are further apart than the provider routes (Valhalla code 154) — HTTP 400. */

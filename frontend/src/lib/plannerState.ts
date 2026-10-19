@@ -136,10 +136,23 @@ export function serializePlannerState(
     })
     const ele = firstEle !== undefined ? encode1(filled) : undefined
     chars += line.length + (ele?.length ?? 0)
-    const scale = Number.isFinite(src.ascendScale) ? src.ascendScale : 1
+    let scale = Number.isFinite(src.ascendScale) ? src.ascendScale : 1
+    // The server's climb of an imported file travels with it, rebased on the first point kept. The
+    // scale stays the ratio to the raw sum, so a reader that ignores `climb` reaches the same total.
+    let climb: string | undefined
+    if (src.serverClimb && ele !== undefined && src.cumul.length === src.coords.length) {
+      const base = src.cumul[r.lo]
+      const rebased = src.cumul.slice(r.lo, r.hi + 1).map((c) => Math.max(0, c - base))
+      climb = encode1(rebased)
+      chars += climb.length
+      const raw = cumulativeClimb(filled.map((e) => [0, 0, e]))
+      const rawTotal = raw[raw.length - 1]
+      scale = rawTotal > 0 ? rebased[rebased.length - 1] / rawTotal : 1
+    }
     dtoSources[r.next] = {
       line,
       ...(ele !== undefined && { ele }),
+      ...(climb !== undefined && { climb }),
       ascendScale: Math.min(MAX_ASCEND_SCALE, Math.max(MIN_ASCEND_SCALE, scale)),
     }
   }
@@ -228,6 +241,13 @@ function sourceFromDto(dto: PlannerSourceDto): PlannerSource {
     const ele = decode1(dto.ele)
     if (ele.length !== lngLat.length) throw new PlannerStateFormatError('source elevations')
     coords = lngLat.map((c, i) => [c[0], c[1], ele[i]])
+  }
+  if (dto.climb !== undefined) {
+    const cumul = decode1(dto.climb)
+    if (dto.ele === undefined || cumul.length !== coords.length) {
+      throw new PlannerStateFormatError('source climb')
+    }
+    return { coords, cumul, ascendScale: 1, serverClimb: true }
   }
   const scale = dto.ascendScale
   return {

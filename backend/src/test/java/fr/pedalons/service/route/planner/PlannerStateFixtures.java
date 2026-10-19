@@ -31,7 +31,24 @@ public final class PlannerStateFixtures {
     for (int i = 0; i < ele.length; i++) {
       ele[i] = 170 + i;
     }
-    return new PlannerSource(PolylineCodec.encode2(coords), PolylineCodec.encode1(ele), 1.0);
+    return new PlannerSource(PolylineCodec.encode2(coords), PolylineCodec.encode1(ele), 1.0, null);
+  }
+
+  /** {@link #source()} with the server's accumulated ascent: 0.5 m a point, from 0. */
+  public static PlannerSource sourceWithClimb() {
+    PlannerSource plain = source();
+    double[] climb = new double[SOURCE_POINTS];
+    for (int i = 0; i < climb.length; i++) {
+      climb[i] = 0.5 * i;
+    }
+    return new PlannerSource(plain.line(), plain.ele(), 1.0, PolylineCodec.encode1(climb));
+  }
+
+  /** {@link #example()} over {@link #sourceWithClimb()}. */
+  public static PlannerState exampleWithClimb() {
+    PlannerState e = example();
+    return new PlannerState(
+        e.version(), e.profile(), List.of(sourceWithClimb()), e.junctions(), e.pieces());
   }
 
   public static PlannerJunction control(double lng, double lat) {

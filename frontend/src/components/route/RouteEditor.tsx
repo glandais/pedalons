@@ -121,6 +121,14 @@ export function RouteEditor({
     [t, form, name]
   )
 
+  // The planner read a file: it names the route when the name is still empty.
+  const handleImportName = useCallback(
+    (importedName: string) => {
+      if (!form.values.name && importedName.trim()) form.setFieldValue('name', importedName.trim())
+    },
+    [form]
+  )
+
   const handleSubmit = async (values: RouteRequest) => {
     if (isCreateMode) {
       if (sourceMode === 'gpx' && !gpxFile) {
@@ -148,7 +156,8 @@ export function RouteEditor({
         points: track?.points,
         plannerState: track?.plannerState,
       },
-      sourceMode === 'gpx' ? gpxFile || undefined : undefined
+      // The file chosen in the GPX tab, or the one imported in the planner and left untouched
+      sourceMode === 'gpx' ? gpxFile || undefined : track?.file
     )
     // Only once the save went through: a failed save did not drop anything
     if (track?.tooLarge) {
@@ -242,6 +251,7 @@ export function RouteEditor({
               teamLocation={team.geometry?.coordinates as [number, number] | undefined}
               title={name}
               onFullscreenChange={onPlannerFullscreenChange}
+              onImportName={handleImportName}
               openRequest={drawRequest}
             />
             {plannerPoints.length > 0 && !isCoarse && (

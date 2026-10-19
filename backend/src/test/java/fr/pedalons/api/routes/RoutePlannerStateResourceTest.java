@@ -149,6 +149,23 @@ class RoutePlannerStateResourceTest extends AbstractResourceTest {
   }
 
   @Test
+  void aSourceClimb_isReadBackAsItWas() {
+    PlannerState state = exampleWithClimb();
+    String slug = createWithState(state);
+
+    readState(slug, USER1)
+        .statusCode(200)
+        .body("state.sources[0].climb", equalTo(state.sources().getFirst().climb()));
+  }
+
+  @Test
+  void aStateWithoutClimb_hasNoClimbKeyOrNull() {
+    String slug = createWithState(example());
+
+    readState(slug, USER1).statusCode(200).body("state.sources[0].climb", nullValue());
+  }
+
+  @Test
   void aStoredStateWithUnknownFields_isStillReadBack() {
     // A later release may add fields to the stored document: this one must still read it, during a
     // rolling deploy and after a rollback.

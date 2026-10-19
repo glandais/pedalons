@@ -47,4 +47,10 @@ describe('plannerPayload', () => {
       expect(payload.points !== undefined && payload.plannerState !== undefined).toBe(false)
     }
   })
+
+  it('an untouched import: the file alone, on creation and on modification', () => {
+    const file = new File(['<gpx/>'], 'a.gpx')
+    expect(plannerPayload(snapshot({ file }), true)).toEqual({ file })
+    expect(plannerPayload(snapshot({ file }), false)).toEqual({ file })
+  })
 })

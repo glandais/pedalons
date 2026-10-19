@@ -179,25 +179,21 @@ public class GpxProcessingService {
   }
 
   /**
-   * The pure GPX pipeline: resample, fix elevation, simplify, detect climbs, aggregate metadata,
-   * and serialize the three artefacts (original GPX, filtered GPX, FIT).
+   * The tracks of a document, ready for the pipeline: sanitized ({@link GpxSanitizer}), one {@link
+   * Path} per track of at least two points, with the names aligned on them.
    *
-   * <p>No database, no S3, no entities, no {@link Team} — which is what lets GPX previews (which
-   * belong to no team) reuse it. Callers own the returned temp files.
-   *
-   * <p>Nothing is mutated: the pipeline runs on immutable paths, so {@code original.gpx} (the raw
-   * paths re-serialized), {@code filtered.gpx} and the FIT export (both from the processed paths)
-   * can be written in any order.
-   *
-   * <p><b>This is where timestamps and sensor data are stripped</b> ({@link GpxSanitizer},
-   * docs/LEDGER_*.md API-44), before anything is computed or written: every stored GPX and FIT
-   * file of a route or a GPX-tool preview comes out of this method, whatever the entry point
-   * (upload, planner, GPX-tool promotion, biketeam import). {@code original.gpx} is therefore
-   * <b>not</b> the uploaded bytes but the sanitized parse of them; never store the source file.
-   *
-   * @param quality the elevation source of every track ({@link ElevationQuality})
+   * @param doc the sanitized document (its waypoints are the ones to keep)
+   * @param name the document's name, else its first track's
    */
-  public ComputedGpx computeGpx(GpxDocument source, ElevationQuality quality) {
+  public record RawTracks(
+      GpxDocument doc, String name, List<Path> paths, List<String> trackNames) {}
+
+  /**
+   * Sanitizes {@code source} and extracts its tracks. Refused with {@code GPX_EMPTY} when none has
+   * two points, and with {@code GPX_TOO_LONG} past {@link GpxLimits#MAX_TRACK_DISTANCE_METERS}
+   * (SEC-6) — before any resampling allocates one point per 10 m of track.
+   */
+  public RawTracks rawTracks(GpxDocument source) {
     GpxDocument doc;
     try {
       doc = GpxSanitizer.sanitize(source);
@@ -230,6 +226,34 @@ public class GpxProcessingService {
     // Before the resampling of the pipeline allocates one point per 10 m of track (SEC-6):
     // parseGpx and fromPoints already checked, but this is the funnel every GPX goes through.
     GpxLimits.checkTracks(raw);
+    return new RawTracks(doc, name, raw, trackNames);
+  }
+
+  /**
+   * The pure GPX pipeline: resample, fix elevation, simplify, detect climbs, aggregate metadata,
+   * and serialize the three artefacts (original GPX, filtered GPX, FIT).
+   *
+   * <p>No database, no S3, no entities, no {@link Team} — which is what lets GPX previews (which
+   * belong to no team) reuse it. Callers own the returned temp files.
+   *
+   * <p>Nothing is mutated: the pipeline runs on immutable paths, so {@code original.gpx} (the raw
+   * paths re-serialized), {@code filtered.gpx} and the FIT export (both from the processed paths)
+   * can be written in any order.
+   *
+   * <p><b>This is where timestamps and sensor data are stripped</b> ({@link GpxSanitizer},
+   * docs/LEDGER_*.md API-44), before anything is computed or written: every stored GPX and FIT
+   * file of a route or a GPX-tool preview comes out of this method, whatever the entry point
+   * (upload, planner, GPX-tool promotion, biketeam import). {@code original.gpx} is therefore
+   * <b>not</b> the uploaded bytes but the sanitized parse of them; never store the source file.
+   *
+   * @param quality the elevation source of every track ({@link ElevationQuality})
+   */
+  public ComputedGpx computeGpx(GpxDocument source, ElevationQuality quality) {
+    RawTracks rawTracks = rawTracks(source);
+    GpxDocument doc = rawTracks.doc();
+    String name = rawTracks.name();
+    List<Path> raw = rawTracks.paths();
+    List<String> trackNames = rawTracks.trackNames();
 
     File original = null;
     File filtered = null;

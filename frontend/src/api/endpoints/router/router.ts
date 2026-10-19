@@ -6,7 +6,13 @@ import type {
   UseMutationResult,
 } from '@tanstack/react-query'
 
-import type { ErrorResponse, RouterRequest, RouterResponse } from '../../dto'
+import type {
+  ErrorResponse,
+  GpxImportResponse,
+  ImportGpxBody,
+  RouterRequest,
+  RouterResponse,
+} from '../../dto'
 
 import { axiosMutator } from '../../../lib/axiosInstance.ts'
 import type { ErrorType, BodyType } from '../../../lib/axiosInstance.ts'
@@ -97,4 +103,98 @@ export const useRoute = <TError = ErrorType<ErrorResponse | void>, TContext = un
   TContext
 > => {
   return useMutation(getRouteMutationOptions(options), queryClient)
+}
+/**
+ * Processes a GPX file with the FAST elevations and returns its tracks as polylines, with the ascent accumulated up to each point. Nothing is stored and the routing provider is not called. Same rights as the route calculation: with teamSlug, the caller must be allowed to create routes in that team and the team must have the route planner enabled; without it, the domain's GPX planner must be enabled.
+ * @summary Load a GPX file into the route editor
+ */
+export const importGpx = (
+  importGpxBody: BodyType<ImportGpxBody>,
+  options?: SecondParameter<typeof axiosMutator>,
+  signal?: AbortSignal
+) => {
+  const formData = new FormData()
+  if (importGpxBody.gpxFile !== undefined) {
+    formData.append(`gpxFile`, importGpxBody.gpxFile)
+  }
+  if (importGpxBody.teamSlug !== undefined) {
+    formData.append(`teamSlug`, importGpxBody.teamSlug)
+  }
+
+  return axiosMutator<GpxImportResponse>(
+    {
+      url: `/api/router/import-gpx`,
+      method: 'POST',
+      headers: { 'Content-Type': 'multipart/form-data' },
+      data: formData,
+      signal,
+    },
+    options
+  )
+}
+
+export const getImportGpxMutationKey = () => ['importGpx'] as const
+
+export const getImportGpxMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof importGpx>>,
+    TError,
+    ImportGpxMutationVariables,
+    TContext
+  >
+  request?: SecondParameter<typeof axiosMutator>
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof importGpx>>,
+  TError,
+  ImportGpxMutationVariables,
+  TContext
+> => {
+  const mutationKey = getImportGpxMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof importGpx>>,
+    ImportGpxMutationVariables
+  > = (props) => {
+    const { data } = props ?? {}
+
+    return importGpx(data, requestOptions)
+  }
+
+  return { mutationFn, ...mutationOptions }
+}
+
+export type ImportGpxMutationResult = NonNullable<Awaited<ReturnType<typeof importGpx>>>
+export type ImportGpxMutationBody = BodyType<ImportGpxBody>
+export type ImportGpxMutationError = ErrorType<ErrorResponse>
+export type ImportGpxMutationVariables = { data: BodyType<ImportGpxBody> }
+
+/**
+ * @summary Load a GPX file into the route editor
+ */
+export const useImportGpx = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof importGpx>>,
+      TError,
+      ImportGpxMutationVariables,
+      TContext
+    >
+    request?: SecondParameter<typeof axiosMutator>
+  },
+  queryClient?: QueryClient
+): UseMutationResult<
+  Awaited<ReturnType<typeof importGpx>>,
+  TError,
+  ImportGpxMutationVariables,
+  TContext
+> => {
+  return useMutation(getImportGpxMutationOptions(options), queryClient)
 }

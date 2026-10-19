@@ -28,6 +28,7 @@ public class PlannerStates {
   private static final double MAX_ASCEND_SCALE = 100.0;
   private static final double MIN_ELE = -1_000.0;
   private static final double MAX_ELE = 10_000.0;
+  private static final double MAX_CLIMB = 100_000.0;
 
   /** A validated state, decoded. */
   private record Decoded(List<double[][]> sources, List<double[][]> interiors) {}
@@ -97,7 +98,7 @@ public class PlannerStates {
       if (source == null) {
         throw invalid();
       }
-      chars += length(source.line()) + length(source.ele());
+      chars += length(source.line()) + length(source.ele()) + length(source.climb());
     }
     for (PlannerPiece piece : pieces) {
       if (piece == null) {
@@ -122,6 +123,12 @@ public class PlannerStates {
       budget -= line.length;
       if (source.ele() != null) {
         PolylineCodec.decode1(source.ele(), line.length);
+      }
+      if (source.climb() != null) {
+        if (source.ele() == null) {
+          throw invalid();
+        }
+        checkClimb(PolylineCodec.decode1(source.climb(), line.length));
       }
       double scale = source.ascendScale();
       if (!(scale > 0.0 && scale <= MAX_ASCEND_SCALE)) {
@@ -228,6 +235,17 @@ public class PlannerStates {
       throw invalid();
     }
     return new Decoded(decodedSources, interiors);
+  }
+
+  /** An accumulated ascent: from 0 up, never decreasing, within what a track can climb. */
+  private static void checkClimb(double[] climb) {
+    double previous = 0.0;
+    for (double c : climb) {
+      if (!(c >= previous && c <= MAX_CLIMB)) {
+        throw invalid();
+      }
+      previous = c;
+    }
   }
 
   private static boolean hasProvenance(PlannerJunction j, int source, int idx) {

@@ -387,9 +387,10 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
       17 octobre 2026, et son volet backend (`A10`) aussi : codes `ROUTING_*`, `teamSlug` sur
       `/api/router`, colonne `drawn` (`V72`, contrat `11.6.0`). Le lot 2 (disposition et web
       mobile) est fait le 17 octobre 2026, reste sa recette sur un vrai téléphone.
-      Les lots 3 et 4 restent ouverts, avec leurs volets backend (endpoint de recalage de B2,
-      trace source FAST de C4b), qui restent sous cet ID ; C4a (état d'édition, contrat `11.10.0`,
-      `V75`) est fait le 19 octobre 2026.
+      Les lots 3 et 4 restent ouverts, avec leur volet backend (endpoint de recalage de B2) qui
+      reste sous cet ID ; C4 (état d'édition et import d'un fichier, contrats `11.10.0` et
+      `11.11.0`, `V75`) est fait le 19 octobre 2026. Reste de B1b : altitudes FAST d'un tracé
+      rouvert déjà en HD, endpoint d'altitude FAST pour une ligne droite.
 
 ### Couverture e2e — ce que l'audit du 27 septembre laisse ouvert
 

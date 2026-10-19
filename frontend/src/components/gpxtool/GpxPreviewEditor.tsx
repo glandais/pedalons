@@ -79,6 +79,11 @@ export function GpxPreviewEditor({
     [t]
   )
 
+  // The planner read a file: it names the track when the name is still empty.
+  const handleImportName = useCallback((importedName: string) => {
+    setName((current) => (current.trim() ? current : importedName.trim()))
+  }, [])
+
   const nameValid = name.trim().length >= 3
 
   const handleSubmit = async () => {
@@ -92,11 +97,12 @@ export function GpxPreviewEditor({
       sourceMode === 'planner' && canUsePlanner
         ? plannerPayload(plannerRef.current?.snapshot(), create)
         : {}
+    // The file chosen in the GPX tab, or the one imported in the planner and left untouched
+    const file = payload.file ?? (sourceMode === 'gpx' ? gpxFile || undefined : undefined)
     const track =
       payload.plannerState || payload.points
         ? { points: payload.points, plannerState: payload.plannerState }
         : undefined
-    const file = sourceMode === 'gpx' ? gpxFile || undefined : undefined
     await onSubmit(name.trim(), track, file)
     // Only once the save went through: a failed save did not drop anything
     if (payload.tooLarge) {
@@ -160,6 +166,7 @@ export function GpxPreviewEditor({
             initialTrack={initialTrack}
             initialAscend={initialAscend}
             title={name}
+            onImportName={handleImportName}
             openRequest={drawRequest}
           />
           {plannerPoints.length > 0 && !isCoarse && (

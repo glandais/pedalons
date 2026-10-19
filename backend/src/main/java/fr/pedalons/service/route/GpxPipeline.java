@@ -11,6 +11,7 @@ import io.github.glandais.engine.path.ElevationCorrections;
 import io.github.glandais.engine.path.ElevationGainJvm;
 import io.github.glandais.engine.path.ElevationStepJvm;
 import io.github.glandais.engine.path.Path;
+import io.github.glandais.engine.path.PathSimplifier;
 import io.github.glandais.engine.path.PathSimplifierJvm;
 import io.github.glandais.engine.path.PointPerDistance;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -110,6 +111,46 @@ public class GpxPipeline {
 
   /** {@link #process}, keeping the part of the elevation report the HD catch-up decides on. */
   public Processed processReported(Path source, String name, ElevationQuality quality) {
+    DenseResult dense = processDense(source, name, quality);
+    Path simplified = PathSimplifierJvm.simplify(dense.path(), 3.0, 3.0);
+    LOG.debugv("Simplified {0} to {1} points (Douglas-Peucker)", name, simplified.getSize());
+    return new Processed(simplified, dense.fallbackAfterErrorKm());
+  }
+
+  /**
+   * A processed path with, for each of its points, the ascent accumulated up to it (the dead-band
+   * ascent of {@link ElevationGainJvm#cumulativeGain}, same options as the annotation).
+   *
+   * @param climb one value per point of {@code processed.path()}: non-decreasing, first 0, last the
+   *     path's reported ascent
+   */
+  public record ProcessedWithClimb(Processed processed, double[] climb) {}
+
+  /**
+   * {@link #processReported} that also keeps the cumulative ascent of every retained point: the
+   * same points, the same ascent, plus what the planner needs to cut a piece out of the track and
+   * still know its ascent.
+   */
+  public ProcessedWithClimb processWithClimb(Path source, String name, ElevationQuality quality) {
+    DenseResult dense = processDense(source, name, quality);
+    double[] cumulative = ElevationGainJvm.cumulativeGain(dense.path());
+    PathSimplifier.Simplified simplified =
+        PathSimplifierJvm.simplifyWithIndices(dense.path(), 3.0, 3.0);
+    int[] indices = simplified.getIndices();
+    double[] climb = new double[indices.length];
+    for (int k = 0; k < indices.length; k++) {
+      climb[k] = cumulative[indices[k]];
+    }
+    LOG.debugv(
+        "Simplified {0} to {1} points (Douglas-Peucker)", name, simplified.getPath().getSize());
+    return new ProcessedWithClimb(
+        new Processed(simplified.getPath(), dense.fallbackAfterErrorKm()), climb);
+  }
+
+  /** The resampled, corrected, smoothed and annotated path, before the simplification. */
+  private record DenseResult(Path path, double fallbackAfterErrorKm) {}
+
+  private DenseResult processDense(Path source, String name, ElevationQuality quality) {
     double fallbackKm = 0.0;
     ElevationProvider elevationProvider =
         quality == ElevationQuality.FAST ? fastElevationProvider : hdElevationProvider;
@@ -133,10 +174,7 @@ public class GpxPipeline {
 
     p = ElevationStepJvm.smoothElevation(p, 150.0);
     ElevationGainJvm.annotate(p);
-
-    Path simplified = PathSimplifierJvm.simplify(p, 3.0, 3.0);
-    LOG.debugv("Simplified {0} to {1} points (Douglas-Peucker)", name, simplified.getSize());
-    return new Processed(simplified, fallbackKm);
+    return new DenseResult(p, fallbackKm);
   }
 
   /** Detects the climbs of an already-processed path, in the frozen JSONB shape. */

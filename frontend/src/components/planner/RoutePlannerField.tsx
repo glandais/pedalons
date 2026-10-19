@@ -10,7 +10,7 @@ import {
 } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
-import { IconAlertTriangle, IconArrowLeft, IconTrash } from '@tabler/icons-react'
+import { IconAlertTriangle, IconArrowLeft, IconFileImport, IconTrash } from '@tabler/icons-react'
 import { ActionIcon, Alert, Box, Button, Group, Modal, Text } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import type { GeoPoint, PlannerState } from '@/api/dto'
@@ -65,6 +65,11 @@ interface RoutePlannerFieldProps {
   /** Tells the form whether the fullscreen editor is open (its Escape must not close the form). */
   onFullscreenChange?: (opened: boolean) => void
   /**
+   * Receives the name of an imported file (its metadata, else its first track, else the file name):
+   * the form fills its name field with it when that field is still empty.
+   */
+  onImportName?: (name: string) => void
+  /**
    * A counter the form bumps on a deliberate gesture (the « draw on the map » button): on a finger
    * each bump opens the fullscreen editor. Never opens by itself on load.
    */
@@ -91,6 +96,7 @@ export function RoutePlannerField({
   teamSlug,
   title,
   onFullscreenChange,
+  onImportName,
   openRequest,
 }: RoutePlannerFieldProps) {
   const { t } = useTranslation()
@@ -251,6 +257,55 @@ export function RoutePlannerField({
     }
   }, [controlPoints.length])
 
+  // --- Import of a GPX file ---
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  // A file waiting for the user to say whether it replaces the route or is added to it.
+  const [pendingFile, setPendingFile] = useState<File | null>(null)
+  const onImportNameRef = useRef(onImportName)
+  useEffect(() => {
+    onImportNameRef.current = onImportName
+  })
+  const { importGpx } = planner
+  const [fitRequest, setFitRequest] = useState(0)
+  const runImport = useCallback(
+    async (file: File, mode: 'replace' | 'append') => {
+      const info = await importGpx(file, mode)
+      if (!info) return
+      setFitRequest((n) => n + 1)
+      onImportNameRef.current?.(info.name)
+      if (info.elevationFallback) {
+        notifications.show({ message: t('planner.import.elevationFallback'), color: 'yellow' })
+      }
+      if (info.waypointCount > 0) {
+        notifications.show({
+          message: t(
+            info.mode === 'replace'
+              ? 'planner.import.waypoints'
+              : 'planner.import.waypointsDropped',
+            { count: info.waypointCount }
+          ),
+          color: 'yellow',
+        })
+      }
+    },
+    [importGpx, t]
+  )
+  const openFilePicker = useCallback(() => fileInputRef.current?.click(), [])
+  const handleFileChosen = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    // Reset, so that choosing the same file again fires a change
+    event.target.value = ''
+    if (!file) return
+    // Nothing to lose on an empty route (or a lone point): no question
+    if (route.points.length >= 2) setPendingFile(file)
+    else void runImport(file, 'replace')
+  }
+  const choose = (mode: 'replace' | 'append') => {
+    const file = pendingFile
+    setPendingFile(null)
+    if (file) void runImport(file, mode)
+  }
+
   const stats =
     route.points.length >= 2 ? { distance: route.dist, ascend: route.ascend } : undefined
   const showStatusChip = controlPoints.length > 0 || isLoading || error !== null
@@ -308,6 +363,36 @@ export function RoutePlannerField({
 
       {directWarning}
 
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".gpx"
+        hidden
+        aria-label={t('planner.import')}
+        data-testid="planner-import-input"
+        onChange={handleFileChosen}
+      />
+      <Modal
+        opened={pendingFile !== null}
+        onClose={() => setPendingFile(null)}
+        title={t('planner.import.choice.title')}
+        zIndex={400}
+        centered
+      >
+        <Text size="sm" mb="md">
+          {t('planner.import.choice.text', { name: pendingFile?.name ?? '' })}
+        </Text>
+        <Group justify="flex-end" gap="xs">
+          <Button variant="default" onClick={() => setPendingFile(null)}>
+            {t('actions.cancelAction')}
+          </Button>
+          <Button variant="default" onClick={() => choose('append')}>
+            {t('planner.import.append')}
+          </Button>
+          <Button onClick={() => choose('replace')}>{t('planner.import.replace')}</Button>
+        </Group>
+      </Modal>
+
       {host &&
         attachedHost === host &&
         createPortal(
@@ -316,6 +401,8 @@ export function RoutePlannerField({
             layout={opened ? 'fullscreen' : 'inline'}
             active={active}
             onExpand={!isCoarse && !opened ? open : undefined}
+            onImport={openFilePicker}
+            fitRequest={fitRequest}
             initialTrack={initialTrack}
             teamLocation={teamLocation}
             hoveredIndex={profileHoveredIndex}
@@ -360,16 +447,27 @@ export function RoutePlannerField({
               isCoarse ? (
                 // Out of the bottom bar, which has no room left for it at 360 px; away from the
                 // thumb is also where a destructive action belongs.
-                <ActionIcon
-                  variant="subtle"
-                  color="red"
-                  size="xl"
-                  onClick={handleClear}
-                  disabled={controlPoints.length === 0}
-                  aria-label={t('planner.clear')}
-                >
-                  <IconTrash size={22} />
-                </ActionIcon>
+                <Group gap={0} wrap="nowrap">
+                  <ActionIcon
+                    variant="subtle"
+                    size="xl"
+                    onClick={openFilePicker}
+                    disabled={isLoading}
+                    aria-label={t('planner.import')}
+                  >
+                    <IconFileImport size={22} />
+                  </ActionIcon>
+                  <ActionIcon
+                    variant="subtle"
+                    color="red"
+                    size="xl"
+                    onClick={handleClear}
+                    disabled={controlPoints.length === 0}
+                    aria-label={t('planner.clear')}
+                  >
+                    <IconTrash size={22} />
+                  </ActionIcon>
+                </Group>
               ) : (
                 <Group gap="xs" wrap="nowrap">
                   <ActionIcon

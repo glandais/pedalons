@@ -2337,7 +2337,7 @@ Plan [`2026-10-06-team-agenda.md`](plans/archive/2026-10-06-team-agenda.md) §4,
   **À ne pas défaire** : on ne sonde et on n'affiche que `PENDING` ; le sondage reste borné ; ne pas
   recadrer la carte sur un simple changement de profil.
 
-### `WEB-100` Éditeur de parcours : réglage côtes / trafic, état d'édition (19 octobre 2026, contrat `11.10.0`)
+### `WEB-100` Éditeur de parcours : réglage côtes / trafic, état d'édition (19 octobre 2026, contrat `11.11.0`)
 
 - `WEB-100` **Volet C2** (2026-10-19, **API 11.9.0**) — `RouterRequest` accepte `useHills` et
   `useRoads` (0 à 1, facultatifs), fusionnés dans les `costing_options` du profil vélo ; absents,
@@ -2355,8 +2355,8 @@ Plan [`2026-10-06-team-agenda.md`](plans/archive/2026-10-06-team-agenda.md) §4,
   révision : `fileId` du `ROUTE_ORIGINAL_GPX` (parcours), empreinte du tracé 2D (aperçu). Côté web :
   restauration sans requête, `sourceIdx`, suppression à 0 requête entre deux raccords du même import,
   état copié à la promotion d'un aperçu. Détail, bornes et écarts dans
-  [le plan](plans/2026-10-17-editeur-parcours-web.md) (§8 C4a) ; reste **C4b** (trace source FAST à
-  l'envoi d'un fichier) dans `LEDGER_NEXT.md`. Tests : `RoutePlannerStateResourceTest`,
+  [le plan](plans/2026-10-17-editeur-parcours-web.md) (§8 C4a) ; la trace source FAST à l'envoi d'un
+  fichier est le volet C4b, ci-dessous. Tests : `RoutePlannerStateResourceTest`,
   `GpxPreviewPlannerStateResourceTest`, `PlannerStatesTest`, `PolylineCodecTest`,
   `ElevationRefreshTest`, `GpxPreviewElevationRefreshTest` ; `plannerState.test.ts`,
   `plannerSubmit.test.ts`, `useRoutePlanner.test.tsx`, `RouteEditor.test.tsx`,
@@ -2366,6 +2366,23 @@ Plan [`2026-10-06-team-agenda.md`](plans/archive/2026-10-06-team-agenda.md) §4,
   et le copie à la promotion ; `drawn` est faux pour un état de seuls morceaux importés
   (`API-127`) ; remplacer le tracé efface l'état ; les listes et chaînes de l'état restent bornées
   (`@Size`, `GpxLimits`) ; la migration reste additive (déploiement roulant).
+- `WEB-100` **Volet C4b** (2026-10-19, **API 11.11.0**, pas de migration) — l'éditeur importe un
+  fichier GPX : `POST /api/router/import-gpx` (multipart `gpxFile`, `teamSlug` facultatif, mêmes
+  droits que le routeur via `PlannerAccess`) traite chaque piste en FAST sans rien stocker ni appeler
+  Stadia et rend `GpxImportResponse` (polylines `line` / `ele` / `climb`, `dist`, `ascend`,
+  `waypointCount`, `elevationFallback`) ; `PlannerSource.climb` facultatif (état toujours en
+  version 1) ; code `PLANNER_IMPORT_TOO_LARGE` (plus de 8 pistes ou 100 000 points). vcyclist
+  `6.10.0` (`cumulativeGain`, `simplifyWithIndices`). Web : bouton « Importer un
+  fichier GPX », Remplacer / Ajouter à la fin, import intact enregistré comme le fichier. Détail
+  dans [le plan](plans/2026-10-17-editeur-parcours-web.md) (§8 C4b). Tests : `GpxPipelineTest`,
+  `RouterImportResourceTest`, `PlannerStatesTest`, `RoutePlannerStateResourceTest`,
+  `GpxPreviewPlannerStateResourceTest`, `GpxLimitsResourceTest` ; `plannerImport.test.ts`,
+  `useRoutePlannerImport.test.tsx`, `plannerState.test.ts`, e2e `gpx-planner`.
+  **À ne pas défaire** : le dernier `climb` d'une piste vaut son `ascend` (le D+ du serveur) et
+  `climb[k]` vient de l'index du point retenu dans le chemin dense, pas de `k` ; un import intact
+  s'enregistre comme le fichier (waypoints, pistes, original), y compris après un annuler ;
+  l'endpoint ne stocke rien ; droits avant `FILE_REQUIRED` et la taille ; pas de limite de débit
+  propre (`SEC-28` au proxy, plafond de points contrôlé après le pipeline, risque accepté).
 
 ## API — Contrat d'API et backend
 

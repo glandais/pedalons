@@ -13,9 +13,7 @@ import fr.pedalons.dto.error.ErrorCode;
 import fr.pedalons.dto.router.request.RouterProfile;
 import fr.pedalons.dto.router.request.RouterRequest;
 import fr.pedalons.dto.router.response.RouterResponse;
-import fr.pedalons.enums.ActionType;
 import fr.pedalons.enums.ElevationQuality;
-import fr.pedalons.enums.EntityType;
 import fr.pedalons.infrastructure.valhalla.Polyline6Decoder;
 import fr.pedalons.infrastructure.valhalla.StadiaMapsClient;
 import fr.pedalons.infrastructure.valhalla.ValhallaLocation;
@@ -23,10 +21,7 @@ import fr.pedalons.infrastructure.valhalla.ValhallaRequest;
 import fr.pedalons.infrastructure.valhalla.ValhallaResponse;
 import fr.pedalons.service.route.GpxLimits;
 import fr.pedalons.service.route.GpxPipeline;
-import fr.pedalons.service.security.PedalonsQueryContext;
-import fr.pedalons.service.security.SecurityVerifier;
 import fr.pedalons.service.security.annotation.Logged;
-import fr.pedalons.service.team.TeamService;
 import io.github.glandais.elevation.CoordinatesElevation;
 import io.github.glandais.elevation.LatLonElevation;
 import io.github.glandais.engine.path.Path;
@@ -48,7 +43,6 @@ import org.geolatte.geom.LineString;
 import org.geolatte.geom.crs.CoordinateReferenceSystem;
 import org.geolatte.geom.crs.LinearUnit;
 import org.jboss.logging.Logger;
-import org.jspecify.annotations.Nullable;
 
 @ApplicationScoped
 public class RouterService {
@@ -69,16 +63,12 @@ public class RouterService {
 
   @Inject GpxPipeline gpxPipeline;
 
-  @Inject PedalonsQueryContext pedalonsContext;
-
-  @Inject SecurityVerifier securityVerifier;
-
-  @Inject TeamService teamService;
+  @Inject PlannerAccess plannerAccess;
 
   @Logged
   public RouterResponse getRoute(RouterRequest routerRequest) {
     // Every check comes before the call to Stadia Maps, which is billed against a monthly quota.
-    checkPlannerAllowed(routerRequest.teamSlug());
+    plannerAccess.check(routerRequest.teamSlug());
     ValhallaRequest valhallaRequest = getValhallaRequest(routerRequest);
 
     ValhallaResponse response;
@@ -127,26 +117,6 @@ public class RouterService {
     double ascend = path.getReportedElevationGain();
 
     return new RouterResponse(filteredRoute, dist, ascend);
-  }
-
-  /**
-   * Who may draw. With a team, the caller must be allowed to create routes in it (the very rule of
-   * {@code RouteService.createRoute}, through its {@code RouteAccessChecker}) and the team must have
-   * its route planner on; without one, the domain's GPX planner must be on. The team is looked up
-   * in the current domain only, so a slug of another domain is a 404 like anywhere else. Rights are
-   * checked before the flag, so a non-member learns nothing about the team's settings.
-   */
-  private void checkPlannerAllowed(@Nullable String teamSlug) {
-    if (teamSlug == null || teamSlug.isBlank()) {
-      if (!pedalonsContext.getDomain().isEnableGpxPlanner()) {
-        throw new BusinessException(ErrorCode.ROUTE_PLANNER_DISABLED);
-      }
-      return;
-    }
-    securityVerifier.verifyAccess(EntityType.ROUTE, ActionType.CREATE, List.of(teamSlug));
-    if (!teamService.getTeam(teamSlug).isEnableRoutePlanner()) {
-      throw new BusinessException(ErrorCode.ROUTE_PLANNER_DISABLED);
-    }
   }
 
   /**

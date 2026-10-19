@@ -18,6 +18,9 @@ abstract class PlannerSource with _$PlannerSource {
 
     /// One-dimension polyline (tenths of a metre), one value per point of line; absent: no elevation
     String? ele,
+
+    /// One-dimension polyline (tenths of a metre), one value per point of line: the ascent accumulated up to each point, as the server measured it (dead-band, non-decreasing, within [0, 100 000 m]). Absent: the client derives it from ele. Requires ele
+    String? climb,
   }) = _PlannerSource;
 
   factory PlannerSource.fromJson(Map<String, Object?> json) =>

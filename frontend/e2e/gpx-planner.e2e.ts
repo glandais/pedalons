@@ -24,6 +24,7 @@ import {
   traceMapPixels,
   watchRouter,
   windingTrack,
+  type GpxPoint,
 } from './support/routes'
 import { hydrated } from './support/ui'
 
@@ -177,8 +178,13 @@ test('a user draws a route from two points on the map, sees it routed and traced
  * after the route, « Tracé » while it has no name) on a finger. A finger's form holds a still
  * preview and a button; the editor opens on a tap of it, never by itself.
  */
-const editorOf = (page: Page, isMobile: boolean, name = 'Tracé') =>
-  isMobile ? page.getByRole('dialog', { name, exact: true }) : page.getByRole('main')
+const editorOf = (page: Page, isMobile: boolean, name?: string) =>
+  isMobile
+    ? // The editor is told by its map (its name follows the route's, which an import can set)
+      name === undefined
+      ? page.getByRole('dialog').filter({ has: page.locator('canvas.maplibregl-canvas') })
+      : page.getByRole('dialog', { name, exact: true })
+    : page.getByRole('main')
 
 /** Opens the fullscreen editor from the form on a finger; on a mouse the map is already in the page. */
 async function startDrawing(page: Page, isMobile: boolean) {
@@ -186,7 +192,8 @@ async function startDrawing(page: Page, isMobile: boolean) {
   if (!isMobile) return main
   // Nothing of the map is built until the editor is opened.
   await expect(main.locator('canvas.maplibregl-canvas')).toHaveCount(0)
-  const draw = main.getByRole('button', { name: 'Tracer le parcours' })
+  // « Modifier le tracé » once an import has given the form a track
+  const draw = main.getByRole('button', { name: /^(Tracer le parcours|Modifier le tracé)$/ })
   await hydrated(draw)
   await draw.click()
   const dialog = editorOf(page, isMobile)
@@ -2057,6 +2064,79 @@ test.describe('avoiding hills and traffic (C2)', () => {
  * straight legs and the loaded file survive a save, and reopening a route asks the router for
  * nothing. Nothing here reaches Stadia Maps (the router is simulated).
  */
+/** An L-shaped track: 3 km east, then 3 km north, a point every 50 m. */
+function lTrack(): [number, number, number][] {
+  const [lat0, lon0] = [48.4469, 1.4875]
+  const perLat = 111_320
+  const perLon = perLat * Math.cos((lat0 * Math.PI) / 180)
+  const leg = Array.from({ length: 61 }, (_, i) => i * 50)
+  return [
+    ...leg.map((east): [number, number, number] => [lat0, lon0 + east / perLon, 150]),
+    ...leg
+      .slice(1)
+      .map((north): [number, number, number] => [lat0 + north / perLat, lon0 + 3000 / perLon, 150]),
+  ]
+}
+
+/** A tap on the trace between the first two anchors, then the dropped point is the second marker. */
+async function insertOnTrace(page: Page, isMobile: boolean, surface: ReturnType<typeof editorOf>) {
+  const marker = (n: number) => surface.getByRole('button', { name: markerName(n) })
+  const centre = async (n: number) => {
+    const b = await marker(n).boundingBox()
+    if (!b) throw new Error(`marker ${n} has no box`)
+    return { x: b.x + b.width / 2, y: b.y + b.height / 2 }
+  }
+  const canvas = surface.locator('canvas.maplibregl-canvas').first()
+  await canvas.evaluate((el) => el.scrollIntoView({ block: 'center', inline: 'center' }))
+  const [start, end] = [await centre(1), await centre(2)]
+  // Half way along the first leg of the L, east from the start
+  const grab = { x: (start.x + end.x) / 2, y: start.y }
+  if (isMobile) {
+    await page.evaluate(async ({ x, y }) => {
+      const target = document.elementFromPoint(x, y)
+      if (!target) throw new Error('nothing under the tap')
+      const at = { clientX: x, clientY: y, bubbles: true, cancelable: true, view: window }
+      const touch = { ...at, pointerId: 7, pointerType: 'touch', isPrimary: true }
+      target.dispatchEvent(new PointerEvent('pointerdown', touch))
+      target.dispatchEvent(new PointerEvent('pointerup', touch))
+      target.dispatchEvent(new MouseEvent('mousemove', at))
+      await new Promise((resolve) => setTimeout(resolve, 50))
+      target.dispatchEvent(new MouseEvent('mousedown', { ...at, button: 0, buttons: 1 }))
+      target.dispatchEvent(new MouseEvent('mouseup', { ...at, button: 0 }))
+      target.dispatchEvent(new MouseEvent('click', { ...at, button: 0, detail: 1 }))
+    }, grab)
+  } else {
+    await page.mouse.move(grab.x - 10, grab.y - 10)
+    await page.mouse.move(grab.x, grab.y, { steps: 3 })
+    await page.mouse.move(grab.x + 1, grab.y, { steps: 2 })
+    await page.mouse.down()
+    await page.mouse.move(grab.x, grab.y - 110, { steps: 8 })
+    await page.mouse.up()
+  }
+  return marker
+}
+
+/** Deletes the n-th control point: a right click on a mouse, a long press and its menu on a finger. */
+async function deleteMarker(
+  page: Page,
+  context: BrowserContext,
+  isMobile: boolean,
+  marker: Locator
+) {
+  if (!isMobile) {
+    await marker.click({ button: 'right' })
+    return
+  }
+  const box = await marker.boundingBox()
+  if (!box) throw new Error('the marker has no box')
+  const at = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+  const cdp = await context.newCDPSession(page)
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [at] })
+  await page.waitForTimeout(800)
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+  await page.getByRole('menuitem', { name: 'Supprimer le point' }).click()
+}
+
 test.describe('planner state saved and read back (C4a)', () => {
   test.setTimeout(120_000)
 
@@ -2173,86 +2253,10 @@ test.describe('planner state saved and read back (C4a)', () => {
     const owner = await newUser(unique('Admin tracé'))
     const team = await newTeam(owner, unique('Équipe tracé'))
     await setTeamAttributes(team, { enableRoutePlanner: true })
-    const [lat0, lon0] = [48.4469, 1.4875]
-    const perLat = 111_320
-    const perLon = perLat * Math.cos((lat0 * Math.PI) / 180)
-    const leg = Array.from({ length: 61 }, (_, i) => i * 50)
-    const track: [number, number, number][] = [
-      ...leg.map((east): [number, number, number] => [lat0, lon0 + east / perLon, 150]),
-      ...leg
-        .slice(1)
-        .map((north): [number, number, number] => [
-          lat0 + north / perLat,
-          lon0 + 3000 / perLon,
-          150,
-        ]),
-    ]
+    const track = lTrack()
     const name = unique('Boucle en L')
     const route = await newRoute(owner, team.slug, name, track)
     return { owner, team, route, name }
-  }
-
-  /** A tap on the trace between the first two anchors, then the dropped point is the second marker. */
-  async function insertOnTrace(
-    page: Page,
-    isMobile: boolean,
-    surface: ReturnType<typeof editorOf>
-  ) {
-    const marker = (n: number) => surface.getByRole('button', { name: markerName(n) })
-    const centre = async (n: number) => {
-      const b = await marker(n).boundingBox()
-      if (!b) throw new Error(`marker ${n} has no box`)
-      return { x: b.x + b.width / 2, y: b.y + b.height / 2 }
-    }
-    const canvas = surface.locator('canvas.maplibregl-canvas').first()
-    await canvas.evaluate((el) => el.scrollIntoView({ block: 'center', inline: 'center' }))
-    const [start, end] = [await centre(1), await centre(2)]
-    // Half way along the first leg of the L, east from the start
-    const grab = { x: (start.x + end.x) / 2, y: start.y }
-    if (isMobile) {
-      await page.evaluate(async ({ x, y }) => {
-        const target = document.elementFromPoint(x, y)
-        if (!target) throw new Error('nothing under the tap')
-        const at = { clientX: x, clientY: y, bubbles: true, cancelable: true, view: window }
-        const touch = { ...at, pointerId: 7, pointerType: 'touch', isPrimary: true }
-        target.dispatchEvent(new PointerEvent('pointerdown', touch))
-        target.dispatchEvent(new PointerEvent('pointerup', touch))
-        target.dispatchEvent(new MouseEvent('mousemove', at))
-        await new Promise((resolve) => setTimeout(resolve, 50))
-        target.dispatchEvent(new MouseEvent('mousedown', { ...at, button: 0, buttons: 1 }))
-        target.dispatchEvent(new MouseEvent('mouseup', { ...at, button: 0 }))
-        target.dispatchEvent(new MouseEvent('click', { ...at, button: 0, detail: 1 }))
-      }, grab)
-    } else {
-      await page.mouse.move(grab.x - 10, grab.y - 10)
-      await page.mouse.move(grab.x, grab.y, { steps: 3 })
-      await page.mouse.move(grab.x + 1, grab.y, { steps: 2 })
-      await page.mouse.down()
-      await page.mouse.move(grab.x, grab.y - 110, { steps: 8 })
-      await page.mouse.up()
-    }
-    return marker
-  }
-
-  /** Deletes the n-th control point: a right click on a mouse, a long press and its menu on a finger. */
-  async function deleteMarker(
-    page: Page,
-    context: BrowserContext,
-    isMobile: boolean,
-    marker: Locator
-  ) {
-    if (!isMobile) {
-      await marker.click({ button: 'right' })
-      return
-    }
-    const box = await marker.boundingBox()
-    if (!box) throw new Error('the marker has no box')
-    const at = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
-    const cdp = await context.newCDPSession(page)
-    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [at] })
-    await page.waitForTimeout(800)
-    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
-    await page.getByRole('menuitem', { name: 'Supprimer le point' }).click()
   }
 
   test('a route without a saved state opens as an import: a point inserted on it is deleted with no request', async ({
@@ -2335,5 +2339,262 @@ test.describe('planner state saved and read back (C4a)', () => {
     )
     await expect(surface.getByText('2 points', { exact: true })).toBeVisible()
     expect(routerRequests, 'the joins and their provenance were saved').toHaveLength(0)
+  })
+})
+
+test.describe('importing a GPX file in the planner (C4b)', () => {
+  test.setTimeout(120_000)
+
+  /** POST /api/router/import-gpx is the real endpoint here; only the router is simulated. */
+  const gpxUpload = (name: string, points: GpxPoint[]) => ({
+    name: `${name}.gpx`,
+    mimeType: 'application/gpx+xml',
+    buffer: Buffer.from(gpxOf(name, points)),
+  })
+
+  /** A file of two tracks, in this order, the second one `shiftEast` metres east of the first. */
+  const twoTracks = (name: string, shiftEast: number) => {
+    const first = windingTrack(120)
+    const perLon = 111_320 * Math.cos((48.4469 * Math.PI) / 180)
+    const second = first.map(([lat, lon, ele]): GpxPoint => [lat, lon + shiftEast / perLon, ele])
+    const trk = (n: string, pts: GpxPoint[]) =>
+      `<trk><name>${n}</name><trkseg>${pts
+        .map(([lat, lon, ele]) => `<trkpt lat="${lat}" lon="${lon}"><ele>${ele}</ele></trkpt>`)
+        .join('')}</trkseg></trk>`
+    return {
+      name: `${name}.gpx`,
+      mimeType: 'application/gpx+xml',
+      buffer: Buffer.from(
+        `<?xml version="1.0" encoding="UTF-8"?><gpx version="1.1" creator="pedalons-e2e" xmlns="http://www.topografix.com/GPX/1/1"><metadata><name>${name}</name></metadata>${trk('a', first)}${trk('b', second)}</gpx>`
+      ),
+    }
+  }
+
+  const importInput = (page: Page) => page.getByTestId('planner-import-input')
+  const choice = (page: Page) => page.getByRole('dialog', { name: 'Importer un fichier GPX' })
+
+  /** Closes the fullscreen editor on a finger, so that the form's own buttons are reachable. */
+  async function backToForm(surface: Locator, isMobile: boolean) {
+    if (!isMobile) return
+    await surface.getByRole('button', { name: 'Terminer' }).click()
+    await expect(surface).toBeHidden()
+  }
+
+  test('a file imported into an empty planner names the track and is saved as the file itself', async ({
+    context,
+    page,
+    isMobile,
+  }) => {
+    const planner = await openPlanner({ context, page, isMobile }, { enter: false })
+    const { main, nameField, routerRequests } = planner
+    const name = unique('Import intact')
+    await importInput(page).setInputFiles(gpxUpload(name, windingTrack(300)))
+    // Nothing to lose: no question, and the file names the track
+    await expect(nameField).toHaveValue(name)
+    await expect(choice(page)).toHaveCount(0)
+    await planner.enterEditor()
+    await expect(planner.points(2)).toBeVisible()
+    await backToForm(planner.surface, isMobile)
+
+    const upload = page.waitForRequest(
+      (r) => r.method() === 'POST' && r.url().endsWith('/api/gpx-previews')
+    )
+    await main.getByRole('button', { name: 'Enregistrer' }).click()
+    const request = await upload
+    expect(request.headers()['content-type']).toContain('multipart/form-data')
+    expect(request.postDataBuffer()?.toString('latin1')).toContain('name="gpxFile"')
+    expect(routerRequests, 'importing asks nothing of the router').toHaveLength(0)
+    await expect(page).toHaveURL(new RegExp(`${origin}/outils-gpx/[^/]+$`))
+  })
+
+  test('a modified import is saved as its state, climb included, and read back without routing', async ({
+    context,
+    page,
+    isMobile,
+  }) => {
+    const planner = await openPlanner({ context, page, isMobile }, { enter: false })
+    const { main, nameField, routerRequests } = planner
+    const name = unique('Import modifié')
+    await importInput(page).setInputFiles(gpxUpload(name, windingTrack(300)))
+    await expect(nameField).toHaveValue(name)
+    await planner.enterEditor()
+    await expect(planner.points(2)).toBeVisible()
+    // One more point, routed from the end of the file
+    await planner.clickMap(0, 160)
+    await expect(planner.points(3)).toBeVisible()
+    await planner.settled()
+    expect(routerRequests, 'the leg to the new point').toHaveLength(1)
+    await backToForm(planner.surface, isMobile)
+
+    const saved = page.waitForResponse(
+      (r) => r.url().endsWith('/api/gpx-previews/from-points') && r.request().method() === 'POST'
+    )
+    await main.getByRole('button', { name: 'Enregistrer' }).click()
+    const response = await saved
+    expect(response.ok()).toBe(true)
+    const sent = response.request().postDataJSON() as {
+      points?: unknown
+      plannerState?: { sources: { climb?: string }[] }
+    }
+    expect(sent.points).toBeUndefined()
+    expect(
+      sent.plannerState?.sources[0].climb,
+      'the climb of the file travels with it'
+    ).toBeTruthy()
+    const preview = (await response.json()) as GpxPreviewDto
+
+    routerRequests.length = 0
+    await page.goto(`${origin}/outils-gpx/${preview.id}/modifier`)
+    const editor = await (async () => {
+      if (isMobile) {
+        const edit = main.getByRole('button', { name: 'Modifier le tracé' })
+        await hydrated(edit)
+        await edit.click()
+      }
+      return editorOf(page, isMobile, name)
+    })()
+    await expect(editor.getByText('3 points', { exact: true })).toBeVisible()
+    expect(routerRequests).toHaveLength(0)
+  })
+
+  test('« Ajouter à la fin » joins the file to the drawn route with one routed request', async ({
+    context,
+    page,
+    isMobile,
+  }) => {
+    const planner = await openPlanner({ context, page, isMobile })
+    const { surface, points, settled, routerRequests } = planner
+    await drawThreePoints(planner)
+    routerRequests.length = 0
+
+    await importInput(page).setInputFiles(gpxUpload(unique('Suite'), windingTrack(120)))
+    await expect(choice(page)).toBeVisible()
+    await choice(page).getByRole('button', { name: 'Ajouter à la fin' }).click()
+    await expect(choice(page)).toHaveCount(0)
+    await settled()
+    // The three drawn points, and the two ends of the file
+    await expect(points(5)).toBeVisible()
+    expect(routerRequests, 'the join between the route and the file').toHaveLength(1)
+    await expect(surface.getByRole('status', { name: "Calcul de l'itinéraire..." })).toHaveCount(0)
+  })
+
+  test('« Remplacer le tracé » drops the drawn route, through the tool button, with no request', async ({
+    context,
+    page,
+    isMobile,
+  }) => {
+    const planner = await openPlanner({ context, page, isMobile })
+    const { surface, points, routerRequests } = planner
+    await drawThreePoints(planner)
+    routerRequests.length = 0
+
+    const chooser = page.waitForEvent('filechooser')
+    await surface.getByRole('button', { name: 'Importer un fichier GPX', exact: true }).click()
+    await (await chooser).setFiles(gpxUpload(unique('Remplaçant'), windingTrack(120)))
+    await choice(page).getByRole('button', { name: 'Remplacer le tracé' }).click()
+    await expect(points(2)).toBeVisible()
+    expect(routerRequests).toHaveLength(0)
+  })
+
+  test('a cancelled choice imports nothing', async ({ context, page, isMobile }) => {
+    const planner = await openPlanner({ context, page, isMobile })
+    const { points } = planner
+    await drawThreePoints(planner)
+    await importInput(page).setInputFiles(gpxUpload(unique('Annulé'), windingTrack(120)))
+    await choice(page).getByRole('button', { name: 'Annuler', exact: true }).click()
+    await expect(choice(page)).toHaveCount(0)
+    await expect(points(3)).toBeVisible()
+  })
+
+  test('a file of two tracks keeps both, joined by a straight line that asks nothing of the router', async ({
+    context,
+    page,
+    isMobile,
+  }) => {
+    const planner = await openPlanner({ context, page, isMobile }, { enter: false })
+    const { routerRequests } = planner
+    await importInput(page).setInputFiles(twoTracks(unique('Deux pistes'), 4000))
+    await planner.enterEditor()
+    // The two ends of each track
+    await expect(planner.points(4)).toBeVisible()
+    // 4 km between the tracks: the straight leg is long enough for the warning
+    await expect(directWarning(page)).toBeVisible()
+    expect(routerRequests).toHaveLength(0)
+  })
+
+  test('a team route is replaced by a file and saved as an upload of it', async ({
+    context,
+    page,
+  }) => {
+    const owner = await newUser(unique('Admin import'))
+    const team = await newTeam(owner, unique('Équipe import'))
+    await setTeamAttributes(team, { enableRoutePlanner: true })
+    const route = await newRoute(owner, team.slug, unique('Parcours à remplacer'), windingTrack(80))
+    await signIn(context, owner)
+    await stubBasemap(page)
+    const routerRequests = await stubRouter(page)
+
+    await page.goto(`${routePath(team.slug, route.slug)}/modifier`)
+    await hydrated(importInput(page))
+    await importInput(page).setInputFiles(gpxUpload(unique('Nouveau fichier'), windingTrack(200)))
+    await expect(choice(page)).toBeVisible()
+    await choice(page).getByRole('button', { name: 'Remplacer le tracé' }).click()
+    await expect(choice(page)).toHaveCount(0)
+
+    const saved = page.waitForRequest(
+      (r) => r.method() === 'PUT' && r.url().endsWith(`/routes/${route.slug}`)
+    )
+    await page.getByRole('main').getByRole('button', { name: 'Enregistrer' }).click()
+    const request = await saved
+    expect(request.headers()['content-type']).toContain('multipart/form-data')
+    expect(request.postDataBuffer()?.toString('latin1')).toContain('name="gpxFile"')
+    expect(routerRequests).toHaveLength(0)
+  })
+
+  test('the joins of an imported file survive a save: after reopening, deleting a point between two joins is free', async ({
+    context,
+    page,
+    isMobile,
+  }) => {
+    const planner = await openPlanner({ context, page, isMobile }, { enter: false })
+    const { main, nameField, routerRequests } = planner
+    const name = unique('Import en L')
+    await importInput(page).setInputFiles(gpxUpload(name, lTrack()))
+    await expect(nameField).toHaveValue(name)
+    await planner.enterEditor()
+    const marker = await insertOnTrace(page, isMobile, planner.surface)
+    await planner.settled()
+    await expect(planner.points(3)).toBeVisible()
+    expect(routerRequests, 'the cut leg, before and after the new point').toHaveLength(2)
+
+    routerRequests.length = 0
+    await deleteMarker(page, context, isMobile, marker(2))
+    await planner.settled()
+    await expect(planner.points(2)).toBeVisible()
+    expect(routerRequests, 'the imported pieces between two joins are given back').toHaveLength(0)
+
+    // Insert again, save, reopen: the pieces come back from the saved state
+    await insertOnTrace(page, isMobile, planner.surface)
+    await planner.settled()
+    await expect(planner.points(3)).toBeVisible()
+    await backToForm(planner.surface, isMobile)
+    const saved = page.waitForResponse(
+      (r) => r.url().endsWith('/api/gpx-previews/from-points') && r.request().method() === 'POST'
+    )
+    await main.getByRole('button', { name: 'Enregistrer' }).click()
+    const preview = (await (await saved).json()) as GpxPreviewDto
+
+    routerRequests.length = 0
+    await page.goto(`${origin}/outils-gpx/${preview.id}/modifier`)
+    if (isMobile) {
+      const edit = main.getByRole('button', { name: 'Modifier le tracé' })
+      await hydrated(edit)
+      await edit.click()
+    }
+    const editor = editorOf(page, isMobile, name)
+    await expect(editor.getByText('3 points', { exact: true })).toBeVisible()
+    await deleteMarker(page, context, isMobile, editor.getByRole('button', { name: markerName(2) }))
+    await expect(editor.getByText('2 points', { exact: true })).toBeVisible()
+    expect(routerRequests, 'nothing was asked of the router after reopening').toHaveLength(0)
   })
 })

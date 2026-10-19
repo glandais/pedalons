@@ -2,7 +2,8 @@ import { distance } from '@/components/map/mapUtils'
 import { route as routerRoute } from '@/api/endpoints/router/router'
 import KDBush from 'kdbush'
 import { around } from 'geokdbush'
-import { RouterProfile } from '@/api/dto'
+import { RouterProfile, type GpxImportTrack } from '@/api/dto'
+import { decode1, decode2 } from '@/lib/polyline'
 import { tRegister, type TranslationKey } from '@/lib/i18nUtils'
 import type { MappableRoute } from '@/components/route/RouteMapView'
 
@@ -86,6 +87,11 @@ export interface PlannerSource {
   cumul: number[]
   /** Factor that scales the raw climb onto the stored D+ of the route (1 without reference). */
   ascendScale: number
+  /**
+   * `cumul` is the server's dead-band climb of the imported file (and `ascendScale` is 1), not a
+   * raw sum: the saved state carries it as `climb`, trimmed to the range in use.
+   */
+  serverClimb?: boolean
 }
 
 /**
@@ -114,6 +120,85 @@ export function sourceOf(coords: number[][], referenceAscend?: number): PlannerS
   const ascendScale =
     referenceAscend !== undefined && referenceAscend > 0 && total > 0 ? referenceAscend / total : 1
   return { coords, cumul, ascendScale }
+}
+
+/**
+ * A track of an imported GPX file (POST /api/router/import-gpx) as a source: its climb is the
+ * server's, per point, so the D+ of the route is the file's reported one.
+ */
+export function sourceFromImport(track: GpxImportTrack): PlannerSource {
+  const lngLat = decode2(track.line)
+  if (lngLat.length < 2) throw new Error('imported track under two points')
+  let coords: number[][] = lngLat
+  if (track.ele !== undefined) {
+    const ele = decode1(track.ele)
+    if (ele.length !== lngLat.length) throw new Error('imported track elevations')
+    coords = lngLat.map((c, i) => [c[0], c[1], ele[i]])
+  }
+  if (track.climb !== undefined && track.ele !== undefined) {
+    const cumul = decode1(track.climb)
+    if (cumul.length !== coords.length) throw new Error('imported track climb')
+    return { coords, cumul, ascendScale: 1, serverClimb: true }
+  }
+  return sourceOf(coords)
+}
+
+/**
+ * The route of imported sources, side by side: the points of each carry their provenance (source
+ * `firstId + k`, index in it) and the climb of the file; the ends of every track are control points
+ * and a track starts from the end of the previous one by a straight line.
+ */
+export function routeFromSources(sources: PlannerSource[], firstId: number): Route {
+  const points: RoutePoint[] = []
+  sources.forEach((source, k) => {
+    const start = points.length
+    source.coords.forEach((c, i) => {
+      const p = createPoint(c[0], c[1], c[2], true)
+      p.sourceId = firstId + k
+      p.sourceIdx = i
+      p.importAscend = source.cumul[i] * source.ascendScale
+      points.push(p)
+    })
+    points[start].manual = true
+    points[points.length - 1].manual = true
+    if (k > 0) points[start].direct = true
+  })
+  return computeRoute(points)
+}
+
+/**
+ * Adds imported tracks (`imported`, made by {@link routeFromSources}) at the end of `route`. The
+ * last point is joined to the first imported one the way the current mode says: a straight line,
+ * or a routed leg (one request) unless the two are under 5 m apart (none). Nothing of the route
+ * is touched before the router answered: a failure leaves it intact.
+ */
+export async function appendImport(
+  route: Route,
+  imported: Route,
+  settings: RouterSettings,
+  straight: boolean,
+  signal?: AbortSignal,
+  teamSlug?: string
+): Promise<Route> {
+  signal?.throwIfAborted()
+  if (route.points.length === 0) return imported
+  const last = route.points[route.points.length - 1]
+  const first = imported.points[0]
+  const leg = await router(last, first, settings, straight, signal, teamSlug)
+  const routed = isRouted(last, first, straight)
+  last.manual = true
+  // The router's own last point stands for the first imported one, which stays where the file has it.
+  const interior = leg.points.slice(0, -1)
+  if (routed && leg.points.length > 0) {
+    last.lng = leg.points[0].lng
+    last.lat = leg.points[0].lat
+    last.ele ??= leg.points[0].ele
+  }
+  first.direct = straight
+  first.legAscend = leg.ascend ?? (straight ? undefined : 0)
+  first.manual = true
+  const points = [...route.points, ...interior, ...imported.points]
+  return computeRoute(points, { start: last, end: first })
 }
 
 // The only place where points become `imported` from a file or an existing route (restoring a saved

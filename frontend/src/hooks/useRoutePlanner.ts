@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useLocalStorage } from '@mantine/hooks'
 import {
   add,
+  appendImport,
   computeRoute,
   createRoute,
   directStats as computeDirectStats,
@@ -13,17 +14,22 @@ import {
   legsGeojson,
   LegProperties,
   Point,
+  PlannerRefusedError,
   remove,
   restoreSourceSpan,
+  routeFromSources,
   Route,
   RoutePoint,
+  sourceFromImport,
   sourceOf,
   spanBounds,
   type PlannerSource,
 } from '@/lib/planner'
-import { restorePlannerState, serializePlannerState } from '@/lib/plannerState'
+import { MAX_PLANNER_SOURCES, restorePlannerState, serializePlannerState } from '@/lib/plannerState'
 import { RouterProfile } from '@/api/dto'
-import type { GeoPoint, PlannerState } from '@/api/dto'
+import type { GeoPoint, GpxImportResponse, PlannerState } from '@/api/dto'
+import { importGpx as importGpxRequest } from '@/api/endpoints/router/router'
+import { tRegister, type TranslationKey } from '@/lib/i18nUtils'
 import { plannerErrorMessage } from '@/lib/plannerErrors'
 import {
   isTunable,
@@ -56,7 +62,28 @@ export interface PlannerSnapshot {
   /** Null below two points or past the bounds of lib/plannerState.ts: send `points` instead. */
   plannerState: PlannerState | null
   points: GeoPoint[]
+  /**
+   * The file imported in place of the track, when the route is still exactly what it produced (any
+   * gesture, an undo included, drops it): the form then uploads the file itself.
+   */
+  file?: File
 }
+
+/** What the planner tells about a file it imported, for the view to report. */
+export interface GpxImportInfo {
+  /** Name of the file: its metadata, else its first track, else its file name. */
+  name: string
+  waypointCount: number
+  elevationFallback: boolean
+  mode: 'replace' | 'append'
+}
+
+/** Biggest file the server takes (GpxLimits.MAX_GPX_SIZE_BYTES). */
+export const MAX_IMPORT_BYTES = 10 * 1024 * 1024
+
+const IMPORT_TOO_BIG_KEY = tRegister('planner.import.tooBig')
+const IMPORT_FAILED_KEY = tRegister('planner.import.failed')
+const IMPORT_TOO_MANY_KEY = tRegister('planner.import.tooManyTracks')
 
 /** Everything the planner hook returns: the state a view of the planner is given. */
 export interface RoutePlannerState {
@@ -105,6 +132,11 @@ export interface RoutePlannerState {
   /** Removes what lies between two bounds frozen by the caller (a menu opened on an imported anchor). */
   removeAnchor: (start: RoutePoint, end: RoutePoint, direct?: boolean) => void
   clearRoute: () => void
+  /**
+   * Loads a GPX file: it replaces the route, or is added after its last point. Resolves with what
+   * was loaded, null when nothing was (refused, failed, cancelled, or another operation running).
+   */
+  importGpx: (file: File, mode: 'replace' | 'append') => Promise<GpxImportInfo | null>
   undo: () => void
   redo: () => void
 }
@@ -266,9 +298,16 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
   }, [cancelInFlight, routerProfile, setStoredTuning])
 
   // Generic executor for all route operations
+  // The file imported in place of the track and the routes that are exactly what it produced: the
+  // route itself, and the history copies taken of it, so an undo back to it gives the file again.
+  const importedRef = useRef<{ file: File; routes: Set<Route> } | null>(null)
+
   const executeRouteOperation = useCallback(
-    async (operation: (route: Route, signal: AbortSignal) => Promise<Route>) => {
-      if (inFlightRef.current) return // lock
+    async (
+      operation: (route: Route, signal: AbortSignal) => Promise<Route>,
+      fallbackKey?: TranslationKey
+    ): Promise<boolean> => {
+      if (inFlightRef.current) return false // lock
 
       const controller = new AbortController()
       inFlightRef.current = controller
@@ -283,13 +322,17 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
 
       try {
         const newRoute = await operation(routeRef.current, controller.signal)
-        if (controller.signal.aborted) return
+        if (controller.signal.aborted) return false
+        if (importedRef.current?.routes.has(routeRef.current))
+          importedRef.current.routes.add(snapshot)
         setHistory((prev) => [...prev, snapshot])
         setFuture([])
         setRoute(newRoute)
+        return true
       } catch (e) {
-        if (controller.signal.aborted) return
-        setError(plannerErrorMessage(e, t, teamSlug))
+        if (controller.signal.aborted) return false
+        setError(plannerErrorMessage(e, t, teamSlug, fallbackKey))
+        return false
       } finally {
         // Only the operation still in flight owns the loading state (a cancelled one already reset it)
         if (inFlightRef.current === controller) {
@@ -393,11 +436,73 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
       ...routeRef.current,
       points: routeRef.current.points.map((p) => ({ ...p })),
     }
+    if (importedRef.current?.routes.has(routeRef.current)) importedRef.current.routes.add(snapshot)
     setHistory((prev) => [...prev, snapshot])
     setFuture([])
     setRoute(computeRoute([]))
     setError(null)
   }, [cancelInFlight])
+
+  // The last answer of the import endpoint, by identity of the file: a retry (a join that failed)
+  // does not send the file again.
+  const importCacheRef = useRef<{ key: string; response: GpxImportResponse } | null>(null)
+  const importGpx = useCallback(
+    async (file: File, mode: 'replace' | 'append'): Promise<GpxImportInfo | null> => {
+      const outcome: {
+        info: GpxImportInfo | null
+        produced: { file: File; routes: Set<Route> } | null
+      } = { info: null, produced: null }
+      const applied = await executeRouteOperation(async (route, signal) => {
+        if (file.size > MAX_IMPORT_BYTES) throw new PlannerRefusedError(IMPORT_TOO_BIG_KEY)
+        const key = `${file.name}|${file.size}|${file.lastModified}`
+        let response = importCacheRef.current?.key === key ? importCacheRef.current.response : null
+        if (!response) {
+          response = await importGpxRequest(
+            { gpxFile: file, teamSlug },
+            { skipErrorToast: true },
+            signal
+          )
+          importCacheRef.current = { key, response }
+        }
+        signal.throwIfAborted()
+        const kept = mode === 'append' ? route.points : []
+        const referenced = new Set(kept.map((p) => p.sourceId).filter((id) => id !== undefined))
+        if (referenced.size + response.tracks.length > MAX_PLANNER_SOURCES) {
+          throw new PlannerRefusedError(IMPORT_TOO_MANY_KEY)
+        }
+        const sources = response.tracks.map(sourceFromImport)
+        const firstId = sourcesRef.current.length
+        const imported = routeFromSources(sources, firstId)
+        const next =
+          mode === 'append'
+            ? await appendImport(
+                route,
+                imported,
+                routerSettings,
+                directModeRef.current,
+                signal,
+                teamSlug
+              )
+            : imported
+        signal.throwIfAborted()
+        // Only an operation that went through leaves its sources behind
+        sourcesRef.current.push(...sources)
+        if (mode === 'replace' || route.points.length === 0)
+          outcome.produced = { file, routes: new Set([next]) }
+        outcome.info = {
+          name: response.name,
+          waypointCount: response.waypointCount,
+          elevationFallback: response.elevationFallback,
+          mode,
+        }
+        return next
+      }, IMPORT_FAILED_KEY)
+      if (!applied) return null
+      importedRef.current = outcome.produced
+      return outcome.info
+    },
+    [executeRouteOperation, routerSettings, teamSlug]
+  )
 
   const undo = useCallback(() => {
     // While a calculation runs, undo only abandons it: the previous gesture is already applied
@@ -430,6 +535,7 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
     return {
       dirty: historyLengthRef.current > 0,
       plannerState: serializePlannerState(current, sourcesRef.current, profileRef.current),
+      ...(importedRef.current?.routes.has(current) && { file: importedRef.current.file }),
       points:
         current.points.length < 2 ? [] : current.points.map((p) => ({ lng: p.lng, lat: p.lat })),
     }
@@ -468,6 +574,7 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
     removeControlPoint,
     removeAnchor,
     clearRoute,
+    importGpx,
     canUndo,
     canRedo,
     isDirty,

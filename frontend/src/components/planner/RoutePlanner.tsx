@@ -10,7 +10,13 @@ import {
   MarkerDragEvent,
   MapLayerTouchEvent,
 } from 'react-map-gl/maplibre'
-import { IconFlagFilled, IconMaximize, IconPlayerPlayFilled, IconTrash } from '@tabler/icons-react'
+import {
+  IconFileImport,
+  IconFlagFilled,
+  IconMaximize,
+  IconPlayerPlayFilled,
+  IconTrash,
+} from '@tabler/icons-react'
 import { ActionIcon, Box, Button, Group, Loader, Menu, Skeleton, Stack, Text } from '@mantine/core'
 import { useMediaMatch } from '@/hooks/useResponsive'
 import { PedalonsMap } from '../map/PedalonsMap'
@@ -59,6 +65,10 @@ interface RoutePlannerProps {
   active: boolean
   /** Given on a mouse, inline: adds the « Expand » button to the control column. */
   onExpand?: () => void
+  /** Bumped by the owner after an import: the map frames the whole route. */
+  fitRequest?: number
+  /** Given where the map holds the tool: adds the « Import a GPX file » button to the control column. */
+  onImport?: () => void
   initialTrack?: number[][] // [lng, lat, ele, dist][] from existing route
   teamLocation?: [number, number] // [lng, lat] from team geometry
   /** Index in `planner.route.points` of the point the elevation profile (not the map) is hovering; -1 for none. */
@@ -144,6 +154,8 @@ export function RoutePlanner({
   layout,
   active,
   onExpand,
+  onImport,
+  fitRequest = 0,
   initialTrack,
   teamLocation,
   hoveredIndex = -1,
@@ -189,8 +201,20 @@ export function RoutePlanner({
 
   // Calculate initial view state from track bounds, team location, or the server's default centre.
   // Null while none of the three is known yet — the map waits rather than opening somewhere wrong.
+  // The route as the map is built: a file imported while the editor was closed frames it too.
+  const routeRef = useRef(route)
+  useEffect(() => {
+    routeRef.current = route
+  })
   const initialViewState = useMemo(() => {
     if (!initialTrack || initialTrack.length === 0) {
+      const built = routeRef.current.points
+      if (built.length > 1) {
+        return {
+          bounds: calculateBounds(built.map((p) => [p.lng, p.lat])),
+          fitBoundsOptions: { padding: 40, maxZoom: 15 },
+        }
+      }
       if (teamLocation) {
         return { longitude: teamLocation[0], latitude: teamLocation[1], zoom: DEFAULT_ZOOM }
       }
@@ -205,6 +229,18 @@ export function RoutePlanner({
       fitBoundsOptions: { padding: 40, maxZoom: 15 },
     }
   }, [initialTrack, teamLocation, defaultView])
+
+  // An import frames the whole route, whatever the map was showing
+  useEffect(() => {
+    if (fitRequest === 0) return
+    const points = routeRef.current.points
+    if (points.length < 2) return
+    mapRef.current?.fitBounds(calculateBounds(points.map((p) => [p.lng, p.lat])), {
+      padding: 40,
+      maxZoom: 15,
+      duration: 0,
+    })
+  }, [fitRequest])
 
   // The map lives in a container that changes size when this view moves between the form and the
   // fullscreen dialog. MapLibre's own observer notices; this also covers the frame the container
@@ -1321,6 +1357,17 @@ export function RoutePlanner({
                 <DirectModeControl directMode={directMode} onToggle={setDirectMode} />
 
                 <HideTrackControl hidden={trackHidden} onToggle={toggleTrackHidden} />
+
+                {onImport && (
+                  <MapControlGroup>
+                    <MapControlButton
+                      label={t('planner.import')}
+                      icon={<IconFileImport size={20} />}
+                      onClick={onImport}
+                      disabled={isLoading}
+                    />
+                  </MapControlGroup>
+                )}
 
                 <PlannerHelpControl />
 

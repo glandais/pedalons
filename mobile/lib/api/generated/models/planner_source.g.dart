@@ -11,6 +11,7 @@ _PlannerSource _$PlannerSourceFromJson(Map<String, dynamic> json) =>
       line: json['line'] as String,
       ascendScale: (json['ascendScale'] as num).toDouble(),
       ele: json['ele'] as String?,
+      climb: json['climb'] as String?,
     );
 
 Map<String, dynamic> _$PlannerSourceToJson(_PlannerSource instance) =>
@@ -18,4 +19,5 @@ Map<String, dynamic> _$PlannerSourceToJson(_PlannerSource instance) =>
       'line': instance.line,
       'ascendScale': instance.ascendScale,
       'ele': instance.ele,
+      'climb': instance.climb,
     };

@@ -139,20 +139,73 @@ class PlannerStatesTest {
     // a source of one point
     assertInvalid(
         withSource(
-            ok, new PlannerSource(PolylineCodec.encode2(new double[][] {{4.8, 45.7}}), null, 1.0)));
+            ok,
+            new PlannerSource(
+                PolylineCodec.encode2(new double[][] {{4.8, 45.7}}), null, 1.0, null)));
     // ele of the wrong cardinality
     assertInvalid(
         withSource(
             ok,
-            new PlannerSource(good.line(), PolylineCodec.encode1(new double[] {1, 2, 3}), 1.0)));
+            new PlannerSource(
+                good.line(), PolylineCodec.encode1(new double[] {1, 2, 3}), 1.0, null)));
     // ascendScale 0, NaN, > 100
-    assertInvalid(withSource(ok, new PlannerSource(good.line(), good.ele(), 0)));
-    assertInvalid(withSource(ok, new PlannerSource(good.line(), good.ele(), Double.NaN)));
-    assertInvalid(withSource(ok, new PlannerSource(good.line(), good.ele(), 100.5)));
+    assertInvalid(withSource(ok, new PlannerSource(good.line(), good.ele(), 0, null)));
+    assertInvalid(withSource(ok, new PlannerSource(good.line(), good.ele(), Double.NaN, null)));
+    assertInvalid(withSource(ok, new PlannerSource(good.line(), good.ele(), 100.5, null)));
     // a truncated line
     assertInvalid(
         withSource(
-            ok, new PlannerSource(good.line().substring(0, good.line().length() - 1), null, 1.0)));
+            ok,
+            new PlannerSource(
+                good.line().substring(0, good.line().length() - 1), null, 1.0, null)));
+  }
+
+  @Test
+  void climbRefusals() {
+    PlannerState ok = example();
+    PlannerSource good = source();
+    int n = SOURCE_POINTS;
+    double[] rising = new double[n];
+    for (int i = 0; i < n; i++) {
+      rising[i] = i;
+    }
+    // absent climb is accepted (checked by every other test); a valid one too
+    states.validateAndDerive(
+        withSource(
+            ok, new PlannerSource(good.line(), good.ele(), 1.0, PolylineCodec.encode1(rising))));
+    // wrong cardinality
+    assertInvalid(
+        withSource(
+            ok,
+            new PlannerSource(
+                good.line(), good.ele(), 1.0, PolylineCodec.encode1(new double[] {0, 1, 2}))));
+    // a negative delta
+    double[] falling = rising.clone();
+    falling[3] = 0.5;
+    assertInvalid(
+        withSource(
+            ok, new PlannerSource(good.line(), good.ele(), 1.0, PolylineCodec.encode1(falling))));
+    // a negative value
+    double[] negative = rising.clone();
+    negative[0] = -1;
+    assertInvalid(
+        withSource(
+            ok, new PlannerSource(good.line(), good.ele(), 1.0, PolylineCodec.encode1(negative))));
+    // over 100 000 m
+    double[] huge = rising.clone();
+    huge[n - 1] = 100_000.1;
+    assertInvalid(
+        withSource(
+            ok, new PlannerSource(good.line(), good.ele(), 1.0, PolylineCodec.encode1(huge))));
+    // climb without ele
+    assertInvalid(
+        withSource(ok, new PlannerSource(good.line(), null, 1.0, PolylineCodec.encode1(rising))));
+    // climb counts in the character budget
+    assertInvalid(
+        withSource(
+            ok,
+            new PlannerSource(
+                good.line(), good.ele(), 1.0, "?".repeat(GpxLimits.MAX_PLANNER_STATE_CHARS + 1))));
   }
 
   @Test
@@ -249,7 +302,7 @@ class PlannerStatesTest {
     for (int i = 0; i < n; i++) {
       big[i] = new double[] {4.0 + (i % 1000) * 1e-4, 45.0 + (i / 1000) * 1e-4};
     }
-    PlannerSource source = new PlannerSource(PolylineCodec.encode2(big), null, 1.0);
+    PlannerSource source = new PlannerSource(PolylineCodec.encode2(big), null, 1.0, null);
     PlannerJunction first =
         new PlannerJunction(PlannerJunctionKind.CONTROL, big[0][0], big[0][1], null, 0, 0);
     PlannerJunction mid =

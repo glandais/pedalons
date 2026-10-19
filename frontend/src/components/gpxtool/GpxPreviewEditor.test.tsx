@@ -1,6 +1,6 @@
 import { useEffect, type Ref } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MantineProvider } from '@mantine/core'
 import type { PlannerSnapshot } from '@/hooks/useRoutePlanner'
 
@@ -108,5 +108,43 @@ describe('GpxPreviewEditor planner state (C4a)', () => {
     snapshotMock.mockReturnValue({ dirty: false, plannerState: STATE, points: POINTS })
     renderEditor({ initialPlannerState: STATE })
     expect(fieldProps.last?.initialState).toBe(STATE)
+  })
+})
+
+describe('GpxPreviewEditor import in the planner (C4b)', () => {
+  beforeEach(() => {
+    snapshotMock.mockReset()
+    notify.mockReset()
+  })
+  afterEach(cleanup)
+
+  it('an import left untouched is submitted as the file, without points nor state', async () => {
+    const file = new File(['<gpx/>'], 'sortie.gpx')
+    snapshotMock.mockReturnValue({ dirty: true, plannerState: STATE, points: POINTS, file })
+    const onSubmit = renderEditor({ create: true, initialTrack: undefined })
+    save()
+    await waitFor(() => expect(onSubmit).toHaveBeenCalled())
+    expect(onSubmit).toHaveBeenCalledWith('Ma sortie', undefined, file)
+  })
+
+  it('a modified import is submitted as the state', async () => {
+    snapshotMock.mockReturnValue({ dirty: true, plannerState: STATE, points: POINTS })
+    const onSubmit = renderEditor({ create: true, initialTrack: undefined })
+    save()
+    await waitFor(() => expect(onSubmit).toHaveBeenCalled())
+    expect(onSubmit.mock.calls[0][1]).toEqual({ points: undefined, plannerState: STATE })
+    expect(onSubmit.mock.calls[0][2]).toBeUndefined()
+  })
+
+  it('names the track after the file only when the name is empty', () => {
+    snapshotMock.mockReturnValue({ dirty: false, plannerState: STATE, points: POINTS })
+    renderEditor()
+    act(() => (fieldProps.last!.onImportName as (n: string) => void)('Du fichier'))
+    expect(screen.getByDisplayValue('Ma sortie')).toBeTruthy()
+    cleanup()
+
+    renderEditor({ initialName: '' })
+    act(() => (fieldProps.last!.onImportName as (n: string) => void)('Du fichier'))
+    expect(screen.getByDisplayValue('Du fichier')).toBeTruthy()
   })
 })

@@ -6,7 +6,9 @@ import { notifications } from '@mantine/notifications'
 import type { GeoPoint, PlannerState } from '@/api/dto'
 import {
   getListMyPreviewsQueryKey,
+  useCreatePreview,
   useCreatePreviewFromPoints,
+  useUpdatePreview,
 } from '@/api/endpoints/gpx-previews/gpx-previews'
 import { GpxPreviewEditor } from '@/components/gpxtool/GpxPreviewEditor'
 import { paths } from '@/config/paths'
@@ -22,11 +24,40 @@ export function CreateGpxPreviewPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const createMutation = useCreatePreviewFromPoints()
+  // A file imported in the planner and saved untouched goes through the upload, like any file
+  const createFromFileMutation = useCreatePreview()
+  const renameMutation = useUpdatePreview()
 
   const handleSubmit = async (
     name: string,
-    track?: { points?: GeoPoint[]; plannerState?: PlannerState }
+    track?: { points?: GeoPoint[]; plannerState?: PlannerState },
+    gpxFile?: File
   ) => {
+    if (gpxFile) {
+      const created = await createFromFileMutation.mutateAsync({ data: { gpxFile } })
+      // The upload names the preview after the file: the name typed in the form wins
+      // (the two calls are not atomic: if the rename fails the preview exists, so go to it
+      // rather than leave the form open for a submit that would create a second one)
+      let renamed = true
+      if (name !== created.name) {
+        try {
+          await renameMutation.mutateAsync({
+            previewId: created.id,
+            data: { preview: { name } },
+          })
+        } catch {
+          renamed = false
+        }
+      }
+      queryClient.invalidateQueries({ queryKey: getListMyPreviewsQueryKey() })
+      notifications.show(
+        renamed
+          ? { message: t('gpxTools.createFromScratch.created'), color: 'green' }
+          : { message: t('gpxTools.createFromScratch.renameFailed'), color: 'yellow' }
+      )
+      navigate(paths.gpxToolsView(created.id))
+      return
+    }
     if (!track?.plannerState && (!track?.points || track.points.length < 2)) return
 
     const preview = await createMutation.mutateAsync(
@@ -60,7 +91,9 @@ export function CreateGpxPreviewPage() {
         initialName=""
         onSubmit={handleSubmit}
         onCancel={() => navigate(paths.gpxTools())}
-        isPending={createMutation.isPending}
+        isPending={
+          createMutation.isPending || createFromFileMutation.isPending || renameMutation.isPending
+        }
       />
     </Stack>
   )

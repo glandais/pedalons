@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import fr.pedalons.api.AbstractResourceTest;
 import fr.pedalons.common.GeoPoint;
+import fr.pedalons.common.planner.PlannerSource;
 import fr.pedalons.common.planner.PlannerState;
 import fr.pedalons.domain.gpx.GpxPreview;
 import fr.pedalons.domain.route.PlannerStateDocument;
@@ -129,6 +130,31 @@ class GpxPreviewPlannerStateResourceTest extends AbstractResourceTest {
         .body("state.pieces.size()", equalTo(example().pieces().size()))
         .body("state.junctions.size()", equalTo(example().junctions().size()))
         .body("state.sources[0].line", equalTo(example().sources().getFirst().line()));
+  }
+
+  @Test
+  void aSourceClimb_isReadBackAsItWas() {
+    String id = createWithState(exampleWithClimb());
+
+    readState(id, USER1)
+        .statusCode(200)
+        .body("state.sources[0].climb", equalTo(exampleWithClimb().sources().getFirst().climb()));
+  }
+
+  @Test
+  void anInvalidSourceClimb_isRefused() {
+    PlannerState e = exampleWithClimb();
+    PlannerSource s = e.sources().getFirst();
+    PlannerState bad =
+        new PlannerState(
+            e.version(),
+            e.profile(),
+            List.of(new PlannerSource(s.line(), s.ele(), 1.0, "??")),
+            e.junctions(),
+            e.pieces());
+    fromPoints(USER1, new GpxPreviewFromPointsRequest("Bad climb", null, bad))
+        .statusCode(400)
+        .body("code", equalTo("PLANNER_STATE_INVALID"));
   }
 
   @Test

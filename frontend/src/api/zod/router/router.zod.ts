@@ -67,3 +67,57 @@ export const RouteResponse = zod.object({
   dist: zod.number().optional(),
   ascend: zod.number().optional(),
 })
+
+/**
+ * Processes a GPX file with the FAST elevations and returns its tracks as polylines, with the ascent accumulated up to each point. Nothing is stored and the routing provider is not called. Same rights as the route calculation: with teamSlug, the caller must be allowed to create routes in that team and the team must have the route planner enabled; without it, the domain's GPX planner must be enabled.
+ * @summary Load a GPX file into the route editor
+ */
+export const importGpxBodyTeamSlugMax = 250
+
+export const ImportGpxBody = zod.object({
+  gpxFile: zod.instanceof(Blob).optional(),
+  teamSlug: zod.string().max(importGpxBodyTeamSlugMax).optional(),
+})
+
+export const ImportGpxResponse = zod
+  .object({
+    name: zod
+      .string()
+      .describe('Name of the file: its metadata, else its first track, else its file name'),
+    tracks: zod
+      .array(
+        zod
+          .object({
+            line: zod
+              .string()
+              .describe(
+                'Polyline (precision 6, latitude then longitude) of the processed track, as PlannerSource.line'
+              ),
+            ele: zod
+              .string()
+              .optional()
+              .describe(
+                'One-dimension polyline (tenths of a metre), one value per point of line; absent when an elevation is not finite'
+              ),
+            climb: zod
+              .string()
+              .optional()
+              .describe(
+                'One-dimension polyline (tenths of a metre): the ascent accumulated up to each point of line (dead-band, non-decreasing, first 0, last = ascend); absent when ele is'
+              ),
+            dist: zod.number().describe('Length in metres'),
+            ascend: zod.number().describe('Reported ascent in metres'),
+          })
+          .describe('A track of an imported GPX file')
+      )
+      .describe('Tracks in the order of the file, 1 to 8'),
+    waypointCount: zod
+      .int()
+      .describe('Number of waypoints of the file, which the editor does not keep'),
+    elevationFallback: zod
+      .boolean()
+      .describe(
+        "True when the elevations of a track could not all be read from the elevation source and part of them are the file's own"
+      ),
+  })
+  .describe('A GPX file processed for the route editor')

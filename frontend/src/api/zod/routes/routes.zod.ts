@@ -1054,6 +1054,8 @@ export const createRouteBodyRoutePlannerStateSourcesItemLineMax = 2000000
 
 export const createRouteBodyRoutePlannerStateSourcesItemEleMax = 2000000
 
+export const createRouteBodyRoutePlannerStateSourcesItemClimbMax = 2000000
+
 export const createRouteBodyRoutePlannerStateSourcesMax = 8
 
 export const createRouteBodyRoutePlannerStateJunctionsMax = 2001
@@ -1388,6 +1390,13 @@ export const CreateRouteBody = zod.object({
                   .number()
                   .describe(
                     'Factor that recalibrates the raw climb of the source on a reference ascent (1 without reference); in ]0, 100]'
+                  ),
+                climb: zod
+                  .string()
+                  .max(createRouteBodyRoutePlannerStateSourcesItemClimbMax)
+                  .optional()
+                  .describe(
+                    'One-dimension polyline (tenths of a metre), one value per point of line: the ascent accumulated up to each point, as the server measured it (dead-band, non-decreasing, within [0, 100 000 m]). Absent: the client derives it from ele. Requires ele'
                   ),
               })
             )
@@ -2474,6 +2483,8 @@ export const updateRouteBodyRoutePlannerStateSourcesItemLineMax = 2000000
 
 export const updateRouteBodyRoutePlannerStateSourcesItemEleMax = 2000000
 
+export const updateRouteBodyRoutePlannerStateSourcesItemClimbMax = 2000000
+
 export const updateRouteBodyRoutePlannerStateSourcesMax = 8
 
 export const updateRouteBodyRoutePlannerStateJunctionsMax = 2001
@@ -2808,6 +2819,13 @@ export const UpdateRouteBody = zod.object({
                   .number()
                   .describe(
                     'Factor that recalibrates the raw climb of the source on a reference ascent (1 without reference); in ]0, 100]'
+                  ),
+                climb: zod
+                  .string()
+                  .max(updateRouteBodyRoutePlannerStateSourcesItemClimbMax)
+                  .optional()
+                  .describe(
+                    'One-dimension polyline (tenths of a metre), one value per point of line: the ascent accumulated up to each point, as the server measured it (dead-band, non-decreasing, within [0, 100 000 m]). Absent: the client derives it from ele. Requires ele'
                   ),
               })
             )
@@ -3658,6 +3676,8 @@ export const getRoutePlannerStateResponseStateSourcesItemLineMax = 2000000
 
 export const getRoutePlannerStateResponseStateSourcesItemEleMax = 2000000
 
+export const getRoutePlannerStateResponseStateSourcesItemClimbMax = 2000000
+
 export const getRoutePlannerStateResponseStateSourcesMax = 8
 
 export const getRoutePlannerStateResponseStateJunctionsMax = 2001
@@ -3692,6 +3712,13 @@ export const GetRoutePlannerStateResponse = zod
                 .number()
                 .describe(
                   'Factor that recalibrates the raw climb of the source on a reference ascent (1 without reference); in ]0, 100]'
+                ),
+              climb: zod
+                .string()
+                .max(getRoutePlannerStateResponseStateSourcesItemClimbMax)
+                .optional()
+                .describe(
+                  'One-dimension polyline (tenths of a metre), one value per point of line: the ascent accumulated up to each point, as the server measured it (dead-band, non-decreasing, within [0, 100 000 m]). Absent: the client derives it from ele. Requires ele'
                 ),
             })
           )

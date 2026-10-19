@@ -2,12 +2,12 @@
 
 Écrit le 17 octobre 2026, mis à jour le 19 octobre 2026. **État : lots 1 et 2 livrés le
 17 octobre 2026 (§5 et §6, A10 compris) ; dans le lot 3, B11, B12, B6, B1a (profil d'édition), B7 et B9 sont livrés (18 octobre) ;
-le lot 4 est entamé par C2 et C4a (livrés le 19 octobre) ; restent B1b, le reste du lot 3 (B2, mis de côté), C4b (trace source FAST à l'envoi d'un fichier) et le lot 4 (C1, C3, C5, C7 ; C6 non attribué).**
+le lot 4 est entamé par C2 et C4 (C4a et C4b, livrés le 19 octobre) ; restent B1b (ses restes), le reste du lot 3 (B2, mis de côté) et le lot 4 (C1, C3, C5, C7 ; C6 non attribué).**
 Ledger `WEB-100` (une seule
 entrée, qui pointe ici) : le suivi fin se fait **dans ce plan**, cases à cocher comprises, pas dans
 le ledger. Une tâche n'en sort vers `LEDGER_NEXT.md` que si elle quitte le périmètre du plan
 (backend partagé, autre client) ou si le plan est archivé avec des restes. **Les volets backend
-du lot 3 et du lot 4** (l'endpoint de recalage de B2, l'état d'édition de C4 ; C4a est livré, voir §8) **restent sous
+du lot 3 et du lot 4** (l'endpoint de recalage de B2, l'état d'édition de C4 ; C4a et C4b sont livrés, voir §8) **restent sous
 `WEB-100`**, comme A10 (D4, §10) : les versions de contrat et les migrations seront notées au
 passage dans `LEDGER_DONE.md`.
 
@@ -56,7 +56,7 @@ Quatre lots, chacun livrable seul :
 | **1. Robustesse** (livré) | Annulation et verrou pendant le calcul, `Ctrl+Z` hors des champs, tactile décidé par le pointeur, aide aux gestes, menus fiables, tests de `lib/planner.ts` | S à M (≈ 1 semaine) | — (volet backend A10 livré) |
 | **2. Disposition** (livré) | Plein écran d'édition, barre sous le pouce, cibles 44 px, un seul panneau ouvert, recherche d'adresse, cadrage `fitBounds` | M | 1 |
 | **3. Standard** | Profil altimétrique d'édition (B1, **B1a livré**, B1b à faire), inverser / aller-retour / retour au départ avec recalage (B2), ligne droite visible (B6, **livré**), clavier (B7, **livré**), défilement au bord (B9, **livré**), glisser une ancre au doigt (B11, **livré**), bornes indépendantes du zoom et suppression d'une ancre (B12, **livré**) | **L** | 1, 2 ; API pour B2 (endpoint de recalage) |
-| **4. Différenciation** | Éviter côtes / trafic (C2, **livré**), état d'édition conservé (C4 : **C4a livré**, C4b à faire), surface par point (C1), points de parcours (C3), popularité interne (C5), zones à éviter (C7) ; C6 non attribué | M à L | C4 : B6 et B12 ; C2 : aucun morceau du lot 3 ; API pour C1, C2, C4, C7 |
+| **4. Différenciation** | Éviter côtes / trafic (C2, **livré**), état d'édition conservé (C4 : **C4a et C4b livrés**), surface par point (C1), points de parcours (C3), popularité interne (C5), zones à éviter (C7) ; C6 non attribué | M à L | C4 : B6 et B12 ; C2 : aucun morceau du lot 3 ; API pour C1, C2, C4, C7 |
 
 Dans le lot 4, **C4 dépend de B6** (seul B6 crée l'information « ligne droite ») **et de B12**
 (la provenance des points) ; B6 et B12 ne dépendent pas de C4. Le lot 2 passe **avant** les fonctions : sans lui, chaque bouton du lot 3 serait à placer deux fois
@@ -438,10 +438,9 @@ servent), puis B6 (la ligne droite visible), puis B1 et B2.
           course du redimensionnement de la carte rend l'e2e du repli asynchrone (`expect.poll`) ;
           le test e2e « a user draws a route » peut échouer en `LOGIN_RATE_LIMITED` (429) en fin de
           longue série, il repasse seul.
-        - **Reste (B1b)** : trace source FAST à l'envoi d'un GPX et sa remise au planificateur ;
-          `sourceIdx` (C4, indispensable dès plusieurs imports) ; altitudes FAST d'un tracé rouvert
-          déjà en HD ; cumul dead-band par point côté serveur ; endpoint d'altitude FAST pour
-          échantillonner une ligne droite.
+        - **Reste (B1b)** : altitudes FAST d'un tracé rouvert déjà en HD ; endpoint d'altitude FAST
+          pour échantillonner une ligne droite. (La trace source FAST à l'envoi d'un GPX, `sourceIdx`
+          et le cumul dead-band par point côté serveur sont livrés par C4a et C4b.)
 - [ ] **B2. Inverser, aller-retour, retour au départ** (L, §8 n° 8) — trois opérations dans
       `lib/planner.ts`, passées par `executeRouteOperation` pour l'historique. Boutons dans la
       barre, raccourci dans le libellé. Dépend de A9 et de l'endpoint de recalage ci-dessous.
@@ -826,7 +825,7 @@ questions ouvertes viennent du §10 de
         FASTBIKE + `useRoads`, BIKE + `useHills` 0, 400 hors bornes sans appel Stadia, profils non
         vélo, clés Jackson) ; à lancer par le propriétaire.
       - **Écart** : pas de D+ affiché pour le réglage (le routeur ne le renvoie pas, voir ci-dessus).
-- [ ] **C4. Conserver l'état d'édition à l'enregistrement** (L, §8 n° 11, élargi le 18 octobre
+- [x] **C4. Conserver l'état d'édition à l'enregistrement** (L, §8 n° 11, élargi le 18 octobre
       2026) — aujourd'hui le client n'envoie qu'une liste de points (`fromPoints`,
       `GpxProcessingService`), que la chaîne GPX rééchantillonne et simplifie ; à la réouverture,
       seuls le départ et l'arrivée redeviennent des points de contrôle, et les points
@@ -999,10 +998,47 @@ questions ouvertes viennent du §10 de
         de la fiche. Un état de seuls morceaux importés vient du client : le serveur ne peut pas le
         distinguer d'un fichier qu'il a stocké, l'effet est celui d'un export puis d'un
         réimport du GPX (`API-127`, noté dans `GpxPreviewService.createRoute`).
-        **Reste (C4b).** La trace source **FAST à l'envoi d'un fichier avant enregistrement**
-        (endpoint de lecture sans enregistrement, ou aperçu implicite) : aujourd'hui un fichier
-        envoyé à la modification remplace le tracé sans que l'éditeur en ait la trace avant
-        l'enregistrement.
+      - [x] **C4b. Importer un fichier GPX dans l'éditeur** — **livré le 19 octobre 2026.**
+        **Fait.** *Backend* : `POST /api/router/import-gpx` (multipart `gpxFile`, `teamSlug`
+        facultatif, `operationId` `importGpx`), sans stockage ni appel Stadia ; `GpxImportService` :
+        droits (`PlannerAccess`, extrait de `RouterService`, comportement inchangé), puis taille,
+        puis lecture ; chaque piste passe par `GpxPipeline.processWithClimb` (FAST), qui partage
+        l'étape « chemin dense » avec `processReported` et renvoie le cumul de montée dead-band
+        de chaque point retenu (`climb[k] = cumulativeGain(dense)[indices[k]]`, dernier = D+).
+        `GpxImportResponse` / `GpxImportTrack` (polylines `line`, `ele`, `climb`, `dist`,
+        `ascend`) ; 8 pistes et 100 000 points au plus, sinon `PLANNER_IMPORT_TOO_LARGE`.
+        `PlannerSource.climb` facultatif (format de l'état toujours en version 1), validé par
+        `PlannerStates` (cardinal, croissant, bornes, budget de caractères, `climb` sans `ele`
+        refusé). *Frontend* : bouton « Importer un fichier GPX » (carte au desktop, en-tête
+        plein écran au doigt), choix Remplacer / Ajouter à la fin / Annuler, `sourceFromImport`,
+        `routeFromSources`, `appendImport` (raccord droit 0 appel, < 5 m 0 appel, sinon 1 appel),
+        `importGpx` dans `useRoutePlanner` (verrou, annulation, historique, réponse gardée pour
+        réessayer), `snapshot().file` pour un import intact (enregistré comme le fichier), nom
+        prérempli, notifications (altitudes de repli, waypoints perdus si le tracé change).
+        **Décisions du 19 octobre 2026** : option A (traitement sans stockage), cumul par point
+        dans vcyclist 6.10.0, toujours FAST, GPX multi-pistes = une source par piste reliées par
+        des lignes droites (8 au plus, au-delà l'outil Fusionner), pas de limite de débit propre
+        (`SEC-28` au proxy), droits identiques au routeur. **Contrat `11.11.0`**, pas de migration.
+        **vcyclist `6.10.0`** (`ElevationGain.cumulativeGain`,
+        `PathSimplifier.simplifyWithIndices`, publiés le 19 octobre 2026). **Correctif préalable** :
+        `@JsonIgnoreProperties(ignoreUnknown = true)` sur l'état (commit `9e437bd5`), déployé en
+        staging et en production avant C4b.
+        **Tests** : backend `GpxPipelineTest` (dont un profil qui monte vraiment),
+        `RouterImportResourceTest`, `PlannerStatesTest`, `RoutePlannerStateResourceTest`,
+        `GpxPreviewPlannerStateResourceTest`, `GpxLimitsResourceTest`, `RouterResourceTest`,
+        `ArchitectureTest` ; frontend `plannerImport.test.ts`, `useRoutePlannerImport.test.tsx`,
+        `plannerState.test.ts`, `RoutePlannerField.test.tsx`, `RouteEditor.test.tsx`,
+        `GpxPreviewEditor.test.tsx` ; e2e `gpx-planner` (C4b, dont la réouverture d'un import
+        enregistré et la suppression entre raccords à 0 requête).
+        **Écarts / décisions de revue.** *É1* : après un import, un geste puis un annuler, la route
+        redevient l'import intact et `snapshot().file` rend le fichier (les copies d'historique
+        d'un import sont reconnues). *É2* : enregistrer un import intact depuis les outils GPX
+        passe par deux appels (envoi puis renommage, l'envoi n'accepte pas de nom) ; si le
+        renommage échoue, on va à l'aperçu créé avec un avertissement plutôt que de laisser le
+        formulaire rouvert. *É3* : le nom renvoyé perd ses caractères de contrôle et n'est pas
+        coupé au milieu d'une paire de substituts ; `teamSlug` du multipart borné à 250.
+        *É4* : le plafond de 100 000 points est contrôlé après le pipeline (risque accepté : coût
+        borné par 4 000 km et 10 Mo, limite de débit au proxy, `SEC-28`).
 - [ ] **C1. Surface par point** (L, §8 n° 13) — **à concevoir avant de commencer.**
       `ElevationChart` colore déjà par segment, un second mode suffit ; sur la carte, même mécanique
       de couches que B6. Côté API, `trace_attributes` est facturé à part chez Stadia : l'appeler
@@ -1113,13 +1149,20 @@ questions ouvertes viennent du §10 de
 - **C4a (19 octobre 2026).** C4 est découpé : C4a maintenant (enregistrer et relire l'état :
   morceaux, points de contrôle, raccords, `sourceIdx` et trace source = le tracé déjà enregistré pour
   un parcours rouvert sans état, suppression à 0 requête, copie de l'état à la promotion), C4b plus
-  tard (trace source FAST à l'envoi d'un fichier). Propositions backend **validées telles quelles** :
+  tard (trace source FAST à l'envoi d'un fichier ; livré, voir C4b). Propositions backend **validées telles quelles** :
   `GET …/planner-state` séparé et réservé à l'édition ; état écrit avec le tracé (`RouteRequest`,
   `GpxPreviewFromPointsRequest`, `GpxPreviewUpdateRequest`), le serveur dérive le tracé ; points +
   état = 400 `PLANNER_STATE_INVALID` ; `V75` additive, `planner_state jsonb` sur `gpx_tracks` et
   `gpx_previews` ; jeton `fileId` du `ROUTE_ORIGINAL_GPX` (parcours) ou empreinte du tracé 2D
   (aperçu) ; `drawn` faux pour un état de seuls morceaux importés ; contrat `11.10.0`. **L'état d'un
   aperçu n'est lisible que par son créateur.**
+- **C4b (19 octobre 2026).** Option A : endpoint de traitement sans stockage ; cumul par point
+  dans vcyclist 6.10.0 ; contrat `11.11.0` (`POST /api/router/import-gpx`, `PlannerSource.climb`,
+  `PLANNER_IMPORT_TOO_LARGE`), pas de migration ; bouton « Importer un fichier GPX » avec choix
+  Remplacer / Ajouter à la fin ; import intact enregistré comme le fichier ; multi-pistes reliées en
+  lignes droites, 8 au plus ; raccord d'un ajout qui échoue = opération entière en échec ; pas de
+  limite de débit propre (`SEC-28`) ; droits du routeur ; au doigt, bouton dans l'en-tête plein
+  écran en attendant le menu « Plus » (D8).
 - **D4.** Les volets backend de B2 (l'endpoint de recalage) et de C4 **restent sous `WEB-100`**,
   comme A10. Les versions de contrat et les migrations seront notées au passage dans
   `LEDGER_DONE.md`.

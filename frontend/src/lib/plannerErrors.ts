@@ -14,6 +14,13 @@ const PLANNER_ERROR_KEYS: Partial<Record<ErrorCode, TranslationKey>> = {
   [ErrorCode.FORBIDDEN]: tRegister('planner.error.forbidden'),
   [ErrorCode.NOT_FOUND]: tRegister('planner.error.forbidden'),
   [ErrorCode.TEAM_NOT_FOUND]: tRegister('planner.error.forbidden'),
+  // Refusals of a file sent to the editor's import (the API's own wording).
+  [ErrorCode.FILE_REQUIRED]: tRegister('errors.api.FILE_REQUIRED'),
+  [ErrorCode.FILE_TOO_LARGE]: tRegister('errors.api.FILE_TOO_LARGE'),
+  [ErrorCode.GPX_EMPTY]: tRegister('errors.api.GPX_EMPTY'),
+  [ErrorCode.GPX_FAILURE]: tRegister('errors.api.GPX_FAILURE'),
+  [ErrorCode.GPX_TOO_LONG]: tRegister('errors.api.GPX_TOO_LONG'),
+  [ErrorCode.PLANNER_IMPORT_TOO_LARGE]: tRegister('errors.api.PLANNER_IMPORT_TOO_LARGE'),
 }
 
 /** The straight-line gesture, spelled for the platform (the same as the help panel's). */
@@ -28,8 +35,14 @@ export function directShortcut(t: TFunction): string {
 /**
  * The message shown under the planner for a failed routing call. `teamSlug` tells whose flag
  * refused a ROUTE_PLANNER_DISABLED: the team's with one, the site's (GPX tools) without.
+ * `fallbackKey` words a failure with no message of its own (default: the routing one).
  */
-export function plannerErrorMessage(error: unknown, t: TFunction, teamSlug?: string): string {
+export function plannerErrorMessage(
+  error: unknown,
+  t: TFunction,
+  teamSlug?: string,
+  fallbackKey: TranslationKey = 'planner.error.routing'
+): string {
   if (error instanceof PlannerRefusedError) return t(error.messageKey)
   const code = apiErrorCode(error)
   if (code === ErrorCode.ROUTE_PLANNER_DISABLED)
@@ -37,5 +50,5 @@ export function plannerErrorMessage(error: unknown, t: TFunction, teamSlug?: str
   if (code === ErrorCode.ROUTING_NO_ROUTE)
     return t('planner.error.noRoute', { shortcut: directShortcut(t) })
   const key = code ? PLANNER_ERROR_KEYS[code] : undefined
-  return key ? t(key) : t('planner.error.routing')
+  return key ? t(key) : t(fallbackKey)
 }

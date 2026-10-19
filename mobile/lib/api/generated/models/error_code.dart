@@ -72,6 +72,8 @@ enum ErrorCode {
   routePlannerDisabled('ROUTE_PLANNER_DISABLED'),
   @JsonValue('PLANNER_STATE_INVALID')
   plannerStateInvalid('PLANNER_STATE_INVALID'),
+  @JsonValue('PLANNER_IMPORT_TOO_LARGE')
+  plannerImportTooLarge('PLANNER_IMPORT_TOO_LARGE'),
   @JsonValue('ROUTING_QUOTA_EXCEEDED')
   routingQuotaExceeded('ROUTING_QUOTA_EXCEEDED'),
   @JsonValue('ROUTING_SEGMENT_TOO_LONG')

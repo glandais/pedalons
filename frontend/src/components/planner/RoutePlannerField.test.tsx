@@ -14,6 +14,12 @@ const hookMounts = vi.fn()
 // One state object for the whole file, as the real hook returns one per component instance.
 const hookOptions = vi.hoisted(() => ({ last: undefined as unknown }))
 const snapshotMock = vi.hoisted(() => vi.fn())
+const importGpxMock = vi.hoisted(() => vi.fn())
+const notificationShow = vi.hoisted(() => vi.fn())
+
+vi.mock('@mantine/notifications', () => ({
+  notifications: { show: notificationShow, hide: vi.fn() },
+}))
 
 const plannerState = vi.hoisted(() => ({
   snapshot: () => snapshotMock(),
@@ -29,6 +35,7 @@ const plannerState = vi.hoisted(() => ({
   setRouterTuning: () => {},
   resetRouterTuning: () => {},
   clearRoute: () => {},
+  importGpx: (file: File, mode: string) => importGpxMock(file, mode),
   canUndo: false,
   canRedo: false,
   directStats: { total: 0, longest: 0, count: 0 },
@@ -64,6 +71,7 @@ vi.mock('./RoutePlanner', () => ({
     layout,
     active,
     onExpand,
+    onImport,
     hoveredIndex,
     onHoverIndex,
   }: {
@@ -71,6 +79,7 @@ vi.mock('./RoutePlanner', () => ({
     layout: string
     active: boolean
     onExpand?: () => void
+    onImport?: () => void
     hoveredIndex?: number
     onHoverIndex?: (index: number) => void
   }) => {
@@ -90,6 +99,7 @@ vi.mock('./RoutePlanner', () => ({
         <button onClick={() => onHoverIndex?.(3)}>map hover</button>
         <button onClick={() => setTaps((n) => n + 1)}>tap {taps}</button>
         {onExpand && <button onClick={onExpand}>expand</button>}
+        {onImport && <button onClick={onImport}>map import</button>}
       </div>
     )
   },
@@ -145,6 +155,9 @@ describe('RoutePlannerField', () => {
     seenRoutes.length = 0
     plannerState.routeGeoJson = null
     plannerState.directStats = { total: 0, longest: 0, count: 0 }
+    plannerState.route = { points: [], dist: 0, ascend: 0 }
+    importGpxMock.mockReset()
+    notificationShow.mockClear()
     localStorage.clear()
   })
   afterEach(() => {
@@ -198,6 +211,102 @@ describe('RoutePlannerField', () => {
     plannerState.directStats = { total: 400, longest: 400, count: 1 }
     renderField()
     expect(screen.getByText('planner.directWarning')).toBeTruthy()
+  })
+
+  describe('GPX import', () => {
+    const gpx = () => new File(['<gpx/>'], 'sortie.gpx', { type: 'application/gpx+xml' })
+    const info = (over = {}) => ({
+      name: 'Boucle',
+      waypointCount: 0,
+      elevationFallback: false,
+      mode: 'replace',
+      ...over,
+    })
+    function choose(file: File) {
+      fireEvent.change(screen.getByTestId('planner-import-input'), { target: { files: [file] } })
+    }
+    function routeOfTwoPoints() {
+      plannerState.route = { points: [{}, {}], dist: 1, ascend: 0 } as never
+    }
+
+    beforeEach(() => setCoarse(false))
+
+    it('gives the map a button that opens the file picker', () => {
+      renderField()
+      const input = screen.getByTestId('planner-import-input') as HTMLInputElement
+      const click = vi.spyOn(input, 'click')
+      fireEvent.click(screen.getByText('map import'))
+      expect(click).toHaveBeenCalledTimes(1)
+    })
+
+    it('replaces directly, without a question, when there is no route to lose', async () => {
+      importGpxMock.mockResolvedValue(info())
+      const onImportName = vi.fn()
+      renderField({ onImportName })
+      const file = gpx()
+      choose(file)
+      expect(screen.queryByRole('dialog')).toBeNull()
+      expect(importGpxMock).toHaveBeenCalledWith(file, 'replace')
+      await waitFor(() => expect(onImportName).toHaveBeenCalledWith('Boucle'))
+    })
+
+    it.each([
+      ['planner.import.replace', 'replace'],
+      ['planner.import.append', 'append'],
+    ])('asks what to do with a route of two points: %s', async (label, mode) => {
+      importGpxMock.mockResolvedValue(info({ mode }))
+      routeOfTwoPoints()
+      renderField()
+      const file = gpx()
+      choose(file)
+      expect(importGpxMock).not.toHaveBeenCalled()
+      await screen.findByRole('dialog')
+      fireEvent.click(screen.getByRole('button', { name: label }))
+      expect(importGpxMock).toHaveBeenCalledWith(file, mode)
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    })
+
+    it('imports nothing on cancel', async () => {
+      routeOfTwoPoints()
+      renderField()
+      choose(gpx())
+      await screen.findByRole('dialog')
+      fireEvent.click(screen.getByRole('button', { name: 'actions.cancelAction' }))
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+      expect(importGpxMock).not.toHaveBeenCalled()
+    })
+
+    it('reports the waypoints and the elevation fallback, and no name when nothing was loaded', async () => {
+      importGpxMock.mockResolvedValueOnce(info({ waypointCount: 2, elevationFallback: true }))
+      const onImportName = vi.fn()
+      renderField({ onImportName })
+      choose(gpx())
+      await waitFor(() => expect(notificationShow).toHaveBeenCalledTimes(2))
+      const messages = notificationShow.mock.calls.map((c) => c[0].message)
+      expect(messages).toContain('planner.import.elevationFallback')
+      expect(messages).toContain('planner.import.waypoints')
+      cleanup()
+      notificationShow.mockClear()
+
+      importGpxMock.mockResolvedValueOnce(null)
+      const other = vi.fn()
+      renderField({ onImportName: other })
+      choose(gpx())
+      await waitFor(() => expect(importGpxMock).toHaveBeenCalledTimes(2))
+      expect(other).not.toHaveBeenCalled()
+      expect(notificationShow).not.toHaveBeenCalled()
+    })
+
+    it('puts the button in the fullscreen header on a finger', async () => {
+      setCoarse(true)
+      renderField()
+      fireEvent.click(screen.getByRole('button', { name: 'planner.draw' }))
+      await screen.findByRole('dialog')
+      const input = screen.getByTestId('planner-import-input') as HTMLInputElement
+      const click = vi.spyOn(input, 'click')
+      fireEvent.click(screen.getByRole('button', { name: 'planner.import' }))
+      expect(click).toHaveBeenCalledTimes(1)
+    })
   })
 
   describe('with a mouse', () => {

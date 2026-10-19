@@ -19,7 +19,8 @@ mixin _$PlannerSource {
 /// Polyline (precision 6, latitude then longitude) of the source track
  String get line;/// Factor that recalibrates the raw climb of the source on a reference ascent (1 without reference); in ]0, 100]
  double get ascendScale;/// One-dimension polyline (tenths of a metre), one value per point of line; absent: no elevation
- String? get ele;
+ String? get ele;/// One-dimension polyline (tenths of a metre), one value per point of line: the ascent accumulated up to each point, as the server measured it (dead-band, non-decreasing, within [0, 100 000 m]). Absent: the client derives it from ele. Requires ele
+ String? get climb;
 /// Create a copy of PlannerSource
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -33,20 +34,20 @@ $PlannerSourceCopyWith<PlannerSource> get copyWith => _$PlannerSourceCopyWithImp
 @override
 bool operator ==(Object other) {
   final _this = this as PlannerSource;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PlannerSource&&(identical(other.line, _this.line) || other.line == _this.line)&&(identical(other.ascendScale, _this.ascendScale) || other.ascendScale == _this.ascendScale)&&(identical(other.ele, _this.ele) || other.ele == _this.ele));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PlannerSource&&(identical(other.line, _this.line) || other.line == _this.line)&&(identical(other.ascendScale, _this.ascendScale) || other.ascendScale == _this.ascendScale)&&(identical(other.ele, _this.ele) || other.ele == _this.ele)&&(identical(other.climb, _this.climb) || other.climb == _this.climb));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as PlannerSource;
-  return Object.hash(runtimeType,_this.line,_this.ascendScale,_this.ele);
+  return Object.hash(runtimeType,_this.line,_this.ascendScale,_this.ele,_this.climb);
 }
 
 @override
 String toString() {
   final _this = this as PlannerSource;
-  return 'PlannerSource(line: ${_this.line}, ascendScale: ${_this.ascendScale}, ele: ${_this.ele})';
+  return 'PlannerSource(line: ${_this.line}, ascendScale: ${_this.ascendScale}, ele: ${_this.ele}, climb: ${_this.climb})';
 }
 
 
@@ -57,7 +58,7 @@ abstract mixin class $PlannerSourceCopyWith<$Res>  {
   factory $PlannerSourceCopyWith(PlannerSource value, $Res Function(PlannerSource) _then) = _$PlannerSourceCopyWithImpl;
 @useResult
 $Res call({
- String line, double ascendScale, String? ele
+ String line, double ascendScale, String? ele, String? climb
 });
 
 
@@ -74,11 +75,12 @@ class _$PlannerSourceCopyWithImpl<$Res>
 
 /// Create a copy of PlannerSource
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? line = null,Object? ascendScale = null,Object? ele = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? line = null,Object? ascendScale = null,Object? ele = freezed,Object? climb = freezed,}) {
   return _then(PlannerSource(
 line: null == line ? _self.line : line // ignore: cast_nullable_to_non_nullable
 as String,ascendScale: null == ascendScale ? _self.ascendScale : ascendScale // ignore: cast_nullable_to_non_nullable
 as double,ele: freezed == ele ? _self.ele : ele // ignore: cast_nullable_to_non_nullable
+as String?,climb: freezed == climb ? _self.climb : climb // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
@@ -164,10 +166,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String line,  double ascendScale,  String? ele)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String line,  double ascendScale,  String? ele,  String? climb)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _PlannerSource() when $default != null:
-return $default(_that.line,_that.ascendScale,_that.ele);case _:
+return $default(_that.line,_that.ascendScale,_that.ele,_that.climb);case _:
   return orElse();
 
 }
@@ -185,10 +187,10 @@ return $default(_that.line,_that.ascendScale,_that.ele);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String line,  double ascendScale,  String? ele)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String line,  double ascendScale,  String? ele,  String? climb)  $default,) {final _that = this;
 switch (_that) {
 case _PlannerSource():
-return $default(_that.line,_that.ascendScale,_that.ele);case _:
+return $default(_that.line,_that.ascendScale,_that.ele,_that.climb);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -205,10 +207,10 @@ return $default(_that.line,_that.ascendScale,_that.ele);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String line,  double ascendScale,  String? ele)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String line,  double ascendScale,  String? ele,  String? climb)?  $default,) {final _that = this;
 switch (_that) {
 case _PlannerSource() when $default != null:
-return $default(_that.line,_that.ascendScale,_that.ele);case _:
+return $default(_that.line,_that.ascendScale,_that.ele,_that.climb);case _:
   return null;
 
 }
@@ -220,7 +222,7 @@ return $default(_that.line,_that.ascendScale,_that.ele);case _:
 @JsonSerializable()
 
 class _PlannerSource implements PlannerSource {
-  const _PlannerSource({required this.line, required this.ascendScale, this.ele});
+  const _PlannerSource({required this.line, required this.ascendScale, this.ele, this.climb});
   factory _PlannerSource.fromJson(Map<String, dynamic> json) => _$PlannerSourceFromJson(json);
 
 /// Polyline (precision 6, latitude then longitude) of the source track
@@ -229,6 +231,8 @@ class _PlannerSource implements PlannerSource {
 @override final  double ascendScale;
 /// One-dimension polyline (tenths of a metre), one value per point of line; absent: no elevation
 @override final  String? ele;
+/// One-dimension polyline (tenths of a metre), one value per point of line: the ascent accumulated up to each point, as the server measured it (dead-band, non-decreasing, within [0, 100 000 m]). Absent: the client derives it from ele. Requires ele
+@override final  String? climb;
 
 /// Create a copy of PlannerSource
 /// with the given fields replaced by the non-null parameter values.
@@ -243,18 +247,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PlannerSource&&(identical(other.line, line) || other.line == line)&&(identical(other.ascendScale, ascendScale) || other.ascendScale == ascendScale)&&(identical(other.ele, ele) || other.ele == ele));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PlannerSource&&(identical(other.line, line) || other.line == line)&&(identical(other.ascendScale, ascendScale) || other.ascendScale == ascendScale)&&(identical(other.ele, ele) || other.ele == ele)&&(identical(other.climb, climb) || other.climb == climb));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,line,ascendScale,ele);
+    return Object.hash(runtimeType,line,ascendScale,ele,climb);
 }
 
 @override
 String toString() {
-    return 'PlannerSource(line: $line, ascendScale: $ascendScale, ele: $ele)';
+    return 'PlannerSource(line: $line, ascendScale: $ascendScale, ele: $ele, climb: $climb)';
 }
 
 
@@ -265,7 +269,7 @@ abstract mixin class _$PlannerSourceCopyWith<$Res> implements $PlannerSourceCopy
   factory _$PlannerSourceCopyWith(_PlannerSource value, $Res Function(_PlannerSource) _then) = __$PlannerSourceCopyWithImpl;
 @override @useResult
 $Res call({
- String line, double ascendScale, String? ele
+ String line, double ascendScale, String? ele, String? climb
 });
 
 
@@ -282,11 +286,12 @@ class __$PlannerSourceCopyWithImpl<$Res>
 
 /// Create a copy of PlannerSource
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? line = null,Object? ascendScale = null,Object? ele = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? line = null,Object? ascendScale = null,Object? ele = freezed,Object? climb = freezed,}) {
   return _then(_PlannerSource(
 line: null == line ? _self.line : line // ignore: cast_nullable_to_non_nullable
 as String,ascendScale: null == ascendScale ? _self.ascendScale : ascendScale // ignore: cast_nullable_to_non_nullable
 as double,ele: freezed == ele ? _self.ele : ele // ignore: cast_nullable_to_non_nullable
+as String?,climb: freezed == climb ? _self.climb : climb // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
