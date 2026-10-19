@@ -223,14 +223,20 @@ function TuningSlider({ name, words, value, onCommit }: TuningSliderProps) {
           onCommit(v)
         }}
         label={(v) => words[Math.round(v * 4)]}
-        marks={STEPS.map((v) => ({
-          value: v,
-          label: v === 0 ? words[0] : v === 1 ? words[4] : undefined,
-        }))}
+        marks={STEPS.map((v) => ({ value: v }))}
         thumbLabel={name}
         thumbValueText={(v) => words[Math.round(v * 4)]}
-        mb="md"
       />
+      {/* The two ends under the slider, aligned on its edges: as mark labels Mantine centres them
+          on the marks, so they overflowed the narrow panel and were cut */}
+      <Group justify="space-between" mt={6} wrap="nowrap" aria-hidden>
+        <Text size="xs" c="dimmed">
+          {words[0]}
+        </Text>
+        <Text size="xs" c="dimmed" ta="right">
+          {words[4]}
+        </Text>
+      </Group>
     </div>
   )
 }
