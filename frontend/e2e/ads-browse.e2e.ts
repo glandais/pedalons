@@ -68,7 +68,10 @@ test.describe('ad detail', () => {
     expect(order).toEqual(images.map((image) => image.id))
     const shows = async (index: number) => {
       await expect(mainFrame).toHaveAccessibleName(`Ouvrir la photo ${index + 1} sur 3`)
-      await expect(mainImage).toHaveAttribute('src', new RegExp(`/${order[index]}/\\d+$`))
+      await expect(mainImage).toHaveAttribute(
+        'src',
+        new RegExp(`/${order[index]}/\\d+(\\?v=\\w+)?$`)
+      )
       await expect(thumbnails.nth(index)).toHaveAttribute('aria-current', 'true')
     }
 
@@ -92,12 +95,14 @@ test.describe('ad detail', () => {
     await shows(2)
 
     // Full screen: the picture on display, at the 1920 variant, actually served.
-    const served = page.waitForResponse((response) => response.url().endsWith(`/${order[2]}/1920`))
+    const served = page.waitForResponse((response) =>
+      new URL(response.url()).pathname.endsWith(`/${order[2]}/1920`)
+    )
     await mainFrame.click()
     const dialog = page.getByRole('dialog', { name: "Photos de l'annonce" })
     await expect(dialog).toBeVisible()
     const fullImage = dialog.getByRole('img', { name: ad.name })
-    await expect(fullImage).toHaveAttribute('src', new RegExp(`/${order[2]}/1920$`))
+    await expect(fullImage).toHaveAttribute('src', new RegExp(`/${order[2]}/1920(\\?v=\\w+)?$`))
     expect((await served).status()).toBe(200)
     await expect
       .poll(() => fullImage.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth))

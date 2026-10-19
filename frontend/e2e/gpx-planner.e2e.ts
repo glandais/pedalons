@@ -365,8 +365,9 @@ test.describe('the planner gestures, with a simulated router', () => {
     routerRequests.length = 0
 
     // Ctrl and Alt both draw a straight line (Alt for macOS, where Ctrl+click is a right click): a
-    // point is added, nothing is asked of the router.
-    await clickMap(130, 60, ['Control'])
+    // point is added, nothing is asked of the router. Chromium on a macOS host turns Ctrl+click
+    // into a right click whatever user agent the project emulates: a run on a Mac uses Alt there.
+    await clickMap(130, 60, [process.platform === 'darwin' ? 'Alt' : 'Control'])
     await expect(points(4)).toBeVisible()
     await settled()
     await clickMap(150, -60, ['Alt'])
