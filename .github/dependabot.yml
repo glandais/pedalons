@@ -14,6 +14,12 @@ updates:
     commit-message:
       prefix: "deps(maven)"
       include: "scope"
+    ignore:
+      # Spotless calls JavaFormatterOptions.Style.valueOf, gone in 1.37.0 (Style became a record):
+      # every file fails with InvocationTargetException. Fixed upstream (diffplug/spotless#3126,
+      # google/google-java-format a51e46a), not yet released — drop this once 1.37.1 is out.
+      - dependency-name: "com.google.googlejavaformat:google-java-format"
+        versions: ["1.37.0"]
     groups:
       minor-and-patch:
         update-types:
