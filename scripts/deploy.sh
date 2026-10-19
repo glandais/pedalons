@@ -230,7 +230,9 @@ rollout_state() {
   state="${status%% *}"
   # A status unchanged since before the deploy is a previous update's: this deploy either started
   # none (same spec, or a service just created) or has not started it yet — the tasks decide.
-  if [[ "$status" != "${before[$service]}" ]]; then
+  # So does an empty one: every spec write clears it, and it stays empty when no rolling update
+  # follows (a write that leaves the task template as it is).
+  if [[ -n "$status" && "$status" != "${before[$service]}" ]]; then
     case "$state" in
       completed) ;;
       rollback_* | paused) echo "failed: update $state" && return ;;
