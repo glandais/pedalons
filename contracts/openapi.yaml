@@ -3997,6 +3997,14 @@ components:
           type: integer
           format: int32
           description: "IMPORTED: index in the source of the last junction"
+        unpaved:
+          type: array
+          items:
+            $ref: "#/components/schemas/UnpavedSpan"
+          description: "ROUTED: runs of unpaved edges of the piece, half-open, ascending\
+            \ and disjoint; edge 0 joins the first junction to the first interior\
+            \ point, the last edge ends at the last junction. Absent: surface unknown"
+          maxItems: 50000
     PlannerPieceMode:
       type: string
       enum:
@@ -5827,6 +5835,14 @@ components:
         ascend:
           type: number
           format: double
+        unpaved:
+          type: array
+          items:
+            $ref: "#/components/schemas/UnpavedSpan"
+          description: "Runs of unpaved edges of route (compacted surface or worse,\
+            \ from the router's own maneuvers), half-open, ascending and disjoint;\
+            \ edge i joins route points i and i + 1. Absent when the router gave no\
+            \ surface; empty when all paved"
     RoutesBulkResponse:
       description: "Detail of several routes fetched at once, plus their combined\
         \ extent"
@@ -7539,6 +7555,22 @@ components:
       enum:
       - METRIC
       - IMPERIAL
+    UnpavedSpan:
+      type: object
+      description: "Half-open run of unpaved edges [from, to) of a line; edge i joins\
+        \ points i and i + 1"
+      required:
+      - from
+      - to
+      properties:
+        from:
+          type: integer
+          format: int32
+          minimum: 0
+        to:
+          type: integer
+          format: int32
+          minimum: 1
     UnreadCountDto:
       description: Number of unread notifications — the badge on the bell
       type: object
@@ -20099,7 +20131,7 @@ paths:
                 $ref: "#/components/schemas/VersionDto"
 info:
   title: Pedalons API
-  version: 11.12.0
+  version: 11.13.0
   description: API for Pedalons Cycling Team Management Platform
 servers:
 - url: http://localhost:8080

@@ -366,6 +366,9 @@ export function RoutePlannerField({
                 mappable={mappable}
                 route={route}
                 hoveredIndex={hoveredIndex}
+                colorBy={planner.colorBy}
+                onColorByChange={planner.setColorBy}
+                surfaceStats={planner.surfaceStats}
                 onHoverIndex={handleHoverIndex}
                 height={STRIP_HEIGHT}
               />
@@ -506,6 +509,9 @@ export function RoutePlannerField({
                   mappable={mappable}
                   route={route}
                   hoveredIndex={hoveredIndex}
+                  colorBy={planner.colorBy}
+                  onColorByChange={planner.setColorBy}
+                  surfaceStats={planner.surfaceStats}
                   onHoverIndex={handleHoverIndex}
                   height={STRIP_HEIGHT}
                 />
@@ -537,6 +543,9 @@ export function RoutePlannerField({
                     mappable={mappable}
                     route={route}
                     hoveredIndex={hoveredIndex}
+                    colorBy={planner.colorBy}
+                    onColorByChange={planner.setColorBy}
+                    surfaceStats={planner.surfaceStats}
                     onHoverIndex={handleHoverIndex}
                     height={STRIP_BODY_HEIGHT_TOUCH}
                     collapsible={{ collapsed: stripCollapsed, onToggle: toggleStrip }}

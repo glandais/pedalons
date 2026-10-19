@@ -72,6 +72,13 @@ export interface ElevationChartProps {
   /** Draws the segment starting at this data index dashed (a straight line of the route planner). */
   dashedSegment?: (p0Index: number) => boolean
   /**
+   * What colours the profile: the climb's grade (default) or, with `surfaceAt`, the surface of each
+   * segment (route planner, WEB-100 C1a). The fill follows the line.
+   */
+  colorBy?: 'grade' | 'surface'
+  /** The colour of the segment starting at this data index, when `colorBy` is `surface`. */
+  surfaceAt?: (p0Index: number) => string
+  /**
    * When provided, registers chartjs-plugin-zoom on this chart instance (wheel/pinch/pan, x-axis
    * only) and reports gesture boundaries so a parent can keep a map viewport in sync.
    */
@@ -83,7 +90,16 @@ export interface ElevationChartProps {
 
 export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartProps>(
   function ElevationChart(
-    { route, hoveredPointIndex, onHoverPoint, filled = true, dashedSegment, zoom },
+    {
+      route,
+      hoveredPointIndex,
+      onHoverPoint,
+      filled = true,
+      dashedSegment,
+      colorBy = 'grade',
+      surfaceAt,
+      zoom,
+    },
     ref
   ) {
     const { t } = useTranslation()
@@ -145,6 +161,7 @@ export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartPro
 
     // Prepare chart data with per climb-part gradient coloring on a linear (distance-in-meters)
     // x-axis, which is what makes zoom sync against the map possible.
+    const bySurface = colorBy === 'surface' && surfaceAt !== undefined
     const chartData: ChartData<'line'> = useMemo(
       () => ({
         datasets: [
@@ -155,6 +172,7 @@ export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartPro
             borderColor: (context: ScriptableContext<'line'>) => {
               const index = context.dataIndex
               if (index === undefined) return NEUTRAL_COLOR
+              if (bySurface) return surfaceAt(index)
               const gradient = getPointClimbGradient(trackPoints[index], climbs)
               return getColorFromGradient(gradient)
             },
@@ -163,11 +181,13 @@ export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartPro
             segment: {
               backgroundColor: filled
                 ? (ctx: ScriptableLineSegmentContext) => {
+                    if (bySurface) return surfaceAt(ctx.p0DataIndex)
                     const gradient = getPointClimbGradient(trackPoints[ctx.p0DataIndex], climbs)
                     return getColorFromGradient(gradient)
                   }
                 : undefined,
               borderColor: (ctx: ScriptableLineSegmentContext) => {
+                if (bySurface) return surfaceAt(ctx.p0DataIndex)
                 const gradient = getPointClimbGradient(trackPoints[ctx.p0DataIndex], climbs)
                 return getColorFromGradient(gradient)
               },
@@ -177,7 +197,7 @@ export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartPro
           },
         ],
       }),
-      [trackPoints, climbs, filled, dashedSegment]
+      [trackPoints, climbs, filled, dashedSegment, bySurface, surfaceAt]
     )
 
     const chartOptions: ChartOptions<'line'> = useMemo(

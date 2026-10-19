@@ -5,6 +5,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import 'planner_piece_mode.dart';
+import 'unpaved_span.dart';
 
 part 'planner_piece.freezed.dart';
 part 'planner_piece.g.dart';
@@ -31,6 +32,9 @@ abstract class PlannerPiece with _$PlannerPiece {
 
     /// IMPORTED: index in the source of the last junction
     int? to,
+
+    /// ROUTED: runs of unpaved edges of the piece, half-open, ascending and disjoint; edge 0 joins the first junction to the first interior point, the last edge ends at the last junction. Absent: surface unknown
+    List<UnpavedSpan>? unpaved,
   }) = _PlannerPiece;
 
   factory PlannerPiece.fromJson(Map<String, Object?> json) =>

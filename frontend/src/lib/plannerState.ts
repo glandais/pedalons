@@ -13,6 +13,7 @@ import {
   type PlannerPiece,
   type PlannerSource as PlannerSourceDto,
   type PlannerState,
+  type UnpavedSpan,
 } from '@/api/dto'
 import {
   computeRouteFromPieces,
@@ -23,6 +24,7 @@ import {
   type PlannerSource,
   type Route,
   type RoutePoint,
+  isUnpavedShare,
 } from '@/lib/planner'
 import { decode1, decode2, encode1, encode2 } from '@/lib/polyline'
 
@@ -34,6 +36,7 @@ export const PLANNER_STATE_VERSION = 1
 export const MAX_PLANNER_PIECES = 2_000
 export const MAX_PLANNER_SOURCES = 8
 export const MAX_PLANNER_POINTS = 100_000
+export const MAX_PLANNER_UNPAVED_SPANS = 50_000
 export const MAX_PLANNER_STATE_CHARS = 2_000_000
 
 const MAX_ASCEND_SCALE = 100
@@ -218,6 +221,9 @@ export function serializePlannerState(
         }
       }
       if (any) piece.ascend = Math.max(0, round2(sum))
+      // Only when the router said something about every edge of the piece: a gap is not « paved »
+      const spans = unpavedSpans(pts, a, b)
+      if (spans) piece.unpaved = spans
     }
     pieces.push(piece)
   }
@@ -231,6 +237,29 @@ export function serializePlannerState(
     junctions,
     pieces,
   }
+}
+
+/**
+ * The unpaved runs of the edges of `pts[a..b]` (half-open, ascending, never adjacent: the shape
+ * the server checks), edge 0 being the one into `pts[a + 1]`. Undefined when the surface of one of
+ * the edges is unknown, or past the server's bound.
+ */
+function unpavedSpans(pts: RoutePoint[], a: number, b: number): UnpavedSpan[] | undefined {
+  const spans: UnpavedSpan[] = []
+  let from = -1
+  for (let i = a + 1; i <= b; i++) {
+    const share = pts[i].unpaved
+    if (share === undefined) return undefined
+    const edge = i - a - 1
+    if (isUnpavedShare(share)) {
+      if (from < 0) from = edge
+    } else if (from >= 0) {
+      spans.push({ from, to: edge })
+      from = -1
+    }
+  }
+  if (from >= 0) spans.push({ from, to: b - a })
+  return spans.length <= MAX_PLANNER_UNPAVED_SPANS ? spans : undefined
 }
 
 function sourceFromDto(dto: PlannerSourceDto): PlannerSource {
@@ -274,6 +303,15 @@ export function restorePlannerState(state: PlannerState): {
     if (e instanceof PlannerStateFormatError) throw e
     throw new PlannerStateFormatError(e instanceof Error ? e.message : 'malformed planner state')
   }
+}
+
+/** 1 for the edges of a piece inside one of its unpaved runs, 0 for the others. */
+function unpavedFlags(piece: PlannerPiece, edges: number): number[] {
+  const flags = new Array<number>(edges).fill(0)
+  for (const { from, to } of piece.unpaved ?? []) {
+    for (let e = Math.max(0, from); e < Math.min(edges, to); e++) flags[e] = 1
+  }
+  return flags
 }
 
 function restore(state: PlannerState): { route: Route; sources: PlannerSource[] } {
@@ -329,11 +367,17 @@ function restore(state: PlannerState): { route: Route; sources: PlannerSource[] 
       const line = decode2(piece.line ?? '')
       const ele = piece.ele !== undefined ? decode1(piece.ele) : undefined
       if (ele && ele.length !== line.length) throw new PlannerStateFormatError('piece elevations')
+      // Edge e of the piece ends at its interior point e, the last one at the exit; a straight piece
+      // is off the network and a piece without runs has an unknown surface
+      const unpaved =
+        direct || piece.unpaved === undefined ? undefined : unpavedFlags(piece, line.length + 1)
       line.forEach((c, i) => {
         const p = createPoint(c[0], c[1], ele?.[i])
         p.direct = direct
+        p.unpaved = unpaved?.[i]
         points.push(p)
       })
+      exit.unpaved = unpaved?.[line.length]
       exit.direct = direct
       // `?? 0`: edgeMode must read ROUTED even between two imported junctions
       exit.legAscend = direct ? undefined : (piece.ascend ?? 0)

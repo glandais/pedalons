@@ -2400,6 +2400,22 @@ Plan [`2026-10-06-team-agenda.md`](plans/archive/2026-10-06-team-agenda.md) §4,
   n'est pas dans l'état (version 1) ; un échec ou un 404 / 405 laisse Q-C sans message (déploiement
   roulant) ; `from` et `to` sont `@NotNull` (400, pas 500) ; l'endpoint n'appelle jamais Stadia ; pas de
   plafond de tuiles propre (`WEB-104`, `SEC-28` au proxy).
+- `WEB-100` **Volet C1a** (2026-10-19, **API 11.13.0**, pas de migration) — « non revêtu » en direct
+  dans l'éditeur, sans crédit Stadia de plus : chaque manœuvre de `/route/v1` porte `rough`, que
+  `ValhallaResponse` lit et que `UnpavedSpans` reporte sur les points de sortie du pipeline par la
+  distance cumulée ; `RouterResponse.unpaved` et `PlannerPiece.unpaved` (morceaux ROUTED)
+  facultatifs, plages `[from, to[` d'arêtes. Web : `RoutePoint.unpaved` (fraction) porté par le
+  point d'arrivée, importé = inconnu, ligne droite = hors réseau, mode « Pente / Revêtement » du
+  profil, couleur de la carte par classe (familles de `brand-colors.yaml`). Détail dans
+  [le plan](plans/2026-10-17-editeur-parcours-web.md) (§8 C1a). Tests : `UnpavedSpansTest`,
+  `RouterResourceTest`, `PlannerStatesTest`, `RoutePlannerStateResourceTest`, `ArchitectureTest` ;
+  `plannerSurface.test.ts`, `PlannerElevationStrip.test.tsx`, `ElevationChart.test.tsx`,
+  `useRoutePlanner.test.tsx`, e2e `gpx-planner`. **À ne pas défaire** : l'affichage et l'état
+  sur-déclarent le non revêtu (une arête l'est dès qu'une partie l'est, `share > 0` côté web,
+  recouvrement de plus de 5 m côté serveur, jamais le milieu ni un seuil de 0,5) ; `unpaved`
+  absent = inconnu (déploiement roulant dans les deux sens) ; le pointillé reste aux lignes
+  droites ; `@JsonIgnoreProperties(ignoreUnknown = true)` sur tout record stocké ; aucune
+  couleur locale par enum. Reste C1b et C1c sous `WEB-100`.
 
 
 ## API — Contrat d'API et backend

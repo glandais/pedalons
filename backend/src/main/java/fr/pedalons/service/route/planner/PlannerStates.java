@@ -8,6 +8,7 @@ import fr.pedalons.common.planner.PlannerPiece;
 import fr.pedalons.common.planner.PlannerPieceMode;
 import fr.pedalons.common.planner.PlannerSource;
 import fr.pedalons.common.planner.PlannerState;
+import fr.pedalons.common.planner.UnpavedSpan;
 import fr.pedalons.dto.error.ErrorCode;
 import fr.pedalons.service.route.GpxLimits;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -180,6 +181,7 @@ public class PlannerStates {
         if (piece.line() != null
             || piece.ele() != null
             || piece.ascend() != null
+            || piece.unpaved() != null
             || piece.source() == null
             || piece.from() == null
             || piece.to() == null) {
@@ -224,6 +226,7 @@ public class PlannerStates {
         } else if (ascend != null && !(ascend >= 0.0 && finite(ascend))) {
           throw invalid();
         }
+        checkUnpaved(piece.unpaved(), piece.mode(), interior.length + 1);
         total += interior.length;
         interiors.add(interior);
       }
@@ -235,6 +238,33 @@ public class PlannerStates {
       throw invalid();
     }
     return new Decoded(decodedSources, interiors);
+  }
+
+  /**
+   * The unpaved runs of a routed piece (C1a): none on a direct piece (a straight line is off the
+   * network, not unpaved), else strictly ascending, disjoint, non-empty, within the piece's {@code
+   * edges}. Adjacent runs are refused too: they are one run, and a canonical form keeps the state
+   * stable under a round trip.
+   */
+  private static void checkUnpaved(
+      @Nullable List<UnpavedSpan> spans, PlannerPieceMode mode, int edges) {
+    if (spans == null) {
+      return;
+    }
+    if (mode != PlannerPieceMode.ROUTED || spans.size() > GpxLimits.MAX_PLANNER_UNPAVED_SPANS) {
+      throw invalid();
+    }
+    long previousTo = -1;
+    for (UnpavedSpan span : spans) {
+      if (span == null
+          || span.from() <= previousTo
+          || span.from() < 0
+          || span.to() <= span.from()
+          || span.to() > edges) {
+        throw invalid();
+      }
+      previousTo = span.to();
+    }
   }
 
   /** An accumulated ascent: from 0 up, never decreasing, within what a track can climb. */

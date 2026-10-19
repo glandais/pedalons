@@ -59,6 +59,8 @@ export const RouteBody = zod.object({
     ),
 })
 
+export const routeResponseUnpavedItemFromMin = 0
+
 export const RouteResponse = zod.object({
   route: zod.object({
     type: zod.enum(['LineString']),
@@ -66,6 +68,21 @@ export const RouteResponse = zod.object({
   }),
   dist: zod.number().optional(),
   ascend: zod.number().optional(),
+  unpaved: zod
+    .array(
+      zod
+        .object({
+          from: zod.int().min(routeResponseUnpavedItemFromMin),
+          to: zod.int().min(1),
+        })
+        .describe(
+          'Half-open run of unpaved edges [from, to) of a line; edge i joins points i and i + 1'
+        )
+    )
+    .optional()
+    .describe(
+      "Runs of unpaved edges of route (compacted surface or worse, from the router's own maneuvers), half-open, ascending and disjoint; edge i joins route points i and i + 1. Absent when the router gave no surface; empty when all paved"
+    ),
 })
 
 /**

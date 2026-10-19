@@ -2,7 +2,7 @@ import { distance } from '@/components/map/mapUtils'
 import { route as routerRoute } from '@/api/endpoints/router/router'
 import KDBush from 'kdbush'
 import { around } from 'geokdbush'
-import { RouterProfile, type GpxImportTrack } from '@/api/dto'
+import { RouterProfile, type GpxImportTrack, type UnpavedSpan } from '@/api/dto'
 import { decode1, decode2 } from '@/lib/polyline'
 import { tRegister, type TranslationKey } from '@/lib/i18nUtils'
 import type { MappableRoute } from '@/components/route/RouteMapView'
@@ -53,6 +53,15 @@ export interface RoutePoint {
    * by the arrival point like `direct`; ignored (stale) as soon as its `key` is not the edge's.
    */
   directProfile?: DirectProfile
+  /**
+   * Share (0..1, by length) of the edge `points[i-1] -> points[i]` that is unpaved, as the router's
+   * own maneuvers said (WEB-100 C1a). Carried by the arrival point like `direct`. Absent: unknown
+   * (a loaded track, a router that gave no surface, a hop under 5 m); meaningless on a straight
+   * edge, which is off the network. A fraction and not a flag, so that simplifying the route (which
+   * merges the edges between two kept points into one) never makes a run of unpaved edges vanish:
+   * the merged edge keeps the length-weighted share.
+   */
+  unpaved?: number
   /**
    * Cumulative climb (m) of the loaded track from its start to this point, scaled to the track's
    * reference D+. Imported points only.
@@ -217,6 +226,8 @@ export async function appendImport(
   }
   first.direct = straight
   first.legAscend = leg.ascend ?? (straight ? undefined : 0)
+  // The edge into it is the leg's last one (its own last point stands for it)
+  first.unpaved = leg.points.at(-1)?.unpaved
   first.manual = true
   const points = [...route.points, ...interior, ...imported.points]
   return computeRoute(points, { start: last, end: first })
@@ -411,6 +422,92 @@ export function edgeMode(points: RoutePoint[], i: number): EdgeMode {
 }
 
 /**
+ * What an edge is, for the surface display (WEB-100 C1a): `offNetwork` is a straight line, `unknown`
+ * a loaded track or a routed edge the router said nothing about.
+ */
+export type SurfaceClass = 'paved' | 'unpaved' | 'unknown' | 'offNetwork'
+
+/**
+ * An edge counts as unpaved as soon as any part of it is (what is saved, drawn and counted): like the
+ * router's `rough`, the display errs towards over-reporting, so a short unpaved run inside a merged
+ * edge never shows as paved.
+ */
+export const isUnpavedShare = (share: number) => share > 0
+
+/** The surface class of the edge `points[i-1] -> points[i]`. */
+export function edgeSurface(points: RoutePoint[], i: number): SurfaceClass {
+  const p = points[i]
+  if (p.direct) return 'offNetwork'
+  if (edgeMode(points, i) === 'IMPORTED' || p.unpaved === undefined) return 'unknown'
+  return isUnpavedShare(p.unpaved) ? 'unpaved' : 'paved'
+}
+
+/** Length (m) of the route by surface class; `total` is their sum. */
+export type SurfaceStats = Record<SurfaceClass, number> & { total: number }
+
+export function surfaceStats(route: Route): SurfaceStats {
+  const stats: SurfaceStats = { paved: 0, unpaved: 0, unknown: 0, offNetwork: 0, total: 0 }
+  const points = route.points
+  for (let i = 1; i < points.length; i++) {
+    const d = distance(points[i - 1].lng, points[i - 1].lat, points[i].lng, points[i].lat)
+    stats[edgeSurface(points, i)] += d
+    stats.total += d
+  }
+  return stats
+}
+
+/**
+ * Puts the router's unpaved runs (edge indices of its line, half-open) on `points`, the points of
+ * that line: each point carries the share of the edge that arrives at it. The first point has no
+ * arriving edge in the line: it takes its successor's, so the few metres of snapping before a leg
+ * are not a gap in the surface.
+ */
+function applyUnpaved(points: RoutePoint[], spans: UnpavedSpan[]) {
+  const edges = Math.max(0, points.length - 1)
+  const flags = new Array<number>(edges).fill(0)
+  for (const { from, to } of spans) {
+    for (let e = Math.max(0, from); e < Math.min(edges, to); e++) flags[e] = 1
+  }
+  for (let e = 0; e < edges; e++) points[e + 1].unpaved = flags[e]
+  if (edges > 0) points[0].unpaved = flags[0]
+}
+
+/**
+ * After a simplification, `kept` (a subsequence of `input`, in order) holds the edges between two
+ * consecutive kept points as one: the arrival point gets the length-weighted share of unpaved of the
+ * edges it replaced, so a run is never lost because a point inside it was dropped. Unknown as soon
+ * as one replaced edge is (or is a straight line). Edges of no length weigh nothing: the router's
+ * duplicates of a point do not turn a known surface into an unknown one.
+ */
+function foldUnpaved(input: RoutePoint[], kept: RoutePoint[]) {
+  if (kept.length < 2) return
+  let prev = input.indexOf(kept[0])
+  if (prev < 0) return
+  let j = prev
+  for (let k = 1; k < kept.length; k++) {
+    while (j < input.length && input[j] !== kept[k]) j++
+    if (j >= input.length) return
+    if (j - prev > 1) {
+      let total = 0
+      let unpaved = 0
+      let unknown = false
+      for (let e = prev + 1; e <= j; e++) {
+        const a = input[e - 1]
+        const b = input[e]
+        const len = distance(a.lng, a.lat, b.lng, b.lat)
+        if (len === 0) continue
+        if (b.direct || b.unpaved === undefined) unknown = true
+        else unpaved += b.unpaved * len
+        total += len
+      }
+      if (total === 0) kept[k].unpaved = input[j].unpaved
+      else kept[k].unpaved = unknown ? undefined : unpaved / total
+    }
+    prev = j
+  }
+}
+
+/**
  * D+ of a route, edge by edge (the first point never counts). The arrival point of an edge says
  * where its climb comes from: a straight line is the climb the elevation service measured for it
  * (`directProfile`, same dead-band as a routed leg) and, until it answered or if it failed, the net
@@ -537,6 +634,8 @@ export type PlannerMappable = MappableRoute & {
   profileIndexOfRoute: number[]
   /** Whether the segment starting at this entry is a straight line (drawn dashed). */
   dashed: boolean[]
+  /** Surface class of the segment starting at this entry (the last entry repeats the one before). */
+  surface: SurfaceClass[]
 }
 
 export function plannerRouteToMappable(route: Route): PlannerMappable | null {
@@ -585,6 +684,10 @@ export function plannerRouteToMappable(route: Route): PlannerMappable | null {
     routeIndex.push(i)
     dashed.push(!!points[i + 1]?.direct)
   }
+  // The segment from entry k to entry k + 1 is the edge arriving at the point of entry k + 1
+  const surface: SurfaceClass[] = routeIndex.map((_, k) =>
+    edgeSurface(points, routeIndex[Math.min(k + 1, routeIndex.length - 1)])
+  )
   return {
     distance: route.dist,
     waypoints: [],
@@ -593,6 +696,7 @@ export function plannerRouteToMappable(route: Route): PlannerMappable | null {
     routeIndex,
     profileIndexOfRoute,
     dashed,
+    surface,
   } as PlannerMappable
 }
 
@@ -645,6 +749,7 @@ export function computeRoute(input: RoutePoint[], changed?: Bounds): Route {
     points.forEach((p) => {
       p.zoom = p.manual ? MIN_ANCHOR_ZOOM : getZoomLevelForDistance(p.lat, p.rdpDistance)
     })
+    foldUnpaved(input, points)
   } else {
     const s = changed.start ? input.indexOf(changed.start) : 0
     const e = changed.end ? input.indexOf(changed.end) : input.length - 1
@@ -663,6 +768,7 @@ export function computeRoute(input: RoutePoint[], changed?: Bounds): Route {
     points[points.length - 1].manual = true
     // Other points, the bounds included, keep their zoom: only a manual one is always visible
     for (const p of points) if (p.manual) p.zoom = MIN_ANCHOR_ZOOM
+    foldUnpaved(input, points)
   }
   return finishRoute(points)
 }
@@ -672,7 +778,10 @@ function finishRoute(points: RoutePoint[]): Route {
   points.forEach((p, idx) => {
     p.idx = idx
   })
-  if (points.length) points[0].direct = false
+  if (points.length) {
+    points[0].direct = false
+    points[0].unpaved = undefined
+  }
   const index = new KDBush(points.length)
   for (const { lng, lat } of points) index.add(lng, lat)
   return {
@@ -702,6 +811,7 @@ export function computeRouteFromPieces(input: RoutePoint[], junctions: number[])
     for (const p of middle) p.zoom = getZoomLevelForDistance(p.lat, p.rdpDistance)
     points.push(...middle)
   }
+  foldUnpaved(input, points)
   return finishRoute(points)
 }
 
@@ -794,6 +904,7 @@ export async function insert(
   // The inserted point sits on the road: it takes its elevation, and closes the leg that reached it
   manualPoint.ele = snappedP?.ele
   manualPoint.legAscend = startPoint && segmentToP.length > 0 ? toP.ascend : undefined
+  manualPoint.unpaved = startPoint && segmentToP.length > 0 ? segmentToP.at(-1)?.unpaved : undefined
 
   // Snap boundary points to route endpoints
   if (before.length > 0 && segmentToP.length > 0 && isRouted(startPoint!, p, direct)) {
@@ -812,6 +923,7 @@ export async function insert(
   if (endPoint && after.length > 0) {
     after[0].direct = direct
     after[0].legAscend = toEnd.ascend
+    after[0].unpaved = segmentToEnd.at(-1)?.unpaved
   }
 
   if (after.length > 0 && segmentToEnd.length > 0 && isRouted(p, endPoint!, direct)) {
@@ -890,6 +1002,7 @@ export async function remove(
   // Neither routed nor straight (a hop between bounds a few metres apart): no climb, and not the
   // imported fallback either, which would credit the span that was just removed
   after[0].legAscend = leg.ascend ?? (straight ? undefined : 0)
+  after[0].unpaved = segment.at(-1)?.unpaved
 
   return computeRoute([...before, ...segment, ...after], { start: before.at(-1), end: after[0] })
 }
@@ -922,6 +1035,7 @@ export function restoreSourceSpan(
   const target = route.points[endIdx]
   target.direct = false
   target.legAscend = undefined
+  target.unpaved = undefined
   const points = [...route.points.slice(0, startIdx + 1), ...given, ...route.points.slice(endIdx)]
   return computeRoute(points, { start: route.points[startIdx], end: target })
 }
@@ -939,11 +1053,11 @@ export function geojson(route: Route): GeoJSON.LineString {
   }
 }
 
-export type LegProperties = { direct: boolean }
+export type LegProperties = { direct: boolean; surface: SurfaceClass }
 
 /**
  * The route as a FeatureCollection of LineStrings, consecutive edges of the same kind (straight or
- * not) grouped; each feature repeats the shared vertex so the line stays continuous.
+ * not) and of the same surface class grouped; each feature repeats the shared vertex so the line stays continuous.
  */
 export function legsGeojson(
   route: Route
@@ -952,13 +1066,14 @@ export function legsGeojson(
   const points = route.points
   for (let i = 1; i < points.length; i++) {
     const direct = points[i].direct
+    const surface = edgeSurface(points, i)
     const last = features.at(-1)
-    if (last && last.properties.direct === direct) {
+    if (last && last.properties.direct === direct && last.properties.surface === surface) {
       last.geometry.coordinates.push([points[i].lng, points[i].lat])
     } else {
       features.push({
         type: 'Feature',
-        properties: { direct },
+        properties: { direct, surface },
         geometry: {
           type: 'LineString',
           coordinates: [
@@ -1027,6 +1142,8 @@ async function router(
     signal
   )
   const points = createPoints(response.route.coordinates)
+  // Absent from the answer (an older backend, a router without maneuvers): the surface stays unknown
+  if (response.unpaved !== undefined) applyUnpaved(points, response.unpaved)
   let positive = 0
   for (let i = 1; i < points.length; i++) {
     const a = points[i - 1].ele

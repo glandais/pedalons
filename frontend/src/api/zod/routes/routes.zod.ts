@@ -1064,6 +1064,10 @@ export const createRouteBodyRoutePlannerStatePiecesItemLineMax = 2000000
 
 export const createRouteBodyRoutePlannerStatePiecesItemEleMax = 2000000
 
+export const createRouteBodyRoutePlannerStatePiecesItemUnpavedItemFromMin = 0
+
+export const createRouteBodyRoutePlannerStatePiecesItemUnpavedMax = 50000
+
 export const createRouteBodyRoutePlannerStatePiecesMax = 2000
 
 export const CreateRouteBody = zod.object({
@@ -1442,6 +1446,24 @@ export const CreateRouteBody = zod.object({
                   .int()
                   .optional()
                   .describe('IMPORTED: index in the source of the last junction'),
+                unpaved: zod
+                  .array(
+                    zod
+                      .object({
+                        from: zod
+                          .int()
+                          .min(createRouteBodyRoutePlannerStatePiecesItemUnpavedItemFromMin),
+                        to: zod.int().min(1),
+                      })
+                      .describe(
+                        'Half-open run of unpaved edges [from, to) of a line; edge i joins points i and i + 1'
+                      )
+                  )
+                  .max(createRouteBodyRoutePlannerStatePiecesItemUnpavedMax)
+                  .optional()
+                  .describe(
+                    'ROUTED: runs of unpaved edges of the piece, half-open, ascending and disjoint; edge 0 joins the first junction to the first interior point, the last edge ends at the last junction. Absent: surface unknown'
+                  ),
               })
             )
             .max(createRouteBodyRoutePlannerStatePiecesMax),
@@ -2493,6 +2515,10 @@ export const updateRouteBodyRoutePlannerStatePiecesItemLineMax = 2000000
 
 export const updateRouteBodyRoutePlannerStatePiecesItemEleMax = 2000000
 
+export const updateRouteBodyRoutePlannerStatePiecesItemUnpavedItemFromMin = 0
+
+export const updateRouteBodyRoutePlannerStatePiecesItemUnpavedMax = 50000
+
 export const updateRouteBodyRoutePlannerStatePiecesMax = 2000
 
 export const UpdateRouteBody = zod.object({
@@ -2871,6 +2897,24 @@ export const UpdateRouteBody = zod.object({
                   .int()
                   .optional()
                   .describe('IMPORTED: index in the source of the last junction'),
+                unpaved: zod
+                  .array(
+                    zod
+                      .object({
+                        from: zod
+                          .int()
+                          .min(updateRouteBodyRoutePlannerStatePiecesItemUnpavedItemFromMin),
+                        to: zod.int().min(1),
+                      })
+                      .describe(
+                        'Half-open run of unpaved edges [from, to) of a line; edge i joins points i and i + 1'
+                      )
+                  )
+                  .max(updateRouteBodyRoutePlannerStatePiecesItemUnpavedMax)
+                  .optional()
+                  .describe(
+                    'ROUTED: runs of unpaved edges of the piece, half-open, ascending and disjoint; edge 0 joins the first junction to the first interior point, the last edge ends at the last junction. Absent: surface unknown'
+                  ),
               })
             )
             .max(updateRouteBodyRoutePlannerStatePiecesMax),
@@ -3686,6 +3730,10 @@ export const getRoutePlannerStateResponseStatePiecesItemLineMax = 2000000
 
 export const getRoutePlannerStateResponseStatePiecesItemEleMax = 2000000
 
+export const getRoutePlannerStateResponseStatePiecesItemUnpavedItemFromMin = 0
+
+export const getRoutePlannerStateResponseStatePiecesItemUnpavedMax = 50000
+
 export const getRoutePlannerStateResponseStatePiecesMax = 2000
 
 export const GetRoutePlannerStateResponse = zod
@@ -3764,6 +3812,24 @@ export const GetRoutePlannerStateResponse = zod
                 .int()
                 .optional()
                 .describe('IMPORTED: index in the source of the last junction'),
+              unpaved: zod
+                .array(
+                  zod
+                    .object({
+                      from: zod
+                        .int()
+                        .min(getRoutePlannerStateResponseStatePiecesItemUnpavedItemFromMin),
+                      to: zod.int().min(1),
+                    })
+                    .describe(
+                      'Half-open run of unpaved edges [from, to) of a line; edge i joins points i and i + 1'
+                    )
+                )
+                .max(getRoutePlannerStateResponseStatePiecesItemUnpavedMax)
+                .optional()
+                .describe(
+                  'ROUTED: runs of unpaved edges of the piece, half-open, ascending and disjoint; edge 0 joins the first junction to the first interior point, the last edge ends at the last junction. Absent: surface unknown'
+                ),
             })
           )
           .max(getRoutePlannerStateResponseStatePiecesMax),

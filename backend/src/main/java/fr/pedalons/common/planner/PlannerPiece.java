@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import fr.pedalons.service.route.GpxLimits;
 import jakarta.validation.constraints.Size;
 import java.io.Serializable;
+import java.util.List;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.jspecify.annotations.Nullable;
 
@@ -25,5 +26,13 @@ public record PlannerPiece(
     @Nullable @Schema(description = "IMPORTED: index in the source of the first junction")
         Integer from,
     @Nullable @Schema(description = "IMPORTED: index in the source of the last junction")
-        Integer to)
+        Integer to,
+    @Nullable
+        @Schema(
+            description =
+                "ROUTED: runs of unpaved edges of the piece, half-open, ascending and disjoint;"
+                    + " edge 0 joins the first junction to the first interior point, the last edge"
+                    + " ends at the last junction. Absent: surface unknown")
+        @Size(max = GpxLimits.MAX_PLANNER_UNPAVED_SPANS)
+        List<UnpavedSpan> unpaved)
     implements Serializable {}

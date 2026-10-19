@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ELEVATION_DEBOUNCE_MS, useRoutePlanner } from './useRoutePlanner'
 import { ApiClientError } from '@/lib/apiError'
 import { ErrorCode } from '@/api/dto'
-import { DIRECT_WARNING_METERS } from '@/lib/planner'
+import { DIRECT_WARNING_METERS, edgeSurface } from '@/lib/planner'
 import { encode1, encode2 } from '@/lib/polyline'
 
 const routeMock = vi.hoisted(() => vi.fn())
@@ -328,6 +328,45 @@ describe('useRoutePlanner elevation (B1)', () => {
     act(() => result.current.redo())
     await waitFor(() => expect(result.current.route.ascend).toBe(100))
     expect(result.current.route.points.at(-1)?.legAscend).toBe(50)
+    expect(routeMock).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('useRoutePlanner surface (C1a)', () => {
+  beforeEach(() => {
+    routeMock.mockReset()
+    localStorage.clear()
+  })
+
+  it('undo and redo hand back the unpaved legs without a request', async () => {
+    let unpaved = true
+    routeMock.mockImplementation(async ({ from, to }: { from: typeof A; to: typeof A }) => ({
+      route: {
+        coordinates: [
+          [from.lng, from.lat, 100],
+          [to.lng, to.lat, 100],
+        ],
+      },
+      unpaved: unpaved ? [{ from: 0, to: 1 }] : [],
+    }))
+    const { result } = renderHook(() => useRoutePlanner())
+    act(() => result.current.addControlPoint(A, false))
+    await waitFor(() => expect(result.current.controlPoints).toHaveLength(1))
+    act(() => result.current.addControlPoint(B, false))
+    await waitFor(() => expect(result.current.controlPoints).toHaveLength(2))
+    unpaved = false
+    act(() => result.current.addControlPoint(C, false))
+    await waitFor(() => expect(result.current.controlPoints).toHaveLength(3))
+    const classes = () =>
+      result.current.route.points
+        .slice(1)
+        .map((_, i) => edgeSurface(result.current.route.points, i + 1))
+    expect(classes()).toEqual(['unpaved', 'paved'])
+
+    act(() => result.current.undo())
+    expect(classes()).toEqual(['unpaved'])
+    act(() => result.current.redo())
+    expect(classes()).toEqual(['unpaved', 'paved'])
     expect(routeMock).toHaveBeenCalledTimes(2)
   })
 })

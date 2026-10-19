@@ -2766,3 +2766,106 @@ test.describe('importing a GPX file in the planner (C4b)', () => {
     expect(routerRequests, 'nothing was asked of the router after reopening').toHaveLength(0)
   })
 })
+
+test.describe('unpaved surface, live in the editor (C1a)', () => {
+  test.setTimeout(120_000)
+
+  const strip = (page: Page) => page.getByTestId('planner-elevation-strip').first()
+
+  test('the profile switches from grade to surface: legend and summary, no routing request', async ({
+    context,
+    page,
+    isMobile,
+  }) => {
+    const planner = await openPlanner({ context, page, isMobile })
+    const { clickMap, points, settled, routerRequests } = planner
+    await clickMap(-120, 0)
+    await expect(points(1)).toBeVisible()
+    await clickMap(0, 40)
+    await expect(points(2)).toBeVisible()
+    await settled()
+    expect(routerRequests).toHaveLength(1)
+
+    await expect(page.getByTestId('planner-surface-legend')).toHaveCount(0)
+    await strip(page).getByText('Revêtement', { exact: true }).click()
+    const legend = page.getByTestId('planner-surface-legend').first()
+    await expect(legend).toBeVisible()
+    for (const label of ['Revêtu', 'Non revêtu', 'Inconnu', 'Hors réseau']) {
+      await expect(legend.getByText(label, { exact: true })).toBeVisible()
+    }
+    // The stub says a third of the leg is unpaved (4 of 12 edges): some, not all, and nothing unknown
+    await expect(legend.getByTestId('planner-surface-summary')).toHaveText(
+      /Non revêtu [1-9]\d* % \(routé\), inconnu 0 %/
+    )
+
+    await strip(page).getByText('Pente', { exact: true }).click()
+    await expect(page.getByTestId('planner-surface-legend')).toHaveCount(0)
+    expect(routerRequests, 'a display switch asks nothing of the router').toHaveLength(1)
+  })
+
+  test('a straight line is off the network, and the summary says so', async ({
+    context,
+    page,
+    isMobile,
+  }) => {
+    const planner = await openPlanner({ context, page, isMobile })
+    const { clickMap, points, settled } = planner
+    await clickMap(-120, 0)
+    await expect(points(1)).toBeVisible()
+    await clickMap(0, 40)
+    await expect(points(2)).toBeVisible()
+    await settled()
+    const toggle = directToggle(page, isMobile)
+    await toggle.click()
+    await clickMap(100, 0)
+    await expect(points(3)).toBeVisible()
+    await settled()
+
+    await strip(page).getByText('Revêtement', { exact: true }).click()
+    await expect(page.getByTestId('planner-surface-summary').first()).toContainText('hors réseau')
+  })
+
+  test('the unpaved runs are saved with the track and read back: nothing routed, same summary', async ({
+    context,
+    page,
+    isMobile,
+  }) => {
+    const planner = await openPlanner({ context, page, isMobile })
+    const { main, surface, routerRequests } = planner
+    await drawThreePoints(planner)
+    if (isMobile) {
+      await surface.getByRole('button', { name: 'Terminer' }).click()
+      await expect(surface).toBeHidden()
+    }
+    const name = unique('Tracé revêtement')
+    await main.getByRole('textbox', { name: 'Nom du parcours' }).fill(name)
+    const saved = page.waitForResponse(
+      (r) => r.url().endsWith('/api/gpx-previews/from-points') && r.request().method() === 'POST'
+    )
+    await main.getByRole('button', { name: 'Enregistrer' }).click()
+    const response = await saved
+    expect(response.ok()).toBe(true)
+    const sent = response.request().postDataJSON() as {
+      plannerState?: { pieces: { mode: string; unpaved?: { from: number; to: number }[] }[] }
+    }
+    const routed = sent.plannerState?.pieces.filter((piece) => piece.mode === 'ROUTED') ?? []
+    expect(routed.length).toBeGreaterThan(0)
+    for (const piece of routed) expect(piece.unpaved?.length).toBeGreaterThan(0)
+    const preview = (await response.json()) as GpxPreviewDto
+
+    routerRequests.length = 0
+    await page.goto(`${origin}/outils-gpx/${preview.id}/modifier`)
+    if (isMobile) {
+      const edit = main.getByRole('button', { name: 'Modifier le tracé' })
+      await hydrated(edit)
+      await edit.click()
+    }
+    const editor = editorOf(page, isMobile, name)
+    await expect(editor.getByText('3 points', { exact: true })).toBeVisible()
+    await strip(page).getByText('Revêtement', { exact: true }).click()
+    await expect(page.getByTestId('planner-surface-summary').first()).toHaveText(
+      /Non revêtu [1-9]\d* % \(routé\), inconnu 0 %/
+    )
+    expect(routerRequests, 'reading the state asks nothing of the router').toHaveLength(0)
+  })
+})

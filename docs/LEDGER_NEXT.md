@@ -390,7 +390,7 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
       Les lots 3 et 4 restent ouverts, avec leur volet backend (endpoint de recalage de B2) qui
       reste sous cet ID ; C4 (état d'édition et import d'un fichier, contrats `11.10.0` et
       `11.11.0`, `V75`) est fait le 19 octobre 2026. B1 (profil d'édition, `B1a` et `B1b`, contrat
-      `11.12.0`) est fait le 19 octobre 2026.
+      `11.12.0`) est fait le 19 octobre 2026. C1a (« non revêtu » en direct, contrat `11.13.0`) aussi ; restent C1b et C1c.
 
 ### Couverture e2e — ce que l'audit du 27 septembre laisse ouvert
 

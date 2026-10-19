@@ -2,7 +2,7 @@
 
 Écrit le 17 octobre 2026, mis à jour le 19 octobre 2026. **État : lots 1 et 2 livrés le
 17 octobre 2026 (§5 et §6, A10 compris) ; dans le lot 3, B11, B12, B6, B1 (profil d'édition : B1a le 18, B1b le 19 octobre), B7 et B9 sont livrés ;
-le lot 4 est entamé par C2 et C4 (C4a et C4b, livrés le 19 octobre) ; restent le reste du lot 3 (B2, mis de côté) et le lot 4 (C1 conçu le 19 octobre — C1a prêt, C1b en attente des conditions Stadia —, C3, C5, C7 ; C6 non attribué).**
+le lot 4 est entamé par C2, C4 (C4a et C4b, livrés le 19 octobre) et C1a (livré le 19 octobre) ; restent le reste du lot 3 (B2, mis de côté) et le lot 4 (C1b en attente des conditions Stadia, puis C1c ; C3, C5, C7 ; C6 non attribué).**
 Ledger `WEB-100` (une seule
 entrée, qui pointe ici) : le suivi fin se fait **dans ce plan**, cases à cocher comprises, pas dans
 le ledger. Une tâche n'en sort vers `LEDGER_NEXT.md` que si elle quitte le périmètre du plan
@@ -56,7 +56,7 @@ Quatre lots, chacun livrable seul :
 | **1. Robustesse** (livré) | Annulation et verrou pendant le calcul, `Ctrl+Z` hors des champs, tactile décidé par le pointeur, aide aux gestes, menus fiables, tests de `lib/planner.ts` | S à M (≈ 1 semaine) | — (volet backend A10 livré) |
 | **2. Disposition** (livré) | Plein écran d'édition, barre sous le pouce, cibles 44 px, un seul panneau ouvert, recherche d'adresse, cadrage `fitBounds` | M | 1 |
 | **3. Standard** | Profil altimétrique d'édition (B1, **livré**), inverser / aller-retour / retour au départ avec recalage (B2), ligne droite visible (B6, **livré**), clavier (B7, **livré**), défilement au bord (B9, **livré**), glisser une ancre au doigt (B11, **livré**), bornes indépendantes du zoom et suppression d'une ancre (B12, **livré**) | **L** | 1, 2 ; API pour B2 (endpoint de recalage) |
-| **4. Différenciation** | Éviter côtes / trafic (C2, **livré**), état d'édition conservé (C4 : **C4a et C4b livrés**), surface par point (C1), points de parcours (C3), popularité interne (C5), zones à éviter (C7) ; C6 non attribué | M à L | C4 : B6 et B12 ; C2 : aucun morceau du lot 3 ; API pour C1, C2, C4, C7 |
+| **4. Différenciation** | Éviter côtes / trafic (C2, **livré**), état d'édition conservé (C4 : **C4a et C4b livrés**), surface par point (C1 : **C1a livré**), points de parcours (C3), popularité interne (C5), zones à éviter (C7) ; C6 non attribué | M à L | C4 : B6 et B12 ; C2 : aucun morceau du lot 3 ; API pour C1, C2, C4, C7 |
 
 Dans le lot 4, **C4 dépend de B6** (seul B6 crée l'information « ligne droite ») **et de B12**
 (la provenance des points) ; B6 et B12 ne dépendent pas de C4. Le lot 2 passe **avant** les fonctions : sans lui, chaque bouton du lot 3 serait à placer deux fois
@@ -1070,7 +1070,7 @@ questions ouvertes viennent du §10 de
 - [ ] **C1. Surface par point** (L, §8 n° 13) — **conçu le 19 octobre 2026** (essais réels :
       [`../research/2026-10-19-stadia-surfaces.md`](../research/2026-10-19-stadia-surfaces.md) ;
       décisions au §10, « C1 »). Découpé en trois :
-      - [ ] **C1a — « non revêtu » en direct dans l'éditeur, 0 crédit** (contrat mineur, sans
+      - [x] **C1a — « non revêtu » en direct dans l'éditeur, 0 crédit** (contrat mineur, sans
             migration). Chaque manœuvre de `/route/v1` porte `rough` (compacté et pire) avec ses
             indices de shape : il ne rate jamais un passage non revêtu et en signale un peu trop
             (0 à 4,5 % de la distance sur 5 parcours). `ValhallaResponse` lit `maneuvers[]` ;
@@ -1080,6 +1080,35 @@ questions ouvertes viennent du §10 de
             `RoutePoint.unpaved` porté par le point d'arrivée comme `direct` ; importé = inconnu,
             ligne droite = hors réseau ; mode « Pente / Revêtement » du profil (`ElevationChart`
             `colorBy`), couleur sur la carte par expression `match` (le pointillé reste à B6).
+            **C1a livré le 19 octobre 2026** (contrat **11.13.0**, aucune migration).
+            *Backend* : `ValhallaResponse` lit `maneuvers[]` (`rough`, indices de shape),
+            `UnpavedSpans.project` reporte les plages sur les points de sortie du pipeline par la
+            distance cumulée (ramenée à la longueur brute), `RouterResponse.unpaved` et
+            `PlannerPiece.unpaved` facultatifs (`UnpavedSpan` en `[from, to[` d'arêtes, borné par
+            `GpxLimits`, `ignoreUnknown` conservé). *Web* : `RoutePoint.unpaved` porté par le point
+            d'arrivée, `edgeSurface` (revêtu / non revêtu / inconnu / hors réseau),
+            `surfaceStats`, mode « Pente / Revêtement » du profil (`ElevationChart` `colorBy`),
+            couleur sur la carte par `match` sur la classe (familles de `brand-colors.yaml` via
+            `SURFACE_TYPE_COLORS`, pointillé réservé aux lignes droites), légende et répartition.
+            Un ancien backend ne répond rien : « inconnu » ; un ancien frontend ignore le champ.
+            **Tests** : backend `UnpavedSpansTest`, `RouterResourceTest`, `PlannerStatesTest`,
+            `RoutePlannerStateResourceTest`, `ArchitectureTest` ; frontend `plannerSurface.test.ts`,
+            `PlannerElevationStrip.test.tsx`, `ElevationChart.test.tsx`, `useRoutePlanner.test.tsx` ;
+            e2e `gpx-planner` (C1a, 3 scénarios).
+            **Écarts / décisions de revue.** *É1* : `RoutePoint.unpaved` est une **fraction** (0..1,
+            part de la longueur) et non un booléen, pour que la fusion d'arêtes par la
+            simplification (RDP 5 m) garde la part pondérée. *É2* : convention d'arête,
+            `PlannerPiece.unpaved` compte les arêtes de la pièce (l'arête `i` joint les points `i` et
+            `i + 1`) ; le premier point prend la part de son successeur. *É3* : **le seuil de 0,5
+            est abandonné** : une arête est « non revêtue » dès qu'une partie l'est (`share > 0`,
+            `isUnpavedShare`), règle unique pour carte, profil, répartition et enregistrement, car
+            `rough` ne rate jamais un passage non revêtu et l'affichage ne doit pas le perdre ;
+            côté backend, une arête de sortie est non revêtue quand une plage `rough` la recouvre de
+            plus de 5 m (ou de la moitié d'une arête plus courte), et non plus sur son milieu : un
+            court passage sans virage, que le pipeline fond dans une longue arête, n'est plus perdu
+            (`UnpavedSpansTest`). *É4* : couleurs, revêtu gris 7, hors réseau gris 5 (pointillé),
+            inconnu gris 4, non revêtu orange 6 (famille GRAVEL), pour que l'inconnu reste lisible
+            sur fond clair ; contrôle visuel sur écran non fait, le contraste est raisonné.
       - [ ] **C1b — surface détaillée après l'enregistrement** (contrat mineur, migration
             `V76__track_surfaces.sql` additive). **En attente** de la vérification des conditions
             Stadia (§10, « C1 »). `trace_attributes/v1` en `map_snap` sur le tracé stocké

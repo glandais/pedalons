@@ -14,6 +14,7 @@ import fr.pedalons.common.planner.PlannerPiece;
 import fr.pedalons.common.planner.PlannerPieceMode;
 import fr.pedalons.common.planner.PlannerSource;
 import fr.pedalons.common.planner.PlannerState;
+import fr.pedalons.common.planner.UnpavedSpan;
 import fr.pedalons.dto.error.ErrorCode;
 import fr.pedalons.service.route.GpxLimits;
 import java.util.ArrayList;
@@ -73,7 +74,8 @@ class PlannerStatesTest {
             drawn().profile(),
             List.of(),
             List.of(control(4.83, 45.76), control(4.84, 45.77)),
-            List.of(new PlannerPiece(PlannerPieceMode.ROUTED, "", null, null, null, null, null)));
+            List.of(
+                new PlannerPiece(PlannerPieceMode.ROUTED, "", null, null, null, null, null, null)));
     assertEquals(2, states.validateAndDerive(state).size());
   }
 
@@ -127,8 +129,10 @@ class PlannerStatesTest {
     String filler = "?".repeat(GpxLimits.MAX_PLANNER_STATE_CHARS);
     PlannerState d = drawn();
     List<PlannerPiece> pieces = new ArrayList<>(d.pieces());
-    pieces.set(0, new PlannerPiece(PlannerPieceMode.ROUTED, filler, null, null, null, null, null));
-    pieces.set(1, new PlannerPiece(PlannerPieceMode.ROUTED, "?", null, null, null, null, null));
+    pieces.set(
+        0, new PlannerPiece(PlannerPieceMode.ROUTED, filler, null, null, null, null, null, null));
+    pieces.set(
+        1, new PlannerPiece(PlannerPieceMode.ROUTED, "?", null, null, null, null, null, null));
     assertInvalid(rebuild(d, 1, d.profile(), d.sources(), d.junctions(), pieces));
   }
 
@@ -262,20 +266,27 @@ class PlannerStatesTest {
     // ROUTED without line
     assertInvalid(
         withPiece(
-            ok, 1, new PlannerPiece(PlannerPieceMode.ROUTED, null, null, null, null, null, null)));
+            ok,
+            1,
+            new PlannerPiece(PlannerPieceMode.ROUTED, null, null, null, null, null, null, null)));
     // ascend on a DIRECT piece
-    assertInvalid(
-        withPiece(
-            ok, 1, new PlannerPiece(PlannerPieceMode.DIRECT, "", null, 3.0, null, null, null)));
-    // negative or NaN ascend
-    assertInvalid(
-        withPiece(
-            ok, 1, new PlannerPiece(PlannerPieceMode.ROUTED, "", null, -1.0, null, null, null)));
     assertInvalid(
         withPiece(
             ok,
             1,
-            new PlannerPiece(PlannerPieceMode.ROUTED, "", null, Double.NaN, null, null, null)));
+            new PlannerPiece(PlannerPieceMode.DIRECT, "", null, 3.0, null, null, null, null)));
+    // negative or NaN ascend
+    assertInvalid(
+        withPiece(
+            ok,
+            1,
+            new PlannerPiece(PlannerPieceMode.ROUTED, "", null, -1.0, null, null, null, null)));
+    assertInvalid(
+        withPiece(
+            ok,
+            1,
+            new PlannerPiece(
+                PlannerPieceMode.ROUTED, "", null, Double.NaN, null, null, null, null)));
     // ele of the wrong cardinality
     assertInvalid(
         withPiece(
@@ -288,10 +299,12 @@ class PlannerStatesTest {
                 null,
                 null,
                 null,
+                null,
                 null)));
     // IMPORTED carrying a line
     assertInvalid(
-        withPiece(ok, 0, new PlannerPiece(PlannerPieceMode.IMPORTED, "", null, null, 0, 0, 5)));
+        withPiece(
+            ok, 0, new PlannerPiece(PlannerPieceMode.IMPORTED, "", null, null, 0, 0, 5, null)));
   }
 
   @Test
@@ -323,6 +336,7 @@ class PlannerStatesTest {
                     null,
                     null,
                     null,
+                    null,
                     null)));
     // n + 1 junction-and-interior points from the first piece (n) + 1 junction + 1 interior + last
     assertInvalid(state);
@@ -348,6 +362,85 @@ class PlannerStatesTest {
 
   private static PlannerState withSource(PlannerState s, PlannerSource source) {
     return new PlannerState(s.version(), s.profile(), List.of(source), s.junctions(), s.pieces());
+  }
+
+  // ------------------------------------------------------------------ unpaved runs (C1a)
+
+  /** The second routed piece of {@link #example()} (index 2): 2 interior points, so 3 edges. */
+  private static PlannerState withUnpaved(UnpavedSpan... spans) {
+    PlannerPiece p = routed(new double[][] {{4.8402, 45.7660}, {4.8410, 45.7664}});
+    return withPiece(
+        example(),
+        2,
+        new PlannerPiece(
+            p.mode(), p.line(), p.ele(), p.ascend(), null, null, null, List.of(spans)));
+  }
+
+  @Test
+  void unpavedRunsOfARoutedPieceAreAccepted() {
+    assertEquals(
+        EXAMPLE_DERIVED,
+        states.validateAndDerive(withUnpaved(new UnpavedSpan(0, 1), new UnpavedSpan(2, 3))).size());
+    // The whole piece, and no run at all (all paved) are both valid.
+    states.validateAndDerive(withUnpaved(new UnpavedSpan(0, 3)));
+    states.validateAndDerive(withUnpaved());
+  }
+
+  @Test
+  void unpavedRunsRefusals() {
+    // beyond the 3 edges of the piece
+    assertInvalid(withUnpaved(new UnpavedSpan(0, 4)));
+    // empty, reversed, negative
+    assertInvalid(withUnpaved(new UnpavedSpan(1, 1)));
+    assertInvalid(withUnpaved(new UnpavedSpan(2, 1)));
+    assertInvalid(withUnpaved(new UnpavedSpan(-1, 1)));
+    // not ascending, overlapping, adjacent (one run in canonical form)
+    assertInvalid(withUnpaved(new UnpavedSpan(2, 3), new UnpavedSpan(0, 1)));
+    assertInvalid(withUnpaved(new UnpavedSpan(0, 2), new UnpavedSpan(1, 3)));
+    assertInvalid(withUnpaved(new UnpavedSpan(0, 1), new UnpavedSpan(1, 3)));
+    // too many runs
+    List<UnpavedSpan> many = new ArrayList<>();
+    for (int i = 0; i <= GpxLimits.MAX_PLANNER_UNPAVED_SPANS; i++) {
+      many.add(new UnpavedSpan(2 * i, 2 * i + 1));
+    }
+    PlannerPiece p = routed(new double[][] {{4.8402, 45.7660}, {4.8410, 45.7664}});
+    assertInvalid(
+        withPiece(
+            example(),
+            2,
+            new PlannerPiece(p.mode(), p.line(), p.ele(), p.ascend(), null, null, null, many)));
+    // a null run
+    List<UnpavedSpan> withNull = new ArrayList<>();
+    withNull.add(null);
+    assertInvalid(
+        withPiece(
+            example(),
+            2,
+            new PlannerPiece(p.mode(), p.line(), p.ele(), p.ascend(), null, null, null, withNull)));
+  }
+
+  @Test
+  void unpavedRunsAreRefusedOnAnotherMode() {
+    List<UnpavedSpan> spans = List.of(new UnpavedSpan(0, 1));
+    assertInvalid(
+        withPiece(
+            example(),
+            2,
+            new PlannerPiece(PlannerPieceMode.DIRECT, "", null, null, null, null, null, spans)));
+    PlannerPiece imported = imported(0, 5);
+    assertInvalid(
+        withPiece(
+            example(),
+            0,
+            new PlannerPiece(
+                imported.mode(),
+                null,
+                null,
+                null,
+                imported.source(),
+                imported.from(),
+                imported.to(),
+                spans)));
   }
 
   private static PlannerState withJunction(PlannerState s, int i, PlannerJunction j) {

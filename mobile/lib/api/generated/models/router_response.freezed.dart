@@ -16,7 +16,8 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$RouterResponse {
 
- GeoJsonLineString get route; double? get dist; double? get ascend;
+ GeoJsonLineString get route; double? get dist; double? get ascend;/// Runs of unpaved edges of route (compacted surface or worse, from the router's own maneuvers), half-open, ascending and disjoint; edge i joins route points i and i + 1. Absent when the router gave no surface; empty when all paved
+ List<UnpavedSpan>? get unpaved;
 /// Create a copy of RouterResponse
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -30,20 +31,20 @@ $RouterResponseCopyWith<RouterResponse> get copyWith => _$RouterResponseCopyWith
 @override
 bool operator ==(Object other) {
   final _this = this as RouterResponse;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RouterResponse&&(identical(other.route, _this.route) || other.route == _this.route)&&(identical(other.dist, _this.dist) || other.dist == _this.dist)&&(identical(other.ascend, _this.ascend) || other.ascend == _this.ascend));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RouterResponse&&(identical(other.route, _this.route) || other.route == _this.route)&&(identical(other.dist, _this.dist) || other.dist == _this.dist)&&(identical(other.ascend, _this.ascend) || other.ascend == _this.ascend)&&const DeepCollectionEquality().equals(other.unpaved, _this.unpaved));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as RouterResponse;
-  return Object.hash(runtimeType,_this.route,_this.dist,_this.ascend);
+  return Object.hash(runtimeType,_this.route,_this.dist,_this.ascend,const DeepCollectionEquality().hash(_this.unpaved));
 }
 
 @override
 String toString() {
   final _this = this as RouterResponse;
-  return 'RouterResponse(route: ${_this.route}, dist: ${_this.dist}, ascend: ${_this.ascend})';
+  return 'RouterResponse(route: ${_this.route}, dist: ${_this.dist}, ascend: ${_this.ascend}, unpaved: ${_this.unpaved})';
 }
 
 
@@ -54,7 +55,7 @@ abstract mixin class $RouterResponseCopyWith<$Res>  {
   factory $RouterResponseCopyWith(RouterResponse value, $Res Function(RouterResponse) _then) = _$RouterResponseCopyWithImpl;
 @useResult
 $Res call({
- GeoJsonLineString route, double? dist, double? ascend
+ GeoJsonLineString route, double? dist, double? ascend, List<UnpavedSpan>? unpaved
 });
 
 
@@ -71,12 +72,13 @@ class _$RouterResponseCopyWithImpl<$Res>
 
 /// Create a copy of RouterResponse
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? route = null,Object? dist = freezed,Object? ascend = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? route = null,Object? dist = freezed,Object? ascend = freezed,Object? unpaved = freezed,}) {
   return _then(RouterResponse(
 route: null == route ? _self.route : route // ignore: cast_nullable_to_non_nullable
 as GeoJsonLineString,dist: freezed == dist ? _self.dist : dist // ignore: cast_nullable_to_non_nullable
 as double?,ascend: freezed == ascend ? _self.ascend : ascend // ignore: cast_nullable_to_non_nullable
-as double?,
+as double?,unpaved: freezed == unpaved ? _self.unpaved : unpaved // ignore: cast_nullable_to_non_nullable
+as List<UnpavedSpan>?,
   ));
 }
 /// Create a copy of RouterResponse
@@ -170,10 +172,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( GeoJsonLineString route,  double? dist,  double? ascend)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( GeoJsonLineString route,  double? dist,  double? ascend,  List<UnpavedSpan>? unpaved)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _RouterResponse() when $default != null:
-return $default(_that.route,_that.dist,_that.ascend);case _:
+return $default(_that.route,_that.dist,_that.ascend,_that.unpaved);case _:
   return orElse();
 
 }
@@ -191,10 +193,10 @@ return $default(_that.route,_that.dist,_that.ascend);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( GeoJsonLineString route,  double? dist,  double? ascend)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( GeoJsonLineString route,  double? dist,  double? ascend,  List<UnpavedSpan>? unpaved)  $default,) {final _that = this;
 switch (_that) {
 case _RouterResponse():
-return $default(_that.route,_that.dist,_that.ascend);case _:
+return $default(_that.route,_that.dist,_that.ascend,_that.unpaved);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -211,10 +213,10 @@ return $default(_that.route,_that.dist,_that.ascend);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( GeoJsonLineString route,  double? dist,  double? ascend)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( GeoJsonLineString route,  double? dist,  double? ascend,  List<UnpavedSpan>? unpaved)?  $default,) {final _that = this;
 switch (_that) {
 case _RouterResponse() when $default != null:
-return $default(_that.route,_that.dist,_that.ascend);case _:
+return $default(_that.route,_that.dist,_that.ascend,_that.unpaved);case _:
   return null;
 
 }
@@ -226,12 +228,23 @@ return $default(_that.route,_that.dist,_that.ascend);case _:
 @JsonSerializable()
 
 class _RouterResponse implements RouterResponse {
-  const _RouterResponse({required this.route, this.dist, this.ascend});
+  const _RouterResponse({required this.route, this.dist, this.ascend,  List<UnpavedSpan>? unpaved}): _unpaved = unpaved;
   factory _RouterResponse.fromJson(Map<String, dynamic> json) => _$RouterResponseFromJson(json);
 
 @override final  GeoJsonLineString route;
 @override final  double? dist;
 @override final  double? ascend;
+/// Runs of unpaved edges of route (compacted surface or worse, from the router's own maneuvers), half-open, ascending and disjoint; edge i joins route points i and i + 1. Absent when the router gave no surface; empty when all paved
+ final  List<UnpavedSpan>? _unpaved;
+/// Runs of unpaved edges of route (compacted surface or worse, from the router's own maneuvers), half-open, ascending and disjoint; edge i joins route points i and i + 1. Absent when the router gave no surface; empty when all paved
+@override List<UnpavedSpan>? get unpaved {
+  final value = _unpaved;
+  if (value == null) return null;
+  if (_unpaved is EqualUnmodifiableListView) return _unpaved;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(value);
+}
+
 
 /// Create a copy of RouterResponse
 /// with the given fields replaced by the non-null parameter values.
@@ -246,18 +259,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _RouterResponse&&(identical(other.route, route) || other.route == route)&&(identical(other.dist, dist) || other.dist == dist)&&(identical(other.ascend, ascend) || other.ascend == ascend));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _RouterResponse&&(identical(other.route, route) || other.route == route)&&(identical(other.dist, dist) || other.dist == dist)&&(identical(other.ascend, ascend) || other.ascend == ascend)&&const DeepCollectionEquality().equals(other.unpaved, _unpaved));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,route,dist,ascend);
+    return Object.hash(runtimeType,route,dist,ascend,const DeepCollectionEquality().hash(_unpaved));
 }
 
 @override
 String toString() {
-    return 'RouterResponse(route: $route, dist: $dist, ascend: $ascend)';
+    return 'RouterResponse(route: $route, dist: $dist, ascend: $ascend, unpaved: $unpaved)';
 }
 
 
@@ -268,7 +281,7 @@ abstract mixin class _$RouterResponseCopyWith<$Res> implements $RouterResponseCo
   factory _$RouterResponseCopyWith(_RouterResponse value, $Res Function(_RouterResponse) _then) = __$RouterResponseCopyWithImpl;
 @override @useResult
 $Res call({
- GeoJsonLineString route, double? dist, double? ascend
+ GeoJsonLineString route, double? dist, double? ascend, List<UnpavedSpan>? unpaved
 });
 
 
@@ -285,12 +298,13 @@ class __$RouterResponseCopyWithImpl<$Res>
 
 /// Create a copy of RouterResponse
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? route = null,Object? dist = freezed,Object? ascend = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? route = null,Object? dist = freezed,Object? ascend = freezed,Object? unpaved = freezed,}) {
   return _then(_RouterResponse(
 route: null == route ? _self.route : route // ignore: cast_nullable_to_non_nullable
 as GeoJsonLineString,dist: freezed == dist ? _self.dist : dist // ignore: cast_nullable_to_non_nullable
 as double?,ascend: freezed == ascend ? _self.ascend : ascend // ignore: cast_nullable_to_non_nullable
-as double?,
+as double?,unpaved: freezed == unpaved ? _self._unpaved : unpaved // ignore: cast_nullable_to_non_nullable
+as List<UnpavedSpan>?,
   ));
 }
 

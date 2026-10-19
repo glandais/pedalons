@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.pedalons.common.exception.BusinessException;
 import fr.pedalons.common.exception.PedalonsException;
 import fr.pedalons.common.exception.ServiceUnavailableException;
+import fr.pedalons.common.planner.UnpavedSpan;
 import fr.pedalons.dto.error.ErrorCode;
 import fr.pedalons.dto.router.request.RouterProfile;
 import fr.pedalons.dto.router.request.RouterRequest;
@@ -43,6 +44,7 @@ import org.geolatte.geom.LineString;
 import org.geolatte.geom.crs.CoordinateReferenceSystem;
 import org.geolatte.geom.crs.LinearUnit;
 import org.jboss.logging.Logger;
+import org.jspecify.annotations.Nullable;
 
 @ApplicationScoped
 public class RouterService {
@@ -85,7 +87,7 @@ public class RouterService {
     }
 
     if (response.trip() == null || response.trip().legs().isEmpty()) {
-      return new RouterResponse(linestring(WGS84_3D), 0, 0);
+      return new RouterResponse(linestring(WGS84_3D), 0, 0, null);
     }
 
     // Decode all leg shapes and concatenate coordinates
@@ -116,7 +118,43 @@ public class RouterService {
     double dist = path.getTotalDistance();
     double ascend = path.getReportedElevationGain();
 
-    return new RouterResponse(filteredRoute, dist, ascend);
+    // Surface (C1a): Valhalla's own rough flag, free. Absent when the answer carries no maneuvers
+    // (the caller then shows "unknown"), empty when every maneuver is paved.
+    List<int[]> rough = roughRanges(response.trip().legs());
+    List<UnpavedSpan> unpaved = null;
+    if (rough != null) {
+      double[] lon = new double[path.getSize()];
+      double[] lat = new double[path.getSize()];
+      for (int i = 0; i < lon.length; i++) {
+        lon[i] = path.longitudeDeg(i);
+        lat[i] = path.latitudeDeg(i);
+      }
+      unpaved = UnpavedSpans.project(allCoords, rough, lon, lat);
+    }
+
+    return new RouterResponse(filteredRoute, dist, ascend, unpaved);
+  }
+
+  /**
+   * The rough maneuvers of the legs as [begin, end] indices into the concatenated shape, or null
+   * when a leg carries no maneuvers at all (then nothing is known about the surface). The legs'
+   * shapes are concatenated as they are, so each leg's indices shift by the points before it.
+   */
+  static @Nullable List<int[]> roughRanges(List<ValhallaResponse.ValhallaLeg> legs) {
+    List<int[]> ranges = new ArrayList<>();
+    int offset = 0;
+    for (ValhallaResponse.ValhallaLeg leg : legs) {
+      if (leg.maneuvers() == null) {
+        return null;
+      }
+      for (ValhallaResponse.ValhallaManeuver m : leg.maneuvers()) {
+        if (Boolean.TRUE.equals(m.rough())) {
+          ranges.add(new int[] {offset + m.beginShapeIndex(), offset + m.endShapeIndex()});
+        }
+      }
+      offset += Polyline6Decoder.decode(leg.shape()).size();
+    }
+    return ranges;
   }
 
   /**

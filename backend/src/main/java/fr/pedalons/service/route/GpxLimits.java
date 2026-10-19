@@ -84,6 +84,12 @@ public final class GpxLimits {
    */
   public static final int MAX_PLANNER_PIECES = 2_000;
 
+  /**
+   * Unpaved runs in one routed piece (C1a): disjoint and non-adjacent, so at most one per two edges
+   * of a piece of {@link #MAX_PLANNER_POINTS} points.
+   */
+  public static final int MAX_PLANNER_UNPAVED_SPANS = MAX_PLANNER_POINTS / 2;
+
   /** Source tracks in one planner state: C4a writes at most one, the rest is room for later. */
   public static final int MAX_PLANNER_SOURCES = 8;
 

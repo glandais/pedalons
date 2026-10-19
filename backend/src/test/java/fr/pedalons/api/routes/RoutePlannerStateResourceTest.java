@@ -159,6 +159,72 @@ class RoutePlannerStateResourceTest extends AbstractResourceTest {
   }
 
   @Test
+  void unpavedRuns_areReadBackAsTheyWere() {
+    String slug = createWithState(exampleWithUnpaved());
+
+    readState(slug, USER1)
+        .statusCode(200)
+        .body("state.pieces[0].unpaved", nullValue())
+        .body("state.pieces[1].unpaved.size()", equalTo(1))
+        .body("state.pieces[1].unpaved[0].from", equalTo(1))
+        .body("state.pieces[1].unpaved[0].to", equalTo(2))
+        .body("state.pieces[2].unpaved[0].from", equalTo(0))
+        .body("state.pieces[2].unpaved[0].to", equalTo(2));
+  }
+
+  @Test
+  void aStateWithoutUnpaved_hasNoUnpavedKeyOrNull() {
+    String slug = createWithState(example());
+
+    readState(slug, USER1).statusCode(200).body("state.pieces[1].unpaved", nullValue());
+  }
+
+  @Test
+  void unpavedRunsOutsideThePiece_areRefused() {
+    PlannerState ok = exampleWithUnpaved();
+    java.util.List<fr.pedalons.common.planner.PlannerPiece> pieces =
+        new java.util.ArrayList<>(ok.pieces());
+    fr.pedalons.common.planner.PlannerPiece p = pieces.get(1);
+    // The piece has 2 edges: [1, 3) goes past its end.
+    pieces.set(
+        1,
+        new fr.pedalons.common.planner.PlannerPiece(
+            p.mode(),
+            p.line(),
+            p.ele(),
+            p.ascend(),
+            null,
+            null,
+            null,
+            List.of(new fr.pedalons.common.planner.UnpavedSpan(1, 3))));
+    PlannerState bad =
+        new PlannerState(ok.version(), ok.profile(), ok.sources(), ok.junctions(), pieces);
+
+    create(stateRequest("Bad", bad), null).statusCode(400);
+  }
+
+  @Test
+  void aStoredUnpavedRunWithUnknownFields_isStillReadBack() {
+    // Same rolling-deploy guarantee as for the other records of the state.
+    PlannerState state = exampleWithUnpaved();
+    String slug = createWithState(state);
+    Long id = routeId(slug);
+    QuarkusTransaction.requiringNew()
+        .run(
+            () ->
+                em.createNativeQuery(
+                        """
+                        update gpx_tracks set planner_state =
+                          jsonb_set(planner_state, '{state,pieces,1,unpaved,0,later}', '1')
+                        where route_id = :id
+                        """)
+                    .setParameter("id", id)
+                    .executeUpdate());
+
+    readState(slug, USER1).statusCode(200).body("state.pieces[1].unpaved[0].from", equalTo(1));
+  }
+
+  @Test
   void aStateWithoutClimb_hasNoClimbKeyOrNull() {
     String slug = createWithState(example());
 

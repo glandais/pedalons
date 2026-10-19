@@ -170,6 +170,10 @@ export const createPreviewFromPointsBodyPlannerStatePiecesItemLineMax = 2000000
 
 export const createPreviewFromPointsBodyPlannerStatePiecesItemEleMax = 2000000
 
+export const createPreviewFromPointsBodyPlannerStatePiecesItemUnpavedItemFromMin = 0
+
+export const createPreviewFromPointsBodyPlannerStatePiecesItemUnpavedMax = 50000
+
 export const createPreviewFromPointsBodyPlannerStatePiecesMax = 2000
 
 export const CreatePreviewFromPointsBody = zod
@@ -272,6 +276,24 @@ export const CreatePreviewFromPointsBody = zod
                 .int()
                 .optional()
                 .describe('IMPORTED: index in the source of the last junction'),
+              unpaved: zod
+                .array(
+                  zod
+                    .object({
+                      from: zod
+                        .int()
+                        .min(createPreviewFromPointsBodyPlannerStatePiecesItemUnpavedItemFromMin),
+                      to: zod.int().min(1),
+                    })
+                    .describe(
+                      'Half-open run of unpaved edges [from, to) of a line; edge i joins points i and i + 1'
+                    )
+                )
+                .max(createPreviewFromPointsBodyPlannerStatePiecesItemUnpavedMax)
+                .optional()
+                .describe(
+                  'ROUTED: runs of unpaved edges of the piece, half-open, ascending and disjoint; edge 0 joins the first junction to the first interior point, the last edge ends at the last junction. Absent: surface unknown'
+                ),
             })
           )
           .max(createPreviewFromPointsBodyPlannerStatePiecesMax),
@@ -519,6 +541,10 @@ export const updatePreviewBodyPreviewPlannerStatePiecesItemLineMax = 2000000
 
 export const updatePreviewBodyPreviewPlannerStatePiecesItemEleMax = 2000000
 
+export const updatePreviewBodyPreviewPlannerStatePiecesItemUnpavedItemFromMin = 0
+
+export const updatePreviewBodyPreviewPlannerStatePiecesItemUnpavedMax = 50000
+
 export const updatePreviewBodyPreviewPlannerStatePiecesMax = 2000
 
 export const UpdatePreviewBody = zod.object({
@@ -620,6 +646,24 @@ export const UpdatePreviewBody = zod.object({
                   .int()
                   .optional()
                   .describe('IMPORTED: index in the source of the last junction'),
+                unpaved: zod
+                  .array(
+                    zod
+                      .object({
+                        from: zod
+                          .int()
+                          .min(updatePreviewBodyPreviewPlannerStatePiecesItemUnpavedItemFromMin),
+                        to: zod.int().min(1),
+                      })
+                      .describe(
+                        'Half-open run of unpaved edges [from, to) of a line; edge i joins points i and i + 1'
+                      )
+                  )
+                  .max(updatePreviewBodyPreviewPlannerStatePiecesItemUnpavedMax)
+                  .optional()
+                  .describe(
+                    'ROUTED: runs of unpaved edges of the piece, half-open, ascending and disjoint; edge 0 joins the first junction to the first interior point, the last edge ends at the last junction. Absent: surface unknown'
+                  ),
               })
             )
             .max(updatePreviewBodyPreviewPlannerStatePiecesMax),
@@ -885,6 +929,10 @@ export const getPreviewPlannerStateResponseStatePiecesItemLineMax = 2000000
 
 export const getPreviewPlannerStateResponseStatePiecesItemEleMax = 2000000
 
+export const getPreviewPlannerStateResponseStatePiecesItemUnpavedItemFromMin = 0
+
+export const getPreviewPlannerStateResponseStatePiecesItemUnpavedMax = 50000
+
 export const getPreviewPlannerStateResponseStatePiecesMax = 2000
 
 export const GetPreviewPlannerStateResponse = zod
@@ -963,6 +1011,24 @@ export const GetPreviewPlannerStateResponse = zod
                 .int()
                 .optional()
                 .describe('IMPORTED: index in the source of the last junction'),
+              unpaved: zod
+                .array(
+                  zod
+                    .object({
+                      from: zod
+                        .int()
+                        .min(getPreviewPlannerStateResponseStatePiecesItemUnpavedItemFromMin),
+                      to: zod.int().min(1),
+                    })
+                    .describe(
+                      'Half-open run of unpaved edges [from, to) of a line; edge i joins points i and i + 1'
+                    )
+                )
+                .max(getPreviewPlannerStateResponseStatePiecesItemUnpavedMax)
+                .optional()
+                .describe(
+                  'ROUTED: runs of unpaved edges of the piece, half-open, ascending and disjoint; edge 0 joins the first junction to the first interior point, the last edge ends at the last junction. Absent: surface unknown'
+                ),
             })
           )
           .max(getPreviewPlannerStateResponseStatePiecesMax),
@@ -1008,6 +1074,10 @@ export const createRouteFromPreviewBodyPlannerStateJunctionsMax = 2001
 export const createRouteFromPreviewBodyPlannerStatePiecesItemLineMax = 2000000
 
 export const createRouteFromPreviewBodyPlannerStatePiecesItemEleMax = 2000000
+
+export const createRouteFromPreviewBodyPlannerStatePiecesItemUnpavedItemFromMin = 0
+
+export const createRouteFromPreviewBodyPlannerStatePiecesItemUnpavedMax = 50000
 
 export const createRouteFromPreviewBodyPlannerStatePiecesMax = 2000
 
@@ -1386,6 +1456,24 @@ export const CreateRouteFromPreviewBody = zod
                 .int()
                 .optional()
                 .describe('IMPORTED: index in the source of the last junction'),
+              unpaved: zod
+                .array(
+                  zod
+                    .object({
+                      from: zod
+                        .int()
+                        .min(createRouteFromPreviewBodyPlannerStatePiecesItemUnpavedItemFromMin),
+                      to: zod.int().min(1),
+                    })
+                    .describe(
+                      'Half-open run of unpaved edges [from, to) of a line; edge i joins points i and i + 1'
+                    )
+                )
+                .max(createRouteFromPreviewBodyPlannerStatePiecesItemUnpavedMax)
+                .optional()
+                .describe(
+                  'ROUTED: runs of unpaved edges of the piece, half-open, ascending and disjoint; edge 0 joins the first junction to the first interior point, the last edge ends at the last junction. Absent: surface unknown'
+                ),
             })
           )
           .max(createRouteFromPreviewBodyPlannerStatePiecesMax),

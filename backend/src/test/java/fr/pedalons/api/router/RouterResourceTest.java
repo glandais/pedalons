@@ -17,6 +17,7 @@ import fr.pedalons.enums.Visibility;
 import fr.pedalons.infrastructure.valhalla.StadiaMapsClient;
 import fr.pedalons.infrastructure.valhalla.ValhallaRequest;
 import fr.pedalons.infrastructure.valhalla.ValhallaResponse;
+import fr.pedalons.service.route.planner.PolylineCodec;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.response.ValidatableResponse;
@@ -24,6 +25,7 @@ import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import java.util.List;
 import java.util.Map;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.junit.jupiter.api.BeforeEach;
@@ -340,6 +342,90 @@ class RouterResourceTest extends AbstractResourceTest {
     assertTrue(routeWith("RUN_HIKE", both).costingOptions().isEmpty());
     Mockito.reset(stadiaMapsClient);
     assertTrue(routeWith("MOTORCYCLE", both).costingOptions().isEmpty());
+  }
+
+  // ==================== Surface: the rough maneuvers (WEB-100, C1a) ====================
+
+  /** A zigzag of 21 points about 235 m apart (synthetic, around Lyon), which survives the pipeline. */
+  private static String zigzagShape() {
+    double[][] points = new double[21][];
+    for (int i = 0; i < points.length; i++) {
+      points[i] = new double[] {4.83 + 0.001 * i, 45.76 + (i % 2) * 0.002};
+    }
+    return PolylineCodec.encode2(points);
+  }
+
+  private static ValhallaResponse tripOf(List<ValhallaResponse.ValhallaManeuver> maneuvers) {
+    return new ValhallaResponse(
+        new ValhallaResponse.ValhallaTrip(
+            List.of(new ValhallaResponse.ValhallaLeg(zigzagShape(), maneuvers))));
+  }
+
+  private static ValhallaResponse.ValhallaManeuver maneuver(int begin, int end, Boolean rough) {
+    return new ValhallaResponse.ValhallaManeuver(begin, end, rough);
+  }
+
+  private JsonNode routeBody() throws Exception {
+    dataService.setDomainEnableGpxPlanner(domain, true);
+    String json = route(USER1, null).statusCode(200).extract().asString();
+    return new ObjectMapper().readTree(json);
+  }
+
+  @Test
+  void route_withRoughManeuvers_shouldReportTheUnpavedRunOnTheOutputEdges() throws Exception {
+    when(stadiaMapsClient.route(any(ValhallaRequest.class)))
+        .thenReturn(
+            tripOf(List.of(maneuver(0, 6, null), maneuver(6, 12, true), maneuver(12, 20, false))));
+
+    JsonNode body = routeBody();
+
+    int edges = body.path("route").path("coordinates").size() - 1;
+    JsonNode unpaved = body.path("unpaved");
+    assertEquals(1, unpaved.size());
+    // The rough maneuver covers the 6th to the 12th of the 20 segments: 30 % to 60 % of the line.
+    assertEquals(0.3, unpaved.get(0).path("from").asInt() / (double) edges, 0.1);
+    assertEquals(0.6, unpaved.get(0).path("to").asInt() / (double) edges, 0.1);
+    assertTrue(unpaved.get(0).path("to").asInt() <= edges);
+  }
+
+  @Test
+  void route_withAdjacentRoughManeuvers_shouldMergeThemIntoOneRun() throws Exception {
+    when(stadiaMapsClient.route(any(ValhallaRequest.class)))
+        .thenReturn(
+            tripOf(List.of(maneuver(0, 4, true), maneuver(4, 9, true), maneuver(9, 20, null))));
+
+    JsonNode unpaved = routeBody().path("unpaved");
+
+    assertEquals(1, unpaved.size());
+    assertEquals(0, unpaved.get(0).path("from").asInt());
+  }
+
+  @Test
+  void route_withoutRoughManeuver_shouldReportAnEmptyList() throws Exception {
+    when(stadiaMapsClient.route(any(ValhallaRequest.class)))
+        .thenReturn(tripOf(List.of(maneuver(0, 20, null))));
+
+    JsonNode body = routeBody();
+
+    assertTrue(body.has("unpaved"));
+    assertEquals(0, body.path("unpaved").size());
+  }
+
+  @Test
+  void route_withoutManeuvers_shouldOmitTheSurface() throws Exception {
+    when(stadiaMapsClient.route(any(ValhallaRequest.class))).thenReturn(tripOf(null));
+
+    JsonNode body = routeBody();
+
+    assertFalse(body.has("unpaved") && !body.path("unpaved").isNull());
+    assertTrue(body.path("route").path("coordinates").size() > 2);
+  }
+
+  @Test
+  void route_whenTheEmptyTripHasNoSurface_shouldOmitIt() throws Exception {
+    emptyRouteFromStadia();
+
+    assertFalse(routeBody().hasNonNull("unpaved"));
   }
 
   @Test

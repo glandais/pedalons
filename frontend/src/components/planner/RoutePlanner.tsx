@@ -17,7 +17,18 @@ import {
   IconPlayerPlayFilled,
   IconTrash,
 } from '@tabler/icons-react'
-import { ActionIcon, Box, Button, Group, Loader, Menu, Skeleton, Stack, Text } from '@mantine/core'
+import {
+  ActionIcon,
+  Box,
+  Button,
+  Group,
+  Loader,
+  Menu,
+  Skeleton,
+  Stack,
+  Text,
+  useMantineTheme,
+} from '@mantine/core'
 import { useMediaMatch } from '@/hooks/useResponsive'
 import { PedalonsMap } from '../map/PedalonsMap'
 import { MapControlButton, MapControlGroup } from '../map/MapControl'
@@ -28,6 +39,8 @@ import { useResolvedColorScheme } from '@/hooks/useResolvedColorScheme'
 import { useDefaultMapView } from '@/hooks/useDefaultMapView'
 import { HoverMarker, KmMarkersLayer } from '../map/MapMarkers'
 import { routeArrowLayout } from '../map/routeArrowLayout'
+import type { ExpressionSpecification } from 'maplibre-gl'
+import { surfaceColors } from '@/lib/plannerSurface'
 import { DirectModeControl } from './DirectModeControl'
 import { UndoRedoControl } from './UndoRedoControl'
 import { RouterProfileSelector } from './RouterProfileSelector'
@@ -49,6 +62,8 @@ import { isApplePlatform } from '@/lib/platform'
 import { panelJustDismissed } from '@/components/map/mapPanelState'
 
 const DEFAULT_ZOOM = 12
+/** The route line when it is not coloured by surface. */
+const ROUTE_COLOR = '#4F46E5'
 
 interface RoutePlannerProps {
   /** The planner's state, owned by the parent so it outlives this view being moved or hidden. */
@@ -163,6 +178,7 @@ export function RoutePlanner({
 }: RoutePlannerProps) {
   const { t } = useTranslation()
   const colorScheme = useResolvedColorScheme()
+  const theme = useMantineTheme()
   const mapRef = useRef<MapRef>(null)
   const mapContainerRef = useRef<HTMLDivElement>(null)
 
@@ -171,6 +187,7 @@ export function RoutePlanner({
     controlPoints,
     routeGeoJson,
     routeLegsGeoJson,
+    colorBy,
     directMode,
     setDirectMode,
     isLoading,
@@ -191,6 +208,23 @@ export function RoutePlanner({
     undo,
     redo,
   } = planner
+
+  // The route line: one colour, or the surface of each edge (a `match` on the features' `surface`)
+  const lineColor = useMemo(() => {
+    if (colorBy !== 'surface') return ROUTE_COLOR
+    const c = surfaceColors(theme)
+    return [
+      'match',
+      ['get', 'surface'],
+      'paved',
+      c.paved,
+      'unpaved',
+      c.unpaved,
+      'offNetwork',
+      c.offNetwork,
+      c.unknown,
+    ] as ExpressionSpecification
+  }, [colorBy, theme])
 
   const getMapZoom = useCallback(() => mapRef.current?.getZoom() ?? DEFAULT_ZOOM, [])
 
@@ -1401,7 +1435,7 @@ export function RoutePlanner({
                       type="line"
                       filter={['!=', ['get', 'direct'], true]}
                       paint={{
-                        'line-color': '#4F46E5',
+                        'line-color': lineColor,
                         'line-width': 5,
                         'line-opacity': 0.8,
                       }}
@@ -1413,7 +1447,7 @@ export function RoutePlanner({
                       type="line"
                       filter={['==', ['get', 'direct'], true]}
                       paint={{
-                        'line-color': '#4F46E5',
+                        'line-color': lineColor,
                         'line-width': 5,
                         'line-opacity': 0.8,
                         'line-dasharray': [1.5, 1.5],

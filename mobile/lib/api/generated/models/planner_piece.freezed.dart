@@ -22,7 +22,8 @@ mixin _$PlannerPiece {
  double? get ascend;/// IMPORTED: index of the source track
  int? get source;/// IMPORTED: index in the source of the first junction
  int? get from;/// IMPORTED: index in the source of the last junction
- int? get to;
+ int? get to;/// ROUTED: runs of unpaved edges of the piece, half-open, ascending and disjoint; edge 0 joins the first junction to the first interior point, the last edge ends at the last junction. Absent: surface unknown
+ List<UnpavedSpan>? get unpaved;
 /// Create a copy of PlannerPiece
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -36,20 +37,20 @@ $PlannerPieceCopyWith<PlannerPiece> get copyWith => _$PlannerPieceCopyWithImpl<P
 @override
 bool operator ==(Object other) {
   final _this = this as PlannerPiece;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PlannerPiece&&(identical(other.mode, _this.mode) || other.mode == _this.mode)&&(identical(other.line, _this.line) || other.line == _this.line)&&(identical(other.ele, _this.ele) || other.ele == _this.ele)&&(identical(other.ascend, _this.ascend) || other.ascend == _this.ascend)&&(identical(other.source, _this.source) || other.source == _this.source)&&(identical(other.from, _this.from) || other.from == _this.from)&&(identical(other.to, _this.to) || other.to == _this.to));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PlannerPiece&&(identical(other.mode, _this.mode) || other.mode == _this.mode)&&(identical(other.line, _this.line) || other.line == _this.line)&&(identical(other.ele, _this.ele) || other.ele == _this.ele)&&(identical(other.ascend, _this.ascend) || other.ascend == _this.ascend)&&(identical(other.source, _this.source) || other.source == _this.source)&&(identical(other.from, _this.from) || other.from == _this.from)&&(identical(other.to, _this.to) || other.to == _this.to)&&const DeepCollectionEquality().equals(other.unpaved, _this.unpaved));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as PlannerPiece;
-  return Object.hash(runtimeType,_this.mode,_this.line,_this.ele,_this.ascend,_this.source,_this.from,_this.to);
+  return Object.hash(runtimeType,_this.mode,_this.line,_this.ele,_this.ascend,_this.source,_this.from,_this.to,const DeepCollectionEquality().hash(_this.unpaved));
 }
 
 @override
 String toString() {
   final _this = this as PlannerPiece;
-  return 'PlannerPiece(mode: ${_this.mode}, line: ${_this.line}, ele: ${_this.ele}, ascend: ${_this.ascend}, source: ${_this.source}, from: ${_this.from}, to: ${_this.to})';
+  return 'PlannerPiece(mode: ${_this.mode}, line: ${_this.line}, ele: ${_this.ele}, ascend: ${_this.ascend}, source: ${_this.source}, from: ${_this.from}, to: ${_this.to}, unpaved: ${_this.unpaved})';
 }
 
 
@@ -60,7 +61,7 @@ abstract mixin class $PlannerPieceCopyWith<$Res>  {
   factory $PlannerPieceCopyWith(PlannerPiece value, $Res Function(PlannerPiece) _then) = _$PlannerPieceCopyWithImpl;
 @useResult
 $Res call({
- PlannerPieceMode mode, String? line, String? ele, double? ascend, int? source, int? from, int? to
+ PlannerPieceMode mode, String? line, String? ele, double? ascend, int? source, int? from, int? to, List<UnpavedSpan>? unpaved
 });
 
 
@@ -77,7 +78,7 @@ class _$PlannerPieceCopyWithImpl<$Res>
 
 /// Create a copy of PlannerPiece
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? mode = null,Object? line = freezed,Object? ele = freezed,Object? ascend = freezed,Object? source = freezed,Object? from = freezed,Object? to = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? mode = null,Object? line = freezed,Object? ele = freezed,Object? ascend = freezed,Object? source = freezed,Object? from = freezed,Object? to = freezed,Object? unpaved = freezed,}) {
   return _then(PlannerPiece(
 mode: null == mode ? _self.mode : mode // ignore: cast_nullable_to_non_nullable
 as PlannerPieceMode,line: freezed == line ? _self.line : line // ignore: cast_nullable_to_non_nullable
@@ -86,7 +87,8 @@ as String?,ascend: freezed == ascend ? _self.ascend : ascend // ignore: cast_nul
 as double?,source: freezed == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
 as int?,from: freezed == from ? _self.from : from // ignore: cast_nullable_to_non_nullable
 as int?,to: freezed == to ? _self.to : to // ignore: cast_nullable_to_non_nullable
-as int?,
+as int?,unpaved: freezed == unpaved ? _self.unpaved : unpaved // ignore: cast_nullable_to_non_nullable
+as List<UnpavedSpan>?,
   ));
 }
 
@@ -171,10 +173,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( PlannerPieceMode mode,  String? line,  String? ele,  double? ascend,  int? source,  int? from,  int? to)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( PlannerPieceMode mode,  String? line,  String? ele,  double? ascend,  int? source,  int? from,  int? to,  List<UnpavedSpan>? unpaved)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _PlannerPiece() when $default != null:
-return $default(_that.mode,_that.line,_that.ele,_that.ascend,_that.source,_that.from,_that.to);case _:
+return $default(_that.mode,_that.line,_that.ele,_that.ascend,_that.source,_that.from,_that.to,_that.unpaved);case _:
   return orElse();
 
 }
@@ -192,10 +194,10 @@ return $default(_that.mode,_that.line,_that.ele,_that.ascend,_that.source,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( PlannerPieceMode mode,  String? line,  String? ele,  double? ascend,  int? source,  int? from,  int? to)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( PlannerPieceMode mode,  String? line,  String? ele,  double? ascend,  int? source,  int? from,  int? to,  List<UnpavedSpan>? unpaved)  $default,) {final _that = this;
 switch (_that) {
 case _PlannerPiece():
-return $default(_that.mode,_that.line,_that.ele,_that.ascend,_that.source,_that.from,_that.to);case _:
+return $default(_that.mode,_that.line,_that.ele,_that.ascend,_that.source,_that.from,_that.to,_that.unpaved);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -212,10 +214,10 @@ return $default(_that.mode,_that.line,_that.ele,_that.ascend,_that.source,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( PlannerPieceMode mode,  String? line,  String? ele,  double? ascend,  int? source,  int? from,  int? to)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( PlannerPieceMode mode,  String? line,  String? ele,  double? ascend,  int? source,  int? from,  int? to,  List<UnpavedSpan>? unpaved)?  $default,) {final _that = this;
 switch (_that) {
 case _PlannerPiece() when $default != null:
-return $default(_that.mode,_that.line,_that.ele,_that.ascend,_that.source,_that.from,_that.to);case _:
+return $default(_that.mode,_that.line,_that.ele,_that.ascend,_that.source,_that.from,_that.to,_that.unpaved);case _:
   return null;
 
 }
@@ -227,7 +229,7 @@ return $default(_that.mode,_that.line,_that.ele,_that.ascend,_that.source,_that.
 @JsonSerializable()
 
 class _PlannerPiece implements PlannerPiece {
-  const _PlannerPiece({required this.mode, this.line, this.ele, this.ascend, this.source, this.from, this.to});
+  const _PlannerPiece({required this.mode, this.line, this.ele, this.ascend, this.source, this.from, this.to,  List<UnpavedSpan>? unpaved}): _unpaved = unpaved;
   factory _PlannerPiece.fromJson(Map<String, dynamic> json) => _$PlannerPieceFromJson(json);
 
 @override final  PlannerPieceMode mode;
@@ -243,6 +245,17 @@ class _PlannerPiece implements PlannerPiece {
 @override final  int? from;
 /// IMPORTED: index in the source of the last junction
 @override final  int? to;
+/// ROUTED: runs of unpaved edges of the piece, half-open, ascending and disjoint; edge 0 joins the first junction to the first interior point, the last edge ends at the last junction. Absent: surface unknown
+ final  List<UnpavedSpan>? _unpaved;
+/// ROUTED: runs of unpaved edges of the piece, half-open, ascending and disjoint; edge 0 joins the first junction to the first interior point, the last edge ends at the last junction. Absent: surface unknown
+@override List<UnpavedSpan>? get unpaved {
+  final value = _unpaved;
+  if (value == null) return null;
+  if (_unpaved is EqualUnmodifiableListView) return _unpaved;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(value);
+}
+
 
 /// Create a copy of PlannerPiece
 /// with the given fields replaced by the non-null parameter values.
@@ -257,18 +270,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PlannerPiece&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.line, line) || other.line == line)&&(identical(other.ele, ele) || other.ele == ele)&&(identical(other.ascend, ascend) || other.ascend == ascend)&&(identical(other.source, source) || other.source == source)&&(identical(other.from, from) || other.from == from)&&(identical(other.to, to) || other.to == to));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PlannerPiece&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.line, line) || other.line == line)&&(identical(other.ele, ele) || other.ele == ele)&&(identical(other.ascend, ascend) || other.ascend == ascend)&&(identical(other.source, source) || other.source == source)&&(identical(other.from, from) || other.from == from)&&(identical(other.to, to) || other.to == to)&&const DeepCollectionEquality().equals(other.unpaved, _unpaved));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,mode,line,ele,ascend,source,from,to);
+    return Object.hash(runtimeType,mode,line,ele,ascend,source,from,to,const DeepCollectionEquality().hash(_unpaved));
 }
 
 @override
 String toString() {
-    return 'PlannerPiece(mode: $mode, line: $line, ele: $ele, ascend: $ascend, source: $source, from: $from, to: $to)';
+    return 'PlannerPiece(mode: $mode, line: $line, ele: $ele, ascend: $ascend, source: $source, from: $from, to: $to, unpaved: $unpaved)';
 }
 
 
@@ -279,7 +292,7 @@ abstract mixin class _$PlannerPieceCopyWith<$Res> implements $PlannerPieceCopyWi
   factory _$PlannerPieceCopyWith(_PlannerPiece value, $Res Function(_PlannerPiece) _then) = __$PlannerPieceCopyWithImpl;
 @override @useResult
 $Res call({
- PlannerPieceMode mode, String? line, String? ele, double? ascend, int? source, int? from, int? to
+ PlannerPieceMode mode, String? line, String? ele, double? ascend, int? source, int? from, int? to, List<UnpavedSpan>? unpaved
 });
 
 
@@ -296,7 +309,7 @@ class __$PlannerPieceCopyWithImpl<$Res>
 
 /// Create a copy of PlannerPiece
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? mode = null,Object? line = freezed,Object? ele = freezed,Object? ascend = freezed,Object? source = freezed,Object? from = freezed,Object? to = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? mode = null,Object? line = freezed,Object? ele = freezed,Object? ascend = freezed,Object? source = freezed,Object? from = freezed,Object? to = freezed,Object? unpaved = freezed,}) {
   return _then(_PlannerPiece(
 mode: null == mode ? _self.mode : mode // ignore: cast_nullable_to_non_nullable
 as PlannerPieceMode,line: freezed == line ? _self.line : line // ignore: cast_nullable_to_non_nullable
@@ -305,7 +318,8 @@ as String?,ascend: freezed == ascend ? _self.ascend : ascend // ignore: cast_nul
 as double?,source: freezed == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
 as int?,from: freezed == from ? _self.from : from // ignore: cast_nullable_to_non_nullable
 as int?,to: freezed == to ? _self.to : to // ignore: cast_nullable_to_non_nullable
-as int?,
+as int?,unpaved: freezed == unpaved ? _self._unpaved : unpaved // ignore: cast_nullable_to_non_nullable
+as List<UnpavedSpan>?,
   ));
 }
 

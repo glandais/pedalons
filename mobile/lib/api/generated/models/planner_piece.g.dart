@@ -15,6 +15,9 @@ _PlannerPiece _$PlannerPieceFromJson(Map<String, dynamic> json) =>
       source: (json['source'] as num?)?.toInt(),
       from: (json['from'] as num?)?.toInt(),
       to: (json['to'] as num?)?.toInt(),
+      unpaved: (json['unpaved'] as List<dynamic>?)
+          ?.map((e) => UnpavedSpan.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
 
 Map<String, dynamic> _$PlannerPieceToJson(_PlannerPiece instance) =>
@@ -26,4 +29,5 @@ Map<String, dynamic> _$PlannerPieceToJson(_PlannerPiece instance) =>
       'source': instance.source,
       'from': instance.from,
       'to': instance.to,
+      'unpaved': instance.unpaved?.map((e) => e.toJson()).toList(),
     };

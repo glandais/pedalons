@@ -6,6 +6,7 @@ import fr.pedalons.common.planner.PlannerPiece;
 import fr.pedalons.common.planner.PlannerPieceMode;
 import fr.pedalons.common.planner.PlannerSource;
 import fr.pedalons.common.planner.PlannerState;
+import fr.pedalons.common.planner.UnpavedSpan;
 import fr.pedalons.dto.router.request.RouterProfile;
 import java.util.List;
 
@@ -51,6 +52,23 @@ public final class PlannerStateFixtures {
         e.version(), e.profile(), List.of(sourceWithClimb()), e.junctions(), e.pieces());
   }
 
+  /**
+   * {@link #example()} whose first routed piece (1 interior point, so 2 edges) is unpaved on its
+   * second edge and whose second routed piece (2 interior points, 3 edges) on its first two.
+   */
+  public static PlannerState exampleWithUnpaved() {
+    PlannerState e = example();
+    List<PlannerPiece> pieces = new java.util.ArrayList<>(e.pieces());
+    pieces.set(1, withUnpaved(pieces.get(1), List.of(new UnpavedSpan(1, 2))));
+    pieces.set(2, withUnpaved(pieces.get(2), List.of(new UnpavedSpan(0, 2))));
+    return new PlannerState(e.version(), e.profile(), e.sources(), e.junctions(), pieces);
+  }
+
+  private static PlannerPiece withUnpaved(PlannerPiece p, List<UnpavedSpan> spans) {
+    return new PlannerPiece(
+        p.mode(), p.line(), p.ele(), p.ascend(), p.source(), p.from(), p.to(), spans);
+  }
+
   public static PlannerJunction control(double lng, double lat) {
     return new PlannerJunction(PlannerJunctionKind.CONTROL, lng, lat, null, null, null);
   }
@@ -68,15 +86,16 @@ public final class PlannerStateFixtures {
         interior.length == 0 ? null : 3.5,
         null,
         null,
+        null,
         null);
   }
 
   public static PlannerPiece direct() {
-    return new PlannerPiece(PlannerPieceMode.DIRECT, "", null, null, null, null, null);
+    return new PlannerPiece(PlannerPieceMode.DIRECT, "", null, null, null, null, null, null);
   }
 
   public static PlannerPiece imported(int from, int to) {
-    return new PlannerPiece(PlannerPieceMode.IMPORTED, null, null, null, 0, from, to);
+    return new PlannerPiece(PlannerPieceMode.IMPORTED, null, null, null, 0, from, to, null);
   }
 
   /**

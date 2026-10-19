@@ -328,6 +328,7 @@ export 'models/trip_stage_dto.dart';
 export 'models/trip_stage_weather_dto.dart';
 export 'models/trip_weather_dto.dart';
 export 'models/unit_system.dart';
+export 'models/unpaved_span.dart';
 export 'models/unread_count_dto.dart';
 export 'models/update_domain_alias_request.dart';
 export 'models/update_domain_request.dart';

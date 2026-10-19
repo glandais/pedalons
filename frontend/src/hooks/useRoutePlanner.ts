@@ -24,9 +24,11 @@ import {
   sourceOf,
   spanBounds,
   straightEdgesMissingProfile,
+  surfaceStats as computeSurfaceStats,
   withDirectProfiles,
   type DirectProfile,
   type PlannerSource,
+  type SurfaceStats,
 } from '@/lib/planner'
 import {
   isElevationUnsupported,
@@ -39,6 +41,7 @@ import type { GeoPoint, GpxImportResponse, PlannerState } from '@/api/dto'
 import { importGpx as importGpxRequest } from '@/api/endpoints/router/router'
 import { tRegister, type TranslationKey } from '@/lib/i18nUtils'
 import { plannerErrorMessage } from '@/lib/plannerErrors'
+import type { PlannerColorBy } from '@/lib/plannerSurface'
 import {
   isTunable,
   PROFILE_DEFAULTS,
@@ -103,6 +106,11 @@ export interface RoutePlannerState {
   routeLegsGeoJson: GeoJSON.FeatureCollection<GeoJSON.LineString, LegProperties> | null
   /** Length of the straight legs: total, longest one, count. */
   directStats: DirectStats
+  /** Length of the route by surface class (C1a): paved, unpaved, unknown, off the network. */
+  surfaceStats: SurfaceStats
+  /** What the profile and the route line are coloured by. Display only: not in the history. */
+  colorBy: PlannerColorBy
+  setColorBy: (colorBy: PlannerColorBy) => void
   /** "Straight line" toggle: every following gesture is drawn without the router, until switched off. */
   directMode: boolean
   setDirectMode: (on: boolean) => void
@@ -634,11 +642,16 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
   }, [route])
 
   const directStats = useMemo(() => computeDirectStats(route), [route])
+  const surfaceStats = useMemo(() => computeSurfaceStats(route), [route])
+  const [colorBy, setColorBy] = useState<PlannerColorBy>('grade')
 
   return {
     route,
     routeLegsGeoJson,
     directStats,
+    surfaceStats,
+    colorBy,
+    setColorBy,
     directMode,
     setDirectMode,
     controlPoints,

@@ -327,7 +327,7 @@ function metresBetween(a: [lon: number, lat: number], b: [lon: number, lat: numb
 /**
  * A plausible answer of POST /api/router for `request`: a gently bowed line (up to 3 % of its
  * length off the straight one, so the planner's simplification keeps its points) of 3D points from
- * `from` to `to`, climbing 50 m along the way.
+ * `from` to `to`, climbing 50 m along the way, a third of it unpaved.
  */
 export function routerAnswer({ from, to }: RouterRequest): RouterResponse {
   const steps = 12
@@ -350,6 +350,9 @@ export function routerAnswer({ from, to }: RouterRequest): RouterResponse {
     route: { type: 'LineString', coordinates },
     dist: Math.round(dist),
     ascend: 50,
+    // A run of unpaved edges in the middle of the leg (C1a): a third of it, as the router's own
+    // maneuvers would say. Edges are half-open, indexed in `route`.
+    unpaved: [{ from: 4, to: 8 }],
   }
 }
 
