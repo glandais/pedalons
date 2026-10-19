@@ -2707,8 +2707,15 @@ test.describe('importing a GPX file in the planner (C4b)', () => {
     await hydrated(importInput(page))
     await importInput(page).setInputFiles(gpxUpload(unique('Nouveau fichier'), windingTrack(200)))
     await expect(choice(page)).toBeVisible()
+    // The file is read by the server after the choice: saving before it answers would save the
+    // route untouched (seen under load)
+    const imported = page.waitForResponse(
+      (r) => r.url().endsWith('/api/router/import-gpx') && r.request().method() === 'POST'
+    )
     await choice(page).getByRole('button', { name: 'Remplacer le tracé' }).click()
     await expect(choice(page)).toHaveCount(0)
+    expect((await imported).ok()).toBe(true)
+    await expect(page.getByRole('status', { name: "Calcul de l'itinéraire..." })).toHaveCount(0)
 
     const saved = page.waitForRequest(
       (r) => r.method() === 'PUT' && r.url().endsWith(`/routes/${route.slug}`)
