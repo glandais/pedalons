@@ -1,6 +1,7 @@
 import { useGetConfig } from '@/api/endpoints/configuration/configuration'
 import { useResolvedColorScheme } from '@/hooks/useResolvedColorScheme'
 import {
+  isDarkBasemap,
   resolveMapStyle,
   styleUrlFor,
   type MapStyle,
@@ -43,6 +44,7 @@ export function useMapStyle() {
   const currentStyle = resolveMapStyle(styles, savedStyleId)
   const styleId: MapStyleId | undefined = currentStyle?.id
   const style = currentStyle ? styleUrlFor(currentStyle, colorScheme === 'dark') : undefined
+  const darkBasemap = isDarkBasemap(currentStyle, colorScheme === 'dark')
 
   return {
     styleId,
@@ -52,6 +54,8 @@ export function useMapStyle() {
     clearPreference: clearStylePreference,
     currentStyle,
     style,
+    /** The basemap as rendered is dark (satellite, or a dark variant): what is drawn over it reads by this, not by the colour scheme. */
+    darkBasemap,
     terrain3d,
     setTerrain3d,
     hillshade,

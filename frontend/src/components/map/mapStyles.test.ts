@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { groupStyles, isKnownGroup, resolveMapStyle, styleUrlFor, type MapStyle } from './mapStyles'
+import {
+  groupStyles,
+  isDarkBasemap,
+  isKnownGroup,
+  resolveMapStyle,
+  styleUrlFor,
+  type MapStyle,
+} from './mapStyles'
 
 const style = (
   id: string,
@@ -48,6 +55,19 @@ describe('styleUrlFor', () => {
     // A satellite view has no night version: hiding it after dark would be worse than showing it.
     expect(styleUrlFor(SERVED[0], true)).toBe('https://tiles.example/eclipse.json')
     expect(styleUrlFor(SERVED[2], true)).toBe(SERVED[2].url)
+  })
+})
+
+describe('isDarkBasemap', () => {
+  it('follows what is rendered, not the colour scheme alone', () => {
+    // Dark mode loads the dark counterpart where there is one…
+    expect(isDarkBasemap(SERVED[0], true)).toBe(true)
+    expect(isDarkBasemap(SERVED[0], false)).toBe(false)
+    // …and keeps a light basemap that has none
+    expect(isDarkBasemap(SERVED[1], true)).toBe(false)
+    expect(isDarkBasemap(SERVED[3], true)).toBe(false)
+    // A satellite view is dark at any hour
+    expect(isDarkBasemap(SERVED[2], false)).toBe(true)
   })
 })
 

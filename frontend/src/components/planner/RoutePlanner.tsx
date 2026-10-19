@@ -37,6 +37,7 @@ import { LocateControl } from '../map/LocateControl'
 import { MapSearchControl, type SearchedPlace } from '../map/MapSearchControl'
 import { useResolvedColorScheme } from '@/hooks/useResolvedColorScheme'
 import { useDefaultMapView } from '@/hooks/useDefaultMapView'
+import { useMapStyle } from '@/hooks/useMapStyle'
 import { HoverMarker, KmMarkersLayer } from '../map/MapMarkers'
 import { routeArrowLayout } from '../map/routeArrowLayout'
 import type { ExpressionSpecification } from 'maplibre-gl'
@@ -178,6 +179,7 @@ export function RoutePlanner({
 }: RoutePlannerProps) {
   const { t } = useTranslation()
   const colorScheme = useResolvedColorScheme()
+  const { darkBasemap } = useMapStyle()
   const theme = useMantineTheme()
   const mapRef = useRef<MapRef>(null)
   const mapContainerRef = useRef<HTMLDivElement>(null)
@@ -212,7 +214,8 @@ export function RoutePlanner({
   // The route line: one colour, or the surface of each edge (a `match` on the features' `surface`)
   const lineColor = useMemo(() => {
     if (colorBy !== 'surface') return ROUTE_COLOR
-    const c = surfaceColors(theme, colorScheme)
+    // Over the basemap: its tone decides, not the theme (a light basemap in dark mode, a satellite)
+    const c = surfaceColors(theme, darkBasemap ? 'dark' : 'light')
     return [
       'match',
       ['get', 'surface'],
@@ -224,7 +227,7 @@ export function RoutePlanner({
       c.offNetwork,
       c.unknown,
     ] as ExpressionSpecification
-  }, [colorBy, theme, colorScheme])
+  }, [colorBy, theme, darkBasemap])
 
   const getMapZoom = useCallback(() => mapRef.current?.getZoom() ?? DEFAULT_ZOOM, [])
 

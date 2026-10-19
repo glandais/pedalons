@@ -4,8 +4,10 @@
 // asphalt's grey (ROAD's on a route's badge), an unpaved one the compacted orange (GRAVEL's), so the
 // colour means the same thing while drawing, once saved and on the badge. What is not known is a
 // paler grey than paved, and what is not on the network (a straight line, drawn dashed) a medium
-// one. The greys depend on the colour scheme: the dark theme loads the basemap's dark variant, where
-// a dark grey vanishes, so there paved is the light one and unknown the dimmer.
+// one. The greys depend on the background, so that paved is always the strong one and unknown the
+// faint one: on a dark background a dark grey vanishes, so there paved is the light grey. The map
+// passes the basemap's tone (a satellite view, a light basemap kept in dark mode), the profile and
+// its legend the theme's, which is their strip's.
 import type { MantineTheme } from '@mantine/core'
 import { TrackSurface } from '@/api/dto'
 import type { SurfaceClass } from '@/lib/planner'
@@ -25,12 +27,12 @@ const CLASS: Record<SurfaceClass, TrackSurface> = {
   offNetwork: TrackSurface.OFF_NETWORK,
 }
 
-/** The colour of every class, resolved from the Mantine theme for the given colour scheme. */
+/** The colour of every class, resolved from the Mantine theme for a background of that tone. */
 export function surfaceColors(
   theme: MantineTheme,
-  colorScheme: 'light' | 'dark'
+  background: 'light' | 'dark'
 ): Record<SurfaceClass, string> {
-  const saved = trackSurfaceColors(theme, colorScheme)
+  const saved = trackSurfaceColors(theme, background)
   return {
     paved: saved[CLASS.paved],
     unpaved: saved[CLASS.unpaved],

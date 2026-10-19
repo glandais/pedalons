@@ -62,6 +62,16 @@ export function styleUrlFor(style: MapStyle, dark: boolean): string {
 }
 
 /**
+ * Whether the basemap as rendered is dark, for what is drawn over it: a satellite view at any hour,
+ * or the dark counterpart `styleUrlFor` loads. A basemap without one stays light in dark mode, so
+ * the colour scheme alone does not tell.
+ */
+export function isDarkBasemap(style: MapStyle | undefined, dark: boolean): boolean {
+  if (!style) return dark
+  return style.group === 'satellite' || (dark && !!style.darkVariant)
+}
+
+/**
  * The basemaps the server wraps itself are served as ABSOLUTE URLs on the tenant's `baseUrl`
  * (`MapStyleService.generatedStyleUrl`), because the mobile and device clients have no origin to
  * resolve a path against. The web client does, and must use it: an absolute URL bypasses the dev
