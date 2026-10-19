@@ -1,6 +1,7 @@
 package fr.pedalons.repository.gpx;
 
 import fr.pedalons.domain.gpx.GpxPreview;
+import fr.pedalons.domain.gpx.PreviewSurfacesDocument;
 import fr.pedalons.dto.common.PedalonsPage;
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
@@ -10,6 +11,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 
 @ApplicationScoped
 public class GpxPreviewRepository implements PanacheRepository<GpxPreview> {
@@ -54,5 +56,20 @@ public class GpxPreviewRepository implements PanacheRepository<GpxPreview> {
   /** Previews created before the cutoff, for the retention job. */
   public List<GpxPreview> findExpired(Instant cutoff) {
     return list("createdAt < ?1", cutoff);
+  }
+
+  /**
+   * The surface document of a preview, a projection so the planner state stays unread (docs/LEDGER_*.md
+   * WEB-100, C1b). Null when there is none.
+   */
+  public @Nullable PreviewSurfacesDocument findSurfaces(Long previewId) {
+    List<PreviewSurfacesDocument> found =
+        getEntityManager()
+            .createQuery(
+                "select p.surfaces from GpxPreview p where p.id = :id",
+                PreviewSurfacesDocument.class)
+            .setParameter("id", previewId)
+            .getResultList();
+    return found.isEmpty() ? null : found.getFirst();
   }
 }

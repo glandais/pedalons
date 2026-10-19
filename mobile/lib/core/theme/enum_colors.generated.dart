@@ -10,6 +10,7 @@ import '../../api/generated/models/ad_type.dart';
 import '../../api/generated/models/status.dart';
 import '../../api/generated/models/team_role.dart';
 import '../../api/generated/models/surface_type.dart';
+import '../../api/generated/models/track_surface.dart';
 import '../../api/generated/models/visibility.dart';
 import '../../api/generated/models/relative_wind.dart';
 import '../../api/generated/models/climb_category.dart';
@@ -71,6 +72,21 @@ extension SurfaceTypeTone on SurfaceType {
     SurfaceType.mtb => PdlFamily.green,
     SurfaceType.mixed => PdlFamily.teal,
     SurfaceType.$unknown => PdlFamily.gray,
+  };
+
+  PdlTone tone(PdlColors c) => family.soft(c);
+}
+
+extension TrackSurfaceTone on TrackSurface {
+  PdlFamily get family => switch (this) {
+    TrackSurface.paved => PdlFamily.gray,
+    TrackSurface.pavedRough => PdlFamily.yellow,
+    TrackSurface.gravel => PdlFamily.orange,
+    TrackSurface.dirt => PdlFamily.green,
+    TrackSurface.path => PdlFamily.grape,
+    TrackSurface.unknown => PdlFamily.gray,
+    TrackSurface.offNetwork => PdlFamily.gray,
+    TrackSurface.$unknown => PdlFamily.gray,
   };
 
   PdlTone tone(PdlColors c) => family.soft(c);

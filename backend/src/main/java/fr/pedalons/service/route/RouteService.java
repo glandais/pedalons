@@ -6,8 +6,10 @@ import fr.pedalons.common.exception.BusinessException;
 import fr.pedalons.common.planner.PlannerState;
 import fr.pedalons.domain.asset.Asset;
 import fr.pedalons.domain.common.TeamEntity;
+import fr.pedalons.domain.route.GpxTrack;
 import fr.pedalons.domain.route.PlannerStateDocument;
 import fr.pedalons.domain.route.Route;
+import fr.pedalons.domain.route.TrackSurfaceDocument;
 import fr.pedalons.domain.team.Team;
 import fr.pedalons.domain.user.User;
 import fr.pedalons.dto.comments.response.CommentCounts;
@@ -51,6 +53,8 @@ import fr.pedalons.service.route.planner.PlannerStates;
 import fr.pedalons.service.route.response.TrackMetadata;
 import fr.pedalons.service.security.annotation.CheckAccess;
 import fr.pedalons.service.security.annotation.Public;
+import fr.pedalons.service.surface.RouteSurfaces;
+import fr.pedalons.service.surface.SurfaceRefreshService;
 import fr.pedalons.service.tag.TagLookup;
 import fr.pedalons.service.tag.TagService;
 import io.github.glandais.engine.gpx.GpxDocument;
@@ -100,6 +104,8 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
 
   @Inject ElevationRefreshService elevationRefreshService;
 
+  @Inject SurfaceRefreshService surfaceRefreshService;
+
   @Inject AssetRepository assetRepository;
 
   @Inject GpxTrackRepository gpxTrackRepository;
@@ -124,7 +130,12 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
   @Override
   protected RouteDetailDto toDto(Route entity) {
     return RouteDetailDto.from(
-        entity, assetService, commentCountLookup.forEntity(entity), tagsOf(entity), true);
+        entity,
+        assetService,
+        commentCountLookup.forEntity(entity),
+        tagsOf(entity),
+        true,
+        surfaceRefreshService.readRoute(entity.getId()));
   }
 
   @Override
@@ -196,8 +207,11 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
 
     Map<String, RouteDetailDto> bySlug = new LinkedHashMap<>();
     for (Route route : routes) {
+      // No surface in a list: nothing more to read per row
       bySlug.put(
-          route.getSlug(), RouteDetailDto.from(route, assetService, commentCounts, tags, geometry));
+          route.getSlug(),
+          RouteDetailDto.from(
+              route, assetService, commentCounts, tags, geometry, RouteSurfaces.NONE));
     }
 
     List<RouteDetailDto> ordered =
@@ -283,7 +297,7 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
   @Transactional
   @CheckAccess(entityType = EntityType.ROUTE, action = ActionType.CREATE)
   public RouteDto createRoute(String teamSlug, RouteRequest request, @Nullable Path gpxPath) {
-    return doCreateRoute(teamSlug, request, gpxPath, null);
+    return doCreateRoute(teamSlug, request, gpxPath, null, null);
   }
 
   /**
@@ -291,6 +305,10 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
    * copiedState} is the planner state of the preview, written with the track of the new route
    * (docs/LEDGER_*.md WEB-100, C4a). The track comes from the preview's original GPX, which is the
    * one derived from that state, so the two agree by construction.
+   *
+   * <p>{@code copiedSurfaces} are the surface documents of the preview, one per track, when they
+   * describe its current tracks (C1b): the new route has the same tracks, so it keeps them and
+   * asks for nothing.
    */
   @Transactional
   @CheckAccess(entityType = EntityType.ROUTE, action = ActionType.CREATE)
@@ -298,15 +316,17 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
       String teamSlug,
       RouteRequest request,
       @Nullable Path gpxPath,
-      @Nullable PlannerState copiedState) {
-    return doCreateRoute(teamSlug, request, gpxPath, copiedState);
+      @Nullable PlannerState copiedState,
+      @Nullable List<@Nullable TrackSurfaceDocument> copiedSurfaces) {
+    return doCreateRoute(teamSlug, request, gpxPath, copiedState, copiedSurfaces);
   }
 
   private RouteDto doCreateRoute(
       String teamSlug,
       RouteRequest request,
       @Nullable Path gpxPath,
-      @Nullable PlannerState copiedState) {
+      @Nullable PlannerState copiedState,
+      @Nullable List<@Nullable TrackSurfaceDocument> copiedSurfaces) {
     Team team = teamService.getTeam(teamSlug);
     User creator = pedalonsContext.getUser();
 
@@ -364,6 +384,7 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
       route.setWindDirection(getWindDirection(metadata));
       recordElevationQuality(route, quality, gpxResult);
       storePlannerState(route, requestedState != null ? requestedState : copiedState, gpxResult);
+      storeOrRequestSurfaces(route, copiedSurfaces, gpxResult);
 
       updateMedia(route, request.media());
       routeRepository.persist(route);
@@ -415,6 +436,27 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
         .getTracks()
         .getFirst()
         .setPlannerState(new PlannerStateDocument(originalFileId(result), state));
+  }
+
+  /**
+   * The surface of the tracks just saved (docs/LEDGER_*.md WEB-100, C1b): the documents of the
+   * preview this route is promoted from when they cover every track, else a request for the
+   * background computation, in this transaction.
+   */
+  private void storeOrRequestSurfaces(
+      Route route,
+      @Nullable List<@Nullable TrackSurfaceDocument> copied,
+      GpxProcessingService.GpxProcessingResult result) {
+    List<GpxTrack> tracks = route.getTracks();
+    if (copied != null
+        && copied.size() == tracks.size()
+        && copied.stream().allMatch(Objects::nonNull)) {
+      for (int i = 0; i < tracks.size(); i++) {
+        tracks.get(i).setSurfaces(Objects.requireNonNull(copied.get(i)));
+      }
+      return;
+    }
+    surfaceRefreshService.requestRoute(route, originalFileId(result));
   }
 
   private static long originalFileId(GpxProcessingService.GpxProcessingResult result) {
@@ -520,6 +562,8 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
         // The new tracks carry no state of their own: the old state left with the old tracks
         // (WEB-100, C4a). A state is only written when this save was made of one.
         storePlannerState(route, requestedState, gpxResult);
+        // The new tracks have no surface: the old ones left with the old tracks (WEB-100, C1b)
+        surfaceRefreshService.requestRoute(route, originalFileId(gpxResult));
       }
     } catch (Exception e) {
       throw new BusinessException(ErrorCode.GPX_FAILURE, e);

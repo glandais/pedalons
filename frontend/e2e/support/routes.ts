@@ -8,6 +8,9 @@ import type {
   RouteDto,
   RouteRequest,
   RoutesBulkResponse,
+  SurfaceSpanDto,
+  TrackDto,
+  TrackSurfaceState,
   StageRequest,
   TripDto,
   TripRequest,
@@ -436,3 +439,33 @@ export async function watchElevation(page: Page): Promise<LineElevationRequest[]
   })
   return requests
 }
+
+/**
+ * Answers the GET of `apiPath` with the real response whose tracks carry the surface `surfaceOf`
+ * says (WEB-100 C1b). The e2e stack runs with the surface computation off (no call to Stadia Maps,
+ * `.env.e2e`), so a track never has one: the browser is handed what the worker would have stored.
+ * Only a read the browser sends is touched: the page must be reached by a client-side navigation,
+ * the SSR server's own prefetch does not go through the browser.
+ */
+export async function withTrackSurfaces(
+  page: Page,
+  apiPath: string,
+  surfaceOf: (
+    track: TrackDto,
+    index: number
+  ) => { surfaceState: TrackSurfaceState; surfaces?: SurfaceSpanDto[] }
+) {
+  await page.route(
+    (url) => url.pathname === apiPath,
+    async (route) => {
+      if (route.request().method() !== 'GET') return route.continue()
+      const response = await route.fetch()
+      const body = (await response.json()) as { tracks: TrackDto[] }
+      body.tracks = body.tracks.map((track, i) => ({ ...track, ...surfaceOf(track, i) }))
+      return route.fulfill({ response, json: body })
+    }
+  )
+}
+
+/** The length of a track: the measure (4th ordinate) of its last point. */
+export const trackLength = (track: TrackDto) => track.line.coordinates.at(-1)?.[3] ?? 0

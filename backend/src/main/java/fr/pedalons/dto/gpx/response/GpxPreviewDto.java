@@ -5,13 +5,16 @@ import static org.geolatte.geom.builder.DSL.point;
 import static org.geolatte.geom.crs.CoordinateReferenceSystems.WGS84;
 
 import fr.pedalons.domain.gpx.GpxPreview;
+import fr.pedalons.domain.gpx.GpxPreview.PreviewTrack;
 import fr.pedalons.dto.routes.response.TrackDto;
 import fr.pedalons.dto.routes.response.WaypointDto;
 import fr.pedalons.dto.validation.ValidateSchema;
 import fr.pedalons.enums.ElevationState;
 import fr.pedalons.service.route.ClimbNaming.NamedPoint;
+import fr.pedalons.service.surface.TrackSurfaceReadout;
 import java.time.Instant;
 import java.util.List;
+import java.util.stream.IntStream;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.jspecify.annotations.Nullable;
 
@@ -58,7 +61,12 @@ public record GpxPreviewDto(
     @Schema(description = "Tracks", required = true) List<TrackDto> tracks,
     @Schema(description = "Waypoints", required = true) List<WaypointDto> waypoints) {
 
-  public static GpxPreviewDto from(GpxPreview preview, boolean owned) {
+  /**
+   * @param surfaces the surface of each track, in order (docs/LEDGER_*.md WEB-100, C1b); empty
+   *     when nothing is known of any
+   */
+  public static GpxPreviewDto from(
+      GpxPreview preview, boolean owned, List<TrackSurfaceReadout> surfaces) {
     String publicId = preview.getPublicId().toString();
     return new GpxPreviewDto(
         publicId,
@@ -74,15 +82,18 @@ public record GpxPreviewDto(
         "/api/gpx-previews/" + publicId + "/gpx",
         "/api/gpx-previews/" + publicId + "/fit",
         preview.isDrawn(),
-        preview.getTracks().stream()
-            .map(
-                t ->
-                    TrackDto.of(
-                        t.trackPoints(),
-                        t.climbs(),
-                        preview.getWaypoints().stream()
-                            .map(w -> new NamedPoint(w.name(), w.lat(), w.lng()))
-                            .toList()))
+        IntStream.range(0, preview.getTracks().size())
+            .mapToObj(
+                i -> {
+                  PreviewTrack t = preview.getTracks().get(i);
+                  return TrackDto.of(
+                      t.trackPoints(),
+                      t.climbs(),
+                      preview.getWaypoints().stream()
+                          .map(w -> new NamedPoint(w.name(), w.lat(), w.lng()))
+                          .toList(),
+                      i < surfaces.size() ? surfaces.get(i) : TrackSurfaceReadout.NONE);
+                })
             .toList(),
         preview.getWaypoints().stream()
             .map(w -> new WaypointDto(point(WGS84, g(w.lng(), w.lat())), w.name()))

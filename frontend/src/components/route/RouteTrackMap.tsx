@@ -31,6 +31,11 @@ interface RouteTrackMapProps {
   /** Padding used when fitting the track to the viewport. Defaults to 50px on every side. */
   fitPadding?: number | PaddingOptions
   onMoveStart?: () => void
+  /**
+   * The colour of the segment starting at a point (track index, point index in the track), instead
+   * of the climb's grade (surface of a saved route, WEB-100 C1b). Keep its identity stable.
+   */
+  lineColorAt?: (trackIndex: number, pointIndex: number) => string
   /** Gets the MapLibre event, whose `eventData` tells a programmatic move from the user's. */
   onMoveEnd?: (event: ViewStateChangeEvent) => void
   /**
@@ -53,6 +58,7 @@ export function RouteTrackMap({
   hoveredPointIndex,
   onHoverPoint,
   fitPadding = 50,
+  lineColorAt,
   onMoveStart,
   onMoveEnd,
   controls,
@@ -71,7 +77,10 @@ export function RouteTrackMap({
   const waypoints = route.waypoints || []
 
   // Create gradient line GeoJSON
-  const lineFeatures = useMemo(() => createGradientLineFeatures(route.tracks), [route.tracks])
+  const lineFeatures = useMemo(
+    () => createGradientLineFeatures(route.tracks, lineColorAt),
+    [route.tracks, lineColorAt]
+  )
 
   // The direction chevrons follow whole tracks: placed on the gradient's short segments, they
   // would restart (or vanish) at every colour change.

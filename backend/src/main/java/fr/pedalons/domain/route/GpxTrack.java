@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.geolatte.geom.G2D;
 import org.geolatte.geom.LineString;
+import org.hibernate.annotations.LazyGroup;
 import org.hibernate.annotations.Type;
 import org.jspecify.annotations.Nullable;
 
@@ -66,6 +67,17 @@ public class GpxTrack extends BaseEntity {
   @Type(JsonBinaryType.class)
   @Column(name = "planner_state", columnDefinition = "jsonb")
   private @Nullable PlannerStateDocument plannerState;
+
+  /**
+   * Surface along the track (docs/LEDGER_*.md WEB-100, C1b), computed in the background after the
+   * save. Lazy, in a group of its own: reading it must not load the planner state, nor the other
+   * way. Read through projections ({@code GpxTrackRepository#findSurfaces}).
+   */
+  @Basic(fetch = FetchType.LAZY)
+  @LazyGroup("surfaces")
+  @Type(JsonBinaryType.class)
+  @Column(name = "surfaces", columnDefinition = "jsonb")
+  private @Nullable TrackSurfaceDocument surfaces;
 
   public GpxTrack(
       User createdBy,

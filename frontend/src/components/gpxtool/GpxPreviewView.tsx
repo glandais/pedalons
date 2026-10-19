@@ -19,12 +19,14 @@ import { useListTeams } from '@/api/endpoints/teams/teams'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { ShareButton } from '@/components/common/ShareButton'
 import { RouteMapView } from '@/components/route/RouteMapView'
+import { RouteSurfaceSummary } from '@/components/route/RouteSurfaceSummary'
 import { paths } from '@/config/paths'
 import { useAuth } from '@/hooks/useAuth'
 import { useGpsConnections } from '@/hooks/useGpsConnections'
 import { useUnits } from '@/hooks/useUnits'
 import { apiErrorCode, ApiClientError } from '@/lib/apiError'
 import { defaultMedia } from '@/lib/apiUtils'
+import type { PlannerColorBy } from '@/lib/plannerSurface'
 
 interface GpxPreviewViewProps {
   preview: GpxPreviewDto
@@ -46,6 +48,7 @@ export function GpxPreviewView({ preview }: GpxPreviewViewProps) {
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [deleteOpened, setDeleteOpened] = useState(false)
+  const [colorBy, setColorBy] = useState<PlannerColorBy>('grade')
 
   const deletePreviewMutation = useDeletePreview()
 
@@ -121,8 +124,15 @@ export function GpxPreviewView({ preview }: GpxPreviewViewProps) {
       </Group>
 
       <Box>
-        <RouteMapView route={preview} fullscreenPath={paths.gpxToolsMap(preview.id)} />
+        <RouteMapView
+          route={preview}
+          fullscreenPath={paths.gpxToolsMap(preview.id)}
+          colorBy={colorBy}
+        />
       </Box>
+
+      {/* Under the map, like the route sheet: its switch colours the map and the profile above */}
+      <RouteSurfaceSummary tracks={preview.tracks} colorBy={colorBy} onColorByChange={setColorBy} />
 
       <Group gap="lg">
         <Text>{distance(preview.distance)}</Text>

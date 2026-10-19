@@ -2292,6 +2292,36 @@ export const GetRoutesBulkResponse = zod
                           .describe('Climb segment information')
                       )
                       .describe('List of climbs on the route'),
+                    surfaceState: zod
+                      .enum(['PENDING', 'READY', 'UNAVAILABLE'])
+                      .optional()
+                      .describe(
+                        'Where the surface of the track stands. Absent: never computed (a track saved before the feature, or the feature off), or not included (bulk endpoint)'
+                      ),
+                    surfaces: zod
+                      .array(
+                        zod
+                          .object({
+                            from: zod.number().describe('Start, metres along the track'),
+                            to: zod.number().describe('End, metres along the track'),
+                            surface: zod.enum([
+                              'PAVED',
+                              'PAVED_ROUGH',
+                              'GRAVEL',
+                              'DIRT',
+                              'PATH',
+                              'UNKNOWN',
+                              'OFF_NETWORK',
+                            ]),
+                          })
+                          .describe(
+                            'A stretch of a track with one surface class, in metres along the track (the M of its line)'
+                          )
+                      )
+                      .optional()
+                      .describe(
+                        "Surface along the track when surfaceState is READY: contiguous spans from 0 to the track's length, adjacent spans of the same class merged. Derived from OpenStreetMap (© OpenStreetMap contributors, ODbL) by Stadia Maps"
+                      ),
                   })
                   .describe('GPX track with track points')
               )
@@ -3652,6 +3682,36 @@ export const GetRouteResponse = zod
                   .describe('Climb segment information')
               )
               .describe('List of climbs on the route'),
+            surfaceState: zod
+              .enum(['PENDING', 'READY', 'UNAVAILABLE'])
+              .optional()
+              .describe(
+                'Where the surface of the track stands. Absent: never computed (a track saved before the feature, or the feature off), or not included (bulk endpoint)'
+              ),
+            surfaces: zod
+              .array(
+                zod
+                  .object({
+                    from: zod.number().describe('Start, metres along the track'),
+                    to: zod.number().describe('End, metres along the track'),
+                    surface: zod.enum([
+                      'PAVED',
+                      'PAVED_ROUGH',
+                      'GRAVEL',
+                      'DIRT',
+                      'PATH',
+                      'UNKNOWN',
+                      'OFF_NETWORK',
+                    ]),
+                  })
+                  .describe(
+                    'A stretch of a track with one surface class, in metres along the track (the M of its line)'
+                  )
+              )
+              .optional()
+              .describe(
+                "Surface along the track when surfaceState is READY: contiguous spans from 0 to the track's length, adjacent spans of the same class merged. Derived from OpenStreetMap (© OpenStreetMap contributors, ODbL) by Stadia Maps"
+              ),
           })
           .describe('GPX track with track points')
       )
@@ -4236,6 +4296,36 @@ export const ChangeRouteSlugResponse = zod
                   .describe('Climb segment information')
               )
               .describe('List of climbs on the route'),
+            surfaceState: zod
+              .enum(['PENDING', 'READY', 'UNAVAILABLE'])
+              .optional()
+              .describe(
+                'Where the surface of the track stands. Absent: never computed (a track saved before the feature, or the feature off), or not included (bulk endpoint)'
+              ),
+            surfaces: zod
+              .array(
+                zod
+                  .object({
+                    from: zod.number().describe('Start, metres along the track'),
+                    to: zod.number().describe('End, metres along the track'),
+                    surface: zod.enum([
+                      'PAVED',
+                      'PAVED_ROUGH',
+                      'GRAVEL',
+                      'DIRT',
+                      'PATH',
+                      'UNKNOWN',
+                      'OFF_NETWORK',
+                    ]),
+                  })
+                  .describe(
+                    'A stretch of a track with one surface class, in metres along the track (the M of its line)'
+                  )
+              )
+              .optional()
+              .describe(
+                "Surface along the track when surfaceState is READY: contiguous spans from 0 to the track's length, adjacent spans of the same class merged. Derived from OpenStreetMap (© OpenStreetMap contributors, ODbL) by Stadia Maps"
+              ),
           })
           .describe('GPX track with track points')
       )
@@ -4663,6 +4753,36 @@ export const UndeleteRouteResponse = zod
                   .describe('Climb segment information')
               )
               .describe('List of climbs on the route'),
+            surfaceState: zod
+              .enum(['PENDING', 'READY', 'UNAVAILABLE'])
+              .optional()
+              .describe(
+                'Where the surface of the track stands. Absent: never computed (a track saved before the feature, or the feature off), or not included (bulk endpoint)'
+              ),
+            surfaces: zod
+              .array(
+                zod
+                  .object({
+                    from: zod.number().describe('Start, metres along the track'),
+                    to: zod.number().describe('End, metres along the track'),
+                    surface: zod.enum([
+                      'PAVED',
+                      'PAVED_ROUGH',
+                      'GRAVEL',
+                      'DIRT',
+                      'PATH',
+                      'UNKNOWN',
+                      'OFF_NETWORK',
+                    ]),
+                  })
+                  .describe(
+                    'A stretch of a track with one surface class, in metres along the track (the M of its line)'
+                  )
+              )
+              .optional()
+              .describe(
+                "Surface along the track when surfaceState is READY: contiguous spans from 0 to the track's length, adjacent spans of the same class merged. Derived from OpenStreetMap (© OpenStreetMap contributors, ODbL) by Stadia Maps"
+              ),
           })
           .describe('GPX track with track points')
       )

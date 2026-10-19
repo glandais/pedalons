@@ -6004,6 +6004,25 @@ components:
           $ref: "#/components/schemas/GeoPoint"
         to:
           $ref: "#/components/schemas/GeoPoint"
+    SurfaceSpanDto:
+      type: object
+      description: "A stretch of a track with one surface class, in metres along the\
+        \ track (the M of its line)"
+      required:
+      - from
+      - to
+      - surface
+      properties:
+        from:
+          type: number
+          format: double
+          description: "Start, metres along the track"
+        to:
+          type: number
+          format: double
+          description: "End, metres along the track"
+        surface:
+          $ref: "#/components/schemas/TrackSurface"
     SurfaceType:
       type: string
       enum:
@@ -7139,6 +7158,36 @@ components:
           items:
             $ref: "#/components/schemas/ClimbDto"
           description: List of climbs on the route
+        surfaceState:
+          description: "Where the surface of the track stands. Absent: never computed\
+            \ (a track saved before the feature, or the feature off), or not included\
+            \ (bulk endpoint)"
+          type: string
+          $ref: "#/components/schemas/TrackSurfaceState"
+        surfaces:
+          type: array
+          items:
+            $ref: "#/components/schemas/SurfaceSpanDto"
+          description: "Surface along the track when surfaceState is READY: contiguous\
+            \ spans from 0 to the track's length, adjacent spans of the same class\
+            \ merged. Derived from OpenStreetMap (© OpenStreetMap contributors, ODbL)\
+            \ by Stadia Maps"
+    TrackSurface:
+      type: string
+      enum:
+      - PAVED
+      - PAVED_ROUGH
+      - GRAVEL
+      - DIRT
+      - PATH
+      - UNKNOWN
+      - OFF_NETWORK
+    TrackSurfaceState:
+      type: string
+      enum:
+      - PENDING
+      - READY
+      - UNAVAILABLE
     TripDto:
       description: Trip data
       type: object
@@ -20131,7 +20180,7 @@ paths:
                 $ref: "#/components/schemas/VersionDto"
 info:
   title: Pedalons API
-  version: 11.13.0
+  version: 11.14.0
   description: API for Pedalons Cycling Team Management Platform
 servers:
 - url: http://localhost:8080

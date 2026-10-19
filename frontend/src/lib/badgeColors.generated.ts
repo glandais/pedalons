@@ -2,7 +2,7 @@
 // The family of each enum value (docs/BRANDING.md §3.6). How it renders is up to the component:
 // badges use Mantine's `light` variant, except where the series' variant says `filled`.
 
-import type { PublicationType, AdType, Status, TeamRole, SurfaceType, Visibility, RelativeWind, ClimbCategory } from '@/api/dto'
+import type { PublicationType, AdType, Status, TeamRole, SurfaceType, TrackSurface, Visibility, RelativeWind, ClimbCategory } from '@/api/dto'
 
 export type BadgeFamily = 'indigo' | 'blue' | 'green' | 'red' | 'yellow' | 'orange' | 'grape' | 'teal' | 'gray'
 
@@ -37,6 +37,16 @@ export const SURFACE_TYPE_COLORS = {
   MIXED: 'teal',
 } as const satisfies Record<SurfaceType, BadgeFamily>
 
+export const TRACK_SURFACE_COLORS = {
+  PAVED: 'gray',
+  PAVED_ROUGH: 'yellow',
+  GRAVEL: 'orange',
+  DIRT: 'green',
+  PATH: 'grape',
+  UNKNOWN: 'gray',
+  OFF_NETWORK: 'gray',
+} as const satisfies Record<TrackSurface, BadgeFamily>
+
 export const VISIBILITY_COLORS = {
   TEAM: 'gray',
   PUBLIC_UNLISTED: 'orange',
@@ -64,6 +74,7 @@ export const BADGE_VARIANTS = {
   Status: 'light',
   TeamRole: 'light',
   SurfaceType: 'light',
+  TrackSurface: 'light',
   Visibility: 'light',
   RelativeWind: 'light',
   ClimbCategory: 'filled',

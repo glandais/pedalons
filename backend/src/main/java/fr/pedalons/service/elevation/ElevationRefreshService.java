@@ -3,6 +3,7 @@ package fr.pedalons.service.elevation;
 import fr.pedalons.domain.asset.Asset;
 import fr.pedalons.domain.gpx.GpxPreview;
 import fr.pedalons.domain.gpx.GpxPreview.PreviewTrack;
+import fr.pedalons.domain.gpx.PreviewSurfacesDocument;
 import fr.pedalons.domain.route.PlannerStateDocument;
 import fr.pedalons.domain.route.Route;
 import fr.pedalons.domain.team.Team;
@@ -14,6 +15,7 @@ import fr.pedalons.repository.asset.AssetRepository;
 import fr.pedalons.repository.route.ElevationRefreshRepository;
 import fr.pedalons.repository.route.ElevationRefreshRepository.Claim;
 import fr.pedalons.repository.route.ElevationRefreshRepository.PreviewClaim;
+import fr.pedalons.repository.route.SurfaceRefreshRepository;
 import fr.pedalons.service.asset.AssetService;
 import fr.pedalons.service.gpx.GpxPreviewService;
 import fr.pedalons.service.publication.PublicationEndCalculator;
@@ -115,6 +117,7 @@ public class ElevationRefreshService {
   Duration maxWait;
 
   @Inject ElevationRefreshRepository refreshRepository;
+  @Inject SurfaceRefreshRepository surfaceRefreshRepository;
   @Inject GpxProcessingService gpxProcessingService;
   @Inject AssetService assetService;
   @Inject AssetRepository assetRepository;
@@ -602,6 +605,16 @@ public class ElevationRefreshService {
           if (planner != null && planner.trackRevision() == claim.sourceRevision()) {
             preview.setPlannerState(planner.withTrackRevision(recomputed.revision()));
           }
+          // The surface follows the track onto its new revision too (WEB-100, C1b): the catch-up
+          // changes the elevations and the simplification, not the 2D track; the spans rescale on
+          // read.
+          PreviewSurfacesDocument surfaces = preview.getSurfaces();
+          if (surfaces != null && surfaces.trackRevision() == claim.sourceRevision()) {
+            preview.setSurfaces(surfaces.withTrackRevision(recomputed.revision()));
+          }
+          // A request still waiting for the old revision follows it
+          surfaceRefreshRepository.forwardPreviewRevision(
+              claim.previewId(), claim.sourceRevision(), recomputed.revision());
           preview.setTracks(recomputed.tracks());
           preview.setDistance(metadata.distance());
           preview.setElevationGain(metadata.elevationGain());

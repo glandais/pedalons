@@ -1,12 +1,15 @@
 // How the surface of the route being drawn is coloured (WEB-100 C1a), on the map and on the
-// profile. The families are the business colour code's (docs/BRANDING.md §3.6, `SurfaceType`): a
-// paved edge is ROAD's grey, an unpaved one GRAVEL's orange, so the colour means the same thing
-// here as on a route's badge. What is not known is a lighter grey (still readable on a white strip
-// and a light basemap), and what is not on the network (a straight line, drawn dashed) a medium one.
-// The classes the detailed surface will add (C1b) take their families from the same code.
+// profile. Its four classes take the colours of the saved route's (`trackSurface.ts`, C1b), whose
+// families are the business colour code's (docs/BRANDING.md §3.6, `TrackSurface`): a paved edge is
+// asphalt's grey (ROAD's on a route's badge), an unpaved one the compacted orange (GRAVEL's), so the
+// colour means the same thing while drawing, once saved and on the badge. What is not known is a
+// paler grey than paved, and what is not on the network (a straight line, drawn dashed) a medium
+// one. The greys depend on the colour scheme: the dark theme loads the basemap's dark variant, where
+// a dark grey vanishes, so there paved is the light one and unknown the dimmer.
 import type { MantineTheme } from '@mantine/core'
-import { SURFACE_TYPE_COLORS, type BadgeFamily } from '@/lib/badgeColors.generated'
+import { TrackSurface } from '@/api/dto'
 import type { SurfaceClass } from '@/lib/planner'
+import { trackSurfaceColors } from '@/lib/trackSurface'
 
 /** What the profile and the map colour by. */
 export type PlannerColorBy = 'grade' | 'surface'
@@ -14,20 +17,24 @@ export type PlannerColorBy = 'grade' | 'surface'
 /** The classes of the legend, in its order. */
 export const SURFACE_CLASSES: SurfaceClass[] = ['paved', 'unpaved', 'unknown', 'offNetwork']
 
-const FAMILY: Record<SurfaceClass, { family: BadgeFamily; shade: number }> = {
-  paved: { family: SURFACE_TYPE_COLORS.ROAD, shade: 7 },
-  unpaved: { family: SURFACE_TYPE_COLORS.GRAVEL, shade: 6 },
-  unknown: { family: SURFACE_TYPE_COLORS.ROAD, shade: 4 },
-  offNetwork: { family: SURFACE_TYPE_COLORS.ROAD, shade: 5 },
+/** The class of the saved route whose colour each class of the route being drawn takes. */
+const CLASS: Record<SurfaceClass, TrackSurface> = {
+  paved: TrackSurface.PAVED,
+  unpaved: TrackSurface.GRAVEL,
+  unknown: TrackSurface.UNKNOWN,
+  offNetwork: TrackSurface.OFF_NETWORK,
 }
 
-/** The colour of every class, resolved from the Mantine theme. */
-export function surfaceColors(theme: MantineTheme): Record<SurfaceClass, string> {
-  const colorOf = (c: SurfaceClass) => theme.colors[FAMILY[c].family][FAMILY[c].shade]
+/** The colour of every class, resolved from the Mantine theme for the given colour scheme. */
+export function surfaceColors(
+  theme: MantineTheme,
+  colorScheme: 'light' | 'dark'
+): Record<SurfaceClass, string> {
+  const saved = trackSurfaceColors(theme, colorScheme)
   return {
-    paved: colorOf('paved'),
-    unpaved: colorOf('unpaved'),
-    unknown: colorOf('unknown'),
-    offNetwork: colorOf('offNetwork'),
+    paved: saved[CLASS.paved],
+    unpaved: saved[CLASS.unpaved],
+    unknown: saved[CLASS.unknown],
+    offNetwork: saved[CLASS.offNetwork],
   }
 }

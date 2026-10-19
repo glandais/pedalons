@@ -17,6 +17,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.LazyGroup;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.jspecify.annotations.Nullable;
@@ -119,6 +120,18 @@ public class GpxPreview {
   @Type(JsonBinaryType.class)
   @Column(name = "planner_state", columnDefinition = "jsonb")
   private @Nullable PlannerStateDocument plannerState;
+
+  /**
+   * Surface along the tracks (docs/LEDGER_*.md WEB-100, C1b), valid while its revision is {@link
+   * #filesRevision}. Lazy, in a group of its own, like {@link #plannerState}: read through
+   * projections ({@code GpxPreviewRepository#findSurfaces}). Deliberately not a field of {@link
+   * PreviewTrack}, which the JSONB reader of the previous release does not tolerate.
+   */
+  @Basic(fetch = FetchType.LAZY)
+  @LazyGroup("surfaces")
+  @Type(JsonBinaryType.class)
+  @Column(name = "surfaces", columnDefinition = "jsonb")
+  private @Nullable PreviewSurfacesDocument surfaces;
 
   @CreationTimestamp
   @Column(name = "created_at", nullable = false, updatable = false)

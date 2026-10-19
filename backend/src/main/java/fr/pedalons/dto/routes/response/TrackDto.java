@@ -9,8 +9,10 @@ import fr.pedalons.domain.route.ClimbData;
 import fr.pedalons.domain.route.GpxTrack;
 import fr.pedalons.dto.common.GeoJsonLineString;
 import fr.pedalons.dto.validation.ValidateSchema;
+import fr.pedalons.enums.TrackSurfaceState;
 import fr.pedalons.service.route.ClimbNaming;
 import fr.pedalons.service.route.ClimbNaming.NamedPoint;
+import fr.pedalons.service.surface.TrackSurfaceReadout;
 import java.util.List;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.geolatte.geom.G3D;
@@ -18,6 +20,7 @@ import org.geolatte.geom.G3DM;
 import org.geolatte.geom.LineString;
 import org.geolatte.geom.crs.CoordinateReferenceSystem;
 import org.geolatte.geom.crs.LinearUnit;
+import org.jspecify.annotations.Nullable;
 
 /**
  * GPX Track DTO with track points for frontend rendering.
@@ -26,7 +29,20 @@ import org.geolatte.geom.crs.LinearUnit;
 @ValidateSchema
 public record TrackDto(
     @Schema(implementation = GeoJsonLineString.class, required = true) LineString<G3DM> line,
-    @Schema(description = "List of climbs on the route", required = true) List<ClimbDto> climbs) {
+    @Schema(description = "List of climbs on the route", required = true) List<ClimbDto> climbs,
+    @Nullable
+        @Schema(
+            description =
+                "Where the surface of the track stands. Absent: never computed (a track saved"
+                    + " before the feature, or the feature off), or not included (bulk endpoint)")
+        TrackSurfaceState surfaceState,
+    @Nullable
+        @Schema(
+            description =
+                "Surface along the track when surfaceState is READY: contiguous spans from 0 to"
+                    + " the track's length, adjacent spans of the same class merged. Derived from"
+                    + " OpenStreetMap (© OpenStreetMap contributors, ODbL) by Stadia Maps")
+        List<SurfaceSpanDto> surfaces) {
 
   private static final CoordinateReferenceSystem<G3DM> WGS84_3DM =
       addLinearSystem(
@@ -51,12 +67,27 @@ public record TrackDto(
    *     ClimbNaming}, docs/LEDGER_*.md API-10)
    */
   public static TrackDto from(GpxTrack track, List<NamedPoint> waypoints) {
-    return of(track.getTrackPoints(), track.getClimbs(), waypoints);
+    return from(track, waypoints, TrackSurfaceReadout.NONE);
+  }
+
+  /** As {@link #from(GpxTrack, List)}, with the surface of the track (docs/LEDGER_*.md WEB-100, C1b). */
+  public static TrackDto from(
+      GpxTrack track, List<NamedPoint> waypoints, TrackSurfaceReadout surface) {
+    return of(track.getTrackPoints(), track.getClimbs(), waypoints, surface);
   }
 
   /** Builds a track DTO straight from computed points and climbs, with no entity involved. */
   public static TrackDto of(
       List<GpxTrack.TrackPoint> trackPoints, List<ClimbData> climbs, List<NamedPoint> waypoints) {
+    return of(trackPoints, climbs, waypoints, TrackSurfaceReadout.NONE);
+  }
+
+  /** As {@link #of(List, List, List)}, with the surface of the track (docs/LEDGER_*.md WEB-100, C1b). */
+  public static TrackDto of(
+      List<GpxTrack.TrackPoint> trackPoints,
+      List<ClimbData> climbs,
+      List<NamedPoint> waypoints,
+      TrackSurfaceReadout surface) {
     G3DM[] geomPoints =
         trackPoints.stream().map(p -> g(p.lng(), p.lat(), p.ele(), p.dist())).toArray(G3DM[]::new);
     LineString<G3DM> line = linestring(WGS84_3DM, geomPoints);
@@ -64,6 +95,8 @@ public record TrackDto(
         line,
         climbs.stream()
             .map(climb -> ClimbDto.from(climb, ClimbNaming.nameOf(climb, trackPoints, waypoints)))
-            .toList());
+            .toList(),
+        surface.state(),
+        surface.spans(trackPoints.isEmpty() ? 0 : trackPoints.getLast().dist()));
   }
 }

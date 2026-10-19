@@ -38,6 +38,13 @@ enums:
   SurfaceType:
     style: soft
     values: { ROAD: gray, GRAVEL: orange, MTB: green, MIXED: teal }
+  # Surface le long d'un tracé (ledger WEB-100, C1b) : profil, carte et répartition de la fiche.
+  # Gris pour l'asphalte comme ROAD, orange pour le compacté comme GRAVEL, vert pour la terre comme
+  # MTB ; l'inconnu et le hors réseau sont gris aussi, plus clairs (la nuance est au client).
+  TrackSurface:
+    style: soft
+    values:
+      { PAVED: gray, PAVED_ROUGH: yellow, GRAVEL: orange, DIRT: green, PATH: grape, UNKNOWN: gray, OFF_NETWORK: gray }
   Visibility:
     style: soft
     values: { PUBLIC: blue, PUBLIC_UNLISTED: orange, TEAM: gray }

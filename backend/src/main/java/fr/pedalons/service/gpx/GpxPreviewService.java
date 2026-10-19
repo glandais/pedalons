@@ -8,8 +8,10 @@ import fr.pedalons.common.planner.PlannerState;
 import fr.pedalons.domain.gpx.GpxPreview;
 import fr.pedalons.domain.gpx.GpxPreview.PreviewTrack;
 import fr.pedalons.domain.gpx.GpxPreview.PreviewWaypoint;
+import fr.pedalons.domain.gpx.PreviewSurfacesDocument;
 import fr.pedalons.domain.platform.Domain;
 import fr.pedalons.domain.route.PlannerStateDocument;
+import fr.pedalons.domain.route.TrackSurfaceDocument;
 import fr.pedalons.domain.user.User;
 import fr.pedalons.dto.common.PedalonsPage;
 import fr.pedalons.dto.error.ErrorCode;
@@ -41,6 +43,8 @@ import fr.pedalons.service.security.PedalonsQueryContext;
 import fr.pedalons.service.security.SecurityVerifier;
 import fr.pedalons.service.security.annotation.Logged;
 import fr.pedalons.service.security.annotation.Public;
+import fr.pedalons.service.surface.SurfaceRefreshService;
+import fr.pedalons.service.surface.TrackSurfaceReadout;
 import fr.pedalons.service.team.TeamService;
 import fr.pedalons.service.thumbnail.ThumbnailService;
 import io.github.glandais.engine.gpx.GpxDocument;
@@ -132,6 +136,8 @@ public class GpxPreviewService {
 
   @Inject PlannerStates plannerStates;
 
+  @Inject SurfaceRefreshService surfaceRefreshService;
+
   /**
    * Parses and analyses an uploaded GPX file, stores it, and returns the persisted preview.
    *
@@ -216,11 +222,14 @@ public class GpxPreviewService {
           .run(
               () -> {
                 gpxPreviewRepository.persist(preview);
-                if (quality == ElevationQuality.FAST) {
-                  // The row first: the request points at it
+                if (quality == ElevationQuality.FAST || surfaceRefreshService.isEnabled()) {
+                  // The row first: the requests point at it
                   gpxPreviewRepository.flush();
+                }
+                if (quality == ElevationQuality.FAST) {
                   elevationRefreshService.requestPreview(preview.getId(), revision);
                 }
+                surfaceRefreshService.requestPreview(preview.getId(), revision);
               });
     } catch (RuntimeException e) {
       deleteFiles(publicId, revision);
@@ -233,7 +242,7 @@ public class GpxPreviewService {
   /** Analyses an uploaded GPX file. Entry point for the API layer. */
   @Logged
   public GpxPreviewDto createPreview(Path gpxPath, String fallbackName) {
-    return toDto(create(gpxPath, fallbackName));
+    return toDtoJustSaved(create(gpxPath, fallbackName));
   }
 
   /**
@@ -264,7 +273,7 @@ public class GpxPreviewService {
     String name = truncateName(String.join(" + ", names));
     GpxDocument merged = GpxTrackMerger.merge(docs, name);
     GpxLimits.checkTracks(merged);
-    return toDto(create(merged, name));
+    return toDtoJustSaved(create(merged, name));
   }
 
   /** A client-side file name without its {@code .gpx} extension, or "GPX" when there is none. */
@@ -304,11 +313,11 @@ public class GpxPreviewService {
     }
     checkPlannerAllowed();
     if (plannerState == null) {
-      return toDto(create(gpxProcessingService.fromPoints(name, points), name, true));
+      return toDtoJustSaved(create(gpxProcessingService.fromPoints(name, points), name, true));
     }
     GpxDocument gpx =
         gpxProcessingService.fromPoints(name, plannerStates.validateAndDerive(plannerState));
-    return toDto(create(gpx, name, plannerState.drawn(), plannerState));
+    return toDtoJustSaved(create(gpx, name, plannerState.drawn(), plannerState));
   }
 
   /**
@@ -395,7 +404,7 @@ public class GpxPreviewService {
                 lockForUpdate(previewId);
                 GpxPreview managed = getByPublicId(publicId);
                 managed.setName(truncateName(name));
-                return toDto(managed);
+                return toDto(managed, surfaceRefreshService.readPreview(managed));
               });
     }
 
@@ -445,12 +454,17 @@ public class GpxPreviewService {
               // Written or cleared with the track it describes, never left over a new one
               managed.setPlannerState(
                   stateToStore == null ? null : new PlannerStateDocument(revision, stateToStore));
-              if (quality == ElevationQuality.FAST) {
+              // The surface of the old track left with it (WEB-100, C1b)
+              managed.setSurfaces(null);
+              if (quality == ElevationQuality.FAST || surfaceRefreshService.isEnabled()) {
                 gpxPreviewRepository.flush();
+              }
+              if (quality == ElevationQuality.FAST) {
                 elevationRefreshService.requestPreview(previewId, revision);
               }
+              surfaceRefreshService.requestPreview(previewId, revision);
               deleteTrackFilesAfterCommit(pid, previous);
-              return toDto(managed);
+              return toDto(managed, surfaceRefreshService.pendingReadouts(tracks.size()));
             });
   }
 
@@ -462,7 +476,8 @@ public class GpxPreviewService {
    */
   @Public
   public GpxPreviewDto getPreview(String publicId) {
-    return toDto(getByPublicId(publicId));
+    GpxPreview preview = getByPublicId(publicId);
+    return toDto(preview, surfaceRefreshService.readPreview(preview));
   }
 
   /**
@@ -497,6 +512,22 @@ public class GpxPreviewService {
   }
 
   /**
+   * The stored surface documents when they still describe the current tracks of the preview (same
+   * revision, same number of tracks), else null.
+   */
+  private @Nullable List<@Nullable TrackSurfaceDocument> readableSurfaces(GpxPreview preview) {
+    PreviewSurfacesDocument document = gpxPreviewRepository.findSurfaces(preview.getId());
+    Long revision = preview.getFilesRevision();
+    if (document == null
+        || revision == null
+        || document.trackRevision() != revision
+        || document.tracks().size() != preview.getTracks().size()) {
+      return null;
+    }
+    return document.tracks();
+  }
+
+  /**
    * Lists the current user's previews still within the retention window, most recent first. Scoped
    * to the caller: only previews they created, in their domain.
    */
@@ -518,9 +549,26 @@ public class GpxPreviewService {
         .orElseThrow(() -> new NotFoundException(ErrorCode.GPX_NOT_FOUND));
   }
 
+  /** The DTO of a preview, its surface read ({@link SurfaceRefreshService#readPreview}). */
   public GpxPreviewDto toDto(GpxPreview preview) {
+    return toDto(preview, surfaceRefreshService.readPreview(preview));
+  }
+
+  /**
+   * @param surfaces the surface of each track of the preview
+   *     ({@link SurfaceRefreshService#readPreview})
+   */
+  public GpxPreviewDto toDto(GpxPreview preview, List<TrackSurfaceReadout> surfaces) {
     boolean owned = preview.getCreatedBy().getId().equals(pedalonsContext.getUserIdNullable());
-    return GpxPreviewDto.from(preview, owned);
+    return GpxPreviewDto.from(preview, owned, surfaces);
+  }
+
+  /**
+   * The DTO of a preview just saved, whose entity is detached: no read of its surface, which is
+   * queued and not computed yet (docs/LEDGER_*.md WEB-100, C1b).
+   */
+  private GpxPreviewDto toDtoJustSaved(GpxPreview preview) {
+    return toDto(preview, surfaceRefreshService.pendingReadouts(preview.getTracks().size()));
   }
 
   /** Sends a preview's filtered GPX to one of the current user's connected GPS services. */
@@ -571,9 +619,13 @@ public class GpxPreviewService {
                       return document == null ? null : document.state();
                     })
             : null;
+    // The surface, on the other hand, is public on the page of the preview: any caller takes it
+    // along, and the route then asks for no computation of its own (WEB-100, C1b)
+    List<@Nullable TrackSurfaceDocument> copiedSurfaces =
+        QuarkusTransaction.requiringNew().call(() -> readableSurfaces(getByPublicId(publicId)));
     Path gpxPath = downloadOriginalGpx(preview);
     try {
-      return routeService.createRoute(teamSlug, request, gpxPath, copied);
+      return routeService.createRoute(teamSlug, request, gpxPath, copied, copiedSurfaces);
     } finally {
       try {
         Files.deleteIfExists(gpxPath);

@@ -1,10 +1,12 @@
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { MapRef } from 'react-map-gl/maplibre'
 import { IconArrowsMaximize } from '@tabler/icons-react'
-import { Box, Center, Paper, Text } from '@mantine/core'
+import { Box, Center, Paper, Text, useMantineTheme } from '@mantine/core'
 import { MapControlButton, MapControlGroup } from '@/components/map/MapControl'
 import type { RouteDetailDto } from '@/api/dto'
+import { pointSurfaces, trackSurfaceColors } from '@/lib/trackSurface'
+import type { PlannerColorBy } from '@/lib/plannerSurface'
 import { useMapHeight } from '@/hooks/useResponsive'
 import { getOverlayBg } from '@/lib/colors'
 import { useResolvedColorScheme } from '@/hooks/useResolvedColorScheme'
@@ -25,16 +27,45 @@ interface RouteMapViewProps {
   route: MappableRoute
   /** When set, shows a fullscreen action linking to this path (built by the caller via paths.xxx). */
   fullscreenPath?: string
+  /**
+   * What colours the profile and the line: the grade (default) or, once the route has its surface
+   * (WEB-100 C1b), the surface; without it, the grade whatever is asked.
+   */
+  colorBy?: PlannerColorBy
 }
 
-export function RouteMapView({ route, fullscreenPath }: RouteMapViewProps) {
+export function RouteMapView({ route, fullscreenPath, colorBy = 'grade' }: RouteMapViewProps) {
   const { t } = useTranslation()
+  const theme = useMantineTheme()
   const colorScheme = useResolvedColorScheme()
   const mapHeight = useMapHeight('full')
   const [hoveredPointIndex, setHoveredPointIndex] = useState<number>(-1)
   const mapRef = useRef<MapRef>(null)
 
   const trackPoints = route.tracks.flatMap((track) => track.line.coordinates)
+
+  // Class of every point of the flattened tracks, null while the route has no surface.
+  const surfaces = useMemo(
+    () => (colorBy === 'surface' ? pointSurfaces(route.tracks) : null),
+    [colorBy, route.tracks]
+  )
+  const colors = useMemo(() => trackSurfaceColors(theme, colorScheme), [theme, colorScheme])
+  const surfaceAt = useMemo(
+    () => (surfaces ? (i: number) => colors[surfaces[i]] : undefined),
+    [surfaces, colors]
+  )
+  // The map asks per track: the flat index is the size of the tracks before it plus the point's.
+  const lineColorAt = useMemo(() => {
+    if (!surfaces) return undefined
+    const offsets: number[] = []
+    let offset = 0
+    for (const track of route.tracks) {
+      offsets.push(offset)
+      offset += track.line.coordinates.length
+    }
+    return (trackIndex: number, pointIndex: number) =>
+      colors[surfaces[offsets[trackIndex] + pointIndex]]
+  }, [surfaces, colors, route.tracks])
 
   if (trackPoints.length === 0) {
     return (
@@ -59,6 +90,7 @@ export function RouteMapView({ route, fullscreenPath }: RouteMapViewProps) {
           hoveredPointIndex={hoveredPointIndex}
           onHoverPoint={setHoveredPointIndex}
           fitPadding={EMBEDDED_FIT_PADDING}
+          lineColorAt={lineColorAt}
           // Fullscreen action, in the control column with the zoom and basemap buttons
           controls={
             fullscreenPath && (
@@ -92,6 +124,8 @@ export function RouteMapView({ route, fullscreenPath }: RouteMapViewProps) {
               route={route}
               hoveredPointIndex={hoveredPointIndex}
               onHoverPoint={setHoveredPointIndex}
+              colorBy={surfaceAt ? 'surface' : 'grade'}
+              surfaceAt={surfaceAt}
             />
           </Box>
         </RouteTrackMap>

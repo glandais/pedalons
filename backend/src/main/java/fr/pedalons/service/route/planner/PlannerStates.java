@@ -1,5 +1,6 @@
 package fr.pedalons.service.route.planner;
 
+import fr.pedalons.common.GeoDistance;
 import fr.pedalons.common.GeoPoint;
 import fr.pedalons.common.exception.BusinessException;
 import fr.pedalons.common.planner.PlannerJunction;
@@ -36,7 +37,54 @@ public class PlannerStates {
 
   /** The points of the track the state stands for, junctions and interiors in order. */
   public List<GeoPoint> validateAndDerive(@Nullable PlannerState state) {
-    Decoded decoded = validate(state);
+    return derive(state, validate(state), null);
+  }
+
+  /**
+   * The straight pieces of a state as distances along the track it derives (docs/LEDGER_*.md
+   * WEB-100, C1b).
+   *
+   * @param length the length of that derived polyline, metres
+   * @param runs {@code [from, to]}, metres along it, one per DIRECT piece
+   */
+  public record DirectRuns(double length, List<double[]> runs) {}
+
+  /**
+   * The DIRECT pieces of a stored state, as {@code [from, to]} metres along the polyline {@link
+   * #validateAndDerive} builds from it, and that polyline's length. Empty when the state no longer
+   * validates (a stored state is read back, not trusted).
+   */
+  public DirectRuns directRuns(@Nullable PlannerState state) {
+    Decoded decoded;
+    try {
+      decoded = validate(state);
+    } catch (BusinessException e) {
+      return new DirectRuns(0, List.of());
+    }
+    PlannerState s = java.util.Objects.requireNonNull(state);
+    int[] junctionAt = new int[s.junctions().size()];
+    List<GeoPoint> polyline = derive(s, decoded, junctionAt);
+    double[] cumulative = new double[polyline.size()];
+    for (int i = 1; i < cumulative.length; i++) {
+      GeoPoint a = polyline.get(i - 1);
+      GeoPoint b = polyline.get(i);
+      cumulative[i] =
+          cumulative[i - 1] + GeoDistance.haversineMeters(a.lat(), a.lng(), b.lat(), b.lng());
+    }
+    List<double[]> runs = new ArrayList<>();
+    for (int k = 0; k < s.pieces().size(); k++) {
+      if (s.pieces().get(k).mode() == PlannerPieceMode.DIRECT) {
+        runs.add(new double[] {cumulative[junctionAt[k]], cumulative[junctionAt[k + 1]]});
+      }
+    }
+    return new DirectRuns(cumulative[cumulative.length - 1], runs);
+  }
+
+  /**
+   * @param junctionAt when not null, receives the index in the result of each junction
+   */
+  private static List<GeoPoint> derive(
+      @Nullable PlannerState state, Decoded decoded, int @Nullable [] junctionAt) {
     PlannerState s = java.util.Objects.requireNonNull(state);
     List<PlannerJunction> junctions = s.junctions();
     List<PlannerPiece> pieces = s.pieces();
@@ -46,6 +94,9 @@ public class PlannerStates {
     }
     List<GeoPoint> out = new ArrayList<>(total);
     out.add(point(junctions.getFirst()));
+    if (junctionAt != null) {
+      junctionAt[0] = 0;
+    }
     for (int k = 0; k < pieces.size(); k++) {
       PlannerPiece piece = pieces.get(k);
       if (piece.mode() == PlannerPieceMode.IMPORTED) {
@@ -59,6 +110,9 @@ public class PlannerStates {
         }
       }
       out.add(point(junctions.get(k + 1)));
+      if (junctionAt != null) {
+        junctionAt[k + 1] = out.size() - 1;
+      }
     }
     return out;
   }

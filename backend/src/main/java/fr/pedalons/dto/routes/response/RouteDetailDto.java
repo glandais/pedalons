@@ -15,6 +15,7 @@ import fr.pedalons.enums.SurfaceType;
 import fr.pedalons.enums.Visibility;
 import fr.pedalons.service.asset.AssetService;
 import fr.pedalons.service.route.ClimbNaming.NamedPoint;
+import fr.pedalons.service.surface.RouteSurfaces;
 import java.time.Instant;
 import java.util.List;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -84,13 +85,16 @@ public record RouteDetailDto(
    *
    * @param tags the tags of the route — of the whole batch on the bulk path — from {@code
    *     TagLookup}
+   * @param surfaces what is known of the surface of the tracks ({@link RouteSurfaces#NONE} on the
+   *     bulk path: nothing more in a list)
    */
   public static RouteDetailDto from(
       Route route,
       AssetService assetService,
       CommentCounts commentCounts,
       ContentTags tags,
-      boolean withGeometry) {
+      boolean withGeometry,
+      RouteSurfaces surfaces) {
     return new RouteDetailDto(
         TsidUtils.toString(route.getId()),
         route.getSlug(),
@@ -109,7 +113,9 @@ public record RouteDetailDto(
         route.getCreatedAt(),
         route.getUpdatedAt(),
         withGeometry
-            ? route.getTracks().stream().map(t -> TrackDto.from(t, namedPoints(route))).toList()
+            ? route.getTracks().stream()
+                .map(t -> TrackDto.from(t, namedPoints(route), surfaces.of(t.getId())))
+                .toList()
             : List.of(),
         route.getWaypoints().stream().map(WaypointDto::from).toList(),
         route.isDeleted(),

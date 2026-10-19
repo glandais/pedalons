@@ -660,6 +660,17 @@ ways that must not be confused:
 | `STADIAMAPS_API_KEY` | the `.env` of **each environment** (`~/prod/.env`, `~/staging/.env`), never `~/shared/.env`: the shared stack has no routing any more | One key for routing and the forms' geocoding. Sent as `Authorization: Stadia-Auth …` on every request. **Required** in `%prod`: `docker-compose.yml` restates it with `:?`, so a deploy without it stops before any container starts (the backend itself would start and fail every route with a 500: the header is resolved per request). `scripts/dev-env.sh` exports it for `mvn quarkus:dev`; the e2e stack takes it from the shell or the workstation's `.env` (`scripts/e2e.sh`), the CI from a GitHub secret of the same name |
 | `STADIAMAPS_URL` | optional | `https://api-eu.stadiamaps.com` by default (EU-only host; `https://api.stadiamaps.com` is the global one, same key), used by both the routing and the geocoding REST clients; another Valhalla-compatible host for a test — but then the geocoder points at it too |
 
+The same key also serves the **surface along saved tracks** (ledger `WEB-100`, C1b):
+`SurfaceRefreshWorker` (every 30 s, never during an HTTP request) sends a saved route's or GPX-tool
+preview's stored track to `POST /trace_attributes/v1` once it has been left alone for 90 s (never
+beyond 10 min), in `map_snap` mode, and stores the surface as ranges in `gpx_tracks.surfaces` /
+`gpx_previews.surfaces`. **20 credits per 190 km slice** (a typical route is one request). The queue
+is `surface_refresh`; a request that failed five times (2 min, 10 min, 1 h, 6 h) stays in the table
+for diagnosis, untouched, and the API then says nothing for that track. `SURFACE_ENABLED=false` stops new requests **and** the worker's calls, the queue waits; it is
+also off by itself when the key is empty. Set it to `false` in the `.env` of a workstation stack,
+and the e2e stack has it off (`.env.e2e`): both would otherwise spend real credits, a biketeam
+migration test included.
+
 One key for prod and staging works (Stadia Maps counts requests per key); a second key makes
 staging's usage readable apart on their dashboard, and revocable alone. **The key never reaches a
 log**: the request URL is not logged, and a failure is logged by its status only —

@@ -454,4 +454,68 @@ class PlannerStatesTest {
     list.set(i, p);
     return new PlannerState(s.version(), s.profile(), s.sources(), s.junctions(), list);
   }
+
+  // ------------------------------------------------------------------ direct runs (C1b)
+
+  @Test
+  void directRunsLocateTheStraightPiecesAlongTheDerivedLine() {
+    // Two routed pieces would be c0 - c1 - c2; here the second is a straight line
+    PlannerState state =
+        new PlannerState(
+            1,
+            fr.pedalons.dto.router.request.RouterProfile.BIKE,
+            List.of(),
+            List.of(control(4.8300, 45.7600), control(4.8340, 45.7620), control(4.8400, 45.7650)),
+            List.of(routed(new double[][] {{4.8320, 45.7610}}), direct()));
+    PlannerStates.DirectRuns runs = states.directRuns(state);
+    List<GeoPoint> line = states.validateAndDerive(state);
+    assertEquals(4, line.size());
+    assertEquals(1, runs.runs().size());
+    double toC1 = distance(line.subList(0, 3));
+    double total = distance(line);
+    assertEquals(total, runs.length(), 0.01);
+    assertEquals(toC1, runs.runs().getFirst()[0], 0.01);
+    assertEquals(total, runs.runs().getFirst()[1], 0.01);
+  }
+
+  @Test
+  void directRunsCountTheImportedAndRoutedPointsBeforeThem() {
+    // example() with its second routed piece (P to the JOIN at idx 8) drawn straight: imported
+    // 0-5 (4 interiors), routed (1), then the straight piece between derived points 7 and 8
+    PlannerState e = example();
+    List<PlannerPiece> pieces = new ArrayList<>(e.pieces());
+    pieces.set(2, direct());
+    PlannerState state =
+        new PlannerState(e.version(), e.profile(), e.sources(), e.junctions(), pieces);
+    PlannerStates.DirectRuns runs = states.directRuns(state);
+    List<GeoPoint> line = states.validateAndDerive(state);
+    assertEquals(1, runs.runs().size());
+    assertEquals(distance(line.subList(0, 8)), runs.runs().getFirst()[0], 0.01);
+    assertEquals(distance(line.subList(0, 9)), runs.runs().getFirst()[1], 0.01);
+    assertEquals(distance(line), runs.length(), 0.01);
+  }
+
+  @Test
+  void directRunsOfAStateWithoutStraightPiecesAreEmptyButGiveTheLength() {
+    PlannerStates.DirectRuns runs = states.directRuns(example());
+    assertTrue(runs.runs().isEmpty());
+    assertEquals(distance(states.validateAndDerive(example())), runs.length(), 0.01);
+  }
+
+  @Test
+  void directRunsOfAnInvalidStateAreEmpty() {
+    PlannerStates.DirectRuns runs = states.directRuns(null);
+    assertEquals(0, runs.length(), 0);
+    assertTrue(runs.runs().isEmpty());
+  }
+
+  private static double distance(List<GeoPoint> line) {
+    double d = 0;
+    for (int i = 1; i < line.size(); i++) {
+      d +=
+          fr.pedalons.common.GeoDistance.haversineMeters(
+              line.get(i - 1).lat(), line.get(i - 1).lng(), line.get(i).lat(), line.get(i).lng());
+    }
+    return d;
+  }
 }

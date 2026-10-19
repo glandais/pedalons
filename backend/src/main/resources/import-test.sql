@@ -20,3 +20,8 @@ CREATE UNIQUE INDEX uk_gps_route_syncs_manual ON gps_route_syncs (connection_id,
 CREATE UNIQUE INDEX elevation_refresh_route ON elevation_refresh (route_id) WHERE route_id IS NOT NULL;
 CREATE UNIQUE INDEX elevation_refresh_preview ON elevation_refresh (preview_id) WHERE preview_id IS NOT NULL;
 ALTER TABLE elevation_refresh ADD CONSTRAINT ck_elevation_refresh_target CHECK ((route_id IS NULL) <> (preview_id IS NULL));
+-- Mirrors V76__track_surfaces.sql: one request per target (Hibernate cannot express a partial index) and
+-- exactly one target per row. The tests' upsert relies on the first index.
+CREATE UNIQUE INDEX surface_refresh_route ON surface_refresh (route_id) WHERE route_id IS NOT NULL;
+CREATE UNIQUE INDEX surface_refresh_preview ON surface_refresh (preview_id) WHERE preview_id IS NOT NULL;
+ALTER TABLE surface_refresh ADD CONSTRAINT ck_surface_refresh_target CHECK ((route_id IS NULL) <> (preview_id IS NULL));

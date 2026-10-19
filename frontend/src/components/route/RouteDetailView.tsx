@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   IconMap,
@@ -9,6 +10,8 @@ import {
 import { Box, Button, Group, Stack, Text, Title, Badge, Menu, Loader } from '@mantine/core'
 import { ElevationState, type RouteDetailDto, type GpsServiceType } from '@/api/dto'
 import { RouteMapView } from './RouteMapView'
+import { RouteSurfaceSummary } from './RouteSurfaceSummary'
+import type { PlannerColorBy } from '@/lib/plannerSurface'
 import { useUnits } from '@/hooks/useUnits'
 import { useGpsConnections } from '@/hooks/useGpsConnections'
 import { useAuth } from '@/hooks/useAuth'
@@ -42,6 +45,7 @@ export function RouteDetailView({
   const { t } = useTranslation()
   const { distance, elevation, formatDistance, config } = useUnits()
   const { isAuthenticated } = useAuth()
+  const [colorBy, setColorBy] = useState<PlannerColorBy>('grade')
   const { connectedServices, uploadRoute, isUploading } = useGpsConnections()
 
   const handleSendToDevice = (serviceType: GpsServiceType) => {
@@ -54,7 +58,7 @@ export function RouteDetailView({
     <Stack>
       {/* Interactive Map with Elevation Chart */}
       <Box>
-        <RouteMapView route={route} fullscreenPath={fullscreenPath} />
+        <RouteMapView route={route} fullscreenPath={fullscreenPath} colorBy={colorBy} />
       </Box>
 
       {route.elevationState === ElevationState.PENDING && (
@@ -62,6 +66,8 @@ export function RouteDetailView({
           {t('routes.detail.elevationRefining')}
         </Text>
       )}
+
+      <RouteSurfaceSummary tracks={route.tracks} colorBy={colorBy} onColorByChange={setColorBy} />
 
       {/* Download Buttons - inline without wrapper */}
       {showDownload && (route.media.assets.gpx || route.media.assets.fit) && (

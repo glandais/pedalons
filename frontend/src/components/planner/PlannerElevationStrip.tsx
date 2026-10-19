@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { IconChevronDown, IconChevronUp } from '@tabler/icons-react'
 import { ActionIcon, Box, Group, SegmentedControl, Text, useMantineTheme } from '@mantine/core'
+import { useResolvedColorScheme } from '@/hooks/useResolvedColorScheme'
 import { useUnits } from '@/hooks/useUnits'
 import type { PlannerMappable, Route, SurfaceClass, SurfaceStats } from '@/lib/planner'
 import { SURFACE_CLASSES, surfaceColors, type PlannerColorBy } from '@/lib/plannerSurface'
@@ -46,7 +47,8 @@ export function PlannerElevationStrip({
   const { t } = useTranslation()
   const { elevation } = useUnits()
   const theme = useMantineTheme()
-  const colors = useMemo(() => surfaceColors(theme), [theme])
+  const colorScheme = useResolvedColorScheme()
+  const colors = useMemo(() => surfaceColors(theme, colorScheme), [theme, colorScheme])
   const bySurface = colorBy === 'surface'
   const surfaceAt = useMemo(
     () => (i: number) => colors[mappable?.surface[i] ?? 'unknown'],

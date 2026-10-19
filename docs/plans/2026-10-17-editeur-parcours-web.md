@@ -2,7 +2,7 @@
 
 Écrit le 17 octobre 2026, mis à jour le 19 octobre 2026. **État : lots 1 et 2 livrés le
 17 octobre 2026 (§5 et §6, A10 compris) ; dans le lot 3, B11, B12, B6, B1 (profil d'édition : B1a le 18, B1b le 19 octobre), B7 et B9 sont livrés ;
-le lot 4 est entamé par C2, C4 (C4a et C4b, livrés le 19 octobre) et C1a (livré le 19 octobre) ; restent le reste du lot 3 (B2, mis de côté) et le lot 4 (C1b en attente des conditions Stadia, puis C1c ; C3, C5, C7 ; C6 non attribué).**
+le lot 4 est entamé par C2, C4 (C4a et C4b, livrés le 19 octobre) et C1a et C1b (livrés le 19 octobre) ; restent le reste du lot 3 (B2, mis de côté) et le lot 4 (C1c ; C3, C5, C7 ; C6 non attribué).**
 Ledger `WEB-100` (une seule
 entrée, qui pointe ici) : le suivi fin se fait **dans ce plan**, cases à cocher comprises, pas dans
 le ledger. Une tâche n'en sort vers `LEDGER_NEXT.md` que si elle quitte le périmètre du plan
@@ -56,7 +56,7 @@ Quatre lots, chacun livrable seul :
 | **1. Robustesse** (livré) | Annulation et verrou pendant le calcul, `Ctrl+Z` hors des champs, tactile décidé par le pointeur, aide aux gestes, menus fiables, tests de `lib/planner.ts` | S à M (≈ 1 semaine) | — (volet backend A10 livré) |
 | **2. Disposition** (livré) | Plein écran d'édition, barre sous le pouce, cibles 44 px, un seul panneau ouvert, recherche d'adresse, cadrage `fitBounds` | M | 1 |
 | **3. Standard** | Profil altimétrique d'édition (B1, **livré**), inverser / aller-retour / retour au départ avec recalage (B2), ligne droite visible (B6, **livré**), clavier (B7, **livré**), défilement au bord (B9, **livré**), glisser une ancre au doigt (B11, **livré**), bornes indépendantes du zoom et suppression d'une ancre (B12, **livré**) | **L** | 1, 2 ; API pour B2 (endpoint de recalage) |
-| **4. Différenciation** | Éviter côtes / trafic (C2, **livré**), état d'édition conservé (C4 : **C4a et C4b livrés**), surface par point (C1 : **C1a livré**), points de parcours (C3), popularité interne (C5), zones à éviter (C7) ; C6 non attribué | M à L | C4 : B6 et B12 ; C2 : aucun morceau du lot 3 ; API pour C1, C2, C4, C7 |
+| **4. Différenciation** | Éviter côtes / trafic (C2, **livré**), état d'édition conservé (C4 : **C4a et C4b livrés**), surface par point (C1 : **C1a et C1b livrés**), points de parcours (C3), popularité interne (C5), zones à éviter (C7) ; C6 non attribué | M à L | C4 : B6 et B12 ; C2 : aucun morceau du lot 3 ; API pour C1, C2, C4, C7 |
 
 Dans le lot 4, **C4 dépend de B6** (seul B6 crée l'information « ligne droite ») **et de B12**
 (la provenance des points) ; B6 et B12 ne dépendent pas de C4. Le lot 2 passe **avant** les fonctions : sans lui, chaque bouton du lot 3 serait à placer deux fois
@@ -1109,9 +1109,9 @@ questions ouvertes viennent du §10 de
             (`UnpavedSpansTest`). *É4* : couleurs, revêtu gris 7, hors réseau gris 5 (pointillé),
             inconnu gris 4, non revêtu orange 6 (famille GRAVEL), pour que l'inconnu reste lisible
             sur fond clair ; contrôle visuel sur écran non fait, le contraste est raisonné.
-      - [ ] **C1b — surface détaillée après l'enregistrement** (contrat mineur, migration
-            `V76__track_surfaces.sql` additive). **En attente** de la vérification des conditions
-            Stadia (§10, « C1 »). `trace_attributes/v1` en `map_snap` sur le tracé stocké
+      - [x] **C1b — surface détaillée après l'enregistrement** (contrat mineur, migration
+            `V76__track_surfaces.sql` additive). Conditions Stadia confirmées par le propriétaire le
+            19 octobre 2026 (§10, « C1 »). `trace_attributes/v1` en `map_snap` sur le tracé stocké
             (`edge_walk` échoue sur un tracé simplifié, code 443), 190 km et 16 000 points au plus
             par tranche, 500 m de recouvrement ; costing `bicycle` **sans** `avoid_bad_surfaces`
             (qui rend les passages non revêtus `unmatched`), `pedestrian` pour RUN_HIKE, `auto` pour
@@ -1127,6 +1127,52 @@ questions ouvertes viennent du §10 de
             fiche et aperçu : mode « Revêtement », carte, barre de répartition, attribution OSM.
             Coût : 20 crédits par tranche de 190 km, une par enregistrement dans le délai de calme.
             Exports GPX et FIT inchangés (pas de champ standard).
+            **C1b livré le 19 octobre 2026** (contrat **11.14.0**, migration **`V76`**).
+            *Backend* : `StadiaTraceAttributesClient` (clé de configuration REST
+            `stadiamaps-trace`, même clé Stadia), `Polyline6Encoder`, `TraceSurfaceProjection`
+            (projection de `mapping.py` : interpolation entre changements d'arête, coupure à
+            mi-chemin au-delà de 1,2 × + 30 m), `SurfaceRanges` (couverture, fusion, absorption des
+            plages de moins de 20 m), `TraceSurfaceComputer` (tranches, recouvrement, costing par
+            type d'activité), `PlannerStates.directRuns` (morceaux DIRECT → « hors réseau ») ;
+            documents `TrackSurfaceDocument` (`gpx_tracks.surfaces`, plages `[de, à, code]` et
+            `[de, à, use, lane]`, `osmChangeset`, longueur de calcul) et `PreviewSurfacesDocument`
+            (`gpx_previews.surfaces`, avec le `files_revision` décrit), colonnes `@LazyGroup` ; file
+            `surface_refresh` et `SurfaceRefreshWorker` calqués sur `elevation_refresh` (calme de
+            90 s, jamais plus de 10 min, cinq essais, 400 par tranche → inconnu) ; le rattrapage HD
+            reporte le jeton de révision et la lecture remet les plages à l'échelle de la longueur
+            courante ; `pedalons.surface.enabled` (`SURFACE_ENABLED`) arrête demandes et worker, se
+            coupe seul sans clé, coupé en `%test` et dans `.env.e2e`. `TrackDto.surfaceState`
+            (`PENDING` / `READY` / `UNAVAILABLE`, absent = rien de connu) et `TrackDto.surfaces`
+            (`SurfaceSpanDto` `{from, to, surface}` en mètres, `TrackSurface` à sept valeurs :
+            cinq classes, `UNKNOWN`, `OFF_NETWORK`) sur le détail d'un parcours et l'aperçu ; rien
+            dans les listes ni dans le bulk (`RouteSurfaces.NONE`) ; `use` et `cycle_lane` stockés,
+            jamais exposés. *Web* : `lib/trackSurface.ts`, `RouteSurfaceSummary` (barre de
+            répartition, légende, attribution OpenStreetMap, interrupteur qui colore le profil et la
+            ligne par revêtement) sur la fiche et l'aperçu des outils GPX, couleurs des familles de
+            `brand-colors.yaml` (enum `TrackSurface`, `pnpm generate-brand-colors`).
+            **Tests** : backend `Polyline6EncoderTest`, `TraceSurfaceProjectionTest`,
+            `SurfaceRangesTest`, `TraceSurfaceComputerTest`, `TrackSurfaceDocumentTest`,
+            `PlannerStatesTest`, `SurfaceRefreshTest`, `GpxPreviewSurfaceRefreshTest`,
+            `RouteSurfaceResourceTest`, `ArchitectureTest`, `RouterResourceTest`,
+            `ElevationRefreshTest`, `GpxPreviewElevationRefreshTest`, `RouteQueryCountTest` (client
+            Stadia toujours simulé) ; frontend `trackSurface.test.ts`, `plannerSurface.test.ts`,
+            `RouteSurfaceSummary.test.tsx`, `mapUtils.test.ts`, `GpxPreviewView.test.tsx` ; e2e
+            `route-surface` (surfaces simulées dans la réponse, la pile n'appelle pas Stadia).
+            **Écarts / décisions de revue.** *É1* : `OFF_NETWORK` distinct de `UNKNOWN` dans le
+            contrat (même famille grise, nuance différente) : une ligne droite voulue n'est pas un
+            défaut de données, et séparer après coup demanderait un recalcul. *É2* : les codes
+            stockés sont les valeurs brutes de Valhalla (`paved_smooth`…, plus `unknown` et
+            `off_network`), la correspondance vers les classes se fait à la lecture : changer les
+            classes ne demande aucun recalcul. *É3* : erreur définitive par tranche (400 : codes
+            123, 154, 171, 443, 444) → tranche inconnue, document « indisponible » seulement si
+            toutes le sont ; tout autre échec (429, 5xx, délai, 401/403) reprend toute la piste
+            (2 min, 10 min, 1 h, 6 h) ; après le cinquième, aucun document et la demande reste en
+            table pour diagnostic. *É4* : tranches de 188 km de cœur + 2 × 500 m et 15 000 points
+            au plus (marges sous 200 km / 16 000). *É5* : à la promotion d'un aperçu, les surfaces
+            sont recopiées pour tout appelant (elles sont publiques sur l'aperçu), sans nouvelle
+            demande. *É6* : le plein écran (`RouteFullscreenView`) et l'éditeur n'affichent pas la
+            surface détaillée, et l'état « en cours » n'est pas sondé (recharger la page) ; le worker
+            traite une demande à la fois (20 s par tic de 30 s).
       - [ ] **C1c — après C1b** : rattrapage des anciens parcours (biketeam compris), plafonné et
             déclenché par l'exploitation ; suggestion de `surfaceType` dans le formulaire d'après
             les parts (seuils à valider), jamais automatique ; affichage mobile (tâche MOB à part).
@@ -1270,8 +1316,9 @@ questions ouvertes viennent du §10 de
   dans `contracts/brand-colors.yaml` ; le type de voie (`use`, `cycle_lane`) stocké sans être
   affiché ; C1c = rattrapage des anciens parcours (plafonné, déclenché par l'exploitation),
   suggestion de `surfaceType` dans le formulaire (jamais automatique), affichage mobile (tâche MOB
-  à part). **C1b attend une vérification** : plan Stadia payant et compatibilité du stockage des
-  plages dérivées avec les conditions d'utilisation (« cache »). C1a peut partir sans.
+  à part). Les conditions Stadia (plan payant, stockage des plages dérivées malgré la clause de
+  « cache ») sont **confirmées par le propriétaire le 19 octobre 2026** ; C1b est livré le même jour.
+  Pas de second passage de costing sur l'inconnu ; exports GPX et FIT sans surface (`WEB-105`).
 
 ### Propositions de ce plan à valider
 
@@ -1304,6 +1351,12 @@ validées (19 octobre 2026, ci-dessus).
   quelques mètres dans 50 tuiles z12 distinctes coûtent 50 téléchargements à froid, écrits sans
   éviction dans `DemTileStore`. Même risque, plus étroit, que celui accepté pour `import-gpx` (C4b) ;
   seul `SEC-28` (proxy) limite le débit. Rouvert sous `WEB-104`.
+- **Surface dans les exports GPX et FIT** (C1b, décidé le 19 octobre 2026) : FIT n'a pas de champ
+  standard, une extension GPX serait ignorée des appareils, et les fichiers stockés seraient à
+  réécrire après chaque calcul en arrière-plan. Pas non plus de **second passage de costing** sur
+  les plages restées inconnues (piéton ou auto, 20 crédits de plus par tranche) : « inconnu »
+  est une réponse honnête.
+  Rouvert sous `WEB-105`.
 - **Cache client des segments** entre sessions : annuler / rétablir ne coûte déjà rien, et le
   cache serveur suggéré par la session Stadia est plus rentable ; à reconsidérer si la facture le
   demande.

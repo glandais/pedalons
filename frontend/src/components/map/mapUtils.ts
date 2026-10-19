@@ -217,9 +217,12 @@ export function findNearestPoint(
   return nearestIndex
 }
 
-// Create GeoJSON FeatureCollection with multiple line segments for gradient coloring
+// Create GeoJSON FeatureCollection with multiple line segments for gradient coloring. With
+// `colorAt` the colour of a point (track index, point index) replaces the grade's: it colours the
+// segment that starts there, like the grade does.
 export function createGradientLineFeatures(
-  tracks: TrackDto[]
+  tracks: TrackDto[],
+  colorAt?: (trackIndex: number, pointIndex: number) => string
 ): GeoJSON.FeatureCollection<GeoJSON.LineString> {
   const features: GeoJSON.Feature<GeoJSON.LineString>[] = []
 
@@ -227,19 +230,27 @@ export function createGradientLineFeatures(
     return { type: 'FeatureCollection', features }
   }
 
-  let currentColor = getColorFromGradient(
-    getPointClimbGradient(tracks[0].line.coordinates[0], tracks[0].climbs)
-  )
+  const colorOf = (trackIndex: number, pointIndex: number) =>
+    colorAt
+      ? colorAt(trackIndex, pointIndex)
+      : getColorFromGradient(
+          getPointClimbGradient(
+            tracks[trackIndex].line.coordinates[pointIndex],
+            tracks[trackIndex].climbs
+          )
+        )
+
+  let currentColor = colorOf(0, 0)
   let currentSegment: [number, number][] = []
 
   for (let j = 0; j < tracks.length; j++) {
     const trackPoints = tracks[j].line.coordinates
-    const climbs = tracks[j].climbs
 
     for (let i = 0; i < trackPoints.length; i++) {
       const point = trackPoints[i]
-      const gradient = getPointClimbGradient(point, climbs)
-      const color = getColorFromGradient(gradient)
+      const color = colorOf(j, i)
+      // A new track opens its own piece, whatever the previous one ended with
+      if (i === 0) currentColor = color
 
       if (color !== currentColor && currentSegment.length > 0) {
         // Add last point of previous segment for continuity

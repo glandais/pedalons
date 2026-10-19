@@ -2337,7 +2337,7 @@ Plan [`2026-10-06-team-agenda.md`](plans/archive/2026-10-06-team-agenda.md) §4,
   **À ne pas défaire** : on ne sonde et on n'affiche que `PENDING` ; le sondage reste borné ; ne pas
   recadrer la carte sur un simple changement de profil.
 
-### `WEB-100` Éditeur de parcours : réglage côtes / trafic, état d'édition, altitudes des lignes droites (19 octobre 2026, contrat `11.12.0`)
+### `WEB-100` Éditeur de parcours : réglage côtes / trafic, état d'édition, altitudes des lignes droites, revêtement (19 octobre 2026, contrat `11.14.0`)
 
 - `WEB-100` **Volet C2** (2026-10-19, **API 11.9.0**) — `RouterRequest` accepte `useHills` et
   `useRoads` (0 à 1, facultatifs), fusionnés dans les `costing_options` du profil vélo ; absents,
@@ -2415,7 +2415,36 @@ Plan [`2026-10-06-team-agenda.md`](plans/archive/2026-10-06-team-agenda.md) §4,
   recouvrement de plus de 5 m côté serveur, jamais le milieu ni un seuil de 0,5) ; `unpaved`
   absent = inconnu (déploiement roulant dans les deux sens) ; le pointillé reste aux lignes
   droites ; `@JsonIgnoreProperties(ignoreUnknown = true)` sur tout record stocké ; aucune
-  couleur locale par enum. Reste C1b et C1c sous `WEB-100`.
+  couleur locale par enum.
+- `WEB-100` **Volet C1b** (2026-10-19, **API 11.14.0**, Flyway `V76`) — surface détaillée d'un tracé
+  enregistré, calculée en arrière-plan : `SurfaceRefreshWorker` envoie la piste stockée d'un parcours
+  ou d'un aperçu des outils GPX à Stadia `trace_attributes/v1` en `map_snap` après 90 s de calme
+  (jamais plus de 10 min), par tranches de 190 km au plus (20 crédits chacune), et range des plages
+  `[de, à, code]` dans `gpx_tracks.surfaces` / `gpx_previews.surfaces` ; file `surface_refresh`
+  calquée sur `elevation_refresh` (V74), clé par id, indépendante du domaine. Les morceaux DIRECT
+  de l'état d'édition sont « hors réseau » ; `use` et `cycle_lane` sont stockés, jamais exposés.
+  `TrackDto.surfaceState` (`PENDING` / `READY` / `UNAVAILABLE`) et `TrackDto.surfaces`
+  (`SurfaceSpanDto`, enum `TrackSurface` : cinq classes, `UNKNOWN`, `OFF_NETWORK`) facultatifs, sur
+  le détail d'un parcours et l'aperçu seulement. `pedalons.surface.enabled` (`SURFACE_ENABLED`,
+  `docs/OPERATIONS.md`). Web : `RouteSurfaceSummary` (barre de répartition, légende, attribution
+  OpenStreetMap, profil et ligne colorés par revêtement) sur la fiche et l'aperçu ; couleurs dans
+  `contracts/brand-colors.yaml`. Détail et écarts dans [le plan](plans/2026-10-17-editeur-parcours-web.md)
+  (§8 C1b). Tests : `Polyline6EncoderTest`, `TraceSurfaceProjectionTest`, `SurfaceRangesTest`,
+  `TraceSurfaceComputerTest`, `TrackSurfaceDocumentTest`, `PlannerStatesTest`,
+  `SurfaceRefreshTest`, `GpxPreviewSurfaceRefreshTest`, `RouteSurfaceResourceTest`,
+  `ArchitectureTest`, `ElevationRefreshTest`, `GpxPreviewElevationRefreshTest`,
+  `RouteQueryCountTest` ; `trackSurface.test.ts`, `RouteSurfaceSummary.test.tsx`,
+  `mapUtils.test.ts`, `GpxPreviewView.test.tsx`, e2e `route-surface`.
+  **À ne pas défaire** : jamais de `costing_options` ni d'`avoid_bad_surfaces` (il rend le non
+  revêtu `unmatched`) ; `map_snap` et non `edge_walk` (code 443 sur un tracé simplifié) ; coupure à
+  mi-chemin quand la distance recalée dépasse 1,2 × + 30 m (détours aux demi-tours) ; plages remises
+  à l'échelle à la lecture, jamais réécrites (le rattrapage HD de la version précédente les laisse
+  justes) ; colonnes `@LazyGroup`, rien dans les listes, le bulk ni `PreviewTrack` (pas
+  d'`ignoreUnknown`) ; documents en `@JsonIgnoreProperties(ignoreUnknown = true)` ; le jeton de
+  révision (`files_revision` d'un aperçu, `fileId` d'un parcours) est reporté par le rattrapage HD ;
+  codes stockés bruts, classes faites à la lecture ; aucun test n'appelle Stadia (interrupteur coupé
+  en `%test` et dans `.env.e2e`) ; migration additive (déploiement roulant). Les exports GPX / FIT
+  restent sans surface (`WEB-105`). Reste C1c sous `WEB-100`.
 
 
 ## API — Contrat d'API et backend

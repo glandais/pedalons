@@ -4,8 +4,6 @@ import static org.geolatte.geom.builder.DSL.*;
 import static org.geolatte.geom.crs.CoordinateReferenceSystems.WGS84;
 import static org.geolatte.geom.crs.CoordinateReferenceSystems.addVerticalSystem;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.pedalons.common.exception.BusinessException;
 import fr.pedalons.common.exception.PedalonsException;
 import fr.pedalons.common.exception.ServiceUnavailableException;
@@ -17,6 +15,7 @@ import fr.pedalons.dto.router.response.RouterResponse;
 import fr.pedalons.enums.ElevationQuality;
 import fr.pedalons.infrastructure.valhalla.Polyline6Decoder;
 import fr.pedalons.infrastructure.valhalla.StadiaMapsClient;
+import fr.pedalons.infrastructure.valhalla.ValhallaErrors;
 import fr.pedalons.infrastructure.valhalla.ValhallaLocation;
 import fr.pedalons.infrastructure.valhalla.ValhallaRequest;
 import fr.pedalons.infrastructure.valhalla.ValhallaResponse;
@@ -31,8 +30,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -58,8 +55,6 @@ public class RouterService {
 
   /** Valhalla 170, 171, 441, 442: see {@link #toRoutingException}. */
   private static final Set<Integer> NO_ROUTE_CODES = Set.of(170, 171, 441, 442);
-
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   @Inject @RestClient StadiaMapsClient stadiaMapsClient;
 
@@ -171,7 +166,7 @@ public class RouterService {
    */
   private static PedalonsException toRoutingException(WebApplicationException e) {
     int status = e.getResponse().getStatus();
-    int valhallaCode = readValhallaErrorCode(e.getResponse());
+    int valhallaCode = ValhallaErrors.errorCode(e.getResponse());
     LOG.warnv("Stadia Maps routing failed with status {0}, error_code {1}", status, valhallaCode);
     if (status == 429) {
       return new ServiceUnavailableException(ErrorCode.ROUTING_QUOTA_EXCEEDED);
@@ -188,24 +183,6 @@ public class RouterService {
     // 5xx, and anything unexpected (401/403 on a bad key, 404): the planner is out of order for
     // the caller, who did nothing wrong.
     return new ServiceUnavailableException(ErrorCode.ROUTING_UNAVAILABLE);
-  }
-
-  /** The Valhalla {@code error_code} of an error body, or -1 when it is empty or not JSON. */
-  private static int readValhallaErrorCode(Response response) {
-    try {
-      if (!response.hasEntity()) {
-        return -1;
-      }
-      String body = response.readEntity(String.class);
-      if (body == null || body.isBlank()) {
-        return -1;
-      }
-      JsonNode code = OBJECT_MAPPER.readTree(body).path("error_code");
-      return code.isInt() ? code.asInt() : -1;
-    } catch (RuntimeException | IOException ex) {
-      // Empty, truncated or HTML body: the status alone decides.
-      return -1;
-    }
   }
 
   /**

@@ -212,7 +212,7 @@ export function RoutePlanner({
   // The route line: one colour, or the surface of each edge (a `match` on the features' `surface`)
   const lineColor = useMemo(() => {
     if (colorBy !== 'surface') return ROUTE_COLOR
-    const c = surfaceColors(theme)
+    const c = surfaceColors(theme, colorScheme)
     return [
       'match',
       ['get', 'surface'],
@@ -224,7 +224,7 @@ export function RoutePlanner({
       c.offNetwork,
       c.unknown,
     ] as ExpressionSpecification
-  }, [colorBy, theme])
+  }, [colorBy, theme, colorScheme])
 
   const getMapZoom = useCallback(() => mapRef.current?.getZoom() ?? DEFAULT_ZOOM, [])
 

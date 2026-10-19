@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { MantineProvider } from '@mantine/core'
-import type { GpxPreviewDto } from '@/api/dto'
+import { TrackSurface, TrackSurfaceState, type GpxPreviewDto, type TrackDto } from '@/api/dto'
 
 vi.mock('react-i18next', async (importOriginal) => {
   const { frenchT } = await import('@/test/frenchT')
@@ -83,6 +83,32 @@ describe('GpxPreviewView', () => {
     cleanup()
     renderView({ ...preview, elevationState: 'FAST' })
     expect(screen.queryByText(/Profil d'altitude provisoire/)).toBeNull()
+  })
+
+  it('shows the surface breakdown once the preview has it, and says when it is coming', () => {
+    const withSurface = (extra: Partial<TrackDto>): GpxPreviewDto => ({
+      ...preview,
+      tracks: [{ line: { type: 'LineString', coordinates: [] }, climbs: [], ...extra }],
+    })
+    renderView(
+      withSurface({
+        surfaceState: TrackSurfaceState.READY,
+        surfaces: [
+          { from: 0, to: 3000, surface: TrackSurface.PAVED },
+          { from: 3000, to: 4000, surface: TrackSurface.DIRT },
+        ],
+      })
+    )
+    expect(screen.getByTestId('route-surface-legend').textContent).toContain('Asphalte 75 %')
+    expect(screen.getByTestId('route-surface-attribution')).toBeTruthy()
+    cleanup()
+    renderView(withSurface({ surfaceState: TrackSurfaceState.PENDING }))
+    expect(screen.getByText('Revêtement en cours de calcul')).toBeTruthy()
+    expect(screen.queryByTestId('route-surface-bar')).toBeNull()
+    cleanup()
+    renderView()
+    expect(screen.queryByTestId('route-surface-summary')).toBeNull()
+    expect(screen.queryByTestId('route-surface-pending')).toBeNull()
   })
 
   it('offers to share the preview to an anonymous visitor holding the link', () => {
