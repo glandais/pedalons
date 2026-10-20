@@ -894,8 +894,8 @@ Ce que les tests ne prouvent pas, parce qu'ils ne passent ni par Flyway ni par u
 Les phases 1 à 5 de [`plans/archive/2026-09-18-notifications.md`](plans/archive/2026-09-18-notifications.md)
 sont en production, le Web Push aussi depuis le 29 septembre 2026 ; ce qui en est livré, et les
 pièges à ne pas rejouer, sont sous `NOTIF-9` (le ledger du chantier y a été rapatrié le
-29 septembre 2026). Restent deux points qui ne sont pas du code (`NOTIF-1`, `NOTIF-2`), et trois
-qui le sont (`NOTIF-3`, `NOTIF-4`, `NOTIF-11`) :
+29 septembre 2026). Restent deux points qui ne sont pas du code (`NOTIF-1`, `NOTIF-2`), et quatre
+qui le sont (`NOTIF-3`, `NOTIF-4`, `NOTIF-11`, `NOTIF-12`) :
 
 - [ ] `NOTIF-1` **Recette du webhook d'équipe** contre un vrai Slack, un vrai Discord et un vrai
       Mattermost (bouton « Envoyer un test ») — vérifier au passage qu'un `@channel` dans un nom de
@@ -916,6 +916,14 @@ qui le sont (`NOTIF-3`, `NOTIF-4`, `NOTIF-11`) :
       encore l'invariant ; la relecture du code n'a trouvé aucun entrelacement perdant, mais le modèle
       n'a pas été adapté (réinsertion quand la clé a été rendue). L'adapter, et ajouter le test de la
       variante « fusion dans la ligne en attente pendant qu'une réservation est tentée ». Taille : S.
+- [ ] `NOTIF-12` **Le mobile enregistre ses push par une API dépréciée** : firebase_messaging 17
+      (20 octobre 2026) déprécie `getToken()` / `onTokenRefresh` au profit de `register()` /
+      `onRegistered`, qui rendent un *Firebase Installation ID* (cible « direct-send ») et non plus
+      un jeton FCM. `PushGateway` (`mobile/lib/features/notifications/services/push_gateway.dart`)
+      garde l'ancienne API sous `// ignore: deprecated_member_use`, parce que `FcmRestClient`
+      n'envoie qu'à `message.token`. Migrer suppose que le backend sache cibler un FID (et accepte
+      les deux pendant la transition, les installations existantes ayant enregistré un jeton), puis
+      que le mobile bascule ; à faire avant que Firebase retire l'API. Taille : M, backend + mobile.
 
 ---
 

@@ -178,6 +178,9 @@ class FirebasePushGateway implements PushGateway {
   Future<String?> token() async {
     if (!_supported) return null;
     try {
+      // Déprécié depuis firebase_messaging 17, mais `register()` rend un FID,
+      // que le backend ne sait pas encore cibler — ledger NOTIF-12.
+      // ignore: deprecated_member_use
       return await _messaging.getToken();
     } catch (error) {
       // Un appareil sans Google Play Services, un simulateur iOS sans APNs :
@@ -188,8 +191,11 @@ class FirebasePushGateway implements PushGateway {
   }
 
   @override
-  Stream<String> tokenRefreshes() =>
-      _supported ? _messaging.onTokenRefresh : const Stream<String>.empty();
+  Stream<String> tokenRefreshes() => _supported
+      // Même raison que `token()` — ledger NOTIF-12.
+      // ignore: deprecated_member_use
+      ? _messaging.onTokenRefresh
+      : const Stream<String>.empty();
 
   @override
   Stream<PushMessage> foregroundMessages() => _supported

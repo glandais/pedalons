@@ -89,8 +89,8 @@ dependencies:
   # Push notifications (FCM). firebase_core reads the native config files
   # (android/app/google-services.json, ios/Runner/GoogleService-Info.plist), so
   # there is no generated firebase_options.dart to keep in sync.
-  firebase_core: ^4.15.0
-  firebase_messaging: ^16.7.0
+  firebase_core: ^5.0.0
+  firebase_messaging: ^17.0.0
   # Creates the `pedalons_default` Android channel — the channel_id the server
   # already sends — and shows a notification while the app is in the foreground,
   # which FCM does not do on Android.
