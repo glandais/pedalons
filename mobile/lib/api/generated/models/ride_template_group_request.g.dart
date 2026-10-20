@@ -11,7 +11,7 @@ _RideTemplateGroupRequest _$RideTemplateGroupRequestFromJson(
 ) => _RideTemplateGroupRequest(
   name: json['name'] as String,
   id: json['id'] as String?,
-  time: json['time'] as String?,
+  time: json['time'] as LocalTime?,
   averageSpeed: (json['averageSpeed'] as num?)?.toDouble(),
   maxParticipants: (json['maxParticipants'] as num?)?.toInt(),
 );

@@ -12,7 +12,7 @@ _RideTemplateGroupDto _$RideTemplateGroupDtoFromJson(
   id: json['id'] as String,
   name: json['name'] as String,
   sortOrder: (json['sortOrder'] as num).toInt(),
-  time: json['time'] as String?,
+  time: json['time'] as LocalTime?,
   averageSpeed: (json['averageSpeed'] as num?)?.toDouble(),
   maxParticipants: (json['maxParticipants'] as num?)?.toInt(),
 );
