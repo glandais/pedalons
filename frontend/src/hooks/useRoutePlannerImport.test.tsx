@@ -1,7 +1,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiClientError } from '@/lib/apiError'
-import { ErrorCode, type GpxImportResponse } from '@/api/dto'
+import { ErrorCode, type GpxImportResponse, type WaypointDto } from '@/api/dto'
 import { encode1, encode2 } from '@/lib/polyline'
 import { useRoutePlanner, MAX_IMPORT_BYTES } from './useRoutePlanner'
 
@@ -272,13 +272,114 @@ describe('useRoutePlanner importGpx', () => {
     expect(result.current.canUndo).toBe(false)
   })
 
-  it('reports the waypoints and the elevation fallback it was told of', async () => {
-    importMock.mockResolvedValue({ ...response(), waypointCount: 3, elevationFallback: true })
+  it('reports the elevation fallback it was told of, and no route point left out when they all came', async () => {
+    importMock.mockResolvedValue({ ...response(), waypointCount: 0, elevationFallback: true })
     const { result } = renderHook(() => useRoutePlanner())
     let info: unknown
     await act(async () => {
       info = await result.current.importGpx(fileOf(), 'replace')
     })
-    expect(info).toMatchObject({ waypointCount: 3, elevationFallback: true })
+    expect(info).toMatchObject({ droppedWaypoints: 0, elevationFallback: true })
+  })
+})
+
+describe('useRoutePlanner importGpx and the route points (C3e)', () => {
+  const wpt = (name: string, i = 0): WaypointDto => ({
+    geometry: { type: 'Point', coordinates: [5.002 + i * 0.0001, 45] },
+    name,
+    type: 'WATER',
+    origin: 'IMPORTED',
+  })
+
+  beforeEach(() => {
+    routeMock.mockReset()
+    importMock.mockReset()
+    localStorage.clear()
+  })
+
+  it('loads the file’s route points into the list, as imported ones with no id', async () => {
+    importMock.mockResolvedValue({
+      ...response(),
+      waypointCount: 2,
+      waypoints: [wpt('Source'), wpt('Fontaine', 1)],
+    })
+    const { result } = renderHook(() => useRoutePlanner())
+    let info: unknown
+    await act(async () => {
+      info = await result.current.importGpx(fileOf(), 'replace')
+    })
+    expect(info).toMatchObject({ droppedWaypoints: 0 })
+    expect(result.current.waypoints.map((w) => [w.name, w.origin, w.id])).toEqual([
+      ['Source', 'IMPORTED', undefined],
+      ['Fontaine', 'IMPORTED', undefined],
+    ])
+    // the list changed: it goes to the server, the file's own are in it
+    expect(result.current.snapshot().waypoints).toHaveLength(2)
+    // and it is one operation: undone with the track
+    act(() => result.current.undo())
+    expect(result.current.waypoints).toHaveLength(0)
+  })
+
+  it('replace drops the imported points and keeps the author’s; append keeps both', async () => {
+    const opening = [
+      { ...wpt('Vieux'), id: '0a1' },
+      { ...wpt('Mien'), id: '0a2', origin: 'AUTHOR' },
+    ] as WaypointDto[]
+    importMock.mockResolvedValue({ ...response(), waypointCount: 1, waypoints: [wpt('Neuf')] })
+    const { result } = renderHook(() => useRoutePlanner({ initialWaypoints: opening }))
+    await act(async () => {
+      await result.current.importGpx(fileOf('a.gpx'), 'replace')
+    })
+    expect(result.current.waypoints.map((w) => w.name)).toEqual(['Mien', 'Neuf'])
+    expect(result.current.waypoints[0].id).toBe('0a2')
+
+    importMock.mockResolvedValue({ ...response([track(5.05, 45)]), waypoints: [wpt('Autre')] })
+    routeMock.mockResolvedValue({ route: { coordinates: [[5.05, 45, 100]] }, ascend: 0 })
+    await act(async () => {
+      await result.current.importGpx(fileOf('b.gpx'), 'append')
+    })
+    expect(result.current.waypoints.map((w) => w.name)).toEqual(['Mien', 'Neuf', 'Autre'])
+  })
+
+  it('stops at 500 and counts what the server cut and what the list could not take', async () => {
+    const opening = Array.from({ length: 498 }, (_, i) => ({
+      ...wpt(`a${i}`),
+      id: `id${i}`,
+      origin: 'AUTHOR',
+    })) as WaypointDto[]
+    // the file had 505 points: the response carries the first 500, three came in
+    importMock.mockResolvedValue({
+      ...response(),
+      waypointCount: 505,
+      waypoints: Array.from({ length: 5 }, (_, i) => wpt(`n${i}`, i)),
+    })
+    const { result } = renderHook(() => useRoutePlanner({ initialWaypoints: opening }))
+    let info: unknown
+    await act(async () => {
+      info = await result.current.importGpx(fileOf(), 'replace')
+    })
+    expect(result.current.waypoints).toHaveLength(500)
+    expect(info).toMatchObject({ droppedWaypoints: 500 + 3 })
+  })
+
+  it('a route point operation leaves an import intact: the file still goes up', async () => {
+    importMock.mockResolvedValue(response())
+    const file = fileOf()
+    const { result } = renderHook(() => useRoutePlanner())
+    await act(async () => {
+      await result.current.importGpx(file, 'replace')
+    })
+    act(() => {
+      result.current.addWaypoint(
+        { lng: 5.002, lat: 45, distance: 150 },
+        { type: 'REGROUP', name: 'Ici', description: '' }
+      )
+    })
+    expect(result.current.snapshot().file).toBe(file)
+    expect(result.current.snapshot().waypoints).toHaveLength(1)
+    // undoing the point goes back to the import, which is still the file
+    act(() => result.current.undo())
+    expect(result.current.snapshot().file).toBe(file)
+    expect(result.current.snapshot().waypoints).toBeUndefined()
   })
 })

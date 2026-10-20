@@ -54,3 +54,44 @@ describe('plannerPayload', () => {
     expect(plannerPayload(snapshot({ file }), false)).toEqual({ file })
   })
 })
+
+describe('plannerPayload and the route points (C3e)', () => {
+  const LIST = [{ position: { lng: 5.05, lat: 45 }, type: 'CAFE', name: 'Café' }] as never
+
+  it('modification, route untouched, points touched: the list alone, so that the track stays', () => {
+    expect(plannerPayload(snapshot({ dirty: false, waypoints: LIST }), false)).toEqual({
+      waypoints: LIST,
+    })
+  })
+
+  it('rides along the state, the points past the bounds and an untouched import', () => {
+    expect(plannerPayload(snapshot({ waypoints: LIST }), false)).toEqual({
+      plannerState: STATE,
+      waypoints: LIST,
+    })
+    expect(plannerPayload(snapshot({ plannerState: null, waypoints: LIST }), false)).toEqual({
+      points: POINTS,
+      tooLarge: true,
+      waypoints: LIST,
+    })
+    const file = new File(['<gpx/>'], 'a.gpx')
+    expect(plannerPayload(snapshot({ file, waypoints: LIST }), true)).toEqual({
+      file,
+      waypoints: LIST,
+    })
+    expect(plannerPayload(snapshot({ waypoints: LIST }), true)).toEqual({
+      plannerState: STATE,
+      waypoints: LIST,
+    })
+  })
+
+  it('is absent when the user did not touch the list', () => {
+    for (const create of [true, false]) {
+      expect('waypoints' in plannerPayload(snapshot({}), create)).toBe(false)
+    }
+  })
+
+  it('sends nothing at all below two points, the list included', () => {
+    expect(plannerPayload(snapshot({ points: [], waypoints: LIST }), false)).toEqual({})
+  })
+})

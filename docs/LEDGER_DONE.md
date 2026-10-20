@@ -2432,7 +2432,61 @@ Plan [`2026-10-06-team-agenda.md`](plans/archive/2026-10-06-team-agenda.md) §4,
   le test d'égalité avec le composant). Une ligne d'avant C3c dont `WaypointBackfill` n'est pas
   encore passé (distance nulle) s'affiche « Hors tracé » dans cette courte fenêtre. Le texte de
   `planner.import.waypoints*` (« ne sont conservés que si… ») est devenu faux depuis C3c : à
-  reprendre avec C3e.
+  reprendre avec C3e (fait, voir ci-dessous).
+
+### Points de parcours d'auteur : éditeur web (C3e de `WEB-100`, 20 octobre 2026, contrat inchangé)
+
+- `WEB-100` **Volet C3e, éditeur des points de parcours** (2026-10-20, contrat inchangé, ni backend
+  ni mobile, `pnpm check` vert) — dans le planificateur, un clic droit (souris) ou un appui long
+  (doigt) n'importe où sur le tracé calculé ouvre le menu de B12 avec « Ajouter un point de
+  parcours » ; le point est posé sur la projection la plus proche du tracé. Un formulaire (Mantine
+  `Modal`) donne le type (les douze, pictogramme et couleur de C3d, REGROUP présélectionné), le
+  nom (40 caractères, compteur) et la description (500) ; un clic, Entrée ou le profil rouvrent le
+  formulaire d'un point existant, qui propose aussi « Supprimer » et, hors tracé, « Remettre sur
+  le tracé ». Un point se glisse en restant sur la ligne (projection continue) ; **Alt** le libère
+  (il passe « hors tracé » au-delà de 50 m). Toutes les opérations (ajouter, modifier, déplacer,
+  supprimer) sont des entrées de l'historique annuler / rétablir du planificateur, au même titre que
+  le tracé, et **n'appellent jamais le routeur**. Un recalcul du tracé ne réécrit pas les points :
+  `placedWaypoints` en reprend la distance et l'état « hors tracé » par `locateOnRoute`, jumeau de
+  `WaypointAnchoring.locate` (rayon 50 m, passages à 100 m, indice de distance remis à l'échelle).
+  À l'enregistrement la liste `waypoints` complète (avec les `id` existants, sans `origin` pour
+  eux) part dans `RouteRequest`, `GpxPreviewUpdateRequest` et `GpxPreviewFromPointsRequest`
+  **seulement si l'utilisateur y a touché** ; les points d'un parcours importé (`IMPORTED`)
+  sont chargés à l'ouverture, gardent id et origine, et un import « remplacer » retire les
+  importés et garde ceux de l'auteur (règle du serveur). L'import dans l'éditeur charge aussi les
+  `<wpt>` du fichier (plafond de 500, message `planner.import.waypointsDropped`). Clavier : Menu
+  ou Maj+F10 sur un point de contrôle ouvre son menu (Ajouter / Supprimer), Entrée ouvre le
+  formulaire d'un point de parcours, Suppr le supprime ; la suppression se défait par la
+  notification « Annuler » ou Ctrl+Z.
+  Tests : `lib/plannerWaypoints.test.ts` (accroche à 50 / 51 m, aller-retour et indice remis à
+  l'échelle, arête nulle, `mergeImported`, requêtes), `hooks/useRoutePlanner.test.tsx` (0 appel au
+  routeur, une entrée par opération, annuler / rétablir mêlés au tracé, `dirty`, liste absente après
+  annulation jusqu'à l'ouverture, refus pendant un calcul, plafond de 500, recalcul, effacer),
+  `hooks/useRoutePlannerImport.test.tsx` (chargement, remplacer / ajouter, plafond, fichier intact
+  après une opération de point), `lib/plannerSubmit.test.ts`, `lib/planner.test.ts`,
+  `components/planner/PlannerWaypointForm.test.tsx` (dont Entrée sans soumettre le `<form>`
+  parent), `RoutePlannerField.test.tsx`, `GpxPreviewEditor.test.tsx`. Les gestes de carte (clic
+  droit, appui long, glisser, Alt) ne se testent pas sous jsdom : un cas dans `gpx-planner.e2e.ts`
+  reste à écrire, et la recette à la souris, au doigt et au clavier est à faire sur un navigateur.
+  **À ne pas défaire** : la liste n'est envoyée que si elle a été touchée, par identité (`snapshot()`
+  compare `waypointsRef` à la liste d'ouverture ; une annulation jusqu'à l'ouverture redevient « non
+  touché »), et `snapshot().dirty` ne compte que les entrées d'historique qui ont touché le tracé :
+  sans cela, retoucher un point renverrait le tracé et ses altitudes à l'enregistrement ; la
+  position d'un point n'est **jamais** recalculée (le tracé bouge, le point reste où l'auteur l'a
+  mis, seule sa distance suit, le serveur ayant le dernier mot) ; l'historique ne référence jamais
+  le tracé courant (`add` et `insert` mutent ses points), d'où la copie d'une opération de point,
+  qui laisse son identité au tracé pour qu'un import intact reste intact et que le fichier parte ;
+  `undo` et `redo` figent l'entrée avant de poser les refs (les mises à jour de `setState` tournent
+  plus tard) ; seul un `contextmenu` de `button 2` supprime un point de contrôle (la touche Menu et
+  Maj+F10 en envoient un autre, qui ouvre le menu) ; le `<form>` du formulaire de point fait
+  `stopPropagation` du submit (il remonte par le portail React jusqu'au `<form>` de `RouteEditor`,
+  qui enregistrerait le parcours) et la modale déclare son ouverture comme `onFullscreenChange` pour
+  que Échap ne ferme pas la fenêtre du formulaire de route ; les marqueurs de points de parcours sont
+  des `Marker` DOM (`zIndex` 1, points de contrôle 2, point glissé 3) quand la couche `symbol` de C3d
+  reste celle de la consultation ; effacer le tracé garde les points (hors tracé) ; un aperçu créé
+  depuis un fichier envoie sa liste dans l'`updatePreview` qui suit la création.
+  Restent ouverts : liste éditable avec un champ « km » (ajout sans clic droit, sans clavier sur un
+  point de contrôle), placement libre au doigt (pas d'Alt), déplacement d'un point aux flèches.
 
 ### `WEB-106` Pas d'enregistrement pendant un calcul du planificateur (20 octobre 2026)
 

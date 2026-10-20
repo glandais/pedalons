@@ -1396,6 +1396,21 @@ describe('B1 elevation', () => {
       expect(straightEdgesMissingProfile(far)).toHaveLength(2)
     })
 
+    it('carries the route points it is given, none by default (C3e)', async () => {
+      const route = withDirectProfiles(await straightRoute(), lookupOf([profileOf(A, B)]))
+      expect(plannerRouteToMappable(route)!.waypoints).toEqual([])
+      const waypoints = [
+        {
+          geometry: { type: 'Point', coordinates: [5.005, 45] },
+          name: 'Café',
+          type: 'CAFE',
+          origin: 'AUTHOR',
+          distance: 400,
+        },
+      ] as never
+      expect(plannerRouteToMappable(route, waypoints)!.waypoints).toBe(waypoints)
+    })
+
     it('unfolds the samples in the profile, with their positions, route indices and dashes', async () => {
       const route = withDirectProfiles(await straightRoute(), lookupOf([profileOf(A, B)]))
       const mappable = plannerRouteToMappable(route)!

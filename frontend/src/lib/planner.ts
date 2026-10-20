@@ -2,7 +2,7 @@ import { distance } from '@/components/map/mapUtils'
 import { route as routerRoute } from '@/api/endpoints/router/router'
 import KDBush from 'kdbush'
 import { around } from 'geokdbush'
-import { RouterProfile, type GpxImportTrack, type UnpavedSpan } from '@/api/dto'
+import { RouterProfile, type GpxImportTrack, type UnpavedSpan, type WaypointDto } from '@/api/dto'
 import { decode1, decode2 } from '@/lib/polyline'
 import { tRegister, type TranslationKey } from '@/lib/i18nUtils'
 import type { MappableRoute } from '@/components/route/RouteMapView'
@@ -375,7 +375,7 @@ export function fillElevations(points: RoutePoint[]): (number | undefined)[] {
   return result
 }
 
-function cumulativeDistances(points: RoutePoint[]): number[] {
+export function cumulativeDistances(points: readonly RoutePoint[]): number[] {
   const cum: number[] = new Array(points.length)
   let dist = 0
   for (let i = 0; i < points.length; i++) {
@@ -638,7 +638,10 @@ export type PlannerMappable = MappableRoute & {
   surface: SurfaceClass[]
 }
 
-export function plannerRouteToMappable(route: Route): PlannerMappable | null {
+export function plannerRouteToMappable(
+  route: Route,
+  waypoints: WaypointDto[] = []
+): PlannerMappable | null {
   const points = route.points
   if (points.length < 2) return null
   // The ends of an edge whose relief is known take its elevations, so a route of straight lines
@@ -690,7 +693,7 @@ export function plannerRouteToMappable(route: Route): PlannerMappable | null {
   )
   return {
     distance: route.dist,
-    waypoints: [],
+    waypoints,
     tracks: [{ line: { type: 'LineString', coordinates }, climbs: [] }],
     positions,
     routeIndex,

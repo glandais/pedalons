@@ -24,6 +24,21 @@ export function PlannerHelpControl({ trigger }: PlannerHelpControlProps) {
     { action: t('planner.help.add'), gesture: t(`planner.help.add.${pointer}`) },
     { action: t('planner.help.move'), gesture: t(`planner.help.move.${pointer}`) },
     { action: t('planner.help.insert'), gesture: t(`planner.help.insert.${pointer}`) },
+    {
+      action: t('planner.help.addWaypoint'),
+      gesture: t(`planner.help.addWaypoint.${pointer}`),
+    },
+    {
+      action: t('planner.help.editWaypoint'),
+      gesture: t(`planner.help.editWaypoint.${pointer}`),
+    },
+    {
+      action: t('planner.help.moveWaypoint'),
+      // Alt frees the point from the line (it may then be off the route)
+      gesture: isCoarsePointer
+        ? t('planner.help.moveWaypoint.touch')
+        : t('planner.help.moveWaypoint.mouse', { alt: apple ? '⌥' : 'Alt' }),
+    },
     { action: t('planner.help.remove'), gesture: t(`planner.help.remove.${pointer}`) },
     {
       action: t('planner.help.removeAnchor'),
@@ -32,10 +47,13 @@ export function PlannerHelpControl({ trigger }: PlannerHelpControlProps) {
   ]
   // Moving a point by keyboard is a mouse-and-keyboard matter
   if (!isCoarsePointer) {
-    rows.splice(4, 0, {
-      action: t('planner.help.keyboard'),
-      gesture: t('planner.help.keyboard.mouse'),
-    })
+    rows.splice(
+      7,
+      0,
+      { action: t('planner.help.keyboard'), gesture: t('planner.help.keyboard.mouse') },
+      // The Menu key opens the menu of a focused point: delete it, add a route point there
+      { action: t('planner.help.menu'), gesture: t('planner.help.menu.mouse') }
+    )
   }
   if (isCoarsePointer) {
     rows.push({ action: t('planner.help.direct'), gesture: t('planner.help.direct.touch') })

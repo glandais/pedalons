@@ -17,7 +17,7 @@ import {
   Badge,
 } from '@mantine/core'
 import { RouteRequest, SurfaceType } from '@/api/dto'
-import type { TeamDetailDto, GeoPoint, PlannerState } from '@/api/dto'
+import type { TeamDetailDto, GeoPoint, PlannerState, WaypointDto } from '@/api/dto'
 import { notifications } from '@mantine/notifications'
 import { plannerPayload } from '@/lib/plannerSubmit'
 import { SURFACE_TYPE_COLORS } from '@/lib/badgeColors.generated'
@@ -53,6 +53,10 @@ interface RouteEditorProps {
   initialAscend?: number
   /** The saved editing state of the route (control points, pieces): the planner opens on it. */
   initialPlannerState?: PlannerState
+  /** The route points saved with the route: the planner opens with them (WEB-100, C3e). */
+  initialWaypoints?: WaypointDto[]
+  /** Length (m) stored with the route: the distances of `initialWaypoints` were measured on it. */
+  initialDistance?: number
   submitButtonText?: string
   cancelButtonText?: string
   showCancelButton?: boolean
@@ -77,6 +81,8 @@ export function RouteEditor({
   initialTrack,
   initialAscend,
   initialPlannerState,
+  initialWaypoints,
+  initialDistance,
   suggestedSurfaceType,
   submitButtonText,
   cancelButtonText,
@@ -179,6 +185,8 @@ export function RouteEditor({
         ...values,
         points: track?.points,
         plannerState: track?.plannerState,
+        // Only when the user touched the route points: absent, the server keeps them
+        waypoints: track?.waypoints,
       },
       // The file chosen in the GPX tab, or the one imported in the planner and left untouched
       sourceMode === 'gpx' ? gpxFile || undefined : track?.file
@@ -268,6 +276,8 @@ export function RouteEditor({
             <RoutePlannerField
               plannerRef={plannerRef}
               initialState={initialPlannerState}
+              initialWaypoints={initialWaypoints}
+              initialWaypointsTotal={initialDistance}
               onPointsChange={setPlannerPoints}
               initialTrack={initialTrack}
               initialAscend={initialAscend}

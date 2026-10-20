@@ -19,6 +19,13 @@ if (typeof window !== 'undefined') {
     })),
   })
 
+  // jsdom has no font loading API: Mantine's autosize textarea listens to it
+  if (!('fonts' in document)) {
+    Object.defineProperty(document, 'fonts', {
+      value: { addEventListener: vi.fn(), removeEventListener: vi.fn(), ready: Promise.resolve() },
+    })
+  }
+
   // Mock localStorage
   const localStorageMock = {
     getItem: vi.fn(),

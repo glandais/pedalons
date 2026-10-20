@@ -3,7 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { Stack, Text, Title } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
-import type { GeoPoint, PlannerState } from '@/api/dto'
+import type { GeoPoint, PlannerState, WaypointRequest } from '@/api/dto'
 import {
   getListMyPreviewsQueryKey,
   useCreatePreview,
@@ -31,19 +31,21 @@ export function CreateGpxPreviewPage() {
   const handleSubmit = async (
     name: string,
     track?: { points?: GeoPoint[]; plannerState?: PlannerState },
-    gpxFile?: File
+    gpxFile?: File,
+    waypoints?: WaypointRequest[]
   ) => {
     if (gpxFile) {
       const created = await createFromFileMutation.mutateAsync({ data: { gpxFile } })
       // The upload names the preview after the file: the name typed in the form wins
       // (the two calls are not atomic: if the rename fails the preview exists, so go to it
-      // rather than leave the form open for a submit that would create a second one)
+      // rather than leave the form open for a submit that would create a second one). The route
+      // points the user edited ride the same call: the upload takes no list.
       let renamed = true
-      if (name !== created.name) {
+      if (name !== created.name || waypoints) {
         try {
           await renameMutation.mutateAsync({
             previewId: created.id,
-            data: { preview: { name } },
+            data: { preview: { name, waypoints } },
           })
         } catch {
           renamed = false
@@ -61,7 +63,7 @@ export function CreateGpxPreviewPage() {
     if (!track?.plannerState && (!track?.points || track.points.length < 2)) return
 
     const preview = await createMutation.mutateAsync(
-      { data: { name, points: track.points, plannerState: track.plannerState } },
+      { data: { name, points: track.points, plannerState: track.plannerState, waypoints } },
       {
         onSuccess: () => {
           // Refresh "my files": the key prefix matches every paginated variant.

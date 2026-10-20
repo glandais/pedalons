@@ -36,8 +36,27 @@ import {
   type ElevationCache,
 } from '@/lib/plannerElevation'
 import { MAX_PLANNER_SOURCES, restorePlannerState, serializePlannerState } from '@/lib/plannerState'
-import { RouterProfile } from '@/api/dto'
-import type { GeoPoint, GpxImportResponse, PlannerState } from '@/api/dto'
+import { RouterProfile, WaypointOrigin } from '@/api/dto'
+import type {
+  GeoPoint,
+  GpxImportResponse,
+  PlannerState,
+  WaypointDto,
+  WaypointRequest,
+  WaypointType,
+} from '@/api/dto'
+import {
+  MAX_WAYPOINTS,
+  mergeImported,
+  nextWaypointKey,
+  placeWaypoints,
+  toWaypointRequests,
+  waypointFromDto,
+  waypointFromImport,
+  type PlacedWaypoint,
+  type PlannerWaypoint,
+  type WaypointPlacement,
+} from '@/lib/plannerWaypoints'
 import { importGpx as importGpxRequest } from '@/api/endpoints/router/router'
 import { tRegister, type TranslationKey } from '@/lib/i18nUtils'
 import { plannerErrorMessage } from '@/lib/plannerErrors'
@@ -64,6 +83,10 @@ export interface UseRoutePlannerOptions {
   initialAscend?: number
   /** Team the route is drawn for; sent to the router, which checks the team's planner flag and rights. Absent from the GPX tools. */
   teamSlug?: string
+  /** The route points saved with the route or the preview: the planner opens with them. */
+  initialWaypoints?: readonly WaypointDto[]
+  /** Length (m) stored with them: the distances they carry were measured on it. */
+  initialWaypointsTotal?: number
 }
 
 /** What the form saves: taken at submit time, never while drawing. */
@@ -78,13 +101,20 @@ export interface PlannerSnapshot {
    * gesture, an undo included, drops it): the form then uploads the file itself.
    */
   file?: File
+  /**
+   * The complete list of the route points, with the ids of the existing ones, only when the user
+   * touched them (an undo back to the opening list counts as not touched). Absent: the server keeps
+   * them as they are.
+   */
+  waypoints?: WaypointRequest[]
 }
 
 /** What the planner tells about a file it imported, for the view to report. */
 export interface GpxImportInfo {
   /** Name of the file: its metadata, else its first track, else its file name. */
   name: string
-  waypointCount: number
+  /** Route points of the file that the list did not take (more than the 500 a route carries). */
+  droppedWaypoints: number
   elevationFallback: boolean
   mode: 'replace' | 'append'
 }
@@ -150,6 +180,23 @@ export interface RoutePlannerState {
   removeControlPoint: (index: number, direct?: boolean, zoom?: number) => void
   /** Removes what lies between two bounds frozen by the caller (a menu opened on an imported anchor). */
   removeAnchor: (start: RoutePoint, end: RoutePoint, direct?: boolean) => void
+  /** The author's route points, as edited (no router call, one history entry per operation). */
+  waypoints: PlannerWaypoint[]
+  /** The same, placed on the current route: distance along it, null off the track. */
+  placedWaypoints: PlacedWaypoint[]
+  /** Returns the key of the new point, null when refused (500 points, calculation in flight). */
+  addWaypoint: (
+    at: WaypointPlacement,
+    fields: { type: WaypointType; name: string; description: string }
+  ) => string | null
+  updateWaypoint: (
+    key: string,
+    fields: Partial<{ type: WaypointType; name: string; description: string }>
+  ) => boolean
+  /** `distance`: along the route at the new position, null when it is off the track. */
+  moveWaypoint: (key: string, position: Point, distance: number | null) => void
+  /** True when the point was removed (false: refused while a calculation runs). */
+  removeWaypoint: (key: string) => boolean
   clearRoute: () => void
   /**
    * Loads a GPX file: it replaces the route, or is added after its last point. Resolves with what
@@ -160,6 +207,20 @@ export interface RoutePlannerState {
   redo: () => void
 }
 
+/**
+ * One state of the history: the route and the route points as they were before an operation, and
+ * whether that operation changed the track (a route point's operation does not).
+ */
+interface PlannerEntry {
+  route: Route
+  waypoints: PlannerWaypoint[]
+  track: boolean
+}
+
+function copyRoute(route: Route): Route {
+  return { ...route, points: route.points.map((p) => ({ ...p })) }
+}
+
 const ROUTER_PROFILE_STORAGE_KEY = 'pedalons-router-profile'
 const ROUTER_TUNING_STORAGE_KEY = 'pedalons-router-tuning'
 
@@ -168,7 +229,14 @@ function isRouterProfile(value: unknown): value is RouterProfile {
 }
 
 export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerState {
-  const { initialState, initialTrack, initialAscend, teamSlug } = options || {}
+  const {
+    initialState,
+    initialTrack,
+    initialAscend,
+    teamSlug,
+    initialWaypoints,
+    initialWaypointsTotal,
+  } = options || {}
   const { t } = useTranslation()
   // Remembered across sessions; a stale or hand-edited value falls back to the default.
   const [storedProfile, setStoredProfile] = useLocalStorage<RouterProfile>({
@@ -227,8 +295,15 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
   // history: the indices of `sourceId` stay valid for every snapshot.
   const sourcesRef = useRef<PlannerSource[]>(initial.sources)
   const [route, setRoute] = useState<Route>(initial.route)
-  const [history, setHistory] = useState<Route[]>([])
-  const [future, setFuture] = useState<Route[]>([])
+  // The author's route points: an immutable list, replaced by every operation. A list that is not,
+  // by identity, the one opened on is a list the user touched.
+  const [openingWaypoints] = useState<PlannerWaypoint[]>(() =>
+    (initialWaypoints ?? []).map((w) => waypointFromDto(w, initialWaypointsTotal))
+  )
+  const [waypoints, setWaypoints] = useState<PlannerWaypoint[]>(openingWaypoints)
+  const waypointsRef = useRef(openingWaypoints)
+  const [history, setHistory] = useState<PlannerEntry[]>([])
+  const [future, setFuture] = useState<PlannerEntry[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -254,11 +329,11 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
 
   const routeRef = useRef(route)
   const profileRef = useRef(routerProfile)
-  const historyLengthRef = useRef(0)
+  const historyRef = useRef<PlannerEntry[]>([])
   useEffect(() => {
     routeRef.current = route
     profileRef.current = routerProfile
-    historyLengthRef.current = history.length
+    historyRef.current = history
   })
 
   // The operation in flight, if any. Routing is billed per request, so:
@@ -323,7 +398,10 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
 
   const executeRouteOperation = useCallback(
     async (
-      operation: (route: Route, signal: AbortSignal) => Promise<Route>,
+      operation: (
+        route: Route,
+        signal: AbortSignal
+      ) => Promise<Route | { route: Route; waypoints: PlannerWaypoint[] }>,
       fallbackKey?: TranslationKey
     ): Promise<boolean> => {
       if (inFlightRef.current) return false // lock
@@ -334,18 +412,21 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
       setError(null)
 
       // Snapshot before the operation mutates the current route's points
-      const snapshot: Route = {
-        ...routeRef.current,
-        points: routeRef.current.points.map((p) => ({ ...p })),
-      }
+      const snapshot = copyRoute(routeRef.current)
+      const before = waypointsRef.current
 
       try {
-        const newRoute = await operation(routeRef.current, controller.signal)
+        const outcome = await operation(routeRef.current, controller.signal)
         if (controller.signal.aborted) return false
+        const newRoute = 'waypoints' in outcome ? outcome.route : outcome
         if (importedRef.current?.routes.has(routeRef.current))
           importedRef.current.routes.add(snapshot)
-        setHistory((prev) => [...prev, snapshot])
+        setHistory((prev) => [...prev, { route: snapshot, waypoints: before, track: true }])
         setFuture([])
+        if ('waypoints' in outcome && outcome.waypoints !== before) {
+          waypointsRef.current = outcome.waypoints
+          setWaypoints(outcome.waypoints)
+        }
         setRoute(newRoute)
         return true
       } catch (e) {
@@ -522,12 +603,11 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
 
   const clearRoute = useCallback(() => {
     cancelInFlight()
-    const snapshot: Route = {
-      ...routeRef.current,
-      points: routeRef.current.points.map((p) => ({ ...p })),
-    }
+    const snapshot = copyRoute(routeRef.current)
     if (importedRef.current?.routes.has(routeRef.current)) importedRef.current.routes.add(snapshot)
-    setHistory((prev) => [...prev, snapshot])
+    // The route points stay (off the track): clearing the line does not clear the author's work
+    const entry: PlannerEntry = { route: snapshot, waypoints: waypointsRef.current, track: true }
+    setHistory((prev) => [...prev, entry])
     setFuture([])
     setRoute(computeRoute([]))
     setError(null)
@@ -575,17 +655,26 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
               )
             : imported
         signal.throwIfAborted()
+        // The file's route points join the list under the server's rule (a new file replaces the
+        // imported ones and keeps the author's), within the 500 a route carries
+        const merged = mergeImported(
+          waypointsRef.current,
+          (response.waypoints ?? []).map(waypointFromImport),
+          mode
+        )
         // Only an operation that went through leaves its sources behind
         sourcesRef.current.push(...sources)
         if (mode === 'replace' || route.points.length === 0)
           outcome.produced = { file, routes: new Set([next]) }
         outcome.info = {
           name: response.name,
-          waypointCount: response.waypointCount,
+          droppedWaypoints:
+            Math.max(0, response.waypointCount - (response.waypoints?.length ?? 0)) +
+            merged.dropped,
           elevationFallback: response.elevationFallback,
           mode,
         }
-        return next
+        return { route: next, waypoints: merged.waypoints }
       }, IMPORT_FAILED_KEY)
       if (!applied) return null
       importedRef.current = outcome.produced
@@ -602,10 +691,18 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
       return
     }
     if (history.length === 0) return
-    setFuture((prev) => [routeRef.current, ...prev])
-    const prev = history[history.length - 1]
+    const entry = history[history.length - 1]
+    // Taken now: the updaters run later, after the refs below moved
+    const undone: PlannerEntry = {
+      route: routeRef.current,
+      waypoints: waypointsRef.current,
+      track: entry.track,
+    }
+    setFuture((prev) => [undone, ...prev])
     setHistory((h) => h.slice(0, -1))
-    setRoute(prev)
+    waypointsRef.current = entry.waypoints
+    setWaypoints(entry.waypoints)
+    setRoute(entry.route)
   }, [history, cancelInFlight])
 
   const redo = useCallback(() => {
@@ -614,22 +711,135 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
       return
     }
     if (future.length === 0) return
-    setHistory((prev) => [...prev, routeRef.current])
     const next = future[0]
+    const redone: PlannerEntry = {
+      route: routeRef.current,
+      waypoints: waypointsRef.current,
+      track: next.track,
+    }
+    setHistory((prev) => [...prev, redone])
     setFuture((f) => f.slice(1))
-    setRoute(next)
+    waypointsRef.current = next.waypoints
+    setWaypoints(next.waypoints)
+    setRoute(next.route)
   }, [future, cancelInFlight])
+
+  // --- The author's route points: no router, one history entry per operation ---
+  const commitWaypoints = useCallback(
+    (change: (list: PlannerWaypoint[]) => PlannerWaypoint[]): boolean => {
+      // One operation at a time, like the gestures
+      if (inFlightRef.current) return false
+      const before = waypointsRef.current
+      const after = change(before)
+      if (after === before) return false
+      // The history never holds the current route itself: add / insert mutate its points. The
+      // current route keeps its identity, so an import left intact still is the file.
+      const copy = copyRoute(routeRef.current)
+      if (importedRef.current?.routes.has(routeRef.current)) importedRef.current.routes.add(copy)
+      setHistory((prev) => [...prev, { route: copy, waypoints: before, track: false }])
+      setFuture([])
+      waypointsRef.current = after
+      setWaypoints(after)
+      return true
+    },
+    []
+  )
+
+  const addWaypoint = useCallback(
+    (
+      at: WaypointPlacement,
+      fields: { type: WaypointType; name: string; description: string }
+    ): string | null => {
+      let created = null as string | null
+      commitWaypoints((list) => {
+        if (list.length >= MAX_WAYPOINTS) return list
+        created = nextWaypointKey()
+        return [
+          ...list,
+          {
+            key: created,
+            origin: WaypointOrigin.AUTHOR,
+            type: fields.type,
+            name: fields.name,
+            description: fields.description,
+            lng: at.lng,
+            lat: at.lat,
+            hint: { distance: at.distance, total: routeRef.current.dist },
+          },
+        ]
+      })
+      return created
+    },
+    [commitWaypoints]
+  )
+
+  const updateWaypoint = useCallback(
+    (
+      key: string,
+      fields: Partial<{ type: WaypointType; name: string; description: string }>
+    ): boolean => {
+      // Refused during a calculation: the caller keeps the form, and what was typed, open
+      if (inFlightRef.current) return false
+      commitWaypoints((list) => {
+        const i = list.findIndex((w) => w.key === key)
+        if (i < 0) return list
+        const current = list[i]
+        const next = { ...current, ...fields }
+        if (
+          next.type === current.type &&
+          next.name === current.name &&
+          next.description === current.description
+        ) {
+          return list
+        }
+        return list.map((w, k) => (k === i ? next : w))
+      })
+      return true
+    },
+    [commitWaypoints]
+  )
+
+  const moveWaypoint = useCallback(
+    (key: string, position: Point, distance: number | null) => {
+      commitWaypoints((list) => {
+        const i = list.findIndex((w) => w.key === key)
+        if (i < 0) return list
+        const current = list[i]
+        if (current.lng === position.lng && current.lat === position.lat) return list
+        // The hint follows the point while it is on the track; off it, it keeps the last passage
+        const hint = distance !== null ? { distance, total: routeRef.current.dist } : current.hint
+        return list.map((w, k) =>
+          k === i ? { ...w, lng: position.lng, lat: position.lat, hint } : w
+        )
+      })
+    },
+    [commitWaypoints]
+  )
+
+  const removeWaypoint = useCallback(
+    (key: string): boolean =>
+      commitWaypoints((list) =>
+        list.some((w) => w.key === key) ? list.filter((w) => w.key !== key) : list
+      ),
+    [commitWaypoints]
+  )
+
+  const placedWaypoints = useMemo(() => placeWaypoints(route, waypoints), [route, waypoints])
 
   const snapshot = useCallback((): PlannerSnapshot => {
     const current = routeRef.current
     return {
-      dirty: historyLengthRef.current > 0,
+      // A route point's operation is in the history without having touched the track
+      dirty: historyRef.current.some((entry) => entry.track),
       plannerState: serializePlannerState(current, sourcesRef.current, profileRef.current),
       ...(importedRef.current?.routes.has(current) && { file: importedRef.current.file }),
       points:
         current.points.length < 2 ? [] : current.points.map((p) => ({ lng: p.lng, lat: p.lat })),
+      ...(waypointsRef.current !== openingWaypoints && {
+        waypoints: toWaypointRequests(placeWaypoints(current, waypointsRef.current)),
+      }),
     }
-  }, [])
+  }, [openingWaypoints])
 
   const routeGeoJson = useMemo(() => {
     if (route.points.length < 2) return null
@@ -668,6 +878,12 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
     updateControlPoint,
     removeControlPoint,
     removeAnchor,
+    waypoints,
+    placedWaypoints,
+    addWaypoint,
+    updateWaypoint,
+    moveWaypoint,
+    removeWaypoint,
     clearRoute,
     importGpx,
     canUndo,

@@ -73,7 +73,7 @@ describe('GpxPreviewEditor planner state (C4a)', () => {
     const onSubmit = renderEditor()
     save()
     await waitFor(() => expect(onSubmit).toHaveBeenCalled())
-    expect(onSubmit).toHaveBeenCalledWith('Ma sortie', undefined, undefined)
+    expect(onSubmit).toHaveBeenCalledWith('Ma sortie', undefined, undefined, undefined)
   })
 
   it('a changed track sends the state alone', async () => {
@@ -104,6 +104,47 @@ describe('GpxPreviewEditor planner state (C4a)', () => {
     expect(onSubmit.mock.calls[0][1]).toEqual({ points: undefined, plannerState: STATE })
   })
 
+  it('the route points edited alone go with no track: the track is left as it is', async () => {
+    const waypoints = [{ position: { lng: 5.05, lat: 45 }, type: 'CAFE', name: 'Café' }]
+    snapshotMock.mockReturnValue({ dirty: false, plannerState: STATE, points: POINTS, waypoints })
+    const onSubmit = renderEditor()
+    save()
+    await waitFor(() => expect(onSubmit).toHaveBeenCalled())
+    expect(onSubmit).toHaveBeenCalledWith('Ma sortie', undefined, undefined, waypoints)
+  })
+
+  it('the route points ride along a changed track and an untouched import', async () => {
+    const waypoints = [{ position: { lng: 5.05, lat: 45 }, type: 'CAFE', name: 'Café' }]
+    snapshotMock.mockReturnValue({ dirty: true, plannerState: STATE, points: POINTS, waypoints })
+    const onSubmit = renderEditor()
+    save()
+    await waitFor(() => expect(onSubmit).toHaveBeenCalled())
+    expect(onSubmit.mock.calls[0][1]).toEqual({ points: undefined, plannerState: STATE })
+    expect(onSubmit.mock.calls[0][3]).toBe(waypoints)
+    cleanup()
+
+    const file = new File(['<gpx/>'], 'sortie.gpx')
+    snapshotMock.mockReturnValue({
+      dirty: true,
+      plannerState: STATE,
+      points: POINTS,
+      file,
+      waypoints,
+    })
+    const second = renderEditor({ create: true, initialTrack: undefined })
+    save()
+    await waitFor(() => expect(second).toHaveBeenCalled())
+    expect(second).toHaveBeenCalledWith('Ma sortie', undefined, file, waypoints)
+  })
+
+  it('hands the saved route points and their length to the planner', () => {
+    snapshotMock.mockReturnValue({ dirty: false, plannerState: STATE, points: POINTS })
+    const initialWaypoints = [{ name: 'Café' }] as never
+    renderEditor({ initialWaypoints, initialDistance: 12345 })
+    expect(fieldProps.last?.initialWaypoints).toBe(initialWaypoints)
+    expect(fieldProps.last?.initialWaypointsTotal).toBe(12345)
+  })
+
   it('hands the saved state to the planner', () => {
     snapshotMock.mockReturnValue({ dirty: false, plannerState: STATE, points: POINTS })
     renderEditor({ initialPlannerState: STATE })
@@ -124,7 +165,7 @@ describe('GpxPreviewEditor import in the planner (C4b)', () => {
     const onSubmit = renderEditor({ create: true, initialTrack: undefined })
     save()
     await waitFor(() => expect(onSubmit).toHaveBeenCalled())
-    expect(onSubmit).toHaveBeenCalledWith('Ma sortie', undefined, file)
+    expect(onSubmit).toHaveBeenCalledWith('Ma sortie', undefined, file, undefined)
   })
 
   it('a modified import is submitted as the state', async () => {

@@ -795,3 +795,225 @@ describe('useRoutePlanner relief of straight lines (B1b)', () => {
     expect(result.current.route.ascend).toBe(35)
   })
 })
+
+describe('useRoutePlanner route points (C3e)', () => {
+  const AT = { lng: 5.005, lat: 45, distance: 393 }
+  const FIELDS = { type: 'CAFE', name: 'Café', description: '' } as const
+
+  beforeEach(() => {
+    routeMock.mockReset()
+    localStorage.clear()
+  })
+
+  /** A route of two straight points, drawn without the router. */
+  async function drawn(options: Parameters<typeof useRoutePlanner>[0] = {}) {
+    const hook = renderHook(() => useRoutePlanner(options))
+    act(() => hook.result.current.addControlPoint(A, true))
+    await waitFor(() => expect(hook.result.current.controlPoints).toHaveLength(1))
+    act(() => hook.result.current.addControlPoint(B, true))
+    await waitFor(() => expect(hook.result.current.controlPoints).toHaveLength(2))
+    return hook
+  }
+
+  it('adds, edits, moves and removes without any router call, one history entry each', async () => {
+    const { result } = await drawn()
+    let key: string | null = null
+    act(() => {
+      key = result.current.addWaypoint(AT, FIELDS)
+    })
+    expect(key).toMatch(/^w-/)
+    expect(result.current.waypoints).toHaveLength(1)
+    act(() => result.current.updateWaypoint(key!, { name: 'Café du Port' }))
+    act(() => result.current.moveWaypoint(key!, { lng: 5.006, lat: 45 }, 471))
+    expect(result.current.waypoints[0]).toMatchObject({
+      name: 'Café du Port',
+      lng: 5.006,
+      hint: { distance: 471 },
+    })
+    act(() => {
+      expect(result.current.removeWaypoint(key!)).toBe(true)
+    })
+    expect(result.current.waypoints).toHaveLength(0)
+    expect(routeMock).not.toHaveBeenCalled()
+
+    // 2 control points + 4 operations: four undos take the operations back, one by one
+    act(() => result.current.undo())
+    expect(result.current.waypoints).toHaveLength(1)
+    act(() => result.current.undo())
+    expect(result.current.waypoints[0].lng).toBe(5.005)
+    act(() => result.current.undo())
+    expect(result.current.waypoints[0].name).toBe('Café')
+    act(() => result.current.undo())
+    expect(result.current.waypoints).toHaveLength(0)
+    expect(result.current.controlPoints).toHaveLength(2)
+    act(() => result.current.redo())
+    expect(result.current.waypoints).toHaveLength(1)
+  })
+
+  it('shares the history with the track: undo takes them back in the order they were made', async () => {
+    const { result } = await drawn()
+    act(() => {
+      result.current.addWaypoint(AT, FIELDS)
+    })
+    act(() => result.current.addControlPoint(C, true))
+    await waitFor(() => expect(result.current.controlPoints).toHaveLength(3))
+    act(() => result.current.undo())
+    expect(result.current.controlPoints).toHaveLength(2)
+    expect(result.current.waypoints).toHaveLength(1)
+    act(() => result.current.undo())
+    expect(result.current.waypoints).toHaveLength(0)
+    expect(result.current.controlPoints).toHaveLength(2)
+  })
+
+  it('refuses a no-op and a point past the 500', async () => {
+    const { result } = await drawn()
+    let key: string | null = null
+    act(() => {
+      key = result.current.addWaypoint(AT, FIELDS)
+    })
+    act(() => result.current.updateWaypoint(key!, { name: 'Café' }))
+    act(() => result.current.moveWaypoint(key!, { lng: AT.lng, lat: AT.lat }, 393))
+    act(() => {
+      expect(result.current.removeWaypoint('w-unknown')).toBe(false)
+    })
+    // one operation in the history on top of the two control points
+    act(() => result.current.undo())
+    expect(result.current.waypoints).toHaveLength(0)
+    expect(result.current.controlPoints).toHaveLength(2)
+  })
+
+  it('stops at 500 points', async () => {
+    const { result } = await drawn()
+    for (let i = 0; i < 500; i++) {
+      act(() => {
+        result.current.addWaypoint(AT, FIELDS)
+      })
+    }
+    expect(result.current.waypoints).toHaveLength(500)
+    let key: string | null = 'x'
+    act(() => {
+      key = result.current.addWaypoint(AT, FIELDS)
+    })
+    expect(key).toBeNull()
+    expect(result.current.waypoints).toHaveLength(500)
+  })
+
+  it('is refused while a calculation runs', async () => {
+    const { result } = await drawn()
+    pendingRouter()
+    act(() => result.current.addControlPoint(C, false))
+    await waitFor(() => expect(result.current.isLoading).toBe(true))
+    let key: string | null = 'x'
+    act(() => {
+      key = result.current.addWaypoint(AT, FIELDS)
+    })
+    expect(key).toBeNull()
+    expect(result.current.waypoints).toHaveLength(0)
+    act(() => result.current.undo())
+  })
+
+  describe('what is saved', () => {
+    const initialTrack = [
+      [5, 45, 100, 0],
+      [5.01, 45, 100, 786],
+    ]
+    const stored = {
+      id: '0abc',
+      geometry: { type: 'Point', coordinates: [5.005, 45] },
+      name: 'Café',
+      type: 'CAFE',
+      origin: 'IMPORTED',
+      distance: 393,
+    } as never
+
+    it('sends nothing of the route points nor of the track when nothing was touched', () => {
+      const { result } = renderHook(() =>
+        useRoutePlanner({ initialTrack, initialWaypoints: [stored], initialWaypointsTotal: 786 })
+      )
+      expect(result.current.waypoints).toHaveLength(1)
+      expect(result.current.snapshot().waypoints).toBeUndefined()
+      expect(result.current.snapshot().dirty).toBe(false)
+    })
+
+    it('a point operation alone touches the list, not the track', () => {
+      const { result } = renderHook(() =>
+        useRoutePlanner({ initialTrack, initialWaypoints: [stored], initialWaypointsTotal: 786 })
+      )
+      const key = result.current.waypoints[0].key
+      act(() => result.current.updateWaypoint(key, { name: 'Terrasse' }))
+      const snapshot = result.current.snapshot()
+      expect(snapshot.dirty).toBe(false)
+      expect(snapshot.file).toBeUndefined()
+      // the whole list, with the id of the existing point, and no origin for it
+      expect(snapshot.waypoints).toEqual([
+        {
+          id: '0abc',
+          position: { lng: 5.005, lat: 45 },
+          type: 'CAFE',
+          name: 'Terrasse',
+          description: undefined,
+          distance: expect.closeTo(393, -1),
+          origin: undefined,
+        },
+      ])
+      expect(result.current.isDirty).toBe(true)
+    })
+
+    it('an undo back to the opening list is not a touch', () => {
+      const { result } = renderHook(() =>
+        useRoutePlanner({ initialTrack, initialWaypoints: [stored] })
+      )
+      const key = result.current.waypoints[0].key
+      act(() => result.current.removeWaypoint(key))
+      expect(result.current.snapshot().waypoints).toEqual([])
+      act(() => result.current.undo())
+      expect(result.current.snapshot().waypoints).toBeUndefined()
+    })
+
+    it('a track gesture alone does not send the list', async () => {
+      const { result } = renderHook(() =>
+        useRoutePlanner({ initialTrack, initialWaypoints: [stored] })
+      )
+      act(() => result.current.addControlPoint(C, true))
+      await waitFor(() => expect(result.current.controlPoints.length).toBeGreaterThan(2))
+      const snapshot = result.current.snapshot()
+      expect(snapshot.dirty).toBe(true)
+      expect(snapshot.waypoints).toBeUndefined()
+    })
+  })
+
+  it('follows a recalculated track: same positions, the distance and the state off the track move', async () => {
+    const { result } = await drawn()
+    act(() => {
+      result.current.addWaypoint(AT, FIELDS)
+    })
+    const before = result.current.waypoints
+    expect(result.current.placedWaypoints[0].distance).not.toBeNull()
+    // B is dragged 1.1 km to the north: the line no longer passes near the point
+    const [first, last] = result.current.controlPoints
+    act(() =>
+      result.current.updateControlPoint(first, { lng: B.lng, lat: 45.01 }, undefined, true, last.id)
+    )
+    await waitFor(() => expect(result.current.route.points.at(-1)!.lat).toBe(45.01))
+    expect(result.current.waypoints).toBe(before)
+    expect(result.current.placedWaypoints[0]).toMatchObject({ lng: 5.005, lat: 45, distance: null })
+    expect(routeMock).not.toHaveBeenCalled()
+    // and back on the track after an undo
+    act(() => result.current.undo())
+    expect(result.current.placedWaypoints[0].distance).not.toBeNull()
+  })
+
+  it('keeps the points when the route is cleared, off the track', async () => {
+    const { result } = await drawn()
+    act(() => {
+      result.current.addWaypoint(AT, FIELDS)
+    })
+    act(() => result.current.clearRoute())
+    expect(result.current.controlPoints).toHaveLength(0)
+    expect(result.current.waypoints).toHaveLength(1)
+    expect(result.current.placedWaypoints[0].distance).toBeNull()
+    act(() => result.current.undo())
+    expect(result.current.controlPoints).toHaveLength(2)
+    expect(result.current.placedWaypoints[0].distance).not.toBeNull()
+  })
+})

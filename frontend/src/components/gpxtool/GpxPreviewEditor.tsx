@@ -2,7 +2,7 @@ import { useCallback, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useMediaMatch } from '@/hooks/useResponsive'
 import { Alert, Box, Button, FileInput, Group, Stack, Text, TextInput } from '@mantine/core'
-import type { GeoPoint, PlannerState } from '@/api/dto'
+import type { GeoPoint, PlannerState, WaypointDto, WaypointRequest } from '@/api/dto'
 import { notifications } from '@mantine/notifications'
 import { plannerPayload } from '@/lib/plannerSubmit'
 import { RoutePlannerField, type RoutePlannerHandle } from '../planner/RoutePlannerField'
@@ -18,16 +18,23 @@ interface GpxPreviewEditorProps {
   initialAscend?: number
   /** The saved editing state of the preview (control points, pieces): the planner opens on it. */
   initialPlannerState?: PlannerState
+  /** The route points saved with the preview: the planner opens with them (WEB-100, C3e). */
+  initialWaypoints?: WaypointDto[]
+  /** Length (m) stored with the preview: the distances of `initialWaypoints` were measured on it. */
+  initialDistance?: number
   /** Create-from-scratch: planner on an empty map, no GPX upload, no source toggle. */
   create?: boolean
   /**
    * `track` is set when the planner's route is to be saved: its editing state, or its points past
    * the bounds of the state. Absent for a rename, which leaves the track as it is.
+   * `waypoints` is the complete list of the route points, present only when the user touched them
+   * (alone, it leaves the track as it is).
    */
   onSubmit: (
     name: string,
     track?: { points?: GeoPoint[]; plannerState?: PlannerState },
-    gpxFile?: File
+    gpxFile?: File,
+    waypoints?: WaypointRequest[]
   ) => void | Promise<void>
   onCancel: () => void
   isPending: boolean
@@ -46,6 +53,8 @@ export function GpxPreviewEditor({
   initialTrack,
   initialAscend,
   initialPlannerState,
+  initialWaypoints,
+  initialDistance,
   create = false,
   onSubmit,
   onCancel,
@@ -105,7 +114,7 @@ export function GpxPreviewEditor({
       payload.plannerState || payload.points
         ? { points: payload.points, plannerState: payload.plannerState }
         : undefined
-    await onSubmit(name.trim(), track, file)
+    await onSubmit(name.trim(), track, file, payload.waypoints)
     // Only once the save went through: a failed save did not drop anything
     if (payload.tooLarge) {
       notifications.show({ message: t('planner.state.tooLarge'), color: 'yellow' })
@@ -164,6 +173,8 @@ export function GpxPreviewEditor({
           <RoutePlannerField
             plannerRef={plannerRef}
             initialState={initialPlannerState}
+            initialWaypoints={initialWaypoints}
+            initialWaypointsTotal={initialDistance}
             onPointsChange={setPlannerPoints}
             initialTrack={initialTrack}
             initialAscend={initialAscend}

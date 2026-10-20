@@ -3,7 +3,7 @@ import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { Alert, Stack, Text, Title } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
-import type { GeoPoint, PlannerState } from '@/api/dto'
+import type { GeoPoint, PlannerState, WaypointRequest } from '@/api/dto'
 import { getGetPreviewQueryKey, useUpdatePreview } from '@/api/endpoints/gpx-previews/gpx-previews'
 import { GpxPreviewEditor } from '@/components/gpxtool/GpxPreviewEditor'
 import { LoadingPage } from '@/components/common/LoadingSpinner'
@@ -43,13 +43,14 @@ export function EditGpxPreviewPage() {
   const handleSubmit = async (
     name: string,
     track?: { points?: GeoPoint[]; plannerState?: PlannerState },
-    gpxFile?: File
+    gpxFile?: File,
+    waypoints?: WaypointRequest[]
   ) => {
     await updateMutation.mutateAsync(
       {
         previewId: preview.id,
         data: {
-          preview: { name, points: track?.points, plannerState: track?.plannerState },
+          preview: { name, points: track?.points, plannerState: track?.plannerState, waypoints },
           gpxFile,
         },
       },
@@ -81,6 +82,8 @@ export function EditGpxPreviewPage() {
         initialTrack={initialTrack}
         initialAscend={preview.elevationGain}
         initialPlannerState={plannerStateQuery.data?.state}
+        initialWaypoints={preview.waypoints}
+        initialDistance={preview.distance}
         onSubmit={handleSubmit}
         onCancel={() => navigate(paths.gpxToolsView(preview.id))}
         isPending={updateMutation.isPending}

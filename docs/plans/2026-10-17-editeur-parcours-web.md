@@ -1277,10 +1277,33 @@ questions ouvertes viennent du §10 de
             `RouteArrowImage` (E2) ; popup au clic, au survol seulement le nom et le curseur, la
             liste donne l'équivalent au clavier (E4) ; liste aussi sur l'étape, l'aperçu GPX et le
             groupe d'une sortie, pas en plein écran (E8). Détail dans `LEDGER_DONE.md` (`WEB-100`).
-      - [ ] **C3e. Web, éditeur** (L, après C3c et C3d) — clic droit ou appui long sur toute la
-            ligne → « Ajouter un point de parcours » (le menu de B12 s'ouvre alors hors des
-            marqueurs) ; formulaire type, nom, description ; glisser contraint au tracé (Alt
-            libère) ; suppression ; historique annuler / rétablir ; 0 requête au routeur.
+      - [x] **C3e. Web, éditeur** (L, 20 octobre 2026, contrat inchangé) — clic droit ou appui long
+            sur toute la ligne → « Ajouter un point de parcours » (le menu de B12 s'ouvre alors
+            hors des marqueurs) ; formulaire type, nom, description ; glisser contraint au tracé
+            (Alt libère) ; suppression ; historique annuler / rétablir ; 0 requête au routeur.
+            Livré : `lib/plannerWaypoints.ts` (modèle, `locateOnRoute` = jumeau local de
+            `WaypointAnchoring`, `projectOnRoute`), historique commun aux points et au tracé
+            (`PlannerEntry`), `PlannerWaypointMarker` / `PlannerWaypointForm`, liste `waypoints`
+            envoyée seulement si l'utilisateur y a touché. Écarts à la conception : F1 marqueurs DOM
+            glissables dans l'éditeur (la couche `symbol` reste pour la consultation) ; F2 formulaire
+            en `Modal`, pas en popover ; F3 le DTO a `position` et un indice `distance` non remis à
+            l'échelle par le serveur ; F4 l'import charge les `<wpt>` du fichier dans la liste ; F5
+            `planner.import.waypoints*` supprimée (le texte était faux depuis C3c) ; F6 `dirty` ne
+            lit plus que les entrées qui ont touché le tracé (`trackDirty`), les points ont leur
+            propre « touché » par identité de liste ; F7 un aperçu créé depuis un fichier envoie la
+            liste dans l'`updatePreview` qui suit ; F8 le clic droit sur un point de contrôle le
+            supprime toujours sans menu (B12), l'ajout se fait à plus de 20 px ou par le menu du doigt ;
+            F9 pas de placement libre au doigt (pas d'Alt), le formulaire propose « Remettre sur le
+            tracé » ; F10 clavier : Menu ou Maj+F10 sur un point de contrôle ouvre le menu de B12,
+            Entrée / Suppr sur un point de parcours ; F11 effacer le tracé garde les points (hors
+            tracé) ; F12 bogue latent corrigé : seul un `contextmenu` de `button 2` supprime un point
+            de contrôle ; F13 « Ajouter » désactivé à 500. Restent hors de C3e : liste éditable avec
+            un champ « km », placement libre au doigt, déplacement d'un point aux flèches, cas e2e
+            dans `gpx-planner.e2e.ts` (les gestes de carte ne se testent pas sous jsdom), recette
+            souris / doigt / clavier dans un vrai navigateur — dont l'appui long, qui ouvre
+            désormais le menu sur tout point de contrôle (avant : les seuls importés) et peut gêner
+            un glisser visé lentement au doigt. Détail dans
+            `LEDGER_DONE.md` (`WEB-100`).
       - [ ] **C3f. Mobile, consultation** (M, après C3c) — autre client, suivi sous `MOB-84`.
       - [ ] **C3g. POI de la carte → point de parcours** (S, optionnel, après C3e) — fond « Plan »,
             zoom ≥ 14, couche `pois` des tuiles VersaTiles (ni cols ni sommets).

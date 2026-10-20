@@ -139,6 +139,8 @@ export function EditRoutePage() {
         initialTrack={initialTrack}
         initialAscend={route.elevationGain}
         initialPlannerState={plannerStateQuery.data?.state}
+        initialWaypoints={route.waypoints}
+        initialDistance={route.distance}
         suggestedSurfaceType={suggestSurfaceType(route.tracks)}
         onSubmit={handleSubmit}
         onCancel={() => navigate(paths.route(teamSlug!, routeSlug!))}

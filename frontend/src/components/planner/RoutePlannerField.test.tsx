@@ -16,6 +16,13 @@ const hookOptions = vi.hoisted(() => ({ last: undefined as unknown }))
 const snapshotMock = vi.hoisted(() => vi.fn())
 const importGpxMock = vi.hoisted(() => vi.fn())
 const notificationShow = vi.hoisted(() => vi.fn())
+const undoMock = vi.hoisted(() => vi.fn())
+const waypointOps = vi.hoisted(() => ({
+  addWaypoint: vi.fn((..._args: unknown[]): string | null => 'w-new'),
+  updateWaypoint: vi.fn((..._args: unknown[]) => true),
+  moveWaypoint: vi.fn(),
+  removeWaypoint: vi.fn(),
+}))
 
 vi.mock('@mantine/notifications', () => ({
   notifications: { show: notificationShow, hide: vi.fn() },
@@ -35,6 +42,12 @@ const plannerState = vi.hoisted(() => ({
   setRouterTuning: () => {},
   resetRouterTuning: () => {},
   clearRoute: () => {},
+  waypoints: [] as unknown[],
+  placedWaypoints: [] as unknown[],
+  addWaypoint: (...args: unknown[]) => waypointOps.addWaypoint(...args),
+  updateWaypoint: (...args: unknown[]) => waypointOps.updateWaypoint(...args),
+  moveWaypoint: (...args: unknown[]) => waypointOps.moveWaypoint(...args),
+  removeWaypoint: (...args: unknown[]) => waypointOps.removeWaypoint(...args),
   importGpx: (file: File, mode: string) => importGpxMock(file, mode),
   canUndo: false,
   canRedo: false,
@@ -42,7 +55,7 @@ const plannerState = vi.hoisted(() => ({
   directMode: false,
   setDirectMode: () => {},
   routeLegsGeoJson: null,
-  undo: () => {},
+  undo: () => undoMock(),
   redo: () => {},
 }))
 
@@ -74,6 +87,7 @@ vi.mock('./RoutePlanner', () => ({
     onImport,
     hoverPosition,
     onHoverIndex,
+    onWaypointAdd,
   }: {
     planner: { route: unknown }
     layout: string
@@ -82,6 +96,7 @@ vi.mock('./RoutePlanner', () => ({
     onImport?: () => void
     hoverPosition?: { lng: number; lat: number } | null
     onHoverIndex?: (index: number) => void
+    onWaypointAdd?: (at: { lng: number; lat: number; distance: number }) => void
   }) => {
     const [taps, setTaps] = useState(0)
     seenRoutes.push(planner.route)
@@ -100,6 +115,9 @@ vi.mock('./RoutePlanner', () => ({
         <button onClick={() => setTaps((n) => n + 1)}>tap {taps}</button>
         {onExpand && <button onClick={onExpand}>expand</button>}
         {onImport && <button onClick={onImport}>map import</button>}
+        <button onClick={() => onWaypointAdd?.({ lng: 5.001, lat: 45, distance: 80 })}>
+          map add waypoint
+        </button>
       </div>
     )
   },
@@ -111,10 +129,14 @@ vi.mock('./PlannerElevationStrip', () => ({
     hoveredIndex,
     onHoverIndex,
     collapsible,
+    mappable,
+    onSelectWaypoint,
   }: {
     hoveredIndex: number
     onHoverIndex: (index: number) => void
     collapsible?: { collapsed: boolean; onToggle: () => void }
+    mappable?: { waypoints: unknown[] } | null
+    onSelectWaypoint?: (waypoint: unknown) => void
   }) => (
     <div
       data-testid="strip"
@@ -122,6 +144,7 @@ vi.mock('./PlannerElevationStrip', () => ({
       data-collapsed={String(collapsible?.collapsed)}
     >
       <button onClick={() => onHoverIndex(1)}>profile hover</button>
+      <button onClick={() => onSelectWaypoint?.(mappable?.waypoints[0])}>profile waypoint</button>
       {collapsible && <button onClick={collapsible.onToggle}>toggle strip</button>}
     </div>
   ),
@@ -157,6 +180,10 @@ describe('RoutePlannerField', () => {
     plannerState.routeGeoJson = null
     plannerState.directStats = { total: 0, longest: 0, count: 0 }
     plannerState.route = { points: [], dist: 0, ascend: 0 }
+    plannerState.waypoints = []
+    plannerState.placedWaypoints = []
+    Object.values(waypointOps).forEach((op) => op.mockReset())
+    undoMock.mockReset()
     importGpxMock.mockReset()
     notificationShow.mockClear()
     localStorage.clear()
@@ -233,7 +260,7 @@ describe('RoutePlannerField', () => {
     const gpx = () => new File(['<gpx/>'], 'sortie.gpx', { type: 'application/gpx+xml' })
     const info = (over = {}) => ({
       name: 'Boucle',
-      waypointCount: 0,
+      droppedWaypoints: 0,
       elevationFallback: false,
       mode: 'replace',
       ...over,
@@ -292,15 +319,15 @@ describe('RoutePlannerField', () => {
       expect(importGpxMock).not.toHaveBeenCalled()
     })
 
-    it('reports the waypoints and the elevation fallback, and no name when nothing was loaded', async () => {
-      importGpxMock.mockResolvedValueOnce(info({ waypointCount: 2, elevationFallback: true }))
+    it('reports the elevation fallback and the route points left out, and no name when nothing was loaded', async () => {
+      importGpxMock.mockResolvedValueOnce(info({ droppedWaypoints: 2, elevationFallback: true }))
       const onImportName = vi.fn()
       renderField({ onImportName })
       choose(gpx())
       await waitFor(() => expect(notificationShow).toHaveBeenCalledTimes(2))
       const messages = notificationShow.mock.calls.map((c) => c[0].message)
       expect(messages).toContain('planner.import.elevationFallback')
-      expect(messages).toContain('planner.import.waypoints')
+      expect(messages).toContain('planner.import.waypointsDropped')
       cleanup()
       notificationShow.mockClear()
 
@@ -322,6 +349,98 @@ describe('RoutePlannerField', () => {
       const click = vi.spyOn(input, 'click')
       fireEvent.click(screen.getByRole('button', { name: 'planner.import' }))
       expect(click).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('route points (C3e)', () => {
+    const placed = {
+      key: 'w-1',
+      origin: 'AUTHOR',
+      type: 'CAFE',
+      name: 'Café',
+      description: '',
+      lng: 5.001,
+      lat: 45,
+      distance: 80,
+    }
+    function withWaypoint() {
+      const start = createPoint(5, 45, 100)
+      start.manual = true
+      const end = createPoint(5.002, 45, 110)
+      end.manual = true
+      plannerState.route = computeRoute([start, end]) as never
+      plannerState.placedWaypoints = [placed]
+      plannerState.waypoints = [placed]
+    }
+
+    beforeEach(() => setCoarse(false))
+
+    it('hands the saved route points and their length to the hook', () => {
+      const initialWaypoints = [{ name: 'Café' }] as never
+      renderField({ initialWaypoints, initialWaypointsTotal: 4200 })
+      expect(hookOptions.last).toMatchObject({ initialWaypoints, initialWaypointsTotal: 4200 })
+    })
+
+    it('adds a route point from the place the map gives, with REGROUP pre-selected', async () => {
+      const onFullscreenChange = vi.fn()
+      renderField({ onFullscreenChange })
+      fireEvent.click(await screen.findByText('map add waypoint'))
+      await screen.findByRole('dialog')
+      expect(onFullscreenChange).toHaveBeenLastCalledWith(true)
+      fireEvent.change(screen.getByLabelText('planner.waypoint.form.name'), {
+        target: { value: 'Pont' },
+      })
+      fireEvent.click(screen.getByRole('button', { name: 'planner.waypoint.form.add' }))
+      expect(waypointOps.addWaypoint).toHaveBeenCalledWith(
+        { lng: 5.001, lat: 45, distance: 80 },
+        { type: 'REGROUP', name: 'Pont', description: '' }
+      )
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+      expect(onFullscreenChange).toHaveBeenLastCalledWith(false)
+    })
+
+    it('opens the form of a route point from the profile and saves the edit', async () => {
+      withWaypoint()
+      renderField()
+      fireEvent.click(await screen.findByText('profile waypoint'))
+      await screen.findByRole('dialog')
+      const name = screen.getByLabelText('planner.waypoint.form.name') as HTMLInputElement
+      expect(name.value).toBe('Café')
+      fireEvent.change(name, { target: { value: 'Café du Port' } })
+      fireEvent.click(screen.getByRole('button', { name: 'actions.save' }))
+      expect(waypointOps.updateWaypoint).toHaveBeenCalledWith('w-1', {
+        type: 'CAFE',
+        name: 'Café du Port',
+        description: '',
+      })
+    })
+
+    it('deletes a route point without a question, and offers to take it back', async () => {
+      withWaypoint()
+      waypointOps.removeWaypoint.mockImplementation(() => {
+        plannerState.placedWaypoints = []
+        plannerState.waypoints = []
+        return true
+      })
+      renderField()
+      fireEvent.click(await screen.findByText('profile waypoint'))
+      fireEvent.click(await screen.findByRole('button', { name: 'planner.waypoint.form.delete' }))
+      expect(waypointOps.removeWaypoint).toHaveBeenCalledWith('w-1')
+      await waitFor(() => expect(notificationShow).toHaveBeenCalledTimes(1))
+      const { message } = notificationShow.mock.calls[0][0]
+      render(<MantineProvider>{message}</MantineProvider>)
+      expect(screen.getByText('planner.waypoint.deleted')).toBeTruthy()
+      fireEvent.click(screen.getByRole('button', { name: 'planner.cleared.undo' }))
+      expect(undoMock).toHaveBeenCalledTimes(1)
+    })
+
+    it('says nothing when the removal was refused', async () => {
+      withWaypoint()
+      waypointOps.removeWaypoint.mockReturnValue(false)
+      renderField()
+      fireEvent.click(await screen.findByText('profile waypoint'))
+      fireEvent.click(await screen.findByRole('button', { name: 'planner.waypoint.form.delete' }))
+      expect(notificationShow).not.toHaveBeenCalled()
     })
   })
 

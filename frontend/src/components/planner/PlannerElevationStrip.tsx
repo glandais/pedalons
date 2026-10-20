@@ -4,6 +4,7 @@ import { IconChevronDown, IconChevronUp } from '@tabler/icons-react'
 import { ActionIcon, Box, Group, SegmentedControl, Text, useMantineTheme } from '@mantine/core'
 import { useResolvedColorScheme } from '@/hooks/useResolvedColorScheme'
 import { useUnits } from '@/hooks/useUnits'
+import type { WaypointDto } from '@/api/dto'
 import type { PlannerMappable, Route, SurfaceClass, SurfaceStats } from '@/lib/planner'
 import { SURFACE_CLASSES, surfaceColors, type PlannerColorBy } from '@/lib/plannerSurface'
 import { ElevationChart } from '../route/ElevationChart'
@@ -24,6 +25,10 @@ interface PlannerElevationStripProps {
   surfaceStats?: SurfaceStats
   /** Finger layout: a 44 px header holding the 44 px fold button above the chart. */
   collapsible?: { collapsed: boolean; onToggle: () => void }
+  /** The route point whose form is open, highlighted on the profile (one of `mappable.waypoints`). */
+  selectedWaypoint?: WaypointDto | null
+  /** A click on a route point's marker of the profile: opens its form. */
+  onSelectWaypoint?: (waypoint: WaypointDto) => void
 }
 
 /**
@@ -43,6 +48,8 @@ export function PlannerElevationStrip({
   colorBy = 'grade',
   onColorByChange,
   surfaceStats,
+  selectedWaypoint,
+  onSelectWaypoint,
 }: PlannerElevationStripProps) {
   const { t } = useTranslation()
   const { elevation } = useUnits()
@@ -135,6 +142,8 @@ export function PlannerElevationStrip({
               dashedSegment={dashedSegment}
               colorBy={colorBy}
               surfaceAt={surfaceAt}
+              selectedWaypoint={selectedWaypoint}
+              onSelectWaypoint={onSelectWaypoint}
             />
           ) : (
             <Text size="sm" c="dimmed" ta="center" pt="md">

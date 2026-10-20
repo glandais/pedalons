@@ -18,11 +18,19 @@ import { useHistoryOverlay } from '@/hooks/useHistoryOverlay'
 import { useMediaMatch } from '@/hooks/useResponsive'
 import { useRoutePlanner, type PlannerSnapshot } from '@/hooks/useRoutePlanner'
 import { useUnits } from '@/hooks/useUnits'
-import { DIRECT_WARNING_METERS, plannerRouteToMappable, type Route } from '@/lib/planner'
+import type { WaypointDto } from '@/api/dto'
+import {
+  cumulativeDistances,
+  DIRECT_WARNING_METERS,
+  plannerRouteToMappable,
+  type Route,
+} from '@/lib/planner'
+import { projectOnRoute, toWaypointDto, type WaypointPlacement } from '@/lib/plannerWaypoints'
 import { MapFullscreenShell } from '@/components/map/MapFullscreenShell'
 import { MapPanelContext, useMapPanelState } from '@/components/map/mapPanelState'
 import { PlannerBottomBar } from './PlannerBottomBar'
 import { PlannerElevationStrip } from './PlannerElevationStrip'
+import { PlannerWaypointForm, type WaypointFormFields } from './PlannerWaypointForm'
 import { PlannerStatusChip } from './PlannerStatus'
 import { RoutePlanner } from './RoutePlanner'
 import { RoutePlannerPreview } from './RoutePlannerPreview'
@@ -57,6 +65,10 @@ interface RoutePlannerFieldProps {
   initialTrack?: number[][] // [lng, lat, ele, dist][] from existing route
   /** D+ (m) stored for that track: the reference the loaded track's climb is scaled to. */
   initialAscend?: number
+  /** The route points saved with the route or preview: the planner opens with them. */
+  initialWaypoints?: readonly WaypointDto[]
+  /** Length (m) stored with them: the reference their distances were measured on. */
+  initialWaypointsTotal?: number
   teamLocation?: [number, number] // [lng, lat] from team geometry
   /** Team the route is drawn for (team route editor); absent from the GPX tools. Sent to the router. */
   teamSlug?: string
@@ -94,6 +106,8 @@ export function RoutePlannerField({
   onPointsChange,
   initialTrack,
   initialAscend,
+  initialWaypoints,
+  initialWaypointsTotal,
   teamLocation,
   teamSlug,
   title,
@@ -103,7 +117,14 @@ export function RoutePlannerField({
   openRequest,
 }: RoutePlannerFieldProps) {
   const { t } = useTranslation()
-  const planner = useRoutePlanner({ initialState, initialTrack, initialAscend, teamSlug })
+  const planner = useRoutePlanner({
+    initialState,
+    initialTrack,
+    initialAscend,
+    teamSlug,
+    initialWaypoints,
+    initialWaypointsTotal,
+  })
   const { snapshot } = planner
   useImperativeHandle(plannerRef, () => ({ snapshot }), [snapshot])
   const { routeGeoJson, controlPoints, route, isLoading, error, directStats } = planner
@@ -112,7 +133,46 @@ export function RoutePlannerField({
   const { opened, open, close } = useHistoryOverlay()
   // The profile of the route: one entry per point, and the samples of the straight edges whose
   // relief was read. Shared by the strip (which draws it) and the hover (which translates it).
-  const mappable = useMemo(() => plannerRouteToMappable(route), [route])
+  // The route points ride along, placed on the route: the profile marks them, and a click on one of
+  // its markers (an object of this list) is found again by identity.
+  const { placedWaypoints } = planner
+  const waypointDtos = useMemo(() => placedWaypoints.map(toWaypointDto), [placedWaypoints])
+  const waypointKeyOf = useMemo(
+    () => new Map<WaypointDto, string>(waypointDtos.map((dto, i) => [dto, placedWaypoints[i].key])),
+    [waypointDtos, placedWaypoints]
+  )
+  const mappable = useMemo(() => plannerRouteToMappable(route, waypointDtos), [route, waypointDtos])
+  // The form of a route point: a new one on a place of the line, or an existing one by its key
+  const [waypointForm, setWaypointForm] = useState<
+    { mode: 'create'; at: WaypointPlacement } | { mode: 'edit'; key: string } | null
+  >(null)
+  // Fresh state for every opening of the form (a closing one may still be on screen)
+  const [waypointFormSeq, setWaypointFormSeq] = useState(0)
+  const editedWaypoint =
+    waypointForm?.mode === 'edit'
+      ? (placedWaypoints.find((w) => w.key === waypointForm.key) ?? null)
+      : null
+  // Undone away under the form: nothing left to edit
+  const waypointFormOpen =
+    waypointForm?.mode === 'create' || (waypointForm?.mode === 'edit' && editedWaypoint !== null)
+  const selectedWaypoint = editedWaypoint
+    ? (waypointDtos[placedWaypoints.indexOf(editedWaypoint)] ?? null)
+    : null
+  const openWaypointCreate = useCallback((at: WaypointPlacement) => {
+    setWaypointFormSeq((n) => n + 1)
+    setWaypointForm({ mode: 'create', at })
+  }, [])
+  const openWaypointEdit = useCallback((key: string) => {
+    setWaypointFormSeq((n) => n + 1)
+    setWaypointForm({ mode: 'edit', key })
+  }, [])
+  const handleSelectWaypoint = useCallback(
+    (dto: WaypointDto) => {
+      const key = waypointKeyOf.get(dto)
+      if (key) openWaypointEdit(key)
+    },
+    [waypointKeyOf, openWaypointEdit]
+  )
   // The point hovered, on the map or on the profile: an index of the profile, valid for the
   // route it was reported on only (any edit drops it). The source matters: the profile follows
   // both, but only a profile hover draws a marker on the map (the ghost point is the map's own).
@@ -175,9 +235,10 @@ export function RoutePlannerField({
   useEffect(() => {
     onFullscreenChangeRef.current = onFullscreenChange
   })
+  // Reported to the form: a dialog above it (the editor, or a route point's form) owns Escape
   useEffect(() => {
-    onFullscreenChangeRef.current?.(opened)
-  }, [opened])
+    onFullscreenChangeRef.current?.(opened || waypointFormOpen)
+  }, [opened, waypointFormOpen])
   useEffect(
     () => () => {
       onFullscreenChangeRef.current?.(false)
@@ -288,6 +349,92 @@ export function RoutePlannerField({
     }
   }, [controlPoints.length])
 
+  // Removing a route point needs no confirmation (undoing is one tap): the notification offers to
+  // take it back, and is withdrawn once anything else changes.
+  const removedNotice = useRef<{
+    id: string
+    after?: { waypoints: unknown; route: Route }
+  } | null>(null)
+  const { removeWaypoint } = planner
+  const handleWaypointRemove = useCallback(
+    (key: string) => {
+      if (!removeWaypoint(key)) return
+      const id = `planner-waypoint-removed-${Date.now()}`
+      removedNotice.current = { id }
+      notifications.show({
+        id,
+        autoClose: 6000,
+        message: (
+          <Group justify="space-between" wrap="nowrap" gap="sm">
+            <Text size="sm">{t('planner.waypoint.deleted')}</Text>
+            <Button
+              size="compact-sm"
+              variant="light"
+              onClick={() => {
+                // Only while the removal is still the last thing done
+                const after = removedNotice.current?.after
+                if (
+                  after &&
+                  after.waypoints === waypointsNowRef.current &&
+                  after.route === routeNowRef.current
+                ) {
+                  undoRef.current()
+                }
+                notifications.hide(id)
+              }}
+            >
+              {t('planner.cleared.undo')}
+            </Button>
+          </Group>
+        ),
+      })
+    },
+    [removeWaypoint, t]
+  )
+  const waypointsNowRef = useRef(planner.waypoints)
+  const routeNowRef = useRef(route)
+  useEffect(() => {
+    waypointsNowRef.current = planner.waypoints
+    routeNowRef.current = route
+    const notice = removedNotice.current
+    if (!notice) return
+    if (!notice.after) {
+      // The render that shows the removal itself
+      notice.after = { waypoints: planner.waypoints, route }
+      return
+    }
+    if (notice.after.waypoints !== planner.waypoints || notice.after.route !== route) {
+      removedNotice.current = null
+      notifications.hide(notice.id)
+    }
+  }, [planner.waypoints, route])
+
+  const closeWaypointForm = useCallback(() => setWaypointForm(null), [])
+  const { addWaypoint, updateWaypoint, moveWaypoint } = planner
+  const submitWaypointForm = useCallback(
+    (fields: WaypointFormFields) => {
+      // Refused while a calculation runs: the form stays open with what was typed
+      const applied =
+        waypointForm?.mode === 'create'
+          ? addWaypoint(waypointForm.at, fields) !== null
+          : waypointForm?.mode === 'edit'
+            ? updateWaypoint(waypointForm.key, fields)
+            : true
+      if (applied) setWaypointForm(null)
+    },
+    [waypointForm, addWaypoint, updateWaypoint]
+  )
+  const snapWaypoint = useCallback(() => {
+    if (!editedWaypoint) return
+    const onRoute = projectOnRoute(route, cumulativeDistances(route.points), editedWaypoint)
+    if (onRoute) moveWaypoint(editedWaypoint.key, onRoute, onRoute.distance)
+    setWaypointForm(null)
+  }, [editedWaypoint, route, moveWaypoint])
+  const deleteWaypointFromForm = useCallback(() => {
+    if (waypointForm?.mode === 'edit') handleWaypointRemove(waypointForm.key)
+    setWaypointForm(null)
+  }, [waypointForm, handleWaypointRemove])
+
   // --- Import of a GPX file ---
   const fileInputRef = useRef<HTMLInputElement>(null)
   // A file waiting for the user to say whether it replaces the route or is added to it.
@@ -307,14 +454,11 @@ export function RoutePlannerField({
       if (info.elevationFallback) {
         notifications.show({ message: t('planner.import.elevationFallback'), color: 'yellow' })
       }
-      if (info.waypointCount > 0) {
+      // The file's route points join the list (they are saved with it); only the ones past the
+      // 500 a route carries are left out
+      if (info.droppedWaypoints > 0) {
         notifications.show({
-          message: t(
-            info.mode === 'replace'
-              ? 'planner.import.waypoints'
-              : 'planner.import.waypointsDropped',
-            { count: info.waypointCount }
-          ),
+          message: t('planner.import.waypointsDropped', { count: info.droppedWaypoints }),
           color: 'yellow',
         })
       }
@@ -390,6 +534,8 @@ export function RoutePlannerField({
                 surfaceStats={planner.surfaceStats}
                 onHoverIndex={handleHoverIndex}
                 height={STRIP_HEIGHT}
+                selectedWaypoint={selectedWaypoint}
+                onSelectWaypoint={handleSelectWaypoint}
               />
             </Box>
           )}
@@ -442,9 +588,39 @@ export function RoutePlannerField({
             teamLocation={teamLocation}
             hoverPosition={hoverPosition}
             onHoverIndex={handleMapHoverIndex}
+            onWaypointAdd={openWaypointCreate}
+            onWaypointOpen={openWaypointEdit}
+            onWaypointRemove={handleWaypointRemove}
           />,
           host
         )}
+
+      <PlannerWaypointForm
+        key={waypointFormSeq}
+        opened={waypointFormOpen}
+        mode={waypointForm?.mode ?? 'create'}
+        initial={
+          editedWaypoint
+            ? {
+                type: editedWaypoint.type,
+                name: editedWaypoint.name,
+                description: editedWaypoint.description,
+              }
+            : undefined
+        }
+        distance={
+          waypointForm?.mode === 'create' ? waypointForm.at.distance : editedWaypoint?.distance
+        }
+        onSnap={
+          editedWaypoint && editedWaypoint.distance === null && route.points.length >= 2
+            ? snapWaypoint
+            : undefined
+        }
+        onDelete={deleteWaypointFromForm}
+        onSubmit={submitWaypointForm}
+        onClose={closeWaypointForm}
+        busy={isLoading}
+      />
 
       <Modal.Root
         opened={opened}
@@ -533,6 +709,8 @@ export function RoutePlannerField({
                   surfaceStats={planner.surfaceStats}
                   onHoverIndex={handleHoverIndex}
                   height={STRIP_HEIGHT}
+                  selectedWaypoint={selectedWaypoint}
+                  onSelectWaypoint={handleSelectWaypoint}
                 />
               ) : (
                 <Box pos="relative" style={{ flexShrink: 0 }}>
@@ -568,6 +746,8 @@ export function RoutePlannerField({
                     onHoverIndex={handleHoverIndex}
                     height={STRIP_BODY_HEIGHT_TOUCH}
                     collapsible={{ collapsed: stripCollapsed, onToggle: toggleStrip }}
+                    selectedWaypoint={selectedWaypoint}
+                    onSelectWaypoint={handleSelectWaypoint}
                   />
                   <PlannerBottomBar
                     canUndo={planner.canUndo}
