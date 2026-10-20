@@ -807,3 +807,8 @@ routes:
       en: /platform/reports
       fr: /plateforme/signalements
     web: true
+  - id: adminMaintenance
+    path:
+      en: /platform/maintenance
+      fr: /plateforme/maintenance
+    web: true

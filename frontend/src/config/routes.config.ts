@@ -37,6 +37,7 @@ import { prefetchAdminDomains } from '@/pages/admin/adminDomainsData'
 import { prefetchAdminTeams } from '@/pages/admin/adminTeamsData'
 import { prefetchAdminUsers } from '@/pages/admin/adminUsersData'
 import { prefetchAdminBetaSignups } from '@/pages/admin/adminBetaSignupsData'
+import { prefetchAdminMaintenance } from '@/pages/admin/adminMaintenanceData'
 import { prefetchAdminReports } from '@/pages/admin/adminReportsData'
 import { prefetchTeamAbout } from '@/pages/team/teamAboutData'
 import { prefetchTeamPage } from '@/pages/team/teamPageData'
@@ -1061,5 +1062,14 @@ export const routesConfig: RoutesConfig = [
     parentId: 'admin',
     breadcrumb: { type: 'static', i18nKey: tRegister('admin.tabs.betaSignups') },
     prefetch: (queryClient) => prefetchAdminBetaSignups(queryClient),
+  },
+  {
+    id: 'admin-maintenance',
+    paths: pathVariants.adminMaintenance(),
+    component: pages.AdminMaintenancePage,
+    auth: 'authenticated',
+    parentId: 'admin',
+    breadcrumb: { type: 'static', i18nKey: tRegister('admin.tabs.maintenance') },
+    prefetch: (queryClient) => prefetchAdminMaintenance(queryClient),
   },
 ]

@@ -187,6 +187,10 @@ export const pages = {
     'AdminBetaSignupsPage',
     () => import('../pages/admin/AdminBetaSignupsPage')
   ),
+  AdminMaintenancePage: lazyPage(
+    'AdminMaintenancePage',
+    () => import('../pages/admin/AdminMaintenancePage')
+  ),
   PrivacyPolicyPage: lazyPage(
     'PrivacyPolicyPage',
     () => import('../pages/legal/PrivacyPolicyPage')

@@ -495,6 +495,12 @@ export const paths = {
       default: return '/platform/reports'
     }
   },
+  adminMaintenance: () => {
+    switch (getCurrentLocale()) {
+      case 'fr': return '/plateforme/maintenance'
+      default: return '/platform/maintenance'
+    }
+  },
 } as const
 
 /** Per-locale URL variants — returns all locale pattern strings. */
@@ -586,6 +592,7 @@ export const pathVariants = {
   adminUsers: (): Record<Locale, string> => ({ en: '/platform/users', fr: '/plateforme/utilisateurs' }),
   adminBetaSignups: (): Record<Locale, string> => ({ en: '/platform/beta-signups', fr: '/plateforme/inscriptions-beta' }),
   adminReports: (): Record<Locale, string> => ({ en: '/platform/reports', fr: '/plateforme/signalements' }),
+  adminMaintenance: (): Record<Locale, string> => ({ en: '/platform/maintenance', fr: '/plateforme/maintenance' }),
 } as const
 
 /**
