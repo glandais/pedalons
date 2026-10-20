@@ -10,6 +10,7 @@ import type { PlannerColorBy } from '@/lib/plannerSurface'
 import { useMapHeight } from '@/hooks/useResponsive'
 import { getOverlayBg } from '@/lib/colors'
 import { useResolvedColorScheme } from '@/hooks/useResolvedColorScheme'
+import { useMapStyle } from '@/hooks/useMapStyle'
 import { RouteTrackMap } from './RouteTrackMap'
 import { ElevationChart } from './ElevationChart'
 
@@ -38,6 +39,7 @@ export function RouteMapView({ route, fullscreenPath, colorBy = 'grade' }: Route
   const { t } = useTranslation()
   const theme = useMantineTheme()
   const colorScheme = useResolvedColorScheme()
+  const { darkBasemap } = useMapStyle()
   const mapHeight = useMapHeight('full')
   const [hoveredPointIndex, setHoveredPointIndex] = useState<number>(-1)
   const mapRef = useRef<MapRef>(null)
@@ -49,10 +51,16 @@ export function RouteMapView({ route, fullscreenPath, colorBy = 'grade' }: Route
     () => (colorBy === 'surface' ? pointSurfaces(route.tracks) : null),
     [colorBy, route.tracks]
   )
-  const colors = useMemo(() => trackSurfaceColors(theme, colorScheme), [theme, colorScheme])
+  // The profile is drawn on the page, so by the theme; the line over the basemap, by its tone (a
+  // light basemap kept in dark mode, a satellite), as in the editor.
+  const chartColors = useMemo(() => trackSurfaceColors(theme, colorScheme), [theme, colorScheme])
+  const lineColors = useMemo(
+    () => trackSurfaceColors(theme, darkBasemap ? 'dark' : 'light'),
+    [theme, darkBasemap]
+  )
   const surfaceAt = useMemo(
-    () => (surfaces ? (i: number) => colors[surfaces[i]] : undefined),
-    [surfaces, colors]
+    () => (surfaces ? (i: number) => chartColors[surfaces[i]] : undefined),
+    [surfaces, chartColors]
   )
   // The map asks per track: the flat index is the size of the tracks before it plus the point's.
   const lineColorAt = useMemo(() => {
@@ -64,8 +72,8 @@ export function RouteMapView({ route, fullscreenPath, colorBy = 'grade' }: Route
       offset += track.line.coordinates.length
     }
     return (trackIndex: number, pointIndex: number) =>
-      colors[surfaces[offsets[trackIndex] + pointIndex]]
-  }, [surfaces, colors, route.tracks])
+      lineColors[surfaces[offsets[trackIndex] + pointIndex]]
+  }, [surfaces, lineColors, route.tracks])
 
   if (trackPoints.length === 0) {
     return (
