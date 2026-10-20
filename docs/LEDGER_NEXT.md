@@ -443,6 +443,12 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
 
 ## API — Contrat d'API et backend
 
+- [ ] `API-136` **Retirer `participations` du résumé du profil (S)** — depuis `WEB-110`, ni le site
+      ni l'app ne lisent `ProfileSummaryDto.participations` (`ProfileParticipationSummaryDto` : compteurs
+      à venir / passées et prochaine sortie), que `GET /api/users/me/profile-summary` calcule encore à
+      chaque ouverture du profil. Le retirer du contrat (montée de version majeure) ;
+      `GET /api/users/me/participations` reste, l'accueil mobile le lit.
+
 - [ ] `API-135` **Garder les `course_point` d'une pièce jointe FIT (S)** — un parcours ne s'importe
       qu'en GPX (C3c de `WEB-100`, écart E1) ; le seul lecteur de FIT est `TrackAttachmentSanitizer`,
       pour les **pièces jointes**, qui n'ont pas de ligne `gpx_waypoints`. Lire leurs `course_point`

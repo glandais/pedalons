@@ -5,12 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/api/pedalons_api_client.dart';
-import 'package:pedalons/core/pagination/pagination.dart';
 import 'package:pedalons/features/calendar/providers/calendar_month_provider.dart';
 import 'package:pedalons/features/home/providers/next_ride_provider.dart';
 import 'package:pedalons/features/home/providers/week_events_provider.dart';
 import 'package:pedalons/features/profile/data/profile_repository.dart';
-import 'package:pedalons/features/profile/providers/participations_provider.dart';
 import 'package:pedalons/features/profile/providers/profile_summary_provider.dart';
 import 'package:pedalons/features/home/providers/next_ride_leave_controller.dart';
 import 'package:pedalons/features/rides/data/ride_repository.dart';
@@ -155,24 +153,8 @@ class _FakeProfileRepository implements ProfileRepository {
   _FakeProfileRepository(this._server);
   final _Server _server;
 
-  int listCalls = 0;
-
-  @override
-  Future<PageResult<PublicationDto>> fetchParticipations({
-    required bool upcoming,
-    required DateTime now,
-    int page = 0,
-    int size = 20,
-  }) async {
-    if (size > 1) listCalls++;
-    return PageResult<PublicationDto>(
-      items: const <PublicationDto>[],
-      total: _server.participationCount(upcoming: upcoming),
-    );
-  }
-
   /// Le résumé de la vue d'ensemble : seul son compteur « à venir » compte
-  /// ici, le badge de « Mes sorties ».
+  /// ici.
   @override
   Future<ProfileSummaryDto> profileSummary() async => ProfileSummaryDto(
     participations: ProfileParticipationSummaryDto(
@@ -304,11 +286,6 @@ void main() {
     container.listen(weekEventsProvider, (_, _) {}, fireImmediately: true);
     container.listen(profileSummaryProvider, (_, _) {}, fireImmediately: true);
     container.listen(
-      participationsProvider(true),
-      (_, _) {},
-      fireImmediately: true,
-    );
-    container.listen(
       calendarMonthProvider(monthKey),
       (_, _) {},
       fireImmediately: true,
@@ -319,7 +296,7 @@ void main() {
     await container.read(calendarMonthProvider(monthKey).future);
   }
 
-  /// Le badge de « Mes sorties », relu après invalidation.
+  /// Le compteur « à venir » du résumé du profil, relu après invalidation.
   Future<int> upcomingCount() async => (await container.read(
     profileSummaryProvider.future,
   ))!.participations.upcomingCount;
@@ -410,14 +387,10 @@ void main() {
     },
   );
 
-  test('une inscription recharge « Cette semaine », la liste du profil et le '
-      'calendrier', () async {
+  test('une inscription recharge « Cette semaine » et le calendrier', () async {
     await mountDerivedViews();
     final int weekBefore = weekBuilds;
     final int calendarBefore = calendarBuilds;
-    final ParticipationsNotifier listBefore = container.read(
-      participationsProvider(true).notifier,
-    );
 
     await (await openRide()).join('g1');
     await container.read(weekEventsProvider.future);
@@ -425,11 +398,6 @@ void main() {
 
     expect(weekBuilds, weekBefore + 1);
     expect(calendarBuilds, calendarBefore + 1);
-    expect(
-      container.read(participationsProvider(true).notifier),
-      isNot(same(listBefore)),
-      reason: 'la liste « Mes sorties à venir » repart de sa première page',
-    );
   });
 
   test('un échec ne recharge pas les vues dérivées', () async {

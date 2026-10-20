@@ -1435,20 +1435,6 @@
       "title": "Être contacté par les membres",
       "hint": "Les membres de vos équipes peuvent vous écrire au sujet de vos annonces ; votre adresse ne leur est jamais montrée."
     },
-    "participations": {
-      "title": "Mes sorties",
-      "upcoming": "À venir",
-      "past": "Historique",
-      "count": {
-        "zero": "Aucune participation",
-        "one": "{} participation",
-        "other": "{} participations"
-      },
-      "emptyUpcoming": "Aucune sortie à venir",
-      "emptyUpcomingHint": "Inscrivez-vous à une sortie de l'une de vos équipes ; elle apparaîtra ici.",
-      "emptyPast": "Aucune participation passée",
-      "emptyPastHint": "Vos sorties et voyages passés s'afficheront ici."
-    },
     "gps": {
       "title": "Services connectés",
       "connect": "Connecter",
@@ -1540,14 +1526,11 @@
       "identityLink": "Photo, nom et compte"
     },
     "groups": {
-      "activity": "Mon activité",
       "settings": "Réglages",
       "security": "Sécurité et confidentialité",
       "account": "Compte"
     },
     "nav": {
-      "rides": "Mes sorties",
-      "teams": "Mes équipes",
       "preferences": "Préférences",
       "notifications": "Notifications",
       "devices": "Appareils et services",
@@ -1557,13 +1540,6 @@
       "help": "Aide et à propos"
     },
     "status": {
-      "nextRide": "Prochaine : {date}",
-      "noUpcoming": "Aucune sortie à venir",
-      "teams": {
-        "zero": "Aucune équipe",
-        "one": "{} équipe",
-        "other": "{} équipes"
-      },
       "deviceTimezone": "Fuseau de l'appareil",
       "inAppOnly": "Dans l'application seulement",
       "emailAndPush": "E-mail et push",

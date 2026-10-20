@@ -104,15 +104,12 @@ describe('ProfileOverviewPage', () => {
     expect(accountLinks).toHaveLength(3)
   })
 
-  it('names the next ride and both totals, and the teams with their role', () => {
+  it('lists the teams with their role, and no longer the rides', () => {
     renderOverview()
 
-    expect(screen.getByRole('link', { name: 'Sortie du dimanche' })).toHaveAttribute(
-      'href',
-      paths.ride('velo-club', 'sortie-du-dimanche')
-    )
-    expect(screen.getAllByText('profile.status.upcoming(count=2)').length).toBeGreaterThan(0)
-    expect(screen.getByText('profile.status.history(count=7)')).toBeTruthy()
+    // « Mes sorties » left the profile: the home page and the agenda already list them.
+    expect(screen.queryByRole('link', { name: 'Sortie du dimanche' })).toBeNull()
+    expect(screen.queryByText('profile.nav.rides')).toBeNull()
     const team = screen.getByRole('link', { name: /Vélo Club/ })
     expect(team).toHaveAttribute('href', paths.team('velo-club'))
     expect(within(team).getByText('roles.ADMIN')).toBeTruthy()
@@ -131,13 +128,8 @@ describe('ProfileOverviewPage', () => {
     ])
       expect(shortcuts(label, status), `${label}: ${status}`).toHaveLength(2)
 
-    // The phone list alone: the activity and « Mon compte » have their own cards on a desktop.
-    for (const [label, status] of [
-      ['profile.nav.rides', 'profile.status.upcoming(count=2)'],
-      ['profile.nav.teams', 'profile.status.teams(count=1)'],
-      ['profile.nav.account', 'profile.status.account'],
-    ])
-      expect(shortcuts(label, status), `${label}: ${status}`).toHaveLength(1)
+    // The phone list alone: « Mon compte » has the identity card on a desktop.
+    expect(shortcuts('profile.nav.account', 'profile.status.account')).toHaveLength(1)
   })
 
   it('switches between the sidebar and the phone list by CSS only, « Se déconnecter » in each', () => {
@@ -167,7 +159,6 @@ describe('ProfileOverviewPage', () => {
     renderOverview()
 
     expect(screen.queryByText(/profile\.status\.passkeys/)).toBeNull()
-    expect(screen.queryByText(/profile\.status\.upcoming/)).toBeNull()
     expect(shortcuts('profile.nav.privacy', 'profile.status.notContactable')).toHaveLength(2)
   })
 })

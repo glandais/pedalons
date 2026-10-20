@@ -40,13 +40,16 @@ bool _registered(WidgetRef ref, String id, bool loaded) =>
 /// allure et son heure de départ. **Jamais de meneur ici** — et surtout pas
 /// `createdBy`, qui est le créateur de la sortie et non celui d'un groupe.
 class DashboardMyUpcoming extends StatelessWidget {
-  const DashboardMyUpcoming({super.key, required this.list, this.onViewAll});
+  const DashboardMyUpcoming({
+    super.key,
+    required this.list,
+    required this.onViewAll,
+  });
 
   final PublicationListResponse list;
 
-  /// « Voir tout » : l'Agenda de l'équipe sur « Je participe ». Sans lui,
-  /// « Mes participations » du profil, toutes équipes.
-  final VoidCallback? onViewAll;
+  /// « Voir tout » : l'Agenda de l'équipe sur « Je participe ».
+  final VoidCallback onViewAll;
 
   @override
   Widget build(BuildContext context) {
@@ -57,11 +60,7 @@ class DashboardMyUpcoming extends StatelessWidget {
     return DashboardSection(
       key: keys.teamDashboard.myUpcoming,
       title: 'teams.dashboard.myUpcoming.title'.tr(),
-      onViewAll:
-          onViewAll ??
-          (list.total > rows.length
-              ? () => context.push(Paths.myParticipations())
-              : null),
+      onViewAll: onViewAll,
       child: rows.isEmpty
           ? DashboardEmptyLine(message: 'teams.dashboard.myUpcoming.empty'.tr())
           : DashboardCardColumn(

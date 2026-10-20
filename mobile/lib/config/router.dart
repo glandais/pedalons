@@ -20,7 +20,6 @@ import '../features/legal/presentation/pages/legal_page.dart';
 import '../features/navigation/presentation/shell/main_shell.dart';
 import '../features/notifications/presentation/pages/notifications_page.dart';
 import '../features/moderation/presentation/pages/blocked_users_page.dart';
-import '../features/profile/presentation/pages/my_participations_page.dart';
 import '../features/profile/presentation/pages/profile_account_page.dart';
 import '../features/profile/presentation/pages/profile_devices_page.dart';
 import '../features/profile/presentation/pages/profile_help_page.dart';
@@ -146,10 +145,6 @@ final List<_DeepLinkHierarchy> _deepLinkHierarchies = [
   // trouver le profil dessous. « Utilisateurs bloqués » est une sous-page de
   // « Confidentialité » (`/profil/vie-privee/bloques`) : les deux sont dessous,
   // Profil › Confidentialité › Bloqués, comme le fil d'Ariane du site.
-  _DeepLinkHierarchy(
-    patterns: PathVariants.myParticipations(),
-    ancestors: [_profileAncestor],
-  ),
   _DeepLinkHierarchy(
     patterns: PathVariants.profilePreferences(),
     ancestors: [_profileAncestor],
@@ -1027,12 +1022,6 @@ final routerProvider = Provider<GoRouter>((ref) {
                 PathVariants.profile(),
                 (ctx, st) => const ProfilePage(),
                 asPage: true,
-              ),
-              ..._perLocale(
-                PathVariants.myParticipations(),
-                (ctx, st) => MyParticipationsPage(
-                  initialUpcoming: st.extra is bool ? st.extra! as bool : true,
-                ),
               ),
               ..._perLocale(
                 PathVariants.profilePreferences(),

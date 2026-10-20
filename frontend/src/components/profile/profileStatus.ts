@@ -55,11 +55,6 @@ export function profileStatusLines(
   }
 
   if (summary) {
-    lines.rides = t('profile.status.upcoming', { count: summary.participations.upcomingCount })
-    lines.teams =
-      summary.teams.length === 0
-        ? t('profile.status.noTeam')
-        : t('profile.status.teams', { count: summary.teams.length })
     lines.notifications = notificationLine(t, summary)
     lines.security =
       summary.passkeyCount === 0

@@ -36,21 +36,6 @@ extension AccountSeed on BackendClient {
         options: Options(validateStatus: (_) => true),
       )).statusCode!;
 
-  /// How many of [who]'s participations are still to come, per the endpoint the profile counts
-  /// with (`from` now, one row asked, its `total` read).
-  Future<int> upcomingParticipationCount(TestUser who) async {
-    final page = await get(
-      who,
-      '/api/users/me/participations',
-      query: {
-        'from': DateTime.now().toUtc().toIso8601String(),
-        'page': 0,
-        'size': 1,
-      },
-    );
-    return page['total'] as int;
-  }
-
   Future<Response<Json>> _login(String email, String password) =>
       http.post<Json>(
         '/api/auth/login',

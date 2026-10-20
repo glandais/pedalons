@@ -2,7 +2,6 @@ import { useTranslation } from 'react-i18next'
 import {
   Anchor,
   Avatar,
-  Badge,
   Box,
   Button,
   Center,
@@ -17,11 +16,10 @@ import {
   ThemeIcon,
   Title,
 } from '@mantine/core'
-import { IconBike, IconChevronRight } from '@tabler/icons-react'
+import { IconChevronRight } from '@tabler/icons-react'
 import { useGetMyProfileSummary } from '@/api/endpoints/users/users'
-import type { ProfileSummaryDto, PublicationDto, TeamRole } from '@/api/dto'
+import type { ProfileSummaryDto, TeamRole } from '@/api/dto'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
-import { Rendezvous } from '@/components/common/Rendezvous'
 import { UserAvatar } from '@/components/common/UserAvatar'
 import {
   PROFILE_SIDEBAR_FROM,
@@ -39,7 +37,7 @@ import { paths } from '@/config/paths'
 import { useAuth } from '@/hooks/useAuth'
 
 /** The shortcuts a desktop shows as cards: the settings, without « Mon compte » (the identity
- * card leads there) and without the activity, which has its own two cards above. */
+ * card leads there). */
 const DESKTOP_CARDS: ProfileSection[] = [
   'preferences',
   'notifications',
@@ -50,12 +48,6 @@ const DESKTOP_CARDS: ProfileSection[] = [
 ]
 
 const NAV_ITEMS: ProfileNavItem[] = PROFILE_NAV_GROUPS.flatMap((group) => group.items)
-
-function publicationPath(publication: PublicationDto): string {
-  return publication.type === 'TRIP'
-    ? paths.trip(publication.team.slug, publication.slug)
-    : paths.ride(publication.team.slug, publication.slug)
-}
 
 function IdentityCard() {
   const { t } = useTranslation()
@@ -77,68 +69,6 @@ function IdentityCard() {
           {t('profile.nav.account')}
         </Button>
       </Group>
-    </Paper>
-  )
-}
-
-function RidesCard({ summary }: { summary: ProfileSummaryDto | undefined }) {
-  const { t } = useTranslation()
-  const next = summary?.participations.next[0]
-  return (
-    <Paper withBorder radius="md" p="lg">
-      <Stack gap="sm">
-        <Group justify="space-between" align="baseline">
-          <Title order={3} size="h5">
-            {t('profile.nav.rides')}
-          </Title>
-          <Anchor component={PrefetchLink} to={paths.myParticipations()} size="sm" fw={600}>
-            {t('profile.rides.viewAll')}
-          </Anchor>
-        </Group>
-        {!summary ? (
-          <Skeleton height={64} radius="md" />
-        ) : next ? (
-          <Paper bg="var(--mantine-color-default-hover)" radius="md" p="sm">
-            <Group wrap="nowrap" gap="sm">
-              <ThemeIcon variant="light" size={40} radius="md">
-                <IconBike size={22} />
-              </ThemeIcon>
-              <Box style={{ minWidth: 0 }}>
-                <Text size="xs" fw={600} c="dimmed">
-                  {t('profile.rides.next')} ·{' '}
-                  <Rendezvous date={next.dateTime} zone={next.timezone} />
-                </Text>
-                <Anchor
-                  component={PrefetchLink}
-                  to={publicationPath(next)}
-                  fw={600}
-                  c="inherit"
-                  lineClamp={1}
-                >
-                  {next.name}
-                </Anchor>
-                <Text size="sm" c="dimmed" truncate>
-                  {next.team.name}
-                </Text>
-              </Box>
-            </Group>
-          </Paper>
-        ) : (
-          <Text size="sm" c="dimmed">
-            {t('profile.rides.noNext')}
-          </Text>
-        )}
-        {summary && (
-          <Group gap="xs">
-            <Badge variant="light" color="primary">
-              {t('profile.status.upcoming', { count: summary.participations.upcomingCount })}
-            </Badge>
-            <Badge variant="light" color="gray">
-              {t('profile.status.history', { count: summary.participations.pastCount })}
-            </Badge>
-          </Group>
-        )}
-      </Stack>
     </Paper>
   )
 }
@@ -220,7 +150,7 @@ function StatusCard({ item, status }: { item: ProfileNavItem; status: string | u
 }
 
 /**
- * `/profil`: who is signed in, what they ride next, their teams, and one shortcut per subject with
+ * `/profil`: who is signed in, their teams (on a desktop), and one shortcut per subject with
  * its state line. Two calls in all — `/me`, which the server seeds, and the profile summary.
  *
  * A desktop has the sidebar (ProfileShell) and the subjects as cards; a phone has the grouped list,
@@ -246,12 +176,9 @@ export function ProfileOverviewPage() {
     <ProfileShell section="overview" title={t('profile.title')}>
       <IdentityCard />
 
-      <SimpleGrid cols={{ base: 1, [PROFILE_SIDEBAR_FROM]: 2 }} spacing="md">
-        <RidesCard summary={summary} />
-        <Box visibleFrom={PROFILE_SIDEBAR_FROM}>
-          <TeamsCard summary={summary} />
-        </Box>
-      </SimpleGrid>
+      <Box visibleFrom={PROFILE_SIDEBAR_FROM}>
+        <TeamsCard summary={summary} />
+      </Box>
 
       <Stack gap="sm" visibleFrom={PROFILE_SIDEBAR_FROM}>
         <Title order={3} size="h4">

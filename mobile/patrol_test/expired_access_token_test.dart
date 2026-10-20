@@ -7,7 +7,7 @@ import 'common.dart';
 /// intercept: its tests only check which paths are eligible (`refreshesOn401`). Here the app is
 /// signed in, then handed an access token the server refuses — the refresh token stays valid, as
 /// after a phone left open past the access token's lifetime. Two calls must go through anyway: an
-/// ordinary one (the profile's participation count) and one under `/api/auth/` (`logout-all`),
+/// ordinary one (the profile's summary) and one under `/api/auth/` (`logout-all`),
 /// which MOB-32 used to leave failing with a 401.
 void main() {
   testApp(
@@ -25,8 +25,9 @@ void main() {
       replaceAccessToken($, 'expired-access-token');
       await modules.navigation.goToProfile();
       await modules.profile.waitUntilShown();
-      // The badge only appears once `GET /api/users/me/profile-summary` has answered.
-      await modules.profile.waitUntilUpcomingCountIs(0);
+      // « Sécurité » only shows its state line once `GET /api/users/me/profile-summary` has
+      // answered.
+      await modules.profile.waitUntilSummaryLoaded();
       expect(currentAccessToken($), isNot(equals('expired-access-token')));
       expect(currentAccessToken($), isNotNull);
 

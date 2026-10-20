@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../api/generated/export.dart';
 import '../../../api/pedalons_api_client.dart';
-import '../../../core/pagination/pagination.dart';
 
 final profileRepositoryProvider = Provider<ProfileRepository>((ref) {
   return ProfileRepository(
@@ -60,31 +59,6 @@ class ProfileRepository {
   }
 
   Future<UserExportDto> requestExport() => _users.requestExport();
-
-  /// Une page de participations, bornée dans le temps.
-  ///
-  /// `from = maintenant` donne les sorties à venir, `to = maintenant`
-  /// l'historique — et c'est le `total` de la réponse qui alimente les deux
-  /// compteurs, sans endpoint de comptage.
-  Future<PageResult<PublicationDto>> fetchParticipations({
-    required bool upcoming,
-    required DateTime now,
-    int page = 0,
-    int size = kDefaultPageSize,
-  }) async {
-    final String boundary = now.toUtc().toIso8601String();
-    final PublicationListResponse response = await _users.listMyParticipations(
-      page: page,
-      size: size,
-      from: upcoming ? boundary : null,
-      to: upcoming ? null : boundary,
-      view: ListViewMode.compact,
-    );
-    return PageResult<PublicationDto>(
-      items: response.publications,
-      total: response.total,
-    );
-  }
 
   /// Les services GPS que **le serveur** propose. Jamais une liste codée en
   /// dur : un service ajouté au backend apparaît sans livrer de mobile.

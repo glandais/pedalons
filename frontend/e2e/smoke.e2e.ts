@@ -187,8 +187,8 @@ test.describe('app links', () => {
   }[] = [
     { path: () => '/inscription', to: () => '/connexion', signedIn: false },
     { path: () => '/equipes/decouvrir', to: () => '/equipes', signedIn: true },
-    // /equipes/{team}/membres left this list with WEB-1, /profil/participations with the profile
-    // redesign (now /profil/sorties): both are web pages now.
+    // /equipes/{team}/membres left this list with WEB-1 (a web page now), /profil/participations
+    // with the profile redesign (then /profil/sorties, since removed).
   ]
   for (const landing of landings) {
     const label = landing.path('{team}')

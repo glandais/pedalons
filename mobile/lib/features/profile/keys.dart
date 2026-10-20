@@ -27,19 +27,9 @@ class ProfilePageKeys {
   /// bloquent (seul administrateur d'une équipe qui a d'autres membres).
   final deletionBlockedBanner = const _ProfilePageKey('deletionBlockedBanner');
 
-  /// Vue d'ensemble : la ligne « Mes sorties » et son compteur de sorties à
-  /// venir.
-  final participationsUpcomingRow = const _ProfilePageKey(
-    'participationsUpcomingRow',
-  );
-  final participationsUpcomingCount = const _ProfilePageKey(
-    'participationsUpcomingCount',
-  );
-
   /// Vue d'ensemble : la carte d'identité (vers « Mon compte ») et un
   /// raccourci par sous-page.
   final identityCard = const _ProfilePageKey('identityCard');
-  final teamsRow = const _ProfilePageKey('teamsRow');
   final preferencesRow = const _ProfilePageKey('preferencesRow');
   final notificationsRow = const _ProfilePageKey('notificationsRow');
   final devicesRow = const _ProfilePageKey('devicesRow');
@@ -51,18 +41,6 @@ class ProfilePageKeys {
   /// La flèche de retour d'une sous-page du profil, vers la vue d'ensemble
   /// (ou « Confidentialité », sous « Utilisateurs bloqués »).
   final backButton = const _ProfilePageKey('backButton');
-
-  /// « Mes sorties » : les segments « À venir » et « Historique ».
-  final participationsUpcomingTab = const _ProfilePageKey(
-    'participationsUpcomingTab',
-  );
-  final participationsHistoryTab = const _ProfilePageKey(
-    'participationsHistoryTab',
-  );
-
-  /// Une publication de la liste « Mes participations », par son slug.
-  Key participationCard(String slug) =>
-      _ProfilePageKey('participationCard_$slug');
 
   /// Confidentialité : l'interrupteur « Être contacté par les membres ».
   final contactableSwitch = const _ProfilePageKey('contactableSwitch');

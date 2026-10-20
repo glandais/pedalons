@@ -56,7 +56,6 @@ export const pages = {
     'ProfileOverviewPage',
     () => import('../pages/profile/ProfileOverviewPage')
   ),
-  MyRidesPage: lazyPage('MyRidesPage', () => import('../pages/profile/MyRidesPage')),
   ProfilePreferencesPage: lazyPage(
     'ProfilePreferencesPage',
     () => import('../pages/profile/ProfilePreferencesPage')

@@ -38,7 +38,6 @@ describe('ProfileShell', () => {
       .filter((link) => link.getAttribute('aria-current') === 'page')
     expect(current.map((link) => link.textContent)).toEqual(['profile.nav.notifications'])
     for (const group of [
-      'profile.nav.group.activity',
       'profile.nav.group.settings',
       'profile.nav.group.security',
       'profile.nav.group.account',

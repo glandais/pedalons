@@ -18,7 +18,6 @@ import {
   prefetchProfilePrivacy,
   prefetchProfileSecurity,
 } from '@/pages/profile/profileData'
-import { prefetchMyRides } from '@/pages/profile/myRidesData'
 import { prefetchCalendar } from '@/pages/calendar/calendarData'
 import { prefetchGpxPreview, prefetchGpxPreviewView } from '@/pages/gpxtool/gpxPreviewData'
 import { prefetchGpxPreviewList } from '@/pages/gpxtool/gpxPreviewListData'
@@ -392,16 +391,6 @@ export const routesConfig: RoutesConfig = [
     breadcrumb: { type: 'static', i18nKey: tRegister('nav.profile') },
     // `/me` is seeded by the server with the session; the summary carries every state line.
     prefetch: (queryClient) => prefetchProfileOverview(queryClient),
-  },
-  {
-    id: 'my-participations',
-    paths: pathVariants.myParticipations(),
-    component: pages.MyRidesPage,
-    auth: 'authenticated',
-    parentId: 'profile',
-    breadcrumb: { type: 'static', i18nKey: tRegister('profile.nav.rides') },
-    // Both tabs' totals, and the page window of the tab the URL asks for.
-    prefetch: (queryClient, _params, url) => prefetchMyRides(queryClient, url),
   },
   {
     id: 'profile-preferences',

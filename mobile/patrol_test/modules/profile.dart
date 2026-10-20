@@ -56,59 +56,26 @@ final class Profile extends Module {
   }
 
   Future<void> waitUntilShown() async {
-    await $(keys.profile.participationsUpcomingRow).waitUntilVisible();
+    await $(keys.profile.identityCard).waitUntilVisible();
   }
 
-  // ── Participations ──────────────────────────────────────────────────────
-
-  /// The badge of « Mes sorties » (the upcoming ones), once the profile summary has loaded.
-  Future<int> upcomingCount() async {
-    await $(keys.profile.participationsUpcomingCount).waitUntilExists();
-    return int.parse(_upcomingBadgeText);
-  }
-
-  /// Waits until the badge of « Mes sorties » reads [expected].
-  Future<void> waitUntilUpcomingCountIs(
-    int expected, {
+  /// Waits until `GET /api/users/me/profile-summary` has answered: « Sécurité » shows its state
+  /// line (the passkey count) only then, as a second text under its title.
+  Future<void> waitUntilSummaryLoaded({
     Duration timeout = const Duration(seconds: 10),
   }) async {
+    final texts = find.descendant(
+      of: find.byKey(keys.profile.securityRow),
+      matching: find.byType(Text),
+    );
     final deadline = DateTime.now().add(timeout);
-    while (!$(keys.profile.participationsUpcomingCount).exists ||
-        _upcomingBadgeText != '$expected') {
+    while (texts.evaluate().length < 2) {
       if (DateTime.now().isAfter(deadline)) {
-        final shown = $(keys.profile.participationsUpcomingCount).exists
-            ? _upcomingBadgeText
-            : 'no badge';
-        throw TestFailure(
-          'upcoming participations badge not $expected after $timeout '
-          '(shows $shown)',
-        );
+        throw TestFailure('profile summary not shown after $timeout');
       }
       await $.pump(const Duration(milliseconds: 200));
     }
   }
-
-  Future<void> openUpcomingParticipations() async {
-    await (await scrolledTo(keys.profile.participationsUpcomingRow)).tap();
-  }
-
-  /// Waits for the publication [slug] in « Mes sorties ».
-  Future<void> waitUntilParticipationIsListed(String slug) async {
-    await $(keys.profile.participationCard(slug)).waitUntilVisible();
-  }
-
-  ///
-  /// Tapped on its media band, near the top: the card's centre may fall on its team line, which
-  /// opens the team instead.
-  Future<void> openParticipation(String slug) async {
-    final card = await scrolledTo(keys.profile.participationCard(slug));
-    final box = $.tester.getRect(card.first);
-    await $.tester.tapAt(Offset(box.center.dx, box.top + 30));
-    await $.pump(const Duration(milliseconds: 300));
-  }
-
-  String get _upcomingBadgeText =>
-      $(keys.profile.participationsUpcomingCount).$(Text).text ?? '';
 
   // ── Deleting the account ────────────────────────────────────────────────
 

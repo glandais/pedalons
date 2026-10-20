@@ -7,7 +7,6 @@ import '../../calendar/providers/calendar_month_provider.dart';
 import '../../home/providers/next_ride_provider.dart';
 import '../../home/providers/week_events_provider.dart';
 import '../../participants/providers/participant_list_provider.dart';
-import '../../profile/providers/participations_provider.dart';
 import '../../profile/providers/profile_summary_provider.dart';
 import '../../teams/providers/team_dashboard_provider.dart';
 
@@ -57,10 +56,7 @@ void notifyParticipationChanged(
   ref.invalidate(nextRideProvider);
   ref.invalidate(weekEventsProvider);
 
-  // Profil. La frontière « à venir / passées » est figée à la première
-  // lecture ; une participation qui change est le bon moment pour l'avancer.
-  ref.invalidate(participationsNowProvider);
-  ref.invalidate(participationsProvider);
+  // Profil : son résumé porte les compteurs de participations.
   ref.invalidate(profileSummaryProvider);
 
   // Calendrier : chaque événement porte `registered`.

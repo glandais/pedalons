@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Box, Button, Divider, Group, NavLink, Paper, Stack, Text, Title } from '@mantine/core'
-import { IconArrowUpRight, IconLogout } from '@tabler/icons-react'
+import { IconLogout } from '@tabler/icons-react'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { useAuth } from '@/hooks/useAuth'
 import {
@@ -44,7 +44,6 @@ function SidebarLink({ item, active }: { item: ProfileNavItem; active: boolean }
       to={item.to()}
       label={t(item.labelKey)}
       leftSection={<Icon size={18} stroke={1.5} />}
-      rightSection={item.leavesProfile ? <IconArrowUpRight size={14} /> : undefined}
       active={active}
       aria-current={active ? 'page' : undefined}
       variant="light"

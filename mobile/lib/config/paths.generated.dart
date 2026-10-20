@@ -102,15 +102,6 @@ class Paths {
   }
 
   static String notifications() => '/notifications';
-  static String myParticipations() {
-    switch (getCurrentLocale()) {
-      case 'fr':
-        return '/profil/sorties';
-      default:
-        return '/profile/rides';
-    }
-  }
-
   static String profilePreferences() {
     switch (getCurrentLocale()) {
       case 'fr':
@@ -556,10 +547,6 @@ class PathVariants {
   static Map<String, String> notifications() => {
     'en': '/notifications',
     'fr': '/notifications',
-  };
-  static Map<String, String> myParticipations() => {
-    'en': '/profile/rides',
-    'fr': '/profil/sorties',
   };
   static Map<String, String> profilePreferences() => {
     'en': '/profile/preferences',

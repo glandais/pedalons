@@ -42,8 +42,8 @@ import { wallTimeOf } from './support/dates'
 /**
  * docs/LEDGER_*.md WEB-14 — authenticated SSR (frontend/docs/SSR.md, "Session-aware SSR"): for a document
  * request carrying the refresh_token cookie, « Ma prochaine sortie », the « Inscrit » badge on the
- * feed cards, the totals of « Mes sorties » and the profile overview's next ride and state line are in
- * the server HTML; without the cookie they are not;
+ * feed cards and the profile overview's state lines are in the server HTML; without the cookie they
+ * are not;
  * and hydration adopts that markup instead of throwing it away.
  *
  * Setup: a PUBLIC team (a platform admin is needed to make it public), a public ride two days
@@ -53,15 +53,11 @@ import { wallTimeOf } from './support/dates'
 
 const NEXT_RIDE = 'Ma prochaine sortie'
 const REGISTERED = 'Inscrit'
-/** « Mes sorties », the profile's page of the rider's participations (`/profil/sorties`). */
-const MY_RIDES_PATH = '/profil/sorties'
-const PARTICIPATIONS = 'Mes sorties'
-/** Its first tab, labelled with the total: the prefetched `size: 1` query's. */
-const UPCOMING = 'À venir'
 const BREADCRUMB = "Fil d'Ariane"
-/** The profile's overview, and the state line of « Mes sorties » for the one registration. */
+/** The profile's overview, and the state line of « Sécurité » for a fresh account: it reads the
+ * profile summary, which only a session can fetch. */
 const PROFILE_PATH = '/profil'
-const OVERVIEW_UPCOMING = '1 à venir'
+const OVERVIEW_SECURITY = "Aucune clé d'accès"
 
 interface Setup {
   rider: AuthResponse
@@ -123,39 +119,22 @@ test.describe('server HTML, JavaScript disabled', () => {
     await expect(page.getByRole('heading', { name: NEXT_RIDE })).toHaveCount(0)
   })
 
-  test('signed in: « Mes sorties » carries the upcoming count', async ({ page, context }) => {
-    await signIn(context, setup.rider)
-    const response = await page.goto(MY_RIDES_PATH)
-    expect(response?.status()).toBe(200)
-
-    await expect(
-      page.getByRole('main').getByRole('heading', { name: PARTICIPATIONS, exact: true })
-    ).toBeVisible()
-    // The count is the prefetched `size: 1` query's total: exactly the one registration.
-    await expect(page.getByRole('tab', { name: new RegExp(UPCOMING) })).toHaveText(
-      new RegExp(`${UPCOMING}\\s*1$`)
-    )
-    // And the open tab's page of the list, prefetched too: the ride's card is in the server HTML.
-    await expect(page.getByRole('main').getByText(setup.rideName).first()).toBeVisible()
-  })
-
-  test('signed in: the profile overview carries the next ride and its state line', async ({
-    page,
-    context,
-  }) => {
+  test('signed in: the profile overview carries its state lines', async ({ page, context }) => {
     await signIn(context, setup.rider)
     const response = await page.goto(PROFILE_PATH)
     expect(response?.status()).toBe(200)
 
     const main = page.getByRole('main')
     await expect(main.getByRole('heading', { name: 'Profil', exact: true })).toBeVisible()
-    // GET /api/users/me/profile-summary, prefetched by the server: no state line without it.
-    await expect(main.getByRole('link', { name: setup.rideName, exact: true })).toBeVisible()
-    await expect(main.getByText(OVERVIEW_UPCOMING, { exact: true }).first()).toBeVisible()
+    // GET /api/users/me/profile-summary, prefetched by the server: no state line without it. The
+    // line is drawn twice — the desktop cards and the phone list — and only one is displayed.
+    await expect(
+      main.getByText(OVERVIEW_SECURITY, { exact: true }).locator('visible=true').first()
+    ).toBeVisible()
   })
 
-  test('anonymous: « Mes sorties » shows no participation', async ({ page }) => {
-    const response = await page.goto(MY_RIDES_PATH)
+  test('anonymous: the profile overview shows no state line', async ({ page }) => {
+    const response = await page.goto(PROFILE_PATH)
     expect(response?.status()).toBe(200)
     // The server did render the page for a visitor (the guarded route stays on its loading
     // branch): its breadcrumb, and a way to sign in. Attached rather than visible — the mobile
@@ -168,8 +147,7 @@ test.describe('server HTML, JavaScript disabled', () => {
       page.locator('a[href="/connexion"]').first(),
       'the anonymous page offers a login'
     ).toBeAttached()
-    await expect(page.getByRole('heading', { name: PARTICIPATIONS })).toHaveCount(0)
-    await expect(page.getByRole('tab', { name: new RegExp(UPCOMING) })).toHaveCount(0)
+    await expect(page.getByText(OVERVIEW_SECURITY)).toHaveCount(0)
   })
 })
 
@@ -197,11 +175,9 @@ test.describe('raw document response', () => {
     expect(anonymousHome.html).not.toContain(NEXT_RIDE)
     expect(anonymousHome.html).not.toContain(REGISTERED)
 
-    const signedProfile = await outletOf(MY_RIDES_PATH, cookie)
-    expect(signedProfile.html).toContain(UPCOMING)
-    // The tab's label is static: what proves the session's data is the ride's card in the list.
-    expect(signedProfile.html).toContain(setup.rideName)
-    const anonymousProfile = await outletOf(MY_RIDES_PATH)
+    const signedProfile = await outletOf(PROFILE_PATH, cookie)
+    expect(signedProfile.html).toContain(OVERVIEW_SECURITY.replaceAll("'", '&#x27;'))
+    const anonymousProfile = await outletOf(PROFILE_PATH)
     // What the anonymous page does render — its breadcrumb and the login link — so that a broken
     // page cannot pass the absence check below.
     expect(anonymousProfile.html, 'the anonymous profile rendered its breadcrumb').toContain(
@@ -211,9 +187,7 @@ test.describe('raw document response', () => {
     expect(anonymousProfile.html, 'the anonymous profile offers a login').toContain(
       'href="/connexion"'
     )
-    // The breadcrumb names the page (« Mes sorties »): the absence is read on the tab.
-    expect(anonymousProfile.html).not.toContain(UPCOMING)
-    expect(anonymousProfile.html).not.toContain(setup.rideName)
+    expect(anonymousProfile.html).not.toContain(OVERVIEW_SECURITY.replaceAll("'", '&#x27;'))
   })
 })
 
@@ -236,31 +210,18 @@ test.describe('hydration, JavaScript enabled', () => {
     context,
   }) => {
     await signIn(context, setup.rider)
-    const watch = await watchHydration(page, [setup.rideName, OVERVIEW_UPCOMING])
+    const watch = await watchHydration(page, [OVERVIEW_SECURITY])
 
     await page.goto(PROFILE_PATH)
     await pageHydrated(page)
 
-    const main = page.getByRole('main')
-    await expect(main.getByRole('link', { name: setup.rideName, exact: true })).toBeVisible()
-    await expect(main.getByText(OVERVIEW_UPCOMING, { exact: true }).first()).toBeVisible()
-    expect(watch.hydrationErrors).toEqual([])
-    expect(await watch.removed()).toEqual([])
-  })
-
-  test('profile: « Mes sorties » survives hydration untouched', async ({ page, context }) => {
-    await signIn(context, setup.rider)
-    const watch = await watchHydration(page, [UPCOMING])
-
-    await page.goto(MY_RIDES_PATH)
-    await pageHydrated(page)
-
     await expect(
-      page.getByRole('main').getByRole('heading', { name: PARTICIPATIONS, exact: true })
+      page
+        .getByRole('main')
+        .getByText(OVERVIEW_SECURITY, { exact: true })
+        .locator('visible=true')
+        .first()
     ).toBeVisible()
-    await expect(page.getByRole('tab', { name: new RegExp(UPCOMING) })).toHaveText(
-      new RegExp(`${UPCOMING}\\s*1$`)
-    )
     expect(watch.hydrationErrors).toEqual([])
     expect(await watch.removed()).toEqual([])
   })

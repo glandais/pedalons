@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/api/pedalons_api_client.dart';
-import 'package:pedalons/core/pagination/pagination.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/features/auth/data/auth_repository.dart';
@@ -117,15 +116,6 @@ class _StubProfileRepository implements ProfileRepository {
   @override
   Future<List<GpsServiceType>> availableGpsServices() async =>
       const <GpsServiceType>[];
-
-  @override
-  Future<PageResult<PublicationDto>> fetchParticipations({
-    required bool upcoming,
-    required DateTime now,
-    int page = 0,
-    int size = kDefaultPageSize,
-  }) async =>
-      const PageResult<PublicationDto>(items: <PublicationDto>[], total: 0);
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

@@ -182,14 +182,8 @@ routes:
     deeplink: true
   # The profile's sub-pages (profile navigation redesign, 2026-10): the same tree, labels and
   # paths on both clients. /profile is the overview; each sub-page is one subject.
-  # Rides and trips the current user is registered to (tabs Upcoming · History).
-  - id: myParticipations
-    path:
-      en: /profile/rides
-      fr: /profil/sorties
-    web: true
-    mobile: true
-    deeplink: true
+  # No /profile/rides any more (2026-10-20): the home page and the agenda's « Je participe »
+  # already list the rides one is registered to.
   - id: profilePreferences
     path:
       en: /profile/preferences

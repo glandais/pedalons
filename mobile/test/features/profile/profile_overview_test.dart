@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,7 +20,6 @@ import 'package:pedalons/keys.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../support/localization.dart';
-import '../rides/ride_fixtures.dart';
 
 /// La vue d'ensemble du profil : une ligne d'état par sujet, sans flèche de
 /// retour (l'onglet est une racine), et « Se déconnecter » une seule fois.
@@ -182,20 +180,13 @@ void main() {
   ) async {
     await mount(tester);
 
-    expect(find.text('Mon activité'), findsOneWidget);
+    // Plus de « Mon activité » : l'accueil et l'Agenda listent les sorties.
+    expect(find.text('Mon activité'), findsNothing);
+    expect(find.text('Mes sorties'), findsNothing);
     expect(find.text('Réglages'), findsOneWidget);
     expect(find.text('Sécurité et confidentialité'), findsOneWidget);
     expect(find.text('Compte'), findsOneWidget);
 
-    expect(find.text('Aucune sortie à venir'), findsOneWidget);
-    expect(
-      find.descendant(
-        of: find.byKey(keys.profile.participationsUpcomingCount),
-        matching: find.text('3'),
-      ),
-      findsOneWidget,
-    );
-    expect(find.text('2 équipes'), findsOneWidget);
     expect(
       find.text('Métrique · Europe/Paris · Système · Français'),
       findsOneWidget,
@@ -291,39 +282,6 @@ void main() {
       expect(find.textContaining('résumé quotidien'), findsNothing);
     },
   );
-
-  testWidgets('« Mes sorties » annonce la prochaine sortie et le compteur', (
-    WidgetTester tester,
-  ) async {
-    final PublicationDto next = PublicationDto.fromJson(
-      jsonDecode(jsonEncode(fixtureRide().toJson())) as Map<String, dynamic>,
-    );
-    await mount(
-      tester,
-      summary: _summary.copyWith(
-        participations: ProfileParticipationSummaryDto(
-          upcomingCount: 1,
-          pastCount: 0,
-          next: <PublicationDto>[next],
-        ),
-      ),
-    );
-    expect(
-      find.descendant(
-        of: find.byKey(keys.profile.participationsUpcomingRow),
-        matching: find.textContaining('Prochaine : '),
-      ),
-      findsOneWidget,
-    );
-    expect(find.text('Aucune sortie à venir'), findsNothing);
-    expect(
-      find.descendant(
-        of: find.byKey(keys.profile.participationsUpcomingCount),
-        matching: find.text('1'),
-      ),
-      findsOneWidget,
-    );
-  });
 
   testWidgets('« Se déconnecter » une seule fois, en bas de la liste', (
     WidgetTester tester,

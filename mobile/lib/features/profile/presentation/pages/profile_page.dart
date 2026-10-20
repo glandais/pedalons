@@ -7,13 +7,11 @@ import '../../../../api/generated/export.dart';
 import '../../../../config/paths.dart';
 import '../../../../core/pdl/pdl.dart';
 import '../../../../core/preferences/user_preferences_provider.dart';
-import '../../../../core/theme/enum_colors.dart';
 import '../../../../core/theme/pdl_colors.dart';
 import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/api_error_handler.dart';
-import '../../../../core/utils/formatters.dart';
 import '../../../../core/utils/push_location.dart';
 import '../../../../keys.dart';
 import '../../../auth/domain/auth_state.dart';
@@ -27,8 +25,8 @@ import 'profile_help_page.dart';
 /// Le profil : une **vue d'ensemble** courte, et une sous-page par sujet.
 ///
 /// La carte d'identité mène à « Mon compte », que le groupe Compte nomme aussi
-/// en toutes lettres ; viennent ensuite des raccourcis groupés — Mon activité,
-/// Réglages, Sécurité et confidentialité, Compte —,
+/// en toutes lettres ; viennent ensuite des raccourcis groupés — Réglages,
+/// Sécurité et confidentialité, Compte —,
 /// chacun avec **une ligne d'état** : on sait ce qu'on va trouver avant
 /// d'ouvrir. « Se déconnecter » ferme la liste, une seule fois dans le profil.
 ///
@@ -76,25 +74,9 @@ class ProfilePage extends ConsumerWidget {
                   ),
           ),
         ),
-        SliverToBoxAdapter(
-          child: _Group(
-            title: 'profile.groups.activity'.tr(),
-            rows: <Widget>[
-              _ridesRow(context, summary, open),
-              _ShortcutRow(
-                key: keys.profile.teamsRow,
-                icon: PdlIcons.teams,
-                title: 'profile.nav.teams'.tr(),
-                status: summary == null
-                    ? null
-                    : 'profile.status.teams'.plural(summary.teams.length),
-                // Les équipes ont leur onglet : on y va, sans empiler la
-                // branche Équipes sur celle du profil.
-                onTap: () => context.go(Paths.teams()),
-              ),
-            ],
-          ),
-        ),
+        // Plus de groupe « Mon activité » (« Mes sorties », « Mes équipes ») :
+        // l'accueil, « Je participe » de l'Agenda et l'onglet Équipes en
+        // montrent déjà tout.
         SliverToBoxAdapter(
           child: _Group(
             title: 'profile.groups.settings'.tr(),
@@ -180,51 +162,6 @@ class ProfilePage extends ConsumerWidget {
           ),
         ),
       ],
-    );
-  }
-
-  /// « Mes sorties » : la prochaine, et le nombre de sorties à venir.
-  Widget _ridesRow(
-    BuildContext context,
-    ProfileSummaryDto? summary,
-    void Function(String path) open,
-  ) {
-    final PdlColors c = context.pdl;
-    final ProfileParticipationSummaryDto? p = summary?.participations;
-    final PublicationDto? next = p?.next.firstOrNull;
-    // L'instant du contrat : la date se lit dans le fuseau de la sortie, sans
-    // mention sur une ligne d'état (docs/LEDGER_*.md API-60).
-    final DateTime? when = next == null
-        ? null
-        : DateTime.tryParse(next.dateTime);
-
-    return _ShortcutRow(
-      key: keys.profile.participationsUpcomingRow,
-      icon: PdlIcons.ride,
-      title: 'profile.nav.rides'.tr(),
-      status: p == null
-          ? null
-          : when == null
-          ? 'profile.status.noUpcoming'.tr()
-          : 'profile.status.nextRide'.tr(
-              namedArgs: <String, String>{
-                'date': AppFormatters.formatRideDate(
-                  when,
-                  zone: next!.timezone,
-                ),
-              },
-            ),
-      badge: p == null
-          ? null
-          : PdlBadge(
-              key: keys.profile.participationsUpcomingCount,
-              label: '${p.upcomingCount}',
-              size: PdlBadgeSize.lg,
-              tone: p.upcomingCount > 0
-                  ? PdlDerivedTones.registered(c)
-                  : PdlTone.pair(c.softGray, c.neutral),
-            ),
-      onTap: () => open(Paths.myParticipations()),
     );
   }
 
@@ -388,8 +325,7 @@ class _Group extends StatelessWidget {
   }
 }
 
-/// Un raccourci : pastille d'icône, titre, ligne d'état, compteur éventuel,
-/// chevron. La ligne d'état est absente tant que sa donnée n'est pas arrivée,
+/// Un raccourci : pastille d'icône, titre, ligne d'état, chevron. La ligne d'état est absente tant que sa donnée n'est pas arrivée,
 /// plutôt qu'un « Chargement… » sur chaque ligne.
 class _ShortcutRow extends StatelessWidget {
   const _ShortcutRow({
@@ -398,14 +334,12 @@ class _ShortcutRow extends StatelessWidget {
     required this.title,
     required this.onTap,
     this.status,
-    this.badge,
     this.neutral = false,
   });
 
   final IconData icon;
   final String title;
   final String? status;
-  final Widget? badge;
   final VoidCallback onTap;
 
   /// Pastille grise plutôt qu'indigo : le groupe « Compte ».
@@ -418,14 +352,7 @@ class _ShortcutRow extends StatelessWidget {
       leading: _IconTile(icon: icon, neutral: neutral),
       title: title,
       subtitle: status,
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          ?badge,
-          const SizedBox(width: 4),
-          Icon(PdlIcons.chevronRight, size: 20, color: c.textPlaceholder),
-        ],
-      ),
+      trailing: Icon(PdlIcons.chevronRight, size: 20, color: c.textPlaceholder),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       onTap: onTap,
     );

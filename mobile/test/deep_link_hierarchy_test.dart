@@ -61,9 +61,6 @@ final List<_LinkCase> _cases = [
   ]),
 
   // Les sous-pages du profil vivent sous sa vue d'ensemble.
-  _LinkCase('myParticipations', PathVariants.myParticipations(), [
-    PathVariants.profile(),
-  ]),
   _LinkCase('profilePreferences', PathVariants.profilePreferences(), [
     PathVariants.profile(),
   ]),

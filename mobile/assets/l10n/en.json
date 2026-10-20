@@ -1435,20 +1435,6 @@
       "title": "Be contacted by members",
       "hint": "Members of your teams can write to you about your classifieds; your address is never shown to them."
     },
-    "participations": {
-      "title": "My rides",
-      "upcoming": "Upcoming",
-      "past": "History",
-      "count": {
-        "zero": "No participation",
-        "one": "{} participation",
-        "other": "{} participations"
-      },
-      "emptyUpcoming": "No upcoming ride",
-      "emptyUpcomingHint": "Register for a ride in one of your teams; it will show up here.",
-      "emptyPast": "No past participation",
-      "emptyPastHint": "Your past rides and trips will show up here."
-    },
     "gps": {
       "title": "Connected services",
       "connect": "Connect",
@@ -1540,14 +1526,11 @@
       "identityLink": "Photo, name and account"
     },
     "groups": {
-      "activity": "My activity",
       "settings": "Settings",
       "security": "Security and privacy",
       "account": "Account"
     },
     "nav": {
-      "rides": "My rides",
-      "teams": "My teams",
       "preferences": "Preferences",
       "notifications": "Notifications",
       "devices": "Devices and services",
@@ -1557,13 +1540,6 @@
       "help": "Help and about"
     },
     "status": {
-      "nextRide": "Next: {date}",
-      "noUpcoming": "No upcoming ride",
-      "teams": {
-        "zero": "No team",
-        "one": "{} team",
-        "other": "{} teams"
-      },
       "deviceTimezone": "Device time zone",
       "inAppOnly": "In the app only",
       "emailAndPush": "E-mail and push",

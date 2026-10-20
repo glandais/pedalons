@@ -51,7 +51,6 @@ describe('profileStatusLines', () => {
 
   it('shows no line for what the summary carries until it lands', () => {
     const lines = profileStatusLines(t, user(), undefined, 'fr')
-    expect(lines.rides).toBeUndefined()
     expect(lines.notifications).toBeUndefined()
     expect(lines.security).toBeUndefined()
     expect(lines.devices).toBeUndefined()
@@ -147,18 +146,10 @@ describe('profileStatusLines', () => {
     ).toBe('profile.status.notContactable · profile.status.blocked(count=2)')
   })
 
-  it('counts passkeys and teams, with their own empty wording', () => {
+  it('counts passkeys, with their own empty wording', () => {
     const empty = profileStatusLines(t, user(), summary(), 'fr')
     expect(empty.security).toBe('profile.status.noPasskey')
-    expect(empty.teams).toBe('profile.status.noTeam')
-    const some = profileStatusLines(
-      t,
-      user(),
-      summary({ passkeyCount: 2, teams: [{ slug: 'a', name: 'A', role: 'ADMIN' }] }),
-      'fr'
-    )
+    const some = profileStatusLines(t, user(), summary({ passkeyCount: 2 }), 'fr')
     expect(some.security).toBe('profile.status.passkeys(count=2)')
-    expect(some.teams).toBe('profile.status.teams(count=1)')
-    expect(some.rides).toBe('profile.status.upcoming(count=3)')
   })
 })

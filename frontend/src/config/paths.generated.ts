@@ -75,12 +75,6 @@ export const paths = {
     }
   },
   notifications: () => '/notifications',
-  myParticipations: () => {
-    switch (getCurrentLocale()) {
-      case 'fr': return '/profil/sorties'
-      default: return '/profile/rides'
-    }
-  },
   profilePreferences: () => {
     switch (getCurrentLocale()) {
       case 'fr': return '/profil/preferences'
@@ -522,7 +516,6 @@ export const pathVariants = {
   support: (): Record<Locale, string> => ({ en: '/support', fr: '/support' }),
   profile: (): Record<Locale, string> => ({ en: '/profile', fr: '/profil' }),
   notifications: (): Record<Locale, string> => ({ en: '/notifications', fr: '/notifications' }),
-  myParticipations: (): Record<Locale, string> => ({ en: '/profile/rides', fr: '/profil/sorties' }),
   profilePreferences: (): Record<Locale, string> => ({ en: '/profile/preferences', fr: '/profil/preferences' }),
   profileNotifications: (): Record<Locale, string> => ({ en: '/profile/notifications', fr: '/profil/notifications' }),
   profileDevices: (): Record<Locale, string> => ({ en: '/profile/devices', fr: '/profil/appareils' }),

@@ -1797,6 +1797,21 @@ l'app. Ne pas déduire les rôles ou l'accès côté client pour élargir ce que
 
 ### Profil
 
+- `WEB-110` **« Mes sorties » et « Mon activité » retirés du profil** (20 octobre 2026, site et app
+  mobile, contrat d'API inchangé). La carte « Mes sorties » de la vue d'ensemble, le groupe « Mon
+  activité » (Mes sorties, Mes équipes) de la barre latérale et de la liste du téléphone, et la page
+  `/profil/sorties` (`myParticipations`, retirée de `contracts/routes.yaml`, deeplinks compris) n'en
+  montraient pas plus que l'accueil (« Ma prochaine sortie »), « Je participe » de l'Agenda et
+  l'onglet Équipes. Supprimés : `MyRidesPage`/`myRidesData` (web), `MyParticipationsPage` et
+  `participationsProvider` (mobile) ; « Voir tout » de « Vos prochaines sorties » du tableau de bord
+  mobile mène toujours à l'Agenda sur « Je participe ». La carte « Mes équipes » du bureau reste. Tests
+  : `ProfileOverviewPage.test.tsx`, `profile_overview_test.dart` (plus de « Mon activité ») ;
+  `ssr-session.e2e.ts` prouve désormais la session sur la ligne d'état « Sécurité » de `/profil` ;
+  `expired_access_token_test` attend le résumé via `Profile.waitUntilSummaryLoaded` ;
+  `profile_participations_list_test` et `profile_participations_count_test` supprimés avec ce
+  qu'ils couvraient. Le résumé du profil porte encore `participations`, que plus aucun client ne lit
+  (`API-136`).
+
 - `WEB-41` **Services connectés et appareils appairés, deux sections distinctes** (3 octobre 2026,
   site et app mobile, sans changement de contrat). Le profil titrait « Appareils GPS » la liste des
   *services* OAuth (Hammerhead, Garmin Connect, Wahoo), et le site y glissait « Appareils appairés »

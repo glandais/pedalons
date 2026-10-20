@@ -2,14 +2,12 @@ import type { ComponentType } from 'react'
 import {
   IconAdjustmentsHorizontal,
   IconBell,
-  IconBike,
   IconDeviceWatch,
   IconHelpCircle,
   IconLayoutDashboard,
   IconLock,
   IconShieldLock,
   IconUserCircle,
-  IconUsersGroup,
 } from '@tabler/icons-react'
 import { paths } from '@/config/paths'
 import { tRegister, type TranslationKey } from '@/lib/i18nUtils'
@@ -21,8 +19,6 @@ import { tRegister, type TranslationKey } from '@/lib/i18nUtils'
  */
 export type ProfileSection =
   | 'overview'
-  | 'rides'
-  | 'teams'
   | 'preferences'
   | 'notifications'
   | 'devices'
@@ -38,8 +34,6 @@ export interface ProfileNavItem {
   icon: ComponentType<{ size?: number | string; stroke?: number }>
   /** Read at render: `paths.*()` follows the current language. */
   to: () => string
-  /** Leaves the profile (« Mes équipes » is the teams tab, not a page of the profile). */
-  leavesProfile?: boolean
 }
 
 export interface ProfileNavGroup {
@@ -55,25 +49,9 @@ export const PROFILE_OVERVIEW: ProfileNavItem = {
   to: () => paths.profile(),
 }
 
+// No « Mon activité » group (« Mes sorties », « Mes équipes »): the home page, the agenda's
+// « Je participe » and the teams tab already show all of it.
 export const PROFILE_NAV_GROUPS: ProfileNavGroup[] = [
-  {
-    labelKey: tRegister('profile.nav.group.activity'),
-    items: [
-      {
-        section: 'rides',
-        labelKey: tRegister('profile.nav.rides'),
-        icon: IconBike,
-        to: () => paths.myParticipations(),
-      },
-      {
-        section: 'teams',
-        labelKey: tRegister('profile.nav.teams'),
-        icon: IconUsersGroup,
-        to: () => paths.teams(),
-        leavesProfile: true,
-      },
-    ],
-  },
   {
     labelKey: tRegister('profile.nav.group.settings'),
     items: [
