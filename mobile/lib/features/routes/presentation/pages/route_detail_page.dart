@@ -34,6 +34,9 @@ import '../widgets/route_manage_menu.dart';
 import '../widgets/route_map.dart';
 import '../widgets/route_sheet_header.dart';
 import '../widgets/route_surface_section.dart';
+import '../widgets/route_waypoints_section.dart';
+import '../widgets/waypoint_selection.dart';
+import '../widgets/waypoint_sheet.dart';
 import '../widgets/route_usages_section.dart';
 import '../../../feedback/presentation/report_problem_button.dart';
 
@@ -82,6 +85,14 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
 
   final TrackSurfaceBarColors _barColors = TrackSurfaceBarColors();
 
+  /// Le point de parcours choisi, partagé par la carte, le profil et la liste
+  /// (ledger `MOB-84`). Un notifieur du `State`, comme le réticule.
+  final WaypointSelectionController _selection = WaypointSelectionController();
+
+  /// La feuille à crans : la liste des points la ramène au cran médian avant de
+  /// recentrer la carte, sinon le point passerait sous elle.
+  final DraggableScrollableController _sheet = DraggableScrollableController();
+
   RouteKey get _key =>
       RouteKey(teamSlug: widget.teamSlug, routeSlug: widget.routeSlug);
 
@@ -112,6 +123,8 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
   void dispose() {
     _elevationPoller.dispose();
     _cursor?.dispose();
+    _selection.dispose();
+    _sheet.dispose();
     super.dispose();
   }
 
@@ -155,6 +168,7 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
               cursor: cursor,
               onMapTapped: cursor.moveTo,
               colorBy: colorBy,
+              selection: _selection,
               fitPadding: EdgeInsets.fromLTRB(
                 50,
                 50,
@@ -166,6 +180,7 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
           _overlay(route),
           PdlDetentSheet(
             detents: _kDetents,
+            controller: _sheet,
             initialDetentIndex: _kInitialDetent,
             onDetentChanged: (double detent) {
               if (detent != _detent) setState(() => _detent = detent);
@@ -366,6 +381,15 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
                   setState(() => _colorBy = v),
             ),
           ),
+        if (route.hasGeometry && route.waypoints.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: RouteWaypointsSection(
+              waypoints: route.waypoints,
+              selection: _selection,
+              onSelect: (String key, WaypointDto _) => _focusFromList(key),
+            ),
+          ),
         if (climbs.isNotEmpty)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -413,6 +437,37 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
     );
   }
 
+  /// Toucher une ligne de la liste : la carte se centre sur le point. Si la
+  /// feuille est au-dessus du cran médian, elle descend d'abord, et le
+  /// recadrage qu'entraîne le changement de marge passe **avant** le
+  /// recentrage.
+  Future<void> _focusFromList(String key) async {
+    if (_detent > _kDetents[1] + 0.01 && _sheet.isAttached) {
+      await _sheet.animateTo(
+        _kDetents[1],
+        duration: PdlMotion.stateChange,
+        curve: PdlMotion.stateChangeCurve,
+      );
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted) return;
+    }
+    _selection.select(key, move: PdlWaypointMove.center);
+  }
+
+  void _openFromProfile(RouteDetailDto route, String key) {
+    final WaypointDto? w = waypointByKey(route.waypoints, key);
+    if (w == null) return;
+    if (w.distance != null) _cursor?.moveTo(w.distance);
+    openWaypoint(
+      context,
+      w,
+      _selection,
+      key,
+      units: ref.read(unitSystemProvider),
+      move: PdlWaypointMove.ifHidden,
+    );
+  }
+
   Widget _profile(
     RouteDetailDto route,
     RouteCursorController cursor,
@@ -432,32 +487,43 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
               ? const SizedBox.shrink()
               : _withRefiningNote(
                   route,
-                  PdlElevationProfile(
-                    credit: 'routes.elevationCredit'.tr(),
-                    key: keys.routeDetail.elevationProfile,
-                    samples: samples,
-                    height: PdlMetrics.elevationLarge,
-                    // Le **seul** état partagé avec la carte, et il ne passe pas
-                    // par Riverpod : le réticule bouge à chaque frame de
-                    // glissement.
-                    barColors: bars == null
-                        ? null
-                        : _barColors.of(bars, context.pdl),
-                    cursorDistance: cursor.distance,
-                    axisLabel: (double meters, {required bool isLast}) => isLast
-                        ? AppFormatters.formatDistance(meters, units)
-                        : AppFormatters.formatNumber(
-                            units.longDistance(meters),
-                            fractionDigits: 1,
-                          ),
-                    tipLabel: (ElevationReading r) => <String>[
-                      AppFormatters.formatDistance(r.distance, units),
-                      AppFormatters.formatAltitude(r.elevation, units),
-                      if (bars != null)
-                        ?trackSurfaceTip(samples, bars, r.distance)
-                      else if (r.grade != null)
-                        AppFormatters.formatGrade(r.grade!),
-                    ].join(' · '),
+                  _withMarkers(
+                    route,
+                    (
+                      List<PdlProfileMarker> markers,
+                      String? selectedKey,
+                      ValueChanged<String>? onMarker,
+                    ) => PdlElevationProfile(
+                      credit: 'routes.elevationCredit'.tr(),
+                      key: keys.routeDetail.elevationProfile,
+                      markers: markers,
+                      selectedMarkerKey: selectedKey,
+                      onMarkerTapped: onMarker,
+                      samples: samples,
+                      height: PdlMetrics.elevationLarge,
+                      // Le **seul** état partagé avec la carte, et il ne passe pas
+                      // par Riverpod : le réticule bouge à chaque frame de
+                      // glissement.
+                      barColors: bars == null
+                          ? null
+                          : _barColors.of(bars, context.pdl),
+                      cursorDistance: cursor.distance,
+                      axisLabel: (double meters, {required bool isLast}) =>
+                          isLast
+                          ? AppFormatters.formatDistance(meters, units)
+                          : AppFormatters.formatNumber(
+                              units.longDistance(meters),
+                              fractionDigits: 1,
+                            ),
+                      tipLabel: (ElevationReading r) => <String>[
+                        AppFormatters.formatDistance(r.distance, units),
+                        AppFormatters.formatAltitude(r.elevation, units),
+                        if (bars != null)
+                          ?trackSurfaceTip(samples, bars, r.distance)
+                        else if (r.grade != null)
+                          AppFormatters.formatGrade(r.grade!),
+                      ].join(' · '),
+                    ),
                   ),
                 ),
           loading: () => PdlElevationProfile.loading(
@@ -471,6 +537,26 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
             onRetry: () => ref.invalidate(routeDetailProvider(_key)),
           ),
         );
+  }
+
+  /// Le profil avec ses repères, qui suivent la sélection sans reconstruire la
+  /// page.
+  Widget _withMarkers(
+    RouteDetailDto route,
+    Widget Function(List<PdlProfileMarker>, String?, ValueChanged<String>?)
+    builder,
+  ) {
+    final List<PdlProfileMarker> markers = profileMarkersOf(route.waypoints);
+    if (markers.isEmpty) return builder(markers, null, null);
+    return ValueListenableBuilder<WaypointSelection?>(
+      valueListenable: _selection,
+      builder: (BuildContext context, WaypointSelection? selected, _) =>
+          builder(
+            markers,
+            selected?.key,
+            (String key) => _openFromProfile(route, key),
+          ),
+    );
   }
 
   /// Le profil, précédé de « Profil d'altitude provisoire » tant que c'est

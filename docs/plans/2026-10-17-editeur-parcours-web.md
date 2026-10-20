@@ -1304,7 +1304,12 @@ questions ouvertes viennent du §10 de
             désormais le menu sur tout point de contrôle (avant : les seuls importés) et peut gêner
             un glisser visé lentement au doigt. Détail dans
             `LEDGER_DONE.md` (`WEB-100`).
-      - [ ] **C3f. Mobile, consultation** (M, après C3c) — autre client, suivi sous `MOB-84`.
+      - [x] **C3f. Mobile, consultation** (M, 20 octobre 2026, contrat inchangé) — pictogrammes
+            typés colorés en couches natives (hors tracé compris), feuille au toucher, repères sur
+            le profil (bande haute), liste « Points du parcours » qui centre la carte ; fiche
+            parcours, étape, plein écran et sortie. Icônes Material (`PdlIcons.waypoint*`), aucune
+            dépendance. Recette sur appareil restante : `MOB-86`. Détail dans `LEDGER_DONE.md`
+            (`MOB-84`).
       - [ ] **C3g. POI de la carte → point de parcours** (S, optionnel, après C3e) — fond « Plan »,
             zoom ≥ 14, couche `pois` des tuiles VersaTiles (ni cols ni sommets).
       - [ ] **C3h. Extension Karoo** (L) — **seulement si C3a échoue pour Hammerhead** : dessiner

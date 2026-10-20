@@ -130,3 +130,19 @@ class RouteManageKeys {
   /// Le bandeau d'une fiche supprimée.
   final deletedBanner = const _RouteManageKey('deletedBanner');
 }
+
+class _RouteWaypointsKey extends ValueKey<String> {
+  const _RouteWaypointsKey(String value) : super('routeWaypoints_$value');
+}
+
+/// Les points de parcours d'une fiche (ledger `MOB-84`).
+class RouteWaypointsKeys {
+  /// La section « Points du parcours ».
+  final section = const _RouteWaypointsKey('section');
+
+  /// La feuille d'un point.
+  final sheet = const _RouteWaypointsKey('sheet');
+
+  /// Une ligne de la liste, par la clé du point.
+  ValueKey<String> row(String key) => _RouteWaypointsKey('row_$key');
+}

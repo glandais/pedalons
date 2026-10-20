@@ -85,3 +85,6 @@ export 'map/pdl_map_camera.dart';
 export 'map/pdl_map_controller.dart';
 export 'map/pdl_map_hero.dart';
 export 'map/pdl_mass_layer.dart';
+export 'map/pdl_waypoint_mark.dart';
+export 'pdl_waypoint_row.dart';
+export 'elevation/elevation_markers_painter.dart';

@@ -85,7 +85,7 @@ class PdlColors extends ThemeExtension<PdlColors> {
     required this.mapSurfaceUnknown,
     required this.mapStart,
     required this.mapEnd,
-    required this.mapWaypoint,
+    required this.mapWaypointRing,
     required this.mapHillshadeShadow,
     required this.mapHillshadeHighlight,
     required this.mapArrow,
@@ -188,7 +188,10 @@ class PdlColors extends ThemeExtension<PdlColors> {
   final Color mapSurfaceUnknown;
   final Color mapStart;
   final Color mapEnd;
-  final Color mapWaypoint;
+
+  /// L'anneau d'un point de parcours et le contour de son halo : blanc dans
+  /// les deux thèmes, comme au site (ledger `MOB-84`).
+  final Color mapWaypointRing;
 
   /// Les deux teintes de l'ombrage du relief.
   ///
@@ -315,7 +318,7 @@ class PdlColors extends ThemeExtension<PdlColors> {
     mapSurfaceUnknown: Color(0xFF868E96),
     mapStart: Color(0xFF40C057),
     mapEnd: Color(0xFFFA5252),
-    mapWaypoint: Color(0xFFFAB005),
+    mapWaypointRing: Color(0xFFFFFFFF),
     mapHillshadeShadow: Color(0xFF727C83),
     mapHillshadeHighlight: Color(0xFFFFFFE4),
     mapArrow: Color(0xFFFFFFFF),
@@ -383,7 +386,7 @@ class PdlColors extends ThemeExtension<PdlColors> {
     mapSurfaceUnknown: Color(0xFF868E96),
     mapStart: Color(0xFF40C057),
     mapEnd: Color(0xFFFA5252),
-    mapWaypoint: Color(0xFFFAB005),
+    mapWaypointRing: Color(0xFFFFFFFF),
     mapHillshadeShadow: Color(0xFF727C83),
     mapHillshadeHighlight: Color(0xFFFFFFE4),
     mapArrow: Color(0xFFFFFFFF),
@@ -455,7 +458,7 @@ class PdlColors extends ThemeExtension<PdlColors> {
     Color? mapSurfaceUnknown,
     Color? mapStart,
     Color? mapEnd,
-    Color? mapWaypoint,
+    Color? mapWaypointRing,
     Color? mapHillshadeShadow,
     Color? mapHillshadeHighlight,
     Color? mapArrow,
@@ -522,7 +525,7 @@ class PdlColors extends ThemeExtension<PdlColors> {
       mapSurfaceUnknown: mapSurfaceUnknown ?? this.mapSurfaceUnknown,
       mapStart: mapStart ?? this.mapStart,
       mapEnd: mapEnd ?? this.mapEnd,
-      mapWaypoint: mapWaypoint ?? this.mapWaypoint,
+      mapWaypointRing: mapWaypointRing ?? this.mapWaypointRing,
       mapHillshadeShadow: mapHillshadeShadow ?? this.mapHillshadeShadow,
       mapHillshadeHighlight:
           mapHillshadeHighlight ?? this.mapHillshadeHighlight,
@@ -596,7 +599,7 @@ class PdlColors extends ThemeExtension<PdlColors> {
       mapSurfaceUnknown: c(mapSurfaceUnknown, other.mapSurfaceUnknown),
       mapStart: c(mapStart, other.mapStart),
       mapEnd: c(mapEnd, other.mapEnd),
-      mapWaypoint: c(mapWaypoint, other.mapWaypoint),
+      mapWaypointRing: c(mapWaypointRing, other.mapWaypointRing),
       mapHillshadeShadow: c(mapHillshadeShadow, other.mapHillshadeShadow),
       mapHillshadeHighlight: c(
         mapHillshadeHighlight,

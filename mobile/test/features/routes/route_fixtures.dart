@@ -78,3 +78,26 @@ String fixtureGpx({String trackName = 'Col de test'}) =>
     '<trkpt lat="45.0" lon="5.0"><ele>200</ele></trkpt>'
     '<trkpt lat="45.01" lon="5.01"><ele>230</ele></trkpt>'
     '</trkseg></trk></gpx>';
+
+/// Un point de parcours. [distance] nul : hors tracé. [id] nul : un point du
+/// GPX pas encore enregistré (clé de repli `i<rang>`).
+WaypointDto fixtureWaypoint({
+  String? id = 'w1',
+  String type = 'SUPPLY',
+  String name = 'Café du Port',
+  String? description,
+  double? distance = 12300,
+  double lon = 5.0,
+  double lat = 45.0,
+}) => WaypointDto(
+  id: id,
+  geometry: GeoJsonPoint(
+    type: GeoJsonPointTypeType.point,
+    coordinates: <double>[lon, lat],
+  ),
+  name: name,
+  type: type,
+  description: description,
+  distance: distance,
+  origin: 'AUTHOR',
+);

@@ -20,6 +20,9 @@ import 'route_download_actions.dart';
 import 'route_map.dart';
 import 'route_sheet_header.dart';
 import 'route_surface_section.dart';
+import 'route_waypoints_section.dart';
+import 'waypoint_selection.dart';
+import 'waypoint_sheet.dart';
 
 /// La fiche parcours **embarquée** : en-tête, carte 240 px, profil 140 px,
 /// revêtement, trois statistiques, trois exports, cols.
@@ -57,9 +60,13 @@ class _EmbeddedRouteSheetState extends ConsumerState<EmbeddedRouteSheet> {
   RouteColorBy _colorBy = RouteColorBy.grade;
   final TrackSurfaceBarColors _barColors = TrackSurfaceBarColors();
 
+  /// Le point de parcours choisi (ledger `MOB-84`).
+  final WaypointSelectionController _selection = WaypointSelectionController();
+
   @override
   void dispose() {
     _cursor?.dispose();
+    _selection.dispose();
     super.dispose();
   }
 
@@ -126,6 +133,7 @@ class _EmbeddedRouteSheetState extends ConsumerState<EmbeddedRouteSheet> {
                 onMapTapped: cursor.moveTo,
                 allowFullscreen: true,
                 colorBy: colorBy,
+                selection: _selection,
               ),
             ),
           ),
@@ -141,6 +149,17 @@ class _EmbeddedRouteSheetState extends ConsumerState<EmbeddedRouteSheet> {
               colorBy: colorBy,
               onColorByChanged: (RouteColorBy v) =>
                   setState(() => _colorBy = v),
+            ),
+          ],
+          if (route.waypoints.isNotEmpty) ...<Widget>[
+            const SizedBox(height: PdlSpacing.section),
+            RouteWaypointsSection(
+              waypoints: route.waypoints,
+              selection: _selection,
+              // La carte n'est pas interactive, mais une caméra pilotée par le
+              // code fonctionne : `PdlMap` ramène la vignette à l'écran.
+              onSelect: (String key, WaypointDto _) =>
+                  _selection.select(key, move: PdlWaypointMove.center),
             ),
           ],
         ] else
@@ -170,6 +189,32 @@ class _EmbeddedRouteSheetState extends ConsumerState<EmbeddedRouteSheet> {
     );
   }
 
+  Widget _withMarkers(
+    RouteDetailDto route,
+    Widget Function(List<PdlProfileMarker>, String?, ValueChanged<String>?)
+    builder,
+  ) {
+    final List<PdlProfileMarker> markers = profileMarkersOf(route.waypoints);
+    if (markers.isEmpty) return builder(markers, null, null);
+    return ValueListenableBuilder<WaypointSelection?>(
+      valueListenable: _selection,
+      builder: (BuildContext context, WaypointSelection? selected, _) =>
+          builder(markers, selected?.key, (String key) {
+            final WaypointDto? w = waypointByKey(route.waypoints, key);
+            if (w == null) return;
+            _cursor?.moveTo(w.distance);
+            openWaypoint(
+              context,
+              w,
+              _selection,
+              key,
+              units: ref.read(unitSystemProvider),
+              move: PdlWaypointMove.ifHidden,
+            );
+          }),
+    );
+  }
+
   Widget _profile(
     RouteDetailDto route,
     RouteCursorController cursor,
@@ -187,28 +232,38 @@ class _EmbeddedRouteSheetState extends ConsumerState<EmbeddedRouteSheet> {
           // ferait passer pour un terrain.
           data: (ElevationSamples? samples) => samples == null
               ? const SizedBox.shrink()
-              : PdlElevationProfile(
-                  credit: 'routes.elevationCredit'.tr(),
-                  samples: samples,
-                  height: PdlMetrics.elevationLarge,
-                  barColors: bars == null
-                      ? null
-                      : _barColors.of(bars, context.pdl),
-                  cursorDistance: cursor.distance,
-                  axisLabel: (double meters, {required bool isLast}) => isLast
-                      ? AppFormatters.formatDistance(meters, units)
-                      : AppFormatters.formatNumber(
-                          units.longDistance(meters),
-                          fractionDigits: 1,
-                        ),
-                  tipLabel: (ElevationReading r) => <String>[
-                    AppFormatters.formatDistance(r.distance, units),
-                    AppFormatters.formatAltitude(r.elevation, units),
-                    if (bars != null)
-                      ?trackSurfaceTip(samples, bars, r.distance)
-                    else if (r.grade != null)
-                      AppFormatters.formatGrade(r.grade!),
-                  ].join(' · '),
+              : _withMarkers(
+                  route,
+                  (
+                    List<PdlProfileMarker> markers,
+                    String? selectedKey,
+                    ValueChanged<String>? onMarker,
+                  ) => PdlElevationProfile(
+                    markers: markers,
+                    selectedMarkerKey: selectedKey,
+                    onMarkerTapped: onMarker,
+                    credit: 'routes.elevationCredit'.tr(),
+                    samples: samples,
+                    height: PdlMetrics.elevationLarge,
+                    barColors: bars == null
+                        ? null
+                        : _barColors.of(bars, context.pdl),
+                    cursorDistance: cursor.distance,
+                    axisLabel: (double meters, {required bool isLast}) => isLast
+                        ? AppFormatters.formatDistance(meters, units)
+                        : AppFormatters.formatNumber(
+                            units.longDistance(meters),
+                            fractionDigits: 1,
+                          ),
+                    tipLabel: (ElevationReading r) => <String>[
+                      AppFormatters.formatDistance(r.distance, units),
+                      AppFormatters.formatAltitude(r.elevation, units),
+                      if (bars != null)
+                        ?trackSurfaceTip(samples, bars, r.distance)
+                      else if (r.grade != null)
+                        AppFormatters.formatGrade(r.grade!),
+                    ].join(' · '),
+                  ),
                 ),
           loading: () => PdlElevationProfile.loading(
             label: 'routes.profileLoading'.tr(),

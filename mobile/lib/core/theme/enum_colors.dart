@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 
 import '../../api/generated/models/track_surface.dart';
+import '../../api/generated/models/waypoint_type.dart';
 import 'enum_colors.generated.dart';
 import 'pdl_colors.dart';
 
@@ -172,4 +173,22 @@ extension TrackSurfaceStroke on TrackSurface {
       _ => c.mapSurfaceUnknown,
     };
   }
+}
+
+// ── Points de parcours ──────────────────────────────────────────────────────
+
+/// Le disque d'un point de parcours sur la carte et le profil (`MOB-84`).
+///
+/// Comme [TrackSurfaceStroke] : la **teinte claire dans les deux thèmes**
+/// (nuance 6 au site), parce que les aplats de [PdlColors.dark] s'éteignent sur
+/// un fond de carte sombre. La liste et la feuille, elles, prennent
+/// `WaypointTypeTone.tone` (l'aplat du thème et son `onFill`).
+extension WaypointTypeMarker on WaypointType {
+  Color get markerDisc => family.soft(PdlColors.light).fill;
+
+  /// La règle du site (`isLightColor(disque, 0.3)`, la luminance de Mantine) :
+  /// un pictogramme foncé sur jaune, orange, teal et vert, blanc ailleurs.
+  Color get markerGlyph => markerDisc.computeLuminance() > 0.3
+      ? PdlColors.light.neutralOnSoft
+      : const Color(0xFFFFFFFF);
 }

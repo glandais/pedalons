@@ -8,7 +8,9 @@ import 'package:maplibre/maplibre.dart';
 import '../../geo/polyline_index.dart';
 import 'pdl_map_camera.dart';
 import 'pdl_mass_layer.dart';
+import '../../theme/pdl_tokens.dart';
 import 'pdl_route_arrow.dart';
+import 'pdl_waypoint_mark.dart';
 
 /// Un tracé à dessiner, **sans aucun DTO**.
 ///
@@ -396,7 +398,8 @@ class PdlMapController extends ChangeNotifier {
   StyleController? _style;
 
   List<PdlMapTrack> _tracks = const <PdlMapTrack>[];
-  List<PdlMapPoint> _waypoints = const <PdlMapPoint>[];
+  List<PdlMapWaypoint> _waypoints = const <PdlMapWaypoint>[];
+  String? _focusKey;
   PdlMapPoint? _start;
   PdlMapPoint? _end;
   String? _selectedId;
@@ -420,6 +423,10 @@ class PdlMapController extends ChangeNotifier {
   String get _sourceId => '$layerPrefix-src';
   String get _pointsSourceId => '$layerPrefix-points';
   String get _waypointsSourceId => '$layerPrefix-waypoints';
+  String get _waypointFocusSourceId => '$layerPrefix-waypoint-focus';
+  String get _waypointHaloLayerId => '$layerPrefix-waypoints-halo';
+  String get _waypointIconLayerId => '$layerPrefix-waypoints-icon';
+  String get _waypointLabelLayerId => '$layerPrefix-waypoints-label';
   String get _cursorSourceId => '$layerPrefix-cursor';
   String get _hillshadeSourceId => '$layerPrefix-hillshade';
   String get _massSourceId => '$layerPrefix-mass-src';
@@ -486,7 +493,7 @@ class PdlMapController extends ChangeNotifier {
 
   Future<void> setContent({
     required List<PdlMapTrack> tracks,
-    List<PdlMapPoint> waypoints = const <PdlMapPoint>[],
+    List<PdlMapWaypoint> waypoints = const <PdlMapWaypoint>[],
     PdlMapPoint? start,
     PdlMapPoint? end,
   }) async {
@@ -790,7 +797,10 @@ class PdlMapController extends ChangeNotifier {
     await _addHillshadeLayer(style);
 
     await _safe(() => style.removeLayer(_pointsSourceId));
-    await _safe(() => style.removeLayer('$_waypointsSourceId-dot'));
+    // Les couches des points de parcours avant leurs sources (règle iOS).
+    await _safe(() => style.removeLayer(_waypointHaloLayerId));
+    await _safe(() => style.removeLayer(_waypointIconLayerId));
+    await _safe(() => style.removeLayer(_waypointLabelLayerId));
 
     // La masse juste au-dessus de l'ombrage, et sous tout le reste : c'est un
     // fond, et le tracé sélectionné comme les marqueurs doivent rester lisibles
@@ -823,6 +833,7 @@ class PdlMapController extends ChangeNotifier {
     }
 
     await _addPointLayers(style);
+    await _addWaypointLayers(style);
     await _addCursorLayer(style);
   }
 
@@ -1112,47 +1123,258 @@ class PdlMapController extends ChangeNotifier {
         ),
       );
     }
+  }
 
+  // ── Points de parcours (ledger MOB-84) ────────────────────────────────
+
+  /// Pose les points de parcours : un halo (le point allumé), les pictogrammes,
+  /// puis les noms.
+  ///
+  /// Les **images** (un pictogramme par type, un nom par texte) sont reposées à
+  /// chaque pose, comme le chevron : un changement de fond de carte remplace le
+  /// style, et ses images avec. Leurs PNG, eux, sont mémorisés. Un échec
+  /// n'emporte pas le reste de la pile.
+  Future<void> _addWaypointLayers(StyleController style) async {
     await _safe(() => style.removeSource(_waypointsSourceId));
-    if (_waypoints.isNotEmpty) {
+    await _safe(() => style.removeSource(_waypointFocusSourceId));
+    if (_waypoints.isEmpty) return;
+    try {
+      final Set<String> placed = <String>{};
+      for (final PdlMapWaypoint w in _waypoints) {
+        if (!placed.add(pdlWaypointIconImageId(w.iconId))) continue;
+        final Uint8List? png = await _iconPng(w);
+        if (png != null) {
+          await style.addImage(pdlWaypointIconImageId(w.iconId), png);
+        }
+      }
+      for (final PdlMapWaypoint w in _waypoints) {
+        final String? text = w.label;
+        if (text == null || text.isEmpty) continue;
+        if (!placed.add(pdlWaypointLabelImageId(text))) continue;
+        final Uint8List? png = await _labelPng(text);
+        if (png != null) {
+          await style.addImage(pdlWaypointLabelImageId(text), png);
+        }
+      }
       await style.addSource(
-        GeoJsonSource(
-          id: _waypointsSourceId,
-          data: jsonEncode(<String, Object?>{
-            'type': 'FeatureCollection',
-            'features': <Map<String, Object?>>[
-              for (final PdlMapPoint w in _waypoints)
-                <String, Object?>{
-                  'type': 'Feature',
-                  'properties': <String, Object?>{'name': w.label ?? ''},
-                  'geometry': <String, Object?>{
-                    'type': 'Point',
-                    'coordinates': <double>[w.lon, w.lat],
-                  },
-                },
-            ],
-          }),
-        ),
+        GeoJsonSource(id: _waypointsSourceId, data: _waypointsGeoJson()),
+      );
+      // Posée même vide, comme le réticule : le halo ne fait ensuite que
+      // pousser sa source.
+      await style.addSource(
+        GeoJsonSource(id: _waypointFocusSourceId, data: _focusGeoJson()),
       );
       await style.addLayer(
         CircleStyleLayer(
-          id: '$_waypointsSourceId-dot',
-          sourceId: _waypointsSourceId,
+          id: _waypointHaloLayerId,
+          sourceId: _waypointFocusSourceId,
           paint: <String, Object>{
-            'circle-radius': 6,
-            'circle-color': _waypointColor.toHexString(),
+            'circle-radius': 17,
+            'circle-color': _cursorColor.toHexString(),
+            'circle-opacity': 0.35,
             'circle-stroke-width': 2,
-            'circle-stroke-color': _pointStroke.toHexString(),
+            'circle-stroke-color': _waypointRingColor.toHexString(),
           },
         ),
       );
+      await style.addLayer(
+        SymbolStyleLayer(
+          id: _waypointIconLayerId,
+          sourceId: _waypointsSourceId,
+          layout: pdlWaypointIconLayout,
+        ),
+      );
+      await style.addLayer(
+        SymbolStyleLayer(
+          id: _waypointLabelLayerId,
+          sourceId: _waypointsSourceId,
+          layout: pdlWaypointLabelLayout,
+          minZoom: kPdlWaypointLabelMinZoom,
+          filter: <Object>[
+            '!=',
+            <Object>['get', 'label'],
+            '',
+          ],
+        ),
+      );
+    } catch (error) {
+      debugPrint('Waypoints not drawn: $error');
     }
+  }
+
+  final Map<String, Future<Uint8List?>> _waypointPngs =
+      <String, Future<Uint8List?>>{};
+
+  Future<Uint8List?> _iconPng(PdlMapWaypoint w) => _waypointPngs.putIfAbsent(
+    'icon|${w.iconId}|${w.mark.hashCode}|${_waypointRingColor.toARGB32()}',
+    () => pdlWaypointIconPng(w.mark, ring: _waypointRingColor),
+  );
+
+  Future<Uint8List?> _labelPng(String text) => _waypointPngs.putIfAbsent(
+    'label|$text|${_labelBackground.toARGB32()}|${_labelForeground.toARGB32()}'
+    '|${_labelStyle.hashCode}',
+    () => pdlWaypointLabelPng(
+      text,
+      style: _labelStyle,
+      background: _labelBackground,
+      foreground: _labelForeground,
+    ),
+  );
+
+  /// Une entité par point. Aucun filtre sur la valeur des coordonnées : un
+  /// point à `[0, 45]` ou `[3, 0]` est un point (ledger `WEB-108`).
+  String _waypointsGeoJson() => jsonEncode(<String, Object?>{
+    'type': 'FeatureCollection',
+    'features': <Map<String, Object?>>[
+      for (final PdlMapWaypoint w in _waypoints)
+        <String, Object?>{
+          'type': 'Feature',
+          'properties': <String, Object?>{
+            'key': w.key,
+            'icon': pdlWaypointIconImageId(w.iconId),
+            'label': (w.label == null || w.label!.isEmpty)
+                ? ''
+                : pdlWaypointLabelImageId(w.label!),
+            'priority': w.priority,
+          },
+          'geometry': <String, Object?>{
+            'type': 'Point',
+            'coordinates': <double>[w.lon, w.lat],
+          },
+        },
+    ],
+  });
+
+  PdlMapWaypoint? _waypointByKey(String? key) {
+    if (key == null) return null;
+    for (final PdlMapWaypoint w in _waypoints) {
+      if (w.key == key) return w;
+    }
+    return null;
+  }
+
+  String _focusGeoJson() {
+    final PdlMapWaypoint? w = _waypointByKey(_focusKey);
+    return jsonEncode(<String, Object?>{
+      'type': 'FeatureCollection',
+      'features': <Map<String, Object?>>[
+        if (w != null)
+          <String, Object?>{
+            'type': 'Feature',
+            'properties': <String, Object?>{},
+            'geometry': <String, Object?>{
+              'type': 'Point',
+              'coordinates': <double>[w.lon, w.lat],
+            },
+          },
+      ],
+    });
+  }
+
+  /// Allume un point (halo), ou éteint avec `null`. Un `updateGeoJsonSource`,
+  /// sans repose complète.
+  Future<void> setWaypointFocus(String? key) async {
+    if (_focusKey == key) return;
+    _focusKey = key;
+    await _applying;
+    final StyleController? style = _style;
+    if (style == null || _waypoints.isEmpty) return;
+    await _safe(
+      () => style.updateGeoJsonSource(
+        id: _waypointFocusSourceId,
+        data: _focusGeoJson(),
+      ),
+    );
+  }
+
+  /// La clé du point sous [screenPoint], ou `null`. En cas de recouvrement, le
+  /// plus prioritaire (celui qu'on voit au-dessus).
+  String? waypointKeyAt(
+    Offset screenPoint, {
+    double extent = PdlMetrics.tapTarget,
+  }) {
+    final MapController? m = _map;
+    if (m == null || _waypoints.isEmpty) return null;
+    try {
+      final List<RenderedFeature> hits = m.featuresInRect(
+        Rect.fromCenter(center: screenPoint, width: extent, height: extent),
+        layerIds: <String>[_waypointIconLayerId],
+      );
+      String? best;
+      int bestPriority = -1;
+      for (final RenderedFeature f in hits) {
+        final Object? key = f.properties['key'];
+        if (key is! String) continue;
+        // Android convertit les types : un entier peut revenir en double.
+        final int priority = (f.properties['priority'] as num?)?.toInt() ?? 0;
+        if (priority > bestPriority) {
+          best = key;
+          bestPriority = priority;
+        }
+      }
+      return best;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Amène la caméra sur un point. Avec [onlyIfHidden], rien ne bouge tant que
+  /// le point est dans la région visible.
+  Future<void> revealWaypoint(
+    String key, {
+    required bool onlyIfHidden,
+    EdgeInsets padding = EdgeInsets.zero,
+    bool animate = true,
+  }) async {
+    final MapController? m = _map;
+    final PdlMapWaypoint? w = _waypointByKey(key);
+    if (m == null || w == null) return;
+    if (onlyIfHidden) {
+      final PdlMapBox? visible = visibleBox;
+      if (visible != null &&
+          !visible.isPoint &&
+          visible.contains(
+            PdlMapBox(
+              minLon: w.lon,
+              minLat: w.lat,
+              maxLon: w.lon,
+              maxLat: w.lat,
+            ),
+            slack: 0,
+          )) {
+        return;
+      }
+    }
+    try {
+      final double zoom = math.max(m.getCamera().zoom, 13);
+      final Geographic center = Geographic(lon: w.lon, lat: w.lat);
+      if (animate) {
+        await m.animateCamera(
+          center: center,
+          zoom: zoom,
+          padding: padding,
+          nativeDuration: PdlMotion.mapFocus,
+        );
+      } else {
+        await m.moveCamera(center: center, zoom: zoom, padding: padding);
+      }
+    } catch (error) {
+      debugPrint('Waypoint not revealed: $error');
+    }
+  }
+
+  /// Repose toute la pile avec les couleurs courantes (changement de thème).
+  Future<void> refreshMarkers() async {
+    if (_style != null) await _applyAll();
   }
 
   /// Couleurs des marqueurs, injectées par [PdlMap] depuis `PdlColors`.
   Color _startColor = const Color(0xFF40C057);
   Color _endColor = const Color(0xFFFA5252);
-  Color _waypointColor = const Color(0xFFFAB005);
+  Color _waypointRingColor = const Color(0xFFFFFFFF);
+  Color _labelBackground = const Color(0xFFFFFFFF);
+  Color _labelForeground = const Color(0xFF212529);
+  TextStyle _labelStyle = const TextStyle(fontSize: 12);
   Color _pointStroke = const Color(0xFFFFFFFF);
   Color _cursorColor = const Color(0xFF4C6EF5);
   Color _arrowColor = const Color(0xFFFFFFFF);
@@ -1163,11 +1385,14 @@ class PdlMapController extends ChangeNotifier {
   /// `core/pdl` interdit les littéraux de couleur : les valeurs par défaut
   /// ci-dessus ne sont qu'un filet avant le premier `build`, et [PdlMap] les
   /// remplace systématiquement par `context.pdl.mapStart` / `mapEnd` /
-  /// `mapWaypoint` / `surface` / `mapArrow` / `mapArrowRim`.
+  /// `mapWaypointRing` / `surface` / `mapArrow` / `mapArrowRim`.
   void setMarkerColors({
     required Color start,
     required Color end,
-    required Color waypoint,
+    required Color waypointRing,
+    required Color labelBackground,
+    required Color labelText,
+    required TextStyle labelStyle,
     required Color stroke,
     Color? cursor,
     Color? arrow,
@@ -1178,7 +1403,10 @@ class PdlMapController extends ChangeNotifier {
     if (arrowRim != null) _arrowRimColor = arrowRim;
     _startColor = start;
     _endColor = end;
-    _waypointColor = waypoint;
+    _waypointRingColor = waypointRing;
+    _labelBackground = labelBackground;
+    _labelForeground = labelText;
+    _labelStyle = labelStyle;
     _pointStroke = stroke;
   }
 

@@ -5,13 +5,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../api/generated/export.dart';
 import '../../../../core/config/config_provider.dart';
 import '../../../../core/config/map_style_options.dart';
+import '../../../../core/pdl/map/pdl_waypoint_mark.dart';
 import '../../../../core/pdl/map/pdl_map.dart';
 import '../../../../core/pdl/map/pdl_map_controller.dart';
 import '../../../../core/pdl/map/pdl_map_hero.dart';
 import '../../../../core/theme/pdl_colors.dart';
+import '../../../../core/preferences/user_preferences_provider.dart';
 import '../../domain/track_slope_colors.dart';
 import '../../domain/track_surfaces.dart';
 import 'route_cursor_controller.dart';
+import 'waypoint_selection.dart';
+import 'waypoint_sheet.dart';
 
 /// L'adaptateur entre `RouteDetailDto` et [PdlMap].
 ///
@@ -29,6 +33,7 @@ class RouteMap extends ConsumerStatefulWidget {
     this.allowFullscreen = false,
     this.fullscreen = false,
     this.colorBy = RouteColorBy.grade,
+    this.selection,
   });
 
   final RouteDetailDto route;
@@ -60,6 +65,10 @@ class RouteMap extends ConsumerStatefulWidget {
   /// Ce qui colore le tracé : la pente, ou le revêtement quand il est connu
   /// (`MOB-81`) — la pente sinon.
   final RouteColorBy colorBy;
+
+  /// Le point de parcours choisi, partagé avec le profil et la liste (ledger
+  /// `MOB-84`). `null` : les points s'affichent, sans interaction.
+  final WaypointSelectionController? selection;
 
   @override
   ConsumerState<RouteMap> createState() => _RouteMapState();
@@ -163,6 +172,7 @@ class _RouteMapState extends ConsumerState<RouteMap> {
               onMapTapped: widget.onMapTapped,
               fullscreen: true,
               colorBy: widget.colorBy,
+              selection: widget.selection,
             )
           : null,
       styles: servedMapStyleOptions(ref),
@@ -172,36 +182,72 @@ class _RouteMapState extends ConsumerState<RouteMap> {
       selectedStyleId: resolved.style.id,
       onStyleSelected: (String id) =>
           ref.read(mapStyleIdProvider.notifier).select(id),
-      mapBuilder: (BuildContext context) => PdlMap(
-        hillshade: servedHillshade(context, ref),
-        controller: _controller,
-        interactive: !widget.allowFullscreen || widget.fullscreen,
-        styleUrl: resolved.url,
-        credit: servedMapCredit(resolved),
-        onMapTapped: widget.onMapTapped == null
-            ? null
-            : (double lon, double lat) =>
-                  widget.onMapTapped!(widget.cursor?.distanceNear(lon, lat)),
-        tracks: tracks,
-        start: _point(route.start) ?? route.firstPoint,
-        end: _point(route.end) ?? route.lastPoint,
-        waypoints: <PdlMapPoint>[
-          for (final WaypointDto w in route.waypoints)
-            if (w.geometry.coordinates.length >= 2)
-              PdlMapPoint(
-                lon: w.geometry.coordinates[0],
-                lat: w.geometry.coordinates[1],
-                label: w.name,
-              ),
-        ],
-        kmMarkers: computePdlKmMarkers(_lines, totalMeters: route.distance),
-        initialCenter: defaultCenter == null
-            ? null
-            : PdlMapPoint(lon: defaultCenter.lon, lat: defaultCenter.lat),
-        initialZoom: defaultCenter?.zoom ?? 5,
-        fitBox: PdlMapBox.ofTracks(tracks),
-        fitPadding: widget.fitPadding,
+      mapBuilder: (BuildContext context) => _selectionBuilder(
+        (WaypointSelection? focus) => _map(
+          context,
+          resolved: resolved,
+          tracks: tracks,
+          defaultCenter: defaultCenter,
+          focus: focus?.focus,
+        ),
       ),
+    );
+  }
+
+  /// Écoute la sélection : seule la carte se reconstruit quand elle change.
+  Widget _selectionBuilder(Widget Function(WaypointSelection?) builder) {
+    final WaypointSelectionController? selection = widget.selection;
+    if (selection == null) return builder(null);
+    return ValueListenableBuilder<WaypointSelection?>(
+      valueListenable: selection,
+      builder: (BuildContext context, WaypointSelection? value, _) =>
+          builder(value),
+    );
+  }
+
+  void _openWaypoint(String key) {
+    final WaypointDto? w = waypointByKey(route.waypoints, key);
+    final WaypointSelectionController? selection = widget.selection;
+    if (w == null || selection == null) return;
+    openWaypoint(
+      context,
+      w,
+      selection,
+      key,
+      units: ref.read(unitSystemProvider),
+    );
+  }
+
+  Widget _map(
+    BuildContext context, {
+    required ResolvedMapStyle resolved,
+    required List<PdlMapTrack> tracks,
+    required MapCenterDto? defaultCenter,
+    required PdlWaypointFocus? focus,
+  }) {
+    return PdlMap(
+      hillshade: servedHillshade(context, ref),
+      controller: _controller,
+      interactive: !widget.allowFullscreen || widget.fullscreen,
+      styleUrl: resolved.url,
+      credit: servedMapCredit(resolved),
+      onMapTapped: widget.onMapTapped == null
+          ? null
+          : (double lon, double lat) =>
+                widget.onMapTapped!(widget.cursor?.distanceNear(lon, lat)),
+      tracks: tracks,
+      start: _point(route.start) ?? route.firstPoint,
+      end: _point(route.end) ?? route.lastPoint,
+      waypoints: mapWaypointsOf(route.waypoints),
+      focusedWaypoint: focus,
+      onWaypointTapped: widget.selection == null ? null : _openWaypoint,
+      kmMarkers: computePdlKmMarkers(_lines, totalMeters: route.distance),
+      initialCenter: defaultCenter == null
+          ? null
+          : PdlMapPoint(lon: defaultCenter.lon, lat: defaultCenter.lat),
+      initialZoom: defaultCenter?.zoom ?? 5,
+      fitBox: PdlMapBox.ofTracks(tracks),
+      fitPadding: widget.fitPadding,
     );
   }
 

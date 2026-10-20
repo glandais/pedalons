@@ -7,6 +7,7 @@ import '../../theme/pdl_tokens.dart';
 import '../../theme/pdl_typography.dart';
 import 'pdl_map_attribution.dart';
 import 'pdl_map_controller.dart';
+import 'pdl_waypoint_mark.dart';
 
 /// La carte Pédalons.
 ///
@@ -31,7 +32,9 @@ class PdlMap extends StatefulWidget {
     required this.credit,
     this.controller,
     this.tracks = const <PdlMapTrack>[],
-    this.waypoints = const <PdlMapPoint>[],
+    this.waypoints = const <PdlMapWaypoint>[],
+    this.focusedWaypoint,
+    this.onWaypointTapped,
     this.kmMarkers = const <PdlKmMarker>[],
     this.start,
     this.end,
@@ -74,7 +77,19 @@ class PdlMap extends StatefulWidget {
   final PdlMapController? controller;
 
   final List<PdlMapTrack> tracks;
-  final List<PdlMapPoint> waypoints;
+
+  /// Les points de parcours, dessinés en couche native (pictogramme typé, nom
+  /// à partir du zoom 12). Hors tracé compris : un point n'a pas besoin d'être
+  /// sur le tracé pour exister.
+  final List<PdlMapWaypoint> waypoints;
+
+  /// Le point allumé (halo) et, selon [PdlWaypointFocus.move], ce que la
+  /// caméra en fait. Un nouveau [PdlWaypointFocus.serial] rejoue le geste.
+  final PdlWaypointFocus? focusedWaypoint;
+
+  /// Toucher d'un point : la clé est rendue et le toucher **s'arrête là** — ni
+  /// sélection de tracé, ni masse, ni [onMapTapped].
+  final ValueChanged<String>? onWaypointTapped;
 
   /// Bornes kilométriques déjà calculées — voir [computePdlKmMarkers].
   final List<PdlKmMarker> kmMarkers;
@@ -184,6 +199,38 @@ class _PdlMapState extends State<PdlMap> {
     super.dispose();
   }
 
+  Brightness? _injectedBrightness;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Les couleurs de la carte (anneau, étiquettes) ne sont lues qu'au
+    // chargement du style : un changement de thème sur la même URL de fond
+    // garderait les anciennes.
+    final Brightness brightness = Theme.of(context).brightness;
+    if (_injectedBrightness != null && _injectedBrightness != brightness) {
+      _injectColors();
+      _controller.refreshMarkers();
+    }
+    _injectedBrightness = brightness;
+  }
+
+  void _injectColors() {
+    final PdlColors c = context.pdl;
+    _controller.setMarkerColors(
+      start: c.mapStart,
+      end: c.mapEnd,
+      waypointRing: c.mapWaypointRing,
+      labelBackground: c.overlaySolid,
+      labelText: c.text,
+      labelStyle: context.pdlText.xs.copyWith(fontWeight: FontWeight.w500),
+      stroke: c.surface,
+      cursor: c.primary,
+      arrow: c.mapArrow,
+      arrowRim: c.mapArrowRim,
+    );
+  }
+
   @override
   void didUpdateWidget(PdlMap oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -217,6 +264,36 @@ class _PdlMapState extends State<PdlMap> {
     // viderait le cache de tuiles à chaque image.
     _pushMassTiles();
     _fit();
+    // Dans ce même passage synchrone, après `_fit` : le `moveCamera` du cadrage
+    // doit partir **avant** le recentrage sur le point.
+    if (widget.focusedWaypoint != oldWidget.focusedWaypoint) {
+      _applyFocus(widget.focusedWaypoint);
+    }
+  }
+
+  /// Allume le point, puis déplace la caméra si le choix vient d'ailleurs que de
+  /// la carte.
+  void _applyFocus(PdlWaypointFocus? focus) {
+    _controller.setWaypointFocus(focus?.key);
+    if (focus == null || focus.move == PdlWaypointMove.none) return;
+    final bool animate = !MediaQuery.disableAnimationsOf(context);
+    _controller.revealWaypoint(
+      focus.key,
+      onlyIfHidden: focus.move == PdlWaypointMove.ifHidden,
+      padding: _padding(),
+      animate: animate,
+    );
+    if (focus.move == PdlWaypointMove.center) {
+      // Une vignette dans une page qui défile (étape, sortie) : la ramener à
+      // l'écran. Sans `Scrollable` (fiche parcours), rien.
+      if (Scrollable.maybeOf(context) != null) {
+        Scrollable.ensureVisible(
+          context,
+          alignment: 0.5,
+          duration: animate ? PdlMotion.mapFocus : Duration.zero,
+        );
+      }
+    }
   }
 
   void _pushMassTiles() {
@@ -257,7 +334,6 @@ class _PdlMapState extends State<PdlMap> {
     final PdlMapBox? points = PdlMapBox.ofPoints(<PdlMapPoint>[
       ?widget.start,
       ?widget.end,
-      ...widget.waypoints,
     ]);
     final PdlMapBox? tracks = _tracksBox;
     if (tracks == null) return points;
@@ -342,6 +418,14 @@ class _PdlMapState extends State<PdlMap> {
       case MapEventStyleLoaded():
         _onStyleLoaded(event.style);
       case MapEventClick():
+        // Un point de parcours touché gagne le toucher.
+        if (widget.onWaypointTapped != null) {
+          final String? waypoint = _controller.waypointKeyAt(event.screenPoint);
+          if (waypoint != null) {
+            widget.onWaypointTapped!(waypoint);
+            return;
+          }
+        }
         widget.onMapTapped?.call(event.point.lon, event.point.lat);
         final String? id = _controller.trackIdAt(event.screenPoint);
         if (id != null || _controller.selectedTrackId != null) {
@@ -392,18 +476,8 @@ class _PdlMapState extends State<PdlMap> {
   }
 
   Future<void> _onStyleLoaded(StyleController style) async {
-    final PdlColors c = context.pdl;
-    _controller
-      ..setMarkerColors(
-        start: c.mapStart,
-        end: c.mapEnd,
-        waypoint: c.mapWaypoint,
-        stroke: c.surface,
-        cursor: c.primary,
-        arrow: c.mapArrow,
-        arrowRim: c.mapArrowRim,
-      )
-      ..select(widget.selectedTrackId);
+    _injectColors();
+    _controller.select(widget.selectedTrackId);
     // Avant `attachStyle` : le contrôleur repose *toutes* les couches à
     // l'attache, et l'ombrage comme la masse doivent être connus à ce
     // moment-là pour sortir sous les tracés plutôt qu'au-dessus.
@@ -418,6 +492,10 @@ class _PdlMapState extends State<PdlMap> {
     );
     if (!mounted) return;
     await _controller.attachStyle(style);
+    if (!mounted) return;
+    // Un changement de fond repose les couches : le halo repart du point voulu.
+    final PdlWaypointFocus? focus = widget.focusedWaypoint;
+    if (focus != null) await _controller.setWaypointFocus(focus.key);
     if (!mounted) return;
     // **Le premier cadrage part d'ici** : c'est le premier moment où la vue
     // native a une taille et un style. Plus de `Future.delayed`. Les suivants
@@ -458,26 +536,15 @@ class _PdlMapState extends State<PdlMap> {
       onMapCreated: _controller.attachMap,
       onEvent: _onEvent,
       children: <Widget>[
-        if (widget.kmMarkers.isNotEmpty || widget.waypoints.isNotEmpty)
+        if (widget.kmMarkers.isNotEmpty)
           WidgetLayer(
             markers: <Marker>[
-              // Les bornes kilométriques d'abord, les points de passage
-              // ensuite : c'est l'ordre de la liste qui arbitre le
-              // recouvrement, donc **les bornes cèdent le pas aux points de
-              // passage nommés**, comme le veut le §1.3.2.
               for (final PdlKmMarker m in widget.kmMarkers)
                 Marker(
                   point: Geographic(lon: m.lon, lat: m.lat),
                   size: const Size(30, 30),
                   child: _KmBadge(label: m.label),
                 ),
-              for (final PdlMapPoint w in widget.waypoints)
-                if (w.label != null && w.label!.isNotEmpty)
-                  Marker(
-                    point: Geographic(lon: w.lon, lat: w.lat),
-                    size: const Size(160, 26),
-                    child: _WaypointLabel(label: w.label!),
-                  ),
             ],
           ),
         ...widget.overlays,
@@ -509,51 +576,6 @@ class _KmBadge extends StatelessWidget {
           label,
           textAlign: TextAlign.center,
           style: context.pdlText.mono.copyWith(color: c.text),
-        ),
-      ),
-    );
-  }
-}
-
-/// Étiquette d'un point de passage : pastille ambre plus le nom, sur une
-/// pilule opaque.
-class _WaypointLabel extends StatelessWidget {
-  const _WaypointLabel({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final PdlColors c = context.pdl;
-    return Center(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-        decoration: BoxDecoration(
-          color: c.overlaySolid,
-          borderRadius: PdlRadii.pillAll,
-          border: Border.all(color: c.borderSubtle),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                color: c.mapWaypoint,
-                shape: BoxShape.circle,
-              ),
-            ),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: context.pdlText.xs.copyWith(color: c.text),
-              ),
-            ),
-          ],
         ),
       ),
     );

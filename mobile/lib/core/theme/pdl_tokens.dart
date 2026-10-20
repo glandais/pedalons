@@ -139,6 +139,9 @@ abstract final class PdlMotion {
   static const Duration stateChange = Duration(milliseconds: 180);
   static const Curve stateChangeCurve = Curves.easeOut;
 
+  /// Recentrage de la caméra sur un point de parcours (ledger `MOB-84`).
+  static const Duration mapFocus = Duration(milliseconds: 600);
+
   /// Flou des barres épinglées.
   static const double blurToolbar = 12;
 

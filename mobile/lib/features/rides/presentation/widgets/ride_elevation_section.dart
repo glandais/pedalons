@@ -12,6 +12,9 @@ import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../routes/domain/track_surfaces.dart';
 import '../../../routes/presentation/widgets/route_surface_section.dart';
+import '../../../routes/presentation/widgets/route_waypoints_section.dart';
+import '../../../routes/presentation/widgets/waypoint_selection.dart';
+import '../../../routes/presentation/widgets/waypoint_sheet.dart';
 import '../../providers/ride_detail_provider.dart';
 import '../../providers/ride_group_selection_provider.dart';
 
@@ -63,9 +66,18 @@ class _RideElevationSectionState extends ConsumerState<RideElevationSection> {
       rideSlug: widget.rideSlug,
       routeSlug: widget.routeSlug,
     );
-    final List<TrackDto> tracks =
-        ref.watch(rideRouteGeometryProvider(routeRef)).value?.tracks ??
-        const <TrackDto>[];
+    final RouteDetailDto? route = ref
+        .watch(rideRouteGeometryProvider(routeRef))
+        .value;
+    final List<TrackDto> tracks = route?.tracks ?? const <TrackDto>[];
+    final List<WaypointDto> waypoints =
+        route?.waypoints ?? const <WaypointDto>[];
+    final WaypointSelectionController selection = ref.watch(
+      rideWaypointSelectionProvider(
+        RideKey(teamSlug: widget.teamSlug, rideSlug: widget.rideSlug),
+      ),
+    );
+    final List<PdlProfileMarker> markers = profileMarkersOf(waypoints);
     final RouteColorBy colorBy = hasTrackSurfaces(tracks)
         ? _colorBy
         : RouteColorBy.grade;
@@ -101,28 +113,56 @@ class _RideElevationSectionState extends ConsumerState<RideElevationSection> {
           // ferait passer pour un terrain.
           data: (ElevationSamples? data) => data == null
               ? const SizedBox.shrink()
-              : PdlElevationProfile(
-                  credit: 'routes.elevationCredit'.tr(),
-                  samples: data,
-                  height: PdlMetrics.elevationMedium,
-                  barColors: bars == null
-                      ? null
-                      : _barColors.of(bars, context.pdl),
-                  // Seule la dernière graduation porte l'unité (§1.3.1).
-                  axisLabel: (double meters, {required bool isLast}) => isLast
-                      ? AppFormatters.formatDistance(meters, units)
-                      : AppFormatters.formatNumber(
-                          units.longDistance(meters),
-                          fractionDigits: 1,
-                        ),
-                  tipLabel: (ElevationReading r) => <String>[
-                    AppFormatters.formatDistance(r.distance, units),
-                    AppFormatters.formatAltitude(r.elevation, units),
-                    if (bars != null)
-                      ?trackSurfaceTip(data, bars, r.distance)
-                    else if (r.grade != null)
-                      AppFormatters.formatGrade(r.grade!),
-                  ].join(' · '),
+              : ValueListenableBuilder<WaypointSelection?>(
+                  valueListenable: selection,
+                  builder:
+                      (
+                        BuildContext context,
+                        WaypointSelection? picked,
+                        _,
+                      ) => PdlElevationProfile(
+                        markers: markers,
+                        selectedMarkerKey: picked?.key,
+                        onMarkerTapped: markers.isEmpty
+                            ? null
+                            : (String key) {
+                                final WaypointDto? w = waypointByKey(
+                                  waypoints,
+                                  key,
+                                );
+                                if (w == null) return;
+                                openWaypoint(
+                                  context,
+                                  w,
+                                  selection,
+                                  key,
+                                  units: units,
+                                  move: PdlWaypointMove.ifHidden,
+                                );
+                              },
+                        credit: 'routes.elevationCredit'.tr(),
+                        samples: data,
+                        height: PdlMetrics.elevationMedium,
+                        barColors: bars == null
+                            ? null
+                            : _barColors.of(bars, context.pdl),
+                        // Seule la dernière graduation porte l'unité (§1.3.1).
+                        axisLabel: (double meters, {required bool isLast}) =>
+                            isLast
+                            ? AppFormatters.formatDistance(meters, units)
+                            : AppFormatters.formatNumber(
+                                units.longDistance(meters),
+                                fractionDigits: 1,
+                              ),
+                        tipLabel: (ElevationReading r) => <String>[
+                          AppFormatters.formatDistance(r.distance, units),
+                          AppFormatters.formatAltitude(r.elevation, units),
+                          if (bars != null)
+                            ?trackSurfaceTip(data, bars, r.distance)
+                          else if (r.grade != null)
+                            AppFormatters.formatGrade(r.grade!),
+                        ].join(' · '),
+                      ),
                 ),
           loading: () => PdlElevationProfile.loading(
             label: 'routes.profileLoading'.tr(),
@@ -147,6 +187,15 @@ class _RideElevationSectionState extends ConsumerState<RideElevationSection> {
             tracks: tracks,
             colorBy: colorBy,
             onColorByChanged: (RouteColorBy v) => setState(() => _colorBy = v),
+          ),
+        ],
+        if (waypoints.isNotEmpty) ...<Widget>[
+          const SizedBox(height: PdlSpacing.section),
+          RouteWaypointsSection(
+            waypoints: waypoints,
+            selection: selection,
+            onSelect: (String key, WaypointDto _) =>
+                selection.select(key, move: PdlWaypointMove.center),
           ),
         ],
       ],

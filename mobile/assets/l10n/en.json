@@ -1214,6 +1214,32 @@
     "cursorHint": "The crosshair is synced both ways with the marker on the map.",
     "downloading": "Downloading...",
     "openFullSheet": "View full route",
+    "waypoints": {
+      "title": "Route points",
+      "fromStart": "{distance} from the start",
+      "offTrack": "Off the route",
+      "showMore": {
+        "one": "Show one more point",
+        "other": "Show {} more points"
+      },
+      "showLess": "Show less",
+      "rowLabel": "{type}, {name}, {where}",
+      "rowLabelUnnamed": "{type}, {where}",
+      "type": {
+        "REGROUP": "Regroup",
+        "SUPPLY": "Food stop",
+        "WATER": "Water",
+        "CAFE": "Café break",
+        "TOILETS": "Toilets",
+        "DANGER": "Danger",
+        "SUMMIT": "Pass, summit",
+        "VIEWPOINT": "Viewpoint",
+        "BIKE_SHOP": "Bike shop",
+        "REAL_START": "Actual start",
+        "SPLIT": "Group split",
+        "INFO": "Information"
+      }
+    },
     "view": {
       "list": "List",
       "map": "Map"

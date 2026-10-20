@@ -55,6 +55,7 @@ class Keys {
   final calendar = CalendarKeys();
   final routes = RoutesKeys();
   final routeDetail = RouteDetailKeys();
+  final routeWaypoints = RouteWaypointsKeys();
   final routeEditor = RouteEditorKeys();
   final routeManage = RouteManageKeys();
   final feed = FeedKeys();

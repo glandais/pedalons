@@ -45,12 +45,17 @@ void main() {
 
   setUpAll(loadTestTranslations);
 
-  Future<void> pump(WidgetTester tester, TrackDto track) async {
+  Future<void> pump(
+    WidgetTester tester,
+    TrackDto track, {
+    List<WaypointDto> waypoints = const <WaypointDto>[],
+  }) async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final RouteDetailDto route = fixtureRouteDetail().copyWith(
       distance: 1000,
       tracks: <TrackDto>[track],
+      waypoints: waypoints,
     );
     await tester.pumpWidget(
       ProviderScope(
@@ -114,5 +119,33 @@ void main() {
     expect(find.byKey(keys.routeDetail.surfaceSection), findsNothing);
     expect(find.byKey(keys.routeDetail.surfacePending), findsNothing);
     expect(find.byType(PdlElevationProfile), findsOneWidget);
+  });
+
+  testWidgets('les points de parcours : la section et les repères du profil', (
+    WidgetTester tester,
+  ) async {
+    await pump(
+      tester,
+      _track(),
+      waypoints: <WaypointDto>[
+        fixtureWaypoint(id: 'a', distance: 200),
+        fixtureWaypoint(id: 'b', distance: 800),
+        fixtureWaypoint(id: 'hors', distance: null),
+      ],
+    );
+
+    expect(find.byKey(keys.routeWaypoints.section), findsOneWidget);
+    expect(find.byType(PdlWaypointRow), findsNWidgets(3));
+    // Les points hors tracé ne figurent jamais sur le profil.
+    expect(profile(tester).markers, hasLength(2));
+  });
+
+  testWidgets('sans point de parcours, ni section ni repère', (
+    WidgetTester tester,
+  ) async {
+    await pump(tester, _track());
+
+    expect(find.byKey(keys.routeWaypoints.section), findsNothing);
+    expect(profile(tester).markers, isEmpty);
   });
 }

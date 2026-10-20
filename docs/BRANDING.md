@@ -297,7 +297,8 @@ Ce que la table ne dit pas d'elle-même :
 - **`WaypointType`** (points de parcours d'auteur, `WEB-100` C3d) : un pictogramme Tabler (§6) sur
   un disque de la famille du type. Sur la carte et le profil, nuance 6 dans les deux thèmes (comme
   `TrackSurface` : les aplats sombres s'éteignent sur un fond de carte sombre), anneau blanc de
-  2 px, pictogramme `#212529` ou blanc selon le contraste (le jaune de `SPLIT` en porte un foncé) ;
+  2 px, pictogramme `#212529` si la luminance du disque dépasse 0,3 (jaune, orange, teal et vert),
+  blanc sinon — même règle au web (`isLightColor`) et au mobile (`Color.computeLuminance`) ;
   dans la liste et la popup, `ThemeIcon` en aplat (nuance du thème, §3.4). Rouge réservé au
   `DANGER`, vert au `REAL_START` comme le départ (§3.7), raisin au `SUMMIT` comme `HC`.
 - **`ROAD` est gris doux partout**, badge comme trait de rappel. Le near-black `dark` qu'il portait
@@ -518,22 +519,22 @@ Les maquettes doivent donc puiser dans le jeu Tabler.
 | `IconArrowLeft` | Retour |
 
 **Points de parcours** (`WaypointType`, `WEB-100` C3d ; le mobile prend l'équivalent Material de
-chacun en C3f, `MOB-84`). Couleurs : `contracts/brand-colors.yaml` (§3.6).
+chacun en C3f, livré par `MOB-84`). Couleurs : `contracts/brand-colors.yaml` (§3.6).
 
-| Type | Icône Tabler | Libellé |
-|---|---|---|
-| `REGROUP` | `IconUsersGroup` | Regroupement |
-| `SUPPLY` | `IconToolsKitchen2` | Ravitaillement |
-| `WATER` | `IconDroplet` | Point d'eau |
-| `CAFE` | `IconCoffee` | Café, pause |
-| `TOILETS` | `IconToiletPaper` | Toilettes |
-| `DANGER` | `IconAlertTriangle` | Danger |
-| `SUMMIT` | `IconMountain` | Col, sommet |
-| `VIEWPOINT` | `IconBinoculars` | Point de vue |
-| `BIKE_SHOP` | `IconTool` | Magasin de vélo |
-| `REAL_START` | `IconPlayerPlay` | Départ réel |
-| `SPLIT` | `IconArrowsSplit2` | Séparation des groupes |
-| `INFO` | `IconInfoSmall` | Information |
+| Type | Icône Tabler | Mobile (`PdlIcons`) | Libellé |
+|---|---|---|---|
+| `REGROUP` | `IconUsersGroup` | `waypointRegroup` (`groups_outlined`) | Regroupement |
+| `SUPPLY` | `IconToolsKitchen2` | `waypointSupply` (`restaurant`) | Ravitaillement |
+| `WATER` | `IconDroplet` | `waypointWater` (`water_drop_outlined`) | Point d'eau |
+| `CAFE` | `IconCoffee` | `waypointCafe` (`local_cafe_outlined`) | Café, pause |
+| `TOILETS` | `IconToiletPaper` | `waypointToilets` (`wc`) | Toilettes |
+| `DANGER` | `IconAlertTriangle` | `waypointDanger` (`warning_amber_outlined`) | Danger |
+| `SUMMIT` | `IconMountain` | `waypointSummit` (`landscape_outlined`) | Col, sommet |
+| `VIEWPOINT` | `IconBinoculars` | `waypointViewpoint` (`photo_camera_outlined`, pas de jumelles en Material) | Point de vue |
+| `BIKE_SHOP` | `IconTool` | `waypointBikeShop` (`build_outlined`) | Magasin de vélo |
+| `REAL_START` | `IconPlayerPlay` | `waypointRealStart` (`play_arrow`) | Départ réel |
+| `SPLIT` | `IconArrowsSplit2` | `waypointSplit` (`call_split`) | Séparation des groupes |
+| `INFO` | `IconInfoSmall` | `waypointInfo` (`info_outline`) | Information |
 
 **Icônes des sections d'équipe** (onglets de l'équipe, menu du fil d'Ariane ; décision du
 6 octobre 2026, ledger `BRAND-6`, plan [`2026-10-06-team-agenda.md`](plans/archive/2026-10-06-team-agenda.md)

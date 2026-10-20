@@ -10,6 +10,7 @@ import '../../../core/pdl/elevation/elevation_samples.dart';
 import '../../routes/data/route_repository.dart';
 import '../../routes/domain/route_elevation_builder.dart';
 import '../../routes/domain/track_surfaces.dart';
+import '../../routes/presentation/widgets/waypoint_selection.dart';
 import 'ride_detail_provider.dart';
 
 /// Le groupe pointé, **un seul pour tout l'écran**.
@@ -24,6 +25,18 @@ import 'ride_detail_provider.dart';
 /// place d'emblée le lecteur sur *son* groupe.
 final selectedRideGroupProvider = StateProvider.autoDispose
     .family<String?, RideKey>((Ref ref, RideKey key) => null);
+
+/// Le point de parcours choisi sur l'écran d'une sortie (ledger `MOB-84`),
+/// partagé par la carte des groupes, son plein écran et le profil du groupe
+/// sélectionné. Un changement de groupe laisse une clé orpheline : la carte
+/// l'ignore (clé absente) et la liste ne surligne rien.
+final rideWaypointSelectionProvider = Provider.autoDispose
+    .family<WaypointSelectionController, RideKey>((Ref ref, RideKey key) {
+      final WaypointSelectionController controller =
+          WaypointSelectionController();
+      ref.onDispose(controller.dispose);
+      return controller;
+    });
 
 /// Au-delà de ce nombre de parcours distincts, on n'en charge que les
 /// premiers.

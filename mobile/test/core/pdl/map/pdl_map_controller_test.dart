@@ -1,9 +1,12 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maplibre/maplibre.dart';
 import 'package:pedalons/core/pdl/map/pdl_map_controller.dart';
 import 'package:pedalons/core/pdl/map/pdl_route_arrow.dart';
+import 'package:pedalons/core/pdl/map/pdl_waypoint_mark.dart';
 
 /// Un style qui applique les deux règles de MapLibre iOS qui comptent ici :
 /// `addSource` lève sur un identifiant déjà pris, et `removeSource` ne fait
@@ -13,10 +16,14 @@ class _StrictStyle extends Fake implements StyleController {
   final Set<String> sources = <String>{};
   final Map<String, String?> layers = <String, String?>{};
   final Map<String, Uint8List> images = <String, Uint8List>{};
+  final Map<String, StyleLayer> layerObjects = <String, StyleLayer>{};
+  final Map<String, String> geoJson = <String, String>{};
+  int imageCalls = 0;
 
   @override
   Future<void> addImage(String id, Uint8List bytes) async {
     await Future<void>.delayed(Duration.zero);
+    imageCalls++;
     images[id] = bytes;
   }
 
@@ -26,6 +33,7 @@ class _StrictStyle extends Fake implements StyleController {
     if (!sources.add(source.id)) {
       throw Exception('A Source with the id "${source.id}" already exists');
     }
+    if (source is GeoJsonSource) geoJson[source.id] = source.data;
   }
 
   @override
@@ -47,12 +55,14 @@ class _StrictStyle extends Fake implements StyleController {
       throw Exception('A Layer with the id "${layer.id}" already exists');
     }
     layers[layer.id] = layer is StyleLayerWithSource ? layer.sourceId : null;
+    layerObjects[layer.id] = layer;
   }
 
   @override
   Future<void> removeLayer(String id) async {
     await Future<void>.delayed(Duration.zero);
     layers.remove(id);
+    layerObjects.remove(id);
   }
 
   @override
@@ -62,6 +72,7 @@ class _StrictStyle extends Fake implements StyleController {
   }) async {
     await Future<void>.delayed(Duration.zero);
     if (!sources.contains(id)) throw StateError('no source $id');
+    geoJson[id] = data;
   }
 }
 
@@ -74,6 +85,28 @@ PdlMapTrack _track(String id) => PdlMapTrack(
       <double>[2.1, 48.1],
     ],
   ],
+);
+
+const PdlWaypointMark _mark = PdlWaypointMark(
+  glyph: IconData(0xe318, fontFamily: 'MaterialIcons'),
+  disc: Color(0xFFFD7E14),
+  onDisc: Color(0xFFFFFFFF),
+);
+
+PdlMapWaypoint _waypoint(
+  String key, {
+  String icon = 'SUPPLY',
+  String? label = 'Café du Port',
+  double lon = 2.05,
+  double lat = 48.05,
+}) => PdlMapWaypoint(
+  key: key,
+  lon: lon,
+  lat: lat,
+  iconId: icon,
+  mark: _mark,
+  label: label,
+  priority: 6,
 );
 
 void main() {
@@ -408,6 +441,184 @@ void main() {
 
       expect(style.sources, isNot(contains('pdl-track-arrows')));
       expect(style.layers.keys, isNot(contains('pdl-track-arrows-layer')));
+    });
+  });
+
+  group('PdlMapController — points de parcours (MOB-84)', () {
+    Future<(PdlMapController, _StrictStyle)> attached(
+      List<PdlMapWaypoint> waypoints,
+    ) async {
+      final PdlMapController controller = PdlMapController();
+      addTearDown(controller.dispose);
+      final _StrictStyle style = _StrictStyle();
+      await controller.setContent(
+        tracks: <PdlMapTrack>[_track('a')],
+        waypoints: waypoints,
+      );
+      await controller.attachStyle(style);
+      return (controller, style);
+    }
+
+    test(
+      'une image par type distinct, une étiquette par point nommé',
+      () async {
+        final (
+          PdlMapController _,
+          _StrictStyle style,
+        ) = await attached(<PdlMapWaypoint>[
+          _waypoint('1'),
+          _waypoint('2', label: 'Autre'),
+          _waypoint('3', icon: 'WATER', label: null),
+        ]);
+
+        expect(
+          style.images.keys.where((String k) => k.startsWith('pdl-waypoint:')),
+          unorderedEquals(<String>[
+            'pdl-waypoint:SUPPLY',
+            'pdl-waypoint:WATER',
+          ]),
+        );
+        expect(
+          style.images.keys.where(
+            (String k) => k.startsWith('pdl-waypoint-label:'),
+          ),
+          unorderedEquals(<String>[
+            'pdl-waypoint-label:Café du Port',
+            'pdl-waypoint-label:Autre',
+          ]),
+        );
+      },
+    );
+
+    test(
+      'la pile : chevrons, départ, halo, icônes, étiquettes, réticule',
+      () async {
+        final PdlMapController controller = PdlMapController();
+        addTearDown(controller.dispose);
+        final _StrictStyle style = _StrictStyle();
+        await controller.setContent(
+          tracks: <PdlMapTrack>[_track('a')],
+          waypoints: <PdlMapWaypoint>[_waypoint('1')],
+          start: const PdlMapPoint(lon: 2, lat: 48),
+        );
+        await controller.attachStyle(style);
+
+        final List<String> order = style.layers.keys.toList();
+        final List<String> expected = <String>[
+          'pdl-track-arrows-layer',
+          'pdl-track-points',
+          'pdl-track-waypoints-halo',
+          'pdl-track-waypoints-icon',
+          'pdl-track-waypoints-label',
+          'pdl-track-cursor-dot',
+        ];
+        for (final String id in expected) {
+          expect(order, contains(id), reason: id);
+        }
+        for (int i = 1; i < expected.length; i++) {
+          expect(
+            order.indexOf(expected[i]),
+            greaterThan(order.indexOf(expected[i - 1])),
+            reason: '${expected[i - 1]} < ${expected[i]}',
+          );
+        }
+      },
+    );
+
+    test('les étiquettes n\'apparaissent qu\'à partir du zoom 12', () async {
+      final (PdlMapController _, _StrictStyle style) = await attached(
+        <PdlMapWaypoint>[_waypoint('1')],
+      );
+      final StyleLayer label = style.layerObjects['pdl-track-waypoints-label']!;
+      expect(label.minZoom, kPdlWaypointLabelMinZoom);
+      expect(label.minZoom, 12);
+    });
+
+    test('un changement de fond repose images, sources et couches', () async {
+      final (PdlMapController controller, _StrictStyle style) = await attached(
+        <PdlMapWaypoint>[_waypoint('1')],
+      );
+      final int before = style.imageCalls;
+
+      // Ce que fait `PdlMap` quand le style change : tout est effacé, puis
+      // `MapEventStyleLoaded` rattache.
+      style
+        ..images.clear()
+        ..sources.clear()
+        ..layers.clear()
+        ..layerObjects.clear();
+      controller.detachStyle();
+      await controller.attachStyle(style);
+
+      expect(style.imageCalls, greaterThan(before));
+      expect(style.images.keys, contains('pdl-waypoint:SUPPLY'));
+      expect(style.layers.keys, contains('pdl-track-waypoints-icon'));
+      expect(style.sources, contains('pdl-track-waypoints'));
+    });
+
+    test('sans point, ni source ni couche', () async {
+      final (PdlMapController _, _StrictStyle style) = await attached(
+        const <PdlMapWaypoint>[],
+      );
+      expect(style.sources, isNot(contains('pdl-track-waypoints')));
+      expect(
+        style.layers.keys.where((String id) => id.contains('waypoints')),
+        isEmpty,
+      );
+    });
+
+    test('le GeoJSON garde un point à [0, 45] (WEB-108)', () async {
+      final (PdlMapController _, _StrictStyle style) = await attached(
+        <PdlMapWaypoint>[_waypoint('1', lon: 0, lat: 45)],
+      );
+      final Map<String, Object?> data =
+          jsonDecode(style.geoJson['pdl-track-waypoints']!)
+              as Map<String, Object?>;
+      final List<Object?> features = data['features']! as List<Object?>;
+      expect(features, hasLength(1));
+      final Map<String, Object?> feature =
+          features.single! as Map<String, Object?>;
+      expect(
+        (feature['geometry']! as Map<String, Object?>)['coordinates'],
+        <double>[0.0, 45.0],
+      );
+      final Map<String, Object?> props =
+          feature['properties']! as Map<String, Object?>;
+      expect(props['key'], '1');
+      expect(props['icon'], 'pdl-waypoint:SUPPLY');
+    });
+
+    test(
+      'setWaypointFocus pousse la source du halo, même pendant une pose',
+      () async {
+        final PdlMapController controller = PdlMapController();
+        addTearDown(controller.dispose);
+        final _StrictStyle style = _StrictStyle();
+        await controller.setContent(
+          tracks: <PdlMapTrack>[_track('a')],
+          waypoints: <PdlMapWaypoint>[_waypoint('1')],
+        );
+        final Future<void> attaching = controller.attachStyle(style);
+        final Future<void> focus = controller.setWaypointFocus('1');
+        await Future.wait(<Future<void>>[attaching, focus]);
+
+        final Map<String, Object?> data =
+            jsonDecode(style.geoJson['pdl-track-waypoint-focus']!)
+                as Map<String, Object?>;
+        expect(data['features']! as List<Object?>, hasLength(1));
+
+        await controller.setWaypointFocus(null);
+        final Map<String, Object?> cleared =
+            jsonDecode(style.geoJson['pdl-track-waypoint-focus']!)
+                as Map<String, Object?>;
+        expect(cleared['features']! as List<Object?>, isEmpty);
+      },
+    );
+
+    test('sans carte attachée, waypointKeyAt rend null', () {
+      final PdlMapController controller = PdlMapController();
+      addTearDown(controller.dispose);
+      expect(controller.waypointKeyAt(const Offset(10, 10)), isNull);
     });
   });
 }

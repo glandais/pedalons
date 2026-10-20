@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pedalons/core/pdl/map/pdl_map_buttons.dart';
+import 'package:pedalons/core/pdl/map/pdl_waypoint_mark.dart';
+import 'package:pedalons/core/pdl/pdl_waypoint_row.dart';
 import 'package:pedalons/core/theme/pdl_icons.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 
@@ -33,6 +35,29 @@ void main() {
       final Size size = tester.getSize(find.byType(PdlMapButton));
       expect(size.width, greaterThanOrEqualTo(44));
       expect(size.height, greaterThanOrEqualTo(44));
+    });
+
+    testWidgets('PdlWaypointRow fait au moins 44 px en ${brightness.name}', (
+      WidgetTester tester,
+    ) async {
+      await pump(
+        tester,
+        brightness,
+        PdlWaypointRow(
+          mark: const PdlWaypointMark(
+            glyph: IconData(0xe318, fontFamily: 'MaterialIcons'),
+            disc: Color(0xFFFD7E14),
+            onDisc: Color(0xFFFFFFFF),
+          ),
+          distanceLabel: '1,0 km',
+          title: 'Ravitaillement',
+          onTap: () {},
+        ),
+      );
+      expect(
+        tester.getSize(find.byType(PdlWaypointRow)).height,
+        greaterThanOrEqualTo(44),
+      );
     });
 
     testWidgets(

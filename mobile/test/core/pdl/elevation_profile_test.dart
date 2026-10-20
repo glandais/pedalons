@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pedalons/core/pdl/elevation/elevation_area_painter.dart';
 import 'package:pedalons/core/pdl/elevation/elevation_cursor_painter.dart';
+import 'package:pedalons/core/pdl/elevation/elevation_markers_painter.dart';
+import 'package:pedalons/core/pdl/map/pdl_waypoint_mark.dart';
 import 'package:pedalons/core/pdl/elevation/elevation_samples.dart';
 import 'package:pedalons/core/pdl/elevation/pdl_elevation_profile.dart';
 import 'package:pedalons/core/theme/pdl_tokens.dart';
@@ -64,6 +66,20 @@ class _RecordingCanvas implements ui.Canvas {
   @override
   dynamic noSuchMethod(Invocation invocation) => null;
 }
+
+const PdlWaypointMark _mark = PdlWaypointMark(
+  glyph: IconData(0xe318, fontFamily: 'MaterialIcons'),
+  disc: Color(0xFFFD7E14),
+  onDisc: Color(0xFFFFFFFF),
+);
+
+PdlProfileMarker _marker(String key, double distance, {int priority = 1}) =>
+    PdlProfileMarker(
+      key: key,
+      distance: distance,
+      mark: _mark,
+      priority: priority,
+    );
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -267,6 +283,97 @@ void main() {
     });
   });
 
+  group('ElevationMarkersPainter (MOB-84)', () {
+    test('markerAt ne répond que dans la bande haute, à 22 px près', () {
+      final List<PdlProfileMarker> markers = <PdlProfileMarker>[
+        _marker('a', 1000),
+      ];
+      // 10 000 m sur 400 px : 1 000 m tombent à x = 40.
+      expect(
+        ElevationMarkersPainter.markerAt(
+          markers,
+          10000,
+          400,
+          const Offset(40, 20),
+        ),
+        'a',
+      );
+      expect(
+        ElevationMarkersPainter.markerAt(
+          markers,
+          10000,
+          400,
+          const Offset(60, 44),
+        ),
+        'a',
+      );
+      // Sous la bande : le réticule garde le toucher.
+      expect(
+        ElevationMarkersPainter.markerAt(
+          markers,
+          10000,
+          400,
+          const Offset(40, 60),
+        ),
+        isNull,
+      );
+      // Trop loin (23 px).
+      expect(
+        ElevationMarkersPainter.markerAt(
+          markers,
+          10000,
+          400,
+          const Offset(63, 20),
+        ),
+        isNull,
+      );
+    });
+
+    test('à égalité de distance, le type le plus important gagne', () {
+      final List<PdlProfileMarker> markers = <PdlProfileMarker>[
+        _marker('info', 1000, priority: 0),
+        _marker('danger', 1000, priority: 11),
+      ];
+      expect(
+        ElevationMarkersPainter.markerAt(
+          markers,
+          10000,
+          400,
+          const Offset(40, 10),
+        ),
+        'danger',
+      );
+    });
+
+    test('shouldRepaint réagit à la sélection et aux repères', () {
+      final ElevationSamples samples = _synthetic();
+      ElevationMarkersPainter painter({String? selected, double d = 1000}) =>
+          ElevationMarkersPainter(
+            samples: samples,
+            markers: <PdlProfileMarker>[_marker('a', d)],
+            ring: const Color(0xFFFFFFFF),
+            selectedKey: selected,
+          );
+      expect(painter().shouldRepaint(painter()), isFalse);
+      expect(painter().shouldRepaint(painter(selected: 'a')), isTrue);
+      expect(painter().shouldRepaint(painter(d: 2000)), isTrue);
+    });
+
+    test('une distance hors du profil n\'est pas peinte', () {
+      final ElevationSamples samples = _synthetic();
+      final _RecordingCanvas canvas = _RecordingCanvas();
+      ElevationMarkersPainter(
+        samples: samples,
+        markers: <PdlProfileMarker>[
+          _marker('loin', samples.totalDistance + 1000),
+          _marker('neg', -5),
+        ],
+        ring: const Color(0xFFFFFFFF),
+      ).paint(canvas, const Size(380, 110));
+      expect(canvas.lines, isEmpty);
+    });
+  });
+
   group('PdlElevationProfile', () {
     Widget host(Widget child) => MaterialApp(
       theme: PedalonsTheme.build(Brightness.light),
@@ -318,6 +425,84 @@ void main() {
 
       // …sans que l'aire ait été repeinte une seule fois.
       expect(ElevationAreaPainter.debugPaintCount, before);
+    });
+
+    testWidgets('un toucher sur un repère l\'ouvre sans bouger le réticule', (
+      WidgetTester tester,
+    ) async {
+      final ElevationSamples samples = _synthetic();
+      final ValueNotifier<double?> cursor = ValueNotifier<double?>(null);
+      addTearDown(cursor.dispose);
+      final List<String> tapped = <String>[];
+
+      await tester.pumpWidget(
+        host(
+          PdlElevationProfile(
+            samples: samples,
+            cursorDistance: cursor,
+            height: PdlMetrics.elevationLarge,
+            axisLabel: (double m, {required bool isLast}) => '',
+            tipLabel: (ElevationReading r) => '',
+            markers: <PdlProfileMarker>[
+              _marker('mid', samples.totalDistance / 2),
+            ],
+            onMarkerTapped: tapped.add,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final Rect box = tester.getRect(find.byType(PdlElevationProfile));
+      // La bande haute, au milieu du graphique.
+      await tester.tapAt(Offset(box.center.dx, box.top + 12));
+      await tester.pump();
+      expect(tapped, <String>['mid']);
+      expect(cursor.value, isNull);
+
+      // Ailleurs dans le graphique : le réticule bouge, aucun repère.
+      await tester.tapAt(Offset(box.left + 20, box.top + 80));
+      await tester.pump();
+      expect(tapped, hasLength(1));
+      expect(cursor.value, isNotNull);
+    });
+
+    testWidgets('le glissement ne repeint pas les repères', (
+      WidgetTester tester,
+    ) async {
+      final ElevationSamples samples = _synthetic();
+      final ValueNotifier<double?> cursor = ValueNotifier<double?>(null);
+      addTearDown(cursor.dispose);
+
+      await tester.pumpWidget(
+        host(
+          PdlElevationProfile(
+            samples: samples,
+            cursorDistance: cursor,
+            height: PdlMetrics.elevationLarge,
+            axisLabel: (double m, {required bool isLast}) => '',
+            tipLabel: (ElevationReading r) => '',
+            markers: <PdlProfileMarker>[_marker('a', 5000)],
+            onMarkerTapped: (String _) {},
+          ),
+        ),
+      );
+      await tester.pump();
+      final int before = ElevationMarkersPainter.debugPaintCount;
+      expect(before, greaterThan(0));
+
+      final Rect box = tester.getRect(find.byType(PdlElevationProfile));
+      final TestGesture gesture = await tester.startGesture(
+        Offset(box.left + 10, box.top + 90),
+      );
+      for (int i = 0; i < 10; i++) {
+        await gesture.moveBy(const Offset(12, 0));
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      await gesture.up();
+      await tester.pump();
+
+      expect(cursor.value, isNotNull);
+      expect(ElevationMarkersPainter.debugPaintCount, before);
     });
 
     testWidgets('un tap sous la boîte efface le réticule', (

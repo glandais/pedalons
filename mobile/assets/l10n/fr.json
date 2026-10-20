@@ -1214,6 +1214,32 @@
     "cursorHint": "Réticule synchronisé dans les deux sens avec le marqueur sur la carte.",
     "downloading": "Téléchargement...",
     "openFullSheet": "Voir la fiche complète",
+    "waypoints": {
+      "title": "Points du parcours",
+      "fromStart": "À {distance} du départ",
+      "offTrack": "Hors tracé",
+      "showMore": {
+        "one": "Voir le point suivant",
+        "other": "Voir les {} autres points"
+      },
+      "showLess": "Réduire",
+      "rowLabel": "{type}, {name}, {where}",
+      "rowLabelUnnamed": "{type}, {where}",
+      "type": {
+        "REGROUP": "Regroupement",
+        "SUPPLY": "Ravitaillement",
+        "WATER": "Point d'eau",
+        "CAFE": "Café, pause",
+        "TOILETS": "Toilettes",
+        "DANGER": "Danger",
+        "SUMMIT": "Col, sommet",
+        "VIEWPOINT": "Point de vue",
+        "BIKE_SHOP": "Magasin de vélo",
+        "REAL_START": "Départ réel",
+        "SPLIT": "Séparation des groupes",
+        "INFO": "Information"
+      }
+    },
     "view": {
       "list": "Liste",
       "map": "Carte"

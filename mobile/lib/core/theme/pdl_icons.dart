@@ -205,4 +205,20 @@ abstract final class PdlIcons {
   static const IconData privacy = Icons.policy_outlined;
   static const IconData price = Icons.euro_symbol;
   static const IconData camera = Icons.photo_camera_outlined;
+
+  // ── Points de parcours (WaypointType, ledger MOB-84) ───────────────────
+  // L'équivalent Material des pictogrammes Tabler du site (BRANDING §6).
+  static const IconData waypointRegroup = Icons.groups_outlined;
+  static const IconData waypointSupply = Icons.restaurant;
+  static const IconData waypointWater = Icons.water_drop_outlined;
+  static const IconData waypointCafe = Icons.local_cafe_outlined;
+  static const IconData waypointToilets = Icons.wc;
+  static const IconData waypointDanger = Icons.warning_amber_outlined;
+  static const IconData waypointSummit = Icons.landscape_outlined;
+  // Material n'a pas de jumelles.
+  static const IconData waypointViewpoint = Icons.photo_camera_outlined;
+  static const IconData waypointBikeShop = Icons.build_outlined;
+  static const IconData waypointRealStart = Icons.play_arrow;
+  static const IconData waypointSplit = Icons.call_split;
+  static const IconData waypointInfo = Icons.info_outline;
 }

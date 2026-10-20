@@ -1123,6 +1123,58 @@ class _GalleryBodyState extends State<_GalleryBody> {
           ],
         ),
 
+        // ── Points de parcours (MOB-84) ──────────────────────────────────
+        _Block(
+          title: 'PdlWaypointRow · PdlWaypointBadge',
+          children: <Widget>[
+            PdlWaypointRow(
+              mark: _demoMark(PdlIcons.waypointSupply, c.accentOrange),
+              distanceLabel: '12,3 km',
+              title: 'Café du Port',
+              subtitle: 'Ravitaillement',
+              description: 'Ouvert dès 8 h, terrasse au soleil.',
+              selected: true,
+              onTap: () {},
+            ),
+            PdlWaypointRow(
+              mark: _demoMark(PdlIcons.waypointDanger, c.danger),
+              distanceLabel: 'Hors tracé',
+              title: 'Danger',
+              onTap: () {},
+              showDivider: false,
+            ),
+            const SizedBox(height: 12),
+            PdlElevationProfile(
+              samples: _demoProfile,
+              height: PdlMetrics.elevationMedium,
+              axisLabel: _demoAxisLabel,
+              tipLabel: _demoTipLabel,
+              selectedMarkerKey: 'b',
+              onMarkerTapped: (String _) {},
+              markers: <PdlProfileMarker>[
+                PdlProfileMarker(
+                  key: 'a',
+                  distance: _demoProfile.totalDistance * 0.2,
+                  mark: _demoMark(PdlIcons.waypointWater, c.accentBlue),
+                  priority: 5,
+                ),
+                PdlProfileMarker(
+                  key: 'b',
+                  distance: _demoProfile.totalDistance * 0.5,
+                  mark: _demoMark(PdlIcons.waypointSummit, c.accentGrape),
+                  priority: 7,
+                ),
+                PdlProfileMarker(
+                  key: 'c',
+                  distance: _demoProfile.totalDistance * 0.8,
+                  mark: _demoMark(PdlIcons.waypointDanger, c.danger),
+                  priority: 11,
+                ),
+              ],
+            ),
+          ],
+        ),
+
         // ── B14 ───────────────────────────────────────────────────────────
         _Block(
           title: 'B14 · PdlStatCellRow',
@@ -1931,3 +1983,6 @@ String _demoTipLabel(ElevationReading reading) {
       : '${reading.grade!.toStringAsFixed(1).replaceAll('.', ',')} %';
   return '$km km · ${reading.elevation.round()} m · $grade';
 }
+
+PdlWaypointMark _demoMark(IconData glyph, Color disc) =>
+    PdlWaypointMark(glyph: glyph, disc: disc, onDisc: const Color(0xFFFFFFFF));

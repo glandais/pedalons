@@ -8,6 +8,9 @@ import '../../../../core/config/map_style_options.dart';
 import '../../../../core/pdl/pdl.dart';
 import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
+import '../../../../core/preferences/user_preferences_provider.dart';
+import '../../../routes/presentation/widgets/waypoint_selection.dart';
+import '../../../routes/presentation/widgets/waypoint_sheet.dart';
 import '../../providers/ride_detail_provider.dart';
 import '../../providers/ride_group_selection_provider.dart';
 import '../../../../keys.dart';
@@ -148,6 +151,7 @@ class RideGroupsMap extends ConsumerWidget {
         selected,
         extent,
         ref,
+        geometries,
       ),
     );
 
@@ -163,6 +167,7 @@ class RideGroupsMap extends ConsumerWidget {
     RideGroupDto? selected,
     BoundsDto? extent,
     WidgetRef ref,
+    Map<String, RouteDetailDto> geometries,
   ) {
     // **La carte encastrée ne se manipule pas.** Elle vit au milieu d'une liste
     // qui défile : un pan y dispute le doigt au défilement de la page, et le
@@ -171,42 +176,67 @@ class RideGroupsMap extends ConsumerWidget {
     // le bouton plein écran, où plus rien ne se dispute le doigt.
     final bool fullscreen = PdlMapHero.isFullscreenOf(context);
 
-    return PdlMap(
-      styleUrl: styleUrl,
-      credit: credit,
-      hillshade: servedHillshade(context, ref),
-      interactive: fullscreen,
-      tracks: tracks,
-      start: _point(ride.startPlace),
-      end: _point(ride.endPlace),
-      initialCenter: _defaultCenter(ref),
-      fitBox: extent == null
-          ? null
-          : PdlMapBox(
-              minLon: extent.minLon,
-              minLat: extent.minLat,
-              maxLon: extent.maxLon,
-              maxLat: extent.maxLat,
+    // Les points du parcours du groupe sélectionné.
+    final String? waypointSlug = selected?.routeSlug ?? ride.routeSlug;
+    final List<WaypointDto> waypoints = waypointSlug == null
+        ? const <WaypointDto>[]
+        : (geometries[waypointSlug]?.waypoints ?? const <WaypointDto>[]);
+    final WaypointSelectionController selection = ref.watch(
+      rideWaypointSelectionProvider(rideKey),
+    );
+
+    return ValueListenableBuilder<WaypointSelection?>(
+      valueListenable: selection,
+      builder: (BuildContext context, WaypointSelection? picked, _) => PdlMap(
+        waypoints: mapWaypointsOf(waypoints),
+        focusedWaypoint: picked?.focus,
+        onWaypointTapped: (String key) {
+          final WaypointDto? w = waypointByKey(waypoints, key);
+          if (w == null) return;
+          openWaypoint(
+            context,
+            w,
+            selection,
+            key,
+            units: ref.read(unitSystemProvider),
+          );
+        },
+        styleUrl: styleUrl,
+        credit: credit,
+        hillshade: servedHillshade(context, ref),
+        interactive: fullscreen,
+        tracks: tracks,
+        start: _point(ride.startPlace),
+        end: _point(ride.endPlace),
+        initialCenter: _defaultCenter(ref),
+        fitBox: extent == null
+            ? null
+            : PdlMapBox(
+                minLon: extent.minLon,
+                minLat: extent.minLat,
+                maxLon: extent.maxLon,
+                maxLat: extent.maxLat,
+              ),
+        selectedTrackId: selectedGroupId,
+        onTrackSelected: (String? id) {
+          if (id != null) onSelect(id);
+        },
+        overlays: <Widget>[
+          if (selected != null)
+            Positioned(
+              left: 12,
+              top: 12,
+              // En plein écran la carte remonte sous l'heure et la batterie :
+              // la pilule doit céder l'encoche. Encastrée dans une liste, elle
+              // est déjà loin du haut de l'écran, et un `SafeArea` y ajouterait
+              // une gouttière de 59 px sortie de nulle part — `MediaQuery.padding`
+              // ne se remet pas à zéro pour un widget au milieu de la page.
+              child: fullscreen
+                  ? SafeArea(child: _pill(selected))
+                  : _pill(selected),
             ),
-      selectedTrackId: selectedGroupId,
-      onTrackSelected: (String? id) {
-        if (id != null) onSelect(id);
-      },
-      overlays: <Widget>[
-        if (selected != null)
-          Positioned(
-            left: 12,
-            top: 12,
-            // En plein écran la carte remonte sous l'heure et la batterie :
-            // la pilule doit céder l'encoche. Encastrée dans une liste, elle
-            // est déjà loin du haut de l'écran, et un `SafeArea` y ajouterait
-            // une gouttière de 59 px sortie de nulle part — `MediaQuery.padding`
-            // ne se remet pas à zéro pour un widget au milieu de la page.
-            child: fullscreen
-                ? SafeArea(child: _pill(selected))
-                : _pill(selected),
-          ),
-      ],
+        ],
+      ),
     );
   }
 

@@ -8,6 +8,7 @@ import '../pdl_button.dart';
 import '../pdl_skeleton.dart';
 import 'elevation_area_painter.dart';
 import 'elevation_cursor_painter.dart';
+import 'elevation_markers_painter.dart';
 import 'elevation_samples.dart';
 
 /// Le libellé d'une graduation de l'axe.
@@ -50,6 +51,9 @@ class PdlElevationProfile extends StatefulWidget {
     this.onCursorChanged,
     this.credit,
     this.barColors,
+    this.markers = const <PdlProfileMarker>[],
+    this.selectedMarkerKey,
+    this.onMarkerTapped,
   }) : _mode = _ElevationMode.data,
        label = null,
        actionLabel = null,
@@ -71,6 +75,9 @@ class PdlElevationProfile extends StatefulWidget {
        onCursorChanged = null,
        credit = null,
        barColors = null,
+       markers = const <PdlProfileMarker>[],
+       selectedMarkerKey = null,
+       onMarkerTapped = null,
        actionLabel = null,
        onRetry = null;
 
@@ -91,6 +98,9 @@ class PdlElevationProfile extends StatefulWidget {
        cursorDistance = null,
        onCursorChanged = null,
        barColors = null,
+       markers = const <PdlProfileMarker>[],
+       selectedMarkerKey = null,
+       onMarkerTapped = null,
        credit = null;
 
   final _ElevationMode _mode;
@@ -120,6 +130,17 @@ class PdlElevationProfile extends StatefulWidget {
   /// (`MOB-81`). Une entrée nulle prend la couleur neutre. **Comparée par
   /// identité**, comme [samples] : mémorisez-la.
   final List<Color?>? barColors;
+
+  /// Les repères des points de parcours sur le tracé (ledger `MOB-84`). Comparés
+  /// par valeur : une liste neuve à chaque `build` ne repeint pas.
+  final List<PdlProfileMarker> markers;
+
+  /// Le repère allumé (trait plein, pictogramme agrandi).
+  final String? selectedMarkerKey;
+
+  /// Toucher d'un repère, dans la bande haute du graphique. Le réticule ne
+  /// bouge pas ; ailleurs, le toucher le déplace comme avant.
+  final ValueChanged<String>? onMarkerTapped;
 
   /// Libellé de chargement ou d'échec.
   final String? label;
@@ -184,6 +205,23 @@ class _PdlElevationProfileState extends State<PdlElevationProfile> {
     _setCursor(t * samples.totalDistance);
   }
 
+  /// Un toucher sur un repère l'ouvre au lieu de déplacer le réticule.
+  bool _tapMarker(Offset globalPosition) {
+    final ValueChanged<String>? onTap = widget.onMarkerTapped;
+    if (onTap == null || widget.markers.isEmpty) return false;
+    final RenderObject? object = _chartKey.currentContext?.findRenderObject();
+    if (object is! RenderBox || !object.hasSize) return false;
+    final String? key = ElevationMarkersPainter.markerAt(
+      widget.markers,
+      widget.samples!.totalDistance,
+      object.size.width,
+      object.globalToLocal(globalPosition),
+    );
+    if (key == null) return false;
+    onTap(key);
+    return true;
+  }
+
   @override
   Widget build(BuildContext context) => switch (widget._mode) {
     _ElevationMode.loading => _buildLoading(context),
@@ -227,7 +265,9 @@ class _PdlElevationProfileState extends State<PdlElevationProfile> {
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTapDown: (TapDownDetails d) => _handlePointer(d.globalPosition),
+      onTapDown: (TapDownDetails d) {
+        if (!_tapMarker(d.globalPosition)) _handlePointer(d.globalPosition);
+      },
       onHorizontalDragStart: (DragStartDetails d) =>
           _handlePointer(d.globalPosition),
       onHorizontalDragUpdate: (DragUpdateDetails d) =>
@@ -261,6 +301,21 @@ class _PdlElevationProfileState extends State<PdlElevationProfile> {
                         ),
                       ),
                     ),
+                    if (widget.markers.isNotEmpty)
+                      // Exclus de la sémantique : la liste des points est le
+                      // chemin accessible.
+                      ExcludeSemantics(
+                        child: RepaintBoundary(
+                          child: CustomPaint(
+                            painter: ElevationMarkersPainter(
+                              samples: samples,
+                              markers: widget.markers,
+                              selectedKey: widget.selectedMarkerKey,
+                              ring: c.mapWaypointRing,
+                            ),
+                          ),
+                        ),
+                      ),
                     RepaintBoundary(
                       child: CustomPaint(
                         willChange: true,

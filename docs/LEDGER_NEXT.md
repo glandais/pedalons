@@ -61,10 +61,14 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
 
 ## MOB — Application mobile
 
-- [ ] `MOB-84` **Points de parcours dans l'app (M)** — pendant mobile de C3 (C3f) de `WEB-100` :
-      icônes par type, libellés à partir du zoom 12, repères sur le profil, liste des points ;
-      consultation seulement. Après le volet backend C3c. Détail dans le plan
-      [`plans/2026-10-17-editeur-parcours-web.md`](plans/2026-10-17-editeur-parcours-web.md).
+- [ ] `MOB-86` **Points de parcours : recette sur appareil** — à faire sur Android et iOS, rien ne
+      se teste sans carte native : `icon-image: ['get','icon']` et l'`interpolate` de `icon-size`
+      posés en `layout` (jusqu'ici les expressions n'étaient qu'en `paint`) ; types des `properties`
+      rendues par `featuresInRect` ; `padding` d'`animateCamera` sur iOS (le point doit se centrer
+      au-dessus de la feuille) ; coût de 500 images d'étiquettes au premier chargement ;
+      contraste des noms en sombre sur fond satellite ; bande haute du profil sur écran étroit.
+      Repli si les expressions en `layout` cassent : une `SymbolStyleLayer` par type, `icon-image`
+      constant et filtre `['==',['get','icon'],id]`. Livré par `MOB-84`.
 
 ### Recette sur une application qui tourne
 
@@ -1200,6 +1204,7 @@ redevient une entrée de sa section sous le même identifiant.
 | `BRAND-3` | **Test de concordance des tables de couleurs web et mobile** | Écarté au profit du générateur (`BRAND-2`) | Un test qui parse les deux fichiers et vérifie qu'ils concordent détecte sans unifier, et repose sur des expressions régulières sur du TypeScript et du Dart |
 | `AUD-1` | **Déploiement automatique (CD) depuis GitHub** (audit de février, I3, « Critique ») | Non (16 octobre 2026, relecture du ledger) : le déploiement reste lancé à la main par `scripts/deploy.sh` | Le « Critique » de février visait des images poussées à la main sans retour arrière : `AUD-2` a apporté le tag par commit et le rollback Swarm, `AUD-3` la suite e2e nocturne. Les cinq workflows (`ci.yml`, `codeql.yml`, `e2e.yml`, `karoo-release.yml`, `mobile-release.yml`) ne déploient rien, à dessein : les hôtes sont en Swarm mono-nœud sans registry, et un déploiement depuis la CI demanderait soit un runner auto-hébergé, écarté par `AUD-3` parce qu'il exécuterait le code d'une PR externe chez nous, soit une clé SSH de l'hôte dans les secrets GitHub. À rouvrir avec un registry et un second nœud, ou si les déploiements deviennent assez fréquents pour qu'un oubli coûte |
 | `AUD-33` | **Pagination des routes côté Karoo** (audit de février, K10, scindé d'`AUD-24`) | Non (16 octobre 2026) : bornée côté serveur à la place | `PedalonsApiClient.getRoutes` lit une seule page, mais `DeviceRouteService` plafonne la réponse à 20 sorties, 20 routes et 20 groupes (`MAX_*_IN_RESPONSE`, commits `9f23df4d` et `007bdf3a`, `API-118`), pour tenir sous la limite de 100 Ko d'une réponse sur le Karoo — le risque que K10 nommait. À rouvrir si un écran de l'appareil doit montrer plus que ces plafonds |
+| `MOB-85` | **Nom du point sous l'info-bulle du profil** (« Ravitaillement : Café du Port », comme au web) | Non repris au mobile (`MOB-84`, E13) | La bulle tient sur une ligne et porte déjà trois valeurs ; toucher le repère ouvre la fiche du point. À rouvrir si la recette montre qu'on cherche le nom au glissement |
 
 ---
 
