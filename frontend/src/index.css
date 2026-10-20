@@ -164,6 +164,24 @@
     width: 28px;
   }
 
+  /* No zoom buttons on a touch screen — pinch zooms — and the compass only once the map is
+     rotated (`RotationMarker` in PedalonsMap.tsx): the full column did not fit above the elevation
+     overlay of a phone-sized map, and the fullscreen button ended up under it. */
+  .maplibregl-ctrl-zoom-in,
+  .maplibregl-ctrl-zoom-out {
+    display: none;
+  }
+
+  .maplibregl-map:not(.pdl-map-rotated) .maplibregl-ctrl-group:has(> .maplibregl-ctrl-compass) {
+    display: none;
+  }
+
+  /* Alone in its box once the zoom buttons are gone: no separator above it, all four corners round. */
+  .maplibregl-ctrl-group button.maplibregl-ctrl-compass {
+    border-top: 0;
+    border-radius: inherit;
+  }
+
   .maplibregl-ctrl.maplibre-search-box .input-container input {
     height: 44px;
     font-size: 16px; /* below 16px iOS zooms the page when the field takes focus */

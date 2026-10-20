@@ -1,6 +1,6 @@
-import { forwardRef, useContext, useMemo } from 'react'
+import { forwardRef, useContext, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import Map, { NavigationControl } from 'react-map-gl/maplibre'
+import Map, { NavigationControl, useMap } from 'react-map-gl/maplibre'
 import type { MapProps, MapRef } from 'react-map-gl/maplibre'
 import * as maplibregl from 'maplibre-gl'
 import './setupMaplibreWorker'
@@ -74,6 +74,7 @@ export const PedalonsMap = forwardRef<MapRef, PedalonsMapProps>(
           {...props}
         >
           <NavigationControl position="top-left" />
+          <RotationMarker />
           <MapAttribution />
           <Terrain3D source={terrainSource} terrain={terrain3d} hillshade={hillshade} />
           {/* Every trace on the site shows its direction (`routeArrowLayout`): the image is ready on
@@ -98,3 +99,27 @@ export const PedalonsMap = forwardRef<MapRef, PedalonsMapProps>(
   }
 )
 PedalonsMap.displayName = 'PedalonsMap'
+
+/**
+ * Marks the map container `pdl-map-rotated` while the bearing is off north. On a touch screen
+ * index.css hides the zoom buttons (pinch does it) and shows the compass only under that class:
+ * six buttons did not fit above the elevation overlay of a phone-sized map. CSS rather than
+ * unmounting `NavigationControl`, which would re-add it at the bottom of the control column.
+ */
+function RotationMarker() {
+  const { current: mapRef } = useMap()
+
+  useEffect(() => {
+    if (!mapRef) return
+    const map = mapRef.getMap()
+    const update = () =>
+      map.getContainer().classList.toggle('pdl-map-rotated', Math.round(map.getBearing()) !== 0)
+    update()
+    map.on('rotate', update)
+    return () => {
+      map.off('rotate', update)
+    }
+  }, [mapRef])
+
+  return null
+}
