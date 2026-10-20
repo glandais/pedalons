@@ -2348,6 +2348,21 @@ Plan [`2026-10-06-team-agenda.md`](plans/archive/2026-10-06-team-agenda.md) §4,
   répond rien (« Stadia Maps: routing and geocoding » dans
   [`OPERATIONS.md`](OPERATIONS.md#stadia-maps-routing-and-geocoding)).
 
+### `WEB-106` Pas d'enregistrement pendant un calcul du planificateur (20 octobre 2026)
+
+- `WEB-106` **« Enregistrer » attend la fin du calcul en cours dans le planificateur** (2026-10-20,
+  contrat inchangé) — un clic pendant un import de fichier (`POST /api/router/import-gpx`) ou un
+  tronçon routé enregistrait le parcours *d'avant* le geste : `PUT` sans `gpxFile` ni
+  `plannerState`, notification « Parcours mis à jour avec succès », import perdu sans un mot.
+  `RoutePlannerField` remonte `isLoading` par `onBusyChange` (et `false` au démontage, pour qu'un
+  formulaire qui quitte l'onglet planificateur ne reste pas verrouillé) ; `RouteEditor` et
+  `GpxPreviewEditor` désactivent le bouton et ignorent la soumission tant qu'il est vrai.
+  Tests : `RoutePlannerField.test.tsx` ; `gpx-planner.e2e.ts` « a team route is replaced by a file
+  and saved as an upload of it » retient la réponse de l'import et vérifie le bouton désactivé.
+  **À ne pas défaire** : un formulaire qui lit `snapshot()` à la soumission ne s'enregistre pas
+  pendant un calcul ; les relevés d'altitude des lignes droites, en arrière-plan et hors historique,
+  ne comptent pas (ils ont leur repli).
+
 ### `WEB-102` Profil d'altitude provisoire signalé et rafraîchi (17 octobre 2026, contrat `11.8.0`)
 
 - `WEB-102` **Une page de parcours, d'étape ou d'aperçu de l'outil GPX se met à jour seule quand le

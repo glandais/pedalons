@@ -64,6 +64,8 @@ interface RoutePlannerFieldProps {
   title?: string
   /** Tells the form whether the fullscreen editor is open (its Escape must not close the form). */
   onFullscreenChange?: (opened: boolean) => void
+  /** Tells the form whether a calculation is in flight: its save waits for it. */
+  onBusyChange?: (busy: boolean) => void
   /**
    * Receives the name of an imported file (its metadata, else its first track, else the file name):
    * the form fills its name field with it when that field is still empty.
@@ -96,6 +98,7 @@ export function RoutePlannerField({
   teamSlug,
   title,
   onFullscreenChange,
+  onBusyChange,
   onImportName,
   openRequest,
 }: RoutePlannerFieldProps) {
@@ -178,6 +181,22 @@ export function RoutePlannerField({
   useEffect(
     () => () => {
       onFullscreenChangeRef.current?.(false)
+    },
+    []
+  )
+
+  // A calculation in flight (a routed leg, an imported file) is not in the snapshot yet: the form
+  // must not save until it lands, or it saves the route as it was before the gesture.
+  const onBusyChangeRef = useRef(onBusyChange)
+  useEffect(() => {
+    onBusyChangeRef.current = onBusyChange
+  })
+  useEffect(() => {
+    onBusyChangeRef.current?.(isLoading)
+  }, [isLoading])
+  useEffect(
+    () => () => {
+      onBusyChangeRef.current?.(false)
     },
     []
   )

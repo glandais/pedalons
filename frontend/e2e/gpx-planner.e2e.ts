@@ -2707,20 +2707,25 @@ test.describe('importing a GPX file in the planner (C4b)', () => {
     await hydrated(importInput(page))
     await importInput(page).setInputFiles(gpxUpload(unique('Nouveau fichier'), windingTrack(200)))
     await expect(choice(page)).toBeVisible()
-    // The file is read by the server after the choice: saving before it answers would save the
-    // route untouched (seen under load)
-    const imported = page.waitForResponse(
-      (r) => r.url().endsWith('/api/router/import-gpx') && r.request().method() === 'POST'
-    )
+    // The file is read by the server after the choice. Held here: until it answers, the save is
+    // locked — it used to go through and save the route untouched, with a success notice.
+    let release!: () => void
+    const held = new Promise<void>((resolve) => (release = resolve))
+    await page.route('**/api/router/import-gpx', async (r) => {
+      await held
+      await r.continue()
+    })
     await choice(page).getByRole('button', { name: 'Remplacer le tracé' }).click()
     await expect(choice(page)).toHaveCount(0)
-    expect((await imported).ok()).toBe(true)
-    await expect(page.getByRole('status', { name: "Calcul de l'itinéraire..." })).toHaveCount(0)
+    const save = page.getByRole('main').getByRole('button', { name: 'Enregistrer' })
+    await expect(save).toBeDisabled()
+    release()
+    await expect(save).toBeEnabled()
 
     const saved = page.waitForRequest(
       (r) => r.method() === 'PUT' && r.url().endsWith(`/routes/${route.slug}`)
     )
-    await page.getByRole('main').getByRole('button', { name: 'Enregistrer' }).click()
+    await save.click()
     const request = await saved
     expect(request.headers()['content-type']).toContain('multipart/form-data')
     expect(request.postDataBuffer()?.toString('latin1')).toContain('name="gpxFile"')

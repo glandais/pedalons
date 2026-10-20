@@ -202,6 +202,21 @@ describe('RoutePlannerField', () => {
     expect(snapshotMock).toHaveBeenCalledTimes(1)
   })
 
+  it('tells the form a calculation is in flight, and that it is over once unmounted', () => {
+    setCoarse(false)
+    const onBusyChange = vi.fn()
+    plannerState.isLoading = true
+    try {
+      const { unmount } = renderField({ onBusyChange })
+      expect(onBusyChange).toHaveBeenLastCalledWith(true)
+      // A form that leaves the planner tab must not stay locked
+      unmount()
+      expect(onBusyChange).toHaveBeenLastCalledWith(false)
+    } finally {
+      plannerState.isLoading = false
+    }
+  })
+
   it('warns about a long straight leg, and not about a short one', () => {
     setCoarse(false)
     plannerState.directStats = { total: 200, longest: 200, count: 1 }

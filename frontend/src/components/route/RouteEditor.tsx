@@ -109,6 +109,8 @@ export function RouteEditor({
 
   const [gpxFile, setGpxFile] = useState<File | null>(null)
   const [plannerPoints, setPlannerPoints] = useState<GeoPoint[]>([])
+  // A calculation in flight in the planner: saving now would drop it
+  const [plannerBusy, setPlannerBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const plannerRef = useRef<RoutePlannerHandle>(null)
 
@@ -151,6 +153,7 @@ export function RouteEditor({
   )
 
   const handleSubmit = async (values: RouteRequest) => {
+    if (plannerBusy) return
     if (isCreateMode) {
       if (sourceMode === 'gpx' && !gpxFile) {
         setError(t('routes.create.validation.fileRequired'))
@@ -272,6 +275,7 @@ export function RouteEditor({
               teamLocation={team.geometry?.coordinates as [number, number] | undefined}
               title={name}
               onFullscreenChange={onPlannerFullscreenChange}
+              onBusyChange={setPlannerBusy}
               onImportName={handleImportName}
               openRequest={drawRequest}
             />
@@ -389,6 +393,7 @@ export function RouteEditor({
             disabled={
               isPending ||
               !form.isValid() ||
+              plannerBusy ||
               (isCreateMode && sourceMode === 'gpx' && !gpxFile) ||
               (isCreateMode && sourceMode === 'planner' && plannerPoints.length < 2)
             }

@@ -61,6 +61,8 @@ export function GpxPreviewEditor({
   const [sourceMode, setSourceMode] = useState<SourceMode>(canUsePlanner ? 'planner' : 'gpx')
   const [gpxFile, setGpxFile] = useState<File | null>(null)
   const [plannerPoints, setPlannerPoints] = useState<GeoPoint[]>([])
+  // A calculation in flight in the planner: saving now would drop it
+  const [plannerBusy, setPlannerBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const plannerRef = useRef<RoutePlannerHandle>(null)
   // Bumped by the « draw on the map » button: on a finger it opens the fullscreen editor.
@@ -87,7 +89,7 @@ export function GpxPreviewEditor({
   const nameValid = name.trim().length >= 3
 
   const handleSubmit = async () => {
-    if (!nameValid) return
+    if (!nameValid || plannerBusy) return
     if (create && plannerPoints.length < 2) {
       setError(t('routes.create.validation.pointsRequired'))
       return
@@ -166,6 +168,7 @@ export function GpxPreviewEditor({
             initialTrack={initialTrack}
             initialAscend={initialAscend}
             title={name}
+            onBusyChange={setPlannerBusy}
             onImportName={handleImportName}
             openRequest={drawRequest}
           />
@@ -196,7 +199,11 @@ export function GpxPreviewEditor({
         <Button variant="default" onClick={onCancel} disabled={isPending}>
           {t('actions.cancelAction')}
         </Button>
-        <Button onClick={handleSubmit} disabled={isPending || !nameValid} loading={isPending}>
+        <Button
+          onClick={handleSubmit}
+          disabled={isPending || !nameValid || plannerBusy}
+          loading={isPending}
+        >
           {t('actions.save')}
         </Button>
       </Group>
