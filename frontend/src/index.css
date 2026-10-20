@@ -186,6 +186,15 @@
     height: 44px;
     font-size: 16px; /* below 16px iOS zooms the page when the field takes focus */
   }
+
+  /* Same reason for every field of the site: Mantine's default `sm` is 14px, so tapping a Select
+     or a TextInput zoomed the page in and left it there. `--input-fz` keeps a larger `size`. */
+  input,
+  select,
+  textarea,
+  .mantine-Input-input {
+    font-size: max(16px, var(--input-fz, 16px));
+  }
 }
 
 /* MapLibre's canvas carries tabindex=0, so clicking the map focuses it — silently, since a
