@@ -61,6 +61,11 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
 
 ## MOB — Application mobile
 
+- [ ] `MOB-82` **Points de parcours dans l'app (M)** — pendant mobile de C3 (C3f) de `WEB-100` :
+      icônes par type, libellés à partir du zoom 12, repères sur le profil, liste des points ;
+      consultation seulement. Après le volet backend C3c. Détail dans le plan
+      [`plans/2026-10-17-editeur-parcours-web.md`](plans/2026-10-17-editeur-parcours-web.md).
+
 ### Recette sur une application qui tourne
 
 Rien de ce qui suit n'est couvert par les tests automatisés — soit parce que c'est du rendu, soit
@@ -392,7 +397,12 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
       `11.11.0`, `V75`) est fait le 19 octobre 2026. B1 (profil d'édition, `B1a` et `B1b`, contrat
       `11.12.0`) est fait le 19 octobre 2026. C1a (« non revêtu » en direct, contrat `11.13.0`) et C1b (surface détaillée après
       l'enregistrement, contrat `11.14.0`, `V76`) aussi, et C1c (rattrapage des anciens parcours,
-      suggestion de `surfaceType`, `V77`, pas de contrat ; affichage mobile `MOB-81`) : C1 est livré.
+      suggestion de `surfaceType`, `V77`, pas de contrat ; affichage mobile `MOB-81`) : C1 est livré. C3 (points de parcours) est conçu le 20 octobre 2026
+      dans [l'étude des points de parcours](research/2026-10-20-points-de-parcours.md) et découpé dans le plan (C3a à C3h).
+
+- [ ] `WEB-106` **Un point de parcours sur le méridien ou l'équateur disparaît de la carte (XS)** —
+      `RouteTrackMap.tsx` teste `coordinates[0] && coordinates[1]` : une coordonnée exactement nulle
+      masque le point. Réglé d'office par C3d de `WEB-100` (voir le plan), corrigeable avant.
 
 ### Couverture e2e — ce que l'audit du 27 septembre laisse ouvert
 
@@ -436,6 +446,11 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
 ---
 
 ## API — Contrat d'API et backend
+
+- [ ] `API-133` **Promouvoir un aperçu GPX en parcours perd probablement ses points de parcours (S)** —
+      `GpxPreviewService` relit le GPX *original*, écrit sans waypoint (`GpxProcessingService`) ;
+      non vérifié, aucun test ne couvre ce cas. Écrire le test, puis corriger, au plus tard avec C3c
+      de `WEB-100` (voir le plan [`plans/2026-10-17-editeur-parcours-web.md`](plans/2026-10-17-editeur-parcours-web.md), et [l'étude des points de parcours](research/2026-10-20-points-de-parcours.md) §10).
 
 ### `API-63` Onboarding d'un Karoo refait de bout en bout (M, backend + web + mobile + Karoo)
 
@@ -1178,6 +1193,7 @@ redevient une entrée de sa section sous le même identifiant.
 | `WEB-103` | **Altitudes FAST d'un tracé rouvert sans état** (reste de B1b de `WEB-100`) | Non (décidé le 19 octobre 2026 avec le propriétaire) | Un appel à chaque ouverture et un échange de source délicat (le FAST simplifie avec d'autres sommets que `initialTrack`), pour un chiffre plus éloigné de celui de l'enregistrement : les portions non retouchées gardent un D+ HD recalé sur `elevationGain`, vers lequel le tracé enregistré converge. Les tracés importés (C4b) ont déjà leur source en FAST |
 | `WEB-104` | **Plafond de tuiles MNT et limite de débit propres à `POST /api/router/elevation`** (B1b de `WEB-100`) | Non, risque accepté comme celui d'`import-gpx` (C4b) | Les bornes plafonnent la distance (50 lignes, 200 km), pas les tuiles : 50 lignes de quelques mètres dans 50 tuiles z12 distinctes font 50 téléchargements à froid, écrits sans éviction dans `DemTileStore`. Seul `SEC-28` (proxy) limite le débit. À rouvrir sur une mesure réelle (plafond de tuiles distinctes par requête, limite par utilisateur, taille ou éviction de `DemTileStore`, qui couvrirait aussi `import-gpx`) |
 | `WEB-105` | **Surface dans les exports GPX et FIT, second passage de costing sur l'inconnu** (C1b de `WEB-100`) | Non (décidé le 19 octobre 2026 avec le propriétaire) | FIT n'a pas de champ standard pour la surface, une extension GPX serait ignorée des appareils, et les fichiers stockés seraient à réécrire après chaque calcul en arrière-plan. Un second passage (piéton ou auto) sur les plages inconnues coûterait 20 crédits de plus par tranche : « inconnu » est une réponse honnête |
+| `WEB-107` | **POI suggérés le long d'un parcours** (C3 de `WEB-100`, question W9) | Non (décidé le 20 octobre 2026 avec le propriétaire) | Les tuiles VersaTiles ne le permettent pas (couche `pois` au seul zoom 14, sans cols ni sommets) ; il faudrait Overpass en cache ou un extrait OSM (M à L, une dépendance). Détail dans le plan de `WEB-100`, §11. À rouvrir si un club le demande |
 | `BRAND-3` | **Test de concordance des tables de couleurs web et mobile** | Écarté au profit du générateur (`BRAND-2`) | Un test qui parse les deux fichiers et vérifie qu'ils concordent détecte sans unifier, et repose sur des expressions régulières sur du TypeScript et du Dart |
 | `AUD-1` | **Déploiement automatique (CD) depuis GitHub** (audit de février, I3, « Critique ») | Non (16 octobre 2026, relecture du ledger) : le déploiement reste lancé à la main par `scripts/deploy.sh` | Le « Critique » de février visait des images poussées à la main sans retour arrière : `AUD-2` a apporté le tag par commit et le rollback Swarm, `AUD-3` la suite e2e nocturne. Les cinq workflows (`ci.yml`, `codeql.yml`, `e2e.yml`, `karoo-release.yml`, `mobile-release.yml`) ne déploient rien, à dessein : les hôtes sont en Swarm mono-nœud sans registry, et un déploiement depuis la CI demanderait soit un runner auto-hébergé, écarté par `AUD-3` parce qu'il exécuterait le code d'une PR externe chez nous, soit une clé SSH de l'hôte dans les secrets GitHub. À rouvrir avec un registry et un second nœud, ou si les déploiements deviennent assez fréquents pour qu'un oubli coûte |
 | `AUD-33` | **Pagination des routes côté Karoo** (audit de février, K10, scindé d'`AUD-24`) | Non (16 octobre 2026) : bornée côté serveur à la place | `PedalonsApiClient.getRoutes` lit une seule page, mais `DeviceRouteService` plafonne la réponse à 20 sorties, 20 routes et 20 groupes (`MAX_*_IN_RESPONSE`, commits `9f23df4d` et `007bdf3a`, `API-118`), pour tenir sous la limite de 100 Ko d'une réponse sur le Karoo — le risque que K10 nommait. À rouvrir si un écran de l'appareil doit montrer plus que ces plafonds |

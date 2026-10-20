@@ -1,8 +1,8 @@
 # Éditeur de parcours web — desktop et web mobile
 
-Écrit le 17 octobre 2026, mis à jour le 19 octobre 2026. **État : lots 1 et 2 livrés le
+Écrit le 17 octobre 2026, mis à jour le 20 octobre 2026. **État : lots 1 et 2 livrés le
 17 octobre 2026 (§5 et §6, A10 compris) ; dans le lot 3, B11, B12, B6, B1 (profil d'édition : B1a le 18, B1b le 19 octobre), B7 et B9 sont livrés ;
-le lot 4 est entamé par C2, C4 (C4a et C4b, livrés le 19 octobre) et C1 (C1a, C1b et C1c, livrés le 19 octobre : C1 est entièrement livré) ; restent le reste du lot 3 (B2, mis de côté) et le lot 4 (C3, C5, C7 ; C6 non attribué).**
+le lot 4 est entamé par C2, C4 (C4a et C4b, livrés le 19 octobre) et C1 (C1a, C1b et C1c, livrés le 19 octobre : C1 est entièrement livré) ; restent le reste du lot 3 (B2, mis de côté) et le lot 4 (C3, conçu le 20 octobre et découpé en C3a à C3h ; C5, C7 ; C6 non attribué).**
 Ledger `WEB-100` (une seule
 entrée, qui pointe ici) : le suivi fin se fait **dans ce plan**, cases à cocher comprises, pas dans
 le ledger. Une tâche n'en sort vers `LEDGER_NEXT.md` que si elle quitte le périmètre du plan
@@ -809,7 +809,8 @@ servent), puis B6 (la ligne droite visible), puis B1 et B2.
 Les parties API sont décrites au §8 de l'état de l'art ; ce plan ne garde que la face web, plus,
 pour C4, le volet backend. **C6 n'est pas attribué.** Les tâches C1, C2, C3, C5 et C7 sont **à concevoir avant de commencer** : leurs
 questions ouvertes viennent du §10 de
-[l'état de l'art](../research/2026-10-17-editeur-parcours-etat-de-l-art.md).
+[l'état de l'art](../research/2026-10-17-editeur-parcours-etat-de-l-art.md). C3 est conçu
+(20 octobre 2026, [étude des points de parcours](../research/2026-10-20-points-de-parcours.md)).
 
 - [x] **C2. Éviter les côtes, éviter le trafic** (S côté web, §8 n° 14) — **livré le 19 octobre 2026.**
       Deux `Slider` (« Côtes », « Trafic ») dans le panneau de profil (A6), `useHills` / `useRoads`
@@ -1223,13 +1224,57 @@ questions ouvertes viennent du §10 de
             l'éditeur (elle parle du tracé enregistré). *É6* : au mobile, l'aperçu d'un parcours
             dans une sortie, une étape, un voyage n'ont pas la surface ; « hors réseau » n'est pas
             pointillé (nuance grise seulement).
-- [ ] **C3. Points de parcours d'auteur** (L, §8 n° 15) — **à concevoir avant de commencer.** Appui
-      long ou clic droit sur le tracé, « Ajouter un point de parcours » (dans le menu de B12) ;
-      `WaypointMarker` existe déjà. Questions ouvertes (état de l'art §10, n° 2 et 3) : les types
-      utiles à un club (regroupement, ravitaillement, danger) et leur correspondance avec les
-      `course_point` FIT que reconnaissent Garmin, Wahoo et Karoo ; le comportement de Hammerhead
-      sur les `<wpt>` GPX ; l'insertion « au meilleur endroit » (projection sur le segment le plus
-      proche, ou minimisation de la longueur totale).
+- [ ] **C3. Points de parcours d'auteur** (L, §8 n° 15) — **conçu le 20 octobre 2026** dans
+      [l'étude des points de parcours](../research/2026-10-20-points-de-parcours.md) (formats GPX,
+      FIT, TCX ; Garmin, Wahoo, Karoo ; Komoot, RWGPS, Garmin Connect ; gpx.studio, vcyclist ; POI
+      des tuiles VersaTiles). Le détail est là-bas, ce plan ne garde que le découpage et les
+      décisions. Réponses aux questions ouvertes de l'état de l'art (§10, n° 2 et 3) : douze types
+      (regroupement, ravitaillement, eau, café, toilettes, danger, sommet, point de vue, magasin de
+      vélo, départ réel, séparation, info) avec leur correspondance GPX `sym`, FIT `course_point`,
+      Garmin Courses API, Karoo et Wahoo (étude §11.1) ; Hammerhead ignore les `<wpt>` GPX d'après
+      sa documentation, le contournement et le FIT sont à essayer (C3a) ; pas d'« insertion au
+      meilleur endroit » pour un point d'auteur, qui s'accroche à une distance le long du tracé
+      sans le modifier — le vrai sujet est la ré-accroche après une retouche (étude §11.3). Modèle
+      retenu : étendre `gpx_waypoints` (`type`, `description`, `distance_m`,
+      `origin`), contrat additif ; les points survivent aux retouches (aujourd'hui
+      `RouteService` les vide). **Questions W1 à W9 de l'étude (§13) : toutes les propositions sont
+      validées par le propriétaire le 20 octobre 2026** (§10).
+      - [ ] **C3a. Essais sur appareils** (S, en premier) — parcours de test poussé à Hammerhead
+            (GPX actuel, GPX aux neuf types, FIT avec `course_point`), à Wahoo, à un Edge par
+            l'app Connect IQ et par la Courses API (`geoPoints[].information`, spécification non
+            officielle à confronter à la documentation partenaire) ; troncature des noms.
+            **Volet Karoo essayé le 20 octobre 2026**, le seul appareil disponible, avec un kit
+            local non versionné (cinq variantes d'un parcours à 14 points, envoyées par l'API
+            Hammerhead : GPX actuel, GPX aux neuf types, GPX aux `sym` Garmin, GPX aux types du
+            SDK karoo-ext, FIT à `course_point`). Wahoo et Garmin restent à essayer. **Résultat Karoo (20 octobre 2026)** : par l'API Hammerhead,
+            seul un GPX dont `<type>` et `<sym>` valent l'une des neuf valeurs (`Food`, `Water`,
+            `Summit`, `Danger`, `Generic`…, casse exacte) garde ses points — sur le Dashboard
+            (`pointsOfInterest`, icône par type, hors tracé compris, noms intacts) et sur le Karoo ;
+            le GPX actuel, le GPX proposé (sym Garmin), un GPX aux types du SDK karoo-ext et le FIT
+            à `course_point` perdent tous leurs points. C3c envoie donc à Hammerhead un GPX à part,
+            types réduits aux neuf valeurs (colonne « Karoo, import GPX » de l'étude §11.1) ; C3h
+            n'est pas nécessaire. Détail dans le README du kit.
+      - [ ] **C3b. vcyclist 6.11** (S) — `FitCourse.coursePoints` alignés sur les records ;
+            lecture du type et de la distance d'un FIT importé.
+      - [ ] **C3c. Backend** (M, après C3b ; C3a pour Garmin et Hammerhead) — migration, enum,
+            `WaypointDto` étendu, liste `waypoints` dans les requêtes, accroche et ré-accroche,
+            retouche qui garde les points, régénération des fichiers dérivés, exports GPX, FIT,
+            Garmin, Hammerhead. Contrat `11.15.0` (ou suivant). Englobe `API-133` si son test le
+            confirme.
+      - [ ] **C3d. Web, consultation** (M, après C3c) — couche `symbol` à icônes (remplace
+            `WaypointMarker`, ce qui règle `WEB-106`), repères sur le profil, liste des points,
+            popup ; couleurs dans `contracts/brand-colors.yaml`.
+      - [ ] **C3e. Web, éditeur** (L, après C3c et C3d) — clic droit ou appui long sur toute la
+            ligne → « Ajouter un point de parcours » (le menu de B12 s'ouvre alors hors des
+            marqueurs) ; formulaire type, nom, description ; glisser contraint au tracé (Alt
+            libère) ; suppression ; historique annuler / rétablir ; 0 requête au routeur.
+      - [ ] **C3f. Mobile, consultation** (M, après C3c) — autre client, suivi sous `MOB-82`.
+      - [ ] **C3g. POI de la carte → point de parcours** (S, optionnel, après C3e) — fond « Plan »,
+            zoom ≥ 14, couche `pois` des tuiles VersaTiles (ni cols ni sommets).
+      - [ ] **C3h. Extension Karoo** (L) — **seulement si C3a échoue pour Hammerhead** : dessiner
+            les points et alerter à l'approche (karoo-ext). **Sans objet d'après C3a** (le GPX aux
+            neuf types passe, 20 octobre 2026) ; à rouvrir seulement si les alertes du Karoo ne
+            suffisent pas.
 - [ ] **C5. Popularité interne** (§8 n° 17) et **C7. zones à éviter** (§8 n° 16) — **à concevoir
       avant de commencer** ; sans apport UI propre ici. C7 : `exclude_polygons` est **non vérifié**
       chez Stadia (§2), et la forme du stockage par équipe est à concevoir. C5 : surligner les
@@ -1368,6 +1413,17 @@ questions ouvertes viennent du §10 de
   même jour (C1c : rattrapage continu plafonné à 300 appels/h, suggestion par pastille, `MOB-81`).
   Pas de second passage de costing sur l'inconnu ; exports GPX et FIT sans surface (`WEB-105`).
 
+### Décisions du propriétaire du 20 octobre 2026 (C3)
+
+Les propositions W1 à W9 du §13 de [l'étude des points de parcours](../research/2026-10-20-points-de-parcours.md) sont toutes validées :
+**W1** étendre `gpx_waypoints` (colonne `origin` : importé ou d'auteur), pas de seconde table ;
+**W2** les douze types tels quels ; **W3** le départ réel part en FIT `checkpoint` ; **W4** accroche
+au tracé à 50 m ; **W5** un point hors tracé est gardé, signalé, et n'est exporté qu'en GPX ;
+**W6** nom de 15 caractères dans le FIT, nom complet dans le GPX ; **W7** le type d'un waypoint
+importé est gardé, déduit de `sym` / `type`, sans la valeur brute (écart assumé à `API-44`, à
+noter dans `LEDGER_DONE.md` avec C3c) ; **W8** POI de la carte → point (C3g) après l'éditeur, en
+option ; **W9** POI suggérés le long du tracé : **Délibérément dehors** (§11, `WEB-107`).
+
 ### Propositions de ce plan à valider
 
 Écrites le 18 octobre 2026 sans décision du propriétaire : le chemin, les DTO et la gestion des
@@ -1380,6 +1436,11 @@ validées (19 octobre 2026, ci-dessus).
 
 ## 11. Délibérément dehors
 
+- **POI suggérés le long du tracé** (C3, W9, décidé le 20 octobre 2026, `WEB-107`) : les tuiles
+  VersaTiles n'ont la couche `pois` qu'au zoom 14 et sans cols ni sommets ; il faudrait Overpass
+  en cache ou un extrait OSM dans PostGIS (M à L, une dépendance de plus), et Komoot comme RWGPS
+  le réservent à leurs abonnements. À rouvrir si un club le demande ; C3g (toucher un POI de la
+  carte) reste possible.
 - **Générateur de boucles** (un circuit d'une distance donnée proposé autour d'un point, comme chez
   Komoot ou Strava) : plusieurs requêtes facturées par proposition et un choix de points
   intermédiaires à concevoir, pour un outil où l'auteur dessine son parcours. Le lot 3 n'offre que
