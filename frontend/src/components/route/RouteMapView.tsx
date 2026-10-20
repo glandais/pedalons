@@ -1,16 +1,15 @@
-import { useMemo, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { MapRef } from 'react-map-gl/maplibre'
 import { IconArrowsMaximize } from '@tabler/icons-react'
-import { Box, Center, Paper, Text, useMantineTheme } from '@mantine/core'
+import { Box, Center, Paper, Text } from '@mantine/core'
 import { MapControlButton, MapControlGroup } from '@/components/map/MapControl'
 import type { RouteDetailDto } from '@/api/dto'
-import { pointSurfaces, trackSurfaceColors } from '@/lib/trackSurface'
 import type { PlannerColorBy } from '@/lib/plannerSurface'
 import { useMapHeight } from '@/hooks/useResponsive'
 import { getOverlayBg } from '@/lib/colors'
 import { useResolvedColorScheme } from '@/hooks/useResolvedColorScheme'
-import { useMapStyle } from '@/hooks/useMapStyle'
+import { useRouteSurfaceColors } from '@/hooks/useRouteSurfaceColors'
 import { RouteTrackMap } from './RouteTrackMap'
 import { ElevationChart } from './ElevationChart'
 
@@ -37,43 +36,14 @@ interface RouteMapViewProps {
 
 export function RouteMapView({ route, fullscreenPath, colorBy = 'grade' }: RouteMapViewProps) {
   const { t } = useTranslation()
-  const theme = useMantineTheme()
   const colorScheme = useResolvedColorScheme()
-  const { darkBasemap } = useMapStyle()
   const mapHeight = useMapHeight('full')
   const [hoveredPointIndex, setHoveredPointIndex] = useState<number>(-1)
   const mapRef = useRef<MapRef>(null)
 
   const trackPoints = route.tracks.flatMap((track) => track.line.coordinates)
 
-  // Class of every point of the flattened tracks, null while the route has no surface.
-  const surfaces = useMemo(
-    () => (colorBy === 'surface' ? pointSurfaces(route.tracks) : null),
-    [colorBy, route.tracks]
-  )
-  // The profile is drawn on the page, so by the theme; the line over the basemap, by its tone (a
-  // light basemap kept in dark mode, a satellite), as in the editor.
-  const chartColors = useMemo(() => trackSurfaceColors(theme, colorScheme), [theme, colorScheme])
-  const lineColors = useMemo(
-    () => trackSurfaceColors(theme, darkBasemap ? 'dark' : 'light'),
-    [theme, darkBasemap]
-  )
-  const surfaceAt = useMemo(
-    () => (surfaces ? (i: number) => chartColors[surfaces[i]] : undefined),
-    [surfaces, chartColors]
-  )
-  // The map asks per track: the flat index is the size of the tracks before it plus the point's.
-  const lineColorAt = useMemo(() => {
-    if (!surfaces) return undefined
-    const offsets: number[] = []
-    let offset = 0
-    for (const track of route.tracks) {
-      offsets.push(offset)
-      offset += track.line.coordinates.length
-    }
-    return (trackIndex: number, pointIndex: number) =>
-      lineColors[surfaces[offsets[trackIndex] + pointIndex]]
-  }, [surfaces, lineColors, route.tracks])
+  const { surfaceAt, lineColorAt } = useRouteSurfaceColors(route.tracks, colorBy)
 
   if (trackPoints.length === 0) {
     return (

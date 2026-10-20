@@ -2,11 +2,14 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { IconArrowLeft } from '@tabler/icons-react'
-import { ActionIcon, Box, Center, Text } from '@mantine/core'
+import { ActionIcon, Box, Center, SegmentedControl, Text } from '@mantine/core'
 import { getOverlayBg } from '@/lib/colors'
 import { useResolvedColorScheme } from '@/hooks/useResolvedColorScheme'
 import { useMapChartZoomSync } from '@/hooks/useMapChartZoomSync'
 import { MapFullscreenShell } from '@/components/map/MapFullscreenShell'
+import { hasSurfaces } from '@/lib/trackSurface'
+import type { PlannerColorBy } from '@/lib/plannerSurface'
+import { useRouteSurfaceColors } from '@/hooks/useRouteSurfaceColors'
 import { RouteTrackMap } from './RouteTrackMap'
 import { ElevationChart } from './ElevationChart'
 import type { MappableRoute } from './RouteMapView'
@@ -35,6 +38,8 @@ export function RouteFullscreenView({ route, title, backTo }: RouteFullscreenVie
   const { t } = useTranslation()
   const colorScheme = useResolvedColorScheme()
   const [hoveredPointIndex, setHoveredPointIndex] = useState<number>(-1)
+  const [colorBy, setColorBy] = useState<PlannerColorBy>('grade')
+  const { surfaceAt, lineColorAt } = useRouteSurfaceColors(route.tracks, colorBy)
 
   const {
     mapRef,
@@ -85,6 +90,22 @@ export function RouteFullscreenView({ route, title, backTo }: RouteFullscreenVie
         gain: route.elevationGain,
         loss: route.elevationLoss,
       }}
+      // The grade / surface switch of the route sheet (WEB-100 C1b), only once the route has its surface
+      actions={
+        hasSurfaces(route.tracks) && (
+          <SegmentedControl
+            size="xs"
+            value={colorBy}
+            onChange={(value) => setColorBy(value as PlannerColorBy)}
+            aria-label={t('routes.surface.colorBy.label')}
+            data={[
+              { value: 'grade', label: t('routes.surface.colorBy.grade') },
+              { value: 'surface', label: t('routes.surface.colorBy.surface') },
+            ]}
+            data-testid="route-fullscreen-color-by"
+          />
+        )
+      }
       bottom={
         // Fixed elevation strip below the map (no overlap)
         <Box
@@ -101,6 +122,8 @@ export function RouteFullscreenView({ route, title, backTo }: RouteFullscreenVie
             hoveredPointIndex={hoveredPointIndex}
             onHoverPoint={handleHoverPoint}
             filled
+            colorBy={surfaceAt ? 'surface' : 'grade'}
+            surfaceAt={surfaceAt}
             zoom={{
               onMoveStart: onChartMoveStart,
               onMoveComplete: onChartMoveComplete,
@@ -115,6 +138,7 @@ export function RouteFullscreenView({ route, title, backTo }: RouteFullscreenVie
         hoveredPointIndex={hoveredPointIndex}
         onHoverPoint={handleHoverPoint}
         fitPadding={50}
+        lineColorAt={lineColorAt}
         onMoveStart={onMapMoveStart}
         onMoveEnd={onMapMoveEnd}
       />
