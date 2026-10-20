@@ -6,7 +6,6 @@ import '@/components/map/setupMaplibreWorker'
 import type { MapRef } from 'react-map-gl/maplibre'
 import { ActionIcon, Box, Stack } from '@mantine/core'
 import { IconPlus, IconMinus } from '@tabler/icons-react'
-import { MapAttribution } from '@/components/map/MapAttribution'
 import { RouteArrowImage } from '@/components/map/RouteArrows'
 import { routeArrowLayout } from '@/components/map/routeArrowLayout'
 import { useMapStyle } from '@/hooks/useMapStyle'
@@ -71,10 +70,8 @@ export function RoutePlannerMiniMap({ center, routeGeoJson }: RoutePlannerMiniMa
         interactive={false}
         attributionControl={false}
       >
-        {/* The inset shows the same third-party tiles as the map behind it, so it owes the same
-            credit. `pointerEvents: 'auto'` for the same reason the zoom stack below sets it: the
-            wrapper turns them off wholesale, and a ⓘ nobody can open credits nobody. */}
-        <MapAttribution compact style={{ pointerEvents: 'auto' }} />
+        {/* No attribution here: the inset sits on top of the planner's main map, which shows the
+            same tiles and already credits them. */}
         <RouteArrowImage />
         {routeGeoJson && (
           <Source id="mini-route" type="geojson" data={routeGeoJson}>

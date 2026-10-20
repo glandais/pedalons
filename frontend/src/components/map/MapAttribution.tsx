@@ -1,4 +1,3 @@
-import type { CSSProperties } from 'react'
 import { AttributionControl } from 'react-map-gl/maplibre'
 import { useMapStyle } from '@/hooks/useMapStyle'
 
@@ -8,8 +7,6 @@ interface MapAttributionProps {
    * on narrow viewports and shows the text where there is room for it.
    */
   compact?: boolean
-  /** Applied to the control's container — an inset map that disables pointer events re-enables them here. */
-  style?: CSSProperties
 }
 
 /**
@@ -23,9 +20,10 @@ interface MapAttributionProps {
  * from the style document itself and needs nothing from us.
  *
  * A map that renders third-party tiles renders this. It is not a detail of taste: ODbL, Esri's terms
- * and IGN's all require the credit to be visible next to the tiles they apply to.
+ * and IGN's all require the credit to be visible next to the tiles they apply to. The one exception
+ * is an inset drawn over a map that already credits the same tiles (the planner's precision mini-map).
  */
-export function MapAttribution({ compact, style }: MapAttributionProps) {
+export function MapAttribution({ compact }: MapAttributionProps) {
   const { currentStyle } = useMapStyle()
   const custom = currentStyle?.attribution ?? undefined
 
@@ -34,7 +32,6 @@ export function MapAttribution({ compact, style }: MapAttributionProps) {
       key={custom ?? 'style-credits-itself'}
       customAttribution={custom}
       compact={compact}
-      style={style}
     />
   )
 }
