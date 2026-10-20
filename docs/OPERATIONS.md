@@ -802,7 +802,8 @@ To move the copy to a new release:
    ```
 4. then each environment (`scripts/deploy.sh`);
 5. once every environment runs the new ids, the old aliases can leave `config.json`, and the old
-   ids' tiles leave each environment's cache (`data/cache/tileserver_8080/styles/<old id>`).
+   ids' tiles leave each environment's cache (`data/cache/tileserver_8080/styles/<old id>`) — redeploying and forcing the tileserver again, as
+   in step 3.
 
 ### Changing an environment's network topology
 

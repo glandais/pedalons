@@ -10,12 +10,6 @@
     },
     "colorful-dark-v7": {
       "style": "colorful-dark.json"
-    },
-    "colorful": {
-      "style": "colorful.json"
-    },
-    "eclipse": {
-      "style": "colorful-dark.json"
     }
   }
 }
