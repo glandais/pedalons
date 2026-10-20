@@ -133,9 +133,16 @@ export function RouteDetailPage() {
                     {t('actions.restore')}
                   </Button>
                 )}
-                <Button variant="outline" color="danger" onClick={() => setShowDeleteConfirm(true)}>
-                  {t('actions.delete')}
-                </Button>
+                {/* A deleted route can only be restored */}
+                {!route.deleted && (
+                  <Button
+                    variant="outline"
+                    color="danger"
+                    onClick={() => setShowDeleteConfirm(true)}
+                  >
+                    {t('actions.delete')}
+                  </Button>
+                )}
               </>
             )}
             <ShareButton title={route.name} />

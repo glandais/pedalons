@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Box, Group, Paper, Stack, Text } from '@mantine/core'
 import { IconArrowUp, IconChevronRight, IconMap } from '@tabler/icons-react'
 import type { RouteDto } from '@/api/dto'
-import { SurfaceBadge, VisibilityBadge } from '../card/common'
+import { DeletedBadge, SurfaceBadge, VisibilityBadge } from '../card/common'
 import { RouteThumbnail } from './RouteThumbnail'
 import { paths } from '@/config/paths'
 import { useUnits } from '@/hooks/useUnits'
@@ -66,6 +66,8 @@ export function RouteRow({ route, compact = false }: RouteRowProps) {
 
           {!compact && (
             <Group gap={4}>
+              {/* First, as on the card: deletion outranks what describes a route still believed to exist */}
+              {route.deleted && <DeletedBadge />}
               {route.surfaceType && (
                 <SurfaceBadge surface={route.surfaceType}>
                   {t(
@@ -81,6 +83,7 @@ export function RouteRow({ route, compact = false }: RouteRowProps) {
           {!compact && <TagList tags={route.tags} max={2} size="xs" />}
         </Stack>
 
+        {compact && route.deleted && <DeletedBadge />}
         {compact
           ? route.surfaceType && (
               <SurfaceBadge surface={route.surfaceType}>
