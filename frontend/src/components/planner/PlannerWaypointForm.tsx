@@ -114,6 +114,15 @@ function FormBody({
                   radius="sm"
                   p={6}
                   aria-label={t(`routes.waypoints.type.${candidate}`)}
+                  // Radio.Card has no checked look of its own: the picked type must show
+                  style={
+                    candidate === type
+                      ? {
+                          borderColor: 'var(--mantine-primary-color-filled)',
+                          backgroundColor: 'var(--mantine-primary-color-light)',
+                        }
+                      : undefined
+                  }
                 >
                   <Stack align="center" gap={2}>
                     <ThemeIcon
@@ -178,13 +187,14 @@ function FormBody({
           </Stack>
         )}
 
-        <Group justify={mode === 'edit' && onDelete ? 'space-between' : 'flex-end'} wrap="nowrap">
+        {/* Wraps on a narrow screen rather than cutting « Supprimer le point de parcours » */}
+        <Group justify={mode === 'edit' && onDelete ? 'space-between' : 'flex-end'} gap="xs">
           {mode === 'edit' && onDelete && (
-            <Button variant="subtle" color="red" onClick={onDelete} disabled={busy}>
+            <Button variant="light" color="red" onClick={onDelete} disabled={busy}>
               {t('planner.waypoint.form.delete')}
             </Button>
           )}
-          <Group gap="xs" wrap="nowrap">
+          <Group gap="xs" wrap="nowrap" ml="auto">
             <Button variant="default" onClick={onClose}>
               {t('actions.cancelAction')}
             </Button>
