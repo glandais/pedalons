@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   IconArrowUp,
   IconArrowDown,
@@ -26,6 +27,7 @@ import { useGpsConnections } from '@/hooks/useGpsConnections'
 import { useUnits } from '@/hooks/useUnits'
 import { apiErrorCode, ApiClientError } from '@/lib/apiError'
 import { defaultMedia } from '@/lib/apiUtils'
+import { invalidateRouteQueries } from '@/lib/routeCacheInvalidation'
 import type { PlannerColorBy } from '@/lib/plannerSurface'
 
 interface GpxPreviewViewProps {
@@ -40,6 +42,7 @@ interface GpxPreviewViewProps {
 export function GpxPreviewView({ preview }: GpxPreviewViewProps) {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const { distance, elevation } = useUnits()
   const { isAuthenticated } = useAuth()
   const { connectedServices, uploadPreview, isUploadingPreview } = useGpsConnections()
@@ -98,6 +101,7 @@ export function GpxPreviewView({ preview }: GpxPreviewViewProps) {
         // The global toast would blame the site for a refusal that comes from the team.
         { skipErrorToast: true }
       )
+      invalidateRouteQueries(queryClient, selectedTeam)
       notifications.show({ message: t('routes.notifications.created'), color: 'green' })
       navigate(paths.route(selectedTeam, route.slug))
     } catch (e) {

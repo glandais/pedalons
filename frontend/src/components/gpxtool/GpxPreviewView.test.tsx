@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { MantineProvider } from '@mantine/core'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { TrackSurface, TrackSurfaceState, type GpxPreviewDto, type TrackDto } from '@/api/dto'
 
 vi.mock('react-i18next', async (importOriginal) => {
@@ -59,11 +60,13 @@ const preview: GpxPreviewDto = {
 
 function renderView(shown: GpxPreviewDto = preview) {
   render(
-    <MantineProvider>
-      <MemoryRouter>
-        <GpxPreviewView preview={shown} />
-      </MemoryRouter>
-    </MantineProvider>
+    <QueryClientProvider client={new QueryClient()}>
+      <MantineProvider>
+        <MemoryRouter>
+          <GpxPreviewView preview={shown} />
+        </MemoryRouter>
+      </MantineProvider>
+    </QueryClientProvider>
   )
 }
 
