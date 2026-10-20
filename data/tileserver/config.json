@@ -5,11 +5,17 @@
     }
   },
   "styles": {
+    "colorful-v7": {
+      "style": "colorful.json"
+    },
+    "colorful-dark-v7": {
+      "style": "colorful-dark.json"
+    },
     "colorful": {
       "style": "colorful.json"
     },
     "eclipse": {
-      "style": "eclipse.json"
+      "style": "colorful-dark.json"
     }
   }
 }

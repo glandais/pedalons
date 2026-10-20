@@ -22,8 +22,14 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 @ApplicationScoped
 public class MapThumbnailRenderer {
 
-  public static final String LIGHT_STYLE = "colorful";
-  public static final String DARK_STYLE = "eclipse";
+  /**
+   * Style ids of the tileserver (data/tileserver/config.json), versioned like the VersaTiles copy
+   * they serve: vcyclist caches tiles on disk by URL, so a new id is what keeps a restyled tile from
+   * landing beside stale ones in the same thumbnail.
+   */
+  public static final String LIGHT_STYLE = "colorful-v7";
+
+  public static final String DARK_STYLE = "colorful-dark-v7";
 
   private static final int SIZE = 512;
   private static final double MARGIN = 0.1;

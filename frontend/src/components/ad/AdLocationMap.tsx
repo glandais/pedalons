@@ -80,6 +80,8 @@ export function AdLocationMap({ geometry }: AdLocationMapProps) {
           <Map
             mapLib={maplibregl}
             mapStyle={style}
+            // Same projection as the other maps whatever the style asks for (see PedalonsMap).
+            projection="mercator"
             style={{ width: '100%', height: '100%' }}
             initialViewState={{ bounds, fitBoundsOptions: { padding: 24 } }}
             // The map illustrates, it is not explored: letting it be dragged would suggest the

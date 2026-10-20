@@ -63,6 +63,9 @@ export const PedalonsMap = forwardRef<MapRef, PedalonsMapProps>(
           mapLib={maplibregl}
           mapStyle={style}
           locale={locale}
+          // VersaTiles styles ask for the globe since their v6, the IGN and raster ones don't: without
+          // this the projection would change with the basemap. Re-applied on every style load.
+          projection="mercator"
           style={{ width: '100%', height: '100%' }}
           // Off as a map *option*, on as a child: `MapAttribution` has to rebuild the control when the
           // basemap changes, which the built-in one — constructed once with the map — cannot do.

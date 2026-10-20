@@ -34,7 +34,7 @@ public class VcyclistProducer {
 
   /**
    * Renders map thumbnails. Its own disk cache is keyed on the whole tile source — since vcyclist
-   * 5.1.1, {@code {cache}/tileserver_8080/styles/colorful/256/{z}/{x}/{y}.png}, so the light and
+   * 5.1.1, {@code {cache}/tileserver_8080/styles/colorful-v7/256/{z}/{x}/{y}.png}, so the light and
    * dark styles no longer share tiles. A different layout from gpx2web's: carto tiles get
    * downloaded once more; DEM tiles do not (see {@link DemTileStore}).
    *

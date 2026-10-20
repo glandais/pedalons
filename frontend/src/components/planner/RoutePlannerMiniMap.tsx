@@ -65,6 +65,8 @@ export function RoutePlannerMiniMap({ center, routeGeoJson }: RoutePlannerMiniMa
         ref={mapRef}
         mapLib={maplibregl}
         mapStyle={style}
+        // Same projection as the main map whatever the style asks for (see PedalonsMap).
+        projection="mercator"
         style={{ width: '100%', height: '100%' }}
         initialViewState={{ longitude: center.lng, latitude: center.lat, zoom: DEFAULT_ZOOM }}
         interactive={false}

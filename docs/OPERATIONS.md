@@ -777,6 +777,33 @@ it; a club admin can neither add nor invite it back, only a platform admin can) 
 it back by hand, or run the full rebuild from a workstation and copy the accounts file again if it
 changed.
 
+### Thumbnail basemaps (shared tileserver)
+
+The clients load the VersaTiles styles straight from `tiles.versatiles.org`, unversioned: they
+follow every VersaTiles release. The thumbnails cannot: tileserver-gl renders them from a **copy**
+of those styles, `data/tileserver/styles/*.json`, which only changes when someone replaces it
+(ledger `OPS-50`). The copy keeps pointing at VersaTiles' tiles, glyphs and sprites, so a release
+that renames a sprite or a style can still break it — as on 14 September 2026, when the `basics`
+sprite went away and every thumbnail came out black.
+
+To move the copy to a new release:
+
+1. take `colorful/style.json` and `colorful-dark/style.json` from the release's `styles.tar.gz`
+   (github.com/versatiles-org/versatiles-style/releases) into `data/tileserver/styles/`;
+2. give the styles **new ids** in `data/tileserver/config.json` (`colorful-v7` → `colorful-v8`…)
+   and the same ones to `MapThumbnailRenderer`. The backend's tile cache (`data/cache`) is keyed by
+   URL: under the same id, new tiles would sit beside stale ones in one thumbnail. Keep the old ids
+   as aliases of the new files, for the backend still running them during the deploy;
+3. deploy the shared stack **first**, and force the restart — tileserver-gl reads its styles at
+   start, and `docker stack deploy` leaves a service whose spec did not change alone:
+   ```bash
+   cd ~/shared && git pull && scripts/deploy.sh --shared
+   docker service update --force pedalons-shared_tileserver
+   ```
+4. then each environment (`scripts/deploy.sh`);
+5. once every environment runs the new ids, the old aliases can leave `config.json`, and the old
+   ids' tiles leave each environment's cache (`data/cache/tileserver_8080/styles/<old id>`).
+
 ### Changing an environment's network topology
 
 **On a host**, `docker stack deploy` never alters a network that already exists: change its driver,
@@ -1035,7 +1062,7 @@ gets one more rsync pass before it is called failed.
 
 **Not** in a snapshot, and to be rebuilt by hand: the Docker images (`./build.sh` at the MANIFEST's
 commit), `data/cache` (regenerable, just slow), and the shared tileserver's data
-(`data/tileserver`: a style and a config, tracked by git).
+(`data/tileserver`: two styles and a config, tracked by git).
 Nor, by choice, the **`goatcounter` database**: the web analytics are disposable statistics, and a
 restore starts them again from empty (see [Web analytics](#web-analytics-goatcounter)). Backing
 them up one day would mean rewriting the privacy policy's sentence on backups in the same commit.

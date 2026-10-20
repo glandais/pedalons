@@ -780,6 +780,14 @@ Ce que les tests ne prouvent pas, parce qu'ils ne passent ni par Flyway ni par u
 
 ### Exploitation
 
+- [ ] `OPS-51` **Déployer les styles de vignettes v7, puis retirer les alias** — `OPS-50` est dans
+      le dépôt, pas sur l'hôte. Dans l'ordre (« Thumbnail basemaps (shared tileserver) » dans
+      `docs/OPERATIONS.md`) : `scripts/deploy.sh --shared` suivi de `docker service update --force
+      pedalons-shared_tileserver` (sans quoi tileserver-gl garde les styles lus au démarrage), puis
+      `scripts/deploy.sh` en staging et en prod. Quand plus aucun backend n'appelle `colorful` ni
+      `eclipse` : retirer ces deux alias de `data/tileserver/config.json` et supprimer
+      `data/cache/tileserver_8080/styles/{colorful,eclipse}` de chaque environnement. Petit.
+
 - [ ] `OPS-19` **Passer PostgreSQL 17 → 18** — dependabot l'a proposé (PR #338, fermée le
       29 septembre 2026 avec `ignore this major version`) en ne changeant que l'image de
       `docker-compose.yml`, ce qui empêcherait la prod de redémarrer : les fichiers d'un cluster 17
