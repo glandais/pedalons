@@ -67,8 +67,9 @@ export function Layout() {
   // Fixed for the lifetime of the running server, so fetch it once and never revalidate.
   const { data: version } = useGetVersion({ query: { staleTime: Infinity } })
   // Null until hydrated, and whenever there is nothing to install (already installed, or a
-  // browser with neither a prompt nor home-screen instructions).
-  const { offer: installOffer, install } = useInstallOffer({ withStore: true })
+  // browser with neither a prompt nor home-screen instructions). The entry leads to the apps page,
+  // which lays out every app (the site installed, the mobile app…) rather than picking one.
+  const { offer: installOffer } = useInstallOffer({ withStore: true })
 
   // Mounted before the effect below so its cleanup records the scroll position
   // while the outgoing route is still on screen.
@@ -183,7 +184,11 @@ export function Layout() {
                       {t('feedback.menu')}
                     </Menu.Item>
                     {installOffer && (
-                      <Menu.Item leftSection={<IconDownload size={14} />} onClick={install}>
+                      <Menu.Item
+                        leftSection={<IconDownload size={14} />}
+                        component={PrefetchLink}
+                        to={paths.apps()}
+                      >
                         {t('install.menu')}
                       </Menu.Item>
                     )}
@@ -237,16 +242,17 @@ export function Layout() {
         <Stack>
           <DrawerMainNav onNavigate={close} />
           <Divider />
-          <ColorSchemeSwitcher />
-          <LanguageSwitcher />
+          <Group gap="sm" wrap="nowrap">
+            <ColorSchemeSwitcher />
+            <LanguageSwitcher />
+          </Group>
           {installOffer && (
             <Button
               variant="light"
               leftSection={<IconDownload size={16} />}
-              onClick={() => {
-                install()
-                close()
-              }}
+              component={PrefetchLink}
+              to={paths.apps()}
+              onClick={close}
             >
               {t('install.menu')}
             </Button>
