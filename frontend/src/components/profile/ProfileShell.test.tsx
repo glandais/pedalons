@@ -37,12 +37,24 @@ describe('ProfileShell', () => {
       .getAllByRole('link')
       .filter((link) => link.getAttribute('aria-current') === 'page')
     expect(current.map((link) => link.textContent)).toEqual(['profile.nav.notifications'])
-    for (const group of [
-      'profile.nav.group.settings',
-      'profile.nav.group.security',
-      'profile.nav.group.account',
-    ])
+    for (const group of ['profile.nav.group.settings', 'profile.nav.group.security'])
       expect(within(nav).getByText(group)).toBeTruthy()
+    expect(within(nav).queryByText('profile.nav.group.account')).toBeNull()
+  })
+
+  it('puts « Mon compte » first of the settings and « Aide » last, in no group', () => {
+    renderShell('overview')
+
+    const nav = screen.getByRole('navigation', { name: 'nav.profile' })
+    const labels = within(nav)
+      .getAllByRole('link')
+      .map((link) => link.textContent)
+    expect(labels.slice(0, 3)).toEqual([
+      'profile.nav.overview',
+      'profile.nav.account',
+      'profile.nav.preferences',
+    ])
+    expect(labels.at(-1)).toBe('profile.nav.help')
   })
 
   it('offers « Se déconnecter » once, at the foot of the sidebar', () => {

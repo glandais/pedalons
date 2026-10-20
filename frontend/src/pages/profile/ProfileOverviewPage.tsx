@@ -27,6 +27,7 @@ import {
   ProfileSignOutButton,
 } from '@/components/profile/ProfileShell'
 import {
+  PROFILE_HELP,
   PROFILE_NAV_GROUPS,
   type ProfileNavItem,
   type ProfileSection,
@@ -36,9 +37,10 @@ import { getColorFromName, getInitials } from '@/components/team/teamInitials'
 import { paths } from '@/config/paths'
 import { useAuth } from '@/hooks/useAuth'
 
-/** The shortcuts a desktop shows as cards: the settings, without « Mon compte » (the identity
- * card leads there). */
+/** The shortcuts a desktop shows as cards, in the sidebar's order: « Mon compte » first although
+ * the identity card leads there too, « Aide » last. */
 const DESKTOP_CARDS: ProfileSection[] = [
+  'account',
   'preferences',
   'notifications',
   'devices',
@@ -47,7 +49,10 @@ const DESKTOP_CARDS: ProfileSection[] = [
   'help',
 ]
 
-const NAV_ITEMS: ProfileNavItem[] = PROFILE_NAV_GROUPS.flatMap((group) => group.items)
+const NAV_ITEMS: ProfileNavItem[] = [
+  ...PROFILE_NAV_GROUPS.flatMap((group) => group.items),
+  PROFILE_HELP,
+]
 
 function IdentityCard() {
   const { t } = useTranslation()
@@ -117,6 +122,24 @@ function TeamsCard({ summary }: { summary: ProfileSummaryDto | undefined }) {
         )}
       </Stack>
     </Paper>
+  )
+}
+
+/** A row of the phone list: the subject, its state line, and the way to its page. */
+function PhoneRow({ item, status }: { item: ProfileNavItem; status: string | undefined }) {
+  const { t } = useTranslation()
+  const Icon = item.icon
+  return (
+    <NavLink
+      component={PrefetchLink}
+      to={item.to()}
+      label={t(item.labelKey)}
+      description={status}
+      leftSection={<Icon size={20} stroke={1.5} />}
+      rightSection={<IconChevronRight size={16} />}
+      py="sm"
+      mih={44}
+    />
   )
 }
 
@@ -198,25 +221,16 @@ export function ProfileOverviewPage() {
               {t(group.labelKey)}
             </Text>
             <Paper withBorder radius="md" style={{ overflow: 'hidden' }}>
-              {group.items.map((item) => {
-                const Icon = item.icon
-                return (
-                  <NavLink
-                    key={item.section}
-                    component={PrefetchLink}
-                    to={item.to()}
-                    label={t(item.labelKey)}
-                    description={status[item.section]}
-                    leftSection={<Icon size={20} stroke={1.5} />}
-                    rightSection={<IconChevronRight size={16} />}
-                    py="sm"
-                    mih={44}
-                  />
-                )
-              })}
+              {group.items.map((item) => (
+                <PhoneRow key={item.section} item={item} status={status[item.section]} />
+              ))}
             </Paper>
           </Stack>
         ))}
+        {/* « Aide » in no group, last before « Se déconnecter ». */}
+        <Paper withBorder radius="md" style={{ overflow: 'hidden' }}>
+          <PhoneRow item={PROFILE_HELP} status={status.help} />
+        </Paper>
         <Paper withBorder radius="md" p={4}>
           <ProfileSignOutButton />
         </Paper>

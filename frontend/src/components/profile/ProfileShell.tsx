@@ -5,6 +5,7 @@ import { IconLogout } from '@tabler/icons-react'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { useAuth } from '@/hooks/useAuth'
 import {
+  PROFILE_HELP,
   PROFILE_NAV_GROUPS,
   PROFILE_OVERVIEW,
   type ProfileNavItem,
@@ -68,6 +69,7 @@ function ProfileSidebar({ section }: { section: ProfileSection }) {
           ))}
         </Stack>
       ))}
+      <SidebarLink item={PROFILE_HELP} active={section === 'help'} />
       <Divider />
       <ProfileSignOutButton />
     </Stack>

@@ -24,7 +24,7 @@ import 'profile_help_page.dart';
 
 /// Le profil : une **vue d'ensemble** courte, et une sous-page par sujet.
 ///
-/// La carte d'identité mène à « Mon compte », que le groupe Compte nomme aussi
+/// La carte d'identité mène à « Mon compte », que Réglages nomme aussi, en tête,
 /// en toutes lettres ; viennent ensuite des raccourcis groupés — Réglages,
 /// Sécurité et confidentialité, Compte —,
 /// chacun avec **une ligne d'état** : on sait ce qu'on va trouver avant
@@ -81,6 +81,14 @@ class ProfilePage extends ConsumerWidget {
           child: _Group(
             title: 'profile.groups.settings'.tr(),
             rows: <Widget>[
+              // En tête des réglages, même si la carte d'identité y mène déjà.
+              _ShortcutRow(
+                key: keys.profile.accountRow,
+                icon: PdlIcons.person,
+                title: 'profile.nav.account'.tr(),
+                status: 'profile.status.account'.tr(),
+                onTap: () => open(Paths.profileAccount()),
+              ),
               _ShortcutRow(
                 key: keys.profile.preferencesRow,
                 icon: PdlIcons.units,
@@ -136,14 +144,6 @@ class ProfilePage extends ConsumerWidget {
           child: _Group(
             title: 'profile.groups.account'.tr(),
             rows: <Widget>[
-              _ShortcutRow(
-                key: keys.profile.accountRow,
-                icon: PdlIcons.person,
-                title: 'profile.nav.account'.tr(),
-                neutral: true,
-                status: 'profile.status.account'.tr(),
-                onTap: () => open(Paths.profileAccount()),
-              ),
               _ShortcutRow(
                 key: keys.profile.helpRow,
                 icon: PdlIcons.info,

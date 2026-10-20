@@ -56,6 +56,12 @@ export const PROFILE_NAV_GROUPS: ProfileNavGroup[] = [
     labelKey: tRegister('profile.nav.group.settings'),
     items: [
       {
+        section: 'account',
+        labelKey: tRegister('profile.nav.account'),
+        icon: IconUserCircle,
+        to: () => paths.profileAccount(),
+      },
+      {
         section: 'preferences',
         labelKey: tRegister('profile.nav.preferences'),
         icon: IconAdjustmentsHorizontal,
@@ -92,21 +98,12 @@ export const PROFILE_NAV_GROUPS: ProfileNavGroup[] = [
       },
     ],
   },
-  {
-    labelKey: tRegister('profile.nav.group.account'),
-    items: [
-      {
-        section: 'account',
-        labelKey: tRegister('profile.nav.account'),
-        icon: IconUserCircle,
-        to: () => paths.profileAccount(),
-      },
-      {
-        section: 'help',
-        labelKey: tRegister('profile.nav.help'),
-        icon: IconHelpCircle,
-        to: () => paths.profileHelp(),
-      },
-    ],
-  },
 ]
+
+/** « Aide et à propos »: last, in no group, just above « Se déconnecter ». */
+export const PROFILE_HELP: ProfileNavItem = {
+  section: 'help',
+  labelKey: tRegister('profile.nav.help'),
+  icon: IconHelpCircle,
+  to: () => paths.profileHelp(),
+}

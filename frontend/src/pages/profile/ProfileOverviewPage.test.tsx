@@ -100,8 +100,8 @@ describe('ProfileOverviewPage', () => {
     const accountLinks = screen
       .getAllByRole('link')
       .filter((link) => link.getAttribute('href') === paths.profileAccount())
-    // The identity card's, the sidebar's and the phone list's.
-    expect(accountLinks).toHaveLength(3)
+    // The identity card's, the sidebar's, the desktop card's and the phone list's.
+    expect(accountLinks).toHaveLength(4)
   })
 
   it('lists the teams with their role, and no longer the rides', () => {
@@ -120,6 +120,7 @@ describe('ProfileOverviewPage', () => {
 
     // On both layouts (one of the two is hidden by CSS only).
     for (const [label, status] of [
+      ['profile.nav.account', 'profile.status.account'],
       ['profile.nav.security', 'profile.status.passkeys(count=1)'],
       ['profile.nav.privacy', 'profile.status.notContactable'],
       ['profile.nav.notifications', 'profile.status.notifications.email'],
@@ -127,9 +128,6 @@ describe('ProfileOverviewPage', () => {
       ['profile.nav.help', 'profile.status.help'],
     ])
       expect(shortcuts(label, status), `${label}: ${status}`).toHaveLength(2)
-
-    // The phone list alone: « Mon compte » has the identity card on a desktop.
-    expect(shortcuts('profile.nav.account', 'profile.status.account')).toHaveLength(1)
   })
 
   it('switches between the sidebar and the phone list by CSS only, « Se déconnecter » in each', () => {
