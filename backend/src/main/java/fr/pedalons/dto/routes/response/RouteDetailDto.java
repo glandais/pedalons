@@ -1,6 +1,7 @@
 package fr.pedalons.dto.routes.response;
 
 import fr.pedalons.common.TsidUtils;
+import fr.pedalons.domain.route.GpxWaypoint;
 import fr.pedalons.domain.route.Route;
 import fr.pedalons.dto.comments.response.CommentCounts;
 import fr.pedalons.dto.common.GeoJsonPoint;
@@ -13,10 +14,12 @@ import fr.pedalons.dto.validation.ValidateSchema;
 import fr.pedalons.enums.ElevationState;
 import fr.pedalons.enums.SurfaceType;
 import fr.pedalons.enums.Visibility;
+import fr.pedalons.enums.WaypointType;
 import fr.pedalons.service.asset.AssetService;
 import fr.pedalons.service.route.ClimbNaming.NamedPoint;
 import fr.pedalons.service.surface.RouteSurfaces;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.geolatte.geom.G2D;
@@ -117,7 +120,7 @@ public record RouteDetailDto(
                 .map(t -> TrackDto.from(t, namedPoints(route), surfaces.of(t.getId())))
                 .toList()
             : List.of(),
-        route.getWaypoints().stream().map(WaypointDto::from).toList(),
+        sortedWaypoints(route),
         route.isDeleted(),
         commentCounts.forEntity(route.getId()),
         tags.forContent(route.getId()));
@@ -131,7 +134,23 @@ public record RouteDetailDto(
                 new NamedPoint(
                     w.getName(),
                     w.getGeometry().getPosition().getLat(),
-                    w.getGeometry().getPosition().getLon()))
+                    w.getGeometry().getPosition().getLon(),
+                    w.typeOrInfo() == WaypointType.SUMMIT))
+        .toList();
+  }
+
+  /**
+   * The waypoints by distance along the route, those off the track last (docs/LEDGER_*.md WEB-100,
+   * C3c); the id breaks ties so the order is stable.
+   */
+  private static List<WaypointDto> sortedWaypoints(Route route) {
+    return route.getWaypoints().stream()
+        .sorted(
+            Comparator.comparing(
+                    GpxWaypoint::getDistanceM,
+                    Comparator.nullsLast(Comparator.<Double>naturalOrder()))
+                .thenComparing(GpxWaypoint::getId))
+        .map(WaypointDto::from)
         .toList();
   }
 }

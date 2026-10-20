@@ -88,8 +88,12 @@ public interface GpsServiceClient {
    * @return Upload result with success status and external route ID
    */
   default RouteUploadResult uploadRoute(String accessToken, byte[] gpxContent, String routeName) {
-    return createRoute(new GpsAuth.Bearer(accessToken), gpxContent, RouteMeta.manual(routeName))
-        .toUploadResult();
+    return uploadRoute(accessToken, gpxContent, RouteMeta.manual(routeName));
+  }
+
+  /** As {@link #uploadRoute(String, byte[], String)}, with the course points of the route. */
+  default RouteUploadResult uploadRoute(String accessToken, byte[] gpxContent, RouteMeta meta) {
+    return createRoute(new GpsAuth.Bearer(accessToken), gpxContent, meta).toUploadResult();
   }
 
   /** Creates a route at the service. {@link GpsCallResult.Ok} carries its id there. */

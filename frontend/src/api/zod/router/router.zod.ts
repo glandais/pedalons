@@ -225,11 +225,65 @@ export const ImportGpxResponse = zod
       .describe('Tracks in the order of the file, 1 to 8'),
     waypointCount: zod
       .int()
-      .describe('Number of waypoints of the file, which the editor does not keep'),
+      .describe('Number of waypoints of the file (the first 500 are in waypoints)'),
     elevationFallback: zod
       .boolean()
       .describe(
         "True when the elevations of a track could not all be read from the elevation source and part of them are the file's own"
+      ),
+    waypoints: zod
+      .array(
+        zod
+          .object({
+            geometry: zod
+              .object({
+                type: zod.enum(['Point']),
+                coordinates: zod.array(zod.number()).describe('Coordinates [longitude, latitude]'),
+              })
+              .describe('Location coordinates [longitude, latitude]'),
+            name: zod.string().describe('Name, possibly empty'),
+            id: zod
+              .string()
+              .optional()
+              .describe(
+                'Identifier (TSID) of the waypoint, to send back in the request so that it keeps its origin. Null for a waypoint of a GPX file not saved yet'
+              ),
+            type: zod
+              .enum([
+                'REGROUP',
+                'SUPPLY',
+                'WATER',
+                'CAFE',
+                'TOILETS',
+                'DANGER',
+                'SUMMIT',
+                'VIEWPOINT',
+                'BIKE_SHOP',
+                'REAL_START',
+                'SPLIT',
+                'INFO',
+              ])
+              .describe('What the waypoint is'),
+            description: zod.string().optional().describe('Free text, at most 500 characters'),
+            distance: zod
+              .number()
+              .optional()
+              .describe(
+                'Metres from the start along the tracks in order (cumulated from one track to the next, in the order of their ids). Null for a waypoint more than 50 m from the track'
+              ),
+            origin: zod
+              .enum(['AUTHOR', 'IMPORTED'])
+              .describe(
+                "Who put the waypoint: its AUTHOR in the editor, or a GPX file it was IMPORTED from. A new GPX file replaces the imported ones and keeps the author's"
+              ),
+          })
+          .describe(
+            'A waypoint of a route. Its geometry is where the author put it: its own position, never its projection on the track'
+          )
+      )
+      .optional()
+      .describe(
+        'The waypoints of the file, typed from their symbol, at most 500, in file order: imported, with no identifier and no distance (the server places them when the route is saved)'
       ),
   })
   .describe('A GPX file processed for the route editor')

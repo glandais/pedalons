@@ -1260,19 +1260,23 @@ questions ouvertes viennent du §10 de
             Sans points, le FIT est identique à l'octet près. La bibliothèque ne tronque pas : les
             15 caractères de W6 se coupent côté Pédalons, par point de code. La lecture du type et
             de la distance d'un FIT importé passe à C3c, dans le backend.
-      - [ ] **C3c. Backend** (M, après C3b ; C3a pour Garmin et Hammerhead) — migration, enum,
+      - [x] **C3c. Backend** (L, 20 octobre 2026, contrat `11.16.0`, `V78`) — migration, enums,
             `WaypointDto` étendu, liste `waypoints` dans les requêtes, accroche et ré-accroche,
-            retouche qui garde les points, régénération des fichiers dérivés, exports GPX, FIT,
-            Garmin, Hammerhead. Contrat `11.15.0` (ou suivant). Englobe `API-133` si son test le
-            confirme.
+            retouche qui garde les points, fichiers dérivés réécrits quand seuls les points
+            changent, exports GPX, FIT, Garmin (derrière un drapeau), Hammerhead (GPX aux neuf
+            valeurs), promotion d'un aperçu (`API-134`), rattrapage des anciennes lignes. Écarts à
+            l'étude : pas d'import FIT de parcours (`API-135`) ; `WaypointDto.id` ; noms acceptés
+            jusqu'à 250 caractères par l'API (40 dans l'éditeur) ; `type` nul = ligne héritée ;
+            détails d'aperçu dans une colonne à part ; `sym` avant `type` à l'import ; borne
+            `MAX_WAYPOINTS = 500` à confirmer en prod. Détail dans `LEDGER_DONE.md` (`API-134`).
       - [ ] **C3d. Web, consultation** (M, après C3c) — couche `symbol` à icônes (remplace
-            `WaypointMarker`, ce qui règle `WEB-106`), repères sur le profil, liste des points,
+            `WaypointMarker`, ce qui règle `WEB-108`), repères sur le profil, liste des points,
             popup ; couleurs dans `contracts/brand-colors.yaml`.
       - [ ] **C3e. Web, éditeur** (L, après C3c et C3d) — clic droit ou appui long sur toute la
             ligne → « Ajouter un point de parcours » (le menu de B12 s'ouvre alors hors des
             marqueurs) ; formulaire type, nom, description ; glisser contraint au tracé (Alt
             libère) ; suppression ; historique annuler / rétablir ; 0 requête au routeur.
-      - [ ] **C3f. Mobile, consultation** (M, après C3c) — autre client, suivi sous `MOB-82`.
+      - [ ] **C3f. Mobile, consultation** (M, après C3c) — autre client, suivi sous `MOB-84`.
       - [ ] **C3g. POI de la carte → point de parcours** (S, optionnel, après C3e) — fond « Plan »,
             zoom ≥ 14, couche `pois` des tuiles VersaTiles (ni cols ni sommets).
       - [ ] **C3h. Extension Karoo** (L) — **seulement si C3a échoue pour Hammerhead** : dessiner
@@ -1426,7 +1430,7 @@ au tracé à 50 m ; **W5** un point hors tracé est gardé, signalé, et n'est e
 **W6** nom de 15 caractères dans le FIT, nom complet dans le GPX ; **W7** le type d'un waypoint
 importé est gardé, déduit de `sym` / `type`, sans la valeur brute (écart assumé à `API-44`, à
 noter dans `LEDGER_DONE.md` avec C3c) ; **W8** POI de la carte → point (C3g) après l'éditeur, en
-option ; **W9** POI suggérés le long du tracé : **Délibérément dehors** (§11, `WEB-107`).
+option ; **W9** POI suggérés le long du tracé : **Délibérément dehors** (§11, `WEB-109`).
 
 ### Propositions de ce plan à valider
 
@@ -1440,7 +1444,7 @@ validées (19 octobre 2026, ci-dessus).
 
 ## 11. Délibérément dehors
 
-- **POI suggérés le long du tracé** (C3, W9, décidé le 20 octobre 2026, `WEB-107`) : les tuiles
+- **POI suggérés le long du tracé** (C3, W9, décidé le 20 octobre 2026, `WEB-109`) : les tuiles
   VersaTiles n'ont la couche `pois` qu'au zoom 14 et sans cols ni sommets ; il faudrait Overpass
   en cache ou un extrait OSM dans PostGIS (M à L, une dépendance de plus), et Komoot comme RWGPS
   le réservent à leurs abonnements. À rouvrir si un club le demande ; C3g (toucher un POI de la

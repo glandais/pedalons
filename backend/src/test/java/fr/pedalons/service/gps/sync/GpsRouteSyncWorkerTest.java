@@ -16,6 +16,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import fr.pedalons.api.AbstractResourceTest;
+import fr.pedalons.common.GeoPoint;
+import fr.pedalons.common.TsidUtils;
 import fr.pedalons.common.exception.InternalException;
 import fr.pedalons.domain.gps.DomainGpsCredential;
 import fr.pedalons.domain.gps.GpsRouteSync;
@@ -24,9 +26,16 @@ import fr.pedalons.domain.ride.Ride;
 import fr.pedalons.domain.ride.RideGroup;
 import fr.pedalons.domain.ride.RideParticipation;
 import fr.pedalons.domain.route.Route;
+import fr.pedalons.dto.common.asset.MediaDto;
 import fr.pedalons.dto.error.ErrorCode;
+import fr.pedalons.dto.routes.request.RouteRequest;
+import fr.pedalons.dto.routes.request.WaypointRequest;
+import fr.pedalons.dto.routes.response.RouteDto;
 import fr.pedalons.enums.GpsServiceType;
 import fr.pedalons.enums.GpsSyncError;
+import fr.pedalons.enums.SurfaceType;
+import fr.pedalons.enums.Visibility;
+import fr.pedalons.enums.WaypointType;
 import fr.pedalons.infrastructure.gps.GpsAuth;
 import fr.pedalons.infrastructure.gps.GpsCallResult;
 import fr.pedalons.infrastructure.gps.GpsTokenRefusedException;
@@ -34,14 +43,22 @@ import fr.pedalons.infrastructure.gps.HammerheadClient;
 import fr.pedalons.infrastructure.gps.RouteMeta;
 import fr.pedalons.infrastructure.gps.TokenResponse;
 import fr.pedalons.infrastructure.security.TokenEncryptionService;
+import fr.pedalons.repository.route.RouteRepository;
 import fr.pedalons.service.gps.GpsRouteGpx;
+import fr.pedalons.service.route.RouteService;
+import fr.pedalons.service.security.DomainResolver;
+import fr.pedalons.service.security.PedalonsQueryContext;
 import fr.pedalons.util.GpsSyncTestData;
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -59,6 +76,11 @@ class GpsRouteSyncWorkerTest extends AbstractResourceTest {
   @Inject GpsRouteSyncWorker worker;
   @Inject GpsSyncTestData sync;
   @Inject TokenEncryptionService encryptionService;
+
+  @Inject RouteService routeService;
+  @Inject RouteRepository routeRepository;
+  @Inject PedalonsQueryContext queryContext;
+  @Inject DomainResolver domainResolver;
 
   @InjectMock HammerheadClient hammerhead;
   @InjectMock GpsRouteGpx routeGpx;
@@ -144,6 +166,97 @@ class GpsRouteSyncWorkerTest extends AbstractResourceTest {
     GpsRouteSync row = row();
     assertEquals(other.getId(), row.getDesiredRouteId());
     assertEquals(row.getDesiredHash(), row.getSyncedHash());
+  }
+
+  // ------------------------------------------------------------------ waypoints (WEB-100, C3c)
+
+  /** A real route made of a GPX with three waypoints, riding the ride. */
+  private RouteDto realRouteWithWaypoints() {
+    domainResolver.setDomainForTest(domain);
+    queryContext.setUserForTest(user1);
+    RouteDto created =
+        routeService.createRoute(
+            team1Slug,
+            new RouteRequest(
+                "Avec points",
+                MediaDto.builder().markdown("Parcours").build(),
+                SurfaceType.ROAD,
+                Visibility.PUBLIC,
+                null),
+            Path.of("src/test/resources/waypoints.gpx"));
+    Route entity =
+        QuarkusTransaction.requiringNew()
+            .call(() -> routeRepository.findById(TsidUtils.toLong(created.id())));
+    dataService.setRideRoute(ride, entity);
+    return created;
+  }
+
+  @Test
+  void executor_sendsCoursePointsInMeta() {
+    realRouteWithWaypoints();
+
+    planAndProcess();
+
+    verify(hammerhead)
+        .createRoute(any(), any(), argThat((RouteMeta meta) -> meta.coursePoints().size() == 3));
+  }
+
+  @Test
+  void pointsOnlyEdit_pushesTheRouteAgain() {
+    RouteDto created = realRouteWithWaypoints();
+    planAndProcess();
+    verify(hammerhead, times(1)).createRoute(any(), any(), any());
+    List<WaypointRequest> list =
+        new ArrayList<>(
+            QuarkusTransaction.requiringNew()
+                .call(() -> routeService.getDto(team1Slug, created.slug()))
+                .waypoints()
+                .stream()
+                .map(
+                    w ->
+                        new WaypointRequest(
+                            w.id(),
+                            new GeoPoint(
+                                w.geometry().getPosition().getLon(),
+                                w.geometry().getPosition().getLat()),
+                            w.type(),
+                            w.name(),
+                            w.description(),
+                            w.distance(),
+                            null))
+                .toList());
+    list.add(
+        new WaypointRequest(
+            null,
+            new GeoPoint(-1.5456685, 47.2024271),
+            WaypointType.TOILETS,
+            "Toilettes",
+            null,
+            null,
+            null));
+
+    queryContext.setUserForTest(user1);
+    routeService.updateRoute(
+        team1Slug,
+        created.slug(),
+        new RouteRequest(
+            "Avec points",
+            MediaDto.builder().markdown("Parcours").build(),
+            SurfaceType.ROAD,
+            Visibility.PUBLIC,
+            null,
+            null,
+            null,
+            list),
+        null);
+    planAndProcess();
+
+    verify(hammerhead)
+        .updateRoute(
+            any(),
+            eq("ext-1"),
+            any(),
+            argThat((RouteMeta meta) -> meta.coursePoints().size() == 4));
   }
 
   @Test

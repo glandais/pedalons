@@ -17,6 +17,8 @@ import fr.pedalons.repository.route.RouteRepository;
 import fr.pedalons.service.gps.DomainGpsCredentialService;
 import fr.pedalons.service.gps.GpsConnectionTokens;
 import fr.pedalons.service.gps.GpsRouteGpx;
+import fr.pedalons.service.route.waypoint.AnchoredWaypoint;
+import fr.pedalons.service.route.waypoint.WaypointExports;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -233,7 +235,9 @@ public class GpsRouteSyncExecutor {
             name,
             claim.rideId() != null
                 ? GpsSyncNames.wahooExternalId(claim.domainId(), claim.rideId())
-                : null);
+                : null,
+            // One query for the claim, not per row of a listing (docs/LEDGER_*.md WEB-100, C3c)
+            WaypointExports.coursePoints(AnchoredWaypoint.fromRows(route.getWaypoints())));
     if (externalId == null) {
       // A manual upload of the same route becomes this row's: updated, not copied (§3.6). Its id
       // is written onto this row in this very transaction, so a failed call cannot lose it.

@@ -104,4 +104,21 @@ class ClimbNamingTest {
     assertNull(names.get(0));
     assertEquals("Côte de la Fin", names.get(1));
   }
+
+  @Test
+  void summitTypedWaypoint_winsOverACloserUntypedOne() {
+    List<TrackPoint> track = track(50);
+    ClimbData climb = climb(1000, 3000);
+    NamedPoint closerCafe = near(track.get(30), 10, "Café");
+    NamedPoint typedSummit =
+        new NamedPoint(
+            "Col du Test",
+            near(track.get(30), 200, "x").lat(),
+            near(track.get(30), 200, "x").lng(),
+            true);
+
+    assertEquals("Col du Test", ClimbNaming.nameOf(climb, track, List.of(closerCafe, typedSummit)));
+    // Without a summit within reach, any named point still does
+    assertEquals("Café", ClimbNaming.nameOf(climb, track, List.of(closerCafe)));
+  }
 }

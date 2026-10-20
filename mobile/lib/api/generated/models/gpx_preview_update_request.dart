@@ -6,6 +6,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 
 import 'geo_point.dart';
 import 'planner_state.dart';
+import 'waypoint_request.dart';
 
 part 'gpx_preview_update_request.freezed.dart';
 part 'gpx_preview_update_request.g.dart';
@@ -22,6 +23,9 @@ abstract class GpxPreviewUpdateRequest with _$GpxPreviewUpdateRequest {
 
     /// Editing state of the planner; the server derives the track from it. Not with points (400 PLANNER_STATE_INVALID); a gpxFile wins over it
     PlannerState? plannerState,
+
+    /// The complete list of the waypoints, replacing them. Omitted: they stay as they are (placed again when the track changes)
+    List<WaypointRequest>? waypoints,
   }) = _GpxPreviewUpdateRequest;
 
   factory GpxPreviewUpdateRequest.fromJson(Map<String, Object?> json) =>

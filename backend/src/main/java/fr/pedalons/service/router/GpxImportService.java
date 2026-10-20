@@ -1,14 +1,21 @@
 package fr.pedalons.service.router;
 
+import static org.geolatte.geom.builder.DSL.g;
+import static org.geolatte.geom.builder.DSL.point;
+import static org.geolatte.geom.crs.CoordinateReferenceSystems.WGS84;
+
 import fr.pedalons.common.exception.BusinessException;
 import fr.pedalons.dto.error.ErrorCode;
 import fr.pedalons.dto.router.response.GpxImportResponse;
 import fr.pedalons.dto.router.response.GpxImportTrack;
+import fr.pedalons.dto.routes.response.WaypointDto;
 import fr.pedalons.enums.ElevationQuality;
+import fr.pedalons.enums.WaypointOrigin;
 import fr.pedalons.service.route.GpxLimits;
 import fr.pedalons.service.route.GpxPipeline;
 import fr.pedalons.service.route.GpxProcessingService;
 import fr.pedalons.service.route.GpxProcessingService.RawTracks;
+import fr.pedalons.service.route.waypoint.WaypointDrafts;
 import fr.pedalons.service.security.annotation.Logged;
 import io.github.glandais.engine.gpx.GpxDocument;
 import io.github.glandais.engine.path.Path;
@@ -74,7 +81,27 @@ public class GpxImportService {
 
     String documentName = GpxProcessingService.documentName(parsed);
     String name = documentName != null ? documentName : baseName(fileName);
-    return new GpxImportResponse(cleanName(name), tracks, parsed.getWaypoints().size(), fallback);
+    return new GpxImportResponse(
+        cleanName(name), tracks, parsed.getWaypoints().size(), fallback, waypointsOf(raw.doc()));
+  }
+
+  /**
+   * The waypoints of the (sanitized) file as the editor will send them back: imported, typed, with
+   * no identifier and no distance, at most {@link GpxLimits#MAX_WAYPOINTS}.
+   */
+  private static List<WaypointDto> waypointsOf(GpxDocument sanitized) {
+    return WaypointDrafts.fromDocument(sanitized).stream()
+        .map(
+            d ->
+                new WaypointDto(
+                    point(WGS84, g(d.lng(), d.lat())),
+                    d.name(),
+                    null,
+                    d.type(),
+                    null,
+                    null,
+                    WaypointOrigin.IMPORTED))
+        .toList();
   }
 
   /**

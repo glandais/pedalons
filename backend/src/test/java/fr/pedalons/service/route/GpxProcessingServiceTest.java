@@ -14,8 +14,13 @@ import fr.pedalons.domain.user.User;
 import fr.pedalons.enums.AssetType;
 import fr.pedalons.enums.ElevationQuality;
 import fr.pedalons.enums.Visibility;
+import fr.pedalons.enums.WaypointOrigin;
+import fr.pedalons.enums.WaypointType;
+import fr.pedalons.infrastructure.gpx.FitExporter;
 import fr.pedalons.service.asset.AssetService;
 import fr.pedalons.service.route.response.TrackMetadata;
+import fr.pedalons.service.route.waypoint.WaypointDraft;
+import fr.pedalons.service.route.waypoint.WaypointPlan;
 import fr.pedalons.service.security.DomainResolver;
 import fr.pedalons.service.security.PedalonsQueryContext;
 import fr.pedalons.util.GpxPrivacyAssertions;
@@ -481,6 +486,133 @@ class GpxProcessingServiceTest extends AbstractBaseTest {
   }
 
   // ==================== Helper Methods ====================
+
+  // ==================== Waypoints (docs/LEDGER_*.md WEB-100, C3c) ====================
+
+  private static WaypointDraft draft(
+      double lat, double lng, String name, String description, WaypointType type) {
+    return new WaypointDraft(
+        null, lat, lng, name, description, type, WaypointOrigin.AUTHOR, null, null);
+  }
+
+  /** A position on the first track of the example, and the same one a degree north. */
+  private record OnTheTrack(double lat, double lng) {}
+
+  private static OnTheTrack midTrack(GpxDocument gpx) {
+    List<io.github.glandais.engine.gpx.GpxTrackPoint> points =
+        gpx.getTracks().getFirst().getPoints();
+    io.github.glandais.engine.gpx.GpxTrackPoint p = points.get(points.size() / 2);
+    return new OnTheTrack(p.getLatitudeDeg(), p.getLongitudeDeg());
+  }
+
+  @Test
+  void computeGpx_filteredGpxCarriesNameDescSymType_offTrackIncluded() throws Exception {
+    GpxDocument gpx = gpxProcessingService.parseGpx(getExampleGpxPath());
+    OnTheTrack at = midTrack(gpx);
+    WaypointPlan plan =
+        new WaypointPlan(
+            List.of(
+                draft(at.lat(), at.lng(), "Source", "Eau potable", WaypointType.WATER),
+                draft(at.lat() + 1, at.lng(), "Loin", null, WaypointType.DANGER)),
+            false);
+
+    try (GpxProcessingService.ComputedGpx computed =
+        gpxProcessingService.computeGpx(gpx, ElevationQuality.HD, plan)) {
+      List<io.github.glandais.engine.gpx.GpxWaypoint> waypoints =
+          io.github.glandais.engine.gpx.GpxParserJvm.parse(
+                  java.nio.file.Files.readString(
+                      computed.filteredGpx().toPath(), java.nio.charset.StandardCharsets.UTF_8))
+              .getWaypoints();
+
+      assertEquals(2, waypoints.size(), "the one off the track is written too");
+      io.github.glandais.engine.gpx.GpxWaypoint onTrack =
+          waypoints.stream().filter(w -> "Source".equals(w.getName())).findFirst().orElseThrow();
+      assertEquals("Eau potable", onTrack.getDescription());
+      assertEquals("Drinking Water", onTrack.getSymbol());
+      assertEquals("water", onTrack.getType());
+      io.github.glandais.engine.gpx.GpxWaypoint far =
+          waypoints.stream().filter(w -> "Loin".equals(w.getName())).findFirst().orElseThrow();
+      assertEquals("Danger Area", far.getSymbol());
+      assertEquals("danger", far.getType());
+
+      assertEquals(2, computed.waypoints().size());
+      assertNotNull(computed.waypoints().get(0).distance(), "on the track");
+      assertNull(computed.waypoints().get(1).distance(), "a degree away: off the track");
+    }
+  }
+
+  @Test
+  void computeGpx_fitHasACoursePointPerPlacedWaypoint_withTypeAndTruncatedName() throws Exception {
+    GpxDocument gpx = gpxProcessingService.parseGpx(getExampleGpxPath());
+    OnTheTrack at = midTrack(gpx);
+    WaypointPlan plan =
+        new WaypointPlan(
+            List.of(
+                draft(
+                    at.lat(),
+                    at.lng(),
+                    "Ravitaillement Intermarché de la gare",
+                    null,
+                    WaypointType.SUPPLY),
+                draft(at.lat() + 1, at.lng(), "Loin", null, WaypointType.DANGER)),
+            false);
+
+    try (GpxProcessingService.ComputedGpx computed =
+        gpxProcessingService.computeGpx(gpx, ElevationQuality.HD, plan)) {
+      var coursePoints =
+          new com.garmin.fit.FitDecoder(
+                  java.nio.file.Files.readAllBytes(computed.fitFile().toPath()))
+              .decode(new com.garmin.fit.DecodeOptions())
+              .getMessages()
+              .getCoursePointMesgs();
+
+      assertEquals(1, coursePoints.size(), "the point off the track is in the GPX only (W5)");
+      assertEquals("Ravitaillement", coursePoints.getFirst().getName());
+      assertEquals("AID_STATION", coursePoints.getFirst().getType().name().toUpperCase());
+    }
+  }
+
+  @Test
+  void computeGpx_withoutWaypoints_fitIsByteIdenticalTo610() throws Exception {
+    GpxDocument gpx = gpxProcessingService.parseGpx(getExampleGpxPath());
+
+    try (GpxProcessingService.ComputedGpx computed =
+        gpxProcessingService.computeGpx(gpx, ElevationQuality.HD)) {
+      byte[] fit = java.nio.file.Files.readAllBytes(computed.fitFile().toPath());
+      assertTrue(
+          new com.garmin.fit.FitDecoder(fit)
+              .decode(new com.garmin.fit.DecodeOptions())
+              .getMessages()
+              .getCoursePointMesgs()
+              .isEmpty());
+      // The overload without points is the one before C3c, and the empty list is the same call
+      List<io.github.glandais.engine.path.Path> paths =
+          io.github.glandais.engine.gpx.GpxToPathJvm.tracksAsPaths(
+              io.github.glandais.engine.gpx.GpxParserJvm.parse(
+                  java.nio.file.Files.readString(
+                      computed.filteredGpx().toPath(), java.nio.charset.StandardCharsets.UTF_8)));
+      assertArrayEquals(
+          FitExporter.toFitBytes(paths, "x"), FitExporter.toFitBytes(paths, "x", List.of()));
+    }
+  }
+
+  @Test
+  void computeGpx_originalGpxHasNoWaypoint() throws Exception {
+    GpxDocument gpx = gpxProcessingService.parseGpx(getExampleGpxPath());
+    OnTheTrack at = midTrack(gpx);
+    WaypointPlan plan =
+        new WaypointPlan(
+            List.of(draft(at.lat(), at.lng(), "Source", null, WaypointType.WATER)), false);
+
+    try (GpxProcessingService.ComputedGpx computed =
+        gpxProcessingService.computeGpx(gpx, ElevationQuality.HD, plan)) {
+      String original =
+          java.nio.file.Files.readString(
+              computed.originalGpx().toPath(), java.nio.charset.StandardCharsets.UTF_8);
+
+      assertFalse(original.contains("<wpt"), "the original is the raw track: the HD source");
+    }
+  }
 
   private Path getExampleGpxPath() {
     return new File("src/test/resources/example.gpx").toPath();

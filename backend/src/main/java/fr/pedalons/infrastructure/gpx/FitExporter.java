@@ -3,6 +3,7 @@ package fr.pedalons.infrastructure.gpx;
 import fr.pedalons.common.exception.BusinessException;
 import fr.pedalons.dto.error.ErrorCode;
 import io.github.glandais.engine.path.Path;
+import io.github.glandais.fit.FitCoursePointSpec;
 import io.github.glandais.fit.FitUnits;
 import io.github.glandais.fit.PathToFitJvm;
 import java.util.List;
@@ -37,6 +38,16 @@ public final class FitExporter {
    *     when the writer refuses the geometry
    */
   public static byte[] toFitBytes(List<Path> paths, String name) {
+    return toFitBytes(paths, name, List.of());
+  }
+
+  /**
+   * As {@link #toFitBytes(List, String)}, with the course points of the route's waypoints
+   * (docs/LEDGER_*.md WEB-100, C3c). The library puts each on the record nearest to its distance;
+   * the names must already be cut ({@link WaypointFormats#fitName}). Without a point the bytes are
+   * those of the call without them.
+   */
+  public static byte[] toFitBytes(List<Path> paths, String name, List<CoursePoint> points) {
     List<Path> nonEmpty =
         paths.stream().filter(p -> p.getSize() > 0).map(FitExporter::monotonic).toList();
     if (nonEmpty.isEmpty()) {
@@ -44,7 +55,17 @@ public final class FitExporter {
     }
     long startMillis = Math.max((long) nonEmpty.getFirst().time(0), FitUnits.FIT_EPOCH_OFFSET_MS);
     try {
-      return PathToFitJvm.toFitBytes(nonEmpty, name, startMillis);
+      if (points.isEmpty()) {
+        return PathToFitJvm.toFitBytes(nonEmpty, name, startMillis);
+      }
+      List<FitCoursePointSpec> specs =
+          points.stream()
+              .map(
+                  p ->
+                      new FitCoursePointSpec(
+                          p.distanceM(), WaypointFormats.fitType(p.type()), p.name()))
+              .toList();
+      return PathToFitJvm.toFitBytes(nonEmpty, name, startMillis, specs);
     } catch (Exception e) {
       throw new BusinessException(ErrorCode.GPX_FAILURE, e);
     }

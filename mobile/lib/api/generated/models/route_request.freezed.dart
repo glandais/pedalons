@@ -23,7 +23,8 @@ mixin _$RouteRequest {
  String get visibility;/// Points from frontend routing
  List<GeoPoint>? get points;/// IDs (TSID) of the team's ROUTE tags the route carries, replacing the whole set — at most 10, each a tag of this team and of kind ROUTE, else 400 (TAG_INVALID, TOO_MANY_TAGS). An empty list removes them all. Omitted: none on a creation, left as they are on an update.
  List<String>? get tagIds;/// Editing state of the planner; the server derives the track from it. Not with points (400 PLANNER_STATE_INVALID); a gpxFile wins over it
- PlannerState? get plannerState;
+ PlannerState? get plannerState;/// The complete list of the route's waypoints, replacing them. Omitted: they stay as they are (placed again on the new track when the track changes, and a new GPX file replaces the imported ones and keeps the author's). When present it wins over the waypoints of a GPX file sent with it
+ List<WaypointRequest>? get waypoints;
 /// Create a copy of RouteRequest
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -37,20 +38,20 @@ $RouteRequestCopyWith<RouteRequest> get copyWith => _$RouteRequestCopyWithImpl<R
 @override
 bool operator ==(Object other) {
   final _this = this as RouteRequest;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RouteRequest&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.media, _this.media) || other.media == _this.media)&&(identical(other.surfaceType, _this.surfaceType) || other.surfaceType == _this.surfaceType)&&(identical(other.visibility, _this.visibility) || other.visibility == _this.visibility)&&const DeepCollectionEquality().equals(other.points, _this.points)&&const DeepCollectionEquality().equals(other.tagIds, _this.tagIds)&&(identical(other.plannerState, _this.plannerState) || other.plannerState == _this.plannerState));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RouteRequest&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.media, _this.media) || other.media == _this.media)&&(identical(other.surfaceType, _this.surfaceType) || other.surfaceType == _this.surfaceType)&&(identical(other.visibility, _this.visibility) || other.visibility == _this.visibility)&&const DeepCollectionEquality().equals(other.points, _this.points)&&const DeepCollectionEquality().equals(other.tagIds, _this.tagIds)&&(identical(other.plannerState, _this.plannerState) || other.plannerState == _this.plannerState)&&const DeepCollectionEquality().equals(other.waypoints, _this.waypoints));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as RouteRequest;
-  return Object.hash(runtimeType,_this.name,_this.media,_this.surfaceType,_this.visibility,const DeepCollectionEquality().hash(_this.points),const DeepCollectionEquality().hash(_this.tagIds),_this.plannerState);
+  return Object.hash(runtimeType,_this.name,_this.media,_this.surfaceType,_this.visibility,const DeepCollectionEquality().hash(_this.points),const DeepCollectionEquality().hash(_this.tagIds),_this.plannerState,const DeepCollectionEquality().hash(_this.waypoints));
 }
 
 @override
 String toString() {
   final _this = this as RouteRequest;
-  return 'RouteRequest(name: ${_this.name}, media: ${_this.media}, surfaceType: ${_this.surfaceType}, visibility: ${_this.visibility}, points: ${_this.points}, tagIds: ${_this.tagIds}, plannerState: ${_this.plannerState})';
+  return 'RouteRequest(name: ${_this.name}, media: ${_this.media}, surfaceType: ${_this.surfaceType}, visibility: ${_this.visibility}, points: ${_this.points}, tagIds: ${_this.tagIds}, plannerState: ${_this.plannerState}, waypoints: ${_this.waypoints})';
 }
 
 
@@ -61,7 +62,7 @@ abstract mixin class $RouteRequestCopyWith<$Res>  {
   factory $RouteRequestCopyWith(RouteRequest value, $Res Function(RouteRequest) _then) = _$RouteRequestCopyWithImpl;
 @useResult
 $Res call({
- String name, MediaDto media, String surfaceType, String visibility, List<GeoPoint>? points, List<String>? tagIds, PlannerState? plannerState
+ String name, MediaDto media, String surfaceType, String visibility, List<GeoPoint>? points, List<String>? tagIds, PlannerState? plannerState, List<WaypointRequest>? waypoints
 });
 
 
@@ -78,7 +79,7 @@ class _$RouteRequestCopyWithImpl<$Res>
 
 /// Create a copy of RouteRequest
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? media = null,Object? surfaceType = null,Object? visibility = null,Object? points = freezed,Object? tagIds = freezed,Object? plannerState = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? media = null,Object? surfaceType = null,Object? visibility = null,Object? points = freezed,Object? tagIds = freezed,Object? plannerState = freezed,Object? waypoints = freezed,}) {
   return _then(RouteRequest(
 name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,media: null == media ? _self.media : media // ignore: cast_nullable_to_non_nullable
@@ -87,7 +88,8 @@ as String,visibility: null == visibility ? _self.visibility : visibility // igno
 as String,points: freezed == points ? _self.points : points // ignore: cast_nullable_to_non_nullable
 as List<GeoPoint>?,tagIds: freezed == tagIds ? _self.tagIds : tagIds // ignore: cast_nullable_to_non_nullable
 as List<String>?,plannerState: freezed == plannerState ? _self.plannerState : plannerState // ignore: cast_nullable_to_non_nullable
-as PlannerState?,
+as PlannerState?,waypoints: freezed == waypoints ? _self.waypoints : waypoints // ignore: cast_nullable_to_non_nullable
+as List<WaypointRequest>?,
   ));
 }
 /// Create a copy of RouteRequest
@@ -193,10 +195,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String name,  MediaDto media,  String surfaceType,  String visibility,  List<GeoPoint>? points,  List<String>? tagIds,  PlannerState? plannerState)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String name,  MediaDto media,  String surfaceType,  String visibility,  List<GeoPoint>? points,  List<String>? tagIds,  PlannerState? plannerState,  List<WaypointRequest>? waypoints)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _RouteRequest() when $default != null:
-return $default(_that.name,_that.media,_that.surfaceType,_that.visibility,_that.points,_that.tagIds,_that.plannerState);case _:
+return $default(_that.name,_that.media,_that.surfaceType,_that.visibility,_that.points,_that.tagIds,_that.plannerState,_that.waypoints);case _:
   return orElse();
 
 }
@@ -214,10 +216,10 @@ return $default(_that.name,_that.media,_that.surfaceType,_that.visibility,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String name,  MediaDto media,  String surfaceType,  String visibility,  List<GeoPoint>? points,  List<String>? tagIds,  PlannerState? plannerState)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String name,  MediaDto media,  String surfaceType,  String visibility,  List<GeoPoint>? points,  List<String>? tagIds,  PlannerState? plannerState,  List<WaypointRequest>? waypoints)  $default,) {final _that = this;
 switch (_that) {
 case _RouteRequest():
-return $default(_that.name,_that.media,_that.surfaceType,_that.visibility,_that.points,_that.tagIds,_that.plannerState);case _:
+return $default(_that.name,_that.media,_that.surfaceType,_that.visibility,_that.points,_that.tagIds,_that.plannerState,_that.waypoints);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -234,10 +236,10 @@ return $default(_that.name,_that.media,_that.surfaceType,_that.visibility,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String name,  MediaDto media,  String surfaceType,  String visibility,  List<GeoPoint>? points,  List<String>? tagIds,  PlannerState? plannerState)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String name,  MediaDto media,  String surfaceType,  String visibility,  List<GeoPoint>? points,  List<String>? tagIds,  PlannerState? plannerState,  List<WaypointRequest>? waypoints)?  $default,) {final _that = this;
 switch (_that) {
 case _RouteRequest() when $default != null:
-return $default(_that.name,_that.media,_that.surfaceType,_that.visibility,_that.points,_that.tagIds,_that.plannerState);case _:
+return $default(_that.name,_that.media,_that.surfaceType,_that.visibility,_that.points,_that.tagIds,_that.plannerState,_that.waypoints);case _:
   return null;
 
 }
@@ -249,7 +251,7 @@ return $default(_that.name,_that.media,_that.surfaceType,_that.visibility,_that.
 @JsonSerializable()
 
 class _RouteRequest implements RouteRequest {
-  const _RouteRequest({required this.name, required this.media, required this.surfaceType, required this.visibility,  List<GeoPoint>? points,  List<String>? tagIds, this.plannerState}): _points = points,_tagIds = tagIds;
+  const _RouteRequest({required this.name, required this.media, required this.surfaceType, required this.visibility,  List<GeoPoint>? points,  List<String>? tagIds, this.plannerState,  List<WaypointRequest>? waypoints}): _points = points,_tagIds = tagIds,_waypoints = waypoints;
   factory _RouteRequest.fromJson(Map<String, dynamic> json) => _$RouteRequestFromJson(json);
 
 /// Route name
@@ -284,6 +286,17 @@ class _RouteRequest implements RouteRequest {
 
 /// Editing state of the planner; the server derives the track from it. Not with points (400 PLANNER_STATE_INVALID); a gpxFile wins over it
 @override final  PlannerState? plannerState;
+/// The complete list of the route's waypoints, replacing them. Omitted: they stay as they are (placed again on the new track when the track changes, and a new GPX file replaces the imported ones and keeps the author's). When present it wins over the waypoints of a GPX file sent with it
+ final  List<WaypointRequest>? _waypoints;
+/// The complete list of the route's waypoints, replacing them. Omitted: they stay as they are (placed again on the new track when the track changes, and a new GPX file replaces the imported ones and keeps the author's). When present it wins over the waypoints of a GPX file sent with it
+@override List<WaypointRequest>? get waypoints {
+  final value = _waypoints;
+  if (value == null) return null;
+  if (_waypoints is EqualUnmodifiableListView) return _waypoints;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(value);
+}
+
 
 /// Create a copy of RouteRequest
 /// with the given fields replaced by the non-null parameter values.
@@ -298,18 +311,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _RouteRequest&&(identical(other.name, name) || other.name == name)&&(identical(other.media, media) || other.media == media)&&(identical(other.surfaceType, surfaceType) || other.surfaceType == surfaceType)&&(identical(other.visibility, visibility) || other.visibility == visibility)&&const DeepCollectionEquality().equals(other.points, _points)&&const DeepCollectionEquality().equals(other.tagIds, _tagIds)&&(identical(other.plannerState, plannerState) || other.plannerState == plannerState));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _RouteRequest&&(identical(other.name, name) || other.name == name)&&(identical(other.media, media) || other.media == media)&&(identical(other.surfaceType, surfaceType) || other.surfaceType == surfaceType)&&(identical(other.visibility, visibility) || other.visibility == visibility)&&const DeepCollectionEquality().equals(other.points, _points)&&const DeepCollectionEquality().equals(other.tagIds, _tagIds)&&(identical(other.plannerState, plannerState) || other.plannerState == plannerState)&&const DeepCollectionEquality().equals(other.waypoints, _waypoints));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,name,media,surfaceType,visibility,const DeepCollectionEquality().hash(_points),const DeepCollectionEquality().hash(_tagIds),plannerState);
+    return Object.hash(runtimeType,name,media,surfaceType,visibility,const DeepCollectionEquality().hash(_points),const DeepCollectionEquality().hash(_tagIds),plannerState,const DeepCollectionEquality().hash(_waypoints));
 }
 
 @override
 String toString() {
-    return 'RouteRequest(name: $name, media: $media, surfaceType: $surfaceType, visibility: $visibility, points: $points, tagIds: $tagIds, plannerState: $plannerState)';
+    return 'RouteRequest(name: $name, media: $media, surfaceType: $surfaceType, visibility: $visibility, points: $points, tagIds: $tagIds, plannerState: $plannerState, waypoints: $waypoints)';
 }
 
 
@@ -320,7 +333,7 @@ abstract mixin class _$RouteRequestCopyWith<$Res> implements $RouteRequestCopyWi
   factory _$RouteRequestCopyWith(_RouteRequest value, $Res Function(_RouteRequest) _then) = __$RouteRequestCopyWithImpl;
 @override @useResult
 $Res call({
- String name, MediaDto media, String surfaceType, String visibility, List<GeoPoint>? points, List<String>? tagIds, PlannerState? plannerState
+ String name, MediaDto media, String surfaceType, String visibility, List<GeoPoint>? points, List<String>? tagIds, PlannerState? plannerState, List<WaypointRequest>? waypoints
 });
 
 
@@ -337,7 +350,7 @@ class __$RouteRequestCopyWithImpl<$Res>
 
 /// Create a copy of RouteRequest
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? name = null,Object? media = null,Object? surfaceType = null,Object? visibility = null,Object? points = freezed,Object? tagIds = freezed,Object? plannerState = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? name = null,Object? media = null,Object? surfaceType = null,Object? visibility = null,Object? points = freezed,Object? tagIds = freezed,Object? plannerState = freezed,Object? waypoints = freezed,}) {
   return _then(_RouteRequest(
 name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,media: null == media ? _self.media : media // ignore: cast_nullable_to_non_nullable
@@ -346,7 +359,8 @@ as String,visibility: null == visibility ? _self.visibility : visibility // igno
 as String,points: freezed == points ? _self._points : points // ignore: cast_nullable_to_non_nullable
 as List<GeoPoint>?,tagIds: freezed == tagIds ? _self._tagIds : tagIds // ignore: cast_nullable_to_non_nullable
 as List<String>?,plannerState: freezed == plannerState ? _self.plannerState : plannerState // ignore: cast_nullable_to_non_nullable
-as PlannerState?,
+as PlannerState?,waypoints: freezed == waypoints ? _self._waypoints : waypoints // ignore: cast_nullable_to_non_nullable
+as List<WaypointRequest>?,
   ));
 }
 

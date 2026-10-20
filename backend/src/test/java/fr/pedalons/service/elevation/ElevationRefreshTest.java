@@ -773,4 +773,105 @@ class ElevationRefreshTest extends AbstractResourceTest {
         drift <= tolerance.toMillis(),
         "expected " + expected + " ± " + tolerance + ", got " + actual);
   }
+
+  // ==================== waypoints (docs/LEDGER_*.md WEB-100, C3c) ====================
+
+  private static final Path WAYPOINTS = new File("src/test/resources/waypoints.gpx").toPath();
+
+  private record WaypointSnap(
+      Long id, String name, fr.pedalons.enums.WaypointType type, Double distance) {}
+
+  private List<WaypointSnap> waypointSnaps(RouteDto route) {
+    return QuarkusTransaction.requiringNew()
+        .call(
+            () ->
+                entityManager
+                    .createQuery(
+                        "select w from fr.pedalons.domain.route.GpxWaypoint w where w.route.id ="
+                            + " :id order by w.id",
+                        fr.pedalons.domain.route.GpxWaypoint.class)
+                    .setParameter("id", id(route))
+                    .getResultList()
+                    .stream()
+                    .map(
+                        w ->
+                            new WaypointSnap(
+                                w.getId(), w.getName(), w.typeOrInfo(), w.getDistanceM()))
+                    .toList());
+  }
+
+  @Test
+  void hdCatchUp_keepsWaypoints_updatesTheirDistances() throws Exception {
+    RouteDto created = createRoute(WAYPOINTS);
+    List<WaypointSnap> before = waypointSnaps(created);
+    assertEquals(3, before.size());
+    makeDue(created);
+
+    assertEquals(1, worker.processDue());
+
+    assertEquals(ElevationState.HD, storedState(created));
+    List<WaypointSnap> after = waypointSnaps(created);
+    assertEquals(
+        before.stream().map(WaypointSnap::id).toList(),
+        after.stream().map(WaypointSnap::id).toList(),
+        "the rows are updated in place");
+    assertEquals(
+        before.stream().map(WaypointSnap::type).toList(),
+        after.stream().map(WaypointSnap::type).toList(),
+        "and keep their type, which the original GPX does not carry");
+    assertTrue(after.stream().allMatch(w -> w.distance() != null));
+    String filtered =
+        new String(
+            read(byType(snaps(created)).get(AssetType.ROUTE_FILTERED_GPX).fileId()),
+            java.nio.charset.StandardCharsets.UTF_8);
+    assertTrue(filtered.contains("Drinking Water"), "the HD filtered GPX is typed");
+  }
+
+  @Test
+  void hdCatchUp_waypointsEditedDuringCompute_realigns_andWritesNothing() {
+    RouteDto created = createRoute(WAYPOINTS);
+    makeDue(created);
+    Claim claim = service.claimNext(Instant.now()).orElseThrow();
+    ElevationRefreshService.Recomputed recomputed;
+    try {
+      recomputed = service.compute(claim);
+    } catch (Exception e) {
+      throw new IllegalStateException(e);
+    }
+
+    // The author edits the waypoints (the track stays) while the HD profile was being computed
+    queryContext.setUserForTest(user1);
+    routeService.updateRoute(
+        team1Slug,
+        created.slug(),
+        new RouteRequest(
+            "Boucle",
+            MediaDto.builder().markdown("Parcours").build(),
+            SurfaceType.ROAD,
+            Visibility.PUBLIC,
+            null,
+            null,
+            null,
+            List.of(
+                new fr.pedalons.dto.routes.request.WaypointRequest(
+                    null,
+                    new fr.pedalons.common.GeoPoint(-1.5456685, 47.2024271),
+                    fr.pedalons.enums.WaypointType.CAFE,
+                    "Nouveau",
+                    null,
+                    null,
+                    null))),
+        null);
+    List<Snap> afterEdit = snaps(created);
+
+    ElevationRefreshService.Outcome outcome = service.write(claim, recomputed);
+
+    assertEquals(ElevationRefreshService.Outcome.REALIGNED, outcome);
+    assertEquals(afterEdit, snaps(created), "no asset touched");
+    assertEquals(ElevationState.PENDING, storedState(created));
+    assertFlat(created, FakeElevationProducer.FAST_ELEVATION);
+    assertEquals(1, waypointSnaps(created).size());
+    assertNotNull(refresh(created), "the request is kept, due at once");
+    assertEquals(keysOf(afterEdit), stored.assetKeys(team1), "the HD files are gone");
+  }
 }

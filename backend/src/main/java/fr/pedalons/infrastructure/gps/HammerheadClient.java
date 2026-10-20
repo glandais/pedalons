@@ -224,7 +224,8 @@ public class HammerheadClient implements GpsServiceClient {
     try {
       String boundary = "----" + UUID.randomUUID().toString().replace("-", "");
 
-      byte[] multipartBody = buildMultipartBody(boundary, gpxContent, meta.name());
+      byte[] multipartBody =
+          buildMultipartBody(boundary, HammerheadGpx.withHammerheadTypes(gpxContent), meta.name());
 
       HttpRequest request =
           HttpRequest.newBuilder()

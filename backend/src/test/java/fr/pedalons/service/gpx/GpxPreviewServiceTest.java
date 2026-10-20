@@ -245,4 +245,90 @@ class GpxPreviewServiceTest extends AbstractBaseTest {
     assertFalse(storageService.exists(key(old, "original.gpx")));
     assertTrue(storageService.exists(key(fresh, "original.gpx")));
   }
+
+  // ==================== Waypoints (docs/LEDGER_*.md WEB-100, C3c) ====================
+
+  private static GpxPreview previewWith(
+      Long filesRevision,
+      java.util.List<GpxPreview.PreviewWaypoint> old,
+      fr.pedalons.domain.gpx.PreviewWaypointsDocument details) {
+    GpxPreview preview = new GpxPreview();
+    preview.setFilesRevision(filesRevision);
+    preview.setWaypoints(old);
+    preview.setWaypointDetails(details);
+    return preview;
+  }
+
+  private static fr.pedalons.domain.gpx.PreviewWaypointDetail detail(String name) {
+    return new fr.pedalons.domain.gpx.PreviewWaypointDetail(
+        "0abc", name, 45.0, 6.0, "WATER", "desc", 120.0, "AUTHOR");
+  }
+
+  @Test
+  void legacyPreviewWithoutDetails_readsTheOldColumn() {
+    GpxPreview preview =
+        previewWith(7L, List.of(new GpxPreview.PreviewWaypoint("Source", 45.0, 6.0)), null);
+
+    var waypoints = preview.readableWaypoints();
+
+    assertEquals(1, waypoints.size());
+    assertEquals("Source", waypoints.getFirst().name());
+    assertEquals("INFO", waypoints.getFirst().type());
+    assertEquals("IMPORTED", waypoints.getFirst().origin());
+    assertNull(waypoints.getFirst().distance());
+    assertNull(waypoints.getFirst().id());
+  }
+
+  @Test
+  void staleDetailsRevision_fallsBackToTheOldColumn() {
+    // The previous release rewrote the track (new files_revision) and left the details behind
+    GpxPreview preview =
+        previewWith(
+            8L,
+            List.of(new GpxPreview.PreviewWaypoint("Nouveau", 45.0, 6.0)),
+            new fr.pedalons.domain.gpx.PreviewWaypointsDocument(7L, List.of(detail("Périmé"))));
+
+    assertEquals("Nouveau", preview.readableWaypoints().getFirst().name());
+
+    GpxPreview current =
+        previewWith(
+            7L,
+            List.of(new GpxPreview.PreviewWaypoint("Nouveau", 45.0, 6.0)),
+            new fr.pedalons.domain.gpx.PreviewWaypointsDocument(7L, List.of(detail("Courant"))));
+
+    assertEquals("Courant", current.readableWaypoints().getFirst().name());
+    assertEquals("WATER", current.readableWaypoints().getFirst().type());
+  }
+
+  @Test
+  void oldColumn_keepsItsThreeFieldShape() throws Exception {
+    // The previous release reads this column with a reader that fails on unknown properties
+    String json =
+        new com.fasterxml.jackson.databind.ObjectMapper()
+            .writeValueAsString(new GpxPreview.PreviewWaypoint("Source", 45.0, 6.0));
+
+    var node = new com.fasterxml.jackson.databind.ObjectMapper().readTree(json);
+    assertEquals(3, node.size());
+    assertTrue(node.has("name"));
+    assertTrue(node.has("lat"));
+    assertTrue(node.has("lng"));
+  }
+
+  @Test
+  void detailsDocument_ignoresUnknownProperties() throws Exception {
+    var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+    String json =
+        "{\"trackRevision\":5,\"future\":true,\"waypoints\":[{\"id\":\"x\",\"name\":\"n\","
+            + "\"lat\":1.0,\"lng\":2.0,\"type\":\"TELEPORTER\",\"origin\":\"AUTHOR\","
+            + "\"later\":1}]}";
+
+    var document = mapper.readValue(json, fr.pedalons.domain.gpx.PreviewWaypointsDocument.class);
+
+    assertEquals(5L, document.trackRevision());
+    assertEquals("n", document.waypoints().getFirst().name());
+    assertEquals(
+        fr.pedalons.enums.WaypointType.INFO,
+        fr.pedalons.enums.WaypointType.parseOrInfo(document.waypoints().getFirst().type()),
+        "a type this release does not know reads as INFO");
+  }
 }

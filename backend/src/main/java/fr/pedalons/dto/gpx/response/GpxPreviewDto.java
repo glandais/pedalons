@@ -6,13 +6,17 @@ import static org.geolatte.geom.crs.CoordinateReferenceSystems.WGS84;
 
 import fr.pedalons.domain.gpx.GpxPreview;
 import fr.pedalons.domain.gpx.GpxPreview.PreviewTrack;
+import fr.pedalons.domain.gpx.PreviewWaypointDetail;
 import fr.pedalons.dto.routes.response.TrackDto;
 import fr.pedalons.dto.routes.response.WaypointDto;
 import fr.pedalons.dto.validation.ValidateSchema;
 import fr.pedalons.enums.ElevationState;
+import fr.pedalons.enums.WaypointOrigin;
+import fr.pedalons.enums.WaypointType;
 import fr.pedalons.service.route.ClimbNaming.NamedPoint;
 import fr.pedalons.service.surface.TrackSurfaceReadout;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.IntStream;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -68,6 +72,17 @@ public record GpxPreviewDto(
   public static GpxPreviewDto from(
       GpxPreview preview, boolean owned, List<TrackSurfaceReadout> surfaces) {
     String publicId = preview.getPublicId().toString();
+    List<PreviewWaypointDetail> waypoints = sorted(preview.readableWaypoints());
+    List<NamedPoint> namedPoints =
+        waypoints.stream()
+            .map(
+                w ->
+                    new NamedPoint(
+                        w.name(),
+                        w.lat(),
+                        w.lng(),
+                        WaypointType.parseOrInfo(w.type()) == WaypointType.SUMMIT))
+            .toList();
     return new GpxPreviewDto(
         publicId,
         preview.getName(),
@@ -89,14 +104,31 @@ public record GpxPreviewDto(
                   return TrackDto.of(
                       t.trackPoints(),
                       t.climbs(),
-                      preview.getWaypoints().stream()
-                          .map(w -> new NamedPoint(w.name(), w.lat(), w.lng()))
-                          .toList(),
+                      namedPoints,
                       i < surfaces.size() ? surfaces.get(i) : TrackSurfaceReadout.NONE);
                 })
             .toList(),
-        preview.getWaypoints().stream()
-            .map(w -> new WaypointDto(point(WGS84, g(w.lng(), w.lat())), w.name()))
+        waypoints.stream()
+            .map(
+                w ->
+                    new WaypointDto(
+                        point(WGS84, g(w.lng(), w.lat())),
+                        w.name(),
+                        w.id(),
+                        WaypointType.parseOrInfo(w.type()),
+                        w.description(),
+                        w.distance(),
+                        WaypointOrigin.parseOrImported(w.origin())))
             .toList());
+  }
+
+  /** By distance along the tracks, those off the track last. */
+  private static List<PreviewWaypointDetail> sorted(List<PreviewWaypointDetail> details) {
+    return details.stream()
+        .sorted(
+            Comparator.comparing(
+                PreviewWaypointDetail::distance,
+                Comparator.nullsLast(Comparator.<Double>naturalOrder())))
+        .toList();
   }
 }

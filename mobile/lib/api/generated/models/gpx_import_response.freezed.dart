@@ -18,9 +18,10 @@ mixin _$GpxImportResponse {
 
 /// Name of the file: its metadata, else its first track, else its file name
  String get name;/// Tracks in the order of the file, 1 to 8
- List<GpxImportTrack> get tracks;/// Number of waypoints of the file, which the editor does not keep
+ List<GpxImportTrack> get tracks;/// Number of waypoints of the file (the first 500 are in waypoints)
  int get waypointCount;/// True when the elevations of a track could not all be read from the elevation source and part of them are the file's own
- bool get elevationFallback;
+ bool get elevationFallback;/// The waypoints of the file, typed from their symbol, at most 500, in file order: imported, with no identifier and no distance (the server places them when the route is saved)
+ List<WaypointDto>? get waypoints;
 /// Create a copy of GpxImportResponse
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -34,20 +35,20 @@ $GpxImportResponseCopyWith<GpxImportResponse> get copyWith => _$GpxImportRespons
 @override
 bool operator ==(Object other) {
   final _this = this as GpxImportResponse;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is GpxImportResponse&&(identical(other.name, _this.name) || other.name == _this.name)&&const DeepCollectionEquality().equals(other.tracks, _this.tracks)&&(identical(other.waypointCount, _this.waypointCount) || other.waypointCount == _this.waypointCount)&&(identical(other.elevationFallback, _this.elevationFallback) || other.elevationFallback == _this.elevationFallback));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is GpxImportResponse&&(identical(other.name, _this.name) || other.name == _this.name)&&const DeepCollectionEquality().equals(other.tracks, _this.tracks)&&(identical(other.waypointCount, _this.waypointCount) || other.waypointCount == _this.waypointCount)&&(identical(other.elevationFallback, _this.elevationFallback) || other.elevationFallback == _this.elevationFallback)&&const DeepCollectionEquality().equals(other.waypoints, _this.waypoints));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as GpxImportResponse;
-  return Object.hash(runtimeType,_this.name,const DeepCollectionEquality().hash(_this.tracks),_this.waypointCount,_this.elevationFallback);
+  return Object.hash(runtimeType,_this.name,const DeepCollectionEquality().hash(_this.tracks),_this.waypointCount,_this.elevationFallback,const DeepCollectionEquality().hash(_this.waypoints));
 }
 
 @override
 String toString() {
   final _this = this as GpxImportResponse;
-  return 'GpxImportResponse(name: ${_this.name}, tracks: ${_this.tracks}, waypointCount: ${_this.waypointCount}, elevationFallback: ${_this.elevationFallback})';
+  return 'GpxImportResponse(name: ${_this.name}, tracks: ${_this.tracks}, waypointCount: ${_this.waypointCount}, elevationFallback: ${_this.elevationFallback}, waypoints: ${_this.waypoints})';
 }
 
 
@@ -58,7 +59,7 @@ abstract mixin class $GpxImportResponseCopyWith<$Res>  {
   factory $GpxImportResponseCopyWith(GpxImportResponse value, $Res Function(GpxImportResponse) _then) = _$GpxImportResponseCopyWithImpl;
 @useResult
 $Res call({
- String name, List<GpxImportTrack> tracks, int waypointCount, bool elevationFallback
+ String name, List<GpxImportTrack> tracks, int waypointCount, bool elevationFallback, List<WaypointDto>? waypoints
 });
 
 
@@ -75,13 +76,14 @@ class _$GpxImportResponseCopyWithImpl<$Res>
 
 /// Create a copy of GpxImportResponse
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? tracks = null,Object? waypointCount = null,Object? elevationFallback = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? tracks = null,Object? waypointCount = null,Object? elevationFallback = null,Object? waypoints = freezed,}) {
   return _then(GpxImportResponse(
 name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,tracks: null == tracks ? _self.tracks : tracks // ignore: cast_nullable_to_non_nullable
 as List<GpxImportTrack>,waypointCount: null == waypointCount ? _self.waypointCount : waypointCount // ignore: cast_nullable_to_non_nullable
 as int,elevationFallback: null == elevationFallback ? _self.elevationFallback : elevationFallback // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,waypoints: freezed == waypoints ? _self.waypoints : waypoints // ignore: cast_nullable_to_non_nullable
+as List<WaypointDto>?,
   ));
 }
 
@@ -166,10 +168,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String name,  List<GpxImportTrack> tracks,  int waypointCount,  bool elevationFallback)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String name,  List<GpxImportTrack> tracks,  int waypointCount,  bool elevationFallback,  List<WaypointDto>? waypoints)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _GpxImportResponse() when $default != null:
-return $default(_that.name,_that.tracks,_that.waypointCount,_that.elevationFallback);case _:
+return $default(_that.name,_that.tracks,_that.waypointCount,_that.elevationFallback,_that.waypoints);case _:
   return orElse();
 
 }
@@ -187,10 +189,10 @@ return $default(_that.name,_that.tracks,_that.waypointCount,_that.elevationFallb
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String name,  List<GpxImportTrack> tracks,  int waypointCount,  bool elevationFallback)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String name,  List<GpxImportTrack> tracks,  int waypointCount,  bool elevationFallback,  List<WaypointDto>? waypoints)  $default,) {final _that = this;
 switch (_that) {
 case _GpxImportResponse():
-return $default(_that.name,_that.tracks,_that.waypointCount,_that.elevationFallback);case _:
+return $default(_that.name,_that.tracks,_that.waypointCount,_that.elevationFallback,_that.waypoints);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -207,10 +209,10 @@ return $default(_that.name,_that.tracks,_that.waypointCount,_that.elevationFallb
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String name,  List<GpxImportTrack> tracks,  int waypointCount,  bool elevationFallback)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String name,  List<GpxImportTrack> tracks,  int waypointCount,  bool elevationFallback,  List<WaypointDto>? waypoints)?  $default,) {final _that = this;
 switch (_that) {
 case _GpxImportResponse() when $default != null:
-return $default(_that.name,_that.tracks,_that.waypointCount,_that.elevationFallback);case _:
+return $default(_that.name,_that.tracks,_that.waypointCount,_that.elevationFallback,_that.waypoints);case _:
   return null;
 
 }
@@ -222,7 +224,7 @@ return $default(_that.name,_that.tracks,_that.waypointCount,_that.elevationFallb
 @JsonSerializable()
 
 class _GpxImportResponse implements GpxImportResponse {
-  const _GpxImportResponse({required this.name, required  List<GpxImportTrack> tracks, required this.waypointCount, required this.elevationFallback}): _tracks = tracks;
+  const _GpxImportResponse({required this.name, required  List<GpxImportTrack> tracks, required this.waypointCount, required this.elevationFallback,  List<WaypointDto>? waypoints}): _tracks = tracks,_waypoints = waypoints;
   factory _GpxImportResponse.fromJson(Map<String, dynamic> json) => _$GpxImportResponseFromJson(json);
 
 /// Name of the file: its metadata, else its first track, else its file name
@@ -236,10 +238,21 @@ class _GpxImportResponse implements GpxImportResponse {
   return EqualUnmodifiableListView(_tracks);
 }
 
-/// Number of waypoints of the file, which the editor does not keep
+/// Number of waypoints of the file (the first 500 are in waypoints)
 @override final  int waypointCount;
 /// True when the elevations of a track could not all be read from the elevation source and part of them are the file's own
 @override final  bool elevationFallback;
+/// The waypoints of the file, typed from their symbol, at most 500, in file order: imported, with no identifier and no distance (the server places them when the route is saved)
+ final  List<WaypointDto>? _waypoints;
+/// The waypoints of the file, typed from their symbol, at most 500, in file order: imported, with no identifier and no distance (the server places them when the route is saved)
+@override List<WaypointDto>? get waypoints {
+  final value = _waypoints;
+  if (value == null) return null;
+  if (_waypoints is EqualUnmodifiableListView) return _waypoints;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(value);
+}
+
 
 /// Create a copy of GpxImportResponse
 /// with the given fields replaced by the non-null parameter values.
@@ -254,18 +267,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _GpxImportResponse&&(identical(other.name, name) || other.name == name)&&const DeepCollectionEquality().equals(other.tracks, _tracks)&&(identical(other.waypointCount, waypointCount) || other.waypointCount == waypointCount)&&(identical(other.elevationFallback, elevationFallback) || other.elevationFallback == elevationFallback));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _GpxImportResponse&&(identical(other.name, name) || other.name == name)&&const DeepCollectionEquality().equals(other.tracks, _tracks)&&(identical(other.waypointCount, waypointCount) || other.waypointCount == waypointCount)&&(identical(other.elevationFallback, elevationFallback) || other.elevationFallback == elevationFallback)&&const DeepCollectionEquality().equals(other.waypoints, _waypoints));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,name,const DeepCollectionEquality().hash(_tracks),waypointCount,elevationFallback);
+    return Object.hash(runtimeType,name,const DeepCollectionEquality().hash(_tracks),waypointCount,elevationFallback,const DeepCollectionEquality().hash(_waypoints));
 }
 
 @override
 String toString() {
-    return 'GpxImportResponse(name: $name, tracks: $tracks, waypointCount: $waypointCount, elevationFallback: $elevationFallback)';
+    return 'GpxImportResponse(name: $name, tracks: $tracks, waypointCount: $waypointCount, elevationFallback: $elevationFallback, waypoints: $waypoints)';
 }
 
 
@@ -276,7 +289,7 @@ abstract mixin class _$GpxImportResponseCopyWith<$Res> implements $GpxImportResp
   factory _$GpxImportResponseCopyWith(_GpxImportResponse value, $Res Function(_GpxImportResponse) _then) = __$GpxImportResponseCopyWithImpl;
 @override @useResult
 $Res call({
- String name, List<GpxImportTrack> tracks, int waypointCount, bool elevationFallback
+ String name, List<GpxImportTrack> tracks, int waypointCount, bool elevationFallback, List<WaypointDto>? waypoints
 });
 
 
@@ -293,13 +306,14 @@ class __$GpxImportResponseCopyWithImpl<$Res>
 
 /// Create a copy of GpxImportResponse
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? name = null,Object? tracks = null,Object? waypointCount = null,Object? elevationFallback = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? name = null,Object? tracks = null,Object? waypointCount = null,Object? elevationFallback = null,Object? waypoints = freezed,}) {
   return _then(_GpxImportResponse(
 name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,tracks: null == tracks ? _self._tracks : tracks // ignore: cast_nullable_to_non_nullable
 as List<GpxImportTrack>,waypointCount: null == waypointCount ? _self.waypointCount : waypointCount // ignore: cast_nullable_to_non_nullable
 as int,elevationFallback: null == elevationFallback ? _self.elevationFallback : elevationFallback // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,waypoints: freezed == waypoints ? _self._waypoints : waypoints // ignore: cast_nullable_to_non_nullable
+as List<WaypointDto>?,
   ));
 }
 

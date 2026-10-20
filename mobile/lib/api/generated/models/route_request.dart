@@ -9,6 +9,7 @@ import 'media_dto.dart';
 import 'planner_state.dart';
 import 'surface_type.dart';
 import 'visibility.dart';
+import 'waypoint_request.dart';
 
 part 'route_request.freezed.dart';
 part 'route_request.g.dart';
@@ -37,6 +38,9 @@ abstract class RouteRequest with _$RouteRequest {
 
     /// Editing state of the planner; the server derives the track from it. Not with points (400 PLANNER_STATE_INVALID); a gpxFile wins over it
     PlannerState? plannerState,
+
+    /// The complete list of the route's waypoints, replacing them. Omitted: they stay as they are (placed again on the new track when the track changes, and a new GPX file replaces the imported ones and keeps the author's). When present it wins over the waypoints of a GPX file sent with it
+    List<WaypointRequest>? waypoints,
   }) = _RouteRequest;
 
   factory RouteRequest.fromJson(Map<String, Object?> json) =>

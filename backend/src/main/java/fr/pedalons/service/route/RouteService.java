@@ -7,6 +7,7 @@ import fr.pedalons.common.planner.PlannerState;
 import fr.pedalons.domain.asset.Asset;
 import fr.pedalons.domain.common.TeamEntity;
 import fr.pedalons.domain.route.GpxTrack;
+import fr.pedalons.domain.route.GpxWaypoint;
 import fr.pedalons.domain.route.PlannerStateDocument;
 import fr.pedalons.domain.route.Route;
 import fr.pedalons.domain.route.TrackSurfaceDocument;
@@ -19,6 +20,7 @@ import fr.pedalons.dto.common.asset.MediaDto;
 import fr.pedalons.dto.error.ErrorCode;
 import fr.pedalons.dto.routes.request.RouteRequest;
 import fr.pedalons.dto.routes.request.RouteSearchParams;
+import fr.pedalons.dto.routes.request.WaypointRequest;
 import fr.pedalons.dto.routes.response.BoundsDto;
 import fr.pedalons.dto.routes.response.PlannerStateResponse;
 import fr.pedalons.dto.routes.response.RouteBoundsResponse;
@@ -37,6 +39,7 @@ import fr.pedalons.enums.ElevationState;
 import fr.pedalons.enums.EntityType;
 import fr.pedalons.enums.ListViewMode;
 import fr.pedalons.enums.TagTarget;
+import fr.pedalons.enums.WaypointOrigin;
 import fr.pedalons.enums.WindDirection;
 import fr.pedalons.repository.asset.AssetRepository;
 import fr.pedalons.repository.common.TeamEntityQueryBasic;
@@ -51,6 +54,13 @@ import fr.pedalons.service.elevation.ElevationRefreshService;
 import fr.pedalons.service.publication.PublicationEndCalculator;
 import fr.pedalons.service.route.planner.PlannerStates;
 import fr.pedalons.service.route.response.TrackMetadata;
+import fr.pedalons.service.route.waypoint.AnchoredWaypoint;
+import fr.pedalons.service.route.waypoint.TrackAxis;
+import fr.pedalons.service.route.waypoint.WaypointAnchoring;
+import fr.pedalons.service.route.waypoint.WaypointDraft;
+import fr.pedalons.service.route.waypoint.WaypointDrafts;
+import fr.pedalons.service.route.waypoint.WaypointPlan;
+import fr.pedalons.service.route.waypoint.WaypointRows;
 import fr.pedalons.service.security.annotation.CheckAccess;
 import fr.pedalons.service.security.annotation.Public;
 import fr.pedalons.service.surface.RouteSurfaces;
@@ -307,7 +317,7 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
   @Transactional
   @CheckAccess(entityType = EntityType.ROUTE, action = ActionType.CREATE)
   public RouteDto createRoute(String teamSlug, RouteRequest request, @Nullable Path gpxPath) {
-    return doCreateRoute(teamSlug, request, gpxPath, null, null);
+    return doCreateRoute(teamSlug, request, gpxPath, null, null, null);
   }
 
   /**
@@ -328,7 +338,24 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
       @Nullable Path gpxPath,
       @Nullable PlannerState copiedState,
       @Nullable List<@Nullable TrackSurfaceDocument> copiedSurfaces) {
-    return doCreateRoute(teamSlug, request, gpxPath, copiedState, copiedSurfaces);
+    return doCreateRoute(teamSlug, request, gpxPath, copiedState, copiedSurfaces, null);
+  }
+
+  /**
+   * As {@link #createRoute(String, RouteRequest, Path, PlannerState, List)}, also taking the
+   * waypoints of the preview, which {@code original.gpx} does not carry (docs/LEDGER_*.md API-134):
+   * they are placed again on the new route, unless the request has a list of its own.
+   */
+  @Transactional
+  @CheckAccess(entityType = EntityType.ROUTE, action = ActionType.CREATE)
+  public RouteDto createRoute(
+      String teamSlug,
+      RouteRequest request,
+      @Nullable Path gpxPath,
+      @Nullable PlannerState copiedState,
+      @Nullable List<@Nullable TrackSurfaceDocument> copiedSurfaces,
+      @Nullable List<WaypointDraft> copiedWaypoints) {
+    return doCreateRoute(teamSlug, request, gpxPath, copiedState, copiedSurfaces, copiedWaypoints);
   }
 
   private RouteDto doCreateRoute(
@@ -336,7 +363,8 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
       RouteRequest request,
       @Nullable Path gpxPath,
       @Nullable PlannerState copiedState,
-      @Nullable List<@Nullable TrackSurfaceDocument> copiedSurfaces) {
+      @Nullable List<@Nullable TrackSurfaceDocument> copiedSurfaces,
+      @Nullable List<WaypointDraft> copiedWaypoints) {
     Team team = teamService.getTeam(teamSlug);
     User creator = pedalonsContext.getUser();
 
@@ -355,6 +383,9 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
     checkPlannerAllowed(team, gpxPath, routePoints, requestedState);
     List<GeoPoint> statePoints =
         requestedState == null ? null : plannerStates.validateAndDerive(requestedState);
+
+    // Before anything is stored: a malformed list is a 400 with nothing to undo
+    WaypointPlan waypointPlan = creationPlan(request, copiedWaypoints);
 
     String slug = slugService.generateSlug(request.name(), team.getId(), routeRepository);
 
@@ -380,7 +411,7 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
       // Phase 1: CPU + S3 (transaction suspended, DB connection released)
       ElevationQuality quality = elevationRefreshService.saveQuality();
       GpxProcessingService.GpxProcessingResult gpxResult =
-          gpxProcessingService.processGpxData(route, gpx, quality);
+          gpxProcessingService.processGpxData(route, gpx, quality, waypointPlan);
 
       // Phase 2: DB persist (transaction resumed, short burst)
       TrackMetadata metadata = gpxProcessingService.persistGpxData(route, gpxResult);
@@ -403,6 +434,23 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
       gpxProcessingService.deleteRouteFiles(route);
       throw e;
     }
+  }
+
+  /**
+   * The waypoints a new route gets (docs/LEDGER_*.md WEB-100, C3c): the request's list when it has
+   * one (the file's <wpt> are then ignored), else the preview's it is promoted from, else those of
+   * the file — a drawing has none.
+   */
+  private static WaypointPlan creationPlan(
+      RouteRequest request, @Nullable List<WaypointDraft> copiedWaypoints) {
+    if (request.waypoints() != null) {
+      return new WaypointPlan(
+          WaypointDrafts.fromRequest(request.waypoints(), List.of(), null), false);
+    }
+    if (copiedWaypoints != null) {
+      return new WaypointPlan(copiedWaypoints, false);
+    }
+    return WaypointPlan.FROM_DOCUMENT;
   }
 
   /**
@@ -515,6 +563,12 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
     // and realigns, instead of bumping the versions under it (docs/LEDGER_*.md API-131).
     routeRepository.getEntityManager().lock(route, LockModeType.PESSIMISTIC_WRITE);
 
+    // Before anything is cleared: this initialises the waypoints collection, and none may be
+    // loaded between the clear of the tracks and their refill (HHH90032003). Docs/LEDGER_*.md
+    // WEB-100, C3c: the waypoints are never cleared, they are updated and removed in place.
+    List<GpxWaypoint> currentWaypoints = List.copyOf(route.getWaypoints());
+    Float previousDistance = route.getDistance();
+
     validateVisibility(team, request);
     rejectPointsWithState(request);
     // A file wins over a planner state, which is then ignored, not even validated.
@@ -545,18 +599,22 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
       }
     }
 
+    // Outside the try: a malformed list is a 400, not a GPX_FAILURE
+    WaypointPlan waypointPlan =
+        gpx == null ? null : updatePlan(request, gpxPath, currentWaypoints, previousDistance);
+
     try {
       // If GPX file provided, update track and climbs
       if (gpx != null) {
         // The asset rows are kept and given the new files by persistGpxData (docs/LEDGER_*.md
         // API-128); a rollback restores them and the transaction synchronizations clean the files.
         route.getTracks().clear();
-        route.getWaypoints().clear();
 
         // Phase 1: CPU + S3 (transaction suspended, DB connection released)
         ElevationQuality quality = elevationRefreshService.saveQuality();
         GpxProcessingService.GpxProcessingResult gpxResult =
-            gpxProcessingService.processGpxData(route, gpx, quality);
+            gpxProcessingService.processGpxData(
+                route, gpx, quality, Objects.requireNonNull(waypointPlan));
 
         // Phase 2: DB persist (transaction resumed, short burst)
         TrackMetadata metadata = gpxProcessingService.persistGpxData(route, gpxResult);
@@ -582,11 +640,70 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
       // A new track is a new distance: every ride, group and stage riding it ends at another time
       // (docs/LEDGER_*.md API-85).
       publicationEndCalculator.refreshUsersOf(route);
+    } else if (request.waypoints() != null) {
+      replaceWaypointsOnly(team, route, request.waypoints(), currentWaypoints);
     }
 
     updateMedia(route, request.media());
     routeRepository.persist(route);
     return RouteDto.from(route, assetService, commentCountLookup.forEntity(route), tagsOf(route));
+  }
+
+  /**
+   * The waypoints placed on a track that is replaced (docs/LEDGER_*.md WEB-100, C3c): the request's
+   * list when it has one; else, for a new file, the author's waypoints kept and the file's own
+   * replacing the imported ones; else (a redrawn track) all of them, placed again.
+   */
+  private static WaypointPlan updatePlan(
+      RouteRequest request,
+      @Nullable Path gpxPath,
+      List<GpxWaypoint> current,
+      @Nullable Float previousDistance) {
+    if (request.waypoints() != null) {
+      return new WaypointPlan(
+          WaypointDrafts.fromRequest(
+              request.waypoints(), WaypointDrafts.knownOf(current), previousDistance),
+          false);
+    }
+    if (gpxPath != null) {
+      return new WaypointPlan(
+          WaypointDrafts.fromRows(
+              current, previousDistance, w -> w.getOrigin() == WaypointOrigin.AUTHOR),
+          true);
+    }
+    return new WaypointPlan(WaypointDrafts.fromRows(current, previousDistance, w -> true), false);
+  }
+
+  /**
+   * Replaces the waypoints of a route whose track did not change: the filtered GPX and the FIT are
+   * written again from the stored track, nothing else is touched (no original, no thumbnail, no
+   * elevation or surface request). A list equal to the stored one writes nothing at all, so a save
+   * of the title alone sends no route to the GPS services again.
+   */
+  private void replaceWaypointsOnly(
+      Team team, Route route, List<WaypointRequest> requested, List<GpxWaypoint> current) {
+    List<GpxTrack> tracks =
+        route.getTracks().stream().sorted(Comparator.comparing(GpxTrack::getId)).toList();
+    List<AnchoredWaypoint> anchored =
+        WaypointAnchoring.anchor(
+            TrackAxis.ofTracks(tracks),
+            WaypointDrafts.fromRequest(requested, WaypointDrafts.knownOf(current), null));
+    if (WaypointRows.sameContent(current, anchored, true)) {
+      return;
+    }
+    if (tracks.stream().allMatch(t -> t.getTrackPoints().isEmpty())) {
+      // No stored track (legacy data): no file to write, every waypoint is off the track
+      WaypointRows.apply(route, anchored, pedalonsContext.getUser());
+      return;
+    }
+    List<GpxProcessingService.StoredTrack> stored =
+        tracks.stream()
+            .map(t -> new GpxProcessingService.StoredTrack(t.getName(), t.getTrackPoints()))
+            .toList();
+    GpxProcessingService.WaypointFiles files =
+        gpxProcessingService.rewriteWaypointFiles(team, route.getName(), stored, anchored);
+    WaypointRows.apply(route, anchored, pedalonsContext.getUser());
+    gpxProcessingService.applyWaypointFiles(route, files);
   }
 
   /**

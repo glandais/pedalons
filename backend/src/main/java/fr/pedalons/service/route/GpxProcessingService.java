@@ -9,7 +9,6 @@ import fr.pedalons.common.exception.PedalonsException;
 import fr.pedalons.domain.asset.Asset;
 import fr.pedalons.domain.route.ClimbData;
 import fr.pedalons.domain.route.GpxTrack;
-import fr.pedalons.domain.route.GpxWaypoint;
 import fr.pedalons.domain.route.Route;
 import fr.pedalons.domain.team.Team;
 import fr.pedalons.domain.user.User;
@@ -20,10 +19,19 @@ import fr.pedalons.enums.ElevationState;
 import fr.pedalons.enums.EntityType;
 import fr.pedalons.enums.WindDirection;
 import fr.pedalons.infrastructure.exception.NotFoundException;
+import fr.pedalons.infrastructure.gpx.CoursePoint;
 import fr.pedalons.infrastructure.gpx.FitExporter;
 import fr.pedalons.infrastructure.storage.StorageService;
 import fr.pedalons.service.asset.AssetService;
 import fr.pedalons.service.route.response.TrackMetadata;
+import fr.pedalons.service.route.waypoint.AnchoredWaypoint;
+import fr.pedalons.service.route.waypoint.TrackAxis;
+import fr.pedalons.service.route.waypoint.WaypointAnchoring;
+import fr.pedalons.service.route.waypoint.WaypointDraft;
+import fr.pedalons.service.route.waypoint.WaypointDrafts;
+import fr.pedalons.service.route.waypoint.WaypointExports;
+import fr.pedalons.service.route.waypoint.WaypointPlan;
+import fr.pedalons.service.route.waypoint.WaypointRows;
 import fr.pedalons.service.security.PedalonsQueryContext;
 import fr.pedalons.service.thumbnail.MapThumbnailRenderer;
 import fr.pedalons.service.thumbnail.ThumbnailService;
@@ -137,9 +145,6 @@ public class GpxProcessingService {
       List<ClimbData> climbs,
       TrackMetadata metadata) {}
 
-  /** A single waypoint, fully computed but not yet bound to any entity. */
-  public record ComputedWaypoint(String name, org.geolatte.geom.Point<G2D> location) {}
-
   /**
    * Outcome of {@link #computeGpx}: the two GPX serializations and the FIT export as temp files,
    * plus the computed tracks, waypoints and aggregated metadata.
@@ -159,7 +164,7 @@ public class GpxProcessingService {
       File filteredGpx,
       File fitFile,
       List<ComputedTrack> tracks,
-      List<ComputedWaypoint> waypoints,
+      List<AnchoredWaypoint> waypoints,
       TrackMetadata aggregated,
       double fallbackAfterErrorKm)
       implements AutoCloseable {
@@ -249,6 +254,17 @@ public class GpxProcessingService {
    * @param quality the elevation source of every track ({@link ElevationQuality})
    */
   public ComputedGpx computeGpx(GpxDocument source, ElevationQuality quality) {
+    return computeGpx(source, quality, WaypointPlan.FROM_DOCUMENT);
+  }
+
+  /**
+   * As {@link #computeGpx(GpxDocument, ElevationQuality)}, placing the waypoints of {@code plan}
+   * on the processed tracks (docs/LEDGER_*.md WEB-100, C3c) and writing them, typed, into the
+   * filtered GPX ({@code sym}, {@code type}, {@code desc}) and the FIT ({@code course_point}).
+   * {@code original.gpx} stays the raw tracks without any {@code <wpt>}: it is the source of the HD
+   * catch-up and of a preview's promotion, which carry the waypoints on their own.
+   */
+  public ComputedGpx computeGpx(GpxDocument source, ElevationQuality quality, WaypointPlan plan) {
     RawTracks rawTracks = rawTracks(source);
     GpxDocument doc = rawTracks.doc();
     String name = rawTracks.name();
@@ -261,16 +277,6 @@ public class GpxProcessingService {
     try {
       original = writeToTempFile(GpxWriterJvm.write(raw, name, trackNames), ".gpx");
 
-      List<ComputedWaypoint> waypoints = new ArrayList<>();
-      for (io.github.glandais.engine.gpx.GpxWaypoint waypoint : doc.getWaypoints()) {
-        waypoints.add(
-            new ComputedWaypoint(
-                // Nullable in vcyclist, empty string in gpx2web, and not-null in gpx_waypoints:
-                // without this fallback a <wpt> with no <name> fails the insert at flush time.
-                Objects.requireNonNullElse(waypoint.getName(), ""),
-                point(WGS84, g(waypoint.getLongitudeDeg(), waypoint.getLatitudeDeg()))));
-      }
-
       List<Path> processed = new ArrayList<>(raw.size());
       double fallbackKm = 0.0;
       for (int i = 0; i < raw.size(); i++) {
@@ -280,10 +286,19 @@ public class GpxProcessingService {
         fallbackKm += result.fallbackAfterErrorKm();
       }
 
+      List<WaypointDraft> drafts = new ArrayList<>(plan.drafts());
+      if (plan.withDocumentWaypoints()) {
+        // A <wpt> with no <name> gets an empty one: the column is not null
+        drafts.addAll(WaypointDrafts.fromDocument(doc));
+      }
+      List<AnchoredWaypoint> waypoints =
+          WaypointAnchoring.anchor(TrackAxis.ofPaths(processed), drafts);
+
       filtered =
           writeToTempFile(
-              GpxWriterJvm.write(processed, name, trackNames, doc.getWaypoints()), ".gpx");
-      fit = writeFitToTempFile(processed, name);
+              GpxWriterJvm.write(processed, name, trackNames, WaypointExports.gpx(waypoints)),
+              ".gpx");
+      fit = writeFitToTempFile(processed, name, WaypointExports.coursePoints(waypoints));
 
       List<ComputedTrack> tracks = new ArrayList<>();
       List<TrackMetadata> tracksMetadata = new ArrayList<>();
@@ -385,8 +400,12 @@ public class GpxProcessingService {
   }
 
   /** FIT export of the processed geometry — see {@link FitExporter} for what it guards against. */
-  private static File writeFitToTempFile(List<Path> paths, String name) throws IOException {
-    byte[] bytes = FitExporter.toFitBytes(paths, name);
+  private static File writeFitToTempFile(List<Path> paths, String name, List<CoursePoint> points)
+      throws IOException {
+    return writeFitToTempFile(FitExporter.toFitBytes(paths, name, points));
+  }
+
+  private static File writeFitToTempFile(byte[] bytes) throws IOException {
     File file = createTempFile(".fit");
     try {
       Files.write(file.toPath(), bytes);
@@ -404,7 +423,7 @@ public class GpxProcessingService {
   record GpxProcessingResult(
       TrackMetadata metadata,
       List<GpxTrack> tracks,
-      List<GpxWaypoint> waypoints,
+      List<AnchoredWaypoint> waypoints,
       List<PreparedAsset> uploadedAssets) {}
 
   /**
@@ -425,12 +444,23 @@ public class GpxProcessingService {
   @Transactional(Transactional.TxType.NOT_SUPPORTED)
   public GpxProcessingResult processGpxData(
       Route route, GpxDocument gpx, ElevationQuality quality) {
+    return processGpxData(route, gpx, quality, WaypointPlan.FROM_DOCUMENT);
+  }
+
+  /**
+   * As {@link #processGpxData(Route, GpxDocument, ElevationQuality)}, placing the waypoints of
+   * {@code plan} (docs/LEDGER_*.md WEB-100, C3c). The result carries them placed; {@link
+   * #persistGpxData} writes the rows.
+   */
+  @Transactional(Transactional.TxType.NOT_SUPPORTED)
+  public GpxProcessingResult processGpxData(
+      Route route, GpxDocument gpx, ElevationQuality quality, WaypointPlan plan) {
     User creator = pedalonsContext.getUser();
     Long routeId = route.getId();
     Team team = route.getTeam();
     // Outside the try: the catches below delete what was uploaded before the failure
     List<PreparedAsset> uploadedAssets = new ArrayList<>();
-    try (ComputedGpx computed = computeGpx(gpx, quality)) {
+    try (ComputedGpx computed = computeGpx(gpx, quality, plan)) {
       uploadedAssets.add(
           prepareAndUpload(
               team,
@@ -478,11 +508,6 @@ public class GpxProcessingService {
 
       LOG.infov("GPX processing complete for route {0}", routeId);
 
-      List<GpxWaypoint> waypoints =
-          computed.waypoints().stream()
-              .map(w -> new GpxWaypoint(creator, w.name(), w.location()))
-              .toList();
-
       List<GpxTrack> tracks =
           computed.tracks().stream()
               .map(
@@ -498,7 +523,8 @@ public class GpxProcessingService {
                           t.metadata().elevationLoss()))
               .toList();
 
-      return new GpxProcessingResult(computed.aggregated(), tracks, waypoints, uploadedAssets);
+      return new GpxProcessingResult(
+          computed.aggregated(), tracks, computed.waypoints(), uploadedAssets);
     } catch (PedalonsException e) {
       cleanupUploadedAssets(uploadedAssets, team);
       throw e;
@@ -545,10 +571,11 @@ public class GpxProcessingService {
     for (PreparedAsset pa : result.uploadedAssets()) {
       assetService.deleteUnlessCommitted(assetService.getAssetKey(route.getTeam(), pa.fileId()));
     }
-    // First: updateRoute cleared these orphan-removal collections, and no query may run between a
-    // clear and its refill (HHH90032003 would delete the elements for good).
-    result.waypoints().forEach(route::addWaypoint);
+    // First: updateRoute cleared the tracks, an orphan-removal collection, and no query may run
+    // between a clear and its refill (HHH90032003 would delete the elements for good). The
+    // waypoints are never cleared: they are updated, removed and added in place (WaypointRows).
     result.tracks().forEach(route::addTrack);
+    WaypointRows.apply(route, result.waypoints(), pedalonsContext.getUser());
 
     // The asset rows stay (same id, so the published URLs keep working), only their file changes.
     // In memory only, never a clear-and-refill of the set. docs/LEDGER_*.md API-128.
@@ -588,7 +615,19 @@ public class GpxProcessingService {
       TrackMetadata metadata,
       List<ComputedTrack> tracks,
       PreparedAsset filtered,
-      PreparedAsset fit) {}
+      PreparedAsset fit,
+      List<AnchoredWaypoint> waypoints,
+      List<WaypointDraft> used) {
+
+    /** Without waypoints: the shape this record had before WEB-100 (C3c). */
+    public ElevationRecompute(
+        TrackMetadata metadata,
+        List<ComputedTrack> tracks,
+        PreparedAsset filtered,
+        PreparedAsset fit) {
+      this(metadata, tracks, filtered, fit, List.of(), List.of());
+    }
+  }
 
   /**
    * Phase 1 of the HD catch-up (docs/LEDGER_*.md API-131): recomputes {@code gpx} (the route's
@@ -603,8 +642,22 @@ public class GpxProcessingService {
    */
   @Transactional(Transactional.TxType.NOT_SUPPORTED)
   public ElevationRecompute recomputeHd(Team team, GpxDocument gpx) {
+    return recomputeHd(team, gpx, WaypointPlan.FROM_DOCUMENT);
+  }
+
+  /**
+   * As {@link #recomputeHd(Team, GpxDocument)}, with the waypoints stored (not the file's, which
+   * the original does not carry) given as {@code drafts}, to be placed again on the HD track
+   * (docs/LEDGER_*.md WEB-100, C3c): the HD simplification may move the vertices, hence the axis.
+   */
+  @Transactional(Transactional.TxType.NOT_SUPPORTED)
+  public ElevationRecompute recomputeHd(Team team, GpxDocument gpx, List<WaypointDraft> drafts) {
+    return recomputeHd(team, gpx, new WaypointPlan(drafts, false));
+  }
+
+  private ElevationRecompute recomputeHd(Team team, GpxDocument gpx, WaypointPlan plan) {
     List<PreparedAsset> uploaded = new ArrayList<>(2);
-    try (ComputedGpx computed = computeGpx(gpx, ElevationQuality.HD)) {
+    try (ComputedGpx computed = computeGpx(gpx, ElevationQuality.HD, plan)) {
       if (computed.fallbackAfterErrorKm() > 0) {
         throw new ElevationUnavailableException(
             "HD elevation unavailable for %.2f km of the track"
@@ -621,7 +674,13 @@ public class GpxProcessingService {
           prepareAndUpload(
               team, AssetType.ROUTE_FIT, "route.fit", tmp -> moveInto(computed.fitFile(), tmp));
       uploaded.add(fit);
-      return new ElevationRecompute(computed.aggregated(), computed.tracks(), filtered, fit);
+      return new ElevationRecompute(
+          computed.aggregated(),
+          computed.tracks(),
+          filtered,
+          fit,
+          computed.waypoints(),
+          plan.drafts());
     } catch (Exception e) {
       cleanupUploadedAssets(uploaded, team);
       throw e instanceof RuntimeException re ? re : new BusinessException(ErrorCode.GPX_FAILURE, e);
@@ -672,6 +731,9 @@ public class GpxProcessingService {
       track.setElevationGain(computed.metadata().elevationGain());
       track.setElevationLoss(computed.metadata().elevationLoss());
     }
+    // The HD simplification may have moved the vertices: the waypoints keep their place, their
+    // distance follows the new axis (docs/LEDGER_*.md WEB-100, C3c)
+    WaypointRows.updateDistances(route, recompute.waypoints());
     TrackMetadata metadata = recompute.metadata();
     boolean distanceChanged = !Objects.equals(route.getDistance(), metadata.distance());
     route.setDistance(metadata.distance());
@@ -680,6 +742,88 @@ public class GpxProcessingService {
     route.setElevationLoss(metadata.elevationLoss());
     route.setElevationState(ElevationState.HD);
     return distanceChanged;
+  }
+
+  // ------------------------------------------------------------------ waypoints only
+
+  /** A stored track, read before the transaction is suspended. */
+  public record StoredTrack(String name, List<GpxTrack.TrackPoint> points) {}
+
+  /** The filtered GPX and FIT rewritten for new waypoints, uploaded under new keys. */
+  public record WaypointFiles(PreparedAsset filtered, PreparedAsset fit) {}
+
+  /** The two serialisations of stored tracks with waypoints. */
+  public record WaypointFileBytes(String filteredGpx, byte[] fit) {}
+
+  /**
+   * The filtered GPX and the FIT of stored tracks (the processed paths, as {@code track_points}
+   * keep them) with {@code waypoints}. Pure: no I/O, no entity.
+   */
+  public static WaypointFileBytes waypointFileBytes(
+      String name, List<StoredTrack> tracks, List<AnchoredWaypoint> waypoints) {
+    List<io.github.glandais.engine.gpx.GpxTrack> gpxTracks = new ArrayList<>(tracks.size());
+    for (StoredTrack track : tracks) {
+      gpxTracks.add(
+          GpxModelJvm.track(
+              track.points().stream()
+                  .map(p -> GpxModelJvm.trackPoint(p.lat(), p.lng(), p.ele()))
+                  .toList(),
+              track.name()));
+    }
+    List<Path> paths = GpxToPathJvm.tracksAsPaths(GpxModelJvm.document(gpxTracks, name));
+    List<String> names = tracks.stream().map(StoredTrack::name).toList();
+    return new WaypointFileBytes(
+        GpxWriterJvm.write(paths, name, names, WaypointExports.gpx(waypoints)),
+        FitExporter.toFitBytes(paths, name, WaypointExports.coursePoints(waypoints)));
+  }
+
+  /**
+   * The filtered GPX and the FIT of a route whose track did not change, written again for new
+   * waypoints (docs/LEDGER_*.md WEB-100, C3c): from the stored track points, which are the
+   * processed paths, so neither the original, nor the thumbnails, nor the elevation state, nor
+   * the planner state are touched. No transaction, no entity: like {@link #processGpxData}.
+   */
+  @Transactional(Transactional.TxType.NOT_SUPPORTED)
+  public WaypointFiles rewriteWaypointFiles(
+      Team team, String routeName, List<StoredTrack> tracks, List<AnchoredWaypoint> waypoints) {
+    List<PreparedAsset> uploaded = new ArrayList<>(2);
+    try {
+      WaypointFileBytes content = waypointFileBytes(routeName, tracks, waypoints);
+      byte[] fitBytes = content.fit();
+      PreparedAsset filtered =
+          prepareAndUpload(
+              team,
+              AssetType.ROUTE_FILTERED_GPX,
+              "filtered.gpx",
+              tmp ->
+                  Files.writeString(tmp.toPath(), content.filteredGpx(), StandardCharsets.UTF_8));
+      uploaded.add(filtered);
+      PreparedAsset fit =
+          prepareAndUpload(
+              team, AssetType.ROUTE_FIT, "route.fit", tmp -> Files.write(tmp.toPath(), fitBytes));
+      uploaded.add(fit);
+      return new WaypointFiles(filtered, fit);
+    } catch (Exception e) {
+      cleanupUploadedAssets(uploaded, team);
+      throw e instanceof RuntimeException re ? re : new BusinessException(ErrorCode.GPX_FAILURE, e);
+    }
+  }
+
+  /**
+   * In the caller's transaction: the existing filtered GPX and FIT rows take the files of {@link
+   * #rewriteWaypointFiles} (same asset ids, so every URL is stable; new content revision, so GPS
+   * sync pushes the route again).
+   */
+  @Transactional(Transactional.TxType.REQUIRED)
+  public void applyWaypointFiles(Route route, WaypointFiles files) {
+    // Before anything can throw, as persistGpxData does
+    for (PreparedAsset pa : List.of(files.filtered(), files.fit())) {
+      assetService.deleteUnlessCommitted(assetService.getAssetKey(route.getTeam(), pa.fileId()));
+    }
+    for (PreparedAsset pa : List.of(files.filtered(), files.fit())) {
+      assetService.putStoredFile(
+          route.getTeam(), route, pa.type(), pa.fileId(), pa.fileName(), pa.stored(), true);
+    }
   }
 
   /**

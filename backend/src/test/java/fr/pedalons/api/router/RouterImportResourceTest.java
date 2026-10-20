@@ -196,6 +196,27 @@ class RouterImportResourceTest extends AbstractResourceTest {
         .body("name", equalTo("Sortie du dimanche"));
   }
 
+  /** docs/LEDGER_*.md WEB-100, C3c: the editor receives the file's waypoints, typed. */
+  @Test
+  void importGpx_returnsTypedWaypoints() throws IOException {
+    String typed =
+        "<wpt lat=\"47.2\" lon=\"-1.55\"><name>Source</name><desc>Eau</desc>"
+            + "<sym>Drinking Water</sym><type>water</type></wpt>"
+            + "<wpt lat=\"47.21\" lon=\"-1.55\"><name>Vieux</name></wpt>";
+    File file = gpx("Typed", track("A", 47.20, 30) + typed);
+
+    importFile(file)
+        .statusCode(200)
+        .body("waypointCount", equalTo(2))
+        .body("waypoints.size()", equalTo(2))
+        .body("waypoints[0].name", equalTo("Source"))
+        .body("waypoints[0].type", equalTo("WATER"))
+        .body("waypoints[0].origin", equalTo("IMPORTED"))
+        .body("waypoints[0]", org.hamcrest.Matchers.not(org.hamcrest.Matchers.hasKey("id")))
+        .body("waypoints[0]", org.hamcrest.Matchers.not(org.hamcrest.Matchers.hasKey("distance")))
+        .body("waypoints[1].type", equalTo("INFO"));
+  }
+
   @Test
   void importGpx_tracksKeepTheOrderOfTheFile_andWaypointsAreCounted() throws IOException {
     File file = gpx("Multi", track("A", 47.20, 30) + track("B", 47.30, 30) + waypoints(3));

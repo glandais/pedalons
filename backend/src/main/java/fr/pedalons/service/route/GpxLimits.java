@@ -62,6 +62,13 @@ public final class GpxLimits {
   public static final int MAX_PLANNER_POINTS = 100_000;
 
   /**
+   * Waypoints of a route, in a request and in an import (docs/LEDGER_*.md WEB-100, C3c). Beyond it
+   * an import keeps the first ones. To confirm against production before freezing it: {@code select
+   * max(c) from (select count(*) c from gpx_waypoints group by route_id) t}.
+   */
+  public static final int MAX_WAYPOINTS = 500;
+
+  /**
    * Longest straight line the elevation endpoint reads (docs/LEDGER_*.md WEB-100, B1b): 100 km, a
    * point every 30 m after the densification.
    */

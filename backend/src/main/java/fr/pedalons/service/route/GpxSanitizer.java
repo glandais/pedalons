@@ -1,5 +1,6 @@
 package fr.pedalons.service.route;
 
+import fr.pedalons.infrastructure.gpx.WaypointFormats;
 import io.github.glandais.engine.gpx.GpxDocument;
 import io.github.glandais.engine.gpx.GpxModelJvm;
 import io.github.glandais.engine.gpx.GpxSegment;
@@ -27,8 +28,13 @@ import java.util.List;
  *
  * <p>Document metadata needs no work here: the parser keeps only its name (the route's name), so
  * author, e-mail, link, creator and {@code <metadata><time>} never survive parsing. What the model
- * does carry beyond geometry — a waypoint's time, description, symbol and type, a track's type, a
- * road width or OSM class — is dropped with the rest: none of it is read downstream.
+ * does carry beyond geometry — a waypoint's time, description and raw symbol and type, a track's
+ * type, a road width or OSM class — is dropped with the rest: none of it is read downstream.
+ *
+ * <p>The one exception is a waypoint's <b>canonical type</b> (docs/LEDGER_*.md WEB-100, C3c, W7):
+ * the raw {@code sym} and {@code type} are mapped to one of the twelve {@code WaypointType}s and
+ * only its name is written into the {@code type} of the sanitized waypoint. No raw value comes
+ * out of this funnel, and the description is still dropped.
  */
 public final class GpxSanitizer {
 
@@ -62,7 +68,15 @@ public final class GpxSanitizer {
             .map(
                 w ->
                     GpxModelJvm.waypoint(
-                        w.getLatitudeDeg(), w.getLongitudeDeg(), null, w.getName()))
+                        w.getLatitudeDeg(),
+                        w.getLongitudeDeg(),
+                        null,
+                        w.getName(),
+                        null,
+                        null,
+                        // The canonical type only: the raw sym and type never leave this funnel
+                        WaypointFormats.fromGpx(w.getSymbol(), w.getType()).name(),
+                        null))
             .toList();
     return GpxModelJvm.document(tracks, doc.getName(), waypoints);
   }

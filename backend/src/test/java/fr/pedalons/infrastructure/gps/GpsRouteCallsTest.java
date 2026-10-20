@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -93,8 +94,71 @@ class GpsRouteCallsTest {
     client.objectMapper = new ObjectMapper();
     client.courseConverter = mock(GarminCourseConverter.class);
     when(client.courseConverter.convertToGarminCourse(any(), anyString())).thenReturn("{}");
+    when(client.courseConverter.convertToGarminCourse(any(), anyString(), anyList()))
+        .thenReturn("{}");
     return client;
   }
+
+  /** A Garmin client with the real converter, to read the course it sends. */
+  private GarminClient garminWithRealConverter(boolean coursePoints) {
+    GarminClient client = new GarminClient();
+    client.httpClient = http;
+    client.objectMapper = new ObjectMapper();
+    client.courseConverter = new GarminCourseConverter();
+    client.setCoursePointsEnabled(coursePoints);
+    return client;
+  }
+
+  /** The body of the request the mocked client received. */
+  private static byte[] body(HttpRequest request) throws Exception {
+    java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+    java.util.concurrent.CompletableFuture<Void> done =
+        new java.util.concurrent.CompletableFuture<>();
+    request
+        .bodyPublisher()
+        .orElseThrow()
+        .subscribe(
+            new java.util.concurrent.Flow.Subscriber<java.nio.ByteBuffer>() {
+              @Override
+              public void onSubscribe(java.util.concurrent.Flow.Subscription subscription) {
+                subscription.request(Long.MAX_VALUE);
+              }
+
+              @Override
+              public void onNext(java.nio.ByteBuffer item) {
+                byte[] bytes = new byte[item.remaining()];
+                item.get(bytes);
+                out.write(bytes, 0, bytes.length);
+              }
+
+              @Override
+              public void onError(Throwable throwable) {
+                done.completeExceptionally(throwable);
+              }
+
+              @Override
+              public void onComplete() {
+                done.complete(null);
+              }
+            });
+    done.get();
+    return out.toByteArray();
+  }
+
+  private static final String GPX_WITH_WAYPOINTS =
+      """
+      <?xml version="1.0" encoding="UTF-8"?>
+      <gpx version="1.1" creator="test" xmlns="http://www.topografix.com/GPX/1/1">
+        <wpt lat="48.0050" lon="-1.6050"><name>Source</name><desc>Eau potable</desc><sym>Drinking Water</sym><type>water</type></wpt>
+        <wpt lat="48.0150" lon="-1.6150"><name>RDV</name><sym>Flag, Blue</sym><type>meeting_spot</type></wpt>
+        <wpt lat="48.5000" lon="-1.0000"><name>Loin</name><sym>Danger Area</sym><type>danger</type></wpt>
+        <trk><name>t</name><trkseg>
+          <trkpt lat="48.0000" lon="-1.6000"><ele>40</ele></trkpt>
+          <trkpt lat="48.0100" lon="-1.6100"><ele>60</ele></trkpt>
+          <trkpt lat="48.0200" lon="-1.6200"><ele>50</ele></trkpt>
+        </trkseg></trk>
+      </gpx>
+      """;
 
   private static final GpsAuth BEARER = new GpsAuth.Bearer("tok");
 
@@ -265,6 +329,116 @@ class GpsRouteCallsTest {
   void auth_neverPrintsATokenInLogs() {
     assertFalse(new GpsAuth.Bearer("secret-token").toString().contains("secret-token"));
     assertFalse(new GpsAuth.OAuth1("k", "s", "t", "ts").toString().contains("ts"));
+  }
+
+  // ------------------------------------------------------------------ Waypoints (WEB-100, C3c)
+
+  @Test
+  void hammerhead_sendsTheNineValues() throws Exception {
+    answer(200, "{\"id\":\"r-1\"}");
+
+    hammerhead()
+        .createRoute(
+            BEARER, GPX_WITH_WAYPOINTS.getBytes(StandardCharsets.UTF_8), new RouteMeta("S", null));
+
+    String sentBody = new String(body(sent.get()), StandardCharsets.UTF_8);
+    assertTrue(sentBody.contains("<sym>Water</sym>"), sentBody);
+    assertTrue(sentBody.contains("<type>Water</type>"), sentBody);
+    assertTrue(sentBody.contains("<sym>Danger</sym>"), "the point off the track is sent too");
+    assertTrue(sentBody.contains("<sym>Generic</sym>"), sentBody);
+    assertFalse(sentBody.contains("Drinking Water"), sentBody);
+    assertFalse(sentBody.contains("meeting_spot"), sentBody);
+    assertTrue(sentBody.contains("Eau potable"));
+  }
+
+  @Test
+  void wahoo_fitCarriesTheCoursePoints() throws Exception {
+    answer(200, "{\"id\":123}");
+    List<fr.pedalons.infrastructure.gpx.CoursePoint> points =
+        List.of(
+            new fr.pedalons.infrastructure.gpx.CoursePoint(
+                700, fr.pedalons.enums.WaypointType.WATER, "Source"));
+
+    wahoo()
+        .createRoute(
+            BEARER, GPX.getBytes(StandardCharsets.UTF_8), new RouteMeta("Sortie", null, points));
+
+    String form = new String(body(sent.get()), StandardCharsets.UTF_8);
+    String dataUri = parseForm(form).get("route[file]");
+    byte[] fit =
+        java.util.Base64.getDecoder().decode(dataUri.substring(dataUri.indexOf("base64,") + 7));
+    var coursePoints =
+        new com.garmin.fit.FitDecoder(fit)
+            .decode(new com.garmin.fit.DecodeOptions())
+            .getMessages()
+            .getCoursePointMesgs();
+    assertEquals(1, coursePoints.size());
+    assertEquals("Source", coursePoints.getFirst().getName());
+  }
+
+  private static final List<fr.pedalons.infrastructure.gpx.CoursePoint> ONE_POINT =
+      List.of(
+          new fr.pedalons.infrastructure.gpx.CoursePoint(
+              1000, fr.pedalons.enums.WaypointType.WATER, "Source"));
+
+  @Test
+  void garmin_insertsInformationGeoPointAtItsDistance_whenEnabled() throws Exception {
+    answer(200, "{\"courseId\":\"1\"}");
+
+    garminWithRealConverter(true)
+        .createRoute(
+            BEARER, GPX.getBytes(StandardCharsets.UTF_8), new RouteMeta("Sortie", null, ONE_POINT));
+
+    var course = new ObjectMapper().readTree(body(sent.get()));
+    var geoPoints = course.get("geoPoints");
+    assertEquals(4, geoPoints.size(), "the three points and the course point");
+    var inserted = geoPoints.get(1);
+    assertEquals("Source", inserted.get("information").get("name").asText());
+    assertEquals("WATER", inserted.get("information").get("coursePointType").asText());
+    assertEquals(1000.0, inserted.get("distance").asDouble(), 0.1);
+    // 1 000 m along a track of about 1 500 m between the first and the second point
+    assertTrue(
+        inserted.get("latitude").asDouble() > 48.0
+            && inserted.get("latitude").asDouble() < 48.0200);
+  }
+
+  @Test
+  void garmin_sendsNoInformation_whenDisabled() throws Exception {
+    answer(200, "{\"courseId\":\"1\"}");
+
+    garminWithRealConverter(false)
+        .createRoute(
+            BEARER, GPX.getBytes(StandardCharsets.UTF_8), new RouteMeta("Sortie", null, ONE_POINT));
+
+    var course = new ObjectMapper().readTree(body(sent.get()));
+    assertEquals(3, course.get("geoPoints").size());
+    assertFalse(new String(body(sent.get()), StandardCharsets.UTF_8).contains("information"));
+  }
+
+  @Test
+  void garmin_distanceDoesNotJumpBetweenTracks() throws Exception {
+    // Two tracks 100 km apart: the course is as long as the two tracks, not the gap
+    String twoTracks =
+        """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <gpx version="1.1" creator="test" xmlns="http://www.topografix.com/GPX/1/1">
+          <trk><name>a</name><trkseg>
+            <trkpt lat="48.0000" lon="-1.6000"/><trkpt lat="48.0100" lon="-1.6000"/>
+          </trkseg></trk>
+          <trk><name>b</name><trkseg>
+            <trkpt lat="49.0000" lon="-1.6000"/><trkpt lat="49.0100" lon="-1.6000"/>
+          </trkseg></trk>
+        </gpx>
+        """;
+    answer(200, "{\"courseId\":\"1\"}");
+
+    garminWithRealConverter(true)
+        .createRoute(
+            BEARER, twoTracks.getBytes(StandardCharsets.UTF_8), new RouteMeta("Sortie", null));
+
+    var course = new ObjectMapper().readTree(body(sent.get()));
+    // 2 x 1.11 km
+    assertEquals(2224, course.get("distance").asInt(), 5);
   }
 
   // ------------------------------------------------------------------ helpers

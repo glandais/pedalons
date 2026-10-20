@@ -70,7 +70,10 @@ public class Route extends TeamEntity {
   @Column(name = "elevation_state", length = 8)
   private @Nullable ElevationState elevationState;
 
+  // Ordered: the distances of the waypoints are cumulated over the tracks in this order
+  // (docs/LEDGER_*.md WEB-100, C3c)
   @OneToMany(mappedBy = "route", cascade = CascadeType.ALL, orphanRemoval = true)
+  @OrderBy("id")
   private List<GpxTrack> tracks = new ArrayList<>();
 
   @OneToMany(mappedBy = "route", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -95,6 +98,14 @@ public class Route extends TeamEntity {
   public void addWaypoint(GpxWaypoint waypoint) {
     waypoints.add(waypoint);
     waypoint.setRoute(this);
+  }
+
+  /**
+   * Removes a waypoint (orphan removal deletes the row). Waypoints are replaced one by one, never
+   * by a clear and refill: a query between the two deletes the elements for good (HHH90032003).
+   */
+  public void removeWaypoint(GpxWaypoint waypoint) {
+    waypoints.remove(waypoint);
   }
 
   @Override

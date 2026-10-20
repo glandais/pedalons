@@ -115,4 +115,33 @@ class GpxSanitizerTest {
     GpxDocument doc = assertDoesNotThrow(() -> GpxSanitizer.sanitize(drawn));
     assertEquals(drawn, doc);
   }
+
+  @Test
+  void sanitize_keepsCanonicalWaypointType_dropsSymAndDescription() {
+    GpxDocument raw =
+        GpxModelJvm.document(
+            List.of(
+                GpxModelJvm.track(
+                    List.of(
+                        GpxModelJvm.trackPoint(45.0, 6.0, 100.0),
+                        GpxModelJvm.trackPoint(45.01, 6.0, 110.0)),
+                    "T")),
+            "Doc",
+            List.of(
+                GpxModelJvm.waypoint(
+                    45.005, 6.0, null, "Source", "Une description", "Drinking Water", "x", 1234L),
+                GpxModelJvm.waypoint(45.006, 6.0, null, "Vieux")));
+
+    GpxDocument doc = GpxSanitizer.sanitize(raw);
+
+    GpxWaypoint typed = doc.getWaypoints().get(0);
+    assertEquals("Source", typed.getName());
+    assertEquals("WATER", typed.getType(), "the canonical type, not the raw one");
+    assertNull(typed.getSymbol());
+    assertNull(typed.getDescription());
+    assertNull(typed.getTimeEpochMs());
+    assertEquals("INFO", doc.getWaypoints().get(1).getType());
+    // Idempotent: a second pass leaves the canonical types as they are
+    assertEquals("WATER", GpxSanitizer.sanitize(doc).getWaypoints().get(0).getType());
+  }
 }

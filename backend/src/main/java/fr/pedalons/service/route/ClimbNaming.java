@@ -33,7 +33,13 @@ public final class ClimbNaming {
   private static final double EARTH_RADIUS_METERS = 6_371_000;
 
   /** A named point of the route — a waypoint, whatever it was loaded from. */
-  public record NamedPoint(String name, double lat, double lng) {}
+  public record NamedPoint(String name, double lat, double lng, boolean summit) {
+
+    /** A point of unknown type: it names a climb only when no SUMMIT waypoint does. */
+    public NamedPoint(String name, double lat, double lng) {
+      this(name, lat, lng, false);
+    }
+  }
 
   private ClimbNaming() {}
 
@@ -48,10 +54,21 @@ public final class ClimbNaming {
       return null;
     }
     TrackPoint summit = pointAt(trackPoints, climb.endDist());
+    // A SUMMIT waypoint within reach names the climb even when another point lies closer
+    // (docs/LEDGER_*.md WEB-100, C3c); any named point does otherwise
+    String best = closest(summit, waypoints, true);
+    return best != null ? best : closest(summit, waypoints, false);
+  }
+
+  private static @Nullable String closest(
+      TrackPoint summit, List<NamedPoint> waypoints, boolean summitsOnly) {
     String best = null;
     double bestDistance = MAX_SUMMIT_DISTANCE_METERS;
     for (NamedPoint waypoint : waypoints) {
       if (waypoint.name() == null || waypoint.name().isBlank()) {
+        continue;
+      }
+      if (summitsOnly && !waypoint.summit()) {
         continue;
       }
       double d = distanceMeters(summit.lat(), summit.lng(), waypoint.lat(), waypoint.lng());

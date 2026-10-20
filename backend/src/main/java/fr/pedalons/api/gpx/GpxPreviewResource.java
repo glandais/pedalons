@@ -163,7 +163,7 @@ public class GpxPreviewResource {
   public Response createPreviewFromPoints(@Valid @NotNull GpxPreviewFromPointsRequest request) {
     GpxPreviewDto preview =
         gpxPreviewService.createPreviewFromPoints(
-            request.name(), request.points(), request.plannerState());
+            request.name(), request.points(), request.plannerState(), request.waypoints());
     return Response.status(Response.Status.CREATED).entity(preview).build();
   }
 
@@ -348,7 +348,8 @@ public class GpxPreviewResource {
         request.name(),
         GpxUploads.uploadedGpx(gpxFile),
         request.points(),
-        request.plannerState());
+        request.plannerState(),
+        request.waypoints());
   }
 
   @DELETE

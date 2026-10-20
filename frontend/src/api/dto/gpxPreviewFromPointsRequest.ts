@@ -1,5 +1,6 @@
 import type { GeoPoint } from './geoPoint.ts'
 import type { PlannerState } from './plannerState.ts'
+import type { WaypointRequest } from './waypointRequest.ts'
 
 /**
  * GPX preview creation request from planner points
@@ -19,4 +20,9 @@ export interface GpxPreviewFromPointsRequest {
   points?: GeoPoint[]
   /** Editing state of the planner; the server derives the track from it. Not with points */
   plannerState?: PlannerState
+  /**
+   * The complete list of the waypoints, replacing them. Omitted: they stay as they are (placed again when the track changes)
+   * @maxItems 500
+   */
+  waypoints?: WaypointRequest[]
 }

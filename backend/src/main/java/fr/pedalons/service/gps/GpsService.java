@@ -18,6 +18,7 @@ import fr.pedalons.infrastructure.gps.GarminOAuth1Client;
 import fr.pedalons.infrastructure.gps.GpsServiceClient;
 import fr.pedalons.infrastructure.gps.HammerheadClient;
 import fr.pedalons.infrastructure.gps.PkceUtils;
+import fr.pedalons.infrastructure.gps.RouteMeta;
 import fr.pedalons.infrastructure.gps.RouteUploadResult;
 import fr.pedalons.infrastructure.gps.TokenResponse;
 import fr.pedalons.infrastructure.gps.WahooClient;
@@ -517,6 +518,17 @@ public class GpsService {
   @Transactional
   @Logged
   public RouteUploadResponse uploadGpx(GpsServiceType serviceType, byte[] gpxContent, String name) {
+    return uploadGpx(serviceType, gpxContent, RouteMeta.manual(name));
+  }
+
+  /**
+   * As {@link #uploadGpx(GpsServiceType, byte[], String)}, with the course points of the route
+   * (docs/LEDGER_*.md WEB-100, C3c).
+   */
+  @Transactional
+  @Logged
+  public RouteUploadResponse uploadGpx(
+      GpsServiceType serviceType, byte[] gpxContent, RouteMeta meta) {
     Long userId = pedalonsContext.getUserId();
 
     // Get connection
@@ -536,7 +548,7 @@ public class GpsService {
       requireGarmin(serviceType);
       result =
           garminOAuth1Client.uploadRoute(
-              accessToken, encryptionService.decrypt(accessTokenSecret), gpxContent, name);
+              accessToken, encryptionService.decrypt(accessTokenSecret), gpxContent, meta);
     } else {
       // Refresh token if needed
       if (connection.isTokenExpired() && connection.getRefreshTokenEncrypted() != null) {
@@ -547,7 +559,7 @@ public class GpsService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.GPS_SERVICE_NOT_CONFIGURED)));
         accessToken = encryptionService.decrypt(connection.getAccessTokenEncrypted());
       }
-      result = getClient(serviceType).uploadRoute(accessToken, gpxContent, name);
+      result = getClient(serviceType).uploadRoute(accessToken, gpxContent, meta);
     }
 
     // Update last used

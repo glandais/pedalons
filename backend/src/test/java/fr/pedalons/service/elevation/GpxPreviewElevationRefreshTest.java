@@ -787,4 +787,70 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
         fr.pedalons.common.exception.NotFoundException.class,
         () -> previewService.getPreview(created.getPublicId().toString()));
   }
+
+  // ==================== waypoints (docs/LEDGER_*.md WEB-100, C3c) ====================
+
+  private static final Path WAYPOINTS = new File("src/test/resources/waypoints.gpx").toPath();
+
+  @Test
+  void hdCatchUp_keepsWaypoints_updatesTheirDistances() {
+    GpxPreview created = previewService.create(WAYPOINTS, "waypoints.gpx");
+    GpxPreview before = reload(created);
+    assertEquals(3, before.readableWaypoints().size());
+    makeDue(created);
+
+    worker.processDue();
+
+    GpxPreview after = reload(created);
+    assertNotEquals(before.getFilesRevision(), after.getFilesRevision());
+    var waypoints = after.readableWaypoints();
+    assertEquals(3, waypoints.size(), "read from the document of the new revision");
+    assertEquals(after.getFilesRevision(), after.getWaypointDetails().trackRevision());
+    assertTrue(waypoints.stream().anyMatch(w -> "WATER".equals(w.type())), "typed");
+    assertTrue(waypoints.stream().allMatch(w -> w.distance() != null));
+    assertEquals(3, after.getWaypoints().size(), "the historical column follows");
+  }
+
+  @Test
+  void hdCatchUp_waypointsEditedDuringCompute_realigns_andWritesNothing() {
+    GpxPreview created = previewService.create(WAYPOINTS, "waypoints.gpx");
+    makeDue(created);
+    PreviewClaim claim = service.claimNextPreview(Instant.now()).orElseThrow();
+    ElevationRefreshService.PreviewRecomputed recomputed;
+    try {
+      recomputed = service.computePreview(claim);
+    } catch (Exception e) {
+      throw new IllegalStateException(e);
+    }
+    String hdKey =
+        GpxPreviewService.trackKey(created.getPublicId(), recomputed.revision(), "filtered.gpx");
+
+    // The creator edits the waypoints (the track stays) while the HD profile was being computed
+    previewService.updatePreview(
+        created.getPublicId().toString(),
+        "waypoints.gpx",
+        null,
+        null,
+        null,
+        java.util.List.of(
+            new fr.pedalons.dto.routes.request.WaypointRequest(
+                null,
+                new fr.pedalons.common.GeoPoint(-1.5456685, 47.2024271),
+                fr.pedalons.enums.WaypointType.CAFE,
+                "Nouveau",
+                null,
+                null,
+                null)));
+    GpxPreview afterEdit = reload(created);
+
+    ElevationRefreshService.Outcome outcome = service.writePreview(claim, recomputed);
+
+    assertEquals(ElevationRefreshService.Outcome.REALIGNED, outcome);
+    GpxPreview after = reload(created);
+    assertEquals(afterEdit.getFilesRevision(), after.getFilesRevision(), "revision untouched");
+    assertEquals(ElevationState.PENDING, after.getElevationState());
+    assertEquals(1, after.readableWaypoints().size());
+    assertFalse(storageService.exists(hdKey), "the revision computed meanwhile is gone");
+    assertNotNull(refresh(created), "the request is kept");
+  }
 }

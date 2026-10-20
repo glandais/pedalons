@@ -2547,6 +2547,45 @@ Plan [`2026-10-06-team-agenda.md`](plans/archive/2026-10-06-team-agenda.md) §4,
 
 ## API — Contrat d'API et backend
 
+### Points de parcours typés (C3c de `WEB-100`, 20 octobre 2026, contrat `11.16.0`, `V78`)
+
+- `API-134` **Promouvoir un aperçu GPX en parcours gardait-il ses points ? Non, et il les garde
+  maintenant** (2026-10-20, **API 11.16.0**, Flyway `V78`) — confirmé par la lecture du code
+  (`computeGpx` écrit `original.gpx` sans `<wpt>`, la promotion rejouait cet original) puis corrigé :
+  `GpxPreviewService.createRoute` lit `GpxPreview.readableWaypoints()` et les passe en brouillons
+  (`WaypointDraft`, id nul, origine et type gardés, indication de distance) à `RouteService.createRoute`.
+  Une liste `waypoints` dans la requête l'emporte. Tout appelant les emporte (ils sont publics sur
+  la page de l'aperçu, comme le revêtement). Test : `GpxPreviewResourceTest.promotePreview_keepsItsWaypoints`
+  (rouge avant), `promotePreview_keepsAuthorPoints`, `promotePreview_requestListWins`.
+- **C3c, le volet backend des points de parcours d'auteur** (plan [`2026-10-17-editeur-parcours-web.md`](plans/2026-10-17-editeur-parcours-web.md),
+  étude [`2026-10-20-points-de-parcours.md`](research/2026-10-20-points-de-parcours.md)) — `V78` : `gpx_waypoints`
+  gagne `type`, `description`, `distance_m`, `origin` (W1), `gpx_previews.waypoint_details` (jsonb).
+  `WaypointType` (douze valeurs, W2) et `WaypointOrigin`. `WaypointDto` gagne `id`, `type`,
+  `description`, `distance`, `origin` ; `WaypointRequest` et `waypoints` dans `RouteRequest`, `GpxPreviewUpdateRequest`
+  et `GpxPreviewFromPointsRequest` (liste complète qui remplace ; omise, les points restent) ;
+  `GpxImportResponse.waypoints` (facultatif). Accroche à 50 m et ré-accroche (`WaypointAnchoring`,
+  W4, étude §11.3), formats (`WaypointFormats`), `filtered.gpx` (`sym`, `type`, `desc`) et `route.fit`
+  (`course_point`, noms de 15 points de code, W6) écrits par le même passage ; points seuls modifiés :
+  réécriture de `filtered.gpx` et `route.fit` depuis les `track_points`, sans repasser le pipeline ;
+  Hammerhead reçoit un GPX réécrit aux neuf valeurs (`HammerheadGpx`, C3a), Wahoo le FIT avec les
+  `course_point` (`RouteMeta.coursePoints`), Garmin derrière `pedalons.gps.garmin.course-points.enabled`
+  (désactivé : forme non essayée sur un Edge). `WaypointBackfill` type INFO et place les lignes
+  d'avant C3c. Tests : `WaypointAnchoringTest`, `WaypointFormatsTest`, `WaypointExportsTest`,
+  `HammerheadGpxTest`, `RouteWaypointsResourceTest`, `WaypointBackfillTest`, `GpxProcessingServiceTest`,
+  `ElevationRefreshTest` et `GpxPreviewElevationRefreshTest` (`hdCatchUp_*`), `GpsRouteCallsTest`,
+  `GpsRouteSyncWorkerTest`.
+  **À ne pas défaire** : jamais de `clear()` sur `Route.waypoints` (diff en place par `WaypointRows`,
+  HHH90032003) ; la colonne `gpx_previews.waypoints` garde sa forme `(name, lat, lng)` (le lecteur
+  JSON de la version précédente échoue sur un champ inconnu), les détails vont dans
+  `waypoint_details`, lu seulement quand sa révision est `files_revision` ; un `type` nul en base
+  est le marqueur du rattrapage (ni défaut SQL, ni `check` sur l'enum) ; un nouveau `WaypointType`
+  se déploie en deux versions (la première le lit, la seconde l'écrit) ; `@OrderBy("id")` sur
+  `Route.tracks` (l'axe des distances en dépend) ; l'origine d'un point existant ne change jamais par
+  une requête ; un point hors tracé est gardé et n'est exporté qu'en GPX (W5).
+  **Écart assumé à `API-44`** (W7) : le type canonique d'un waypoint importé est gardé
+  (`GpxSanitizer` écrit `WaypointType.name()` dans `<type>`), jamais la valeur brute de `sym` ou
+  `type` ; la description importée reste jetée.
+
 ### Modèles de sortie numérotés (repris de biketeam)
 
 - `API-108` **Un modèle peut numéroter les sorties créées depuis lui** (2026-10-15, API 11.1.0, Flyway `V70`) — la fonction « incrément » des modèles biketeam : `RideTemplate.nextNumber` (colonne `ride_templates.next_number`, nullable, `>= 0`) est le numéro que prend la prochaine sortie. Le web préremplit son nom par « Nom #42 » (`CreateRidePage.templateForNewRide`) et envoie `RideRequest.templateId`, dont la création relève le numéro d'un (`RideTemplateRepository.raiseNextNumber`, un seul `UPDATE … set next_number = next_number + 1`, borné à l'équipe et sans effet sur un modèle qui ne numérote pas ou n'existe plus) ; le numéro se règle dans l'éditeur de modèle, vide = pas de numérotation. L'import biketeam reprend `increment` tel quel (c'est déjà, chez biketeam, le numéro de la prochaine sortie) et une ré-importation l'écrase par celui que biketeam a atteint entre-temps. Le mobile ne crée pas de sortie depuis un modèle (il ouvre la page web), il n'a que le client régénéré. Tests : `RideTemplateResourceTest.nextNumber_*`, `BiketeamLiveMigrationTest.rideTemplate_keepsBiketeamsIncrement_asItsNextNumber`, `CreateRidePage.test.tsx`. **À ne pas défaire** : relever le numéro côté serveur à la création, en une requête atomique — jamais par un `PUT` du modèle depuis le client, deux sorties créées ensemble prendraient le même numéro ; le numéro monte même si le nom proposé a été changé, comme chez biketeam ; `templateId` est ignoré à la mise à jour d'une sortie.

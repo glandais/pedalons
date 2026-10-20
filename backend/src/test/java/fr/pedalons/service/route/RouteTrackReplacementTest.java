@@ -354,4 +354,60 @@ class RouteTrackReplacementTest extends AbstractResourceTest {
 
     assertEquals(bucketBefore, stored.assetKeys(team1));
   }
+
+  // ==================== 5. waypoints survive a new track (WEB-100, C3c) ====================
+
+  @Test
+  void editingTheTrack_keepsWaypointRows_noOrphanRemovalLoss() {
+    Path waypointsGpx = new File("src/test/resources/waypoints.gpx").toPath();
+    RouteDto created = createRoute(waypointsGpx);
+    // An author's waypoint, which must outlive the replacement of the track
+    queryContext.setUserForTest(user1);
+    routeService.updateRoute(
+        team1Slug,
+        created.slug(),
+        new RouteRequest(
+            "Boucle",
+            MediaDto.builder().markdown("Parcours").build(),
+            SurfaceType.ROAD,
+            Visibility.PUBLIC,
+            null,
+            null,
+            null,
+            List.of(
+                new fr.pedalons.dto.routes.request.WaypointRequest(
+                    null,
+                    new fr.pedalons.common.GeoPoint(-1.5456685, 47.2024271),
+                    fr.pedalons.enums.WaypointType.BIKE_SHOP,
+                    "Atelier",
+                    null,
+                    null,
+                    null))),
+        null);
+    String authorId = waypointNamed(created.slug(), "Atelier").id();
+
+    updateOverHttp(created.slug(), waypointsGpx);
+
+    var after =
+        QuarkusTransaction.requiringNew()
+            .call(() -> routeService.getDto(team1Slug, created.slug()));
+    assertEquals(1, after.tracks().size());
+    assertEquals(
+        1, after.waypoints().stream().filter(w -> "AUTHOR".equals(w.origin().name())).count());
+    assertEquals(authorId, waypointNamed(created.slug(), "Atelier").id(), "the same row");
+    assertEquals(
+        3,
+        after.waypoints().stream().filter(w -> "IMPORTED".equals(w.origin().name())).count(),
+        "the file's own, in place of the old ones");
+  }
+
+  private fr.pedalons.dto.routes.response.WaypointDto waypointNamed(String slug, String name) {
+    return QuarkusTransaction.requiringNew()
+        .call(() -> routeService.getDto(team1Slug, slug))
+        .waypoints()
+        .stream()
+        .filter(w -> name.equals(w.name()))
+        .findFirst()
+        .orElseThrow();
+  }
 }

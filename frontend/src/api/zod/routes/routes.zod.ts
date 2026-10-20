@@ -1070,6 +1070,20 @@ export const createRouteBodyRoutePlannerStatePiecesItemUnpavedMax = 50000
 
 export const createRouteBodyRoutePlannerStatePiecesMax = 2000
 
+export const createRouteBodyRouteWaypointsItemPositionLngMin = -180
+export const createRouteBodyRouteWaypointsItemPositionLngMax = 180
+
+export const createRouteBodyRouteWaypointsItemPositionLatMin = -90
+export const createRouteBodyRouteWaypointsItemPositionLatMax = 90
+
+export const createRouteBodyRouteWaypointsItemNameMax = 250
+
+export const createRouteBodyRouteWaypointsItemDescriptionMax = 500
+
+export const createRouteBodyRouteWaypointsItemDistanceMin = 0
+
+export const createRouteBodyRouteWaypointsMax = 500
+
 export const CreateRouteBody = zod.object({
   route: zod
     .object({
@@ -1471,6 +1485,76 @@ export const CreateRouteBody = zod.object({
         .optional()
         .describe(
           'Editing state of the planner; the server derives the track from it. Not with points (400 PLANNER_STATE_INVALID); a gpxFile wins over it'
+        ),
+      waypoints: zod
+        .array(
+          zod
+            .object({
+              id: zod
+                .string()
+                .optional()
+                .describe(
+                  'Identifier of an existing waypoint, as returned by the API: it keeps its origin. Omitted or unknown: a new waypoint. Malformed or repeated: 400'
+                ),
+              position: zod
+                .object({
+                  lng: zod
+                    .number()
+                    .min(createRouteBodyRouteWaypointsItemPositionLngMin)
+                    .max(createRouteBodyRouteWaypointsItemPositionLngMax),
+                  lat: zod
+                    .number()
+                    .min(createRouteBodyRouteWaypointsItemPositionLatMin)
+                    .max(createRouteBodyRouteWaypointsItemPositionLatMax),
+                })
+                .describe('Where the waypoint is'),
+              type: zod
+                .enum([
+                  'REGROUP',
+                  'SUPPLY',
+                  'WATER',
+                  'CAFE',
+                  'TOILETS',
+                  'DANGER',
+                  'SUMMIT',
+                  'VIEWPOINT',
+                  'BIKE_SHOP',
+                  'REAL_START',
+                  'SPLIT',
+                  'INFO',
+                ])
+                .describe('What the waypoint is'),
+              name: zod
+                .string()
+                .max(createRouteBodyRouteWaypointsItemNameMax)
+                .describe(
+                  "Name, possibly empty (the type's label then shows on a device). The editor limits it to 40 characters; the API accepts what an import can bring, up to 250"
+                ),
+              description: zod
+                .string()
+                .max(createRouteBodyRouteWaypointsItemDescriptionMax)
+                .optional()
+                .describe('Free text, at most 500 characters'),
+              distance: zod
+                .number()
+                .min(createRouteBodyRouteWaypointsItemDistanceMin)
+                .optional()
+                .describe(
+                  'The distance in metres the editor shows the waypoint at. Only used to pick which passage of a route that goes by twice the waypoint belongs to: the server recomputes the distance itself'
+                ),
+              origin: zod
+                .enum(['AUTHOR', 'IMPORTED'])
+                .optional()
+                .describe(
+                  'Origin of a new waypoint, AUTHOR by default. Ignored for a waypoint that exists: it keeps its own'
+                ),
+            })
+            .describe('A waypoint of a route, as sent by the editor')
+        )
+        .max(createRouteBodyRouteWaypointsMax)
+        .optional()
+        .describe(
+          "The complete list of the route's waypoints, replacing them. Omitted: they stay as they are (placed again on the new track when the track changes, and a new GPX file replaces the imported ones and keeps the author's). When present it wins over the waypoints of a GPX file sent with it"
         ),
     })
     .optional()
@@ -2330,17 +2414,58 @@ export const GetRoutesBulkResponse = zod
               ),
             waypoints: zod
               .array(
-                zod.object({
-                  geometry: zod
-                    .object({
-                      type: zod.enum(['Point']),
-                      coordinates: zod
-                        .array(zod.number())
-                        .describe('Coordinates [longitude, latitude]'),
-                    })
-                    .describe('Location coordinates [longitude, latitude]'),
-                  name: zod.string().optional(),
-                })
+                zod
+                  .object({
+                    geometry: zod
+                      .object({
+                        type: zod.enum(['Point']),
+                        coordinates: zod
+                          .array(zod.number())
+                          .describe('Coordinates [longitude, latitude]'),
+                      })
+                      .describe('Location coordinates [longitude, latitude]'),
+                    name: zod.string().describe('Name, possibly empty'),
+                    id: zod
+                      .string()
+                      .optional()
+                      .describe(
+                        'Identifier (TSID) of the waypoint, to send back in the request so that it keeps its origin. Null for a waypoint of a GPX file not saved yet'
+                      ),
+                    type: zod
+                      .enum([
+                        'REGROUP',
+                        'SUPPLY',
+                        'WATER',
+                        'CAFE',
+                        'TOILETS',
+                        'DANGER',
+                        'SUMMIT',
+                        'VIEWPOINT',
+                        'BIKE_SHOP',
+                        'REAL_START',
+                        'SPLIT',
+                        'INFO',
+                      ])
+                      .describe('What the waypoint is'),
+                    description: zod
+                      .string()
+                      .optional()
+                      .describe('Free text, at most 500 characters'),
+                    distance: zod
+                      .number()
+                      .optional()
+                      .describe(
+                        'Metres from the start along the tracks in order (cumulated from one track to the next, in the order of their ids). Null for a waypoint more than 50 m from the track'
+                      ),
+                    origin: zod
+                      .enum(['AUTHOR', 'IMPORTED'])
+                      .describe(
+                        "Who put the waypoint: its AUTHOR in the editor, or a GPX file it was IMPORTED from. A new GPX file replaces the imported ones and keeps the author's"
+                      ),
+                  })
+                  .describe(
+                    'A waypoint of a route. Its geometry is where the author put it: its own position, never its projection on the track'
+                  )
               )
               .describe('Waypoints'),
             deleted: zod.boolean().describe('Whether the route is soft-deleted'),
@@ -2550,6 +2675,20 @@ export const updateRouteBodyRoutePlannerStatePiecesItemUnpavedItemFromMin = 0
 export const updateRouteBodyRoutePlannerStatePiecesItemUnpavedMax = 50000
 
 export const updateRouteBodyRoutePlannerStatePiecesMax = 2000
+
+export const updateRouteBodyRouteWaypointsItemPositionLngMin = -180
+export const updateRouteBodyRouteWaypointsItemPositionLngMax = 180
+
+export const updateRouteBodyRouteWaypointsItemPositionLatMin = -90
+export const updateRouteBodyRouteWaypointsItemPositionLatMax = 90
+
+export const updateRouteBodyRouteWaypointsItemNameMax = 250
+
+export const updateRouteBodyRouteWaypointsItemDescriptionMax = 500
+
+export const updateRouteBodyRouteWaypointsItemDistanceMin = 0
+
+export const updateRouteBodyRouteWaypointsMax = 500
 
 export const UpdateRouteBody = zod.object({
   route: zod
@@ -2952,6 +3091,76 @@ export const UpdateRouteBody = zod.object({
         .optional()
         .describe(
           'Editing state of the planner; the server derives the track from it. Not with points (400 PLANNER_STATE_INVALID); a gpxFile wins over it'
+        ),
+      waypoints: zod
+        .array(
+          zod
+            .object({
+              id: zod
+                .string()
+                .optional()
+                .describe(
+                  'Identifier of an existing waypoint, as returned by the API: it keeps its origin. Omitted or unknown: a new waypoint. Malformed or repeated: 400'
+                ),
+              position: zod
+                .object({
+                  lng: zod
+                    .number()
+                    .min(updateRouteBodyRouteWaypointsItemPositionLngMin)
+                    .max(updateRouteBodyRouteWaypointsItemPositionLngMax),
+                  lat: zod
+                    .number()
+                    .min(updateRouteBodyRouteWaypointsItemPositionLatMin)
+                    .max(updateRouteBodyRouteWaypointsItemPositionLatMax),
+                })
+                .describe('Where the waypoint is'),
+              type: zod
+                .enum([
+                  'REGROUP',
+                  'SUPPLY',
+                  'WATER',
+                  'CAFE',
+                  'TOILETS',
+                  'DANGER',
+                  'SUMMIT',
+                  'VIEWPOINT',
+                  'BIKE_SHOP',
+                  'REAL_START',
+                  'SPLIT',
+                  'INFO',
+                ])
+                .describe('What the waypoint is'),
+              name: zod
+                .string()
+                .max(updateRouteBodyRouteWaypointsItemNameMax)
+                .describe(
+                  "Name, possibly empty (the type's label then shows on a device). The editor limits it to 40 characters; the API accepts what an import can bring, up to 250"
+                ),
+              description: zod
+                .string()
+                .max(updateRouteBodyRouteWaypointsItemDescriptionMax)
+                .optional()
+                .describe('Free text, at most 500 characters'),
+              distance: zod
+                .number()
+                .min(updateRouteBodyRouteWaypointsItemDistanceMin)
+                .optional()
+                .describe(
+                  'The distance in metres the editor shows the waypoint at. Only used to pick which passage of a route that goes by twice the waypoint belongs to: the server recomputes the distance itself'
+                ),
+              origin: zod
+                .enum(['AUTHOR', 'IMPORTED'])
+                .optional()
+                .describe(
+                  'Origin of a new waypoint, AUTHOR by default. Ignored for a waypoint that exists: it keeps its own'
+                ),
+            })
+            .describe('A waypoint of a route, as sent by the editor')
+        )
+        .max(updateRouteBodyRouteWaypointsMax)
+        .optional()
+        .describe(
+          "The complete list of the route's waypoints, replacing them. Omitted: they stay as they are (placed again on the new track when the track changes, and a new GPX file replaces the imported ones and keeps the author's). When present it wins over the waypoints of a GPX file sent with it"
         ),
     })
     .optional()
@@ -3720,15 +3929,53 @@ export const GetRouteResponse = zod
       ),
     waypoints: zod
       .array(
-        zod.object({
-          geometry: zod
-            .object({
-              type: zod.enum(['Point']),
-              coordinates: zod.array(zod.number()).describe('Coordinates [longitude, latitude]'),
-            })
-            .describe('Location coordinates [longitude, latitude]'),
-          name: zod.string().optional(),
-        })
+        zod
+          .object({
+            geometry: zod
+              .object({
+                type: zod.enum(['Point']),
+                coordinates: zod.array(zod.number()).describe('Coordinates [longitude, latitude]'),
+              })
+              .describe('Location coordinates [longitude, latitude]'),
+            name: zod.string().describe('Name, possibly empty'),
+            id: zod
+              .string()
+              .optional()
+              .describe(
+                'Identifier (TSID) of the waypoint, to send back in the request so that it keeps its origin. Null for a waypoint of a GPX file not saved yet'
+              ),
+            type: zod
+              .enum([
+                'REGROUP',
+                'SUPPLY',
+                'WATER',
+                'CAFE',
+                'TOILETS',
+                'DANGER',
+                'SUMMIT',
+                'VIEWPOINT',
+                'BIKE_SHOP',
+                'REAL_START',
+                'SPLIT',
+                'INFO',
+              ])
+              .describe('What the waypoint is'),
+            description: zod.string().optional().describe('Free text, at most 500 characters'),
+            distance: zod
+              .number()
+              .optional()
+              .describe(
+                'Metres from the start along the tracks in order (cumulated from one track to the next, in the order of their ids). Null for a waypoint more than 50 m from the track'
+              ),
+            origin: zod
+              .enum(['AUTHOR', 'IMPORTED'])
+              .describe(
+                "Who put the waypoint: its AUTHOR in the editor, or a GPX file it was IMPORTED from. A new GPX file replaces the imported ones and keeps the author's"
+              ),
+          })
+          .describe(
+            'A waypoint of a route. Its geometry is where the author put it: its own position, never its projection on the track'
+          )
       )
       .describe('Waypoints'),
     deleted: zod.boolean().describe('Whether the route is soft-deleted'),
@@ -4334,15 +4581,53 @@ export const ChangeRouteSlugResponse = zod
       ),
     waypoints: zod
       .array(
-        zod.object({
-          geometry: zod
-            .object({
-              type: zod.enum(['Point']),
-              coordinates: zod.array(zod.number()).describe('Coordinates [longitude, latitude]'),
-            })
-            .describe('Location coordinates [longitude, latitude]'),
-          name: zod.string().optional(),
-        })
+        zod
+          .object({
+            geometry: zod
+              .object({
+                type: zod.enum(['Point']),
+                coordinates: zod.array(zod.number()).describe('Coordinates [longitude, latitude]'),
+              })
+              .describe('Location coordinates [longitude, latitude]'),
+            name: zod.string().describe('Name, possibly empty'),
+            id: zod
+              .string()
+              .optional()
+              .describe(
+                'Identifier (TSID) of the waypoint, to send back in the request so that it keeps its origin. Null for a waypoint of a GPX file not saved yet'
+              ),
+            type: zod
+              .enum([
+                'REGROUP',
+                'SUPPLY',
+                'WATER',
+                'CAFE',
+                'TOILETS',
+                'DANGER',
+                'SUMMIT',
+                'VIEWPOINT',
+                'BIKE_SHOP',
+                'REAL_START',
+                'SPLIT',
+                'INFO',
+              ])
+              .describe('What the waypoint is'),
+            description: zod.string().optional().describe('Free text, at most 500 characters'),
+            distance: zod
+              .number()
+              .optional()
+              .describe(
+                'Metres from the start along the tracks in order (cumulated from one track to the next, in the order of their ids). Null for a waypoint more than 50 m from the track'
+              ),
+            origin: zod
+              .enum(['AUTHOR', 'IMPORTED'])
+              .describe(
+                "Who put the waypoint: its AUTHOR in the editor, or a GPX file it was IMPORTED from. A new GPX file replaces the imported ones and keeps the author's"
+              ),
+          })
+          .describe(
+            'A waypoint of a route. Its geometry is where the author put it: its own position, never its projection on the track'
+          )
       )
       .describe('Waypoints'),
     deleted: zod.boolean().describe('Whether the route is soft-deleted'),
@@ -4791,15 +5076,53 @@ export const UndeleteRouteResponse = zod
       ),
     waypoints: zod
       .array(
-        zod.object({
-          geometry: zod
-            .object({
-              type: zod.enum(['Point']),
-              coordinates: zod.array(zod.number()).describe('Coordinates [longitude, latitude]'),
-            })
-            .describe('Location coordinates [longitude, latitude]'),
-          name: zod.string().optional(),
-        })
+        zod
+          .object({
+            geometry: zod
+              .object({
+                type: zod.enum(['Point']),
+                coordinates: zod.array(zod.number()).describe('Coordinates [longitude, latitude]'),
+              })
+              .describe('Location coordinates [longitude, latitude]'),
+            name: zod.string().describe('Name, possibly empty'),
+            id: zod
+              .string()
+              .optional()
+              .describe(
+                'Identifier (TSID) of the waypoint, to send back in the request so that it keeps its origin. Null for a waypoint of a GPX file not saved yet'
+              ),
+            type: zod
+              .enum([
+                'REGROUP',
+                'SUPPLY',
+                'WATER',
+                'CAFE',
+                'TOILETS',
+                'DANGER',
+                'SUMMIT',
+                'VIEWPOINT',
+                'BIKE_SHOP',
+                'REAL_START',
+                'SPLIT',
+                'INFO',
+              ])
+              .describe('What the waypoint is'),
+            description: zod.string().optional().describe('Free text, at most 500 characters'),
+            distance: zod
+              .number()
+              .optional()
+              .describe(
+                'Metres from the start along the tracks in order (cumulated from one track to the next, in the order of their ids). Null for a waypoint more than 50 m from the track'
+              ),
+            origin: zod
+              .enum(['AUTHOR', 'IMPORTED'])
+              .describe(
+                "Who put the waypoint: its AUTHOR in the editor, or a GPX file it was IMPORTED from. A new GPX file replaces the imported ones and keeps the author's"
+              ),
+          })
+          .describe(
+            'A waypoint of a route. Its geometry is where the author put it: its own position, never its projection on the track'
+          )
       )
       .describe('Waypoints'),
     deleted: zod.boolean().describe('Whether the route is soft-deleted'),

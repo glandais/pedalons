@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<gpx creator="test" version="1.1" xmlns="http://www.topografix.com/GPX/1/1">
+	<metadata>
+		<name>Route with waypoints</name>
+	</metadata>
+	<wpt lat="47.2034113" lon="-1.5462658"><name>Source</name><desc>Eau potable</desc><sym>Drinking Water</sym><type>water</type></wpt>
+	<wpt lat="47.2012478" lon="-1.5449118"><name>Café du coin</name><sym>Restaurant</sym><type>food</type></wpt>
+	<wpt lat="47.2059982" lon="-1.5480203"><name>Mystère</name></wpt>
+	<trk>
+		<name>Route with waypoints</name>
+		<trkseg>
+			<trkpt lat="47.20626" lon="-1.54564"><ele>11.7</ele></trkpt>
+			<trkpt lat="47.2059982" lon="-1.5480203"><ele>10.6</ele></trkpt>
+			<trkpt lat="47.2034113" lon="-1.5462658"><ele>8.5</ele></trkpt>
+			<trkpt lat="47.2024271" lon="-1.5456685"><ele>8.9</ele></trkpt>
+			<trkpt lat="47.2012478" lon="-1.5449118"><ele>12.8</ele></trkpt>
+			<trkpt lat="47.2009366" lon="-1.5447893"><ele>12.4</ele></trkpt>
+			<trkpt lat="47.1990000" lon="-1.5430000"><ele>12.0</ele></trkpt>
+			<trkpt lat="47.1970000" lon="-1.5410000"><ele>11.0</ele></trkpt>
+		</trkseg>
+	</trk>
+</gpx>

@@ -46,8 +46,29 @@ public record RouteRequest(
                 "Editing state of the planner; the server derives the track from it. Not with"
                     + " points (400 PLANNER_STATE_INVALID); a gpxFile wins over it")
         @Valid
-        PlannerState plannerState)
+        PlannerState plannerState,
+    @Nullable
+        @Schema(
+            description =
+                "The complete list of the route's waypoints, replacing them. Omitted: they stay as"
+                    + " they are (placed again on the new track when the track changes, and a new"
+                    + " GPX file replaces the imported ones and keeps the author's). When present"
+                    + " it wins over the waypoints of a GPX file sent with it")
+        @Size(max = GpxLimits.MAX_WAYPOINTS)
+        List<@Valid WaypointRequest> waypoints)
     implements WithVisibility {
+
+  /** Without waypoints: the shape this record had before WEB-100 (C3c). */
+  public RouteRequest(
+      String name,
+      MediaDto media,
+      SurfaceType surfaceType,
+      Visibility visibility,
+      @Nullable List<GeoPoint> points,
+      @Nullable List<String> tagIds,
+      @Nullable PlannerState plannerState) {
+    this(name, media, surfaceType, visibility, points, tagIds, plannerState, null);
+  }
 
   /** Without tags: the shape this record had before API-59 — leaves the tags as they are. */
   public RouteRequest(

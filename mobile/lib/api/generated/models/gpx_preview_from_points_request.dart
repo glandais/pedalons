@@ -6,6 +6,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 
 import 'geo_point.dart';
 import 'planner_state.dart';
+import 'waypoint_request.dart';
 
 part 'gpx_preview_from_points_request.freezed.dart';
 part 'gpx_preview_from_points_request.g.dart';
@@ -22,6 +23,9 @@ abstract class GpxPreviewFromPointsRequest with _$GpxPreviewFromPointsRequest {
 
     /// Editing state of the planner; the server derives the track from it. Not with points
     PlannerState? plannerState,
+
+    /// The complete list of the waypoints, replacing them. Omitted: they stay as they are (placed again when the track changes)
+    List<WaypointRequest>? waypoints,
   }) = _GpxPreviewFromPointsRequest;
 
   factory GpxPreviewFromPointsRequest.fromJson(Map<String, Object?> json) =>

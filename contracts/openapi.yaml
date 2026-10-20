@@ -2641,12 +2641,18 @@ components:
         waypointCount:
           type: integer
           format: int32
-          description: "Number of waypoints of the file, which the editor does not\
-            \ keep"
+          description: Number of waypoints of the file (the first 500 are in waypoints)
         elevationFallback:
           type: boolean
           description: True when the elevations of a track could not all be read from
             the elevation source and part of them are the file's own
+        waypoints:
+          type: array
+          items:
+            $ref: "#/components/schemas/WaypointDto"
+          description: "The waypoints of the file, typed from their symbol, at most\
+            \ 500, in file order: imported, with no identifier and no distance (the\
+            \ server places them when the route is saved)"
     GpxImportTrack:
       type: object
       description: A track of an imported GPX file
@@ -2781,6 +2787,13 @@ components:
             from it. Not with points
           type: object
           $ref: "#/components/schemas/PlannerState"
+        waypoints:
+          type: array
+          items:
+            $ref: "#/components/schemas/WaypointRequest"
+          description: "The complete list of the waypoints, replacing them. Omitted:\
+            \ they stay as they are (placed again when the track changes)"
+          maxItems: 500
     GpxPreviewListResponse:
       description: Paginated GPX preview list response
       type: object
@@ -2869,6 +2882,13 @@ components:
             it
           type: object
           $ref: "#/components/schemas/PlannerState"
+        waypoints:
+          type: array
+          items:
+            $ref: "#/components/schemas/WaypointRequest"
+          description: "The complete list of the waypoints, replacing them. Omitted:\
+            \ they stay as they are (placed again when the track changes)"
+          maxItems: 500
     GroupRequest:
       description: Ride group creation request
       type: object
@@ -5692,6 +5712,16 @@ components:
             it
           type: object
           $ref: "#/components/schemas/PlannerState"
+        waypoints:
+          type: array
+          items:
+            $ref: "#/components/schemas/WaypointRequest"
+          description: "The complete list of the route's waypoints, replacing them.\
+            \ Omitted: they stay as they are (placed again on the new track when the\
+            \ track changes, and a new GPX file replaces the imported ones and keeps\
+            \ the author's). When present it wins over the waypoints of a GPX file\
+            \ sent with it"
+          maxItems: 500
     RouteSortBy:
       type: string
       enum:
@@ -7960,14 +7990,107 @@ components:
       - PUBLIC
     WaypointDto:
       type: object
+      description: "A waypoint of a route. Its geometry is where the author put it:\
+        \ its own position, never its projection on the track"
       required:
       - geometry
+      - name
+      - type
+      - origin
       properties:
         geometry:
           $ref: "#/components/schemas/GeoJsonPoint"
           type: object
         name:
           type: string
+          description: "Name, possibly empty"
+        id:
+          type: string
+          description: "Identifier (TSID) of the waypoint, to send back in the request\
+            \ so that it keeps its origin. Null for a waypoint of a GPX file not saved\
+            \ yet"
+        type:
+          description: What the waypoint is
+          type: string
+          $ref: "#/components/schemas/WaypointType"
+        description:
+          type: string
+          description: "Free text, at most 500 characters"
+        distance:
+          type: number
+          format: double
+          description: "Metres from the start along the tracks in order (cumulated\
+            \ from one track to the next, in the order of their ids). Null for a waypoint\
+            \ more than 50 m from the track"
+        origin:
+          description: "Who put the waypoint: its AUTHOR in the editor, or a GPX file\
+            \ it was IMPORTED from. A new GPX file replaces the imported ones and\
+            \ keeps the author's"
+          type: string
+          $ref: "#/components/schemas/WaypointOrigin"
+    WaypointOrigin:
+      type: string
+      enum:
+      - AUTHOR
+      - IMPORTED
+    WaypointRequest:
+      type: object
+      description: "A waypoint of a route, as sent by the editor"
+      properties:
+        id:
+          type: string
+          description: "Identifier of an existing waypoint, as returned by the API:\
+            \ it keeps its origin. Omitted or unknown: a new waypoint. Malformed or\
+            \ repeated: 400"
+        position:
+          description: Where the waypoint is
+          type: object
+          $ref: "#/components/schemas/GeoPoint"
+        type:
+          description: What the waypoint is
+          type: string
+          $ref: "#/components/schemas/WaypointType"
+        name:
+          type: string
+          description: "Name, possibly empty (the type's label then shows on a device).\
+            \ The editor limits it to 40 characters; the API accepts what an import\
+            \ can bring, up to 250"
+          maxLength: 250
+        description:
+          type: string
+          description: "Free text, at most 500 characters"
+          maxLength: 500
+        distance:
+          type: number
+          format: double
+          description: "The distance in metres the editor shows the waypoint at. Only\
+            \ used to pick which passage of a route that goes by twice the waypoint\
+            \ belongs to: the server recomputes the distance itself"
+          minimum: 0
+        origin:
+          description: "Origin of a new waypoint, AUTHOR by default. Ignored for a\
+            \ waypoint that exists: it keeps its own"
+          type: string
+          $ref: "#/components/schemas/WaypointOrigin"
+      required:
+      - position
+      - type
+      - name
+    WaypointType:
+      type: string
+      enum:
+      - REGROUP
+      - SUPPLY
+      - WATER
+      - CAFE
+      - TOILETS
+      - DANGER
+      - SUMMIT
+      - VIEWPOINT
+      - BIKE_SHOP
+      - REAL_START
+      - SPLIT
+      - INFO
     WeatherAttributionDto:
       type: object
       description: "Who the forecast comes from. Its licence (CC BY 4.0) asks every\
@@ -20181,7 +20304,7 @@ paths:
                 $ref: "#/components/schemas/VersionDto"
 info:
   title: Pedalons API
-  version: 11.15.0
+  version: 11.16.0
   description: API for Pedalons Cycling Team Management Platform
 servers:
 - url: http://localhost:8080

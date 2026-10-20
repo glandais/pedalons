@@ -16,6 +16,9 @@ _GpxPreviewUpdateRequest _$GpxPreviewUpdateRequestFromJson(
   plannerState: json['plannerState'] == null
       ? null
       : PlannerState.fromJson(json['plannerState'] as Map<String, dynamic>),
+  waypoints: (json['waypoints'] as List<dynamic>?)
+      ?.map((e) => WaypointRequest.fromJson(e as Map<String, dynamic>))
+      .toList(),
 );
 
 Map<String, dynamic> _$GpxPreviewUpdateRequestToJson(
@@ -24,4 +27,5 @@ Map<String, dynamic> _$GpxPreviewUpdateRequestToJson(
   'name': instance.name,
   'points': instance.points?.map((e) => e.toJson()).toList(),
   'plannerState': instance.plannerState?.toJson(),
+  'waypoints': instance.waypoints?.map((e) => e.toJson()).toList(),
 };

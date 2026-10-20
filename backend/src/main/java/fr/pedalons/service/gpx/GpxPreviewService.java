@@ -7,8 +7,9 @@ import fr.pedalons.common.exception.NotFoundException;
 import fr.pedalons.common.planner.PlannerState;
 import fr.pedalons.domain.gpx.GpxPreview;
 import fr.pedalons.domain.gpx.GpxPreview.PreviewTrack;
-import fr.pedalons.domain.gpx.GpxPreview.PreviewWaypoint;
 import fr.pedalons.domain.gpx.PreviewSurfacesDocument;
+import fr.pedalons.domain.gpx.PreviewWaypointDetail;
+import fr.pedalons.domain.gpx.PreviewWaypointsDocument;
 import fr.pedalons.domain.platform.Domain;
 import fr.pedalons.domain.route.PlannerStateDocument;
 import fr.pedalons.domain.route.TrackSurfaceDocument;
@@ -20,6 +21,7 @@ import fr.pedalons.dto.gpx.response.GpxPreviewDto;
 import fr.pedalons.dto.gpx.response.GpxPreviewListResponse;
 import fr.pedalons.dto.gpx.response.GpxPreviewSummaryDto;
 import fr.pedalons.dto.routes.request.RouteRequest;
+import fr.pedalons.dto.routes.request.WaypointRequest;
 import fr.pedalons.dto.routes.response.PlannerStateResponse;
 import fr.pedalons.dto.routes.response.RouteDto;
 import fr.pedalons.enums.ActionType;
@@ -27,6 +29,8 @@ import fr.pedalons.enums.ElevationQuality;
 import fr.pedalons.enums.ElevationState;
 import fr.pedalons.enums.EntityType;
 import fr.pedalons.enums.GpsServiceType;
+import fr.pedalons.infrastructure.gps.RouteMeta;
+import fr.pedalons.infrastructure.gpx.CoursePoint;
 import fr.pedalons.infrastructure.imgproxy.ImgProxyService;
 import fr.pedalons.infrastructure.storage.StorageService;
 import fr.pedalons.repository.gpx.GpxPreviewRepository;
@@ -39,6 +43,13 @@ import fr.pedalons.service.route.GpxProcessingService.ComputedGpx;
 import fr.pedalons.service.route.RouteService;
 import fr.pedalons.service.route.planner.PlannerStates;
 import fr.pedalons.service.route.response.TrackMetadata;
+import fr.pedalons.service.route.waypoint.AnchoredWaypoint;
+import fr.pedalons.service.route.waypoint.TrackAxis;
+import fr.pedalons.service.route.waypoint.WaypointAnchoring;
+import fr.pedalons.service.route.waypoint.WaypointDraft;
+import fr.pedalons.service.route.waypoint.WaypointDrafts;
+import fr.pedalons.service.route.waypoint.WaypointExports;
+import fr.pedalons.service.route.waypoint.WaypointPlan;
 import fr.pedalons.service.security.PedalonsQueryContext;
 import fr.pedalons.service.security.SecurityVerifier;
 import fr.pedalons.service.security.annotation.Logged;
@@ -55,10 +66,12 @@ import jakarta.inject.Inject;
 import jakarta.persistence.LockModeType;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.core.Response;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -172,6 +185,19 @@ public class GpxPreviewService {
    */
   public GpxPreview create(
       GpxDocument gpx, String fallbackName, boolean drawn, @Nullable PlannerState state) {
+    return create(gpx, fallbackName, drawn, state, WaypointPlan.FROM_DOCUMENT);
+  }
+
+  /**
+   * As {@link #create(GpxDocument, String, boolean, PlannerState)}, placing the waypoints of {@code
+   * plan} (docs/LEDGER_*.md WEB-100, C3c): the file's, or the editor's list.
+   */
+  public GpxPreview create(
+      GpxDocument gpx,
+      String fallbackName,
+      boolean drawn,
+      @Nullable PlannerState state,
+      WaypointPlan plan) {
     User creator = pedalonsContext.getUser();
     Domain domain = pedalonsContext.getDomain();
     UUID publicId = UUID.randomUUID();
@@ -179,14 +205,14 @@ public class GpxPreviewService {
     ElevationQuality quality = elevationRefreshService.saveQuality();
 
     List<PreviewTrack> tracks;
-    List<PreviewWaypoint> waypoints;
+    List<PreviewWaypointDetail> waypoints;
     TrackMetadata metadata;
-    try (ComputedGpx computed = gpxProcessingService.computeGpx(gpx, quality)) {
+    try (ComputedGpx computed = gpxProcessingService.computeGpx(gpx, quality, plan)) {
       uploadTrackFiles(
           publicId, revision, computed.originalGpx(), computed.filteredGpx(), computed.fitFile());
 
       tracks = toPreviewTracks(computed);
-      waypoints = toPreviewWaypoints(computed);
+      waypoints = PreviewWaypoints.toDetails(computed.waypoints());
       metadata = computed.aggregated();
     } catch (IOException e) {
       deleteFiles(publicId, revision);
@@ -208,7 +234,8 @@ public class GpxPreviewService {
             metadata.elevationLoss(),
             metadata.hilliness(),
             tracks,
-            waypoints);
+            PreviewWaypoints.legacy(waypoints));
+    preview.setWaypointDetails(new PreviewWaypointsDocument(revision, waypoints));
     preview.setHasThumbnail(renderAndUploadThumbnail(publicId, tracks));
     preview.setDrawn(drawn);
     preview.setFilesRevision(revision);
@@ -304,6 +331,19 @@ public class GpxPreviewService {
   @Logged
   public GpxPreviewDto createPreviewFromPoints(
       String name, @Nullable List<GeoPoint> points, @Nullable PlannerState plannerState) {
+    return createPreviewFromPoints(name, points, plannerState, null);
+  }
+
+  /**
+   * As {@link #createPreviewFromPoints(String, List, PlannerState)}, with the waypoints the editor
+   * placed on the drawing (docs/LEDGER_*.md WEB-100, C3c).
+   */
+  @Logged
+  public GpxPreviewDto createPreviewFromPoints(
+      String name,
+      @Nullable List<GeoPoint> points,
+      @Nullable PlannerState plannerState,
+      @Nullable List<WaypointRequest> waypoints) {
     boolean hasPoints = points != null && !points.isEmpty();
     if (hasPoints && plannerState != null) {
       throw new BusinessException(ErrorCode.PLANNER_STATE_INVALID);
@@ -312,12 +352,17 @@ public class GpxPreviewService {
       throw new BusinessException(ErrorCode.GPX_EMPTY);
     }
     checkPlannerAllowed();
+    WaypointPlan plan =
+        waypoints == null
+            ? WaypointPlan.FROM_DOCUMENT
+            : new WaypointPlan(WaypointDrafts.fromRequest(waypoints, List.of(), null), false);
     if (plannerState == null) {
-      return toDtoJustSaved(create(gpxProcessingService.fromPoints(name, points), name, true));
+      return toDtoJustSaved(
+          create(gpxProcessingService.fromPoints(name, points), name, true, null, plan));
     }
     GpxDocument gpx =
         gpxProcessingService.fromPoints(name, plannerStates.validateAndDerive(plannerState));
-    return toDtoJustSaved(create(gpx, name, plannerState.drawn(), plannerState));
+    return toDtoJustSaved(create(gpx, name, plannerState.drawn(), plannerState, plan));
   }
 
   /**
@@ -366,6 +411,24 @@ public class GpxPreviewService {
       @Nullable Path gpxPath,
       @Nullable List<GeoPoint> points,
       @Nullable PlannerState plannerState) {
+    return updatePreview(publicId, name, gpxPath, points, plannerState, null);
+  }
+
+  /**
+   * As {@link #updatePreview(String, String, Path, List, PlannerState)}, also taking the complete
+   * list of the waypoints (docs/LEDGER_*.md WEB-100, C3c). With a new track they are placed on it;
+   * alone, they rewrite the filtered GPX and the FIT in place and leave the track, its revision and
+   * everything computed from it alone. Omitted, they stay (placed again when the track changes; a
+   * new file replaces the imported ones and keeps the author's).
+   */
+  @Logged
+  public GpxPreviewDto updatePreview(
+      String publicId,
+      String name,
+      @Nullable Path gpxPath,
+      @Nullable List<GeoPoint> points,
+      @Nullable PlannerState plannerState,
+      @Nullable List<WaypointRequest> waypoints) {
     GpxPreview preview = getByPublicId(publicId);
     if (!preview.getCreatedBy().getId().equals(pedalonsContext.getUserId())) {
       throw new ForbiddenException();
@@ -395,6 +458,9 @@ public class GpxPreviewService {
     }
 
     Long previewId = preview.getId();
+    if (gpx == null && waypoints != null) {
+      return replaceWaypointsOnly(publicId, previewId, name, waypoints);
+    }
     if (gpx == null) {
       // Rename only: nothing to recompute, no request, no new revision. The row is locked first,
       // or this flush of every column could undo the switch of a catch-up committing meanwhile.
@@ -408,16 +474,19 @@ public class GpxPreviewService {
               });
     }
 
+    // Outside the heavy work: a malformed list is a 400 with nothing uploaded
+    WaypointPlan plan = updatePlan(preview, waypoints, gpxPath != null);
+
     long revision = newRevision();
     ElevationQuality quality = elevationRefreshService.saveQuality();
     List<PreviewTrack> tracks;
-    List<PreviewWaypoint> waypoints;
+    List<PreviewWaypointDetail> placed;
     TrackMetadata metadata;
-    try (ComputedGpx computed = gpxProcessingService.computeGpx(gpx, quality)) {
+    try (ComputedGpx computed = gpxProcessingService.computeGpx(gpx, quality, plan)) {
       uploadTrackFiles(
           pid, revision, computed.originalGpx(), computed.filteredGpx(), computed.fitFile());
       tracks = toPreviewTracks(computed);
-      waypoints = toPreviewWaypoints(computed);
+      placed = PreviewWaypoints.toDetails(computed.waypoints());
       metadata = computed.aggregated();
     } catch (IOException e) {
       deleteTrackFiles(pid, revision);
@@ -448,7 +517,8 @@ public class GpxPreviewService {
               managed.setElevationLoss(metadata.elevationLoss());
               managed.setHilliness(metadata.hilliness());
               managed.setTracks(tracks);
-              managed.setWaypoints(waypoints);
+              managed.setWaypoints(PreviewWaypoints.legacy(placed));
+              managed.setWaypointDetails(new PreviewWaypointsDocument(revision, placed));
               managed.setHasThumbnail(hasThumbnail);
               managed.setDrawn(newDrawn);
               // Written or cleared with the track it describes, never left over a new one
@@ -466,6 +536,75 @@ public class GpxPreviewService {
               deleteTrackFilesAfterCommit(pid, previous);
               return toDto(managed, surfaceRefreshService.pendingReadouts(tracks.size()));
             });
+  }
+
+  /**
+   * The waypoints placed on a track that is replaced: the editor's list when it sent one, else the
+   * author's of the preview kept with the file's own (a new file), else all of them (a redraw).
+   */
+  private static WaypointPlan updatePlan(
+      GpxPreview preview, @Nullable List<WaypointRequest> waypoints, boolean newFile) {
+    List<PreviewWaypointDetail> current = preview.readableWaypoints();
+    Float oldTotal = preview.getDistance();
+    if (waypoints != null) {
+      return new WaypointPlan(
+          WaypointDrafts.fromRequest(waypoints, PreviewWaypoints.known(current), oldTotal), false);
+    }
+    if (newFile) {
+      return new WaypointPlan(
+          PreviewWaypoints.drafts(current, oldTotal, true, PreviewWaypoints::isAuthor), true);
+    }
+    return new WaypointPlan(PreviewWaypoints.drafts(current, oldTotal, true, d -> true), false);
+  }
+
+  /**
+   * The waypoints alone: placed on the stored track points, and, when the list differs from the
+   * stored one, the filtered GPX and the FIT of the <b>current</b> revision are written again in
+   * place, under the row lock. The revision is kept, so nothing computed from the track alone (HD
+   * profile, surface, planner state, thumbnail) is invalidated. If the S3 write succeeds and the
+   * commit fails the files are one save ahead of the row: harmless, the next save rewrites them.
+   */
+  private GpxPreviewDto replaceWaypointsOnly(
+      String publicId, Long previewId, String name, List<WaypointRequest> requested) {
+    return QuarkusTransaction.requiringNew()
+        .call(
+            () -> {
+              lockForUpdate(previewId);
+              GpxPreview managed = getByPublicId(publicId);
+              managed.setName(truncateName(name));
+              List<PreviewWaypointDetail> current = managed.readableWaypoints();
+              List<AnchoredWaypoint> anchored =
+                  WaypointAnchoring.anchor(
+                      TrackAxis.ofPointLists(
+                          managed.getTracks().stream().map(PreviewTrack::trackPoints).toList()),
+                      WaypointDrafts.fromRequest(requested, PreviewWaypoints.known(current), null));
+              if (!PreviewWaypoints.same(current, anchored)) {
+                List<PreviewWaypointDetail> placed = PreviewWaypoints.toDetails(anchored);
+                List<AnchoredWaypoint> placedAnchored = PreviewWaypoints.toAnchored(placed);
+                GpxProcessingService.WaypointFileBytes content =
+                    GpxProcessingService.waypointFileBytes(
+                        managed.getName(),
+                        managed.getTracks().stream()
+                            .map(
+                                t ->
+                                    new GpxProcessingService.StoredTrack(t.name(), t.trackPoints()))
+                            .toList(),
+                        placedAnchored);
+                byte[] gpxBytes = content.filteredGpx().getBytes(StandardCharsets.UTF_8);
+                overwrite(trackKey(managed, FILTERED_GPX), gpxBytes, GPX_CONTENT_TYPE);
+                overwrite(trackKey(managed, FIT), content.fit(), FIT_CONTENT_TYPE);
+                managed.setWaypoints(PreviewWaypoints.legacy(placed));
+                // The revision of the files, which did not change
+                managed.setWaypointDetails(
+                    new PreviewWaypointsDocument(
+                        Objects.requireNonNullElse(managed.getFilesRevision(), 0L), placed));
+              }
+              return toDto(managed, surfaceRefreshService.readPreview(managed));
+            });
+  }
+
+  private void overwrite(String key, byte[] content, String contentType) {
+    storageService.store(key, new ByteArrayInputStream(content), contentType, content.length);
   }
 
   /**
@@ -575,7 +714,14 @@ public class GpxPreviewService {
   @Logged
   public RouteUploadResponse uploadToGpsService(String publicId, GpsServiceType serviceType) {
     GpxPreview preview = getByPublicId(publicId);
-    return gpsService.uploadGpx(serviceType, getFilteredGpxContent(preview), preview.getName());
+    // The course points ride along in the call: the GPX alone cannot tell a service where a point
+    // sits on the route (docs/LEDGER_*.md WEB-100, C3c)
+    List<CoursePoint> coursePoints =
+        WaypointExports.coursePoints(PreviewWaypoints.toAnchored(preview.readableWaypoints()));
+    return gpsService.uploadGpx(
+        serviceType,
+        getFilteredGpxContent(preview),
+        RouteMeta.manual(preview.getName(), coursePoints));
   }
 
   /**
@@ -623,9 +769,20 @@ public class GpxPreviewService {
     // along, and the route then asks for no computation of its own (WEB-100, C1b)
     List<@Nullable TrackSurfaceDocument> copiedSurfaces =
         QuarkusTransaction.requiringNew().call(() -> readableSurfaces(getByPublicId(publicId)));
+    // The waypoints are public on the page of the preview, like the surface: any caller takes them
+    // along. original.gpx carries none, so without this a promoted route lost them (API-134).
+    List<WaypointDraft> copiedWaypoints =
+        QuarkusTransaction.requiringNew()
+            .call(
+                () -> {
+                  GpxPreview current = getByPublicId(publicId);
+                  return PreviewWaypoints.drafts(
+                      current.readableWaypoints(), current.getDistance(), false, d -> true);
+                });
     Path gpxPath = downloadOriginalGpx(preview);
     try {
-      return routeService.createRoute(teamSlug, request, gpxPath, copied, copiedSurfaces);
+      return routeService.createRoute(
+          teamSlug, request, gpxPath, copied, copiedSurfaces, copiedWaypoints);
     } finally {
       try {
         Files.deleteIfExists(gpxPath);
@@ -995,17 +1152,6 @@ public class GpxPreviewService {
                     t.metadata().distance(),
                     t.metadata().elevationGain(),
                     t.metadata().elevationLoss()))
-        .toList();
-  }
-
-  public static List<PreviewWaypoint> toPreviewWaypoints(ComputedGpx computed) {
-    return computed.waypoints().stream()
-        .map(
-            w ->
-                new PreviewWaypoint(
-                    w.name(),
-                    w.location().getPosition().getLat(),
-                    w.location().getPosition().getLon()))
         .toList();
   }
 }

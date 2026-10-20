@@ -14,6 +14,9 @@ _GpxImportResponse _$GpxImportResponseFromJson(Map<String, dynamic> json) =>
           .toList(),
       waypointCount: (json['waypointCount'] as num).toInt(),
       elevationFallback: json['elevationFallback'] as bool,
+      waypoints: (json['waypoints'] as List<dynamic>?)
+          ?.map((e) => WaypointDto.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
 
 Map<String, dynamic> _$GpxImportResponseToJson(_GpxImportResponse instance) =>
@@ -22,4 +25,5 @@ Map<String, dynamic> _$GpxImportResponseToJson(_GpxImportResponse instance) =>
       'tracks': instance.tracks.map((e) => e.toJson()).toList(),
       'waypointCount': instance.waypointCount,
       'elevationFallback': instance.elevationFallback,
+      'waypoints': instance.waypoints?.map((e) => e.toJson()).toList(),
     };

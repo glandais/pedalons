@@ -4,6 +4,9 @@ import fr.pedalons.domain.asset.Asset;
 import fr.pedalons.domain.gpx.GpxPreview;
 import fr.pedalons.domain.gpx.GpxPreview.PreviewTrack;
 import fr.pedalons.domain.gpx.PreviewSurfacesDocument;
+import fr.pedalons.domain.gpx.PreviewWaypointDetail;
+import fr.pedalons.domain.gpx.PreviewWaypointsDocument;
+import fr.pedalons.domain.route.GpxWaypoint;
 import fr.pedalons.domain.route.PlannerStateDocument;
 import fr.pedalons.domain.route.Route;
 import fr.pedalons.domain.team.Team;
@@ -18,12 +21,17 @@ import fr.pedalons.repository.route.ElevationRefreshRepository.PreviewClaim;
 import fr.pedalons.repository.route.SurfaceRefreshRepository;
 import fr.pedalons.service.asset.AssetService;
 import fr.pedalons.service.gpx.GpxPreviewService;
+import fr.pedalons.service.gpx.PreviewWaypoints;
 import fr.pedalons.service.publication.PublicationEndCalculator;
 import fr.pedalons.service.route.GpxProcessingService;
 import fr.pedalons.service.route.GpxProcessingService.ComputedGpx;
 import fr.pedalons.service.route.GpxProcessingService.ElevationRecompute;
 import fr.pedalons.service.route.GpxProcessingService.ElevationUnavailableException;
 import fr.pedalons.service.route.response.TrackMetadata;
+import fr.pedalons.service.route.waypoint.WaypointDraft;
+import fr.pedalons.service.route.waypoint.WaypointDrafts;
+import fr.pedalons.service.route.waypoint.WaypointPlan;
+import fr.pedalons.service.route.waypoint.WaypointRows;
 import io.github.glandais.engine.gpx.GpxDocument;
 import io.github.glandais.engine.gpx.GpxModelJvm;
 import io.quarkus.narayana.jta.QuarkusTransaction;
@@ -99,7 +107,18 @@ public class ElevationRefreshService {
    * row points at them yet).
    */
   record PreviewRecomputed(
-      UUID publicId, long revision, List<PreviewTrack> tracks, TrackMetadata metadata) {}
+      UUID publicId,
+      long revision,
+      List<PreviewTrack> tracks,
+      TrackMetadata metadata,
+      List<PreviewWaypointDetail> usedWaypoints,
+      List<PreviewWaypointDetail> placedWaypoints) {
+
+    PreviewRecomputed(
+        UUID publicId, long revision, List<PreviewTrack> tracks, TrackMetadata metadata) {
+      this(publicId, revision, tracks, metadata, List.of(), List.of());
+    }
+  }
 
   /**
    * Whether a save computes the fast profile and asks for the catch-up (default), or computes HD
@@ -243,31 +262,31 @@ public class ElevationRefreshService {
   Recomputed compute(Claim claim) throws IOException {
     Sources sources = tx(() -> sourcesOf(claim));
     GpxDocument original = load(assetService.getAssetKey(claim.teamId(), claim.sourceRevision()));
-    List<io.github.glandais.engine.gpx.GpxWaypoint> waypoints = List.of();
-    if (sources.filteredFileId() != null) {
-      // The original file carries no waypoint; the filtered one does
-      waypoints =
-          load(assetService.getAssetKey(claim.teamId(), sources.filteredFileId())).getWaypoints();
-    }
-    GpxDocument gpx = GpxModelJvm.document(original.getTracks(), original.getName(), waypoints);
-    return new Recomputed(sources.team(), gpxProcessingService.recomputeHd(sources.team(), gpx));
+    // The original file carries no waypoint: the stored rows do, typed (docs/LEDGER_*.md WEB-100,
+    // C3c), and are placed again on the HD track
+    GpxDocument gpx = GpxModelJvm.document(original.getTracks(), original.getName(), List.of());
+    return new Recomputed(
+        sources.team(), gpxProcessingService.recomputeHd(sources.team(), gpx, sources.drafts()));
   }
 
-  private record Sources(Team team, @Nullable Long filteredFileId) {}
+  private record Sources(Team team, List<WaypointDraft> drafts) {}
 
   private Sources sourcesOf(Claim claim) {
     Team team = entityManager.getReference(Team.class, claim.teamId());
-    List<Long> filtered =
+    List<GpxWaypoint> rows =
         entityManager
             .createQuery(
-                "select a.fileId from Asset a where a.teamEntity.id = :routeId and a.type = :type"
-                    + " order by a.id desc",
-                Long.class)
+                "select w from GpxWaypoint w where w.route.id = :routeId", GpxWaypoint.class)
             .setParameter("routeId", claim.routeId())
-            .setParameter("type", AssetType.ROUTE_FILTERED_GPX)
-            .setMaxResults(1)
             .getResultList();
-    return new Sources(team, filtered.isEmpty() ? null : filtered.getFirst());
+    Float distance =
+        entityManager
+            .createQuery("select r.distance from Route r where r.id = :routeId", Float.class)
+            .setParameter("routeId", claim.routeId())
+            .getResultStream()
+            .findFirst()
+            .orElse(null);
+    return new Sources(team, WaypointDrafts.fromRows(rows, distance, w -> true));
   }
 
   private GpxDocument load(String key) throws IOException {
@@ -323,6 +342,17 @@ public class ElevationRefreshService {
             refreshRepository.realign(claim.id(), current, now, now.plus(quiet));
             LOG.debugf(
                 "Route %d changed during its HD elevation compute, request realigned",
+                claim.routeId());
+            return Outcome.REALIGNED;
+          }
+          if (!WaypointRows.sameContent(
+              route.getWaypoints(), recomputed.recompute().waypoints(), false)) {
+            // The waypoints were edited during the compute: what was placed is stale
+            discard(claim, recomputed);
+            Instant now = Instant.now();
+            refreshRepository.realign(claim.id(), current, now, now);
+            LOG.debugf(
+                "Waypoints of route %d changed during its HD elevation compute, request realigned",
                 claim.routeId());
             return Outcome.REALIGNED;
           }
@@ -519,26 +549,32 @@ public class ElevationRefreshService {
    * revision of their own.
    */
   PreviewRecomputed computePreview(PreviewClaim claim) throws IOException {
-    UUID publicId =
+    record PreviewSources(UUID publicId, List<PreviewWaypointDetail> waypoints, Float distance) {}
+    PreviewSources sources =
         tx(
             () -> {
               GpxPreview preview = entityManager.find(GpxPreview.class, claim.previewId());
-              return preview == null ? null : preview.getPublicId();
+              return preview == null
+                  ? null
+                  : new PreviewSources(
+                      preview.getPublicId(), preview.readableWaypoints(), preview.getDistance());
             });
-    if (publicId == null) {
+    if (sources == null) {
       throw new IllegalStateException("Preview " + claim.previewId() + " is gone");
     }
+    UUID publicId = sources.publicId();
     long revision = GpxPreviewService.newRevision();
     Path originalFile =
         download(GpxPreviewService.trackKey(publicId, claim.sourceRevision(), "original.gpx"));
     try {
       GpxDocument original = gpxProcessingService.parseGpx(originalFile);
-      // The original file carries no waypoint; the filtered one does
-      List<io.github.glandais.engine.gpx.GpxWaypoint> waypoints =
-          load(GpxPreviewService.trackKey(publicId, claim.sourceRevision(), "filtered.gpx"))
-              .getWaypoints();
-      GpxDocument gpx = GpxModelJvm.document(original.getTracks(), original.getName(), waypoints);
-      try (ComputedGpx computed = gpxProcessingService.computeGpx(gpx, ElevationQuality.HD)) {
+      // The original file carries no waypoint: the stored ones are placed again (WEB-100, C3c)
+      GpxDocument gpx = GpxModelJvm.document(original.getTracks(), original.getName(), List.of());
+      WaypointPlan plan =
+          new WaypointPlan(
+              PreviewWaypoints.drafts(sources.waypoints(), sources.distance(), true, d -> true),
+              false);
+      try (ComputedGpx computed = gpxProcessingService.computeGpx(gpx, ElevationQuality.HD, plan)) {
         if (computed.fallbackAfterErrorKm() > 0) {
           throw new ElevationUnavailableException(
               "HD elevation unavailable for %.2f km of the track"
@@ -547,7 +583,12 @@ public class ElevationRefreshService {
         gpxPreviewService.uploadTrackFilesForRefresh(
             publicId, revision, originalFile.toFile(), computed.filteredGpx(), computed.fitFile());
         return new PreviewRecomputed(
-            publicId, revision, GpxPreviewService.toPreviewTracks(computed), computed.aggregated());
+            publicId,
+            revision,
+            GpxPreviewService.toPreviewTracks(computed),
+            computed.aggregated(),
+            sources.waypoints(),
+            PreviewWaypoints.toDetails(computed.waypoints()));
       }
     } catch (Exception e) {
       gpxPreviewService.deleteTrackFiles(publicId, revision);
@@ -597,8 +638,25 @@ public class ElevationRefreshService {
                 claim.previewId());
             return Outcome.REALIGNED;
           }
+          if (!PreviewWaypoints.sameIgnoringDistance(
+              preview.readableWaypoints(), recomputed.usedWaypoints())) {
+            // The waypoints were edited during the compute: what was placed is stale
+            gpxPreviewService.deleteTrackFilesAfterCommit(publicId, recomputed.revision());
+            Instant now = Instant.now();
+            refreshRepository.realign(claim.id(), current, now, now);
+            LOG.debugf(
+                "Waypoints of preview %d changed during its HD elevation compute, request"
+                    + " realigned",
+                claim.previewId());
+            return Outcome.REALIGNED;
+          }
           TrackMetadata metadata = recomputed.metadata();
           preview.setFilesRevision(recomputed.revision());
+          // The waypoints follow the track onto its new revision, with the distances of the HD one
+          // (WEB-100, C3c)
+          preview.setWaypointDetails(
+              new PreviewWaypointsDocument(recomputed.revision(), recomputed.placedWaypoints()));
+          preview.setWaypoints(PreviewWaypoints.legacy(recomputed.placedWaypoints()));
           // The planner state follows the track it describes onto its new revision (WEB-100, C4a):
           // the catch-up changes the elevations and the simplification, not the drawing.
           PlannerStateDocument planner = preview.getPlannerState();

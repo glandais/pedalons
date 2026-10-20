@@ -8,7 +8,10 @@ import fr.pedalons.dto.common.asset.MediaDto;
 import fr.pedalons.dto.routes.request.RouteRequest;
 import fr.pedalons.enums.SurfaceType;
 import fr.pedalons.enums.Visibility;
+import fr.pedalons.repository.gpx.GpxPreviewRepository;
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.junit.QuarkusTest;
+import jakarta.inject.Inject;
 import jakarta.ws.rs.core.MediaType;
 import java.io.File;
 import java.util.UUID;
@@ -644,5 +647,273 @@ class GpxPreviewResourceTest extends AbstractResourceTest {
         .post("/api/gpx-previews/" + previewId + "/gps/GARMIN")
         .then()
         .statusCode(400);
+  }
+
+  // ==================== Waypoints (docs/LEDGER_*.md WEB-100, C3c, API-134) ====================
+
+  private static final File WAYPOINTS_GPX = new File("src/test/resources/waypoints.gpx");
+
+  @Inject GpxPreviewRepository gpxPreviewRepository;
+
+  private String createPreviewFrom(File gpx) {
+    return given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .multiPart("gpxFile", gpx, "application/gpx+xml")
+        .when()
+        .post("/api/gpx-previews")
+        .then()
+        .statusCode(201)
+        .extract()
+        .path("id");
+  }
+
+  private java.util.List<java.util.Map<String, Object>> previewWaypoints(String previewId) {
+    return given()
+        .when()
+        .get("/api/gpx-previews/" + previewId)
+        .then()
+        .statusCode(200)
+        .extract()
+        .path("waypoints");
+  }
+
+  private java.util.List<java.util.Map<String, Object>> routeWaypoints(String slug) {
+    return given()
+        .when()
+        .get("/api/teams/" + team1Slug + "/routes/" + slug)
+        .then()
+        .statusCode(200)
+        .extract()
+        .path("waypoints");
+  }
+
+  private static RouteRequest routeRequestWithWaypoints(
+      java.util.List<fr.pedalons.dto.routes.request.WaypointRequest> waypoints) {
+    return new RouteRequest(
+        "Promoted",
+        MediaDto.builder().build(),
+        SurfaceType.ROAD,
+        Visibility.PUBLIC,
+        null,
+        null,
+        null,
+        waypoints);
+  }
+
+  private static fr.pedalons.dto.routes.request.WaypointRequest authorPoint(
+      String name, fr.pedalons.enums.WaypointType type, double lat, double lng) {
+    return new fr.pedalons.dto.routes.request.WaypointRequest(
+        null, new fr.pedalons.common.GeoPoint(lng, lat), type, name, null, null, null);
+  }
+
+  /** Red on the code before C3c: original.gpx carries no <wpt>, and the promotion read it. */
+  @Test
+  void promotePreview_keepsItsWaypoints() {
+    String previewId = createPreviewFrom(WAYPOINTS_GPX);
+    java.util.List<java.util.Map<String, Object>> onPreview = previewWaypoints(previewId);
+    org.junit.jupiter.api.Assertions.assertEquals(3, onPreview.size());
+
+    String slug =
+        given()
+            .auth()
+            .oauth2(getAccessToken(USER1))
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(routeRequest())
+            .when()
+            .post("/api/gpx-previews/" + previewId + "/routes/" + team1Slug)
+            .then()
+            .statusCode(201)
+            .extract()
+            .path("slug");
+
+    java.util.List<java.util.Map<String, Object>> waypoints = routeWaypoints(slug);
+
+    org.junit.jupiter.api.Assertions.assertEquals(3, waypoints.size());
+    org.junit.jupiter.api.Assertions.assertEquals(
+        java.util.Set.of("Source", "Café du coin", "Mystère"),
+        waypoints.stream()
+            .map(w -> (String) w.get("name"))
+            .collect(java.util.stream.Collectors.toSet()));
+    org.junit.jupiter.api.Assertions.assertEquals(
+        "WATER",
+        waypoints.stream()
+            .filter(w -> "Source".equals(w.get("name")))
+            .findFirst()
+            .orElseThrow()
+            .get("type"));
+    org.junit.jupiter.api.Assertions.assertTrue(
+        waypoints.stream().allMatch(w -> "IMPORTED".equals(w.get("origin"))));
+    org.junit.jupiter.api.Assertions.assertTrue(
+        waypoints.stream().allMatch(w -> w.get("distance") != null), "placed on the new route");
+  }
+
+  @Test
+  void promotePreview_keepsAuthorPoints() {
+    String previewId = createPreviewFrom(WAYPOINTS_GPX);
+    java.util.List<fr.pedalons.dto.routes.request.WaypointRequest> list =
+        new java.util.ArrayList<>();
+    list.add(authorPoint("Sommet", fr.pedalons.enums.WaypointType.SUMMIT, 47.2024271, -1.5456685));
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .multiPart(
+            "preview",
+            new fr.pedalons.dto.gpx.request.GpxPreviewUpdateRequest(
+                "Renamed preview", null, null, list),
+            MediaType.APPLICATION_JSON)
+        .when()
+        .put("/api/gpx-previews/" + previewId)
+        .then()
+        .statusCode(200)
+        .body("waypoints", hasSize(1))
+        .body("waypoints[0].origin", equalTo("AUTHOR"));
+
+    String slug =
+        given()
+            .auth()
+            .oauth2(getAccessToken(USER1))
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(routeRequest())
+            .when()
+            .post("/api/gpx-previews/" + previewId + "/routes/" + team1Slug)
+            .then()
+            .statusCode(201)
+            .extract()
+            .path("slug");
+
+    java.util.List<java.util.Map<String, Object>> waypoints = routeWaypoints(slug);
+    org.junit.jupiter.api.Assertions.assertEquals(1, waypoints.size());
+    org.junit.jupiter.api.Assertions.assertEquals("Sommet", waypoints.getFirst().get("name"));
+    org.junit.jupiter.api.Assertions.assertEquals("SUMMIT", waypoints.getFirst().get("type"));
+    org.junit.jupiter.api.Assertions.assertEquals("AUTHOR", waypoints.getFirst().get("origin"));
+  }
+
+  @Test
+  void promotePreview_requestListWins() {
+    String previewId = createPreviewFrom(WAYPOINTS_GPX);
+
+    String slug =
+        given()
+            .auth()
+            .oauth2(getAccessToken(USER1))
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(
+                routeRequestWithWaypoints(
+                    java.util.List.of(
+                        authorPoint(
+                            "Seul", fr.pedalons.enums.WaypointType.WATER, 47.2024271, -1.5456685))))
+            .when()
+            .post("/api/gpx-previews/" + previewId + "/routes/" + team1Slug)
+            .then()
+            .statusCode(201)
+            .extract()
+            .path("slug");
+
+    java.util.List<java.util.Map<String, Object>> waypoints = routeWaypoints(slug);
+    org.junit.jupiter.api.Assertions.assertEquals(1, waypoints.size());
+    org.junit.jupiter.api.Assertions.assertEquals("Seul", waypoints.getFirst().get("name"));
+  }
+
+  @Test
+  void updatePreview_pointsOnly_keepsRevision_rewritesFilteredAndFit() {
+    String previewId = createPreviewFrom(WAYPOINTS_GPX);
+    UUID publicId = UUID.fromString(previewId);
+    Long revisionBefore =
+        QuarkusTransaction.requiringNew()
+            .call(
+                () ->
+                    gpxPreviewRepository
+                        .findByPublicId(domain.getId(), publicId)
+                        .orElseThrow()
+                        .getFilesRevision());
+    byte[] gpxBefore =
+        given()
+            .when()
+            .get("/api/gpx-previews/" + previewId + "/gpx")
+            .then()
+            .statusCode(200)
+            .extract()
+            .asByteArray();
+    java.util.List<fr.pedalons.dto.routes.request.WaypointRequest> list =
+        new java.util.ArrayList<>();
+    list.add(
+        authorPoint("Atelier", fr.pedalons.enums.WaypointType.BIKE_SHOP, 47.2024271, -1.5456685));
+
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .multiPart(
+            "preview",
+            new fr.pedalons.dto.gpx.request.GpxPreviewUpdateRequest("Same track", null, null, list),
+            MediaType.APPLICATION_JSON)
+        .when()
+        .put("/api/gpx-previews/" + previewId)
+        .then()
+        .statusCode(200)
+        .body("waypoints", hasSize(1));
+
+    Long revisionAfter =
+        QuarkusTransaction.requiringNew()
+            .call(
+                () ->
+                    gpxPreviewRepository
+                        .findByPublicId(domain.getId(), publicId)
+                        .orElseThrow()
+                        .getFilesRevision());
+    org.junit.jupiter.api.Assertions.assertEquals(
+        revisionBefore, revisionAfter, "the track did not change: no new revision");
+    String gpxAfter =
+        given()
+            .when()
+            .get("/api/gpx-previews/" + previewId + "/gpx")
+            .then()
+            .statusCode(200)
+            .extract()
+            .asString();
+    org.junit.jupiter.api.Assertions.assertTrue(gpxAfter.contains("Atelier"));
+    org.junit.jupiter.api.Assertions.assertFalse(
+        new String(gpxBefore, java.nio.charset.StandardCharsets.UTF_8).contains("Atelier"));
+    org.junit.jupiter.api.Assertions.assertTrue(gpxAfter.contains("Car Repair"));
+    byte[] fit =
+        given()
+            .when()
+            .get("/api/gpx-previews/" + previewId + "/fit")
+            .then()
+            .statusCode(200)
+            .extract()
+            .asByteArray();
+    org.junit.jupiter.api.Assertions.assertEquals(
+        1,
+        new com.garmin.fit.FitDecoder(fit)
+            .decode(new com.garmin.fit.DecodeOptions())
+            .getMessages()
+            .getCoursePointMesgs()
+            .size());
+  }
+
+  @Test
+  void fromPoints_withWaypoints() {
+    dataService.setDomainEnableGpxPlanner(domain, true);
+
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(
+            """
+            {"name": "Drawn with points",
+             "points": [{"lng": 4.8357, "lat": 45.7640}, {"lng": 4.8500, "lat": 45.7700}],
+             "waypoints": [{"position": {"lng": 4.8400, "lat": 45.7655}, "type": "CAFE",
+                            "name": "Café du départ"}]}
+            """)
+        .when()
+        .post("/api/gpx-previews/from-points")
+        .then()
+        .statusCode(201)
+        .body("waypoints", hasSize(1))
+        .body("waypoints[0].name", equalTo("Café du départ"))
+        .body("waypoints[0].type", equalTo("CAFE"))
+        .body("waypoints[0].origin", equalTo("AUTHOR"));
   }
 }

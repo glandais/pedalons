@@ -2,6 +2,7 @@ package fr.pedalons.dto.gpx.request;
 
 import fr.pedalons.common.GeoPoint;
 import fr.pedalons.common.planner.PlannerState;
+import fr.pedalons.dto.routes.request.WaypointRequest;
 import fr.pedalons.dto.validation.ValidateSchema;
 import fr.pedalons.service.route.GpxLimits;
 import jakarta.validation.Valid;
@@ -30,10 +31,23 @@ public record GpxPreviewUpdateRequest(
                 "Editing state of the planner; the server derives the track from it. Not with"
                     + " points (400 PLANNER_STATE_INVALID); a gpxFile wins over it")
         @Valid
-        PlannerState plannerState) {
+        PlannerState plannerState,
+    @Nullable
+        @Schema(
+            description =
+                "The complete list of the waypoints, replacing them. Omitted: they stay as they"
+                    + " are (placed again when the track changes)")
+        @Size(max = GpxLimits.MAX_WAYPOINTS)
+        List<@Valid WaypointRequest> waypoints) {
+
+  /** Without waypoints: the shape this record had before WEB-100 (C3c). */
+  public GpxPreviewUpdateRequest(
+      String name, @Nullable List<GeoPoint> points, @Nullable PlannerState plannerState) {
+    this(name, points, plannerState, null);
+  }
 
   /** Without a planner state: the shape this record had before WEB-100 (C4a). */
   public GpxPreviewUpdateRequest(String name, @Nullable List<GeoPoint> points) {
-    this(name, points, null);
+    this(name, points, null, null);
   }
 }

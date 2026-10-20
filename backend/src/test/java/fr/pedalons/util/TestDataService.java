@@ -468,8 +468,12 @@ public class TestDataService {
 
   @Transactional
   public void setRideRoute(Ride ride, Route route) {
-    ride.setRoute(route);
-    rideRepository.getEntityManager().merge(ride);
+    // The managed instance: the caller's copy may be stale after an earlier merge (version check)
+    Ride managed = rideRepository.getEntityManager().find(Ride.class, ride.getId());
+    managed.setRoute(
+        route == null
+            ? null
+            : rideRepository.getEntityManager().getReference(Route.class, route.getId()));
   }
 
   @Transactional
@@ -602,8 +606,10 @@ public class TestDataService {
             createdBy,
             name,
             org.geolatte.geom.builder.DSL.point(WGS84, org.geolatte.geom.builder.DSL.g(lon, lat)));
-    route.addWaypoint(waypoint);
-    routeRepository.getEntityManager().merge(route);
+    // On the managed row: merging the caller's detached route again would hit the stale version
+    // of its track as soon as a first waypoint was added (OptimisticLockException)
+    Route managed = routeRepository.getEntityManager().find(Route.class, route.getId());
+    managed.addWaypoint(waypoint);
   }
 
   @Transactional

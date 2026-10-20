@@ -20,6 +20,7 @@ import fr.pedalons.enums.GpsConnectReturn;
 import fr.pedalons.enums.GpsOAuthVersion;
 import fr.pedalons.enums.GpsServiceType;
 import fr.pedalons.infrastructure.gps.GarminOAuth1Client;
+import fr.pedalons.infrastructure.gps.RouteMeta;
 import fr.pedalons.infrastructure.gps.RouteUploadResult;
 import fr.pedalons.infrastructure.security.TokenEncryptionService;
 import fr.pedalons.repository.gps.GpsServiceConnectionRepository;
@@ -162,7 +163,8 @@ class GpsServiceOAuth1Test extends AbstractBaseTest {
     gpsService.initiateOAuth(GpsServiceType.GARMIN);
     gpsService.handleOAuth1Callback(GpsServiceType.GARMIN, REQUEST_TOKEN, "verifier");
     byte[] gpx = "<gpx/>".getBytes();
-    when(garminOAuth1Client.uploadRoute("access-token", "access-secret", gpx, "Route"))
+    when(garminOAuth1Client.uploadRoute(
+            "access-token", "access-secret", gpx, RouteMeta.manual("Route")))
         .thenReturn(RouteUploadResult.success("42"));
 
     RouteUploadResponse response = gpsService.uploadGpx(GpsServiceType.GARMIN, gpx, "Route");
@@ -184,7 +186,7 @@ class GpsServiceOAuth1Test extends AbstractBaseTest {
     assertTrue(
         connectionRepository.findByUserAndService(user.getId(), GpsServiceType.GARMIN).isEmpty());
     verify(garminOAuth1Client, never())
-        .uploadRoute(anyString(), anyString(), any(byte[].class), anyString());
+        .uploadRoute(anyString(), anyString(), any(byte[].class), any(RouteMeta.class));
   }
 
   @Test

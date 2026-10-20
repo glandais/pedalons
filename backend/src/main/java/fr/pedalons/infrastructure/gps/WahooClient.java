@@ -264,7 +264,7 @@ public class WahooClient implements GpsServiceClient {
       @Nullable String knownId) {
     try {
       List<Path> paths = parsePaths(gpxContent);
-      byte[] fitContent = FitExporter.toFitBytes(paths, meta.name());
+      byte[] fitContent = FitExporter.toFitBytes(paths, meta.name(), meta.coursePoints());
 
       String body =
           buildRouteForm(

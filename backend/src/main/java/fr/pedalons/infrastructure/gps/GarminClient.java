@@ -19,6 +19,8 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.List;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 import org.jspecify.annotations.Nullable;
 
@@ -44,6 +46,19 @@ public class GarminClient implements GpsServiceClient {
   @Inject GarminCourseConverter courseConverter;
 
   @Inject ObjectMapper objectMapper;
+
+  /**
+   * Whether the course carries the waypoints (docs/LEDGER_*.md WEB-100, C3c). Off by default: the
+   * shape comes from an unofficial specification and was never tried on an Edge (C3a did not
+   * include one).
+   */
+  @ConfigProperty(name = "pedalons.gps.garmin.course-points.enabled", defaultValue = "false")
+  boolean coursePointsEnabled;
+
+  /** For the tests. */
+  public void setCoursePointsEnabled(boolean enabled) {
+    this.coursePointsEnabled = enabled;
+  }
 
   private DomainGpsCredential getCredential() {
     return credentialService
@@ -249,7 +264,11 @@ public class GarminClient implements GpsServiceClient {
       @Nullable String knownId) {
     try {
       // Convert GPX to Garmin course JSON format
-      String courseJson = courseConverter.convertToGarminCourse(gpxContent, meta.name());
+      // The course points go behind a flag, off until the shape has been tried on an Edge: a
+      // refusal of the Courses API would block the sync of every route that has points
+      String courseJson =
+          courseConverter.convertToGarminCourse(
+              gpxContent, meta.name(), coursePointsEnabled ? meta.coursePoints() : List.of());
 
       HttpRequest request =
           HttpRequest.newBuilder()

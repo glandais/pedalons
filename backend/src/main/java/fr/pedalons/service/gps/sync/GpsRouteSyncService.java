@@ -16,6 +16,7 @@ import fr.pedalons.infrastructure.gps.GpsCallResult;
 import fr.pedalons.infrastructure.gps.GpsServiceClient;
 import fr.pedalons.infrastructure.gps.RouteMeta;
 import fr.pedalons.infrastructure.gps.RouteUploadResult;
+import fr.pedalons.infrastructure.gpx.CoursePoint;
 import fr.pedalons.repository.gps.GpsRouteSyncRepository;
 import fr.pedalons.repository.gps.GpsRouteSyncRepository.Claim;
 import fr.pedalons.repository.gps.GpsRouteSyncRepository.ConnectionSummary;
@@ -27,6 +28,8 @@ import fr.pedalons.service.gps.DomainGpsCredentialService;
 import fr.pedalons.service.gps.GpsConnectionTokens;
 import fr.pedalons.service.gps.GpsRouteGpx;
 import fr.pedalons.service.gps.sync.GpsRouteSyncExecutor.Outcome;
+import fr.pedalons.service.route.waypoint.AnchoredWaypoint;
+import fr.pedalons.service.route.waypoint.WaypointExports;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -306,12 +309,13 @@ public class GpsRouteSyncService {
       byte[] gpx,
       String name,
       String hash,
-      @Nullable String externalId) {}
+      @Nullable String externalId,
+      List<CoursePoint> coursePoints) {}
 
   private RouteUploadResponse uploadTracked(
       Long domainId, Long userId, Long connectionId, Long routeId) {
     Manual manual = tx(() -> prepareManual(domainId, connectionId, routeId));
-    RouteMeta meta = RouteMeta.manual(manual.name());
+    RouteMeta meta = RouteMeta.manual(manual.name(), manual.coursePoints());
     GpsCallResult result;
     String externalId = manual.externalId();
     if (externalId != null) {
@@ -369,7 +373,8 @@ public class GpsRouteSyncService {
         routeGpx.read(asset),
         name,
         GpsSyncNames.hash(GpsSyncNames.contentKey(asset.getId(), asset.getContentRevision()), name),
-        externalId);
+        externalId,
+        WaypointExports.coursePoints(AnchoredWaypoint.fromRows(route.getWaypoints())));
   }
 
   // ------------------------------------------------------------------ clean-up

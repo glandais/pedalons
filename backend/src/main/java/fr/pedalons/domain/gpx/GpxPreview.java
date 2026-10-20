@@ -1,5 +1,6 @@
 package fr.pedalons.domain.gpx;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import fr.pedalons.domain.platform.Domain;
 import fr.pedalons.domain.route.ClimbData;
 import fr.pedalons.domain.route.GpxTrack;
@@ -80,6 +81,16 @@ public class GpxPreview {
   @Type(JsonBinaryType.class)
   @Column(name = "waypoints", columnDefinition = "jsonb", nullable = false)
   private List<PreviewWaypoint> waypoints;
+
+  /**
+   * The waypoints with their type, description and distance (docs/LEDGER_*.md WEB-100, C3c), valid
+   * while its track revision is {@link #filesRevision}. The {@link #waypoints} column stays the
+   * historical {@code (name, lat, lng)} one: the previous release reads it with a JSON reader that
+   * fails on unknown properties. Read through {@link #readableWaypoints()}.
+   */
+  @Type(JsonBinaryType.class)
+  @Column(name = "waypoint_details", columnDefinition = "jsonb")
+  private @Nullable PreviewWaypointsDocument waypointDetails;
 
   /**
    * Whether a rendered map thumbnail (gpx-previews/{publicId}/thumbnail-light.png) was produced and
@@ -167,6 +178,24 @@ public class GpxPreview {
   }
 
   /**
+   * The waypoints as they stand: the typed document when it describes the current tracks, else the
+   * historical column, every point then an imported INFO with no distance (an older preview, or one
+   * saved by the previous release of a rolling deploy).
+   */
+  public List<PreviewWaypointDetail> readableWaypoints() {
+    PreviewWaypointsDocument document = waypointDetails;
+    if (document != null && filesRevision != null && document.trackRevision() == filesRevision) {
+      return document.waypoints();
+    }
+    return waypoints.stream()
+        .map(
+            w ->
+                new PreviewWaypointDetail(
+                    null, w.name(), w.lat(), w.lng(), "INFO", null, null, "IMPORTED"))
+        .toList();
+  }
+
+  /**
    * A computed track, stored as JSONB. No PostGIS geometry: previews are never queried spatially,
    * only rendered.
    */
@@ -179,5 +208,8 @@ public class GpxPreview {
       float elevationLoss)
       implements Serializable {}
 
+  // Unknown properties tolerated for the releases to come (this shape itself never grows: see
+  // waypointDetails)
+  @JsonIgnoreProperties(ignoreUnknown = true)
   public record PreviewWaypoint(String name, double lat, double lng) implements Serializable {}
 }

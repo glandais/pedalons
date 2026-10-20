@@ -188,10 +188,24 @@ public final class ContentExport {
     }
   }
 
-  public record WaypointEntry(String id, String name, @Nullable Point<G2D> geometry) {
+  public record WaypointEntry(
+      String id,
+      String name,
+      @Nullable Point<G2D> geometry,
+      @Nullable String type,
+      @Nullable String description,
+      @Nullable Double distance,
+      @Nullable String origin) {
 
     public static WaypointEntry from(GpxWaypoint w) {
-      return new WaypointEntry(TsidUtils.toString(w.getId()), w.getName(), w.getGeometry());
+      return new WaypointEntry(
+          TsidUtils.toString(w.getId()),
+          w.getName(),
+          w.getGeometry(),
+          w.typeOrInfo().name(),
+          w.getDescription(),
+          w.getDistanceM(),
+          w.getOrigin().name());
     }
   }
 

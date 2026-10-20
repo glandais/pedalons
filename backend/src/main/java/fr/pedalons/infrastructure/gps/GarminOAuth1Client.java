@@ -74,10 +74,16 @@ public class GarminOAuth1Client {
   /** Creates a course on Garmin Connect, signed with the user's access token. */
   public RouteUploadResult uploadRoute(
       String accessToken, String accessTokenSecret, byte[] gpxContent, String routeName) {
+    return uploadRoute(accessToken, accessTokenSecret, gpxContent, RouteMeta.manual(routeName));
+  }
+
+  /** As above, with the course points of the route. */
+  public RouteUploadResult uploadRoute(
+      String accessToken, String accessTokenSecret, byte[] gpxContent, RouteMeta meta) {
     Consumer consumer = consumer();
     GpsAuth auth =
         new GpsAuth.OAuth1(consumer.key(), consumer.secret(), accessToken, accessTokenSecret);
-    return garminClient.createRoute(auth, gpxContent, RouteMeta.manual(routeName)).toUploadResult();
+    return garminClient.createRoute(auth, gpxContent, meta).toUploadResult();
   }
 
   /**

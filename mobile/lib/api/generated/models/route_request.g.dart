@@ -21,6 +21,9 @@ _RouteRequest _$RouteRequestFromJson(Map<String, dynamic> json) =>
       plannerState: json['plannerState'] == null
           ? null
           : PlannerState.fromJson(json['plannerState'] as Map<String, dynamic>),
+      waypoints: (json['waypoints'] as List<dynamic>?)
+          ?.map((e) => WaypointRequest.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
 
 Map<String, dynamic> _$RouteRequestToJson(_RouteRequest instance) =>
@@ -32,4 +35,5 @@ Map<String, dynamic> _$RouteRequestToJson(_RouteRequest instance) =>
       'points': instance.points?.map((e) => e.toJson()).toList(),
       'tagIds': instance.tagIds,
       'plannerState': instance.plannerState?.toJson(),
+      'waypoints': instance.waypoints?.map((e) => e.toJson()).toList(),
     };

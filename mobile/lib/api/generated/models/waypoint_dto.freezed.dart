@@ -16,7 +16,13 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$WaypointDto {
 
- GeoJsonPoint get geometry; String? get name;
+ GeoJsonPoint get geometry;/// Name, possibly empty
+ String get name;/// What the waypoint is
+ String get type;/// Who put the waypoint: its AUTHOR in the editor, or a GPX file it was IMPORTED from. A new GPX file replaces the imported ones and keeps the author's
+ String get origin;/// Identifier (TSID) of the waypoint, to send back in the request so that it keeps its origin. Null for a waypoint of a GPX file not saved yet
+ String? get id;/// Free text, at most 500 characters
+ String? get description;/// Metres from the start along the tracks in order (cumulated from one track to the next, in the order of their ids). Null for a waypoint more than 50 m from the track
+ double? get distance;
 /// Create a copy of WaypointDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -30,20 +36,20 @@ $WaypointDtoCopyWith<WaypointDto> get copyWith => _$WaypointDtoCopyWithImpl<Wayp
 @override
 bool operator ==(Object other) {
   final _this = this as WaypointDto;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is WaypointDto&&(identical(other.geometry, _this.geometry) || other.geometry == _this.geometry)&&(identical(other.name, _this.name) || other.name == _this.name));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is WaypointDto&&(identical(other.geometry, _this.geometry) || other.geometry == _this.geometry)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.type, _this.type) || other.type == _this.type)&&(identical(other.origin, _this.origin) || other.origin == _this.origin)&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.description, _this.description) || other.description == _this.description)&&(identical(other.distance, _this.distance) || other.distance == _this.distance));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as WaypointDto;
-  return Object.hash(runtimeType,_this.geometry,_this.name);
+  return Object.hash(runtimeType,_this.geometry,_this.name,_this.type,_this.origin,_this.id,_this.description,_this.distance);
 }
 
 @override
 String toString() {
   final _this = this as WaypointDto;
-  return 'WaypointDto(geometry: ${_this.geometry}, name: ${_this.name})';
+  return 'WaypointDto(geometry: ${_this.geometry}, name: ${_this.name}, type: ${_this.type}, origin: ${_this.origin}, id: ${_this.id}, description: ${_this.description}, distance: ${_this.distance})';
 }
 
 
@@ -54,7 +60,7 @@ abstract mixin class $WaypointDtoCopyWith<$Res>  {
   factory $WaypointDtoCopyWith(WaypointDto value, $Res Function(WaypointDto) _then) = _$WaypointDtoCopyWithImpl;
 @useResult
 $Res call({
- GeoJsonPoint geometry, String? name
+ GeoJsonPoint geometry, String name, String type, String origin, String? id, String? description, double? distance
 });
 
 
@@ -71,11 +77,16 @@ class _$WaypointDtoCopyWithImpl<$Res>
 
 /// Create a copy of WaypointDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? geometry = null,Object? name = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? geometry = null,Object? name = null,Object? type = null,Object? origin = null,Object? id = freezed,Object? description = freezed,Object? distance = freezed,}) {
   return _then(WaypointDto(
 geometry: null == geometry ? _self.geometry : geometry // ignore: cast_nullable_to_non_nullable
-as GeoJsonPoint,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as String?,
+as GeoJsonPoint,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
+as String,origin: null == origin ? _self.origin : origin // ignore: cast_nullable_to_non_nullable
+as String,id: freezed == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String?,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
+as String?,distance: freezed == distance ? _self.distance : distance // ignore: cast_nullable_to_non_nullable
+as double?,
   ));
 }
 /// Create a copy of WaypointDto
@@ -169,10 +180,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( GeoJsonPoint geometry,  String? name)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( GeoJsonPoint geometry,  String name,  String type,  String origin,  String? id,  String? description,  double? distance)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _WaypointDto() when $default != null:
-return $default(_that.geometry,_that.name);case _:
+return $default(_that.geometry,_that.name,_that.type,_that.origin,_that.id,_that.description,_that.distance);case _:
   return orElse();
 
 }
@@ -190,10 +201,10 @@ return $default(_that.geometry,_that.name);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( GeoJsonPoint geometry,  String? name)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( GeoJsonPoint geometry,  String name,  String type,  String origin,  String? id,  String? description,  double? distance)  $default,) {final _that = this;
 switch (_that) {
 case _WaypointDto():
-return $default(_that.geometry,_that.name);case _:
+return $default(_that.geometry,_that.name,_that.type,_that.origin,_that.id,_that.description,_that.distance);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -210,10 +221,10 @@ return $default(_that.geometry,_that.name);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( GeoJsonPoint geometry,  String? name)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( GeoJsonPoint geometry,  String name,  String type,  String origin,  String? id,  String? description,  double? distance)?  $default,) {final _that = this;
 switch (_that) {
 case _WaypointDto() when $default != null:
-return $default(_that.geometry,_that.name);case _:
+return $default(_that.geometry,_that.name,_that.type,_that.origin,_that.id,_that.description,_that.distance);case _:
   return null;
 
 }
@@ -225,11 +236,22 @@ return $default(_that.geometry,_that.name);case _:
 @JsonSerializable()
 
 class _WaypointDto implements WaypointDto {
-  const _WaypointDto({required this.geometry, this.name});
+  const _WaypointDto({required this.geometry, required this.name, required this.type, required this.origin, this.id, this.description, this.distance});
   factory _WaypointDto.fromJson(Map<String, dynamic> json) => _$WaypointDtoFromJson(json);
 
 @override final  GeoJsonPoint geometry;
-@override final  String? name;
+/// Name, possibly empty
+@override final  String name;
+/// What the waypoint is
+@override final  String type;
+/// Who put the waypoint: its AUTHOR in the editor, or a GPX file it was IMPORTED from. A new GPX file replaces the imported ones and keeps the author's
+@override final  String origin;
+/// Identifier (TSID) of the waypoint, to send back in the request so that it keeps its origin. Null for a waypoint of a GPX file not saved yet
+@override final  String? id;
+/// Free text, at most 500 characters
+@override final  String? description;
+/// Metres from the start along the tracks in order (cumulated from one track to the next, in the order of their ids). Null for a waypoint more than 50 m from the track
+@override final  double? distance;
 
 /// Create a copy of WaypointDto
 /// with the given fields replaced by the non-null parameter values.
@@ -244,18 +266,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _WaypointDto&&(identical(other.geometry, geometry) || other.geometry == geometry)&&(identical(other.name, name) || other.name == name));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _WaypointDto&&(identical(other.geometry, geometry) || other.geometry == geometry)&&(identical(other.name, name) || other.name == name)&&(identical(other.type, type) || other.type == type)&&(identical(other.origin, origin) || other.origin == origin)&&(identical(other.id, id) || other.id == id)&&(identical(other.description, description) || other.description == description)&&(identical(other.distance, distance) || other.distance == distance));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,geometry,name);
+    return Object.hash(runtimeType,geometry,name,type,origin,id,description,distance);
 }
 
 @override
 String toString() {
-    return 'WaypointDto(geometry: $geometry, name: $name)';
+    return 'WaypointDto(geometry: $geometry, name: $name, type: $type, origin: $origin, id: $id, description: $description, distance: $distance)';
 }
 
 
@@ -266,7 +288,7 @@ abstract mixin class _$WaypointDtoCopyWith<$Res> implements $WaypointDtoCopyWith
   factory _$WaypointDtoCopyWith(_WaypointDto value, $Res Function(_WaypointDto) _then) = __$WaypointDtoCopyWithImpl;
 @override @useResult
 $Res call({
- GeoJsonPoint geometry, String? name
+ GeoJsonPoint geometry, String name, String type, String origin, String? id, String? description, double? distance
 });
 
 
@@ -283,11 +305,16 @@ class __$WaypointDtoCopyWithImpl<$Res>
 
 /// Create a copy of WaypointDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? geometry = null,Object? name = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? geometry = null,Object? name = null,Object? type = null,Object? origin = null,Object? id = freezed,Object? description = freezed,Object? distance = freezed,}) {
   return _then(_WaypointDto(
 geometry: null == geometry ? _self.geometry : geometry // ignore: cast_nullable_to_non_nullable
-as GeoJsonPoint,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as String?,
+as GeoJsonPoint,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
+as String,origin: null == origin ? _self.origin : origin // ignore: cast_nullable_to_non_nullable
+as String,id: freezed == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String?,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
+as String?,distance: freezed == distance ? _self.distance : distance // ignore: cast_nullable_to_non_nullable
+as double?,
   ));
 }
 
