@@ -3975,6 +3975,37 @@ plus la colonne. Le départ d'un groupe n'existe plus que dans `ride_groups.star
   **À ne pas défaire** : une date journalière d'Open-Meteo se lit au décalage unique de la réponse,
   jamais dans le fuseau du lieu.
 
+### Préalables à Quarkus 4
+
+- `API-133` **Le backend ne dépend plus de hypersistence-utils** (2026-10-20, contrat inchangé,
+  pas de migration) — préalable à Quarkus 4 : `hypersistence-utils-hibernate-71` n'a pas de module
+  pour Hibernate ORM 8. Remplacé à comportement identique sur Quarkus 3.40 / Hibernate 7.4.
+  **Ids** : `@Tsid` est `infrastructure.hibernate.Tsid` (`@IdGeneratorType` → `TsidGenerator`, un
+  `BeforeExecutionGenerator`), adossé à `io.hypersistence:hypersistence-tsid` gardé en dépendance
+  directe ; même fabrique que hypersistence (`TSID.Factory.builder().withRandomFunction(
+  THREAD_LOCAL_RANDOM_FUNCTION)`, une seule par JVM, 10 bits de nœud tirés au démarrage sauf
+  `TSID_NODE`, époque 2020-01-01) ; seuls les imports des 38 entités changent. **JSONB** : les 19
+  colonnes passent de `@Type(JsonBinaryType.class)` à `@JdbcTypeCode(SqlTypes.JSON)`, sérialisées
+  par le `FormatMapper` du PU (`JsonbFormatMapper`, `@JsonFormat @PersistenceUnitExtension`), qui
+  délègue à `JsonbMapper`, seul `ObjectMapper` des colonnes JSONB et copie exacte de celui de
+  hypersistence (`JavaTimeModule`, `Jdk8Module`, `ParameterNamesModule`, `OffsetDateTime` en ISO,
+  défauts Jackson 2 : `Instant` en secondes décimales, nulls écrits, propriété inconnue refusée) ;
+  `GpxTrackRepository.updateSurfaces` et les tests passent par `JsonbMapper.INSTANCE`. Les champs
+  `JsonNode` portent `@Mutability(JsonNodeMutabilityPlan.class)` : la copie par aller-retour JSON
+  de Hibernate changerait un `LongNode` en `IntNode` et réécrirait la ligne à chaque flush.
+  Tests : `JsonbMapperTest` (document de référence écrit par hypersistence 3.16.0),
+  `TsidGeneratorTest`, `JsonbMappingTest` (`@QuarkusTest` : mapper du PU, plan des `JsonNode`,
+  `Passkey.transports` toujours en `ARRAY`, garde-fou contre un bean `JsonbFormatMapper` perdu qui
+  ferait retomber Hibernate sur son mapper par défaut sans bruit), `ClimbDataTest`,
+  `TrackSurfaceDocumentTest`. Quarkus 4 reste bloqué par d'autres dépendances : `API-134`.
+  **À ne pas défaire** : jamais l'`ObjectMapper` de Quarkus/REST (`PedalonsJacksonConfig`,
+  `NON_NULL`) sur une colonne JSONB ; ne toucher à la configuration de `JsonbMapper`, ni passer à
+  Jackson 3 (défauts différents, dates notamment), qu'avec `JsonbMapperTest` vert, car un
+  déploiement roulant fait lire à l'ancienne version ce qu'écrit la nouvelle ; une seule fabrique
+  TSID pour toutes les entités (nœud aléatoire par JVM, comme avant : `TSID_NODE` n'est fixé nulle
+  part) ; `@Mutability(JsonNodeMutabilityPlan.class)` sur tout champ `JsonNode` mappé en JSON ;
+  `quarkus.hibernate-orm.mapping.format.global=ignore` reste.
+
 ### `API-120` Envoi automatique des parcours de mes sorties vers mes services GPS (16 octobre 2026, contrat `11.5.0`)
 
 - `API-120` **Un membre inscrit n'envoie plus lui-même le parcours de son groupe vers Hammerhead,

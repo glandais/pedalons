@@ -16,7 +16,7 @@ import org.jspecify.annotations.Nullable;
  *
  * @param trackRevision the {@code files_revision} of the tracks the documents describe
  */
-// Read by hypersistence's own ObjectMapper, which fails on unknown properties (see
+// Read by JsonbMapper, a plain Jackson ObjectMapper that fails on unknown properties (see
 // TrackSurfaceDocument).
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record PreviewSurfacesDocument(

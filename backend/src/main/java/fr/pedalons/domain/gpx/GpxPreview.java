@@ -6,8 +6,7 @@ import fr.pedalons.domain.route.GpxTrack;
 import fr.pedalons.domain.route.PlannerStateDocument;
 import fr.pedalons.domain.user.User;
 import fr.pedalons.enums.ElevationState;
-import io.hypersistence.utils.hibernate.id.Tsid;
-import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
+import fr.pedalons.infrastructure.hibernate.Tsid;
 import jakarta.persistence.*;
 import java.io.Serializable;
 import java.time.Instant;
@@ -17,9 +16,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.LazyGroup;
-import org.hibernate.annotations.Type;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -73,11 +73,11 @@ public class GpxPreview {
   @Column(name = "hilliness", nullable = false)
   private Float hilliness;
 
-  @Type(JsonBinaryType.class)
+  @JdbcTypeCode(SqlTypes.JSON)
   @Column(name = "tracks", columnDefinition = "jsonb", nullable = false)
   private List<PreviewTrack> tracks;
 
-  @Type(JsonBinaryType.class)
+  @JdbcTypeCode(SqlTypes.JSON)
   @Column(name = "waypoints", columnDefinition = "jsonb", nullable = false)
   private List<PreviewWaypoint> waypoints;
 
@@ -117,7 +117,7 @@ public class GpxPreview {
    * to a few MB, and every path that loads the track must not pay for it.
    */
   @Basic(fetch = FetchType.LAZY)
-  @Type(JsonBinaryType.class)
+  @JdbcTypeCode(SqlTypes.JSON)
   @Column(name = "planner_state", columnDefinition = "jsonb")
   private @Nullable PlannerStateDocument plannerState;
 
@@ -129,7 +129,7 @@ public class GpxPreview {
    */
   @Basic(fetch = FetchType.LAZY)
   @LazyGroup("surfaces")
-  @Type(JsonBinaryType.class)
+  @JdbcTypeCode(SqlTypes.JSON)
   @Column(name = "surfaces", columnDefinition = "jsonb")
   private @Nullable PreviewSurfacesDocument surfaces;
 

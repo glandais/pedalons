@@ -3,7 +3,6 @@ package fr.pedalons.domain.route;
 import fr.pedalons.domain.common.BaseEntity;
 import fr.pedalons.domain.common.NotNullableDbValue;
 import fr.pedalons.domain.user.User;
-import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.*;
 import java.io.Serializable;
 import java.util.List;
@@ -12,8 +11,9 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.geolatte.geom.G2D;
 import org.geolatte.geom.LineString;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.LazyGroup;
-import org.hibernate.annotations.Type;
+import org.hibernate.type.SqlTypes;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -39,11 +39,11 @@ public class GpxTrack extends BaseEntity {
   @Column(name = "geometry", columnDefinition = "geometry(LineString,4326)", nullable = false)
   private LineString<G2D> geometry;
 
-  @Type(JsonBinaryType.class)
+  @JdbcTypeCode(SqlTypes.JSON)
   @Column(name = "track_points", columnDefinition = "jsonb", nullable = false)
   private List<TrackPoint> trackPoints;
 
-  @Type(JsonBinaryType.class)
+  @JdbcTypeCode(SqlTypes.JSON)
   @Column(name = "climbs", columnDefinition = "jsonb", nullable = false)
   private List<ClimbData> climbs;
 
@@ -64,7 +64,7 @@ public class GpxTrack extends BaseEntity {
    * to a few MB, and every path that loads the track must not pay for it.
    */
   @Basic(fetch = FetchType.LAZY)
-  @Type(JsonBinaryType.class)
+  @JdbcTypeCode(SqlTypes.JSON)
   @Column(name = "planner_state", columnDefinition = "jsonb")
   private @Nullable PlannerStateDocument plannerState;
 
@@ -75,7 +75,7 @@ public class GpxTrack extends BaseEntity {
    */
   @Basic(fetch = FetchType.LAZY)
   @LazyGroup("surfaces")
-  @Type(JsonBinaryType.class)
+  @JdbcTypeCode(SqlTypes.JSON)
   @Column(name = "surfaces", columnDefinition = "jsonb")
   private @Nullable TrackSurfaceDocument surfaces;
 

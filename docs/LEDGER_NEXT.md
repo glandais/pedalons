@@ -585,6 +585,18 @@ sont les plus lourds et les nomme tous : c'est un sujet de **rate limiting**, pa
 levier si ça devient sensible est de descendre `MAX_BULK_SLUGS` vers ~15 (les appelants réels
 plafonnent à 12, `kTripTrackStageCap`), pas de réintroduire un paramètre de finesse.
 
+### Quarkus 4
+
+- [ ] `API-134` **Quarkus 4 reste bloqué après le retrait de hypersistence-utils (`API-133`)** — le
+  dernier module Hibernate ORM 8 manquant est parti, mais d'autres dépendances restent à lever
+  avant de monter la plateforme de `3.40.x` à 4 (`backend/pom.xml`) : `geolatte-geojson` (Jackson 2
+  seulement, branché dans `PedalonsJacksonConfig`) et `quarkus-amazon-services`
+  (`io.quarkiverse.amazonservices:quarkus-amazon-s3`, bom `quarkus-amazon-services-bom`), dont une
+  version pour Quarkus 4 est à attendre ; à revérifier au moment du bump, ainsi que le câblage
+  `@JsonFormat @PersistenceUnitExtension` de `JsonbFormatMapper`, non vérifiable avant Quarkus 4.
+  Passer `JsonbMapper` à Jackson 3 est un chantier à part (défauts différents, dates notamment) :
+  `JsonbMapperTest` en est la porte.
+
 ### Petites évolutions d'API qui suppriment chacune une dégradation nommée
 
 Extrait du §5.2 du plan mobile. Aucune ne bloque un écran ; chacune retire un repli visible.

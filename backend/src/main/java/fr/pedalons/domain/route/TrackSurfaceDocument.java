@@ -34,7 +34,7 @@ import org.jspecify.annotations.Nullable;
  *     answered with one
  * @param distance the length of the track when it was computed: the base of the rescale on reading
  */
-// The JSONB column is read by hypersistence's own ObjectMapper, which fails on unknown
+// The JSONB column is read by JsonbMapper, a plain Jackson ObjectMapper that fails on unknown
 // properties: a release must read a document written by a later one (rolling deploy, rollback).
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record TrackSurfaceDocument(

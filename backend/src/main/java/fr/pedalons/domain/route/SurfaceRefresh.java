@@ -1,7 +1,7 @@
 package fr.pedalons.domain.route;
 
 import fr.pedalons.domain.gpx.GpxPreview;
-import io.hypersistence.utils.hibernate.id.Tsid;
+import fr.pedalons.infrastructure.hibernate.Tsid;
 import jakarta.persistence.*;
 import java.time.Instant;
 import lombok.Getter;

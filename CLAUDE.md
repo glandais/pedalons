@@ -80,7 +80,7 @@ Three invariants that cut across modules, each of which a plausible-looking chan
 | Mobile | Flutter, Dart (see `mobile/RULES.md` for detailed guidelines) |
 | Karoo | Kotlin, Jetpack Compose, karoo-ext SDK, ktor-client-karoo |
 | Auth | Database auth with JWT (password, OTP, passkeys/WebAuthn) |
-| IDs | TSID via hypersistence-utils (Long internally, lowercase string in API) |
+| IDs | TSID via hypersistence-tsid — `@Tsid` is `fr.pedalons.infrastructure.hibernate.Tsid` (Long internally, lowercase string in API) |
 | API | OpenAPI 3.1 contract-first with code generation |
 
 ## Infrastructure

@@ -5,8 +5,8 @@ import fr.pedalons.enums.NotificationChange;
 import fr.pedalons.enums.NotificationEventStatus;
 import fr.pedalons.enums.NotificationSubjectType;
 import fr.pedalons.enums.NotificationType;
-import io.hypersistence.utils.hibernate.id.Tsid;
-import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
+import fr.pedalons.infrastructure.hibernate.JsonNodeMutabilityPlan;
+import fr.pedalons.infrastructure.hibernate.Tsid;
 import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.Arrays;
@@ -14,7 +14,9 @@ import java.util.List;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.Type;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.Mutability;
+import org.hibernate.type.SqlTypes;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -75,7 +77,8 @@ public class NotificationEventEntry {
   private String dedupKey;
 
   /** The event record, serialized. Read back into its record class by {@code type}. */
-  @Type(JsonBinaryType.class)
+  @JdbcTypeCode(SqlTypes.JSON)
+  @Mutability(JsonNodeMutabilityPlan.class)
   @Column(name = "payload", columnDefinition = "jsonb", nullable = false)
   private JsonNode payload;
 

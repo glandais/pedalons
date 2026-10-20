@@ -3,7 +3,7 @@ package fr.pedalons.repository.route;
 import fr.pedalons.domain.route.GpxTrack;
 import fr.pedalons.domain.route.PlannerStateDocument;
 import fr.pedalons.domain.route.TrackSurfaceDocument;
-import io.hypersistence.utils.hibernate.type.util.JsonConfiguration;
+import fr.pedalons.infrastructure.hibernate.JsonbMapper;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.ArrayList;
@@ -119,7 +119,7 @@ public class GpxTrackRepository implements PanacheRepository<GpxTrack> {
   public void updateSurfaces(Long trackId, TrackSurfaceDocument surfaces) {
     getEntityManager()
         .createNativeQuery("update gpx_tracks set surfaces = cast(:doc as jsonb) where id = :id")
-        .setParameter("doc", JsonConfiguration.INSTANCE.getObjectMapperWrapper().toString(surfaces))
+        .setParameter("doc", JsonbMapper.INSTANCE.toString(surfaces))
         .setParameter("id", trackId)
         .executeUpdate();
   }

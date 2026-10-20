@@ -95,6 +95,8 @@ and the standalone `Passkey` / `GpsServiceConnection` use hard delete.
 
 - **Slugs**: Unique per team, auto-generated from title → see `SlugService.generateSlug()`
 - **TSID conversion**: `TsidUtils.toString()` / `TsidUtils.toLong()` in `common/`
+- **IDs**: `@Id @Tsid private Long id;` with `fr.pedalons.infrastructure.hibernate.Tsid` (one TSID factory per JVM, see `TsidGenerator`). Native inserts take `TSID.Factory.getTsid().toLong()`.
+- **JSONB columns**: `@JdbcTypeCode(SqlTypes.JSON)` + `columnDefinition = "jsonb"`; a `JsonNode` field also takes `@Mutability(JsonNodeMutabilityPlan.class)`. Serialized by `JsonbMapper` (never the REST ObjectMapper), which fails on unknown properties — a stored record takes `@JsonIgnoreProperties(ignoreUnknown = true)` so a release reads what the next one writes. Native SQL writing a JSONB column serializes with `JsonbMapper.INSTANCE.toString(...)`.
 - **Assets**: Upload via `assetsApi.uploadAsset()`, type assigned by field placement in `AssetsDto` → see `AssetService.updateAssets()`
 
 ## Security & Authorization
