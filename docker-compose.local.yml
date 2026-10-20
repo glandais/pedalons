@@ -29,7 +29,7 @@ services:
   # The stack runs the %prod Quarkus profile, whose only way out for mail is the SMTP relay named by
   # QUARKUS_MAILER_*. The local .env points it here, and it goes no further.
   mailpit:
-    image: axllent/mailpit:v1.31.5
+    image: axllent/mailpit:v1.31.6
     container_name: ${ENV_NAME}-mailpit
     restart: unless-stopped
     networks:
