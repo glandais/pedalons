@@ -14,17 +14,26 @@ import {
   Alert,
   FileInput,
   Box,
+  Badge,
 } from '@mantine/core'
 import { RouteRequest, SurfaceType } from '@/api/dto'
 import type { TeamDetailDto, GeoPoint, PlannerState } from '@/api/dto'
 import { notifications } from '@mantine/notifications'
 import { plannerPayload } from '@/lib/plannerSubmit'
+import { SURFACE_TYPE_COLORS } from '@/lib/badgeColors.generated'
 import { MediaEditor } from '../common/MediaEditor'
 import { SlugEditor } from '../common/SlugEditor'
 import { paths } from '@/config/paths'
 import { RoutePlannerField, type RoutePlannerHandle } from '../planner/RoutePlannerField'
 import { CreateRouteBody } from '@/api/zod/routes/routes.zod'
 import { TagPicker } from '@/components/tag'
+
+const SURFACE_TYPE_LABEL_KEYS = {
+  ROAD: 'routes.surfaceType.ROAD',
+  GRAVEL: 'routes.surfaceType.GRAVEL',
+  MTB: 'routes.surfaceType.MTB',
+  MIXED: 'routes.surfaceType.MIXED',
+} as const satisfies Record<SurfaceType, string>
 
 export type RouteSourceMode = 'gpx' | 'planner'
 
@@ -52,6 +61,8 @@ interface RouteEditorProps {
   canEditSlug?: boolean
   /** Tells the host dialog whether the planner's fullscreen editor is open (its Escape must wait). */
   onPlannerFullscreenChange?: (opened: boolean) => void
+  /** What the saved track's surface suggests (WEB-100 C1c): offered next to the field, never applied by itself. */
+  suggestedSurfaceType?: SurfaceType | null
 }
 
 export function RouteEditor({
@@ -66,6 +77,7 @@ export function RouteEditor({
   initialTrack,
   initialAscend,
   initialPlannerState,
+  suggestedSurfaceType,
   submitButtonText,
   cancelButtonText,
   showCancelButton = true,
@@ -99,6 +111,15 @@ export function RouteEditor({
   const [plannerPoints, setPlannerPoints] = useState<GeoPoint[]>([])
   const [error, setError] = useState<string | null>(null)
   const plannerRef = useRef<RoutePlannerHandle>(null)
+
+  // The saved track's surface: hidden once another file is chosen (it would describe the old track)
+  const suggestion =
+    !isCreateMode &&
+    !gpxFile &&
+    suggestedSurfaceType &&
+    suggestedSurfaceType !== form.values.surfaceType
+      ? suggestedSurfaceType
+      : null
 
   const handleFileChange = useCallback(
     (file: File | null) => {
@@ -303,17 +324,39 @@ export function RouteEditor({
         </Stack>
 
         {/* Surface Type */}
-        <Select
-          label={t('routes.create.form.surfaceType')}
-          value={form.values.surfaceType}
-          onChange={(val) => form.setFieldValue('surfaceType', val as SurfaceType)}
-          data={[
-            { value: SurfaceType.ROAD, label: t('routes.surfaceType.ROAD') },
-            { value: SurfaceType.GRAVEL, label: t('routes.surfaceType.GRAVEL') },
-            { value: SurfaceType.MTB, label: t('routes.surfaceType.MTB') },
-            { value: SurfaceType.MIXED, label: t('routes.surfaceType.MIXED') },
-          ]}
-        />
+        <Stack gap={4}>
+          <Select
+            label={t('routes.create.form.surfaceType')}
+            value={form.values.surfaceType}
+            onChange={(val) => form.setFieldValue('surfaceType', val as SurfaceType)}
+            data={[
+              { value: SurfaceType.ROAD, label: t(SURFACE_TYPE_LABEL_KEYS.ROAD) },
+              { value: SurfaceType.GRAVEL, label: t(SURFACE_TYPE_LABEL_KEYS.GRAVEL) },
+              { value: SurfaceType.MTB, label: t(SURFACE_TYPE_LABEL_KEYS.MTB) },
+              { value: SurfaceType.MIXED, label: t(SURFACE_TYPE_LABEL_KEYS.MIXED) },
+            ]}
+          />
+          {suggestion && (
+            <Group gap="xs" wrap="wrap">
+              <Badge
+                component="button"
+                type="button"
+                variant="light"
+                color={SURFACE_TYPE_COLORS[suggestion]}
+                style={{ cursor: 'pointer' }}
+                onClick={() => form.setFieldValue('surfaceType', suggestion)}
+                data-testid="route-surface-type-suggestion"
+              >
+                {t('routes.surfaceTypeSuggestion.label', {
+                  type: t(SURFACE_TYPE_LABEL_KEYS[suggestion]),
+                })}
+              </Badge>
+              <Text size="xs" c="dimmed">
+                {t('routes.surfaceTypeSuggestion.hint')}
+              </Text>
+            </Group>
+          )}
+        </Stack>
 
         {/* Visibility */}
         <TagPicker

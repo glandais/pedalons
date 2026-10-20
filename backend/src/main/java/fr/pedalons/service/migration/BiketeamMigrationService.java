@@ -88,6 +88,7 @@ import fr.pedalons.service.route.GpxPipeline;
 import fr.pedalons.service.route.RouteService;
 import fr.pedalons.service.security.DomainResolver;
 import fr.pedalons.service.security.PedalonsQueryContext;
+import fr.pedalons.service.surface.SurfaceRefreshService;
 import fr.pedalons.service.tag.TagService;
 import fr.pedalons.service.timezone.EventTimezoneResolver;
 import fr.pedalons.service.trip.TripService;
@@ -204,6 +205,7 @@ public class BiketeamMigrationService {
 
   @Inject PlaceService placeService;
   @Inject RouteService routeService;
+  @Inject SurfaceRefreshService surfaceRefreshService;
   @Inject RideService rideService;
   @Inject TripService tripService;
   @Inject PostService postService;
@@ -867,6 +869,8 @@ public class BiketeamMigrationService {
         RouteDto created = routeService.createRoute(team.getSlug(), req, gpx);
         route = routeRepository.findByIdOptional(TsidUtils.toLong(created.id())).orElseThrow();
       }
+      // A bulk import must not spend outside the cap: the catch-up takes the surface (WEB-100 C1c)
+      surfaceRefreshService.leaveToBackfill(route.getId());
     }
     route.setStatus(Status.PUBLISHED);
     WindDirection wd = mapWindDirection(bt.windDirection());

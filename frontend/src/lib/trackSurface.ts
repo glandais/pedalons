@@ -2,9 +2,16 @@
 // after the save, turned into the colour of each profile and map segment and into the breakdown of
 // the route sheet. The families come from the business colour code (docs/BRANDING.md §3.6,
 // `TrackSurface`); only the shades live here. The route being drawn takes its colours from here too
-// (`plannerSurface.ts`), so it looks like the saved one.
+// (`plannerSurface.ts`), so it looks like the saved one. `suggestSurfaceType` (C1c) reads the same
+// spans to offer a value for the route form's surface type, never to apply it.
 import type { MantineTheme } from '@mantine/core'
-import { TrackSurface, TrackSurfaceState, type SurfaceSpanDto, type TrackDto } from '@/api/dto'
+import {
+  SurfaceType,
+  TrackSurface,
+  TrackSurfaceState,
+  type SurfaceSpanDto,
+  type TrackDto,
+} from '@/api/dto'
 import { TRACK_SURFACE_COLORS } from '@/lib/badgeColors.generated'
 
 /** The classes, in the order of the legend. */
@@ -142,4 +149,64 @@ export function surfaceShares(
     length: lengths.get(surface)!,
     share: lengths.get(surface)! / total,
   }))
+}
+
+/** Above this share of the whole length unknown or off the network, no suggestion (WEB-100 C1c). */
+export const SUGGEST_MAX_MISSING = 0.3
+/** Above this share of paths (of the known length), MTB. */
+export const SUGGEST_MTB_PATH = 0.3
+/** Below this share of unpaved (of the known length), ROAD; up to SUGGEST_MIXED_MAX, MIXED; above, GRAVEL. */
+export const SUGGEST_ROAD_BELOW = 0.05
+export const SUGGEST_MIXED_MAX = 0.2
+
+/**
+ * The surface type a route's surface suggests (WEB-100 C1c), never applied by itself: the form
+ * offers it. Read over every track: one whose surface is not READY counts as unknown for its whole
+ * length (last M of its line). Null without any READY track, or when more than 30 % of the length
+ * is unknown or off the network. On the known length: more than 30 % path -> MTB; else unpaved
+ * (GRAVEL, DIRT, PATH; PAVED_ROUGH is paved) below 5 % -> ROAD, 5 to 20 % -> MIXED, above -> GRAVEL.
+ */
+export function suggestSurfaceType(tracks: TrackDto[]): SurfaceType | null {
+  if (!hasSurfaces(tracks)) return null
+  let total = 0
+  let missing = 0
+  let path = 0
+  let unpaved = 0
+  for (const track of tracks) {
+    const spans = readySpans(track)
+    if (!spans) {
+      const length = track.line.coordinates.at(-1)?.[3] ?? 0
+      total += length
+      missing += length
+      continue
+    }
+    for (const span of spans) {
+      const length = span.to - span.from
+      if (length <= 0) continue
+      total += length
+      switch (span.surface) {
+        case TrackSurface.UNKNOWN:
+        case TrackSurface.OFF_NETWORK:
+          missing += length
+          break
+        case TrackSurface.PATH:
+          path += length
+          unpaved += length
+          break
+        case TrackSurface.GRAVEL:
+        case TrackSurface.DIRT:
+          unpaved += length
+          break
+        // PAVED, PAVED_ROUGH (and a later value): paved
+      }
+    }
+  }
+  if (total <= 0 || missing / total > SUGGEST_MAX_MISSING) return null
+  const known = total - missing
+  if (known <= 0) return null
+  if (path / known > SUGGEST_MTB_PATH) return SurfaceType.MTB
+  const share = unpaved / known
+  if (share < SUGGEST_ROAD_BELOW) return SurfaceType.ROAD
+  if (share <= SUGGEST_MIXED_MAX) return SurfaceType.MIXED
+  return SurfaceType.GRAVEL
 }

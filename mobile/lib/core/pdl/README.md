@@ -259,7 +259,7 @@ Exportés par `pdl.dart` comme le reste, et soumis au même contrat (jetons,
 
 | Widget / type | Fichier | Rôle |
 |---|---|---|
-| `PdlElevationProfile` | `elevation/pdl_elevation_profile.dart` | Le profil, avec axe et info-bulle |
+| `PdlElevationProfile` | `elevation/pdl_elevation_profile.dart` | Le profil, avec axe et info-bulle ; `barColors` (une couleur par barre, comparée par identité) remplace l'échelle de pente — le mode revêtement de la fiche parcours, `MOB-81` |
 | `ElevationSamples` · `ElevationPoint` · `ElevationBar` · `ElevationReading` | `elevation/elevation_samples.dart` | Modèle de données et agrégation |
 | `ElevationAreaPainter` · `ElevationCursorPainter` | `elevation/elevation_*_painter.dart` | Les deux couches peintes : l'aire, puis le réticule |
 

@@ -19,7 +19,7 @@ const Duration kElevationPollGiveUp = Duration(minutes: 15);
 bool isElevationPending(String? state) => state == ElevationState.pending.json;
 
 /// Redemande le parcours toutes les [kElevationPollInterval] tant qu'il est
-/// `PENDING`, et s'arrête dès qu'il ne l'est plus — ou au bout de
+/// `PENDING` (altitude, ou revêtement des pistes — `MOB-81`), et s'arrête dès qu'il ne l'est plus — ou au bout de
 /// [kElevationPollGiveUp] depuis le premier `PENDING` vu par cet écran.
 ///
 /// Une fois la fenêtre écoulée, un parcours encore `PENDING` ne la relance
@@ -40,8 +40,13 @@ class ElevationRefreshPoller {
   bool get isPolling => _timer?.isActive ?? false;
 
   /// À appeler à chaque nouvelle valeur du parcours.
-  void update(String? elevationState) {
-    if (!isElevationPending(elevationState)) {
+  void update(String? elevationState) =>
+      updatePending(isElevationPending(elevationState));
+
+  /// Comme [update], pour un état d'attente déjà calculé : l'altitude
+  /// provisoire **ou** un revêtement en cours de calcul (`MOB-81`).
+  void updatePending(bool pending) {
+    if (!pending) {
       _stop();
       _pendingSince = null;
       return;

@@ -160,6 +160,16 @@ public class SurfaceRefreshService {
     }
   }
 
+  /**
+   * Drops the normal request a bulk import (the biketeam migration) just made for a route, so that
+   * the capped catch-up takes it (C1c), in the caller's transaction. No-op when the feature is off.
+   */
+  public void leaveToBackfill(Long routeId) {
+    if (isEnabled()) {
+      refreshRepository.dropNormalRequest(routeId);
+    }
+  }
+
   // ------------------------------------------------------------------ read
 
   /** The surfaces of a route's tracks, for its detail: a projection and one existence query. */
@@ -202,14 +212,18 @@ public class SurfaceRefreshService {
 
   // ------------------------------------------------------------------ claim
 
-  /** Takes the next due route request, in a transaction of its own. */
-  public Optional<Claim> claimNext(Instant now) {
-    return tx(() -> refreshRepository.claimNextRoute(now, now.plus(LEASE), MAX_ATTEMPTS));
+  /**
+   * Takes the next due route request, in a transaction of its own. {@code backfill} picks the
+   * catch-up's requests (C1c) or the normal ones.
+   */
+  public Optional<Claim> claimNext(Instant now, boolean backfill) {
+    return tx(() -> refreshRepository.claimNextRoute(now, now.plus(LEASE), MAX_ATTEMPTS, backfill));
   }
 
   /** Takes the next due preview request, in a transaction of its own. */
-  public Optional<PreviewClaim> claimNextPreview(Instant now) {
-    return tx(() -> refreshRepository.claimNextPreview(now, now.plus(LEASE), MAX_ATTEMPTS));
+  public Optional<PreviewClaim> claimNextPreview(Instant now, boolean backfill) {
+    return tx(
+        () -> refreshRepository.claimNextPreview(now, now.plus(LEASE), MAX_ATTEMPTS, backfill));
   }
 
   // ------------------------------------------------------------------ one route

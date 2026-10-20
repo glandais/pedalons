@@ -671,6 +671,46 @@ also off by itself when the key is empty. Set it to `false` in the `.env` of a w
 and the e2e stack has it off (`.env.e2e`): both would otherwise spend real credits, a biketeam
 migration test included.
 
+The **catch-up of old tracks** (`WEB-100`, C1c; the routes saved before the surface existed,
+biketeam ones included): `SurfaceBackfill` (every 5 min) queues the routes without a surface nor
+any request, most recent first, then the GPX-tool previews younger than 29 days, as requests marked
+`surface_refresh.backfill`. The worker serves them only once no normal request is due. The cap is
+global (carried by the requests' due times, spaced under a lock, so two backends of a rolling deploy
+do not double it): `SURFACE_BACKFILL_PER_HOUR` provider calls an hour (default 300 = **6,000
+credits/h**; a 188 km slice is one call, a 400 km route three), and never more than 10 minutes of it
+waiting in the queue, so it pauses by itself while Stadia fails. The cap is on the due times: after
+the worker was held up (a backlog of normal requests, `SURFACE_ENABLED` off a while, a restart) it
+sends what fell due at once, so an hour can see up to the cap plus those 10 minutes (350 calls,
+7,000 credits at the default), retries of failed requests aside. **Cost**: tracks x 20 credits; 10,000
+routes take about 34 h and about 200,000 credits at the default cap (about 4 to 6 USD on the Starter
+plan). A biketeam migration leaves its routes to the catch-up instead of queuing them at once.
+
+- **Stop it**: `SURFACE_BACKFILL_ENABLED=false` (nothing more is queued; what is already queued, at
+  most 10 minutes of cap, is still computed). `SURFACE_ENABLED=false` stops everything.
+- **Before the first deploy, estimate it** (the routes the catch-up will take, its calls and
+  credits; the previews are a few days' worth at most):
+  ```sql
+  select count(*) as routes,
+         sum(greatest(1, ceil(coalesce(t.distance, 0) / 188000.0))) as calls,
+         20 * sum(greatest(1, ceil(coalesce(t.distance, 0) / 188000.0))) as credits
+    from team_entities t join teams tm on tm.id = t.team_id
+   where t.id in (select g.route_id from gpx_tracks g where g.surfaces is null)
+     and not t.deleted and not tm.deleted
+     and not exists (select 1 from surface_refresh r where r.route_id = t.id)
+     and exists (select 1 from assets a
+                  where a.team_entity_id = t.id and a.type = 'ROUTE_ORIGINAL_GPX');
+  ```
+  `calls / SURFACE_BACKFILL_PER_HOUR` is the duration in hours.
+- **Follow it**: `select count(*) filter (where backfill), count(*) filter (where backfill and attempts >= 5) from surface_refresh;`
+  and what is left: `select count(distinct route_id) from gpx_tracks where surfaces is null;`. The log
+  says `Surface catch-up done` once nothing is left.
+- **A track the provider cannot match** gets an « unavailable » document and is never retried; one
+  that failed five times keeps its request row (normal or catch-up) and is not taken again either.
+  To retry the given-up ones (a revoked key made a batch fail):
+  `delete from surface_refresh where attempts >= 5;` — they become candidates of the catch-up again,
+  under its cap.
+- A workstation stack keeps `SURFACE_ENABLED=false` (above), which disables the catch-up too.
+
 One key for prod and staging works (Stadia Maps counts requests per key); a second key makes
 staging's usage readable apart on their dashboard, and revocable alone. **The key never reaches a
 log**: the request URL is not logged, and a failure is logged by its status only —

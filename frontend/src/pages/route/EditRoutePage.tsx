@@ -11,6 +11,7 @@ import { invalidateRouteQueries } from '@/lib/routeCacheInvalidation'
 import { SurfaceType, RouteRequest } from '@/api/dto'
 import { LoadingPage } from '@/components/common/LoadingSpinner'
 import { RouteEditor } from '@/components/route/RouteEditor'
+import { suggestSurfaceType } from '@/lib/trackSurface'
 import { useEditRouteFormData } from './routeFormData'
 
 export function EditRoutePage() {
@@ -138,6 +139,7 @@ export function EditRoutePage() {
         initialTrack={initialTrack}
         initialAscend={route.elevationGain}
         initialPlannerState={plannerStateQuery.data?.state}
+        suggestedSurfaceType={suggestSurfaceType(route.tracks)}
         onSubmit={handleSubmit}
         onCancel={() => navigate(paths.route(teamSlug!, routeSlug!))}
         isPending={updateRouteMutation.isPending}

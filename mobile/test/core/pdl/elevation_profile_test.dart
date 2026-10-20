@@ -99,6 +99,50 @@ void main() {
       expect(canvas.fills.first.a, lessThan(canvas.lines.first.$3.a));
     });
 
+    test(
+      'barColors remplace l\'échelle de pente, une entrée nulle est neutre',
+      () {
+        final ElevationSamples samples = _synthetic(count: 5);
+        final List<Color?> colors = <Color?>[
+          const Color(0xFF112233),
+          null,
+          const Color(0xFF445566),
+          const Color(0xFF778899),
+        ];
+        final _RecordingCanvas canvas = _RecordingCanvas();
+
+        ElevationAreaPainter(
+          samples: samples,
+          neutralColor: slopeNeutral,
+          slopeColorOf: slopeColor,
+          barColors: colors,
+        ).paint(canvas, const Size(380, 110));
+
+        expect(canvas.lines.map((l) => l.$3.toARGB32()).toList(), <int>[
+          0xFF112233,
+          slopeNeutral.toARGB32(),
+          0xFF445566,
+          0xFF778899,
+        ]);
+      },
+    );
+
+    test('shouldRepaint suit l\'identité de barColors', () {
+      final ElevationSamples samples = _synthetic(count: 5);
+      final List<Color?> a = <Color?>[const Color(0xFF112233)];
+      ElevationAreaPainter painter(List<Color?>? colors) =>
+          ElevationAreaPainter(
+            samples: samples,
+            neutralColor: slopeNeutral,
+            slopeColorOf: slopeColor,
+            barColors: colors,
+          );
+
+      expect(painter(a).shouldRepaint(painter(a)), isFalse);
+      expect(painter(a).shouldRepaint(painter(<Color?>[...a])), isTrue);
+      expect(painter(a).shouldRepaint(painter(null)), isTrue);
+    });
+
     test('une pente inconnue tombe sur slopeNeutral', () {
       final ElevationSamples samples =
           ElevationSamples.fromPoints(const <ElevationPoint>[

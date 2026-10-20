@@ -2,7 +2,7 @@
 
 Écrit le 17 octobre 2026, mis à jour le 19 octobre 2026. **État : lots 1 et 2 livrés le
 17 octobre 2026 (§5 et §6, A10 compris) ; dans le lot 3, B11, B12, B6, B1 (profil d'édition : B1a le 18, B1b le 19 octobre), B7 et B9 sont livrés ;
-le lot 4 est entamé par C2, C4 (C4a et C4b, livrés le 19 octobre) et C1a et C1b (livrés le 19 octobre) ; restent le reste du lot 3 (B2, mis de côté) et le lot 4 (C1c ; C3, C5, C7 ; C6 non attribué).**
+le lot 4 est entamé par C2, C4 (C4a et C4b, livrés le 19 octobre) et C1 (C1a, C1b et C1c, livrés le 19 octobre : C1 est entièrement livré) ; restent le reste du lot 3 (B2, mis de côté) et le lot 4 (C3, C5, C7 ; C6 non attribué).**
 Ledger `WEB-100` (une seule
 entrée, qui pointe ici) : le suivi fin se fait **dans ce plan**, cases à cocher comprises, pas dans
 le ledger. Une tâche n'en sort vers `LEDGER_NEXT.md` que si elle quitte le périmètre du plan
@@ -56,7 +56,7 @@ Quatre lots, chacun livrable seul :
 | **1. Robustesse** (livré) | Annulation et verrou pendant le calcul, `Ctrl+Z` hors des champs, tactile décidé par le pointeur, aide aux gestes, menus fiables, tests de `lib/planner.ts` | S à M (≈ 1 semaine) | — (volet backend A10 livré) |
 | **2. Disposition** (livré) | Plein écran d'édition, barre sous le pouce, cibles 44 px, un seul panneau ouvert, recherche d'adresse, cadrage `fitBounds` | M | 1 |
 | **3. Standard** | Profil altimétrique d'édition (B1, **livré**), inverser / aller-retour / retour au départ avec recalage (B2), ligne droite visible (B6, **livré**), clavier (B7, **livré**), défilement au bord (B9, **livré**), glisser une ancre au doigt (B11, **livré**), bornes indépendantes du zoom et suppression d'une ancre (B12, **livré**) | **L** | 1, 2 ; API pour B2 (endpoint de recalage) |
-| **4. Différenciation** | Éviter côtes / trafic (C2, **livré**), état d'édition conservé (C4 : **C4a et C4b livrés**), surface par point (C1 : **C1a et C1b livrés**), points de parcours (C3), popularité interne (C5), zones à éviter (C7) ; C6 non attribué | M à L | C4 : B6 et B12 ; C2 : aucun morceau du lot 3 ; API pour C1, C2, C4, C7 |
+| **4. Différenciation** | Éviter côtes / trafic (C2, **livré**), état d'édition conservé (C4 : **C4a et C4b livrés**), surface par point (C1, **livré** : C1a, C1b et C1c), points de parcours (C3), popularité interne (C5), zones à éviter (C7) ; C6 non attribué | M à L | C4 : B6 et B12 ; C2 : aucun morceau du lot 3 ; API pour C1, C2, C4, C7 |
 
 Dans le lot 4, **C4 dépend de B6** (seul B6 crée l'information « ligne droite ») **et de B12**
 (la provenance des points) ; B6 et B12 ne dépendent pas de C4. Le lot 2 passe **avant** les fonctions : sans lui, chaque bouton du lot 3 serait à placer deux fois
@@ -1067,7 +1067,7 @@ questions ouvertes viennent du §10 de
         coupé au milieu d'une paire de substituts ; `teamSlug` du multipart borné à 250.
         *É4* : le plafond de 100 000 points est contrôlé après le pipeline (risque accepté : coût
         borné par 4 000 km et 10 Mo, limite de débit au proxy, `SEC-28`).
-- [ ] **C1. Surface par point** (L, §8 n° 13) — **conçu le 19 octobre 2026** (essais réels :
+- [x] **C1. Surface par point** (L, §8 n° 13) — **conçu et livré le 19 octobre 2026** (essais réels :
       [`../research/2026-10-19-stadia-surfaces.md`](../research/2026-10-19-stadia-surfaces.md) ;
       décisions au §10, « C1 »). Découpé en trois :
       - [x] **C1a — « non revêtu » en direct dans l'éditeur, 0 crédit** (contrat mineur, sans
@@ -1173,9 +1173,56 @@ questions ouvertes viennent du §10 de
             demande. *É6* : le plein écran (`RouteFullscreenView`) et l'éditeur n'affichent pas la
             surface détaillée, et l'état « en cours » n'est pas sondé (recharger la page) ; le worker
             traite une demande à la fois (20 s par tic de 30 s).
-      - [ ] **C1c — après C1b** : rattrapage des anciens parcours (biketeam compris), plafonné et
+      - [x] **C1c — après C1b** : rattrapage des anciens parcours (biketeam compris), plafonné et
             déclenché par l'exploitation ; suggestion de `surfaceType` dans le formulaire d'après
             les parts (seuils à valider), jamais automatique ; affichage mobile (tâche MOB à part).
+            **C1c livré le 19 octobre 2026** (pas de contrat, migration **`V77`** additive ;
+            mobile sous `MOB-81`). *Rattrapage* : `SurfaceBackfill` (`@Scheduled` toutes les
+            5 min) met en file les parcours sans surface **ni ligne `surface_refresh`** (les plus
+            récents d'abord, ceux de biketeam compris), puis les aperçus des outils GPX à
+            `files_revision` non nul et de moins de 29 jours ; ses demandes portent
+            `surface_refresh.backfill` (V77, défaut `false`, plus l'index partiel
+            `gpx_tracks_surface_missing`) et le worker ne les sert qu'une fois toutes les demandes
+            normales servies (filtre dans le claim, quatre étapes). Plafond global
+            `pedalons.surface.backfill.per-hour` (300 appels/h = 6 000 crédits/h, un appel par
+            tranche de 188 km) porté par l'espacement des `due_at` sous `pg_advisory_xact_lock`,
+            file bornée à 10 minutes de plafond ; insertion `on conflict do nothing` sur les index
+            uniques de la file ; `pedalons.surface.backfill.enabled` (`SURFACE_BACKFILL_ENABLED`,
+            vrai par défaut, sans effet si `pedalons.surface.enabled` est faux, coupé en `%test`) ;
+            la migration biketeam laisse ses parcours au rattrapage (`leaveToBackfill`) ;
+            `docs/OPERATIONS.md` (coût, suivi, comment couper). *Web* : `suggestSurfaceType`
+            (`lib/trackSurface.ts`) et une pastille cliquable « Suggéré : … » sous le champ
+            `surfaceType` de l'édition d'un parcours (`RouteEditor`, `EditRoutePage`), de la
+            famille `SURFACE_TYPE_COLORS`, seulement quand les surfaces sont prêtes et que la
+            suggestion diffère de la valeur. *Mobile* (`MOB-81`) : sur la fiche parcours, bascule
+            Pente / Revêtement qui colore le profil et la ligne, barre de répartition, légende,
+            attribution OpenStreetMap, « Revêtement en cours de calcul » avec rechargement de la
+            fiche toutes les 30 s ; traits de `TrackSurfaceTone.family`
+            (`enum_colors.generated.dart`) et trois jetons gris `mapSurface*` en clair et en sombre.
+            **Tests** : backend `SurfaceBackfillTest` (17), `BiketeamLiveMigrationTest`,
+            `SurfaceRefreshTest`, `GpxPreviewSurfaceRefreshTest`, `RouteSurfaceResourceTest`,
+            `ArchitectureTest` et les classes de C1b (passe ciblée de 12 classes, 251 tests,
+            0 échec) ; frontend `trackSurface.test.ts` (bornes de la règle), `RouteEditor.test.tsx` ;
+            e2e `route-surface` (« the edit form suggests the surface type… ») ; mobile
+            `track_surfaces_test.dart`, `track_surface_stroke_test.dart`,
+            `route_surface_section_test.dart`, ajouts à `elevation_profile_test.dart` et
+            `elevation_refresh_test.dart` (`bash check.sh` vert, 1 250 tests).
+            **Écarts / décisions.** *É1* : rien n'est marqué pour une piste indisponible ou
+            abandonnée : le document « indisponible » est écrit, la ligne abandonnée après cinq
+            échecs reste en table, et la sélection exige « aucune ligne `surface_refresh` » ; la
+            reprise est un `delete from surface_refresh where attempts >= 5`. *É2* : le plafond
+            n'est pas un comptage des demandes de l'heure (une demande réussie est supprimée) mais
+            l'espacement de leurs `due_at` ; après un retard du worker, une heure peut voir le
+            plafond plus les 10 minutes de file. *É3* : le plafond compte des appels (une piste de
+            400 km en vaut trois), pas des demandes ; seule, une piste plus longue que la fenêtre
+            passe quand la file est vide. *É4* : la migration biketeam ne met plus ses parcours en
+            file d'un coup (≈ 100 000 crédits/h hors plafond pour une grosse équipe). *É5* :
+            suggestion — `PAVED_ROUGH` compte revêtu, une piste non prête compte inconnue sur toute
+            sa longueur, 5 % et 20 % sont dans MIXED, 30 % exclus des deux seuils ; pastille
+            cachée en création et après le choix d'un autre fichier, pas après un geste dans
+            l'éditeur (elle parle du tracé enregistré). *É6* : au mobile, l'aperçu d'un parcours
+            dans une sortie, une étape, un voyage n'ont pas la surface ; « hors réseau » n'est pas
+            pointillé (nuance grise seulement).
 - [ ] **C3. Points de parcours d'auteur** (L, §8 n° 15) — **à concevoir avant de commencer.** Appui
       long ou clic droit sur le tracé, « Ajouter un point de parcours » (dans le menu de B12) ;
       `WaypointMarker` existe déjà. Questions ouvertes (état de l'art §10, n° 2 et 3) : les types
@@ -1317,7 +1364,8 @@ questions ouvertes viennent du §10 de
   affiché ; C1c = rattrapage des anciens parcours (plafonné, déclenché par l'exploitation),
   suggestion de `surfaceType` dans le formulaire (jamais automatique), affichage mobile (tâche MOB
   à part). Les conditions Stadia (plan payant, stockage des plages dérivées malgré la clause de
-  « cache ») sont **confirmées par le propriétaire le 19 octobre 2026** ; C1b est livré le même jour.
+  « cache ») sont **confirmées par le propriétaire le 19 octobre 2026** ; C1b et C1c sont livrés le
+  même jour (C1c : rattrapage continu plafonné à 300 appels/h, suggestion par pastille, `MOB-81`).
   Pas de second passage de costing sur l'inconnu ; exports GPX et FIT sans surface (`WEB-105`).
 
 ### Propositions de ce plan à valider

@@ -92,4 +92,19 @@ void main() {
     expect(calls, made + 1);
     p.dispose();
   });
+
+  testWidgets('updatePending(true) interroge, updatePending(false) arrête '
+      '(revêtement en cours, MOB-81)', (WidgetTester tester) async {
+    final ElevationRefreshPoller p = poller()..updatePending(true);
+
+    await elapse(tester, kElevationPollInterval);
+    expect(calls, 1);
+    expect(p.isPolling, isTrue);
+
+    p.updatePending(false);
+    expect(p.isPolling, isFalse);
+    await elapse(tester, const Duration(seconds: 90));
+    expect(calls, 1);
+    p.dispose();
+  });
 }

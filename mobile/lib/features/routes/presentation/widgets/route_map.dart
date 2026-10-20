@@ -10,6 +10,7 @@ import '../../../../core/pdl/map/pdl_map_controller.dart';
 import '../../../../core/pdl/map/pdl_map_hero.dart';
 import '../../../../core/theme/pdl_colors.dart';
 import '../../domain/track_slope_colors.dart';
+import '../../domain/track_surfaces.dart';
 import 'route_cursor_controller.dart';
 
 /// L'adaptateur entre `RouteDetailDto` et [PdlMap].
@@ -27,6 +28,7 @@ class RouteMap extends ConsumerStatefulWidget {
     this.fitPadding = const EdgeInsets.all(50),
     this.allowFullscreen = false,
     this.fullscreen = false,
+    this.colorBy = RouteColorBy.grade,
   });
 
   final RouteDetailDto route;
@@ -54,6 +56,10 @@ class RouteMap extends ConsumerStatefulWidget {
   /// Vrai dans la page plein écran, que ce widget construit lui-même — voir
   /// `PdlMapHero.fullscreenBuilder`.
   final bool fullscreen;
+
+  /// Ce qui colore le tracé : la pente, ou le revêtement quand il est connu
+  /// (`MOB-81`) — la pente sinon.
+  final RouteColorBy colorBy;
 
   @override
   ConsumerState<RouteMap> createState() => _RouteMapState();
@@ -129,7 +135,12 @@ class _RouteMapState extends ConsumerState<RouteMap> {
         // Colorisation **par segment** : chaque tronçon porte la teinte de sa
         // propre pente (§1.1.5). Le repli `mapTrack` reste la couleur d'un
         // segment sans altitude exploitable.
-        segmentColors: slopeColorsForLines(_lines),
+        segmentColors: switch (widget.colorBy) {
+          RouteColorBy.surface =>
+            surfaceSegmentColors(route.tracks, context.pdl) ??
+                slopeColorsForLines(_lines),
+          RouteColorBy.grade => slopeColorsForLines(_lines),
+        },
       ),
     ];
 
@@ -151,6 +162,7 @@ class _RouteMapState extends ConsumerState<RouteMap> {
               cursor: widget.cursor,
               onMapTapped: widget.onMapTapped,
               fullscreen: true,
+              colorBy: widget.colorBy,
             )
           : null,
       styles: servedMapStyleOptions(ref),

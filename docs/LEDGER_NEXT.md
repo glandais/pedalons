@@ -391,8 +391,8 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
       reste sous cet ID ; C4 (état d'édition et import d'un fichier, contrats `11.10.0` et
       `11.11.0`, `V75`) est fait le 19 octobre 2026. B1 (profil d'édition, `B1a` et `B1b`, contrat
       `11.12.0`) est fait le 19 octobre 2026. C1a (« non revêtu » en direct, contrat `11.13.0`) et C1b (surface détaillée après
-      l'enregistrement, contrat `11.14.0`, `V76`) aussi ; reste C1c (rattrapage des anciens parcours,
-      suggestion de `surfaceType`, affichage mobile).
+      l'enregistrement, contrat `11.14.0`, `V76`) aussi, et C1c (rattrapage des anciens parcours,
+      suggestion de `surfaceType`, `V77`, pas de contrat ; affichage mobile `MOB-81`) : C1 est livré.
 
 ### Couverture e2e — ce que l'audit du 27 septembre laisse ouvert
 

@@ -65,4 +65,12 @@ public class SurfaceRefresh {
 
   @Column(name = "last_error", columnDefinition = "text")
   private @Nullable String lastError;
+
+  /**
+   * Queued by the catch-up of old tracks ({@code SurfaceBackfill}), not by a save: taken only once
+   * no normal request is due, and spaced under the catch-up's hourly cap. A save of the track makes
+   * it a normal request again.
+   */
+  @Column(name = "backfill", nullable = false)
+  private boolean backfill;
 }

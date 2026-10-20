@@ -1292,7 +1292,25 @@
       "deleteMessage": "“{name}” will disappear from lists. A team administrator can restore it.",
       "deletedBanner": "This route is deleted. Only team administrators can see it."
     },
-    "elevationRefining": "Provisional elevation profile"
+    "elevationRefining": "Provisional elevation profile",
+    "surfaceDetail": {
+      "colorBy": "Colour the profile and the route by",
+      "grade": "Grade",
+      "surface": "Surface",
+      "pending": "Surface being computed",
+      "share": "{share}%",
+      "shareBelowOne": "< 1%",
+      "attribution": "© OpenStreetMap contributors",
+      "class": {
+        "paved": "Asphalt",
+        "pavedRough": "Rough paving",
+        "gravel": "Compacted, gravel",
+        "dirt": "Dirt",
+        "path": "Path",
+        "unknown": "Unknown",
+        "offNetwork": "Off the network"
+      }
+    }
   },
   "tags": {
     "title": "Tags",

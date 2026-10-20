@@ -188,3 +188,78 @@ describe('RouteEditor import in the planner (C4b)', () => {
     )
   })
 })
+
+describe('surface type suggestion (C1c)', () => {
+  beforeEach(() => {
+    snapshotMock.mockReset()
+    snapshotMock.mockReturnValue({ dirty: false, plannerState: STATE, points: POINTS })
+  })
+  afterEach(cleanup)
+
+  const field = () =>
+    screen
+      .getAllByLabelText(/routes.create.form.surfaceType/)
+      .find((e) => e.tagName === 'INPUT') as HTMLInputElement
+  const badge = () => screen.queryByTestId('route-surface-type-suggestion')
+
+  it('shows the badge when the suggestion differs from the value', () => {
+    renderEditor({ suggestedSurfaceType: 'GRAVEL' as never })
+    expect(badge()?.textContent).toBe('routes.surfaceTypeSuggestion.label')
+  })
+
+  it('is absent when equal, without a prop, and in create mode', () => {
+    renderEditor({ suggestedSurfaceType: 'ROAD' as never })
+    expect(badge()).toBeNull()
+    cleanup()
+    renderEditor()
+    expect(badge()).toBeNull()
+    cleanup()
+    renderEditor({ suggestedSurfaceType: 'GRAVEL' as never, isCreateMode: true })
+    expect(badge()).toBeNull()
+  })
+
+  it('a click applies it, hides the badge, and the submission carries it', async () => {
+    const onSubmit = renderEditor({ suggestedSurfaceType: 'GRAVEL' as never })
+    expect(field().value).toBe('routes.surfaceType.ROAD')
+    fireEvent.click(badge()!)
+    expect(field().value).toBe('routes.surfaceType.GRAVEL')
+    expect(badge()).toBeNull()
+    save()
+    await waitFor(() => expect(onSubmit).toHaveBeenCalled())
+    expect(onSubmit.mock.calls[0][0].surfaceType).toBe('GRAVEL')
+  })
+
+  it('is absent once a GPX file is chosen', async () => {
+    const { container } = renderGpx()
+    expect(badge()).not.toBeNull()
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement
+    fireEvent.change(input, {
+      target: { files: [new File(['<gpx/>'], 'sortie.gpx', { type: 'application/gpx+xml' })] },
+    })
+    await waitFor(() => expect(badge()).toBeNull())
+  })
+
+  function renderGpx() {
+    return render(
+      <MantineProvider>
+        <RouteEditor
+          team={{ ...TEAM, enableRoutePlanner: false } as unknown as TeamDetailDto}
+          teamSlug="club"
+          initialValues={{
+            name: 'Boucle du lac',
+            media: defaultMedia(),
+            surfaceType: 'ROAD',
+            visibility: 'TEAM',
+            tagIds: [],
+          }}
+          initialTrack={[[5, 45, 100]]}
+          suggestedSurfaceType={'GRAVEL' as never}
+          submitButtonText="save"
+          onSubmit={vi.fn()}
+          onCancel={() => {}}
+          isPending={false}
+        />
+      </MantineProvider>
+    )
+  }
+})

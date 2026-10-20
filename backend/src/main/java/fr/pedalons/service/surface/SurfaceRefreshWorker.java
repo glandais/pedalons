@@ -50,6 +50,21 @@ public class SurfaceRefreshWorker {
     }
   }
 
+  /** Processes the next due route request, else preview request, of a kind; false when none. */
+  private boolean processNext(boolean backfill) {
+    Optional<Claim> claim = service.claimNext(Instant.now(), backfill);
+    if (claim.isPresent()) {
+      service.process(claim.get());
+      return true;
+    }
+    Optional<PreviewClaim> previewClaim = service.claimNextPreview(Instant.now(), backfill);
+    if (previewClaim.isEmpty()) {
+      return false;
+    }
+    service.processPreview(previewClaim.get());
+    return true;
+  }
+
   /**
    * Processes due requests until none is left or the tick's budget is spent. Public for the tests
    * (scheduler off, provider faked).
@@ -63,18 +78,12 @@ public class SurfaceRefreshWorker {
     Instant started = Instant.now();
     int processed = 0;
     while (Duration.between(started, Instant.now()).compareTo(TIME_BUDGET) <= 0) {
-      Optional<Claim> claim = service.claimNext(Instant.now());
-      if (claim.isPresent()) {
-        service.process(claim.get());
+      // Strict priority: normal requests (routes, then previews), then the catch-up's
+      if (processNext(false) || processNext(true)) {
         processed++;
         continue;
       }
-      Optional<PreviewClaim> previewClaim = service.claimNextPreview(Instant.now());
-      if (previewClaim.isEmpty()) {
-        break;
-      }
-      service.processPreview(previewClaim.get());
-      processed++;
+      break;
     }
     return processed;
   }

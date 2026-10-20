@@ -49,6 +49,7 @@ class PdlElevationProfile extends StatefulWidget {
     this.cursorDistance,
     this.onCursorChanged,
     this.credit,
+    this.barColors,
   }) : _mode = _ElevationMode.data,
        label = null,
        actionLabel = null,
@@ -69,6 +70,7 @@ class PdlElevationProfile extends StatefulWidget {
        cursorDistance = null,
        onCursorChanged = null,
        credit = null,
+       barColors = null,
        actionLabel = null,
        onRetry = null;
 
@@ -88,6 +90,7 @@ class PdlElevationProfile extends StatefulWidget {
        tipLabel = null,
        cursorDistance = null,
        onCursorChanged = null,
+       barColors = null,
        credit = null;
 
   final _ElevationMode _mode;
@@ -111,6 +114,12 @@ class PdlElevationProfile extends StatefulWidget {
   /// licence peut exiger de la nommer (Licence Ouverte de l'IGN,
   /// docs/LEDGER_*.md LEGAL-18). Nulle : rien.
   final String? credit;
+
+  /// Une couleur par barre de [samples] (autant que `samples.bars`), à la
+  /// place de l'échelle de pente : le mode « revêtement » d'une fiche
+  /// (`MOB-81`). Une entrée nulle prend la couleur neutre. **Comparée par
+  /// identité**, comme [samples] : mémorisez-la.
+  final List<Color?>? barColors;
 
   /// Libellé de chargement ou d'échec.
   final String? label;
@@ -248,6 +257,7 @@ class _PdlElevationProfileState extends State<PdlElevationProfile> {
                           samples: samples,
                           neutralColor: slopeNeutral,
                           slopeColorOf: slopeColor,
+                          barColors: widget.barColors,
                         ),
                       ),
                     ),

@@ -159,3 +159,40 @@ test('the GPX tools preview shows the surface breakdown', async ({ page, context
   await expect(main.getByTestId('route-surface-legend')).toContainText('Asphalte 40 %')
   await expect(main.getByTestId('route-surface-attribution')).toBeVisible()
 })
+
+test('the edit form suggests the surface type from the saved surface, never on its own', async ({
+  page,
+  context,
+}) => {
+  const { owner, team, route } = await ownRoute('suggestion')
+  await signIn(context, owner)
+  // 70 % paved, 30 % gravel: more than 20 % unpaved, hence gravel
+  await withTrackSurfaces(page, `/api/teams/${team.slug}/routes/${route.slug}`, (track) => {
+    const length = trackLength(track)
+    return {
+      surfaceState: 'READY',
+      surfaces: [
+        { from: 0, to: 0.7 * length, surface: 'PAVED' },
+        { from: 0.7 * length, to: length, surface: 'GRAVEL' },
+      ],
+    }
+  })
+
+  await clientNavigate(page, `${routePath(team.slug, route.slug!)}/modifier`)
+  const field = page.getByRole('combobox', { name: 'Type de revêtement' })
+  await expect(field).toHaveValue('Route')
+  const suggestion = page.getByTestId('route-surface-type-suggestion')
+  await expect(suggestion).toHaveText('Suggéré : Gravel')
+  // Offered, not applied
+  await expect(field).toHaveValue('Route')
+
+  await suggestion.click()
+  await expect(field).toHaveValue('Gravel')
+  await expect(suggestion).toHaveCount(0)
+
+  const update = page.waitForRequest(
+    (request) => request.method() === 'PUT' && request.url().includes(`/routes/${route.slug}`)
+  )
+  await page.getByRole('button', { name: 'Enregistrer' }).click()
+  expect((await update).postData()).toContain('GRAVEL')
+})

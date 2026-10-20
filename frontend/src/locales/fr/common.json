@@ -2100,6 +2100,8 @@
   "routes.surfaceType.MIXED": "Mixte",
   "routes.surfaceType.MTB": "VTT",
   "routes.surfaceType.ROAD": "Route",
+  "routes.surfaceTypeSuggestion.hint": "D'après le revêtement OpenStreetMap du tracé enregistré",
+  "routes.surfaceTypeSuggestion.label": "Suggéré : {{type}}",
   "routes.thumbnail.alt": "Aperçu du parcours",
   "routes.upload.button": "Importer GPX",
   "routes.upload.progress": "{{current}}/{{total}}",

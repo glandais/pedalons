@@ -60,8 +60,8 @@ public class SurfaceRefreshRepository implements PanacheRepository<SurfaceRefres
         .createNativeQuery(
             """
             insert into surface_refresh
-              (id, {col}, source_revision, first_requested_at, due_at, attempts)
-            values (:id, :targetId, :revision, :now, :due, 0)
+              (id, {col}, source_revision, first_requested_at, due_at, attempts, backfill)
+            values (:id, :targetId, :revision, :now, :due, 0, false)
             on conflict ({col}) where {col} is not null do update set
               source_revision = excluded.source_revision,
               first_requested_at = case
@@ -80,7 +80,8 @@ public class SurfaceRefreshRepository implements PanacheRepository<SurfaceRefres
                                else surface_refresh.first_requested_at end
                                + make_interval(secs => :maxWait)),
               attempts = 0,
-              last_error = null
+              last_error = null,
+              backfill = false
             """
                 .replace("{col}", column))
         .setParameter("id", TSID.Factory.getTsid().toLong())
@@ -98,9 +99,11 @@ public class SurfaceRefreshRepository implements PanacheRepository<SurfaceRefres
   /**
    * Takes the next due route request and leases it, in the caller's transaction: {@code FOR UPDATE
    * SKIP LOCKED}, so the second backend of a rolling deploy takes another one. Requests that used
-   * up their attempts stay in the table for diagnosis and are not taken again.
+   * up their attempts stay in the table for diagnosis and are not taken again. {@code backfill}
+   * selects the kind: the requests of the catch-up (C1c) or the normal ones.
    */
-  public Optional<Claim> claimNextRoute(Instant now, Instant lease, int maxAttempts) {
+  public Optional<Claim> claimNextRoute(
+      Instant now, Instant lease, int maxAttempts, boolean backfill) {
     @SuppressWarnings("unchecked")
     List<Object[]> rows =
         getEntityManager()
@@ -113,6 +116,7 @@ public class SurfaceRefreshRepository implements PanacheRepository<SurfaceRefres
                   where e.route_id is not null
                     and t.deleted = false
                     and tm.deleted = false
+                    and e.backfill = :backfill
                     and e.attempts < :maxAttempts
                     and e.due_at <= :now
                     and (e.claimed_until is null or e.claimed_until < :now)
@@ -122,6 +126,7 @@ public class SurfaceRefreshRepository implements PanacheRepository<SurfaceRefres
                 """)
             .setParameter("now", Timestamp.from(now))
             .setParameter("maxAttempts", maxAttempts)
+            .setParameter("backfill", backfill)
             .getResultList();
     if (rows.isEmpty()) {
       return Optional.empty();
@@ -141,7 +146,8 @@ public class SurfaceRefreshRepository implements PanacheRepository<SurfaceRefres
    * As {@link #claimNextRoute}, for the next due GPX-tool preview request. A preview is hard
    * deleted, with its request, so there is no deleted flag to join on.
    */
-  public Optional<PreviewClaim> claimNextPreview(Instant now, Instant lease, int maxAttempts) {
+  public Optional<PreviewClaim> claimNextPreview(
+      Instant now, Instant lease, int maxAttempts, boolean backfill) {
     @SuppressWarnings("unchecked")
     List<Object[]> rows =
         getEntityManager()
@@ -151,6 +157,7 @@ public class SurfaceRefreshRepository implements PanacheRepository<SurfaceRefres
                   from surface_refresh e
                   join gpx_previews p on p.id = e.preview_id
                   where e.preview_id is not null
+                    and e.backfill = :backfill
                     and e.attempts < :maxAttempts
                     and e.due_at <= :now
                     and (e.claimed_until is null or e.claimed_until < :now)
@@ -160,6 +167,7 @@ public class SurfaceRefreshRepository implements PanacheRepository<SurfaceRefres
                 """)
             .setParameter("now", Timestamp.from(now))
             .setParameter("maxAttempts", maxAttempts)
+            .setParameter("backfill", backfill)
             .getResultList();
     if (rows.isEmpty()) {
       return Optional.empty();
@@ -248,5 +256,171 @@ public class SurfaceRefreshRepository implements PanacheRepository<SurfaceRefres
   /** As {@link #isPendingForRoute}, for a preview. */
   public boolean isPendingForPreview(Long previewId, int maxAttempts) {
     return count("preview.id = ?1 and attempts < ?2", previewId, maxAttempts) > 0;
+  }
+
+  // ------------------------------------------------------------------ catch-up (C1c)
+
+  /** Serialises the catch-up across backends: transaction-scoped, released at commit. */
+  public void lockBackfill() {
+    getEntityManager()
+        .createNativeQuery("select 1 from pg_advisory_xact_lock(hashtextextended(:key, 0))")
+        .setParameter("key", "surface-backfill")
+        .getSingleResult();
+  }
+
+  /**
+   * What the catch-up has queued and not done: the provider calls it still holds (a request weighs
+   * one call per slice of track), and the first free due time.
+   */
+  public record BackfillBudget(int pending, @Nullable Instant nextFree) {}
+
+  /**
+   * The catch-up requests still to come (not given up, target alive), weighted by their number of
+   * provider calls, and the first due time free after the ones not yet tried.
+   */
+  public BackfillBudget backfillBudget(double spacingSeconds, double sliceMetres, int maxAttempts) {
+    Object[] row =
+        (Object[])
+            getEntityManager()
+                .createNativeQuery(
+                    """
+                    select coalesce(sum(greatest(1, ceil(coalesce(t.distance, p.distance, 0) / :slice))), 0),
+                           max(e.due_at + make_interval(secs =>
+                                 :spacing * greatest(1, ceil(coalesce(t.distance, p.distance, 0) / :slice))))
+                             filter (where e.attempts = 0)
+                      from surface_refresh e
+                      left join team_entities t on t.id = e.route_id
+                      left join teams tm on tm.id = t.team_id
+                      left join gpx_previews p on p.id = e.preview_id
+                     where e.backfill
+                       and e.attempts < :maxAttempts
+                       and (e.preview_id is not null or (t.deleted = false and tm.deleted = false))
+                    """)
+                .setParameter("spacing", spacingSeconds)
+                .setParameter("slice", sliceMetres)
+                .setParameter("maxAttempts", maxAttempts)
+                .getSingleResult();
+    Object next = row[1];
+    Instant nextFree = next == null ? null : toInstant(next);
+    return new BackfillBudget(((Number) row[0]).intValue(), nextFree);
+  }
+
+  private static Instant toInstant(Object value) {
+    if (value instanceof Instant i) {
+      return i;
+    }
+    if (value instanceof java.time.OffsetDateTime o) {
+      return o.toInstant();
+    }
+    if (value instanceof java.time.LocalDateTime l) {
+      return l.atZone(java.time.ZoneId.systemDefault()).toInstant();
+    }
+    return ((java.util.Date) value).toInstant();
+  }
+
+  /** A track the catch-up may queue: its id, its length (the weight), the revision to ask for. */
+  public record BackfillCandidate(Long id, double distance, long sourceRevision) {}
+
+  /** Routes without a surface nor any request, most recent first. */
+  public List<BackfillCandidate> findBackfillRoutes(int limit) {
+    @SuppressWarnings("unchecked")
+    List<Object[]> rows =
+        getEntityManager()
+            .createNativeQuery(
+                """
+                with candidates as (
+                  select t.id, t.distance, t.created_at
+                    from team_entities t
+                    join teams tm on tm.id = t.team_id
+                   where t.id in (select g.route_id from gpx_tracks g where g.surfaces is null)
+                     and t.deleted = false
+                     and tm.deleted = false
+                     and not exists (select 1 from surface_refresh r where r.route_id = t.id)
+                     and exists (select 1 from assets a
+                                  where a.team_entity_id = t.id and a.type = 'ROUTE_ORIGINAL_GPX')
+                   order by t.created_at desc, t.id desc
+                   limit :limit)
+                select c.id, c.distance,
+                       (select a.file_id from assets a
+                         where a.team_entity_id = c.id and a.type = 'ROUTE_ORIGINAL_GPX'
+                         order by a.id desc limit 1)
+                  from candidates c
+                 order by c.created_at desc, c.id desc
+                """)
+            .setParameter("limit", limit)
+            .getResultList();
+    return candidates(rows);
+  }
+
+  /**
+   * Previews without a current surface nor any request, created after {@code createdAfter}, most
+   * recent first.
+   */
+  public List<BackfillCandidate> findBackfillPreviews(int limit, Instant createdAfter) {
+    @SuppressWarnings("unchecked")
+    List<Object[]> rows =
+        getEntityManager()
+            .createNativeQuery(
+                """
+                select p.id, p.distance, p.files_revision
+                  from gpx_previews p
+                 where p.files_revision is not null
+                   and p.created_at > :createdAfter
+                   and (p.surfaces is null
+                        or (p.surfaces ->> 'trackRevision')::bigint is distinct from p.files_revision)
+                   and not exists (select 1 from surface_refresh r where r.preview_id = p.id)
+                 order by p.created_at desc, p.id desc
+                 limit :limit
+                """)
+            .setParameter("createdAfter", Timestamp.from(createdAfter))
+            .setParameter("limit", limit)
+            .getResultList();
+    return candidates(rows);
+  }
+
+  private static List<BackfillCandidate> candidates(List<Object[]> rows) {
+    return rows.stream()
+        .map(
+            r ->
+                new BackfillCandidate(
+                    ((Number) r[0]).longValue(),
+                    r[1] == null ? 0 : ((Number) r[1]).doubleValue(),
+                    ((Number) r[2]).longValue()))
+        .toList();
+  }
+
+  /** Queues a catch-up request, unless the route has one by now. @return whether it was inserted */
+  public boolean insertBackfillRoute(BackfillCandidate c, Instant now, Instant dueAt) {
+    return insertBackfill("route_id", c, now, dueAt);
+  }
+
+  /** As {@link #insertBackfillRoute}, for a preview. */
+  public boolean insertBackfillPreview(BackfillCandidate c, Instant now, Instant dueAt) {
+    return insertBackfill("preview_id", c, now, dueAt);
+  }
+
+  /** {@code column} is one of two constants of this class, never user input. */
+  private boolean insertBackfill(String column, BackfillCandidate c, Instant now, Instant dueAt) {
+    return getEntityManager()
+            .createNativeQuery(
+                """
+                insert into surface_refresh
+                  (id, {col}, source_revision, first_requested_at, due_at, attempts, backfill)
+                values (:id, :targetId, :revision, :now, :due, 0, true)
+                on conflict ({col}) where {col} is not null do nothing
+                """
+                    .replace("{col}", column))
+            .setParameter("id", TSID.Factory.getTsid().toLong())
+            .setParameter("targetId", c.id())
+            .setParameter("revision", c.sourceRevision())
+            .setParameter("now", Timestamp.from(now))
+            .setParameter("due", Timestamp.from(dueAt))
+            .executeUpdate()
+        > 0;
+  }
+
+  /** Drops the normal request a bulk import made for a route, so the capped catch-up takes it. */
+  public int dropNormalRequest(Long routeId) {
+    return (int) delete("route.id = ?1 and backfill = false and attempts = 0", routeId);
   }
 }

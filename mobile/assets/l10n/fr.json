@@ -1292,7 +1292,25 @@
       "deleteMessage": "« {name} » disparaîtra des listes. Un administrateur de l'équipe pourra le restaurer.",
       "deletedBanner": "Ce parcours est supprimé. Seuls les administrateurs de l'équipe le voient."
     },
-    "elevationRefining": "Profil d'altitude provisoire"
+    "elevationRefining": "Profil d'altitude provisoire",
+    "surfaceDetail": {
+      "colorBy": "Colorer le profil et le tracé selon",
+      "grade": "Pente",
+      "surface": "Revêtement",
+      "pending": "Revêtement en cours de calcul",
+      "share": "{share} %",
+      "shareBelowOne": "< 1 %",
+      "attribution": "© contributeurs OpenStreetMap",
+      "class": {
+        "paved": "Asphalte",
+        "pavedRough": "Revêtement dégradé",
+        "gravel": "Compacté, gravier",
+        "dirt": "Terre",
+        "path": "Sentier",
+        "unknown": "Inconnu",
+        "offNetwork": "Hors réseau"
+      }
+    }
   },
   "tags": {
     "title": "Tags",

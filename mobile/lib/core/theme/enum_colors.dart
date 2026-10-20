@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+import '../../api/generated/models/track_surface.dart';
 import 'enum_colors.generated.dart';
 import 'pdl_colors.dart';
 
@@ -147,4 +148,28 @@ abstract final class PdlDerivedTones {
     onSoft: c.softRed.foreground,
     filledStyle: true,
   );
+}
+
+// ── Revêtement ──────────────────────────────────────────────────────────────
+
+/// Le trait d'une classe de revêtement sur la carte et le profil (`MOB-81`) :
+/// l'aplat de sa famille (`contracts/brand-colors.yaml`), et, pour les classes
+/// grises, la nuance que le site prend dans `TRACK_SURFACE_SHADES` — asphalte
+/// foncé, hors réseau moyen, inconnu pâle en clair ; l'inverse, lisible, sur
+/// le fond sombre.
+///
+/// Une famille non grise prend l'aplat **du thème clair dans les deux
+/// thèmes**, comme le site (nuances 6–7 en clair comme en sombre) : les aplats
+/// de [PdlColors.dark] sont un cran plus foncés, faits pour porter du texte
+/// blanc, et le violet du sentier y tombe sous 3:1 sur le fond de carte sombre
+/// et la surface du profil.
+extension TrackSurfaceStroke on TrackSurface {
+  Color stroke(PdlColors c) {
+    if (family != PdlFamily.gray) return family.soft(PdlColors.light).fill;
+    return switch (this) {
+      TrackSurface.paved => c.mapSurfacePaved,
+      TrackSurface.offNetwork => c.mapSurfaceOffNetwork,
+      _ => c.mapSurfaceUnknown,
+    };
+  }
 }

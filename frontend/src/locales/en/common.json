@@ -2039,6 +2039,8 @@
   "routes.surfaceType.MIXED": "Mixed",
   "routes.surfaceType.MTB": "MTB",
   "routes.surfaceType.ROAD": "Road",
+  "routes.surfaceTypeSuggestion.hint": "From the OpenStreetMap surface of the saved track",
+  "routes.surfaceTypeSuggestion.label": "Suggested: {{type}}",
   "routes.thumbnail.alt": "Route preview",
   "routes.upload.button": "Import GPX",
   "routes.upload.progress": "{{current}}/{{total}}",

@@ -25,6 +25,7 @@ class ElevationAreaPainter extends CustomPainter {
     required this.samples,
     required this.neutralColor,
     required this.slopeColorOf,
+    this.barColors,
   });
 
   final ElevationSamples samples;
@@ -35,6 +36,11 @@ class ElevationAreaPainter extends CustomPainter {
   /// Échelle de pente. Injectée plutôt qu'appelée en dur pour que le test de
   /// painter puisse observer la couleur exacte demandée à chaque tranche.
   final Color Function(double gradePercent) slopeColorOf;
+
+  /// Une couleur par tranche de [samples], à la place de l'échelle de pente
+  /// (le mode « revêtement » d'une fiche, `MOB-81`). Une entrée nulle prend
+  /// [neutralColor]. Comparée par identité, comme [samples] : mémorisez-la.
+  final List<Color?>? barColors;
 
   /// Opacité de l'aplat sous la ligne. La ligne, elle, reste opaque : c'est
   /// elle qui porte la lecture de la pente, le remplissage ne fait que donner
@@ -91,7 +97,10 @@ class ElevationAreaPainter extends CustomPainter {
 
     for (int i = 0; i < n; i++) {
       final double? grade = samples.bars[i].grade;
-      final Color color = grade == null ? neutralColor : slopeColorOf(grade);
+      final List<Color?>? override = barColors;
+      final Color color = override != null && i < override.length
+          ? (override[i] ?? neutralColor)
+          : (grade == null ? neutralColor : slopeColorOf(grade));
       final Offset a = vertices[i];
       final Offset b = vertices[i + 1];
 
@@ -118,5 +127,7 @@ class ElevationAreaPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant ElevationAreaPainter old) =>
-      !identical(old.samples, samples) || old.neutralColor != neutralColor;
+      !identical(old.samples, samples) ||
+      old.neutralColor != neutralColor ||
+      !identical(old.barColors, barColors);
 }

@@ -1,7 +1,13 @@
 // The surface of a saved track (WEB-100 C1b): reading the spans per point and per class.
 import { describe, expect, it } from 'vitest'
 import { createTheme, DEFAULT_THEME, mergeMantineTheme } from '@mantine/core'
-import { TrackSurface, TrackSurfaceState, type SurfaceSpanDto, type TrackDto } from '@/api/dto'
+import {
+  SurfaceType,
+  TrackSurface,
+  TrackSurfaceState,
+  type SurfaceSpanDto,
+  type TrackDto,
+} from '@/api/dto'
 import { TRACK_SURFACE_COLORS } from '@/lib/badgeColors.generated'
 import {
   TRACK_SURFACES,
@@ -10,6 +16,7 @@ import {
   pointSurfaces,
   surfaceAtDistance,
   surfaceShares,
+  suggestSurfaceType,
   surfacesPending,
   trackSurfaceColors,
 } from './trackSurface'
@@ -221,5 +228,89 @@ describe('surfaceShares', () => {
     const b = track(3, { surfaceState: TrackSurfaceState.PENDING })
     expect(surfaceShares([a, b, a])).toEqual([{ surface: 'DIRT', length: 200, share: 1 }])
     expect(surfaceShares([b])).toEqual([])
+  })
+})
+
+describe('suggestSurfaceType (C1c)', () => {
+  /** A READY track whose M ends at `length` (the last point). */
+  function ready(length: number, spans: SurfaceSpanDto[]): TrackDto {
+    return {
+      line: {
+        type: 'LineString',
+        coordinates: [
+          [2, 45, 100, 0],
+          [2.01, 45, 100, length],
+        ],
+      },
+      climbs: [],
+      surfaceState: TrackSurfaceState.READY,
+      surfaces: spans,
+    }
+  }
+  /** 1 000 m: `other` metres of `surface`, the rest paved. */
+  function mix(other: number, surface: TrackSurface, length = 1000): TrackDto {
+    return ready(length, [span(0, other, surface), span(other, length, TrackSurface.PAVED)])
+  }
+
+  it('is null without any READY track', () => {
+    expect(suggestSurfaceType([])).toBeNull()
+    expect(suggestSurfaceType([track(3)])).toBeNull()
+    expect(suggestSurfaceType([track(3, { surfaceState: TrackSurfaceState.PENDING })])).toBeNull()
+    expect(
+      suggestSurfaceType([track(3, { surfaceState: TrackSurfaceState.UNAVAILABLE })])
+    ).toBeNull()
+  })
+
+  it('suggests ROAD on paved, rough paving included', () => {
+    expect(suggestSurfaceType([ready(1000, [span(0, 1000, TrackSurface.PAVED)])])).toBe(
+      SurfaceType.ROAD
+    )
+    expect(suggestSurfaceType([ready(1000, [span(0, 1000, TrackSurface.PAVED_ROUGH)])])).toBe(
+      SurfaceType.ROAD
+    )
+  })
+
+  it('cuts the unpaved share at 5 % and 20 %', () => {
+    expect(suggestSurfaceType([mix(49, TrackSurface.GRAVEL)])).toBe(SurfaceType.ROAD)
+    expect(suggestSurfaceType([mix(50, TrackSurface.GRAVEL)])).toBe(SurfaceType.MIXED)
+    expect(suggestSurfaceType([mix(200, TrackSurface.GRAVEL)])).toBe(SurfaceType.MIXED)
+    expect(suggestSurfaceType([mix(201, TrackSurface.GRAVEL)])).toBe(SurfaceType.GRAVEL)
+    expect(suggestSurfaceType([mix(201, TrackSurface.DIRT)])).toBe(SurfaceType.GRAVEL)
+  })
+
+  it('needs more than 30 % of paths for MTB', () => {
+    expect(suggestSurfaceType([mix(300, TrackSurface.PATH)])).toBe(SurfaceType.GRAVEL)
+    expect(suggestSurfaceType([mix(301, TrackSurface.PATH)])).toBe(SurfaceType.MTB)
+  })
+
+  it('gives up above 30 % unknown or off the network, over the whole length', () => {
+    const half = (unknown: number, off: number) =>
+      ready(1000, [
+        span(0, unknown, TrackSurface.UNKNOWN),
+        span(unknown, unknown + off, TrackSurface.OFF_NETWORK),
+        span(unknown + off, 1000, TrackSurface.PAVED),
+      ])
+    expect(suggestSurfaceType([half(200, 100)])).toBe(SurfaceType.ROAD)
+    expect(suggestSurfaceType([half(200, 101)])).toBeNull()
+  })
+
+  it('reads the share on the known length', () => {
+    // 200 unknown, 40 gravel out of 1 000: 40 / 800 = 5 %
+    const t = ready(1000, [
+      span(0, 200, TrackSurface.UNKNOWN),
+      span(200, 240, TrackSurface.GRAVEL),
+      span(240, 1000, TrackSurface.PAVED),
+    ])
+    expect(suggestSurfaceType([t])).toBe(SurfaceType.MIXED)
+  })
+
+  it('counts a track without its surface as unknown over its whole length', () => {
+    const paved = ready(1000, [span(0, 1000, TrackSurface.PAVED)])
+    const failed = ready(1000, []) // not READY with spans
+    failed.surfaceState = TrackSurfaceState.UNAVAILABLE
+    failed.surfaces = undefined
+    expect(suggestSurfaceType([paved, failed])).toBeNull()
+    const shortFailed = { ...failed, line: ready(250, []).line }
+    expect(suggestSurfaceType([paved, shortFailed])).toBe(SurfaceType.ROAD)
   })
 })

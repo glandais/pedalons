@@ -63,6 +63,9 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
   @Inject BiketeamMigrationJobService jobService;
   @Inject BiketeamTestData biketeamData;
   @Inject ObjectMapper objectMapper;
+  @Inject fr.pedalons.service.surface.SurfaceRefreshService surfaceService;
+  @Inject fr.pedalons.service.surface.SurfaceBackfill surfaceBackfill;
+  @Inject fr.pedalons.repository.route.SurfaceRefreshRepository surfaceRefreshRepository;
 
   /** Every path the fake export was asked for, in order. */
   final List<String> downloads = new ArrayList<>();
@@ -225,6 +228,34 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
     assertEquals(2, status.counts().tripStages().migrated());
     assertEquals(2, status.counts().teamPages().migrated());
     assertEquals(1, status.counts().images().migrated(), "the logo");
+  }
+
+  /** WEB-100 C1c: a bulk import spends nothing by itself, the capped catch-up takes its routes. */
+  @Test
+  void migratedRoutes_leaveTheirSurfaceToTheCatchUp() throws IOException {
+    surfaceService.setEnabledForTest(true);
+    surfaceBackfill.setForTest(true, 300);
+    try {
+      migrate(USER4, true, false);
+
+      long requests =
+          io.quarkus.narayana.jta.QuarkusTransaction.requiringNew()
+              .call(() -> surfaceRefreshRepository.count());
+      assertEquals(0, requests, "no normal request for an imported route");
+
+      assertTrue(surfaceBackfill.enqueue(Instant.now()) > 0);
+      long backfill =
+          io.quarkus.narayana.jta.QuarkusTransaction.requiringNew()
+              .call(() -> surfaceRefreshRepository.count("backfill = true"));
+      assertTrue(backfill > 0);
+      assertEquals(
+          requests + backfill,
+          io.quarkus.narayana.jta.QuarkusTransaction.requiringNew()
+              .call(() -> surfaceRefreshRepository.count()));
+    } finally {
+      surfaceBackfill.setForTest(false, 300);
+      surfaceService.setEnabledForTest(false);
+    }
   }
 
   @Test

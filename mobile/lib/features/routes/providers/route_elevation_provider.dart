@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../api/generated/export.dart';
 import '../../../core/pdl/elevation/elevation_samples.dart';
 import '../domain/route_elevation_builder.dart';
+import '../domain/track_surfaces.dart';
 import 'route_detail_provider.dart';
 
 /// Le profil d'un parcours, **prêt à peindre**, dérivé de sa géométrie.
@@ -29,4 +30,26 @@ final routeElevationSamplesProvider =
       return ref
           .watch(routeDetailProvider(key))
           .whenData((RouteDetailDto route) => route.elevationSamples());
+    }, isAutoDispose: true);
+
+/// La classe de revêtement de chaque barre du profil (`MOB-81`), **mémorisée**
+/// avec le profil : `ElevationAreaPainter` compare ses couleurs par identité.
+///
+/// `null` sans revêtement prêt ou sans profil.
+final routeSurfaceBarsProvider =
+    Provider.family<AsyncValue<List<TrackSurface?>?>, RouteKey>((
+      Ref ref,
+      RouteKey key,
+    ) {
+      final AsyncValue<RouteDetailDto> detail = ref.watch(
+        routeDetailProvider(key),
+      );
+      final AsyncValue<ElevationSamples?> samples = ref.watch(
+        routeElevationSamplesProvider(key),
+      );
+      return detail.whenData((RouteDetailDto route) {
+        final ElevationSamples? s = samples.value;
+        if (s == null || !hasTrackSurfaces(route.tracks)) return null;
+        return barSurfaces(s, route.tracks);
+      });
     }, isAutoDispose: true);

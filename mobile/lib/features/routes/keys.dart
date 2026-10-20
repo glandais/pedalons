@@ -54,6 +54,15 @@ class RouteDetailKeys {
 
   final title = const _RouteDetailKey('title');
 
+  /// Le revêtement le long du parcours (ledger `MOB-81`) : la section, la
+  /// bascule Pente / Revêtement, la ligne « en cours », la barre de répartition
+  /// et l'attribution OpenStreetMap.
+  final surfaceSection = const _RouteDetailKey('surfaceSection');
+  final surfaceColorBy = const _RouteDetailKey('surfaceColorBy');
+  final surfacePending = const _RouteDetailKey('surfacePending');
+  final surfaceBar = const _RouteDetailKey('surfaceBar');
+  final surfaceAttribution = const _RouteDetailKey('surfaceAttribution');
+
   /// Une carte de « Utilisée dans », par le slug de la sortie ou du voyage.
   ValueKey<String> usage(String slug) => _RouteDetailKey('usage_$slug');
 }

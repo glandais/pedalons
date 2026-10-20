@@ -8,6 +8,7 @@ import '../../../../config/paths.dart';
 import '../../../../core/pdl/pdl.dart';
 import '../../../../keys.dart';
 import '../../../../core/preferences/user_preferences_provider.dart';
+import '../../../../core/theme/enum_colors.dart';
 import '../../../../core/theme/pdl_colors.dart';
 import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
@@ -24,6 +25,7 @@ import '../../../moderation/presentation/moderation_menu.dart';
 import '../../../tags/presentation/content_tags.dart';
 import '../../providers/route_detail_provider.dart';
 import '../../domain/elevation_refresh.dart';
+import '../../domain/track_surfaces.dart';
 import '../../providers/route_editor_providers.dart';
 import '../../providers/route_elevation_provider.dart';
 import '../widgets/route_climbs_section.dart';
@@ -32,6 +34,7 @@ import '../widgets/route_download_actions.dart';
 import '../widgets/route_manage_menu.dart';
 import '../widgets/route_map.dart';
 import '../widgets/route_sheet_header.dart';
+import '../widgets/route_surface_section.dart';
 import '../widgets/route_usages_section.dart';
 import '../../../feedback/presentation/report_problem_button.dart';
 
@@ -74,6 +77,16 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
   /// de cran** et jamais en continu : la caméra ne bouge pas sous le doigt.
   double _detent = _kDetents[_kInitialDetent];
 
+  /// Ce que la pente / le revêtement colorent (`MOB-81`) ; retombe sur la pente
+  /// si le revêtement disparaît au rechargement.
+  RouteColorBy _colorBy = RouteColorBy.grade;
+
+  /// Les couleurs des barres du profil en mode revêtement, mémorisées : le
+  /// painter les compare par identité.
+  List<TrackSurface?>? _cachedBars;
+  PdlColors? _cachedColors;
+  List<Color?>? _cachedBarColors;
+
   RouteKey get _key =>
       RouteKey(teamSlug: widget.teamSlug, routeSlug: widget.routeSlug);
 
@@ -92,7 +105,10 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
     ref.listenManual<AsyncValue<RouteDetailDto>>(
       routeDetailProvider(_key),
       (AsyncValue<RouteDetailDto>? _, AsyncValue<RouteDetailDto> next) =>
-          _elevationPoller.update(next.value?.elevationState),
+          _elevationPoller.updatePending(
+            isElevationPending(next.value?.elevationState) ||
+                trackSurfacesPending(next.value?.tracks ?? const <TrackDto>[]),
+          ),
       fireImmediately: true,
     );
   }
@@ -117,6 +133,19 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
     );
   }
 
+  /// La couleur de chaque barre du profil en mode revêtement, recalculée
+  /// seulement si les classes ou le thème changent.
+  List<Color?> _barColorsFor(List<TrackSurface?> bars, PdlColors c) {
+    if (identical(bars, _cachedBars) && c == _cachedColors) {
+      return _cachedBarColors!;
+    }
+    _cachedBars = bars;
+    _cachedColors = c;
+    return _cachedBarColors = <Color?>[
+      for (final TrackSurface? s in bars) s?.stroke(c),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final AsyncValue<RouteDetailDto> detail = ref.watch(
@@ -129,6 +158,9 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
   // ── Écran chargé ────────────────────────────────────────────────────────
   Widget _content(RouteDetailDto route) {
     final RouteCursorController cursor = _cursorFor(route);
+    final RouteColorBy colorBy = hasTrackSurfaces(route.tracks)
+        ? _colorBy
+        : RouteColorBy.grade;
 
     return Scaffold(
       body: Stack(
@@ -140,6 +172,7 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
               route: route,
               cursor: cursor,
               onMapTapped: cursor.moveTo,
+              colorBy: colorBy,
               fitPadding: EdgeInsets.fromLTRB(
                 50,
                 50,
@@ -174,7 +207,8 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
                   BuildContext context,
                   ScrollController controller,
                   double footerInset,
-                ) => _sheetBody(route, cursor, controller, footerInset),
+                ) =>
+                    _sheetBody(route, cursor, controller, footerInset, colorBy),
           ),
         ],
       ),
@@ -293,6 +327,7 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
     RouteCursorController cursor,
     ScrollController controller,
     double footerInset,
+    RouteColorBy colorBy,
   ) {
     final List<ClimbDto> climbs = route.allClimbs;
 
@@ -326,7 +361,7 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
         if (route.hasGeometry)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: _profile(route, cursor),
+            child: _profile(route, cursor, colorBy),
           )
         else
           PdlEmptyState(
@@ -334,6 +369,20 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
             icon: PdlIcons.route,
             title: 'routes.noTrackTitle'.tr(),
             message: 'routes.noTrackMessage'.tr(),
+          ),
+        // Le gabarit de 16 px n'est posé que si la section rend quelque chose :
+        // la plupart des parcours n'ont pas (encore) de revêtement.
+        if (route.hasGeometry &&
+            (hasTrackSurfaces(route.tracks) ||
+                trackSurfacesPending(route.tracks)))
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: RouteSurfaceSection(
+              tracks: route.tracks,
+              colorBy: colorBy,
+              onColorByChanged: (RouteColorBy v) =>
+                  setState(() => _colorBy = v),
+            ),
           ),
         if (climbs.isNotEmpty)
           Padding(
@@ -382,8 +431,15 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
     );
   }
 
-  Widget _profile(RouteDetailDto route, RouteCursorController cursor) {
+  Widget _profile(
+    RouteDetailDto route,
+    RouteCursorController cursor,
+    RouteColorBy colorBy,
+  ) {
     final UnitSystem units = ref.watch(unitSystemProvider);
+    final List<TrackSurface?>? bars = colorBy == RouteColorBy.surface
+        ? ref.watch(routeSurfaceBarsProvider(_key)).value
+        : null;
 
     return ref
         .watch(routeElevationSamplesProvider(_key))
@@ -402,6 +458,9 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
                     // Le **seul** état partagé avec la carte, et il ne passe pas
                     // par Riverpod : le réticule bouge à chaque frame de
                     // glissement.
+                    barColors: bars == null
+                        ? null
+                        : _barColorsFor(bars, context.pdl),
                     cursorDistance: cursor.distance,
                     axisLabel: (double meters, {required bool isLast}) => isLast
                         ? AppFormatters.formatDistance(meters, units)
@@ -412,7 +471,10 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
                     tipLabel: (ElevationReading r) => <String>[
                       AppFormatters.formatDistance(r.distance, units),
                       AppFormatters.formatAltitude(r.elevation, units),
-                      if (r.grade != null) AppFormatters.formatGrade(r.grade!),
+                      if (bars != null)
+                        ?_surfaceTip(samples, bars, r.distance)
+                      else if (r.grade != null)
+                        AppFormatters.formatGrade(r.grade!),
                     ].join(' · '),
                   ),
                 ),
@@ -427,6 +489,22 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
             onRetry: () => ref.invalidate(routeDetailProvider(_key)),
           ),
         );
+  }
+
+  /// La classe de revêtement sous le réticule (mode revêtement), à la place de
+  /// la pente.
+  String? _surfaceTip(
+    ElevationSamples samples,
+    List<TrackSurface?> bars,
+    double distance,
+  ) {
+    final ElevationBar? bar = samples.barAt(distance);
+    if (bar == null) return null;
+    final int index = samples.bars.indexOf(bar);
+    final TrackSurface? surface = index >= 0 && index < bars.length
+        ? bars[index]
+        : null;
+    return surface == null ? null : trackSurfaceLabel(surface);
   }
 
   /// Le profil, précédé de « Profil d'altitude provisoire » tant que c'est

@@ -298,6 +298,11 @@ Ce que la table ne dit pas d'elle-même :
   au web (et en trait de rappel au mobile) n'est plus une famille de badge : sa famille est `gray`,
   comme `DRAFT`, `MEMBER` et `TEAM`.
 - **Une valeur inconnue** d'un client en retard sur le contrat se rend en `gray`.
+- **Le revêtement d'une piste (`TrackSurface`) se rend en trait, pas en badge** : l'aplat de sa famille
+  — celui du thème clair dans les deux thèmes, comme le site (les aplats sombres du mobile, un cran
+  plus foncés, s'éteignent sur le fond de carte sombre) —, sauf les trois classes grises, qui prennent chacune une nuance (asphalte foncé, hors réseau moyen,
+  inconnu pâle en clair ; l'inverse en sombre) — `TRACK_SURFACE_SHADES` au web, `TrackSurfaceStroke`
+  et les jetons `mapSurface*` de `pdl_colors.dart` au mobile (`MOB-81`).
 - **Le vent relatif** (`RelativeWind`, météo des sorties) : `TAIL` teal, `CROSS` gray, `HEAD`
   orange, en doux. La couleur n'y porte **jamais seule** : barre d'exposition et points de passage
   la doublent toujours du libellé (« Vent de face », « de travers », « dans le dos ») et d'une

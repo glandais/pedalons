@@ -80,6 +80,9 @@ class PdlColors extends ThemeExtension<PdlColors> {
     required this.doneSoft,
     required this.doneOnSoft,
     required this.mapTrack,
+    required this.mapSurfacePaved,
+    required this.mapSurfaceOffNetwork,
+    required this.mapSurfaceUnknown,
     required this.mapStart,
     required this.mapEnd,
     required this.mapWaypoint,
@@ -178,6 +181,11 @@ class PdlColors extends ThemeExtension<PdlColors> {
 
   // ── Carte ──────────────────────────────────────────────────────────────
   final Color mapTrack;
+
+  /// Les trois classes de revêtement grises de la carte et du profil (`MOB-81`).
+  final Color mapSurfacePaved;
+  final Color mapSurfaceOffNetwork;
+  final Color mapSurfaceUnknown;
   final Color mapStart;
   final Color mapEnd;
   final Color mapWaypoint;
@@ -302,6 +310,9 @@ class PdlColors extends ThemeExtension<PdlColors> {
     doneSoft: Color(0xFFE9ECEF),
     doneOnSoft: Color(0xFF495057),
     mapTrack: Color(0xFF228BE6),
+    mapSurfacePaved: Color(0xFF495057),
+    mapSurfaceOffNetwork: Color(0xFFADB5BD),
+    mapSurfaceUnknown: Color(0xFFCED4DA),
     mapStart: Color(0xFF40C057),
     mapEnd: Color(0xFFFA5252),
     mapWaypoint: Color(0xFFFAB005),
@@ -367,6 +378,9 @@ class PdlColors extends ThemeExtension<PdlColors> {
     doneSoft: Color(0xFF24282B),
     doneOnSoft: Color(0xFFF8F9FA),
     mapTrack: Color(0xFF4DABF7),
+    mapSurfacePaved: Color(0xFFE9ECEF),
+    mapSurfaceOffNetwork: Color(0xFFCED4DA),
+    mapSurfaceUnknown: Color(0xFF868E96),
     mapStart: Color(0xFF40C057),
     mapEnd: Color(0xFFFA5252),
     mapWaypoint: Color(0xFFFAB005),
@@ -436,6 +450,9 @@ class PdlColors extends ThemeExtension<PdlColors> {
     Color? doneSoft,
     Color? doneOnSoft,
     Color? mapTrack,
+    Color? mapSurfacePaved,
+    Color? mapSurfaceOffNetwork,
+    Color? mapSurfaceUnknown,
     Color? mapStart,
     Color? mapEnd,
     Color? mapWaypoint,
@@ -500,6 +517,9 @@ class PdlColors extends ThemeExtension<PdlColors> {
       doneSoft: doneSoft ?? this.doneSoft,
       doneOnSoft: doneOnSoft ?? this.doneOnSoft,
       mapTrack: mapTrack ?? this.mapTrack,
+      mapSurfacePaved: mapSurfacePaved ?? this.mapSurfacePaved,
+      mapSurfaceOffNetwork: mapSurfaceOffNetwork ?? this.mapSurfaceOffNetwork,
+      mapSurfaceUnknown: mapSurfaceUnknown ?? this.mapSurfaceUnknown,
       mapStart: mapStart ?? this.mapStart,
       mapEnd: mapEnd ?? this.mapEnd,
       mapWaypoint: mapWaypoint ?? this.mapWaypoint,
@@ -571,6 +591,9 @@ class PdlColors extends ThemeExtension<PdlColors> {
       doneSoft: c(doneSoft, other.doneSoft),
       doneOnSoft: c(doneOnSoft, other.doneOnSoft),
       mapTrack: c(mapTrack, other.mapTrack),
+      mapSurfacePaved: c(mapSurfacePaved, other.mapSurfacePaved),
+      mapSurfaceOffNetwork: c(mapSurfaceOffNetwork, other.mapSurfaceOffNetwork),
+      mapSurfaceUnknown: c(mapSurfaceUnknown, other.mapSurfaceUnknown),
       mapStart: c(mapStart, other.mapStart),
       mapEnd: c(mapEnd, other.mapEnd),
       mapWaypoint: c(mapWaypoint, other.mapWaypoint),

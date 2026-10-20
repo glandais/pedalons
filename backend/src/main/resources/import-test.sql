@@ -25,3 +25,7 @@ ALTER TABLE elevation_refresh ADD CONSTRAINT ck_elevation_refresh_target CHECK (
 CREATE UNIQUE INDEX surface_refresh_route ON surface_refresh (route_id) WHERE route_id IS NOT NULL;
 CREATE UNIQUE INDEX surface_refresh_preview ON surface_refresh (preview_id) WHERE preview_id IS NOT NULL;
 ALTER TABLE surface_refresh ADD CONSTRAINT ck_surface_refresh_target CHECK ((route_id IS NULL) <> (preview_id IS NULL));
+-- Mirrors V77__surface_backfill.sql: the default the previous release relies on, and the partial
+-- index of the catch-up (Hibernate cannot express either).
+ALTER TABLE surface_refresh ALTER COLUMN backfill SET DEFAULT false;
+CREATE INDEX gpx_tracks_surface_missing ON gpx_tracks (route_id) WHERE surfaces IS NULL;

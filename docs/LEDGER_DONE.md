@@ -790,6 +790,35 @@ couvert » ; les tests ne tournent qu'en local (`MOB-37`).
   `notifyRideChanged` invalide aussi les listes et détails de modèles, parce qu'une sortie créée
   depuis un modèle en avance le `nextNumber`.
 
+### `MOB-81` Revêtement des parcours dans l'app (19 octobre 2026, contrat d'API inchangé)
+
+- `MOB-81` **La fiche d'un parcours montre son revêtement** — le pendant mobile de `WEB-100` C1b
+  et C1c (`TrackDto.surfaceState` et `TrackDto.surfaces` du contrat `11.14.0`, déjà dans le client
+  Dart). Sur `route_detail_page.dart`, juste sous le profil, `RouteSurfaceSection`
+  (`…/routes/presentation/widgets/route_surface_section.dart`) : une bascule Pente / Revêtement
+  (`PdlSegmented`) qui colore **le profil et la ligne de la carte**, la barre de répartition
+  (`PdlSegmentBar`), la légende (« Asphalte 40 % », « < 1 % » sous 0,5 %), l'attribution
+  « © contributeurs OpenStreetMap » qui ouvre la page de copyright (cible de 44 px) ; « Revêtement
+  en cours de calcul » quand une piste est `PENDING`, et rien sans surface. La logique est celle du
+  site (`track_surfaces.dart` : `surfaceAtDistance`, `segmentSurfaces`, `surfaceShares`,
+  `barSurfaces`, classe dominante par barre du profil, pont entre pistes ignoré) ;
+  `PdlElevationProfile` et `ElevationAreaPainter` prennent `barColors` (une couleur par barre, à
+  la place de l'échelle de pente), mémorisées par `routeSurfaceBarsProvider` ; `RouteMap` prend
+  `colorBy`. `ElevationRefreshPoller.updatePending` recharge aussi la fiche toutes les 30 s, 15 min
+  au plus, tant qu'un revêtement est en cours. Couleurs : la famille de `TrackSurfaceTone`
+  (`enum_colors.generated.dart`, depuis `contracts/brand-colors.yaml`) rendue par
+  `TrackSurfaceStroke` (`enum_colors.dart`), et trois jetons gris de `pdl_colors.dart`
+  (`mapSurfacePaved`, `mapSurfaceOffNetwork`, `mapSurfaceUnknown`, en clair et en sombre, valeurs
+  du site) ; `docs/BRANDING.md` §3.6. `routes.surfaceDetail.*` en français et en anglais. Tests :
+  `track_surfaces_test.dart`, `track_surface_stroke_test.dart`, `route_surface_section_test.dart`
+  (thèmes clair et sombre), ajouts à `elevation_profile_test.dart` et `elevation_refresh_test.dart` ;
+  `bash check.sh` vert (`flutter analyze` sans remarque, 1 250 tests). Pas de Patrol ni de recette
+  sur appareil. **À ne pas défaire** : aucune table de couleurs locale — le trait suit la famille
+  du YAML, les nuances grises sont des jetons du thème ; le profil compare `barColors` par
+  identité (mémoriser, sinon il repeint à chaque `build`) ; la bascule retombe sur la pente quand
+  la surface disparaît. Hors périmètre : l'aperçu d'un parcours dans une sortie, une étape, un
+  voyage ; « hors réseau » n'est pas pointillé sur la carte.
+
 ### `MOB-76` Profil d'altitude provisoire dans l'app (18 octobre 2026, contrat `11.8.0`)
 
 - `MOB-76` **La fiche d'un parcours dit quand son profil est provisoire, et se met à jour seule**
@@ -2445,6 +2474,25 @@ Plan [`2026-10-06-team-agenda.md`](plans/archive/2026-10-06-team-agenda.md) §4,
   codes stockés bruts, classes faites à la lecture ; aucun test n'appelle Stadia (interrupteur coupé
   en `%test` et dans `.env.e2e`) ; migration additive (déploiement roulant). Les exports GPX / FIT
   restent sans surface (`WEB-105`). Reste C1c sous `WEB-100`.
+- **WEB-100 (C1c, 19 octobre 2026, pas de contrat, `V77`) : rattrapage des anciens parcours et
+  suggestion de `surfaceType`.** `SurfaceBackfill` (toutes les 5 min) met en file les parcours sans
+  surface ni demande (récents d'abord, biketeam compris), puis les aperçus de moins de 29 jours,
+  en demandes `surface_refresh.backfill` que le worker ne sert qu'une fois les demandes normales
+  servies. `pedalons.surface.backfill.enabled` (`SURFACE_BACKFILL_ENABLED`) et `.per-hour`
+  (`SURFACE_BACKFILL_PER_HOUR`, 300 appels/h = 6 000 crédits/h), `docs/OPERATIONS.md`. La migration
+  biketeam laisse ses parcours au rattrapage (`leaveToBackfill`). Web : pastille « Suggéré : … »
+  sous le champ `surfaceType` de l'édition (`suggestSurfaceType`, `lib/trackSurface.ts`). Tests :
+  `SurfaceBackfillTest`, `BiketeamLiveMigrationTest`, `SurfaceRefreshTest`,
+  `GpxPreviewSurfaceRefreshTest`, `RouteSurfaceResourceTest`, `ArchitectureTest` (passe ciblée avec
+  les classes de C1b : 12 classes, 251 tests, 0 échec) ; `trackSurface.test.ts`,
+  `RouteEditor.test.tsx` ; e2e `route-surface`. **À ne pas défaire** : une demande réussie est supprimée, d'où le plafond
+  porté par l'espacement des `due_at` (sous verrou consultatif, pas un comptage de l'heure), et la
+  place en file (10 min de plafond) comptée en appels, pas en demandes (une piste de 400 km en vaut
+  trois ; seule, une piste plus longue que la fenêtre passe quand la file est vide) ; une
+  piste indisponible (document écrit) ou abandonnée (ligne laissée en table) n'est jamais reprise :
+  la sélection exige « aucune ligne `surface_refresh` », rien n'est marqué ; jamais de `surfaceType`
+  automatique, seulement proposé ; la migration biketeam passe par le rattrapage plafonné.
+  L'affichage mobile est `MOB-81`. C1 est entièrement livré (détail et écarts dans le plan).
 
 
 ## API — Contrat d'API et backend
