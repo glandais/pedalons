@@ -21,12 +21,12 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 public record PlannerState(
     @Schema(required = true) int version,
     @Schema(required = true) RouterProfile profile,
-    @Schema(required = true) @Size(max = GpxLimits.MAX_PLANNER_SOURCES) @Valid
-        List<PlannerSource> sources,
-    @Schema(required = true) @Size(max = GpxLimits.MAX_PLANNER_PIECES + 1) @Valid
-        List<PlannerJunction> junctions,
-    @Schema(required = true) @Size(max = GpxLimits.MAX_PLANNER_PIECES) @Valid
-        List<PlannerPiece> pieces)
+    @Schema(required = true) @Size(max = GpxLimits.MAX_PLANNER_SOURCES)
+        List<@Valid PlannerSource> sources,
+    @Schema(required = true) @Size(max = GpxLimits.MAX_PLANNER_PIECES + 1)
+        List<@Valid PlannerJunction> junctions,
+    @Schema(required = true) @Size(max = GpxLimits.MAX_PLANNER_PIECES)
+        List<@Valid PlannerPiece> pieces)
     implements Serializable {
 
   /** Whether the user drew any of it: one routed or straight piece (docs/LEDGER_*.md API-127). */

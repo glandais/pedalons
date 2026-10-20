@@ -31,8 +31,7 @@ public record RouteRequest(
     @Nullable
         @Schema(description = "Points from frontend routing")
         @Size(max = GpxLimits.MAX_PLANNER_POINTS)
-        @Valid
-        List<GeoPoint> points,
+        List<@Valid GeoPoint> points,
     @Nullable
         @Schema(
             description =

@@ -28,8 +28,7 @@ public record GpxPreviewFromPointsRequest(
                 "Points from frontend routing; points or plannerState, never both (400"
                     + " PLANNER_STATE_INVALID), and one of them (400 GPX_EMPTY)")
         @Size(max = GpxLimits.MAX_PLANNER_POINTS)
-        @Valid
-        List<GeoPoint> points,
+        List<@Valid GeoPoint> points,
     @Nullable
         @Schema(
             description =
