@@ -1254,8 +1254,12 @@ questions ouvertes viennent du §10 de
             à `course_point` perdent tous leurs points. C3c envoie donc à Hammerhead un GPX à part,
             types réduits aux neuf valeurs (colonne « Karoo, import GPX » de l'étude §11.1) ; C3h
             n'est pas nécessaire. Détail dans le README du kit.
-      - [ ] **C3b. vcyclist 6.11** (S) — `FitCourse.coursePoints` alignés sur les records ;
-            lecture du type et de la distance d'un FIT importé.
+      - [x] **C3b. vcyclist 6.11** (S, publié le 20 octobre 2026) — `FitCourse.coursePoints`,
+            chaque point calé sur le record le plus proche, triés, écrits avant `STOP_ALL` ; côté
+            Java, `PathToFitJvm.toFitBytes(paths, name, startMillis, List<FitCoursePointSpec>)`.
+            Sans points, le FIT est identique à l'octet près. La bibliothèque ne tronque pas : les
+            15 caractères de W6 se coupent côté Pédalons, par point de code. La lecture du type et
+            de la distance d'un FIT importé passe à C3c, dans le backend.
       - [ ] **C3c. Backend** (M, après C3b ; C3a pour Garmin et Hammerhead) — migration, enum,
             `WaypointDto` étendu, liste `waypoints` dans les requêtes, accroche et ré-accroche,
             retouche qui garde les points, régénération des fichiers dérivés, exports GPX, FIT,
