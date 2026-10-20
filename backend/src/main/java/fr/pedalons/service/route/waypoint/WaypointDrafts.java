@@ -126,8 +126,8 @@ public final class WaypointDrafts {
       drafts.add(
           new WaypointDraft(
               existing != null ? existing.id() : null,
-              request.position().lat(),
-              request.position().lng(),
+              roundCoordinate(request.position().lat()),
+              roundCoordinate(request.position().lng()),
               cleanName(request.name()),
               cleanDescription(request.description()),
               request.type(),
@@ -150,6 +150,14 @@ public final class WaypointDrafts {
   }
 
   /** Control characters out, then stripped: a name is one line. */
+  /**
+   * A coordinate from the editor, at 7 decimals (about 1 cm): the map hands its full double
+   * precision, which the GPX would otherwise carry digit for digit.
+   */
+  static double roundCoordinate(double degrees) {
+    return Math.round(degrees * 1e7) / 1e7;
+  }
+
   public static String cleanName(String name) {
     return name.replaceAll("\\p{Cntrl}", " ").strip();
   }

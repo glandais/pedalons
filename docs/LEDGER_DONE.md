@@ -2689,7 +2689,10 @@ Plan [`2026-10-06-team-agenda.md`](plans/archive/2026-10-06-team-agenda.md) §4,
   une requête ; un point hors tracé est gardé et n'est exporté qu'en GPX (W5).
   **Écart assumé à `API-44`** (W7) : le type canonique d'un waypoint importé est gardé
   (`GpxSanitizer` écrit `WaypointType.name()` dans `<type>`), jamais la valeur brute de `sym` ou
-  `type` ; la description importée reste jetée.
+  `type` ; la description importée reste jetée (confirmé par le propriétaire le 20 octobre 2026,
+  après la recette dans un navigateur). Une position venue de l'éditeur est arrondie à 7 décimales
+  (`WaypointDrafts.roundCoordinate`, `WaypointDraftsTest`) : la carte donne toute la précision d'un
+  double, que le GPX aurait recopiée chiffre pour chiffre.
 
 ### Modèles de sortie numérotés (repris de biketeam)
 
