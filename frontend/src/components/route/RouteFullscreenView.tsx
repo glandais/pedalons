@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { IconArrowLeft } from '@tabler/icons-react'
 import { ActionIcon, Box, Center, SegmentedControl, Text } from '@mantine/core'
@@ -24,7 +25,11 @@ interface RouteFullscreenViewProps {
   route: FullscreenRoute
   /** Title shown in the toolbar (the route/stage/track name). */
   title: string
-  /** Locale-aware path to return to (built by the page via paths.xxx). */
+  /**
+   * Locale-aware path to return to (built by the page via paths.xxx) when the map was opened
+   * directly; reached from within the app, the back button goes back in history instead, so it
+   * returns to whichever page opened the map (a ride group, a stage…), not to the route sheet.
+   */
   backTo: string
 }
 
@@ -36,6 +41,8 @@ interface RouteFullscreenViewProps {
  */
 export function RouteFullscreenView({ route, title, backTo }: RouteFullscreenViewProps) {
   const { t } = useTranslation()
+  const location = useLocation()
+  const navigate = useNavigate()
   const colorScheme = useResolvedColorScheme()
   const [hoveredPointIndex, setHoveredPointIndex] = useState<number>(-1)
   const [colorBy, setColorBy] = useState<PlannerColorBy>('grade')
@@ -71,12 +78,21 @@ export function RouteFullscreenView({ route, title, backTo }: RouteFullscreenVie
 
   const stripBg = getOverlayBg(colorScheme, true)
 
+  // The router's first entry has the key 'default': anything else was reached by an in-app
+  // navigation, so there is a page of ours to go back to. A modified click keeps the link.
+  const handleBack = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    if (location.key === 'default' || event.metaKey || event.ctrlKey || event.shiftKey) return
+    event.preventDefault()
+    navigate(-1)
+  }
+
   return (
     <MapFullscreenShell
       leading={
         <ActionIcon
           component={PrefetchLink}
           to={backTo}
+          onClick={handleBack}
           variant="subtle"
           size="lg"
           aria-label={t('actions.back')}

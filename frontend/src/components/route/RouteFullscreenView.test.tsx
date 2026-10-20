@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { Link, MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { MantineProvider } from '@mantine/core'
 import { TrackSurface, TrackSurfaceState, type TrackDto } from '@/api/dto'
 
@@ -18,7 +18,7 @@ const seen = vi.hoisted(() => ({
 }))
 
 vi.mock('@/components/common/PrefetchLink', () => ({
-  PrefetchLink: ({ children }: { children?: React.ReactNode }) => <a>{children}</a>,
+  PrefetchLink: Link,
 }))
 vi.mock('@/hooks/useMapStyle', () => ({ useMapStyle: () => ({ darkBasemap: false }) }))
 vi.mock('@/hooks/useMapChartZoomSync', () => ({
@@ -67,14 +67,25 @@ function route(extra: Partial<TrackDto> = {}): FullscreenRoute {
   }
 }
 
-function renderView(shown: FullscreenRoute) {
+function renderView(shown: FullscreenRoute, history: string[] = ['/map']) {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={history} initialIndex={history.length - 1}>
       <MantineProvider>
-        <RouteFullscreenView route={shown} title="Boucle" backTo="/back" />
+        <Routes>
+          <Route
+            path="/map"
+            element={<RouteFullscreenView route={shown} title="Boucle" backTo="/back" />}
+          />
+          <Route path="*" element={<LocationProbe />} />
+        </Routes>
       </MantineProvider>
     </MemoryRouter>
   )
+}
+
+function LocationProbe() {
+  const { pathname } = useLocation()
+  return <div data-testid="landed">{pathname}</div>
 }
 
 describe('RouteFullscreenView surface switch', () => {
@@ -107,5 +118,21 @@ describe('RouteFullscreenView surface switch', () => {
     expect(surfaceAt(0)).not.toBe(surfaceAt(1))
     const lineColorAt = seen.map.lineColorAt as (t: number, p: number) => string
     expect(lineColorAt(0, 0)).not.toBe(lineColorAt(0, 1))
+  })
+})
+
+describe('RouteFullscreenView back button', () => {
+  afterEach(cleanup)
+
+  it('goes back to the page that opened the map', () => {
+    renderView(route(), ['/group', '/map'])
+    fireEvent.click(screen.getByLabelText('Retour'))
+    expect(screen.getByTestId('landed').textContent).toBe('/group')
+  })
+
+  it('falls back to its own page when the map was opened directly', () => {
+    renderView(route())
+    fireEvent.click(screen.getByLabelText('Retour'))
+    expect(screen.getByTestId('landed').textContent).toBe('/back')
   })
 })
