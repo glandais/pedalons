@@ -291,9 +291,15 @@ le mobile par `PdlFamilyTone` dans `enum_colors.dart`.
 
 Ce que la table ne dit pas d'elle-même :
 
-- **Doux par défaut, aplat pour les seules catégories de col** (`style: filled`). En aplat, le jaune
+- **Doux par défaut, aplat pour les catégories de col et les types de point de parcours** (`style: filled`). En aplat, le jaune
   de `CAT3` porte un texte foncé (`#212529`), les autres du blanc — `autoContrast` au web, `onFill`
   au mobile.
+- **`WaypointType`** (points de parcours d'auteur, `WEB-100` C3d) : un pictogramme Tabler (§6) sur
+  un disque de la famille du type. Sur la carte et le profil, nuance 6 dans les deux thèmes (comme
+  `TrackSurface` : les aplats sombres s'éteignent sur un fond de carte sombre), anneau blanc de
+  2 px, pictogramme `#212529` ou blanc selon le contraste (le jaune de `SPLIT` en porte un foncé) ;
+  dans la liste et la popup, `ThemeIcon` en aplat (nuance du thème, §3.4). Rouge réservé au
+  `DANGER`, vert au `REAL_START` comme le départ (§3.7), raisin au `SUMMIT` comme `HC`.
 - **`ROAD` est gris doux partout**, badge comme trait de rappel. Le near-black `dark` qu'il portait
   au web (et en trait de rappel au mobile) n'est plus une famille de badge : sa famille est `gray`,
   comme `DRAFT`, `MEMBER` et `TEAM`.
@@ -326,7 +332,7 @@ Les libellés de ces valeurs viennent des traductions de chaque client ; le lexi
 | Marqueur de départ | `green` nuance 6 `#40c057` | `green` nuance 8 `#2f9e44` |
 | Marqueur d'arrivée | `red` nuance 6 `#fa5252` | `red` nuance 8 `#e03131` |
 | Marqueur survolé | `blue` nuance 6 `#228be6` | `blue` nuance 8 `#1971c2` |
-| Point de passage | `yellow` nuance 6 `#fab005` | `yellow` nuance 8 `#f08c00` |
+| Point de parcours | famille de son type (§3.6) | idem |
 | Événement calendrier « Sortie » | `blue`, variante `light` | `blue`, variante `light` |
 | Événement calendrier « Étape » | `green`, variante `light` | `green`, variante `light` |
 
@@ -511,6 +517,24 @@ Les maquettes doivent donc puiser dans le jeu Tabler.
 | `IconArrowsMaximize` | Carte en plein écran |
 | `IconArrowLeft` | Retour |
 
+**Points de parcours** (`WaypointType`, `WEB-100` C3d ; le mobile prend l'équivalent Material de
+chacun en C3f, `MOB-84`). Couleurs : `contracts/brand-colors.yaml` (§3.6).
+
+| Type | Icône Tabler | Libellé |
+|---|---|---|
+| `REGROUP` | `IconUsersGroup` | Regroupement |
+| `SUPPLY` | `IconToolsKitchen2` | Ravitaillement |
+| `WATER` | `IconDroplet` | Point d'eau |
+| `CAFE` | `IconCoffee` | Café, pause |
+| `TOILETS` | `IconToiletPaper` | Toilettes |
+| `DANGER` | `IconAlertTriangle` | Danger |
+| `SUMMIT` | `IconMountain` | Col, sommet |
+| `VIEWPOINT` | `IconBinoculars` | Point de vue |
+| `BIKE_SHOP` | `IconTool` | Magasin de vélo |
+| `REAL_START` | `IconPlayerPlay` | Départ réel |
+| `SPLIT` | `IconArrowsSplit2` | Séparation des groupes |
+| `INFO` | `IconInfoSmall` | Information |
+
 **Icônes des sections d'équipe** (onglets de l'équipe, menu du fil d'Ariane ; décision du
 6 octobre 2026, ledger `BRAND-6`, plan [`2026-10-06-team-agenda.md`](plans/archive/2026-10-06-team-agenda.md)
 §2). Ce sont les icônes des *sections* : toutes les pages perso partagent la même. Le mobile prend
@@ -680,6 +704,7 @@ aucune formule enthousiaste (« Génial ! », « C'est parti ! » sont hors marq
 | Surface type | **type de revêtement** | « terrain » |
 | Hilliness | **relief** (Plat / Vallonné / Montagneux) | « difficulté » |
 | Climb | **montée** ; section **Cols et montées** | « ascension » |
+| Waypoint | **point de parcours** ; section **Points du parcours** | « waypoint », « POI », « point d'intérêt » |
 | Member | **membre** | « utilisateur » dans un contexte d'équipe |
 | Headwind / crosswind / tailwind | **vent de face** / **de travers** / **dans le dos** (court : Face, Travers, Dos) | « vent contraire », « vent latéral » |
 | Stale forecast | **prévision ancienne** | « météo périmée », « obsolète » |
@@ -967,7 +992,6 @@ production (voir l'en-tête). [`pedalons.css`](pedalons.css) en est la version c
   --pdl-map-marker-start: #40c057;
   --pdl-map-marker-end: #fa5252;
   --pdl-map-marker-hover: #228be6;
-  --pdl-map-marker-waypoint: #fab005;
   --pdl-map-event-ride: #228be6;
   --pdl-map-event-stage: #40c057;
   --pdl-elevation-flat: hsl(85, 86%, 62%);

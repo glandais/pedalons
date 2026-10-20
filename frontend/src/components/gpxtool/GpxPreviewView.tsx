@@ -21,6 +21,8 @@ import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { ShareButton } from '@/components/common/ShareButton'
 import { RouteMapView } from '@/components/route/RouteMapView'
 import { RouteSurfaceSummary } from '@/components/route/RouteSurfaceSummary'
+import { RouteWaypointList } from '@/components/route/RouteWaypointList'
+import { useWaypointSelection } from '@/hooks/useWaypointSelection'
 import { paths } from '@/config/paths'
 import { useAuth } from '@/hooks/useAuth'
 import { useGpsConnections } from '@/hooks/useGpsConnections'
@@ -52,6 +54,8 @@ export function GpxPreviewView({ preview }: GpxPreviewViewProps) {
   const [isSaving, setIsSaving] = useState(false)
   const [deleteOpened, setDeleteOpened] = useState(false)
   const [colorBy, setColorBy] = useState<PlannerColorBy>('grade')
+
+  const { selection, setSelection, mapBoxRef, selectFromList } = useWaypointSelection()
 
   const deletePreviewMutation = useDeletePreview()
 
@@ -127,11 +131,13 @@ export function GpxPreviewView({ preview }: GpxPreviewViewProps) {
         <ShareButton title={preview.name} />
       </Group>
 
-      <Box>
+      <Box ref={mapBoxRef}>
         <RouteMapView
           route={preview}
           fullscreenPath={paths.gpxToolsMap(preview.id)}
           colorBy={colorBy}
+          waypointSelection={selection}
+          onWaypointSelectionChange={setSelection}
         />
       </Box>
 
@@ -149,6 +155,12 @@ export function GpxPreviewView({ preview }: GpxPreviewViewProps) {
           <Text>{elevation(preview.elevationLoss)}</Text>
         </Group>
       </Group>
+
+      <RouteWaypointList
+        waypoints={preview.waypoints}
+        selected={selection?.waypoint ?? null}
+        onSelect={selectFromList}
+      />
 
       {/* Downloads are open to anyone with the link; the actions below need an account. */}
       <Group gap="sm" wrap="wrap">

@@ -36,7 +36,7 @@ vi.mock('./rideDetailData', async (importOriginal) => {
         ride: { data: ride, isLoading: false, error: null, refetch: () => {} },
         weather: { data: weather, isLoading: false, isFetching: false, refetch: () => {} },
         routes: { data: undefined },
-        routesBySlug: new Map([['boucle', { slug: 'boucle', tracks: [] }]]),
+        routesBySlug: new Map([['boucle', { slug: 'boucle', tracks: [], waypoints: [] }]]),
         soloGroup: solo,
         soloLeg: solo ? actual.ownLeg(ride, weather) : undefined,
       }

@@ -14,6 +14,7 @@ import '../../api/generated/models/track_surface.dart';
 import '../../api/generated/models/visibility.dart';
 import '../../api/generated/models/relative_wind.dart';
 import '../../api/generated/models/climb_category.dart';
+import '../../api/generated/models/waypoint_type.dart';
 import 'enum_colors.dart';
 import 'pdl_colors.dart';
 
@@ -122,6 +123,26 @@ extension ClimbCategoryTone on ClimbCategory {
     ClimbCategory.cat3 => PdlFamily.yellow,
     ClimbCategory.cat4 => PdlFamily.green,
     ClimbCategory.$unknown => PdlFamily.gray,
+  };
+
+  PdlTone tone(PdlColors c) => family.filled(c);
+}
+
+extension WaypointTypeTone on WaypointType {
+  PdlFamily get family => switch (this) {
+    WaypointType.regroup => PdlFamily.indigo,
+    WaypointType.supply => PdlFamily.orange,
+    WaypointType.water => PdlFamily.blue,
+    WaypointType.cafe => PdlFamily.orange,
+    WaypointType.toilets => PdlFamily.gray,
+    WaypointType.danger => PdlFamily.red,
+    WaypointType.summit => PdlFamily.grape,
+    WaypointType.viewpoint => PdlFamily.teal,
+    WaypointType.bikeShop => PdlFamily.gray,
+    WaypointType.realStart => PdlFamily.green,
+    WaypointType.split => PdlFamily.yellow,
+    WaypointType.info => PdlFamily.gray,
+    WaypointType.$unknown => PdlFamily.gray,
   };
 
   PdlTone tone(PdlColors c) => family.filled(c);

@@ -10,6 +10,7 @@ import { useMapChartZoomSync } from '@/hooks/useMapChartZoomSync'
 import { MapFullscreenShell } from '@/components/map/MapFullscreenShell'
 import { hasSurfaces } from '@/lib/trackSurface'
 import type { PlannerColorBy } from '@/lib/plannerSurface'
+import type { WaypointSelection } from '@/lib/waypoints'
 import { useRouteSurfaceColors } from '@/hooks/useRouteSurfaceColors'
 import { RouteTrackMap } from './RouteTrackMap'
 import { ElevationChart } from './ElevationChart'
@@ -46,6 +47,7 @@ export function RouteFullscreenView({ route, title, backTo }: RouteFullscreenVie
   const colorScheme = useResolvedColorScheme()
   const [hoveredPointIndex, setHoveredPointIndex] = useState<number>(-1)
   const [colorBy, setColorBy] = useState<PlannerColorBy>('grade')
+  const [waypointSelection, setWaypointSelection] = useState<WaypointSelection | null>(null)
   const { surfaceAt, lineColorAt } = useRouteSurfaceColors(route.tracks, colorBy)
 
   const {
@@ -140,6 +142,8 @@ export function RouteFullscreenView({ route, title, backTo }: RouteFullscreenVie
             filled
             colorBy={surfaceAt ? 'surface' : 'grade'}
             surfaceAt={surfaceAt}
+            selectedWaypoint={waypointSelection?.waypoint ?? null}
+            onSelectWaypoint={(waypoint) => setWaypointSelection({ waypoint, from: 'profile' })}
             zoom={{
               onMoveStart: onChartMoveStart,
               onMoveComplete: onChartMoveComplete,
@@ -155,6 +159,8 @@ export function RouteFullscreenView({ route, title, backTo }: RouteFullscreenVie
         onHoverPoint={handleHoverPoint}
         fitPadding={50}
         lineColorAt={lineColorAt}
+        waypointSelection={waypointSelection}
+        onWaypointSelect={setWaypointSelection}
         onMoveStart={onMapMoveStart}
         onMoveEnd={onMapMoveEnd}
       />

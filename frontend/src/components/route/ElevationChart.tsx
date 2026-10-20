@@ -27,6 +27,9 @@ import {
   getPointClimbGradient,
 } from '../map/mapUtils'
 import { crosshairPlugin, type ChartWithCrosshair } from './chartCrosshair'
+import { waypointAt, waypointMarkersPlugin } from './waypointMarkersPlugin'
+import { sortWaypoints, waypointTypeOf, waypointsNear } from '@/lib/waypoints'
+import type { WaypointDto } from '@/api/dto'
 import { useUnits } from '../../hooks/useUnits'
 import { getOverlayBg } from '@/lib/colors'
 import { useResolvedColorScheme } from '@/hooks/useResolvedColorScheme'
@@ -78,6 +81,10 @@ export interface ElevationChartProps {
   colorBy?: 'grade' | 'surface'
   /** The colour of the segment starting at this data index, when `colorBy` is `surface`. */
   surfaceAt?: (p0Index: number) => string
+  /** The waypoint to highlight on the profile, if it is one of the route's. */
+  selectedWaypoint?: WaypointDto | null
+  /** A click on a waypoint marker of the profile. */
+  onSelectWaypoint?: (waypoint: WaypointDto) => void
   /**
    * When provided, registers chartjs-plugin-zoom on this chart instance (wheel/pinch/pan, x-axis
    * only) and reports gesture boundaries so a parent can keep a map viewport in sync.
@@ -98,6 +105,8 @@ export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartPro
       dashedSegment,
       colorBy = 'grade',
       surfaceAt,
+      selectedWaypoint = null,
+      onSelectWaypoint,
       zoom,
     },
     ref
@@ -114,8 +123,10 @@ export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartPro
     const zoomEnabled = !!zoom
     const onHoverPointRef = useRef(onHoverPoint)
     const zoomRef = useRef(zoom)
+    const onSelectWaypointRef = useRef(onSelectWaypoint)
     useEffect(() => {
       onHoverPointRef.current = onHoverPoint
+      onSelectWaypointRef.current = onSelectWaypoint
       zoomRef.current = zoom
     })
 
@@ -136,6 +147,12 @@ export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartPro
       [route.tracks]
     )
     const climbs = useMemo(() => route.tracks.flatMap((track) => track.climbs), [route.tracks])
+
+    // Waypoints on the track only: one that is off it (no distance) has no place on the profile.
+    const markers = useMemo(
+      () => sortWaypoints(route.waypoints ?? []).filter((w) => w.distance != null),
+      [route.waypoints]
+    )
 
     // Computed over the whole route, never the zoom window: an axis that rescales under a pan
     // gesture makes the profile look like it's breathing.
@@ -212,6 +229,7 @@ export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartPro
           legend: {
             display: false,
           },
+          waypointMarkers: { markers, selected: selectedWaypoint },
           tooltip: {
             enabled: true,
             backgroundColor: chartColors.background,
@@ -243,6 +261,17 @@ export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartPro
               // Climb index + per-part breakdown, à la prendslaroue:
               //   Montée (i/n) : <gain> / <length> (<avg>%)
               //   Partie (j/m) : <length> (<grade>%)
+              // The waypoints about there: « Ravitaillement : Café du Port ».
+              footer: (items: TooltipItem<'line'>[]) => {
+                if (items.length === 0) return []
+                const dist = trackPoints[items[0].dataIndex][3]
+                const x = xRange ?? { min: 0, max: route.distance }
+                const tolerance = Math.max(50, (x.max - x.min) / 150)
+                return waypointsNear(markers, dist, tolerance).map((w) => {
+                  const type = t(`routes.waypoints.type.${waypointTypeOf(w.type)}`)
+                  return w.name ? t('routes.waypoints.tooltipNamed', { type, name: w.name }) : type
+                })
+              },
               afterLabel: (item: TooltipItem<'line'>) => {
                 const dist = trackPoints[item.dataIndex][3]
                 const lines: string[] = []
@@ -356,7 +385,16 @@ export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartPro
             },
           },
         },
-        onHover: (_event: ChartEvent, activeElements: ActiveElement[]) => {
+        onClick: (event: ChartEvent, _elements: ActiveElement[], chart: ChartJS) => {
+          if (event.x == null) return
+          const waypoint = waypointAt(markers, chart.scales.x, event.x)
+          if (waypoint) onSelectWaypointRef.current?.(waypoint)
+        },
+        onHover: (event: ChartEvent, activeElements: ActiveElement[], chart: ChartJS) => {
+          if (event.native && chart.canvas) {
+            chart.canvas.style.cursor =
+              event.x != null && waypointAt(markers, chart.scales.x, event.x) ? 'pointer' : ''
+          }
           if (activeElements.length > 0) {
             const index = activeElements[0].index
             onHoverPointRef.current(index)
@@ -388,6 +426,8 @@ export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartPro
         xRange,
         yBounds,
         t,
+        markers,
+        selectedWaypoint,
       ]
     )
 
@@ -418,7 +458,10 @@ export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartPro
 
     const zoomPlugin = useZoomPlugin(zoomEnabled)
     const plugins = useMemo(
-      () => (zoomEnabled && zoomPlugin ? [crosshairPlugin, zoomPlugin] : [crosshairPlugin]),
+      () =>
+        zoomEnabled && zoomPlugin
+          ? [crosshairPlugin, waypointMarkersPlugin, zoomPlugin]
+          : [crosshairPlugin, waypointMarkersPlugin],
       [zoomEnabled, zoomPlugin]
     )
 

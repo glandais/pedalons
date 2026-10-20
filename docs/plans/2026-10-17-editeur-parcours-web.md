@@ -1269,9 +1269,14 @@ questions ouvertes viennent du §10 de
             jusqu'à 250 caractères par l'API (40 dans l'éditeur) ; `type` nul = ligne héritée ;
             détails d'aperçu dans une colonne à part ; `sym` avant `type` à l'import ; borne
             `MAX_WAYPOINTS = 500` à confirmer en prod. Détail dans `LEDGER_DONE.md` (`API-134`).
-      - [ ] **C3d. Web, consultation** (M, après C3c) — couche `symbol` à icônes (remplace
-            `WaypointMarker`, ce qui règle `WEB-108`), repères sur le profil, liste des points,
-            popup ; couleurs dans `contracts/brand-colors.yaml`.
+      - [x] **C3d. Web, consultation** (M, 20 octobre 2026, contrat inchangé) — couche `symbol` à
+            icônes (remplace `WaypointMarker`, ce qui règle `WEB-108`), repères sur le profil,
+            liste des points, popup ; couleurs dans `contracts/brand-colors.yaml`. Écarts à
+            l'étude : le nom est une image canvas, pas un `text-field` (fonds raster sans
+            `glyphs`, E1) ; un seul résolveur d'images par carte, `MapImages`, qui remplace
+            `RouteArrowImage` (E2) ; popup au clic, au survol seulement le nom et le curseur, la
+            liste donne l'équivalent au clavier (E4) ; liste aussi sur l'étape, l'aperçu GPX et le
+            groupe d'une sortie, pas en plein écran (E8). Détail dans `LEDGER_DONE.md` (`WEB-100`).
       - [ ] **C3e. Web, éditeur** (L, après C3c et C3d) — clic droit ou appui long sur toute la
             ligne → « Ajouter un point de parcours » (le menu de B12 s'ouvre alors hors des
             marqueurs) ; formulaire type, nom, description ; glisser contraint au tracé (Alt

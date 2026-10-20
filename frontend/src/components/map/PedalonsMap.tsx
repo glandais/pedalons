@@ -6,7 +6,7 @@ import * as maplibregl from 'maplibre-gl'
 import './setupMaplibreWorker'
 import { Terrain3D } from './Terrain3D'
 import { MapAttribution } from './MapAttribution'
-import { RouteArrowImage } from './RouteArrows'
+import { MapImages } from './MapImages'
 import { MapStyleSwitcher, type MapStyleSwitcherProps } from './MapStyleSwitcher'
 import { MapPanelContext, useMapPanelState } from './mapPanelState'
 import { useMapStyle } from '@/hooks/useMapStyle'
@@ -52,6 +52,7 @@ export const PedalonsMap = forwardRef<MapRef, PedalonsMapProps>(
         'NavigationControl.ZoomIn': t('map.zoomIn'),
         'NavigationControl.ZoomOut': t('map.zoomOut'),
         'NavigationControl.ResetBearing': t('map.resetBearing'),
+        'Popup.Close': t('map.popup.close'),
       }),
       [t]
     )
@@ -77,7 +78,7 @@ export const PedalonsMap = forwardRef<MapRef, PedalonsMapProps>(
           <Terrain3D source={terrainSource} terrain={terrain3d} hillshade={hillshade} />
           {/* Every trace on the site shows its direction (`routeArrowLayout`): the image is ready on
           every map rather than registered by each page that draws one. */}
-          <RouteArrowImage />
+          <MapImages />
           <MapStyleSwitcher
             styles={styles}
             currentStyleId={styleId}

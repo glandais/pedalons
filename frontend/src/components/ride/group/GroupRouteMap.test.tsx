@@ -23,6 +23,7 @@ import { GroupRouteMap } from './GroupRouteMap'
 
 function route(track: Partial<TrackDto>): RouteDetailDto {
   return {
+    waypoints: [],
     tracks: [{ line: { type: 'LineString', coordinates: [] }, climbs: [], ...track }],
   } as unknown as RouteDetailDto
 }

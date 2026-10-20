@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next'
 import type { MapRef } from 'react-map-gl/maplibre'
 import { IconArrowsMaximize } from '@tabler/icons-react'
 import { Box, Center, Paper, Text } from '@mantine/core'
+import { useUncontrolled } from '@mantine/hooks'
+import type { WaypointSelection } from '@/lib/waypoints'
 import { MapControlButton, MapControlGroup } from '@/components/map/MapControl'
 import type { RouteDetailDto } from '@/api/dto'
 import type { PlannerColorBy } from '@/lib/plannerSurface'
@@ -32,14 +34,29 @@ interface RouteMapViewProps {
    * (WEB-100 C1b), the surface; without it, the grade whatever is asked.
    */
   colorBy?: PlannerColorBy
+  /** The waypoint picked on the map, the profile or the page's list (internal state when omitted). */
+  waypointSelection?: WaypointSelection | null
+  onWaypointSelectionChange?: (selection: WaypointSelection | null) => void
 }
 
-export function RouteMapView({ route, fullscreenPath, colorBy = 'grade' }: RouteMapViewProps) {
+export function RouteMapView({
+  route,
+  fullscreenPath,
+  colorBy = 'grade',
+  waypointSelection,
+  onWaypointSelectionChange,
+}: RouteMapViewProps) {
   const { t } = useTranslation()
   const colorScheme = useResolvedColorScheme()
   const mapHeight = useMapHeight('full')
   const [hoveredPointIndex, setHoveredPointIndex] = useState<number>(-1)
   const mapRef = useRef<MapRef>(null)
+  const [selection, setSelection] = useUncontrolled<WaypointSelection | null>({
+    value: waypointSelection,
+    defaultValue: null,
+    finalValue: null,
+    onChange: onWaypointSelectionChange,
+  })
 
   const trackPoints = route.tracks.flatMap((track) => track.line.coordinates)
 
@@ -69,6 +86,8 @@ export function RouteMapView({ route, fullscreenPath, colorBy = 'grade' }: Route
           onHoverPoint={setHoveredPointIndex}
           fitPadding={EMBEDDED_FIT_PADDING}
           lineColorAt={lineColorAt}
+          waypointSelection={selection}
+          onWaypointSelect={setSelection}
           // Fullscreen action, in the control column with the zoom and basemap buttons
           controls={
             fullscreenPath && (
@@ -104,6 +123,8 @@ export function RouteMapView({ route, fullscreenPath, colorBy = 'grade' }: Route
               onHoverPoint={setHoveredPointIndex}
               colorBy={surfaceAt ? 'surface' : 'grade'}
               surfaceAt={surfaceAt}
+              selectedWaypoint={selection?.waypoint ?? null}
+              onSelectWaypoint={(waypoint) => setSelection({ waypoint, from: 'profile' })}
             />
           </Box>
         </RouteTrackMap>

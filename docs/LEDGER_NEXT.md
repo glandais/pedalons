@@ -398,11 +398,7 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
       `11.12.0`) est fait le 19 octobre 2026. C1a (« non revêtu » en direct, contrat `11.13.0`) et C1b (surface détaillée après
       l'enregistrement, contrat `11.14.0`, `V76`) aussi, et C1c (rattrapage des anciens parcours,
       suggestion de `surfaceType`, `V77`, pas de contrat ; affichage mobile `MOB-81`) : C1 est livré. C3 (points de parcours) est conçu le 20 octobre 2026
-      dans [l'étude des points de parcours](research/2026-10-20-points-de-parcours.md) et découpé dans le plan (C3a à C3h) ; C3b (vcyclist 6.11) et C3c (backend, contrat `11.15.0`, `V78`) sont faits le 20 octobre 2026. Reste de C3a : basculer `pedalons.gps.garmin.course-points.enabled` (désactivé) après un essai de la Courses API sur un Edge, et essayer Wahoo.
-
-- [ ] `WEB-108` **Un point de parcours sur le méridien ou l'équateur disparaît de la carte (XS)** —
-      `RouteTrackMap.tsx` teste `coordinates[0] && coordinates[1]` : une coordonnée exactement nulle
-      masque le point. Réglé d'office par C3d de `WEB-100` (voir le plan), corrigeable avant.
+      dans [l'étude des points de parcours](research/2026-10-20-points-de-parcours.md) et découpé dans le plan (C3a à C3h) ; C3b (vcyclist 6.11), C3c (backend, contrat `11.16.0`, `V78`) et C3d (web, consultation) sont faits le 20 octobre 2026. Reste de C3a : basculer `pedalons.gps.garmin.course-points.enabled` (désactivé) après un essai de la Courses API sur un Edge, et essayer Wahoo.
 
 ### Couverture e2e — ce que l'audit du 27 septembre laisse ouvert
 

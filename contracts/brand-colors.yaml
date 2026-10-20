@@ -57,6 +57,18 @@ enums:
     style: filled
     values: { HC: grape, CAT1: red, CAT2: orange, CAT3: yellow, CAT4: green }
 
+  # Points de parcours d'auteur (ledger WEB-100, C3d) : icône Tabler sur un disque de la famille,
+  # sur la carte, le profil et la liste. En aplat comme les cols : c'est une pastille, pas un badge.
+  # Rouge réservé au danger ; jaune (attention sans danger, FIT `alert`) pour la séparation ; vert
+  # pour le départ réel comme le marqueur de départ (§3.7) ; raisin pour le col comme le HC ; bleu
+  # pour l'eau ; orange pour manger (ravitaillement et café, tous deux FIT `food`/`aid_station`) ;
+  # indigo, la couleur primaire, pour le regroupement ; teal pour le point de vue ; gris pour les
+  # services et l'information (le pictogramme les distingue).
+  WaypointType:
+    style: filled
+    values:
+      { REGROUP: indigo, SUPPLY: orange, WATER: blue, CAFE: orange, TOILETS: gray, DANGER: red, SUMMIT: grape, VIEWPOINT: teal, BIKE_SHOP: gray, REAL_START: green, SPLIT: yellow, INFO: gray }
+
 # Dégradé de l'image de repli d'une carte sans photo, à 135° (haut gauche → bas
 # droite). Chaque arrêt est une nuance Mantine `couleur-nuance` ; le générateur
 # en tire la variable CSS pour le web et l'hexadécimal pour le mobile.

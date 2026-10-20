@@ -1,14 +1,15 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react'
-import { Source, Layer, MapRef, MapMouseEvent, ViewStateChangeEvent } from 'react-map-gl/maplibre'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  Source,
+  Layer,
+  MapRef,
+  MapLayerMouseEvent,
+  ViewStateChangeEvent,
+} from 'react-map-gl/maplibre'
 import type { PaddingOptions } from 'maplibre-gl'
 import { Box } from '@mantine/core'
-import {
-  StartMarker,
-  EndMarker,
-  HoverMarker,
-  WaypointMarker,
-  KmMarkersLayer,
-} from '../map/MapMarkers'
+import { useUncontrolled } from '@mantine/hooks'
+import { StartMarker, EndMarker, HoverMarker, KmMarkersLayer } from '../map/MapMarkers'
 import {
   calculateBounds,
   distance,
@@ -18,6 +19,9 @@ import {
 import { PedalonsMap } from '../map/PedalonsMap'
 import { routeArrowLayout } from '../map/routeArrowLayout'
 import { HideTrackControl } from '../map/HideTrackControl'
+import { WAYPOINT_HIT_LAYER, WaypointLayer } from '../map/WaypointLayer'
+import { useMapStyle } from '@/hooks/useMapStyle'
+import type { WaypointSelection } from '@/lib/waypoints'
 import { useHideTrackKey } from '@/hooks/useHideTrackKey'
 import { useResolvedColorScheme } from '@/hooks/useResolvedColorScheme'
 import type { MappableRoute } from './RouteMapView'
@@ -43,6 +47,9 @@ interface RouteTrackMapProps {
    * map context — unlike `children`, which sits outside it.
    */
   controls?: React.ReactNode
+  /** The waypoint picked on the map, the profile or the list (uncontrolled when omitted). */
+  waypointSelection?: WaypointSelection | null
+  onWaypointSelect?: (selection: WaypointSelection | null) => void
   /** Overlays (the elevation chart) absolutely positioned on top of the map. */
   children?: React.ReactNode
 }
@@ -62,9 +69,19 @@ export function RouteTrackMap({
   onMoveStart,
   onMoveEnd,
   controls,
+  waypointSelection,
+  onWaypointSelect,
   children,
 }: RouteTrackMapProps) {
   const colorScheme = useResolvedColorScheme()
+  const { darkBasemap } = useMapStyle()
+  const [selection, setSelection] = useUncontrolled<WaypointSelection | null>({
+    value: waypointSelection,
+    defaultValue: null,
+    finalValue: null,
+    onChange: onWaypointSelect,
+  })
+  const [hoveredWaypoint, setHoveredWaypoint] = useState<number | null>(null)
 
   // Press "h" to hide the trace and its markers, revealing the basemap underneath
   const [trackHidden, toggleTrackHidden] = useHideTrackKey()
@@ -74,7 +91,7 @@ export function RouteTrackMap({
     () => route.tracks.flatMap((track) => track.line.coordinates) || [],
     [route.tracks]
   )
-  const waypoints = route.waypoints || []
+  const waypoints = useMemo(() => route.waypoints ?? [], [route.waypoints])
 
   // Create gradient line GeoJSON
   const lineFeatures = useMemo(
@@ -131,7 +148,11 @@ export function RouteTrackMap({
 
   // Handle mouse move for nearest point detection
   const handleMouseMove = useCallback(
-    (event: MapMouseEvent) => {
+    (event: MapLayerMouseEvent) => {
+      const featureId = event.features?.[0]?.id
+      const hovered = typeof featureId === 'number' ? featureId : null
+      setHoveredWaypoint((previous) => (previous === hovered ? previous : hovered))
+
       if (!mapRef.current || trackPoints.length === 0) return
 
       const bounds = mapRef.current.getBounds()
@@ -154,8 +175,18 @@ export function RouteTrackMap({
   )
 
   const handleMouseLeave = useCallback(() => {
+    setHoveredWaypoint(null)
     onHoverPoint(-1)
   }, [onHoverPoint])
+
+  const handleClick = useCallback(
+    (event: MapLayerMouseEvent) => {
+      const id = event.features?.[0]?.id
+      const waypoint = typeof id === 'number' ? waypoints[id] : undefined
+      setSelection(waypoint ? { waypoint, from: 'map' } : null)
+    },
+    [waypoints, setSelection]
+  )
 
   const hoveredPoint = hoveredPointIndex >= 0 ? trackPoints[hoveredPointIndex] : null
 
@@ -173,6 +204,9 @@ export function RouteTrackMap({
           bounds: bounds ?? undefined,
           fitBoundsOptions: { padding: fitPadding },
         }}
+        interactiveLayerIds={trackHidden ? [] : [WAYPOINT_HIT_LAYER]}
+        cursor={hoveredWaypoint !== null ? 'pointer' : undefined}
+        onClick={handleClick}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
         onMoveStart={onMoveStart}
@@ -199,6 +233,15 @@ export function RouteTrackMap({
               <Layer id="route-direction-arrows" type="symbol" layout={routeArrowLayout} />
             </Source>
 
+            {/* Author's waypoints: a symbol layer, under the DOM markers below */}
+            <WaypointLayer
+              waypoints={waypoints}
+              selection={selection}
+              onSelect={setSelection}
+              hoveredIndex={hoveredWaypoint}
+              darkBasemap={darkBasemap}
+            />
+
             {/* Start marker */}
             <StartMarker longitude={trackPoints[0][0]} latitude={trackPoints[0][1]} />
 
@@ -207,20 +250,6 @@ export function RouteTrackMap({
               longitude={trackPoints[trackPoints.length - 1][0]}
               latitude={trackPoints[trackPoints.length - 1][1]}
             />
-
-            {/* Waypoints */}
-            {waypoints.map(
-              (waypoint, index) =>
-                waypoint.geometry.coordinates[0] &&
-                waypoint.geometry.coordinates[1] && (
-                  <WaypointMarker
-                    key={`waypoint-${index}`}
-                    longitude={waypoint.geometry.coordinates[0]}
-                    latitude={waypoint.geometry.coordinates[1]}
-                    name={waypoint.name}
-                  />
-                )
-            )}
 
             {/* Km markers */}
             <KmMarkersLayer coords={trackPoints} totalDistanceM={route.distance} />

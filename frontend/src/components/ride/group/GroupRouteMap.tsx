@@ -1,10 +1,12 @@
 import { lazy, Suspense, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Paper, Skeleton, Stack, Title } from '@mantine/core'
+import { Box, Paper, Skeleton, Stack, Title } from '@mantine/core'
 import type { RouteDetailDto } from '@/api/dto'
 import { ErrorBoundary } from '@/components/common/ErrorBoundary'
 import { RideGroupRouteActions } from '@/components/ride/RideGroupRouteActions'
 import { RouteSurfaceSummary } from '@/components/route/RouteSurfaceSummary'
+import { RouteWaypointList } from '@/components/route/RouteWaypointList'
+import { useWaypointSelection } from '@/hooks/useWaypointSelection'
 import { paths } from '@/config/paths'
 import type { PlannerColorBy } from '@/lib/plannerSurface'
 
@@ -31,22 +33,32 @@ export function GroupRouteMap({
 }) {
   const { t } = useTranslation()
   const [colorBy, setColorBy] = useState<PlannerColorBy>('grade')
+  const { selection, setSelection, mapBoxRef, selectFromList } = useWaypointSelection()
   return (
     <Stack gap="md">
       <ErrorBoundary variant="inline">
         {route ? (
           <>
             <Suspense fallback={<Skeleton height={500} radius="md" />}>
-              <RouteMapView
-                route={route}
-                fullscreenPath={paths.routeMap(teamSlug, routeSlug)}
-                colorBy={colorBy}
-              />
+              <Box ref={mapBoxRef}>
+                <RouteMapView
+                  route={route}
+                  fullscreenPath={paths.routeMap(teamSlug, routeSlug)}
+                  colorBy={colorBy}
+                  waypointSelection={selection}
+                  onWaypointSelectionChange={setSelection}
+                />
+              </Box>
             </Suspense>
             <RouteSurfaceSummary
               tracks={route.tracks}
               colorBy={colorBy}
               onColorByChange={setColorBy}
+            />
+            <RouteWaypointList
+              waypoints={route.waypoints}
+              selected={selection?.waypoint ?? null}
+              onSelect={selectFromList}
             />
           </>
         ) : (

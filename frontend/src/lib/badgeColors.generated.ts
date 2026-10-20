@@ -2,7 +2,7 @@
 // The family of each enum value (docs/BRANDING.md §3.6). How it renders is up to the component:
 // badges use Mantine's `light` variant, except where the series' variant says `filled`.
 
-import type { PublicationType, AdType, Status, TeamRole, SurfaceType, TrackSurface, Visibility, RelativeWind, ClimbCategory } from '@/api/dto'
+import type { PublicationType, AdType, Status, TeamRole, SurfaceType, TrackSurface, Visibility, RelativeWind, ClimbCategory, WaypointType } from '@/api/dto'
 
 export type BadgeFamily = 'indigo' | 'blue' | 'green' | 'red' | 'yellow' | 'orange' | 'grape' | 'teal' | 'gray'
 
@@ -67,6 +67,21 @@ export const CLIMB_CATEGORY_COLORS = {
   CAT4: 'green',
 } as const satisfies Record<ClimbCategory, BadgeFamily>
 
+export const WAYPOINT_TYPE_COLORS = {
+  REGROUP: 'indigo',
+  SUPPLY: 'orange',
+  WATER: 'blue',
+  CAFE: 'orange',
+  TOILETS: 'gray',
+  DANGER: 'red',
+  SUMMIT: 'grape',
+  VIEWPOINT: 'teal',
+  BIKE_SHOP: 'gray',
+  REAL_START: 'green',
+  SPLIT: 'yellow',
+  INFO: 'gray',
+} as const satisfies Record<WaypointType, BadgeFamily>
+
 /** The Mantine badge variant of each series. */
 export const BADGE_VARIANTS = {
   PublicationType: 'light',
@@ -78,6 +93,7 @@ export const BADGE_VARIANTS = {
   Visibility: 'light',
   RelativeWind: 'light',
   ClimbCategory: 'filled',
+  WaypointType: 'filled',
 } as const
 
 /** Background of a card without a picture, 135° (top left → bottom right). */

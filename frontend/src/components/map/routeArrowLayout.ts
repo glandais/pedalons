@@ -1,6 +1,6 @@
 import type { SymbolLayerSpecification } from 'maplibre-gl'
 
-/** The chevron drawn along a trace to tell which way it runs, registered by `RouteArrowImage`. */
+/** The chevron drawn along a trace to tell which way it runs, registered by `MapImages`. */
 export const ROUTE_ARROW_IMAGE = 'pedalons-route-arrow'
 
 /** Layout of a `symbol` layer that repeats the chevron along a line source. */

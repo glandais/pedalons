@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { Link, MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { MantineProvider } from '@mantine/core'
-import { TrackSurface, TrackSurfaceState, type TrackDto } from '@/api/dto'
+import { TrackSurface, TrackSurfaceState, type TrackDto, type WaypointDto } from '@/api/dto'
 
 vi.mock('react-i18next', async (importOriginal) => {
   const { frenchT } = await import('@/test/frenchT')
@@ -47,6 +47,7 @@ vi.mock('./ElevationChart', () => ({
 }))
 
 import { RouteFullscreenView, type FullscreenRoute } from './RouteFullscreenView'
+import type { WaypointSelection } from '@/lib/waypoints'
 
 const line = {
   type: 'LineString' as const,
@@ -118,6 +119,27 @@ describe('RouteFullscreenView surface switch', () => {
     expect(surfaceAt(0)).not.toBe(surfaceAt(1))
     const lineColorAt = seen.map.lineColorAt as (t: number, p: number) => string
     expect(lineColorAt(0, 0)).not.toBe(lineColorAt(0, 1))
+  })
+})
+
+describe('RouteFullscreenView waypoints', () => {
+  afterEach(cleanup)
+
+  it('hands the same selection to the map and to the profile', () => {
+    const waypoint = { name: 'Fontaine', type: 'WATER' } as WaypointDto
+    renderView({ ...route(), waypoints: [waypoint] })
+    expect(seen.map.waypointSelection).toBeNull()
+
+    act(() => {
+      ;(seen.chart.onSelectWaypoint as (w: WaypointDto) => void)(waypoint)
+    })
+    expect(seen.chart.selectedWaypoint).toBe(waypoint)
+    expect(seen.map.waypointSelection).toEqual({ waypoint, from: 'profile' })
+
+    act(() => {
+      ;(seen.map.onWaypointSelect as (s: WaypointSelection | null) => void)(null)
+    })
+    expect(seen.chart.selectedWaypoint).toBeNull()
   })
 })
 

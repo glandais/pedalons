@@ -11,6 +11,8 @@ import { Box, Button, Group, Stack, Text, Title, Badge, Menu, Loader } from '@ma
 import { ElevationState, type RouteDetailDto, type GpsServiceType } from '@/api/dto'
 import { RouteMapView } from './RouteMapView'
 import { RouteSurfaceSummary } from './RouteSurfaceSummary'
+import { RouteWaypointList } from './RouteWaypointList'
+import { useWaypointSelection } from '@/hooks/useWaypointSelection'
 import type { PlannerColorBy } from '@/lib/plannerSurface'
 import { useUnits } from '@/hooks/useUnits'
 import { useGpsConnections } from '@/hooks/useGpsConnections'
@@ -47,6 +49,7 @@ export function RouteDetailView({
   const { isAuthenticated } = useAuth()
   const [colorBy, setColorBy] = useState<PlannerColorBy>('grade')
   const { connectedServices, uploadRoute, isUploading } = useGpsConnections()
+  const { selection, setSelection, mapBoxRef, selectFromList } = useWaypointSelection()
 
   const handleSendToDevice = (serviceType: GpsServiceType) => {
     if (teamSlug && route.slug) {
@@ -57,8 +60,14 @@ export function RouteDetailView({
   return (
     <Stack>
       {/* Interactive Map with Elevation Chart */}
-      <Box>
-        <RouteMapView route={route} fullscreenPath={fullscreenPath} colorBy={colorBy} />
+      <Box ref={mapBoxRef}>
+        <RouteMapView
+          route={route}
+          fullscreenPath={fullscreenPath}
+          colorBy={colorBy}
+          waypointSelection={selection}
+          onWaypointSelectionChange={setSelection}
+        />
       </Box>
 
       {route.elevationState === ElevationState.PENDING && (
@@ -186,6 +195,12 @@ export function RouteDetailView({
 
       {/* The route's team tags. Not on a stage (`showInfo` off): tags stay on the route (plan D15). */}
       {showInfo && <TagList tags={route.tags} />}
+
+      <RouteWaypointList
+        waypoints={route.waypoints}
+        selected={selection?.waypoint ?? null}
+        onSelect={selectFromList}
+      />
 
       {/* Climbs Section - compact list */}
       {(() => {

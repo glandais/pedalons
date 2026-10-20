@@ -2383,6 +2383,42 @@ Plan [`2026-10-06-team-agenda.md`](plans/archive/2026-10-06-team-agenda.md) §4,
   `RideDetailPage.test.tsx` a maintenant ses `tracks`. Pas de rechargement tant qu'un revêtement se
   calcule.
 
+### Points de parcours d'auteur : consultation sur le web (C3d de `WEB-100`, 20 octobre 2026, contrat inchangé)
+
+- `WEB-108` **Un point de parcours sur le méridien ou l'équateur reste sur la carte** (2026-10-20,
+  contrat inchangé) — réglé par C3d : `WaypointMarker` et son test
+  `coordinates[0] && coordinates[1]` sont retirés de `RouteTrackMap`, les points passent par la
+  couche `symbol` dont la source (`waypointFeatures`) ne filtre jamais sur la valeur d'une
+  coordonnée. Tests : `lib/waypoints.test.ts` (points à `[0, 45]` et `[3, 0]` gardés),
+  `WaypointLayer.test.tsx`.
+- `WEB-100` **Volet C3d, consultation des points de parcours** (2026-10-20, contrat inchangé,
+  `pnpm check` vert) — couche `symbol` (`WaypointLayer`) : un pictogramme Tabler par type sur un
+  disque de la famille de `contracts/brand-colors.yaml` (`WaypointType`, aplat, nuance 6 dans les
+  deux thèmes, anneau blanc), nom à côté dès le zoom 12, halo au survol et à la sélection, popup
+  (`WaypointDetails`) au clic ou au toucher, Échap la ferme. Les mêmes pictogrammes en repères sur
+  le profil (`waypointMarkersPlugin`, clic pour sélectionner, pied d'infobulle « Ravitaillement :
+  Café du Port ») et en liste (`RouteWaypointList`, triée par distance, hors tracé en fin, pliée
+  au-delà de 10) sur la fiche d'un parcours, d'une étape, l'aperçu GPX et le groupe d'une sortie ;
+  le plein écran a la couche, la popup et les repères, pas la liste. La sélection (`WaypointSelection`
+  : l'objet et d'où elle vient) est tenue par la page (`useWaypointSelection`) et partagée entre
+  carte, profil et liste. Les couleurs et pictogrammes sont documentés dans `BRANDING.md` §3.6 et §6 ;
+  le mobile n'a que l'extension générée `WaypointTypeTone` (C3f, `MOB-84`).
+  Tests : `waypoints.test.ts`, `waypointIcons.test.tsx` (les tracés égalent ceux du composant Tabler),
+  `mapImages.test.ts`, `MapImages.test.tsx`, `WaypointLayer.test.tsx`, `RouteWaypointList.test.tsx`,
+  `WaypointDetails.test.tsx`, `waypointMarkersPlugin.test.ts`, `ElevationChart.test.tsx`,
+  `RouteFullscreenView.test.tsx`.
+  **À ne pas défaire** : un seul `setMissingStyleImageResolver` par carte (`MapImages`, qui aiguille
+  chevron, pictogramme et étiquette ; un second écraserait le premier) ; pas de `text-field` sur les
+  points (cinq fonds sur sept sont des habillages raster sans `glyphs`) : le nom est une image
+  dessinée sur canvas ; jamais de filtre sur la valeur des coordonnées ; les points hors tracé
+  (`distance` nul) restent sur la carte, jamais sur le profil ; pas de cluster (un danger ne se
+  cache pas) ; le client retrie par distance, le contrat ne promet pas l'ordre. Les pictogrammes
+  lisent `__iconNode` dans `@tabler/icons-react/dist/esm/icons/*.mjs` (API interne de Tabler, d'où
+  le test d'égalité avec le composant). Une ligne d'avant C3c dont `WaypointBackfill` n'est pas
+  encore passé (distance nulle) s'affiche « Hors tracé » dans cette courte fenêtre. Le texte de
+  `planner.import.waypoints*` (« ne sont conservés que si… ») est devenu faux depuis C3c : à
+  reprendre avec C3e.
+
 ### `WEB-106` Pas d'enregistrement pendant un calcul du planificateur (20 octobre 2026)
 
 - `WEB-106` **« Enregistrer » attend la fin du calcul en cours dans le planificateur** (2026-10-20,

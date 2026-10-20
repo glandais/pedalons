@@ -6,7 +6,7 @@ import '@/components/map/setupMaplibreWorker'
 import type { MapRef } from 'react-map-gl/maplibre'
 import { ActionIcon, Box, Stack } from '@mantine/core'
 import { IconPlus, IconMinus } from '@tabler/icons-react'
-import { RouteArrowImage } from '@/components/map/RouteArrows'
+import { MapImages } from '@/components/map/MapImages'
 import { routeArrowLayout } from '@/components/map/routeArrowLayout'
 import { useMapStyle } from '@/hooks/useMapStyle'
 
@@ -74,7 +74,7 @@ export function RoutePlannerMiniMap({ center, routeGeoJson }: RoutePlannerMiniMa
       >
         {/* No attribution here: the inset sits on top of the planner's main map, which shows the
             same tiles and already credits them. */}
-        <RouteArrowImage />
+        <MapImages />
         {routeGeoJson && (
           <Source id="mini-route" type="geojson" data={routeGeoJson}>
             <Layer
