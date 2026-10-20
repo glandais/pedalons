@@ -8,7 +8,6 @@ import '../../../../config/paths.dart';
 import '../../../../core/pdl/pdl.dart';
 import '../../../../keys.dart';
 import '../../../../core/preferences/user_preferences_provider.dart';
-import '../../../../core/theme/enum_colors.dart';
 import '../../../../core/theme/pdl_colors.dart';
 import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
@@ -81,11 +80,7 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
   /// si le revêtement disparaît au rechargement.
   RouteColorBy _colorBy = RouteColorBy.grade;
 
-  /// Les couleurs des barres du profil en mode revêtement, mémorisées : le
-  /// painter les compare par identité.
-  List<TrackSurface?>? _cachedBars;
-  PdlColors? _cachedColors;
-  List<Color?>? _cachedBarColors;
+  final TrackSurfaceBarColors _barColors = TrackSurfaceBarColors();
 
   RouteKey get _key =>
       RouteKey(teamSlug: widget.teamSlug, routeSlug: widget.routeSlug);
@@ -131,19 +126,6 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
         for (final TrackDto t in route.tracks) t.line.coordinates,
       ],
     );
-  }
-
-  /// La couleur de chaque barre du profil en mode revêtement, recalculée
-  /// seulement si les classes ou le thème changent.
-  List<Color?> _barColorsFor(List<TrackSurface?> bars, PdlColors c) {
-    if (identical(bars, _cachedBars) && c == _cachedColors) {
-      return _cachedBarColors!;
-    }
-    _cachedBars = bars;
-    _cachedColors = c;
-    return _cachedBarColors = <Color?>[
-      for (final TrackSurface? s in bars) s?.stroke(c),
-    ];
   }
 
   @override
@@ -460,7 +442,7 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
                     // glissement.
                     barColors: bars == null
                         ? null
-                        : _barColorsFor(bars, context.pdl),
+                        : _barColors.of(bars, context.pdl),
                     cursorDistance: cursor.distance,
                     axisLabel: (double meters, {required bool isLast}) => isLast
                         ? AppFormatters.formatDistance(meters, units)
@@ -472,7 +454,7 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
                       AppFormatters.formatDistance(r.distance, units),
                       AppFormatters.formatAltitude(r.elevation, units),
                       if (bars != null)
-                        ?_surfaceTip(samples, bars, r.distance)
+                        ?trackSurfaceTip(samples, bars, r.distance)
                       else if (r.grade != null)
                         AppFormatters.formatGrade(r.grade!),
                     ].join(' · '),
@@ -489,22 +471,6 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
             onRetry: () => ref.invalidate(routeDetailProvider(_key)),
           ),
         );
-  }
-
-  /// La classe de revêtement sous le réticule (mode revêtement), à la place de
-  /// la pente.
-  String? _surfaceTip(
-    ElevationSamples samples,
-    List<TrackSurface?> bars,
-    double distance,
-  ) {
-    final ElevationBar? bar = samples.barAt(distance);
-    if (bar == null) return null;
-    final int index = samples.bars.indexOf(bar);
-    final TrackSurface? surface = index >= 0 && index < bars.length
-        ? bars[index]
-        : null;
-    return surface == null ? null : trackSurfaceLabel(surface);
   }
 
   /// Le profil, précédé de « Profil d'altitude provisoire » tant que c'est

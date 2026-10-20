@@ -790,6 +790,21 @@ couvert » ; les tests ne tournent qu'en local (`MOB-37`).
   `notifyRideChanged` invalide aussi les listes et détails de modèles, parce qu'une sortie créée
   depuis un modèle en avance le `nextNumber`.
 
+### `MOB-82` Revêtement sur la fiche embarquée d'une étape (20 octobre 2026, contrat d'API inchangé)
+
+- `MOB-82` **La fiche parcours d'une étape de voyage montre son revêtement** — l'écran 25
+  (`EmbeddedRouteSheet`) reprend la bascule Pente / Revêtement de `MOB-81` : `RouteSurfaceSection`
+  sous le profil, profil coloré par barre (`routeSurfaceBarsProvider`), ligne de la carte colorée
+  (`RouteMap.colorBy`), classe sous le réticule à la place de la pente. Les données y étaient déjà
+  (`getRouteDetail`). La mémoïsation des couleurs (`TrackSurfaceBarColors`) et l'infobulle
+  (`trackSurfaceTip`) passent de `route_detail_page.dart` à `route_surface_section.dart`, pour que
+  les deux fiches ne divergent pas. Test : `embedded_route_sheet_test.dart` (prêt, en cours, sans
+  revêtement) ; `flutter analyze` sans remarque. **Hors périmètre, décidé avec le propriétaire le
+  20 octobre 2026** : les profils servis par `/routes/bulk` (groupe d'une sortie, web et mobile ;
+  profil global d'un voyage) restent en pente seule, le bulk ne portant toujours pas de revêtement
+  (`WEB-100` C1b). La fiche embarquée ne relance pas le calcul en cours (pas de
+  `ElevationRefreshPoller`, comme pour l'altitude provisoire).
+
 ### `MOB-81` Revêtement des parcours dans l'app (19 octobre 2026, contrat d'API inchangé)
 
 - `MOB-81` **La fiche d'un parcours montre son revêtement** — le pendant mobile de `WEB-100` C1b

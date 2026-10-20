@@ -33,7 +33,42 @@ String trackSurfaceShareLabel(double share) {
   );
 }
 
-/// Le revêtement le long du parcours, sur la fiche (`MOB-81`) : la bascule
+/// La classe de revêtement sous le réticule (mode revêtement), à la place de
+/// la pente — dans l'infobulle du profil.
+String? trackSurfaceTip(
+  ElevationSamples samples,
+  List<TrackSurface?> bars,
+  double distance,
+) {
+  final ElevationBar? bar = samples.barAt(distance);
+  if (bar == null) return null;
+  final int index = samples.bars.indexOf(bar);
+  final TrackSurface? surface = index >= 0 && index < bars.length
+      ? bars[index]
+      : null;
+  return surface == null ? null : trackSurfaceLabel(surface);
+}
+
+/// Les couleurs des barres du profil en mode revêtement, mémorisées : le
+/// painter les compare par identité, il repeindrait sinon à chaque `build`.
+class TrackSurfaceBarColors {
+  List<TrackSurface?>? _bars;
+  PdlColors? _colors;
+  List<Color?>? _barColors;
+
+  /// Recalculées seulement si les classes ou le thème changent.
+  List<Color?> of(List<TrackSurface?> bars, PdlColors c) {
+    if (identical(bars, _bars) && c == _colors) return _barColors!;
+    _bars = bars;
+    _colors = c;
+    return _barColors = <Color?>[
+      for (final TrackSurface? s in bars) s?.stroke(c),
+    ];
+  }
+}
+
+/// Le revêtement le long du parcours, sur la fiche et la fiche embarquée
+/// d'une étape (`MOB-81`, `MOB-82`) : la bascule
 /// Pente / Revêtement du profil et du tracé, la barre de répartition, sa
 /// légende et l'attribution OpenStreetMap.
 ///

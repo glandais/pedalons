@@ -7,9 +7,11 @@ import '../../../../api/generated/export.dart';
 import '../../../../config/paths.dart';
 import '../../../../core/pdl/pdl.dart';
 import '../../../../core/preferences/user_preferences_provider.dart';
+import '../../../../core/theme/pdl_colors.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/units/unit_system.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../domain/track_surfaces.dart';
 import '../../providers/route_detail_provider.dart';
 import '../../providers/route_elevation_provider.dart';
 import 'route_climbs_section.dart';
@@ -17,9 +19,10 @@ import 'route_cursor_controller.dart';
 import 'route_download_actions.dart';
 import 'route_map.dart';
 import 'route_sheet_header.dart';
+import 'route_surface_section.dart';
 
 /// La fiche parcours **embarquée** : en-tête, carte 240 px, profil 140 px,
-/// trois statistiques, trois exports, cols.
+/// revêtement, trois statistiques, trois exports, cols.
 ///
 /// Extraite de l'écran 13 pour être **réutilisée telle quelle par l'écran 25**
 /// (détail d'une étape de voyage). Toute divergence de rendu entre les deux est
@@ -48,6 +51,11 @@ class EmbeddedRouteSheet extends ConsumerStatefulWidget {
 class _EmbeddedRouteSheetState extends ConsumerState<EmbeddedRouteSheet> {
   RouteCursorController? _cursor;
   String? _cursorForSlug;
+
+  /// Ce que la pente / le revêtement colorent (`MOB-82`), comme sur
+  /// l'écran 13 ; retombe sur la pente si le revêtement disparaît.
+  RouteColorBy _colorBy = RouteColorBy.grade;
+  final TrackSurfaceBarColors _barColors = TrackSurfaceBarColors();
 
   @override
   void dispose() {
@@ -97,6 +105,9 @@ class _EmbeddedRouteSheetState extends ConsumerState<EmbeddedRouteSheet> {
   Widget _body(RouteDetailDto route) {
     final RouteCursorController cursor = _cursorFor(route);
     final UnitSystem units = ref.watch(unitSystemProvider);
+    final RouteColorBy colorBy = hasTrackSurfaces(route.tracks)
+        ? _colorBy
+        : RouteColorBy.grade;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -114,11 +125,24 @@ class _EmbeddedRouteSheetState extends ConsumerState<EmbeddedRouteSheet> {
                 cursor: cursor,
                 onMapTapped: cursor.moveTo,
                 allowFullscreen: true,
+                colorBy: colorBy,
               ),
             ),
           ),
           const SizedBox(height: PdlSpacing.section),
-          _profile(route, cursor, units),
+          _profile(route, cursor, units, colorBy),
+          // L'espace n'est posé que si la section rend quelque chose : la
+          // plupart des parcours n'ont pas (encore) de revêtement.
+          if (hasTrackSurfaces(route.tracks) ||
+              trackSurfacesPending(route.tracks)) ...<Widget>[
+            const SizedBox(height: PdlSpacing.section),
+            RouteSurfaceSection(
+              tracks: route.tracks,
+              colorBy: colorBy,
+              onColorByChanged: (RouteColorBy v) =>
+                  setState(() => _colorBy = v),
+            ),
+          ],
         ] else
           PdlEmptyState(
             variant: PdlEmptyVariant.empty,
@@ -150,7 +174,12 @@ class _EmbeddedRouteSheetState extends ConsumerState<EmbeddedRouteSheet> {
     RouteDetailDto route,
     RouteCursorController cursor,
     UnitSystem units,
+    RouteColorBy colorBy,
   ) {
+    final List<TrackSurface?>? bars = colorBy == RouteColorBy.surface
+        ? ref.watch(routeSurfaceBarsProvider(widget.routeKey)).value
+        : null;
+
     return ref
         .watch(routeElevationSamplesProvider(widget.routeKey))
         .when(
@@ -162,6 +191,9 @@ class _EmbeddedRouteSheetState extends ConsumerState<EmbeddedRouteSheet> {
                   credit: 'routes.elevationCredit'.tr(),
                   samples: samples,
                   height: PdlMetrics.elevationLarge,
+                  barColors: bars == null
+                      ? null
+                      : _barColors.of(bars, context.pdl),
                   cursorDistance: cursor.distance,
                   axisLabel: (double meters, {required bool isLast}) => isLast
                       ? AppFormatters.formatDistance(meters, units)
@@ -172,7 +204,10 @@ class _EmbeddedRouteSheetState extends ConsumerState<EmbeddedRouteSheet> {
                   tipLabel: (ElevationReading r) => <String>[
                     AppFormatters.formatDistance(r.distance, units),
                     AppFormatters.formatAltitude(r.elevation, units),
-                    if (r.grade != null) AppFormatters.formatGrade(r.grade!),
+                    if (bars != null)
+                      ?trackSurfaceTip(samples, bars, r.distance)
+                    else if (r.grade != null)
+                      AppFormatters.formatGrade(r.grade!),
                   ].join(' · '),
                 ),
           loading: () => PdlElevationProfile.loading(
