@@ -76,18 +76,20 @@ export type MapHeightVariant = 'compact' | 'standard' | 'full' | 'fullscreen'
 /**
  * Single source of truth for map heights.
  *
- * Every value is `clamp(min, N·dvh, max)`:
- * - `dvh` (dynamic viewport height) scales the map to the *actual* screen and follows the
- *   mobile address-bar collapse, so a map is never taller than the device — the old fixed
- *   `700px` was taller than a phone viewport and forced a full-screen scroll just to pan.
+ * Every value is `clamp(min, N·svh, max)`:
+ * - `svh` (small viewport height) scales the map to the *actual* screen, address bar shown,
+ *   so a map is never taller than the device — the old fixed `700px` was taller than a phone
+ *   viewport and forced a full-screen scroll just to pan.
+ * - `svh`, not `dvh`: `dvh` follows the address bar, so on iOS Safari the map shrank every time
+ *   scrolling back up expanded the bar, shifting the page under the finger.
  * - the `min`/`max` bounds keep the map usable on very short screens and stop it from
  *   ballooning on ultra-tall/desktop windows.
  */
 const MAP_HEIGHT_CSS: Record<MapHeightVariant, string> = {
-  compact: 'clamp(200px, 34dvh, 360px)',
-  standard: 'clamp(260px, 44dvh, 460px)',
-  full: 'clamp(300px, 52dvh, 560px)',
-  fullscreen: 'clamp(400px, 72dvh, 820px)',
+  compact: 'clamp(200px, 34svh, 360px)',
+  standard: 'clamp(260px, 44svh, 460px)',
+  full: 'clamp(300px, 52svh, 560px)',
+  fullscreen: 'clamp(400px, 72svh, 820px)',
 }
 
 /**
