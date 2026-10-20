@@ -77,7 +77,12 @@ export function NewRoutesList({ routes }: { routes: RouteDto[] }) {
     <Stack gap="sm">
       {routes.map((route) => (
         <Group key={route.id} gap="sm" wrap="nowrap">
-          <RouteThumbnail fallbackUrl={route.thumbnailUrl} size="xs" />
+          <RouteThumbnail
+            thumbnailLightUrl={route.media.assets.thumbnailLight?.imageUrl}
+            thumbnailDarkUrl={route.media.assets.thumbnailDark?.imageUrl}
+            fallbackUrl={route.thumbnailUrl}
+            size="xs"
+          />
           <Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
             <Anchor
               component={PrefetchLink}
