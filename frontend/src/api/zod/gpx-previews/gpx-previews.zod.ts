@@ -124,7 +124,7 @@ export const CreatePreviewResponse = zod
               .enum(['PENDING', 'READY', 'UNAVAILABLE'])
               .optional()
               .describe(
-                'Where the surface of the track stands. Absent: never computed (a track saved before the feature, or the feature off), or not included (bulk endpoint)'
+                'Where the surface of the track stands. Absent: never computed (a track saved before the feature, or the feature off), or not included (bulk endpoint with geometry=false, which carries no track)'
               ),
             surfaces: zod
               .array(
@@ -416,7 +416,7 @@ export const CreatePreviewFromPointsResponse = zod
               .enum(['PENDING', 'READY', 'UNAVAILABLE'])
               .optional()
               .describe(
-                'Where the surface of the track stands. Absent: never computed (a track saved before the feature, or the feature off), or not included (bulk endpoint)'
+                'Where the surface of the track stands. Absent: never computed (a track saved before the feature, or the feature off), or not included (bulk endpoint with geometry=false, which carries no track)'
               ),
             surfaces: zod
               .array(
@@ -551,7 +551,7 @@ export const MergePreviewsResponse = zod
               .enum(['PENDING', 'READY', 'UNAVAILABLE'])
               .optional()
               .describe(
-                'Where the surface of the track stands. Absent: never computed (a track saved before the feature, or the feature off), or not included (bulk endpoint)'
+                'Where the surface of the track stands. Absent: never computed (a track saved before the feature, or the feature off), or not included (bulk endpoint with geometry=false, which carries no track)'
               ),
             surfaces: zod
               .array(
@@ -849,7 +849,7 @@ export const UpdatePreviewResponse = zod
               .enum(['PENDING', 'READY', 'UNAVAILABLE'])
               .optional()
               .describe(
-                'Where the surface of the track stands. Absent: never computed (a track saved before the feature, or the feature off), or not included (bulk endpoint)'
+                'Where the surface of the track stands. Absent: never computed (a track saved before the feature, or the feature off), or not included (bulk endpoint with geometry=false, which carries no track)'
               ),
             surfaces: zod
               .array(
@@ -984,7 +984,7 @@ export const GetPreviewResponse = zod
               .enum(['PENDING', 'READY', 'UNAVAILABLE'])
               .optional()
               .describe(
-                'Where the surface of the track stands. Absent: never computed (a track saved before the feature, or the feature off), or not included (bulk endpoint)'
+                'Where the surface of the track stands. Absent: never computed (a track saved before the feature, or the feature off), or not included (bulk endpoint with geometry=false, which carries no track)'
               ),
             surfaces: zod
               .array(

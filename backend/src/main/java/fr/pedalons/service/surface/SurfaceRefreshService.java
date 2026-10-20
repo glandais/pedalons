@@ -25,10 +25,13 @@ import jakarta.persistence.LockModeType;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
@@ -177,6 +180,28 @@ public class SurfaceRefreshService {
     Map<Long, TrackSurfaceDocument> documents = gpxTrackRepository.findSurfaces(routeId);
     boolean pending = isEnabled() && refreshRepository.isPendingForRoute(routeId, MAX_ATTEMPTS);
     return new RouteSurfaces(documents, pending);
+  }
+
+  /**
+   * The surfaces of a batch of routes, for the bulk: the same two queries whatever the number of
+   * routes (the page rule). Every requested id has an entry; no pending query when the feature is
+   * off.
+   */
+  public Map<Long, RouteSurfaces> readRoutes(Collection<Long> routeIds) {
+    if (routeIds.isEmpty()) {
+      return Map.of();
+    }
+    Map<Long, Map<Long, TrackSurfaceDocument>> documents =
+        gpxTrackRepository.findSurfacesByRouteIds(routeIds);
+    Set<Long> pending =
+        isEnabled()
+            ? refreshRepository.findPendingRouteIds(routeIds, MAX_ATTEMPTS)
+            : Collections.emptySet();
+    Map<Long, RouteSurfaces> out = new HashMap<>();
+    for (Long id : routeIds) {
+      out.put(id, new RouteSurfaces(documents.getOrDefault(id, Map.of()), pending.contains(id)));
+    }
+    return out;
   }
 
   /**

@@ -188,22 +188,45 @@ class RouteSurfaceResourceTest extends AbstractResourceTest {
         .body("tracks[0].surfaces[0].surface", equalTo("DIRT"));
   }
 
+  private ValidatableResponse bulk(RouteDto route, boolean geometry) {
+    return given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .queryParam("slug", route.slug())
+        .queryParam("geometry", geometry)
+        .when()
+        .get("/api/teams/" + team1Slug + "/routes/bulk")
+        .then()
+        .statusCode(200);
+  }
+
   @Test
-  void theBulkEndpoint_carriesNoSurface() {
+  void theBulkEndpoint_carriesTheSurface_whenTracksAreDrawn() {
     RouteDto route = createRoute();
     double length = length(route);
     store(route, ok(length, List.of(new SurfaceRange(0, length, "paved"))));
 
-    given()
-        .auth()
-        .oauth2(getAccessToken(USER1))
-        .queryParam("slug", route.slug())
-        .queryParam("geometry", true)
-        .when()
-        .get("/api/teams/" + team1Slug + "/routes/bulk")
-        .then()
-        .statusCode(200)
+    bulk(route, true)
         .body("routes[0].tracks", hasSize(1))
+        .body("routes[0].tracks[0].surfaceState", equalTo("READY"))
+        .body("routes[0].tracks[0].surfaces", hasSize(1))
+        .body("routes[0].tracks[0].surfaces[0].surface", equalTo("PAVED"));
+  }
+
+  @Test
+  void theBulkEndpoint_withoutGeometry_carriesNoSurface() {
+    RouteDto route = createRoute();
+    double length = length(route);
+    store(route, ok(length, List.of(new SurfaceRange(0, length, "paved"))));
+
+    bulk(route, false).body("routes[0].tracks", hasSize(0));
+  }
+
+  @Test
+  void theBulkEndpoint_saysNothing_ofATrackNeverComputed() {
+    RouteDto route = createRoute();
+
+    bulk(route, true)
         .body("routes[0].tracks[0].surfaceState", nullValue())
         .body("routes[0].tracks[0].surfaces", nullValue());
   }

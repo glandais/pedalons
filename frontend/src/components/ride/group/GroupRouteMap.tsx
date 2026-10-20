@@ -1,10 +1,12 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Paper, Skeleton, Stack, Title } from '@mantine/core'
 import type { RouteDetailDto } from '@/api/dto'
 import { ErrorBoundary } from '@/components/common/ErrorBoundary'
 import { RideGroupRouteActions } from '@/components/ride/RideGroupRouteActions'
+import { RouteSurfaceSummary } from '@/components/route/RouteSurfaceSummary'
 import { paths } from '@/config/paths'
+import type { PlannerColorBy } from '@/lib/plannerSurface'
 
 // Lazy: the map pulls in map-vendor (~1 MB) and the elevation chart chart-vendor.
 const RouteMapView = lazy(() =>
@@ -28,13 +30,25 @@ export function GroupRouteMap({
   withActions?: boolean
 }) {
   const { t } = useTranslation()
+  const [colorBy, setColorBy] = useState<PlannerColorBy>('grade')
   return (
     <Stack gap="md">
       <ErrorBoundary variant="inline">
         {route ? (
-          <Suspense fallback={<Skeleton height={500} radius="md" />}>
-            <RouteMapView route={route} fullscreenPath={paths.routeMap(teamSlug, routeSlug)} />
-          </Suspense>
+          <>
+            <Suspense fallback={<Skeleton height={500} radius="md" />}>
+              <RouteMapView
+                route={route}
+                fullscreenPath={paths.routeMap(teamSlug, routeSlug)}
+                colorBy={colorBy}
+              />
+            </Suspense>
+            <RouteSurfaceSummary
+              tracks={route.tracks}
+              colorBy={colorBy}
+              onColorByChange={setColorBy}
+            />
+          </>
         ) : (
           <Skeleton height={500} radius="md" />
         )}

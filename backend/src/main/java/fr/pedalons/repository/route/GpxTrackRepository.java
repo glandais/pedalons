@@ -112,6 +112,32 @@ public class GpxTrackRepository implements PanacheRepository<GpxTrack> {
   }
 
   /**
+   * As {@link #findSurfaces(Long)}, for a batch of routes: one query whatever their number, keyed
+   * by route id then track id. Routes without any stored document are absent.
+   */
+  public Map<Long, Map<Long, TrackSurfaceDocument>> findSurfacesByRouteIds(
+      Collection<Long> routeIds) {
+    if (routeIds.isEmpty()) {
+      return Map.of();
+    }
+    Map<Long, Map<Long, TrackSurfaceDocument>> out = new HashMap<>();
+    getEntityManager()
+        .createQuery(
+            "select t.route.id, t.id, t.surfaces from GpxTrack t where t.route.id in :routeIds",
+            Object[].class)
+        .setParameter("routeIds", routeIds)
+        .getResultList()
+        .forEach(
+            row -> {
+              if (row[2] != null) {
+                out.computeIfAbsent((Long) row[0], k -> new HashMap<>())
+                    .put((Long) row[1], (TrackSurfaceDocument) row[2]);
+              }
+            });
+    return out;
+  }
+
+  /**
    * Stores the surface of a track, with no read of the row (its points are not needed). Native
    * with a cast of the serialized document, which leaves nothing to the binding of a JSON type in
    * an update.

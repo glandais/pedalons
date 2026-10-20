@@ -34,7 +34,8 @@ public record TrackDto(
         @Schema(
             description =
                 "Where the surface of the track stands. Absent: never computed (a track saved"
-                    + " before the feature, or the feature off), or not included (bulk endpoint)")
+                    + " before the feature, or the feature off), or not included (bulk endpoint"
+                    + " with geometry=false, which carries no track)")
         TrackSurfaceState surfaceState,
     @Nullable
         @Schema(

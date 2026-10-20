@@ -1883,7 +1883,7 @@ export const GetRoutesBoundsResponse = zod
   .describe('Bounding box of the routes matching a filter set')
 
 /**
- * The detail of every requested 'slug' that exists and the caller may read, in one round-trip — built for the screens that load several routes together (a ride's stages, a comparison view), which would otherwise cost one request per route. Each row is exactly what the single-route endpoint returns, geometry included. Unknown slugs and slugs the caller may not read are silently left out of the answer rather than failing the whole batch. Set 'geometry' to false for the screens that only need each route's name and figures. The response also carries the bounding box of the track geometry actually sent back (waypoints are excluded, so an imported meeting-point or car-park waypoint far off the track cannot widen it), so a map can frame the batch without a second request.
+ * The detail of every requested 'slug' that exists and the caller may read, in one round-trip — built for the screens that load several routes together (a ride's stages, a comparison view), which would otherwise cost one request per route. Each row is exactly what the single-route endpoint returns, geometry included (track surfaces too, read for the whole batch at once). Unknown slugs and slugs the caller may not read are silently left out of the answer rather than failing the whole batch. Set 'geometry' to false for the screens that only need each route's name and figures. The response also carries the bounding box of the track geometry actually sent back (waypoints are excluded, so an imported meeting-point or car-park waypoint far off the track cannot widen it), so a map can frame the batch without a second request.
  * @summary Get several routes' details at once
  */
 export const GetRoutesBulkParams = zod.object({
@@ -2296,7 +2296,7 @@ export const GetRoutesBulkResponse = zod
                       .enum(['PENDING', 'READY', 'UNAVAILABLE'])
                       .optional()
                       .describe(
-                        'Where the surface of the track stands. Absent: never computed (a track saved before the feature, or the feature off), or not included (bulk endpoint)'
+                        'Where the surface of the track stands. Absent: never computed (a track saved before the feature, or the feature off), or not included (bulk endpoint with geometry=false, which carries no track)'
                       ),
                     surfaces: zod
                       .array(
@@ -3686,7 +3686,7 @@ export const GetRouteResponse = zod
               .enum(['PENDING', 'READY', 'UNAVAILABLE'])
               .optional()
               .describe(
-                'Where the surface of the track stands. Absent: never computed (a track saved before the feature, or the feature off), or not included (bulk endpoint)'
+                'Where the surface of the track stands. Absent: never computed (a track saved before the feature, or the feature off), or not included (bulk endpoint with geometry=false, which carries no track)'
               ),
             surfaces: zod
               .array(
@@ -4300,7 +4300,7 @@ export const ChangeRouteSlugResponse = zod
               .enum(['PENDING', 'READY', 'UNAVAILABLE'])
               .optional()
               .describe(
-                'Where the surface of the track stands. Absent: never computed (a track saved before the feature, or the feature off), or not included (bulk endpoint)'
+                'Where the surface of the track stands. Absent: never computed (a track saved before the feature, or the feature off), or not included (bulk endpoint with geometry=false, which carries no track)'
               ),
             surfaces: zod
               .array(
@@ -4757,7 +4757,7 @@ export const UndeleteRouteResponse = zod
               .enum(['PENDING', 'READY', 'UNAVAILABLE'])
               .optional()
               .describe(
-                'Where the surface of the track stands. Absent: never computed (a track saved before the feature, or the feature off), or not included (bulk endpoint)'
+                'Where the surface of the track stands. Absent: never computed (a track saved before the feature, or the feature off), or not included (bulk endpoint with geometry=false, which carries no track)'
               ),
             surfaces: zod
               .array(

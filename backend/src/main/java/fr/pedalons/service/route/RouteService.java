@@ -205,13 +205,23 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
     CommentCounts commentCounts = commentCountLookup.forEntities(routes);
     ContentTags tags = tagLookup.forContents(routes.stream().map(Route::getId).toList());
 
+    // Surfaces only matter when tracks are drawn; read per page, two queries for the batch.
+    Map<Long, RouteSurfaces> surfaces =
+        geometry
+            ? surfaceRefreshService.readRoutes(routes.stream().map(Route::getId).toList())
+            : Map.of();
+
     Map<String, RouteDetailDto> bySlug = new LinkedHashMap<>();
     for (Route route : routes) {
-      // No surface in a list: nothing more to read per row
       bySlug.put(
           route.getSlug(),
           RouteDetailDto.from(
-              route, assetService, commentCounts, tags, geometry, RouteSurfaces.NONE));
+              route,
+              assetService,
+              commentCounts,
+              tags,
+              geometry,
+              surfaces.getOrDefault(route.getId(), RouteSurfaces.NONE)));
     }
 
     List<RouteDetailDto> ordered =

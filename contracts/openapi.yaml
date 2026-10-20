@@ -7161,7 +7161,7 @@ components:
         surfaceState:
           description: "Where the surface of the track stands. Absent: never computed\
             \ (a track saved before the feature, or the feature off), or not included\
-            \ (bulk endpoint)"
+            \ (bulk endpoint with geometry=false, which carries no track)"
           type: string
           $ref: "#/components/schemas/TrackSurfaceState"
         surfaces:
@@ -17236,13 +17236,14 @@ paths:
         \ may read, in one round-trip — built for the screens that load several routes\
         \ together (a ride's stages, a comparison view), which would otherwise cost\
         \ one request per route. Each row is exactly what the single-route endpoint\
-        \ returns, geometry included. Unknown slugs and slugs the caller may not read\
-        \ are silently left out of the answer rather than failing the whole batch.\
-        \ Set 'geometry' to false for the screens that only need each route's name\
-        \ and figures. The response also carries the bounding box of the track geometry\
-        \ actually sent back (waypoints are excluded, so an imported meeting-point\
-        \ or car-park waypoint far off the track cannot widen it), so a map can frame\
-        \ the batch without a second request."
+        \ returns, geometry included (track surfaces too, read for the whole batch\
+        \ at once). Unknown slugs and slugs the caller may not read are silently left\
+        \ out of the answer rather than failing the whole batch. Set 'geometry' to\
+        \ false for the screens that only need each route's name and figures. The\
+        \ response also carries the bounding box of the track geometry actually sent\
+        \ back (waypoints are excluded, so an imported meeting-point or car-park waypoint\
+        \ far off the track cannot widen it), so a map can frame the batch without\
+        \ a second request."
       operationId: getRoutesBulk
       tags:
       - Routes
@@ -20180,7 +20181,7 @@ paths:
                 $ref: "#/components/schemas/VersionDto"
 info:
   title: Pedalons API
-  version: 11.14.0
+  version: 11.15.0
   description: API for Pedalons Cycling Team Management Platform
 servers:
 - url: http://localhost:8080

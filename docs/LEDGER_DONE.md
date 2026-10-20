@@ -790,6 +790,18 @@ couvert » ; les tests ne tournent qu'en local (`MOB-37`).
   `notifyRideChanged` invalide aussi les listes et détails de modèles, parce qu'une sortie créée
   depuis un modèle en avance le `nextNumber`.
 
+### `MOB-83` Revêtement sur le profil du groupe d'une sortie (20 octobre 2026, contrat `11.15.0`)
+
+- `MOB-83` **Le profil du groupe d'une sortie montre son revêtement** — `RideElevationSection`
+  (fiche de la sortie et onglet du groupe) reprend la bascule Pente / Revêtement de `MOB-81` et
+  `MOB-82`, sur le revêtement que le lot `/routes/bulk` porte depuis `API-133` :
+  `RouteSurfaceSection` sous le profil, barres colorées par `rideRouteSurfaceBarsProvider`
+  (`ride_group_selection_provider.dart`, mémorisé), classe sous le réticule. La bascule retombe sur la
+  pente quand le groupe choisi n'a pas de revêtement. Test : `ride_elevation_section_test.dart`
+  (prêt, en cours, sans revêtement). **Hors périmètre** : la carte de la sortie, qui dessine tous les
+  groupes, garde ses couleurs ; le profil global d'un voyage reste en pente seule (décidé avec le
+  propriétaire le 20 octobre 2026) ; pas de rechargement tant qu'un revêtement se calcule.
+
 ### `MOB-82` Revêtement sur la fiche embarquée d'une étape (20 octobre 2026, contrat d'API inchangé)
 
 - `MOB-82` **La fiche parcours d'une étape de voyage montre son revêtement** — l'écran 25
@@ -800,9 +812,8 @@ couvert » ; les tests ne tournent qu'en local (`MOB-37`).
   (`trackSurfaceTip`) passent de `route_detail_page.dart` à `route_surface_section.dart`, pour que
   les deux fiches ne divergent pas. Test : `embedded_route_sheet_test.dart` (prêt, en cours, sans
   revêtement) ; `flutter analyze` sans remarque. **Hors périmètre, décidé avec le propriétaire le
-  20 octobre 2026** : les profils servis par `/routes/bulk` (groupe d'une sortie, web et mobile ;
-  profil global d'un voyage) restent en pente seule, le bulk ne portant toujours pas de revêtement
-  (`WEB-100` C1b). La fiche embarquée ne relance pas le calcul en cours (pas de
+  20 octobre 2026** : le profil global d'un voyage reste en pente seule ; le groupe d'une sortie a
+  sa bascule depuis (`MOB-83`). La fiche embarquée ne relance pas le calcul en cours (pas de
   `ElevationRefreshPoller`, comme pour l'altitude provisoire).
 
 ### `MOB-81` Revêtement des parcours dans l'app (19 octobre 2026, contrat d'API inchangé)
@@ -2363,6 +2374,15 @@ Plan [`2026-10-06-team-agenda.md`](plans/archive/2026-10-06-team-agenda.md) §4,
   répond rien (« Stadia Maps: routing and geocoding » dans
   [`OPERATIONS.md`](OPERATIONS.md#stadia-maps-routing-and-geocoding)).
 
+### `WEB-107` Revêtement sur la carte du groupe d'une sortie (20 octobre 2026, contrat `11.15.0`)
+
+- `WEB-107` **La carte du groupe d'une sortie a la bascule Pente / Revêtement** — `GroupRouteMap`
+  (fiche d'une sortie à un groupe, page d'un groupe) tient `colorBy`, le passe à `RouteMapView` et
+  rend `RouteSurfaceSummary` sous la carte, comme `RouteDetailView`, sur le revêtement que
+  `/routes/bulk` porte depuis `API-133`. Tests : `GroupRouteMap.test.tsx` ; la route factice de
+  `RideDetailPage.test.tsx` a maintenant ses `tracks`. Pas de rechargement tant qu'un revêtement se
+  calcule.
+
 ### `WEB-106` Pas d'enregistrement pendant un calcul du planificateur (20 octobre 2026)
 
 - `WEB-106` **« Enregistrer » attend la fin du calcul en cours dans le planificateur** (2026-10-20,
@@ -2498,8 +2518,8 @@ Plan [`2026-10-06-team-agenda.md`](plans/archive/2026-10-06-team-agenda.md) §4,
   revêtu `unmatched`) ; `map_snap` et non `edge_walk` (code 443 sur un tracé simplifié) ; coupure à
   mi-chemin quand la distance recalée dépasse 1,2 × + 30 m (détours aux demi-tours) ; plages remises
   à l'échelle à la lecture, jamais réécrites (le rattrapage HD de la version précédente les laisse
-  justes) ; colonnes `@LazyGroup`, rien dans les listes, le bulk ni `PreviewTrack` (pas
-  d'`ignoreUnknown`) ; documents en `@JsonIgnoreProperties(ignoreUnknown = true)` ; le jeton de
+  justes) ; colonnes `@LazyGroup`, rien dans les listes ni `PreviewTrack` (pas
+  d'`ignoreUnknown`) ; le bulk les porte depuis, avec `geometry=true` et lues par page (`API-133`) ; documents en `@JsonIgnoreProperties(ignoreUnknown = true)` ; le jeton de
   révision (`files_revision` d'un aperçu, `fileId` d'un parcours) est reporté par le rattrapage HD ;
   codes stockés bruts, classes faites à la lecture ; aucun test n'appelle Stadia (interrupteur coupé
   en `%test` et dans `.env.e2e`) ; migration additive (déploiement roulant). Les exports GPX / FIT
@@ -3973,6 +3993,21 @@ plus la colonne. Le départ d'un groupe n'existe plus que dans `ride_groups.star
   Les clients générés ne changent que par un commentaire ; aucun client n'a de calcul à retirer.
   **À ne pas défaire** : le jour ou la nuit d'un instant se juge à cet instant, jamais à l'heure
   du modèle qui le renseigne ; les clients n'en recalculent rien.
+
+### `API-133` Le revêtement dans `/routes/bulk`, lu par page (20 octobre 2026, contrat `11.15.0`)
+
+- `API-133` **`GET /api/teams/{teamSlug}/routes/bulk` porte `TrackDto.surfaceState` et
+  `TrackDto.surfaces`** quand la géométrie est demandée — décision du propriétaire, qui revient sur
+  le « rien dans le bulk » de `WEB-100` C1b. Lecture par page : `SurfaceRefreshService.readRoutes`
+  fait deux requêtes pour tout le lot (`GpxTrackRepository.findSurfacesByRouteIds`, projection qui
+  ne charge pas les points, et `SurfaceRefreshRepository.findPendingRouteIds`), aucune avec
+  `geometry=false` ni sur un lot vide. Schéma inchangé, champs facultatifs remplis sur un endpoint de
+  plus (mineure). Consommé par `WEB-107` et `MOB-83`. Tests :
+  `RouteQueryCountTest.bulkWithSurfaces_costDoesNotScaleWithRouteCount`,
+  `RouteSurfaceResourceTest` (`theBulkEndpoint_carriesTheSurface_whenTracksAreDrawn`,
+  `…_withoutGeometry_carriesNoSurface`, `…_saysNothing_ofATrackNeverComputed`). **À ne pas
+  défaire** : aucune lecture par parcours ; rien n'est lu sans géométrie ; les listes paginées de
+  parcours restent sans revêtement.
 
 ### `API-132` Dates journalières d'Open-Meteo lues au décalage de la réponse (contrat inchangé)
 

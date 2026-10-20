@@ -86,7 +86,7 @@ public record RouteDetailDto(
    * @param tags the tags of the route — of the whole batch on the bulk path — from {@code
    *     TagLookup}
    * @param surfaces what is known of the surface of the tracks ({@link RouteSurfaces#NONE} on the
-   *     bulk path: nothing more in a list)
+   *     bulk path without geometry: no track is drawn)
    */
   public static RouteDetailDto from(
       Route route,

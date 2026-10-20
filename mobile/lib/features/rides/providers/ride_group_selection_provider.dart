@@ -9,6 +9,7 @@ import '../../../api/generated/export.dart';
 import '../../../core/pdl/elevation/elevation_samples.dart';
 import '../../routes/data/route_repository.dart';
 import '../../routes/domain/route_elevation_builder.dart';
+import '../../routes/domain/track_surfaces.dart';
 import 'ride_detail_provider.dart';
 
 /// Le groupe pointé, **un seul pour tout l'écran**.
@@ -257,6 +258,29 @@ final rideRouteElevationProvider =
       return ref
           .watch(rideRouteGeometryProvider(route))
           .whenData((RouteDetailDto detail) => detail.elevationSamples());
+    }, isAutoDispose: true);
+
+/// La classe de revêtement de chaque barre du profil d'un parcours de la sortie
+/// (`MOB-81`), **mémorisée** avec le profil : le painter compare ses couleurs
+/// par identité, jamais de calcul dans un `build`.
+///
+/// `null` sans revêtement prêt ou sans profil.
+final rideRouteSurfaceBarsProvider =
+    Provider.family<AsyncValue<List<TrackSurface?>?>, RouteRef>((
+      Ref ref,
+      RouteRef route,
+    ) {
+      final AsyncValue<RouteDetailDto> detail = ref.watch(
+        rideRouteGeometryProvider(route),
+      );
+      final AsyncValue<ElevationSamples?> samples = ref.watch(
+        rideRouteElevationProvider(route),
+      );
+      return detail.whenData((RouteDetailDto d) {
+        final ElevationSamples? s = samples.value;
+        if (s == null || !hasTrackSurfaces(d.tracks)) return null;
+        return barSurfaces(s, d.tracks);
+      });
     }, isAutoDispose: true);
 
 /// Un parcours d'une sortie donnée — la clé de cache des géométries.

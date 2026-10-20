@@ -11,7 +11,7 @@ import java.util.Map;
  */
 public record RouteSurfaces(Map<Long, TrackSurfaceDocument> byTrackId, boolean pending) {
 
-  /** Not read: the bulk endpoint, a list in the sense of the page rule. */
+  /** Not read: the bulk endpoint without geometry (no track drawn), or a route without any. */
   public static final RouteSurfaces NONE = new RouteSurfaces(Map.of(), false);
 
   public TrackSurfaceReadout of(Long trackId) {

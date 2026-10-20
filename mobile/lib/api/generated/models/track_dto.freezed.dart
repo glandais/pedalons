@@ -17,7 +17,7 @@ T _$identity<T>(T value) => value;
 mixin _$TrackDto {
 
  GeoJsonLineString get line;/// List of climbs on the route
- List<ClimbDto> get climbs;/// Where the surface of the track stands. Absent: never computed (a track saved before the feature, or the feature off), or not included (bulk endpoint)
+ List<ClimbDto> get climbs;/// Where the surface of the track stands. Absent: never computed (a track saved before the feature, or the feature off), or not included (bulk endpoint with geometry=false, which carries no track)
  String? get surfaceState;/// Surface along the track when surfaceState is READY: contiguous spans from 0 to the track's length, adjacent spans of the same class merged. Derived from OpenStreetMap (© OpenStreetMap contributors, ODbL) by Stadia Maps
  List<SurfaceSpanDto>? get surfaces;
 /// Create a copy of TrackDto
@@ -243,7 +243,7 @@ class _TrackDto implements TrackDto {
   return EqualUnmodifiableListView(_climbs);
 }
 
-/// Where the surface of the track stands. Absent: never computed (a track saved before the feature, or the feature off), or not included (bulk endpoint)
+/// Where the surface of the track stands. Absent: never computed (a track saved before the feature, or the feature off), or not included (bulk endpoint with geometry=false, which carries no track)
 @override final  String? surfaceState;
 /// Surface along the track when surfaceState is READY: contiguous spans from 0 to the track's length, adjacent spans of the same class merged. Derived from OpenStreetMap (© OpenStreetMap contributors, ODbL) by Stadia Maps
  final  List<SurfaceSpanDto>? _surfaces;

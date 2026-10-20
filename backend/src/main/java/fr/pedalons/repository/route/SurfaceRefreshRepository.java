@@ -7,8 +7,11 @@ import jakarta.enterprise.context.ApplicationScoped;
 import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -251,6 +254,25 @@ public class SurfaceRefreshRepository implements PanacheRepository<SurfaceRefres
   /** Whether a computation is still to come for a route: queued and not given up. */
   public boolean isPendingForRoute(Long routeId, int maxAttempts) {
     return count("route.id = ?1 and attempts < ?2", routeId, maxAttempts) > 0;
+  }
+
+  /**
+   * As {@link #isPendingForRoute}, for a batch: the ids, among {@code routeIds}, with a request
+   * still to come. One query whatever their number.
+   */
+  public Set<Long> findPendingRouteIds(Collection<Long> routeIds, int maxAttempts) {
+    if (routeIds.isEmpty()) {
+      return Set.of();
+    }
+    return new HashSet<>(
+        getEntityManager()
+            .createQuery(
+                "select r.route.id from SurfaceRefresh r"
+                    + " where r.route.id in :routeIds and r.attempts < :maxAttempts",
+                Long.class)
+            .setParameter("routeIds", routeIds)
+            .setParameter("maxAttempts", maxAttempts)
+            .getResultList());
   }
 
   /** As {@link #isPendingForRoute}, for a preview. */
