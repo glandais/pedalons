@@ -12,7 +12,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
-        <quarkus.platform.version>3.40.1</quarkus.platform.version>
+        <quarkus.platform.version>4.0.0.Beta1</quarkus.platform.version>
+        <quarkus-amazon-services.version>4.0.0.Beta3</quarkus-amazon-services.version>
         <compiler-plugin.version>3.16.0</compiler-plugin.version>
         <surefire-plugin.version>3.6.0</surefire-plugin.version>
         <!-- Keep at 1: with forkCount>1 Surefire dispatches classes one at a time and
@@ -27,7 +28,7 @@
         <jspecify.version>1.0.0</jspecify.version>
         <magika.version>0.6.1</magika.version>
         <dependencyversion-maven-plugin.version>1.0.0</dependencyversion-maven-plugin.version>
-        <geolatte-geojson.version>1.11</geolatte-geojson.version>
+        <geolatte-geojson.version>2.0.1</geolatte-geojson.version>
         <archunit-junit5.version>1.5.1</archunit-junit5.version>
         <webauthn4j-core.version>0.31.11.RELEASE</webauthn4j-core.version>
         <timeshape.version>2026b.29</timeshape.version>
@@ -63,9 +64,9 @@
                 <scope>import</scope>
             </dependency>
             <dependency>
-                <groupId>io.quarkus.platform</groupId>
+                <groupId>io.quarkiverse.amazonservices</groupId>
                 <artifactId>quarkus-amazon-services-bom</artifactId>
-                <version>${quarkus.platform.version}</version>
+                <version>${quarkus-amazon-services.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -97,11 +98,26 @@
         </dependency>
         <dependency>
             <groupId>org.geolatte</groupId>
-            <artifactId>geolatte-geojson</artifactId>
+            <artifactId>geolatte-geojson-jackson3</artifactId>
             <version>${geolatte-geojson.version}</version>
         </dependency>
 
         <!-- Database -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+            <version>2.22.2</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jdk8</artifactId>
+            <version>2.22.2</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.module</groupId>
+            <artifactId>jackson-module-parameter-names</artifactId>
+            <version>2.22.2</version>
+        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-orm-panache</artifactId>
