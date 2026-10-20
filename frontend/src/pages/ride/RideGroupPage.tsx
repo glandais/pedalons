@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { IconArrowLeft, IconUsersGroup } from '@tabler/icons-react'
@@ -82,6 +82,9 @@ export function RideGroupPage() {
     leg,
   } = useRideGroupData(teamSlug, rideSlug, groupId)
   const membership = useRideGroupMembership(teamSlug!, rideSlug!)
+  // The Select's input keeps the focus after a pick, and iOS Safari then offers to AutoFill it
+  // (« Remplir »): drop the focus once the choice is made.
+  const groupSelectRef = useRef<HTMLInputElement>(null)
 
   // A ride with at most one group: its page is the group's (WEB-79), the URL is replaced.
   // Not through `useCanonicalPath`, which checks once: a ride read with two groups then refetched
@@ -179,6 +182,7 @@ export function RideGroupPage() {
       : t('rides.group.optionNoMax', { name: g.name, current: g.countParticipants }),
   }))
   const chooseGroup = (id: string | null) => {
+    groupSelectRef.current?.blur()
     if (id && id !== group.id) navigate(paths.rideGroup(team.slug, ride.slug, id))
   }
 
@@ -200,6 +204,7 @@ export function RideGroupPage() {
               />
             ) : (
               <Select
+                ref={groupSelectRef}
                 data={groupOptions}
                 value={group.id}
                 onChange={chooseGroup}
@@ -228,12 +233,12 @@ export function RideGroupPage() {
                     </Badge>
                   )
                 )}
+                {/* Beside the title, not with the join actions: signed out there are none, and
+                    the button sat alone on its own line. */}
+                <ShareButton title={t('rides.group.title', { name: group.name })} />
               </Group>
             </Stack>
-            <Group gap="xs" wrap="nowrap">
-              <GroupJoinActions action={action} group={group} membership={membership} />
-              <ShareButton title={t('rides.group.title', { name: group.name })} />
-            </Group>
+            <GroupJoinActions action={action} group={group} membership={membership} />
           </Group>
 
           <GroupPlaces group={group} />
