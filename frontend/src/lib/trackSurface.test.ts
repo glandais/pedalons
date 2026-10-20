@@ -79,6 +79,13 @@ describe('trackSurfaceColors', () => {
     }
   )
 
+  it('keeps unknown visible on a light basemap', () => {
+    const light = trackSurfaceColors(theme, 'light')
+    expect(light.PAVED).toBe(theme.colors.gray[9])
+    expect(light.OFF_NETWORK).toBe(theme.colors.gray[7])
+    expect(light.UNKNOWN).toBe(theme.colors.gray[6])
+  })
+
   it('lightens paved and dims unknown on the dark basemap', () => {
     const dark = trackSurfaceColors(theme, 'dark')
     expect(dark.PAVED).toBe(theme.colors.gray[2])
@@ -92,10 +99,10 @@ describe('the route being drawn (C1a)', () => {
 
   it('keeps its colours, now read from the saved route', () => {
     expect(surfaceColors(theme, 'light')).toEqual({
-      paved: theme.colors.gray[7],
+      paved: theme.colors.gray[9],
       unpaved: theme.colors.orange[6],
-      unknown: theme.colors.gray[4],
-      offNetwork: theme.colors.gray[5],
+      unknown: theme.colors.gray[6],
+      offNetwork: theme.colors.gray[7],
     })
     expect(surfaceColors(theme, 'dark')).toEqual({
       paved: theme.colors.gray[2],

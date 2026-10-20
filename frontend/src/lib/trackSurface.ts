@@ -27,19 +27,20 @@ export const TRACK_SURFACES: TrackSurface[] = [
 
 /**
  * The shade of each class within its family, per colour scheme. Three classes share the grey: in
- * light, paved is the dark one, unknown the palest and off the network in between; the dark theme
+ * light, paved is the dark one, unknown the palest and off the network in between, unknown no paler
+ * than gray-6 (a lighter grey vanishes on the light basemap, ~#f2efe9); the dark theme
  * loads the basemap's dark variant, where a dark grey vanishes, so there paved is the light one and
  * unknown the dimmer.
  */
 export const TRACK_SURFACE_SHADES: Record<'light' | 'dark', Record<TrackSurface, number>> = {
   light: {
-    PAVED: 7,
+    PAVED: 9,
     PAVED_ROUGH: 6,
     GRAVEL: 6,
     DIRT: 7,
     PATH: 6,
-    UNKNOWN: 4,
-    OFF_NETWORK: 5,
+    UNKNOWN: 6,
+    OFF_NETWORK: 7,
   },
   dark: {
     PAVED: 2,
