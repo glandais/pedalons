@@ -1,6 +1,5 @@
 package fr.pedalons.domain.feedback;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import fr.pedalons.domain.platform.Domain;
 import fr.pedalons.domain.user.User;
 import fr.pedalons.enums.ClientPlatform;
@@ -18,6 +17,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.Mutability;
 import org.hibernate.type.SqlTypes;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.databind.JsonNode;
 
 /**
  * A bug report or a suggestion a member wrote from the app or the site, with the technical context

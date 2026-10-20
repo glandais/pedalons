@@ -1,6 +1,5 @@
 package fr.pedalons.domain.feedback;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import fr.pedalons.domain.platform.Domain;
 import fr.pedalons.domain.user.User;
 import fr.pedalons.infrastructure.hibernate.JsonNodeMutabilityPlan;
@@ -15,6 +14,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.Mutability;
 import org.hibernate.type.SqlTypes;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.databind.JsonNode;
 
 /**
  * One automatic report of an unhandled error by a member's client. Stored redacted, purged after

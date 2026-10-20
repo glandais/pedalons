@@ -1,6 +1,5 @@
 package fr.pedalons.util;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.pedalons.domain.notification.Notification;
 import fr.pedalons.domain.notification.NotificationDelivery;
 import fr.pedalons.domain.notification.NotificationEventEntry;
@@ -27,6 +26,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import tools.jackson.databind.ObjectMapper;
 
 /** Reads and seeds the notification tables for tests, each call in its own transaction. */
 @ApplicationScoped

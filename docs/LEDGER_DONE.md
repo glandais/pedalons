@@ -3975,7 +3975,7 @@ plus la colonne. Le départ d'un groupe n'existe plus que dans `ride_groups.star
   **À ne pas défaire** : une date journalière d'Open-Meteo se lit au décalage unique de la réponse,
   jamais dans le fuseau du lieu.
 
-### Préalables à Quarkus 4
+### Quarkus 4
 
 - `API-133` **Le backend ne dépend plus de hypersistence-utils** (2026-10-20, contrat inchangé,
   pas de migration) — préalable à Quarkus 4 : `hypersistence-utils-hibernate-71` n'a pas de module
@@ -4005,6 +4005,41 @@ plus la colonne. Le départ d'un groupe n'existe plus que dans `ride_groups.star
   TSID pour toutes les entités (nœud aléatoire par JVM, comme avant : `TSID_NODE` n'est fixé nulle
   part) ; `@Mutability(JsonNodeMutabilityPlan.class)` sur tout champ `JsonNode` mappé en JSON ;
   `quarkus.hibernate-orm.mapping.format.global=ignore` reste.
+
+- `API-134` **Le backend tourne sur Quarkus 4 (4.0.0.Beta1) et Jackson 3** (2026-10-20, contrat
+  inchangé — `pedalons.api.version` non bumpé, pas de migration) — plateforme 4.0.0.Beta1,
+  `quarkus-amazon-services` 4.0.0.Beta3 par le BOM `io.quarkiverse.amazonservices` (SDK AWS
+  2.55.10, code S3 inchangé), `geolatte-geojson-jackson3` 2.0.1. Tout le code, main et tests, est
+  passé de `com.fasterxml.jackson.core/databind/datatype/module` à `tools.jackson.*` ; les
+  annotations restent dans `com.fasterxml.jackson.annotation`. `JsonProcessingException` est devenu
+  `JacksonException` (non vérifiée) ; `JsonSerializer`/`JsonDeserializer`/`SerializerProvider` sont
+  devenus `ValueSerializer`/`ValueDeserializer`/`SerializationContext` ;
+  `asText`/`textValue`/`isTextual` sont devenus `asString`/`stringValue`/`isString`. Les modules
+  Jackson 2 `jsr310`/`jdk8`/`parameter-names` sont sortis du pom, car databind 3 les intègre. **Le
+  JSON REST est celui de Quarkus 3.40** : `quarkus.jackson.fail-on-null-for-primitives=false`,
+  `fail-on-trailing-tokens=false`, `default-view-inclusion=true`, `use-getters-as-setters=true`,
+  `allow-final-fields-as-mutators=true`, et
+  `quarkus.rest.jackson.optimization.enable-reflection-free-serializers=false` (activé par défaut
+  en 4, éteint en 3.40). `PedalonsJacksonConfig` remet les défauts Jackson 2 qui n'ont pas de
+  propriété : ordre de déclaration et non alphabétique, enums par `name()`, mois `java.time`
+  comptés à partir de zéro, `NON_NULL` sur la valeur **et** le contenu des `Map`, zéros de fin des
+  `BigDecimal` d'un arbre retirés, caractères hors BMP échappés en `\uXXXX` dans l'UTF-8.
+  `PedalonsJsonFactoryConfig` ramène la profondeur d'imbrication à 1000. `ValhallaErrors` lit
+  encore un corps suivi de contenu parasite. **Les colonnes JSONB sont identiques octet pour
+  octet** : le `JsonMapper.builder()` de `JsonbMapper` rétablit un à un les défauts Jackson 2 qui
+  avaient changé (dates et durées en nombres, propriété inconnue refusée, null accepté pour un
+  primitif, profondeur 1000…), et les versions 3.40 et 4 relisent chacune ce qu'écrit l'autre. Le
+  câblage `@JsonFormat @PersistenceUnitExtension` et S3 sur MinIO sont vérifiés sur Quarkus 4.
+  Tests : `JsonbMapperTest` (document de référence hypersistence, inchangé), `RestJsonParityTest`
+  (nouveau, `@QuarkusTest` sur le mapper injecté, valeurs attendues = sorties Jackson 2 / Quarkus
+  3.40), `JsonbMappingTest`, `EventDateTimeTest`, `TrackSurfaceDocumentTest`, la règle
+  `ArchitectureTest.no_jackson_2`, et la suite complète. **À ne pas défaire** : aucun import
+  Jackson 2 — il reste au classpath par flyway-core, magika et timeshape, donc le compilateur ne le
+  verrait pas. Ne retirer aucune des propriétés `quarkus.jackson.*`, ni
+  `enable-reflection-free-serializers=false`, ni un réglage de `PedalonsJacksonConfig` ou de
+  `JsonbMapper`, sans `RestJsonParityTest` et `JsonbMapperTest` verts. `NON_NULL` porte sur la
+  valeur et le contenu. `jackson3.version` reste au-dessus de ce que fige `quarkus-bom` tant que
+  webauthn4j est compilé contre 3.2.x.
 
 ### `API-120` Envoi automatique des parcours de mes sorties vers mes services GPS (16 octobre 2026, contrat `11.5.0`)
 

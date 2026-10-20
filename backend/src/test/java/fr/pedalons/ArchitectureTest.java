@@ -44,6 +44,23 @@ import org.jspecify.annotations.Nullable;
 class ArchitectureTest {
 
   @ArchTest
+  static final ArchRule no_jackson_2 =
+      noClasses()
+          .that()
+          .resideInAPackage("fr.pedalons..")
+          .should()
+          .dependOnClassesThat()
+          .resideInAnyPackage(
+              "com.fasterxml.jackson.core..",
+              "com.fasterxml.jackson.databind..",
+              "com.fasterxml.jackson.datatype..",
+              "com.fasterxml.jackson.module..")
+          .because(
+              "Quarkus 4 only produces a Jackson 3 JsonMapper; Jackson 2 is still on the classpath"
+                  + " through flyway/magika/timeshape, so the compiler would not catch it"
+                  + " (docs/LEDGER_*.md API-134)");
+
+  @ArchTest
   static final ArchRule packages_with_classes_should_be_null_marked =
       classes()
           .should(beInPackageAnnotatedWithNullMarked())

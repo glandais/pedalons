@@ -1,46 +1,80 @@
 package fr.pedalons.infrastructure.hibernate;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
-import java.io.IOException;
 import java.lang.reflect.Type;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import org.hibernate.HibernateException;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.StreamReadConstraints;
+import tools.jackson.core.StreamWriteConstraints;
+import tools.jackson.core.json.JsonFactory;
+import tools.jackson.core.json.JsonWriteFeature;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.MapperFeature;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.cfg.DateTimeFeature;
+import tools.jackson.databind.cfg.EnumFeature;
+import tools.jackson.databind.cfg.JsonNodeFeature;
+import tools.jackson.databind.deser.std.StdDeserializer;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.module.SimpleModule;
+import tools.jackson.databind.ser.std.StdSerializer;
 
 /**
- * The only {@link ObjectMapper} of the JSONB columns. It reproduces, byte for byte, the mapper that
- * hypersistence-utils used for {@code JsonBinaryType} (Jackson 2 defaults: dates as timestamps,
- * nulls written, unknown properties refused), because a rolling deploy makes the previous release
- * read what this one writes. Never the Quarkus/REST mapper ({@code PedalonsJacksonConfig} adds
- * NON_NULL and disables timestamps). Modules are registered explicitly so that a jar added later
- * cannot silently change what is stored. {@code JsonbMapperTest} is the gate for any change here,
- * including a move to Jackson 3.
+ * The only {@link JsonMapper} of the JSONB columns. It reproduces, byte for byte, the mapper that
+ * hypersistence-utils used for {@code JsonBinaryType}: Jackson 2 defaults (as hypersistence-utils
+ * wrote them), restored on Jackson 3 one feature at a time — dates as timestamps, nulls written,
+ * unknown properties refused, nesting up to 1000 — because a rolling deploy makes the previous
+ * release read what this one writes (docs/LEDGER_*.md API-134). Never the Quarkus/REST mapper
+ * ({@code PedalonsJacksonConfig} adds NON_NULL and disables timestamps). No module is discovered
+ * from the classpath, so that a jar added later cannot silently change what is stored. {@code
+ * JsonbMapperTest} is the gate for any change here.
  */
 public final class JsonbMapper {
 
   public static final JsonbMapper INSTANCE = new JsonbMapper();
 
-  private final ObjectMapper mapper =
-      new ObjectMapper()
-          .registerModule(new JavaTimeModule())
-          .registerModule(new Jdk8Module())
-          .registerModule(new ParameterNamesModule())
-          .registerModule(
-              new SimpleModule()
+  private final JsonMapper mapper =
+      JsonMapper.builder(
+              JsonFactory.builder()
+                  .streamReadConstraints(
+                      StreamReadConstraints.builder().maxNestingDepth(1000).build())
+                  .streamWriteConstraints(
+                      StreamWriteConstraints.builder().maxNestingDepth(1000).build())
+                  .build())
+          // Jackson 2 defaults that Jackson 3 changed, restored one by one: what is stored must not
+          // move
+          .enable(DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS)
+          .enable(DateTimeFeature.WRITE_DURATIONS_AS_TIMESTAMPS)
+          .disable(DateTimeFeature.ONE_BASED_MONTHS)
+          .disable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY)
+          .disable(MapperFeature.FIX_FIELD_NAME_UPPER_CASE_PREFIX)
+          .disable(MapperFeature.ALLOW_VOID_VALUED_PROPERTIES)
+          .enable(MapperFeature.USE_GETTERS_AS_SETTERS)
+          .enable(MapperFeature.ALLOW_FINAL_FIELDS_AS_MUTATORS)
+          .enable(MapperFeature.DEFAULT_VIEW_INCLUSION)
+          .disable(EnumFeature.WRITE_ENUMS_USING_TO_STRING)
+          .disable(EnumFeature.READ_ENUMS_USING_TO_STRING)
+          .enable(JsonNodeFeature.STRIP_TRAILING_BIGDECIMAL_ZEROES)
+          .enable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
+          // 3.x default is false: stored records keep @JsonIgnoreProperties(ignoreUnknown = true)
+          .enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+          .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+          .disable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
+          // only byte output; kept so that a later switch to bytes cannot move what is stored
+          .disable(JsonWriteFeature.COMBINE_UNICODE_SURROGATES_IN_UTF8)
+          .addModule(
+              new SimpleModule("jsonb-offset-date-time")
                   .addSerializer(OffsetDateTime.class, new OffsetDateTimeSerializer())
-                  .addDeserializer(OffsetDateTime.class, new OffsetDateTimeDeserializer()));
+                  .addDeserializer(OffsetDateTime.class, new OffsetDateTimeDeserializer()))
+          .build();
 
   private JsonbMapper() {}
 
@@ -50,7 +84,7 @@ public final class JsonbMapper {
     }
     try {
       return mapper.writeValueAsString(value);
-    } catch (JsonProcessingException e) {
+    } catch (JacksonException e) {
       throw new HibernateException(
           new IllegalArgumentException(
               "The given Json object value cannot be transformed to a String", e));
@@ -60,7 +94,7 @@ public final class JsonbMapper {
   public <T> T fromString(String string, Class<T> clazz) {
     try {
       return mapper.readValue(string, clazz);
-    } catch (JsonProcessingException e) {
+    } catch (JacksonException e) {
       throw new HibernateException(
           new IllegalArgumentException(
               "The given string value cannot be transformed to Json object", e));
@@ -71,7 +105,7 @@ public final class JsonbMapper {
   public <T> T fromString(String string, Type type) {
     try {
       return (T) mapper.readValue(string, mapper.getTypeFactory().constructType(type));
-    } catch (JsonProcessingException e) {
+    } catch (JacksonException e) {
       throw new HibernateException(
           new IllegalArgumentException(
               "The given string value: " + string + " cannot be transformed to Json object", e));
@@ -81,7 +115,7 @@ public final class JsonbMapper {
   public JsonNode toJsonNode(String value) {
     try {
       return mapper.readTree(value);
-    } catch (IOException e) {
+    } catch (JacksonException e) {
       throw new HibernateException(new IllegalArgumentException(e));
     }
   }
@@ -92,11 +126,7 @@ public final class JsonbMapper {
     }
 
     @Override
-    public void serialize(
-        OffsetDateTime value,
-        com.fasterxml.jackson.core.JsonGenerator gen,
-        com.fasterxml.jackson.databind.SerializerProvider provider)
-        throws IOException {
+    public void serialize(OffsetDateTime value, JsonGenerator gen, SerializationContext provider) {
       gen.writeString(DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(value));
     }
   }
@@ -107,10 +137,9 @@ public final class JsonbMapper {
     }
 
     @Override
-    public OffsetDateTime deserialize(JsonParser jsonParser, DeserializationContext ctxt)
-        throws IOException {
+    public OffsetDateTime deserialize(JsonParser jsonParser, DeserializationContext ctxt) {
       try {
-        return OffsetDateTime.parse(jsonParser.getText(), DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+        return OffsetDateTime.parse(jsonParser.getString(), DateTimeFormatter.ISO_OFFSET_DATE_TIME);
       } catch (Exception e) {
         return OffsetDateTime.ofInstant(
             new Date((long) jsonParser.getDoubleValue() * 1000).toInstant(), ZoneOffset.UTC);

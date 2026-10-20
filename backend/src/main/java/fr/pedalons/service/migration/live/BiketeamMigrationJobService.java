@@ -1,8 +1,5 @@
 package fr.pedalons.service.migration.live;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.pedalons.common.PersistenceErrors;
 import fr.pedalons.common.TokenUtils;
 import fr.pedalons.common.TsidUtils;
@@ -39,6 +36,9 @@ import java.util.Objects;
 import java.util.Optional;
 import org.jboss.logging.Logger;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * The job side of the biketeam live migration: biketeam's M2M trigger and status poll (§5), and the
@@ -477,7 +477,7 @@ public class BiketeamMigrationJobService {
   private <T> T fromJson(JsonNode node, Class<T> type) {
     try {
       return objectMapper.treeToValue(node, type);
-    } catch (JsonProcessingException e) {
+    } catch (JacksonException e) {
       throw new IllegalStateException("Unreadable job document", e);
     }
   }

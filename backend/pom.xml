@@ -34,8 +34,9 @@
         <timeshape.version>2026b.29</timeshape.version>
         <s3mock-testcontainers.version>5.2.3</s3mock-testcontainers.version>
         <google-java-format.version>1.36.1</google-java-format.version>
-        <!-- Security overrides of versions quarkus-bom pins too low; drop each one once a Quarkus
-             release aligns past it. jackson 3 (via webauthn4j): GHSA ranges [3.2.0,3.2.2).
+        <!-- Overrides of versions quarkus-bom pins too low; drop each one once a Quarkus release
+             aligns past it. jackson 3: quarkus-bom 4.0.0.Beta1 pins 3.1.4, below the 3.2.3 that
+             webauthn4j 0.31.11 is built against (3.2.0 and 3.2.1 carry GHSA advisories).
              log4j-api (via log4j2-jboss-logmanager): [2.26.0,2.26.1). -->
         <jackson3.version>3.2.3</jackson3.version>
         <log4j-api.version>2.26.1</log4j-api.version>
@@ -103,21 +104,6 @@
         </dependency>
 
         <!-- Database -->
-        <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-jsr310</artifactId>
-            <version>2.22.2</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-jdk8</artifactId>
-            <version>2.22.2</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.module</groupId>
-            <artifactId>jackson-module-parameter-names</artifactId>
-            <version>2.22.2</version>
-        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-orm-panache</artifactId>

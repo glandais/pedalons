@@ -1,7 +1,7 @@
 package fr.pedalons.infrastructure.hibernate;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import org.hibernate.type.descriptor.java.MutableMutabilityPlan;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Copies a {@link JsonNode} with {@code deepCopy()}. Hibernate's default copy is a JSON round trip,

@@ -1,6 +1,5 @@
 package fr.pedalons.domain.notification;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import fr.pedalons.enums.NotificationChange;
 import fr.pedalons.enums.NotificationEventStatus;
 import fr.pedalons.enums.NotificationSubjectType;
@@ -18,6 +17,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.Mutability;
 import org.hibernate.type.SqlTypes;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.databind.JsonNode;
 
 /**
  * One business event waiting to be — or having been — turned into notifications: the outbox.

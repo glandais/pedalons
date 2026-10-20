@@ -587,21 +587,15 @@ plafonnent à 12, `kTripTrackStageCap`), pas de réintroduire un paramètre de f
 
 ### Quarkus 4
 
-- [ ] `API-134` **Le backend compile sur Quarkus 4.0.0.Beta1 mais ne démarre pas : le code est
-  encore sur Jackson 2** — essai du 2026-10-20 sur `chore/quarkus-4`. Les dépendances tierces sont
-  levées : `quarkus-amazon-services` 4.0.0.Beta3 (BOM `io.quarkiverse.amazonservices`, le BOM
-  plateforme n'existe pas encore en 4.x ; SDK AWS 2.55.10, code S3 inchangé) et
-  `geolatte-geojson-jackson3` 2.0.1 (`org.geolatte.geom.json.jackson3.GeolatteGeomModule`, branché
-  dans `PedalonsJacksonConfig`, devenu `JsonMapperBuilderCustomizer`). Reste à faire, dans l'ordre :
-  migrer vers `tools.jackson.*` les 47 fichiers qui importent `com.fasterxml.jackson.core`/`databind`
-  — Quarkus 4 ne produit plus de bean `ObjectMapper` Jackson 2 et ArC échoue sur 22 points
-  d'injection (`RideService`, `TripService`, `FeedbackService`, `HammerheadClient`…) ; trancher les
-  défauts Jackson 3 (`quarkus.jackson.fail-on-trailing-tokens`, `fail-on-null-for-primitives`,
-  `default-view-inclusion`, `use-getters-as-setters`) ; puis la suite complète, qui validera S3 sur
-  MinIO et le câblage `@JsonFormat @PersistenceUnitExtension` de `JsonbFormatMapper`. `JsonbMapper`
-  reste sur Jackson 2 (modules `jsr310`/`jdk8`/`parameter-names` 2.22.2 déclarés explicitement dans
-  `backend/pom.xml`) : le passer à Jackson 3 est un chantier à part (défauts différents, dates
-  notamment), `JsonbMapperTest` en est la porte.
+- [ ] `API-135` **Le backend est sur une bêta de Quarkus 4** — plan et points ouverts :
+  [plans/2026-10-20-quarkus-4.md](plans/2026-10-20-quarkus-4.md) §9 (contrat OpenAPI régénéré sans
+  `servers`, métriques Prometheus 1.x à vérifier dans la supervision). Version : `4.0.0.Beta1`, avec
+  `quarkus-amazon-services` `4.0.0.Beta3` par le BOM Quarkiverse faute de BOM plateforme 4.x
+  (`backend/pom.xml`). À la version finale : revenir au BOM plateforme `quarkus-amazon-services-bom` ;
+  relire les surcharges du pom (`jackson3.version` 3.2.3 contre 3.1.4 dans `quarkus-bom`
+  4.0.0.Beta1, webauthn4j 0.31.11 voulant 3.2.x ; `log4j-api` 2.26.1, déjà la version du BOM
+  4.0.0.Beta1, que la règle du commentaire permet de retirer) ; relancer `RestJsonParityTest` et
+  `JsonbMapperTest`. Petite taille.
 
 ### Petites évolutions d'API qui suppriment chacune une dégradation nommée
 

@@ -1,7 +1,5 @@
 package fr.pedalons.service.notification;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.pedalons.domain.common.Publication;
 import fr.pedalons.domain.post.Post;
 import fr.pedalons.domain.ride.Ride;
@@ -24,6 +22,8 @@ import java.time.Instant;
 import java.util.function.Supplier;
 import org.jboss.logging.Logger;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Stage 1 of the notification pipeline: queues a typed event in {@code notification_events}.
@@ -87,7 +87,7 @@ public class NotificationPublisher {
     String payload;
     try {
       payload = objectMapper.writeValueAsString(event);
-    } catch (JsonProcessingException e) {
+    } catch (JacksonException e) {
       // A record of longs cannot fail to serialize; if it ever does, that is a programming error.
       throw new IllegalStateException("Cannot serialize " + event, e);
     }

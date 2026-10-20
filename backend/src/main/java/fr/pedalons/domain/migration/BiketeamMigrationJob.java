@@ -1,6 +1,5 @@
 package fr.pedalons.domain.migration;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import fr.pedalons.domain.platform.Domain;
 import fr.pedalons.domain.user.User;
 import fr.pedalons.enums.BiketeamMigrationStatus;
@@ -17,6 +16,7 @@ import org.hibernate.annotations.Mutability;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.databind.JsonNode;
 
 /**
  * One confirmed biketeam migration request. The row is first a <em>grant</em> — a single-use

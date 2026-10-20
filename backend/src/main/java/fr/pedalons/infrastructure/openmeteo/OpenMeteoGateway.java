@@ -1,7 +1,5 @@
 package fr.pedalons.infrastructure.openmeteo;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.ProcessingException;
@@ -18,6 +16,8 @@ import java.util.stream.Collectors;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * The forecast request, and the reading of its answer.
@@ -190,7 +190,7 @@ public class OpenMeteoGateway {
   }
 
   private static OpenMeteoForecast parseLocation(JsonNode node) {
-    String timezone = node.hasNonNull("timezone") ? node.get("timezone").asText() : null;
+    String timezone = node.hasNonNull("timezone") ? node.get("timezone").asString() : null;
     // Open-Meteo shifts the whole answer by today's offset, DST changes in the window included.
     ZoneOffset offset = ZoneOffset.ofTotalSeconds(node.path("utc_offset_seconds").asInt(0));
 
@@ -277,7 +277,7 @@ public class OpenMeteoGateway {
     try {
       JsonNode node = objectMapper.readTree(body);
       if (node != null && node.hasNonNull("reason")) {
-        return redact(node.get("reason").asText());
+        return redact(node.get("reason").asString());
       }
     } catch (Exception e) {
       // Not JSON: quoted as text below.

@@ -1,7 +1,5 @@
 package fr.pedalons.service.feedback;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.pedalons.common.exception.TooManyRequestsException;
 import fr.pedalons.common.exception.ValidationException;
 import fr.pedalons.domain.feedback.ErrorOccurrence;
@@ -31,6 +29,8 @@ import java.util.ArrayList;
 import java.util.List;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Receives what the clients send about bugs: a member's written report, and the automatic report

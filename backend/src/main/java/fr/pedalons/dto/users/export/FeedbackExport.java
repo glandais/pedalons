@@ -1,9 +1,9 @@
 package fr.pedalons.dto.users.export;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import fr.pedalons.domain.feedback.FeedbackReport;
 import java.time.Instant;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.databind.JsonNode;
 
 /**
  * {@code account/feedback.json}: the bug reports and suggestions the user wrote, with the technical

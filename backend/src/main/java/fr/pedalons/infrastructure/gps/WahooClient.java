@@ -1,8 +1,5 @@
 package fr.pedalons.infrastructure.gps;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.pedalons.common.exception.BusinessException;
 import fr.pedalons.common.exception.InternalException;
 import fr.pedalons.domain.gps.DomainGpsCredential;
@@ -40,6 +37,9 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.jboss.logging.Logger;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Wahoo Cloud API GPS device integration client.
@@ -199,7 +199,7 @@ public class WahooClient implements GpsServiceClient {
       String userId = jsonString(root, "user_id");
 
       return new TokenResponse(accessToken, refreshToken, expiresIn, userId);
-    } catch (JsonProcessingException e) {
+    } catch (JacksonException e) {
       throw new InternalException(ErrorCode.GPS_TOKEN_EXCHANGE_FAILED, e);
     }
   }
@@ -313,7 +313,7 @@ public class WahooClient implements GpsServiceClient {
     }
     try {
       return objectMapper.readTree(body);
-    } catch (JsonProcessingException e) {
+    } catch (JacksonException e) {
       return null;
     }
   }
@@ -420,7 +420,7 @@ public class WahooClient implements GpsServiceClient {
 
   private static String jsonString(JsonNode root, String key) {
     JsonNode node = root.path(key);
-    return node.isMissingNode() || node.isNull() ? null : node.asText();
+    return node.isMissingNode() || node.isNull() ? null : node.asString();
   }
 
   private static Long jsonLong(JsonNode root, String key) {
@@ -433,7 +433,7 @@ public class WahooClient implements GpsServiceClient {
     }
     // Some providers return numeric fields as JSON strings (e.g. "3600").
     try {
-      return Long.parseLong(node.asText().trim());
+      return Long.parseLong(node.asString().trim());
     } catch (NumberFormatException e) {
       return null;
     }
