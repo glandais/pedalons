@@ -2467,7 +2467,7 @@ Plan [`2026-10-06-team-agenda.md`](plans/archive/2026-10-06-team-agenda.md) §4,
   carte, profil et liste. Les couleurs et pictogrammes sont documentés dans `BRANDING.md` §3.6 et §6 ;
   le mobile n'a que l'extension générée `WaypointTypeTone` (C3f, `MOB-84`).
   Tests : `waypoints.test.ts`, `waypointIcons.test.tsx` (les tracés égalent ceux du composant Tabler),
-  `mapImages.test.ts`, `MapImages.test.tsx`, `WaypointLayer.test.tsx`, `RouteWaypointList.test.tsx`,
+  `mapImageResolver.test.ts`, `MapImages.test.tsx`, `WaypointLayer.test.tsx`, `RouteWaypointList.test.tsx`,
   `WaypointDetails.test.tsx`, `waypointMarkersPlugin.test.ts`, `ElevationChart.test.tsx`,
   `RouteFullscreenView.test.tsx`.
   **À ne pas défaire** : un seul `setMissingStyleImageResolver` par carte (`MapImages`, qui aiguille

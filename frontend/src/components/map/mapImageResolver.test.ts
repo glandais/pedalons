@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ROUTE_ARROW_IMAGE } from './routeArrowLayout'
-import { PRELOADED_IMAGE_IDS, resolveMapImage, type ImageMap } from './mapImages'
+import { PRELOADED_IMAGE_IDS, resolveMapImage, type ImageMap } from './mapImageResolver'
 
 function fakeMap() {
   const images = new Set<string>()

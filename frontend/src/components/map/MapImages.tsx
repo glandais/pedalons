@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useMap } from 'react-map-gl/maplibre'
-import { PRELOADED_IMAGE_IDS, resolveMapImage } from './mapImages'
+import { PRELOADED_IMAGE_IDS, resolveMapImage } from './mapImageResolver'
 
 /**
  * Registers the images the map's layers use (the direction chevron, the waypoint pictograms and

@@ -32,7 +32,7 @@ export function waypointTypeOf(type: string): WaypointType {
     : 'INFO'
 }
 
-/** Map image ids: they carry everything needed to draw the image again (see `mapImages`). */
+/** Map image ids: they carry everything needed to draw the image again (see `mapImageResolver`). */
 export const WAYPOINT_ICON_PREFIX = 'pdl-waypoint:'
 export const WAYPOINT_LABEL_PREFIX = 'pdl-waypoint-label:'
 
