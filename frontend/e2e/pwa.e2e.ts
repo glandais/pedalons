@@ -231,7 +231,7 @@ test.describe('the install offer', () => {
       await fireInstallPrompt(page)
       // The drawer still offers it (the menu entry is not the banner)...
       const drawer = await headerControls(page, true)
-      await expect(drawer.getByRole('button', { name: "Installer l'application" })).toBeVisible()
+      await expect(drawer.getByRole('link', { name: "Installer l'application" })).toBeVisible()
       // ...the banner does not.
       await expect(installBanner(page)).toHaveCount(0)
     } finally {
@@ -250,7 +250,7 @@ test.describe('the install offer', () => {
     }
   })
 
-  test("on a desktop, the account menu offers « Installer l'application », which opens the browser's prompt", async ({
+  test("on a desktop, the account menu offers « Installer l'application », which leads to the apps page", async ({
     browser,
     isMobile,
   }) => {
@@ -270,8 +270,11 @@ test.describe('the install offer', () => {
 
       await fireInstallPrompt(page)
       await account.click()
+      // The entry lays out every app rather than picking one: it leads to /applications, whose
+      // « Application web » card holds the prompt.
       await page.getByRole('menuitem', { name: "Installer l'application" }).click()
-      await expect.poll(() => promptCount(page)).toBe(1)
+      await expect(page).toHaveURL(/\/applications$/)
+      expect(await promptCount(page)).toBe(0)
       // No banner on a desktop layout, even with an offer.
       await expect(installBanner(page)).toBeHidden()
     } finally {

@@ -903,7 +903,7 @@ test.describe('the fullscreen editor, over the form', () => {
     expect(routerRequests, 'reopening the editor never routes').toHaveLength(1)
   })
 
-  test('on a finger, the tools and the zoom buttons are at least 44 px', async ({
+  test('on a finger, the tools are at least 44 px, and pinching replaces the zoom buttons', async ({
     context,
     page,
     isMobile,
@@ -922,8 +922,6 @@ test.describe('the fullscreen editor, over the form', () => {
       // In the toolbar above the map, out of the bar (no room left for it at 360 px)
       surface.getByRole('button', { name: 'Effacer' }),
       surface.getByRole('button', { name: 'Terminer' }),
-      surface.getByRole('button', { name: 'Zoomer', exact: true }),
-      surface.getByRole('button', { name: 'Dézoomer', exact: true }),
     ]
     for (const target of targets) {
       const box = await target.boundingBox()
@@ -931,6 +929,10 @@ test.describe('the fullscreen editor, over the form', () => {
       expect(box.width).toBeGreaterThanOrEqual(44)
       expect(box.height).toBeGreaterThanOrEqual(44)
     }
+    // No zoom buttons on a touch screen: they did not fit above a phone map's elevation overlay
+    // (index.css, PedalonsMap's RotationMarker).
+    await expect(surface.getByRole('button', { name: 'Zoomer', exact: true })).toBeHidden()
+    await expect(surface.getByRole('button', { name: 'Dézoomer', exact: true })).toBeHidden()
   })
 })
 

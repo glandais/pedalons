@@ -649,6 +649,7 @@ const screens: Record<string, Screen> = {
   adminUsers: platformAdmin('Utilisateurs'),
   adminBetaSignups: platformAdmin('Inscriptions bêta'),
   adminReports: platformAdmin('Signalements'),
+  adminMaintenance: platformAdmin('Maintenance'),
 }
 
 async function rideTemplates(main: Main, d: Dataset, page: Page) {

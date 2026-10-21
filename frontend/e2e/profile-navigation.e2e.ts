@@ -2,12 +2,11 @@ import type { Locator, Page } from '@playwright/test'
 import { setContactable } from './support/ad-contact'
 import { newTeam, newUser, signIn } from './support/data'
 import { expect, test, unique } from './support/fixtures'
-import { joinGroup, newRide } from './support/rides'
 import { hydrated, startsWith } from './support/ui'
 
 /**
  * The profile's tree (contracts/routes.yaml, « profile's sub-pages »; ProfileShell.tsx,
- * profileNav.ts): `/profil` is an overview — who is signed in, the next ride, the teams, and one
+ * profileNav.ts): `/profil` is an overview — who is signed in, the teams (on a desktop), and one
  * shortcut per subject with its state line — and each subject is a page of its own.
  *
  * A desktop has the grouped sidebar, its current entry marked `aria-current`; a phone has the
@@ -55,8 +54,6 @@ async function follow(link: Locator) {
 test('the overview sums up each subject in its state line', async ({ page, context, isMobile }) => {
   const user = await newUser(unique('Vue du profil'))
   const team = await newTeam(user, unique('Équipe du profil'))
-  const ride = await newRide(user, team.slug, unique('Sortie du profil'))
-  await joinGroup(user, team.slug, ride, 'Groupe A')
   await setContactable(user, false)
   await signIn(context, user)
 
@@ -66,11 +63,6 @@ test('the overview sums up each subject in its state line', async ({ page, conte
   // Who is signed in.
   await expect(overview.getByText(user.user.displayName, { exact: true }).first()).toBeVisible()
   await expect(overview.getByText(user.user.email, { exact: true })).toBeVisible()
-
-  // « Mes sorties »: the next ride, its total, and the way to the page.
-  await expect(overview.getByRole('link', { name: ride.name, exact: true })).toBeVisible()
-  await expect(overview.getByText('1 à venir', { exact: true }).first()).toBeVisible()
-  await expect(overview.getByRole('link', { name: 'Tout voir', exact: true })).toBeVisible()
 
   // One state line per subject, on both layouts.
   for (const [label, status] of [
@@ -83,14 +75,12 @@ test('the overview sums up each subject in its state line', async ({ page, conte
     await expect(shortcut(overview, label, status), `${label}: ${status}`).toBeVisible()
 
   if (isMobile) {
-    // The grouped list stands in for the sidebar, and carries the activity and « Mon compte » too.
+    // The grouped list stands in for the sidebar, « Mon compte » at the head of « Réglages ».
     await expect(sidebar(page)).toHaveCount(0)
-    for (const group of ['Mon activité', 'Réglages', 'Sécurité et confidentialité', 'Compte'])
+    for (const group of ['Réglages', 'Sécurité et confidentialité'])
       await expect(
         overview.getByText(group, { exact: true }).filter({ visible: true })
       ).toBeVisible()
-    await expect(shortcut(overview, 'Mes sorties', '1 à venir')).toBeVisible()
-    await expect(shortcut(overview, 'Mes équipes', '1 équipe')).toBeVisible()
     await expect(
       shortcut(overview, 'Mon compte', 'Photo, nom affiché, adresse e-mail')
     ).toBeVisible()
