@@ -88,6 +88,13 @@ characters under it may stay, the code expires after ten minutes).
 5. **Review**: "within 72 hours" outside holidays (no ANT+ profile, so no extra certification).
    While pending, the app can be previewed and downloaded from the developer account. A rejection
    comes by e-mail with its reasons; fix, bump, upload again.
+
+   **Updating an approved app** (seen with 1.0.2 on 2026-10-23): the dashboard shows no "pending"
+   state — it keeps "Statut : Approuvée" and the store page keeps the live version number. The only
+   trace of the upload is "Dernière version de l'application : X.Y.Z" under the version field of
+   *Charger une nouvelle version* (open it, read it, cancel). And the "Nouveautés" text goes live
+   **at once**, before review, on the public page under the *old* version number: write notes that
+   read acceptably for the few days until approval, and don't resubmit the form to undo them.
 6. **After approval**: point the site's `/applications` page and the mobile app at the store page
    (today `apps.garmin.description` says "coming soon"), and tell the beta sign-ups
    (`beta-signups`).
