@@ -440,9 +440,12 @@ class ApiClient {
         return {
             "teamSlug" => raw.get("teamSlug"),
             "routeSlug" => raw.get("routeSlug"),
+            "routeName" => raw.get("routeName"),
             "rideName" => raw.get("rideName"),
             "groupName" => raw.get("groupName"),
             "startDateTime" => raw.get("startDateTime"),
+            "distance" => raw.get("distance"),
+            "elevationGain" => raw.get("elevationGain"),
             "syncState" => parseGarminSyncState(raw.get("syncStatuses")),
         };
     }

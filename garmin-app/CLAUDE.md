@@ -62,7 +62,7 @@ source/
 ├── PedalonsView.mc                 # Loads registered groups, rides + routes, then opens the home menu
 ├── PedalonsDelegate.mc             # Loading/error view input (retry, refresh menu)
 ├── HomeMenuDelegate.mc             # Home menu: My next rides, Rides, Routes, Logout
-├── RegisteredGroupListMenuDelegate.mc # Groups the user is registered in (now-12h to +7d); select = download
+├── RegisteredGroupListMenuDelegate.mc # Groups the user is registered in (now-12h to +7d); select = route detail
 ├── RideListMenuDelegate.mc         # Upcoming rides (D-1 to D+7, server side)
 ├── RideEntryMenuDelegate.mc        # A ride's routes (one per group)
 ├── StandaloneRouteMenuDelegate.mc  # Routes not attached to a ride
@@ -111,7 +111,7 @@ Uses Device Code Flow (RFC 8628) since Edge devices have no keyboard:
 
 ## Supported Devices
 
-edge530, edge540, edge550, edge830, edge840, edge850, edge1030, edge1030bontrager, edge1030plus, edge1040, edge1050, edgeexplore2, edgemtb
+edge530, edge540, edge550, edge830, edge840, edge850, edge1030, edge1030bontrager, edge1030plus, edge1040, edge1050, edge1060, edgeexplore2, edgemtb
 
 The list lives in `manifest.xml` and in `DEVICES` in the `Makefile` — change both together.
 
