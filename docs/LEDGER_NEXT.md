@@ -901,12 +901,10 @@ Ce que les tests ne prouvent pas, parce qu'ils ne passent ni par Flyway ni par u
       à la revue le 15 octobre 2026, remplacée en revue par la 1.0.1 (« Prochaines sorties »,
       tag `garmin.1.0.1`) le 16 octobre, **approuvée** (constaté le 23 octobre) ; la 1.0.2 (Edge 1060,
       « Prochaines sorties » ouvre le détail du parcours, cinq captures 480×800, tag `garmin.1.0.2`)
-      est soumise le 23 octobre. Fiche FR/EN tirée de `garmin-app/metadata/` ; page du store :
+      est soumise et approuvée le 23 octobre, avec l'image du héros FR/EN. Fiche FR/EN tirée de `garmin-app/metadata/` ; page du store :
       `https://apps.garmin.com/fr-FR/apps/262ea335-a5b7-4a6a-bb30-fc6f5db9b115`. Le formulaire et
       ses pièges (signature « échouée » au premier dépôt, migration désactivée, cinq captures au
-      plus) sont dans `garmin-app/PUBLISH.md`. Reste : la décision de Garmin sur la 1.0.2 (jusqu'à
-      3 jours ; un rejet arrive par e-mail), puis l'envoi de l'image du héros FR/EN
-      (`garmin-app/metadata/hero/`, pas envoyée pendant la revue), un essai sur un vrai Edge depuis le store, et un mot aux
+      plus) sont dans `garmin-app/PUBLISH.md`. Reste : un essai sur un vrai Edge depuis le store, et un mot aux
       inscrits de la bêta. La carte Garmin de `/applications` (site et app mobile) pointe sur la
       fiche du store depuis le 23 octobre ; côté mobile, elle arrive avec la prochaine version. Ne bloque pas mais se verra sur l'appareil :
       `AUD-26` (AM/PM en dur). `AUD-25` limite l'app à pedalons.fr. Taille : XS, surtout de l'attente.

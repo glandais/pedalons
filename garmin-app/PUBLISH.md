@@ -2,7 +2,7 @@
 
 *Garmin information below was gathered on 2026-10-15 from the developer site and the dashboard —
 verify the links and the process before relying on it.* Version 1.0.0 submitted for review on
-2026-10-15, replaced in review by 1.0.1 on 2026-10-16 (ledger `OPS-35`); each release is tagged
+2026-10-15, replaced in review by 1.0.1 on 2026-10-16 (approved), 1.0.2 submitted and approved on 2026-10-23 (ledger `OPS-35`); each release is tagged
 `garmin.X.Y.Z` (skill `garmin-release`).
 
 ## Current Situation
@@ -69,7 +69,9 @@ characters under it may stay, the code expires after ten minutes).
    - **Hero image** (optional, 1440×720, 2 MB max), **one per language** — it sits in the language
      block, unlike the screenshots, which are shared by every language: `metadata/hero/hero-fr-FR.png`
      and `hero-en-US.png`, rendered from `hero.html` by `metadata/hero/render.sh` (headless Chrome).
-     Garmin picks its featured carousel from hero images showing the name and a tagline.
+     Garmin picks its featured carousel from hero images showing the name and a tagline. The
+     store's web page does not show it; check an upload at
+     `services.garmin.com/appsLibraryBusinessServices_v0/rest/apps/<store id>/heroimagefile/<fr|en>`.
    - **Category**: Sports (it offers no sub-category).
    - **User data collected**: yes, with the privacy policy URL — one URL for all languages,
      `/confidentialite`.
