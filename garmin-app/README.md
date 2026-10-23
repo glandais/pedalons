@@ -17,7 +17,7 @@ teams, and download routes to the device.
 ## Supported Devices
 
 edge530, edge540, edge550, edge830, edge840, edge850, edge1030, edge1030bontrager, edge1030plus,
-edge1040, edge1050, edgeexplore2, edgemtb — Connect IQ API 3.3.0 or higher (`minApiLevel`).
+edge1040, edge1050, edge1060, edgeexplore2, edgemtb — Connect IQ API 3.3.0 or higher (`minApiLevel`).
 
 The list lives in `manifest.xml` and in `DEVICES` in the `Makefile`: change both together.
 

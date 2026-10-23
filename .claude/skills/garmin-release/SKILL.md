@@ -90,7 +90,7 @@ ls -l bin/Pedalons.iq
   **stop** — never run `make keygen` for a release: a new key means a new app id and a new listing
   (PUBLISH.md, « Signing key »).
 - Always `make clean` first: a `.iq` left in `bin/` proves nothing.
-- The build ends on « N OUT OF N DEVICES BUILT » with N above the 13 products of `DEVICES` (the
+- The build ends on « N OUT OF N DEVICES BUILT » with N above the 14 products of `DEVICES` (the
   SDK counts device variants): only a count below N, or no « BUILD SUCCESSFUL », is a failure.
   The « Cannot determine if container access is using container type » warnings are known noise.
 - Unit tests need the simulator running: `make simulator` returns at once while it is still

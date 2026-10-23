@@ -11,6 +11,8 @@
     "en-US": "https://www.pedalons.fr/privacy"
   },
   "screenshots": [
+    "home.png",
+    "nextrides.png",
     "rides.png",
     "routes.png",
     "downloaded.png",

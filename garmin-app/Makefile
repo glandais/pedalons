@@ -38,7 +38,7 @@ RESOURCE_DIR = resources
 BIN_DIR = bin
 
 # Supported devices (from manifest.xml, API 3.3.0+)
-DEVICES = edge530 edge540 edge550 edge830 edge840 edge850 edge1030 edge1030bontrager edge1030plus edge1040 edge1050 edgeexplore2 edgemtb
+DEVICES = edge530 edge540 edge550 edge830 edge840 edge850 edge1030 edge1030bontrager edge1030plus edge1040 edge1050 edge1060 edgeexplore2 edgemtb
 
 # Default device for single builds
 DEVICE ?= edge1040

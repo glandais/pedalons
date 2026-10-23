@@ -41,8 +41,9 @@ for Internet access, the position sent at opening (Positioning permission; the l
 names the Garmin app). No claim of partnership with Garmin.
 
 **Screenshots** are taken from the simulator (`make simulator`, `make run DEVICE=…`, then the
-simulator's screen capture). The current four (2026-10-15) are 246×322, the edge530/edge830
-screen, in English: ride list, route list, a downloaded route, the pairing screen. The pairing QR
+simulator's screen capture). The current six (2026-10-23) are 480×800, the edge1060
+screen, in English: home menu, my next rides, ride list, route list, a downloaded route, the
+pairing screen. The pairing QR
 code is a live code from production: blur it before committing, as was done for Karoo (the six
 characters under it may stay, the code expires after ten minutes).
 
