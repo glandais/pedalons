@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<!--
+  Connect IQ Store hero image, 1440 x 720 (garmin-app/metadata/hero/render.sh renders it with
+  headless Chrome, one PNG per language: hero.html?lang=fr|en). The Play feature graphic's look
+  (mobile/screenshots/koubou/templates/feature.html) — blue gradient, faint contour lines, orange
+  bar — with an Edge showing "My next rides" instead of the bare icon. Shown on mobile: large type,
+  nothing that matters near the edges.
+-->
+<style>
+  @font-face { font-family: "Inter"; font-weight: 500; src: url("../../../mobile/assets/fonts/inter/Inter-Medium.ttf"); }
+  @font-face { font-family: "Inter"; font-weight: 700; src: url("../../../mobile/assets/fonts/inter/Inter-Bold.ttf"); }
+  :root { --blue: #228be6; --blue-deep: #1864ab; --orange: #fd7e14; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1440px; height: 720px; overflow: hidden; }
+  body {
+    position: relative;
+    background: linear-gradient(160deg, #4c9cea 0%, var(--blue) 45%, var(--blue-deep) 100%);
+    font-family: "Inter", -apple-system, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    display: flex; align-items: center; justify-content: center; gap: 110px;
+  }
+  .terrain {
+    position: absolute; inset: 0; opacity: 0.10;
+    background: repeating-radial-gradient(circle at 88% 20%, transparent 0 34px, #fff 34px 36px);
+  }
+  .copy { position: relative; z-index: 2; width: 640px; }
+  .brand { display: flex; align-items: center; gap: 32px; }
+  .brand img {
+    width: 150px; height: 150px; border-radius: 19%;
+    box-shadow: 0 0 0 7px rgba(255,255,255,0.95), 0 24px 60px rgba(8,30,66,0.4);
+  }
+  h1 { font-weight: 700; color: #fff; font-size: 120px; line-height: 1; letter-spacing: -0.03em; }
+  .bar { width: 120px; height: 12px; border-radius: 12px; background: var(--orange); margin: 44px 0 34px; }
+  p { font-weight: 500; color: rgba(255,255,255,0.92); font-size: 46px; line-height: 1.22; text-wrap: balance; }
+  /* A generic bike computer, drawn in CSS: dark body, bezel, two side buttons. */
+  .device {
+    position: relative; z-index: 2; padding: 22px 18px 50px; border-radius: 46px;
+    background: linear-gradient(180deg, #2a3038 0%, #12161b 100%);
+    box-shadow: 0 0 0 3px #3a424c, 0 40px 80px rgba(8,30,66,0.55);
+    transform: rotate(4deg);
+  }
+  .device::before, .device::after {
+    content: ""; position: absolute; right: -9px; width: 9px; height: 70px; border-radius: 0 6px 6px 0;
+    background: #3a424c;
+  }
+  .device::before { top: 90px; }
+  .device::after { top: 180px; }
+  .device img { display: block; width: 300px; height: 500px; border-radius: 10px; }
+</style>
+</head>
+<body>
+  <div class="terrain"></div>
+  <div class="copy">
+    <div class="brand">
+      <img src="../../../assets/icon-1024.png" alt="">
+      <h1>Pédalons</h1>
+    </div>
+    <div class="bar"></div>
+    <p id="tagline"></p>
+  </div>
+  <div class="device"><img src="../screenshots/nextrides.png" alt=""></div>
+<script>
+  var fr = new URLSearchParams(location.search).get('lang') === 'fr';
+  document.getElementById('tagline').textContent = fr
+    ? 'Les sorties et les parcours de vos équipes sur votre Edge.'
+    : "Your teams' rides and routes on your Edge.";
+  document.documentElement.lang = fr ? 'fr' : 'en';
+</script>
+</body>
+</html>

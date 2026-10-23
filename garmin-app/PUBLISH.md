@@ -31,6 +31,7 @@ verify the links and the process before relying on it.* Version 1.0.0 submitted 
 | `metadata/version/X.Y.Z/fr-FR.json`, `en-US.json` | `whatsNew`: the release notes of version X.Y.Z |
 | `metadata/screenshots/` | Captures, listed in `app.json`'s `screenshots` in display order |
 | `metadata/cover.png` | Cover image, 500×500, from `assets/icon-1024.png` |
+| `metadata/hero/` | Hero image per language, 1440×720, rendered by `render.sh` from `hero.html` |
 
 Write the version folder **before** packaging, as for Karoo. Nothing reads these files
 automatically: they are the source the form is filled from, so the listing can be reviewed in a diff.
@@ -65,7 +66,10 @@ characters under it may stay, the code expires after ten minutes).
    step 2 asks for, as of 2026-10-15:
    - **Title and description per language** (title 50 characters, description and "Nouveautés"
      4000 each): English and Français, from `metadata/`.
-   - Hero image (optional, 1440×720, 2 MB max) — none.
+   - **Hero image** (optional, 1440×720, 2 MB max), **one per language** — it sits in the language
+     block, unlike the screenshots, which are shared by every language: `metadata/hero/hero-fr-FR.png`
+     and `hero-en-US.png`, rendered from `hero.html` by `metadata/hero/render.sh` (headless Chrome).
+     Garmin picks its featured carousel from hero images showing the name and a tagline.
    - **Category**: Sports (it offers no sub-category).
    - **User data collected**: yes, with the privacy policy URL — one URL for all languages,
      `/confidentialite`.
