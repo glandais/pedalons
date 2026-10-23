@@ -1715,7 +1715,8 @@
     },
     "garmin": {
       "title": "Garmin",
-      "description": "The Garmin companion app is coming soon."
+      "description": "Your teams' rides and routes on your Garmin Edge bike computer, ready to navigate.",
+      "download": "View on the Connect IQ Store"
     },
     "status": {
       "available": "Available",

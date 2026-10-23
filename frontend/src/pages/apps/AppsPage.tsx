@@ -38,6 +38,9 @@ const MOBILE_APK_URL =
 const KAROO_SIDELOADING_URL =
   'https://support.hammerhead.io/hc/en-us/articles/31576497036827-Companion-App-Sideloading'
 const APP_STORE_URL = 'https://apps.apple.com/app/id6761760079'
+// The Connect IQ Store listing (garmin-app/PUBLISH.md); without a locale, the store picks the
+// browser's language.
+const GARMIN_STORE_URL = 'https://apps.garmin.com/apps/262ea335-a5b7-4a6a-bb30-fc6f5db9b115'
 
 type AppStatus = 'available' | 'comingSoon' | 'installed'
 
@@ -170,7 +173,19 @@ export function AppsPage() {
             icon={<IconDeviceWatch size={28} />}
             title={t('apps.garmin.title')}
             description={t('apps.garmin.description')}
-            status="comingSoon"
+            status="available"
+            action={
+              <Button
+                component="a"
+                href={GARMIN_STORE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                variant="light"
+                rightSection={<IconExternalLink size={16} />}
+              >
+                {t('apps.garmin.download')}
+              </Button>
+            }
           />
           <AppCard
             icon={<IconMountain size={28} />}

@@ -906,9 +906,9 @@ Ce que les tests ne prouvent pas, parce qu'ils ne passent ni par Flyway ni par u
       ses pièges (signature « échouée » au premier dépôt, migration désactivée, cinq captures au
       plus) sont dans `garmin-app/PUBLISH.md`. Reste : la décision de Garmin sur la 1.0.2 (jusqu'à
       3 jours ; un rejet arrive par e-mail), puis l'envoi de l'image du héros FR/EN
-      (`garmin-app/metadata/hero/`, pas envoyée pendant la revue), un essai sur un vrai Edge depuis le store, puis le lien
-      vers la fiche sur `/applications` (`apps.garmin.description` dit « arrive bientôt ») et dans
-      l'app mobile, et un mot aux inscrits de la bêta. Ne bloque pas mais se verra sur l'appareil :
+      (`garmin-app/metadata/hero/`, pas envoyée pendant la revue), un essai sur un vrai Edge depuis le store, et un mot aux
+      inscrits de la bêta. La carte Garmin de `/applications` (site et app mobile) pointe sur la
+      fiche du store depuis le 23 octobre ; côté mobile, elle arrive avec la prochaine version. Ne bloque pas mais se verra sur l'appareil :
       `AUD-26` (AM/PM en dur). `AUD-25` limite l'app à pedalons.fr. Taille : XS, surtout de l'attente.
 
 ## NOTIF — Notifications

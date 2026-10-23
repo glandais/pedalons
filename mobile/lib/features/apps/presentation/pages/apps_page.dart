@@ -31,6 +31,11 @@ const String _kKarooSideloadingUrl =
     'https://support.hammerhead.io/hc/en-us/articles/31576497036827-Companion-App-Sideloading';
 const String _kAppStoreUrl = 'https://apps.apple.com/app/id6761760079';
 
+/// La fiche du Connect IQ Store (`garmin-app/PUBLISH.md`) ; sans locale, le
+/// store prend la langue du navigateur.
+const String _kGarminStoreUrl =
+    'https://apps.garmin.com/apps/262ea335-a5b7-4a6a-bb30-fc6f5db9b115';
+
 class AppsPage extends ConsumerStatefulWidget {
   const AppsPage({super.key});
 
@@ -126,7 +131,13 @@ class _AppsPageState extends ConsumerState<AppsPage> {
                 icon: PdlIcons.devices,
                 title: 'apps.garmin.title'.tr(),
                 description: 'apps.garmin.description'.tr(),
-                available: false,
+                available: true,
+                action: PdlButton(
+                  label: 'apps.garmin.download'.tr(),
+                  icon: PdlIcons.openExternal,
+                  variant: PdlButtonVariant.outline,
+                  onPressed: () => openLink(context, _kGarminStoreUrl),
+                ),
               ),
               const SizedBox(height: PdlSpacing.cardTight),
               _AppTile(

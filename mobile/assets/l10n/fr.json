@@ -1715,7 +1715,8 @@
     },
     "garmin": {
       "title": "Garmin",
-      "description": "L'application compagnon Garmin arrive bientôt."
+      "description": "Les sorties et les parcours de vos équipes sur votre compteur Garmin Edge, prêts pour la navigation.",
+      "download": "Voir sur le Connect IQ Store"
     },
     "status": {
       "available": "Disponible",
