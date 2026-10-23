@@ -899,17 +899,16 @@ Ce que les tests ne prouvent pas, parce qu'ils ne passent ni par Flyway ni par u
 
 - [ ] `OPS-35` **Publier l'app Garmin sur le Connect IQ Store** — la 1.0.0 (13 Edge) est soumise
       à la revue le 15 octobre 2026, remplacée en revue par la 1.0.1 (« Prochaines sorties »,
-      tag `garmin.1.0.1`) le 16 octobre, fiche FR/EN tirée de `garmin-app/metadata/` ; page du store
-      (démo, visible du seul compte tant qu'elle n'est pas validée) :
+      tag `garmin.1.0.1`) le 16 octobre, **approuvée** (constaté le 23 octobre) ; la 1.0.2 (Edge 1060,
+      « Prochaines sorties » ouvre le détail du parcours, cinq captures 480×800, tag `garmin.1.0.2`)
+      est soumise le 23 octobre. Fiche FR/EN tirée de `garmin-app/metadata/` ; page du store :
       `https://apps.garmin.com/fr-FR/apps/262ea335-a5b7-4a6a-bb30-fc6f5db9b115`. Le formulaire et
-      ses pièges (signature « échouée » au premier dépôt, migration désactivée) sont dans
-      `garmin-app/PUBLISH.md`. Le 16 octobre au soir, l'API publique du store répond encore
-      `The requested app is not approved`. Reste : la décision de Garmin (jusqu'à 3 jours, donc
-      attendue vers le 19 octobre ; un rejet arrive par e-mail), un essai sur un vrai Edge depuis
-      la page démo (non fait avant l'envoi), puis le lien vers la fiche sur `/applications`
-      (`apps.garmin.description` dit « arrive bientôt ») et dans l'app mobile, et un mot aux
-      inscrits de la bêta. Ne bloque pas mais se verra sur l'appareil : `AUD-26` (AM/PM en dur).
-      `AUD-25` limite l'app à pedalons.fr. Taille : XS, surtout de l'attente.
+      ses pièges (signature « échouée » au premier dépôt, migration désactivée, cinq captures au
+      plus) sont dans `garmin-app/PUBLISH.md`. Reste : la décision de Garmin sur la 1.0.2 (jusqu'à
+      3 jours ; un rejet arrive par e-mail), un essai sur un vrai Edge depuis le store, puis le lien
+      vers la fiche sur `/applications` (`apps.garmin.description` dit « arrive bientôt ») et dans
+      l'app mobile, et un mot aux inscrits de la bêta. Ne bloque pas mais se verra sur l'appareil :
+      `AUD-26` (AM/PM en dur). `AUD-25` limite l'app à pedalons.fr. Taille : XS, surtout de l'attente.
 
 ## NOTIF — Notifications
 

@@ -41,9 +41,9 @@ for Internet access, the position sent at opening (Positioning permission; the l
 names the Garmin app). No claim of partnership with Garmin.
 
 **Screenshots** are taken from the simulator (`make simulator`, `make run DEVICE=…`, then the
-simulator's screen capture). The current six (2026-10-23) are 480×800, the edge1060
-screen, in English: home menu, my next rides, ride list, route list, a downloaded route, the
-pairing screen. The pairing QR
+simulator's screen capture). The store takes **five at most**; the current five (2026-10-23)
+are 480×800, the edge1060 screen, in English: home menu, my next rides, ride list, route list, a
+downloaded route. `qrcode.png`, the pairing screen, is kept but not uploaded. The pairing QR
 code is a live code from production: blur it before committing, as was done for Karoo (the six
 characters under it may stay, the code expires after ten minutes).
 
@@ -72,7 +72,7 @@ characters under it may stay, the code expires after ten minutes).
    - ANT+ profiles: no. Regional limits: no.
    - **Cover image** 500×500, 300 KB max: `metadata/cover.png`. On-device store icons (128×128):
      no.
-   - **Screenshots**, 150 KB max each: add them **one at a time**, the input keeps only the first
+   - **Screenshots**, 150 KB max each, five at most: add them **one at a time**, the input keeps only the first
      file of a multiple selection.
    - Video (optional): none. **Public contact e-mail**: `contact@pedalons.fr`. Source code URL:
      none.
