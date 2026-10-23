@@ -632,6 +632,12 @@ def seed_club(locale: str, acc: dict, viewer: dict) -> list:
     slug = team["slug"]
     print(f"  club {slug}")
     base = f"/api/teams/{slug}"
+    # The routes below are drawn (from-points previews), which a team only saves with its
+    # route planner on — a flag only a platform admin sets, and the PATCH sets all four.
+    attrs = call("GET", f"/api/admin/teams/{team['id']}", token=org)
+    call("PATCH", f"/api/admin/teams/{team['id']}/attributes", {
+        "visibilityEditable": attrs["visibilityEditable"], "joinable": attrs["joinable"],
+        "addMemberAllowed": attrs["addMemberAllowed"], "enableRoutePlanner": True}, org)
 
     roles = {"sophie": "ORGANIZER"}
     for key in [k for k in MEMBERS if k != "julien"]:
