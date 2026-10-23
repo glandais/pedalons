@@ -36,7 +36,7 @@
         <!-- Security overrides of versions quarkus-bom pins too low; drop each one once a Quarkus
              release aligns past it. jackson 3 (via webauthn4j): GHSA ranges [3.2.0,3.2.2).
              log4j-api (via log4j2-jboss-logmanager): [2.26.0,2.26.1). -->
-        <jackson3.version>3.2.3</jackson3.version>
+        <jackson3.version>3.2.4</jackson3.version>
         <log4j-api.version>2.26.1</log4j-api.version>
     </properties>
 
