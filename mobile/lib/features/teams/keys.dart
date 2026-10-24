@@ -39,6 +39,9 @@ class TeamPageKeys {
   /// « Réessayer » de l'état d'erreur.
   final loadErrorRetryButton = const _TeamPageKey('loadErrorRetryButton');
 
+  /// Avatar et nom de l'en-tête : un tap mène au tableau de bord.
+  final headerIdentity = const _TeamPageKey('headerIdentity');
+
   final joinButton = const _TeamPageKey('joinButton');
   final leaveButton = const _TeamPageKey('leaveButton');
   final inviteOnlyButton = const _TeamPageKey('inviteOnlyButton');

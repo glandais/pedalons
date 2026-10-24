@@ -116,21 +116,31 @@ class _Bar extends ConsumerWidget {
           // L'identité compacte n'apparaît qu'en se rétractant : déployée,
           // elle ferait doublon avec le titre de 20 px juste dessous.
           Expanded(
-            child: Opacity(
-              opacity: ((t - 0.4) / 0.6).clamp(0, 1),
-              child: Row(
-                children: <Widget>[
-                  PdlAvatar(name: team.name, imageUrl: team.logoUrl, size: 26),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      team.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: ty.barTitle.copyWith(color: c.text),
+            child: _ToDashboard(
+              team: team,
+              // Invisible tant que l'en-tête est déployé : on ne tape pas sur
+              // ce qu'on ne voit pas — le nom du bloc dessous y mène déjà.
+              enabled: t > 0.4,
+              child: Opacity(
+                opacity: ((t - 0.4) / 0.6).clamp(0, 1),
+                child: Row(
+                  children: <Widget>[
+                    PdlAvatar(
+                      name: team.name,
+                      imageUrl: team.logoUrl,
+                      size: 26,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        team.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: ty.barTitle.copyWith(color: c.text),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -169,49 +179,81 @@ class _Identity extends StatelessWidget {
         PdlSpacing.section,
         8,
       ),
-      child: Row(
-        children: <Widget>[
-          PdlAvatar(name: team.name, imageUrl: team.logoUrl, size: 48),
-          const SizedBox(width: PdlSpacing.cardTight),
-          Expanded(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  team.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: t.screenTitle.copyWith(fontSize: 20),
-                ),
-                const SizedBox(height: 3),
-                Row(
-                  children: <Widget>[
-                    PdlBadge(
-                      label: 'visibility.${team.visibility.toLowerCase()}'.tr(),
-                      tone: Visibility.fromJson(team.visibility).tone(c),
-                      icon: switch (Visibility.fromJson(team.visibility)) {
-                        Visibility.public => PdlIcons.visibilityPublic,
-                        Visibility.publicUnlisted =>
-                          PdlIcons.visibilityUnlisted,
-                        _ => PdlIcons.visibilityTeam,
-                      },
-                    ),
-                    if (team.role != null) ...<Widget>[
-                      const SizedBox(width: PdlSpacing.badgeGap),
-                      Flexible(
-                        child: PdlBadge(
-                          label: 'teams.discovery.memberBadge'.tr(),
-                          tone: PdlDerivedTones.registered(c),
-                        ),
+      child: _ToDashboard(
+        team: team,
+        child: Row(
+          children: <Widget>[
+            PdlAvatar(name: team.name, imageUrl: team.logoUrl, size: 48),
+            const SizedBox(width: PdlSpacing.cardTight),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    team.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: t.screenTitle.copyWith(fontSize: 20),
+                  ),
+                  const SizedBox(height: 3),
+                  Row(
+                    children: <Widget>[
+                      PdlBadge(
+                        label: 'visibility.${team.visibility.toLowerCase()}'
+                            .tr(),
+                        tone: Visibility.fromJson(team.visibility).tone(c),
+                        icon: switch (Visibility.fromJson(team.visibility)) {
+                          Visibility.public => PdlIcons.visibilityPublic,
+                          Visibility.publicUnlisted =>
+                            PdlIcons.visibilityUnlisted,
+                          _ => PdlIcons.visibilityTeam,
+                        },
                       ),
+                      if (team.role != null) ...<Widget>[
+                        const SizedBox(width: PdlSpacing.badgeGap),
+                        Flexible(
+                          child: PdlBadge(
+                            label: 'teams.discovery.memberBadge'.tr(),
+                            tone: PdlDerivedTones.registered(c),
+                          ),
+                        ),
+                      ],
                     ],
-                  ],
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// L'identité de l'équipe mène à son tableau de bord, son adresse propre.
+class _ToDashboard extends StatelessWidget {
+  const _ToDashboard({
+    required this.team,
+    required this.child,
+    this.enabled = true,
+  });
+
+  final TeamDetailDto team;
+  final Widget child;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!enabled) return child;
+    return Semantics(
+      button: true,
+      label: 'teams.tabs.dashboard'.tr(),
+      child: GestureDetector(
+        key: keys.team.headerIdentity,
+        behavior: HitTestBehavior.opaque,
+        onTap: () => context.go(Paths.team(team.slug)),
+        child: child,
       ),
     );
   }

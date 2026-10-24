@@ -4,7 +4,10 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:pedalons/api/generated/export.dart';
+import 'package:pedalons/config/locale_context.dart';
+import 'package:pedalons/config/paths.generated.dart';
 import 'package:pedalons/core/pagination/pagination.dart';
 import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
@@ -15,6 +18,7 @@ import 'package:pedalons/features/teams/domain/team_discovery_filters.dart';
 import 'package:pedalons/features/teams/presentation/pages/team_home_page.dart';
 import 'package:pedalons/features/teams/presentation/widgets/team_header.dart';
 import 'package:pedalons/features/teams/presentation/widgets/team_sections.dart';
+import 'package:pedalons/keys.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../support/localization.dart';
@@ -22,9 +26,9 @@ import 'team_fixtures.dart';
 
 /// S23-1 à S23-3 — la page d'équipe.
 ///
-/// Trois choses s'y vérifient : l'en-tête tient sous son plafond de 120 px et
-/// se rétracte à 56, les cellules chiffrées **mènent quelque part**, et
-/// l'adhésion est résolue avant le premier paint puis bascule en optimiste.
+/// Trois choses s'y vérifient : l'en-tête tient sous son plafond de 120 px,
+/// se rétracte à 56 et son nom mène au tableau de bord, et l'adhésion est
+/// résolue avant le premier paint puis bascule en optimiste.
 class _StubTeamRepository implements TeamRepository {
   _StubTeamRepository(this.team, {this.joinError});
 
@@ -187,6 +191,51 @@ void main() {
       // L'action vit dans la rangée de barre : elle survit à la rétraction.
       expect(find.text('Quitter'), findsOneWidget);
     });
+
+    for (final double t in <double>[0, 1]) {
+      testWidgets('t = $t : le nom de l\'équipe mène au tableau de bord', (
+        WidgetTester tester,
+      ) async {
+        setCurrentLocale('fr');
+        final TeamDetailDto team = fixtureTeam(role: 'MEMBER');
+        final GoRouter router = GoRouter(
+          initialLocation: '/ailleurs',
+          routes: <RouteBase>[
+            GoRoute(
+              path: '/ailleurs',
+              builder: (_, _) => Scaffold(
+                body: TeamHeader(team: team, t: t),
+              ),
+            ),
+            GoRoute(
+              path: Paths.team(team.slug),
+              builder: (_, _) => const Text('tableau de bord'),
+            ),
+          ],
+        );
+        addTearDown(router.dispose);
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(prefs),
+              teamRepositoryProvider.overrideWithValue(
+                _StubTeamRepository(team),
+              ),
+            ],
+            child: MaterialApp.router(
+              theme: PedalonsTheme.build(Brightness.light),
+              routerConfig: router,
+            ),
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 10));
+
+        await tester.tap(find.byKey(keys.team.headerIdentity).hitTestable());
+        await tester.pump(const Duration(milliseconds: 10));
+
+        expect(find.text('tableau de bord'), findsOneWidget);
+      });
+    }
   });
 
   group('À propos', () {
