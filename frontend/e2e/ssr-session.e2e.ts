@@ -164,7 +164,7 @@ test.describe('raw document response', () => {
 
     const signedHome = await outletOf(setup.feedPath, cookie)
     expect(signedHome.html).toContain(NEXT_RIDE)
-    expect(signedHome.html).toContain(REGISTERED)
+    expect(signedHome.html).toContain(REGISTERED.replaceAll("'", '&#x27;'))
     expect(signedHome.html).toContain(setup.rideName)
     // Per-visitor HTML: docs/SSR.md makes these a security requirement.
     expect(signedHome.headers['cache-control']).toContain('no-store')
@@ -173,7 +173,7 @@ test.describe('raw document response', () => {
     const anonymousHome = await outletOf(setup.feedPath)
     expect(anonymousHome.html).toContain(setup.rideName)
     expect(anonymousHome.html).not.toContain(NEXT_RIDE)
-    expect(anonymousHome.html).not.toContain(REGISTERED)
+    expect(anonymousHome.html).not.toContain(REGISTERED.replaceAll("'", '&#x27;'))
 
     const signedProfile = await outletOf(PROFILE_PATH, cookie)
     expect(signedProfile.html).toContain(OVERVIEW_SECURITY.replaceAll("'", '&#x27;'))

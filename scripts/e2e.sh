@@ -23,6 +23,8 @@ set -a
 set +a
 
 compose() {
+  # docker-compose.yml requires the key at interpolation, `down` and `logs` included.
+  ensure_routing_key
   docker compose -p "$ENV_NAME" --project-directory "$ROOT" --env-file "$ENV_FILE" \
     -f "$ROOT/docker-compose.yml" -f "$ROOT/docker-compose.e2e.yml" "$@"
 }

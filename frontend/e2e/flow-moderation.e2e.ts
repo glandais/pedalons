@@ -142,7 +142,7 @@ test.describe('team moderation', () => {
       await expect(card.getByText('Post', { exact: true })).toBeVisible()
       await expect(card.getByText('3 signalements', { exact: true })).toBeVisible()
       await expect(card.getByText('Masqué aux membres', { exact: true })).toBeVisible()
-      await expect(card.getByText(`Auteur : ${author.user.displayName}`)).toBeVisible()
+      await expect(card.getByText(`Par ${author.user.displayName}`)).toBeVisible()
       await expect(card.getByText('Harcèlement', { exact: true })).toBeVisible()
       await expect(card.getByText('Spam ou publicité', { exact: true })).toBeVisible()
       await expect(card.getByText(REPORT_MESSAGE, { exact: true })).toBeVisible()
