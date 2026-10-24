@@ -332,9 +332,22 @@ describe('team dashboard, by role', () => {
     expect(heading('teams.dashboard.todo.title')).toBeInTheDocument()
   })
 
-  it('never shows a block above the role, even when the payload carries it', () => {
-    const stale = dashboard('ADMIN')
-    renderDashboard({ ...stale, role: 'MEMBER' })
+  // docs/LEDGER_*.md API-137: a platform admin who is not a member gets a null role and the
+  // organizer and admin blocks. The blocks the response carries are what is drawn, not the role.
+  it("draws the blocks the payload carries, a platform admin's null role included", () => {
+    renderDashboard({ ...dashboard('ADMIN'), role: undefined, myUpcoming: undefined })
+
+    expect(heading('teams.dashboard.todo.title')).toBeInTheDocument()
+    expect(heading('teams.dashboard.admin.title')).toBeInTheDocument()
+  })
+
+  it('a member payload carries no organizer or admin block, and shows none', () => {
+    renderDashboard({
+      ...dashboard('ADMIN'),
+      role: 'MEMBER',
+      organizer: undefined,
+      admin: undefined,
+    })
 
     expect(heading('teams.dashboard.todo.title')).not.toBeInTheDocument()
     expect(heading('teams.dashboard.admin.title')).not.toBeInTheDocument()

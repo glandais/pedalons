@@ -40,11 +40,14 @@ import { ConfirmDialog } from '../../components/common/ConfirmDialog'
 import { VisibilityBadge } from '../../components/card/common'
 import { useTeamPagesAdminData } from './teamPagesAdminData'
 import type { TeamPageSummaryDto } from '@/api/dto'
+import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
+import { teamAccess } from '@/lib/teamAccess'
 
 const MAX_ADDITIONAL_PAGES = 3
 
 export function TeamPagesAdminPage() {
   const { t } = useTranslation()
+  const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
   const { teamSlug } = useParams<{ teamSlug: string }>()
   const queryClient = useQueryClient()
   const [pageToDelete, setPageToDelete] = useState<TeamPageSummaryDto | null>(null)
@@ -67,7 +70,7 @@ export function TeamPagesAdminPage() {
     return <Navigate to={paths.teams()} replace />
   }
 
-  const isAdmin = team.role === 'ADMIN'
+  const isAdmin = teamAccess(team, isPlatformAdmin).isAdmin
   if (!isAdmin) {
     return <Navigate to={paths.team(team.slug)} replace />
   }

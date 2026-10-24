@@ -215,7 +215,12 @@ public interface TeamEntityRepository<T extends TeamEntity, Q extends TeamEntity
                       + "where")
               .addParam("userId", query.userId());
 
-      if (!query.platformAdmin()) {
+      // A platform admin's bypass covers what they open — a detail, or the lists of the one team
+      // they navigated to, as its moderation tool — never a personal or cross-team view, nor a
+      // query restricted to their own memberships: there, their real role decides
+      // (docs/LEDGER_*.md API-137).
+      boolean bypass = query.platformAdmin() && (!list || (teamScoped && query.minRole() == null));
+      if (!bypass) {
         OrClause visibilityFilter = new OrClause();
 
         // public
@@ -263,9 +268,16 @@ public interface TeamEntityRepository<T extends TeamEntity, Q extends TeamEntity
         pedalonsQuery.and(visibilityFilter);
 
         // Hidden by reports until a moderator decides — except from the team's moderators, who
-        // have to read it to decide. A platform admin skips this block altogether.
+        // have to read it to decide. A bypassing platform admin skips this block altogether.
         pedalonsQuery.and(
             "(te.moderationHiddenAt IS NULL OR ut.role IN ('ORGANIZER', 'ADMIN'))", Map.of());
+      } else if (list) {
+        // Someone else's draft ad stays out of the team's lists, as it does for a team admin; the
+        // detail stays readable by link.
+        pedalonsQuery.and(
+            "(TYPE(te) <> Ad OR te.status IN ('PUBLISHED', 'CANCELLED')"
+                + " OR te.createdBy.id = :userId)",
+            Map.of());
       }
 
       if (list) {

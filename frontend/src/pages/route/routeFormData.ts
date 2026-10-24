@@ -6,6 +6,8 @@ import {
   prefetchGetRouteQuery,
 } from '@/api/endpoints/routes/routes'
 import { prefetchTeamTags } from '@/config/prefetchHelpers'
+import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
+import { teamAccess } from '@/lib/teamAccess'
 
 /**
  * The one description of what `CreateRoutePage` and `EditRoutePage` read, consumed two ways: the
@@ -45,10 +47,11 @@ export function useCreateRouteFormData(teamSlug?: string) {
  */
 export function useEditRouteFormData(teamSlug?: string, routeSlug?: string) {
   const team = useGetTeam(teamSlug!, { query: { enabled: !!teamSlug } })
+  const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
   const route = useGetRoute(teamSlug!, routeSlug!, {
     query: { enabled: !!teamSlug && !!routeSlug },
   })
-  const canEdit = team.data?.role === 'ADMIN' || team.data?.role === 'ORGANIZER'
+  const canEdit = teamAccess(team.data, isPlatformAdmin).isOrganizer
   const plannerState = useGetRoutePlannerState(teamSlug!, routeSlug!, {
     query: {
       enabled:

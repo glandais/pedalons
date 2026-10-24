@@ -5,6 +5,7 @@ import { useTeamAdminData } from './teamAdminData'
 import { LoadingPage } from '../../components/common/LoadingSpinner'
 import { useTranslation } from 'react-i18next'
 import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
+import { teamAccess } from '@/lib/teamAccess'
 
 export function TeamAdminPage() {
   const { t } = useTranslation()
@@ -22,13 +23,8 @@ export function TeamAdminPage() {
       return
     }
 
-    const isOrganizer = team.role === 'ADMIN' || team.role === 'ORGANIZER'
-    // A platform admin who is not an organizer here can only moderate the team.
-    if (!isOrganizer && isPlatformAdmin) {
-      navigate(paths.teamAdminReports(teamSlug!), { replace: true })
-      return
-    }
-    if (!isOrganizer) {
+    // A platform admin administers every team, member or not (docs/LEDGER_*.md API-137).
+    if (!teamAccess(team, isPlatformAdmin).isOrganizer) {
       navigate(paths.team(teamSlug!), { replace: true })
       return
     }

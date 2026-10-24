@@ -42,6 +42,8 @@ import { useRideGroupMembership } from '@/hooks/useRideGroupMembership'
 import { useScrollToAnchor } from '@/hooks/useScrollToAnchor'
 import { leavesGroupPage } from './rideDetailData'
 import { groupAction, groupWindLeg, useRideGroupData } from './rideGroupData'
+import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
+import { teamAccess } from '@/lib/teamAccess'
 
 /** Up to this many groups pick from a segmented control; beyond, a select keeps the row short. */
 const SEGMENTED_MAX_GROUPS = 4
@@ -80,6 +82,7 @@ const NO_WEATHER_FOCUS: WeatherFocus = { selection: { position: 0 }, open: null 
  */
 export function RideGroupPage() {
   const { t } = useTranslation()
+  const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
   const { teamSlug, rideSlug, groupId } = useParams<{
     teamSlug: string
     rideSlug: string
@@ -196,8 +199,9 @@ export function RideGroupPage() {
     )
   }
 
-  const isMember = !!team.role
-  const canEdit = team.role === 'ADMIN' || team.role === 'ORGANIZER'
+  // Registering follows the real membership; editing, a platform admin's right too
+  // (docs/LEDGER_*.md API-137).
+  const { isMember, isOrganizer: canEdit } = teamAccess(team, isPlatformAdmin)
   const action = groupAction(ride, group, isMember)
   const groups = ride.groups ?? []
   const otherGroup =

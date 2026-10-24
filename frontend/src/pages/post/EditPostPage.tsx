@@ -15,9 +15,12 @@ import { PostEditor } from '../../components/post/PostEditor'
 import { paths } from '@/config/paths'
 import type { PostRequest } from '@/api/dto'
 import { useEditPostFormData, postToRequest } from './postFormData'
+import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
+import { teamAccess } from '@/lib/teamAccess'
 
 export function EditPostPage() {
   const { t } = useTranslation()
+  const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
   const { teamSlug, postSlug } = useParams<{ teamSlug: string; postSlug: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -43,7 +46,7 @@ export function EditPostPage() {
     return <Navigate to={paths.team(teamSlug!)} replace />
   }
 
-  const canEdit = team.role === 'ADMIN' || team.role === 'ORGANIZER'
+  const canEdit = teamAccess(team, isPlatformAdmin).isOrganizer
 
   if (!canEdit) {
     return <Navigate to={paths.post(teamSlug!, postSlug!)} replace />

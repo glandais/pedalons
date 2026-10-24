@@ -100,7 +100,7 @@ abstract class TeamDetailDto with _$TeamDetailDto {
     /// Members per role. Only for the team's administrators (platform admins included): null for everyone else, and in the team listings.
     MemberCountByRoleDto? memberCountByRole,
 
-    /// Current user's role (null if not a member)
+    /// Current user's role (null if not a member). The real membership, platform admins included: their extra rights come from the platform role of /api/me, not from this field.
     String? role,
 
     /// Team location coordinates [longitude, latitude]

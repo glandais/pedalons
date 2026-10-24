@@ -75,12 +75,15 @@ import { GroupRouteMap } from '@/components/ride/group/GroupRouteMap'
 import { GroupStats } from '@/components/ride/group/GroupStats'
 import { useScrollToAnchor } from '@/hooks/useScrollToAnchor'
 import { withMapColor } from '@/hooks/filters/mapColorFilters'
+import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
+import { teamAccess } from '@/lib/teamAccess'
 
 /** The anchor of the weather block, as on a group's page: a former group link's `#meteo` lands here. */
 const WEATHER_ANCHOR = 'meteo'
 
 export function RideDetailPage() {
   const { t } = useTranslation()
+  const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
   const { teamSlug, rideSlug } = useParams<{ teamSlug: string; rideSlug: string }>()
   const { isAuthenticated } = useAuth()
   // The hovered route, and the one chosen by a click on its trace — map item ids, one per distinct
@@ -158,10 +161,10 @@ export function RideDetailPage() {
     )
   }
 
-  const isMember = !!team?.role
-  const isAdmin = team?.role === 'ADMIN'
-  const isOrganizer = team?.role === 'ORGANIZER'
-  const canEdit = isAdmin || isOrganizer
+  // Registering and the join banner follow the real membership; editing and the comment thread
+  // (moderation), the rights a platform admin holds in every team (docs/LEDGER_*.md API-137).
+  const { isMember, isOrganizer: canEdit } = teamAccess(team, isPlatformAdmin)
+  const canReadComments = isMember || isPlatformAdmin
   // A ride that has already happened is not joinable — `canJoinRide` used to ignore the date
   // entirely, so last year's rides kept a live "Join" button.
   // Said by the server (docs/LEDGER_*.md API-16), not derived from the clock of whoever renders.
@@ -623,7 +626,7 @@ export function RideDetailPage() {
       )}
 
       {/* Comments Section - only visible to team members */}
-      {isMember && (
+      {canReadComments && (
         <Box mt="lg">
           <CommentSection
             teamSlug={teamSlug!}

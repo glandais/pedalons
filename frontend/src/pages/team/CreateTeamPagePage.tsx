@@ -9,9 +9,12 @@ import { TeamPageForm } from '../../components/team/TeamPageForm'
 import { defaultMedia } from '@/lib/apiUtils'
 import { Visibility } from '@/api/dto'
 import { useCreateTeamPageFormData } from './teamPageFormData'
+import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
+import { teamAccess } from '@/lib/teamAccess'
 
 export function CreateTeamPagePage() {
   const { t } = useTranslation()
+  const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
   const { teamSlug } = useParams<{ teamSlug: string }>()
 
   const { team: teamQuery } = useCreateTeamPageFormData(teamSlug)
@@ -27,7 +30,7 @@ export function CreateTeamPagePage() {
     return <Navigate to={paths.teams()} replace />
   }
 
-  const isAdmin = team.role === 'ADMIN'
+  const isAdmin = teamAccess(team, isPlatformAdmin).isAdmin
   if (!isAdmin) {
     return <Navigate to={paths.team(team.slug)} replace />
   }

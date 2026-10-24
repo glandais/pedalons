@@ -402,7 +402,9 @@ export const ListTeamsResponse = zod
             role: zod
               .enum(['MEMBER', 'ORGANIZER', 'ADMIN'])
               .optional()
-              .describe("Current user's role (null if not a member)"),
+              .describe(
+                "Current user's role (null if not a member). The real membership, platform admins included: their extra rights come from the platform role of /api/me, not from this field."
+              ),
             createdAt: zod.iso.datetime({ offset: true }).describe('Team creation timestamp'),
             geometry: zod
               .object({
@@ -1109,7 +1111,9 @@ export const CreateTeamResponse = zod
     role: zod
       .enum(['MEMBER', 'ORGANIZER', 'ADMIN'])
       .optional()
-      .describe("Current user's role (null if not a member)"),
+      .describe(
+        "Current user's role (null if not a member). The real membership, platform admins included: their extra rights come from the platform role of /api/me, not from this field."
+      ),
     createdAt: zod.iso.datetime({ offset: true }).describe('Team creation timestamp'),
     geometry: zod
       .object({
@@ -1813,7 +1817,9 @@ export const UpdateTeamResponse = zod
     role: zod
       .enum(['MEMBER', 'ORGANIZER', 'ADMIN'])
       .optional()
-      .describe("Current user's role (null if not a member)"),
+      .describe(
+        "Current user's role (null if not a member). The real membership, platform admins included: their extra rights come from the platform role of /api/me, not from this field."
+      ),
     createdAt: zod.iso.datetime({ offset: true }).describe('Team creation timestamp'),
     geometry: zod
       .object({
@@ -2201,7 +2207,9 @@ export const GetTeamResponse = zod
     role: zod
       .enum(['MEMBER', 'ORGANIZER', 'ADMIN'])
       .optional()
-      .describe("Current user's role (null if not a member)"),
+      .describe(
+        "Current user's role (null if not a member). The real membership, platform admins included: their extra rights come from the platform role of /api/me, not from this field."
+      ),
     createdAt: zod.iso.datetime({ offset: true }).describe('Team creation timestamp'),
     geometry: zod
       .object({
@@ -2668,7 +2676,9 @@ export const GetTeamDashboardResponse = zod
         role: zod
           .enum(['MEMBER', 'ORGANIZER', 'ADMIN'])
           .optional()
-          .describe("Current user's role (null if not a member)"),
+          .describe(
+            "Current user's role (null if not a member). The real membership, platform admins included: their extra rights come from the platform role of /api/me, not from this field."
+          ),
         createdAt: zod.iso.datetime({ offset: true }).describe('Team creation timestamp'),
         geometry: zod
           .object({
@@ -2690,7 +2700,7 @@ export const GetTeamDashboardResponse = zod
       .enum(['MEMBER', 'ORGANIZER', 'ADMIN'])
       .optional()
       .describe(
-        "The caller's role in the team, the one the sections were built for. ADMIN for a platform admin; null for a visitor, anonymous or not a member."
+        "The caller's real role in the team; null for a visitor, anonymous or not a member — a platform admin who is not a member included. The organizer and admin blocks are what a platform admin's rights add."
       ),
     myUpcoming: zod
       .object({
@@ -18638,7 +18648,9 @@ export const GetTeamDashboardResponse = zod
           ),
       })
       .optional()
-      .describe('What organizers and administrators see on top. Null for a MEMBER and a visitor.'),
+      .describe(
+        'What organizers and administrators see on top. Null for a MEMBER and a visitor; filled for a platform admin, member or not.'
+      ),
     admin: zod
       .object({
         newestMembers: zod
@@ -18723,7 +18735,9 @@ export const GetTeamDashboardResponse = zod
           ),
       })
       .optional()
-      .describe('The administration panel. Null below ADMIN, and for a visitor.'),
+      .describe(
+        'The administration panel. Null below ADMIN, and for a visitor; filled for a platform admin, member or not.'
+      ),
   })
   .describe(
     "A team's dashboard for one of its members, or its public part for a visitor. Each section is a short page (at most 5 rows) of the matching list, compact rows, deleted content left out; its total is what the full list holds. A section is null when its module is disabled for the team. The organizer block is null for a MEMBER, the admin block null below ADMIN. For a visitor (role null) only team, upcomingRides, latestPosts and newRoutes are filled."
@@ -19114,7 +19128,9 @@ export const ChangeTeamSlugResponse = zod
     role: zod
       .enum(['MEMBER', 'ORGANIZER', 'ADMIN'])
       .optional()
-      .describe("Current user's role (null if not a member)"),
+      .describe(
+        "Current user's role (null if not a member). The real membership, platform admins included: their extra rights come from the platform role of /api/me, not from this field."
+      ),
     createdAt: zod.iso.datetime({ offset: true }).describe('Team creation timestamp'),
     geometry: zod
       .object({

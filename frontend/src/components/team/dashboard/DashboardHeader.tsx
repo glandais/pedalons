@@ -1,3 +1,4 @@
+import { useTeamAccess } from '@/lib/teamAccess'
 import { useTranslation } from 'react-i18next'
 import { ActionIcon, Button, Group, Text, Tooltip } from '@mantine/core'
 import { IconPencilPlus, IconPlus, type Icon } from '@tabler/icons-react'
@@ -36,7 +37,8 @@ export function DashboardHeaderMeta({ team, role }: { team: TeamDetailDto; role?
 export function DashboardHeaderActions({ team, role }: { team: TeamDetailDto; role?: TeamRole }) {
   const { t } = useTranslation()
   const { isMobile } = useResponsive()
-  const isOrganizer = role === 'ADMIN' || role === 'ORGANIZER'
+  // A right, not the badge: a platform admin creates in any team (docs/LEDGER_*.md API-137).
+  const { isOrganizer } = useTeamAccess({ role })
 
   return (
     <>

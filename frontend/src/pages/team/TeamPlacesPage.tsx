@@ -7,9 +7,12 @@ import { LoadingPage } from '../../components/common/LoadingSpinner'
 import { TeamAdminLayout } from '../../components/team/TeamAdminLayout'
 import { PlaceList } from '../../components/team/PlaceList'
 import { useCanonicalPath } from '../../hooks/useCanonicalPath'
+import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
+import { teamAccess } from '@/lib/teamAccess'
 
 export function TeamPlacesPage() {
   const { t } = useTranslation()
+  const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
   const { teamSlug } = useParams<{ teamSlug: string }>()
 
   const { data: team, isLoading } = useGetTeam(teamSlug!, {
@@ -26,7 +29,7 @@ export function TeamPlacesPage() {
     return <Navigate to={paths.teams()} replace />
   }
 
-  const canManage = team.role === 'ADMIN' || team.role === 'ORGANIZER'
+  const canManage = teamAccess(team, isPlatformAdmin).isOrganizer
 
   return (
     <TeamAdminLayout team={team} currentTab="places">

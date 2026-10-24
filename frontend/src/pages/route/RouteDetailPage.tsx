@@ -21,12 +21,14 @@ import { ContentActionsMenu } from '../../components/moderation/ContentActionsMe
 import { ShareButton } from '../../components/common/ShareButton'
 import { TeamContextBanner } from '../../components/team/TeamContextBanner'
 import { ReportTargetType } from '@/api/dto'
-import { useAuthStore, selectUser } from '@/store/authStore'
+import { useAuthStore, selectUser, selectIsPlatformAdmin } from '@/store/authStore'
 import { useCanonicalPath } from '../../hooks/useCanonicalPath'
+import { teamAccess } from '@/lib/teamAccess'
 
 export function RouteDetailPage() {
   const { teamSlug, routeSlug } = useParams<{ teamSlug: string; routeSlug: string }>()
   const { t } = useTranslation()
+  const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const currentUserId = useAuthStore(selectUser)?.id
@@ -41,8 +43,10 @@ export function RouteDetailPage() {
 
   useCanonicalPath(team && route ? paths.route(team.slug, route.slug) : undefined)
 
-  const isMember = !!team?.role
-  const canEdit = team && (team.role === 'ADMIN' || team.role === 'ORGANIZER')
+  // Editing and the comment thread (moderation) are the rights a platform admin holds in every
+  // team (docs/LEDGER_*.md API-137).
+  const { isMember, isOrganizer: canEdit } = teamAccess(team, isPlatformAdmin)
+  const canReadComments = isMember || isPlatformAdmin
 
   const handleDelete = async () => {
     if (routeSlug && teamSlug) {
@@ -183,7 +187,7 @@ export function RouteDetailPage() {
       </Box>
 
       {/* Comments Section - only visible to team members */}
-      {isMember && (
+      {canReadComments && (
         <Box mt="xl">
           <CommentSection
             teamSlug={teamSlug!}

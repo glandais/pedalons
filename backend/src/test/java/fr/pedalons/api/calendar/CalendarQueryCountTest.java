@@ -11,7 +11,9 @@ import fr.pedalons.domain.ride.RideGroup;
 import fr.pedalons.domain.route.Route;
 import fr.pedalons.domain.trip.Trip;
 import fr.pedalons.domain.trip.TripStage;
+import fr.pedalons.domain.user.User;
 import fr.pedalons.enums.AssetType;
+import fr.pedalons.enums.TeamRole;
 import fr.pedalons.util.QueryStats;
 import io.quarkus.test.junit.QuarkusTest;
 import java.time.Instant;
@@ -87,7 +89,8 @@ class CalendarQueryCountTest extends AbstractQueryCountTest {
     }
   }
 
-  private QueryStats.Counters measureWindow(String label, String path, int days, int expected) {
+  private QueryStats.Counters measureWindow(
+      String label, String user, String path, int days, int expected) {
     String url =
         path
             + "?from="
@@ -99,7 +102,7 @@ class CalendarQueryCountTest extends AbstractQueryCountTest {
         () ->
             given()
                 .auth()
-                .oauth2(getAccessToken(USER1))
+                .oauth2(getAccessToken(user))
                 .when()
                 .get(url)
                 .then()
@@ -108,10 +111,14 @@ class CalendarQueryCountTest extends AbstractQueryCountTest {
   }
 
   private void assertFlatOverWindow(String name, String path) {
+    assertFlatOverWindow(name, USER1, path);
+  }
+
+  private void assertFlatOverWindow(String name, String user, String path) {
     QueryStats.Counters small =
-        measureWindow(name + " [" + SMALL_PAGE + " days]", path, SMALL_PAGE, SMALL_PAGE);
+        measureWindow(name + " [" + SMALL_PAGE + " days]", user, path, SMALL_PAGE, SMALL_PAGE);
     QueryStats.Counters large =
-        measureWindow(name + " [" + LARGE_PAGE + " days]", path, LARGE_PAGE, LARGE_PAGE);
+        measureWindow(name + " [" + LARGE_PAGE + " days]", user, path, LARGE_PAGE, LARGE_PAGE);
 
     long growth = large.statements() - small.statements();
     assertTrue(
@@ -154,5 +161,26 @@ class CalendarQueryCountTest extends AbstractQueryCountTest {
     seedRides(LARGE_PAGE);
     assertFlatOverWindow(
         "GET /api/teams/{slug}/calendar/events", "/api/teams/" + team1Slug + "/calendar/events");
+  }
+
+  /** Ledger API-137: a platform admin's personal agenda takes the member's query shape. */
+  @Test
+  void getEvents_asPlatformAdminMember_costDoesNotScaleWithTheWindow() {
+    seedRides(LARGE_PAGE);
+    User root = dataService.createPlatformAdminUser("root@example.com", "Root");
+    dataService.addUserToTeam(root, team1, TeamRole.MEMBER);
+    assertFlatOverWindow(
+        "GET /api/calendar/events (platform admin)", "root", "/api/calendar/events");
+  }
+
+  /** The in-app team calendar keeps the platform admin's full view, at the same cost. */
+  @Test
+  void getTeamEvents_asPlatformAdmin_costDoesNotScaleWithTheWindow() {
+    seedRides(LARGE_PAGE);
+    dataService.createPlatformAdminUser("root@example.com", "Root");
+    assertFlatOverWindow(
+        "GET /api/teams/{slug}/calendar/events (platform admin)",
+        "root",
+        "/api/teams/" + team1Slug + "/calendar/events");
   }
 }

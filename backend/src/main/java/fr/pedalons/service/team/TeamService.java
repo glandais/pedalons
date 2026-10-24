@@ -203,7 +203,10 @@ public class TeamService {
       @Nullable SortDirection sortDir,
       int page,
       int size) {
-    boolean platformAdmin = isPlatformAdmin();
+    // A platform admin's directory of every team is the plain listing; "my teams" (minRole) and
+    // discovery (joinable) are personal views and apply the real membership (docs/LEDGER_*.md
+    // API-137).
+    boolean allTeams = isPlatformAdmin() && minRole == null && joinable == null;
     PedalonsPage<TeamAndRole> teams =
         teamRepository.find(
             TeamQuery.builder()
@@ -217,10 +220,12 @@ public class TeamService {
                 .sortDir(sortDir)
                 .page(page)
                 .size(size)
-                .platformAdmin(platformAdmin)
+                .platformAdmin(allTeams)
                 .build());
+    // A team card counts what the caller's real role shows: explicit, since a one-row page would
+    // otherwise be a team-scoped query, where the platform admin's bypass applies.
     Map<Long, TeamStats> stats =
-        loadStats(teams.items().stream().map(t -> t.team().getId()).toList());
+        loadStats(teams.items().stream().map(t -> t.team().getId()).toList(), false);
     List<TeamDetailDto> dtos =
         teams.items().stream()
             .map(
@@ -228,7 +233,7 @@ public class TeamService {
                     TeamDetailDto.from(
                         teamAndRole,
                         assetService,
-                        platformAdmin,
+                        false,
                         stats.getOrDefault(teamAndRole.team().getId(), TeamStats.EMPTY)))
             .toList();
     return new TeamListResponse(dtos, teams.total(), page, size);
@@ -238,8 +243,10 @@ public class TeamService {
   public TeamDetailDto getTeamDetailDto(String teamSlug) {
     Team team = getTeam(teamSlug);
     TeamAndRole teamAndRole = getTeamAndRole(team.getId());
-    TeamStats stats = loadStats(List.of(team.getId())).getOrDefault(team.getId(), TeamStats.EMPTY);
     boolean platformAdmin = isPlatformAdmin();
+    // The header of a team the caller opened: a platform admin counts what its lists show them.
+    TeamStats stats =
+        loadStats(List.of(team.getId()), platformAdmin).getOrDefault(team.getId(), TeamStats.EMPTY);
     // The split per role is the administration panel's: one more query, for administrators only.
     boolean admin =
         platformAdmin || (teamAndRole.teamRole() != null && teamAndRole.teamRole().isAdmin());
@@ -256,13 +263,13 @@ public class TeamService {
    * <p>The obvious implementation — ask each team for its rides and its routes — is two queries per
    * row, and it is the reason this indirection exists at all.
    */
-  private Map<Long, TeamStats> loadStats(List<Long> teamIds) {
+  private Map<Long, TeamStats> loadStats(List<Long> teamIds, boolean platformAdmin) {
     return teamStatsRepository.load(
         teamIds,
         pedalonsContext.getDomainId(),
         pedalonsContext.getUserIdNullable(),
         pedalonsContext.getPinnedTeamIdNullable(),
-        isPlatformAdmin());
+        platformAdmin);
   }
 
   @Transactional

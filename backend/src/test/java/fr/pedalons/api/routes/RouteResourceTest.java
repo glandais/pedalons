@@ -1166,4 +1166,70 @@ class RouteResourceTest extends AbstractResourceTest {
         .then()
         .statusCode(404);
   }
+
+  // ==================== Platform admin (ledger API-137) ====================
+
+  @Test
+  void getAllRoutes_asPlatformAdmin_shouldNotReturnPrivateOrHiddenRoutes() {
+    dataService.createPlatformAdminUser("root@example.com", "Root");
+    Route open = dataService.createRoute(team1, user1, "Open Route", Visibility.PUBLIC);
+    Route members = dataService.createRoute(team1, user1, "Members Route", Visibility.TEAM);
+    Route hidden = dataService.createRoute(team1, user1, "Hidden Route", Visibility.PUBLIC);
+    dataService.hideForModeration(hidden);
+    Route foreign = dataService.createRoute(team2, user1, "Private Team Route", Visibility.TEAM);
+
+    // The cross-team listing is what the admin's real role (none) shows.
+    given()
+        .auth()
+        .oauth2(getAccessToken("root"))
+        .queryParam("size", 50)
+        .when()
+        .get("/api/routes")
+        .then()
+        .statusCode(200)
+        .body("routes.slug", hasItem(open.getSlug()))
+        .body(
+            "routes.slug",
+            not(
+                anyOf(
+                    hasItem(members.getSlug()),
+                    hasItem(hidden.getSlug()),
+                    hasItem(foreign.getSlug()))));
+
+    // The team the admin opens keeps its full list.
+    given()
+        .auth()
+        .oauth2(getAccessToken("root"))
+        .queryParam("size", 50)
+        .when()
+        .get("/api/teams/" + team1Slug + "/routes")
+        .then()
+        .statusCode(200)
+        .body("routes.slug", hasItems(open.getSlug(), members.getSlug(), hidden.getSlug()));
+  }
+
+  @Test
+  void getUsages_asPlatformAdmin_shouldStillListDraftRides() {
+    dataService.createPlatformAdminUser("root@example.com", "Root");
+    Route route = dataService.createRoute(team1, user1, "Draft Usage Route", Visibility.PUBLIC);
+    Ride draft =
+        dataService.createRide(
+            team1,
+            user1,
+            "Draft Ride",
+            "draft-usage-ride",
+            USAGE_TIME,
+            Visibility.PUBLIC,
+            Status.DRAFT);
+    dataService.setRideRoute(draft, route);
+
+    given()
+        .auth()
+        .oauth2(getAccessToken("root"))
+        .when()
+        .get(usagesUrl(route))
+        .then()
+        .statusCode(200)
+        .body("usages.slug", hasItem("draft-usage-ride"));
+  }
 }

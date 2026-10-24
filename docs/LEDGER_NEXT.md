@@ -81,6 +81,14 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
       Repli si les expressions en `layout` cassent : une `SymbolStyleLayer` par type, `icon-image`
       constant et filtre `['==',['get','icon'],id]`. Livré par `MOB-84`.
 
+- [ ] `MOB-96` **`teamManagePermission` ne regarde pas les modules d'une équipe hors de « Mes
+      équipes » (XS, facultatif)** — un administrateur de la plateforme qui ouvre une équipe dont il
+      n'est pas membre se voit proposer de créer une sortie ou un parcours sans que `enableRides` /
+      `enableRoutes` soient vérifiés (`features/rides/providers/ride_editor_providers.dart`) : le
+      serveur refuse ensuite. Relevé pendant `API-137`. Au même endroit : la puce « Annonces »
+      reste aux membres (`buildTeamSections`), alors que le site l'ouvre à l'administrateur de la
+      plateforme.
+
 ### Recette sur une application qui tourne
 
 Rien de ce qui suit n'est couvert par les tests automatisés — soit parce que c'est du rendu, soit
@@ -347,6 +355,12 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
       pas (`WEB-54`). Les mineurs relevés au passage sont sortis dans `WEB-98` ; les renvois
       imprécis des textes légaux (« depuis votre profil ») relèvent de la section `LEGAL`.
 
+- [ ] `WEB-120` **Signaler à un administrateur de la plateforme les pages qu'il est seul à voir
+      (XS, facultatif)** — depuis `API-137`, le détail d'une équipe lui donne toutes ses pages
+      (brouillons, réservées aux membres, masquées par la modération) alors que son `role` est son
+      vrai rôle. Le menu de l'équipe (`useNavItems.teamNavItems`) les liste sans les distinguer :
+      un badge « Brouillon » / « Membres » / « Masquée » éviterait qu'il les croie publiques.
+
 - [ ] `WEB-98` **Deux clés i18n mortes et un e-mail qui nomme un réglage sans lien (XS)** —
       `auth.login.tabs.passkey` et `auth.passkey.login` ne servent plus nulle part dans
       `frontend/src` (`frontend/src/locales/{fr,en}/common.json`, lignes 286 et 301 en français ;
@@ -468,6 +482,20 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
 ---
 
 ## API — Contrat d'API et backend
+
+- [ ] `API-139` **`GET /api/admin/teams` compte les membres ligne par ligne (S)** —
+      `AdminTeamService.listTeams` appelle `userTeamRepository.count` pour chaque équipe de la page
+      (`service/admin/AdminTeamService.java`, dans le `map` des lignes) : une requête par ligne, contre l'invariant des
+      lookups par page. Correctif : un `count` groupé par `team.id` pour toute la page, et un
+      `AdminTeamQueryCountTest` qui échoue si la ligne revient. Relevé pendant `API-137`.
+
+- [ ] `API-140` **`/api/admin/teams` sans domaine forcé : décision produit à prendre** —
+      l'endpoint accepte un `domainId` arbitraire ou nul, et nul liste les équipes de **tous** les
+      domaines (`AdminTeamService.listTeams`). Le filtre de domaine de la console d'administration
+      laisse penser que c'est voulu (un opérateur pour toute la plateforme), mais rien ne le dit, et
+      c'est le seul endroit où une requête sort de son domaine. Trancher : super-administration
+      multi-domaine assumée (et alors l'écrire, et le dire dans la console), ou domaine de la
+      requête imposé. Rien n'est changé en attendant. Relevé pendant `API-137`.
 
 - [ ] `API-136` **Retirer `participations` du résumé du profil (S)** — depuis `WEB-110`, ni le site
       ni l'app ne lisent `ProfileSummaryDto.participations` (`ProfileParticipationSummaryDto` : compteurs
@@ -641,7 +669,6 @@ ceux du plan (`API-1`, l'URL de tuile authentifiable, est livré).
 | `API-17` | `?format=polyline` sur la géométrie de parcours | — | La géométrie stockée est déjà allégée à l'import (`API-40` : 681 points et 65 Ko pour le parcours médian) ; ~÷4 sur le poids, au prix d'un décodeur Dart. **À rouvrir seulement sur une mesure réelle** — aucune n'a été faite au 16 octobre 2026 ; sans mesure, candidat à « Délibérément dehors » (décision du propriétaire) |
 | `API-18` | Voyage comme événement multi-jour au calendrier (`CalendarEventType`, toujours `RIDE`/`TRIP_STAGE`) | 22 | Un voyage sans étape est absent du calendrier ; avec des étapes, elles y sont, le voyage en tant qu'objet non |
 | `API-19` | `GET /api/search?q&types=&limit` unifié | — | Plus aucune recherche transverse : `GET /api/users/search` a été **supprimé** en `3.0.0` (`API-39`). La seule recherche de personnes est celle du trombinoscope d'une équipe |
-| `API-137` | `GET /api/teams?minRole=MEMBER` pour un administrateur de la plateforme : ses vraies adhésions et son vrai rôle, sans les équipes supprimées | Accueil « Mes équipes », sélecteur d'équipe (`WEB-111`, `MOB-87`) | `TeamRepository.find` (branche « Platform admin, all teams ») ignore `minRole` et ne filtre plus `deleted`, et `TeamDetailDto.from` donne `role = ADMIN` sur chaque ligne. Un administrateur de la plateforme voit donc les 20 premières équipes du domaine, supprimées comprises, au lieu des siennes. Garder la vue « toutes les équipes » pour l'administration, sans `minRole` |
 
 Le meneur de groupe (`API-41`, livré en 1.5.0), l'URL de tuile (`API-1`) et la pagination du
 calendrier (`API-20`) sont dans

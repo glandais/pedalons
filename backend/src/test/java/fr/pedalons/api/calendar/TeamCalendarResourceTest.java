@@ -8,6 +8,9 @@ import fr.pedalons.domain.calendar.CalendarToken;
 import fr.pedalons.domain.ride.Ride;
 import fr.pedalons.domain.trip.Trip;
 import fr.pedalons.domain.trip.TripStage;
+import fr.pedalons.domain.user.User;
+import fr.pedalons.enums.Status;
+import fr.pedalons.enums.TeamRole;
 import io.quarkus.test.junit.QuarkusTest;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
@@ -265,5 +268,37 @@ class TeamCalendarResourceTest extends AbstractResourceTest {
         .then()
         .statusCode(200)
         .body("events.title", hasItem("Private Ride"));
+  }
+
+  /**
+   * Ledger API-137: an exported feed lands in someone's agenda, so it follows the real role; the
+   * in-app team calendar keeps the drafts for the platform admin who opens it.
+   */
+  @Test
+  void teamIcs_asPlatformAdmin_shouldNotExportDrafts() {
+    User godmode = dataService.createPlatformAdminUser("godmode@example.com", "God Mode");
+    // The team feed is members-only (403 otherwise): as a plain member, the platform admin must
+    // not get the drafts their bypass would show.
+    dataService.addUserToTeam(godmode, team1, TeamRole.MEMBER);
+    CalendarToken godToken = dataService.createCalendarToken(godmode, "godmode-calendar-token");
+    dataService.createRide(team1, user1, "Draft Ride", "draft-ride", now, Status.DRAFT);
+
+    given()
+        .queryParam("token", godToken.getToken())
+        .when()
+        .get("/api/teams/" + team1Slug + "/calendar/ics")
+        .then()
+        .statusCode(200)
+        .body(containsString("Team Ride"))
+        .body(not(containsString("Draft Ride")));
+
+    given()
+        .auth()
+        .oauth2(getAccessToken("godmode"))
+        .when()
+        .get("/api/teams/" + team1Slug + "/calendar/events")
+        .then()
+        .statusCode(200)
+        .body("events.title", hasItem("Draft Ride"));
   }
 }

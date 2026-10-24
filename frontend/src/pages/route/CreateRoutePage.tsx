@@ -13,11 +13,14 @@ import { SurfaceType, RouteRequest } from '@/api/dto'
 import { defaultMedia } from '@/lib/apiUtils'
 import { invalidateRouteQueries } from '@/lib/routeCacheInvalidation'
 import { useCreateRouteFormData } from './routeFormData'
+import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
+import { teamAccess } from '@/lib/teamAccess'
 
 export function CreateRoutePage() {
   const { teamSlug } = useParams<{ teamSlug: string }>()
   const navigate = useNavigate()
   const { t } = useTranslation()
+  const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
   const queryClient = useQueryClient()
 
   const { data: team, isLoading: isLoadingTeam } = useCreateRouteFormData(teamSlug)
@@ -64,7 +67,7 @@ export function CreateRoutePage() {
     return <Navigate to={paths.team(teamSlug!)} replace />
   }
 
-  const canCreate = team.role === 'ADMIN' || team.role === 'ORGANIZER'
+  const canCreate = teamAccess(team, isPlatformAdmin).isOrganizer
 
   if (!canCreate) {
     return <Navigate to={paths.routes(teamSlug!)} replace />

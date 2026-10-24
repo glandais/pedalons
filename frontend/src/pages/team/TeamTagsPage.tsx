@@ -32,6 +32,8 @@ import { TeamAdminLayout } from '@/components/team/TeamAdminLayout'
 import { TagChip } from '@/components/tag'
 import { TagFormModal } from '@/components/tag/TagFormModal'
 import { useTeamTagsData, teamTagsTabOptions } from './teamTagsData'
+import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
+import { teamAccess } from '@/lib/teamAccess'
 
 /** At most this many tags per team and kind — the API refuses more (plan D16, `TAG_LIMIT_REACHED`). */
 const MAX_TAGS_PER_KIND = 100
@@ -67,6 +69,7 @@ function kindEnabled(team: TeamDetailDto, kind: TagTarget): boolean {
  */
 export function TeamTagsPage() {
   const { t } = useTranslation()
+  const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
   const { teamSlug } = useParams<{ teamSlug: string }>()
   const queryClient = useQueryClient()
   const { team: teamQuery, tags: tagsQuery } = useTeamTagsData(teamSlug)
@@ -95,7 +98,7 @@ export function TeamTagsPage() {
     return <Navigate to={paths.teams()} replace />
   }
 
-  if (team.role !== 'ADMIN') {
+  if (!teamAccess(team, isPlatformAdmin).isAdmin) {
     return <Navigate to={paths.team(team.slug)} replace />
   }
 

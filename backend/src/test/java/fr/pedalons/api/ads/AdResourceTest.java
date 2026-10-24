@@ -281,4 +281,58 @@ class AdResourceTest extends AbstractResourceTest {
         .then()
         .statusCode(200);
   }
+
+  // ==================== Platform admin (ledger API-137) ====================
+
+  /** Someone else's draft ad stays out of a platform admin's lists, as out of a team admin's. */
+  private fr.pedalons.domain.ad.Ad[] draftAndLiveAds() {
+    dataService.createPlatformAdminUser("root@example.com", "Root");
+    fr.pedalons.domain.ad.Ad live = dataService.createAd(team1, user3, "Live Bike", AdType.SALE);
+    fr.pedalons.domain.ad.Ad draft = dataService.createAd(team1, user3, "Draft Bike", AdType.SALE);
+    dataService.setTeamEntityStatus(draft, Status.DRAFT);
+    return new fr.pedalons.domain.ad.Ad[] {live, draft};
+  }
+
+  @Test
+  void listAds_asPlatformAdmin_shouldNotReturnOthersDraftAds() {
+    fr.pedalons.domain.ad.Ad[] ads = draftAndLiveAds();
+
+    given()
+        .auth()
+        .oauth2(getAccessToken("root"))
+        .when()
+        .get("/api/teams/" + team1Slug + "/classifieds")
+        .then()
+        .statusCode(200)
+        .body("ads.slug", hasItem(ads[0].getSlug()))
+        .body("ads.slug", not(hasItem(ads[1].getSlug())));
+  }
+
+  @Test
+  void countAds_asPlatformAdmin_shouldNotCountOthersDraftAds() {
+    draftAndLiveAds();
+
+    given()
+        .auth()
+        .oauth2(getAccessToken("root"))
+        .when()
+        .get("/api/teams/" + team1Slug + "/classifieds/count")
+        .then()
+        .statusCode(200)
+        .body("total", equalTo(1));
+  }
+
+  @Test
+  void getAd_asPlatformAdmin_othersDraft_isReadable() {
+    fr.pedalons.domain.ad.Ad[] ads = draftAndLiveAds();
+
+    given()
+        .auth()
+        .oauth2(getAccessToken("root"))
+        .when()
+        .get("/api/teams/" + team1Slug + "/classifieds/" + ads[1].getSlug())
+        .then()
+        .statusCode(200)
+        .body("slug", equalTo(ads[1].getSlug()));
+  }
 }

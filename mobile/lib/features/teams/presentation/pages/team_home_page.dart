@@ -12,6 +12,8 @@ import '../../../../core/utils/api_error_handler.dart';
 import '../../../ads/presentation/pages/ads_page.dart';
 import '../../../feed/presentation/widgets/publication_feed_view.dart';
 import '../../../routes/presentation/pages/routes_page.dart';
+import '../../../auth/domain/auth_state.dart';
+import '../../../auth/providers/auth_provider.dart';
 import '../../providers/team_membership_controller.dart';
 import '../../providers/team_providers.dart';
 import '../widgets/team_header.dart';
@@ -181,7 +183,7 @@ class _TeamChrome extends StatelessWidget {
 }
 
 /// Dispatches to the section's body, team in hand.
-class _TeamSectionScaffold extends StatelessWidget {
+class _TeamSectionScaffold extends ConsumerWidget {
   const _TeamSectionScaffold({
     required this.team,
     required this.section,
@@ -197,8 +199,19 @@ class _TeamSectionScaffold extends StatelessWidget {
   final AgendaView agendaView;
 
   @override
-  Widget build(BuildContext context) {
-    final List<TeamSection> sections = buildTeamSections(team);
+  Widget build(BuildContext context, WidgetRef ref) {
+    // `team.role` est le vrai rôle, nul pour un administrateur de la
+    // plateforme qui n'est pas membre (docs/LEDGER_*.md API-137) : ses droits
+    // viennent de son rôle de plateforme.
+    final bool platformAdmin = ref.watch(
+      authProvider.select(
+        (AuthState s) => s.user?.platformRole == 'PLATFORM_ADMIN',
+      ),
+    );
+    final List<TeamSection> sections = buildTeamSections(
+      team,
+      platformAdmin: platformAdmin,
+    );
     final List<Widget> headerSlivers = <Widget>[
       TeamHeaderSliver(team: team, section: section),
       SliverToBoxAdapter(child: _MembershipBanner(team: team)),
@@ -229,6 +242,7 @@ class _TeamSectionScaffold extends StatelessWidget {
         initialType: agendaType,
         initialScope: agendaScope,
         initialView: agendaView,
+        platformAdmin: platformAdmin,
         chrome: ({required Widget? header, required Widget body}) =>
             _TeamChrome(header: header, body: body),
       ),
@@ -284,7 +298,10 @@ class _TeamSectionScaffold extends StatelessWidget {
             teamSlug: team.slug,
             // Les rôles ne reviennent qu'à un admin, ou à tous une fois le
             // trombinoscope ouvert (docs/LEDGER_*.md SEC-18).
-            rolesShown: team.role == 'ADMIN' || team.enableMemberDirectory,
+            rolesShown:
+                team.role == 'ADMIN' ||
+                platformAdmin ||
+                team.enableMemberDirectory,
           ),
         ),
       ),

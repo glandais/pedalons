@@ -8,6 +8,8 @@ import type { TagTarget } from '@/api/dto'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { paths } from '@/config/paths'
 import { TagDot } from './TagList'
+import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
+import { teamAccess } from '@/lib/teamAccess'
 
 /** At most this many tags on one content — the API refuses more (plan D16, `TOO_MANY_TAGS`). */
 export const MAX_TAGS_PER_CONTENT = 10
@@ -37,6 +39,7 @@ interface TagPickerProps {
  */
 export function TagPicker({ teamSlug, type, value, onChange, disabled }: TagPickerProps) {
   const { t } = useTranslation()
+  const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
   // Already in the cache: every editor's page reads its team.
   const { data: team } = useGetTeam(teamSlug, { query: { enabled: !!teamSlug } })
   const { data: tags } = useListTeamTags(teamSlug, { type }, { request: { skipErrorToast: true } })
@@ -65,7 +68,7 @@ export function TagPicker({ teamSlug, type, value, onChange, disabled }: TagPick
           {t('tags.picker.label')}
         </Text>
         <Text size="sm" c="dimmed">
-          {team?.role === 'ADMIN' ? (
+          {teamAccess(team, isPlatformAdmin).isAdmin ? (
             <>
               {t('tags.picker.emptyAdmin')}{' '}
               <Anchor component={PrefetchLink} to={paths.teamAdminTags(teamSlug)} size="sm">

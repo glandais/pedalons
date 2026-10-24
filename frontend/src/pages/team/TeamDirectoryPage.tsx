@@ -21,6 +21,7 @@ import { Pagination } from '../../components/common/Pagination'
 import { TeamLayout } from '../../components/team/TeamLayout'
 import { TeamMemberList, TeamMemberListSkeleton } from '../../components/team/TeamMemberList'
 import { useTeamMembersData } from './teamMembersData'
+import { teamAccess } from '@/lib/teamAccess'
 
 /**
  * The member directory as the members read it (docs/LEDGER_*.md WEB-1) — the admin screen
@@ -60,7 +61,7 @@ export function TeamDirectoryPage() {
 
   // Roles come back only to an admin, or to everyone once the directory is open: filtering on a
   // role nobody on the page can see would be a way to learn it.
-  const admin = team.role === TeamRole.ADMIN || user?.platformRole === PlatformRole.PLATFORM_ADMIN
+  const admin = teamAccess(team, user?.platformRole === PlatformRole.PLATFORM_ADMIN).isAdmin
   const rolesShown = admin || team.enableMemberDirectory
   // Only an administrator's search also matches e-mail addresses.
   const searchPlaceholder = admin

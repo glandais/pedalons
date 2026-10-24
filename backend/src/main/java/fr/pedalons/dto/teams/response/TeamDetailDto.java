@@ -113,7 +113,13 @@ public record TeamDetailDto(
                 "Members per role. Only for the team's administrators (platform admins included):"
                     + " null for everyone else, and in the team listings.")
         MemberCountByRoleDto memberCountByRole,
-    @Nullable @Schema(description = "Current user's role (null if not a member)") TeamRole role,
+    @Nullable
+        @Schema(
+            description =
+                "Current user's role (null if not a member). The real membership, platform admins"
+                    + " included: their extra rights come from the platform role of /api/me, not"
+                    + " from this field.")
+        TeamRole role,
     @Schema(description = "Team creation timestamp", required = true) Instant createdAt,
     @Nullable
         @Schema(
@@ -128,8 +134,8 @@ public record TeamDetailDto(
             required = true)
         String timezone) {
   public static TeamDetailDto from(
-      TeamAndRole teamAndRole, AssetService assetService, boolean platformAdmin) {
-    return from(teamAndRole, assetService, platformAdmin, TeamStats.EMPTY);
+      TeamAndRole teamAndRole, AssetService assetService, boolean seeAllPages) {
+    return from(teamAndRole, assetService, seeAllPages, TeamStats.EMPTY);
   }
 
   /**
@@ -137,24 +143,27 @@ public record TeamDetailDto(
    *     — never fetched here, or a directory of thirty teams would run sixty queries
    */
   public static TeamDetailDto from(
-      TeamAndRole teamAndRole, AssetService assetService, boolean platformAdmin, TeamStats stats) {
-    return from(teamAndRole, assetService, platformAdmin, stats, null);
+      TeamAndRole teamAndRole, AssetService assetService, boolean seeAllPages, TeamStats stats) {
+    return from(teamAndRole, assetService, seeAllPages, stats, null);
   }
 
   /**
+   * @param seeAllPages whether every additional page goes into the menu, drafts and members-only
+   *     ones included: a platform admin opening the team. Never changes {@code role}, which is the
+   *     caller's real one (docs/LEDGER_*.md API-137)
    * @param memberCountByRole the split of the members per role, loaded only for an administrator;
    *     null leaves it out
    */
   public static TeamDetailDto from(
       TeamAndRole teamAndRole,
       AssetService assetService,
-      boolean platformAdmin,
+      boolean seeAllPages,
       TeamStats stats,
       @Nullable MemberCountByRoleDto memberCountByRole) {
     Team team = teamAndRole.team();
     List<TeamPageSummaryDto> pages =
         team.getAdditionalPages().stream()
-            .filter(page -> isListed(page, team, teamAndRole.teamRole(), platformAdmin))
+            .filter(page -> isListed(page, team, teamAndRole.teamRole(), seeAllPages))
             .map(TeamPageSummaryDto::from)
             .toList();
     // Built once: the excerpt and the logo are read back out of it rather than re-walking the
@@ -187,7 +196,9 @@ public record TeamDetailDto(
         stats.upcomingTripCount(),
         stats.recentPostCount(),
         memberCountByRole,
-        platformAdmin ? TeamRole.ADMIN : teamAndRole.teamRole(),
+        // The real role, null for a non-member — a platform admin included (docs/LEDGER_*.md
+        // API-137). Clients add the platform role of /me for the rights it grants.
+        teamAndRole.teamRole(),
         team.getCreatedAt(),
         team.getGeometry(),
         team.getTimezone());
@@ -199,9 +210,8 @@ public record TeamDetailDto(
    * team already holds. Without it every visitor, anonymous included, received the title and slug
    * of the members-only pages and the drafts; only their content was guarded.
    */
-  static boolean isListed(
-      TeamPage page, Team team, @Nullable TeamRole role, boolean platformAdmin) {
-    if (platformAdmin) {
+  static boolean isListed(TeamPage page, Team team, @Nullable TeamRole role, boolean seeAllPages) {
+    if (seeAllPages) {
       return true;
     }
     boolean moderator = role == TeamRole.ORGANIZER || role == TeamRole.ADMIN;

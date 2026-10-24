@@ -354,22 +354,162 @@ class TeamServiceTest extends AbstractBaseTest {
     assertTrue(result.teams().stream().anyMatch(t -> t.slug().equals("unlisted")));
   }
 
+  // ==================== Platform admin: real memberships (ledger API-137) ====================
+
   @Test
-  void listTeams_shouldReturnDeletedUnlistedForPlatformAdmin() {
+  void listTeams_asPlatformAdmin_shouldNeverReturnDeletedTeams() {
     User admin =
         dataService.createPlatformAdminUser("platform-admin@example.com", "Platform Admin");
     Team unlisted =
         dataService.createTeam(user1, "Unlisted Team", "unlisted", Visibility.PUBLIC_UNLISTED);
     dataService.softDeleteTeam(unlisted);
+    Team mine = dataService.createTeam(admin, "Trashed Own", "trashed-own", Visibility.TEAM);
+    dataService.softDeleteTeam(mine);
+    dataService.createTeam(user1, "Live Team", "live", Visibility.PUBLIC);
 
     queryContext.setUserForTest(admin);
-    TeamListResponse adminResult = teamService.listTeams(null, null, 0, 10);
-    assertTrue(adminResult.teams().stream().anyMatch(t -> t.slug().equals("unlisted")));
+    // The directory of every team: trashed ones are the administration console's business.
+    TeamListResponse all = teamService.listTeams(null, null, 0, 10);
+    assertEquals(1, all.teams().size());
+    assertEquals("live", all.teams().getFirst().slug());
+    assertEquals(1, all.total());
+
+    // "My teams": a trashed team the admin belongs to is not one of them either.
+    TeamListResponse mineOnly = teamService.listTeams(MinRole.MEMBER, null, 0, 10);
+    assertTrue(mineOnly.teams().isEmpty());
+    assertEquals(0, mineOnly.total());
 
     // a regular anonymous listing must not surface the deleted unlisted team
     queryContext.setUserForTest(null);
     TeamListResponse anonResult = teamService.listTeams(null, null, 0, 10);
     assertTrue(anonResult.teams().stream().noneMatch(t -> t.slug().equals("unlisted")));
+  }
+
+  @Test
+  void listTeams_asPlatformAdmin_withMinRoleMember_shouldReturnOnlyRealMemberships() {
+    User admin =
+        dataService.createPlatformAdminUser("platform-admin@example.com", "Platform Admin");
+    Team joined = dataService.createTeam(user1, "Joined", "joined", Visibility.TEAM);
+    dataService.addUserToTeam(admin, joined, TeamRole.MEMBER);
+    dataService.createTeam(user1, "Public Foreign", "public-foreign", Visibility.PUBLIC);
+    dataService.createTeam(user2, "Private Foreign", "private-foreign", Visibility.TEAM);
+
+    queryContext.setUserForTest(admin);
+    TeamListResponse result = teamService.listTeams(MinRole.MEMBER, null, 0, 10);
+
+    assertEquals(1, result.teams().size());
+    assertEquals(1, result.total());
+    assertEquals("joined", result.teams().getFirst().slug());
+  }
+
+  @Test
+  void listTeams_asPlatformAdmin_withMinRoleOrganizer_shouldReturnOnlyTeamsHeOrganizes() {
+    User admin =
+        dataService.createPlatformAdminUser("platform-admin@example.com", "Platform Admin");
+    Team asMember = dataService.createTeam(user1, "As Member", "as-member", Visibility.TEAM);
+    dataService.addUserToTeam(admin, asMember, TeamRole.MEMBER);
+    Team asOrganizer =
+        dataService.createTeam(user1, "As Organizer", "as-organizer", Visibility.TEAM);
+    dataService.addUserToTeam(admin, asOrganizer, TeamRole.ORGANIZER);
+    dataService.createTeam(admin, "As Admin", "as-admin", Visibility.TEAM);
+    dataService.createTeam(user2, "Foreign", "foreign", Visibility.PUBLIC);
+
+    queryContext.setUserForTest(admin);
+    TeamListResponse result = teamService.listTeams(MinRole.ORGANIZER, null, 0, 10);
+
+    assertEquals(2, result.total());
+    assertEquals(
+        java.util.Set.of("as-organizer", "as-admin"),
+        result.teams().stream()
+            .map(TeamDetailDto::slug)
+            .collect(java.util.stream.Collectors.toSet()));
+  }
+
+  @Test
+  void listTeams_asPlatformAdmin_shouldReturnRealRoleOrNull() {
+    User admin =
+        dataService.createPlatformAdminUser("platform-admin@example.com", "Platform Admin");
+    Team joined = dataService.createTeam(user1, "Joined", "joined", Visibility.PUBLIC);
+    dataService.addUserToTeam(admin, joined, TeamRole.MEMBER);
+    dataService.createTeam(user2, "Foreign", "foreign", Visibility.TEAM);
+
+    queryContext.setUserForTest(admin);
+    TeamListResponse result = teamService.listTeams(null, null, 0, 10);
+
+    assertEquals(2, result.teams().size());
+    TeamDetailDto joinedRow =
+        result.teams().stream().filter(t -> t.slug().equals("joined")).findFirst().orElseThrow();
+    TeamDetailDto foreignRow =
+        result.teams().stream().filter(t -> t.slug().equals("foreign")).findFirst().orElseThrow();
+    assertEquals(TeamRole.MEMBER, joinedRow.role());
+    assertNull(foreignRow.role());
+  }
+
+  @Test
+  void listTeams_asPlatformAdmin_withJoinable_shouldApplyVisibility() {
+    User admin =
+        dataService.createPlatformAdminUser("platform-admin@example.com", "Platform Admin");
+    Team open = dataService.createTeam(user1, "Open", "open", Visibility.PUBLIC);
+    dataService.setTeamJoinable(open, true);
+    Team privateJoinable =
+        dataService.createTeam(user1, "Private Joinable", "private-joinable", Visibility.TEAM);
+    dataService.setTeamJoinable(privateJoinable, true);
+    Team unlistedJoinable =
+        dataService.createTeam(
+            user1, "Unlisted Joinable", "unlisted-joinable", Visibility.PUBLIC_UNLISTED);
+    dataService.setTeamJoinable(unlistedJoinable, true);
+
+    queryContext.setUserForTest(admin);
+    // Discovery is "what can I ask to join": the platform admin sees what anyone would.
+    TeamListResponse result = teamService.listTeams(null, null, true, null, null, 0, 10);
+
+    assertEquals(1, result.total());
+    assertEquals("open", result.teams().getFirst().slug());
+  }
+
+  @Test
+  void listTeams_asPlatformAdmin_rowsShouldNotListDraftPages() {
+    User admin =
+        dataService.createPlatformAdminUser("platform-admin@example.com", "Platform Admin");
+    Team team = dataService.createTeam(user1, "Public", "public", Visibility.PUBLIC);
+    var draft = dataService.createAdditionalPage(team, user1, "Draft Page", 1);
+    dataService.setTeamEntityStatus(draft, fr.pedalons.enums.Status.DRAFT);
+    dataService.createAdditionalPage(team, user1, "Live Page", 2);
+
+    queryContext.setUserForTest(admin);
+    TeamListResponse result = teamService.listTeams(null, null, 0, 10);
+
+    TeamDetailDto row = result.teams().getFirst();
+    assertEquals(
+        java.util.List.of("live-page"),
+        row.pages().stream().map(p -> p.slug()).toList(),
+        "a team card shows the menu of the caller's real role");
+
+    // The team the admin opens still lists every page: moderation needs them.
+    TeamDetailDto detail = teamService.getTeamDetailDto("public");
+    assertEquals(2, detail.pages().size());
+    assertNull(detail.role());
+  }
+
+  @Test
+  void listTeams_asPlatformAdmin_statsShouldNotCountDrafts() {
+    User admin =
+        dataService.createPlatformAdminUser("platform-admin@example.com", "Platform Admin");
+    Team team = dataService.createTeam(user1, "Joined", "joined", Visibility.TEAM);
+    dataService.addUserToTeam(admin, team, TeamRole.MEMBER);
+    Instant future = Instant.now().plus(3, ChronoUnit.DAYS);
+    dataService.createRide(team, user1, "Published", "published", future);
+    dataService.createRide(team, user1, "Draft", "draft", future, fr.pedalons.enums.Status.DRAFT);
+
+    queryContext.setUserForTest(admin);
+    // A one-row page is a single-team query: the counters must still be the member's.
+    TeamListResponse result = teamService.listTeams(MinRole.MEMBER, null, 0, 10);
+
+    assertEquals(1, result.teams().size());
+    assertEquals(1, result.teams().getFirst().upcomingRideCount());
+
+    // The header of the team the admin opens counts what its lists show them.
+    assertEquals(2, teamService.getTeamDetailDto("joined").upcomingRideCount());
   }
 
   @Test

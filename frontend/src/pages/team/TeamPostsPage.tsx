@@ -20,6 +20,8 @@ import { useCanonicalPath } from '@/hooks/useCanonicalPath'
 import { useDebouncedSearch } from '@/hooks/useDebouncedSearch'
 import { useScrollToListTop } from '@/hooks/useScrollToListTop'
 import { useTeamPostsData } from './teamPostsData'
+import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
+import { teamAccess } from '@/lib/teamAccess'
 
 /**
  * « Publications » (`teamPosts`, ledger `WEB-68`): the team's posts alone, read like a blog —
@@ -28,6 +30,7 @@ import { useTeamPostsData } from './teamPostsData'
  */
 export function TeamPostsPage() {
   const { t } = useTranslation()
+  const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
   const { teamSlug } = useParams<{ teamSlug: string }>()
 
   const { filters, setFilters, team, publications, totalPages } = useTeamPostsData(teamSlug)
@@ -57,8 +60,7 @@ export function TeamPostsPage() {
     )
   }
 
-  const canCreate =
-    (teamData.role === 'ADMIN' || teamData.role === 'ORGANIZER') && !!teamData.enablePosts
+  const canCreate = teamAccess(teamData, isPlatformAdmin).isOrganizer && !!teamData.enablePosts
   const hasTagFilter = !!filters.tags?.length
   const hasFilters = !!search || hasTagFilter
   const clearFilters = () => {

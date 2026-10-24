@@ -2,6 +2,8 @@ import type { QueryClient } from '@tanstack/react-query'
 import { getGetTeamQueryKey, prefetchGetTeamQuery, useGetTeam } from '@/api/endpoints/teams/teams'
 import { prefetchGetTeamWebhookQuery } from '@/api/endpoints/team-webhook/team-webhook'
 import type { TeamDetailDto } from '@/api/dto'
+import { teamAccess } from '@/lib/teamAccess'
+import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
 
 /**
  * `TeamSettingsPage` reads the team — the form, the slug change and the delete confirmation all
@@ -24,6 +26,7 @@ export function useTeamSettingsData(teamSlug: string | undefined) {
 export async function prefetchTeamSettings(queryClient: QueryClient, teamSlug: string) {
   await prefetchGetTeamQuery(queryClient, teamSlug)
   const team = queryClient.getQueryData<TeamDetailDto>(getGetTeamQueryKey(teamSlug))
-  if (team?.role !== 'ADMIN') return
+  // A platform admin administers every team, member or not (docs/LEDGER_*.md API-137).
+  if (!teamAccess(team, selectIsPlatformAdmin(useAuthStore.getState())).isAdmin) return
   await prefetchGetTeamWebhookQuery(queryClient, teamSlug)
 }

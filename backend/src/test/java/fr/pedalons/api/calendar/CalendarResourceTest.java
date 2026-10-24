@@ -9,6 +9,9 @@ import fr.pedalons.domain.calendar.CalendarToken;
 import fr.pedalons.domain.ride.Ride;
 import fr.pedalons.domain.trip.Trip;
 import fr.pedalons.domain.trip.TripStage;
+import fr.pedalons.domain.user.User;
+import fr.pedalons.enums.Status;
+import fr.pedalons.enums.TeamRole;
 import fr.pedalons.repository.calendar.CalendarTokenRepository;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
@@ -108,6 +111,27 @@ class CalendarResourceTest extends AbstractResourceTest {
         .then()
         .statusCode(200)
         .body("events.size()", equalTo(0));
+  }
+
+  /**
+   * Ledger API-137: an admin member of a single team gets a single-team query, where the platform
+   * admin's bypass would apply. The personal calendar must follow the real role instead.
+   */
+  @Test
+  void getEvents_asPlatformAdminMemberOfOneTeam_shouldNotReturnDrafts() {
+    User godmode = dataService.createPlatformAdminUser("godmode@example.com", "God Mode");
+    dataService.addUserToTeam(godmode, team1, TeamRole.MEMBER);
+    dataService.createRide(team1, user1, "Draft Ride", "draft-ride", Instant.now(), Status.DRAFT);
+
+    given()
+        .auth()
+        .oauth2(getAccessToken("godmode"))
+        .when()
+        .get("/api/calendar/events")
+        .then()
+        .statusCode(200)
+        .body("events.title", hasItem("Test Ride"))
+        .body("events.title", not(hasItem("Draft Ride")));
   }
 
   @Test

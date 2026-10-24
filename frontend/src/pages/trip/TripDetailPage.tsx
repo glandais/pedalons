@@ -68,9 +68,12 @@ import { useCanonicalPath } from '../../hooks/useCanonicalPath'
 import { STATUS_COLORS } from '@/lib/badgeColors.generated'
 import { TagList } from '@/components/tag'
 import { TripOverviewMap } from '@/components/trip/TripOverviewMap'
+import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
+import { teamAccess } from '@/lib/teamAccess'
 
 export function TripDetailPage() {
   const { t } = useTranslation()
+  const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
   const { teamSlug, tripSlug } = useParams<{ teamSlug: string; tripSlug: string }>()
   const { isAuthenticated, user } = useAuth()
   const [highlightedStageId, setHighlightedStageId] = useState<string | null>(null)
@@ -145,10 +148,10 @@ export function TripDetailPage() {
     )
   }
 
-  const isMember = !!team?.role
-  const isAdmin = team?.role === 'ADMIN'
-  const isOrganizer = team?.role === 'ORGANIZER'
-  const canEdit = isAdmin || isOrganizer
+  // Registering and the join banner follow the real membership; editing and the comment thread
+  // (moderation), the rights a platform admin holds in every team (docs/LEDGER_*.md API-137).
+  const { isMember, isOrganizer: canEdit } = teamAccess(team, isPlatformAdmin)
+  const canReadComments = isMember || isPlatformAdmin
   // Told by the server: `participants` is only a preview of the first few (ledger API-12).
   const hasJoined = !!user && trip.registered
   const canJoinTrip = isMember && trip.status === Status.PUBLISHED && !hasJoined
@@ -563,7 +566,7 @@ export function TripDetailPage() {
           )}
 
           {/* Comments Section - only visible to team members */}
-          {isMember && (
+          {canReadComments && team && (
             <Box>
               <CommentSection
                 teamSlug={teamSlug!}

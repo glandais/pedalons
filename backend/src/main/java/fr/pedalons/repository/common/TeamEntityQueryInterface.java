@@ -39,5 +39,14 @@ public interface TeamEntityQueryInterface extends PageInterface {
 
   boolean includeDeleted();
 
+  /**
+   * Whether the caller is a platform admin. It lifts the visibility rules only where the admin
+   * opens something: a detail ({@code findOne}), or a listing of a single team (an explicit single
+   * {@link #teamIds()} or a pinned host) without {@link #minRole()}. Cross-team listings, counts and
+   * any query with {@code minRole} apply the caller's real membership instead, and someone else's
+   * draft ad never appears in a list (docs/LEDGER_*.md API-137). A personal view that happens to
+   * target one team (the agenda of a member of a single team, a one-row page of team cards) must
+   * pass {@code false}.
+   */
   boolean platformAdmin();
 }

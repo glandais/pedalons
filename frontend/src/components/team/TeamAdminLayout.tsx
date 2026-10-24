@@ -13,7 +13,7 @@ import {
 import type { TeamDetailDto } from '@/api/dto'
 import { paths } from '@/config/paths'
 import { NavButtons, type NavButtonItem } from '../common/NavButtons'
-import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
+import { useTeamAccess } from '@/lib/teamAccess'
 
 export type AdminTab =
   'ride-templates' | 'places' | 'tags' | 'pages' | 'members' | 'reports' | 'settings'
@@ -27,19 +27,15 @@ interface TeamAdminLayoutProps {
 export function TeamAdminLayout({ team, currentTab, children }: TeamAdminLayoutProps) {
   const { t } = useTranslation()
 
-  const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
+  // A team ORGANIZER or ADMIN, or a platform admin — who administers every team, member or not
+  // (docs/LEDGER_*.md API-137).
+  const { isAdmin, isOrganizer } = useTeamAccess(team)
 
-  const isAdmin = team.role === 'ADMIN'
-  const isOrganizer = team.role === 'ADMIN' || team.role === 'ORGANIZER'
-
-  // Only ADMIN or ORGANIZER can access admin section — except its moderation queue, which a
-  // platform admin opens from a report notification without being a member of the team.
-  const canModerateOnly = !isOrganizer && isPlatformAdmin && currentTab === 'reports'
-  if (!isOrganizer && !canModerateOnly) {
+  if (!isOrganizer) {
     return <Navigate to={paths.team(team.slug)} replace />
   }
 
-  const tabs: (NavButtonItem & { adminOnly?: boolean; moderation?: boolean })[] = [
+  const tabs: (NavButtonItem & { adminOnly?: boolean })[] = [
     {
       id: 'ride-templates',
       path: paths.rideTemplates(team.slug),
@@ -79,7 +75,6 @@ export function TeamAdminLayout({ team, currentTab, children }: TeamAdminLayoutP
       path: paths.teamAdminReports(team.slug),
       label: t('teams.admin.tabs.reports'),
       icon: IconFlag,
-      moderation: true,
     },
     {
       id: 'settings',
@@ -90,10 +85,8 @@ export function TeamAdminLayout({ team, currentTab, children }: TeamAdminLayoutP
     },
   ]
 
-  // Filter tabs based on role. A platform admin who is not an organizer here only gets the queue.
-  const visibleTabs: NavButtonItem[] = tabs
-    .filter((tab) => !tab.adminOnly || isAdmin)
-    .filter((tab) => !canModerateOnly || tab.moderation)
+  // Filter tabs based on role.
+  const visibleTabs: NavButtonItem[] = tabs.filter((tab) => !tab.adminOnly || isAdmin)
 
   return (
     <Container size="xl" py="xl">

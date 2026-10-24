@@ -91,7 +91,11 @@ public class TeamDashboardService {
   @Transactional
   public TeamDashboardDto getDashboard(String teamSlug) {
     Team team = teamService.getTeam(teamSlug);
-    @Nullable TeamRole role = roleOf(team);
+    // The caller's real role, null for a visitor — a platform admin included (docs/LEDGER_*.md
+    // API-137): the member-only sections stay a member's, while the organizer and admin blocks
+    // follow the platform admin's rights.
+    @Nullable TeamRole role = pedalonsContext.getContext(team).teamRole();
+    boolean platformAdmin = pedalonsContext.isPlatformAdmin();
     boolean member = role != null;
     TeamDetailDto detail = teamService.getTeamDetailDto(teamSlug);
     Instant now = Instant.now();
@@ -121,8 +125,11 @@ public class TeamDashboardService {
             : null;
 
     TeamDashboardOrganizerDto organizer =
-        role != null && role.isOrganizer() ? organizer(team, teamSlug, rides, now) : null;
-    TeamDashboardAdminDto admin = role != null && role.isAdmin() ? admin(teamSlug) : null;
+        platformAdmin || (role != null && role.isOrganizer())
+            ? organizer(team, teamSlug, rides, now)
+            : null;
+    TeamDashboardAdminDto admin =
+        platformAdmin || (role != null && role.isAdmin()) ? admin(teamSlug) : null;
 
     return new TeamDashboardDto(
         detail,
@@ -134,17 +141,6 @@ public class TeamDashboardService {
         latestAds,
         organizer,
         admin);
-  }
-
-  /**
-   * The caller's role in the team, null for a visitor; a platform admin is an administrator
-   * everywhere.
-   */
-  private @Nullable TeamRole roleOf(Team team) {
-    if (pedalonsContext.isPlatformAdmin()) {
-      return TeamRole.ADMIN;
-    }
-    return pedalonsContext.getContext(team).teamRole();
   }
 
   private TeamDashboardOrganizerDto organizer(

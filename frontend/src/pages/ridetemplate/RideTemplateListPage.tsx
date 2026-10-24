@@ -39,9 +39,12 @@ import { useCanonicalPath } from '../../hooks/useCanonicalPath'
 import { useUnits } from '@/hooks/useUnits'
 import { VISIBILITY_COLORS } from '@/lib/badgeColors.generated'
 import { TagList } from '@/components/tag'
+import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
+import { teamAccess } from '@/lib/teamAccess'
 
 export function RideTemplateListPage() {
   const { t } = useTranslation()
+  const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
   const { speed } = useUnits()
   const { teamSlug } = useParams<{ teamSlug: string }>()
   const queryClient = useQueryClient()
@@ -71,7 +74,7 @@ export function RideTemplateListPage() {
     return <Navigate to={paths.teams()} replace />
   }
 
-  const canManage = team.role === 'ADMIN' || team.role === 'ORGANIZER'
+  const canManage = teamAccess(team, isPlatformAdmin).isOrganizer
 
   const handleDelete = (template: RideTemplateDto) => {
     setTemplateToDelete(template)

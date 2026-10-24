@@ -6173,7 +6173,7 @@
             "$ref" : "#/components/schemas/TeamDetailDto"
           },
           "role" : {
-            "description" : "The caller's role in the team, the one the sections were built for. ADMIN for a platform admin; null for a visitor, anonymous or not a member.",
+            "description" : "The caller's real role in the team; null for a visitor, anonymous or not a member — a platform admin who is not a member included. The organizer and admin blocks are what a platform admin's rights add.",
             "type" : "string",
             "$ref" : "#/components/schemas/TeamRole"
           },
@@ -6203,12 +6203,12 @@
             "$ref" : "#/components/schemas/AdListResponse"
           },
           "organizer" : {
-            "description" : "What organizers and administrators see on top. Null for a MEMBER and a visitor.",
+            "description" : "What organizers and administrators see on top. Null for a MEMBER and a visitor; filled for a platform admin, member or not.",
             "type" : "object",
             "$ref" : "#/components/schemas/TeamDashboardOrganizerDto"
           },
           "admin" : {
-            "description" : "The administration panel. Null below ADMIN, and for a visitor.",
+            "description" : "The administration panel. Null below ADMIN, and for a visitor; filled for a platform admin, member or not.",
             "type" : "object",
             "$ref" : "#/components/schemas/TeamDashboardAdminDto"
           }
@@ -6395,7 +6395,7 @@
             "$ref" : "#/components/schemas/MemberCountByRoleDto"
           },
           "role" : {
-            "description" : "Current user's role (null if not a member)",
+            "description" : "Current user's role (null if not a member). The real membership, platform admins included: their extra rights come from the platform role of /api/me, not from this field.",
             "type" : "string",
             "$ref" : "#/components/schemas/TeamRole"
           },
@@ -24853,7 +24853,7 @@
   },
   "info" : {
     "title" : "Pedalons API",
-    "version" : "11.16.1",
+    "version" : "11.17.0",
     "description" : "API for Pedalons Cycling Team Management Platform"
   },
   "servers" : [ {

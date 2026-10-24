@@ -296,10 +296,20 @@ class TeamDashboardResourceTest extends AbstractResourceTest {
         .body("admin.webhook.configured", equalTo(false));
   }
 
+  /**
+   * Ledger API-137: the real role (none), so no member-only section, but the organizer and admin
+   * blocks a platform admin's rights grant.
+   */
   @Test
   void platformAdmin_notAMember_shouldGetTheAdminDashboard() {
     dataService.createPlatformAdminUser("root@example.com", "Root");
-    dashboardAs("root").body("role", equalTo("ADMIN")).body("admin", notNullValue());
+    dashboardAs("root")
+        .body("role", nullValue())
+        .body("team.role", nullValue())
+        .body("admin", notNullValue())
+        .body("organizer", notNullValue())
+        .body("myUpcoming", nullValue())
+        .body("latestAds", nullValue());
   }
 
   /** The team lists show an administrator the deleted content; the dashboard never does. */

@@ -14,6 +14,8 @@ import { RideTemplateEditor } from '../../components/ridetemplate/RideTemplateEd
 import { Status, RideTemplateRequest } from '@/api/dto'
 import { paths } from '@/config/paths'
 import { useCreateRideTemplateFormData } from './rideTemplateFormData'
+import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
+import { teamAccess } from '@/lib/teamAccess'
 
 export function CreateRideTemplatePage() {
   const { teamSlug } = useParams<{ teamSlug: string }>()
@@ -23,6 +25,7 @@ export function CreateRideTemplatePage() {
 
   const createMutation = useCreateTemplate()
   const { t } = useTranslation()
+  const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
 
   useCanonicalPath(team ? paths.rideTemplateNew(team.slug) : undefined)
 
@@ -34,7 +37,7 @@ export function CreateRideTemplatePage() {
     return <Navigate to={paths.teams()} replace />
   }
 
-  const canCreate = team.role === 'ADMIN' || team.role === 'ORGANIZER'
+  const canCreate = teamAccess(team, isPlatformAdmin).isOrganizer
 
   if (!canCreate) {
     return <Navigate to={paths.rideTemplates(teamSlug!)} replace />

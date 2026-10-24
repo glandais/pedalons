@@ -136,6 +136,13 @@ describe('QuickActions', () => {
     expect(screen.queryByRole('group', { name: 'home.actions.label' })).toBeNull()
   })
 
+  // docs/LEDGER_*.md API-137: the shortcuts are personal, so they follow the real role. A team
+  // row a platform admin is not a member of carries no role, and offers no shortcut.
+  it('nothing without a real role, platform admin or not', () => {
+    renderIn(<QuickActions teams={[team({ role: undefined })]} />)
+    expect(screen.queryByRole('group', { name: 'home.actions.label' })).toBeNull()
+  })
+
   it('an organizer of one team gets direct links to its forms', () => {
     renderIn(
       <QuickActions teams={[team({ role: 'ORGANIZER' }), team({ id: 't2', role: 'MEMBER' })]} />

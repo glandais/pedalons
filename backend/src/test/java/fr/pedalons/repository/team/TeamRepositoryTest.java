@@ -288,28 +288,54 @@ class TeamRepositoryTest extends AbstractBaseTest {
     assertTrue(result.isEmpty());
   }
 
+  // ==================== Platform admin (ledger API-137) ====================
+
   @Test
-  void findOne_shouldReturnDeletedTeamWhenIncludeDeletedTrue() {
-    Team team = dataService.createTeam(user1, "Deleted Team", "deleted-team", Visibility.PUBLIC);
-    dataService.deleteTeam(team);
+  void find_platformAdmin_minRoleTakesPrecedence() {
+    User admin = dataService.createPlatformAdminUser("root@example.com", "Root");
+    Team joined = dataService.createTeam(user1, "Joined", "joined", Visibility.TEAM);
+    dataService.addUserToTeam(admin, joined, TeamRole.MEMBER);
+    dataService.createTeam(user1, "Foreign Private", "foreign-private", Visibility.TEAM);
+    dataService.createTeam(user2, "Foreign Public", "foreign-public", Visibility.PUBLIC);
+    Team trashed = dataService.createTeam(admin, "Trashed", "trashed", Visibility.TEAM);
+    dataService.softDeleteTeam(trashed);
 
-    Optional<TeamAndRole> result =
-        teamRepository.findOne(domain.getId(), team.getId(), user1.getId(), true);
+    PedalonsPage<TeamAndRole> mine =
+        teamRepository.find(
+            TeamQuery.builder()
+                .domainId(domain.getId())
+                .userId(admin.getId())
+                .minRole(MinRole.MEMBER)
+                .platformAdmin(true)
+                .page(0)
+                .size(10)
+                .build());
 
-    assertTrue(result.isPresent());
-    assertEquals("deleted-team", result.get().team().getSlug());
+    assertEquals(1, mine.total());
+    assertEquals("joined", mine.items().getFirst().team().getSlug());
+    assertEquals(TeamRole.MEMBER, mine.items().getFirst().teamRole());
+
+    PedalonsPage<TeamAndRole> all =
+        teamRepository.find(
+            TeamQuery.builder()
+                .domainId(domain.getId())
+                .userId(admin.getId())
+                .platformAdmin(true)
+                .page(0)
+                .size(10)
+                .build());
+
+    // Every live team of the domain, the trashed one excluded.
+    assertEquals(3, all.total());
+    assertTrue(all.items().stream().noneMatch(t -> t.team().getSlug().equals("trashed")));
   }
 
   @Test
-  void find_shouldIncludeDeletedTeamsWhenIncludeDeletedTrue() {
-    dataService.createTeam(user1, "Visible Team", "visible", Visibility.PUBLIC);
-    Team deletedTeam = dataService.createTeam(user1, "Deleted Team", "deleted", Visibility.PUBLIC);
-    dataService.deleteTeam(deletedTeam);
+  void findOne_platformAdmin_deletedTeam_isNotFound() {
+    User admin = dataService.createPlatformAdminUser("root@example.com", "Root");
+    Team team = dataService.createTeam(user1, "Trashed", "trashed", Visibility.TEAM);
+    dataService.softDeleteTeam(team);
 
-    TeamQuery query =
-        new TeamQuery(0, 10, domain.getId(), null, null, null, null, null, null, null, null, true);
-    PedalonsPage<TeamAndRole> result = teamRepository.find(query);
-
-    assertEquals(2, result.items().size());
+    assertTrue(teamRepository.findOne(domain.getId(), team.getId(), admin.getId(), true).isEmpty());
   }
 }

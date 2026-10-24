@@ -33,9 +33,12 @@ import { ErrorBoundary } from '@/components/common/ErrorBoundary'
 import { StageWeatherSection } from '@/components/weather'
 import { withMapColor } from '@/hooks/filters/mapColorFilters'
 import { stageWindLeg } from '@/lib/tripWeatherOnMap'
+import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
+import { teamAccess } from '@/lib/teamAccess'
 
 export function StageDetailPage() {
   const { t } = useTranslation()
+  const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
   const { speed } = useUnits()
   const { teamSlug, tripSlug, stageSlug } = useParams<{
     teamSlug: string
@@ -112,10 +115,10 @@ export function StageDetailPage() {
   }
 
   const stageIndex = trip.stages?.findIndex((s) => s.slug === stageSlug) ?? 0
-  const isAdmin = team?.role === 'ADMIN'
-  const isOrganizer = team?.role === 'ORGANIZER'
-  const canEdit = isAdmin || isOrganizer
-  const isMember = !!team?.role
+  // Registering and the join banner follow the real membership; editing and the comment thread
+  // (moderation), the rights a platform admin holds in every team (docs/LEDGER_*.md API-137).
+  const { isMember, isOrganizer: canEdit } = teamAccess(team, isPlatformAdmin)
+  const canReadComments = isMember || isPlatformAdmin
   // The stage's Météo mode on its map, and on its fullscreen map (WEB-118)
   const windLeg = stageWindLeg(trip, weather.data, stage.id)
 
@@ -271,7 +274,7 @@ export function StageDetailPage() {
           )}
 
           {/* The stage's own thread, apart from the trip's — members only, like every thread */}
-          {isMember && team && (
+          {canReadComments && team && (
             <Box>
               <CommentSection
                 teamSlug={teamSlug!}

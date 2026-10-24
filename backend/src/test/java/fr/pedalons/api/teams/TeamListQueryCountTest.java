@@ -2,6 +2,8 @@ package fr.pedalons.api.teams;
 
 import fr.pedalons.api.AbstractQueryCountTest;
 import fr.pedalons.domain.team.Team;
+import fr.pedalons.domain.user.User;
+import fr.pedalons.enums.TeamRole;
 import fr.pedalons.enums.Visibility;
 import io.quarkus.test.junit.QuarkusTest;
 import java.time.Instant;
@@ -49,5 +51,30 @@ class TeamListQueryCountTest extends AbstractQueryCountTest {
   void listTeamsAnonymous_costDoesNotScaleWithRowCount() {
     seedTeams(LARGE_PAGE);
     assertFlatQueryCount("GET /api/teams anonymous", anonymous(), "/api/teams");
+  }
+
+  /** Ledger API-137: a platform admin's « Mes équipes » applies the member's query. */
+  @Test
+  void listMyTeams_asPlatformAdmin_costDoesNotScaleWithRowCount() {
+    seedTeams(LARGE_PAGE);
+    User root = dataService.createPlatformAdminUser("root@example.com", "Root");
+    for (int i = 0; i < LARGE_PAGE; i++) {
+      dataService.addUserToTeam(
+          root, dataService.findTeamBySlug(domain, "budget-team-" + i), TeamRole.MEMBER);
+    }
+    assertFlatQueryCount(
+        "GET /api/teams?minRole=MEMBER platform admin", asRoot(), "/api/teams?minRole=MEMBER");
+  }
+
+  /** The platform admin's directory of every team. */
+  @Test
+  void listAllTeams_asPlatformAdmin_costDoesNotScaleWithRowCount() {
+    seedTeams(LARGE_PAGE);
+    dataService.createPlatformAdminUser("root@example.com", "Root");
+    assertFlatQueryCount("GET /api/teams platform admin", asRoot(), "/api/teams");
+  }
+
+  private java.util.function.Supplier<io.restassured.specification.RequestSpecification> asRoot() {
+    return () -> io.restassured.RestAssured.given().auth().oauth2(getAccessToken("root"));
   }
 }

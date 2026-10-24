@@ -13,9 +13,12 @@ import { paths } from '@/config/paths'
 import { PostRequest, Status } from '../../api/dto'
 import { useCreatePostFormData } from './postFormData'
 import { instantToWallTime } from '@/utils/wallTime'
+import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
+import { teamAccess } from '@/lib/teamAccess'
 
 export function CreatePostPage() {
   const { t } = useTranslation()
+  const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
   const { teamSlug } = useParams<{ teamSlug: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -39,7 +42,7 @@ export function CreatePostPage() {
     return <Navigate to={paths.team(teamSlug!)} replace />
   }
 
-  const canCreate = team.role === 'ADMIN' || team.role === 'ORGANIZER'
+  const canCreate = teamAccess(team, isPlatformAdmin).isOrganizer
 
   if (!canCreate) {
     return <Navigate to={paths.team(teamSlug!)} replace />

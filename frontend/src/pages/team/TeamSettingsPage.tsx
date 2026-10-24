@@ -20,9 +20,12 @@ import { TeamForm } from '../../components/team/TeamForm'
 import { TeamAdminLayout } from '../../components/team/TeamAdminLayout'
 import { TeamWebhookSettings } from '../../components/team/TeamWebhookSettings'
 import { TeamDetailDto } from '@/api/dto'
+import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
+import { teamAccess } from '@/lib/teamAccess'
 
 export function TeamSettingsPage() {
   const { t } = useTranslation()
+  const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
   const { teamSlug } = useParams<{ teamSlug: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -57,7 +60,7 @@ export function TeamSettingsPage() {
     )
   }
 
-  if (team.role !== 'ADMIN') {
+  if (!teamAccess(team, isPlatformAdmin).isAdmin) {
     return <Navigate to={paths.team(teamSlug!)} replace />
   }
 

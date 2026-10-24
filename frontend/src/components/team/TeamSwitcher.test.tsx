@@ -95,6 +95,15 @@ describe('TeamSwitcher (WEB-111)', () => {
     expect(menuButton()).toBeNull()
   })
 
+  // docs/LEDGER_*.md API-137: « Mes équipes » is the real memberships, a platform admin's too. One
+  // who belongs to no team gets an empty listing, so a team they only administer has no menu.
+  it('stays a plain title for a platform admin who belongs to no team', () => {
+    listing.teams = []
+    renderSwitcher(team('c-team', 'Craponne'))
+    expect(heading()).toHaveTextContent('Craponne')
+    expect(menuButton()).toBeNull()
+  })
+
   it('stays a plain title on a single-team site, without asking for the listing', () => {
     singleTeam = true
     listing.teams = [team('a-team', 'Annonay', 'MEMBER'), current]

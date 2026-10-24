@@ -7,6 +7,8 @@ import { LoadingPage } from '../../components/common/LoadingSpinner'
 import { TeamAdminLayout } from '../../components/team/TeamAdminLayout'
 import { TeamPageForm } from '../../components/team/TeamPageForm'
 import { useEditTeamPageFormData } from './teamPageFormData'
+import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
+import { teamAccess } from '@/lib/teamAccess'
 
 export function EditTeamPagePage() {
   const { teamSlug, pageSlug } = useParams<{ teamSlug: string; pageSlug: string }>()
@@ -15,6 +17,7 @@ export function EditTeamPagePage() {
   const { data: team, isLoading: isTeamLoading } = teamQuery
   const { data: page, isLoading: isPageLoading } = pageQuery
   const { t } = useTranslation()
+  const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
 
   useCanonicalPath(team && page ? paths.teamAdminPageEdit(team.slug, page.slug) : undefined)
 
@@ -26,7 +29,7 @@ export function EditTeamPagePage() {
     return <Navigate to={paths.teams()} replace />
   }
 
-  const isAdmin = team.role === 'ADMIN'
+  const isAdmin = teamAccess(team, isPlatformAdmin).isAdmin
   if (!isAdmin) {
     return <Navigate to={paths.team(team.slug)} replace />
   }

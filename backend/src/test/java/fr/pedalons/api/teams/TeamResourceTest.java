@@ -516,6 +516,55 @@ class TeamResourceTest extends AbstractResourceTest {
         .body("code", equalTo("MIGRATED_TEAM"));
   }
 
+  /** Ledger API-137: the real role, null for a non-member, and still the whole menu of pages. */
+  @Test
+  void getTeam_asPlatformAdminNonMember_shouldReturnNullRole_andAllPages() {
+    dataService.createPlatformAdminUser("godmode@example.com", "God Mode");
+    var draft = dataService.createAdditionalPage(team2, user1, "Brouillon", 1);
+    dataService.setTeamEntityStatus(draft, fr.pedalons.enums.Status.DRAFT);
+    dataService.createAdditionalPage(team2, user1, "Réservée", 2, Visibility.TEAM);
+
+    given()
+        .auth()
+        .oauth2(getAccessToken("godmode"))
+        .when()
+        .get("/api/teams/" + team2Slug)
+        .then()
+        .statusCode(200)
+        .body("role", nullValue())
+        .body("pages.size()", equalTo(2))
+        // The administration panel's split stays: it is a right, not a role.
+        .body("memberCountByRole", notNullValue());
+  }
+
+  /** Ledger API-137: « Mes équipes » of a platform admin who belongs to no team is empty. */
+  @Test
+  void listTeams_minRoleMember_asPlatformAdminWithoutTeam_shouldBeEmpty() {
+    dataService.createPlatformAdminUser("godmode@example.com", "God Mode");
+
+    given()
+        .auth()
+        .oauth2(getAccessToken("godmode"))
+        .queryParam("minRole", "MEMBER")
+        .when()
+        .get("/api/teams")
+        .then()
+        .statusCode(200)
+        .body("teams", empty())
+        .body("total", equalTo(0));
+
+    // The directory, without minRole, still lists every team of the domain, private ones included.
+    given()
+        .auth()
+        .oauth2(getAccessToken("godmode"))
+        .when()
+        .get("/api/teams")
+        .then()
+        .statusCode(200)
+        .body("total", equalTo(2))
+        .body("teams.role", everyItem(nullValue()));
+  }
+
   @Test
   void deleteTeam_asNonAdmin_shouldBeDenied() {
     given()

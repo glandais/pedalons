@@ -2938,6 +2938,57 @@ relevés sont `WEB-111` à `WEB-114` et `MOB-87` à `MOB-90`. `MOB-88` et `MOB-8
   une description seule (`SEC-11`, 9.1.2). Aucun changement de comportement, couvert par
   `RouteSampleLookupTest`. Premier palier de [`2026-10-24-weather-on-map.md`](plans/archive/2026-10-24-weather-on-map.md) (`WEB-115`, `MOB-91`).
 
+### Administrateur de la plateforme : vues personnelles au vrai rôle (24 octobre 2026, contrat `11.17.0`)
+
+- `API-137` **« Mes équipes » d'un administrateur de la plateforme : ses vraies adhésions, son vrai
+  rôle, plus d'équipe supprimée** (2026-10-24, **API 11.17.0**, mineure : la forme du contrat ne
+  change pas, son comportement oui) — `GET /api/teams?minRole=MEMBER` rendait les 20 premières
+  équipes du domaine, supprimées comprises, toutes avec `role = ADMIN`, à l'accueil « Mes équipes »
+  et dans le sélecteur d'équipe (`WEB-111`, `MOB-87`). Élargi à tout l'affichage d'un
+  administrateur de la plateforme : une vue personnelle montre ce que montre son vrai rôle, ses
+  droits d'ouvrir, de modérer et d'administrer restent entiers (`SecurityVerifier` inchangé).
+  Backend : `TeamRepository.find` filtre `t.deleted = false` sans condition, et `minRole` passe
+  avant le statut d'administrateur ; `TeamService.listTeams` ne lève les règles de visibilité que
+  pour l'annuaire sans `minRole` ni `joinable` (la découverte applique la vraie règle), ses cartes
+  comptent et listent les pages au vrai rôle ; `TeamDetailDto.role` est le vrai rôle, nul pour un
+  non-membre (le paramètre `platformAdmin` de `from` devient `seeAllPages`, le détail garde toutes
+  les pages et ses compteurs complets) ; `TeamEntityRepository.getPedalonsQuery` ne lève la
+  visibilité que pour un détail ou une liste d'**une seule** équipe sans `minRole`, et même là les
+  annonces brouillons des autres restent hors des listes ; `TeamDashboardService` rend le vrai
+  rôle, pas de « Mes prochaines sorties » ni d'annonces sans adhésion, mais les blocs organisateur
+  et admin ; `CalendarService` suit le vrai rôle pour l'agenda personnel et pour l'ICS d'équipe
+  (flux exporté), la vue calendrier d'une équipe dans l'application garde la vue complète. Web :
+  `lib/teamAccess.ts` combine `role` et `platformRole` (`isMember` réel, `isOrganizer` / `isAdmin`
+  élargis) sur une trentaine de gardes de droit ; adhésion, participation, raccourcis de l'accueil
+  et badges restent sur le vrai rôle ; `TeamAdminLayout` perd `canModerateOnly`, `TeamDashboard`
+  dessine les blocs que porte la réponse. Mobile : `buildTeamSections(…, platformAdmin:)` (puce
+  « Membres »), calendrier d'équipe et rôles de l'annuaire ouverts à l'administrateur de la
+  plateforme. Tests (backend lancés, suite complète verte) : `TeamServiceTest.listTeams_asPlatformAdmin_*`
+  (remplace `listTeams_shouldReturnDeletedUnlistedForPlatformAdmin`),
+  `TeamResourceTest.getTeam_asPlatformAdminNonMember_shouldReturnNullRole_andAllPages` et
+  `listTeams_minRoleMember_asPlatformAdminWithoutTeam_shouldBeEmpty`,
+  `TeamRepositoryTest.find_platformAdmin_minRoleTakesPrecedence` et
+  `findOne_platformAdmin_deletedTeam_isNotFound`, `TeamDashboardResourceTest.platformAdmin_notAMember_shouldGetTheAdminDashboard`
+  (réécrit), `PublicationVisibilityPlatformAdminTest`, `RouteResourceTest.getAllRoutes_asPlatformAdmin_*`
+  et `getUsages_asPlatformAdmin_*`, `AdResourceTest.*_asPlatformAdmin_*`,
+  `CalendarResourceTest.getEvents_asPlatformAdminMemberOfOneTeam_shouldNotReturnDrafts`,
+  `TeamCalendarResourceTest.teamIcs_asPlatformAdmin_shouldNotExportDrafts`, et un cas
+  « administrateur de la plateforme » dans `TeamListQueryCountTest`, `TeamDashboardQueryCountTest`,
+  `PublicationQueryCountTest`, `CalendarQueryCountTest` ; web `teamAccess.test.ts`,
+  `TeamAdminLayout.test.tsx`, `TeamLayout.test.tsx`, `TeamSwitcher.test.tsx`, `memberHome.test.tsx`,
+  `TeamDashboard.test.tsx` ; mobile `team_dashboard_test.dart` (« un administrateur de la plateforme
+  non membre garde la puce « Membres » »).
+  **À ne pas défaire** : `minRole` prime sur le statut d'administrateur de la plateforme ;
+  `deleted = false` est inconditionnel dans `GET /api/teams` (la restauration reste à
+  `AdminTeamService`) ; `role` est le vrai rôle, sans champ `administrable` — les clients ajoutent
+  `platformRole` de `/me` (décision tranchée : les applications mobiles déjà installées perdent
+  l'édition pour l'administrateur de la plateforme jusqu'à leur mise à jour) ; le contournement de
+  visibilité ne vaut que pour un détail ou une liste d'une seule équipe sans `minRole` ; les
+  annonces brouillons des autres restent hors des listes ; l'agenda personnel, l'ICS d'équipe et
+  les compteurs des cartes d'équipe passent `platformAdmin = false` explicitement (une seule équipe
+  ferait sinon une requête « d'une seule équipe ») ; le filtre `domainId` reste partout. Ce qui
+  reste : `API-139`, `API-140`, `WEB-120`, `MOB-96`.
+
 ### Points de parcours typés (C3c de `WEB-100`, 20 octobre 2026, contrat `11.16.0`, `V78`)
 
 - `API-134` **Promouvoir un aperçu GPX en parcours gardait-il ses points ? Non, et il les garde

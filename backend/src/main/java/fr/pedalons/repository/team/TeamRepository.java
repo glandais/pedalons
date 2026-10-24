@@ -10,9 +10,9 @@ import fr.pedalons.repository.common.BaseRepository;
 import fr.pedalons.repository.query.OrClause;
 import fr.pedalons.repository.query.PedalonsQuery;
 import fr.pedalons.repository.query.SimpleClause;
+import fr.pedalons.service.team.request.MinRole;
 import fr.pedalons.service.team.response.TeamAndRole;
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
-import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.List;
 import java.util.Map;
@@ -87,14 +87,14 @@ public class TeamRepository implements BaseRepository<Team> {
                     + " t.id) from Team t left join UserTeam ut on ut.team.id ="
                     + " t.id AND ut.user.id = :userId WHERE")
             .and("t.domain.id = :domainId", Map.of("domainId", teamQuery.domainId()))
+            // Never a trashed team, platform admin included (docs/LEDGER_*.md API-137): restoring
+            // one is the administration console's job (AdminTeamService), which has its own query.
+            .and("t.deleted = false", Map.of())
             .order(orderClause(teamQuery));
     if (teamQuery.pinnedTeamId() != null) {
       // A pinned alias host lists only its team, even for platform admins — a site scope like
       // domain.
       pedalonsQuery.and("t.id = :pinnedTeamId", Map.of("pinnedTeamId", teamQuery.pinnedTeamId()));
-    }
-    if (!teamQuery.platformAdmin()) {
-      pedalonsQuery.and("t.deleted = false", Map.of());
     }
     if (teamQuery.joinable() != null) {
       // Team discovery: "which teams can I ask to join?". ANDed with the visibility clauses below,
@@ -110,20 +110,21 @@ public class TeamRepository implements BaseRepository<Team> {
         SearchClause.addSearch(
             pedalonsQuery, Set.of("t.name", "t.aboutPage.markdown"), teamQuery.search());
     if (teamQuery.userId() != null) {
-      if (teamQuery.platformAdmin()) {
-        Log.debugf("Platform admin, all teams");
-      } else if (teamQuery.minRole() == null) {
+      MinRole minRole = teamQuery.minRole();
+      if (minRole != null) {
+        // "My teams": the caller's real memberships, whoever they are. A platform admin is a
+        // member of the teams they joined, not of every team (docs/LEDGER_*.md API-137).
+        pedalonsQuery.and("ut.role in (:userRoles)", Map.of("userRoles", minRole.acceptedRoles()));
+      } else if (!teamQuery.platformAdmin()) {
         OrClause or = new OrClause();
 
         or.add(visibleTeam(list));
         or.add(new SimpleClause("ut IS NOT NULL", Map.of()));
 
         pedalonsQuery.and(or);
-
-      } else {
-        pedalonsQuery.and(
-            "ut.role in (:userRoles)", Map.of("userRoles", teamQuery.minRole().acceptedRoles()));
       }
+      // Otherwise a platform admin's directory: every live team of the domain, private and
+      // unlisted ones included.
     } else {
       pedalonsQuery.and(visibleTeam(list));
     }

@@ -37,9 +37,12 @@ import { TagFilter } from '../../components/tag'
 import { paths } from '@/config/paths'
 import { AdType } from '../../api/dto'
 import { useCanonicalPath } from '../../hooks/useCanonicalPath'
+import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
+import { teamAccess } from '@/lib/teamAccess'
 
 export function AdListPage() {
   const { t } = useTranslation()
+  const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
   const { teamSlug } = useParams<{ teamSlug: string }>()
 
   const { filters, setFilters, team, ads, totalPages } = useAdListData(teamSlug)
@@ -70,9 +73,10 @@ export function AdListPage() {
 
   const isMember = !!teamData.role
 
-  // The API refuses the list to anyone outside the team (AdAccessChecker LIST): saying there are
-  // no ads would be untrue, and filters over a list that cannot come would be noise.
-  if (!isMember) {
+  // The API refuses the list to anyone outside the team (AdAccessChecker LIST) but a platform
+  // admin: saying there are no ads would be untrue, and filters over a list that cannot come would
+  // be noise.
+  if (!isMember && !isPlatformAdmin) {
     return (
       <TeamLayout team={teamData} currentTab="ads">
         <Title order={2}>{t('ads.title')}</Title>
@@ -244,7 +248,12 @@ export function AdListPage() {
               <AdCard
                 key={ad.id}
                 ad={ad}
-                actions={<AdCardActions ad={ad} isTeamAdmin={teamData.role === 'ADMIN'} />}
+                actions={
+                  <AdCardActions
+                    ad={ad}
+                    isTeamAdmin={teamAccess(teamData, isPlatformAdmin).isAdmin}
+                  />
+                }
               />
             ))}
           </SimpleGrid>

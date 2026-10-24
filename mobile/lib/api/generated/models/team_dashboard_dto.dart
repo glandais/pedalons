@@ -22,7 +22,7 @@ abstract class TeamDashboardDto with _$TeamDashboardDto {
     /// The team, as GET /api/teams/{teamSlug} returns it — header, feature flags, memberCount; memberCountByRole is filled for an administrator.
     required TeamDetailDto team,
 
-    /// The caller's role in the team, the one the sections were built for. ADMIN for a platform admin; null for a visitor, anonymous or not a member.
+    /// The caller's real role in the team; null for a visitor, anonymous or not a member — a platform admin who is not a member included. The organizer and admin blocks are what a platform admin's rights add.
     String? role,
 
     /// « Vos prochaines sorties »: the team's rides and trips starting from now that the caller is registered to, soonest first (at most 3). A ride row's registeredGroup is the group joined, with its pace. Null when both rides and trips are disabled, and for a visitor.
@@ -40,10 +40,10 @@ abstract class TeamDashboardDto with _$TeamDashboardDto {
     /// « Annonces »: the team's latest ads, newest first (at most 3). A null price reads « Prix à négocier »; the place is locationDescription, a sector — never a pin. Null when ads are disabled, and for a visitor.
     AdListResponse? latestAds,
 
-    /// What organizers and administrators see on top. Null for a MEMBER and a visitor.
+    /// What organizers and administrators see on top. Null for a MEMBER and a visitor; filled for a platform admin, member or not.
     TeamDashboardOrganizerDto? organizer,
 
-    /// The administration panel. Null below ADMIN, and for a visitor.
+    /// The administration panel. Null below ADMIN, and for a visitor; filled for a platform admin, member or not.
     TeamDashboardAdminDto? admin,
   }) = _TeamDashboardDto;
 

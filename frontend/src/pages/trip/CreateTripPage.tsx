@@ -14,9 +14,12 @@ import { TripEditor } from '../../components/trip/TripEditor'
 import { defaultMedia } from '@/lib/apiUtils'
 import { useCreateTripFormData } from './tripFormData'
 import { nextWeekdayWallTime } from '@/utils/wallTime'
+import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
+import { teamAccess } from '@/lib/teamAccess'
 
 export function CreateTripPage() {
   const { t } = useTranslation()
+  const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
   const { teamSlug } = useParams<{ teamSlug: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -39,7 +42,7 @@ export function CreateTripPage() {
     return <Navigate to={paths.team(teamSlug!)} replace />
   }
 
-  const canCreate = team.role === 'ADMIN' || team.role === 'ORGANIZER'
+  const canCreate = teamAccess(team, isPlatformAdmin).isOrganizer
 
   if (!canCreate) {
     return <Navigate to={paths.team(teamSlug!)} replace />

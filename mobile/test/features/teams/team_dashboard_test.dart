@@ -458,6 +458,26 @@ void main() {
       ]);
     });
 
+    // docs/LEDGER_*.md API-137 : `role` est le vrai rôle, nul pour un
+    // administrateur de la plateforme qui n'est pas membre — l'annuaire lui
+    // reste ouvert, comme toute vérification d'accès.
+    test('un administrateur de la plateforme non membre garde la puce '
+        '« Membres »', () {
+      final List<TeamSection> sections = buildTeamSections(
+        fixtureTeam(),
+        platformAdmin: true,
+      );
+      expect(
+        sections.map((TeamSection s) => s.kind),
+        contains(TeamSectionKind.members),
+      );
+      // Les annonces restent aux membres.
+      expect(
+        sections.map((TeamSection s) => s.kind),
+        isNot(contains(TeamSectionKind.ads)),
+      );
+    });
+
     test('un administrateur garde la puce « Membres »', () {
       final List<TeamSection> sections = buildTeamSections(
         fixtureTeam(role: 'ADMIN'),

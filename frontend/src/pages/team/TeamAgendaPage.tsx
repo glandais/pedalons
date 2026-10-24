@@ -48,6 +48,8 @@ import {
 import { isDated } from '@/utils/publicationTiming'
 import type { TeamDetailDto } from '@/api/dto'
 import { useTeamAgendaData } from './teamAgendaData'
+import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
+import { teamAccess } from '@/lib/teamAccess'
 
 /**
  * « Agenda » (`teamAgenda`, ledger `WEB-68`): the team's rides and trips, by time — « À venir »
@@ -58,6 +60,7 @@ import { useTeamAgendaData } from './teamAgendaData'
  */
 export function TeamAgendaPage() {
   const { t } = useTranslation()
+  const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
   const navigate = useNavigate()
   const { teamSlug } = useParams<{ teamSlug: string }>()
 
@@ -90,7 +93,7 @@ export function TeamAgendaPage() {
     )
   }
 
-  const canCreate = teamData.role === 'ADMIN' || teamData.role === 'ORGANIZER'
+  const canCreate = teamAccess(teamData, isPlatformAdmin).isOrganizer
   const createItems = [
     ...(teamData.enableRides && teamData.enableRoutes
       ? [{ path: paths.rideNew(teamData.slug), label: t('rides.create.title') }]
@@ -100,8 +103,10 @@ export function TeamAgendaPage() {
       : []),
   ]
 
-  // The calendar is the members' (CalendarAccessChecker): a visitor only has the two lists.
-  const hasCalendar = !!teamData.role && (!!teamData.enableRides || !!teamData.enableTrips)
+  // The calendar is the members' (CalendarAccessChecker) and a platform admin's: a visitor only has
+  // the two lists.
+  const hasCalendar =
+    (!!teamData.role || isPlatformAdmin) && (!!teamData.enableRides || !!teamData.enableTrips)
   const views: ListView[] = hasCalendar ? ['card', 'row', 'calendar'] : ['card', 'row']
   const density = filters.density ?? 'card'
   const onViewChange = (view: ListView) => {

@@ -16,10 +16,13 @@ import { RouteViewSwitch } from '@/components/route/RouteViewSwitch'
 import { useCanonicalPath } from '../../hooks/useCanonicalPath'
 import { UploadGpxFiles } from '../../components/route/UploadGpxFiles'
 import { TagFilter } from '../../components/tag'
+import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
+import { teamAccess } from '@/lib/teamAccess'
 
 export function RouteListPage() {
   const { teamSlug } = useParams<{ teamSlug: string }>()
   const { t } = useTranslation()
+  const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
 
   const {
     filters,
@@ -47,7 +50,7 @@ export function RouteListPage() {
     return <Navigate to={paths.teams()} replace />
   }
 
-  const canCreateRoute = team.role === 'ADMIN' || team.role === 'ORGANIZER'
+  const canCreateRoute = teamAccess(team, isPlatformAdmin).isOrganizer
 
   return (
     <TeamLayout team={team} currentTab="routes">

@@ -42,9 +42,12 @@ import { Pagination } from '../../components/common/Pagination'
 import { useDebouncedSearch } from '../../hooks/useDebouncedSearch'
 import { useScrollToListTop } from '../../hooks/useScrollToListTop'
 import { useTeamMembersData } from './teamMembersData'
+import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
+import { teamAccess } from '@/lib/teamAccess'
 
 export function TeamMembersPage() {
   const { t } = useTranslation()
+  const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
   const { teamSlug } = useParams<{ teamSlug: string }>()
   const { user } = useAuth()
   const queryClient = useQueryClient()
@@ -89,7 +92,7 @@ export function TeamMembersPage() {
   }
 
   // Only admins can see member list
-  if (team.role !== 'ADMIN') {
+  if (!teamAccess(team, isPlatformAdmin).isAdmin) {
     return <Navigate to={paths.team(teamSlug!)} replace />
   }
 
@@ -197,7 +200,8 @@ export function TeamMembersPage() {
             <Box ref={listTopRef}>
               <TeamMemberList
                 members={membersData.members}
-                currentUserRole={team.role}
+                // The rights the list grants: a platform admin manages the members of any team.
+                currentUserRole={isPlatformAdmin ? TeamRole.ADMIN : (team.role ?? null)}
                 currentUserId={user?.id ?? null}
                 onUpdateRole={handleUpdateRole}
                 onRemoveMember={handleRemoveMember}

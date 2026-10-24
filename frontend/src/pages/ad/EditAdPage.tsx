@@ -19,9 +19,12 @@ import { paths } from '@/config/paths'
 import { AdRequest } from '@/api/dto'
 import { useEditAdFormData } from './adFormData'
 import { useAuth } from '../../hooks/useAuth'
+import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
+import { teamAccess } from '@/lib/teamAccess'
 
 export function EditAdPage() {
   const { t } = useTranslation()
+  const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
   const { teamSlug, adSlug } = useParams<{ teamSlug: string; adSlug: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -48,8 +51,8 @@ export function EditAdPage() {
     return <Navigate to={paths.ads(teamSlug!)} replace />
   }
 
-  // The author or a team admin, as AdAccessChecker enforces.
-  const isAdmin = team.role === 'ADMIN'
+  // The author or a team admin, as AdAccessChecker enforces — or a platform admin.
+  const isAdmin = teamAccess(team, isPlatformAdmin).isAdmin
   const canEdit = isAdmin || (!!user && ad.createdById === user.id)
 
   if (!canEdit) {

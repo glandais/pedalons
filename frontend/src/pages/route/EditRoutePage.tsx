@@ -13,10 +13,13 @@ import { LoadingPage } from '@/components/common/LoadingSpinner'
 import { RouteEditor } from '@/components/route/RouteEditor'
 import { suggestSurfaceType } from '@/lib/trackSurface'
 import { useEditRouteFormData } from './routeFormData'
+import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
+import { teamAccess } from '@/lib/teamAccess'
 
 export function EditRoutePage() {
   const { teamSlug, routeSlug } = useParams<{ teamSlug: string; routeSlug: string }>()
   const { t } = useTranslation()
+  const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
@@ -44,7 +47,7 @@ export function EditRoutePage() {
     return <Navigate to={paths.team(teamSlug!)} replace />
   }
 
-  const canEdit = team.role === 'ADMIN' || team.role === 'ORGANIZER'
+  const canEdit = teamAccess(team, isPlatformAdmin).isOrganizer
 
   if (!canEdit) {
     return <Navigate to={paths.routes(teamSlug!)} replace />

@@ -53,6 +53,7 @@ class TeamAgendaPage extends StatefulWidget {
     this.initialType,
     this.initialScope = AgendaScope.upcoming,
     this.initialView = AgendaView.list,
+    this.platformAdmin = false,
   });
 
   final TeamDetailDto team;
@@ -69,6 +70,11 @@ class TeamAgendaPage extends StatefulWidget {
   final AgendaScope initialScope;
   final AgendaView initialView;
 
+  /// Le lecteur est administrateur de la plateforme : `team.role` reste son
+  /// vrai rôle, nul s'il n'est pas membre (docs/LEDGER_*.md API-137), mais il
+  /// ouvre le calendrier de toute équipe.
+  final bool platformAdmin;
+
   @override
   State<TeamAgendaPage> createState() => _TeamAgendaPageState();
 }
@@ -78,8 +84,9 @@ class _TeamAgendaPageState extends State<TeamAgendaPage> {
   late AgendaScope _scope = widget.initialScope;
   late AgendaView _view = widget.initialView;
 
-  /// Le calendrier d'une équipe est réservé à ses membres.
-  bool get _canShowCalendar => widget.team.role != null;
+  /// Le calendrier d'une équipe est réservé à ses membres — et à
+  /// l'administration de la plateforme.
+  bool get _canShowCalendar => widget.team.role != null || widget.platformAdmin;
 
   @override
   Widget build(BuildContext context) {

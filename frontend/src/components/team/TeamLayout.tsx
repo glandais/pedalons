@@ -23,6 +23,7 @@ import { TeamSwitcher } from './TeamSwitcher'
 import { invalidateTeamSwitcher } from './teamSwitcherData'
 import type { TeamDetailDto } from '@/api/dto'
 import { paths } from '@/config/paths'
+import { useTeamAccess } from '@/lib/teamAccess'
 
 interface TeamLayoutProps {
   team: TeamDetailDto
@@ -54,12 +55,12 @@ export function TeamLayout({
   // Set favicon to team logo
   useFavicon(team.about?.assets?.logo?.imageUrl?.replace('{size}', String(128)))
 
-  const isMember = !!team.role
-  const isAdmin = team.role === 'ADMIN'
-  const isOrganizer = team.role === 'ADMIN' || team.role === 'ORGANIZER'
+  // Joining and leaving follow the real membership; the administration entry, the rights a
+  // platform admin holds everywhere (docs/LEDGER_*.md API-137).
+  const { isMember, isOrganizer } = useTeamAccess(team)
   // `joinable` is what UserTeamAccessChecker enforces; without it the button only earns a 403.
   const canJoin = isAuthenticated && !isMember && team.visibility !== 'TEAM' && team.joinable
-  const canLeave = isMember && !isAdmin
+  const canLeave = isMember && team.role !== 'ADMIN'
 
   const joinMutation = useJoinTeam()
   const leaveMutation = useLeaveTeam()

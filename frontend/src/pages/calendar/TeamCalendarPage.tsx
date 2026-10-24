@@ -14,6 +14,7 @@ import { useCanonicalPath } from '@/hooks/useCanonicalPath'
 import { useUrlFilters } from '@/hooks/useUrlFilters'
 import { useTeamCalendarData } from '@/pages/calendar/teamCalendarData'
 import type { CalendarEventDto } from '@/api/dto'
+import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
 
 /**
  * The agenda's calendar view, kept on its own path for the links already out there (ledger
@@ -43,6 +44,7 @@ function keepEvent(
 
 export function TeamCalendarPage(): React.ReactElement {
   const { t } = useTranslation()
+  const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
   const navigate = useNavigate()
   const { teamSlug } = useParams<{ teamSlug: string }>()
   const { filters, setFilters } = useUrlFilters(calendarFilterOptions)
@@ -66,9 +68,9 @@ export function TeamCalendarPage(): React.ReactElement {
     return <Navigate to={paths.teams()} replace />
   }
 
-  // The calendar and its ICS feed are for the team's members (CalendarAccessChecker): anyone else
-  // gets the agenda's lists.
-  if (!teamData.role) {
+  // The calendar and its ICS feed are for the team's members (CalendarAccessChecker) — and a
+  // platform admin, who passes every access check: anyone else gets the agenda's lists.
+  if (!teamData.role && !isPlatformAdmin) {
     return <Navigate to={paths.teamAgenda(teamData.slug)} replace />
   }
 

@@ -23,6 +23,8 @@ import { isSingleTeam } from '@/config/appConfig'
 import { useAuth } from './useAuth'
 import type { NavButtonItem } from '../components/common/NavButtons'
 import type { TeamDetailDto } from '@/api/dto'
+import { teamAccess } from '@/lib/teamAccess'
+import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
 
 /** A main-navigation entry, tied to the route (routes.config.ts id) that its section starts at. */
 export interface MainNavItem extends NavButtonItem {
@@ -151,14 +153,25 @@ export function useActiveMainNavId(items: MainNavItem[]): string | undefined {
  */
 export function useTeamNavItems(team: TeamDetailDto | undefined): NavButtonItem[] {
   const { t } = useTranslation()
-  return useMemo(() => (team ? teamNavItems(team, t) : []), [team, t])
+  const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
+  return useMemo(
+    () => (team ? teamNavItems(team, t, isPlatformAdmin) : []),
+    [team, t, isPlatformAdmin]
+  )
 }
 
 /** useTeamNavItems' list for a loaded team: its sections, then its visible custom pages. */
-function teamNavItems(team: TeamDetailDto, t: TFunction): NavButtonItem[] {
-  const isMember = !!team.role
-  // Add dynamic pages - filter by visibility (PUBLIC pages or member can see TEAM pages)
-  const visiblePages = (team.pages ?? []).filter((page) => page.visibility !== 'TEAM' || isMember)
+function teamNavItems(
+  team: TeamDetailDto,
+  t: TFunction,
+  isPlatformAdmin: boolean
+): NavButtonItem[] {
+  // Add dynamic pages - filter by visibility (PUBLIC pages or member can see TEAM pages). A platform
+  // admin reads every page of the team they open (docs/LEDGER_*.md API-137).
+  const canReadTeamPages = !!team.role || isPlatformAdmin
+  const visiblePages = (team.pages ?? []).filter(
+    (page) => page.visibility !== 'TEAM' || canReadTeamPages
+  )
 
   const pageTabs: NavButtonItem[] = visiblePages.map((page) => ({
     id: page.slug,
@@ -167,14 +180,20 @@ function teamNavItems(team: TeamDetailDto, t: TFunction): NavButtonItem[] {
     icon: IconFileText,
   }))
 
-  return [...teamSectionItems(team, t), ...pageTabs]
+  return [...teamSectionItems(team, t, isPlatformAdmin), ...pageTabs]
 }
 
 /** The sections the team has, without its custom pages: what the team switcher carries over. */
-export function teamSectionItems(team: TeamDetailDto, t: TFunction): NavButtonItem[] {
-  const isMember = !!team.role
-  const canSeeMembers =
-    team.role === 'ADMIN' || team.role === 'ORGANIZER' || (isMember && !!team.enableMemberDirectory)
+export function teamSectionItems(
+  team: TeamDetailDto,
+  t: TFunction,
+  isPlatformAdmin = false
+): NavButtonItem[] {
+  // `team.role` is the real membership: a platform admin's rights (the ads, the directory) are
+  // added from `isPlatformAdmin` (docs/LEDGER_*.md API-137).
+  const { isMember, isOrganizer } = teamAccess(team, isPlatformAdmin)
+  const canSeeMembers = isOrganizer || (isMember && !!team.enableMemberDirectory)
+  const canReadAds = isMember || isPlatformAdmin
   const hasAgenda = (!!team.enableRides || !!team.enableTrips) && !!team.enableRoutes
   return [
     {
@@ -213,7 +232,7 @@ export function teamSectionItems(team: TeamDetailDto, t: TFunction): NavButtonIt
           },
         ]
       : []),
-    ...(isMember && team.enableAds
+    ...(canReadAds && team.enableAds
       ? [
           {
             id: 'ads',

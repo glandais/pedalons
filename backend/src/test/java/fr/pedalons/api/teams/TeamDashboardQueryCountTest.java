@@ -211,6 +211,13 @@ class TeamDashboardQueryCountTest extends AbstractQueryCountTest {
   }
 
   /** An anonymous visitor: the public part, through the anonymous branch. */
+  /** Ledger API-137: a platform admin who is not a member gets the organizer and admin blocks. */
+  @Test
+  void dashboard_asPlatformAdmin_costDoesNotScaleWithTheTeam() {
+    dataService.createPlatformAdminUser("root@example.com", "Root");
+    assertFlatAcrossData("root");
+  }
+
   @Test
   void dashboard_anonymously_costDoesNotScaleWithTheTeam() {
     assertFlatAcrossData(null);

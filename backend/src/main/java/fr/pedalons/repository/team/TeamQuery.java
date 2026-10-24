@@ -26,5 +26,10 @@ public record TeamQuery(
     @Nullable TeamSortBy sortBy,
     /** Defaults to DESC when {@code sortBy} is set, as on the other listings. */
     @Nullable SortDirection sortDir,
+    /**
+     * Lifts the visibility rules for a platform admin's directory of every team of the domain.
+     * Never the deleted filter, and never {@code minRole}: "my teams" are real memberships
+     * (docs/LEDGER_*.md API-137).
+     */
     boolean platformAdmin)
     implements PageInterface {}

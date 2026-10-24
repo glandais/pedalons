@@ -102,14 +102,19 @@ public class CalendarService {
       AuthMode authMode, String teamSlug, @Nullable Instant from, @Nullable Instant to) {
     Team team = teamService.getTeam(teamSlug);
     User user = pedalonsQueryContext.getUser();
-    return getTeamEvents(team, user, resolveFrom(from), resolveTo(to));
+    // The in-app team calendar is a view of the team the caller opened: a platform admin sees it
+    // whole, drafts included, as the team's own lists show them (docs/LEDGER_*.md API-137).
+    return getTeamEvents(team, user, resolveFrom(from), resolveTo(to), user.isPlatformAdmin());
   }
 
   @CheckAccess(entityType = EntityType.CALENDAR, action = ActionType.LIST)
   public String generateIcsForTeam(AuthMode authMode, String token, String teamSlug) {
     User user = validateToken(token);
     Team team = teamService.getTeam(teamSlug);
-    CalendarEventsResponse feed = getTeamEvents(team, user, getDefaultFrom(), getDefaultTo());
+    // An exported feed lands in someone's own agenda: it follows the caller's real role, never the
+    // platform admin's bypass (docs/LEDGER_*.md API-137).
+    CalendarEventsResponse feed =
+        getTeamEvents(team, user, getDefaultFrom(), getDefaultTo(), false);
     return icsGenerationService.generateIcs(
         feed.events(), "Pedalons - " + team.getName(), EventTimezoneResolver.teamZone(team));
   }
@@ -210,8 +215,9 @@ public class CalendarService {
   }
 
   @Transactional
-  protected CalendarEventsResponse getTeamEvents(Team team, User user, Instant from, Instant to) {
-    return buildEvents(Set.of(team.getId()), user, from, to);
+  protected CalendarEventsResponse getTeamEvents(
+      Team team, User user, Instant from, Instant to, boolean platformAdmin) {
+    return buildEvents(Set.of(team.getId()), user, from, to, platformAdmin);
   }
 
   private CalendarEventsResponse getEventsForUserInternal(User user, Instant from, Instant to) {
@@ -227,7 +233,10 @@ public class CalendarService {
       return new CalendarEventsResponse(List.of());
     }
 
-    return buildEvents(teamIds, user, from, to);
+    // A personal agenda shows what the caller's real role shows, platform admin or not
+    // (docs/LEDGER_*.md API-137). Explicit: an admin member of a single team would otherwise get a
+    // team-scoped query, where the platform admin's bypass applies.
+    return buildEvents(teamIds, user, from, to, false);
   }
 
   /**
@@ -241,13 +250,13 @@ public class CalendarService {
    * eager to-ones already loaded with the publication.
    */
   private CalendarEventsResponse buildEvents(
-      Set<Long> teamIds, User user, Instant from, Instant to) {
+      Set<Long> teamIds, User user, Instant from, Instant to, boolean platformAdmin) {
     List<Ride> rides =
-        getPublications(teamIds, user, from, to, PublicationType.RIDE).stream()
+        getPublications(teamIds, user, from, to, PublicationType.RIDE, platformAdmin).stream()
             .map(Ride.class::cast)
             .toList();
     List<Trip> trips =
-        getPublications(teamIds, user, from, to, PublicationType.TRIP).stream()
+        getPublications(teamIds, user, from, to, PublicationType.TRIP, platformAdmin).stream()
             .map(Trip.class::cast)
             .toList();
     // A trip in the window may have stages outside it, now that a trip started before `from` is in.
@@ -333,16 +342,19 @@ public class CalendarService {
    * their stored end, and started at or before {@code to} (docs/LEDGER_*.md API-88) — a trip that
    * began before {@code from} and still runs is in it.
    *
-   * <p>The ICS feeds authenticate through a calendar token rather than a session, so god mode is read
-   * off the resolved {@code user} — {@link
+   * <p>The ICS feeds authenticate through a calendar token rather than a session, so the caller
+   * decides whether the platform admin's bypass applies — {@link
    * fr.pedalons.service.security.PedalonsQueryContext#isPlatformAdmin()} would see no user there.
+   * Only the in-app team calendar passes {@code user.isPlatformAdmin()}; the personal agenda and
+   * the exported feeds pass {@code false} (docs/LEDGER_*.md API-137).
    */
   private List<Publication> getPublications(
       @Nullable Set<Long> teamIds,
       User user,
       Instant from,
       Instant to,
-      PublicationType publicationType) {
+      PublicationType publicationType,
+      boolean platformAdmin) {
     return allPublicationRepository.findAll(
         PublicationQuery.builder()
             .domainId(pedalonsQueryContext.getDomainId())
@@ -353,7 +365,7 @@ public class CalendarService {
             .notEndedAt(from)
             .to(to)
             .includeDeleted(false)
-            .platformAdmin(user.isPlatformAdmin())
+            .platformAdmin(platformAdmin)
             .build());
   }
 

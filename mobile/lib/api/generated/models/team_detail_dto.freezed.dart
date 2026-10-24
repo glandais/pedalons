@@ -43,7 +43,7 @@ mixin _$TeamDetailDto {
  String? get excerpt;/// URL template of the team's logo, when it has one. Same picture as about.assets.logo, hoisted so a card does not have to walk the asset inventory to find it. Opaque URL: may carry a query string; substitute {size} only.
  String? get logoUrl;/// Additional team pages
  List<TeamPageSummaryDto>? get pages;/// Members per role. Only for the team's administrators (platform admins included): null for everyone else, and in the team listings.
- MemberCountByRoleDto? get memberCountByRole;/// Current user's role (null if not a member)
+ MemberCountByRoleDto? get memberCountByRole;/// Current user's role (null if not a member). The real membership, platform admins included: their extra rights come from the platform role of /api/me, not from this field.
  String? get role;/// Team location coordinates [longitude, latitude]
  TeamDetailDtoGeometry? get geometry;
 /// Create a copy of TeamDetailDto
@@ -371,7 +371,7 @@ class _TeamDetailDto implements TeamDetailDto {
 
 /// Members per role. Only for the team's administrators (platform admins included): null for everyone else, and in the team listings.
 @override final  MemberCountByRoleDto? memberCountByRole;
-/// Current user's role (null if not a member)
+/// Current user's role (null if not a member). The real membership, platform admins included: their extra rights come from the platform role of /api/me, not from this field.
 @override final  String? role;
 /// Team location coordinates [longitude, latitude]
 @override final  TeamDetailDtoGeometry? geometry;

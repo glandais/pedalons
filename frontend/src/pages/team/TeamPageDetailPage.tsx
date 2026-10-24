@@ -8,6 +8,7 @@ import { TeamLayout } from '../../components/team/TeamLayout'
 import { MediaDisplay } from '../../components/common/MediaDisplay'
 import { VisibilityBadge } from '../../components/card/common'
 import { useTeamPageData } from './teamPageData'
+import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
 
 export function TeamPageDetailPage() {
   const { teamSlug, pageSlug } = useParams<{ teamSlug: string; pageSlug: string }>()
@@ -17,6 +18,7 @@ export function TeamPageDetailPage() {
   const { data: page, isLoading: isPageLoading } = pageQuery
 
   const { t } = useTranslation()
+  const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
 
   useCanonicalPath(team && page ? paths.teamPage(team.slug, page.slug) : undefined)
 
@@ -32,7 +34,8 @@ export function TeamPageDetailPage() {
     return <Navigate to={paths.team(team.slug)} replace />
   }
 
-  const isMember = !!team.role
+  // The badge tells who else reads the page: shown to its members, and to a platform admin.
+  const isMember = !!team.role || isPlatformAdmin
 
   return (
     <TeamLayout team={team} currentTab={page.slug} onCustomPage>

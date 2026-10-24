@@ -45,9 +45,12 @@ import { paths } from '@/config/paths'
 import { useCanonicalPath } from '../../hooks/useCanonicalPath'
 import { STATUS_COLORS } from '@/lib/badgeColors.generated'
 import { TagList } from '@/components/tag'
+import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
+import { teamAccess } from '@/lib/teamAccess'
 
 export function PostDetailPage() {
   const { t } = useTranslation()
+  const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
   const { teamSlug, postSlug } = useParams<{ teamSlug: string; postSlug: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -89,10 +92,10 @@ export function PostDetailPage() {
     )
   }
 
-  const isMember = !!team?.role
-  const isAdmin = team?.role === 'ADMIN'
-  const isOrganizer = team?.role === 'ORGANIZER'
-  const canEdit = isAdmin || isOrganizer
+  // Registering and the join banner follow the real membership; editing and the comment thread
+  // (moderation), the rights a platform admin holds in every team (docs/LEDGER_*.md API-137).
+  const { isMember, isOrganizer: canEdit } = teamAccess(team, isPlatformAdmin)
+  const canReadComments = isMember || isPlatformAdmin
 
   // A post's date is entered, a rendezvous in its (the team's) zone (docs/LEDGER_*.md API-60).
   const formattedDate = <Rendezvous date={post.dateTime} zone={post.timezone} variant="detail" />
@@ -315,7 +318,7 @@ export function PostDetailPage() {
         </Paper>
 
         {/* Comments Section - only visible to team members */}
-        {isMember && (
+        {canReadComments && (
           <CommentSection
             teamSlug={teamSlug!}
             teamName={team.name}

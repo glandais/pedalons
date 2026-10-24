@@ -188,6 +188,28 @@ class PublicationQueryCountTest extends AbstractQueryCountTest {
     assertFlatQueryCount("GET /api/publications", asUser1(), "/api/publications");
   }
 
+  /** Ledger API-137: a platform admin's cross-team listing takes the real-role query shape. */
+  @Test
+  void listAllPublications_asPlatformAdmin_costDoesNotScaleWithRowCount() {
+    seedRides(LARGE_PAGE);
+    dataService.createPlatformAdminUser("root@example.com", "Root");
+    assertFlatQueryCount(
+        "GET /api/publications platform admin",
+        () -> given().auth().oauth2(getAccessToken("root")),
+        "/api/publications");
+  }
+
+  /** The lists of the one team a platform admin opens keep the full view, at the same cost. */
+  @Test
+  void listTeamRides_asPlatformAdmin_costDoesNotScaleWithRowCount() {
+    seedRides(LARGE_PAGE);
+    dataService.createPlatformAdminUser("root@example.com", "Root");
+    assertFlatQueryCount(
+        "GET /api/teams/{teamSlug}/publications?type=RIDE platform admin",
+        () -> given().auth().oauth2(getAccessToken("root")),
+        "/api/teams/" + team1Slug + "/publications?type=RIDE");
+  }
+
   /** The same list seen by an anonymous visitor — a different query shape (no UserTeam join). */
   @Test
   void listAllPublicationsAnonymous_costDoesNotScaleWithRowCount() {

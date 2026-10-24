@@ -17,9 +17,12 @@ import { LoadingPage } from '../../components/common/LoadingSpinner'
 import { TripEditor } from '../../components/trip/TripEditor'
 import { TripRequest } from '@/api/dto'
 import { useEditTripFormData, tripToRequest, tripStageTimezones } from './tripFormData'
+import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
+import { teamAccess } from '@/lib/teamAccess'
 
 export function EditTripPage() {
   const { t } = useTranslation()
+  const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
   const { teamSlug, tripSlug } = useParams<{ teamSlug: string; tripSlug: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -40,7 +43,7 @@ export function EditTripPage() {
     return <Navigate to={paths.team(teamSlug!)} replace />
   }
 
-  const canEdit = team.role === 'ADMIN' || team.role === 'ORGANIZER'
+  const canEdit = teamAccess(team, isPlatformAdmin).isOrganizer
 
   if (!canEdit) {
     return <Navigate to={paths.trip(teamSlug!, tripSlug!)} replace />

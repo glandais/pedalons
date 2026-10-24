@@ -23,17 +23,17 @@ interface TeamDashboardProps {
  * leads to the list behind it: the agenda (« Je participe » for « Mes prochaines »), the posts, the
  * routes (ledger WEB-68). What it shows follows the API, never a guess from the client:
  * a section is drawn when the response carries it — `null` means the team disabled that module —
- * and the organizer and admin blocks only exist in the response for those roles. The role is
- * still checked here, so that a block can never leak to a lower role through a stale cache.
+ * and the organizer and admin blocks only exist in the response for those who hold the rights: a
+ * team ORGANIZER or ADMIN, or a platform admin whose `role` is null when not a member
+ * (docs/LEDGER_*.md API-137). Their presence, not `role`, is what draws them.
  */
 export function TeamDashboard({ dashboard, team: teamOverride }: TeamDashboardProps) {
   const { t } = useTranslation()
   const team = teamOverride ?? dashboard.team
   const slug = team.slug
-  const isOrganizer = dashboard.role === 'ORGANIZER' || dashboard.role === 'ADMIN'
-  const isAdmin = dashboard.role === 'ADMIN'
-  const organizer = isOrganizer ? dashboard.organizer : undefined
-  const admin = isAdmin ? dashboard.admin : undefined
+  const organizer = dashboard.organizer ?? undefined
+  const admin = dashboard.admin ?? undefined
+  const isOrganizer = !!organizer
 
   const { myUpcoming, upcomingRides, latestPosts, newRoutes, latestAds } = dashboard
   const upcoming = ridesOf(upcomingRides?.publications)

@@ -37,8 +37,9 @@ public record TeamDashboardDto(
     @Nullable
         @Schema(
             description =
-                "The caller's role in the team, the one the sections were built for. ADMIN for a"
-                    + " platform admin; null for a visitor, anonymous or not a member.")
+                "The caller's real role in the team; null for a visitor, anonymous or not a"
+                    + " member — a platform admin who is not a member included. The organizer and"
+                    + " admin blocks are what a platform admin's rights add.")
         TeamRole role,
     @Nullable
         @Schema(
@@ -78,8 +79,12 @@ public record TeamDashboardDto(
     @Nullable
         @Schema(
             description =
-                "What organizers and administrators see on top. Null for a MEMBER and a visitor.")
+                "What organizers and administrators see on top. Null for a MEMBER and a visitor;"
+                    + " filled for a platform admin, member or not.")
         TeamDashboardOrganizerDto organizer,
     @Nullable
-        @Schema(description = "The administration panel. Null below ADMIN, and for a visitor.")
+        @Schema(
+            description =
+                "The administration panel. Null below ADMIN, and for a visitor; filled for a"
+                    + " platform admin, member or not.")
         TeamDashboardAdminDto admin) {}

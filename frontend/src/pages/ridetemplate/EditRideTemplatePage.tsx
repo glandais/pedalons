@@ -15,6 +15,8 @@ import { LoadingPage } from '../../components/common/LoadingSpinner'
 import { RideTemplateEditor } from '../../components/ridetemplate/RideTemplateEditor'
 import { RideTemplateRequest } from '@/api/dto'
 import { useEditRideTemplateFormData } from './rideTemplateFormData'
+import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
+import { teamAccess } from '@/lib/teamAccess'
 
 export function EditRideTemplatePage() {
   const { teamSlug, templateSlug } = useParams<{ teamSlug: string; templateSlug: string }>()
@@ -29,6 +31,7 @@ export function EditRideTemplatePage() {
 
   const updateMutation = useUpdateTemplate()
   const { t } = useTranslation()
+  const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
 
   useCanonicalPath(team && template ? paths.rideTemplateEdit(team.slug, template.slug) : undefined)
 
@@ -44,7 +47,7 @@ export function EditRideTemplatePage() {
     return <Navigate to={paths.rideTemplates(teamSlug!)} replace />
   }
 
-  const canEdit = team.role === 'ADMIN' || team.role === 'ORGANIZER'
+  const canEdit = teamAccess(team, isPlatformAdmin).isOrganizer
 
   if (!canEdit) {
     return <Navigate to={paths.rideTemplates(teamSlug!)} replace />

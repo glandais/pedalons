@@ -16,6 +16,7 @@ import { useCanonicalPath } from '@/hooks/useCanonicalPath'
 import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
 import { invalidateModeratedContent } from '@/lib/moderationCacheInvalidation'
 import { useTeamReportsData } from './teamReportsData'
+import { teamAccess } from '@/lib/teamAccess'
 
 /**
  * The team's moderation queue — its organizers and admins, and the platform admins, who reach it
@@ -30,7 +31,7 @@ export function TeamReportsPage() {
   const { data: team, isLoading } = useGetTeam(teamSlug!, {
     query: { enabled: !!teamSlug },
   })
-  const canModerate = isPlatformAdmin || team?.role === 'ADMIN' || team?.role === 'ORGANIZER'
+  const canModerate = teamAccess(team, isPlatformAdmin).isOrganizer
 
   const { filters, setFilters, reports } = useTeamReportsData(teamSlug, canModerate)
   const resolveMutation = useResolveTeamReports()

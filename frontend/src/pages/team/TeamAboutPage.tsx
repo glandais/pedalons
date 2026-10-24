@@ -4,16 +4,18 @@ import { useTranslation } from 'react-i18next'
 import { IconUsers, IconCalendar, IconBike, IconMap } from '@tabler/icons-react'
 import { Box, Group, Paper, SimpleGrid, Stack, Text, Title, UnstyledButton } from '@mantine/core'
 import { paths } from '../../config/paths'
-import { TeamRole } from '@/api/dto'
 import { useTeamAboutData } from './teamAboutData'
 import { LoadingPage } from '../../components/common/LoadingSpinner'
 import { TeamLayout } from '../../components/team/TeamLayout'
 import { MediaDisplay } from '../../components/common/MediaDisplay'
 import { FormattedDate } from '../../components/common/FormattedDate'
 import { useCanonicalPath } from '../../hooks/useCanonicalPath'
+import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
+import { teamAccess } from '@/lib/teamAccess'
 
 export function TeamAboutPage() {
   const { t } = useTranslation()
+  const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
   const { teamSlug } = useParams<{ teamSlug: string }>()
 
   const { data: team, isLoading } = useTeamAboutData(teamSlug)
@@ -31,10 +33,9 @@ export function TeamAboutPage() {
   // Organisers and admins read the directory whatever the team decided; a member needs the team to
   // have opened it (API-39, UserTeamAccessChecker). Same rule as the mobile's members chip: a link
   // that always leads to a 403 is worse than no link.
-  const canSeeMembers =
-    team.role === TeamRole.ADMIN ||
-    team.role === TeamRole.ORGANIZER ||
-    (!!team.role && team.enableMemberDirectory)
+  // A platform admin reads every directory (docs/LEDGER_*.md API-137).
+  const { isMember, isOrganizer } = teamAccess(team, isPlatformAdmin)
+  const canSeeMembers = isOrganizer || (isMember && team.enableMemberDirectory)
 
   const membersStat = (
     <Group gap="sm">

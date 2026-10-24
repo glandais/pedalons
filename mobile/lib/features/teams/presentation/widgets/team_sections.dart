@@ -151,17 +151,26 @@ class TeamSection {
 /// the routes too: a ride is created on a route. The icons are the brand's
 /// (`docs/BRANDING.md` §6, ledger `BRAND-6`), each section's `PdlIcons`
 /// equivalent of the site's Tabler icon.
-List<TeamSection> buildTeamSections(TeamDetailDto team) {
+///
+/// [platformAdmin] is the reader's platform role (`/me`): `team.role` is their
+/// real membership, null for a platform admin who is not a member
+/// (docs/LEDGER_*.md API-137), so the rights that role grants come from here.
+List<TeamSection> buildTeamSections(
+  TeamDetailDto team, {
+  bool platformAdmin = false,
+}) {
   final isMember = team.role != null;
   // Organisers and admins read the roster whatever the team decided; everyone
   // else needs the team to have opened it. Mirrors UserTeamAccessChecker: the
   // chip has to disappear when the server would answer 403, because an entry
-  // that always leads to an error is worse than no entry at all.
+  // that always leads to an error is worse than no entry at all. A platform
+  // admin passes every access check.
   final canSeeMembers =
-      isMember &&
-      (team.role == 'ORGANIZER' ||
-          team.role == 'ADMIN' ||
-          team.enableMemberDirectory);
+      platformAdmin ||
+      (isMember &&
+          (team.role == 'ORGANIZER' ||
+              team.role == 'ADMIN' ||
+              team.enableMemberDirectory));
   final hasAgenda = (team.enableRides || team.enableTrips) && team.enableRoutes;
   final slug = team.slug;
 
