@@ -61,14 +61,15 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
 
 ## MOB — Application mobile
 
-- [ ] `MOB-93` **La météo sur la carte du groupe, palier 3, et la recette des paliers 1-2 (M)** —
-      les paliers 1 et 2 (`MOB-91`, `MOB-92`) colorent le tracé par le vent et posent les pastilles
-      en plein écran. Reste le palier 3 : une carte dans l'onglet Météo liée à la frise, la sortie
-      solo et les étapes de voyage. Recette sur appareil, rien ne se teste sans carte native :
-      pastilles et goutte sur un vrai parcours à plusieurs traces, un toucher ouvre la feuille et la
-      carte se déplace encore autour, flèches justes sur une carte tournée à deux doigts, pastille en
-      thème sombre et à 130 % de taille de texte, contraste du gris travers sur fond sombre,
-      légende, crédit et puce sur la carte encastrée. Plan [`2026-10-24-weather-on-map.md`](plans/2026-10-24-weather-on-map.md).
+- [ ] `MOB-94` **La météo sur la carte, palier 3 lot B (sortie solo, voyages) et recette des paliers
+      1-3 (M)** — restent la sortie solo (carte du détail) et les voyages (carte de l'étape choisie,
+      carte d'ensemble avec toutes les étapes), arbitrages du plan §5 « Palier 3 ». Recette sur
+      appareil, rien ne se teste sans carte native : pastilles et goutte sur un vrai parcours à
+      plusieurs traces, toucher d'une pastille et déplacement de la carte autour, flèches justes sur
+      une carte tournée, pastille en sombre et à 130 % de texte, contraste du gris travers ; onglet
+      Météo : la couche de toucher de la vignette (iOS et Android), le ⓘ des crédits et ses liens au
+      travers, défilement de la page sur la carte, curseur lisible sur le tracé coloré ; à trancher :
+      faire remonter la page vers la carte quand on touche un point bas dans la frise. Plan [`2026-10-24-weather-on-map.md`](plans/2026-10-24-weather-on-map.md).
 - [ ] `MOB-86` **Points de parcours : recette sur appareil** — à faire sur Android et iOS, rien ne
       se teste sans carte native : `icon-image: ['get','icon']` et l'`interpolate` de `icon-size`
       posés en `layout` (jusqu'ici les expressions n'étaient qu'en `paint`) ; types des `properties`
@@ -307,15 +308,17 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
 (`WEB-13` à `WEB-22`, livrés, avec ce que l'automatisation ne voit pas) : voir
 `frontend/e2e/README.md`.
 
-- [ ] `WEB-117` **La météo sur la carte du groupe, palier 3, et la recette des paliers 1-2 (M)** —
-      les paliers 1 et 2 (`WEB-115`, `WEB-116`) colorent le tracé par le vent et posent les
-      pastilles. Reste le palier 3 : la sélection partagée avec « Heure par heure », la sortie solo
-      et les étapes de voyage. Recette navigateur : contraste du gris travers sur fond sombre et
-      satellite, crédit Open-Meteo et sa mise à jour au changement de mode, un vrai parcours à
-      plusieurs traces ; pastilles nombreuses en clair et sombre, bulle non coupée par le profil
-      superposé, focus rendu à la pastille après « Fermer » et titre lu à l'ouverture, un clic de
-      pastille qui ne touche pas la sélection de waypoint, flèches justes sur une carte tournée,
-      cible de 44 px au téléphone. Plan [`2026-10-24-weather-on-map.md`](plans/2026-10-24-weather-on-map.md).
+- [ ] `WEB-118` **La météo sur la carte, palier 3 lot B (sortie solo, voyages) et recette des paliers
+      1-3 (M)** — restent la sortie solo (carte du détail et route plein écran `rideMap`) et les
+      voyages (carte et plein écran d'une étape, carte d'ensemble avec toutes les étapes), arbitrages
+      du plan §5 « Palier 3 ». À lancer sur la pile e2e : `pnpm e2e routes-render -g 'rideGroupMap /'`
+      (audit du prefetch et hydratation de la nouvelle page, six rôles). Recette navigateur : contraste
+      du gris travers sur fond sombre et satellite, crédit Open-Meteo et sa mise à jour au changement
+      de mode, un vrai parcours à plusieurs traces, pastilles nombreuses, bulle non coupée par le
+      profil, focus de la bulle (rendu après « Fermer », titre lu à l'ouverture, non pris quand une
+      ligne du tableau l'ouvre), clic de pastille sans effet sur la sélection de waypoint, flèches sur
+      une carte tournée, cible de 44 px ; plein écran du groupe au téléphone (barre à trois modes,
+      bande de légende). Plan [`2026-10-24-weather-on-map.md`](plans/2026-10-24-weather-on-map.md).
 - [ ] `WEB-36` **Un tap juste après l'affichage d'une page, sous charge, est ignoré (M)** — le HTML
       du SSR est à l'écran et cliquable avant que React l'ait adopté ; avec l'hydratation
       concurrente de React 19, un clic qui tombe pendant le rendu d'hydratation, avant son commit,

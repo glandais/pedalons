@@ -51,6 +51,13 @@ interface RouteWeatherProps {
   departure: DepartureWeatherDto
   /** The ride's zone: passages are rendezvous read in it (docs/LEDGER_*.md API-60). */
   timezone?: string
+  /**
+   * The selected point, when the page holds it (ledger WEB-117: the group's page shares it with
+   * the badges of its map). Left out, the component keeps its own, starting on the first point.
+   */
+  selection?: RouteWeatherSelection
+  /** Every new selection — a column, a phase, the slider —, controlled or not. */
+  onSelectionChange?: (selection: RouteWeatherSelection) => void
 }
 
 /** The colour variables of a relative wind's generated family (contracts/brand-colors.yaml). */
@@ -80,15 +87,21 @@ function phaseTimes(
 }
 
 /**
- * The selected point, and the phase it was picked from: a phase shorter than the spacing of the
- * points has none of its own and selects a neighbour's, so the phase is kept rather than looked up
- * from the point. `fromSlider`: the slider's own value text already speaks the point.
+ * The selected point (its position in `leg.checkpoints`), and the phase it was picked from: a
+ * phase shorter than the spacing of the points has none of its own and selects a neighbour's, so
+ * the phase is kept rather than looked up from the point. `fromSlider`: the slider's own value text
+ * already speaks the point; `fromMap`: so does the popup of the map's badge that picked it — the
+ * detail then announces nothing.
  */
-interface Selection {
+export interface RouteWeatherSelection {
   position: number
   phase?: number
   fromSlider?: boolean
+  fromMap?: boolean
 }
+
+/** Where a table starts: its first point. */
+const FIRST_ROUTE_POINT: RouteWeatherSelection = { position: 0 }
 
 /**
  * A group's route, full width on its page: four verdicts, the wind phase by phase, then every
@@ -97,26 +110,41 @@ interface Selection {
  * `hiddenFrom`), so the server and the browser render the same tree. One point is selected at a
  * time, shared by the table, the slider, the phases and the detail panel.
  */
-export function RouteWeather({ leg, departure, timezone }: RouteWeatherProps) {
+export function RouteWeather({
+  leg,
+  departure,
+  timezone,
+  selection: controlledSelection,
+  onSelectionChange,
+}: RouteWeatherProps) {
   const { t } = useTranslation()
   const { speed } = useUnits()
   const route = useRouteLabels()
   const checkpoints = leg.checkpoints
   const phases = useMemo(() => windPhases(leg.segments, checkpoints), [leg.segments, checkpoints])
-  const [selection, setSelection] = useState<Selection>({ position: 0 })
+  const [ownSelection, setOwnSelection] = useState<RouteWeatherSelection>(FIRST_ROUTE_POINT)
+  const controlled = controlledSelection !== undefined
+  const selection = controlledSelection ?? ownSelection
+  const setSelection = useCallback(
+    (next: RouteWeatherSelection) => {
+      if (!controlled) setOwnSelection(next)
+      onSelectionChange?.(next)
+    },
+    [controlled, onSelectionChange]
+  )
   const current = Math.min(selection.position, checkpoints.length - 1)
   const currentPhase =
     selection.phase !== undefined && selection.phase < phases.length
       ? selection.phase
       : phaseOfCheckpoint(phases, current)
-  const selectPoint = useCallback((position: number) => setSelection({ position }), [])
+  const selectPoint = useCallback((position: number) => setSelection({ position }), [setSelection])
   const selectWithSlider = useCallback(
     (position: number) => setSelection({ position, fromSlider: true }),
-    []
+    [setSelection]
   )
   const selectPhase = useCallback(
     (index: number) => setSelection({ position: phaseAnchor(phases[index]), phase: index }),
-    [phases]
+    [phases, setSelection]
   )
   const spacing = checkpointSpacing(checkpoints)
 
@@ -173,7 +201,7 @@ export function RouteWeather({ leg, departure, timezone }: RouteWeatherProps) {
           checkpoint={checkpoints[current]}
           phase={currentPhase === undefined ? undefined : phases[currentPhase]}
           timezone={timezone}
-          announce={!selection.fromSlider}
+          announce={!selection.fromSlider && !selection.fromMap}
         />
       </Stack>
 

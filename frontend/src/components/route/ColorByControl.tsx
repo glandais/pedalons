@@ -15,6 +15,8 @@ interface ColorByControlProps<T extends ColorByOption> {
   onChange: (value: T) => void
   /** The modes on offer, in order; with fewer than two the control draws nothing. */
   options: readonly T[]
+  /** The control's test hook: the fullscreen map's toolbar names its own. */
+  testId?: string
 }
 
 /**
@@ -26,6 +28,7 @@ export function ColorByControl<T extends ColorByOption>({
   value,
   onChange,
   options,
+  testId = 'route-color-by',
 }: ColorByControlProps<T>) {
   const { t } = useTranslation()
   if (options.length < 2) return null
@@ -41,7 +44,7 @@ export function ColorByControl<T extends ColorByOption>({
           ? 'routes.surface.colorBy.lineLabel'
           : 'routes.surface.colorBy.label'
       )}
-      data-testid="route-color-by"
+      data-testid={testId}
       data={options.map((option) => ({ value: option, label: t(OPTION_LABEL_KEYS[option]) }))}
     />
   )

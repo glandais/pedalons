@@ -39,6 +39,7 @@ class PdlMap extends StatefulWidget {
     this.kmMarkers = const <PdlKmMarker>[],
     this.markers = const <PdlMapMarker>[],
     this.onMarkerTapped,
+    this.cursor,
     this.start,
     this.end,
     this.initialCenter,
@@ -106,6 +107,13 @@ class PdlMap extends StatefulWidget {
   /// Toucher d'un marqueur : son id. Sans lui, les marqueurs ne sont que des
   /// images et laissent passer les gestes à la carte.
   final ValueChanged<String>? onMarkerTapped;
+
+  /// Le réticule posé sur la carte (un point, à la couleur primaire), ou
+  /// `null` pour aucun. La forme déclarative de
+  /// [PdlMapController.setCursor] : seul un changement de valeur le déplace,
+  /// et `null` ne touche pas au réticule qu'un contrôleur externe pilote déjà
+  /// (la fiche parcours le promène au doigt sur le profil).
+  final PdlMapPoint? cursor;
 
   final PdlMapPoint? start;
   final PdlMapPoint? end;
@@ -204,6 +212,9 @@ class _PdlMapState extends State<PdlMap> {
   void initState() {
     super.initState();
     _appliedStyleUrl = widget.styleUrl;
+    // Avant le style : le contrôleur pose la source du réticule à l'attache,
+    // avec la position qu'il connaît alors.
+    if (widget.cursor != null) _controller.setCursor(widget.cursor);
   }
 
   @override
@@ -271,6 +282,9 @@ class _PdlMapState extends State<PdlMap> {
     }
     if (widget.selectedTrackId != oldWidget.selectedTrackId) {
       _controller.select(widget.selectedTrackId);
+    }
+    if (widget.cursor != oldWidget.cursor) {
+      _controller.setCursor(widget.cursor);
     }
     // `setMassTileUrl` ignore une URL inchangée : c'est ce qui rend cet appel
     // sûr à chaque `didUpdateWidget`, alors qu'un remplacement de source

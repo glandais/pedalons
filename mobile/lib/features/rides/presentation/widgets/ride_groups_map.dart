@@ -58,6 +58,11 @@ double rideMapHeight(double screenHeight) =>
 /// face, et une légende en mots. Le mode est exclusif — le gris du travers se
 /// confondrait avec un trait superposé — et éteint par défaut
 /// ([rideMapWindModeProvider]).
+///
+/// L'onglet Météo de la page d'un groupe la pose avec [forceWeatherMode] :
+/// le mode « Météo » d'office, sans toucher au choix fait dans l'Aperçu, un
+/// toucher qui ouvre le plein écran, et le réticule d'un point de la frise
+/// ([cursorDistance], ledger `MOB-93`).
 class RideGroupsMap extends ConsumerWidget {
   const RideGroupsMap({
     super.key,
@@ -68,6 +73,8 @@ class RideGroupsMap extends ConsumerWidget {
     this.seedExtent,
     this.weatherLeg,
     this.weatherAttribution,
+    this.forceWeatherMode = false,
+    this.cursorDistance,
   });
 
   final RideKey rideKey;
@@ -94,6 +101,18 @@ class RideGroupsMap extends ConsumerWidget {
   /// Le crédit des prévisions (`RideWeatherDto.attribution`), porté par la
   /// légende du mode « Météo », encastrée comme en plein écran.
   final WeatherAttributionDto? weatherAttribution;
+
+  /// Le mode « Météo » imposé (l'onglet Météo d'un groupe) : le tracé se
+  /// colore d'office dès que le leg a une prévision, sans lire ni écrire
+  /// [rideMapWindModeProvider] — celui-ci reste le choix de la personne dans
+  /// l'Aperçu. Pas de bascule, donc, ni dans la feuille du plein écran, que
+  /// ce mode suit ; et la carte encastrée ouvre le plein écran au toucher.
+  final bool forceWeatherMode;
+
+  /// Le réticule, en mètres le long du parcours du groupe, **distance chaînée
+  /// des DTO météo** (traces bout à bout, saut nul : [pointsAtDistances]) —
+  /// le point de la frise touché dans l'onglet Météo. `null` : aucun.
+  final double? cursorDistance;
 
   /// Vrai dans la page plein écran, que ce widget construit lui-même : la
   /// carte y prend tout l'écran et le bouton devient une sortie. C'est **la**
@@ -165,7 +184,8 @@ class RideGroupsMap extends ConsumerWidget {
         ? weatherLeg
         : null;
     final bool windMode =
-        windLeg != null && ref.watch(rideMapWindModeProvider(rideKey));
+        windLeg != null &&
+        (forceWeatherMode || ref.watch(rideMapWindModeProvider(rideKey)));
 
     final List<PdlMapTrack> tracks = _tracks(
       layers,
@@ -217,7 +237,10 @@ class RideGroupsMap extends ConsumerWidget {
               seedExtent: extent,
               weatherLeg: weatherLeg,
               weatherAttribution: weatherAttribution,
+              forceWeatherMode: forceWeatherMode,
+              cursorDistance: cursorDistance,
             ),
+      tapOpensFullscreen: forceWeatherMode,
       labels: PdlMapHeroLabels(
         enterFullscreen: 'map.fullscreen'.tr(),
         exitFullscreen: 'map.exitFullscreen'.tr(),
@@ -231,8 +254,9 @@ class RideGroupsMap extends ConsumerWidget {
       onHillshadeChanged: (bool on) =>
           ref.read(hillshadeEnabledProvider.notifier).set(on),
       // En plein écran, le mode « Météo » se bascule dans la feuille, comme
-      // l'ombrage ; la carte encastrée a sa puce sous elle (l'Aperçu).
-      switches: fullscreen && windLeg != null
+      // l'ombrage ; la carte encastrée a sa puce sous elle (l'Aperçu). Rien à
+      // basculer quand le mode est imposé (l'onglet Météo).
+      switches: fullscreen && windLeg != null && !forceWeatherMode
           ? <PdlMapHeroSwitch>[
               PdlMapHeroSwitch(
                 id: 'wind',
@@ -285,10 +309,15 @@ class RideGroupsMap extends ConsumerWidget {
                 bottom: fullscreen,
                 child: Align(
                   alignment: Alignment.bottomLeft,
-                  child: RideWindMapLegend(
-                    leg: windLeg,
-                    units: ref.watch(unitSystemProvider),
-                    attribution: weatherAttribution,
+                  // Sur la vignette qui s'ouvre au toucher, la légende ne
+                  // garde pas le doigt pour elle : il va au plein écran.
+                  child: IgnorePointer(
+                    ignoring: forceWeatherMode && !fullscreen,
+                    child: RideWindMapLegend(
+                      leg: windLeg,
+                      units: ref.watch(unitSystemProvider),
+                      attribution: weatherAttribution,
+                    ),
                   ),
                 ),
               ),
@@ -306,6 +335,7 @@ class RideGroupsMap extends ConsumerWidget {
         geometries,
         mainRouteLabel,
         windMode ? windLeg : null,
+        _cursor(geometries[selectedSlug]),
       ),
     );
 
@@ -325,6 +355,7 @@ class RideGroupsMap extends ConsumerWidget {
     Map<String, RouteDetailDto> geometries,
     String mainRouteLabel,
     WeatherLegDto? windLeg,
+    PdlMapPoint? cursor,
   ) {
     // **La carte encastrée ne se manipule pas.** Elle vit au milieu d'une liste
     // qui défile : un pan y dispute le doigt au défilement de la page, et le
@@ -380,6 +411,7 @@ class RideGroupsMap extends ConsumerWidget {
                   units: units,
                   timezone: ride.timezone,
                 ),
+          cursor: cursor,
           styleUrl: styleUrl,
           credit: credit,
           hillshade: servedHillshade(context, ref),
@@ -531,6 +563,30 @@ class RideGroupsMap extends ConsumerWidget {
     );
   }
 
+  /// Le réticule de [cursorDistance] sur le parcours, mémorisé par
+  /// (parcours, distance) : il chaîne toutes les distances du tracé.
+  PdlMapPoint? _cursor(RouteDetailDto? route) {
+    final double? distance = cursorDistance;
+    if (route == null || distance == null) return null;
+    final _CursorPoint? memo = _cursorMemo[route];
+    if (memo != null && memo.distance == distance) return memo.point;
+    final LngLat? at = pointsAtDistances(
+      <List<List<double>>>[
+        for (final TrackDto t in route.tracks) t.line.coordinates,
+      ],
+      <double>[distance],
+    ).single;
+    final PdlMapPoint? point = at == null
+        ? null
+        : PdlMapPoint(lon: at.lng, lat: at.lat);
+    _cursorMemo[route] = _CursorPoint(distance, point);
+    return point;
+  }
+
+  static final Expando<_CursorPoint> _cursorMemo = Expando<_CursorPoint>(
+    'rideMapCursor',
+  );
+
   static final Expando<_WeatherPoints> _pointsMemo = Expando<_WeatherPoints>(
     'rideMapWeatherPoints',
   );
@@ -567,6 +623,14 @@ class _WeatherPoints {
 
   final WeatherLegDto leg;
   final List<LngLat?> points;
+}
+
+/// Une entrée de la mémoire du réticule d'un parcours.
+class _CursorPoint {
+  const _CursorPoint(this.distance, this.point);
+
+  final double distance;
+  final PdlMapPoint? point;
 }
 
 /// La carte d'un test de widget ([RideGroupsMap.debugSkipNativeMap]) : un

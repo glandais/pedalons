@@ -16,6 +16,22 @@ fichier garde **ce qui est fait**, et ce qu'il ne faut pas défaire.
 
 ## MOB — Application mobile
 
+- [x] `MOB-93` **La météo sur la carte du groupe, palier 3 lot A : la carte de l'onglet Météo** (25
+  octobre 2026, contrat inchangé) — l'onglet Météo d'un groupe n'avait pas de carte. Une vignette
+  non manipulable en tête, **toujours en mode Météo** (tracé coloré, légende, crédit, sans puce ni
+  pastille), seulement si le leg a une prévision et le groupe un parcours ; un toucher ouvre le plein
+  écran de `RideGroupsMap` en mode Météo avec ses pastilles ; toucher un point de la frise pose un
+  curseur sur la carte à la distance chaînée (`pointsAtDistances`), le retoucher l'ôte.
+  `RideGroupsMap` gagne `forceWeatherMode` et `cursorDistance` ; `core/pdl` gagne `PdlMap.cursor`
+  (curseur déclaratif), `PdlMapHero.tapOpensFullscreen` et `PdlMapTapPassThrough` (zones que la
+  couche de toucher laisse passer, dont le ⓘ des crédits). Plan [`2026-10-24-weather-on-map.md`](plans/2026-10-24-weather-on-map.md). Couvert par
+  `ride_group_page_test.dart` (carte selon le statut, curseur sur deux traces, plein écran, Aperçu
+  inchangé et une seule carte montée), `ride_groups_map_wind_test.dart`,
+  `pdl_map_hero_fullscreen_test.dart`, `trip_weather_test.dart`. **À ne pas défaire** : le mode
+  imposé de l'onglet ne lit ni n'écrit `rideMapWindModeProvider`, que `RideGroupPage` garde en vie
+  (`ref.listen` vide) pour que le choix de l'Aperçu survive au passage par l'onglet Météo ; le ⓘ des
+  crédits reste touchable au-dessus de la couche ; une ligne de frise non touchable n'a pas d'état
+  `selected` (`null`, pas `false`). La suite est `MOB-94`.
 - [x] `MOB-92` **La météo sur la carte du groupe, palier 2 : les pastilles aux checkpoints** (25
   octobre 2026, contrat inchangé) — en plein écran et en mode Météo seulement, une pastille compacte
   par checkpoint (ciel, température, flèche du vent absolue) et une goutte au point `rainAlert` ; un
@@ -1037,6 +1053,24 @@ couvert » ; les tests ne tournent qu'en local (`MOB-37`).
 
 ## WEB — Site web
 
+- [x] `WEB-117` **La météo sur la carte du groupe, palier 3 lot A : carte ↔ tableau et plein écran du
+  groupe** (25 octobre 2026, contrat inchangé) — la carte et le tableau « Heure par heure » de la
+  page d'un groupe partagent une sélection (`WeatherFocus` dans `RideGroupPage`, props contrôlées
+  optionnelles de `RouteWeather`, `GroupWeatherSection`, `WeatherCheckpointMarkers`) : une pastille
+  ouvre sa bulle et sélectionne sa ligne sans défilement ; une ligne ouvre la bulle de son point en
+  mode Météo seulement, sans voler le focus ni bouger la caméra. Nouvelle route **`rideGroupMap`**
+  (`/equipes/{teamSlug}/sorties/{rideSlug}/groupes/{groupId}/carte`, web seul) et page
+  `RideGroupFullscreenMapPage` : mode porté par `?color=grade|surface|wind` (`useUrlFilters`),
+  retombée sur Pente sans prévision, prefetch dans `rideGroupData.ts` (`prefetchRideGroupMap`) ;
+  `RouteFullscreenView` prend le mode Météo en props optionnelles. Le bouton plein écran de la page
+  du groupe y mène avec le mode courant. Plan [`2026-10-24-weather-on-map.md`](plans/2026-10-24-weather-on-map.md). Couvert par
+  `GroupWeatherSection.test.tsx`, `WeatherCheckpointMarkers.test.tsx`, `GroupRouteMap.test.tsx`,
+  `RideGroupPage.test.tsx`, `RideGroupFullscreenMapPage.test.tsx`, `RouteFullscreenView.test.tsx`,
+  `rideGroupMapRoute.test.ts`, `rideGroupData.test.ts`, et l'entrée `rideGroupMap` de
+  `e2e/routes-render.e2e.ts` (pas encore lancée). **À ne pas défaire** : `RouteWeather` reste
+  utilisable non contrôlé (étapes, détail de sortie) ; une sélection venue du tableau n'ouvre jamais
+  de bulle en Pente et ne bascule pas le mode ; une sortie à un seul groupe est redirigée vers son
+  détail (`rideGroupDataRedirect`). La suite est `WEB-118`.
 - [x] `WEB-116` **La météo sur la carte du groupe, palier 2 : les pastilles aux checkpoints** (25
   octobre 2026, contrat inchangé) — en mode Météo seulement, `WeatherCheckpointMarkers` pose une
   pastille compacte par checkpoint (ciel, température, flèche du vent absolue) et une goutte au point

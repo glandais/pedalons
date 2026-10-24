@@ -18,6 +18,7 @@ vi.mock('react-i18next', async () => {
 })
 
 import { GroupWeatherSection } from './GroupWeatherSection'
+import type { RouteWeatherSelection } from './RouteWeather'
 
 /** A ride read in Paris time: passages from 08:30. */
 const ride = (overrides: Partial<RideDto> = {}) =>
@@ -29,6 +30,8 @@ function renderSection(props: {
   leg?: WeatherLegDto
   canEdit?: boolean
   onRetry?: () => void
+  selection?: RouteWeatherSelection
+  onSelectionChange?: (selection: RouteWeatherSelection) => void
 }) {
   const weather = 'weather' in props ? props.weather : routeWeather
   return render(
@@ -41,6 +44,8 @@ function renderSection(props: {
         isFetching={false}
         onRetry={props.onRetry ?? (() => {})}
         canEdit={props.canEdit ?? false}
+        selection={props.selection}
+        onSelectionChange={props.onSelectionChange}
       />
     </MantineProvider>
   )
@@ -277,6 +282,57 @@ describe('GroupWeatherSection', () => {
     fireEvent.change(slider, { target: { value: '2' } })
     expect(columns()[2].getAttribute('aria-pressed')).toBe('true')
     expect(slider.getAttribute('aria-valuetext')).toContain('09:30, km 30.0')
+  })
+
+  describe('its selection held by the page (WEB-117)', () => {
+    it('shows the point the page selects, and only reports a click', () => {
+      const onSelectionChange = vi.fn()
+      const { rerender } = renderSection({ selection: { position: 3 }, onSelectionChange })
+      expect(columns()[3].getAttribute('aria-pressed')).toBe('true')
+      expect(detail()).toContain('km 45.0')
+
+      fireEvent.click(columns()[5])
+      expect(onSelectionChange).toHaveBeenCalledWith({ position: 5 })
+      // Controlled: the page has not followed, the table stays on its point
+      expect(columns()[3].getAttribute('aria-pressed')).toBe('true')
+
+      // A badge of the map picks a point: selected, its popup speaks it, the detail does not
+      rerender(
+        <MantineProvider>
+          <GroupWeatherSection
+            ride={ride()}
+            weather={routeWeather}
+            leg={routeWeather.legs.find((l) => l.groupId === 'g2')}
+            isLoading={false}
+            isFetching={false}
+            onRetry={() => {}}
+            canEdit={false}
+            selection={{ position: 5, fromMap: true }}
+            onSelectionChange={onSelectionChange}
+          />
+        </MantineProvider>
+      )
+      expect(columns()[5].getAttribute('aria-pressed')).toBe('true')
+      expect(plain(document.querySelector('[aria-live="polite"]')?.textContent)).toBe('')
+    })
+
+    it('reports a phase and the slider as the table would select them', () => {
+      const onSelectionChange = vi.fn()
+      renderSection({ selection: { position: 0 }, onSelectionChange })
+      const bar = screen.getByRole('group', { name: 'Le vent, tronçon par tronçon' })
+      fireEvent.click(within(bar).getAllByRole('button')[1])
+      expect(onSelectionChange).toHaveBeenLastCalledWith({ position: 1, phase: 1 })
+      fireEvent.change(screen.getByRole('slider'), { target: { value: '2' } })
+      expect(onSelectionChange).toHaveBeenLastCalledWith({ position: 2, fromSlider: true })
+    })
+
+    it('keeps its own selection when the page holds none, telling it all the same', () => {
+      const onSelectionChange = vi.fn()
+      renderSection({ onSelectionChange })
+      fireEvent.click(columns()[4])
+      expect(columns()[4].getAttribute('aria-pressed')).toBe('true')
+      expect(onSelectionChange).toHaveBeenCalledWith({ position: 4 })
+    })
   })
 
   it('keeps a point without forecast selectable, and says so', () => {

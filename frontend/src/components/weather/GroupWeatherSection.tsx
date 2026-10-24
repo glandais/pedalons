@@ -3,7 +3,7 @@ import { Group, Paper, Stack, Text, Title } from '@mantine/core'
 import type { RideDto, RideWeatherDto, WeatherLegDto } from '@/api/dto'
 import { Status, WeatherStatus } from '@/api/dto'
 import { DepartureWeather } from './DepartureWeather'
-import { RouteWeather } from './RouteWeather'
+import { RouteWeather, type RouteWeatherSelection } from './RouteWeather'
 import { WeatherAttribution } from './WeatherAttribution'
 import { WeatherStaleBadge } from './WeatherStaleBadge'
 import { WeatherStatusNotice } from './WeatherStatusNotice'
@@ -20,6 +20,9 @@ interface GroupWeatherSectionProps {
   onRetry: () => void
   /** Organisers alone hear about a ride without a place (NO_LOCATION): they can fix it. */
   canEdit: boolean
+  /** The point selected in « Heure par heure », when the page shares it with its map (WEB-117). */
+  selection?: RouteWeatherSelection
+  onSelectionChange?: (selection: RouteWeatherSelection) => void
 }
 
 /**
@@ -40,6 +43,8 @@ export function GroupWeatherSection({
   isFetching,
   onRetry,
   canEdit,
+  selection,
+  onSelectionChange,
 }: GroupWeatherSectionProps) {
   const { t } = useTranslation()
 
@@ -80,7 +85,13 @@ export function GroupWeatherSection({
         {weather &&
           hasForecast(status) &&
           (legHasForecast ? (
-            <RouteWeather leg={leg} departure={weather.departure} timezone={ride.timezone} />
+            <RouteWeather
+              leg={leg}
+              departure={weather.departure}
+              timezone={ride.timezone}
+              selection={selection}
+              onSelectionChange={onSelectionChange}
+            />
           ) : (
             <Stack gap="md">
               <DepartureWeather

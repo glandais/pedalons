@@ -466,6 +466,12 @@ const screens: Record<string, Screen> = {
   },
   ride: { roles: EVERYONE, sees: (main, d) => heading(d.ride.name)(main) },
   rideGroup: { roles: EVERYONE, sees: heading('Groupe Groupe A') },
+  // Groupe A has a route of its own (`otherRoute`), so its map draws instead of sending back.
+  rideGroupMap: {
+    roles: EVERYONE,
+    bare: true,
+    sees: fullscreenMap((d) => `${d.ride.name} · Groupe Groupe A`, pathTo('rideGroup')),
+  },
   rideEdit: {
     roles: ORGANIZERS,
     sees: heading('Modifier la sortie'),

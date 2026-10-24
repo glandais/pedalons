@@ -169,6 +169,10 @@ class RideGroupPageKeys {
   /// Le crédit des prévisions dans cette légende.
   final windMapCredit = const _RideGroupKey('windMapCredit');
 
+  /// La carte encastrée en tête de l'onglet Météo, toujours en mode
+  /// « Météo » (ledger `MOB-93`).
+  final weatherTabMap = const _RideGroupKey('weatherTabMap');
+
   /// La goutte de l'alerte pluie sur la carte plein écran (ledger `MOB-92`).
   final weatherMapRainDrop = const _RideGroupKey('weatherMapRainDrop');
 

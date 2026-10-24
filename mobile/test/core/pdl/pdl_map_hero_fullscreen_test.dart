@@ -53,6 +53,67 @@ void main() {
     expect(find.text('carte:satellite'), findsOneWidget);
   });
 
+  group('vignette qui ouvre le plein écran au toucher', () {
+    // Une vignette inerte comme celle de l'onglet Météo d'un groupe : la carte
+    // se réduit à un texte, et porte le crédit ⓘ que `PdlMap` pose en dernier.
+    Widget thumbnail() => MaterialApp(
+      theme: PedalonsTheme.build(Brightness.light),
+      home: Scaffold(
+        body: SizedBox(
+          height: 240,
+          child: PdlMapHero(
+            labels: labels,
+            tapOpensFullscreen: true,
+            fullscreenBuilder: (BuildContext context) =>
+                const Text('page plein écran'),
+            mapBuilder: (BuildContext context) => const Stack(
+              children: <Widget>[
+                Center(child: Text('carte')),
+                PdlMapAttribution(
+                  credit: PdlMapCredit(
+                    toggleLabel: 'Crédits de la carte',
+                    extra: 'IGN — Geoportail',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    testWidgets('le ⓘ déplie les crédits et n\'ouvre pas le plein écran', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(thumbnail());
+      expect(find.text('IGN — Geoportail'), findsNothing);
+
+      await tester.tap(find.bySemanticsLabel('Crédits de la carte'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('IGN — Geoportail'), findsOneWidget);
+      expect(find.text('page plein écran'), findsNothing);
+
+      // Le ⓘ replie, toujours sans quitter la vignette.
+      await tester.tap(find.bySemanticsLabel('Crédits de la carte'));
+      await tester.pumpAndSettle();
+      expect(find.text('IGN — Geoportail'), findsNothing);
+      expect(find.text('page plein écran'), findsNothing);
+    });
+
+    testWidgets('ailleurs, le toucher ouvre le plein écran', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(thumbnail());
+
+      // La couche, pas la carte, reçoit le toucher : c'est ce qu'on vérifie.
+      await tester.tap(find.byKey(PdlMapHero.tapTargetKey));
+      await tester.pumpAndSettle();
+
+      expect(find.text('page plein écran'), findsOneWidget);
+    });
+  });
+
   testWidgets('un bouton plein écran sans page est refusé', (
     WidgetTester tester,
   ) async {

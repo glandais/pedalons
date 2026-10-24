@@ -110,6 +110,10 @@ export const pages = {
   EditTeamPagePage: lazyPage('EditTeamPagePage', () => import('../pages/team/EditTeamPagePage')),
   RideDetailPage: lazyPage('RideDetailPage', () => import('../pages/ride/RideDetailPage')),
   RideGroupPage: lazyPage('RideGroupPage', () => import('../pages/ride/RideGroupPage')),
+  RideGroupFullscreenMapPage: lazyPage(
+    'RideGroupFullscreenMapPage',
+    () => import('../pages/ride/RideGroupFullscreenMapPage')
+  ),
   CreateRidePage: lazyPage('CreateRidePage', () => import('../pages/ride/CreateRidePage')),
   EditRidePage: lazyPage('EditRidePage', () => import('../pages/ride/EditRidePage')),
   RideTemplateListPage: lazyPage(

@@ -625,6 +625,268 @@ void main() {
     }
   });
 
+  // ────────────────────────────────────── la carte de l'onglet Météo
+
+  /// La carte encastrée en tête de l'onglet Météo (ledger `MOB-93`) : en mode
+  /// « Météo » d'office, sans toucher au choix de l'Aperçu, et le réticule
+  /// d'un point de la frise.
+  group('carte de l\'onglet Météo', () {
+    setUp(() => RideGroupsMap.debugSkipNativeMap = true);
+    tearDown(() => RideGroupsMap.debugSkipNativeMap = false);
+
+    final RideDto routed = fixtureRide(
+      groups: <RideGroupDto>[
+        fixtureGroup(id: 'g1', name: 'Rapide', routeSlug: 'court'),
+        fixtureGroup(id: 'g2', name: 'Cool', sortOrder: 1),
+      ],
+    );
+    TrackDto trackOf(List<List<double>> coordinates) => TrackDto(
+      line: GeoJsonLineString(
+        type: GeoJsonLineStringTypeType.lineString,
+        coordinates: coordinates,
+      ),
+      climbs: const <ClimbDto>[],
+    );
+    // Deux traces : 10 km plein nord, un saut de ~8 km vers l'est, puis 20 km
+    // dont la distance repart de 0 — 30 km chaînés, saut nul.
+    final RouteDetailDto route = RouteDetailDto(
+      elevationState: 'HD',
+      tags: const [],
+      id: 'r-court',
+      slug: 'court',
+      team: routed.team,
+      name: 'Court',
+      media: routed.media,
+      distance: 30000,
+      elevationGain: 0,
+      elevationLoss: 0,
+      surfaceType: 'ROAD',
+      visibility: 'PUBLIC',
+      createdBy: const PublicUserDto(id: 'u9', displayName: 'Créatrice'),
+      createdAt: '2026-01-01T00:00:00Z',
+      updatedAt: '2026-01-01T00:00:00Z',
+      tracks: <TrackDto>[
+        trackOf(<List<double>>[
+          for (int i = 0; i <= 10; i++)
+            <double>[5, 45 + i * 0.009, 300, i * 1000.0],
+        ]),
+        trackOf(<List<double>>[
+          for (int j = 0; j <= 20; j++)
+            <double>[5.1, 45 + (10 + j) * 0.009, 300, j * 1000.0],
+        ]),
+      ],
+      waypoints: const <WaypointDto>[],
+      deleted: false,
+    );
+    final List mapOverrides = [
+      appConfigProvider.overrideWith(
+        (Ref ref) => Completer<ConfigDto>().future,
+      ),
+      mapStyleProvider.overrideWith(
+        (Ref ref, Brightness b) => const AsyncValue<ResolvedMapStyle?>.data(
+          ResolvedMapStyle(
+            style: MapStyleDto(
+              id: 'plan',
+              label: 'Plan',
+              group: 'vector',
+              url: 'https://tiles.example/plan.json',
+            ),
+            url: 'https://tiles.example/plan.json',
+          ),
+        ),
+      ),
+      rideRouteGeometryProvider.overrideWith(
+        (Ref ref, RouteRef r) => AsyncValue<RouteDetailDto>.data(route),
+      ),
+    ];
+
+    Future<void> openWeather(
+      WidgetTester tester,
+      RideWeatherDto dto, {
+      RideGroupTab tab = RideGroupTab.weather,
+    }) => open(tester, dto, ride: routed, tab: tab, overrides: mapOverrides);
+
+    Finder tabMap() => find.byKey(keys.rideGroup.weatherTabMap);
+
+    PdlMap probe(WidgetTester tester) =>
+        tester.widget<RideGroupsMapProbe>(find.byType(RideGroupsMapProbe)).map;
+
+    for (final String status in <String>['OK', 'STALE']) {
+      testWidgets('$status : la carte en tête, tracé coloré d\'office, sans '
+          'puce ni pastille', (WidgetTester tester) async {
+        await openWeather(
+          tester,
+          weather(
+            status: status,
+            legs: <WeatherLegDto>[fixtureLeg(status: status)],
+          ),
+        );
+
+        expect(tabMap(), findsOneWidget);
+        // Une seule carte sur la page : l'Aperçu n'est pas monté.
+        expect(find.byType(RideGroupsMap), findsOneWidget);
+        expect(tester.widget<RideGroupsMap>(tabMap()).forceWeatherMode, isTrue);
+        expect(probe(tester).tracks.single.segmentColors, isNotNull);
+        expect(probe(tester).markers, isEmpty);
+        expect(find.byKey(keys.rideGroup.windMapLegend), findsOneWidget);
+        expect(find.byKey(keys.rideGroup.windMapCredit), findsOneWidget);
+        expect(find.byKey(keys.rideGroup.windMapChip), findsNothing);
+        // Le choix de l'Aperçu n'a pas bougé.
+        expect(container.read(rideMapWindModeProvider(key)), isFalse);
+        expect(tester.takeException(), isNull);
+      });
+    }
+
+    for (final String legStatus in <String>[
+      'NOT_YET_AVAILABLE',
+      'UNAVAILABLE',
+      'NO_LOCATION',
+    ]) {
+      testWidgets('un leg $legStatus : pas de carte', (
+        WidgetTester tester,
+      ) async {
+        await openWeather(
+          tester,
+          weather(legs: <WeatherLegDto>[fixtureLeg(status: legStatus)]),
+        );
+
+        expect(tabMap(), findsNothing);
+        expect(find.byType(RideGroupsMap), findsNothing);
+      });
+    }
+
+    testWidgets('sans leg pour ce groupe : pas de carte', (
+      WidgetTester tester,
+    ) async {
+      await openWeather(
+        tester,
+        weather(legs: <WeatherLegDto>[fixtureLeg(groupId: 'g2')]),
+      );
+
+      expect(tabMap(), findsNothing);
+    });
+
+    testWidgets('NOT_YET_AVAILABLE pour toute la sortie : pas de carte', (
+      WidgetTester tester,
+    ) async {
+      await openWeather(
+        tester,
+        fixtureWeather(
+          status: 'NOT_YET_AVAILABLE',
+          availableFrom: '2099-07-22T19:30:00Z',
+        ),
+      );
+
+      expect(tabMap(), findsNothing);
+    });
+
+    testWidgets('un groupe sans parcours : pas de carte', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, weather(), ride: twoGroups, overrides: mapOverrides);
+
+      expect(tabMap(), findsNothing);
+      expect(find.byKey(keys.ride.weatherCheckpoint(1)), findsOneWidget);
+    });
+
+    testWidgets('toucher un point de la frise pose le réticule à sa distance '
+        'chaînée ; le retoucher l\'ôte', (WidgetTester tester) async {
+      await openWeather(tester, weather());
+      expect(probe(tester).cursor, isNull);
+
+      // 15 km chaînés : le 5ᵉ kilomètre de la seconde trace, saut ignoré.
+      final Finder enRoute = find.byKey(keys.ride.weatherCheckpoint(1));
+      await tester.ensureVisible(enRoute);
+      await tester.tap(enRoute);
+      await tester.pump();
+      expect(probe(tester).cursor!.lon, 5.1);
+      expect(probe(tester).cursor!.lat, closeTo(45 + 15 * 0.009, 1e-9));
+      expect(
+        tester.getSemantics(enRoute),
+        isSemantics(isButton: true, isSelected: true, hasTapAction: true),
+      );
+
+      // L'arrivée, au bout de la seconde trace.
+      final Finder finish = find.byKey(keys.ride.weatherCheckpoint(2));
+      await tester.ensureVisible(finish);
+      await tester.tap(finish);
+      await tester.pump();
+      expect(probe(tester).cursor!.lon, 5.1);
+      expect(probe(tester).cursor!.lat, closeTo(45 + 30 * 0.009, 1e-9));
+
+      await tester.tap(finish);
+      await tester.pump();
+      expect(probe(tester).cursor, isNull);
+      expect(container.read(rideMapWindModeProvider(key)), isFalse);
+    });
+
+    testWidgets('un toucher sur la carte ouvre le plein écran en mode Météo, '
+        'réticule compris', (WidgetTester tester) async {
+      await openWeather(tester, weather());
+      final Finder start = find.byKey(keys.ride.weatherCheckpoint(0));
+      await tester.ensureVisible(start);
+      await tester.tap(start);
+      await tester.pump();
+
+      await tester.ensureVisible(tabMap());
+      await tester.tap(find.byKey(PdlMapHero.tapTargetKey));
+      for (int i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+
+      final RideGroupsMap full = tester.widget<RideGroupsMap>(
+        find.byWidgetPredicate(
+          (Widget w) => w is RideGroupsMap && w.fullscreen,
+        ),
+      );
+      expect(full.forceWeatherMode, isTrue);
+      expect(full.cursorDistance, 0);
+      final PdlMap fullMap = tester
+          .widget<RideGroupsMapProbe>(find.byType(RideGroupsMapProbe).last)
+          .map;
+      expect(fullMap.markers, isNotEmpty);
+      expect(fullMap.cursor!.lat, closeTo(45, 1e-9));
+      expect(container.read(rideMapWindModeProvider(key)), isFalse);
+    });
+
+    testWidgets('l\'Aperçu reste tel quel : mode éteint, puce, pas de toucher '
+        'plein écran', (WidgetTester tester) async {
+      await openWeather(tester, weather(), tab: RideGroupTab.overview);
+
+      expect(tabMap(), findsNothing);
+      final RideGroupsMap overview = tester.widget<RideGroupsMap>(
+        find.byType(RideGroupsMap),
+      );
+      expect(overview.forceWeatherMode, isFalse);
+      expect(overview.cursorDistance, isNull);
+      expect(probe(tester).tracks.single.segmentColors, isNull);
+      expect(find.byKey(keys.rideGroup.windMapChip), findsOneWidget);
+      expect(find.byKey(PdlMapHero.tapTargetKey), findsNothing);
+
+      // La personne allume « Météo » dans l'Aperçu…
+      final Finder chip = find.byKey(keys.rideGroup.windMapChip);
+      await tester.ensureVisible(chip);
+      await tester.tap(chip);
+      await tester.pump();
+      expect(container.read(rideMapWindModeProvider(key)), isTrue);
+      expect(probe(tester).tracks.single.segmentColors, isNotNull);
+
+      // … aller sur l'onglet Météo, où l'Aperçu est démonté et la carte
+      // impose le mode sans lire ce choix, puis revenir ne le perd pas.
+      await tester.tap(find.byKey(keys.rideGroup.tabWeather));
+      await tester.pump();
+      expect(tabMap(), findsOneWidget);
+      expect(find.byType(RideGroupsMap), findsOneWidget);
+      await tester.tap(find.byKey(keys.rideGroup.tabOverview));
+      await tester.pump();
+      expect(container.read(rideMapWindModeProvider(key)), isTrue);
+      expect(tester.widget<PdlChip>(chip).selected, isTrue);
+      expect(probe(tester).tracks.single.segmentColors, isNotNull);
+      // Le profil remonté avec l'Aperçu finit ses cadres.
+      await settle(tester);
+    });
+  });
+
   // ──────────────────────────────────────────────────── barre d'inscription
 
   group('barre d\'inscription', () {

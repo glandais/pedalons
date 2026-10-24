@@ -552,6 +552,16 @@ routes:
     web: true
     mobile: true
     deeplink: true
+  # The group's map in full screen (WEB-117), its Météo mode in `?color=`: web only, like stageMap.
+  - id: rideGroupMap
+    path:
+      en: /teams/{teamSlug}/rides/{rideSlug}/groups/{groupId}/map
+      fr: /equipes/{teamSlug}/sorties/{rideSlug}/groupes/{groupId}/carte
+    params:
+      - teamSlug
+      - rideSlug
+      - groupId
+    web: true
   - id: rideEdit
     path:
       en: /teams/{teamSlug}/rides/{rideSlug}/edit

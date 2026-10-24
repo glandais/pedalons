@@ -43,7 +43,9 @@ const WeatherCheckpointMarkers = lazy(() =>
  * plan 2026-10-24-weather-on-map.md): exclusive of the grade and the surface, never the default,
  * the profile staying on the grade. The leg losing its forecast falls back to the grade. The same
  * mode puts a badge at every forecast point, its detail a click away, and a drop where rain becomes
- * likely, the km markers giving way to them (ledger WEB-116).
+ * likely, the km markers giving way to them (ledger WEB-116). The group's page shares the badge
+ * whose popup is open with the row selected in its « Heure par heure » (`selectedCheckpoint`,
+ * ledger WEB-117), and opens its own fullscreen map in the current mode (`fullscreenPath`).
  */
 export function GroupRouteMap({
   teamSlug,
@@ -52,6 +54,9 @@ export function GroupRouteMap({
   leg,
   attribution,
   timezone,
+  selectedCheckpoint,
+  onSelectCheckpoint,
+  fullscreenPath,
   withActions = true,
 }: {
   teamSlug: string
@@ -67,6 +72,15 @@ export function GroupRouteMap({
   attribution?: WeatherAttributionDto
   /** The ride's zone: the passages of the forecast's points read in it. */
   timezone?: string
+  /**
+   * The checkpoint (its `index`) whose badge is lit and popup open in the Météo mode, when the
+   * page holds it; left out, the badges keep their own.
+   */
+  selectedCheckpoint?: number | null
+  /** A badge opened (its `index`) or its popup closed (`null`). */
+  onSelectCheckpoint?: (index: number | null) => void
+  /** The fullscreen map, opened in the mode the line is in; the route's own map without it. */
+  fullscreenPath?: (colorBy: GroupColorBy) => string
   withActions?: boolean
 }) {
   const { t } = useTranslation()
@@ -86,7 +100,13 @@ export function GroupRouteMap({
   const overlays =
     wind && leg ? (
       <Suspense fallback={null}>
-        <WeatherCheckpointMarkers tracks={tracks} leg={leg} timezone={timezone} />
+        <WeatherCheckpointMarkers
+          tracks={tracks}
+          leg={leg}
+          timezone={timezone}
+          openIndex={selectedCheckpoint}
+          onOpenChange={onSelectCheckpoint}
+        />
       </Suspense>
     ) : undefined
   const { selection, setSelection, mapBoxRef, selectFromList } = useWaypointSelection()
@@ -99,7 +119,9 @@ export function GroupRouteMap({
               <Box ref={mapBoxRef}>
                 <RouteMapView
                   route={route}
-                  fullscreenPath={paths.routeMap(teamSlug, routeSlug)}
+                  fullscreenPath={
+                    fullscreenPath ? fullscreenPath(colorBy) : paths.routeMap(teamSlug, routeSlug)
+                  }
                   colorBy={wind ? 'grade' : colorBy}
                   lineColorAt={windColorAt}
                   lineAttribution={lineAttribution}

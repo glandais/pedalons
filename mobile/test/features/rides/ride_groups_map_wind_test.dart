@@ -70,6 +70,9 @@ void main() {
     required WeatherLegDto? leg,
     bool windMode = true,
     WeatherAttributionDto? attribution,
+    bool forceWeatherMode = false,
+    double? cursorDistance,
+    RouteDetailDto? geometry,
   }) async {
     await tester.binding.setSurfaceSize(const Size(400, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -94,7 +97,8 @@ void main() {
           ),
         ),
         rideRouteGeometryProvider.overrideWith(
-          (Ref ref, RouteRef r) => AsyncValue<RouteDetailDto>.data(route),
+          (Ref ref, RouteRef r) =>
+              AsyncValue<RouteDetailDto>.data(geometry ?? route),
         ),
         unitSystemProvider.overrideWithValue(UnitSystem.metric),
         rideMapWindModeProvider.overrideWith((Ref ref, RideKey k) => windMode),
@@ -115,6 +119,8 @@ void main() {
                   onlyGroup: group,
                   weatherLeg: leg,
                   weatherAttribution: attribution,
+                  forceWeatherMode: forceWeatherMode,
+                  cursorDistance: cursorDistance,
                 ),
               ],
             ),
@@ -330,5 +336,141 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(map(tester).markers, isEmpty);
+  });
+
+  // ── Palier 3 (ledger `MOB-93`) : la carte de l'onglet Météo ─────────────
+
+  testWidgets('mode imposé : tracé coloré même le choix de l\'Aperçu éteint, '
+      'qui reste éteint', (WidgetTester tester) async {
+    final ProviderContainer container = await pump(
+      tester,
+      leg: fixtureLeg(),
+      windMode: false,
+      forceWeatherMode: true,
+      attribution: openMeteo,
+    );
+
+    final List<Color> colors = track(tester).segmentColors!;
+    expect(colors.sublist(0, 15), everyElement(RelativeWind.head.stroke));
+    expect(colors.sublist(15), everyElement(RelativeWind.tail.stroke));
+    expect(find.byKey(keys.rideGroup.windMapLegend), findsOneWidget);
+    expect(find.byKey(keys.rideGroup.windMapCredit), findsOneWidget);
+    // Encastrée : toujours aucune pastille.
+    expect(map(tester).markers, isEmpty);
+    expect(container.read(rideMapWindModeProvider(key)), isFalse);
+  });
+
+  testWidgets('mode imposé sans prévision : le trait habituel', (
+    WidgetTester tester,
+  ) async {
+    await pump(
+      tester,
+      leg: fixtureLeg(status: 'NOT_YET_AVAILABLE'),
+      forceWeatherMode: true,
+    );
+
+    expect(track(tester).segmentColors, isNull);
+    expect(find.byKey(keys.rideGroup.windMapLegend), findsNothing);
+  });
+
+  testWidgets('mode imposé : un toucher sur la carte ouvre le plein écran, '
+      'en mode « Météo », pastilles comprises, sans bascule', (
+    WidgetTester tester,
+  ) async {
+    final ProviderContainer container = await pump(
+      tester,
+      leg: fixtureLeg(),
+      windMode: false,
+      forceWeatherMode: true,
+      cursorDistance: 15000,
+    );
+
+    // Au milieu de la carte, légende comprise : elle laisse passer le doigt.
+    await tester.tap(find.byKey(PdlMapHero.tapTargetKey));
+    await tester.pumpAndSettle();
+
+    final RideGroupsMap full = tester.widget<RideGroupsMap>(
+      find.byWidgetPredicate((Widget w) => w is RideGroupsMap && w.fullscreen),
+    );
+    expect(full.forceWeatherMode, isTrue);
+    expect(full.cursorDistance, 15000);
+    expect(map(tester).markers, isNotEmpty);
+    expect(map(tester).cursor, isNotNull);
+    expect(
+      find.byKey(const ValueKey<String>('pdlMapHeroSwitch_wind')),
+      findsNothing,
+    );
+    expect(container.read(rideMapWindModeProvider(key)), isFalse);
+  });
+
+  testWidgets('la légende de la vignette ne retient pas le toucher', (
+    WidgetTester tester,
+  ) async {
+    await pump(tester, leg: fixtureLeg(), forceWeatherMode: true);
+
+    // Le toucher traverse la légende (`IgnorePointer`) : le testeur le
+    // signale, c'est justement ce qu'on veut.
+    await tester.tap(
+      find.byKey(keys.rideGroup.windMapLegend),
+      warnIfMissed: false,
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byWidgetPredicate((Widget w) => w is RideGroupsMap && w.fullscreen),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('l\'Aperçu, sans mode imposé : pas de toucher plein écran, '
+      'pas de réticule', (WidgetTester tester) async {
+    await pump(tester, leg: fixtureLeg());
+
+    expect(find.byKey(PdlMapHero.tapTargetKey), findsNothing);
+    expect(map(tester).cursor, isNull);
+  });
+
+  testWidgets('le réticule tombe à la distance chaînée, sur deux traces', (
+    WidgetTester tester,
+  ) async {
+    // Deux traces : 10 km plein nord, puis un saut de ~8 km vers l'est, et
+    // 20 km dont la distance repart de 0. 15 km chaînés (saut nul) tombent au
+    // 5ᵉ kilomètre de la seconde ; `PolylineIndex`, qui compte le saut,
+    // tomberait ailleurs.
+    final RouteDetailDto twoTracks = route.copyWith(
+      tracks: <TrackDto>[
+        TrackDto(
+          line: GeoJsonLineString(
+            type: GeoJsonLineStringTypeType.lineString,
+            coordinates: <List<double>>[
+              for (int i = 0; i <= 10; i++)
+                <double>[5, 45 + i * 0.009, 300, i * 1000.0],
+            ],
+          ),
+          climbs: const <ClimbDto>[],
+        ),
+        TrackDto(
+          line: GeoJsonLineString(
+            type: GeoJsonLineStringTypeType.lineString,
+            coordinates: <List<double>>[
+              for (int j = 0; j <= 20; j++)
+                <double>[5.1, 45 + (10 + j) * 0.009, 300, j * 1000.0],
+            ],
+          ),
+          climbs: const <ClimbDto>[],
+        ),
+      ],
+    );
+    await pump(
+      tester,
+      leg: fixtureLeg(),
+      forceWeatherMode: true,
+      cursorDistance: 15000,
+      geometry: twoTracks,
+    );
+
+    final PdlMapPoint cursor = map(tester).cursor!;
+    expect(cursor.lon, 5.1);
+    expect(cursor.lat, closeTo(45 + 15 * 0.009, 1e-9));
   });
 }

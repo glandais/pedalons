@@ -321,6 +321,12 @@ export const paths = {
       default: return `/teams/${teamSlug}/rides/${rideSlug}/groups/${groupId}`
     }
   },
+  rideGroupMap: (teamSlug: string, rideSlug: string, groupId: string) => {
+    switch (getCurrentLocale()) {
+      case 'fr': return `/equipes/${teamSlug}/sorties/${rideSlug}/groupes/${groupId}/carte`
+      default: return `/teams/${teamSlug}/rides/${rideSlug}/groups/${groupId}/map`
+    }
+  },
   rideEdit: (teamSlug: string, rideSlug: string) => {
     switch (getCurrentLocale()) {
       case 'fr': return `/equipes/${teamSlug}/sorties/${rideSlug}/modifier`
@@ -557,6 +563,7 @@ export const pathVariants = {
   rideNew: (teamSlug: string): Record<Locale, string> => ({ en: `/teams/${teamSlug}/rides/new`, fr: `/equipes/${teamSlug}/sorties/nouvelle` }),
   ride: (teamSlug: string, rideSlug: string): Record<Locale, string> => ({ en: `/teams/${teamSlug}/rides/${rideSlug}`, fr: `/equipes/${teamSlug}/sorties/${rideSlug}` }),
   rideGroup: (teamSlug: string, rideSlug: string, groupId: string): Record<Locale, string> => ({ en: `/teams/${teamSlug}/rides/${rideSlug}/groups/${groupId}`, fr: `/equipes/${teamSlug}/sorties/${rideSlug}/groupes/${groupId}` }),
+  rideGroupMap: (teamSlug: string, rideSlug: string, groupId: string): Record<Locale, string> => ({ en: `/teams/${teamSlug}/rides/${rideSlug}/groups/${groupId}/map`, fr: `/equipes/${teamSlug}/sorties/${rideSlug}/groupes/${groupId}/carte` }),
   rideEdit: (teamSlug: string, rideSlug: string): Record<Locale, string> => ({ en: `/teams/${teamSlug}/rides/${rideSlug}/edit`, fr: `/equipes/${teamSlug}/sorties/${rideSlug}/modifier` }),
   rideTemplates: (teamSlug: string): Record<Locale, string> => ({ en: `/teams/${teamSlug}/admin/ride-templates`, fr: `/equipes/${teamSlug}/admin/modeles-sortie` }),
   rideTemplateNew: (teamSlug: string): Record<Locale, string> => ({ en: `/teams/${teamSlug}/admin/ride-templates/new`, fr: `/equipes/${teamSlug}/admin/modeles-sortie/nouveau` }),

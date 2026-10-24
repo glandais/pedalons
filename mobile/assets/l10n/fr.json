@@ -738,7 +738,8 @@
       "mapPassage": "Passage vers {time}",
       "mapFromStart": "À {distance} du départ",
       "mapGusts": "Rafales {speed}",
-      "mapRainTitle": "Pluie probable"
+      "mapRainTitle": "Pluie probable",
+      "mapShowPoint": "Montrer sur la carte"
     },
     "groupPage": {
       "title": "Groupe {name}",

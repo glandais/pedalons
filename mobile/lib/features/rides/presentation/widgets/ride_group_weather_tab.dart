@@ -8,9 +8,11 @@ import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../keys.dart';
 import '../../domain/ride_weather_display.dart';
+import '../../domain/ride_weather_map.dart';
 import '../../providers/ride_detail_provider.dart';
 import '../../providers/ride_weather_provider.dart';
 import 'departure_weather_section.dart';
+import 'ride_groups_map.dart';
 import 'ride_weather_widgets.dart';
 import 'weather_leg_sections.dart';
 
@@ -24,8 +26,21 @@ import 'weather_leg_sections.dart';
 /// vit dans `weather_leg_sections.dart`, partagé avec l'écran météo d'une
 /// étape de voyage.
 ///
+/// En tête, quand le leg a une prévision ([showsWindOnMap]) et le groupe un
+/// parcours : la carte du groupe, **toujours en mode « Météo »** (ledger
+/// `MOB-93`, palier 3 de `docs/plans/2026-10-24-weather-on-map.md`) — le
+/// tracé coloré par le vent, la légende et le crédit, sans puce ni pastille.
+/// Elle ne se manipule pas ; un toucher ouvre le plein écran, en mode
+/// « Météo » lui aussi, avec ses pastilles. Toucher un point de la frise y
+/// pose le réticule, à la distance chaînée du point ; le retoucher l'ôte.
+///
+/// Le mode imposé n'écrit pas `rideMapWindModeProvider` : c'est le choix de
+/// la personne dans l'Aperçu, que passer par cet onglet ne doit pas changer.
+/// Les deux onglets ne sont jamais montés ensemble (la page n'en construit
+/// qu'un) : une seule vue native à la fois.
+///
 /// Un sliver ([SliverMainAxisGroup]) : la page le pose sous ses onglets.
-class RideGroupWeatherTab extends ConsumerWidget {
+class RideGroupWeatherTab extends ConsumerStatefulWidget {
   const RideGroupWeatherTab({
     super.key,
     required this.rideKey,
@@ -38,7 +53,36 @@ class RideGroupWeatherTab extends ConsumerWidget {
   final String groupId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<RideGroupWeatherTab> createState() =>
+      _RideGroupWeatherTabState();
+}
+
+class _RideGroupWeatherTabState extends ConsumerState<RideGroupWeatherTab> {
+  /// Le point de la frise dont le réticule est sur la carte : son `index` et
+  /// sa distance. `null` : aucun.
+  ({int index, double distance})? _cursor;
+
+  RideKey get rideKey => widget.rideKey;
+  RideDto get ride => widget.ride;
+  String get groupId => widget.groupId;
+
+  @override
+  void didUpdateWidget(RideGroupWeatherTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Une autre pastille de groupe : un autre parcours, un autre leg.
+    if (oldWidget.groupId != widget.groupId) _cursor = null;
+  }
+
+  void _toggleCursor(WeatherCheckpointDto checkpoint) {
+    setState(() {
+      _cursor = _cursor?.index == checkpoint.indexField
+          ? null
+          : (index: checkpoint.indexField, distance: checkpoint.distance);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     // Une sortie terminée ou annulée ne demande pas sa météo — comme le
     // détail et les cartes de groupe : le serveur répondrait `OUT_OF_RANGE`,
     // qui mène au même état neutre, mais au prix d'un appel.
@@ -140,15 +184,37 @@ class RideGroupWeatherTab extends ConsumerWidget {
     final bool stale =
         WeatherStatus.fromJson(dto.status) == WeatherStatus.stale;
     final WeatherLegDto? leg = weatherLegOfGroup(dto.legs, groupId);
-    String? groupName;
+    RideGroupDto? group;
     for (final RideGroupDto g in ride.groups) {
-      if (g.id == groupId) groupName = g.name;
+      if (g.id == groupId) group = g;
     }
+    final String? groupName = group?.name;
+    // La carte : une prévision sur le leg et un parcours à dessiner.
+    final bool showsMap =
+        group != null &&
+        (group.routeSlug ?? ride.routeSlug) != null &&
+        showsWindOnMap(leg);
     final DateTime? fetchedAt = dto.fetchedAt == null
         ? null
         : DateTime.tryParse(dto.fetchedAt!);
 
     return <Widget>[
+      if (showsMap)
+        SliverPadding(
+          padding: const EdgeInsets.only(top: PdlSpacing.section),
+          sliver: SliverToBoxAdapter(
+            child: RideGroupsMap(
+              key: keys.rideGroup.weatherTabMap,
+              rideKey: rideKey,
+              ride: ride,
+              onlyGroup: group,
+              weatherLeg: leg,
+              weatherAttribution: dto.attribution,
+              forceWeatherMode: true,
+              cursorDistance: _cursor?.distance,
+            ),
+          ),
+        ),
       if (stale) padded(WeatherStaleBanner(fetchedAt: fetchedAt)),
       padded(
         DepartureWeatherSection(
@@ -160,7 +226,13 @@ class RideGroupWeatherTab extends ConsumerWidget {
         padded(
           WeatherLegHeader(leg: leg, title: groupName, timezone: ride.timezone),
         ),
-        ...weatherLegBody(leg, padded, ride.timezone),
+        ...weatherLegBody(
+          leg,
+          padded,
+          ride.timezone,
+          onCheckpointTap: showsMap ? _toggleCursor : null,
+          selectedCheckpoint: showsMap ? _cursor?.index : null,
+        ),
       ],
       padded(
         WeatherAttributionBlock(

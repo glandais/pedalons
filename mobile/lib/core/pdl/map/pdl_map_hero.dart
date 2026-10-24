@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 
 import '../../theme/pdl_colors.dart';
@@ -153,6 +154,7 @@ class PdlMapHero extends StatelessWidget {
     this.onTrackVisibilityChanged,
     this.showFullscreenButton = true,
     this.fullscreenBuilder,
+    this.tapOpensFullscreen = false,
     this.extraButtons = const <Widget>[],
     this.pill,
     this.floatingCard,
@@ -204,6 +206,21 @@ class PdlMapHero extends StatelessWidget {
   ///
   /// Le hero l'enveloppe d'un `Scaffold` et le pousse en route opaque.
   final WidgetBuilder? fullscreenBuilder;
+
+  /// Vrai : un toucher **n'importe où sur la carte encastrée** ouvre le plein
+  /// écran, comme son bouton. Pour une vignette qui ne se manipule pas et
+  /// n'a rien à toucher (la carte de l'onglet Météo d'un groupe) : une couche
+  /// transparente passe au-dessus de la vue native, sous les boutons, et lui
+  /// prend le toucher — un tap seulement, le défilement de la page n'est pas
+  /// disputé. Elle laisse passer ce que la carte enveloppe d'un
+  /// [PdlMapTapPassThrough] : le crédit ⓘ des tuiles, que les licences veulent
+  /// accessible d'un toucher. Sans effet en plein écran ou sans
+  /// [fullscreenBuilder]. Les lecteurs d'écran ont déjà le bouton : la couche
+  /// ne s'y annonce pas.
+  final bool tapOpensFullscreen;
+
+  /// La clé de cette couche, pour les tests.
+  static const Key tapTargetKey = ValueKey<String>('pdlMapHeroTapTarget');
 
   /// Boutons ajoutés sous les deux boutons standards — « autour de moi »,
   /// recentrage.
@@ -285,36 +302,53 @@ class PdlMapHero extends StatelessWidget {
       ...extraButtons,
     ];
 
-    return Stack(
-      fit: StackFit.expand,
-      children: <Widget>[
-        _PdlMapHeroScope(
-          isFullscreen: isFullscreen,
-          child: Builder(builder: mapBuilder),
-        ),
-        if (pill != null)
-          Positioned(
-            left: PdlSpacing.sectionTightH,
-            right: PdlSpacing.sectionTightH,
-            top: PdlSpacing.sectionTightV,
-            child: Align(child: pill),
+    // L'hôte est posé même sans couche de toucher : la forme de l'arbre ne
+    // dépend pas de [tapOpensFullscreen], et basculer celui-ci ne recrée pas
+    // la vue native de la carte.
+    return _TapPassThroughHost(
+      builder: (_TapPassThroughs regions) => Stack(
+        fit: StackFit.expand,
+        children: <Widget>[
+          _PdlMapHeroScope(
+            isFullscreen: isFullscreen,
+            child: Builder(builder: mapBuilder),
           ),
-        if (buttons.isNotEmpty)
-          Positioned(
-            right: PdlSpacing.sectionTightV,
-            top: 0,
-            bottom: 0,
-            child: Center(child: PdlMapButtonColumn(children: buttons)),
-          ),
-        if (floatingCard != null)
-          Positioned(
-            left: PdlSpacing.sectionTightV,
-            right: PdlSpacing.sectionTightV,
-            bottom: PdlSpacing.sectionTightV,
-            child: floatingCard!,
-          ),
-        ?foreground,
-      ],
+          if (tapOpensFullscreen && !isFullscreen && fullscreenBuilder != null)
+            Positioned.fill(
+              child: _PassThroughHitTest(
+                regions: regions,
+                child: GestureDetector(
+                  key: tapTargetKey,
+                  behavior: HitTestBehavior.opaque,
+                  excludeFromSemantics: true,
+                  onTap: () => _toggleFullscreen(context),
+                ),
+              ),
+            ),
+          if (pill != null)
+            Positioned(
+              left: PdlSpacing.sectionTightH,
+              right: PdlSpacing.sectionTightH,
+              top: PdlSpacing.sectionTightV,
+              child: Align(child: pill),
+            ),
+          if (buttons.isNotEmpty)
+            Positioned(
+              right: PdlSpacing.sectionTightV,
+              top: 0,
+              bottom: 0,
+              child: Center(child: PdlMapButtonColumn(children: buttons)),
+            ),
+          if (floatingCard != null)
+            Positioned(
+              left: PdlSpacing.sectionTightV,
+              right: PdlSpacing.sectionTightV,
+              bottom: PdlSpacing.sectionTightV,
+              child: floatingCard!,
+            ),
+          ?foreground,
+        ],
+      ),
     );
   }
 
@@ -511,4 +545,118 @@ class _PdlMapHeroScope extends InheritedWidget {
   @override
   bool updateShouldNotify(_PdlMapHeroScope oldWidget) =>
       oldWidget.isFullscreen != isFullscreen;
+}
+
+/// Une zone de la carte que la couche [PdlMapHero.tapOpensFullscreen] laisse
+/// passer : un toucher qui y tombe va à [child], pas au plein écran.
+///
+/// La couche est posée au-dessus de tout le `mapBuilder`, donc de ce que la
+/// carte rend elle-même ; sans ce passe-droit, le crédit ⓘ des tuiles
+/// (`PdlMapAttribution`) ouvrirait le plein écran au lieu de se déplier. La
+/// zone suit [child] où qu'il soit et quelle que soit sa taille (crédits
+/// dépliés compris). Hors d'un [PdlMapHero], ou sans couche, sans effet.
+class PdlMapTapPassThrough extends StatefulWidget {
+  const PdlMapTapPassThrough({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  State<PdlMapTapPassThrough> createState() => _PdlMapTapPassThroughState();
+}
+
+class _PdlMapTapPassThroughState extends State<PdlMapTapPassThrough> {
+  _TapPassThroughs? _regions;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final _TapPassThroughs? regions = context
+        .dependOnInheritedWidgetOfExactType<_TapPassThroughScope>()
+        ?.regions;
+    if (identical(regions, _regions)) return;
+    _regions?.zones.remove(this);
+    _regions = regions?..zones.add(this);
+  }
+
+  @override
+  void dispose() {
+    _regions?.zones.remove(this);
+    super.dispose();
+  }
+
+  /// Vrai si [global] tombe sur ce qui est rendu ici.
+  bool _contains(Offset global) {
+    final RenderObject? box = context.findRenderObject();
+    if (box is! RenderBox || !box.attached || !box.hasSize) return false;
+    return box.size.contains(box.globalToLocal(global));
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
+}
+
+/// Les zones [PdlMapTapPassThrough] d'un hero.
+class _TapPassThroughs {
+  final Set<_PdlMapTapPassThroughState> zones = <_PdlMapTapPassThroughState>{};
+
+  bool contains(Offset global) =>
+      zones.any((_PdlMapTapPassThroughState z) => z._contains(global));
+}
+
+/// Garde les zones d'un hero d'un build à l'autre.
+class _TapPassThroughHost extends StatefulWidget {
+  const _TapPassThroughHost({required this.builder});
+
+  final Widget Function(_TapPassThroughs regions) builder;
+
+  @override
+  State<_TapPassThroughHost> createState() => _TapPassThroughHostState();
+}
+
+class _TapPassThroughHostState extends State<_TapPassThroughHost> {
+  final _TapPassThroughs _regions = _TapPassThroughs();
+
+  @override
+  Widget build(BuildContext context) =>
+      _TapPassThroughScope(regions: _regions, child: widget.builder(_regions));
+}
+
+class _TapPassThroughScope extends InheritedWidget {
+  const _TapPassThroughScope({required this.regions, required super.child});
+
+  final _TapPassThroughs regions;
+
+  @override
+  bool updateShouldNotify(_TapPassThroughScope oldWidget) =>
+      !identical(oldWidget.regions, regions);
+}
+
+/// Refuse le toucher qui tombe sur une zone [PdlMapTapPassThrough] : le test
+/// passe alors aux couches du dessous, jusqu'à la zone elle-même.
+class _PassThroughHitTest extends SingleChildRenderObjectWidget {
+  const _PassThroughHitTest({required this.regions, super.child});
+
+  final _TapPassThroughs regions;
+
+  @override
+  _RenderPassThroughHitTest createRenderObject(BuildContext context) =>
+      _RenderPassThroughHitTest(regions);
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    _RenderPassThroughHitTest renderObject,
+  ) => renderObject.regions = regions;
+}
+
+class _RenderPassThroughHitTest extends RenderProxyBox {
+  _RenderPassThroughHitTest(this.regions);
+
+  _TapPassThroughs regions;
+
+  @override
+  bool hitTest(BoxHitTestResult result, {required Offset position}) {
+    if (regions.contains(localToGlobal(position))) return false;
+    return super.hitTest(result, position: position);
+  }
 }

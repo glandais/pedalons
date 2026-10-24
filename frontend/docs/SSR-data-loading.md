@@ -126,7 +126,7 @@ added to the page and forgotten in the prefetch. Don't reintroduce the exception
 | `pages/route/allRouteListData.ts` | `all-routes`, `all-routes-map` | cross-team filters + `minRole` projection |
 | `pages/ad/adListData.ts` | `ads` | ad filters schema/alias, page window |
 | `pages/ride/rideDetailData.ts` | `ride-detail` | `rideRouteSlugs`, two-phase prefetch |
-| `pages/ride/rideGroupData.ts` | `ride-group` | the ride page's own reads (shared keys), the group's participants from the URL (`groupParticipantsParams`) |
+| `pages/ride/rideGroupData.ts` | `ride-group`, `ride-group-map` | the ride page's own reads (shared keys), the group's participants from the URL (`groupParticipantsParams`, the page only) |
 | `pages/trip/tripDetailData.ts` | `trip-detail` | `tripRouteSlugs`, two-phase prefetch |
 | `pages/trip/stageDetailData.ts` | `stage-detail` | `stageRouteSlug` (the stage's route, looked up inside the trip) |
 | `pages/post/postDetailData.ts` | `post-detail` | two-phase prefetch (comments for the child) |

@@ -15,10 +15,11 @@ import {
   groupParticipantsParams,
 } from '@/hooks/filters/groupParticipantFilters'
 import { useAuthStore } from '@/store/authStore'
-import type { RideDto, RideGroupDto } from '@/api/dto'
+import type { RideDto, RideGroupDto, WeatherLegDto } from '@/api/dto'
 import { Status } from '@/api/dto'
 import type { RouteParams } from '@/config/routes.types'
 import { paths } from '@/config/paths'
+import { hasWindForecast } from '@/lib/weatherOnRoute'
 import {
   leavesGroupPage,
   rideRouteSlugs,
@@ -32,6 +33,10 @@ import {
  * routes bulk, under the ride page's own query keys, so going from the ride to one of its groups
  * and back reads nothing twice. Only the group's participants are its own, their search and page
  * in the query string (`groupParticipantFilters.ts`).
+ *
+ * It also serves the group's fullscreen map (`RideGroupFullscreenMapPage`, route `ride-group-map`,
+ * ledger WEB-117): same hook, and a prefetch of the same keys minus what only the page's children
+ * read (participants, GPS services) — one module, two routes (docs/SSR-data-loading.md).
  */
 
 /**
@@ -80,6 +85,41 @@ export async function prefetchRideGroup(
       ? prefetchGetAvailableServicesQuery(queryClient)
       : Promise.resolve(queryClient),
   ])
+}
+
+/**
+ * Server-side counterpart of {@link useRideGroupData} for the group's fullscreen map: the ride page's
+ * reads under their own keys — team, ride and weather, then the routes bulk the ride's groups name.
+ * The map mounts no participant list and no export menu, so neither is prefetched; its colour mode
+ * (`?color=`) is presentation and reads nothing.
+ */
+export async function prefetchRideGroupMap(
+  queryClient: QueryClient,
+  teamSlug: string,
+  rideSlug: string
+): Promise<void> {
+  await Promise.all([
+    prefetchGetTeamQuery(queryClient, teamSlug),
+    prefetchGetRideQuery(queryClient, teamSlug, rideSlug),
+    prefetchGetRideWeatherQuery(queryClient, teamSlug, rideSlug, { request: WEATHER_REQUEST }),
+  ])
+  const ride = queryClient.getQueryData<RideDto>(getGetRideQueryKey(teamSlug, rideSlug))
+  await prefetchRoutesBulkChunked(queryClient, teamSlug, rideRouteSlugs(ride))
+}
+
+/**
+ * The group's leg when its map offers the Météo mode (WEB-115): a forecast with at least one
+ * point's weather, on a ride neither finished nor cancelled. One rule for the group's page and its
+ * fullscreen map, which must agree: a link to the map in the Météo mode falls back on the grade
+ * exactly when the page would.
+ */
+export function groupWindLeg(
+  ride: RideDto,
+  leg: WeatherLegDto | undefined
+): WeatherLegDto | undefined {
+  return !ride.finished && ride.status !== Status.CANCELLED && hasWindForecast(leg)
+    ? leg
+    : undefined
 }
 
 /**

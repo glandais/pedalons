@@ -27,6 +27,13 @@ interface WeatherCheckpointMarkersProps {
   leg: WeatherLegDto
   /** The ride's zone: passages are rendezvous read in it (docs/LEDGER_*.md API-60). */
   timezone?: string
+  /**
+   * The checkpoint (its `index`) whose popup is open, when the page holds it (ledger WEB-117: the
+   * row selected in « Heure par heure » opens its badge). Left out, the component keeps its own.
+   */
+  openIndex?: number | null
+  /** Every opening or closing — a badge, the popup's button, Escape —, controlled or not. */
+  onOpenChange?: (index: number | null) => void
 }
 
 /**
@@ -38,7 +45,13 @@ interface WeatherCheckpointMarkersProps {
  * remains the full, accessible reference. Rendered inside the map (`overlays`), in the Météo mode
  * only — the caller's decision.
  */
-export function WeatherCheckpointMarkers({ tracks, leg, timezone }: WeatherCheckpointMarkersProps) {
+export function WeatherCheckpointMarkers({
+  tracks,
+  leg,
+  timezone,
+  openIndex: controlledOpenIndex,
+  onOpenChange,
+}: WeatherCheckpointMarkersProps) {
   const { t } = useTranslation()
   const labels = useWeatherLabels()
   const route = useRouteLabels()
@@ -51,7 +64,21 @@ export function WeatherCheckpointMarkers({ tracks, leg, timezone }: WeatherCheck
     () => mapCheckpoints(tracks, leg.checkpoints, chained),
     [tracks, leg.checkpoints, chained]
   )
-  const [openIndex, setOpenIndex] = useState<number | null>(null)
+  const [ownOpenIndex, setOwnOpenIndex] = useState<number | null>(null)
+  const controlled = controlledOpenIndex !== undefined
+  const openIndex = controlled ? controlledOpenIndex : ownOpenIndex
+  const setOpenIndex = useCallback(
+    (next: number | null) => {
+      if (!controlled) setOwnOpenIndex(next)
+      onOpenChange?.(next)
+    },
+    [controlled, onOpenChange]
+  )
+  /**
+   * Whether the popup about to open was asked by its badge: only then does it take the focus. One
+   * opened from the page's table leaves the focus on the table's row.
+   */
+  const focusOnOpen = useRef(false)
   const buttons = useRef(new Map<number, HTMLButtonElement>())
   const popupRef = useRef<HTMLDivElement>(null)
   /** Whether the focus was last inside the popup — kept as it moves, read when it closes. */
@@ -72,7 +99,8 @@ export function WeatherCheckpointMarkers({ tracks, leg, timezone }: WeatherCheck
   // body and `document.activeElement` can no longer tell where it was.
   useEffect(() => {
     if (openIndex === null) return
-    popupRef.current?.focus({ preventScroll: true })
+    if (focusOnOpen.current) popupRef.current?.focus({ preventScroll: true })
+    focusOnOpen.current = false
     focusInPopup.current = isInPopup(document.activeElement)
     const onFocusIn = (event: FocusEvent) => {
       focusInPopup.current = isInPopup(event.target)
@@ -88,7 +116,7 @@ export function WeatherCheckpointMarkers({ tracks, leg, timezone }: WeatherCheck
     focusInPopup.current = false
     setOpenIndex(null)
     if (hadFocus && index !== null) buttons.current.get(index)?.focus()
-  }, [openIndex, isInPopup])
+  }, [openIndex, isInPopup, setOpenIndex])
 
   // Escape closes it, wherever the focus is — the popup's close button, the badge, the page.
   useEffect(() => {
@@ -133,11 +161,11 @@ export function WeatherCheckpointMarkers({ tracks, leg, timezone }: WeatherCheck
               if (element) buttons.current.set(marker.checkpoint.index, element)
               else buttons.current.delete(marker.checkpoint.index)
             }}
-            onToggle={() =>
-              setOpenIndex((current) =>
-                current === marker.checkpoint.index ? null : marker.checkpoint.index
-              )
-            }
+            onToggle={() => {
+              const opening = openIndex !== marker.checkpoint.index
+              focusOnOpen.current = opening
+              setOpenIndex(opening ? marker.checkpoint.index : null)
+            }}
           />
         </Marker>
       ))}

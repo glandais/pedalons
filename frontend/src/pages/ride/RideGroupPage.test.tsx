@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { MantineProvider } from '@mantine/core'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -71,10 +71,43 @@ vi.mock('@/components/ride/ParticipantList', () => ({
     </div>
   ),
 }))
-// The map is lazy and pulls map vendors: a stand-in saying whether the wind colours the line.
+// The map is lazy and pulls map vendors: a stand-in saying whether the wind colours the line,
+// where its fullscreen button leads, and holding the forecast's badges it is handed.
 vi.mock('@/components/route/RouteMapView', () => ({
-  RouteMapView: ({ lineColorAt }: { lineColorAt?: unknown }) => (
-    <div data-testid="map">{lineColorAt ? 'wind' : 'plain'}</div>
+  RouteMapView: ({
+    lineColorAt,
+    fullscreenPath,
+    overlays,
+  }: {
+    lineColorAt?: unknown
+    fullscreenPath?: string
+    overlays?: React.ReactNode
+  }) => (
+    <>
+      <div data-testid="map">{lineColorAt ? 'wind' : 'plain'}</div>
+      <span data-testid="map-fullscreen">{fullscreenPath}</span>
+      {overlays}
+    </>
+  ),
+}))
+// The badges pull react-map-gl: a stand-in saying which popup is open, and a badge to press.
+vi.mock('@/components/weather/WeatherCheckpointMarkers', () => ({
+  WeatherCheckpointMarkers: ({
+    openIndex,
+    onOpenChange,
+  }: {
+    openIndex?: number | null
+    onOpenChange?: (index: number | null) => void
+  }) => (
+    <>
+      <span data-testid="markers-open">{String(openIndex)}</span>
+      <button type="button" onClick={() => onOpenChange?.(1)}>
+        Pastille 1
+      </button>
+      <button type="button" onClick={() => onOpenChange?.(null)}>
+        Fermer la bulle
+      </button>
+    </>
   ),
 }))
 vi.mock('@/components/ride/RideGroupRouteActions', () => ({
@@ -336,6 +369,48 @@ describe('RideGroupPage (WEB-77)', () => {
       await findMap()
       expect(screen.queryByLabelText('Météo')).toBeNull()
       expect(screen.queryByTestId('route-color-by')).toBeNull()
+    })
+
+    /** The « Heure par heure » table's columns, one button per point. */
+    const columns = () =>
+      within(screen.getByRole('group', { name: 'Prévisions à chaque passage' })).getAllByRole(
+        'button'
+      )
+
+    it('opens its own fullscreen map, in the mode the line is in (WEB-117)', async () => {
+      renderPage()
+      await findMap()
+      const map = paths.rideGroupMap('np', 'sortie', 'g1')
+      expect(screen.getByTestId('map-fullscreen').textContent).toBe(map)
+      fireEvent.click(screen.getByLabelText('Météo'))
+      expect(screen.getByTestId('map-fullscreen').textContent).toBe(`${map}?color=wind`)
+    })
+
+    it("lights the table's row on the map in the Météo mode, never switching to it (WEB-117)", async () => {
+      renderPage()
+      await findMap()
+      fireEvent.click(columns()[1])
+      // Still on the grade: nothing switched by itself
+      expect(screen.getByTestId('map').textContent).toBe('plain')
+      expect(screen.queryByTestId('markers-open')).toBeNull()
+      fireEvent.click(screen.getByLabelText('Météo'))
+      expect((await screen.findByTestId('markers-open')).textContent).toBe('1')
+      fireEvent.click(columns()[0])
+      expect(screen.getByTestId('markers-open').textContent).toBe('0')
+    })
+
+    it("selects a badge's row in the table, and keeps it when its popup closes (WEB-117)", async () => {
+      renderPage()
+      await findMap()
+      fireEvent.click(screen.getByLabelText('Météo'))
+      expect((await screen.findByTestId('markers-open')).textContent).toBe('null')
+      expect(columns()[0].getAttribute('aria-pressed')).toBe('true')
+      fireEvent.click(screen.getByRole('button', { name: 'Pastille 1' }))
+      expect(screen.getByTestId('markers-open').textContent).toBe('1')
+      expect(columns()[1].getAttribute('aria-pressed')).toBe('true')
+      fireEvent.click(screen.getByRole('button', { name: 'Fermer la bulle' }))
+      expect(screen.getByTestId('markers-open').textContent).toBe('null')
+      expect(columns()[1].getAttribute('aria-pressed')).toBe('true')
     })
 
     it('offers nothing on a finished or cancelled ride', async () => {

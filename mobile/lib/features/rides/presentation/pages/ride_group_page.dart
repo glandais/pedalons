@@ -183,6 +183,11 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
     // Surveillé pour le garder vivant : `autoDispose`, il tomberait sinon
     // quand la page est ouverte sans le détail dessous.
     ref.watch(selectedRideGroupProvider(key));
+    // Écouté, sans reconstruire la page, pour la même raison : sur l'onglet
+    // Météo, l'Aperçu est démonté et la carte y impose le mode sans lire ce
+    // choix ; sans écouteur il serait libéré et l'Aperçu reviendrait sur
+    // « Pente » (ledger `MOB-91`).
+    ref.listen(rideMapWindModeProvider(key), (bool? _, bool _) {});
     final RideRegistrationState registration = ref.watch(
       rideRegistrationProvider(key),
     );

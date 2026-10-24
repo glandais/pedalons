@@ -47,6 +47,9 @@ vi.mock('./ElevationChart', () => ({
 }))
 
 import { RouteFullscreenView, type FullscreenRoute } from './RouteFullscreenView'
+import type { ColorByOption } from './ColorByControl'
+import { WeatherStatus, type WeatherLegDto } from '@/api/dto'
+import { okWeather, plain, weatherLeg } from '@/test/weatherFixtures'
 import type { WaypointSelection } from '@/lib/waypoints'
 
 const line = {
@@ -156,5 +159,106 @@ describe('RouteFullscreenView back button', () => {
     renderView(route())
     fireEvent.click(screen.getByLabelText('Retour'))
     expect(screen.getByTestId('landed').textContent).toBe('/back')
+  })
+})
+
+describe('RouteFullscreenView Météo mode (WEB-117)', () => {
+  afterEach(cleanup)
+
+  /** A 50 km track, its points every 10 km: the fixture leg's head wind covers it. */
+  const windRoute = (): FullscreenRoute => ({
+    ...route(),
+    distance: 50_000,
+    tracks: [
+      {
+        line: {
+          type: 'LineString',
+          coordinates: Array.from({ length: 6 }, (_, i) => [5, 45 + i * 0.09, 300, i * 10_000]),
+        },
+        climbs: [],
+      } as unknown as TrackDto,
+    ],
+  })
+
+  function renderWind(props: {
+    colorBy?: ColorByOption
+    onColorByChange?: (c: ColorByOption) => void
+    windLeg?: WeatherLegDto
+  }) {
+    return render(
+      <MemoryRouter initialEntries={['/map']}>
+        <MantineProvider>
+          <RouteFullscreenView
+            route={windRoute()}
+            title="Groupe Rapide"
+            backTo="/back"
+            windAttribution={okWeather.attribution}
+            timezone="Europe/Paris"
+            {...props}
+          />
+        </MantineProvider>
+      </MemoryRouter>
+    )
+  }
+
+  it('offers « Pente | Météo » with a forecast, the grade by default', () => {
+    renderWind({ windLeg: weatherLeg('g1') })
+    const control = screen.getByTestId('route-fullscreen-color-by')
+    expect(plain(control.textContent)).toBe('PenteMétéo')
+    expect(seen.map.lineColorAt).toBeUndefined()
+    expect(seen.map.kmMarkers).toBe(true)
+    expect(screen.queryByTestId('wind-map-legend')).toBeNull()
+  })
+
+  it('colours the line by the wind, with its badges, legend and credit, the profile on the grade', () => {
+    renderWind({ colorBy: 'wind', windLeg: weatherLeg('g1', { status: WeatherStatus.STALE }) })
+    const lineColorAt = seen.map.lineColorAt as (t: number, p: number) => string
+    // The fixture's head wind: orange-6 of the generated family
+    expect(lineColorAt(0, 0)).toBe('#fd7e14')
+    expect(seen.map.overlays).toBeTruthy()
+    expect(seen.map.kmMarkers).toBe(false)
+    expect(seen.map.lineAttribution).toContain('Open-Meteo.com')
+    expect(seen.chart.colorBy).toBe('grade')
+    const legend = plain(screen.getByTestId('wind-map-legend').textContent)
+    expect(legend).toMatch(/Face 50[.,]0 km/)
+    expect(legend).toContain('Prévision ancienne')
+    expect(legend).toContain('Prévisions Open-Meteo.com')
+  })
+
+  it('reads the Météo mode as the grade without a forecast', () => {
+    renderWind({ colorBy: 'wind' })
+    expect(screen.queryByTestId('route-fullscreen-color-by')).toBeNull()
+    expect(seen.map.lineColorAt).toBeUndefined()
+    expect(seen.map.overlays).toBeFalsy()
+    expect(seen.map.kmMarkers).toBe(true)
+    expect(screen.queryByTestId('wind-map-legend')).toBeNull()
+  })
+
+  it('reports a switch to the page that holds the mode, and follows it', () => {
+    const onColorByChange = vi.fn()
+    const { rerender } = renderWind({
+      colorBy: 'grade',
+      windLeg: weatherLeg('g1'),
+      onColorByChange,
+    })
+    fireEvent.click(screen.getByLabelText('Météo'))
+    expect(onColorByChange).toHaveBeenCalledWith('wind')
+    // Held by the page: nothing changes until it says so
+    expect(seen.map.lineColorAt).toBeUndefined()
+    rerender(
+      <MemoryRouter initialEntries={['/map']}>
+        <MantineProvider>
+          <RouteFullscreenView
+            route={windRoute()}
+            title="Groupe Rapide"
+            backTo="/back"
+            colorBy="wind"
+            windLeg={weatherLeg('g1')}
+            onColorByChange={onColorByChange}
+          />
+        </MantineProvider>
+      </MemoryRouter>
+    )
+    expect(seen.map.lineColorAt).toBeDefined()
   })
 })

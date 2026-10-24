@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { IconArrowLeft, IconUsersGroup } from '@tabler/icons-react'
@@ -19,7 +19,6 @@ import {
   Title,
 } from '@mantine/core'
 import type { RideDto } from '@/api/dto'
-import { Status } from '@/api/dto'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { QueryStateBoundary } from '@/components/common/QueryStateBoundary'
 import { DetailPageSkeleton } from '@/components/common/DetailPageSkeleton'
@@ -32,23 +31,38 @@ import { GroupParticipantsSection } from '@/components/ride/group/GroupParticipa
 import { GroupPlaces } from '@/components/ride/group/GroupPlaces'
 import { GroupRouteMap } from '@/components/ride/group/GroupRouteMap'
 import { GroupStats } from '@/components/ride/group/GroupStats'
-import { GroupWeatherSection } from '@/components/weather'
+import { GroupWeatherSection, type RouteWeatherSelection } from '@/components/weather'
 import { hasForecast } from '@/components/weather/weatherDisplay'
 import { paths } from '@/config/paths'
-import { hasWindForecast } from '@/lib/weatherOnRoute'
+import { withMapColor } from '@/hooks/filters/mapColorFilters'
 import { useAuth } from '@/hooks/useAuth'
 import { useCanonicalPath } from '@/hooks/useCanonicalPath'
 import { useRendezvousFormat } from '@/hooks/useRendezvousFormat'
 import { useRideGroupMembership } from '@/hooks/useRideGroupMembership'
 import { useScrollToAnchor } from '@/hooks/useScrollToAnchor'
 import { leavesGroupPage } from './rideDetailData'
-import { groupAction, useRideGroupData } from './rideGroupData'
+import { groupAction, groupWindLeg, useRideGroupData } from './rideGroupData'
 
 /** Up to this many groups pick from a segmented control; beyond, a select keeps the row short. */
 const SEGMENTED_MAX_GROUPS = 4
 
 /** The anchor of the weather section: the ride's cards and the mobile app link to it. */
 const WEATHER_ANCHOR = 'meteo'
+
+/**
+ * The forecast point the map and the « Heure par heure » table share (ledger WEB-117): the row
+ * selected in the table, and the checkpoint (its `index`) whose badge is lit and popup open on the
+ * map in the Météo mode — closing the popup leaves the row selected. Held for one group: another
+ * group's page (the same component, its id changed) starts afresh.
+ */
+interface WeatherFocus {
+  groupId?: string
+  selection: RouteWeatherSelection
+  open: number | null
+}
+
+/** The table starts on its first point, no popup open. */
+const NO_WEATHER_FOCUS: WeatherFocus = { selection: { position: 0 }, open: null }
 
 /**
  * One group of a ride, on a page of its own (ledger WEB-77): who leads it, when it leaves and at
@@ -87,6 +101,27 @@ export function RideGroupPage() {
   // The Select's input keeps the focus after a pick, and iOS Safari then offers to AutoFill it
   // (« Remplir »): drop the focus once the choice is made.
   const groupSelectRef = useRef<HTMLInputElement>(null)
+  const [heldFocus, setWeatherFocus] = useState<WeatherFocus>(NO_WEATHER_FOCUS)
+  const weatherFocus = heldFocus.groupId === groupId ? heldFocus : NO_WEATHER_FOCUS
+  // A row of the table (a column, a phase, the slider): its point lights up on the map. The camera
+  // stays where it is, and the mode does not switch to Météo by itself.
+  const selectFromTable = (selection: RouteWeatherSelection) =>
+    setWeatherFocus({
+      groupId,
+      selection,
+      open: leg?.checkpoints[selection.position]?.index ?? null,
+    })
+  // A badge of the map: its row is selected, the page does not scroll. Its popup closed: the row
+  // stays.
+  const selectFromMap = (index: number | null) => {
+    const position =
+      index === null ? -1 : (leg?.checkpoints.findIndex((c) => c.index === index) ?? -1)
+    setWeatherFocus({
+      groupId,
+      selection: position >= 0 ? { position, fromMap: true } : weatherFocus.selection,
+      open: index,
+    })
+  }
 
   // A ride with at most one group: its page is the group's (WEB-79), the URL is replaced.
   // Not through `useCanonicalPath`, which checks once: a ride read with two groups then refetched
@@ -172,8 +207,7 @@ export function RideGroupPage() {
   const routeSlug = group.routeSlug ?? ride.routeSlug
   const route = routeSlug ? routesBySlug.get(routeSlug) : undefined
   // The wind on the map (WEB-115): a leg with a forecast, on a ride neither finished nor cancelled.
-  const windLeg =
-    !ride.finished && ride.status !== Status.CANCELLED && hasWindForecast(leg) ? leg : undefined
+  const windLeg = groupWindLeg(ride, leg)
   const groupError = membership.error?.groupId === group.id ? membership.error.message : undefined
 
   const groupOptions = groups.map((g) => ({
@@ -319,6 +353,12 @@ export function RideGroupPage() {
               leg={windLeg}
               attribution={windLeg ? weather.data?.attribution : undefined}
               timezone={ride.timezone}
+              selectedCheckpoint={weatherFocus.open}
+              onSelectCheckpoint={selectFromMap}
+              // Its own fullscreen map, in the mode the line is in (WEB-117)
+              fullscreenPath={(colorBy) =>
+                withMapColor(paths.rideGroupMap(team.slug, ride.slug, group.id), colorBy)
+              }
             />
           )}
         </Box>
@@ -339,6 +379,8 @@ export function RideGroupPage() {
             isFetching={weather.isFetching}
             onRetry={() => void weather.refetch()}
             canEdit={canEdit}
+            selection={weatherFocus.selection}
+            onSelectionChange={selectFromTable}
           />
         </ErrorBoundary>
       </Box>

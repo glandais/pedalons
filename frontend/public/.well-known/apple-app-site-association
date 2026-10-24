@@ -25,6 +25,8 @@
           "NOT /equipes/*/admin/signalements",
           "NOT /teams/*/admin/settings",
           "NOT /equipes/*/admin/parametres",
+          "NOT /teams/*/rides/*/groups/*/map",
+          "NOT /equipes/*/sorties/*/groupes/*/carte",
           "NOT /teams/*/trips/new",
           "NOT /equipes/*/voyages/nouveau",
           "NOT /teams/*/trips/*/edit",

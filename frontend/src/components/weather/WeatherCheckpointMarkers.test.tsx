@@ -268,6 +268,52 @@ describe('WeatherCheckpointMarkers (WEB-116)', () => {
     expect(document.activeElement).toBe(badges()[2])
   })
 
+  describe('its popup held by the page (WEB-117)', () => {
+    function controlled(openIndex: number | null, onOpenChange = vi.fn()) {
+      return (
+        <MantineProvider>
+          <WeatherCheckpointMarkers
+            tracks={TRACKS}
+            leg={routeLeg()}
+            timezone="Europe/Paris"
+            openIndex={openIndex}
+            onOpenChange={onOpenChange}
+          />
+        </MantineProvider>
+      )
+    }
+
+    it('opens the point the page names, lit, leaving the focus where it was', () => {
+      const outside = document.createElement('button')
+      document.body.appendChild(outside)
+      outside.focus()
+      const { rerender } = render(controlled(null))
+      expect(screen.queryByTestId('popup')).toBeNull()
+      // A row of the table: the popup opens on its point, the focus stays on the row
+      rerender(controlled(4))
+      expect(detail()).toContain('km 60.0')
+      expect(badges()[4].getAttribute('aria-expanded')).toBe('true')
+      expect(document.activeElement).toBe(outside)
+      outside.remove()
+    })
+
+    it('reports a badge, its toggle and its closing, and the page decides', () => {
+      const onOpenChange = vi.fn()
+      const { rerender } = render(controlled(null, onOpenChange))
+      fireEvent.click(badges()[2])
+      expect(onOpenChange).toHaveBeenLastCalledWith(2)
+      // Not opened until the page says so
+      expect(screen.queryByTestId('popup')).toBeNull()
+      rerender(controlled(2, onOpenChange))
+      // Opened by its badge, it takes the focus
+      expect(document.activeElement).toBe(screen.getByRole('dialog'))
+      fireEvent.click(badges()[2])
+      expect(onOpenChange).toHaveBeenLastCalledWith(null)
+      fireEvent.click(screen.getByRole('button', { name: 'Fermer' }))
+      expect(onOpenChange).toHaveBeenLastCalledWith(null)
+    })
+  })
+
   it('drops a drop where rain becomes likely, nowhere without an alert', () => {
     show(
       routeLeg({

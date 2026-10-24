@@ -68,11 +68,17 @@ class WeatherStaleBanner extends StatelessWidget {
 /// ou un seul bandeau quand il n'y a rien à dérouler. Les heures se lisent
 /// dans le fuseau [timezone] de la sortie ou de l'étape (docs/LEDGER_*.md
 /// API-60).
+///
+/// Avec [onCheckpointTap], chaque point de la frise se touche (l'onglet Météo
+/// d'un groupe y place le réticule de sa carte, ledger `MOB-93`) ; le point
+/// d'`index` [selectedCheckpoint] se marque comme choisi.
 List<Widget> weatherLegBody(
   WeatherLegDto leg,
   Widget Function(Widget) padded,
-  String? timezone,
-) {
+  String? timezone, {
+  ValueChanged<WeatherCheckpointDto>? onCheckpointTap,
+  int? selectedCheckpoint,
+}) {
   final WeatherStatus legStatus = WeatherStatus.fromJson(leg.status);
   if (legStatus == WeatherStatus.noLocation) {
     return <Widget>[
@@ -108,7 +114,14 @@ List<Widget> weatherLegBody(
       padded(_RainAlertBanner(alert: leg.rainAlert!, timezone: timezone)),
     if (leg.segments.isNotEmpty) padded(_WindSection(leg: leg)),
     if (leg.checkpoints.isNotEmpty)
-      padded(_Timeline(leg: leg, timezone: timezone)),
+      padded(
+        _Timeline(
+          leg: leg,
+          timezone: timezone,
+          onTap: onCheckpointTap,
+          selected: selectedCheckpoint,
+        ),
+      ),
   ];
 }
 
@@ -232,10 +245,17 @@ class _WindSection extends ConsumerWidget {
 // ───────────────────────────────────────────────────── frise des passages
 
 class _Timeline extends StatelessWidget {
-  const _Timeline({required this.leg, required this.timezone});
+  const _Timeline({
+    required this.leg,
+    required this.timezone,
+    this.onTap,
+    this.selected,
+  });
 
   final WeatherLegDto leg;
   final String? timezone;
+  final ValueChanged<WeatherCheckpointDto>? onTap;
+  final int? selected;
 
   @override
   Widget build(BuildContext context) {
@@ -251,6 +271,8 @@ class _Timeline extends StatelessWidget {
             timezone: timezone,
             first: i == 0,
             last: i == points.length - 1,
+            selected: selected == points[i].indexField,
+            onTap: onTap == null ? null : () => onTap!(points[i]),
           ),
       ],
     );
@@ -264,12 +286,20 @@ class _CheckpointRow extends ConsumerWidget {
     required this.timezone,
     required this.first,
     required this.last,
+    this.selected = false,
+    this.onTap,
   });
 
   final WeatherCheckpointDto checkpoint;
   final String? timezone;
   final bool first;
   final bool last;
+
+  /// Le point choisi : son réticule est sur la carte.
+  final bool selected;
+
+  /// Toucher du point ; `null` : la ligne ne se touche pas.
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -313,8 +343,32 @@ class _CheckpointRow extends ConsumerWidget {
     final bool endpoint = first || last;
     final Color dot = endpoint ? c.primary : c.textDimmed;
 
+    final Widget row = _row(
+      c,
+      t,
+      p,
+      w,
+      relative,
+      time: time,
+      distance: distance,
+      kind: kind,
+      temperature: temperature,
+      condition: condition,
+      rain: rain,
+      amount: amount,
+      wind: wind,
+      dot: dot,
+      endpoint: endpoint,
+    );
+
     return Semantics(
       container: true,
+      button: onTap != null,
+      // Nul, pas `false`, sur une ligne qui ne se touche pas : `false` lui
+      // donnerait un état « non sélectionné » qu'elle n'a pas.
+      selected: onTap == null ? null : selected,
+      onTap: onTap,
+      onTapHint: onTap == null ? null : 'rides.weather.mapShowPoint'.tr(),
       label: <String>[
         kind,
         time,
@@ -328,122 +382,147 @@ class _CheckpointRow extends ConsumerWidget {
         if (w == null) 'rides.weather.checkpointNoWeather'.tr(),
       ].join(', '),
       child: ExcludeSemantics(
-        child: IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              SizedBox(
-                width: 64,
-                child: Padding(
-                  padding: const EdgeInsets.only(top: PdlSpacing.badgeGap),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(time, style: t.bodyStrong),
-                      Text(distance, style: t.xs),
-                    ],
+        child: onTap == null
+            ? row
+            : Material(
+                type: MaterialType.transparency,
+                child: InkWell(
+                  onTap: onTap,
+                  borderRadius: PdlRadii.mdAll,
+                  child: Ink(
+                    decoration: BoxDecoration(
+                      color: selected ? c.primarySoft : null,
+                      borderRadius: PdlRadii.mdAll,
+                    ),
+                    child: row,
                   ),
                 ),
               ),
-              // Le rail : un trait continu, interrompu au premier et au
-              // dernier point, et une pastille par point.
-              SizedBox(
-                width: 24,
-                child: Column(
-                  children: <Widget>[
-                    Container(
-                      width: 2,
-                      height: 10,
-                      color: first ? null : c.border,
-                    ),
-                    Container(
-                      width: endpoint ? 12 : 8,
-                      height: endpoint ? 12 : 8,
-                      decoration: BoxDecoration(
-                        color: dot,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    Expanded(
-                      child: Container(width: 2, color: last ? null : c.border),
-                    ),
-                  ],
-                ),
+      ),
+    );
+  }
+
+  Widget _row(
+    PdlColors c,
+    PdlTypography t,
+    WeatherCheckpointDto p,
+    WeatherConditionsDto? w,
+    RelativeWind? relative, {
+    required String time,
+    required String distance,
+    required String kind,
+    required String? temperature,
+    required String? condition,
+    required String? rain,
+    required String? amount,
+    required String? wind,
+    required Color dot,
+    required bool endpoint,
+  }) {
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          SizedBox(
+            width: 64,
+            child: Padding(
+              padding: const EdgeInsets.only(top: PdlSpacing.badgeGap),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(time, style: t.bodyStrong),
+                  Text(distance, style: t.xs),
+                ],
               ),
-              const SizedBox(width: PdlSpacing.chipGap),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(
-                    top: PdlSpacing.badgeGap,
-                    bottom: PdlSpacing.section,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(kind, style: t.xs),
-                      const SizedBox(height: 2),
-                      if (w == null)
-                        Text(
-                          'rides.weather.checkpointNoWeather'.tr(),
-                          style: t.sub,
-                        )
-                      else ...<Widget>[
-                        Row(
-                          children: <Widget>[
-                            WeatherConditionIcon(
-                              condition: w.condition,
-                              daylight: w.daylight,
-                            ),
-                            const SizedBox(width: PdlSpacing.badgeGap),
-                            Text(temperature!, style: t.statValue),
-                            const SizedBox(width: PdlSpacing.chipGap),
-                            Expanded(
-                              child: Text(
-                                condition!,
-                                style: t.sub,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
+            ),
+          ),
+          // Le rail : un trait continu, interrompu au premier et au
+          // dernier point, et une pastille par point.
+          SizedBox(
+            width: 24,
+            child: Column(
+              children: <Widget>[
+                Container(width: 2, height: 10, color: first ? null : c.border),
+                Container(
+                  width: endpoint ? 12 : 8,
+                  height: endpoint ? 12 : 8,
+                  decoration: BoxDecoration(color: dot, shape: BoxShape.circle),
+                ),
+                Expanded(
+                  child: Container(width: 2, color: last ? null : c.border),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: PdlSpacing.chipGap),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(
+                top: PdlSpacing.badgeGap,
+                bottom: PdlSpacing.section,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(kind, style: t.xs),
+                  const SizedBox(height: 2),
+                  if (w == null)
+                    Text('rides.weather.checkpointNoWeather'.tr(), style: t.sub)
+                  else ...<Widget>[
+                    Row(
+                      children: <Widget>[
+                        WeatherConditionIcon(
+                          condition: w.condition,
+                          daylight: w.daylight,
                         ),
-                        const SizedBox(height: PdlSpacing.badgeGap),
-                        Wrap(
-                          spacing: PdlSpacing.chipGap,
-                          runSpacing: PdlSpacing.badgeGap,
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          children: <Widget>[
-                            if (relative != null) ...<Widget>[
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: <Widget>[
-                                  if (p.relativeWindAngle != null) ...<Widget>[
-                                    PdlWindArrow(
-                                      angle: p.relativeWindAngle!,
-                                      color: relativeWindColor(c, relative),
-                                    ),
-                                    const SizedBox(width: 2),
-                                  ],
-                                  PdlBadge(
-                                    label: relative.shortLabelKey.tr(),
-                                    tone: relative.tone(c),
-                                  ),
-                                ],
-                              ),
-                            ],
-                            Text(wind!, style: t.xs),
-                            if (rain != null) Text(rain, style: t.xs),
-                            if (amount != null) Text(amount, style: t.xs),
-                          ],
+                        const SizedBox(width: PdlSpacing.badgeGap),
+                        Text(temperature!, style: t.statValue),
+                        const SizedBox(width: PdlSpacing.chipGap),
+                        Expanded(
+                          child: Text(
+                            condition!,
+                            style: t.sub,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ],
-                    ],
-                  ),
-                ),
+                    ),
+                    const SizedBox(height: PdlSpacing.badgeGap),
+                    Wrap(
+                      spacing: PdlSpacing.chipGap,
+                      runSpacing: PdlSpacing.badgeGap,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: <Widget>[
+                        if (relative != null) ...<Widget>[
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: <Widget>[
+                              if (p.relativeWindAngle != null) ...<Widget>[
+                                PdlWindArrow(
+                                  angle: p.relativeWindAngle!,
+                                  color: relativeWindColor(c, relative),
+                                ),
+                                const SizedBox(width: 2),
+                              ],
+                              PdlBadge(
+                                label: relative.shortLabelKey.tr(),
+                                tone: relative.tone(c),
+                              ),
+                            ],
+                          ),
+                        ],
+                        Text(wind!, style: t.xs),
+                        if (rain != null) Text(rain, style: t.xs),
+                        if (amount != null) Text(amount, style: t.xs),
+                      ],
+                    ),
+                  ],
+                ],
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

@@ -5,7 +5,11 @@ import { tRegister } from '@/lib/i18nUtils'
 import { prefetchGetTeamQuery } from '@/api/endpoints/teams/teams'
 import { prefetchTeamSwitcher } from '@/components/team/teamSwitcherData'
 import { prefetchRideDetail } from '@/pages/ride/rideDetailData'
-import { prefetchRideGroup, rideGroupDataRedirect } from '@/pages/ride/rideGroupData'
+import {
+  prefetchRideGroup,
+  prefetchRideGroupMap,
+  rideGroupDataRedirect,
+} from '@/pages/ride/rideGroupData'
 import { prefetchRouteList } from '@/pages/route/routeListData'
 import { prefetchTripDetail } from '@/pages/trip/tripDetailData'
 import { prefetchStageDetail } from '@/pages/trip/stageDetailData'
@@ -759,6 +763,22 @@ export const routesConfig: RoutesConfig = [
     prefetch: (queryClient, params, url) =>
       prefetchRideGroup(queryClient, params.teamSlug!, params.rideSlug!, params.groupId!, url),
     // A ride with at most one group has no group page: its own page is the group's (WEB-79).
+    dataRedirect: rideGroupDataRedirect,
+    meta: rideGroupMeta,
+  },
+  {
+    // The group's map in full screen (ledger WEB-117), its colour mode in `?color=`: the group
+    // page's reads, minus what only that page's children read.
+    id: 'ride-group-map',
+    paths: pathVariants.rideGroupMap(':teamSlug', ':rideSlug', ':groupId'),
+    component: pages.RideGroupFullscreenMapPage,
+    auth: 'public',
+    layout: 'bare',
+    parentId: 'ride-group',
+    breadcrumb: { type: 'static', i18nKey: tRegister('map.fullscreen.title') },
+    prefetch: (queryClient, params) =>
+      prefetchRideGroupMap(queryClient, params.teamSlug!, params.rideSlug!),
+    // No group page for a ride with at most one group (WEB-79), so no group map either.
     dataRedirect: rideGroupDataRedirect,
     meta: rideGroupMeta,
   },

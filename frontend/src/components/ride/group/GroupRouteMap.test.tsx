@@ -33,6 +33,7 @@ vi.mock('@/components/route/RouteMapView', async () => {
       lineAttribution,
       overlays,
       kmMarkers = true,
+      fullscreenPath,
     }: {
       route: RouteDetailDto
       colorBy?: string
@@ -40,8 +41,10 @@ vi.mock('@/components/route/RouteMapView', async () => {
       lineAttribution?: string
       overlays?: React.ReactNode
       kmMarkers?: boolean
+      fullscreenPath?: string
     }) => (
       <div data-testid="map">
+        <span data-testid="map-fullscreen">{fullscreenPath}</span>
         <span data-testid="map-color-by">{colorBy}</span>
         {kmMarkers && <span data-testid="map-km-markers" />}
         {overlays}
@@ -62,10 +65,26 @@ vi.mock('@/components/route/RouteMapView', async () => {
 })
 // The forecast's points pull react-map-gl: a stand-in saying what it was handed.
 vi.mock('@/components/weather/WeatherCheckpointMarkers', () => ({
-  WeatherCheckpointMarkers: ({ leg, timezone }: { leg: WeatherLegDto; timezone?: string }) => (
-    <span data-testid="weather-markers">
-      {leg.checkpoints.length} {timezone}
-    </span>
+  WeatherCheckpointMarkers: ({
+    leg,
+    timezone,
+    openIndex,
+    onOpenChange,
+  }: {
+    leg: WeatherLegDto
+    timezone?: string
+    openIndex?: number | null
+    onOpenChange?: (index: number | null) => void
+  }) => (
+    <>
+      <span data-testid="weather-markers">
+        {leg.checkpoints.length} {timezone}
+      </span>
+      <span data-testid="weather-markers-open">{String(openIndex)}</span>
+      <button type="button" onClick={() => onOpenChange?.(1)}>
+        badge 1
+      </button>
+    </>
   ),
 }))
 vi.mock('@/components/ride/RideGroupRouteActions', () => ({
@@ -87,10 +106,15 @@ const LINE = {
   coordinates: Array.from({ length: 6 }, (_, i) => [5, 45 + i * 0.09, 300, i * 10_000]),
 }
 
-function tree(r: RouteDetailDto | undefined, leg?: WeatherLegDto) {
+function tree(
+  r: RouteDetailDto | undefined,
+  leg?: WeatherLegDto,
+  extra: Partial<React.ComponentProps<typeof GroupRouteMap>> = {}
+) {
   return (
     <MantineProvider>
       <GroupRouteMap
+        {...extra}
         teamSlug="t"
         routeSlug="r"
         route={r}
@@ -103,8 +127,12 @@ function tree(r: RouteDetailDto | undefined, leg?: WeatherLegDto) {
   )
 }
 
-function show(r: RouteDetailDto | undefined, leg?: WeatherLegDto) {
-  return render(tree(r, leg))
+function show(
+  r: RouteDetailDto | undefined,
+  leg?: WeatherLegDto,
+  extra: Partial<React.ComponentProps<typeof GroupRouteMap>> = {}
+) {
+  return render(tree(r, leg, extra))
 }
 
 describe('GroupRouteMap', () => {
@@ -238,6 +266,43 @@ describe('GroupRouteMap', () => {
       await screen.findByTestId('map')
       expect(screen.queryByTestId('weather-markers')).toBeNull()
       expect(screen.getByTestId('map-km-markers')).toBeTruthy()
+    })
+  })
+
+  describe('the fullscreen map and the shared point (WEB-117)', () => {
+    it("opens the route's own map without a path of the page's", async () => {
+      show(route({ line: LINE } as Partial<TrackDto>), weatherLeg('g1'))
+      expect((await screen.findByTestId('map-fullscreen')).textContent).toMatch(/\/r\/(carte|map)$/)
+    })
+
+    it('opens the fullscreen map in the mode the line is in', async () => {
+      const fullscreenPath = (colorBy: string) => `/plein-ecran?mode=${colorBy}`
+      show(route({ line: LINE } as Partial<TrackDto>), weatherLeg('g1'), { fullscreenPath })
+      expect((await screen.findByTestId('map-fullscreen')).textContent).toBe(
+        '/plein-ecran?mode=grade'
+      )
+      fireEvent.click(screen.getByLabelText('Météo'))
+      expect(screen.getByTestId('map-fullscreen').textContent).toBe('/plein-ecran?mode=wind')
+    })
+
+    it("hands the page's point to the badges, and their choice back to it", async () => {
+      const onSelectCheckpoint = vi.fn()
+      show(route({ line: LINE } as Partial<TrackDto>), weatherLeg('g1'), {
+        selectedCheckpoint: 0,
+        onSelectCheckpoint,
+      })
+      await screen.findByTestId('map')
+      fireEvent.click(screen.getByLabelText('Météo'))
+      expect((await screen.findByTestId('weather-markers-open')).textContent).toBe('0')
+      fireEvent.click(screen.getByRole('button', { name: 'badge 1' }))
+      expect(onSelectCheckpoint).toHaveBeenCalledWith(1)
+    })
+
+    it('leaves the badges their own popup when the page holds none', async () => {
+      show(route({ line: LINE } as Partial<TrackDto>), weatherLeg('g1'))
+      await screen.findByTestId('map')
+      fireEvent.click(screen.getByLabelText('Météo'))
+      expect((await screen.findByTestId('weather-markers-open')).textContent).toBe('undefined')
     })
   })
 })

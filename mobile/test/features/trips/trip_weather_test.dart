@@ -263,6 +263,16 @@ void main() {
         // L'en-tête porte le nom de l'étape ; pas de sélecteur de groupe.
         expect(find.text('J1'), findsWidgets);
         expect(find.byKey(keys.ride.weatherCheckpoint(0)), findsOneWidget);
+        // Sans carte, la ligne ne se touche pas : ni bouton ni état
+        // « sélectionné / non sélectionné » annoncé.
+        expect(
+          tester.getSemantics(find.byKey(keys.ride.weatherCheckpoint(0))),
+          isSemantics(
+            isButton: false,
+            hasSelectedState: false,
+            hasTapAction: false,
+          ),
+        );
       },
     );
 

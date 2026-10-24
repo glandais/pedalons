@@ -738,7 +738,8 @@
       "mapPassage": "Passing around {time}",
       "mapFromStart": "{distance} from the start",
       "mapGusts": "Gusts {speed}",
-      "mapRainTitle": "Rain likely"
+      "mapRainTitle": "Rain likely",
+      "mapShowPoint": "Show on the map"
     },
     "groupPage": {
       "title": "Group {name}",

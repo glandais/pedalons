@@ -1,10 +1,14 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { IconArrowLeft } from '@tabler/icons-react'
-import { ActionIcon, Box, Center, SegmentedControl, Text } from '@mantine/core'
+import { ActionIcon, Box, Center, Text } from '@mantine/core'
+import type { WeatherAttributionDto, WeatherLegDto } from '@/api/dto'
+import { WindMapLegend } from '@/components/weather/WindMapLegend'
 import { getOverlayBg } from '@/lib/colors'
+import { attributionHtml } from '@/lib/weatherOnRoute'
+import { useRouteWindColors } from '@/hooks/useRouteWindColors'
 import { useResolvedColorScheme } from '@/hooks/useResolvedColorScheme'
 import { useMapChartZoomSync } from '@/hooks/useMapChartZoomSync'
 import { MapFullscreenShell } from '@/components/map/MapFullscreenShell'
@@ -14,7 +18,15 @@ import type { WaypointSelection } from '@/lib/waypoints'
 import { useRouteSurfaceColors } from '@/hooks/useRouteSurfaceColors'
 import { RouteTrackMap } from './RouteTrackMap'
 import { ElevationChart } from './ElevationChart'
+import { ColorByControl, type ColorByOption } from './ColorByControl'
 import type { MappableRoute } from './RouteMapView'
+
+// Lazy, as on the group's page: the forecast's points, in the Météo mode only.
+const WeatherCheckpointMarkers = lazy(() =>
+  import('@/components/weather/WeatherCheckpointMarkers').then((m) => ({
+    default: m.WeatherCheckpointMarkers,
+  }))
+)
 
 /** A route rich enough for the fullscreen toolbar's distance / D+ / D− readout. */
 export type FullscreenRoute = MappableRoute & {
@@ -32,6 +44,23 @@ interface RouteFullscreenViewProps {
    * returns to whichever page opened the map (a ride group, a stage…), not to the route sheet.
    */
   backTo: string
+  /**
+   * The mode the line is coloured in, when the page holds it (the group's map reads it from its
+   * URL, ledger WEB-117). A mode the route cannot offer — no surface, no `windLeg` — reads as the
+   * grade. Left out, the view keeps its own, starting on the grade.
+   */
+  colorBy?: ColorByOption
+  onColorByChange?: (colorBy: ColorByOption) => void
+  /**
+   * A leg with a forecast offers the Météo mode (WEB-115/116 on the group's page): the line by the
+   * wind, a badge per forecast point with its popup, the legend and the forecast's credit; the
+   * profile keeps its grade.
+   */
+  windLeg?: WeatherLegDto
+  /** The forecast's credit, owed while the wind colours the line. */
+  windAttribution?: WeatherAttributionDto
+  /** The ride's zone: the passages of the forecast's points read in it. */
+  timezone?: string
 }
 
 /**
@@ -40,15 +69,39 @@ interface RouteFullscreenViewProps {
  * sync via {@link useMapChartZoomSync}; hover updates are suppressed while either side is driving
  * the other so the crosshair doesn't jump mid-gesture.
  */
-export function RouteFullscreenView({ route, title, backTo }: RouteFullscreenViewProps) {
+export function RouteFullscreenView({
+  route,
+  title,
+  backTo,
+  colorBy: controlledColorBy,
+  onColorByChange,
+  windLeg,
+  windAttribution,
+  timezone,
+}: RouteFullscreenViewProps) {
   const { t } = useTranslation()
   const location = useLocation()
   const navigate = useNavigate()
   const colorScheme = useResolvedColorScheme()
   const [hoveredPointIndex, setHoveredPointIndex] = useState<number>(-1)
-  const [colorBy, setColorBy] = useState<PlannerColorBy>('grade')
+  const [ownColorBy, setOwnColorBy] = useState<ColorByOption>('grade')
+  const requested = controlledColorBy ?? ownColorBy
+  const setColorBy = (next: ColorByOption) => {
+    if (controlledColorBy === undefined) setOwnColorBy(next)
+    onColorByChange?.(next)
+  }
+  const withSurface = hasSurfaces(route.tracks)
+  const options: ColorByOption[] = ['grade']
+  if (withSurface) options.push('surface')
+  if (windLeg) options.push('wind')
+  // A mode the route cannot offer (a link's `?color=`, a forecast gone) reads as the grade
+  const colorBy: ColorByOption = options.includes(requested) ? requested : 'grade'
+  const wind = colorBy === 'wind' && windLeg ? windLeg : undefined
+  const planner: PlannerColorBy = colorBy === 'surface' ? 'surface' : 'grade'
   const [waypointSelection, setWaypointSelection] = useState<WaypointSelection | null>(null)
-  const { surfaceAt, lineColorAt } = useRouteSurfaceColors(route.tracks, colorBy)
+  const { surfaceAt, lineColorAt: surfaceColorAt } = useRouteSurfaceColors(route.tracks, planner)
+  const windColorAt = useRouteWindColors(route.tracks, wind)
+  const lineColorAt = windColorAt ?? surfaceColorAt
 
   const {
     mapRef,
@@ -108,48 +161,59 @@ export function RouteFullscreenView({ route, title, backTo }: RouteFullscreenVie
         gain: route.elevationGain,
         loss: route.elevationLoss,
       }}
-      // The grade / surface switch of the route sheet (WEB-100 C1b), only once the route has its surface
+      // The grade / surface switch of the route sheet (WEB-100 C1b), once the route has its surface,
+      // and the Météo mode with a forecast (WEB-117) — nothing with a single mode
       actions={
-        hasSurfaces(route.tracks) && (
-          <SegmentedControl
-            size="xs"
-            value={colorBy}
-            onChange={(value) => setColorBy(value as PlannerColorBy)}
-            aria-label={t('routes.surface.colorBy.label')}
-            data={[
-              { value: 'grade', label: t('routes.surface.colorBy.grade') },
-              { value: 'surface', label: t('routes.surface.colorBy.surface') },
-            ]}
-            data-testid="route-fullscreen-color-by"
-          />
-        )
+        <ColorByControl
+          value={colorBy}
+          onChange={setColorBy}
+          options={options}
+          testId="route-fullscreen-color-by"
+        />
       }
       bottom={
-        // Fixed elevation strip below the map (no overlap)
-        <Box
-          h={160}
-          style={{
-            flexShrink: 0,
-            borderTop: '1px solid var(--mantine-color-default-border)',
-            backgroundColor: stripBg,
-          }}
-        >
-          <ElevationChart
-            ref={chartRef}
-            route={route}
-            hoveredPointIndex={hoveredPointIndex}
-            onHoverPoint={handleHoverPoint}
-            filled
-            colorBy={surfaceAt ? 'surface' : 'grade'}
-            surfaceAt={surfaceAt}
-            selectedWaypoint={waypointSelection?.waypoint ?? null}
-            onSelectWaypoint={(waypoint) => setWaypointSelection({ waypoint, from: 'profile' })}
-            zoom={{
-              onMoveStart: onChartMoveStart,
-              onMoveComplete: onChartMoveComplete,
+        <>
+          {/* What the wind colours say, and the forecast's credit: the profile under the map
+              would cover MapLibre's own attribution */}
+          {wind && (
+            <Box
+              px="sm"
+              py={6}
+              style={{
+                flexShrink: 0,
+                borderTop: '1px solid var(--mantine-color-default-border)',
+                backgroundColor: stripBg,
+              }}
+            >
+              <WindMapLegend leg={wind} attribution={windAttribution} />
+            </Box>
+          )}
+          {/* Fixed elevation strip below the map (no overlap) */}
+          <Box
+            h={160}
+            style={{
+              flexShrink: 0,
+              borderTop: '1px solid var(--mantine-color-default-border)',
+              backgroundColor: stripBg,
             }}
-          />
-        </Box>
+          >
+            <ElevationChart
+              ref={chartRef}
+              route={route}
+              hoveredPointIndex={hoveredPointIndex}
+              onHoverPoint={handleHoverPoint}
+              filled
+              colorBy={surfaceAt ? 'surface' : 'grade'}
+              surfaceAt={surfaceAt}
+              selectedWaypoint={waypointSelection?.waypoint ?? null}
+              onSelectWaypoint={(waypoint) => setWaypointSelection({ waypoint, from: 'profile' })}
+              zoom={{
+                onMoveStart: onChartMoveStart,
+                onMoveComplete: onChartMoveComplete,
+              }}
+            />
+          </Box>
+        </>
       }
     >
       <RouteTrackMap
@@ -159,6 +223,15 @@ export function RouteFullscreenView({ route, title, backTo }: RouteFullscreenVie
         onHoverPoint={handleHoverPoint}
         fitPadding={50}
         lineColorAt={lineColorAt}
+        lineAttribution={wind && windAttribution ? attributionHtml(windAttribution) : undefined}
+        overlays={
+          wind && (
+            <Suspense fallback={null}>
+              <WeatherCheckpointMarkers tracks={route.tracks} leg={wind} timezone={timezone} />
+            </Suspense>
+          )
+        }
+        kmMarkers={!wind}
         waypointSelection={waypointSelection}
         onWaypointSelect={setWaypointSelection}
         onMoveStart={onMapMoveStart}
