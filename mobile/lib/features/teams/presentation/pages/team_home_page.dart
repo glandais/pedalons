@@ -11,9 +11,7 @@ import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/utils/api_error_handler.dart';
 import '../../../ads/presentation/pages/ads_page.dart';
 import '../../../feed/presentation/widgets/publication_feed_view.dart';
-import '../../../routes/domain/route_filters.dart';
 import '../../../routes/presentation/pages/routes_page.dart';
-import '../../../routes/providers/route_list_provider.dart';
 import '../../providers/team_membership_controller.dart';
 import '../../providers/team_providers.dart';
 import '../widgets/team_header.dart';
@@ -203,9 +201,6 @@ class _TeamSectionScaffold extends StatelessWidget {
     final List<TeamSection> sections = buildTeamSections(team);
     final List<Widget> headerSlivers = <Widget>[
       TeamHeaderSliver(team: team),
-      SliverToBoxAdapter(
-        child: _TeamStats(team: team, section: section),
-      ),
       SliverToBoxAdapter(child: _MembershipBanner(team: team)),
     ];
 
@@ -294,73 +289,6 @@ class _TeamSectionScaffold extends StatelessWidget {
         ),
       ),
     };
-  }
-}
-
-/// Les trois cellules chiffrées — et c'est ici que le silo se casse.
-///
-/// Elles ne mènent pas à des écrans dupliqués par équipe mais à des **surfaces
-/// racine pré-filtrées** : le trombinoscope de l'équipe, son Agenda, et
-/// l'onglet Parcours global dont la portée est réglée sur cette équipe. Une
-/// application qui recopie ses écrans par équipe finit avec deux parcothèques
-/// qui divergent.
-///
-/// Sur « À propos », deux cellules seulement : membres et année de création.
-/// Il n'y a pas de `foundedYear` au contrat — c'est `createdAt`, et le dire
-/// autrement serait inventer une histoire à l'équipe.
-class _TeamStats extends ConsumerWidget {
-  const _TeamStats({required this.team, required this.section});
-
-  final TeamDetailDto team;
-  final TeamSectionKind section;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final bool about = section == TeamSectionKind.about;
-    final DateTime? created = DateTime.tryParse(team.createdAt);
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        PdlSpacing.section,
-        PdlSpacing.chipGap,
-        PdlSpacing.section,
-        0,
-      ),
-      child: PdlStatCellRow(
-        cells: <PdlStatCell>[
-          PdlStatCell(
-            value: '${team.memberCount}',
-            label: 'teams.membersLabel'.tr(),
-            semanticLabel: 'teams.membersList.count'.plural(team.memberCount),
-            onTap: () => context.go(Paths.teamMembers(team.slug)),
-          ),
-          if (about)
-            PdlStatCell(
-              value: created == null ? '—' : '${created.year}',
-              label: 'teams.aboutPage.createdYear'.tr(),
-            )
-          else ...<PdlStatCell>[
-            PdlStatCell(
-              value: '${team.upcomingRideCount}',
-              label: 'teams.stats.upcomingRides'.tr(),
-              // L'Agenda, « À venir » : les sorties que la cellule compte.
-              onTap: () => context.go(Paths.teamAgenda(team.slug)),
-            ),
-            PdlStatCell(
-              value: '${team.routeCount}',
-              label: 'teams.tabs.routes'.tr(),
-              // **L'onglet Parcours global**, portée pré-réglée sur l'équipe :
-              // c'est la même parcothèque, filtrée, et non une seconde.
-              onTap: () {
-                ref.read(routeFiltersProvider(null).notifier).state =
-                    const RouteFilters().copyWith(teamSlug: team.slug);
-                context.go(Paths.allRoutes());
-              },
-            ),
-          ],
-        ],
-      ),
-    );
   }
 }
 

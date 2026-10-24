@@ -260,7 +260,6 @@
     "joinPrompt": "Join a team to get started",
     "discover": "Discover teams",
     "members": "{count} members",
-    "membersLabel": "Members",
     "about": "About",
     "tabs": {
       "dashboard": "Dashboard",
@@ -272,7 +271,7 @@
       "about": "About"
     },
     "aboutPage": {
-      "createdYear": "founded",
+      "founded": "Team founded in {year}",
       "pages": "Team pages",
       "pagesHint": "Each page opens its own shareable screen.",
       "empty": "Nothing to show yet",
@@ -346,9 +345,6 @@
       "leaveTitle": "Leave this team?",
       "leaveMessage": "You will lose access to members-only content: the calendar, the classifieds and the member list.",
       "failed": "Action failed."
-    },
-    "stats": {
-      "upcomingRides": "upcoming rides"
     },
     "dashboard": {
       "role": {

@@ -53,6 +53,9 @@ class TeamAboutPage extends ConsumerWidget {
             (TeamPageSummaryDto a, TeamPageSummaryDto b) =>
                 a.order.compareTo(b.order),
           );
+    // Il n'y a pas de `foundedYear` au contrat : c'est l'année de `createdAt`,
+    // la création de l'équipe sur la plateforme.
+    final DateTime? created = DateTime.tryParse(team.createdAt);
 
     return CustomScrollView(
       primary: true,
@@ -63,6 +66,15 @@ class TeamAboutPage extends ConsumerWidget {
           padding: const EdgeInsets.all(PdlSpacing.section),
           sliver: SliverList.list(
             children: <Widget>[
+              if (created != null) ...<Widget>[
+                Text(
+                  'teams.aboutPage.founded'.tr(
+                    namedArgs: <String, String>{'year': '${created.year}'},
+                  ),
+                  style: t.sub,
+                ),
+                const SizedBox(height: PdlSpacing.section),
+              ],
               if (team.about.markdown.trim().isNotEmpty) ...<Widget>[
                 PdlSectionHeader(title: 'teams.about'.tr()),
                 MarkdownContent(

@@ -260,7 +260,6 @@
     "joinPrompt": "Rejoignez une équipe pour commencer",
     "discover": "Découvrir des équipes",
     "members": "{count} membres",
-    "membersLabel": "Membres",
     "about": "À propos",
     "tabs": {
       "dashboard": "Tableau de bord",
@@ -272,7 +271,7 @@
       "about": "À propos"
     },
     "aboutPage": {
-      "createdYear": "année de création",
+      "founded": "Équipe créée en {year}",
       "pages": "Pages de l'équipe",
       "pagesHint": "Chaque page ouvre un écran propre et partageable.",
       "empty": "Rien à présenter pour l'instant",
@@ -346,9 +345,6 @@
       "leaveTitle": "Quitter cette équipe ?",
       "leaveMessage": "Vous perdrez l'accès aux contenus réservés aux membres : le calendrier, les annonces et le trombinoscope.",
       "failed": "Action impossible."
-    },
-    "stats": {
-      "upcomingRides": "sorties à venir"
     },
     "dashboard": {
       "role": {

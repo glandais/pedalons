@@ -189,8 +189,8 @@ void main() {
     });
   });
 
-  group('cellules chiffrées', () {
-    testWidgets('« À propos » en montre deux, dont l\'année de création', (
+  group('À propos', () {
+    testWidgets('l\'année de création, et plus de cellules chiffrées', (
       WidgetTester tester,
     ) async {
       await openTeam(
@@ -198,18 +198,8 @@ void main() {
         repository: _StubTeamRepository(fixtureTeam(role: 'MEMBER')),
       );
 
-      expect(find.text('40'), findsOneWidget);
-      expect(find.text('2024'), findsOneWidget);
-      expect(find.text('année de création'), findsOneWidget);
-
-      final PdlStatCellRow row = tester.widget<PdlStatCellRow>(
-        find.byType(PdlStatCellRow),
-      );
-      expect(row.cells, hasLength(2));
-      // Les membres mènent au trombinoscope ; l'année ne mène nulle part et
-      // n'a donc pas de chevron.
-      expect(row.cells.first.onTap, isNotNull);
-      expect(row.cells.last.onTap, isNull);
+      expect(find.text('Équipe créée en 2024'), findsOneWidget);
+      expect(find.byType(PdlStatCellRow), findsNothing);
     });
   });
 
