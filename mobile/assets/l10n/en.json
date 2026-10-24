@@ -612,6 +612,7 @@
     "leaderIs": "Leader: {name}",
     "participantsOf": "{count}/{max} participants",
     "viewRoute": "View route",
+    "otherGroupsLabel": "Other groups",
     "otherGroups": {
       "one": "View the other group",
       "other": "View the {} other groups"

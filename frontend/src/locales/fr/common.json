@@ -1784,6 +1784,7 @@
   "rides.detail.groups.joined": "Inscrit",
   "rides.detail.groups.leader": "Meneur",
   "rides.detail.groups.leave": "Quitter",
+  "rides.detail.groups.others": "Autres groupes",
   "rides.detail.groups.participants": "{{current}}/{{max}} participants",
   "rides.detail.groups.participantsNoMax": "{{current}} participants",
   "rides.detail.groups.route.downloadFit": "FIT",

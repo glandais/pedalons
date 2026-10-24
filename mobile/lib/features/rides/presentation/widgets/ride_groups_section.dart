@@ -6,6 +6,7 @@ import '../../../../api/generated/export.dart';
 import '../../../../core/pdl/pdl.dart';
 import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
+import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/preferences/user_preferences_provider.dart';
 import '../../../auth/domain/auth_state.dart';
 import '../../../auth/providers/auth_provider.dart';
@@ -76,7 +77,14 @@ class _RideGroupsSectionState extends ConsumerState<RideGroupsSection>
   @override
   Widget build(BuildContext context) {
     final RideDto ride = widget.ride;
-    final List<RideGroupDto> groups = ride.groups;
+    // Le groupe où l'on est inscrit passe en tête, détaché des autres.
+    final RideGroupDto? registered = ride.groups
+        .where((RideGroupDto g) => g.id == ride.registeredGroupId)
+        .firstOrNull;
+    final List<RideGroupDto> groups = <RideGroupDto>[
+      ?registered,
+      ...ride.groups.where((RideGroupDto g) => g != registered),
+    ];
 
     if (groups.isEmpty) {
       return PdlEmptyState(
@@ -144,6 +152,11 @@ class _RideGroupsSectionState extends ConsumerState<RideGroupsSection>
         ],
         ...exportBanners(),
         for (final RideGroupDto group in shown) ...<Widget>[
+          if (registered != null && shown.indexOf(group) == 1) ...<Widget>[
+            const SizedBox(height: PdlSpacing.feedGap),
+            Text('rides.otherGroupsLabel'.tr(), style: context.pdlText.count),
+            const SizedBox(height: PdlSpacing.feedGap),
+          ],
           _groupCard(
             group: group,
             ride: ride,

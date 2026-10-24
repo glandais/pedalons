@@ -612,6 +612,7 @@
     "leaderIs": "Meneur : {name}",
     "participantsOf": "{count}/{max} participants",
     "viewRoute": "Voir le parcours",
+    "otherGroupsLabel": "Autres groupes",
     "otherGroups": {
       "one": "Voir l'autre groupe",
       "other": "Voir les {} autres groupes"

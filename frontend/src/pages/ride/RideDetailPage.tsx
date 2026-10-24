@@ -1,4 +1,4 @@
-import { useState, useMemo, lazy, Suspense } from 'react'
+import { Fragment, useState, useMemo, lazy, Suspense } from 'react'
 import { getGetTeamDashboardQueryKey } from '@/api/endpoints/teams/teams'
 import { useLocation, useParams, useNavigate } from 'react-router-dom'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
@@ -29,6 +29,7 @@ import {
   Anchor,
   Skeleton,
   Loader,
+  Divider,
 } from '@mantine/core'
 import {
   useUpdateRide,
@@ -38,7 +39,7 @@ import {
 } from '../../api/endpoints/rides/rides'
 import { getListPublicationsQueryKey } from '../../api/endpoints/publications/publications'
 import { invalidateRideWeather, rideRouteSlugs, useRideDetailData } from './rideDetailData'
-import { groupAction } from './rideGroupData'
+import { groupAction, groupsRegisteredFirst } from './rideGroupData'
 import { rideStatusRequest } from './rideFormData'
 import { ReportTargetType, Status } from '@/api/dto'
 import { useAuth } from '../../hooks/useAuth'
@@ -180,6 +181,8 @@ export function RideDetailPage() {
   // `ride.full` is deliberately left out: each card already withholds its Join button when its own
   // group is full, and gating the whole zone on it hid every « Complet » badge once all groups filled.
   const canJoinRide = isMember && ride.status === Status.PUBLISHED && !ride.registered && !isPast
+  // The member's own group heads the list, set apart from the others.
+  const isRegisteredInGroup = !!ride.groups?.some((g) => g.id === ride.registeredGroupId)
 
   // A solo ride whose ride and group share one route: the group page's single-route map (WEB-79).
   // Two different routes (the ride's and its group's) keep the multi-route map.
@@ -546,33 +549,45 @@ export function RideDetailPage() {
               </Title>
               {ride.groups && ride.groups.length > 0 ? (
                 <Stack gap="sm">
-                  {ride.groups.map((group) => {
-                    return (
-                      <RideGroupCard
-                        key={group.id}
-                        group={group}
-                        rideTimezone={ride.timezone}
-                        rideDateTime={ride.dateTime}
-                        teamSlug={teamSlug!}
-                        rideSlug={ride.slug}
-                        rideRouteSlug={ride.routeSlug}
-                        routesBySlug={groupRoutesBySlug}
-                        trackColor={trackColors.get(group.id)}
-                        weatherLeg={
-                          weather.data && hasForecast(weather.data.status)
-                            ? weather.data.legs.find((leg) => leg.groupId === group.id)
-                            : undefined
-                        }
-                        canJoin={canJoinRide}
-                        onJoin={() => handleJoinGroup(group.id)}
-                        onLeave={() => handleLeaveGroup(group.id)}
-                        onHover={setHighlightedGroupId}
-                        isHighlighted={litGroupId === group.id}
-                        isLoading={membership.isPending}
-                        error={groupError?.groupId === group.id ? groupError.message : undefined}
-                      />
-                    )
-                  })}
+                  {groupsRegisteredFirst(ride.groups, ride.registeredGroupId).map(
+                    (group, index) => {
+                      return (
+                        <Fragment key={group.id}>
+                          {index === 1 && isRegisteredInGroup && (
+                            <Divider
+                              label={t('rides.detail.groups.others')}
+                              labelPosition="left"
+                              mt="xs"
+                            />
+                          )}
+                          <RideGroupCard
+                            group={group}
+                            rideTimezone={ride.timezone}
+                            rideDateTime={ride.dateTime}
+                            teamSlug={teamSlug!}
+                            rideSlug={ride.slug}
+                            rideRouteSlug={ride.routeSlug}
+                            routesBySlug={groupRoutesBySlug}
+                            trackColor={trackColors.get(group.id)}
+                            weatherLeg={
+                              weather.data && hasForecast(weather.data.status)
+                                ? weather.data.legs.find((leg) => leg.groupId === group.id)
+                                : undefined
+                            }
+                            canJoin={canJoinRide}
+                            onJoin={() => handleJoinGroup(group.id)}
+                            onLeave={() => handleLeaveGroup(group.id)}
+                            onHover={setHighlightedGroupId}
+                            isHighlighted={litGroupId === group.id}
+                            isLoading={membership.isPending}
+                            error={
+                              groupError?.groupId === group.id ? groupError.message : undefined
+                            }
+                          />
+                        </Fragment>
+                      )
+                    }
+                  )}
                 </Stack>
               ) : (
                 <EmptyState

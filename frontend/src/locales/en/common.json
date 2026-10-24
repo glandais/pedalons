@@ -1731,6 +1731,7 @@
   "rides.detail.groups.joined": "Joined",
   "rides.detail.groups.leader": "Leader",
   "rides.detail.groups.leave": "Leave",
+  "rides.detail.groups.others": "Other groups",
   "rides.detail.groups.participants": "{{current}}/{{max}} participants",
   "rides.detail.groups.participantsNoMax": "{{current}} participants",
   "rides.detail.groups.route.downloadFit": "FIT",

@@ -117,3 +117,12 @@ export function groupAction(ride: RideDto, group: RideGroupDto, isMember: boolea
   const canJoin = isMember && ride.status === Status.PUBLISHED && !ride.registered && !ride.finished
   return canJoin ? 'join' : 'none'
 }
+
+/** The ride's groups, the one the member is registered in first; the others keep their order. */
+export function groupsRegisteredFirst(
+  groups: RideGroupDto[],
+  registeredGroupId: string | undefined | null
+): RideGroupDto[] {
+  const registered = groups.find((g) => g.id === registeredGroupId)
+  return registered ? [registered, ...groups.filter((g) => g !== registered)] : groups
+}
