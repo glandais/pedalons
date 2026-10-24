@@ -354,10 +354,11 @@ class RideGroupCard extends StatelessWidget {
   bool get _hasTextActions =>
       onExportGpx != null || onExportFit != null || onSendToDevice != null;
 
+  // Une seule ligne : GPX et FIT gardent leur taille, l'envoi vers un appareil
+  // prend le reste et s'abrège plutôt que de passer à la ligne.
   Widget _textActions() {
-    return Wrap(
+    return Row(
       spacing: PdlSpacing.badgeGap,
-      runSpacing: 0,
       children: <Widget>[
         if (onExportGpx != null)
           PdlButton(
@@ -378,13 +379,15 @@ class RideGroupCard extends StatelessWidget {
             onPressed: onExportFit,
           ),
         if (onSendToDevice != null)
-          PdlButton(
-            key: keys.ride.groupSendToDevice(group.id),
-            label: 'routes.sendToDevice'.tr(),
-            icon: PdlIcons.device,
-            variant: PdlButtonVariant.text,
-            size: PdlButtonSize.sm,
-            onPressed: onSendToDevice,
+          Flexible(
+            child: PdlButton(
+              key: keys.ride.groupSendToDevice(group.id),
+              label: 'routes.sendToDevice'.tr(),
+              icon: PdlIcons.device,
+              variant: PdlButtonVariant.text,
+              size: PdlButtonSize.sm,
+              onPressed: onSendToDevice,
+            ),
           ),
       ],
     );

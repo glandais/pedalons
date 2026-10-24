@@ -41,7 +41,8 @@ export function RideGroupRouteActions({
   }
 
   return (
-    <Group gap="xs">
+    // Without the view link, the row fits on one line: the device menu shrinks to make it so.
+    <Group gap="xs" wrap={withViewLink ? 'wrap' : 'nowrap'}>
       {withViewLink && (
         <Anchor
           component={PrefetchLink}
@@ -49,7 +50,7 @@ export function RideGroupRouteActions({
           size={size}
           c="dimmed"
         >
-          <Group gap={4}>
+          <Group gap={4} wrap="nowrap">
             <IconMap size={16} />
             {t('rides.detail.groups.route.view')}
           </Group>
@@ -57,7 +58,7 @@ export function RideGroupRouteActions({
       )}
       {route?.media?.assets?.gpx?.url && (
         <Anchor href={route.media.assets.gpx.url} size={size} c="dimmed" download>
-          <Group gap={4}>
+          <Group gap={4} wrap="nowrap">
             <IconDownload size={16} />
             {t('rides.detail.groups.route.downloadGpx')}
           </Group>
@@ -65,7 +66,7 @@ export function RideGroupRouteActions({
       )}
       {route?.media?.assets?.fit?.url && (
         <Anchor href={route.media.assets.fit.url} size={size} c="dimmed" download>
-          <Group gap={4}>
+          <Group gap={4} wrap="nowrap">
             <IconDownload size={16} />
             {t('rides.detail.groups.route.downloadFit')}
           </Group>
@@ -74,10 +75,14 @@ export function RideGroupRouteActions({
       {isAuthenticated && connectedServices.length > 0 && (
         <Menu shadow="md" width={200}>
           <Menu.Target>
-            <UnstyledButton disabled={isUploading} aria-label={t('routes.detail.sendToDevice')}>
-              <Group gap={4}>
+            <UnstyledButton
+              disabled={isUploading}
+              aria-label={t('routes.detail.sendToDevice')}
+              miw={0}
+            >
+              <Group gap={4} wrap="nowrap">
                 {isUploading ? <Loader size={16} /> : <IconDeviceMobile size={16} />}
-                <Text size={size} c="dimmed">
+                <Text size={size} c="dimmed" truncate>
                   {t('routes.detail.sendToDevice')}
                 </Text>
               </Group>
