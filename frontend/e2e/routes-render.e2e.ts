@@ -436,7 +436,7 @@ const screens: Record<string, Screen> = {
   teamAdminMembers: {
     roles: ADMINS,
     sees: async (main, d, page) => {
-      await currentTab(page, "Navigation de la gestion de l'équipe", 'Membres')
+      await currentTab(page, "Navigation de la gestion de l'équipe", 'Gestion des membres')
       await expect(main.getByText(d.sessions.member.user.displayName).first()).toBeVisible()
     },
     denied: denies(BELOW_ADMIN, teamHome(NOT_ADMIN)),

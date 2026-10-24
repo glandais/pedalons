@@ -515,6 +515,7 @@ Les maquettes doivent donc puiser dans le jeu Tabler.
 | `IconEye` / `IconEyeOff` / `IconUsers` | Visibilité publique / non listée / réservée à l'équipe |
 | `IconCheck` | Inscription confirmée |
 | `IconMapSearch` | Exploration des parcours |
+| `IconCompass` | L'entrée « Explorer » de la navigation principale (`WEB-114`) ; au mobile, l'onglet prend son équivalent `Icons.explore` |
 | `IconArrowsMaximize` | Carte en plein écran |
 | `IconArrowLeft` | Retour |
 
@@ -694,6 +695,7 @@ aucune formule enthousiaste (« Génial ! », « C'est parti ! » sont hors marq
 |---|---|---|
 | Ride | **sortie** | « ride », « run », « balade » |
 | Route | **parcours** | « itinéraire », « trace » |
+| Routes of every team (global page) | **Explorer** (entrée de navigation et titre ; elle ouvre la carte). « Parcours » reste la section d'une équipe (`WEB-114`) | « Parcours » pour la page globale |
 | Post | **publication** | « article », « news » |
 | Trip | **voyage** ; ses composants sont des **étapes** | « séjour », « tour » |
 | Rides + trips of a team | **Agenda** (section : sorties et voyages ; filtres « À venir », « Je participe », « Passées ») ; état vide « Rien à l'agenda pour le moment » | « événements », « programme », « activités » |

@@ -105,8 +105,6 @@ String _teamRoutesAncestor(Map<String, String> p, String locale) =>
     PathVariants.routes(p['teamSlug']!)[locale]!;
 String _routeAncestor(Map<String, String> p, String locale) =>
     PathVariants.route(p['teamSlug']!, p['routeSlug']!)[locale]!;
-String _allRoutesAncestor(Map<String, String> p, String locale) =>
-    PathVariants.allRoutes()[locale]!;
 
 final List<_DeepLinkHierarchy> _deepLinkHierarchies = [
   // Standalone pages outside any shell: without an ancestor they would be the
@@ -176,12 +174,6 @@ final List<_DeepLinkHierarchy> _deepLinkHierarchies = [
   _DeepLinkHierarchy(
     patterns: PathVariants.profileHelp(),
     ancestors: [_profileAncestor],
-  ),
-
-  // Pages of the Routes branch. Its root carries the tab bar, the map does not.
-  _DeepLinkHierarchy(
-    patterns: PathVariants.allRoutesMap(),
-    ancestors: [_allRoutesAncestor],
   ),
 
   // Team pages. The chain starts at the teams tab rather than home — pushing
@@ -998,18 +990,23 @@ final routerProvider = Provider<GoRouter>((ref) {
               asPage: true,
             ),
           ),
-          // 3 · Routes, across every team.
+          // 3 · Explorer : routes across every team. The map comes first, so
+          // it is the branch's initial location — the tab opens on it, and
+          // tapping the tab again goes back to it (docs/LEDGER_*.md WEB-114).
+          // The list is the same screen in its other view, a root as well: no
+          // deep-link ancestor for either.
           StatefulShellBranch(
             navigatorKey: _routesNavigatorKey,
             routes: [
               ..._perLocale(
-                PathVariants.allRoutes(),
-                (ctx, st) => const AllRoutesPage(),
+                PathVariants.allRoutesMap(),
+                (ctx, st) => const AllRoutesMapPage(),
                 asPage: true,
               ),
               ..._perLocale(
-                PathVariants.allRoutesMap(),
-                (ctx, st) => const AllRoutesMapPage(),
+                PathVariants.allRoutes(),
+                (ctx, st) => const AllRoutesPage(),
+                asPage: true,
               ),
             ],
           ),

@@ -21,7 +21,7 @@ void main() {
         'nav.home',
         'nav.teams',
         'nav.calendar',
-        'nav.routes',
+        'nav.explore',
         'nav.profile',
       ]);
     });
@@ -59,9 +59,9 @@ void main() {
       }
     });
 
-    test('the global routes map stays on Routes', () {
+    test('the global routes map stays on Explorer', () {
       for (final path in PathVariants.allRoutesMap().values) {
-        expect(getDestinationIndex(path), indexOf('nav.routes'));
+        expect(getDestinationIndex(path), indexOf('nav.explore'));
       }
     });
 

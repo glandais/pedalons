@@ -71,6 +71,23 @@ describe('team tabs (WEB-68, BRAND-6)', () => {
     expect(ids(team('MEMBER', { enablePosts: false }))).not.toContain('posts')
   })
 
+  it('shows « Membres » to whoever may read the directory, as the mobile does (WEB-112, MOB-89)', () => {
+    // Closed directory: organisers and admins only.
+    expect(ids(team('ADMIN'))).toContain('members')
+    expect(ids(team('ORGANIZER'))).toContain('members')
+    expect(ids(team('MEMBER'))).not.toContain('members')
+    // Open directory: every member, and still never a visitor.
+    expect(ids(team('MEMBER', { enableMemberDirectory: true }))).toContain('members')
+    expect(ids(team(undefined, { enableMemberDirectory: true }))).not.toContain('members')
+    // Between « Annonces » and « À propos », the mobile's order.
+    const order = ids(team('MEMBER', { enableMemberDirectory: true }))
+    expect(order.slice(order.indexOf('ads'), order.indexOf('about') + 1)).toEqual([
+      'ads',
+      'members',
+      'about',
+    ])
+  })
+
   it('wears the brand icons (docs/BRANDING.md §6)', () => {
     const items = renderHook(() => useTeamNavItems(team('MEMBER'))).result.current
     const icon = (id: string) => items.find((i) => i.id === id)?.icon

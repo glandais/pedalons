@@ -159,7 +159,7 @@ export function TeamMembersPage() {
     <TeamAdminLayout team={team} currentTab="members">
       <Box py="md">
         <Group justify="space-between" mb="lg">
-          <Title order={2}>{t('teams.detail.members.title')}</Title>
+          <Title order={2}>{t('teams.admin.tabs.members')}</Title>
           {team.addMemberAllowed && (
             <Button onClick={() => setShowAddMember(true)} leftSection={<IconPlus size={16} />}>
               {t('teams.invitations.invite')}

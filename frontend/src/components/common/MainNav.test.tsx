@@ -53,7 +53,7 @@ describe('HeaderMainNav', () => {
     expect(linkNames(renderAt(paths.home()))).toEqual([
       'home.tabs.feed',
       'teams.title',
-      'nav.routes',
+      'nav.explore',
       'nav.features',
     ])
     cleanup()
@@ -62,9 +62,16 @@ describe('HeaderMainNav', () => {
       'home.tabs.feed',
       'teams.title',
       'calendar.title',
-      'nav.routes',
+      'nav.explore',
       'gpxTools.title',
     ])
+  })
+
+  it('opens « Explorer » on the routes map, not the list (WEB-114)', () => {
+    const nav = renderAt(paths.home())
+    expect(nav.getByRole('link', { name: 'nav.explore' }).getAttribute('href')).toBe(
+      paths.allRoutesMap()
+    )
   })
 
   it('drops the teams entry on a single-team site', () => {
@@ -76,7 +83,9 @@ describe('HeaderMainNav', () => {
     auth.isAuthenticated = true
     expect(current(renderAt(paths.home()))).toEqual(['home.tabs.feed'])
     cleanup()
-    expect(current(renderAt(paths.allRoutesMap()))).toEqual(['nav.routes'])
+    expect(current(renderAt(paths.allRoutesMap()))).toEqual(['nav.explore'])
+    cleanup()
+    expect(current(renderAt(paths.allRoutes()))).toEqual(['nav.explore'])
     cleanup()
     expect(current(renderAt(paths.team('les-velos')))).toEqual(['teams.title'])
     cleanup()

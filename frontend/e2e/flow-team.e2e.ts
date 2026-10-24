@@ -249,10 +249,10 @@ test.describe('members', () => {
     const manage = page.getByRole('link', { name: 'Gérer', exact: true })
     await hydrated(manage)
     await manage.click()
-    await adminNav(page).getByRole('link', { name: 'Membres' }).click()
+    await adminNav(page).getByRole('link', { name: 'Gestion des membres' }).click()
     await expect(page).toHaveURL(new RegExp(`/equipes/${team.slug}/admin/membres$`))
     await expect(
-      main(page).getByRole('heading', { level: 2, name: 'Membres', exact: true })
+      main(page).getByRole('heading', { level: 2, name: 'Gestion des membres', exact: true })
     ).toBeVisible()
 
     // Both rows: the owner, who can touch neither their role nor their membership here…
@@ -318,7 +318,7 @@ test.describe('members', () => {
     await signIn(context, owner)
     await page.goto(`/equipes/${team.slug}/admin/membres`)
     await expect(
-      main(page).getByRole('heading', { level: 2, name: 'Membres', exact: true })
+      main(page).getByRole('heading', { level: 2, name: 'Gestion des membres', exact: true })
     ).toBeVisible()
     await expect(
       memberRow(page, owner.user.displayName).getByText('(vous)'),

@@ -140,7 +140,7 @@ export const routesConfig: RoutesConfig = [
     noindex: true,
     parentId: null,
     navGroup: 'home',
-    breadcrumb: { type: 'static', i18nKey: tRegister('nav.routes') },
+    breadcrumb: { type: 'static', i18nKey: tRegister('nav.explore') },
     // Matches AllRoutesPage's initial useListAllRoutes key when no URL filters are set. Signed
     // in, the list's `minRole` depends on team membership (see useMembershipDefault) —
     // replicated here so the resolved variant, not a guess, lands in the cache (same pattern as
@@ -591,7 +591,8 @@ export const routesConfig: RoutesConfig = [
     paths: pathVariants.teamMembers(':teamSlug'),
     component: pages.TeamDirectoryPage,
     auth: 'authenticated',
-    parentId: 'team-about',
+    // A team section of its own (WEB-112): the team is its parent, like the row's other tabs.
+    parentId: 'team-detail',
     breadcrumb: { type: 'static', i18nKey: tRegister('teams.detail.members.title') },
     prefetch: teamScopedPrefetch((qc, p, url) => prefetchTeamDirectory(qc, p.teamSlug!, url)),
   },

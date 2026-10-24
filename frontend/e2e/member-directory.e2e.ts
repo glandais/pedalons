@@ -173,7 +173,9 @@ test.describe('member directory — web', () => {
       await signIn(context, t.admin)
       const page = await context.newPage()
       await page.goto(`/equipes/${t.team.slug}/admin/membres`)
-      await expect(page.getByRole('heading', { name: 'Membres', level: 2 })).toBeVisible()
+      await expect(
+        page.getByRole('heading', { name: 'Gestion des membres', level: 2 })
+      ).toBeVisible()
       // The whole roster first — the filtered view below is then a narrowing, not an empty page.
       await expect(page.getByText(t.member.user.displayName, { exact: true })).toBeVisible()
 
@@ -222,7 +224,12 @@ test.describe('member directory — web', () => {
       const page = await context.newPage()
 
       await page.goto(`/equipes/${t.team.slug}/a-propos`)
-      await page.getByRole('link', { name: /Membres/ }).click()
+      // The count of « À propos » (it carries a number), not the « Membres » tab of the team row
+      // (WEB-112), which sits in the same landmark.
+      await page
+        .getByRole('link', { name: /Membres/ })
+        .filter({ hasText: /\d/ })
+        .click()
       await expect(page).toHaveURL(new RegExp(`/equipes/${t.team.slug}/membres$`))
       await expect(page.getByRole('heading', { name: 'Membres', level: 2 })).toBeVisible()
       await expect(page.getByText(t.teammate.user.displayName, { exact: true })).toBeVisible()
@@ -247,7 +254,15 @@ test.describe('member directory — web', () => {
       const page = await context.newPage()
 
       await page.goto(`/equipes/${t.team.slug}/a-propos`)
-      await page.getByRole('link', { name: /Membres/ }).click()
+      // An open directory earns a plain member the « Membres » tab too (WEB-112).
+      const teamNav = page.getByRole('navigation', { name: /équipe/i })
+      await expect(teamNav.getByRole('link', { name: 'Membres', exact: true })).toBeVisible()
+      // The count of « À propos » (it carries a number), not the « Membres » tab of the team row
+      // (WEB-112), which sits in the same landmark.
+      await page
+        .getByRole('link', { name: /Membres/ })
+        .filter({ hasText: /\d/ })
+        .click()
       await expect(page).toHaveURL(new RegExp(`/equipes/${t.team.slug}/membres$`))
       await expect(page.getByText(t.organizer.user.displayName, { exact: true })).toBeVisible()
       await expect(page.getByText('Organisateur', { exact: true }).first()).toBeVisible()

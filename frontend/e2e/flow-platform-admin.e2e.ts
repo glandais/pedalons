@@ -278,7 +278,7 @@ test.describe('team governance', () => {
         await expect(ownerForm.getByRole('switch', { name })).toBeDisabled()
       await ownerPage.goto(`/equipes/${team.slug}/admin/membres`)
       await expect(
-        main(ownerPage).getByRole('heading', { level: 2, name: 'Membres', exact: true })
+        main(ownerPage).getByRole('heading', { level: 2, name: 'Gestion des membres', exact: true })
       ).toBeVisible()
       await expect(main(ownerPage).getByText(owner.user.displayName)).toBeVisible()
       await expect(main(ownerPage).getByRole('button', { name: 'Inviter par e-mail' })).toHaveCount(

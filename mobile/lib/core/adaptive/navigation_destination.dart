@@ -49,11 +49,15 @@ final List<AppDestination> kAppDestinations = [
     selectedIcon: Icons.calendar_today,
     label: 'nav.calendar',
   ),
+  // « Explorer » : the route library across every team, which the tab opens on
+  // its map (the branch's first route in `router.dart`). Matched on the list's
+  // path, which prefixes the map's, so both light it up (docs/LEDGER_*.md
+  // WEB-114).
   AppDestination(
     paths: PathVariants.allRoutes(),
-    icon: Icons.route_outlined,
-    selectedIcon: Icons.route,
-    label: 'nav.routes',
+    icon: Icons.explore_outlined,
+    selectedIcon: Icons.explore,
+    label: 'nav.explore',
   ),
   AppDestination(
     paths: PathVariants.profile(),
@@ -71,7 +75,7 @@ final List<AppDestination> kAppDestinations = [
 /// prefix-match everything.
 ///
 /// **Most specific wins.** A team's route library lives at
-/// `/equipes/{slug}/parcours`, one segment deeper than the global Routes tab at
+/// `/equipes/{slug}/parcours`, one segment deeper than the global Explorer tab at
 /// `/parcours`; matching the longest destination prefix keeps it on Teams
 /// instead of letting a shorter, unrelated prefix claim it. Length comparison
 /// rather than declaration order so adding a destination cannot silently

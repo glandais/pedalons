@@ -2713,6 +2713,33 @@ Plan [`2026-10-06-team-agenda.md`](plans/archive/2026-10-06-team-agenda.md) §4,
 
 ### Navigation à deux niveaux : repères d'équipe (24 octobre 2026, contrat d'API inchangé)
 
+- `WEB-112` **Deux pages « Membres » distinguées, l'annuaire devient une section d'équipe** (web ;
+  le mobile appliquait déjà la règle) — dans la gestion d'équipe, l'onglet, le fil d'Ariane et le
+  titre de `/admin/membres` disent « Gestion des membres » (`teams.admin.tabs.members`). L'annuaire
+  (`/equipes/{slug}/membres`) garde « Membres ». Son onglet (`useTeamNavItems`) suit la règle de la
+  puce mobile (`team_sections.dart`) et du lien d'« À propos » : administrateur ou organisateur, ou
+  membre si l'annuaire est ouvert. Avant, il était réservé aux administrateurs. Son parent dans le
+  fil d'Ariane est l'équipe (`team-detail`) et non plus « À propos ». Test :
+  `useTeamNavItems.test.tsx` ; e2e mis à jour (`flow-team`, `member-directory`, `routes-render`,
+  `flow-platform-admin`, `invitations`). **À ne pas défaire** : un onglet qui mènerait à un 403 est
+  pire que pas d'onglet, la règle reste donc celle de l'API (`API-39`). Un administrateur de la
+  plateforme sans rôle dans l'équipe n'a pas l'onglet, mais peut ouvrir la page directement.
+- `WEB-114` **La page globale des parcours s'appelle « Explorer » et s'ouvre sur la carte** (web et
+  mobile) — l'entrée de l'en-tête, du tiroir et du menu « … » du fil d'Ariane (`useNavItems.ts`,
+  `nav.explore`, `IconCompass`) mène à `/parcours/carte`. Elle reste allumée sur la liste, parce que
+  son `routeId` est celui de la liste, parent de la carte : le fil d'Ariane dit « Explorer › Carte ».
+  Sur le mobile, l'onglet s'appelle « Explorer » (`Icons.explore`). La carte est la première route
+  de la branche, donc l'onglet s'ouvre sur elle et y revient au deuxième tap. Un lien profond vers
+  `/parcours/carte` ne pose plus la liste dessous. L'action « Explorer » de la carte d'accueil
+  ouvre aussi la carte. La liste reste accessible par le sélecteur liste/carte des deux clients. La
+  section « Parcours » d'une équipe garde son nom ; « Gérer » / « Gestion de l'équipe » sont gardés
+  (le même mot). Aucune URL ne change. Lexique et icône dans `BRANDING.md` §6 et §8.2. Tests :
+  `MainNav.test.tsx`, `shell_branches_test.dart`, `destination_index_test.dart`,
+  `deep_link_hierarchy_test.dart` ; Patrol mis à jour (`modules/routes.dart`,
+  `routes_visibility_test.dart`), non lancé. Effet de bord connu : au premier passage sur
+  « Explorer », le mobile enregistre la vue carte (`routeViewModeProvider`, partagé), si bien que la
+  section Parcours d'une équipe peut s'ouvrir elle aussi sur la carte, selon la règle « dernière vue
+  employée ».
 - `WEB-113` **Le détail d'un parcours porte la bannière d'équipe, la gestion d'équipe perd son lien
   de retour** — `RouteDetailPage.tsx` n'est pas monté dans `TeamLayout` et rend maintenant
   `TeamContextBanner`, comme les détails de sortie, de voyage, de publication et d'annonce.

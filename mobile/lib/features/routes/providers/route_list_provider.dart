@@ -13,7 +13,7 @@ import '../domain/route_filters.dart';
 /// scope**.
 ///
 /// La clé de famille n'est pas la portée choisie mais celle que l'écran
-/// impose : `null` pour l'onglet Parcours, le slug pour la section d'une
+/// impose : `null` pour l'onglet Explorer, le slug pour la section d'une
 /// équipe. La portée *choisie*, elle, vit dans `RouteFilters.teamSlug`, ce qui
 /// la fait participer à la clé de liste — changer d'équipe crée un jeu de
 /// résultats neuf, comme n'importe quel autre filtre.
@@ -94,7 +94,7 @@ final routeBoundsProvider = FutureProvider.autoDispose
 const String _kRouteViewKey = 'routes.view';
 const String _kRouteDensityKey = 'routes.density';
 
-/// Liste ou carte. Persistée : revenir sur l'onglet Parcours restitue la vue
+/// Liste ou carte. Persistée : revenir sur l'onglet Explorer restitue la vue
 /// qu'on y avait laissée.
 final routeViewModeProvider =
     NotifierProvider<RouteViewModeNotifier, RouteViewMode>(

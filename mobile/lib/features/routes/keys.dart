@@ -6,7 +6,7 @@ class _RoutesKey extends ValueKey<String> {
   const _RoutesKey(String value) : super('routes_$value');
 }
 
-/// La parcothèque : l'onglet Parcours et la section Parcours d'une équipe.
+/// La parcothèque : l'onglet Explorer et la section Parcours d'une équipe.
 class RoutesKeys {
   /// La carte (ou la ligne compacte) d'un parcours de la liste.
   ValueKey<String> card(String routeSlug) => _RoutesKey('card_$routeSlug');

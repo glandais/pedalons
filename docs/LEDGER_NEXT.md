@@ -72,18 +72,7 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
 - [ ] `MOB-87` **Pas de sélecteur d'équipe (S)** — on ne change d'équipe que par ← Équipes (l'en-tête
       d'équipe y renvoie toujours par `go`, `team_header.dart:111`) ou par « Mes équipes » de
       l'accueil. Sur le modèle de Heja, toucher le nom de l'équipe dans `team_header.dart` ouvre une
-      feuille « Mes équipes ». Inutile en mono-équipe (voir `MOB-88`). Pendant web : `WEB-111`.
-- [ ] `MOB-88` **Mono-équipe : l'onglet Équipes reste, l'équipe épinglée n'est lue nulle part (S)** —
-      le web masque « Équipes » (`hideWhenSingleTeam`). Le mobile garde son onglet fixe
-      (`kAppDestinations`) et ne masque que « Mes équipes » de l'accueil. `pinnedTeamSlugProvider`
-      (`core/config/config_provider.dart:145`) n'a aucun lecteur. Ouvrir directement l'équipe
-      épinglée depuis l'onglet, sans passer par la liste, dans le respect des 5 branches fixes
-      (arbitrage n°6 du plan mobile v2).
-- [ ] `MOB-89` **Sections d'équipe divergentes du web (S)** — les pages personnalisées sont des
-      onglets sur le web, mais seulement une liste dans À propos sur le mobile
-      (`team_about_page.dart:104`). La puce « Membres » (`team_sections.dart`) s'affiche pour tout
-      membre quand l'annuaire est ouvert ou pour un organisateur, contre l'ADMIN seul sur le web
-      (`WEB-112`). Une seule règle pour les deux clients.
+      feuille « Mes équipes ». L'app ne sert que `pedalons.fr`, qui n'est jamais mono-équipe (`MOB-88`). Pendant web : `WEB-111`.
 
 ### Recette sur une application qui tourne
 
@@ -433,23 +422,6 @@ entrées ci-dessous en sont les écarts. La contrepartie mobile est `MOB-87` à 
       menu « Mes équipes » (modèle Tines) ou ajouter un menu à l'entrée « Équipes » de l'en-tête
       (modèle GitHub). À trancher : le sélecteur reste-t-il visible sur les pages globales ?
       Inutile en mono-équipe (`hideWhenSingleTeam`). Pendant mobile : `MOB-87`.
-- [ ] `WEB-112` **Deux « Membres » dans une équipe, et un annuaire à deux parents (S)** —
-      l'onglet d'équipe « Membres » (ADMIN seulement, `useNavItems.ts:204`) mène à l'annuaire
-      `/equipes/{slug}/membres`. L'onglet de gestion « Membres » (`TeamAdminLayout.tsx`) mène à
-      `/admin/membres`. Même libellé, deux pages. Par ailleurs, l'annuaire a pour parent
-      `team-about` (`routes.config.ts:594`) : le fil d'Ariane affiche « À propos › Membres » alors que
-      la rangée allume « Membres » chez un admin. Renommer l'onglet de gestion (par exemple
-      « Gestion des membres ») et donner à l'annuaire un seul rattachement, cohérent avec la
-      rangée. La visibilité de l'onglet diverge aussi du mobile (puce ouverte aux membres quand
-      l'annuaire l'est) : à aligner avec `MOB-89`.
-- [ ] `WEB-114` **Mêmes libellés au niveau global et au niveau équipe (S, web + mobile)** —
-      « Parcours » désigne à la fois `/parcours` (global) et `/equipes/{slug}/parcours`. Le
-      couple « Calendrier » (global) / « Agenda » (équipe) montre déjà comment distinguer les deux
-      niveaux par le libellé. La gestion d'équipe porte, elle, trois noms : bouton « Gérer », titre et
-      crumb « Gestion de l'équipe ». Choisir les libellés dans le lexique de
-      [`BRANDING.md`](BRANDING.md), puis les appliquer aux deux clients (`common.json`, `fr.json`).
-      Question liée : un parcours d'équipe a-t-il pour chemin canonique la route d'équipe ou la route
-      globale ? NN/g demande un chemin canonique unique.
 
 ### Couverture e2e — ce que l'audit du 27 septembre laisse ouvert
 
@@ -1250,6 +1222,8 @@ redevient une entrée de sa section sous le même identifiant.
 | `AUD-1` | **Déploiement automatique (CD) depuis GitHub** (audit de février, I3, « Critique ») | Non (16 octobre 2026, relecture du ledger) : le déploiement reste lancé à la main par `scripts/deploy.sh` | Le « Critique » de février visait des images poussées à la main sans retour arrière : `AUD-2` a apporté le tag par commit et le rollback Swarm, `AUD-3` la suite e2e nocturne. Les cinq workflows (`ci.yml`, `codeql.yml`, `e2e.yml`, `karoo-release.yml`, `mobile-release.yml`) ne déploient rien, à dessein : les hôtes sont en Swarm mono-nœud sans registry, et un déploiement depuis la CI demanderait soit un runner auto-hébergé, écarté par `AUD-3` parce qu'il exécuterait le code d'une PR externe chez nous, soit une clé SSH de l'hôte dans les secrets GitHub. À rouvrir avec un registry et un second nœud, ou si les déploiements deviennent assez fréquents pour qu'un oubli coûte |
 | `AUD-33` | **Pagination des routes côté Karoo** (audit de février, K10, scindé d'`AUD-24`) | Non (16 octobre 2026) : bornée côté serveur à la place | `PedalonsApiClient.getRoutes` lit une seule page, mais `DeviceRouteService` plafonne la réponse à 20 sorties, 20 routes et 20 groupes (`MAX_*_IN_RESPONSE`, commits `9f23df4d` et `007bdf3a`, `API-118`), pour tenir sous la limite de 100 Ko d'une réponse sur le Karoo — le risque que K10 nommait. À rouvrir si un écran de l'appareil doit montrer plus que ces plafonds |
 | `MOB-85` | **Nom du point sous l'info-bulle du profil** (« Ravitaillement : Café du Port », comme au web) | Non repris au mobile (`MOB-84`, E13) | La bulle tient sur une ligne et porte déjà trois valeurs ; toucher le repère ouvre la fiche du point. À rouvrir si la recette montre qu'on cherche le nom au glissement |
+| `MOB-88` | **Mode mono-équipe dans l'app** (masquer l'onglet Équipes, ouvrir l'équipe épinglée, lire `pinnedTeamSlugProvider`) | Non (24 octobre 2026) | L'app ne sert que `pedalons.fr`, et ce domaine n'est jamais mono-équipe : le mode n'y a pas de cas d'usage. `pinnedTeamSlugProvider` (`core/config/config_provider.dart`) reste sans lecteur. Le web garde son `hideWhenSingleTeam`, qui sert les autres domaines. À rouvrir si l'app devait un jour servir un domaine mono-équipe |
+| `MOB-89` | **Pages personnalisées d'équipe en puces de section, comme les onglets du web** | Non (24 octobre 2026) | Au mobile, elles restent une liste dans « À propos », une ligne par page qui ouvre son écran (`team_about_page.dart`), comme le demandait la note de conception (`plans/archive/audit-ux/BRIEF.md`, onglet À propos). Avec plusieurs pages, la rangée de puces déborderait. Le web garde ses onglets : sa rangée a la place et n'a pas de menu de débordement (`WEB-25`). Le filtrage des pages réservées aux membres se fait côté backend (`isListed` dans `TeamDetailDto`). L'autre volet de l'entrée, la visibilité de « Membres », n'avait rien à changer au mobile : c'est sa règle que le web reprend (`WEB-112`) |
 
 ---
 

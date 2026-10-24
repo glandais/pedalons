@@ -12,7 +12,7 @@ import 'common.dart';
 /// the elevation profile — drawn from the stored track alone — and the map view by its presence.
 void main() {
   testApp(
-    'The Parcours tab keeps members-only routes to members, filters and toggles the map; « Utilisée dans » lists only what the viewer may read',
+    'The Explorer tab keeps members-only routes to members, filters and toggles the map; « Utilisée dans » lists only what the viewer may read',
     ($, modules, apiClients) async {
       final backend = apiClients.backend;
       final owner = await backend.newUser('Routes owner');
@@ -89,8 +89,10 @@ void main() {
       ]);
 
       // The outsider: the public route shows up, the members-only ones don't.
+      // The tab opens on the map; the list is one toggle away.
       await openAppSignedIn($, outsider);
       await modules.routes.goToRoutes();
+      await modules.routes.switchToList();
       await modules.routes.search(tag);
       await modules.routes.waitUntilListed(openSlug);
       expect(modules.routes.isListed(reservedSlug), isFalse);
@@ -116,6 +118,7 @@ void main() {
       // A member: both of the team's routes, still not the other team's.
       await openAppSignedIn($, member);
       await modules.routes.goToRoutes();
+      await modules.routes.switchToList();
       await modules.routes.search(tag);
       await modules.routes.waitUntilListed(openSlug);
       await modules.routes.waitUntilListed(reservedSlug);

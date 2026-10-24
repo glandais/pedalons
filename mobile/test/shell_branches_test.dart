@@ -76,6 +76,19 @@ void main() {
     }
   });
 
+  test('the Explorer branch opens on the routes map, the list beside it', () {
+    final explorer = shell().branches[3];
+    expect(
+      PathVariants.allRoutesMap().values,
+      contains(explorer.defaultRoute?.path),
+      reason: 'the tab, and a tap on it once shown, land on the map',
+    );
+    expect(
+      topLevelPaths(explorer.routes),
+      containsAll(PathVariants.allRoutes().values),
+    );
+  });
+
   test('the team tree lives in the Teams branch, at unchanged URLs', () {
     final teamsBranch = shell().branches[1];
     final paths = topLevelPaths(teamsBranch.routes);

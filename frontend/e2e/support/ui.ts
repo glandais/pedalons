@@ -201,7 +201,7 @@ export async function pageAs(browser: Browser, auth: AuthResponse | undefined) {
 }
 
 /**
- * A link of the site's main navigation (Fil, Équipes, Calendrier, Parcours, Fonctionnalités —
+ * A link of the site's main navigation (Fil, Équipes, Calendrier, Explorer, Fonctionnalités —
  * MainNav.tsx), hydrated and ready to click: the header's on desktop, the burger's drawer on mobile,
  * which this opens. On desktop the collapsed drawer holds a second copy, hence the scoping.
  */

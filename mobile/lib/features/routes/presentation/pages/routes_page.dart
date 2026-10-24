@@ -122,15 +122,19 @@ class _RoutesPageState extends ConsumerState<RoutesPage> {
 
     if (widget.embedded) return body;
 
+    // Across every team, the page is the Explorer tab and bears its name; a
+    // team's own library stays « Parcours » (docs/LEDGER_*.md WEB-114).
     return Scaffold(
-      appBar: PdlAppBar(title: 'routes.title'.tr()),
+      appBar: PdlAppBar(
+        title: (widget.teamSlug == null ? 'nav.explore' : 'routes.title').tr(),
+      ),
       body: body,
     );
   }
 
   /// « Ajouter » : créer un parcours, pour un organisateur de la section
   /// Parcours d'une équipe seulement — ni pour un simple membre, ni sur
-  /// l'onglet Parcours de toutes les équipes (ledger `MOB-79`).
+  /// l'onglet Explorer de toutes les équipes (ledger `MOB-79`).
   Widget? _addButton() {
     final String? teamSlug = widget.teamSlug;
     if (teamSlug == null) return null;

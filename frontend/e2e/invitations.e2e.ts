@@ -27,7 +27,9 @@ const NO_ACCOUNT = /Vous n'avez pas encore de compte|You do not have an account 
 
 async function openMembersAdmin(page: Page, teamSlug: string) {
   await page.goto(`/equipes/${teamSlug}/admin/membres`)
-  await expect(page.getByRole('heading', { name: 'Membres', exact: true })).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: 'Gestion des membres', exact: true })
+  ).toBeVisible()
 }
 
 /** Invites through the members screen's modal; returns the POST's response. */

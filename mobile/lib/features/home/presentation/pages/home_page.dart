@@ -147,7 +147,7 @@ class _NextRideSliver extends ConsumerWidget {
         child: value == null
             ? NoNextRideCard(
                 key: keys.home.noNextRideCard,
-                onExplore: () => context.go(Paths.allRoutes()),
+                onExplore: () => context.go(Paths.allRoutesMap()),
               )
             : NextRideCard(
                 key: keys.home.nextRideCard(value.ride.slug),

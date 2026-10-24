@@ -88,11 +88,6 @@ final List<_LinkCase> _cases = [
     PathVariants.profile(),
   ]),
 
-  // Routes branch: the map sits under the route library.
-  _LinkCase('allRoutesMap', PathVariants.allRoutesMap(), [
-    PathVariants.allRoutes(),
-  ]),
-
   // Team pages → back to the teams list (not home: two branch roots stacked
   // would merge into one shell match).
   _LinkCase('teamsDiscover', PathVariants.teamsDiscover(), [
@@ -249,6 +244,8 @@ final Map<String, Map<String, String>> _selfNavigating = {
   'teams': PathVariants.teams(),
   'calendar': PathVariants.calendar(),
   'allRoutes': PathVariants.allRoutes(),
+  // The Explorer tab's root since WEB-114: the list is its other view.
+  'allRoutesMap': PathVariants.allRoutesMap(),
   'profile': PathVariants.profile(),
   'login': PathVariants.login(),
   'register': PathVariants.register(),
@@ -445,10 +442,13 @@ void main() {
       ]);
     });
 
-    test('the global routes map goes back to the routes tab', () {
-      expect(ancestorsForDeepLink('/parcours/carte'), ['/parcours']);
-      expect(ancestorsForDeepLink('/routes/map'), ['/routes']);
-    });
+    test(
+      'the global routes map is the Explorer tab root, with nothing under it',
+      () {
+        expect(ancestorsForDeepLink('/parcours/carte'), isEmpty);
+        expect(ancestorsForDeepLink('/routes/map'), isEmpty);
+      },
+    );
 
     test('detail pages rebuild their full hierarchy', () {
       expect(ancestorsForDeepLink('/equipes/velo-club/sorties/rando'), [

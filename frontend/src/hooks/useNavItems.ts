@@ -14,6 +14,7 @@ import {
   IconSparkles,
   IconLayoutDashboard,
   IconMapSearch,
+  IconCompass,
 } from '@tabler/icons-react'
 import { paths } from '@/config/paths'
 import { findMatchingRoute, getRouteById } from '@/config/routeUtils'
@@ -63,12 +64,14 @@ export function useHomeNavItems(): MainNavItem[] {
         icon: IconCalendar,
         requiresAuth: true,
       },
+      // « Explorer » opens the routes map, the list being one switch away (docs/LEDGER_*.md
+      // WEB-114); its routeId stays the list's, the map's parent, so both light it up.
       {
-        id: 'routes',
+        id: 'explore',
         routeId: 'all-routes',
-        path: paths.allRoutes(),
-        label: t('nav.routes'),
-        icon: IconRoute,
+        path: paths.allRoutesMap(),
+        label: t('nav.explore'),
+        icon: IconCompass,
       },
     ]
     return allTabs.filter(
@@ -115,7 +118,7 @@ export function useMainNavItems(): MainNavItem[] {
 
 /**
  * The main-navigation entry the given path belongs to: the nearest ancestor of its route (itself
- * included) that starts a section — so the routes map lights « Parcours » and a team page
+ * included) that starts a section — so the routes map lights « Explorer » and a team page
  * « Équipes », as their parent chain in routes.config.ts says. Undefined off any section (profile,
  * notifications…), where no entry is current.
  */
@@ -140,8 +143,8 @@ export function useActiveMainNavId(items: MainNavItem[]): string | undefined {
  * Navigation items for a team section, in the order of the plan (2026-10-06 §2): « Tableau de
  * bord » (for everyone, API-86), « Agenda » (rides and trips — their calendar view is reached
  * from it, for a member), « Publications », « Parcours », « Annonces » (members), « Membres »
- * (administrators), « À propos », then each visible custom page. Each section only when the team
- * has its module — a ride or a trip needs the routes too. The icons are the brand's
+ * (whoever may read the directory), « À propos », then each visible custom page. Each section
+ * only when the team has its module — a ride or a trip needs the routes too. The icons are the brand's
  * (docs/BRANDING.md §6, ledger BRAND-6); custom pages all share one. Single source of truth shared
  * by TeamLayout and the breadcrumb dropdown. Returns [] until the team is loaded.
  */
@@ -152,6 +155,10 @@ export function useTeamNavItems(team: TeamDetailDto | undefined): NavButtonItem[
     if (!team) return []
 
     const isMember = !!team.role
+    const canSeeMembers =
+      team.role === 'ADMIN' ||
+      team.role === 'ORGANIZER' ||
+      (isMember && !!team.enableMemberDirectory)
     const hasAgenda = (!!team.enableRides || !!team.enableTrips) && !!team.enableRoutes
     const baseTabs: NavButtonItem[] = [
       {
@@ -200,8 +207,11 @@ export function useTeamNavItems(team: TeamDetailDto | undefined): NavButtonItem[
             },
           ]
         : []),
-      // An administrator always reads the directory (API-39), so it earns a tab of its own.
-      ...(team.role === 'ADMIN'
+      // Whoever may read the directory (WEB-112, API-39): an organiser or an administrator whatever
+      // the team decided, a member once the team has opened it. The mobile's members chip
+      // (team_sections.dart) and the « À propos » link apply the same rule: a tab that always
+      // leads to a 403 is worse than no tab.
+      ...(canSeeMembers
         ? [
             {
               id: 'members',

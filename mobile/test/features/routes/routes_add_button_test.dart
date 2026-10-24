@@ -22,7 +22,7 @@ import '../../support/localization.dart';
 
 /// Le bouton « Ajouter » de la section Parcours (ledger `MOB-79`) : pour un
 /// organisateur de l'équipe, à droite de la recherche — ni pour un simple
-/// membre, ni sur l'onglet Parcours de toutes les équipes.
+/// membre, ni sur l'onglet Explorer de toutes les équipes.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(loadTestTranslations);
@@ -98,7 +98,7 @@ void main() {
     expect(find.byKey(keys.routes.addButton), findsNothing);
   });
 
-  testWidgets('l\'onglet Parcours de toutes les équipes non plus', (
+  testWidgets('l\'onglet Explorer de toutes les équipes non plus', (
     WidgetTester tester,
   ) async {
     await open(tester, teamSlug: null, canManage: true);

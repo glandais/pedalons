@@ -3,17 +3,20 @@ import 'package:pedalons/core/adaptive/navigation_destination.dart';
 
 import 'module.dart';
 
-/// The route library (the Parcours tab): search, filters, the list/map toggle — and a route's
-/// page, its trace and « Utilisée dans ».
+/// The route library (the Explorer tab, and a team's Parcours section): search, filters, the
+/// list/map toggle — and a route's page, its trace and « Utilisée dans ».
 final class Routes extends Module {
   Routes(super.$);
 
+  /// The Explorer tab, which opens on the map (ledger `WEB-114`); then [switchToList] for the
+  /// cards.
   Future<void> goToRoutes() async {
     await $(
       keys.navigation.tab(
-        kAppDestinations.firstWhere((d) => d.label == 'nav.routes'),
+        kAppDestinations.firstWhere((d) => d.label == 'nav.explore'),
       ),
     ).tap();
+    await $(keys.routes.mapView).waitUntilExists();
   }
 
   // ── The list ────────────────────────────────────────────────────────────

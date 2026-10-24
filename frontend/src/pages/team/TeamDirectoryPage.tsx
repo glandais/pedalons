@@ -72,7 +72,7 @@ export function TeamDirectoryPage() {
   const list = members.data?.members ?? []
 
   return (
-    <TeamLayout team={team} currentTab={team.role === 'ADMIN' ? 'members' : 'about'}>
+    <TeamLayout team={team} currentTab="members">
       <Box py="md">
         <Stack gap="lg">
           <Group justify="space-between" align="baseline">
