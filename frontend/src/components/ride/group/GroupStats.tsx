@@ -28,7 +28,7 @@ function StatTile({
           {label}
         </Text>
       </Group>
-      <Text fw={700} size="lg">
+      <Text fw={700} size="lg" style={{ whiteSpace: 'nowrap' }}>
         {children}
       </Text>
       {hint && (
@@ -61,7 +61,9 @@ export function GroupStats({
 
   return (
     <Paper withBorder p="lg" data-testid="group-stats">
-      <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="md">
+      {/* Container query: the tiles sit in a narrow side column on wide screens, so the viewport
+          width says nothing about the room they have. */}
+      <SimpleGrid type="container" cols={{ base: 2, '560px': 4 }} spacing="md">
         {group.startAt && (
           <StatTile
             icon={<IconClock size={14} aria-hidden />}
@@ -71,7 +73,8 @@ export function GroupStats({
             <Rendezvous date={group.startAt} zone={ride.timezone} format="time" />
           </StatTile>
         )}
-        {group.averageSpeed && (
+        {/* A 0 pace means none — and `0 && …` would render a bare « 0 ». */}
+        {!!group.averageSpeed && (
           <StatTile
             icon={<IconBolt size={14} aria-hidden />}
             label={t('rides.group.stats.pace')}
