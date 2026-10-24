@@ -46,8 +46,11 @@ class PdlSegmentBar extends StatelessWidget {
       (double sum, PdlSegmentBarEntry e) => sum + (e.extent > 0 ? e.extent : 0),
     );
 
+    // Le rayon pilule est borné à la demi-hauteur : un `ClipRRect` de rayon
+    // `PdlRadii.pill` (1000) sur 8 pt n'est pas dessiné par Impeller sur iOS,
+    // qui laisse à la place des traînées sous la carte.
     final Widget bar = ClipRRect(
-      borderRadius: PdlRadii.pillAll,
+      borderRadius: BorderRadius.all(Radius.circular(height / 2)),
       child: SizedBox(
         height: height,
         child: total <= 0

@@ -221,20 +221,6 @@ class _WindSection extends ConsumerWidget {
               Text('rides.weather.segmentsTitle'.tr(), style: t.xs),
               const SizedBox(height: PdlSpacing.badgeGap),
               WeatherWindSegments(leg: leg, units: units),
-              const SizedBox(height: PdlSpacing.badgeGap),
-              // Les bornes de la barre : elle se lit du départ à l'arrivée.
-              ExcludeSemantics(
-                child: Row(
-                  children: <Widget>[
-                    Text(AppFormatters.formatDistance(0, units), style: t.xs),
-                    const Spacer(),
-                    Text(
-                      AppFormatters.formatDistance(leg.distance, units),
-                      style: t.xs,
-                    ),
-                  ],
-                ),
-              ),
             ],
           ),
         ),
