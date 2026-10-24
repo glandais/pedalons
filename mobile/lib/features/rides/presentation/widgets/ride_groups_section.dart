@@ -43,7 +43,6 @@ class RideGroupsSection extends ConsumerStatefulWidget {
     required this.onSelect,
     this.onOpenGroup,
     this.onShowParticipants,
-    this.onViewRoute,
     this.onViewTeam,
   });
 
@@ -63,7 +62,6 @@ class RideGroupsSection extends ConsumerStatefulWidget {
   final ValueChanged<RideGroupDto>? onOpenGroup;
 
   final ValueChanged<RideGroupDto>? onShowParticipants;
-  final ValueChanged<RideGroupDto>? onViewRoute;
   final VoidCallback? onViewTeam;
 
   @override
@@ -220,9 +218,6 @@ class _RideGroupsSectionState extends ConsumerState<RideGroupsSection>
       onShowParticipants: widget.onShowParticipants == null
           ? null
           : () => widget.onShowParticipants!(group),
-      onViewRoute: widget.onViewRoute == null || routeSlug == null
-          ? null
-          : () => widget.onViewRoute!(group),
       onExportGpx: gpx == null ? null : () => downloadRouteAsset(gpx),
       onExportFit: fit == null ? null : () => downloadRouteAsset(fit),
       onSendToDevice: routeSlug == null || services.isEmpty

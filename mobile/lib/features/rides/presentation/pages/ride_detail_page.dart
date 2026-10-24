@@ -356,12 +356,6 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
                     onOpenGroup: openGroup,
                     onShowParticipants: (RideGroupDto g) =>
                         ParticipantsSheet.open(context, ride, g),
-                    onViewRoute: (RideGroupDto g) {
-                      final String? slug = g.routeSlug ?? ride.routeSlug;
-                      if (slug != null) {
-                        context.push(Paths.route(ride.team.slug, slug));
-                      }
-                    },
                     onViewTeam: () =>
                         pushLocation(context, Paths.team(ride.team.slug)),
                   ),

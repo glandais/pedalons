@@ -17,6 +17,8 @@ interface RideGroupRouteActionsProps {
    */
   route: RouteDetailDto | undefined
   size?: 'xs' | 'sm'
+  /** False on the ride page's group cards: the card itself opens the group, map and route included. */
+  withViewLink?: boolean
 }
 
 /**
@@ -28,6 +30,7 @@ export function RideGroupRouteActions({
   routeSlug,
   route,
   size = 'xs',
+  withViewLink = true,
 }: RideGroupRouteActionsProps) {
   const { t } = useTranslation()
   const { isAuthenticated } = useAuth()
@@ -39,12 +42,19 @@ export function RideGroupRouteActions({
 
   return (
     <Group gap="xs">
-      <Anchor component={PrefetchLink} to={paths.route(teamSlug, routeSlug)} size={size} c="dimmed">
-        <Group gap={4}>
-          <IconMap size={16} />
-          {t('rides.detail.groups.route.view')}
-        </Group>
-      </Anchor>
+      {withViewLink && (
+        <Anchor
+          component={PrefetchLink}
+          to={paths.route(teamSlug, routeSlug)}
+          size={size}
+          c="dimmed"
+        >
+          <Group gap={4}>
+            <IconMap size={16} />
+            {t('rides.detail.groups.route.view')}
+          </Group>
+        </Anchor>
+      )}
       {route?.media?.assets?.gpx?.url && (
         <Anchor href={route.media.assets.gpx.url} size={size} c="dimmed" download>
           <Group gap={4}>

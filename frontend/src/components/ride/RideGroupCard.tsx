@@ -282,7 +282,12 @@ export function RideGroupCard({
           </Group>
         </Anchor>
         {effectiveRouteSlug && (
-          <RideGroupRouteActions teamSlug={teamSlug} routeSlug={effectiveRouteSlug} route={route} />
+          <RideGroupRouteActions
+            teamSlug={teamSlug}
+            routeSlug={effectiveRouteSlug}
+            route={route}
+            withViewLink={false}
+          />
         )}
       </Group>
 

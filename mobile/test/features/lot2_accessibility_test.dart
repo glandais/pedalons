@@ -119,7 +119,6 @@ void main() {
                   selected: true,
                   onJoin: () {},
                   onShowParticipants: () {},
-                  onViewRoute: () {},
                   onExportGpx: () {},
                   onExportFit: () {},
                   onSendToDevice: () {},

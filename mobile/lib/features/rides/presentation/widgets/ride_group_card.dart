@@ -41,7 +41,6 @@ class RideGroupCard extends StatelessWidget {
     this.onJoin,
     this.onLeave,
     this.onShowParticipants,
-    this.onViewRoute,
     this.onExportGpx,
     this.onExportFit,
     this.onSendToDevice,
@@ -83,7 +82,6 @@ class RideGroupCard extends StatelessWidget {
   final VoidCallback? onJoin;
   final VoidCallback? onLeave;
   final VoidCallback? onShowParticipants;
-  final VoidCallback? onViewRoute;
   final VoidCallback? onExportGpx;
   final VoidCallback? onExportFit;
   final VoidCallback? onSendToDevice;
@@ -354,24 +352,13 @@ class RideGroupCard extends StatelessWidget {
 
   // ───────────────────────────────────────────────────────────── ligne 4
   bool get _hasTextActions =>
-      onViewRoute != null ||
-      onExportGpx != null ||
-      onExportFit != null ||
-      onSendToDevice != null;
+      onExportGpx != null || onExportFit != null || onSendToDevice != null;
 
   Widget _textActions() {
     return Wrap(
       spacing: PdlSpacing.badgeGap,
       runSpacing: 0,
       children: <Widget>[
-        if (onViewRoute != null)
-          PdlButton(
-            label: 'rides.viewRoute'.tr(),
-            icon: PdlIcons.route,
-            variant: PdlButtonVariant.text,
-            size: PdlButtonSize.sm,
-            onPressed: onViewRoute,
-          ),
         if (onExportGpx != null)
           PdlButton(
             key: keys.ride.groupExportGpx(group.id),
