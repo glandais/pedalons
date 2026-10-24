@@ -54,7 +54,7 @@ interface NextRideCardProps {
  *
  * The heading and the ride's name share one parent (the e2e `ssr-session` spec reads the card
  * through the heading), and the card itself is not a link: the feed's card is the ride's link. The
- * name is one, as everywhere else a ride's name is shown.
+ * name is one, as everywhere else a ride's name is shown, and so is the thumbnail.
  */
 export function NextRideCard({ ride, headingId }: NextRideCardProps) {
   const { t } = useTranslation()
@@ -109,7 +109,13 @@ export function NextRideCard({ ride, headingId }: NextRideCardProps) {
   return (
     <Paper withBorder radius="md" style={{ overflow: 'hidden' }} h="100%">
       <Flex direction={{ base: 'column', sm: 'row' }} h="100%">
+        {/* The thumbnail opens the ride too; the name stays the link assistive tech reads. */}
         <Box
+          component={PrefetchLink}
+          to={ridePath}
+          tabIndex={-1}
+          aria-hidden
+          display="block"
           pos="relative"
           w={{ base: '100%', sm: 260 }}
           style={{ flexShrink: 0, alignSelf: 'stretch' }}
