@@ -69,6 +69,21 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
       contraste des noms en sombre sur fond satellite ; bande haute du profil sur écran étroit.
       Repli si les expressions en `layout` cassent : une `SymbolStyleLayer` par type, `icon-image`
       constant et filtre `['==',['get','icon'],id]`. Livré par `MOB-84`.
+- [ ] `MOB-87` **Pas de sélecteur d'équipe (S)** — on ne change d'équipe que par ← Équipes (l'en-tête
+      d'équipe y renvoie toujours par `go`, `team_header.dart:111`) ou par « Mes équipes » de
+      l'accueil. Sur le modèle de Heja, toucher le nom de l'équipe dans `team_header.dart` ouvre une
+      feuille « Mes équipes ». Inutile en mono-équipe (voir `MOB-88`). Pendant web : `WEB-111`.
+- [ ] `MOB-88` **Mono-équipe : l'onglet Équipes reste, l'équipe épinglée n'est lue nulle part (S)** —
+      le web masque « Équipes » (`hideWhenSingleTeam`). Le mobile garde son onglet fixe
+      (`kAppDestinations`) et ne masque que « Mes équipes » de l'accueil. `pinnedTeamSlugProvider`
+      (`core/config/config_provider.dart:145`) n'a aucun lecteur. Ouvrir directement l'équipe
+      épinglée depuis l'onglet, sans passer par la liste, dans le respect des 5 branches fixes
+      (arbitrage n°6 du plan mobile v2).
+- [ ] `MOB-89` **Sections d'équipe divergentes du web (S)** — les pages personnalisées sont des
+      onglets sur le web, mais seulement une liste dans À propos sur le mobile
+      (`team_about_page.dart:104`). La puce « Membres » (`team_sections.dart`) s'affiche pour tout
+      membre quand l'annuaire est ouvert ou pour un organisateur, contre l'ADMIN seul sur le web
+      (`WEB-112`). Une seule règle pour les deux clients.
 
 ### Recette sur une application qui tourne
 
@@ -403,6 +418,38 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
       l'enregistrement, contrat `11.14.0`, `V76`) aussi, et C1c (rattrapage des anciens parcours,
       suggestion de `surfaceType`, `V77`, pas de contrat ; affichage mobile `MOB-81`) : C1 est livré. C3 (points de parcours) est conçu le 20 octobre 2026
       dans [l'étude des points de parcours](research/2026-10-20-points-de-parcours.md) et découpé dans le plan (C3a à C3h) ; C3b (vcyclist 6.11), C3c (backend, contrat `11.16.0`, `V78`), C3d (web, consultation) et C3e (web, éditeur) sont faits le 20 octobre 2026. Reste de C3a : basculer `pedalons.gps.garmin.course-points.enabled` (désactivé) après un essai de la Courses API sur un Edge, et essayer Wahoo.
+
+### Navigation à deux niveaux (global / équipe) : ce que l'analyse du 24 octobre 2026 laisse ouvert
+
+Comparaison de l'existant avec les motifs de GitLab, Tines, Bitbucket, GitHub et Heja, de NN/g (fil
+d'Ariane) et des guides Apple HIG et Material 3. L'existant est conforme sur l'essentiel : niveau
+global et niveau équipe séparés, fil d'Ariane hiérarchique, canonique et raccourci sous `sm`. Les
+entrées ci-dessous en sont les écarts. La contrepartie mobile est `MOB-87` à `MOB-90`.
+
+- [ ] `WEB-111` **Pas de sélecteur d'équipe (S)** — l'équipe courante est affichée
+      (`TeamLayout.tsx`, en-tête d'équipe) mais on n'en change qu'en repassant par « Équipes » ou
+      par « Mes équipes » de l'accueil (`MyTeamsCard.tsx`). Tous les produits multi-espaces étudiés
+      ont un sélecteur à un emplacement fixe. Faire du nom de l'équipe dans l'en-tête d'équipe un
+      menu « Mes équipes » (modèle Tines) ou ajouter un menu à l'entrée « Équipes » de l'en-tête
+      (modèle GitHub). À trancher : le sélecteur reste-t-il visible sur les pages globales ?
+      Inutile en mono-équipe (`hideWhenSingleTeam`). Pendant mobile : `MOB-87`.
+- [ ] `WEB-112` **Deux « Membres » dans une équipe, et un annuaire à deux parents (S)** —
+      l'onglet d'équipe « Membres » (ADMIN seulement, `useNavItems.ts:204`) mène à l'annuaire
+      `/equipes/{slug}/membres`. L'onglet de gestion « Membres » (`TeamAdminLayout.tsx`) mène à
+      `/admin/membres`. Même libellé, deux pages. Par ailleurs, l'annuaire a pour parent
+      `team-about` (`routes.config.ts:594`) : le fil d'Ariane affiche « À propos › Membres » alors que
+      la rangée allume « Membres » chez un admin. Renommer l'onglet de gestion (par exemple
+      « Gestion des membres ») et donner à l'annuaire un seul rattachement, cohérent avec la
+      rangée. La visibilité de l'onglet diverge aussi du mobile (puce ouverte aux membres quand
+      l'annuaire l'est) : à aligner avec `MOB-89`.
+- [ ] `WEB-114` **Mêmes libellés au niveau global et au niveau équipe (S, web + mobile)** —
+      « Parcours » désigne à la fois `/parcours` (global) et `/equipes/{slug}/parcours`. Le
+      couple « Calendrier » (global) / « Agenda » (équipe) montre déjà comment distinguer les deux
+      niveaux par le libellé. La gestion d'équipe porte, elle, trois noms : bouton « Gérer », titre et
+      crumb « Gestion de l'équipe ». Choisir les libellés dans le lexique de
+      [`BRANDING.md`](BRANDING.md), puis les appliquer aux deux clients (`common.json`, `fr.json`).
+      Question liée : un parcours d'équipe a-t-il pour chemin canonique la route d'équipe ou la route
+      globale ? NN/g demande un chemin canonique unique.
 
 ### Couverture e2e — ce que l'audit du 27 septembre laisse ouvert
 

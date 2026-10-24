@@ -62,6 +62,9 @@ class TeamCustomPage extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
+              // Pas de `onTap`, à dessein (ledger `MOB-90`) : la page est une
+              // sous-route de l'équipe, qui est toujours la page dessous — le
+              // retour y mène, et la toucher en empilerait une seconde copie.
               PdlTeamLine(label: page.team.name, imageUrl: page.team.logoUrl),
               const SizedBox(height: PdlSpacing.chipGap),
               Text(

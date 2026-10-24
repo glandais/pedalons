@@ -2300,7 +2300,6 @@
   "tags.picker.manageLink": "Gérer les tags",
   "tags.picker.placeholder": "Choisir des tags",
   "teams.actions.edit": "Modifier l'équipe",
-  "teams.admin.backToTeam": "Retour à {{teamName}}",
   "teams.admin.tabs.members": "Membres",
   "teams.admin.tabs.pages": "Pages",
   "teams.admin.tabs.places": "Lieux",

@@ -979,6 +979,19 @@ couvert » ; les tests ne tournent qu'en local (`MOB-37`).
   module Patrol `ride` ouvre la page du groupe puis revient au détail ; il ne se contente plus de
   désigner une carte.
 
+### Navigation à deux niveaux : repères d'équipe (24 octobre 2026, contrat d'API inchangé)
+
+- `MOB-90` **Le détail d'un parcours dit à quelle équipe il appartient** — `RouteSheetHeader`
+  (`features/routes/presentation/widgets/route_sheet_header.dart`) porte au-dessus du titre le
+  même `PdlTeamLine` cliquable que les détails de sortie, de voyage, de publication et d'annonce,
+  avec `pushLocation` vers l'équipe. Il apparaît aux crans moyen et haut ; la bande compacte du
+  cran bas n'en a pas. `team` est requis sur les DTO de parcours : pas de cas sans équipe. Test :
+  `test/features/routes/route_sheet_header_test.dart`. **À ne pas défaire** : la ligne d'équipe de
+  la page personnalisée (`team_custom_page.dart`) reste **non cliquable**. La page est une
+  sous-route de l'équipe, qui est donc toujours la page dessous : le retour y mène, et un tap en
+  empilerait une seconde copie. Reste ouvert : la rangée « Équipe » de la section Informations du
+  parcours répète désormais la ligne d'équipe.
+
 ## WEB — Site web
 
 ### La recette web, automatisée
@@ -2697,6 +2710,20 @@ Plan [`2026-10-06-team-agenda.md`](plans/archive/2026-10-06-team-agenda.md) §4,
   automatique, seulement proposé ; la migration biketeam passe par le rattrapage plafonné.
   L'affichage mobile est `MOB-81`. C1 est entièrement livré (détail et écarts dans le plan).
 
+
+### Navigation à deux niveaux : repères d'équipe (24 octobre 2026, contrat d'API inchangé)
+
+- `WEB-113` **Le détail d'un parcours porte la bannière d'équipe, la gestion d'équipe perd son lien
+  de retour** — `RouteDetailPage.tsx` n'est pas monté dans `TeamLayout` et rend maintenant
+  `TeamContextBanner`, comme les détails de sortie, de voyage, de publication et d'annonce.
+  `TeamAdminLayout.tsx` n'a plus le lien « Retour à {{teamName}} », qui doublait le fil d'Ariane ;
+  la clé `teams.admin.backToTeam` est supprimée (fr, en). Vérifié par le typecheck, le lint,
+  `i18n:check` et les tests unitaires ; aucun spec e2e ne citait le lien. **À ne pas défaire** : le
+  retour vers l'équipe depuis la gestion d'équipe passe par le fil d'Ariane, pas par un second
+  lien. Sur les détails, la bannière **reste un lien** vers l'équipe, même si elle double le
+  crumb de l'équipe sur grand écran (tranché le 24 octobre 2026). Sous `sm`, le fil compact ne
+  garde que les deux derniers niveaux et n'affiche plus l'équipe : la bannière est alors le seul
+  chemin vers elle.
 
 ## API — Contrat d'API et backend
 

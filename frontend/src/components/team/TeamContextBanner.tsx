@@ -19,7 +19,7 @@ export interface TeamContextBannerProps {
 }
 
 /**
- * Clickable team banner shown at the top of detail pages (ride, post, trip, ad).
+ * Clickable team banner shown at the top of detail pages (ride, post, trip, ad, route).
  *
  * These pages are not mounted inside `TeamLayout` — they would lose their two-column layout —
  * so without this banner a visitor arriving from the home feed has no path back to the team.

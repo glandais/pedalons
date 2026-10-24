@@ -2234,7 +2234,6 @@
   "tags.picker.manageLink": "Manage tags",
   "tags.picker.placeholder": "Pick tags",
   "teams.actions.edit": "Edit Team",
-  "teams.admin.backToTeam": "Back to {{teamName}}",
   "teams.admin.tabs.members": "Members",
   "teams.admin.tabs.pages": "Pages",
   "teams.admin.tabs.places": "Places",

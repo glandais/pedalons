@@ -3,6 +3,7 @@ import 'package:flutter/material.dart' hide Visibility;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../api/generated/export.dart';
+import '../../../../config/paths.dart';
 import '../../../../core/pdl/pdl.dart';
 import '../../../../core/preferences/user_preferences_provider.dart';
 import '../../../../core/theme/enum_colors.dart';
@@ -11,6 +12,7 @@ import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../core/utils/push_location.dart';
 
 /// En dessous de ce cran, l'en-tête bascule en composition compacte.
 const double kRouteSheetCompactBelow = 0.34;
@@ -88,6 +90,14 @@ class RouteSheetHeader extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
+        // L'équipe au-dessus du titre, comme sur les autres détails (ledger
+        // `MOB-90`) ; la bande du cran bas ne la porte pas.
+        PdlTeamLine(
+          label: route.team.name,
+          imageUrl: route.team.logoUrl,
+          onTap: () => pushLocation(context, Paths.team(route.team.slug)),
+        ),
+        const SizedBox(height: 2),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[

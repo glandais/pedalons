@@ -19,6 +19,7 @@ import { EntityLogo } from '../../components/common/EntityLogo'
 import { CommentSection } from '../../components/comment'
 import { ContentActionsMenu } from '../../components/moderation/ContentActionsMenu'
 import { ShareButton } from '../../components/common/ShareButton'
+import { TeamContextBanner } from '../../components/team/TeamContextBanner'
 import { ReportTargetType } from '@/api/dto'
 import { useAuthStore, selectUser } from '@/store/authStore'
 import { useCanonicalPath } from '../../hooks/useCanonicalPath'
@@ -103,6 +104,9 @@ export function RouteDetailPage() {
 
   return (
     <Box maw={1280} mx="auto" px="md" py="xl">
+      {/* Way back to the team: this page is not mounted inside TeamLayout */}
+      <TeamContextBanner team={team} />
+
       {/* Header */}
       <Stack mb="lg">
         <Group justify="space-between" align="flex-start" wrap="wrap">
