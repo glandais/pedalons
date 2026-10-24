@@ -61,6 +61,14 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
 
 ## MOB — Application mobile
 
+- [ ] `MOB-91` **La météo sur la carte du groupe (3 × M)** — la carte de la page d'un groupe ne
+      montre rien de la météo : `RideGroupOverviewTab` reçoit le leg mais ne le passe pas à
+      `RideGroupsMap` (`ride_group_overview_tab.dart:73`). Mode « Vent » exclusif (tracé coloré
+      dos / travers / face, légende en mots, puce sous la carte encastrée), puis pastilles aux
+      checkpoints en plein écran, puis carte dans l'onglet Météo, sortie solo et étapes de voyage.
+      Piège : `PolylineIndex.fromLineStrings` compte le saut entre traces, le serveur non. Plan
+      [`2026-10-24-weather-on-map.md`](plans/2026-10-24-weather-on-map.md) ; contrat `API-138`,
+      web `WEB-115`.
 - [ ] `MOB-86` **Points de parcours : recette sur appareil** — à faire sur Android et iOS, rien ne
       se teste sans carte native : `icon-image: ['get','icon']` et l'`interpolate` de `icon-size`
       posés en `layout` (jusqu'ici les expressions n'étaient qu'en `paint`) ; types des `properties`
@@ -299,6 +307,13 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
 (`WEB-13` à `WEB-22`, livrés, avec ce que l'automatisation ne voit pas) : voir
 `frontend/e2e/README.md`.
 
+- [ ] `WEB-115` **La météo sur la carte du groupe (3 × M)** — la page d'un groupe a le leg météo
+      mais `GroupRouteMap` ne reçoit que la route (`RideGroupPage.tsx:309`). Mode « Vent » exclusif
+      (tracé coloré dos / travers / face, légende en mots, profil laissé en pente), puis pastilles
+      aux checkpoints, puis sélection partagée avec « Heure par heure », sortie solo et étapes de
+      voyage. Piège : `dist` repart de 0 à chaque trace, le serveur les met bout à bout sans saut.
+      Plan [`2026-10-24-weather-on-map.md`](plans/2026-10-24-weather-on-map.md) ; contrat
+      `API-138`, mobile `MOB-91`.
 - [ ] `WEB-36` **Un tap juste après l'affichage d'une page, sous charge, est ignoré (M)** — le HTML
       du SSR est à l'écran et cliquable avant que React l'ait adopté ; avec l'hydratation
       concurrente de React 19, un clic qui tombe pendant le rendu d'hydratation, avant son commit,
@@ -493,6 +508,14 @@ La météo des **sorties** est livrée (`API-74`, `WEB-60`, `MOB-51`, contrat `1
 cartes de voyage (`API-82`, contrat `10.13.0`). Le plan
 [`2026-10-05-weather.md`](plans/archive/2026-10-05-weather.md) est archivé : il garde les
 arbitrages, ce qui suit est ici (et les recettes des sorties, `WEB-61`, `MOB-52`, `OPS-29`).
+
+- [ ] `API-138` **Documenter la convention de distance de la météo (S)** — rien dans le contrat ne
+      dit que `WeatherCheckpointDto.distance` et `WindSegmentDto.from/toDistance` comptent les
+      traces bout à bout sans le saut entre elles (`RouteSampleLookup.java:127-152`), ni que la
+      4ᵉ composante de `GeoJsonLineString` repart de 0 à chaque trace ; seul le code Java le fixe,
+      et le mobile fait autrement (`polyline_index.dart`). Descriptions seulement, bump de version.
+      Premier palier de la météo sur la carte : plan
+      [`2026-10-24-weather-on-map.md`](plans/2026-10-24-weather-on-map.md), `WEB-115`, `MOB-91`.
 
 - [ ] `API-77` **Météo sur Karoo et Garmin (M)** — `DeviceRideDto` ne porte rien ; à concevoir
       (résumé seul, ou points de passage) avec les contraintes de taille des deux apps. Les aperçus
