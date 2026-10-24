@@ -31,6 +31,7 @@ import { RideGroupRouteActions } from './RideGroupRouteActions'
 import { useUnits } from '@/hooks/useUnits'
 import { Rendezvous } from '../common/Rendezvous'
 import { groupLeavesAtOwnTime } from '@/utils/groupStart'
+import classes from './RideGroupCard.module.css'
 
 interface RideGroupCardProps {
   group: RideGroupDto
@@ -105,6 +106,7 @@ export function RideGroupCard({
       shadow={isHighlighted ? 'md' : 'xs'}
       p="md"
       withBorder
+      className={classes.card}
       style={{
         borderColor: isHighlighted
           ? 'var(--mantine-primary-color-filled)'
@@ -136,6 +138,7 @@ export function RideGroupCard({
             fw={500}
             c="inherit"
             underline="hover"
+            className={classes.stretchedLink}
             style={{ minWidth: 0 }}
           >
             <Group gap={2} wrap="nowrap">
@@ -155,11 +158,17 @@ export function RideGroupCard({
         {(canJoin || isJoined) && (
           <>
             {isJoined ? (
-              <Button variant="outline" size="xs" onClick={onLeave} disabled={isLoading}>
+              <Button
+                variant="outline"
+                size="xs"
+                onClick={onLeave}
+                disabled={isLoading}
+                className={classes.aboveLink}
+              >
                 {t('rides.detail.groups.leave')}
               </Button>
             ) : canJoin && !isFull ? (
-              <Button size="xs" onClick={onJoin} disabled={isLoading}>
+              <Button size="xs" onClick={onJoin} disabled={isLoading} className={classes.aboveLink}>
                 {t('rides.detail.groups.join')}
               </Button>
             ) : isFull ? (
@@ -231,6 +240,7 @@ export function RideGroupCard({
           onClick={() => setShowParticipants(true)}
           title={t('rides.detail.groups.viewParticipants')}
           aria-label={t('rides.detail.groups.viewParticipants')}
+          className={classes.aboveLink}
           style={{ borderRadius: 'var(--mantine-radius-sm)' }}
         >
           <Group gap="sm">
@@ -268,9 +278,10 @@ export function RideGroupCard({
         <GroupWeatherLine leg={weatherLeg} timezone={rideTimezone} />
       </Box>
 
-      {/* The group's page is its name's link; its route's files and device menu stay here */}
+      {/* The whole card opens the group (its name's link, stretched); the route's files and device
+          menu sit above that link */}
       {effectiveRouteSlug && (
-        <Box mt="sm">
+        <Box mt="sm" className={classes.aboveLink} w="fit-content">
           <RideGroupRouteActions
             teamSlug={teamSlug}
             routeSlug={effectiveRouteSlug}

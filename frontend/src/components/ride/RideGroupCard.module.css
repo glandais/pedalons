@@ -1,0 +1,19 @@
+/*
+ * The whole card opens the group's page: its name's link is stretched over the card (one link for
+ * assistive tech, no link wrapping buttons), and the card's own controls are lifted above it.
+ */
+.card {
+  position: relative;
+}
+
+.stretchedLink::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.aboveLink {
+  position: relative;
+  z-index: 1;
+}
