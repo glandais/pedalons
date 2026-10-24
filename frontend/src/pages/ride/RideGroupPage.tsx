@@ -318,6 +318,7 @@ export function RideGroupPage() {
               route={route}
               leg={windLeg}
               attribution={windLeg ? weather.data?.attribution : undefined}
+              timezone={ride.timezone}
             />
           )}
         </Box>

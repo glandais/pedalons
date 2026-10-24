@@ -166,6 +166,19 @@ class RideGroupPageKeys {
   /// La légende du vent posée sur la carte du groupe en mode « Météo ».
   final windMapLegend = const _RideGroupKey('windMapLegend');
 
+  /// Le crédit des prévisions dans cette légende.
+  final windMapCredit = const _RideGroupKey('windMapCredit');
+
+  /// La goutte de l'alerte pluie sur la carte plein écran (ledger `MOB-92`).
+  final weatherMapRainDrop = const _RideGroupKey('weatherMapRainDrop');
+
+  /// La feuille du détail d'une pastille ou de la goutte.
+  final weatherMapSheet = const _RideGroupKey('weatherMapSheet');
+
+  /// La pastille météo d'un point de passage, par son `index`.
+  ValueKey<String> weatherMapPastille(int index) =>
+      _RideGroupKey('weatherMapPastille_$index');
+
   /// « Voir toutes les personnes inscrites » de l'aperçu.
   final viewAllParticipants = const _RideGroupKey('viewAllParticipants');
 

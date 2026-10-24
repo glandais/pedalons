@@ -36,6 +36,7 @@ class RideGroupOverviewTab extends ConsumerStatefulWidget {
     required this.ride,
     required this.group,
     required this.leg,
+    this.weatherAttribution,
     required this.onOpenTab,
   });
 
@@ -45,6 +46,10 @@ class RideGroupOverviewTab extends ConsumerStatefulWidget {
 
   /// Le leg météo de ce groupe, `null` sans prévision chargée.
   final WeatherLegDto? leg;
+
+  /// Le crédit des prévisions, que la légende du mode « Météo » de la carte
+  /// porte (ledger `MOB-92`).
+  final WeatherAttributionDto? weatherAttribution;
 
   final ValueChanged<RideGroupTab> onOpenTab;
 
@@ -77,6 +82,7 @@ class _RideGroupOverviewTabState extends ConsumerState<RideGroupOverviewTab>
             ride: ride,
             onlyGroup: group,
             weatherLeg: widget.leg,
+            weatherAttribution: widget.weatherAttribution,
           ),
           if (showsWindOnMap(widget.leg)) _windChip(),
           Padding(

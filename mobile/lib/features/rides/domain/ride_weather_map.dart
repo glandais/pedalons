@@ -125,3 +125,51 @@ WindSegmentDto? _segmentAt(List<WindSegmentDto> sorted, double distance) {
   }
   return null;
 }
+
+/// La position de chaque distance de [distances] sur les [lines] d'un
+/// parcours (palier 2 du plan, ledger `MOB-92`) : **le premier sommet dont la
+/// distance chaînée ([chainedMeasures], saut nul) atteint `d − 0,5 m`**. Un
+/// point de passage tombe sur un sommet du tracé (la géométrie n'est pas
+/// simplifiée), d'où le demi-mètre de tolérance pour l'arrondi du serveur.
+///
+/// Une distance au-delà du dernier sommet prend le dernier ; `null` pour
+/// toutes quand le parcours n'a aucun sommet. Les distances sont chaînées une
+/// seule fois pour toute la liste.
+List<LngLat?> pointsAtDistances(
+  List<List<List<double>>> lines,
+  List<double> distances,
+) {
+  final List<List<double>> measures = chainedMeasures(lines);
+  // Les sommets aplatis, dans l'ordre, avec leur distance chaînée.
+  final List<double> flat = <double>[];
+  final List<List<double>> coords = <List<double>>[];
+  for (int l = 0; l < lines.length; l++) {
+    for (int i = 0; i < lines[l].length; i++) {
+      flat.add(measures[l][i]);
+      coords.add(lines[l][i]);
+    }
+  }
+  if (flat.isEmpty) {
+    return List<LngLat?>.filled(distances.length, null);
+  }
+  return <LngLat?>[
+    for (final double d in distances) _vertexAt(flat, coords, d - 0.5),
+  ];
+}
+
+/// Le premier sommet de distance `>= target` (dichotomie : [flat] ne recule
+/// jamais), le dernier à défaut.
+LngLat _vertexAt(List<double> flat, List<List<double>> coords, double target) {
+  int lo = 0;
+  int hi = flat.length - 1;
+  if (flat[hi] < target) return LngLat(coords[hi][0], coords[hi][1]);
+  while (lo < hi) {
+    final int mid = (lo + hi) >> 1;
+    if (flat[mid] >= target) {
+      hi = mid;
+    } else {
+      lo = mid + 1;
+    }
+  }
+  return LngLat(coords[lo][0], coords[lo][1]);
+}

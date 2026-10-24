@@ -11,6 +11,7 @@ import 'package:pedalons/core/theme/enum_colors.dart';
 import 'package:pedalons/core/theme/pdl_icons.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/features/rides/presentation/widgets/ride_groups_map.dart';
+import 'package:pedalons/features/rides/presentation/widgets/ride_weather_map_markers.dart';
 import 'package:pedalons/features/rides/providers/ride_detail_provider.dart';
 import 'package:pedalons/features/rides/providers/ride_group_selection_provider.dart';
 import 'package:pedalons/keys.dart';
@@ -68,6 +69,7 @@ void main() {
     WidgetTester tester, {
     required WeatherLegDto? leg,
     bool windMode = true,
+    WeatherAttributionDto? attribution,
   }) async {
     await tester.binding.setSurfaceSize(const Size(400, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -112,6 +114,7 @@ void main() {
                   ride: ride,
                   onlyGroup: group,
                   weatherLeg: leg,
+                  weatherAttribution: attribution,
                 ),
               ],
             ),
@@ -122,6 +125,10 @@ void main() {
     await tester.pump();
     return container;
   }
+
+  PdlMap map(WidgetTester tester) => tester
+      .widget<RideGroupsMapProbe>(find.byType(RideGroupsMapProbe).last)
+      .map;
 
   PdlMapTrack track(WidgetTester tester) => tester
       .widget<RideGroupsMapProbe>(find.byType(RideGroupsMapProbe).first)
@@ -207,5 +214,121 @@ void main() {
     await tester.tap(row);
     await tester.pumpAndSettle();
     expect(container.read(rideMapWindModeProvider(key)), isFalse);
+  });
+
+  // ── Palier 2 (ledger `MOB-92`) ─────────────────────────────────────────
+  const WeatherAttributionDto openMeteo = WeatherAttributionDto(
+    name: 'Open-Meteo.com',
+    url: 'https://open-meteo.com/',
+  );
+
+  testWidgets('le crédit des prévisions est dans la légende, encastrée et '
+      'plein écran', (WidgetTester tester) async {
+    await pump(tester, leg: fixtureLeg(), attribution: openMeteo);
+
+    expect(find.byKey(keys.rideGroup.windMapCredit), findsOneWidget);
+    expect(find.text('Prévisions : Open-Meteo.com'), findsOneWidget);
+
+    await tester.tap(find.byIcon(PdlIcons.fullscreen));
+    await tester.pumpAndSettle();
+
+    final RideGroupsMap full = tester.widget<RideGroupsMap>(
+      find.byWidgetPredicate((Widget w) => w is RideGroupsMap && w.fullscreen),
+    );
+    expect(full.weatherAttribution, openMeteo);
+    expect(
+      find.descendant(
+        of: find.byWidget(full),
+        matching: find.byKey(keys.rideGroup.windMapCredit),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('encastrée : aucune pastille, même en mode « Météo »', (
+    WidgetTester tester,
+  ) async {
+    await pump(tester, leg: fixtureLeg());
+
+    expect(map(tester).markers, isEmpty);
+    expect(map(tester).onMarkerTapped, isNull);
+  });
+
+  testWidgets('plein écran en mode « Météo » : les pastilles, et le détail au '
+      'toucher', (WidgetTester tester) async {
+    await pump(tester, leg: fixtureLeg());
+    await tester.tap(find.byIcon(PdlIcons.fullscreen));
+    await tester.pumpAndSettle();
+
+    final PdlMap full = map(tester);
+    // Départ et point en route : l'arrivée du fixture n'a pas de météo.
+    expect(full.markers.map((PdlMapMarker m) => m.id), <String>[
+      'weather.checkpoint.0',
+      'weather.checkpoint.1',
+    ]);
+    // 15 km chaînés : le 15ᵉ sommet du tracé.
+    expect(full.markers[1].lat, closeTo(45 + 15 * 0.009, 1e-9));
+
+    full.onMarkerTapped!('weather.checkpoint.1');
+    await tester.pumpAndSettle();
+    expect(find.byKey(keys.rideGroup.weatherMapSheet), findsOneWidget);
+    expect(find.text('Rafales 32\u00a0km/h'), findsOneWidget);
+  });
+
+  testWidgets('plein écran : la goutte ouvre l\'alerte pluie', (
+    WidgetTester tester,
+  ) async {
+    await pump(
+      tester,
+      leg: fixtureLeg(
+        rainAlert: const WeatherRainAlertDto(
+          probability: 70,
+          time: '2026-07-29T20:05:00Z',
+          condition: 'RAIN',
+          distance: 15000,
+        ),
+      ),
+    );
+    await tester.tap(find.byIcon(PdlIcons.fullscreen));
+    await tester.pumpAndSettle();
+
+    final PdlMap full = map(tester);
+    expect(
+      full.markers.map((PdlMapMarker m) => m.id),
+      contains(weatherRainMarkerId),
+    );
+
+    full.onMarkerTapped!(weatherRainMarkerId);
+    await tester.pumpAndSettle();
+    expect(find.byKey(keys.rideGroup.weatherMapSheet), findsOneWidget);
+    expect(find.text('Pluie probable'), findsOneWidget);
+  });
+
+  testWidgets('les libellés des pastilles suivent la langue : seules les '
+      'positions sont mémorisées', (WidgetTester tester) async {
+    addTearDown(loadTestTranslations);
+    await pump(tester, leg: fixtureLeg());
+    await tester.tap(find.byIcon(PdlIcons.fullscreen));
+    await tester.pumpAndSettle();
+    expect(map(tester).markers.first.semanticLabel, startsWith('Départ'));
+
+    // Même parcours, même leg : la mémoire des positions sert, mais la
+    // langue a changé entre-temps.
+    await tester.runAsync(() => loadTestTranslations(languageCode: 'en'));
+    for (final Element e in find.byType(RideGroupsMap).evaluate()) {
+      e.markNeedsBuild();
+    }
+    await tester.pumpAndSettle();
+    expect(map(tester).markers.first.semanticLabel, startsWith('Start'));
+  });
+
+  testWidgets('plein écran, mode éteint : aucune pastille', (
+    WidgetTester tester,
+  ) async {
+    await pump(tester, leg: fixtureLeg(), windMode: false);
+    await tester.tap(find.byIcon(PdlIcons.fullscreen));
+    await tester.pumpAndSettle();
+
+    expect(map(tester).markers, isEmpty);
   });
 }

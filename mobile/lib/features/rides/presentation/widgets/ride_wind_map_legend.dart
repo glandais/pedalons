@@ -21,11 +21,25 @@ import 'ride_weather_widgets.dart';
 /// La couleur n'est jamais seule : chaque trait porte son libellé, et un
 /// lecteur d'écran entend le résumé de l'exposition. Les parts viennent du
 /// serveur (`WeatherLegDto.windExposure`) : l'app ne recalcule rien.
+///
+/// Elle porte aussi le crédit que la licence des prévisions demande
+/// (« Prévisions : Open-Meteo.com », `RideWeatherDto.attribution`, ledger
+/// `MOB-92`), en clair : la carte encastrée ne se manipule pas, et un lien de
+/// 44 px n'a pas sa place dans une légende posée sur la carte. L'onglet Météo
+/// le rend en lien.
 class RideWindMapLegend extends StatelessWidget {
-  const RideWindMapLegend({super.key, required this.leg, required this.units});
+  const RideWindMapLegend({
+    super.key,
+    required this.leg,
+    required this.units,
+    this.attribution,
+  });
 
   final WeatherLegDto leg;
   final UnitSystem units;
+
+  /// Le crédit des prévisions, `null` tant que la réponse ne l'a pas apporté.
+  final WeatherAttributionDto? attribution;
 
   @override
   Widget build(BuildContext context) {
@@ -50,6 +64,7 @@ class RideWindMapLegend extends StatelessWidget {
           },
         ),
     ];
+    final WeatherAttributionDto? credit = attribution;
 
     return Semantics(
       key: keys.rideGroup.windMapLegend,
@@ -61,6 +76,7 @@ class RideWindMapLegend extends StatelessWidget {
           },
         ),
         ...notes,
+        if (credit != null) weatherAttributionLabel(credit),
       ].join('. '),
       child: ExcludeSemantics(
         child: PdlBlurSurface(
@@ -107,6 +123,12 @@ class RideWindMapLegend extends StatelessWidget {
                 ),
                 for (final String note in notes)
                   Text(note, style: t.xs.copyWith(color: c.textDimmed)),
+                if (credit != null)
+                  Text(
+                    weatherAttributionLabel(credit),
+                    key: keys.rideGroup.windMapCredit,
+                    style: t.xs.copyWith(color: c.textDimmed),
+                  ),
               ],
             ),
           ),

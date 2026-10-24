@@ -31,14 +31,20 @@ vi.mock('@/components/route/RouteMapView', async () => {
       colorBy,
       lineColorAt,
       lineAttribution,
+      overlays,
+      kmMarkers = true,
     }: {
       route: RouteDetailDto
       colorBy?: string
       lineColorAt?: (track: number, point: number) => string | undefined
       lineAttribution?: string
+      overlays?: React.ReactNode
+      kmMarkers?: boolean
     }) => (
       <div data-testid="map">
         <span data-testid="map-color-by">{colorBy}</span>
+        {kmMarkers && <span data-testid="map-km-markers" />}
+        {overlays}
         {lineColorAt && (
           <>
             <span data-testid="map-line-color">{lineColorAt(0, 0) ?? 'default'}</span>
@@ -54,6 +60,14 @@ vi.mock('@/components/route/RouteMapView', async () => {
     ),
   }
 })
+// The forecast's points pull react-map-gl: a stand-in saying what it was handed.
+vi.mock('@/components/weather/WeatherCheckpointMarkers', () => ({
+  WeatherCheckpointMarkers: ({ leg, timezone }: { leg: WeatherLegDto; timezone?: string }) => (
+    <span data-testid="weather-markers">
+      {leg.checkpoints.length} {timezone}
+    </span>
+  ),
+}))
 vi.mock('@/components/ride/RideGroupRouteActions', () => ({
   RideGroupRouteActions: () => null,
 }))
@@ -82,6 +96,7 @@ function tree(r: RouteDetailDto | undefined, leg?: WeatherLegDto) {
         route={r}
         leg={leg}
         attribution={leg ? okWeather.attribution : undefined}
+        timezone="Europe/Paris"
         withActions={false}
       />
     </MantineProvider>
@@ -203,6 +218,26 @@ describe('GroupRouteMap', () => {
       expect(screen.queryByTestId('map-credit')).toBeNull()
       expect(screen.queryByTestId('wind-map-legend')).toBeNull()
       expect(screen.queryByRole('radiogroup')).toBeNull()
+    })
+
+    it('puts the forecast points on the map in the Météo mode only, the km markers gone (WEB-116)', async () => {
+      show(route({ line: LINE } as Partial<TrackDto>), weatherLeg('g1'))
+      await screen.findByTestId('map')
+      expect(screen.queryByTestId('weather-markers')).toBeNull()
+      expect(screen.getByTestId('map-km-markers')).toBeTruthy()
+      fireEvent.click(screen.getByLabelText('Météo'))
+      expect((await screen.findByTestId('weather-markers')).textContent).toBe('2 Europe/Paris')
+      expect(screen.queryByTestId('map-km-markers')).toBeNull()
+      fireEvent.click(screen.getByLabelText('Pente'))
+      expect(screen.queryByTestId('weather-markers')).toBeNull()
+      expect(screen.getByTestId('map-km-markers')).toBeTruthy()
+    })
+
+    it('puts no forecast point without a leg, the km markers kept', async () => {
+      show(route({ line: LINE } as Partial<TrackDto>))
+      await screen.findByTestId('map')
+      expect(screen.queryByTestId('weather-markers')).toBeNull()
+      expect(screen.getByTestId('map-km-markers')).toBeTruthy()
     })
   })
 })

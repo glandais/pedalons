@@ -25,7 +25,7 @@ interface DepartureWeatherProps {
 /** The meeting point at departure: sky, temperature and felt temperature, rain, wind, daylight. */
 export function DepartureWeather({ departure, time, timezone }: DepartureWeatherProps) {
   const { t } = useTranslation()
-  const { temperature } = useUnits()
+  const { temperature, precipitation } = useUnits()
   const { formatTime, isGuessedText } = useRendezvousFormat(timezone)
   const labels = useWeatherLabels()
   const conditions = departure.conditions
@@ -66,7 +66,7 @@ export function DepartureWeather({ departure, time, timezone }: DepartureWeather
               {conditions.precipitation > 0
                 ? t('rides.weather.precipitationWithAmount', {
                     probability: conditions.precipitationProbability,
-                    amount: conditions.precipitation.toFixed(1),
+                    amount: precipitation(conditions.precipitation),
                   })
                 : t('rides.weather.precipitation', {
                     probability: conditions.precipitationProbability,

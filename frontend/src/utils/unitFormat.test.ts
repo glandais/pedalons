@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { formatFileSize, formatTemperature, temperatureToDisplay } from './unitFormat'
+import {
+  formatFileSize,
+  formatPrecipitation,
+  formatTemperature,
+  temperatureToDisplay,
+} from './unitFormat'
 
 // Intl separates value and unit with a no-break space; compare on plain spaces.
 const plain = (s: string) => s.replace(/[  ]/g, ' ')
@@ -36,5 +41,18 @@ describe('temperatureToDisplay', () => {
 
   it('never writes minus zero', () => {
     expect(formatTemperature(-0.3, 'METRIC')).toBe('0')
+  })
+})
+
+describe('formatPrecipitation', () => {
+  it('keeps mm to the tenth for a metric reader, in the decimal of the language', () => {
+    expect(formatPrecipitation(1.24, 'METRIC', 'fr')).toBe('1,2')
+    expect(formatPrecipitation(1.24, 'METRIC', 'en')).toBe('1.2')
+    expect(formatPrecipitation(3, 'METRIC', 'en')).toBe('3.0')
+  })
+
+  it('converts to inches, to the hundredth, for an imperial reader', () => {
+    expect(formatPrecipitation(25.4, 'IMPERIAL', 'en')).toBe('1.00')
+    expect(formatPrecipitation(1.2, 'IMPERIAL', 'fr')).toBe('0,05')
   })
 })

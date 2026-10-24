@@ -28,13 +28,22 @@ const RouteMapView = lazy(() =>
   import('@/components/route/RouteMapView').then((m) => ({ default: m.RouteMapView }))
 )
 
+// Lazy as the map itself, whose chunk it shares: the forecast's points, in the Météo mode only.
+const WeatherCheckpointMarkers = lazy(() =>
+  import('@/components/weather/WeatherCheckpointMarkers').then((m) => ({
+    default: m.WeatherCheckpointMarkers,
+  }))
+)
+
 /**
  * A group's single route: the map with its profile and a way to full screen, then — unless
  * `withActions` is off — what to do with it (view, GPX, FIT, send to a device).
  *
  * With a `leg` that has a forecast, a « Météo » mode colours the line by the wind (ledger WEB-115,
  * plan 2026-10-24-weather-on-map.md): exclusive of the grade and the surface, never the default,
- * the profile staying on the grade. The leg losing its forecast falls back to the grade.
+ * the profile staying on the grade. The leg losing its forecast falls back to the grade. The same
+ * mode puts a badge at every forecast point, its detail a click away, and a drop where rain becomes
+ * likely, the km markers giving way to them (ledger WEB-116).
  */
 export function GroupRouteMap({
   teamSlug,
@@ -42,6 +51,7 @@ export function GroupRouteMap({
   route,
   leg,
   attribution,
+  timezone,
   withActions = true,
 }: {
   teamSlug: string
@@ -55,6 +65,8 @@ export function GroupRouteMap({
   leg?: WeatherLegDto
   /** The forecast's credit, owed while the wind colours the line. */
   attribution?: WeatherAttributionDto
+  /** The ride's zone: the passages of the forecast's points read in it. */
+  timezone?: string
   withActions?: boolean
 }) {
   const { t } = useTranslation()
@@ -71,6 +83,12 @@ export function GroupRouteMap({
     return modes
   }, [tracks, leg])
   const lineAttribution = wind && attribution ? attributionHtml(attribution) : undefined
+  const overlays =
+    wind && leg ? (
+      <Suspense fallback={null}>
+        <WeatherCheckpointMarkers tracks={tracks} leg={leg} timezone={timezone} />
+      </Suspense>
+    ) : undefined
   const { selection, setSelection, mapBoxRef, selectFromList } = useWaypointSelection()
   return (
     <Stack gap="md">
@@ -85,6 +103,8 @@ export function GroupRouteMap({
                   colorBy={wind ? 'grade' : colorBy}
                   lineColorAt={windColorAt}
                   lineAttribution={lineAttribution}
+                  overlays={overlays}
+                  kmMarkers={!wind}
                   waypointSelection={selection}
                   onWaypointSelectionChange={setSelection}
                 />

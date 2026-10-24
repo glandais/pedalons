@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/config/paths.dart';
+import 'package:pedalons/core/config/config_provider.dart';
 import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
 import 'package:pedalons/core/pagination/pagination.dart';
@@ -16,6 +17,7 @@ import 'package:pedalons/features/rides/data/ride_repository.dart';
 import 'package:pedalons/features/rides/domain/ride_group_tab.dart';
 import 'package:pedalons/features/rides/presentation/pages/ride_detail_page.dart';
 import 'package:pedalons/features/rides/presentation/pages/ride_group_page.dart';
+import 'package:pedalons/features/rides/presentation/widgets/ride_groups_map.dart';
 import 'package:pedalons/features/rides/providers/ride_detail_provider.dart';
 import 'package:pedalons/features/rides/providers/ride_group_selection_provider.dart';
 import 'package:pedalons/features/rides/providers/ride_weather_provider.dart';
@@ -192,6 +194,7 @@ void main() {
     RideGroupTab tab = RideGroupTab.weather,
     UnitSystem units = UnitSystem.metric,
     bool member = true,
+    List overrides = const [],
   }) async {
     tester.view.physicalSize = const Size(402 * 3, 2400 * 3);
     tester.view.devicePixelRatio = 3;
@@ -207,6 +210,7 @@ void main() {
         rideRepositoryProvider.overrideWithValue(repository),
         participantRepositoryProvider.overrideWithValue(participants),
         teamRepositoryProvider.overrideWithValue(_Teams(member: member)),
+        ...overrides,
       ],
     );
     addTearDown(container.dispose);
@@ -523,6 +527,102 @@ void main() {
       expect(find.text('avec la sortie'), findsOneWidget);
       expect(find.textContaining('Arrivée estimée'), findsOneWidget);
     });
+  });
+
+  // ──────────────────────────────────────── la puce « Météo » de la carte
+
+  /// La puce sous la carte encastrée de l'Aperçu (ledger `MOB-91`, test resté
+  /// ouvert au ledger `MOB-92`). La carte native est remplacée par sa sonde, la
+  /// géométrie reste en vol : la puce n'en dépend pas.
+  group('puce « Météo » de la carte', () {
+    setUp(() => RideGroupsMap.debugSkipNativeMap = true);
+    tearDown(() => RideGroupsMap.debugSkipNativeMap = false);
+
+    final RideDto routed = fixtureRide(
+      groups: <RideGroupDto>[
+        fixtureGroup(id: 'g1', routeSlug: 'court'),
+        fixtureGroup(id: 'g2', name: 'Cool', sortOrder: 1),
+      ],
+    );
+    final List mapOverrides = [
+      appConfigProvider.overrideWith(
+        (Ref ref) => Completer<ConfigDto>().future,
+      ),
+      mapStyleProvider.overrideWith(
+        (Ref ref, Brightness b) => const AsyncValue<ResolvedMapStyle?>.data(
+          ResolvedMapStyle(
+            style: MapStyleDto(
+              id: 'plan',
+              label: 'Plan',
+              group: 'vector',
+              url: 'https://tiles.example/plan.json',
+            ),
+            url: 'https://tiles.example/plan.json',
+          ),
+        ),
+      ),
+      rideRouteGeometryProvider.overrideWith(
+        (Ref ref, RouteRef r) => const AsyncValue<RouteDetailDto>.loading(),
+      ),
+    ];
+
+    Future<void> openOverview(WidgetTester tester, RideWeatherDto dto) => open(
+      tester,
+      dto,
+      ride: routed,
+      tab: RideGroupTab.overview,
+      overrides: mapOverrides,
+    );
+
+    testWidgets('sans prévision chargée (leg nul) : pas de puce', (
+      WidgetTester tester,
+    ) async {
+      await openOverview(tester, fixtureWeather());
+
+      expect(find.byType(RideGroupsMap), findsOneWidget);
+      expect(find.byKey(keys.rideGroup.windMapChip), findsNothing);
+    });
+
+    testWidgets('NOT_YET_AVAILABLE : pas de puce', (WidgetTester tester) async {
+      await openOverview(
+        tester,
+        weather(
+          status: 'NOT_YET_AVAILABLE',
+          legs: <WeatherLegDto>[fixtureLeg(status: 'NOT_YET_AVAILABLE')],
+        ),
+      );
+
+      expect(find.byType(RideGroupsMap), findsOneWidget);
+      expect(find.byKey(keys.rideGroup.windMapChip), findsNothing);
+    });
+
+    for (final String status in <String>['OK', 'STALE']) {
+      testWidgets(
+        '$status : la puce, éteinte par défaut ; un appui l\'allume',
+        (WidgetTester tester) async {
+          await openOverview(
+            tester,
+            weather(
+              status: status,
+              legs: <WeatherLegDto>[fixtureLeg(status: status)],
+            ),
+          );
+
+          final Finder chip = find.byKey(keys.rideGroup.windMapChip);
+          expect(chip, findsOneWidget);
+          // Aucun override du mode : son défaut, éteint.
+          expect(tester.widget<PdlChip>(chip).selected, isFalse);
+          expect(container.read(rideMapWindModeProvider(key)), isFalse);
+
+          await tester.ensureVisible(chip);
+          await tester.tap(chip);
+          await tester.pump();
+
+          expect(container.read(rideMapWindModeProvider(key)), isTrue);
+          expect(tester.widget<PdlChip>(chip).selected, isTrue);
+        },
+      );
+    }
   });
 
   // ──────────────────────────────────────────────────── barre d'inscription

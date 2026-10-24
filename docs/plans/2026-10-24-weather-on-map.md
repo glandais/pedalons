@@ -1,8 +1,9 @@
 # La météo sur la carte du groupe d'une sortie (web et mobile)
 
-Écrit le 24 octobre 2026. **État : palier 1 livré le 24 octobre 2026 (contrat `11.16.1`) ; paliers 2 et 3 à faire.**
+Écrit le 24 octobre 2026. **État : palier 1 livré le 24 octobre 2026 (contrat `11.16.1`), palier 2 le 25 octobre ; palier 3
+à faire.**
 Ledger `API-138` (convention de distance documentée dans le contrat), `WEB-115` et `MOB-91`
-(palier 1, le site et l'app), `WEB-116` et `MOB-92` (paliers 2 et 3). Suit la météo des
+(palier 1, le site et l'app), `WEB-116` et `MOB-92` (palier 2), `WEB-117` et `MOB-93` (palier 3 et recette). Suit la météo des
 sorties (`API-74`, `WEB-94`, `MOB-67`, `MOB-69`) et des étapes (`API-76`, `WEB-67`, `MOB-57`), dont
 le plan archivé [`2026-10-05-weather.md`](archive/2026-10-05-weather.md) garde les arbitrages.
 
@@ -134,9 +135,22 @@ parts (« Dos 32 km · Travers 18 km · Face 40 km »), qui porte « Prévision 
 
 ### Palier 2 — les pastilles aux checkpoints (web S-M, mobile M)
 
-En mode Vent, une pastille par checkpoint : heure de passage, icône du ciel, température,
-probabilité de pluie quand elle existe, flèche du vent absolue. Une goutte au point
-`leg.rainAlert.distance`. Les bornes km sont masquées en mode Vent.
+En mode Vent, une pastille par checkpoint. Une goutte au point `leg.rainAlert.distance`. Les
+bornes km sont masquées en mode Vent.
+
+**Arbitrages du palier 2 (24 octobre 2026, après la livraison du palier 1)** :
+
+| Sujet | Décision |
+|---|---|
+| Quand | **En mode Météo seulement** : le même geste montre le vent sur le tracé et les pastilles ; « Pente » garde une carte épurée. |
+| Au repos | **Compacte** : icône du ciel, température, flèche du vent absolue. |
+| Détail | Heure de passage (zone de la sortie, `formatWeatherTime` / `useRendezvousFormat`), probabilité de pluie si présente, **quantité de précipitation** (`precipitation`, mm sur l'heure), vent en km/h et **rafales** (`wind.gusts`, absentes quand le modèle n'en a pas : ne rien afficher, jamais « 0 »). Unités par le formateur unique (impérial compris). Aucun changement de contrat : tout est déjà dans `WeatherConditionsDto`. |
+| Ouverture du détail, web | **Clic → bulle** (`Popup` MapLibre) qui reste ouverte, atteignable au clavier, avec un titre accessible. |
+| Ouverture du détail, mobile | **Tap → `PdlSheet` courte**, comme les points de parcours (`MOB-84`). |
+| Bornes km | **Masquées en mode Météo.** |
+| Mobile, carte encastrée | **Pas de pastilles** : plein écran seulement ; l'encastrée garde le tracé coloré et la légende. |
+| Extrêmes de température | **Pastilles égales**, pas de mise en avant ; les verdicts restent dans la frise. |
+| Crédit Open-Meteo mobile | **Traité dans ce palier** : `RideWeatherDto.attribution` descend jusqu'à la légende de la carte (encastrée et plein écran). |
 
 - **Web** : prop `overlays?: ReactNode` sur `RouteTrackMap`, rendue dans `PedalonsMap` après
   `WaypointLayer`, sous `!trackHidden` (`RouteTrackMap.tsx:236-258`) ;

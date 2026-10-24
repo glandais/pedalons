@@ -293,6 +293,7 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
           ride: ride,
           group: group,
           leg: leg,
+          weatherAttribution: weather?.attribution,
           onOpenTab: _openTab,
         ),
       ),

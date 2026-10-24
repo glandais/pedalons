@@ -734,7 +734,11 @@
       "attribution": "Forecast: {name}",
       "mapMode": "Weather",
       "mapModeSwitch": "Wind on the route",
-      "mapDefaultSpeed": "Times estimated at {speed}"
+      "mapDefaultSpeed": "Times estimated at {speed}",
+      "mapPassage": "Passing around {time}",
+      "mapFromStart": "{distance} from the start",
+      "mapGusts": "Gusts {speed}",
+      "mapRainTitle": "Rain likely"
     },
     "groupPage": {
       "title": "Group {name}",

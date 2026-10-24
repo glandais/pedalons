@@ -734,7 +734,11 @@
       "attribution": "Prévisions : {name}",
       "mapMode": "Météo",
       "mapModeSwitch": "Vent sur le tracé",
-      "mapDefaultSpeed": "Heures estimées à {speed}"
+      "mapDefaultSpeed": "Heures estimées à {speed}",
+      "mapPassage": "Passage vers {time}",
+      "mapFromStart": "À {distance} du départ",
+      "mapGusts": "Rafales {speed}",
+      "mapRainTitle": "Pluie probable"
     },
     "groupPage": {
       "title": "Groupe {name}",

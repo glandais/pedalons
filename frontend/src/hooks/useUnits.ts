@@ -4,6 +4,7 @@ import { usePreferencesStore } from '../store/preferencesStore'
 import {
   formatDistance,
   formatElevation,
+  formatPrecipitation,
   formatSpeed,
   formatTemperature,
   getUnitConfig,
@@ -16,7 +17,7 @@ import {
 } from '../utils/unitFormat'
 
 export function useUnits() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const unitSystem = usePreferencesStore((state) => state.unitSystem)
   const config = useMemo(() => getUnitConfig(unitSystem), [unitSystem])
   const isImperial = unitSystem === 'IMPERIAL'
@@ -60,6 +61,17 @@ export function useUnits() {
       })
     },
     [t, unitSystem, isImperial]
+  )
+
+  /** « 1,2 mm » / « 0.05 in » — the API always speaks mm, the decimal follows the language. */
+  const precipitation = useCallback(
+    (mm: number) => {
+      const key = isImperial ? 'precipitation_imperial' : 'precipitation'
+      return t(key satisfies 'precipitation' | 'precipitation_imperial', {
+        precipitation: formatPrecipitation(mm, unitSystem, i18n?.language),
+      })
+    },
+    [t, i18n?.language, unitSystem, isImperial]
   )
 
   const distanceUnit = useCallback(() => {
@@ -127,6 +139,7 @@ export function useUnits() {
     elevation,
     speed,
     temperature,
+    precipitation,
     distanceUnit,
     elevationUnit,
     // Raw formatters for special cases (charts, inputs)

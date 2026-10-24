@@ -6,7 +6,10 @@ import { routeLeg, weatherLeg } from '@/test/weatherFixtures'
 import {
   attributionHtml,
   chainedDistances,
+  checkpointPoint,
   hasWindForecast,
+  mapCheckpoints,
+  mapWindRotation,
   pointWinds,
   relativeWindStrokeColors,
   windShares,
@@ -171,5 +174,59 @@ describe('attributionHtml', () => {
     expect(attributionHtml({ name: '<b>x</b>', url: 'javascript:alert(1)' })).toBe(
       '&lt;b&gt;x&lt;/b&gt;'
     )
+  })
+})
+
+describe('checkpointPoint (WEB-116)', () => {
+  // RouteSampleLookupTest's case: two 20 km tracks, the second 50 km further north, each one's own
+  // distance restarting at 0.
+  const tracks = [track(20, 5_000, 45), track(20, 5_000, 45.5)]
+  const second = tracks[1].line.coordinates
+
+  it('places a point of the second track by the chained distance, without the gap', () => {
+    // 25 km along the route is the second point of the second track, not the first track's end
+    expect(checkpointPoint(tracks, 25_000)).toEqual([second[1][0], second[1][1]])
+    // The join: the first track's end (20 km) comes first
+    const first = tracks[0].line.coordinates
+    expect(checkpointPoint(tracks, 20_000)).toEqual([first[4][0], first[4][1]])
+    expect(checkpointPoint(tracks, 0)).toEqual([first[0][0], first[0][1]])
+  })
+
+  it("takes the API's rounding within half a metre, and the last point past the end", () => {
+    expect(checkpointPoint(tracks, 25_000.4)).toEqual([second[1][0], second[1][1]])
+    expect(checkpointPoint(tracks, 99_000)).toEqual([second[4][0], second[4][1]])
+  })
+
+  it('places nothing without a point', () => {
+    const empty = { line: { type: 'LineString', coordinates: [] } } as unknown as TrackDto
+    expect(checkpointPoint([empty], 0)).toBeUndefined()
+  })
+})
+
+describe('mapCheckpoints (WEB-116)', () => {
+  it('keeps only the checkpoints with their weather, each at its place', () => {
+    const tracks = [track(45, 15_000, 45), track(45, 15_000, 46)]
+    const leg = routeLeg()
+    leg.checkpoints[2] = { ...leg.checkpoints[2], weather: undefined }
+    const placed = mapCheckpoints(tracks, leg.checkpoints)
+    expect(placed.map((p) => p.checkpoint.index)).toEqual([0, 1, 3, 4, 5, 6])
+    // km 60 is the second track's second point (km 45 + 15)
+    const km60 = placed.find((p) => p.checkpoint.index === 4)!
+    expect([km60.longitude, km60.latitude]).toEqual(tracks[1].line.coordinates[1].slice(0, 2))
+  })
+})
+
+describe('mapWindRotation', () => {
+  it('points where the wind blows to, north up', () => {
+    expect(mapWindRotation(0)).toBe(180) // from the north: towards the south
+    expect(mapWindRotation(225)).toBe(45) // from the south-west: towards the north-east
+    expect(mapWindRotation(180)).toBe(0)
+  })
+
+  it('takes the bearing off on a rotated map, the marker staying upright', () => {
+    expect(mapWindRotation(0, 90)).toBe(90) // towards the south, the map turned east-up
+    expect(mapWindRotation(180, 90)).toBe(270)
+    expect(mapWindRotation(225, 200)).toBe(205)
+    expect(mapWindRotation(180, -30)).toBe(30)
   })
 })

@@ -58,6 +58,13 @@ interface RouteTrackMapProps {
   /** The waypoint picked on the map, the profile or the list (uncontrolled when omitted). */
   waypointSelection?: WaypointSelection | null
   onWaypointSelect?: (selection: WaypointSelection | null) => void
+  /**
+   * Layers or markers drawn on the track, inside the map (the forecast's points of a group's leg,
+   * WEB-116). Hidden with the track.
+   */
+  overlays?: React.ReactNode
+  /** Whether the km markers show (default). Off where `overlays` places its own points. */
+  kmMarkers?: boolean
   /** Overlays (the elevation chart) absolutely positioned on top of the map. */
   children?: React.ReactNode
 }
@@ -80,6 +87,8 @@ export function RouteTrackMap({
   controls,
   waypointSelection,
   onWaypointSelect,
+  overlays,
+  kmMarkers = true,
   children,
 }: RouteTrackMapProps) {
   const colorScheme = useResolvedColorScheme()
@@ -275,10 +284,13 @@ export function RouteTrackMap({
             />
 
             {/* Km markers */}
-            <KmMarkersLayer coords={trackPoints} totalDistanceM={route.distance} />
+            {kmMarkers && <KmMarkersLayer coords={trackPoints} totalDistanceM={route.distance} />}
 
             {/* Hover marker */}
             {hoveredPoint && <HoverMarker longitude={hoveredPoint[0]} latitude={hoveredPoint[1]} />}
+
+            {/* The caller's points, above every other marker */}
+            {overlays}
           </>
         )}
       </PedalonsMap>

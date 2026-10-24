@@ -16,6 +16,22 @@ fichier garde **ce qui est fait**, et ce qu'il ne faut pas défaire.
 
 ## MOB — Application mobile
 
+- [x] `MOB-92` **La météo sur la carte du groupe, palier 2 : les pastilles aux checkpoints** (25
+  octobre 2026, contrat inchangé) — en plein écran et en mode Météo seulement, une pastille compacte
+  par checkpoint (ciel, température, flèche du vent absolue) et une goutte au point `rainAlert` ; un
+  toucher ouvre une `PdlSheet` courte (heure de passage dans la zone de la sortie, pluie en % et en
+  quantité, vent, rafales seulement quand le modèle en donne). `core/pdl` gagne des marqueurs
+  génériques (`PdlMapMarker`, cible de 44 px, égalité de valeur, couche `WidgetLayer` interactive à
+  part de celle des bornes) et `PdlMapBearing`, le cap de la carte. Placement par
+  `pointsAtDistances` sur la distance chaînée du palier 1. Le crédit Open-Meteo descend de
+  `RideWeatherDto.attribution` jusqu'à la légende, encastrée et plein écran. Le test resté ouvert du
+  palier 1 (puce « Météo » selon le statut, éteinte par défaut) est écrit. Plan [`2026-10-24-weather-on-map.md`](plans/2026-10-24-weather-on-map.md).
+  Couvert par `ride_weather_map_markers_test.dart`, `pdl_map_marker_test.dart`,
+  `ride_groups_map_wind_test.dart`, `ride_group_page_test.dart`, `ride_weather_map_test.dart`.
+  **À ne pas défaire** : la flèche retranche le cap de la carte (`windArrowOnMap`), la rotation à
+  deux doigts étant active en plein écran ; seules les positions sont mémorisées, les libellés se
+  reconstruisent (langue, 12 h / 24 h) ; pas de pastilles sur la carte encastrée. La suite est
+  `MOB-93`.
 - [x] `MOB-91` **La météo sur la carte du groupe, palier 1 : le vent sur le tracé** (24 octobre
   2026, contrat `11.16.1`) — la carte de l'Aperçu d'un groupe ne montrait rien de la météo. Une puce
   « Météo » sous la carte encastrée (et un interrupteur « Vent sur le tracé » dans la feuille des
@@ -1021,6 +1037,21 @@ couvert » ; les tests ne tournent qu'en local (`MOB-37`).
 
 ## WEB — Site web
 
+- [x] `WEB-116` **La météo sur la carte du groupe, palier 2 : les pastilles aux checkpoints** (25
+  octobre 2026, contrat inchangé) — en mode Météo seulement, `WeatherCheckpointMarkers` pose une
+  pastille compacte par checkpoint (ciel, température, flèche du vent absolue) et une goutte au point
+  `rainAlert`, et masque les bornes km (`kmMarkers` sur `RouteTrackMap`/`RouteMapView`, vrai par
+  défaut). Un clic ou Entrée ouvre une bulle (`Popup` MapLibre, une à la fois, `role="dialog"`
+  titré, focus sur le détail à l'ouverture et rendu à la pastille à la fermeture) : heure de passage
+  dans la zone de la sortie, pluie en % et en quantité, vent et rafales seulement quand le modèle en
+  donne. Nouveau `formatPrecipitation` (mm ou pouces, décimale de la langue), repris par
+  `DepartureWeather` et `RouteWeather`. Plan [`2026-10-24-weather-on-map.md`](plans/2026-10-24-weather-on-map.md). Couvert par
+  `WeatherCheckpointMarkers.test.tsx`, `weatherOnRoute.test.ts`, `unitFormat.test.ts`,
+  `RouteTrackMap.test.tsx`, `GroupRouteMap.test.tsx`. **À ne pas défaire** : la pastille est un
+  bouton de 44 px qui centre une capsule de 22 px ; la flèche retranche le cap de la carte
+  (`mapWindRotation(direction, bearing)`, la carte web tourne) ; le `stopPropagation` du clic React
+  suffit à épargner la carte (le `Marker` rend par portail, React écoute sur ce portail) ; la distance
+  chaînée est calculée une fois pour toutes les pastilles. La suite est `WEB-117`.
 - [x] `WEB-115` **La météo sur la carte du groupe, palier 1 : le vent sur le tracé** (24 octobre
   2026, contrat `11.16.1`) — `GroupRouteMap` ne recevait que la route. Un `ColorByControl`
   (« Pente | Météo » ou « Pente | Revêtement | Météo », affiché même sans surface) propose le mode

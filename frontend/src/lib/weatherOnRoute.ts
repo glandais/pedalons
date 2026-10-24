@@ -9,7 +9,13 @@
 // `chainedDistances` rebuilds the API's measure; nothing here measures the jump between tracks.
 import type { MantineTheme } from '@mantine/core'
 import { RelativeWind } from '@/api/dto'
-import type { TrackDto, WeatherAttributionDto, WeatherLegDto } from '@/api/dto'
+import type {
+  TrackDto,
+  WeatherAttributionDto,
+  WeatherCheckpointDto,
+  WeatherConditionsDto,
+  WeatherLegDto,
+} from '@/api/dto'
 import { RELATIVE_WIND_COLORS } from '@/lib/badgeColors.generated'
 import { hasForecast } from '@/components/weather/weatherDisplay'
 import { phaseAt, type WindPhase } from '@/components/weather/windPhases'
@@ -55,6 +61,70 @@ export function pointWinds(tracks: Tracks, phases: WindPhase[]): (RelativeWind |
       return i > 0 ? windAt((distances[i - 1] + distance) / 2) : windAt(distance)
     })
   )
+}
+
+/**
+ * Where a point of the leg (a checkpoint, the rain alert) stands on the map, from its distance
+ * alone (ledger WEB-116, plan §5 palier 2): the first vertex whose chained distance reaches it,
+ * within half a metre — the API rounds its distances, and a checkpoint falls on a vertex. Past the
+ * end, the last vertex. Undefined without a single point. `chained` is `chainedDistances(tracks)`,
+ * passed in by a caller placing several points so the whole geometry is measured once.
+ */
+export function checkpointPoint(
+  tracks: Tracks,
+  distance: number,
+  chained: number[][] = chainedDistances(tracks)
+): [number, number] | undefined {
+  let last: number[] | undefined
+  for (let t = 0; t < tracks.length; t++) {
+    const points = tracks[t].line.coordinates
+    for (let i = 0; i < points.length; i++) {
+      if (chained[t][i] >= distance - 0.5) return [points[i][0], points[i][1]]
+      last = points[i]
+    }
+  }
+  return last ? [last[0], last[1]] : undefined
+}
+
+/** A checkpoint of the leg that has its weather, and its place on the map. */
+export interface MapCheckpoint {
+  checkpoint: WeatherCheckpointDto & { weather: WeatherConditionsDto }
+  longitude: number
+  latitude: number
+}
+
+/**
+ * The checkpoints the map shows a badge for: only those with a forecast — a point « not yet
+ * forecast » says nothing on a map — each placed by its distance on the chained measure.
+ */
+export function mapCheckpoints(
+  tracks: Tracks,
+  checkpoints: readonly WeatherCheckpointDto[],
+  chained: number[][] = chainedDistances(tracks)
+): MapCheckpoint[] {
+  const placed: MapCheckpoint[] = []
+  for (const checkpoint of checkpoints) {
+    if (!checkpoint.weather) continue
+    const point = checkpointPoint(tracks, checkpoint.distance, chained)
+    if (!point) continue
+    placed.push({
+      checkpoint: checkpoint as MapCheckpoint['checkpoint'],
+      longitude: point[0],
+      latitude: point[1],
+    })
+  }
+  return placed
+}
+
+/**
+ * The rotation of the map's wind arrow, degrees clockwise from north up: where the wind blows
+ * *towards* (`direction` is where it comes from, plus 180). Absolute on a map facing north — the
+ * relative arrow, the rider's frame, stays in the timeline (plan §4).
+ */
+export function mapWindRotation(direction: number, bearing = 0): number {
+  // The marker stays upright while the map turns: the arrow takes the bearing off
+  const angle = (direction + 180 - bearing) % 360
+  return Math.round(angle < 0 ? angle + 360 : angle) % 360
 }
 
 /** The legend's order: « Dos · Travers · Face ». */

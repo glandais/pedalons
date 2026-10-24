@@ -41,6 +41,10 @@ interface RouteMapViewProps {
   lineColorAt?: (trackIndex: number, pointIndex: number) => string | undefined
   /** The credit that colouring owes, for the map's attribution control (HTML). */
   lineAttribution?: string
+  /** Markers drawn on the track, inside the map (`RouteTrackMap`'s). */
+  overlays?: React.ReactNode
+  /** Whether the km markers show (default). */
+  kmMarkers?: boolean
   /** The waypoint picked on the map, the profile or the page's list (internal state when omitted). */
   waypointSelection?: WaypointSelection | null
   onWaypointSelectionChange?: (selection: WaypointSelection | null) => void
@@ -52,6 +56,8 @@ export function RouteMapView({
   colorBy = 'grade',
   lineColorAt: externalLineColorAt,
   lineAttribution,
+  overlays,
+  kmMarkers,
   waypointSelection,
   onWaypointSelectionChange,
 }: RouteMapViewProps) {
@@ -96,6 +102,8 @@ export function RouteMapView({
           fitPadding={EMBEDDED_FIT_PADDING}
           lineColorAt={externalLineColorAt ?? lineColorAt}
           lineAttribution={lineAttribution}
+          overlays={overlays}
+          kmMarkers={kmMarkers}
           waypointSelection={selection}
           onWaypointSelect={setSelection}
           // Fullscreen action, in the control column with the zoom and basemap buttons

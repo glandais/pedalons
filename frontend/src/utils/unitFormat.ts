@@ -64,6 +64,22 @@ export function formatTemperature(celsius: number, unitSystem: UnitSystem): stri
   return temperatureToDisplay(celsius, unitSystem).toString()
 }
 
+const MM_PER_INCH = 25.4
+
+/**
+ * An amount of precipitation from the API (always mm) in the reader's unit system and language:
+ * « 1,2 » mm in French, « 1.2 » in English, inches to the hundredth for IMPERIAL (« 0.05 ») — a
+ * tenth of an inch is 2.5 mm, too coarse for a shower.
+ */
+export function formatPrecipitation(mm: number, unitSystem: UnitSystem, locale?: string): string {
+  const imperial = unitSystem === 'IMPERIAL'
+  const digits = imperial ? 2 : 1
+  return new Intl.NumberFormat(locale, {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  }).format(imperial ? mm / MM_PER_INCH : mm)
+}
+
 // Round to avoid floating-point precision issues (e.g., 25.000000000000004)
 function round(value: number, decimals: number = 2): number {
   const factor = Math.pow(10, decimals)

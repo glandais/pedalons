@@ -7,6 +7,7 @@ import '../../theme/pdl_tokens.dart';
 import '../../theme/pdl_typography.dart';
 import 'pdl_map_attribution.dart';
 import 'pdl_map_controller.dart';
+import 'pdl_map_marker.dart';
 import 'pdl_waypoint_mark.dart';
 
 /// La carte Pédalons.
@@ -36,6 +37,8 @@ class PdlMap extends StatefulWidget {
     this.focusedWaypoint,
     this.onWaypointTapped,
     this.kmMarkers = const <PdlKmMarker>[],
+    this.markers = const <PdlMapMarker>[],
+    this.onMarkerTapped,
     this.start,
     this.end,
     this.initialCenter,
@@ -93,6 +96,16 @@ class PdlMap extends StatefulWidget {
 
   /// Bornes kilométriques déjà calculées — voir [computePdlKmMarkers].
   final List<PdlKmMarker> kmMarkers;
+
+  /// Marqueurs Flutter posés sur la carte (une pastille, une goutte) — voir
+  /// [PdlMapMarker]. Au-dessus des bornes kilométriques, sous les
+  /// [overlays]. Pour quelques points (une quinzaine) : chacun est un widget
+  /// replacé à chaque mouvement de caméra.
+  final List<PdlMapMarker> markers;
+
+  /// Toucher d'un marqueur : son id. Sans lui, les marqueurs ne sont que des
+  /// images et laissent passer les gestes à la carte.
+  final ValueChanged<String>? onMarkerTapped;
 
   final PdlMapPoint? start;
   final PdlMapPoint? end;
@@ -544,6 +557,35 @@ class _PdlMapState extends State<PdlMap> {
                   point: Geographic(lon: m.lon, lat: m.lat),
                   size: const Size(30, 30),
                   child: _KmBadge(label: m.label),
+                ),
+            ],
+          ),
+        if (widget.markers.isNotEmpty)
+          // Une couche à part des bornes : celle-ci reçoit les touchers
+          // (`allowInteraction`), les bornes, elles, laissent tout passer.
+          // Hors des marqueurs, le pan va toujours à la carte.
+          WidgetLayer(
+            allowInteraction: widget.onMarkerTapped != null,
+            markers: <Marker>[
+              for (final PdlMapMarker m in widget.markers)
+                Marker(
+                  point: Geographic(lon: m.lon, lat: m.lat),
+                  size: m.targetSize,
+                  alignment: m.alignment,
+                  // Le marqueur reste droit quand la carte tourne : son
+                  // contenu reçoit le cap, pour qu'une direction absolue
+                  // (une flèche de vent) le retranche.
+                  child: Builder(
+                    builder: (BuildContext context) => PdlMapBearing(
+                      bearing: MapCamera.maybeOf(context)?.bearing ?? 0,
+                      child: PdlMapMarkerTarget(
+                        marker: m,
+                        onTap: widget.onMarkerTapped == null
+                            ? null
+                            : () => widget.onMarkerTapped!(m.id),
+                      ),
+                    ),
+                  ),
                 ),
             ],
           ),

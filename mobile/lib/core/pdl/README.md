@@ -249,6 +249,7 @@ Exportés par `pdl.dart` comme le reste, et soumis au même contrat (jetons,
 |---|---|---|
 | `PdlMap` | `map/pdl_map.dart` | La carte (MapLibre) |
 | `PdlMapController` · `PdlMapTrack` · `PdlMapPoint` · `PdlMapBox` · `PdlHillshade` · `PdlKmMarker` | `map/pdl_map_controller.dart` | Tracés, points, emprise, estompage, bornes kilométriques |
+| `PdlMapMarker` · `PdlMapMarkerTarget` · `PdlMapBearing` | `map/pdl_map_marker.dart` | Marqueurs Flutter génériques (position + widget + libellé, égalité de valeur) posés dans un `WidgetLayer` de `PdlMap` ; cible de 44 px, toucher rendu par id — les pastilles météo du plein écran d'un groupe, `MOB-92`. Un marqueur reste droit quand la carte tourne : `PdlMapBearing.of(context)` donne le cap à son contenu, qu'une direction absolue (flèche de vent) retranche |
 | `PdlMapHero` · `PdlMapStyleOption` · `PdlMapHeroSwitch` | `map/pdl_map_hero.dart` | La coquille d'une carte occupant une surface : voiles, plein écran, sélecteur de fond de carte et ses interrupteurs de mode |
 | `PdlMapButton` · `PdlMapButtonColumn` · `PdlMapPill` · `PdlMapFloatingCard` | `map/pdl_map_buttons.dart` | Contrôles posés sur la carte, sur voile de lisibilité |
 | `PdlMapAttribution` · `PdlMapCredit` | `map/pdl_map_attribution.dart` | Crédit des fournisseurs de tuiles |

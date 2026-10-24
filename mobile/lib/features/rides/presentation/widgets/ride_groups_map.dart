@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/legacy.dart';
 import '../../../../api/generated/export.dart';
 import '../../../../core/config/config_provider.dart';
 import '../../../../core/config/map_style_options.dart';
+import '../../../../core/geo/polyline_index.dart';
 import '../../../../core/pdl/pdl.dart';
 import '../../../../core/theme/enum_colors.dart';
 import '../../../../core/theme/pdl_icons.dart';
@@ -18,6 +19,7 @@ import '../../domain/ride_weather_map.dart';
 import '../../providers/ride_detail_provider.dart';
 import '../../providers/ride_group_selection_provider.dart';
 import '../../../../keys.dart';
+import 'ride_weather_map_markers.dart';
 import 'ride_wind_map_legend.dart';
 
 /// La hauteur de la carte de sortie.
@@ -65,6 +67,7 @@ class RideGroupsMap extends ConsumerWidget {
     this.fullscreen = false,
     this.seedExtent,
     this.weatherLeg,
+    this.weatherAttribution,
   });
 
   final RideKey rideKey;
@@ -87,6 +90,10 @@ class RideGroupsMap extends ConsumerWidget {
   /// Il n'a d'effet que sur la page d'un groupe, avec une prévision
   /// ([showsWindOnMap]) : il propose alors le mode « Météo ».
   final WeatherLegDto? weatherLeg;
+
+  /// Le crédit des prévisions (`RideWeatherDto.attribution`), porté par la
+  /// légende du mode « Météo », encastrée comme en plein écran.
+  final WeatherAttributionDto? weatherAttribution;
 
   /// Vrai dans la page plein écran, que ce widget construit lui-même : la
   /// carte y prend tout l'écran et le bouton devient une sortie. C'est **la**
@@ -209,6 +216,7 @@ class RideGroupsMap extends ConsumerWidget {
               fullscreen: true,
               seedExtent: extent,
               weatherLeg: weatherLeg,
+              weatherAttribution: weatherAttribution,
             ),
       labels: PdlMapHeroLabels(
         enterFullscreen: 'map.fullscreen'.tr(),
@@ -280,6 +288,7 @@ class RideGroupsMap extends ConsumerWidget {
                   child: RideWindMapLegend(
                     leg: windLeg,
                     units: ref.watch(unitSystemProvider),
+                    attribution: weatherAttribution,
                   ),
                 ),
               ),
@@ -296,6 +305,7 @@ class RideGroupsMap extends ConsumerWidget {
         ref,
         geometries,
         mainRouteLabel,
+        windMode ? windLeg : null,
       ),
     );
 
@@ -314,6 +324,7 @@ class RideGroupsMap extends ConsumerWidget {
     WidgetRef ref,
     Map<String, RouteDetailDto> geometries,
     String mainRouteLabel,
+    WeatherLegDto? windLeg,
   ) {
     // **La carte encastrée ne se manipule pas.** Elle vit au milieu d'une liste
     // qui défile : un pan y dispute le doigt au défilement de la page, et le
@@ -329,6 +340,18 @@ class RideGroupsMap extends ConsumerWidget {
     final WaypointSelectionController selection = ref.watch(
       rideWaypointSelectionProvider(rideKey),
     );
+
+    // Les pastilles météo : **plein écran seulement**, en mode « Météo »
+    // (ledger `MOB-92`). Encastrée, la carte est trop petite et ne se touche
+    // pas ; elle garde le tracé coloré et la légende.
+    final UnitSystem units = ref.watch(unitSystemProvider);
+    final RouteDetailDto? windRoute = selectedSlug == null
+        ? null
+        : geometries[selectedSlug];
+    final List<PdlMapMarker> weatherMarkers =
+        fullscreen && windLeg != null && windRoute != null
+        ? _weatherMarkers(windRoute, windLeg, units, ride.timezone)
+        : const <PdlMapMarker>[];
 
     return ValueListenableBuilder<WaypointSelection?>(
       valueListenable: selection,
@@ -347,6 +370,16 @@ class RideGroupsMap extends ConsumerWidget {
               units: ref.read(unitSystemProvider),
             );
           },
+          markers: weatherMarkers,
+          onMarkerTapped: weatherMarkers.isEmpty
+              ? null
+              : (String id) => openWeatherMapMarker(
+                  context,
+                  id,
+                  leg: windLeg!,
+                  units: units,
+                  timezone: ride.timezone,
+                ),
           styleUrl: styleUrl,
           credit: credit,
           hillshade: servedHillshade(context, ref),
@@ -469,6 +502,39 @@ class RideGroupsMap extends ConsumerWidget {
     return colors;
   }
 
+  /// Les marqueurs météo. Seules leurs **positions** sont mémorisées, par
+  /// (parcours, leg) comme les couleurs : elles chaînent toutes les distances
+  /// du parcours. Les libellés, eux, se refont à chaque construction — ils
+  /// suivent la langue et le format horaire du téléphone, que la mémoire ne
+  /// verrait pas changer.
+  static List<PdlMapMarker> _weatherMarkers(
+    RouteDetailDto route,
+    WeatherLegDto leg,
+    UnitSystem units,
+    String? timezone,
+  ) {
+    final _WeatherPoints? memo = _pointsMemo[route];
+    final List<LngLat?> points;
+    if (memo != null && identical(memo.leg, leg)) {
+      points = memo.points;
+    } else {
+      points = rideWeatherMarkerPoints(<List<List<double>>>[
+        for (final TrackDto t in route.tracks) t.line.coordinates,
+      ], leg);
+      _pointsMemo[route] = _WeatherPoints(leg, points);
+    }
+    return rideWeatherMapMarkers(
+      points: points,
+      leg: leg,
+      units: units,
+      timezone: timezone,
+    );
+  }
+
+  static final Expando<_WeatherPoints> _pointsMemo = Expando<_WeatherPoints>(
+    'rideMapWeatherPoints',
+  );
+
   static final Expando<_WindColors> _windMemo = Expando<_WindColors>(
     'rideMapWindColors',
   );
@@ -493,6 +559,14 @@ class _WindColors {
   final WeatherLegDto leg;
   final Color fallback;
   final List<Color> colors;
+}
+
+/// Une entrée de la mémoire des positions météo d'un parcours.
+class _WeatherPoints {
+  const _WeatherPoints(this.leg, this.points);
+
+  final WeatherLegDto leg;
+  final List<LngLat?> points;
 }
 
 /// La carte d'un test de widget ([RideGroupsMap.debugSkipNativeMap]) : un
