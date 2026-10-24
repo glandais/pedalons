@@ -178,7 +178,28 @@ bornes km sont masquées en mode Vent.
   porte les mêmes checkpoints et segments : la logique des paliers 1 et 2 doit donc rester
   indépendante de la page du groupe.
 
-## 6. `API-138` — la convention de distance dans le contrat (S, palier 1)
+**Arbitrages du palier 3 (25 octobre 2026, après la livraison du palier 2)** — ils font foi sur
+la liste ci-dessus. Livré en **deux lots**, chacun avec sa revue et son commit.
+
+*Lot A — liens, plein écran du groupe, onglet Météo mobile*
+
+| Sujet | Décision |
+|---|---|
+| Web, pastille → tableau | **La bulle s'ouvre et la ligne du tableau « Heure par heure » se sélectionne**, sans faire défiler la page. |
+| Web, tableau → carte | **La pastille correspondante s'allume** (et sa bulle s'ouvre si le mode Météo est actif), sans bouger la caméra ; en mode Pente, rien ne bascule tout seul. |
+| Web, plein écran du groupe | **Nouvelle route `rideGroupMap`** dans `contracts/routes.yaml` : `/teams/{teamSlug}/rides/{rideSlug}/groups/{groupId}/map`, `/equipes/{teamSlug}/sorties/{rideSlug}/groupes/{groupId}/carte`, **web seul** (pas de `mobile`, pas de `deeplink`), sur le modèle de `stageMap`. Puis `pnpm generate-routes`. Le bouton plein écran de la page du groupe y mène au lieu de `routeMap`. La page porte le mode Météo (tracé, légende, pastilles, bulle), avec un `prefetch` déclaré une seule fois dans un module compagnon (docs/SSR-data-loading.md). |
+| Mode à l'arrivée sur le plein écran | **Celui de la page**, porté par un paramètre d'URL (par exemple `?couleur=meteo`, nom à choisir selon les conventions de `useUrlFilters`) : un lien partagé montre la même carte. Sans paramètre, Pente. Une prévision absente fait retomber sur Pente, comme sur la page. |
+| Mobile, onglet Météo | **Carte encastrée, toujours en mode Météo** (tracé coloré par le vent d'office, pas de puce, légende et crédit), non manipulable ; un tap ouvre le plein écran existant ; toucher un point de la frise y place un curseur (`setCursor` / `setWaypointFocus`). Rien si le leg n'a pas de prévision (`showsWindOnMap`). |
+
+*Lot B — sortie solo et voyages*
+
+| Sujet | Décision |
+|---|---|
+| Sortie solo, détail | **Même mode** sur la carte du détail (web `RideDetailPage` avec `soloLeg`, mobile `ride_detail_page.dart`) : sélecteur / puce, légende, pastilles. |
+| Sortie solo, plein écran web | **Nouvelle route `rideMap`** : `/teams/{teamSlug}/rides/{rideSlug}/map`, `/equipes/{teamSlug}/sorties/{rideSlug}/carte`, web seul ; elle affiche le groupe unique (l'URL ne dévoile pas l'id d'un groupe sans page). Même paramètre de mode que `rideGroupMap`. |
+| Étape, détail et plein écran | **Même mode** sur la carte d'une étape (web `StageDetailPage` et `StageFullscreenMapPage` via `stageMap`, avec le même paramètre de mode ; mobile la carte de l'étape choisie). |
+| Carte d'ensemble du voyage | **Toutes les étapes** en mode Météo : chaque tracé coloré par le vent de son étape (à son jour) et les pastilles de toutes les étapes (web `TripDetailPage`, mobile `trip_map.dart`). La lisibilité à beaucoup d'étapes est à vérifier en recette. |
+ `API-138` — la convention de distance dans le contrat (S, palier 1)
 
 Descriptions seulement, dans les DTO Java (puis skill `contract-first-api`) :
 
