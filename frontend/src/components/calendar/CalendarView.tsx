@@ -185,7 +185,7 @@ export function CalendarView({
     [t, tz, isPlaceholder, i18n.language]
   )
 
-  /** "Inscrit" / "Inscrit · Groupe A", empty when the user is not registered. */
+  /** "J'y vais" / "J'y vais · Groupe A", empty when the user is not registered. */
   const buildRegistration = useCallback(
     (dto: CalendarEventDto): string => {
       if (!dto.registered) {

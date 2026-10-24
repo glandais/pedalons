@@ -273,7 +273,9 @@ void main() {
     expect(find.byKey(keys.rideEditor.groupLeader(0)), findsNothing);
     expect(find.byKey(keys.rideEditor.groupRoute(0)), findsNothing);
     expect(
-      find.text('Le meneur et le parcours se choisissent sur chaque sortie.'),
+      find.text(
+        'Le ou la capitaine et le parcours se choisissent sur chaque sortie.',
+      ),
       findsOneWidget,
     );
     // La barre d'outils du markdown est là, sans son bouton image.

@@ -586,7 +586,7 @@ public class UserExportBuilder {
                         notifications push, membres que vous avez bloqués et
                         signalements que vous avez faits.
       memberships/      Les équipes dont vous êtes membre.
-      participations/   Les sorties et voyages auxquels vous vous êtes inscrit.
+      participations/   Les sorties et voyages auxquels vous participez.
       notifications/    Les notifications reçues ces derniers mois, et pour chacune les
                         envois par e-mail ou push qu'elle a donnés.
       content/          Ce que vous avez publié : sorties, articles, voyages, parcours,

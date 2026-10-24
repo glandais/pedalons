@@ -18,7 +18,7 @@ class ModerationKeys {
   ValueKey<String> reason(ReportReason reason) =>
       _ModerationKey('reason_${reason.toJson()}');
 
-  /// « Utilisateurs bloqués », depuis le profil.
+  /// « Personnes bloquées », depuis le profil.
   final blockedUsersRow = const _ModerationKey('blockedUsersRow');
 
   ValueKey<String> unblockButton(String userId) =>

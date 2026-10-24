@@ -158,7 +158,7 @@ class PdlColors extends ThemeExtension<PdlColors> {
   final Color accentPink;
 
   /// L'aplat de la famille indigo du code couleur métier (« Location »,
-  /// « Inscrit »), aux valeurs de Mantine comme au web. Distinct de
+  /// « J'y vais »), aux valeurs de Mantine comme au web. Distinct de
   /// [primary], foncé d'une nuance en clair pour le contraste du texte.
   final Color accentIndigo;
 

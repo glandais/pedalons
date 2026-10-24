@@ -76,7 +76,7 @@ final List<_LinkCase> _cases = [
   _LinkCase('profilePrivacy', PathVariants.profilePrivacy(), [
     PathVariants.profile(),
   ]),
-  // « Utilisateurs bloqués » est sous « Confidentialité ».
+  // « Personnes bloquées » est sous « Confidentialité ».
   _LinkCase('blockedUsers', PathVariants.blockedUsers(), [
     PathVariants.profile(),
     PathVariants.profilePrivacy(),

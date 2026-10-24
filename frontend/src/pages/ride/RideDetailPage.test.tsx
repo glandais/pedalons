@@ -152,7 +152,7 @@ describe('RideDetailPage — a ride with one group is its group page (WEB-79)', 
 
   it("carries the group's places, figures and inline participants", async () => {
     renderPage()
-    expect(plain(screen.getByTestId('group-places').textContent)).toContain('11/12 participants')
+    expect(plain(screen.getByTestId('group-places').textContent)).toContain('11/12 personnes')
     const stats = plain(screen.getByTestId('group-stats').textContent)
     expect(stats).toContain('28 km/h')
     expect(stats).toContain('avec la sortie')
@@ -175,7 +175,7 @@ describe('RideDetailPage — a ride with one group is its group page (WEB-79)', 
   it('shows no leader without one — never the ride creator', () => {
     renderPage()
     expect(screen.queryByTestId('group-leader')).toBeNull()
-    expect(screen.queryByText('Meneur')).toBeNull()
+    expect(screen.queryByText('Capitaine')).toBeNull()
     expect(screen.queryByText('Créatrice de la sortie')).toBeNull()
   })
 

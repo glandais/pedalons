@@ -164,7 +164,7 @@ void main() {
       await renderBody(tester, _dashboard(role: 'MEMBER'));
 
       expect(
-        find.bySemanticsLabel(RegExp(r'^.+, 11 inscrits sur 16$')),
+        find.bySemanticsLabel(RegExp(r'^.+, 11 inscriptions sur 16$')),
         findsOneWidget,
       );
       // Plus de « 11 / 16 » lu seul, sans le groupe.

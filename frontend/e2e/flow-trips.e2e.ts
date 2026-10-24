@@ -220,8 +220,8 @@ test.describe('registration', () => {
 
     await signIn(page.context(), member)
     let main = await openTrip(page, team.slug, trip.slug, trip.name)
-    await expect(main.getByText('0 participant', { exact: true })).toBeVisible()
-    await expect(main.getByRole('heading', { name: 'Participants' })).toHaveCount(0)
+    await expect(main.getByText('0 personne', { exact: true })).toBeVisible()
+    await expect(main.getByRole('heading', { name: 'Personnes inscrites' })).toHaveCount(0)
     // A member is no organizer: no way to edit.
     await expect(main.getByRole('link', { name: 'Modifier' })).toHaveCount(0)
 
@@ -231,8 +231,8 @@ test.describe('registration', () => {
     await expect(toasts(page).filter({ hasText: 'Inscription au voyage confirmée' })).toBeVisible()
     await expect(main.getByRole('button', { name: 'Quitter le voyage' })).toBeVisible()
     await expect(join).toHaveCount(0)
-    await expect(main.getByText('1 participant', { exact: true }).first()).toBeVisible()
-    await expect(main.getByRole('heading', { level: 3, name: 'Participants' })).toBeVisible()
+    await expect(main.getByText('1 personne', { exact: true }).first()).toBeVisible()
+    await expect(main.getByRole('heading', { level: 3, name: 'Personnes inscrites' })).toBeVisible()
 
     let saved = await fetchTrip(member, team.slug, trip.slug)
     expect(saved!.participants?.map((p) => p.id)).toEqual([member.user.id])
@@ -246,8 +246,8 @@ test.describe('registration', () => {
       toasts(page).filter({ hasText: 'Désinscription du voyage confirmée' })
     ).toBeVisible()
     await expect(main.getByRole('button', { name: 'Rejoindre le voyage' })).toBeVisible()
-    await expect(main.getByText('0 participant', { exact: true })).toBeVisible()
-    await expect(main.getByRole('heading', { name: 'Participants' })).toHaveCount(0)
+    await expect(main.getByText('0 personne', { exact: true })).toBeVisible()
+    await expect(main.getByRole('heading', { name: 'Personnes inscrites' })).toHaveCount(0)
 
     saved = await fetchTrip(member, team.slug, trip.slug)
     expect(saved!.participants ?? []).toEqual([])
@@ -326,7 +326,7 @@ test('a team admin edits a stage, deletes the other one, then deletes the trip',
   const menu = await openActionsMenu(page)
   await menu.getByRole('menuitem', { name: 'Supprimer' }).click()
   const confirm = page.getByRole('dialog', { name: 'Supprimer' })
-  await expect(confirm).toContainText('Êtes-vous sûr de vouloir supprimer ce voyage ?')
+  await expect(confirm).toContainText('Voulez-vous vraiment supprimer ce voyage ?')
   await confirm.getByRole('button', { name: 'Supprimer' }).click()
   await expect(toasts(page).filter({ hasText: 'Voyage supprimé avec succès' })).toBeVisible()
   await expect(page).toHaveURL(new RegExp(`/equipes/${team.slug}/agenda$`))
@@ -528,7 +528,7 @@ test.describe('publication states', () => {
       await menu.getByRole('menuitem', { name: 'Dépublier' }).click()
       const confirm = page.getByRole('dialog', { name: 'Dépublier' })
       await expect(confirm).toContainText(
-        'Êtes-vous sûr de vouloir dépublier ce voyage ? Il reviendra au statut brouillon.'
+        'Voulez-vous vraiment dépublier ce voyage ? Il reviendra au statut brouillon.'
       )
       await confirm.getByRole('button', { name: 'Dépublier' }).click()
       await expect(confirm).toBeHidden()
@@ -567,7 +567,7 @@ test.describe('publication states', () => {
     const menu = await openActionsMenu(page)
     await menu.getByRole('menuitem', { name: 'Annuler le voyage' }).click()
     const confirm = page.getByRole('dialog', { name: 'Annuler le voyage' })
-    await expect(confirm).toContainText('Êtes-vous sûr de vouloir annuler ce voyage ?')
+    await expect(confirm).toContainText('Voulez-vous vraiment annuler ce voyage ?')
     await confirm.getByRole('button', { name: 'Annuler le voyage' }).click()
     await expect(confirm).toBeHidden()
     await expect(toasts(page).filter({ hasText: 'Voyage annulé avec succès' })).toBeVisible()
@@ -584,7 +584,7 @@ test.describe('publication states', () => {
 
       const memberMain = await openTrip(reader.page, team.slug, trip.slug, trip.name)
       await expect(memberMain.getByText('Annulé', { exact: true })).toBeVisible()
-      await expect(memberMain.getByText('0 participant', { exact: true })).toBeVisible()
+      await expect(memberMain.getByText('0 personne', { exact: true })).toBeVisible()
       await expect(memberMain.getByRole('button', { name: 'Rejoindre le voyage' })).toHaveCount(0)
       // Nor through the API.
       const refused = await apiPost(
@@ -862,7 +862,7 @@ test.describe('restoring', () => {
     await menu.getByRole('menuitem', { name: 'Restaurer le voyage' }).click()
     const confirm = page.getByRole('dialog', { name: 'Restaurer le voyage' })
     await expect(confirm).toContainText(
-      'Êtes-vous sûr de vouloir restaurer ce voyage ? Il reviendra au statut brouillon.'
+      'Voulez-vous vraiment restaurer ce voyage ? Il reviendra au statut brouillon.'
     )
     await confirm.getByRole('button', { name: 'Restaurer le voyage' }).click()
     await expect(confirm).toBeHidden()

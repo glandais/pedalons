@@ -90,7 +90,7 @@ class NotificationTextsTest {
   void rendezvousAbroad_readsInItsZone_withTheReadersEquivalent() {
     // 2026-09-20T06:30Z is 15h30 in Tokyo, 08h30 in Paris: same day.
     assertEquals(
-        "La sortie « Col », à laquelle vous êtes inscrit, part le dimanche 20 septembre à 15h30,"
+        "La sortie « Col », à laquelle vous participez, part le dimanche 20 septembre à 15h30,"
             + " heure de Tokyo (08h30 chez vous).",
         body("fr", "Europe/Paris", "Asia/Tokyo"));
     assertEquals(

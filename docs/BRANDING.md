@@ -315,7 +315,7 @@ Ce que la table ne dit pas d'elle-même :
   la doublent toujours du libellé (« Vent de face », « de travers », « dans le dos ») et d'une
   flèche orientée. Les **conditions météo** (soleil, pluie…) n'ont pas de couleur : leur icône prend
   celle du texte. Leur en donner une passerait par le YAML, jamais par une table dans un client.
-- **Les états dérivés côté client** — « Inscrit » (indigo), « Terminée » (gris foncé), « Supprimé »
+- **Les états dérivés côté client** — « J'y vais » (indigo), « Terminée » (gris foncé), « Supprimé »
   (rouge **en aplat**, pour se distinguer de `CANCELLED`) — ne sont portés par aucune énumération :
   ils restent hors du YAML (`PdlDerivedTones` au mobile, `DeletedBadge` au web).
 - **Les dégradés de repli** (image d'une carte sans photo, 135°) sont des paires de nuances Mantine
@@ -579,12 +579,12 @@ Structure de haut en bas, dans un `Paper withBorder radius="md"` entièrement cl
    `CardTitle` en h4/700 ; en dessous, aperçu Markdown de la description tronqué à 150 caractères,
    14 px, atténué. Tout à droite, **pile verticale de badges alignés à droite, écart 4 px** :
    badge de type (Sortie, bleu), badge de statut (Publié / Brouillon / Annulé), badge de visibilité.
-5. **Ligne sociale** : groupe d'avatars circulaires des participants (26 px, chevauchement, 5
+5. **Ligne sociale** : groupe d'avatars circulaires des personnes inscrites (26 px, chevauchement, 5
    maximum puis pastille grise `+N`), une barre de progression des places, et à droite la
    **vignette du parcours en 160×160** (rayon 8 px, bordure 1 px `#ced4da` / `#424242`).
 6. **Barre de statistiques**, poussée en bas de la carte (`mt="auto"`), écart 16 px, chaque
    statistique = icône 16 px + texte 14 px atténué :
-   `📅 sam. 12 avril, 09h00` · `👥 12 participants` · `🗂 3 groupes`.
+   `📅 sam. 12 avril, 09h00` · `👥 12 personnes` · `🗂 3 groupes`.
 
 Au survol : ombre `md`, rien d'autre — aucun soulèvement, aucun agrandissement. Elle est portée
 par une classe CSS (`Card.module.css`, mixin `hover` de `postcss-preset-mantine`, donc sans effet
@@ -671,9 +671,9 @@ de 1440 px, avec les superpositions (info-bulles, profil altimétrique) posées 
 
 ### 7.7 Groupe de sortie (inscription)
 
-Bloc listé sous la sortie, avec pour chaque groupe : nom, organisateur du groupe, compteur
-`{{current}}/{{max}} participants`, lien vers le parcours, boutons `GPX` / `FIT`. L'action varie
-selon l'état : **« Rejoindre »** (bouton plein indigo), **« Inscrit »** (badge indigo doux et
+Bloc listé sous la sortie, avec pour chaque groupe : nom, capitaine du groupe, compteur
+`{{current}}/{{max}} personnes`, lien vers le parcours, boutons `GPX` / `FIT`. L'action varie
+selon l'état : **« Rejoindre »** (bouton plein indigo), **« J'y vais »** (badge indigo doux et
 contour indigo sur le groupe, avec « Quitter » en bouton `outline`), **« Complet »** (badge gris
 doux, sans bouton). C'est le principal appel à
 l'action du parcours membre : il doit être le seul élément plein et coloré de la zone.
@@ -697,7 +697,7 @@ aucune formule enthousiaste (« Génial ! », « C'est parti ! » sont hors marq
 | Post | **publication** | « article », « news » |
 | Trip | **voyage** ; ses composants sont des **étapes** | « séjour », « tour » |
 | Rides + trips of a team | **Agenda** (section : sorties et voyages ; filtres « À venir », « Je participe », « Passées ») ; état vide « Rien à l'agenda pour le moment » | « événements », « programme », « activités » |
-| Ride or trip under way | **En cours** (badge dérivé, comme « Inscrit ») | « en direct », « live » |
+| Ride or trip under way | **En cours** (badge dérivé, comme « J'y vais ») | « en direct », « live » |
 | Ad | **annonce** (rubrique : **Annonces**) | « petite annonce » dans l'UI |
 | Team | **équipe** | « club », « groupe » |
 | Group (dans une sortie) | **groupe** | « niveau », « peloton » |
@@ -706,7 +706,11 @@ aucune formule enthousiaste (« Génial ! », « C'est parti ! » sont hors marq
 | Hilliness | **relief** (Plat / Vallonné / Montagneux) | « difficulté » |
 | Climb | **montée** ; section **Cols et montées** | « ascension » |
 | Waypoint | **point de parcours** ; section **Points du parcours** | « waypoint », « POI », « point d'intérêt » |
-| Member | **membre** | « utilisateur » dans un contexte d'équipe |
+| Member | **membre** ; hors équipe, **compte** ou **personne** | « utilisateur » |
+| Group leader | **capitaine** | « meneur », « leader » |
+| Registered people | **personnes inscrites** ; compteur « 12 personnes », « 3 inscriptions » | « participants », « inscrits » |
+| Registered (badge) | **J'y vais** | « Inscrit » |
+| Ad author | **la personne qui a publié l'annonce** ; libellé « Publiée par » ; bouton « Répondre à l'annonce » | « vendeur », « annonceur » |
 | Headwind / crosswind / tailwind | **vent de face** / **de travers** / **dans le dos** (court : Face, Travers, Dos) | « vent contraire », « vent latéral » |
 | Stale forecast | **prévision ancienne** | « météo périmée », « obsolète » |
 
@@ -729,14 +733,14 @@ aucune formule enthousiaste (« Génial ! », « C'est parti ! » sont hors marq
   → libellé « Rechercher des parcours », espace réservé « Rechercher par titre ou description... ».
   Les espaces réservés se terminent par des points de suspension.
 - **Confirmations : question fermée + conséquence.**
-  → « Êtes-vous sûr de vouloir quitter cette équipe ? »
+  → « Voulez-vous vraiment quitter cette équipe ? »
   → « Voulez-vous vraiment supprimer cette annonce ? Cette action est irréversible. »
 - **Notifications de succès : nom + participe passé + « avec succès ».**
   → « Annonce créée avec succès », « Annonce mise à jour avec succès ».
 - **Erreurs : constat neutre, puis action possible.** Jamais de blâme.
   → « Email ou mot de passe incorrect », « Échec de l'ajout du membre. Veuillez réessayer. »
 - **Compteurs : toujours pluralisés** (`_one` / `_many` / `_other`).
-  → « 1 groupe » / « 3 groupes », « 1 étape » / « 4 étapes », « 12 participants ».
+  → « 1 groupe » / « 3 groupes », « 1 étape » / « 4 étapes », « 12 personnes ».
 - **Dates** : format français long abrégé, heure sur 24 h — sur le web, qui suit la langue ; le
   mobile suit le réglage 12 h / 24 h du téléphone (ledger `API-60`). Un rendez-vous lu d'un autre
   fuseau porte la mention « heure de Tokyo (ven. 01:00 chez vous) ». Le calendrier propose
@@ -750,13 +754,38 @@ aucune formule enthousiaste (« Génial ! », « C'est parti ! » sont hors marq
   « Fermer la fenêtre », « Aller au contenu principal », « Fil d'Ariane », « Changer le thème »).
   Les maquettes doivent prévoir ces textes, même invisibles.
 
-### 8.4 Micro-copie de référence (extraits réels)
+### 8.4 Écriture inclusive : épicène d'abord
+
+Pédalons s'adresse à tout le monde : aucun libellé ne suppose le genre de la personne qui le lit,
+ni de celle dont il parle. L'API ne connaît pas le genre des membres, on ne peut donc pas accorder
+au cas par cas : **on reformule de façon épicène**, sans point médian. Le point médian
+(« inscrit·e·s ») allonge les badges et se lit mal aux lecteurs d'écran — il n'est pas employé.
+
+- **Accords avec « vous » : tourner la phrase vers l'action ou l'objet.**
+  → « Vous participez à 2 d'entre elles » (pas « Vous êtes inscrit »), « Votre inscription est dans
+  le groupe A », « Votre session est ouverte en tant que… », « Connectez-vous pour… »,
+  « Vous êtes la seule personne à administrer cette équipe », « Vous êtes l'unique membre ».
+- **Confirmations** : « Voulez-vous vraiment… ? », jamais « Êtes-vous sûr… ? ».
+- **Une personne nommée : verbe actif.** → « Léa a rejoint votre sortie », « Vous avez bloqué
+  Léa » (pas « Léa s'est inscrit », « Léa est bloqué »).
+- **Groupes de personnes : noms épicènes ou collectifs.** → *personne(s)*, *membre(s)*, *compte(s)*,
+  *capitaine*, *inscription(s)*, *tout le monde* (pas « tous »), « qui organise {équipe} »,
+  « l'administration de la plateforme », « Confiez l'administration à un autre membre ».
+- **Les rôles gardent leur nom.** `ADMIN` et `ORGANIZER` s'affichent « Administrateur » et
+  « Organisateur » (filtres, badges, compteurs « 3 administrateurs ») : ce sont des noms de
+  fonction, partagés par le web, le mobile et la documentation. Dans une phrase qui décrit un
+  droit, on cite le rôle plutôt que les personnes : « Le rôle Organisateur peut créer des
+  sorties », « Visible des rôles Organisateur et Administrateur ».
+- **Exceptions tolérées** : les formules figées (« © contributeurs OpenStreetMap », « Tous droits
+  réservés ») et les accords qui portent sur une chose (« service connecté », « export prêt »).
+
+### 8.5 Micro-copie de référence (extraits réels)
 
 > « Votre plateforme pour organiser vos sorties cyclistes »
 > « Dernières publications »
 > « Parcourez les équipes cyclistes ou créez la vôtre »
-> « Rejoindre l'équipe » · « Quitter l'équipe » · « Complet » · « Inscrit »
-> « Voir le parcours » · « Voir tous les participants » · « Voir tout »
+> « Rejoindre l'équipe » · « Quitter l'équipe » · « Complet » · « J'y vais »
+> « Voir le parcours » · « Voir toutes les personnes inscrites » · « Voir tout »
 > « Masquer les filtres » · « Tous les niveaux » · « Prix à négocier »
 > « Aucun groupe défini pour cette sortie. »
 > « Parcours introuvable » · « Le parcours que vous recherchez n'existe pas. »

@@ -142,7 +142,7 @@ final List<_DeepLinkHierarchy> _deepLinkHierarchies = [
 
   // Les sous-pages du profil vivent sous sa vue d'ensemble : ouvertes par un
   // lien froid (un e-mail mène à `/profile/notifications`), elles doivent
-  // trouver le profil dessous. « Utilisateurs bloqués » est une sous-page de
+  // trouver le profil dessous. « Personnes bloquées » est une sous-page de
   // « Confidentialité » (`/profil/vie-privee/bloques`) : les deux sont dessous,
   // Profil › Confidentialité › Bloqués, comme le fil d'Ariane du site.
   _DeepLinkHierarchy(
@@ -481,7 +481,7 @@ List<GoRoute> _perLocale(
   return routes;
 }
 
-/// « Confidentialité » et, imbriquée dessous, « Utilisateurs bloqués » — son
+/// « Confidentialité » et, imbriquée dessous, « Personnes bloquées » — son
 /// adresse prolonge la sienne (`/profil/vie-privee/bloques`). Ouverte par `go`
 /// (un lien froid, la boîte de réception), la liste trouve donc
 /// « Confidentialité » sous elle : son retour suit la même hiérarchie que le

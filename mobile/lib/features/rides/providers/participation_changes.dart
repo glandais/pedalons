@@ -14,7 +14,7 @@ import '../../teams/providers/team_dashboard_provider.dart';
 ///
 /// Une inscription ne modifie pas qu'un écran : l'accueil (« Ma prochaine
 /// sortie », « Cette semaine »), le profil (compteur et liste « Mes sorties
-/// à venir ») et le calendrier (badge « Inscrit ») en sont tous des vues
+/// à venir ») et le calendrier (badge « J'y vais ») en sont tous des vues
 /// dérivées, chacune dans son propre cache. Avant ce point, seul le détail de
 /// la sortie était invalidé et ces vues restaient périmées jusqu'à un
 /// pull-to-refresh — ou jusqu'au redémarrage pour le compteur du profil, qui
@@ -30,7 +30,7 @@ import '../../teams/providers/team_dashboard_provider.dart';
 /// simplement reconstruit à sa prochaine lecture. Seules les vues montées
 /// refont un appel.
 ///
-/// Les fils (`publicationFeedProvider`) portent aussi un badge « Inscrit »,
+/// Les fils (`publicationFeedProvider`) portent aussi un badge « J'y vais »,
 /// mais ce sont des listes paginées : les invalider remettrait le défilement à
 /// zéro sous l'écran de détail. Ils lisent donc [registrationOverridesProvider],
 /// que [publicationId] et [registered] renseignent : l'inscription que l'app

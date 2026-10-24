@@ -95,10 +95,10 @@ test.describe('group leader', () => {
     for (const name of [first, second]) {
       const card = groupCard(page, name)
       await expect(card).toBeVisible()
-      await expect(card.getByText('Meneur', { exact: true })).toHaveCount(0)
+      await expect(card.getByText('Capitaine', { exact: true })).toHaveCount(0)
       await expect(card.getByText(organizer.user.displayName)).toHaveCount(0)
     }
-    await expect(page.getByText('Meneur', { exact: true })).toHaveCount(0)
+    await expect(page.getByText('Capitaine', { exact: true })).toHaveCount(0)
   })
 
   test('a designated leader is shown on their group only', async ({ page }) => {
@@ -115,13 +115,13 @@ test.describe('group leader', () => {
     await openRide(page, team.slug, ride)
 
     const ledCard = groupCard(page, led)
-    await expect(ledCard.getByText('Meneur', { exact: true })).toBeVisible()
+    await expect(ledCard.getByText('Capitaine', { exact: true })).toBeVisible()
     await expect(ledCard.getByText(leader.user.displayName, { exact: true })).toBeVisible()
     await expect(ledCard.getByText(organizer.user.displayName)).toHaveCount(0)
 
     const freeCard = groupCard(page, free)
     await expect(freeCard).toBeVisible()
-    await expect(freeCard.getByText('Meneur', { exact: true })).toHaveCount(0)
+    await expect(freeCard.getByText('Capitaine', { exact: true })).toHaveCount(0)
     await expect(freeCard.getByText(leader.user.displayName)).toHaveCount(0)
     await expect(freeCard.getByText(organizer.user.displayName)).toHaveCount(0)
   })
@@ -139,30 +139,30 @@ test.describe('registration', () => {
     await openRide(page, team.slug, ride)
 
     const card = groupCard(page, name)
-    await expect(card.getByText('0/5 participants')).toBeVisible()
-    await expect(card.getByText('Inscrit', { exact: true })).toHaveCount(0)
+    await expect(card.getByText('0/5 personnes')).toBeVisible()
+    await expect(card.getByText("J'y vais", { exact: true })).toHaveCount(0)
     await hydrated(card.getByRole('button', { name: 'Rejoindre' }))
     await card.getByRole('button', { name: 'Rejoindre' }).click()
 
-    await expect(card.getByText('Inscrit', { exact: true })).toBeVisible()
+    await expect(card.getByText("J'y vais", { exact: true })).toBeVisible()
     await expect(card.getByRole('button', { name: 'Quitter' })).toBeEnabled()
-    await expect(card.getByText('1/5 participants')).toBeVisible()
+    await expect(card.getByText('1/5 personnes')).toBeVisible()
 
     // It is the server's state, not only the optimistic cache.
     await page.reload()
     await openRide(page, team.slug, ride)
-    await expect(card.getByText('Inscrit', { exact: true })).toBeVisible()
+    await expect(card.getByText("J'y vais", { exact: true })).toBeVisible()
     await hydrated(card.getByRole('button', { name: 'Quitter' }))
     await card.getByRole('button', { name: 'Quitter' }).click()
 
     await expect(card.getByRole('button', { name: 'Rejoindre' })).toBeEnabled()
-    await expect(card.getByText('Inscrit', { exact: true })).toHaveCount(0)
-    await expect(card.getByText('0/5 participants')).toBeVisible()
+    await expect(card.getByText("J'y vais", { exact: true })).toHaveCount(0)
+    await expect(card.getByText('0/5 personnes')).toBeVisible()
 
     await page.reload()
     await openRide(page, team.slug, ride)
     await expect(card.getByRole('button', { name: 'Rejoindre' })).toBeVisible()
-    await expect(card.getByText('Inscrit', { exact: true })).toHaveCount(0)
+    await expect(card.getByText("J'y vais", { exact: true })).toHaveCount(0)
   })
 
   test('a full group shows « Complet » and offers no way to join', async ({ page }) => {
@@ -184,7 +184,7 @@ test.describe('registration', () => {
 
     const fullCard = groupCard(page, full)
     await expect(fullCard.getByText('Complet', { exact: true })).toBeVisible()
-    await expect(fullCard.getByText('1/1 participant')).toBeVisible()
+    await expect(fullCard.getByText('1/1 personne')).toBeVisible()
     await expect(fullCard.getByRole('button', { name: 'Rejoindre' })).toHaveCount(0)
     // The other group is still open — which also proves the page offers joining at all.
     await expect(groupCard(page, open).getByRole('button', { name: 'Rejoindre' })).toBeEnabled()
@@ -210,7 +210,7 @@ test.describe('registration', () => {
     const card = groupCard(page, full)
     await expect(card, 'precondition: the group card is rendered').toBeVisible()
     await expect(
-      card.getByText('1/1 participant'),
+      card.getByText('1/1 personne'),
       'precondition: the only seat is taken'
     ).toBeVisible()
     await expect(
@@ -254,9 +254,9 @@ test.describe('registration', () => {
     await expect(card.getByRole('alert').filter({ hasText: 'Ce groupe est complet' })).toBeVisible()
     await expect(groupCard(page, spare).getByText('Ce groupe est complet')).toHaveCount(0)
     // ...the optimistic registration is undone, and the refetched group says it is full.
-    await expect(card.getByText('Inscrit', { exact: true })).toHaveCount(0)
+    await expect(card.getByText("J'y vais", { exact: true })).toHaveCount(0)
     await expect(card.getByText('Complet', { exact: true })).toBeVisible()
-    await expect(card.getByText('1/1 participant')).toBeVisible()
+    await expect(card.getByText('1/1 personne')).toBeVisible()
   })
 })
 
@@ -287,7 +287,7 @@ test.describe('a past ride', () => {
     await expect(page.getByRole('main').getByText('Publié', { exact: true })).toBeVisible()
     for (const name of [first, second]) {
       const card = groupCard(page, name)
-      await expect(card.getByText('0/10 participants')).toBeVisible()
+      await expect(card.getByText('0/10 personnes')).toBeVisible()
       await expect(card.getByRole('button', { name: 'Rejoindre' })).toHaveCount(0)
       await expect(card.getByText('Complet', { exact: true })).toHaveCount(0)
     }
@@ -345,12 +345,12 @@ test.describe('changing group', () => {
     await openRide(page, team.slug, ride)
     const firstCard = groupCard(page, first)
     const secondCard = groupCard(page, second)
-    await expect(firstCard.getByText('Inscrit', { exact: true })).toBeVisible()
+    await expect(firstCard.getByText("J'y vais", { exact: true })).toBeVisible()
     await expect(firstCard.getByRole('button', { name: 'Quitter' })).toBeEnabled()
-    await expect(firstCard.getByText('1/10 participants')).toBeVisible()
-    await expect(secondCard.getByText('0/10 participants')).toBeVisible()
+    await expect(firstCard.getByText('1/10 personnes')).toBeVisible()
+    await expect(secondCard.getByText('0/10 personnes')).toBeVisible()
     await expect(secondCard.getByRole('button', { name: 'Rejoindre' })).toHaveCount(0)
-    await expect(secondCard.getByText('Inscrit', { exact: true })).toHaveCount(0)
+    await expect(secondCard.getByText("J'y vais", { exact: true })).toHaveCount(0)
 
     // The page is not the only guard: the API refuses a second registration on the same ride.
     const refused = await joinGroup(member, team.slug, ride, second).then(
@@ -365,11 +365,11 @@ test.describe('changing group', () => {
     const leave = firstCard.getByRole('button', { name: 'Quitter' })
     await hydrated(leave)
     await leave.click()
-    await expect(firstCard.getByText('Inscrit', { exact: true })).toHaveCount(0)
-    await expect(firstCard.getByText('0/10 participants')).toBeVisible()
+    await expect(firstCard.getByText("J'y vais", { exact: true })).toHaveCount(0)
+    await expect(firstCard.getByText('0/10 personnes')).toBeVisible()
     const join = secondCard.getByRole('button', { name: 'Rejoindre' })
     await expect(join).toBeEnabled()
-    // The card says « Inscrit » optimistically, before the server has answered: the API read below
+    // The card says « J'y vais » optimistically, before the server has answered: the API read below
     // waits for that answer, or it can go out while the join is still in flight.
     const joined = page.waitForResponse(
       (r) =>
@@ -377,8 +377,8 @@ test.describe('changing group', () => {
     )
     await join.click()
     expect((await joined).ok(), 'the server accepted the join').toBe(true)
-    await expect(secondCard.getByText('Inscrit', { exact: true })).toBeVisible()
-    await expect(secondCard.getByText('1/10 participants')).toBeVisible()
+    await expect(secondCard.getByText("J'y vais", { exact: true })).toBeVisible()
+    await expect(secondCard.getByText('1/10 personnes')).toBeVisible()
     await expect(firstCard.getByRole('button', { name: 'Rejoindre' })).toHaveCount(0)
 
     const after = await readRide(member, team.slug, ride.slug)
@@ -392,14 +392,14 @@ test.describe('changing group', () => {
     // The server's state, not only the optimistic cache.
     await page.reload()
     await openRide(page, team.slug, ride)
-    await expect(secondCard.getByText('Inscrit', { exact: true })).toBeVisible()
+    await expect(secondCard.getByText("J'y vais", { exact: true })).toBeVisible()
     await expect(firstCard.getByRole('button', { name: 'Rejoindre' })).toHaveCount(0)
   })
 })
 
 /**
  * Leaving a ride refreshes everything that shows the registration, wherever the member left from:
- * the home page's « Ma prochaine sortie », the « Inscrit » badge of the feed cards, the « Je
+ * the home page's « Ma prochaine sortie », the « J'y vais » badge of the feed cards, the « Je
  * participe » scope and the calendars (lib/rideRegistration.ts invalidateRideRegistration).
  * Regression (11602d48): « Se désinscrire » on the home card only refreshed « Ma prochaine
  * sortie », « Quitter » on the ride page only the ride — the rest stayed as it was until a reload,
@@ -489,16 +489,16 @@ test.describe('leaving a ride, seen from the home page and the calendar', () => 
     await signIn(page.context(), member)
     await page.goto(homePath(ride.name))
     await expect(nextRideCard(page)).toContainText(ride.name)
-    await expect(feedCard(page, ride.name)).toContainText('Inscrit')
+    await expect(feedCard(page, ride.name)).toContainText("J'y vais")
 
     // The calendar and the « Je participe » feed are read once, so the leave has a cache to
     // refresh.
     await toCalendar(page, day)
-    await expect(calendarEvent(page, ride.name)).toContainText(`Inscrit · ${group}`)
+    await expect(calendarEvent(page, ride.name)).toContainText(`J'y vais · ${group}`)
     await page.goBack()
     await expect(nextRideCard(page)).toContainText(ride.name)
     await scope(page, 'Je participe')
-    await expect(feedCard(page, ride.name)).toContainText('Inscrit')
+    await expect(feedCard(page, ride.name)).toContainText("J'y vais")
 
     // --- Leave from the home card.
     const leave = nextRideCard(page).getByRole('button', { name: 'Se désinscrire' })
@@ -521,11 +521,11 @@ test.describe('leaving a ride, seen from the home page and the calendar', () => 
     // ...« Tout » still does, without the badge...
     await scope(page, 'Tout')
     await expect(feedCard(page, ride.name)).toBeVisible()
-    await expect(feedCard(page, ride.name)).not.toContainText('Inscrit')
+    await expect(feedCard(page, ride.name)).not.toContainText("J'y vais")
     // ...and the calendar's event is no longer marked.
     await toCalendar(page, day)
     await expect(calendarEvent(page, ride.name)).toBeVisible()
-    await expect(calendarEvent(page, ride.name)).not.toContainText('Inscrit')
+    await expect(calendarEvent(page, ride.name)).not.toContainText("J'y vais")
   })
 
   test('« Quitter » on the ride page: the calendar, « Ma prochaine sortie », the feed badge and « Je participe » follow without a reload', async ({
@@ -535,10 +535,10 @@ test.describe('leaving a ride, seen from the home page and the calendar', () => 
     await signIn(page.context(), member)
     await page.goto(homePath(ride.name))
     await expect(nextRideCard(page)).toContainText(ride.name)
-    await expect(feedCard(page, ride.name)).toContainText('Inscrit')
+    await expect(feedCard(page, ride.name)).toContainText("J'y vais")
     await toCalendar(page, day)
     const event = calendarEvent(page, ride.name)
-    await expect(event).toContainText(`Inscrit · ${group}`)
+    await expect(event).toContainText(`J'y vais · ${group}`)
 
     // --- From the calendar to the ride, and leave there.
     await hydrated(event)
@@ -549,20 +549,20 @@ test.describe('leaving a ride, seen from the home page and the calendar', () => 
     await hydrated(quit)
     await quit.click()
     await expect(card.getByRole('button', { name: 'Rejoindre' })).toBeEnabled()
-    await expect(card.getByText('0/10 participants')).toBeVisible()
+    await expect(card.getByText('0/10 personnes')).toBeVisible()
     expect((await readRide(member, team.slug, ride.slug)).registered).toBe(false)
 
     // --- Back to the calendar: the event is no longer marked.
     await page.goBack()
     await showCalendarDay(page, day)
     await expect(calendarEvent(page, ride.name)).toBeVisible()
-    await expect(calendarEvent(page, ride.name)).not.toContainText('Inscrit')
+    await expect(calendarEvent(page, ride.name)).not.toContainText("J'y vais")
 
     // --- Back home: no « Ma prochaine sortie », no badge, nothing under « Je participe ».
     await page.goBack()
     await expect(page).toHaveURL(/\/\?q=/)
     await expect(feedCard(page, ride.name)).toBeVisible()
-    await expect(feedCard(page, ride.name)).not.toContainText('Inscrit')
+    await expect(feedCard(page, ride.name)).not.toContainText("J'y vais")
     await expect(nextRideEmpty(page)).toBeVisible()
     await scope(page, 'Je participe')
     await expect(
@@ -598,16 +598,16 @@ test.describe('participants', () => {
     await openRide(page, team.slug, ride)
 
     const card = groupCard(page, name)
-    await expect(card.getByText('10 participants')).toBeVisible()
-    await hydrated(card.getByRole('button', { name: 'Voir tous les participants' }))
-    await card.getByRole('button', { name: 'Voir tous les participants' }).click()
+    await expect(card.getByText('10 personnes')).toBeVisible()
+    await hydrated(card.getByRole('button', { name: 'Voir toutes les personnes inscrites' }))
+    await card.getByRole('button', { name: 'Voir toutes les personnes inscrites' }).click()
 
     const modal = page.getByRole('dialog', { name })
     await expect(modal.getByRole('listitem')).toHaveCount(10)
     await expect(modal.getByTestId('participants-shown-of')).toHaveText('1–10 sur 10')
 
     const wanted = riders[7].user.displayName
-    await modal.getByPlaceholder('Rechercher un participant…').fill(wanted)
+    await modal.getByPlaceholder('Rechercher une personne…').fill(wanted)
     await expect(modal.getByRole('listitem')).toHaveCount(1)
     await expect(modal.getByRole('listitem')).toContainText(wanted)
     await expect(modal.getByTestId('participants-shown-of')).toHaveText('1–1 sur 1')

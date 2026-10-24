@@ -17,7 +17,7 @@ import '../../providers/ride_registration_controller.dart';
 /// La barre d'inscription de la page d'un groupe, collée en bas (ledger
 /// `MOB-67`) — et celle du détail d'une sortie solo (ledger `MOB-69`).
 ///
-/// À gauche les places — « 11/12 participants », « 1 place restante » —, à
+/// À gauche les places — « 11/12 personnes », « 1 place restante » —, à
 /// droite **la** seule action pleine de la page : « Rejoindre ». « Quitter »
 /// est en contour, un groupe complet n'a qu'un badge, une sortie terminée ou
 /// annulée rien ([rideGroupAction]).

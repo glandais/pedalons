@@ -488,7 +488,7 @@ test('units, theme, language and contact preferences apply at once and persist',
 
   // Contactable, on « Confidentialité »: a partial PATCH of the preferences.
   await openProfilePage(page, '/profil/vie-privee', 'Confidentialité')
-  const contactable = main.getByRole('switch', { name: 'Être contacté par les membres' })
+  const contactable = main.getByRole('switch', { name: 'Accepter les messages des membres' })
   await expect(contactable).toBeChecked()
   await hydrated(contactable)
   const contactSaved = page.waitForResponse(
@@ -754,7 +754,7 @@ test.describe('deleting the account', () => {
     ).toBeVisible()
     await expect(
       dialog.getByText(
-        "Vous êtes le seul administrateur de cette équipe, qui compte d'autres membres :"
+        "Vous êtes la seule personne à administrer cette équipe, qui compte d'autres membres :"
       )
     ).toBeVisible()
     await expect(dialog.getByText('venue de biketeam', { exact: false })).toHaveCount(0)
@@ -804,7 +804,7 @@ test.describe('deleting the account', () => {
     await open()
     await expect(
       dialog.getByText(
-        'Vous êtes le seul membre de cette équipe : elle sera supprimée avec votre compte.'
+        "Vous êtes l'unique membre de cette équipe : elle sera supprimée avec votre compte."
       )
     ).toBeVisible()
     await expect(dialog.getByRole('listitem').filter({ hasText: team.name })).toBeVisible()
@@ -1012,7 +1012,7 @@ test.describe('replayed links, unknown addresses, sign-up checks', () => {
       const main = page.getByRole('main')
       await expect(main.getByRole('heading', { name: 'Activer votre compte' })).toBeVisible()
       await expect(main.getByText(email).first()).toBeVisible()
-      await expect(main.getByText('Vous êtes connecté en tant que')).toBeVisible()
+      await expect(main.getByText('Votre session est ouverte en tant que')).toBeVisible()
       await expect(main.getByText(reader.user.email)).toBeVisible()
 
       const cookie = await sessionCookie(context)

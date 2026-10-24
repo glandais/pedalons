@@ -237,7 +237,7 @@ void main() {
     );
 
     expect(find.byKey(keys.routeEditor.forbidden), findsOneWidget);
-    expect(find.text('Réservé aux organisateurs'), findsOneWidget);
+    expect(find.text('Réservé au rôle Organisateur'), findsOneWidget);
     expect(find.byKey(keys.routeEditor.saveButton), findsNothing);
     expect(find.byKey(keys.routeEditor.pickButton), findsNothing);
   });

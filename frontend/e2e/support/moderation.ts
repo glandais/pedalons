@@ -136,7 +136,7 @@ export async function openProfileInApp(page: Page, displayName: string) {
 }
 
 /**
- * From the profile's overview to « Utilisateurs bloqués », link by link — « Confidentialité », then
+ * From the profile's overview to « Personnes bloquées », link by link — « Confidentialité », then
  * its row — so the app is not reloaded. Two client-side steps on top of {@link openProfileInApp}.
  */
 export async function openBlockedUsersInApp(page: Page, displayName: string) {
@@ -147,7 +147,7 @@ export async function openBlockedUsersInApp(page: Page, displayName: string) {
   await hydrated(privacy)
   await privacy.click()
   await expect(page).toHaveURL(/\/profil\/vie-privee$/)
-  const blocked = main.getByRole('link', { name: /^Utilisateurs bloqués/ })
+  const blocked = main.getByRole('link', { name: /^Personnes bloquées/ })
   await hydrated(blocked)
   await blocked.click()
   await expect(page).toHaveURL(/\/profil\/vie-privee\/bloques$/)

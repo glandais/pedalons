@@ -32,7 +32,7 @@ void leaveProfileSubpage(BuildContext context) {
 /// Attaché à la sous-page et non au `push` de la vue d'ensemble : une
 /// sous-page ouverte par un lien froid puis fermée par `pop`, ou par le geste
 /// de retour du système, rafraîchit aussi les lignes d'état. Une sous-page
-/// recouverte par une autre (« Utilisateurs bloqués » sur « Confidentialité »)
+/// recouverte par une autre (« Personnes bloquées » sur « Confidentialité »)
 /// reste montée : rien n'est relu avant qu'on la quitte vraiment.
 class ProfileSummaryRefreshOnLeave extends StatefulWidget {
   const ProfileSummaryRefreshOnLeave({super.key, required this.child});

@@ -81,7 +81,7 @@ test.describe('team moderation', () => {
 
       const dialog = page.getByRole('dialog', { name: 'Signaler ce post' })
       await expect(dialog).toBeVisible()
-      await expect(dialog.getByText(`Transmis aux organisateurs de ${team.name}`)).toBeVisible()
+      await expect(dialog.getByText(`Transmis à qui organise ${team.name}`)).toBeVisible()
       const send = dialog.getByRole('button', { name: 'Envoyer' })
       // A reason is required.
       await expect(send).toBeDisabled()
@@ -337,7 +337,7 @@ test.describe('blocking', () => {
       const confirm = page.getByRole('dialog', { name: `Bloquer ${writerName} ?` })
       await expect(confirm).toBeVisible()
       await confirm.getByRole('button', { name: 'Bloquer', exact: true }).click()
-      await expect(page.getByText(`${writerName} est bloqué.`, { exact: true })).toBeVisible()
+      await expect(page.getByText(`Vous avez bloqué ${writerName}.`, { exact: true })).toBeVisible()
 
       await expect(main.getByText(blockedComment, { exact: true })).toHaveCount(0)
       await expect(main.getByText(controlComment, { exact: true })).toBeVisible()
@@ -354,7 +354,7 @@ test.describe('blocking', () => {
     await test.step('unblocking from the profile brings the comment back in the same app', async () => {
       const sameDocument = await markDocument(page)
       await openBlockedUsersInApp(page, reader.user.displayName)
-      await expect(main.getByRole('heading', { name: 'Utilisateurs bloqués' })).toBeVisible()
+      await expect(main.getByRole('heading', { name: 'Personnes bloquées' })).toBeVisible()
       const unblock = main.getByRole('button', { name: 'Débloquer' })
       await expect(unblock).toHaveCount(1)
       await expect(main.getByText(writerName, { exact: true })).toBeVisible()

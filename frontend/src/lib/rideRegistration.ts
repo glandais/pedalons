@@ -9,7 +9,7 @@ import { getGetTeamDashboardQueryKey } from '@/api/endpoints/teams/teams'
 
 /**
  * Everything that shows whether the user rides, after they joined or left a ride — wherever they
- * did it from. The feeds carry the « Inscrit » badge and the « Je participe » filter, the home page
+ * did it from. The feeds carry the « J'y vais » badge and the « Je participe » filter, the home page
  * « Ma prochaine sortie », the team dashboard « Vos prochaines sorties » and the fill of each group,
  * the calendars their registration. Left out, each stayed stale until a
  * reload: leaving from the home card kept the badge on the feed right below it.

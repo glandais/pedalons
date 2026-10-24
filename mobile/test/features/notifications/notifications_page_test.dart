@@ -265,7 +265,7 @@ void main() {
     );
     expect(find.text('Superbe parcours !'), findsOneWidget);
     // Le nom du groupe n'est pas une citation : il est présenté comme tel.
-    expect(find.text('Léa s\'est inscrit à une sortie'), findsOneWidget);
+    expect(find.text('Léa a rejoint une sortie'), findsOneWidget);
     expect(find.text('Groupe « Groupe rapide »'), findsOneWidget);
     expect(find.text('Rappel : votre sortie part demain'), findsOneWidget);
     expect(find.textContaining('COMMENT_ON_MY_PUBLICATION'), findsNothing);

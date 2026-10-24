@@ -27,7 +27,7 @@ import 'ride_fixtures.dart';
 /// qui identifie un libellé sans faire dépendre l'assertion d'un chargement
 /// d'assets ni d'une traduction qui peut légitimement changer.
 void main() {
-  // Le compteur « 3/16 participants » passe par `.plural()`, qui exige une
+  // Le compteur « 3/16 personnes » passe par `.plural()`, qui exige une
   // locale chargée.
   late final String joinLabel;
   late final String leaveLabel;
@@ -273,7 +273,7 @@ void main() {
       expect(find.text(joinLabel), findsNothing);
     });
 
-    testWidgets('« Quitter » côtoie le badge « Inscrit » — $mode', (
+    testWidgets('« Quitter » côtoie le badge « J\'y vais » — $mode', (
       WidgetTester tester,
     ) async {
       await pump(
@@ -330,7 +330,7 @@ void main() {
     WidgetTester tester,
   ) async {
     await pump(tester, g: fixtureGroup(), action: RideGroupAction.join);
-    expect(find.textContaining('Meneur'), findsNothing);
+    expect(find.textContaining('Capitaine'), findsNothing);
   });
 
   testWidgets('un meneur désigné est rendu avec son nom', (

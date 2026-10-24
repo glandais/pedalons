@@ -14,7 +14,7 @@ export function isDated(publication: PublicationDto): publication is DatedPublic
 /**
  * « En cours »: a ride or a trip that has started and is not over yet — `dateTime <= now <
  * endDateTime`, the end the server stores (API-85). A state derived on the client, like
- * « Inscrit »: the API's `finished` only says the start has passed. A cancelled one is never under
+ * « J'y vais »: the API's `finished` only says the start has passed. A cancelled one is never under
  * way. Such a ride keeps its place in the agenda's « À venir » (`when=UPCOMING` reads the same
  * end).
  */

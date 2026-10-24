@@ -75,7 +75,10 @@ void main() {
         isTrue,
       );
       expect(
-        modules.calendar.registeredBadgeShows(joinedSlug, 'Inscrit · Groupe A'),
+        modules.calendar.registeredBadgeShows(
+          joinedSlug,
+          'J\'y vais · Groupe A',
+        ),
         isTrue,
       );
       expect(modules.calendar.showsRegistered(otherSlug), isFalse);

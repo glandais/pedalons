@@ -55,12 +55,12 @@ async function openAd(browser: Browser, as: AuthResponse, s: Scene): Promise<Pag
   await page.goto(`/equipes/${s.team.slug}/annonces/${s.ad.slug}`)
   // The page has loaded when the ad's title and its seller section are there.
   await expect(page.getByRole('heading', { name: s.ad.name })).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'Annonceur' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Publiée par' })).toBeVisible()
   return page
 }
 
-const contactButton = (page: Page) => page.getByRole('button', { name: 'Contacter le vendeur' })
-const dialog = (page: Page) => page.getByRole('dialog', { name: 'Contacter le vendeur' })
+const contactButton = (page: Page) => page.getByRole('button', { name: "Répondre à l'annonce" })
+const dialog = (page: Page) => page.getByRole('dialog', { name: "Répondre à l'annonce" })
 const messageBox = (page: Page) => dialog(page).getByRole('textbox', { name: 'Votre message' })
 /** The relayed mails about this ad in the seller's mailbox (the sign-up mail does not name it). */
 async function relayedAbout(s: Scene) {
@@ -129,7 +129,7 @@ test.describe('contacting the seller of an ad', () => {
     await expect(dialog(page)).toBeHidden()
     // A state of the page, inside <main> — not a toast that vanishes before it is read.
     await expect(pageAlert(page)).toHaveText(
-      'Message envoyé, le vendeur vous répondra directement.'
+      'Message envoyé, la réponse vous arrivera directement par e-mail.'
     )
     await expect(contactButton(page)).toHaveCount(0)
     expect(await toastTexts()).toEqual([])
@@ -220,7 +220,7 @@ test.describe('contacting the seller of an ad', () => {
     // « Aucun succès affiché sur un 500. »
     await expect(pageAlert(page)).toHaveCount(0)
     await expect(
-      page.getByText('Message envoyé, le vendeur vous répondra directement.')
+      page.getByText('Message envoyé, la réponse vous arrivera directement par e-mail.')
     ).toHaveCount(0)
 
     // The relay is back: the kept draft goes out as is.
@@ -230,7 +230,7 @@ test.describe('contacting the seller of an ad', () => {
     expect((await answered).status()).toBe(204)
     await expect(dialog(page)).toBeHidden()
     await expect(pageAlert(page)).toHaveText(
-      'Message envoyé, le vendeur vous répondra directement.'
+      'Message envoyé, la réponse vous arrivera directement par e-mail.'
     )
     await expect.poll(async () => (await relayedAbout(s)).length).toBe(1)
     expect((await relayedAbout(s))[0].parts.some((part) => part.includes(DRAFT))).toBe(true)

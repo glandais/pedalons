@@ -409,7 +409,7 @@ test.describe('personal notifications', () => {
       await signIn(context, owner)
       await openInbox(page, isMobile)
       const entry = inboxEntry(page, ride.name)
-      await expect(entry).toContainText(`${rider.user.displayName} s'est inscrit à votre sortie`)
+      await expect(entry).toContainText(`${rider.user.displayName} a rejoint votre sortie`)
       await expect(entry).toContainText(`Groupe : ${group}`)
       await hydrated(entry)
       await entry.click()

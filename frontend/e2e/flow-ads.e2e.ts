@@ -266,7 +266,7 @@ test.describe('ad journey', () => {
     expect(wanted.adType).toBe('WANTED')
     expect(wanted.price ?? null).toBeNull()
     // No place typed in: no location section, and no map.
-    await expect(main.getByRole('heading', { name: 'Annonceur' })).toBeVisible()
+    await expect(main.getByRole('heading', { name: 'Publiée par' })).toBeVisible()
     await expect(main.getByRole('heading', { name: 'Localisation' })).toHaveCount(0)
 
     await page.goto(listPath(team.slug))
@@ -464,7 +464,7 @@ test.describe('ad rights', () => {
       const main = mainOf(page)
       await expect(page.getByRole('heading', { level: 2, name: ad.name })).toBeVisible()
       // The contact button is the hydrated page's own: once it shows, so would the others.
-      const contact = main.getByRole('button', { name: 'Contacter le vendeur' })
+      const contact = main.getByRole('button', { name: "Répondre à l'annonce" })
       await hydrated(contact)
       await expect(main.getByRole('link', { name: 'Modifier' })).toHaveCount(0)
       await expect(actionsMenu(page)).toHaveCount(0)

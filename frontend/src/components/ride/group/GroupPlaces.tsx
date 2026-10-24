@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { Group, Progress, Stack, Text } from '@mantine/core'
 import type { RideGroupDto } from '@/api/dto'
 
-/** The places bar: « 11/12 participants », « 1 place restante ». No max, no bar. */
+/** The places bar: « 11/12 personnes », « 1 place restante ». No max, no bar. */
 export function GroupPlaces({ group }: { group: RideGroupDto }) {
   const { t } = useTranslation()
   if (!group.maxParticipants) {

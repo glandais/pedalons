@@ -159,7 +159,7 @@ class RideGroupPageKeys {
   /// La carte résumé « Météo au départ du groupe » de l'aperçu.
   final weatherSummaryCard = const _RideGroupKey('weatherSummaryCard');
 
-  /// « Voir tous les participants » de l'aperçu.
+  /// « Voir toutes les personnes inscrites » de l'aperçu.
   final viewAllParticipants = const _RideGroupKey('viewAllParticipants');
 
   final exportGpx = const _RideGroupKey('exportGpx');

@@ -233,7 +233,7 @@ test.describe('ride journey', () => {
       await main(page).getByRole('button', { name: 'Enregistrer' }).click()
       await expect(page).toHaveURL(new RegExp(`/sorties/${rideSlug}$`))
       await expect(groupCard(page, easier)).toBeVisible()
-      await expect(groupCard(page, easier).getByText('0/4 participants')).toBeVisible()
+      await expect(groupCard(page, easier).getByText('0/4 personnes')).toBeVisible()
       await expect(main(page).getByText(easy, { exact: true })).toHaveCount(0)
 
       saved = await readRide(organizer, team.slug, rideSlug)
@@ -253,12 +253,12 @@ test.describe('ride journey', () => {
         main(memberPage).getByRole('heading', { name: rideName, level: 2 })
       ).toBeVisible()
       const card = groupCard(memberPage, easier)
-      await expect(card.getByText('0/4 participants')).toBeVisible()
+      await expect(card.getByText('0/4 personnes')).toBeVisible()
       const join = card.getByRole('button', { name: 'Rejoindre' })
       await hydrated(join)
       await join.click()
-      await expect(card.getByText('Inscrit', { exact: true })).toBeVisible()
-      await expect(card.getByText('1/4 participants')).toBeVisible()
+      await expect(card.getByText("J'y vais", { exact: true })).toBeVisible()
+      await expect(card.getByText('1/4 personnes')).toBeVisible()
 
       const comment = `On se retrouve au parking ${unique('msg')}`
       const commentBox = main(memberPage).getByRole('textbox', { name: /Écrivez un commentaire/ })
@@ -277,16 +277,14 @@ test.describe('ride journey', () => {
 
       // The organizer sees both on their page.
       await page.reload()
-      await expect(groupCard(page, easier).getByText('1/4 participants')).toBeVisible()
+      await expect(groupCard(page, easier).getByText('1/4 personnes')).toBeVisible()
       await expect(main(page).getByText(comment, { exact: true })).toBeVisible()
 
       // --- Delete: back on the feed, and gone from every list.
       const actions = await openActionsMenu(page)
       await actions.getByRole('menuitem', { name: 'Supprimer' }).click()
       const confirm = page.getByRole('dialog', { name: 'Supprimer' })
-      await expect(
-        confirm.getByText('Êtes-vous sûr de vouloir supprimer cette sortie ?')
-      ).toBeVisible()
+      await expect(confirm.getByText('Voulez-vous vraiment supprimer cette sortie ?')).toBeVisible()
       await confirm.getByRole('button', { name: 'Supprimer' }).click()
       await expect(page).toHaveURL(new RegExp(`/equipes/${team.slug}/agenda$`))
       await expect(main(page).getByRole('heading', { name: 'Agenda', level: 2 })).toBeVisible()
@@ -348,7 +346,7 @@ test.describe('ride journey', () => {
     const menu = await openActionsMenu(page)
     await menu.getByRole('menuitem', { name: 'Annuler la sortie' }).click()
     const confirm = page.getByRole('dialog', { name: 'Annuler la sortie' })
-    await expect(confirm.getByText('Êtes-vous sûr de vouloir annuler cette sortie ?')).toBeVisible()
+    await expect(confirm.getByText('Voulez-vous vraiment annuler cette sortie ?')).toBeVisible()
     await confirm.getByRole('button', { name: 'Annuler la sortie' }).click()
     await expect(confirm).toBeHidden()
     await expect(main(page).getByText('Annulé', { exact: true })).toBeVisible()
@@ -613,7 +611,9 @@ test.describe('regressions', () => {
     expect(after.status).toBe('CANCELLED')
     expect(after.groups[0].leader?.id, 'the group keeps its leader').toBe(member.user.id)
     expect(await shown()).not.toContainEqual(
-      expect.stringContaining("Le meneur choisi n'appartient pas à cette équipe.")
+      expect.stringContaining(
+        "La personne choisie comme capitaine n'appartient pas à cette équipe."
+      )
     )
   })
 })
@@ -696,8 +696,8 @@ test.describe('ride templates', () => {
     await pickDateTime(page, main(page).getByRole('button', { name: 'Départ' }), day)
     await main(page).getByRole('button', { name: 'Créer la sortie' }).click()
     await expect(main(page).getByRole('heading', { name: rideName, level: 2 })).toBeVisible()
-    await expect(groupCard(page, first).getByText('0/6 participants')).toBeVisible()
-    await expect(groupCard(page, second).getByText('0/10 participants')).toBeVisible()
+    await expect(groupCard(page, first).getByText('0/6 personnes')).toBeVisible()
+    await expect(groupCard(page, second).getByText('0/10 personnes')).toBeVisible()
 
     const rideSlug = new URL(page.url()).pathname.split('/').pop()!
     const ride = await readRide(organizer, team.slug, rideSlug)
@@ -770,18 +770,18 @@ test.describe('group leader in the editor', () => {
     const rideSlug = new URL(page.url()).pathname.split('/').pop()!
     const ledCard = groupCard(page, led)
     const freeCard = groupCard(page, free)
-    await expect(ledCard.getByText('Meneur', { exact: true })).toBeVisible()
+    await expect(ledCard.getByText('Capitaine', { exact: true })).toBeVisible()
     await expect(ledCard.getByText(leader.user.displayName, { exact: true })).toBeVisible()
     await expect(ledCard.getByText(organizer.user.displayName)).toHaveCount(0)
     await expect(freeCard).toBeVisible()
-    await expect(freeCard.getByText('Meneur', { exact: true })).toHaveCount(0)
+    await expect(freeCard.getByText('Capitaine', { exact: true })).toHaveCount(0)
     let saved = await readRide(organizer, team.slug, rideSlug)
     expect(saved.groups.map((g) => [g.name, g.leader?.id])).toEqual([
       [led, leader.user.id],
       [free, undefined],
     ])
 
-    // --- Edit: the row names the leader (not « Meneur désigné »); changing the other group keeps it.
+    // --- Edit: the row names the leader (not « Nom inconnu »); changing the other group keeps it.
     const openEditor = async () => {
       const edit = main(page).getByRole('link', { name: 'Modifier' })
       await hydrated(edit)
@@ -797,13 +797,13 @@ test.describe('group leader in the editor', () => {
     await expect(
       editorGroup(page, 0).getByText(leader.user.displayName, { exact: true })
     ).toBeVisible()
-    await expect(main(page).getByText('Meneur désigné', { exact: true })).toHaveCount(0)
+    await expect(main(page).getByText('Nom inconnu', { exact: true })).toHaveCount(0)
     const capacity = editorGroup(page, 1).getByRole('textbox', { name: 'Taille max' })
     await hydrated(capacity)
     await capacity.fill('7')
     await main(page).getByRole('button', { name: 'Enregistrer' }).click()
     await expect(page).toHaveURL(new RegExp(`/sorties/${rideSlug}$`))
-    await expect(freeCard.getByText('0/7 participants')).toBeVisible()
+    await expect(freeCard.getByText('0/7 personnes')).toBeVisible()
     await expect(ledCard.getByText(leader.user.displayName, { exact: true })).toBeVisible()
     saved = await readRide(organizer, team.slug, rideSlug)
     expect(saved.groups.map((g) => [g.name, g.leader?.id, g.maxParticipants])).toEqual([
@@ -823,10 +823,10 @@ test.describe('group leader in the editor', () => {
     await main(page).getByRole('button', { name: 'Enregistrer' }).click()
     await expect(page).toHaveURL(new RegExp(`/sorties/${rideSlug}$`))
     await expect(ledCard).toBeVisible()
-    await expect(ledCard.getByText('Meneur', { exact: true })).toHaveCount(0)
+    await expect(ledCard.getByText('Capitaine', { exact: true })).toHaveCount(0)
     await expect(ledCard.getByText(leader.user.displayName)).toHaveCount(0)
     // Never the ride's creator in the leader's place.
-    await expect(main(page).getByText('Meneur', { exact: true })).toHaveCount(0)
+    await expect(main(page).getByText('Capitaine', { exact: true })).toHaveCount(0)
     saved = await readRide(organizer, team.slug, rideSlug)
     expect(saved.groups.map((g) => [g.name, g.leader])).toEqual([
       [led, undefined],
@@ -929,7 +929,7 @@ test.describe('ride templates, edited and deleted', () => {
     await remove.click()
     const confirm = page.getByRole('dialog', { name: 'Supprimer le modèle' })
     await expect(
-      confirm.getByText(`Êtes-vous sûr de vouloir supprimer le modèle "${templateName}" ?`)
+      confirm.getByText(`Voulez-vous vraiment supprimer le modèle "${templateName}" ?`)
     ).toBeVisible()
     await confirm.getByRole('button', { name: 'Supprimer le modèle' }).click()
     await expect(confirm).toBeHidden()
@@ -1205,7 +1205,7 @@ test.describe('restoring a ride', () => {
     const confirm = page.getByRole('dialog', { name: 'Restaurer la sortie' })
     await expect(
       confirm.getByText(
-        'Êtes-vous sûr de vouloir restaurer cette sortie ? Elle repassera en brouillon.'
+        'Voulez-vous vraiment restaurer cette sortie ? Elle repassera en brouillon.'
       )
     ).toBeVisible()
     await confirm.getByRole('button', { name: 'Restaurer la sortie' }).click()
@@ -1347,9 +1347,9 @@ test.describe('editing a ride that has registrations', () => {
         main(memberPage).getByRole('heading', { name: ride.name, level: 2 })
       ).toBeVisible()
       const card = groupCard(memberPage, renamed)
-      await expect(card.getByText('Inscrit', { exact: true })).toBeVisible()
-      await expect(card.getByText('1/10 participants')).toBeVisible()
-      await expect(card.getByText('Meneur', { exact: true })).toHaveCount(0)
+      await expect(card.getByText("J'y vais", { exact: true })).toBeVisible()
+      await expect(card.getByText('1/10 personnes')).toBeVisible()
+      await expect(card.getByText('Capitaine', { exact: true })).toHaveCount(0)
       await expect(card.getByText(organizer.user.displayName)).toHaveCount(0)
       await expect(
         groupCard(memberPage, led).getByText(leader.user.displayName, { exact: true })
@@ -1401,10 +1401,10 @@ test.describe('editing a ride that has registrations', () => {
     // A group with a rider asks first, and says what will happen; cancelling keeps it.
     const remove = editorGroup(page, 0).getByRole('button', { name: 'Supprimer' })
     await remove.click()
-    const dialog = page.getByRole('dialog', { name: 'Retirer un groupe avec des inscrits' })
+    const dialog = page.getByRole('dialog', { name: 'Retirer un groupe avec des inscriptions' })
     await expect(dialog).toBeVisible()
     await expect(dialog).toContainText(
-      "Ce groupe a 1 inscrit. À l'enregistrement, son inscription sera supprimée et il sera prévenu."
+      "Ce groupe compte 1 inscription. À l'enregistrement, elle sera supprimée et la personne prévenue."
     )
     await dialog.getByRole('button', { name: 'Annuler' }).click()
     await expect(dialog).toHaveCount(0)
@@ -1453,9 +1453,9 @@ test.describe('editing a ride that has registrations', () => {
         main(memberPage).getByRole('heading', { name: ride.name, level: 2 })
       ).toBeVisible()
       const card = groupCard(memberPage, kept)
-      await expect(card.getByText('0/10 participants')).toBeVisible()
+      await expect(card.getByText('0/10 personnes')).toBeVisible()
       await expect(card.getByRole('button', { name: 'Rejoindre' })).toBeVisible()
-      await expect(main(memberPage).getByText('Inscrit', { exact: true })).toHaveCount(0)
+      await expect(main(memberPage).getByText("J'y vais", { exact: true })).toHaveCount(0)
     } finally {
       await memberContext.close()
     }

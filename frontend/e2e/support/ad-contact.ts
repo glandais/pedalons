@@ -7,7 +7,7 @@ import { apiContext, expectOk, type AuthResponse } from './api'
  * mails from `mailsTo` in support/mailpit.ts.
  */
 
-/** The profile switch « Être contacté par les membres » (« Confidentialité »). */
+/** The profile switch « Accepter les messages des membres » (« Confidentialité »). */
 export async function setContactable(user: AuthResponse, contactableByMembers: boolean) {
   const api = await apiContext(user.accessToken)
   try {

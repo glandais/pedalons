@@ -13,7 +13,7 @@ import { UserAvatar } from '../common/UserAvatar'
 import { invalidateModeratedContent } from '@/lib/moderationCacheInvalidation'
 
 /**
- * « Utilisateurs bloqués », its own page under « Confidentialité » — the one place a block can be undone. Unblocking needs no
+ * « Personnes bloquées », its own page under « Confidentialité » — the one place a block can be undone. Unblocking needs no
  * confirmation: it is as silent as the block was, and can be redone from any comment or ad.
  */
 export function BlockedUsers() {

@@ -114,30 +114,31 @@ void main() {
   });
 
   group('Cette semaine', () {
-    testWidgets('liste les événements, avec l\'équipe et le badge Inscrit', (
-      WidgetTester tester,
-    ) async {
-      await _pump(
-        tester,
-        const WeekAgendaSection(),
-        events: <CalendarEventDto>[
-          _event('mardi-soir', registered: true),
-          _event(
-            'etape-1',
-            type: 'TRIP_STAGE',
-            tripSlug: 'ardeche',
-            teamName: 'Rouleurs du Pilat',
-          ),
-        ],
-      );
+    testWidgets(
+      'liste les événements, avec l\'équipe et le badge « J\'y vais »',
+      (WidgetTester tester) async {
+        await _pump(
+          tester,
+          const WeekAgendaSection(),
+          events: <CalendarEventDto>[
+            _event('mardi-soir', registered: true),
+            _event(
+              'etape-1',
+              type: 'TRIP_STAGE',
+              tripSlug: 'ardeche',
+              teamName: 'Rouleurs du Pilat',
+            ),
+          ],
+        );
 
-      expect(find.text('Les 7 prochains jours'), findsOneWidget);
-      expect(find.byKey(keys.home.weekEvent('mardi-soir')), findsOneWidget);
-      expect(find.byKey(keys.home.weekEvent('etape-1')), findsOneWidget);
-      expect(find.textContaining('VC Craponne'), findsOneWidget);
-      expect(find.textContaining('Rouleurs du Pilat'), findsOneWidget);
-      expect(find.text('INSCRIT'), findsOneWidget);
-    });
+        expect(find.text('Les 7 prochains jours'), findsOneWidget);
+        expect(find.byKey(keys.home.weekEvent('mardi-soir')), findsOneWidget);
+        expect(find.byKey(keys.home.weekEvent('etape-1')), findsOneWidget);
+        expect(find.textContaining('VC Craponne'), findsOneWidget);
+        expect(find.textContaining('Rouleurs du Pilat'), findsOneWidget);
+        expect(find.text('J\'Y VAIS'), findsOneWidget);
+      },
+    );
 
     testWidgets('ne répète pas la sortie que « Ma prochaine sortie » montre', (
       WidgetTester tester,

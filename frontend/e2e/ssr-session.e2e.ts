@@ -41,7 +41,7 @@ import { wallTimeOf } from './support/dates'
 
 /**
  * docs/LEDGER_*.md WEB-14 — authenticated SSR (frontend/docs/SSR.md, "Session-aware SSR"): for a document
- * request carrying the refresh_token cookie, « Ma prochaine sortie », the « Inscrit » badge on the
+ * request carrying the refresh_token cookie, « Ma prochaine sortie », the « J'y vais » badge on the
  * feed cards and the profile overview's state lines are in the server HTML; without the cookie they
  * are not;
  * and hydration adopts that markup instead of throwing it away.
@@ -52,7 +52,7 @@ import { wallTimeOf } from './support/dates'
  */
 
 const NEXT_RIDE = 'Ma prochaine sortie'
-const REGISTERED = 'Inscrit'
+const REGISTERED = "J'y vais"
 const BREADCRUMB = "Fil d'Ariane"
 /** The profile's overview, and the state line of « Sécurité » for a fresh account: it reads the
  * profile summary, which only a session can fetch. */
@@ -87,7 +87,7 @@ const feedCard = (page: Page, rideName: string) => entityCard(homeFeed(page), ri
 test.describe('server HTML, JavaScript disabled', () => {
   test.use({ javaScriptEnabled: false })
 
-  test('signed in: home carries « Ma prochaine sortie » and the « Inscrit » feed badge', async ({
+  test("signed in: home carries « Ma prochaine sortie » and the « J'y vais » feed badge", async ({
     page,
     context,
   }) => {
@@ -105,7 +105,7 @@ test.describe('server HTML, JavaScript disabled', () => {
     await expect(card).toContainText(REGISTERED)
   })
 
-  test('anonymous: the same feed lists the ride, without « Inscrit » nor « Ma prochaine sortie »', async ({
+  test("anonymous: the same feed lists the ride, without « J'y vais » nor « Ma prochaine sortie »", async ({
     page,
   }) => {
     const response = await page.goto(setup.feedPath)

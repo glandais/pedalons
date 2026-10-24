@@ -71,7 +71,7 @@ class RideGroupEditor extends ConsumerStatefulWidget {
   final RideGroupForm group;
 
   /// Le nom du meneur, s'il est connu (`null` avec un [RideGroupForm.leaderId]
-  /// : « Meneur désigné », comme au site).
+  /// : « Nom inconnu », comme au site).
   final String? leaderName;
   final String? routeName;
   final bool isFirst;

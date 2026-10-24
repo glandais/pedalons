@@ -434,14 +434,14 @@ void main() {
       await open(tester, weather(), tab: RideGroupTab.overview);
 
       expect(find.byKey(keys.rideGroup.leader), findsNothing);
-      expect(find.text('MENEUR'), findsNothing);
+      expect(find.text('CAPITAINE'), findsNothing);
       expect(find.text('Départ'), findsOneWidget);
       expect(find.text('Allure moyenne'), findsOneWidget);
       expect(find.text('Dénivelé positif'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('un meneur désigné : son nom et le badge « Meneur »', (
+    testWidgets('un meneur désigné : son nom et le badge « Capitaine »', (
       WidgetTester tester,
     ) async {
       await open(
@@ -461,7 +461,7 @@ void main() {
 
       expect(find.byKey(keys.rideGroup.leader), findsOneWidget);
       expect(find.text('Léa'), findsOneWidget);
-      expect(find.text('MENEUR'), findsOneWidget);
+      expect(find.text('CAPITAINE'), findsOneWidget);
     });
 
     testWidgets('le résumé météo du groupe ouvre l\'onglet Météo', (
@@ -509,7 +509,7 @@ void main() {
       await open(tester, weather(), tab: RideGroupTab.overview);
 
       expect(find.byKey(keys.rideGroup.participantsCount), findsOneWidget);
-      expect(find.text('3/16 participants'), findsOneWidget);
+      expect(find.text('3/16 personnes'), findsOneWidget);
       expect(find.text('13 places restantes'), findsOneWidget);
       expect(find.byKey(keys.rideGroup.leaveButton), findsNothing);
 
@@ -590,7 +590,7 @@ void main() {
       expect(find.byKey(keys.rideGroup.fullBadge), findsOneWidget);
       expect(find.byKey(keys.rideGroup.joinButton), findsNothing);
       expect(find.byKey(keys.rideGroup.leaveButton), findsNothing);
-      expect(find.text('16/16 participants'), findsOneWidget);
+      expect(find.text('16/16 personnes'), findsOneWidget);
     });
 
     testWidgets(
@@ -617,7 +617,7 @@ void main() {
 
         expect(find.byKey(keys.rideGroup.registeredElsewhere), findsOneWidget);
         expect(
-          find.text('Vous êtes inscrit dans le groupe Cool.'),
+          find.text('Votre inscription est dans le groupe Cool.'),
           findsOneWidget,
         );
         expect(find.byKey(keys.rideGroup.joinButton), findsNothing);

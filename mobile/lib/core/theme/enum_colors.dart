@@ -117,7 +117,7 @@ PdlFamily tagFamily(String color) {
 
 /// Les familles de badge qu'aucune énumération du contrat ne porte.
 ///
-/// « Inscrit » se déduit de `registered`, « Terminée » de `dateTime < now`
+/// « J'y vais » se déduit de `registered`, « Terminée » de `dateTime < now`
 /// (§5.2-18 : le statut `TERMINÉE` n'existe pas dans l'enum `Status`),
 /// « Supprimé » du booléen `deleted` — qui est un champ à part, et non une
 /// valeur de `Status`. Les nommer ici évite qu'un écran ne recompose la paire

@@ -909,7 +909,7 @@ void main() {
       await open(tester, ride, repository: repository);
 
       expect(find.byKey(keys.rideGroup.participantsCount), findsOneWidget);
-      expect(find.text('3/16 participants'), findsOneWidget);
+      expect(find.text('3/16 personnes'), findsOneWidget);
       expect(find.text('13 places restantes'), findsOneWidget);
       expect(find.byKey(keys.rideGroup.viewMyGroup), findsNothing);
 
@@ -1044,7 +1044,7 @@ void main() {
 
       expect(find.byKey(keys.ride.soloGroupSection), findsOneWidget);
       expect(find.byKey(keys.rideGroup.leader), findsNothing);
-      expect(find.text('MENEUR'), findsNothing);
+      expect(find.text('CAPITAINE'), findsNothing);
     });
 
     testWidgets('un meneur désigné : son nom et le badge', (
@@ -1064,7 +1064,7 @@ void main() {
 
       expect(find.byKey(keys.rideGroup.leader), findsOneWidget);
       expect(find.text('Léa'), findsOneWidget);
-      expect(find.text('MENEUR'), findsOneWidget);
+      expect(find.text('CAPITAINE'), findsOneWidget);
     });
 
     testWidgets('les visages du groupe ouvrent la feuille du groupe', (

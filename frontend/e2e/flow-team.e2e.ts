@@ -282,7 +282,7 @@ test.describe('members', () => {
     // Remove.
     await memberRow(page, member.user.displayName).getByRole('button', { name: 'Retirer' }).click()
     const dialog = page.getByRole('dialog')
-    await expect(dialog.getByText('Êtes-vous sûr de vouloir retirer ce membre ?')).toBeVisible()
+    await expect(dialog.getByText('Voulez-vous vraiment retirer ce membre ?')).toBeVisible()
     await dialog.getByRole('button', { name: 'Retirer' }).click()
     await expect(page.getByText("Membre retiré de l'équipe", { exact: true })).toBeVisible()
     await expect(main(page).getByText(member.user.displayName, { exact: true })).toHaveCount(0)
@@ -589,7 +589,7 @@ test.describe('joining a team', () => {
     const joinRide = card.getByRole('button', { name: 'Rejoindre', exact: true })
     await hydrated(joinRide)
     await joinRide.click()
-    await expect(card.getByText('Inscrit', { exact: true })).toBeVisible()
+    await expect(card.getByText("J'y vais", { exact: true })).toBeVisible()
     await expect
       .poll(async () => (await readRide(joiner, team.slug, ride.slug)).registered)
       .toBe(true)
@@ -676,7 +676,7 @@ test.describe('leaving a team', () => {
     await hydrated(leave)
     await leave.click()
     const dialog = page.getByRole('dialog', { name: "Quitter l'équipe" })
-    await expect(dialog.getByText('Êtes-vous sûr de vouloir quitter cette équipe ?')).toBeVisible()
+    await expect(dialog.getByText('Voulez-vous vraiment quitter cette équipe ?')).toBeVisible()
     const left = page.waitForResponse(
       (r) =>
         r.request().method() === 'POST' && r.url().endsWith(`/teams/${team.slug}/members/leave`)
@@ -801,7 +801,7 @@ test.describe('regressions', () => {
     await remove.click()
     const dialog = page.getByRole('dialog', { name: 'Supprimer la page' })
     await expect(
-      dialog.getByText(`Êtes-vous sûr de vouloir supprimer la page "${title}" ?`, { exact: false })
+      dialog.getByText(`Voulez-vous vraiment supprimer la page "${title}" ?`, { exact: false })
     ).toBeVisible()
     await expect(dialog.getByRole('button', { name: 'Supprimer', exact: true })).toBeVisible()
     await expect(dialog.getByRole('button', { name: /équipe/ })).toHaveCount(0)
@@ -842,7 +842,7 @@ test.describe('regressions', () => {
     await expect(dialog.locator('strong').filter({ hasText: team.name })).toHaveText(team.name)
     await expect(dialog.getByText('<strong>', { exact: false })).toHaveCount(0)
     await expect(
-      dialog.getByText(`Êtes-vous sûr de vouloir supprimer ${team.name} ?`, { exact: false })
+      dialog.getByText(`Voulez-vous vraiment supprimer ${team.name} ?`, { exact: false })
     ).toBeVisible()
   })
 

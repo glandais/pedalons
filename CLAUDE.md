@@ -13,6 +13,12 @@ sources is authoritative over what (that file for assets, the web theme and the 
 `mobile/lib/core/theme/` for Flutter and the derived dark mode). The business colour code is semantic and shared by
 both clients: changing it in one place only makes them diverge silently.
 
+**French copy is gender-neutral (épicène), never point médian** — web, mobile, backend e-mails and
+notifications alike. Rephrase rather than agree: « Vous participez » not « Vous êtes inscrit »,
+« Voulez-vous vraiment… ? » not « Êtes-vous sûr… ? », « Léa a rejoint » not « Léa s'est inscrit »,
+*personnes / membres / capitaine / tout le monde* not *participants / meneur / tous*. Role names
+(« Administrateur », « Organisateur ») stay as they are. Rules and lexicon: BRANDING.md §8.2 and §8.4.
+
 ## Where things are written down
 
 | Question | Read |

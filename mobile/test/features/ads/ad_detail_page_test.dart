@@ -150,21 +150,21 @@ void main() {
       WidgetTester tester,
     ) async {
       await openAd(tester, fixtureAd(createdById: 'u-me'));
-      expect(find.text('Contacter le vendeur'), findsNothing);
+      expect(find.text('Répondre à l\'annonce'), findsNothing);
     });
 
     testWidgets('le bouton est là sur l\'annonce d\'un autre', (
       WidgetTester tester,
     ) async {
       await openAd(tester, fixtureAd(createdById: 'u-autre'));
-      expect(find.text('Contacter le vendeur'), findsOneWidget);
+      expect(find.text('Répondre à l\'annonce'), findsOneWidget);
     });
 
     testWidgets('l\'envoi est coupé sous dix caractères, ouvert au-delà', (
       WidgetTester tester,
     ) async {
       await openAd(tester, fixtureAd(createdById: 'u-autre'));
-      await tester.tap(find.text('Contacter le vendeur'));
+      await tester.tap(find.text('Répondre à l\'annonce'));
       await tester.pumpAndSettle();
 
       expect(find.textContaining('elle lui sera donc visible'), findsOneWidget);
@@ -190,7 +190,7 @@ void main() {
         fixtureAd(createdById: 'u-autre'),
         contactError: _apiError('AD_CONTACT_DELIVERY_FAILED', status: 500),
       );
-      await tester.tap(find.text('Contacter le vendeur'));
+      await tester.tap(find.text('Répondre à l\'annonce'));
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField), 'Bonjour, votre vélo ?');
       await tester.pump();
@@ -201,7 +201,9 @@ void main() {
       // Ni fermeture, ni confirmation : l'échec est nommé, la feuille reste.
       expect(find.textContaining('n\'est pas parti'), findsOneWidget);
       expect(
-        find.text('Message envoyé, le vendeur vous répondra directement.'),
+        find.text(
+          'Message envoyé, la réponse vous arrivera directement par e-mail.',
+        ),
         findsNothing,
       );
       expect(
@@ -225,7 +227,7 @@ void main() {
           },
         ),
       );
-      await tester.tap(find.text('Contacter le vendeur'));
+      await tester.tap(find.text('Répondre à l\'annonce'));
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField), 'Bonjour, votre vélo ?');
       await tester.pump();
@@ -243,7 +245,7 @@ void main() {
         fixtureAd(createdById: 'u-autre'),
         contactError: _apiError('AD_CONTACT_OPTED_OUT'),
       );
-      await tester.tap(find.text('Contacter le vendeur'));
+      await tester.tap(find.text('Répondre à l\'annonce'));
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField), 'Bonjour, votre vélo ?');
       await tester.pump();
@@ -251,9 +253,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(TextField), findsNothing);
-      expect(find.text('Contacter le vendeur'), findsNothing);
+      expect(find.text('Répondre à l\'annonce'), findsNothing);
       expect(
-        find.text('Ce vendeur ne souhaite pas être contacté.'),
+        find.text('Cette annonce ne reçoit pas de messages.'),
         findsOneWidget,
       );
     });
@@ -265,7 +267,7 @@ void main() {
         tester,
         fixtureAd(createdById: 'u-autre'),
       );
-      await tester.tap(find.text('Contacter le vendeur'));
+      await tester.tap(find.text('Répondre à l\'annonce'));
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField), 'Bonjour, votre vélo ?');
       await tester.pump();
@@ -274,7 +276,9 @@ void main() {
 
       expect(repository.lastMessage, 'Bonjour, votre vélo ?');
       expect(
-        find.text('Message envoyé, le vendeur vous répondra directement.'),
+        find.text(
+          'Message envoyé, la réponse vous arrivera directement par e-mail.',
+        ),
         findsOneWidget,
       );
     });

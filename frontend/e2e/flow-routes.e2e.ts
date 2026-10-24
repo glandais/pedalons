@@ -322,7 +322,7 @@ test('a team admin deletes a route: members no longer see it, the team admin can
   await remove.click()
 
   const dialog = page.getByRole('dialog', { name: 'Supprimer le parcours' })
-  await expect(dialog).toContainText('Êtes-vous sûr de vouloir supprimer ce parcours ?')
+  await expect(dialog).toContainText('Voulez-vous vraiment supprimer ce parcours ?')
   await dialog.getByRole('button', { name: 'Supprimer', exact: true }).click()
 
   // Back on the list, where the team admin still sees it, marked deleted.

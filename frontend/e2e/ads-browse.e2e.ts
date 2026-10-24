@@ -200,7 +200,7 @@ test.describe('ad detail', () => {
     await page.goto(adPath(team.slug, bare))
     await expect(page.getByRole('heading', { level: 2, name: bare.name })).toBeVisible()
     // The page is complete: the always-present seller section rendered.
-    await expect(page.getByRole('heading', { level: 4, name: 'Annonceur' })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 4, name: 'Publiée par' })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Description' })).toHaveCount(0)
     await expect(page.getByRole('heading', { name: 'Localisation' })).toHaveCount(0)
     await expect(page.getByRole('img', { name: /à environ 1 km près/ })).toHaveCount(0)

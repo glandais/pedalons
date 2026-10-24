@@ -129,7 +129,7 @@ test('from the overview to a page, and back to it by the breadcrumb', async ({
   await expectPage(page, /\/profil$/, 'Profil')
 })
 
-test('« Utilisateurs bloqués » sits under « Confidentialité », in the sidebar and the breadcrumb', async ({
+test('« Personnes bloquées » sits under « Confidentialité », in the sidebar and the breadcrumb', async ({
   page,
   context,
   isMobile,
@@ -140,8 +140,8 @@ test('« Utilisateurs bloqués » sits under « Confidentialité », in the side
 
   await follow(entry(page, isMobile, 'Confidentialité'))
   await expectPage(page, /\/profil\/vie-privee$/, 'Confidentialité')
-  await follow(main(page).getByRole('link', { name: startsWith('Utilisateurs bloqués') }))
-  await expectPage(page, /\/profil\/vie-privee\/bloques$/, 'Utilisateurs bloqués')
+  await follow(main(page).getByRole('link', { name: startsWith('Personnes bloquées') }))
+  await expectPage(page, /\/profil\/vie-privee\/bloques$/, 'Personnes bloquées')
 
   // A page of « Confidentialité »: the sidebar keeps it current.
   if (!isMobile)
@@ -149,7 +149,7 @@ test('« Utilisateurs bloqués » sits under « Confidentialité », in the side
       sidebar(page).getByRole('link', { name: 'Confidentialité', exact: true })
     ).toHaveAttribute('aria-current', 'page')
 
-  // Back one level by the breadcrumb (« Confidentialité › Utilisateurs bloqués » on a phone, the
+  // Back one level by the breadcrumb (« Confidentialité › Personnes bloquées » on a phone, the
   // whole trail from « Profil » on a desktop).
   await follow(breadcrumb(page).getByRole('link', { name: 'Confidentialité', exact: true }))
   await expectPage(page, /\/profil\/vie-privee$/, 'Confidentialité')

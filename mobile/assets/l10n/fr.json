@@ -47,7 +47,7 @@
       "verificationSent": "Un e-mail de vérification a été envoyé à {email}. Ouvrez son lien pour choisir votre mot de passe.",
       "activateTitle": "Activer votre compte",
       "activateMessage": "Choisissez le mot de passe du compte {email}.",
-      "signedInAs": "Vous êtes connecté en tant que {current}. Activer ce compte vous connectera à {email} à sa place.",
+      "signedInAs": "Votre session est ouverte en tant que {current}. Activer ce compte vous connectera à {email} à sa place.",
       "activate": "Activer mon compte",
       "notYours": "Ce n'est pas votre adresse ? Fermez cette page : rien n'est activé tant que vous ne touchez pas le bouton.",
       "emailChangedTitle": "Adresse modifiée",
@@ -379,9 +379,9 @@
           "other": "Sorties avec un groupe complet"
         },
         "fullGroupLine": {
-          "zero": "{group} de « {ride} », {count} inscrit sur {max}",
-          "one": "{group} de « {ride} », {count} inscrit sur {max}",
-          "other": "{group} de « {ride} », {count} inscrits sur {max}"
+          "zero": "{group} de « {ride} », {count} inscription sur {max}",
+          "one": "{group} de « {ride} », {count} inscription sur {max}",
+          "other": "{group} de « {ride} », {count} inscriptions sur {max}"
         },
         "fullGroupAction": "Voir les groupes",
         "reports": {
@@ -407,21 +407,21 @@
       },
       "myUpcoming": {
         "title": "Vos prochaines sorties",
-        "empty": "Vous n'êtes inscrit à aucune sortie à venir dans cette équipe."
+        "empty": "Aucune inscription à une sortie à venir dans cette équipe."
       },
       "upcomingRides": {
         "title": "Sorties à venir",
         "empty": "Aucune sortie n'est prévue pour le moment.",
         "noRoute": "Aucun parcours associé",
         "registeredCount": {
-          "zero": "Aucun inscrit",
-          "one": "{} inscrit",
-          "other": "{} inscrits"
+          "zero": "Aucune inscription",
+          "one": "{} inscription",
+          "other": "{} inscriptions"
         },
         "groupFill": {
-          "zero": "{} inscrit sur {max}",
-          "one": "{} inscrit sur {max}",
-          "other": "{} inscrits sur {max}"
+          "zero": "{} inscription sur {max}",
+          "one": "{} inscription sur {max}",
+          "other": "{} inscriptions sur {max}"
         }
       },
       "latestPosts": {
@@ -540,19 +540,19 @@
         },
         "participating": {
           "all": {
-            "zero": "Aucune sortie ni aucun voyage où vous êtes inscrit",
-            "one": "{} sortie ou voyage où vous êtes inscrit",
-            "other": "{} sorties et voyages où vous êtes inscrit"
+            "zero": "Aucune sortie ni aucun voyage auquel vous participez",
+            "one": "{} sortie ou voyage auquel vous participez",
+            "other": "{} sorties et voyages auxquels vous participez"
           },
           "rides": {
-            "zero": "Aucune sortie où vous êtes inscrit",
-            "one": "{} sortie où vous êtes inscrit",
-            "other": "{} sorties où vous êtes inscrit"
+            "zero": "Aucune sortie à laquelle vous participez",
+            "one": "{} sortie à laquelle vous participez",
+            "other": "{} sorties auxquelles vous participez"
           },
           "trips": {
-            "zero": "Aucun voyage où vous êtes inscrit",
-            "one": "{} voyage où vous êtes inscrit",
-            "other": "{} voyages où vous êtes inscrit"
+            "zero": "Aucun voyage auquel vous participez",
+            "one": "{} voyage auquel vous participez",
+            "other": "{} voyages auxquels vous participez"
           }
         },
         "past": {
@@ -585,8 +585,8 @@
     "upcoming": "Prochaines sorties",
     "noUpcoming": "Aucune sortie à venir",
     "participants": {
-      "one": "{count} participant",
-      "other": "{count} participants"
+      "one": "{count} personne",
+      "other": "{count} personnes"
     },
     "groups": "Groupes",
     "join": "Participer",
@@ -597,18 +597,18 @@
     "selectGroup": "Choisir un groupe",
     "description": "Description",
     "actionFailed": "Inscription au groupe {group} impossible.",
-    "registered": "Inscrit",
-    "registeredIn": "Inscrit · {group}",
+    "registered": "J'y vais",
+    "registeredIn": "J'y vais · {group}",
     "finished": "Terminée",
     "groupJoin": "Rejoindre",
     "groupLeave": "Quitter",
     "groupFull": "Complet",
     "joining": "Adhésion...",
     "leaving": "Désinscription...",
-    "leaderIs": "Meneur : {name}",
+    "leaderIs": "Capitaine : {name}",
     "participantsOf": {
-      "one": "{count}/{max} participant",
-      "other": "{count}/{max} participants"
+      "one": "{count}/{max} personne",
+      "other": "{count}/{max} personnes"
     },
     "viewRoute": "Voir le parcours",
     "otherGroupsLabel": "Autres groupes",
@@ -699,7 +699,7 @@
       "summaryAvailableFrom": "Météo dès le {date}",
       "unavailableTitle": "Météo indisponible pour le moment.",
       "unavailableMessage": "La prévision n'est pas encore arrivée, réessayez dans quelques minutes.",
-      "noLocation": "Ajoutez un lieu de départ ou un parcours pour afficher la météo de cette sortie. Message visible des organisateurs seulement.",
+      "noLocation": "Ajoutez un lieu de départ ou un parcours pour afficher la météo de cette sortie. Message visible du rôle Organisateur seulement.",
       "legNoRoute": "Ce groupe n'a pas de parcours : la météo n'est donnée qu'au départ.",
       "legUnavailable": "Les prévisions le long du parcours ne sont pas encore disponibles.",
       "sunrise": "Lever du soleil {time}",
@@ -735,22 +735,22 @@
       "tabs": {
         "overview": "Aperçu",
         "weather": "Météo",
-        "participants": "Participants"
+        "participants": "Inscriptions"
       },
       "participantsCount": {
-        "one": "{count}/{max} participant",
-        "other": "{count}/{max} participants"
+        "one": "{count}/{max} personne",
+        "other": "{count}/{max} personnes"
       },
       "participantsCountNoMax": {
-        "one": "{count} participant",
-        "other": "{count} participants"
+        "one": "{count} personne",
+        "other": "{count} personnes"
       },
       "placesLeft": {
         "zero": "Plus aucune place",
         "one": "{} place restante",
         "other": "{} places restantes"
       },
-      "registeredElsewhere": "Vous êtes inscrit dans le groupe {group}.",
+      "registeredElsewhere": "Votre inscription est dans le groupe {group}.",
       "viewMyGroup": "Voir mon groupe",
       "stats": {
         "departure": "Départ",
@@ -762,10 +762,10 @@
         "distance": "Distance",
         "elevation": "Dénivelé positif"
       },
-      "leader": "Meneur",
+      "leader": "Capitaine",
       "weatherSummary": "Météo au départ du groupe",
-      "participantsTitle": "Participants",
-      "viewAllParticipants": "Voir tous les participants",
+      "participantsTitle": "Personnes inscrites",
+      "viewAllParticipants": "Voir toutes les personnes inscrites",
       "routeTitle": "Parcours du groupe",
       "notFoundTitle": "Ce groupe n'existe plus",
       "notFoundMessage": "Il a peut-être été retiré de la sortie.",
@@ -779,8 +779,8 @@
       "saving": "Enregistrement…",
       "created": "Sortie créée",
       "saved": "Sortie enregistrée",
-      "forbiddenTitle": "Réservé aux organisateurs",
-      "forbiddenMessage": "Seuls les organisateurs et les administrateurs de l'équipe peuvent créer ou modifier une sortie.",
+      "forbiddenTitle": "Réservé au rôle Organisateur",
+      "forbiddenMessage": "Seuls les rôles Organisateur et Administrateur de l'équipe peuvent créer ou modifier une sortie.",
       "modulesOffMessage": "Les sorties ou les parcours sont désactivés pour cette équipe.",
       "invalid": "Vérifiez les champs signalés avant d'enregistrer.",
       "discardTitle": "Abandonner les modifications ?",
@@ -867,20 +867,20 @@
       "groupTimeNone": "Celle de la sortie",
       "groupSpeed": "Vitesse ({unit})",
       "groupMax": "Places max",
-      "groupLeader": "Meneur",
-      "groupLeaderNone": "Aucun meneur",
-      "groupLeaderUnknown": "Meneur désigné",
+      "groupLeader": "Capitaine",
+      "groupLeaderNone": "Pas de capitaine",
+      "groupLeaderUnknown": "Nom inconnu",
       "groupLeaderSearch": "Rechercher un membre…",
       "groupLeaderEmpty": "Aucun membre trouvé",
       "groupRoute": "Parcours du groupe",
       "groupUp": "Monter le groupe",
       "groupDown": "Descendre le groupe",
       "groupRemove": "Supprimer le groupe",
-      "groupRemoveRegisteredTitle": "Retirer un groupe avec des inscrits",
+      "groupRemoveRegisteredTitle": "Retirer un groupe avec des inscriptions",
       "groupRemoveRegisteredMessage": {
-        "zero": "Ce groupe a {} inscrit. À l'enregistrement, son inscription sera supprimée et il sera prévenu.",
-        "one": "Ce groupe a {} inscrit. À l'enregistrement, son inscription sera supprimée et il sera prévenu.",
-        "other": "Ce groupe a {} inscrits. À l'enregistrement, leurs inscriptions seront supprimées et ils seront prévenus."
+        "zero": "Ce groupe compte {} inscription. À l'enregistrement, elle sera supprimée et la personne prévenue.",
+        "one": "Ce groupe compte {} inscription. À l'enregistrement, elle sera supprimée et la personne prévenue.",
+        "other": "Ce groupe compte {} inscriptions. À l'enregistrement, elles seront supprimées et les personnes prévenues."
       },
       "groupRemoveConfirm": "Retirer le groupe",
       "positive": "Doit être supérieur à 0"
@@ -914,7 +914,7 @@
       "deleted": "Modèle supprimé",
       "created": "Modèle créé",
       "saved": "Modèle enregistré",
-      "forbiddenMessage": "Seuls les organisateurs et les administrateurs de l'équipe peuvent gérer les modèles de sortie.",
+      "forbiddenMessage": "Seuls les rôles Organisateur et Administrateur de l'équipe peuvent gérer les modèles de sortie.",
       "name": "Nom du modèle",
       "namePlaceholder": "ex. Sortie du dimanche",
       "nameError": "Donnez un nom au modèle (200 caractères au plus)",
@@ -924,7 +924,7 @@
       "tagsPickerTitle": "Tags des sorties créées",
       "visibility": "Visibilité des sorties créées",
       "status": "Statut des sorties créées",
-      "groupsHint": "Le meneur et le parcours se choisissent sur chaque sortie."
+      "groupsHint": "Le ou la capitaine et le parcours se choisissent sur chaque sortie."
     },
     "manage": {
       "edit": "Modifier la sortie",
@@ -947,8 +947,8 @@
       "cancelTitle": "Annuler la sortie ?",
       "cancelMessage": "Elle restera visible, marquée annulée.",
       "deleteTitle": "Supprimer la sortie ?",
-      "deleteMessage": "Elle disparaîtra des listes. Un administrateur de l'équipe pourra la restaurer.",
-      "deletedBanner": "Cette sortie est supprimée. Seuls les administrateurs de l'équipe la voient."
+      "deleteMessage": "Elle disparaîtra des listes. Le rôle Administrateur de l'équipe pourra la restaurer.",
+      "deletedBanner": "Cette sortie est supprimée. Seul le rôle Administrateur de l'équipe la voit."
     }
   },
   "posts": {
@@ -971,8 +971,8 @@
       "priceNegotiable": "Prix à négocier",
       "description": "Description",
       "location": "Localisation",
-      "locationApproximate": "Localisation approximative — le point exact est communiqué par l'annonceur.",
-      "seller": "Annonceur",
+      "locationApproximate": "Localisation approximative — le point exact est communiqué par la personne qui publie l'annonce.",
+      "seller": "Publiée par",
       "gallery": "Photos de l'annonce",
       "openImage": "Ouvrir la photo {index} sur {count}"
     },
@@ -1008,17 +1008,17 @@
       "nameDesc": "Nom Z → A"
     },
     "contact": {
-      "cta": "Contacter le vendeur",
-      "title": "Contacter le vendeur",
+      "cta": "Répondre à l'annonce",
+      "title": "Répondre à l'annonce",
       "intro": "Votre message part par e-mail à {seller}.",
       "placeholder": "Bonjour, votre annonce m'intéresse…",
-      "replyToNotice": "Le vendeur répondra directement à votre adresse e-mail : elle lui sera donc visible.",
+      "replyToNotice": "La personne qui a publié l'annonce répondra directement à votre adresse e-mail : elle lui sera donc visible.",
       "tooShort": "Au moins {min} caractères.",
       "send": "Envoyer",
       "sending": "Envoi…",
-      "sent": "Message envoyé, le vendeur vous répondra directement.",
-      "optedOut": "Ce vendeur ne souhaite pas être contacté.",
-      "deliveryFailed": "Le message n'est pas parti. Rien n'a été envoyé au vendeur.",
+      "sent": "Message envoyé, la réponse vous arrivera directement par e-mail.",
+      "optedOut": "Cette annonce ne reçoit pas de messages.",
+      "deliveryFailed": "Le message n'est pas parti. Rien n'a été transmis.",
       "rateLimited": "Vous avez envoyé trop de messages. Réessayez plus tard.",
       "rateLimitedIn": "Vous avez envoyé trop de messages. Réessayez dans {delay}.",
       "delayUnderMinute": "moins d'une minute",
@@ -1035,8 +1035,8 @@
   "trips": {
     "title": "Voyages",
     "participants": {
-      "one": "{count} participant",
-      "other": "{count} participants"
+      "one": "{count} personne",
+      "other": "{count} personnes"
     },
     "stages": "Étapes",
     "stages.empty": "Aucune étape définie pour ce voyage.",
@@ -1091,7 +1091,7 @@
     "missingTracks": "{count} tracé(s) n'ont pas pu être chargés.",
     "profileGaps": "Profil incomplet : {stages} n'a pas pu être chargée.",
     "weather": {
-      "noLocation": "Ajoutez un parcours à cette étape pour afficher sa météo. Message visible des organisateurs seulement.",
+      "noLocation": "Ajoutez un parcours à cette étape pour afficher sa météo. Message visible du rôle Organisateur seulement.",
       "emptyTitle": "Pas de météo pour cette étape",
       "emptyMessage": "Aucune prévision n'est à afficher pour cette étape.",
       "legSpeedDefault": "Passages estimés à {speed}, vitesse par défaut : l'étape n'en indique pas"
@@ -1212,7 +1212,7 @@
     "viaGroups": "via les groupes : {names}",
     "viaStage": "via l'étape {names}",
     "information": "Informations",
-    "author": "Auteur",
+    "author": "Par",
     "createdOn": "Créé le",
     "ownerTeam": "Équipe propriétaire",
     "noTrackTitle": "Aucune donnée de tracé",
@@ -1279,8 +1279,8 @@
       "saving": "Enregistrement…",
       "created": "Parcours créé",
       "saved": "Parcours enregistré",
-      "forbiddenTitle": "Réservé aux organisateurs",
-      "forbiddenMessage": "Seuls les organisateurs et les administrateurs de l'équipe peuvent créer ou modifier un parcours.",
+      "forbiddenTitle": "Réservé au rôle Organisateur",
+      "forbiddenMessage": "Seuls les rôles Organisateur et Administrateur de l'équipe peuvent créer ou modifier un parcours.",
       "modulesOffMessage": "Les parcours sont désactivés pour cette équipe.",
       "invalid": "Vérifiez les champs signalés avant d'enregistrer.",
       "pickTitle": "Envoyer un fichier GPX",
@@ -1325,8 +1325,8 @@
       "deleted": "Parcours supprimé",
       "restored": "Parcours restauré",
       "deleteTitle": "Supprimer le parcours ?",
-      "deleteMessage": "« {name} » disparaîtra des listes. Un administrateur de l'équipe pourra le restaurer.",
-      "deletedBanner": "Ce parcours est supprimé. Seuls les administrateurs de l'équipe le voient."
+      "deleteMessage": "« {name} » disparaîtra des listes. Le rôle Administrateur de l'équipe pourra le restaurer.",
+      "deletedBanner": "Ce parcours est supprimé. Seul le rôle Administrateur de l'équipe le voit."
     },
     "elevationRefining": "Profil d'altitude provisoire",
     "surfaceDetail": {
@@ -1468,7 +1468,7 @@
       "saving": "Enregistrement…"
     },
     "contactable": {
-      "title": "Être contacté par les membres",
+      "title": "Accepter les messages des membres",
       "hint": "Les membres de vos équipes peuvent vous écrire au sujet de vos annonces ; votre adresse ne leur est jamais montrée."
     },
     "gps": {
@@ -1478,13 +1478,13 @@
       "connectedOn": "Connecté le {date}",
       "notConnected": "Non connecté",
       "none": "Aucun service GPS n'est proposé pour le moment.",
-      "hint": "Vos comptes Hammerhead, Garmin Connect ou Wahoo. « Envoyer vers l'appareil » y dépose un parcours ; l'envoi automatique y dépose ceux des sorties où vous êtes inscrit. Votre compteur les récupère à sa prochaine synchronisation.",
+      "hint": "Vos comptes Hammerhead, Garmin Connect ou Wahoo. « Envoyer vers l'appareil » y dépose un parcours ; l'envoi automatique y dépose ceux des sorties auxquelles vous participez. Votre compteur les récupère à sa prochaine synchronisation.",
       "disconnectTitle": "Déconnecter {service} ?",
       "disconnectMessage": "Vous ne pourrez plus envoyer de parcours vers ce service tant qu'il n'est pas reconnecté.",
       "autoSync": {
         "title": "Envoi automatique des parcours",
         "semantic": "Envoi automatique des parcours vers {service}",
-        "off": "Activé, il y dépose les parcours des sorties où vous êtes inscrit dès 7 jours avant le départ, les met à jour s'ils changent, et les retire le lendemain.",
+        "off": "Activé, il y dépose les parcours des sorties auxquelles vous participez dès 7 jours avant le départ, les met à jour s'ils changent, et les retire le lendemain.",
         "saving": "Enregistrement…",
         "upToDateNone": "À jour · aucun parcours à venir",
         "upToDate": {
@@ -1543,17 +1543,17 @@
       "deleteTitle": "Voulez-vous vraiment supprimer votre compte ?",
       "deleteMessage": "Cette action est irréversible. Vos données personnelles seront effacées immédiatement. Les sorties, parcours et posts publiés pour une équipe resteront en ligne, attribués à « Ancien membre », et un commentaire qui a reçu des réponses restera affiché vide.",
       "teamsDeleted": {
-        "one": "Vous êtes le seul membre de l'équipe {teams} : elle sera supprimée avec votre compte.",
-        "other": "Vous êtes le seul membre des équipes {teams} : elles seront supprimées avec votre compte."
+        "one": "Vous êtes l'unique membre de l'équipe {teams} : elle sera supprimée avec votre compte.",
+        "other": "Vous êtes l'unique membre des équipes {teams} : elles seront supprimées avec votre compte."
       },
       "blockedTitle": "Suppression impossible pour l'instant",
       "blocked": {
-        "one": "Vous êtes le seul administrateur de l'équipe {teams}, qui compte d'autres membres. Nommez un autre administrateur depuis ses membres, ou supprimez l'équipe, puis revenez supprimer votre compte.",
-        "other": "Vous êtes le seul administrateur des équipes {teams}, qui comptent d'autres membres. Nommez un autre administrateur depuis leurs membres, ou supprimez ces équipes, puis revenez supprimer votre compte."
+        "one": "Vous êtes la seule personne à administrer l'équipe {teams}, qui compte d'autres membres. Confiez l'administration à un autre de ses membres, ou supprimez l'équipe, puis revenez supprimer votre compte.",
+        "other": "Vous êtes la seule personne à administrer les équipes {teams}, qui comptent d'autres membres. Confiez l'administration à un autre de leurs membres, ou supprimez ces équipes, puis revenez supprimer votre compte."
       },
       "blockedMigrated": {
-        "one": "Vous êtes le seul administrateur de l'équipe {teams}, venue de biketeam : ses anciennes adresses biketeam redirigent vers elle, elle ne peut pas partir avec votre compte. Nommez un autre administrateur depuis ses membres, puis revenez supprimer votre compte. Pour supprimer l'équipe elle-même, un administrateur de la plateforme doit d'abord annuler sa bascule sur biketeam.",
-        "other": "Vous êtes le seul administrateur des équipes {teams}, venues de biketeam : leurs anciennes adresses biketeam redirigent vers elles, elles ne peuvent pas partir avec votre compte. Nommez un autre administrateur dans chacune, puis revenez supprimer votre compte. Pour supprimer ces équipes, un administrateur de la plateforme doit d'abord annuler leur bascule sur biketeam."
+        "one": "Vous êtes la seule personne à administrer l'équipe {teams}, venue de biketeam : ses anciennes adresses biketeam redirigent vers elle, elle ne peut pas partir avec votre compte. Confiez l'administration à un autre de ses membres, puis revenez supprimer votre compte. Pour supprimer l'équipe elle-même, l'administration de la plateforme doit d'abord annuler sa bascule sur biketeam.",
+        "other": "Vous êtes la seule personne à administrer les équipes {teams}, venues de biketeam : leurs anciennes adresses biketeam redirigent vers elles, elles ne peuvent pas partir avec votre compte. Confiez l'administration à un autre membre dans chacune, puis revenez supprimer votre compte. Pour supprimer ces équipes, l'administration de la plateforme doit d'abord annuler leur bascule sur biketeam."
       }
     },
     "community": "Communauté",
@@ -1603,7 +1603,7 @@
       "deleteAccount": "Pour supprimer votre compte, ouvrez Mon compte"
     },
     "privacyPage": {
-      "blockedTitle": "Utilisateurs bloqués",
+      "blockedTitle": "Personnes bloquées",
       "reportsTitle": "Rapports d'erreur"
     },
     "help": {
@@ -1641,7 +1641,7 @@
       "COMMENT_REPLY": "{actor} a répondu à votre commentaire",
       "RIDE_REMINDER": "Rappel : votre sortie part demain",
       "RIDE_GROUP_REMOVED": "Votre groupe a été retiré d'une sortie",
-      "RIDE_JOINED": "{actor} s'est inscrit à une sortie",
+      "RIDE_JOINED": "{actor} a rejoint une sortie",
       "COMMENT_ON_MY_PUBLICATION": "{actor} a commenté votre publication",
       "TEAM_INVITATION": "{actor} vous invite à rejoindre {team}",
       "RIDE_UPDATED": "Une sortie a été modifiée",
@@ -1734,7 +1734,7 @@
     },
     "signup": {
       "title": "Devenir testeur·se",
-      "subtitle": "Laissez votre adresse e-mail pour être averti·e dès qu'une bêta ouvre, sur n'importe laquelle de ces applications.",
+      "subtitle": "Laissez votre adresse e-mail : un message vous préviendra dès qu'une bêta ouvre, sur n'importe laquelle de ces applications.",
       "emailLabel": "Adresse e-mail",
       "submit": "S'inscrire",
       "validation": {
@@ -1786,7 +1786,7 @@
       "title": "Autoriser cet appareil ?",
       "question": "Autoriser {device} à accéder au compte {name} ?",
       "requestedAt": "Code demandé {when}.",
-      "warning": "Vérifiez que ce code est bien celui affiché sur votre appareil, devant vous. Si quelqu'un vous a envoyé ce lien, refusez : il obtiendrait l'accès à votre compte.",
+      "warning": "Vérifiez que ce code est bien celui affiché sur votre appareil, devant vous. Si quelqu'un vous a envoyé ce lien, refusez : cette personne obtiendrait l'accès à votre compte.",
       "authorize": "Autoriser",
       "deny": "Refuser"
     },
@@ -1847,12 +1847,12 @@
       "INVALID_FORMAT": "Le format du fichier est invalide",
       "INVALID_SLUG": "L'URL personnalisée est invalide",
       "INVALID_VISIBILITY": "Le paramètre de visibilité est invalide",
-      "LAST_ADMIN": "Impossible de retirer le dernier administrateur de l'équipe",
-      "SOLE_TEAM_ADMIN": "Vous êtes le seul administrateur d'une équipe qui compte d'autres membres. Nommez un autre administrateur, ou supprimez l'équipe, avant de supprimer votre compte.",
-      "SOLE_MIGRATED_TEAM_ADMIN": "Vous êtes le seul administrateur d'une équipe venue de biketeam, dont les anciennes adresses redirigent vers elle. Nommez un autre administrateur avant de supprimer votre compte ; pour supprimer l'équipe, un administrateur de la plateforme doit d'abord annuler sa bascule sur biketeam.",
-      "MIGRATED_TEAM": "Cette équipe est venue de biketeam, dont les anciennes adresses redirigent vers elle : elle ne peut pas être supprimée. Un administrateur de la plateforme doit d'abord annuler sa bascule sur biketeam.",
+      "LAST_ADMIN": "L'équipe doit garder au moins une personne pour l'administrer",
+      "SOLE_TEAM_ADMIN": "Vous êtes la seule personne à administrer une équipe qui compte d'autres membres. Confiez l'administration à un autre membre, ou supprimez l'équipe, avant de supprimer votre compte.",
+      "SOLE_MIGRATED_TEAM_ADMIN": "Vous êtes la seule personne à administrer une équipe venue de biketeam, dont les anciennes adresses redirigent vers elle. Confiez l'administration à un autre membre avant de supprimer votre compte ; pour supprimer l'équipe, l'administration de la plateforme doit d'abord annuler sa bascule sur biketeam.",
+      "MIGRATED_TEAM": "Cette équipe est venue de biketeam, dont les anciennes adresses redirigent vers elle : elle ne peut pas être supprimée. L'administration de la plateforme doit d'abord annuler sa bascule sur biketeam.",
       "NOT_FOUND": "La ressource demandée est introuvable",
-      "NOT_REGISTERED": "Vous n'êtes pas inscrit à cette sortie",
+      "NOT_REGISTERED": "Vous n'avez pas d'inscription à cette sortie",
       "PASSKEY_NOT_FOUND": "Clé d'accès introuvable",
       "PASSWORD_NOT_SET": "Aucun mot de passe n'est défini pour ce compte",
       "PUBLIC_RIDE_PRIVATE_ROUTE": "Une sortie publique ne peut pas utiliser un parcours privé",
@@ -1864,7 +1864,7 @@
       "TEAM_CREATION_DISABLED": "La création d'équipes est désactivée sur cette plateforme",
       "TEAM_INVITE_ALREADY_MEMBER": "Cette adresse appartient déjà à un membre de l'équipe.",
       "TEAM_INVITE_EMAIL_MISMATCH": "Cette invitation est adressée à quelqu'un d'autre. Déconnectez-vous et reconnectez-vous avec l'adresse invitée.",
-      "TEAM_INVITE_EXPIRED": "Cette invitation a expiré. Demandez-en une nouvelle à un administrateur de l'équipe.",
+      "TEAM_INVITE_EXPIRED": "Cette invitation a expiré. Demandez-en une nouvelle à l'équipe.",
       "TEAM_INVITE_INVALID": "Cette invitation n'existe pas ou n'est plus valide.",
       "TEAM_INVITE_NOT_PENDING": "Cette invitation n'est plus en attente.",
       "TEAM_INVITE_REVOKED": "Cette invitation a été annulée.",
@@ -1872,10 +1872,10 @@
       "TOKEN_EXPIRED": "Le jeton a expiré",
       "TOKEN_INVALID": "Le jeton est invalide",
       "TOO_MANY_TEAM_PAGES": "Le nombre maximum de pages pour cette équipe est atteint",
-      "UNAUTHORIZED": "Vous devez être connecté pour effectuer cette action",
+      "UNAUTHORIZED": "Connectez-vous pour effectuer cette action",
       "UNKNOWN": "Une erreur inattendue s'est produite",
-      "USER_NOT_FOUND": "Utilisateur introuvable",
-      "USER_NOT_SYNCED": "Le compte utilisateur n'est pas synchronisé",
+      "USER_NOT_FOUND": "Compte introuvable",
+      "USER_NOT_SYNCED": "Le compte n'est pas synchronisé",
       "VALIDATION": "Les données fournies sont invalides",
       "WEBHOOK_URL_INVALID": "Cette adresse de webhook n'est pas acceptée : elle doit commencer par https:// et pointer vers un service public.",
       "CONTENT_REJECTED": "Ce texte contient des termes interdits sur Pédalons. Reformulez-le pour publier.",
@@ -1959,7 +1959,7 @@
     },
     "emptyTitle": "Aucun commentaire",
     "loadMore": "Voir plus de commentaires",
-    "emptyMessage": "Soyez le premier à commenter.",
+    "emptyMessage": "Lancez la discussion.",
     "placeholder": "Écrire un commentaire...",
     "send": "Publier",
     "sending": "Publication...",
@@ -1973,18 +1973,18 @@
     "progress": "{loaded} commentaires sur {total}"
   },
   "participants": {
-    "title": "Participants",
-    "search": "Rechercher un participant…",
-    "emptyTitle": "Aucun participant",
-    "emptyMessage": "Personne n'est encore inscrit dans ce groupe.",
-    "noMatchTitle": "Aucun participant trouvé",
+    "title": "Personnes inscrites",
+    "search": "Rechercher une personne…",
+    "emptyTitle": "Aucune inscription",
+    "emptyMessage": "Aucune inscription dans ce groupe pour le moment.",
+    "noMatchTitle": "Personne ne correspond",
     "noMatchMessage": "Aucun nom ne correspond à « {search} ».",
-    "groupOrganizer": "Organisateur du groupe",
-    "emptyTripMessage": "Personne n'est encore inscrit à ce voyage.",
+    "groupOrganizer": "Capitaine",
+    "emptyTripMessage": "Aucune inscription à ce voyage pour le moment.",
     "loadMore": "Afficher plus",
-    "noun": "participants",
+    "noun": "personnes",
     "searchByName": "Rechercher par nom...",
-    "noMatchGeneric": "Aucun participant ne correspond à votre recherche."
+    "noMatchGeneric": "Personne ne correspond à votre recherche."
   },
   "status": {
     "draft": "Brouillon",
@@ -2050,8 +2050,8 @@
       "OTHER": "Autre raison"
     },
     "messageHint": "Précisez si besoin (facultatif)",
-    "recipients": "Transmis aux organisateurs de {team} et à l'équipe Pédalons.",
-    "recipientsNoTeam": "Transmis aux organisateurs de l'équipe et à l'équipe Pédalons.",
+    "recipients": "Transmis à qui organise {team} et à l'équipe Pédalons.",
+    "recipientsNoTeam": "Transmis à qui organise l'équipe et à l'équipe Pédalons.",
     "send": "Envoyer",
     "sending": "Envoi…",
     "reported": "Merci. Ce contenu est masqué pour vous.",
@@ -2064,9 +2064,9 @@
     "unblockSemantic": "Débloquer {name}",
     "unblocked": "Vous avez débloqué {name}.",
     "blockedUsers": {
-      "title": "Utilisateurs bloqués",
-      "hint": "Vous ne voyez plus leurs commentaires, publications et annonces. Ils ne savent pas que vous les avez bloqués.",
-      "emptyTitle": "Aucun utilisateur bloqué",
+      "title": "Personnes bloquées",
+      "hint": "Vous ne voyez plus leurs commentaires, publications et annonces. Ces personnes ne savent pas que vous les avez bloquées.",
+      "emptyTitle": "Aucune personne bloquée",
       "emptyMessage": "Pour bloquer quelqu'un, touchez ⋯ sur l'un de ses commentaires ou de ses annonces, ou son nom dans la liste des membres."
     }
   },

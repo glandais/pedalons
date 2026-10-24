@@ -14,7 +14,7 @@ import '../../../feedback/presentation/report_problem_button.dart';
 import '../../../../keys.dart';
 import '../../../profile/presentation/widgets/profile_subpage.dart';
 
-/// « Utilisateurs bloqués » — ouverte depuis le profil, mobile seulement.
+/// « Personnes bloquées » — ouverte depuis le profil, mobile seulement.
 ///
 /// Une liste courte et non paginée : on bloque une poignée de personnes, pas
 /// un annuaire. Chaque ligne porte **son** bouton « Débloquer », sans

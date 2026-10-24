@@ -182,7 +182,7 @@ void main() {
       expect(find.text('Système'), findsOneWidget);
       expect(find.text('Langue'), findsOneWidget);
       // La confidentialité a sa propre page.
-      expect(find.text('Être contacté par les membres'), findsNothing);
+      expect(find.text('Accepter les messages des membres'), findsNothing);
       // Ils s'appliquent immédiatement : aucun « Enregistrer » dans la carte.
       expect(find.text('Enregistrer'), findsNothing);
     });
@@ -388,7 +388,7 @@ void main() {
         findsOneWidget,
       );
       expect(
-        find.textContaining('seul membre de l\'équipe Mon équipe'),
+        find.textContaining('unique membre de l\'équipe Mon équipe'),
         findsOneWidget,
       );
 

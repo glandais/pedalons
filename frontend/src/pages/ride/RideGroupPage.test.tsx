@@ -153,7 +153,7 @@ describe('RideGroupPage (WEB-77)', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Groupe Rapide' })).toBeTruthy()
     const text = plain(document.body.textContent)
     expect(text).toContain('Sortie du samedi · ')
-    expect(text).toContain('11/12 participants')
+    expect(text).toContain('11/12 personnes')
     expect(text).toContain('1 place restante')
     expect(text).toContain('Départ')
     expect(text).toContain('avec la sortie')
@@ -191,7 +191,7 @@ describe('RideGroupPage (WEB-77)', () => {
     } as Partial<RideDto>)
     renderPage()
     expect(screen.queryByTestId('group-leader')).toBeNull()
-    expect(screen.queryByText('Meneur')).toBeNull()
+    expect(screen.queryByText('Capitaine')).toBeNull()
     expect(screen.queryByText('Créatrice de la sortie')).toBeNull()
   })
 
@@ -205,7 +205,7 @@ describe('RideGroupPage (WEB-77)', () => {
     renderPage()
     const leader = plain(screen.getByTestId('group-leader').textContent)
     expect(leader).toContain('Léa Meneuse')
-    expect(leader).toContain('Meneur')
+    expect(leader).toContain('Capitaine')
   })
 
   it('offers a member « Rejoindre », the one filled button', () => {
@@ -222,7 +222,7 @@ describe('RideGroupPage (WEB-77)', () => {
       groups: [group({ registered: true }), cool()],
     })
     renderPage()
-    expect(screen.getByText('Inscrit')).toBeTruthy()
+    expect(screen.getByText("J'y vais")).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Quitter' }))
     expect(state.leave).toHaveBeenCalledWith('g1')
     expect(screen.queryByRole('button', { name: 'Rejoindre' })).toBeNull()
@@ -241,7 +241,7 @@ describe('RideGroupPage (WEB-77)', () => {
     renderPage()
     expect(screen.queryByRole('button', { name: 'Rejoindre' })).toBeNull()
     const notice = screen.getByTestId('registered-elsewhere')
-    expect(plain(notice.textContent)).toContain('Vous êtes inscrit dans le groupe Cool.')
+    expect(plain(notice.textContent)).toContain('Votre inscription est dans le groupe Cool.')
     expect(notice.querySelector('a')?.getAttribute('href')).toMatch(/\/(groupes|groups)\/g2$/)
   })
 

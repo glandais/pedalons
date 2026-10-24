@@ -36,7 +36,7 @@ final class Moderation extends Module {
     await waitUntilGone(keys.profile.confirmDestructiveButton);
   }
 
-  /// « Confidentialité » → « Utilisateurs bloqués » → « Débloquer » on [userId]'s row.
+  /// « Confidentialité » → « Personnes bloquées » → « Débloquer » on [userId]'s row.
   Future<void> unblockFromProfile(String userId) async {
     await (await scrolledTo(keys.moderation.blockedUsersRow)).tap();
     await $(keys.moderation.unblockButton(userId)).tap();

@@ -39,7 +39,7 @@ class ProfilePageKeys {
   final helpRow = const _ProfilePageKey('helpRow');
 
   /// La flèche de retour d'une sous-page du profil, vers la vue d'ensemble
-  /// (ou « Confidentialité », sous « Utilisateurs bloqués »).
+  /// (ou « Confidentialité », sous « Personnes bloquées »).
   final backButton = const _ProfilePageKey('backButton');
 
   /// Confidentialité : l'interrupteur « Être contacté par les membres ».

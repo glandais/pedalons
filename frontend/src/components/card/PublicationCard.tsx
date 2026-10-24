@@ -215,7 +215,7 @@ export function PublicationCard({
             {/* First in the stack: deletion outranks type, status and visibility, which all
                 describe an entity one still believes exists. */}
             {publication.deleted && <DeletedBadge />}
-            {/* Derived on the client, like « Inscrit »: started, not over yet (API-85). */}
+            {/* Derived on the client, like « J'y vais »: started, not over yet (API-85). */}
             {isUnderWay(publication) && <InProgressBadge />}
             {isRegistered && (
               <Badge

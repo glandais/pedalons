@@ -118,7 +118,7 @@ void main() {
         tester.widget<PdlAppBar>(find.byType(PdlAppBar)).backSemanticLabel,
         'Retour au profil',
       );
-      expect(find.text('Être contacté par les membres'), findsOneWidget);
+      expect(find.text('Accepter les messages des membres'), findsOneWidget);
       expect(
         tester
             .widget<PdlSwitch>(find.byKey(keys.profile.contactableSwitch))

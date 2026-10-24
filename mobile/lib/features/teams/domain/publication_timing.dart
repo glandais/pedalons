@@ -4,7 +4,7 @@ import '../../../core/utils/formatters.dart';
 
 /// « En cours » : une sortie ou un voyage parti et pas encore rentré —
 /// `dateTime <= now < endDateTime`, la fin que le serveur stocke (ledger
-/// `API-85`). Un état dérivé côté client, comme « Inscrit » : le `finished`
+/// `API-85`). Un état dérivé côté client, comme « J'y vais » : le `finished`
 /// de l'API ne dit que « départ passé ». Une sortie annulée n'est jamais en
 /// cours. Une telle sortie garde sa place dans « À venir » de l'Agenda
 /// (`when=UPCOMING` lit la même fin). Même règle que `isUnderWay` au web

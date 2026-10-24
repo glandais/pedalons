@@ -136,7 +136,7 @@ void main() {
 
     expect(find.text('Signaler ce commentaire'), findsOneWidget);
     expect(
-      find.text('Transmis aux organisateurs de Gaby et à l\'équipe Pédalons.'),
+      find.text('Transmis à qui organise Gaby et à l\'équipe Pédalons.'),
       findsOneWidget,
     );
 
