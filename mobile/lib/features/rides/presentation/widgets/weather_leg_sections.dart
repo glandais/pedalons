@@ -298,6 +298,13 @@ class _CheckpointRow extends ConsumerWidget {
               ),
             },
           );
+    final String? amount = w == null || w.precipitation <= 0
+        ? null
+        : 'rides.weather.precipitation'.tr(
+            namedArgs: <String, String>{
+              'amount': AppFormatters.formatPrecipitation(w.precipitation),
+            },
+          );
     final String? relativeLabel = relative?.labelKey.tr();
     final String? wind = w == null
         ? null
@@ -317,6 +324,7 @@ class _CheckpointRow extends ConsumerWidget {
         ?relativeLabel,
         ?wind,
         ?rain,
+        ?amount,
         if (w == null) 'rides.weather.checkpointNoWeather'.tr(),
       ].join(', '),
       child: ExcludeSemantics(
@@ -425,6 +433,7 @@ class _CheckpointRow extends ConsumerWidget {
                             ],
                             Text(wind!, style: t.xs),
                             if (rain != null) Text(rain, style: t.xs),
+                            if (amount != null) Text(amount, style: t.xs),
                           ],
                         ),
                       ],
