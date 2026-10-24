@@ -55,6 +55,8 @@ export interface Dataset {
   team: TeamDetailDto
   sessions: Record<Exclude<RenderRole, 'anonymous'>, AuthResponse>
   ride: RideDto
+  /** A ride of a single group on `route`: what a solo ride's fullscreen map draws (WEB-118). */
+  soloRide: RideDto
   /** Its route, the first stage's, and the one route the screens name. */
   route: RouteDto
   /** The route of the ride's first group, and of the trip's second stage. */
@@ -143,7 +145,7 @@ export async function buildDataset(label: string): Promise<Dataset> {
     }),
     newRoute(organizer, slug, `Boucle ${label}`, windingTrack(80), { visibility: 'PUBLIC' }),
   ])
-  const [ride, trip, publication, ad, page, template, preview] = await Promise.all([
+  const [ride, soloRide, trip, publication, ad, page, template, preview] = await Promise.all([
     newRide(organizer, slug, `Sortie ${label}`, {
       visibility: 'PUBLIC',
       routeSlug: route.slug,
@@ -161,6 +163,11 @@ export async function buildDataset(label: string): Promise<Dataset> {
         },
         { name: 'Groupe B' },
       ],
+    }),
+    // Its one default group rides the ride's route
+    newRide(organizer, slug, `Sortie solo ${label}`, {
+      visibility: 'PUBLIC',
+      routeSlug: route.slug,
     }),
     newTrip(
       organizer,
@@ -228,6 +235,7 @@ export async function buildDataset(label: string): Promise<Dataset> {
     team,
     sessions: { outsider, member, organizer, teamAdmin, platformAdmin },
     ride,
+    soloRide,
     route,
     otherRoute,
     trip,

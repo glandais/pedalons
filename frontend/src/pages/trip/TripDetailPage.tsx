@@ -1,4 +1,4 @@
-import { useState, useMemo, lazy, Suspense } from 'react'
+import { useState, useMemo } from 'react'
 import { getGetTeamDashboardQueryKey } from '@/api/endpoints/teams/teams'
 import { useLocation, useParams, Navigate, useNavigate } from 'react-router-dom'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
@@ -6,7 +6,6 @@ import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import { notifications } from '@mantine/notifications'
 import { paths } from '../../config/paths'
-import { ErrorBoundary } from '../../components/common/ErrorBoundary'
 import { UserAvatarGroup } from '../../components/common/UserAvatar'
 import { ParticipantListModal } from '../../components/ride/ParticipantListModal'
 import { useUnits } from '../../hooks/useUnits'
@@ -35,7 +34,6 @@ import {
   UnstyledButton,
   Alert,
   Anchor,
-  Skeleton,
   Loader,
 } from '@mantine/core'
 import {
@@ -58,10 +56,6 @@ import { TripLayout } from '../../components/trip/TripLayout'
 import { TeamContextBanner } from '../../components/team/TeamContextBanner'
 import { ConfirmDialog } from '../../components/common/ConfirmDialog'
 
-// Lazy load the map component (pulls in map-vendor ~1MB and chart-vendor ~150KB)
-const RoutesMapView = lazy(() =>
-  import('../../components/route/RoutesMapView').then((m) => ({ default: m.RoutesMapView }))
-)
 import type { MapRouteItem } from '../../components/route/RoutesMapView'
 import { Rendezvous } from '../../components/common/Rendezvous'
 import { tripEndZone } from '../../utils/rendezvous'
@@ -73,6 +67,7 @@ import { CommentSection } from '../../components/comment'
 import { useCanonicalPath } from '../../hooks/useCanonicalPath'
 import { STATUS_COLORS } from '@/lib/badgeColors.generated'
 import { TagList } from '@/components/tag'
+import { TripOverviewMap } from '@/components/trip/TripOverviewMap'
 
 export function TripDetailPage() {
   const { t } = useTranslation()
@@ -473,17 +468,16 @@ export function TripDetailPage() {
             {/* Map: global route if defined, otherwise all stage routes. Shown first on mobile,
                 spans 2 cols on xl, sticky on md+ (via .detail-map). */}
             <Box className="detail-map" style={{ order: 1 }}>
+              {/* With a forecast, its Météo mode: every stage by its own wind (WEB-118) */}
               {mapItems.length > 0 && (
-                <ErrorBoundary variant="inline">
-                  <Suspense fallback={<Skeleton height={500} radius="md" />}>
-                    <RoutesMapView
-                      items={mapItems}
-                      teamSlug={teamSlug!}
-                      highlightedItemId={highlightedStageId}
-                      onItemHover={setHighlightedStageId}
-                    />
-                  </Suspense>
-                </ErrorBoundary>
+                <TripOverviewMap
+                  trip={trip}
+                  items={mapItems}
+                  teamSlug={teamSlug!}
+                  weather={weatherQuery.data}
+                  highlightedItemId={highlightedStageId}
+                  onItemHover={setHighlightedStageId}
+                />
               )}
             </Box>
 

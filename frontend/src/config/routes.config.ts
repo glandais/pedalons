@@ -4,11 +4,16 @@ import { pathVariants } from './paths'
 import { tRegister } from '@/lib/i18nUtils'
 import { prefetchGetTeamQuery } from '@/api/endpoints/teams/teams'
 import { prefetchTeamSwitcher } from '@/components/team/teamSwitcherData'
-import { prefetchRideDetail } from '@/pages/ride/rideDetailData'
+import {
+  prefetchRideDetail,
+  prefetchRideMap,
+  rideMapDataRedirect,
+} from '@/pages/ride/rideDetailData'
 import {
   prefetchRideGroup,
   prefetchRideGroupMap,
   rideGroupDataRedirect,
+  rideGroupMapDataRedirect,
 } from '@/pages/ride/rideGroupData'
 import { prefetchRouteList } from '@/pages/route/routeListData'
 import { prefetchTripDetail } from '@/pages/trip/tripDetailData'
@@ -778,9 +783,26 @@ export const routesConfig: RoutesConfig = [
     breadcrumb: { type: 'static', i18nKey: tRegister('map.fullscreen.title') },
     prefetch: (queryClient, params) =>
       prefetchRideGroupMap(queryClient, params.teamSlug!, params.rideSlug!),
-    // No group page for a ride with at most one group (WEB-79), so no group map either.
-    dataRedirect: rideGroupDataRedirect,
+    // No group page for a ride with at most one group (WEB-79), so no group map either: a solo
+    // ride's is the ride's own map (WEB-118), `?color=` kept; a ride without groups, its page.
+    dataRedirect: rideGroupMapDataRedirect,
     meta: rideGroupMeta,
+  },
+  {
+    // A solo ride's map in full screen (ledger WEB-118): its one group's route, its colour mode in
+    // `?color=` — the ride page's reads, minus what only that page's children read.
+    id: 'ride-map',
+    paths: pathVariants.rideMap(':teamSlug', ':rideSlug'),
+    component: pages.RideFullscreenMapPage,
+    auth: 'public',
+    layout: 'bare',
+    parentId: 'ride-detail',
+    breadcrumb: { type: 'static', i18nKey: tRegister('map.fullscreen.title') },
+    prefetch: (queryClient, params) =>
+      prefetchRideMap(queryClient, params.teamSlug!, params.rideSlug!),
+    // Only a solo ride has this map: any other goes to its page.
+    dataRedirect: rideMapDataRedirect,
+    meta: rideMeta,
   },
   {
     id: 'ride-edit',

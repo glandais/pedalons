@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
+import { Fragment, useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import type { LngLatBoundsLike } from 'maplibre-gl'
 import { Source, Layer, MapRef, MapMouseEvent, FullscreenControl } from 'react-map-gl/maplibre'
 import { Line } from 'react-chartjs-2'
@@ -22,7 +22,11 @@ import { Box, Center, Text, Paper, useMantineTheme } from '@mantine/core'
 import { useMapHeight } from '@/hooks/useResponsive'
 import { useRoutesBulk } from '@/hooks/useRoutesBulk'
 import { useResolvedColorScheme } from '@/hooks/useResolvedColorScheme'
-import type { RouteDetailDto } from '@/api/dto'
+import type { RouteDetailDto, WeatherAttributionDto } from '@/api/dto'
+import { WeatherCheckpointMarkers } from '@/components/weather/WeatherCheckpointMarkers'
+import type { MapItemWind } from '@/lib/tripWeatherOnMap'
+import { attributionHtml, relativeWindStrokeColors } from '@/lib/weatherOnRoute'
+import { windTraceLines } from './routesMapWind'
 import { StartMarker, EndMarker, HoverMarker } from '../map/MapMarkers'
 import {
   calculateBounds,
@@ -50,6 +54,14 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, T
  * the whole control column (zoom, basemaps, fullscreen).
  */
 const ROUTES_FIT_PADDING = { top: 50, bottom: 170, left: 50, right: 50 } as const
+
+const EMPTY_FEATURES: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] }
+
+/** The badge whose popup is open, among every trace's: one at a time over the whole map. */
+interface OpenBadge {
+  itemId: string
+  index: number
+}
 
 // One item, one layer. The ride page passes one item per distinct route (`rideMapRoutes`); a trip
 // stage carries the whole RouteDto, so TripDetailPage narrows it down to the slug.
@@ -83,6 +95,15 @@ export interface RoutesMapViewProps {
   onItemSelect?: (itemId: string) => void
   /** Map size variant: 'compact' for cards, 'standard' for detail pages, 'full' for full-screen */
   variant?: 'compact' | 'standard' | 'full'
+  /**
+   * The Météo mode, when set (a trip's overview, ledger WEB-118): each trace coloured by the wind of
+   * its own leg (by item id) and every leg's badges, each read in its own zone; a trace without one
+   * takes the line's default colour. The page decides which items have a forecast
+   * (`tripMapWinds`); left out, each trace keeps its own colour.
+   */
+  winds?: ReadonlyMap<string, MapItemWind>
+  /** The forecast's credit, owed while the wind colours the traces. */
+  windAttribution?: WeatherAttributionDto
 }
 
 export function RoutesMapView({
@@ -93,6 +114,8 @@ export function RoutesMapView({
   selectedItemId,
   onItemSelect,
   variant = 'full',
+  winds,
+  windAttribution,
 }: RoutesMapViewProps) {
   const { t } = useTranslation()
   const mapHeight = useMapHeight(variant)
@@ -341,14 +364,30 @@ export function RoutesMapView({
     chart.update()
   }, [hoveredPointIndex, chartColors.crosshair])
 
-  // Create GeoJSON data for each route
+  // Create GeoJSON data for each route: its whole tracks (and its chevrons), plus, in the Météo
+  // mode, its stretches of one wind colour
+  const windColors = useMemo(() => relativeWindStrokeColors(theme), [theme])
   const routeGeoJSONs = useMemo(() => {
     return routesData.map((route) => ({
       itemId: route.itemId,
       color: route.color,
       geojson: routeToGeoJSON(route.route, { id: route.itemId }),
+      windLines: winds
+        ? windTraceLines(route.route.tracks, winds.get(route.itemId), windColors)
+        : undefined,
     }))
-  }, [routesData])
+  }, [routesData, winds, windColors])
+  // The badge open among every trace's, one at a time (WEB-118)
+  const [openBadge, setOpenBadge] = useState<OpenBadge | null>(null)
+  // Its markers gone — the Météo mode left, its trace or every trace hidden, its forecast dropped —,
+  // the badge closes for good: back on screen, its popup never reopens without a gesture, as the
+  // uncontrolled markers of a group's or a stage's map restart closed.
+  if (
+    openBadge &&
+    (tracksHidden || hiddenItemIds.has(openBadge.itemId) || !winds?.get(openBadge.itemId))
+  ) {
+    setOpenBadge(null)
+  }
 
   // Interactive layer IDs for hover detection
   const interactiveLayerIds = useMemo(() => {
@@ -542,32 +581,63 @@ export function RoutesMapView({
                 const isHighlighted = highlightedRoute?.itemId === route.itemId
                 const visibility = hiddenItemIds.has(route.itemId) ? 'none' : 'visible'
 
+                // Which way the route runs: chevrons along its whole tracks, in the order of its
+                // points. In the Météo mode they take a source of their own — on the wind's short
+                // stretches they would restart at each one —; otherwise they share the line's, so
+                // MapLibre's worker cuts each trace once. One layer id per source: a layer moving
+                // to the other source is a new one, never the old one found still in the style.
+                const arrows = (
+                  <Layer
+                    id={`${route.windLines ? 'wind-arrows' : 'arrows'}-${route.itemId}`}
+                    type="symbol"
+                    layout={{ ...routeArrowLayout, visibility }}
+                  />
+                )
                 return (
-                  <Source
-                    key={`source-${route.itemId}`}
-                    id={`route-${route.itemId}`}
-                    type="geojson"
-                    data={route.geojson}
-                  >
-                    <Layer
-                      id={`line-${route.itemId}`}
-                      type="line"
-                      layout={{ visibility }}
-                      paint={{
-                        'line-color': route.color,
-                        'line-width': isHighlighted ? 8 : 5,
-                        'line-opacity': isHighlighted ? 0.9 : 0.5,
-                      }}
-                    />
-                    {/* Which way the route runs: chevrons along it, in the order of its points */}
-                    <Layer
-                      id={`arrows-${route.itemId}`}
-                      type="symbol"
-                      layout={{ ...routeArrowLayout, visibility }}
-                    />
-                  </Source>
+                  <Fragment key={`source-${route.itemId}`}>
+                    <Source
+                      id={`route-${route.itemId}`}
+                      type="geojson"
+                      data={route.windLines ?? route.geojson}
+                    >
+                      <Layer
+                        id={`line-${route.itemId}`}
+                        type="line"
+                        layout={{ visibility }}
+                        paint={{
+                          // In the Météo mode, the colour of each stretch, every trace as legible
+                          'line-color': route.windLines ? ['get', 'color'] : route.color,
+                          'line-width': isHighlighted ? 8 : 5,
+                          'line-opacity': isHighlighted || route.windLines ? 0.9 : 0.5,
+                        }}
+                      />
+                      {!route.windLines && arrows}
+                    </Source>
+                    {route.windLines && (
+                      <Source
+                        id={`route-arrows-${route.itemId}`}
+                        type="geojson"
+                        data={route.geojson}
+                      >
+                        {arrows}
+                      </Source>
+                    )}
+                  </Fragment>
                 )
               })}
+
+              {/* The credit of what colours the traces, on a source of its own (as RouteTrackMap) */}
+              {winds && windAttribution && (
+                <Source
+                  key={windAttribution.url}
+                  id="routes-wind-credit"
+                  type="geojson"
+                  data={EMPTY_FEATURES}
+                  attribution={attributionHtml(windAttribution)}
+                >
+                  <Layer id="routes-wind-credit" type="line" paint={{ 'line-opacity': 0 }} />
+                </Source>
+              )}
 
               {startPoint && <StartMarker longitude={startPoint[0]} latitude={startPoint[1]} />}
               {endPoint && <EndMarker longitude={endPoint[0]} latitude={endPoint[1]} />}
@@ -576,6 +646,32 @@ export function RoutesMapView({
               {hoveredPoint && (
                 <HoverMarker longitude={hoveredPoint[0]} latitude={hoveredPoint[1]} />
               )}
+
+              {/* Every shown trace's forecast points, each in its own zone (WEB-118) */}
+              {winds &&
+                visibleRoutes.map((route) => {
+                  const wind = winds.get(route.itemId)
+                  if (!wind) return null
+                  return (
+                    <WeatherCheckpointMarkers
+                      key={`weather-${route.itemId}`}
+                      tracks={route.route.tracks}
+                      leg={wind.leg}
+                      timezone={wind.timezone}
+                      context={route.itemName}
+                      openIndex={openBadge?.itemId === route.itemId ? openBadge.index : null}
+                      onOpenChange={(index) =>
+                        setOpenBadge((current) =>
+                          index !== null
+                            ? { itemId: route.itemId, index }
+                            : current?.itemId === route.itemId
+                              ? null
+                              : current
+                        )
+                      }
+                    />
+                  )
+                })}
             </>
           )}
         </PedalonsMap>

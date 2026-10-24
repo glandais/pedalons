@@ -1,4 +1,4 @@
-// The wind on a group's route map (ledger WEB-115, plan docs/plans/2026-10-24-weather-on-map.md):
+// The wind on a group's route map (ledger WEB-115, plan docs/plans/archive/2026-10-24-weather-on-map.md):
 // the leg's wind stretches, which the API places by distance only, laid on the track the page
 // already holds. Pure and free of the map chunk, so the page and its tests read it without
 // MapLibre.

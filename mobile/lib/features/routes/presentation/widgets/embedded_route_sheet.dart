@@ -39,6 +39,8 @@ class EmbeddedRouteSheet extends ConsumerStatefulWidget {
     required this.routeKey,
     this.mapHeight = 240,
     this.showOpenFullAction = true,
+    this.mapLayer,
+    this.belowMap,
   });
 
   final RouteKey routeKey;
@@ -46,6 +48,15 @@ class EmbeddedRouteSheet extends ConsumerStatefulWidget {
 
   /// Propose « Voir la fiche complète », qui ouvre l'écran 13.
   final bool showOpenFullAction;
+
+  /// Ce que l'écran hôte pose en plus sur la carte — le mode « Météo » du
+  /// détail d'une étape (ledger `MOB-94`) —, transmis au plein écran.
+  /// `null` sur l'écran 13 : la fiche y reste identique.
+  final RouteMapLayerBuilder? mapLayer;
+
+  /// Posé juste sous la carte — la puce « Météo » de l'étape : la vignette
+  /// ne se manipule pas, sa bascule ne peut pas vivre dedans. `null` : rien.
+  final Widget? belowMap;
 
   @override
   ConsumerState<EmbeddedRouteSheet> createState() => _EmbeddedRouteSheetState();
@@ -134,9 +145,14 @@ class _EmbeddedRouteSheetState extends ConsumerState<EmbeddedRouteSheet> {
                 allowFullscreen: true,
                 colorBy: colorBy,
                 selection: _selection,
+                layer: widget.mapLayer,
               ),
             ),
           ),
+          if (widget.belowMap != null) ...<Widget>[
+            const SizedBox(height: PdlSpacing.chipGap),
+            widget.belowMap!,
+          ],
           const SizedBox(height: PdlSpacing.section),
           _profile(route, cursor, units, colorBy),
           // L'espace n'est posé que si la section rend quelque chose : la

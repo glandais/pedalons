@@ -1107,7 +1107,10 @@
       "noLocation": "Add a route to this stage to show its weather. Only organisers see this message.",
       "emptyTitle": "No weather for this stage",
       "emptyMessage": "There is no forecast to show for this stage.",
-      "legSpeedDefault": "Passages estimated at {speed}, the default speed: the stage sets none"
+      "legSpeedDefault": "Passages estimated at {speed}, the default speed: the stage sets none",
+      "mapSharesAll": "Shares added up over all {count} stages",
+      "mapSharesSome": "Shares added up over the stages with a forecast: {count} of {total}",
+      "mapSharesOne": "Shares of the only stage with a forecast: {stage}"
     }
   },
   "routes": {

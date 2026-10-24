@@ -4,7 +4,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { MantineProvider } from '@mantine/core'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { RideDto, RideGroupDto, RideWeatherDto, TeamDetailDto } from '@/api/dto'
-import { Status } from '@/api/dto'
+import { Status, WeatherStatus } from '@/api/dto'
 import { okWeather, plain, weatherLeg } from '@/test/weatherFixtures'
 import { pathVariants, paths } from '@/config/paths'
 
@@ -21,6 +21,7 @@ const state = vi.hoisted(() => ({
   ride: undefined as unknown,
   weather: undefined as unknown,
   join: (() => {}) as (groupId: string) => void,
+  map: {} as Record<string, unknown>,
 }))
 
 vi.mock('./rideDetailData', async (importOriginal) => {
@@ -66,7 +67,10 @@ vi.mock('@/components/route/RoutesMapView', () => ({
   RoutesMapView: () => <div data-testid="routes-map" />,
 }))
 vi.mock('@/components/route/RouteMapView', () => ({
-  RouteMapView: () => <div data-testid="route-map" />,
+  RouteMapView: (props: Record<string, unknown>) => {
+    state.map = props
+    return <div data-testid="route-map" />
+  },
 }))
 vi.mock('@/components/comment', () => ({ CommentSection: () => null }))
 vi.mock('@/components/moderation/ContentActionsMenu', () => ({ ContentActionsMenu: () => null }))
@@ -194,6 +198,40 @@ describe('RideDetailPage — a ride with one group is its group page (WEB-79)', 
     const weather = container.querySelector('#meteo')
     expect(weather?.textContent).toContain('Météo au départ')
     expect(weather?.textContent).toContain('Exposition au vent')
+  })
+
+  it("offers the Météo mode on its map, its fullscreen map the ride's own in that mode (WEB-118)", async () => {
+    renderPage()
+    await screen.findByTestId('route-map')
+    // The grade by default, the ride's map opened without a mode
+    expect(state.map.fullscreenPath).toBe(paths.rideMap('np', 'sortie'))
+    expect(state.map.lineColorAt).toBeUndefined()
+    fireEvent.click(screen.getByLabelText('Météo'))
+    expect(state.map.fullscreenPath).toBe(`${paths.rideMap('np', 'sortie')}?color=wind`)
+    expect(state.map.lineColorAt).toBeTypeOf('function')
+    expect(state.map.kmMarkers).toBe(false)
+    expect(state.map.overlays).toBeTruthy()
+    expect(screen.getByTestId('wind-map-legend')).toBeTruthy()
+  })
+
+  it('offers no Météo mode without a forecast, nor on a finished or cancelled ride', async () => {
+    state.weather = {
+      ...okWeather,
+      legs: [weatherLeg('g1', { status: WeatherStatus.NOT_YET_AVAILABLE })],
+    }
+    renderPage()
+    await screen.findByTestId('route-map')
+    expect(screen.queryByLabelText('Météo')).toBeNull()
+    cleanup()
+    state.weather = { ...okWeather, legs: [weatherLeg('g1')] }
+    for (const over of [{ finished: true }, { status: Status.CANCELLED }]) {
+      state.ride = ride(over)
+      renderPage()
+      await screen.findByTestId('route-map')
+      expect(screen.queryByLabelText('Météo')).toBeNull()
+      expect(state.map.fullscreenPath).toBe(paths.rideMap('np', 'sortie'))
+      cleanup()
+    }
   })
 
   it('keeps one linked card per group on a ride with two', async () => {

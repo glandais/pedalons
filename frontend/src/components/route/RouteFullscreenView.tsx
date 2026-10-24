@@ -5,7 +5,7 @@ import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { IconArrowLeft } from '@tabler/icons-react'
 import { ActionIcon, Box, Center, Text } from '@mantine/core'
 import type { WeatherAttributionDto, WeatherLegDto } from '@/api/dto'
-import { WindMapLegend } from '@/components/weather/WindMapLegend'
+import { WindMapLegend, type WindLegendSubject } from '@/components/weather/WindMapLegend'
 import { getOverlayBg } from '@/lib/colors'
 import { attributionHtml } from '@/lib/weatherOnRoute'
 import { useRouteWindColors } from '@/hooks/useRouteWindColors'
@@ -34,7 +34,7 @@ export type FullscreenRoute = MappableRoute & {
   elevationLoss: number
 }
 
-interface RouteFullscreenViewProps {
+export interface RouteFullscreenViewProps {
   route: FullscreenRoute
   /** Title shown in the toolbar (the route/stage/track name). */
   title: string
@@ -59,7 +59,9 @@ interface RouteFullscreenViewProps {
   windLeg?: WeatherLegDto
   /** The forecast's credit, owed while the wind colours the line. */
   windAttribution?: WeatherAttributionDto
-  /** The ride's zone: the passages of the forecast's points read in it. */
+  /** Whose speed the legend speaks of when the passages assume the default: a group, a stage. */
+  windSubject?: WindLegendSubject
+  /** The ride's or the stage's zone: the passages of the forecast's points read in it. */
   timezone?: string
 }
 
@@ -77,6 +79,7 @@ export function RouteFullscreenView({
   onColorByChange,
   windLeg,
   windAttribution,
+  windSubject,
   timezone,
 }: RouteFullscreenViewProps) {
   const { t } = useTranslation()
@@ -185,7 +188,7 @@ export function RouteFullscreenView({
                 backgroundColor: stripBg,
               }}
             >
-              <WindMapLegend leg={wind} attribution={windAttribution} />
+              <WindMapLegend leg={wind} subject={windSubject} attribution={windAttribution} />
             </Box>
           )}
           {/* Fixed elevation strip below the map (no overlap) */}

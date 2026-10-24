@@ -31,6 +31,7 @@ import '../../providers/ride_group_selection_provider.dart';
 import '../../providers/ride_registration_controller.dart';
 import '../../providers/ride_scroll_target_provider.dart';
 import '../../domain/ride_weather_display.dart';
+import '../../domain/ride_weather_map.dart';
 import '../../domain/solo_group.dart';
 import '../../providers/ride_weather_provider.dart';
 import '../widgets/ride_elevation_section.dart';
@@ -39,6 +40,7 @@ import '../widgets/ride_group_action_bar.dart';
 import '../widgets/ride_groups_section.dart';
 import '../widgets/ride_solo_group_section.dart';
 import '../widgets/ride_weather_card.dart';
+import '../widgets/weather_map_layer.dart';
 import '../../../feedback/presentation/report_problem_button.dart';
 import '../../../../keys.dart';
 import '../../../../core/utils/push_location.dart';
@@ -215,15 +217,38 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
     // Le leg du groupe d'une sortie solo, pour son arrivée estimée. Une
     // sortie terminée ou annulée ne demande même pas sa météo.
     final WeatherLegDto? soloLeg;
+    final RideWeatherDto? soloWeather;
     if (solo == null || ride.isPast || ride.isCancelled) {
+      soloWeather = null;
       soloLeg = null;
     } else {
-      final RideWeatherDto? weather = ref
-          .watch(rideWeatherProvider(rideKey))
-          .value;
-      soloLeg = weather == null
+      soloWeather = ref.watch(rideWeatherProvider(rideKey)).value;
+      soloLeg = soloWeather == null
           ? null
-          : weatherLegOfGroup(weather.legs, solo.id);
+          : weatherLegOfGroup(soloWeather.legs, solo.id);
+    }
+
+    // Le mode « Météo » de la carte d'une sortie solo, comme dans l'Aperçu
+    // d'un groupe (ledger `MOB-94`). Écouté sans reconstruire la page pour le
+    // garder vivant tant qu'elle est montée : `autoDispose`, il tomberait
+    // sinon le temps d'un aller-retour par une autre page.
+    ref.listen(rideMapWindModeProvider(rideKey), (bool? _, bool _) {});
+    // Une prévision perdue au refetch éteint le mode : revenue, elle ne
+    // recolore pas le tracé sans nouveau choix (plan 2026-10-24-weather-on-map
+    // §4, la règle de `RideGroupPage`).
+    if (solo != null && !ride.isPast && !ride.isCancelled) {
+      ref.listen(rideWeatherProvider(rideKey), (
+        _,
+        AsyncValue<RideWeatherDto> next,
+      ) {
+        final RideWeatherDto? dto = next.value;
+        final WeatherLegDto? nextLeg = dto == null
+            ? null
+            : weatherLegOfGroup(dto.legs, solo.id);
+        if (!showsWindOnMap(nextLeg)) {
+          ref.read(rideMapWindModeProvider(rideKey).notifier).state = false;
+        }
+      });
     }
 
     return PdlScreenScaffold(
@@ -340,6 +365,8 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
             ref,
             routeOnly ? null : selected,
             selectedRoute,
+            soloLeg,
+            soloWeather?.attribution,
           ),
         ),
         SliverToBoxAdapter(
@@ -582,6 +609,8 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
     WidgetRef ref,
     String? selected,
     String? routeSlug,
+    WeatherLegDto? soloLeg,
+    WeatherAttributionDto? attribution,
   ) {
     if (ride.groups.isEmpty && ride.routeSlug == null) {
       return const SizedBox.shrink();
@@ -592,6 +621,11 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
     // Une entrée de légende par parcours, comme les couches de la carte.
     final List<RideRouteLayer> layers = rideRouteLayers(ride);
     final String mainRouteLabel = 'rides.mainRoute'.tr();
+    // Le parcours que le vent colorerait : celui du groupe d'une sortie solo.
+    final RideGroupDto? solo = soloGroupOf(ride);
+    final String? windSlug = solo == null
+        ? null
+        : effectiveRouteSlug(ride, solo);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -600,7 +634,32 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
           child: Text('rides.groupsRoute'.tr(), style: t.sectionTitle),
         ),
-        RideGroupsMap(rideKey: rideKey, ride: ride),
+        // Le leg n'est là que pour une sortie solo : la carte propose alors
+        // le mode « Météo » sur le parcours de son groupe (ledger `MOB-94`).
+        RideGroupsMap(
+          rideKey: rideKey,
+          ride: ride,
+          weatherLeg: soloLeg,
+          weatherAttribution: attribution,
+        ),
+        // Un parcours à colorer, dessiné (pas masqué dans la feuille des
+        // couches), et une prévision.
+        if (windSlug != null &&
+            showsWindOnMap(soloLeg) &&
+            !(layers.length > 1 &&
+                ref
+                    .watch(hiddenRideRoutesProvider(rideKey))
+                    .contains(windSlug)))
+          Padding(
+            padding: const EdgeInsets.only(top: PdlSpacing.chipGap),
+            child: WeatherMapChip(
+              chipKey: keys.ride.windMapChip,
+              selected: ref.watch(rideMapWindModeProvider(rideKey)),
+              onChanged: (bool on) =>
+                  ref.read(rideMapWindModeProvider(rideKey).notifier).state =
+                      on,
+            ),
+          ),
         if (layers.length > 1)
           Padding(
             padding: const EdgeInsets.only(top: 8),

@@ -16,6 +16,22 @@ fichier garde **ce qui est fait**, et ce qu'il ne faut pas défaire.
 
 ## MOB — Application mobile
 
+- [x] `MOB-94` **La météo sur la carte, palier 3 lot B : sortie solo et voyages** (25 octobre 2026,
+  contrat inchangé) — le mode Météo (puce sous la carte encastrée, tracé coloré, légende et crédit,
+  pastilles et feuille en plein écran) gagne le détail d'une sortie solo (`ride_detail_page.dart`,
+  seul le parcours du groupe unique se colore), la carte d'une étape (`RouteMap` via un point
+  d'extension générique `RouteMapLayer`, sans notion de météo dans le dossier routes) et la carte
+  d'ensemble du voyage (`trip_map.dart` : chaque étape colorée par son vent, pastilles de toutes les
+  étapes, légende qui additionne les legs et dit lesquels sont comptés). Brique commune
+  `weather_map_layer.dart` (couleurs mémorisées par leg, pastilles, puce, interrupteur, légende),
+  reprise par le groupe ; `tripMapWindModeProvider` (une clé par voyage, partagé entre la carte
+  d'ensemble et celle d'une étape) ; `PdlMapTrack.emphasized`. Plan [`2026-10-24-weather-on-map.md`](plans/archive/2026-10-24-weather-on-map.md). Couvert par
+  `ride_solo_weather_map_test.dart`, `trip_map_weather_test.dart`, `stage_map_weather_test.dart`,
+  `ride_detail_page_test.dart`, `pdl_map_controller_test.dart`. **À ne pas défaire** : un tracé
+  coloré par le vent est `emphasized` (opacité et largeur du sélectionné), sinon la nuance 6 est
+  délavée à 50 % ; le mode du voyage ne s'éteint que si la page **perdait** une prévision qu'elle
+  montrait ; pas de légende quand aucune étape colorée n'est dessinée ; un parcours masqué dans les
+  couches retire légende, crédit et puce ; les pastilles d'un voyage ont un préfixe d'id par étape.
 - [x] `MOB-93` **La météo sur la carte du groupe, palier 3 lot A : la carte de l'onglet Météo** (25
   octobre 2026, contrat inchangé) — l'onglet Météo d'un groupe n'avait pas de carte. Une vignette
   non manipulable en tête, **toujours en mode Météo** (tracé coloré, légende, crédit, sans puce ni
@@ -24,7 +40,7 @@ fichier garde **ce qui est fait**, et ce qu'il ne faut pas défaire.
   curseur sur la carte à la distance chaînée (`pointsAtDistances`), le retoucher l'ôte.
   `RideGroupsMap` gagne `forceWeatherMode` et `cursorDistance` ; `core/pdl` gagne `PdlMap.cursor`
   (curseur déclaratif), `PdlMapHero.tapOpensFullscreen` et `PdlMapTapPassThrough` (zones que la
-  couche de toucher laisse passer, dont le ⓘ des crédits). Plan [`2026-10-24-weather-on-map.md`](plans/2026-10-24-weather-on-map.md). Couvert par
+  couche de toucher laisse passer, dont le ⓘ des crédits). Plan [`2026-10-24-weather-on-map.md`](plans/archive/2026-10-24-weather-on-map.md). Couvert par
   `ride_group_page_test.dart` (carte selon le statut, curseur sur deux traces, plein écran, Aperçu
   inchangé et une seule carte montée), `ride_groups_map_wind_test.dart`,
   `pdl_map_hero_fullscreen_test.dart`, `trip_weather_test.dart`. **À ne pas défaire** : le mode
@@ -41,7 +57,7 @@ fichier garde **ce qui est fait**, et ce qu'il ne faut pas défaire.
   part de celle des bornes) et `PdlMapBearing`, le cap de la carte. Placement par
   `pointsAtDistances` sur la distance chaînée du palier 1. Le crédit Open-Meteo descend de
   `RideWeatherDto.attribution` jusqu'à la légende, encastrée et plein écran. Le test resté ouvert du
-  palier 1 (puce « Météo » selon le statut, éteinte par défaut) est écrit. Plan [`2026-10-24-weather-on-map.md`](plans/2026-10-24-weather-on-map.md).
+  palier 1 (puce « Météo » selon le statut, éteinte par défaut) est écrit. Plan [`2026-10-24-weather-on-map.md`](plans/archive/2026-10-24-weather-on-map.md).
   Couvert par `ride_weather_map_markers_test.dart`, `pdl_map_marker_test.dart`,
   `ride_groups_map_wind_test.dart`, `ride_group_page_test.dart`, `ride_weather_map_test.dart`.
   **À ne pas défaire** : la flèche retranche le cap de la carte (`windArrowOnMap`), la rotation à
@@ -56,7 +72,7 @@ fichier garde **ce qui est fait**, et ce qu'il ne faut pas défaire.
   avec une légende en mots (`RideWindMapLegend`, parts de `windExposure`, « Prévision ancienne » en
   STALE, vitesse par défaut). Distances : `chainedMeasures` (`features/rides/domain/ride_weather_map.dart`)
   reprend la règle du serveur, saut nul entre traces ; `windSegmentColors` colore les intervalles
-  des lignes brutes. Plan [`2026-10-24-weather-on-map.md`](plans/2026-10-24-weather-on-map.md). Couvert par `ride_weather_map_test.dart` (cas à deux traces
+  des lignes brutes. Plan [`2026-10-24-weather-on-map.md`](plans/archive/2026-10-24-weather-on-map.md). Couvert par `ride_weather_map_test.dart` (cas à deux traces
   du fixture de `RouteSampleLookupTest`), `ride_groups_map_wind_test.dart` et
   `ride_group_page_test.dart` (prévision perdue → mode éteint). **À ne pas défaire** : ne pas passer
   par `PolylineIndex.fromLineStrings`, qui compte le saut entre traces à vol d'oiseau ; mode éteint
@@ -1053,6 +1069,27 @@ couvert » ; les tests ne tournent qu'en local (`MOB-37`).
 
 ## WEB — Site web
 
+- [x] `WEB-118` **La météo sur la carte, palier 3 lot B : sortie solo et voyages** (25 octobre 2026,
+  contrat inchangé) — le mode Météo gagne la carte du détail d'une sortie solo (sur un seul
+  parcours), la nouvelle route **`rideMap`** (`/equipes/{teamSlug}/sorties/{rideSlug}/carte`, web
+  seul, `RideFullscreenMapPage`, groupe unique, `?color=`, prefetch `prefetchRideMap` dans
+  `rideDetailData.ts`, repris par `prefetchRideGroupMap`), la carte d'une étape et son plein écran
+  (`stageMap?color=`, la règle `stageWindLeg` écarte une étape passée ou un voyage terminé), et la
+  carte d'ensemble du voyage (`TripOverviewMap`, `RoutesMapView` : chaque étape colorée par son
+  vent, pastilles de toutes les étapes, titrées du nom de l'étape et du jour dans sa zone).
+  `rideGroupMap` d'une sortie solo redirige vers `rideMap` en gardant `?color=`. Extraits communs :
+  `useWindColorMode`, `ColorModeControls`, `MapColorFullscreenView`, `routesMapWind.ts`,
+  `tripWeatherOnMap.ts`. Plan [`2026-10-24-weather-on-map.md`](plans/archive/2026-10-24-weather-on-map.md). Couvert par `RideFullscreenMapPage.test.tsx`,
+  `rideMapRoute.test.ts`, `RideGroupFullscreenMapPage.test.tsx`, `rideDetailData.test.ts`,
+  `RideDetailPage.test.tsx`, `tripWeatherOnMap`/`routesMapWind`, `TripOverviewMap.test.tsx`,
+  `RoutesMapView.test.tsx`, `RouteDetailView`/`StageFullscreenMapPage`, `stageMapData`,
+  `StageDetailPage`, `WeatherCheckpointMarkers.test.tsx`, et l'entrée `rideMap` de
+  `e2e/routes-render.e2e.ts` sur la sortie solo `soloRide` du jeu de données (pas encore lancée).
+  **À ne pas défaire** : pas de mode Météo sur la carte d'ensemble d'un voyage dessiné sur son
+  propre parcours quand il a des étapes (leurs distances ne tombent pas sur ce tracé) ; la source
+  des chevrons n'est séparée qu'en mode Météo (sinon chaque tracé serait découpé deux fois) ; la
+  bulle ouverte se referme quand ses pastilles disparaissent (sortie de Météo, tracé masqué) ; la
+  variable d'interpolation du contexte s'appelle `name` (`context` est réservé par i18next).
 - [x] `WEB-117` **La météo sur la carte du groupe, palier 3 lot A : carte ↔ tableau et plein écran du
   groupe** (25 octobre 2026, contrat inchangé) — la carte et le tableau « Heure par heure » de la
   page d'un groupe partagent une sélection (`WeatherFocus` dans `RideGroupPage`, props contrôlées
@@ -1063,7 +1100,7 @@ couvert » ; les tests ne tournent qu'en local (`MOB-37`).
   `RideGroupFullscreenMapPage` : mode porté par `?color=grade|surface|wind` (`useUrlFilters`),
   retombée sur Pente sans prévision, prefetch dans `rideGroupData.ts` (`prefetchRideGroupMap`) ;
   `RouteFullscreenView` prend le mode Météo en props optionnelles. Le bouton plein écran de la page
-  du groupe y mène avec le mode courant. Plan [`2026-10-24-weather-on-map.md`](plans/2026-10-24-weather-on-map.md). Couvert par
+  du groupe y mène avec le mode courant. Plan [`2026-10-24-weather-on-map.md`](plans/archive/2026-10-24-weather-on-map.md). Couvert par
   `GroupWeatherSection.test.tsx`, `WeatherCheckpointMarkers.test.tsx`, `GroupRouteMap.test.tsx`,
   `RideGroupPage.test.tsx`, `RideGroupFullscreenMapPage.test.tsx`, `RouteFullscreenView.test.tsx`,
   `rideGroupMapRoute.test.ts`, `rideGroupData.test.ts`, et l'entrée `rideGroupMap` de
@@ -1080,7 +1117,7 @@ couvert » ; les tests ne tournent qu'en local (`MOB-37`).
   titré, focus sur le détail à l'ouverture et rendu à la pastille à la fermeture) : heure de passage
   dans la zone de la sortie, pluie en % et en quantité, vent et rafales seulement quand le modèle en
   donne. Nouveau `formatPrecipitation` (mm ou pouces, décimale de la langue), repris par
-  `DepartureWeather` et `RouteWeather`. Plan [`2026-10-24-weather-on-map.md`](plans/2026-10-24-weather-on-map.md). Couvert par
+  `DepartureWeather` et `RouteWeather`. Plan [`2026-10-24-weather-on-map.md`](plans/archive/2026-10-24-weather-on-map.md). Couvert par
   `WeatherCheckpointMarkers.test.tsx`, `weatherOnRoute.test.ts`, `unitFormat.test.ts`,
   `RouteTrackMap.test.tsx`, `GroupRouteMap.test.tsx`. **À ne pas défaire** : la pastille est un
   bouton de 44 px qui centre une capsule de 22 px ; la flèche retranche le cap de la carte
@@ -1097,7 +1134,7 @@ couvert » ; les tests ne tournent qu'en local (`MOB-37`).
   MapLibre). Distances : `chainedDistances` (`lib/weatherOnRoute.ts`), saut nul entre traces dont
   `dist` repart à 0. `RouteMapView`/`RouteTrackMap` prennent `lineColorAt` et `lineAttribution`
   optionnels, sans effet sur les autres écrans ; type propre `GroupColorBy`. BRANDING §3.6 décrit
-  la nuance de carte. Plan [`2026-10-24-weather-on-map.md`](plans/2026-10-24-weather-on-map.md). Couvert par `weatherOnRoute.test.ts`,
+  la nuance de carte. Plan [`2026-10-24-weather-on-map.md`](plans/archive/2026-10-24-weather-on-map.md). Couvert par `weatherOnRoute.test.ts`,
   `ColorByControl.test.tsx`, `GroupRouteMap.test.tsx` (dont un tronçon sans vent dans une montée),
   `RideGroupPage.test.tsx`, `mapUtils.test.ts`. **À ne pas défaire** : mode par défaut « Pente »,
   profil laissé en pente en mode Météo (d'où le libellé « Colorer le tracé selon ») ; un point sans
@@ -2899,7 +2936,7 @@ relevés sont `WEB-111` à `WEB-114` et `MOB-87` à `MOB-90`. `MOB-88` et `MOB-8
   (`RouteSampleLookup.java`) ; `GeoJsonLineString.coordinates`, que la 4ᵉ composante d'une trace
   (`TrackDto.line`) est la distance depuis le début de **cette** trace. Bump de patch, comme pour
   une description seule (`SEC-11`, 9.1.2). Aucun changement de comportement, couvert par
-  `RouteSampleLookupTest`. Premier palier de [`2026-10-24-weather-on-map.md`](plans/2026-10-24-weather-on-map.md) (`WEB-115`, `MOB-91`).
+  `RouteSampleLookupTest`. Premier palier de [`2026-10-24-weather-on-map.md`](plans/archive/2026-10-24-weather-on-map.md) (`WEB-115`, `MOB-91`).
 
 ### Points de parcours typés (C3c de `WEB-100`, 20 octobre 2026, contrat `11.16.0`, `V78`)
 

@@ -1,17 +1,23 @@
 import { useEffect } from 'react'
 import { Navigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { RouteFullscreenView } from '@/components/route/RouteFullscreenView'
+import { MapColorFullscreenView } from '@/components/route/MapColorFullscreenView'
 import { LoadingPage } from '@/components/common/LoadingSpinner'
 import { paths } from '@/config/paths'
 import { useAppName } from '@/hooks/useAppName'
 import { useCanonicalPath } from '@/hooks/useCanonicalPath'
+import { stageWindLeg } from '@/lib/tripWeatherOnMap'
 import { useStageMapData } from './stageMapData'
 
 /**
  * Fullscreen map for a trip stage's route (`.../map`). Bare layout (no AppShell), so it owns its own
  * `document.title`. Mirrors {@link StageDetailPage}'s data flow (`useGetTrip` → stage → `useGetRoute`);
  * a stage with no route falls back to the stage detail page.
+ *
+ * With the stage's forecast, the Météo mode of its page (ledger WEB-118, `stageWindLeg`: not for a
+ * stage gone, nor on a trip over or cancelled): the line by the wind, the badges and their popups,
+ * the legend and the credit. The mode arrives in the URL (`?color=wind`, `MapColorFullscreenView`),
+ * which the stage's page writes on its fullscreen button; without it, the grade.
  */
 export function StageFullscreenMapPage() {
   const { teamSlug, tripSlug, stageSlug } = useParams<{
@@ -27,6 +33,7 @@ export function StageFullscreenMapPage() {
     trip: { data: trip, isLoading: isLoadingTrip },
     route: { data: route, isLoading: isLoadingRoute },
     routeSlug,
+    weather,
   } = useStageMapData(teamSlug, tripSlug, stageSlug)
 
   const stage = trip?.stages?.find((s) => s.slug === stageSlug)
@@ -51,11 +58,17 @@ export function StageFullscreenMapPage() {
     return <Navigate to={paths.stage(teamSlug!, tripSlug!, stageSlug!)} replace />
   }
 
+  const windLeg = stageWindLeg(trip, weather.data, stage.id)
+
   return (
-    <RouteFullscreenView
+    <MapColorFullscreenView
       route={route}
       title={title}
       backTo={paths.stage(team.slug, trip.slug, stageSlug!)}
+      windLeg={windLeg}
+      windAttribution={windLeg ? weather.data?.attribution : undefined}
+      windSubject="stage"
+      timezone={stage.timezone}
     />
   )
 }

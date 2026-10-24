@@ -22,7 +22,9 @@ import { paths } from '@/config/paths'
 import { hasWindForecast } from '@/lib/weatherOnRoute'
 import {
   leavesGroupPage,
+  prefetchRideMap,
   rideRouteSlugs,
+  soloGroup,
   useRideDetailData,
   WEATHER_REQUEST,
 } from './rideDetailData'
@@ -36,7 +38,8 @@ import {
  *
  * It also serves the group's fullscreen map (`RideGroupFullscreenMapPage`, route `ride-group-map`,
  * ledger WEB-117): same hook, and a prefetch of the same keys minus what only the page's children
- * read (participants, GPS services) — one module, two routes (docs/SSR-data-loading.md).
+ * read (participants, GPS services) — the solo ride's map's (`prefetchRideMap`) — one module, two
+ * routes (docs/SSR-data-loading.md).
  */
 
 /**
@@ -88,23 +91,16 @@ export async function prefetchRideGroup(
 }
 
 /**
- * Server-side counterpart of {@link useRideGroupData} for the group's fullscreen map: the ride page's
- * reads under their own keys — team, ride and weather, then the routes bulk the ride's groups name.
- * The map mounts no participant list and no export menu, so neither is prefetched; its colour mode
- * (`?color=`) is presentation and reads nothing.
+ * Server-side counterpart of {@link useRideGroupData} for the group's fullscreen map: the ride
+ * page's reads under their own keys, exactly those of the solo ride's map (`prefetchRideMap`) — a
+ * group's map reads nothing of its own.
  */
-export async function prefetchRideGroupMap(
+export function prefetchRideGroupMap(
   queryClient: QueryClient,
   teamSlug: string,
   rideSlug: string
 ): Promise<void> {
-  await Promise.all([
-    prefetchGetTeamQuery(queryClient, teamSlug),
-    prefetchGetRideQuery(queryClient, teamSlug, rideSlug),
-    prefetchGetRideWeatherQuery(queryClient, teamSlug, rideSlug, { request: WEATHER_REQUEST }),
-  ])
-  const ride = queryClient.getQueryData<RideDto>(getGetRideQueryKey(teamSlug, rideSlug))
-  await prefetchRoutesBulkChunked(queryClient, teamSlug, rideRouteSlugs(ride))
+  return prefetchRideMap(queryClient, teamSlug, rideSlug)
 }
 
 /**
@@ -140,6 +136,40 @@ export function rideGroupDataRedirect(
   )
   if (!ride || !leavesGroupPage(ride)) return undefined
   return paths.ride(params.teamSlug, ride.slug) + url.search
+}
+
+/**
+ * Where a group's map leaves to when its ride has no group page (WEB-79), `undefined` when it has
+ * one: a solo ride's map is now its own (`ride-map`, WEB-118) — the same map, the same group, and the
+ * mode the link asked for (`?color=`, kept) —, so a group map link shared before the group became
+ * the only one still opens a map rather than the ride's page; a ride without groups has no group to
+ * draw, so its page. One rule for the route's loader and the page's own `<Navigate>`.
+ */
+export function rideGroupMapLeavesTo(
+  ride: RideDto,
+  teamSlug: string,
+  search: string
+): string | undefined {
+  if (!leavesGroupPage(ride)) return undefined
+  return soloGroup(ride)
+    ? paths.rideMap(teamSlug, ride.slug) + search
+    : paths.ride(teamSlug, ride.slug)
+}
+
+/**
+ * The `ride-group-map` route's `dataRedirect`: {@link rideGroupMapLeavesTo}, from the ride
+ * `prefetchRideGroupMap` cached; without it, `undefined`, and the page leaves on the client.
+ */
+export function rideGroupMapDataRedirect(
+  queryClient: QueryClient,
+  params: RouteParams,
+  url: URL
+): string | undefined {
+  if (!params.teamSlug || !params.rideSlug) return undefined
+  const ride = queryClient.getQueryData<RideDto>(
+    getGetRideQueryKey(params.teamSlug, params.rideSlug)
+  )
+  return ride ? rideGroupMapLeavesTo(ride, params.teamSlug, url.search) : undefined
 }
 
 /**

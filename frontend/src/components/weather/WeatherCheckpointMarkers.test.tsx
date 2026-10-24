@@ -314,6 +314,54 @@ describe('WeatherCheckpointMarkers (WEB-116)', () => {
     })
   })
 
+  describe('naming whose points they are, on a map of several legs (WEB-118)', () => {
+    const alertLeg = () =>
+      routeLeg({
+        rainAlert: {
+          probability: 55,
+          time: routeLeg().checkpoints[3].time,
+          distance: 45_000,
+          condition: 'SHOWERS',
+        },
+      })
+    const showIn = (timezone: string) =>
+      render(
+        <MantineProvider>
+          <WeatherCheckpointMarkers
+            tracks={TRACKS}
+            leg={alertLeg()}
+            timezone={timezone}
+            context="Étape 3"
+          />
+        </MantineProvider>
+      )
+
+    it("names the stage and the passage's day in the badge, its popup and the drop", () => {
+      showIn('Europe/Paris')
+      expect(plain(badges()[2].getAttribute('aria-label'))).toMatch(/^Étape 3, dim\. 18 oct\. — /)
+      fireEvent.click(badges()[2])
+      expect(
+        screen.getByRole('dialog', { name: /^Étape 3, dim\. 18 oct\. — km\s30\.0\s·\s09:30$/ })
+      ).toBeTruthy()
+      expect(plain(screen.getByTestId('weather-rain-alert').getAttribute('aria-label'))).toBe(
+        'Étape 3, dim. 18 oct. — Averses probable (55 %) vers 10:00, à km 45'
+      )
+    })
+
+    it("reads the day in the leg's zone", () => {
+      // 06:30 UTC is still Saturday evening in Pago Pago
+      showIn('Pacific/Pago_Pago')
+      expect(plain(badges()[0].getAttribute('aria-label'))).toMatch(/^Étape 3, sam\. 17 oct\. — /)
+    })
+
+    it('reads as before without one', () => {
+      show(alertLeg())
+      expect(plain(badges()[2].getAttribute('aria-label'))).not.toContain('Étape')
+      fireEvent.click(badges()[2])
+      expect(screen.getByRole('dialog', { name: /^km\s30\.0\s·\s09:30$/ })).toBeTruthy()
+    })
+  })
+
   it('drops a drop where rain becomes likely, nowhere without an alert', () => {
     show(
       routeLeg({

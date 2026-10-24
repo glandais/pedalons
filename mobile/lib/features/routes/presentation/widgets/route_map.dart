@@ -9,6 +9,7 @@ import '../../../../core/pdl/map/pdl_waypoint_mark.dart';
 import '../../../../core/pdl/map/pdl_map.dart';
 import '../../../../core/pdl/map/pdl_map_controller.dart';
 import '../../../../core/pdl/map/pdl_map_hero.dart';
+import '../../../../core/pdl/map/pdl_map_marker.dart';
 import '../../../../core/theme/pdl_colors.dart';
 import '../../../../core/preferences/user_preferences_provider.dart';
 import '../../domain/track_slope_colors.dart';
@@ -16,6 +17,51 @@ import '../../domain/track_surfaces.dart';
 import 'route_cursor_controller.dart';
 import 'waypoint_selection.dart';
 import 'waypoint_sheet.dart';
+
+/// Ce qu'un écran pose **en plus** sur la carte d'un parcours, sans que
+/// celle-ci sache ce que c'est — le mode « Météo » du détail d'une étape
+/// (ledger `MOB-94`) : des couleurs de tracé prioritaires sur la pente et le
+/// revêtement, des marqueurs, une légende, un interrupteur de la feuille des
+/// couches.
+@immutable
+class RouteMapLayer {
+  const RouteMapLayer({
+    this.segmentColors,
+    this.markers = const <PdlMapMarker>[],
+    this.onMarkerTapped,
+    this.foreground,
+    this.switches = const <PdlMapHeroSwitch>[],
+  });
+
+  /// Une couleur par intervalle des lignes brutes (`PdlMapTrack`), à la place
+  /// de la pente ou du revêtement. `null` : la coloration de la carte. Les
+  /// bornes kilométriques s'effacent quand elle est posée : le tracé dit
+  /// déjà autre chose.
+  final List<Color>? segmentColors;
+
+  final List<PdlMapMarker> markers;
+
+  /// Le toucher d'un marqueur, avec le contexte de la carte qui l'a rendu.
+  final void Function(BuildContext context, String id)? onMarkerTapped;
+
+  /// Posé au-dessus de la carte, dans la coquille (une légende).
+  final Widget? foreground;
+
+  /// Les interrupteurs de la feuille des couches, sous l'ombrage.
+  final List<PdlMapHeroSwitch> switches;
+}
+
+/// Construit la [RouteMapLayer] d'une carte de parcours. Appelé au `build`
+/// de **chaque** carte — l'encastrée, puis le plein écran, qui est une autre
+/// instance : c'est ce qui garde ses `ref.watch` vivants là où l'écran
+/// recouvert ne se reconstruit plus (voir `PdlMapHero`). `null` : rien.
+typedef RouteMapLayerBuilder =
+    RouteMapLayer? Function(
+      BuildContext context,
+      WidgetRef ref,
+      RouteDetailDto route, {
+      required bool fullscreen,
+    });
 
 /// L'adaptateur entre `RouteDetailDto` et [PdlMap].
 ///
@@ -34,6 +80,7 @@ class RouteMap extends ConsumerStatefulWidget {
     this.fullscreen = false,
     this.colorBy = RouteColorBy.grade,
     this.selection,
+    this.layer,
   });
 
   final RouteDetailDto route;
@@ -69,6 +116,16 @@ class RouteMap extends ConsumerStatefulWidget {
   /// Le point de parcours choisi, partagé avec le profil et la liste (ledger
   /// `MOB-84`). `null` : les points s'affichent, sans interaction.
   final WaypointSelectionController? selection;
+
+  /// Ce que l'écran pose en plus sur la carte ([RouteMapLayer]), transmis au
+  /// plein écran. `null` : rien.
+  final RouteMapLayerBuilder? layer;
+
+  /// Vrai dans un test de widget : MapLibre n'y a pas de vue native, et la
+  /// carte y est remplacée par [RouteMapProbe], qui garde le `PdlMap`
+  /// construit pour qu'on lise ses tracés et ses marqueurs.
+  @visibleForTesting
+  static bool debugSkipNativeMap = false;
 
   @override
   ConsumerState<RouteMap> createState() => _RouteMapState();
@@ -135,6 +192,13 @@ class _RouteMapState extends ConsumerState<RouteMap> {
       );
     }
 
+    final RouteMapLayer? layer = widget.layer?.call(
+      context,
+      ref,
+      route,
+      fullscreen: widget.fullscreen,
+    );
+
     final List<PdlMapTrack> tracks = <PdlMapTrack>[
       PdlMapTrack(
         id: route.id,
@@ -144,12 +208,15 @@ class _RouteMapState extends ConsumerState<RouteMap> {
         // Colorisation **par segment** : chaque tronçon porte la teinte de sa
         // propre pente (§1.1.5). Le repli `mapTrack` reste la couleur d'un
         // segment sans altitude exploitable.
-        segmentColors: switch (widget.colorBy) {
-          RouteColorBy.surface =>
-            surfaceSegmentColors(route.tracks, context.pdl) ??
-                slopeColorsForLines(_lines),
-          RouteColorBy.grade => slopeColorsForLines(_lines),
-        },
+        // Les couleurs de l'écran passent devant (le vent sur le tracé).
+        segmentColors:
+            layer?.segmentColors ??
+            switch (widget.colorBy) {
+              RouteColorBy.surface =>
+                surfaceSegmentColors(route.tracks, context.pdl) ??
+                    slopeColorsForLines(_lines),
+              RouteColorBy.grade => slopeColorsForLines(_lines),
+            },
       ),
     ];
 
@@ -173,8 +240,11 @@ class _RouteMapState extends ConsumerState<RouteMap> {
               fullscreen: true,
               colorBy: widget.colorBy,
               selection: widget.selection,
+              layer: widget.layer,
             )
           : null,
+      switches: layer?.switches ?? const <PdlMapHeroSwitch>[],
+      foreground: layer?.foreground,
       styles: servedMapStyleOptions(ref),
       hillshadeEnabled: servedHillshadeEnabled(ref),
       onHillshadeChanged: (bool on) =>
@@ -189,6 +259,7 @@ class _RouteMapState extends ConsumerState<RouteMap> {
           tracks: tracks,
           defaultCenter: defaultCenter,
           focus: focus?.focus,
+          layer: layer,
         ),
       ),
     );
@@ -224,32 +295,45 @@ class _RouteMapState extends ConsumerState<RouteMap> {
     required List<PdlMapTrack> tracks,
     required MapCenterDto? defaultCenter,
     required PdlWaypointFocus? focus,
+    required RouteMapLayer? layer,
   }) {
-    return PdlMap(
-      hillshade: servedHillshade(context, ref),
-      controller: _controller,
-      interactive: !widget.allowFullscreen || widget.fullscreen,
-      styleUrl: resolved.url,
-      credit: servedMapCredit(resolved),
-      onMapTapped: widget.onMapTapped == null
-          ? null
-          : (double lon, double lat) =>
-                widget.onMapTapped!(widget.cursor?.distanceNear(lon, lat)),
-      tracks: tracks,
-      start: _point(route.start) ?? route.firstPoint,
-      end: _point(route.end) ?? route.lastPoint,
-      waypoints: mapWaypointsOf(route.waypoints),
-      focusedWaypoint: focus,
-      onWaypointTapped: widget.selection == null ? null : _openWaypoint,
-      kmMarkers: computePdlKmMarkers(_lines, totalMeters: route.distance),
-      initialCenter: defaultCenter == null
-          ? null
-          : PdlMapPoint(lon: defaultCenter.lon, lat: defaultCenter.lat),
-      initialZoom: defaultCenter?.zoom ?? 5,
-      fitBox: PdlMapBox.ofTracks(tracks),
-      fitPadding: widget.fitPadding,
+    final void Function(BuildContext, String)? onMarker = layer?.onMarkerTapped;
+    return _native(
+      PdlMap(
+        markers: layer?.markers ?? const <PdlMapMarker>[],
+        onMarkerTapped: onMarker == null || (layer?.markers.isEmpty ?? true)
+            ? null
+            : (String id) => onMarker(context, id),
+        hillshade: servedHillshade(context, ref),
+        controller: _controller,
+        interactive: !widget.allowFullscreen || widget.fullscreen,
+        styleUrl: resolved.url,
+        credit: servedMapCredit(resolved),
+        onMapTapped: widget.onMapTapped == null
+            ? null
+            : (double lon, double lat) =>
+                  widget.onMapTapped!(widget.cursor?.distanceNear(lon, lat)),
+        tracks: tracks,
+        start: _point(route.start) ?? route.firstPoint,
+        end: _point(route.end) ?? route.lastPoint,
+        waypoints: mapWaypointsOf(route.waypoints),
+        focusedWaypoint: focus,
+        onWaypointTapped: widget.selection == null ? null : _openWaypoint,
+        kmMarkers: layer?.segmentColors != null
+            ? const <PdlKmMarker>[]
+            : computePdlKmMarkers(_lines, totalMeters: route.distance),
+        initialCenter: defaultCenter == null
+            ? null
+            : PdlMapPoint(lon: defaultCenter.lon, lat: defaultCenter.lat),
+        initialZoom: defaultCenter?.zoom ?? 5,
+        fitBox: PdlMapBox.ofTracks(tracks),
+        fitPadding: widget.fitPadding,
+      ),
     );
   }
+
+  Widget _native(PdlMap map) =>
+      RouteMap.debugSkipNativeMap ? RouteMapProbe(map: map) : map;
 
   /// Le départ et l'arrivée servis par le contrat ; à défaut, les extrémités du
   /// tracé — c'est ce que faisait l'implémentation d'origine.
@@ -259,6 +343,18 @@ class _RouteMapState extends ConsumerState<RouteMap> {
     }
     return null;
   }
+}
+
+/// La carte d'un test de widget ([RouteMap.debugSkipNativeMap]) : un fond
+/// vide qui porte le `PdlMap` que l'écran aurait rendu.
+@visibleForTesting
+class RouteMapProbe extends StatelessWidget {
+  const RouteMapProbe({super.key, required this.map});
+
+  final PdlMap map;
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.expand();
 }
 
 /// Les extrémités du tracé, quand `start` / `end` sont absents du DTO.

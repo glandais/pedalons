@@ -31,6 +31,8 @@ import { CommentSection } from '../../components/comment'
 import { STATUS_COLORS } from '@/lib/badgeColors.generated'
 import { ErrorBoundary } from '@/components/common/ErrorBoundary'
 import { StageWeatherSection } from '@/components/weather'
+import { withMapColor } from '@/hooks/filters/mapColorFilters'
+import { stageWindLeg } from '@/lib/tripWeatherOnMap'
 
 export function StageDetailPage() {
   const { t } = useTranslation()
@@ -114,6 +116,8 @@ export function StageDetailPage() {
   const isOrganizer = team?.role === 'ORGANIZER'
   const canEdit = isAdmin || isOrganizer
   const isMember = !!team?.role
+  // The stage's Météo mode on its map, and on its fullscreen map (WEB-118)
+  const windLeg = stageWindLeg(trip, weather.data, stage.id)
 
   return (
     <Container size="xl" py="xl">
@@ -256,7 +260,12 @@ export function StageDetailPage() {
                 route={route}
                 teamSlug={teamSlug}
                 showInfo={false}
-                fullscreenPath={paths.stageMap(teamSlug!, tripSlug!, stageSlug!)}
+                fullscreenPath={(colorBy) =>
+                  withMapColor(paths.stageMap(teamSlug!, tripSlug!, stageSlug!), colorBy)
+                }
+                windLeg={windLeg}
+                windAttribution={windLeg ? weather.data?.attribution : undefined}
+                timezone={stage.timezone}
               />
             </Box>
           )}

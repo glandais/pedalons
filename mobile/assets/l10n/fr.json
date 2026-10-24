@@ -1107,7 +1107,10 @@
       "noLocation": "Ajoutez un parcours à cette étape pour afficher sa météo. Message visible du rôle Organisateur seulement.",
       "emptyTitle": "Pas de météo pour cette étape",
       "emptyMessage": "Aucune prévision n'est à afficher pour cette étape.",
-      "legSpeedDefault": "Passages estimés à {speed}, vitesse par défaut : l'étape n'en indique pas"
+      "legSpeedDefault": "Passages estimés à {speed}, vitesse par défaut : l'étape n'en indique pas",
+      "mapSharesAll": "Parts additionnées des {count} étapes",
+      "mapSharesSome": "Parts additionnées des étapes avec prévision : {count} sur {total}",
+      "mapSharesOne": "Parts de la seule étape avec prévision : {stage}"
     }
   },
   "routes": {

@@ -39,7 +39,7 @@ import {
 } from '../../api/endpoints/rides/rides'
 import { getListPublicationsQueryKey } from '../../api/endpoints/publications/publications'
 import { invalidateRideWeather, rideRouteSlugs, useRideDetailData } from './rideDetailData'
-import { groupAction, groupsRegisteredFirst } from './rideGroupData'
+import { groupAction, groupsRegisteredFirst, groupWindLeg } from './rideGroupData'
 import { rideStatusRequest } from './rideFormData'
 import { ReportTargetType, Status } from '@/api/dto'
 import { useAuth } from '../../hooks/useAuth'
@@ -74,6 +74,7 @@ import { GroupParticipantsSection } from '@/components/ride/group/GroupParticipa
 import { GroupRouteMap } from '@/components/ride/group/GroupRouteMap'
 import { GroupStats } from '@/components/ride/group/GroupStats'
 import { useScrollToAnchor } from '@/hooks/useScrollToAnchor'
+import { withMapColor } from '@/hooks/filters/mapColorFilters'
 
 /** The anchor of the weather block, as on a group's page: a former group link's `#meteo` lands here. */
 const WEATHER_ANCHOR = 'meteo'
@@ -175,6 +176,8 @@ export function RideDetailPage() {
   // Two different routes (the ride's and its group's) keep the multi-route map.
   const routeSlugs = rideRouteSlugs(ride)
   const soloRouteSlug = solo && routeSlugs.length === 1 ? routeSlugs[0] : undefined
+  // Its group's Météo mode on that map, on the group page's own terms (WEB-118)
+  const soloWindLeg = groupWindLeg(ride, soloLeg)
 
   // A rendezvous, in the ride's zone (docs/LEDGER_*.md API-60).
   const formattedDate = <Rendezvous date={ride.dateTime} zone={ride.timezone} variant="detail" />
@@ -478,11 +481,18 @@ export function RideDetailPage() {
         {/* Map - shown first on mobile, spans 2 cols on xl */}
         <Box className="detail-map" style={{ order: 1 }}>
           {soloRouteSlug ? (
-            // A solo ride on one route: the group page's map, its profile and full screen.
+            // A solo ride on one route: the group page's map, its profile, its Météo mode, and the
+            // ride's own fullscreen map in the mode the line is in (WEB-118).
             <GroupRouteMap
               teamSlug={teamSlug!}
               routeSlug={soloRouteSlug}
               route={groupRoutesBySlug.get(soloRouteSlug)}
+              leg={soloWindLeg}
+              attribution={soloWindLeg ? weather.data?.attribution : undefined}
+              timezone={ride.timezone}
+              fullscreenPath={(colorBy) =>
+                withMapColor(paths.rideMap(team.slug, ride.slug), colorBy)
+              }
               withActions={false}
             />
           ) : (

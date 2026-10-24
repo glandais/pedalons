@@ -4,13 +4,20 @@ import { SegmentedControl } from '@mantine/core'
 /** Every way a route's line can be coloured: the grade, the surface (WEB-100 C1b), the wind (WEB-115). */
 export type ColorByOption = 'grade' | 'surface' | 'wind'
 
+/**
+ * Every mode the switch can name: a route's line modes, plus a map of several routes' default — one
+ * colour per stage, on a trip's overview (« Étapes | Météo », WEB-118). Never in a `?color=`.
+ */
+export type LineModeOption = ColorByOption | 'stages'
+
 const OPTION_LABEL_KEYS = {
   grade: 'routes.surface.colorBy.grade',
   surface: 'routes.surface.colorBy.surface',
   wind: 'routes.surface.colorBy.wind',
-} as const satisfies Record<ColorByOption, string>
+  stages: 'routes.surface.colorBy.stages',
+} as const satisfies Record<LineModeOption, string>
 
-interface ColorByControlProps<T extends ColorByOption> {
+interface ColorByControlProps<T extends LineModeOption> {
   value: T
   onChange: (value: T) => void
   /** The modes on offer, in order; with fewer than two the control draws nothing. */
@@ -21,10 +28,10 @@ interface ColorByControlProps<T extends ColorByOption> {
 
 /**
  * The switch of what colours a route's line and profile, under its map: « Pente | Revêtement »
- * on a route sheet, « Pente | Météo » or « Pente | Revêtement | Météo » on a group's page — which
- * is why it stands apart from the surface summary, which shows nothing without a surface.
+ * on a route sheet, « Pente | Météo » or « Pente | Revêtement | Météo » on a group's page, « Étapes |
+ * Météo » on a trip's overview — which is why it stands apart from the surface summary, which shows nothing without a surface.
  */
-export function ColorByControl<T extends ColorByOption>({
+export function ColorByControl<T extends LineModeOption>({
   value,
   onChange,
   options,

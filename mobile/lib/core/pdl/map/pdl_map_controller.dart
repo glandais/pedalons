@@ -26,6 +26,7 @@ class PdlMapTrack {
     required this.color,
     this.label,
     this.segmentColors,
+    this.emphasized = false,
   });
 
   /// Identité du tracé. Elle finit dans le `layerId` de la couche MapLibre,
@@ -61,6 +62,16 @@ class PdlMapTrack {
   final List<Color>? segmentColors;
 
   bool get isSegmented => segmentColors != null && segmentColors!.isNotEmpty;
+
+  /// Dessiné **comme s'il était sélectionné** — l'opacité et la largeur du
+  /// tracé sélectionné —, sans l'être : ni l'ordre de dessin, ni la
+  /// sélection ne changent.
+  ///
+  /// Pour un tracé dont les couleurs portent un sens qu'une légende décrit
+  /// (le vent d'une étape, ledger `MOB-94`) : à l'opacité d'un tracé non
+  /// sélectionné, ses teintes ressortiraient délavées, loin de celles de la
+  /// légende.
+  final bool emphasized;
 
   /// Égalité **de valeur**, avec les géométries comparées par référence.
   ///
@@ -1427,7 +1438,8 @@ class PdlMapController extends ChangeNotifier {
   String _tracksGeoJson() {
     final List<Map<String, Object?>> features = <Map<String, Object?>>[];
     for (final PdlMapTrack track in _tracks) {
-      final bool selected = track.id == _selectedId;
+      // `sel` ne pilote que le trait : un tracé mis en avant le prend aussi.
+      final bool selected = track.id == _selectedId || track.emphasized;
       if (track.isSegmented) {
         _appendSegments(features, track, selected);
         continue;

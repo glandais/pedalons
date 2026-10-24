@@ -5,7 +5,7 @@ import '../../../core/geo/polyline_index.dart';
 import 'ride_weather_display.dart';
 
 /// Le vent posé sur le tracé d'un groupe (ledger `MOB-91`, palier 1 de
-/// `docs/plans/2026-10-24-weather-on-map.md`). Aucun widget ici : des
+/// `docs/plans/archive/2026-10-24-weather-on-map.md`). Aucun widget ici : des
 /// fonctions pures, testées sans carte.
 ///
 /// ## Le piège des distances

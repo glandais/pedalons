@@ -39,4 +39,14 @@ class TripDetailKeys {
   /// Le rail d'étapes épinglé de l'écran 25. Ses pastilles portent leur rang
   /// (`ValueKey<int>`, 0 pour « Aperçu ») : c'est `PdlStageRail` qui les pose.
   final stageRail = const _TripKey('stageRail');
+
+  /// La puce « Météo » sous la carte d'ensemble du voyage : chaque étape
+  /// colorée par son vent (ledger `MOB-94`).
+  final windMapChip = const _TripKey('windMapChip');
+
+  /// La légende du vent de la carte d'ensemble, parts des étapes additionnées.
+  final windMapLegend = const _TripKey('windMapLegend');
+
+  /// La puce « Météo » sous la carte du détail d'une étape.
+  final stageWindMapChip = const _TripKey('stageWindMapChip');
 }

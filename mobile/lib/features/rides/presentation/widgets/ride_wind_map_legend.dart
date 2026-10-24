@@ -28,39 +28,89 @@ import 'ride_weather_widgets.dart';
 /// 44 px n'a pas sa place dans une légende posée sur la carte. L'onglet Météo
 /// le rend en lien.
 class RideWindMapLegend extends StatelessWidget {
-  const RideWindMapLegend({
+  /// La légende d'un leg : un groupe, une sortie solo, une étape.
+  RideWindMapLegend({
     super.key,
-    required this.leg,
+    required WeatherLegDto leg,
     required this.units,
     this.attribution,
-  });
+  }) : exposure = leg.windExposure,
+       stale = _isStale(leg),
+       defaultSpeed = leg.speedIsDefault ? leg.averageSpeed : null,
+       scopeNote = null;
 
-  final WeatherLegDto leg;
+  /// La légende de **plusieurs** legs sur une même carte — les étapes d'un
+  /// voyage, chacune colorée par son propre vent (ledger `MOB-94`) : les
+  /// parts sont **additionnées** sur les [legs], et [scopeNote] dit sur
+  /// lesquelles (« Parts additionnées des 3 étapes »). « Prévision
+  /// ancienne » dès qu'un leg l'est ; la vitesse par défaut dès qu'un leg
+  /// l'emploie — c'est la même pour tous, celle du serveur.
+  RideWindMapLegend.combined({
+    super.key,
+    required List<WeatherLegDto> legs,
+    required this.units,
+    required this.scopeNote,
+    this.attribution,
+  }) : exposure = WindExposureDto(
+         head: legs.fold(
+           0,
+           (double s, WeatherLegDto l) => s + l.windExposure.head,
+         ),
+         cross: legs.fold(
+           0,
+           (double s, WeatherLegDto l) => s + l.windExposure.cross,
+         ),
+         tail: legs.fold(
+           0,
+           (double s, WeatherLegDto l) => s + l.windExposure.tail,
+         ),
+       ),
+       stale = legs.any(_isStale),
+       defaultSpeed = legs
+           .where((WeatherLegDto l) => l.speedIsDefault)
+           .map((WeatherLegDto l) => l.averageSpeed)
+           .firstOrNull;
+
+  /// Les mètres de dos, de travers et de face, tels que le serveur les donne.
+  final WindExposureDto exposure;
+
+  /// « Prévision ancienne ».
+  final bool stale;
+
+  /// La vitesse des heures estimées quand c'est celle par défaut, `null`
+  /// sinon.
+  final double? defaultSpeed;
+
+  /// Ce que les parts recouvrent, quand ce n'est pas un seul leg.
+  final String? scopeNote;
+
   final UnitSystem units;
 
   /// Le crédit des prévisions, `null` tant que la réponse ne l'a pas apporté.
   final WeatherAttributionDto? attribution;
 
+  static bool _isStale(WeatherLegDto leg) =>
+      rideWeatherViewOf(leg.status, canSeeNoLocation: false) ==
+      RideWeatherView.stale;
+
   @override
   Widget build(BuildContext context) {
     final PdlColors c = context.pdl;
     final PdlTypography t = context.pdlText;
-    final WindExposureDto exposure = leg.windExposure;
     final List<(RelativeWind, double)> entries = <(RelativeWind, double)>[
       (RelativeWind.tail, exposure.tail),
       (RelativeWind.cross, exposure.cross),
       (RelativeWind.head, exposure.head),
     ].where(((RelativeWind, double) e) => e.$2 > 0).toList();
-    final bool stale =
-        rideWeatherViewOf(leg.status, canSeeNoLocation: false) ==
-        RideWeatherView.stale;
+    final double? speed = defaultSpeed;
 
     final List<String> notes = <String>[
+      ?scopeNote,
       if (stale) 'rides.weather.stale'.tr(),
-      if (leg.speedIsDefault)
+      if (speed != null)
         'rides.weather.mapDefaultSpeed'.tr(
           namedArgs: <String, String>{
-            'speed': AppFormatters.formatSpeed(leg.averageSpeed, units),
+            'speed': AppFormatters.formatSpeed(speed, units),
           },
         ),
     ];

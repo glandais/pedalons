@@ -22,6 +22,7 @@ import 'ride_group_route_actions.dart';
 import 'ride_group_stats.dart';
 import 'ride_group_weather_line.dart';
 import 'ride_groups_map.dart';
+import 'weather_map_layer.dart';
 
 /// L'onglet Aperçu de la page d'un groupe (ledger `MOB-67`).
 ///
@@ -145,24 +146,12 @@ class _RideGroupOverviewTabState extends ConsumerState<RideGroupOverviewTab>
   /// La puce sous la carte encastrée : celle-ci ne se manipule pas, la
   /// bascule ne peut donc pas vivre dans la vue native (ledger `MOB-91`). En
   /// plein écran, la même bascule est dans la feuille des couches.
-  Widget _windChip() {
-    final bool on = ref.watch(rideMapWindModeProvider(widget.rideKey));
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: PdlSpacing.section),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: PdlChip(
-          key: keys.rideGroup.windMapChip,
-          label: 'rides.weather.mapMode'.tr(),
-          icon: PdlIcons.wind,
-          selected: on,
-          onTap: () =>
-              ref.read(rideMapWindModeProvider(widget.rideKey).notifier).state =
-                  !on,
-        ),
-      ),
-    );
-  }
+  Widget _windChip() => WeatherMapChip(
+    chipKey: keys.rideGroup.windMapChip,
+    selected: ref.watch(rideMapWindModeProvider(widget.rideKey)),
+    onChanged: (bool on) =>
+        ref.read(rideMapWindModeProvider(widget.rideKey).notifier).state = on,
+  );
 
   // ── Le résumé météo ─────────────────────────────────────────────────────
   Widget _weatherSummary(UnitSystem units) {

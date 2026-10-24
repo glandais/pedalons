@@ -1,19 +1,15 @@
-import { lazy, Suspense, useMemo, useState } from 'react'
+import { lazy, Suspense } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Box, Paper, Skeleton, Stack, Title } from '@mantine/core'
 import type { RouteDetailDto, WeatherAttributionDto, WeatherLegDto } from '@/api/dto'
 import { ErrorBoundary } from '@/components/common/ErrorBoundary'
 import { RideGroupRouteActions } from '@/components/ride/RideGroupRouteActions'
-import { ColorByControl } from '@/components/route/ColorByControl'
-import { RouteSurfaceSummary } from '@/components/route/RouteSurfaceSummary'
-import { WindMapLegend } from '@/components/weather/WindMapLegend'
+import { ColorModeControls } from '@/components/route/ColorModeControls'
 import { RouteWaypointList } from '@/components/route/RouteWaypointList'
-import { useRouteWindColors } from '@/hooks/useRouteWindColors'
 import { useWaypointSelection } from '@/hooks/useWaypointSelection'
+import { useWindColorMode } from '@/hooks/useWindColorMode'
 import { paths } from '@/config/paths'
 import type { PlannerColorBy } from '@/lib/plannerSurface'
-import { hasSurfaces } from '@/lib/trackSurface'
-import { attributionHtml } from '@/lib/weatherOnRoute'
 
 /**
  * What colours the group's line: the planner's modes, plus the wind of the group's leg (WEB-115).
@@ -21,18 +17,9 @@ import { attributionHtml } from '@/lib/weatherOnRoute'
  */
 export type GroupColorBy = PlannerColorBy | 'wind'
 
-const NO_TRACKS: RouteDetailDto['tracks'] = []
-
 // Lazy: the map pulls in map-vendor (~1 MB) and the elevation chart chart-vendor.
 const RouteMapView = lazy(() =>
   import('@/components/route/RouteMapView').then((m) => ({ default: m.RouteMapView }))
-)
-
-// Lazy as the map itself, whose chunk it shares: the forecast's points, in the Météo mode only.
-const WeatherCheckpointMarkers = lazy(() =>
-  import('@/components/weather/WeatherCheckpointMarkers').then((m) => ({
-    default: m.WeatherCheckpointMarkers,
-  }))
 )
 
 /**
@@ -84,31 +71,14 @@ export function GroupRouteMap({
   withActions?: boolean
 }) {
   const { t } = useTranslation()
-  const [chosenColorBy, setColorBy] = useState<GroupColorBy>('grade')
-  // The forecast gone (a refetch), the choice reads as the grade.
-  const colorBy: GroupColorBy = chosenColorBy === 'wind' && !leg ? 'grade' : chosenColorBy
-  const wind = colorBy === 'wind'
-  const tracks = route?.tracks ?? NO_TRACKS
-  const windColorAt = useRouteWindColors(tracks, wind ? leg : undefined)
-  const options = useMemo(() => {
-    const modes: GroupColorBy[] = ['grade']
-    if (hasSurfaces(tracks)) modes.push('surface')
-    if (leg) modes.push('wind')
-    return modes
-  }, [tracks, leg])
-  const lineAttribution = wind && attribution ? attributionHtml(attribution) : undefined
-  const overlays =
-    wind && leg ? (
-      <Suspense fallback={null}>
-        <WeatherCheckpointMarkers
-          tracks={tracks}
-          leg={leg}
-          timezone={timezone}
-          openIndex={selectedCheckpoint}
-          onOpenChange={onSelectCheckpoint}
-        />
-      </Suspense>
-    ) : undefined
+  const mode = useWindColorMode({
+    tracks: route?.tracks,
+    leg,
+    attribution,
+    timezone,
+    openIndex: selectedCheckpoint,
+    onOpenChange: onSelectCheckpoint,
+  })
   const { selection, setSelection, mapBoxRef, selectFromList } = useWaypointSelection()
   return (
     <Stack gap="md">
@@ -120,28 +90,18 @@ export function GroupRouteMap({
                 <RouteMapView
                   route={route}
                   fullscreenPath={
-                    fullscreenPath ? fullscreenPath(colorBy) : paths.routeMap(teamSlug, routeSlug)
+                    fullscreenPath
+                      ? fullscreenPath(mode.colorBy)
+                      : paths.routeMap(teamSlug, routeSlug)
                   }
-                  colorBy={wind ? 'grade' : colorBy}
-                  lineColorAt={windColorAt}
-                  lineAttribution={lineAttribution}
-                  overlays={overlays}
-                  kmMarkers={!wind}
+                  colorBy={mode.plannerColorBy}
+                  {...mode.mapProps}
                   waypointSelection={selection}
                   onWaypointSelectionChange={setSelection}
                 />
               </Box>
             </Suspense>
-            <Stack gap="xs">
-              <ColorByControl value={colorBy} onChange={setColorBy} options={options} />
-              {wind && leg && <WindMapLegend leg={leg} attribution={attribution} />}
-              <RouteSurfaceSummary
-                tracks={route.tracks}
-                colorBy={wind ? 'grade' : colorBy}
-                onColorByChange={setColorBy}
-                withControl={false}
-              />
-            </Stack>
+            <ColorModeControls mode={mode} tracks={route.tracks} attribution={attribution} />
             <RouteWaypointList
               waypoints={route.waypoints}
               selected={selection?.waypoint ?? null}

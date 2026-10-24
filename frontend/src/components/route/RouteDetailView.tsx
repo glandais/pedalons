@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   IconMap,
@@ -8,12 +7,19 @@ import {
   IconDeviceMobile,
 } from '@tabler/icons-react'
 import { Box, Button, Group, Stack, Text, Title, Badge, Menu, Loader } from '@mantine/core'
-import { ElevationState, type RouteDetailDto, type GpsServiceType } from '@/api/dto'
+import {
+  ElevationState,
+  type RouteDetailDto,
+  type GpsServiceType,
+  type WeatherAttributionDto,
+  type WeatherLegDto,
+} from '@/api/dto'
 import { RouteMapView } from './RouteMapView'
-import { RouteSurfaceSummary } from './RouteSurfaceSummary'
+import { ColorModeControls } from './ColorModeControls'
+import type { ColorByOption } from './ColorByControl'
 import { RouteWaypointList } from './RouteWaypointList'
 import { useWaypointSelection } from '@/hooks/useWaypointSelection'
-import type { PlannerColorBy } from '@/lib/plannerSurface'
+import { useWindColorMode } from '@/hooks/useWindColorMode'
 import { useUnits } from '@/hooks/useUnits'
 import { useGpsConnections } from '@/hooks/useGpsConnections'
 import { useAuth } from '@/hooks/useAuth'
@@ -29,13 +35,25 @@ interface RouteDetailViewProps {
   showDownload?: boolean
   /** Show route info section with visibility and surface type (default: true) */
   showInfo?: boolean
-  /** When set, the map shows a fullscreen action linking to this path (built via paths.xxx). */
-  fullscreenPath?: string
+  /**
+   * When set, the map shows a fullscreen action linking to this path (built via paths.xxx) — or to
+   * the path this builds for the mode the line is in (a stage's map, ledger WEB-118).
+   */
+  fullscreenPath?: string | ((colorBy: ColorByOption) => string)
+  /**
+   * A leg with a forecast offers the Météo mode (a trip stage's, WEB-118): the line by the wind, a
+   * badge per forecast point, the legend and the credit. The page decides (`stageWindLeg`).
+   */
+  windLeg?: WeatherLegDto
+  /** The forecast's credit, owed while the wind colours the line. */
+  windAttribution?: WeatherAttributionDto
+  /** The stage's zone: the passages of the forecast's points read in it. */
+  timezone?: string
 }
 
 /**
  * Detailed route view component showing map, stats, info, and climbs.
- * Used in RouteDetailPage and StageDetailPage.
+ * Used in RouteDetailPage and StageDetailPage, where a stage's forecast adds the Météo mode.
  */
 export function RouteDetailView({
   route,
@@ -43,11 +61,19 @@ export function RouteDetailView({
   showDownload = true,
   showInfo = true,
   fullscreenPath,
+  windLeg,
+  windAttribution,
+  timezone,
 }: RouteDetailViewProps) {
   const { t } = useTranslation()
   const { distance, elevation, formatDistance, config } = useUnits()
   const { isAuthenticated } = useAuth()
-  const [colorBy, setColorBy] = useState<PlannerColorBy>('grade')
+  const mode = useWindColorMode({
+    tracks: route.tracks,
+    leg: windLeg,
+    attribution: windAttribution,
+    timezone,
+  })
   const { connectedServices, uploadRoute, isUploading } = useGpsConnections()
   const { selection, setSelection, mapBoxRef, selectFromList } = useWaypointSelection()
 
@@ -63,8 +89,11 @@ export function RouteDetailView({
       <Box ref={mapBoxRef}>
         <RouteMapView
           route={route}
-          fullscreenPath={fullscreenPath}
-          colorBy={colorBy}
+          fullscreenPath={
+            typeof fullscreenPath === 'function' ? fullscreenPath(mode.colorBy) : fullscreenPath
+          }
+          colorBy={mode.plannerColorBy}
+          {...mode.mapProps}
           waypointSelection={selection}
           onWaypointSelectionChange={setSelection}
         />
@@ -76,7 +105,13 @@ export function RouteDetailView({
         </Text>
       )}
 
-      <RouteSurfaceSummary tracks={route.tracks} colorBy={colorBy} onColorByChange={setColorBy} />
+      {/* « Pente | Revêtement », plus « Météo » with a forecast (WEB-118) */}
+      <ColorModeControls
+        mode={mode}
+        tracks={route.tracks}
+        attribution={windAttribution}
+        subject="stage"
+      />
 
       {/* Download Buttons - inline without wrapper */}
       {showDownload && (route.media.assets.gpx || route.media.assets.fit) && (

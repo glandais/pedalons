@@ -58,3 +58,4 @@ de biketeam (`LEDGER_NEXT.md`, préfixe `MIG`).
 des captures) et documente l'état d'avant la v2 ; il ne décrit pas le code actuel. Sa charte et sa
 feuille de style, toujours de référence, vivent dans [`../../BRANDING.md`](../../BRANDING.md) et
 [`../../pedalons.css`](../../pedalons.css).
+| [`2026-10-24-weather-on-map.md`](2026-10-24-weather-on-map.md) | La météo sur la carte : mode « Météo » exclusif (tracé coloré dos / travers / face), pastilles aux checkpoints, liens carte ↔ tableau, plein écran du groupe (`rideGroupMap`) et de la sortie solo (`rideMap`), sortie solo, étapes et carte d'ensemble des voyages, web et mobile | **Exécuté** du 24 au 25 octobre 2026, contrat `11.16.1` (descriptions seulement, `API-138`) — `WEB-115` à `WEB-118` et `MOB-91` à `MOB-94` dans `LEDGER_DONE.md`. Reste la recette : `WEB-119` (dont `routes-render` pour `rideMap`) et `MOB-95`. Aucun test backend n'a tourné (contrat inchangé dans son comportement) |

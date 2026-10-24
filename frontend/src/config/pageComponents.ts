@@ -114,6 +114,10 @@ export const pages = {
     'RideGroupFullscreenMapPage',
     () => import('../pages/ride/RideGroupFullscreenMapPage')
   ),
+  RideFullscreenMapPage: lazyPage(
+    'RideFullscreenMapPage',
+    () => import('../pages/ride/RideFullscreenMapPage')
+  ),
   CreateRidePage: lazyPage('CreateRidePage', () => import('../pages/ride/CreateRidePage')),
   EditRidePage: lazyPage('EditRidePage', () => import('../pages/ride/EditRidePage')),
   RideTemplateListPage: lazyPage(

@@ -8,7 +8,6 @@ import '../../../../core/config/config_provider.dart';
 import '../../../../core/config/map_style_options.dart';
 import '../../../../core/geo/polyline_index.dart';
 import '../../../../core/pdl/pdl.dart';
-import '../../../../core/theme/enum_colors.dart';
 import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/preferences/user_preferences_provider.dart';
@@ -16,11 +15,13 @@ import '../../../routes/presentation/widgets/waypoint_selection.dart';
 import '../../../routes/presentation/widgets/waypoint_sheet.dart';
 import '../../domain/ride_route_layers.dart';
 import '../../domain/ride_weather_map.dart';
+import '../../domain/solo_group.dart';
 import '../../providers/ride_detail_provider.dart';
 import '../../providers/ride_group_selection_provider.dart';
 import '../../../../keys.dart';
 import 'ride_weather_map_markers.dart';
 import 'ride_wind_map_legend.dart';
+import 'weather_map_layer.dart';
 
 /// La hauteur de la carte de sortie.
 ///
@@ -59,6 +60,12 @@ double rideMapHeight(double screenHeight) =>
 /// confondrait avec un trait superposé — et éteint par défaut
 /// ([rideMapWindModeProvider]).
 ///
+/// Le détail d'une **sortie solo** la pose sans [onlyGroup], avec le leg de
+/// son groupe unique (ledger `MOB-94`) : le vent colore alors le seul
+/// parcours de ce groupe, et ses pastilles s'y posent en plein écran. Une
+/// sortie à plusieurs groupes n'a pas de mode « Météo » sur sa carte —
+/// chaque groupe l'a sur la sienne.
+///
 /// L'onglet Météo de la page d'un groupe la pose avec [forceWeatherMode] :
 /// le mode « Météo » d'office, sans toucher au choix fait dans l'Aperçu, un
 /// toucher qui ouvre le plein écran, et le réticule d'un point de la frise
@@ -93,9 +100,9 @@ class RideGroupsMap extends ConsumerWidget {
   /// graine **est** l'emprise du backend, relevée un instant plus tôt.
   final BoundsDto? seedExtent;
 
-  /// Le leg météo du groupe de [onlyGroup], `null` sans prévision chargée.
-  /// Il n'a d'effet que sur la page d'un groupe, avec une prévision
-  /// ([showsWindOnMap]) : il propose alors le mode « Météo ».
+  /// Le leg météo du groupe de [onlyGroup] — ou du groupe unique d'une
+  /// sortie solo —, `null` sans prévision chargée. Il n'a d'effet qu'avec
+  /// une prévision ([showsWindOnMap]) : il propose alors le mode « Météo ».
   final WeatherLegDto? weatherLeg;
 
   /// Le crédit des prévisions (`RideWeatherDto.attribution`), porté par la
@@ -178,9 +185,19 @@ class RideGroupsMap extends ConsumerWidget {
         ? ref.watch(hiddenRideRoutesProvider(rideKey))
         : const <String>{};
 
-    // Le vent sur le tracé : la page d'un groupe, une prévision, et le mode
-    // choisi. Sinon le trait habituel, même si le mode reste allumé.
-    final WeatherLegDto? windLeg = only != null && showsWindOnMap(weatherLeg)
+    // Le vent sur le tracé : le parcours d'un groupe (sa page, ou le détail
+    // d'une sortie solo), une prévision, et le mode choisi. Sinon le trait
+    // habituel, même si le mode reste allumé.
+    final RideGroupDto? weatherGroup = only ?? soloGroupOf(ride);
+    final String? weatherSlug = weatherGroup == null
+        ? null
+        : effectiveRouteSlug(ride, weatherGroup);
+    // Un parcours masqué dans la feuille des couches ne porte plus le vent :
+    // ni légende, ni crédit, ni bascule pour un tracé qui n'est pas dessiné.
+    final WeatherLegDto? windLeg =
+        weatherSlug != null &&
+            !hidden.contains(weatherSlug) &&
+            showsWindOnMap(weatherLeg)
         ? weatherLeg
         : null;
     final bool windMode =
@@ -194,6 +211,7 @@ class RideGroupsMap extends ConsumerWidget {
       hidden,
       mainRouteLabel,
       windMode ? windLeg : null,
+      weatherSlug,
     );
 
     // L'emprise vient du serveur (`RoutesBulkResponse.extent`), pas d'un
@@ -258,9 +276,7 @@ class RideGroupsMap extends ConsumerWidget {
       // basculer quand le mode est imposé (l'onglet Météo).
       switches: fullscreen && windLeg != null && !forceWeatherMode
           ? <PdlMapHeroSwitch>[
-              PdlMapHeroSwitch(
-                id: 'wind',
-                label: 'rides.weather.mapModeSwitch'.tr(),
+              weatherMapModeSwitch(
                 value: windMode,
                 onChanged: (bool on) =>
                     ref.read(rideMapWindModeProvider(rideKey).notifier).state =
@@ -298,28 +314,15 @@ class RideGroupsMap extends ConsumerWidget {
       // ceux-ci n'apparaissent qu'une fois la vue native prête, et la légende
       // se lit sans elle. À gauche : le crédit ⓘ tient le coin droit.
       foreground: windMode
-          ? Positioned(
-              left: PdlSpacing.sectionTightV,
-              right: PdlMetrics.tapTarget + PdlSpacing.sectionTightV,
-              bottom: PdlSpacing.sectionTightV,
-              child: SafeArea(
-                top: false,
-                left: fullscreen,
-                right: false,
-                bottom: fullscreen,
-                child: Align(
-                  alignment: Alignment.bottomLeft,
-                  // Sur la vignette qui s'ouvre au toucher, la légende ne
-                  // garde pas le doigt pour elle : il va au plein écran.
-                  child: IgnorePointer(
-                    ignoring: forceWeatherMode && !fullscreen,
-                    child: RideWindMapLegend(
-                      leg: windLeg,
-                      units: ref.watch(unitSystemProvider),
-                      attribution: weatherAttribution,
-                    ),
-                  ),
-                ),
+          ? weatherMapLegendLayer(
+              fullscreen: fullscreen,
+              // Sur la vignette qui s'ouvre au toucher, la légende ne garde
+              // pas le doigt pour elle : il va au plein écran.
+              passTouches: forceWeatherMode && !fullscreen,
+              legend: RideWindMapLegend(
+                leg: windLeg,
+                units: ref.watch(unitSystemProvider),
+                attribution: weatherAttribution,
               ),
             )
           : null,
@@ -335,6 +338,9 @@ class RideGroupsMap extends ConsumerWidget {
         geometries,
         mainRouteLabel,
         windMode ? windLeg : null,
+        weatherSlug == null || hidden.contains(weatherSlug)
+            ? null
+            : geometries[weatherSlug],
         _cursor(geometries[selectedSlug]),
       ),
     );
@@ -355,6 +361,7 @@ class RideGroupsMap extends ConsumerWidget {
     Map<String, RouteDetailDto> geometries,
     String mainRouteLabel,
     WeatherLegDto? windLeg,
+    RouteDetailDto? windRoute,
     PdlMapPoint? cursor,
   ) {
     // **La carte encastrée ne se manipule pas.** Elle vit au milieu d'une liste
@@ -376,12 +383,14 @@ class RideGroupsMap extends ConsumerWidget {
     // (ledger `MOB-92`). Encastrée, la carte est trop petite et ne se touche
     // pas ; elle garde le tracé coloré et la légende.
     final UnitSystem units = ref.watch(unitSystemProvider);
-    final RouteDetailDto? windRoute = selectedSlug == null
-        ? null
-        : geometries[selectedSlug];
     final List<PdlMapMarker> weatherMarkers =
         fullscreen && windLeg != null && windRoute != null
-        ? _weatherMarkers(windRoute, windLeg, units, ride.timezone)
+        ? weatherMarkersOnRoute(
+            windRoute,
+            windLeg,
+            units: units,
+            timezone: ride.timezone,
+          )
         : const <PdlMapMarker>[];
 
     return ValueListenableBuilder<WaypointSelection?>(
@@ -477,6 +486,7 @@ class RideGroupsMap extends ConsumerWidget {
     Set<String> hidden,
     String mainRouteLabel,
     WeatherLegDto? windLeg,
+    String? weatherSlug,
   ) {
     final List<PdlMapTrack> tracks = <PdlMapTrack>[];
     for (final RideRouteLayer layer in layers) {
@@ -492,9 +502,16 @@ class RideGroupsMap extends ConsumerWidget {
           ],
           color: color,
           label: layer.label(mainRouteLabel),
-          segmentColors: windLeg == null
+          // Le vent ne colore que le parcours du leg : sur le détail d'une
+          // sortie solo, le parcours principal que personne ne roule garde
+          // son trait.
+          segmentColors: windLeg == null || layer.routeSlug != weatherSlug
               ? null
-              : _windColors(route, windLeg, color),
+              : weatherTrackColors(route, windLeg, color),
+          // Le tracé coloré par le vent garde l'opacité et la largeur du
+          // tracé sélectionné, même quand l'autre parcours l'est : délavé, il
+          // ne ressemblerait plus à sa légende.
+          emphasized: windLeg != null && layer.routeSlug == weatherSlug,
         ),
       );
     }
@@ -507,62 +524,6 @@ class RideGroupsMap extends ConsumerWidget {
     return tracks;
   }
 
-  /// Les couleurs du vent, **mémorisées par (parcours, leg, couleur)** :
-  /// sur un parcours de plusieurs milliers de sommets, les recalculer à chaque
-  /// `build` coûterait une recherche par segment pour un résultat identique.
-  /// La mémoire s'accroche au DTO du parcours (même objet tant que le cache du
-  /// provider le garde) et part avec lui.
-  static List<Color> _windColors(
-    RouteDetailDto route,
-    WeatherLegDto leg,
-    Color fallback,
-  ) {
-    final _WindColors? memo = _windMemo[route];
-    if (memo != null && identical(memo.leg, leg) && memo.fallback == fallback) {
-      return memo.colors;
-    }
-    final List<Color> colors = windSegmentColors<Color>(
-      <List<List<double>>>[
-        for (final TrackDto t in route.tracks) t.line.coordinates,
-      ],
-      leg.segments,
-      // Un tronçon sans vent connu garde le trait du tracé, jamais le gris —
-      // qui dit « travers ».
-      (RelativeWind? wind) => wind?.stroke ?? fallback,
-    );
-    _windMemo[route] = _WindColors(leg, fallback, colors);
-    return colors;
-  }
-
-  /// Les marqueurs météo. Seules leurs **positions** sont mémorisées, par
-  /// (parcours, leg) comme les couleurs : elles chaînent toutes les distances
-  /// du parcours. Les libellés, eux, se refont à chaque construction — ils
-  /// suivent la langue et le format horaire du téléphone, que la mémoire ne
-  /// verrait pas changer.
-  static List<PdlMapMarker> _weatherMarkers(
-    RouteDetailDto route,
-    WeatherLegDto leg,
-    UnitSystem units,
-    String? timezone,
-  ) {
-    final _WeatherPoints? memo = _pointsMemo[route];
-    final List<LngLat?> points;
-    if (memo != null && identical(memo.leg, leg)) {
-      points = memo.points;
-    } else {
-      points = rideWeatherMarkerPoints(<List<List<double>>>[
-        for (final TrackDto t in route.tracks) t.line.coordinates,
-      ], leg);
-      _pointsMemo[route] = _WeatherPoints(leg, points);
-    }
-    return rideWeatherMapMarkers(
-      points: points,
-      leg: leg,
-      units: units,
-      timezone: timezone,
-    );
-  }
-
   /// Le réticule de [cursorDistance] sur le parcours, mémorisé par
   /// (parcours, distance) : il chaîne toutes les distances du tracé.
   PdlMapPoint? _cursor(RouteDetailDto? route) {
@@ -570,12 +531,9 @@ class RideGroupsMap extends ConsumerWidget {
     if (route == null || distance == null) return null;
     final _CursorPoint? memo = _cursorMemo[route];
     if (memo != null && memo.distance == distance) return memo.point;
-    final LngLat? at = pointsAtDistances(
-      <List<List<double>>>[
-        for (final TrackDto t in route.tracks) t.line.coordinates,
-      ],
-      <double>[distance],
-    ).single;
+    final LngLat? at = pointsAtDistances(routeLinesOf(route), <double>[
+      distance,
+    ]).single;
     final PdlMapPoint? point = at == null
         ? null
         : PdlMapPoint(lon: at.lng, lat: at.lat);
@@ -585,14 +543,6 @@ class RideGroupsMap extends ConsumerWidget {
 
   static final Expando<_CursorPoint> _cursorMemo = Expando<_CursorPoint>(
     'rideMapCursor',
-  );
-
-  static final Expando<_WeatherPoints> _pointsMemo = Expando<_WeatherPoints>(
-    'rideMapWeatherPoints',
-  );
-
-  static final Expando<_WindColors> _windMemo = Expando<_WindColors>(
-    'rideMapWindColors',
   );
 
   PdlMapPoint? _point(PlaceDetailDto? place) {
@@ -606,23 +556,6 @@ class RideGroupsMap extends ConsumerWidget {
     if (center == null) return null;
     return PdlMapPoint(lon: center.lon, lat: center.lat);
   }
-}
-
-/// Une entrée de la mémoire des couleurs du vent d'un parcours.
-class _WindColors {
-  const _WindColors(this.leg, this.fallback, this.colors);
-
-  final WeatherLegDto leg;
-  final Color fallback;
-  final List<Color> colors;
-}
-
-/// Une entrée de la mémoire des positions météo d'un parcours.
-class _WeatherPoints {
-  const _WeatherPoints(this.leg, this.points);
-
-  final WeatherLegDto leg;
-  final List<LngLat?> points;
 }
 
 /// Une entrée de la mémoire du réticule d'un parcours.

@@ -1,11 +1,11 @@
 # La météo sur la carte du groupe d'une sortie (web et mobile)
 
-Écrit le 24 octobre 2026. **État : palier 1 livré le 24 octobre 2026 (contrat `11.16.1`), palier 2 et palier 3 lot A le
-25 octobre ; palier 3 lot B à faire.**
+Écrit le 24 octobre 2026. **État : exécuté du 24 au 25 octobre 2026 (paliers 1 à 3, contrat `11.16.1`), archivé.** Il ne reste
+que la recette sur appareil et dans un navigateur, au ledger `WEB-119` et `MOB-95`.
 Ledger `API-138` (convention de distance documentée dans le contrat), `WEB-115` et `MOB-91`
 (palier 1, le site et l'app), `WEB-116` et `MOB-92` (palier 2), `WEB-117` et `MOB-93` (palier 3 lot A), `WEB-118` et `MOB-94` (palier 3 lot B et recette). Suit la météo des
 sorties (`API-74`, `WEB-94`, `MOB-67`, `MOB-69`) et des étapes (`API-76`, `WEB-67`, `MOB-57`), dont
-le plan archivé [`2026-10-05-weather.md`](archive/2026-10-05-weather.md) garde les arbitrages.
+le plan archivé [`2026-10-05-weather.md`](2026-10-05-weather.md) garde les arbitrages.
 
 Les faits sur le dépôt ont été relus sur `develop` (`7f9fa7e1`, contrat `11.16.0`) le 24 octobre
 2026, avec leurs numéros de ligne à cette date.

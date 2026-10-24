@@ -23,6 +23,10 @@ import 'package:pedalons/features/participants/presentation/widgets/participants
 import 'package:pedalons/features/rides/presentation/widgets/ride_group_card.dart';
 import 'package:pedalons/features/rides/presentation/widgets/ride_solo_group_section.dart';
 import 'package:pedalons/features/teams/data/team_repository.dart';
+import 'package:pedalons/features/routes/data/route_repository.dart';
+import 'package:pedalons/features/rides/providers/ride_group_selection_provider.dart';
+import 'package:pedalons/features/rides/providers/ride_weather_provider.dart';
+import 'package:pedalons/features/rides/providers/ride_detail_provider.dart';
 import 'package:pedalons/keys.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -109,6 +113,20 @@ class _StubParticipants implements ParticipantRepository {
   );
 }
 
+/// Le lot de tracés : vide — la carte n'a pas de style résolu ici, elle
+/// reste un squelette ; ce qui est vérifié est ce qui l'entoure.
+class _StubRoutes implements RouteRepository {
+  @override
+  Future<RoutesBulkResponse> getRoutesBulk(
+    String teamSlug,
+    List<String> slugs, {
+    bool geometry = true,
+  }) async => const RoutesBulkResponse(routes: <RouteDetailDto>[]);
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 class _StubTeamRepository implements TeamRepository {
   _StubTeamRepository({required this.member, this.role});
 
@@ -190,6 +208,8 @@ void main() {
           _StubTeamRepository(member: member, role: role),
         ),
         participantRepositoryProvider.overrideWithValue(_StubParticipants()),
+        // Les tracés d'une sortie qui a un parcours : aucun appel réseau.
+        routeRepositoryProvider.overrideWithValue(_StubRoutes()),
       ],
       child: MaterialApp(
         theme: PedalonsTheme.build(brightness ?? Brightness.light),
@@ -1081,6 +1101,192 @@ void main() {
 
       expect(find.byType(ParticipantsSheet), findsOneWidget);
       expect(find.text('Membre 0'), findsWidgets);
+    });
+  });
+
+  // ─────────────────── sortie solo : le mode « Météo » de la carte (MOB-94)
+
+  group('sortie solo, mode « Météo » de la carte', () {
+    final RideDto solo = fixtureRide(
+      groups: <RideGroupDto>[fixtureGroup(routeSlug: 'court')],
+    );
+    const RideKey key = RideKey(teamSlug: 'n-peloton', rideSlug: 'np-665');
+
+    RideWeatherDto served({String status = 'OK'}) => fixtureWeather(
+      status: status,
+      departure: fixtureConditions(),
+      fetchedAt: '2099-07-29T17:00:00Z',
+      legs: <WeatherLegDto>[fixtureLeg(status: status)],
+    );
+
+    /// Une page assez haute pour que la carte et sa puce soient construites :
+    /// un `CustomScrollView` ne construit pas ce qu'il n'affiche pas, et un
+    /// « rien » ne prouverait alors rien.
+    void tall(WidgetTester tester) {
+      tester.view.physicalSize = const Size(402 * 3, 4000 * 3);
+      tester.view.devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
+    }
+
+    ProviderContainer containerOf(WidgetTester tester) =>
+        ProviderScope.containerOf(tester.element(find.byType(RideDetailPage)));
+
+    testWidgets('une prévision : la puce sous la carte, éteinte par défaut', (
+      WidgetTester tester,
+    ) async {
+      tall(tester);
+      await open(
+        tester,
+        solo,
+        repository: _StubRideRepository(solo, weather: served()),
+      );
+
+      final Finder chip = find.byKey(keys.ride.windMapChip);
+      expect(chip, findsOneWidget);
+      expect(tester.widget<PdlChip>(chip).selected, isFalse);
+      expect(containerOf(tester).read(rideMapWindModeProvider(key)), isFalse);
+
+      await tester.ensureVisible(chip);
+      await tester.pump();
+      await tester.tap(chip);
+      await tester.pump();
+      expect(containerOf(tester).read(rideMapWindModeProvider(key)), isTrue);
+      expect(tester.widget<PdlChip>(chip).selected, isTrue);
+    });
+
+    testWidgets('le parcours du groupe masqué dans les couches : plus de '
+        'puce', (WidgetTester tester) async {
+      tall(tester);
+      final RideDto twoLayers = solo.copyWith(routeSlug: 'principal');
+      await open(
+        tester,
+        twoLayers,
+        repository: _StubRideRepository(twoLayers, weather: served()),
+      );
+      expect(find.byKey(keys.ride.windMapChip), findsOneWidget);
+
+      containerOf(tester).read(hiddenRideRoutesProvider(key).notifier).state =
+          <String>{'court'};
+      await tester.pump();
+      expect(find.byKey(keys.ride.windMapChip), findsNothing);
+    });
+
+    for (final String status in <String>[
+      'NOT_YET_AVAILABLE',
+      'UNAVAILABLE',
+      'NO_LOCATION',
+    ]) {
+      testWidgets('$status : pas de puce', (WidgetTester tester) async {
+        tall(tester);
+        await open(
+          tester,
+          solo,
+          repository: _StubRideRepository(
+            solo,
+            weather: served(status: status),
+          ),
+        );
+        expect(find.byKey(keys.ride.windMapChip), findsNothing);
+      });
+    }
+
+    testWidgets('une sortie terminée : pas de puce, pas de météo', (
+      WidgetTester tester,
+    ) async {
+      tall(tester);
+      final RideDto past = fixtureRide(
+        dateTime: '2020-07-29T19:30:00Z',
+        groups: <RideGroupDto>[fixtureGroup(routeSlug: 'court')],
+      );
+      final _StubRideRepository repository = _StubRideRepository(
+        past,
+        weather: served(),
+      );
+      await open(tester, past, repository: repository);
+      expect(find.byKey(keys.ride.windMapChip), findsNothing);
+      expect(repository.weatherCalls, 0);
+    });
+
+    testWidgets('une sortie annulée : pas de puce', (
+      WidgetTester tester,
+    ) async {
+      tall(tester);
+      final RideDto cancelled = fixtureRide(
+        status: 'CANCELLED',
+        groups: <RideGroupDto>[fixtureGroup(routeSlug: 'court')],
+      );
+      await open(
+        tester,
+        cancelled,
+        repository: _StubRideRepository(cancelled, weather: served()),
+      );
+      expect(find.byKey(keys.ride.windMapChip), findsNothing);
+    });
+
+    testWidgets('plusieurs groupes : pas de puce sous la carte de la sortie', (
+      WidgetTester tester,
+    ) async {
+      tall(tester);
+      final RideDto two = fixtureRide(
+        groups: <RideGroupDto>[
+          fixtureGroup(id: 'g1', routeSlug: 'court'),
+          fixtureGroup(id: 'g2', name: 'Cool', routeSlug: 'long'),
+        ],
+      );
+      await open(
+        tester,
+        two,
+        repository: _StubRideRepository(two, weather: served()),
+      );
+      expect(find.byKey(keys.ride.windMapChip), findsNothing);
+    });
+
+    testWidgets('une prévision perdue au refetch éteint le mode, qui ne '
+        'revient pas seul', (WidgetTester tester) async {
+      tall(tester);
+      final _StubRideRepository repository = _StubRideRepository(
+        solo,
+        weather: served(),
+      );
+      await open(tester, solo, repository: repository);
+      final ProviderContainer container = containerOf(tester);
+      container.read(rideMapWindModeProvider(key).notifier).state = true;
+      await tester.pump();
+
+      repository.weather = served(status: 'UNAVAILABLE');
+      container.invalidate(rideWeatherProvider(key));
+      for (int i = 0; i < 4; i++) {
+        await tester.pump(const Duration(milliseconds: 10));
+      }
+      expect(container.read(rideMapWindModeProvider(key)), isFalse);
+      expect(find.byKey(keys.ride.windMapChip), findsNothing);
+
+      // Revenue, la prévision rend la puce, éteinte.
+      repository.weather = served();
+      container.invalidate(rideWeatherProvider(key));
+      for (int i = 0; i < 4; i++) {
+        await tester.pump(const Duration(milliseconds: 10));
+      }
+      expect(find.byKey(keys.ride.windMapChip), findsOneWidget);
+      expect(container.read(rideMapWindModeProvider(key)), isFalse);
+    });
+
+    testWidgets('le choix survit tant que la page est montée', (
+      WidgetTester tester,
+    ) async {
+      await open(
+        tester,
+        solo,
+        repository: _StubRideRepository(solo, weather: served()),
+      );
+      final ProviderContainer container = containerOf(tester);
+      container.read(rideMapWindModeProvider(key).notifier).state = true;
+      // La page défile : la carte et sa puce quittent l'écran.
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -3000));
+      for (int i = 0; i < 3; i++) {
+        await tester.pump(const Duration(milliseconds: 10));
+      }
+      expect(container.read(rideMapWindModeProvider(key)), isTrue);
     });
   });
 }

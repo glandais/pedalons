@@ -14,6 +14,10 @@ class RideDetailKeys {
   /// La pastille de la carte des groupes, qui nomme le groupe sélectionné.
   final groupsMapPill = const _RideDetailKey('groupsMapPill');
 
+  /// La puce « Météo » sous la carte d'une sortie solo : le vent sur le
+  /// tracé de son groupe (ledger `MOB-94`).
+  final windMapChip = const _RideDetailKey('windMapChip');
+
   final loadError = const _RideDetailKey('loadError');
 
   /// « Réessayer » de l'état d'erreur.

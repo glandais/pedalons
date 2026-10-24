@@ -403,6 +403,49 @@ void main() {
     });
   });
 
+  group('PdlMapController — tracé mis en avant (MOB-94)', () {
+    test('un tracé mis en avant prend le trait du sélectionné, sans '
+        'changer la sélection', () async {
+      final PdlMapController controller = PdlMapController();
+      addTearDown(controller.dispose);
+      final _StrictStyle style = _StrictStyle();
+      final PdlMapTrack emphasized = PdlMapTrack(
+        id: 'b',
+        color: const Color(0xFF000000),
+        lines: _track('b').lines,
+        segmentColors: const <Color>[Color(0xFF111111)],
+        emphasized: true,
+      );
+
+      await controller.setContent(
+        tracks: <PdlMapTrack>[_track('a'), emphasized],
+      );
+      await controller.attachStyle(style);
+
+      final List<dynamic> features =
+          (jsonDecode(style.geoJson['pdl-track-src']!)
+                  as Map<String, dynamic>)['features']
+              as List<dynamic>;
+      int selOf(String id) =>
+          ((features.firstWhere(
+                        (dynamic f) =>
+                            (f
+                                as Map<
+                                  String,
+                                  dynamic
+                                >)['properties']['trackId'] ==
+                            id,
+                      )
+                      as Map<String, dynamic>)['properties']
+                  as Map<String, dynamic>)['sel']
+              as int;
+      expect(selOf('a'), 0);
+      expect(selOf('b'), 1);
+      expect(controller.selectedTrackId, isNull);
+      expect(emphasized, isNot(_track('b')));
+    });
+  });
+
   group('PdlMapController — sens des tracés', () {
     test('les chevrons passent au-dessus de tous les tracés', () async {
       final PdlMapController controller = PdlMapController();

@@ -26,6 +26,7 @@ import '../../../tags/presentation/content_tags.dart';
 import '../../providers/trip_detail_provider.dart';
 import '../../providers/trip_participation_controller.dart';
 import '../../providers/trip_stage_selection_provider.dart';
+import '../../domain/trip_weather_map.dart';
 import '../../providers/trip_weather_provider.dart';
 import '../widgets/stage_card.dart';
 import '../widgets/trip_elevation.dart';
@@ -82,6 +83,15 @@ class _TripDetailContent extends ConsumerWidget {
     final bool? isMember = ref.watch(teamMembershipProvider(trip.team.slug));
     final List<TripStageDto> stages = trip.orderedStages;
     final String? selected = ref.watch(selectedStageProvider(tripKey));
+    // Le mode « Météo » de la carte d'ensemble (ledger `MOB-94`) : gardé en
+    // vie tant que la page est montée, éteint quand plus aucune étape n'a de
+    // prévision.
+    listenTripMapWindMode(
+      ref,
+      tripKey,
+      trip,
+      stillShows: (Map<String, WeatherLegDto> legs) => legs.isNotEmpty,
+    );
 
     void select(String id) =>
         ref.read(selectedStageProvider(tripKey).notifier).state = id;

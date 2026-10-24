@@ -1,7 +1,12 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { QueryClient } from '@tanstack/react-query'
 import type { RideDto, RideGroupDto, RideWeatherDto } from '@/api/dto'
-import { getGetRideParticipantsQueryKey } from '@/api/endpoints/rides/rides'
+import {
+  getGetRideParticipantsQueryKey,
+  getGetRideQueryKey,
+  getGetRideWeatherQueryKey,
+} from '@/api/endpoints/rides/rides'
+import { getGetTeamQueryKey } from '@/api/endpoints/teams/teams'
 import { groupParticipantsParams } from '@/hooks/filters/groupParticipantFilters'
 import { okWeather, weatherLeg } from '@/test/weatherFixtures'
 
@@ -20,7 +25,13 @@ vi.mock('@/store/authStore', () => ({
   useAuthStore: { getState: () => ({ isAuthenticated: false }) },
 }))
 
-import { leavesGroupPage, ownLeg, prefetchRideDetail, soloGroup } from './rideDetailData'
+import {
+  leavesGroupPage,
+  ownLeg,
+  prefetchRideDetail,
+  prefetchRideMap,
+  soloGroup,
+} from './rideDetailData'
 
 const g = (id: string) => ({ id, name: id }) as RideGroupDto
 const ride = (groups: RideGroupDto[]) => ({ slug: 'sortie', groups }) as unknown as RideDto
@@ -93,5 +104,32 @@ describe('prefetchRideDetail', () => {
       new URL('https://pedalons.fr/equipes/np/sorties/sortie')
     )
     expect(requests.urls.filter((u) => u.endsWith('/participants'))).toHaveLength(0)
+  })
+})
+
+describe('prefetchRideMap (WEB-118)', () => {
+  beforeEach(() => {
+    requests.urls = []
+    requests.responses = {}
+  })
+
+  it("reads the ride page's keys — team, ride, weather, then the routes — and nothing else", async () => {
+    requests.responses['/api/teams/np/rides/sortie'] = {
+      slug: 'sortie',
+      routeSlug: 'boucle',
+      groups: [{ id: 'g1', routeSlug: 'col' }],
+    }
+    const queryClient = new QueryClient()
+    await prefetchRideMap(queryClient, 'np', 'sortie')
+    expect(queryClient.getQueryState(getGetTeamQueryKey('np'))?.status).toBe('success')
+    expect(queryClient.getQueryState(getGetRideQueryKey('np', 'sortie'))?.status).toBe('success')
+    expect(queryClient.getQueryState(getGetRideWeatherQueryKey('np', 'sortie'))?.status).toBe(
+      'success'
+    )
+    expect(requests.urls.some((u) => u.includes('/routes/bulk'))).toBe(true)
+    // No comments, participants nor GPS services: the map mounts none of them
+    expect(requests.urls.some((u) => u.endsWith('/comments'))).toBe(false)
+    expect(requests.urls.some((u) => u.endsWith('/participants'))).toBe(false)
+    expect(requests.urls.some((u) => u.includes('gps'))).toBe(false)
   })
 })

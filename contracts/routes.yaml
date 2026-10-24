@@ -562,6 +562,16 @@ routes:
       - rideSlug
       - groupId
     web: true
+  # A solo ride's map in full screen (WEB-118): its one group, whose id the URL keeps to itself
+  # (a solo ride has no group page), the Météo mode in `?color=`. Web only, like rideGroupMap.
+  - id: rideMap
+    path:
+      en: /teams/{teamSlug}/rides/{rideSlug}/map
+      fr: /equipes/{teamSlug}/sorties/{rideSlug}/carte
+    params:
+      - teamSlug
+      - rideSlug
+    web: true
   - id: rideEdit
     path:
       en: /teams/{teamSlug}/rides/{rideSlug}/edit

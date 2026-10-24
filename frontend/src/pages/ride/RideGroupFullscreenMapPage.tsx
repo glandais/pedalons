@@ -1,15 +1,12 @@
 import { useEffect } from 'react'
-import { Navigate, useParams } from 'react-router-dom'
+import { Navigate, useLocation, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { RouteFullscreenView } from '@/components/route/RouteFullscreenView'
+import { MapColorFullscreenView } from '@/components/route/MapColorFullscreenView'
 import { LoadingPage } from '@/components/common/LoadingSpinner'
 import { paths } from '@/config/paths'
 import { useAppName } from '@/hooks/useAppName'
 import { useCanonicalPath } from '@/hooks/useCanonicalPath'
-import { useUrlFilters } from '@/hooks/useUrlFilters'
-import { mapColorFiltersAlias, mapColorFiltersSchema } from '@/hooks/filters/mapColorFilters'
-import { leavesGroupPage } from './rideDetailData'
-import { groupWindLeg, useRideGroupData } from './rideGroupData'
+import { groupWindLeg, rideGroupMapLeavesTo, useRideGroupData } from './rideGroupData'
 
 /**
  * A ride group's map in full screen (`…/groups/{groupId}/map`, ledger WEB-117, plan
@@ -18,15 +15,16 @@ import { groupWindLeg, useRideGroupData } from './rideGroupData'
  * the credit — when its page would offer it (`groupWindLeg`). Bare layout, so it owns its
  * `document.title`.
  *
- * The mode arrives in the URL (`?color=wind`, `mapColorFilters.ts`), which the group's page writes
- * on its fullscreen button: a shared link shows the same map. Without it, the grade; a mode the map
- * cannot offer (no forecast, a finished ride, no surface) reads as the grade too. A switch here
- * rewrites the URL in place.
+ * The mode arrives in the URL (`?color=wind`, `MapColorFullscreenView`), which the group's page
+ * writes on its fullscreen button: a shared link shows the same map. Without it, the grade; a mode
+ * the map cannot offer (no forecast, a finished ride, no surface) reads as the grade too. A switch
+ * here rewrites the URL in place.
  *
  * Its data is the group's page's (`rideGroupData.ts`), under the same keys. A ride with at most one
- * group has no group page (WEB-79), so none of its maps either: the route's loader sends it to the
- * ride (`rideGroupDataRedirect`), and this page does when it could not. A group or a route it lacks
- * sends back to the group's page, which says what is missing.
+ * group has no group page (WEB-79), so none of its maps either: a solo ride's map is the ride's own
+ * (`rideMap`, WEB-118, the mode kept), a ride without groups goes to its page
+ * (`rideGroupMapLeavesTo`) — the route's loader does it, and this page when it could not. A group
+ * or a route it lacks sends back to the group's page, which says what is missing.
  */
 export function RideGroupFullscreenMapPage() {
   const { teamSlug, rideSlug, groupId } = useParams<{
@@ -36,10 +34,7 @@ export function RideGroupFullscreenMapPage() {
   }>()
   const { t } = useTranslation()
   const appName = useAppName()
-  const {
-    filters: { colorBy },
-    setFilters,
-  } = useUrlFilters({ schema: mapColorFiltersSchema, alias: mapColorFiltersAlias })
+  const { search } = useLocation()
 
   const {
     team: { data: team, isLoading: isLoadingTeam },
@@ -51,7 +46,8 @@ export function RideGroupFullscreenMapPage() {
     leg,
   } = useRideGroupData(teamSlug, rideSlug, groupId)
 
-  const leave = ride ? leavesGroupPage(ride) : false
+  const leaveTo = ride && teamSlug ? rideGroupMapLeavesTo(ride, teamSlug, search) : undefined
+  const leave = !!leaveTo
   const routeSlug = group ? (group.routeSlug ?? ride?.routeSlug) : undefined
   const route = routeSlug ? routesBySlug.get(routeSlug) : undefined
 
@@ -73,8 +69,8 @@ export function RideGroupFullscreenMapPage() {
     return <LoadingPage message={t('loading')} />
   }
 
-  if (ride && leave) {
-    return <Navigate to={paths.ride(teamSlug!, ride.slug)} replace />
+  if (leaveTo) {
+    return <Navigate to={leaveTo} replace />
   }
   // No team, no ride, a group the ride no longer has, or no route to draw: the group's page says so
   if (!team || !ride || !group || !route) {
@@ -84,12 +80,10 @@ export function RideGroupFullscreenMapPage() {
   const windLeg = groupWindLeg(ride, leg)
 
   return (
-    <RouteFullscreenView
+    <MapColorFullscreenView
       route={route}
       title={title}
       backTo={paths.rideGroup(team.slug, ride.slug, group.id)}
-      colorBy={colorBy}
-      onColorByChange={(next) => setFilters({ colorBy: next })}
       windLeg={windLeg}
       windAttribution={windLeg ? weather.data?.attribution : undefined}
       timezone={ride.timezone}

@@ -61,6 +61,8 @@ interface Screen extends Expectation {
   roles: readonly RenderRole[]
   /** Rendered outside the app shell (`layout: 'bare'`): no <main>. */
   bare?: boolean
+  /** The params the route is opened with, when the dataset's own (`d.params`) do not fit. */
+  params?: (data: Dataset) => Record<string, string>
   /** What only the screen shows to these roles, when it renders differently for them. */
   seesAs?: Partial<Record<RenderRole, Expectation['sees']>>
   /** Per-role outcomes that differ from the screen itself — the page's own redirects. */
@@ -104,12 +106,20 @@ const fullscreenMap =
 
 const teamPath = (d: Dataset) => `/equipes/${d.team.slug}`
 
-/** The path of the contract's route `id`, filled from the dataset. Read at run time. */
-const pathTo = (id: string) => (d: Dataset) => {
-  const route = contract.find((candidate) => candidate.id === id)
-  if (!route) throw new Error(`no web route ${id} in the contract`)
-  return fillPath(route, d.params)
-}
+/**
+ * The path of the contract's route `id`, filled from the dataset (or from `params`, read from it).
+ * Read at run time.
+ */
+const pathTo =
+  (id: string, params: (d: Dataset) => Record<string, string> = (d) => d.params) =>
+  (d: Dataset) => {
+    const route = contract.find((candidate) => candidate.id === id)
+    if (!route) throw new Error(`no web route ${id} in the contract`)
+    return fillPath(route, params(d))
+  }
+
+/** The dataset's params, on its solo ride (one group) instead of its ride of two groups. */
+const soloRideParams = (d: Dataset) => ({ ...d.params, rideSlug: d.soloRide.slug })
 
 /** The same page-level outcome for each of `roles` — a redirect, or a refusal. */
 const redirects = (
@@ -472,6 +482,14 @@ const screens: Record<string, Screen> = {
     bare: true,
     sees: fullscreenMap((d) => `${d.ride.name} · Groupe Groupe A`, pathTo('rideGroup')),
   },
+  // A solo ride's map (WEB-118), on the dataset's ride of a single group: the shared `rideSlug`
+  // names a ride of two groups, which has no such map — that redirect is tested on its own, below.
+  rideMap: {
+    roles: EVERYONE,
+    bare: true,
+    params: soloRideParams,
+    sees: fullscreenMap((d) => d.soloRide.name, pathTo('ride', soloRideParams)),
+  },
   rideEdit: {
     roles: ORGANIZERS,
     sees: heading('Modifier la sortie'),
@@ -796,7 +814,7 @@ for (const route of contract) {
     test(title, async ({ page }) => {
       test.fail(!!expected.defect, expected.defect)
       const d = await data()
-      const path = fillPath(route, d.params)
+      const path = fillPath(route, screen.params?.(d) ?? d.params)
       const where = `${route.id} as ${role} (${path})`
 
       const { pageErrors, hydrationErrors } = await watchHydration(page)
@@ -850,6 +868,22 @@ for (const route of contract) {
     })
   }
 }
+
+/**
+ * The other half of `rideMap`'s contract: a ride with several groups has no map of its own, and its
+ * loader (`rideMapDataRedirect`) sends the visitor to the ride's page, server side.
+ */
+test('rideMap of a ride with several groups: redirects to the ride', async ({ page }) => {
+  const d = await data()
+  const { pageErrors, hydrationErrors } = await watchHydration(page)
+  const response = await page.goto(pathTo('rideMap')(d))
+  expect(response?.status()).toBe(200)
+  await pageHydrated(page)
+  await expect.poll(() => new URL(page.url()).pathname, { timeout: 15_000 }).toBe(pathTo('ride')(d))
+  await heading(d.ride.name)(page.getByRole('main'))
+  expect(pageErrors).toEqual([])
+  expect(hydrationErrors).toEqual([])
+})
 
 /**
  * The English paths of the contract. The router registers every locale's path whatever the

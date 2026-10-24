@@ -34,6 +34,14 @@ interface WeatherCheckpointMarkersProps {
   openIndex?: number | null
   /** Every opening or closing — a badge, the popup's button, Escape —, controlled or not. */
   onOpenChange?: (index: number | null) => void
+  /**
+   * Whose points these are, when a map lays several legs at once (a trip's overview, ledger
+   * WEB-118): a stage's name. Each badge's label, its popup's title and the drop's label then name
+   * it and the passage's day (in `timezone`), so the stages of a multi-day trip — the loops of a
+   * base camp, whose badges overlap — are told apart. Left out (a group, a stage), they read as
+   * before.
+   */
+  context?: string
 }
 
 /**
@@ -51,12 +59,14 @@ export function WeatherCheckpointMarkers({
   timezone,
   openIndex: controlledOpenIndex,
   onOpenChange,
+  context,
 }: WeatherCheckpointMarkersProps) {
   const { t } = useTranslation()
   const labels = useWeatherLabels()
   const route = useRouteLabels()
   const passage = useRendezvousFormat(timezone)
   const summarize = useCheckpointSummary(timezone)
+  const inContext = useInContext(context, timezone)
   // The whole geometry measured once, for every badge and the drop
   const bearing = useMapBearing()
   const chained = useMemo(() => chainedDistances(tracks), [tracks])
@@ -154,7 +164,7 @@ export function WeatherCheckpointMarkers({
         >
           <CheckpointBadge
             marker={marker}
-            label={summarize(marker.checkpoint)}
+            label={inContext(summarize(marker.checkpoint), marker.checkpoint.time)}
             expanded={openIndex === marker.checkpoint.index}
             bearing={bearing}
             buttonRef={(element) => {
@@ -180,12 +190,15 @@ export function WeatherCheckpointMarkers({
           style={{ pointerEvents: 'none' }}
         >
           <RainDrop
-            label={t('rides.weather.rain.alertAt', {
-              condition: labels.condition(rainAlertCondition(alert.condition)),
-              probability: alert.probability,
-              time: passage.formatTime(alert.time),
-              distance: route.marker(alert.distance ?? 0),
-            })}
+            label={inContext(
+              t('rides.weather.rain.alertAt', {
+                condition: labels.condition(rainAlertCondition(alert.condition)),
+                probability: alert.probability,
+                time: passage.formatTime(alert.time),
+                distance: route.marker(alert.distance ?? 0),
+              }),
+              alert.time
+            )}
           />
         </Marker>
       )}
@@ -204,7 +217,13 @@ export function WeatherCheckpointMarkers({
           maxWidth="260px"
           onClose={close}
         >
-          <CheckpointDetail ref={popupRef} marker={open} timezone={timezone} bearing={bearing} />
+          <CheckpointDetail
+            ref={popupRef}
+            marker={open}
+            timezone={timezone}
+            context={context}
+            bearing={bearing}
+          />
         </Popup>
       )}
     </>
@@ -326,11 +345,13 @@ function CheckpointDetail({
   ref,
   marker,
   timezone,
+  context,
   bearing,
 }: {
   ref: React.Ref<HTMLDivElement>
   marker: MapCheckpoint
   timezone?: string
+  context?: string
   bearing: number
 }) {
   const { t } = useTranslation()
@@ -338,6 +359,7 @@ function CheckpointDetail({
   const labels = useWeatherLabels()
   const route = useRouteLabels()
   const passage = useRendezvousFormat(timezone)
+  const inContext = useInContext(context, timezone)
   const titleId = useId()
   const { checkpoint } = marker
   const weather = checkpoint.weather
@@ -374,10 +396,13 @@ function CheckpointDetail({
         m={0}
         suppressHydrationWarning={passage.isGuessedText}
       >
-        {t('rides.weather.map.checkpointTitle', {
-          place: route.place(checkpoint),
-          time: passage.formatTime(checkpoint.time),
-        })}
+        {inContext(
+          t('rides.weather.map.checkpointTitle', {
+            place: route.place(checkpoint),
+            time: passage.formatTime(checkpoint.time),
+          }),
+          checkpoint.time
+        )}
       </Text>
       <Group gap={6} wrap="nowrap">
         <WeatherIcon condition={weather.condition} daylight={weather.daylight} size={18} />
@@ -408,6 +433,27 @@ function CheckpointDetail({
         </Text>
       </Group>
     </Stack>
+  )
+}
+
+/**
+ * « Étape 3, sam. 3 mai — Départ · 09:00 »: a text prefixed with whose point it is and the day of
+ * its passage, read in the leg's zone — the text alone without a `context`.
+ */
+function useInContext(context: string | undefined, timezone: string | undefined) {
+  const { t } = useTranslation()
+  const { formatPattern } = useRendezvousFormat(timezone)
+  return useCallback(
+    (text: string, time: string) =>
+      context
+        ? t('rides.weather.map.inContext', {
+            // Not `context`: i18next reads it as the key's variant
+            name: context,
+            day: formatPattern(time, 'EEE d MMM'),
+            text,
+          })
+        : text,
+    [t, formatPattern, context]
   )
 }
 

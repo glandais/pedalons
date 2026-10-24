@@ -26,6 +26,8 @@ import { useRoutesBulk } from '@/hooks/useRoutesBulk'
 import { prefetchMemberComments, prefetchRoutesBulkChunked } from '@/config/prefetchHelpers'
 import { useAuthStore } from '@/store/authStore'
 import type { RideDto, RouteDetailDto } from '@/api/dto'
+import type { RouteParams } from '@/config/routes.types'
+import { paths } from '@/config/paths'
 
 // The solo-ride predicates (ledger WEB-79), one import for the ride's and the group's pages.
 export { soloGroup, leavesGroupPage, ownLeg } from '@/utils/soloGroup'
@@ -38,6 +40,10 @@ export { soloGroup, leavesGroupPage, ownLeg } from '@/utils/soloGroup'
  * yields a different query key, so the client refetches after hydration and only
  * the prefetch audit of
  * `e2e/routes-render.e2e.ts` notices.
+ *
+ * It also serves the solo ride's fullscreen map (`RideFullscreenMapPage`, route `ride-map`, ledger
+ * WEB-118): same hook, and {@link prefetchRideMap}, the same keys minus what only the page's
+ * children read — one module, two routes (docs/SSR-data-loading.md).
  *
  * Its own module rather than exports of `RideDetailPage.tsx`: `routes.config.ts` is imported
  * eagerly and must not pull the page out of its lazy chunk (same contract as
@@ -178,4 +184,44 @@ export async function prefetchRideDetail(
         )
       : Promise.resolve(queryClient),
   ])
+}
+
+/**
+ * Server-side counterpart of {@link useRideDetailData} for a ride's fullscreen map — the solo
+ * ride's (`ride-map`, WEB-118) and a group's (`ride-group-map`, WEB-117, through
+ * `prefetchRideGroupMap`): the ride page's reads under their own keys — team, ride and weather, then
+ * the routes bulk the ride and its groups name. A map mounts no comments, participant list or export
+ * menu, so none of them is prefetched; its colour mode (`?color=`) is presentation and reads nothing.
+ */
+export async function prefetchRideMap(
+  queryClient: QueryClient,
+  teamSlug: string,
+  rideSlug: string
+): Promise<void> {
+  await Promise.all([
+    prefetchGetTeamQuery(queryClient, teamSlug),
+    prefetchGetRideQuery(queryClient, teamSlug, rideSlug),
+    prefetchGetRideWeatherQuery(queryClient, teamSlug, rideSlug, { request: WEATHER_REQUEST }),
+  ])
+  const ride = queryClient.getQueryData<RideDto>(getGetRideQueryKey(teamSlug, rideSlug))
+  await prefetchRoutesBulkChunked(queryClient, teamSlug, rideRouteSlugs(ride))
+}
+
+/**
+ * The `ride-map` route's `dataRedirect` (WEB-118): only a solo ride has this map — its page draws
+ * its one group's route (WEB-79) —, so a ride with no group or several is sent to its page (its
+ * groups' maps are on their own pages). Reads only the ride `prefetchRideMap` cached; without it
+ * (a private team rendered anonymously), `undefined`, and `RideFullscreenMapPage` leaves on the
+ * client. The query string (`?color=`) means nothing on the ride's page: dropped.
+ */
+export function rideMapDataRedirect(
+  queryClient: QueryClient,
+  params: RouteParams
+): string | undefined {
+  if (!params.teamSlug || !params.rideSlug) return undefined
+  const ride = queryClient.getQueryData<RideDto>(
+    getGetRideQueryKey(params.teamSlug, params.rideSlug)
+  )
+  if (!ride || soloGroup(ride)) return undefined
+  return paths.ride(params.teamSlug, ride.slug)
 }

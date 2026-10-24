@@ -28,7 +28,7 @@ import 'weather_leg_sections.dart';
 ///
 /// En tête, quand le leg a une prévision ([showsWindOnMap]) et le groupe un
 /// parcours : la carte du groupe, **toujours en mode « Météo »** (ledger
-/// `MOB-93`, palier 3 de `docs/plans/2026-10-24-weather-on-map.md`) — le
+/// `MOB-93`, palier 3 de `docs/plans/archive/2026-10-24-weather-on-map.md`) — le
 /// tracé coloré par le vent, la légende et le crédit, sans puce ni pastille.
 /// Elle ne se manipule pas ; un toucher ouvre le plein écran, en mode
 /// « Météo » lui aussi, avec ses pastilles. Toucher un point de la frise y

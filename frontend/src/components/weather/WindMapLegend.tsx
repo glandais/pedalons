@@ -1,15 +1,28 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Anchor, Box, Group, Stack, Text, useMantineTheme } from '@mantine/core'
-import type { WeatherAttributionDto, WeatherLegDto } from '@/api/dto'
+import type { WeatherAttributionDto } from '@/api/dto'
 import { WeatherStatus } from '@/api/dto'
 import { useUnits } from '@/hooks/useUnits'
 import { relativeWindStrokeColors, windShares } from '@/lib/weatherOnRoute'
+import type { WindLegendSource } from '@/lib/tripWeatherOnMap'
 import { useWeatherLabels } from './useWeatherLabels'
 import { WeatherStaleBadge } from './WeatherStaleBadge'
 
+/** Who rides at the default speed, which only changes how that is said. */
+export type WindLegendSubject = 'group' | 'stage' | 'trip'
+
+const SPEED_DEFAULT_KEYS = {
+  group: 'rides.weather.leg.speedDefault',
+  stage: 'trips.weather.speedDefault',
+  trip: 'trips.weather.map.speedDefault',
+} as const satisfies Record<WindLegendSubject, string>
+
 interface WindMapLegendProps {
-  leg: WeatherLegDto
+  /** A leg — a group's, a stage's —, or a trip's stages taken together (`combinedWindLegend`). */
+  leg: WindLegendSource
+  /** Whose speed the passages assume when it is the default: a group (default), a stage, a trip. */
+  subject?: WindLegendSubject
   /** The forecast's credit, repeated under the map: the profile overlay can cover the map's own. */
   attribution?: WeatherAttributionDto
 }
@@ -20,7 +33,7 @@ interface WindMapLegendProps {
  * (docs/BRANDING.md §3.6). Says when the forecast is old and when the passages assume the default
  * speed, which the wind of each stretch depends on.
  */
-export function WindMapLegend({ leg, attribution }: WindMapLegendProps) {
+export function WindMapLegend({ leg, subject = 'group', attribution }: WindMapLegendProps) {
   const { t } = useTranslation()
   const theme = useMantineTheme()
   const { distance, speed } = useUnits()
@@ -55,7 +68,7 @@ export function WindMapLegend({ leg, attribution }: WindMapLegendProps) {
       </Group>
       {leg.speedIsDefault && (
         <Text size="xs" c="dimmed">
-          {t('rides.weather.leg.speedDefault', { speed: speed(leg.averageSpeed) })}
+          {t(SPEED_DEFAULT_KEYS[subject], { speed: speed(leg.averageSpeed) })}
         </Text>
       )}
       {attribution && (

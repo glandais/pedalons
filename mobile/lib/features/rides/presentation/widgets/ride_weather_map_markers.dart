@@ -15,7 +15,7 @@ import '../../domain/ride_weather_map.dart';
 import 'ride_weather_widgets.dart';
 
 /// Les pastilles météo de la carte plein écran d'un groupe, en mode « Météo »
-/// (palier 2 de `docs/plans/2026-10-24-weather-on-map.md`, ledger `MOB-92`).
+/// (palier 2 de `docs/plans/archive/2026-10-24-weather-on-map.md`, ledger `MOB-92`).
 ///
 /// Une pastille **compacte** par point de passage qui porte une météo —
 /// icône du ciel, température, flèche du vent **absolue** (vers le nord de la
@@ -63,12 +63,17 @@ List<LngLat?> rideWeatherMarkerPoints(
 /// l'alerte pluie tombe le plus souvent sur un point de passage, et les deux
 /// ne se recouvrent pas. Un point sans météo n'a pas de pastille ; une alerte
 /// sans distance n'a pas de goutte.
+///
+/// [idPrefix] précède chaque id : plusieurs legs sur une même carte (les
+/// étapes d'un voyage, ledger `MOB-94`) gardent des ids distincts.
+/// [openWeatherMapMarker] reçoit le même.
 List<PdlMapMarker> rideWeatherMapMarkers({
   List<List<List<double>>>? lines,
   List<LngLat?>? points,
   required WeatherLegDto leg,
   required UnitSystem units,
   required String? timezone,
+  String idPrefix = '',
 }) {
   assert(lines != null || points != null);
   final List<WeatherCheckpointDto> withWeather = <WeatherCheckpointDto>[
@@ -85,7 +90,7 @@ List<PdlMapMarker> rideWeatherMapMarkers({
     final WeatherCheckpointDto c = withWeather[i];
     markers.add(
       PdlMapMarker(
-        id: weatherCheckpointMarkerId(c.indexField),
+        id: '$idPrefix${weatherCheckpointMarkerId(c.indexField)}',
         lon: at.lng,
         lat: at.lat,
         size: _pastilleSize,
@@ -104,7 +109,7 @@ List<PdlMapMarker> rideWeatherMapMarkers({
   if (alert != null && rainAt != null) {
     markers.add(
       PdlMapMarker(
-        id: weatherRainMarkerId,
+        id: '$idPrefix$weatherRainMarkerId',
         lon: rainAt.lng,
         lat: rainAt.lat,
         size: _dropSize,
@@ -145,15 +150,19 @@ String weatherCheckpointKindLabel(String kind) =>
       WeatherCheckpointKind.$unknown => 'rides.weather.checkpointKind.enRoute',
     }.tr();
 
-/// Ouvre le détail du marqueur [id] du [leg]. Rien pour un id inconnu.
-/// [PdlSheet.show] est le seul appelant de `showModalBottomSheet`.
+/// Ouvre le détail du marqueur [markerId] du [leg], posé avec [idPrefix]. Rien
+/// pour un id inconnu. [PdlSheet.show] est le seul appelant de
+/// `showModalBottomSheet`.
 Future<void> openWeatherMapMarker(
   BuildContext context,
-  String id, {
+  String markerId, {
   required WeatherLegDto leg,
   required UnitSystem units,
   required String? timezone,
+  String idPrefix = '',
 }) async {
+  if (!markerId.startsWith(idPrefix)) return;
+  final String id = markerId.substring(idPrefix.length);
   if (id == weatherRainMarkerId) {
     final WeatherRainAlertDto? alert = leg.rainAlert;
     if (alert == null) return;

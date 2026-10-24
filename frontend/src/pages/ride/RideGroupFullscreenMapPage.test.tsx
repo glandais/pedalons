@@ -181,9 +181,15 @@ describe('RideGroupFullscreenMapPage (WEB-117)', () => {
     expect(screen.getByTestId('url').textContent).toBe('')
   })
 
-  it('sends a ride with at most one group to the ride (WEB-79)', () => {
+  it('sends a solo ride to its own map, mode kept (WEB-118), a ride without groups to the ride', () => {
     state.ride = ride({ groups: [group('g1', 'Rapide')] })
-    renderPage()
+    renderPage('?color=wind')
+    expect(screen.getByTestId('elsewhere').textContent).toBe(
+      `${paths.rideMap('np', 'sortie')}?color=wind`
+    )
+    cleanup()
+    state.ride = ride({ groups: [] })
+    renderPage('?color=wind')
     expect(screen.getByTestId('elsewhere').textContent).toBe(paths.ride('np', 'sortie'))
   })
 
