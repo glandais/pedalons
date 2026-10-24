@@ -11,7 +11,25 @@ import '../../routes/data/route_repository.dart';
 import '../../routes/domain/route_elevation_builder.dart';
 import '../../routes/domain/track_surfaces.dart';
 import '../../routes/presentation/widgets/waypoint_selection.dart';
+import '../domain/ride_route_layers.dart';
+import '../domain/solo_group.dart';
 import 'ride_detail_provider.dart';
+
+/// Le parcours pointé quand **aucun groupe ne le roule** — le parcours
+/// principal de la sortie, touché sur la carte.
+///
+/// La sélection de l'écran est un parcours : celui du groupe sélectionné, ou
+/// celui-ci quand il est posé. Toucher un tracé que roule un groupe
+/// sélectionne ce groupe (voir `groupForRoute`) et efface cette valeur ;
+/// sélectionner un groupe l'efface aussi. Elle n'existe donc que pour la seule
+/// couche sans groupe.
+final selectedRideRouteOverrideProvider = StateProvider.autoDispose
+    .family<String?, RideKey>((Ref ref, RideKey key) => null);
+
+/// Les parcours décochés dans la feuille des couches, partagés par la carte
+/// encastrée et son plein écran.
+final hiddenRideRoutesProvider = StateProvider.autoDispose
+    .family<Set<String>, RideKey>((Ref ref, RideKey key) => const <String>{});
 
 /// Le groupe pointé, **un seul pour tout l'écran**.
 ///
@@ -25,6 +43,65 @@ import 'ride_detail_provider.dart';
 /// place d'emblée le lecteur sur *son* groupe.
 final selectedRideGroupProvider = StateProvider.autoDispose
     .family<String?, RideKey>((Ref ref, RideKey key) => null);
+
+/// Le groupe sélectionné de l'écran d'une sortie, valeur par défaut comprise :
+/// le groupe unique d'une sortie solo, sinon le choix du lecteur, sinon *son*
+/// groupe, sinon le premier.
+///
+/// [listen] à `false` hors d'un `build` — dans un callback, `ref.watch` est
+/// interdit.
+String? resolvedRideGroupId(
+  WidgetRef ref,
+  RideKey key,
+  RideDto ride, {
+  bool listen = true,
+}) {
+  final RideGroupDto? solo = soloGroupOf(ride);
+  final String? chosen = listen
+      ? ref.watch(selectedRideGroupProvider(key))
+      : ref.read(selectedRideGroupProvider(key));
+  return solo?.id ??
+      chosen ??
+      ride.registeredGroupId ??
+      (ride.groups.isEmpty ? null : ride.groups.first.id);
+}
+
+/// Le parcours sélectionné de l'écran d'une sortie : celui touché sur la
+/// carte quand aucun groupe ne le roule, sinon celui du groupe sélectionné,
+/// sinon celui de la sortie.
+String? resolvedRideRouteSlug(WidgetRef ref, RideKey key, RideDto ride) {
+  final String? override = ref.watch(selectedRideRouteOverrideProvider(key));
+  if (override != null) return override;
+  final String? groupId = resolvedRideGroupId(ref, key, ride);
+  for (final RideGroupDto g in ride.groups) {
+    if (g.id == groupId) return effectiveRouteSlug(ride, g);
+  }
+  return ride.routeSlug;
+}
+
+/// Sélectionne un groupe — donc son parcours, dont la trace s'allume avec
+/// celles des groupes qui le partagent.
+void selectRideGroup(WidgetRef ref, RideKey key, String groupId) {
+  ref.read(selectedRideRouteOverrideProvider(key).notifier).state = null;
+  ref.read(selectedRideGroupProvider(key).notifier).state = groupId;
+}
+
+/// Sélectionne un parcours touché sur la carte. Le groupe sélectionné reste
+/// s'il le roule ; sinon le premier groupe qui le roule le devient — la carte
+/// de groupe allumée et les chiffres du profil suivent ainsi la trace. Le
+/// parcours principal, que personne ne roule, se sélectionne seul.
+void selectRideRoute(WidgetRef ref, RideKey key, RideDto ride, String slug) {
+  final String? group = groupForRoute(
+    ride,
+    slug,
+    current: resolvedRideGroupId(ref, key, ride, listen: false),
+  );
+  if (group != null) {
+    selectRideGroup(ref, key, group);
+  } else {
+    ref.read(selectedRideRouteOverrideProvider(key).notifier).state = slug;
+  }
+}
 
 /// Le point de parcours choisi sur l'écran d'une sortie (ledger `MOB-84`),
 /// partagé par la carte des groupes, son plein écran et le profil du groupe
@@ -322,16 +399,14 @@ class RouteRef {
   String toString() => 'RouteRef($teamSlug/$rideSlug/$routeSlug)';
 }
 
-/// Les `routeSlug` distincts d'une sortie, dans l'ordre des groupes.
+/// Les `routeSlug` distincts d'une sortie : celui de la sortie d'abord, puis
+/// ceux des groupes dans leur ordre — l'ordre des couches de la carte
+/// ([rideRouteLayers]).
 ///
 /// Le parcours de la sortie elle-même sert de repli aux groupes qui n'en
-/// portent pas : c'est la même règle que le bouton « Voir le parcours ».
-List<String> distinctRouteSlugs(RideDto ride) {
-  final List<String> slugs = <String>[];
-  for (final RideGroupDto group in ride.groups) {
-    final String? slug = group.routeSlug ?? ride.routeSlug;
-    if (slug != null && !slugs.contains(slug)) slugs.add(slug);
-  }
-  if (slugs.isEmpty && ride.routeSlug != null) slugs.add(ride.routeSlug!);
-  return slugs;
-}
+/// portent pas : c'est la même règle que le bouton « Voir le parcours ». Il
+/// est demandé même quand tous les groupes ont le leur : la carte lui garde
+/// sa couche (« Parcours principal »).
+List<String> distinctRouteSlugs(RideDto ride) => <String>[
+  for (final RideRouteLayer layer in rideRouteLayers(ride)) layer.routeSlug,
+];

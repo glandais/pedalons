@@ -23,7 +23,7 @@ import 'ride_groups_map.dart';
 
 /// L'onglet Aperçu de la page d'un groupe (ledger `MOB-67`).
 ///
-/// La carte du parcours du groupe et son profil, les chiffres (départ et
+/// La carte du seul parcours du groupe et son profil, les chiffres (départ et
 /// arrivée estimée, allure, distance, dénivelé positif), le meneur quand il
 /// y en a un, le résumé météo qui ouvre l'onglet Météo, les visages inscrits
 /// qui ouvrent l'onglet Participants, et l'export du parcours.
@@ -35,7 +35,6 @@ class RideGroupOverviewTab extends ConsumerStatefulWidget {
     required this.group,
     required this.leg,
     required this.onOpenTab,
-    required this.onSelectGroup,
   });
 
   final RideKey rideKey;
@@ -46,9 +45,6 @@ class RideGroupOverviewTab extends ConsumerStatefulWidget {
   final WeatherLegDto? leg;
 
   final ValueChanged<RideGroupTab> onOpenTab;
-
-  /// Un autre tracé touché sur la carte : la page passe à son groupe.
-  final ValueChanged<String> onSelectGroup;
 
   @override
   ConsumerState<RideGroupOverviewTab> createState() =>
@@ -72,12 +68,9 @@ class _RideGroupOverviewTabState extends ConsumerState<RideGroupOverviewTab>
       children: <Widget>[
         if (routeSlug != null) ...<Widget>[
           const SizedBox(height: PdlSpacing.section),
-          RideGroupsMap(
-            rideKey: widget.rideKey,
-            ride: ride,
-            selectedGroupId: group.id,
-            onSelect: widget.onSelectGroup,
-          ),
+          // Le seul parcours de ce groupe : ceux des autres groupes sont sur
+          // la carte de la sortie.
+          RideGroupsMap(rideKey: widget.rideKey, ride: ride, onlyGroup: group),
           Padding(
             padding: const EdgeInsets.fromLTRB(
               PdlSpacing.section,

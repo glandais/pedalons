@@ -622,6 +622,7 @@
       "other": "{} groups"
     },
     "groupsRoute": "Group routes",
+    "mainRoute": "Main route",
     "selectedGroupProfile": "Selected group profile",
     "dateAndTime": "Date and time",
     "viewParticipants": "View list",
@@ -1937,6 +1938,7 @@
     "background": "Map background",
     "chooseBackground": "Choose map background",
     "hillshade": "Hillshading",
+    "tracks": "Routes",
     "attribution": "Map credits",
     "styleGroup": {
       "vector": "Maps",

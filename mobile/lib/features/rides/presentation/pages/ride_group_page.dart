@@ -82,7 +82,7 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
   void _shareSelection() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      ref.read(selectedRideGroupProvider(_rideKey).notifier).state = _groupId;
+      selectRideGroup(ref, _rideKey, _groupId);
     });
   }
 
@@ -276,7 +276,6 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
           group: group,
           leg: leg,
           onOpenTab: _openTab,
-          onSelectGroup: _selectGroup,
         ),
       ),
       RideGroupTab.weather => RideGroupWeatherTab(

@@ -622,6 +622,7 @@
       "other": "{} groupes"
     },
     "groupsRoute": "Parcours des groupes",
+    "mainRoute": "Parcours principal",
     "selectedGroupProfile": "Profil du groupe sélectionné",
     "dateAndTime": "Date et heure",
     "viewParticipants": "Voir la liste",
@@ -1937,6 +1938,7 @@
     "background": "Fond de carte",
     "chooseBackground": "Choisir le fond de carte",
     "hillshade": "Ombrage du relief",
+    "tracks": "Tracés",
     "attribution": "Crédits cartographiques",
     "styleGroup": {
       "vector": "Plans",

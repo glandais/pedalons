@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 import '../../../../api/generated/export.dart';
 import '../../../../core/config/config_provider.dart';
@@ -11,6 +12,7 @@ import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/preferences/user_preferences_provider.dart';
 import '../../../routes/presentation/widgets/waypoint_selection.dart';
 import '../../../routes/presentation/widgets/waypoint_sheet.dart';
+import '../../domain/ride_route_layers.dart';
 import '../../providers/ride_detail_provider.dart';
 import '../../providers/ride_group_selection_provider.dart';
 import '../../../../keys.dart';
@@ -26,11 +28,22 @@ double rideMapHeight(double screenHeight) =>
 /// La carte multi-tracés de l'écran 12, et la moitié cartographique de la
 /// sélection croisée.
 ///
-/// **Une couche par groupe**, toutes adossées à une même source : le SDK
-/// MapLibre rend `queryLayers` sans les propriétés de l'entité touchée, donc
-/// seul le `layerId` porte l'identité d'un tracé (§1.0.3-7). `PdlMap` s'en
-/// charge ; ce widget lui donne les tracés, la couleur de chacun, et reçoit le
-/// tap.
+/// **Une couche par parcours distinct** ([rideRouteLayers]) — plus jamais une
+/// par groupe : trois groupes sur un même parcours sont une trace, une
+/// couleur, une case de la feuille des couches. Toutes adossées à une même
+/// source : le SDK MapLibre rend `queryLayers` sans les propriétés de
+/// l'entité touchée, donc seul le `layerId` porte l'identité d'un tracé
+/// (§1.0.3-7) — ici le `routeSlug`. `PdlMap` s'en charge ; ce widget lui donne
+/// les tracés, la couleur de chacun, et reçoit le tap.
+///
+/// La sélection est **un parcours**. Toucher une trace la sélectionne (mise en
+/// évidence, profil) et n'ouvre aucune page. Le widget lit et écrit lui-même
+/// la sélection de l'écran ([resolvedRideRouteSlug], [selectRideRoute]) :
+/// c'est ce qui la garde vivante dans la page plein écran, que l'écran masqué
+/// ne peut plus nourrir (voir `PdlMapHero`).
+///
+/// Avec [onlyGroup] — la page d'un groupe —, la carte ne montre que le
+/// parcours de ce groupe : ni cases, ni pilule, ni sélection.
 ///
 /// Les géométries sont **dédoublonnées par `routeSlug`** en amont : dix groupes
 /// sur trois parcours coûtent trois appels.
@@ -39,16 +52,17 @@ class RideGroupsMap extends ConsumerWidget {
     super.key,
     required this.rideKey,
     required this.ride,
-    required this.selectedGroupId,
-    required this.onSelect,
+    this.onlyGroup,
     this.fullscreen = false,
     this.seedExtent,
   });
 
   final RideKey rideKey;
   final RideDto ride;
-  final String? selectedGroupId;
-  final ValueChanged<String> onSelect;
+
+  /// Le groupe dont la page affiche la carte : seul son parcours est dessiné.
+  /// `null` sur la page de la sortie.
+  final RideGroupDto? onlyGroup;
 
   /// L'emprise que l'écran connaissait au moment de pousser le plein écran.
   ///
@@ -73,8 +87,20 @@ class RideGroupsMap extends ConsumerWidget {
       mapStyleProvider(brightness),
     );
 
-    final List<String> slugs = distinctRouteSlugs(ride);
-    if (slugs.isEmpty) {
+    final RideGroupDto? only = onlyGroup;
+    final String? onlySlug = only == null
+        ? null
+        : effectiveRouteSlug(ride, only);
+    final List<RideRouteLayer> allLayers = rideRouteLayers(ride);
+    // Sur la page d'un groupe, la seule couche de son parcours — qui garde la
+    // couleur qu'elle a sur la carte de la sortie.
+    final List<RideRouteLayer> layers = only == null
+        ? allLayers
+        : <RideRouteLayer>[
+            for (final RideRouteLayer l in allLayers)
+              if (l.routeSlug == onlySlug) l,
+          ];
+    if (layers.isEmpty) {
       return PdlCard(
         child: PdlEmptyState(
           variant: PdlEmptyVariant.empty,
@@ -87,35 +113,66 @@ class RideGroupsMap extends ConsumerWidget {
 
     // Une entrée de cache par parcours distinct, et une seule.
     final Map<String, RouteDetailDto> geometries = <String, RouteDetailDto>{};
-    for (final String slug in slugs) {
+    for (final RideRouteLayer layer in layers) {
       final RouteDetailDto? route = ref
           .watch(
             rideRouteGeometryProvider(
               RouteRef(
                 teamSlug: ride.team.slug,
                 rideSlug: rideKey.rideSlug,
-                routeSlug: slug,
+                routeSlug: layer.routeSlug,
               ),
             ),
           )
           .value;
-      if (route != null) geometries[slug] = route;
+      if (route != null) geometries[layer.routeSlug] = route;
     }
+
+    final String mainRouteLabel = 'rides.mainRoute'.tr();
+    final bool multi = layers.length > 1;
+    final String? selectedSlug = only == null
+        ? resolvedRideRouteSlug(ref, rideKey, ride)
+        : onlySlug;
+    final Set<String> hidden = multi
+        ? ref.watch(hiddenRideRoutesProvider(rideKey))
+        : const <String>{};
+
+    final List<PdlMapTrack> tracks = _tracks(
+      layers,
+      geometries,
+      selectedSlug,
+      hidden,
+      mainRouteLabel,
+    );
 
     // L'emprise vient du serveur (`RoutesBulkResponse.extent`), pas d'un
     // parcours des sommets : elle arrive **avec** le premier lot, et couvre
     // déjà tous les parcours demandés — y compris ceux dont la géométrie est
-    // encore en vol.
-    final BoundsDto? extent =
-        ref.watch(rideRouteGeometriesProvider(rideKey)).extent ?? seedExtent;
+    // encore en vol. La page d'un groupe, elle, cadre sur son seul tracé :
+    // l'emprise du lot couvrirait les parcours des autres groupes.
+    final BoundsDto? extent = only == null
+        ? ref.watch(rideRouteGeometriesProvider(rideKey)).extent ?? seedExtent
+        : null;
+    final PdlMapBox? fitBox = only != null
+        ? PdlMapBox.ofTracks(tracks)
+        : extent == null
+        ? null
+        : PdlMapBox(
+            minLon: extent.minLon,
+            minLat: extent.minLat,
+            maxLon: extent.maxLon,
+            maxLat: extent.maxLat,
+          );
 
     final String? styleUrl = style.value?.url;
     if (styleUrl == null) {
       return PdlSkeleton(height: height, borderRadius: PdlRadii.mdAll);
     }
 
-    final List<PdlMapTrack> tracks = _tracks(geometries);
-    final RideGroupDto? selected = _selectedGroup();
+    RideRouteLayer? selectedLayer;
+    for (final RideRouteLayer l in layers) {
+      if (l.routeSlug == selectedSlug) selectedLayer = l;
+    }
 
     final Widget hero = PdlMapHero(
       isFullscreen: fullscreen,
@@ -124,8 +181,7 @@ class RideGroupsMap extends ConsumerWidget {
           : (BuildContext context) => RideGroupsMap(
               rideKey: rideKey,
               ride: ride,
-              selectedGroupId: selectedGroupId,
-              onSelect: onSelect,
+              onlyGroup: onlyGroup,
               fullscreen: true,
               seedExtent: extent,
             ),
@@ -135,6 +191,7 @@ class RideGroupsMap extends ConsumerWidget {
         chooseBackground: 'map.background'.tr(),
         backgroundSheetTitle: 'map.background'.tr(),
         hillshade: 'map.hillshade'.tr(),
+        tracks: 'map.tracks'.tr(),
       ),
       styles: servedMapStyleOptions(ref),
       hillshadeEnabled: servedHillshadeEnabled(ref),
@@ -143,15 +200,40 @@ class RideGroupsMap extends ConsumerWidget {
       selectedStyleId: style.value?.style.id,
       onStyleSelected: (String id) =>
           ref.read(mapStyleIdProvider.notifier).select(id),
+      // Une case par parcours, seulement quand il y en a plusieurs : masquer
+      // l'unique tracé d'une carte n'a pas de sens.
+      trackToggles: multi
+          ? <PdlMapTrackToggle>[
+              for (final RideRouteLayer l in layers)
+                PdlMapTrackToggle(
+                  id: l.routeSlug,
+                  label: l.label(mainRouteLabel),
+                  color: multiTrackColor(l.colorIndex),
+                  visible: !hidden.contains(l.routeSlug),
+                ),
+            ]
+          : const <PdlMapTrackToggle>[],
+      onTrackVisibilityChanged: multi
+          ? (String slug, bool visible) {
+              final StateController<Set<String>> c = ref.read(
+                hiddenRideRoutesProvider(rideKey).notifier,
+              );
+              c.state = visible
+                  ? (<String>{...c.state}..remove(slug))
+                  : <String>{...c.state, slug};
+            }
+          : null,
       mapBuilder: (BuildContext context) => _map(
         context,
         styleUrl,
         servedMapCredit(style.value),
         tracks,
-        selected,
-        extent,
+        multi ? selectedLayer : null,
+        selectedSlug,
+        fitBox,
         ref,
         geometries,
+        mainRouteLabel,
       ),
     );
 
@@ -164,23 +246,24 @@ class RideGroupsMap extends ConsumerWidget {
     String styleUrl,
     PdlMapCredit credit,
     List<PdlMapTrack> tracks,
-    RideGroupDto? selected,
-    BoundsDto? extent,
+    RideRouteLayer? pillLayer,
+    String? selectedSlug,
+    PdlMapBox? fitBox,
     WidgetRef ref,
     Map<String, RouteDetailDto> geometries,
+    String mainRouteLabel,
   ) {
     // **La carte encastrée ne se manipule pas.** Elle vit au milieu d'une liste
     // qui défile : un pan y dispute le doigt au défilement de la page, et le
     // geste part à moitié dans l'un, à moitié dans l'autre. Le tap reste — il
-    // sélectionne un groupe, et n'est pas un geste de caméra. Pour explorer,
+    // sélectionne un parcours, et n'est pas un geste de caméra. Pour explorer,
     // le bouton plein écran, où plus rien ne se dispute le doigt.
     final bool fullscreen = PdlMapHero.isFullscreenOf(context);
 
-    // Les points du parcours du groupe sélectionné.
-    final String? waypointSlug = selected?.routeSlug ?? ride.routeSlug;
-    final List<WaypointDto> waypoints = waypointSlug == null
+    // Les points du parcours sélectionné.
+    final List<WaypointDto> waypoints = selectedSlug == null
         ? const <WaypointDto>[]
-        : (geometries[waypointSlug]?.waypoints ?? const <WaypointDto>[]);
+        : (geometries[selectedSlug]?.waypoints ?? const <WaypointDto>[]);
     final WaypointSelectionController selection = ref.watch(
       rideWaypointSelectionProvider(rideKey),
     );
@@ -209,20 +292,18 @@ class RideGroupsMap extends ConsumerWidget {
         start: _point(ride.startPlace),
         end: _point(ride.endPlace),
         initialCenter: _defaultCenter(ref),
-        fitBox: extent == null
+        fitBox: fitBox,
+        selectedTrackId: selectedSlug,
+        // Un tap sur une trace **sélectionne son parcours** — il n'ouvre plus
+        // la page d'un groupe. La page d'un groupe n'a qu'un tracé : rien à
+        // sélectionner.
+        onTrackSelected: onlyGroup != null
             ? null
-            : PdlMapBox(
-                minLon: extent.minLon,
-                minLat: extent.minLat,
-                maxLon: extent.maxLon,
-                maxLat: extent.maxLat,
-              ),
-        selectedTrackId: selectedGroupId,
-        onTrackSelected: (String? id) {
-          if (id != null) onSelect(id);
-        },
+            : (String? slug) {
+                if (slug != null) selectRideRoute(ref, rideKey, ride, slug);
+              },
         overlays: <Widget>[
-          if (selected != null)
+          if (pillLayer != null)
             Positioned(
               left: 12,
               top: 12,
@@ -232,57 +313,55 @@ class RideGroupsMap extends ConsumerWidget {
               // une gouttière de 59 px sortie de nulle part — `MediaQuery.padding`
               // ne se remet pas à zéro pour un widget au milieu de la page.
               child: fullscreen
-                  ? SafeArea(child: _pill(selected))
-                  : _pill(selected),
+                  ? SafeArea(child: _pill(pillLayer, mainRouteLabel))
+                  : _pill(pillLayer, mainRouteLabel),
             ),
         ],
       ),
     );
   }
 
-  Widget _pill(RideGroupDto group) => PdlMapPill(
+  Widget _pill(RideRouteLayer layer, String mainRouteLabel) => PdlMapPill(
     key: keys.ride.groupsMapPill,
-    label: group.name,
+    label: layer.label(mainRouteLabel),
     leading: PdlColorTrack(
-      color: multiTrackColor(group.sortOrder),
+      color: multiTrackColor(layer.colorIndex),
       shape: PdlColorTrackShape.legend,
     ),
   );
 
-  /// Un tracé par groupe — **pas** un par parcours : deux groupes qui partagent
-  /// un parcours doivent chacun être sélectionnables, et la carte de groupe
-  /// sélectionnée doit s'allumer quel que soit le tracé touché.
-  List<PdlMapTrack> _tracks(Map<String, RouteDetailDto> geometries) {
+  /// Un tracé par parcours — **pas** un par groupe : les groupes qui le
+  /// partagent s'allument ensemble, puisque leur trace est la même.
+  List<PdlMapTrack> _tracks(
+    List<RideRouteLayer> layers,
+    Map<String, RouteDetailDto> geometries,
+    String? selectedSlug,
+    Set<String> hidden,
+    String mainRouteLabel,
+  ) {
     final List<PdlMapTrack> tracks = <PdlMapTrack>[];
-    for (final RideGroupDto group in ride.groups) {
-      final String? slug = group.routeSlug ?? ride.routeSlug;
-      final RouteDetailDto? route = slug == null ? null : geometries[slug];
+    for (final RideRouteLayer layer in layers) {
+      if (hidden.contains(layer.routeSlug)) continue;
+      final RouteDetailDto? route = geometries[layer.routeSlug];
       if (route == null) continue;
       tracks.add(
         PdlMapTrack(
-          id: group.id,
+          id: layer.routeSlug,
           lines: <List<List<double>>>[
             for (final TrackDto t in route.tracks) t.line.coordinates,
           ],
-          color: multiTrackColor(group.sortOrder),
-          label: group.name,
+          color: multiTrackColor(layer.colorIndex),
+          label: layer.label(mainRouteLabel),
         ),
       );
     }
     // Le tracé sélectionné est dessiné **en dernier** : MapLibre n'a pas de
     // `zIndex` sur les lignes, c'est l'ordre d'ajout qui décide.
     final int index = tracks.indexWhere(
-      (PdlMapTrack t) => t.id == selectedGroupId,
+      (PdlMapTrack t) => t.id == selectedSlug,
     );
     if (index >= 0) tracks.add(tracks.removeAt(index));
     return tracks;
-  }
-
-  RideGroupDto? _selectedGroup() {
-    for (final RideGroupDto g in ride.groups) {
-      if (g.id == selectedGroupId) return g;
-    }
-    return null;
   }
 
   PdlMapPoint? _point(PlaceDetailDto? place) {

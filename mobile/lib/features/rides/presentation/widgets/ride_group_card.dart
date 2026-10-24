@@ -57,8 +57,9 @@ class RideGroupCard extends StatelessWidget {
 
   final RideGroupAction action;
 
-  /// Couleur du tracé du groupe sur la carte, issue de `kMultiTrackPalette`
-  /// indexée par `sortOrder` — c'est le lien visuel entre les deux.
+  /// Couleur du parcours du groupe sur la carte de la sortie
+  /// (`groupTrackColorIndex` dans `kMultiTrackPalette`), partagée par les
+  /// groupes qui roulent le même parcours — c'est le lien visuel entre les deux.
   final Color trackColor;
 
   final UnitSystem units;

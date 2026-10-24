@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../theme/pdl_colors.dart';
 import '../../theme/pdl_icons.dart';
 import '../../theme/pdl_tokens.dart';
+import '../pdl_color_track.dart';
 import '../pdl_section_header.dart';
 import '../pdl_setting_row.dart';
 import '../pdl_switch.dart';
@@ -38,6 +39,26 @@ class PdlMapStyleOption {
   final String? groupLabel;
 }
 
+/// Un tracé que la feuille des couches propose de masquer ou d'afficher.
+///
+/// Rien d'un DTO : un identifiant (celui du `PdlMapTrack` qu'il commande), un
+/// libellé **déjà localisé** et la couleur du trait, que l'appelant tire de
+/// `kMultiTrackPalette`.
+@immutable
+class PdlMapTrackToggle {
+  const PdlMapTrackToggle({
+    required this.id,
+    required this.label,
+    required this.color,
+    required this.visible,
+  });
+
+  final String id;
+  final String label;
+  final Color color;
+  final bool visible;
+}
+
 /// Les libellés du hero. `core/pdl` ne traduit rien : l'écran les fournit.
 @immutable
 class PdlMapHeroLabels {
@@ -47,6 +68,7 @@ class PdlMapHeroLabels {
     required this.chooseBackground,
     required this.backgroundSheetTitle,
     this.hillshade,
+    this.tracks,
   });
 
   final String enterFullscreen;
@@ -57,6 +79,10 @@ class PdlMapHeroLabels {
   /// L'intitulé de l'interrupteur d'ombrage. `null` = l'app de cet écran n'en
   /// propose pas, la ligne n'est pas rendue.
   final String? hillshade;
+
+  /// L'intitulé de la section des tracés à cocher. `null` = pas de section,
+  /// même si des [PdlMapHero.trackToggles] sont fournis.
+  final String? tracks;
 }
 
 /// La coquille d'une carte occupant une surface, avec ses
@@ -101,6 +127,8 @@ class PdlMapHero extends StatelessWidget {
     this.onStyleSelected,
     this.hillshadeEnabled,
     this.onHillshadeChanged,
+    this.trackToggles = const <PdlMapTrackToggle>[],
+    this.onTrackVisibilityChanged,
     this.showFullscreenButton = true,
     this.fullscreenBuilder,
     this.extraButtons = const <Widget>[],
@@ -135,6 +163,14 @@ class PdlMapHero extends StatelessWidget {
   final bool? hillshadeEnabled;
   final ValueChanged<bool>? onHillshadeChanged;
 
+  /// Les tracés à cocher, **dans l'ordre de la carte**. Moins de deux = pas de
+  /// section : masquer l'unique tracé d'une carte n'a pas de sens.
+  final List<PdlMapTrackToggle> trackToggles;
+
+  /// Une case cochée ou décochée : l'identifiant du tracé et sa visibilité
+  /// voulue. L'écran reste la source de vérité et filtre ses `PdlMapTrack`.
+  final void Function(String id, bool visible)? onTrackVisibilityChanged;
+
   final bool showFullscreenButton;
 
   /// Construit le **contenu de la page plein écran**, typiquement l'écran
@@ -166,6 +202,12 @@ class PdlMapHero extends StatelessWidget {
       hillshadeEnabled != null &&
       onHillshadeChanged != null &&
       labels.hillshade != null;
+
+  /// Vrai quand la feuille porte une section de tracés à cocher.
+  bool get _hasTrackToggles =>
+      trackToggles.length > 1 &&
+      onTrackVisibilityChanged != null &&
+      labels.tracks != null;
 
   /// Vrai si le contexte est celui de la carte **plein écran**.
   ///
@@ -206,7 +248,9 @@ class PdlMapHero extends StatelessWidget {
               : labels.enterFullscreen,
           onPressed: () => _toggleFullscreen(context),
         ),
-      if ((styles.isNotEmpty && onStyleSelected != null) || _hasHillshade)
+      if ((styles.isNotEmpty && onStyleSelected != null) ||
+          _hasHillshade ||
+          _hasTrackToggles)
         PdlMapButton(
           icon: PdlIcons.layers,
           semanticLabel: labels.chooseBackground,
@@ -303,6 +347,21 @@ class PdlMapHero extends StatelessWidget {
               initialValue: hillshadeEnabled!,
               onChanged: onHillshadeChanged!,
             ),
+          // Les tracés se cochent comme l'ombrage se bascule : sans refermer
+          // la feuille, pour en masquer plusieurs d'affilée.
+          if (_hasTrackToggles) ...<Widget>[
+            Padding(
+              padding: const EdgeInsets.only(top: PdlSpacing.sectionTightV),
+              child: PdlSectionHeader(title: labels.tracks!),
+            ),
+            for (final PdlMapTrackToggle track in trackToggles)
+              _TrackToggleRow(
+                key: ValueKey<String>('pdlMapTrackToggle_${track.id}'),
+                track: track,
+                onChanged: (bool visible) =>
+                    onTrackVisibilityChanged!(track.id, visible),
+              ),
+          ],
         ],
       ),
     );
@@ -353,6 +412,59 @@ class _HillshadeRowState extends State<_HillshadeRow> {
       semanticLabel: widget.label,
     ),
   );
+}
+
+/// Une ligne de la section des tracés : le trait de couleur, le nom, la case.
+///
+/// État local pour la même raison que [_HillshadeRow] : la feuille n'est pas
+/// reconstruite quand l'écran l'est.
+class _TrackToggleRow extends StatefulWidget {
+  const _TrackToggleRow({
+    super.key,
+    required this.track,
+    required this.onChanged,
+  });
+
+  final PdlMapTrackToggle track;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  State<_TrackToggleRow> createState() => _TrackToggleRowState();
+}
+
+class _TrackToggleRowState extends State<_TrackToggleRow> {
+  late bool _visible = widget.track.visible;
+
+  void _toggle() {
+    setState(() => _visible = !_visible);
+    widget.onChanged(_visible);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final PdlColors c = context.pdl;
+    return PdlSettingRow(
+      title: widget.track.label,
+      leading: PdlColorTrack(
+        color: widget.track.color,
+        shape: PdlColorTrackShape.legend,
+      ),
+      onTap: _toggle,
+      trailing: Semantics(
+        label: widget.track.label,
+        checked: _visible,
+        child: ExcludeSemantics(
+          child: Checkbox(
+            value: _visible,
+            activeColor: c.primary,
+            // La ligne entière est la cible : la case n'en ouvre pas une
+            // seconde.
+            onChanged: (bool? _) => _toggle(),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// Porte [PdlMapHero.isFullscreenOf] jusqu'au `mapBuilder`.

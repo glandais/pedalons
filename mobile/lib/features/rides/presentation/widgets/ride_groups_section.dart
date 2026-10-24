@@ -11,6 +11,7 @@ import '../../../../core/preferences/user_preferences_provider.dart';
 import '../../../auth/domain/auth_state.dart';
 import '../../../auth/providers/auth_provider.dart';
 import '../../domain/ride_group_action.dart';
+import '../../domain/ride_route_layers.dart';
 import '../../domain/ride_weather_display.dart';
 import '../../providers/ride_detail_provider.dart';
 import '../../providers/ride_group_selection_provider.dart';
@@ -39,7 +40,7 @@ class RideGroupsSection extends ConsumerStatefulWidget {
     required this.rideKey,
     required this.ride,
     required this.isMember,
-    required this.selectedGroupId,
+    required this.selectedRouteSlug,
     required this.onSelect,
     this.onOpenGroup,
     this.onShowParticipants,
@@ -54,7 +55,10 @@ class RideGroupsSection extends ConsumerStatefulWidget {
   /// membre.
   final bool? isMember;
 
-  final String? selectedGroupId;
+  /// Le parcours sélectionné de l'écran : toutes les cartes des groupes qui le
+  /// roulent s'allument, pas seulement celle du groupe courant. `null`, ou un
+  /// parcours que personne ne roule (le principal), n'allume aucune carte.
+  final String? selectedRouteSlug;
   final ValueChanged<String> onSelect;
 
   /// Ouvre la page du groupe (ledger `MOB-67`) : toute la carte y mène. Sans
@@ -204,9 +208,11 @@ class _RideGroupsSectionState extends ConsumerState<RideGroupsSection>
       rideDateTime: ride.dateTime,
       timezone: ride.timezone,
       action: rideGroupAction(ride: ride, group: group, isMember: isMember),
-      trackColor: multiTrackColor(group.sortOrder),
+      // La couleur de son parcours : les groupes qui le partagent portent la
+      // même, celle de leur trace commune.
+      trackColor: multiTrackColor(groupTrackColorIndex(ride, group)),
       units: units,
-      selected: group.id == widget.selectedGroupId,
+      selected: routeSlug != null && routeSlug == widget.selectedRouteSlug,
       pending: registration.pendingGroupId == group.id,
       currentUserId: currentUserId,
       weatherLeg: weatherLeg,

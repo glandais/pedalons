@@ -26,6 +26,7 @@ import '../../../tags/presentation/content_tags.dart';
 import '../../providers/ride_detail_provider.dart';
 import '../../providers/ride_editor_providers.dart';
 import '../widgets/ride_manage_menu.dart';
+import '../../domain/ride_route_layers.dart';
 import '../../providers/ride_group_selection_provider.dart';
 import '../../providers/ride_registration_controller.dart';
 import '../../providers/ride_scroll_target_provider.dart';
@@ -167,14 +168,16 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
 
     // La sélection est initialisée sur *mon* groupe quand j'en ai un : c'est
     // celui qu'on veut voir en premier sur la carte comme dans le profil.
-    final String? selected =
-        solo?.id ??
-        ref.watch(selectedRideGroupProvider(rideKey)) ??
-        ride.registeredGroupId ??
-        (ride.groups.isEmpty ? null : ride.groups.first.id);
+    final String? selected = resolvedRideGroupId(ref, rideKey, ride);
 
-    void select(String id) =>
-        ref.read(selectedRideGroupProvider(rideKey).notifier).state = id;
+    // La sélection de l'écran est un **parcours** : celui du groupe
+    // sélectionné, ou le parcours principal touché sur la carte quand aucun
+    // groupe ne le roule — aucune carte de groupe ne s'allume alors.
+    final bool routeOnly =
+        ref.watch(selectedRideRouteOverrideProvider(rideKey)) != null;
+    final String? selectedRoute = resolvedRideRouteSlug(ref, rideKey, ride);
+
+    void select(String id) => selectRideGroup(ref, rideKey, id);
 
     // Ouvre la page d'un groupe : il devient le groupe sélectionné, que le
     // détail montre encore au retour (ledger `MOB-67`).
@@ -332,7 +335,12 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
           ),
         ),
         SliverToBoxAdapter(
-          child: _mapAndProfile(context, ref, selected, select),
+          child: _mapAndProfile(
+            context,
+            ref,
+            routeOnly ? null : selected,
+            selectedRoute,
+          ),
         ),
         SliverToBoxAdapter(
           child: Padding(
@@ -351,7 +359,7 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
                     rideKey: rideKey,
                     ride: ride,
                     isMember: isMember,
-                    selectedGroupId: selected,
+                    selectedRouteSlug: selectedRoute,
                     onSelect: select,
                     onOpenGroup: openGroup,
                     onShowParticipants: (RideGroupDto g) =>
@@ -573,7 +581,7 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
     BuildContext context,
     WidgetRef ref,
     String? selected,
-    ValueChanged<String> select,
+    String? routeSlug,
   ) {
     if (ride.groups.isEmpty && ride.routeSlug == null) {
       return const SizedBox.shrink();
@@ -581,7 +589,9 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
 
     final PdlTypography t = context.pdlText;
     final RideGroupDto? selectedGroup = _groupById(selected);
-    final String? routeSlug = selectedGroup?.routeSlug ?? ride.routeSlug;
+    // Une entrée de légende par parcours, comme les couches de la carte.
+    final List<RideRouteLayer> layers = rideRouteLayers(ride);
+    final String mainRouteLabel = 'rides.mainRoute'.tr();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -590,26 +600,22 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
           child: Text('rides.groupsRoute'.tr(), style: t.sectionTitle),
         ),
-        RideGroupsMap(
-          rideKey: rideKey,
-          ride: ride,
-          selectedGroupId: selected,
-          onSelect: select,
-        ),
-        if (ride.groups.length > 1)
+        RideGroupsMap(rideKey: rideKey, ride: ride),
+        if (layers.length > 1)
           Padding(
             padding: const EdgeInsets.only(top: 8),
             child: PdlLegendRow(
               entries: <PdlLegendEntry>[
-                for (final RideGroupDto g in ride.groups)
+                for (final RideRouteLayer l in layers)
                   PdlLegendEntry(
-                    color: multiTrackColor(g.sortOrder),
-                    label: g.name,
-                    onTap: () => select(g.id),
+                    color: multiTrackColor(l.colorIndex),
+                    label: l.label(mainRouteLabel),
+                    onTap: () =>
+                        selectRideRoute(ref, rideKey, ride, l.routeSlug),
                   ),
               ],
-              activeIndex: ride.groups.indexWhere(
-                (RideGroupDto g) => g.id == selected,
+              activeIndex: layers.indexWhere(
+                (RideRouteLayer l) => l.routeSlug == routeSlug,
               ),
             ),
           ),

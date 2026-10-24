@@ -17,6 +17,7 @@ import 'ride_group_leader_row.dart';
 import 'ride_group_route_actions.dart';
 import 'ride_group_stats.dart';
 import '../../domain/group_title.dart';
+import '../../domain/ride_route_layers.dart';
 
 /// Le groupe d'une sortie **solo** — un seul groupe —, à la place de la
 /// section Groupes du détail (ledger `MOB-69`).
@@ -140,7 +141,11 @@ class _RideSoloGroupSectionState extends ConsumerState<RideSoloGroupSection>
     return Row(
       key: keys.ride.soloGroupHeader,
       children: <Widget>[
-        PdlColorTrack(color: multiTrackColor(widget.group.sortOrder)),
+        PdlColorTrack(
+          color: multiTrackColor(
+            groupTrackColorIndex(widget.ride, widget.group),
+          ),
+        ),
         const SizedBox(width: PdlSpacing.chipGap),
         Expanded(
           child: Text(
