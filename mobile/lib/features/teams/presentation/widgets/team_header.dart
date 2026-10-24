@@ -15,7 +15,10 @@ import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/share_link.dart';
 import '../../providers/team_membership_controller.dart';
+import '../../providers/team_providers.dart';
 import '../../../../keys.dart';
+import 'my_teams_sheet.dart';
+import 'team_sections.dart';
 
 /// Hauteur de la barre — le plancher de l'en-tête rétracté.
 const double _kBarHeight = PdlMetrics.appBar;
@@ -38,15 +41,24 @@ const double _kExpandedBlock = 56;
 /// [t] va de 0 (déployé) à 1 (rétracté) : l'avatar passe de 56 à 26, le titre
 /// de 20 à 17, et les badges s'effacent. Rien ne saute — c'est une
 /// interpolation, pas une bascule à seuil.
+///
+/// **Le nom ouvre « Mes équipes »** (ledger `MOB-87`) dès que j'ai une autre
+/// équipe que celle affichée — un `▾` le signale. Sans autre équipe, ni `▾`
+/// ni feuille : le nom mène au tableau de bord, comme avant.
 class TeamHeader extends ConsumerWidget {
   const TeamHeader({
     super.key,
     required this.team,
+    required this.section,
     required this.t,
     this.topPadding = 0,
   });
 
   final TeamDetailDto team;
+
+  /// La section affichée sous l'en-tête : celle où mène « Mes équipes » dans
+  /// l'autre équipe, quand elle l'a.
+  final TeamSectionKind section;
 
   /// Facteur de rétraction, 0 → 1.
   final double t;
@@ -58,6 +70,13 @@ class TeamHeader extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final PdlColors c = context.pdl;
+    // Mes équipes, quand l'une d'elles n'est pas celle affichée — sinon pas de
+    // menu, chargement et échec compris. Un visiteur y voit les siennes.
+    final List<TeamDetailDto>? teams = ref.watch(myTeamsProvider).value;
+    final _Switcher? switcher =
+        teams != null && teams.any((TeamDetailDto x) => x.id != team.id)
+        ? (section: section, teams: teams)
+        : null;
 
     return Material(
       color: c.overlaySolid,
@@ -68,7 +87,7 @@ class TeamHeader extends ConsumerWidget {
           SizedBox(height: topPadding),
           SizedBox(
             height: _kBarHeight,
-            child: _Bar(team: team, t: t),
+            child: _Bar(team: team, t: t, switcher: switcher),
           ),
           // Le bloc se replie **en hauteur** et non seulement en opacité :
           // laisser 56 px vides derrière un contenu effacé ferait remonter le
@@ -81,7 +100,7 @@ class TeamHeader extends ConsumerWidget {
                 opacity: (1 - t * 1.6).clamp(0, 1),
                 child: SizedBox(
                   height: _kExpandedBlock,
-                  child: _Identity(team: team),
+                  child: _Identity(team: team, switcher: switcher),
                 ),
               ),
             ),
@@ -92,12 +111,16 @@ class TeamHeader extends ConsumerWidget {
   }
 }
 
+/// De quoi ouvrir « Mes équipes » : la section d'où l'on part, et la liste.
+typedef _Switcher = ({TeamSectionKind section, List<TeamDetailDto> teams});
+
 /// Retour, identité compacte (qui apparaît en se rétractant), action, partage.
 class _Bar extends ConsumerWidget {
-  const _Bar({required this.team, required this.t});
+  const _Bar({required this.team, required this.t, required this.switcher});
 
   final TeamDetailDto team;
   final double t;
+  final _Switcher? switcher;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -116,8 +139,9 @@ class _Bar extends ConsumerWidget {
           // L'identité compacte n'apparaît qu'en se rétractant : déployée,
           // elle ferait doublon avec le titre de 20 px juste dessous.
           Expanded(
-            child: _ToDashboard(
+            child: _IdentityTap(
               team: team,
+              switcher: switcher,
               // Invisible tant que l'en-tête est déployé : on ne tape pas sur
               // ce qu'on ne voit pas — le nom du bloc dessous y mène déjà.
               enabled: t > 0.4,
@@ -131,7 +155,8 @@ class _Bar extends ConsumerWidget {
                       size: 26,
                     ),
                     const SizedBox(width: 8),
-                    Expanded(
+                    // Flexible et non Expanded : le `▾` suit le nom.
+                    Flexible(
                       child: Text(
                         team.name,
                         maxLines: 1,
@@ -139,6 +164,8 @@ class _Bar extends ConsumerWidget {
                         style: ty.barTitle.copyWith(color: c.text),
                       ),
                     ),
+                    if (switcher != null)
+                      Icon(PdlIcons.chevronDown, size: 18, color: c.textDimmed),
                   ],
                 ),
               ),
@@ -163,9 +190,10 @@ class _Bar extends ConsumerWidget {
 
 /// « Toutes mes équipes », avatar 56, titre 20, badges.
 class _Identity extends StatelessWidget {
-  const _Identity({required this.team});
+  const _Identity({required this.team, required this.switcher});
 
   final TeamDetailDto team;
+  final _Switcher? switcher;
 
   @override
   Widget build(BuildContext context) {
@@ -179,8 +207,9 @@ class _Identity extends StatelessWidget {
         PdlSpacing.section,
         8,
       ),
-      child: _ToDashboard(
+      child: _IdentityTap(
         team: team,
+        switcher: switcher,
         child: Row(
           children: <Widget>[
             PdlAvatar(name: team.name, imageUrl: team.logoUrl, size: 48),
@@ -190,11 +219,23 @@ class _Identity extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text(
-                    team.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: t.screenTitle.copyWith(fontSize: 20),
+                  Row(
+                    children: <Widget>[
+                      Flexible(
+                        child: Text(
+                          team.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: t.screenTitle.copyWith(fontSize: 20),
+                        ),
+                      ),
+                      if (switcher != null)
+                        Icon(
+                          PdlIcons.chevronDown,
+                          size: 20,
+                          color: c.textDimmed,
+                        ),
+                    ],
                   ),
                   const SizedBox(height: 3),
                   Row(
@@ -231,28 +272,41 @@ class _Identity extends StatelessWidget {
   }
 }
 
-/// L'identité de l'équipe mène à son tableau de bord, son adresse propre.
-class _ToDashboard extends StatelessWidget {
-  const _ToDashboard({
+/// L'identité de l'équipe ouvre « Mes équipes » quand [switcher] est là, et
+/// mène sinon à son tableau de bord, son adresse propre.
+class _IdentityTap extends StatelessWidget {
+  const _IdentityTap({
     required this.team,
+    required this.switcher,
     required this.child,
     this.enabled = true,
   });
 
   final TeamDetailDto team;
+  final _Switcher? switcher;
   final Widget child;
   final bool enabled;
 
   @override
   Widget build(BuildContext context) {
     if (!enabled) return child;
+    final _Switcher? switcher = this.switcher;
     return Semantics(
       button: true,
-      label: 'teams.tabs.dashboard'.tr(),
+      label: switcher != null
+          ? 'teams.switcher.open'.tr()
+          : 'teams.tabs.dashboard'.tr(),
       child: GestureDetector(
         key: keys.team.headerIdentity,
         behavior: HitTestBehavior.opaque,
-        onTap: () => context.go(Paths.team(team.slug)),
+        onTap: switcher != null
+            ? () => showMyTeamsSheet(
+                context,
+                team: team,
+                section: switcher.section,
+                teams: switcher.teams,
+              )
+            : () => context.go(Paths.team(team.slug)),
         child: child,
       ),
     );
@@ -380,9 +434,14 @@ class _MembershipAction extends ConsumerWidget {
 /// statut de défileur primaire dont dépend le retour en haut par la barre
 /// d'état (lot 3).
 class TeamHeaderSliver extends StatelessWidget {
-  const TeamHeaderSliver({super.key, required this.team});
+  const TeamHeaderSliver({
+    super.key,
+    required this.team,
+    required this.section,
+  });
 
   final TeamDetailDto team;
+  final TeamSectionKind section;
 
   @override
   Widget build(BuildContext context) {
@@ -390,6 +449,7 @@ class TeamHeaderSliver extends StatelessWidget {
       pinned: true,
       delegate: _TeamHeaderDelegate(
         team: team,
+        section: section,
         // L'en-tête est le premier pixel de l'écran : il n'y a pas d'`AppBar`
         // au-dessus de lui, c'est donc à lui de tenir la barre d'état.
         topPadding: MediaQuery.paddingOf(context).top,
@@ -399,9 +459,14 @@ class TeamHeaderSliver extends StatelessWidget {
 }
 
 class _TeamHeaderDelegate extends SliverPersistentHeaderDelegate {
-  const _TeamHeaderDelegate({required this.team, required this.topPadding});
+  const _TeamHeaderDelegate({
+    required this.team,
+    required this.section,
+    required this.topPadding,
+  });
 
   final TeamDetailDto team;
+  final TeamSectionKind section;
   final double topPadding;
 
   @override
@@ -428,6 +493,7 @@ class _TeamHeaderDelegate extends SliverPersistentHeaderDelegate {
       height: math.max(minExtent, maxExtent - shrinkOffset),
       child: TeamHeader(
         team: team,
+        section: section,
         t: (shrinkOffset / _kExpandedBlock).clamp(0, 1),
         topPadding: topPadding,
       ),
@@ -436,18 +502,21 @@ class _TeamHeaderDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   bool shouldRebuild(_TeamHeaderDelegate oldDelegate) =>
-      oldDelegate.team != team || oldDelegate.topPadding != topPadding;
+      oldDelegate.team != team ||
+      oldDelegate.section != section ||
+      oldDelegate.topPadding != topPadding;
 }
 
 /// L'en-tête rétracté, en boîte fixe.
 class TeamHeaderBar extends StatelessWidget {
-  const TeamHeaderBar({super.key, required this.team});
+  const TeamHeaderBar({super.key, required this.team, required this.section});
 
   final TeamDetailDto team;
+  final TeamSectionKind section;
 
   @override
   Widget build(BuildContext context) => SizedBox(
     height: _kBarHeight,
-    child: TeamHeader(team: team, t: 1),
+    child: TeamHeader(team: team, section: section, t: 1),
   );
 }

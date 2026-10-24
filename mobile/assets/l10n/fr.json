@@ -256,6 +256,11 @@
   },
   "teams": {
     "title": "Mes équipes",
+    "switcher": {
+      "title": "Mes équipes",
+      "allTeams": "Toutes les équipes",
+      "open": "Changer d'équipe"
+    },
     "empty": "Aucune équipe",
     "joinPrompt": "Rejoignez une équipe pour commencer",
     "discover": "Découvrir des équipes",

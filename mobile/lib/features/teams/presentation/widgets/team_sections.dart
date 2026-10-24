@@ -237,3 +237,15 @@ int indexOfSection(TeamSectionKind kind, List<TeamSection> sections) {
   }
   return -1;
 }
+
+/// Où mène « Mes équipes » vers [team], depuis la section [current] d'une
+/// autre (ledgers `MOB-87`, `WEB-111`) : la même section si [team] l'a, son
+/// tableau de bord sinon. L'adresse est nue — ni période, ni type, ni vue de
+/// l'Agenda ne passent d'une équipe à l'autre. Pendant du site :
+/// `teamSwitchPath` (`frontend/src/hooks/useNavItems.ts`).
+TeamSection switchTargetSection(TeamDetailDto team, TeamSectionKind current) {
+  final List<TeamSection> sections = buildTeamSections(team);
+  final int i = indexOfSection(current, sections);
+  // Le tableau de bord est toujours la première section.
+  return sections[i < 0 ? 0 : i];
+}

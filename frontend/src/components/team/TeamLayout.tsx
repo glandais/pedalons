@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
-import { Stack, Group, Title, Button, Box } from '@mantine/core'
+import { Stack, Group, Button, Box } from '@mantine/core'
 import { getGetTeamQueryKey } from '@/api/endpoints/teams/teams'
 import {
   useLeaveTeam,
@@ -19,6 +19,8 @@ import { NavButtons } from '../common/NavButtons'
 import { ShareButton } from '../common/ShareButton'
 import { VisibilityBadge } from '../card/common'
 import { TeamAvatar } from './TeamAvatar'
+import { TeamSwitcher } from './TeamSwitcher'
+import { invalidateTeamSwitcher } from './teamSwitcherData'
 import type { TeamDetailDto } from '@/api/dto'
 import { paths } from '@/config/paths'
 
@@ -26,6 +28,8 @@ interface TeamLayoutProps {
   team: TeamDetailDto
   /** Tab identifier (`useTeamNavItems`): 'dashboard', 'agenda', 'posts', 'routes', 'about'…, or a page slug */
   currentTab: string
+  /** `currentTab` is a custom page's slug, which may read like a section's id (a page « Agenda »). */
+  onCustomPage?: boolean
   children: React.ReactNode
   /** Under the name: the dashboard puts the reader's role and the member count there. */
   meta?: React.ReactNode
@@ -33,7 +37,14 @@ interface TeamLayoutProps {
   actions?: React.ReactNode
 }
 
-export function TeamLayout({ team, currentTab, children, meta, actions }: TeamLayoutProps) {
+export function TeamLayout({
+  team,
+  currentTab,
+  onCustomPage,
+  children,
+  meta,
+  actions,
+}: TeamLayoutProps) {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -60,6 +71,7 @@ export function TeamLayout({ team, currentTab, children, meta, actions }: TeamLa
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetTeamQueryKey(team.slug) })
           queryClient.invalidateQueries({ queryKey: getGetMembersQueryKey(team.slug) })
+          invalidateTeamSwitcher(queryClient)
           invalidateTeamDashboard(queryClient, team.slug)
         },
       }
@@ -73,6 +85,7 @@ export function TeamLayout({ team, currentTab, children, meta, actions }: TeamLa
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetTeamQueryKey(team.slug) })
           queryClient.invalidateQueries({ queryKey: getGetMembersQueryKey(team.slug) })
+          invalidateTeamSwitcher(queryClient)
           invalidateTeamDashboard(queryClient, team.slug)
           navigate(paths.teams())
         },
@@ -92,9 +105,7 @@ export function TeamLayout({ team, currentTab, children, meta, actions }: TeamLa
         <Box style={{ flex: 1, minWidth: 0 }}>
           <Group justify="space-between" align="center" wrap="wrap" gap="sm">
             <Group gap="sm" style={{ minWidth: 0 }}>
-              <Title order={1} lineClamp={1}>
-                {team.name}
-              </Title>
+              <TeamSwitcher team={team} section={onCustomPage ? undefined : currentTab} />
               <VisibilityBadge visibility={team.visibility} />
             </Group>
 

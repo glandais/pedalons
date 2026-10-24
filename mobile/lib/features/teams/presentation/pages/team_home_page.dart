@@ -200,7 +200,7 @@ class _TeamSectionScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     final List<TeamSection> sections = buildTeamSections(team);
     final List<Widget> headerSlivers = <Widget>[
-      TeamHeaderSliver(team: team),
+      TeamHeaderSliver(team: team, section: section),
       SliverToBoxAdapter(child: _MembershipBanner(team: team)),
     ];
 
@@ -216,7 +216,7 @@ class _TeamSectionScaffold extends StatelessWidget {
         body: TeamDashboardPage(
           team: team,
           leadingSlivers: <Widget>[
-            TeamHeaderSliver(team: team),
+            TeamHeaderSliver(team: team, section: section),
             SliverToBoxAdapter(child: _MembershipBanner(team: team)),
           ],
           toolbar: TeamSectionsToolbar(sections: sections, current: section),
@@ -260,7 +260,7 @@ class _TeamSectionScaffold extends StatelessWidget {
         ),
       ),
       TeamSectionKind.routes => _TeamChrome(
-        header: TeamHeaderBar(team: team),
+        header: TeamHeaderBar(team: team, section: section),
         body: _WithSectionsBar(
           sections: sections,
           current: section,
@@ -268,7 +268,7 @@ class _TeamSectionScaffold extends StatelessWidget {
         ),
       ),
       TeamSectionKind.ads => _TeamChrome(
-        header: TeamHeaderBar(team: team),
+        header: TeamHeaderBar(team: team, section: section),
         body: _WithSectionsBar(
           sections: sections,
           current: section,
@@ -276,7 +276,7 @@ class _TeamSectionScaffold extends StatelessWidget {
         ),
       ),
       TeamSectionKind.members => _TeamChrome(
-        header: TeamHeaderBar(team: team),
+        header: TeamHeaderBar(team: team, section: section),
         body: _WithSectionsBar(
           sections: sections,
           current: section,

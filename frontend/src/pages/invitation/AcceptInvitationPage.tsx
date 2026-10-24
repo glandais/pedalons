@@ -2,12 +2,13 @@ import { useEffect, useRef, useState } from 'react'
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { useTranslation } from 'react-i18next'
+import { useQueryClient } from '@tanstack/react-query'
 import { IconCheck, IconX, IconUsers, IconLogin } from '@tabler/icons-react'
 import { Alert, Button, Center, Group, Loader, Paper, Stack, Text, Title } from '@mantine/core'
 import { paths } from '@/config/paths'
 import { useAuthStore } from '@/store/authStore'
 import { preview, accept } from '@/api/endpoints/invitations/invitations'
-import { useGetTeam } from '@/api/endpoints/teams/teams'
+import { getListTeamsQueryKey, useGetTeam } from '@/api/endpoints/teams/teams'
 import { ApiClientError } from '@/lib/apiError'
 import type { ErrorCode, InvitationPreviewDto } from '@/api/dto'
 
@@ -30,6 +31,7 @@ export function AcceptInvitationPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
+  const queryClient = useQueryClient()
   const [searchParams] = useSearchParams()
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const logout = useAuthStore((state) => state.logout)
@@ -82,6 +84,8 @@ export function AcceptInvitationPage() {
     accept({ token })
       .then(() => {
         sessionStorage.removeItem(TOKEN_STORAGE_KEY)
+        // A new membership: every teams listing, the team switcher's (WEB-111) and the home's included.
+        queryClient.invalidateQueries({ queryKey: getListTeamsQueryKey() })
         setState('accepted')
         if (invitation) {
           navigate(paths.team(invitation.teamSlug), { replace: true })

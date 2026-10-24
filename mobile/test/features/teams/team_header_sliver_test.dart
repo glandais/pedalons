@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/features/teams/presentation/widgets/team_header.dart';
+import 'package:pedalons/features/teams/presentation/widgets/team_sections.dart';
 import 'package:pedalons/features/teams/providers/team_providers.dart';
 
 import 'team_fixtures.dart';
@@ -24,7 +25,11 @@ void main() {
     addTearDown(controller.dispose);
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [teamDetailProvider(team.slug).overrideWith((_) => team)],
+        overrides: [
+          teamDetailProvider(team.slug).overrideWith((_) => team),
+          // L'en-tête lit « Mes équipes » pour décider de son menu.
+          myTeamsProvider.overrideWith((_) async => const <TeamDetailDto>[]),
+        ],
         child: MaterialApp(
           theme: PedalonsTheme.build(Brightness.light),
           home: MediaQuery(
@@ -39,7 +44,10 @@ void main() {
                   parent: AlwaysScrollableScrollPhysics(),
                 ),
                 slivers: <Widget>[
-                  TeamHeaderSliver(team: team),
+                  TeamHeaderSliver(
+                    team: team,
+                    section: TeamSectionKind.dashboard,
+                  ),
                   const SliverToBoxAdapter(child: SizedBox(height: 120)),
                 ],
               ),

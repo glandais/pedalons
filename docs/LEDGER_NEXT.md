@@ -69,10 +69,6 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
       contraste des noms en sombre sur fond satellite ; bande haute du profil sur écran étroit.
       Repli si les expressions en `layout` cassent : une `SymbolStyleLayer` par type, `icon-image`
       constant et filtre `['==',['get','icon'],id]`. Livré par `MOB-84`.
-- [ ] `MOB-87` **Pas de sélecteur d'équipe (S)** — on ne change d'équipe que par ← Équipes (l'en-tête
-      d'équipe y renvoie toujours par `go`, `team_header.dart:111`) ou par « Mes équipes » de
-      l'accueil. Sur le modèle de Heja, toucher le nom de l'équipe dans `team_header.dart` ouvre une
-      feuille « Mes équipes ». L'app ne sert que `pedalons.fr`, qui n'est jamais mono-équipe (`MOB-88`). Pendant web : `WEB-111`.
 
 ### Recette sur une application qui tourne
 
@@ -408,21 +404,6 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
       suggestion de `surfaceType`, `V77`, pas de contrat ; affichage mobile `MOB-81`) : C1 est livré. C3 (points de parcours) est conçu le 20 octobre 2026
       dans [l'étude des points de parcours](research/2026-10-20-points-de-parcours.md) et découpé dans le plan (C3a à C3h) ; C3b (vcyclist 6.11), C3c (backend, contrat `11.16.0`, `V78`), C3d (web, consultation) et C3e (web, éditeur) sont faits le 20 octobre 2026. Reste de C3a : basculer `pedalons.gps.garmin.course-points.enabled` (désactivé) après un essai de la Courses API sur un Edge, et essayer Wahoo.
 
-### Navigation à deux niveaux (global / équipe) : ce que l'analyse du 24 octobre 2026 laisse ouvert
-
-Comparaison de l'existant avec les motifs de GitLab, Tines, Bitbucket, GitHub et Heja, de NN/g (fil
-d'Ariane) et des guides Apple HIG et Material 3. L'existant est conforme sur l'essentiel : niveau
-global et niveau équipe séparés, fil d'Ariane hiérarchique, canonique et raccourci sous `sm`. Les
-entrées ci-dessous en sont les écarts. La contrepartie mobile est `MOB-87` à `MOB-90`.
-
-- [ ] `WEB-111` **Pas de sélecteur d'équipe (S)** — l'équipe courante est affichée
-      (`TeamLayout.tsx`, en-tête d'équipe) mais on n'en change qu'en repassant par « Équipes » ou
-      par « Mes équipes » de l'accueil (`MyTeamsCard.tsx`). Tous les produits multi-espaces étudiés
-      ont un sélecteur à un emplacement fixe. Faire du nom de l'équipe dans l'en-tête d'équipe un
-      menu « Mes équipes » (modèle Tines) ou ajouter un menu à l'entrée « Équipes » de l'en-tête
-      (modèle GitHub). À trancher : le sélecteur reste-t-il visible sur les pages globales ?
-      Inutile en mono-équipe (`hideWhenSingleTeam`). Pendant mobile : `MOB-87`.
-
 ### Couverture e2e — ce que l'audit du 27 septembre laisse ouvert
 
 L'audit ([archivé](plans/archive/2026-09-27-e2e-coverage-audit.md), `WEB-26`) est exécuté : P0, P1
@@ -638,6 +619,7 @@ ceux du plan (`API-1`, l'URL de tuile authentifiable, est livré).
 | `API-17` | `?format=polyline` sur la géométrie de parcours | — | La géométrie stockée est déjà allégée à l'import (`API-40` : 681 points et 65 Ko pour le parcours médian) ; ~÷4 sur le poids, au prix d'un décodeur Dart. **À rouvrir seulement sur une mesure réelle** — aucune n'a été faite au 16 octobre 2026 ; sans mesure, candidat à « Délibérément dehors » (décision du propriétaire) |
 | `API-18` | Voyage comme événement multi-jour au calendrier (`CalendarEventType`, toujours `RIDE`/`TRIP_STAGE`) | 22 | Un voyage sans étape est absent du calendrier ; avec des étapes, elles y sont, le voyage en tant qu'objet non |
 | `API-19` | `GET /api/search?q&types=&limit` unifié | — | Plus aucune recherche transverse : `GET /api/users/search` a été **supprimé** en `3.0.0` (`API-39`). La seule recherche de personnes est celle du trombinoscope d'une équipe |
+| `API-137` | `GET /api/teams?minRole=MEMBER` pour un administrateur de la plateforme : ses vraies adhésions et son vrai rôle, sans les équipes supprimées | Accueil « Mes équipes », sélecteur d'équipe (`WEB-111`, `MOB-87`) | `TeamRepository.find` (branche « Platform admin, all teams ») ignore `minRole` et ne filtre plus `deleted`, et `TeamDetailDto.from` donne `role = ADMIN` sur chaque ligne. Un administrateur de la plateforme voit donc les 20 premières équipes du domaine, supprimées comprises, au lieu des siennes. Garder la vue « toutes les équipes » pour l'administration, sans `minRole` |
 
 Le meneur de groupe (`API-41`, livré en 1.5.0), l'URL de tuile (`API-1`) et la pagination du
 calendrier (`API-20`) sont dans

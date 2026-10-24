@@ -256,6 +256,11 @@
   },
   "teams": {
     "title": "My teams",
+    "switcher": {
+      "title": "My teams",
+      "allTeams": "All teams",
+      "open": "Switch team"
+    },
     "empty": "No teams",
     "joinPrompt": "Join a team to get started",
     "discover": "Discover teams",

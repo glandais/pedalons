@@ -979,7 +979,7 @@ couvert » ; les tests ne tournent qu'en local (`MOB-37`).
   module Patrol `ride` ouvre la page du groupe puis revient au détail ; il ne se contente plus de
   désigner une carte.
 
-### Navigation à deux niveaux : repères d'équipe (24 octobre 2026, contrat d'API inchangé)
+### Navigation à deux niveaux : analyse du 24 octobre 2026 (contrat d'API inchangé)
 
 - `MOB-90` **Le détail d'un parcours dit à quelle équipe il appartient** — `RouteSheetHeader`
   (`features/routes/presentation/widgets/route_sheet_header.dart`) porte au-dessus du titre le
@@ -991,6 +991,16 @@ couvert » ; les tests ne tournent qu'en local (`MOB-37`).
   sous-route de l'équipe, qui est donc toujours la page dessous : le retour y mène, et un tap en
   empilerait une seconde copie. Reste ouvert : la rangée « Équipe » de la section Informations du
   parcours répète désormais la ligne d'équipe.
+
+- `MOB-87` **Sélecteur d'équipe dans l'en-tête d'équipe** (24 octobre 2026, contrat inchangé) —
+  toucher le nom dans `team_header.dart` (suivi d'un chevron) ouvre la feuille « Mes équipes »
+  (`my_teams_sheet.dart`, `myTeamsProvider`) : les mêmes règles que `WEB-111` (ordre du serveur,
+  équipe courante cochée et annoncée `selected` aux lecteurs d'écran, « Toutes les équipes »,
+  même section sinon tableau de bord, calculé par `team_sections.dart`). L'en-tête reçoit sa
+  section (`section`, aussi depuis la vue calendrier de l'agenda). Sans menu, toucher le nom ramène
+  au tableau de bord comme avant (`keys.team.headerIdentity` inchangée). Tests :
+  `team_switch_target_test.dart`, groupe « Mes équipes » de `team_home_page_test.dart`. Mêmes
+  décisions à ne pas défaire que `WEB-111` (en-tête seulement, 20 équipes).
 
 ## WEB — Site web
 
@@ -2711,7 +2721,13 @@ Plan [`2026-10-06-team-agenda.md`](plans/archive/2026-10-06-team-agenda.md) §4,
   L'affichage mobile est `MOB-81`. C1 est entièrement livré (détail et écarts dans le plan).
 
 
-### Navigation à deux niveaux : repères d'équipe (24 octobre 2026, contrat d'API inchangé)
+### Navigation à deux niveaux : analyse du 24 octobre 2026 (contrat d'API inchangé)
+
+L'existant a été comparé aux motifs de GitLab, Tines, Bitbucket, GitHub et Heja, à NN/g (fil
+d'Ariane) et aux guides Apple HIG et Material 3. Il était conforme sur l'essentiel : niveau global
+et niveau équipe séparés, fil d'Ariane hiérarchique, canonique et raccourci sous `sm`. Les écarts
+relevés sont `WEB-111` à `WEB-114` et `MOB-87` à `MOB-90`. `MOB-88` et `MOB-89` sont dans
+« Délibérément dehors », et `API-137` reste ouvert.
 
 - `WEB-112` **Deux pages « Membres » distinguées, l'annuaire devient une section d'équipe** (web ;
   le mobile appliquait déjà la règle) — dans la gestion d'équipe, l'onglet, le fil d'Ariane et le
@@ -2751,6 +2767,28 @@ Plan [`2026-10-06-team-agenda.md`](plans/archive/2026-10-06-team-agenda.md) §4,
   crumb de l'équipe sur grand écran (tranché le 24 octobre 2026). Sous `sm`, le fil compact ne
   garde que les deux derniers niveaux et n'affiche plus l'équipe : la bannière est alors le seul
   chemin vers elle.
+
+- `WEB-111` **Sélecteur d'équipe dans l'en-tête d'équipe** (24 octobre 2026, contrat inchangé) —
+  dans `TeamLayout`, le nom de l'équipe devient le menu « Mes équipes » (`TeamSwitcher.tsx`) : mes
+  équipes dans l'ordre du serveur (par nom), l'équipe courante cochée (`aria-current`, sans lien),
+  puis « Toutes les équipes ». Une autre équipe ouvre la même section chez elle, sinon son tableau
+  de bord (`teamSwitchPath`, `useNavItems.ts`, sur les seules sections partagées : une page
+  personnalisée mène au tableau de bord, même si son slug vaut `agenda`). Pas de menu sans autre
+  équipe que celle affichée, déconnecté ou sur un site mono-équipe ; un visiteur voit les siennes,
+  sans coche. La liste est celle de l'accueil (`teamSwitcherData.ts`, `MY_TEAMS_PARAMS`, cache
+  partagé), préchargée au SSR sur les routes qui montent `TeamLayout`, rafraîchie quand on rejoint
+  ou quitte l'équipe et quand on accepte une invitation. Tests : `TeamSwitcher.test.tsx`,
+  `useTeamNavItems.test.tsx`, `AcceptInvitationPage.test.tsx`. **À ne pas défaire** :
+  - Le bouton est **dans** le `h1`, pas autour, et garde le nom de l'équipe comme nom accessible (« Changer
+  d'équipe » est son `title`) : le titre de la page reste nommé d'après l'équipe.
+  - Le sélecteur n'existe **que dans l'en-tête d'équipe** : la règle « depuis une page de
+    détail, arriver sur la section qui la contient » est abandonnée (tranché le 24 octobre 2026).
+    Depuis un détail, on remonte d'abord à l'équipe par la bannière, qui reste un simple lien
+    (`WEB-113`).
+  - La liste s'arrête aux 20 premières équipes, comme l'accueil (tranché le 24 octobre 2026) ;
+    au-delà, « Toutes les équipes ».
+
+  Reste ouvert côté API : la liste d'un administrateur de la plateforme (`API-137`).
 
 ## API — Contrat d'API et backend
 

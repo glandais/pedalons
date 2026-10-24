@@ -39,8 +39,19 @@ class TeamPageKeys {
   /// « Réessayer » de l'état d'erreur.
   final loadErrorRetryButton = const _TeamPageKey('loadErrorRetryButton');
 
-  /// Avatar et nom de l'en-tête : un tap mène au tableau de bord.
+  /// Avatar et nom de l'en-tête : un tap ouvre « Mes équipes », ou mène au
+  /// tableau de bord quand il n'y a pas d'autre équipe où aller.
   final headerIdentity = const _TeamPageKey('headerIdentity');
+
+  /// La feuille « Mes équipes » ouverte depuis l'en-tête.
+  final switcherSheet = const _TeamPageKey('switcherSheet');
+
+  /// Une équipe de la feuille « Mes équipes », par son slug.
+  ValueKey<String> switcherRow(String teamSlug) =>
+      _TeamPageKey('switcherRow_$teamSlug');
+
+  /// « Toutes les équipes », au pied de la feuille.
+  final switcherAllTeams = const _TeamPageKey('switcherAllTeams');
 
   final joinButton = const _TeamPageKey('joinButton');
   final leaveButton = const _TeamPageKey('leaveButton');

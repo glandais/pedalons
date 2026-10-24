@@ -88,7 +88,10 @@ class _TeamAgendaPageState extends State<TeamAgendaPage> {
 
     if (view == AgendaView.calendar) {
       return widget.chrome(
-        header: TeamHeaderBar(team: widget.team),
+        header: TeamHeaderBar(
+          team: widget.team,
+          section: TeamSectionKind.agenda,
+        ),
         body: Column(
           children: <Widget>[
             TeamSectionsBar(

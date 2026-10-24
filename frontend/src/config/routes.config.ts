@@ -3,6 +3,7 @@ import type { RoutesConfig, RouteParams } from './routes.types'
 import { pathVariants } from './paths'
 import { tRegister } from '@/lib/i18nUtils'
 import { prefetchGetTeamQuery } from '@/api/endpoints/teams/teams'
+import { prefetchTeamSwitcher } from '@/components/team/teamSwitcherData'
 import { prefetchRideDetail } from '@/pages/ride/rideDetailData'
 import { prefetchRideGroup, rideGroupDataRedirect } from '@/pages/ride/rideGroupData'
 import { prefetchRouteList } from '@/pages/route/routeListData'
@@ -110,6 +111,15 @@ function teamScopedPrefetch(
       extra ? extra(queryClient, params, url) : Promise.resolve(),
     ])
   }
+}
+
+/**
+ * A route that mounts `TeamLayout` adds the team switcher's listing to its own data
+ * (docs/LEDGER_*.md WEB-111) — the same on every such route, so it is not repeated in each page's
+ * companion module.
+ */
+async function withTeamSwitcher(queryClient: QueryClient, page: Promise<unknown>): Promise<void> {
+  await Promise.all([page, prefetchTeamSwitcher(queryClient)])
 }
 
 export const routesConfig: RoutesConfig = [
@@ -531,7 +541,8 @@ export const routesConfig: RoutesConfig = [
     // part — see pages/team/teamHomeData.ts. The former feed's addresses (`?tab=publications`, a
     // visitor's `?type=…`) lead to the agenda or the posts (ledger WEB-68).
     redirect: (params, url) => teamHomeRedirect(params.teamSlug!, url.searchParams),
-    prefetch: (queryClient, params) => prefetchTeamHome(queryClient, params.teamSlug!),
+    prefetch: (queryClient, params) =>
+      withTeamSwitcher(queryClient, prefetchTeamHome(queryClient, params.teamSlug!)),
     meta: teamDetailMeta,
   },
   // « Agenda » — the team's rides and trips, upcoming first — and « Publications », its posts,
@@ -544,7 +555,8 @@ export const routesConfig: RoutesConfig = [
     auth: 'public',
     parentId: 'team-detail',
     breadcrumb: { type: 'static', i18nKey: tRegister('teams.detail.tabs.agenda') },
-    prefetch: (queryClient, params, url) => prefetchTeamAgenda(queryClient, params.teamSlug!, url),
+    prefetch: (queryClient, params, url) =>
+      withTeamSwitcher(queryClient, prefetchTeamAgenda(queryClient, params.teamSlug!, url)),
   },
   {
     id: 'team-posts',
@@ -553,7 +565,8 @@ export const routesConfig: RoutesConfig = [
     auth: 'public',
     parentId: 'team-detail',
     breadcrumb: { type: 'static', i18nKey: tRegister('teams.detail.tabs.posts') },
-    prefetch: (queryClient, params, url) => prefetchTeamPosts(queryClient, params.teamSlug!, url),
+    prefetch: (queryClient, params, url) =>
+      withTeamSwitcher(queryClient, prefetchTeamPosts(queryClient, params.teamSlug!, url)),
   },
   // The former « Sorties » and « Voyages » tabs (WEB-64), kept for the links already out there:
   // their loader redirects to the agenda, so the page never renders.
@@ -580,7 +593,8 @@ export const routesConfig: RoutesConfig = [
     auth: 'public',
     parentId: 'team-detail',
     breadcrumb: { type: 'static', i18nKey: tRegister('teams.detail.tabs.about') },
-    prefetch: (queryClient, params) => prefetchTeamAbout(queryClient, params.teamSlug!),
+    prefetch: (queryClient, params) =>
+      withTeamSwitcher(queryClient, prefetchTeamAbout(queryClient, params.teamSlug!)),
     meta: teamAboutMeta,
   },
   {
@@ -594,7 +608,9 @@ export const routesConfig: RoutesConfig = [
     // A team section of its own (WEB-112): the team is its parent, like the row's other tabs.
     parentId: 'team-detail',
     breadcrumb: { type: 'static', i18nKey: tRegister('teams.detail.members.title') },
-    prefetch: teamScopedPrefetch((qc, p, url) => prefetchTeamDirectory(qc, p.teamSlug!, url)),
+    prefetch: teamScopedPrefetch((qc, p, url) =>
+      withTeamSwitcher(qc, prefetchTeamDirectory(qc, p.teamSlug!, url))
+    ),
   },
   {
     id: 'team-calendar',
@@ -606,7 +622,8 @@ export const routesConfig: RoutesConfig = [
     auth: 'authenticated',
     parentId: 'team-agenda',
     breadcrumb: { type: 'static', i18nKey: tRegister('calendar.title') },
-    prefetch: (queryClient, params) => prefetchTeamCalendar(queryClient, params.teamSlug!),
+    prefetch: (queryClient, params) =>
+      withTeamSwitcher(queryClient, prefetchTeamCalendar(queryClient, params.teamSlug!)),
   },
   {
     id: 'team-page',
@@ -616,7 +633,10 @@ export const routesConfig: RoutesConfig = [
     parentId: 'team-detail',
     breadcrumb: { type: 'dynamic', entity: 'teamPage' },
     prefetch: (queryClient, params) =>
-      prefetchTeamPage(queryClient, params.teamSlug!, params.pageSlug!),
+      withTeamSwitcher(
+        queryClient,
+        prefetchTeamPage(queryClient, params.teamSlug!, params.pageSlug!)
+      ),
     meta: teamPageMeta,
   },
   // === Team Admin Routes ===
@@ -892,7 +912,8 @@ export const routesConfig: RoutesConfig = [
     noindex: true,
     parentId: 'team-detail',
     breadcrumb: { type: 'static', i18nKey: tRegister('nav.routes') },
-    prefetch: (queryClient, params, url) => prefetchRouteList(queryClient, params.teamSlug!, url),
+    prefetch: (queryClient, params, url) =>
+      withTeamSwitcher(queryClient, prefetchRouteList(queryClient, params.teamSlug!, url)),
   },
   {
     id: 'routes-map',
@@ -902,7 +923,8 @@ export const routesConfig: RoutesConfig = [
     noindex: true,
     parentId: 'routes',
     breadcrumb: { type: 'static', i18nKey: tRegister('routes.view.map') },
-    prefetch: (queryClient, params, url) => prefetchRoutesMap(queryClient, params.teamSlug!, url),
+    prefetch: (queryClient, params, url) =>
+      withTeamSwitcher(queryClient, prefetchRoutesMap(queryClient, params.teamSlug!, url)),
   },
   {
     id: 'route-new',
@@ -963,7 +985,8 @@ export const routesConfig: RoutesConfig = [
     breadcrumb: { type: 'static', i18nKey: tRegister('ads.title') },
     // AdListPage reads the team plus its first two, unfiltered ad pages — matches its query key
     // exactly (including `view`), same pattern as the publications and routes lists above.
-    prefetch: (queryClient, params, url) => prefetchAdList(queryClient, params.teamSlug!, url),
+    prefetch: (queryClient, params, url) =>
+      withTeamSwitcher(queryClient, prefetchAdList(queryClient, params.teamSlug!, url)),
   },
   {
     id: 'ad-new',

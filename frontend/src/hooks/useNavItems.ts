@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import {
   IconNews,
   IconCalendar,
@@ -150,95 +151,112 @@ export function useActiveMainNavId(items: MainNavItem[]): string | undefined {
  */
 export function useTeamNavItems(team: TeamDetailDto | undefined): NavButtonItem[] {
   const { t } = useTranslation()
+  return useMemo(() => (team ? teamNavItems(team, t) : []), [team, t])
+}
 
-  return useMemo(() => {
-    if (!team) return []
+/** useTeamNavItems' list for a loaded team: its sections, then its visible custom pages. */
+function teamNavItems(team: TeamDetailDto, t: TFunction): NavButtonItem[] {
+  const isMember = !!team.role
+  // Add dynamic pages - filter by visibility (PUBLIC pages or member can see TEAM pages)
+  const visiblePages = (team.pages ?? []).filter((page) => page.visibility !== 'TEAM' || isMember)
 
-    const isMember = !!team.role
-    const canSeeMembers =
-      team.role === 'ADMIN' ||
-      team.role === 'ORGANIZER' ||
-      (isMember && !!team.enableMemberDirectory)
-    const hasAgenda = (!!team.enableRides || !!team.enableTrips) && !!team.enableRoutes
-    const baseTabs: NavButtonItem[] = [
-      {
-        id: 'dashboard',
-        path: paths.team(team.slug),
-        label: t('teams.dashboard.title'),
-        icon: IconLayoutDashboard,
-      },
-      ...(hasAgenda
-        ? [
-            {
-              id: 'agenda',
-              path: paths.teamAgenda(team.slug),
-              label: t('teams.detail.tabs.agenda'),
-              icon: IconCalendarEvent,
-            },
-          ]
-        : []),
-      ...(team.enablePosts
-        ? [
-            {
-              id: 'posts',
-              path: paths.teamPosts(team.slug),
-              label: t('teams.detail.tabs.posts'),
-              icon: IconArticle,
-            },
-          ]
-        : []),
-      ...(team.enableRoutes
-        ? [
-            {
-              id: 'routes',
-              path: paths.routes(team.slug),
-              label: t('teams.detail.tabs.routes'),
-              icon: IconRoute,
-            },
-          ]
-        : []),
-      ...(isMember && team.enableAds
-        ? [
-            {
-              id: 'ads',
-              path: paths.ads(team.slug),
-              label: t('ads.title'),
-              icon: IconTag,
-            },
-          ]
-        : []),
-      // Whoever may read the directory (WEB-112, API-39): an organiser or an administrator whatever
-      // the team decided, a member once the team has opened it. The mobile's members chip
-      // (team_sections.dart) and the « À propos » link apply the same rule: a tab that always
-      // leads to a 403 is worse than no tab.
-      ...(canSeeMembers
-        ? [
-            {
-              id: 'members',
-              path: paths.teamMembers(team.slug),
-              label: t('teams.detail.members.title'),
-              icon: IconUsers,
-            },
-          ]
-        : []),
-      {
-        id: 'about',
-        path: paths.teamAbout(team.slug),
-        label: t('teams.detail.tabs.about'),
-        icon: IconInfoCircle,
-      },
-    ]
+  const pageTabs: NavButtonItem[] = visiblePages.map((page) => ({
+    id: page.slug,
+    path: paths.teamPage(team.slug, page.slug),
+    label: page.title,
+    icon: IconFileText,
+  }))
 
-    // Add dynamic pages - filter by visibility (PUBLIC pages or member can see TEAM pages)
-    const visiblePages = (team.pages ?? []).filter((page) => page.visibility !== 'TEAM' || isMember)
+  return [...teamSectionItems(team, t), ...pageTabs]
+}
 
-    const pageTabs: NavButtonItem[] = visiblePages.map((page) => ({
-      id: page.slug,
-      path: paths.teamPage(team.slug, page.slug),
-      label: page.title,
-      icon: IconFileText,
-    }))
+/** The sections the team has, without its custom pages: what the team switcher carries over. */
+export function teamSectionItems(team: TeamDetailDto, t: TFunction): NavButtonItem[] {
+  const isMember = !!team.role
+  const canSeeMembers =
+    team.role === 'ADMIN' || team.role === 'ORGANIZER' || (isMember && !!team.enableMemberDirectory)
+  const hasAgenda = (!!team.enableRides || !!team.enableTrips) && !!team.enableRoutes
+  return [
+    {
+      id: 'dashboard',
+      path: paths.team(team.slug),
+      label: t('teams.dashboard.title'),
+      icon: IconLayoutDashboard,
+    },
+    ...(hasAgenda
+      ? [
+          {
+            id: 'agenda',
+            path: paths.teamAgenda(team.slug),
+            label: t('teams.detail.tabs.agenda'),
+            icon: IconCalendarEvent,
+          },
+        ]
+      : []),
+    ...(team.enablePosts
+      ? [
+          {
+            id: 'posts',
+            path: paths.teamPosts(team.slug),
+            label: t('teams.detail.tabs.posts'),
+            icon: IconArticle,
+          },
+        ]
+      : []),
+    ...(team.enableRoutes
+      ? [
+          {
+            id: 'routes',
+            path: paths.routes(team.slug),
+            label: t('teams.detail.tabs.routes'),
+            icon: IconRoute,
+          },
+        ]
+      : []),
+    ...(isMember && team.enableAds
+      ? [
+          {
+            id: 'ads',
+            path: paths.ads(team.slug),
+            label: t('ads.title'),
+            icon: IconTag,
+          },
+        ]
+      : []),
+    // Whoever may read the directory (WEB-112, API-39): an organiser or an administrator whatever
+    // the team decided, a member once the team has opened it. The mobile's members chip
+    // (team_sections.dart) and the « À propos » link apply the same rule: a tab that always
+    // leads to a 403 is worse than no tab.
+    ...(canSeeMembers
+      ? [
+          {
+            id: 'members',
+            path: paths.teamMembers(team.slug),
+            label: t('teams.detail.members.title'),
+            icon: IconUsers,
+          },
+        ]
+      : []),
+    {
+      id: 'about',
+      path: paths.teamAbout(team.slug),
+      label: t('teams.detail.tabs.about'),
+      icon: IconInfoCircle,
+    },
+  ]
+}
 
-    return [...baseTabs, ...pageTabs]
-  }, [team, t])
+/**
+ * Where the team switcher leads to `target` from the `section` the reader is on (docs/LEDGER_*.md
+ * WEB-111): the same section if `target` has it, bare — no filter or view carried over —, else its
+ * dashboard. From a custom page (`section` undefined) always the dashboard, even to a page of the
+ * same slug. Mirrors switchTargetSection in the mobile's team_sections.dart (MOB-87).
+ */
+export function teamSwitchPath(
+  target: TeamDetailDto,
+  section: string | undefined,
+  t: TFunction
+): string {
+  const item = section ? teamSectionItems(target, t).find((i) => i.id === section) : undefined
+  return item?.path ?? paths.team(target.slug)
 }

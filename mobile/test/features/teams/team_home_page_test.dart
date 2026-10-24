@@ -11,6 +11,7 @@ import 'package:pedalons/config/paths.generated.dart';
 import 'package:pedalons/core/pagination/pagination.dart';
 import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
+import 'package:pedalons/core/theme/pdl_icons.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/features/teams/data/team_repository.dart';
 import 'package:pedalons/features/teams/domain/member_filters.dart';
@@ -18,6 +19,7 @@ import 'package:pedalons/features/teams/domain/team_discovery_filters.dart';
 import 'package:pedalons/features/teams/presentation/pages/team_home_page.dart';
 import 'package:pedalons/features/teams/presentation/widgets/team_header.dart';
 import 'package:pedalons/features/teams/presentation/widgets/team_sections.dart';
+import 'package:pedalons/features/teams/providers/team_providers.dart';
 import 'package:pedalons/keys.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -180,7 +182,11 @@ void main() {
           child: MaterialApp(
             theme: PedalonsTheme.build(Brightness.light),
             home: Scaffold(
-              body: TeamHeader(team: fixtureTeam(role: 'MEMBER'), t: 1),
+              body: TeamHeader(
+                team: fixtureTeam(role: 'MEMBER'),
+                section: TeamSectionKind.dashboard,
+                t: 1,
+              ),
             ),
           ),
         ),
@@ -204,7 +210,11 @@ void main() {
             GoRoute(
               path: '/ailleurs',
               builder: (_, _) => Scaffold(
-                body: TeamHeader(team: team, t: t),
+                body: TeamHeader(
+                  team: team,
+                  section: TeamSectionKind.dashboard,
+                  t: t,
+                ),
               ),
             ),
             GoRoute(
@@ -236,6 +246,232 @@ void main() {
         expect(find.text('tableau de bord'), findsOneWidget);
       });
     }
+  });
+
+  /// Ledger `MOB-87` — « Mes équipes », depuis le nom de l'en-tête.
+  group('Mes équipes', () {
+    final TeamDetailDto alpes = fixtureTeam(
+      slug: 'alpes',
+      name: 'Alpes Vélo',
+      role: 'MEMBER',
+    ).copyWith(enableRides: false, enableTrips: false);
+    final TeamDetailDto vercors = fixtureTeam(
+      slug: 'vercors',
+      name: 'Vercors',
+      role: 'ADMIN',
+    );
+
+    /// L'en-tête de [team] sur la section [section], « Mes équipes » valant
+    /// [myTeams] — dans l'ordre du serveur, que la feuille ne retouche pas.
+    Future<void> openHeader(
+      WidgetTester tester, {
+      required TeamDetailDto team,
+      required List<TeamDetailDto> myTeams,
+      TeamSectionKind section = TeamSectionKind.dashboard,
+    }) async {
+      setCurrentLocale('fr');
+      tester.view.physicalSize = const Size(1200, 2400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final GoRouter router = GoRouter(
+        initialLocation: '/ailleurs',
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/ailleurs',
+            builder: (_, _) => Scaffold(
+              body: TeamHeader(team: team, section: section, t: 0),
+            ),
+          ),
+          for (final TeamDetailDto x in <TeamDetailDto>[team, ...myTeams]) ...[
+            GoRoute(
+              path: Paths.team(x.slug),
+              builder: (_, _) => Text('tableau de bord ${x.slug}'),
+            ),
+            GoRoute(
+              path: Paths.teamAgenda(x.slug),
+              builder: (_, _) => Text('agenda ${x.slug}'),
+            ),
+          ],
+          GoRoute(
+            path: Paths.teams(),
+            builder: (_, _) => const Text('toutes les équipes'),
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            teamRepositoryProvider.overrideWithValue(_StubTeamRepository(team)),
+            myTeamsProvider.overrideWith((_) async => myTeams),
+          ],
+          child: MaterialApp.router(
+            theme: PedalonsTheme.build(Brightness.light),
+            routerConfig: router,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> openSheet(WidgetTester tester) async {
+      await tester.tap(find.byKey(keys.team.headerIdentity).hitTestable());
+      await tester.pumpAndSettle();
+    }
+
+    Finder checkIn(String slug) => find.descendant(
+      of: find.byKey(keys.team.switcherRow(slug)),
+      matching: find.byIcon(PdlIcons.check),
+    );
+
+    testWidgets('membre de plusieurs : ▾, puis la feuille dans l\'ordre du '
+        'serveur, l\'équipe courante cochée', (WidgetTester tester) async {
+      final TeamDetailDto team = fixtureTeam(role: 'MEMBER');
+      await openHeader(
+        tester,
+        team: team,
+        myTeams: <TeamDetailDto>[alpes, team, vercors],
+      );
+      expect(find.byIcon(PdlIcons.chevronDown), findsWidgets);
+
+      await openSheet(tester);
+      expect(find.byKey(keys.team.switcherSheet), findsOneWidget);
+      expect(find.text('Mes équipes'), findsOneWidget);
+      final List<double> tops = <String>['alpes', 'n-peloton', 'vercors']
+          .map(
+            (String slug) =>
+                tester.getTopLeft(find.byKey(keys.team.switcherRow(slug))).dy,
+          )
+          .toList();
+      expect(tops[0], lessThan(tops[1]));
+      expect(tops[1], lessThan(tops[2]));
+      expect(checkIn('n-peloton'), findsOneWidget);
+      expect(checkIn('alpes'), findsNothing);
+      expect(checkIn('vercors'), findsNothing);
+      // La coche n'est pas qu'un dessin : un lecteur d'écran l'entend aussi.
+      expect(
+        tester.getSemantics(find.byKey(keys.team.switcherRow('n-peloton'))),
+        isSemantics(isSelected: true, isButton: true),
+      );
+      expect(
+        tester.getSemantics(find.byKey(keys.team.switcherRow('alpes'))),
+        isSemantics(isSelected: false, isButton: true),
+      );
+      // « Toutes les équipes » ferme la liste.
+      expect(
+        tester.getTopLeft(find.byKey(keys.team.switcherAllTeams)).dy,
+        greaterThan(tops[2]),
+      );
+      expect(find.text('Toutes les équipes'), findsOneWidget);
+    });
+
+    testWidgets('depuis l\'Agenda, une équipe qui en a un ouvre le sien', (
+      WidgetTester tester,
+    ) async {
+      final TeamDetailDto team = fixtureTeam(role: 'MEMBER');
+      await openHeader(
+        tester,
+        team: team,
+        myTeams: <TeamDetailDto>[alpes, team, vercors],
+        section: TeamSectionKind.agenda,
+      );
+      await openSheet(tester);
+      await tester.tap(find.byKey(keys.team.switcherRow('vercors')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('agenda vercors'), findsOneWidget);
+    });
+
+    testWidgets('depuis l\'Agenda, une équipe sans Agenda ouvre son tableau '
+        'de bord', (WidgetTester tester) async {
+      final TeamDetailDto team = fixtureTeam(role: 'MEMBER');
+      await openHeader(
+        tester,
+        team: team,
+        myTeams: <TeamDetailDto>[alpes, team, vercors],
+        section: TeamSectionKind.agenda,
+      );
+      await openSheet(tester);
+      await tester.tap(find.byKey(keys.team.switcherRow('alpes')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('tableau de bord alpes'), findsOneWidget);
+    });
+
+    testWidgets('l\'équipe courante referme la feuille sans naviguer', (
+      WidgetTester tester,
+    ) async {
+      final TeamDetailDto team = fixtureTeam(role: 'MEMBER');
+      await openHeader(
+        tester,
+        team: team,
+        myTeams: <TeamDetailDto>[alpes, team],
+      );
+      await openSheet(tester);
+      await tester.tap(find.byKey(keys.team.switcherRow('n-peloton')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(keys.team.switcherSheet), findsNothing);
+      expect(find.byType(TeamHeader), findsOneWidget);
+    });
+
+    testWidgets('« Toutes les équipes » mène à la liste des équipes', (
+      WidgetTester tester,
+    ) async {
+      final TeamDetailDto team = fixtureTeam(role: 'MEMBER');
+      await openHeader(
+        tester,
+        team: team,
+        myTeams: <TeamDetailDto>[alpes, team],
+      );
+      await openSheet(tester);
+      await tester.tap(find.byKey(keys.team.switcherAllTeams));
+      await tester.pumpAndSettle();
+
+      expect(find.text('toutes les équipes'), findsOneWidget);
+    });
+
+    testWidgets('membre de cette seule équipe : pas de ▾, le nom mène au '
+        'tableau de bord', (WidgetTester tester) async {
+      final TeamDetailDto team = fixtureTeam(role: 'MEMBER');
+      await openHeader(tester, team: team, myTeams: <TeamDetailDto>[team]);
+      expect(find.byIcon(PdlIcons.chevronDown), findsNothing);
+
+      await openSheet(tester);
+      expect(find.byKey(keys.team.switcherSheet), findsNothing);
+      expect(find.text('tableau de bord n-peloton'), findsOneWidget);
+    });
+
+    testWidgets('visiteur avec une équipe : la feuille, sans coche', (
+      WidgetTester tester,
+    ) async {
+      await openHeader(
+        tester,
+        team: fixtureTeam(),
+        myTeams: <TeamDetailDto>[alpes],
+      );
+      expect(find.byIcon(PdlIcons.chevronDown), findsWidgets);
+
+      await openSheet(tester);
+      expect(find.byKey(keys.team.switcherRow('alpes')), findsOneWidget);
+      expect(find.byKey(keys.team.switcherRow('n-peloton')), findsNothing);
+      expect(find.byIcon(PdlIcons.check), findsNothing);
+    });
+
+    testWidgets('visiteur sans équipe : pas de ▾, le nom mène au tableau de '
+        'bord', (WidgetTester tester) async {
+      await openHeader(
+        tester,
+        team: fixtureTeam(),
+        myTeams: const <TeamDetailDto>[],
+      );
+      expect(find.byIcon(PdlIcons.chevronDown), findsNothing);
+
+      await openSheet(tester);
+      expect(find.byKey(keys.team.switcherSheet), findsNothing);
+      expect(find.text('tableau de bord n-peloton'), findsOneWidget);
+    });
   });
 
   group('À propos', () {

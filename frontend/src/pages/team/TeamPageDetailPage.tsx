@@ -35,7 +35,7 @@ export function TeamPageDetailPage() {
   const isMember = !!team.role
 
   return (
-    <TeamLayout team={team} currentTab={page.slug}>
+    <TeamLayout team={team} currentTab={page.slug} onCustomPage>
       <Box py="md">
         <Paper p="lg" withBorder>
           <Group gap="sm" mb="md">
