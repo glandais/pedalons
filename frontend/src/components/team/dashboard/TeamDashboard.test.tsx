@@ -293,12 +293,30 @@ describe('team dashboard, by role', () => {
     expect(within(todo).getByText('Brouillon de sortie')).toBeInTheDocument()
     // The reports tile is for organizers too (same audience as the moderation queue).
     expect(within(todo).getByText('teams.dashboard.todo.reports:1')).toBeInTheDocument()
-    expect(within(todo).getByText('teams.dashboard.todo.withoutRouteNone')).toBeInTheDocument()
+    // Nothing waits in a category: its tile is not there at all.
+    expect(within(todo).queryByText(/teams\.dashboard\.todo\.withoutRoute/)).not.toBeInTheDocument()
 
     expect(heading('teams.dashboard.templates.title')).toBeInTheDocument()
     expect(screen.getByText('Modèle du samedi')).toBeInTheDocument()
     expect(screen.getAllByText('teams.dashboard.ride.edit').length).toBeGreaterThan(0)
     expect(heading('teams.dashboard.admin.title')).not.toBeInTheDocument()
+  })
+
+  it('« À traiter » is gone when nothing waits anywhere', () => {
+    const base = dashboard('ORGANIZER')
+    renderDashboard({
+      ...base,
+      organizer: {
+        ...base.organizer!,
+        drafts: page([]),
+        ridesWithoutRoute: page([]),
+        ridesWithFullGroup: page([]),
+        reports: { openCount: 0 },
+      },
+    })
+
+    expect(heading('teams.dashboard.todo.title')).not.toBeInTheDocument()
+    expect(heading('teams.dashboard.templates.title')).toBeInTheDocument()
   })
 
   it('an administrator gets the administration panel, members split by role', () => {

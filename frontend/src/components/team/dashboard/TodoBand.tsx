@@ -34,6 +34,9 @@ interface TodoBandProps {
  * « À traiter »: what an organizer or an administrator should look at — drafts, upcoming rides
  * without a route, rides with a full group, open reports. Same audience as the team's moderation
  * queue (`requireTeamModerator`), which is why the reports tile is shown to organizers too.
+ *
+ * A tile shows only when something waits in its category, and the whole section is gone when
+ * nothing waits anywhere.
  */
 export function TodoBand({ teamSlug, organizer }: TodoBandProps) {
   const { t, i18n } = useTranslation()
@@ -54,57 +57,62 @@ export function TodoBand({ teamSlug, organizer }: TodoBandProps) {
         : reader.formatPattern(ride.dateTime, 'EEE d MMM')
     }`
 
+  const hasRidesWithoutRoute = !!ridesWithoutRoute && ridesWithoutRoute.total > 0
+  const hasRidesWithFullGroup = !!ridesWithFullGroup && ridesWithFullGroup.total > 0
+  if (
+    drafts.total === 0 &&
+    !hasRidesWithoutRoute &&
+    !hasRidesWithFullGroup &&
+    reports.openCount === 0
+  )
+    return null
+
   return (
     <section aria-labelledby="dashboard-todo">
       <Stack gap="sm">
-        <Group justify="space-between" align="baseline" gap="xs">
-          <Title order={2} id="dashboard-todo" size="h3">
-            {t('teams.dashboard.todo.title')}
-          </Title>
-          <Text size="sm" c="dimmed">
-            {t('teams.dashboard.todo.hint')}
-          </Text>
-        </Group>
+        <Title order={2} id="dashboard-todo" size="h3">
+          {t('teams.dashboard.todo.title')}
+        </Title>
         <SimpleGrid cols={{ base: 1, xs: 2, md: 4 }} spacing="md">
-          <TodoTile
-            icon={IconFileText}
-            color="gray"
-            count={drafts.total}
-            label={t('teams.dashboard.todo.drafts', { count: drafts.total })}
-            none={t('teams.dashboard.todo.draftsNone')}
-            detail={
-              drafts.publications.length > 0 ? (
-                <>
-                  {drafts.publications.map((draft, index) => (
-                    <span key={draft.id}>
-                      {index > 0 && ', '}
-                      <Anchor
-                        component={PrefetchLink}
-                        to={publicationEditPath(draft)}
-                        inherit
-                        c="inherit"
-                      >
-                        {draft.name}
-                      </Anchor>
-                    </span>
-                  ))}
-                </>
-              ) : undefined
-            }
-            action={
-              firstDraft
-                ? { label: t('teams.dashboard.todo.resume'), to: publicationEditPath(firstDraft) }
-                : undefined
-            }
-          />
+          {drafts.total > 0 && (
+            <TodoTile
+              icon={IconFileText}
+              color="gray"
+              count={drafts.total}
+              label={t('teams.dashboard.todo.drafts', { count: drafts.total })}
+              detail={
+                drafts.publications.length > 0 ? (
+                  <>
+                    {drafts.publications.map((draft, index) => (
+                      <span key={draft.id}>
+                        {index > 0 && ', '}
+                        <Anchor
+                          component={PrefetchLink}
+                          to={publicationEditPath(draft)}
+                          inherit
+                          c="inherit"
+                        >
+                          {draft.name}
+                        </Anchor>
+                      </span>
+                    ))}
+                  </>
+                ) : undefined
+              }
+              action={
+                firstDraft
+                  ? { label: t('teams.dashboard.todo.resume'), to: publicationEditPath(firstDraft) }
+                  : undefined
+              }
+            />
+          )}
 
-          {ridesWithoutRoute && (
+          {ridesWithoutRoute && hasRidesWithoutRoute && (
             <TodoTile
               icon={IconRouteOff}
               color="warning"
               count={ridesWithoutRoute.total}
               label={t('teams.dashboard.todo.withoutRoute', { count: ridesWithoutRoute.total })}
-              none={t('teams.dashboard.todo.withoutRouteNone')}
               detail={
                 withoutRoute.length > 0 ? (
                   <span suppressHydrationWarning>{withoutRoute.map(rideLabel).join(' · ')}</span>
@@ -121,13 +129,12 @@ export function TodoBand({ teamSlug, organizer }: TodoBandProps) {
             />
           )}
 
-          {ridesWithFullGroup && (
+          {ridesWithFullGroup && hasRidesWithFullGroup && (
             <TodoTile
               icon={IconUsersGroup}
               color="primary"
               count={ridesWithFullGroup.total}
               label={t('teams.dashboard.todo.fullGroup', { count: ridesWithFullGroup.total })}
-              none={t('teams.dashboard.todo.fullGroupNone')}
               detail={
                 firstFull && fullGroup
                   ? t('teams.dashboard.todo.fullGroupDetail', {
@@ -146,27 +153,31 @@ export function TodoBand({ teamSlug, organizer }: TodoBandProps) {
             />
           )}
 
-          <TodoTile
-            icon={IconFlag}
-            color="danger"
-            count={reports.openCount}
-            label={t('teams.dashboard.todo.reports', { count: reports.openCount })}
-            none={t('teams.dashboard.todo.reportsNone')}
-            detail={
-              reports.openCount > 0 && reports.latestTargetType ? (
-                <ReportSummary
-                  targetType={reports.latestTargetType}
-                  reason={reports.latestReason}
-                  excerpt={reports.latestExcerpt}
-                />
-              ) : undefined
-            }
-            action={
-              reports.openCount > 0
-                ? { label: t('teams.dashboard.todo.review'), to: paths.teamAdminReports(teamSlug) }
-                : undefined
-            }
-          />
+          {reports.openCount > 0 && (
+            <TodoTile
+              icon={IconFlag}
+              color="danger"
+              count={reports.openCount}
+              label={t('teams.dashboard.todo.reports', { count: reports.openCount })}
+              detail={
+                reports.openCount > 0 && reports.latestTargetType ? (
+                  <ReportSummary
+                    targetType={reports.latestTargetType}
+                    reason={reports.latestReason}
+                    excerpt={reports.latestExcerpt}
+                  />
+                ) : undefined
+              }
+              action={
+                reports.openCount > 0
+                  ? {
+                      label: t('teams.dashboard.todo.review'),
+                      to: paths.teamAdminReports(teamSlug),
+                    }
+                  : undefined
+              }
+            />
+          )}
         </SimpleGrid>
       </Stack>
     </section>
@@ -205,18 +216,16 @@ interface TodoTileProps {
   color: string
   count: number
   label: string
-  /** Shown when the count is zero. */
-  none: string
   detail?: ReactNode
   action?: { label: string; to: string }
 }
 
-function TodoTile({ icon: Icon, color, count, label, none, detail, action }: TodoTileProps) {
+function TodoTile({ icon: Icon, color, count, label, detail, action }: TodoTileProps) {
   return (
     <Paper withBorder radius="md" p="md">
       <Stack gap="xs" h="100%">
         <Group gap="sm" wrap="nowrap">
-          <ThemeIcon variant="light" color={count > 0 ? color : 'gray'} size="lg" radius="md">
+          <ThemeIcon variant="light" color={color} size="lg" radius="md">
             <Icon size={20} />
           </ThemeIcon>
           <Text fz={28} fw={700} lh={1}>
@@ -225,9 +234,9 @@ function TodoTile({ icon: Icon, color, count, label, none, detail, action }: Tod
         </Group>
         <Text fw={600}>{label}</Text>
         <Text size="sm" c="dimmed" lineClamp={3}>
-          {count > 0 ? detail : none}
+          {detail}
         </Text>
-        {count > 0 && action && (
+        {action && (
           <Button
             component={PrefetchLink}
             to={action.to}
