@@ -195,7 +195,8 @@ describe('RideDetailPage — a ride with one group is its group page (WEB-79)', 
     state.ride = ride({ groups: [group(), group({ id: 'g2', name: 'Cool' })] })
     state.weather = okWeather
     renderPage()
-    expect(screen.getAllByRole('link', { name: /Voir le groupe/ })).toHaveLength(2)
+    expect(screen.getByRole('link', { name: 'Rapide' })).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Cool' })).toBeTruthy()
     expect(screen.queryByTestId('group-stats')).toBeNull()
     expect(await screen.findByTestId('routes-map')).toBeTruthy()
   })

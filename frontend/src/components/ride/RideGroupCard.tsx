@@ -268,28 +268,17 @@ export function RideGroupCard({
         <GroupWeatherLine leg={weatherLeg} timezone={rideTimezone} />
       </Box>
 
-      {/* The group's page, then its route */}
-      <Group mt="sm" gap="md" wrap="wrap">
-        <Anchor
-          component={PrefetchLink}
-          to={paths.rideGroup(teamSlug, rideSlug, group.id)}
-          size="xs"
-          fw={500}
-        >
-          <Group gap={2} wrap="nowrap">
-            {t('rides.group.view')}
-            <IconChevronRight size={14} aria-hidden />
-          </Group>
-        </Anchor>
-        {effectiveRouteSlug && (
+      {/* The group's page is its name's link; its route's files and device menu stay here */}
+      {effectiveRouteSlug && (
+        <Box mt="sm">
           <RideGroupRouteActions
             teamSlug={teamSlug}
             routeSlug={effectiveRouteSlug}
             route={route}
             withViewLink={false}
           />
-        )}
-      </Group>
+        </Box>
+      )}
 
       {error && (
         <Alert color="red" variant="light" mt="sm" icon={<IconAlertTriangle size={16} />}>

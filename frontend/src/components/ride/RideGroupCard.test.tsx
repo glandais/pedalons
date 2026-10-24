@@ -57,11 +57,11 @@ function renderCard(weather?: WeatherLegDto, trackColor?: string) {
 describe('RideGroupCard (WEB-77)', () => {
   afterEach(cleanup)
 
-  it("links its name and « Voir le groupe » to the group's page, and keeps « Rejoindre »", () => {
+  it("links its name — and only its name — to the group's page, and keeps « Rejoindre »", () => {
     renderCard()
     const target = paths.rideGroup('np', 'sortie', 'g1')
     expect(screen.getByRole('link', { name: 'Rapide' }).getAttribute('href')).toBe(target)
-    expect(screen.getByRole('link', { name: 'Voir le groupe' }).getAttribute('href')).toBe(target)
+    expect(screen.queryByRole('link', { name: 'Voir le groupe' })).toBeNull()
     expect(screen.getByRole('button', { name: 'Rejoindre' })).toBeTruthy()
   })
 
