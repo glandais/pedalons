@@ -352,7 +352,6 @@
         "ORGANIZER": "Organisateur",
         "ADMIN": "Administrateur"
       },
-      "subscribeCalendar": "S'abonner au calendrier",
       "createRide": "Créer une sortie",
       "newPost": "Nouvelle publication",
       "loadError": "Tableau de bord indisponible",
@@ -362,7 +361,6 @@
       "viewTrip": "Voir le voyage",
       "todo": {
         "title": "À traiter",
-        "hint": "Visible des organisateurs et des administrateurs",
         "drafts": {
           "zero": "Brouillon",
           "one": "Brouillon",
@@ -401,7 +399,6 @@
           "ROUTE": "Parcours signalé",
           "MEMBER": "Membre signalé"
         },
-        "nothing": "Rien en attente",
         "more": {
           "zero": "",
           "one": "et {} autre",

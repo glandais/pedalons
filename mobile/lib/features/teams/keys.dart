@@ -69,7 +69,6 @@ class _TeamDashboardKey extends ValueKey<String> {
 /// ce qu'un rôle voit sans dépendre d'un libellé.
 class TeamDashboardKeys {
   final summary = const _TeamDashboardKey('summary');
-  final calendarButton = const _TeamDashboardKey('calendarButton');
   final createRideButton = const _TeamDashboardKey('createRideButton');
   final newPostButton = const _TeamDashboardKey('newPostButton');
   final loadError = const _TeamDashboardKey('loadError');

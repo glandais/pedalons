@@ -107,7 +107,7 @@ void main() {
 
       expect(find.byKey(keys.teamDashboard.summary), findsOneWidget);
       expect(find.text('MEMBRE'), findsOneWidget);
-      expect(find.byKey(keys.teamDashboard.calendarButton), findsOneWidget);
+      expect(find.text('S\'abonner au calendrier'), findsNothing);
 
       expect(find.byKey(keys.teamDashboard.myUpcoming), findsOneWidget);
       expect(find.byKey(keys.teamDashboard.upcomingRides), findsOneWidget);
@@ -257,6 +257,48 @@ void main() {
       expect(find.text('Examiner'), findsOneWidget);
     });
 
+    testWidgets('une catégorie sans attente n\'a pas de tuile', (
+      WidgetTester tester,
+    ) async {
+      final TeamDashboardDto d = _dashboard(role: 'ORGANIZER');
+      await renderBody(
+        tester,
+        d.copyWith(
+          organizer: d.organizer!.copyWith(
+            drafts: _list(const <PublicationDto>[]),
+            reports: const TeamDashboardReportsDto(openCount: 0),
+          ),
+        ),
+      );
+
+      expect(find.byKey(keys.teamDashboard.todo), findsOneWidget);
+      expect(find.byKey(keys.teamDashboard.todoDrafts), findsNothing);
+      expect(find.byKey(keys.teamDashboard.todoReports), findsNothing);
+      expect(find.byKey(keys.teamDashboard.todoWithoutRoute), findsOneWidget);
+      expect(find.byKey(keys.teamDashboard.todoFullGroup), findsOneWidget);
+    });
+
+    testWidgets('rien en attente nulle part : pas de « À traiter »', (
+      WidgetTester tester,
+    ) async {
+      final TeamDashboardDto d = _dashboard(role: 'ORGANIZER');
+      await renderBody(
+        tester,
+        d.copyWith(
+          organizer: d.organizer!.copyWith(
+            drafts: _list(const <PublicationDto>[]),
+            ridesWithoutRoute: _list(const <PublicationDto>[]),
+            ridesWithFullGroup: _list(const <PublicationDto>[]),
+            reports: const TeamDashboardReportsDto(openCount: 0),
+          ),
+        ),
+      );
+
+      expect(find.byKey(keys.teamDashboard.todo), findsNothing);
+      expect(find.text('À traiter'), findsNothing);
+      expect(find.byKey(keys.teamDashboard.createRideButton), findsOneWidget);
+    });
+
     testWidgets('sans module de sorties, ni tuiles de sorties ni modèles', (
       WidgetTester tester,
     ) async {
@@ -346,7 +388,6 @@ void main() {
       );
 
       expect(find.byKey(keys.teamDashboard.summary), findsOneWidget);
-      expect(find.byKey(keys.teamDashboard.calendarButton), findsNothing);
       expect(find.byKey(keys.teamDashboard.myUpcoming), findsNothing);
       expect(find.byKey(keys.teamDashboard.upcomingRides), findsOneWidget);
       expect(find.byKey(keys.teamDashboard.latestPosts), findsOneWidget);

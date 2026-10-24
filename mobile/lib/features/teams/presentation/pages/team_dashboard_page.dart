@@ -14,7 +14,6 @@ import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/api_error_handler.dart';
 import '../../../../keys.dart';
-import '../../../calendar/presentation/widgets/calendar_subscription_card.dart';
 import '../../providers/team_dashboard_provider.dart';
 import '../../../rides/presentation/ride_editor_location.dart';
 import '../team_web_paths.dart';
@@ -189,9 +188,8 @@ class TeamDashboardBody extends StatelessWidget {
   }
 }
 
-/// Le rôle, le nombre de membres, et les gestes de tête : s'abonner au
-/// calendrier pour tous, créer une sortie ou une publication pour qui
-/// organise.
+/// Le rôle, le nombre de membres, et les gestes de tête : créer une sortie
+/// ou une publication pour qui organise.
 class _Summary extends StatelessWidget {
   const _Summary({
     required this.team,
@@ -210,10 +208,6 @@ class _Summary extends StatelessWidget {
   Widget build(BuildContext context) {
     final PdlColors c = context.pdl;
     final String? role = this.role;
-    // L'abonnement au calendrier est celui d'un membre : un visiteur n'a ni
-    // calendrier d'équipe ni jeton (ledger `MOB-60`, comme au site).
-    final bool hasCalendar =
-        role != null && (team.enableRides || team.enableTrips);
     // Comme le site : une sortie se crée sur un parcours, il faut donc les
     // deux modules.
     final bool canCreateRide =
@@ -245,14 +239,12 @@ class _Summary extends StatelessWidget {
               ),
             ],
           ),
-          if (hasCalendar || canCreateRide || canPost) ...<Widget>[
+          if (canCreateRide || canPost) ...<Widget>[
             const SizedBox(height: PdlSpacing.chipGap),
             Wrap(
               spacing: PdlSpacing.chipGap,
               runSpacing: PdlSpacing.chipGap,
               children: <Widget>[
-                // Une seule action pleine par zone : « Créer une sortie »
-                // quand on organise, sinon l'abonnement au calendrier.
                 if (canCreateRide)
                   PdlButton(
                     key: keys.teamDashboard.createRideButton,
@@ -273,32 +265,10 @@ class _Summary extends StatelessWidget {
                       TeamWebPaths.postNew(team.slug),
                     ),
                   ),
-                if (hasCalendar)
-                  PdlButton(
-                    key: keys.teamDashboard.calendarButton,
-                    label: 'teams.dashboard.subscribeCalendar'.tr(),
-                    icon: PdlIcons.calendar,
-                    variant: canCreateRide
-                        ? PdlButtonVariant.outline
-                        : PdlButtonVariant.fill,
-                    size: PdlButtonSize.sm,
-                    onPressed: () => _subscribe(context),
-                  ),
               ],
             ),
           ],
         ],
-      ),
-    );
-  }
-
-  /// Le bloc d'abonnement du calendrier, dans une feuille : le flux de **cette**
-  /// équipe (`teamFeedUrlTemplate`), jeton masqué.
-  void _subscribe(BuildContext context) {
-    PdlSheet.show<void>(
-      context: context,
-      builder: (BuildContext sheetContext) => PdlSheet(
-        children: <Widget>[CalendarSubscriptionCard(teamSlug: team.slug)],
       ),
     );
   }

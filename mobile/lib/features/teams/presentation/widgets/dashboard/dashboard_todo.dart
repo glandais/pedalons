@@ -20,7 +20,10 @@ import 'dashboard_section.dart';
 /// Rendu pour un organisateur **et** un administrateur, c'est-à-dire dès que
 /// l'API envoie le bloc `organizer` : l'écran ne relit pas le rôle pour en
 /// décider. Les deux tuiles de sorties suivent l'activation des sorties (leur
-/// liste vient `null` sinon) ; brouillons et signalements sont toujours là.
+/// liste vient `null` sinon).
+///
+/// Une tuile n'apparaît que si quelque chose attend dans sa catégorie, et la
+/// section entière disparaît quand rien n'attend nulle part.
 class DashboardTodo extends StatelessWidget {
   const DashboardTodo({super.key, required this.teamSlug, required this.data});
 
@@ -29,9 +32,17 @@ class DashboardTodo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final PdlTypography t = context.pdlText;
     final PublicationListResponse? withoutRoute = data.ridesWithoutRoute;
     final PublicationListResponse? fullGroup = data.ridesWithFullGroup;
+    final List<Widget> tiles = <Widget>[
+      if (data.drafts.total > 0) _drafts(context),
+      if (withoutRoute != null && withoutRoute.total > 0)
+        _withoutRoute(context, withoutRoute),
+      if (fullGroup != null && fullGroup.total > 0)
+        _fullGroup(context, fullGroup),
+      if (data.reports.openCount > 0) _reports(context),
+    ];
+    if (tiles.isEmpty) return const SizedBox.shrink();
 
     return Padding(
       key: keys.teamDashboard.todo,
@@ -44,19 +55,8 @@ class DashboardTodo extends StatelessWidget {
             title: 'teams.dashboard.todo.title'.tr(),
             padding: EdgeInsets.zero,
           ),
-          Text(
-            'teams.dashboard.todo.hint'.tr(),
-            style: t.xs.copyWith(color: context.pdl.textDimmed),
-          ),
           const SizedBox(height: PdlSpacing.chipGap),
-          DashboardCardColumn(
-            children: <Widget>[
-              _drafts(context),
-              if (withoutRoute != null) _withoutRoute(context, withoutRoute),
-              if (fullGroup != null) _fullGroup(context, fullGroup),
-              _reports(context),
-            ],
-          ),
+          DashboardCardColumn(children: tiles),
         ],
       ),
     );
@@ -286,8 +286,7 @@ class _PickEntry {
 }
 
 /// Une tuile : le compte, ce qu'il compte, le premier cas, et le geste qui le
-/// traite. À zéro, la tuile reste — « Rien en attente » est une réponse — mais
-/// perd son geste.
+/// traite. Jamais à zéro : [DashboardTodo] ne rend que ce qui attend.
 class _TodoTile extends StatelessWidget {
   const _TodoTile({
     super.key,
@@ -314,12 +313,7 @@ class _TodoTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final PdlColors c = context.pdl;
     final PdlTypography t = context.pdlText;
-    final bool pending = count > 0;
-    final Color tint = !pending
-        ? c.textDimmed
-        : urgent
-        ? c.danger
-        : c.warning;
+    final Color tint = urgent ? c.danger : c.warning;
 
     return PdlCard(
       flat: true,
@@ -339,26 +333,22 @@ class _TodoTile extends StatelessWidget {
                   children: <Widget>[
                     Text(
                       '$count',
-                      style: t.statBigValue.copyWith(
-                        color: pending ? c.text : c.textDimmed,
-                      ),
+                      style: t.statBigValue.copyWith(color: c.text),
                     ),
                     const SizedBox(width: PdlSpacing.chipGap),
                     Expanded(child: Text(label, style: t.bodyStrong)),
                   ],
                 ),
-                // « Rien en attente » seulement quand rien ne l'est : un compte
-                // non nul dont le premier cas n'est pas décrit n'a pas de ligne.
-                if (!pending || detail != null) ...<Widget>[
+                if (detail != null) ...<Widget>[
                   const SizedBox(height: 2),
                   Text(
-                    pending ? detail! : 'teams.dashboard.todo.nothing'.tr(),
+                    detail!,
                     style: t.sub,
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
-                if (pending && onAction != null)
+                if (onAction != null)
                   Align(
                     alignment: AlignmentDirectional.centerStart,
                     child: PdlButton(

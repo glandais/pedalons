@@ -352,7 +352,6 @@
         "ORGANIZER": "Organiser",
         "ADMIN": "Administrator"
       },
-      "subscribeCalendar": "Subscribe to the calendar",
       "createRide": "Create a ride",
       "newPost": "New post",
       "loadError": "Dashboard unavailable",
@@ -362,7 +361,6 @@
       "viewTrip": "View trip",
       "todo": {
         "title": "To handle",
-        "hint": "Visible to organisers and administrators",
         "drafts": {
           "zero": "Drafts",
           "one": "Draft",
@@ -401,7 +399,6 @@
           "ROUTE": "Reported route",
           "MEMBER": "Reported member"
         },
-        "nothing": "Nothing pending",
         "more": {
           "zero": "",
           "one": "and {} more",
