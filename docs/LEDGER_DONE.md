@@ -1067,7 +1067,8 @@ couvert » ; les tests ne tournent qu'en local (`MOB-37`).
   `GroupWeatherSection.test.tsx`, `WeatherCheckpointMarkers.test.tsx`, `GroupRouteMap.test.tsx`,
   `RideGroupPage.test.tsx`, `RideGroupFullscreenMapPage.test.tsx`, `RouteFullscreenView.test.tsx`,
   `rideGroupMapRoute.test.ts`, `rideGroupData.test.ts`, et l'entrée `rideGroupMap` de
-  `e2e/routes-render.e2e.ts` (pas encore lancée). **À ne pas défaire** : `RouteWeather` reste
+  `e2e/routes-render.e2e.ts` (verte le 25 octobre 2026 : 12/12, six rôles en bureau et mobile, audit
+  du prefetch « covered », hydratation sans erreur). **À ne pas défaire** : `RouteWeather` reste
   utilisable non contrôlé (étapes, détail de sortie) ; une sélection venue du tableau n'ouvre jamais
   de bulle en Pente et ne bascule pas le mode ; une sortie à un seul groupe est redirigée vers son
   détail (`rideGroupDataRedirect`). La suite est `WEB-118`.

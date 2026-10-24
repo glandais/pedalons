@@ -311,8 +311,7 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
 - [ ] `WEB-118` **La météo sur la carte, palier 3 lot B (sortie solo, voyages) et recette des paliers
       1-3 (M)** — restent la sortie solo (carte du détail et route plein écran `rideMap`) et les
       voyages (carte et plein écran d'une étape, carte d'ensemble avec toutes les étapes), arbitrages
-      du plan §5 « Palier 3 ». À lancer sur la pile e2e : `pnpm e2e routes-render -g 'rideGroupMap /'`
-      (audit du prefetch et hydratation de la nouvelle page, six rôles). Recette navigateur : contraste
+      du plan §5 « Palier 3 ». Recette navigateur : contraste
       du gris travers sur fond sombre et satellite, crédit Open-Meteo et sa mise à jour au changement
       de mode, un vrai parcours à plusieurs traces, pastilles nombreuses, bulle non coupée par le
       profil, focus de la bulle (rendu après « Fermer », titre lu à l'ouverture, non pris quand une
