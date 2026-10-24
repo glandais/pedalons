@@ -19,8 +19,8 @@ Pedalons est une plateforme de gestion d'équipes cyclistes permettant de :
 - Publier des petites annonces au sein de votre équipe (objets à vendre, à louer ou recherchés), lorsque cette fonction est activée pour votre équipe. Pedalons ne fait qu'héberger l'annonce : il n'est partie à aucune vente ou location, ne traite aucun paiement et ne vérifie ni les annonces ni les objets
 - Vous abonner à vos sorties et voyages depuis une application de calendrier externe, via un lien personnel. Quiconque détient ce lien peut lire ces événements sans se connecter : ne le partagez pas, et régénérez-le s'il a circulé
 - Connecter des appareils et services GPS (Hammerhead Karoo, Garmin, Wahoo) et y envoyer vos itinéraires
-- Recevoir des notifications sur l'activité de vos équipes, dans l'application et, selon vos réglages, par e-mail ou en push. Les administrateurs d'une équipe peuvent aussi relayer ses annonces vers un service de messagerie externe, comme Slack ou Discord
-- Inviter des personnes dans votre équipe par e-mail, si vous en êtes administrateur. N'invitez que des personnes qui s'attendent à être contactées par votre équipe. Personne ne devient membre sans avoir accepté l'invitation
+- Recevoir des notifications sur l'activité de vos équipes, dans l'application et, selon vos réglages, par e-mail ou en push. Les personnes qui administrent une équipe peuvent aussi relayer ses annonces vers un service de messagerie externe, comme Slack ou Discord
+- Inviter des personnes dans votre équipe par e-mail, si vous y avez le rôle Administrateur. N'invitez que des personnes qui s'attendent à être contactées par votre équipe. Personne ne devient membre sans avoir accepté l'invitation
 
 Selon les réglages de votre équipe, les autres membres peuvent voir la liste des membres de l'équipe (noms et photos, et, si l'équipe ouvre son trombinoscope, rôles et dates d'arrivée).
 
@@ -42,11 +42,11 @@ Pedalons applique une **tolérance zéro** envers les contenus répréhensibles 
 - violent ou choquant ;
 - illicite, diffamatoire ou portant atteinte aux droits d'autrui.
 
-Il est également interdit de harceler, d'intimider ou de dénigrer d'autres utilisateurs, y compris par messages ou par signalements abusifs. Les sanctions sont décrites à la section 6.
+Il est également interdit de harceler, d'intimider ou de dénigrer d'autres personnes, y compris par messages ou par signalements abusifs. Les sanctions sont décrites à la section 6.
 
 Vous vous engagez en outre à :
 
-- Ne pas tenter d'accéder de manière non autorisée au service ou aux données d'autres utilisateurs
+- Ne pas tenter d'accéder de manière non autorisée au service ou aux données d'autres comptes
 - Ne pas utiliser le service à des fins commerciales non autorisées
 - Ne pas utiliser la prise de contact au sujet des petites annonces ni les invitations dans une équipe pour envoyer des messages non sollicités ou collecter les adresses e-mail d'autres personnes
 
@@ -59,9 +59,9 @@ Vous vous engagez en outre à :
 ## 6. Modération : signalement et blocage
 
 - **Signaler** : vous pouvez signaler tout contenu (sortie, voyage, parcours, publication, petite annonce, commentaire) ou un membre, avec un motif et un message facultatif. Le contenu que vous signalez disparaît aussitôt de vos listes.
-- **Traitement** : les signalements sont transmis aux organisateurs de l'équipe concernée et à l'équipe Pedalons, qui les traitent **dans un délai de 24 heures**. Un contenu contraire aux présentes conditions est supprimé, et son auteur peut être exclu de l'équipe ou de la plateforme. Un contenu signalé par au moins trois membres est masqué en attendant la décision.
-- **Confidentialité** : votre identité n'est connue que de l'équipe Pedalons. Ni les organisateurs de l'équipe ni l'auteur du contenu ne savent qui l'a signalé.
-- **Bloquer** : vous pouvez bloquer un autre utilisateur. Vous ne voyez plus ses commentaires, ses publications ni ses annonces, et vous ne recevez plus de notification pour ses commentaires. La personne bloquée n'en est pas informée. Vous pouvez la débloquer à tout moment depuis votre profil.
+- **Traitement** : les signalements sont transmis aux personnes qui organisent l'équipe concernée et à l'équipe Pedalons, qui les traitent **dans un délai de 24 heures**. Un contenu contraire aux présentes conditions est supprimé, et la personne qui l'a publié peut être exclue de l'équipe ou de la plateforme. Un contenu signalé par au moins trois membres est masqué en attendant la décision.
+- **Confidentialité** : votre identité n'est connue que de l'équipe Pedalons. Ni les personnes qui organisent l'équipe ni celle qui a publié le contenu ne savent qui l'a signalé.
+- **Bloquer** : vous pouvez bloquer une autre personne. Vous ne voyez plus ses commentaires, ses publications ni ses annonces, et vous ne recevez plus de notification pour ses commentaires. La personne bloquée n'en est pas informée. Vous pouvez la débloquer à tout moment depuis votre profil.
 - **Filtrage** : un filtre refuse, au moment de la publication, les textes contenant certains termes injurieux ou haineux.
 
 ## 7. Propriété intellectuelle
@@ -81,7 +81,7 @@ Le service est fourni « en l'état ». Nous nous efforçons d'assurer sa dispon
 ## 9. Résiliation
 
 - Vous pouvez supprimer votre compte à tout moment depuis votre profil, sur le site ou dans l'application. La suppression est immédiate et irréversible.
-- Si vous êtes le seul administrateur d'une équipe qui compte d'autres membres, vous devez d'abord nommer un autre membre administrateur. Une équipe dont vous êtes le seul membre est supprimée avec votre compte.
+- Si vous êtes la seule personne à administrer une équipe qui compte d'autres membres, vous devez d'abord confier le rôle Administrateur à un autre membre. Une équipe dont vous êtes l'unique membre est supprimée avec votre compte.
 - Le contenu que vous avez publié dans une équipe (sorties, itinéraires, posts et fichiers joints) appartient à l'équipe et reste en ligne, attribué à « Ancien membre ». Ce qui est effacé ou conservé est détaillé dans « Supprimer votre compte », à la section 7 de la Politique de confidentialité.
 - Nous nous réservons le droit de suspendre ou supprimer un compte en cas de violation des présentes conditions.
 

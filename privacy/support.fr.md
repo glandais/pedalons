@@ -8,7 +8,7 @@ Par e-mail, indiquez l'appareil utilisé, la version de l'application (**Profil*
 
 ### Comment rejoindre une équipe ?
 
-Une équipe se rejoint sur invitation d'un de ses administrateurs, ou depuis sa page si elle est ouverte à tous. Si vous ne trouvez pas votre club, demandez à ses responsables de vous inviter.
+Une équipe se rejoint sur invitation d'une personne qui l'administre, ou depuis sa page si elle est ouverte à tout le monde. Si vous ne trouvez pas votre club, demandez à ses responsables de vous inviter.
 
 ### Je ne reçois pas le code de connexion
 
@@ -16,9 +16,9 @@ Vérifiez vos courriers indésirables, et que l'adresse saisie est bien celle de
 
 ### Comment signaler un contenu ou bloquer un membre ?
 
-Touchez « ⋯ » sur le commentaire, la publication, l'annonce, la sortie ou le parcours, puis **Signaler**. Le signalement part aux organisateurs de l'équipe et à l'équipe Pédalons, et le contenu disparaît aussitôt de votre vue.
+Touchez « ⋯ » sur le commentaire, la publication, l'annonce, la sortie ou le parcours, puis **Signaler**. Le signalement part aux personnes qui organisent l'équipe et à l'équipe Pédalons, et le contenu disparaît aussitôt de votre vue.
 
-Pour ne plus voir ce que publie un membre, choisissez **Bloquer** dans le même menu ; il n'en est pas averti. Vous le débloquez depuis **Profil → Confidentialité → Utilisateurs bloqués**.
+Pour ne plus voir ce que publie un membre, choisissez **Bloquer** dans le même menu ; cette personne n'en est pas avertie. Vous pouvez la débloquer depuis **Profil → Confidentialité → Personnes bloquées**.
 
 Vous pouvez aussi nous écrire à l'adresse ci-dessus, en indiquant l'équipe et le contenu concernés.
 
