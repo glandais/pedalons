@@ -208,7 +208,8 @@ class TripSummaryCard extends ConsumerWidget {
   Widget _participants(BuildContext context) {
     final PdlColors c = context.pdl;
     final PdlTypography t = context.pdlText;
-    final String label = 'trips.participants'.tr(
+    final String label = 'trips.participants'.plural(
+      trip.participantCount,
       namedArgs: <String, String>{'count': '${trip.participantCount}'},
     );
 

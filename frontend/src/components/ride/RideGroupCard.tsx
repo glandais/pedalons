@@ -258,10 +258,10 @@ export function RideGroupCard({
                 {group.maxParticipants
                   ? t('rides.detail.groups.participants', {
                       current: group.countParticipants,
-                      max: group.maxParticipants,
+                      count: group.maxParticipants,
                     })
                   : t('rides.detail.groups.participantsNoMax', {
-                      current: group.countParticipants,
+                      count: group.countParticipants,
                     })}
               </Text>
             </Group>

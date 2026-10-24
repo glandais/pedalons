@@ -101,10 +101,10 @@ export function NextRideCard({ ride, headingId }: NextRideCardProps) {
     ? group.maxParticipants
       ? t('rides.detail.groups.participants', {
           current: group.countParticipants,
-          max: group.maxParticipants,
+          count: group.maxParticipants,
         })
-      : t('rides.detail.groups.participantsNoMax', { current: group.countParticipants })
-    : t('rides.detail.groups.participantsNoMax', { current: ride.participantCount })
+      : t('rides.detail.groups.participantsNoMax', { count: group.countParticipants })
+    : t('rides.detail.groups.participantsNoMax', { count: ride.participantCount })
 
   return (
     <Paper withBorder radius="md" style={{ overflow: 'hidden' }} h="100%">

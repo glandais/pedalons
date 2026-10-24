@@ -71,10 +71,12 @@ class RideGroupActionBar extends ConsumerWidget {
 
     final int? max = group.maxParticipants;
     final String count = max == null
-        ? 'rides.groupPage.participantsCountNoMax'.tr(
+        ? 'rides.groupPage.participantsCountNoMax'.plural(
+            group.countParticipants,
             namedArgs: <String, String>{'count': '${group.countParticipants}'},
           )
-        : 'rides.groupPage.participantsCount'.tr(
+        : 'rides.groupPage.participantsCount'.plural(
+            max,
             namedArgs: <String, String>{
               'count': '${group.countParticipants}',
               'max': '$max',

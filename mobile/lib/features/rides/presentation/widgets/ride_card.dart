@@ -28,7 +28,8 @@ class RideCard extends ConsumerWidget {
         ? ride.thumbnailDarkUrl
         : ride.thumbnailLightUrl;
 
-    final participantText = 'rides.participants'.tr(
+    final participantText = 'rides.participants'.plural(
+      ride.participantCount,
       namedArgs: {'count': ride.participantCount.toString()},
     );
     final subtitleText = showTeamName

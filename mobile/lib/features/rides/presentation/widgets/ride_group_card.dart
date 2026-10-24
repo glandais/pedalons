@@ -340,10 +340,12 @@ class RideGroupCard extends StatelessWidget {
   }
 
   String _countLabel(int? max) => max == null
-      ? 'rides.participants'.tr(
+      ? 'rides.participants'.plural(
+          group.countParticipants,
           namedArgs: <String, String>{'count': '${group.countParticipants}'},
         )
-      : 'rides.participantsOf'.tr(
+      : 'rides.participantsOf'.plural(
+          max,
           namedArgs: <String, String>{
             'count': '${group.countParticipants}',
             'max': '$max',

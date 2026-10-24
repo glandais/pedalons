@@ -47,7 +47,7 @@ export function GroupParticipantsSection({
           </Title>
           <Text size="sm" c="dimmed">
             {t('rides.detail.groups.participantsNoMax', {
-              current: group.countParticipants,
+              count: group.countParticipants,
             })}
           </Text>
         </Group>

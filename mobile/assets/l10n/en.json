@@ -584,7 +584,10 @@
     "title": "Rides",
     "upcoming": "Upcoming rides",
     "noUpcoming": "No upcoming rides",
-    "participants": "{count} participants",
+    "participants": {
+      "one": "{count} participant",
+      "other": "{count} participants"
+    },
     "groups": "Groups",
     "join": "Join",
     "leave": "Leave",
@@ -603,7 +606,10 @@
     "joining": "Joining...",
     "leaving": "Leaving...",
     "leaderIs": "Leader: {name}",
-    "participantsOf": "{count}/{max} participants",
+    "participantsOf": {
+      "one": "{count}/{max} participant",
+      "other": "{count}/{max} participants"
+    },
     "viewRoute": "View route",
     "otherGroupsLabel": "Other groups",
     "otherGroups": {
@@ -730,8 +736,14 @@
         "weather": "Weather",
         "participants": "Participants"
       },
-      "participantsCount": "{count}/{max} participants",
-      "participantsCountNoMax": "{count} participants",
+      "participantsCount": {
+        "one": "{count}/{max} participant",
+        "other": "{count}/{max} participants"
+      },
+      "participantsCountNoMax": {
+        "one": "{count} participant",
+        "other": "{count} participants"
+      },
       "placesLeft": {
         "zero": "No places left",
         "one": "{} place left",
@@ -1021,7 +1033,10 @@
   },
   "trips": {
     "title": "Trips",
-    "participants": "{count} participants",
+    "participants": {
+      "one": "{count} participant",
+      "other": "{count} participants"
+    },
     "stages": "Stages",
     "stages.empty": "No stages defined for this trip.",
     "join": "Join",

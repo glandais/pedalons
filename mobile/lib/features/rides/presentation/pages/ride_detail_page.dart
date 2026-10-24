@@ -493,7 +493,8 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
       ),
       cell(
         'participants.title'.tr(),
-        'rides.participants'.tr(
+        'rides.participants'.plural(
+          ride.participantCount,
           namedArgs: <String, String>{'count': '${ride.participantCount}'},
         ),
         // Un `PdlButton(text)` et non un `Text` tappable : il porte la cible

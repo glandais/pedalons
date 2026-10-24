@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pedalons/api/generated/export.dart';
@@ -10,6 +11,7 @@ import 'package:pedalons/features/rides/domain/group_start.dart';
 import 'package:pedalons/features/rides/domain/ride_group_action.dart';
 import 'package:pedalons/features/rides/presentation/widgets/ride_group_card.dart';
 
+import '../../support/localization.dart';
 import 'ride_fixtures.dart';
 
 /// S12-2 — les six états du bouton d'une carte de groupe.
@@ -25,10 +27,19 @@ import 'ride_fixtures.dart';
 /// qui identifie un libellé sans faire dépendre l'assertion d'un chargement
 /// d'assets ni d'une traduction qui peut légitimement changer.
 void main() {
-  const String joinLabel = 'rides.groupJoin';
-  const String leaveLabel = 'rides.groupLeave';
-  const String fullLabel = 'rides.groupFull';
-  const String joiningLabel = 'rides.joining';
+  // Le compteur « 3/16 participants » passe par `.plural()`, qui exige une
+  // locale chargée.
+  late final String joinLabel;
+  late final String leaveLabel;
+  late final String fullLabel;
+  late final String joiningLabel;
+  setUpAll(() async {
+    await loadTestTranslations();
+    joinLabel = 'rides.groupJoin'.tr();
+    leaveLabel = 'rides.groupLeave'.tr();
+    fullLabel = 'rides.groupFull'.tr();
+    joiningLabel = 'rides.joining'.tr();
+  });
 
   Future<void> pump(
     WidgetTester tester, {
@@ -273,7 +284,7 @@ void main() {
       );
       expect(find.text(leaveLabel), findsOneWidget);
       // Le badge de la charte est en capitales.
-      expect(find.text('RIDES.REGISTERED'), findsOneWidget);
+      expect(find.text('rides.registered'.tr().toUpperCase()), findsOneWidget);
     });
 
     testWidgets('« Complet » n\'est pas actionnable — $mode', (
@@ -319,7 +330,7 @@ void main() {
     WidgetTester tester,
   ) async {
     await pump(tester, g: fixtureGroup(), action: RideGroupAction.join);
-    expect(find.text('rides.leaderIs'), findsNothing);
+    expect(find.textContaining('Meneur'), findsNothing);
   });
 
   testWidgets('un meneur désigné est rendu avec son nom', (
@@ -332,7 +343,7 @@ void main() {
       ),
       action: RideGroupAction.join,
     );
-    expect(find.text('rides.leaderIs'), findsOneWidget);
+    expect(find.textContaining('Antoine Yvon'), findsOneWidget);
   });
 
   // ── La ligne de statistiques ────────────────────────────────────────────

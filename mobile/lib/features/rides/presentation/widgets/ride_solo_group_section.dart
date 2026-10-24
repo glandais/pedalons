@@ -179,7 +179,8 @@ class _RideSoloGroupSectionState extends ConsumerState<RideSoloGroupSection>
         ],
         total: group.countParticipants,
         onTap: () => ParticipantsSheet.open(context, ride, group),
-        semanticLabel: 'rides.participants'.tr(
+        semanticLabel: 'rides.participants'.plural(
+          group.countParticipants,
           namedArgs: <String, String>{'count': '${group.countParticipants}'},
         ),
       ),

@@ -51,7 +51,7 @@ export function ParticipantListModal({
     <Modal opened={isOpen} onClose={handleClose} title={groupName} size="xl">
       <Stack>
         <Text size="sm" fw={600} c="primary">
-          {t('rides.detail.groups.participantsNoMax', { current: count })}
+          {t('rides.detail.groups.participantsNoMax', { count })}
         </Text>
         <ParticipantList
           source={source}

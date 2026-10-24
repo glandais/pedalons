@@ -382,7 +382,8 @@ class _RideBody extends ConsumerWidget {
         if (mention != null)
           PdlStat(value: mention, icon: PdlIcons.otherTimezone),
         PdlStat(
-          value: 'rides.participants'.tr(
+          value: 'rides.participants'.plural(
+            ride.participantCount,
             namedArgs: <String, String>{'count': '${ride.participantCount}'},
           ),
           icon: PdlIcons.people,

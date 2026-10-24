@@ -584,7 +584,10 @@
     "title": "Sorties",
     "upcoming": "Prochaines sorties",
     "noUpcoming": "Aucune sortie à venir",
-    "participants": "{count} participants",
+    "participants": {
+      "one": "{count} participant",
+      "other": "{count} participants"
+    },
     "groups": "Groupes",
     "join": "Participer",
     "leave": "Se désinscrire",
@@ -603,7 +606,10 @@
     "joining": "Adhésion...",
     "leaving": "Désinscription...",
     "leaderIs": "Meneur : {name}",
-    "participantsOf": "{count}/{max} participants",
+    "participantsOf": {
+      "one": "{count}/{max} participant",
+      "other": "{count}/{max} participants"
+    },
     "viewRoute": "Voir le parcours",
     "otherGroupsLabel": "Autres groupes",
     "otherGroups": {
@@ -730,8 +736,14 @@
         "weather": "Météo",
         "participants": "Participants"
       },
-      "participantsCount": "{count}/{max} participants",
-      "participantsCountNoMax": "{count} participants",
+      "participantsCount": {
+        "one": "{count}/{max} participant",
+        "other": "{count}/{max} participants"
+      },
+      "participantsCountNoMax": {
+        "one": "{count} participant",
+        "other": "{count} participants"
+      },
       "placesLeft": {
         "zero": "Plus aucune place",
         "one": "{} place restante",
@@ -1021,7 +1033,10 @@
   },
   "trips": {
     "title": "Voyages",
-    "participants": "{count} participants",
+    "participants": {
+      "one": "{count} participant",
+      "other": "{count} participants"
+    },
     "stages": "Étapes",
     "stages.empty": "Aucune étape définie pour ce voyage.",
     "join": "Rejoindre",

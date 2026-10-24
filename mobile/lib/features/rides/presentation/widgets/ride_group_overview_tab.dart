@@ -192,7 +192,8 @@ class _RideGroupOverviewTabState extends ConsumerState<RideGroupOverviewTab>
               ],
               total: group.countParticipants,
               onTap: () => widget.onOpenTab(RideGroupTab.participants),
-              semanticLabel: 'rides.participants'.tr(
+              semanticLabel: 'rides.participants'.plural(
+                group.countParticipants,
                 namedArgs: <String, String>{
                   'count': '${group.countParticipants}',
                 },

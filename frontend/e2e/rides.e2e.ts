@@ -184,7 +184,7 @@ test.describe('registration', () => {
 
     const fullCard = groupCard(page, full)
     await expect(fullCard.getByText('Complet', { exact: true })).toBeVisible()
-    await expect(fullCard.getByText('1/1 participants')).toBeVisible()
+    await expect(fullCard.getByText('1/1 participant')).toBeVisible()
     await expect(fullCard.getByRole('button', { name: 'Rejoindre' })).toHaveCount(0)
     // The other group is still open — which also proves the page offers joining at all.
     await expect(groupCard(page, open).getByRole('button', { name: 'Rejoindre' })).toBeEnabled()
@@ -210,7 +210,7 @@ test.describe('registration', () => {
     const card = groupCard(page, full)
     await expect(card, 'precondition: the group card is rendered').toBeVisible()
     await expect(
-      card.getByText('1/1 participants'),
+      card.getByText('1/1 participant'),
       'precondition: the only seat is taken'
     ).toBeVisible()
     await expect(
@@ -256,7 +256,7 @@ test.describe('registration', () => {
     // ...the optimistic registration is undone, and the refetched group says it is full.
     await expect(card.getByText('Inscrit', { exact: true })).toHaveCount(0)
     await expect(card.getByText('Complet', { exact: true })).toBeVisible()
-    await expect(card.getByText('1/1 participants')).toBeVisible()
+    await expect(card.getByText('1/1 participant')).toBeVisible()
   })
 })
 

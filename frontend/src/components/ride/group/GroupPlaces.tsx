@@ -8,7 +8,7 @@ export function GroupPlaces({ group }: { group: RideGroupDto }) {
   if (!group.maxParticipants) {
     return (
       <Text size="sm" c="dimmed">
-        {t('rides.detail.groups.participantsNoMax', { current: group.countParticipants })}
+        {t('rides.detail.groups.participantsNoMax', { count: group.countParticipants })}
       </Text>
     )
   }
@@ -18,7 +18,7 @@ export function GroupPlaces({ group }: { group: RideGroupDto }) {
     <Stack gap={4} data-testid="group-places">
       <Group justify="space-between" gap="xs">
         <Text size="sm" fw={500}>
-          {t('rides.detail.groups.participants', { current: group.countParticipants, max })}
+          {t('rides.detail.groups.participants', { current: group.countParticipants, count: max })}
         </Text>
         <Text size="sm" c="dimmed">
           {t('rides.group.placesLeft', { count: left })}
@@ -29,7 +29,7 @@ export function GroupPlaces({ group }: { group: RideGroupDto }) {
         color={left === 0 ? 'gray' : 'primary'}
         aria-label={t('rides.detail.groups.participants', {
           current: group.countParticipants,
-          max,
+          count: max,
         })}
       />
     </Stack>

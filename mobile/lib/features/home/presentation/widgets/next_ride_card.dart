@@ -316,7 +316,8 @@ class NextRideCard extends ConsumerWidget {
           Expanded(
             child: PdlProgressBar(
               value: g.countParticipants / g.maxParticipants!,
-              semanticLabel: 'rides.participantsOf'.tr(
+              semanticLabel: 'rides.participantsOf'.plural(
+                g.maxParticipants!,
                 namedArgs: <String, String>{
                   'count': '${g.countParticipants}',
                   'max': '${g.maxParticipants}',
