@@ -5,6 +5,7 @@ import type { ControlPosition } from 'react-map-gl/maplibre'
 import type { IControl } from 'maplibre-gl'
 import { Tooltip } from '@mantine/core'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
+import { useFullscreenElement } from './useFullscreenElement'
 
 /**
  * A MapLibre control whose element React renders into. Lets a button join the native control
@@ -70,8 +71,9 @@ export const MapControlButton = forwardRef<
   { label, icon, onClick, to, active = false, disabled = false, ...rest },
   ref
 ) {
+  const fullscreenElement = useFullscreenElement()
   return (
-    <Tooltip label={label} position="right" withArrow>
+    <Tooltip label={label} position="right" withArrow portalProps={{ target: fullscreenElement }}>
       {to ? (
         <PrefetchLink
           ref={ref as React.Ref<HTMLAnchorElement>}

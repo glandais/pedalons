@@ -5,6 +5,7 @@ import { ActionIcon, Box, Drawer, Group, Popover, Text } from '@mantine/core'
 import { useMediaMatch } from '@/hooks/useResponsive'
 import { MapControlButton, MapControlGroup } from './MapControl'
 import { markPanelDismissed, useMapPanel } from './mapPanelState'
+import { useFullscreenElement } from './useFullscreenElement'
 
 /** Above the elevation profile overlaid on compact maps (zIndex 1000 in RouteMapView). */
 const PANEL_Z_INDEX = 1001
@@ -45,6 +46,11 @@ export function MapPanel({
   const { t } = useTranslation()
   const { opened, toggle, close, setOpened } = useMapPanel(id)
   const isCoarsePointer = useMediaMatch('(pointer: coarse)')
+  // In browser fullscreen, a portal into <body> is never on screen: render into the map instead.
+  // Mantine's Portal reads its target only when it mounts, hence the key remounting it on a switch
+  // while the panel is open.
+  const fullscreenElement = useFullscreenElement()
+  const portalKey = fullscreenElement ? 'fullscreen' : 'page'
 
   const fromBar = trigger === 'bar'
   const isPopover = !isCoarsePointer && !fromBar
@@ -109,11 +115,13 @@ export function MapPanel({
           </MapControlGroup>
         )}
         <Drawer
+          key={portalKey}
           opened={opened}
           onClose={close}
           position="bottom"
           size="auto"
           zIndex={PANEL_Z_INDEX}
+          portalProps={{ target: fullscreenElement }}
           title={title}
           closeButtonProps={{ 'aria-label': t('actions.cancelAction') }}
         >
@@ -139,6 +147,7 @@ export function MapPanel({
         radius="md"
         width={width}
         withinPortal
+        portalProps={{ target: fullscreenElement }}
         closeOnClickOutside
         closeOnEscape
         trapFocus={false}
@@ -147,7 +156,7 @@ export function MapPanel({
         <Popover.Target>
           <MapControlButton label={label} icon={icon} onClick={toggle} active={opened} />
         </Popover.Target>
-        <Popover.Dropdown p="sm">
+        <Popover.Dropdown key={portalKey} p="sm">
           {header}
           <Box style={{ maxHeight: 'min(70dvh, 480px)', overflowY: 'auto' }}>{content}</Box>
         </Popover.Dropdown>
