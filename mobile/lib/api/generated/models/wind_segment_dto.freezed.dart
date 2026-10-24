@@ -16,8 +16,8 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$WindSegmentDto {
 
-/// Start of the stretch, metres from the start of the leg
- double get fromDistance;/// End of the stretch, metres from the start of the leg
+/// Start of the stretch, equal to its checkpoint's distance: metres from the start of the route, its tracks laid end to end in the order of their ids, without counting the gap between the end of one track and the start of the next (unlike the 4th coordinate of a track geometry, which restarts at 0 on each track).
+ double get fromDistance;/// End of the stretch, equal to the next checkpoint's distance: metres from the start of the route, its tracks laid end to end in the order of their ids, without counting the gap between the end of one track and the start of the next (unlike the 4th coordinate of a track geometry, which restarts at 0 on each track).
  double get toDistance;/// HEAD when the head component exceeds half the wind speed, TAIL below minus half, CROSS otherwise. Always shown with its label and an arrow, not by colour alone.
  String get relativeWind;/// Mean head component, km/h, signed: positive against the rider
  double get headwind;
@@ -225,9 +225,9 @@ class _WindSegmentDto implements WindSegmentDto {
   const _WindSegmentDto({required this.fromDistance, required this.toDistance, required this.relativeWind, required this.headwind});
   factory _WindSegmentDto.fromJson(Map<String, dynamic> json) => _$WindSegmentDtoFromJson(json);
 
-/// Start of the stretch, metres from the start of the leg
+/// Start of the stretch, equal to its checkpoint's distance: metres from the start of the route, its tracks laid end to end in the order of their ids, without counting the gap between the end of one track and the start of the next (unlike the 4th coordinate of a track geometry, which restarts at 0 on each track).
 @override final  double fromDistance;
-/// End of the stretch, metres from the start of the leg
+/// End of the stretch, equal to the next checkpoint's distance: metres from the start of the route, its tracks laid end to end in the order of their ids, without counting the gap between the end of one track and the start of the next (unlike the 4th coordinate of a track geometry, which restarts at 0 on each track).
 @override final  double toDistance;
 /// HEAD when the head component exceeds half the wind speed, TAIL below minus half, CROSS otherwise. Always shown with its label and an arrow, not by colour alone.
 @override final  String relativeWind;

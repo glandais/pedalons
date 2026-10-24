@@ -34,6 +34,13 @@ interface RouteMapViewProps {
    * (WEB-100 C1b), the surface; without it, the grade whatever is asked.
    */
   colorBy?: PlannerColorBy
+  /**
+   * The line's colour from the caller (the wind of a group's leg, WEB-115), ahead of the surface;
+   * the profile keeps `colorBy`. Same contract as `RouteTrackMap`'s — keep its identity stable.
+   */
+  lineColorAt?: (trackIndex: number, pointIndex: number) => string | undefined
+  /** The credit that colouring owes, for the map's attribution control (HTML). */
+  lineAttribution?: string
   /** The waypoint picked on the map, the profile or the page's list (internal state when omitted). */
   waypointSelection?: WaypointSelection | null
   onWaypointSelectionChange?: (selection: WaypointSelection | null) => void
@@ -43,6 +50,8 @@ export function RouteMapView({
   route,
   fullscreenPath,
   colorBy = 'grade',
+  lineColorAt: externalLineColorAt,
+  lineAttribution,
   waypointSelection,
   onWaypointSelectionChange,
 }: RouteMapViewProps) {
@@ -85,7 +94,8 @@ export function RouteMapView({
           hoveredPointIndex={hoveredPointIndex}
           onHoverPoint={setHoveredPointIndex}
           fitPadding={EMBEDDED_FIT_PADDING}
-          lineColorAt={lineColorAt}
+          lineColorAt={externalLineColorAt ?? lineColorAt}
+          lineAttribution={lineAttribution}
           waypointSelection={selection}
           onWaypointSelect={setSelection}
           // Fullscreen action, in the control column with the zoom and basemap buttons

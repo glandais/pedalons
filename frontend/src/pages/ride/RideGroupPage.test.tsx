@@ -3,9 +3,15 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { MantineProvider } from '@mantine/core'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import type { RideDto, RideGroupDto, RideWeatherDto, TeamDetailDto } from '@/api/dto'
-import { Status } from '@/api/dto'
-import { okWeather, plain } from '@/test/weatherFixtures'
+import type {
+  RideDto,
+  RideGroupDto,
+  RideWeatherDto,
+  RouteDetailDto,
+  TeamDetailDto,
+} from '@/api/dto'
+import { Status, WeatherStatus } from '@/api/dto'
+import { okWeather, plain, weatherLeg } from '@/test/weatherFixtures'
 import { pathVariants, paths } from '@/config/paths'
 
 vi.mock('react-i18next', async (importOriginal) => {
@@ -20,6 +26,7 @@ const state = vi.hoisted(() => ({
   team: undefined as unknown,
   ride: undefined as unknown,
   weather: undefined as unknown,
+  routes: new Map<string, unknown>(),
   isAuthenticated: true,
   join: (() => {}) as (groupId: string) => void,
   leave: (() => {}) as (groupId: string) => void,
@@ -40,7 +47,7 @@ vi.mock('./rideGroupData', async (importOriginal) => ({
         refetch: () => {},
       },
       routes: { data: undefined },
-      routesBySlug: new Map(),
+      routesBySlug: state.routes,
       group: ride?.groups.find((g) => g.id === groupId),
       leg: weather?.legs.find((l) => l.groupId === groupId),
     }
@@ -62,6 +69,12 @@ vi.mock('@/components/ride/ParticipantList', () => ({
     <div data-testid="participant-list">
       {props.source.groupId} {props.searchPlaceholder}
     </div>
+  ),
+}))
+// The map is lazy and pulls map vendors: a stand-in saying whether the wind colours the line.
+vi.mock('@/components/route/RouteMapView', () => ({
+  RouteMapView: ({ lineColorAt }: { lineColorAt?: unknown }) => (
+    <div data-testid="map">{lineColorAt ? 'wind' : 'plain'}</div>
   ),
 }))
 vi.mock('@/components/ride/RideGroupRouteActions', () => ({
@@ -142,6 +155,7 @@ describe('RideGroupPage (WEB-77)', () => {
     state.team = member
     state.ride = ride()
     state.weather = okWeather
+    state.routes = new Map()
     state.isAuthenticated = true
     state.join = vi.fn()
     state.leave = vi.fn()
@@ -269,6 +283,72 @@ describe('RideGroupPage (WEB-77)', () => {
     state.ride = ride({ finished: true })
     const { container: finished } = renderPage()
     expect(finished.querySelector('#meteo section')).toBeNull()
+  })
+
+  describe('the wind on the map (WEB-115)', () => {
+    const boucle = {
+      waypoints: [],
+      tracks: [
+        {
+          line: {
+            type: 'LineString',
+            coordinates: Array.from({ length: 6 }, (_, i) => [5, 45 + i * 0.09, 300, i * 10_000]),
+          },
+          climbs: [],
+        },
+      ],
+    } as unknown as RouteDetailDto
+
+    const weatherWith = (status: WeatherStatus): RideWeatherDto => ({
+      ...okWeather,
+      status,
+      legs: [weatherLeg('g1', { status }), weatherLeg('g2')],
+    })
+
+    /** The map is lazy: under a loaded full run its stand-in can take more than the default second. */
+    const findMap = () => screen.findByTestId('map', {}, { timeout: 5_000 })
+
+    beforeEach(() => {
+      state.routes = new Map([['boucle', boucle]])
+    })
+
+    it('offers « Météo » beside « Pente » when the group has a forecast', async () => {
+      renderPage()
+      expect((await findMap()).textContent).toBe('plain')
+      fireEvent.click(screen.getByLabelText('Météo'))
+      expect(screen.getByTestId('map').textContent).toBe('wind')
+      expect(screen.getByTestId('wind-map-legend')).toBeTruthy()
+    })
+
+    it('offers it on an old forecast, flagged as such', async () => {
+      state.weather = weatherWith(WeatherStatus.STALE)
+      renderPage()
+      await findMap()
+      fireEvent.click(screen.getByLabelText('Météo'))
+      expect(plain(screen.getByTestId('wind-map-legend').textContent)).toContain(
+        'Prévision ancienne'
+      )
+    })
+
+    it('offers nothing before the forecast opens', async () => {
+      state.weather = weatherWith(WeatherStatus.NOT_YET_AVAILABLE)
+      renderPage()
+      await findMap()
+      expect(screen.queryByLabelText('Météo')).toBeNull()
+      expect(screen.queryByTestId('route-color-by')).toBeNull()
+    })
+
+    it('offers nothing on a finished or cancelled ride', async () => {
+      state.ride = ride({ finished: true })
+      renderPage()
+      await findMap()
+      expect(screen.queryByLabelText('Météo')).toBeNull()
+      cleanup()
+      state.ride = ride({ status: Status.CANCELLED })
+      renderPage()
+      await findMap()
+      expect(screen.queryByLabelText('Météo')).toBeNull()
+    })
   })
 
   it('switches group by going to its page', () => {

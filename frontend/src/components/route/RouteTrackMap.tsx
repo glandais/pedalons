@@ -27,6 +27,8 @@ import { useResolvedColorScheme } from '@/hooks/useResolvedColorScheme'
 import type { MappableRoute } from './RouteMapView'
 // maplibre-gl CSS is provided by maplibre-theme in index.css
 
+const EMPTY_FEATURES: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] }
+
 interface RouteTrackMapProps {
   route: MappableRoute
   mapRef: React.RefObject<MapRef | null>
@@ -37,9 +39,15 @@ interface RouteTrackMapProps {
   onMoveStart?: () => void
   /**
    * The colour of the segment starting at a point (track index, point index in the track), instead
-   * of the climb's grade (surface of a saved route, WEB-100 C1b). Keep its identity stable.
+   * of the climb's grade (surface of a saved route, WEB-100 C1b; wind of a group's leg, WEB-115).
+   * Undefined for a point keeps the grade there. Keep its identity stable.
    */
-  lineColorAt?: (trackIndex: number, pointIndex: number) => string
+  lineColorAt?: (trackIndex: number, pointIndex: number) => string | undefined
+  /**
+   * A credit the line's data owes (HTML, as MapLibre's attribution control takes it): the forecast
+   * of the wind colouring. Shown by the map's attribution control while set.
+   */
+  lineAttribution?: string
   /** Gets the MapLibre event, whose `eventData` tells a programmatic move from the user's. */
   onMoveEnd?: (event: ViewStateChangeEvent) => void
   /**
@@ -66,6 +74,7 @@ export function RouteTrackMap({
   onHoverPoint,
   fitPadding = 50,
   lineColorAt,
+  lineAttribution,
   onMoveStart,
   onMoveEnd,
   controls,
@@ -229,6 +238,20 @@ export function RouteTrackMap({
                 }}
               />
             </Source>
+            {/* The credit of what colours the line. On a source of its own, remounted when it
+            changes: a GeoJSON <Source> only ever updates its data. Its empty layer marks the
+            source as used, which is what the attribution control reads. */}
+            {lineAttribution && (
+              <Source
+                key={lineAttribution}
+                id="route-line-credit"
+                type="geojson"
+                data={EMPTY_FEATURES}
+                attribution={lineAttribution}
+              >
+                <Layer id="route-line-credit" type="line" paint={{ 'line-opacity': 0 }} />
+              </Source>
+            )}
             <Source id="route-direction" type="geojson" data={directionLines}>
               <Layer id="route-direction-arrows" type="symbol" layout={routeArrowLayout} />
             </Source>

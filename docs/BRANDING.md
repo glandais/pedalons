@@ -313,7 +313,14 @@ Ce que la table ne dit pas d'elle-même :
 - **Le vent relatif** (`RelativeWind`, météo des sorties) : `TAIL` teal, `CROSS` gray, `HEAD`
   orange, en doux. La couleur n'y porte **jamais seule** : barre d'exposition et points de passage
   la doublent toujours du libellé (« Vent de face », « de travers », « dans le dos ») et d'une
-  flèche orientée. Les **conditions météo** (soleil, pluie…) n'ont pas de couleur : leur icône prend
+  flèche orientée. **Sur la carte** d'un groupe (mode « Météo », `WEB-115`, `MOB-91`), le vent
+  colore le tracé en trait, pas en badge : l'aplat de sa famille, nuance 6 **dans les deux thèmes**
+  comme `TrackSurface` (le doux est trop pâle sur une tuile, les aplats sombres s'éteignent sur le
+  fond de carte sombre) — `relativeWindStrokeColors` au web, `RelativeWindStroke` au mobile. Un
+  tronçon sans vent connu garde la couleur par défaut du tracé, **jamais le gris**, qui dirait
+  « de travers ». La carte a toujours sa légende en mots (« Dos 32 km · Travers 18 km · Face
+  40 km »), et le mode est exclusif de la pente et du revêtement : le gris du travers s'y confondrait
+  avec l'asphalte. Les **conditions météo** (soleil, pluie…) n'ont pas de couleur : leur icône prend
   celle du texte. Leur en donner une passerait par le YAML, jamais par une table dans un client.
 - **Les états dérivés côté client** — « J'y vais » (indigo), « Terminée » (gris foncé), « Supprimé »
   (rouge **en aplat**, pour se distinguer de `CANCELLED`) — ne sont portés par aucune énumération :

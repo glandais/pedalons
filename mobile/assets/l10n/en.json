@@ -731,7 +731,10 @@
       },
       "checkpointNoWeather": "No forecast here yet",
       "prevailingWind": "Prevailing wind: {wind}",
-      "attribution": "Forecast: {name}"
+      "attribution": "Forecast: {name}",
+      "mapMode": "Weather",
+      "mapModeSwitch": "Wind on the route",
+      "mapDefaultSpeed": "Times estimated at {speed}"
     },
     "groupPage": {
       "title": "Group {name}",

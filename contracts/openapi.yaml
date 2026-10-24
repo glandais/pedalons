@@ -2462,7 +2462,12 @@ components:
             items:
               type: number
               format: double
-          description: "Array of [lon, lat] coordinates"
+          description: "Array of [lon, lat] coordinates, followed by the elevation\
+            \ in metres when the line carries one ([lon, lat, ele]). A route track's\
+            \ geometry (TrackDto.line) adds a 4th component, [lon, lat, ele, dist]:\
+            \ the distance in metres from the start of THAT track, monotonic, restarting\
+            \ at 0 on each track of the route; it is not the distance along the whole\
+            \ route."
     GeoJsonPoint:
       description: "Location coordinates [longitude, latitude]"
       type: object
@@ -8127,7 +8132,11 @@ components:
         distance:
           type: number
           format: double
-          description: "Distance from the start of the leg's route, metres"
+          description: "Distance from the start of the leg's route, metres: its tracks\
+            \ laid end to end in the order of their ids, without counting the gap\
+            \ between the end of one track and the start of the next. To place the\
+            \ point on the geometry, add up the lengths of the previous tracks: the\
+            \ 4th coordinate of a track geometry restarts at 0 on each track."
         elevation:
           type: number
           format: double
@@ -8447,11 +8456,19 @@ components:
         fromDistance:
           type: number
           format: double
-          description: "Start of the stretch, metres from the start of the leg"
+          description: "Start of the stretch, equal to its checkpoint's distance:\
+            \ metres from the start of the route, its tracks laid end to end in the\
+            \ order of their ids, without counting the gap between the end of one\
+            \ track and the start of the next (unlike the 4th coordinate of a track\
+            \ geometry, which restarts at 0 on each track)."
         toDistance:
           type: number
           format: double
-          description: "End of the stretch, metres from the start of the leg"
+          description: "End of the stretch, equal to the next checkpoint's distance:\
+            \ metres from the start of the route, its tracks laid end to end in the\
+            \ order of their ids, without counting the gap between the end of one\
+            \ track and the start of the next (unlike the 4th coordinate of a track\
+            \ geometry, which restarts at 0 on each track)."
         relativeWind:
           description: "HEAD when the head component exceeds half the wind speed,\
             \ TAIL below minus half, CROSS otherwise. Always shown with its label\
@@ -20304,7 +20321,7 @@ paths:
                 $ref: "#/components/schemas/VersionDto"
 info:
   title: Pedalons API
-  version: 11.16.0
+  version: 11.16.1
   description: API for Pedalons Cycling Team Management Platform
 servers:
 - url: http://localhost:8080

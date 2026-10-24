@@ -17,7 +17,7 @@ T _$identity<T>(T value) => value;
 mixin _$WeatherCheckpointDto {
 
 @JsonKey(name: 'index') int get indexField;/// Where the point stands on the leg
- String get kind;/// Distance from the start of the leg's route, metres
+ String get kind;/// Distance from the start of the leg's route, metres: its tracks laid end to end in the order of their ids, without counting the gap between the end of one track and the start of the next. To place the point on the geometry, add up the lengths of the previous tracks: the 4th coordinate of a track geometry restarts at 0 on each track.
  double get distance;/// Estimated passage, from the leg's start time and speed
  String get time;/// Elevation of the point, metres, from the track
  double? get elevation;/// The forecast at the passage. Absent when nothing is in cache for that place yet.
@@ -249,7 +249,7 @@ class _WeatherCheckpointDto implements WeatherCheckpointDto {
 @override@JsonKey(name: 'index') final  int indexField;
 /// Where the point stands on the leg
 @override final  String kind;
-/// Distance from the start of the leg's route, metres
+/// Distance from the start of the leg's route, metres: its tracks laid end to end in the order of their ids, without counting the gap between the end of one track and the start of the next. To place the point on the geometry, add up the lengths of the previous tracks: the 4th coordinate of a track geometry restarts at 0 on each track.
 @override final  double distance;
 /// Estimated passage, from the leg's start time and speed
 @override final  String time;

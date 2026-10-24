@@ -49,4 +49,10 @@ describe('createGradientLineFeatures', () => {
     ])
     expect(features.map((f) => f.properties?.color)).toEqual(['green', 'orange'])
   })
+
+  it('keeps the grade where the colour gives none', () => {
+    const colors = ['teal', undefined, undefined, 'teal', 'teal']
+    const { features } = createGradientLineFeatures([track(5, 2)], (_, i) => colors[i])
+    expect(features.map((f) => f.properties?.color)).toEqual(['teal', NEUTRAL_COLOR, 'teal'])
+  })
 })

@@ -13,10 +13,10 @@ part 'wind_segment_dto.g.dart';
 @Freezed()
 abstract class WindSegmentDto with _$WindSegmentDto {
   const factory WindSegmentDto({
-    /// Start of the stretch, metres from the start of the leg
+    /// Start of the stretch, equal to its checkpoint's distance: metres from the start of the route, its tracks laid end to end in the order of their ids, without counting the gap between the end of one track and the start of the next (unlike the 4th coordinate of a track geometry, which restarts at 0 on each track).
     required double fromDistance,
 
-    /// End of the stretch, metres from the start of the leg
+    /// End of the stretch, equal to the next checkpoint's distance: metres from the start of the route, its tracks laid end to end in the order of their ids, without counting the gap between the end of one track and the start of the next (unlike the 4th coordinate of a track geometry, which restarts at 0 on each track).
     required double toDistance,
 
     /// HEAD when the head component exceeds half the wind speed, TAIL below minus half, CROSS otherwise. Always shown with its label and an arrow, not by colour alone.

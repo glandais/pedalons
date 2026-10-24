@@ -219,10 +219,12 @@ export function findNearestPoint(
 
 // Create GeoJSON FeatureCollection with multiple line segments for gradient coloring. With
 // `colorAt` the colour of a point (track index, point index) replaces the grade's: it colours the
-// segment that starts there, like the grade does.
+// segment that starts there, like the grade does. A point it has no colour for (undefined) keeps
+// the grade's — so a caller that must not read as the grade (the wind colouring) gives every point
+// a colour, `NEUTRAL_COLOR` where it knows none.
 export function createGradientLineFeatures(
   tracks: TrackDto[],
-  colorAt?: (trackIndex: number, pointIndex: number) => string
+  colorAt?: (trackIndex: number, pointIndex: number) => string | undefined
 ): GeoJSON.FeatureCollection<GeoJSON.LineString> {
   const features: GeoJSON.Feature<GeoJSON.LineString>[] = []
 
@@ -231,14 +233,13 @@ export function createGradientLineFeatures(
   }
 
   const colorOf = (trackIndex: number, pointIndex: number) =>
-    colorAt
-      ? colorAt(trackIndex, pointIndex)
-      : getColorFromGradient(
-          getPointClimbGradient(
-            tracks[trackIndex].line.coordinates[pointIndex],
-            tracks[trackIndex].climbs
-          )
-        )
+    colorAt?.(trackIndex, pointIndex) ??
+    getColorFromGradient(
+      getPointClimbGradient(
+        tracks[trackIndex].line.coordinates[pointIndex],
+        tracks[trackIndex].climbs
+      )
+    )
 
   let currentColor = colorOf(0, 0)
   let currentSegment: [number, number][] = []

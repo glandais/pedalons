@@ -7,15 +7,18 @@ import '../../../../api/generated/export.dart';
 import '../../../../core/config/config_provider.dart';
 import '../../../../core/config/map_style_options.dart';
 import '../../../../core/pdl/pdl.dart';
+import '../../../../core/theme/enum_colors.dart';
 import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/preferences/user_preferences_provider.dart';
 import '../../../routes/presentation/widgets/waypoint_selection.dart';
 import '../../../routes/presentation/widgets/waypoint_sheet.dart';
 import '../../domain/ride_route_layers.dart';
+import '../../domain/ride_weather_map.dart';
 import '../../providers/ride_detail_provider.dart';
 import '../../providers/ride_group_selection_provider.dart';
 import '../../../../keys.dart';
+import 'ride_wind_map_legend.dart';
 
 /// La hauteur de la carte de sortie.
 ///
@@ -47,6 +50,12 @@ double rideMapHeight(double screenHeight) =>
 ///
 /// Les géométries sont **dédoublonnées par `routeSlug`** en amont : dix groupes
 /// sur trois parcours coûtent trois appels.
+///
+/// Avec [onlyGroup] et son [weatherLeg], la carte peut aussi colorer le tracé
+/// par le vent relatif (mode « Météo », ledger `MOB-91`) : dos, travers,
+/// face, et une légende en mots. Le mode est exclusif — le gris du travers se
+/// confondrait avec un trait superposé — et éteint par défaut
+/// ([rideMapWindModeProvider]).
 class RideGroupsMap extends ConsumerWidget {
   const RideGroupsMap({
     super.key,
@@ -55,6 +64,7 @@ class RideGroupsMap extends ConsumerWidget {
     this.onlyGroup,
     this.fullscreen = false,
     this.seedExtent,
+    this.weatherLeg,
   });
 
   final RideKey rideKey;
@@ -72,6 +82,11 @@ class RideGroupsMap extends ConsumerWidget {
   /// saut jusqu'à l'emprise réelle une fraction de seconde plus tard. Cette
   /// graine **est** l'emprise du backend, relevée un instant plus tôt.
   final BoundsDto? seedExtent;
+
+  /// Le leg météo du groupe de [onlyGroup], `null` sans prévision chargée.
+  /// Il n'a d'effet que sur la page d'un groupe, avec une prévision
+  /// ([showsWindOnMap]) : il propose alors le mode « Météo ».
+  final WeatherLegDto? weatherLeg;
 
   /// Vrai dans la page plein écran, que ce widget construit lui-même : la
   /// carte y prend tout l'écran et le bouton devient une sortie. C'est **la**
@@ -137,12 +152,21 @@ class RideGroupsMap extends ConsumerWidget {
         ? ref.watch(hiddenRideRoutesProvider(rideKey))
         : const <String>{};
 
+    // Le vent sur le tracé : la page d'un groupe, une prévision, et le mode
+    // choisi. Sinon le trait habituel, même si le mode reste allumé.
+    final WeatherLegDto? windLeg = only != null && showsWindOnMap(weatherLeg)
+        ? weatherLeg
+        : null;
+    final bool windMode =
+        windLeg != null && ref.watch(rideMapWindModeProvider(rideKey));
+
     final List<PdlMapTrack> tracks = _tracks(
       layers,
       geometries,
       selectedSlug,
       hidden,
       mainRouteLabel,
+      windMode ? windLeg : null,
     );
 
     // L'emprise vient du serveur (`RoutesBulkResponse.extent`), pas d'un
@@ -184,6 +208,7 @@ class RideGroupsMap extends ConsumerWidget {
               onlyGroup: onlyGroup,
               fullscreen: true,
               seedExtent: extent,
+              weatherLeg: weatherLeg,
             ),
       labels: PdlMapHeroLabels(
         enterFullscreen: 'map.fullscreen'.tr(),
@@ -197,6 +222,20 @@ class RideGroupsMap extends ConsumerWidget {
       hillshadeEnabled: servedHillshadeEnabled(ref),
       onHillshadeChanged: (bool on) =>
           ref.read(hillshadeEnabledProvider.notifier).set(on),
+      // En plein écran, le mode « Météo » se bascule dans la feuille, comme
+      // l'ombrage ; la carte encastrée a sa puce sous elle (l'Aperçu).
+      switches: fullscreen && windLeg != null
+          ? <PdlMapHeroSwitch>[
+              PdlMapHeroSwitch(
+                id: 'wind',
+                label: 'rides.weather.mapModeSwitch'.tr(),
+                value: windMode,
+                onChanged: (bool on) =>
+                    ref.read(rideMapWindModeProvider(rideKey).notifier).state =
+                        on,
+              ),
+            ]
+          : const <PdlMapHeroSwitch>[],
       selectedStyleId: style.value?.style.id,
       onStyleSelected: (String id) =>
           ref.read(mapStyleIdProvider.notifier).select(id),
@@ -222,6 +261,29 @@ class RideGroupsMap extends ConsumerWidget {
                   ? (<String>{...c.state}..remove(slug))
                   : <String>{...c.state, slug};
             }
+          : null,
+      // La légende vit dans la coquille, pas dans les `overlays` de la carte :
+      // ceux-ci n'apparaissent qu'une fois la vue native prête, et la légende
+      // se lit sans elle. À gauche : le crédit ⓘ tient le coin droit.
+      foreground: windMode
+          ? Positioned(
+              left: PdlSpacing.sectionTightV,
+              right: PdlMetrics.tapTarget + PdlSpacing.sectionTightV,
+              bottom: PdlSpacing.sectionTightV,
+              child: SafeArea(
+                top: false,
+                left: fullscreen,
+                right: false,
+                bottom: fullscreen,
+                child: Align(
+                  alignment: Alignment.bottomLeft,
+                  child: RideWindMapLegend(
+                    leg: windLeg,
+                    units: ref.watch(unitSystemProvider),
+                  ),
+                ),
+              ),
+            )
           : null,
       mapBuilder: (BuildContext context) => _map(
         context,
@@ -270,56 +332,67 @@ class RideGroupsMap extends ConsumerWidget {
 
     return ValueListenableBuilder<WaypointSelection?>(
       valueListenable: selection,
-      builder: (BuildContext context, WaypointSelection? picked, _) => PdlMap(
-        waypoints: mapWaypointsOf(waypoints),
-        focusedWaypoint: picked?.focus,
-        onWaypointTapped: (String key) {
-          final WaypointDto? w = waypointByKey(waypoints, key);
-          if (w == null) return;
-          openWaypoint(
-            context,
-            w,
-            selection,
-            key,
-            units: ref.read(unitSystemProvider),
-          );
-        },
-        styleUrl: styleUrl,
-        credit: credit,
-        hillshade: servedHillshade(context, ref),
-        interactive: fullscreen,
-        tracks: tracks,
-        start: _point(ride.startPlace),
-        end: _point(ride.endPlace),
-        initialCenter: _defaultCenter(ref),
-        fitBox: fitBox,
-        selectedTrackId: selectedSlug,
-        // Un tap sur une trace **sélectionne son parcours** — il n'ouvre plus
-        // la page d'un groupe. La page d'un groupe n'a qu'un tracé : rien à
-        // sélectionner.
-        onTrackSelected: onlyGroup != null
-            ? null
-            : (String? slug) {
-                if (slug != null) selectRideRoute(ref, rideKey, ride, slug);
-              },
-        overlays: <Widget>[
-          if (pillLayer != null)
-            Positioned(
-              left: 12,
-              top: 12,
-              // En plein écran la carte remonte sous l'heure et la batterie :
-              // la pilule doit céder l'encoche. Encastrée dans une liste, elle
-              // est déjà loin du haut de l'écran, et un `SafeArea` y ajouterait
-              // une gouttière de 59 px sortie de nulle part — `MediaQuery.padding`
-              // ne se remet pas à zéro pour un widget au milieu de la page.
-              child: fullscreen
-                  ? SafeArea(child: _pill(pillLayer, mainRouteLabel))
-                  : _pill(pillLayer, mainRouteLabel),
-            ),
-        ],
+      builder: (BuildContext context, WaypointSelection? picked, _) => _native(
+        PdlMap(
+          waypoints: mapWaypointsOf(waypoints),
+          focusedWaypoint: picked?.focus,
+          onWaypointTapped: (String key) {
+            final WaypointDto? w = waypointByKey(waypoints, key);
+            if (w == null) return;
+            openWaypoint(
+              context,
+              w,
+              selection,
+              key,
+              units: ref.read(unitSystemProvider),
+            );
+          },
+          styleUrl: styleUrl,
+          credit: credit,
+          hillshade: servedHillshade(context, ref),
+          interactive: fullscreen,
+          tracks: tracks,
+          start: _point(ride.startPlace),
+          end: _point(ride.endPlace),
+          initialCenter: _defaultCenter(ref),
+          fitBox: fitBox,
+          selectedTrackId: selectedSlug,
+          // Un tap sur une trace **sélectionne son parcours** — il n'ouvre plus
+          // la page d'un groupe. La page d'un groupe n'a qu'un tracé : rien à
+          // sélectionner.
+          onTrackSelected: onlyGroup != null
+              ? null
+              : (String? slug) {
+                  if (slug != null) selectRideRoute(ref, rideKey, ride, slug);
+                },
+          overlays: <Widget>[
+            if (pillLayer != null)
+              Positioned(
+                left: 12,
+                top: 12,
+                // En plein écran la carte remonte sous l'heure et la batterie :
+                // la pilule doit céder l'encoche. Encastrée dans une liste, elle
+                // est déjà loin du haut de l'écran, et un `SafeArea` y ajouterait
+                // une gouttière de 59 px sortie de nulle part — `MediaQuery.padding`
+                // ne se remet pas à zéro pour un widget au milieu de la page.
+                child: fullscreen
+                    ? SafeArea(child: _pill(pillLayer, mainRouteLabel))
+                    : _pill(pillLayer, mainRouteLabel),
+              ),
+          ],
+        ),
       ),
     );
   }
+
+  /// Vrai dans un test de widget : MapLibre n'y a pas de vue native, et la
+  /// carte y est remplacée par [RideGroupsMapProbe], qui garde le `PdlMap`
+  /// construit pour qu'on lise ses tracés.
+  @visibleForTesting
+  static bool debugSkipNativeMap = false;
+
+  Widget _native(PdlMap map) =>
+      debugSkipNativeMap ? RideGroupsMapProbe(map: map) : map;
 
   Widget _pill(RideRouteLayer layer, String mainRouteLabel) => PdlMapPill(
     key: keys.ride.groupsMapPill,
@@ -338,20 +411,25 @@ class RideGroupsMap extends ConsumerWidget {
     String? selectedSlug,
     Set<String> hidden,
     String mainRouteLabel,
+    WeatherLegDto? windLeg,
   ) {
     final List<PdlMapTrack> tracks = <PdlMapTrack>[];
     for (final RideRouteLayer layer in layers) {
       if (hidden.contains(layer.routeSlug)) continue;
       final RouteDetailDto? route = geometries[layer.routeSlug];
       if (route == null) continue;
+      final Color color = multiTrackColor(layer.colorIndex);
       tracks.add(
         PdlMapTrack(
           id: layer.routeSlug,
           lines: <List<List<double>>>[
             for (final TrackDto t in route.tracks) t.line.coordinates,
           ],
-          color: multiTrackColor(layer.colorIndex),
+          color: color,
           label: layer.label(mainRouteLabel),
+          segmentColors: windLeg == null
+              ? null
+              : _windColors(route, windLeg, color),
         ),
       );
     }
@@ -364,6 +442,37 @@ class RideGroupsMap extends ConsumerWidget {
     return tracks;
   }
 
+  /// Les couleurs du vent, **mémorisées par (parcours, leg, couleur)** :
+  /// sur un parcours de plusieurs milliers de sommets, les recalculer à chaque
+  /// `build` coûterait une recherche par segment pour un résultat identique.
+  /// La mémoire s'accroche au DTO du parcours (même objet tant que le cache du
+  /// provider le garde) et part avec lui.
+  static List<Color> _windColors(
+    RouteDetailDto route,
+    WeatherLegDto leg,
+    Color fallback,
+  ) {
+    final _WindColors? memo = _windMemo[route];
+    if (memo != null && identical(memo.leg, leg) && memo.fallback == fallback) {
+      return memo.colors;
+    }
+    final List<Color> colors = windSegmentColors<Color>(
+      <List<List<double>>>[
+        for (final TrackDto t in route.tracks) t.line.coordinates,
+      ],
+      leg.segments,
+      // Un tronçon sans vent connu garde le trait du tracé, jamais le gris —
+      // qui dit « travers ».
+      (RelativeWind? wind) => wind?.stroke ?? fallback,
+    );
+    _windMemo[route] = _WindColors(leg, fallback, colors);
+    return colors;
+  }
+
+  static final Expando<_WindColors> _windMemo = Expando<_WindColors>(
+    'rideMapWindColors',
+  );
+
   PdlMapPoint? _point(PlaceDetailDto? place) {
     final List<double>? c = place?.geometry?.coordinates;
     if (c == null || c.length < 2) return null;
@@ -375,4 +484,25 @@ class RideGroupsMap extends ConsumerWidget {
     if (center == null) return null;
     return PdlMapPoint(lon: center.lon, lat: center.lat);
   }
+}
+
+/// Une entrée de la mémoire des couleurs du vent d'un parcours.
+class _WindColors {
+  const _WindColors(this.leg, this.fallback, this.colors);
+
+  final WeatherLegDto leg;
+  final Color fallback;
+  final List<Color> colors;
+}
+
+/// La carte d'un test de widget ([RideGroupsMap.debugSkipNativeMap]) : un
+/// fond vide qui porte le `PdlMap` que l'écran aurait rendu.
+@visibleForTesting
+class RideGroupsMapProbe extends StatelessWidget {
+  const RideGroupsMapProbe({super.key, required this.map});
+
+  final PdlMap map;
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.expand();
 }

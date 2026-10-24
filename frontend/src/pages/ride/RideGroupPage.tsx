@@ -19,6 +19,7 @@ import {
   Title,
 } from '@mantine/core'
 import type { RideDto } from '@/api/dto'
+import { Status } from '@/api/dto'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { QueryStateBoundary } from '@/components/common/QueryStateBoundary'
 import { DetailPageSkeleton } from '@/components/common/DetailPageSkeleton'
@@ -34,6 +35,7 @@ import { GroupStats } from '@/components/ride/group/GroupStats'
 import { GroupWeatherSection } from '@/components/weather'
 import { hasForecast } from '@/components/weather/weatherDisplay'
 import { paths } from '@/config/paths'
+import { hasWindForecast } from '@/lib/weatherOnRoute'
 import { useAuth } from '@/hooks/useAuth'
 import { useCanonicalPath } from '@/hooks/useCanonicalPath'
 import { useRendezvousFormat } from '@/hooks/useRendezvousFormat'
@@ -169,6 +171,9 @@ export function RideGroupPage() {
       : undefined
   const routeSlug = group.routeSlug ?? ride.routeSlug
   const route = routeSlug ? routesBySlug.get(routeSlug) : undefined
+  // The wind on the map (WEB-115): a leg with a forecast, on a ride neither finished nor cancelled.
+  const windLeg =
+    !ride.finished && ride.status !== Status.CANCELLED && hasWindForecast(leg) ? leg : undefined
   const groupError = membership.error?.groupId === group.id ? membership.error.message : undefined
 
   const groupOptions = groups.map((g) => ({
@@ -306,7 +311,15 @@ export function RideGroupPage() {
 
         {/* The group's route: the map with its profile, then what to do with it */}
         <Box className="detail-map">
-          {routeSlug && <GroupRouteMap teamSlug={team.slug} routeSlug={routeSlug} route={route} />}
+          {routeSlug && (
+            <GroupRouteMap
+              teamSlug={team.slug}
+              routeSlug={routeSlug}
+              route={route}
+              leg={windLeg}
+              attribution={windLeg ? weather.data?.attribution : undefined}
+            />
+          )}
         </Box>
       </SimpleGrid>
 

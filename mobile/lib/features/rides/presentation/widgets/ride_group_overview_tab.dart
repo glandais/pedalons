@@ -13,7 +13,9 @@ import '../../../../keys.dart';
 import '../../../auth/domain/auth_state.dart';
 import '../../../auth/providers/auth_provider.dart';
 import '../../domain/ride_group_tab.dart';
+import '../../domain/ride_weather_map.dart';
 import '../../providers/ride_detail_provider.dart';
+import '../../providers/ride_group_selection_provider.dart';
 import 'ride_elevation_section.dart';
 import 'ride_group_leader_row.dart';
 import 'ride_group_route_actions.dart';
@@ -70,7 +72,13 @@ class _RideGroupOverviewTabState extends ConsumerState<RideGroupOverviewTab>
           const SizedBox(height: PdlSpacing.section),
           // Le seul parcours de ce groupe : ceux des autres groupes sont sur
           // la carte de la sortie.
-          RideGroupsMap(rideKey: widget.rideKey, ride: ride, onlyGroup: group),
+          RideGroupsMap(
+            rideKey: widget.rideKey,
+            ride: ride,
+            onlyGroup: group,
+            weatherLeg: widget.leg,
+          ),
+          if (showsWindOnMap(widget.leg)) _windChip(),
           Padding(
             padding: const EdgeInsets.fromLTRB(
               PdlSpacing.section,
@@ -124,6 +132,29 @@ class _RideGroupOverviewTabState extends ConsumerState<RideGroupOverviewTab>
           ),
         ),
       ],
+    );
+  }
+
+  // ── Le mode « Météo » de la carte ───────────────────────────────────────
+  /// La puce sous la carte encastrée : celle-ci ne se manipule pas, la
+  /// bascule ne peut donc pas vivre dans la vue native (ledger `MOB-91`). En
+  /// plein écran, la même bascule est dans la feuille des couches.
+  Widget _windChip() {
+    final bool on = ref.watch(rideMapWindModeProvider(widget.rideKey));
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: PdlSpacing.section),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: PdlChip(
+          key: keys.rideGroup.windMapChip,
+          label: 'rides.weather.mapMode'.tr(),
+          icon: PdlIcons.wind,
+          selected: on,
+          onTap: () =>
+              ref.read(rideMapWindModeProvider(widget.rideKey).notifier).state =
+                  !on,
+        ),
+      ),
     );
   }
 

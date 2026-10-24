@@ -159,6 +159,13 @@ class RideGroupPageKeys {
   /// La carte résumé « Météo au départ du groupe » de l'aperçu.
   final weatherSummaryCard = const _RideGroupKey('weatherSummaryCard');
 
+  /// La puce « Météo » sous la carte de l'aperçu : le vent sur le tracé
+  /// (ledger `MOB-91`).
+  final windMapChip = const _RideGroupKey('windMapChip');
+
+  /// La légende du vent posée sur la carte du groupe en mode « Météo ».
+  final windMapLegend = const _RideGroupKey('windMapLegend');
+
   /// « Voir toutes les personnes inscrites » de l'aperçu.
   final viewAllParticipants = const _RideGroupKey('viewAllParticipants');
 

@@ -18,6 +18,7 @@ import 'package:pedalons/features/rides/presentation/pages/ride_detail_page.dart
 import 'package:pedalons/features/rides/presentation/pages/ride_group_page.dart';
 import 'package:pedalons/features/rides/providers/ride_detail_provider.dart';
 import 'package:pedalons/features/rides/providers/ride_group_selection_provider.dart';
+import 'package:pedalons/features/rides/providers/ride_weather_provider.dart';
 import 'package:pedalons/features/rides/providers/ride_scroll_target_provider.dart';
 import 'package:pedalons/features/teams/data/team_repository.dart';
 import 'package:pedalons/keys.dart';
@@ -34,7 +35,7 @@ class _Repository implements RideRepository {
   _Repository(this.ride, this.weather);
 
   final RideDto ride;
-  final RideWeatherDto weather;
+  RideWeatherDto weather;
   final List<String> joined = <String>[];
   final List<String> left = <String>[];
   int weatherCalls = 0;
@@ -363,6 +364,28 @@ void main() {
       expect(find.text('58 °F'), findsWidgets);
       expect(find.textContaining('mph'), findsWidgets);
       expect(find.textContaining('°C'), findsNothing);
+    });
+
+    testWidgets('une prévision perdue éteint le mode « Météo » de la carte', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, weather());
+      container.read(rideMapWindModeProvider(key).notifier).state = true;
+
+      repository.weather = fixtureWeather(status: 'UNAVAILABLE');
+      container.invalidate(rideWeatherProvider(key));
+      for (int i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 10));
+      }
+      expect(container.read(rideMapWindModeProvider(key)), isFalse);
+
+      // Revenue, la prévision ne rallume pas le mode toute seule.
+      repository.weather = weather();
+      container.invalidate(rideWeatherProvider(key));
+      for (int i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 10));
+      }
+      expect(container.read(rideMapWindModeProvider(key)), isFalse);
     });
 
     testWidgets('UNAVAILABLE : un état d\'erreur et « Réessayer »', (

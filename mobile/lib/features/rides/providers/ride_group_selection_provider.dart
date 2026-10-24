@@ -31,6 +31,18 @@ final selectedRideRouteOverrideProvider = StateProvider.autoDispose
 final hiddenRideRoutesProvider = StateProvider.autoDispose
     .family<Set<String>, RideKey>((Ref ref, RideKey key) => const <String>{});
 
+/// Le mode « Météo » de la carte d'un groupe : le tracé coloré par le vent
+/// relatif au lieu de son trait habituel (ledger `MOB-91`).
+///
+/// En mémoire, partagé par la carte encastrée et son plein écran, et **éteint
+/// par défaut** : on ne change pas le sens des couleurs sans que la personne
+/// l'ait choisi. Il n'a d'effet que si le leg porte une prévision
+/// (`showsWindOnMap`) ; un refetch qui la perd l'éteint (`RideGroupPage`), pour
+/// qu'une prévision revenue ne recolore pas le tracé sans nouveau choix.
+final rideMapWindModeProvider = StateProvider.autoDispose.family<bool, RideKey>(
+  (Ref ref, RideKey key) => false,
+);
+
 /// Le groupe pointé, **un seul pour tout l'écran**.
 ///
 /// Il pilote simultanément la carte de groupe sélectionnée, la pilule posée sur

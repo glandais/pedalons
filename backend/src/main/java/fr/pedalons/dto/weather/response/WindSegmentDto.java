@@ -8,9 +8,23 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @Schema(description = "The wind on the stretch between two checkpoints, as the rider meets it")
 @ValidateSchema
 public record WindSegmentDto(
-    @Schema(description = "Start of the stretch, metres from the start of the leg", required = true)
+    @Schema(
+            description =
+                "Start of the stretch, equal to its checkpoint's distance: metres from the start of"
+                    + " the route, its tracks laid end to end in the order of their ids, without"
+                    + " counting the gap between the end of one track and the start of the next"
+                    + " (unlike the 4th coordinate of a track geometry, which restarts at 0 on each"
+                    + " track).",
+            required = true)
         double fromDistance,
-    @Schema(description = "End of the stretch, metres from the start of the leg", required = true)
+    @Schema(
+            description =
+                "End of the stretch, equal to the next checkpoint's distance: metres from the start"
+                    + " of the route, its tracks laid end to end in the order of their ids, without"
+                    + " counting the gap between the end of one track and the start of the next"
+                    + " (unlike the 4th coordinate of a track geometry, which restarts at 0 on each"
+                    + " track).",
+            required = true)
         double toDistance,
     @Schema(
             description =

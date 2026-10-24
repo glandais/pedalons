@@ -5652,7 +5652,9 @@ export const GetRideWeatherResponse = zod
                       .describe('Where the point stands on the leg'),
                     distance: zod
                       .number()
-                      .describe("Distance from the start of the leg's route, metres"),
+                      .describe(
+                        "Distance from the start of the leg's route, metres: its tracks laid end to end in the order of their ids, without counting the gap between the end of one track and the start of the next. To place the point on the geometry, add up the lengths of the previous tracks: the 4th coordinate of a track geometry restarts at 0 on each track."
+                      ),
                     elevation: zod
                       .number()
                       .optional()
@@ -5762,10 +5764,14 @@ export const GetRideWeatherResponse = zod
                   .object({
                     fromDistance: zod
                       .number()
-                      .describe('Start of the stretch, metres from the start of the leg'),
+                      .describe(
+                        "Start of the stretch, equal to its checkpoint's distance: metres from the start of the route, its tracks laid end to end in the order of their ids, without counting the gap between the end of one track and the start of the next (unlike the 4th coordinate of a track geometry, which restarts at 0 on each track)."
+                      ),
                     toDistance: zod
                       .number()
-                      .describe('End of the stretch, metres from the start of the leg'),
+                      .describe(
+                        "End of the stretch, equal to the next checkpoint's distance: metres from the start of the route, its tracks laid end to end in the order of their ids, without counting the gap between the end of one track and the start of the next (unlike the 4th coordinate of a track geometry, which restarts at 0 on each track)."
+                      ),
                     relativeWind: zod
                       .enum(['HEAD', 'CROSS', 'TAIL'])
                       .describe(

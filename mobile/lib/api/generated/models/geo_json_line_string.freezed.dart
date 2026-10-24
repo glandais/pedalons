@@ -16,7 +16,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$GeoJsonLineString {
 
- GeoJsonLineStringTypeType get type;/// Array of [lon, lat] coordinates
+ GeoJsonLineStringTypeType get type;/// Array of [lon, lat] coordinates, followed by the elevation in metres when the line carries one ([lon, lat, ele]). A route track's geometry (TrackDto.line) adds a 4th component, [lon, lat, ele, dist]: the distance in metres from the start of THAT track, monotonic, restarting at 0 on each track of the route; it is not the distance along the whole route.
  List<List<double>> get coordinates;
 /// Create a copy of GeoJsonLineString
 /// with the given fields replaced by the non-null parameter values.
@@ -221,9 +221,9 @@ class _GeoJsonLineString implements GeoJsonLineString {
   factory _GeoJsonLineString.fromJson(Map<String, dynamic> json) => _$GeoJsonLineStringFromJson(json);
 
 @override final  GeoJsonLineStringTypeType type;
-/// Array of [lon, lat] coordinates
+/// Array of [lon, lat] coordinates, followed by the elevation in metres when the line carries one ([lon, lat, ele]). A route track's geometry (TrackDto.line) adds a 4th component, [lon, lat, ele, dist]: the distance in metres from the start of THAT track, monotonic, restarting at 0 on each track of the route; it is not the distance along the whole route.
  final  List<List<double>> _coordinates;
-/// Array of [lon, lat] coordinates
+/// Array of [lon, lat] coordinates, followed by the elevation in metres when the line carries one ([lon, lat, ele]). A route track's geometry (TrackDto.line) adds a 4th component, [lon, lat, ele, dist]: the distance in metres from the start of THAT track, monotonic, restarting at 0 on each track of the route; it is not the distance along the whole route.
 @override List<List<double>> get coordinates {
   if (_coordinates is EqualUnmodifiableListView) return _coordinates;
   // ignore: implicit_dynamic_type

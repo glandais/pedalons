@@ -18,7 +18,14 @@ public record WeatherCheckpointDto(
         int index,
     @Schema(description = "Where the point stands on the leg", required = true)
         WeatherCheckpointKind kind,
-    @Schema(description = "Distance from the start of the leg's route, metres", required = true)
+    @Schema(
+            description =
+                "Distance from the start of the leg's route, metres: its tracks laid end to end in"
+                    + " the order of their ids, without counting the gap between the end of one"
+                    + " track and the start of the next. To place the point on the geometry, add"
+                    + " up the lengths of the previous tracks: the 4th coordinate of a track"
+                    + " geometry restarts at 0 on each track.",
+            required = true)
         double distance,
     @Nullable @Schema(description = "Elevation of the point, metres, from the track")
         Double elevation,

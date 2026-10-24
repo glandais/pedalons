@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+import '../../api/generated/models/relative_wind.dart';
 import '../../api/generated/models/track_surface.dart';
 import '../../api/generated/models/waypoint_type.dart';
 import 'enum_colors.generated.dart';
@@ -173,6 +174,17 @@ extension TrackSurfaceStroke on TrackSurface {
       _ => c.mapSurfaceUnknown,
     };
   }
+}
+
+// ── Vent relatif ────────────────────────────────────────────────────────────
+
+/// Le trait d'un vent relatif sur la carte (ledger `MOB-91`) : l'aplat de sa
+/// famille (`contracts/brand-colors.yaml` — dos teal, travers gris, face
+/// orange), **du thème clair dans les deux thèmes** (nuance 6 au site), comme
+/// [TrackSurfaceStroke]. La teinte `soft` des badges est trop pâle sur une
+/// tuile, et les aplats de [PdlColors.dark] s'y éteignent.
+extension RelativeWindStroke on RelativeWind {
+  Color get stroke => family.soft(PdlColors.light).fill;
 }
 
 // ── Points de parcours ──────────────────────────────────────────────────────

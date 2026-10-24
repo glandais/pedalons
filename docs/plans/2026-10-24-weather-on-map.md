@@ -1,7 +1,8 @@
 # La météo sur la carte du groupe d'une sortie (web et mobile)
 
-Écrit le 24 octobre 2026. **État : étudié, arbitré, rien d'implémenté.** Ledger `API-138` (convention
-de distance documentée dans le contrat), `WEB-115` (le site), `MOB-91` (l'app). Suit la météo des
+Écrit le 24 octobre 2026. **État : palier 1 livré le 24 octobre 2026 (contrat `11.16.1`) ; paliers 2 et 3 à faire.**
+Ledger `API-138` (convention de distance documentée dans le contrat), `WEB-115` et `MOB-91`
+(palier 1, le site et l'app), `WEB-116` et `MOB-92` (paliers 2 et 3). Suit la météo des
 sorties (`API-74`, `WEB-94`, `MOB-67`, `MOB-69`) et des étapes (`API-76`, `WEB-67`, `MOB-57`), dont
 le plan archivé [`2026-10-05-weather.md`](archive/2026-10-05-weather.md) garde les arbitrages.
 
@@ -173,7 +174,8 @@ Descriptions seulement, dans les DTO Java (puis skill `contract-first-api`) :
 - `GeoJsonLineString` : la 4ᵉ composante est la distance depuis le début de **cette** trace (elle
   repart de 0 à chaque trace).
 
-Bump de `pedalons.api.version` (`11.16.0` → `11.17.0` si rien d'autre ne passe avant). Aucun
+Bump de patch de `pedalons.api.version` (`11.16.0` → `11.16.1`, livré), comme pour toute
+description seule. Aucun
 changement de comportement : les tests backend existants (`RouteSampleLookupTest`) couvrent déjà la
 convention, et c'est la personne propriétaire qui les lance.
 

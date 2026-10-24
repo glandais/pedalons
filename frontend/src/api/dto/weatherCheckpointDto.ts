@@ -11,7 +11,7 @@ export interface WeatherCheckpointDto {
   index: number
   /** Where the point stands on the leg */
   kind: WeatherCheckpointKind
-  /** Distance from the start of the leg's route, metres */
+  /** Distance from the start of the leg's route, metres: its tracks laid end to end in the order of their ids, without counting the gap between the end of one track and the start of the next. To place the point on the geometry, add up the lengths of the previous tracks: the 4th coordinate of a track geometry restarts at 0 on each track. */
   distance: number
   /** Elevation of the point, metres, from the track */
   elevation?: number

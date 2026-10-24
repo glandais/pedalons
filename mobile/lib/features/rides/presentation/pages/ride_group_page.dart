@@ -17,6 +17,7 @@ import '../../../participants/presentation/widgets/participant_list_view.dart';
 import '../../../participants/providers/participant_list_provider.dart';
 import '../../domain/ride_group_tab.dart';
 import '../../domain/ride_weather_display.dart';
+import '../../domain/ride_weather_map.dart';
 import '../../domain/solo_group.dart';
 import '../../providers/ride_detail_provider.dart';
 import '../../providers/ride_group_selection_provider.dart';
@@ -267,6 +268,23 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
     final WeatherLegDto? leg = weather == null
         ? null
         : weatherLegOfGroup(weather.legs, group.id);
+    // Une prévision perdue au refetch éteint le mode « Météo » de la carte :
+    // revenue, elle ne recolore pas le tracé sans nouveau choix (ledger
+    // `MOB-91`, plan 2026-10-24-weather-on-map §4).
+    if (!ride.isPast && !ride.isCancelled) {
+      ref.listen(rideWeatherProvider(key), (
+        _,
+        AsyncValue<RideWeatherDto> next,
+      ) {
+        final RideWeatherDto? dto = next.value;
+        final WeatherLegDto? nextLeg = dto == null
+            ? null
+            : weatherLegOfGroup(dto.legs, group.id);
+        if (!showsWindOnMap(nextLeg)) {
+          ref.read(rideMapWindModeProvider(key).notifier).state = false;
+        }
+      });
+    }
 
     final Widget body = switch (_tab) {
       RideGroupTab.overview => SliverToBoxAdapter(

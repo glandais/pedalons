@@ -249,7 +249,7 @@ Exportés par `pdl.dart` comme le reste, et soumis au même contrat (jetons,
 |---|---|---|
 | `PdlMap` | `map/pdl_map.dart` | La carte (MapLibre) |
 | `PdlMapController` · `PdlMapTrack` · `PdlMapPoint` · `PdlMapBox` · `PdlHillshade` · `PdlKmMarker` | `map/pdl_map_controller.dart` | Tracés, points, emprise, estompage, bornes kilométriques |
-| `PdlMapHero` · `PdlMapStyleOption` | `map/pdl_map_hero.dart` | La coquille d'une carte occupant une surface : voiles, plein écran, sélecteur de fond de carte |
+| `PdlMapHero` · `PdlMapStyleOption` · `PdlMapHeroSwitch` | `map/pdl_map_hero.dart` | La coquille d'une carte occupant une surface : voiles, plein écran, sélecteur de fond de carte et ses interrupteurs de mode |
 | `PdlMapButton` · `PdlMapButtonColumn` · `PdlMapPill` · `PdlMapFloatingCard` | `map/pdl_map_buttons.dart` | Contrôles posés sur la carte, sur voile de lisibilité |
 | `PdlMapAttribution` · `PdlMapCredit` | `map/pdl_map_attribution.dart` | Crédit des fournisseurs de tuiles |
 | `PdlMapCamera` | `map/pdl_map_camera.dart` | Position de caméra et projection Web Mercator |

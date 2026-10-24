@@ -731,7 +731,10 @@
       },
       "checkpointNoWeather": "Prévision pas encore disponible ici",
       "prevailingWind": "Vent dominant : {wind}",
-      "attribution": "Prévisions : {name}"
+      "attribution": "Prévisions : {name}",
+      "mapMode": "Météo",
+      "mapModeSwitch": "Vent sur le tracé",
+      "mapDefaultSpeed": "Heures estimées à {speed}"
     },
     "groupPage": {
       "title": "Groupe {name}",

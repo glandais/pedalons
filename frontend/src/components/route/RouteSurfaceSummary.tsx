@@ -1,20 +1,13 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  Anchor,
-  Box,
-  Group,
-  Progress,
-  SegmentedControl,
-  Stack,
-  Text,
-  Tooltip,
-  useMantineTheme,
-} from '@mantine/core'
+import { Anchor, Box, Group, Progress, Stack, Text, Tooltip, useMantineTheme } from '@mantine/core'
 import type { TrackDto, TrackSurface } from '@/api/dto'
 import { useResolvedColorScheme } from '@/hooks/useResolvedColorScheme'
 import type { PlannerColorBy } from '@/lib/plannerSurface'
 import { hasSurfaces, surfaceShares, surfacesPending, trackSurfaceColors } from '@/lib/trackSurface'
+import { ColorByControl } from './ColorByControl'
+
+const SURFACE_OPTIONS: readonly PlannerColorBy[] = ['grade', 'surface']
 
 const CLASS_LABEL_KEYS = {
   PAVED: 'routes.surface.class.PAVED',
@@ -30,6 +23,11 @@ interface RouteSurfaceSummaryProps {
   tracks: TrackDto[]
   colorBy: PlannerColorBy
   onColorByChange: (value: PlannerColorBy) => void
+  /**
+   * Draws the grade / surface switch (default). Off where the page draws its own `ColorByControl`,
+   * with more modes than these two (a group's page, WEB-115).
+   */
+  withControl?: boolean
 }
 
 /**
@@ -42,6 +40,7 @@ export function RouteSurfaceSummary({
   tracks,
   colorBy,
   onColorByChange,
+  withControl = true,
 }: RouteSurfaceSummaryProps) {
   const { t } = useTranslation()
   const theme = useMantineTheme()
@@ -65,17 +64,9 @@ export function RouteSurfaceSummary({
 
   return (
     <Stack gap="xs" data-testid="route-surface-summary">
-      <SegmentedControl
-        size="xs"
-        w="fit-content"
-        value={colorBy}
-        onChange={(value) => onColorByChange(value as PlannerColorBy)}
-        aria-label={t('routes.surface.colorBy.label')}
-        data={[
-          { value: 'grade', label: t('routes.surface.colorBy.grade') },
-          { value: 'surface', label: t('routes.surface.colorBy.surface') },
-        ]}
-      />
+      {withControl && (
+        <ColorByControl value={colorBy} onChange={onColorByChange} options={SURFACE_OPTIONS} />
+      )}
       {/* The bar says by colour what the legend below says in words: hidden from assistive tech */}
       <Progress.Root size="lg" aria-hidden data-testid="route-surface-bar">
         {shares.map(({ surface, share }) => (

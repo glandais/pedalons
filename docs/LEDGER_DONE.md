@@ -16,6 +16,23 @@ fichier garde **ce qui est fait**, et ce qu'il ne faut pas défaire.
 
 ## MOB — Application mobile
 
+- [x] `MOB-91` **La météo sur la carte du groupe, palier 1 : le vent sur le tracé** (24 octobre
+  2026, contrat `11.16.1`) — la carte de l'Aperçu d'un groupe ne montrait rien de la météo. Une puce
+  « Météo » sous la carte encastrée (et un interrupteur « Vent sur le tracé » dans la feuille des
+  couches du plein écran, `PdlMapHeroSwitch` générique dans `core/pdl`) colore le tracé dos /
+  travers / face (`RelativeWindStroke.stroke`, nuance 6 de la table générée, dans les deux thèmes),
+  avec une légende en mots (`RideWindMapLegend`, parts de `windExposure`, « Prévision ancienne » en
+  STALE, vitesse par défaut). Distances : `chainedMeasures` (`features/rides/domain/ride_weather_map.dart`)
+  reprend la règle du serveur, saut nul entre traces ; `windSegmentColors` colore les intervalles
+  des lignes brutes. Plan [`2026-10-24-weather-on-map.md`](plans/2026-10-24-weather-on-map.md). Couvert par `ride_weather_map_test.dart` (cas à deux traces
+  du fixture de `RouteSampleLookupTest`), `ride_groups_map_wind_test.dart` et
+  `ride_group_page_test.dart` (prévision perdue → mode éteint). **À ne pas défaire** : ne pas passer
+  par `PolylineIndex.fromLineStrings`, qui compte le saut entre traces à vol d'oiseau ; mode éteint
+  par défaut (`rideMapWindModeProvider`), éteint aussi quand un refetch perd la prévision
+  (`RideGroupPage`), pour qu'une prévision revenue ne recolore pas le tracé sans nouveau choix ; un
+  intervalle sans vent connu garde le trait du parcours, jamais le gris du travers. La suite est
+  `MOB-92`.
+
 - `MOB-21` **Sortie (12), corrigé pendant la passe partielle du 27 juillet 2026** — le bandeau
   `GROUP_FULL` affichait « Groupe complet. » sans jamais dire lequel : `rides.failure.full` prend
   maintenant `{group}`, comme les bandeaux voisins. Le reste de la recette de l'écran est `MOB-2`.
@@ -1003,6 +1020,23 @@ couvert » ; les tests ne tournent qu'en local (`MOB-37`).
   décisions à ne pas défaire que `WEB-111` (en-tête seulement, 20 équipes).
 
 ## WEB — Site web
+
+- [x] `WEB-115` **La météo sur la carte du groupe, palier 1 : le vent sur le tracé** (24 octobre
+  2026, contrat `11.16.1`) — `GroupRouteMap` ne recevait que la route. Un `ColorByControl`
+  (« Pente | Météo » ou « Pente | Revêtement | Météo », affiché même sans surface) propose le mode
+  « Météo » sur la page d'un groupe quand le leg a une prévision OK ou STALE et que la sortie n'est
+  ni terminée ni annulée ; le tracé se colore dos / travers / face (`useRouteWindColors`, nuance 6
+  des familles générées), `WindMapLegend` donne les parts de `windExposure`, « Prévision ancienne »
+  et le crédit Open-Meteo en clair (le profil superposé masque le contrôle d'attribution de
+  MapLibre). Distances : `chainedDistances` (`lib/weatherOnRoute.ts`), saut nul entre traces dont
+  `dist` repart à 0. `RouteMapView`/`RouteTrackMap` prennent `lineColorAt` et `lineAttribution`
+  optionnels, sans effet sur les autres écrans ; type propre `GroupColorBy`. BRANDING §3.6 décrit
+  la nuance de carte. Plan [`2026-10-24-weather-on-map.md`](plans/2026-10-24-weather-on-map.md). Couvert par `weatherOnRoute.test.ts`,
+  `ColorByControl.test.tsx`, `GroupRouteMap.test.tsx` (dont un tronçon sans vent dans une montée),
+  `RideGroupPage.test.tsx`, `mapUtils.test.ts`. **À ne pas défaire** : mode par défaut « Pente »,
+  profil laissé en pente en mode Météo (d'où le libellé « Colorer le tracé selon ») ; un point sans
+  vent connu prend `NEUTRAL_COLOR`, **jamais** la couleur de pente (orange en montée, lu comme un
+  vent de face) ni le gris ; ne pas élargir `PlannerColorBy`. La suite est `WEB-116`.
 
 ### La recette web, automatisée
 
@@ -2791,6 +2825,15 @@ relevés sont `WEB-111` à `WEB-114` et `MOB-87` à `MOB-90`. `MOB-88` et `MOB-8
   Reste ouvert côté API : la liste d'un administrateur de la plateforme (`API-137`).
 
 ## API — Contrat d'API et backend
+
+- [x] `API-138` **La convention de distance de la météo est écrite dans le contrat** (24 octobre
+  2026, **API 11.16.1**, descriptions seulement) — `WeatherCheckpointDto.distance` et
+  `WindSegmentDto.fromDistance/toDistance` disent compter les traces bout à bout dans l'ordre de
+  leurs id, sans le saut entre la fin d'une trace et le début de la suivante
+  (`RouteSampleLookup.java`) ; `GeoJsonLineString.coordinates`, que la 4ᵉ composante d'une trace
+  (`TrackDto.line`) est la distance depuis le début de **cette** trace. Bump de patch, comme pour
+  une description seule (`SEC-11`, 9.1.2). Aucun changement de comportement, couvert par
+  `RouteSampleLookupTest`. Premier palier de [`2026-10-24-weather-on-map.md`](plans/2026-10-24-weather-on-map.md) (`WEB-115`, `MOB-91`).
 
 ### Points de parcours typés (C3c de `WEB-100`, 20 octobre 2026, contrat `11.16.0`, `V78`)
 

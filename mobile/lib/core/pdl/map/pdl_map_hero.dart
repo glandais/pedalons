@@ -59,6 +59,27 @@ class PdlMapTrackToggle {
   final bool visible;
 }
 
+/// Un interrupteur de plus dans la feuille des couches, sous l'ombrage : un
+/// mode de la carte que l'écran pilote (le vent sur le tracé d'un groupe).
+///
+/// Comme l'ombrage, il ne referme pas la feuille. L'écran reste la source de
+/// vérité ; [label] arrive déjà traduit.
+@immutable
+class PdlMapHeroSwitch {
+  const PdlMapHeroSwitch({
+    required this.id,
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  /// Identité stable : elle nomme la clé de la ligne (`pdlMapHeroSwitch_<id>`).
+  final String id;
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+}
+
 /// Les libellés du hero. `core/pdl` ne traduit rien : l'écran les fournit.
 @immutable
 class PdlMapHeroLabels {
@@ -127,6 +148,7 @@ class PdlMapHero extends StatelessWidget {
     this.onStyleSelected,
     this.hillshadeEnabled,
     this.onHillshadeChanged,
+    this.switches = const <PdlMapHeroSwitch>[],
     this.trackToggles = const <PdlMapTrackToggle>[],
     this.onTrackVisibilityChanged,
     this.showFullscreenButton = true,
@@ -162,6 +184,9 @@ class PdlMapHero extends StatelessWidget {
   /// plutôt qu'un réglage sans effet.
   final bool? hillshadeEnabled;
   final ValueChanged<bool>? onHillshadeChanged;
+
+  /// Les interrupteurs de mode, rendus sous l'ombrage. Vide = aucun.
+  final List<PdlMapHeroSwitch> switches;
 
   /// Les tracés à cocher, **dans l'ordre de la carte**. Moins de deux = pas de
   /// section : masquer l'unique tracé d'une carte n'a pas de sens.
@@ -250,6 +275,7 @@ class PdlMapHero extends StatelessWidget {
         ),
       if ((styles.isNotEmpty && onStyleSelected != null) ||
           _hasHillshade ||
+          switches.isNotEmpty ||
           _hasTrackToggles)
         PdlMapButton(
           icon: PdlIcons.layers,
@@ -342,10 +368,17 @@ class PdlMapHero extends StatelessWidget {
           // vient après la liste et, contrairement à elle, ne referme pas la
           // feuille — on veut pouvoir juger de l'ombrage puis changer de fond.
           if (_hasHillshade)
-            _HillshadeRow(
+            _SwitchRow(
               label: labels.hillshade!,
               initialValue: hillshadeEnabled!,
               onChanged: onHillshadeChanged!,
+            ),
+          for (final PdlMapHeroSwitch option in switches)
+            _SwitchRow(
+              key: ValueKey<String>('pdlMapHeroSwitch_${option.id}'),
+              label: option.label,
+              initialValue: option.value,
+              onChanged: option.onChanged,
             ),
           // Les tracés se cochent comme l'ombrage se bascule : sans refermer
           // la feuille, pour en masquer plusieurs d'affilée.
@@ -369,7 +402,8 @@ class PdlMapHero extends StatelessWidget {
   }
 }
 
-/// La ligne « Ombrage du relief » de la feuille des fonds.
+/// Une ligne à interrupteur de la feuille des fonds : « Ombrage du relief »,
+/// ou un [PdlMapHeroSwitch].
 ///
 /// Elle tient son propre état parce que la feuille est construite une fois :
 /// `PdlSheet` n'est pas reconstruit quand l'écran l'est, si bien qu'un
@@ -377,8 +411,9 @@ class PdlMapHero extends StatelessWidget {
 /// position d'origine jusqu'à la fermeture. L'écran reste la source de vérité —
 /// il reçoit le changement et le persiste ; ce témoin local n'est que l'écho
 /// immédiat que la feuille doit à celui qui vient d'appuyer.
-class _HillshadeRow extends StatefulWidget {
-  const _HillshadeRow({
+class _SwitchRow extends StatefulWidget {
+  const _SwitchRow({
+    super.key,
     required this.label,
     required this.initialValue,
     required this.onChanged,
@@ -389,10 +424,10 @@ class _HillshadeRow extends StatefulWidget {
   final ValueChanged<bool> onChanged;
 
   @override
-  State<_HillshadeRow> createState() => _HillshadeRowState();
+  State<_SwitchRow> createState() => _SwitchRowState();
 }
 
-class _HillshadeRowState extends State<_HillshadeRow> {
+class _SwitchRowState extends State<_SwitchRow> {
   late bool _value = widget.initialValue;
 
   void _toggle() {
@@ -416,7 +451,7 @@ class _HillshadeRowState extends State<_HillshadeRow> {
 
 /// Une ligne de la section des tracés : le trait de couleur, le nom, la case.
 ///
-/// État local pour la même raison que [_HillshadeRow] : la feuille n'est pas
+/// État local pour la même raison que [_SwitchRow] : la feuille n'est pas
 /// reconstruite quand l'écran l'est.
 class _TrackToggleRow extends StatefulWidget {
   const _TrackToggleRow({
