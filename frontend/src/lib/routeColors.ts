@@ -2,9 +2,10 @@
  * Multi-route palette (matching biketeam, and the mobile `kMultiTrackPalette`).
  *
  * A trace's colour is its index among the map items that **have** a route: the ride page's map and
- * its group cards both go through `routeColorsById`, so the bar in front of a group's name is the
- * colour of its trace — computing it from `sortOrder` would drift as soon as the ride has a main
- * route or a group has none.
+ * its group cards both go through `routeColorsById` (via `rideMapRoutes`, one item per distinct
+ * route), so the bar in front of a group's name is the colour of its trace, shared by every group on
+ * that route — computing it from `sortOrder` would drift as soon as the ride has a main route or two
+ * groups share one.
  */
 export const ROUTE_COLORS = [
   '#566B13',

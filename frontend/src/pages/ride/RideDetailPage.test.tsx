@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { MantineProvider } from '@mantine/core'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -161,6 +161,11 @@ describe('RideDetailPage — a ride with one group is its group page (WEB-79)', 
     expect(await screen.findByTestId('route-map')).toBeTruthy()
   })
 
+  it('draws no track colour bar: its single-route map has no coloured trace', () => {
+    renderPage()
+    expect(screen.queryByTestId('group-track-color')).toBeNull()
+  })
+
   it('joins the group', () => {
     renderPage()
     fireEvent.click(screen.getByRole('button', { name: 'Rejoindre' }))
@@ -199,5 +204,44 @@ describe('RideDetailPage — a ride with one group is its group page (WEB-79)', 
     expect(screen.getByRole('link', { name: 'Cool' })).toBeTruthy()
     expect(screen.queryByTestId('group-stats')).toBeNull()
     expect(await screen.findByTestId('routes-map')).toBeTruthy()
+  })
+})
+
+describe('RideDetailPage — one trace per route, shared by the groups that ride it', () => {
+  beforeEach(() => {
+    state.team = member
+    state.weather = okWeather
+    // Rapide and Cool ride the ride's route, Col its own.
+    state.ride = ride({
+      groups: [
+        group(),
+        group({ id: 'g2', name: 'Cool' }),
+        group({ id: 'g3', name: 'Col', routeSlug: 'col' }),
+      ],
+    })
+  })
+  afterEach(cleanup)
+
+  const card = (name: string) =>
+    screen.getByRole('link', { name }).closest<HTMLElement>('.mantine-Paper-root')!
+  const bar = (name: string) =>
+    within(card(name)).getByTestId('group-track-color').style.backgroundColor
+  const isLit = (name: string) =>
+    card(name).style.backgroundColor === 'var(--mantine-primary-color-light)'
+
+  it('gives the groups on the same route the same colour', () => {
+    renderPage()
+    expect(bar('Rapide')).toBe(bar('Cool'))
+    expect(bar('Col')).not.toBe(bar('Rapide'))
+  })
+
+  it("lights every card on the hovered group's route", () => {
+    renderPage()
+    fireEvent.mouseEnter(card('Rapide'))
+    expect(isLit('Rapide')).toBe(true)
+    expect(isLit('Cool')).toBe(true)
+    expect(isLit('Col')).toBe(false)
+    fireEvent.mouseLeave(card('Rapide'))
+    expect(isLit('Cool')).toBe(false)
   })
 })

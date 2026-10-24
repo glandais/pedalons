@@ -51,8 +51,8 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, T
  */
 const ROUTES_FIT_PADDING = { top: 50, bottom: 170, left: 50, right: 50 } as const
 
-// Minimal interface RideGroupDto satisfies directly; a trip stage carries the whole RouteDto,
-// so TripDetailPage narrows it down to the slug.
+// One item, one layer. The ride page passes one item per distinct route (`rideMapRoutes`); a trip
+// stage carries the whole RouteDto, so TripDetailPage narrows it down to the slug.
 export interface MapRouteItem {
   id: string
   name: string
@@ -75,11 +75,11 @@ export interface RoutesMapViewProps {
   highlightedItemId?: string | null
   onItemHover?: (itemId: string | null) => void
   /**
-   * The clicked (selected) trace, when the page holds it — the ride page shares it with the weather
-   * block and the group cards. Left undefined, the map keeps its own.
+   * The clicked (selected) trace, when the page holds it — the ride page shares it with the group
+   * cards. Left undefined, the map keeps its own.
    */
   selectedItemId?: string | null
-  /** A trace was clicked. */
+  /** A trace was clicked or tapped: it selects it (highlight and profile), it never navigates. */
   onItemSelect?: (itemId: string) => void
   /** Map size variant: 'compact' for cards, 'standard' for detail pages, 'full' for full-screen */
   variant?: 'compact' | 'standard' | 'full'

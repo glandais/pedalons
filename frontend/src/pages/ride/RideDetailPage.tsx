@@ -48,8 +48,7 @@ import { QueryStateBoundary } from '../../components/common/QueryStateBoundary'
 import { DetailPageSkeleton } from '../../components/common/DetailPageSkeleton'
 import { RideGroupCard } from '../../components/ride/RideGroupCard'
 import { TeamContextBanner } from '../../components/team/TeamContextBanner'
-import type { MapRouteItem } from '../../components/route/RoutesMapView'
-import { routeColorsById } from '@/lib/routeColors'
+import { rideMapRoutes } from './rideMapRoutes'
 import { ConfirmDialog } from '../../components/common/ConfirmDialog'
 
 // Lazy load the map component (pulls in map-vendor ~1MB and chart-vendor ~150KB)
@@ -83,15 +82,16 @@ export function RideDetailPage() {
   const { t } = useTranslation()
   const { teamSlug, rideSlug } = useParams<{ teamSlug: string; rideSlug: string }>()
   const { isAuthenticated } = useAuth()
-  // The hovered group, and the one chosen by a click on its trace. The hover wins while it lasts;
-  // the choice stays lit on the map and among the cards.
-  const [highlightedGroupId, setHighlightedGroupId] = useState<string | null>(null)
-  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
-  const litGroupId = highlightedGroupId ?? selectedGroupId
+  // The hovered route, and the one chosen by a click on its trace — map item ids, one per distinct
+  // route (`rideMapRoutes`). The hover wins while it lasts; the choice stays lit on the map and on
+  // the cards of every group that rides it.
+  const [highlightedItemId, setHighlightedItemId] = useState<string | null>(null)
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
+  const litItemId = highlightedItemId ?? selectedItemId
   // A choice drops a hover the map may have left behind (it re-asserts its clicked trace on leave).
-  const chooseGroup = (groupId: string) => {
-    setSelectedGroupId(groupId)
-    setHighlightedGroupId(null)
+  const chooseItem = (itemId: string) => {
+    setSelectedItemId(itemId)
+    setHighlightedItemId(null)
   }
   const [showUnpublishConfirm, setShowUnpublishConfirm] = useState(false)
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
@@ -116,31 +116,18 @@ export function RideDetailPage() {
   const membership = useRideGroupMembership(teamSlug!, rideSlug!)
   const groupError = membership.error
 
-  // Combine ride's main route with group routes for map display
-  // Must be before early returns to maintain hook order
-  const mapItems = useMemo(() => {
-    if (!ride) return []
-    const items: MapRouteItem[] = []
-
-    // Add ride's main route if it exists
-    if (ride.routeSlug) {
-      items.push({
-        id: 'ride-main-route',
-        name: t('rides.detail.mainRoute'),
-        routeSlug: ride.routeSlug,
-      })
-    }
-
-    // Add all groups
-    if (ride.groups) {
-      items.push(...ride.groups)
-    }
-
-    return items
-  }, [ride, t])
-
-  // The same numbering as the map's, so each card's bar is the colour of its trace.
-  const trackColors = useMemo(() => routeColorsById(mapItems), [mapItems])
+  // One layer per distinct route, not per group: groups on the same route share its trace and its
+  // colour, the bar in front of their names. Must be before early returns to maintain hook order.
+  const mainRouteLabel = t('rides.detail.mainRoute')
+  const {
+    items: mapItems,
+    itemIdByGroupId,
+    colorByGroupId: trackColors,
+  } = useMemo(() => rideMapRoutes(ride, mainRouteLabel), [ride, mainRouteLabel])
+  // Hovering a group's card lights its whole route, so the cards of the groups that share it too.
+  const hoverGroup = (groupId: string | null) =>
+    setHighlightedItemId(groupId ? (itemIdByGroupId.get(groupId) ?? null) : null)
+  const isGroupLit = (groupId: string) => !!litItemId && itemIdByGroupId.get(groupId) === litItemId
 
   useCanonicalPath(team && ride ? paths.ride(team.slug, ride.slug) : undefined)
 
@@ -505,10 +492,10 @@ export function RideDetailPage() {
                   <RoutesMapView
                     items={mapItems}
                     teamSlug={teamSlug!}
-                    highlightedItemId={litGroupId}
-                    onItemHover={setHighlightedGroupId}
-                    selectedItemId={selectedGroupId}
-                    onItemSelect={chooseGroup}
+                    highlightedItemId={litItemId}
+                    onItemHover={setHighlightedItemId}
+                    selectedItemId={selectedItemId}
+                    onItemSelect={chooseItem}
                   />
                 </Suspense>
               </ErrorBoundary>
@@ -527,7 +514,8 @@ export function RideDetailPage() {
                 action={groupAction(ride, solo, isMember)}
                 membership={membership}
                 routesBySlug={groupRoutesBySlug}
-                trackColor={trackColors.get(solo.id)}
+                // On its single-route map (graded, not a coloured trace) the bar would match nothing.
+                trackColor={soloRouteSlug ? undefined : trackColors.get(solo.id)}
                 error={groupError?.groupId === solo.id ? groupError.message : undefined}
               />
               <GroupStats
@@ -577,8 +565,8 @@ export function RideDetailPage() {
                             canJoin={canJoinRide}
                             onJoin={() => handleJoinGroup(group.id)}
                             onLeave={() => handleLeaveGroup(group.id)}
-                            onHover={setHighlightedGroupId}
-                            isHighlighted={litGroupId === group.id}
+                            onHover={hoverGroup}
+                            isHighlighted={isGroupLit(group.id)}
                             isLoading={membership.isPending}
                             error={
                               groupError?.groupId === group.id ? groupError.message : undefined

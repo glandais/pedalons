@@ -49,8 +49,8 @@ interface RideGroupCardProps {
    */
   routesBySlug: Map<string, RouteDetailDto>
   /**
-   * The colour of the group's trace on the ride's map (`routeColorsById`), recalled by a bar in
-   * front of its name; absent when the group has no trace of its own on the map.
+   * The colour of the group's trace on the ride's map (`rideMapRoutes`), recalled by a bar in
+   * front of its name — the same for every group on that route; absent when it rides no route.
    */
   trackColor?: string
   /**
