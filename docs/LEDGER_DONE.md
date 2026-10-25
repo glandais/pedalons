@@ -24,14 +24,28 @@ fichier garde **ce qui est fait**, et ce qu'il ne faut pas défaire.
   (`report_details_test`, `route_editor_member_test`, `team_pages_visibility_test`) ; ils la
   couvrent. **À ne pas défaire** : le rappel ne touche la puce que si elle a une taille
   (`hasSize`), sinon il ne fait rien.
-- [x] `MOB-97` **Le build release iOS ne plante plus à l'ouverture** (25 octobre 2026, contrat
-  inchangé) — la mise à jour des dépendances avait fait passer `shared_preferences_foundation` de
-  2.5.7 à 2.6.0, qui passe par Pigeon FFI : un build release s'arrêtait au lancement sur
-  `Unrecognized selector +[LegacyUserDefaultsApiSetup getInstanceWithName:]` (SIGABRT, vu sur
-  iPhone, iOS 27.0.1). Le plugin est figé en 2.5.7 par un `dependency_overrides` de
-  `mobile/pubspec.yaml`. Aucun test ne le couvre : seul un build release lancé sur un appareil le
-  montre. **À ne pas défaire** : ne pas lever l'override sans avoir ouvert un build release sur un
-  appareil (`MOB-98`).
+- [x] `MOB-98` **`shared_preferences_foundation` n'est plus figé en 2.5.7** (26 octobre 2026,
+  contrat inchangé) — le `dependency_overrides` posé par `MOB-97` est retiré et le plugin passe en
+  2.6.0. Le diagnostic refait sur le simulateur a montré que la 2.6.0 n'avait rien de cassé (voir
+  `MOB-97`). Vérifié en ouvrant un build release (`flutter run --release`, sans `--no-pub`) sur un
+  iPhone sous iOS 27.0.1. Aucun test ne le couvre.
+- [x] `MOB-97` **Le build release iOS ne plante plus à l'ouverture** (25 octobre 2026, cause
+  rectifiée le 26 octobre, contrat inchangé) — l'app s'arrêtait au lancement sur
+  `Unrecognized selector +[shared_preferences_foundation.LegacyUserDefaultsApiSetup
+  getInstanceWithName:]` (SIGABRT, iPhone, iOS 27.0.1). On a d'abord accusé
+  `shared_preferences_foundation` 2.6.0 (Pigeon FFI) et figé le plugin en 2.5.7 ; c'était faux. Le
+  build était **incohérent** : le Dart compilé contre la 2.6.0 (`.dart_tool/package_config.json`)
+  appelait en FFI le Swift de la 2.5.7, parce que le `Package.swift` SwiftPM généré
+  (`mobile/ios/Flutter/ephemeral/…`) pointait encore vers `.packages/shared_preferences_foundation-2.5.7`.
+  La mise à jour des dépendances avait été faite dans un autre worktree, et le build lancé avec
+  `flutter run --release --no-pub` : avec `--no-pub`, flutter ne régénère pas les fichiers natifs
+  des plugins, et `dart pub get` ne le fait jamais. Le message `does not implement
+  methodSignatureForSelector:` le trahissait : la classe chargée ne dérivait pas de `NSObject`,
+  contrairement à celle de la 2.6.0. Reproduit en **debug** sur le simulateur en recréant ce
+  décalage ; un build propre en 2.6.0 s'ouvre. **À ne pas défaire** : après tout changement du
+  `pubspec.lock` (pull, merge, mise à jour), lancer `flutter pub get` — pas `dart pub get` — ou un
+  `flutter run`/`build` sans `--no-pub` avant de construire pour iOS ; un `Unrecognized selector`
+  sur une classe de plugin désigne d'abord ce décalage, pas le plugin.
 - [x] `MOB-94` **La météo sur la carte, palier 3 lot B : sortie solo et voyages** (25 octobre 2026,
   contrat inchangé) — le mode Météo (puce sous la carte encastrée, tracé coloré, légende et crédit,
   pastilles et feuille en plein écran) gagne le détail d'une sortie solo (`ride_detail_page.dart`,
