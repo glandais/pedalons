@@ -4602,6 +4602,70 @@ plus la colonne. Le départ d'un groupe n'existe plus que dans `ride_groups.star
   **À ne pas défaire** : une date journalière d'Open-Meteo se lit au décalage unique de la réponse,
   jamais dans le fuseau du lieu.
 
+### Quarkus 4
+
+- `API-143` **Le backend ne dépend plus de hypersistence-utils** (2026-10-20, contrat inchangé,
+  pas de migration) — préalable à Quarkus 4 : `hypersistence-utils-hibernate-71` n'a pas de module
+  pour Hibernate ORM 8. Remplacé à comportement identique sur Quarkus 3.40 / Hibernate 7.4.
+  **Ids** : `@Tsid` est `infrastructure.hibernate.Tsid` (`@IdGeneratorType` → `TsidGenerator`, un
+  `BeforeExecutionGenerator`), adossé à `io.hypersistence:hypersistence-tsid` gardé en dépendance
+  directe ; même fabrique que hypersistence (`TSID.Factory.builder().withRandomFunction(
+  THREAD_LOCAL_RANDOM_FUNCTION)`, une seule par JVM, 10 bits de nœud tirés au démarrage sauf
+  `TSID_NODE`, époque 2020-01-01) ; seuls les imports des 38 entités changent. **JSONB** : les 19
+  colonnes passent de `@Type(JsonBinaryType.class)` à `@JdbcTypeCode(SqlTypes.JSON)`, sérialisées
+  par le `FormatMapper` du PU (`JsonbFormatMapper`, `@JsonFormat @PersistenceUnitExtension`), qui
+  délègue à `JsonbMapper`, seul `ObjectMapper` des colonnes JSONB et copie exacte de celui de
+  hypersistence (`JavaTimeModule`, `Jdk8Module`, `ParameterNamesModule`, `OffsetDateTime` en ISO,
+  défauts Jackson 2 : `Instant` en secondes décimales, nulls écrits, propriété inconnue refusée) ;
+  `GpxTrackRepository.updateSurfaces` et les tests passent par `JsonbMapper.INSTANCE`. Les champs
+  `JsonNode` portent `@Mutability(JsonNodeMutabilityPlan.class)` : la copie par aller-retour JSON
+  de Hibernate changerait un `LongNode` en `IntNode` et réécrirait la ligne à chaque flush.
+  Tests : `JsonbMapperTest` (document de référence écrit par hypersistence 3.16.0),
+  `TsidGeneratorTest`, `JsonbMappingTest` (`@QuarkusTest` : mapper du PU, plan des `JsonNode`,
+  `Passkey.transports` toujours en `ARRAY`, garde-fou contre un bean `JsonbFormatMapper` perdu qui
+  ferait retomber Hibernate sur son mapper par défaut sans bruit), `ClimbDataTest`,
+  `TrackSurfaceDocumentTest`. Quarkus 4 reste bloqué par d'autres dépendances : `API-144`.
+  **À ne pas défaire** : jamais l'`ObjectMapper` de Quarkus/REST (`PedalonsJacksonConfig`,
+  `NON_NULL`) sur une colonne JSONB ; ne toucher à la configuration de `JsonbMapper`, ni passer à
+  Jackson 3 (défauts différents, dates notamment), qu'avec `JsonbMapperTest` vert, car un
+  déploiement roulant fait lire à l'ancienne version ce qu'écrit la nouvelle ; une seule fabrique
+  TSID pour toutes les entités (nœud aléatoire par JVM, comme avant : `TSID_NODE` n'est fixé nulle
+  part) ; `@Mutability(JsonNodeMutabilityPlan.class)` sur tout champ `JsonNode` mappé en JSON ;
+  `quarkus.hibernate-orm.mapping.format.global=ignore` reste.
+
+- `API-144` **Le backend tourne sur Quarkus 4 (4.0.0.Beta1) et Jackson 3** (2026-10-20, contrat
+  inchangé — `pedalons.api.version` non bumpé, pas de migration) — plateforme 4.0.0.Beta1,
+  `quarkus-amazon-services` 4.0.0.Beta3 par le BOM `io.quarkiverse.amazonservices` (SDK AWS
+  2.55.10, code S3 inchangé), `geolatte-geojson-jackson3` 2.0.1. Tout le code, main et tests, est
+  passé de `com.fasterxml.jackson.core/databind/datatype/module` à `tools.jackson.*` ; les
+  annotations restent dans `com.fasterxml.jackson.annotation`. `JsonProcessingException` est devenu
+  `JacksonException` (non vérifiée) ; `JsonSerializer`/`JsonDeserializer`/`SerializerProvider` sont
+  devenus `ValueSerializer`/`ValueDeserializer`/`SerializationContext` ;
+  `asText`/`textValue`/`isTextual` sont devenus `asString`/`stringValue`/`isString`. Les modules
+  Jackson 2 `jsr310`/`jdk8`/`parameter-names` sont sortis du pom, car databind 3 les intègre. **Le
+  JSON REST envoyé aux clients est celui de Quarkus 3.40**, sans propriété `quarkus.jackson.*` et
+  avec les sérialiseurs générés au build de Quarkus 4 : la lecture suit les défauts plus stricts de
+  Jackson 3 (`null` refusé sur un primitif, contenu après le document refusé), ce qu'aucun client
+  n'envoie — vérifié le 2026-10-26 par `check.sh` et la suite backend sans ces propriétés.
+  `PedalonsJacksonConfig` remet les défauts Jackson 2 de l'écriture : ordre de déclaration et non alphabétique, enums par `name()`, mois `java.time`
+  comptés à partir de zéro, `NON_NULL` sur la valeur **et** le contenu des `Map`, zéros de fin des
+  `BigDecimal` d'un arbre retirés, caractères hors BMP échappés en `\uXXXX` dans l'UTF-8.
+  `PedalonsJsonFactoryConfig` ramène la profondeur d'imbrication à 1000. `ValhallaErrors` lit
+  encore un corps suivi de contenu parasite. **Les colonnes JSONB sont identiques octet pour
+  octet** : le `JsonMapper.builder()` de `JsonbMapper` rétablit un à un les défauts Jackson 2 qui
+  avaient changé (dates et durées en nombres, propriété inconnue refusée, null accepté pour un
+  primitif, profondeur 1000…), et les versions 3.40 et 4 relisent chacune ce qu'écrit l'autre. Le
+  câblage `@JsonFormat @PersistenceUnitExtension` et S3 sur MinIO sont vérifiés sur Quarkus 4.
+  Tests : `JsonbMapperTest` (document de référence hypersistence, inchangé), `RestJsonParityTest`
+  (nouveau, `@QuarkusTest` sur le mapper injecté, valeurs attendues = sorties Jackson 2 / Quarkus
+  3.40), `RideResourceTest.getRide_leavesNullPropertiesOut` (un champ nul reste absent du corps
+  HTTP), `JsonbMappingTest`, `EventDateTimeTest`, `TrackSurfaceDocumentTest`, la règle
+  `ArchitectureTest.no_jackson_2`, et la suite complète. **À ne pas défaire** : aucun import
+  Jackson 2 — il reste au classpath par flyway-core, magika et timeshape, donc le compilateur ne le
+  verrait pas. Ne retirer aucun réglage de `PedalonsJacksonConfig` ou de `JsonbMapper` sans `RestJsonParityTest` et `JsonbMapperTest` verts. `NON_NULL` porte sur la
+  valeur et le contenu. `jackson3.version` reste au-dessus de ce que fige `quarkus-bom` tant que
+  webauthn4j est compilé contre 3.2.x.
+
 ### `API-120` Envoi automatique des parcours de mes sorties vers mes services GPS (16 octobre 2026, contrat `11.5.0`)
 
 - `API-120` **Un membre inscrit n'envoie plus lui-même le parcours de son groupe vers Hammerhead,

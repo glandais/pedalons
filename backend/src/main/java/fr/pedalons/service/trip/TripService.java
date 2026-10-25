@@ -1,6 +1,5 @@
 package fr.pedalons.service.trip;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.pedalons.common.TsidUtils;
 import fr.pedalons.common.exception.BusinessException;
 import fr.pedalons.common.exception.ConflictException;
@@ -62,6 +61,7 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.databind.ObjectMapper;
 
 @ApplicationScoped
 public class TripService extends TeamEntityService<Trip, TripRepository, TripDto> {

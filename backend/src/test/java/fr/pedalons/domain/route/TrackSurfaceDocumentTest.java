@@ -3,21 +3,19 @@ package fr.pedalons.domain.route;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import fr.pedalons.domain.gpx.PreviewSurfacesDocument;
 import fr.pedalons.domain.route.TrackSurfaceDocument.SurfaceRange;
 import fr.pedalons.domain.route.TrackSurfaceDocument.WayRange;
-import io.hypersistence.utils.hibernate.type.util.JsonConfiguration;
-import io.hypersistence.utils.hibernate.type.util.ObjectMapperWrapper;
+import fr.pedalons.infrastructure.hibernate.JsonbMapper;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.JsonNode;
 
-/** The documents are read by the mapper {@code JsonBinaryType} hands to Hibernate. */
+/** The documents are read by {@link JsonbMapper}, the mapper the PU FormatMapper hands to Hibernate. */
 class TrackSurfaceDocumentTest {
 
-  private static final ObjectMapperWrapper MAPPER =
-      JsonConfiguration.INSTANCE.getObjectMapperWrapper();
+  private static final JsonbMapper MAPPER = JsonbMapper.INSTANCE;
 
   private static TrackSurfaceDocument document() {
     return new TrackSurfaceDocument(
@@ -42,7 +40,7 @@ class TrackSurfaceDocumentTest {
     assertEquals(
         MAPPER.toJsonNode("[[0.0,800.0,\"road\",\"none\"],[800.0,57012.3,\"cycleway\",null]]"),
         json.get("ways"));
-    assertEquals("ok", json.get("status").asText());
+    assertEquals("ok", json.get("status").asString());
     assertEquals(190674135L, json.get("osmChangeset").asLong());
   }
 

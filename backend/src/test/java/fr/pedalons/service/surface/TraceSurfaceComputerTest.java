@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.pedalons.common.GeoDistance;
 import fr.pedalons.domain.route.GpxTrack.TrackPoint;
 import fr.pedalons.domain.route.TrackSurfaceDocument;
@@ -23,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 
 class TraceSurfaceComputerTest {
 

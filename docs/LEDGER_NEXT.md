@@ -664,6 +664,20 @@ sont les plus lourds et les nomme tous : c'est un sujet de **rate limiting**, pa
 levier si ça devient sensible est de descendre `MAX_BULK_SLUGS` vers ~15 (les appelants réels
 plafonnent à 12, `kTripTrackStageCap`), pas de réintroduire un paramètre de finesse.
 
+### Quarkus 4
+
+- [ ] `API-145` **Le backend est sur une bêta de Quarkus 4** — plan et points ouverts :
+  [plans/2026-10-20-quarkus-4.md](plans/2026-10-20-quarkus-4.md) §9 (contrat OpenAPI régénéré sans
+  `servers`, métriques Prometheus 1.x à vérifier dans la supervision, variables `QUARKUS_MAILER_*`
+  de production jamais confrontées aux propriétés renommées de la 4, `mapping.format.global`
+  dépréciée). Version : `4.0.0.Beta1`, avec
+  `quarkus-amazon-services` `4.0.0.Beta3` par le BOM Quarkiverse faute de BOM plateforme 4.x
+  (`backend/pom.xml`). À la version finale : revenir au BOM plateforme `quarkus-amazon-services-bom` ;
+  relire les surcharges du pom (`jackson3.version` 3.2.3 contre 3.1.4 dans `quarkus-bom`
+  4.0.0.Beta1, webauthn4j 0.31.11 voulant 3.2.x ; `log4j-api` 2.26.1, déjà la version du BOM
+  4.0.0.Beta1, que la règle du commentaire permet de retirer) ; relancer `RestJsonParityTest` et
+  `JsonbMapperTest`. Petite taille.
+
 ### Petites évolutions d'API qui suppriment chacune une dégradation nommée
 
 Extrait du §5.2 du plan mobile. Aucune ne bloque un écran ; chacune retire un repli visible.

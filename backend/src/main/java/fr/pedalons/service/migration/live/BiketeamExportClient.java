@@ -1,7 +1,5 @@
 package fr.pedalons.service.migration.live;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.pedalons.service.migration.SourceFileUnavailableException;
 import fr.pedalons.service.migration.live.snapshot.BiketeamFileFetcher;
 import fr.pedalons.service.migration.live.snapshot.BiketeamSnapshot;
@@ -21,6 +19,9 @@ import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Client of biketeam's M2M export API, over HTTPS (docs/plans/2026-09-22-biketeam-live-migration.md
@@ -112,7 +113,7 @@ public class BiketeamExportClient implements BiketeamFileFetcher {
       }
       try {
         return objectMapper.readValue(body, BiketeamSnapshot.class);
-      } catch (IOException e) {
+      } catch (JacksonException e) {
         // Jackson wraps what the heartbeat throws mid-body: the job is no longer ours.
         for (Throwable t = e.getCause(); t != null && t != t.getCause(); t = t.getCause()) {
           if (t instanceof BiketeamJobLostException lost) {
@@ -228,11 +229,11 @@ public class BiketeamExportClient implements BiketeamFileFetcher {
       JsonNode node = objectMapper.readTree(body);
       if (node != null && node.isObject()) {
         JsonNode code = node.get("code");
-        if (code != null && code.isTextual() && CODE.matcher(code.textValue()).matches()) {
-          return code.textValue();
+        if (code != null && code.isString() && CODE.matcher(code.stringValue()).matches()) {
+          return code.stringValue();
         }
       }
-    } catch (IOException | RuntimeException e) {
+    } catch (RuntimeException e) {
       // Not JSON: not biketeam's answer.
     }
     return null;

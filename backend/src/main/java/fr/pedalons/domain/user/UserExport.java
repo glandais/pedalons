@@ -2,7 +2,7 @@ package fr.pedalons.domain.user;
 
 import fr.pedalons.domain.platform.Domain;
 import fr.pedalons.enums.UserExportStatus;
-import io.hypersistence.utils.hibernate.id.Tsid;
+import fr.pedalons.infrastructure.hibernate.Tsid;
 import jakarta.persistence.*;
 import java.time.Instant;
 import lombok.Getter;

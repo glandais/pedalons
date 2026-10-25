@@ -1,7 +1,5 @@
 package fr.pedalons.service.feedback;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.pedalons.common.TsidUtils;
 import fr.pedalons.domain.feedback.ErrorOccurrence;
 import fr.pedalons.domain.feedback.ErrorSignature;
@@ -21,6 +19,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Turns feedback rows into GitHub issues and comments — in French, for the maintainers who triage

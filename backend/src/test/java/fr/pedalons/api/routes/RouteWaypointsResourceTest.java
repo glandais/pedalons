@@ -6,8 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.pedalons.api.AbstractResourceTest;
 import fr.pedalons.common.GeoPoint;
 import fr.pedalons.common.TsidUtils;
@@ -37,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * The waypoints of a route: typed, placed on the track and edited as a list (docs/LEDGER_*.md
@@ -77,17 +76,13 @@ class RouteWaypointsResourceTest extends AbstractResourceTest {
 
   /** The route part as UTF-8 bytes: RestAssured would write an accent as "?" in its default charset. */
   private MultiPartSpecification routePart(Object route) {
-    try {
-      byte[] json =
-          (route instanceof String text ? text : objectMapper.writeValueAsString(route))
-              .getBytes(StandardCharsets.UTF_8);
-      return new MultiPartSpecBuilder(json)
-          .controlName("route")
-          .mimeType(MediaType.APPLICATION_JSON)
-          .build();
-    } catch (JsonProcessingException e) {
-      throw new IllegalStateException(e);
-    }
+    byte[] json =
+        (route instanceof String text ? text : objectMapper.writeValueAsString(route))
+            .getBytes(StandardCharsets.UTF_8);
+    return new MultiPartSpecBuilder(json)
+        .controlName("route")
+        .mimeType(MediaType.APPLICATION_JSON)
+        .build();
   }
 
   private Response create(File gpx, List<WaypointRequest> waypoints) {

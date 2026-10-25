@@ -3,7 +3,6 @@ package fr.pedalons.service.ride;
 import static fr.pedalons.dto.error.ErrorCode.ALREADY_REGISTERED;
 import static fr.pedalons.dto.error.ErrorCode.NOT_REGISTERED;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.pedalons.common.TsidUtils;
 import fr.pedalons.common.exception.BusinessException;
 import fr.pedalons.common.exception.ConflictException;
@@ -71,6 +70,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.databind.ObjectMapper;
 
 @ApplicationScoped
 public class RideService extends TeamEntityService<Ride, RideRepository, RideDto> {

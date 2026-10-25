@@ -4,12 +4,12 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.function.BiConsumer;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * The heartbeat of a download: at most one write a minute, a job no longer ours stops the download,
@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test;
  */
 class JobProgressTrackerTest {
 
-  private final ObjectMapper mapper = new ObjectMapper().findAndRegisterModules();
+  private final ObjectMapper mapper = new ObjectMapper();
   private Instant now = Instant.parse("2026-09-24T10:00:00Z");
   private int writes;
   private RuntimeException failWith;

@@ -14,8 +14,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.when;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.pedalons.api.AbstractResourceTest;
 import fr.pedalons.common.TsidUtils;
 import fr.pedalons.domain.route.Route;
@@ -42,6 +40,8 @@ import java.util.Locale;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * {@code GET …/trips/{tripSlug}/weather} (docs/LEDGER_*.md API-76): who may read it, the state of
@@ -207,7 +207,7 @@ class TripWeatherResourceTest extends AbstractResourceTest {
     JsonNode json = objectMapper.readTree(body);
     assertEquals(
         farStart.minus(7, ChronoUnit.DAYS),
-        Instant.parse(json.path("stages").get(3).path("leg").path("availableFrom").asText()));
+        Instant.parse(json.path("stages").get(3).path("leg").path("availableFrom").asString()));
     List<String> keys = new ArrayList<>();
     collectKeys(json, "$", keys);
     List<String> leaks =

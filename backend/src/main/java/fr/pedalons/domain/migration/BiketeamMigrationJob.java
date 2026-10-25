@@ -1,20 +1,22 @@
 package fr.pedalons.domain.migration;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import fr.pedalons.domain.platform.Domain;
 import fr.pedalons.domain.user.User;
 import fr.pedalons.enums.BiketeamMigrationStatus;
-import io.hypersistence.utils.hibernate.id.Tsid;
-import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
+import fr.pedalons.infrastructure.hibernate.JsonNodeMutabilityPlan;
+import fr.pedalons.infrastructure.hibernate.Tsid;
 import jakarta.persistence.*;
 import java.time.Instant;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.Type;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.Mutability;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.databind.JsonNode;
 
 /**
  * One confirmed biketeam migration request. The row is first a <em>grant</em> — a single-use
@@ -97,7 +99,8 @@ public class BiketeamMigrationJob {
   private @Nullable Instant heartbeatAt;
 
   /** {@code {phase, done, total}}. */
-  @Type(JsonBinaryType.class)
+  @JdbcTypeCode(SqlTypes.JSON)
+  @Mutability(JsonNodeMutabilityPlan.class)
   @Column(name = "progress", columnDefinition = "jsonb")
   private @Nullable JsonNode progress;
 
@@ -105,7 +108,8 @@ public class BiketeamMigrationJob {
   private @Nullable Long targetTeamId;
 
   /** {@code {counts, warnings, warningsTruncated, urlMap}} — urlMap only once SUCCEEDED. */
-  @Type(JsonBinaryType.class)
+  @JdbcTypeCode(SqlTypes.JSON)
+  @Mutability(JsonNodeMutabilityPlan.class)
   @Column(name = "result", columnDefinition = "jsonb")
   private @Nullable JsonNode result;
 

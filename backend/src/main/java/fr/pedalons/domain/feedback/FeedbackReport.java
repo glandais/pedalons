@@ -1,21 +1,23 @@
 package fr.pedalons.domain.feedback;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import fr.pedalons.domain.platform.Domain;
 import fr.pedalons.domain.user.User;
 import fr.pedalons.enums.ClientPlatform;
 import fr.pedalons.enums.FeedbackKind;
 import fr.pedalons.enums.GithubSyncStatus;
-import io.hypersistence.utils.hibernate.id.Tsid;
-import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
+import fr.pedalons.infrastructure.hibernate.JsonNodeMutabilityPlan;
+import fr.pedalons.infrastructure.hibernate.Tsid;
 import jakarta.persistence.*;
 import java.time.Instant;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.Type;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.Mutability;
+import org.hibernate.type.SqlTypes;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.databind.JsonNode;
 
 /**
  * A bug report or a suggestion a member wrote from the app or the site, with the technical context
@@ -60,17 +62,20 @@ public class FeedbackReport {
   private @Nullable String message;
 
   /** {@code ClientContextDto}, serialized. */
-  @Type(JsonBinaryType.class)
+  @JdbcTypeCode(SqlTypes.JSON)
+  @Mutability(JsonNodeMutabilityPlan.class)
   @Column(name = "context", columnDefinition = "jsonb", nullable = false)
   private JsonNode context;
 
   /** {@code ClientErrorDto}, serialized — the error the report was opened from, if any. */
-  @Type(JsonBinaryType.class)
+  @JdbcTypeCode(SqlTypes.JSON)
+  @Mutability(JsonNodeMutabilityPlan.class)
   @Column(name = "error", columnDefinition = "jsonb")
   private @Nullable JsonNode error;
 
   /** {@code ClientLogEntryDto}s, serialized. Null when the member attached no technical details. */
-  @Type(JsonBinaryType.class)
+  @JdbcTypeCode(SqlTypes.JSON)
+  @Mutability(JsonNodeMutabilityPlan.class)
   @Column(name = "logs", columnDefinition = "jsonb")
   private @Nullable JsonNode logs;
 

@@ -1,8 +1,5 @@
 package fr.pedalons.infrastructure.github;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -17,6 +14,9 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.logging.Logger;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Opens, reads, reopens and comments issues of the feedback repository.
@@ -94,8 +94,8 @@ public class GitHubIssueClient {
   public IssueStatus status(int number) {
     JsonNode issue =
         call("read issue #" + number, () -> github.getIssue(owner(), repo(), number, auth()));
-    boolean closed = "closed".equals(issue.path("state").asText());
-    String closedAt = issue.path("closed_at").asText(null);
+    boolean closed = "closed".equals(issue.path("state").asString());
+    String closedAt = issue.path("closed_at").asString(null);
     return new IssueStatus(closed, closed && closedAt != null ? Instant.parse(closedAt) : null);
   }
 
@@ -120,7 +120,7 @@ public class GitHubIssueClient {
             "GitHub " + what + " answered " + response.getStatus() + ": " + abbreviate(body));
       }
       return objectMapper.readTree(body.isEmpty() ? "{}" : body);
-    } catch (JsonProcessingException e) {
+    } catch (JacksonException e) {
       throw new GitHubException("GitHub " + what + " answered unreadable JSON", e);
     }
   }

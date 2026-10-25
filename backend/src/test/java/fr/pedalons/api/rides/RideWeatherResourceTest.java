@@ -19,8 +19,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.when;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.pedalons.api.AbstractResourceTest;
 import fr.pedalons.domain.place.Place;
 import fr.pedalons.domain.ride.Ride;
@@ -49,6 +47,8 @@ import java.util.Locale;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * {@code GET …/rides/{rideSlug}/weather} and {@code RideDto.weather}: who may read it, the state it
@@ -304,7 +304,7 @@ class RideWeatherResourceTest extends AbstractResourceTest {
                 .statusCode(200)
                 .extract()
                 .asString());
-    assertEquals("OK", detail.path("weather").path("status").asText());
+    assertEquals("OK", detail.path("weather").path("status").asString());
     assertNoCoordinate(detail.path("weather"), "RideDto.weather");
     JsonNode list =
         objectMapper.readTree(

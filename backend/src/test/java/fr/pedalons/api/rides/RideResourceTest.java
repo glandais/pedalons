@@ -236,6 +236,49 @@ class RideResourceTest extends AbstractResourceTest {
   }
 
   /**
+   * Null properties are left out of the HTTP body, not written as {@code null}: Quarkus 4 builds the
+   * response serializers at build time (reflection-free), and a {@code nullValue()} matcher cannot
+   * tell an absent field from a null one (docs/LEDGER_*.md API-144).
+   */
+  @Test
+  void getRide_leavesNullPropertiesOut() {
+    String rideSlug =
+        given()
+            .auth()
+            .oauth2(getAccessToken(USER1))
+            .contentType("application/json")
+            .body(
+                new RideRequest(
+                    "Null Test Ride",
+                    MediaDto.builder().build(),
+                    wall(LocalDate.parse("2025-01-22").atTime(0, 0).toInstant(ZoneOffset.UTC)),
+                    Status.DRAFT,
+                    Visibility.PUBLIC,
+                    null,
+                    null,
+                    null,
+                    null,
+                    List.of(new GroupRequest(null, "G1", null, null, null, null)),
+                    null))
+            .when()
+            .post("/api/teams/" + team1Slug + "/rides")
+            .then()
+            .statusCode(201)
+            .extract()
+            .path("slug");
+
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .when()
+        .get("/api/teams/" + team1Slug + "/rides/" + rideSlug)
+        .then()
+        .statusCode(200)
+        .body("groups[0]", not(hasKey("leader")))
+        .body(not(containsString(":null")));
+  }
+
+  /**
    * docs/LEDGER_*.md API-16: « terminée » is computed by the server from the start time, and is
    * independent of the status — the clients no longer derive it each on their own.
    */

@@ -12,7 +12,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
-        <quarkus.platform.version>3.40.1.1</quarkus.platform.version>
+        <quarkus.platform.version>4.0.0.Beta1</quarkus.platform.version>
+        <quarkus-amazon-services.version>4.0.0.Beta3</quarkus-amazon-services.version>
         <compiler-plugin.version>3.16.0</compiler-plugin.version>
         <surefire-plugin.version>3.6.0</surefire-plugin.version>
         <!-- Keep at 1: with forkCount>1 Surefire dispatches classes one at a time and
@@ -21,20 +22,21 @@
         <checkstyle-plugin.version>3.6.0</checkstyle-plugin.version>
         <spotless-plugin.version>3.10.4</spotless-plugin.version>
         <git-commit-id-plugin.version>10.0.1</git-commit-id-plugin.version>
-        <hypersistence-utils-hibernate.version>3.16.0</hypersistence-utils-hibernate.version>
+        <hypersistence-tsid.version>2.1.4</hypersistence-tsid.version>
         <vcyclist.version>6.11.0</vcyclist.version>
         <lombok.version>1.18.48</lombok.version>
         <jspecify.version>1.0.0</jspecify.version>
         <magika.version>0.6.1</magika.version>
         <dependencyversion-maven-plugin.version>1.0.0</dependencyversion-maven-plugin.version>
-        <geolatte-geojson.version>1.11</geolatte-geojson.version>
+        <geolatte-geojson.version>2.0.1</geolatte-geojson.version>
         <archunit-junit5.version>1.5.1</archunit-junit5.version>
         <webauthn4j-core.version>0.31.11.RELEASE</webauthn4j-core.version>
         <timeshape.version>2026b.29</timeshape.version>
         <s3mock-testcontainers.version>5.2.3</s3mock-testcontainers.version>
         <google-java-format.version>1.36.1</google-java-format.version>
-        <!-- Security overrides of versions quarkus-bom pins too low; drop each one once a Quarkus
-             release aligns past it. jackson 3 (via webauthn4j): GHSA ranges [3.2.0,3.2.2).
+        <!-- Overrides of versions quarkus-bom pins too low; drop each one once a Quarkus release
+             aligns past it. jackson 3: quarkus-bom 4.0.0.Beta1 pins 3.1.4, below the 3.2.3 that
+             webauthn4j 0.31.11 is built against (3.2.0 and 3.2.1 carry GHSA advisories).
              log4j-api (via log4j2-jboss-logmanager): [2.26.0,2.26.1). -->
         <jackson3.version>3.2.4</jackson3.version>
         <log4j-api.version>2.26.1</log4j-api.version>
@@ -63,9 +65,9 @@
                 <scope>import</scope>
             </dependency>
             <dependency>
-                <groupId>io.quarkus.platform</groupId>
+                <groupId>io.quarkiverse.amazonservices</groupId>
                 <artifactId>quarkus-amazon-services-bom</artifactId>
-                <version>${quarkus.platform.version}</version>
+                <version>${quarkus-amazon-services.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -97,7 +99,7 @@
         </dependency>
         <dependency>
             <groupId>org.geolatte</groupId>
-            <artifactId>geolatte-geojson</artifactId>
+            <artifactId>geolatte-geojson-jackson3</artifactId>
             <version>${geolatte-geojson.version}</version>
         </dependency>
 
@@ -112,8 +114,8 @@
         </dependency>
         <dependency>
             <groupId>io.hypersistence</groupId>
-            <artifactId>hypersistence-utils-hibernate-71</artifactId>
-            <version>${hypersistence-utils-hibernate.version}</version>
+            <artifactId>hypersistence-tsid</artifactId>
+            <version>${hypersistence-tsid.version}</version>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

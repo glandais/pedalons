@@ -1,14 +1,17 @@
 package fr.pedalons.infrastructure.valhalla;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.ws.rs.core.Response;
-import java.io.IOException;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 /** Reading the errors of the Valhalla protocol, as served by Stadia Maps. */
 public final class ValhallaErrors {
 
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+  // Jackson 3 refuses trailing content, Jackson 2 read past it (docs/LEDGER_*.md API-144).
+  private static final ObjectMapper OBJECT_MAPPER =
+      JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS).build();
 
   private ValhallaErrors() {}
 
@@ -24,7 +27,7 @@ public final class ValhallaErrors {
       }
       JsonNode code = OBJECT_MAPPER.readTree(body).path("error_code");
       return code.isInt() ? code.asInt() : -1;
-    } catch (RuntimeException | IOException ex) {
+    } catch (RuntimeException ex) {
       // Empty, truncated or HTML body: the status alone decides.
       return -1;
     }

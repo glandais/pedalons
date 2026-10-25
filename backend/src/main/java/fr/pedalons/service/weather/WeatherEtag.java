@@ -1,10 +1,10 @@
 package fr.pedalons.service.weather;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * The {@code ETag} of a weather body: a digest of what is sent rather than « version + {@code
@@ -21,7 +21,7 @@ public final class WeatherEtag {
       byte[] digest =
           MessageDigest.getInstance("SHA-256").digest(objectMapper.writeValueAsBytes(body));
       return HexFormat.of().formatHex(digest, 0, 16);
-    } catch (JsonProcessingException | NoSuchAlgorithmException e) {
+    } catch (JacksonException | NoSuchAlgorithmException e) {
       throw new IllegalStateException("Cannot digest a weather body", e);
     }
   }

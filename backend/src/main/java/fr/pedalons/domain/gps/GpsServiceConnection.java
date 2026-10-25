@@ -3,7 +3,7 @@ package fr.pedalons.domain.gps;
 import fr.pedalons.domain.user.User;
 import fr.pedalons.enums.GpsOAuthVersion;
 import fr.pedalons.enums.GpsServiceType;
-import io.hypersistence.utils.hibernate.id.Tsid;
+import fr.pedalons.infrastructure.hibernate.Tsid;
 import jakarta.persistence.*;
 import java.time.Instant;
 import lombok.Getter;

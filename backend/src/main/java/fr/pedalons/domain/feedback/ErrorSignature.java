@@ -2,8 +2,7 @@ package fr.pedalons.domain.feedback;
 
 import fr.pedalons.enums.ClientPlatform;
 import fr.pedalons.enums.GithubSyncStatus;
-import io.hypersistence.utils.hibernate.id.Tsid;
-import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
+import fr.pedalons.infrastructure.hibernate.Tsid;
 import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -12,7 +11,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.DynamicUpdate;
-import org.hibernate.annotations.Type;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -69,7 +69,7 @@ public class ErrorSignature {
   private long occurrenceCount;
 
   /** Every client version it was seen on, in order of appearance. */
-  @Type(JsonBinaryType.class)
+  @JdbcTypeCode(SqlTypes.JSON)
   @Column(name = "versions", columnDefinition = "jsonb", nullable = false)
   private List<String> versions = new ArrayList<>();
 
@@ -106,7 +106,7 @@ public class ErrorSignature {
    * The versions seen when the issue was found closed. An occurrence on any other version is a
    * regression and reopens the issue; one on these versions is a client that was never updated.
    */
-  @Type(JsonBinaryType.class)
+  @JdbcTypeCode(SqlTypes.JSON)
   @Column(name = "versions_at_close", columnDefinition = "jsonb", nullable = false)
   private List<String> versionsAtClose = new ArrayList<>();
 

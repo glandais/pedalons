@@ -1,9 +1,5 @@
 package fr.pedalons.service.migration.live;
 
-import com.fasterxml.jackson.core.StreamReadFeature;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import fr.pedalons.common.TokenUtils;
 import fr.pedalons.common.UrlUtils;
 import fr.pedalons.common.exception.BadRequestException;
@@ -19,6 +15,11 @@ import java.util.regex.Pattern;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import org.jboss.logging.Logger;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.StreamReadFeature;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Verifies the request token biketeam signs and sends through the browser — a compact JWS, HS256,
@@ -89,7 +90,7 @@ public class BiketeamRequestTokenVerifier {
     }
     JsonNode header = parseJson(parts[0]);
     JsonNode alg = header.get("alg");
-    if (alg == null || !alg.isTextual() || !"HS256".equals(alg.textValue())) {
+    if (alg == null || !alg.isString() || !"HS256".equals(alg.stringValue())) {
       throw invalid();
     }
 
@@ -185,10 +186,10 @@ public class BiketeamRequestTokenVerifier {
 
   private static String text(JsonNode node, String field) {
     JsonNode value = node.get(field);
-    if (value == null || !value.isTextual()) {
+    if (value == null || !value.isString()) {
       throw invalid();
     }
-    return value.textValue();
+    return value.stringValue();
   }
 
   private static long integer(JsonNode node, String field) {
@@ -214,7 +215,7 @@ public class BiketeamRequestTokenVerifier {
         throw invalid();
       }
       return node;
-    } catch (java.io.IOException e) {
+    } catch (JacksonException e) {
       throw invalid();
     }
   }

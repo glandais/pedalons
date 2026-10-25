@@ -34,6 +34,7 @@ notifications alike. Rephrase rather than agree: « Vous participez » not « Vo
 | Deployment, backups, restore (the runbook) | [docs/OPERATIONS.md](docs/OPERATIONS.md) |
 | What the product does, for whom | [docs/PRODUCT_SHEET.md](docs/PRODUCT_SHEET.md) |
 | Biketeam → Pédalons migration, team by team, server to server over HTTPS (contract with biketeam, operations) | [docs/plans/2026-09-22-biketeam-live-migration.md](docs/plans/2026-09-22-biketeam-live-migration.md) + [docs/MIGRATE_BIKETEAM.md](docs/MIGRATE_BIKETEAM.md) |
+| Quarkus 4 + Jackson 3 migration (what changed, the JSON-compatibility settings not to undo, what's left until the final release) | [docs/plans/2026-10-20-quarkus-4.md](docs/plans/2026-10-20-quarkus-4.md) |
 | Monetisation plan (pricing tiers, annual invoicing through Qonto, subscription tracking, per-team entitlements) — a proposal, nothing decided | [docs/plans/2026-10-17-monetisation.md](docs/plans/2026-10-17-monetisation.md) |
 | The design brief the v2 came from (state *before* v2) | [docs/plans/archive/audit-ux/](docs/plans/archive/audit-ux/) |
 
@@ -81,12 +82,12 @@ Three invariants that cut across modules, each of which a plausible-looking chan
 
 | Layer | Technologies |
 |-------|-------------|
-| Backend | Java 25, Quarkus 3.39.x, PostgreSQL 18 + PostGIS, Hibernate/Panache, Flyway |
+| Backend | Java 25, Quarkus 4 (4.0.0.Beta1, Jackson 3), PostgreSQL 18 + PostGIS, Hibernate/Panache, Flyway |
 | Frontend | TypeScript 7 (tsgo native compiler), React 19, Vite 8, Mantine UI, Zustand, React Query |
 | Mobile | Flutter, Dart (see `mobile/RULES.md` for detailed guidelines) |
 | Karoo | Kotlin, Jetpack Compose, karoo-ext SDK, ktor-client-karoo |
 | Auth | Database auth with JWT (password, OTP, passkeys/WebAuthn) |
-| IDs | TSID via hypersistence-utils (Long internally, lowercase string in API) |
+| IDs | TSID via hypersistence-tsid — `@Tsid` is `fr.pedalons.infrastructure.hibernate.Tsid` (Long internally, lowercase string in API) |
 | API | OpenAPI 3.1 contract-first with code generation |
 
 ## Infrastructure

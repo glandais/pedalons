@@ -10,7 +10,6 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.URLDecoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpHeaders;
@@ -27,6 +26,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * The requests the clients build for the route sync (docs/LEDGER_*.md API-120 §4.5): method, URL,

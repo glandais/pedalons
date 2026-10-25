@@ -3822,7 +3822,6 @@
           "link" : {
             "type" : "string",
             "description" : "External link (e.g., Google Maps URL)",
-            "pattern" : "",
             "minLength" : 3,
             "maxLength" : 200
           },
@@ -24713,12 +24712,5 @@
     "title" : "Pedalons API",
     "version" : "12.0.0",
     "description" : "API for Pedalons Cycling Team Management Platform"
-  },
-  "servers" : [ {
-    "url" : "http://localhost:8080",
-    "description" : "Auto generated value"
-  }, {
-    "url" : "http://0.0.0.0:8080",
-    "description" : "Auto generated value"
-  } ]
+  }
 }
