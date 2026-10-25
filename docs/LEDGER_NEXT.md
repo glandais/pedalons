@@ -198,10 +198,13 @@ faite, et le 500 du contact vendeur (`MOB-47`). Depuis l'import de `n-peloton` e
       qu'aucune API ne remplit (accès à l'application avec le compte de démo, classification du
       contenu, public cible, publicités), plus la sécurité des données (`fastlane data_safety`).
       Une fois l'accès obtenu : promouvoir la release `alpha` depuis la Console plutôt que
-      `fastlane deploy`, qui renverrait le même versionCode.
+      `fastlane deploy`, qui renverrait le même versionCode. Fiche (textes 1.1.0) et captures
+      refaites sur l'app du 25 octobre poussées par `fastlane listing` le 25 octobre 2026.
 - [ ] `MOB-70` **Publier la 1.1.0 sur l'App Store (XS)** — la 1.0.0 est en vente ; la version 1.1.0
-      existe dans App Store Connect, fiche et captures identiques à `mobile/metadata/` et
-      `mobile/screenshots/` (vérifié le 15 octobre 2026), sans build attaché. Les bêtas 1.1.0 de
+      existe dans App Store Connect, fiche, nouveautés, notes de revue et captures (iPhone et iPad,
+      refaites sur l'app du 25 octobre) identiques à `mobile/metadata/` et `mobile/screenshots/`
+      (poussées et vérifiées le 25 octobre 2026), sans build attaché : `asc validate` ne signale plus
+      que ce build manquant. Les bêtas 1.1.0 de
       `publish_beta.sh` passent par TestFlight (groupe externe NP), la première en revue bêta depuis
       le 15 octobre. Les informations de test TestFlight (compte de démo, notes reprises de
       `mobile/metadata/review-notes.md`, description bêta FR/EN, URL de confidentialité) ont été
