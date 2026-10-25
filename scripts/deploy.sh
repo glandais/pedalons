@@ -291,7 +291,13 @@ for service in backend frontend; do
     | tail -n +$((KEEP_BUILDS + 1)) \
     | while read -r image; do
       [[ " ${keep[*]} " == *" $image"[@\ ]* ]] && continue
-      docker rmi "$image" >/dev/null && log "dropped old build $image"
+      # A stopped task (task history, a service scaled to 0) still holds its image: keep it rather
+      # than fail a deploy that went through — the loop's status is the pipeline's, under pipefail.
+      if docker rmi "$image" >/dev/null 2>&1; then
+        log "dropped old build $image"
+      else
+        log "kept old build $image: a container still uses it"
+      fi
     done
 done
 
