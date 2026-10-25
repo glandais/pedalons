@@ -5,18 +5,3 @@ allowBuilds:
   msw: true
   protobufjs: false
   sharp: true
-
-minimumReleaseAgeExclude:
-  - '@mantine/core@9.7.1'
-  - '@mantine/dates@9.7.1'
-  - '@mantine/form@9.7.1'
-  - '@mantine/hooks@9.7.1'
-  - '@mantine/notifications@9.7.1'
-  - '@mantine/schedule@9.7.1'
-  - '@mantine/store@9.7.1'
-  - '@mantine/tiptap@9.7.1'
-
-overrides:
-  # Peer optionnel de rollup-plugin-visualizer, jamais remonté par pnpm update :
-  # GHSA-mw96-cpmx-2vgc (path traversal) touche rollup < 4.59.0.
-  rollup: '>=4.59.0'
