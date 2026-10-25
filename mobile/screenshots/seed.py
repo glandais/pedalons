@@ -777,7 +777,7 @@ def seed_club(locale: str, acc: dict, viewer: dict) -> list:
     # (lib/screenshots/screenshot_mode.dart). The weather needs ride0 within
     # seven days — next Saturday, so capture right after seeding.
     return [
-        {"id": "01-home", "path": "/", "devices": ["iphone"]},
+        {"id": "01-home", "path": "/", "devices": ["iphone"], "wait": 12},
         {"id": "01-trip", "path": f"{prefix}/{slug}/{voyages}/{trip_slug}", "devices": ["ipad"], "wait": 12},
         {"id": "02-ride", "path": f"{prefix}/{slug}/{sorties}/{ride0}", "push": "rideGroups", "wait": 12},
         {"id": "03-weather", "path": f"{prefix}/{slug}/{sorties}/{ride0}", "push": "rideGroupWeather", "wait": 12},
