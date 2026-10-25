@@ -27,8 +27,8 @@ public class AuthSessionRepository implements PanacheRepository<AuthSession> {
    */
   public int rotate(Long sessionId, String presentedHash, String nextHash) {
     return update(
-        "refreshTokenHash = ?3, previousRefreshTokenHash = ?2, rotatedAt = CURRENT_TIMESTAMP,"
-            + " lastUsedAt = CURRENT_TIMESTAMP"
+        "refreshTokenHash = ?3, previousRefreshTokenHash = ?2, rotatedAt = instant,"
+            + " lastUsedAt = instant"
             + " where id = ?1 and refreshTokenHash = ?2 and revoked = false",
         sessionId,
         presentedHash,
@@ -45,7 +45,7 @@ public class AuthSessionRepository implements PanacheRepository<AuthSession> {
   public int rotateFromPrevious(
       Long sessionId, String previousHash, String currentHash, String nextHash) {
     return update(
-        "refreshTokenHash = ?4, rotatedAt = CURRENT_TIMESTAMP, lastUsedAt = CURRENT_TIMESTAMP"
+        "refreshTokenHash = ?4, rotatedAt = instant, lastUsedAt = instant"
             + " where id = ?1 and previousRefreshTokenHash = ?2 and refreshTokenHash = ?3"
             + " and revoked = false",
         sessionId,
@@ -62,19 +62,19 @@ public class AuthSessionRepository implements PanacheRepository<AuthSession> {
   public List<AuthSession> findActiveDevicesByUserId(Long userId) {
     return list(
         "user.id = ?1 and deviceClient is not null and revoked = false"
-            + " and expiresAt > CURRENT_TIMESTAMP order by createdAt desc",
+            + " and expiresAt > instant order by createdAt desc",
         userId);
   }
 
   /** Whether the session is neither revoked nor expired — a device's, checked on every request. */
   public boolean isLive(Long sessionId) {
-    return count("id = ?1 and revoked = false and expiresAt > CURRENT_TIMESTAMP", sessionId) > 0;
+    return count("id = ?1 and revoked = false and expiresAt > instant", sessionId) > 0;
   }
 
   /** Revokes a device session of this user; 0 when it is not one (or no longer live). */
   public int revokeDevice(Long sessionId, Long userId) {
     return update(
-        "revoked = true, revokedAt = CURRENT_TIMESTAMP where id = ?1 and user.id = ?2"
+        "revoked = true, revokedAt = instant where id = ?1 and user.id = ?2"
             + " and deviceClient is not null and revoked = false",
         sessionId,
         userId);
@@ -85,13 +85,12 @@ public class AuthSessionRepository implements PanacheRepository<AuthSession> {
    * refreshes never conflict and never overwrite a concurrent revocation.
    */
   public int markUsed(Long sessionId) {
-    return update("lastUsedAt = CURRENT_TIMESTAMP where id = ?1", sessionId);
+    return update("lastUsedAt = instant where id = ?1", sessionId);
   }
 
   public int revokeAllByUserId(Long userId) {
     return update(
-        "revoked = true, revokedAt = CURRENT_TIMESTAMP where user.id = ?1 and revoked = false",
-        userId);
+        "revoked = true, revokedAt = instant where user.id = ?1 and revoked = false", userId);
   }
 
   /** Every session ever recorded for a user, revoked ones included — for the GDPR data export. */
@@ -100,6 +99,6 @@ public class AuthSessionRepository implements PanacheRepository<AuthSession> {
   }
 
   public long deleteExpiredSessions() {
-    return delete("expiresAt < CURRENT_TIMESTAMP or revoked = true");
+    return delete("expiresAt < instant or revoked = true");
   }
 }

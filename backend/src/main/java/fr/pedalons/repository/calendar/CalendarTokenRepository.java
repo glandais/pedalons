@@ -22,7 +22,7 @@ public class CalendarTokenRepository implements BaseRepository<CalendarToken> {
    * once must not fail on the optimistic lock.
    */
   public int markUsed(Long tokenId) {
-    return update("lastUsedAt = CURRENT_TIMESTAMP where id = ?1", tokenId);
+    return update("lastUsedAt = instant where id = ?1", tokenId);
   }
 
   /** Tokens silent since {@code cutoff}: dead already, deleted for good (docs/LEDGER_*.md SEC-17). */

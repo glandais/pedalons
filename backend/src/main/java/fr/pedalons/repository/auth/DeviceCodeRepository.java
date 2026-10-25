@@ -21,7 +21,7 @@ public class DeviceCodeRepository implements PanacheRepository<DeviceCode> {
   /** A pending code of {@code domainId}: another domain's code is as unknown as a wrong one. */
   public Optional<DeviceCode> findValidByUserCode(Long domainId, String userCode) {
     return find(
-            "domainId = ?1 and userCode = ?2 and expiresAt > CURRENT_TIMESTAMP",
+            "domainId = ?1 and userCode = ?2 and expiresAt > instant",
             domainId,
             userCode.toUpperCase())
         .firstResultOptional();
@@ -34,7 +34,7 @@ public class DeviceCodeRepository implements PanacheRepository<DeviceCode> {
    */
   public Optional<DeviceCode> findValidByUserCodeForUpdate(Long domainId, String userCode) {
     return find(
-            "domainId = ?1 and userCode = ?2 and expiresAt > CURRENT_TIMESTAMP",
+            "domainId = ?1 and userCode = ?2 and expiresAt > instant",
             domainId,
             userCode.toUpperCase())
         .withLock(LockModeType.PESSIMISTIC_WRITE)
@@ -42,7 +42,7 @@ public class DeviceCodeRepository implements PanacheRepository<DeviceCode> {
   }
 
   public Optional<DeviceCode> findValidByDeviceCodeHash(String deviceCodeHash) {
-    return find("deviceCodeHash = ?1 and expiresAt > CURRENT_TIMESTAMP", deviceCodeHash)
+    return find("deviceCodeHash = ?1 and expiresAt > instant", deviceCodeHash)
         .firstResultOptional();
   }
 
@@ -52,6 +52,6 @@ public class DeviceCodeRepository implements PanacheRepository<DeviceCode> {
   }
 
   public long deleteExpiredCodes() {
-    return delete("expiresAt < CURRENT_TIMESTAMP");
+    return delete("expiresAt < instant");
   }
 }

@@ -11,25 +11,19 @@ import java.util.Optional;
 public class WebAuthnChallengeRepository implements PanacheRepository<WebAuthnChallenge> {
 
   public Optional<WebAuthnChallenge> findValidByChallenge(String challenge) {
-    return find("challenge = ?1 and expiresAt > CURRENT_TIMESTAMP", challenge)
-        .firstResultOptional();
+    return find("challenge = ?1 and expiresAt > instant", challenge).firstResultOptional();
   }
 
   public Optional<WebAuthnChallenge> findValidByUserIdAndType(
       Long userId, WebAuthnChallengeType challengeType) {
     return find(
-            "user.id = ?1 and challengeType = ?2 and expiresAt > CURRENT_TIMESTAMP",
-            userId,
-            challengeType)
+            "user.id = ?1 and challengeType = ?2 and expiresAt > instant", userId, challengeType)
         .firstResultOptional();
   }
 
   public Optional<WebAuthnChallenge> findValidByEmailAndType(
       String email, WebAuthnChallengeType challengeType) {
-    return find(
-            "email = ?1 and challengeType = ?2 and expiresAt > CURRENT_TIMESTAMP",
-            email,
-            challengeType)
+    return find("email = ?1 and challengeType = ?2 and expiresAt > instant", email, challengeType)
         .firstResultOptional();
   }
 
@@ -50,7 +44,7 @@ public class WebAuthnChallengeRepository implements PanacheRepository<WebAuthnCh
   }
 
   public long deleteExpiredChallenges() {
-    return delete("expiresAt < CURRENT_TIMESTAMP");
+    return delete("expiresAt < instant");
   }
 
   public long deleteByUserId(Long userId) {

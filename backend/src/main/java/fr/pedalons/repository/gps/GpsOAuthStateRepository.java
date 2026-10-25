@@ -10,7 +10,7 @@ import java.util.Optional;
 public class GpsOAuthStateRepository implements PanacheRepository<GpsOAuthState> {
 
   public Optional<GpsOAuthState> findValidByState(String state) {
-    return find("state = ?1 and expiresAt > CURRENT_TIMESTAMP", state).firstResultOptional();
+    return find("state = ?1 and expiresAt > instant", state).firstResultOptional();
   }
 
   /** In-flight GPS OAuth handshakes for a user on a domain — for the GDPR data export. */
@@ -19,6 +19,6 @@ public class GpsOAuthStateRepository implements PanacheRepository<GpsOAuthState>
   }
 
   public long deleteExpiredStates() {
-    return delete("expiresAt < CURRENT_TIMESTAMP");
+    return delete("expiresAt < instant");
   }
 }

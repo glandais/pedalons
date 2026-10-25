@@ -18,7 +18,7 @@ public class UserRepository implements BaseRepository<User> {
    * so a login that also edits the account still writes both.
    */
   public void recordLogin(Long userId) {
-    update("lastLoginAt = CURRENT_TIMESTAMP where id = ?1", userId);
+    update("lastLoginAt = instant where id = ?1", userId);
   }
 
   public Optional<User> findByEmailAndDomain(Long domainId, String email) {

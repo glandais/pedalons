@@ -2929,6 +2929,24 @@ relevés sont `WEB-111` à `WEB-114` et `MOB-87` à `MOB-90`. `MOB-88` et `MOB-8
 
 ## API — Contrat d'API et backend
 
+- [x] `API-141` **Les expirations ne basculent plus une heure trop tôt la nuit du changement
+  d'heure** (25 octobre 2026, contrat d'API inchangé) — le `CURRENT_TIMESTAMP` des requêtes HQL
+  est rendu `localtimestamp` par Hibernate, un horodatage sans fuseau que PostgreSQL convertit au
+  fuseau de session (celui de la JVM, posé par pgjdbc) pour le comparer à un `timestamptz`. Sous
+  `Europe/Paris`, pendant l'heure ambiguë du retour à l'heure d'hiver, il choisit `+01` : « maintenant »
+  avance d'une heure, tout OTP, lien de réinitialisation, challenge WebAuthn, état OAuth GPS et code
+  d'appairage de moins d'une heure passe pour expiré, et les `lastUsedAt`/`revokedAt` écrits sont
+  faux d'une heure. Découvert par la recette du 25 octobre 2026 à 2 h 30 (57 échecs backend, verts en
+  `-Duser.timezone=UTC`). La prod tourne en UTC et n'était pas exposée ; un poste ou un serveur à
+  l'heure de Paris l'était. Les 27 occurrences (`AuthSessionRepository`, `AuthTokenRepository`,
+  `DeviceCodeRepository`, `WebAuthnChallengeRepository`, `GpsOAuthStateRepository`,
+  `CalendarTokenRepository`, `UserRepository`) passent à la fonction HQL `instant`, rendue
+  `current_timestamp` (`timestamptz`). Suite complète verte en `Europe/Paris` dans l'heure ambiguë
+  (4 201 tests), dont `WebAuthnChallengeRepositoryTest`, `GpsOAuthStateRepositoryTest`,
+  `AuthCleanupSchedulerTest`, `DeviceOAuth*Test`, `AuthServiceTest`.
+  **À ne pas défaire** : jamais `CURRENT_TIMESTAMP`, `current_timestamp` ni `local datetime` en HQL
+  face à une colonne `Instant` — `instant`, ou un `Instant.now()` passé en paramètre.
+
 - [x] `API-138` **La convention de distance de la météo est écrite dans le contrat** (24 octobre
   2026, **API 11.16.1**, descriptions seulement) — `WeatherCheckpointDto.distance` et
   `WindSegmentDto.fromDistance/toDistance` disent compter les traces bout à bout dans l'ordre de

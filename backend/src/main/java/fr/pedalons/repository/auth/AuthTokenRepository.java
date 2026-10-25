@@ -14,14 +14,14 @@ import java.util.Optional;
 public class AuthTokenRepository implements PanacheRepository<AuthToken> {
 
   public Optional<AuthToken> findValidByTokenHash(String tokenHash) {
-    return find("tokenHash = ?1 and usedAt is null and expiresAt > CURRENT_TIMESTAMP", tokenHash)
+    return find("tokenHash = ?1 and usedAt is null and expiresAt > instant", tokenHash)
         .firstResultOptional();
   }
 
   /** A mailed link's token, on the site it was issued for only. */
   public Optional<AuthToken> findValidByTokenHashAndDomain(String tokenHash, Long domainId) {
     return find(
-            "tokenHash = ?1 and domainId = ?2 and usedAt is null and expiresAt > CURRENT_TIMESTAMP",
+            "tokenHash = ?1 and domainId = ?2 and usedAt is null and expiresAt > instant",
             tokenHash,
             domainId)
         .firstResultOptional();
@@ -31,7 +31,7 @@ public class AuthTokenRepository implements PanacheRepository<AuthToken> {
       String email, AuthTokenType tokenType, Long domainId) {
     return find(
             "email = ?1 and tokenType = ?2 and domainId = ?3 and usedAt is null and expiresAt >"
-                + " CURRENT_TIMESTAMP",
+                + " instant",
             email,
             tokenType,
             domainId)
@@ -51,7 +51,7 @@ public class AuthTokenRepository implements PanacheRepository<AuthToken> {
       String email, AuthTokenType tokenType, Long domainId) {
     return find(
             "email = ?1 and tokenType = ?2 and domainId = ?3 and usedAt is null and expiresAt >"
-                + " CURRENT_TIMESTAMP order by createdAt desc",
+                + " instant order by createdAt desc",
             email,
             tokenType,
             domainId)
@@ -61,7 +61,7 @@ public class AuthTokenRepository implements PanacheRepository<AuthToken> {
 
   public int invalidateByEmailAndType(String email, AuthTokenType tokenType, Long domainId) {
     return update(
-        "usedAt = CURRENT_TIMESTAMP where email = ?1 and tokenType = ?2 and domainId = ?3 and"
+        "usedAt = instant where email = ?1 and tokenType = ?2 and domainId = ?3 and"
             + " usedAt is null",
         email,
         tokenType,
@@ -74,7 +74,7 @@ public class AuthTokenRepository implements PanacheRepository<AuthToken> {
   }
 
   public long deleteExpiredTokens() {
-    return delete("expiresAt < CURRENT_TIMESTAMP or usedAt is not null");
+    return delete("expiresAt < instant or usedAt is not null");
   }
 
   /**
