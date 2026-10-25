@@ -65,7 +65,7 @@
     "date-fns-tz": "^3.2.0",
     "dayjs": "^1.11.23",
     "express": "^5.3.0",
-    "express-static-gzip": "3.0.2",
+    "express-static-gzip": "^3.0.2",
     "firebase": "^13.1.0",
     "geokdbush": "^2.1.0",
     "http-proxy-middleware": "^4.2.0",
@@ -121,7 +121,7 @@
     "rollup-plugin-visualizer": "^7.1.1",
     "typescript": "^7.0.2",
     "vite": "^8.3.5",
-    "vite-plugin-compression2": "2.5.3",
+    "vite-plugin-compression2": "^2.5.3",
     "vitest": "^4.1.11",
     "yaml": "^2.9.1"
   }

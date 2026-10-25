@@ -254,7 +254,7 @@ importers:
         specifier: ^5.3.0
         version: 5.3.0(supports-color@7.2.0)
       express-static-gzip:
-        specifier: 3.0.2
+        specifier: ^3.0.2
         version: 3.0.2(supports-color@7.2.0)
       firebase:
         specifier: ^13.1.0
@@ -417,7 +417,7 @@ importers:
         specifier: ^8.3.5
         version: 8.3.5(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(sugarss@5.0.1(postcss@8.5.31))(yaml@2.9.1)
       vite-plugin-compression2:
-        specifier: 2.5.3
+        specifier: ^2.5.3
         version: 2.5.3
       vitest:
         specifier: ^4.1.11
