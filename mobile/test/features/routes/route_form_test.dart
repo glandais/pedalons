@@ -127,9 +127,9 @@ void main() {
     });
 
     test('les tags posés partent tels quels', () {
-      final RouteRequest request = RouteForm.initial(
-        _team(),
-      ).copyWith(name: 'abc', tagIds: <String>['a', 'b']).toRequest();
+      final RouteRequest request = RouteForm.initial(_team())
+          .copyWith(name: 'abc', tagIds: <String>['a', 'b'])
+          .toRequest();
       expect(request.tagIds, <String>['a', 'b']);
     });
   });

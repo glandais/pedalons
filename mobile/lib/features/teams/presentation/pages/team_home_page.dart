@@ -69,9 +69,8 @@ class TeamHomePage extends ConsumerWidget {
     // lui qui porte la bascule optimiste. Il adopte `teamDetailProvider` et
     // le rend inchangé le reste du temps.
     final AsyncValue<TeamDetailDto> teamAsync = ref.watch(
-      teamMembershipControllerProvider(
-        teamSlug,
-      ).select((TeamMembershipState s) => s.team),
+      teamMembershipControllerProvider(teamSlug)
+          .select((TeamMembershipState s) => s.team),
     );
 
     // Un lien sous un **ancien slug** : l'API répond avec l'équipe sous son
@@ -318,9 +317,8 @@ class _MembershipBanner extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final String? failure = ref.watch(
-      teamMembershipControllerProvider(
-        team.slug,
-      ).select((TeamMembershipState s) => s.failure),
+      teamMembershipControllerProvider(team.slug)
+          .select((TeamMembershipState s) => s.failure),
     );
     if (failure == null) return const SizedBox.shrink();
 

@@ -28,9 +28,8 @@ final class Routes extends Module {
   /// Waits until the list holds the card of [routeSlug] (the search is debounced, then answered by
   /// the API).
   Future<void> waitUntilListed(String routeSlug) async {
-    await $(
-      keys.routes.card(routeSlug),
-    ).waitUntilExists(timeout: const Duration(seconds: 20));
+    await $(keys.routes.card(routeSlug))
+        .waitUntilExists(timeout: const Duration(seconds: 20));
   }
 
   Future<void> waitUntilNotListed(String routeSlug) async {
@@ -64,9 +63,8 @@ final class Routes extends Module {
   /// The « Tags » chip of a team's list → ticks [tagId] in the sheet → « Appliquer ». The chip is
   /// the last of its row, past its right edge on a phone.
   Future<void> filterByTag(String tagId) async {
-    await $(
-      keys.tags.filterChip,
-    ).waitUntilExists(timeout: const Duration(seconds: 20));
+    await $(keys.tags.filterChip)
+        .waitUntilExists(timeout: const Duration(seconds: 20));
     await $.tester.ensureVisible(find.byKey(keys.tags.filterChip));
     await $.pump(const Duration(milliseconds: 300));
     await $(keys.tags.filterChip).tap();
@@ -95,25 +93,22 @@ final class Routes extends Module {
   // ── A route's page ──────────────────────────────────────────────────────
 
   Future<void> waitUntilRouteIsShown() async {
-    await $(
-      keys.routeDetail.title,
-    ).waitUntilVisible(timeout: const Duration(seconds: 20));
+    await $(keys.routeDetail.title)
+        .waitUntilVisible(timeout: const Duration(seconds: 20));
   }
 
   bool routeTitleShows(String name) => shows(keys.routeDetail.title, name);
 
   /// Waits for the elevation profile, drawn from the stored track — neither tiles nor routing.
   Future<void> waitUntilTraceIsShown() async {
-    await $(
-      keys.routeDetail.elevationProfile,
-    ).waitUntilExists(timeout: const Duration(seconds: 20));
+    await $(keys.routeDetail.elevationProfile)
+        .waitUntilExists(timeout: const Duration(seconds: 20));
   }
 
   /// Waits for the « Utilisée dans » card of the ride or trip [slug].
   Future<void> waitUntilUsageIsShown(String slug) async {
-    await $(
-      keys.routeDetail.usage(slug),
-    ).waitUntilExists(timeout: const Duration(seconds: 20));
+    await $(keys.routeDetail.usage(slug))
+        .waitUntilExists(timeout: const Duration(seconds: 20));
   }
 
   bool showsUsage(String slug) => isShown(keys.routeDetail.usage(slug));

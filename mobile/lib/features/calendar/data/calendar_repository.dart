@@ -28,12 +28,10 @@ class CalendarRepository {
     required DateTime end,
     String? teamSlug,
   }) async {
-    final String from = AppFormatters.displayWallClockToUtc(
-      start,
-    ).toIso8601String();
-    final String to = AppFormatters.displayWallClockToUtc(
-      end,
-    ).toIso8601String();
+    final String from = AppFormatters.displayWallClockToUtc(start)
+        .toIso8601String();
+    final String to = AppFormatters.displayWallClockToUtc(end)
+        .toIso8601String();
     final CalendarEventsResponse response = teamSlug == null
         ? await _calendarClient.getEvents(from: from, to: to)
         : await _calendarClient.getTeamEvents(

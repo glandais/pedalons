@@ -65,9 +65,8 @@ class _RideSoloGroupSectionState extends ConsumerState<RideSoloGroupSection>
   @override
   Widget build(BuildContext context) {
     ref.listen<RegistrationFailure?>(
-      rideRegistrationProvider(
-        widget.rideKey,
-      ).select((RideRegistrationState s) => s.failure),
+      rideRegistrationProvider(widget.rideKey)
+          .select((RideRegistrationState s) => s.failure),
       (RegistrationFailure? previous, RegistrationFailure? next) {
         if (next == null || identical(previous, next)) return;
         WidgetsBinding.instance.addPostFrameCallback((_) {

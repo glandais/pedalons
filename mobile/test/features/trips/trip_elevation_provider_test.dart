@@ -121,9 +121,8 @@ void main() {
     final ProviderContainer container = ProviderContainer(
       overrides: [
         routeRepositoryProvider.overrideWithValue(repository),
-        tripDetailProvider(
-          key,
-        ).overrideWith((Ref ref) async => withTrip ?? trip()),
+        tripDetailProvider(key)
+            .overrideWith((Ref ref) async => withTrip ?? trip()),
       ],
     );
     addTearDown(container.dispose);

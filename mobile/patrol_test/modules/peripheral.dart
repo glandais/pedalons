@@ -31,9 +31,8 @@ final class Peripheral extends Module {
 
   Future<void> waitUntilBetaSignUpIsRecorded() async {
     // A column of text whose middle is empty: existence, not hit-testing.
-    await $(
-      keys.apps.betaSentState,
-    ).waitUntilExists(timeout: const Duration(seconds: 10));
+    await $(keys.apps.betaSentState)
+        .waitUntilExists(timeout: const Duration(seconds: 10));
   }
 
   bool get showsBetaSignedUp => isShown(keys.apps.betaSentState);

@@ -18,10 +18,8 @@ class _StubRepository implements NotificationsRepository {
   _StubRepository({
     this.channels = const <NotificationChannel>[],
     List<(NotificationType, NotificationChannel, bool)>? cells,
-    List<NotificationTeamPreferenceDto> teams =
-        const <NotificationTeamPreferenceDto>[],
-  }) : _teams = teams,
-       _cells =
+    this._teams = const <NotificationTeamPreferenceDto>[],
+  }) : _cells =
            cells ??
            <(NotificationType, NotificationChannel, bool)>[
              for (final NotificationChannel channel in channels)

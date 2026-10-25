@@ -55,13 +55,12 @@ class RouteMapLayer {
 /// de **chaque** carte — l'encastrée, puis le plein écran, qui est une autre
 /// instance : c'est ce qui garde ses `ref.watch` vivants là où l'écran
 /// recouvert ne se reconstruit plus (voir `PdlMapHero`). `null` : rien.
-typedef RouteMapLayerBuilder =
-    RouteMapLayer? Function(
-      BuildContext context,
-      WidgetRef ref,
-      RouteDetailDto route, {
-      required bool fullscreen,
-    });
+typedef RouteMapLayerBuilder = RouteMapLayer? Function(
+  BuildContext context,
+  WidgetRef ref,
+  RouteDetailDto route, {
+  required bool fullscreen,
+});
 
 /// L'adaptateur entre `RouteDetailDto` et [PdlMap].
 ///

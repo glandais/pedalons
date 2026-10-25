@@ -110,9 +110,8 @@ class _RideGroupsSectionState extends ConsumerState<RideGroupsSection>
     // Les parcours des groupes sont déjà chargés en lot pour la carte : leurs
     // assets GPX/FIT viennent de là, sans appel de plus.
     final Map<String, RouteDetailDto> routes = ref.watch(
-      rideRouteGeometriesProvider(
-        widget.rideKey,
-      ).select((RideRouteGeometriesState s) => s.geometries),
+      rideRouteGeometriesProvider(widget.rideKey)
+          .select((RideRouteGeometriesState s) => s.geometries),
     );
     final List<GpsServiceConnectionDto> services = ref.watch(
       authProvider.select(

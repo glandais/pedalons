@@ -59,9 +59,8 @@ void main() {
         overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
         child: MaterialApp(
           builder: (BuildContext context, Widget? child) => MediaQuery(
-            data: MediaQuery.of(
-              context,
-            ).copyWith(textScaler: TextScaler.linear(textScale)),
+            data: MediaQuery.of(context)
+                .copyWith(textScaler: TextScaler.linear(textScale)),
             child: child!,
           ),
           home: Builder(

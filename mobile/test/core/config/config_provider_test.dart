@@ -43,21 +43,18 @@ void main() {
       expect(r.style.id, 'satellite');
     });
 
-    test(
-      'un identifiant mémorisé disparu retombe sur le premier style servi',
-      () {
-        // Le contrat peut retirer un fond entre deux versions du serveur : mieux
-        // vaut une carte que rien.
-        expect(
-          resolveMapStyle(styles, 'fond-retire', Brightness.light)!.style.id,
-          'colorful',
-        );
-        expect(
-          resolveMapStyle(styles, null, Brightness.light)!.style.id,
-          'colorful',
-        );
-      },
-    );
+    test('un identifiant mémorisé disparu retombe sur le premier style servi', () {
+      // Le contrat peut retirer un fond entre deux versions du serveur : mieux
+      // vaut une carte que rien.
+      expect(
+        resolveMapStyle(styles, 'fond-retire', Brightness.light)!.style.id,
+        'colorful',
+      );
+      expect(
+        resolveMapStyle(styles, null, Brightness.light)!.style.id,
+        'colorful',
+      );
+    });
 
     test('aucun style servi ne rend rien plutôt qu\'une URL inventée', () {
       expect(

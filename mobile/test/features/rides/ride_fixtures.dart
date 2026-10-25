@@ -64,9 +64,10 @@ RideDto fixtureRide({
       assets: AssetsDto(images: <AssetDto>[], attachments: <AssetDto>[]),
     ),
     dateTime: dateTime,
-    endDateTime: DateTime.parse(
-      dateTime,
-    ).add(const Duration(hours: 3)).toUtc().toIso8601String(),
+    endDateTime: DateTime.parse(dateTime)
+        .add(const Duration(hours: 3))
+        .toUtc()
+        .toIso8601String(),
     status: status,
     // La règle du serveur (docs/LEDGER_*.md API-16) : terminée dès que le départ est passé.
     finished: DateTime.parse(dateTime).isBefore(DateTime.now()),

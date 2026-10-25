@@ -272,9 +272,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(keys.rideGroup.weatherMapSheet), findsOneWidget);
     expect(find.text('Passage vers 05:05'), findsOneWidget);
-    Navigator.of(
-      tester.element(find.byKey(keys.rideGroup.weatherMapSheet)),
-    ).pop();
+    Navigator.of(tester.element(find.byKey(keys.rideGroup.weatherMapSheet)))
+        .pop();
     await tester.pumpAndSettle();
 
     // La bascule vit dans la feuille des couches, et elle est vivante.

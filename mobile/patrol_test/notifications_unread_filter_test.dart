@@ -61,9 +61,9 @@ void main() {
       await modules.notifications.waitUntilEntryIsShown(unreadId);
       await modules.notifications.waitUntilEntryIsShown(readId);
       expect(
-        (await backend.notifications(
-          member,
-        )).where((Json n) => n['read'] != true).map((Json n) => n['id']),
+        (await backend.notifications(member))
+            .where((Json n) => n['read'] != true)
+            .map((Json n) => n['id']),
         isEmpty,
       );
 

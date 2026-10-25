@@ -14,9 +14,8 @@ final class DetailMenus extends Module {
   }
 
   Future<void> openRouteMenu() async {
-    await $(
-      keys.routeDetail.moreButton,
-    ).waitUntilVisible(timeout: const Duration(seconds: 20));
+    await $(keys.routeDetail.moreButton)
+        .waitUntilVisible(timeout: const Duration(seconds: 20));
     await $(keys.routeDetail.moreButton).tap();
   }
 

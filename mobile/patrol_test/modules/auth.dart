@@ -37,9 +37,8 @@ final class Auth extends Module {
     required String displayName,
   }) async {
     await (await scrolledTo(keys.login.registerEmailField)).enterText(email);
-    await (await scrolledTo(
-      keys.login.registerDisplayNameField,
-    )).enterText(displayName);
+    await (await scrolledTo(keys.login.registerDisplayNameField))
+        .enterText(displayName);
   }
 
   Future<void> acceptTerms() async {
@@ -64,9 +63,8 @@ final class Auth extends Module {
   /// chosen — the link alone opens nothing (SEC-9, SEC-24).
   Future<void> activateAccount(String password) async {
     await $(keys.login.verifyAddress).waitUntilVisible();
-    await (await scrolledTo(
-      keys.login.verifyPasswordField,
-    )).enterText(password);
+    await (await scrolledTo(keys.login.verifyPasswordField))
+        .enterText(password);
     await (await scrolledTo(keys.login.verifyConfirmField)).enterText(password);
     await (await scrolledTo(keys.login.verifyActivateButton)).tap();
   }

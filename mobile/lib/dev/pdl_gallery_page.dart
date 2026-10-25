@@ -931,8 +931,7 @@ class _GalleryBodyState extends State<_GalleryBody> {
             const PdlBanner(
               tone: PdlBannerTone.danger,
               title: 'Inscription impossible.',
-              message:
-                  'Vous êtes déjà inscrit dans un autre groupe de cette sortie.',
+              message: 'Vous êtes déjà inscrit dans un autre groupe de cette sortie.',
             ),
             const SizedBox(height: 8),
             PdlBanner(

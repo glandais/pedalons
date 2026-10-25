@@ -519,9 +519,10 @@ void main() {
       expect(end, isNonNegative);
       final block = source.substring(start, end);
 
-      final declared = RegExp(
-        r'patterns:\s*PathVariants\.(\w+)\(',
-      ).allMatches(block).map((m) => m.group(1)!).toList();
+      final declared = RegExp(r'patterns:\s*PathVariants\.(\w+)\(')
+          .allMatches(block)
+          .map((m) => m.group(1)!)
+          .toList();
 
       expect(
         _cases.map((c) => c.id).toList(),
@@ -552,9 +553,9 @@ void main() {
 /// Hand-rolled rather than pulling in a YAML parser: the file is a flat list of
 /// blocks with one field per line.
 Set<String> _mobileDeepLinkIds() {
-  final lines = File(
-    '../contracts/routes.yaml',
-  ).readAsLinesSync().where((l) => !l.trimLeft().startsWith('#'));
+  final lines = File('../contracts/routes.yaml')
+      .readAsLinesSync()
+      .where((l) => !l.trimLeft().startsWith('#'));
 
   final ids = <String>{};
   String? id;

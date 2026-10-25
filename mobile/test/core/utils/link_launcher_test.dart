@@ -36,9 +36,9 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUpAll(() {
-    final Map<String, dynamic> fr =
-        json.decode(File('assets/l10n/fr.json').readAsStringSync())
-            as Map<String, dynamic>;
+    final Map<String, dynamic> fr = json.decode(
+      File('assets/l10n/fr.json').readAsStringSync(),
+    ) as Map<String, dynamic>;
     Localization.load(
       const Locale('fr'),
       translations: Translations(fr),
@@ -125,15 +125,15 @@ void main() {
       // `paths.generated.dart` est régénéré depuis `contracts/routes.yaml` :
       // une route ajoutée au contrat et oubliée ici partirait dans le
       // navigateur au lieu de s'ouvrir dans l'app. Le test lit la source.
-      final String source = File(
-        'lib/config/paths.generated.dart',
-      ).readAsStringSync();
+      final String source = File('lib/config/paths.generated.dart')
+          .readAsStringSync();
       final String variants = source.substring(
         source.indexOf('class PathVariants'),
       );
-      final Set<String> declared = RegExp(
-        r'static Map<String, String> (\w+)\(',
-      ).allMatches(variants).map((RegExpMatch m) => m.group(1)!).toSet();
+      final Set<String> declared = RegExp(r'static Map<String, String> (\w+)\(')
+          .allMatches(variants)
+          .map((RegExpMatch m) => m.group(1)!)
+          .toSet();
 
       expect(declared, isNotEmpty);
       expect(

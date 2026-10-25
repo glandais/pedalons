@@ -428,15 +428,10 @@ void main() {
               as List<dynamic>;
       int selOf(String id) =>
           ((features.firstWhere(
-                        (dynamic f) =>
-                            (f
-                                as Map<
-                                  String,
-                                  dynamic
-                                >)['properties']['trackId'] ==
-                            id,
-                      )
-                      as Map<String, dynamic>)['properties']
+                    (dynamic f) =>
+                        (f as Map<String, dynamic>)['properties']['trackId'] ==
+                        id,
+                  ) as Map<String, dynamic>)['properties']
                   as Map<String, dynamic>)['sel']
               as int;
       expect(selOf('a'), 0);
@@ -505,14 +500,13 @@ void main() {
     test(
       'une image par type distinct, une étiquette par point nommé',
       () async {
-        final (
-          PdlMapController _,
-          _StrictStyle style,
-        ) = await attached(<PdlMapWaypoint>[
-          _waypoint('1'),
-          _waypoint('2', label: 'Autre'),
-          _waypoint('3', icon: 'WATER', label: null),
-        ]);
+        final (PdlMapController _, _StrictStyle style) = await attached(
+          <PdlMapWaypoint>[
+            _waypoint('1'),
+            _waypoint('2', label: 'Autre'),
+            _waypoint('3', icon: 'WATER', label: null),
+          ],
+        );
 
         expect(
           style.images.keys.where((String k) => k.startsWith('pdl-waypoint:')),
@@ -614,9 +608,9 @@ void main() {
       final (PdlMapController _, _StrictStyle style) = await attached(
         <PdlMapWaypoint>[_waypoint('1', lon: 0, lat: 45)],
       );
-      final Map<String, Object?> data =
-          jsonDecode(style.geoJson['pdl-track-waypoints']!)
-              as Map<String, Object?>;
+      final Map<String, Object?> data = jsonDecode(
+        style.geoJson['pdl-track-waypoints']!,
+      ) as Map<String, Object?>;
       final List<Object?> features = data['features']! as List<Object?>;
       expect(features, hasLength(1));
       final Map<String, Object?> feature =
@@ -645,15 +639,15 @@ void main() {
         final Future<void> focus = controller.setWaypointFocus('1');
         await Future.wait(<Future<void>>[attaching, focus]);
 
-        final Map<String, Object?> data =
-            jsonDecode(style.geoJson['pdl-track-waypoint-focus']!)
-                as Map<String, Object?>;
+        final Map<String, Object?> data = jsonDecode(
+          style.geoJson['pdl-track-waypoint-focus']!,
+        ) as Map<String, Object?>;
         expect(data['features']! as List<Object?>, hasLength(1));
 
         await controller.setWaypointFocus(null);
-        final Map<String, Object?> cleared =
-            jsonDecode(style.geoJson['pdl-track-waypoint-focus']!)
-                as Map<String, Object?>;
+        final Map<String, Object?> cleared = jsonDecode(
+          style.geoJson['pdl-track-waypoint-focus']!,
+        ) as Map<String, Object?>;
         expect(cleared['features']! as List<Object?>, isEmpty);
       },
     );

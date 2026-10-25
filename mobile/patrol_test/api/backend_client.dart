@@ -197,9 +197,9 @@ final class BackendClient {
   /// PATCH `{entity}/slug` as [who], what the web editor sends: the backend then keeps a redirect
   /// from the old slug. [apiPath] is the entity's resource (`/api/teams/{slug}`, …).
   Future<String> renameSlug(TestUser who, String apiPath, String label) async {
-    final slug = unique(
-      label,
-    ).toLowerCase().replaceAll(RegExp('[^a-z0-9]+'), '-');
+    final slug = unique(label)
+        .toLowerCase()
+        .replaceAll(RegExp('[^a-z0-9]+'), '-');
     final renamed = await patch(who, '$apiPath/slug', {'slug': slug});
     return renamed['slug'] as String;
   }
@@ -355,9 +355,10 @@ final class BackendClient {
     TestUser who,
     String type,
     String subjectSlug,
-  ) async => (await notifications(who))
-      .where((n) => n['type'] == type && n['subjectSlug'] == subjectSlug)
-      .firstOrNull;
+  ) async =>
+      (await notifications(who))
+          .where((n) => n['type'] == type && n['subjectSlug'] == subjectSlug)
+          .firstOrNull;
 
   /// Whether [who] receives [type] on [channel], per the API; null when the server offers no such
   /// cell.
@@ -433,9 +434,8 @@ final class BackendClient {
   Future<Json?> getOrNull(TestUser who, String path) async {
     final response = await _dio.get<Json>(
       path,
-      options: _as(
-        who,
-      ).copyWith(validateStatus: (status) => status == 200 || status == 404),
+      options: _as(who)
+          .copyWith(validateStatus: (status) => status == 200 || status == 404),
     );
     return response.statusCode == 404 ? null : response.data;
   }

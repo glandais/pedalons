@@ -153,9 +153,8 @@ String? gpxTrackName(String head) {
 String? _firstName(String xml) {
   final RegExpMatch? match = _nameElement.firstMatch(xml);
   if (match == null) return null;
-  final String name = _unescape(
-    match.group(1)!,
-  ).replaceAll(RegExp(r'\s+'), ' ');
+  final String name = _unescape(match.group(1)!)
+      .replaceAll(RegExp(r'\s+'), ' ');
   final String trimmed = name.trim();
   return trimmed.isEmpty ? null : trimmed;
 }

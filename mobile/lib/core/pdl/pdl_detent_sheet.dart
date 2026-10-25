@@ -259,9 +259,11 @@ class _PdlDetentSheetState extends State<PdlDetentSheet> {
                             if (widget.headerBuilder != null)
                               ValueListenableBuilder<double>(
                                 valueListenable: _extent,
-                                builder:
-                                    (BuildContext context, double extent, _) =>
-                                        widget.headerBuilder!(context, extent),
+                                builder: (
+                                  BuildContext context,
+                                  double extent,
+                                  _,
+                                ) => widget.headerBuilder!(context, extent),
                               ),
                           ],
                         ),

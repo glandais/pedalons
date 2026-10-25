@@ -17,8 +17,10 @@ import '../widgets/team_sections_bar.dart';
 /// Le cadre d'une section d'équipe : l'en-tête fixe ([header], quand le corps
 /// a son propre défileur) ou aucun (quand le corps est une liste de slivers
 /// qui porte l'en-tête interpolé). Fourni par `TeamHomePage`.
-typedef TeamChromeBuilder =
-    Widget Function({required Widget? header, required Widget body});
+typedef TeamChromeBuilder = Widget Function({
+  required Widget? header,
+  required Widget body,
+});
 
 /// Les types de l'Agenda : ses sorties et ses voyages, jamais ses
 /// publications (plan `2026-10-06-team-agenda.md` §2).

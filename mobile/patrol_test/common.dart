@@ -29,12 +29,11 @@ export 'package:pedalons/config/paths.dart' show Paths;
 
 export 'api/backend_client.dart' show Json, TestUser, unique;
 
-typedef TestAppCallback =
-    Future<void> Function(
-      PatrolIntegrationTester $,
-      Modules modules,
-      ApiClients apiClients,
-    );
+typedef TestAppCallback = Future<void> Function(
+  PatrolIntegrationTester $,
+  Modules modules,
+  ApiClients apiClients,
+);
 
 /// The wrapper every test goes through: one test per file, run by `patrol test`.
 void testApp(String description, TestAppCallback callback) {

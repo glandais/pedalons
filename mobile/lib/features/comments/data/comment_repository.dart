@@ -55,16 +55,12 @@ final commentRepositoryProvider = Provider<CommentRepository>((Ref ref) {
 /// Le seul accès aux commentaires, quel que soit l'objet commenté.
 class CommentRepository {
   CommentRepository({
-    required RideCommentsClient rides,
-    required PostCommentsClient posts,
-    required RouteCommentsClient routes,
-    required TripCommentsClient trips,
-    required TripStageCommentsClient stages,
-  }) : _rides = rides,
-       _posts = posts,
-       _routes = routes,
-       _trips = trips,
-       _stages = stages;
+    required this._rides,
+    required this._posts,
+    required this._routes,
+    required this._trips,
+    required this._stages,
+  });
 
   final RideCommentsClient _rides;
   final PostCommentsClient _posts;

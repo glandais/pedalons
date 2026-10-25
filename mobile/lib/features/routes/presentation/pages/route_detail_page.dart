@@ -199,13 +199,11 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
                 child: RouteDownloadActions(route: route),
               ),
             ),
-            bodyBuilder:
-                (
-                  BuildContext context,
-                  ScrollController controller,
-                  double footerInset,
-                ) =>
-                    _sheetBody(route, cursor, controller, footerInset, colorBy),
+            bodyBuilder: (
+              BuildContext context,
+              ScrollController controller,
+              double footerInset,
+            ) => _sheetBody(route, cursor, controller, footerInset, colorBy),
           ),
         ],
       ),

@@ -84,8 +84,7 @@ final notificationsProvider = StateNotifierProvider.autoDispose
     });
 
 class NotificationsNotifier extends PagedListNotifier<NotificationDto> {
-  NotificationsNotifier(this._repository, {required bool unreadOnly})
-    : _unreadOnly = unreadOnly;
+  NotificationsNotifier(this._repository, {required this._unreadOnly});
 
   final NotificationsRepository _repository;
   final bool _unreadOnly;

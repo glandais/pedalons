@@ -25,9 +25,8 @@ void main() {
       MaterialApp(
         theme: PedalonsTheme.build(brightness),
         builder: (BuildContext context, Widget? child) => MediaQuery(
-          data: MediaQuery.of(
-            context,
-          ).copyWith(textScaler: TextScaler.linear(textScale)),
+          data: MediaQuery.of(context)
+              .copyWith(textScaler: TextScaler.linear(textScale)),
           child: child!,
         ),
         home: const PdlShellDemoPage(),
@@ -206,9 +205,8 @@ void main() {
       MaterialApp(
         theme: PedalonsTheme.build(Brightness.light),
         builder: (BuildContext context, Widget? child) => MediaQuery(
-          data: MediaQuery.of(
-            context,
-          ).copyWith(padding: const EdgeInsets.only(top: kTopInset)),
+          data: MediaQuery.of(context)
+              .copyWith(padding: const EdgeInsets.only(top: kTopInset)),
           child: child!,
         ),
         home: Scaffold(

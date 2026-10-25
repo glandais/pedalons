@@ -297,9 +297,10 @@ void main() {
   }
 
   /// Le compteur « à venir » du résumé du profil, relu après invalidation.
-  Future<int> upcomingCount() async => (await container.read(
-    profileSummaryProvider.future,
-  ))!.participations.upcomingCount;
+  Future<int> upcomingCount() async =>
+      (await container.read(profileSummaryProvider.future))!
+          .participations
+          .upcomingCount;
 
   Future<RideRegistrationController> openRide() async {
     container.listen(

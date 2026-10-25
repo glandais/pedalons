@@ -160,11 +160,13 @@ void main() {
     });
 
     test('une pente inconnue tombe sur slopeNeutral', () {
-      final ElevationSamples samples =
-          ElevationSamples.fromPoints(const <ElevationPoint>[
-            ElevationPoint(distance: 0, elevation: 10),
-            ElevationPoint(distance: 100, elevation: 20),
-          ], targetBars: 1);
+      final ElevationSamples samples = ElevationSamples.fromPoints(
+        const <ElevationPoint>[
+          ElevationPoint(distance: 0, elevation: 10),
+          ElevationPoint(distance: 100, elevation: 20),
+        ],
+        targetBars: 1,
+      );
       final _RecordingCanvas canvas = _RecordingCanvas();
 
       ElevationAreaPainter(

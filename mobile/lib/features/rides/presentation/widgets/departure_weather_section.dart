@@ -82,9 +82,8 @@ class DepartureConditionsBlock extends StatelessWidget {
       conditions.temperature,
       units,
     );
-    final String condition = weatherConditionOf(
-      conditions.condition,
-    ).labelKey.tr();
+    final String condition = weatherConditionOf(conditions.condition).labelKey
+        .tr();
     final List<String> facts = <String>[
       'rides.weather.feelsLike'.tr(
         namedArgs: <String, String>{

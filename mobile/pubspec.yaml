@@ -4,7 +4,7 @@ publish_to: 'none'
 version: 1.1.0+91
 
 environment:
-  sdk: ^3.10.4
+  sdk: ^3.13.0
   # Exact on purpose: CI reads it (flutter-version-file) so it builds with the SDK the store builds
   # come from (publish_test.sh, local). Bump it by hand with each `flutter upgrade`.
   flutter: 3.47.7

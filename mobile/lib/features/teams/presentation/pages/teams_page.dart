@@ -242,9 +242,8 @@ class _TeamCard extends ConsumerWidget {
                 children: [
                   Text(
                     team.name,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: Theme.of(context).textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 4),
                   Row(
@@ -269,18 +268,18 @@ class _TeamCard extends ConsumerWidget {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.primaryContainer,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .primaryContainer,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
                             AppFormatters.roleName(team.role!),
                             style: TextStyle(
                               fontSize: 10,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onPrimaryContainer,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onPrimaryContainer,
                             ),
                           ),
                         ),

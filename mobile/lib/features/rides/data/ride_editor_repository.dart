@@ -28,20 +28,14 @@ const int kRideEditorPageSize = 20;
 /// ce formulaire, et un test qui le remplace n'a qu'une classe à bouchonner.
 class RideEditorRepository {
   RideEditorRepository({
-    required RoutesClient routes,
-    required PlacesClient places,
-    required TeamMembersClient members,
-    required TagsClient tags,
-    required RideTemplatesClient templates,
-    required AssetsClient assets,
-    required TeamsClient teams,
-  }) : _routes = routes,
-       _places = places,
-       _members = members,
-       _tags = tags,
-       _templates = templates,
-       _assets = assets,
-       _teams = teams;
+    required this._routes,
+    required this._places,
+    required this._members,
+    required this._tags,
+    required this._templates,
+    required this._assets,
+    required this._teams,
+  });
 
   final RoutesClient _routes;
   final PlacesClient _places;

@@ -43,14 +43,12 @@ const String _kUnreportedFatalKey = 'errorReports.unreportedFatal';
 class ErrorReporter {
   ErrorReporter({
     required SharedPreferences preferences,
-    required AppLog log,
-    required ClientContextBuilder context,
+    required this._log,
+    required this._context,
     this.maxPerSession = 5,
     this.maxQueue = 5,
     this.autoSendAllowed = true,
-  }) : _prefs = preferences,
-       _log = log,
-       _context = context {
+  }) : _prefs = preferences {
     _previousFatal = _readFatal();
   }
 

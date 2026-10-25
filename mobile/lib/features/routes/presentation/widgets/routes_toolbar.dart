@@ -195,9 +195,9 @@ class _ScopeSheet extends ConsumerWidget {
             trailing: check(filters.teamSlug == team.slug),
             // Choisir une équipe efface le rôle minimum : il ne partirait pas
             // à l'API, et le laisser affiché mentirait sur ce qui filtre.
-            onTap: () => Navigator.of(
-              context,
-            ).pop(filters.copyWith(teamSlug: team.slug, minRole: null)),
+            onTap: () =>
+                Navigator.of(context)
+                    .pop(filters.copyWith(teamSlug: team.slug, minRole: null)),
           ),
         if (filters.teamSlug == null) ...<Widget>[
           const SizedBox(height: PdlSpacing.chipGap),

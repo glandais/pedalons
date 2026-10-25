@@ -42,12 +42,12 @@ void main() {
     }
 
     test('fr et en déclarent exactement les mêmes clés', () {
-      final Map<String, dynamic> fr =
-          json.decode(File('assets/l10n/fr.json').readAsStringSync())
-              as Map<String, dynamic>;
-      final Map<String, dynamic> en =
-          json.decode(File('assets/l10n/en.json').readAsStringSync())
-              as Map<String, dynamic>;
+      final Map<String, dynamic> fr = json.decode(
+        File('assets/l10n/fr.json').readAsStringSync(),
+      ) as Map<String, dynamic>;
+      final Map<String, dynamic> en = json.decode(
+        File('assets/l10n/en.json').readAsStringSync(),
+      ) as Map<String, dynamic>;
 
       expect(
         keysOf(fr).difference(keysOf(en)),

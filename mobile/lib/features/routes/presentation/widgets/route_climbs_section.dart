@@ -46,9 +46,8 @@ class RouteClimbsSection extends ConsumerWidget {
             // de la charte : HC raisin jusqu'à Cat.4 vert, Cat.3 à texte
             // sombre parce que le jaune ne porte pas de blanc.
             categoryLabel: _categoryLabel(climbs[i].category),
-            categoryTone: ClimbCategory.fromJson(
-              climbs[i].category ?? '',
-            ).tone(c),
+            categoryTone: ClimbCategory.fromJson(climbs[i].category ?? '')
+                .tone(c),
             name:
                 climbs[i].name ??
                 'routes.climbNumber'.tr(

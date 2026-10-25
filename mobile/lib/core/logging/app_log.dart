@@ -108,9 +108,9 @@ String sanitizeLogText(String value) =>
 class AppLog {
   AppLog({
     this.capacity = 200,
-    Future<Directory> Function()? directory,
+    this._directory,
     this.flushDelay = const Duration(milliseconds: 500),
-  }) : _directory = directory;
+  });
 
   /// Le journal de l'app. Les gestionnaires globaux de `main.dart` s'exécutent
   /// hors de Riverpod : ils écrivent ici, et [appLogProvider] rend la même

@@ -1165,8 +1165,11 @@ void main() {
       );
       expect(find.byKey(keys.ride.windMapChip), findsOneWidget);
 
-      containerOf(tester).read(hiddenRideRoutesProvider(key).notifier).state =
-          <String>{'court'};
+      containerOf(tester)
+          .read(hiddenRideRoutesProvider(key).notifier)
+          .state = <String>{
+        'court',
+      };
       await tester.pump();
       expect(find.byKey(keys.ride.windMapChip), findsNothing);
     });

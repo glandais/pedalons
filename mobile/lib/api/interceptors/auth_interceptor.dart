@@ -57,8 +57,8 @@ class AuthInterceptor extends Interceptor {
   AuthInterceptor(
     this._ref,
     this._dio, {
-    @visibleForTesting HttpClientAdapter? refreshAdapter,
-  }) : _refreshAdapter = refreshAdapter;
+    @visibleForTesting this._refreshAdapter,
+  });
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {

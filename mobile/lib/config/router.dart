@@ -67,8 +67,10 @@ final _profileNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'profile');
 /// Provider for the initial deep link path (set in main.dart)
 final initialDeepLinkProvider = Provider<String?>((ref) => null);
 
-typedef _AncestorBuilder =
-    String Function(Map<String, String> params, String locale);
+typedef _AncestorBuilder = String Function(
+  Map<String, String> params,
+  String locale,
+);
 
 /// Hierarchies for deep-linked pages. Each entry pairs a route's locale
 /// variants with the list of ancestor URL builders (root → parent), used by

@@ -136,9 +136,8 @@ class RideGroupRouteActions extends ConsumerWidget {
     // Les parcours sont déjà chargés en lot pour la carte : leurs assets
     // GPX/FIT viennent de là, sans appel de plus.
     final RouteDetailDto? route = ref.watch(
-      rideRouteGeometriesProvider(
-        rideKey,
-      ).select((RideRouteGeometriesState s) => s.geometries[routeSlug]),
+      rideRouteGeometriesProvider(rideKey)
+          .select((RideRouteGeometriesState s) => s.geometries[routeSlug]),
     );
     final List<GpsServiceConnectionDto> services = ref.watch(
       authProvider.select(

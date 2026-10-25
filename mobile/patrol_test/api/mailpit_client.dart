@@ -37,9 +37,8 @@ final class MailpitClient {
   /// the body.
   Future<List<Map<String, dynamic>>> messagesTo(String to) async => [
     for (final message in await _search(to))
-      (await _dio.get<Map<String, dynamic>>(
-        '/api/v1/message/${message['ID']}',
-      )).data!,
+      (await _dio.get<Map<String, dynamic>>('/api/v1/message/${message['ID']}'))
+          .data!,
   ];
 
   /// The 6-digit one-time code in [mail].

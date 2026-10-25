@@ -41,17 +41,14 @@ void main() {
     expect(distinctRouteSlugs(fixtureRide()), isEmpty);
   });
 
-  test(
-    'le parcours de la sortie est demandé même si aucun groupe ne le roule',
-    () {
-      final RideDto ride = fixtureRide(
-        groups: <RideGroupDto>[fixtureGroup(id: 'g1', routeSlug: 'court')],
-      ).copyWith(routeSlug: 'principal');
+  test('le parcours de la sortie est demandé même si aucun groupe ne le roule', () {
+    final RideDto ride = fixtureRide(
+      groups: <RideGroupDto>[fixtureGroup(id: 'g1', routeSlug: 'court')],
+    ).copyWith(routeSlug: 'principal');
 
-      // D'abord celui de la sortie, comme le web : l'ordre numérote les couleurs.
-      expect(distinctRouteSlugs(ride), <String>['principal', 'court']);
-    },
-  );
+    // D'abord celui de la sortie, comme le web : l'ordre numérote les couleurs.
+    expect(distinctRouteSlugs(ride), <String>['principal', 'court']);
+  });
 
   group('une couche par parcours', () {
     // Chill et G1 sans parcours propre roulent celui de la sortie ; Sportif a

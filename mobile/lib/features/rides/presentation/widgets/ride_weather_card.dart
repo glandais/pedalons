@@ -347,9 +347,8 @@ class _DepartureSummary extends StatelessWidget {
       conditions.temperature,
       units,
     );
-    final String condition = weatherConditionOf(
-      conditions.condition,
-    ).labelKey.tr();
+    final String condition = weatherConditionOf(conditions.condition).labelKey
+        .tr();
     final String feelsLike = 'rides.weather.feelsLike'.tr(
       namedArgs: <String, String>{
         'temperature': AppFormatters.formatTemperature(

@@ -21,14 +21,11 @@ const int _kLongFieldMax = 200;
 /// l'erreur et la photo.
 class ClientContextBuilder {
   ClientContextBuilder({
-    DeviceDescription? device,
+    this._device,
     String? Function()? locale,
-    String? platform,
-    AppLog? log,
-  }) : _device = device,
-       _locale = locale ?? getCurrentLocale,
-       _platform = platform,
-       _log = log;
+    this._platform,
+    this._log,
+  }) : _locale = locale ?? getCurrentLocale;
 
   static final ClientContextBuilder instance = ClientContextBuilder(
     log: AppLog.instance,

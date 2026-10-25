@@ -82,9 +82,10 @@ final class Post extends Module {
   bool get isReplying => isShown(keys.comments.replyingToBanner);
 
   /// Whether [replyId] is rendered inside [parentId]'s thread, under it.
-  bool showsReplyUnder(String parentId, String replyId) => $(
-    keys.comments.thread(parentId),
-  ).$(keys.comments.comment(replyId)).exists;
+  bool showsReplyUnder(String parentId, String replyId) =>
+      $(keys.comments.thread(parentId))
+          .$(keys.comments.comment(replyId))
+          .exists;
 
   // ── The `⋯` menu ────────────────────────────────────────────────────────
 

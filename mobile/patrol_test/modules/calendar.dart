@@ -28,9 +28,8 @@ final class Calendar extends Module {
 
   /// Waits until the agenda holds the card of [entitySlug], and brings it on screen.
   Future<void> waitUntilEventIsShown(String entitySlug) async {
-    await $(
-      keys.calendar.agendaCard(entitySlug),
-    ).waitUntilExists(timeout: const Duration(seconds: 20));
+    await $(keys.calendar.agendaCard(entitySlug))
+        .waitUntilExists(timeout: const Duration(seconds: 20));
     await scrolledTo(keys.calendar.agendaCard(entitySlug));
   }
 
@@ -77,9 +76,9 @@ final class Calendar extends Module {
     await $(keys.calendar.subscriptionRegenerateConfirmButton).tap();
     await waitUntilGone(keys.calendar.subscriptionRegenerateConfirmButton);
     // Said once the new token is read back: before, the card still holds the old one.
-    await $(
-      keys.calendar.subscriptionNotice,
-    ).$(RegExp("^Lien régénéré")).waitUntilExists();
+    await $(keys.calendar.subscriptionNotice)
+        .$(RegExp("^Lien régénéré"))
+        .waitUntilExists();
   }
 
   bool noticeShows(String text) =>

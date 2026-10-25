@@ -57,15 +57,13 @@ final class RideTemplates extends Module {
   }
 
   Future<void> enterGroupName(int index, String name) async {
-    await (await scrolledTo(
-      keys.rideTemplateEditor.groupName(index),
-    )).enterText(name);
+    await (await scrolledTo(keys.rideTemplateEditor.groupName(index)))
+        .enterText(name);
   }
 
   Future<void> enterGroupMax(int index, String max) async {
-    await (await scrolledTo(
-      keys.rideTemplateEditor.groupMax(index),
-    )).enterText(max);
+    await (await scrolledTo(keys.rideTemplateEditor.groupMax(index)))
+        .enterText(max);
   }
 
   /// « Enregistrer », then waits for the form to leave: the list is underneath.

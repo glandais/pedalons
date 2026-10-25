@@ -92,17 +92,15 @@ void main() {
 
     test('une recherche blanche ne part pas comme filtre', () async {
       final _RecordingAdsClient client = _RecordingAdsClient();
-      await AdRepository(
-        client,
-      ).fetchAds(filters: base.copyWith(search: '   '));
+      await AdRepository(client)
+          .fetchAds(filters: base.copyWith(search: '   '));
       expect(client.calls.single['search'], isNull);
     });
 
     test('rend le total du serveur, pas la taille de la page', () async {
       final _RecordingAdsClient client = _RecordingAdsClient()..total = 57;
-      final PageResult<AdDto> page = await AdRepository(
-        client,
-      ).fetchAds(filters: base);
+      final PageResult<AdDto> page = await AdRepository(client)
+          .fetchAds(filters: base);
       expect(page.items, hasLength(20));
       expect(page.total, 57);
     });

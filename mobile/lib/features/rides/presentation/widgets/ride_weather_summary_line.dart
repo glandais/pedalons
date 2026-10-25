@@ -146,9 +146,8 @@ class RideWeatherSummaryLine extends ConsumerWidget {
           crossAxisAlignment: WrapCrossAlignment.center,
           children: <Widget>[
             _Part(
-              icon: weatherConditionOf(
-                s.condition,
-              ).icon(daylight: s.daylight ?? true),
+              icon: weatherConditionOf(s.condition)
+                  .icon(daylight: s.daylight ?? true),
               iconColor: c.text,
               text: temperature ?? condition,
             ),

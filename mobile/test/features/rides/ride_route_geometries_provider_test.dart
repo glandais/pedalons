@@ -155,27 +155,24 @@ void main() {
     },
   );
 
-  test(
-    'invalider plusieurs fois de suite (switchGroup, échec) ne fait toujours qu\'un appel',
-    () async {
-      final RideDto ride = fixtureRide(
-        groups: <RideGroupDto>[fixtureGroup(id: 'g1', routeSlug: 'seul')],
-      );
-      final (ProviderContainer container, _CountingRouteRepository repo) =
-          await boot(ride);
-      expect(repo.bulkCalls.length, 1);
+  test('invalider plusieurs fois de suite (switchGroup, échec) ne fait toujours qu\'un appel', () async {
+    final RideDto ride = fixtureRide(
+      groups: <RideGroupDto>[fixtureGroup(id: 'g1', routeSlug: 'seul')],
+    );
+    final (ProviderContainer container, _CountingRouteRepository repo) =
+        await boot(ride);
+    expect(repo.bulkCalls.length, 1);
 
-      // `switchGroup` invalide deux fois (leave, puis join) ; un échec en
-      // invalide une troisième (`_fail`).
-      for (int i = 0; i < 3; i++) {
-        container.invalidate(rideDetailProvider(key));
-        await container.read(rideDetailProvider(key).future);
-      }
-      await Future<void>.delayed(const Duration(milliseconds: 20));
+    // `switchGroup` invalide deux fois (leave, puis join) ; un échec en
+    // invalide une troisième (`_fail`).
+    for (int i = 0; i < 3; i++) {
+      container.invalidate(rideDetailProvider(key));
+      await container.read(rideDetailProvider(key).future);
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 20));
 
-      expect(repo.bulkCalls.length, 1);
-    },
-  );
+    expect(repo.bulkCalls.length, 1);
+  });
 
   test(
     'au-delà de cinquante parcours distincts, le lot est plafonné',

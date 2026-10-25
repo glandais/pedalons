@@ -1132,28 +1132,29 @@ void main() {
     String groupPath(String id) =>
         Paths.rideGroup(key.teamSlug, key.rideSlug, id);
 
-    testWidgets('poussée au-dessus du détail : elle s\'efface, le détail reste', (
-      WidgetTester tester,
-    ) async {
-      await mount(tester, solo);
-      unawaited(router.push(ridePath));
-      await settle(tester);
-      expect(find.byType(RideDetailPage), findsOneWidget);
+    testWidgets(
+      'poussée au-dessus du détail : elle s\'efface, le détail reste',
+      (WidgetTester tester) async {
+        await mount(tester, solo);
+        unawaited(router.push(ridePath));
+        await settle(tester);
+        expect(find.byType(RideDetailPage), findsOneWidget);
 
-      unawaited(router.push('${groupPath('g1')}?tab=weather'));
-      await settle(tester);
+        unawaited(router.push('${groupPath('g1')}?tab=weather'));
+        await settle(tester);
 
-      expect(find.byType(RideGroupPage), findsNothing);
-      expect(find.byType(RideDetailPage), findsOneWidget);
-      // L'onglet Météo devient un défilement du détail, consommé par lui.
-      expect(container.read(rideScrollToWeatherProvider(key)), isFalse);
+        expect(find.byType(RideGroupPage), findsNothing);
+        expect(find.byType(RideDetailPage), findsOneWidget);
+        // L'onglet Météo devient un défilement du détail, consommé par lui.
+        expect(container.read(rideScrollToWeatherProvider(key)), isFalse);
 
-      // Un seul retour mène à l'écran d'avant le détail : pas d'entrée laissée.
-      router.pop();
-      await settle(tester);
-      expect(find.byKey(home), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    });
+        // Un seul retour mène à l'écran d'avant le détail : pas d'entrée laissée.
+        router.pop();
+        await settle(tester);
+        expect(find.byKey(home), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
 
     testWidgets(
       'poussée au-dessus d\'un autre écran : remplacée par le détail',

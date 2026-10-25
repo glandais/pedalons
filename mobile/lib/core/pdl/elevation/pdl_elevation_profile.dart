@@ -15,8 +15,10 @@ import 'elevation_samples.dart';
 ///
 /// [isLast] marque la dernière, **seule suffixée de l'unité** :
 /// « 0,0 · 11,6 · 23,2 · 34,7 · 46,3 km ».
-typedef ElevationAxisLabel =
-    String Function(double meters, {required bool isLast});
+typedef ElevationAxisLabel = String Function(
+  double meters, {
+  required bool isLast,
+});
 
 /// Le libellé de l'info-bulle : « 28,7 km · 74 m · 4,1 % ».
 typedef ElevationTipLabel = String Function(ElevationReading reading);

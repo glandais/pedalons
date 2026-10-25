@@ -11,8 +11,10 @@ import '../../../../../keys.dart';
 /// ledger `API-21`).
 typedef PickerPage<T> = ({List<T> items, int total});
 
-typedef PickerLoader<T> =
-    Future<PickerPage<T>> Function(String? search, int page);
+typedef PickerLoader<T> = Future<PickerPage<T>> Function(
+  String? search,
+  int page,
+);
 
 /// Ouvre une feuille plein rideau de choix dans une liste serveur, avec
 /// recherche et chargement à la demande — parcours, lieux, membres, modèles

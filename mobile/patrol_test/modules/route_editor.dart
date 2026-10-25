@@ -37,9 +37,9 @@ final class RouteEditor extends Module {
       name: fileName,
       size: await file.length(),
     );
-    ProviderScope.containerOf(
-      $.tester.element(find.byType(PedalonsApp)),
-    ).read(gpxFilePickerProvider.notifier).state = _FixedPicker(
+    ProviderScope.containerOf($.tester.element(find.byType(PedalonsApp)))
+        .read(gpxFilePickerProvider.notifier)
+        .state = _FixedPicker(
       gpx,
     );
   }

@@ -119,15 +119,12 @@ void main() {
       expect(t.badgeLg.letterSpacing, 0.25);
     });
 
-    test(
-      'la pile mono passe par fontFamilyFallback, pas par une police téléchargée',
-      () {
-        final PdlTypography t = PdlTypography.of(Brightness.light);
-        expect(t.mono.fontFamilyFallback, PdlTypography.monoFallback);
-        expect(t.monoAxis.fontFamilyFallback, PdlTypography.monoFallback);
-        expect(t.monoAxis.color, PdlColors.light.textPlaceholder);
-      },
-    );
+    test('la pile mono passe par fontFamilyFallback, pas par une police téléchargée', () {
+      final PdlTypography t = PdlTypography.of(Brightness.light);
+      expect(t.mono.fontFamilyFallback, PdlTypography.monoFallback);
+      expect(t.monoAxis.fontFamilyFallback, PdlTypography.monoFallback);
+      expect(t.monoAxis.color, PdlColors.light.textPlaceholder);
+    });
 
     test('le mode sombre repeint les rôles sans changer les métriques', () {
       final PdlTypography l = PdlTypography.of(Brightness.light);

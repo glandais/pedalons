@@ -48,12 +48,12 @@ void main() {
   setUpAll(() async {
     await initializeDateFormatting('fr');
     await initializeDateFormatting('en');
-    fr =
-        jsonDecode(File('assets/l10n/fr.json').readAsStringSync())
-            as Map<String, dynamic>;
-    en =
-        jsonDecode(File('assets/l10n/en.json').readAsStringSync())
-            as Map<String, dynamic>;
+    fr = jsonDecode(
+      File('assets/l10n/fr.json').readAsStringSync(),
+    ) as Map<String, dynamic>;
+    en = jsonDecode(
+      File('assets/l10n/en.json').readAsStringSync(),
+    ) as Map<String, dynamic>;
   });
 
   group('formatDistance', () {

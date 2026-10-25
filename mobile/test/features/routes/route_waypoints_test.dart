@@ -108,9 +108,9 @@ void main() {
   group('traductions', () {
     for (final String lang in <String>['fr', 'en']) {
       test('chaque type a son libellé en $lang', () {
-        final Map<String, dynamic> data =
-            json.decode(File('assets/l10n/$lang.json').readAsStringSync())
-                as Map<String, dynamic>;
+        final Map<String, dynamic> data = json.decode(
+          File('assets/l10n/$lang.json').readAsStringSync(),
+        ) as Map<String, dynamic>;
         final Map<String, dynamic> types =
             ((data['routes'] as Map<String, dynamic>)['waypoints']
                     as Map<String, dynamic>)['type']

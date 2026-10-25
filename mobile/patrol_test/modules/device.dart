@@ -8,17 +8,15 @@ final class Device extends Module {
   /// can fall on one of the gaps between them — in French on an Android phone it does, and the
   /// column was never « visible » although fully on screen.
   Future<void> waitUntilPaired() async {
-    await $(
-      keys.device.success,
-    ).waitUntilExists(timeout: const Duration(seconds: 10));
+    await $(keys.device.success)
+        .waitUntilExists(timeout: const Duration(seconds: 10));
   }
 
   /// The Hammerhead step a Karoo goes on to once authorized (docs/LEDGER_*.md API-63) —
   /// existence, for the same reason as [waitUntilPaired].
   Future<void> waitUntilHammerheadStep() async {
-    await $(
-      keys.device.hammerhead,
-    ).waitUntilExists(timeout: const Duration(seconds: 10));
+    await $(keys.device.hammerhead)
+        .waitUntilExists(timeout: const Duration(seconds: 10));
     await $(keys.device.connectHammerheadButton).waitUntilExists();
   }
 
@@ -32,24 +30,21 @@ final class Device extends Module {
   /// already at that step lands a frame or more later: [waitUntilHammerheadStep] would return on
   /// the page underneath.
   Future<void> waitUntilHammerheadError() async {
-    await $(
-      keys.device.hammerheadError,
-    ).waitUntilExists(timeout: const Duration(seconds: 10));
+    await $(keys.device.hammerheadError)
+        .waitUntilExists(timeout: const Duration(seconds: 10));
   }
 
   /// Existence too: the error state is the same kind of spaced column.
   Future<void> waitUntilCodeIsRefused() async {
-    await $(
-      keys.device.error,
-    ).waitUntilExists(timeout: const Duration(seconds: 10));
+    await $(keys.device.error)
+        .waitUntilExists(timeout: const Duration(seconds: 10));
   }
 
   /// Waits for the confirmation card, then presses « Autoriser » — the only
   /// way a device gets paired (docs/LEDGER_*.md SEC-2).
   Future<void> authorize() async {
-    await $(
-      keys.device.confirm,
-    ).waitUntilExists(timeout: const Duration(seconds: 10));
+    await $(keys.device.confirm)
+        .waitUntilExists(timeout: const Duration(seconds: 10));
     await $(keys.device.authorizeButton).scrollTo();
     await $(keys.device.authorizeButton).tap();
   }

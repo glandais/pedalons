@@ -47,9 +47,8 @@ final class Notifications extends Module {
 
   /// The chip of [channel] on the row of [type], tapped: it writes that cell alone.
   Future<void> toggleChannelChip(String type, String channel) async {
-    await (await scrolledTo(
-      keys.notifications.channelChip(type, channel),
-    )).tap();
+    await (await scrolledTo(keys.notifications.channelChip(type, channel)))
+        .tap();
   }
 
   /// Scrolls the settings down to the team's switch, their last section: once it shows, the
@@ -125,9 +124,8 @@ final class Notifications extends Module {
   Future<void> waitUntilUnreadEmptyStateIsShown({
     Duration timeout = const Duration(seconds: 10),
   }) async {
-    await $(
-      keys.notifications.unreadEmptyState,
-    ).waitUntilVisible(timeout: timeout);
+    await $(keys.notifications.unreadEmptyState)
+        .waitUntilVisible(timeout: timeout);
   }
 
   /// The empty state's way out: « Toutes ».

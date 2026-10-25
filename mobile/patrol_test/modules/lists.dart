@@ -62,9 +62,8 @@ final class Lists extends Module {
   Future<void> scrollFeedTo(String slug) => scrollDownTo(keys.feed.card(slug));
 
   Future<void> waitUntilFeedHas(String slug) async {
-    await $(
-      keys.feed.card(slug),
-    ).waitUntilExists(timeout: const Duration(seconds: 20));
+    await $(keys.feed.card(slug))
+        .waitUntilExists(timeout: const Duration(seconds: 20));
   }
 
   Future<void> waitUntilFeedLacks(String slug) =>
@@ -83,9 +82,8 @@ final class Lists extends Module {
   }
 
   Future<void> waitUntilFeedFilteredEmpty() async {
-    await $(
-      keys.feed.filteredEmptyState,
-    ).waitUntilExists(timeout: const Duration(seconds: 15));
+    await $(keys.feed.filteredEmptyState)
+        .waitUntilExists(timeout: const Duration(seconds: 15));
   }
 
   // ── Ads ─────────────────────────────────────────────────────────────────
@@ -94,9 +92,8 @@ final class Lists extends Module {
       scrollDownTo(keys.adsList.card(adSlug));
 
   Future<void> waitUntilAdsHave(String adSlug) async {
-    await $(
-      keys.adsList.card(adSlug),
-    ).waitUntilExists(timeout: const Duration(seconds: 20));
+    await $(keys.adsList.card(adSlug))
+        .waitUntilExists(timeout: const Duration(seconds: 20));
   }
 
   Future<void> waitUntilAdsLack(String adSlug) =>
@@ -115,9 +112,8 @@ final class Lists extends Module {
   }
 
   Future<void> waitUntilAdsFilteredEmpty() async {
-    await $(
-      keys.adsList.filteredEmptyState,
-    ).waitUntilExists(timeout: const Duration(seconds: 15));
+    await $(keys.adsList.filteredEmptyState)
+        .waitUntilExists(timeout: const Duration(seconds: 15));
   }
 
   // ── Members ─────────────────────────────────────────────────────────────
@@ -126,9 +122,8 @@ final class Lists extends Module {
       scrollDownTo(keys.team.memberRow(userId));
 
   Future<void> waitUntilMembersHave(String userId) async {
-    await $(
-      keys.team.memberRow(userId),
-    ).waitUntilExists(timeout: const Duration(seconds: 20));
+    await $(keys.team.memberRow(userId))
+        .waitUntilExists(timeout: const Duration(seconds: 20));
   }
 
   bool membersHave(String userId) => isShown(keys.team.memberRow(userId));
@@ -176,9 +171,8 @@ final class Lists extends Module {
 
   /// Waits until the thread holds the comment of [commentId] — built, not necessarily on screen.
   Future<void> waitUntilCommentIsLoaded(String commentId) async {
-    await $(
-      keys.comments.comment(commentId),
-    ).waitUntilExists(timeout: const Duration(seconds: 20));
+    await $(keys.comments.comment(commentId))
+        .waitUntilExists(timeout: const Duration(seconds: 20));
   }
 
   Future<void> scrollCommentsTo(String commentId) =>

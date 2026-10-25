@@ -73,9 +73,9 @@ void main() {
 
     test('se lit juste une fois interpolé dans les deux catalogues', () {
       String mention(String language, String zone) {
-        final Map<String, dynamic> catalog =
-            json.decode(File('assets/l10n/$language.json').readAsStringSync())
-                as Map<String, dynamic>;
+        final Map<String, dynamic> catalog = json.decode(
+          File('assets/l10n/$language.json').readAsStringSync(),
+        ) as Map<String, dynamic>;
         final String text =
             (catalog['dates'] as Map<String, dynamic>)['zoneMention'] as String;
         return text

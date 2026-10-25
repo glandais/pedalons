@@ -193,9 +193,8 @@ class DashboardNewRoutes extends ConsumerWidget {
                                     label: AppFormatters.surfaceName(
                                       r.surfaceType,
                                     ),
-                                    tone: SurfaceType.fromJson(
-                                      r.surfaceType,
-                                    ).tone(c),
+                                    tone: SurfaceType.fromJson(r.surfaceType)
+                                        .tone(c),
                                   ),
                                 ],
                               ),

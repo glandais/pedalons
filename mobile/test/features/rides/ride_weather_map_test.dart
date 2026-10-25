@@ -190,38 +190,35 @@ void main() {
   });
 
   group('pointsAtDistances', () {
-    test(
-      'deux traces, la seconde repartant de 0 : chaque point sur son sommet',
-      () {
-        // Comme `chainedMeasures` : la seconde trace, décalée de 0,7° à l'est,
-        // commence à 20 km chaînés, sans compter le saut.
-        final List<List<List<double>>> lines = <List<List<double>>>[
-          northbound(20),
-          northbound(20, lon: 5.7),
-        ];
+    test('deux traces, la seconde repartant de 0 : chaque point sur son sommet', () {
+      // Comme `chainedMeasures` : la seconde trace, décalée de 0,7° à l'est,
+      // commence à 20 km chaînés, sans compter le saut.
+      final List<List<List<double>>> lines = <List<List<double>>>[
+        northbound(20),
+        northbound(20, lon: 5.7),
+      ];
 
-        final List<LngLat?> points = pointsAtDistances(lines, <double>[
-          0,
-          15000,
-          20000,
-          25000,
-          40000,
-        ]);
+      final List<LngLat?> points = pointsAtDistances(lines, <double>[
+        0,
+        15000,
+        20000,
+        25000,
+        40000,
+      ]);
 
-        expect(points[0], const LngLat(5, 45));
-        expect(points[1]!.lng, 5);
-        expect(points[1]!.lat, closeTo(45 + 15 * 0.009, 1e-9));
-        // 20 km : le dernier sommet de la première trace, premier à l'atteindre.
-        expect(points[2]!.lng, 5);
-        expect(points[2]!.lat, closeTo(45 + 20 * 0.009, 1e-9));
-        // 25 km : 5 km dans la seconde trace — pas 5 km avant, comme le
-        // donnerait le saut compté à vol d'oiseau.
-        expect(points[3]!.lng, 5.7);
-        expect(points[3]!.lat, closeTo(45 + 5 * 0.009, 1e-9));
-        expect(points[4]!.lng, 5.7);
-        expect(points[4]!.lat, closeTo(45 + 20 * 0.009, 1e-9));
-      },
-    );
+      expect(points[0], const LngLat(5, 45));
+      expect(points[1]!.lng, 5);
+      expect(points[1]!.lat, closeTo(45 + 15 * 0.009, 1e-9));
+      // 20 km : le dernier sommet de la première trace, premier à l'atteindre.
+      expect(points[2]!.lng, 5);
+      expect(points[2]!.lat, closeTo(45 + 20 * 0.009, 1e-9));
+      // 25 km : 5 km dans la seconde trace — pas 5 km avant, comme le
+      // donnerait le saut compté à vol d'oiseau.
+      expect(points[3]!.lng, 5.7);
+      expect(points[3]!.lat, closeTo(45 + 5 * 0.009, 1e-9));
+      expect(points[4]!.lng, 5.7);
+      expect(points[4]!.lat, closeTo(45 + 20 * 0.009, 1e-9));
+    });
 
     test('un arrondi du serveur sous le demi-mètre tombe sur le sommet', () {
       final List<LngLat?> points = pointsAtDistances(

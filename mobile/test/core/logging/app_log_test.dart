@@ -127,9 +127,8 @@ void main() {
       log.warn('http', 'GET /api/x → 500');
       await Future<void>.delayed(const Duration(milliseconds: 20));
       await log.flush();
-      final List<String> lines = File(
-        '${dir.path}/${AppLog.fileName}',
-      ).readAsLinesSync();
+      final List<String> lines = File('${dir.path}/${AppLog.fileName}')
+          .readAsLinesSync();
       expect(lines, hasLength(2));
     });
 
