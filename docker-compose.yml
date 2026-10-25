@@ -240,7 +240,7 @@ services:
     # imresamu/postgis, not postgis/postgis: same builds (by a docker-postgis maintainer), but
     # published for arm64 too — the official image is amd64-only, which Docker VMM on Apple
     # Silicon cannot run.
-    image: imresamu/postgis:17-3.6-alpine
+    image: imresamu/postgis:18-3.6-alpine
     container_name: ${ENV_NAME}-postgres
     restart: unless-stopped
     networks:
