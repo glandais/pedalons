@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/pdl/pdl.dart';
@@ -66,7 +67,12 @@ class TeamSectionsToolbar extends StatelessWidget {
 }
 
 /// The chips themselves, shared by both forms.
-class TeamSectionChips extends StatelessWidget {
+///
+/// The row is wider than the screen as soon as a team has a few sections, so
+/// the selected chip, when it is not whole on screen, is scrolled into view —
+/// centred where the row allows it — when the section opens: « Parcours » or « À propos » would otherwise sit
+/// past the edge, and nothing on screen would say where one is.
+class TeamSectionChips extends StatefulWidget {
   const TeamSectionChips({
     super.key,
     required this.sections,
@@ -77,13 +83,71 @@ class TeamSectionChips extends StatelessWidget {
   final TeamSectionKind current;
 
   @override
+  State<TeamSectionChips> createState() => _TeamSectionChipsState();
+}
+
+class _TeamSectionChipsState extends State<TeamSectionChips> {
+  final ScrollController _scroll = ScrollController();
+  final GlobalKey _selectedKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    _revealSelected(animate: false);
+  }
+
+  @override
+  void didUpdateWidget(TeamSectionChips oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.current != widget.current) _revealSelected(animate: true);
+  }
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  /// Scrolls the row only. `Scrollable.ensureVisible` would also move every
+  /// enclosing scrollable — the section's own list, under a pinned toolbar.
+  void _revealSelected({required bool animate}) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final RenderObject? chip = _selectedKey.currentContext
+          ?.findRenderObject();
+      if (!mounted || chip == null || !_scroll.hasClients) return;
+      final ScrollPosition position = _scroll.position;
+      final RenderAbstractViewport viewport = RenderAbstractViewport.of(chip);
+      // Already whole on screen: leave the row where it is.
+      final double atEnd = viewport.getOffsetToReveal(chip, 1).offset;
+      final double atStart = viewport.getOffsetToReveal(chip, 0).offset;
+      if (position.pixels >= atEnd && position.pixels <= atStart) return;
+      final double target = viewport
+          .getOffsetToReveal(chip, 0.5)
+          .offset
+          .clamp(position.minScrollExtent, position.maxScrollExtent);
+      if (animate && !MediaQuery.disableAnimationsOf(context)) {
+        _scroll.animateTo(
+          target,
+          duration: PdlMotion.stateChange,
+          curve: PdlMotion.stateChangeCurve,
+        );
+      } else {
+        _scroll.jumpTo(target);
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final int selected = indexOfSection(current, sections);
+    final List<TeamSection> sections = widget.sections;
+    final int selected = indexOfSection(widget.current, sections);
 
     return PdlChipRow(
+      controller: _scroll,
       children: <Widget>[
         for (int i = 0; i < sections.length; i++)
           PdlChip(
+            key: i == selected ? _selectedKey : null,
             label: sections[i].label.tr(),
             icon: sections[i].icon,
             selected: i == selected,
