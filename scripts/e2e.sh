@@ -118,6 +118,11 @@ up() {
   ensure_routing_key
   ensure_images
   compose --profile app up -d --remove-orphans
+  # varnishd resolves imgproxy's address once, when it loads its VCL: an `up` that recreates
+  # imgproxy (a new image) leaves it sending to the old IP, which another container may hold by
+  # then — every upload is refused INVALID_FORMAT. Compose's `depends_on.restart` does not cover
+  # that case (docs/LEDGER_*.md OPS-53).
+  compose restart varnish
   wait_for "http://localhost:$HTTP_PORT/api/config"
   wait_for "http://localhost:$HTTP_PORT/" 60
   echo "e2e: stack up — app http://localhost:$HTTP_PORT, mailpit http://localhost:$E2E_MAILPIT_PORT"
