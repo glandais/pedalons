@@ -852,13 +852,6 @@ Ce que les tests ne prouvent pas, parce qu'ils ne passent ni par Flyway ni par u
 
 ### Exploitation
 
-- [ ] `OPS-53` **Basculer chaque environnement sur PostgreSQL 18** (scindé d'`OPS-19`) — tant
-      que ce n'est pas fait, `deploy.sh` refuse de déployer ce commit, et sur un poste un simple
-      `docker compose up -d` démarre la 18 sur un volume vide (rien de perdu : `down`, puis le
-      script). Lancer `scripts/postgres-upgrade.sh` **au lieu** du déploiement habituel, en production, en
-      staging et sur `tribly-local` (procédure : `OPERATIONS.md`, « PostgreSQL major upgrade »),
-      puis, une fois une sauvegarde nocturne passée, supprimer les volumes `…_postgres_data`
-      (`tribly-e2e_postgres_data` peut partir tout de suite). Taille : XS.
 - [ ] `OPS-21` **Ce que le monitoring ne voit pas encore** — PostgreSQL (connexions, taille, bloat,
       requêtes lentes : un `postgres_exporter` par environnement, sur `pedalons-shared`), le
       frontend SSR (ni métriques Node ni temps de rendu : seul Caddy le voit, par hôte), et les
