@@ -128,9 +128,11 @@ updates:
           - "minor"
           - "patch"
 
-  # Docker dependencies (Frontend)
+  # Docker dependencies (Frontend, Garmin build images)
   - package-ecosystem: "docker"
-    directory: "/frontend"
+    directories:
+      - "/frontend"
+      - "/garmin-app"
     schedule:
       interval: "weekly"
       day: "tuesday"
@@ -142,10 +144,18 @@ updates:
     commit-message:
       prefix: "deps(docker)"
       include: "scope"
+    ignore:
+      # The Garmin build images sit on an Ubuntu LTS the Connect IQ SDK is known to run on: a new
+      # LTS is a deliberate move, tested by hand, not a weekly bump. Ignored outright, since
+      # 22.04 → 22.10 (a short-lived interim release) counts as a minor update. The LTS tag itself
+      # is rebuilt upstream with security fixes, so nothing is frozen.
+      - dependency-name: "ubuntu"
 
-  # Docker Compose dependencies (root)
+  # Docker Compose dependencies (root, Gatus — Dependabot does not recurse into subdirectories)
   - package-ecosystem: "docker-compose"
-    directory: "/"
+    directories:
+      - "/"
+      - "/services/monitoring/gatus"
     schedule:
       interval: "weekly"
       day: "tuesday"
