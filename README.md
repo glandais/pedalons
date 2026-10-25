@@ -4,7 +4,7 @@ Multi-tenant web platform for cycling teams to organize rides, trips, manage GPX
 
 | Module | Stack | Read |
 |---|---|---|
-| `backend/` | Java 25, Quarkus 3.39.x, PostgreSQL 17 + PostGIS | [backend/README.md](backend/README.md) |
+| `backend/` | Java 25, Quarkus 3.39.x, PostgreSQL 18 + PostGIS | [backend/README.md](backend/README.md) |
 | `frontend/` | TypeScript 7 (tsgo), React 19, Vite 8, Mantine UI 9, server-side rendered | [frontend/README.md](frontend/README.md) |
 | `mobile/` | Flutter, Dart, Riverpod 3 | [mobile/README.md](mobile/README.md) |
 | `karoo/` | Kotlin, Jetpack Compose, ktor-client-karoo | [karoo/README.md](karoo/README.md) |
