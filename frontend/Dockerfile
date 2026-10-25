@@ -3,7 +3,7 @@
 # The Node version is the one in frontend/.nvmrc, which the CI reads: change both together
 # (here and in the runtime stage below).
 ####
-FROM node:26.12.0-alpine AS base
+FROM node:26.12.1-alpine AS base
 
 WORKDIR /app
 
@@ -59,7 +59,7 @@ RUN pnpm build
 ####
 # Runtime stage with Node.js for SSR
 ####
-FROM node:26.12.0-alpine
+FROM node:26.12.1-alpine
 
 WORKDIR /app
 ENV NODE_ENV=production
