@@ -125,10 +125,19 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
       return;
     }
     _scrollToGroups = false;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    void reveal() {
       final BuildContext? anchor = _groupsAnchor.currentContext;
       if (mounted && anchor != null) Scrollable.ensureVisible(anchor);
-    });
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) => reveal());
+    // Le profil et le revêtement du parcours, au-dessus des cartes, arrivent
+    // après la météo et repoussent les groupes vers le bas : on recadre une
+    // fois qu'ils ont leur hauteur. La capture attend de toute façon des
+    // images stables.
+    for (final int s in <int>[2, 4]) {
+      Future<void>.delayed(Duration(seconds: s), reveal);
+    }
   }
 
   /// Défile jusqu'au bloc météo une fois la prévision là — sans elle, le bloc
