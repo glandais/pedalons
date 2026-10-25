@@ -161,7 +161,7 @@ helper — reuse before writing a new one, and keep journey-only helpers in thei
   `setMemberDirectory`, `listMembers`.
 - `platform-admin.ts` — the admin screens and their API: team/user/domain rows, `setPlatformRole`,
   `toggleTeamArchived`, domain aliases (`aliasesOf`, `deleteAlias`), `gpsCredentialsOf`,
-  `scratchDomain`, `betaSignups`.
+  `scratchDomain`.
 - `moderation.ts` — `report`, `blockedBy`, `teamQueue` / `platformQueue`, `moderationWorld`,
   `queueCard`, `queueTab`, `commentRow`.
 - `notifications.ts` — a user's inbox and preferences through the API: `listNotifications`,

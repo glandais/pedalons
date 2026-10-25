@@ -1,6 +1,4 @@
-import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useForm } from '@mantine/form'
 import {
   Anchor,
   Container,
@@ -11,8 +9,6 @@ import {
   Paper,
   Badge,
   Button,
-  TextInput,
-  Center,
   ThemeIcon,
 } from '@mantine/core'
 import {
@@ -20,11 +16,9 @@ import {
   IconDeviceMobile,
   IconMountain,
   IconExternalLink,
-  IconMail,
   IconWorldWww,
   IconDownload,
 } from '@tabler/icons-react'
-import { signUpForBeta } from '@/api/endpoints/beta-signups/beta-signups'
 import { useInstallOffer } from '@/lib/install/useInstallOffer'
 
 // The karoo-latest release, rewritten on every karoo.X.Y.Z tag (karoo/PUBLISH.md). A GitHub URL on
@@ -107,26 +101,6 @@ function WebAppCard() {
 
 export function AppsPage() {
   const { t } = useTranslation()
-  const [isLoading, setIsLoading] = useState(false)
-  const [sent, setSent] = useState(false)
-
-  const form = useForm({
-    initialValues: { email: '' },
-    validate: {
-      email: (v) =>
-        !v || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? t('apps.signup.validation.email') : null,
-    },
-  })
-
-  const handleSubmit = async (values: { email: string }) => {
-    setIsLoading(true)
-    try {
-      await signUpForBeta(values)
-      setSent(true)
-    } finally {
-      setIsLoading(false)
-    }
-  }
 
   return (
     <Container size="md" py="xl">
@@ -217,42 +191,6 @@ export function AppsPage() {
             }
           />
         </SimpleGrid>
-
-        <Paper shadow="sm" radius="lg" p="xl" withBorder>
-          {sent ? (
-            <Center>
-              <Stack ta="center" gap="xs">
-                <ThemeIcon size={48} radius="xl" color="green" variant="light">
-                  <IconMail size={24} />
-                </ThemeIcon>
-                <Title order={3}>{t('apps.signup.sent.title')}</Title>
-                <Text c="dimmed">{t('apps.signup.sent.message')}</Text>
-              </Stack>
-            </Center>
-          ) : (
-            <Stack>
-              <Stack gap={4}>
-                <Title order={3}>{t('apps.signup.title')}</Title>
-                <Text c="dimmed" size="sm">
-                  {t('apps.signup.subtitle')}
-                </Text>
-              </Stack>
-              <form onSubmit={form.onSubmit(handleSubmit)}>
-                <Stack>
-                  <TextInput
-                    label={t('apps.signup.emailLabel')}
-                    placeholder="email@example.com"
-                    autoComplete="email"
-                    {...form.getInputProps('email')}
-                  />
-                  <Button type="submit" loading={isLoading}>
-                    {t('apps.signup.submit')}
-                  </Button>
-                </Stack>
-              </form>
-            </Stack>
-          )}
-        </Paper>
       </Stack>
     </Container>
   )

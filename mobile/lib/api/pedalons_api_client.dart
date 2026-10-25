@@ -85,12 +85,6 @@ final authenticationClientProvider = Provider<AuthenticationClient>((ref) {
   return ref.watch(baseApiClientProvider).authentication;
 });
 
-/// Signing up for a beta is public and account-free, so it stays on the base
-/// client rather than [apiClientProvider].
-final betaSignupsClientProvider = Provider<BetaSignupsClient>((ref) {
-  return ref.watch(baseApiClientProvider).betaSignups;
-});
-
 /// Only `authenticate` goes through this client, and that endpoint is public —
 /// the authenticated passkey calls go through `PasskeyManagementRepository`, on
 /// [apiClientProvider]. Keeping this one on the base client is what keeps the auth tree

@@ -1,6 +1,6 @@
 # Politique de confidentialité
 
-**Dernière mise à jour : 17 octobre 2026**
+**Dernière mise à jour : 25 octobre 2026**
 
 La présente politique de confidentialité décrit la manière dont Pedalons (« nous », « notre », « nos ») collecte, utilise et protège vos données personnelles lorsque vous utilisez notre plateforme (site web, application mobile, extensions pour appareils GPS).
 
@@ -141,10 +141,6 @@ Pour corriger les bugs, nous recevons :
 
 Le journal ne contient ni mot de passe, ni contenu de formulaire, ni paramètre d'adresse web ; les jetons de connexion et les adresses e-mail qui s'y trouveraient sont masqués par nos serveurs avant tout enregistrement. Ces informations sont transmises à l'équipe Pedalons sous forme de tickets dans un dépôt **privé** GitHub (voir section 4), où votre compte est désigné par un identifiant technique, jamais par votre nom ni votre adresse e-mail.
 
-### Inscriptions aux programmes bêta
-
-Sur la page Applications, toute personne, avec ou sans compte, peut laisser une adresse e-mail pour être prévenue de l'ouverture d'une version de test de notre application mobile ou Garmin. Nous stockons l'adresse, le site sur lequel elle a été saisie et la date ; elle n'est rattachée à aucun compte et aucun e-mail de confirmation n'est envoyé. Nous ne l'utilisons que pour vous contacter au sujet de la bêta. Si nous vous invitons, nous la saisissons à la main dans le service de test du magasin concerné (Apple TestFlight ou Google Play Console), qui la traite selon sa propre politique de confidentialité. Connect IQ, le magasin de Garmin, n'ayant pas de service de test, votre adresse n'y est pas saisie. Pour que votre adresse soit retirée de la liste, écrivez à privacy@pedalons.fr.
-
 ### Données de connexion à des services GPS tiers
 
 Si vous connectez un service GPS externe (Hammerhead, Garmin, Wahoo) :
@@ -182,7 +178,6 @@ Si vous connectez un service GPS externe (Hammerhead, Garmin, Wahoo) :
 - **Automatiquement** : adresse IP et agent utilisateur lors de vos connexions ; cookie de session pour maintenir votre authentification ; journaux serveur décrits à la section 1 ; sur le site, mesure d'audience décrite à la section 1 (« Mesure d'audience du site ») ; et, sauf si vous les désactivez, rapports d'erreur automatiques (voir « Signalements de problèmes et rapports d'erreur »).
 - **Depuis la plateforme à laquelle Pedalons succède** : une personne qui administre une équipe Biketeam peut faire transférer le contenu de son équipe depuis le serveur de Biketeam, comme décrit à la section 1 (« Équipes venues de Biketeam »).
 - **Auprès d'autres membres** : la personne qui administre une équipe et vous y invite nous communique votre adresse e-mail (voir « Invitations dans une équipe ») ; un membre qui vous signale, ou signale votre contenu, nous communique le motif, son message et une copie du texte signalé (voir « Signalements et blocages »).
-- **Depuis le formulaire d'inscription à la bêta** (voir « Inscriptions aux programmes bêta »).
 
 En dehors de ces cas, **nous ne collectons aucune donnée auprès de tiers** : nous n'achetons ni ne louons jamais de données, et nous ne collectons rien depuis les réseaux sociaux.
 
@@ -208,7 +203,6 @@ Pour chaque finalité, la base légale (RGPD) sur laquelle elle repose :
 - **Afficher les cartes (fonds de carte téléchargés par votre appareil auprès du fournisseur choisi)** : Intérêt légitime
 - **Position approximative (« Autour de moi », facultatif, application mobile)** : Consentement, donné via la demande d'autorisation du système d'exploitation ; vous pouvez le retirer dans les réglages de votre appareil
 - **Fournir votre flux calendrier personnel à l'application de calendrier de votre choix** : Consentement (abonnement volontaire)
-- **Vous prévenir de l'ouverture d'une bêta de nos applications** : Consentement (inscription volontaire)
 - **Traiter vos signalements de problème et corriger les erreurs de l'application** : Intérêt légitime (fiabilité du service ; rapports automatiques désactivables)
 - **Mesurer l'audience du site, de façon anonyme et agrégée** : Intérêt légitime (exempté de consentement) ; opposition possible, voir section 7
 - **Assurer la continuité du service pour les équipes venues de la plateforme précédente** : Intérêt légitime
@@ -236,7 +230,7 @@ Nous n'utilisons **jamais** vos données pour :
 - **Abonnements calendrier (ICS)** : votre lien calendrier personnel fonctionne sans connexion : quiconque l'obtient peut lire les sorties et voyages que vous voyez, y compris ceux réservés à l'équipe. Un service de calendrier hébergé (Google Calendar, Apple Calendar, Outlook…) récupère le flux sur ses propres serveurs et en stocke le contenu (titres, dates et liens des sorties et étapes, noms de vos équipes) ; nous n'avons aucun contrôle sur ce qu'il en fait. Traitez l'adresse du flux comme un mot de passe : tant qu'une application de calendrier la consulte, elle reste valide ; elle expire après 90 jours sans consultation, et la régénérer invalide immédiatement l'ancienne.
 - **Canaux de discussion d'équipe** : si les personnes qui administrent votre équipe en ont relié un (voir « Notifications » à la section 1), les annonces de l'équipe, avec le nom du membre qui les a déclenchées, y sont publiées. C'est l'équipe qui choisit ce service, qui les reçoit en tant que destinataire agissant selon ses propres conditions, et non en tant que prestataire de notre part.
 - **Signalements** : voir « Signalements et blocages » à la section 1.
-- **Administration de la plateforme** : un très petit nombre de comptes administrateurs de la plateforme (actuellement le responsable du traitement lui-même) peut techniquement accéder à tous les comptes et à tous les contenus de tous les sites, y compris les contenus d'équipe et les brouillons, et lister les adresses e-mail, les dates de dernière connexion et les inscriptions aux programmes bêta. Cet accès sert uniquement à exploiter, assister et modérer le service, et uniquement lorsque c'est nécessaire.
+- **Administration de la plateforme** : un très petit nombre de comptes administrateurs de la plateforme (actuellement le responsable du traitement lui-même) peut techniquement accéder à tous les comptes et à tous les contenus de tous les sites, y compris les contenus d'équipe et les brouillons, et lister les adresses e-mail et les dates de dernière connexion. Cet accès sert uniquement à exploiter, assister et modérer le service, et uniquement lorsque c'est nécessaire.
 
 ### Sous-traitants techniques
 
@@ -322,7 +316,6 @@ Certains traitements que vous pouvez déclencher impliquent des serveurs situés
 - **Notifications push** : Google (Firebase Cloud Messaging) peut traiter leur titre, leur texte et le jeton push de votre appareil aux États-Unis ; ce transfert est encadré par les clauses contractuelles types de la Commission européenne et par l'adhésion de Google LLC au Data Privacy Framework. Sur iPhone, elles sont remises par Apple (Apple Distribution International, Irlande), dont les transferts vers les États-Unis sont encadrés par les clauses contractuelles types ; dans un navigateur, par le service push de son éditeur, qui ne reçoit que le message chiffré (voir section 4). Cela n'a lieu que tant que vous autorisez les notifications.
 - **Signalements de problème et rapports d'erreur** : transmis à GitHub (États-Unis), sans votre nom ni votre adresse e-mail ; ce transfert est encadré par les clauses contractuelles types de la Commission européenne et par l'adhésion de GitHub, Inc. au Data Privacy Framework.
 - **Canaux de discussion d'équipe** : le service choisi par les personnes qui administrent l'équipe (par exemple Slack ou Discord, exploités depuis les États-Unis) reçoit les annonces de l'équipe. Ce transfert a lieu sur instruction de ces personnes, qui choisissent le service : Slack et Discord adhèrent au Data Privacy Framework ; tout autre service relève de ses propres conditions.
-- **Programmes bêta** : si nous vous invitons, votre adresse e-mail est saisie dans Apple TestFlight ou Google Play Console ; Apple et Google encadrent leurs transferts vers les États-Unis par les clauses contractuelles types.
 
 ---
 
@@ -357,7 +350,6 @@ Certains traitements que vous pouvez déclencher impliquent des serveurs situés
 - **Signalements de problème et suggestions** : 1 an sur nos serveurs, ou jusqu'à la suppression de votre compte ; le ticket GitHub correspondant est conservé tant qu'il est utile au suivi du bug
 - **Rapports d'erreur automatiques** : 90 jours sur nos serveurs, ou jusqu'à la suppression de votre compte ; le ticket GitHub correspondant est conservé tant qu'il est utile
 - **Demandes de transfert d'équipe depuis Biketeam (compte qui l'a confirmée, équipe Biketeam, dates, résultat)** : 1 an après la fin du transfert ou l'expiration de la demande ; après la suppression du compte, la demande n'est plus rattachée à rien qui identifie la personne
-- **Inscriptions aux programmes bêta (adresse e-mail, site, date)** : 1 an après l'inscription ; écrivez à privacy@pedalons.fr pour que votre adresse soit retirée de la liste plus tôt
 - **Archive d'export de vos données (ZIP)** : 7 jours
 - **Historique des demandes d'export (date de la demande, statut, taille de l'archive, date d'expiration)** : 90 jours
 - **Journaux d'accès du serveur (date et heure, adresse IP, navigateur ou appareil, adresse demandée sans les coordonnées ni les jetons, code de réponse ; hors requêtes de mesure d'audience, qui n'y sont pas écrites)** : 14 jours

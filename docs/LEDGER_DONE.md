@@ -2946,6 +2946,22 @@ relevés sont `WEB-111` à `WEB-114` et `MOB-87` à `MOB-90`. `MOB-88` et `MOB-8
 
 ## API — Contrat d'API et backend
 
+- [x] `API-142` **L'inscription « Devenir testeur·se » est supprimée, de la base au site** (25
+  octobre 2026, **API 12.0.0**, majeure : deux endpoints retirés) — les applications sont dans leurs
+  magasins, et les testeurs d'un test fermé passent par le canal du magasin, pas par une liste tenue
+  à la main. Partis : `POST /api/beta-signups` et `GET /api/admin/beta-signups` (`BetaSignup*`,
+  `BetaSignupScheduler` et `pedalons.beta.signups.retention-days`), la table `beta_signups`
+  (`V79__drop_beta_signups.sql`, sur le modèle de `V45` : pendant le déploiement, l'ancien backend
+  ne voit échouer que ce formulaire), le formulaire de la page Applications (web `AppsPage.tsx`,
+  mobile `apps_page.dart`), l'onglet « Inscriptions bêta » de la plateforme et sa route
+  `adminBetaSignups`, leurs clés de traduction, le test e2e `flow-platform-admin` › « beta sign-ups »
+  et le test Patrol `apps_beta_signup_test`. La politique de confidentialité (FR/EN, 25 octobre)
+  perd la sous-section, la source de collecte, la base légale, la ligne d'administration, le
+  transfert TestFlight/Play Console et la ligne de conservation. Une app mobile antérieure qui
+  envoie encore le formulaire reçoit une 404, affichée comme une erreur.
+  **À ne pas défaire** : ne pas recréer de liste d'adresses pour annoncer une bêta — le test fermé
+  passe par le groupe et le lien du magasin (ledger `MOB-64`).
+
 - [x] `API-141` **Les expirations ne basculent plus une heure trop tôt la nuit du changement
   d'heure** (25 octobre 2026, contrat d'API inchangé) — le `CURRENT_TIMESTAMP` des requêtes HQL
   est rendu `localtimestamp` par Hibernate, un horodatage sans fuseau que PostgreSQL convertit au

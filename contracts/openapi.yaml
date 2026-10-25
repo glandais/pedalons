@@ -956,62 +956,6 @@ components:
           description: "Refresh token, for mobile clients. On a refresh, the rotated\
             \ token — absent when the refresh came within the grace of a rotation\
             \ made by another one, whose token stands."
-    BetaSignupDto:
-      description: "A beta program sign-up, as seen by an admin"
-      type: object
-      required:
-      - id
-      - email
-      - createdAt
-      properties:
-        id:
-          type: string
-          description: Sign-up ID
-        email:
-          type: string
-          description: Email
-        createdAt:
-          description: When the sign-up was submitted
-          type: string
-          $ref: "#/components/schemas/Instant"
-    BetaSignupListResponse:
-      description: Paginated beta sign-up list response
-      type: object
-      required:
-      - signups
-      - total
-      - page
-      - size
-      properties:
-        signups:
-          type: array
-          items:
-            $ref: "#/components/schemas/BetaSignupDto"
-          description: List of sign-ups
-        total:
-          type: integer
-          format: int64
-          description: Total number of sign-ups
-        page:
-          type: integer
-          format: int32
-          description: Current page number
-        size:
-          type: integer
-          format: int32
-          description: Page size
-    BetaSignupRequest:
-      description: A request to be notified and added to a beta program once one opens
-      type: object
-      required:
-      - email
-      properties:
-        email:
-          type: string
-          description: Email to contact once a beta is open
-          examples:
-          - rider@example.com
-          pattern: \S
     BlockedUsersResponse:
       description: "The members the current user blocked, most recent first"
       type: object
@@ -8489,8 +8433,6 @@ components:
       bearerFormat: JWT
       description: Authentication
 tags:
-- name: Admin - Beta signups
-  description: "Beta program sign-ups, for platform admins"
 - name: Admin - Domains
   description: Platform admin domain management
 - name: Admin - Elevation
@@ -8509,8 +8451,6 @@ tags:
   description: Assets management operations
 - name: Authentication
   description: User authentication operations
-- name: Beta signups
-  description: Sign up to be notified about upcoming apps
 - name: Calendar
   description: Team calendar operations
 - name: Configuration
@@ -8586,43 +8526,6 @@ tags:
 - name: Users
   description: User profile management operations
 paths:
-  /api/admin/beta-signups:
-    get:
-      summary: List beta sign-ups
-      description: Get a paginated list of everyone who signed up to be notified about
-        a beta
-      operationId: listBetaSignups
-      tags:
-      - Admin - Beta signups
-      parameters:
-      - description: Page number (0-indexed)
-        name: page
-        in: query
-        schema:
-          type: integer
-          format: int32
-          default: 0
-      - description: Page size
-        name: size
-        in: query
-        schema:
-          type: integer
-          format: int32
-          default: 20
-      responses:
-        "200":
-          description: Sign-ups retrieved successfully
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/BetaSignupListResponse"
-        "401":
-          description: Not Authorized
-        "403":
-          description: Not Allowed
-      security:
-      - SecurityScheme:
-        - user
   /api/admin/domains:
     get:
       summary: List all domains
@@ -10327,26 +10230,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  /api/beta-signups:
-    post:
-      summary: Sign up for a beta program
-      description: "Record interest in being added to a beta program (TestFlight,\
-        \ Play Console, Garmin Connect IQ) once one opens. Submitting the same email\
-        \ again has no effect."
-      operationId: signUpForBeta
-      tags:
-      - Beta signups
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/BetaSignupRequest"
-        required: true
-      responses:
-        "204":
-          description: Sign-up recorded
-        "400":
-          description: Bad Request
   /api/calendar/events:
     get:
       summary: Get calendar events
@@ -20324,7 +20207,7 @@ paths:
                 $ref: "#/components/schemas/VersionDto"
 info:
   title: Pedalons API
-  version: 11.17.0
+  version: 12.0.0
   description: API for Pedalons Cycling Team Management Platform
 servers:
 - url: http://localhost:8080

@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Last updated: October 17, 2026**
+**Last updated: October 25, 2026**
 
 This privacy policy describes how Pedalons ("we", "our", "us") collects, uses, and protects your personal data when you use our platform (website, mobile app, GPS device extensions).
 
@@ -141,10 +141,6 @@ To fix bugs, we receive:
 
 The log contains no password, no form content and no web address parameter; any sign-in token or e-mail address found in it is masked by our servers before anything is stored. This information reaches the Pedalons team as tickets in a **private** GitHub repository (see section 4), where you are designated by a technical identifier, never by your name or e-mail address.
 
-### Beta Programme Sign-ups
-
-On the Apps page, anyone, with or without an account, can leave an email address to hear when a test version of our mobile or Garmin app opens. We store the address, the site it was entered on and the date; it is not linked to any account and no confirmation email is sent. We use it only to contact you about the beta. If we invite you, we enter it by hand in the beta-testing service of the store concerned (Apple TestFlight or Google Play Console), which processes it under its own privacy policy. Connect IQ, Garmin's store, has no beta-testing service, so your address is not entered there. To be removed from the list, write to privacy@pedalons.fr.
-
 ### Third-Party GPS Service Connections
 
 If you connect an external GPS service (Hammerhead, Garmin, Wahoo):
@@ -182,7 +178,6 @@ If you connect an external GPS service (Hammerhead, Garmin, Wahoo):
 - **Automatically**: IP address and user agent during sign-in; session cookie to maintain your authentication; server logs as described in section 1; on the website, audience measurement as described in section 1 ("Website Audience Measurement"); and, unless you turn them off, automatic error reports (see "Problem Reports and Error Reports").
 - **From the platform Pedalons succeeds**: a Biketeam team administrator can have their team's content transferred from Biketeam's server, as described in section 1 ("Teams Coming from Biketeam").
 - **From other members**: a team administrator who invites you gives us your email address (see "Team Invitations"); a member who reports you or your content gives us the reason, their message and a copy of the reported text (see "Reports and Blocks").
-- **From the beta sign-up form** (see "Beta Programme Sign-ups").
 
 Apart from these cases, **we do not collect data from third parties**: we never buy or rent data, and we collect nothing from social networks.
 
@@ -208,7 +203,6 @@ For each purpose, the legal basis (GDPR) it rests on:
 - **Display maps (map backgrounds downloaded by your device from the chosen provider)**: Legitimate interest
 - **Approximate location ("Around me", optional, mobile app)**: Consent, given through the operating-system permission prompt; you can withdraw it in your device settings
 - **Provide your personal calendar feed to the calendar app you choose**: Consent (voluntary subscription)
-- **Tell you when a beta of our apps opens**: Consent (voluntary sign-up)
 - **Handle your problem reports and fix the app's errors**: Legitimate interest (reliability of the service; automatic reports can be turned off)
 - **Measure the website's audience, anonymously and in aggregate**: Legitimate interest (exempt from consent); you can object, see section 7
 - **Continue the service for teams coming from the previous platform**: Legitimate interest
@@ -236,7 +230,7 @@ We **never** use your data for:
 - **Calendar subscriptions (ICS)**: your personal calendar link works without logging in: anyone who obtains it can read the rides and trips you can see, including team-only ones. A hosted calendar service (Google Calendar, Apple Calendar, Outlook, …) fetches the feed on its own servers and stores its content (titles, dates and links of rides and stages, your team names); we have no control over what it does with it. Treat the feed address as a password: it stays valid as long as a calendar application fetches it; it expires after 90 days without a fetch, and regenerating it immediately invalidates the old one.
 - **Team chat channels**: if your team's administrators have connected one (see "Notifications" in section 1), the team's announcements, with the name of the member who triggered them, are posted there. The team chooses the service, which receives them as a recipient acting under its own terms, not as our provider.
 - **Reports**: see "Reports and Blocks" in section 1.
-- **Platform administration**: a very small number of platform administrator accounts (currently the data controller himself) can technically access all accounts and all content across all sites, including team-only and draft content, and can list email addresses, last-login dates and beta programme sign-ups. This access is used only to operate, support and moderate the service, and only when necessary.
+- **Platform administration**: a very small number of platform administrator accounts (currently the data controller himself) can technically access all accounts and all content across all sites, including team-only and draft content, and can list email addresses and last-login dates. This access is used only to operate, support and moderate the service, and only when necessary.
 
 ### Technical Service Providers
 
@@ -322,7 +316,6 @@ Some processing you can trigger involves servers outside the European Union:
 - **Push notifications**: Google (Firebase Cloud Messaging) may process their title, their text and your device's push token in the United States; this transfer is covered by the European Commission's standard contractual clauses and by Google LLC's certification under the Data Privacy Framework. On iPhone, they are delivered by Apple (Apple Distribution International, Ireland), whose transfers to the United States are covered by the standard contractual clauses; in a browser, by its vendor's push service, which only receives the encrypted message (see section 4). This happens only while you allow notifications.
 - **Problem reports and error reports**: sent to GitHub (United States), without your name or your e-mail address; this transfer is covered by the European Commission's standard contractual clauses and by GitHub, Inc.'s certification under the Data Privacy Framework.
 - **Team chat channels**: the service chosen by the team's administrators (for example Slack or Discord, operated from the United States) receives the team's announcements. This transfer takes place on the administrators' instructions, who choose the service: Slack and Discord are certified under the Data Privacy Framework; any other service is governed by its own terms.
-- **Beta programmes**: if we invite you, your email address is entered in Apple TestFlight or Google Play Console; Apple and Google cover their transfers to the United States with the standard contractual clauses.
 
 ---
 
@@ -357,7 +350,6 @@ Some processing you can trigger involves servers outside the European Union:
 - **Problem reports and suggestions**: 1 year on our servers, or until your account is deleted; the matching GitHub ticket is kept as long as it is useful to track the bug
 - **Automatic error reports**: 90 days on our servers, or until your account is deleted; the matching GitHub ticket is kept as long as it is useful
 - **Team transfer requests from Biketeam (account that confirmed, Biketeam team, dates, outcome)**: 1 year after the transfer ended or the request expired; after the account is deleted, the request is no longer linked to anything that identifies the person
-- **Beta programme sign-ups (email address, site, date)**: 1 year after sign-up; ask privacy@pedalons.fr to be removed sooner
 - **Data export archive (ZIP)**: 7 days
 - **Data export request history (request date, status, archive size, expiry date)**: 90 days
 - **Server access logs (date and time, IP address, browser or device, requested address without the coordinates or tokens, response code; excluding audience measurement requests, which are not written to them)**: 14 days

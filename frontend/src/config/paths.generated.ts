@@ -489,12 +489,6 @@ export const paths = {
       default: return '/platform/users'
     }
   },
-  adminBetaSignups: () => {
-    switch (getCurrentLocale()) {
-      case 'fr': return '/plateforme/inscriptions-beta'
-      default: return '/platform/beta-signups'
-    }
-  },
   adminReports: () => {
     switch (getCurrentLocale()) {
       case 'fr': return '/plateforme/signalements'
@@ -597,7 +591,6 @@ export const pathVariants = {
   adminDomains: (): Record<Locale, string> => ({ en: '/platform/domains', fr: '/plateforme/domaines' }),
   adminTeams: (): Record<Locale, string> => ({ en: '/platform/teams', fr: '/plateforme/equipes' }),
   adminUsers: (): Record<Locale, string> => ({ en: '/platform/users', fr: '/plateforme/utilisateurs' }),
-  adminBetaSignups: (): Record<Locale, string> => ({ en: '/platform/beta-signups', fr: '/plateforme/inscriptions-beta' }),
   adminReports: (): Record<Locale, string> => ({ en: '/platform/reports', fr: '/plateforme/signalements' }),
   adminMaintenance: (): Record<Locale, string> => ({ en: '/platform/maintenance', fr: '/plateforme/maintenance' }),
 } as const

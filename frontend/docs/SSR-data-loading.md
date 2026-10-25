@@ -164,7 +164,6 @@ added to the page and forgotten in the prefetch. Don't reintroduce the exception
 | `pages/admin/adminDomainsData.ts` | `admin-domains` | the default domain list |
 | `pages/admin/adminTeamsData.ts` | `admin-teams` | the domain filter options + the default team list |
 | `pages/admin/adminUsersData.ts` | `admin-users` | the domain filter options + the default user list |
-| `pages/admin/adminBetaSignupsData.ts` | `admin-beta-signups` | the default beta-signup list |
 | `pages/admin/adminReportsData.ts` | `admin-reports` | report filters from the URL |
 
 `routes.config.ts` imports exactly one generated function now — `prefetchGetTeamQuery`, for

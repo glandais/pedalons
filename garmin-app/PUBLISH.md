@@ -101,9 +101,8 @@ characters under it may stay, the code expires after ten minutes).
    *Charger une nouvelle version* (open it, read it, cancel). And the "Nouveautés" text goes live
    **at once**, before review, on the public page under the *old* version number: write notes that
    read acceptably for the few days until approval, and don't resubmit the form to undo them.
-6. **After approval**: tell the beta sign-ups (`beta-signups`). The `/applications` page, on the
-   site and in the mobile app, links to the store page since 2026-10-23 (`GARMIN_STORE_URL`,
-   `_kGarminStoreUrl`).
+6. **After approval**: nothing to do on the site — the `/applications` page, on the site and in the
+   mobile app, links to the store page since 2026-10-23 (`GARMIN_STORE_URL`, `_kGarminStoreUrl`).
 
 ## Updates
 

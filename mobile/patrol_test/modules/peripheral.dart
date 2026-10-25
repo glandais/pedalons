@@ -4,38 +4,10 @@ import 'package:pedalons/core/pdl/pdl.dart';
 
 import 'module.dart';
 
-/// The screens around the app's core: the Apps page and its beta sign-up, the legal pages, « Signaler
-/// un problème », and the push activation banner.
+/// The screens around the app's core: the legal pages, « Signaler un problème », and the push
+/// activation banner.
 final class Peripheral extends Module {
   Peripheral(super.$);
-
-  // ── Apps and the beta sign-up ───────────────────────────────────────────
-
-  /// Profile → « Aide et à propos » → « Applications ».
-  Future<void> openAppsFromProfile() async {
-    await _openHelp();
-    await (await scrolledTo(keys.profile.appsRow)).tap();
-    await $(keys.apps.betaEmailField).waitUntilExists();
-  }
-
-  /// Types [email] in the beta sign-up and taps « S'inscrire ».
-  Future<void> signUpForBeta(String email) async {
-    await (await scrolledTo(keys.apps.betaEmailField)).enterText(email);
-    await (await scrolledTo(keys.apps.betaSubmitButton)).tap();
-  }
-
-  Future<void> waitUntilBetaEmailIsRefused() => _waitUntil(
-    () => shows(keys.apps.betaEmailField, 'Adresse e-mail invalide'),
-    'the beta e-mail refused',
-  );
-
-  Future<void> waitUntilBetaSignUpIsRecorded() async {
-    // A column of text whose middle is empty: existence, not hit-testing.
-    await $(keys.apps.betaSentState)
-        .waitUntilExists(timeout: const Duration(seconds: 10));
-  }
-
-  bool get showsBetaSignedUp => isShown(keys.apps.betaSentState);
 
   // ── Legal pages ─────────────────────────────────────────────────────────
 

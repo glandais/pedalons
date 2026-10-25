@@ -1747,19 +1747,6 @@
     "status": {
       "available": "Disponible",
       "comingSoon": "Bientôt disponible"
-    },
-    "signup": {
-      "title": "Devenir testeur·se",
-      "subtitle": "Laissez votre adresse e-mail : un message vous préviendra dès qu'une bêta ouvre, sur n'importe laquelle de ces applications.",
-      "emailLabel": "Adresse e-mail",
-      "submit": "S'inscrire",
-      "validation": {
-        "email": "Adresse e-mail invalide"
-      },
-      "sent": {
-        "title": "Inscription enregistrée",
-        "message": "Merci ! On vous recontacte dès qu'une bêta ouvre."
-      }
     }
   },
   "dialog": {

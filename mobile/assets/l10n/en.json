@@ -1747,19 +1747,6 @@
     "status": {
       "available": "Available",
       "comingSoon": "Coming soon"
-    },
-    "signup": {
-      "title": "Become a tester",
-      "subtitle": "Leave your email address to be notified as soon as a beta opens, for any of these apps.",
-      "emailLabel": "Email address",
-      "submit": "Sign up",
-      "validation": {
-        "email": "Invalid email address"
-      },
-      "sent": {
-        "title": "Sign-up recorded",
-        "message": "Thanks! We'll get in touch as soon as a beta opens."
-      }
     }
   },
   "dialog": {

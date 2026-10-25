@@ -329,13 +329,8 @@ Add a privacy-policy link and a "decline" action to the invitation e-mail and pa
 "simply ignore this email", but the address stays for up to 14+365 days and `InvitationResource` offers
 only preview/accept. (b) `ad_contacts` has no purge (only `AdService` uses `AdContactRepository`): delete
 rows after e.g. 90 days — they serve only the 60-minute rate limit and abuse follow-up. (c) Beta
-sign-ups (V35) need no confirmation, are kept forever, and admins can only list them
-(`AdminBetaSignupResource` is GET-only, and the list is not scoped per domain). Add a one-line notice
-with a policy link under the form (web `AppsPage.tsx` and mobile `apps_page.dart` have none), say the
-address may be entered in TestFlight / Play Console / Connect IQ, add a platform-admin delete (or an
-unsubscribe link), purge once the beta has opened and the address was invited or after 12 months, and
-ideally send a confirmation e-mail so nobody can register someone else's address. Then fill the policy
-§6 rows (one carries a TODO today).
+sign-ups: moot — the form, its table and the policy's paragraphs were removed on 2026-10-25 (ledger
+`API-142`).
 
 ### 27. Biketeam import must not publish e-mail addresses as names **[Minimize]**
 `BiketeamMigrationService.displayNameFor` (806-811) falls back to the account's e-mail address (real,

@@ -671,7 +671,6 @@ const screens: Record<string, Screen> = {
   adminDomains: platformAdmin('Domaines'),
   adminTeams: platformAdmin('Équipes'),
   adminUsers: platformAdmin('Comptes'),
-  adminBetaSignups: platformAdmin('Inscriptions bêta'),
   adminReports: platformAdmin('Signalements'),
   adminMaintenance: platformAdmin('Maintenance'),
 }

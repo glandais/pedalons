@@ -34,10 +34,3 @@ export const adminDomainFiltersSchema = z.object({
 })
 
 export const adminDomainFiltersAlias = COMMON_ALIAS
-
-export const adminBetaSignupFiltersSchema = z.object({
-  page: pageField,
-  size: sizeField(ADMIN_PAGE_SIZE),
-})
-
-export const adminBetaSignupFiltersAlias = COMMON_ALIAS

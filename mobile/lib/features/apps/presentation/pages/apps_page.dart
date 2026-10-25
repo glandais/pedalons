@@ -1,6 +1,5 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../../core/adaptive/content_width_constraint.dart';
@@ -10,11 +9,9 @@ import '../../../../core/theme/pdl_colors.dart';
 import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
-import '../../../../core/utils/api_error_handler.dart';
 import '../../../../core/utils/link_launcher.dart';
 import '../../../../core/widgets/back_or_home_button.dart';
 import '../../../../keys.dart';
-import '../../data/beta_signup_repository.dart';
 
 /// La release `karoo-latest`, réécrite à chaque tag `karoo.X.Y.Z`
 /// (`karoo/PUBLISH.md`). Une URL GitHub exprès : Hammerhead n'a vérifié
@@ -36,50 +33,8 @@ const String _kAppStoreUrl = 'https://apps.apple.com/app/id6761760079';
 const String _kGarminStoreUrl =
     'https://apps.garmin.com/apps/262ea335-a5b7-4a6a-bb30-fc6f5db9b115';
 
-class AppsPage extends ConsumerStatefulWidget {
+class AppsPage extends StatelessWidget {
   const AppsPage({super.key});
-
-  @override
-  ConsumerState<AppsPage> createState() => _AppsPageState();
-}
-
-class _AppsPageState extends ConsumerState<AppsPage> {
-  final TextEditingController _emailController = TextEditingController();
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-
-  bool _sending = false;
-  bool _sent = false;
-  String? _error;
-
-  @override
-  void dispose() {
-    _emailController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
-    setState(() {
-      _sending = true;
-      _error = null;
-    });
-    try {
-      await ref
-          .read(betaSignupRepositoryProvider)
-          .signUp(_emailController.text.trim());
-      if (!mounted) return;
-      setState(() {
-        _sending = false;
-        _sent = true;
-      });
-    } catch (error, stackTrace) {
-      if (!mounted) return;
-      setState(() {
-        _sending = false;
-        _error = getErrorMessage(error, stackTrace);
-      });
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -169,70 +124,6 @@ class _AppsPageState extends ConsumerState<AppsPage> {
                   ],
                 ),
               ),
-              const SizedBox(height: PdlSpacing.section),
-              PdlCard(
-                child: _sent
-                    ? _SentState(key: keys.apps.betaSentState, t: t)
-                    : Form(
-                        key: _formKey,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: <Widget>[
-                            Text('apps.signup.title'.tr(), style: t.cardTitle),
-                            const SizedBox(height: 4),
-                            Text('apps.signup.subtitle'.tr(), style: t.sub),
-                            const SizedBox(height: PdlSpacing.cardTight),
-                            TextFormField(
-                              key: keys.apps.betaEmailField,
-                              controller: _emailController,
-                              enabled: !_sending,
-                              keyboardType: TextInputType.emailAddress,
-                              autofillHints: const <String>[
-                                AutofillHints.email,
-                              ],
-                              textInputAction: TextInputAction.done,
-                              onFieldSubmitted: (_) => _submit(),
-                              style: t.body,
-                              decoration: InputDecoration(
-                                labelText: 'apps.signup.emailLabel'.tr(),
-                                filled: true,
-                                fillColor: context.pdl.surfaceAlt,
-                                border: OutlineInputBorder(
-                                  borderRadius: PdlRadii.mdAll,
-                                  borderSide: BorderSide(
-                                    color: context.pdl.border,
-                                  ),
-                                ),
-                              ),
-                              validator: (String? value) {
-                                final String v = value?.trim() ?? '';
-                                final RegExp emailPattern = RegExp(
-                                  r'^[^\s@]+@[^\s@]+\.[^\s@]+$',
-                                );
-                                return emailPattern.hasMatch(v)
-                                    ? null
-                                    : 'apps.signup.validation.email'.tr();
-                              },
-                            ),
-                            if (_error != null) ...<Widget>[
-                              const SizedBox(height: PdlSpacing.cardTight),
-                              PdlBanner(
-                                tone: PdlBannerTone.danger,
-                                message: _error!,
-                              ),
-                            ],
-                            const SizedBox(height: PdlSpacing.cardTight),
-                            PdlButton(
-                              key: keys.apps.betaSubmitButton,
-                              label: 'apps.signup.submit'.tr(),
-                              loading: _sending,
-                              fullWidth: true,
-                              onPressed: _submit,
-                            ),
-                          ],
-                        ),
-                      ),
-              ),
             ],
           ),
         ),
@@ -256,32 +147,6 @@ Future<void> _shareKarooApk(BuildContext context) async {
           : box.localToGlobal(Offset.zero) & box.size,
     ),
   );
-}
-
-class _SentState extends StatelessWidget {
-  const _SentState({super.key, required this.t});
-
-  final PdlTypography t;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        Row(
-          children: <Widget>[
-            Icon(PdlIcons.checkCircle, color: context.pdl.success),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text('apps.signup.sent.title'.tr(), style: t.cardTitle),
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        Text('apps.signup.sent.message'.tr(), style: t.sub),
-      ],
-    );
-  }
 }
 
 class _AppTile extends StatelessWidget {

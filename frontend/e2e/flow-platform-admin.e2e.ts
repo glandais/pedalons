@@ -1,12 +1,11 @@
 import type { Page } from '@playwright/test'
 import type { AdminGpsCredentialDto, AdminTeamDto, ConfigDto, TeamDetailDto } from '../src/api/dto'
 import { apiGetOrNull } from './support/api'
-import { freshAddress, getTeam, newTeam, newUser, roleSession, signIn } from './support/data'
+import { getTeam, newTeam, newUser, roleSession, signIn } from './support/data'
 import { OTHER_HOST, hostGet, hostStatus, originOf, otherDomain } from './support/domains'
 import { expect, test, unique } from './support/fixtures'
 import { listedTeams } from './support/flow-team'
 import {
-  ADMIN_BETA_SIGNUPS_PATH,
   ADMIN_TEAMS_PATH,
   adminDomain,
   adminDomainsPathOf,
@@ -17,7 +16,6 @@ import {
   adminUsersSearch,
   aliasesOf,
   aliasesPath,
-  betaSignups,
   deleteAlias,
   gpsCredentialsOf,
   credentialRow,
@@ -578,78 +576,5 @@ test('the row actions of the domain list have an accessible name', async ({ page
   await expect.soft(row.getByRole('button', { name: 'Modifier' })).toBeVisible({ timeout: 2_000 })
   await expect(row.getByRole('button', { name: 'Désactiver le domaine' })).toBeVisible({
     timeout: 2_000,
-  })
-})
-
-/**
- * The beta sign-up of /applications (AppsPage.tsx, `signUpForBeta`) and its platform list
- * (AdminBetaSignupsPage.tsx). The sign-up is idempotent on the address, whatever its case
- * (BetaSignupService.java:32-37, BetaSignupRepository.existsByEmail), and answers the same either
- * way — the form must not confirm to a prober that an address is already listed.
- */
-test.describe('beta sign-ups', () => {
-  const submitSignUp = async (page: Page, email: string) => {
-    const field = page.getByRole('main').getByRole('textbox', { name: 'Adresse e-mail' })
-    await hydrated(field)
-    await field.fill(email)
-    const sent = page.waitForResponse(
-      (r) => r.url().endsWith('/api/beta-signups') && r.request().method() === 'POST'
-    )
-    await page.getByRole('main').getByRole('button', { name: "S'inscrire" }).click()
-    expect((await sent).status()).toBe(204)
-    await expect(page.getByRole('heading', { name: 'Inscription enregistrée' })).toBeVisible()
-  }
-
-  test('a visitor signs up on /applications, and the platform admin finds the address in the list; signing up again adds nothing', async ({
-    browser,
-    page,
-  }) => {
-    const email = freshAddress('beta signup')
-    const { context, page: visitor } = await pageAs(browser, undefined)
-    try {
-      await visitor.goto('/applications')
-      await expect(visitor.getByRole('heading', { name: 'Devenir testeur·se' })).toBeVisible()
-      // A malformed address stays on the form, with its message.
-      const field = visitor.getByRole('main').getByRole('textbox', { name: 'Adresse e-mail' })
-      await hydrated(field)
-      await field.fill('pas-une-adresse')
-      await visitor.getByRole('main').getByRole('button', { name: "S'inscrire" }).click()
-      await expect(visitor.getByText('Adresse e-mail invalide', { exact: true })).toBeVisible()
-
-      await submitSignUp(visitor, email)
-      // Again, in capitals: the same answer, and no second row.
-      await visitor.reload()
-      await submitSignUp(visitor, email.toUpperCase())
-    } finally {
-      await context.close()
-    }
-    expect(
-      (await betaSignups()).signups.filter((signup) => signup.email.toLowerCase() === email)
-    ).toEqual([expect.objectContaining({ email })])
-
-    await page.goto(ADMIN_BETA_SIGNUPS_PATH)
-    await expect(rowWithCell(page.getByRole('main'), email)).toBeVisible()
-    await expect(rowWithCell(page.getByRole('main'), email.toUpperCase())).toHaveCount(0)
-  })
-
-  // The list is the platform's, every domain together — like the platform user and team lists,
-  // and as BetaSignup.java:18-20 has it (domainId kept « for reporting, never for access control »).
-  // A sign-up on another domain goes through, and lands in that one list.
-  test('a sign-up on another domain goes through too, and lands in the same platform list', async ({
-    browser,
-    page,
-  }) => {
-    await otherDomain()
-    const email = freshAddress('beta autre')
-    const { context, page: visitor } = await pageAs(browser, undefined)
-    try {
-      await visitor.goto(`${originOf(OTHER_HOST)}/applications`)
-      await submitSignUp(visitor, email)
-    } finally {
-      await context.close()
-    }
-    expect((await betaSignups()).signups.map((signup) => signup.email)).toContain(email)
-    await page.goto(ADMIN_BETA_SIGNUPS_PATH)
-    await expect(rowWithCell(page.getByRole('main'), email)).toBeVisible()
   })
 })

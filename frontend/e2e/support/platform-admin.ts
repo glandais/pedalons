@@ -8,7 +8,6 @@ import type {
   AdminTeamDto,
   AdminUserDto,
   AssignPlatformRoleRequest,
-  BetaSignupListResponse,
   CreateDomainRequest,
   CreateGpsCredentialRequest,
   TeamDetailDto,
@@ -67,7 +66,6 @@ export const setPlatformRole = async (userId: string, role: AssignPlatformRoleRe
   } satisfies AssignPlatformRoleRequest)
 
 export const ADMIN_DOMAINS_PATH = '/plateforme/domaines'
-export const ADMIN_BETA_SIGNUPS_PATH = '/plateforme/inscriptions-beta'
 /** ADMIN_PAGE_SIZE of src/hooks/filters/adminFilters.ts. */
 const ADMIN_PAGE_SIZE = 20
 
@@ -163,9 +161,3 @@ export async function scratchDomain(
     created.push(await apiPost<AdminGpsCredentialDto>(admin, credentialsPath, credential))
   return { domain, credentials: created }
 }
-
-/** GET /api/admin/beta-signups as the platform admin: the newest sign-ups first. */
-export const betaSignups = async () =>
-  apiGet<BetaSignupListResponse>(await roleSession('admin'), '/api/admin/beta-signups', {
-    size: 100,
-  })
