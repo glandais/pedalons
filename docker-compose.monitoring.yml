@@ -133,7 +133,7 @@ services:
   # Ships every stack's container logs and the host's Caddy access logs to Loki. The Caddy files are
   # read as Caddy wrote them, i.e. already filtered (docs/OPERATIONS.md, « Access logs »).
   alloy:
-    image: grafana/alloy:v1.20.1
+    image: grafana/alloy:v1.21.1
     command:
       - run
       - --server.http.listen-addr=0.0.0.0:12345
