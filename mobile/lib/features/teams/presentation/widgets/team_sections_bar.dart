@@ -114,7 +114,14 @@ class _TeamSectionChipsState extends State<TeamSectionChips> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final RenderObject? chip = _selectedKey.currentContext
           ?.findRenderObject();
-      if (!mounted || chip == null || !_scroll.hasClients) return;
+      // A page covered by an opaque route is offstage: the Overlay skips its
+      // layout, so the chip may have no size yet.
+      if (!mounted ||
+          chip is! RenderBox ||
+          !chip.hasSize ||
+          !_scroll.hasClients) {
+        return;
+      }
       final ScrollPosition position = _scroll.position;
       final RenderAbstractViewport viewport = RenderAbstractViewport.of(chip);
       // Already whole on screen: leave the row where it is.
