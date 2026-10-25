@@ -194,9 +194,11 @@ faite, et le 500 du contact vendeur (`MOB-47`). Depuis l'import de `n-peloton` e
       https://play.google.com/apps/testing/fr.pedalons.mobile ; seul un testeur qui a accepté le
       second lien compte. En viser une quinzaine : sous douze, les quatorze jours repartent de zéro.
       Le canal n'est ouvert que dans un pays, et l'adresse de commentaires y est `dev@pedalons.fr`
-      (TestFlight : `gabriel.landais@gmail.com`). Restent aussi les formulaires de la Console
-      qu'aucune API ne remplit (accès à l'application avec le compte de démo, classification du
-      contenu, public cible, publicités), plus la sécurité des données (`fastlane data_safety`).
+      (TestFlight : `gabriel.landais@gmail.com`). Les formulaires de *Contenu de l'application*
+      sont tous traités (neuf les 11 et 12 avril 2026 : informations de connexion, classification
+      du contenu, cible et contenu, annonces, identifiant publicitaire…), et la sécurité des
+      données a été repoussée par `fastlane data_safety` le 25 octobre 2026, à envoyer en examen
+      depuis *Vue d'ensemble de la publication*.
       Une fois l'accès obtenu : promouvoir la release `alpha` depuis la Console plutôt que
       `fastlane deploy`, qui renverrait le même versionCode. Fiche (textes 1.1.0) et captures
       refaites sur l'app du 25 octobre poussées par `fastlane listing` le 25 octobre 2026.
