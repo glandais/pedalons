@@ -81,7 +81,7 @@ Three invariants that cut across modules, each of which a plausible-looking chan
 
 | Layer | Technologies |
 |-------|-------------|
-| Backend | Java 25, Quarkus 3.39.x, PostgreSQL 17 + PostGIS, Hibernate/Panache, Flyway |
+| Backend | Java 25, Quarkus 3.39.x, PostgreSQL 18 + PostGIS, Hibernate/Panache, Flyway |
 | Frontend | TypeScript 7 (tsgo native compiler), React 19, Vite 8, Mantine UI, Zustand, React Query |
 | Mobile | Flutter, Dart (see `mobile/RULES.md` for detailed guidelines) |
 | Karoo | Kotlin, Jetpack Compose, karoo-ext SDK, ktor-client-karoo |

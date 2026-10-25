@@ -240,7 +240,7 @@ services:
     # imresamu/postgis, not postgis/postgis: same builds (by a docker-postgis maintainer), but
     # published for arm64 too — the official image is amd64-only, which Docker VMM on Apple
     # Silicon cannot run.
-    image: imresamu/postgis:17-3.6-alpine
+    image: imresamu/postgis:18-3.6-alpine
     container_name: ${ENV_NAME}-postgres
     restart: unless-stopped
     networks:
@@ -248,8 +248,12 @@ services:
     # No published port here. Swarm cannot bind to the loopback (it drops `127.0.0.1:` and listens
     # on every interface), and a raw Postgres guarded by a password alone has no business there.
     # docker-compose.local.yml publishes it on a workstation; on a host, go through `docker exec`.
+    # Since 18 the image keeps each major under <major>/docker in this mount, so that a later
+    # upgrade can run `pg_upgrade --link` inside one volume. A new volume, not postgres_data: that
+    # one holds the 17 cluster, which this image refuses to start on — scripts/postgres-upgrade.sh
+    # copies it over and leaves it in place for a rollback.
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - pg_clusters:/var/lib/postgresql
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -471,7 +475,7 @@ services:
       labels: *goatcounter-labels
 
 volumes:
-  postgres_data:
+  pg_clusters:
   minio_data:
 
 networks:

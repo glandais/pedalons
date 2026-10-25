@@ -198,8 +198,8 @@ if is_swarm; then
       && break
     sleep 2
   done
-  docker volume rm "${ENV_NAME}_postgres_data" "${ENV_NAME}_minio_data" >/dev/null 2>&1 || true
-  for volume in "${ENV_NAME}_postgres_data" "${ENV_NAME}_minio_data"; do
+  docker volume rm "${ENV_NAME}_pg_clusters" "${ENV_NAME}_minio_data" >/dev/null 2>&1 || true
+  for volume in "${ENV_NAME}_pg_clusters" "${ENV_NAME}_minio_data"; do
     ! docker volume inspect "$volume" >/dev/null 2>&1 || die "volume $volume is still there — is a container still using it?"
   done
 

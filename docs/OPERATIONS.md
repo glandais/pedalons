@@ -37,7 +37,7 @@ valid for both tools — its header lists what each one ignores.
 - it picks the **build of the checked-out commit**, `pedalons-backend:${ENV_NAME}-<sha12>` (see
   [Rolling updates](#rolling-updates-and-rollback)), and refuses a checkout with uncommitted changes;
 - the stack must be named after `ENV_NAME`: the backup scripts find its containers and volumes
-  (`${ENV_NAME}_postgres_data`) by that name.
+  (`${ENV_NAME}_pg_clusters`) by that name.
 
 ```bash
 # once per host — the firewall unit (see "Only Caddy may reach traefik") before the swarm
@@ -835,6 +835,45 @@ After an aborted run, check what a container is actually attached to before beli
 docker inspect <container> --format '{{range $k,$v := .NetworkSettings.Networks}}{{$k}} {{end}}'
 docker compose up -d --force-recreate <service>
 ```
+
+### PostgreSQL major upgrade
+
+Two majors cannot open each other's files, and since 18 the image wants its mount on
+`/var/lib/postgresql` (each major under `<major>/docker`), no longer on `…/data`: changing the tag
+alone leaves postgres refusing to start, the next deploy taking it down with the rest of the stack
+— stop-first, it does not roll. A major therefore lands with a **new volume** in
+`docker-compose.yml` (17 → 18: `postgres_data` → `pg_clusters`) and is applied, once per
+environment, by `scripts/postgres-upgrade.sh`:
+
+```bash
+sudo scripts/backup.sh                 # a fresh snapshot, in case
+git pull && ./build.sh                 # the commit with the new image; postgres still runs the old one
+scripts/postgres-upgrade.sh            # asks for the environment name
+```
+
+It stops backend, frontend and goatcounter, copies **every** database and role with `pg_dumpall`
+into a throwaway container of the new image on the new volume, compares the databases, their
+extensions and each table's row count on both sides, and only then switches over — `deploy.sh` on a
+host, `docker compose up -d postgres` on a workstation. Any failure before the switch drops the copy
+and restarts the writers on the old volume. Downtime is the time of the copy, a few minutes.
+Until then `deploy.sh` refuses to run: it would start the new major on the new, empty volume, and
+the backend would bootstrap a fresh Domain there. **A workstation has no such guard** — a plain
+`docker compose up -d` after pulling the commit does exactly that (the data stays in the old
+volume; `docker compose down`, then run the script).
+`backup.sh` + `restore.sh` would not do: the snapshot holds `$POSTGRES_DB` alone, so GoatCounter
+would come back empty.
+
+The old volume is never written to. **Rolling back** is the previous commit, whose file still names
+it — losing whatever was written since the switch:
+
+```bash
+git checkout <previous commit> && scripts/deploy.sh   # deploy.sh --rev alone keeps the new file
+```
+
+Once the new volume has been through a nightly backup, drop the old one
+(`docker volume rm ${ENV_NAME}_postgres_data`). A snapshot taken after the switch is a dump of the
+new major: restore it with the new image. On a workstation, run the same script on `tribly-local`;
+the e2e stack starts on an empty database anyway (`docker volume rm tribly-e2e_postgres_data`).
 
 ## Monitoring
 

@@ -852,21 +852,13 @@ Ce que les tests ne prouvent pas, parce qu'ils ne passent ni par Flyway ni par u
 
 ### Exploitation
 
-- [ ] `OPS-19` **Passer PostgreSQL 17 → 18** — dependabot l'a proposé (PR #338, fermée le
-      29 septembre 2026 avec `ignore this major version`) en ne changeant que l'image de
-      `docker-compose.yml`, ce qui empêcherait la prod de redémarrer : les fichiers d'un cluster 17
-      ne s'ouvrent pas en 18, et l'image 18 attend ses données sous `/var/lib/postgresql/18/docker`,
-      le volume monté sur `/var/lib/postgresql` (le montage actuel sur `…/data` la fait refuser de
-      démarrer). À faire ensemble : dump avec `scripts/backup.sh`, nouveau volume au nouveau point
-      de montage, restauration avec `scripts/restore.sh` ; l'image des devservices
-      (`quarkus.datasource.devservices.image-name`, `application.properties`) pour que les tests
-      tournent sur la même version ; la doc qui annonce « PostgreSQL 17 » (CLAUDE.md, README.md,
-      backend/README.md). Rien ne presse tant que la 17 est maintenue. Taille : S.
-- [ ] `OPS-45` **Les tests ne tournent pas sur le PostGIS de la prod** —
-      `quarkus.datasource.devservices.image-name` (`application.properties`) est resté à
-      `imresamu/postgis:17-3.5-alpine` quand `docker-compose.yml` (et donc la prod, constaté le
-      16 octobre 2026) est passé à `imresamu/postgis:17-3.6-alpine`. L'aligner sur `17-3.6-alpine`,
-      indépendamment d'`OPS-19`. Taille : XS.
+- [ ] `OPS-53` **Basculer chaque environnement sur PostgreSQL 18** (scindé d'`OPS-19`) — tant
+      que ce n'est pas fait, `deploy.sh` refuse de déployer ce commit, et sur un poste un simple
+      `docker compose up -d` démarre la 18 sur un volume vide (rien de perdu : `down`, puis le
+      script). Lancer `scripts/postgres-upgrade.sh` **au lieu** du déploiement habituel, en production, en
+      staging et sur `tribly-local` (procédure : `OPERATIONS.md`, « PostgreSQL major upgrade »),
+      puis, une fois une sauvegarde nocturne passée, supprimer les volumes `…_postgres_data`
+      (`tribly-e2e_postgres_data` peut partir tout de suite). Taille : XS.
 - [ ] `OPS-21` **Ce que le monitoring ne voit pas encore** — PostgreSQL (connexions, taille, bloat,
       requêtes lentes : un `postgres_exporter` par environnement, sur `pedalons-shared`), le
       frontend SSR (ni métriques Node ni temps de rendu : seul Caddy le voit, par hôte), et les

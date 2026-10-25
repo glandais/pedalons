@@ -18,7 +18,7 @@
 #     script waits for that outcome (DEPLOY_TIMEOUT, 600s by default) and exits non-zero on a rollback.
 #
 # The stack is named after ENV_NAME, not after the checkout: scripts/backup.sh and restore.sh find
-# its containers and volumes (${ENV_NAME}_postgres_data...) by that name.
+# its containers and volumes (${ENV_NAME}_pg_clusters...) by that name.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -161,6 +161,14 @@ suffix="$(image_suffix "${REV:-HEAD}")" || die "unknown commit: $REV"
 for image in "pedalons-backend:$ENV_NAME$suffix" "pedalons-frontend:$ENV_NAME$suffix"; do
   docker image inspect "$image" >/dev/null 2>&1 || die "image $image missing — run ./build.sh"
 done
+# A postgres on another volume than the file's is a major upgrade not yet applied: deploying would
+# start the new major on an empty volume, and the backend would bootstrap a fresh Domain on it.
+# scripts/postgres-upgrade.sh copies the data over first, then deploys with POSTGRES_UPGRADE=1.
+pg_volume="$(docker service inspect -f \
+  '{{range .Spec.TaskTemplate.ContainerSpec.Mounts}}{{if eq .Type "volume"}}{{.Source}}{{end}}{{end}}' \
+  "${ENV_NAME}_postgres" 2>/dev/null || true)"
+[[ -z "$pg_volume" || "$pg_volume" == "${ENV_NAME}_pg_clusters" || -n "${POSTGRES_UPGRADE:-}" ]] \
+  || die "postgres runs on $pg_volume, the file declares ${ENV_NAME}_pg_clusters — run scripts/postgres-upgrade.sh (docs/OPERATIONS.md, « PostgreSQL major upgrade »)"
 # Read by docker-compose.yml, one per service so that each could move alone.
 export BACKEND_IMAGE_SUFFIX="$suffix" FRONTEND_IMAGE_SUFFIX="$suffix"
 [[ -f data/keys/privateKey.pem && -f data/keys/publicKey.pem ]] \
