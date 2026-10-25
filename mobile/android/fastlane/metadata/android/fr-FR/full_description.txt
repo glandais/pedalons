@@ -3,13 +3,14 @@ Pédalons est l'espace de votre club ou de votre groupe cycliste : les sorties, 
 LES SORTIES
 • Chaque sortie propose ses groupes d'allure : on s'inscrit dans le sien en un geste, et on voit qui roule avec qui.
 • Lieu et heure de départ, parcours prévu, commentaires : tout ce qu'il faut savoir avant de partir.
-• La météo de la sortie dans la semaine qui la précède : au départ, puis le long du parcours à l'allure de votre groupe — pluie, température, et vent de face ou dans le dos, point par point.
+• La météo de la sortie dans la semaine qui la précède : au départ, puis le long du parcours à l'allure de votre groupe — pluie, température, et vent de face ou dans le dos, point par point, jusque sur la carte.
 • Les voyages de plusieurs jours, étape par étape, avec la météo de chaque étape.
 
 LES PARCOURS
-• La bibliothèque de parcours du club, sur la carte ou en liste, avec des filtres par distance et dénivelé.
-• Le profil altimétrique coloré par pente, et les cols et montées du tracé.
-• Téléchargement en GPX ou en FIT, et envoi du parcours vers votre compteur Hammerhead Karoo ou Garmin.
+• La bibliothèque de parcours du club, sur la carte ou en liste, avec des filtres par distance et dénivelé ; « Explorer » ouvre la carte de tous les parcours de vos équipes.
+• Le profil altimétrique coloré par pente ou par revêtement, et les cols et montées du tracé.
+• Les points du parcours sur la carte et le profil : regroupements, ravitaillements, points d'eau, cafés, sommets, passages délicats…
+• Téléchargement en GPX ou en FIT, et envoi du parcours vers votre compteur Hammerhead Karoo ou Garmin — ou envoi automatique, service par service.
 
 L'ÉQUIPE
 • Le tableau de bord de chaque équipe : vos prochaines sorties, les dernières publications, les nouveaux parcours et les annonces.

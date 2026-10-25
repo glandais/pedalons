@@ -3,13 +3,14 @@ Pédalons is the home of your cycling club or group: rides, routes, the agenda a
 RIDES
 • Every ride offers its pace groups: sign up for yours in one tap, and see who is riding with whom.
 • Start location and time, planned route, comments: everything you need to know before heading out.
-• The ride's weather in the week before it: at the start, then along the route at your group's pace — rain, temperature, and headwind or tailwind, point by point.
+• The ride's weather in the week before it: at the start, then along the route at your group's pace — rain, temperature, and headwind or tailwind, point by point, right on the map.
 • Multi-day trips, stage by stage, with the weather for each stage.
 
 ROUTES
-• The club's route library, on the map or as a list, filtered by distance and elevation.
-• An elevation profile coloured by gradient, and the climbs along the way.
-• Download as GPX or FIT, and send a route to your Hammerhead Karoo or Garmin bike computer.
+• The club's route library, on the map or as a list, filtered by distance and elevation; Explore opens the map of every route of your teams.
+• An elevation profile coloured by gradient or by surface, and the climbs along the way.
+• The route's points on the map and the profile: regroups, food stops, water, cafés, summits, hazards…
+• Download as GPX or FIT, and send a route to your Hammerhead Karoo or Garmin bike computer — or have routes sent automatically, service by service.
 
 THE TEAM
 • Each team's dashboard: your next rides, the latest posts, new routes and ads.

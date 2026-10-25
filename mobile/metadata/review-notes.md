@@ -6,10 +6,10 @@ Use the demo account given in the review information, with its password (e-mail 
 WHAT TO LOOK AT
 - Home: the next ride you are registered for, then the team feed.
 - A ride: pick a pace group and register, then unregister.
-- Routes: list and map views, a route's elevation profile, GPX/FIT download.
+- Routes: list and map views (Explore opens the map of every route), a route's elevation profile with its surface and its points, GPX/FIT download.
 - Calendar, posts and their comments, classified ads.
 - A team: its dashboard (your next rides, latest posts, new routes, ads), then its Agenda, Posts, Routes, Ads and Members.
-- A ride's weather, once it is less than seven days away: the "Weather at the start" card under the date; then tap a pace group's card to open its page, whose Weather tab gives rain, temperature and headwind or tailwind along the route at that group's pace.
+- A ride's weather, once it is less than seven days away: the "Weather at the start" card under the date; then tap a pace group's card to open its page, whose Weather tab gives rain, temperature and headwind or tailwind along the route at that group's pace, also drawn on its map.
 - Profile: account settings, and account deletion under Profile > My account > Danger zone.
 
 PERMISSIONS
