@@ -77,16 +77,10 @@ platform :ios do
     version_line = File.read("../../pubspec.yaml")[/^version:\s*(\S+)/, 1]
     app_version, build_number = version_line.split("+")
 
-    upload_to_app_store(
-      api_key: asc_api_key,
-      app_version: app_version,
-      build_number: build_number,
-      skip_binary_upload: true,
-      skip_screenshots: true,
-      skip_metadata: true,
-      submit_for_review: false,
-      automatic_release: false,
-      force: true
-    )
+    # Attaches the pubspec's build to the App Store version, nothing more: no
+    # submission, no metadata, no screenshots. deliver (upload_to_app_store)
+    # only picks a build when it submits for review, so it attached nothing.
+    sh("/opt/homebrew/bin/asc", "versions", "attach-build",
+       "--app", "6761760079", "--version", app_version, "--build-number", build_number)
   end
 end

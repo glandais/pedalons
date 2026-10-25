@@ -203,16 +203,18 @@ faite, et le 500 du contact vendeur (`MOB-47`). Depuis l'import de `n-peloton` e
 - [ ] `MOB-70` **Publier la 1.1.0 sur l'App Store (XS)** — la 1.0.0 est en vente ; la version 1.1.0
       existe dans App Store Connect, fiche, nouveautés, notes de revue et captures (iPhone et iPad,
       refaites sur l'app du 25 octobre) identiques à `mobile/metadata/` et `mobile/screenshots/`
-      (poussées et vérifiées le 25 octobre 2026), sans build attaché : `asc validate` ne signale plus
-      que ce build manquant. Les bêtas 1.1.0 de
+      (poussées et vérifiées le 25 octobre 2026), build 92 attaché : `asc validate` ne signale plus
+      aucun blocage. Les bêtas 1.1.0 de
       `publish_beta.sh` passent par TestFlight (groupe externe NP), la première en revue bêta depuis
       le 15 octobre. Les informations de test TestFlight (compte de démo, notes reprises de
       `mobile/metadata/review-notes.md`, description bêta FR/EN, URL de confidentialité) ont été
       remplies ce jour-là par l'API : elles ne sont **pas versionnées**, et le compte de démo est à
-      changer aux deux endroits (fiche App Store et TestFlight) s'il change. Reste :
-      `cd mobile/ios && bundle exec fastlane release` (attache le build du `pubspec`, donc le
-      dernier publié par `publish_beta.sh`), puis soumettre à la revue dans App Store Connect. Le
-      formulaire *App Privacy* n'a pas été comparé (`asc web privacy plan`, session web 2FA).
+      changer aux deux endroits (fiche App Store et TestFlight) s'il change. Pour une autre build,
+      `cd mobile/ios && bundle exec fastlane release` attache celle du `pubspec` (`asc versions
+      attach-build` ; l'ancienne lane passait par `deliver`, qui n'attache un build qu'en
+      soumettant, et n'attachait donc rien). Reste : vérifier que *App Privacy* est publié (jamais
+      comparé : `asc web privacy plan`, session web 2FA), puis soumettre à la revue dans App Store
+      Connect, et publier à la main après l'approbation (sortie `MANUAL`).
 
 ### Couverture e2e Patrol — ce que les tests ne couvrent pas encore
 
