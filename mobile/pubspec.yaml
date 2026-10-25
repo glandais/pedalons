@@ -52,7 +52,7 @@ dependencies:
   cached_network_image: ^4.0.5
 
   # Maps
-  maplibre: ^0.3.6
+  maplibre: ^0.3.7
 
   # Full-screen image viewer
   photo_view: ^0.15.0

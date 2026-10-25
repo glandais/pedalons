@@ -848,25 +848,6 @@ class PdlMapController extends ChangeNotifier {
     await _addCursorLayer(style);
   }
 
-  /// `hillshade-shadow-color` et `hillshade-highlight-color` **tuent le process
-  /// sur iOS**, et pas d'une exception qu'on pourrait rattraper : le SDK envoie
-  /// `count` au `UIColor` scalaire qu'il vient de fabriquer et l'application
-  /// abandonne (`NSInvalidArgumentException`, `-[UIDeviceRGBColor count]`). Les
-  /// deux sont typées `colorArray` dans la spec de style, et le convertisseur
-  /// `std::vector<T>` de MapLibre iOS ne vérifie pas la classe de la constante
-  /// avant de lui demander sa longueur.
-  ///
-  /// Tant que ce n'est pas corrigé en amont, iOS garde l'ombrage **aux teintes
-  /// par défaut** (noir/blanc) plutôt que pas d'ombrage du tout. Android et le
-  /// web reçoivent les couleurs de la charte.
-  ///
-  /// Correctif proposé : https://github.com/josxha/flutter-maplibre/pull/571 —
-  /// à sa fusion, remonter `maplibre` dans `pubspec.yaml`, **supprimer ce
-  /// drapeau** et le rappel dans `CLAUDE.md`. Constaté sur maplibre 0.3.6
-  /// (MapLibre iOS 6.25.1 et 6.29.0).
-  static bool get _hillshadeColorsCrashOnIos =>
-      defaultTargetPlatform == TargetPlatform.iOS;
-
   /// Pose — ou retire — l'ombrage du relief, **avant tout le reste**.
   ///
   /// L'ordre compte : ajoutée en premier de nos couches, elle passe au-dessus du
@@ -885,9 +866,6 @@ class PdlMapController extends ChangeNotifier {
   /// `hillshade-method` n'est pas envoyé : c'est une propriété de MapLibre GL
   /// **JS**, absente des SDK natifs, où elle finirait en écriture KVC sur une
   /// clé inconnue.
-  ///
-  /// **Les deux teintes sont muettes sur iOS** — voir
-  /// [_hillshadeColorsCrashOnIos].
   Future<void> _addHillshadeLayer(StyleController style) async {
     await _safe(() => style.removeLayer('$_hillshadeSourceId-layer'));
     await _safe(() => style.removeSource(_hillshadeSourceId));
@@ -905,11 +883,8 @@ class PdlMapController extends ChangeNotifier {
           sourceId: _hillshadeSourceId,
           paint: <String, Object>{
             'hillshade-exaggeration': hillshade.exaggeration,
-            if (!_hillshadeColorsCrashOnIos) ...<String, Object>{
-              'hillshade-shadow-color': hillshade.shadowColor.toHexString(),
-              'hillshade-highlight-color': hillshade.highlightColor
-                  .toHexString(),
-            },
+            'hillshade-shadow-color': hillshade.shadowColor.toHexString(),
+            'hillshade-highlight-color': hillshade.highlightColor.toHexString(),
           },
         ),
       ),
