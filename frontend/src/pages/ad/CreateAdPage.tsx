@@ -13,6 +13,7 @@ import { paths } from '@/config/paths'
 import { AdRequest, AdType, Status } from '../../api/dto'
 import { useCanonicalPath } from '../../hooks/useCanonicalPath'
 import { useCreateAdFormData } from './adFormData'
+import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
 
 export function CreateAdPage() {
   const { t } = useTranslation()
@@ -23,6 +24,7 @@ export function CreateAdPage() {
   const { data: team, isLoading: isLoadingTeam } = teamQuery
 
   const createMutation = useCreateAd()
+  const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
 
   useCanonicalPath(team ? paths.adNew(team.slug) : undefined)
 
@@ -39,8 +41,9 @@ export function CreateAdPage() {
     return <Navigate to={paths.team(team.slug)} replace />
   }
 
-  // Any member can create ads
-  const canCreate = !!team.role
+  // Any member can create ads, and a platform admin, whose `team.role` is their real membership
+  // (docs/LEDGER_*.md API-137)
+  const canCreate = !!team.role || isPlatformAdmin
 
   if (!canCreate) {
     return <Navigate to={paths.ads(teamSlug!)} replace />

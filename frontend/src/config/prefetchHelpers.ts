@@ -9,7 +9,7 @@ import { prefetchListTeamTagsQuery } from '@/api/endpoints/tags/tags'
 import { ROUTES_BULK_MAX_SLUGS } from '@/hooks/useRoutesBulk'
 import { COMMENT_LIST_OPTIONS } from '@/hooks/useComments'
 import type { MembershipFilterValue } from '@/hooks/filters/membership'
-import { useAuthStore } from '@/store/authStore'
+import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
 import { MinRole } from '@/api/dto'
 import type {
   SortDirection,
@@ -24,6 +24,16 @@ import type {
  * `pages/ride/rideDetailData.ts`). Their own module rather than exports of `routes.config.ts`,
  * which imports those companions — the other direction would be a cycle.
  */
+
+/**
+ * Whether the reader sees a team's member-only content (comments, the team calendar): a member, or
+ * a platform admin — whose `team.role` is their real membership, null outside it (docs/LEDGER_*.md
+ * API-137). Reads the team query prefetched just before, like the pages' `isMember || isPlatformAdmin`.
+ */
+export function readsMemberContent(queryClient: QueryClient, teamSlug: string): boolean {
+  const team = queryClient.getQueryData<TeamDetailDto>(getGetTeamQueryKey(teamSlug))
+  return !!team?.role || selectIsPlatformAdmin(useAuthStore.getState())
+}
 
 /**
  * Comments are member-only on rides/trips/posts/routes (each detail page's own `isMember`, from
@@ -41,8 +51,7 @@ export async function prefetchMemberComments(
   ) => Promise<unknown>,
   getQueryKey: (teamSlug: string, entitySlug: string) => readonly unknown[]
 ) {
-  const team = queryClient.getQueryData<TeamDetailDto>(getGetTeamQueryKey(teamSlug))
-  if (!team?.role) return
+  if (!readsMemberContent(queryClient, teamSlug)) return
 
   await queryClient.prefetchInfiniteQuery({
     queryKey: [...getQueryKey(teamSlug, entitySlug), COMMENT_LIST_OPTIONS],

@@ -95,15 +95,17 @@ test('a route sheet shows its surface breakdown and colours the profile and the 
   await expect(credit).toHaveText('© contributeurs OpenStreetMap')
   await expect(credit).toHaveAttribute('href', 'https://www.openstreetmap.org/copyright')
 
-  // The grade colours the profile and the line until the viewer asks for the surface.
-  const grade = summary.getByRole('radio', { name: 'Pente' })
-  const surface = summary.getByRole('radio', { name: 'Revêtement' })
+  // The grade colours the profile and the line until the viewer asks for the surface. The switch
+  // sits above the breakdown, shared with the weather mode (ledger WEB-115, WEB-118).
+  const colorBy = main.getByRole('radiogroup', { name: 'Colorer le profil et le tracé selon' })
+  const grade = colorBy.getByRole('radio', { name: 'Pente' })
+  const surface = colorBy.getByRole('radio', { name: 'Revêtement' })
   await expect(grade).toBeChecked()
   // Mantine hides the radio inputs: the click goes to their label, as the viewer's does
-  await summary.getByText('Revêtement', { exact: true }).click()
+  await colorBy.getByText('Revêtement', { exact: true }).click()
   await expect(surface).toBeChecked()
   await expect(main.locator('canvas').first()).toBeVisible()
-  await summary.getByText('Pente', { exact: true }).click()
+  await colorBy.getByText('Pente', { exact: true }).click()
   await expect(grade).toBeChecked()
   expect(errors, 'no error on the console').toEqual([])
 })

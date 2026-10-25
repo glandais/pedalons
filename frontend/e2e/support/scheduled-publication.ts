@@ -47,9 +47,16 @@ export async function pickIntoEmptyPicker(page: Page, field: Locator, when: Wall
   await expect(field).toHaveText(pickerText(when))
 }
 
-/** The instant a minute ago, to the second: a `publishAt` the scheduler's next run takes. */
-export const pastPublishInstant = () =>
-  new Date(Math.floor((Date.now() - 60_000) / 1000) * 1000).toISOString()
+/**
+ * The instant a minute ago, to the second: a `publishAt` the scheduler's next run takes. In the hour
+ * the clocks go back, its Paris wall time names two instants and the API takes the earlier one
+ * (`ZonedDateTime`'s rule) — still past, so that is the one returned.
+ */
+export const pastPublishInstant = () => {
+  const due = Math.floor((Date.now() - 60_000) / 1000) * 1000
+  const anHourEarlier = due - 3_600_000
+  return new Date(wallTimeOf(anHourEarlier) === wallTimeOf(due) ? anHourEarlier : due).toISOString()
+}
 
 /** `pastPublishInstant` as the request carries it: a Paris wall time (contract 11.0.0). */
 export const pastPublishAt = () => wallTimeOf(pastPublishInstant())

@@ -1069,6 +1069,23 @@ couvert » ; les tests ne tournent qu'en local (`MOB-37`).
 
 ## WEB — Site web
 
+- [x] `WEB-121` **Un administrateur de la plateforme crée une annonce et voit ses pages préchargées
+  hors de ses équipes** (25 octobre 2026, contrat inchangé) — suite d'`API-137` : `team.role` étant
+  devenu le vrai rôle, nul hors adhésion, trois lectures web s'y fiaient encore seules.
+  `CreateAdPage` renvoyait l'administrateur vers la liste (`canCreate = !!team.role || isPlatformAdmin`
+  désormais, comme `AdDetailPage`) ; `prefetchMemberComments` sautait les commentaires d'une sortie,
+  d'un voyage, d'une étape, d'un article et d'un parcours que la page lit ensuite
+  (`isMember || isPlatformAdmin`), et `prefetchTeamCalendar` les événements d'une équipe — deux
+  écarts de préchargement que relevait l'audit. Les deux passent par `readsMemberContent`
+  (`config/prefetchHelpers.ts`). Couvert par `e2e/routes-render.e2e.ts` (les 7 routes « as
+  platformAdmin », desktop et mobile, rouges à la recette du 25 octobre 2026, vertes ensuite).
+  Même recette, deux e2e réalignés : `route-surface.e2e.ts` cherche la bascule « Pente |
+  Revêtement » dans son radiogroup, que `WEB-115`/`WEB-118` ont sorti du résumé du revêtement ;
+  `pastPublishInstant` (`e2e/support/scheduled-publication.ts`) rend, pendant l'heure où l'on
+  recule, l'instant que l'API retient pour une heure murale ambiguë (le plus tôt).
+  **À ne pas défaire** : un droit d'administrateur de la plateforme ne se lit jamais sur
+  `team.role` — `teamAccess`, ou `readsMemberContent` dans un `prefetch`.
+
 - [x] `WEB-118` **La météo sur la carte, palier 3 lot B : sortie solo et voyages** (25 octobre 2026,
   contrat inchangé) — le mode Météo gagne la carte du détail d'une sortie solo (sur un seul
   parcours), la nouvelle route **`rideMap`** (`/equipes/{teamSlug}/sorties/{rideSlug}/carte`, web
