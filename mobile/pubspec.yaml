@@ -118,6 +118,13 @@ dev_dependencies:
   patrol: ^4.10.0
   patrol_mcp: ^0.2.1
 
+dependency_overrides:
+  # 2.6.0 moved to Pigeon FFI and crashes a release build at launch on iOS:
+  # `Unrecognized selector +[LegacyUserDefaultsApiSetup getInstanceWithName:]`.
+  # Lift once a fixed version is out and a release build opens on a device —
+  # docs/LEDGER_*.md MOB-98.
+  shared_preferences_foundation: 2.5.7
+
 patrol:
   app_name: Pédalons
   android:

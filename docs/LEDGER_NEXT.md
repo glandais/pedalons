@@ -61,6 +61,11 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
 
 ## MOB — Application mobile
 
+- [ ] `MOB-98` **Lever le gel de `shared_preferences_foundation` en 2.5.7 (XS)** — posé par
+      `MOB-97` (`dependency_overrides` de `mobile/pubspec.yaml`) parce que la 2.6.0 fait planter un
+      build release iOS à l'ouverture. Le retirer quand une version corrigée sort, après avoir
+      lancé un build release sur un iPhone ; tant qu'il reste, le plugin ne reçoit plus de mises à
+      jour.
 - [ ] `MOB-95` **La météo sur la carte : recette sur appareil des paliers 1 à 3 (S)** — rien ne se
       teste sans carte native (`MOB-91` à `MOB-94`, plan [`2026-10-24-weather-on-map.md`](plans/archive/2026-10-24-weather-on-map.md)) :
       pastilles et goutte sur un vrai parcours à plusieurs traces ; toucher d'une pastille et

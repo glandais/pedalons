@@ -16,6 +16,14 @@ fichier garde **ce qui est fait**, et ce qu'il ne faut pas défaire.
 
 ## MOB — Application mobile
 
+- [x] `MOB-97` **Le build release iOS ne plante plus à l'ouverture** (25 octobre 2026, contrat
+  inchangé) — la mise à jour des dépendances avait fait passer `shared_preferences_foundation` de
+  2.5.7 à 2.6.0, qui passe par Pigeon FFI : un build release s'arrêtait au lancement sur
+  `Unrecognized selector +[LegacyUserDefaultsApiSetup getInstanceWithName:]` (SIGABRT, vu sur
+  iPhone, iOS 27.0.1). Le plugin est figé en 2.5.7 par un `dependency_overrides` de
+  `mobile/pubspec.yaml`. Aucun test ne le couvre : seul un build release lancé sur un appareil le
+  montre. **À ne pas défaire** : ne pas lever l'override sans avoir ouvert un build release sur un
+  appareil (`MOB-98`).
 - [x] `MOB-94` **La météo sur la carte, palier 3 lot B : sortie solo et voyages** (25 octobre 2026,
   contrat inchangé) — le mode Météo (puce sous la carte encastrée, tracé coloré, légende et crédit,
   pastilles et feuille en plein écran) gagne le détail d'une sortie solo (`ride_detail_page.dart`,
