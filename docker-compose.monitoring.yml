@@ -18,7 +18,7 @@
 # them is reachable from outside the stack.
 services:
   prometheus:
-    image: prom/prometheus:v3.15.0
+    image: prom/prometheus:v3.15.1
     # The socket is root:docker 0660: Swarm service discovery (the backend job) needs it readable.
     user: root
     command:
