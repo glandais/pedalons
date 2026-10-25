@@ -1662,6 +1662,18 @@ l'app. Ne pas déduire les rôles ou l'accès côté client pour élargir ce que
   après le rechargement, l'erreur s'affiche et se remonte normalement. Test :
   `staleChunk.test.ts`. **À ne pas défaire** : la garde anti-boucle.
 
+- `WEB-122` **Un chunk disparu après un déploiement était encore remonté en erreur** (feedback
+  #10, #12, #13, 2026-10-26, sans changement de contrat) — le survol d'un lien précharge déjà son
+  chunk : l'échec de ce préchargement déclenchait le rechargement de `WEB-66` et armait sa garde de
+  30 s, puis l'import du clic, survenu avant le départ de la page, échouait à son tour, trouvait la
+  garde armée et finissait sur l'écran d'erreur et en issue. `lib/staleChunk.ts` retient désormais
+  qu'un rechargement est en cours dans la page : tout chunk manquant qui suit attend ce rechargement
+  sans s'afficher ni se remonter (`ErrorBoundary`, et `reportError` pour les imports hors limite
+  d'erreur). L'écouteur `vite:preloadError` n'appelle plus `preventDefault`, qui faisait résoudre
+  l'import à `undefined` et `lazyPage` lever une `TypeError` sans rapport. Test :
+  `staleChunk.test.ts` (un module neuf par chargement de page). **À ne pas défaire** : la garde
+  de 30 s vaut entre deux chargements de page, pas dans la page qui a demandé le rechargement.
+
 - `WEB-59` **« Lien invalide » sur un changement d'adresse pourtant appliqué** (2026-10-04) —
   `VerifyEmailPage` confirmait le changement, puis relisait `/me` avec le jeton d'accès en mémoire.
   Ce jeton porte l'ancienne adresse, que le backend ne résout plus (`API-73`) : un 403, que

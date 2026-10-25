@@ -2,6 +2,7 @@ import Axios from 'axios'
 import type { ClientErrorDto } from '@/api/dto'
 import { reportClientError } from '@/api/endpoints/feedback/feedback'
 import { ApiClientError } from '@/lib/apiError'
+import { isStaleChunkError, reloadForStaleChunk } from '@/lib/staleChunk'
 import { useAuthStore } from '@/store/authStore'
 import { buildClientContext } from './clientContext'
 import { getLogEntries, logEntry } from './clientLog'
@@ -64,6 +65,8 @@ function isHandled(error: unknown): boolean {
 
 export function reportError(error: unknown, componentStack?: string): void {
   if (typeof window === 'undefined' || isHandled(error)) return
+  // A chunk of a build replaced by a deploy, outside any ErrorBoundary: the reload is the fix.
+  if (isStaleChunkError(error) && reloadForStaleChunk()) return
   const dto = toClientError(error, componentStack)
   const text = `${dto.type}: ${dto.message}`
   if (IGNORED.some((pattern) => pattern.test(dto.message) || pattern.test(dto.stack ?? ''))) {
