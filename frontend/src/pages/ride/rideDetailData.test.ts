@@ -23,6 +23,7 @@ vi.mock('@/lib/axiosInstance', () => ({
 }))
 vi.mock('@/store/authStore', () => ({
   useAuthStore: { getState: () => ({ isAuthenticated: false }) },
+  selectIsPlatformAdmin: () => false,
 }))
 
 import {
