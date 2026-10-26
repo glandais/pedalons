@@ -95,6 +95,17 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-rest-jackson</artifactId>
         </dependency>
+        <!-- br compression (quarkus.http.compressors): brotli4j only pulls the native library of the
+             OS Maven runs on, so an image built on a Mac would carry the macOS one and fail at boot
+             ("Brotli is not available"). Both Linux ones go in, whatever the build host. -->
+        <dependency>
+            <groupId>com.aayushatharva.brotli4j</groupId>
+            <artifactId>native-linux-x86_64</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.aayushatharva.brotli4j</groupId>
+            <artifactId>native-linux-aarch64</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.geolatte</groupId>
             <artifactId>geolatte-geojson</artifactId>
