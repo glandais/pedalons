@@ -142,6 +142,17 @@ fichier garde **ce qui est fait**, et ce qu'il ne faut pas défaire.
   ses membres et son calendrier **d'une graine par date** (`calendar-{fr}-{jour}`,
   `{locale}-{AAAAMMJJ}`), et les lève-tôt sont un préfixe des inscrits finaux — c'est ce qui rend
   `--refresh` idempotent et ne fait qu'ajouter. L'installation sur l'hôte est `OPS-28`.
+- [x] `MOB-70` **La 1.1.0 est publiée sur l'App Store** (constaté le 26 octobre 2026, contrat
+  inchangé) — la 1.0.0 était en vente ; la 1.1.0 a été créée le 14 octobre dans App Store Connect
+  (sortie `MANUAL`), sa fiche, ses nouveautés, ses notes de revue et ses captures (iPhone et iPad,
+  refaites sur l'app du 25 octobre) poussées depuis `mobile/metadata/` et `mobile/screenshots/`,
+  le build 92 attaché, soumise, approuvée puis publiée à la main. `cd mobile/ios && bundle exec
+  fastlane release` attache le build du `pubspec` (`asc versions attach-build`) : l'ancienne lane
+  passait par `deliver`, qui n'attache un build qu'en soumettant, et n'attachait donc rien. Les
+  informations de test TestFlight (compte de démo, notes de revue, description bêta FR/EN, URL de
+  confidentialité), remplies par l'API le 15 octobre, ne sont **pas versionnées** : le compte de
+  démo se change aux deux endroits (fiche App Store et TestFlight). La version suivante est
+  `MOB-101`.
 - [x] `MOB-63` **Fiche App Store et captures refaites sur l'app d'octobre** (9 octobre 2026, contrat
   inchangé) — les captures du 25 septembre montraient un fil d'équipe remplacé depuis par le
   tableau de bord, l'Agenda et les Publications (`MOB-60`), et ni la description ni les captures ne

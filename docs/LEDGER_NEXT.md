@@ -202,21 +202,18 @@ faite, et le 500 du contact vendeur (`MOB-47`). Depuis l'import de `n-peloton` e
       Une fois l'accès obtenu : promouvoir la release `alpha` depuis la Console plutôt que
       `fastlane deploy`, qui renverrait le même versionCode. Fiche (textes 1.1.0) et captures
       refaites sur l'app du 25 octobre poussées par `fastlane listing` le 25 octobre 2026.
-- [ ] `MOB-70` **Publier la 1.1.0 sur l'App Store (XS)** — la 1.0.0 est en vente ; la version 1.1.0
-      existe dans App Store Connect, fiche, nouveautés, notes de revue et captures (iPhone et iPad,
-      refaites sur l'app du 25 octobre) identiques à `mobile/metadata/` et `mobile/screenshots/`
-      (poussées et vérifiées le 25 octobre 2026), build 92 attaché : `asc validate` ne signale plus
-      aucun blocage. Les bêtas 1.1.0 de
-      `publish_beta.sh` passent par TestFlight (groupe externe NP), la première en revue bêta depuis
-      le 15 octobre. Les informations de test TestFlight (compte de démo, notes reprises de
-      `mobile/metadata/review-notes.md`, description bêta FR/EN, URL de confidentialité) ont été
-      remplies ce jour-là par l'API : elles ne sont **pas versionnées**, et le compte de démo est à
-      changer aux deux endroits (fiche App Store et TestFlight) s'il change. Pour une autre build,
-      `cd mobile/ios && bundle exec fastlane release` attache celle du `pubspec` (`asc versions
-      attach-build` ; l'ancienne lane passait par `deliver`, qui n'attache un build qu'en
-      soumettant, et n'attachait donc rien). Reste : vérifier que *App Privacy* est publié (jamais
-      comparé : `asc web privacy plan`, session web 2FA), puis soumettre à la revue dans App Store
-      Connect, et publier à la main après l'approbation (sortie `MANUAL`).
+- [ ] `MOB-101` **Publier la 1.1.1 sur l'App Store et en bêta (XS)** — correctif de la 1.1.0 pour
+      le contrat `13.0.0` (`API-144`, `MOB-100`) : `RouteDetailDto.createdBy` y devient nullable, et
+      la 1.1.0 en vente ne lit plus le détail d'un parcours sans créateur visible. Elle embarque aussi
+      `MOB-97`, `MOB-98`, `MOB-99` et les teintes du relief sur iOS. `pubspec.yaml` est en `1.1.1`,
+      la fiche et les nouveautés dans `mobile/metadata/version/1.1.1/`. Reste : `publish_beta.sh`
+      (build 93, tag `mobile.1.1.1.93`), créer la version dans App Store Connect (`asc versions
+      create --app 6761760079 --version 1.1.1 --platform IOS --copyright "2026 Gabriel Landais"
+      --release-type MANUAL`), y pousser la fiche (`asc metadata plan`/`apply --version 1.1.1`,
+      `mobile/store-metadata/README.md`) et les notes de revue (le détail de revue est propre à la
+      version), attacher le build (`cd mobile/ios && bundle exec fastlane release`), `asc validate`,
+      soumettre, publier à la main après l'approbation. Le backend `13.0.0` déployé avant que la
+      1.1.1 soit en vente casse ce détail de parcours pour les non-membres sur la 1.1.0.
 
 ### Couverture e2e Patrol — ce que les tests ne couvrent pas encore
 
