@@ -71,8 +71,9 @@ App Store Connect create the version one, and the version half of the same plan 
 been used" — re-plan and apply again). `review-notes.md` is pushed with
 `asc review details-update --id <detail> --notes "$(cat metadata/review-notes.md)"`. The review
 detail belongs to **one version**: read its ID with `asc review details-for-version --version-id
-<version>` (1.0.0 was `d8cc0005-f535-4475-a720-a00eeb844adb`, 1.1.0 is
-`8ca43e45-9914-439b-bf67-ebccad095826`).
+<version>` (1.0.0 was `d8cc0005-f535-4475-a720-a00eeb844adb`, 1.1.0 was
+`8ca43e45-9914-439b-bf67-ebccad095826`, 1.1.1 is `75f06b3c-c7ac-4e82-99fb-0e88efd444da`, copied from 1.1.0 with the
+demo account by App Store Connect when the version was created).
 
 Version 1.1.0 was created on 14 October 2026 (`asc versions create … --copyright "2026 Gabriel
 Landais" --release-type MANUAL`, description and keywords copied from 1.0.0 by App Store Connect),

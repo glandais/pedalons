@@ -206,13 +206,12 @@ faite, et le 500 du contact vendeur (`MOB-47`). Depuis l'import de `n-peloton` e
       le contrat `13.0.0` (`API-144`, `MOB-100`) : `RouteDetailDto.createdBy` y devient nullable, et
       la 1.1.0 en vente ne lit plus le détail d'un parcours sans créateur visible. Elle embarque aussi
       `MOB-97`, `MOB-98`, `MOB-99` et les teintes du relief sur iOS. `pubspec.yaml` est en `1.1.1`,
-      la fiche et les nouveautés dans `mobile/metadata/version/1.1.1/`. Reste : `publish_beta.sh`
-      (build 93, tag `mobile.1.1.1.93`), créer la version dans App Store Connect (`asc versions
-      create --app 6761760079 --version 1.1.1 --platform IOS --copyright "2026 Gabriel Landais"
-      --release-type MANUAL`), y pousser la fiche (`asc metadata plan`/`apply --version 1.1.1`,
-      `mobile/store-metadata/README.md`) et les notes de revue (le détail de revue est propre à la
-      version), attacher le build (`cd mobile/ios && bundle exec fastlane release`), `asc validate`,
-      soumettre, publier à la main après l'approbation. Le backend `13.0.0` déployé avant que la
+      la fiche et les nouveautés dans `mobile/metadata/version/1.1.1/`. Fait le 26 octobre 2026 :
+      `publish_beta.sh` (build 93, TestFlight et Play, tag `mobile.1.1.1.93`), version 1.1.1 créée
+      dans App Store Connect (`MANUAL`), nouveautés poussées par `asc metadata apply` ; description,
+      mots-clés et détail de revue (notes identiques à `review-notes.md`, compte de démo) recopiés de
+      la 1.1.0 par App Store Connect. Reste : attacher le build (`cd mobile/ios && bundle exec
+      fastlane release`), `asc validate`, soumettre, publier à la main après l'approbation. Le backend `13.0.0` déployé avant que la
       1.1.1 soit en vente casse ce détail de parcours pour les non-membres sur la 1.1.0.
 
 ### Couverture e2e Patrol — ce que les tests ne couvrent pas encore
