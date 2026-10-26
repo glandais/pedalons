@@ -38,8 +38,8 @@ export interface RouteDetailDto {
   visibility: Visibility
   start?: GeoJsonPoint
   end?: GeoJsonPoint
-  /** Creator user */
-  createdBy: PublicUserDto
+  /** Creator user. Absent when the caller is not a member of the team: member names are never sent to anyone else. */
+  createdBy?: PublicUserDto
   /** Creation timestamp */
   createdAt: Instant
   /** Last update timestamp */

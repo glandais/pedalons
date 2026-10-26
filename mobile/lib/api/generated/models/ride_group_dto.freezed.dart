@@ -20,7 +20,7 @@ mixin _$RideGroupDto {
  String get id;/// Group name
  String get name;/// When the group leaves: its time on the ride's local date in the ride's zone, the ride's dateTime when it has no time of its own.
  String get startAt;/// Current number of participants
- int get countParticipants;/// The first participants of the group (at most 8), earliest registrations first — enough to draw avatars. countParticipants is the total; the whole list is paginated and searched by GET …/rides/{rideSlug}/participants?groupId=.
+ int get countParticipants;/// The first participants of the group (at most 8), earliest registrations first — enough to draw avatars. countParticipants is the total; the whole list is paginated and searched by GET …/rides/{rideSlug}/participants?groupId=. Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.
  List<PublicUserDto> get participants;/// Sort order
  int get sortOrder;/// Whether the current user is registered in THIS group. False if anonymous.
  bool get registered;/// Whether the group has reached maxParticipants. False when maxParticipants is not set.
@@ -30,7 +30,7 @@ mixin _$RideGroupDto {
  double? get averageSpeed;/// Maximum participants
  int? get maxParticipants;/// Distance in meters of the group route, if it has one
  double? get distance;/// Total elevation gain in meters of the group route, if it has one
- double? get elevationGain;/// The member who leads this group, when one is designated. Null means no leader was designated — render nothing rather than falling back on the ride's creator, who is the same person on every group of the ride.
+ double? get elevationGain;/// The member who leads this group, when one is designated. Null means no leader was designated — render nothing rather than falling back on the ride's creator, who is the same person on every group of the ride. Also null for a caller who is not a member of the team: member names are never sent to anyone else.
  PublicUserDto? get leader;/// Thumbnail URL (light) of the group route, if it has one. Opaque URL: may carry a query string; substitute {size} only.
  String? get thumbnailLightUrl;/// Thumbnail URL (dark) of the group route, if it has one. Opaque URL: may carry a query string; substitute {size} only.
  String? get thumbnailDarkUrl;/// The one thumbnail of the group route to show when the client does not theme its cards: the light variant if there is one, else the dark one. Null when the group has no route or its route has no thumbnail — the ride's own thumbnail is then the one to fall back on. Opaque URL: may carry a query string; substitute {size} only.
@@ -273,9 +273,9 @@ class _RideGroupDto implements RideGroupDto {
 @override final  String startAt;
 /// Current number of participants
 @override final  int countParticipants;
-/// The first participants of the group (at most 8), earliest registrations first — enough to draw avatars. countParticipants is the total; the whole list is paginated and searched by GET …/rides/{rideSlug}/participants?groupId=.
+/// The first participants of the group (at most 8), earliest registrations first — enough to draw avatars. countParticipants is the total; the whole list is paginated and searched by GET …/rides/{rideSlug}/participants?groupId=. Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.
  final  List<PublicUserDto> _participants;
-/// The first participants of the group (at most 8), earliest registrations first — enough to draw avatars. countParticipants is the total; the whole list is paginated and searched by GET …/rides/{rideSlug}/participants?groupId=.
+/// The first participants of the group (at most 8), earliest registrations first — enough to draw avatars. countParticipants is the total; the whole list is paginated and searched by GET …/rides/{rideSlug}/participants?groupId=. Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.
 @override List<PublicUserDto> get participants {
   if (_participants is EqualUnmodifiableListView) return _participants;
   // ignore: implicit_dynamic_type
@@ -300,7 +300,7 @@ class _RideGroupDto implements RideGroupDto {
 @override final  double? distance;
 /// Total elevation gain in meters of the group route, if it has one
 @override final  double? elevationGain;
-/// The member who leads this group, when one is designated. Null means no leader was designated — render nothing rather than falling back on the ride's creator, who is the same person on every group of the ride.
+/// The member who leads this group, when one is designated. Null means no leader was designated — render nothing rather than falling back on the ride's creator, who is the same person on every group of the ride. Also null for a caller who is not a member of the team: member names are never sent to anyone else.
 @override final  PublicUserDto? leader;
 /// Thumbnail URL (light) of the group route, if it has one. Opaque URL: may carry a query string; substitute {size} only.
 @override final  String? thumbnailLightUrl;

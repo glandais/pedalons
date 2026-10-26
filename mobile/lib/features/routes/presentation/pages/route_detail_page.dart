@@ -286,14 +286,14 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
                     route,
                     canReport:
                         currentUserId != null &&
-                        currentUserId != route.createdBy.id,
+                        currentUserId != route.createdBy?.id,
                   ),
                 ),
               ]
               // Sinon, la modération — mais son propre parcours ne se signale
               // pas : le menu serait vide.
               else if (currentUserId != null &&
-                  currentUserId != route.createdBy.id) ...<Widget>[
+                  currentUserId != route.createdBy?.id) ...<Widget>[
                 const SizedBox(width: PdlSpacing.chipGap),
                 PdlMapButton(
                   key: keys.routeDetail.moreButton,
@@ -592,10 +592,12 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
         ),
         // `createdBy` **existe au contrat et n'était pas lu** : cette section
         // l'active.
-        PdlInfoLine(
-          label: 'routes.author'.tr(),
-          value: route.createdBy.displayName,
-        ),
+        // Null pour qui n'est pas membre de l'équipe : on n'affiche rien.
+        if (route.createdBy != null)
+          PdlInfoLine(
+            label: 'routes.author'.tr(),
+            value: route.createdBy!.displayName,
+          ),
         if (createdAt != null)
           PdlInfoLine(
             label: 'routes.createdOn'.tr(),

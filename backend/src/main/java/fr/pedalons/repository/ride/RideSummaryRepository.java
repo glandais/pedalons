@@ -44,12 +44,17 @@ public class RideSummaryRepository {
   /**
    * Returns a summary per ride id. Ride ids with no groups are absent from the map — callers fall
    * back to {@link RideListSummary#EMPTY}.
+   *
+   * @param namedRideIds the rides whose team's member names the caller may see (docs/LEDGER_*.md
+   *     API-144): the others get their counts and an empty {@code topParticipants}, and the
+   *     participants query is skipped when none is named
    */
-  public Map<Long, RideListSummary> loadListSummaries(Collection<Long> rideIds) {
+  public Map<Long, RideListSummary> loadListSummaries(
+      Collection<Long> rideIds, Collection<Long> namedRideIds) {
     if (rideIds.isEmpty()) {
       return Map.of();
     }
-    Map<Long, List<PublicUserDto>> topParticipants = loadTopParticipants(rideIds);
+    Map<Long, List<PublicUserDto>> topParticipants = loadTopParticipants(namedRideIds);
 
     Map<Long, int[]> counts = new HashMap<>();
     Map<Long, Boolean> full = new HashMap<>();
@@ -166,6 +171,9 @@ public class RideSummaryRepository {
    * rather than a thousand managed entities plus their users.
    */
   private Map<Long, List<PublicUserDto>> loadTopParticipants(Collection<Long> rideIds) {
+    if (rideIds.isEmpty()) {
+      return Map.of();
+    }
     List<Object[]> rows =
         entityManager
             .createQuery(

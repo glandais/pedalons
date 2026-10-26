@@ -518,22 +518,28 @@ export function TripDetailPage() {
               <Title order={3} mb="md">
                 {t('trips.detail.participants.title')}
               </Title>
-              <UnstyledButton
-                onClick={() => setShowParticipants(true)}
-                aria-label={t('trips.detail.participants.viewAll')}
-              >
-                <Group gap="sm">
-                  <UserAvatarGroup
-                    users={trip.participants}
-                    total={trip.participantCount}
-                    max={8}
-                    size="md"
-                  />
-                  <Text size="sm" c="dimmed">
-                    {t('participantCount', { count: trip.participantCount })}
-                  </Text>
-                </Group>
-              </UnstyledButton>
+              {canReadComments ? (
+                <UnstyledButton
+                  onClick={() => setShowParticipants(true)}
+                  aria-label={t('trips.detail.participants.viewAll')}
+                >
+                  <Group gap="sm">
+                    <UserAvatarGroup
+                      users={trip.participants}
+                      total={trip.participantCount}
+                      max={8}
+                      size="md"
+                    />
+                    <Text size="sm" c="dimmed">
+                      {t('participantCount', { count: trip.participantCount })}
+                    </Text>
+                  </Group>
+                </UnstyledButton>
+              ) : (
+                <Text size="sm" c="dimmed">
+                  {t('participantCount', { count: trip.participantCount })}
+                </Text>
+              )}
             </Paper>
           )}
 
@@ -581,13 +587,15 @@ export function TripDetailPage() {
       </TripLayout>
 
       {/* Confirmation Dialogs */}
-      <ParticipantListModal
-        isOpen={showParticipants}
-        onClose={() => setShowParticipants(false)}
-        source={{ kind: 'trip', teamSlug: teamSlug!, tripSlug: trip.slug }}
-        count={trip.participantCount}
-        groupName={trip.name}
-      />
+      {canReadComments && (
+        <ParticipantListModal
+          isOpen={showParticipants}
+          onClose={() => setShowParticipants(false)}
+          source={{ kind: 'trip', teamSlug: teamSlug!, tripSlug: trip.slug }}
+          count={trip.participantCount}
+          groupName={trip.name}
+        />
+      )}
 
       <ConfirmDialog
         isOpen={showUnpublishConfirm}

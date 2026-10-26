@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../api/generated/export.dart';
+import '../../auth/domain/auth_state.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../data/invitations_repository.dart';
 import '../data/team_repository.dart';
 
@@ -47,6 +49,27 @@ final teamMembershipProvider = Provider.family<bool?, String>((
         data: (List<TeamDetailDto> teams) =>
             teams.any((TeamDetailDto t) => t.slug == teamSlug),
       );
+});
+
+/// Puis-je voir les noms des membres de [teamSlug] ?
+///
+/// La même règle que le serveur (`member || platformAdmin`, comme les
+/// commentaires) : qui n'est pas membre — visiteur, sans équipe, membre d'une
+/// autre équipe — ne reçoit que des **comptes** : pas de noms, pas d'avatars,
+/// et la liste des participants lui est refusée. À ne pas déduire de la
+/// vacuité d'une liste. Inconnu (`null`) vaut non : on n'offre pas une action
+/// que l'API refuserait.
+final canSeeMemberNamesProvider = Provider.family<bool, String>((
+  Ref ref,
+  String teamSlug,
+) {
+  final bool platformAdmin = ref.watch(
+    authProvider.select(
+      (AuthState s) => s.user?.platformRole == 'PLATFORM_ADMIN',
+    ),
+  );
+  return platformAdmin ||
+      (ref.watch(teamMembershipProvider(teamSlug)) ?? false);
 });
 
 /// Mon rôle dans [teamSlug], lu dans « Mes équipes » — aucun appel de plus.

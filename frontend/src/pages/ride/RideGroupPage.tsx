@@ -344,7 +344,12 @@ export function RideGroupPage() {
           {/* The leader — only when one is designated, never the ride's creator */}
           <GroupLeader group={group} />
 
-          <GroupParticipantsSection teamSlug={team.slug} ride={ride} group={group} />
+          <GroupParticipantsSection
+            teamSlug={team.slug}
+            ride={ride}
+            group={group}
+            canSeeParticipants={isMember || isPlatformAdmin}
+          />
         </Stack>
 
         {/* The group's route: the map with its profile, then what to do with it */}

@@ -44,7 +44,7 @@ export interface PostDto {
   commentCount?: number
   /** Whether the post is signed by the team rather than by its author. Readers are then not told who wrote it: createdBy is absent unless the caller administers the team or wrote the post. */
   signedAsTeam: boolean
-  /** Who wrote the post. Absent when the post is signed by the team (signedAsTeam) and the caller neither administers the team nor wrote it — render the team instead. */
+  /** Who wrote the post. Absent when the caller is not a member of the team — member names are never sent to anyone else — and when the post is signed by the team (signedAsTeam) and the caller neither administers the team nor wrote it: render the team instead. */
   createdBy?: PublicUserDto
   /** The team's POST tags the post carries, sorted by label. Empty when it carries none. */
   tags: TagDto[]

@@ -21,7 +21,7 @@ import {
 } from './support/data'
 import { expect, test, unique } from './support/fixtures'
 import { commentOnPost, newPost, postPath } from './support/posts'
-import { newRide, postComments, ridePath } from './support/rides'
+import { joinGroup, newRide, postComments, ridePath } from './support/rides'
 import { newTrip, stagePath, tripPath } from './support/routes'
 import {
   authState,
@@ -119,6 +119,8 @@ test.beforeAll(async () => {
   const stage = trip.stages[0]
   await Promise.all([
     postComments(member, slug, ride.slug, [comments.ride]),
+    // The member takes part: their name is what a non-member must never get (API-144).
+    joinGroup(member, slug, ride, 'Groupe A'),
     apiPost<CommentDto>(member, `/api/teams/${slug}/trips/${trip.slug}/comments`, {
       content: comments.trip,
     } satisfies CommentRequest),
@@ -256,6 +258,14 @@ async function statusOf(call: Promise<unknown>): Promise<number | 'ok'> {
 }
 
 test.describe('public content, seen from outside the team', () => {
+  test('a member still sees who takes part in a public ride (positive control, API-144)', async () => {
+    const { commentsApi } = scene.open.ride
+    const rideApi = commentsApi.replace(/\/comments$/, '')
+    const name = scene.member.user.displayName
+    const ride = await apiGet<RideDto>(scene.member, rideApi)
+    expect(ride.topParticipants.map((p) => p.displayName)).toContain(name)
+  })
+
   test('a member gets each entity with its comments, server document included (positive control)', async () => {
     for (const kind of COMMENTED) {
       const { path, name } = scene.open[kind]
@@ -288,6 +298,29 @@ test.describe('public content, seen from outside the team', () => {
         expect(refused, 'the comments endpoint refuses').not.toBe('ok')
       })
     }
+
+    test(`${visitor} on a public ride: the count of participants, never a name (API-144)`, async () => {
+      const auth = session()
+      const { path, commentsApi } = scene.open.ride
+      const rideApi = commentsApi.replace(/\/comments$/, '')
+      const name = scene.member.user.displayName
+
+      const document = await documentAs(path, auth)
+      expect.soft(document.html.includes(name), 'the member name in the document').toBe(false)
+      expect.soft(document.html.includes(scene.member.user.id), 'the member id').toBe(false)
+
+      const ride = await apiGet<RideDto>(auth, rideApi)
+      expect.soft(ride.participantCount, 'the count stays').toBeGreaterThan(0)
+      expect.soft(ride.topParticipants, 'no preview').toEqual([])
+      expect.soft(JSON.stringify(ride).includes(name), 'the name anywhere in the ride').toBe(false)
+      for (const group of ride.groups) {
+        expect.soft(group.participants, 'no group preview').toEqual([])
+        expect.soft(group.leader ?? null, 'no leader').toBeNull()
+      }
+      expect(await statusOf(apiGet(auth, `${rideApi}/participants`)), 'the list is refused').toBe(
+        auth ? 403 : 401
+      )
+    })
 
     test(`${visitor} on a public ride and trip: taking part is the members', no join, no comments`, async ({
       browser,

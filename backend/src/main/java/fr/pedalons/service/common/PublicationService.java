@@ -47,6 +47,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 
 @ApplicationScoped
@@ -71,6 +72,8 @@ public class PublicationService {
   @Inject CommentCountLookup commentCountLookup;
 
   @Inject PostAuthorLookup postAuthorLookup;
+
+  @Inject MemberNamesVisibility memberNamesVisibility;
 
   @Inject TagLookup tagLookup;
 
@@ -642,14 +645,27 @@ public class PublicationService {
       return new PublicationListResponse(List.of(), 0, query.page(), query.size());
     }
     PedalonsPage<Publication> publications = allPublicationRepository.find(query);
-    PublicationListSummaries summaries = loadSummaries(publications.items());
-    UserParticipations participations = loadParticipations(publications.items());
+    // The rows whose team's member names the caller may see — at most one query for the page, none
+    // for a visitor or a platform admin (docs/LEDGER_*.md API-144). A non-member is sent the
+    // counts, never the names: no participants, no leader, no signed author.
+    Set<Long> namedTeamIds =
+        memberNamesVisibility.teamsWithNames(
+            publications.items().stream()
+                .map(p -> p.getTeam().getId())
+                .collect(Collectors.toSet()));
+    Set<Long> namedRideIds =
+        itemsOfType(publications.items(), Ride.class).stream()
+            .filter(r -> namedTeamIds.contains(r.getTeam().getId()))
+            .map(Ride::getId)
+            .collect(Collectors.toSet());
+    PublicationListSummaries summaries = loadSummaries(publications.items(), namedRideIds);
+    UserParticipations participations = loadParticipations(publications.items(), namedRideIds);
     // Two more queries for the whole page, none per row — and nothing at all for a visitor who is
     // not a member of any of the teams on it.
     CommentCounts commentCounts = commentCountLookup.forEntities(publications.items());
     // At most two more, for the authors of the posts on the page (docs/LEDGER_*.md API-6).
     PostAuthors postAuthors =
-        postAuthorLookup.forPosts(itemsOfType(publications.items(), Post.class));
+        postAuthorLookup.forPosts(itemsOfType(publications.items(), Post.class), namedTeamIds);
     // One more for the tags of every row (docs/LEDGER_*.md API-59), none for an empty page.
     ContentTags tags =
         tagLookup.forContents(publications.items().stream().map(Publication::getId).toList());
@@ -703,9 +719,9 @@ public class PublicationService {
    * registeredGroup}) for the whole page at once — a fixed number of queries, whatever the page
    * size. Anonymous callers cost nothing.
    */
-  private UserParticipations loadParticipations(List<Publication> items) {
+  private UserParticipations loadParticipations(List<Publication> items, Set<Long> namedRideIds) {
     return participationLookup.forListPage(
-        idsOfType(items, Ride.class), idsOfType(items, Trip.class));
+        idsOfType(items, Ride.class), idsOfType(items, Trip.class), namedRideIds);
   }
 
   /**
@@ -719,9 +735,9 @@ public class PublicationService {
    * <p>Only the ids actually present on the page are queried, and a type absent from the page costs
    * nothing — the repositories short-circuit on an empty id list.
    */
-  private PublicationListSummaries loadSummaries(List<Publication> items) {
+  private PublicationListSummaries loadSummaries(List<Publication> items, Set<Long> namedRideIds) {
     return new PublicationListSummaries(
-        rideSummaryRepository.loadListSummaries(idsOfType(items, Ride.class)),
+        rideSummaryRepository.loadListSummaries(idsOfType(items, Ride.class), namedRideIds),
         tripSummaryRepository.loadListSummaries(idsOfType(items, Trip.class)));
   }
 

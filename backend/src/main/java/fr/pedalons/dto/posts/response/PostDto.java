@@ -110,8 +110,10 @@ public class PostDto implements PublicationDto {
   @Nullable
   @Schema(
       description =
-          "Who wrote the post. Absent when the post is signed by the team (signedAsTeam) and the"
-              + " caller neither administers the team nor wrote it — render the team instead.")
+          "Who wrote the post. Absent when the caller is not a member of the team — member names"
+              + " are never sent to anyone else — and when the post is signed by the team"
+              + " (signedAsTeam) and the caller neither administers the team nor wrote it:"
+              + " render the team instead.")
   final PublicUserDto createdBy;
 
   @Schema(

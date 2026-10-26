@@ -36,7 +36,7 @@ mixin _$RideDto {
  List<TagDto> get tags;/// Whether every group of the ride has reached its capacity. False when the ride has no group, or when at least one group has no maxParticipants.
  bool get full;/// Whether the ride is soft-deleted
  bool get deleted;/// Whether the current user is registered in one of this ride's groups. False if anonymous.
- bool get registered;/// Preview of first participants (max 5)
+ bool get registered;/// Preview of first participants (max 5). Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.
  List<PublicUserDto> get topParticipants;/// Total elevation gain in meters, from the same route as distance. Null when no route is set anywhere.
  double? get elevationGain;/// Surface type, from the same route as distance. Null when no route is set anywhere.
  String? get surfaceType;/// Start place
@@ -420,9 +420,9 @@ class _RideDto implements RideDto {
 @override final  bool deleted;
 /// Whether the current user is registered in one of this ride's groups. False if anonymous.
 @override final  bool registered;
-/// Preview of first participants (max 5)
+/// Preview of first participants (max 5). Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.
  final  List<PublicUserDto> _topParticipants;
-/// Preview of first participants (max 5)
+/// Preview of first participants (max 5). Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.
 @override List<PublicUserDto> get topParticipants {
   if (_topParticipants is EqualUnmodifiableListView) return _topParticipants;
   // ignore: implicit_dynamic_type

@@ -4142,9 +4142,10 @@ components:
             \ author. Readers are then not told who wrote it: createdBy is absent\
             \ unless the caller administers the team or wrote the post."
         createdBy:
-          description: Who wrote the post. Absent when the post is signed by the team
-            (signedAsTeam) and the caller neither administers the team nor wrote it
-            — render the team instead.
+          description: "Who wrote the post. Absent when the caller is not a member\
+            \ of the team — member names are never sent to anyone else — and when\
+            \ the post is signed by the team (signedAsTeam) and the caller neither\
+            \ administers the team nor wrote it: render the team instead."
           type: object
           $ref: "#/components/schemas/PublicUserDto"
         tags:
@@ -4731,7 +4732,9 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/PublicUserDto"
-          description: Preview of first participants (max 5)
+          description: "Preview of first participants (max 5). Always empty for a\
+            \ caller who is not a member of the team (member names are never sent\
+            \ to anyone else): the count stays."
         thumbnailLightUrl:
           type: string
           description: "Thumbnail URL (light). Opaque URL: may carry a query string;\
@@ -4849,7 +4852,9 @@ components:
             $ref: "#/components/schemas/PublicUserDto"
           description: "The first participants of the group (at most 8), earliest\
             \ registrations first — enough to draw avatars. countParticipants is the\
-            \ total; the whole list is paginated and searched by GET …/rides/{rideSlug}/participants?groupId=."
+            \ total; the whole list is paginated and searched by GET …/rides/{rideSlug}/participants?groupId=.\
+            \ Always empty for a caller who is not a member of the team (member names\
+            \ are never sent to anyone else): the count stays."
         sortOrder:
           type: integer
           format: int32
@@ -4875,7 +4880,8 @@ components:
           description: "The member who leads this group, when one is designated. Null\
             \ means no leader was designated — render nothing rather than falling\
             \ back on the ride's creator, who is the same person on every group of\
-            \ the ride."
+            \ the ride. Also null for a caller who is not a member of the team: member\
+            \ names are never sent to anyone else."
           type: object
           $ref: "#/components/schemas/PublicUserDto"
         thumbnailLightUrl:
@@ -5397,7 +5403,6 @@ components:
       - elevationState
       - surfaceType
       - visibility
-      - createdBy
       - createdAt
       - updatedAt
       - tracks
@@ -5456,7 +5461,8 @@ components:
           $ref: "#/components/schemas/GeoJsonPoint"
           type: object
         createdBy:
-          description: Creator user
+          description: "Creator user. Absent when the caller is not a member of the\
+            \ team: member names are never sent to anyone else."
           type: object
           $ref: "#/components/schemas/PublicUserDto"
         createdAt:
@@ -7301,7 +7307,9 @@ components:
             $ref: "#/components/schemas/PublicUserDto"
           description: "The first participants of the trip (at most 8), earliest registrations\
             \ first — enough to draw avatars; empty on a list row. participantCount\
-            \ is the total; the whole list is paginated and searched by GET …/trips/{tripSlug}/participants."
+            \ is the total; the whole list is paginated and searched by GET …/trips/{tripSlug}/participants.\
+            \ Always empty for a caller who is not a member of the team (member names\
+            \ are never sent to anyone else): the count stays."
         thumbnailLightUrl:
           type: string
           description: "Thumbnail URL (light). Opaque URL: may carry a query string;\
@@ -16679,7 +16687,8 @@ paths:
       description: "One page of the people registered to the ride, or to one of its\
         \ groups, earliest registrations first, searchable by display name. The ride\
         \ detail only embeds the first few; this is the whole list, with its total.\
-        \ Readable by whoever may read the ride."
+        \ Members of the team only (and platform administrators): member names are\
+        \ never sent to anyone else."
       operationId: getRideParticipants
       tags:
       - Rides
@@ -16727,12 +16736,28 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ParticipantListResponse"
+        "401":
+          description: Not signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: "Not a member of the team: member names are never sent to anyone\
+            \ else"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "404":
           description: Team or ride not found (or group not in this ride)
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - SecurityScheme:
+        - user
   /api/teams/{teamSlug}/rides/{rideSlug}/slug:
     patch:
       summary: Change ride slug
@@ -19083,8 +19108,8 @@ paths:
       summary: List trip participants
       description: "One page of the people registered to the trip, earliest registrations\
         \ first, searchable by display name. The trip detail only embeds the first\
-        \ few; this is the whole list, with its total. Readable by whoever may read\
-        \ the trip."
+        \ few; this is the whole list, with its total. Members of the team only (and\
+        \ platform administrators): member names are never sent to anyone else."
       operationId: getTripParticipants
       tags:
       - Trips
@@ -19127,12 +19152,28 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ParticipantListResponse"
+        "401":
+          description: Not signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: "Not a member of the team: member names are never sent to anyone\
+            \ else"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "404":
           description: Team or trip not found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - SecurityScheme:
+        - user
   /api/teams/{teamSlug}/trips/{tripSlug}/slug:
     patch:
       summary: Change trip slug
@@ -20207,7 +20248,7 @@ paths:
                 $ref: "#/components/schemas/VersionDto"
 info:
   title: Pedalons API
-  version: 12.0.0
+  version: 13.0.0
   description: API for Pedalons Cycling Team Management Platform
 servers:
 - url: http://localhost:8080

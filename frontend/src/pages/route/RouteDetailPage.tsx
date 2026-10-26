@@ -159,7 +159,7 @@ export function RouteDetailPage() {
               teamName={team.name}
               targetType={ReportTargetType.ROUTE}
               targetId={route.id}
-              isOwn={route.createdBy.id === currentUserId}
+              isOwn={route.createdBy?.id === currentUserId}
               onReported={() => navigate(paths.routes(team.slug))}
             />
           </Group>

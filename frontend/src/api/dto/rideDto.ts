@@ -65,7 +65,7 @@ export interface RideDto {
   startPlace?: PlaceDetailDto
   /** End place */
   endPlace?: PlaceDetailDto
-  /** Preview of first participants (max 5) */
+  /** Preview of first participants (max 5). Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays. */
   topParticipants: PublicUserDto[]
   /** Thumbnail URL (light). Opaque URL: may carry a query string; substitute {size} only. */
   thumbnailLightUrl?: string

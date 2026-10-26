@@ -3073,7 +3073,7 @@ export const GetTeamDashboardResponse = zod
                                   .describe('Public user information (limited fields)')
                               )
                               .describe(
-                                'The first participants of the group (at most 8), earliest registrations first — enough to draw avatars. countParticipants is the total; the whole list is paginated and searched by GET …/rides/{rideSlug}/participants?groupId=.'
+                                'The first participants of the group (at most 8), earliest registrations first — enough to draw avatars. countParticipants is the total; the whole list is paginated and searched by GET …/rides/{rideSlug}/participants?groupId=. Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.'
                               ),
                             sortOrder: zod.int().describe('Sort order'),
                             registered: zod
@@ -3104,7 +3104,7 @@ export const GetTeamDashboardResponse = zod
                               })
                               .optional()
                               .describe(
-                                "The member who leads this group, when one is designated. Null means no leader was designated — render nothing rather than falling back on the ride's creator, who is the same person on every group of the ride."
+                                "The member who leads this group, when one is designated. Null means no leader was designated — render nothing rather than falling back on the ride's creator, who is the same person on every group of the ride. Also null for a caller who is not a member of the team: member names are never sent to anyone else."
                               ),
                             thumbnailLightUrl: zod
                               .string()
@@ -3245,7 +3245,9 @@ export const GetTeamDashboardResponse = zod
                           })
                           .describe('Public user information (limited fields)')
                       )
-                      .describe('Preview of first participants (max 5)'),
+                      .describe(
+                        'Preview of first participants (max 5). Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.'
+                      ),
                     thumbnailLightUrl: zod
                       .string()
                       .optional()
@@ -3306,7 +3308,7 @@ export const GetTeamDashboardResponse = zod
                               .describe('Public user information (limited fields)')
                           )
                           .describe(
-                            'The first participants of the group (at most 8), earliest registrations first — enough to draw avatars. countParticipants is the total; the whole list is paginated and searched by GET …/rides/{rideSlug}/participants?groupId=.'
+                            'The first participants of the group (at most 8), earliest registrations first — enough to draw avatars. countParticipants is the total; the whole list is paginated and searched by GET …/rides/{rideSlug}/participants?groupId=. Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.'
                           ),
                         sortOrder: zod.int().describe('Sort order'),
                         registered: zod
@@ -3337,7 +3339,7 @@ export const GetTeamDashboardResponse = zod
                           })
                           .optional()
                           .describe(
-                            "The member who leads this group, when one is designated. Null means no leader was designated — render nothing rather than falling back on the ride's creator, who is the same person on every group of the ride."
+                            "The member who leads this group, when one is designated. Null means no leader was designated — render nothing rather than falling back on the ride's creator, who is the same person on every group of the ride. Also null for a caller who is not a member of the team: member names are never sent to anyone else."
                           ),
                         thumbnailLightUrl: zod
                           .string()
@@ -3883,7 +3885,7 @@ export const GetTeamDashboardResponse = zod
                       })
                       .optional()
                       .describe(
-                        'Who wrote the post. Absent when the post is signed by the team (signedAsTeam) and the caller neither administers the team nor wrote it — render the team instead.'
+                        'Who wrote the post. Absent when the caller is not a member of the team — member names are never sent to anyone else — and when the post is signed by the team (signedAsTeam) and the caller neither administers the team nor wrote it: render the team instead.'
                       ),
                     tags: zod
                       .array(
@@ -4988,7 +4990,7 @@ export const GetTeamDashboardResponse = zod
                           .describe('Public user information (limited fields)')
                       )
                       .describe(
-                        'The first participants of the trip (at most 8), earliest registrations first — enough to draw avatars; empty on a list row. participantCount is the total; the whole list is paginated and searched by GET …/trips/{tripSlug}/participants.'
+                        'The first participants of the trip (at most 8), earliest registrations first — enough to draw avatars; empty on a list row. participantCount is the total; the whole list is paginated and searched by GET …/trips/{tripSlug}/participants. Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.'
                       ),
                     thumbnailLightUrl: zod
                       .string()
@@ -5568,7 +5570,7 @@ export const GetTeamDashboardResponse = zod
                                   .describe('Public user information (limited fields)')
                               )
                               .describe(
-                                'The first participants of the group (at most 8), earliest registrations first — enough to draw avatars. countParticipants is the total; the whole list is paginated and searched by GET …/rides/{rideSlug}/participants?groupId=.'
+                                'The first participants of the group (at most 8), earliest registrations first — enough to draw avatars. countParticipants is the total; the whole list is paginated and searched by GET …/rides/{rideSlug}/participants?groupId=. Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.'
                               ),
                             sortOrder: zod.int().describe('Sort order'),
                             registered: zod
@@ -5599,7 +5601,7 @@ export const GetTeamDashboardResponse = zod
                               })
                               .optional()
                               .describe(
-                                "The member who leads this group, when one is designated. Null means no leader was designated — render nothing rather than falling back on the ride's creator, who is the same person on every group of the ride."
+                                "The member who leads this group, when one is designated. Null means no leader was designated — render nothing rather than falling back on the ride's creator, who is the same person on every group of the ride. Also null for a caller who is not a member of the team: member names are never sent to anyone else."
                               ),
                             thumbnailLightUrl: zod
                               .string()
@@ -5740,7 +5742,9 @@ export const GetTeamDashboardResponse = zod
                           })
                           .describe('Public user information (limited fields)')
                       )
-                      .describe('Preview of first participants (max 5)'),
+                      .describe(
+                        'Preview of first participants (max 5). Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.'
+                      ),
                     thumbnailLightUrl: zod
                       .string()
                       .optional()
@@ -5801,7 +5805,7 @@ export const GetTeamDashboardResponse = zod
                               .describe('Public user information (limited fields)')
                           )
                           .describe(
-                            'The first participants of the group (at most 8), earliest registrations first — enough to draw avatars. countParticipants is the total; the whole list is paginated and searched by GET …/rides/{rideSlug}/participants?groupId=.'
+                            'The first participants of the group (at most 8), earliest registrations first — enough to draw avatars. countParticipants is the total; the whole list is paginated and searched by GET …/rides/{rideSlug}/participants?groupId=. Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.'
                           ),
                         sortOrder: zod.int().describe('Sort order'),
                         registered: zod
@@ -5832,7 +5836,7 @@ export const GetTeamDashboardResponse = zod
                           })
                           .optional()
                           .describe(
-                            "The member who leads this group, when one is designated. Null means no leader was designated — render nothing rather than falling back on the ride's creator, who is the same person on every group of the ride."
+                            "The member who leads this group, when one is designated. Null means no leader was designated — render nothing rather than falling back on the ride's creator, who is the same person on every group of the ride. Also null for a caller who is not a member of the team: member names are never sent to anyone else."
                           ),
                         thumbnailLightUrl: zod
                           .string()
@@ -6378,7 +6382,7 @@ export const GetTeamDashboardResponse = zod
                       })
                       .optional()
                       .describe(
-                        'Who wrote the post. Absent when the post is signed by the team (signedAsTeam) and the caller neither administers the team nor wrote it — render the team instead.'
+                        'Who wrote the post. Absent when the caller is not a member of the team — member names are never sent to anyone else — and when the post is signed by the team (signedAsTeam) and the caller neither administers the team nor wrote it: render the team instead.'
                       ),
                     tags: zod
                       .array(
@@ -7483,7 +7487,7 @@ export const GetTeamDashboardResponse = zod
                           .describe('Public user information (limited fields)')
                       )
                       .describe(
-                        'The first participants of the trip (at most 8), earliest registrations first — enough to draw avatars; empty on a list row. participantCount is the total; the whole list is paginated and searched by GET …/trips/{tripSlug}/participants.'
+                        'The first participants of the trip (at most 8), earliest registrations first — enough to draw avatars; empty on a list row. participantCount is the total; the whole list is paginated and searched by GET …/trips/{tripSlug}/participants. Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.'
                       ),
                     thumbnailLightUrl: zod
                       .string()
@@ -8063,7 +8067,7 @@ export const GetTeamDashboardResponse = zod
                                   .describe('Public user information (limited fields)')
                               )
                               .describe(
-                                'The first participants of the group (at most 8), earliest registrations first — enough to draw avatars. countParticipants is the total; the whole list is paginated and searched by GET …/rides/{rideSlug}/participants?groupId=.'
+                                'The first participants of the group (at most 8), earliest registrations first — enough to draw avatars. countParticipants is the total; the whole list is paginated and searched by GET …/rides/{rideSlug}/participants?groupId=. Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.'
                               ),
                             sortOrder: zod.int().describe('Sort order'),
                             registered: zod
@@ -8094,7 +8098,7 @@ export const GetTeamDashboardResponse = zod
                               })
                               .optional()
                               .describe(
-                                "The member who leads this group, when one is designated. Null means no leader was designated — render nothing rather than falling back on the ride's creator, who is the same person on every group of the ride."
+                                "The member who leads this group, when one is designated. Null means no leader was designated — render nothing rather than falling back on the ride's creator, who is the same person on every group of the ride. Also null for a caller who is not a member of the team: member names are never sent to anyone else."
                               ),
                             thumbnailLightUrl: zod
                               .string()
@@ -8235,7 +8239,9 @@ export const GetTeamDashboardResponse = zod
                           })
                           .describe('Public user information (limited fields)')
                       )
-                      .describe('Preview of first participants (max 5)'),
+                      .describe(
+                        'Preview of first participants (max 5). Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.'
+                      ),
                     thumbnailLightUrl: zod
                       .string()
                       .optional()
@@ -8296,7 +8302,7 @@ export const GetTeamDashboardResponse = zod
                               .describe('Public user information (limited fields)')
                           )
                           .describe(
-                            'The first participants of the group (at most 8), earliest registrations first — enough to draw avatars. countParticipants is the total; the whole list is paginated and searched by GET …/rides/{rideSlug}/participants?groupId=.'
+                            'The first participants of the group (at most 8), earliest registrations first — enough to draw avatars. countParticipants is the total; the whole list is paginated and searched by GET …/rides/{rideSlug}/participants?groupId=. Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.'
                           ),
                         sortOrder: zod.int().describe('Sort order'),
                         registered: zod
@@ -8327,7 +8333,7 @@ export const GetTeamDashboardResponse = zod
                           })
                           .optional()
                           .describe(
-                            "The member who leads this group, when one is designated. Null means no leader was designated — render nothing rather than falling back on the ride's creator, who is the same person on every group of the ride."
+                            "The member who leads this group, when one is designated. Null means no leader was designated — render nothing rather than falling back on the ride's creator, who is the same person on every group of the ride. Also null for a caller who is not a member of the team: member names are never sent to anyone else."
                           ),
                         thumbnailLightUrl: zod
                           .string()
@@ -8873,7 +8879,7 @@ export const GetTeamDashboardResponse = zod
                       })
                       .optional()
                       .describe(
-                        'Who wrote the post. Absent when the post is signed by the team (signedAsTeam) and the caller neither administers the team nor wrote it — render the team instead.'
+                        'Who wrote the post. Absent when the caller is not a member of the team — member names are never sent to anyone else — and when the post is signed by the team (signedAsTeam) and the caller neither administers the team nor wrote it: render the team instead.'
                       ),
                     tags: zod
                       .array(
@@ -9978,7 +9984,7 @@ export const GetTeamDashboardResponse = zod
                           .describe('Public user information (limited fields)')
                       )
                       .describe(
-                        'The first participants of the trip (at most 8), earliest registrations first — enough to draw avatars; empty on a list row. participantCount is the total; the whole list is paginated and searched by GET …/trips/{tripSlug}/participants.'
+                        'The first participants of the trip (at most 8), earliest registrations first — enough to draw avatars; empty on a list row. participantCount is the total; the whole list is paginated and searched by GET …/trips/{tripSlug}/participants. Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.'
                       ),
                     thumbnailLightUrl: zod
                       .string()
@@ -11319,7 +11325,7 @@ export const GetTeamDashboardResponse = zod
                                       .describe('Public user information (limited fields)')
                                   )
                                   .describe(
-                                    'The first participants of the group (at most 8), earliest registrations first — enough to draw avatars. countParticipants is the total; the whole list is paginated and searched by GET …/rides/{rideSlug}/participants?groupId=.'
+                                    'The first participants of the group (at most 8), earliest registrations first — enough to draw avatars. countParticipants is the total; the whole list is paginated and searched by GET …/rides/{rideSlug}/participants?groupId=. Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.'
                                   ),
                                 sortOrder: zod.int().describe('Sort order'),
                                 registered: zod
@@ -11350,7 +11356,7 @@ export const GetTeamDashboardResponse = zod
                                   })
                                   .optional()
                                   .describe(
-                                    "The member who leads this group, when one is designated. Null means no leader was designated — render nothing rather than falling back on the ride's creator, who is the same person on every group of the ride."
+                                    "The member who leads this group, when one is designated. Null means no leader was designated — render nothing rather than falling back on the ride's creator, who is the same person on every group of the ride. Also null for a caller who is not a member of the team: member names are never sent to anyone else."
                                   ),
                                 thumbnailLightUrl: zod
                                   .string()
@@ -11500,7 +11506,9 @@ export const GetTeamDashboardResponse = zod
                               })
                               .describe('Public user information (limited fields)')
                           )
-                          .describe('Preview of first participants (max 5)'),
+                          .describe(
+                            'Preview of first participants (max 5). Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.'
+                          ),
                         thumbnailLightUrl: zod
                           .string()
                           .optional()
@@ -11561,7 +11569,7 @@ export const GetTeamDashboardResponse = zod
                                   .describe('Public user information (limited fields)')
                               )
                               .describe(
-                                'The first participants of the group (at most 8), earliest registrations first — enough to draw avatars. countParticipants is the total; the whole list is paginated and searched by GET …/rides/{rideSlug}/participants?groupId=.'
+                                'The first participants of the group (at most 8), earliest registrations first — enough to draw avatars. countParticipants is the total; the whole list is paginated and searched by GET …/rides/{rideSlug}/participants?groupId=. Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.'
                               ),
                             sortOrder: zod.int().describe('Sort order'),
                             registered: zod
@@ -11592,7 +11600,7 @@ export const GetTeamDashboardResponse = zod
                               })
                               .optional()
                               .describe(
-                                "The member who leads this group, when one is designated. Null means no leader was designated — render nothing rather than falling back on the ride's creator, who is the same person on every group of the ride."
+                                "The member who leads this group, when one is designated. Null means no leader was designated — render nothing rather than falling back on the ride's creator, who is the same person on every group of the ride. Also null for a caller who is not a member of the team: member names are never sent to anyone else."
                               ),
                             thumbnailLightUrl: zod
                               .string()
@@ -12140,7 +12148,7 @@ export const GetTeamDashboardResponse = zod
                           })
                           .optional()
                           .describe(
-                            'Who wrote the post. Absent when the post is signed by the team (signedAsTeam) and the caller neither administers the team nor wrote it — render the team instead.'
+                            'Who wrote the post. Absent when the caller is not a member of the team — member names are never sent to anyone else — and when the post is signed by the team (signedAsTeam) and the caller neither administers the team nor wrote it: render the team instead.'
                           ),
                         tags: zod
                           .array(
@@ -13254,7 +13262,7 @@ export const GetTeamDashboardResponse = zod
                               .describe('Public user information (limited fields)')
                           )
                           .describe(
-                            'The first participants of the trip (at most 8), earliest registrations first — enough to draw avatars; empty on a list row. participantCount is the total; the whole list is paginated and searched by GET …/trips/{tripSlug}/participants.'
+                            'The first participants of the trip (at most 8), earliest registrations first — enough to draw avatars; empty on a list row. participantCount is the total; the whole list is paginated and searched by GET …/trips/{tripSlug}/participants. Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.'
                           ),
                         thumbnailLightUrl: zod
                           .string()
@@ -13846,7 +13854,7 @@ export const GetTeamDashboardResponse = zod
                                       .describe('Public user information (limited fields)')
                                   )
                                   .describe(
-                                    'The first participants of the group (at most 8), earliest registrations first — enough to draw avatars. countParticipants is the total; the whole list is paginated and searched by GET …/rides/{rideSlug}/participants?groupId=.'
+                                    'The first participants of the group (at most 8), earliest registrations first — enough to draw avatars. countParticipants is the total; the whole list is paginated and searched by GET …/rides/{rideSlug}/participants?groupId=. Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.'
                                   ),
                                 sortOrder: zod.int().describe('Sort order'),
                                 registered: zod
@@ -13877,7 +13885,7 @@ export const GetTeamDashboardResponse = zod
                                   })
                                   .optional()
                                   .describe(
-                                    "The member who leads this group, when one is designated. Null means no leader was designated — render nothing rather than falling back on the ride's creator, who is the same person on every group of the ride."
+                                    "The member who leads this group, when one is designated. Null means no leader was designated — render nothing rather than falling back on the ride's creator, who is the same person on every group of the ride. Also null for a caller who is not a member of the team: member names are never sent to anyone else."
                                   ),
                                 thumbnailLightUrl: zod
                                   .string()
@@ -14027,7 +14035,9 @@ export const GetTeamDashboardResponse = zod
                               })
                               .describe('Public user information (limited fields)')
                           )
-                          .describe('Preview of first participants (max 5)'),
+                          .describe(
+                            'Preview of first participants (max 5). Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.'
+                          ),
                         thumbnailLightUrl: zod
                           .string()
                           .optional()
@@ -14088,7 +14098,7 @@ export const GetTeamDashboardResponse = zod
                                   .describe('Public user information (limited fields)')
                               )
                               .describe(
-                                'The first participants of the group (at most 8), earliest registrations first — enough to draw avatars. countParticipants is the total; the whole list is paginated and searched by GET …/rides/{rideSlug}/participants?groupId=.'
+                                'The first participants of the group (at most 8), earliest registrations first — enough to draw avatars. countParticipants is the total; the whole list is paginated and searched by GET …/rides/{rideSlug}/participants?groupId=. Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.'
                               ),
                             sortOrder: zod.int().describe('Sort order'),
                             registered: zod
@@ -14119,7 +14129,7 @@ export const GetTeamDashboardResponse = zod
                               })
                               .optional()
                               .describe(
-                                "The member who leads this group, when one is designated. Null means no leader was designated — render nothing rather than falling back on the ride's creator, who is the same person on every group of the ride."
+                                "The member who leads this group, when one is designated. Null means no leader was designated — render nothing rather than falling back on the ride's creator, who is the same person on every group of the ride. Also null for a caller who is not a member of the team: member names are never sent to anyone else."
                               ),
                             thumbnailLightUrl: zod
                               .string()
@@ -14667,7 +14677,7 @@ export const GetTeamDashboardResponse = zod
                           })
                           .optional()
                           .describe(
-                            'Who wrote the post. Absent when the post is signed by the team (signedAsTeam) and the caller neither administers the team nor wrote it — render the team instead.'
+                            'Who wrote the post. Absent when the caller is not a member of the team — member names are never sent to anyone else — and when the post is signed by the team (signedAsTeam) and the caller neither administers the team nor wrote it: render the team instead.'
                           ),
                         tags: zod
                           .array(
@@ -15781,7 +15791,7 @@ export const GetTeamDashboardResponse = zod
                               .describe('Public user information (limited fields)')
                           )
                           .describe(
-                            'The first participants of the trip (at most 8), earliest registrations first — enough to draw avatars; empty on a list row. participantCount is the total; the whole list is paginated and searched by GET …/trips/{tripSlug}/participants.'
+                            'The first participants of the trip (at most 8), earliest registrations first — enough to draw avatars; empty on a list row. participantCount is the total; the whole list is paginated and searched by GET …/trips/{tripSlug}/participants. Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.'
                           ),
                         thumbnailLightUrl: zod
                           .string()
@@ -16374,7 +16384,7 @@ export const GetTeamDashboardResponse = zod
                                       .describe('Public user information (limited fields)')
                                   )
                                   .describe(
-                                    'The first participants of the group (at most 8), earliest registrations first — enough to draw avatars. countParticipants is the total; the whole list is paginated and searched by GET …/rides/{rideSlug}/participants?groupId=.'
+                                    'The first participants of the group (at most 8), earliest registrations first — enough to draw avatars. countParticipants is the total; the whole list is paginated and searched by GET …/rides/{rideSlug}/participants?groupId=. Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.'
                                   ),
                                 sortOrder: zod.int().describe('Sort order'),
                                 registered: zod
@@ -16405,7 +16415,7 @@ export const GetTeamDashboardResponse = zod
                                   })
                                   .optional()
                                   .describe(
-                                    "The member who leads this group, when one is designated. Null means no leader was designated — render nothing rather than falling back on the ride's creator, who is the same person on every group of the ride."
+                                    "The member who leads this group, when one is designated. Null means no leader was designated — render nothing rather than falling back on the ride's creator, who is the same person on every group of the ride. Also null for a caller who is not a member of the team: member names are never sent to anyone else."
                                   ),
                                 thumbnailLightUrl: zod
                                   .string()
@@ -16555,7 +16565,9 @@ export const GetTeamDashboardResponse = zod
                               })
                               .describe('Public user information (limited fields)')
                           )
-                          .describe('Preview of first participants (max 5)'),
+                          .describe(
+                            'Preview of first participants (max 5). Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.'
+                          ),
                         thumbnailLightUrl: zod
                           .string()
                           .optional()
@@ -16616,7 +16628,7 @@ export const GetTeamDashboardResponse = zod
                                   .describe('Public user information (limited fields)')
                               )
                               .describe(
-                                'The first participants of the group (at most 8), earliest registrations first — enough to draw avatars. countParticipants is the total; the whole list is paginated and searched by GET …/rides/{rideSlug}/participants?groupId=.'
+                                'The first participants of the group (at most 8), earliest registrations first — enough to draw avatars. countParticipants is the total; the whole list is paginated and searched by GET …/rides/{rideSlug}/participants?groupId=. Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.'
                               ),
                             sortOrder: zod.int().describe('Sort order'),
                             registered: zod
@@ -16647,7 +16659,7 @@ export const GetTeamDashboardResponse = zod
                               })
                               .optional()
                               .describe(
-                                "The member who leads this group, when one is designated. Null means no leader was designated — render nothing rather than falling back on the ride's creator, who is the same person on every group of the ride."
+                                "The member who leads this group, when one is designated. Null means no leader was designated — render nothing rather than falling back on the ride's creator, who is the same person on every group of the ride. Also null for a caller who is not a member of the team: member names are never sent to anyone else."
                               ),
                             thumbnailLightUrl: zod
                               .string()
@@ -17195,7 +17207,7 @@ export const GetTeamDashboardResponse = zod
                           })
                           .optional()
                           .describe(
-                            'Who wrote the post. Absent when the post is signed by the team (signedAsTeam) and the caller neither administers the team nor wrote it — render the team instead.'
+                            'Who wrote the post. Absent when the caller is not a member of the team — member names are never sent to anyone else — and when the post is signed by the team (signedAsTeam) and the caller neither administers the team nor wrote it: render the team instead.'
                           ),
                         tags: zod
                           .array(
@@ -18309,7 +18321,7 @@ export const GetTeamDashboardResponse = zod
                               .describe('Public user information (limited fields)')
                           )
                           .describe(
-                            'The first participants of the trip (at most 8), earliest registrations first — enough to draw avatars; empty on a list row. participantCount is the total; the whole list is paginated and searched by GET …/trips/{tripSlug}/participants.'
+                            'The first participants of the trip (at most 8), earliest registrations first — enough to draw avatars; empty on a list row. participantCount is the total; the whole list is paginated and searched by GET …/trips/{tripSlug}/participants. Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.'
                           ),
                         thumbnailLightUrl: zod
                           .string()

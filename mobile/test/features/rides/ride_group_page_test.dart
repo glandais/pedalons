@@ -1025,6 +1025,42 @@ void main() {
       expect(find.byKey(keys.rideGroup.joinButton), findsNothing);
       expect(find.byKey(keys.rideGroup.participantsCount), findsOneWidget);
     });
+
+    testWidgets('un non-membre ne reçoit que le nombre : ni onglet, ni liste, '
+        'ni « Voir tout »', (WidgetTester tester) async {
+      // Le serveur lui envoie `participants: []` et un meneur nul ; l'onglet
+      // demandé par lien (`?tab=participants`) retombe sur l'Aperçu.
+      final RideDto stripped = fixtureRide(
+        groups: <RideGroupDto>[
+          for (final RideGroupDto g in twoGroups.groups)
+            g.copyWith(participants: const <PublicUserDto>[], leader: null),
+        ],
+      );
+      await open(
+        tester,
+        weather(),
+        ride: stripped,
+        tab: RideGroupTab.participants,
+        member: false,
+      );
+
+      expect(find.byKey(keys.rideGroup.tabParticipants), findsNothing);
+      expect(find.byKey(keys.rideGroup.tabOverview), findsOneWidget);
+      expect(find.byKey(keys.rideGroup.viewAllParticipants), findsNothing);
+      expect(find.text('Hélène Ebrard'), findsNothing);
+      expect(participants.calls, 0);
+      expect(find.byKey(keys.rideGroup.leader), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('un membre garde l\'onglet Participants et « Voir tout »', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, weather(), tab: RideGroupTab.overview);
+
+      expect(find.byKey(keys.rideGroup.tabParticipants), findsOneWidget);
+      expect(find.byKey(keys.rideGroup.viewAllParticipants), findsOneWidget);
+    });
   });
 
   testWidgets('un groupe disparu : un état vide et le retour à la sortie', (

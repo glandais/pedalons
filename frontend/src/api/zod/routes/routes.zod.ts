@@ -2320,7 +2320,10 @@ export const GetRoutesBulkResponse = zod
                 displayName: zod.string().describe('User display name'),
                 avatarUrl: zod.string().optional().describe('User avatar URL'),
               })
-              .describe('Creator user'),
+              .optional()
+              .describe(
+                'Creator user. Absent when the caller is not a member of the team: member names are never sent to anyone else.'
+              ),
             createdAt: zod.iso.datetime({ offset: true }).describe('Creation timestamp'),
             updatedAt: zod.iso.datetime({ offset: true }).describe('Last update timestamp'),
             tracks: zod
@@ -3841,7 +3844,10 @@ export const GetRouteResponse = zod
         displayName: zod.string().describe('User display name'),
         avatarUrl: zod.string().optional().describe('User avatar URL'),
       })
-      .describe('Creator user'),
+      .optional()
+      .describe(
+        'Creator user. Absent when the caller is not a member of the team: member names are never sent to anyone else.'
+      ),
     createdAt: zod.iso.datetime({ offset: true }).describe('Creation timestamp'),
     updatedAt: zod.iso.datetime({ offset: true }).describe('Last update timestamp'),
     tracks: zod
@@ -4495,7 +4501,10 @@ export const ChangeRouteSlugResponse = zod
         displayName: zod.string().describe('User display name'),
         avatarUrl: zod.string().optional().describe('User avatar URL'),
       })
-      .describe('Creator user'),
+      .optional()
+      .describe(
+        'Creator user. Absent when the caller is not a member of the team: member names are never sent to anyone else.'
+      ),
     createdAt: zod.iso.datetime({ offset: true }).describe('Creation timestamp'),
     updatedAt: zod.iso.datetime({ offset: true }).describe('Last update timestamp'),
     tracks: zod
@@ -4992,7 +5001,10 @@ export const UndeleteRouteResponse = zod
         displayName: zod.string().describe('User display name'),
         avatarUrl: zod.string().optional().describe('User avatar URL'),
       })
-      .describe('Creator user'),
+      .optional()
+      .describe(
+        'Creator user. Absent when the caller is not a member of the team: member names are never sent to anyone else.'
+      ),
     createdAt: zod.iso.datetime({ offset: true }).describe('Creation timestamp'),
     updatedAt: zod.iso.datetime({ offset: true }).describe('Last update timestamp'),
     tracks: zod

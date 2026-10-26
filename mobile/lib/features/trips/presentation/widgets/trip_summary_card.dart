@@ -27,11 +27,14 @@ class TripSummaryCard extends ConsumerWidget {
   const TripSummaryCard({
     super.key,
     required this.trip,
-    required this.onShowParticipants,
+    this.onShowParticipants,
   });
 
   final TripDto trip;
-  final VoidCallback onShowParticipants;
+
+  /// Nul pour qui n'est pas membre de l'équipe : la liste lui est refusée, la
+  /// rangée n'affiche alors que le nombre, sans chevron.
+  final VoidCallback? onShowParticipants;
 
   static const String _dash = '—';
 
@@ -214,7 +217,7 @@ class TripSummaryCard extends ConsumerWidget {
     );
 
     return Semantics(
-      button: true,
+      button: onShowParticipants != null,
       label: label,
       child: InkWell(
         onTap: onShowParticipants,
@@ -245,7 +248,8 @@ class TripSummaryCard extends ConsumerWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              Icon(PdlIcons.chevronRight, size: 20, color: c.textDimmed),
+              if (onShowParticipants != null)
+                Icon(PdlIcons.chevronRight, size: 20, color: c.textDimmed),
             ],
           ),
         ),

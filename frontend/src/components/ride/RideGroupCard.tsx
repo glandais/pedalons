@@ -59,6 +59,12 @@ interface RideGroupCardProps {
    */
   weatherLeg?: WeatherLegDto
   canJoin?: boolean
+  /**
+   * Whether the reader may see who takes part (a member of the team, or a platform admin — the
+   * comments' rule, docs/LEDGER_*.md API-144). Otherwise the card shows the count only and
+   * offers no list: the participants endpoint refuses them. Defaults to true.
+   */
+  canSeeParticipants?: boolean
   onJoin?: () => void
   onLeave?: () => void
   isLoading?: boolean
@@ -79,6 +85,7 @@ export function RideGroupCard({
   trackColor,
   weatherLeg,
   canJoin,
+  canSeeParticipants = true,
   onJoin,
   onLeave,
   isLoading,
@@ -236,42 +243,58 @@ export function RideGroupCard({
             )}
           </Group>
         )}
-        <UnstyledButton
-          onClick={() => setShowParticipants(true)}
-          title={t('rides.detail.groups.viewParticipants')}
-          aria-label={t('rides.detail.groups.viewParticipants')}
-          className={classes.aboveLink}
-          style={{ borderRadius: 'var(--mantine-radius-sm)' }}
-        >
-          <Group gap="sm">
-            {group.participants.length > 0 && (
-              <UserAvatarGroup
-                users={group.participants}
-                total={group.countParticipants}
-                max={5}
-                size="sm"
-              />
-            )}
-            <Group gap={4}>
-              <IconUsers size={16} />
-              <Text size="sm" c="dimmed">
-                {group.maxParticipants
-                  ? t('rides.detail.groups.participants', {
-                      current: group.countParticipants,
-                      count: group.maxParticipants,
-                    })
-                  : t('rides.detail.groups.participantsNoMax', {
-                      count: group.countParticipants,
-                    })}
-              </Text>
-            </Group>
-            {group.countParticipants > 5 && (
-              <Text size="xs" fw={500} c="var(--mantine-primary-color-filled)">
-                {t('rides.detail.groups.viewAll')}
-              </Text>
-            )}
+        {!canSeeParticipants ? (
+          <Group gap={4}>
+            <IconUsers size={16} />
+            <Text size="sm" c="dimmed">
+              {group.maxParticipants
+                ? t('rides.detail.groups.participants', {
+                    current: group.countParticipants,
+                    count: group.maxParticipants,
+                  })
+                : t('rides.detail.groups.participantsNoMax', {
+                    count: group.countParticipants,
+                  })}
+            </Text>
           </Group>
-        </UnstyledButton>
+        ) : (
+          <UnstyledButton
+            onClick={() => setShowParticipants(true)}
+            title={t('rides.detail.groups.viewParticipants')}
+            aria-label={t('rides.detail.groups.viewParticipants')}
+            className={classes.aboveLink}
+            style={{ borderRadius: 'var(--mantine-radius-sm)' }}
+          >
+            <Group gap="sm">
+              {group.participants.length > 0 && (
+                <UserAvatarGroup
+                  users={group.participants}
+                  total={group.countParticipants}
+                  max={5}
+                  size="sm"
+                />
+              )}
+              <Group gap={4}>
+                <IconUsers size={16} />
+                <Text size="sm" c="dimmed">
+                  {group.maxParticipants
+                    ? t('rides.detail.groups.participants', {
+                        current: group.countParticipants,
+                        count: group.maxParticipants,
+                      })
+                    : t('rides.detail.groups.participantsNoMax', {
+                        count: group.countParticipants,
+                      })}
+                </Text>
+              </Group>
+              {group.countParticipants > 5 && (
+                <Text size="xs" fw={500} c="var(--mantine-primary-color-filled)">
+                  {t('rides.detail.groups.viewAll')}
+                </Text>
+              )}
+            </Group>
+          </UnstyledButton>
+        )}
       </Group>
 
       <Box mt="xs">
@@ -297,14 +320,16 @@ export function RideGroupCard({
         </Alert>
       )}
 
-      <ParticipantListModal
-        isOpen={showParticipants}
-        onClose={() => setShowParticipants(false)}
-        source={{ kind: 'ride', teamSlug, rideSlug, groupId: group.id }}
-        count={group.countParticipants}
-        groupName={group.name}
-        leaderId={group.leader?.id}
-      />
+      {canSeeParticipants && (
+        <ParticipantListModal
+          isOpen={showParticipants}
+          onClose={() => setShowParticipants(false)}
+          source={{ kind: 'ride', teamSlug, rideSlug, groupId: group.id }}
+          count={group.countParticipants}
+          groupName={group.name}
+          leaderId={group.leader?.id}
+        />
+      )}
     </Paper>
   )
 }

@@ -168,7 +168,11 @@ public class RideDto implements PublicationDto {
   @Schema(description = "End place")
   final PlaceDetailDto endPlace;
 
-  @Schema(description = "Preview of first participants (max 5)", required = true)
+  @Schema(
+      description =
+          "Preview of first participants (max 5). Always empty for a caller who is not a member of"
+              + " the team (member names are never sent to anyone else): the count stays.",
+      required = true)
   final List<PublicUserDto> topParticipants;
 
   @Nullable
@@ -392,6 +396,8 @@ public class RideDto implements PublicationDto {
    *     registration of the ride (docs/LEDGER_*.md API-12).
    * @param tags the ride's tags, from {@code TagLookup}
    * @param weather the ride's weather line, from {@code RideWeatherLookup}
+   * @param withNames {@code false} for a caller who is not a member of the team: no leader, no
+   *     {@code topParticipants} — the counts stay (docs/LEDGER_*.md API-144)
    */
   public static RideDto from(
       Ride ride,
@@ -401,7 +407,8 @@ public class RideDto implements PublicationDto {
       Map<Long, ThemedThumbnail> routeThumbnails,
       Map<Long, ParticipantPreview> groupParticipants,
       List<TagDto> tags,
-      RideWeatherSummaries weather) {
+      RideWeatherSummaries weather,
+      boolean withNames) {
     Long registeredGroupId = participations.registeredGroupId(ride.getId());
     List<RideGroup> groups =
         ride.getGroups().stream().sorted(Comparator.comparing(RideGroup::getSortOrder)).toList();
@@ -421,7 +428,8 @@ public class RideDto implements PublicationDto {
                         group.getRoute() != null
                             ? routeThumbnails.get(group.getRoute().getId())
                             : null,
-                        preview.apply(group)))
+                        preview.apply(group),
+                        withNames))
             .toList();
 
     // The first 5 registrations of the ride. Each group's preview holds its own earliest ones, so

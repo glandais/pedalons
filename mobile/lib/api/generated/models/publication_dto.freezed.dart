@@ -344,9 +344,9 @@ class PublicationDtoRide implements PublicationDto {
   return EqualUnmodifiableListView(_groups);
 }
 
-/// Preview of first participants (max 5)
+/// Preview of first participants (max 5). Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.
  final  List<PublicUserDto> _topParticipants;
-/// Preview of first participants (max 5)
+/// Preview of first participants (max 5). Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.
  List<PublicUserDto> get topParticipants {
   if (_topParticipants is EqualUnmodifiableListView) return _topParticipants;
   // ignore: implicit_dynamic_type
@@ -619,7 +619,7 @@ class PublicationDtoPost implements PublicationDto {
 @override final  String? createdAt;
 /// Number of comments, replies included. Absent when the caller may not read the comments of this post — comments are members-only, so an outsider is told nothing, not even zero.
 @override final  int? commentCount;
-/// Who wrote the post. Absent when the post is signed by the team (signedAsTeam) and the caller neither administers the team nor wrote it — render the team instead.
+/// Who wrote the post. Absent when the caller is not a member of the team — member names are never sent to anyone else — and when the post is signed by the team (signedAsTeam) and the caller neither administers the team nor wrote it: render the team instead.
  final  PublicUserDto? createdBy;
 
 @JsonKey(name: 'type')
@@ -777,9 +777,9 @@ class PublicationDtoTrip implements PublicationDto {
   return EqualUnmodifiableListView(_stages);
 }
 
-/// The first participants of the trip (at most 8), earliest registrations first — enough to draw avatars; empty on a list row. participantCount is the total; the whole list is paginated and searched by GET …/trips/{tripSlug}/participants.
+/// The first participants of the trip (at most 8), earliest registrations first — enough to draw avatars; empty on a list row. participantCount is the total; the whole list is paginated and searched by GET …/trips/{tripSlug}/participants. Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.
  final  List<PublicUserDto> _participants;
-/// The first participants of the trip (at most 8), earliest registrations first — enough to draw avatars; empty on a list row. participantCount is the total; the whole list is paginated and searched by GET …/trips/{tripSlug}/participants.
+/// The first participants of the trip (at most 8), earliest registrations first — enough to draw avatars; empty on a list row. participantCount is the total; the whole list is paginated and searched by GET …/trips/{tripSlug}/participants. Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.
  List<PublicUserDto> get participants {
   if (_participants is EqualUnmodifiableListView) return _participants;
   // ignore: implicit_dynamic_type

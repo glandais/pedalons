@@ -1,3 +1,4 @@
+import { readsMemberContent } from '@/config/prefetchHelpers'
 import { useMemo } from 'react'
 import type { QueryClient } from '@tanstack/react-query'
 import { useGetTeam, prefetchGetTeamQuery } from '@/api/endpoints/teams/teams'
@@ -175,7 +176,7 @@ export async function prefetchRideDetail(
     useAuthStore.getState().isAuthenticated
       ? prefetchGetAvailableServicesQuery(queryClient)
       : Promise.resolve(queryClient),
-    solo
+    solo && readsMemberContent(queryClient, teamSlug)
       ? prefetchGetRideParticipantsQuery(
           queryClient,
           teamSlug,

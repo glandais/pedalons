@@ -86,7 +86,7 @@ abstract class RideDto with _$RideDto {
     /// Whether the current user is registered in one of this ride's groups. False if anonymous.
     required bool registered,
 
-    /// Preview of first participants (max 5)
+    /// Preview of first participants (max 5). Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.
     required List<PublicUserDto> topParticipants,
 
     /// Total elevation gain in meters, from the same route as distance. Null when no route is set anywhere.

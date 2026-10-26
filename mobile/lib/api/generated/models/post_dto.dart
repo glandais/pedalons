@@ -75,7 +75,7 @@ abstract class PostDto with _$PostDto {
     /// Number of comments, replies included. Absent when the caller may not read the comments of this post — comments are members-only, so an outsider is told nothing, not even zero.
     int? commentCount,
 
-    /// Who wrote the post. Absent when the post is signed by the team (signedAsTeam) and the caller neither administers the team nor wrote it — render the team instead.
+    /// Who wrote the post. Absent when the caller is not a member of the team — member names are never sent to anyone else — and when the post is signed by the team (signedAsTeam) and the caller neither administers the team nor wrote it: render the team instead.
     PublicUserDto? createdBy,
   }) = _PostDto;
 

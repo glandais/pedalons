@@ -1663,7 +1663,7 @@ export const CreateTripResponse = zod
           .describe('Public user information (limited fields)')
       )
       .describe(
-        'The first participants of the trip (at most 8), earliest registrations first — enough to draw avatars; empty on a list row. participantCount is the total; the whole list is paginated and searched by GET …/trips/{tripSlug}/participants.'
+        'The first participants of the trip (at most 8), earliest registrations first — enough to draw avatars; empty on a list row. participantCount is the total; the whole list is paginated and searched by GET …/trips/{tripSlug}/participants. Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.'
       ),
     thumbnailLightUrl: zod
       .string()
@@ -3485,7 +3485,7 @@ export const UpdateTripResponse = zod
           .describe('Public user information (limited fields)')
       )
       .describe(
-        'The first participants of the trip (at most 8), earliest registrations first — enough to draw avatars; empty on a list row. participantCount is the total; the whole list is paginated and searched by GET …/trips/{tripSlug}/participants.'
+        'The first participants of the trip (at most 8), earliest registrations first — enough to draw avatars; empty on a list row. participantCount is the total; the whole list is paginated and searched by GET …/trips/{tripSlug}/participants. Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.'
       ),
     thumbnailLightUrl: zod
       .string()
@@ -4699,7 +4699,7 @@ export const GetTripResponse = zod
           .describe('Public user information (limited fields)')
       )
       .describe(
-        'The first participants of the trip (at most 8), earliest registrations first — enough to draw avatars; empty on a list row. participantCount is the total; the whole list is paginated and searched by GET …/trips/{tripSlug}/participants.'
+        'The first participants of the trip (at most 8), earliest registrations first — enough to draw avatars; empty on a list row. participantCount is the total; the whole list is paginated and searched by GET …/trips/{tripSlug}/participants. Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.'
       ),
     thumbnailLightUrl: zod
       .string()
@@ -4908,7 +4908,7 @@ export const LeaveTripParams = zod.object({
 export const LeaveTripResponse = zod.void()
 
 /**
- * One page of the people registered to the trip, earliest registrations first, searchable by display name. The trip detail only embeds the first few; this is the whole list, with its total. Readable by whoever may read the trip.
+ * One page of the people registered to the trip, earliest registrations first, searchable by display name. The trip detail only embeds the first few; this is the whole list, with its total. Members of the team only (and platform administrators): member names are never sent to anyone else.
  * @summary List trip participants
  */
 export const GetTripParticipantsParams = zod.object({
@@ -6018,7 +6018,7 @@ export const ChangeTripSlugResponse = zod
           .describe('Public user information (limited fields)')
       )
       .describe(
-        'The first participants of the trip (at most 8), earliest registrations first — enough to draw avatars; empty on a list row. participantCount is the total; the whole list is paginated and searched by GET …/trips/{tripSlug}/participants.'
+        'The first participants of the trip (at most 8), earliest registrations first — enough to draw avatars; empty on a list row. participantCount is the total; the whole list is paginated and searched by GET …/trips/{tripSlug}/participants. Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.'
       ),
     thumbnailLightUrl: zod
       .string()
@@ -7238,7 +7238,7 @@ export const ChangeTripStatusResponse = zod
           .describe('Public user information (limited fields)')
       )
       .describe(
-        'The first participants of the trip (at most 8), earliest registrations first — enough to draw avatars; empty on a list row. participantCount is the total; the whole list is paginated and searched by GET …/trips/{tripSlug}/participants.'
+        'The first participants of the trip (at most 8), earliest registrations first — enough to draw avatars; empty on a list row. participantCount is the total; the whole list is paginated and searched by GET …/trips/{tripSlug}/participants. Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.'
       ),
     thumbnailLightUrl: zod
       .string()
@@ -8452,7 +8452,7 @@ export const UndeleteTripResponse = zod
           .describe('Public user information (limited fields)')
       )
       .describe(
-        'The first participants of the trip (at most 8), earliest registrations first — enough to draw avatars; empty on a list row. participantCount is the total; the whole list is paginated and searched by GET …/trips/{tripSlug}/participants.'
+        'The first participants of the trip (at most 8), earliest registrations first — enough to draw avatars; empty on a list row. participantCount is the total; the whole list is paginated and searched by GET …/trips/{tripSlug}/participants. Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.'
       ),
     thumbnailLightUrl: zod
       .string()

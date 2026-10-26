@@ -50,7 +50,7 @@ import 'clients/team_webhook_client.dart';
 import 'clients/tiles_client.dart';
 import 'clients/server_version_client.dart';
 
-/// Pedalons API `v12.0.0`.
+/// Pedalons API `v13.0.0`.
 ///
 /// API for Pedalons Cycling Team Management Platform.
 class PedalonsApiClient {
@@ -63,7 +63,7 @@ class PedalonsApiClient {
   final Dio _dio;
   final String? _baseUrl;
 
-  static String get version => '12.0.0';
+  static String get version => '13.0.0';
 
   AdminDomainsClient? _adminDomains;
   AdminElevationClient? _adminElevation;

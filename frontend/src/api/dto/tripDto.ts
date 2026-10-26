@@ -56,7 +56,7 @@ export interface TripDto {
   totalElevationGain?: number
   /** Trip stages */
   stages: TripStageDto[]
-  /** The first participants of the trip (at most 8), earliest registrations first — enough to draw avatars; empty on a list row. participantCount is the total; the whole list is paginated and searched by GET …/trips/{tripSlug}/participants. */
+  /** The first participants of the trip (at most 8), earliest registrations first — enough to draw avatars; empty on a list row. participantCount is the total; the whole list is paginated and searched by GET …/trips/{tripSlug}/participants. Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays. */
   participants: PublicUserDto[]
   /** Thumbnail URL (light). Opaque URL: may carry a query string; substitute {size} only. */
   thumbnailLightUrl?: string

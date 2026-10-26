@@ -49,6 +49,7 @@ import fr.pedalons.repository.route.RouteQuery;
 import fr.pedalons.repository.route.RouteRepository;
 import fr.pedalons.repository.trip.TripRepository;
 import fr.pedalons.service.comment.CommentCountLookup;
+import fr.pedalons.service.common.MemberNamesVisibility;
 import fr.pedalons.service.common.TeamEntityService;
 import fr.pedalons.service.elevation.ElevationRefreshService;
 import fr.pedalons.service.publication.PublicationEndCalculator;
@@ -92,6 +93,8 @@ import org.jspecify.annotations.Nullable;
  */
 @ApplicationScoped
 public class RouteService extends TeamEntityService<Route, RouteRepository, RouteDetailDto> {
+
+  @Inject MemberNamesVisibility memberNamesVisibility;
 
   /**
    * A route's track points are the heaviest column of the schema; a batch beyond this is not "a
@@ -145,7 +148,8 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
         commentCountLookup.forEntity(entity),
         tagsOf(entity),
         true,
-        surfaceRefreshService.readRoute(entity.getId()));
+        surfaceRefreshService.readRoute(entity.getId()),
+        memberNamesVisibility.canSeeNames(entity.getTeam().getId()));
   }
 
   @Override
@@ -221,6 +225,8 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
             ? surfaceRefreshService.readRoutes(routes.stream().map(Route::getId).toList())
             : Map.of();
 
+    // Once for the batch: every route belongs to this team (docs/LEDGER_*.md API-144).
+    boolean withCreator = memberNamesVisibility.canSeeNames(team.getId());
     Map<String, RouteDetailDto> bySlug = new LinkedHashMap<>();
     for (Route route : routes) {
       bySlug.put(
@@ -231,7 +237,8 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
               commentCounts,
               tags,
               geometry,
-              surfaces.getOrDefault(route.getId(), RouteSurfaces.NONE)));
+              surfaces.getOrDefault(route.getId(), RouteSurfaces.NONE),
+              withCreator));
     }
 
     List<RouteDetailDto> ordered =

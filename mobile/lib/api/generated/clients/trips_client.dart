@@ -116,7 +116,7 @@ abstract class TripsClient {
 
   /// List trip participants.
   ///
-  /// One page of the people registered to the trip, earliest registrations first, searchable by display name. The trip detail only embeds the first few; this is the whole list, with its total. Readable by whoever may read the trip.
+  /// One page of the people registered to the trip, earliest registrations first, searchable by display name. The trip detail only embeds the first few; this is the whole list, with its total. Members of the team only (and platform administrators): member names are never sent to anyone else.
   ///
   /// [teamSlug] - Team URL slug.
   ///

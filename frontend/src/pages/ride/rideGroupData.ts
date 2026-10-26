@@ -1,3 +1,4 @@
+import { readsMemberContent } from '@/config/prefetchHelpers'
 import type { QueryClient } from '@tanstack/react-query'
 import { prefetchGetTeamQuery } from '@/api/endpoints/teams/teams'
 import {
@@ -73,17 +74,19 @@ export async function prefetchRideGroup(
     prefetchGetTeamQuery(queryClient, teamSlug),
     prefetchGetRideQuery(queryClient, teamSlug, rideSlug),
     prefetchGetRideWeatherQuery(queryClient, teamSlug, rideSlug, { request: WEATHER_REQUEST }),
-    prefetchGetRideParticipantsQuery(
-      queryClient,
-      teamSlug,
-      rideSlug,
-      groupParticipantsParams(groupId, filters)
-    ),
   ])
 
   const ride = queryClient.getQueryData<RideDto>(getGetRideQueryKey(teamSlug, rideSlug))
   await Promise.all([
     prefetchRoutesBulkChunked(queryClient, teamSlug, rideRouteSlugs(ride)),
+    readsMemberContent(queryClient, teamSlug)
+      ? prefetchGetRideParticipantsQuery(
+          queryClient,
+          teamSlug,
+          rideSlug,
+          groupParticipantsParams(groupId, filters)
+        )
+      : Promise.resolve(queryClient),
     useAuthStore.getState().isAuthenticated
       ? prefetchGetAvailableServicesQuery(queryClient)
       : Promise.resolve(queryClient),

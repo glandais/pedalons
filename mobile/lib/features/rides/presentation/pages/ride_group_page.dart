@@ -15,6 +15,7 @@ import '../../../../keys.dart';
 import '../../../participants/domain/participant_query.dart';
 import '../../../participants/presentation/widgets/participant_list_view.dart';
 import '../../../participants/providers/participant_list_provider.dart';
+import '../../../teams/providers/team_providers.dart';
 import '../../domain/ride_group_tab.dart';
 import '../../domain/ride_weather_display.dart';
 import '../../domain/ride_weather_map.dart';
@@ -92,6 +93,16 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
     setState(() => _groupId = id);
     _shareSelection();
   }
+
+  /// Qui n'est pas membre de l'équipe ne voit que des comptes : l'onglet
+  /// Participants (la liste nommée, refusée par l'API) ne lui est pas offert.
+  bool get _canSeeNames =>
+      ref.watch(canSeeMemberNamesProvider(widget.teamSlug));
+
+  RideGroupTab get _shownTab =>
+      !_canSeeNames && _tab == RideGroupTab.participants
+      ? RideGroupTab.overview
+      : _tab;
 
   void _openTab(RideGroupTab tab) => setState(() => _tab = tab);
 
@@ -291,7 +302,7 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
       });
     }
 
-    final Widget body = switch (_tab) {
+    final Widget body = switch (_shownTab) {
       RideGroupTab.overview => SliverToBoxAdapter(
         child: RideGroupOverviewTab(
           rideKey: key,
@@ -392,7 +403,7 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: PdlSpacing.section),
           child: PdlSegmented<RideGroupTab>(
-            value: _tab,
+            value: _shownTab,
             onChanged: _openTab,
             segments: <PdlSegment<RideGroupTab>>[
               PdlSegment<RideGroupTab>(
@@ -405,11 +416,12 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
                 value: RideGroupTab.weather,
                 label: 'rides.groupPage.tabs.weather'.tr(),
               ),
-              PdlSegment<RideGroupTab>(
-                key: keys.rideGroup.tabParticipants,
-                value: RideGroupTab.participants,
-                label: 'rides.groupPage.tabs.participants'.tr(),
-              ),
+              if (_canSeeNames)
+                PdlSegment<RideGroupTab>(
+                  key: keys.rideGroup.tabParticipants,
+                  value: RideGroupTab.participants,
+                  label: 'rides.groupPage.tabs.participants'.tr(),
+                ),
             ],
           ),
         ),

@@ -52,7 +52,12 @@ public record RouteDetailDto(
     @Schema(description = "Whether the route is public", required = true) Visibility visibility,
     @Schema(implementation = GeoJsonPoint.class) Point<G2D> start,
     @Schema(implementation = GeoJsonPoint.class) Point<G2D> end,
-    @Schema(description = "Creator user", required = true) PublicUserDto createdBy,
+    @Nullable
+        @Schema(
+            description =
+                "Creator user. Absent when the caller is not a member of the team: member names"
+                    + " are never sent to anyone else.")
+        PublicUserDto createdBy,
     @Schema(description = "Creation timestamp", required = true) Instant createdAt,
     @Schema(description = "Last update timestamp", required = true) Instant updatedAt,
     @Schema(
@@ -90,6 +95,8 @@ public record RouteDetailDto(
    *     TagLookup}
    * @param surfaces what is known of the surface of the tracks ({@link RouteSurfaces#NONE} on the
    *     bulk path without geometry: no track is drawn)
+   * @param withCreator {@code false} for a caller who is not a member of the team: {@code
+   *     createdBy} is left out (docs/LEDGER_*.md API-144)
    */
   public static RouteDetailDto from(
       Route route,
@@ -97,7 +104,8 @@ public record RouteDetailDto(
       CommentCounts commentCounts,
       ContentTags tags,
       boolean withGeometry,
-      RouteSurfaces surfaces) {
+      RouteSurfaces surfaces,
+      boolean withCreator) {
     return new RouteDetailDto(
         TsidUtils.toString(route.getId()),
         route.getSlug(),
@@ -112,7 +120,7 @@ public record RouteDetailDto(
         route.getVisibility(),
         route.getStart(),
         route.getEnd(),
-        PublicUserDto.from(route.getCreatedBy()),
+        withCreator ? PublicUserDto.from(route.getCreatedBy()) : null,
         route.getCreatedAt(),
         route.getUpdatedAt(),
         withGeometry

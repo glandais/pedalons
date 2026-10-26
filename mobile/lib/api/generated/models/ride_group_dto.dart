@@ -27,7 +27,7 @@ abstract class RideGroupDto with _$RideGroupDto {
     /// Current number of participants
     required int countParticipants,
 
-    /// The first participants of the group (at most 8), earliest registrations first — enough to draw avatars. countParticipants is the total; the whole list is paginated and searched by GET …/rides/{rideSlug}/participants?groupId=.
+    /// The first participants of the group (at most 8), earliest registrations first — enough to draw avatars. countParticipants is the total; the whole list is paginated and searched by GET …/rides/{rideSlug}/participants?groupId=. Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.
     required List<PublicUserDto> participants,
 
     /// Sort order
@@ -57,7 +57,7 @@ abstract class RideGroupDto with _$RideGroupDto {
     /// Total elevation gain in meters of the group route, if it has one
     double? elevationGain,
 
-    /// The member who leads this group, when one is designated. Null means no leader was designated — render nothing rather than falling back on the ride's creator, who is the same person on every group of the ride.
+    /// The member who leads this group, when one is designated. Null means no leader was designated — render nothing rather than falling back on the ride's creator, who is the same person on every group of the ride. Also null for a caller who is not a member of the team: member names are never sent to anyone else.
     PublicUserDto? leader,
 
     /// Thumbnail URL (light) of the group route, if it has one. Opaque URL: may carry a query string; substitute {size} only.

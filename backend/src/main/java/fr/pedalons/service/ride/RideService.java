@@ -43,6 +43,7 @@ import fr.pedalons.repository.ridetemplate.RideTemplateRepository;
 import fr.pedalons.repository.team.UserTeamRepository;
 import fr.pedalons.service.asset.ThumbnailLookup;
 import fr.pedalons.service.comment.CommentCountLookup;
+import fr.pedalons.service.common.MemberNamesVisibility;
 import fr.pedalons.service.common.ParticipantPreviewLookup;
 import fr.pedalons.service.common.ParticipationLookup;
 import fr.pedalons.service.common.TeamEntityService;
@@ -97,6 +98,8 @@ public class RideService extends TeamEntityService<Ride, RideRepository, RideDto
 
   @Inject ParticipantPreviewLookup participantPreviewLookup;
 
+  @Inject MemberNamesVisibility memberNamesVisibility;
+
   @Inject UserTeamRepository userTeamRepository;
 
   @Inject NotificationPublisher notificationPublisher;
@@ -134,6 +137,9 @@ public class RideService extends TeamEntityService<Ride, RideRepository, RideDto
             .filter(Objects::nonNull)
             .map(Route::getId)
             .toList();
+    // One query for a logged-in caller, none for the others: only a member of the team is told who
+    // rides (docs/LEDGER_*.md API-144).
+    boolean withNames = memberNamesVisibility.canSeeNames(entity.getTeam().getId());
     return RideDto.from(
         entity,
         assetService,
@@ -141,11 +147,12 @@ public class RideService extends TeamEntityService<Ride, RideRepository, RideDto
         commentCountLookup.forEntity(entity),
         thumbnailLookup.forTeamEntities(groupRouteIds),
         participantPreviewLookup.forRideGroups(
-            entity.getGroups().stream().map(RideGroup::getId).toList()),
+            entity.getGroups().stream().map(RideGroup::getId).toList(), withNames),
         tagLookup.forContent(entity.getId()),
         // The same card line as the lists, so a ride reads alike in both; none for a ride outside
         // the forecast window, at most one query otherwise.
-        rideWeatherLookup.forRides(List.of(entity)));
+        rideWeatherLookup.forRides(List.of(entity)),
+        withNames);
   }
 
   /**
@@ -169,8 +176,9 @@ public class RideService extends TeamEntityService<Ride, RideRepository, RideDto
 
   /**
    * One page of the people registered to a ride, or to one of its groups — the list the detail
-   * only previews (docs/LEDGER_*.md API-12). Read like the ride itself: whoever may read the ride
-   * may read who rides it.
+   * only previews (docs/LEDGER_*.md API-12). Read like the ride itself, but only by a member of
+   * the team or a platform admin, because names are never sent to anyone else (docs/LEDGER_*.md
+   * API-144).
    *
    * @param groupId {@code null} for the whole ride; a group of another ride is a 404
    */
@@ -184,6 +192,9 @@ public class RideService extends TeamEntityService<Ride, RideRepository, RideDto
       int size) {
     Team team = teamService.getTeam(teamSlug);
     Ride ride = findBySlug(team, rideSlug);
+    if (!memberNamesVisibility.canSeeNames(team.getId())) {
+      throw new ForbiddenException();
+    }
     if (groupId != null && rideGroupRepository.findByIdAndRide(groupId, ride.getId()).isEmpty()) {
       throw new NotFoundException(EntityType.RIDE_GROUP, groupId);
     }

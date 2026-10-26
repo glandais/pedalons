@@ -145,19 +145,27 @@ public class RideResource {
 
   @GET
   @Path("/{rideSlug}/participants")
-  @PermitAll
+  @RolesAllowed("user")
   @Operation(
       summary = "List ride participants",
       description =
           "One page of the people registered to the ride, or to one of its groups, earliest"
               + " registrations first, searchable by display name. The ride detail only embeds the"
-              + " first few; this is the whole list, with its total. Readable by whoever may read"
-              + " the ride.")
+              + " first few; this is the whole list, with its total. Members of the team only (and"
+              + " platform administrators): member names are never sent to anyone else.")
   @APIResponses({
     @APIResponse(
         responseCode = "200",
         description = "Participants retrieved successfully",
         content = @Content(schema = @Schema(implementation = ParticipantListResponse.class))),
+    @APIResponse(
+        responseCode = "401",
+        description = "Not signed in",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+    @APIResponse(
+        responseCode = "403",
+        description = "Not a member of the team: member names are never sent to anyone else",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
     @APIResponse(
         responseCode = "404",
         description = "Team or ride not found (or group not in this ride)",

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.pedalons.common.TsidUtils;
 import fr.pedalons.common.exception.BusinessException;
 import fr.pedalons.common.exception.ConflictException;
+import fr.pedalons.common.exception.ForbiddenException;
 import fr.pedalons.domain.common.TeamEntity;
 import fr.pedalons.domain.place.Place;
 import fr.pedalons.domain.route.Route;
@@ -38,6 +39,7 @@ import fr.pedalons.repository.trip.TripParticipationRepository;
 import fr.pedalons.repository.trip.TripRepository;
 import fr.pedalons.repository.trip.TripStageRepository;
 import fr.pedalons.service.comment.CommentCountLookup;
+import fr.pedalons.service.common.MemberNamesVisibility;
 import fr.pedalons.service.common.ParticipantPreviewLookup;
 import fr.pedalons.service.common.ParticipationLookup;
 import fr.pedalons.service.common.TeamEntityService;
@@ -84,6 +86,8 @@ public class TripService extends TeamEntityService<Trip, TripRepository, TripDto
 
   @Inject ParticipantPreviewLookup participantPreviewLookup;
 
+  @Inject MemberNamesVisibility memberNamesVisibility;
+
   @Inject CommentCountLookup commentCountLookup;
 
   @Inject NotificationPublisher notificationPublisher;
@@ -115,6 +119,9 @@ public class TripService extends TeamEntityService<Trip, TripRepository, TripDto
     List<TeamEntity> commented = new ArrayList<>();
     commented.add(entity);
     entity.getStages().stream().filter(stage -> !stage.isDeleted()).forEach(commented::add);
+    // One query for a logged-in caller, none for the others: only a member of the team is told who
+    // goes (docs/LEDGER_*.md API-144).
+    boolean withNames = memberNamesVisibility.canSeeNames(entity.getTeam().getId());
     // One indexed lookup resolves the "registered" flag; anonymous callers cost nothing.
     return TripDto.from(
         entity,
@@ -123,19 +130,23 @@ public class TripService extends TeamEntityService<Trip, TripRepository, TripDto
         // The trip's count and each live stage's, in the same two queries (docs/LEDGER_*.md
         // API-11).
         commentCountLookup.forEntities(commented),
-        participantPreviewLookup.forTrip(entity.getId()),
+        participantPreviewLookup.forTrip(entity.getId(), withNames),
         tagLookup.forContents(taggedIds));
   }
 
   /**
    * One page of the people registered to a trip — the list the detail only previews
-   * (docs/LEDGER_*.md API-12). Read like the trip itself.
+   * (docs/LEDGER_*.md API-12). Read like the trip itself, but only by a member of the team: names
+   * are never sent to anyone else (docs/LEDGER_*.md API-144).
    */
   @CheckAccess(entityType = EntityType.TRIP, action = ActionType.READ)
   public ParticipantListResponse getParticipants(
       String teamSlug, String tripSlug, @Nullable String search, int page, int size) {
     Team team = teamService.getTeam(teamSlug);
     Trip trip = findBySlug(team, tripSlug);
+    if (!memberNamesVisibility.canSeeNames(team.getId())) {
+      throw new ForbiddenException();
+    }
     PedalonsPage<User> participants =
         participationRepository.findParticipants(trip.getId(), search, page, size);
     return new ParticipantListResponse(

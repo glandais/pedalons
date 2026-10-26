@@ -12,6 +12,7 @@ import '../../../../core/theme/pdl_typography.dart';
 import '../../../../keys.dart';
 import '../../../auth/domain/auth_state.dart';
 import '../../../auth/providers/auth_provider.dart';
+import '../../../teams/providers/team_providers.dart';
 import '../../domain/ride_group_tab.dart';
 import '../../domain/ride_weather_map.dart';
 import '../../providers/ride_detail_provider.dart';
@@ -187,6 +188,9 @@ class _RideGroupOverviewTabState extends ConsumerState<RideGroupOverviewTab>
   Widget _participants(String? currentUserId) {
     final PdlTypography t = context.pdlText;
     final RideGroupDto group = widget.group;
+    final bool canSeeNames = ref.watch(
+      canSeeMemberNamesProvider(widget.ride.team.slug),
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
@@ -195,7 +199,11 @@ class _RideGroupOverviewTabState extends ConsumerState<RideGroupOverviewTab>
           count: '${group.countParticipants}',
           padding: const EdgeInsets.only(bottom: PdlSpacing.chipGap),
         ),
-        if (group.participants.isEmpty)
+        // Un non-membre ne reçoit que le nombre : l'en-tête le porte déjà, ni
+        // avatars ni « Voir tout » (la liste lui est refusée).
+        if (!canSeeNames)
+          const SizedBox.shrink()
+        else if (group.participants.isEmpty)
           Text('participants.emptyMessage'.tr(), style: t.sub)
         else
           Align(
@@ -219,7 +227,7 @@ class _RideGroupOverviewTabState extends ConsumerState<RideGroupOverviewTab>
               ),
             ),
           ),
-        if (group.countParticipants > 0)
+        if (canSeeNames && group.countParticipants > 0)
           Align(
             alignment: Alignment.centerLeft,
             child: PdlButton(

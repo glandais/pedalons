@@ -340,26 +340,42 @@ class PostResourceTest extends AbstractResourceTest {
   }
 
   @Test
-  void aPostSignedByItsAuthor_namesThemToEveryReader() {
+  void aPostSignedByItsAuthor_namesThemToTheMembersOnly() {
+    // docs/LEDGER_*.md API-144 supersedes API-6 here: it used to name the author to everyone who
+    // could read the post; a non-member now gets no name, the team renders instead.
     String slug = createPostAsOrganizer("Signed Post", false);
     String authorId = TsidUtils.toString(user2.getId());
 
-    for (String reader : new String[] {null, USER3, USER4}) {
+    as(USER3)
+        .when()
+        .get("/api/teams/" + team1Slug + "/posts/" + slug)
+        .then()
+        .statusCode(200)
+        .body("signedAsTeam", equalTo(false))
+        .body("createdBy.id", equalTo(authorId))
+        .body("createdBy.displayName", equalTo(user2.getDisplayName()));
+    // Anonymous, and a person of no team: not named although the post is signed by its author
+    for (String reader : new String[] {null, USER4}) {
       as(reader)
           .when()
           .get("/api/teams/" + team1Slug + "/posts/" + slug)
           .then()
           .statusCode(200)
           .body("signedAsTeam", equalTo(false))
-          .body("createdBy.id", equalTo(authorId))
-          .body("createdBy.displayName", equalTo(user2.getDisplayName()));
+          .body("$", not(hasKey("createdBy")));
     }
-    given()
+    as(USER3)
         .when()
         .get("/api/teams/" + team1Slug + "/publications?type=POST&view=COMPACT")
         .then()
         .statusCode(200)
         .body("publications[0].createdBy.id", equalTo(authorId));
+    given()
+        .when()
+        .get("/api/teams/" + team1Slug + "/publications?type=POST&view=COMPACT")
+        .then()
+        .statusCode(200)
+        .body("publications[0]", not(hasKey("createdBy")));
   }
 
   @Test

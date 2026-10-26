@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -54,17 +55,32 @@ public class ParticipantPreviewLookup {
     }
   }
 
-  /** Group id → preview; a group nobody joined maps to {@link ParticipantPreview#EMPTY}. */
-  public Map<Long, ParticipantPreview> forRideGroups(Collection<Long> groupIds) {
-    return previews("ride_participations", "ride_group_id", groupIds);
+  /**
+   * Group id → preview; a group nobody joined maps to {@link ParticipantPreview#EMPTY}.
+   *
+   * @param withNames {@code false} for a caller who is not a member of the team: the counts only,
+   *     no name, and the users are not even loaded (docs/LEDGER_*.md API-144)
+   */
+  public Map<Long, ParticipantPreview> forRideGroups(Collection<Long> groupIds, boolean withNames) {
+    return previews("ride_participations", "ride_group_id", groupIds, id -> withNames);
   }
 
-  public ParticipantPreview forTrip(Long tripId) {
-    return previews("trip_participations", "trip_id", List.of(tripId)).get(tripId);
+  /**
+   * Same, for groups whose team differs (a list page): only the groups in {@code namedGroupIds}
+   * get their first participants, every other keeps its count alone.
+   */
+  public Map<Long, ParticipantPreview> forRideGroups(
+      Collection<Long> groupIds, Set<Long> namedGroupIds) {
+    return previews("ride_participations", "ride_group_id", groupIds, namedGroupIds::contains);
+  }
+
+  /** The trip's preview; {@code withNames} as for {@link #forRideGroups}. */
+  public ParticipantPreview forTrip(Long tripId, boolean withNames) {
+    return previews("trip_participations", "trip_id", List.of(tripId), id -> withNames).get(tripId);
   }
 
   private Map<Long, ParticipantPreview> previews(
-      String table, String ownerColumn, Collection<Long> ownerIds) {
+      String table, String ownerColumn, Collection<Long> ownerIds, Predicate<Long> withNames) {
     Map<Long, ParticipantPreview> byOwner = new HashMap<>();
     if (ownerIds.isEmpty()) {
       return byOwner;
@@ -98,7 +114,9 @@ public class ParticipantPreviewLookup {
 
     Set<Long> userIds = new LinkedHashSet<>();
     for (Object[] row : rows) {
-      userIds.add(((Number) row[1]).longValue());
+      if (withNames.test(((Number) row[0]).longValue())) {
+        userIds.add(((Number) row[1]).longValue());
+      }
     }
     Map<Long, User> users =
         userIds.isEmpty()
@@ -112,7 +130,7 @@ public class ParticipantPreviewLookup {
       Long ownerId = ((Number) row[0]).longValue();
       User user = users.get(((Number) row[1]).longValue());
       counts.put(ownerId, ((Number) row[3]).intValue());
-      if (user != null) {
+      if (user != null && withNames.test(ownerId)) {
         firsts
             .computeIfAbsent(ownerId, k -> new ArrayList<>())
             .add(new PreviewedParticipant(PublicUserDto.from(user), toInstant(row[2])));

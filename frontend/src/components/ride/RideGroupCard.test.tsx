@@ -31,7 +31,7 @@ const group = {
   full: false,
 } as unknown as RideGroupDto
 
-function renderCard(weather?: WeatherLegDto, trackColor?: string) {
+function renderCard(weather?: WeatherLegDto, trackColor?: string, canSeeParticipants = true) {
   return render(
     <MantineProvider>
       <QueryClientProvider client={new QueryClient()}>
@@ -47,6 +47,7 @@ function renderCard(weather?: WeatherLegDto, trackColor?: string) {
             weatherLeg={weather}
             trackColor={trackColor}
             canJoin
+            canSeeParticipants={canSeeParticipants}
           />
         </MemoryRouter>
       </QueryClientProvider>
@@ -78,6 +79,17 @@ describe('RideGroupCard (WEB-77)', () => {
     expect(plain(line.textContent)).toContain('Dos 30.0 km')
     expect(line.closest('a')).toBeNull()
     expect(line.querySelector('a')).toBeNull()
+  })
+
+  it('offers the participants list to those who may see names (API-144)', () => {
+    renderCard()
+    expect(screen.getByRole('button', { name: 'Voir toutes les personnes inscrites' })).toBeTruthy()
+  })
+
+  it('shows the count only, with no participants button, to a non-member (API-144)', () => {
+    renderCard(undefined, undefined, false)
+    expect(screen.queryByRole('button', { name: 'Voir toutes les personnes inscrites' })).toBeNull()
+    expect(screen.getByText(/3/)).toBeTruthy()
   })
 
   it('carries no weather line without a forecast', () => {

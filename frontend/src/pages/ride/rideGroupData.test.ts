@@ -20,9 +20,15 @@ vi.mock('@/lib/axiosInstance', () => ({
 }))
 vi.mock('@/store/authStore', () => ({
   useAuthStore: { getState: () => ({ isAuthenticated: true }) },
+  selectIsPlatformAdmin: () => false,
 }))
 
-import { groupWindLeg, prefetchRideGroupMap, rideGroupDataRedirect } from './rideGroupData'
+import {
+  groupWindLeg,
+  prefetchRideGroup,
+  prefetchRideGroupMap,
+  rideGroupDataRedirect,
+} from './rideGroupData'
 
 const g = (id: string) => ({ id, name: id }) as RideGroupDto
 
@@ -87,6 +93,37 @@ describe('prefetchRideGroupMap (WEB-117)', () => {
     // No participants nor GPS services: the map mounts neither, even signed in
     expect(requests.urls.some((u) => u.endsWith('/participants'))).toBe(false)
     expect(requests.urls.some((u) => u.includes('gps'))).toBe(false)
+  })
+})
+
+describe('prefetchRideGroup: participants are members-only (API-144)', () => {
+  beforeEach(() => {
+    requests.urls = []
+    requests.responses = {}
+  })
+  const run = (team: unknown) => {
+    requests.responses['/api/teams/np'] = team
+    requests.responses['/api/teams/np/rides/sortie'] = {
+      slug: 'sortie',
+      groups: [g('g1'), g('g2')],
+    }
+    return prefetchRideGroup(
+      new QueryClient(),
+      'np',
+      'sortie',
+      'g1',
+      new URL('https://pedalons.fr/equipes/np/sorties/sortie/groupes/g1')
+    )
+  }
+
+  it('reads them for a member', async () => {
+    await run({ slug: 'np', role: 'MEMBER' })
+    expect(requests.urls.filter((u) => u.endsWith('/participants'))).toHaveLength(1)
+  })
+
+  it('makes no /participants request for a non-member', async () => {
+    await run({ slug: 'np' })
+    expect(requests.urls.some((u) => u.endsWith('/participants'))).toBe(false)
   })
 })
 

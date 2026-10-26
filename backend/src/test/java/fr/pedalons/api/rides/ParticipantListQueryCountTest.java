@@ -91,7 +91,8 @@ class ParticipantListQueryCountTest extends AbstractQueryCountTest {
     RideGroup group = seedRide("crowded-group", LARGE_PAGE * 2);
     assertFlatQueryCount(
         "GET /api/teams/{teamSlug}/rides/{rideSlug}/participants?groupId=",
-        anonymous(),
+        // Members only (docs/LEDGER_*.md API-144): an anonymous call is refused.
+        asUser1(),
         "/api/teams/"
             + team1Slug
             + "/rides/crowded-group/participants?groupId="

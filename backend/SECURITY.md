@@ -343,6 +343,20 @@ entity may be `TEAM`; what `PUBLIC_UNLISTED` allows depends on the request
   but the entity must be `PUBLIC` — unlisted entities stay out of lists.
 - **Cross-team listing**: both must be `PUBLIC` — unlisted teams stay out of directories.
 
+### Member names (API-144)
+
+The names of a team's members never reach a caller who is not a member of that team (anonymous
+visitors, people of no team, members of another team). "May see names" is `member || platformAdmin`,
+the comments' rule. A non-member gets the **count only**: no name, avatar or user id. Concretely
+`RideDto.topParticipants`, `RideGroupDto.participants` and `leader`, `TripDto.participants` come
+back empty or null, `PostDto.createdBy` and `RouteDetailDto.createdBy` are null, and
+`GET …/rides/{slug}/participants` and `GET …/trips/{slug}/participants` answer 401 (anonymous) or
+403 (logged in, not a member), like comments. Membership is resolved once per page by
+`MemberNamesVisibility` (one `findMemberTeamIds` query, none for anonymous or platform admins),
+never per row. This supersedes "author-signed posts name the author to every reader" (API-6) and
+"participants readable by whoever may read the ride" (API-12). Kept on purpose:
+`InvitationPreviewDto.inviterName`.
+
 ### SQL Filtering Logic
 
 #### Anonymous Users (not authenticated)

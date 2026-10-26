@@ -94,6 +94,8 @@ class ParticipantListResourceTest extends AbstractResourceTest {
     }
 
     given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
         .when()
         .get("/api/teams/" + team1Slug + "/rides/paged-ride/participants?page=1&size=2")
         .then()
@@ -117,6 +119,8 @@ class ParticipantListResourceTest extends AbstractResourceTest {
     String base = "/api/teams/" + team1Slug + "/rides/split-ride/participants";
 
     given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
         .when()
         .get(base + "?groupId=" + TsidUtils.toString(slow.getId()))
         .then()
@@ -126,6 +130,8 @@ class ParticipantListResourceTest extends AbstractResourceTest {
 
     // Case-insensitive, over every group of the ride.
     given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
         .when()
         .get(base + "?search=RIDER 02")
         .then()
@@ -134,7 +140,14 @@ class ParticipantListResourceTest extends AbstractResourceTest {
         .body("participants.displayName", contains("split Rider 02"));
 
     // A LIKE wildcard is a literal character, not "anything".
-    given().when().get(base + "?search=%25").then().statusCode(200).body("total", equalTo(0));
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .when()
+        .get(base + "?search=%25")
+        .then()
+        .statusCode(200)
+        .body("total", equalTo(0));
   }
 
   @Test
@@ -144,6 +157,8 @@ class ParticipantListResourceTest extends AbstractResourceTest {
     RideGroup foreign = dataService.createRideGroup(user1, other, "Elsewhere", 0);
 
     given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
         .when()
         .get(
             "/api/teams/"
@@ -161,7 +176,10 @@ class ParticipantListResourceTest extends AbstractResourceTest {
     dataService.createParticipation(group, user1);
     String path = "/api/teams/" + team1Slug + "/rides/team-ride/participants";
 
-    given().when().get(path).then().statusCode(404);
+    // Anonymous is turned away before the ride is looked up (docs/LEDGER_*.md API-144); an
+    // outsider who cannot read the ride still gets the 404 it would get on the ride itself.
+    given().when().get(path).then().statusCode(401);
+    given().auth().oauth2(getAccessToken(USER5)).when().get(path).then().statusCode(404);
     given()
         .auth()
         .oauth2(getAccessToken(USER1))
@@ -184,6 +202,8 @@ class ParticipantListResourceTest extends AbstractResourceTest {
     String base = "/api/teams/" + team1Slug + "/trips/" + trip.getSlug();
 
     given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
         .when()
         .get(base)
         .then()
@@ -193,6 +213,8 @@ class ParticipantListResourceTest extends AbstractResourceTest {
         .body("participants[0].displayName", equalTo("trip Rider 00"));
 
     given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
         .when()
         .get(base + "/participants?size=4&page=2")
         .then()
@@ -201,6 +223,8 @@ class ParticipantListResourceTest extends AbstractResourceTest {
         .body("participants.displayName", contains("trip Rider 08", "trip Rider 09"));
 
     given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
         .when()
         .get(base + "/participants?search=rider 05")
         .then()

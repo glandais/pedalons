@@ -541,6 +541,7 @@ export function RideDetailPage() {
                 ride={ride}
                 group={solo}
                 titleId="ride-participants-title"
+                canSeeParticipants={canReadComments}
               />
             </Stack>
           ) : (
@@ -576,6 +577,7 @@ export function RideDetailPage() {
                                 : undefined
                             }
                             canJoin={canJoinRide}
+                            canSeeParticipants={canReadComments}
                             onJoin={() => handleJoinGroup(group.id)}
                             onLeave={() => handleLeaveGroup(group.id)}
                             onHover={hoverGroup}

@@ -31,7 +31,7 @@ mixin _$TripDto {
  String get visibility;/// Number of participants
  int get participantCount;/// Number of stages
  int get stageCount;/// Trip stages
- List<TripStageDto> get stages;/// The first participants of the trip (at most 8), earliest registrations first — enough to draw avatars; empty on a list row. participantCount is the total; the whole list is paginated and searched by GET …/trips/{tripSlug}/participants.
+ List<TripStageDto> get stages;/// The first participants of the trip (at most 8), earliest registrations first — enough to draw avatars; empty on a list row. participantCount is the total; the whole list is paginated and searched by GET …/trips/{tripSlug}/participants. Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.
  List<PublicUserDto> get participants;/// Whether the trip is soft-deleted
  bool get deleted;/// Whether the current user is registered for this trip. False if anonymous.
  bool get registered;/// The team's TRIP tags the trip carries, sorted by label. Empty when it carries none.
@@ -346,9 +346,9 @@ class _TripDto implements TripDto {
   return EqualUnmodifiableListView(_stages);
 }
 
-/// The first participants of the trip (at most 8), earliest registrations first — enough to draw avatars; empty on a list row. participantCount is the total; the whole list is paginated and searched by GET …/trips/{tripSlug}/participants.
+/// The first participants of the trip (at most 8), earliest registrations first — enough to draw avatars; empty on a list row. participantCount is the total; the whole list is paginated and searched by GET …/trips/{tripSlug}/participants. Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.
  final  List<PublicUserDto> _participants;
-/// The first participants of the trip (at most 8), earliest registrations first — enough to draw avatars; empty on a list row. participantCount is the total; the whole list is paginated and searched by GET …/trips/{tripSlug}/participants.
+/// The first participants of the trip (at most 8), earliest registrations first — enough to draw avatars; empty on a list row. participantCount is the total; the whole list is paginated and searched by GET …/trips/{tripSlug}/participants. Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.
 @override List<PublicUserDto> get participants {
   if (_participants is EqualUnmodifiableListView) return _participants;
   // ignore: implicit_dynamic_type

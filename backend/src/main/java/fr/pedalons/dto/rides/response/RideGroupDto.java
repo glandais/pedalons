@@ -42,7 +42,9 @@ public record RideGroupDto(
             description =
                 "The first participants of the group (at most 8), earliest registrations first —"
                     + " enough to draw avatars. countParticipants is the total; the whole list is"
-                    + " paginated and searched by GET …/rides/{rideSlug}/participants?groupId=.",
+                    + " paginated and searched by GET …/rides/{rideSlug}/participants?groupId=."
+                    + " Always empty for a caller who is not a member of the team (member names are"
+                    + " never sent to anyone else): the count stays.",
             required = true)
         List<PublicUserDto> participants,
     @Schema(description = "Sort order", required = true) int sortOrder,
@@ -67,7 +69,9 @@ public record RideGroupDto(
             description =
                 "The member who leads this group, when one is designated. Null means no leader was"
                     + " designated — render nothing rather than falling back on the ride's"
-                    + " creator, who is the same person on every group of the ride.")
+                    + " creator, who is the same person on every group of the ride. Also null for a"
+                    + " caller who is not a member of the team: member names are never sent to"
+                    + " anyone else.")
         PublicUserDto leader,
     @Nullable
         @Schema(
@@ -99,13 +103,16 @@ public record RideGroupDto(
    * @param participants the count and first participants of the group, resolved by {@code
    *     ParticipantPreviewLookup} for every group of the ride at once — never by walking {@code
    *     group.getParticipations()}, which hydrates the whole list
+   * @param withNames {@code false} for a caller who is not a member of the team: no leader, the
+   *     participants already stripped by the lookup (docs/LEDGER_*.md API-144)
    */
   public static RideGroupDto from(
       RideGroup group,
       ZoneId rideZone,
       @Nullable Long registeredGroupId,
       @Nullable ThemedThumbnail routeThumbnail,
-      ParticipantPreview participants) {
+      ParticipantPreview participants,
+      boolean withNames) {
     // RideGroup.route is a to-one, already resolved (and batched across the ride's groups) by the
     // routeSlug read just below: the metrics cost no extra query.
     Route route = group.getRoute();
@@ -124,7 +131,7 @@ public record RideGroupDto(
         group.getMaxParticipants() != null && participants.count() >= group.getMaxParticipants(),
         route != null ? route.getDistance() : null,
         route != null ? route.getElevationGain() : null,
-        group.getLeader() != null ? PublicUserDto.from(group.getLeader()) : null,
+        withNames && group.getLeader() != null ? PublicUserDto.from(group.getLeader()) : null,
         routeThumbnail != null ? routeThumbnail.light() : null,
         routeThumbnail != null ? routeThumbnail.dark() : null,
         routeThumbnail != null ? routeThumbnail.collapsed() : null);
@@ -140,9 +147,14 @@ public record RideGroupDto(
    * @param row the group's scalars, projected for the whole page in one query
    * @param routeThumbnail resolved for every such group of the page in one query
    * @param participants resolved for every such group of the page in two queries
+   * @param withNames {@code false} for a caller who is not a member of the team: no leader
+   *     (docs/LEDGER_*.md API-144)
    */
   public static RideGroupDto fromRow(
-      GroupRow row, @Nullable ThemedThumbnail routeThumbnail, ParticipantPreview participants) {
+      GroupRow row,
+      @Nullable ThemedThumbnail routeThumbnail,
+      ParticipantPreview participants,
+      boolean withNames) {
     return new RideGroupDto(
         TsidUtils.toString(row.id()),
         row.name(),
@@ -158,7 +170,7 @@ public record RideGroupDto(
         row.maxParticipants() != null && participants.count() >= row.maxParticipants(),
         row.routeId() != null ? row.distance() : null,
         row.routeId() != null ? row.elevationGain() : null,
-        row.leaderId() != null
+        withNames && row.leaderId() != null
             ? new PublicUserDto(
                 TsidUtils.toString(row.leaderId()), row.leaderDisplayName(), row.leaderAvatarUrl())
             : null,

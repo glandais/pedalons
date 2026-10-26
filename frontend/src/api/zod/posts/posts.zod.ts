@@ -647,7 +647,7 @@ export const CreatePostResponse = zod
       })
       .optional()
       .describe(
-        'Who wrote the post. Absent when the post is signed by the team (signedAsTeam) and the caller neither administers the team nor wrote it — render the team instead.'
+        'Who wrote the post. Absent when the caller is not a member of the team — member names are never sent to anyone else — and when the post is signed by the team (signedAsTeam) and the caller neither administers the team nor wrote it: render the team instead.'
       ),
     tags: zod
       .array(
@@ -1315,7 +1315,7 @@ export const UpdatePostResponse = zod
       })
       .optional()
       .describe(
-        'Who wrote the post. Absent when the post is signed by the team (signedAsTeam) and the caller neither administers the team nor wrote it — render the team instead.'
+        'Who wrote the post. Absent when the caller is not a member of the team — member names are never sent to anyone else — and when the post is signed by the team (signedAsTeam) and the caller neither administers the team nor wrote it: render the team instead.'
       ),
     tags: zod
       .array(
@@ -1677,7 +1677,7 @@ export const GetPostResponse = zod
       })
       .optional()
       .describe(
-        'Who wrote the post. Absent when the post is signed by the team (signedAsTeam) and the caller neither administers the team nor wrote it — render the team instead.'
+        'Who wrote the post. Absent when the caller is not a member of the team — member names are never sent to anyone else — and when the post is signed by the team (signedAsTeam) and the caller neither administers the team nor wrote it: render the team instead.'
       ),
     tags: zod
       .array(
@@ -2064,7 +2064,7 @@ export const ChangePostSlugResponse = zod
       })
       .optional()
       .describe(
-        'Who wrote the post. Absent when the post is signed by the team (signedAsTeam) and the caller neither administers the team nor wrote it — render the team instead.'
+        'Who wrote the post. Absent when the caller is not a member of the team — member names are never sent to anyone else — and when the post is signed by the team (signedAsTeam) and the caller neither administers the team nor wrote it: render the team instead.'
       ),
     tags: zod
       .array(
@@ -2432,7 +2432,7 @@ export const ChangePostStatusResponse = zod
       })
       .optional()
       .describe(
-        'Who wrote the post. Absent when the post is signed by the team (signedAsTeam) and the caller neither administers the team nor wrote it — render the team instead.'
+        'Who wrote the post. Absent when the caller is not a member of the team — member names are never sent to anyone else — and when the post is signed by the team (signedAsTeam) and the caller neither administers the team nor wrote it: render the team instead.'
       ),
     tags: zod
       .array(
@@ -2794,7 +2794,7 @@ export const UndeletePostResponse = zod
       })
       .optional()
       .describe(
-        'Who wrote the post. Absent when the post is signed by the team (signedAsTeam) and the caller neither administers the team nor wrote it — render the team instead.'
+        'Who wrote the post. Absent when the caller is not a member of the team — member names are never sent to anyone else — and when the post is signed by the team (signedAsTeam) and the caller neither administers the team nor wrote it: render the team instead.'
       ),
     tags: zod
       .array(

@@ -20,12 +20,15 @@ export function GroupParticipantsSection({
   ride,
   group,
   titleId = 'group-participants-title',
+  canSeeParticipants = true,
 }: {
   teamSlug: string
   ride: RideDto
   group: RideGroupDto
   /** The heading's id, which names the section. */
   titleId?: string
+  /** Members and platform admins only: the names are never sent to anyone else (API-144). */
+  canSeeParticipants?: boolean
 }) {
   const { t } = useTranslation()
   const { filters, setFilters } = useUrlFilters({
@@ -51,23 +54,25 @@ export function GroupParticipantsSection({
             })}
           </Text>
         </Group>
-        <ParticipantList
-          source={{
-            kind: 'ride',
-            teamSlug,
-            rideSlug: ride.slug,
-            groupId: group.id,
-          }}
-          count={group.countParticipants}
-          leaderId={group.leader?.id}
-          search={filters.search}
-          page={filters.page}
-          searchInput={searchInput}
-          onSearchInputChange={setSearchInput}
-          onPageChange={(page) => setFilters({ page })}
-          searchPlaceholder={t('participants.searchByName')}
-          noMatch={t('participants.noMatchGeneric')}
-        />
+        {canSeeParticipants && (
+          <ParticipantList
+            source={{
+              kind: 'ride',
+              teamSlug,
+              rideSlug: ride.slug,
+              groupId: group.id,
+            }}
+            count={group.countParticipants}
+            leaderId={group.leader?.id}
+            search={filters.search}
+            page={filters.page}
+            searchInput={searchInput}
+            onSearchInputChange={setSearchInput}
+            onPageChange={(page) => setFilters({ page })}
+            searchPlaceholder={t('participants.searchByName')}
+            noMatch={t('participants.noMatchGeneric')}
+          />
+        )}
       </Stack>
     </Paper>
   )

@@ -170,6 +170,9 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
   @override
   Widget build(BuildContext context) {
     final bool? isMember = ref.watch(teamMembershipProvider(ride.team.slug));
+    final bool canSeeNames = ref.watch(
+      canSeeMemberNamesProvider(ride.team.slug),
+    );
     final bool canManage =
         ref.watch(canManageRidesProvider(ride.team.slug)) ?? false;
 
@@ -398,8 +401,10 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
                     selectedRouteSlug: selectedRoute,
                     onSelect: select,
                     onOpenGroup: openGroup,
-                    onShowParticipants: (RideGroupDto g) =>
-                        ParticipantsSheet.open(context, ride, g),
+                    onShowParticipants: canSeeNames
+                        ? (RideGroupDto g) =>
+                              ParticipantsSheet.open(context, ride, g)
+                        : null,
                     onViewTeam: () =>
                         pushLocation(context, Paths.team(ride.team.slug)),
                   ),
@@ -506,6 +511,9 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
 
   // ── 3 · Bloc méta ───────────────────────────────────────────────────────
   Widget _meta(BuildContext context) {
+    final bool canSeeNames = ref.watch(
+      canSeeMemberNamesProvider(ride.team.slug),
+    );
     final PdlTypography t = context.pdlText;
     final DateTime? start = ride.startsAt;
 
@@ -544,7 +552,7 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
         // Un `PdlButton(text)` et non un `Text` tappable : il porte la cible
         // de 44 px et la sémantique de bouton, que la maquette (un simple
         // lien bleu) ne donne pas.
-        extra: ride.groups.isEmpty
+        extra: ride.groups.isEmpty || !canSeeNames
             ? null
             : Align(
                 alignment: Alignment.centerLeft,

@@ -80,6 +80,7 @@ describe('prefetchRideDetail', () => {
 
   it("prefetches a solo ride's participants under the list's key, filters from the URL", async () => {
     requests.responses['/api/teams/np/rides/sortie'] = ride([g('g1')])
+    requests.responses['/api/teams/np'] = { slug: 'np', role: 'MEMBER' }
     const queryClient = new QueryClient()
     await prefetchRideDetail(
       queryClient,
@@ -94,6 +95,18 @@ describe('prefetchRideDetail', () => {
     )
     expect(queryClient.getQueryState(key)?.status).toBe('success')
     expect(requests.urls.filter((u) => u.endsWith('/participants'))).toHaveLength(1)
+  })
+
+  it('reads no participants for a non-member: names are members-only (API-144)', async () => {
+    requests.responses['/api/teams/np/rides/sortie'] = ride([g('g1')])
+    requests.responses['/api/teams/np'] = { slug: 'np' }
+    await prefetchRideDetail(
+      new QueryClient(),
+      'np',
+      'sortie',
+      new URL('https://pedalons.fr/equipes/np/sorties/sortie')
+    )
+    expect(requests.urls.filter((u) => u.endsWith('/participants'))).toHaveLength(0)
   })
 
   it('reads no participants for a ride with several groups', async () => {

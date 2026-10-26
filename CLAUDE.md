@@ -64,7 +64,7 @@ comments. `grep -rn 'WEB-14'` finds the entry and everything that points at it.
 - A plan in `docs/plans/` that is fully executed moves to `docs/plans/archive/` (with its row in the
   archive README); its leftovers go to `LEDGER_NEXT.md`.
 
-Three invariants that cut across modules, each of which a plausible-looking change would break:
+Four invariants that cut across modules, each of which a plausible-looking change would break:
 
 - **A ride group's leader is `RideGroupDto.leader`, nullable, and null is the common case** — render
   nothing, and never fall back to `createdBy` (the *ride's* creator, identical across all its
@@ -76,6 +76,10 @@ Three invariants that cut across modules, each of which a plausible-looking chan
   and `ThumbnailLookup` each take a fixed number of queries for a whole page. The
   `…QueryCountTest` classes fail if someone reintroduces a per-row query; don't disable them to make
   a build pass.
+- **Member names never reach a non-member — the count only.** Anonymous, no-team and other-team callers get
+  no participant, leader or author name, avatar or id (`member || platformAdmin`, resolved once per page by
+  `MemberNamesVisibility`); the `…/participants` endpoints refuse them like comments. Guarded by the backend
+  test `MemberNamesVisibilityResourceTest` (ledger `API-144`).
 
 ## Tech Stack
 

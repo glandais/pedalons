@@ -34,7 +34,7 @@ mixin _$PostDto {
  String? get thumbnailUrl;/// Publication timestamp
  String? get publishAt;/// Creation timestamp
  String? get createdAt;/// Number of comments, replies included. Absent when the caller may not read the comments of this post — comments are members-only, so an outsider is told nothing, not even zero.
- int? get commentCount;/// Who wrote the post. Absent when the post is signed by the team (signedAsTeam) and the caller neither administers the team nor wrote it — render the team instead.
+ int? get commentCount;/// Who wrote the post. Absent when the caller is not a member of the team — member names are never sent to anyone else — and when the post is signed by the team (signedAsTeam) and the caller neither administers the team nor wrote it: render the team instead.
  PublicUserDto? get createdBy;
 /// Create a copy of PostDto
 /// with the given fields replaced by the non-null parameter values.
@@ -328,7 +328,7 @@ class _PostDto implements PostDto {
 @override final  String? createdAt;
 /// Number of comments, replies included. Absent when the caller may not read the comments of this post — comments are members-only, so an outsider is told nothing, not even zero.
 @override final  int? commentCount;
-/// Who wrote the post. Absent when the post is signed by the team (signedAsTeam) and the caller neither administers the team nor wrote it — render the team instead.
+/// Who wrote the post. Absent when the caller is not a member of the team — member names are never sent to anyone else — and when the post is signed by the team (signedAsTeam) and the caller neither administers the team nor wrote it: render the team instead.
 @override final  PublicUserDto? createdBy;
 
 /// Create a copy of PostDto

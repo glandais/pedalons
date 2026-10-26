@@ -75,7 +75,7 @@ sealed class PublicationDto with _$PublicationDto {
     /// Ride groups
     required List<RideGroupDto> groups,
 
-    /// Preview of first participants (max 5)
+    /// Preview of first participants (max 5). Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.
     required List<PublicUserDto> topParticipants,
 
     /// Whether every group of the ride has reached its capacity. False when the ride has no group, or when at least one group has no maxParticipants.
@@ -195,7 +195,7 @@ sealed class PublicationDto with _$PublicationDto {
     /// Number of comments, replies included. Absent when the caller may not read the comments of this post — comments are members-only, so an outsider is told nothing, not even zero.
     int? commentCount,
 
-    /// Who wrote the post. Absent when the post is signed by the team (signedAsTeam) and the caller neither administers the team nor wrote it — render the team instead.
+    /// Who wrote the post. Absent when the caller is not a member of the team — member names are never sent to anyone else — and when the post is signed by the team (signedAsTeam) and the caller neither administers the team nor wrote it: render the team instead.
     PublicUserDto? createdBy,
   }) = PublicationDtoPost;
 
@@ -243,7 +243,7 @@ sealed class PublicationDto with _$PublicationDto {
     /// Trip stages
     required List<TripStageDto> stages,
 
-    /// The first participants of the trip (at most 8), earliest registrations first — enough to draw avatars; empty on a list row. participantCount is the total; the whole list is paginated and searched by GET …/trips/{tripSlug}/participants.
+    /// The first participants of the trip (at most 8), earliest registrations first — enough to draw avatars; empty on a list row. participantCount is the total; the whole list is paginated and searched by GET …/trips/{tripSlug}/participants. Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.
     required List<PublicUserDto> participants,
 
     /// Whether the trip is soft-deleted

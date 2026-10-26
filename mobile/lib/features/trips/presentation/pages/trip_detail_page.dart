@@ -81,6 +81,9 @@ class _TripDetailContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final bool? isMember = ref.watch(teamMembershipProvider(trip.team.slug));
+    final bool canSeeNames = ref.watch(
+      canSeeMemberNamesProvider(trip.team.slug),
+    );
     final List<TripStageDto> stages = trip.orderedStages;
     final String? selected = ref.watch(selectedStageProvider(tripKey));
     // Le mode « Météo » de la carte d'ensemble (ledger `MOB-94`) : gardé en
@@ -185,8 +188,9 @@ class _TripDetailContent extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             child: TripSummaryCard(
               trip: trip,
-              onShowParticipants: () =>
-                  ParticipantsSheet.openTrip(context, trip),
+              onShowParticipants: canSeeNames
+                  ? () => ParticipantsSheet.openTrip(context, trip)
+                  : null,
             ),
           ),
         ),
@@ -227,7 +231,7 @@ class _TripDetailContent extends ConsumerWidget {
               ),
             ),
           ),
-        if (trip.participants.isNotEmpty)
+        if (canSeeNames && trip.participants.isNotEmpty)
           SliverToBoxAdapter(child: _participants(context)),
         if (participation.failure != null)
           SliverToBoxAdapter(

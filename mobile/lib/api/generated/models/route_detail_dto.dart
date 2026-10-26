@@ -56,9 +56,6 @@ abstract class RouteDetailDto with _$RouteDetailDto {
     /// Whether the route is public
     required String visibility,
 
-    /// Creator user
-    required PublicUserDto createdBy,
-
     /// Creation timestamp
     required String createdAt,
 
@@ -78,6 +75,9 @@ abstract class RouteDetailDto with _$RouteDetailDto {
     required List<TagDto> tags,
     GeoJsonPoint? start,
     GeoJsonPoint? end,
+
+    /// Creator user. Absent when the caller is not a member of the team: member names are never sent to anyone else.
+    PublicUserDto? createdBy,
 
     /// Number of comments, replies included. Absent when the caller may not read the comments of this route — comments are members-only, so an outsider is told nothing, not even zero.
     int? commentCount,

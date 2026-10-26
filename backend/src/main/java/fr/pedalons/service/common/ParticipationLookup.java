@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -59,16 +60,27 @@ public class ParticipationLookup {
    * number of queries for the whole page, never one per row: the group scalars in one projection
    * (no entity hydrated), the participant previews in two, the route thumbnails in one — and
    * nothing at all when the caller joined none of the page's rides.
+   *
+   * @param namedRideIds the rides of the page whose team's member names the caller may see
+   *     (docs/LEDGER_*.md API-144): the joined group of any other ride carries neither leader nor
+   *     participants, a former member's own registrations included
    */
-  public UserParticipations forListPage(Collection<Long> rideIds, Collection<Long> tripIds) {
+  public UserParticipations forListPage(
+      Collection<Long> rideIds, Collection<Long> tripIds, Set<Long> namedRideIds) {
     UserParticipations participations = forPublications(rideIds, tripIds);
     Map<Long, Long> groupIdByRide = participations.registeredGroupIdByRideId();
     if (groupIdByRide.isEmpty()) {
       return participations;
     }
     List<GroupRow> rows = rideGroupRepository.findGroupRows(groupIdByRide.values());
+    // The counts for every group, the participants only for those of rides the caller may name.
     Map<Long, ParticipantPreview> previews =
-        participantPreviewLookup.forRideGroups(rows.stream().map(GroupRow::id).toList());
+        participantPreviewLookup.forRideGroups(
+            rows.stream().map(GroupRow::id).toList(),
+            rows.stream()
+                .filter(r -> namedRideIds.contains(r.rideId()))
+                .map(GroupRow::id)
+                .collect(Collectors.toSet()));
     Map<Long, ThemedThumbnail> thumbnails =
         thumbnailLookup.forTeamEntities(
             rows.stream().map(GroupRow::routeId).filter(Objects::nonNull).distinct().toList());
@@ -79,7 +91,8 @@ public class ParticipationLookup {
           RideGroupDto.fromRow(
               row,
               row.routeId() != null ? thumbnails.get(row.routeId()) : null,
-              previews.getOrDefault(row.id(), ParticipantPreview.EMPTY)));
+              previews.getOrDefault(row.id(), ParticipantPreview.EMPTY),
+              namedRideIds.contains(row.rideId())));
     }
     return new UserParticipations(
         groupIdByRide, participations.registeredTripIds(), Map.copyOf(groupByRide));
