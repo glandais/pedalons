@@ -113,6 +113,10 @@ PATROL_DEVICE=05EC0174-83A8-4D6D-B334-BB93E84C8D46 bash e2e.sh > logs/e2e-ios.lo
 ```
 
 - Un test seul : `… bash e2e.sh -t patrol_test/<x>_test.dart`.
+- Suivre le log (iOS comme Android) : un grep sur `❌` remonte de faux échecs — une vérification
+  d'absence (`scrollTo` d'une clé qui ne doit pas exister) imprime un ❌ d'étape dans un test qui
+  passe. Retirer les codes ANSI, puis ne garder que les lignes qui *commencent* par ❌ et le bilan :
+  `tail -F logs/e2e-ios.log | sed -u 's/\x1b\[[0-9;]*[A-Za-z]//g' | grep -E --line-buffered '^❌|Total:|Successful:|Failed:'`.
 - `Total: 0` + code 65 après ~16 min = accès disque (voir §0), pas un bug de test.
 - Patrol désinstalle `fr.pedalons.mobile` à la fin : normal.
 - Fin : `xcrun simctl shutdown 05EC0174-83A8-4D6D-B334-BB93E84C8D46`.
