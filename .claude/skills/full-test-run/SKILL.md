@@ -24,6 +24,8 @@ une demande explicite. Hors de ce skill, elle tient toujours.
   les `…QueryCountTest`). Un échec backend : le signaler avec la sortie, ne pas s'acharner.
 - Après une correction de code applicatif, **reconstruire l'image e2e concernée** avant de
   retester (les e2e tournent sur les images, pas sur l'arbre de travail).
+- **Redémarrer Docker Desktop en entier avant chaque passe e2e** (web, iOS, Android) : voir
+  « Redémarrage Docker » au §2.
 - Ne pas commiter sans demande ; si on commite, `./format.sh` d'abord et l'entrée de ledger qui va.
 
 ## 0. Préparation
@@ -63,7 +65,20 @@ scripts/e2e.sh build frontend   # / backend — seulement si l'image n'est pas c
 scripts/e2e.sh up
 ```
 
+**Redémarrage Docker** — avant chaque passe e2e (web, iOS, Android), quitter Docker Desktop
+complètement, le relancer, puis remonter la pile :
+
+```bash
+osascript -e 'quit app "Docker"'
+while pgrep -qf 'Docker.app/Contents/MacOS'; do sleep 2; done
+open -a Docker
+until docker info >/dev/null 2>&1; do sleep 2; done
+scripts/e2e.sh up
+```
+
 ## 3. E2E web (Playwright)
+
+D'abord le redémarrage Docker du §2.
 
 ```bash
 scripts/e2e.sh test --workers=3 > logs/e2e-web.log 2>&1
@@ -88,6 +103,8 @@ scripts/e2e.sh test --workers=3 > logs/e2e-web.log 2>&1
 
 ## 4. E2E iOS (Patrol)
 
+D'abord le redémarrage Docker du §2.
+
 Simulateur : **iPhone 17 Pro Max**, iOS 26.5, UDID `05EC0174-83A8-4D6D-B334-BB93E84C8D46`.
 
 ```bash
@@ -102,7 +119,7 @@ PATROL_DEVICE=05EC0174-83A8-4D6D-B334-BB93E84C8D46 bash e2e.sh > logs/e2e-ios.lo
 
 ## 5. E2E Android (Patrol)
 
-Seulement une fois le simulateur iOS éteint.
+Seulement une fois le simulateur iOS éteint, et après le redémarrage Docker du §2.
 
 ```bash
 ~/Library/Android/sdk/emulator/emulator -avd pedalons_e2e -no-snapshot-save -no-window &
