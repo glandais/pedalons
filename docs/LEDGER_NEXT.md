@@ -210,8 +210,8 @@ faite, et le 500 du contact vendeur (`MOB-47`). Depuis l'import de `n-peloton` e
       `publish_beta.sh` (build 93, TestFlight et Play, tag `mobile.1.1.1.93`), version 1.1.1 créée
       dans App Store Connect (`MANUAL`), nouveautés poussées par `asc metadata apply` ; description,
       mots-clés et détail de revue (notes identiques à `review-notes.md`, compte de démo) recopiés de
-      la 1.1.0 par App Store Connect. Reste : attacher le build (`cd mobile/ios && bundle exec
-      fastlane release`), `asc validate`, soumettre, publier à la main après l'approbation. Le backend `13.0.0` déployé avant que la
+      la 1.1.0 par App Store Connect. Le 27 octobre : build 93 attaché (`fastlane release`),
+      `asc validate` sans erreur ni avertissement. Reste : soumettre, publier à la main après l'approbation. Le backend `13.0.0` déployé avant que la
       1.1.1 soit en vente casse ce détail de parcours pour les non-membres sur la 1.1.0.
 
 ### Couverture e2e Patrol — ce que les tests ne couvrent pas encore
