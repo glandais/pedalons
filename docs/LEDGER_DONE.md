@@ -2988,6 +2988,21 @@ relevés sont `WEB-111` à `WEB-114` et `MOB-87` à `MOB-90`. `MOB-88` et `MOB-8
 
 ## API — Contrat d'API et backend
 
+- [x] `API-143` **Les réponses de l'API sont compressées** (26 octobre 2026, contrat d'API
+  inchangé) — rien ne compressait l'API : le Caddy de l'hôte n'a pas d'`encode`, traefik pas de
+  middleware `compress` sur le routeur `quarkus` (seul le front compresse ce qu'il sert), et Quarkus
+  laissait `quarkus.http.enable-compression` à `false`. La tuile de tous les parcours en z7
+  partait en clair, à 841 Ko (480 Ko en gzip). `application.properties` active désormais la
+  compression (`deflate,gzip,br`) et ajoute à la liste par défaut des types compressibles
+  `application/vnd.mapbox-vector-tile`, `application/gpx+xml` et `text/calendar`. Quarkus REST
+  l'applique par méthode de ressource d'après son `@Produces` (`CompressionScanner`) ; la doc de
+  référence HTTP ne mentionne que les ressources statiques. Test :
+  `AllRouteResourceTest.allRoutesTile_shouldBeCompressed`.
+  **À ne pas défaire** : `compress-media-types` **remplace** la liste par défaut, qu'il répète. Un
+  type ajouté à l'API (JSON excepté) doit y entrer, et les types déjà compressés (zip, pdf, FIT,
+  images) doivent en rester dehors. Brotli passe par brotli4j, dont Maven choisit la bibliothèque
+  native selon l'OS de la build : une image construite sur un Mac arm64 n'aurait pas la bonne.
+
 - [x] `API-142` **L'inscription « Devenir testeur·se » est supprimée, de la base au site** (25
   octobre 2026, **API 12.0.0**, majeure : deux endpoints retirés) — les applications sont dans leurs
   magasins, et les testeurs d'un test fermé passent par le canal du magasin, pas par une liste tenue

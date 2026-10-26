@@ -262,6 +262,18 @@ class AllRouteResourceTest extends AbstractResourceTest {
     MvtAssert.assertContainsSlugs(tile, publicRoute.getSlug(), teamRoute.getSlug());
   }
 
+  /** Nothing in front of the backend compresses: a tile not gzipped here travels raw. */
+  @Test
+  void allRoutesTile_shouldBeCompressed() {
+    given()
+        .header("Accept-Encoding", "gzip")
+        .when()
+        .get(ROUTES_TILE)
+        .then()
+        .statusCode(200)
+        .header("Content-Encoding", "gzip");
+  }
+
   @Test
   void allRoutesTile_outsideRouteBounds_shouldBeEmpty() {
     given().when().get("/api/routes/tiles/12/0/0.mvt").then().statusCode(200).body(emptyString());
