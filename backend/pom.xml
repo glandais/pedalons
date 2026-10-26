@@ -14,7 +14,7 @@
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
         <quarkus.platform.version>3.40.1.1</quarkus.platform.version>
         <compiler-plugin.version>3.16.0</compiler-plugin.version>
-        <surefire-plugin.version>3.6.0</surefire-plugin.version>
+        <surefire-plugin.version>3.6.1</surefire-plugin.version>
         <!-- Keep at 1: with forkCount>1 Surefire dispatches classes one at a time and
              Quarkus restarts (~13s) per class, which costs more than the parallelism buys -->
         <surefire.forkCount>1</surefire.forkCount>
