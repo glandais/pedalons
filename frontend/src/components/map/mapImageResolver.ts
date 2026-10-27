@@ -20,12 +20,18 @@ const ICON_LOGICAL = 26
 const LABEL_MAX_CHARS = 28
 const LABEL_HEIGHT = 22
 
+// Every canvas here is drawn once and read back with getImageData: `willReadFrequently` keeps it in
+// memory instead of on the GPU, whose readback cost ~1 ms an image — 200 ms for a long route's
+// waypoint labels, on the page's first render.
 function canvasOf(width: number, height: number): CanvasRenderingContext2D | null {
   const canvas = document.createElement('canvas')
   canvas.width = width
   canvas.height = height
-  return canvas.getContext('2d')
+  return canvas.getContext('2d', { willReadFrequently: true })
 }
+
+/** One context to measure every label with. */
+let measureContext: CanvasRenderingContext2D | null | undefined
 
 function drawArrow(): ImageData | null {
   const ctx = canvasOf(ARROW_SIZE, ARROW_SIZE)
@@ -76,7 +82,8 @@ async function drawLabel(name: string, dark: boolean): Promise<ImageData | null>
     // the fallback face does the job
   }
   const text = truncate(name)
-  const measure = canvasOf(1, 1)
+  if (measureContext === undefined) measureContext = canvasOf(1, 1)
+  const measure = measureContext
   if (!measure) return null
   measure.font = LABEL_FONT
   const width = Math.ceil(measure.measureText(text).width) + 12
