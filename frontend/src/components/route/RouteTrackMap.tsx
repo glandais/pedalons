@@ -13,7 +13,7 @@ import { StartMarker, EndMarker, HoverMarker, KmMarkersLayer } from '../map/MapM
 import {
   calculateBounds,
   distance,
-  findNearestPoint,
+  nearestPointFinder,
   createGradientLineFeatures,
 } from '../map/mapUtils'
 import { PedalonsMap } from '../map/PedalonsMap'
@@ -110,6 +110,7 @@ export function RouteTrackMap({
     [route.tracks]
   )
   const waypoints = useMemo(() => route.waypoints ?? [], [route.waypoints])
+  const findNearest = useMemo(() => nearestPointFinder(trackPoints), [trackPoints])
 
   // Create gradient line GeoJSON
   const lineFeatures = useMemo(
@@ -178,18 +179,13 @@ export function RouteTrackMap({
       const ne = bounds.getNorthEast()
       const mapViewSize = distance(sw.lng, sw.lat, ne.lng, ne.lat)
 
-      const nearestIndex = findNearestPoint(
-        trackPoints,
-        event.lngLat.lat,
-        event.lngLat.lng,
-        mapViewSize / 20.0
-      )
+      const nearestIndex = findNearest(event.lngLat.lat, event.lngLat.lng, mapViewSize / 20.0)
 
       if (nearestIndex >= 0) {
         onHoverPoint(nearestIndex)
       }
     },
-    [trackPoints, mapRef, onHoverPoint]
+    [trackPoints, findNearest, mapRef, onHoverPoint]
   )
 
   const handleMouseLeave = useCallback(() => {

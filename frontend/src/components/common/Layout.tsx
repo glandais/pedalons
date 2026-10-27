@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { memo, useEffect } from 'react'
 import { Outlet, useLocation, useNavigationType } from 'react-router-dom'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { useTranslation } from 'react-i18next'
@@ -51,6 +51,15 @@ import classes from './Layout.module.css'
 
 /** Target of the skip link; the page's `<main>`. */
 const MAIN_ID = 'main-content'
+
+/**
+ * The page, shielded from the layout's own re-renders: `useHeadroom` re-renders the layout on every
+ * scroll event, which without this re-rendered the whole page each time — thousands of components
+ * on a long route's page, 40 to 60 ms a frame. The outlet still follows navigations (its context).
+ */
+const PageOutlet = memo(function PageOutlet() {
+  return <Outlet />
+})
 
 export function Layout() {
   const { t } = useTranslation()
@@ -345,7 +354,7 @@ export function Layout() {
         <Container size="lg" px={0}>
           <InstallBanner />
           <Breadcrumb items={breadcrumbItems} showBackLink={showBackLink} />
-          <Outlet />
+          <PageOutlet />
         </Container>
       </AppShell.Main>
 

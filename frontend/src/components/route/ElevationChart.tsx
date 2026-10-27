@@ -20,6 +20,7 @@ import {
 } from 'chart.js'
 import { useTranslation } from 'react-i18next'
 import { Box, Text, useMantineTheme } from '@mantine/core'
+import { useDebouncedValue } from '@mantine/hooks'
 import {
   NEUTRAL_COLOR,
   getColorFromGradient,
@@ -34,11 +35,15 @@ import { useUnits } from '../../hooks/useUnits'
 import { getOverlayBg } from '@/lib/colors'
 import { useResolvedColorScheme } from '@/hooks/useResolvedColorScheme'
 import type { MappableRoute } from './RouteMapView'
+import { breaksGradient, colorBreaks, sampleProfile, sampledIndexOf } from './profileSampling'
 
 // Register the shared Chart.js building blocks (line chart with fill + tooltip).
 // chartjs-plugin-zoom is registered PER-INSTANCE (via the <Line plugins> prop) only when a
 // consumer opts into zoom, so the embedded chart never pays for the zoom machinery.
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Filler)
+
+/** Idle time after a zoom or pan before the profile is sampled for the new window. */
+const SAMPLE_WINDOW_DEBOUNCE_MS = 250
 
 /**
  * chartjs-plugin-zoom transitively imports hammerjs, which reads `window` at module load and
@@ -147,6 +152,8 @@ export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartPro
       [route.tracks]
     )
     const climbs = useMemo(() => route.tracks.flatMap((track) => track.climbs), [route.tracks])
+    const xs = useMemo(() => Float64Array.from(trackPoints, (p) => p[3]), [trackPoints])
+    const ys = useMemo(() => Float64Array.from(trackPoints, (p) => p[2]), [trackPoints])
 
     // Waypoints on the track only: one that is off it (no distance) has no place on the profile.
     const markers = useMemo(
@@ -156,10 +163,7 @@ export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartPro
 
     // Computed over the whole route, never the zoom window: an axis that rescales under a pan
     // gesture makes the profile look like it's breathing.
-    const yBounds = useMemo(
-      () => getElevationAxisBounds(trackPoints.map((p) => p[2])),
-      [trackPoints]
-    )
+    const yBounds = useMemo(() => getElevationAxisBounds(Array.from(ys)), [ys])
 
     // Displayed x-range, null = full route extent. Held in state (not just mutated on the chart
     // instance) so re-renders that reapply the options — hover updates, theme changes — keep the
@@ -176,51 +180,91 @@ export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartPro
       []
     )
 
-    // Prepare chart data with per climb-part gradient coloring on a linear (distance-in-meters)
-    // x-axis, which is what makes zoom sync against the map possible.
+    // The colour (and dash) of the segment starting at each point, worked out once: the scriptable
+    // options below run per segment on every draw.
     const bySurface = colorBy === 'surface' && surfaceAt !== undefined
-    const chartData: ChartData<'line'> = useMemo(
-      () => ({
+    const colors = useMemo(
+      () =>
+        trackPoints.map((p, i) =>
+          bySurface ? surfaceAt(i) : getColorFromGradient(getPointClimbGradient(p, climbs))
+        ),
+      [trackPoints, climbs, bySurface, surfaceAt]
+    )
+    const dashed = useMemo(
+      () => (dashedSegment ? trackPoints.map((_, i) => dashedSegment(i)) : null),
+      [trackPoints, dashedSegment]
+    )
+    const styles = useMemo(
+      () => (dashed ? colors.map((c, i) => (dashed[i] ? `${c} dashed` : c)) : colors),
+      [colors, dashed]
+    )
+
+    // The points drawn, as indices into `trackPoints`: a long route is thinned to the resolution
+    // of the strip, sampled again for the zoom window (profileSampling.ts). Every index the chart
+    // hands back (data, tooltip, hover) goes through it.
+    // Sampled again once the gesture settles, not at every wheel notch: the window's margin covers
+    // the moves in between.
+    const [sampleWindow] = useDebouncedValue(xRange, SAMPLE_WINDOW_DEBOUNCE_MS)
+    const sources = useMemo(
+      () => sampleProfile(xs, ys, styles, sampleWindow),
+      [xs, ys, styles, sampleWindow]
+    )
+
+    // Prepare chart data with per climb-part gradient coloring on a linear (distance-in-meters)
+    // x-axis, which is what makes zoom sync against the map possible. The colours are a canvas
+    // gradient with hard stops, built again only when the axis moves: one path to stroke and fill.
+    // Dashes need per-segment styles; only the route planner draws them, on short routes.
+    const breaks = useMemo(() => colorBreaks(xs, colors), [xs, colors])
+    const chartData: ChartData<'line'> = useMemo(() => {
+      let cached: { key: string; gradient: CanvasGradient } | null = null
+      const gradient = (context: ScriptableContext<'line'>) => {
+        const { chart } = context
+        const area = chart.chartArea
+        const x = chart.scales?.x
+        if (!area || !x) return colors[0] ?? NEUTRAL_COLOR
+        const key = `${area.left} ${area.right} ${x.min} ${x.max}`
+        if (cached?.key !== key) {
+          cached = {
+            key,
+            gradient: breaksGradient(chart.ctx, breaks, area.left, area.right, (v) =>
+              x.getPixelForValue(v)
+            ),
+          }
+        }
+        return cached.gradient
+      }
+      return {
         datasets: [
           {
             label: 'Elevation',
-            data: trackPoints.map((p) => ({ x: p[3], y: p[2] })),
+            data: sources.map((i) => ({ x: xs[i], y: ys[i] })),
             fill: filled,
-            borderColor: (context: ScriptableContext<'line'>) => {
-              const index = context.dataIndex
-              if (index === undefined) return NEUTRAL_COLOR
-              if (bySurface) return surfaceAt(index)
-              const gradient = getPointClimbGradient(trackPoints[index], climbs)
-              return getColorFromGradient(gradient)
-            },
+            borderColor: gradient,
+            backgroundColor: filled ? gradient : undefined,
             borderWidth: 2,
             pointRadius: 0,
-            segment: {
-              backgroundColor: filled
-                ? (ctx: ScriptableLineSegmentContext) => {
-                    if (bySurface) return surfaceAt(ctx.p0DataIndex)
-                    const gradient = getPointClimbGradient(trackPoints[ctx.p0DataIndex], climbs)
-                    return getColorFromGradient(gradient)
-                  }
-                : undefined,
-              borderColor: (ctx: ScriptableLineSegmentContext) => {
-                if (bySurface) return surfaceAt(ctx.p0DataIndex)
-                const gradient = getPointClimbGradient(trackPoints[ctx.p0DataIndex], climbs)
-                return getColorFromGradient(gradient)
-              },
-              borderDash: (ctx: ScriptableLineSegmentContext) =>
-                dashedSegment?.(ctx.p0DataIndex) ? [6, 4] : undefined,
-            },
+            // Static, so Chart.js shares one options object across the (invisible) points instead
+            // of resolving the scriptable gradient for each; the tooltip reads `colors` itself.
+            pointBorderColor: NEUTRAL_COLOR,
+            pointBackgroundColor: NEUTRAL_COLOR,
+            segment: dashed
+              ? {
+                  borderDash: (ctx: ScriptableLineSegmentContext) =>
+                    dashed[sources[ctx.p0DataIndex]] ? [6, 4] : undefined,
+                }
+              : undefined,
           },
         ],
-      }),
-      [trackPoints, climbs, filled, dashedSegment, bySurface, surfaceAt]
-    )
+      }
+    }, [sources, xs, ys, colors, breaks, dashed, filled])
 
     const chartOptions: ChartOptions<'line'> = useMemo(
       () => ({
         responsive: true,
         maintainAspectRatio: false,
+        // The points are already { x, y }, sorted by distance: no parsing, no sort check.
+        parsing: false,
+        normalized: true,
         interaction: {
           mode: 'index',
           intersect: false,
@@ -240,15 +284,17 @@ export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartPro
             callbacks: {
               title: (items: TooltipItem<'line'>[]) => {
                 if (items.length > 0) {
-                  const index = items[0].dataIndex
-                  const point = trackPoints[index]
+                  const point = trackPoints[sources[items[0].dataIndex]]
                   return `${distanceFormat(point[3])}`
                 }
                 return ''
               },
+              labelColor: (item: TooltipItem<'line'>) => {
+                const color = colors[sources[item.dataIndex]] ?? NEUTRAL_COLOR
+                return { borderColor: color, backgroundColor: color }
+              },
               label: (item: TooltipItem<'line'>) => {
-                const index = item.dataIndex
-                const point = trackPoints[index]
+                const point = trackPoints[sources[item.dataIndex]]
                 // Grade of the climb part the point falls in (matching prendslaroue's precision).
                 const gradient = getPointClimbGradient(point, climbs)
 
@@ -264,7 +310,7 @@ export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartPro
               // The waypoints about there: « Ravitaillement : Café du Port ».
               footer: (items: TooltipItem<'line'>[]) => {
                 if (items.length === 0) return []
-                const dist = trackPoints[items[0].dataIndex][3]
+                const dist = xs[sources[items[0].dataIndex]]
                 const x = xRange ?? { min: 0, max: route.distance }
                 const tolerance = Math.max(50, (x.max - x.min) / 150)
                 return waypointsNear(markers, dist, tolerance).map((w) => {
@@ -273,7 +319,7 @@ export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartPro
                 })
               },
               afterLabel: (item: TooltipItem<'line'>) => {
-                const dist = trackPoints[item.dataIndex][3]
+                const dist = xs[sources[item.dataIndex]]
                 const lines: string[] = []
 
                 for (let ci = 0; ci < climbs.length; ci++) {
@@ -397,7 +443,7 @@ export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartPro
           }
           if (activeElements.length > 0) {
             const index = activeElements[0].index
-            onHoverPointRef.current(index)
+            onHoverPointRef.current(sources[index])
 
             // Update crosshair position
             if (chartRef.current) {
@@ -411,10 +457,15 @@ export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartPro
             }
           }
         },
-        animation: { duration: 0 },
+        // false, not a zero duration: with a duration Chart.js still builds an animation per
+        // property of every point on each update — 10× the cost of the update itself.
+        animation: false,
       }),
       [
         trackPoints,
+        xs,
+        sources,
+        colors,
         climbs,
         chartColors,
         config,
@@ -431,30 +482,27 @@ export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartPro
       ]
     )
 
-    // Update chart crosshair when hovering over the map (bidirectional cursor sync)
+    // Update chart crosshair when hovering over the map (bidirectional cursor sync). A redraw, never
+    // an update: the tooltip lays itself out in setActiveElements, and an update re-lays the whole
+    // dataset out — on every mouse move.
     useEffect(() => {
-      if (chartRef.current && hoveredPointIndex >= 0) {
-        const chart = chartRef.current as ChartWithCrosshair
-        const meta = chart.getDatasetMeta(0)
-        const point = meta.data[hoveredPointIndex]
-        if (point) {
-          chart.crosshair = { x: point.x, color: chartColors.crosshair }
-          chart.draw()
-
-          // Show tooltip
-          chart.tooltip?.setActiveElements([{ datasetIndex: 0, index: hoveredPointIndex }], {
-            x: point.x,
-            y: point.y,
-          })
-          chart.update()
+      const chart = chartRef.current as ChartWithCrosshair | null
+      if (!chart) return
+      const index = sampledIndexOf(sources, xs, hoveredPointIndex)
+      const point = index >= 0 ? chart.getDatasetMeta(0).data[index] : undefined
+      if (point) {
+        // At the hovered point's own distance, which the thinned profile may not carry.
+        chart.crosshair = {
+          x: chart.scales.x.getPixelForValue(xs[hoveredPointIndex]),
+          color: chartColors.crosshair,
         }
-      } else if (chartRef.current) {
-        const chart = chartRef.current as ChartWithCrosshair
+        chart.tooltip?.setActiveElements([{ datasetIndex: 0, index }], { x: point.x, y: point.y })
+      } else {
         chart.crosshair = null
         chart.tooltip?.setActiveElements([], { x: 0, y: 0 })
-        chart.update()
       }
-    }, [hoveredPointIndex, chartColors.crosshair])
+      chart.draw()
+    }, [hoveredPointIndex, chartColors.crosshair, sources, xs])
 
     const zoomPlugin = useZoomPlugin(zoomEnabled)
     const plugins = useMemo(

@@ -496,7 +496,8 @@ export function RoutesMapView({
       onHover: (_event: ChartEvent, activeElements: ActiveElement[]) => {
         setHoveredPointIndex(activeElements.length > 0 ? activeElements[0].index : -1)
       },
-      animation: { duration: 0 },
+      // false, not a zero duration, which still builds an animation per point property.
+      animation: false,
     }),
     [chartColors, highlightedRoute, config, distance, elevation, yBounds]
   )

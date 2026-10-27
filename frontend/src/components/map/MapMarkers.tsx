@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react'
+import { memo, useMemo, type CSSProperties } from 'react'
 import { Marker } from 'react-map-gl/maplibre'
 import { Box, Text } from '@mantine/core'
 import { getOverlayBg } from '@/lib/colors'
@@ -110,8 +110,12 @@ interface KmMarkersLayerProps {
   totalDistanceM: number
 }
 
-export function KmMarkersLayer({ coords, totalDistanceM }: KmMarkersLayerProps) {
-  const markers = computeKmMarkers(coords, totalDistanceM)
+// Memoized: its map re-renders on every hover move, and a long route carries some 200 markers.
+export const KmMarkersLayer = memo(function KmMarkersLayer({
+  coords,
+  totalDistanceM,
+}: KmMarkersLayerProps) {
+  const markers = useMemo(() => computeKmMarkers(coords, totalDistanceM), [coords, totalDistanceM])
   return (
     <>
       {markers.map((m) => (
@@ -119,4 +123,4 @@ export function KmMarkersLayer({ coords, totalDistanceM }: KmMarkersLayerProps) 
       ))}
     </>
   )
-}
+})

@@ -1,4 +1,6 @@
 import type { LngLatBoundsLike } from 'maplibre-gl'
+import KDBush from 'kdbush'
+import { around } from 'geokdbush'
 import type { ClimbDto, RouteDetailDto, TrackDto } from '@/api/dto'
 
 // Color calculation (matching biketeam single-map.js `getColor`)
@@ -215,6 +217,24 @@ export function findNearestPoint(
   }
 
   return nearestIndex
+}
+
+/**
+ * {@link findNearestPoint} over a spatial index built once for the track: a mouse move then costs a
+ * few comparisons instead of a haversine per point (22 000 on a long route). Same arguments and
+ * result, `maxDistance` in meters.
+ */
+export function nearestPointFinder(
+  trackPoints: number[][]
+): (lat: number, lng: number, maxDistance: number) => number {
+  if (trackPoints.length === 0) return () => -1
+  const index = new KDBush(trackPoints.length)
+  for (const p of trackPoints) index.add(p[0], p[1])
+  index.finish()
+  return (lat, lng, maxDistance) => {
+    const [nearest] = around(index, lng, lat, 1, maxDistance / 1000)
+    return nearest ?? -1
+  }
 }
 
 // Create GeoJSON FeatureCollection with multiple line segments for gradient coloring. With

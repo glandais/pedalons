@@ -81,10 +81,11 @@ describe('ElevationChart', () => {
   it('colours the segments by surface when asked, and by grade otherwise', async () => {
     const surfaceAt = (i: number) => (i === 0 ? '#aa0000' : '#00aa00')
     const segmentColor = () => {
+      // Before the first layout there is no axis to build the gradient on: the first colour.
       const datasets = lastData.value?.datasets as {
-        segment: { borderColor: (ctx: { p0DataIndex: number }) => string }
+        borderColor: (ctx: { chart: Record<string, unknown> }) => string
       }[]
-      return datasets[0].segment.borderColor({ p0DataIndex: 0 })
+      return datasets[0].borderColor({ chart: {} })
     }
     render(
       <MantineProvider>
