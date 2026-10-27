@@ -1,5 +1,6 @@
 package fr.pedalons.dto.auth.request;
 
+import fr.pedalons.common.EmailAddresses;
 import fr.pedalons.dto.validation.ValidateSchema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -16,4 +17,8 @@ public record LoginRequest(
         @Size(max = 250)
         @Schema(description = "Email address", examples = "user@example.com")
         String email,
-    @NotBlank @Size(max = 100) @Schema(description = "Password") String password) {}
+    @NotBlank @Size(max = 100) @Schema(description = "Password") String password) {
+  public LoginRequest {
+    email = EmailAddresses.normalize(email);
+  }
+}

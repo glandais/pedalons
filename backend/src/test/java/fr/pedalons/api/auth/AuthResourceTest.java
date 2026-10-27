@@ -869,6 +869,52 @@ class AuthResourceTest extends AbstractResourceTest {
     assertThat(mailbox.getMailsSentTo("forgot@example.com").size(), is(1));
   }
 
+  /** docs/LEDGER_*.md API-146: the address typed with other capitals still finds the account. */
+  @Test
+  void forgotPassword_ignoresTheCaseOfTheAddress() {
+    createVerifiedUserWithPassword("forgot@example.com", "Forgot User", "oldpassword");
+    mailbox.clear();
+
+    given()
+        .contentType(ContentType.JSON)
+        .body("{\"email\": \" Forgot@Example.COM \"}")
+        .when()
+        .post("/api/auth/forgot-password")
+        .then()
+        .statusCode(200);
+
+    assertThat(mailbox.getMailsSentTo("forgot@example.com").size(), is(1));
+  }
+
+  @Test
+  void login_ignoresTheCaseOfTheAddress() {
+    createVerifiedUserWithPassword("login@example.com", "Login User", "mypassword123");
+
+    login("Login@Example.com", "mypassword123")
+        .statusCode(200)
+        .body("user.email", equalTo("login@example.com"));
+  }
+
+  @Test
+  void register_storesTheAddressInLowerCase() {
+    given()
+        .contentType(ContentType.JSON)
+        .body(
+            """
+            {
+              "email": "NewUser@Example.com",
+              "displayName": "New User",
+              "acceptTerms": true
+            }
+            """)
+        .when()
+        .post("/api/auth/register")
+        .then()
+        .statusCode(200);
+
+    assertThat(mailbox.getMailsSentTo("newuser@example.com").size(), is(1));
+  }
+
   @Test
   void forgotPassword_withNonexistentEmail_shouldStillReturn200() {
     given()

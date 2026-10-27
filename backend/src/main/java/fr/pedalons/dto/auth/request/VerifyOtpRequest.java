@@ -1,5 +1,6 @@
 package fr.pedalons.dto.auth.request;
 
+import fr.pedalons.common.EmailAddresses;
 import fr.pedalons.dto.validation.ValidateSchema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -20,4 +21,8 @@ public record VerifyOtpRequest(
     @NotBlank
         @Pattern(regexp = "^\\d{6}$", message = "Code must be 6 digits")
         @Schema(description = "6-digit OTP code", examples = "123456")
-        String code) {}
+        String code) {
+  public VerifyOtpRequest {
+    email = EmailAddresses.normalize(email);
+  }
+}

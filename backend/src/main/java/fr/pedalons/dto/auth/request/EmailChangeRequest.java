@@ -1,5 +1,6 @@
 package fr.pedalons.dto.auth.request;
 
+import fr.pedalons.common.EmailAddresses;
 import fr.pedalons.dto.validation.ValidateSchema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -13,4 +14,8 @@ public record EmailChangeRequest(
         @Email
         @Size(max = 250)
         @Schema(description = "New email address", examples = "user@example.com", required = true)
-        String email) {}
+        String email) {
+  public EmailChangeRequest {
+    email = EmailAddresses.normalize(email);
+  }
+}

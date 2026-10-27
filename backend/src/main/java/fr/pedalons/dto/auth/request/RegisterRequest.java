@@ -1,5 +1,6 @@
 package fr.pedalons.dto.auth.request;
 
+import fr.pedalons.common.EmailAddresses;
 import fr.pedalons.dto.validation.AcceptableText;
 import fr.pedalons.dto.validation.ValidateSchema;
 import jakarta.validation.constraints.AssertTrue;
@@ -34,4 +35,8 @@ public record RegisterRequest(
                 "The member accepted the terms of service. Required, and must be true: the"
                     + " sign-up form asks for it with a checkbox.",
             required = true)
-        boolean acceptTerms) {}
+        boolean acceptTerms) {
+  public RegisterRequest {
+    email = EmailAddresses.normalize(email);
+  }
+}
