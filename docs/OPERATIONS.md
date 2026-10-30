@@ -133,6 +133,12 @@ docker exec "$(docker ps -qf name=${ENV_NAME}_backend)" sh -c \
 docker stats --no-stream        # usage against each limit
 ```
 
+**A heap OutOfMemoryError leaves a dump** in the environment's `data/cache/java_pid1.hprof`
+(`-XX:+HeapDumpOnOutOfMemoryError`, `quarkus.jib.jvm-additional-arguments`), written before
+`ExitOnOutOfMemoryError` ends the JVM. It is as large as the heap and holds personal data (e-mail
+addresses, tokens, request bodies): analyse it on the host or over an encrypted channel, then delete
+it — while it is there, the next OOM writes no new dump. A cgroup kill (exit 137) leaves none.
+
 **Varnish's cache size and its limit go together.** `VARNISH_SIZE` is malloc storage, so it is
 resident memory once the cache fills; keep `VARNISH_MEMORY` about half as much again. It used to be
 20 G with no limit at all. A smaller cache only costs imgproxy CPU on a miss.
@@ -993,7 +999,7 @@ through, whose outage would then silence its own alert. Severity only says how s
 | `DiskAlmostFull` (critical) | a filesystem under 15 % free | `docker system df`, `data/cache`, old images |
 | `DiskFillingUp` | a filesystem full within 24 h at the last 6 h's rate | same |
 | `HostLowMemory` | under 10 % of the host's memory available for 15 min | `docker stats` |
-| `BackendHeapFull` | over 90 % of the heap still live after GC for 15 min | raise `BACKEND_MEMORY` |
+| `BackendHeapFull` | over 90 % of the heap still live after GC for 15 min | raise `BACKEND_MEMORY`; `jcmd 1 GC.class_histogram` in the backend container says what fills it |
 | `BackendConnectionPoolExhausted` | requests waiting for a database connection for 5 min | slow queries, a stuck transaction |
 | `BackendErrors` (Loki) | more than 10 `ERROR` lines in 10 min, for 5 min | the lines themselves, in Loki |
 | `TargetDown` | a scrape target unreachable for 5 min | `docker stack ps` of its stack |

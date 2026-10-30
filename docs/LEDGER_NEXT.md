@@ -941,6 +941,20 @@ Ce que les tests ne prouvent pas, parce qu'ils ne passent ni par Flyway ni par u
       Laisse `AUD-1` dehors. Étude, découpage et décisions :
       [`2026-10-25-public-registry.md`](plans/2026-10-25-public-registry.md). Taille : M (deux à
       trois jours).
+- [ ] `OPS-55` **Le heap du backend de prod se remplit, puis un import GPX le fait tomber** — le
+      29 octobre 2026 à 20 h 49 UTC, `OutOfMemoryError: Java heap space` (sortie 3,
+      `ExitOnOutOfMemoryError`) pendant deux imports GPX lourds à la suite (« Nantes – Houtkerque »,
+      50 tuiles d'altitude). Avant cela, `BackendHeapFull` sonnait depuis deux jours : la mémoire
+      encore occupée après GC était montée de 69 % à 91 % de l'old gen (≈ 615 MiB) dans les huit
+      heures suivant le démarrage du 27 octobre, puis s'était stabilisée entre 92 % et 95 % ; une
+      tâche neuve repart à environ 180 MiB. Une courbe qui monte puis plafonne fait penser à un cache
+      borné plutôt qu'à une fuite. Fait le 30 octobre : `BACKEND_MEMORY=2G` dans le `.env` de prod,
+      et un dump du heap au prochain OOM (`HeapDumpOnOutOfMemoryError`, `/mnt/cache/java_pid1.hprof`,
+      voir `application.properties`). **Reste** : comparer `jcmd 1 GC.class_histogram` entre une
+      tâche neuve et la même 24 à 48 h plus tard (référence : `~/heap-histo/` sur le serveur, la
+      première relevée le 30 octobre sur une tâche de 14 h) pour nommer ce qui grossit — à la
+      première lecture, 242 000 `LinkedHashMap$Entry` et 78 MB de `byte[]` ; puis le borner ou le
+      sortir du heap, et rendre l'import GPX moins gourmand si le pic suffit seul. Taille : S à M.
 
 ---
 
