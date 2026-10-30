@@ -323,6 +323,15 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
 (`WEB-13` à `WEB-22`, livrés, avec ce que l'automatisation ne voit pas) : voir
 `frontend/e2e/README.md`.
 
+- [ ] `WEB-125` **La carte d'un parcours plante pendant une animation de caméra (S)** — remontée
+      automatique [pedalons-feedback#11](https://github.com/glandais/pedalons-feedback/issues/11),
+      deux occurrences (20 et 28 octobre 2026, Chrome puis Firefox) sur
+      `/equipes/:team/parcours/:slug` : `TypeError` sur un `null[0]` dans MapLibre, pile
+      `easeTo` → `setZoom` → `_calcMatrices`. Une matrice de projection non inversible, ce qui
+      arrive quand le conteneur de la carte a une taille nulle (carte démontée ou masquée en cours
+      d'animation). Candidats : le `fitBounds` animé de `RouteTrackMap.tsx` au changement de trace,
+      le `easeTo` de `WaypointLayer.tsx`. À reproduire avant de corriger (arrêter l'animation au
+      démontage ou quand le conteneur tombe à zéro).
 - [ ] `WEB-119` **La météo sur la carte : recette navigateur des paliers 1 à 3 (S)** — `WEB-115` à
       `WEB-118`, plan [`2026-10-24-weather-on-map.md`](plans/archive/2026-10-24-weather-on-map.md). Sur la pile e2e :
       `pnpm e2e routes-render -g 'rideMap /'` (la sortie solo `soloRide` ajoutée au jeu de données,
