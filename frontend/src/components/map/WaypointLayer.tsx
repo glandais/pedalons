@@ -74,12 +74,13 @@ export function WaypointLayer({
     if (!waypoints.includes(selection.waypoint)) return
     const [lng, lat] = selection.waypoint.geometry.coordinates
     const map = mapRef.getMap()
-    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-    const duration = reduced ? 0 : undefined
+    // No `duration` key: MapLibre copies an explicit `undefined` over its default, and the animation
+    // then divides by it — a NaN zoom that crashes the map (docs/LEDGER_*.md WEB-125). Reduced
+    // motion needs nothing either: MapLibre already jumps when the visitor asks for it.
     if (selection.from === 'list') {
-      map.easeTo({ center: [lng, lat], zoom: Math.max(map.getZoom(), LIST_SELECT_ZOOM), duration })
+      map.easeTo({ center: [lng, lat], zoom: Math.max(map.getZoom(), LIST_SELECT_ZOOM) })
     } else if (!map.getBounds().contains([lng, lat])) {
-      map.easeTo({ center: [lng, lat], duration })
+      map.easeTo({ center: [lng, lat] })
     }
   }, [mapRef, selection, waypoints])
 

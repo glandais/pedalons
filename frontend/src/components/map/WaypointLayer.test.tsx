@@ -6,6 +6,7 @@ const seen = vi.hoisted(() => ({
   sources: [] as Record<string, unknown>[],
   layers: [] as Record<string, unknown>[],
   popups: [] as Record<string, unknown>[],
+  map: undefined as { getMap: () => unknown } | undefined,
 }))
 
 vi.mock('react-map-gl/maplibre', () => ({
@@ -21,7 +22,7 @@ vi.mock('react-map-gl/maplibre', () => ({
     seen.popups.push(props)
     return <div data-testid="popup">{props.children}</div>
   },
-  useMap: () => ({ current: undefined }),
+  useMap: () => ({ current: seen.map }),
 }))
 vi.mock('../route/WaypointDetails', () => ({
   WaypointDetails: ({ waypoint }: { waypoint: WaypointDto }) => <span>{waypoint.name}</span>,
@@ -42,6 +43,7 @@ describe('WaypointLayer', () => {
   afterEach(() => {
     cleanup()
     seen.sources.length = seen.layers.length = seen.popups.length = 0
+    seen.map = undefined
   })
 
   it('hands the source the point on the equator, as the others (WEB-108)', () => {
@@ -96,5 +98,26 @@ describe('WaypointLayer', () => {
       />
     )
     expect(queryByTestId('popup')).toBeNull()
+  })
+
+  it('eases to a point picked in the list without an undefined duration (WEB-125)', () => {
+    // MapLibre's easeTo copies every key over its defaults: `duration: undefined` turned the
+    // animation's progress into NaN, then the zoom, and the projection matrix failed to invert.
+    const easeTo = vi.fn()
+    seen.map = { getMap: () => ({ easeTo, getZoom: () => 8 }) }
+    const a = wp('A', [3, 45])
+    render(
+      <WaypointLayer
+        waypoints={[a]}
+        selection={{ waypoint: a, from: 'list' }}
+        onSelect={() => {}}
+        hoveredIndex={null}
+        darkBasemap={false}
+      />
+    )
+    expect(easeTo).toHaveBeenCalledTimes(1)
+    const options = easeTo.mock.calls[0][0] as Record<string, unknown>
+    expect(options.center).toEqual([3, 45])
+    expect(Object.entries(options).filter(([, value]) => value === undefined)).toEqual([])
   })
 })
