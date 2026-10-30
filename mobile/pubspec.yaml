@@ -73,7 +73,7 @@ dependencies:
 
   # A ride's attachments in the ride editor (any file the member picks, sent to
   # POST /api/teams/{slug}/assets?assetType=ATTACHMENT, ledger MOB-80)
-  file_picker: ^13.1.0
+  file_picker: ^13.3.0
 
   # Coarse location for the "around me" proximity filter
   geolocator: ^14.1.2
