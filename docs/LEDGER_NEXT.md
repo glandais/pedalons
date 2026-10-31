@@ -215,6 +215,13 @@ faite, et le 500 du contact vendeur (`MOB-47`). Depuis l'import de `n-peloton` e
       main après l'approbation (`asc versions release --version-id
       60a9008f-9319-4628-8e2b-f1a75bd1dc4e --confirm`). Le backend `13.0.0` déployé avant que la
       1.1.1 soit en vente casse ce détail de parcours pour les non-membres sur la 1.1.0.
+- [ ] `MOB-103` **Publier la 1.1.2 en bêta, puis sur l'App Store (XS)** — embarque `MOB-102`
+      (enregistrer un parcours ou une pièce jointe sur un téléphone Android, types MIME GPX/FIT).
+      `pubspec.yaml` est en `1.1.2`, la fiche et les nouveautés dans
+      `mobile/metadata/version/1.1.2/` (fiche recopiée de la 1.1.1). Le 31 octobre 2026 :
+      `publish_beta.sh` (TestFlight externe et Play test fermé, tag `mobile.1.1.2.N`). Reste : créer
+      la version 1.1.2 dans App Store Connect une fois la 1.1.1 (`MOB-101`) publiée, pousser les
+      nouveautés, attacher le build (`fastlane release`), soumettre.
 
 ### Couverture e2e Patrol — ce que les tests ne couvrent pas encore
 
