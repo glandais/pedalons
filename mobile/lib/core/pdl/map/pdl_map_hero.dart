@@ -263,6 +263,17 @@ class PdlMapHero extends StatelessWidget {
           ?.isFullscreen ??
       false;
 
+  /// Ouvre le plein écran du hero qui encadre [context], comme son bouton —
+  /// pour ce que la carte rend elle-même et qui, sur la vignette encastrée,
+  /// doit y mener plutôt qu'à sa propre action (une pastille météo, ledger
+  /// `MOB-107`). Lu **au moment du toucher** : la page poussée est celle du
+  /// hero tel qu'il est alors. Sans effet en plein écran, sans
+  /// [fullscreenBuilder] ou hors d'un [PdlMapHero].
+  static void openFullscreen(BuildContext context) => context
+      .getInheritedWidgetOfExactType<_PdlMapHeroScope>()
+      ?.openFullscreen
+      ?.call();
+
   @override
   Widget build(BuildContext context) {
     final Widget stack = _buildStack(context);
@@ -311,6 +322,9 @@ class PdlMapHero extends StatelessWidget {
         children: <Widget>[
           _PdlMapHeroScope(
             isFullscreen: isFullscreen,
+            openFullscreen: !isFullscreen && fullscreenBuilder != null
+                ? () => _toggleFullscreen(context)
+                : null,
             child: Builder(builder: mapBuilder),
           ),
           if (tapOpensFullscreen && !isFullscreen && fullscreenBuilder != null)
@@ -536,11 +550,20 @@ class _TrackToggleRowState extends State<_TrackToggleRow> {
   }
 }
 
-/// Porte [PdlMapHero.isFullscreenOf] jusqu'au `mapBuilder`.
+/// Porte [PdlMapHero.isFullscreenOf] et [PdlMapHero.openFullscreen]
+/// jusqu'au `mapBuilder`.
 class _PdlMapHeroScope extends InheritedWidget {
-  const _PdlMapHeroScope({required this.isFullscreen, required super.child});
+  const _PdlMapHeroScope({
+    required this.isFullscreen,
+    required this.openFullscreen,
+    required super.child,
+  });
 
   final bool isFullscreen;
+
+  /// Pousse le plein écran ; `null` en plein écran ou sans page à pousser.
+  /// Lu sans dépendance, au toucher : pas de notification à son changement.
+  final VoidCallback? openFullscreen;
 
   @override
   bool updateShouldNotify(_PdlMapHeroScope oldWidget) =>

@@ -33,12 +33,18 @@ final tripMapColorModeProvider = StateProvider.autoDispose
       (Ref ref, TripKey key) => RouteColorBy.grade,
     );
 
+/// Ce que l'interrupteur de la carte d'ensemble propose : chaque étape à sa
+/// couleur, ou à son vent — le `ColorByControl` « Étapes | Météo » du site.
+/// Il n'a pas d'état à lui : « Étapes » est « pas Météo » de
+/// [tripMapColorModeProvider] ([watchTripMapWindMode], [setTripMapWindMode]).
+enum TripMapColorBy { stages, wind }
+
 /// Vrai quand les cartes de [key] sont en mode « Météo ».
 bool watchTripMapWindMode(WidgetRef ref, TripKey key) =>
     ref.watch(tripMapColorModeProvider(key)) == RouteColorBy.wind;
 
-/// Allume ([on]) ou éteint le mode « Météo » des cartes de [key] : la puce et
-/// l'interrupteur de la carte d'ensemble. Éteindre ramène sur la pente
+/// Allume ([on]) ou éteint le mode « Météo » des cartes de [key] :
+/// l'interrupteur Étapes | Météo de la carte d'ensemble. Éteindre ramène sur la pente
 /// **seulement depuis Météo** : un Revêtement choisi sur une étape reste
 /// (ledger `MOB-105`).
 void setTripMapWindMode(WidgetRef ref, TripKey key, bool on) {

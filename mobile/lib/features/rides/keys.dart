@@ -188,7 +188,8 @@ class RideGroupPageKeys {
   /// « Météo » (ledger `MOB-93`).
   final weatherTabMap = const _RideGroupKey('weatherTabMap');
 
-  /// La goutte de l'alerte pluie sur la carte plein écran (ledger `MOB-92`).
+  /// La goutte de l'alerte pluie sur la carte, encastrée ou plein écran
+  /// (ledgers `MOB-92`, `MOB-107`).
   final weatherMapRainDrop = const _RideGroupKey('weatherMapRainDrop');
 
   /// La feuille du détail d'une pastille ou de la goutte.

@@ -355,10 +355,37 @@ void main() {
     );
   });
 
-  testWidgets('encastrée : aucune pastille, même en mode « Météo »', (
+  testWidgets('encastrée en mode « Météo » : les pastilles, et un toucher '
+      'ouvre le plein écran, pas leur feuille (ledger `MOB-107`)', (
     WidgetTester tester,
   ) async {
     await pump(tester, leg: fixtureLeg());
+
+    final PdlMap embedded = map(tester);
+    expect(embedded.markers.map((PdlMapMarker m) => m.id), <String>[
+      'weather.checkpoint.0',
+      'weather.checkpoint.1',
+    ]);
+    expect(embedded.onMarkerTapped, isNotNull);
+
+    embedded.onMarkerTapped!('weather.checkpoint.1');
+    await tester.pumpAndSettle();
+    expect(find.byKey(keys.rideGroup.weatherMapSheet), findsNothing);
+    expect(find.byType(PdlSheet), findsNothing);
+    expect(
+      find.byWidgetPredicate((Widget w) => w is RideGroupsMap && w.fullscreen),
+      findsOneWidget,
+    );
+    // Le plein écran, lui, n'a pas changé : la pastille ouvre sa feuille.
+    map(tester).onMarkerTapped!('weather.checkpoint.1');
+    await tester.pumpAndSettle();
+    expect(find.byKey(keys.rideGroup.weatherMapSheet), findsOneWidget);
+  });
+
+  testWidgets('encastrée hors mode « Météo » : aucune pastille', (
+    WidgetTester tester,
+  ) async {
+    await pump(tester, leg: fixtureLeg(), mode: RouteColorBy.grade);
 
     expect(map(tester).markers, isEmpty);
     expect(map(tester).onMarkerTapped, isNull);
@@ -459,8 +486,8 @@ void main() {
     expect(colors.sublist(15), everyElement(RelativeWind.tail.stroke));
     expect(find.byKey(keys.rideGroup.windMapLegend), findsOneWidget);
     expect(find.byKey(keys.rideGroup.windMapCredit), findsOneWidget);
-    // Encastrée : toujours aucune pastille.
-    expect(map(tester).markers, isEmpty);
+    // Encastrée : les pastilles aussi (ledger `MOB-107`).
+    expect(map(tester).markers, isNotEmpty);
     expect(container.read(rideMapColorModeProvider(key)), RouteColorBy.grade);
   });
 

@@ -265,7 +265,19 @@ void main() {
     expect(map(tester).kmMarkers, isEmpty);
     expect(find.byKey(keys.rideGroup.windMapLegend), findsOneWidget);
     expect(find.byKey(keys.rideGroup.windMapCredit), findsOneWidget);
-    expect(map(tester).markers, isEmpty);
+    // Les pastilles, encastrée aussi (ledger `MOB-107`) : un toucher y ouvre
+    // le plein écran, jamais leur feuille.
+    final PdlMap embedded = map(tester);
+    expect(embedded.markers.map((PdlMapMarker m) => m.id), <String>[
+      'weather.checkpoint.0',
+      'weather.checkpoint.1',
+    ]);
+    embedded.onMarkerTapped!('weather.checkpoint.1');
+    await tester.pumpAndSettle();
+    expect(find.byKey(keys.rideGroup.weatherMapSheet), findsNothing);
+    expect(find.byType(PdlSheet), findsNothing);
+    expect(find.byIcon(PdlIcons.fullscreenExit), findsOneWidget);
+    expect(map(tester).kmMarkers, isEmpty);
   });
 
   testWidgets('plein écran : les pastilles, à l\'heure de la zone de l\'étape, '

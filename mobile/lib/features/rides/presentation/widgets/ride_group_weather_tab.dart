@@ -29,10 +29,12 @@ import 'weather_leg_sections.dart';
 /// En tête, quand le leg a une prévision ([showsWindOnMap]) et le groupe un
 /// parcours : la carte du groupe, **toujours en mode « Météo »** (ledger
 /// `MOB-93`, palier 3 de `docs/plans/archive/2026-10-24-weather-on-map.md`) — le
-/// tracé coloré par le vent, la légende et le crédit, sans interrupteur ni pastille.
-/// Elle ne se manipule pas ; un toucher ouvre le plein écran, en mode
-/// « Météo » lui aussi, avec ses pastilles. Toucher un point de la frise y
-/// pose le réticule, à la distance chaînée du point ; le retoucher l'ôte.
+/// tracé coloré par le vent, la légende, le crédit, les pastilles et la
+/// goutte (ledger `MOB-107`), sans interrupteur. Elle ne se manipule pas ; un
+/// toucher, pastille comprise, ouvre le plein écran, en mode « Météo » lui
+/// aussi, où une pastille ouvre sa feuille. Toucher un point de la frise y
+/// pose le réticule, à la distance chaînée du point, sous les pastilles ; le
+/// retoucher l'ôte.
 ///
 /// Le mode imposé n'écrit pas `rideMapColorModeProvider` : c'est le choix de
 /// la personne dans l'Aperçu, que passer par cet onglet ne doit pas changer.

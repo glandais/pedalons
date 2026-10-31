@@ -673,6 +673,7 @@
         "cross": "Crosswind",
         "tail": "Tailwind"
       },
+      "relativeWindUnknown": "Unknown wind",
       "relativeWindShort": {
         "head": "Head",
         "cross": "Cross",
@@ -1052,6 +1053,7 @@
       "other": "{count} participants"
     },
     "stages": "Stages",
+    "mapColorBy": "Colour the route by",
     "stages.empty": "No stages defined for this trip.",
     "join": "Join",
     "leave": "Leave",

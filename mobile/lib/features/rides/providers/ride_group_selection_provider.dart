@@ -11,6 +11,7 @@ import '../../routes/data/route_repository.dart';
 import '../../routes/domain/route_elevation_builder.dart';
 import '../../routes/domain/track_slope_colors.dart';
 import '../../routes/domain/track_surfaces.dart';
+import '../../routes/domain/track_wind_bars.dart';
 import '../../routes/presentation/widgets/waypoint_selection.dart';
 import '../domain/ride_route_layers.dart';
 import '../domain/solo_group.dart';
@@ -464,5 +465,26 @@ final rideRouteClimbBarsProvider =
       return detail.whenData((RouteDetailDto d) {
         final ElevationSamples? s = samples.value;
         return s == null ? null : climbBars(s, d.tracks);
+      });
+    }, isAutoDispose: true);
+
+/// Le vent de [WindBarsKey.leg] sous chaque barre du profil d'un parcours de
+/// la sortie et sa couleur (ledger `MOB-106`), **mémorisés** avec le profil.
+///
+/// `null` sans profil.
+final rideRouteWindBarsProvider =
+    Provider.family<AsyncValue<WindBars?>, WindBarsKey<RouteRef>>((
+      Ref ref,
+      WindBarsKey<RouteRef> key,
+    ) {
+      final AsyncValue<RouteDetailDto> detail = ref.watch(
+        rideRouteGeometryProvider(key.route),
+      );
+      final AsyncValue<ElevationSamples?> samples = ref.watch(
+        rideRouteElevationProvider(key.route),
+      );
+      return detail.whenData((RouteDetailDto d) {
+        final ElevationSamples? s = samples.value;
+        return s == null ? null : windBars(s, d.tracks, key.leg);
       });
     }, isAutoDispose: true);

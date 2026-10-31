@@ -61,23 +61,6 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
 
 ## MOB — Application mobile
 
-- [ ] `MOB-106` **Le profil montre le vent par une bande, en mode Météo (S)** — le pendant de
-      `WEB-129`. En mode Météo, le profil reste en pente (décision de `WEB-115`, maintenue) et
-      gagne une bande dos / travers / face sous l'aire, sur le même axe des distances ; l'info-bulle
-      du réticule dit aussi le vent du point. Aujourd'hui rien du vent n'apparaît sur le profil :
-      une montée face au vent ne se lit qu'en croisant carte et profil. Piège : le vent se place
-      en distance chaînée sans saut (`chainedMeasures`), le profil en `PolylineIndex` qui compte le
-      saut entre traces — une conversion unique et testée, sans quoi la bande se décale dès la
-      deuxième trace. Lieu : `core/pdl/elevation/` (un painter de plus, couleurs reçues, sans DTO),
-      `ride_elevation_section.dart`, `embedded_route_sheet.dart`. Après `MOB-105`.
-- [ ] `MOB-107` **Les pastilles météo sur la carte encastrée (S)** — décidé le 31 octobre 2026,
-      **revient sur** le « pas de pastilles sur la carte encastrée » de `MOB-92` (plan
-      `2026-10-24-weather-on-map.md` : « trop petite, non touchable »). En mode Météo, les
-      pastilles et la goutte s'affichent aussi hors plein écran : Aperçu et onglet Météo d'un
-      groupe, sortie solo, étape (`ride_groups_map.dart` et `stage_detail_page.dart` les réservent
-      à `fullscreen`). La carte encastrée restant non manipulable, un toucher ouvre le plein écran
-      comme aujourd'hui, pas la feuille de la pastille. À vérifier sur appareil : lisibilité à la
-      taille encastrée, étalement de `MOB-104` sur une petite carte.
 
 - [ ] `MOB-95` **La météo sur la carte : recette sur appareil des paliers 1 à 3 (S)** — rien ne se
       teste sans carte native (`MOB-91` à `MOB-94`, plan [`2026-10-24-weather-on-map.md`](plans/archive/2026-10-24-weather-on-map.md)) :

@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pedalons/core/theme/pdl_tokens.dart';
 import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/core/pdl/pdl.dart';
+import 'package:pedalons/core/theme/enum_colors.dart';
+import 'package:pedalons/features/routes/domain/track_surfaces.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/features/routes/presentation/widgets/embedded_route_sheet.dart';
@@ -12,6 +14,7 @@ import 'package:pedalons/keys.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../support/localization.dart';
+import '../rides/ride_fixtures.dart';
 import 'route_fixtures.dart';
 
 /// Le revêtement sur la fiche embarquée d'une étape (ledger `MOB-82`) : la même
@@ -49,6 +52,8 @@ void main() {
     WidgetTester tester,
     TrackDto track, {
     List<WaypointDto> waypoints = const <WaypointDto>[],
+    RouteColorBy? colorBy,
+    WeatherLegDto? windLeg,
   }) async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
     final SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -65,11 +70,15 @@ void main() {
         ],
         child: MaterialApp(
           theme: PedalonsTheme.build(Brightness.light),
-          home: const Scaffold(
+          home: Scaffold(
             body: SingleChildScrollView(
               child: EmbeddedRouteSheet(
                 routeKey: _key,
                 showOpenFullAction: false,
+                colorBy: colorBy,
+                onColorByChanged: colorBy == null ? null : (_) {},
+                offersWind: windLeg != null,
+                windLeg: windLeg,
               ),
             ),
           ),
@@ -146,5 +155,39 @@ void main() {
 
     expect(find.byKey(keys.routeWaypoints.section), findsNothing);
     expect(profile(tester).markers, isEmpty);
+  });
+
+  testWidgets('mode Météo d\'une étape : la bande du vent sous le profil et '
+      'le vent dans l\'info-bulle (ledger `MOB-106`)', (
+    WidgetTester tester,
+  ) async {
+    await pump(
+      tester,
+      _track(),
+      colorBy: RouteColorBy.wind,
+      windLeg: fixtureLeg(relativeWind: 'CROSS'),
+    );
+
+    expect(profile(tester).barColors, everyElement(slopeNeutral));
+    expect(profile(tester).bandColors, everyElement(RelativeWind.cross.stroke));
+    expect(
+      profile(tester).tipLabel!(
+        const ElevationReading(distance: 500, elevation: 120, grade: null),
+      ),
+      contains('Vent de travers'),
+    );
+  });
+
+  testWidgets('en mode Pente, pas de bande malgré le leg', (
+    WidgetTester tester,
+  ) async {
+    await pump(
+      tester,
+      _track(),
+      colorBy: RouteColorBy.grade,
+      windLeg: fixtureLeg(),
+    );
+
+    expect(profile(tester).bandColors, isNull);
   });
 }

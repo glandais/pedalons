@@ -249,8 +249,8 @@ Exportés par `pdl.dart` comme le reste, et soumis au même contrat (jetons,
 |---|---|---|
 | `PdlMap` | `map/pdl_map.dart` | La carte (MapLibre) ; `cursor`, la forme déclarative du réticule de `PdlMapController.setCursor` (le point de la frise météo d'un groupe, `MOB-93`) |
 | `PdlMapController` · `PdlMapTrack` · `PdlMapPoint` · `PdlMapBox` · `PdlHillshade` · `PdlKmMarker` | `map/pdl_map_controller.dart` | Tracés, points, emprise, estompage, bornes kilométriques |
-| `PdlMapMarker` · `PdlMapMarkerTarget` · `PdlMapBearing` | `map/pdl_map_marker.dart` | Marqueurs Flutter génériques (position + widget + libellé, égalité de valeur) posés dans un `WidgetLayer` de `PdlMap` ; cible de 44 px, toucher rendu par id — les pastilles météo du plein écran d'un groupe, `MOB-92`. Un marqueur reste droit quand la carte tourne : `PdlMapBearing.of(context)` donne le cap à son contenu, qu'une direction absolue (flèche de vent) retranche |
-| `PdlMapHero` · `PdlMapStyleOption` · `PdlMapHeroSwitch` · `PdlMapTapPassThrough` | `map/pdl_map_hero.dart` | La coquille d'une carte occupant une surface : voiles, plein écran, sélecteur de fond de carte et ses interrupteurs de mode ; `tapOpensFullscreen` fait d'une vignette inerte une porte vers le plein écran, sauf sur ce qu'enveloppe un `PdlMapTapPassThrough` (le crédit ⓘ) |
+| `PdlMapMarker` · `PdlMapMarkerTarget` · `PdlMapBearing` | `map/pdl_map_marker.dart` | Marqueurs Flutter génériques (position + widget + libellé, égalité de valeur) posés dans un `WidgetLayer` de `PdlMap` ; cible de 44 px, toucher rendu par id — les pastilles météo d'une carte en mode Météo, `MOB-92`, `MOB-107`. Un marqueur reste droit quand la carte tourne : `PdlMapBearing.of(context)` donne le cap à son contenu, qu'une direction absolue (flèche de vent) retranche |
+| `PdlMapHero` · `PdlMapStyleOption` · `PdlMapHeroSwitch` · `PdlMapTapPassThrough` | `map/pdl_map_hero.dart` | La coquille d'une carte occupant une surface : voiles, plein écran, sélecteur de fond de carte et ses interrupteurs de mode ; `tapOpensFullscreen` fait d'une vignette inerte une porte vers le plein écran, sauf sur ce qu'enveloppe un `PdlMapTapPassThrough` (le crédit ⓘ) ; `PdlMapHero.openFullscreen(context)` y mène depuis ce que la carte rend elle-même (une pastille de la vignette) |
 | `PdlMapButton` · `PdlMapButtonColumn` · `PdlMapPill` · `PdlMapFloatingCard` | `map/pdl_map_buttons.dart` | Contrôles posés sur la carte, sur voile de lisibilité |
 | `PdlMapAttribution` · `PdlMapCredit` | `map/pdl_map_attribution.dart` | Crédit des fournisseurs de tuiles |
 | `PdlMapCamera` | `map/pdl_map_camera.dart` | Position de caméra et projection Web Mercator |
@@ -263,6 +263,7 @@ Exportés par `pdl.dart` comme le reste, et soumis au même contrat (jetons,
 | `PdlElevationProfile` | `elevation/pdl_elevation_profile.dart` | Le profil, avec axe et info-bulle ; `barColors` (une couleur par barre, comparée par identité) remplace l'échelle de pente — le revêtement (`MOB-81`) et la pente des montées, que seul l'écran connaît (`MOB-105`) ; sans elle, la pente géométrique de chaque barre (profil d'un voyage) |
 | `ElevationSamples` · `ElevationPoint` · `ElevationBar` · `ElevationReading` | `elevation/elevation_samples.dart` | Modèle de données et agrégation |
 | `ElevationAreaPainter` · `ElevationCursorPainter` | `elevation/elevation_*_painter.dart` | Les deux couches peintes : l'aire, puis le réticule |
+| `ElevationBandPainter` · `ElevationBandCursorPainter` | `elevation/elevation_band_painter.dart` | La bande sous l'aire (`bandColors`, `bandHeight` de `PdlElevationProfile`, une couleur par barre — le vent, `MOB-106`) et le réticule qui la traverse, chacun dans son `RepaintBoundary` |
 
 ## Voir le rendu
 

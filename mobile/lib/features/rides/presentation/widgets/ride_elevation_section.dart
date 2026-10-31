@@ -13,6 +13,7 @@ import '../../../../core/utils/formatters.dart';
 import '../../../routes/domain/route_color_mode.dart';
 import '../../../routes/domain/track_slope_colors.dart';
 import '../../../routes/domain/track_surfaces.dart';
+import '../../../routes/domain/track_wind_bars.dart';
 import '../../../routes/presentation/widgets/route_color_mode_switch.dart';
 import '../../../routes/presentation/widgets/route_surface_section.dart';
 import '../../../routes/presentation/widgets/route_waypoints_section.dart';
@@ -36,6 +37,7 @@ class RideElevationSection extends ConsumerStatefulWidget {
     this.elevationGain,
     this.colorBy = RouteColorBy.grade,
     this.profileColorByKey,
+    this.windLeg,
   });
 
   final String teamSlug;
@@ -62,6 +64,12 @@ class RideElevationSection extends ConsumerStatefulWidget {
 
   /// La clé de cet interrupteur propre au profil.
   final Key? profileColorByKey;
+
+  /// Le leg météo du groupe, à passer **seulement** quand la carte est en
+  /// mode Météo ([colorBy] `wind`) : le profil, toujours en pente, gagne
+  /// sous son aire la bande du vent et son info-bulle le vent du point
+  /// (ledger `MOB-106`). Ignoré hors mode Météo.
+  final WeatherLegDto? windLeg;
 
   @override
   ConsumerState<RideElevationSection> createState() =>
@@ -118,6 +126,19 @@ class _RideElevationSectionState extends ConsumerState<RideElevationSection> {
     final ClimbBars? climbs = bars == null
         ? ref.watch(rideRouteClimbBarsProvider(routeRef)).value
         : null;
+    // Le vent sous le profil, en mode Météo seulement (ledger `MOB-106`).
+    final WeatherLegDto? windLeg = shared == RouteColorBy.wind
+        ? widget.windLeg
+        : null;
+    final WindBars? wind = windLeg == null
+        ? null
+        : ref
+              .watch(
+                rideRouteWindBarsProvider(
+                  WindBarsKey<RouteRef>(routeRef, windLeg),
+                ),
+              )
+              .value;
     final AsyncValue<ElevationSamples?> samples = ref.watch(
       rideRouteElevationProvider(routeRef),
     );
@@ -191,6 +212,7 @@ class _RideElevationSectionState extends ConsumerState<RideElevationSection> {
                         barColors: bars == null
                             ? climbs?.colors
                             : _barColors.of(bars, context.pdl),
+                        bandColors: wind?.colors,
                         // Seule la dernière graduation porte l'unité (§1.3.1).
                         axisLabel: (double meters, {required bool isLast}) =>
                             isLast
@@ -206,6 +228,8 @@ class _RideElevationSectionState extends ConsumerState<RideElevationSection> {
                             ?trackSurfaceTip(data, bars, r.distance)
                           else
                             ?climbGradeTipLabel(data, climbs, r),
+                          if (wind != null)
+                            windTipLabel(data, wind, r.distance),
                         ].join(' · '),
                       ),
                 ),

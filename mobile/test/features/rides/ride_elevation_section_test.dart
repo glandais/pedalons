@@ -5,6 +5,7 @@ import 'package:pedalons/core/theme/pdl_tokens.dart';
 import 'package:pedalons/features/routes/domain/track_surfaces.dart';
 import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/core/pdl/pdl.dart';
+import 'package:pedalons/core/theme/enum_colors.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/features/rides/presentation/widgets/ride_elevation_section.dart';
@@ -14,6 +15,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../support/localization.dart';
 import '../routes/route_fixtures.dart';
+import 'ride_fixtures.dart';
 
 /// Le revêtement sur le profil du groupe sélectionné (ledger `MOB-81`) : la
 /// même bascule Pente / Revêtement que la fiche parcours.
@@ -52,6 +54,7 @@ void main() {
     TrackDto track, {
     List<WaypointDto> waypoints = const <WaypointDto>[],
     RouteColorBy colorBy = RouteColorBy.grade,
+    WeatherLegDto? windLeg,
   }) async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
     final SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -77,6 +80,7 @@ void main() {
                 rideSlug: 'sortie',
                 routeSlug: 'col-de-la-croix',
                 colorBy: colorBy,
+                windLeg: windLeg,
               ),
             ),
           ),
@@ -163,5 +167,58 @@ void main() {
 
     expect(find.byKey(keys.routeWaypoints.section), findsNothing);
     expect(profile(tester).markers, isEmpty);
+  });
+
+  String tip(WidgetTester tester, double at) => profile(tester)
+      .tipLabel!(ElevationReading(distance: at, elevation: 120, grade: null));
+
+  testWidgets('mode Météo : la bande du vent sous le profil, toujours en '
+      'pente, et le vent dans l\'info-bulle (ledger `MOB-106`)', (
+    WidgetTester tester,
+  ) async {
+    await pump(
+      tester,
+      _track(),
+      colorBy: RouteColorBy.wind,
+      windLeg: fixtureLeg(),
+    );
+
+    expect(profile(tester).barColors, everyElement(slopeNeutral));
+    expect(profile(tester).bandColors, isNotEmpty);
+    expect(profile(tester).bandColors, everyElement(RelativeWind.head.stroke));
+    expect(tip(tester, 500), contains('Vent de face'));
+  });
+
+  testWidgets('mode Météo, vent inconnu : bleu neutre et « Vent inconnu »', (
+    WidgetTester tester,
+  ) async {
+    await pump(
+      tester,
+      _track(),
+      colorBy: RouteColorBy.wind,
+      // Aucun tronçon ne couvre le premier kilomètre.
+      windLeg: fixtureLeg().copyWith(
+        segments: const <WindSegmentDto>[
+          WindSegmentDto(
+            fromDistance: 5000,
+            toDistance: 30000,
+            relativeWind: 'HEAD',
+            headwind: 10,
+          ),
+        ],
+      ),
+    );
+
+    expect(profile(tester).bandColors, everyElement(slopeNeutral));
+    expect(tip(tester, 500), contains('Vent inconnu'));
+  });
+
+  testWidgets('hors mode Météo, ni bande ni vent, même avec un leg', (
+    WidgetTester tester,
+  ) async {
+    await pump(tester, _track(), windLeg: fixtureLeg());
+
+    expect(profile(tester).bandColors, isNull);
+    expect(tip(tester, 500), isNot(contains('Vent')));
   });
 }

@@ -63,8 +63,8 @@ double rideMapHeight(double screenHeight) =>
 /// parcours** ([rideMapColorsLikeRoute]) —, le tracé se colore **comme celui
 /// d'un parcours** (ledger `MOB-105`) : la pente des montées, le revêtement,
 /// ou le vent relatif de [weatherLeg] (mode « Météo », ledgers `MOB-91`,
-/// `MOB-94`) — dos, travers, face, une légende en mots, les pastilles en
-/// plein écran. Le choix est [rideMapColorModeProvider], sur la pente par
+/// `MOB-94`) — dos, travers, face, une légende en mots, les pastilles et la
+/// goutte, encastrée comme en plein écran (ledger `MOB-107`). Le choix est [rideMapColorModeProvider], sur la pente par
 /// défaut ; il se fait sous la carte encastrée (`RouteColorModeSwitch`) et,
 /// en plein écran, par le même interrupteur posé en bas de la carte. Les
 /// modes proposés sont ceux de [rideMapColorModes].
@@ -78,7 +78,7 @@ double rideMapHeight(double screenHeight) =>
 ///
 /// L'onglet Météo de la page d'un groupe la pose avec [forceWeatherMode] :
 /// le mode « Météo » d'office, sans toucher au choix fait dans l'Aperçu, un
-/// toucher qui ouvre le plein écran, et le réticule d'un point de la frise
+/// toucher qui ouvre le plein écran (pastilles comprises), et le réticule d'un point de la frise
 /// ([cursorDistance], ledger `MOB-93`).
 class RideGroupsMap extends ConsumerWidget {
   const RideGroupsMap({
@@ -429,12 +429,16 @@ class RideGroupsMap extends ConsumerWidget {
       rideWaypointSelectionProvider(rideKey),
     );
 
-    // Les pastilles météo : **plein écran seulement**, en mode « Météo »
-    // (ledger `MOB-92`). Encastrée, la carte est trop petite et ne se touche
-    // pas ; elle garde le tracé coloré et la légende.
+    // Les pastilles météo et la goutte, en mode « Météo », encastrée comme
+    // en plein écran (ledger `MOB-107`, qui revient sur `MOB-92`). La
+    // vignette ne se manipule pas : toucher une pastille y ouvre le plein
+    // écran, jamais sa feuille — celle-ci est pour le plein écran. Sur
+    // l'onglet Météo, la couche de `tapOpensFullscreen` prend de toute façon
+    // le doigt avant elles ; le réticule de la frise, une couche de la carte,
+    // passe sous les pastilles sans les déplacer.
     final UnitSystem units = ref.watch(unitSystemProvider);
     final List<PdlMapMarker> weatherMarkers =
-        fullscreen && windLeg != null && windRoute != null
+        windLeg != null && windRoute != null
         ? weatherMarkersOnRoute(
             windRoute,
             windLeg,
@@ -463,13 +467,15 @@ class RideGroupsMap extends ConsumerWidget {
           markers: weatherMarkers,
           onMarkerTapped: weatherMarkers.isEmpty
               ? null
-              : (String id) => openWeatherMapMarker(
+              : fullscreen
+              ? (String id) => openWeatherMapMarker(
                   context,
                   id,
                   leg: windLeg!,
                   units: units,
                   timezone: ride.timezone,
-                ),
+                )
+              : (String _) => PdlMapHero.openFullscreen(context),
           cursor: cursor,
           styleUrl: styleUrl,
           credit: credit,

@@ -673,6 +673,7 @@
         "cross": "Vent de travers",
         "tail": "Vent dans le dos"
       },
+      "relativeWindUnknown": "Vent inconnu",
       "relativeWindShort": {
         "head": "Face",
         "cross": "Travers",
@@ -1052,6 +1053,7 @@
       "other": "{count} personnes"
     },
     "stages": "Étapes",
+    "mapColorBy": "Colorer le tracé selon",
     "stages.empty": "Aucune étape définie pour ce voyage.",
     "join": "Rejoindre",
     "leave": "Se désinscrire",

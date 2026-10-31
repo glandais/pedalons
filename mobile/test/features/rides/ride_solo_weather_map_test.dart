@@ -145,7 +145,7 @@ void main() {
   );
 
   testWidgets('sortie solo, mode « Météo » : le parcours du groupe coloré, '
-      'la légende et son crédit, aucune pastille encastrée', (
+      'la légende et son crédit, les pastilles encastrées', (
     WidgetTester tester,
   ) async {
     await pump(tester, ride: solo, leg: fixtureLeg());
@@ -155,7 +155,28 @@ void main() {
     expect(colors.sublist(15), everyElement(RelativeWind.tail.stroke));
     expect(find.byKey(keys.rideGroup.windMapLegend), findsOneWidget);
     expect(find.byKey(keys.rideGroup.windMapCredit), findsOneWidget);
-    expect(map(tester).markers, isEmpty);
+    // Ledger `MOB-107` : les pastilles encastrées, un toucher ouvre le plein
+    // écran.
+    final PdlMap embedded = map(tester);
+    expect(embedded.markers, hasLength(2));
+    embedded.onMarkerTapped!('weather.checkpoint.0');
+    await tester.pumpAndSettle();
+    expect(find.byKey(keys.rideGroup.weatherMapSheet), findsNothing);
+    expect(find.byIcon(PdlIcons.fullscreenExit), findsOneWidget);
+  });
+
+  testWidgets('deux parcours, mode « Météo » : les pastilles du parcours du '
+      'groupe sur la carte encastrée', (WidgetTester tester) async {
+    await pump(
+      tester,
+      ride: solo.copyWith(routeSlug: 'principal'),
+      leg: fixtureLeg(),
+    );
+
+    expect(map(tester).markers.map((PdlMapMarker m) => m.id), <String>[
+      'weather.checkpoint.0',
+      'weather.checkpoint.1',
+    ]);
   });
 
   testWidgets('sortie solo, plein écran : les pastilles et leur feuille', (

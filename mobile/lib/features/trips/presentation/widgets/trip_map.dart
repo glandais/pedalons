@@ -15,6 +15,7 @@ import '../../../../keys.dart';
 import '../../../rides/presentation/widgets/ride_weather_map_markers.dart';
 import '../../../rides/presentation/widgets/ride_wind_map_legend.dart';
 import '../../../rides/presentation/widgets/weather_map_layer.dart';
+import '../../../routes/presentation/widgets/route_color_mode_switch.dart';
 import '../../domain/trip_weather_map.dart';
 import '../../providers/trip_detail_provider.dart';
 import '../../providers/trip_tracks_provider.dart';
@@ -35,9 +36,9 @@ const double _kTripMapHeight = 280;
 /// **Le mode « Météo »** (ledger `MOB-94`) colore chaque étape par **son
 /// propre vent**, à son jour, et pose en plein écran les pastilles de toutes
 /// les étapes, chacune à l'heure de sa zone. Proposé dès qu'une étape a une
-/// prévision ([tripMapWindLegs]) ; une puce sous la carte encastrée,
-/// l'interrupteur de la feuille des couches en plein écran, éteint par
-/// défaut. Le choix est [tripMapColorModeProvider], partagé avec le détail
+/// prévision ([tripMapWindLegs]) : un interrupteur Étapes | Météo
+/// ([MapColorModeSwitch], le dessin de `RouteColorModeSwitch`) sous la carte
+/// encastrée, et le même en bas du plein écran, sur « Étapes » par défaut. Le choix est [tripMapColorModeProvider], partagé avec le détail
 /// d'une étape (ledger `MOB-105`) : la carte d'ensemble ne lit que « Météo »
 /// ou non ([watchTripMapWindMode]), et l'éteindre ici laisse un Revêtement
 /// choisi sur une étape ([setTripMapWindMode]). En mode « Météo », une étape
@@ -137,20 +138,20 @@ class TripMap extends ConsumerWidget {
             selectedStyleId: resolved.style.id,
             onStyleSelected: (String id) =>
                 ref.read(mapStyleIdProvider.notifier).select(id),
-            // En plein écran, le mode « Météo » se bascule dans la feuille,
-            // comme l'ombrage ; la carte encastrée a sa puce sous elle.
-            switches: fullscreen && windLegs.isNotEmpty
-                ? <PdlMapHeroSwitch>[
-                    weatherMapModeSwitch(
-                      value: windMode,
-                      onChanged: (bool on) =>
-                          setTripMapWindMode(ref, tripKey, on),
-                    ),
-                  ]
-                : const <PdlMapHeroSwitch>[],
-            foreground: legend == null
-                ? null
-                : weatherMapLegendLayer(fullscreen: fullscreen, legend: legend),
+            // En plein écran, le même interrupteur que sous la carte
+            // encastrée, sur le même état, en bas à gauche (ledger `MOB-105`).
+            foreground: routeMapBottomLayer(
+              fullscreen: fullscreen,
+              modeSwitch: fullscreen && windLegs.isNotEmpty
+                  ? _colorBySwitch(
+                      ref,
+                      windMode: windMode,
+                      key: keys.trip.fullscreenMapColorBy,
+                      overMap: true,
+                    )
+                  : null,
+              legend: legend,
+            ),
             pill: selected == null
                 ? null
                 : PdlMapPill(
@@ -213,11 +214,16 @@ class TripMap extends ConsumerWidget {
         ),
         if (windLegs.isNotEmpty)
           Padding(
-            padding: const EdgeInsets.only(top: PdlSpacing.chipGap),
-            child: WeatherMapChip(
-              chipKey: keys.trip.windMapChip,
-              selected: windMode,
-              onChanged: (bool on) => setTripMapWindMode(ref, tripKey, on),
+            padding: const EdgeInsets.fromLTRB(
+              PdlSpacing.section,
+              PdlSpacing.chipGap,
+              PdlSpacing.section,
+              0,
+            ),
+            child: _colorBySwitch(
+              ref,
+              windMode: windMode,
+              key: keys.trip.mapColorBy,
             ),
           ),
         if (stages.length > 1)
@@ -276,6 +282,35 @@ class TripMap extends ConsumerWidget {
       ],
     );
   }
+
+  /// L'interrupteur Étapes | Météo, sous la carte encastrée ou sur le plein
+  /// écran ([overMap]). « Étapes » éteint la Météo sans toucher un
+  /// Revêtement choisi sur une étape ([setTripMapWindMode]).
+  Widget _colorBySwitch(
+    WidgetRef ref, {
+    required bool windMode,
+    required Key key,
+    bool overMap = false,
+  }) => MapColorModeSwitch<TripMapColorBy>(
+    key: key,
+    options: <MapColorModeOption<TripMapColorBy>>[
+      MapColorModeOption<TripMapColorBy>(
+        key: keys.trip.mapColorByMode(TripMapColorBy.stages.name),
+        value: TripMapColorBy.stages,
+        label: 'trips.stages'.tr(),
+      ),
+      MapColorModeOption<TripMapColorBy>(
+        key: keys.trip.mapColorByMode(TripMapColorBy.wind.name),
+        value: TripMapColorBy.wind,
+        label: 'rides.weather.mapMode'.tr(),
+      ),
+    ],
+    value: windMode ? TripMapColorBy.wind : TripMapColorBy.stages,
+    onChanged: (TripMapColorBy v) =>
+        setTripMapWindMode(ref, tripKey, v == TripMapColorBy.wind),
+    semanticLabel: 'trips.mapColorBy'.tr(),
+    overMap: overMap,
+  );
 
   /// Un tracé par **étape**, pas par parcours : deux étapes qui partagent un
   /// parcours doivent chacune être sélectionnables, et chacune porte la couleur

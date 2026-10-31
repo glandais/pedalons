@@ -13,6 +13,7 @@ import 'package:pedalons/core/theme/pdl_tokens.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/features/routes/data/route_repository.dart';
 import 'package:pedalons/features/routes/domain/track_surfaces.dart';
+import 'package:pedalons/features/routes/presentation/widgets/route_color_mode_switch.dart';
 import 'package:pedalons/features/trips/domain/trip_weather_map.dart';
 import 'package:pedalons/features/trips/presentation/widgets/trip_map.dart';
 import 'package:pedalons/features/trips/providers/trip_detail_provider.dart';
@@ -184,6 +185,7 @@ void main() {
     required TripDto trip,
     TripWeatherDto? dto,
     bool? windMode,
+    RouteColorBy? colorBy,
     Map<String, RouteDetailDto>? served,
   }) async {
     await tester.binding.setSurfaceSize(const Size(400, 900));
@@ -214,10 +216,10 @@ void main() {
           return dto ?? weather();
         }),
         unitSystemProvider.overrideWithValue(UnitSystem.metric),
-        if (windMode != null)
+        if (windMode != null || colorBy != null)
           tripMapColorModeProvider.overrideWith(
             (Ref ref, TripKey k) =>
-                windMode ? RouteColorBy.wind : RouteColorBy.grade,
+                colorBy ?? (windMode! ? RouteColorBy.wind : RouteColorBy.grade),
           ),
       ],
     );
@@ -254,24 +256,68 @@ void main() {
   PdlMapTrack track(WidgetTester tester, String stageId) =>
       map(tester).tracks.singleWhere((PdlMapTrack t) => t.id == stageId);
 
-  testWidgets('la puce est là, éteinte par défaut : le trait habituel', (
-    WidgetTester tester,
-  ) async {
+  TripMapColorBy shown(WidgetTester tester, Key switchKey) => tester
+      .widget<MapColorModeSwitch<TripMapColorBy>>(find.byKey(switchKey))
+      .value;
+
+  Finder segment(Key switchKey, TripMapColorBy mode) => find.descendant(
+    of: find.byKey(switchKey),
+    matching: find.byKey(keys.trip.mapColorByMode(mode.name)),
+  );
+
+  testWidgets('l\'interrupteur Étapes | Météo est là, sur « Étapes » par '
+      'défaut : le trait habituel', (WidgetTester tester) async {
     final (ProviderContainer container, _) = await pump(tester, trip: trip());
 
-    final PdlChip chip = tester.widget<PdlChip>(
-      find.byKey(keys.trip.windMapChip),
+    expect(shown(tester, keys.trip.mapColorBy), TripMapColorBy.stages);
+    expect(
+      find.descendant(
+        of: find.byKey(keys.trip.mapColorBy),
+        matching: find.text('Étapes'),
+      ),
+      findsOneWidget,
     );
-    expect(chip.selected, isFalse);
+    expect(
+      find.descendant(
+        of: find.byKey(keys.trip.mapColorBy),
+        matching: find.text('Météo'),
+      ),
+      findsOneWidget,
+    );
     expect(track(tester, 's1').segmentColors, isNull);
     expect(track(tester, 's2').segmentColors, isNull);
     expect(find.byKey(keys.trip.windMapLegend), findsNothing);
     expect(track(tester, 's1').emphasized, isFalse);
 
-    await tester.tap(find.byKey(keys.trip.windMapChip));
+    await tester.tap(segment(keys.trip.mapColorBy, TripMapColorBy.wind));
     await tester.pump();
     expect(container.read(tripMapColorModeProvider(key)), RouteColorBy.wind);
+    expect(shown(tester, keys.trip.mapColorBy), TripMapColorBy.wind);
     expect(track(tester, 's1').segmentColors, isNotNull);
+    expect(find.byKey(keys.trip.windMapLegend), findsOneWidget);
+
+    // « Étapes » éteint la Météo : retour sur la pente pour la page d'une
+    // étape, qui partage le choix.
+    await tester.tap(segment(keys.trip.mapColorBy, TripMapColorBy.stages));
+    await tester.pump();
+    expect(container.read(tripMapColorModeProvider(key)), RouteColorBy.grade);
+    expect(track(tester, 's1').segmentColors, isNull);
+    expect(find.byKey(keys.trip.windMapLegend), findsNothing);
+  });
+
+  testWidgets('un Revêtement choisi sur une étape se lit « Étapes » ici, et '
+      'reste tant qu\'on ne passe pas par la Météo', (
+    WidgetTester tester,
+  ) async {
+    final (ProviderContainer container, _) = await pump(
+      tester,
+      trip: trip(),
+      colorBy: RouteColorBy.surface,
+    );
+
+    expect(shown(tester, keys.trip.mapColorBy), TripMapColorBy.stages);
+    expect(track(tester, 's1').segmentColors, isNull);
+    expect(container.read(tripMapColorModeProvider(key)), RouteColorBy.surface);
   });
 
   testWidgets('mode « Météo » : chaque étape colorée par son propre vent, '
@@ -298,7 +344,8 @@ void main() {
     expect(find.textContaining(RegExp(r'^Face 25')), findsOneWidget);
     expect(find.text('Parts additionnées des 2 étapes'), findsOneWidget);
     expect(find.text('Prévisions : Open-Meteo.com'), findsOneWidget);
-    // Encastrée : aucune pastille.
+    // Encastrée : aucune pastille. Le toucher y choisit l'étape — `MOB-107`
+    // ne vaut que pour le groupe, la sortie solo et l'étape.
     expect(map(tester).markers, isEmpty);
   });
 
@@ -325,6 +372,44 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(keys.rideGroup.weatherMapSheet), findsOneWidget);
     expect(find.text('Passage vers 16:36'), findsOneWidget);
+  });
+
+  testWidgets('plein écran : le même interrupteur en bas de la carte, sur le '
+      'même état, et rien dans la feuille des couches', (
+    WidgetTester tester,
+  ) async {
+    final (ProviderContainer container, _) = await pump(
+      tester,
+      trip: trip(),
+      windMode: true,
+    );
+    await tester.tap(find.byIcon(PdlIcons.fullscreen));
+    await tester.pumpAndSettle();
+
+    final Key full = keys.trip.fullscreenMapColorBy;
+    expect(find.byKey(full), findsOneWidget);
+    expect(shown(tester, full), TripMapColorBy.wind);
+    expect(
+      tester
+          .widget<MapColorModeSwitch<TripMapColorBy>>(find.byKey(full))
+          .overMap,
+      isTrue,
+    );
+    expect(
+      tester.widget<PdlMapHero>(find.byType(PdlMapHero).last).switches,
+      isEmpty,
+    );
+    expect(
+      find.byKey(const ValueKey<String>('pdlMapHeroSwitch_wind')),
+      findsNothing,
+    );
+
+    // « Étapes », en plein écran : plus de vent, plus de pastilles.
+    await tester.tap(segment(full, TripMapColorBy.stages));
+    await tester.pumpAndSettle();
+    expect(container.read(tripMapColorModeProvider(key)), RouteColorBy.grade);
+    expect(map(tester).markers, isEmpty);
+    expect(track(tester, 's1').segmentColors, isNull);
   });
 
   testWidgets('une étape sans prévision prend le bleu neutre, et la légende '
@@ -365,11 +450,11 @@ void main() {
     );
 
     expect(map(tester).tracks.map((PdlMapTrack t) => t.id), <String>['s2']);
-    expect(find.byKey(keys.trip.windMapChip), findsOneWidget);
+    expect(find.byKey(keys.trip.mapColorBy), findsOneWidget);
     expect(find.byKey(keys.trip.windMapLegend), findsNothing);
   });
 
-  testWidgets('aucune étape avec prévision : ni puce ni couleur', (
+  testWidgets('aucune étape avec prévision : ni interrupteur ni couleur', (
     WidgetTester tester,
   ) async {
     await pump(
@@ -388,7 +473,7 @@ void main() {
       windMode: true,
     );
 
-    expect(find.byKey(keys.trip.windMapChip), findsNothing);
+    expect(find.byKey(keys.trip.mapColorBy), findsNothing);
     expect(track(tester, 's1').segmentColors, isNull);
   });
 
@@ -401,7 +486,7 @@ void main() {
     ) async {
       final (_, List<int> calls) = await pump(tester, trip: t, windMode: true);
 
-      expect(find.byKey(keys.trip.windMapChip), findsNothing);
+      expect(find.byKey(keys.trip.mapColorBy), findsNothing);
       expect(track(tester, 's1').segmentColors, isNull);
       expect(calls.single, 0);
     });

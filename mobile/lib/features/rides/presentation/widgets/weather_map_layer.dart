@@ -7,7 +7,6 @@ import '../../../../core/pdl/pdl.dart';
 import '../../../../core/theme/enum_colors.dart';
 import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
-import '../../../routes/presentation/widgets/route_color_mode_switch.dart';
 import '../../domain/ride_weather_map.dart';
 import 'ride_weather_map_markers.dart';
 
@@ -54,8 +53,10 @@ List<Color> weatherTrackColors(RouteDetailDto route, WeatherLegDto leg) {
   return colors;
 }
 
-/// Les pastilles et la goutte de [leg] sur [route] (plein écran seulement,
-/// ledger `MOB-92`). Seules les **positions** sont mémorisées, par (leg,
+/// Les pastilles et la goutte de [leg] sur [route] (ledger `MOB-92`), sur la
+/// carte encastrée comme en plein écran (ledger `MOB-107`) : encastrée, leur
+/// toucher ouvre le plein écran (`PdlMapHero.openFullscreen`), en plein
+/// écran leur feuille ([openWeatherMapMarker]). Seules les **positions** sont mémorisées, par (leg,
 /// parcours) : elles chaînent toutes les distances du parcours. Les libellés
 /// se refont à chaque appel — ils suivent la langue et le format horaire du
 /// téléphone, que la mémoire ne verrait pas changer.
@@ -110,14 +111,15 @@ class _WeatherPoints {
   final List<LngLat?> points;
 }
 
-/// La puce « Météo » sous une carte aux couleurs de ses couches — la carte
-/// d'ensemble d'un voyage, celle d'une sortie solo dont le groupe roule un
-/// autre parcours que la sortie : celle-ci ne se manipule pas, la bascule ne
+/// La puce « Météo » sous une carte aux couleurs de ses couches — celle d'une
+/// sortie solo dont le groupe roule un autre parcours que la sortie : celle-ci
+/// ne se manipule pas, la bascule ne
 /// peut donc pas vivre dans la vue native (ledger `MOB-91`). En plein écran,
 /// la même bascule est dans la feuille des couches ([weatherMapModeSwitch]).
 /// Une carte colorée comme un parcours — groupe, sortie solo à un parcours,
 /// étape — a l'interrupteur Pente | Revêtement | Météo à la place
-/// (`RouteColorModeSwitch`, ledger `MOB-105`).
+/// (`RouteColorModeSwitch`, ledger `MOB-105`), et la carte d'ensemble d'un
+/// voyage son interrupteur Étapes | Météo (`TripMap`).
 class WeatherMapChip extends StatelessWidget {
   const WeatherMapChip({
     super.key,
@@ -165,20 +167,3 @@ PdlMapHeroSwitch weatherMapModeSwitch({
   value: value,
   onChanged: onChanged,
 );
-
-/// La légende posée en bas à gauche d'une carte, dans le `foreground` de
-/// `PdlMapHero` — [routeMapBottomLayer] sans interrupteur : la carte
-/// d'ensemble d'un voyage, à une couleur par étape, n'a que « Météo » à
-/// basculer, dans la feuille des couches.
-///
-/// [passTouches] : sur une vignette qui s'ouvre au toucher, la légende ne
-/// garde pas le doigt pour elle.
-Widget weatherMapLegendLayer({
-  required bool fullscreen,
-  required Widget legend,
-  bool passTouches = false,
-}) => routeMapBottomLayer(
-  fullscreen: fullscreen,
-  legend: legend,
-  passTouches: passTouches,
-)!;

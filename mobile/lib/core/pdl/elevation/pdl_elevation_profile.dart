@@ -7,6 +7,7 @@ import '../../theme/pdl_typography.dart';
 import '../pdl_button.dart';
 import '../pdl_skeleton.dart';
 import 'elevation_area_painter.dart';
+import 'elevation_band_painter.dart';
 import 'elevation_cursor_painter.dart';
 import 'elevation_markers_painter.dart';
 import 'elevation_samples.dart';
@@ -26,7 +27,8 @@ typedef ElevationTipLabel = String Function(ElevationReading reading);
 /// Le profil altimétrique : une aire remplie colorisée par pente, un réticule et
 /// une info-bulle.
 ///
-/// **Peinture maison, deux couches** (§1.3.1 du plan). Le painter du bas ne
+/// **Peinture maison, deux couches** (§1.3.1 du plan), plus la bande de
+/// [bandColors] et son réticule quand l'écran en passe une (`MOB-106`). Le painter du bas ne
 /// dépend que des données et n'est jamais rappelé pendant un glissement ; le
 /// painter du haut écoute un `ValueListenable<double?>` et ne dessine que le
 /// trait et la bulle. Chacun est isolé dans son `RepaintBoundary`, sans quoi
@@ -53,6 +55,8 @@ class PdlElevationProfile extends StatefulWidget {
     this.onCursorChanged,
     this.credit,
     this.barColors,
+    this.bandColors,
+    this.bandHeight = PdlMetrics.elevationBand,
     this.markers = const <PdlProfileMarker>[],
     this.selectedMarkerKey,
     this.onMarkerTapped,
@@ -77,6 +81,8 @@ class PdlElevationProfile extends StatefulWidget {
        onCursorChanged = null,
        credit = null,
        barColors = null,
+       bandColors = null,
+       bandHeight = PdlMetrics.elevationBand,
        markers = const <PdlProfileMarker>[],
        selectedMarkerKey = null,
        onMarkerTapped = null,
@@ -100,6 +106,8 @@ class PdlElevationProfile extends StatefulWidget {
        cursorDistance = null,
        onCursorChanged = null,
        barColors = null,
+       bandColors = null,
+       bandHeight = PdlMetrics.elevationBand,
        markers = const <PdlProfileMarker>[],
        selectedMarkerKey = null,
        onMarkerTapped = null,
@@ -132,6 +140,17 @@ class PdlElevationProfile extends StatefulWidget {
   /// (`MOB-81`). Une entrée nulle prend la couleur neutre. **Comparée par
   /// identité**, comme [samples] : mémorisez-la.
   final List<Color?>? barColors;
+
+  /// Une bande fine **sous** le graphique, une couleur par barre de
+  /// [samples], sur le même axe des distances, que le réticule traverse : le
+  /// vent relatif en mode Météo (ledger `MOB-106`). Nulle ou vide : pas de
+  /// bande. **Comparée par identité** : mémorisez-la.
+  final List<Color>? bandColors;
+
+  /// Hauteur de la bande — [PdlMetrics.elevationBand].
+  final double bandHeight;
+
+  bool get _hasBand => bandColors?.isNotEmpty ?? false;
 
   /// Les repères des points de parcours sur le tracé (ledger `MOB-84`). Comparés
   /// par valeur : une liste neuve à chaque `build` ne repeint pas.
@@ -196,7 +215,11 @@ class _PdlElevationProfileState extends State<PdlElevationProfile> {
 
     final Offset local = object.globalToLocal(globalPosition);
     final Size size = object.size;
-    if (local.dy < 0 || local.dy > size.height) {
+    // La bande, sous le graphique, déplace le réticule comme lui.
+    final double bottom = widget._hasBand
+        ? size.height + PdlMetrics.elevationBandGap + widget.bandHeight
+        : size.height;
+    if (local.dy < 0 || local.dy > bottom) {
       _setCursor(null);
       return;
     }
@@ -339,6 +362,43 @@ class _PdlElevationProfileState extends State<PdlElevationProfile> {
               ),
             ),
           ),
+          if (widget._hasBand)
+            // Visuelle seulement : l'info-bulle écrit ce que la bande montre.
+            ExcludeSemantics(
+              child: Padding(
+                padding: const EdgeInsets.only(
+                  top: PdlMetrics.elevationBandGap,
+                ),
+                child: SizedBox(
+                  height: widget.bandHeight,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: <Widget>[
+                      RepaintBoundary(
+                        child: CustomPaint(
+                          willChange: false,
+                          painter: ElevationBandPainter(
+                            samples: samples,
+                            colors: widget.bandColors!,
+                          ),
+                        ),
+                      ),
+                      RepaintBoundary(
+                        child: CustomPaint(
+                          willChange: true,
+                          painter: ElevationBandCursorPainter(
+                            samples: samples,
+                            distance: _cursor,
+                            repaint: _cursor,
+                            lineColor: c.text.withValues(alpha: 0.7),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.only(top: 4),
             child: Row(

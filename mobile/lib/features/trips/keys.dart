@@ -40,9 +40,16 @@ class TripDetailKeys {
   /// (`ValueKey<int>`, 0 pour « Aperçu ») : c'est `PdlStageRail` qui les pose.
   final stageRail = const _TripKey('stageRail');
 
-  /// La puce « Météo » sous la carte d'ensemble du voyage : chaque étape
-  /// colorée par son vent (ledger `MOB-94`).
-  final windMapChip = const _TripKey('windMapChip');
+  /// L'interrupteur Étapes | Météo sous la carte d'ensemble du voyage : chaque
+  /// étape à sa couleur, ou colorée par son vent (ledgers `MOB-94`, `MOB-105`).
+  final mapColorBy = const _TripKey('mapColorBy');
+
+  /// Le même interrupteur, posé en bas du plein écran de la carte d'ensemble.
+  final fullscreenMapColorBy = const _TripKey('fullscreenMapColorBy');
+
+  /// Un segment de l'interrupteur de la carte d'ensemble, par
+  /// `TripMapColorBy.name` (`stages`, `wind`).
+  ValueKey<String> mapColorByMode(String mode) => _TripKey('mapColorBy_$mode');
 
   /// La légende du vent de la carte d'ensemble, parts des étapes additionnées.
   final windMapLegend = const _TripKey('windMapLegend');

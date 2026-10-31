@@ -5,6 +5,7 @@ import '../../../core/pdl/elevation/elevation_samples.dart';
 import '../domain/route_elevation_builder.dart';
 import '../domain/track_slope_colors.dart';
 import '../domain/track_surfaces.dart';
+import '../domain/track_wind_bars.dart';
 import 'route_detail_provider.dart';
 
 /// Le profil d'un parcours, **prêt à peindre**, dérivé de sa géométrie.
@@ -71,5 +72,27 @@ final routeClimbBarsProvider =
       return detail.whenData((RouteDetailDto route) {
         final ElevationSamples? s = samples.value;
         return s == null ? null : climbBars(s, route.tracks);
+      });
+    }, isAutoDispose: true);
+
+/// Le vent de [WindBarsKey.leg] sous chaque barre du profil et sa couleur
+/// (ledger `MOB-106`), **mémorisés** avec le profil : `ElevationBandPainter`
+/// compare ses couleurs par identité.
+///
+/// `null` sans profil.
+final routeWindBarsProvider =
+    Provider.family<AsyncValue<WindBars?>, WindBarsKey<RouteKey>>((
+      Ref ref,
+      WindBarsKey<RouteKey> key,
+    ) {
+      final AsyncValue<RouteDetailDto> detail = ref.watch(
+        routeDetailProvider(key.route),
+      );
+      final AsyncValue<ElevationSamples?> samples = ref.watch(
+        routeElevationSamplesProvider(key.route),
+      );
+      return detail.whenData((RouteDetailDto route) {
+        final ElevationSamples? s = samples.value;
+        return s == null ? null : windBars(s, route.tracks, key.leg);
       });
     }, isAutoDispose: true);

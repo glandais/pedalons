@@ -134,6 +134,8 @@ class _RideGroupOverviewTabState extends ConsumerState<RideGroupOverviewTab>
               distance: group.distance,
               elevationGain: group.elevationGain,
               colorBy: colorBy,
+              // Le vent sous le profil, en mode Météo (ledger `MOB-106`).
+              windLeg: colorBy == RouteColorBy.wind ? widget.leg : null,
             ),
           ),
         ],

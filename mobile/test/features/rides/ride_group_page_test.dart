@@ -738,7 +738,7 @@ void main() {
 
     for (final String status in <String>['OK', 'STALE']) {
       testWidgets('$status : la carte en tête, tracé coloré d\'office, sans '
-          'interrupteur ni pastille', (WidgetTester tester) async {
+          'interrupteur, pastilles comprises', (WidgetTester tester) async {
         await openWeather(
           tester,
           weather(
@@ -752,7 +752,8 @@ void main() {
         expect(find.byType(RideGroupsMap), findsOneWidget);
         expect(tester.widget<RideGroupsMap>(tabMap()).forceWeatherMode, isTrue);
         expect(probe(tester).tracks.single.segmentColors, isNotNull);
-        expect(probe(tester).markers, isEmpty);
+        // Ledger `MOB-107` : les pastilles, sur la vignette aussi.
+        expect(probe(tester).markers, isNotEmpty);
         expect(find.byKey(keys.rideGroup.windMapLegend), findsOneWidget);
         expect(find.byKey(keys.rideGroup.windMapCredit), findsOneWidget);
         expect(find.byKey(keys.rideGroup.mapColorBy), findsNothing);
@@ -829,6 +830,9 @@ void main() {
       await tester.pump();
       expect(probe(tester).cursor!.lon, 5.1);
       expect(probe(tester).cursor!.lat, closeTo(45 + 15 * 0.009, 1e-9));
+      // Le réticule cohabite avec les pastilles (ledger `MOB-107`) : elles
+      // restent, à leur place.
+      expect(probe(tester).markers, isNotEmpty);
       expect(
         tester.getSemantics(enRoute),
         isSemantics(isButton: true, isSelected: true, hasTapAction: true),

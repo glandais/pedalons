@@ -7,6 +7,95 @@ import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../keys.dart';
 import '../../domain/track_surfaces.dart';
 
+/// Un mode d'un [MapColorModeSwitch] : sa valeur, son libellé déjà traduit, et
+/// la clé de son segment (celle qu'un test touche).
+class MapColorModeOption<T> {
+  const MapColorModeOption({
+    required this.value,
+    required this.label,
+    this.key,
+  });
+
+  final T value;
+  final String label;
+  final Key? key;
+}
+
+/// L'interrupteur segmenté qui choisit ce que colore une carte — le dessin
+/// commun de [RouteColorModeSwitch] (Pente | Revêtement | Météo) et de celui
+/// de la carte d'ensemble d'un voyage (Étapes | Météo) : sous la carte
+/// encastrée, ou posé sur le plein écran ([overMap], [routeMapBottomLayer]).
+///
+/// Avec moins de deux [options], il n'y a rien à choisir : rien ne se rend.
+class MapColorModeSwitch<T> extends StatelessWidget {
+  const MapColorModeSwitch({
+    super.key,
+    required this.options,
+    required this.value,
+    required this.onChanged,
+    required this.semanticLabel,
+    this.overMap = false,
+  });
+
+  final List<MapColorModeOption<T>> options;
+  final T value;
+  final ValueChanged<T> onChanged;
+
+  /// Ce que l'interrupteur colore, pour les lecteurs d'écran, déjà traduit.
+  final String semanticLabel;
+
+  /// Vrai quand il est posé sur une carte (le plein écran) : une ombre et un
+  /// filet le détachent de la tuile.
+  final bool overMap;
+
+  /// La largeur d'un segment : `PdlSegmented` exige une largeur bornée, et
+  /// trois segments étirés sur toute une tablette se liraient mal.
+  static const double _segmentWidth = 120;
+
+  @override
+  Widget build(BuildContext context) {
+    if (options.length < 2) return const SizedBox.shrink();
+    final bool known = options.any(
+      (MapColorModeOption<T> o) => o.value == value,
+    );
+    final Widget segmented = PdlSegmented<T>(
+      value: known ? value : options.first.value,
+      onChanged: onChanged,
+      segments: <PdlSegment<T>>[
+        for (final MapColorModeOption<T> option in options)
+          PdlSegment<T>(
+            key: option.key,
+            value: option.value,
+            label: option.label,
+          ),
+      ],
+    );
+    return Semantics(
+      label: semanticLabel,
+      container: true,
+      child: Align(
+        alignment: AlignmentDirectional.centerStart,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: _segmentWidth * options.length),
+          child: SizedBox(
+            width: double.infinity,
+            child: overMap
+                ? DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: PdlRadii.mdAll,
+                      border: Border.all(color: context.pdl.borderSubtle),
+                      boxShadow: PdlShadows.sheet,
+                    ),
+                    child: segmented,
+                  )
+                : segmented,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// L'interrupteur **unique** Pente | Revêtement | Météo d'une carte de
 /// parcours (ledger `MOB-105`) : il colore la carte encastrée, son plein écran
 /// et le profil — le pendant mobile des `ColorModeControls` du site. La carte
@@ -39,49 +128,21 @@ class RouteColorModeSwitch extends StatelessWidget {
   /// filet le détachent de la tuile.
   final bool overMap;
 
-  /// La largeur d'un segment : `PdlSegmented` exige une largeur bornée, et
-  /// trois segments étirés sur toute une tablette se liraient mal.
-  static const double _segmentWidth = 120;
-
   @override
-  Widget build(BuildContext context) {
-    if (modes.length < 2) return const SizedBox.shrink();
-    final Widget segmented = PdlSegmented<RouteColorBy>(
-      value: modes.contains(value) ? value : modes.first,
-      onChanged: onChanged,
-      segments: <PdlSegment<RouteColorBy>>[
-        for (final RouteColorBy mode in modes)
-          PdlSegment<RouteColorBy>(
-            key: keys.routeDetail.colorByMode(mode.name),
-            value: mode,
-            label: _label(mode),
-          ),
-      ],
-    );
-    return Semantics(
-      label: semanticLabel ?? 'routes.surfaceDetail.colorBy'.tr(),
-      container: true,
-      child: Align(
-        alignment: AlignmentDirectional.centerStart,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: _segmentWidth * modes.length),
-          child: SizedBox(
-            width: double.infinity,
-            child: overMap
-                ? DecoratedBox(
-                    decoration: BoxDecoration(
-                      borderRadius: PdlRadii.mdAll,
-                      border: Border.all(color: context.pdl.borderSubtle),
-                      boxShadow: PdlShadows.sheet,
-                    ),
-                    child: segmented,
-                  )
-                : segmented,
-          ),
+  Widget build(BuildContext context) => MapColorModeSwitch<RouteColorBy>(
+    options: <MapColorModeOption<RouteColorBy>>[
+      for (final RouteColorBy mode in modes)
+        MapColorModeOption<RouteColorBy>(
+          key: keys.routeDetail.colorByMode(mode.name),
+          value: mode,
+          label: _label(mode),
         ),
-      ),
-    );
-  }
+    ],
+    value: value,
+    onChanged: onChanged,
+    semanticLabel: semanticLabel ?? 'routes.surfaceDetail.colorBy'.tr(),
+    overMap: overMap,
+  );
 
   static String _label(RouteColorBy mode) => switch (mode) {
     RouteColorBy.grade => 'routes.surfaceDetail.grade'.tr(),

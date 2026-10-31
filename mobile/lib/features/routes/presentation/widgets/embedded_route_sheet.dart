@@ -15,6 +15,7 @@ import '../../../../keys.dart';
 import '../../domain/route_color_mode.dart';
 import '../../domain/track_slope_colors.dart';
 import '../../domain/track_surfaces.dart';
+import '../../domain/track_wind_bars.dart';
 import '../../providers/route_detail_provider.dart';
 import '../../providers/route_elevation_provider.dart';
 import 'route_climbs_section.dart';
@@ -47,6 +48,7 @@ class EmbeddedRouteSheet extends ConsumerStatefulWidget {
     this.colorBy,
     this.onColorByChanged,
     this.offersWind = false,
+    this.windLeg,
     this.colorBySwitchKey,
   });
 
@@ -70,6 +72,11 @@ class EmbeddedRouteSheet extends ConsumerStatefulWidget {
   /// Vrai quand l'écran hôte colore le tracé par le vent en mode Météo (via
   /// [mapLayer]) : l'interrupteur propose alors « Météo ».
   final bool offersWind;
+
+  /// Le leg dont l'écran hôte colore le tracé en mode Météo : le profil,
+  /// toujours en pente, gagne alors la bande du vent sous son aire et son
+  /// info-bulle le vent du point (ledger `MOB-106`). Ignoré hors mode Météo.
+  final WeatherLegDto? windLeg;
 
   /// La clé de l'interrupteur Pente | Revêtement | Météo sous la carte.
   final Key? colorBySwitchKey;
@@ -184,7 +191,13 @@ class _EmbeddedRouteSheetState extends ConsumerState<EmbeddedRouteSheet> {
             ),
           ],
           const SizedBox(height: PdlSpacing.section),
-          _profile(route, cursor, units, profileColorBy(colorBy)),
+          _profile(
+            route,
+            cursor,
+            units,
+            profileColorBy(colorBy),
+            colorBy == RouteColorBy.wind ? widget.windLeg : null,
+          ),
           // L'espace n'est posé que si la section rend quelque chose : la
           // plupart des parcours n'ont pas (encore) de revêtement.
           if (hasTrackSurfaces(route.tracks) ||
@@ -261,6 +274,7 @@ class _EmbeddedRouteSheetState extends ConsumerState<EmbeddedRouteSheet> {
     RouteCursorController cursor,
     UnitSystem units,
     RouteColorBy colorBy,
+    WeatherLegDto? windLeg,
   ) {
     final List<TrackSurface?>? bars = colorBy == RouteColorBy.surface
         ? ref.watch(routeSurfaceBarsProvider(widget.routeKey)).value
@@ -270,6 +284,16 @@ class _EmbeddedRouteSheetState extends ConsumerState<EmbeddedRouteSheet> {
     final ClimbBars? climbs = bars == null
         ? ref.watch(routeClimbBarsProvider(widget.routeKey)).value
         : null;
+    // Le vent sous le profil, en mode Météo seulement (ledger `MOB-106`).
+    final WindBars? wind = windLeg == null
+        ? null
+        : ref
+              .watch(
+                routeWindBarsProvider(
+                  WindBarsKey<RouteKey>(widget.routeKey, windLeg),
+                ),
+              )
+              .value;
 
     return ref
         .watch(routeElevationSamplesProvider(widget.routeKey))
@@ -294,6 +318,7 @@ class _EmbeddedRouteSheetState extends ConsumerState<EmbeddedRouteSheet> {
                     barColors: bars == null
                         ? climbs?.colors
                         : _barColors.of(bars, context.pdl),
+                    bandColors: wind?.colors,
                     cursorDistance: cursor.distance,
                     axisLabel: (double meters, {required bool isLast}) => isLast
                         ? AppFormatters.formatDistance(meters, units)
@@ -308,6 +333,7 @@ class _EmbeddedRouteSheetState extends ConsumerState<EmbeddedRouteSheet> {
                         ?trackSurfaceTip(samples, bars, r.distance)
                       else
                         ?climbGradeTipLabel(samples, climbs, r),
+                      if (wind != null) windTipLabel(samples, wind, r.distance),
                     ].join(' · '),
                   ),
                 ),

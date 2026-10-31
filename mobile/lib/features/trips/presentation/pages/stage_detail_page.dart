@@ -112,10 +112,11 @@ class _StageDetailContent extends ConsumerWidget {
       stillShows: (Map<String, WeatherLegDto> legs) =>
           legs.containsKey(stage.id),
     );
-    final bool showsWind = tripMapWindLegs(
+    final WeatherLegDto? windLeg = tripMapWindLegs(
       trip,
       watchTripMapWeather(ref, tripKey, trip),
-    ).containsKey(stage.id);
+    )[stage.id];
+    final bool showsWind = windLeg != null;
 
     return PdlScreenScaffold(
       // Relit le voyage (le détail reste affiché pendant l'appel,
@@ -172,6 +173,9 @@ class _StageDetailContent extends ConsumerWidget {
                     ref.read(tripMapColorModeProvider(tripKey).notifier).state =
                         v,
                 offersWind: showsWind,
+                // La bande du vent sous le profil, en mode Météo (ledger
+                // `MOB-106`).
+                windLeg: windLeg,
                 colorBySwitchKey: keys.trip.stageMapColorBy,
               ),
             ),
@@ -234,8 +238,10 @@ class _StageDetailContent extends ConsumerWidget {
   /// * en plein écran, le même interrupteur Pente | Revêtement | Météo que
   ///   sous la carte encastrée, posé en bas de la carte ;
   /// * en mode « Météo », le vent de l'étape comme dans l'Aperçu d'un groupe
-  ///   (ledger `MOB-94`) : tracé coloré, légende et crédit ; pastilles et leur
-  ///   feuille en plein écran seulement, à l'heure de la zone de l'étape.
+  ///   (ledger `MOB-94`) : tracé coloré, légende et crédit, pastilles et
+  ///   goutte à l'heure de la zone de l'étape, encastrée comme en plein écran
+  ///   (ledger `MOB-107`). Encastrée, une pastille touchée ouvre le plein
+  ///   écran ; en plein écran, sa feuille.
   RouteMapLayer? _mapLayer(
     BuildContext context,
     WidgetRef ref,
@@ -261,7 +267,7 @@ class _StageDetailContent extends ConsumerWidget {
       segmentColors: windLeg == null
           ? null
           : weatherTrackColors(route, windLeg),
-      markers: fullscreen && windLeg != null
+      markers: windLeg != null
           ? weatherMarkersOnRoute(
               route,
               windLeg,
@@ -271,13 +277,16 @@ class _StageDetailContent extends ConsumerWidget {
           : const <PdlMapMarker>[],
       onMarkerTapped: windLeg == null
           ? null
-          : (BuildContext context, String id) => openWeatherMapMarker(
+          : fullscreen
+          ? (BuildContext context, String id) => openWeatherMapMarker(
               context,
               id,
               leg: windLeg,
               units: units,
               timezone: stage.timezone,
-            ),
+            )
+          : (BuildContext context, String _) =>
+                PdlMapHero.openFullscreen(context),
       foreground: routeMapBottomLayer(
         fullscreen: fullscreen,
         modeSwitch: fullscreen && modes.length > 1

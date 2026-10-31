@@ -114,6 +114,43 @@ void main() {
     });
   });
 
+  testWidgets('openFullscreen : ce que la carte rend ouvre le plein écran, '
+      'sans effet en plein écran (ledger `MOB-107`)', (
+    WidgetTester tester,
+  ) async {
+    Widget hero({required bool isFullscreen}) => PdlMapHero(
+      labels: labels,
+      isFullscreen: isFullscreen,
+      fullscreenBuilder: isFullscreen
+          ? null
+          : (BuildContext context) => hero(isFullscreen: true),
+      mapBuilder: (BuildContext context) => Center(
+        child: TextButton(
+          onPressed: () => PdlMapHero.openFullscreen(context),
+          child: Text(isFullscreen ? 'pastille plein écran' : 'pastille'),
+        ),
+      ),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: PedalonsTheme.build(Brightness.light),
+        home: Scaffold(
+          body: SizedBox(height: 240, child: hero(isFullscreen: false)),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('pastille'));
+    await tester.pumpAndSettle();
+    expect(find.text('pastille plein écran'), findsOneWidget);
+
+    // En plein écran, rien à ouvrir : la page reste seule.
+    await tester.tap(find.text('pastille plein écran'));
+    await tester.pumpAndSettle();
+    expect(find.text('pastille plein écran'), findsOneWidget);
+    expect(find.bySemanticsLabel('Quitter le plein écran'), findsOneWidget);
+  });
+
   testWidgets('un bouton plein écran sans page est refusé', (
     WidgetTester tester,
   ) async {

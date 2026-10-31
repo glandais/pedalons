@@ -14,16 +14,18 @@ import '../../domain/ride_weather_display.dart';
 import '../../domain/ride_weather_map.dart';
 import 'ride_weather_widgets.dart';
 
-/// Les pastilles météo de la carte plein écran d'un groupe, en mode « Météo »
-/// (palier 2 de `docs/plans/archive/2026-10-24-weather-on-map.md`, ledger `MOB-92`).
+/// Les pastilles météo de la carte d'un groupe, en mode « Météo » (palier 2
+/// de `docs/plans/archive/2026-10-24-weather-on-map.md`, ledger `MOB-92`),
+/// encastrée comme en plein écran (ledger `MOB-107`).
 ///
 /// Une pastille **compacte** par point de passage qui porte une météo —
 /// icône du ciel, température, flèche du vent **absolue** (vers le nord de la
 /// carte, même tournée : voir [windArrowOnMap]) —,
 /// toutes égales : les verdicts restent dans la frise. Une goutte au point de
-/// l'alerte pluie (`leg.rainAlert`, seuil du serveur, jamais recalculé). Un
-/// toucher ouvre une `PdlSheet` courte avec le détail, comme un point de
-/// parcours (`MOB-84`).
+/// l'alerte pluie (`leg.rainAlert`, seuil du serveur, jamais recalculé). En
+/// plein écran, un toucher ouvre une `PdlSheet` courte avec le détail, comme
+/// un point de parcours (`MOB-84`) ; sur la carte encastrée, il ouvre le plein
+/// écran.
 ///
 /// Les positions viennent des distances **chaînées sans saut**
 /// ([pointsAtDistances]) : la convention des distances météo, pas celle de

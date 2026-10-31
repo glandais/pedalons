@@ -113,6 +113,11 @@ abstract final class PdlMetrics {
   static const double elevationMedium = 110;
   static const double elevationLarge = 140;
 
+  /// La bande sous un profil (le vent en mode Météo, ledger `MOB-106`) et
+  /// son écart au graphique — les 6 px et 2 px du site (`windBand.ts`).
+  static const double elevationBand = 6;
+  static const double elevationBandGap = 2;
+
   /// Barre de places.
   static const double seatsBar = 6;
 

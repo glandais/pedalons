@@ -12,6 +12,8 @@ import '../../../../core/utils/link_launcher.dart';
 import '../../../../keys.dart';
 import '../../domain/track_slope_colors.dart';
 import '../../domain/track_surfaces.dart';
+import '../../domain/track_wind_bars.dart';
+import '../../../rides/domain/ride_weather_display.dart';
 
 /// Le libellé d'une classe de revêtement (`MOB-81`) — ceux du site.
 String trackSurfaceLabel(TrackSurface surface) => switch (surface) {
@@ -63,6 +65,16 @@ String? climbGradeTipLabel(
       ? reading.grade
       : climbGradeTip(samples, climbs, reading.distance);
   return grade == null ? null : AppFormatters.formatGrade(grade);
+}
+
+/// Le vent de l'infobulle du profil en mode Météo (ledger `MOB-106`) : celui
+/// de la barre sous le réticule, « Vent de face »…, ou « Vent inconnu » —
+/// toujours écrit, jamais seulement en couleur.
+String windTipLabel(ElevationSamples samples, WindBars bars, double at) {
+  final RelativeWind? wind = windTip(samples, bars, at);
+  return wind == null
+      ? 'rides.weather.relativeWindUnknown'.tr()
+      : wind.labelKey.tr();
 }
 
 /// Les couleurs des barres du profil en mode revêtement, mémorisées : le

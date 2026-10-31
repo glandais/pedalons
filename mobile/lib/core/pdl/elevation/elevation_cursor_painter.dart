@@ -125,5 +125,8 @@ class ElevationCursorPainter extends CustomPainter {
       old.tipBackground != tipBackground ||
       old.tipBorder != tipBorder ||
       old.tipTextStyle != tipTextStyle ||
-      old.textScaler != textScaler;
+      old.textScaler != textScaler ||
+      // Le libellé change sans que le réticule bouge (passage en Météo,
+      // nouveau leg) : la bulle d'un réticule posé doit suivre.
+      old.label != label;
 }

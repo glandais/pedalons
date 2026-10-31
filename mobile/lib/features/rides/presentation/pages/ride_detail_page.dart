@@ -735,6 +735,11 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
               // interrupteur. Sinon, le profil a le sien, à lui seul.
               colorBy: likeRoute ? colorBy : null,
               profileColorByKey: keys.ride.profileColorBy,
+              // Le vent sous le profil, en mode Météo, sur le seul parcours
+              // de la sortie solo (ledger `MOB-106`).
+              windLeg: likeRoute && colorBy == RouteColorBy.wind
+                  ? soloLeg
+                  : null,
             ),
           ),
       ],
