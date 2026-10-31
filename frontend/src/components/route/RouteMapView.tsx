@@ -21,9 +21,18 @@ import { ElevationChart } from './ElevationChart'
  */
 export type MappableRoute = Pick<RouteDetailDto, 'tracks' | 'waypoints' | 'distance'>
 
-// Stable padding for the embedded layout: leave room at the bottom for the chart overlay so the
-// whole track stays visible. Kept module-level so re-renders don't retrigger fit-to-bounds.
-const EMBEDDED_FIT_PADDING = { top: 50, bottom: 220, left: 50, right: 50 }
+// Stable fit paddings, module-level so re-renders don't retrigger fit-to-bounds. Over the map, the
+// profile needs room at the bottom so the whole track stays visible; below it, nothing to clear.
+const OVERLAY_FIT_PADDING = { top: 50, bottom: 220, left: 50, right: 50 }
+const BELOW_FIT_PADDING = 50
+/** Height of the profile strip under the map, the fullscreen view's. */
+const BELOW_PROFILE_HEIGHT = 160
+
+/**
+ * Where the profile sits: under the map (default, as in the fullscreen view and the planner), or
+ * laid over its bottom — kept on a ride's pages, where the map sits among the groups' content.
+ */
+export type ProfilePlacement = 'below' | 'overlay'
 
 interface RouteMapViewProps {
   route: MappableRoute
@@ -48,6 +57,8 @@ interface RouteMapViewProps {
   /** The waypoint picked on the map, the profile or the page's list (internal state when omitted). */
   waypointSelection?: WaypointSelection | null
   onWaypointSelectionChange?: (selection: WaypointSelection | null) => void
+  /** Where the profile sits (`below` by default). */
+  profilePlacement?: ProfilePlacement
 }
 
 export function RouteMapView({
@@ -60,13 +71,16 @@ export function RouteMapView({
   kmMarkers,
   waypointSelection,
   onWaypointSelectionChange,
+  profilePlacement = 'below',
 }: RouteMapViewProps) {
   const { t } = useTranslation()
   const colorScheme = useResolvedColorScheme()
   const mapHeight = useMapHeight('full')
   const [hoveredPointIndex, setHoveredPointIndex] = useState<number>(-1)
+  const overlay = profilePlacement === 'overlay'
+  const fitPadding = overlay ? OVERLAY_FIT_PADDING : BELOW_FIT_PADDING
   // Zoom/pan sync map ↔ profile, as in the fullscreen view; the fit a profile gesture induces
-  // keeps the track clear of the profile overlay
+  // keeps the track clear of the profile when it lies over the map
   const {
     mapRef,
     chartRef,
@@ -76,7 +90,7 @@ export function RouteMapView({
     onMapMoveEnd,
     onChartMoveStart,
     onChartMoveComplete,
-  } = useMapChartZoomSync(route, EMBEDDED_FIT_PADDING)
+  } = useMapChartZoomSync(route, fitPadding)
   // Ignore hover while a zoom/pan gesture is driving the counterpart view (RouteFullscreenView's)
   const handleHoverPoint = (index: number) => {
     if (mapMoving.current || chartMoving.current) return
@@ -107,6 +121,23 @@ export function RouteMapView({
 
   const overlayBg = getOverlayBg(colorScheme, true)
 
+  const chart = (
+    <ElevationChart
+      ref={chartRef}
+      route={route}
+      hoveredPointIndex={hoveredPointIndex}
+      onHoverPoint={handleHoverPoint}
+      zoom={{
+        onMoveStart: onChartMoveStart,
+        onMoveComplete: onChartMoveComplete,
+      }}
+      colorBy={surfaceAt ? 'surface' : 'grade'}
+      surfaceAt={surfaceAt}
+      selectedWaypoint={selection?.waypoint ?? null}
+      onSelectWaypoint={(waypoint) => setSelection({ waypoint, from: 'profile' })}
+    />
+  )
+
   return (
     <Paper withBorder style={{ overflow: 'hidden' }}>
       <Box w="100%" h={mapHeight}>
@@ -117,7 +148,7 @@ export function RouteMapView({
           onHoverPoint={handleHoverPoint}
           onMoveStart={onMapMoveStart}
           onMoveEnd={onMapMoveEnd}
-          fitPadding={EMBEDDED_FIT_PADDING}
+          fitPadding={fitPadding}
           lineColorAt={externalLineColorAt ?? lineColorAt}
           lineAttribution={lineAttribution}
           overlays={overlays}
@@ -138,38 +169,39 @@ export function RouteMapView({
           }
         >
           {/* Elevation chart overlay */}
-          <Box
-            pos="absolute"
-            bottom={0}
-            left={0}
-            right={0}
-            // Proportional to the (viewport-bounded) map so it never dominates a short map,
-            // while staying readable on tall ones.
-            h="clamp(110px, 38%, 200px)"
-            style={{
-              zIndex: 1000,
-              pointerEvents: 'auto',
-              boxShadow: 'var(--mantine-shadow-lg)',
-              backgroundColor: overlayBg,
-            }}
-          >
-            <ElevationChart
-              ref={chartRef}
-              route={route}
-              hoveredPointIndex={hoveredPointIndex}
-              onHoverPoint={handleHoverPoint}
-              zoom={{
-                onMoveStart: onChartMoveStart,
-                onMoveComplete: onChartMoveComplete,
+          {overlay && (
+            <Box
+              pos="absolute"
+              bottom={0}
+              left={0}
+              right={0}
+              // Proportional to the (viewport-bounded) map so it never dominates a short map,
+              // while staying readable on tall ones.
+              h="clamp(110px, 38%, 200px)"
+              style={{
+                zIndex: 1000,
+                pointerEvents: 'auto',
+                boxShadow: 'var(--mantine-shadow-lg)',
+                backgroundColor: overlayBg,
               }}
-              colorBy={surfaceAt ? 'surface' : 'grade'}
-              surfaceAt={surfaceAt}
-              selectedWaypoint={selection?.waypoint ?? null}
-              onSelectWaypoint={(waypoint) => setSelection({ waypoint, from: 'profile' })}
-            />
-          </Box>
+            >
+              {chart}
+            </Box>
+          )}
         </RouteTrackMap>
       </Box>
+      {/* Fixed elevation strip below the map (no overlap), as in the fullscreen view */}
+      {!overlay && (
+        <Box
+          h={BELOW_PROFILE_HEIGHT}
+          style={{
+            borderTop: '1px solid var(--mantine-color-default-border)',
+            backgroundColor: overlayBg,
+          }}
+        >
+          {chart}
+        </Box>
+      )}
     </Paper>
   )
 }

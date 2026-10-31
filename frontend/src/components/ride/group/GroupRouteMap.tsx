@@ -98,6 +98,8 @@ export function GroupRouteMap({
                   {...mode.mapProps}
                   waypointSelection={selection}
                   onWaypointSelectionChange={setSelection}
+                  // A ride's map keeps its profile laid over it, unlike a route's sheet
+                  profilePlacement="overlay"
                 />
               </Box>
             </Suspense>
