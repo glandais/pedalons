@@ -51,6 +51,12 @@ docker ps --format '{{.Names}}' | grep tribly-e2e   # la pile e2e est-elle up ?
 | karoo | pas de tests unitaires : `./gradlew --quiet assembleDebug` puis `./gradlew --quiet --stop` |
 | garmin-app | `make simulator; sleep 8; make test` (le simulateur doit tourner avant ; verdict = ligne `PASSED`), puis `pkill -f ConnectIQ.app` |
 
+**Suite backend sur optiplex** : quand la recette se fait avec la pile e2e sur optiplex (skill
+`pedalons-e2e-optiplex`), `mvn test` y tourne aussi (§6 de ce skill), en arrière-plan pendant les
+autres tests unitaires du Mac, et *avant* la construction de la pile là-bas. Le Mac n'a alors plus
+besoin de Docker Desktop, et la règle « jamais la suite backend en même temps qu'un e2e » se
+transpose à optiplex (charge CPU, plus les veth).
+
 Pas de `timeout` sur macOS (code 127) : ne pas l'utiliser pour borner une commande.
 
 `mobile/check.sh` et `karoo/check.sh` reformatent et régénèrent : ne les lancer que si on veut
