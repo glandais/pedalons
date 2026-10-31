@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import type { MapRef } from 'react-map-gl/maplibre'
+import type { PaddingOptions } from 'maplibre-gl'
 import { calculateBounds } from '../components/map/mapUtils'
 import type { ElevationChartHandle } from '../components/route/ElevationChart'
 import type { MappableRoute } from '../components/route/RouteMapView'
@@ -45,7 +46,14 @@ export interface MapChartZoomSync {
  * latest induced move releases `chartMoving` (a newer `fitBounds` interrupts the previous one,
  * whose `moveend` fires first); a user move during that animation still drives the chart.
  */
-export function useMapChartZoomSync(route: MappableRoute): MapChartZoomSync {
+export function useMapChartZoomSync(
+  route: MappableRoute,
+  /**
+   * The padding of the map fit a chart gesture induces: the map's own `fitPadding`, so that an
+   * embedded map keeps the track clear of the profile laid over its bottom. Keep its identity stable.
+   */
+  fitPadding: number | PaddingOptions = 50
+): MapChartZoomSync {
   const mapRef = useRef<MapRef | null>(null)
   const chartRef = useRef<ElevationChartHandle | null>(null)
   const mapMoving = useRef(false)
@@ -144,11 +152,11 @@ export function useMapChartZoomSync(route: MappableRoute): MapChartZoomSync {
       fallbackTimer.current = setTimeout(releaseChartGuard, CHART_GUARD_FALLBACK_MS)
       map.fitBounds(
         calculateBounds(points),
-        { padding: 50, duration: INDUCED_MOVE_MS },
+        { padding: fitPadding, duration: INDUCED_MOVE_MS },
         { [CHART_SYNC_KEY]: id }
       )
     },
-    [tracks, clearFallbackTimer, releaseChartGuard]
+    [tracks, fitPadding, clearFallbackTimer, releaseChartGuard]
   )
 
   useEffect(() => clearFallbackTimer, [clearFallbackTimer])

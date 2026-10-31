@@ -1,6 +1,5 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { MapRef } from 'react-map-gl/maplibre'
 import { IconArrowsMaximize } from '@tabler/icons-react'
 import { Box, Center, Paper, Text } from '@mantine/core'
 import { useUncontrolled } from '@mantine/hooks'
@@ -12,6 +11,7 @@ import { useMapHeight } from '@/hooks/useResponsive'
 import { getOverlayBg } from '@/lib/colors'
 import { useResolvedColorScheme } from '@/hooks/useResolvedColorScheme'
 import { useRouteSurfaceColors } from '@/hooks/useRouteSurfaceColors'
+import { useMapChartZoomSync } from '@/hooks/useMapChartZoomSync'
 import { RouteTrackMap } from './RouteTrackMap'
 import { ElevationChart } from './ElevationChart'
 
@@ -65,7 +65,23 @@ export function RouteMapView({
   const colorScheme = useResolvedColorScheme()
   const mapHeight = useMapHeight('full')
   const [hoveredPointIndex, setHoveredPointIndex] = useState<number>(-1)
-  const mapRef = useRef<MapRef>(null)
+  // Zoom/pan sync map ↔ profile, as in the fullscreen view; the fit a profile gesture induces
+  // keeps the track clear of the profile overlay
+  const {
+    mapRef,
+    chartRef,
+    mapMoving,
+    chartMoving,
+    onMapMoveStart,
+    onMapMoveEnd,
+    onChartMoveStart,
+    onChartMoveComplete,
+  } = useMapChartZoomSync(route, EMBEDDED_FIT_PADDING)
+  // Ignore hover while a zoom/pan gesture is driving the counterpart view (RouteFullscreenView's)
+  const handleHoverPoint = (index: number) => {
+    if (mapMoving.current || chartMoving.current) return
+    setHoveredPointIndex(index)
+  }
   const [selection, setSelection] = useUncontrolled<WaypointSelection | null>({
     value: waypointSelection,
     defaultValue: null,
@@ -98,7 +114,9 @@ export function RouteMapView({
           route={route}
           mapRef={mapRef}
           hoveredPointIndex={hoveredPointIndex}
-          onHoverPoint={setHoveredPointIndex}
+          onHoverPoint={handleHoverPoint}
+          onMoveStart={onMapMoveStart}
+          onMoveEnd={onMapMoveEnd}
           fitPadding={EMBEDDED_FIT_PADDING}
           lineColorAt={externalLineColorAt ?? lineColorAt}
           lineAttribution={lineAttribution}
@@ -136,9 +154,14 @@ export function RouteMapView({
             }}
           >
             <ElevationChart
+              ref={chartRef}
               route={route}
               hoveredPointIndex={hoveredPointIndex}
-              onHoverPoint={setHoveredPointIndex}
+              onHoverPoint={handleHoverPoint}
+              zoom={{
+                onMoveStart: onChartMoveStart,
+                onMoveComplete: onChartMoveComplete,
+              }}
               colorBy={surfaceAt ? 'surface' : 'grade'}
               surfaceAt={surfaceAt}
               selectedWaypoint={selection?.waypoint ?? null}
