@@ -2631,6 +2631,14 @@ components:
           type: number
           format: double
           description: Reported ascent in metres
+        shape:
+          type: string
+          description: "Polyline (precision 6, latitude then longitude) of the raw\
+            \ track of the file, 2D, as sanitized, neither resampled nor simplified.\
+            \ Opaque to the client, which carries it into PlannerSource.shape. Only\
+            \ in the GPX import answer: always absent from the line-elevation answer,\
+            \ and absent from the import answer when the file's raw tracks together\
+            \ exceed the planner's point budget"
     GpxPreviewDto:
       description: "Analysed GPX file, not attached to any team"
       type: object
@@ -3974,6 +3982,15 @@ components:
             \ and disjoint; edge 0 joins the first junction to the first interior\
             \ point, the last edge ends at the last junction. Absent: surface unknown"
           maxItems: 50000
+        shape:
+          type: string
+          description: "ROUTED: polyline6 of the router's raw geometry of the piece,\
+            \ RouterResponse.shape as the router answered it, never edited (its two\
+            \ ends may be kept: a point within 1 m of a junction is dropped). The\
+            \ saved track is derived from it rather than from line; absent or inconsistent\
+            \ with line (ends over 50 m from the junctions, length off by over 20\
+            \ % + 200 m): line. Unpaved spans keep indexing the edges of line"
+          maxLength: 2000000
     PlannerPieceMode:
       type: string
       enum:
@@ -4007,6 +4024,13 @@ components:
             \ point of line: the ascent accumulated up to each point, as the server\
             \ measured it (dead-band, non-decreasing, within [0, 100 000 m]). Absent:\
             \ the client derives it from ele. Requires ele"
+          maxLength: 2000000
+        shape:
+          type: string
+          description: "Polyline (precision 6, latitude then longitude) of the raw\
+            \ track of the file, as GpxImportTrack.shape gave it, never edited. An\
+            \ imported piece is cut out of it by projecting its junctions (from and\
+            \ to still index line); absent or inconsistent with line: line"
           maxLength: 2000000
     PlannerState:
       description: Editing state of the route planner
@@ -5828,6 +5852,13 @@ components:
             \ from the router's own maneuvers), half-open, ascending and disjoint;\
             \ edge i joins route points i and i + 1. Absent when the router gave no\
             \ surface; empty when all paved"
+        shape:
+          type: string
+          description: "Polyline (precision 6, latitude then longitude) of the router's\
+            \ raw geometry, 2D: the leg shapes concatenated as decoded, neither resampled\
+            \ nor simplified; its first and last points are the ends of route. Opaque\
+            \ to the client, which carries it into PlannerPiece.shape. Absent when\
+            \ there is no route"
     RoutesBulkResponse:
       description: "Detail of several routes fetched at once, plus their combined\
         \ extent"
@@ -20248,7 +20279,7 @@ paths:
                 $ref: "#/components/schemas/VersionDto"
 info:
   title: Pedalons API
-  version: 13.0.1
+  version: 13.1.0
   description: API for Pedalons Cycling Team Management Platform
 servers:
 - url: http://localhost:8080

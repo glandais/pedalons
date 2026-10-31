@@ -87,6 +87,12 @@ export const RouteResponse = zod.object({
     .describe(
       "Runs of unpaved edges of route (compacted surface or worse, from the router's own maneuvers), half-open, ascending and disjoint; edge i joins route points i and i + 1. Absent when the router gave no surface; empty when all paved"
     ),
+  shape: zod
+    .string()
+    .optional()
+    .describe(
+      "Polyline (precision 6, latitude then longitude) of the router's raw geometry, 2D: the leg shapes concatenated as decoded, neither resampled nor simplified; its first and last points are the ends of route. Opaque to the client, which carries it into PlannerPiece.shape. Absent when there is no route"
+    ),
 })
 
 /**
@@ -174,6 +180,12 @@ export const LineElevationResponse = zod
               ),
             dist: zod.number().describe('Length in metres'),
             ascend: zod.number().describe('Reported ascent in metres'),
+            shape: zod
+              .string()
+              .optional()
+              .describe(
+                "Polyline (precision 6, latitude then longitude) of the raw track of the file, 2D, as sanitized, neither resampled nor simplified. Opaque to the client, which carries it into PlannerSource.shape. Only in the GPX import answer: always absent from the line-elevation answer, and absent from the import answer when the file's raw tracks together exceed the planner's point budget"
+              ),
           })
           .describe('A track of an imported GPX file')
       )
@@ -223,6 +235,12 @@ export const ImportGpxResponse = zod
               ),
             dist: zod.number().describe('Length in metres'),
             ascend: zod.number().describe('Reported ascent in metres'),
+            shape: zod
+              .string()
+              .optional()
+              .describe(
+                "Polyline (precision 6, latitude then longitude) of the raw track of the file, 2D, as sanitized, neither resampled nor simplified. Opaque to the client, which carries it into PlannerSource.shape. Only in the GPX import answer: always absent from the line-elevation answer, and absent from the import answer when the file's raw tracks together exceed the planner's point budget"
+              ),
           })
           .describe('A track of an imported GPX file')
       )

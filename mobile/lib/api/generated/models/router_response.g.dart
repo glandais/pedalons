@@ -14,6 +14,7 @@ _RouterResponse _$RouterResponseFromJson(Map<String, dynamic> json) =>
       unpaved: (json['unpaved'] as List<dynamic>?)
           ?.map((e) => UnpavedSpan.fromJson(e as Map<String, dynamic>))
           .toList(),
+      shape: json['shape'] as String?,
     );
 
 Map<String, dynamic> _$RouterResponseToJson(_RouterResponse instance) =>
@@ -22,4 +23,5 @@ Map<String, dynamic> _$RouterResponseToJson(_RouterResponse instance) =>
       'dist': instance.dist,
       'ascend': instance.ascend,
       'unpaved': instance.unpaved?.map((e) => e.toJson()).toList(),
+      'shape': instance.shape,
     };

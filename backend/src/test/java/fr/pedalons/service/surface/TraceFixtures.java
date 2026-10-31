@@ -37,6 +37,23 @@ final class TraceFixtures {
   }
 
   /**
+   * A raw line along {@link #line}'s meridian as {@code [lng, lat]} pairs, a vertex every {@code
+   * stepM} metres north; over its first {@code jitterM} metres every other vertex is {@code
+   * lateralM} east, a GPS jitter that makes the raw line longer there and only there.
+   */
+  static List<double[]> rawLine(int n, double stepM, double jitterM, double lateralM) {
+    List<double[]> out = new ArrayList<>(n);
+    double dLat = Math.toDegrees(stepM / GeoDistance.EARTH_RADIUS_METERS);
+    double dLng =
+        Math.toDegrees(lateralM / (GeoDistance.EARTH_RADIUS_METERS * Math.cos(Math.toRadians(48))));
+    for (int i = 0; i < n; i++) {
+      boolean off = i % 2 == 1 && i * stepM < jitterM;
+      out.add(new double[] {2 + (off ? dLng : 0), 48 + i * dLat});
+    }
+    return out;
+  }
+
+  /**
    * The answer to a request, as if the track followed the network exactly: one edge per run of
    * equal surface of the segments ({@code surfaceOfSegment} gets the segment index within the
    * sent polyline).

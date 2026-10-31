@@ -2,6 +2,7 @@ package fr.pedalons.service.route.planner;
 
 import fr.pedalons.common.exception.BusinessException;
 import fr.pedalons.dto.error.ErrorCode;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Strict Google-style polyline codec for a planner state sent by a client (docs/LEDGER_*.md WEB-100,
@@ -34,6 +35,18 @@ public final class PolylineCodec {
    * @param budget the most points accepted; one more is refused before it is stored
    */
   public static double[][] decode2(String encoded, int budget) {
+    return java.util.Objects.requireNonNull(decode2(encoded, budget, false));
+  }
+
+  /**
+   * As {@link #decode2(String, int)}, but a polyline of more than {@code budget} points is not an
+   * error: the result is null, and what lies past the budget is not read.
+   */
+  public static double @Nullable [][] decode2Within(String encoded, int budget) {
+    return decode2(encoded, budget, true);
+  }
+
+  private static double @Nullable [][] decode2(String encoded, int budget, boolean lenient) {
     // A point takes at least two characters: this bounds the allocation before decoding.
     int cap = Math.min(budget, encoded.length() / 2);
     double[][] out = new double[cap][];
@@ -51,6 +64,9 @@ public final class PolylineCodec {
         throw invalid();
       }
       if (count >= budget || count >= cap) {
+        if (lenient && count >= budget) {
+          return null;
+        }
         throw invalid();
       }
       out[count++] = new double[] {lng / PRECISION, lat / PRECISION};

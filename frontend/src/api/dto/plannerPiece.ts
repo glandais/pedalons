@@ -26,4 +26,9 @@ export interface PlannerPiece {
    * @maxItems 50000
    */
   unpaved?: UnpavedSpan[]
+  /**
+   * ROUTED: polyline6 of the router's raw geometry of the piece, RouterResponse.shape as the router answered it, never edited (its two ends may be kept: a point within 1 m of a junction is dropped). The saved track is derived from it rather than from line; absent or inconsistent with line (ends over 50 m from the junctions, length off by over 20 % + 200 m): line. Unpaved spans keep indexing the edges of line
+   * @maxLength 2000000
+   */
+  shape?: string
 }
