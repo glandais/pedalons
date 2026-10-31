@@ -3,5 +3,5 @@
   "keywords": "vélo,club,sortie,parcours,gpx,peloton,cycliste,météo,vent,calendrier,route,gravel,allure,col",
   "marketingUrl": "https://www.pedalons.fr/",
   "supportUrl": "https://www.pedalons.fr/support",
-  "whatsNew": "• Sur Android, un parcours ou une pièce jointe s'enregistre désormais sur le téléphone, au lieu de seulement s'envoyer à une autre application.\n• Les fichiers GPX et FIT téléchargés sont désormais proposés aux applications GPS.\n• Corrections de stabilité."
+  "whatsNew": "• Le tracé des parcours, des groupes et des étapes se colore comme sur le site : les montées selon leur pente, et un même choix Pente, Revêtement ou Météo sous la carte comme en plein écran.\n• En mode Météo, le vent s'affiche sous le profil altimétrique, et les pastilles météo apparaissent aussi sur la carte de la page.\n• Sur Android, un parcours ou une pièce jointe s'enregistre désormais sur le téléphone, au lieu de seulement s'envoyer à une autre application.\n• Les fichiers GPX et FIT téléchargés sont désormais proposés aux applications GPS.\n• Corrections de stabilité."
 }
