@@ -13,6 +13,7 @@ import fr.pedalons.dto.users.response.AccountDeletionImpactDto;
 import fr.pedalons.dto.users.response.UserDto;
 import fr.pedalons.enums.ThemePreference;
 import fr.pedalons.enums.UnitSystem;
+import fr.pedalons.repository.auth.AuthSessionRepository;
 import fr.pedalons.repository.gps.GpsServiceConnectionRepository;
 import fr.pedalons.repository.team.UserTeamRepository;
 import fr.pedalons.repository.user.UserRepository;
@@ -27,11 +28,28 @@ import jakarta.transaction.Transactional;
 import java.time.DateTimeException;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class UserService {
+
+  private static final Logger LOG = Logger.getLogger(UserService.class);
+
+  /**
+   * Accounts {@link #deleteUser} never erases: the store reviewers' demo account, whose data is
+   * rebuilt by {@code mobile/screenshots/seed.py} and quoted in the review notes. A reviewer who
+   * tries the deletion — App Review checks it works — would otherwise leave the next one nothing
+   * to sign in to.
+   */
+  @ConfigProperty(name = "pedalons.account-deletion.protected-emails")
+  Optional<List<String>> protectedEmails;
+
+  @Inject AuthSessionRepository authSessionRepository;
 
   @Inject UserRepository userRepository;
 
@@ -165,8 +183,16 @@ public class UserService {
    */
   @Logged
   public void deleteUser() {
-    Long userId = pedalonsContext.getUser().getId();
+    User current = pedalonsContext.getUser();
+    Long userId = current.getId();
     Long domainId = pedalonsContext.getDomainId();
+    if (isProtected(current)) {
+      // The reviewer sees the deletion go through — signed out, as after a real one — but nothing
+      // is erased: they sign in again with the same credentials and find the same data.
+      LOG.infof("Deletion of protected account %d skipped; its sessions are revoked", userId);
+      QuarkusTransaction.requiringNew().run(() -> authSessionRepository.revokeAllByUserId(userId));
+      return;
+    }
     QuarkusTransaction.requiringNew().run(() -> checkDeletable(userId, domainId));
     accountErasureService.removeSyncedRoutes(userId);
     QuarkusTransaction.requiringNew()
@@ -185,6 +211,12 @@ public class UserService {
             });
     // The request context memoizes the active user; it is no longer active.
     pedalonsContext.invalidateUser();
+  }
+
+  private boolean isProtected(User user) {
+    String email = user.getEmail().toLowerCase(Locale.ROOT);
+    return protectedEmails.orElse(List.of()).stream()
+        .anyMatch(protectedEmail -> protectedEmail.trim().toLowerCase(Locale.ROOT).equals(email));
   }
 
   private void checkDeletable(Long userId, Long domainId) {

@@ -9,6 +9,7 @@ import fr.pedalons.domain.team.Team;
 import fr.pedalons.domain.user.User;
 import fr.pedalons.enums.TeamRole;
 import fr.pedalons.enums.Visibility;
+import fr.pedalons.repository.auth.AuthSessionRepository;
 import fr.pedalons.repository.team.TeamRepository;
 import fr.pedalons.repository.user.UserRepository;
 import fr.pedalons.service.migration.live.BiketeamTestData;
@@ -16,6 +17,7 @@ import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import java.io.File;
+import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -27,6 +29,8 @@ class UserResourceTest extends AbstractResourceTest {
   @Inject TeamRepository teamRepository;
 
   @Inject BiketeamTestData biketeamData;
+
+  @Inject AuthSessionRepository authSessionRepository;
 
   @Override
   @BeforeEach
@@ -88,6 +92,33 @@ class UserResourceTest extends AbstractResourceTest {
         .statusCode(204);
 
     assertTrue(isDeleted(user3));
+  }
+
+  @Test
+  void deleteCurrentUser_protectedAccount_signsOutButErasesNothing() {
+    // The store reviewers' demo account (pedalons.account-deletion.protected-emails, %test value).
+    User reviewer = dataService.createUser("store-reviewer@example.com", "Store reviewer");
+    dataService.createAuthSession(reviewer, "reviewer-session", Instant.now().plusSeconds(3600));
+
+    given()
+        .auth()
+        .oauth2(getAccessToken("store-reviewer"))
+        .when()
+        .delete("/api/users/me")
+        .then()
+        .statusCode(204);
+
+    User after =
+        QuarkusTransaction.requiringNew().call(() -> userRepository.findById(reviewer.getId()));
+    assertFalse(after.isDeleted());
+    assertEquals("Store reviewer", after.getDisplayName());
+    assertEquals(
+        0L,
+        QuarkusTransaction.requiringNew()
+            .call(
+                () ->
+                    authSessionRepository.count(
+                        "user.id = ?1 and revoked = false", reviewer.getId())));
   }
 
   @Test

@@ -822,6 +822,10 @@ it; a club admin can neither add nor invite it back, only a platform admin can) 
 it back by hand, or run the full rebuild from a workstation and copy the accounts file again if it
 changed.
 
+The account cannot be deleted from the apps: `pedalons.account-deletion.protected-emails` lists it,
+and `DELETE /api/users/me` then only signs it out (ledger `API-147`). If it is missing anyway, the
+full rebuild recreates it.
+
 ### Thumbnail basemaps (shared tileserver)
 
 The clients load the VersaTiles styles straight from `tiles.versatiles.org`, unversioned: they
