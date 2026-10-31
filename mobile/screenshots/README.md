@@ -62,7 +62,7 @@ au-delà.
 
 Une reconstruction ne vaut que pour le jour où elle est faite : trois semaines plus tard, le compte
 de test n'est plus inscrit à rien, la sortie commentée des notes App Review
-([`metadata/review-notes.md`](../metadata/review-notes.md)) est passée, et les sorties proches
+(champ `notes` de [`metadata/review-information.json`](../metadata/review-information.json)) est passée, et les sorties proches
 n'ont que leurs « lève-tôt ». `--refresh` remet les clubs à jour **sans rien supprimer**, et tourne
 chaque jour depuis la crontab de l'hôte de production
 ([OPERATIONS.md](../../docs/OPERATIONS.md#store-reviewers-demo-data)) :

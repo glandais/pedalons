@@ -41,15 +41,16 @@ Listing copy and screenshots live elsewhere and are not duplicated here:
 
 `mobile/metadata/` holds the App Store copy in `asc`'s canonical layout — `app-info/<locale>.json`
 (name, subtitle, privacy URL) and `version/<version>/<locale>.json` (description, keywords, support
-and marketing URLs), in `fr-FR` (primary) and `en-US` — plus `review-notes.md`, which `asc metadata`
-does not cover. Never `apply` without reading the plan:
+and marketing URLs), in `fr-FR` (primary) and `en-US` — plus `review-information.json`, the App Review information
+(demo account and the reviewer notes, `notes`), managed by the opt-in `review-information` scope
+(asc ≥ 6.0). Never `apply` without reading the plan:
 
 ```bash
 cd mobile
 asc metadata validate --dir ./metadata
-asc metadata plan     --app 6761760079 --version 1.1.0 --platform IOS --dir ./metadata --review-dir ../.asc/metadata/review
+asc metadata plan     --app 6761760079 --version 1.1.2 --platform IOS --dir ./metadata --include localizations,review-information --review-dir ../.asc/metadata/review
 asc metadata approve  --review-dir ../.asc/metadata/review --all
-asc metadata apply    --app 6761760079 --version 1.1.0 --platform IOS --dir ./metadata --review-dir ../.asc/metadata/review --confirm
+asc metadata apply    --app 6761760079 --version 1.1.2 --platform IOS --dir ./metadata --include localizations,review-information --review-dir ../.asc/metadata/review --confirm
 ```
 
 Name, subtitle and keywords form **one indexed pool**: never repeat a word across them, keep keywords
@@ -68,12 +69,18 @@ Mac/Vision Pro distribution — look at *Pricing and Availability* in the browse
 
 Pitfalls: adding a locale takes **two** `apply` runs (creating the `app-info` localization makes
 App Store Connect create the version one, and the version half of the same plan fails with "already
-been used" — re-plan and apply again). `review-notes.md` is pushed with
-`asc review details-update --id <detail> --notes "$(cat metadata/review-notes.md)"`. The review
-detail belongs to **one version**: read its ID with `asc review details-for-version --version-id
-<version>` (1.0.0 was `d8cc0005-f535-4475-a720-a00eeb844adb`, 1.1.0 was
-`8ca43e45-9914-439b-bf67-ebccad095826`, 1.1.1 was `75f06b3c-c7ac-4e82-99fb-0e88efd444da`, 1.1.2 is `3f51738b-347f-4a55-8c5f-2f040d870268`, copied from the previous version with the
-demo account by App Store Connect when the version was created).
+been used" — re-plan and apply again).
+
+`review-information.json` deliberately holds only `demoAccountRequired`, `demoAccountName` and
+`notes`: a field left out is not managed, so the contact (name, e-mail, phone) stays out of the
+repository and the plan stays empty when nothing changed. Never add `demoAccountPassword` — it cannot
+be read back, so every plan would show it as changed, and it must be an `@env:NAME`/`@file:PATH`
+reference anyway. `notes` takes no such reference (`@file:` would be pushed literally): the text
+lives in the JSON, newlines as `\n`. The review information belongs to **one version** —
+App Store Connect copies it, demo account included, when a version is created — so `plan` the new
+version right after `asc versions create` to see whether the notes still need an update.
+`asc metadata pull --include review-information` rewrites the file from App Store Connect, contact
+and a password reference included: trim it back to the three fields before committing.
 
 Version 1.1.0 was created on 14 October 2026 (`asc versions create … --copyright "2026 Gabriel
 Landais" --release-type MANUAL`, description and keywords copied from 1.0.0 by App Store Connect),
