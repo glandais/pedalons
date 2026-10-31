@@ -167,6 +167,16 @@ fichier garde **ce qui est fait**, et ce qu'il ne faut pas défaire.
   confidentialité), remplies par l'API le 15 octobre, ne sont **pas versionnées** : le compte de
   démo se change aux deux endroits (fiche App Store et TestFlight). La version suivante est
   `MOB-101`.
+- [x] `MOB-101` **La 1.1.1 est publiée sur l'App Store** (constaté le 31 octobre 2026, contrat
+  `13.0.0`) — correctif de la 1.1.0 pour le contrat `13.0.0` (`API-144`, `MOB-100`) :
+  `RouteDetailDto.createdBy` y devient nullable, et la 1.1.0 ne lisait plus le détail d'un parcours
+  sans créateur visible. Elle embarque aussi `MOB-97`, `MOB-98`, `MOB-99` et les teintes du relief
+  sur iOS. Le 26 octobre 2026 : `publish_beta.sh` (build 93, TestFlight et Play, tag
+  `mobile.1.1.1.93`), version créée dans App Store Connect (`MANUAL`), nouveautés de
+  `mobile/metadata/version/1.1.1/` poussées par `asc metadata apply`, le reste de la fiche et le
+  détail de revue recopiés de la 1.1.0 par App Store Connect. Le 27 octobre : build 93 attaché
+  (`fastlane release`), `asc validate` sans erreur, soumise ; approuvée puis publiée à la main.
+  La version suivante est `MOB-103`.
 - [x] `MOB-63` **Fiche App Store et captures refaites sur l'app d'octobre** (9 octobre 2026, contrat
   inchangé) — les captures du 25 septembre montraient un fil d'équipe remplacé depuis par le
   tableau de bord, l'Agenda et les Publications (`MOB-60`), et ni la description ni les captures ne

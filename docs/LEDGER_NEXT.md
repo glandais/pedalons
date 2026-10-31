@@ -202,25 +202,12 @@ faite, et le 500 du contact vendeur (`MOB-47`). Depuis l'import de `n-peloton` e
       Une fois l'accès obtenu : promouvoir la release `alpha` depuis la Console plutôt que
       `fastlane deploy`, qui renverrait le même versionCode. Fiche (textes 1.1.0) et captures
       refaites sur l'app du 25 octobre poussées par `fastlane listing` le 25 octobre 2026.
-- [ ] `MOB-101` **Publier la 1.1.1 sur l'App Store et en bêta (XS)** — correctif de la 1.1.0 pour
-      le contrat `13.0.0` (`API-144`, `MOB-100`) : `RouteDetailDto.createdBy` y devient nullable, et
-      la 1.1.0 en vente ne lit plus le détail d'un parcours sans créateur visible. Elle embarque aussi
-      `MOB-97`, `MOB-98`, `MOB-99` et les teintes du relief sur iOS. `pubspec.yaml` est en `1.1.1`,
-      la fiche et les nouveautés dans `mobile/metadata/version/1.1.1/`. Fait le 26 octobre 2026 :
-      `publish_beta.sh` (build 93, TestFlight et Play, tag `mobile.1.1.1.93`), version 1.1.1 créée
-      dans App Store Connect (`MANUAL`), nouveautés poussées par `asc metadata apply` ; description,
-      mots-clés et détail de revue (notes identiques à `review-notes.md`, compte de démo) recopiés de
-      la 1.1.0 par App Store Connect. Le 27 octobre : build 93 attaché (`fastlane release`),
-      `asc validate` sans erreur ni avertissement, version soumise à la revue. Reste : publier à la
-      main après l'approbation (`asc versions release --version-id
-      60a9008f-9319-4628-8e2b-f1a75bd1dc4e --confirm`). Le backend `13.0.0` déployé avant que la
-      1.1.1 soit en vente casse ce détail de parcours pour les non-membres sur la 1.1.0.
 - [ ] `MOB-103` **Publier la 1.1.2 en bêta, puis sur l'App Store (XS)** — embarque `MOB-102`
       (enregistrer un parcours ou une pièce jointe sur un téléphone Android, types MIME GPX/FIT).
       `pubspec.yaml` est en `1.1.2`, la fiche et les nouveautés dans
       `mobile/metadata/version/1.1.2/` (fiche recopiée de la 1.1.1). Le 31 octobre 2026 :
       `publish_beta.sh` (TestFlight externe et Play test fermé, tag `mobile.1.1.2.N`). Reste : créer
-      la version 1.1.2 dans App Store Connect une fois la 1.1.1 (`MOB-101`) publiée, pousser les
+      la version 1.1.2 dans App Store Connect (la 1.1.1, `MOB-101`, est en vente), pousser les
       nouveautés, attacher le build (`fastlane release`), soumettre.
 
 ### Couverture e2e Patrol — ce que les tests ne couvrent pas encore
