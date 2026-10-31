@@ -40,9 +40,10 @@ public record TrackDto(
     @Nullable
         @Schema(
             description =
-                "Surface along the track when surfaceState is READY: contiguous spans from 0 to"
-                    + " the track's length, adjacent spans of the same class merged. Derived from"
-                    + " OpenStreetMap (© OpenStreetMap contributors, ODbL) by Stadia Maps")
+                "Surface along the track when surfaceState is READY: contiguous spans from 0 to the"
+                    + " track's length, adjacent spans of the same class merged. Derived from"
+                    + " OpenStreetMap (© OpenStreetMap contributors, ODbL), VersaTiles vector"
+                    + " tiles")
         List<SurfaceSpanDto> surfaces) {
 
   private static final CoordinateReferenceSystem<G3DM> WGS84_3DM =

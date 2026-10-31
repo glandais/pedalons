@@ -30,7 +30,7 @@ import fr.pedalons.dto.routes.request.RouteRequest;
 import fr.pedalons.dto.routes.response.RouteDto;
 import fr.pedalons.enums.SurfaceType;
 import fr.pedalons.enums.Visibility;
-import fr.pedalons.infrastructure.valhalla.StadiaTraceAttributesClient;
+import fr.pedalons.infrastructure.valhalla.TraceAttributesClient;
 import fr.pedalons.infrastructure.valhalla.TraceAttributesRequest;
 import fr.pedalons.repository.route.ElevationRefreshRepository;
 import fr.pedalons.repository.route.GpxTrackRepository;
@@ -71,7 +71,7 @@ class SurfaceRefreshTest extends AbstractResourceTest {
   private static final Path EXAMPLE = new File("src/test/resources/example.gpx").toPath();
 
   @InjectMock MapThumbnailRenderer renderer;
-  @InjectMock @RestClient StadiaTraceAttributesClient client;
+  @InjectMock @RestClient TraceAttributesClient client;
 
   @Inject RouteService routeService;
   @Inject SurfaceRefreshService service;

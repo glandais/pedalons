@@ -7158,8 +7158,8 @@ components:
             $ref: "#/components/schemas/SurfaceSpanDto"
           description: "Surface along the track when surfaceState is READY: contiguous\
             \ spans from 0 to the track's length, adjacent spans of the same class\
-            \ merged. Derived from OpenStreetMap (© OpenStreetMap contributors, ODbL)\
-            \ by Stadia Maps"
+            \ merged. Derived from OpenStreetMap (© OpenStreetMap contributors, ODbL),\
+            \ VersaTiles vector tiles"
     TrackSurface:
       type: string
       enum:
@@ -20248,7 +20248,7 @@ paths:
                 $ref: "#/components/schemas/VersionDto"
 info:
   title: Pedalons API
-  version: 13.0.0
+  version: 13.0.1
   description: API for Pedalons Cycling Team Management Platform
 servers:
 - url: http://localhost:8080

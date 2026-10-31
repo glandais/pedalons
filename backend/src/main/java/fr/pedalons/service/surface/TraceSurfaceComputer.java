@@ -6,7 +6,7 @@ import fr.pedalons.domain.route.TrackSurfaceDocument.SurfaceRange;
 import fr.pedalons.domain.route.TrackSurfaceDocument.WayRange;
 import fr.pedalons.dto.router.request.RouterProfile;
 import fr.pedalons.infrastructure.valhalla.Polyline6Encoder;
-import fr.pedalons.infrastructure.valhalla.StadiaTraceAttributesClient;
+import fr.pedalons.infrastructure.valhalla.TraceAttributesClient;
 import fr.pedalons.infrastructure.valhalla.TraceAttributesRequest;
 import fr.pedalons.infrastructure.valhalla.TraceAttributesResponse;
 import fr.pedalons.infrastructure.valhalla.TraceAttributesResponse.Edge;
@@ -25,8 +25,9 @@ import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Computes the surface along a saved track with Stadia Maps trace attributes (docs/LEDGER_*.md
- * WEB-100, C1b; trials in docs/research/2026-10-19-stadia-surfaces.md): the track is sent in
+ * Computes the surface along a saved track with the trace attributes of osm-surface
+ * (docs/LEDGER_*.md WEB-100, C1b, and OPS-57; the Stadia Maps trials it was designed on in
+ * docs/research/2026-10-19-stadia-surfaces.md): the track is sent in
  * {@code map_snap} mode, in slices when it exceeds what one request accepts, and the answers are
  * projected back onto the stored points ({@link TraceSurfaceProjection}).
  *
@@ -70,7 +71,7 @@ public class TraceSurfaceComputer {
     }
   }
 
-  @Inject @RestClient StadiaTraceAttributesClient client;
+  @Inject @RestClient TraceAttributesClient client;
 
   /** The costing of a track, from the profile of its planner state (none: it was sent as a file). */
   public static String costingOf(@Nullable RouterProfile profile) {
@@ -147,13 +148,12 @@ public class TraceSurfaceComputer {
             firstDefinitiveCode = code;
           }
         } else {
-          // The URL and the headers carry the key: only the status and the code are kept
           throw new TransientTraceException(
-              "Stadia Maps trace attributes failed, status " + status + ", error_code " + code);
+              "osm-surface trace attributes failed, status " + status + ", error_code " + code);
         }
       } catch (ProcessingException e) {
         throw new TransientTraceException(
-            "Stadia Maps trace attributes unreachable: " + e.getClass().getSimpleName());
+            "osm-surface trace attributes unreachable: " + e.getClass().getSimpleName());
       }
       if (response == null) {
         surfaces.add(new Range<>(start, end, TrackSurfaceDocument.UNKNOWN));

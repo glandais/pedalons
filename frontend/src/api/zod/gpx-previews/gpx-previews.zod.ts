@@ -150,7 +150,7 @@ export const CreatePreviewResponse = zod
               )
               .optional()
               .describe(
-                "Surface along the track when surfaceState is READY: contiguous spans from 0 to the track's length, adjacent spans of the same class merged. Derived from OpenStreetMap (© OpenStreetMap contributors, ODbL) by Stadia Maps"
+                "Surface along the track when surfaceState is READY: contiguous spans from 0 to the track's length, adjacent spans of the same class merged. Derived from OpenStreetMap (© OpenStreetMap contributors, ODbL), VersaTiles vector tiles"
               ),
           })
           .describe('GPX track with track points')
@@ -566,7 +566,7 @@ export const CreatePreviewFromPointsResponse = zod
               )
               .optional()
               .describe(
-                "Surface along the track when surfaceState is READY: contiguous spans from 0 to the track's length, adjacent spans of the same class merged. Derived from OpenStreetMap (© OpenStreetMap contributors, ODbL) by Stadia Maps"
+                "Surface along the track when surfaceState is READY: contiguous spans from 0 to the track's length, adjacent spans of the same class merged. Derived from OpenStreetMap (© OpenStreetMap contributors, ODbL), VersaTiles vector tiles"
               ),
           })
           .describe('GPX track with track points')
@@ -741,7 +741,7 @@ export const MergePreviewsResponse = zod
               )
               .optional()
               .describe(
-                "Surface along the track when surfaceState is READY: contiguous spans from 0 to the track's length, adjacent spans of the same class merged. Derived from OpenStreetMap (© OpenStreetMap contributors, ODbL) by Stadia Maps"
+                "Surface along the track when surfaceState is READY: contiguous spans from 0 to the track's length, adjacent spans of the same class merged. Derived from OpenStreetMap (© OpenStreetMap contributors, ODbL), VersaTiles vector tiles"
               ),
           })
           .describe('GPX track with track points')
@@ -1163,7 +1163,7 @@ export const UpdatePreviewResponse = zod
               )
               .optional()
               .describe(
-                "Surface along the track when surfaceState is READY: contiguous spans from 0 to the track's length, adjacent spans of the same class merged. Derived from OpenStreetMap (© OpenStreetMap contributors, ODbL) by Stadia Maps"
+                "Surface along the track when surfaceState is READY: contiguous spans from 0 to the track's length, adjacent spans of the same class merged. Derived from OpenStreetMap (© OpenStreetMap contributors, ODbL), VersaTiles vector tiles"
               ),
           })
           .describe('GPX track with track points')
@@ -1338,7 +1338,7 @@ export const GetPreviewResponse = zod
               )
               .optional()
               .describe(
-                "Surface along the track when surfaceState is READY: contiguous spans from 0 to the track's length, adjacent spans of the same class merged. Derived from OpenStreetMap (© OpenStreetMap contributors, ODbL) by Stadia Maps"
+                "Surface along the track when surfaceState is READY: contiguous spans from 0 to the track's length, adjacent spans of the same class merged. Derived from OpenStreetMap (© OpenStreetMap contributors, ODbL), VersaTiles vector tiles"
               ),
           })
           .describe('GPX track with track points')

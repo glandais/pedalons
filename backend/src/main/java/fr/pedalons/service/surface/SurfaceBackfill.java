@@ -22,8 +22,7 @@ import org.jboss.logging.Logger;
  * neither a surface nor any request, under a global hourly cap carried by the due times themselves
  * (a done request is deleted, so there is nothing to count). Its requests are marked {@code
  * backfill}: the worker serves them once no normal request is due. Nothing when the surface is off
- * ({@code pedalons.surface.enabled}, or no key), whatever {@code
- * pedalons.surface.backfill.enabled}.
+ * ({@code pedalons.surface.enabled}), whatever {@code pedalons.surface.backfill.enabled}.
  *
  * <p>A track that is given up (five failures) keeps its request row, and one that is unavailable
  * has a document written: neither is ever a candidate again, so nothing is marked and the loop
@@ -49,7 +48,7 @@ public class SurfaceBackfill {
   @ConfigProperty(name = "pedalons.surface.backfill.enabled", defaultValue = "true")
   boolean enabled;
 
-  /** Provider calls per hour (a slice of 188 km is one call, 20 credits). */
+  /** Provider calls per hour (a slice of 188 km is one call, a few tiles fetched by osm-surface). */
   @ConfigProperty(name = "pedalons.surface.backfill.per-hour", defaultValue = "300")
   int perHour;
 

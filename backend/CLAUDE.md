@@ -34,6 +34,7 @@ Coverage instrumentation is opt-in (it slows every run by ~10-15%):
 |---------|------|---------|
 | imgproxy | 38080 | Image optimization/transformation (WebP, AVIF, JXL) |
 | tileserver | 18080 | Internal map renderer for route thumbnails (never handed to clients) |
+| osm-surface | 18002 | Surface along saved tracks (`TraceAttributesClient`, configKey `osm-surface`, no key) — ledger `OPS-57` |
 | MinIO | 9000 (console 9001) | S3 storage for assets |
 | mailpit | 1025 (UI 8025) | SMTP sink — no mail leaves a workstation |
 

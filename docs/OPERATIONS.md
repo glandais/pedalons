@@ -13,16 +13,17 @@ Caddy terminates TLS on the host and reverse-proxies each hostname to that envir
 reconciles: a `deploy` converges the running services onto the file, and a task that dies is
 rescheduled rather than left for a `restart:` policy.
 
-`docker-compose.shared.yml` holds what carries no application data and is read-only: `tileserver`
-(server-side raster rendering, ~1.8 GB resident). One instance serves every environment. It owns
-the `pedalons-shared` overlay network. Route computation is not hosted at all any more: it is
+`docker-compose.shared.yml` holds what carries no application data: `tileserver`
+(server-side raster rendering, ~1.8 GB resident) and `osm-surface` (the surface along saved tracks,
+over a cache of OpenStreetMap tiles; see [Surface along saved tracks](#surface-along-saved-tracks-osm-surface)).
+One instance of each serves every environment. It owns the `pedalons-shared` overlay network. Route computation is not hosted at all any more: it is
 bought from Stadia Maps, with a key per environment, and so is geocoding (see
 [Stadia Maps: routing and geocoding](#stadia-maps-routing-and-geocoding)).
 
 `docker-compose.yml` holds everything that must stay isolated per environment: traefik, backend,
 frontend, postgres, minio, imgproxy and varnish — and goatcounter, which runs in production only
 (see [Web analytics](#web-analytics-goatcounter)). Its `backend` also joins `pedalons-shared` to reach
-the shared service, by its service name `tileserver`.
+the shared services, by their service names `tileserver` and `osm-surface`.
 
 Each environment's `.env` differs from a workstation's in five keys only — see
 [The `.env`, on a workstation and on a server](../README.md#the-env-on-a-workstation-and-on-a-server).
@@ -118,6 +119,7 @@ limit is killed by the kernel (`OOMKilled` in `docker inspect`, `task: non-zero 
 | traefik | 256M | |
 | goatcounter | 128M | production only; 36 to 40 MiB at rest, the rest for CSV exports and the dashboard |
 | tileserver (shared) | 3G | ~1.8 GB resident |
+| osm-surface (shared) | 768M | 256 MB of decoded tiles (`MEMORY_CACHE_MB`) plus the matchings in flight; a few MB at rest |
 | monitoring stack | 2G in all | see [Monitoring](#monitoring); ~1 GB resident |
 
 **The backend has no `-Xmx`.** The image's entrypoint (`run-java.sh`, from the Jib base image
@@ -153,8 +155,8 @@ resident memory once the cache fills; keep `VARNISH_MEMORY` about half as much a
 
 **What a host must hold**: these are ceilings, not usage — but a host should hold the sum of them.
 Per environment, 7.3 GB (7.4 GB in production, with goatcounter), plus 2 GB during a rolling update (a second backend and frontend run
-beside the old ones, see above); on top, the shared stack's tileserver (3 GB) and the monitoring
-stack (2 GB). Two environments with the defaults come to about 23 GB with the host's own share
+beside the old ones, see above); on top, the shared stack's tileserver (3 GB) and osm-surface
+(0.75 GB), and the monitoring stack (2 GB). Two environments with the defaults come to about 24 GB with the host's own share
 (Caddy, Docker, the OS): a 32 GB host holds them with room to spare — since 2026-10-17 no routing
 tiles compete for its page cache (`OPS-48`). A staging environment can take less through its own `.env` (`BACKEND_MEMORY=1G`,
 `VARNISH_SIZE=256M`, `VARNISH_MEMORY=512M`); prod, more `BACKEND_MEMORY` if `docker stats` shows the
@@ -674,57 +676,6 @@ ways that must not be confused:
 | `STADIAMAPS_API_KEY` | the `.env` of **each environment** (`~/prod/.env`, `~/staging/.env`), never `~/shared/.env`: the shared stack has no routing any more | One key for routing and the forms' geocoding. Sent as `Authorization: Stadia-Auth …` on every request. **Required** in `%prod`: `docker-compose.yml` restates it with `:?`, so a deploy without it stops before any container starts (the backend itself would start and fail every route with a 500: the header is resolved per request). `scripts/dev-env.sh` exports it for `mvn quarkus:dev`; the e2e stack takes it from the shell or the workstation's `.env` (`scripts/e2e.sh`), the CI from a GitHub secret of the same name |
 | `STADIAMAPS_URL` | optional | `https://api-eu.stadiamaps.com` by default (EU-only host; `https://api.stadiamaps.com` is the global one, same key), used by both the routing and the geocoding REST clients; another Valhalla-compatible host for a test — but then the geocoder points at it too |
 
-The same key also serves the **surface along saved tracks** (ledger `WEB-100`, C1b):
-`SurfaceRefreshWorker` (every 30 s, never during an HTTP request) sends a saved route's or GPX-tool
-preview's stored track to `POST /trace_attributes/v1` once it has been left alone for 90 s (never
-beyond 10 min), in `map_snap` mode, and stores the surface as ranges in `gpx_tracks.surfaces` /
-`gpx_previews.surfaces`. **20 credits per 190 km slice** (a typical route is one request). The queue
-is `surface_refresh`; a request that failed five times (2 min, 10 min, 1 h, 6 h) stays in the table
-for diagnosis, untouched, and the API then says nothing for that track. `SURFACE_ENABLED=false` stops new requests **and** the worker's calls, the queue waits; it is
-also off by itself when the key is empty. Set it to `false` in the `.env` of a workstation stack,
-and the e2e stack has it off (`.env.e2e`): both would otherwise spend real credits, a biketeam
-migration test included.
-
-The **catch-up of old tracks** (`WEB-100`, C1c; the routes saved before the surface existed,
-biketeam ones included): `SurfaceBackfill` (every 5 min) queues the routes without a surface nor
-any request, most recent first, then the GPX-tool previews younger than 29 days, as requests marked
-`surface_refresh.backfill`. The worker serves them only once no normal request is due. The cap is
-global (carried by the requests' due times, spaced under a lock, so two backends of a rolling deploy
-do not double it): `SURFACE_BACKFILL_PER_HOUR` provider calls an hour (default 300 = **6,000
-credits/h**; a 188 km slice is one call, a 400 km route three), and never more than 10 minutes of it
-waiting in the queue, so it pauses by itself while Stadia fails. The cap is on the due times: after
-the worker was held up (a backlog of normal requests, `SURFACE_ENABLED` off a while, a restart) it
-sends what fell due at once, so an hour can see up to the cap plus those 10 minutes (350 calls,
-7,000 credits at the default), retries of failed requests aside. **Cost**: tracks x 20 credits; 10,000
-routes take about 34 h and about 200,000 credits at the default cap (about 4 to 6 USD on the Starter
-plan). A biketeam migration leaves its routes to the catch-up instead of queuing them at once.
-
-- **Stop it**: `SURFACE_BACKFILL_ENABLED=false` (nothing more is queued; what is already queued, at
-  most 10 minutes of cap, is still computed). `SURFACE_ENABLED=false` stops everything.
-- **Before the first deploy, estimate it** (the routes the catch-up will take, its calls and
-  credits; the previews are a few days' worth at most):
-  ```sql
-  select count(*) as routes,
-         sum(greatest(1, ceil(coalesce(t.distance, 0) / 188000.0))) as calls,
-         20 * sum(greatest(1, ceil(coalesce(t.distance, 0) / 188000.0))) as credits
-    from team_entities t join teams tm on tm.id = t.team_id
-   where t.id in (select g.route_id from gpx_tracks g where g.surfaces is null)
-     and not t.deleted and not tm.deleted
-     and not exists (select 1 from surface_refresh r where r.route_id = t.id)
-     and exists (select 1 from assets a
-                  where a.team_entity_id = t.id and a.type = 'ROUTE_ORIGINAL_GPX');
-  ```
-  `calls / SURFACE_BACKFILL_PER_HOUR` is the duration in hours.
-- **Follow it**: `select count(*) filter (where backfill), count(*) filter (where backfill and attempts >= 5) from surface_refresh;`
-  and what is left: `select count(distinct route_id) from gpx_tracks where surfaces is null;`. The log
-  says `Surface catch-up done` once nothing is left.
-- **A track the provider cannot match** gets an « unavailable » document and is never retried; one
-  that failed five times keeps its request row (normal or catch-up) and is not taken again either.
-  To retry the given-up ones (a revoked key made a batch fail):
-  `delete from surface_refresh where attempts >= 5;` — they become candidates of the catch-up again,
-  under its cap.
-- A workstation stack keeps `SURFACE_ENABLED=false` (above), which disables the catch-up too.
-
 One key for prod and staging works (Stadia Maps counts requests per key); a second key makes
 staging's usage readable apart on their dashboard, and revocable alone. **The key never reaches a
 log**: the request URL is not logged, and a failure is logged by its status only —
@@ -756,6 +707,86 @@ order, because step 2's old backend still talks to `valhalla` until it is replac
    `docker run --rm -v ~/shared/data:/d alpine rm -rf /d/valhalla`), drop `VALHALLA_TILE_URLS`
    from `~/shared/.env`, and delete the cold copy `OPS-9` had sent to the backup host
    (`pedalons-shared/` there).
+
+### Surface along saved tracks (osm-surface)
+
+The **surface along saved tracks** (ledger `WEB-100`, C1b) is computed by **osm-surface**
+(`ghcr.io/glandais/osm-surface`, source at github.com/glandais/osm-surface), a service of the
+**shared stack** since 2026-10-31 (ledger `OPS-57`; Stadia Maps' trace attributes before). It
+answers `POST /trace_attributes/v1` exactly as Stadia did — Valhalla's `map_snap` rebuilt on the
+VersaTiles OpenStreetMap vector tiles (`tiles.versatiles.org`, zoom 14), which it downloads on demand
+and caches in its volume (`pedalons-shared_osm-surface-data`, at most `CACHE_MAX_GB=5`; regenerable,
+not backed up). **No key, no credit**, and no track leaves our servers any more: only tile
+coordinates go to VersaTiles. Every backend reaches it at `http://osm-surface:8002` over
+`pedalons-shared` (`OSM_SURFACE_URL` overrides it; `%dev`: `http://localhost:18002`, published by
+`docker-compose.local.yml`). Its agreement with Stadia is 86 to 94 % per surface class, 98 to 99 %
+on paved / unpaved (its README, *Évaluation*); the surfaces Stadia already computed stay as they are.
+
+`SurfaceRefreshWorker` (every 30 s, never during an HTTP request) sends a saved route's or GPX-tool
+preview's stored track once it has been left alone for 90 s (never beyond 10 min), in `map_snap`
+mode, and stores the surface as ranges in `gpx_tracks.surfaces` / `gpx_previews.surfaces`. 50 to
+100 ms a request with the tiles cached, a few seconds for a 190 km slice in a region never seen. The
+queue is `surface_refresh`; a request that failed five times (2 min, 10 min, 1 h, 6 h) stays in the
+table for diagnosis, untouched, and the API then says nothing for that track. osm-surface answers a
+**503** when it cannot load the tiles (VersaTiles unreachable, a 404, 11 s spent): a transient
+failure, retried. `SURFACE_ENABLED=false` stops new requests **and** the worker's calls, the queue
+waits. The e2e stack has it off (`.env.e2e`): nothing in the suite looks at the surface.
+
+```bash
+# Is it up, and how old are its tiles? (distroless image: no shell, so from the backend container)
+docker exec "$(docker ps -qf name=${ENV_NAME}_backend)" curl -s http://osm-surface:8002/health
+docker service logs pedalons-shared_osm-surface --since 1h
+```
+
+**Upgrading it**: change the tag in `docker-compose.shared.yml`, then
+`cd ~/shared && git pull && scripts/deploy.sh --shared`. Requests in flight during the swap fail
+as unreachable and are retried two minutes later.
+
+**Switching a host from Stadia** (once): deploy the shared stack **first**
+(`cd ~/shared && git pull && scripts/deploy.sh --shared`, which starts `osm-surface`), then the
+environments. A backend deployed before would fail its surface requests as unreachable until the
+service exists — retried, but five failures in about 7 h give a track up.
+
+The **catch-up of old tracks** (`WEB-100`, C1c; the routes saved before the surface existed,
+biketeam ones included): `SurfaceBackfill` (every 5 min) queues the routes without a surface nor
+any request, most recent first, then the GPX-tool previews younger than 29 days, as requests marked
+`surface_refresh.backfill`. The worker serves them only once no normal request is due. The cap is
+global (carried by the requests' due times, spaced under a lock, so two backends of a rolling deploy
+do not double it): `SURFACE_BACKFILL_PER_HOUR` provider calls an hour (default 300; a 188 km slice
+is one call, a 400 km route three), and never more than 10 minutes of it waiting in the queue, so it
+pauses by itself while osm-surface fails. The cap is on the due times: after the worker was held up
+(a backlog of normal requests, `SURFACE_ENABLED` off a while, a restart) it sends what fell due at
+once, so an hour can see up to the cap plus those 10 minutes (350 calls at the default), retries of
+failed requests aside. It costs nothing but the tiles VersaTiles serves us, which the cache keeps;
+10,000 routes take about 34 h at the default cap. A biketeam migration leaves its routes to the
+catch-up instead of queuing them at once.
+
+- **Stop it**: `SURFACE_BACKFILL_ENABLED=false` (nothing more is queued; what is already queued, at
+  most 10 minutes of cap, is still computed). `SURFACE_ENABLED=false` stops everything.
+- **Estimate it** (the routes the catch-up will take and its calls; the previews are a few days'
+  worth at most):
+  ```sql
+  select count(*) as routes,
+         sum(greatest(1, ceil(coalesce(t.distance, 0) / 188000.0))) as calls
+    from team_entities t join teams tm on tm.id = t.team_id
+   where t.id in (select g.route_id from gpx_tracks g where g.surfaces is null)
+     and not t.deleted and not tm.deleted
+     and not exists (select 1 from surface_refresh r where r.route_id = t.id)
+     and exists (select 1 from assets a
+                  where a.team_entity_id = t.id and a.type = 'ROUTE_ORIGINAL_GPX');
+  ```
+  `calls / SURFACE_BACKFILL_PER_HOUR` is the duration in hours.
+- **Follow it**: `select count(*) filter (where backfill), count(*) filter (where backfill and attempts >= 5) from surface_refresh;`
+  and what is left: `select count(distinct route_id) from gpx_tracks where surfaces is null;`. The log
+  says `Surface catch-up done` once nothing is left.
+- **A track the provider cannot match** gets an « unavailable » document and is never retried; one
+  that failed five times keeps its request row (normal or catch-up) and is not taken again either.
+  To retry the given-up ones (osm-surface or VersaTiles down for hours made a batch fail):
+  `delete from surface_refresh where attempts >= 5;` — they become candidates of the catch-up again,
+  under its cap.
+- A workstation stack runs its own osm-surface (`docker-compose.local.yml`) and needs no
+  `SURFACE_ENABLED=false` any more: the computation is free. Keep the catch-up's cap in mind after a
+  biketeam migration test, though — it downloads the tiles of every region its routes cross.
 
 ### Store reviewers' demo data
 

@@ -2,8 +2,9 @@
 #
 # tileserver ne porte aucune donnee applicative : jeu de donnees statique, acces en lecture seule,
 # sollicite uniquement par le backend. L'instancier une seule fois evite de payer deux fois ~1,8 Go
-# de RSS. (Le routage ne tourne plus ici : le backend appelle l'API Stadia Maps avec
-# STADIAMAPS_API_KEY, lue dans le .env de chaque environnement -- docs/LEDGER_*.md OPS-48.)
+# de RSS. osm-surface, de meme : un cache de tuiles OSM, rien qui soit propre a un environnement.
+# (Le routage ne tourne plus ici : le backend appelle l'API Stadia Maps avec STADIAMAPS_API_KEY,
+# lue dans le .env de chaque environnement -- docs/LEDGER_*.md OPS-48.)
 #
 # Cette stack est prealable aux stacks d'environnement : elle cree le reseau `pedalons-shared`, que
 # docker-compose.yml declare en `external`. Demarrage :
@@ -14,12 +15,12 @@
 # ignore les deux autres -- le nom de la stack est celui de la commande, et Swarm redemarre de lui-meme
 # une tache qui meurt.
 #
-# Sur un poste de travail, on ne la lance pas : docker-compose.local.yml reprend ce service via
+# Sur un poste de travail, on ne la lance pas : docker-compose.local.yml reprend ces services via
 # `extends` et redeclare le reseau en reseau de projet, pour n'avoir qu'une seule stack. C'est
-# aussi lui qui lui redonne un nom de conteneur et une politique de redemarrage.
+# aussi lui qui leur redonne un nom de conteneur et une politique de redemarrage.
 #
-# Le nom de service `tileserver` est l'alias DNS sur ce reseau : TILESERVER_URL des .env
-# d'environnement reste inchange.
+# Les noms de service `tileserver` et `osm-surface` sont les alias DNS sur ce reseau : TILESERVER_URL
+# des .env d'environnement reste inchange, et l'URL d'osm-surface est la valeur par defaut du backend.
 #
 # NE PAS y ajouter imgproxy/varnish tant que MinIO n'est pas mutualise : imgproxy n'expose qu'un
 # IMGPROXY_S3_ENDPOINT global et ne sait pas servir deux backends S3 distincts.
@@ -35,6 +36,29 @@ services:
       resources:
         limits:
           memory: 3G
+
+  # Surface des traces enregistrees (trace_attributes au protocole Valhalla, docs/LEDGER_*.md OPS-57) :
+  # appelee par le SurfaceRefreshWorker de chaque backend a http://osm-surface:8002, sans cle.
+  # Ses seules donnees sont les tuiles VersaTiles qu'elle telecharge et met en cache : un volume
+  # nomme (l'image tourne en 65532 et son /data lui appartient deja, un bind mount serait a root),
+  # regenerable, hors sauvegarde. Image distroless : pas de healthcheck possible (ni shell ni curl).
+  osm-surface:
+    image: ghcr.io/glandais/osm-surface:0.1.1
+    networks:
+      - shared
+    environment:
+      CACHE_MAX_GB: "5"
+      LOG_FORMAT: json
+    volumes:
+      - osm-surface-data:/data
+    # MEMORY_CACHE_MB (256 par defaut) de tuiles decodees, plus les appariements en cours.
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+
+volumes:
+  osm-surface-data:
 
 networks:
   shared:

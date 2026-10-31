@@ -11,14 +11,14 @@
 #
 #   1. mailpit. No SQL client here: postgres is published on the loopback, so bring your own —
 #      psql, pgAdmin, DBeaver, an IDE. See "Running SQL" in README.md.
-#   2. tileserver, pulled from docker-compose.shared.yml with `extends`. A host runs that stack
+#   2. tileserver and osm-surface, pulled from docker-compose.shared.yml with `extends`. A host runs that stack
 #      once and shares it between every environment; a workstation has one environment, so it
 #      runs one stack instead of two — and the `shared` network becomes an ordinary project
 #      network (see the bottom of this file) instead of one that must exist beforehand. Routing
 #      is not a container: the backend calls the Stadia Maps API with STADIAMAPS_API_KEY (.env).
 #   3. the host ports `mvn quarkus:dev` and `pnpm dev` talk to. A deployed backend reaches every
 #      service over the compose network and publishes none of them; the %dev profile runs outside
-#      Docker and expects imgproxy on 38080, tileserver on 18080, MinIO on 9000
+#      Docker and expects imgproxy on 38080, tileserver on 18080, osm-surface on 18002, MinIO on 9000
 #      and SMTP on 1025, and postgres on POSTGRES_HOST_PORT.
 #   4. an `app` profile on backend/frontend/traefik, so that a plain `up` starts the backing services
 #      alone — see the comment on those three below — and an `analytics` profile on goatcounter,
@@ -48,6 +48,17 @@ services:
     restart: unless-stopped
     ports:
       - "127.0.0.1:18080:8080"
+
+  # Same: image, cache volume, memory limit and settings from the shared file. The port is for the
+  # %dev backend (OSM_SURFACE_URL defaults to localhost:18002 there).
+  osm-surface:
+    extends:
+      file: docker-compose.shared.yml
+      service: osm-surface
+    container_name: ${ENV_NAME}-osm-surface
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:18002:8002"
 
   # On a deployed host these three are the point of the stack and always start. On a workstation the
   # common case is the opposite — `mvn quarkus:dev` and `pnpm dev` replace them, and want only the
@@ -101,13 +112,17 @@ services:
       - "127.0.0.1:9000:9000" # S3 API
       - "127.0.0.1:9001:9001" # Console UI
 
+# `extends` takes the service, not the top-level volume it names.
+volumes:
+  osm-surface-data:
+
 networks:
   # Back to exactly what compose had before Swarm — a default bridge — so an existing workstation
   # network is kept rather than recreated. Overlay needs a swarm.
   pedalons:
     driver: !reset null
   # docker-compose.yml declares this one `external`, so a deployed environment refuses to start
-  # until the shared stack has created it. Here tileserver belongs to *this* project, so the
+  # until the shared stack has created it. Here tileserver and osm-surface belong to *this* project, so the
   # network is ours to create — and there is no shared stack on a workstation to create it.
   shared:
     name: ${ENV_NAME}-shared

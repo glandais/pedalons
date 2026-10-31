@@ -98,7 +98,7 @@ public class SurfaceRefreshService {
 
   /**
    * Whether a save queues a request and the worker sends it. Off, nothing is asked and nothing
-   * sent (the queue waits): the switch that stops the spending.
+   * sent (the queue waits).
    */
   @ConfigProperty(name = "pedalons.surface.enabled", defaultValue = "true")
   boolean enabled;
@@ -111,12 +111,6 @@ public class SurfaceRefreshService {
   @ConfigProperty(name = "pedalons.surface.max-wait", defaultValue = "PT10M")
   Duration maxWait;
 
-  /** Only asked whether it is set: never logged, never put in an error. */
-  @ConfigProperty(name = "pedalons.routing.stadiamaps.api-key")
-  Optional<String> apiKey;
-
-  private boolean keyOverride;
-
   @Inject SurfaceRefreshRepository refreshRepository;
   @Inject TraceSurfaceComputer computer;
   @Inject AssetRepository assetRepository;
@@ -125,15 +119,14 @@ public class SurfaceRefreshService {
   @Inject PlannerStates plannerStates;
   @Inject EntityManager entityManager;
 
-  /** Whether the feature runs: switched on, and a key to call the provider with. */
+  /** Whether the feature runs. */
   public boolean isEnabled() {
-    return enabled && (keyOverride || apiKey.filter(k -> !k.isBlank()).isPresent());
+    return enabled;
   }
 
-  /** For the tests: sets the switch, and stands for the key (the provider is faked). */
+  /** For the tests: sets the switch (the provider is faked). */
   public void setEnabledForTest(boolean enabled) {
     this.enabled = enabled;
-    this.keyOverride = enabled;
   }
 
   // ------------------------------------------------------------------ request

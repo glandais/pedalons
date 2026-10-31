@@ -17,12 +17,12 @@ import org.jboss.logging.Logger;
  * each claimed in a transaction of its own ({@code FOR UPDATE SKIP LOCKED} and a lease), computed
  * with no transaction open, then written in a short one — see {@link SurfaceRefreshService}.
  *
- * <p>Unlike the HD catch-up, it sends nothing when {@code pedalons.surface.enabled} is off or the
- * key is missing: the switch is what stops the spending, and the queue waits.
+ * <p>Unlike the HD catch-up, it sends nothing when {@code pedalons.surface.enabled} is off: the
+ * queue waits.
  *
  * <p>No {@code @Transactional}. The worker runs without a request domain; everything it reads or
  * writes is keyed by the route or preview id taken from the queue, whatever the domain it belongs
- * to (one Stadia Maps key for all of them).
+ * to (one osm-surface for all of them).
  */
 @ApplicationScoped
 public class SurfaceRefreshWorker {
@@ -31,7 +31,7 @@ public class SurfaceRefreshWorker {
 
   /**
    * No new request is started once a tick has run this long: a call takes 0.1 to 0.5 s, so a tick
-   * sends some forty at most, a modest rate for a provider that publishes no limit for a key. A
+   * sends some forty at most, a modest load on osm-surface and on the tile server behind it. A
    * backlog (a migration) empties in tens of minutes.
    */
   static final Duration TIME_BUDGET = Duration.ofSeconds(20);
