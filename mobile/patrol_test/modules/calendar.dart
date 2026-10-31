@@ -33,6 +33,16 @@ final class Calendar extends Module {
     await scrolledTo(keys.calendar.agendaCard(entitySlug));
   }
 
+  /// [waitUntilEventIsShown] in a team's Agenda, where the card is brought on screen by
+  /// [scrolledIntoView]: on a phone smaller than an iPhone Pro Max the card starts under the tab
+  /// bar and the agenda below the month grid is short — dragging it until the card's centre is
+  /// hit-testable overshoots the card past the top.
+  Future<void> waitUntilTeamEventIsShown(String entitySlug) async {
+    await $(keys.calendar.agendaCard(entitySlug))
+        .waitUntilExists(timeout: const Duration(seconds: 20));
+    await scrolledIntoView(keys.calendar.agendaCard(entitySlug));
+  }
+
   bool showsEvent(String entitySlug) =>
       isShown(keys.calendar.agendaCard(entitySlug));
 

@@ -91,7 +91,7 @@ void main() {
       // The team's calendar: that team's ride alone, and its own feed URL on copy.
       await openLink($, Paths.teamCalendar(mineSlug));
       await modules.calendar.showMonthOf(tomorrowAt(9));
-      await modules.calendar.waitUntilEventIsShown(joinedSlug);
+      await modules.calendar.waitUntilTeamEventIsShown(joinedSlug);
       expect(modules.calendar.showsEvent(otherSlug), isFalse);
       final token = await backend.calendarToken(member);
       final template = token['teamFeedUrlTemplate'] as String;
