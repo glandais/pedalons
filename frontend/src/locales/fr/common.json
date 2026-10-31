@@ -1901,6 +1901,7 @@
   "rides.weather.relativeWindShort.CROSS": "Travers",
   "rides.weather.relativeWindShort.HEAD": "Face",
   "rides.weather.relativeWindShort.TAIL": "Dos",
+  "rides.weather.relativeWindUnknown": "Vent inconnu",
   "rides.weather.retry": "Réessayer",
   "rides.weather.route.detail.announce": "{{place}}, {{time}}",
   "rides.weather.route.detail.finish": "Arrivée · {{distance}}",

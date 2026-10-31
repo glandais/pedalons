@@ -2,7 +2,8 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render, cleanup, waitFor } from '@testing-library/react'
 import { useEffect } from 'react'
 import { MantineProvider } from '@mantine/core'
-import type { WaypointDto } from '@/api/dto'
+import { RelativeWind, type WaypointDto } from '@/api/dto'
+import { NEUTRAL_COLOR } from '../map/mapUtils'
 import type { MappableRoute } from './RouteMapView'
 
 vi.mock('react-i18next', () => ({
@@ -69,13 +70,15 @@ describe('ElevationChart', () => {
 
   it('creates the chart with the zoom plugin once it has loaded', async () => {
     renderChart({ onMoveStart: vi.fn(), onMoveComplete: vi.fn() })
-    await waitFor(() => expect(mounts.at(-1)).toEqual(['crosshair', 'waypointMarkers', 'zoom']))
+    await waitFor(() =>
+      expect(mounts.at(-1)).toEqual(['crosshair', 'waypointMarkers', 'windBand', 'zoom'])
+    )
   })
 
   it('never loads the zoom plugin for a chart without zoom', async () => {
     renderChart()
     await new Promise((resolve) => setTimeout(resolve, 0))
-    expect(mounts).toEqual([['crosshair', 'waypointMarkers']])
+    expect(mounts).toEqual([['crosshair', 'waypointMarkers', 'windBand']])
   })
 
   it('colours the segments by surface when asked, and by grade otherwise', async () => {
@@ -139,5 +142,103 @@ describe('ElevationChart', () => {
       waypointMarkers: { markers: WaypointDto[] }
     }
     expect(plugins.waypointMarkers.markers.map((w) => w.name)).toEqual(['Début', 'Fontaine'])
+  })
+
+  describe('the wind band (WEB-129)', () => {
+    const colors = {
+      [RelativeWind.TAIL]: '#tail',
+      [RelativeWind.CROSS]: '#cross',
+      [RelativeWind.HEAD]: '#head',
+    }
+    // Two tracks whose own distance restarts at 0 (ledger WEB-81): 0 → 1 km, then 0 → 1 km
+    const twoTracks = {
+      tracks: [
+        {
+          line: {
+            type: 'LineString',
+            coordinates: [
+              [0, 0, 10, 0],
+              [0.005, 0, 15, 500],
+              [0.01, 0, 20, 1000],
+            ],
+          },
+          climbs: [],
+        },
+        {
+          line: {
+            type: 'LineString',
+            coordinates: [
+              [0.02, 0, 20, 0],
+              [0.03, 0, 30, 1000],
+            ],
+          },
+          climbs: [],
+        },
+      ],
+      waypoints: [],
+      distance: 2000,
+    } as unknown as MappableRoute
+
+    type Options = {
+      plugins: {
+        windBand: { runs: { from: number; to: number; color: string }[] }
+        tooltip: {
+          callbacks: { afterLabel: (item: { dataIndex: number }) => string[] }
+        }
+      }
+      scales: { x: { ticks: { padding?: number }; grid: { drawTicks?: boolean } } }
+    }
+    const options = () => lastOptions.value as unknown as Options
+
+    function renderWind(wind?: Parameters<typeof ElevationChart>[0]['wind']) {
+      render(
+        <MantineProvider>
+          <ElevationChart
+            route={twoTracks}
+            hoveredPointIndex={-1}
+            onHoverPoint={() => {}}
+            wind={wind}
+          />
+        </MantineProvider>
+      )
+    }
+
+    it('lays the band on the points of each track, never across two, the unknown in the neutral blue', async () => {
+      renderWind({
+        // Flat, as the profile indexes them: head, then unknown, on the first track; tail on the second
+        winds: [RelativeWind.HEAD, undefined, undefined, RelativeWind.TAIL, RelativeWind.TAIL],
+        colors,
+      })
+      await waitFor(() => expect(lastOptions.value).not.toBeNull())
+      expect(options().plugins.windBand.runs).toEqual([
+        { from: 0, to: 500, color: '#head' },
+        { from: 500, to: 1000, color: NEUTRAL_COLOR },
+        // The second track at its own points, where the profile draws them
+        { from: 0, to: 1000, color: '#tail' },
+      ])
+      // Room for it between the plot and the axis labels
+      expect(options().scales.x.ticks.padding).toBeGreaterThan(0)
+      expect(options().scales.x.grid.drawTicks).toBe(false)
+    })
+
+    it("says the point's wind in the tooltip, and « Vent inconnu » where none is known", async () => {
+      renderWind({
+        winds: [RelativeWind.HEAD, undefined, undefined, RelativeWind.TAIL, RelativeWind.TAIL],
+        colors,
+      })
+      await waitFor(() => expect(lastOptions.value).not.toBeNull())
+      const afterLabel = options().plugins.tooltip.callbacks.afterLabel
+      expect(afterLabel({ dataIndex: 0 })).toEqual(['rides.weather.relativeWind.HEAD'])
+      expect(afterLabel({ dataIndex: 1 })).toEqual(['rides.weather.relativeWindUnknown'])
+      expect(afterLabel({ dataIndex: 3 })).toEqual(['rides.weather.relativeWind.TAIL'])
+    })
+
+    it('draws no band and says no wind outside the Météo mode', async () => {
+      renderWind()
+      await waitFor(() => expect(lastOptions.value).not.toBeNull())
+      expect(options().plugins.windBand.runs).toEqual([])
+      expect(options().plugins.tooltip.callbacks.afterLabel({ dataIndex: 0 })).toEqual([])
+      expect(options().scales.x.ticks.padding).toBeUndefined()
+    })
   })
 })

@@ -55,7 +55,7 @@ export interface RouteFullscreenViewProps {
   /**
    * A leg with a forecast offers the Météo mode (WEB-115/116 on the group's page): the line by the
    * wind, a badge per forecast point with its popup, the legend and the forecast's credit; the
-   * profile keeps its grade.
+   * profile keeps its grade, the wind as a band under it (WEB-129).
    */
   windLeg?: WeatherLegDto
   /** The forecast's credit, owed while the wind colours the line. */
@@ -106,7 +106,7 @@ export function RouteFullscreenView({
   const planner: PlannerColorBy = colorBy === 'surface' ? 'surface' : 'grade'
   const [waypointSelection, setWaypointSelection] = useState<WaypointSelection | null>(null)
   const { surfaceAt, lineColorAt: surfaceColorAt } = useRouteSurfaceColors(route.tracks, planner)
-  const windColorAt = useRouteWindColors(route.tracks, wind)
+  const { lineColorAt: windColorAt, profileWind } = useRouteWindColors(route.tracks, wind)
   const lineColorAt = windColorAt ?? surfaceColorAt
 
   const {
@@ -216,6 +216,7 @@ export function RouteFullscreenView({
               filled
               colorBy={surfaceAt ? 'surface' : 'grade'}
               surfaceAt={surfaceAt}
+              wind={profileWind}
               selectedWaypoint={waypointSelection?.waypoint ?? null}
               onSelectWaypoint={(waypoint) => setWaypointSelection({ waypoint, from: 'profile' })}
               zoom={{

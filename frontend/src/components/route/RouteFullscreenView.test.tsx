@@ -229,6 +229,7 @@ describe('RouteFullscreenView Météo mode (WEB-117)', () => {
     const control = screen.getByTestId('route-fullscreen-color-by')
     expect(plain(control.textContent)).toBe('PenteMétéo')
     expect(seen.map.lineColorAt).toBeUndefined()
+    expect(seen.chart.wind).toBeUndefined()
     expect(seen.map.kmMarkers).toBe(true)
     expect(screen.queryByTestId('wind-map-legend')).toBeNull()
   })
@@ -242,6 +243,10 @@ describe('RouteFullscreenView Météo mode (WEB-117)', () => {
     expect(seen.map.kmMarkers).toBe(false)
     expect(seen.map.lineAttribution).toContain('Open-Meteo.com')
     expect(seen.chart.colorBy).toBe('grade')
+    // The wind as a band under the profile (WEB-129), in the line's colours
+    const wind = seen.chart.wind as { winds: string[]; colors: Record<string, string> }
+    expect(wind.winds).toEqual(Array(6).fill('HEAD'))
+    expect(wind.colors.HEAD).toBe('#fd7e14')
     const legend = plain(screen.getByTestId('wind-map-legend').textContent)
     expect(legend).toMatch(/Face 50[.,]0 km/)
     expect(legend).toContain('Prévision ancienne')

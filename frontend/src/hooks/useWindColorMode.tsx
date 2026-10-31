@@ -34,7 +34,7 @@ interface WindColorModeOptions {
  * (ledger WEB-115/116, plan 2026-10-24-weather-on-map.md) —, held by the page and handed to its
  * `RouteMapView` (`mapProps`) and its `ColorModeControls`. One logic for a ride group's page, a solo
  * ride's and a trip stage's (WEB-118): the mode is exclusive, never the default, the profile stays
- * on the grade, and a leg losing its forecast (a refetch) falls back on the grade. The Météo mode
+ * on the grade with the wind as a band under it (WEB-129), and a leg losing its forecast (a refetch) falls back on the grade. The Météo mode
  * puts a badge at every forecast point and a drop where rain becomes likely, the km markers giving
  * way to them.
  */
@@ -62,7 +62,7 @@ export function useWindColorMode({
   // A mode the route cannot offer (no surface, the forecast gone) reads as the grade.
   const colorBy: ColorByOption = options.includes(chosen) ? chosen : 'grade'
   const windLeg = colorBy === 'wind' ? leg : undefined
-  const lineColorAt = useRouteWindColors(tracks, windLeg)
+  const { lineColorAt, profileWind } = useRouteWindColors(tracks, windLeg)
   const overlays: ReactNode = windLeg ? (
     <Suspense fallback={null}>
       <WeatherCheckpointMarkers
@@ -74,7 +74,8 @@ export function useWindColorMode({
       />
     </Suspense>
   ) : undefined
-  // The profile and the surface's own colouring know the grade and the surface only
+  // The profile and the surface's own colouring know the grade and the surface only: in the Météo
+  // mode the profile stays on the grade and gains the wind band (`profileWind`, WEB-129)
   const plannerColorBy: PlannerColorBy = colorBy === 'surface' ? 'surface' : 'grade'
 
   return {
@@ -88,6 +89,8 @@ export function useWindColorMode({
     mapProps: {
       lineColorAt,
       lineAttribution: windLeg && attribution ? attributionHtml(attribution) : undefined,
+      /** The profile stays on the grade, with the wind as a band under it (WEB-129). */
+      profileWind,
       overlays,
       kmMarkers: !windLeg,
     },

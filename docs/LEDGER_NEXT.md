@@ -357,14 +357,6 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
 (`WEB-13` à `WEB-22`, livrés, avec ce que l'automatisation ne voit pas) : voir
 `frontend/e2e/README.md`.
 
-- [ ] `WEB-129` **Le profil montre le vent par une bande, en mode Météo (S)** — arbitré le 31
-      octobre 2026 (option B du canevas « coloration trace et profil ») : le profil reste en pente
-      (décision de `WEB-115`, maintenue, `PlannerColorBy` non élargi) et gagne une bande dos /
-      travers / face sous l'aire, sur le même axe, qui suit le zoom et le curseur ; l'info-bulle dit
-      aussi le vent du point. Aujourd'hui une montée face au vent ne se lit qu'en croisant carte et
-      profil. Lieu : `ElevationChart.tsx`, `useWindColorMode`. À vérifier : que l'axe du profil et
-      `chainedDistances` (`lib/weatherOnRoute.ts`) comptent pareil le saut entre traces. Pendant
-      mobile : `MOB-106`.
 - [ ] `WEB-119` **La météo sur la carte : recette navigateur des paliers 1 à 3 (S)** — `WEB-115` à
       `WEB-118`, plan [`2026-10-24-weather-on-map.md`](plans/archive/2026-10-24-weather-on-map.md). Sur la pile e2e :
       `pnpm e2e routes-render -g 'rideMap /'` (la sortie solo `soloRide` ajoutée au jeu de données,

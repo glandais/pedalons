@@ -1845,6 +1845,7 @@
   "rides.weather.relativeWindShort.CROSS": "Cross",
   "rides.weather.relativeWindShort.HEAD": "Head",
   "rides.weather.relativeWindShort.TAIL": "Tail",
+  "rides.weather.relativeWindUnknown": "Unknown wind",
   "rides.weather.retry": "Retry",
   "rides.weather.route.detail.announce": "{{place}}, {{time}}",
   "rides.weather.route.detail.finish": "Finish · {{distance}}",

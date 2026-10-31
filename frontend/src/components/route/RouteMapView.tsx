@@ -14,6 +14,7 @@ import { useRouteSurfaceColors } from '@/hooks/useRouteSurfaceColors'
 import { useMapChartZoomSync } from '@/hooks/useMapChartZoomSync'
 import { RouteTrackMap } from './RouteTrackMap'
 import { ElevationChart } from './ElevationChart'
+import type { ProfileWind } from './windBand'
 
 /**
  * The subset of a route these views actually render. Satisfied by both `RouteDetailDto` and
@@ -50,6 +51,8 @@ interface RouteMapViewProps {
   lineColorAt?: (trackIndex: number, pointIndex: number) => string | undefined
   /** The credit that colouring owes, for the map's attribution control (HTML). */
   lineAttribution?: string
+  /** The wind band under the profile and the wind in its tooltip, in the Météo mode (WEB-129). */
+  profileWind?: ProfileWind
   /** Markers drawn on the track, inside the map (`RouteTrackMap`'s). */
   overlays?: React.ReactNode
   /** Whether the km markers show (default). */
@@ -67,6 +70,7 @@ export function RouteMapView({
   colorBy = 'grade',
   lineColorAt: externalLineColorAt,
   lineAttribution,
+  profileWind,
   overlays,
   kmMarkers,
   waypointSelection,
@@ -133,6 +137,7 @@ export function RouteMapView({
       }}
       colorBy={surfaceAt ? 'surface' : 'grade'}
       surfaceAt={surfaceAt}
+      wind={profileWind}
       selectedWaypoint={selection?.waypoint ?? null}
       onSelectWaypoint={(waypoint) => setSelection({ waypoint, from: 'profile' })}
     />

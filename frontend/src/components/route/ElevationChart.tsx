@@ -37,6 +37,14 @@ import { getOverlayBg } from '@/lib/colors'
 import { useResolvedColorScheme } from '@/hooks/useResolvedColorScheme'
 import type { MappableRoute } from './RouteMapView'
 import { breaksGradient, colorBreaks, sampleProfile, sampledIndexOf } from './profileSampling'
+import {
+  WIND_BAND_LABEL_PADDING,
+  windBandColors,
+  windBandPlugin,
+  windBandRuns,
+  type ProfileWind,
+} from './windBand'
+import { useWeatherLabels } from '../weather/useWeatherLabels'
 
 // Register the shared Chart.js building blocks (line chart with fill + tooltip).
 // chartjs-plugin-zoom is registered PER-INSTANCE (via the <Line plugins> prop) only when a
@@ -89,6 +97,11 @@ export interface ElevationChartProps {
   colorBy?: 'grade' | 'surface'
   /** The colour of the segment starting at this data index, when `colorBy` is `surface`. */
   surfaceAt?: (p0Index: number) => string
+  /**
+   * The Météo mode (ledger WEB-129): a band under the profile, tail / cross / head in the map's
+   * colours, and the point's wind in the tooltip. The profile itself keeps `colorBy`.
+   */
+  wind?: ProfileWind
   /** The waypoint to highlight on the profile, if it is one of the route's. */
   selectedWaypoint?: WaypointDto | null
   /** A click on a waypoint marker of the profile. */
@@ -113,6 +126,7 @@ export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartPro
       dashedSegment,
       colorBy = 'grade',
       surfaceAt,
+      wind,
       selectedWaypoint = null,
       onSelectWaypoint,
       zoom,
@@ -123,6 +137,7 @@ export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartPro
     const colorScheme = useResolvedColorScheme()
     const theme = useMantineTheme()
     const { config, distance: distanceFormat, elevation, formatDistance } = useUnits()
+    const { relativeWind: relativeWindLabel } = useWeatherLabels()
     const chartRef = useRef<ChartJS<'line'>>(null)
 
     // Callbacks are read through refs inside chart event handlers so their (often per-render)
@@ -249,6 +264,17 @@ export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartPro
     // gradient with hard stops, built again only when the axis moves: one path to stroke and fill.
     // Dashes need per-segment styles; only the route planner draws them, on short routes.
     const breaks = useMemo(() => colorBreaks(xs, colors), [xs, colors])
+
+    // The wind band, from the full-resolution points (never the thinned ones): each stretch starts
+    // and ends at the distance of the very points the map colours, track by track.
+    const trackSizes = useMemo(
+      () => route.tracks.map((track) => track.line.coordinates.length),
+      [route.tracks]
+    )
+    const windRuns = useMemo(
+      () => (wind ? windBandRuns(xs, windBandColors(wind, xs.length), trackSizes) : null),
+      [wind, xs, trackSizes]
+    )
     const chartData: ChartData<'line'> = useMemo(() => {
       let cached: { key: string; gradient: CanvasGradient } | null = null
       const gradient = (context: ScriptableContext<'line'>) => {
@@ -308,6 +334,7 @@ export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartPro
             display: false,
           },
           waypointMarkers: { markers, selected: selectedWaypoint },
+          windBand: { runs: windRuns ?? [] },
           tooltip: {
             enabled: true,
             backgroundColor: chartColors.background,
@@ -353,8 +380,17 @@ export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartPro
                 })
               },
               afterLabel: (item: TooltipItem<'line'>) => {
-                const dist = xs[sources[item.dataIndex]]
+                const source = sources[item.dataIndex]
+                const dist = xs[source]
                 const lines: string[] = []
+                // In words, never by the band's colour alone: « Vent de face »
+                const kind = wind?.winds[source]
+                // In the Météo mode only; a wind no stretch covers, or one this build does not know,
+                // says so rather than leave the band's neutral blue unexplained.
+                if (wind) {
+                  const label = kind ? relativeWindLabel(kind) : ''
+                  lines.push(label || t('rides.weather.relativeWindUnknown'))
+                }
 
                 for (let ci = 0; ci < climbs.length; ci++) {
                   const climb = climbs[ci]
@@ -447,9 +483,12 @@ export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartPro
               maxTicksLimit: 10,
               color: chartColors.text,
               callback: (value: string | number) => formatDistance(Number(value)),
+              // Room for the wind band between the plot and the labels, the tick marks off
+              ...(windRuns ? { padding: WIND_BAND_LABEL_PADDING } : {}),
             },
             grid: {
               color: chartColors.grid,
+              ...(windRuns ? { drawTicks: false } : {}),
             },
           },
           y: {
@@ -520,6 +559,9 @@ export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartPro
         t,
         markers,
         selectedWaypoint,
+        wind,
+        windRuns,
+        relativeWindLabel,
       ]
     )
 
@@ -549,8 +591,8 @@ export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartPro
     const plugins = useMemo(
       () =>
         zoomEnabled && zoomPlugin
-          ? [crosshairPlugin, waypointMarkersPlugin, zoomPlugin]
-          : [crosshairPlugin, waypointMarkersPlugin],
+          ? [crosshairPlugin, waypointMarkersPlugin, windBandPlugin, zoomPlugin]
+          : [crosshairPlugin, waypointMarkersPlugin, windBandPlugin],
       [zoomEnabled, zoomPlugin]
     )
 

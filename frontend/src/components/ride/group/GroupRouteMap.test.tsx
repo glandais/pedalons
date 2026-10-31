@@ -32,6 +32,7 @@ vi.mock('@/components/route/RouteMapView', async () => {
       colorBy,
       lineColorAt,
       lineAttribution,
+      profileWind,
       overlays,
       kmMarkers = true,
       fullscreenPath,
@@ -40,6 +41,7 @@ vi.mock('@/components/route/RouteMapView', async () => {
       colorBy?: string
       lineColorAt?: (track: number, point: number) => string | undefined
       lineAttribution?: string
+      profileWind?: { winds: readonly (string | undefined)[]; colors: Record<string, string> }
       overlays?: React.ReactNode
       kmMarkers?: boolean
       fullscreenPath?: string
@@ -60,6 +62,9 @@ vi.mock('@/components/route/RouteMapView', async () => {
           </>
         )}
         {lineAttribution && <span data-testid="map-credit">{lineAttribution}</span>}
+        {profileWind && (
+          <span data-testid="profile-wind">{profileWind.winds.map((w) => w ?? '-').join(' ')}</span>
+        )}
       </div>
     ),
   }
@@ -200,6 +205,18 @@ describe('GroupRouteMap', () => {
       expect(legend).toContain('Heures de passage estimées à 25 km/h, vitesse par défaut')
       expect(legend).toContain('Prévisions Open-Meteo.com')
       expect(legend).not.toContain('Prévision ancienne')
+    })
+
+    it('gives the profile the wind band in the Météo mode only (WEB-129)', async () => {
+      show(route({ line: LINE } as Partial<TrackDto>), weatherLeg('g1'))
+      await screen.findByTestId('map')
+      expect(screen.queryByTestId('profile-wind')).toBeNull()
+      fireEvent.click(screen.getByLabelText('Météo'))
+      // The fixture's head wind on every point, the profile itself still on the grade
+      expect(screen.getByTestId('profile-wind').textContent).toBe(Array(6).fill('HEAD').join(' '))
+      expect(screen.getByTestId('map-color-by').textContent).toBe('grade')
+      fireEvent.click(screen.getByLabelText('Pente'))
+      expect(screen.queryByTestId('profile-wind')).toBeNull()
     })
 
     it('flags an old forecast', async () => {
