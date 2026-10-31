@@ -577,31 +577,42 @@ class _PdlMapState extends State<PdlMap> {
         if (widget.markers.isNotEmpty)
           // Une couche à part des bornes : celle-ci reçoit les touchers
           // (`allowInteraction`), les bornes, elles, laissent tout passer.
-          // Hors des marqueurs, le pan va toujours à la carte.
-          WidgetLayer(
-            allowInteraction: widget.onMarkerTapped != null,
-            markers: <Marker>[
-              for (final PdlMapMarker m in widget.markers)
-                Marker(
-                  point: Geographic(lon: m.lon, lat: m.lat),
-                  size: m.targetSize,
-                  alignment: m.alignment,
-                  // Le marqueur reste droit quand la carte tourne : son
-                  // contenu reçoit le cap, pour qu'une direction absolue
-                  // (une flèche de vent) le retranche.
-                  child: Builder(
-                    builder: (BuildContext context) => PdlMapBearing(
-                      bearing: MapCamera.maybeOf(context)?.bearing ?? 0,
-                      child: PdlMapMarkerTarget(
-                        marker: m,
-                        onTap: widget.onMarkerTapped == null
-                            ? null
-                            : () => widget.onMarkerTapped!(m.id),
+          // Hors des marqueurs, le pan va toujours à la carte. Reconstruite
+          // à chaque mouvement de la caméra, comme `WidgetLayer` : les
+          // marqueurs qui se recouvriraient à l'écran s'y rangent côte à côte
+          // ([spreadMarkerBoxes]).
+          Builder(
+            builder: (BuildContext context) {
+              final List<Geographic> points = _spreadMarkerPoints(
+                context,
+                widget.markers,
+              );
+              return WidgetLayer(
+                allowInteraction: widget.onMarkerTapped != null,
+                markers: <Marker>[
+                  for (final (int i, PdlMapMarker m) in widget.markers.indexed)
+                    Marker(
+                      point: points[i],
+                      size: m.targetSize,
+                      alignment: m.alignment,
+                      // Le marqueur reste droit quand la carte tourne : son
+                      // contenu reçoit le cap, pour qu'une direction absolue
+                      // (une flèche de vent) le retranche.
+                      child: Builder(
+                        builder: (BuildContext context) => PdlMapBearing(
+                          bearing: MapCamera.maybeOf(context)?.bearing ?? 0,
+                          child: PdlMapMarkerTarget(
+                            marker: m,
+                            onTap: widget.onMarkerTapped == null
+                                ? null
+                                : () => widget.onMarkerTapped!(m.id),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ),
-            ],
+                ],
+              );
+            },
           ),
         ...widget.overlays,
         // En dernier : le crédit se lit par-dessus les voiles et les commandes
@@ -636,4 +647,40 @@ class _KmBadge extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Où poser chaque marqueur pour qu'aucun n'en recouvre un autre à l'écran :
+/// son point, ou celui où [spreadMarkerBoxes] le déplace — ramené en
+/// coordonnées, que `WidgetLayer` reprojette. Les points tels quels hors
+/// d'une carte prête.
+List<Geographic> _spreadMarkerPoints(
+  BuildContext context,
+  List<PdlMapMarker> markers,
+) {
+  final List<Geographic> points = <Geographic>[
+    for (final PdlMapMarker m in markers) Geographic(lon: m.lon, lat: m.lat),
+  ];
+  final MapController? controller = MapController.maybeOf(context);
+  // Lu pour se reconstruire à chaque mouvement de la caméra
+  final MapCamera? camera = MapCamera.maybeOf(context);
+  if (controller == null || camera == null || markers.length < 2) {
+    return points;
+  }
+  final List<Offset> screen = controller.toScreenLocations(points);
+  final List<Offset> shifts = spreadMarkerBoxes(<Rect>[
+    for (final (int i, PdlMapMarker m) in markers.indexed)
+      pdlMarkerBox(m, screen[i]),
+  ]);
+  final List<int> moved = <int>[
+    for (int i = 0; i < shifts.length; i++)
+      if (shifts[i] != Offset.zero) i,
+  ];
+  if (moved.isEmpty) return points;
+  final List<Geographic> shifted = controller.toLngLats(<Offset>[
+    for (final int i in moved) screen[i] + shifts[i],
+  ]);
+  for (int k = 0; k < moved.length; k++) {
+    points[moved[k]] = shifted[k];
+  }
+  return points;
 }

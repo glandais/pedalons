@@ -103,4 +103,47 @@ void main() {
     await tester.pumpWidget(PdlMapBearing(bearing: 90, child: probe()));
     expect(seen, <double>[0, 42, 90]);
   });
+
+  group('spreadMarkerBoxes', () {
+    // Une pastille 96 × 32 posée au-dessus de son point
+    Rect pastille(double x, double y) => Rect.fromLTWH(x - 48, y - 32, 96, 32);
+
+    test('range côte à côte le départ et l\'arrivée d\'une boucle, le départ à '
+        'gauche', () {
+      final List<Offset> shifts = spreadMarkerBoxes(<Rect>[
+        pastille(100, 100),
+        pastille(400, 300),
+        pastille(100, 100),
+      ]);
+      expect(shifts, <Offset>[
+        const Offset(-50, 0),
+        Offset.zero,
+        const Offset(50, 0),
+      ]);
+    });
+
+    test('écarte deux pastilles qui se rapprochent à l\'écran, dans l\'ordre '
+        'où elles sont', () {
+      // L'arrivée 20 px à gauche du départ et 10 px plus bas : elle passe à
+      // gauche, la rangée centrée sur leur milieu.
+      final List<Offset> shifts = spreadMarkerBoxes(<Rect>[
+        pastille(120, 100),
+        pastille(100, 110),
+      ]);
+      expect(shifts, <Offset>[
+        const Offset(110 + 2 - (120 - 48), 5),
+        const Offset(110 - 98 - (100 - 48), -5),
+      ]);
+    });
+
+    test('laisse en place la goutte posée sous la pastille, et les boîtes '
+        'qui ne se touchent pas', () {
+      final List<Offset> shifts = spreadMarkerBoxes(<Rect>[
+        pastille(100, 100),
+        const Rect.fromLTWH(84, 100, 32, 32), // la goutte, sous le point
+        pastille(300, 100),
+      ]);
+      expect(shifts, everyElement(Offset.zero));
+    });
+  });
 }

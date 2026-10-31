@@ -69,6 +69,84 @@ class PdlMapMarker {
   int get hashCode => Object.hash(id, lon, lat, size, alignment, semanticLabel);
 }
 
+/// L'écart laissé entre deux marqueurs que [spreadMarkerBoxes] range côte à
+/// côte.
+const double pdlMarkerGap = 4;
+
+/// La boîte **visuelle** de [marker] quand son point tombe en [at] à l'écran,
+/// accrochée selon son [PdlMapMarker.alignment] — comme la pose `WidgetLayer`.
+Rect pdlMarkerBox(PdlMapMarker marker, Offset at) => Rect.fromLTWH(
+  at.dx - marker.size.width / 2 * (marker.alignment.x + 1),
+  at.dy - marker.size.height / 2 * (marker.alignment.y + 1),
+  marker.size.width,
+  marker.size.height,
+);
+
+/// De combien déplacer chaque boîte, en pixels d'écran, pour qu'aucune n'en
+/// recouvre une autre (ledger `MOB-104`, le pendant de `WEB-128`).
+///
+/// Les boîtes qui se recouvrent forment un groupe — bord à bord ne compte
+/// pas, [gap] ne sert qu'à la rangée : le départ
+/// et l'arrivée d'une boucle, ou deux points qui se rapprochent au dézoom.
+/// Un groupe se range en **une rangée** centrée sur lui, de gauche à droite
+/// comme ses boîtes sont à l'écran, l'ordre de la liste départageant les
+/// ex aequo (le départ d'une boucle à gauche de son arrivée). Une boîte seule
+/// ne bouge pas. Une goutte posée **sous** son point ne touche pas la
+/// pastille posée au-dessus : elles restent où elles sont.
+List<Offset> spreadMarkerBoxes(List<Rect> boxes, {double gap = pdlMarkerGap}) {
+  final List<int> parent = List<int>.generate(boxes.length, (int i) => i);
+  int find(int i) {
+    while (parent[i] != i) {
+      parent[i] = parent[parent[i]];
+      i = parent[i];
+    }
+    return i;
+  }
+
+  for (int i = 0; i < boxes.length; i++) {
+    for (int j = i + 1; j < boxes.length; j++) {
+      if (boxes[i].overlaps(boxes[j])) {
+        parent[find(j)] = find(i);
+      }
+    }
+  }
+  final Map<int, List<int>> groups = <int, List<int>>{};
+  for (int i = 0; i < boxes.length; i++) {
+    groups.putIfAbsent(find(i), () => <int>[]).add(i);
+  }
+
+  final List<Offset> shifts = List<Offset>.filled(boxes.length, Offset.zero);
+  for (final List<int> members in groups.values) {
+    if (members.length < 2) continue;
+    final double cx =
+        members.fold<double>(
+          0,
+          (double sum, int i) => sum + boxes[i].center.dx,
+        ) /
+        members.length;
+    final double cy =
+        members.fold<double>(
+          0,
+          (double sum, int i) => sum + boxes[i].center.dy,
+        ) /
+        members.length;
+    final List<int> row = <int>[...members]
+      ..sort((int a, int b) {
+        final double dx = boxes[a].center.dx - boxes[b].center.dx;
+        return dx.abs() < 1 ? a.compareTo(b) : dx.sign.toInt();
+      });
+    final double width =
+        row.fold<double>(0, (double sum, int i) => sum + boxes[i].width) +
+        gap * (row.length - 1);
+    double left = cx - width / 2;
+    for (final int i in row) {
+      shifts[i] = Offset(left - boxes[i].left, cy - boxes[i].center.dy);
+      left += boxes[i].width + gap;
+    }
+  }
+  return shifts;
+}
+
 /// Le cap de la carte sous un [PdlMapMarker] : degrés, sens horaire, 0 =
 /// nord en haut. [PdlMap] le pose autour de chaque marqueur, que MapLibre
 /// garde droit à l'écran quand la carte tourne : un dessin qui montre une
