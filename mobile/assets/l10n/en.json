@@ -2014,7 +2014,11 @@
     "attachments": "Attachments",
     "downloadOriginal": "Download the original of {file}",
     "downloadAttachment": "Download {file}",
-    "downloading": "Downloading…"
+    "downloading": "Downloading…",
+    "destinationTitle": "Download the file",
+    "saveToDevice": "Save to phone",
+    "shareFile": "Send to another app",
+    "saved": "File saved"
   },
   "invitations": {
     "pending": {

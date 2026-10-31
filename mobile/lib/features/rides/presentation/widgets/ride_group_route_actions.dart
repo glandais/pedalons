@@ -30,11 +30,20 @@ mixin RouteExportRunner<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   String? _exportSuccess;
   bool _exporting = false;
 
-  /// Télécharge [asset] (GPX ou FIT) et le passe à la feuille de partage.
+  /// Télécharge [asset] (GPX ou FIT), puis l'enregistre sur le téléphone ou
+  /// le remet à une autre app, au choix ([pickAssetDestination]).
   Future<void> downloadRouteAsset(AssetDto asset) async {
+    if (_exporting) return;
+    final AssetDestination? destination = await pickAssetDestination(context);
+    if (destination == null || !mounted) return;
     await _runExport(() async {
-      await downloadAndShareAsset(ref, asset, origin: shareOriginOf(context));
-      return null;
+      final bool saved = await deliverAsset(
+        ref,
+        asset,
+        destination,
+        origin: shareOriginOf(context),
+      );
+      return saved ? 'media.saved'.tr() : null;
     });
   }
 

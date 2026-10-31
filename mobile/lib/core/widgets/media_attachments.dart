@@ -36,8 +36,8 @@ import 'authenticated_image.dart';
 /// l'autorisation y est celle du contenu porteur : pour une équipe, une sortie
 /// ou une annonce visibles des seuls membres, une requête sans jeton est
 /// refusée. Confier l'URL au système ouvrirait un onglet sur une erreur 403.
-/// Le fichier est donc rapporté puis remis au système par
-/// `downloadAndShareAsset`, le même chemin que l'export GPX d'un parcours.
+/// Le fichier est donc rapporté puis remis au système par `deliverAsset`, le
+/// même chemin que l'export GPX d'un parcours.
 class MediaAttachments extends ConsumerStatefulWidget {
   const MediaAttachments({
     super.key,
@@ -59,6 +59,9 @@ class _MediaAttachmentsState extends ConsumerState<MediaAttachments> {
   String? _busyId;
 
   Object? _error;
+
+  /// Vrai après un enregistrement sur le téléphone, le temps d'un bandeau.
+  bool _saved = false;
 
   @override
   Widget build(BuildContext context) {
@@ -82,6 +85,15 @@ class _MediaAttachmentsState extends ConsumerState<MediaAttachments> {
           ),
           const SizedBox(height: PdlSpacing.chipGap),
         ],
+        if (_saved) ...<Widget>[
+          PdlBanner(
+            tone: PdlBannerTone.info,
+            message: 'media.saved'.tr(),
+            onDismiss: () => setState(() => _saved = false),
+            dismissSemanticLabel: 'common.close'.tr(),
+          ),
+          const SizedBox(height: PdlSpacing.chipGap),
+        ],
         if (_busyId != null) ...<Widget>[
           PdlBanner(
             tone: PdlBannerTone.info,
@@ -99,19 +111,25 @@ class _MediaAttachmentsState extends ConsumerState<MediaAttachments> {
     );
   }
 
-  /// Rapporte le fichier d'origine, puis le remet au système.
-  ///
-  /// Le partage est ce que la plateforme offre de plus proche d'un
-  /// « enregistrer » : il mène à Fichiers, à une autre application, ou à un
-  /// envoi. Un chemin dans un dossier temporaire, lui, ne mènerait nulle part.
+  /// Rapporte le fichier d'origine, puis l'enregistre sur le téléphone ou le
+  /// remet à une autre app, au choix ([pickAssetDestination]).
   Future<void> _download(AssetDto asset) async {
     if (_busyId != null) return;
+    final AssetDestination? destination = await pickAssetDestination(context);
+    if (destination == null || !mounted) return;
     setState(() {
       _busyId = asset.id;
       _error = null;
+      _saved = false;
     });
     try {
-      await downloadAndShareAsset(ref, asset, origin: shareOriginOf(context));
+      final bool saved = await deliverAsset(
+        ref,
+        asset,
+        destination,
+        origin: shareOriginOf(context),
+      );
+      if (mounted) setState(() => _saved = saved);
     } catch (error) {
       if (mounted) setState(() => _error = error);
     } finally {

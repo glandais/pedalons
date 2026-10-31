@@ -1,4 +1,5 @@
 import 'core/adaptive/keys.dart';
+import 'core/utils/keys.dart';
 import 'features/ads/keys.dart';
 import 'features/apps/keys.dart';
 import 'features/auth/keys.dart';
@@ -27,6 +28,7 @@ final keys = Keys();
 class Keys {
   final login = LoginPageKeys();
   final navigation = NavigationKeys();
+  final assetDestination = AssetDestinationKeys();
   final profile = ProfilePageKeys();
   final teams = TeamsPageKeys();
   final teamsDiscover = TeamsDiscoverKeys();

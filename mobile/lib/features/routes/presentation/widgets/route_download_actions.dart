@@ -120,12 +120,22 @@ class _RouteDownloadActionsState extends ConsumerState<RouteDownloadActions> {
   }
 
   Future<void> _download(AssetDto asset, String tag) async {
+    if (_busyLabel != null) return;
+    final AssetDestination? destination = await pickAssetDestination(context);
+    if (destination == null || !mounted) return;
     setState(() {
       _busyLabel = tag;
       _error = null;
+      _success = null;
     });
     try {
-      await downloadAndShareAsset(ref, asset, origin: shareOriginOf(context));
+      final bool saved = await deliverAsset(
+        ref,
+        asset,
+        destination,
+        origin: shareOriginOf(context),
+      );
+      if (saved && mounted) setState(() => _success = 'media.saved'.tr());
     } catch (error) {
       if (mounted) setState(() => _error = error);
     } finally {

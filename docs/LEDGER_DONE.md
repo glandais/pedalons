@@ -16,6 +16,20 @@ fichier garde **ce qui est fait**, et ce qu'il ne faut pas défaire.
 
 ## MOB — Application mobile
 
+- [x] `MOB-102` **Une trace ou une pièce jointe s'enregistre sur un téléphone Android** (31 octobre
+  2026, contrat inchangé) — le téléchargement ne faisait que partager le fichier, et la feuille de
+  partage de bien des Android (HyperOS, entre autres) n'offre aucune cible d'enregistrement : la
+  trace pouvait être envoyée, jamais gardée. Le seul chemin (`core/utils/share_file.dart`, pour
+  l'export GPX/FIT d'un parcours, des groupes d'une sortie et pour `MediaAttachments`) ouvre
+  désormais sur Android une `PdlSheet` « Enregistrer sur le téléphone » (sélecteur système,
+  `FilePicker.saveFile`, bandeau « Fichier enregistré ») / « Envoyer vers une autre app »
+  (`SharePlus`) ; iOS va droit au partage, qui propose « Enregistrer dans Fichiers ». Le fichier
+  porte son vrai type (`application/gpx+xml`, `application/vnd.ant.fit`) : le paquet `mime` ne
+  connaît ni `.gpx` ni `.fit`, et `octet-stream` écartait les apps GPS. Le Patrol `ride_participants_map_test`
+  passe par « Envoyer vers une autre app » sur Android (`keys.assetDestination`) ; le sélecteur
+  d'enregistrement, natif, n'est pas couvert. À ne pas défaire : la feuille s'ouvre **avant** le téléchargement, pas sous
+  le bandeau d'attente ; une seule fonction remet un fichier au système.
+
 - [x] `MOB-100` **L'application n'affiche ni ne demande plus les noms des membres à qui n'est pas membre** (26 octobre 2026, contrat `13.0.0`, voir `API-144`) — pendant mobile de `WEB-123`. Un fournisseur de `team_providers.dart` dit si la personne peut voir les noms (membre ou administrateur de la plateforme) ; `ride_group_page.dart`, `ride_group_overview_tab.dart`, `ride_detail_page.dart`, `trip_detail_page.dart` et `trip_summary_card.dart` n'affichent alors que le nombre — ni avatars, ni feuille des participants — et `route_detail_page.dart` accepte `createdBy` nul. Clients Dart régénérés. Couvert par `ride_group_page_test.dart` et `trip_summary_card_names_test.dart`. À ne pas défaire : le nombre seul pour un non-membre (`member || platformAdmin`), aucune ouverture de la feuille des participants pour lui, et jamais de repli sur `createdBy` d'une sortie pour nommer un chef.
 
 - [x] `MOB-99` **La rangée des sections d'une équipe ne lève plus `RenderBox was not laid out`**

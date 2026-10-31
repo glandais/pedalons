@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:patrol/patrol.dart';
@@ -216,9 +218,11 @@ final class Ride extends Module {
   );
 
   /// Taps « GPX » on the card of [groupId]: the app downloads the file, then hands it to the
-  /// system share sheet.
+  /// system share sheet. On Android a sheet first asks where the file goes — saved on the phone
+  /// or sent to another app; this takes the share, iOS goes there directly.
   Future<void> exportGpx(String groupId) async {
     await (await scrolledTo(_exportGpxKey(groupId))).tap();
+    if (Platform.isAndroid) await $(keys.assetDestination.share).tap();
   }
 
   // ── Groups map ──────────────────────────────────────────────────────────

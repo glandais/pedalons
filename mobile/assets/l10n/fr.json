@@ -2014,7 +2014,11 @@
     "attachments": "Pièces jointes",
     "downloadOriginal": "Télécharger l’originale de {file}",
     "downloadAttachment": "Télécharger {file}",
-    "downloading": "Téléchargement en cours…"
+    "downloading": "Téléchargement en cours…",
+    "destinationTitle": "Télécharger le fichier",
+    "saveToDevice": "Enregistrer sur le téléphone",
+    "shareFile": "Envoyer vers une autre app",
+    "saved": "Fichier enregistré"
   },
   "invitations": {
     "pending": {
