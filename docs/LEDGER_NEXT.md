@@ -61,6 +61,42 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
 
 ## MOB — Application mobile
 
+- [ ] `MOB-105` **La trace d'un parcours se colore comme sur le site (M)** — arbitré le 31 octobre
+      2026 : la carte mobile ne lit pas la pente comme le site. Aujourd'hui `slopeColor`
+      (`core/theme/pdl_tokens.dart`) monte la teinte de 85 à 255 (vert → cyan → bleu → violet, une
+      pente de ~13 % se confond avec le bleu neutre), et `slopeColorsForLines`
+      (`features/routes/domain/track_slope_colors.dart`) colore **chaque segment**, descentes
+      comprises ; le site colore **les montées** (`climbs`, partie par partie) sur l'échelle vert →
+      jaune → rouge → magenta, et le reste en bleu neutre (`getColorFromGradient`,
+      `frontend/src/components/map/mapUtils.ts`). À faire : (1) la même source et la même échelle
+      sur la carte et le profil ; (2) la carte d'un groupe et d'une sortie (`RideGroupsMap`) ne
+      prend plus la couleur unie de `kMultiTrackPalette` mais pente / revêtement / vent comme un
+      parcours — la couleur de groupe reste sur la carte de la sortie à plusieurs groupes et dans
+      les légendes ; (3) **un seul interrupteur Pente | Revêtement | Météo** sous la carte, partagé
+      par la carte encastrée, son plein écran et le profil, comme `useWindColorMode` au site — il
+      remplace la puce « Météo », l'interrupteur du plein écran et le `RouteColorBy` propre à
+      `RideElevationSection` ; Météo jamais par défaut, onglet Météo du groupe toujours en Météo ;
+      (4) un segment sans vent connu prend le bleu neutre partout (aujourd'hui `mapTrack` sur une
+      étape, la couleur de palette sur un groupe). Maquettes : canevas « coloration trace et
+      profil » du 31 octobre 2026.
+- [ ] `MOB-106` **Le profil montre le vent par une bande, en mode Météo (S)** — le pendant de
+      `WEB-129`. En mode Météo, le profil reste en pente (décision de `WEB-115`, maintenue) et
+      gagne une bande dos / travers / face sous l'aire, sur le même axe des distances ; l'info-bulle
+      du réticule dit aussi le vent du point. Aujourd'hui rien du vent n'apparaît sur le profil :
+      une montée face au vent ne se lit qu'en croisant carte et profil. Piège : le vent se place
+      en distance chaînée sans saut (`chainedMeasures`), le profil en `PolylineIndex` qui compte le
+      saut entre traces — une conversion unique et testée, sans quoi la bande se décale dès la
+      deuxième trace. Lieu : `core/pdl/elevation/` (un painter de plus, couleurs reçues, sans DTO),
+      `ride_elevation_section.dart`, `embedded_route_sheet.dart`. Après `MOB-105`.
+- [ ] `MOB-107` **Les pastilles météo sur la carte encastrée (S)** — décidé le 31 octobre 2026,
+      **revient sur** le « pas de pastilles sur la carte encastrée » de `MOB-92` (plan
+      `2026-10-24-weather-on-map.md` : « trop petite, non touchable »). En mode Météo, les
+      pastilles et la goutte s'affichent aussi hors plein écran : Aperçu et onglet Météo d'un
+      groupe, sortie solo, étape (`ride_groups_map.dart` et `stage_detail_page.dart` les réservent
+      à `fullscreen`). La carte encastrée restant non manipulable, un toucher ouvre le plein écran
+      comme aujourd'hui, pas la feuille de la pastille. À vérifier sur appareil : lisibilité à la
+      taille encastrée, étalement de `MOB-104` sur une petite carte.
+
 - [ ] `MOB-95` **La météo sur la carte : recette sur appareil des paliers 1 à 3 (S)** — rien ne se
       teste sans carte native (`MOB-91` à `MOB-94`, plan [`2026-10-24-weather-on-map.md`](plans/archive/2026-10-24-weather-on-map.md)) :
       pastilles et goutte sur un vrai parcours à plusieurs traces ; toucher d'une pastille et
@@ -321,6 +357,14 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
 (`WEB-13` à `WEB-22`, livrés, avec ce que l'automatisation ne voit pas) : voir
 `frontend/e2e/README.md`.
 
+- [ ] `WEB-129` **Le profil montre le vent par une bande, en mode Météo (S)** — arbitré le 31
+      octobre 2026 (option B du canevas « coloration trace et profil ») : le profil reste en pente
+      (décision de `WEB-115`, maintenue, `PlannerColorBy` non élargi) et gagne une bande dos /
+      travers / face sous l'aire, sur le même axe, qui suit le zoom et le curseur ; l'info-bulle dit
+      aussi le vent du point. Aujourd'hui une montée face au vent ne se lit qu'en croisant carte et
+      profil. Lieu : `ElevationChart.tsx`, `useWindColorMode`. À vérifier : que l'axe du profil et
+      `chainedDistances` (`lib/weatherOnRoute.ts`) comptent pareil le saut entre traces. Pendant
+      mobile : `MOB-106`.
 - [ ] `WEB-119` **La météo sur la carte : recette navigateur des paliers 1 à 3 (S)** — `WEB-115` à
       `WEB-118`, plan [`2026-10-24-weather-on-map.md`](plans/archive/2026-10-24-weather-on-map.md). Sur la pile e2e :
       `pnpm e2e routes-render -g 'rideMap /'` (la sortie solo `soloRide` ajoutée au jeu de données,
