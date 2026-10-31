@@ -206,9 +206,11 @@ faite, et le 500 du contact vendeur (`MOB-47`). Depuis l'import de `n-peloton` e
       (enregistrer un parcours ou une pièce jointe sur un téléphone Android, types MIME GPX/FIT).
       `pubspec.yaml` est en `1.1.2`, la fiche et les nouveautés dans
       `mobile/metadata/version/1.1.2/` (fiche recopiée de la 1.1.1). Le 31 octobre 2026 :
-      `publish_beta.sh` (TestFlight externe et Play test fermé, tag `mobile.1.1.2.N`). Reste : créer
-      la version 1.1.2 dans App Store Connect (la 1.1.1, `MOB-101`, est en vente), pousser les
-      nouveautés, attacher le build (`fastlane release`), soumettre.
+      `publish_beta.sh` (TestFlight externe et Play test fermé, tag `mobile.1.1.2.N`). Version 1.1.2
+      créée dans App Store Connect le même jour (`MANUAL`, id `e357b79e-8617-4196-ac4e-5a39bfce2235`),
+      nouveautés poussées par `asc metadata apply` ; description, mots-clés et détail de revue
+      recopiés de la 1.1.1 par App Store Connect. Reste : attacher le build (`fastlane release`),
+      `asc validate`, soumettre, puis publier à la main après l'approbation.
 
 ### Couverture e2e Patrol — ce que les tests ne couvrent pas encore
 
