@@ -45,6 +45,8 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, T
 
 /** Idle time after a zoom or pan before the profile is sampled for the new window. */
 const SAMPLE_WINDOW_DEBOUNCE_MS = 250
+/** Idle time after the last wheel notch or pinch step before a zoom gesture counts as complete. */
+const ZOOM_COMPLETE_DEBOUNCE_MS = 250
 
 /**
  * chartjs-plugin-zoom transitively imports hammerjs, which reads `window` at module load and
@@ -166,13 +168,40 @@ export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartPro
     // instance) so re-renders that reapply the options — hover updates, theme changes — keep the
     // current zoom instead of silently resetting it.
     const [xRange, setXRangeState] = useState<{ min: number; max: number } | null>(null)
+    // The range the chart shows right now: moved at every wheel notch and pan frame, where the
+    // state above only follows once the gesture completes. The x options read it through getters,
+    // at each chart.update, so a re-render committed mid-gesture never puts a stale range back.
+    const liveRange = useRef<{ min: number; max: number } | null>(null)
+    const followChart = (chart: ChartJS) => {
+      liveRange.current = { min: chart.scales.x.min, max: chart.scales.x.max }
+    }
+    const completeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+    const clearCompleteTimer = () => {
+      if (completeTimer.current !== null) clearTimeout(completeTimer.current)
+      completeTimer.current = null
+    }
+    // Once per gesture: records the range in state (sampling, y-axis) and hands it to the parent.
+    const completeMove = (chart: ChartJS) => {
+      clearCompleteTimer()
+      followChart(chart)
+      const { min, max } = chart.scales.x
+      setXRangeState({ min, max })
+      zoomRef.current?.onMoveComplete(min, max)
+    }
+    useEffect(() => clearCompleteTimer, [])
 
     // Imperative x-range control for zoom sync
     useImperativeHandle(
       ref,
       () => ({
-        setXRange: (min: number, max: number) => setXRangeState({ min, max }),
-        resetXRange: () => setXRangeState(null),
+        setXRange: (min: number, max: number) => {
+          liveRange.current = { min, max }
+          setXRangeState({ min, max })
+        },
+        resetXRange: () => {
+          liveRange.current = null
+          setXRangeState(null)
+        },
       }),
       []
     )
@@ -372,20 +401,23 @@ export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartPro
                     pinch: { enabled: true },
                     mode: 'x' as const,
                     onZoomStart: () => void zoomRef.current?.onMoveStart(),
-                    onZoomComplete: ({ chart }: { chart: ChartJS }) => {
-                      // Record the plugin-driven range so re-renders don't undo the gesture.
-                      setXRangeState({ min: chart.scales.x.min, max: chart.scales.x.max })
-                      zoomRef.current?.onMoveComplete(chart.scales.x.min, chart.scales.x.max)
+                    // Not the plugin's onZoomComplete: its debounce is rebuilt at every chart
+                    // update, so it fires once per wheel notch instead of once per gesture.
+                    onZoom: ({ chart }: { chart: ChartJS }) => {
+                      followChart(chart)
+                      clearCompleteTimer()
+                      completeTimer.current = setTimeout(
+                        () => completeMove(chart),
+                        ZOOM_COMPLETE_DEBOUNCE_MS
+                      )
                     },
                   },
                   pan: {
                     enabled: true,
                     mode: 'x' as const,
                     onPanStart: () => void zoomRef.current?.onMoveStart(),
-                    onPanComplete: ({ chart }: { chart: ChartJS }) => {
-                      setXRangeState({ min: chart.scales.x.min, max: chart.scales.x.max })
-                      zoomRef.current?.onMoveComplete(chart.scales.x.min, chart.scales.x.max)
-                    },
+                    onPan: ({ chart }: { chart: ChartJS }) => followChart(chart),
+                    onPanComplete: ({ chart }: { chart: ChartJS }) => completeMove(chart),
                   },
                   limits: {
                     x: { min: 0, max: route.distance, minRange: 1000 },
@@ -400,8 +432,12 @@ export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartPro
             display: true,
             // Pin the axis to the route extent (or the synced zoom window) so the profile always
             // fills the strip instead of the axis auto-rounding past the last point.
-            min: xRange?.min ?? 0,
-            max: xRange?.max ?? route.distance,
+            get min() {
+              return liveRange.current?.min ?? 0
+            },
+            get max() {
+              return liveRange.current?.max ?? route.distance
+            },
             title: {
               display: true,
               text: `Distance (${config.distanceUnit})`,
