@@ -1,9 +1,6 @@
-import 'package:dio/dio.dart' show Dio;
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../../api/generated/export.dart';
 import '../../api/pedalons_api_client.dart';
@@ -14,6 +11,8 @@ import '../theme/pdl_tokens.dart';
 import '../theme/pdl_typography.dart';
 import '../utils/api_error_handler.dart';
 import '../utils/formatters.dart';
+import '../utils/share_file.dart';
+import '../utils/share_link.dart';
 import 'authenticated_image.dart';
 
 /// Les fichiers joints à un contenu — facture, notice, fiche technique, road
@@ -37,8 +36,8 @@ import 'authenticated_image.dart';
 /// l'autorisation y est celle du contenu porteur : pour une équipe, une sortie
 /// ou une annonce visibles des seuls membres, une requête sans jeton est
 /// refusée. Confier l'URL au système ouvrirait un onglet sur une erreur 403.
-/// Le fichier est donc rapporté ici, puis remis au système — le même chemin que
-/// l'export GPX d'un parcours.
+/// Le fichier est donc rapporté puis remis au système par
+/// `downloadAndShareAsset`, le même chemin que l'export GPX d'un parcours.
 class MediaAttachments extends ConsumerStatefulWidget {
   const MediaAttachments({
     super.key,
@@ -112,28 +111,12 @@ class _MediaAttachmentsState extends ConsumerState<MediaAttachments> {
       _error = null;
     });
     try {
-      final Dio dio = ref.read(dioProvider);
-      final String path =
-          '${(await getTemporaryDirectory()).path}/${asset.fileName}';
-      await dio.download(asset.url, path);
-      if (!mounted) return;
-      await SharePlus.instance.share(
-        ShareParams(
-          files: <XFile>[XFile(path)],
-          sharePositionOrigin: _origin(),
-        ),
-      );
+      await downloadAndShareAsset(ref, asset, origin: shareOriginOf(context));
     } catch (error) {
       if (mounted) setState(() => _error = error);
     } finally {
       if (mounted) setState(() => _busyId = null);
     }
-  }
-
-  /// L'ancre de la feuille de partage, qu'un iPad exige.
-  Rect _origin() {
-    final RenderBox? box = context.findRenderObject() as RenderBox?;
-    return box == null ? Rect.zero : box.localToGlobal(Offset.zero) & box.size;
   }
 }
 

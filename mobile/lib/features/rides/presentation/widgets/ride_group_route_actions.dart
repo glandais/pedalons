@@ -10,6 +10,8 @@ import '../../../../core/pdl/pdl.dart';
 import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/utils/api_error_handler.dart';
+import '../../../../core/utils/share_file.dart';
+import '../../../../core/utils/share_link.dart';
 import '../../../../keys.dart';
 import '../../../auth/domain/auth_state.dart';
 import '../../../auth/providers/auth_provider.dart';
@@ -31,11 +33,7 @@ mixin RouteExportRunner<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   /// Télécharge [asset] (GPX ou FIT) et le passe à la feuille de partage.
   Future<void> downloadRouteAsset(AssetDto asset) async {
     await _runExport(() async {
-      await downloadAndShareRouteAsset(
-        ref,
-        asset,
-        origin: shareOriginOf(context),
-      );
+      await downloadAndShareAsset(ref, asset, origin: shareOriginOf(context));
       return null;
     });
   }

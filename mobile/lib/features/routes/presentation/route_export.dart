@@ -1,9 +1,6 @@
-import 'package:dio/dio.dart' show Dio;
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../../../api/generated/export.dart';
 import '../../../api/pedalons_api_client.dart';
@@ -15,24 +12,8 @@ import '../../../core/theme/pdl_icons.dart';
 /// mêmes gestes doivent se comporter de la même façon partout.
 ///
 /// Les fonctions lèvent en cas d'échec ; c'est à l'appelant d'afficher son
-/// bandeau.
-
-/// Télécharge [asset] dans le répertoire temporaire, puis ouvre la feuille de
-/// partage du système sur le fichier.
-Future<void> downloadAndShareRouteAsset(
-  WidgetRef ref,
-  AssetDto asset, {
-  required Rect origin,
-}) async {
-  final Dio dio = ref.read(dioProvider);
-  final String path =
-      '${(await getTemporaryDirectory()).path}/'
-      '${asset.fileName}';
-  await dio.download(asset.url, path);
-  await SharePlus.instance.share(
-    ShareParams(files: <XFile>[XFile(path)], sharePositionOrigin: origin),
-  );
-}
+/// bandeau. Le téléchargement d'un GPX/FIT, lui, est celui de toute pièce
+/// jointe : `downloadAndShareAsset` (`core/utils/share_file.dart`).
 
 /// Le choix de l'appareil passe par une `PdlSheet` : `PdlSheet.show` force
 /// `useRootNavigator`, donc la feuille passe au-dessus de la barre d'onglets
@@ -74,10 +55,4 @@ Future<void> uploadRouteToService(
         teamSlug: teamSlug,
         routeSlug: routeSlug,
       );
-}
-
-/// Le rectangle d'où part la feuille de partage (iPad) : celui de [context].
-Rect shareOriginOf(BuildContext context) {
-  final RenderBox? box = context.findRenderObject() as RenderBox?;
-  return box == null ? Rect.zero : box.localToGlobal(Offset.zero) & box.size;
 }

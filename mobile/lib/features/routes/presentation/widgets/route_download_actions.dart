@@ -8,6 +8,7 @@ import '../../../../core/pdl/pdl.dart';
 import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/utils/api_error_handler.dart';
+import '../../../../core/utils/share_file.dart';
 import '../../../../core/utils/share_link.dart';
 import '../../../auth/domain/auth_state.dart';
 import '../../../auth/providers/auth_provider.dart';
@@ -124,11 +125,7 @@ class _RouteDownloadActionsState extends ConsumerState<RouteDownloadActions> {
       _error = null;
     });
     try {
-      await downloadAndShareRouteAsset(
-        ref,
-        asset,
-        origin: shareOriginOf(context),
-      );
+      await downloadAndShareAsset(ref, asset, origin: shareOriginOf(context));
     } catch (error) {
       if (mounted) setState(() => _error = error);
     } finally {

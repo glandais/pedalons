@@ -22,7 +22,6 @@ Future<void> shareAppLink(
   required String title,
   required String path,
 }) async {
-  final RenderBox? box = context.findRenderObject() as RenderBox?;
   await SharePlus.instance.share(
     ShareParams(
       uri: Uri.parse(
@@ -30,11 +29,16 @@ Future<void> shareAppLink(
       ),
       title: title,
       subject: title,
-      // Sur iPad la feuille s'ancre au bouton ; sans rectangle elle s'ancre au
-      // centre de l'écran, ce qui la fait pointer vers rien.
-      sharePositionOrigin: box == null
-          ? Rect.zero
-          : box.localToGlobal(Offset.zero) & box.size,
+      sharePositionOrigin: shareOriginOf(context),
     ),
   );
+}
+
+/// Le rectangle d'où part la feuille de partage : celui de [context].
+///
+/// Sur iPad la feuille s'ancre au bouton ; sans rectangle elle s'ancre au
+/// centre de l'écran, ce qui la fait pointer vers rien.
+Rect shareOriginOf(BuildContext context) {
+  final RenderBox? box = context.findRenderObject() as RenderBox?;
+  return box == null ? Rect.zero : box.localToGlobal(Offset.zero) & box.size;
 }
