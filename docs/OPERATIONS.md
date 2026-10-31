@@ -133,6 +133,14 @@ docker exec "$(docker ps -qf name=${ENV_NAME}_backend)" sh -c \
 docker stats --no-stream        # usage against each limit
 ```
 
+**What stays in the heap once warm** (measured on 2026-10-31, ledger `OPS-55`): about 215 MB for
+the world time-zone index (timeshape, loaded at the first ride whose time zone it resolves; kept
+world-wide on purpose), and the decoded elevation tiles the GPX pipeline keeps per DEM tier,
+`pedalons.elevation.tile-cache-size` of them (20: about 50 MB for the four tiers at most; a
+Mapterhorn tile is 1 MiB decoded, an IGN one 256 KiB). A missed tile is re-read from the
+copy `DemTileStore` keeps under `data/cache`, never downloaded again. The old gen is two thirds of the heap: with a 2G limit,
+about 820 MB, of which a long HD elevation refresh needs a few hundred at its peak.
+
 **A heap OutOfMemoryError leaves a dump** in the environment's `data/cache/java_pid1.hprof`
 (`-XX:+HeapDumpOnOutOfMemoryError`, `quarkus.jib.jvm-additional-arguments`), written before
 `ExitOnOutOfMemoryError` ends the JVM. It is as large as the heap and holds personal data (e-mail

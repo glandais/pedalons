@@ -32,6 +32,10 @@ public class VcyclistProducer {
   @ConfigProperty(name = "pedalons.data.cache", defaultValue = "cache")
   File cacheFolder;
 
+  /** Decoded tiles each tier of each provider keeps in memory; see application.properties. */
+  @ConfigProperty(name = "pedalons.elevation.tile-cache-size", defaultValue = "20")
+  int tileCacheSize;
+
   /**
    * Renders map thumbnails. Its own disk cache is keyed on the whole tile source — since vcyclist
    * 5.1.1, {@code {cache}/tileserver_8080/styles/colorful-v7/256/{z}/{x}/{y}.png}, so the light and
@@ -62,7 +66,7 @@ public class VcyclistProducer {
   @ElevationTier(ElevationQuality.FAST)
   public ElevationProvider fastElevationProvider() {
     return ElevationProviderJvm.newElevationProvider(
-        ElevationSource.MAPTERHORN, new DemTileStore(cacheFolder));
+        ElevationSource.MAPTERHORN, new DemTileStore(cacheFolder), tileCacheSize);
   }
 
   /**
@@ -81,6 +85,6 @@ public class VcyclistProducer {
   @ElevationTier(ElevationQuality.HD)
   public ElevationProvider hdElevationProvider() {
     return ElevationProviderJvm.newElevationProvider(
-        ElevationSource.IGN_LIDAR_HD, new DemTileStore(cacheFolder));
+        ElevationSource.IGN_LIDAR_HD, new DemTileStore(cacheFolder), tileCacheSize);
   }
 }

@@ -932,20 +932,14 @@ Ce que les tests ne prouvent pas, parce qu'ils ne passent ni par Flyway ni par u
       Laisse `AUD-1` dehors. Étude, découpage et décisions :
       [`2026-10-25-public-registry.md`](plans/2026-10-25-public-registry.md). Taille : M (deux à
       trois jours).
-- [ ] `OPS-55` **Le heap du backend de prod se remplit, puis un import GPX le fait tomber** — le
-      29 octobre 2026 à 20 h 49 UTC, `OutOfMemoryError: Java heap space` (sortie 3,
-      `ExitOnOutOfMemoryError`) pendant deux imports GPX lourds à la suite (« Nantes – Houtkerque »,
-      50 tuiles d'altitude). Avant cela, `BackendHeapFull` sonnait depuis deux jours : la mémoire
-      encore occupée après GC était montée de 69 % à 91 % de l'old gen (≈ 615 MiB) dans les huit
-      heures suivant le démarrage du 27 octobre, puis s'était stabilisée entre 92 % et 95 % ; une
-      tâche neuve repart à environ 180 MiB. Une courbe qui monte puis plafonne fait penser à un cache
-      borné plutôt qu'à une fuite. Fait le 30 octobre : `BACKEND_MEMORY=2G` dans le `.env` de prod,
-      et un dump du heap au prochain OOM (`HeapDumpOnOutOfMemoryError`, `/mnt/cache/java_pid1.hprof`,
-      voir `application.properties`). **Reste** : comparer `jcmd 1 GC.class_histogram` entre une
-      tâche neuve et la même 24 à 48 h plus tard (référence : `~/heap-histo/` sur le serveur, la
-      première relevée le 30 octobre sur une tâche de 14 h) pour nommer ce qui grossit — à la
-      première lecture, 242 000 `LinkedHashMap$Entry` et 78 MB de `byte[]` ; puis le borner ou le
-      sortir du heap, et rendre l'import GPX moins gourmand si le pic suffit seul. Taille : S à M.
+- [ ] `OPS-56` **Vérifier en prod le plateau du heap après `OPS-55`** (scindé d'`OPS-55`) — une fois
+      vcyclist 6.12.0 et `pedalons.elevation.tile-cache-size=20` déployés, relever
+      `jvm_gc_live_data_size_bytes` après quelques recalculs HD : attendu autour de 400 MiB, contre
+      570 MiB avant (old gen de 820 MiB avec `BACKEND_MEMORY=2G`). Si `BackendHeapFull` ne sonne
+      plus, envisager de revenir à la limite par défaut. Reste ouvert aussi : le recalcul HD alloue
+      beaucoup d'objets éphémères (l'old gen a touché 835 MiB en local pendant le recalcul de
+      « Nantes – Houtkerque », pour 137 MiB vivants ensuite) ; à creuser seulement si un OOM revient.
+      Taille : S.
 
 ---
 
