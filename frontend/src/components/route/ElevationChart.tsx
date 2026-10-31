@@ -24,6 +24,7 @@ import { useDebouncedValue } from '@mantine/hooks'
 import {
   NEUTRAL_COLOR,
   getColorFromGradient,
+  elevationsInWindow,
   getElevationAxisBounds,
   getPointClimbGradient,
 } from '../map/mapUtils'
@@ -161,10 +162,6 @@ export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartPro
       [route.waypoints]
     )
 
-    // Computed over the whole route, never the zoom window: an axis that rescales under a pan
-    // gesture makes the profile look like it's breathing.
-    const yBounds = useMemo(() => getElevationAxisBounds(Array.from(ys)), [ys])
-
     // Displayed x-range, null = full route extent. Held in state (not just mutated on the chart
     // instance) so re-renders that reapply the options — hover updates, theme changes — keep the
     // current zoom instead of silently resetting it.
@@ -205,6 +202,14 @@ export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartPro
     // Sampled again once the gesture settles, not at every wheel notch: the window's margin covers
     // the moves in between.
     const [sampleWindow] = useDebouncedValue(xRange, SAMPLE_WINDOW_DEBOUNCE_MS)
+
+    // Fitted to what the zoom window shows, so a zoomed-in climb fills the strip — but on the
+    // debounced window, once the gesture settles: an axis that rescales at every wheel notch or
+    // pan frame makes the profile look like it's breathing.
+    const yBounds = useMemo(
+      () => getElevationAxisBounds(elevationsInWindow(xs, ys, sampleWindow)),
+      [xs, ys, sampleWindow]
+    )
     const sources = useMemo(
       () => sampleProfile(xs, ys, styles, sampleWindow),
       [xs, ys, styles, sampleWindow]

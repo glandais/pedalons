@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { TrackDto } from '@/api/dto'
-import { NEUTRAL_COLOR, createGradientLineFeatures } from './mapUtils'
+import { NEUTRAL_COLOR, createGradientLineFeatures, elevationsInWindow } from './mapUtils'
 
 function track(n: number, lon0: number): TrackDto {
   return {
@@ -54,5 +54,24 @@ describe('createGradientLineFeatures', () => {
     const colors = ['teal', undefined, undefined, 'teal', 'teal']
     const { features } = createGradientLineFeatures([track(5, 2)], (_, i) => colors[i])
     expect(features.map((f) => f.properties?.color)).toEqual(['teal', NEUTRAL_COLOR, 'teal'])
+  })
+})
+
+describe('elevationsInWindow', () => {
+  const xs = [0, 100, 200, 300, 400]
+  const ys = [10, 50, 20, 80, 30]
+
+  it('keeps the whole profile without a window', () => {
+    expect(elevationsInWindow(xs, ys, null)).toEqual(ys)
+  })
+
+  it('keeps the points in the window and the nearest one on each side', () => {
+    // 150…250 shows the segments 100→200 and 200→300: the 80 m at 300 bounds the line too
+    expect(elevationsInWindow(xs, ys, { min: 150, max: 250 })).toEqual([50, 20, 80])
+  })
+
+  it('keeps the edge points when the window reaches past the route', () => {
+    expect(elevationsInWindow(xs, ys, { min: -50, max: 50 })).toEqual([10, 50])
+    expect(elevationsInWindow(xs, ys, { min: 350, max: 500 })).toEqual([80, 30])
   })
 })

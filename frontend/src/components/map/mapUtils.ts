@@ -143,6 +143,26 @@ export function getElevationAxisBounds(elevations: number[]): { min: number; max
   return { min, max: max + span * 0.03 }
 }
 
+/**
+ * The elevations drawn inside a distance window, for {@link getElevationAxisBounds}: every point
+ * in it plus the nearest one on each side, so the line running out of the frame still fits the
+ * axis. Without a window, the whole profile. `xs` are cumulative distances, in ascending order.
+ */
+export function elevationsInWindow(
+  xs: ArrayLike<number>,
+  ys: ArrayLike<number>,
+  window: { min: number; max: number } | null
+): number[] {
+  if (!window) return Array.from(ys)
+  const elevations: number[] = []
+  for (let i = 0; i < xs.length; i++) {
+    const next = i + 1 < xs.length ? xs[i + 1] : Infinity
+    const previous = i > 0 ? xs[i - 1] : -Infinity
+    if (next >= window.min && previous <= window.max) elevations.push(ys[i])
+  }
+  return elevations
+}
+
 // Returns km marker interval based on total distance
 export function getKmMarkerInterval(distanceKm: number): number {
   if (distanceKm < 10) return 1
