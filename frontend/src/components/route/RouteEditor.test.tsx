@@ -263,3 +263,37 @@ describe('surface type suggestion (C1c)', () => {
     )
   }
 })
+
+describe('names read from the GPX file', () => {
+  afterEach(cleanup)
+
+  const XML =
+    '<gpx xmlns="http://www.topografix.com/GPX/1/1"><trk><name>Aller</name><trkseg>' +
+    '<trkpt lat="45" lon="6"/></trkseg></trk><trk><name>Retour</name><trkseg>' +
+    '<trkpt lat="45" lon="6"/></trkseg></trk></gpx>'
+
+  it('names the route after the first track and offers the other names', async () => {
+    renderEditor({
+      isCreateMode: true,
+      initialTrack: undefined,
+      team: { ...TEAM, enableRoutePlanner: false } as TeamDetailDto,
+      initialValues: {
+        name: '',
+        media: defaultMedia(),
+        surfaceType: 'ROAD',
+        visibility: 'TEAM',
+        tagIds: [],
+      },
+    })
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement
+    const file = new File([XML], 'export.gpx', { type: 'application/gpx+xml' })
+    fireEvent.change(input, { target: { files: [file] } })
+
+    const name = () => (screen.getByLabelText(/routes.create.form.name/) as HTMLInputElement).value
+    await waitFor(() => expect(name()).toBe('Aller'))
+    expect(screen.getByText('routes.create.form.nameSuggestions')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'export' }))
+    expect(name()).toBe('export')
+    expect(screen.getByRole('button', { name: 'Retour' })).toBeTruthy()
+  })
+})

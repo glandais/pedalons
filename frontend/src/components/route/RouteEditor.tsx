@@ -27,6 +27,7 @@ import { paths } from '@/config/paths'
 import { RoutePlannerField, type RoutePlannerHandle } from '../planner/RoutePlannerField'
 import { CreateRouteBody } from '@/api/zod/routes/routes.zod'
 import { TagPicker } from '@/components/tag'
+import { defaultGpxName, gpxNameCandidates, readGpxNames } from '@/lib/gpxNames'
 
 const SURFACE_TYPE_LABEL_KEYS = {
   ROAD: 'routes.surfaceType.ROAD',
@@ -114,6 +115,10 @@ export function RouteEditor({
   const [drawRequest, setDrawRequest] = useState(0)
 
   const [gpxFile, setGpxFile] = useState<File | null>(null)
+  // The names the chosen file carries (document, tracks, file name), offered under the name field
+  const [nameCandidates, setNameCandidates] = useState<string[]>([])
+  // The name the last file filled in: a next file may replace it, never a name typed by hand
+  const autoName = useRef<string | null>(null)
   const [plannerPoints, setPlannerPoints] = useState<GeoPoint[]>([])
   // A calculation in flight in the planner: saving now would drop it
   const [plannerBusy, setPlannerBusy] = useState(false)
@@ -131,10 +136,7 @@ export function RouteEditor({
 
   const handleFileChange = useCallback(
     (file: File | null) => {
-      if (!name && file?.name) {
-        const defaultName = file.name.replace(/\.gpx$/i, '')
-        form.setFieldValue('name', defaultName)
-      }
+      setNameCandidates([])
       if (file) {
         if (!/\.gpx$/i.test(file.name)) {
           setError(t('routes.create.validation.invalidFileType'))
@@ -143,11 +145,21 @@ export function RouteEditor({
         }
         setError(null)
         setGpxFile(file)
+        void readGpxNames(file).then((names) => {
+          const current = form.getValues().name
+          if (!current || current === autoName.current) {
+            const picked = defaultGpxName(names)
+            autoName.current = picked
+            form.setFieldValue('name', picked)
+          }
+          const candidates = gpxNameCandidates(names)
+          setNameCandidates(candidates.length > 1 ? candidates : [])
+        })
       } else {
         setGpxFile(null)
       }
     },
-    [t, form, name]
+    [t, form]
   )
 
   // The planner read a file: it names the route when the name is still empty.
@@ -310,6 +322,25 @@ export function RouteEditor({
           placeholder={t('routes.create.form.name')}
           {...form.getInputProps('name')}
         />
+        {sourceMode === 'gpx' && nameCandidates.length > 0 && (
+          <Group gap="xs" mt={-8}>
+            <Text size="xs" c="dimmed">
+              {t('routes.create.form.nameSuggestions')}
+            </Text>
+            {nameCandidates.map((candidate) => (
+              <Badge
+                key={candidate}
+                component="button"
+                type="button"
+                variant={candidate === name ? 'filled' : 'light'}
+                style={{ cursor: 'pointer', textTransform: 'none' }}
+                onClick={() => form.setFieldValue('name', candidate)}
+              >
+                {candidate}
+              </Badge>
+            ))}
+          </Group>
+        )}
 
         {/* Slug Editor (only in edit mode) */}
         {currentSlug && onSlugChange && (

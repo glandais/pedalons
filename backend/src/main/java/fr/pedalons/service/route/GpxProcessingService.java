@@ -265,11 +265,29 @@ public class GpxProcessingService {
    * catch-up and of a preview's promotion, which carry the waypoints on their own.
    */
   public ComputedGpx computeGpx(GpxDocument source, ElevationQuality quality, WaypointPlan plan) {
+    return computeGpx(source, quality, plan, null);
+  }
+
+  /**
+   * As {@link #computeGpx(GpxDocument, ElevationQuality, WaypointPlan)}, the written files named
+   * {@code name} — a route's name rather than the one the uploaded file carried, or {@code
+   * "noname"} when it carried none. A track the file left unnamed takes it too; a named track keeps
+   * its own. {@code null} keeps the file's names.
+   */
+  public ComputedGpx computeGpx(
+      GpxDocument source, ElevationQuality quality, WaypointPlan plan, @Nullable String name) {
     RawTracks rawTracks = rawTracks(source);
     GpxDocument doc = rawTracks.doc();
-    String name = rawTracks.name();
     List<Path> raw = rawTracks.paths();
     List<String> trackNames = rawTracks.trackNames();
+    if (name == null || name.isBlank()) {
+      name = rawTracks.name();
+    } else {
+      // trackNames() gives an unnamed track the document's own name: that one takes the new name
+      String unnamed = doc.getName();
+      String routeName = name;
+      trackNames = trackNames.stream().map(n -> n.equals(unnamed) ? routeName : n).toList();
+    }
 
     File original = null;
     File filtered = null;
@@ -460,7 +478,7 @@ public class GpxProcessingService {
     Team team = route.getTeam();
     // Outside the try: the catches below delete what was uploaded before the failure
     List<PreparedAsset> uploadedAssets = new ArrayList<>();
-    try (ComputedGpx computed = computeGpx(gpx, quality, plan)) {
+    try (ComputedGpx computed = computeGpx(gpx, quality, plan, route.getName())) {
       uploadedAssets.add(
           prepareAndUpload(
               team,
@@ -592,10 +610,35 @@ public class GpxProcessingService {
               || type == AssetType.ROUTE_FILTERED_GPX
               || type == AssetType.ROUTE_FIT;
       assetService.putStoredFile(
-          route.getTeam(), route, type, pa.fileId(), pa.fileName(), pa.stored(), newContent);
+          route.getTeam(),
+          route,
+          type,
+          pa.fileId(),
+          routeFileName(route, type, pa.fileName()),
+          pa.stored(),
+          newContent);
     }
 
     return result.metadata();
+  }
+
+  /**
+   * The name a route's file is downloaded under: its slug, as {@code RouteService.updateMedia}
+   * renames them, rather than the {@code original.gpx} / {@code filtered.gpx} / {@code route.fit}
+   * it is uploaded as. The asset URL carries it, but the download looks the asset up by id: an
+   * older link with the previous name keeps working.
+   */
+  static String routeFileName(Route route, AssetType type, String fallback) {
+    String slug = route.getSlug();
+    if (slug == null || slug.isBlank()) {
+      return fallback;
+    }
+    return switch (type) {
+      case ROUTE_ORIGINAL_GPX, ROUTE_FILTERED_GPX -> slug + ".gpx";
+      case ROUTE_FIT -> slug + ".fit";
+      case ROUTE_THUMBNAIL_LIGHT, ROUTE_THUMBNAIL_DARK -> slug + ".png";
+      default -> fallback;
+    };
   }
 
   // ------------------------------------------------------------------ HD catch-up
@@ -719,7 +762,13 @@ public class GpxProcessingService {
     }
     for (PreparedAsset pa : List.of(recompute.filtered(), recompute.fit())) {
       assetService.putStoredFile(
-          route.getTeam(), route, pa.type(), pa.fileId(), pa.fileName(), pa.stored(), true);
+          route.getTeam(),
+          route,
+          pa.type(),
+          pa.fileId(),
+          routeFileName(route, pa.type(), pa.fileName()),
+          pa.stored(),
+          true);
     }
     for (int i = 0; i < tracks.size(); i++) {
       GpxTrack track = tracks.get(i);
@@ -822,7 +871,13 @@ public class GpxProcessingService {
     }
     for (PreparedAsset pa : List.of(files.filtered(), files.fit())) {
       assetService.putStoredFile(
-          route.getTeam(), route, pa.type(), pa.fileId(), pa.fileName(), pa.stored(), true);
+          route.getTeam(),
+          route,
+          pa.type(),
+          pa.fileId(),
+          routeFileName(route, pa.type(), pa.fileName()),
+          pa.stored(),
+          true);
     }
   }
 

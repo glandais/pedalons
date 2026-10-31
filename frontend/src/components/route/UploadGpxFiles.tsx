@@ -7,6 +7,7 @@ import { createRoute } from '@/api/endpoints/routes/routes'
 import { SurfaceType, TeamDetailDto } from '@/api/dto'
 import { defaultMedia } from '@/lib/apiUtils'
 import { invalidateRouteQueries } from '@/lib/routeCacheInvalidation'
+import { defaultGpxName, readGpxNames } from '@/lib/gpxNames'
 
 export interface UploadGpxFilesProps {
   team: TeamDetailDto
@@ -35,7 +36,8 @@ export function UploadGpxFiles({ team, disabled }: UploadGpxFilesProps) {
 
     for (let i = 0; i < fileArray.length; i++) {
       const file = fileArray[i]
-      const name = file.name.replace(/\.gpx$/i, '')
+      // The file's own name (metadata, else first track), else its file name
+      const name = defaultGpxName(await readGpxNames(file))
 
       try {
         await createRoute(teamSlug, {

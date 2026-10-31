@@ -1978,6 +1978,7 @@
   "routes.create.form.gpxFile": "GPX File",
   "routes.create.form.gpxFileHint": ".gpx format only",
   "routes.create.form.name": "Route name",
+  "routes.create.form.nameSuggestions": "Names found:",
   "routes.create.form.plannerLabel": "Draw route on map",
   "routes.create.form.pointCount_one": "Track of {{count}} point",
   "routes.create.form.pointCount_other": "Track of {{count}} points",

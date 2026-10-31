@@ -127,10 +127,13 @@ test('a team admin creates a route by uploading a GPX; its page shows its stats,
   // Mantine's FileInput: a button, and a hidden input the description editor's uploads share the
   // page with — the GPX one is the one accepting .gpx.
   await main.locator('input[type="file"][accept=".gpx"]').setInputFiles(gpxPath)
-  // The file's name pre-fills the route's; the team admin types their own.
+  // The track's name pre-fills the route's; the file's name is offered beside it.
   const nameInput = main.getByRole('textbox', { name: 'Nom du parcours' })
+  await expect(nameInput).toHaveValue(name)
+  await main.getByRole('button', { name: 'vers-le-gresivaudan', exact: true }).click()
   await expect(nameInput).toHaveValue('vers-le-gresivaudan')
-  await nameInput.fill(name)
+  await main.getByRole('button', { name, exact: true }).click()
+  await expect(nameInput).toHaveValue(name)
   await expect(submit).toBeEnabled()
   await submit.click()
 
@@ -166,6 +169,11 @@ test('a team admin creates a route by uploading a GPX; its page shows its stats,
   expect(gpx.ok()).toBe(true)
   const body = await gpx.text()
   expect(body).toContain('<gpx')
+  // Downloaded under the route's slug and name, never as filtered.gpx.
+  expect(new URL(href!, page.url()).pathname).toMatch(new RegExp(`/${routeSlug}\\.gpx$`))
+  expect(gpx.headers()['content-disposition']).toContain(`${routeSlug}.gpx`)
+  // Its <name> is the route's (its ASCII tail: whether the writer escapes « é » is not the point)
+  expect(body).toMatch(new RegExp(`<name>[^<]*${name.split(' ').pop()}</name>`))
   const trkpts = [...body.matchAll(/<trkpt lat="([\d.]+)" lon="([\d.]+)"/g)].map((m) => [
     Number(m[1]),
     Number(m[2]),
@@ -863,20 +871,20 @@ test.describe('GPX files in the route forms', () => {
     expect(picker.isMultiple()).toBe(true)
     await picker.setFiles([files.north, files.empty, files.south])
 
-    // The empty file's failure is reported; the two others are in the list, named after their files.
+    // The empty file's failure is reported; the two others are in the list, named after their tracks.
     await expect(main.getByText('Erreur lors du chargement', { exact: true })).toBeVisible()
     await expect(importButton).toHaveText('Importer GPX')
     await expect(importButton).toBeEnabled()
-    await expect(routeCard(main, 'boucle-nord')).toBeVisible()
-    await expect(routeCard(main, 'boucle-sud')).toBeVisible()
+    await expect(routeCard(main, 'Boucle nord')).toBeVisible()
+    await expect(routeCard(main, 'Boucle sud')).toBeVisible()
     await expect(main.getByText('2 parcours', { exact: true })).toBeVisible()
     const { routes } = await listRoutes(owner, team.slug)
-    expect(routes.map((r) => r.name).sort()).toEqual(['boucle-nord', 'boucle-sud'])
+    expect(routes.map((r) => r.name).sort()).toEqual(['Boucle nord', 'Boucle sud'])
     // Imported with the team's visibility and the default surface.
     expect(routes.every((r) => r.visibility === team.visibility && r.surfaceType === 'ROAD')).toBe(
       true
     )
-    const north = routes.find((r) => r.name === 'boucle-nord')!
+    const north = routes.find((r) => r.name === 'Boucle nord')!
     expect(north.distance).toBeGreaterThan(1_900)
     expect(north.distance).toBeLessThan(2_100)
   })
@@ -916,7 +924,7 @@ test.describe('GPX files in the route forms', () => {
     const submit = main.getByRole('button', { name: 'Créer le parcours' })
     await hydrated(submit)
     await main.locator('input[type="file"][accept=".gpx"]').setInputFiles(upper)
-    await expect(main.getByRole('textbox', { name: 'Nom du parcours' })).toHaveValue('BOUCLE')
+    await expect(main.getByRole('textbox', { name: 'Nom du parcours' })).toHaveValue('Boucle')
     await expect(main.getByRole('button', { name: 'Fichier GPX' })).toHaveText('BOUCLE.GPX', {
       timeout: 5_000,
     })

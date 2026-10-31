@@ -1072,8 +1072,8 @@ test.describe('a route from the ride editor', () => {
       buffer: Buffer.from(gpxOf(routeName, windingTrack(80))),
     })
     const nameInput = modal.getByRole('textbox', { name: 'Nom du parcours' })
-    await expect(nameInput).toHaveValue('boucle-neuve')
-    await nameInput.fill(routeName)
+    // Named after the file's track, which carries the route's name
+    await expect(nameInput).toHaveValue(routeName)
     const created = page.waitForResponse(
       (r) =>
         r.request().method() === 'POST' &&

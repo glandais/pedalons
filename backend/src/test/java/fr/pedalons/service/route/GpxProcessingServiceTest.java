@@ -242,6 +242,52 @@ class GpxProcessingServiceTest extends AbstractBaseTest {
     }
   }
 
+  /**
+   * A downloaded file is named after the route — file name and {@code <name>} — not {@code
+   * filtered.gpx} nor the {@code noname} placeholder of a file that carried no name; a track the
+   * file named keeps its own name.
+   */
+  @Test
+  void createTracks_namesTheDownloadedFilesAndTracksAfterTheRoute() throws Exception {
+    GpxDocument gpx =
+        io.github.glandais.engine.gpx.GpxParserJvm.parse(
+            """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <gpx version="1.1" creator="test" xmlns="http://www.topografix.com/GPX/1/1">
+              <trk><name>Aller</name><trkseg>
+                <trkpt lat="45.0" lon="6.0"/><trkpt lat="45.01" lon="6.01"/>
+              </trkseg></trk>
+              <trk><trkseg>
+                <trkpt lat="45.01" lon="6.01"/><trkpt lat="45.0" lon="6.0"/>
+              </trkseg></trk>
+            </gpx>
+            """);
+    route.setName("Boucle du lac");
+    context.setUserForTest(user);
+    gpxProcessingService.createTracks(route, gpx);
+
+    String slug = route.getSlug();
+    for (Asset asset : route.getAssets()) {
+      switch (asset.getType()) {
+        case ROUTE_ORIGINAL_GPX, ROUTE_FILTERED_GPX ->
+            assertEquals(slug + ".gpx", asset.getFileName());
+        case ROUTE_FIT -> assertEquals(slug + ".fit", asset.getFileName());
+        default -> {}
+      }
+    }
+    try (InputStream is = gpxProcessingService.getFilteredGpxContent(route)) {
+      GpxDocument filtered =
+          io.github.glandais.engine.gpx.GpxParserJvm.parse(
+              new String(is.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8));
+      assertEquals("Boucle du lac", filtered.getName());
+      assertEquals(
+          List.of("Aller", "Boucle du lac"),
+          filtered.getTracks().stream()
+              .map(io.github.glandais.engine.gpx.GpxTrack::getName)
+              .toList());
+    }
+  }
+
   // ==================== Create Tracks - Multiple Tracks ====================
 
   @Test

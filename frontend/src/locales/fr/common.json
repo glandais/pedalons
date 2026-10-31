@@ -2034,6 +2034,7 @@
   "routes.create.form.gpxFile": "Fichier GPX",
   "routes.create.form.gpxFileHint": "Format .gpx uniquement",
   "routes.create.form.name": "Nom du parcours",
+  "routes.create.form.nameSuggestions": "Noms trouvés :",
   "routes.create.form.plannerLabel": "Tracer le parcours sur la carte",
   "routes.create.form.pointCount_one": "Tracé de {{count}} point",
   "routes.create.form.pointCount_many": "Tracé de {{count}} points",
