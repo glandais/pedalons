@@ -7,6 +7,7 @@ import '../../../../core/pdl/pdl.dart';
 import '../../../../core/theme/enum_colors.dart';
 import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
+import '../../../routes/presentation/widgets/route_color_mode_switch.dart';
 import '../../domain/ride_weather_map.dart';
 import 'ride_weather_map_markers.dart';
 
@@ -29,32 +30,27 @@ List<List<List<double>>> routeLinesOf(RouteDetailDto route) =>
     ];
 
 /// Les couleurs du vent sur [route] pour [leg] (`PdlMapTrack.segmentColors`),
-/// **mémorisées par (leg, parcours, couleur de repli)** : sur un parcours de
+/// **mémorisées par (leg, parcours)** : sur un parcours de
 /// plusieurs milliers de sommets, les recalculer à chaque `build` coûterait
 /// une recherche par segment pour un résultat identique — et
 /// `PdlMapTrack.==` compare la liste élément par élément.
 ///
 /// La mémoire s'accroche au leg (même objet tant que le provider de la météo
 /// le garde) et part avec lui ; deux étapes d'un voyage qui roulent le même
-/// parcours ont chacune la leur. Un tronçon sans vent connu garde
-/// [fallback], le trait du tracé — **jamais le gris**, qui dit « travers ».
-List<Color> weatherTrackColors(
-  RouteDetailDto route,
-  WeatherLegDto leg,
-  Color fallback,
-) {
+/// parcours ont chacune la leur. Un tronçon sans vent connu prend le bleu
+/// neutre de la pente ([slopeNeutral], le `NEUTRAL_COLOR` du site) **partout**
+/// — groupe, sortie solo, étape, voyage (ledger `MOB-105`) : ni la couleur
+/// d'un groupe ou d'une étape, qui pourrait se lire comme un vent, ni le gris,
+/// qui dit « travers ».
+List<Color> weatherTrackColors(RouteDetailDto route, WeatherLegDto leg) {
   final _WindColors? memo = _windMemo[leg];
-  if (memo != null &&
-      identical(memo.route, route) &&
-      memo.fallback == fallback) {
-    return memo.colors;
-  }
+  if (memo != null && identical(memo.route, route)) return memo.colors;
   final List<Color> colors = windSegmentColors<Color>(
     routeLinesOf(route),
     leg.segments,
-    (RelativeWind? wind) => wind?.stroke ?? fallback,
+    (RelativeWind? wind) => wind?.stroke ?? slopeNeutral,
   );
-  _windMemo[leg] = _WindColors(route, fallback, colors);
+  _windMemo[leg] = _WindColors(route, colors);
   return colors;
 }
 
@@ -100,10 +96,9 @@ final Expando<_WeatherPoints> _pointsMemo = Expando<_WeatherPoints>(
 
 /// Une entrée de la mémoire des couleurs du vent d'un leg.
 class _WindColors {
-  const _WindColors(this.route, this.fallback, this.colors);
+  const _WindColors(this.route, this.colors);
 
   final RouteDetailDto route;
-  final Color fallback;
   final List<Color> colors;
 }
 
@@ -115,10 +110,14 @@ class _WeatherPoints {
   final List<LngLat?> points;
 }
 
-/// La puce « Météo » sous une carte encastrée : celle-ci ne se manipule pas,
-/// la bascule ne peut donc pas vivre dans la vue native (ledger `MOB-91`). En
-/// plein écran, la même bascule est dans la feuille des couches
-/// ([weatherMapModeSwitch]).
+/// La puce « Météo » sous une carte aux couleurs de ses couches — la carte
+/// d'ensemble d'un voyage, celle d'une sortie solo dont le groupe roule un
+/// autre parcours que la sortie : celle-ci ne se manipule pas, la bascule ne
+/// peut donc pas vivre dans la vue native (ledger `MOB-91`). En plein écran,
+/// la même bascule est dans la feuille des couches ([weatherMapModeSwitch]).
+/// Une carte colorée comme un parcours — groupe, sortie solo à un parcours,
+/// étape — a l'interrupteur Pente | Revêtement | Météo à la place
+/// (`RouteColorModeSwitch`, ledger `MOB-105`).
 class WeatherMapChip extends StatelessWidget {
   const WeatherMapChip({
     super.key,
@@ -156,7 +155,7 @@ class WeatherMapChip extends StatelessWidget {
 }
 
 /// L'interrupteur « Vent sur le tracé » de la feuille des couches du plein
-/// écran, à côté de l'ombrage.
+/// écran, à côté de l'ombrage, sur les cartes de [WeatherMapChip].
 PdlMapHeroSwitch weatherMapModeSwitch({
   required bool value,
   required ValueChanged<bool> onChanged,
@@ -168,9 +167,9 @@ PdlMapHeroSwitch weatherMapModeSwitch({
 );
 
 /// La légende posée en bas à gauche d'une carte, dans le `foreground` de
-/// `PdlMapHero` : elle vit dans la coquille et non dans les `overlays` de la
-/// carte, qui n'apparaissent qu'une fois la vue native prête — la légende se
-/// lit sans elle. Le coin droit reste au crédit ⓘ des tuiles.
+/// `PdlMapHero` — [routeMapBottomLayer] sans interrupteur : la carte
+/// d'ensemble d'un voyage, à une couleur par étape, n'a que « Météo » à
+/// basculer, dans la feuille des couches.
 ///
 /// [passTouches] : sur une vignette qui s'ouvre au toucher, la légende ne
 /// garde pas le doigt pour elle.
@@ -178,18 +177,8 @@ Widget weatherMapLegendLayer({
   required bool fullscreen,
   required Widget legend,
   bool passTouches = false,
-}) => Positioned(
-  left: PdlSpacing.sectionTightV,
-  right: PdlMetrics.tapTarget + PdlSpacing.sectionTightV,
-  bottom: PdlSpacing.sectionTightV,
-  child: SafeArea(
-    top: false,
-    left: fullscreen,
-    right: false,
-    bottom: fullscreen,
-    child: Align(
-      alignment: Alignment.bottomLeft,
-      child: IgnorePointer(ignoring: passTouches, child: legend),
-    ),
-  ),
-);
+}) => routeMapBottomLayer(
+  fullscreen: fullscreen,
+  legend: legend,
+  passTouches: passTouches,
+)!;

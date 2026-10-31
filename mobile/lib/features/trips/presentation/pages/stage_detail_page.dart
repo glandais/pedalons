@@ -28,6 +28,9 @@ import '../../domain/trip_weather_map.dart';
 import '../../../rides/presentation/widgets/ride_weather_map_markers.dart';
 import '../../../rides/presentation/widgets/ride_wind_map_legend.dart';
 import '../../../rides/presentation/widgets/weather_map_layer.dart';
+import '../../../routes/domain/route_color_mode.dart';
+import '../../../routes/domain/track_surfaces.dart';
+import '../../../routes/presentation/widgets/route_color_mode_switch.dart';
 import '../../../routes/presentation/widgets/route_map.dart';
 import '../widgets/stage_weather_card.dart';
 import '../../../feedback/presentation/report_problem_button.dart';
@@ -98,9 +101,10 @@ class _StageDetailContent extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final String? routeSlug = stage.route?.slug;
     final bool? isMember = ref.watch(teamMembershipProvider(trip.team.slug));
-    // Le mode « Météo » de la carte de l'étape (ledger `MOB-94`), partagé
+    // Le mode de la carte de l'étape (ledgers `MOB-94`, `MOB-105`), partagé
     // avec la carte d'ensemble du voyage : gardé en vie tant que la page est
-    // montée, éteint quand l'étape perd sa prévision.
+    // montée, ramené de « Météo » sur la pente quand l'étape perd sa
+    // prévision.
     listenTripMapWindMode(
       ref,
       tripKey,
@@ -160,21 +164,15 @@ class _StageDetailContent extends ConsumerWidget {
                   teamSlug: trip.team.slug,
                   routeSlug: routeSlug,
                 ),
-                mapLayer: _weatherLayer,
-                belowMap: showsWind
-                    ? WeatherMapChip(
-                        chipKey: keys.trip.stageWindMapChip,
-                        inset: false,
-                        selected: ref.watch(tripMapWindModeProvider(tripKey)),
-                        onChanged: (bool on) =>
-                            ref
-                                    .read(
-                                      tripMapWindModeProvider(tripKey).notifier,
-                                    )
-                                    .state =
-                                on,
-                      )
-                    : null,
+                mapLayer: _mapLayer,
+                // L'interrupteur unique Pente | Revêtement | Météo sous la
+                // carte (ledger `MOB-105`), partagé avec la carte d'ensemble.
+                colorBy: ref.watch(tripMapColorModeProvider(tripKey)),
+                onColorByChanged: (RouteColorBy v) =>
+                    ref.read(tripMapColorModeProvider(tripKey).notifier).state =
+                        v,
+                offersWind: showsWind,
+                colorBySwitchKey: keys.trip.stageMapColorBy,
               ),
             ),
           )
@@ -227,12 +225,18 @@ class _StageDetailContent extends ConsumerWidget {
     );
   }
 
-  // ── Le mode « Météo » de la carte ───────────────────────────────────────
-  /// Le vent de l'étape sur la carte de son parcours, comme l'Aperçu d'un
-  /// groupe : tracé coloré, légende et crédit ; pastilles et leur feuille en
-  /// plein écran seulement, à l'heure de la zone de l'étape. Relu au `build`
-  /// de chaque carte, plein écran compris (voir `RouteMapLayerBuilder`).
-  RouteMapLayer? _weatherLayer(
+  // ── Le mode de la carte ─────────────────────────────────────────────────
+  /// Ce que l'étape pose sur la carte de son parcours, relu au `build` de
+  /// chaque carte, plein écran compris (voir `RouteMapLayerBuilder`) :
+  ///
+  /// * le mode partagé avec la carte d'ensemble ([tripMapColorModeProvider],
+  ///   ledger `MOB-105`), relu ici pour que le plein écran le suive ;
+  /// * en plein écran, le même interrupteur Pente | Revêtement | Météo que
+  ///   sous la carte encastrée, posé en bas de la carte ;
+  /// * en mode « Météo », le vent de l'étape comme dans l'Aperçu d'un groupe
+  ///   (ledger `MOB-94`) : tracé coloré, légende et crédit ; pastilles et leur
+  ///   feuille en plein écran seulement, à l'heure de la zone de l'étape.
+  RouteMapLayer? _mapLayer(
     BuildContext context,
     WidgetRef ref,
     RouteDetailDto route, {
@@ -240,47 +244,61 @@ class _StageDetailContent extends ConsumerWidget {
   }) {
     final TripWeatherDto? weather = watchTripMapWeather(ref, tripKey, trip);
     final WeatherLegDto? leg = tripMapWindLegs(trip, weather)[stage.id];
-    if (leg == null) return null;
-    final bool on = ref.watch(tripMapWindModeProvider(tripKey));
-    final List<PdlMapHeroSwitch> switches = fullscreen
-        ? <PdlMapHeroSwitch>[
-            weatherMapModeSwitch(
-              value: on,
-              onChanged: (bool v) =>
-                  ref.read(tripMapWindModeProvider(tripKey).notifier).state = v,
-            ),
-          ]
-        : const <PdlMapHeroSwitch>[];
-    if (!on) return RouteMapLayer(switches: switches);
+    final List<RouteColorBy> modes = routeColorModes(
+      surfaces: hasTrackSurfaces(route.tracks),
+      wind: leg != null,
+    );
+    final RouteColorBy colorBy = resolveRouteColorBy(
+      ref.watch(tripMapColorModeProvider(tripKey)),
+      modes,
+    );
+    final WeatherLegDto? windLeg = colorBy == RouteColorBy.wind ? leg : null;
     final UnitSystem units = ref.watch(unitSystemProvider);
     return RouteMapLayer(
-      // Un tronçon sans vent connu garde le trait du parcours, jamais le
-      // gris du travers.
-      segmentColors: weatherTrackColors(route, leg, context.pdl.mapTrack),
-      markers: fullscreen
+      colorBy: colorBy,
+      // Un tronçon sans vent connu prend le bleu neutre, jamais le gris du
+      // travers.
+      segmentColors: windLeg == null
+          ? null
+          : weatherTrackColors(route, windLeg),
+      markers: fullscreen && windLeg != null
           ? weatherMarkersOnRoute(
               route,
-              leg,
+              windLeg,
               units: units,
               timezone: stage.timezone,
             )
           : const <PdlMapMarker>[],
-      onMarkerTapped: (BuildContext context, String id) => openWeatherMapMarker(
-        context,
-        id,
-        leg: leg,
-        units: units,
-        timezone: stage.timezone,
-      ),
-      foreground: weatherMapLegendLayer(
+      onMarkerTapped: windLeg == null
+          ? null
+          : (BuildContext context, String id) => openWeatherMapMarker(
+              context,
+              id,
+              leg: windLeg,
+              units: units,
+              timezone: stage.timezone,
+            ),
+      foreground: routeMapBottomLayer(
         fullscreen: fullscreen,
-        legend: RideWindMapLegend(
-          leg: leg,
-          units: units,
-          attribution: weather?.attribution,
-        ),
+        modeSwitch: fullscreen && modes.length > 1
+            ? RouteColorModeSwitch(
+                key: keys.routeDetail.fullscreenColorBy,
+                modes: modes,
+                value: colorBy,
+                overMap: true,
+                onChanged: (RouteColorBy v) =>
+                    ref.read(tripMapColorModeProvider(tripKey).notifier).state =
+                        v,
+              )
+            : null,
+        legend: windLeg == null
+            ? null
+            : RideWindMapLegend(
+                leg: windLeg,
+                units: units,
+                attribution: weather?.attribution,
+              ),
       ),
-      switches: switches,
     );
   }
 

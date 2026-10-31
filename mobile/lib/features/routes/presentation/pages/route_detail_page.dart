@@ -24,10 +24,13 @@ import '../../../moderation/presentation/moderation_menu.dart';
 import '../../../tags/presentation/content_tags.dart';
 import '../../providers/route_detail_provider.dart';
 import '../../domain/elevation_refresh.dart';
+import '../../domain/route_color_mode.dart';
+import '../../domain/track_slope_colors.dart';
 import '../../domain/track_surfaces.dart';
 import '../../providers/route_editor_providers.dart';
 import '../../providers/route_elevation_provider.dart';
 import '../widgets/route_climbs_section.dart';
+import '../widgets/route_color_mode_switch.dart';
 import '../widgets/route_cursor_controller.dart';
 import '../widgets/route_download_actions.dart';
 import '../widgets/route_manage_menu.dart';
@@ -80,7 +83,9 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
   double _detent = _kDetents[_kInitialDetent];
 
   /// Ce que la pente / le revêtement colorent (`MOB-81`) ; retombe sur la pente
-  /// si le revêtement disparaît au rechargement.
+  /// si le revêtement disparaît au rechargement. La fiche n'a pas de météo :
+  /// son interrupteur (`RouteColorModeSwitch`, ledger `MOB-105`) n'offre que
+  /// Pente | Revêtement.
   RouteColorBy _colorBy = RouteColorBy.grade;
 
   final TrackSurfaceBarColors _barColors = TrackSurfaceBarColors();
@@ -153,9 +158,7 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
   // ── Écran chargé ────────────────────────────────────────────────────────
   Widget _content(RouteDetailDto route) {
     final RouteCursorController cursor = _cursorFor(route);
-    final RouteColorBy colorBy = hasTrackSurfaces(route.tracks)
-        ? _colorBy
-        : RouteColorBy.grade;
+    final RouteColorBy colorBy = resolveRouteColorBy(_colorBy, _modes(route));
 
     return Scaffold(
       body: Stack(
@@ -353,6 +356,18 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             child: ContentTagRow(tags: route.tags),
           ),
+        // L'interrupteur de la carte, en tête de la feuille qui la borde : il
+        // colore le tracé et le profil juste dessous.
+        if (route.hasGeometry && _modes(route).length > 1)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: RouteColorModeSwitch(
+              key: keys.routeDetail.surfaceColorBy,
+              modes: _modes(route),
+              value: colorBy,
+              onChanged: (RouteColorBy v) => setState(() => _colorBy = v),
+            ),
+          ),
         if (route.hasGeometry)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -372,12 +387,7 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
                 trackSurfacesPending(route.tracks)))
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: RouteSurfaceSection(
-              tracks: route.tracks,
-              colorBy: colorBy,
-              onColorByChanged: (RouteColorBy v) =>
-                  setState(() => _colorBy = v),
-            ),
+            child: RouteSurfaceSection(tracks: route.tracks),
           ),
         if (route.hasGeometry && route.waypoints.isNotEmpty)
           Padding(
@@ -466,6 +476,10 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
     );
   }
 
+  /// Pente | Revêtement : la fiche parcours n'a pas de météo.
+  static List<RouteColorBy> _modes(RouteDetailDto route) =>
+      routeColorModes(surfaces: hasTrackSurfaces(route.tracks), wind: false);
+
   Widget _profile(
     RouteDetailDto route,
     RouteCursorController cursor,
@@ -474,6 +488,11 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
     final UnitSystem units = ref.watch(unitSystemProvider);
     final List<TrackSurface?>? bars = colorBy == RouteColorBy.surface
         ? ref.watch(routeSurfaceBarsProvider(_key)).value
+        : null;
+    // La pente des montées, barre par barre, comme la carte (ledger
+    // `MOB-105`).
+    final ClimbBars? climbs = bars == null
+        ? ref.watch(routeClimbBarsProvider(_key)).value
         : null;
 
     return ref
@@ -503,7 +522,7 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
                       // par Riverpod : le réticule bouge à chaque frame de
                       // glissement.
                       barColors: bars == null
-                          ? null
+                          ? climbs?.colors
                           : _barColors.of(bars, context.pdl),
                       cursorDistance: cursor.distance,
                       axisLabel: (double meters, {required bool isLast}) =>
@@ -518,8 +537,8 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
                         AppFormatters.formatAltitude(r.elevation, units),
                         if (bars != null)
                           ?trackSurfaceTip(samples, bars, r.distance)
-                        else if (r.grade != null)
-                          AppFormatters.formatGrade(r.grade!),
+                        else
+                          ?climbGradeTipLabel(samples, climbs, r),
                       ].join(' · '),
                     ),
                   ),

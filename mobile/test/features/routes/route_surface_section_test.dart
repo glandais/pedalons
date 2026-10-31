@@ -4,6 +4,7 @@ import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/keys.dart';
 import 'package:pedalons/features/routes/domain/track_surfaces.dart';
+import 'package:pedalons/features/routes/presentation/widgets/route_color_mode_switch.dart';
 import 'package:pedalons/features/routes/presentation/widgets/route_surface_section.dart';
 
 import '../../support/localization.dart';
@@ -38,19 +39,13 @@ void main() {
     WidgetTester tester,
     List<TrackDto> tracks, {
     Brightness brightness = Brightness.light,
-    RouteColorBy colorBy = RouteColorBy.grade,
-    ValueChanged<RouteColorBy>? onChanged,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
         theme: PedalonsTheme.build(brightness),
         home: Scaffold(
           body: SingleChildScrollView(
-            child: RouteSurfaceSection(
-              tracks: tracks,
-              colorBy: colorBy,
-              onColorByChanged: onChanged ?? (_) {},
-            ),
+            child: RouteSurfaceSection(tracks: tracks),
           ),
         ),
       ),
@@ -58,7 +53,7 @@ void main() {
   }
 
   for (final Brightness brightness in Brightness.values) {
-    testWidgets('prêt : bascule, barre, légende et attribution ($brightness)', (
+    testWidgets('prêt : barre, légende et attribution ($brightness)', (
       WidgetTester tester,
     ) async {
       await pump(tester, <TrackDto>[
@@ -66,10 +61,10 @@ void main() {
       ], brightness: brightness);
 
       expect(find.byKey(keys.routeDetail.surfaceSection), findsOneWidget);
-      expect(find.byKey(keys.routeDetail.surfaceColorBy), findsOneWidget);
+      // La bascule est sous la carte (ledger `MOB-105`), plus ici.
+      expect(find.byKey(keys.routeDetail.surfaceColorBy), findsNothing);
       expect(find.byKey(keys.routeDetail.surfaceBar), findsOneWidget);
-      expect(find.text('Pente'), findsOneWidget);
-      expect(find.text('Revêtement'), findsOneWidget);
+      expect(find.text('Pente'), findsNothing);
       expect(find.text('Asphalte 40 %'), findsOneWidget);
       expect(find.text('Compacté, gravier 60 %'), findsOneWidget);
       expect(find.text('Terre < 1 %'), findsOneWidget);
@@ -78,16 +73,79 @@ void main() {
     });
   }
 
-  testWidgets('toucher « Revêtement » appelle onColorByChanged', (
-    WidgetTester tester,
-  ) async {
-    RouteColorBy? chosen;
-    await pump(tester, <TrackDto>[
-      _track(spans: _spans),
-    ], onChanged: (RouteColorBy v) => chosen = v);
+  group('RouteColorModeSwitch', () {
+    Future<void> pumpSwitch(
+      WidgetTester tester,
+      List<RouteColorBy> modes, {
+      RouteColorBy value = RouteColorBy.grade,
+      ValueChanged<RouteColorBy>? onChanged,
+    }) => tester.pumpWidget(
+      MaterialApp(
+        theme: PedalonsTheme.build(Brightness.light),
+        home: Scaffold(
+          body: RouteColorModeSwitch(
+            modes: modes,
+            value: value,
+            onChanged: onChanged ?? (_) {},
+          ),
+        ),
+      ),
+    );
 
-    await tester.tap(find.text('Revêtement'));
-    expect(chosen, RouteColorBy.surface);
+    testWidgets('les seuls modes proposés, dans l\'ordre', (
+      WidgetTester tester,
+    ) async {
+      await pumpSwitch(tester, <RouteColorBy>[
+        RouteColorBy.grade,
+        RouteColorBy.surface,
+        RouteColorBy.wind,
+      ]);
+      expect(find.text('Pente'), findsOneWidget);
+      expect(find.text('Revêtement'), findsOneWidget);
+      expect(find.text('Météo'), findsOneWidget);
+
+      await pumpSwitch(tester, <RouteColorBy>[
+        RouteColorBy.grade,
+        RouteColorBy.wind,
+      ]);
+      expect(find.text('Revêtement'), findsNothing);
+      expect(find.byKey(keys.routeDetail.colorByMode('wind')), findsOneWidget);
+    });
+
+    testWidgets('la pente seule : rien à choisir, rien de rendu', (
+      WidgetTester tester,
+    ) async {
+      await pumpSwitch(tester, <RouteColorBy>[RouteColorBy.grade]);
+      expect(find.text('Pente'), findsNothing);
+    });
+
+    testWidgets('toucher « Météo » appelle onChanged', (
+      WidgetTester tester,
+    ) async {
+      RouteColorBy? chosen;
+      await pumpSwitch(tester, <RouteColorBy>[
+        RouteColorBy.grade,
+        RouteColorBy.wind,
+      ], onChanged: (RouteColorBy v) => chosen = v);
+      await tester.tap(find.text('Météo'));
+      expect(chosen, RouteColorBy.wind);
+    });
+
+    testWidgets('chaque segment garde la cible de 44 px', (
+      WidgetTester tester,
+    ) async {
+      await pumpSwitch(tester, <RouteColorBy>[
+        RouteColorBy.grade,
+        RouteColorBy.surface,
+        RouteColorBy.wind,
+      ]);
+      for (final String mode in <String>['grade', 'surface', 'wind']) {
+        expect(
+          tester.getSize(find.byKey(keys.routeDetail.colorByMode(mode))).height,
+          greaterThanOrEqualTo(44),
+        );
+      }
+    });
   });
 
   testWidgets('en cours : la seule ligne d\'attente', (

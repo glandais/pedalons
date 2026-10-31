@@ -10,6 +10,7 @@ import 'package:pedalons/core/config/config_provider.dart';
 import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
 import 'package:pedalons/core/pagination/pagination.dart';
+import 'package:pedalons/core/theme/enum_colors.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/features/participants/data/participant_repository.dart';
 import 'package:pedalons/features/participants/domain/participant_query.dart';
@@ -22,6 +23,8 @@ import 'package:pedalons/features/rides/providers/ride_detail_provider.dart';
 import 'package:pedalons/features/rides/providers/ride_group_selection_provider.dart';
 import 'package:pedalons/features/rides/providers/ride_weather_provider.dart';
 import 'package:pedalons/features/rides/providers/ride_scroll_target_provider.dart';
+import 'package:pedalons/features/routes/domain/track_surfaces.dart';
+import 'package:pedalons/features/routes/presentation/widgets/route_color_mode_switch.dart';
 import 'package:pedalons/features/teams/data/team_repository.dart';
 import 'package:pedalons/keys.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -370,18 +373,19 @@ void main() {
       expect(find.textContaining('°C'), findsNothing);
     });
 
-    testWidgets('une prévision perdue éteint le mode « Météo » de la carte', (
+    testWidgets('une prévision perdue ramène le mode « Météo » sur la pente', (
       WidgetTester tester,
     ) async {
       await open(tester, weather());
-      container.read(rideMapWindModeProvider(key).notifier).state = true;
+      container.read(rideMapColorModeProvider(key).notifier).state =
+          RouteColorBy.wind;
 
       repository.weather = fixtureWeather(status: 'UNAVAILABLE');
       container.invalidate(rideWeatherProvider(key));
       for (int i = 0; i < 6; i++) {
         await tester.pump(const Duration(milliseconds: 10));
       }
-      expect(container.read(rideMapWindModeProvider(key)), isFalse);
+      expect(container.read(rideMapColorModeProvider(key)), RouteColorBy.grade);
 
       // Revenue, la prévision ne rallume pas le mode toute seule.
       repository.weather = weather();
@@ -389,7 +393,7 @@ void main() {
       for (int i = 0; i < 6; i++) {
         await tester.pump(const Duration(milliseconds: 10));
       }
-      expect(container.read(rideMapWindModeProvider(key)), isFalse);
+      expect(container.read(rideMapColorModeProvider(key)), RouteColorBy.grade);
     });
 
     testWidgets('UNAVAILABLE : un état d\'erreur et « Réessayer »', (
@@ -574,16 +578,18 @@ void main() {
       overrides: mapOverrides,
     );
 
-    testWidgets('sans prévision chargée (leg nul) : pas de puce', (
+    testWidgets('sans prévision chargée (leg nul) : pas de Météo', (
       WidgetTester tester,
     ) async {
       await openOverview(tester, fixtureWeather());
 
       expect(find.byType(RideGroupsMap), findsOneWidget);
-      expect(find.byKey(keys.rideGroup.windMapChip), findsNothing);
+      expect(find.byKey(keys.routeDetail.colorByMode('wind')), findsNothing);
     });
 
-    testWidgets('NOT_YET_AVAILABLE : pas de puce', (WidgetTester tester) async {
+    testWidgets('NOT_YET_AVAILABLE : pas de Météo', (
+      WidgetTester tester,
+    ) async {
       await openOverview(
         tester,
         weather(
@@ -593,12 +599,12 @@ void main() {
       );
 
       expect(find.byType(RideGroupsMap), findsOneWidget);
-      expect(find.byKey(keys.rideGroup.windMapChip), findsNothing);
+      expect(find.byKey(keys.routeDetail.colorByMode('wind')), findsNothing);
     });
 
     for (final String status in <String>['OK', 'STALE']) {
       testWidgets(
-        '$status : la puce, éteinte par défaut ; un appui l\'allume',
+        '$status : l\'interrupteur, sur la pente par défaut ; Météo au toucher',
         (WidgetTester tester) async {
           await openOverview(
             tester,
@@ -608,18 +614,31 @@ void main() {
             ),
           );
 
-          final Finder chip = find.byKey(keys.rideGroup.windMapChip);
-          expect(chip, findsOneWidget);
-          // Aucun override du mode : son défaut, éteint.
-          expect(tester.widget<PdlChip>(chip).selected, isFalse);
-          expect(container.read(rideMapWindModeProvider(key)), isFalse);
+          final Finder toggle = find.byKey(keys.rideGroup.mapColorBy);
+          expect(toggle, findsOneWidget);
+          // Aucun override du mode : son défaut, la pente.
+          expect(
+            tester.widget<RouteColorModeSwitch>(toggle).value,
+            RouteColorBy.grade,
+          );
+          expect(
+            container.read(rideMapColorModeProvider(key)),
+            RouteColorBy.grade,
+          );
 
-          await tester.ensureVisible(chip);
-          await tester.tap(chip);
+          final Finder wind = find.byKey(keys.routeDetail.colorByMode('wind'));
+          await tester.ensureVisible(wind);
+          await tester.tap(wind);
           await tester.pump();
 
-          expect(container.read(rideMapWindModeProvider(key)), isTrue);
-          expect(tester.widget<PdlChip>(chip).selected, isTrue);
+          expect(
+            container.read(rideMapColorModeProvider(key)),
+            RouteColorBy.wind,
+          );
+          expect(
+            tester.widget<RouteColorModeSwitch>(toggle).value,
+            RouteColorBy.wind,
+          );
         },
       );
     }
@@ -711,9 +730,15 @@ void main() {
     PdlMap probe(WidgetTester tester) =>
         tester.widget<RideGroupsMapProbe>(find.byType(RideGroupsMapProbe)).map;
 
+    /// Le tracé porte-t-il le vent ? Hors Météo il se colore par la pente
+    /// (ledger `MOB-105`), jamais plus `null`.
+    bool windy(WidgetTester tester) =>
+        probe(tester).tracks.single.segmentColors!
+            .contains(RelativeWind.tail.stroke);
+
     for (final String status in <String>['OK', 'STALE']) {
       testWidgets('$status : la carte en tête, tracé coloré d\'office, sans '
-          'puce ni pastille', (WidgetTester tester) async {
+          'interrupteur ni pastille', (WidgetTester tester) async {
         await openWeather(
           tester,
           weather(
@@ -730,9 +755,12 @@ void main() {
         expect(probe(tester).markers, isEmpty);
         expect(find.byKey(keys.rideGroup.windMapLegend), findsOneWidget);
         expect(find.byKey(keys.rideGroup.windMapCredit), findsOneWidget);
-        expect(find.byKey(keys.rideGroup.windMapChip), findsNothing);
+        expect(find.byKey(keys.rideGroup.mapColorBy), findsNothing);
         // Le choix de l'Aperçu n'a pas bougé.
-        expect(container.read(rideMapWindModeProvider(key)), isFalse);
+        expect(
+          container.read(rideMapColorModeProvider(key)),
+          RouteColorBy.grade,
+        );
         expect(tester.takeException(), isNull);
       });
     }
@@ -817,7 +845,7 @@ void main() {
       await tester.tap(finish);
       await tester.pump();
       expect(probe(tester).cursor, isNull);
-      expect(container.read(rideMapWindModeProvider(key)), isFalse);
+      expect(container.read(rideMapColorModeProvider(key)), RouteColorBy.grade);
     });
 
     testWidgets('un toucher sur la carte ouvre le plein écran en mode Météo, '
@@ -846,11 +874,11 @@ void main() {
           .map;
       expect(fullMap.markers, isNotEmpty);
       expect(fullMap.cursor!.lat, closeTo(45, 1e-9));
-      expect(container.read(rideMapWindModeProvider(key)), isFalse);
+      expect(container.read(rideMapColorModeProvider(key)), RouteColorBy.grade);
     });
 
-    testWidgets('l\'Aperçu reste tel quel : mode éteint, puce, pas de toucher '
-        'plein écran', (WidgetTester tester) async {
+    testWidgets('l\'Aperçu reste tel quel : la pente, l\'interrupteur, pas de '
+        'toucher plein écran', (WidgetTester tester) async {
       await openWeather(tester, weather(), tab: RideGroupTab.overview);
 
       expect(tabMap(), findsNothing);
@@ -859,17 +887,17 @@ void main() {
       );
       expect(overview.forceWeatherMode, isFalse);
       expect(overview.cursorDistance, isNull);
-      expect(probe(tester).tracks.single.segmentColors, isNull);
-      expect(find.byKey(keys.rideGroup.windMapChip), findsOneWidget);
+      expect(windy(tester), isFalse);
+      expect(find.byKey(keys.rideGroup.mapColorBy), findsOneWidget);
       expect(find.byKey(PdlMapHero.tapTargetKey), findsNothing);
 
-      // La personne allume « Météo » dans l'Aperçu…
-      final Finder chip = find.byKey(keys.rideGroup.windMapChip);
+      // La personne choisit « Météo » dans l'Aperçu…
+      final Finder chip = find.byKey(keys.routeDetail.colorByMode('wind'));
       await tester.ensureVisible(chip);
       await tester.tap(chip);
       await tester.pump();
-      expect(container.read(rideMapWindModeProvider(key)), isTrue);
-      expect(probe(tester).tracks.single.segmentColors, isNotNull);
+      expect(container.read(rideMapColorModeProvider(key)), RouteColorBy.wind);
+      expect(windy(tester), isTrue);
 
       // … aller sur l'onglet Météo, où l'Aperçu est démonté et la carte
       // impose le mode sans lire ce choix, puis revenir ne le perd pas.
@@ -879,9 +907,14 @@ void main() {
       expect(find.byType(RideGroupsMap), findsOneWidget);
       await tester.tap(find.byKey(keys.rideGroup.tabOverview));
       await tester.pump();
-      expect(container.read(rideMapWindModeProvider(key)), isTrue);
-      expect(tester.widget<PdlChip>(chip).selected, isTrue);
-      expect(probe(tester).tracks.single.segmentColors, isNotNull);
+      expect(container.read(rideMapColorModeProvider(key)), RouteColorBy.wind);
+      expect(
+        tester
+            .widget<RouteColorModeSwitch>(find.byKey(keys.rideGroup.mapColorBy))
+            .value,
+        RouteColorBy.wind,
+      );
+      expect(windy(tester), isTrue);
       // Le profil remonté avec l'Aperçu finit ses cadres.
       await settle(tester);
     });

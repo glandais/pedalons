@@ -136,11 +136,26 @@ void main() {
   });
 
   group('slopeColor', () {
-    test('0 % est le vert de tête d\'échelle', () {
-      expectHsl(slopeColor(0), 85, 0.86, 0.62);
+    // L'échelle du site (`getColorFromGradient`) : la teinte descend de 85 à
+    // −105, enroulée en 255 (ledger `MOB-105`).
+    test('une pente nulle — hors montée — est le bleu neutre', () {
+      expect(slopeColor(0), slopeNeutral);
     });
 
-    test('18 % et au-delà saturent sur le violet', () {
+    test('une faible pente est le vert de tête d\'échelle', () {
+      expectHsl(slopeColor(0.01), 85, 0.86, 0.62);
+    });
+
+    test('vert → jaune → rouge, jamais par le cyan', () {
+      // 3 % : 85 − 190 × 3/18 = 53,3 → 53 (jaune-orangé).
+      expectHsl(slopeColor(3), 53, 0.86, 0.62);
+      // 8 % : 85 − 84,4 = 0,56 → 1 (rouge).
+      expectHsl(slopeColor(8), 1, 0.86, 0.62);
+      // 12 % : 85 − 126,7 = −41,7 → −42, enroulé en 318 (magenta).
+      expectHsl(slopeColor(12), 318, 0.86, 0.62);
+    });
+
+    test('18 % et au-delà saturent sur −105, enroulé en 255', () {
       expectHsl(slopeColor(18), 255, 0.86, 0.62);
       expectHsl(slopeColor(40), 255, 0.86, 0.62);
     });
@@ -149,9 +164,8 @@ void main() {
       expectHsl(slopeColor(-12), 85, 0.86, 0.62);
     });
 
-    test('la pente inconnue a sa propre teinte, hors de l\'échelle', () {
+    test('le neutre a sa propre teinte, hors de l\'échelle', () {
       expectHsl(slopeNeutral, 210, 0.86, 0.62);
-      expect(slopeNeutral, isNot(slopeColor(0)));
     });
   });
 

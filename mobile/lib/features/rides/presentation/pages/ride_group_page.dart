@@ -22,6 +22,7 @@ import '../../domain/ride_weather_map.dart';
 import '../../domain/solo_group.dart';
 import '../../providers/ride_detail_provider.dart';
 import '../../providers/ride_group_selection_provider.dart';
+import '../../../routes/domain/track_surfaces.dart';
 import '../../providers/ride_registration_controller.dart';
 import '../../providers/ride_scroll_target_provider.dart';
 import '../../providers/ride_weather_provider.dart';
@@ -197,8 +198,11 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
     // Écouté, sans reconstruire la page, pour la même raison : sur l'onglet
     // Météo, l'Aperçu est démonté et la carte y impose le mode sans lire ce
     // choix ; sans écouteur il serait libéré et l'Aperçu reviendrait sur
-    // « Pente » (ledger `MOB-91`).
-    ref.listen(rideMapWindModeProvider(key), (bool? _, bool _) {});
+    // « Pente » (ledgers `MOB-91`, `MOB-105`).
+    ref.listen(
+      rideMapColorModeProvider(key),
+      (RouteColorBy? _, RouteColorBy _) {},
+    );
     final RideRegistrationState registration = ref.watch(
       rideRegistrationProvider(key),
     );
@@ -284,9 +288,9 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
     final WeatherLegDto? leg = weather == null
         ? null
         : weatherLegOfGroup(weather.legs, group.id);
-    // Une prévision perdue au refetch éteint le mode « Météo » de la carte :
-    // revenue, elle ne recolore pas le tracé sans nouveau choix (ledger
-    // `MOB-91`, plan 2026-10-24-weather-on-map §4).
+    // Une prévision perdue au refetch ramène le mode « Météo » de la carte
+    // sur la pente : revenue, elle ne recolore pas le tracé sans nouveau
+    // choix (ledgers `MOB-91`, `MOB-105`, plan 2026-10-24-weather-on-map §4).
     if (!ride.isPast && !ride.isCancelled) {
       ref.listen(rideWeatherProvider(key), (
         _,
@@ -296,9 +300,7 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
         final WeatherLegDto? nextLeg = dto == null
             ? null
             : weatherLegOfGroup(dto.legs, group.id);
-        if (!showsWindOnMap(nextLeg)) {
-          ref.read(rideMapWindModeProvider(key).notifier).state = false;
-        }
+        if (!showsWindOnMap(nextLeg)) dropWindMode(ref, key);
       });
     }
 

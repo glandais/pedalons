@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pedalons/core/theme/pdl_tokens.dart';
+import 'package:pedalons/features/routes/domain/track_surfaces.dart';
 import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
@@ -49,6 +51,7 @@ void main() {
     WidgetTester tester,
     TrackDto track, {
     List<WaypointDto> waypoints = const <WaypointDto>[],
+    RouteColorBy colorBy = RouteColorBy.grade,
   }) async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
     final SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -67,12 +70,13 @@ void main() {
         ],
         child: MaterialApp(
           theme: PedalonsTheme.build(Brightness.light),
-          home: const Scaffold(
+          home: Scaffold(
             body: SingleChildScrollView(
               child: RideElevationSection(
                 teamSlug: 'n-peloton',
                 rideSlug: 'sortie',
                 routeSlug: 'col-de-la-croix',
+                colorBy: colorBy,
               ),
             ),
           ),
@@ -87,20 +91,32 @@ void main() {
   PdlElevationProfile profile(WidgetTester tester) =>
       tester.widget<PdlElevationProfile>(find.byType(PdlElevationProfile));
 
-  testWidgets('avec un revêtement, la bascule colore le profil', (
-    WidgetTester tester,
-  ) async {
+  testWidgets('le profil suit le mode choisi sous la carte, sans bascule à '
+      'lui', (WidgetTester tester) async {
     await pump(tester, _track(spans: _spans));
 
     expect(find.byKey(keys.routeDetail.surfaceSection), findsOneWidget);
-    expect(profile(tester).barColors, isNull);
+    expect(find.byKey(keys.routeDetail.surfaceColorBy), findsNothing);
+    // La pente des montées : aucune ici, tout au bleu neutre (ledger
+    // `MOB-105`).
+    expect(profile(tester).barColors, everyElement(slopeNeutral));
+  });
 
-    await tester.ensureVisible(find.text('Revêtement'));
-    await tester.tap(find.text('Revêtement'));
-    await tester.pump();
+  testWidgets('mode Revêtement : le revêtement sur le profil', (
+    WidgetTester tester,
+  ) async {
+    await pump(tester, _track(spans: _spans), colorBy: RouteColorBy.surface);
 
-    expect(profile(tester).barColors, isNotNull);
     expect(profile(tester).barColors, isNotEmpty);
+    expect(profile(tester).barColors, isNot(everyElement(slopeNeutral)));
+  });
+
+  testWidgets('mode Météo : le profil reste sur la pente', (
+    WidgetTester tester,
+  ) async {
+    await pump(tester, _track(spans: _spans), colorBy: RouteColorBy.wind);
+
+    expect(profile(tester).barColors, everyElement(slopeNeutral));
   });
 
   testWidgets('en cours de calcul, une ligne d\'attente et la pente', (
@@ -110,7 +126,7 @@ void main() {
 
     expect(find.byKey(keys.routeDetail.surfacePending), findsOneWidget);
     expect(find.byKey(keys.routeDetail.surfaceColorBy), findsNothing);
-    expect(profile(tester).barColors, isNull);
+    expect(profile(tester).barColors, everyElement(slopeNeutral));
   });
 
   testWidgets('sans revêtement, rien', (WidgetTester tester) async {

@@ -10,9 +10,12 @@ import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
 import 'package:pedalons/core/theme/enum_colors.dart';
 import 'package:pedalons/core/theme/pdl_icons.dart';
+import 'package:pedalons/core/theme/pdl_tokens.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/features/comments/data/comment_repository.dart';
 import 'package:pedalons/features/routes/data/route_repository.dart';
+import 'package:pedalons/features/routes/domain/track_surfaces.dart';
+import 'package:pedalons/features/routes/presentation/widgets/route_color_mode_switch.dart';
 import 'package:pedalons/features/routes/presentation/widgets/route_map.dart';
 import 'package:pedalons/features/routes/providers/route_detail_provider.dart';
 import 'package:pedalons/features/teams/data/team_repository.dart';
@@ -30,7 +33,8 @@ import 'trip_fixtures.dart';
 
 /// La carte du détail d'une étape en mode « Météo » (ledger `MOB-94`) : la
 /// carte de son parcours (`EmbeddedRouteSheet` → `RouteMap`), comme
-/// l'Aperçu d'un groupe — puce sous la carte, éteinte par défaut, tracé
+/// l'Aperçu d'un groupe — l'interrupteur Pente | Revêtement | Météo sous la
+/// carte (ledger `MOB-105`), sur la pente par défaut, tracé
 /// coloré, légende et crédit ; pastilles et feuille en plein écran
 /// seulement, à l'heure de la zone de l'étape ; retombée quand la prévision
 /// disparaît.
@@ -220,25 +224,38 @@ void main() {
 
   const TripKey key = TripKey(teamSlug: 'n-peloton', tripSlug: 'gtmc-bromance');
 
+  /// Le segment « Météo » de l'interrupteur unique.
+  Finder windSegment() => find.byKey(keys.routeDetail.colorByMode('wind'));
+
   PdlMap map(WidgetTester tester) =>
       tester.widget<RouteMapProbe>(find.byType(RouteMapProbe).last).map;
 
-  testWidgets('une prévision : la puce, éteinte par défaut ; allumée, le '
-      'tracé coloré, la légende et le crédit, sans pastille encastrée', (
-    WidgetTester tester,
-  ) async {
+  testWidgets('une prévision : l\'interrupteur, sur la pente par défaut ; en '
+      'Météo, le tracé coloré, la légende et le crédit, sans pastille '
+      'encastrée', (WidgetTester tester) async {
     final (_, ProviderContainer container) = await pump(tester);
 
-    final Finder chip = find.byKey(keys.trip.stageWindMapChip);
-    expect(chip, findsOneWidget);
-    expect(tester.widget<PdlChip>(chip).selected, isFalse);
+    final Finder toggle = find.byKey(keys.trip.stageMapColorBy);
+    expect(toggle, findsOneWidget);
+    expect(tester.widget<RouteColorModeSwitch>(toggle).modes, <RouteColorBy>[
+      RouteColorBy.grade,
+      RouteColorBy.wind,
+    ]);
+    expect(
+      tester.widget<RouteColorModeSwitch>(toggle).value,
+      RouteColorBy.grade,
+    );
+    final Finder chip = windSegment();
     expect(map(tester).kmMarkers, isNotEmpty);
     expect(find.byKey(keys.rideGroup.windMapLegend), findsNothing);
     final List<Color>? slope = map(tester).tracks.single.segmentColors;
 
+    // Pas de montée sur ce parcours plat : tout au bleu neutre.
+    expect(slope, everyElement(slopeNeutral));
+
     await tester.tap(chip);
     await tester.pump();
-    expect(container.read(tripMapWindModeProvider(key)), isTrue);
+    expect(container.read(tripMapColorModeProvider(key)), RouteColorBy.wind);
 
     final List<Color> colors = map(tester).tracks.single.segmentColors!;
     expect(colors, isNot(slope));
@@ -252,9 +269,10 @@ void main() {
   });
 
   testWidgets('plein écran : les pastilles, à l\'heure de la zone de l\'étape, '
-      'et la bascule dans la feuille', (WidgetTester tester) async {
+      'sans bascule dans la feuille', (WidgetTester tester) async {
     final (_, ProviderContainer container) = await pump(tester);
-    container.read(tripMapWindModeProvider(key).notifier).state = true;
+    container.read(tripMapColorModeProvider(key).notifier).state =
+        RouteColorBy.wind;
     await tester.pump();
 
     await tester.tap(find.byIcon(PdlIcons.fullscreen));
@@ -276,21 +294,68 @@ void main() {
         .pop();
     await tester.pumpAndSettle();
 
-    // La bascule vit dans la feuille des couches, et elle est vivante.
-    await tester.tap(find.byIcon(PdlIcons.layers).last);
-    await tester.pumpAndSettle();
-    await tester.tap(
+    // Le mode se choisit par l'interrupteur posé sur la carte (ledger
+    // `MOB-105`), pas dans la feuille des couches.
+    expect(
       find.byKey(const ValueKey<String>('pdlMapHeroSwitch_wind')),
+      findsNothing,
     );
-    await tester.pumpAndSettle();
-    expect(container.read(tripMapWindModeProvider(key)), isFalse);
+    expect(container.read(tripMapColorModeProvider(key)), RouteColorBy.wind);
   });
 
-  testWidgets('une prévision perdue au refetch éteint le mode', (
+  testWidgets('plein écran : le même interrupteur, sur le même état, aller et '
+      'retour', (WidgetTester tester) async {
+    final (_, ProviderContainer container) = await pump(tester);
+    container.read(tripMapColorModeProvider(key).notifier).state =
+        RouteColorBy.wind;
+    await tester.pump();
+
+    await tester.tap(find.byIcon(PdlIcons.fullscreen));
+    await tester.pumpAndSettle();
+
+    final Finder full = find.byKey(keys.routeDetail.fullscreenColorBy);
+    expect(full, findsOneWidget);
+    expect(tester.widget<RouteColorModeSwitch>(full).modes, <RouteColorBy>[
+      RouteColorBy.grade,
+      RouteColorBy.wind,
+    ]);
+    expect(tester.widget<RouteColorModeSwitch>(full).value, RouteColorBy.wind);
+    expect(find.byKey(keys.rideGroup.windMapLegend), findsOneWidget);
+
+    // Pente, choisie en plein écran : la carte du plein écran suit tout de
+    // suite — plus de vent, plus de pastilles, plus de légende.
+    await tester.tap(
+      find.descendant(
+        of: full,
+        matching: find.byKey(keys.routeDetail.colorByMode('grade')),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(container.read(tripMapColorModeProvider(key)), RouteColorBy.grade);
+    expect(tester.widget<RouteColorModeSwitch>(full).value, RouteColorBy.grade);
+    expect(map(tester).markers, isEmpty);
+    expect(map(tester).tracks.single.segmentColors, everyElement(slopeNeutral));
+    expect(find.byKey(keys.rideGroup.windMapLegend), findsNothing);
+
+    // Retour : la carte encastrée et son interrupteur ont suivi.
+    await tester.tap(find.byIcon(PdlIcons.fullscreenExit));
+    await tester.pumpAndSettle();
+    expect(find.byKey(keys.routeDetail.fullscreenColorBy), findsNothing);
+    expect(
+      tester
+          .widget<RouteColorModeSwitch>(find.byKey(keys.trip.stageMapColorBy))
+          .value,
+      RouteColorBy.grade,
+    );
+    expect(map(tester).tracks.single.segmentColors, everyElement(slopeNeutral));
+  });
+
+  testWidgets('une prévision perdue au refetch ramène le mode sur la pente', (
     WidgetTester tester,
   ) async {
     final (_Trips trips, ProviderContainer container) = await pump(tester);
-    container.read(tripMapWindModeProvider(key).notifier).state = true;
+    container.read(tripMapColorModeProvider(key).notifier).state =
+        RouteColorBy.wind;
     await tester.pump();
 
     trips.weather = weather(status: 'UNAVAILABLE');
@@ -298,10 +363,56 @@ void main() {
     for (int i = 0; i < 4; i++) {
       await tester.pump(const Duration(milliseconds: 10));
     }
-    expect(container.read(tripMapWindModeProvider(key)), isFalse);
-    expect(find.byKey(keys.trip.stageWindMapChip), findsNothing);
+    expect(container.read(tripMapColorModeProvider(key)), RouteColorBy.grade);
+    expect(windSegment(), findsNothing);
     expect(map(tester).tracks.single.segmentColors, isNot(isEmpty));
     expect(find.byKey(keys.rideGroup.windMapLegend), findsNothing);
+  });
+
+  testWidgets('une prévision perdue au refetch laisse un Revêtement choisi', (
+    WidgetTester tester,
+  ) async {
+    final (_Trips trips, ProviderContainer container) = await pump(tester);
+    container.read(tripMapColorModeProvider(key).notifier).state =
+        RouteColorBy.surface;
+    await tester.pump();
+
+    trips.weather = weather(status: 'UNAVAILABLE');
+    container.invalidate(tripWeatherProvider(key));
+    for (int i = 0; i < 4; i++) {
+      await tester.pump(const Duration(milliseconds: 10));
+    }
+    expect(container.read(tripMapColorModeProvider(key)), RouteColorBy.surface);
+  });
+
+  testWidgets('éteindre « Météo » ne ramène sur la pente que depuis Météo', (
+    WidgetTester tester,
+  ) async {
+    final ProviderContainer container = ProviderContainer();
+    addTearDown(container.dispose);
+    late WidgetRef widgetRef;
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: Consumer(
+          builder: (BuildContext context, WidgetRef ref, Widget? _) {
+            widgetRef = ref;
+            ref.watch(tripMapColorModeProvider(key));
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
+    );
+
+    container.read(tripMapColorModeProvider(key).notifier).state =
+        RouteColorBy.surface;
+    setTripMapWindMode(widgetRef, key, false);
+    expect(container.read(tripMapColorModeProvider(key)), RouteColorBy.surface);
+
+    setTripMapWindMode(widgetRef, key, true);
+    expect(container.read(tripMapColorModeProvider(key)), RouteColorBy.wind);
+    setTripMapWindMode(widgetRef, key, false);
+    expect(container.read(tripMapColorModeProvider(key)), RouteColorBy.grade);
   });
 
   testWidgets('une étape sans prévision qu\'on rafraîchit n\'éteint pas le '
@@ -320,39 +431,40 @@ void main() {
       ],
     );
     final (_, ProviderContainer container) = await pump(tester, dto: mixed());
-    container.read(tripMapWindModeProvider(key).notifier).state = true;
+    container.read(tripMapColorModeProvider(key).notifier).state =
+        RouteColorBy.wind;
     await tester.pump();
-    expect(find.byKey(keys.trip.stageWindMapChip), findsNothing);
+    expect(windSegment(), findsNothing);
 
     container.invalidate(tripWeatherProvider(key));
     for (int i = 0; i < 4; i++) {
       await tester.pump(const Duration(milliseconds: 10));
     }
-    expect(container.read(tripMapWindModeProvider(key)), isTrue);
+    expect(container.read(tripMapColorModeProvider(key)), RouteColorBy.wind);
   });
 
   for (final String status in <String>['OUT_OF_RANGE', 'NOT_YET_AVAILABLE']) {
-    testWidgets('$status : pas de puce, pas de mode', (
+    testWidgets('$status : pas de « Météo », même choisie', (
       WidgetTester tester,
     ) async {
       final (_, ProviderContainer container) = await pump(
         tester,
         dto: weather(status: status),
       );
-      container.read(tripMapWindModeProvider(key).notifier).state = true;
+      container.read(tripMapColorModeProvider(key).notifier).state =
+          RouteColorBy.wind;
       await tester.pump();
 
-      expect(find.byKey(keys.trip.stageWindMapChip), findsNothing);
+      expect(windSegment(), findsNothing);
       expect(find.byKey(keys.rideGroup.windMapLegend), findsNothing);
       expect(map(tester).kmMarkers, isNotEmpty);
     });
   }
 
-  testWidgets('voyage annulé : pas de puce, et la météo n\'est pas demandée', (
-    WidgetTester tester,
-  ) async {
+  testWidgets('voyage annulé : pas de « Météo », et la météo n\'est pas '
+      'demandée', (WidgetTester tester) async {
     final (_Trips trips, _) = await pump(tester, t: trip(status: 'CANCELLED'));
-    expect(find.byKey(keys.trip.stageWindMapChip), findsNothing);
+    expect(windSegment(), findsNothing);
     expect(trips.weatherReads, 0);
   });
 }

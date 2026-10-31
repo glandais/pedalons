@@ -9,11 +9,14 @@ import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
 import 'package:pedalons/core/theme/enum_colors.dart';
 import 'package:pedalons/core/theme/pdl_icons.dart';
+import 'package:pedalons/core/theme/pdl_tokens.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/features/rides/presentation/widgets/ride_groups_map.dart';
 import 'package:pedalons/features/rides/presentation/widgets/ride_weather_map_markers.dart';
 import 'package:pedalons/features/rides/providers/ride_detail_provider.dart';
 import 'package:pedalons/features/rides/providers/ride_group_selection_provider.dart';
+import 'package:pedalons/features/routes/domain/track_surfaces.dart';
+import 'package:pedalons/features/routes/presentation/widgets/route_color_mode_switch.dart';
 import 'package:pedalons/keys.dart';
 
 import '../../support/localization.dart';
@@ -21,7 +24,8 @@ import 'ride_fixtures.dart';
 
 /// Le vent sur la carte d'un groupe (ledger `MOB-91`) : la légende selon le
 /// statut du leg et le mode, les couleurs posées sur le tracé, et le leg
-/// transmis au plein écran.
+/// transmis au plein écran. Hors Météo, le tracé se colore comme un parcours
+/// — pente des montées, revêtement (ledger `MOB-105`).
 void main() {
   setUpAll(loadTestTranslations);
   setUp(() => RideGroupsMap.debugSkipNativeMap = true);
@@ -68,7 +72,7 @@ void main() {
   Future<ProviderContainer> pump(
     WidgetTester tester, {
     required WeatherLegDto? leg,
-    bool windMode = true,
+    RouteColorBy mode = RouteColorBy.wind,
     WeatherAttributionDto? attribution,
     bool forceWeatherMode = false,
     double? cursorDistance,
@@ -101,7 +105,7 @@ void main() {
               AsyncValue<RouteDetailDto>.data(geometry ?? route),
         ),
         unitSystemProvider.overrideWithValue(UnitSystem.metric),
-        rideMapWindModeProvider.overrideWith((Ref ref, RideKey k) => windMode),
+        rideMapColorModeProvider.overrideWith((Ref ref, RideKey k) => mode),
       ],
     );
     addTearDown(container.dispose);
@@ -169,13 +173,71 @@ void main() {
     expect(find.text('Heures estimées à 25\u00a0km/h'), findsOneWidget);
   });
 
-  testWidgets('mode éteint : trait habituel, pas de légende', (
+  testWidgets('mode Pente : la pente des montées, pas de légende', (
     WidgetTester tester,
   ) async {
-    await pump(tester, leg: fixtureLeg(), windMode: false);
+    await pump(tester, leg: fixtureLeg(), mode: RouteColorBy.grade);
 
     expect(find.byKey(keys.rideGroup.windMapLegend), findsNothing);
-    expect(track(tester).segmentColors, isNull);
+    // Aucune montée sur ce tracé plat : tout est au bleu neutre, plus jamais
+    // la couleur unie du groupe.
+    final List<Color> colors = track(tester).segmentColors!;
+    expect(colors, hasLength(30));
+    expect(colors, everyElement(slopeNeutral));
+  });
+
+  testWidgets('mode Pente : une montée prend la teinte de sa pente, le reste '
+      'le bleu neutre', (WidgetTester tester) async {
+    final RouteDetailDto climbing = route.copyWith(
+      tracks: <TrackDto>[
+        route.tracks.single.copyWith(
+          climbs: const <ClimbDto>[
+            ClimbDto(
+              startDistance: 5000,
+              endDistance: 10000,
+              elevationGain: 300,
+              averageGradient: 6,
+              maxGradient: 9,
+              parts: <ClimbPartDto>[],
+            ),
+          ],
+        ),
+      ],
+    );
+    await pump(
+      tester,
+      leg: fixtureLeg(),
+      mode: RouteColorBy.grade,
+      geometry: climbing,
+    );
+
+    final List<Color> colors = track(tester).segmentColors!;
+    expect(colors.sublist(0, 5), everyElement(slopeNeutral));
+    // Un segment se lit sur son sommet de départ, bornes incluses.
+    expect(colors.sublist(5, 11), everyElement(slopeColor(6)));
+    expect(colors.sublist(11), everyElement(slopeNeutral));
+  });
+
+  testWidgets('mode Revêtement sans revêtement connu : la pente', (
+    WidgetTester tester,
+  ) async {
+    await pump(tester, leg: fixtureLeg(), mode: RouteColorBy.surface);
+
+    expect(track(tester).segmentColors, everyElement(slopeNeutral));
+  });
+
+  testWidgets('un tronçon sans vent connu prend le bleu neutre', (
+    WidgetTester tester,
+  ) async {
+    final WeatherLegDto leg = fixtureLeg();
+    await pump(
+      tester,
+      leg: leg.copyWith(segments: <WindSegmentDto>[leg.segments.first]),
+    );
+
+    final List<Color> colors = track(tester).segmentColors!;
+    expect(colors.sublist(0, 15), everyElement(RelativeWind.head.stroke));
+    expect(colors.sublist(15), everyElement(slopeNeutral));
   });
 
   for (final String status in <String>[
@@ -184,21 +246,23 @@ void main() {
     'OUT_OF_RANGE',
     'UNAVAILABLE',
   ]) {
-    testWidgets('$status : rien, même le mode allumé', (
+    testWidgets('$status : pas de Météo, même choisie — la pente', (
       WidgetTester tester,
     ) async {
       await pump(tester, leg: fixtureLeg(status: status));
 
       expect(find.byKey(keys.rideGroup.windMapLegend), findsNothing);
-      expect(track(tester).segmentColors, isNull);
+      expect(track(tester).segmentColors, everyElement(slopeNeutral));
     });
   }
 
-  testWidgets('le plein écran reçoit le leg et propose la bascule', (
-    WidgetTester tester,
-  ) async {
+  testWidgets('le plein écran reçoit le leg et l\'interrupteur, sur le même '
+      'état, aller et retour', (WidgetTester tester) async {
     final WeatherLegDto leg = fixtureLeg();
     final ProviderContainer container = await pump(tester, leg: leg);
+    // Encastrée, la carte n'a pas d'interrupteur sur elle : il est sous elle,
+    // dans l'onglet.
+    expect(find.byKey(keys.routeDetail.fullscreenColorBy), findsNothing);
 
     await tester.tap(find.byIcon(PdlIcons.fullscreen));
     await tester.pumpAndSettle();
@@ -210,16 +274,56 @@ void main() {
     // La légende suit dans la page plein écran.
     expect(find.byKey(keys.rideGroup.windMapLegend), findsWidgets);
 
-    // La bascule vit dans la feuille des couches, comme l'ombrage.
-    await tester.tap(find.byIcon(PdlIcons.layers).last);
-    await tester.pumpAndSettle();
-    final Finder row = find.byKey(
-      const ValueKey<String>('pdlMapHeroSwitch_wind'),
+    // L'interrupteur du plein écran (ledger `MOB-105`), pas une bascule de la
+    // feuille des couches — ici, sans fonds ni ombrage, pas de feuille.
+    expect(find.byIcon(PdlIcons.layers), findsNothing);
+    expect(
+      find.byKey(const ValueKey<String>('pdlMapHeroSwitch_wind')),
+      findsNothing,
     );
-    expect(row, findsOneWidget);
-    await tester.tap(row);
+    final Finder toggle = find.byKey(keys.routeDetail.fullscreenColorBy);
+    expect(toggle, findsOneWidget);
+    expect(
+      find.descendant(of: find.byWidget(full), matching: toggle),
+      findsOneWidget,
+    );
+    expect(tester.widget<RouteColorModeSwitch>(toggle).modes, <RouteColorBy>[
+      RouteColorBy.grade,
+      RouteColorBy.wind,
+    ]);
+    expect(
+      tester.widget<RouteColorModeSwitch>(toggle).value,
+      RouteColorBy.wind,
+    );
+
+    // Pente, choisie en plein écran : l'état partagé change, la carte du
+    // plein écran suit.
+    await tester.tap(
+      find.descendant(
+        of: toggle,
+        matching: find.byKey(keys.routeDetail.colorByMode('grade')),
+      ),
+    );
     await tester.pumpAndSettle();
-    expect(container.read(rideMapWindModeProvider(key)), isFalse);
+    expect(container.read(rideMapColorModeProvider(key)), RouteColorBy.grade);
+    expect(map(tester).markers, isEmpty);
+    expect(map(tester).tracks.single.segmentColors, everyElement(slopeNeutral));
+
+    // Retour : la carte encastrée aussi.
+    await tester.tap(find.byIcon(PdlIcons.fullscreenExit));
+    await tester.pumpAndSettle();
+    expect(find.byKey(keys.routeDetail.fullscreenColorBy), findsNothing);
+    expect(track(tester).segmentColors, everyElement(slopeNeutral));
+    expect(find.byKey(keys.rideGroup.windMapLegend), findsNothing);
+  });
+
+  testWidgets('plein écran sans prévision ni revêtement : rien à choisir, pas '
+      'd\'interrupteur', (WidgetTester tester) async {
+    await pump(tester, leg: null, mode: RouteColorBy.grade);
+    await tester.tap(find.byIcon(PdlIcons.fullscreen));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(keys.routeDetail.fullscreenColorBy), findsNothing);
   });
 
   // ── Palier 2 (ledger `MOB-92`) ─────────────────────────────────────────
@@ -331,7 +435,7 @@ void main() {
   testWidgets('plein écran, mode éteint : aucune pastille', (
     WidgetTester tester,
   ) async {
-    await pump(tester, leg: fixtureLeg(), windMode: false);
+    await pump(tester, leg: fixtureLeg(), mode: RouteColorBy.grade);
     await tester.tap(find.byIcon(PdlIcons.fullscreen));
     await tester.pumpAndSettle();
 
@@ -340,12 +444,12 @@ void main() {
 
   // ── Palier 3 (ledger `MOB-93`) : la carte de l'onglet Météo ─────────────
 
-  testWidgets('mode imposé : tracé coloré même le choix de l\'Aperçu éteint, '
-      'qui reste éteint', (WidgetTester tester) async {
+  testWidgets('mode imposé : tracé coloré même l\'Aperçu sur la pente, '
+      'qui y reste', (WidgetTester tester) async {
     final ProviderContainer container = await pump(
       tester,
       leg: fixtureLeg(),
-      windMode: false,
+      mode: RouteColorBy.grade,
       forceWeatherMode: true,
       attribution: openMeteo,
     );
@@ -357,10 +461,10 @@ void main() {
     expect(find.byKey(keys.rideGroup.windMapCredit), findsOneWidget);
     // Encastrée : toujours aucune pastille.
     expect(map(tester).markers, isEmpty);
-    expect(container.read(rideMapWindModeProvider(key)), isFalse);
+    expect(container.read(rideMapColorModeProvider(key)), RouteColorBy.grade);
   });
 
-  testWidgets('mode imposé sans prévision : le trait habituel', (
+  testWidgets('mode imposé sans prévision : la pente', (
     WidgetTester tester,
   ) async {
     await pump(
@@ -369,7 +473,7 @@ void main() {
       forceWeatherMode: true,
     );
 
-    expect(track(tester).segmentColors, isNull);
+    expect(track(tester).segmentColors, everyElement(slopeNeutral));
     expect(find.byKey(keys.rideGroup.windMapLegend), findsNothing);
   });
 
@@ -380,7 +484,7 @@ void main() {
     final ProviderContainer container = await pump(
       tester,
       leg: fixtureLeg(),
-      windMode: false,
+      mode: RouteColorBy.grade,
       forceWeatherMode: true,
       cursorDistance: 15000,
     );
@@ -400,7 +504,9 @@ void main() {
       find.byKey(const ValueKey<String>('pdlMapHeroSwitch_wind')),
       findsNothing,
     );
-    expect(container.read(rideMapWindModeProvider(key)), isFalse);
+    // L'onglet Météo reste en Météo : pas d'interrupteur en plein écran.
+    expect(find.byKey(keys.routeDetail.fullscreenColorBy), findsNothing);
+    expect(container.read(rideMapColorModeProvider(key)), RouteColorBy.grade);
   });
 
   testWidgets('la légende de la vignette ne retient pas le toucher', (

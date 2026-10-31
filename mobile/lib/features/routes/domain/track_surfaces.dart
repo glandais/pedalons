@@ -14,8 +14,11 @@ import '../../../core/theme/pdl_colors.dart';
 /// mesure `M` des coordonnées G3DM repart de zéro sur chaque piste : un
 /// segment se lit à son milieu sur `M`, sans passer par le [PolylineIndex].
 
-/// Ce que la pente / le revêtement colorent sur la fiche.
-enum RouteColorBy { grade, surface }
+/// Ce qui colore le tracé d'un parcours — et son profil, qui ne connaît que
+/// la pente et le revêtement (ledger `MOB-105`) : la pente des montées, le
+/// revêtement, ou le vent relatif d'un leg météo (mode « Météo »). Voir
+/// `route_color_mode.dart` pour les modes proposés et le repli.
+enum RouteColorBy { grade, surface, wind }
 
 /// L'ordre de la légende, celui du site (`TRACK_SURFACES`).
 const List<TrackSurface> kTrackSurfaceOrder = <TrackSurface>[
@@ -167,11 +170,33 @@ List<TrackSurfaceShare> surfaceShares(List<TrackDto> tracks) {
 List<TrackSurface?> barSurfaces(
   ElevationSamples samples,
   List<TrackDto> tracks,
-) {
-  // La classe du segment `j → j+1` de l'index, `null` pour un pont. Les lignes
+) => barDominant<TrackSurface>(
+  samples,
+  tracks,
+  (TrackDto t, List<List<double>> coords) =>
+      _lineSegments(_readySpans(t), coords),
+  order: kTrackSurfaceOrder,
+);
+
+/// La valeur de chaque barre du profil : celle des segments qu'elle couvre qui
+/// totalise la plus grande longueur, sur les mêmes sommets que
+/// `elevationPointsFromLines` ; le pont entre deux pistes ne compte pas.
+/// `null` d'une barre sans segment couvert.
+///
+/// [segmentsOf] rend une valeur par segment des coordonnées d'une piste,
+/// coordonnées sans longitude/latitude déjà écartées. Une égalité se tranche
+/// par [order] quand il est donné, sinon par la première valeur rencontrée.
+/// Sert au revêtement ([barSurfaces]) et aux montées (`climbBars`).
+List<T?> barDominant<T extends Object>(
+  ElevationSamples samples,
+  List<TrackDto> tracks,
+  List<T> Function(TrackDto track, List<List<double>> coords) segmentsOf, {
+  List<T>? order,
+}) {
+  // La valeur du segment `j → j+1` de l'index, `null` pour un pont. Les lignes
   // vides et les coordonnées sans longitude/latitude sont écartées comme le
   // fait `PolylineIndex.fromLineStrings`.
-  final List<TrackSurface?> segments = <TrackSurface?>[];
+  final List<T?> segments = <T?>[];
   bool first = true;
   for (final TrackDto t in tracks) {
     final List<List<double>> coords = <List<double>>[
@@ -181,14 +206,14 @@ List<TrackSurface?> barSurfaces(
     if (coords.isEmpty) continue;
     if (!first) segments.add(null);
     first = false;
-    segments.addAll(_lineSegments(_readySpans(t), coords));
+    segments.addAll(segmentsOf(t, coords));
   }
 
   final List<ElevationPoint> points = samples.points;
-  final List<TrackSurface?> result = <TrackSurface?>[];
+  final List<T?> result = <T?>[];
   int cursor = 0;
   for (final ElevationBar bar in samples.bars) {
-    final Map<TrackSurface, double> weights = <TrackSurface, double>{};
+    final Map<T, double> weights = <T, double>{};
     int j = cursor;
     while (j < points.length - 1 && j < segments.length) {
       final double segStart = points[j].distance;
@@ -197,7 +222,7 @@ List<TrackSurface?> barSurfaces(
       final double overlap =
           (segEnd < bar.end ? segEnd : bar.end) -
           (segStart > bar.start ? segStart : bar.start);
-      final TrackSurface? s = segments[j];
+      final T? s = segments[j];
       if (overlap > 0 && s != null) {
         weights[s] = (weights[s] ?? 0) + overlap;
       }
@@ -209,9 +234,9 @@ List<TrackSurface?> barSurfaces(
       }
     }
 
-    TrackSurface? best;
+    T? best;
     double bestWeight = 0;
-    for (final TrackSurface s in kTrackSurfaceOrder) {
+    for (final T s in order ?? weights.keys) {
       final double w = weights[s] ?? 0;
       if (w > bestWeight) {
         best = s;

@@ -55,10 +55,20 @@ class RouteDetailKeys {
   final title = const _RouteDetailKey('title');
 
   /// Le revêtement le long du parcours (ledger `MOB-81`) : la section, la
-  /// bascule Pente / Revêtement, la ligne « en cours », la barre de répartition
+  /// bascule Pente / Revêtement de la fiche, la ligne « en cours », la barre de répartition
   /// et l'attribution OpenStreetMap.
   final surfaceSection = const _RouteDetailKey('surfaceSection');
   final surfaceColorBy = const _RouteDetailKey('surfaceColorBy');
+
+  /// Un segment de l'interrupteur Pente | Revêtement | Météo d'une carte de
+  /// parcours (ledger `MOB-105`), par le nom du mode : `grade`, `surface`,
+  /// `wind`.
+  ValueKey<String> colorByMode(String mode) => _RouteDetailKey('colorBy_$mode');
+
+  /// Le même interrupteur, posé sur la carte d'un groupe, d'une sortie solo
+  /// ou d'une étape **en plein écran** (ledger `MOB-105`) : il partage l'état
+  /// de celui de la carte encastrée.
+  final fullscreenColorBy = const _RouteDetailKey('fullscreenColorBy');
   final surfacePending = const _RouteDetailKey('surfacePending');
   final surfaceBar = const _RouteDetailKey('surfaceBar');
   final surfaceAttribution = const _RouteDetailKey('surfaceAttribution');

@@ -9,8 +9,10 @@ import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
 import 'package:pedalons/core/theme/enum_colors.dart';
 import 'package:pedalons/core/theme/pdl_icons.dart';
+import 'package:pedalons/core/theme/pdl_tokens.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/features/routes/data/route_repository.dart';
+import 'package:pedalons/features/routes/domain/track_surfaces.dart';
 import 'package:pedalons/features/trips/domain/trip_weather_map.dart';
 import 'package:pedalons/features/trips/presentation/widgets/trip_map.dart';
 import 'package:pedalons/features/trips/providers/trip_detail_provider.dart';
@@ -213,8 +215,9 @@ void main() {
         }),
         unitSystemProvider.overrideWithValue(UnitSystem.metric),
         if (windMode != null)
-          tripMapWindModeProvider.overrideWith(
-            (Ref ref, TripKey k) => windMode,
+          tripMapColorModeProvider.overrideWith(
+            (Ref ref, TripKey k) =>
+                windMode ? RouteColorBy.wind : RouteColorBy.grade,
           ),
       ],
     );
@@ -267,7 +270,7 @@ void main() {
 
     await tester.tap(find.byKey(keys.trip.windMapChip));
     await tester.pump();
-    expect(container.read(tripMapWindModeProvider(key)), isTrue);
+    expect(container.read(tripMapColorModeProvider(key)), RouteColorBy.wind);
     expect(track(tester, 's1').segmentColors, isNotNull);
   });
 
@@ -324,8 +327,8 @@ void main() {
     expect(find.text('Passage vers 16:36'), findsOneWidget);
   });
 
-  testWidgets('une étape sans prévision garde sa couleur, et la légende dit '
-      'la seule étape comptée', (WidgetTester tester) async {
+  testWidgets('une étape sans prévision prend le bleu neutre, et la légende '
+      'dit la seule étape comptée', (WidgetTester tester) async {
     await pump(
       tester,
       trip: trip(),
@@ -335,6 +338,8 @@ void main() {
 
     expect(track(tester, 's1').segmentColors, isNotNull);
     expect(track(tester, 's2').segmentColors, isNull);
+    // Sa couleur d'étape se lirait comme un vent (ledger `MOB-105`).
+    expect(track(tester, 's2').color, slopeNeutral);
     // Aucune étape n'est sélectionnée : le vent garde pourtant l'opacité et
     // la largeur d'un tracé sélectionné, l'étape sans prévision non.
     expect(track(tester, 's1').emphasized, isTrue);

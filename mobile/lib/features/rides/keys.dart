@@ -14,9 +14,20 @@ class RideDetailKeys {
   /// La pastille de la carte des groupes, qui nomme le groupe sélectionné.
   final groupsMapPill = const _RideDetailKey('groupsMapPill');
 
-  /// La puce « Météo » sous la carte d'une sortie solo : le vent sur le
-  /// tracé de son groupe (ledger `MOB-94`).
+  /// L'interrupteur Pente | Revêtement | Météo sous la carte d'une sortie
+  /// solo à un seul parcours (ledger `MOB-105`) : il colore son tracé, son
+  /// plein écran et son profil.
+  final mapColorBy = const _RideDetailKey('mapColorBy');
+
+  /// La puce « Météo » sous la carte d'une sortie solo dont le groupe roule
+  /// un autre parcours que la sortie (ledger `MOB-94`) : deux couches, aux
+  /// couleurs de leur couche, et le vent sur celle du groupe seulement.
   final windMapChip = const _RideDetailKey('windMapChip');
+
+  /// Pente | Revêtement **au-dessus du profil** quand la carte garde une
+  /// couleur par couche — plusieurs groupes, ou une sortie solo à deux
+  /// parcours (ledger `MOB-105`) : il ne colore que le profil.
+  final profileColorBy = const _RideDetailKey('profileColorBy');
 
   final loadError = const _RideDetailKey('loadError');
 
@@ -163,9 +174,9 @@ class RideGroupPageKeys {
   /// La carte résumé « Météo au départ du groupe » de l'aperçu.
   final weatherSummaryCard = const _RideGroupKey('weatherSummaryCard');
 
-  /// La puce « Météo » sous la carte de l'aperçu : le vent sur le tracé
-  /// (ledger `MOB-91`).
-  final windMapChip = const _RideGroupKey('windMapChip');
+  /// L'interrupteur Pente | Revêtement | Météo sous la carte de l'aperçu
+  /// (ledger `MOB-105`), partagé par la carte, son plein écran et le profil.
+  final mapColorBy = const _RideGroupKey('mapColorBy');
 
   /// La légende du vent posée sur la carte du groupe en mode « Météo ».
   final windMapLegend = const _RideGroupKey('windMapLegend');

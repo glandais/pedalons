@@ -19,19 +19,27 @@ import 'waypoint_selection.dart';
 import 'waypoint_sheet.dart';
 
 /// Ce qu'un écran pose **en plus** sur la carte d'un parcours, sans que
-/// celle-ci sache ce que c'est — le mode « Météo » du détail d'une étape
-/// (ledger `MOB-94`) : des couleurs de tracé prioritaires sur la pente et le
-/// revêtement, des marqueurs, une légende, un interrupteur de la feuille des
+/// celle-ci sache ce que c'est — le détail d'une étape (ledgers `MOB-94`,
+/// `MOB-105`) : le mode qu'il tient, des couleurs de tracé prioritaires sur
+/// la pente et le revêtement (le vent), des marqueurs, une légende et, en
+/// plein écran, l'interrupteur de mode, un interrupteur de la feuille des
 /// couches.
 @immutable
 class RouteMapLayer {
   const RouteMapLayer({
+    this.colorBy,
     this.segmentColors,
     this.markers = const <PdlMapMarker>[],
     this.onMarkerTapped,
     this.foreground,
     this.switches = const <PdlMapHeroSwitch>[],
   });
+
+  /// Ce qui colore le tracé, **relu à chaque build** — plein écran compris,
+  /// où le `RouteMap.colorBy` reçu à l'ouverture resterait figé : le choix
+  /// fait sur l'interrupteur du plein écran s'y voit tout de suite. `null` :
+  /// `RouteMap.colorBy`.
+  final RouteColorBy? colorBy;
 
   /// Une couleur par intervalle des lignes brutes (`PdlMapTrack`), à la place
   /// de la pente ou du revêtement. `null` : la coloration de la carte. Les
@@ -108,8 +116,9 @@ class RouteMap extends ConsumerStatefulWidget {
   /// `PdlMapHero.fullscreenBuilder`.
   final bool fullscreen;
 
-  /// Ce qui colore le tracé : la pente, ou le revêtement quand il est connu
-  /// (`MOB-81`) — la pente sinon.
+  /// Ce qui colore le tracé : la pente des montées, ou le revêtement quand il
+  /// est connu (`MOB-81`) — la pente sinon. Le vent (`RouteColorBy.wind`) vient
+  /// des [layer] de l'écran, qui seul connaît le leg ; sans eux, la pente.
   final RouteColorBy colorBy;
 
   /// Le point de parcours choisi, partagé avec le profil et la liste (ledger
@@ -204,17 +213,19 @@ class _RouteMapState extends ConsumerState<RouteMap> {
         lines: _lines,
         color: context.pdl.mapTrack,
         label: route.name,
-        // Colorisation **par segment** : chaque tronçon porte la teinte de sa
-        // propre pente (§1.1.5). Le repli `mapTrack` reste la couleur d'un
-        // segment sans altitude exploitable.
-        // Les couleurs de l'écran passent devant (le vent sur le tracé).
+        // Colorisation **par segment** : les montées à la teinte de leur
+        // pente, partie par partie, le reste au bleu neutre — la règle du
+        // site (ledger `MOB-105`). Les couleurs de l'écran passent devant (le
+        // vent sur le tracé) ; sans elles, le mode Météo se lit comme la
+        // pente.
         segmentColors:
             layer?.segmentColors ??
-            switch (widget.colorBy) {
+            switch (layer?.colorBy ?? widget.colorBy) {
               RouteColorBy.surface =>
                 surfaceSegmentColors(route.tracks, context.pdl) ??
-                    slopeColorsForLines(_lines),
-              RouteColorBy.grade => slopeColorsForLines(_lines),
+                    climbSegmentColors(route.tracks),
+              RouteColorBy.grade ||
+              RouteColorBy.wind => climbSegmentColors(route.tracks),
             },
       ),
     ];

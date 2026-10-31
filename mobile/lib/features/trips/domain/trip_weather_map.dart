@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/legacy.dart';
 
 import '../../../api/generated/export.dart';
 import '../../rides/domain/ride_weather_map.dart';
+import '../../routes/domain/track_surfaces.dart';
 import '../providers/trip_detail_provider.dart';
 import '../providers/trip_weather_provider.dart';
 
@@ -16,18 +17,40 @@ import '../providers/trip_weather_provider.dart';
 /// déjà partie arrive en `OUT_OF_RANGE` et n'a donc pas de mode ; un voyage
 /// terminé ou annulé ne demande même pas sa météo.
 
-/// Le mode « Météo » des cartes d'un voyage — **une clé pour le voyage** :
-/// la carte d'ensemble et celle du détail d'une étape partagent le choix,
-/// comme la carte encastrée et le plein écran d'un groupe partagent
-/// `rideMapWindModeProvider`.
+/// Ce qui colore les cartes d'un voyage — **une clé pour le voyage** : la
+/// carte d'ensemble et celle du détail d'une étape partagent le choix, comme
+/// la carte encastrée, le plein écran et le profil d'un groupe partagent
+/// `rideMapColorModeProvider` (ledger `MOB-105`). La carte d'ensemble, à une
+/// couleur par étape, ne lit que « Météo » ou non ; le détail d'une étape lit
+/// aussi Pente | Revêtement.
 ///
-/// En mémoire, **éteint par défaut** : on ne change pas le sens des couleurs
-/// sans que la personne l'ait choisi. Chaque page qui l'offre l'écoute pour
-/// le garder vivant tant qu'elle est montée, et l'éteint quand un refetch
-/// perd la prévision de ce qu'elle montre.
-final tripMapWindModeProvider = StateProvider.autoDispose.family<bool, TripKey>(
-  (Ref ref, TripKey key) => false,
-);
+/// En mémoire, **sur la pente par défaut** : on ne change pas le sens des
+/// couleurs sans que la personne l'ait choisi. Chaque page qui l'offre l'écoute
+/// pour le garder vivant tant qu'elle est montée, et ramène « Météo » sur la
+/// pente quand un refetch perd la prévision de ce qu'elle montre.
+final tripMapColorModeProvider = StateProvider.autoDispose
+    .family<RouteColorBy, TripKey>(
+      (Ref ref, TripKey key) => RouteColorBy.grade,
+    );
+
+/// Vrai quand les cartes de [key] sont en mode « Météo ».
+bool watchTripMapWindMode(WidgetRef ref, TripKey key) =>
+    ref.watch(tripMapColorModeProvider(key)) == RouteColorBy.wind;
+
+/// Allume ([on]) ou éteint le mode « Météo » des cartes de [key] : la puce et
+/// l'interrupteur de la carte d'ensemble. Éteindre ramène sur la pente
+/// **seulement depuis Météo** : un Revêtement choisi sur une étape reste
+/// (ledger `MOB-105`).
+void setTripMapWindMode(WidgetRef ref, TripKey key, bool on) {
+  final StateController<RouteColorBy> mode = ref.read(
+    tripMapColorModeProvider(key).notifier,
+  );
+  if (on) {
+    mode.state = RouteColorBy.wind;
+  } else if (mode.state == RouteColorBy.wind) {
+    mode.state = RouteColorBy.grade;
+  }
+}
 
 /// Le leg à poser sur la carte de chaque étape, par `TripStageDto.id` :
 /// seulement les étapes dont la prévision se montre ([showsWindOnMap]).
@@ -53,8 +76,9 @@ TripWeatherDto? watchTripMapWeather(WidgetRef ref, TripKey key, TripDto trip) =>
     ? null
     : ref.watch(tripWeatherProvider(key)).value;
 
-/// Garde vivant le mode « Météo » des cartes de [trip] tant que la page qui
-/// l'appelle dans son `build` est montée, et l'éteint quand un refetch perd
+/// Garde vivant le mode des cartes de [trip] tant que la page qui l'appelle
+/// dans son `build` est montée, et ramène « Météo » sur la pente quand un
+/// refetch perd
 /// ce que la page colorait — [stillShows] vrai avant, faux après —,
 /// pour qu'une prévision revenue ne recolore pas le tracé sans nouveau choix
 /// (plan 2026-10-24-weather-on-map §4, la règle de `RideGroupPage`).
@@ -64,7 +88,10 @@ void listenTripMapWindMode(
   TripDto trip, {
   required bool Function(Map<String, WeatherLegDto> legs) stillShows,
 }) {
-  ref.listen(tripMapWindModeProvider(key), (bool? _, bool _) {});
+  ref.listen(
+    tripMapColorModeProvider(key),
+    (RouteColorBy? _, RouteColorBy _) {},
+  );
   // Un voyage terminé ou annulé ne demande même pas sa météo.
   if (trip.isPast || trip.isCancelled) return;
   // **Perdre**, pas « ne pas avoir » : le mode est partagé à l'échelle du
@@ -76,7 +103,7 @@ void listenTripMapWindMode(
   ) {
     final bool showed = stillShows(tripMapWindLegs(trip, previous?.value));
     if (showed && !stillShows(tripMapWindLegs(trip, next.value))) {
-      ref.read(tripMapWindModeProvider(key).notifier).state = false;
+      setTripMapWindMode(ref, key, false);
     }
   });
 }

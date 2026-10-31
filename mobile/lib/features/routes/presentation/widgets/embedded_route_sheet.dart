@@ -11,10 +11,14 @@ import '../../../../core/theme/pdl_colors.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/units/unit_system.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../keys.dart';
+import '../../domain/route_color_mode.dart';
+import '../../domain/track_slope_colors.dart';
 import '../../domain/track_surfaces.dart';
 import '../../providers/route_detail_provider.dart';
 import '../../providers/route_elevation_provider.dart';
 import 'route_climbs_section.dart';
+import 'route_color_mode_switch.dart';
 import 'route_cursor_controller.dart';
 import 'route_download_actions.dart';
 import 'route_map.dart';
@@ -40,7 +44,10 @@ class EmbeddedRouteSheet extends ConsumerStatefulWidget {
     this.mapHeight = 240,
     this.showOpenFullAction = true,
     this.mapLayer,
-    this.belowMap,
+    this.colorBy,
+    this.onColorByChanged,
+    this.offersWind = false,
+    this.colorBySwitchKey,
   });
 
   final RouteKey routeKey;
@@ -54,9 +61,18 @@ class EmbeddedRouteSheet extends ConsumerStatefulWidget {
   /// `null` sur l'écran 13 : la fiche y reste identique.
   final RouteMapLayerBuilder? mapLayer;
 
-  /// Posé juste sous la carte — la puce « Météo » de l'étape : la vignette
-  /// ne se manipule pas, sa bascule ne peut pas vivre dedans. `null` : rien.
-  final Widget? belowMap;
+  /// Le mode choisi par l'écran hôte — partagé avec d'autres cartes (le
+  /// détail d'une étape et la carte d'ensemble du voyage) —, avec
+  /// [onColorByChanged]. `null` : la fiche garde son propre choix.
+  final RouteColorBy? colorBy;
+  final ValueChanged<RouteColorBy>? onColorByChanged;
+
+  /// Vrai quand l'écran hôte colore le tracé par le vent en mode Météo (via
+  /// [mapLayer]) : l'interrupteur propose alors « Météo ».
+  final bool offersWind;
+
+  /// La clé de l'interrupteur Pente | Revêtement | Météo sous la carte.
+  final Key? colorBySwitchKey;
 
   @override
   ConsumerState<EmbeddedRouteSheet> createState() => _EmbeddedRouteSheetState();
@@ -66,8 +82,8 @@ class _EmbeddedRouteSheetState extends ConsumerState<EmbeddedRouteSheet> {
   RouteCursorController? _cursor;
   String? _cursorForSlug;
 
-  /// Ce que la pente / le revêtement colorent (`MOB-82`), comme sur
-  /// l'écran 13 ; retombe sur la pente si le revêtement disparaît.
+  /// Ce qui colore la carte et le profil (`MOB-82`, `MOB-105`) quand l'écran
+  /// hôte ne le tient pas ; retombe sur la pente si le mode disparaît.
   RouteColorBy _colorBy = RouteColorBy.grade;
   final TrackSurfaceBarColors _barColors = TrackSurfaceBarColors();
 
@@ -123,9 +139,16 @@ class _EmbeddedRouteSheetState extends ConsumerState<EmbeddedRouteSheet> {
   Widget _body(RouteDetailDto route) {
     final RouteCursorController cursor = _cursorFor(route);
     final UnitSystem units = ref.watch(unitSystemProvider);
-    final RouteColorBy colorBy = hasTrackSurfaces(route.tracks)
-        ? _colorBy
-        : RouteColorBy.grade;
+    // L'interrupteur unique sous la carte (ledger `MOB-105`) : la carte, son
+    // plein écran et le profil suivent le même choix.
+    final List<RouteColorBy> modes = routeColorModes(
+      surfaces: hasTrackSurfaces(route.tracks),
+      wind: widget.offersWind,
+    );
+    final RouteColorBy colorBy = resolveRouteColorBy(
+      widget.colorBy ?? _colorBy,
+      modes,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -149,23 +172,25 @@ class _EmbeddedRouteSheetState extends ConsumerState<EmbeddedRouteSheet> {
               ),
             ),
           ),
-          if (widget.belowMap != null) ...<Widget>[
+          if (modes.length > 1) ...<Widget>[
             const SizedBox(height: PdlSpacing.chipGap),
-            widget.belowMap!,
+            RouteColorModeSwitch(
+              key: widget.colorBySwitchKey ?? keys.routeDetail.surfaceColorBy,
+              modes: modes,
+              value: colorBy,
+              onChanged:
+                  widget.onColorByChanged ??
+                  (RouteColorBy v) => setState(() => _colorBy = v),
+            ),
           ],
           const SizedBox(height: PdlSpacing.section),
-          _profile(route, cursor, units, colorBy),
+          _profile(route, cursor, units, profileColorBy(colorBy)),
           // L'espace n'est posé que si la section rend quelque chose : la
           // plupart des parcours n'ont pas (encore) de revêtement.
           if (hasTrackSurfaces(route.tracks) ||
               trackSurfacesPending(route.tracks)) ...<Widget>[
             const SizedBox(height: PdlSpacing.section),
-            RouteSurfaceSection(
-              tracks: route.tracks,
-              colorBy: colorBy,
-              onColorByChanged: (RouteColorBy v) =>
-                  setState(() => _colorBy = v),
-            ),
+            RouteSurfaceSection(tracks: route.tracks),
           ],
           if (route.waypoints.isNotEmpty) ...<Widget>[
             const SizedBox(height: PdlSpacing.section),
@@ -240,6 +265,11 @@ class _EmbeddedRouteSheetState extends ConsumerState<EmbeddedRouteSheet> {
     final List<TrackSurface?>? bars = colorBy == RouteColorBy.surface
         ? ref.watch(routeSurfaceBarsProvider(widget.routeKey)).value
         : null;
+    // La pente des montées, barre par barre, comme la carte (ledger
+    // `MOB-105`).
+    final ClimbBars? climbs = bars == null
+        ? ref.watch(routeClimbBarsProvider(widget.routeKey)).value
+        : null;
 
     return ref
         .watch(routeElevationSamplesProvider(widget.routeKey))
@@ -262,7 +292,7 @@ class _EmbeddedRouteSheetState extends ConsumerState<EmbeddedRouteSheet> {
                     samples: samples,
                     height: PdlMetrics.elevationLarge,
                     barColors: bars == null
-                        ? null
+                        ? climbs?.colors
                         : _barColors.of(bars, context.pdl),
                     cursorDistance: cursor.distance,
                     axisLabel: (double meters, {required bool isLast}) => isLast
@@ -276,8 +306,8 @@ class _EmbeddedRouteSheetState extends ConsumerState<EmbeddedRouteSheet> {
                       AppFormatters.formatAltitude(r.elevation, units),
                       if (bars != null)
                         ?trackSurfaceTip(samples, bars, r.distance)
-                      else if (r.grade != null)
-                        AppFormatters.formatGrade(r.grade!),
+                      else
+                        ?climbGradeTipLabel(samples, climbs, r),
                     ].join(' · '),
                   ),
                 ),

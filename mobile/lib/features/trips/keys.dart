@@ -47,6 +47,7 @@ class TripDetailKeys {
   /// La légende du vent de la carte d'ensemble, parts des étapes additionnées.
   final windMapLegend = const _TripKey('windMapLegend');
 
-  /// La puce « Météo » sous la carte du détail d'une étape.
-  final stageWindMapChip = const _TripKey('stageWindMapChip');
+  /// L'interrupteur Pente | Revêtement | Météo sous la carte du détail d'une
+  /// étape (ledger `MOB-105`).
+  final stageMapColorBy = const _TripKey('stageMapColorBy');
 }

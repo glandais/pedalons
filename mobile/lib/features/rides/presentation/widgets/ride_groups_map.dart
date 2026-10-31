@@ -8,9 +8,14 @@ import '../../../../core/config/config_provider.dart';
 import '../../../../core/config/map_style_options.dart';
 import '../../../../core/geo/polyline_index.dart';
 import '../../../../core/pdl/pdl.dart';
+import '../../../../core/theme/pdl_colors.dart';
 import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/preferences/user_preferences_provider.dart';
+import '../../../routes/domain/route_color_mode.dart';
+import '../../../routes/domain/track_slope_colors.dart';
+import '../../../routes/domain/track_surfaces.dart';
+import '../../../routes/presentation/widgets/route_color_mode_switch.dart';
 import '../../../routes/presentation/widgets/waypoint_selection.dart';
 import '../../../routes/presentation/widgets/waypoint_sheet.dart';
 import '../../domain/ride_route_layers.dart';
@@ -54,17 +59,22 @@ double rideMapHeight(double screenHeight) =>
 /// Les géométries sont **dédoublonnées par `routeSlug`** en amont : dix groupes
 /// sur trois parcours coûtent trois appels.
 ///
-/// Avec [onlyGroup] et son [weatherLeg], la carte peut aussi colorer le tracé
-/// par le vent relatif (mode « Météo », ledger `MOB-91`) : dos, travers,
-/// face, et une légende en mots. Le mode est exclusif — le gris du travers se
-/// confondrait avec un trait superposé — et éteint par défaut
-/// ([rideMapWindModeProvider]).
+/// Avec [onlyGroup] — ou sur le détail d'une **sortie solo à un seul
+/// parcours** ([rideMapColorsLikeRoute]) —, le tracé se colore **comme celui
+/// d'un parcours** (ledger `MOB-105`) : la pente des montées, le revêtement,
+/// ou le vent relatif de [weatherLeg] (mode « Météo », ledgers `MOB-91`,
+/// `MOB-94`) — dos, travers, face, une légende en mots, les pastilles en
+/// plein écran. Le choix est [rideMapColorModeProvider], sur la pente par
+/// défaut ; il se fait sous la carte encastrée (`RouteColorModeSwitch`) et,
+/// en plein écran, par le même interrupteur posé en bas de la carte. Les
+/// modes proposés sont ceux de [rideMapColorModes].
 ///
-/// Le détail d'une **sortie solo** la pose sans [onlyGroup], avec le leg de
-/// son groupe unique (ledger `MOB-94`) : le vent colore alors le seul
-/// parcours de ce groupe, et ses pastilles s'y posent en plein écran. Une
-/// sortie à plusieurs groupes n'a pas de mode « Météo » sur sa carte —
-/// chaque groupe l'a sur la sienne.
+/// Une sortie à **plusieurs groupes** garde une couleur par couche — comme
+/// ses légendes et sa pilule — et n'a pas de mode « Météo » : chaque groupe
+/// l'a sur sa carte. Une **sortie solo dont le groupe roule un autre
+/// parcours** que la sortie aussi, comme au site : deux couches à leur
+/// couleur ; seul le mode « Météo » du parcours du groupe y reste (la puce
+/// sous la carte, l'interrupteur de la feuille des couches en plein écran).
 ///
 /// L'onglet Météo de la page d'un groupe la pose avec [forceWeatherMode] :
 /// le mode « Météo » d'office, sans toucher au choix fait dans l'Aperçu, un
@@ -111,9 +121,9 @@ class RideGroupsMap extends ConsumerWidget {
 
   /// Le mode « Météo » imposé (l'onglet Météo d'un groupe) : le tracé se
   /// colore d'office dès que le leg a une prévision, sans lire ni écrire
-  /// [rideMapWindModeProvider] — celui-ci reste le choix de la personne dans
-  /// l'Aperçu. Pas de bascule, donc, ni dans la feuille du plein écran, que
-  /// ce mode suit ; et la carte encastrée ouvre le plein écran au toucher.
+  /// [rideMapColorModeProvider] — celui-ci reste le choix de la personne dans
+  /// l'Aperçu. Pas d'interrupteur, et la carte encastrée ouvre le plein écran
+  /// au toucher.
   final bool forceWeatherMode;
 
   /// Le réticule, en mètres le long du parcours du groupe, **distance chaînée
@@ -200,9 +210,32 @@ class RideGroupsMap extends ConsumerWidget {
             showsWindOnMap(weatherLeg)
         ? weatherLeg
         : null;
-    final bool windMode =
-        windLeg != null &&
-        (forceWeatherMode || ref.watch(rideMapWindModeProvider(rideKey)));
+    // Ce qui colore le parcours du groupe : le choix fait sous la carte, ou
+    // la Météo imposée, ramené sur la pente quand il n'est pas proposé.
+    final List<RouteColorBy> modes = rideMapColorModes(
+      ref,
+      rideKey: rideKey,
+      ride: ride,
+      onlyGroup: onlyGroup,
+      weatherLeg: weatherLeg,
+    );
+    final RouteColorBy colorBy = resolveRouteColorBy(
+      forceWeatherMode
+          ? RouteColorBy.wind
+          : ref.watch(rideMapColorModeProvider(rideKey)),
+      modes,
+    );
+    final bool windMode = windLeg != null && colorBy == RouteColorBy.wind;
+    // Le parcours du groupe se colore comme un parcours — pente, revêtement,
+    // vent —, ou, sur une carte à deux couches, par le vent seulement.
+    final bool likeRoute = rideMapColorsLikeRoute(ride, onlyGroup);
+    final RouteColorBy? groupColorBy = weatherGroup == null
+        ? null
+        : likeRoute
+        ? colorBy
+        : windMode
+        ? RouteColorBy.wind
+        : null;
 
     final List<PdlMapTrack> tracks = _tracks(
       layers,
@@ -210,8 +243,10 @@ class RideGroupsMap extends ConsumerWidget {
       selectedSlug,
       hidden,
       mainRouteLabel,
+      groupColorBy,
       windMode ? windLeg : null,
       weatherSlug,
+      context.pdl,
     );
 
     // L'emprise vient du serveur (`RoutesBulkResponse.extent`), pas d'un
@@ -271,16 +306,15 @@ class RideGroupsMap extends ConsumerWidget {
       hillshadeEnabled: servedHillshadeEnabled(ref),
       onHillshadeChanged: (bool on) =>
           ref.read(hillshadeEnabledProvider.notifier).set(on),
-      // En plein écran, le mode « Météo » se bascule dans la feuille, comme
-      // l'ombrage ; la carte encastrée a sa puce sous elle (l'Aperçu). Rien à
-      // basculer quand le mode est imposé (l'onglet Météo).
-      switches: fullscreen && windLeg != null && !forceWeatherMode
+      // Une carte à deux couches (sortie solo dont le groupe roule un autre
+      // parcours) n'a que « Météo » à basculer : en plein écran, dans la
+      // feuille, comme l'ombrage. Une carte colorée comme un parcours a
+      // l'interrupteur en bas de la carte (`foreground`, ledger `MOB-105`).
+      switches: fullscreen && !likeRoute && windLeg != null && !forceWeatherMode
           ? <PdlMapHeroSwitch>[
               weatherMapModeSwitch(
                 value: windMode,
-                onChanged: (bool on) =>
-                    ref.read(rideMapWindModeProvider(rideKey).notifier).state =
-                        on,
+                onChanged: (bool on) => setRideMapWindMode(ref, rideKey, on),
               ),
             ]
           : const <PdlMapHeroSwitch>[],
@@ -310,22 +344,38 @@ class RideGroupsMap extends ConsumerWidget {
                   : <String>{...c.state, slug};
             }
           : null,
-      // La légende vit dans la coquille, pas dans les `overlays` de la carte :
-      // ceux-ci n'apparaissent qu'une fois la vue native prête, et la légende
-      // se lit sans elle. À gauche : le crédit ⓘ tient le coin droit.
-      foreground: windMode
-          ? weatherMapLegendLayer(
-              fullscreen: fullscreen,
-              // Sur la vignette qui s'ouvre au toucher, la légende ne garde
-              // pas le doigt pour elle : il va au plein écran.
-              passTouches: forceWeatherMode && !fullscreen,
-              legend: RideWindMapLegend(
+      // L'interrupteur du plein écran et la légende vivent dans la coquille,
+      // pas dans les `overlays` de la carte : ceux-ci n'apparaissent qu'une
+      // fois la vue native prête, et ni l'un ni l'autre n'en a besoin. À
+      // gauche : le crédit ⓘ tient le coin droit.
+      foreground: routeMapBottomLayer(
+        fullscreen: fullscreen,
+        // En plein écran, le même interrupteur que sous la carte encastrée,
+        // sur le même état (ledger `MOB-105`). Pas dans l'onglet Météo, qui
+        // reste en Météo.
+        modeSwitch:
+            fullscreen && likeRoute && !forceWeatherMode && modes.length > 1
+            ? RouteColorModeSwitch(
+                key: keys.routeDetail.fullscreenColorBy,
+                modes: modes,
+                value: colorBy,
+                overMap: true,
+                onChanged: (RouteColorBy v) =>
+                    ref.read(rideMapColorModeProvider(rideKey).notifier).state =
+                        v,
+              )
+            : null,
+        // Sur la vignette qui s'ouvre au toucher, la légende ne garde pas le
+        // doigt pour elle : il va au plein écran.
+        passTouches: forceWeatherMode && !fullscreen,
+        legend: windMode
+            ? RideWindMapLegend(
                 leg: windLeg,
                 units: ref.watch(unitSystemProvider),
                 attribution: weatherAttribution,
-              ),
-            )
-          : null,
+              )
+            : null,
+      ),
       mapBuilder: (BuildContext context) => _map(
         context,
         styleUrl,
@@ -485,8 +535,10 @@ class RideGroupsMap extends ConsumerWidget {
     String? selectedSlug,
     Set<String> hidden,
     String mainRouteLabel,
+    RouteColorBy? colorBy,
     WeatherLegDto? windLeg,
     String? weatherSlug,
+    PdlColors c,
   ) {
     final List<PdlMapTrack> tracks = <PdlMapTrack>[];
     for (final RideRouteLayer layer in layers) {
@@ -502,12 +554,13 @@ class RideGroupsMap extends ConsumerWidget {
           ],
           color: color,
           label: layer.label(mainRouteLabel),
-          // Le vent ne colore que le parcours du leg : sur le détail d'une
-          // sortie solo, le parcours principal que personne ne roule garde
-          // son trait.
-          segmentColors: windLeg == null || layer.routeSlug != weatherSlug
+          // Seul le parcours du groupe se colore : sur le détail d'une sortie
+          // solo à deux parcours, le parcours principal que personne ne roule
+          // garde son trait, et une sortie à plusieurs groupes une couleur par
+          // couche.
+          segmentColors: colorBy == null || layer.routeSlug != weatherSlug
               ? null
-              : weatherTrackColors(route, windLeg, color),
+              : _segmentColors(route, colorBy, windLeg, c),
           // Le tracé coloré par le vent garde l'opacité et la largeur du
           // tracé sélectionné, même quand l'autre parcours l'est : délavé, il
           // ne ressemblerait plus à sa légende.
@@ -523,6 +576,23 @@ class RideGroupsMap extends ConsumerWidget {
     if (index >= 0) tracks.add(tracks.removeAt(index));
     return tracks;
   }
+
+  /// Les couleurs du parcours du groupe dans le mode [colorBy] — déjà résolu :
+  /// le vent seulement avec un leg, le revêtement seulement s'il est connu.
+  static List<Color> _segmentColors(
+    RouteDetailDto route,
+    RouteColorBy colorBy,
+    WeatherLegDto? windLeg,
+    PdlColors c,
+  ) => switch (colorBy) {
+    RouteColorBy.wind when windLeg != null => weatherTrackColors(
+      route,
+      windLeg,
+    ),
+    RouteColorBy.surface =>
+      surfaceSegmentColors(route.tracks, c) ?? climbSegmentColors(route.tracks),
+    _ => climbSegmentColors(route.tracks),
+  };
 
   /// Le réticule de [cursorDistance] sur le parcours, mémorisé par
   /// (parcours, distance) : il chaîne toutes les distances du tracé.
@@ -576,4 +646,60 @@ class RideGroupsMapProbe extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const SizedBox.expand();
+}
+
+/// Vrai quand la carte colore le parcours du groupe **comme un parcours**
+/// (ledger `MOB-105`) : la page d'un groupe ([onlyGroup]), ou une sortie solo
+/// dont la sortie et le groupe roulent le même parcours — la règle du site
+/// (`soloRouteSlug` de `RideDetailPage.tsx`). Une sortie solo à deux
+/// parcours, comme une sortie à plusieurs groupes, garde une couleur par
+/// couche.
+bool rideMapColorsLikeRoute(RideDto ride, RideGroupDto? onlyGroup) =>
+    onlyGroup != null ||
+    (soloGroupOf(ride) != null && rideRouteLayers(ride).length == 1);
+
+/// Les modes que propose la carte d'une sortie (ledger `MOB-105`), pour son
+/// interrupteur et pour la carte elle-même, qui doivent dire la même chose.
+///
+/// Carte colorée comme un parcours ([rideMapColorsLikeRoute]) : la pente
+/// toujours ; le revêtement quand le parcours du groupe l'a ; Météo quand
+/// [weatherLeg] a une prévision à montrer. Sortie solo à deux parcours : la
+/// pente — c'est-à-dire la couleur des couches — et Météo, quand le parcours
+/// du groupe a une prévision et est dessiné (pas décoché dans la feuille des
+/// couches) ; pas de revêtement, la carte ne le montre pas. Sortie à
+/// plusieurs groupes : la pente seule.
+List<RouteColorBy> rideMapColorModes(
+  WidgetRef ref, {
+  required RideKey rideKey,
+  required RideDto ride,
+  RideGroupDto? onlyGroup,
+  WeatherLegDto? weatherLeg,
+}) {
+  final RideGroupDto? group = onlyGroup ?? soloGroupOf(ride);
+  final String? slug = group == null ? null : effectiveRouteSlug(ride, group);
+  if (slug == null) return const <RouteColorBy>[RouteColorBy.grade];
+  final RouteDetailDto? route = ref
+      .watch(
+        rideRouteGeometryProvider(
+          RouteRef(
+            teamSlug: ride.team.slug,
+            rideSlug: rideKey.rideSlug,
+            routeSlug: slug,
+          ),
+        ),
+      )
+      .value;
+  // La feuille des couches n'a de cases que sur une carte à plusieurs tracés,
+  // et jamais sur la page d'un groupe.
+  final bool hidden =
+      onlyGroup == null &&
+      rideRouteLayers(ride).length > 1 &&
+      ref.watch(hiddenRideRoutesProvider(rideKey)).contains(slug);
+  return routeColorModes(
+    surfaces:
+        rideMapColorsLikeRoute(ride, onlyGroup) &&
+        route != null &&
+        hasTrackSurfaces(route.tracks),
+    wind: !hidden && showsWindOnMap(weatherLeg),
+  );
 }

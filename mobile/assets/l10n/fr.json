@@ -1347,6 +1347,7 @@
     "elevationRefining": "Profil d'altitude provisoire",
     "surfaceDetail": {
       "colorBy": "Colorer le profil et le tracé selon",
+      "profileColorBy": "Colorer le profil selon",
       "grade": "Pente",
       "surface": "Revêtement",
       "pending": "Revêtement en cours de calcul",

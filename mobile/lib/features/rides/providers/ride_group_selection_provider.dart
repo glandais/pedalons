@@ -9,6 +9,7 @@ import '../../../api/generated/export.dart';
 import '../../../core/pdl/elevation/elevation_samples.dart';
 import '../../routes/data/route_repository.dart';
 import '../../routes/domain/route_elevation_builder.dart';
+import '../../routes/domain/track_slope_colors.dart';
 import '../../routes/domain/track_surfaces.dart';
 import '../../routes/presentation/widgets/waypoint_selection.dart';
 import '../domain/ride_route_layers.dart';
@@ -31,17 +32,39 @@ final selectedRideRouteOverrideProvider = StateProvider.autoDispose
 final hiddenRideRoutesProvider = StateProvider.autoDispose
     .family<Set<String>, RideKey>((Ref ref, RideKey key) => const <String>{});
 
-/// Le mode « Météo » de la carte d'un groupe : le tracé coloré par le vent
-/// relatif au lieu de son trait habituel (ledger `MOB-91`).
+/// Ce qui colore la carte d'un groupe — ou d'une sortie solo — et son
+/// profil : Pente | Revêtement | Météo (ledger `MOB-105`, après `MOB-91`).
 ///
-/// En mémoire, partagé par la carte encastrée et son plein écran, et **éteint
-/// par défaut** : on ne change pas le sens des couleurs sans que la personne
-/// l'ait choisi. Il n'a d'effet que si le leg porte une prévision
-/// (`showsWindOnMap`) ; un refetch qui la perd l'éteint (`RideGroupPage`), pour
-/// qu'une prévision revenue ne recolore pas le tracé sans nouveau choix.
-final rideMapWindModeProvider = StateProvider.autoDispose.family<bool, RideKey>(
-  (Ref ref, RideKey key) => false,
-);
+/// En mémoire, partagé par la carte encastrée, son plein écran et le profil,
+/// et **sur la pente par défaut** : on ne change pas le sens des couleurs sans
+/// que la personne l'ait choisi. Un mode indisponible se lit comme la pente
+/// (`resolveRouteColorBy`) ; un refetch qui perd la prévision ramène le choix
+/// « Météo » sur la pente (`RideGroupPage`, `RideDetailPage`), pour qu'une
+/// prévision revenue ne recolore pas le tracé sans nouveau choix.
+final rideMapColorModeProvider = StateProvider.autoDispose
+    .family<RouteColorBy, RideKey>(
+      (Ref ref, RideKey key) => RouteColorBy.grade,
+    );
+
+/// Ramène le choix « Météo » de [rideMapColorModeProvider] sur la pente — une
+/// prévision perdue au refetch. Un autre choix (le revêtement) reste.
+void dropWindMode(WidgetRef ref, RideKey key) {
+  final StateController<RouteColorBy> mode = ref.read(
+    rideMapColorModeProvider(key).notifier,
+  );
+  if (mode.state == RouteColorBy.wind) mode.state = RouteColorBy.grade;
+}
+
+/// Allume ([on]) le mode « Météo » de [rideMapColorModeProvider], ou le
+/// ramène sur la pente ([dropWindMode]) : la puce et l'interrupteur de la
+/// carte d'une sortie solo à deux parcours, qui n'a que « Météo » à basculer.
+void setRideMapWindMode(WidgetRef ref, RideKey key, bool on) {
+  if (on) {
+    ref.read(rideMapColorModeProvider(key).notifier).state = RouteColorBy.wind;
+  } else {
+    dropWindMode(ref, key);
+  }
+}
 
 /// Le groupe pointé, **un seul pour tout l'écran**.
 ///
@@ -422,3 +445,24 @@ class RouteRef {
 List<String> distinctRouteSlugs(RideDto ride) => <String>[
   for (final RideRouteLayer layer in rideRouteLayers(ride)) layer.routeSlug,
 ];
+
+/// La pente des montées sous chaque barre du profil d'un parcours de la
+/// sortie, et sa couleur (ledger `MOB-105`), **mémorisées** avec le profil.
+///
+/// `null` sans profil.
+final rideRouteClimbBarsProvider =
+    Provider.family<AsyncValue<ClimbBars?>, RouteRef>((
+      Ref ref,
+      RouteRef route,
+    ) {
+      final AsyncValue<RouteDetailDto> detail = ref.watch(
+        rideRouteGeometryProvider(route),
+      );
+      final AsyncValue<ElevationSamples?> samples = ref.watch(
+        rideRouteElevationProvider(route),
+      );
+      return detail.whenData((RouteDetailDto d) {
+        final ElevationSamples? s = samples.value;
+        return s == null ? null : climbBars(s, d.tracks);
+      });
+    }, isAutoDispose: true);

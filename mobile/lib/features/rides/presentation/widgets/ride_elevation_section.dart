@@ -10,7 +10,10 @@ import '../../../../core/theme/pdl_colors.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../routes/domain/route_color_mode.dart';
+import '../../../routes/domain/track_slope_colors.dart';
 import '../../../routes/domain/track_surfaces.dart';
+import '../../../routes/presentation/widgets/route_color_mode_switch.dart';
 import '../../../routes/presentation/widgets/route_surface_section.dart';
 import '../../../routes/presentation/widgets/route_waypoints_section.dart';
 import '../../../routes/presentation/widgets/waypoint_selection.dart';
@@ -31,6 +34,8 @@ class RideElevationSection extends ConsumerStatefulWidget {
     required this.routeSlug,
     this.distance,
     this.elevationGain,
+    this.colorBy = RouteColorBy.grade,
+    this.profileColorByKey,
   });
 
   final String teamSlug;
@@ -44,16 +49,32 @@ class RideElevationSection extends ConsumerStatefulWidget {
   final double? distance;
   final double? elevationGain;
 
+  /// Ce que la personne a choisi sous la carte (`RouteColorModeSwitch`,
+  /// ledger `MOB-105`) : le profil suit Pente | Revêtement, et reste sur la
+  /// pente en Météo ou quand ce parcours n'a pas de revêtement.
+  ///
+  /// `null` quand la carte garde une couleur par couche — une sortie à
+  /// plusieurs groupes, une sortie solo à deux parcours : la section pose
+  /// alors **son propre** Pente | Revêtement au-dessus du profil, qui ne
+  /// colore que lui et vit avec elle (le choix partagé de la carte,
+  /// `rideMapColorModeProvider`, n'est ni lu ni écrit).
+  final RouteColorBy? colorBy;
+
+  /// La clé de cet interrupteur propre au profil.
+  final Key? profileColorByKey;
+
   @override
   ConsumerState<RideElevationSection> createState() =>
       _RideElevationSectionState();
 }
 
 class _RideElevationSectionState extends ConsumerState<RideElevationSection> {
-  /// Ce que la pente / le revêtement colorent (`MOB-81`) ; retombe sur la
-  /// pente quand le parcours du groupe sélectionné n'a pas de revêtement.
-  RouteColorBy _colorBy = RouteColorBy.grade;
   final TrackSurfaceBarColors _barColors = TrackSurfaceBarColors();
+
+  /// Le choix de l'interrupteur propre au profil, quand la carte n'en donne
+  /// pas ([RideElevationSection.colorBy] `null`) ; il se lit comme la pente
+  /// sur un parcours sans revêtement.
+  RouteColorBy _ownColorBy = RouteColorBy.grade;
 
   @override
   Widget build(BuildContext context) {
@@ -78,11 +99,24 @@ class _RideElevationSectionState extends ConsumerState<RideElevationSection> {
       ),
     );
     final List<PdlProfileMarker> markers = profileMarkersOf(waypoints);
-    final RouteColorBy colorBy = hasTrackSurfaces(tracks)
-        ? _colorBy
-        : RouteColorBy.grade;
+    final RouteColorBy? shared = widget.colorBy;
+    // L'interrupteur propre au profil : Pente | Revêtement, pour le parcours
+    // qu'il montre.
+    final List<RouteColorBy> ownModes = shared != null
+        ? const <RouteColorBy>[]
+        : routeColorModes(surfaces: hasTrackSurfaces(tracks), wind: false);
+    final RouteColorBy colorBy = !hasTrackSurfaces(tracks)
+        ? RouteColorBy.grade
+        : shared != null
+        ? profileColorBy(shared)
+        : resolveRouteColorBy(_ownColorBy, ownModes);
     final List<TrackSurface?>? bars = colorBy == RouteColorBy.surface
         ? ref.watch(rideRouteSurfaceBarsProvider(routeRef)).value
+        : null;
+    // La pente des montées, barre par barre, comme la carte (ledger
+    // `MOB-105`).
+    final ClimbBars? climbs = bars == null
+        ? ref.watch(rideRouteClimbBarsProvider(routeRef)).value
         : null;
     final AsyncValue<ElevationSamples?> samples = ref.watch(
       rideRouteElevationProvider(routeRef),
@@ -107,7 +141,18 @@ class _RideElevationSectionState extends ConsumerState<RideElevationSection> {
             if (_summary(units) != null) Text(_summary(units)!, style: t.xs),
           ],
         ),
-        const SizedBox(height: 6),
+        if (ownModes.length > 1) ...<Widget>[
+          const SizedBox(height: PdlSpacing.chipGap),
+          RouteColorModeSwitch(
+            key: widget.profileColorByKey,
+            modes: ownModes,
+            value: colorBy,
+            semanticLabel: 'routes.surfaceDetail.profileColorBy'.tr(),
+            onChanged: (RouteColorBy v) => setState(() => _ownColorBy = v),
+          ),
+          const SizedBox(height: PdlSpacing.chipGap),
+        ] else
+          const SizedBox(height: 6),
         samples.when(
           // Pas d'altitude exploitable : rien, plutôt qu'un profil plat qui se
           // ferait passer pour un terrain.
@@ -144,7 +189,7 @@ class _RideElevationSectionState extends ConsumerState<RideElevationSection> {
                         samples: data,
                         height: PdlMetrics.elevationMedium,
                         barColors: bars == null
-                            ? null
+                            ? climbs?.colors
                             : _barColors.of(bars, context.pdl),
                         // Seule la dernière graduation porte l'unité (§1.3.1).
                         axisLabel: (double meters, {required bool isLast}) =>
@@ -159,8 +204,8 @@ class _RideElevationSectionState extends ConsumerState<RideElevationSection> {
                           AppFormatters.formatAltitude(r.elevation, units),
                           if (bars != null)
                             ?trackSurfaceTip(data, bars, r.distance)
-                          else if (r.grade != null)
-                            AppFormatters.formatGrade(r.grade!),
+                          else
+                            ?climbGradeTipLabel(data, climbs, r),
                         ].join(' · '),
                       ),
                 ),
@@ -183,11 +228,7 @@ class _RideElevationSectionState extends ConsumerState<RideElevationSection> {
         if (hasTrackSurfaces(tracks) ||
             trackSurfacesPending(tracks)) ...<Widget>[
           const SizedBox(height: PdlSpacing.section),
-          RouteSurfaceSection(
-            tracks: tracks,
-            colorBy: colorBy,
-            onColorByChanged: (RouteColorBy v) => setState(() => _colorBy = v),
-          ),
+          RouteSurfaceSection(tracks: tracks),
         ],
         if (waypoints.isNotEmpty) ...<Widget>[
           const SizedBox(height: PdlSpacing.section),

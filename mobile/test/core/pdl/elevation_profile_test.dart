@@ -100,10 +100,11 @@ void main() {
       expect(canvas.fills, hasLength(samples.bars.length));
       expect(samples.bars.length, kElevationBarTarget);
 
-      // Pente 0 → teinte 85 (vert), pente ≥ 18 % → teinte 255 (violet).
+      // Pente nulle → le neutre (teinte 210), pente ≥ 18 % → teinte −105
+      // enroulée en 255 (l'échelle du site, ledger `MOB-105`).
       expect(samples.bars.first.grade, closeTo(0, 1e-9));
       expect(samples.bars.last.grade, closeTo(20, 1e-9));
-      expect(HSLColor.fromColor(canvas.lines.first.$3).hue, closeTo(85, 1.5));
+      expect(HSLColor.fromColor(canvas.lines.first.$3).hue, closeTo(210, 1.5));
       expect(HSLColor.fromColor(canvas.lines.last.$3).hue, closeTo(255, 1.5));
 
       // L'aplat est la même teinte, en translucide : c'est la ligne qui porte

@@ -317,8 +317,9 @@ Ce que la table ne dit pas d'elle-même :
   colore le tracé en trait, pas en badge : l'aplat de sa famille, nuance 6 **dans les deux thèmes**
   comme `TrackSurface` (le doux est trop pâle sur une tuile, les aplats sombres s'éteignent sur le
   fond de carte sombre) — `relativeWindStrokeColors` au web, `RelativeWindStroke` au mobile. Un
-  tronçon sans vent connu garde la couleur par défaut du tracé, **jamais le gris**, qui dirait
-  « de travers ». La carte a toujours sa légende en mots (« Dos 32 km · Travers 18 km · Face
+  tronçon sans vent connu prend le **bleu neutre** de la pente (`NEUTRAL_COLOR` au web,
+  `slopeNeutral` au mobile — `MOB-105`), **jamais le gris**, qui dirait « de travers », ni la
+  couleur d'un groupe ou d'une étape, qui pourrait se lire comme un vent. La carte a toujours sa légende en mots (« Dos 32 km · Travers 18 km · Face
   40 km »), et le mode est exclusif de la pente et du revêtement : le gris du travers s'y confondrait
   avec l'asphalte. Les **conditions météo** (soleil, pluie…) n'ont pas de couleur : leur icône prend
   celle du texte. Leur en donner une passerait par le YAML, jamais par une table dans un client.
@@ -335,7 +336,7 @@ Les libellés de ces valeurs viennent des traductions de chaque client ; le lexi
 
 | Élément | Clair | Sombre |
 |---|---|---|
-| Tracé du parcours (page de détail) | Coloré par la pente (voir « Profil altimétrique ») | idem |
+| Tracé d'un parcours (fiche, groupe, sortie solo, étape) | Pente des montées, revêtement ou vent (voir « Profil altimétrique ») | idem |
 | Tracé de la carte multi-parcours | `#1d32a8`, `#c90808` au survol | idem |
 | Marqueur de départ | `green` nuance 6 `#40c057` | `green` nuance 8 `#2f9e44` |
 | Marqueur d'arrivée | `red` nuance 6 `#fa5252` | `red` nuance 8 `#e03131` |
@@ -348,9 +349,17 @@ Les libellés de ces valeurs viennent des traductions de chaque client ; le lexi
 `#566B13`, `#1d32a8`, `#732C7B`, `#bdbd22`, `#c90808`, `#b81491`, `#628de3`, `#6dcc5c`,
 `#c694d4`, `#e3a209`.
 
-**Profil altimétrique** : la pente est mappée en HSL — vert `hsl(85, 86%, 62%)` à 0 %, rouge
-`hsl(255, 86%, 62%)` à 18 % et au-delà, interpolation linéaire de la teinte. Neutre (segment sans
-pente calculée) : `hsl(210, 86%, 62%)`.
+**Pente (tracé et profil)** : seules les **montées** se colorent (`climbs` d'une piste, partie
+par partie quand elles en ont, sinon leur pente moyenne) ; tout le reste — plats, descentes — est
+**neutre** `hsl(210, 86%, 62%)`, comme une pente nulle. Dans une montée, la teinte **descend**
+linéairement de 85 à 0 % jusqu'à −105 à 18 % et au-delà, arrondie au degré puis enroulée
+(−105 → 255) : vert `hsl(85, 86%, 62%)` → jaune → rouge → magenta `hsl(255, 86%, 62%)`, sans
+jamais passer par le cyan ni le bleu du neutre. Une seule règle pour la carte et le profil, au web
+(`getColorFromGradient` / `getPointClimbGradient`) comme au mobile (`slopeColor` /
+`climbGradeAt`, `MOB-105`). Le tracé d'un groupe, ou d'une sortie solo à un seul parcours, se colore comme celui d'un
+parcours ; une carte qui montre plusieurs parcours (plusieurs groupes, une sortie solo dont le
+parcours principal diffère de celui du groupe, les étapes d'un voyage) garde la palette
+multi-parcours.
 
 ---
 
@@ -1033,8 +1042,8 @@ production (voir l'en-tête). [`pedalons.css`](pedalons.css) en est la version c
   --pdl-map-marker-hover: #228be6;
   --pdl-map-event-ride: #228be6;
   --pdl-map-event-stage: #40c057;
-  --pdl-elevation-flat: hsl(85, 86%, 62%);
-  --pdl-elevation-steep: hsl(255, 86%, 62%);
+  --pdl-elevation-flat: hsl(85, 86%, 62%); /* début de montée */
+  --pdl-elevation-steep: hsl(255, 86%, 62%); /* 18 % : la teinte descend de 85 à −105, enroulée */
   --pdl-elevation-neutral: hsl(210, 86%, 62%);
 }
 

@@ -61,24 +61,6 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
 
 ## MOB — Application mobile
 
-- [ ] `MOB-105` **La trace d'un parcours se colore comme sur le site (M)** — arbitré le 31 octobre
-      2026 : la carte mobile ne lit pas la pente comme le site. Aujourd'hui `slopeColor`
-      (`core/theme/pdl_tokens.dart`) monte la teinte de 85 à 255 (vert → cyan → bleu → violet, une
-      pente de ~13 % se confond avec le bleu neutre), et `slopeColorsForLines`
-      (`features/routes/domain/track_slope_colors.dart`) colore **chaque segment**, descentes
-      comprises ; le site colore **les montées** (`climbs`, partie par partie) sur l'échelle vert →
-      jaune → rouge → magenta, et le reste en bleu neutre (`getColorFromGradient`,
-      `frontend/src/components/map/mapUtils.ts`). À faire : (1) la même source et la même échelle
-      sur la carte et le profil ; (2) la carte d'un groupe et d'une sortie (`RideGroupsMap`) ne
-      prend plus la couleur unie de `kMultiTrackPalette` mais pente / revêtement / vent comme un
-      parcours — la couleur de groupe reste sur la carte de la sortie à plusieurs groupes et dans
-      les légendes ; (3) **un seul interrupteur Pente | Revêtement | Météo** sous la carte, partagé
-      par la carte encastrée, son plein écran et le profil, comme `useWindColorMode` au site — il
-      remplace la puce « Météo », l'interrupteur du plein écran et le `RouteColorBy` propre à
-      `RideElevationSection` ; Météo jamais par défaut, onglet Météo du groupe toujours en Météo ;
-      (4) un segment sans vent connu prend le bleu neutre partout (aujourd'hui `mapTrack` sur une
-      étape, la couleur de palette sur un groupe). Maquettes : canevas « coloration trace et
-      profil » du 31 octobre 2026.
 - [ ] `MOB-106` **Le profil montre le vent par une bande, en mode Météo (S)** — le pendant de
       `WEB-129`. En mode Météo, le profil reste en pente (décision de `WEB-115`, maintenue) et
       gagne une bande dos / travers / face sous l'aire, sur le même axe des distances ; l'info-bulle

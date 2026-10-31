@@ -1,46 +1,115 @@
 import 'dart:math' as math;
 import 'dart:ui';
 
-import '../../../core/geo/polyline_index.dart';
-import '../../../core/theme/pdl_tokens.dart';
+import 'package:flutter/foundation.dart';
 
-/// La couleur de chaque segment d'un tracé, dérivée de sa **pente**.
+import '../../../api/generated/export.dart';
+import '../../../core/geo/polyline_index.dart';
+import '../../../core/pdl/elevation/elevation_samples.dart';
+import '../../../core/theme/pdl_tokens.dart';
+import 'track_surfaces.dart';
+
+/// La couleur de la **pente** le long d'un parcours, sur la carte comme sur le
+/// profil : la règle du site (`getPointClimbGradient` et
+/// `createGradientLineFeatures`, `frontend/src/components/map/mapUtils.ts`),
+/// en Dart — ledger `MOB-105`.
 ///
-/// La source est la géométrie elle-même, pas le profil altimétrique : les
-/// coordonnées GeoJSON du contrat sont en `G3DM`, `[lon, lat, altitude,
-/// cumul]`, et la pente d'un segment se lit donc exactement entre ses deux
-/// sommets. C'est aussi la source du profil altimétrique
-/// (`route_elevation_builder.dart`), et les deux doivent le rester : deux
-/// règles de calcul de longueur donneraient des bandes de couleur décalées des
-/// barres du profil.
+/// **Seules les montées se colorent.** La source est `TrackDto.climbs`, partie
+/// par partie (`ClimbDto.parts`) quand le serveur les donne, sinon la pente
+/// moyenne de la montée ; tout le reste — plats, descentes, faux plats que le
+/// détecteur ne retient pas — prend [slopeNeutral], le bleu neutre. La
+/// géométrie seule colorait chaque segment, descentes comprises, et ne disait
+/// donc pas la même chose que le site.
 ///
-/// **Pente signée, colorisation non signée.** L'échelle du §1.1.5 va du vert au
-/// violet sur `0 → 18 %` : une descente à −8 % est peinte comme une montée à
-/// 8 %, ce qui est le rendu voulu — c'est la difficulté du relief qu'on montre,
-/// pas son sens.
-///
-/// Un segment dont l'altitude ou la longueur manque prend [slopeNeutral] : on
-/// ne devine pas une pente.
-List<Color> slopeColorsForLines(Iterable<List<List<double>>> lines) {
-  final List<Color> colors = <Color>[];
-  for (final List<List<double>> line in lines) {
-    for (int i = 1; i < line.length; i++) {
-      colors.add(_segmentColor(line[i - 1], line[i]));
+/// Les distances des montées sont en **mètres le long de la piste**, comme la
+/// mesure `M` des coordonnées G3DM, qui repart de zéro sur chaque piste : un
+/// segment se lit sur `M`, sans passer par le [PolylineIndex], et chaque piste
+/// avec ses propres montées. Un sommet sans `M` est hors montée.
+
+/// La pente de la montée qui couvre [meters] : celle de sa partie quand elle en
+/// a, sinon sa pente moyenne ; 0 hors montée. Bornes incluses, comme au site.
+double climbGradeAt(List<ClimbDto> climbs, double meters) {
+  for (final ClimbDto climb in climbs) {
+    if (meters < climb.startDistance || meters > climb.endDistance) continue;
+    for (final ClimbPartDto part in climb.parts) {
+      if (meters >= part.startDistance && meters <= part.endDistance) {
+        return part.grade.toDouble();
+      }
     }
+    return climb.averageGradient.toDouble();
   }
+  return 0;
+}
+
+/// La pente de chaque segment d'une piste (une de moins que de sommets), lue
+/// sur le sommet **de départ** du segment : au site, un tronçon garde la
+/// couleur du point qui l'ouvre.
+List<double> _segmentGrades(List<ClimbDto> climbs, List<List<double>> coords) =>
+    <double>[
+      for (int i = 1; i < coords.length; i++)
+        coords[i - 1].length < 4 ? 0 : climbGradeAt(climbs, coords[i - 1][3]),
+    ];
+
+/// Les traits de la carte en mode « Pente » : un par segment des lignes
+/// aplaties (autant que [segmentCount]), **mémorisés par liste de pistes** —
+/// `PdlMapTrack.==` compare la liste élément par élément, et le DTO ne change
+/// pas d'un `build` à l'autre.
+List<Color> climbSegmentColors(List<TrackDto> tracks) {
+  final List<Color>? memo = _segmentMemo[tracks];
+  if (memo != null) return memo;
+  final List<Color> colors = List<Color>.unmodifiable(<Color>[
+    for (final TrackDto t in tracks)
+      ..._segmentGrades(t.climbs, t.line.coordinates).map(slopeColor),
+  ]);
+  _segmentMemo[tracks] = colors;
   return colors;
 }
 
-Color _segmentColor(List<double> from, List<double> to) {
-  if (from.length < 3 || to.length < 3) return slopeNeutral;
+final Expando<List<Color>> _segmentMemo = Expando<List<Color>>(
+  'climbSegmentColors',
+);
 
-  final double rise = to[2] - from[2];
-  final double run = _runMeters(from, to);
-  // Sous le mètre, le rapport explose : deux sommets superposés donneraient
-  // une pente de plusieurs centaines de pourcents.
-  if (run < 1) return slopeNeutral;
+/// La pente et la couleur de chaque barre du profil en mode « Pente » —
+/// mémorisées avec le profil : `ElevationAreaPainter` compare ses couleurs par
+/// identité.
+@immutable
+class ClimbBars {
+  const ClimbBars({required this.grades, required this.colors});
 
-  return slopeColor((rise / run * 100).abs());
+  /// La pente de la montée sous chaque barre, 0 hors montée, `null` d'une
+  /// barre sans segment couvert (le pont entre deux pistes).
+  final List<double?> grades;
+
+  /// `slopeColor` de chaque pente, `null` (neutre) d'une barre sans segment.
+  final List<Color?> colors;
+}
+
+/// Les barres de [samples] colorées par les montées de [tracks] : chaque barre
+/// prend la pente qui en couvre la plus grande longueur, sur les mêmes sommets
+/// que `elevationPointsFromLines` (la règle de `barSurfaces`).
+ClimbBars climbBars(ElevationSamples samples, List<TrackDto> tracks) {
+  final List<double?> grades = barDominant<double>(
+    samples,
+    tracks,
+    (TrackDto t, List<List<double>> coords) => _segmentGrades(t.climbs, coords),
+  );
+  return ClimbBars(
+    grades: List<double?>.unmodifiable(grades),
+    colors: List<Color?>.unmodifiable(<Color?>[
+      for (final double? g in grades) g == null ? null : slopeColor(g),
+    ]),
+  );
+}
+
+/// La pente de la montée sous le réticule, pour l'infobulle du profil en mode
+/// « Pente » : `null` hors montée, comme au site, qui ne la dit qu'en montée.
+double? climbGradeTip(ElevationSamples samples, ClimbBars bars, double at) {
+  final ElevationBar? bar = samples.barAt(at);
+  if (bar == null) return null;
+  final int index = samples.bars.indexOf(bar);
+  if (index < 0 || index >= bars.grades.length) return null;
+  final double? grade = bars.grades[index];
+  return grade == null || grade == 0 ? null : grade;
 }
 
 /// La longueur d'un segment : le cumul `M` quand il est là, la haversine

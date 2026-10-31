@@ -37,9 +37,14 @@ const double _kTripMapHeight = 280;
 /// les étapes, chacune à l'heure de sa zone. Proposé dès qu'une étape a une
 /// prévision ([tripMapWindLegs]) ; une puce sous la carte encastrée,
 /// l'interrupteur de la feuille des couches en plein écran, éteint par
-/// défaut ([tripMapWindModeProvider]). Une étape sans prévision — déjà
-/// partie, trop lointaine — garde sa couleur, jamais le gris du travers ; la
-/// légende additionne les parts des étapes colorées et dit lesquelles.
+/// défaut. Le choix est [tripMapColorModeProvider], partagé avec le détail
+/// d'une étape (ledger `MOB-105`) : la carte d'ensemble ne lit que « Météo »
+/// ou non ([watchTripMapWindMode]), et l'éteindre ici laisse un Revêtement
+/// choisi sur une étape ([setTripMapWindMode]). En mode « Météo », une étape
+/// sans prévision — déjà partie, trop lointaine — passe au bleu neutre
+/// ([slopeNeutral]), comme un tronçon sans vent connu : ni sa couleur
+/// d'étape, qui se lirait comme un vent, ni le gris du travers ; la légende
+/// additionne les parts des étapes colorées et dit lesquelles.
 class TripMap extends ConsumerWidget {
   const TripMap({
     super.key,
@@ -85,11 +90,12 @@ class TripMap extends ConsumerWidget {
       watchTripMapWeather(ref, tripKey, trip),
     );
     final bool windMode =
-        windLegs.isNotEmpty && ref.watch(tripMapWindModeProvider(tripKey));
+        windLegs.isNotEmpty && watchTripMapWindMode(ref, tripKey);
     final List<PdlMapTrack> mapTracks = _tracks(
       stages,
       tracks,
       windMode ? windLegs : const <String, WeatherLegDto>{},
+      windMode: windMode,
     );
     final TripStageDto? selected = _selectedStage(stages);
     final UnitSystem units = ref.watch(unitSystemProvider);
@@ -138,12 +144,7 @@ class TripMap extends ConsumerWidget {
                     weatherMapModeSwitch(
                       value: windMode,
                       onChanged: (bool on) =>
-                          ref
-                                  .read(
-                                    tripMapWindModeProvider(tripKey).notifier,
-                                  )
-                                  .state =
-                              on,
+                          setTripMapWindMode(ref, tripKey, on),
                     ),
                   ]
                 : const <PdlMapHeroSwitch>[],
@@ -216,9 +217,7 @@ class TripMap extends ConsumerWidget {
             child: WeatherMapChip(
               chipKey: keys.trip.windMapChip,
               selected: windMode,
-              onChanged: (bool on) =>
-                  ref.read(tripMapWindModeProvider(tripKey).notifier).state =
-                      on,
+              onChanged: (bool on) => setTripMapWindMode(ref, tripKey, on),
             ),
           ),
         if (stages.length > 1)
@@ -283,12 +282,14 @@ class TripMap extends ConsumerWidget {
   /// de son rang.
   ///
   /// En mode « Météo », une étape de [windLegs] est colorée par son propre
-  /// vent ; les autres gardent leur couleur.
+  /// vent ; les autres prennent le bleu neutre, comme au site : leur couleur
+  /// d'étape pourrait se lire comme un vent (ledger `MOB-105`).
   List<PdlMapTrack> _tracks(
     List<TripStageDto> stages,
     TripTracksState state,
-    Map<String, WeatherLegDto> windLegs,
-  ) {
+    Map<String, WeatherLegDto> windLegs, {
+    required bool windMode,
+  }) {
     final List<PdlMapTrack> tracks = <PdlMapTrack>[];
     for (final TripStageDto stage in stages) {
       final String? slug = stage.route?.slug;
@@ -302,11 +303,9 @@ class TripMap extends ConsumerWidget {
         PdlMapTrack(
           id: stage.id,
           lines: routeLinesOf(route),
-          color: color,
+          color: windMode ? slopeNeutral : color,
           label: stage.name,
-          segmentColors: leg == null
-              ? null
-              : weatherTrackColors(route, leg, color),
+          segmentColors: leg == null ? null : weatherTrackColors(route, leg),
           // Sans sélection, toutes les étapes sont à l'opacité d'un tracé
           // non sélectionné : le vent y ressortirait délavé, loin des teintes
           // de la légende.

@@ -38,7 +38,8 @@ class ElevationAreaPainter extends CustomPainter {
   final Color Function(double gradePercent) slopeColorOf;
 
   /// Une couleur par tranche de [samples], à la place de l'échelle de pente
-  /// (le mode « revêtement » d'une fiche, `MOB-81`). Une entrée nulle prend
+  /// géométrique : le revêtement (`MOB-81`), ou la pente des montées que
+  /// l'écran lit dans le contrat (`MOB-105`). Une entrée nulle prend
   /// [neutralColor]. Comparée par identité, comme [samples] : mémorisez-la.
   final List<Color?>? barColors;
 

@@ -24,6 +24,8 @@ import 'package:pedalons/features/rides/presentation/widgets/ride_group_card.dar
 import 'package:pedalons/features/rides/presentation/widgets/ride_solo_group_section.dart';
 import 'package:pedalons/features/teams/data/team_repository.dart';
 import 'package:pedalons/features/routes/data/route_repository.dart';
+import 'package:pedalons/features/routes/domain/track_surfaces.dart';
+import 'package:pedalons/features/routes/presentation/widgets/route_color_mode_switch.dart';
 import 'package:pedalons/features/rides/providers/ride_group_selection_provider.dart';
 import 'package:pedalons/features/rides/providers/ride_weather_provider.dart';
 import 'package:pedalons/features/rides/providers/ride_detail_provider.dart';
@@ -31,6 +33,7 @@ import 'package:pedalons/keys.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../support/localization.dart';
+import '../routes/route_fixtures.dart';
 import 'ride_fixtures.dart';
 
 /// S12-8 — l'assemblage de l'écran 12 et ses états.
@@ -116,12 +119,22 @@ class _StubParticipants implements ParticipantRepository {
 /// Le lot de tracés : vide — la carte n'a pas de style résolu ici, elle
 /// reste un squelette ; ce qui est vérifié est ce qui l'entoure.
 class _StubRoutes implements RouteRepository {
+  _StubRoutes([this.routes = const <RouteDetailDto>[]]);
+
+  /// Les géométries servies, par slug ; aucune par défaut.
+  final List<RouteDetailDto> routes;
+
   @override
   Future<RoutesBulkResponse> getRoutesBulk(
     String teamSlug,
     List<String> slugs, {
     bool geometry = true,
-  }) async => const RoutesBulkResponse(routes: <RouteDetailDto>[]);
+  }) async => RoutesBulkResponse(
+    routes: <RouteDetailDto>[
+      for (final RouteDetailDto r in routes)
+        if (slugs.contains(r.slug)) r,
+    ],
+  );
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -194,6 +207,7 @@ void main() {
     bool loading = false,
     _StubRideRepository? repository,
     String? role,
+    List<RouteDetailDto> routes = const <RouteDetailDto>[],
   }) {
     return ProviderScope(
       // Pas de nouvel essai : une erreur se lit tout de suite, comme avec la
@@ -209,7 +223,7 @@ void main() {
         ),
         participantRepositoryProvider.overrideWithValue(_StubParticipants()),
         // Les tracés d'une sortie qui a un parcours : aucun appel réseau.
-        routeRepositoryProvider.overrideWithValue(_StubRoutes()),
+        routeRepositoryProvider.overrideWithValue(_StubRoutes(routes)),
       ],
       child: MaterialApp(
         theme: PedalonsTheme.build(brightness ?? Brightness.light),
@@ -225,6 +239,7 @@ void main() {
     Brightness brightness = Brightness.light,
     _StubRideRepository? repository,
     String? role,
+    List<RouteDetailDto> routes = const <RouteDetailDto>[],
   }) async {
     await tester.pumpWidget(
       app(
@@ -233,6 +248,7 @@ void main() {
         brightness: brightness,
         repository: repository,
         role: role,
+        routes: routes,
       ),
     );
     // Trois paliers asynchrones s'enchaînent : le chargement des traductions,
@@ -1128,12 +1144,14 @@ void main() {
       addTearDown(tester.view.reset);
     }
 
+    /// Le segment « Météo » de l'interrupteur unique (ledger `MOB-105`).
+    Finder windSegment() => find.byKey(keys.routeDetail.colorByMode('wind'));
+
     ProviderContainer containerOf(WidgetTester tester) =>
         ProviderScope.containerOf(tester.element(find.byType(RideDetailPage)));
 
-    testWidgets('une prévision : la puce sous la carte, éteinte par défaut', (
-      WidgetTester tester,
-    ) async {
+    testWidgets('une prévision : l\'interrupteur sous la carte, sur la pente '
+        'par défaut', (WidgetTester tester) async {
       tall(tester);
       await open(
         tester,
@@ -1141,21 +1159,34 @@ void main() {
         repository: _StubRideRepository(solo, weather: served()),
       );
 
-      final Finder chip = find.byKey(keys.ride.windMapChip);
-      expect(chip, findsOneWidget);
-      expect(tester.widget<PdlChip>(chip).selected, isFalse);
-      expect(containerOf(tester).read(rideMapWindModeProvider(key)), isFalse);
+      final Finder toggle = find.byKey(keys.ride.mapColorBy);
+      expect(toggle, findsOneWidget);
+      expect(
+        tester.widget<RouteColorModeSwitch>(toggle).value,
+        RouteColorBy.grade,
+      );
+      expect(
+        containerOf(tester).read(rideMapColorModeProvider(key)),
+        RouteColorBy.grade,
+      );
 
+      final Finder chip = windSegment();
       await tester.ensureVisible(chip);
       await tester.pump();
       await tester.tap(chip);
       await tester.pump();
-      expect(containerOf(tester).read(rideMapWindModeProvider(key)), isTrue);
-      expect(tester.widget<PdlChip>(chip).selected, isTrue);
+      expect(
+        containerOf(tester).read(rideMapColorModeProvider(key)),
+        RouteColorBy.wind,
+      );
+      expect(
+        tester.widget<RouteColorModeSwitch>(toggle).value,
+        RouteColorBy.wind,
+      );
     });
 
-    testWidgets('le parcours du groupe masqué dans les couches : plus de '
-        'puce', (WidgetTester tester) async {
+    testWidgets('deux parcours : la puce « Météo », que le parcours du groupe '
+        'masqué dans les couches retire', (WidgetTester tester) async {
       tall(tester);
       final RideDto twoLayers = solo.copyWith(routeSlug: 'principal');
       await open(
@@ -1163,7 +1194,27 @@ void main() {
         twoLayers,
         repository: _StubRideRepository(twoLayers, weather: served()),
       );
-      expect(find.byKey(keys.ride.windMapChip), findsOneWidget);
+      // La carte garde ses couleurs de couche, comme au site : pas
+      // d'interrupteur Pente | Revêtement | Météo sous elle.
+      expect(find.byKey(keys.ride.mapColorBy), findsNothing);
+      expect(windSegment(), findsNothing);
+      final Finder chip = find.byKey(keys.ride.windMapChip);
+      expect(chip, findsOneWidget);
+
+      await tester.ensureVisible(chip);
+      await tester.pump();
+      await tester.tap(chip);
+      await tester.pump();
+      expect(
+        containerOf(tester).read(rideMapColorModeProvider(key)),
+        RouteColorBy.wind,
+      );
+      await tester.tap(chip);
+      await tester.pump();
+      expect(
+        containerOf(tester).read(rideMapColorModeProvider(key)),
+        RouteColorBy.grade,
+      );
 
       containerOf(tester)
           .read(hiddenRideRoutesProvider(key).notifier)
@@ -1179,7 +1230,7 @@ void main() {
       'UNAVAILABLE',
       'NO_LOCATION',
     ]) {
-      testWidgets('$status : pas de puce', (WidgetTester tester) async {
+      testWidgets('$status : pas de « Météo »', (WidgetTester tester) async {
         tall(tester);
         await open(
           tester,
@@ -1189,11 +1240,11 @@ void main() {
             weather: served(status: status),
           ),
         );
-        expect(find.byKey(keys.ride.windMapChip), findsNothing);
+        expect(windSegment(), findsNothing);
       });
     }
 
-    testWidgets('une sortie terminée : pas de puce, pas de météo', (
+    testWidgets('une sortie terminée : pas de « Météo », pas de météo', (
       WidgetTester tester,
     ) async {
       tall(tester);
@@ -1206,11 +1257,11 @@ void main() {
         weather: served(),
       );
       await open(tester, past, repository: repository);
-      expect(find.byKey(keys.ride.windMapChip), findsNothing);
+      expect(windSegment(), findsNothing);
       expect(repository.weatherCalls, 0);
     });
 
-    testWidgets('une sortie annulée : pas de puce', (
+    testWidgets('une sortie annulée : pas de « Météo »', (
       WidgetTester tester,
     ) async {
       tall(tester);
@@ -1223,10 +1274,140 @@ void main() {
         cancelled,
         repository: _StubRideRepository(cancelled, weather: served()),
       );
-      expect(find.byKey(keys.ride.windMapChip), findsNothing);
+      expect(windSegment(), findsNothing);
     });
 
-    testWidgets('plusieurs groupes : pas de puce sous la carte de la sortie', (
+    testWidgets(
+      'plusieurs groupes : pas de « Météo » sous la carte de la sortie',
+      (WidgetTester tester) async {
+        tall(tester);
+        final RideDto two = fixtureRide(
+          groups: <RideGroupDto>[
+            fixtureGroup(id: 'g1', routeSlug: 'court'),
+            fixtureGroup(id: 'g2', name: 'Cool', routeSlug: 'long'),
+          ],
+        );
+        await open(
+          tester,
+          two,
+          repository: _StubRideRepository(two, weather: served()),
+        );
+        expect(windSegment(), findsNothing);
+      },
+    );
+
+    testWidgets('une prévision perdue au refetch ramène le mode sur la pente, '
+        'il ne revient pas seul', (WidgetTester tester) async {
+      tall(tester);
+      final _StubRideRepository repository = _StubRideRepository(
+        solo,
+        weather: served(),
+      );
+      await open(tester, solo, repository: repository);
+      final ProviderContainer container = containerOf(tester);
+      container.read(rideMapColorModeProvider(key).notifier).state =
+          RouteColorBy.wind;
+      await tester.pump();
+
+      repository.weather = served(status: 'UNAVAILABLE');
+      container.invalidate(rideWeatherProvider(key));
+      for (int i = 0; i < 4; i++) {
+        await tester.pump(const Duration(milliseconds: 10));
+      }
+      expect(container.read(rideMapColorModeProvider(key)), RouteColorBy.grade);
+      expect(windSegment(), findsNothing);
+
+      // Revenue, la prévision rend « Météo », sans le choisir.
+      repository.weather = served();
+      container.invalidate(rideWeatherProvider(key));
+      for (int i = 0; i < 4; i++) {
+        await tester.pump(const Duration(milliseconds: 10));
+      }
+      expect(windSegment(), findsOneWidget);
+      expect(container.read(rideMapColorModeProvider(key)), RouteColorBy.grade);
+    });
+
+    testWidgets('le choix survit tant que la page est montée', (
+      WidgetTester tester,
+    ) async {
+      await open(
+        tester,
+        solo,
+        repository: _StubRideRepository(solo, weather: served()),
+      );
+      final ProviderContainer container = containerOf(tester);
+      container.read(rideMapColorModeProvider(key).notifier).state =
+          RouteColorBy.wind;
+      // La page défile : la carte et sa puce quittent l'écran.
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -3000));
+      for (int i = 0; i < 3; i++) {
+        await tester.pump(const Duration(milliseconds: 10));
+      }
+      expect(container.read(rideMapColorModeProvider(key)), RouteColorBy.wind);
+    });
+  });
+
+  // ─────── carte aux couleurs de ses couches : le profil a son interrupteur
+
+  group('carte aux couleurs de ses couches, Pente | Revêtement avec le '
+      'profil (MOB-105)', () {
+    const RideKey key = RideKey(teamSlug: 'n-peloton', rideSlug: 'np-665');
+
+    void tall(WidgetTester tester) {
+      tester.view.physicalSize = const Size(402 * 3, 4000 * 3);
+      tester.view.devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
+    }
+
+    /// Un parcours au revêtement connu : le profil peut se colorer par lui.
+    RouteDetailDto surfaced(String slug) => fixtureRouteDetail(slug: slug)
+        .copyWith(
+          tracks: <TrackDto>[
+            TrackDto(
+              line: GeoJsonLineString(
+                type: GeoJsonLineStringTypeType.lineString,
+                coordinates: <List<double>>[
+                  for (int i = 0; i <= 10; i++)
+                    <double>[5, 45 + i * 100 / 111195, 100.0 + i * 5, i * 100],
+                ],
+              ),
+              climbs: const <ClimbDto>[],
+              surfaceState: 'READY',
+              surfaces: const <SurfaceSpanDto>[
+                SurfaceSpanDto(from: 0, to: 400, surface: TrackSurface.paved),
+                SurfaceSpanDto(
+                  from: 400,
+                  to: 1000,
+                  surface: TrackSurface.gravel,
+                ),
+              ],
+            ),
+          ],
+        );
+
+    RideWeatherDto served() => fixtureWeather(
+      departure: fixtureConditions(),
+      fetchedAt: '2099-07-29T17:00:00Z',
+      legs: <WeatherLegDto>[fixtureLeg()],
+    );
+
+    ProviderContainer containerOf(WidgetTester tester) =>
+        ProviderScope.containerOf(tester.element(find.byType(RideDetailPage)));
+
+    Finder profileSegment(String mode) => find.descendant(
+      of: find.byKey(keys.ride.profileColorBy),
+      matching: find.byKey(keys.routeDetail.colorByMode(mode)),
+    );
+
+    Future<void> chooseSurface(WidgetTester tester) async {
+      await tester.ensureVisible(profileSegment('surface'));
+      await tester.pump();
+      await tester.tap(profileSegment('surface'));
+      await tester.pump();
+    }
+
+    testWidgets('plusieurs groupes : l\'interrupteur va avec le profil, ne '
+        'parle que de lui, et n\'écrit pas le choix partagé', (
       WidgetTester tester,
     ) async {
       tall(tester);
@@ -1239,57 +1420,114 @@ void main() {
       await open(
         tester,
         two,
-        repository: _StubRideRepository(two, weather: served()),
+        repository: _StubRideRepository(two),
+        routes: <RouteDetailDto>[surfaced('court'), surfaced('long')],
       );
-      expect(find.byKey(keys.ride.windMapChip), findsNothing);
+
+      expect(find.byKey(keys.ride.mapColorBy), findsNothing);
+      final Finder toggle = find.byKey(keys.ride.profileColorBy);
+      expect(toggle, findsOneWidget);
+      final RouteColorModeSwitch widget = tester.widget<RouteColorModeSwitch>(
+        toggle,
+      );
+      expect(widget.modes, <RouteColorBy>[
+        RouteColorBy.grade,
+        RouteColorBy.surface,
+      ]);
+      expect(widget.semanticLabel, 'Colorer le profil selon');
+      // Au-dessus du profil.
+      expect(
+        tester.getTopLeft(toggle).dy,
+        lessThan(tester.getTopLeft(find.byType(PdlElevationProfile)).dy),
+      );
+
+      await chooseSurface(tester);
+      expect(
+        tester.widget<RouteColorModeSwitch>(toggle).value,
+        RouteColorBy.surface,
+      );
+      expect(
+        containerOf(tester).read(rideMapColorModeProvider(key)),
+        RouteColorBy.grade,
+      );
     });
 
-    testWidgets('une prévision perdue au refetch éteint le mode, qui ne '
-        'revient pas seul', (WidgetTester tester) async {
-      tall(tester);
-      final _StubRideRepository repository = _StubRideRepository(
-        solo,
-        weather: served(),
-      );
-      await open(tester, solo, repository: repository);
-      final ProviderContainer container = containerOf(tester);
-      container.read(rideMapWindModeProvider(key).notifier).state = true;
-      await tester.pump();
+    testWidgets(
+      'sortie solo à deux parcours : la carte aux couleurs de ses '
+      'couches, Pente | Revêtement avec le profil, la puce « Météo » à part',
+      (WidgetTester tester) async {
+        tall(tester);
+        final RideDto twoLayers = fixtureRide(
+          groups: <RideGroupDto>[fixtureGroup(routeSlug: 'court')],
+        ).copyWith(routeSlug: 'principal');
+        await open(
+          tester,
+          twoLayers,
+          repository: _StubRideRepository(twoLayers, weather: served()),
+          routes: <RouteDetailDto>[surfaced('principal'), surfaced('court')],
+        );
 
-      repository.weather = served(status: 'UNAVAILABLE');
-      container.invalidate(rideWeatherProvider(key));
-      for (int i = 0; i < 4; i++) {
-        await tester.pump(const Duration(milliseconds: 10));
-      }
-      expect(container.read(rideMapWindModeProvider(key)), isFalse);
-      expect(find.byKey(keys.ride.windMapChip), findsNothing);
+        expect(find.byKey(keys.ride.mapColorBy), findsNothing);
+        expect(find.byKey(keys.ride.windMapChip), findsOneWidget);
+        expect(find.byKey(keys.ride.profileColorBy), findsOneWidget);
 
-      // Revenue, la prévision rend la puce, éteinte.
-      repository.weather = served();
-      container.invalidate(rideWeatherProvider(key));
-      for (int i = 0; i < 4; i++) {
-        await tester.pump(const Duration(milliseconds: 10));
-      }
-      expect(find.byKey(keys.ride.windMapChip), findsOneWidget);
-      expect(container.read(rideMapWindModeProvider(key)), isFalse);
-    });
+        await chooseSurface(tester);
+        expect(
+          containerOf(tester).read(rideMapColorModeProvider(key)),
+          RouteColorBy.grade,
+        );
 
-    testWidgets('le choix survit tant que la page est montée', (
-      WidgetTester tester,
-    ) async {
-      await open(
-        tester,
-        solo,
-        repository: _StubRideRepository(solo, weather: served()),
-      );
-      final ProviderContainer container = containerOf(tester);
-      container.read(rideMapWindModeProvider(key).notifier).state = true;
-      // La page défile : la carte et sa puce quittent l'écran.
-      await tester.drag(find.byType(CustomScrollView), const Offset(0, -3000));
-      for (int i = 0; i < 3; i++) {
-        await tester.pump(const Duration(milliseconds: 10));
-      }
-      expect(container.read(rideMapWindModeProvider(key)), isTrue);
-    });
+        // Le vent sur la carte ne touche pas au profil.
+        await tester.ensureVisible(find.byKey(keys.ride.windMapChip));
+        await tester.pump();
+        await tester.tap(find.byKey(keys.ride.windMapChip));
+        await tester.pump();
+        expect(
+          containerOf(tester).read(rideMapColorModeProvider(key)),
+          RouteColorBy.wind,
+        );
+        expect(
+          tester
+              .widget<RouteColorModeSwitch>(
+                find.byKey(keys.ride.profileColorBy),
+              )
+              .value,
+          RouteColorBy.surface,
+        );
+      },
+    );
+
+    testWidgets(
+      'sortie solo à un seul parcours : un seul interrupteur, sous la '
+      'carte, partagé',
+      (WidgetTester tester) async {
+        tall(tester);
+        final RideDto solo = fixtureRide(
+          groups: <RideGroupDto>[fixtureGroup(routeSlug: 'court')],
+        );
+        await open(
+          tester,
+          solo,
+          repository: _StubRideRepository(solo),
+          routes: <RouteDetailDto>[surfaced('court')],
+        );
+
+        expect(find.byKey(keys.ride.profileColorBy), findsNothing);
+        final Finder toggle = find.byKey(keys.ride.mapColorBy);
+        expect(toggle, findsOneWidget);
+        final Finder surface = find.descendant(
+          of: toggle,
+          matching: find.byKey(keys.routeDetail.colorByMode('surface')),
+        );
+        await tester.ensureVisible(surface);
+        await tester.pump();
+        await tester.tap(surface);
+        await tester.pump();
+        expect(
+          containerOf(tester).read(rideMapColorModeProvider(key)),
+          RouteColorBy.surface,
+        );
+      },
+    );
   });
 }

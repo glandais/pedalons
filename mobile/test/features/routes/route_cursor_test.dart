@@ -1,12 +1,10 @@
-import 'dart:ui';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pedalons/core/pdl/map/pdl_map_controller.dart';
-import 'package:pedalons/core/theme/pdl_tokens.dart';
 import 'package:pedalons/features/routes/domain/track_slope_colors.dart';
 import 'package:pedalons/features/routes/presentation/widgets/route_cursor_controller.dart';
 
-/// S13-2 et S13-3 — la colorisation par pente et le réticule bidirectionnel.
+/// S13-3 — le réticule bidirectionnel. La colorisation par pente, celle des
+/// montées, est dans `track_climb_colors_test.dart` (ledger `MOB-105`).
 ///
 /// Le cas de test 2 du §5.3 : « la distance affichée coïncide avec
 /// `ElevationProfileDto.distance` à ±0,5 % ». Ici c'est la géométrie qui fait
@@ -29,56 +27,12 @@ void main() {
     ];
   }
 
-  group('colorisation par pente', () {
-    test('un plat prend la teinte de départ de l\'échelle', () {
-      final List<Color> colors = slopeColorsForLines(<List<List<double>>>[
-        straight(),
-      ]);
-      expect(colors, hasLength(10));
-      expect(colors.first, slopeColor(0));
-    });
-
-    test('une pente à 18 % ou plus sature au violet', () {
-      // 180 m de dénivelé sur 1 000 m = 18 %.
-      final List<Color> colors = slopeColorsForLines(<List<List<double>>>[
-        straight(risePerSegment: 180),
-      ]);
-      expect(colors.first, slopeColor(18));
-      expect(slopeColor(40), slopeColor(18), reason: 'l\'échelle est bornée');
-    });
-
-    test('une descente est peinte comme la montée de même raideur', () {
-      final List<Color> up = slopeColorsForLines(<List<List<double>>>[
-        straight(risePerSegment: 80),
-      ]);
-      final List<Color> down = slopeColorsForLines(<List<List<double>>>[
-        straight(risePerSegment: -80),
-      ]);
-      // C'est la difficulté du relief qu'on montre, pas son sens.
-      expect(down.first, up.first);
-    });
-
-    test('un segment sans altitude prend la teinte neutre', () {
-      final List<Color> colors = slopeColorsForLines(<List<List<double>>>[
-        <List<double>>[
-          <double>[0, 0],
-          <double>[0.01, 0],
-        ],
-      ]);
-      expect(colors.single, slopeNeutral);
-    });
-
-    test('il y a exactement une couleur par segment', () {
-      final List<List<List<double>>> lines = <List<List<double>>>[
-        straight(segments: 7),
-        straight(segments: 3),
-      ];
-      expect(
-        slopeColorsForLines(lines),
-        hasLength(segmentCount(lines)),
-        reason: 'PdlMapTrack.segmentColors indexe les segments un à un',
-      );
-    });
+  test('segmentCount compte les segments de toutes les lignes', () {
+    final List<List<List<double>>> lines = <List<List<double>>>[
+      straight(segments: 7),
+      straight(segments: 3),
+    ];
+    expect(segmentCount(lines), 10);
   });
 
   group('réticule', () {

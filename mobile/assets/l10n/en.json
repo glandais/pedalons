@@ -1347,6 +1347,7 @@
     "elevationRefining": "Provisional elevation profile",
     "surfaceDetail": {
       "colorBy": "Colour the profile and the route by",
+      "profileColorBy": "Colour the profile by",
       "grade": "Grade",
       "surface": "Surface",
       "pending": "Surface being computed",

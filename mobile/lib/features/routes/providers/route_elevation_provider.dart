@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../api/generated/export.dart';
 import '../../../core/pdl/elevation/elevation_samples.dart';
 import '../domain/route_elevation_builder.dart';
+import '../domain/track_slope_colors.dart';
 import '../domain/track_surfaces.dart';
 import 'route_detail_provider.dart';
 
@@ -51,5 +52,24 @@ final routeSurfaceBarsProvider =
         final ElevationSamples? s = samples.value;
         if (s == null || !hasTrackSurfaces(route.tracks)) return null;
         return barSurfaces(s, route.tracks);
+      });
+    }, isAutoDispose: true);
+
+/// La pente des montées sous chaque barre du profil et sa couleur (ledger
+/// `MOB-105`), **mémorisées** avec le profil : `ElevationAreaPainter` compare
+/// ses couleurs par identité.
+///
+/// `null` sans profil.
+final routeClimbBarsProvider =
+    Provider.family<AsyncValue<ClimbBars?>, RouteKey>((Ref ref, RouteKey key) {
+      final AsyncValue<RouteDetailDto> detail = ref.watch(
+        routeDetailProvider(key),
+      );
+      final AsyncValue<ElevationSamples?> samples = ref.watch(
+        routeElevationSamplesProvider(key),
+      );
+      return detail.whenData((RouteDetailDto route) {
+        final ElevationSamples? s = samples.value;
+        return s == null ? null : climbBars(s, route.tracks);
       });
     }, isAutoDispose: true);

@@ -7,8 +7,10 @@ import '../../../../core/theme/enum_colors.dart';
 import '../../../../core/theme/pdl_colors.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
+import '../../../../core/utils/formatters.dart';
 import '../../../../core/utils/link_launcher.dart';
 import '../../../../keys.dart';
+import '../../domain/track_slope_colors.dart';
 import '../../domain/track_surfaces.dart';
 
 /// Le libellé d'une classe de revêtement (`MOB-81`) — ceux du site.
@@ -49,6 +51,20 @@ String? trackSurfaceTip(
   return surface == null ? null : trackSurfaceLabel(surface);
 }
 
+/// La pente de l'infobulle du profil en mode « Pente » (ledger `MOB-105`) :
+/// celle de la montée sous le réticule, rien hors montée — comme au site.
+/// Sans les montées (pas encore mémorisées), la pente de la barre.
+String? climbGradeTipLabel(
+  ElevationSamples samples,
+  ClimbBars? climbs,
+  ElevationReading reading,
+) {
+  final double? grade = climbs == null
+      ? reading.grade
+      : climbGradeTip(samples, climbs, reading.distance);
+  return grade == null ? null : AppFormatters.formatGrade(grade);
+}
+
 /// Les couleurs des barres du profil en mode revêtement, mémorisées : le
 /// painter les compare par identité, il repeindrait sinon à chaque `build`.
 class TrackSurfaceBarColors {
@@ -68,25 +84,16 @@ class TrackSurfaceBarColors {
 }
 
 /// Le revêtement le long du parcours, sur la fiche et la fiche embarquée
-/// d'une étape (`MOB-81`, `MOB-82`) : la bascule
-/// Pente / Revêtement du profil et du tracé, la barre de répartition, sa
-/// légende et l'attribution OpenStreetMap.
+/// d'une étape (`MOB-81`, `MOB-82`) : la barre de répartition, sa légende et
+/// l'attribution OpenStreetMap. La bascule Pente / Revêtement n'est plus ici :
+/// c'est l'interrupteur unique sous la carte (`RouteColorModeSwitch`, ledger
+/// `MOB-105`).
 ///
 /// Ne rend rien sans revêtement ; une ligne d'attente tant qu'il se calcule.
 class RouteSurfaceSection extends StatelessWidget {
-  const RouteSurfaceSection({
-    super.key,
-    required this.tracks,
-    required this.colorBy,
-    required this.onColorByChanged,
-  });
+  const RouteSurfaceSection({super.key, required this.tracks});
 
   final List<TrackDto> tracks;
-  final RouteColorBy colorBy;
-  final ValueChanged<RouteColorBy> onColorByChanged;
-
-  /// Largeur de la bascule : `PdlSegmented` exige une largeur bornée.
-  static const double _toggleWidth = 260;
 
   static const String _copyright = 'https://www.openstreetmap.org/copyright';
 
@@ -115,29 +122,6 @@ class RouteSurfaceSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        Semantics(
-          label: 'routes.surfaceDetail.colorBy'.tr(),
-          container: true,
-          child: SizedBox(
-            width: _toggleWidth,
-            child: PdlSegmented<RouteColorBy>(
-              key: keys.routeDetail.surfaceColorBy,
-              value: colorBy,
-              onChanged: onColorByChanged,
-              segments: <PdlSegment<RouteColorBy>>[
-                PdlSegment<RouteColorBy>(
-                  value: RouteColorBy.grade,
-                  label: 'routes.surfaceDetail.grade'.tr(),
-                ),
-                PdlSegment<RouteColorBy>(
-                  value: RouteColorBy.surface,
-                  label: 'routes.surfaceDetail.surface'.tr(),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: PdlSpacing.chipGap),
         SizedBox(
           width: double.infinity,
           child: PdlSegmentBar(

@@ -14,7 +14,9 @@ import '../../../auth/domain/auth_state.dart';
 import '../../../auth/providers/auth_provider.dart';
 import '../../../teams/providers/team_providers.dart';
 import '../../domain/ride_group_tab.dart';
-import '../../domain/ride_weather_map.dart';
+import '../../../routes/domain/route_color_mode.dart';
+import '../../../routes/domain/track_surfaces.dart';
+import '../../../routes/presentation/widgets/route_color_mode_switch.dart';
 import '../../providers/ride_detail_provider.dart';
 import '../../providers/ride_group_selection_provider.dart';
 import 'ride_elevation_section.dart';
@@ -23,7 +25,6 @@ import 'ride_group_route_actions.dart';
 import 'ride_group_stats.dart';
 import 'ride_group_weather_line.dart';
 import 'ride_groups_map.dart';
-import 'weather_map_layer.dart';
 
 /// L'onglet Aperçu de la page d'un groupe (ledger `MOB-67`).
 ///
@@ -71,6 +72,18 @@ class _RideGroupOverviewTabState extends ConsumerState<RideGroupOverviewTab>
       authProvider.select((AuthState s) => s.user?.id),
     );
     final String? routeSlug = group.routeSlug ?? ride.routeSlug;
+    // L'interrupteur unique de la carte et du profil (ledger `MOB-105`).
+    final List<RouteColorBy> modes = rideMapColorModes(
+      ref,
+      rideKey: widget.rideKey,
+      ride: ride,
+      onlyGroup: group,
+      weatherLeg: widget.leg,
+    );
+    final RouteColorBy colorBy = resolveRouteColorBy(
+      ref.watch(rideMapColorModeProvider(widget.rideKey)),
+      modes,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -86,7 +99,27 @@ class _RideGroupOverviewTabState extends ConsumerState<RideGroupOverviewTab>
             weatherLeg: widget.leg,
             weatherAttribution: widget.weatherAttribution,
           ),
-          if (showsWindOnMap(widget.leg)) _windChip(),
+          if (modes.length > 1)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                PdlSpacing.section,
+                PdlSpacing.chipGap,
+                PdlSpacing.section,
+                0,
+              ),
+              child: RouteColorModeSwitch(
+                key: keys.rideGroup.mapColorBy,
+                modes: modes,
+                value: colorBy,
+                onChanged: (RouteColorBy v) =>
+                    ref
+                            .read(
+                              rideMapColorModeProvider(widget.rideKey).notifier,
+                            )
+                            .state =
+                        v,
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.fromLTRB(
               PdlSpacing.section,
@@ -100,6 +133,7 @@ class _RideGroupOverviewTabState extends ConsumerState<RideGroupOverviewTab>
               routeSlug: routeSlug,
               distance: group.distance,
               elevationGain: group.elevationGain,
+              colorBy: colorBy,
             ),
           ),
         ],
@@ -142,17 +176,6 @@ class _RideGroupOverviewTabState extends ConsumerState<RideGroupOverviewTab>
       ],
     );
   }
-
-  // ── Le mode « Météo » de la carte ───────────────────────────────────────
-  /// La puce sous la carte encastrée : celle-ci ne se manipule pas, la
-  /// bascule ne peut donc pas vivre dans la vue native (ledger `MOB-91`). En
-  /// plein écran, la même bascule est dans la feuille des couches.
-  Widget _windChip() => WeatherMapChip(
-    chipKey: keys.rideGroup.windMapChip,
-    selected: ref.watch(rideMapWindModeProvider(widget.rideKey)),
-    onChanged: (bool on) =>
-        ref.read(rideMapWindModeProvider(widget.rideKey).notifier).state = on,
-  );
 
   // ── Le résumé météo ─────────────────────────────────────────────────────
   Widget _weatherSummary(UnitSystem units) {

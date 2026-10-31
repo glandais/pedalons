@@ -28,6 +28,10 @@ import '../../providers/ride_editor_providers.dart';
 import '../widgets/ride_manage_menu.dart';
 import '../../domain/ride_route_layers.dart';
 import '../../providers/ride_group_selection_provider.dart';
+import '../../../routes/domain/route_color_mode.dart';
+import '../../../routes/domain/track_surfaces.dart';
+import '../../../routes/presentation/widgets/route_color_mode_switch.dart';
+import '../widgets/weather_map_layer.dart';
 import '../../providers/ride_registration_controller.dart';
 import '../../providers/ride_scroll_target_provider.dart';
 import '../../domain/ride_weather_display.dart';
@@ -40,7 +44,6 @@ import '../widgets/ride_group_action_bar.dart';
 import '../widgets/ride_groups_section.dart';
 import '../widgets/ride_solo_group_section.dart';
 import '../widgets/ride_weather_card.dart';
-import '../widgets/weather_map_layer.dart';
 import '../../../feedback/presentation/report_problem_button.dart';
 import '../../../../keys.dart';
 import '../../../../core/utils/push_location.dart';
@@ -240,14 +243,17 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
           : weatherLegOfGroup(soloWeather.legs, solo.id);
     }
 
-    // Le mode « Météo » de la carte d'une sortie solo, comme dans l'Aperçu
-    // d'un groupe (ledger `MOB-94`). Écouté sans reconstruire la page pour le
+    // Le mode de la carte et du profil, comme dans l'Aperçu d'un groupe
+    // (ledgers `MOB-94`, `MOB-105`). Écouté sans reconstruire la page pour le
     // garder vivant tant qu'elle est montée : `autoDispose`, il tomberait
     // sinon le temps d'un aller-retour par une autre page.
-    ref.listen(rideMapWindModeProvider(rideKey), (bool? _, bool _) {});
-    // Une prévision perdue au refetch éteint le mode : revenue, elle ne
-    // recolore pas le tracé sans nouveau choix (plan 2026-10-24-weather-on-map
-    // §4, la règle de `RideGroupPage`).
+    ref.listen(
+      rideMapColorModeProvider(rideKey),
+      (RouteColorBy? _, RouteColorBy _) {},
+    );
+    // Une prévision perdue au refetch ramène « Météo » sur la pente :
+    // revenue, elle ne recolore pas le tracé sans nouveau choix (plan
+    // 2026-10-24-weather-on-map §4, la règle de `RideGroupPage`).
     if (solo != null && !ride.isPast && !ride.isCancelled) {
       ref.listen(rideWeatherProvider(rideKey), (
         _,
@@ -257,9 +263,7 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
         final WeatherLegDto? nextLeg = dto == null
             ? null
             : weatherLegOfGroup(dto.legs, solo.id);
-        if (!showsWindOnMap(nextLeg)) {
-          ref.read(rideMapWindModeProvider(rideKey).notifier).state = false;
-        }
+        if (!showsWindOnMap(nextLeg)) dropWindMode(ref, rideKey);
       });
     }
 
@@ -638,11 +642,24 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
     // Une entrée de légende par parcours, comme les couches de la carte.
     final List<RideRouteLayer> layers = rideRouteLayers(ride);
     final String mainRouteLabel = 'rides.mainRoute'.tr();
-    // Le parcours que le vent colorerait : celui du groupe d'une sortie solo.
-    final RideGroupDto? solo = soloGroupOf(ride);
-    final String? windSlug = solo == null
-        ? null
-        : effectiveRouteSlug(ride, solo);
+    // L'interrupteur unique (ledger `MOB-105`). Sortie solo à un seul
+    // parcours : il colore ce parcours sur la carte — pente, revêtement,
+    // Météo —, son plein écran et le profil. Sinon — plusieurs groupes, ou
+    // une sortie solo dont le groupe roule un autre parcours, comme au site —
+    // la carte garde une couleur par couche : Pente | Revêtement va avec le
+    // profil, pour le seul profil, et une sortie solo garde sa puce « Météo »
+    // sur le parcours de son groupe.
+    final bool likeRoute = rideMapColorsLikeRoute(ride, null);
+    final List<RouteColorBy> modes = rideMapColorModes(
+      ref,
+      rideKey: rideKey,
+      ride: ride,
+      weatherLeg: soloLeg,
+    );
+    final RouteColorBy colorBy = resolveRouteColorBy(
+      ref.watch(rideMapColorModeProvider(rideKey)),
+      modes,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -659,22 +676,32 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
           weatherLeg: soloLeg,
           weatherAttribution: attribution,
         ),
-        // Un parcours à colorer, dessiné (pas masqué dans la feuille des
-        // couches), et une prévision.
-        if (windSlug != null &&
-            showsWindOnMap(soloLeg) &&
-            !(layers.length > 1 &&
-                ref
-                    .watch(hiddenRideRoutesProvider(rideKey))
-                    .contains(windSlug)))
+        if (likeRoute && modes.length > 1)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              PdlSpacing.section,
+              PdlSpacing.chipGap,
+              PdlSpacing.section,
+              0,
+            ),
+            child: RouteColorModeSwitch(
+              key: keys.ride.mapColorBy,
+              modes: modes,
+              value: colorBy,
+              onChanged: (RouteColorBy v) =>
+                  ref.read(rideMapColorModeProvider(rideKey).notifier).state =
+                      v,
+            ),
+          )
+        else if (!likeRoute && modes.contains(RouteColorBy.wind))
+          // Le vent sur le parcours du groupe d'une sortie solo à deux
+          // parcours (ledger `MOB-94`) : la carte n'a que ce mode-là.
           Padding(
             padding: const EdgeInsets.only(top: PdlSpacing.chipGap),
             child: WeatherMapChip(
               chipKey: keys.ride.windMapChip,
-              selected: ref.watch(rideMapWindModeProvider(rideKey)),
-              onChanged: (bool on) =>
-                  ref.read(rideMapWindModeProvider(rideKey).notifier).state =
-                      on,
+              selected: colorBy == RouteColorBy.wind,
+              onChanged: (bool on) => setRideMapWindMode(ref, rideKey, on),
             ),
           ),
         if (layers.length > 1)
@@ -704,6 +731,10 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
               routeSlug: routeSlug,
               distance: selectedGroup?.distance,
               elevationGain: selectedGroup?.elevationGain,
+              // Une carte colorée comme un parcours : le profil suit son
+              // interrupteur. Sinon, le profil a le sien, à lui seul.
+              colorBy: likeRoute ? colorBy : null,
+              profileColorByKey: keys.ride.profileColorBy,
             ),
           ),
       ],

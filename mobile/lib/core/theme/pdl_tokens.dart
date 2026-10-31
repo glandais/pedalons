@@ -244,16 +244,26 @@ const List<Color> kMultiTrackPalette = <Color>[
 Color multiTrackColor(int index) =>
     kMultiTrackPalette[index.remainder(kMultiTrackPalette.length).abs()];
 
-/// Échelle de pente du profil altimétrique (§1.1.5).
+/// Échelle de pente du tracé et du profil (BRANDING §3.7), celle du site
+/// (`getColorFromGradient`, `frontend/src/components/map/mapUtils.ts`).
 ///
-/// 0 % → vert (teinte 85), 18 % et au-delà → violet (teinte 255).
+/// La teinte **descend** de 85 (vert) à 0 % jusqu'à −105 à 18 % et au-delà,
+/// puis s'enroule (−105 → 255) : vert → jaune → orange → rouge → magenta,
+/// jamais par le cyan ni le bleu, qui appartiennent au neutre. Elle est
+/// arrondie au degré, comme au site. Une pente **nulle** — hors montée —
+/// prend [slopeNeutral] ; une pente négative est bornée sur le vert.
 Color slopeColor(double gradePercent) {
+  if (gradePercent == 0) return slopeNeutral;
   final double t = (gradePercent / 18).clamp(0.0, 1.0);
-  final double hue = 85 + (255 - 85) * t;
-  return HSLColor.fromAHSL(1, hue, 0.86, 0.62).toColor();
+  // `Math.round` du site : un demi-degré négatif s'arrondit vers le haut.
+  int hue = (85 + (-105 - 85) * t + 0.5).floor();
+  if (hue < 0) hue += 360;
+  return HSLColor.fromAHSL(1, hue.toDouble(), 0.86, 0.62).toColor();
 }
 
-/// Couleur d'une barre dont la pente est inconnue.
+/// Couleur d'un tronçon hors montée, ou dont la pente est inconnue — le
+/// `NEUTRAL_COLOR` du site. C'est aussi celle d'un tronçon sans vent connu en
+/// mode « Météo » (ledger `MOB-105`).
 final Color slopeNeutral = const HSLColor.fromAHSL(
   1,
   210,
