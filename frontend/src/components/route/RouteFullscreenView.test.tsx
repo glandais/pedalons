@@ -88,8 +88,8 @@ function renderView(shown: FullscreenRoute, history: string[] = ['/map']) {
 }
 
 function LocationProbe() {
-  const { pathname } = useLocation()
-  return <div data-testid="landed">{pathname}</div>
+  const { pathname, search } = useLocation()
+  return <div data-testid="landed">{pathname + search}</div>
 }
 
 describe('RouteFullscreenView surface switch', () => {
@@ -159,6 +159,29 @@ describe('RouteFullscreenView back button', () => {
     renderView(route())
     fireEvent.click(screen.getByLabelText('Retour'))
     expect(screen.getByTestId('landed').textContent).toBe('/back')
+  })
+
+  const surfaced = () =>
+    route({
+      surfaceState: TrackSurfaceState.READY,
+      surfaces: [
+        { from: 0, to: 700, surface: TrackSurface.PAVED },
+        { from: 700, to: 1400, surface: TrackSurface.GRAVEL },
+      ],
+    })
+
+  it('returns the mode switched to here to the page that opened the map', () => {
+    renderView(surfaced(), ['/group', '/map'])
+    fireEvent.click(screen.getByText('Revêtement'))
+    fireEvent.click(screen.getByLabelText('Retour'))
+    expect(screen.getByTestId('landed').textContent).toBe('/back?color=surface')
+  })
+
+  it('carries the mode on its link when the map was opened directly', () => {
+    renderView(surfaced())
+    fireEvent.click(screen.getByText('Revêtement'))
+    fireEvent.click(screen.getByLabelText('Retour'))
+    expect(screen.getByTestId('landed').textContent).toBe('/back?color=surface')
   })
 })
 

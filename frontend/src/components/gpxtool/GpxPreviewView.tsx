@@ -1,4 +1,10 @@
 import { useState } from 'react'
+import { useUrlFilters } from '@/hooks/useUrlFilters'
+import {
+  mapColorFiltersAlias,
+  mapColorFiltersSchema,
+  withMapColor,
+} from '@/hooks/filters/mapColorFilters'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
@@ -53,7 +59,13 @@ export function GpxPreviewView({ preview }: GpxPreviewViewProps) {
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [deleteOpened, setDeleteOpened] = useState(false)
-  const [colorBy, setColorBy] = useState<PlannerColorBy>('grade')
+  // In the URL, like a route sheet's (`?color=`): the fullscreen map opens in it, and comes back in its own
+  const {
+    filters: { colorBy: chosen },
+    setFilters,
+  } = useUrlFilters({ schema: mapColorFiltersSchema, alias: mapColorFiltersAlias })
+  const colorBy: PlannerColorBy = chosen === 'surface' ? 'surface' : 'grade'
+  const setColorBy = (next: PlannerColorBy) => setFilters({ colorBy: next })
 
   const { selection, setSelection, mapBoxRef, selectFromList } = useWaypointSelection()
 
@@ -134,7 +146,7 @@ export function GpxPreviewView({ preview }: GpxPreviewViewProps) {
       <Box ref={mapBoxRef}>
         <RouteMapView
           route={preview}
-          fullscreenPath={paths.gpxToolsMap(preview.id)}
+          fullscreenPath={withMapColor(paths.gpxToolsMap(preview.id), colorBy)}
           colorBy={colorBy}
           waypointSelection={selection}
           onWaypointSelectionChange={setSelection}

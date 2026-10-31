@@ -5,6 +5,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { notifications } from '@mantine/notifications'
 import i18next from 'i18next'
 import { paths } from '../../config/paths'
+import { withMapColor } from '@/hooks/filters/mapColorFilters'
 import { Box, Button, Group, Stack, Title } from '@mantine/core'
 import { useDeleteRoute, useUndeleteRoute } from '@/api/endpoints/routes/routes'
 import { invalidateRouteQueries } from '@/lib/routeCacheInvalidation'
@@ -182,7 +183,7 @@ export function RouteDetailPage() {
         <RouteDetailView
           route={route}
           teamSlug={teamSlug}
-          fullscreenPath={paths.routeMap(team.slug, route.slug)}
+          fullscreenPath={(colorBy) => withMapColor(paths.routeMap(team.slug, route.slug), colorBy)}
         />
       </Box>
 

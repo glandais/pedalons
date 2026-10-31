@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { MantineProvider } from '@mantine/core'
+import { MemoryRouter } from 'react-router-dom'
 import {
   TrackSurface,
   TrackSurfaceState,
@@ -112,18 +113,21 @@ function tree(
   extra: Partial<React.ComponentProps<typeof GroupRouteMap>> = {}
 ) {
   return (
-    <MantineProvider>
-      <GroupRouteMap
-        {...extra}
-        teamSlug="t"
-        routeSlug="r"
-        route={r}
-        leg={leg}
-        attribution={leg ? okWeather.attribution : undefined}
-        timezone="Europe/Paris"
-        withActions={false}
-      />
-    </MantineProvider>
+    // The colour mode lives in the query string (`useWindColorMode`)
+    <MemoryRouter>
+      <MantineProvider>
+        <GroupRouteMap
+          {...extra}
+          teamSlug="t"
+          routeSlug="r"
+          route={r}
+          leg={leg}
+          attribution={leg ? okWeather.attribution : undefined}
+          timezone="Europe/Paris"
+          withActions={false}
+        />
+      </MantineProvider>
+    </MemoryRouter>
   )
 }
 

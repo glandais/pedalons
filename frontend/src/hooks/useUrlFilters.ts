@@ -77,10 +77,17 @@ export function useUrlFilters<S extends AnyFiltersSchema>({
     [schema, alias]
   )
 
+  const ownUrlKeys = useMemo(() => new Set(keys.map(toUrlKey)), [keys, toUrlKey])
+
+  // Builds on `base`'s params this hook does not own: two of them on one page (a group's
+  // participants and its map's colour mode) each keep the other's.
   const serialize = useCallback(
-    (next: Record<string, unknown>): URLSearchParams => {
+    (next: Record<string, unknown>, base: URLSearchParams): URLSearchParams => {
       const defaultValues = defaults as Record<string, unknown>
       const params = new URLSearchParams()
+      for (const [key, value] of base) {
+        if (!ownUrlKeys.has(key)) params.append(key, value)
+      }
       for (const apiKey of keys) {
         const value = next[apiKey]
         if (value === undefined || value === null || value === '') continue
@@ -89,7 +96,7 @@ export function useUrlFilters<S extends AnyFiltersSchema>({
       }
       return params
     },
-    [keys, defaults, forced, toUrlKey]
+    [keys, defaults, forced, toUrlKey, ownUrlKeys]
   )
 
   const filters = useMemo(() => read(searchParams), [read, searchParams])
@@ -144,20 +151,21 @@ export function useUrlFilters<S extends AnyFiltersSchema>({
     (patch: Partial<z.infer<S>>) => {
       // Rebuild from the latest params we asked for rather than a captured `filters`, so a
       // debounced search commit racing a page change never clobbers it (nor the reverse).
-      const next = { ...read(latestParams()), ...patch } as Record<string, unknown>
+      const base = latestParams()
+      const next = { ...read(base), ...patch } as Record<string, unknown>
       if (!('page' in patch) && 'page' in next) {
         next.page = (defaults as Record<string, unknown>).page
       }
-      commit(serialize(next))
+      commit(serialize(next, base))
     },
     [latestParams, commit, read, serialize, defaults]
   )
 
   const replaceFilters = useCallback(
     (next: Partial<z.infer<S>>) => {
-      // Builds on nothing, but still goes through `commit` so a later `setFilters` builds on it.
-      latestParams()
-      commit(serialize(next as Record<string, unknown>))
+      // Builds on none of its own filters, but still goes through `commit` so a later `setFilters`
+      // builds on it.
+      commit(serialize(next as Record<string, unknown>, latestParams()))
     },
     [latestParams, commit, serialize]
   )

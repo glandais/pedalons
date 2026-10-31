@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { Navigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { RouteFullscreenView } from '@/components/route/RouteFullscreenView'
+import { MapColorFullscreenView } from '@/components/route/MapColorFullscreenView'
 import { LoadingPage } from '@/components/common/LoadingSpinner'
 import { paths } from '@/config/paths'
 import { useAppName } from '@/hooks/useAppName'
@@ -37,7 +37,7 @@ export function GpxPreviewFullscreenMapPage() {
   }
 
   return (
-    <RouteFullscreenView
+    <MapColorFullscreenView
       route={preview}
       title={preview.name}
       backTo={paths.gpxToolsView(preview.id)}

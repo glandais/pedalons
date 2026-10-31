@@ -115,4 +115,18 @@ describe('useUrlFilters', () => {
     expect(params.get('sort')).toBeNull()
     expect(params.get('page')).toBe('2')
   })
+
+  it("keeps the query string's other parameters, another hook's on the same page", async () => {
+    const { release } = renderWithSlowLoader('/list?color=wind&maxPrice=50')
+
+    fireEvent.click(screen.getByTestId('set-sort'))
+    await release()
+    expect(searchOf().get('color')).toBe('wind')
+    expect(searchOf().get('maxPrice')).toBe('50')
+
+    fireEvent.click(screen.getByTestId('set-replace'))
+    await release()
+    expect(searchOf().get('color')).toBe('wind')
+    expect(searchOf().get('maxPrice')).toBeNull()
+  })
 })

@@ -16,6 +16,7 @@ import { hasSurfaces } from '@/lib/trackSurface'
 import type { PlannerColorBy } from '@/lib/plannerSurface'
 import type { WaypointSelection } from '@/lib/waypoints'
 import { useRouteSurfaceColors } from '@/hooks/useRouteSurfaceColors'
+import { withMapColor } from '@/hooks/filters/mapColorFilters'
 import { RouteTrackMap } from './RouteTrackMap'
 import { ElevationChart } from './ElevationChart'
 import { ColorByControl, type ColorByOption } from './ColorByControl'
@@ -39,9 +40,9 @@ export interface RouteFullscreenViewProps {
   /** Title shown in the toolbar (the route/stage/track name). */
   title: string
   /**
-   * Locale-aware path to return to (built by the page via paths.xxx) when the map was opened
-   * directly; reached from within the app, the back button goes back in history instead, so it
-   * returns to whichever page opened the map (a ride group, a stage…), not to the route sheet.
+   * Locale-aware path to return to (built by the page via paths.xxx), the page that opens the map,
+   * with the current mode (`?color=`). Reached from within the app, the back button goes back in
+   * history instead while the mode is unchanged.
    */
   backTo: string
   /**
@@ -89,6 +90,8 @@ export function RouteFullscreenView({
   const [hoveredPointIndex, setHoveredPointIndex] = useState<number>(-1)
   const [ownColorBy, setOwnColorBy] = useState<ColorByOption>('grade')
   const requested = controlledColorBy ?? ownColorBy
+  // The mode the map was opened in, which the page behind it in history holds
+  const [openedIn] = useState(requested)
   const setColorBy = (next: ColorByOption) => {
     if (controlledColorBy === undefined) setOwnColorBy(next)
     onColorByChange?.(next)
@@ -136,12 +139,17 @@ export function RouteFullscreenView({
 
   const stripBg = getOverlayBg(colorScheme, true)
 
+  // The page returned to opens in the mode the map is in: the link carries it (`?color=`).
+  const backPath = withMapColor(backTo, colorBy)
   // The router's first entry has the key 'default': anything else was reached by an in-app
-  // navigation, so there is a page of ours to go back to. A modified click keeps the link.
+  // navigation, so there is a page of ours to go back to — in history while the mode is the one the
+  // map opened in (that entry already holds it), in its place otherwise, as history cannot be
+  // rewritten behind us. A modified click keeps the link.
   const handleBack = (event: React.MouseEvent<HTMLAnchorElement>) => {
     if (location.key === 'default' || event.metaKey || event.ctrlKey || event.shiftKey) return
     event.preventDefault()
-    navigate(-1)
+    if (requested === openedIn) navigate(-1)
+    else navigate(backPath, { replace: true })
   }
 
   return (
@@ -149,7 +157,7 @@ export function RouteFullscreenView({
       leading={
         <ActionIcon
           component={PrefetchLink}
-          to={backTo}
+          to={backPath}
           onClick={handleBack}
           variant="subtle"
           size="lg"

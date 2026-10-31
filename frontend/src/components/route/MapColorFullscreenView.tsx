@@ -9,8 +9,8 @@ import { RouteFullscreenView, type RouteFullscreenViewProps } from './RouteFulls
  * surface, no `windLeg` (no forecast, an event over or cancelled, a stage gone) — reads as the grade
  * (`RouteFullscreenView`). A switch here rewrites the URL in place.
  *
- * One wrapper for every fullscreen map with a Météo mode: a ride group's, a solo ride's, a trip
- * stage's.
+ * One wrapper for every fullscreen route map: a ride group's, a solo ride's and a trip stage's (with
+ * the Météo mode), a route's and a GPX preview's. The back button returns the mode to the page.
  */
 export function MapColorFullscreenView(
   props: Omit<RouteFullscreenViewProps, 'colorBy' | 'onColorByChange'>

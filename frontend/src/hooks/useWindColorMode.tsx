@@ -1,4 +1,4 @@
-import { Suspense, useMemo, useState, type ReactNode } from 'react'
+import { Suspense, useMemo, type ReactNode } from 'react'
 import type { TrackDto, WeatherAttributionDto, WeatherLegDto } from '@/api/dto'
 import type { ColorByOption } from '@/components/route/ColorByControl'
 import type { PlannerColorBy } from '@/lib/plannerSurface'
@@ -6,6 +6,8 @@ import { hasSurfaces } from '@/lib/trackSurface'
 import { attributionHtml } from '@/lib/weatherOnRoute'
 import { LazyWeatherCheckpointMarkers as WeatherCheckpointMarkers } from '@/components/weather/LazyWeatherCheckpointMarkers'
 import { useRouteWindColors } from './useRouteWindColors'
+import { useUrlFilters } from './useUrlFilters'
+import { mapColorFiltersAlias, mapColorFiltersSchema } from './filters/mapColorFilters'
 
 const NO_TRACKS: TrackDto[] = []
 
@@ -44,17 +46,23 @@ export function useWindColorMode({
   openIndex,
   onOpenChange,
 }: WindColorModeOptions) {
-  const [chosen, setColorBy] = useState<ColorByOption>('grade')
-  // The forecast gone, the choice reads as the grade.
-  const colorBy: ColorByOption = chosen === 'wind' && !leg ? 'grade' : chosen
-  const windLeg = colorBy === 'wind' ? leg : undefined
-  const lineColorAt = useRouteWindColors(tracks, windLeg)
+  // In the URL (`?color=`, the fullscreen map's own parameter): the page's map opens its fullscreen
+  // in this mode, and a return from it — or a shared link — finds the page in the mode it left.
+  const {
+    filters: { colorBy: chosen },
+    setFilters,
+  } = useUrlFilters({ schema: mapColorFiltersSchema, alias: mapColorFiltersAlias })
+  const setColorBy = (next: ColorByOption) => setFilters({ colorBy: next })
   const options = useMemo(() => {
     const modes: ColorByOption[] = ['grade']
     if (hasSurfaces(tracks)) modes.push('surface')
     if (leg) modes.push('wind')
     return modes
   }, [tracks, leg])
+  // A mode the route cannot offer (no surface, the forecast gone) reads as the grade.
+  const colorBy: ColorByOption = options.includes(chosen) ? chosen : 'grade'
+  const windLeg = colorBy === 'wind' ? leg : undefined
+  const lineColorAt = useRouteWindColors(tracks, windLeg)
   const overlays: ReactNode = windLeg ? (
     <Suspense fallback={null}>
       <WeatherCheckpointMarkers
