@@ -28,4 +28,20 @@ public record GpxImportTrack(
                     + " when ele is")
         String climb,
     @Schema(description = "Length in metres", required = true) double dist,
-    @Schema(description = "Reported ascent in metres", required = true) double ascend) {}
+    @Schema(description = "Reported ascent in metres", required = true) double ascend,
+    @Nullable
+        @Schema(
+            description =
+                "Polyline (precision 6, latitude then longitude) of the raw track of the file, 2D,"
+                    + " as sanitized, neither resampled nor simplified. Opaque to the client, which"
+                    + " carries it into PlannerSource.shape. Only in the GPX import answer: always"
+                    + " absent from the line-elevation answer, and absent from the import answer"
+                    + " when the file's raw tracks together exceed the planner's point budget")
+        String shape) {
+
+  /** Without the raw track: the shape this record had before API-147 (phase C). */
+  public GpxImportTrack(
+      String line, @Nullable String ele, @Nullable String climb, double dist, double ascend) {
+    this(line, ele, climb, dist, ascend, null);
+  }
+}

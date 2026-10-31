@@ -4,6 +4,7 @@ import static fr.pedalons.service.route.planner.PlannerStateFixtures.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import fr.pedalons.common.GeoPoint;
@@ -16,7 +17,9 @@ import fr.pedalons.common.planner.PlannerSource;
 import fr.pedalons.common.planner.PlannerState;
 import fr.pedalons.common.planner.UnpavedSpan;
 import fr.pedalons.dto.error.ErrorCode;
+import fr.pedalons.dto.router.request.RouterProfile;
 import fr.pedalons.service.route.GpxLimits;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -507,6 +510,240 @@ class PlannerStatesTest {
     PlannerStates.DirectRuns runs = states.directRuns(null);
     assertEquals(0, runs.length(), 0);
     assertTrue(runs.runs().isEmpty());
+  }
+
+  // ------------------------------------------------------------------ raw shapes (API-147, C)
+
+  @Test
+  void aRoutedPieceIsDerivedFromItsShapeWithoutItsEnds() {
+    PlannerState state = drawnWithShapes();
+    List<GeoPoint> points = states.validateAndDerive(state);
+    assertEquals(DRAWN_WITH_SHAPES_DERIVED, points.size());
+    double[][] first = PolylineCodec.decode2(state.pieces().getFirst().shape(), Integer.MAX_VALUE);
+    assertEquals(new GeoPoint(4.83, 45.76), points.getFirst());
+    // The router's first point is the junction: dropped, the next one follows it
+    assertEquals(new GeoPoint(first[1][0], first[1][1]), points.get(1));
+    assertEquals(
+        new GeoPoint(first[first.length - 2][0], first[first.length - 2][1]), points.get(19));
+    assertEquals(new GeoPoint(4.834, 45.762), points.get(20));
+    assertEquals(new GeoPoint(4.84, 45.765), points.getLast());
+  }
+
+  @Test
+  void aStateWithoutShapeDerivesItsLinesAsBefore() {
+    assertEquals(
+        states.validateAndDerive(drawn()).size(),
+        states.validateAndDerive(withoutShapes(drawnWithShapes())).size());
+    assertEquals(EXAMPLE_DERIVED, states.validateAndDerive(example()).size());
+  }
+
+  @Test
+  void anImportedPieceIsCutOutOfTheRawSourceAtItsJunctions() {
+    List<GeoPoint> points = states.validateAndDerive(exampleWithRawSource());
+    double[][] raw = rounded(rawSourceCoords());
+    // imported 0-5: raw 1..19; routed 1 + 2 from their lines; imported 8-19: raw 33..75
+    int first = 5 * RAW_PER - 1;
+    int last = (SOURCE_POINTS - 1 - 8) * RAW_PER - 1;
+    assertEquals(5 + first + 1 + 2 + last, points.size());
+    assertEquals(new GeoPoint(raw[1][0], raw[1][1]), points.get(1));
+    assertEquals(new GeoPoint(raw[19][0], raw[19][1]), points.get(19));
+    double[] j1 = sourceCoords()[5];
+    assertEquals(new GeoPoint(j1[0], j1[1]), points.get(20));
+    assertEquals(new GeoPoint(raw[33][0], raw[33][1]), points.get(26));
+    assertEquals(new GeoPoint(raw[75][0], raw[75][1]), points.get(points.size() - 2));
+  }
+
+  @Test
+  void anOutAndBackSourceIsCutOnTheRightLeg() {
+    // Out along a parallel and back on the very same points: idx 11 lies where idx 7 does
+    int n = 19;
+    double[][] line = new double[n][];
+    for (int i = 0; i < n; i++) {
+      line[i] = new double[] {4.83 + 0.001 * Math.min(i, n - 1 - i), 45.76};
+    }
+    double[][] raw = rounded(densify(line, RAW_PER));
+    PlannerSource source =
+        new PlannerSource(PolylineCodec.encode2(line), null, 1.0, null, PolylineCodec.encode2(raw));
+    PlannerState state =
+        new PlannerState(
+            1,
+            fr.pedalons.dto.router.request.RouterProfile.BIKE,
+            List.of(source),
+            List.of(
+                junctionAt(line, PlannerJunctionKind.CONTROL, 0),
+                junctionAt(line, PlannerJunctionKind.JOIN, 11),
+                junctionAt(line, PlannerJunctionKind.CONTROL, n - 1)),
+            List.of(imported(0, 11), imported(11, n - 1)));
+    List<GeoPoint> points = states.validateAndDerive(state);
+    // raw 1..43, the junction, raw 45..71
+    assertEquals(3 + (11 * RAW_PER - 1) + (7 * RAW_PER - 1), points.size());
+    assertEquals(new GeoPoint(raw[43][0], raw[43][1]), points.get(43));
+    assertEquals(new GeoPoint(line[11][0], line[11][1]), points.get(44));
+    assertEquals(new GeoPoint(raw[45][0], raw[45][1]), points.get(45));
+    assertEquals(new GeoPoint(raw[71][0], raw[71][1]), points.get(points.size() - 2));
+  }
+
+  @Test
+  void anInconsistentRoutedShapeIsIgnored() {
+    int expected = states.validateAndDerive(drawn()).size();
+    // A kilometre north of its piece
+    double[][] away = {{4.832, 45.770}, {4.833, 45.771}};
+    assertEquals(
+        expected,
+        states
+            .validateAndDerive(
+                withPiece(
+                    drawn(),
+                    0,
+                    withShape(drawn().pieces().getFirst(), PolylineCodec.encode2(away))))
+            .size());
+    // Right ends, two kilometres of detour between them
+    double[][] detour = {{4.8301, 45.7601}, {4.83, 45.78}, {4.8339, 45.7619}};
+    assertEquals(
+        expected,
+        states
+            .validateAndDerive(
+                withPiece(
+                    drawn(),
+                    0,
+                    withShape(drawn().pieces().getFirst(), PolylineCodec.encode2(detour))))
+            .size());
+  }
+
+  @Test
+  void anInconsistentRawSourceIsIgnored() {
+    double[][] raw = rawSourceCoords();
+    for (double[] p : raw) {
+      p[1] += 0.01;
+    }
+    PlannerSource plain = source();
+    PlannerSource shifted =
+        new PlannerSource(plain.line(), plain.ele(), 1.0, null, PolylineCodec.encode2(raw));
+    PlannerState e = example();
+    assertEquals(
+        EXAMPLE_DERIVED,
+        states
+            .validateAndDerive(
+                new PlannerState(
+                    e.version(), e.profile(), List.of(shifted), e.junctions(), e.pieces()))
+            .size());
+  }
+
+  @Test
+  void shapesPastTheirPointBudgetAreIgnoredNotRefused() {
+    double[][] many = new double[GpxLimits.MAX_PLANNER_SHAPE_POINTS + 1][];
+    for (int i = 0; i < many.length; i++) {
+      many[i] = new double[] {4.832, 45.761};
+    }
+    PlannerState state =
+        withPiece(drawn(), 0, withShape(drawn().pieces().getFirst(), PolylineCodec.encode2(many)));
+    assertEquals(states.validateAndDerive(drawn()).size(), states.validateAndDerive(state).size());
+  }
+
+  @Test
+  void shapeRefusals() {
+    PlannerState ok = drawnWithShapes();
+    // malformed
+    assertInvalid(withPiece(ok, 0, withShape(ok.pieces().getFirst(), "not a polyline \u0001")));
+    // on a straight piece, on an imported one
+    assertInvalid(withPiece(ok, 0, withShape(direct(), ok.pieces().getFirst().shape())));
+    PlannerState e = example();
+    assertInvalid(
+        withPiece(e, 0, withShape(e.pieces().getFirst(), ok.pieces().getFirst().shape())));
+    // a source shape malformed, or of a single point
+    PlannerSource plain = source();
+    assertInvalid(withSource(e, new PlannerSource(plain.line(), plain.ele(), 1.0, null, "?")));
+    assertInvalid(
+        withSource(
+            e,
+            new PlannerSource(
+                plain.line(),
+                plain.ele(),
+                1.0,
+                null,
+                PolylineCodec.encode2(new double[][] {{4.83, 45.76}}))));
+    // counted with the other strings
+    String filler = "?".repeat(GpxLimits.MAX_PLANNER_STATE_CHARS);
+    assertInvalid(withPiece(ok, 0, withShape(ok.pieces().getFirst(), filler)));
+  }
+
+  @Test
+  void directRunsFollowTheLinesNotTheRawShapes() {
+    // A jittery raw source, about 300 m longer than its line, then a straight piece
+    double[][] raw = rawSourceCoords();
+    for (int i = 1; i < raw.length - 1; i += 2) {
+      raw[i] = new double[] {raw[i][0], raw[i][1] + 0.00015};
+    }
+    PlannerSource plain = source();
+    PlannerSource jittery =
+        new PlannerSource(plain.line(), plain.ele(), 1.0, null, PolylineCodec.encode2(raw));
+    List<PlannerJunction> junctions =
+        List.of(
+            fromSource(PlannerJunctionKind.CONTROL, 0),
+            fromSource(PlannerJunctionKind.CONTROL, SOURCE_POINTS - 1),
+            control(4.8600, 45.7800));
+    List<PlannerPiece> pieces = List.of(imported(0, SOURCE_POINTS - 1), direct());
+    PlannerState withRaw =
+        new PlannerState(1, RouterProfile.BIKE, List.of(jittery), junctions, pieces);
+    PlannerState lines = new PlannerState(1, RouterProfile.BIKE, List.of(plain), junctions, pieces);
+    List<GeoPoint> derived = states.validateAndDerive(withRaw);
+    // The track takes the raw source, 300 m longer than the line
+    assertEquals(3 + (SOURCE_POINTS - 1) * RAW_PER - 1, derived.size());
+    assertTrue(distance(derived) > distance(states.validateAndDerive(lines)) + 250);
+
+    PlannerStates.DirectRuns runs = states.directRuns(withRaw);
+    PlannerStates.DirectRuns expected = states.directRuns(lines);
+    assertEquals(expected.length(), runs.length(), 0.01);
+    assertEquals(1, runs.runs().size());
+    assertEquals(expected.runs().getFirst()[0], runs.runs().getFirst()[0], 0.01);
+    assertEquals(expected.runs().getFirst()[1], runs.runs().getFirst()[1], 0.01);
+  }
+
+  @Test
+  void aRawSourceTooLongToWalkIsIgnoredBeforeTheWalk() {
+    // Each segment half way round the globe: the walk would take a station every 20 m of it
+    int n = 1001;
+    double[][] line = new double[n][];
+    for (int i = 0; i < n; i++) {
+      line[i] = new double[] {i % 2 == 0 ? -89.9 : 89.9, 0.0};
+    }
+    String encoded = PolylineCodec.encode2(line);
+    PlannerSource withShape = new PlannerSource(encoded, null, 1.0, null, encoded);
+    PlannerSource plain = new PlannerSource(encoded, null, 1.0, null);
+    List<PlannerJunction> junctions =
+        List.of(
+            junctionAt(line, PlannerJunctionKind.CONTROL, 0),
+            junctionAt(line, PlannerJunctionKind.JOIN, n - 2),
+            control(0.0, 1.0));
+    List<PlannerPiece> pieces = List.of(imported(0, n - 2), direct());
+    PlannerState state =
+        new PlannerState(1, RouterProfile.BIKE, List.of(withShape), junctions, pieces);
+    List<GeoPoint> derived =
+        assertTimeoutPreemptively(Duration.ofSeconds(5), () -> states.validateAndDerive(state));
+    assertEquals(
+        states
+            .validateAndDerive(
+                new PlannerState(1, RouterProfile.BIKE, List.of(plain), junctions, pieces))
+            .size(),
+        derived.size());
+  }
+
+  /** {@code points} as a polyline carries them, to the microdegree. */
+  private static double[][] rounded(double[][] points) {
+    return PolylineCodec.decode2(PolylineCodec.encode2(points), Integer.MAX_VALUE);
+  }
+
+  private static PlannerState withoutShapes(PlannerState s) {
+    return new PlannerState(
+        s.version(),
+        s.profile(),
+        s.sources(),
+        s.junctions(),
+        s.pieces().stream().map(p -> withShape(p, null)).toList());
+  }
+
+  private static PlannerJunction junctionAt(double[][] line, PlannerJunctionKind kind, int idx) {
+    return new PlannerJunction(kind, line[idx][0], line[idx][1], null, 0, idx);
   }
 
   private static double distance(List<GeoPoint> line) {

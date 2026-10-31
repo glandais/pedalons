@@ -29,3 +29,6 @@ ALTER TABLE surface_refresh ADD CONSTRAINT ck_surface_refresh_target CHECK ((rou
 -- index of the catch-up (Hibernate cannot express either).
 ALTER TABLE surface_refresh ALTER COLUMN backfill SET DEFAULT false;
 CREATE INDEX gpx_tracks_surface_missing ON gpx_tracks (route_id) WHERE surfaces IS NULL;
+-- Mirrors V82__raw_track_backfill.sql: the partial index of the raw line catch-up (Hibernate cannot
+-- express it). Its two tables are entities, cascade included.
+CREATE INDEX gpx_tracks_raw_missing ON gpx_tracks (route_id) WHERE raw_geometry IS NULL;

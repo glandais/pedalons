@@ -42,6 +42,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -99,6 +100,12 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
   private GpxPreview reload(GpxPreview preview) {
     return QuarkusTransaction.requiringNew()
         .call(() -> previewRepository.findById(preview.getId()));
+  }
+
+  /** The raw lines as readers see them, read in a transaction: the column is lazy. */
+  private List<String> readableRawLines(GpxPreview preview) {
+    return QuarkusTransaction.requiringNew()
+        .call(() -> previewRepository.findById(preview.getId()).readableRawLines());
   }
 
   private ElevationRefresh refresh(GpxPreview preview) {
@@ -347,6 +354,8 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
     byte[] originalBefore = read(GpxPreviewService.trackKey(before, "original.gpx"));
     byte[] filteredBefore = read(GpxPreviewService.trackKey(before, "filtered.gpx"));
     byte[] fitBefore = read(GpxPreviewService.trackKey(before, "route.fit"));
+    List<String> rawLinesBefore = readableRawLines(created);
+    assertNotNull(rawLinesBefore, "an uploaded preview keeps its raw lines");
     makeDue(created);
 
     assertEquals(1, worker.processDue());
@@ -362,6 +371,8 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
         after.getTracks().getFirst().trackPoints().size(),
         "same 2D track");
     assertNull(refresh(created), "request removed");
+    // The raw lines follow the track onto its new revision, unchanged (docs/LEDGER_*.md API-147)
+    assertEquals(rawLinesBefore, readableRawLines(created), "same raw lines, on the HD revision");
     assertEquals(
         keysOf(after), trackKeys(after), "the old revision is deleted, the new one complete");
 

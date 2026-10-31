@@ -39,6 +39,7 @@ class GpxPreviewPlannerStateResourceTest extends AbstractResourceTest {
       List.of(new GeoPoint(4.8357, 45.7640), new GeoPoint(4.85, 45.77));
 
   @Inject EntityManager em;
+  @Inject fr.pedalons.repository.gpx.GpxPreviewRepository gpxPreviewRepository;
 
   @Override
   @BeforeEach
@@ -130,6 +131,42 @@ class GpxPreviewPlannerStateResourceTest extends AbstractResourceTest {
         .body("state.pieces.size()", equalTo(example().pieces().size()))
         .body("state.junctions.size()", equalTo(example().junctions().size()))
         .body("state.sources[0].line", equalTo(example().sources().getFirst().line()));
+  }
+
+  /** The raw lines of a preview, decoded: one point count per track. */
+  private List<Integer> rawLinePoints(String id) {
+    List<String> lines =
+        QuarkusTransaction.requiringNew()
+            .call(
+                () ->
+                    gpxPreviewRepository
+                        .findByPublicId(domain.getId(), UUID.fromString(id))
+                        .orElseThrow()
+                        .readableRawLines());
+    org.junit.jupiter.api.Assertions.assertNotNull(lines);
+    return lines.stream()
+        .map(
+            l ->
+                fr.pedalons.service.route.planner.PolylineCodec.decode2(l, Integer.MAX_VALUE)
+                    .length)
+        .toList();
+  }
+
+  /**
+   * docs/LEDGER_*.md API-147, phase C: a drawn preview keeps the router's raw shapes, every point,
+   * and a state without them its lines, as before.
+   */
+  @Test
+  void aDrawnStateWithShapes_keepsTheRawShapes() {
+    String withShapes = createWithState(drawnWithShapes());
+    org.junit.jupiter.api.Assertions.assertEquals(
+        List.of(DRAWN_WITH_SHAPES_DERIVED), rawLinePoints(withShapes));
+    readState(withShapes, USER1)
+        .statusCode(200)
+        .body("state.pieces[0].shape", equalTo(drawnWithShapes().pieces().getFirst().shape()));
+
+    String without = createWithState(drawn());
+    org.junit.jupiter.api.Assertions.assertEquals(List.of(3 + 1 + 2), rawLinePoints(without));
   }
 
   @Test

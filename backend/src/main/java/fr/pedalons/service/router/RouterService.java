@@ -21,6 +21,7 @@ import fr.pedalons.infrastructure.valhalla.ValhallaRequest;
 import fr.pedalons.infrastructure.valhalla.ValhallaResponse;
 import fr.pedalons.service.route.GpxLimits;
 import fr.pedalons.service.route.GpxPipeline;
+import fr.pedalons.service.route.planner.PolylineCodec;
 import fr.pedalons.service.security.annotation.Logged;
 import io.github.glandais.elevation.CoordinatesElevation;
 import io.github.glandais.elevation.LatLonElevation;
@@ -127,7 +128,11 @@ public class RouterService {
       unpaved = UnpavedSpans.project(allCoords, rough, lon, lat);
     }
 
-    return new RouterResponse(filteredRoute, dist, ascend, unpaved);
+    // The raw geometry (docs/LEDGER_*.md API-147, phase C), untouched: what the saved track is
+    // derived from, so that the route is stored as the router drew it and simplified like a file.
+    String shape = PolylineCodec.encode2(allCoords.toArray(double[][]::new));
+
+    return new RouterResponse(filteredRoute, dist, ascend, unpaved, shape);
   }
 
   /**

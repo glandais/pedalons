@@ -13,6 +13,7 @@ _GpxImportTrack _$GpxImportTrackFromJson(Map<String, dynamic> json) =>
       ascend: (json['ascend'] as num).toDouble(),
       ele: json['ele'] as String?,
       climb: json['climb'] as String?,
+      shape: json['shape'] as String?,
     );
 
 Map<String, dynamic> _$GpxImportTrackToJson(_GpxImportTrack instance) =>
@@ -22,4 +23,5 @@ Map<String, dynamic> _$GpxImportTrackToJson(_GpxImportTrack instance) =>
       'ascend': instance.ascend,
       'ele': instance.ele,
       'climb': instance.climb,
+      'shape': instance.shape,
     };

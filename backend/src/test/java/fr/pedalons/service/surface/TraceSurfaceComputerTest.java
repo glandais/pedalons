@@ -32,7 +32,7 @@ class TraceSurfaceComputerTest {
       List<TrackPoint> points,
       List<double[]> offNetwork,
       Function<TraceAttributesRequest, TraceAttributesResponse> call) {
-    return TraceSurfaceComputer.compute(points, "bicycle", offNetwork, NOW, call);
+    return TraceSurfaceComputer.compute(points, null, "bicycle", offNetwork, NOW, call);
   }
 
   private static WebApplicationException error(int status, int valhallaCode) {
@@ -326,6 +326,192 @@ class TraceSurfaceComputerTest {
     assertEquals(600, doc.surfaces().get(1).from(), 0.1);
     assertEquals(1200, doc.surfaces().get(1).to(), 0.1);
     assertEquals("off_network", doc.ways().get(1).use());
+  }
+
+  // ------------------------------------------------------------------ raw line (API-147, B)
+
+  private static TrackSurfaceDocument computeRaw(
+      List<TrackPoint> points,
+      List<double[]> raw,
+      List<double[]> offNetwork,
+      Function<TraceAttributesRequest, TraceAttributesResponse> call) {
+    return TraceSurfaceComputer.compute(points, raw, "bicycle", offNetwork, NOW, call);
+  }
+
+  @Test
+  void theRawLineIsSent_notTheStoredPoints() {
+    List<TrackPoint> points = TraceFixtures.line(11, 100);
+    List<double[]> raw = TraceFixtures.rawLine(101, 10, 0, 0);
+    List<TraceAttributesRequest> requests = new ArrayList<>();
+    TrackSurfaceDocument doc =
+        computeRaw(
+            points,
+            raw,
+            List.of(),
+            request -> {
+              requests.add(request);
+              return TraceFixtures.answer(request, i -> "paved");
+            });
+    assertEquals(1, requests.size());
+    List<double[]> sent = Polyline6Decoder.decode(requests.getFirst().encodedPolyline());
+    assertEquals(raw.size(), sent.size());
+    assertEquals(points.getLast().dist(), doc.distance(), 0);
+    assertContiguous(doc, points.getLast().dist());
+  }
+
+  @Test
+  void withoutAUsableRawLine_theStoredPointsAreSent() {
+    List<TrackPoint> points = TraceFixtures.line(11, 100);
+    List<double[]> one = List.of(new double[] {2, 48});
+    List<double[]> still = List.of(new double[] {2, 48}, new double[] {2, 48});
+    for (List<double[]> raw : java.util.Arrays.asList(null, one, still)) {
+      List<TraceAttributesRequest> requests = new ArrayList<>();
+      computeRaw(
+          points,
+          raw,
+          List.of(),
+          request -> {
+            requests.add(request);
+            return TraceFixtures.answer(request, i -> "paved");
+          });
+      assertEquals(
+          points.size(), Polyline6Decoder.decode(requests.getFirst().encodedPolyline()).size());
+    }
+  }
+
+  @Test
+  void aRangeFoundOnAJitteryRawLine_landsWhereItIsOnTheStoredPoints() {
+    // 2 km north; the raw line zigzags 10 m east over its first km, which makes it about 414 m
+    // longer there: a proportional rescale would put metre 1500 at about 1586
+    List<TrackPoint> points = TraceFixtures.line(21, 100);
+    List<double[]> raw = TraceFixtures.rawLine(201, 10, 1000, 10);
+    double rawLength = 0;
+    for (int i = 1; i < raw.size(); i++) {
+      double[] a = raw.get(i - 1);
+      double[] b = raw.get(i);
+      rawLength += GeoDistance.haversineMeters(a[1], a[0], b[1], b[0]);
+    }
+    assertTrue(rawLength > 2_400, "raw " + rawLength);
+    TrackSurfaceDocument doc =
+        computeRaw(
+            points,
+            raw,
+            List.of(),
+            request ->
+                TraceFixtures.answerAlong(
+                    request, m -> m > 1_500 && m < 1_800 ? "gravel" : "paved"));
+    List<SurfaceRange> ranges = doc.surfaces();
+    assertEquals(3, ranges.size(), ranges.toString());
+    assertEquals("gravel", ranges.get(1).code());
+    assertEquals(1_500, ranges.get(1).from(), 3);
+    assertEquals(1_800, ranges.get(1).to(), 3);
+    assertEquals(points.getLast().dist(), doc.distance(), 0);
+    assertContiguous(doc, points.getLast().dist());
+  }
+
+  @Test
+  void straightPieces_stayOnTheStoredPoints_whenTheRawLineIsSent() {
+    List<TrackPoint> points = TraceFixtures.line(21, 100);
+    List<double[]> raw = TraceFixtures.rawLine(201, 10, 1000, 10);
+    TrackSurfaceDocument doc =
+        computeRaw(
+            points,
+            raw,
+            List.of(new double[] {1_200, 1_600}),
+            request ->
+                TraceFixtures.answerAlong(
+                    request, m -> m > 1_500 && m < 1_800 ? "gravel" : "paved"));
+    List<SurfaceRange> ranges = doc.surfaces();
+    assertEquals(4, ranges.size(), ranges.toString());
+    assertEquals("off_network", ranges.get(1).code());
+    assertEquals(1_200, ranges.get(1).from(), 0.1);
+    assertEquals(1_600, ranges.get(1).to(), 0.1);
+    assertEquals("gravel", ranges.get(2).code());
+    assertEquals(1_800, ranges.get(2).to(), 3);
+  }
+
+  @Test
+  void theSentCopyIsThinned_keepingTheLastPoint() {
+    List<double[]> line = TraceFixtures.rawLine(13, 1.1, 0, 0);
+    List<double[]> kept = TraceSurfaceComputer.decimate(line, 5);
+    assertEquals(4, kept.size());
+    assertEquals(line.get(0), kept.get(0));
+    assertEquals(line.get(5), kept.get(1));
+    assertEquals(line.get(10), kept.get(2));
+    assertEquals(line.getLast(), kept.getLast());
+  }
+
+  @Test
+  void aDenseRawLine_isThinned_soThatOneSliceHoldsIt() {
+    // 100 km recorded every metre, plus a last point 2 m on: thinned at 5 m, 20 002 points would
+    // take two requests; thinned to fit, one, as the stored points
+    List<TrackPoint> points = TraceFixtures.line(1_001, 100);
+    List<double[]> raw = new ArrayList<>(TraceFixtures.rawLine(100_001, 1, 0, 0));
+    double[] end = raw.getLast();
+    double[] last =
+        new double[] {end[0], end[1] + Math.toDegrees(2 / GeoDistance.EARTH_RADIUS_METERS)};
+    raw.add(last);
+    List<TraceAttributesRequest> requests = new ArrayList<>();
+    TrackSurfaceDocument doc =
+        computeRaw(
+            points,
+            raw,
+            List.of(),
+            request -> {
+              requests.add(request);
+              return TraceFixtures.answer(request, i -> "paved");
+            });
+    assertEquals(1, requests.size());
+    List<double[]> sent = Polyline6Decoder.decode(requests.getFirst().encodedPolyline());
+    assertTrue(sent.size() <= TraceSurfaceComputer.MAX_POINTS, "sent " + sent.size());
+    assertTrue(sent.size() > 10_000, "sent " + sent.size());
+    assertEquals(last[0], sent.getLast()[0], 1e-6);
+    assertEquals(last[1], sent.getLast()[1], 1e-6);
+    assertEquals(1, doc.surfaces().size());
+    assertContiguous(doc, points.getLast().dist());
+  }
+
+  @Test
+  void aLong1HzRawLine_takesAsManyRequestsAsItsStoredPoints() {
+    // 300 km at 7 m between points (1 Hz at 25 km/h): bounded by point count, a slice would cover
+    // about 100 km, three requests; bounded by distance, two
+    List<TrackPoint> points = TraceFixtures.line(3_001, 100);
+    List<double[]> raw = TraceFixtures.rawLine(42_858, 7, 0, 0);
+    int[] stored = {0};
+    compute(
+        points,
+        List.of(),
+        request -> {
+          stored[0]++;
+          return TraceFixtures.answer(request, i -> "paved");
+        });
+    List<TraceAttributesRequest> requests = new ArrayList<>();
+    TrackSurfaceDocument doc =
+        computeRaw(
+            points,
+            raw,
+            List.of(),
+            request -> {
+              requests.add(request);
+              return TraceFixtures.answer(request, i -> "paved");
+            });
+    assertEquals(2, stored[0]);
+    assertEquals(stored[0], requests.size());
+    for (TraceAttributesRequest request : requests) {
+      assertTrue(
+          Polyline6Decoder.decode(request.encodedPolyline()).size()
+              <= TraceSurfaceComputer.MAX_POINTS);
+    }
+    assertEquals(1, doc.surfaces().size());
+    assertContiguous(doc, points.getLast().dist());
+  }
+
+  @Test
+  void aShortRawLine_isThinnedAtTheMinimumSpacing() {
+    assertEquals(
+        TraceSurfaceComputer.MIN_SPACING_M,
+        TraceSurfaceComputer.spacingFor(TraceFixtures.rawLine(10_001, 1, 0, 0)),
+        0);
   }
 
   @Test

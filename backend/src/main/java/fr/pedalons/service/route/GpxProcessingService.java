@@ -137,10 +137,17 @@ public class GpxProcessingService {
     return gpx;
   }
 
-  /** A single track, fully computed but not yet bound to any entity. */
+  /**
+   * A single track, fully computed but not yet bound to any entity.
+   *
+   * @param line the processed track (resampled, elevations fixed, simplified), 2D
+   * @param raw the same track as its source produced it (docs/LEDGER_*.md API-147): the sanitized
+   *     path, 2D, neither resampled nor simplified
+   */
   public record ComputedTrack(
       String name,
       LineString<G2D> line,
+      LineString<G2D> raw,
       List<GpxTrack.TrackPoint> trackPoints,
       List<ClimbData> climbs,
       TrackMetadata metadata) {}
@@ -327,6 +334,8 @@ public class GpxProcessingService {
             new ComputedTrack(
                 trackNames.get(i),
                 toLineString(path),
+                // Aligned with the processed paths: one per raw path, in order
+                toLineString(raw.get(i)),
                 toTrackPoints(path),
                 pipeline.climbs(path),
                 metadata));
@@ -529,16 +538,22 @@ public class GpxProcessingService {
       List<GpxTrack> tracks =
           computed.tracks().stream()
               .map(
-                  t ->
-                      new GpxTrack(
-                          creator,
-                          t.name(),
-                          t.line(),
-                          t.trackPoints(),
-                          t.climbs(),
-                          t.metadata().distance(),
-                          t.metadata().elevationGain(),
-                          t.metadata().elevationLoss()))
+                  t -> {
+                    GpxTrack track =
+                        new GpxTrack(
+                            creator,
+                            t.name(),
+                            t.line(),
+                            t.trackPoints(),
+                            t.climbs(),
+                            t.metadata().distance(),
+                            t.metadata().elevationGain(),
+                            t.metadata().elevationLoss());
+                    // Every new track row carries its raw line: replacing the track is the only
+                    // way it changes (docs/LEDGER_*.md API-147)
+                    track.setRawGeometry(t.raw());
+                    return track;
+                  })
               .toList();
 
       return new GpxProcessingResult(
@@ -677,7 +692,8 @@ public class GpxProcessingService {
    * stored original, plus its waypoints, which the original does not carry) with the HD source and
    * uploads the new filtered GPX and FIT. No transaction, no entity: like {@link #processGpxData}.
    *
-   * <p>The original and the thumbnails are not rewritten: the 2D track is the same.
+   * <p>The original and the thumbnails are not rewritten: the 2D track is the same. So is the raw
+   * line of every track (docs/LEDGER_*.md API-147), which {@link #applyRecompute} leaves alone.
    *
    * @throws ElevationUnavailableException when the HD source failed on part of the track (a tile
    *     IGN could not serve and Mapterhorn answered instead, or no source at all): the route stays
@@ -779,6 +795,8 @@ public class GpxProcessingService {
       track.setDistance(computed.metadata().distance());
       track.setElevationGain(computed.metadata().elevationGain());
       track.setElevationLoss(computed.metadata().elevationLoss());
+      // Not the raw geometry: the catch-up changes the elevations, never the source 2D track
+      // (docs/LEDGER_*.md API-147)
     }
     // The HD simplification may have moved the vertices: the waypoints keep their place, their
     // distance follows the new axis (docs/LEDGER_*.md WEB-100, C3c)
@@ -933,8 +951,16 @@ public class GpxProcessingService {
   }
 
   /**
-   * Convert a path to a PostGIS LineString in WKT format.
-   * Format: "LINESTRING(lng lat, lng lat, ...)"
+   * The raw line of every track of {@code raw}, in order: each path as is, 2D (docs/LEDGER_*.md
+   * API-147). What {@link #computeGpx} stores beside the processed track, for the catch-up of the
+   * tracks saved before the column ({@code RawTrackBackfill}) to write the same thing.
+   */
+  public static List<LineString<G2D>> rawLines(RawTracks raw) {
+    return raw.paths().stream().map(GpxProcessingService::toLineString).toList();
+  }
+
+  /**
+   * Convert a path to a 2D PostGIS LineString (longitude, latitude): the elevations are dropped.
    */
   private static LineString<G2D> toLineString(Path path) {
     G2D[] geomPoints = new G2D[path.getSize()];

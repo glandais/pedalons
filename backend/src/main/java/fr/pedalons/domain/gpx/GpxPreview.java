@@ -144,6 +144,18 @@ public class GpxPreview {
   @Column(name = "surfaces", columnDefinition = "jsonb")
   private @Nullable PreviewSurfacesDocument surfaces;
 
+  /**
+   * The tracks as their source produced them (docs/LEDGER_*.md API-147), valid while its revision
+   * is {@link #filesRevision}. Lazy, in a group of its own like {@link #surfaces}; never exposed by
+   * the API. Deliberately not a field of {@link PreviewTrack}, for the same reason. Read through
+   * {@link #readableRawLines()}.
+   */
+  @Basic(fetch = FetchType.LAZY)
+  @LazyGroup("raw")
+  @Type(JsonBinaryType.class)
+  @Column(name = "raw_lines", columnDefinition = "jsonb")
+  private @Nullable PreviewRawLinesDocument rawLines;
+
   @CreationTimestamp
   @Column(name = "created_at", nullable = false, updatable = false)
   private Instant createdAt;
@@ -193,6 +205,22 @@ public class GpxPreview {
                 new PreviewWaypointDetail(
                     null, w.name(), w.lat(), w.lng(), "INFO", null, null, "IMPORTED"))
         .toList();
+  }
+
+  /**
+   * The raw lines when they describe the current tracks, one per track; null when not known (a
+   * preview that predates the column, or saved by the previous release of a rolling deploy):
+   * readers then fall back on the track points.
+   */
+  public @Nullable List<String> readableRawLines() {
+    PreviewRawLinesDocument document = rawLines;
+    if (document != null
+        && filesRevision != null
+        && document.trackRevision() == filesRevision
+        && document.lines().size() == tracks.size()) {
+      return document.lines();
+    }
+    return null;
   }
 
   /**

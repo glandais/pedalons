@@ -37,6 +37,7 @@ import fr.pedalons.service.security.DomainResolver;
 import fr.pedalons.service.security.PedalonsQueryContext;
 import fr.pedalons.service.thumbnail.MapThumbnailRenderer;
 import fr.pedalons.util.StoredObjects;
+import fr.pedalons.util.TestDataService;
 import io.github.glandais.engine.gpx.GpxDocument;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.InjectMock;
@@ -255,6 +256,35 @@ class RouteTrackReplacementTest extends AbstractResourceTest {
     expected.removeAll(keys(before));
     expected.addAll(keys(after));
     assertEquals(expected, stored.assetKeys(team1));
+  }
+
+  // ==================== 1b. The raw track (API-147) ====================
+
+  /** The number of points of every sanitized source track, as the pipeline receives them. */
+  private List<Integer> sourceSizes(Path gpx) {
+    return gpxProcessingService.rawTracks(gpxProcessingService.parseGpx(gpx)).paths().stream()
+        .map(io.github.glandais.engine.path.Path::getSize)
+        .toList();
+  }
+
+  private static void assertRawOf(List<Integer> expected, List<TestDataService.RawGeometry> raw) {
+    assertEquals(expected.size(), raw.size(), "one raw geometry per track");
+    for (int i = 0; i < raw.size(); i++) {
+      assertEquals(expected.get(i), raw.get(i).points(), "every source point, track " + i);
+      assertEquals(2, raw.get(i).dims(), "2D, no elevation, track " + i);
+    }
+  }
+
+  @Test
+  void anUploadedTrack_keepsItsRawGeometry_andEditingTheTrackReplacesIt() {
+    RouteDto created = createRoute(EXAMPLE);
+    Long id = TsidUtils.toLong(created.id());
+
+    assertRawOf(sourceSizes(EXAMPLE), dataService.rawGeometries(id));
+
+    updateOverHttp(created.slug(), TWO_TRACKS);
+
+    assertRawOf(sourceSizes(TWO_TRACKS), dataService.rawGeometries(id));
   }
 
   // ==================== 2. A failed edit changes nothing ====================

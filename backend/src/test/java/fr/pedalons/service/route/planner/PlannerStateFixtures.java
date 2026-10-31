@@ -148,6 +148,83 @@ public final class PlannerStateFixtures {
         List.of(imported(0, SOURCE_POINTS - 1)));
   }
 
+  // ------------------------------------------------------------------ raw shapes (API-147, C)
+
+  /**
+   * {@code polyline} with {@code per - 1} points inserted evenly in each segment, its own points
+   * kept: {@code (n - 1) * per + 1} points, the vertex {@code i} at index {@code i * per}.
+   */
+  public static double[][] densify(double[][] polyline, int per) {
+    double[][] out = new double[(polyline.length - 1) * per + 1][];
+    for (int i = 0; i < polyline.length - 1; i++) {
+      for (int k = 0; k < per; k++) {
+        double t = (double) k / per;
+        out[i * per + k] =
+            new double[] {
+              polyline[i][0] + t * (polyline[i + 1][0] - polyline[i][0]),
+              polyline[i][1] + t * (polyline[i + 1][1] - polyline[i][1])
+            };
+      }
+    }
+    out[out.length - 1] = polyline[polyline.length - 1];
+    return out;
+  }
+
+  /** Points of the raw source between two of its line's: {@link #rawSourceCoords()}. */
+  public static final int RAW_PER = 4;
+
+  /** The raw track {@link #source()} stands for: its points, and three more in each segment. */
+  public static double[][] rawSourceCoords() {
+    return densify(sourceCoords(), RAW_PER);
+  }
+
+  /** {@link #source()} with its raw track. */
+  public static PlannerSource sourceWithShape() {
+    PlannerSource plain = source();
+    return new PlannerSource(
+        plain.line(), plain.ele(), 1.0, null, PolylineCodec.encode2(rawSourceCoords()));
+  }
+
+  /** {@link #example()} over {@link #sourceWithShape()}. */
+  public static PlannerState exampleWithRawSource() {
+    PlannerState e = example();
+    return new PlannerState(
+        e.version(), e.profile(), List.of(sourceWithShape()), e.junctions(), e.pieces());
+  }
+
+  /** Raw points of a routed piece of {@link #drawnWithShapes()} per segment of its line. */
+  public static final int ROUTED_PER = 10;
+
+  /**
+   * {@link #drawn()} with the router's raw shape on both pieces, as the router answers it: the line
+   * densified, both junctions included (the server drops them). Derives 3 junctions and 19 + 29
+   * raw interior points.
+   */
+  public static PlannerState drawnWithShapes() {
+    PlannerState d = drawn();
+    List<PlannerPiece> pieces = new java.util.ArrayList<>();
+    for (int k = 0; k < d.pieces().size(); k++) {
+      PlannerPiece p = d.pieces().get(k);
+      double[][] interior = PolylineCodec.decode2(p.line(), Integer.MAX_VALUE);
+      double[][] full = new double[interior.length + 2][];
+      full[0] = new double[] {d.junctions().get(k).lng(), d.junctions().get(k).lat()};
+      System.arraycopy(interior, 0, full, 1, interior.length);
+      full[full.length - 1] =
+          new double[] {d.junctions().get(k + 1).lng(), d.junctions().get(k + 1).lat()};
+      pieces.add(withShape(p, PolylineCodec.encode2(densify(full, ROUTED_PER))));
+    }
+    return new PlannerState(d.version(), d.profile(), d.sources(), d.junctions(), pieces);
+  }
+
+  /** Points {@link #drawnWithShapes()} derives. */
+  public static final int DRAWN_WITH_SHAPES_DERIVED =
+      3 + (2 * ROUTED_PER - 1) + (3 * ROUTED_PER - 1);
+
+  public static PlannerPiece withShape(PlannerPiece p, String shape) {
+    return new PlannerPiece(
+        p.mode(), p.line(), p.ele(), p.ascend(), p.source(), p.from(), p.to(), p.unpaved(), shape);
+  }
+
   /** {@code state} with another profile, to tell two saves apart. */
   public static PlannerState withProfile(PlannerState state, RouterProfile profile) {
     return new PlannerState(

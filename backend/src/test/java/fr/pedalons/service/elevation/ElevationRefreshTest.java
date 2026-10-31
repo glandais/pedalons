@@ -39,6 +39,7 @@ import fr.pedalons.service.security.DomainResolver;
 import fr.pedalons.service.security.PedalonsQueryContext;
 import fr.pedalons.service.thumbnail.MapThumbnailRenderer;
 import fr.pedalons.util.StoredObjects;
+import fr.pedalons.util.TestDataService;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
@@ -432,6 +433,10 @@ class ElevationRefreshTest extends AbstractResourceTest {
                         .sorted()
                         .toList());
     assertEquals(2, trackIds.size());
+    // The source 2D track, written by the save (docs/LEDGER_*.md API-147)
+    List<TestDataService.RawGeometry> raw = dataService.rawGeometries(id(created));
+    assertEquals(2, raw.size());
+    assertTrue(raw.stream().allMatch(r -> r.ewkb() != null), raw.toString());
     makeDue(created);
 
     worker.processDue();
@@ -445,6 +450,8 @@ class ElevationRefreshTest extends AbstractResourceTest {
                         .sorted()
                         .toList());
     assertEquals(trackIds, after);
+    // The catch-up changes the elevations, never the raw geometry
+    assertEquals(raw, dataService.rawGeometries(id(created)));
     assertFlat(created, FakeElevationProducer.HD_ELEVATION);
     assertEquals(ElevationState.HD, storedState(created));
   }

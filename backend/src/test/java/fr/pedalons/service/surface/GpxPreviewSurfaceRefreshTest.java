@@ -280,6 +280,56 @@ class GpxPreviewSurfaceRefreshTest extends AbstractResourceTest {
     assertNull(dto(created).tracks().getFirst().surfaceState(), "not the number of tracks");
   }
 
+  // ------------------------------------------------------------------ raw line (API-147, B)
+
+  private int sentPoints() {
+    org.mockito.ArgumentCaptor<fr.pedalons.infrastructure.valhalla.TraceAttributesRequest> captor =
+        org.mockito.ArgumentCaptor.forClass(
+            fr.pedalons.infrastructure.valhalla.TraceAttributesRequest.class);
+    verify(client, times(1)).traceAttributes(captor.capture());
+    return fr.pedalons.infrastructure.valhalla.Polyline6Decoder.decode(
+            captor.getValue().encodedPolyline())
+        .size();
+  }
+
+  @Test
+  void theRawLine_isSent_whileItDescribesTheTracks() {
+    GpxPreview created = previewService.create(EXAMPLE, "example.gpx");
+    makeDue(created);
+    List<String> lines =
+        QuarkusTransaction.requiringNew()
+            .call(() -> previewRepository.findById(created.getId()).readableRawLines());
+    assertNotNull(lines);
+
+    assertEquals(1, worker.processDue());
+
+    int expected =
+        TraceSurfaceComputer.decimate(
+                fr.pedalons.infrastructure.valhalla.Polyline6Decoder.decode(lines.getFirst()),
+                TraceSurfaceComputer.MIN_SPACING_M)
+            .size();
+    assertEquals(expected, sentPoints());
+    assertNotEquals(reload(created).getTracks().getFirst().trackPoints().size(), expected);
+  }
+
+  @Test
+  void rawLinesOfAStaleRevision_areNotSent_theTrackPointsAre() {
+    GpxPreview created = previewService.create(EXAMPLE, "example.gpx");
+    makeDue(created);
+    QuarkusTransaction.requiringNew()
+        .run(
+            () -> {
+              GpxPreview preview = previewRepository.findById(created.getId());
+              preview.setRawLines(
+                  preview.getRawLines().withTrackRevision(preview.getFilesRevision() + 1));
+            });
+
+    assertEquals(1, worker.processDue());
+
+    assertEquals(reload(created).getTracks().getFirst().trackPoints().size(), sentPoints());
+    assertEquals(TrackSurfaceState.READY, dto(created).tracks().getFirst().surfaceState());
+  }
+
   // ------------------------------------------------------------------ HD catch-up
 
   private void makeElevationDue(GpxPreview preview) {

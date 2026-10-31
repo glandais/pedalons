@@ -101,11 +101,26 @@ public final class GpxLimits {
   public static final int MAX_PLANNER_SOURCES = 8;
 
   /**
-   * Summed length of every {@code line} and {@code ele} string of a planner state: the worst case
-   * (100 000 routed points and 100 000 source points) is about 1.6 MB; this also bounds the cost of
-   * decoding.
+   * Summed length of every string of a planner state ({@code line}, {@code ele}, {@code climb},
+   * {@code shape}): the worst case of the lines alone (100 000 routed points and 100 000 source
+   * points) is about 1.6 MB; this also bounds the cost of decoding. Not raised for the raw shapes
+   * (docs/LEDGER_*.md API-147, phase C): a 200 km route drawn with the router is 10 to 25 000 raw
+   * points, some 100 to 200 KB, and a client past this drops its shapes rather than its save.
    */
   public static final int MAX_PLANNER_STATE_CHARS = 2_000_000;
+
+  /**
+   * Raw points ({@code shape}) a planner state decodes, all of them together (docs/LEDGER_*.md
+   * API-147, phase C). A shape past it is ignored, not refused: its piece falls back on its line.
+   */
+  public static final int MAX_PLANNER_SHAPE_POINTS = MAX_PLANNER_POINTS;
+
+  /**
+   * Points of the track a planner state derives once its pieces are taken from their raw shapes:
+   * an imported piece cut out of a raw source may repeat it. A piece whose raw interior would go
+   * past it keeps its line.
+   */
+  public static final int MAX_PLANNER_DERIVED_POINTS = 2 * MAX_PLANNER_POINTS;
 
   /** Fewest GPX files one merge takes: merging a single file is just an upload. */
   public static final int MIN_MERGE_FILES = 2;

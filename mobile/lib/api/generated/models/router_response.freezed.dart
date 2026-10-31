@@ -17,7 +17,8 @@ T _$identity<T>(T value) => value;
 mixin _$RouterResponse {
 
  GeoJsonLineString get route; double? get dist; double? get ascend;/// Runs of unpaved edges of route (compacted surface or worse, from the router's own maneuvers), half-open, ascending and disjoint; edge i joins route points i and i + 1. Absent when the router gave no surface; empty when all paved
- List<UnpavedSpan>? get unpaved;
+ List<UnpavedSpan>? get unpaved;/// Polyline (precision 6, latitude then longitude) of the router's raw geometry, 2D: the leg shapes concatenated as decoded, neither resampled nor simplified; its first and last points are the ends of route. Opaque to the client, which carries it into PlannerPiece.shape. Absent when there is no route
+ String? get shape;
 /// Create a copy of RouterResponse
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -31,20 +32,20 @@ $RouterResponseCopyWith<RouterResponse> get copyWith => _$RouterResponseCopyWith
 @override
 bool operator ==(Object other) {
   final _this = this as RouterResponse;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RouterResponse&&(identical(other.route, _this.route) || other.route == _this.route)&&(identical(other.dist, _this.dist) || other.dist == _this.dist)&&(identical(other.ascend, _this.ascend) || other.ascend == _this.ascend)&&const DeepCollectionEquality().equals(other.unpaved, _this.unpaved));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RouterResponse&&(identical(other.route, _this.route) || other.route == _this.route)&&(identical(other.dist, _this.dist) || other.dist == _this.dist)&&(identical(other.ascend, _this.ascend) || other.ascend == _this.ascend)&&const DeepCollectionEquality().equals(other.unpaved, _this.unpaved)&&(identical(other.shape, _this.shape) || other.shape == _this.shape));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as RouterResponse;
-  return Object.hash(runtimeType,_this.route,_this.dist,_this.ascend,const DeepCollectionEquality().hash(_this.unpaved));
+  return Object.hash(runtimeType,_this.route,_this.dist,_this.ascend,const DeepCollectionEquality().hash(_this.unpaved),_this.shape);
 }
 
 @override
 String toString() {
   final _this = this as RouterResponse;
-  return 'RouterResponse(route: ${_this.route}, dist: ${_this.dist}, ascend: ${_this.ascend}, unpaved: ${_this.unpaved})';
+  return 'RouterResponse(route: ${_this.route}, dist: ${_this.dist}, ascend: ${_this.ascend}, unpaved: ${_this.unpaved}, shape: ${_this.shape})';
 }
 
 
@@ -55,7 +56,7 @@ abstract mixin class $RouterResponseCopyWith<$Res>  {
   factory $RouterResponseCopyWith(RouterResponse value, $Res Function(RouterResponse) _then) = _$RouterResponseCopyWithImpl;
 @useResult
 $Res call({
- GeoJsonLineString route, double? dist, double? ascend, List<UnpavedSpan>? unpaved
+ GeoJsonLineString route, double? dist, double? ascend, List<UnpavedSpan>? unpaved, String? shape
 });
 
 
@@ -72,13 +73,14 @@ class _$RouterResponseCopyWithImpl<$Res>
 
 /// Create a copy of RouterResponse
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? route = null,Object? dist = freezed,Object? ascend = freezed,Object? unpaved = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? route = null,Object? dist = freezed,Object? ascend = freezed,Object? unpaved = freezed,Object? shape = freezed,}) {
   return _then(RouterResponse(
 route: null == route ? _self.route : route // ignore: cast_nullable_to_non_nullable
 as GeoJsonLineString,dist: freezed == dist ? _self.dist : dist // ignore: cast_nullable_to_non_nullable
 as double?,ascend: freezed == ascend ? _self.ascend : ascend // ignore: cast_nullable_to_non_nullable
 as double?,unpaved: freezed == unpaved ? _self.unpaved : unpaved // ignore: cast_nullable_to_non_nullable
-as List<UnpavedSpan>?,
+as List<UnpavedSpan>?,shape: freezed == shape ? _self.shape : shape // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 /// Create a copy of RouterResponse
@@ -172,10 +174,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( GeoJsonLineString route,  double? dist,  double? ascend,  List<UnpavedSpan>? unpaved)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( GeoJsonLineString route,  double? dist,  double? ascend,  List<UnpavedSpan>? unpaved,  String? shape)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _RouterResponse() when $default != null:
-return $default(_that.route,_that.dist,_that.ascend,_that.unpaved);case _:
+return $default(_that.route,_that.dist,_that.ascend,_that.unpaved,_that.shape);case _:
   return orElse();
 
 }
@@ -193,10 +195,10 @@ return $default(_that.route,_that.dist,_that.ascend,_that.unpaved);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( GeoJsonLineString route,  double? dist,  double? ascend,  List<UnpavedSpan>? unpaved)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( GeoJsonLineString route,  double? dist,  double? ascend,  List<UnpavedSpan>? unpaved,  String? shape)  $default,) {final _that = this;
 switch (_that) {
 case _RouterResponse():
-return $default(_that.route,_that.dist,_that.ascend,_that.unpaved);case _:
+return $default(_that.route,_that.dist,_that.ascend,_that.unpaved,_that.shape);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -213,10 +215,10 @@ return $default(_that.route,_that.dist,_that.ascend,_that.unpaved);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( GeoJsonLineString route,  double? dist,  double? ascend,  List<UnpavedSpan>? unpaved)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( GeoJsonLineString route,  double? dist,  double? ascend,  List<UnpavedSpan>? unpaved,  String? shape)?  $default,) {final _that = this;
 switch (_that) {
 case _RouterResponse() when $default != null:
-return $default(_that.route,_that.dist,_that.ascend,_that.unpaved);case _:
+return $default(_that.route,_that.dist,_that.ascend,_that.unpaved,_that.shape);case _:
   return null;
 
 }
@@ -228,7 +230,7 @@ return $default(_that.route,_that.dist,_that.ascend,_that.unpaved);case _:
 @JsonSerializable()
 
 class _RouterResponse implements RouterResponse {
-  const _RouterResponse({required this.route, this.dist, this.ascend,  List<UnpavedSpan>? unpaved}): _unpaved = unpaved;
+  const _RouterResponse({required this.route, this.dist, this.ascend,  List<UnpavedSpan>? unpaved, this.shape}): _unpaved = unpaved;
   factory _RouterResponse.fromJson(Map<String, dynamic> json) => _$RouterResponseFromJson(json);
 
 @override final  GeoJsonLineString route;
@@ -245,6 +247,8 @@ class _RouterResponse implements RouterResponse {
   return EqualUnmodifiableListView(value);
 }
 
+/// Polyline (precision 6, latitude then longitude) of the router's raw geometry, 2D: the leg shapes concatenated as decoded, neither resampled nor simplified; its first and last points are the ends of route. Opaque to the client, which carries it into PlannerPiece.shape. Absent when there is no route
+@override final  String? shape;
 
 /// Create a copy of RouterResponse
 /// with the given fields replaced by the non-null parameter values.
@@ -259,18 +263,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _RouterResponse&&(identical(other.route, route) || other.route == route)&&(identical(other.dist, dist) || other.dist == dist)&&(identical(other.ascend, ascend) || other.ascend == ascend)&&const DeepCollectionEquality().equals(other.unpaved, _unpaved));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _RouterResponse&&(identical(other.route, route) || other.route == route)&&(identical(other.dist, dist) || other.dist == dist)&&(identical(other.ascend, ascend) || other.ascend == ascend)&&const DeepCollectionEquality().equals(other.unpaved, _unpaved)&&(identical(other.shape, shape) || other.shape == shape));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,route,dist,ascend,const DeepCollectionEquality().hash(_unpaved));
+    return Object.hash(runtimeType,route,dist,ascend,const DeepCollectionEquality().hash(_unpaved),shape);
 }
 
 @override
 String toString() {
-    return 'RouterResponse(route: $route, dist: $dist, ascend: $ascend, unpaved: $unpaved)';
+    return 'RouterResponse(route: $route, dist: $dist, ascend: $ascend, unpaved: $unpaved, shape: $shape)';
 }
 
 
@@ -281,7 +285,7 @@ abstract mixin class _$RouterResponseCopyWith<$Res> implements $RouterResponseCo
   factory _$RouterResponseCopyWith(_RouterResponse value, $Res Function(_RouterResponse) _then) = __$RouterResponseCopyWithImpl;
 @override @useResult
 $Res call({
- GeoJsonLineString route, double? dist, double? ascend, List<UnpavedSpan>? unpaved
+ GeoJsonLineString route, double? dist, double? ascend, List<UnpavedSpan>? unpaved, String? shape
 });
 
 
@@ -298,13 +302,14 @@ class __$RouterResponseCopyWithImpl<$Res>
 
 /// Create a copy of RouterResponse
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? route = null,Object? dist = freezed,Object? ascend = freezed,Object? unpaved = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? route = null,Object? dist = freezed,Object? ascend = freezed,Object? unpaved = freezed,Object? shape = freezed,}) {
   return _then(_RouterResponse(
 route: null == route ? _self.route : route // ignore: cast_nullable_to_non_nullable
 as GeoJsonLineString,dist: freezed == dist ? _self.dist : dist // ignore: cast_nullable_to_non_nullable
 as double?,ascend: freezed == ascend ? _self.ascend : ascend // ignore: cast_nullable_to_non_nullable
 as double?,unpaved: freezed == unpaved ? _self._unpaved : unpaved // ignore: cast_nullable_to_non_nullable
-as List<UnpavedSpan>?,
+as List<UnpavedSpan>?,shape: freezed == shape ? _self.shape : shape // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

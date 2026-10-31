@@ -441,6 +441,63 @@ public class SurfaceRefreshRepository implements PanacheRepository<SurfaceRefres
         > 0;
   }
 
+  /**
+   * The routes the catch-up of raw lines asks the surface of again (docs/LEDGER_*.md API-147, phase
+   * D): alive, without any request (one in flight read the stored points: the row waits for it to
+   * end), and still on the original their raw line was read from. Most recent first.
+   */
+  public List<BackfillCandidate> findResurfaceRoutes(int limit) {
+    @SuppressWarnings("unchecked")
+    List<Object[]> rows =
+        getEntityManager()
+            .createNativeQuery(
+                """
+                select t.id, t.distance, w.source_revision
+                  from raw_track_resurface w
+                  join team_entities t on t.id = w.route_id
+                  join teams tm on tm.id = t.team_id
+                 where t.deleted = false
+                   and tm.deleted = false
+                   and not exists (select 1 from surface_refresh r where r.route_id = t.id)
+                   and w.source_revision = (select a.file_id from assets a
+                                             where a.team_entity_id = t.id
+                                               and a.type = 'ROUTE_ORIGINAL_GPX'
+                                             order by a.id desc limit 1)
+                 order by t.created_at desc, t.id desc
+                 limit :limit
+                """)
+            .setParameter("limit", limit)
+            .getResultList();
+    return candidates(rows);
+  }
+
+  /**
+   * Forgets the resurface wishes whose route has another original since the raw line was read: the
+   * save that replaced it wrote the line and asked the surface itself.
+   *
+   * @return how many were forgotten
+   */
+  public int dropStaleResurfaces() {
+    return getEntityManager()
+        .createNativeQuery(
+            """
+            delete from raw_track_resurface w
+             where w.source_revision is distinct from
+                   (select a.file_id from assets a
+                     where a.team_entity_id = w.route_id and a.type = 'ROUTE_ORIGINAL_GPX'
+                     order by a.id desc limit 1)
+            """)
+        .executeUpdate();
+  }
+
+  /** Forgets a route's resurface wish: a request now reads its raw line. */
+  public void dropResurface(Long routeId) {
+    getEntityManager()
+        .createNativeQuery("delete from raw_track_resurface where route_id = :routeId")
+        .setParameter("routeId", routeId)
+        .executeUpdate();
+  }
+
   /** Drops the normal request a bulk import made for a route, so the capped catch-up takes it. */
   public int dropNormalRequest(Long routeId) {
     return (int) delete("route.id = ?1 and backfill = false and attempts = 0", routeId);

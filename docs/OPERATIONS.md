@@ -788,6 +788,31 @@ catch-up instead of queuing them at once.
   `SURFACE_ENABLED=false` any more: the computation is free. Keep the catch-up's cap in mind after a
   biketeam migration test, though — it downloads the tiles of every region its routes cross.
 
+The **catch-up of raw lines** (ledger `API-147`, phase D; the tracks saved before
+`gpx_tracks.raw_geometry` existed, biketeam ones included): `RawTrackBackfill` (every 5 min) reads
+the current `original.gpx` of `RAW_BACKFILL_BATCH` routes (default 50, most recent first) and
+writes the 2D line of each track, as a save does. No file rewritten, one backend at
+a time (an advisory lock: the other one skips the pass). A route whose original is missing or
+unreadable, or holds another number of tracks than the route, is given up in
+`raw_track_backfill_skip` (with its reason) and never picked again. An unreachable bucket or a
+database failure gives nothing up: the pass ends and the next one starts again from the same route
+(a write that fails three passes in a row is given up as `ERROR`).
+
+- **Stop it**: `RAW_BACKFILL_ENABLED=false`.
+- **Surfaces**: a caught-up route keeps the surface computed on its stored points.
+  A route whose raw line has at least 1.5 times as many points as its stored ones is recorded in
+  `raw_track_resurface`, whatever the switch. `RAW_BACKFILL_RESURFACE=true` (**off by default**)
+  lets the surface catch-up queue them, last after its own routes and previews, under
+  `SURFACE_BACKFILL_PER_HOUR` and its ten-minute window, after the normal requests; nothing while `SURFACE_ENABLED` or
+  `SURFACE_BACKFILL_ENABLED` is off. It can be switched on at any time, after the raw lines are
+  caught up too: the rows wait. A route drawn in the planner is never denser: it stored its
+  simplified line as its original. Waiting: `select count(*) from raw_track_resurface;`.
+- **Follow it**: what is left, `select count(distinct route_id) from gpx_tracks where raw_geometry
+  is null;`; given up, `select reason, count(*) from raw_track_backfill_skip group by reason;`. The
+  log says `Raw line catch-up done` once nothing is left. To retry the ones given up on an error
+  (`ERROR`, a file that broke the parse or a write that kept failing — the log has the cause):
+  `delete from raw_track_backfill_skip where reason = 'ERROR';`.
+
 ### Store reviewers' demo data
 
 `marketplace-tester@pedalons.fr`, the account given to the Apple, Google and Garmin reviewers, is a
