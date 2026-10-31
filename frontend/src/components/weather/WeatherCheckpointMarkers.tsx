@@ -13,6 +13,7 @@ import {
   checkpointPoint,
   mapCheckpoints,
   mapWindRotation,
+  sameSpotRanks,
   type MapCheckpoint,
 } from '@/lib/weatherOnRoute'
 import { WeatherIcon } from './WeatherIcon'
@@ -73,6 +74,17 @@ export function WeatherCheckpointMarkers({
   const markers = useMemo(
     () => mapCheckpoints(tracks, leg.checkpoints, chained),
     [tracks, leg.checkpoints, chained]
+  )
+  // Badges sharing a spot (a loop's start and finish) side by side, in the order of the route
+  const shifts = useMemo(
+    () =>
+      new Map(
+        sameSpotRanks(markers).map(({ rank, count }, i) => [
+          markers[i].checkpoint.index,
+          (rank - (count - 1) / 2) * BADGE_STEP,
+        ])
+      ),
+    [markers]
   )
   const [ownOpenIndex, setOwnOpenIndex] = useState<number | null>(null)
   const controlled = controlledOpenIndex !== undefined
@@ -160,7 +172,10 @@ export function WeatherCheckpointMarkers({
           // The capsule 6 px above its point (the line, the start and the finish stay visible
           // under it): its 44 px target, centred on it, reaches 5 px below the point
           anchor="bottom"
-          offset={[0, BADGE_TARGET / 2 - BADGE_HEIGHT / 2 - 6]}
+          offset={[
+            shifts.get(marker.checkpoint.index) ?? 0,
+            BADGE_TARGET / 2 - BADGE_HEIGHT / 2 - 6,
+          ]}
         >
           <CheckpointBadge
             marker={marker}
@@ -210,7 +225,8 @@ export function WeatherCheckpointMarkers({
           longitude={open.longitude}
           latitude={open.latitude}
           anchor="bottom"
-          offset={34}
+          // Above its badge, shifted with it when it shares its spot
+          offset={[shifts.get(open.checkpoint.index) ?? 0, -34]}
           closeOnClick={false}
           // The detail takes the focus itself (the effect above), not the close button
           focusAfterOpen={false}
@@ -233,6 +249,8 @@ export function WeatherCheckpointMarkers({
 /** The capsule drawn on the map, and the touch target around it (WCAG 2.5.8, 44 px aimed). */
 const BADGE_HEIGHT = 22
 const BADGE_TARGET = 44
+/** The step between two badges sharing a spot: a capsule's width (icon, « 23° », arrow) and a gap. */
+const BADGE_STEP = 72
 
 function CheckpointBadge({
   marker,

@@ -9,6 +9,8 @@ import {
   checkpointPoint,
   hasWindForecast,
   mapCheckpoints,
+  sameSpotRanks,
+  type MapCheckpoint,
   mapWindRotation,
   pointWinds,
   relativeWindStrokeColors,
@@ -228,5 +230,23 @@ describe('mapWindRotation', () => {
     expect(mapWindRotation(180, 90)).toBe(270)
     expect(mapWindRotation(225, 200)).toBe(205)
     expect(mapWindRotation(180, -30)).toBe(30)
+  })
+})
+
+describe('sameSpotRanks', () => {
+  const at = (index: number, longitude: number, latitude: number) =>
+    ({ checkpoint: { index }, longitude, latitude }) as unknown as MapCheckpoint
+
+  it("ranks a loop's start and finish side by side, the others alone", () => {
+    const ranks = sameSpotRanks([
+      at(0, 5, 45),
+      at(1, 5.1, 45.1),
+      at(2, 5.0002, 45.0002), // ~30 m from the start
+    ])
+    expect(ranks).toEqual([
+      { rank: 0, count: 2 },
+      { rank: 0, count: 1 },
+      { rank: 1, count: 2 },
+    ])
   })
 })

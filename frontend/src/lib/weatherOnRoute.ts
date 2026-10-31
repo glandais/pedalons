@@ -19,6 +19,7 @@ import type {
 import { RELATIVE_WIND_COLORS } from '@/lib/badgeColors.generated'
 import { hasForecast } from '@/components/weather/weatherDisplay'
 import { phaseAt, type WindPhase } from '@/components/weather/windPhases'
+import { distance } from '@/components/map/mapUtils'
 
 type Tracks = Pick<TrackDto, 'line'>[]
 
@@ -114,6 +115,43 @@ export function mapCheckpoints(
     })
   }
   return placed
+}
+
+/** Two badges closer than this share a spot: a loop's start and finish. */
+const SAME_SPOT_METERS = 100
+
+/**
+ * Where each badge stands among those sharing its spot (`SAME_SPOT_METERS`), in the order of the
+ * route: a loop's start and finish would otherwise lie one on the other, the finish hiding the
+ * start. `count` is 1 for a badge alone.
+ */
+export function sameSpotRanks(
+  markers: readonly MapCheckpoint[]
+): { rank: number; count: number }[] {
+  const groups: number[][] = []
+  const groupOf: number[] = []
+  markers.forEach((marker, i) => {
+    const group = groups.findIndex((members) =>
+      members.some((j) => {
+        const other = markers[j]
+        return (
+          distance(marker.longitude, marker.latitude, other.longitude, other.latitude) <
+          SAME_SPOT_METERS
+        )
+      })
+    )
+    if (group >= 0) {
+      groupOf.push(group)
+      groups[group].push(i)
+    } else {
+      groupOf.push(groups.length)
+      groups.push([i])
+    }
+  })
+  return markers.map((_, i) => {
+    const members = groups[groupOf[i]]
+    return { rank: members.indexOf(i), count: members.length }
+  })
 }
 
 /**
