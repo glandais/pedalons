@@ -8,6 +8,7 @@ import fr.pedalons.domain.route.PlannerStateDocument;
 import fr.pedalons.domain.route.Route;
 import fr.pedalons.domain.route.TrackSurfaceDocument;
 import fr.pedalons.enums.AssetType;
+import fr.pedalons.infrastructure.valhalla.Polyline6Decoder;
 import fr.pedalons.repository.asset.AssetRepository;
 import fr.pedalons.repository.gpx.GpxPreviewRepository;
 import fr.pedalons.repository.route.GpxTrackRepository;
@@ -82,9 +83,19 @@ public class SurfaceRefreshService {
     FAILED
   }
 
-  /** One track to send. */
+  /**
+   * One track to send.
+   *
+   * @param raw its raw line, {@code [lng, lat]} pairs, null when not known: the points are sent
+   *     then (docs/LEDGER_*.md API-147)
+   * @param offNetwork on the distances of {@code points}, whatever is sent
+   */
   record TrackInput(
-      @Nullable Long trackId, List<TrackPoint> points, String costing, List<double[]> offNetwork) {}
+      @Nullable Long trackId,
+      List<TrackPoint> points,
+      @Nullable List<double[]> raw,
+      String costing,
+      List<double[]> offNetwork) {}
 
   /** What the first phase found: the request settled there, or the tracks to compute. */
   private record Read(@Nullable Outcome settled, List<TrackInput> inputs) {
@@ -284,6 +295,7 @@ public class SurfaceRefreshService {
       return Read.settled(Outcome.REALIGNED);
     }
     List<TrackPoints> tracks = gpxTrackRepository.findPoints(claim.routeId());
+    Map<Long, List<double[]>> raws = gpxTrackRepository.findRawLines(claim.routeId());
     PlannerState state = null;
     if (tracks.size() == 1) {
       List<@Nullable PlannerStateDocument> states =
@@ -295,7 +307,7 @@ public class SurfaceRefreshService {
     }
     List<TrackInput> inputs = new ArrayList<>(tracks.size());
     for (TrackPoints t : tracks) {
-      inputs.add(input(t.trackId(), t.points(), state));
+      inputs.add(input(t.trackId(), t.points(), raws.get(t.trackId()), state));
     }
     return new Read(null, inputs);
   }
@@ -381,11 +393,36 @@ public class SurfaceRefreshService {
         && document.trackRevision() == current) {
       state = document.state();
     }
+    List<@Nullable List<double[]>> raws = rawLines(preview);
     List<TrackInput> inputs = new ArrayList<>(preview.getTracks().size());
-    for (GpxPreview.PreviewTrack t : preview.getTracks()) {
-      inputs.add(input(null, t.trackPoints(), state));
+    for (int i = 0; i < preview.getTracks().size(); i++) {
+      inputs.add(input(null, preview.getTracks().get(i).trackPoints(), raws.get(i), state));
     }
     return new Read(null, inputs);
+  }
+
+  /**
+   * The raw line of each track of a preview, in order, as {@code [lng, lat]} pairs: null elements
+   * when they do not describe the current tracks (another revision, another number of tracks) or
+   * cannot be read, and the points are sent instead (docs/LEDGER_*.md API-147).
+   */
+  private static List<@Nullable List<double[]>> rawLines(GpxPreview preview) {
+    int tracks = preview.getTracks().size();
+    List<String> lines = preview.readableRawLines();
+    if (lines == null) {
+      return Collections.nCopies(tracks, null);
+    }
+    List<@Nullable List<double[]>> out = new ArrayList<>(tracks);
+    for (int i = 0; i < tracks; i++) {
+      List<double[]> line = null;
+      try {
+        line = Polyline6Decoder.decode(lines.get(i));
+      } catch (RuntimeException e) {
+        LOG.debugf("Raw line %d of preview %d unreadable, its points are sent", i, preview.getId());
+      }
+      out.add(line);
+    }
+    return out;
   }
 
   /** As {@link #writeRoute}, for a preview: one document holding every track's, with the revision. */
@@ -423,22 +460,27 @@ public class SurfaceRefreshService {
    * (one track, a current token): a state-less track — a file — is cycled.
    */
   private TrackInput input(
-      @Nullable Long trackId, List<TrackPoint> points, @Nullable PlannerState state) {
+      @Nullable Long trackId,
+      List<TrackPoint> points,
+      @Nullable List<double[]> raw,
+      @Nullable PlannerState state) {
     if (state == null) {
-      return new TrackInput(trackId, points, TraceSurfaceComputer.costingOf(null), List.of());
+      return new TrackInput(trackId, points, raw, TraceSurfaceComputer.costingOf(null), List.of());
     }
     DirectRuns direct = plannerStates.directRuns(state);
     double stored = points.isEmpty() ? 0 : points.getLast().dist();
     List<double[]> runs = new ArrayList<>(direct.runs().size());
     if (direct.length() > 0 && stored > 0) {
       // The pipeline resamples and simplifies the derived line: the lengths differ by a few
-      // metres at most, and the runs follow proportionally
+      // metres at most, and the runs follow proportionally. They stay on the stored points even
+      // when the raw line is sent: the computer carries the answer there before laying them over
       double scale = stored / direct.length();
       for (double[] run : direct.runs()) {
         runs.add(new double[] {run[0] * scale, run[1] * scale});
       }
     }
-    return new TrackInput(trackId, points, TraceSurfaceComputer.costingOf(state.profile()), runs);
+    return new TrackInput(
+        trackId, points, raw, TraceSurfaceComputer.costingOf(state.profile()), runs);
   }
 
   /** Phase 2, no transaction: the calls to the provider. */
@@ -448,7 +490,8 @@ public class SurfaceRefreshService {
     List<TrackSurfaceDocument> documents = new ArrayList<>(inputs.size());
     for (TrackInput input : inputs) {
       ids.add(input.trackId());
-      documents.add(computer.compute(input.points(), input.costing(), input.offNetwork(), now));
+      documents.add(
+          computer.compute(input.points(), input.raw(), input.costing(), input.offNetwork(), now));
     }
     return new Computed(ids, documents);
   }

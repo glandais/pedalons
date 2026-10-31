@@ -1795,4 +1795,37 @@ public class TestDataService {
   public boolean tagExists(Long tagId) {
     return tagRepository.findByIdOptional(tagId).isPresent();
   }
+
+  /**
+   * The raw geometry of a route's tracks, in track id order (docs/LEDGER_*.md API-147). Native
+   * query: the column is lazy and nothing in the API exposes it.
+   *
+   * @param points its number of vertices, null when the column is null
+   * @param dims its number of dimensions (2 without elevation), null when null
+   * @param ewkb its hex EWKB, to compare two states of the same row
+   */
+  public record RawGeometry(
+      @Nullable Integer points, @Nullable Integer dims, @Nullable String ewkb) {}
+
+  @Transactional
+  public List<RawGeometry> rawGeometries(Long routeId) {
+    @SuppressWarnings("unchecked")
+    List<Object[]> rows =
+        routeRepository
+            .getEntityManager()
+            .createNativeQuery(
+                "SELECT ST_NPoints(raw_geometry), ST_NDims(raw_geometry),"
+                    + " encode(ST_AsEWKB(raw_geometry), 'hex') FROM gpx_tracks"
+                    + " WHERE route_id = :id ORDER BY id")
+            .setParameter("id", routeId)
+            .getResultList();
+    return rows.stream()
+        .map(
+            r ->
+                new RawGeometry(
+                    r[0] == null ? null : ((Number) r[0]).intValue(),
+                    r[1] == null ? null : ((Number) r[1]).intValue(),
+                    (String) r[2]))
+        .toList();
+  }
 }

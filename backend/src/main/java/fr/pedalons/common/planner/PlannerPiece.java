@@ -34,5 +34,30 @@ public record PlannerPiece(
                     + " edge 0 joins the first junction to the first interior point, the last edge"
                     + " ends at the last junction. Absent: surface unknown")
         @Size(max = GpxLimits.MAX_PLANNER_UNPAVED_SPANS)
-        List<UnpavedSpan> unpaved)
-    implements Serializable {}
+        List<UnpavedSpan> unpaved,
+    @Nullable
+        @Schema(
+            description =
+                "ROUTED: polyline6 of the router's raw geometry of the piece, RouterResponse.shape"
+                    + " as the router answered it, never edited (its two ends may be kept: a point"
+                    + " within 1 m of a junction is dropped). The saved track is derived from it"
+                    + " rather than from line; absent"
+                    + " or inconsistent with line (ends over 50 m from the junctions, length off by"
+                    + " over 20 % + 200 m): line. Unpaved spans keep indexing the edges of line")
+        @Size(max = GpxLimits.MAX_PLANNER_STATE_CHARS)
+        String shape)
+    implements Serializable {
+
+  /** Without the raw geometry: the shape this record had before API-147 (phase C). */
+  public PlannerPiece(
+      PlannerPieceMode mode,
+      @Nullable String line,
+      @Nullable String ele,
+      @Nullable Double ascend,
+      @Nullable Integer source,
+      @Nullable Integer from,
+      @Nullable Integer to,
+      @Nullable List<UnpavedSpan> unpaved) {
+    this(mode, line, ele, ascend, source, from, to, unpaved, null);
+  }
+}

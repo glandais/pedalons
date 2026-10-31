@@ -42,6 +42,7 @@ class RouterImportResourceTest extends AbstractResourceTest {
   private static final File EXAMPLE_GPX = new File("src/test/resources/example.gpx");
 
   @Inject EntityManager em;
+  @Inject fr.pedalons.service.route.GpxProcessingService gpxProcessingService;
   @Inject S3Client s3Client;
 
   @ConfigProperty(name = "storage.bucket", defaultValue = "pedalons")
@@ -181,6 +182,29 @@ class RouterImportResourceTest extends AbstractResourceTest {
     }
     assertTrue(((Number) t.get("dist")).doubleValue() > 1000);
     assertEquals(((Number) t.get("ascend")).doubleValue(), climbs[climbs.length - 1], 0.05);
+  }
+
+  /** docs/LEDGER_*.md API-147, phase C: each track comes with its raw, sanitized 2D track. */
+  @Test
+  void importGpx_returnsTheRawTrackOfTheFile() throws IOException {
+    List<java.util.Map<String, Object>> tracks =
+        importFile(EXAMPLE_GPX).statusCode(200).extract().path("tracks");
+    var t = tracks.getFirst();
+    double[][] line = PolylineCodec.decode2((String) t.get("line"), GpxLimits.MAX_PLANNER_POINTS);
+    double[][] shape =
+        PolylineCodec.decode2((String) t.get("shape"), GpxLimits.MAX_PLANNER_SHAPE_POINTS);
+    io.github.glandais.engine.path.Path raw =
+        gpxProcessingService
+            .rawTracks(gpxProcessingService.parseGpx(EXAMPLE_GPX.toPath()))
+            .paths()
+            .getFirst();
+    assertEquals(raw.getSize(), shape.length, "every sanitized point of the file");
+    assertTrue(shape.length > line.length);
+    assertEquals(raw.longitudeDeg(0), shape[0][0], 1e-6);
+    assertEquals(raw.latitudeDeg(0), shape[0][1], 1e-6);
+    int last = raw.getSize() - 1;
+    assertEquals(raw.longitudeDeg(last), shape[last][0], 1e-6);
+    assertEquals(raw.latitudeDeg(last), shape[last][1], 1e-6);
   }
 
   @Test

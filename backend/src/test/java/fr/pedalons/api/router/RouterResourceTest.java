@@ -428,6 +428,46 @@ class RouterResourceTest extends AbstractResourceTest {
     assertFalse(routeBody().hasNonNull("unpaved"));
   }
 
+  // ==================== The raw geometry (API-147, phase C) ====================
+
+  @Test
+  void route_shouldReturnTheRawShapeUntouched() throws Exception {
+    // Two legs: their shapes are concatenated as decoded, the shared point twice
+    String first = zigzagShape();
+    String second =
+        PolylineCodec.encode2(new double[][] {{4.85, 45.76}, {4.851, 45.7605}, {4.852, 45.761}});
+    when(stadiaMapsClient.route(any(ValhallaRequest.class)))
+        .thenReturn(
+            new ValhallaResponse(
+                new ValhallaResponse.ValhallaTrip(
+                    List.of(
+                        new ValhallaResponse.ValhallaLeg(first, null),
+                        new ValhallaResponse.ValhallaLeg(second, null)))));
+
+    JsonNode body = routeBody();
+
+    double[][] shape = PolylineCodec.decode2(body.path("shape").asText(), Integer.MAX_VALUE);
+    double[][] a = PolylineCodec.decode2(first, Integer.MAX_VALUE);
+    double[][] b = PolylineCodec.decode2(second, Integer.MAX_VALUE);
+    assertEquals(a.length + b.length, shape.length);
+    assertEquals(a[1][0], shape[1][0], 1e-9);
+    assertEquals(a[1][1], shape[1][1], 1e-9);
+    assertEquals(b[2][0], shape[shape.length - 1][0], 1e-9);
+    assertEquals(b[2][1], shape[shape.length - 1][1], 1e-9);
+    // The displayed route is still the simplified one, its ends those of the shape
+    JsonNode route = body.path("route").path("coordinates");
+    assertTrue(route.size() < shape.length);
+    assertEquals(shape[0][0], route.get(0).get(0).asDouble(), 1e-6);
+    assertEquals(shape[0][1], route.get(0).get(1).asDouble(), 1e-6);
+  }
+
+  @Test
+  void route_whenTheTripIsEmpty_shouldOmitTheShape() throws Exception {
+    emptyRouteFromStadia();
+
+    assertFalse(routeBody().hasNonNull("shape"));
+  }
+
   @Test
   void valhallaRequest_shouldSerializeSnakeCaseKeys() throws Exception {
     ValhallaRequest request = routeWith("FASTBIKE", ", \"useHills\": 0.5, \"useRoads\": 0.75");

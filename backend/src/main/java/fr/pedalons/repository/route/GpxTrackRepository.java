@@ -11,6 +11,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.geolatte.geom.G2D;
+import org.geolatte.geom.LineString;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -84,6 +86,38 @@ public class GpxTrackRepository implements PanacheRepository<GpxTrack> {
         .toList();
   }
 
+  /**
+   * The raw line of each track of a route by track id, as {@code [lng, lat]} pairs, tracks whose
+   * line is not known (a row that predates the column) left out: a projection, so neither the
+   * points, the planner state nor the surfaces are read (docs/LEDGER_*.md API-147).
+   */
+  public Map<Long, List<double[]>> findRawLines(Long routeId) {
+    Map<Long, List<double[]>> out = new HashMap<>();
+    getEntityManager()
+        .createQuery(
+            "select t.id, t.rawGeometry from GpxTrack t where t.route.id = :routeId order by t.id",
+            Object[].class)
+        .setParameter("routeId", routeId)
+        .getResultList()
+        .forEach(
+            row -> {
+              if (row[1] instanceof LineString<?> line) {
+                out.put((Long) row[0], lngLat(line));
+              }
+            });
+    return out;
+  }
+
+  private static List<double[]> lngLat(LineString<?> line) {
+    List<double[]> out = new ArrayList<>(line.getNumPositions());
+    for (int i = 0; i < line.getNumPositions(); i++) {
+      if (line.getPositionN(i) instanceof G2D p) {
+        out.add(new double[] {p.getLon(), p.getLat()});
+      }
+    }
+    return out;
+  }
+
   @SuppressWarnings("unchecked")
   private static List<GpxTrack.TrackPoint> castPoints(Object points) {
     return (List<GpxTrack.TrackPoint>) points;
@@ -148,5 +182,44 @@ public class GpxTrackRepository implements PanacheRepository<GpxTrack> {
         .setParameter("doc", JsonConfiguration.INSTANCE.getObjectMapperWrapper().toString(surfaces))
         .setParameter("id", trackId)
         .executeUpdate();
+  }
+
+  /** A track's id and its number of stored points, without reading them. */
+  public record TrackSize(Long trackId, int points) {}
+
+  /**
+   * The id and the number of stored points of each track of a route, in id order: a native
+   * projection, so neither the points nor any lazy column are loaded (docs/LEDGER_*.md API-147,
+   * phase D).
+   */
+  public List<TrackSize> findSizes(Long routeId) {
+    @SuppressWarnings("unchecked")
+    List<Object[]> rows =
+        getEntityManager()
+            .createNativeQuery(
+                "select id, jsonb_array_length(track_points) from gpx_tracks"
+                    + " where route_id = :routeId order by id")
+            .setParameter("routeId", routeId)
+            .getResultList();
+    return rows.stream()
+        .map(r -> new TrackSize(((Number) r[0]).longValue(), ((Number) r[1]).intValue()))
+        .toList();
+  }
+
+  /**
+   * Writes a track's raw line unless it has one by now (docs/LEDGER_*.md API-147, phase D): a save
+   * writes the line of the track it puts, and that one wins.
+   *
+   * @return whether the row was written
+   */
+  public boolean fillRawGeometry(Long trackId, LineString<G2D> raw) {
+    return getEntityManager()
+            .createQuery(
+                "update GpxTrack t set t.rawGeometry = :raw"
+                    + " where t.id = :id and t.rawGeometry is null")
+            .setParameter("raw", raw)
+            .setParameter("id", trackId)
+            .executeUpdate()
+        > 0;
   }
 }

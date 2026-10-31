@@ -7,6 +7,7 @@ import fr.pedalons.common.exception.NotFoundException;
 import fr.pedalons.common.planner.PlannerState;
 import fr.pedalons.domain.gpx.GpxPreview;
 import fr.pedalons.domain.gpx.GpxPreview.PreviewTrack;
+import fr.pedalons.domain.gpx.PreviewRawLinesDocument;
 import fr.pedalons.domain.gpx.PreviewSurfacesDocument;
 import fr.pedalons.domain.gpx.PreviewWaypointDetail;
 import fr.pedalons.domain.gpx.PreviewWaypointsDocument;
@@ -42,6 +43,7 @@ import fr.pedalons.service.route.GpxProcessingService;
 import fr.pedalons.service.route.GpxProcessingService.ComputedGpx;
 import fr.pedalons.service.route.RouteService;
 import fr.pedalons.service.route.planner.PlannerStates;
+import fr.pedalons.service.route.planner.PolylineCodec;
 import fr.pedalons.service.route.response.TrackMetadata;
 import fr.pedalons.service.route.waypoint.AnchoredWaypoint;
 import fr.pedalons.service.route.waypoint.TrackAxis;
@@ -83,6 +85,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import org.geolatte.geom.G2D;
+import org.geolatte.geom.LineString;
 import org.jboss.logging.Logger;
 import org.jspecify.annotations.Nullable;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
@@ -205,6 +209,7 @@ public class GpxPreviewService {
     ElevationQuality quality = elevationRefreshService.saveQuality();
 
     List<PreviewTrack> tracks;
+    List<String> rawLines;
     List<PreviewWaypointDetail> waypoints;
     TrackMetadata metadata;
     try (ComputedGpx computed = gpxProcessingService.computeGpx(gpx, quality, plan)) {
@@ -212,6 +217,7 @@ public class GpxPreviewService {
           publicId, revision, computed.originalGpx(), computed.filteredGpx(), computed.fitFile());
 
       tracks = toPreviewTracks(computed);
+      rawLines = toRawLines(computed);
       waypoints = PreviewWaypoints.toDetails(computed.waypoints());
       metadata = computed.aggregated();
     } catch (IOException e) {
@@ -236,6 +242,7 @@ public class GpxPreviewService {
             tracks,
             PreviewWaypoints.legacy(waypoints));
     preview.setWaypointDetails(new PreviewWaypointsDocument(revision, waypoints));
+    preview.setRawLines(new PreviewRawLinesDocument(revision, rawLines));
     preview.setHasThumbnail(renderAndUploadThumbnail(publicId, tracks));
     preview.setDrawn(drawn);
     preview.setFilesRevision(revision);
@@ -480,12 +487,14 @@ public class GpxPreviewService {
     long revision = newRevision();
     ElevationQuality quality = elevationRefreshService.saveQuality();
     List<PreviewTrack> tracks;
+    List<String> rawLines;
     List<PreviewWaypointDetail> placed;
     TrackMetadata metadata;
     try (ComputedGpx computed = gpxProcessingService.computeGpx(gpx, quality, plan)) {
       uploadTrackFiles(
           pid, revision, computed.originalGpx(), computed.filteredGpx(), computed.fitFile());
       tracks = toPreviewTracks(computed);
+      rawLines = toRawLines(computed);
       placed = PreviewWaypoints.toDetails(computed.waypoints());
       metadata = computed.aggregated();
     } catch (IOException e) {
@@ -517,6 +526,8 @@ public class GpxPreviewService {
               managed.setElevationLoss(metadata.elevationLoss());
               managed.setHilliness(metadata.hilliness());
               managed.setTracks(tracks);
+              // Written with the track it describes, never left over a new one (API-147)
+              managed.setRawLines(new PreviewRawLinesDocument(revision, rawLines));
               managed.setWaypoints(PreviewWaypoints.legacy(placed));
               managed.setWaypointDetails(new PreviewWaypointsDocument(revision, placed));
               managed.setHasThumbnail(hasThumbnail);
@@ -779,6 +790,8 @@ public class GpxPreviewService {
                   return PreviewWaypoints.drafts(
                       current.readableWaypoints(), current.getDistance(), false, d -> true);
                 });
+    // The raw lines need no copy (docs/LEDGER_*.md API-147): original.gpx is the sanitized raw
+    // tracks, and the route recomputes its own raw geometry from it, point for point.
     Path gpxPath = downloadOriginalGpx(preview);
     try {
       return routeService.createRoute(
@@ -1152,6 +1165,25 @@ public class GpxPreviewService {
                     t.metadata().distance(),
                     t.metadata().elevationGain(),
                     t.metadata().elevationLoss()))
+        .toList();
+  }
+
+  /**
+   * The raw line of every computed track (docs/LEDGER_*.md API-147), as a polyline of precision 6
+   * — about 0.1 m, finer than any GPS fix.
+   */
+  private static List<String> toRawLines(ComputedGpx computed) {
+    return computed.tracks().stream()
+        .map(
+            t -> {
+              LineString<G2D> raw = t.raw();
+              double[][] lngLat = new double[raw.getNumPositions()][];
+              for (int i = 0; i < lngLat.length; i++) {
+                G2D p = raw.getPositionN(i);
+                lngLat[i] = new double[] {p.getLon(), p.getLat()};
+              }
+              return PolylineCodec.encode2(lngLat);
+            })
         .toList();
   }
 }

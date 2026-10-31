@@ -12,4 +12,6 @@ export interface GpxImportTrack {
   dist: number
   /** Reported ascent in metres */
   ascend: number
+  /** Polyline (precision 6, latitude then longitude) of the raw track of the file, 2D, as sanitized, neither resampled nor simplified. Opaque to the client, which carries it into PlannerSource.shape. Only in the GPX import answer: always absent from the line-elevation answer, and absent from the import answer when the file's raw tracks together exceed the planner's point budget */
+  shape?: string
 }

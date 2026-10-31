@@ -36,5 +36,21 @@ public record PlannerSource(
                     + " non-decreasing, within [0, 100 000 m]). Absent: the client derives it from"
                     + " ele. Requires ele")
         @Size(max = GpxLimits.MAX_PLANNER_STATE_CHARS)
-        String climb)
-    implements Serializable {}
+        String climb,
+    @Nullable
+        @Schema(
+            description =
+                "Polyline (precision 6, latitude then longitude) of the raw track of the file, as"
+                    + " GpxImportTrack.shape gave it, never edited. An imported piece is cut out of"
+                    + " it by projecting its junctions (from and to still index line); absent or"
+                    + " inconsistent with line: line")
+        @Size(max = GpxLimits.MAX_PLANNER_STATE_CHARS)
+        String shape)
+    implements Serializable {
+
+  /** Without the raw track: the shape this record had before API-147 (phase C). */
+  public PlannerSource(
+      String line, @Nullable String ele, double ascendScale, @Nullable String climb) {
+    this(line, ele, ascendScale, climb, null);
+  }
+}

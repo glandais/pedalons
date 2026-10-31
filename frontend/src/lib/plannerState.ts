@@ -20,11 +20,14 @@ import {
   createPoint,
   cumulativeClimb,
   edgeMode,
+  pieceShape,
   type EdgeMode,
   type PlannerSource,
   type Route,
   type RoutePoint,
   isUnpavedShare,
+  legShape,
+  shapeOf,
 } from '@/lib/planner'
 import { decode1, decode2, encode1, encode2 } from '@/lib/polyline'
 
@@ -66,15 +69,69 @@ function hasProvenance(p: RoutePoint, sources: PlannerSource[]): boolean {
 /**
  * The state of a route, or null when there is none to save: under two points, or past the bounds
  * (then the caller sends the points of the route instead). O(n).
+ *
+ * <p>The raw shapes (docs/LEDGER_*.md API-147, phase C) never cost the save: when the state with
+ * all of them is past the bounds, the largest are dropped until it fits, and at worst all of them
+ * (the state of a client before them). At most four passes.
  */
 export function serializePlannerState(
   route: Route,
   sources: PlannerSource[],
   profile: RouterProfile
 ): PlannerState | null {
+  let pass = build(route, sources, profile, () => true)
+  if (pass.state || pass.shapes.length === 0 || !pass.past) return pass.state
+  // A source sent whole for its shape pushed the sources past their points: none goes whole
+  const noSource = (key: string) => !key.startsWith('source:')
+  if (pass.past === 'points') {
+    pass = build(route, sources, profile, noSource)
+    if (pass.state || pass.past !== 'chars') return pass.state
+  }
+  // Past the characters: the largest shapes first, until they fit. Dropping a source's shape also
+  // trims the source again, which only saves more: the estimate errs on the safe side.
+  let excess = pass.chars - MAX_PLANNER_STATE_CHARS
+  const dropped = new Set<string>()
+  for (const { key, length } of [...pass.shapes].sort((x, y) => y.length - x.length)) {
+    if (excess <= 0) break
+    dropped.add(key)
+    excess -= length
+  }
+  const kept = pass.shapes.filter(({ key }) => !dropped.has(key))
+  if (kept.length > 0) {
+    const keptKeys = new Set(kept.map(({ key }) => key))
+    const some = build(route, sources, profile, (key) => keptKeys.has(key))
+    if (some.state) return some.state
+  }
+  return build(route, sources, profile, () => false).state
+}
+
+/** A raw shape the state carries: `piece:<k>` or `source:<editor source id>`, and its length. */
+interface ShapeEntry {
+  key: string
+  length: number
+}
+
+/**
+ * One pass of {@link serializePlannerState}, carrying the raw shapes `keep` accepts. `past`: the
+ * state was refused only for a bound the shapes count in (its characters, the points of its
+ * sources), so a pass with fewer shapes may fit; `chars` and `shapes` are then what it held.
+ */
+function build(
+  route: Route,
+  sources: PlannerSource[],
+  profile: RouterProfile,
+  keep: (key: string) => boolean
+): {
+  state: PlannerState | null
+  chars: number
+  shapes: ShapeEntry[]
+  past?: 'chars' | 'points'
+} {
+  const shapes: ShapeEntry[] = []
+  const refused = { state: null, chars: 0, shapes }
   const pts = route.points
   const n = pts.length
-  if (n < 2) return null
+  if (n < 2) return refused
 
   // Edge into each point
   const mode: EdgeMode[] = new Array(n)
@@ -98,10 +155,17 @@ export function serializePlannerState(
   }
   J.push(n - 1)
   const pieceCount = J.length - 1
-  if (pieceCount > MAX_PLANNER_PIECES) return null
+  if (pieceCount > MAX_PLANNER_PIECES) return refused
+
+  // The sources an imported piece is cut from: only their raw shape is worth sending
+  const cut = new Set<number>()
+  for (let k = 0; k < pieceCount; k++) {
+    if (mode[J[k] + 1] === 'IMPORTED') cut.add(pts[J[k]].sourceId!)
+  }
 
   // Sources: only those referenced, trimmed to the range of indices that is, renumbered in the
-  // order of first reference.
+  // order of first reference. A source sent with its raw shape is sent whole: the shape is the
+  // whole file, and the server checks it against the whole line.
   const ranges = new Map<number, { lo: number; hi: number; next: number }>()
   for (const i of J) {
     const p = pts[i]
@@ -114,13 +178,21 @@ export function serializePlannerState(
       ranges.set(p.sourceId!, { lo: p.sourceIdx!, hi: p.sourceIdx!, next: ranges.size })
     }
   }
-  if (ranges.size > MAX_PLANNER_SOURCES) return null
+  if (ranges.size > MAX_PLANNER_SOURCES) return refused
   let chars = 0
   let sourcePoints = 0
   const dtoSources: PlannerSourceDto[] = []
   for (const [id, r] of ranges) {
     const src = sources[id]
-    if (src.coords.length < 2) return null
+    if (src.coords.length < 2) return refused
+    const shapeKey = `source:${id}`
+    const shape = src.shape !== undefined && cut.has(id) && keep(shapeKey) ? src.shape : undefined
+    if (shape !== undefined) {
+      r.lo = 0
+      r.hi = src.coords.length - 1
+      chars += shape.length
+      shapes.push({ key: shapeKey, length: shape.length })
+    }
     // A source has at least two points
     if (r.hi === r.lo) {
       if (r.hi + 1 < src.coords.length) r.hi++
@@ -157,9 +229,11 @@ export function serializePlannerState(
       ...(ele !== undefined && { ele }),
       ...(climb !== undefined && { climb }),
       ascendScale: Math.min(MAX_ASCEND_SCALE, Math.max(MIN_ASCEND_SCALE, scale)),
+      ...(shape !== undefined && { shape }),
     }
   }
-  if (sourcePoints > MAX_PLANNER_POINTS) return null
+  // Past the bound only because a source went whole for its shape: a pass without it may fit
+  if (sourcePoints > MAX_PLANNER_POINTS) return { ...refused, past: 'points' }
 
   const provenance = (p: RoutePoint) => {
     if (!hasProvenance(p, sources)) return {}
@@ -188,7 +262,7 @@ export function serializePlannerState(
     if (m === 'IMPORTED') {
       const entry = junctions[k]
       const exit = junctions[k + 1]
-      if (entry.source === undefined || entry.source !== exit.source) return null
+      if (entry.source === undefined || entry.source !== exit.source) return refused
       pieces.push({
         mode: PlannerPieceMode.IMPORTED,
         source: entry.source,
@@ -224,18 +298,30 @@ export function serializePlannerState(
       // Only when the router said something about every edge of the piece: a gap is not « paved »
       const spans = unpavedSpans(pts, a, b)
       if (spans) piece.unpaved = spans
+      // The router's raw geometry, when the piece is still exactly the leg it drew
+      const shape = pieceShape(pts, a, b)
+      const shapeKey = `piece:${k}`
+      if (shape !== undefined && keep(shapeKey)) {
+        piece.shape = shape
+        chars += shape.length
+        shapes.push({ key: shapeKey, length: shape.length })
+      }
     }
     pieces.push(piece)
   }
-  if (chars > MAX_PLANNER_STATE_CHARS) return null
-  if (derived < 2 || derived > MAX_PLANNER_POINTS) return null
+  if (derived < 2 || derived > MAX_PLANNER_POINTS) return refused
+  if (chars > MAX_PLANNER_STATE_CHARS) return { ...refused, chars, past: 'chars' }
 
   return {
-    version: PLANNER_STATE_VERSION,
-    profile,
-    sources: dtoSources,
-    junctions,
-    pieces,
+    state: {
+      version: PLANNER_STATE_VERSION,
+      profile,
+      sources: dtoSources,
+      junctions,
+      pieces,
+    },
+    chars,
+    shapes,
   }
 }
 
@@ -276,13 +362,14 @@ function sourceFromDto(dto: PlannerSourceDto): PlannerSource {
     if (dto.ele === undefined || cumul.length !== coords.length) {
       throw new PlannerStateFormatError('source climb')
     }
-    return { coords, cumul, ascendScale: 1, serverClimb: true }
+    return { coords, cumul, ascendScale: 1, serverClimb: true, ...shapeOf(dto) }
   }
   const scale = dto.ascendScale
   return {
     coords,
     cumul: cumulativeClimb(coords),
     ascendScale: Number.isFinite(scale) && scale > 0 ? scale : 1,
+    ...shapeOf(dto),
   }
 }
 
@@ -381,6 +468,10 @@ function restore(state: PlannerState): { route: Route; sources: PlannerSource[] 
       exit.direct = direct
       // `?? 0`: edgeMode must read ROUTED even between two imported junctions
       exit.legAscend = direct ? undefined : (piece.ascend ?? 0)
+      // The router's raw geometry goes back on the leg it was saved for, between these junctions
+      const entry = junctions[k]
+      exit.legShape =
+        !direct && piece.shape !== undefined ? legShape(entry, exit, piece.shape) : undefined
     }
     points.push(exit)
     junctionIndices.push(points.length - 1)

@@ -31,7 +31,8 @@ import org.jspecify.annotations.Nullable;
  * Loads a GPX file into the route editor (docs/LEDGER_*.md WEB-100, C4b): every track goes through
  * the pipeline with the FAST elevations — the editor edits a quick copy, the saved route is
  * recomputed as any other — and comes back as polylines, with the ascent accumulated up to each
- * point so a piece cut out of it keeps its ascent. Nothing is stored.
+ * point so a piece cut out of it keeps its ascent, and with its raw track (docs/LEDGER_*.md API-147,
+ * phase C), which the saved route is derived from. Nothing is stored.
  *
  * <p>Not transactional: no connection is held while the pipeline waits for the elevation tiles.
  */
@@ -63,6 +64,14 @@ public class GpxImportService {
       throw new BusinessException(ErrorCode.PLANNER_IMPORT_TOO_LARGE);
     }
 
+    // The raw tracks (docs/LEDGER_*.md API-147, phase C), encoded before the pipeline runs: the
+    // editor carries them into the state, and the saved route is derived from them. Past the
+    // planner's point budget they are left out, all of them: the state then falls back on line.
+    boolean withShapes =
+        raw.paths().stream().mapToInt(Path::getSize).sum() <= GpxLimits.MAX_PLANNER_POINTS;
+    List<@Nullable String> shapes =
+        raw.paths().stream().map(path -> withShapes ? PlannerTracks.shapeOf(path) : null).toList();
+
     List<GpxImportTrack> tracks = new ArrayList<>(raw.paths().size());
     int points = 0;
     boolean fallback = false;
@@ -76,7 +85,7 @@ public class GpxImportService {
         throw new BusinessException(ErrorCode.PLANNER_IMPORT_TOO_LARGE);
       }
       fallback |= result.processed().fallbackAfterErrorKm() > 0.0;
-      tracks.add(PlannerTracks.toTrack(path, result.climb()));
+      tracks.add(PlannerTracks.toTrack(path, result.climb(), shapes.get(i)));
     }
 
     String documentName = GpxProcessingService.documentName(parsed);

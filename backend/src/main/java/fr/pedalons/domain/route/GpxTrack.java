@@ -79,6 +79,18 @@ public class GpxTrack extends BaseEntity {
   @Column(name = "surfaces", columnDefinition = "jsonb")
   private @Nullable TrackSurfaceDocument surfaces;
 
+  /**
+   * The track as its source produced it (docs/LEDGER_*.md API-147): 2D, neither resampled nor
+   * simplified, the same trace as {@link #geometry}. Written with every replacement of the track,
+   * never by what only changes the elevations (the HD catch-up). Null when not known (a row that
+   * predates the column): readers fall back on {@link #trackPoints}. Lazy, in a group of its own
+   * like {@link #surfaces}; never exposed by the API.
+   */
+  @Basic(fetch = FetchType.LAZY)
+  @LazyGroup("raw")
+  @Column(name = "raw_geometry", columnDefinition = "geometry(LineString,4326)")
+  private @Nullable LineString<G2D> rawGeometry;
+
   public GpxTrack(
       User createdBy,
       String name,

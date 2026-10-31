@@ -3,6 +3,7 @@ package fr.pedalons.service.elevation;
 import fr.pedalons.domain.asset.Asset;
 import fr.pedalons.domain.gpx.GpxPreview;
 import fr.pedalons.domain.gpx.GpxPreview.PreviewTrack;
+import fr.pedalons.domain.gpx.PreviewRawLinesDocument;
 import fr.pedalons.domain.gpx.PreviewSurfacesDocument;
 import fr.pedalons.domain.gpx.PreviewWaypointDetail;
 import fr.pedalons.domain.gpx.PreviewWaypointsDocument;
@@ -669,6 +670,12 @@ public class ElevationRefreshService {
           PreviewSurfacesDocument surfaces = preview.getSurfaces();
           if (surfaces != null && surfaces.trackRevision() == claim.sourceRevision()) {
             preview.setSurfaces(surfaces.withTrackRevision(recomputed.revision()));
+          }
+          // The raw lines follow the track onto its new revision, unchanged: the catch-up never
+          // changes the source 2D track (docs/LEDGER_*.md API-147)
+          PreviewRawLinesDocument rawLines = preview.getRawLines();
+          if (rawLines != null && rawLines.trackRevision() == claim.sourceRevision()) {
+            preview.setRawLines(rawLines.withTrackRevision(recomputed.revision()));
           }
           // A request still waiting for the old revision follows it
           surfaceRefreshRepository.forwardPreviewRevision(

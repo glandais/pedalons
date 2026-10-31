@@ -1056,6 +1056,8 @@ export const createRouteBodyRoutePlannerStateSourcesItemEleMax = 2000000
 
 export const createRouteBodyRoutePlannerStateSourcesItemClimbMax = 2000000
 
+export const createRouteBodyRoutePlannerStateSourcesItemShapeMax = 2000000
+
 export const createRouteBodyRoutePlannerStateSourcesMax = 8
 
 export const createRouteBodyRoutePlannerStateJunctionsMax = 2001
@@ -1067,6 +1069,8 @@ export const createRouteBodyRoutePlannerStatePiecesItemEleMax = 2000000
 export const createRouteBodyRoutePlannerStatePiecesItemUnpavedItemFromMin = 0
 
 export const createRouteBodyRoutePlannerStatePiecesItemUnpavedMax = 50000
+
+export const createRouteBodyRoutePlannerStatePiecesItemShapeMax = 2000000
 
 export const createRouteBodyRoutePlannerStatePiecesMax = 2000
 
@@ -1416,6 +1420,13 @@ export const CreateRouteBody = zod.object({
                   .describe(
                     'One-dimension polyline (tenths of a metre), one value per point of line: the ascent accumulated up to each point, as the server measured it (dead-band, non-decreasing, within [0, 100 000 m]). Absent: the client derives it from ele. Requires ele'
                   ),
+                shape: zod
+                  .string()
+                  .max(createRouteBodyRoutePlannerStateSourcesItemShapeMax)
+                  .optional()
+                  .describe(
+                    'Polyline (precision 6, latitude then longitude) of the raw track of the file, as GpxImportTrack.shape gave it, never edited. An imported piece is cut out of it by projecting its junctions (from and to still index line); absent or inconsistent with line: line'
+                  ),
               })
             )
             .max(createRouteBodyRoutePlannerStateSourcesMax),
@@ -1477,6 +1488,13 @@ export const CreateRouteBody = zod.object({
                   .optional()
                   .describe(
                     'ROUTED: runs of unpaved edges of the piece, half-open, ascending and disjoint; edge 0 joins the first junction to the first interior point, the last edge ends at the last junction. Absent: surface unknown'
+                  ),
+                shape: zod
+                  .string()
+                  .max(createRouteBodyRoutePlannerStatePiecesItemShapeMax)
+                  .optional()
+                  .describe(
+                    "ROUTED: polyline6 of the router's raw geometry of the piece, RouterResponse.shape as the router answered it, never edited (its two ends may be kept: a point within 1 m of a junction is dropped). The saved track is derived from it rather than from line; absent or inconsistent with line (ends over 50 m from the junctions, length off by over 20 % + 200 m): line. Unpaved spans keep indexing the edges of line"
                   ),
               })
             )
@@ -2667,6 +2685,8 @@ export const updateRouteBodyRoutePlannerStateSourcesItemEleMax = 2000000
 
 export const updateRouteBodyRoutePlannerStateSourcesItemClimbMax = 2000000
 
+export const updateRouteBodyRoutePlannerStateSourcesItemShapeMax = 2000000
+
 export const updateRouteBodyRoutePlannerStateSourcesMax = 8
 
 export const updateRouteBodyRoutePlannerStateJunctionsMax = 2001
@@ -2678,6 +2698,8 @@ export const updateRouteBodyRoutePlannerStatePiecesItemEleMax = 2000000
 export const updateRouteBodyRoutePlannerStatePiecesItemUnpavedItemFromMin = 0
 
 export const updateRouteBodyRoutePlannerStatePiecesItemUnpavedMax = 50000
+
+export const updateRouteBodyRoutePlannerStatePiecesItemShapeMax = 2000000
 
 export const updateRouteBodyRoutePlannerStatePiecesMax = 2000
 
@@ -3027,6 +3049,13 @@ export const UpdateRouteBody = zod.object({
                   .describe(
                     'One-dimension polyline (tenths of a metre), one value per point of line: the ascent accumulated up to each point, as the server measured it (dead-band, non-decreasing, within [0, 100 000 m]). Absent: the client derives it from ele. Requires ele'
                   ),
+                shape: zod
+                  .string()
+                  .max(updateRouteBodyRoutePlannerStateSourcesItemShapeMax)
+                  .optional()
+                  .describe(
+                    'Polyline (precision 6, latitude then longitude) of the raw track of the file, as GpxImportTrack.shape gave it, never edited. An imported piece is cut out of it by projecting its junctions (from and to still index line); absent or inconsistent with line: line'
+                  ),
               })
             )
             .max(updateRouteBodyRoutePlannerStateSourcesMax),
@@ -3088,6 +3117,13 @@ export const UpdateRouteBody = zod.object({
                   .optional()
                   .describe(
                     'ROUTED: runs of unpaved edges of the piece, half-open, ascending and disjoint; edge 0 joins the first junction to the first interior point, the last edge ends at the last junction. Absent: surface unknown'
+                  ),
+                shape: zod
+                  .string()
+                  .max(updateRouteBodyRoutePlannerStatePiecesItemShapeMax)
+                  .optional()
+                  .describe(
+                    "ROUTED: polyline6 of the router's raw geometry of the piece, RouterResponse.shape as the router answered it, never edited (its two ends may be kept: a point within 1 m of a junction is dropped). The saved track is derived from it rather than from line; absent or inconsistent with line (ends over 50 m from the junctions, length off by over 20 % + 200 m): line. Unpaved spans keep indexing the edges of line"
                   ),
               })
             )
@@ -4039,6 +4075,8 @@ export const getRoutePlannerStateResponseStateSourcesItemEleMax = 2000000
 
 export const getRoutePlannerStateResponseStateSourcesItemClimbMax = 2000000
 
+export const getRoutePlannerStateResponseStateSourcesItemShapeMax = 2000000
+
 export const getRoutePlannerStateResponseStateSourcesMax = 8
 
 export const getRoutePlannerStateResponseStateJunctionsMax = 2001
@@ -4050,6 +4088,8 @@ export const getRoutePlannerStateResponseStatePiecesItemEleMax = 2000000
 export const getRoutePlannerStateResponseStatePiecesItemUnpavedItemFromMin = 0
 
 export const getRoutePlannerStateResponseStatePiecesItemUnpavedMax = 50000
+
+export const getRoutePlannerStateResponseStatePiecesItemShapeMax = 2000000
 
 export const getRoutePlannerStateResponseStatePiecesMax = 2000
 
@@ -4084,6 +4124,13 @@ export const GetRoutePlannerStateResponse = zod
                 .optional()
                 .describe(
                   'One-dimension polyline (tenths of a metre), one value per point of line: the ascent accumulated up to each point, as the server measured it (dead-band, non-decreasing, within [0, 100 000 m]). Absent: the client derives it from ele. Requires ele'
+                ),
+              shape: zod
+                .string()
+                .max(getRoutePlannerStateResponseStateSourcesItemShapeMax)
+                .optional()
+                .describe(
+                  'Polyline (precision 6, latitude then longitude) of the raw track of the file, as GpxImportTrack.shape gave it, never edited. An imported piece is cut out of it by projecting its junctions (from and to still index line); absent or inconsistent with line: line'
                 ),
             })
           )
@@ -4146,6 +4193,13 @@ export const GetRoutePlannerStateResponse = zod
                 .optional()
                 .describe(
                   'ROUTED: runs of unpaved edges of the piece, half-open, ascending and disjoint; edge 0 joins the first junction to the first interior point, the last edge ends at the last junction. Absent: surface unknown'
+                ),
+              shape: zod
+                .string()
+                .max(getRoutePlannerStateResponseStatePiecesItemShapeMax)
+                .optional()
+                .describe(
+                  "ROUTED: polyline6 of the router's raw geometry of the piece, RouterResponse.shape as the router answered it, never edited (its two ends may be kept: a point within 1 m of a junction is dropped). The saved track is derived from it rather than from line; absent or inconsistent with line (ends over 50 m from the junctions, length off by over 20 % + 200 m): line. Unpaved spans keep indexing the edges of line"
                 ),
             })
           )

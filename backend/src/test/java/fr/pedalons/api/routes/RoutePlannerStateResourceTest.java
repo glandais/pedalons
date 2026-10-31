@@ -6,6 +6,7 @@ import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import fr.pedalons.api.AbstractResourceTest;
 import fr.pedalons.common.GeoPoint;
@@ -282,6 +283,35 @@ class RoutePlannerStateResourceTest extends AbstractResourceTest {
     assertEquals(45.76, points.getFirst().lat(), 1e-4);
     assertEquals(4.84, points.getLast().lng(), 1e-4);
     assertEquals(45.765, points.getLast().lat(), 1e-4);
+  }
+
+  /**
+   * docs/LEDGER_*.md API-147, phase C: a route drawn with the router's raw shapes stores them as its
+   * raw geometry, every point — more than the simplified track — and a state without them its
+   * lines, as before.
+   */
+  @Test
+  void theRawGeometryOfADrawnRouteIsTheRoutersShape() {
+    String slug = createWithState(drawnWithShapes());
+    Long id = routeId(slug);
+    var raw = dataService.rawGeometries(id);
+    assertEquals(1, raw.size());
+    assertEquals(DRAWN_WITH_SHAPES_DERIVED, raw.getFirst().points());
+    assertEquals(2, raw.getFirst().dims());
+    int trackPoints =
+        QuarkusTransaction.requiringNew()
+            .call(
+                () ->
+                    em.createQuery(
+                            "select t from GpxTrack t where t.route.id = :id", GpxTrack.class)
+                        .setParameter("id", id)
+                        .getSingleResult()
+                        .getTrackPoints()
+                        .size());
+    assertTrue(trackPoints < DRAWN_WITH_SHAPES_DERIVED);
+
+    String plain = createWithState(drawn());
+    assertEquals(3 + 1 + 2, dataService.rawGeometries(routeId(plain)).getFirst().points());
   }
 
   @Test

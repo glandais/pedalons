@@ -21,7 +21,8 @@ mixin _$GpxImportTrack {
  double get dist;/// Reported ascent in metres
  double get ascend;/// One-dimension polyline (tenths of a metre), one value per point of line; absent when an elevation is not finite
  String? get ele;/// One-dimension polyline (tenths of a metre): the ascent accumulated up to each point of line (dead-band, non-decreasing, first 0, last = ascend); absent when ele is
- String? get climb;
+ String? get climb;/// Polyline (precision 6, latitude then longitude) of the raw track of the file, 2D, as sanitized, neither resampled nor simplified. Opaque to the client, which carries it into PlannerSource.shape. Only in the GPX import answer: always absent from the line-elevation answer, and absent from the import answer when the file's raw tracks together exceed the planner's point budget
+ String? get shape;
 /// Create a copy of GpxImportTrack
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -35,20 +36,20 @@ $GpxImportTrackCopyWith<GpxImportTrack> get copyWith => _$GpxImportTrackCopyWith
 @override
 bool operator ==(Object other) {
   final _this = this as GpxImportTrack;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is GpxImportTrack&&(identical(other.line, _this.line) || other.line == _this.line)&&(identical(other.dist, _this.dist) || other.dist == _this.dist)&&(identical(other.ascend, _this.ascend) || other.ascend == _this.ascend)&&(identical(other.ele, _this.ele) || other.ele == _this.ele)&&(identical(other.climb, _this.climb) || other.climb == _this.climb));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is GpxImportTrack&&(identical(other.line, _this.line) || other.line == _this.line)&&(identical(other.dist, _this.dist) || other.dist == _this.dist)&&(identical(other.ascend, _this.ascend) || other.ascend == _this.ascend)&&(identical(other.ele, _this.ele) || other.ele == _this.ele)&&(identical(other.climb, _this.climb) || other.climb == _this.climb)&&(identical(other.shape, _this.shape) || other.shape == _this.shape));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as GpxImportTrack;
-  return Object.hash(runtimeType,_this.line,_this.dist,_this.ascend,_this.ele,_this.climb);
+  return Object.hash(runtimeType,_this.line,_this.dist,_this.ascend,_this.ele,_this.climb,_this.shape);
 }
 
 @override
 String toString() {
   final _this = this as GpxImportTrack;
-  return 'GpxImportTrack(line: ${_this.line}, dist: ${_this.dist}, ascend: ${_this.ascend}, ele: ${_this.ele}, climb: ${_this.climb})';
+  return 'GpxImportTrack(line: ${_this.line}, dist: ${_this.dist}, ascend: ${_this.ascend}, ele: ${_this.ele}, climb: ${_this.climb}, shape: ${_this.shape})';
 }
 
 
@@ -59,7 +60,7 @@ abstract mixin class $GpxImportTrackCopyWith<$Res>  {
   factory $GpxImportTrackCopyWith(GpxImportTrack value, $Res Function(GpxImportTrack) _then) = _$GpxImportTrackCopyWithImpl;
 @useResult
 $Res call({
- String line, double dist, double ascend, String? ele, String? climb
+ String line, double dist, double ascend, String? ele, String? climb, String? shape
 });
 
 
@@ -76,13 +77,14 @@ class _$GpxImportTrackCopyWithImpl<$Res>
 
 /// Create a copy of GpxImportTrack
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? line = null,Object? dist = null,Object? ascend = null,Object? ele = freezed,Object? climb = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? line = null,Object? dist = null,Object? ascend = null,Object? ele = freezed,Object? climb = freezed,Object? shape = freezed,}) {
   return _then(GpxImportTrack(
 line: null == line ? _self.line : line // ignore: cast_nullable_to_non_nullable
 as String,dist: null == dist ? _self.dist : dist // ignore: cast_nullable_to_non_nullable
 as double,ascend: null == ascend ? _self.ascend : ascend // ignore: cast_nullable_to_non_nullable
 as double,ele: freezed == ele ? _self.ele : ele // ignore: cast_nullable_to_non_nullable
 as String?,climb: freezed == climb ? _self.climb : climb // ignore: cast_nullable_to_non_nullable
+as String?,shape: freezed == shape ? _self.shape : shape // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
@@ -168,10 +170,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String line,  double dist,  double ascend,  String? ele,  String? climb)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String line,  double dist,  double ascend,  String? ele,  String? climb,  String? shape)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _GpxImportTrack() when $default != null:
-return $default(_that.line,_that.dist,_that.ascend,_that.ele,_that.climb);case _:
+return $default(_that.line,_that.dist,_that.ascend,_that.ele,_that.climb,_that.shape);case _:
   return orElse();
 
 }
@@ -189,10 +191,10 @@ return $default(_that.line,_that.dist,_that.ascend,_that.ele,_that.climb);case _
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String line,  double dist,  double ascend,  String? ele,  String? climb)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String line,  double dist,  double ascend,  String? ele,  String? climb,  String? shape)  $default,) {final _that = this;
 switch (_that) {
 case _GpxImportTrack():
-return $default(_that.line,_that.dist,_that.ascend,_that.ele,_that.climb);case _:
+return $default(_that.line,_that.dist,_that.ascend,_that.ele,_that.climb,_that.shape);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -209,10 +211,10 @@ return $default(_that.line,_that.dist,_that.ascend,_that.ele,_that.climb);case _
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String line,  double dist,  double ascend,  String? ele,  String? climb)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String line,  double dist,  double ascend,  String? ele,  String? climb,  String? shape)?  $default,) {final _that = this;
 switch (_that) {
 case _GpxImportTrack() when $default != null:
-return $default(_that.line,_that.dist,_that.ascend,_that.ele,_that.climb);case _:
+return $default(_that.line,_that.dist,_that.ascend,_that.ele,_that.climb,_that.shape);case _:
   return null;
 
 }
@@ -224,7 +226,7 @@ return $default(_that.line,_that.dist,_that.ascend,_that.ele,_that.climb);case _
 @JsonSerializable()
 
 class _GpxImportTrack implements GpxImportTrack {
-  const _GpxImportTrack({required this.line, required this.dist, required this.ascend, this.ele, this.climb});
+  const _GpxImportTrack({required this.line, required this.dist, required this.ascend, this.ele, this.climb, this.shape});
   factory _GpxImportTrack.fromJson(Map<String, dynamic> json) => _$GpxImportTrackFromJson(json);
 
 /// Polyline (precision 6, latitude then longitude) of the processed track, as PlannerSource.line
@@ -237,6 +239,8 @@ class _GpxImportTrack implements GpxImportTrack {
 @override final  String? ele;
 /// One-dimension polyline (tenths of a metre): the ascent accumulated up to each point of line (dead-band, non-decreasing, first 0, last = ascend); absent when ele is
 @override final  String? climb;
+/// Polyline (precision 6, latitude then longitude) of the raw track of the file, 2D, as sanitized, neither resampled nor simplified. Opaque to the client, which carries it into PlannerSource.shape. Only in the GPX import answer: always absent from the line-elevation answer, and absent from the import answer when the file's raw tracks together exceed the planner's point budget
+@override final  String? shape;
 
 /// Create a copy of GpxImportTrack
 /// with the given fields replaced by the non-null parameter values.
@@ -251,18 +255,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _GpxImportTrack&&(identical(other.line, line) || other.line == line)&&(identical(other.dist, dist) || other.dist == dist)&&(identical(other.ascend, ascend) || other.ascend == ascend)&&(identical(other.ele, ele) || other.ele == ele)&&(identical(other.climb, climb) || other.climb == climb));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _GpxImportTrack&&(identical(other.line, line) || other.line == line)&&(identical(other.dist, dist) || other.dist == dist)&&(identical(other.ascend, ascend) || other.ascend == ascend)&&(identical(other.ele, ele) || other.ele == ele)&&(identical(other.climb, climb) || other.climb == climb)&&(identical(other.shape, shape) || other.shape == shape));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,line,dist,ascend,ele,climb);
+    return Object.hash(runtimeType,line,dist,ascend,ele,climb,shape);
 }
 
 @override
 String toString() {
-    return 'GpxImportTrack(line: $line, dist: $dist, ascend: $ascend, ele: $ele, climb: $climb)';
+    return 'GpxImportTrack(line: $line, dist: $dist, ascend: $ascend, ele: $ele, climb: $climb, shape: $shape)';
 }
 
 
@@ -273,7 +277,7 @@ abstract mixin class _$GpxImportTrackCopyWith<$Res> implements $GpxImportTrackCo
   factory _$GpxImportTrackCopyWith(_GpxImportTrack value, $Res Function(_GpxImportTrack) _then) = __$GpxImportTrackCopyWithImpl;
 @override @useResult
 $Res call({
- String line, double dist, double ascend, String? ele, String? climb
+ String line, double dist, double ascend, String? ele, String? climb, String? shape
 });
 
 
@@ -290,13 +294,14 @@ class __$GpxImportTrackCopyWithImpl<$Res>
 
 /// Create a copy of GpxImportTrack
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? line = null,Object? dist = null,Object? ascend = null,Object? ele = freezed,Object? climb = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? line = null,Object? dist = null,Object? ascend = null,Object? ele = freezed,Object? climb = freezed,Object? shape = freezed,}) {
   return _then(_GpxImportTrack(
 line: null == line ? _self.line : line // ignore: cast_nullable_to_non_nullable
 as String,dist: null == dist ? _self.dist : dist // ignore: cast_nullable_to_non_nullable
 as double,ascend: null == ascend ? _self.ascend : ascend // ignore: cast_nullable_to_non_nullable
 as double,ele: freezed == ele ? _self.ele : ele // ignore: cast_nullable_to_non_nullable
 as String?,climb: freezed == climb ? _self.climb : climb // ignore: cast_nullable_to_non_nullable
+as String?,shape: freezed == shape ? _self.shape : shape // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }

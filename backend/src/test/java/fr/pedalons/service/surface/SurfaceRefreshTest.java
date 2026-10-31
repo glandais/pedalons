@@ -448,6 +448,64 @@ class SurfaceRefreshTest extends AbstractResourceTest {
     assertEquals(length, number(detail(route), "tracks[0].surfaces[-1].to"), 0.2);
   }
 
+  // ------------------------------------------------------------------ raw line (API-147, B)
+
+  private int sentPoints() {
+    ArgumentCaptor<TraceAttributesRequest> captor =
+        ArgumentCaptor.forClass(TraceAttributesRequest.class);
+    verify(client, atLeastOnce()).traceAttributes(captor.capture());
+    return fr.pedalons.infrastructure.valhalla.Polyline6Decoder.decode(
+            captor.getValue().encodedPolyline())
+        .size();
+  }
+
+  private int storedPoints(RouteDto route) {
+    return QuarkusTransaction.requiringNew()
+        .call(() -> trackRepository.findPoints(id(route)).getFirst().points().size());
+  }
+
+  @Test
+  void theRawLine_isSentThinned_andTheDocumentStaysOnTheStoredPoints() {
+    RouteDto route = createRoute();
+    makeDue(route);
+    java.util.List<double[]> raw =
+        QuarkusTransaction.requiringNew()
+            .call(() -> trackRepository.findRawLines(id(route)).values().iterator().next());
+
+    assertEquals(1, worker.processDue());
+
+    assertEquals(
+        TraceSurfaceComputer.decimate(raw, TraceSurfaceComputer.MIN_SPACING_M).size(),
+        sentPoints());
+    assertNotEquals(storedPoints(route), sentPoints());
+    TrackSurfaceDocument doc = document(route);
+    double length =
+        QuarkusTransaction.requiringNew()
+            .call(() -> trackRepository.findPoints(id(route)).getFirst().points().getLast().dist());
+    assertEquals(length, doc.distance(), 0);
+    assertEquals(length, doc.surfaces().getLast().to(), 0.1);
+  }
+
+  @Test
+  void withoutARawLine_theStoredPointsAreSent() {
+    RouteDto route = createRoute();
+    makeDue(route);
+    QuarkusTransaction.requiringNew()
+        .run(
+            () ->
+                trackRepository
+                    .getEntityManager()
+                    .createNativeQuery(
+                        "update gpx_tracks set raw_geometry = null where route_id = :id")
+                    .setParameter("id", id(route))
+                    .executeUpdate());
+
+    assertEquals(1, worker.processDue());
+
+    assertEquals(storedPoints(route), sentPoints());
+    assertTrue(document(route).ok());
+  }
+
   @Test
   void theWorker_treatsTheRequestsOfEveryDomain_withNoRequestDomain() {
     RouteDto first = createRoute();

@@ -28,6 +28,22 @@ export interface DirectProfile {
   ascend: number
 }
 
+/**
+ * The router's own geometry of a routed leg (docs/LEDGER_*.md API-147, phase C): the saved track is
+ * derived from it rather than from the simplified points the planner shows. Carried opaquely to the
+ * planner state, never decoded, never displayed, never edited: a gesture that changes the leg
+ * without asking the router again drops it (a dropped shape only costs precision, a wrong one would
+ * corrupt the saved track).
+ */
+export interface LegShape {
+  /** Where the leg started when the router drew it (its start junction, snapped). */
+  from: Point
+  /** Where the leg ended (its arrival point). */
+  to: Point
+  /** `RouterResponse.shape`, as the router answered it. */
+  shape: string
+}
+
 export interface RoutePoint {
   id: string
   idx: number
@@ -48,6 +64,12 @@ export interface RoutePoint {
    * point does not end a routed leg. Carried by the leg's last point, like `direct`.
    */
   legAscend?: number
+  /**
+   * Raw geometry of the routed leg arriving at this point, written with `legAscend` by every
+   * operation that writes it (set when the router answered with one, cleared otherwise). Read only
+   * by the planner state, through {@link pieceShape}.
+   */
+  legShape?: LegShape
   /**
    * Relief of the straight edge arriving at this point, once the elevation service answered. Carried
    * by the arrival point like `direct`; ignored (stale) as soon as its `key` is not the edge's.
@@ -122,6 +144,12 @@ export interface PlannerSource {
    * raw sum: the saved state carries it as `climb`, trimmed to the range in use.
    */
   serverClimb?: boolean
+  /**
+   * `GpxImportTrack.shape`: the raw track of the file, as the server sanitized it, for the whole of
+   * `coords` (docs/LEDGER_*.md API-147, phase C). Opaque, never edited; the planner state sends it
+   * only with the source untrimmed, so that it still stands for the source's whole line.
+   */
+  shape?: string
 }
 
 /**
@@ -168,10 +196,12 @@ export function sourceFromImport(track: GpxImportTrack): PlannerSource {
   if (track.climb !== undefined && track.ele !== undefined) {
     const cumul = decode1(track.climb)
     if (cumul.length !== coords.length) throw new Error('imported track climb')
-    return { coords, cumul, ascendScale: 1, serverClimb: true }
+    return { coords, cumul, ascendScale: 1, serverClimb: true, ...shapeOf(track) }
   }
-  return sourceOf(coords)
+  return { ...sourceOf(coords), ...shapeOf(track) }
 }
+
+export const shapeOf = (x: { shape?: string }) => (x.shape !== undefined ? { shape: x.shape } : {})
 
 /**
  * The route of imported sources, side by side: the points of each carry their provenance (source
@@ -226,6 +256,7 @@ export async function appendImport(
   }
   first.direct = straight
   first.legAscend = leg.ascend ?? (straight ? undefined : 0)
+  first.legShape = legShapeOf(leg, last, first)
   // The edge into it is the leg's last one (its own last point stands for it)
   first.unpaved = leg.points.at(-1)?.unpaved
   first.manual = true
@@ -853,6 +884,8 @@ export async function add(
       // The first point of a route is created without elevation: it takes the road's
       last.ele ??= segment[0].ele
     }
+    // Once the start is snapped: the ends recorded are the junctions the piece will have
+    segment[segment.length - 1].legShape = legShapeOf(leg, last, segment[segment.length - 1])
     route.points.push(...segment)
   }
   route.points[route.points.length - 1].manual = true
@@ -935,6 +968,14 @@ export async function insert(
     firstAfter.lat = segmentToEnd[segmentToEnd.length - 1].lat
   }
 
+  // The raw geometry of the two new legs, once their ends are snapped. The leg leaving `after[0]`
+  // keeps its own: if the snap moved its start too far, pieceShape no longer takes it.
+  manualPoint.legShape =
+    before.length > 0 && segmentToP.length > 0
+      ? legShapeOf(toP, before.at(-1)!, manualPoint)
+      : undefined
+  if (endPoint && after.length > 0) after[0].legShape = legShapeOf(toEnd, manualPoint, after[0])
+
   // Build new points array
   const points = [...before, ...segmentToP, manualPoint, ...segmentToEnd, ...after]
   return computeRoute(points, { start: before.at(-1), end: after[0] })
@@ -1005,6 +1046,7 @@ export async function remove(
   // Neither routed nor straight (a hop between bounds a few metres apart): no climb, and not the
   // imported fallback either, which would credit the span that was just removed
   after[0].legAscend = leg.ascend ?? (straight ? undefined : 0)
+  after[0].legShape = legShapeOf(leg, before.at(-1)!, after[0])
   after[0].unpaved = segment.at(-1)?.unpaved
 
   return computeRoute([...before, ...segment, ...after], { start: before.at(-1), end: after[0] })
@@ -1038,6 +1080,7 @@ export function restoreSourceSpan(
   const target = route.points[endIdx]
   target.direct = false
   target.legAscend = undefined
+  target.legShape = undefined
   target.unpaved = undefined
   const points = [...route.points.slice(0, startIdx + 1), ...given, ...route.points.slice(endIdx)]
   return computeRoute(points, { start: route.points[startIdx], end: target })
@@ -1123,6 +1166,48 @@ function isRouted(from: Point, to: Point, direct: boolean): boolean {
 interface Leg {
   points: RoutePoint[]
   ascend?: number
+  /** `RouterResponse.shape`: absent for a straight line, a hop, or a backend that sends none. */
+  shape?: string
+}
+
+/** The raw geometry of `leg` between `from` and `to` as they stand now (copied: points move). */
+function legShapeOf(leg: Leg, from: Point, to: Point): LegShape | undefined {
+  return leg.shape === undefined ? undefined : legShape(from, to, leg.shape)
+}
+
+/** A leg's raw geometry between `from` and `to` as they stand now (copied: points move). */
+export function legShape(from: Point, to: Point, shape: string): LegShape {
+  return { from: { lng: from.lng, lat: from.lat }, to: { lng: to.lng, lat: to.lat }, shape }
+}
+
+/**
+ * How far a junction may have moved since its leg was drawn and the leg keep its raw geometry:
+ * the router snapping the shared end of the next leg moves it a few metres, a gesture further.
+ */
+export const LEG_SHAPE_TOLERANCE_M = 5
+
+/**
+ * The raw geometry of the routed piece `points[a] -> points[b]`, when it is exactly one leg the
+ * router drew between those ends: the arrival point carries its shape, nothing inside the piece
+ * ends another leg or is straight, and neither end moved more than {@link LEG_SHAPE_TOLERANCE_M}
+ * since. Undefined otherwise: the server then derives the piece from its simplified line.
+ */
+export function pieceShape(
+  points: readonly RoutePoint[],
+  a: number,
+  b: number
+): string | undefined {
+  const end = points[b]
+  const s = end?.legShape
+  if (!s || b <= a || end.direct || end.legAscend === undefined) return undefined
+  for (let i = a + 1; i < b; i++) {
+    if (points[i].legAscend !== undefined || points[i].direct) return undefined
+  }
+  const start = points[a]
+  if (distance(s.from.lng, s.from.lat, start.lng, start.lat) > LEG_SHAPE_TOLERANCE_M)
+    return undefined
+  if (distance(s.to.lng, s.to.lat, end.lng, end.lat) > LEG_SHAPE_TOLERANCE_M) return undefined
+  return s.shape
 }
 
 async function router(
@@ -1153,7 +1238,7 @@ async function router(
     const b = points[i].ele
     if (a !== undefined && b !== undefined && b > a) positive += b - a
   }
-  return { points, ascend: response.ascend ?? positive }
+  return { points, ascend: response.ascend ?? positive, shape: response.shape }
 }
 
 function ramerDouglasPeucker(points: RoutePoint[], epsilon: number = 50): RoutePoint[] {

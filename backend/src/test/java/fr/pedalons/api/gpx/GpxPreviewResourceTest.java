@@ -4,11 +4,15 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
 
 import fr.pedalons.api.AbstractResourceTest;
+import fr.pedalons.common.TsidUtils;
 import fr.pedalons.dto.common.asset.MediaDto;
 import fr.pedalons.dto.routes.request.RouteRequest;
 import fr.pedalons.enums.SurfaceType;
 import fr.pedalons.enums.Visibility;
 import fr.pedalons.repository.gpx.GpxPreviewRepository;
+import fr.pedalons.service.route.GpxProcessingService;
+import fr.pedalons.service.route.planner.PolylineCodec;
+import fr.pedalons.util.TestDataService;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
@@ -22,6 +26,8 @@ import org.junit.jupiter.api.Test;
 class GpxPreviewResourceTest extends AbstractResourceTest {
 
   private static final File EXAMPLE_GPX = new File("src/test/resources/example.gpx");
+
+  @Inject GpxProcessingService gpxProcessingService;
 
   @Override
   @BeforeEach
@@ -470,6 +476,60 @@ class GpxPreviewResourceTest extends AbstractResourceTest {
         .statusCode(201)
         .body("name", equalTo("From preview"))
         .body("distance", greaterThan(0.0f));
+  }
+
+  /**
+   * docs/LEDGER_*.md API-147: the preview keeps the raw line of its track, every sanitized source
+   * point, and a promoted route keeps it too — recomputed from original.gpx, point for point.
+   */
+  @Test
+  void createRouteFromPreview_keepsTheRawTrack() {
+    String previewId = createPreview(USER1);
+    UUID publicId = UUID.fromString(previewId);
+    java.util.List<Integer> source =
+        gpxProcessingService
+            .rawTracks(gpxProcessingService.parseGpx(EXAMPLE_GPX.toPath()))
+            .paths()
+            .stream()
+            .map(io.github.glandais.engine.path.Path::getSize)
+            .toList();
+    java.util.List<String> rawLines =
+        QuarkusTransaction.requiringNew()
+            .call(
+                () ->
+                    gpxPreviewRepository
+                        .findByPublicId(domain.getId(), publicId)
+                        .orElseThrow()
+                        .readableRawLines());
+    org.junit.jupiter.api.Assertions.assertNotNull(rawLines);
+    org.junit.jupiter.api.Assertions.assertEquals(
+        source,
+        rawLines.stream()
+            .map(line -> PolylineCodec.decode2(line, Integer.MAX_VALUE).length)
+            .toList(),
+        "the preview keeps every source point");
+
+    String routeId =
+        given()
+            .auth()
+            .oauth2(getAccessToken(USER1))
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(routeRequest())
+            .when()
+            .post("/api/gpx-previews/" + previewId + "/routes/" + team1Slug)
+            .then()
+            .statusCode(201)
+            .extract()
+            .path("id");
+
+    java.util.List<TestDataService.RawGeometry> raw =
+        dataService.rawGeometries(TsidUtils.toLong(routeId));
+    org.junit.jupiter.api.Assertions.assertEquals(
+        source,
+        raw.stream().map(TestDataService.RawGeometry::points).toList(),
+        "the promoted route keeps the raw track of the preview");
+    org.junit.jupiter.api.Assertions.assertTrue(
+        raw.stream().allMatch(r -> r.dims() == 2), raw.toString());
   }
 
   @Test
