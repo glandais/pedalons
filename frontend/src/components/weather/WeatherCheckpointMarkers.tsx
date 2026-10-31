@@ -13,7 +13,7 @@ import {
   checkpointPoint,
   mapCheckpoints,
   mapWindRotation,
-  sameSpotRanks,
+  spreadBadges,
   type MapCheckpoint,
 } from '@/lib/weatherOnRoute'
 import { WeatherIcon } from './WeatherIcon'
@@ -75,17 +75,8 @@ export function WeatherCheckpointMarkers({
     () => mapCheckpoints(tracks, leg.checkpoints, chained),
     [tracks, leg.checkpoints, chained]
   )
-  // Badges sharing a spot (a loop's start and finish) side by side, in the order of the route
-  const shifts = useMemo(
-    () =>
-      new Map(
-        sameSpotRanks(markers).map(({ rank, count }, i) => [
-          markers[i].checkpoint.index,
-          (rank - (count - 1) / 2) * BADGE_STEP,
-        ])
-      ),
-    [markers]
-  )
+  // Badges that would lie one on another at this zoom — a loop's start and finish — side by side
+  const shifts = useBadgeShifts(markers)
   const [ownOpenIndex, setOwnOpenIndex] = useState<number | null>(null)
   const controlled = controlledOpenIndex !== undefined
   const openIndex = controlled ? controlledOpenIndex : ownOpenIndex
@@ -173,8 +164,11 @@ export function WeatherCheckpointMarkers({
           // under it): its 44 px target, centred on it, reaches 5 px below the point
           anchor="bottom"
           offset={[
-            shifts.get(marker.checkpoint.index) ?? 0,
-            BADGE_TARGET / 2 - BADGE_HEIGHT / 2 - 6,
+            shifts.get(marker.checkpoint.index)?.[0] ?? 0,
+            (shifts.get(marker.checkpoint.index)?.[1] ?? 0) +
+              BADGE_TARGET / 2 -
+              BADGE_HEIGHT / 2 -
+              6,
           ]}
         >
           <CheckpointBadge
@@ -226,7 +220,10 @@ export function WeatherCheckpointMarkers({
           latitude={open.latitude}
           anchor="bottom"
           // Above its badge, shifted with it when it shares its spot
-          offset={[shifts.get(open.checkpoint.index) ?? 0, -34]}
+          offset={[
+            shifts.get(open.checkpoint.index)?.[0] ?? 0,
+            (shifts.get(open.checkpoint.index)?.[1] ?? 0) - 34,
+          ]}
           closeOnClick={false}
           // The detail takes the focus itself (the effect above), not the close button
           focusAfterOpen={false}
@@ -249,8 +246,9 @@ export function WeatherCheckpointMarkers({
 /** The capsule drawn on the map, and the touch target around it (WCAG 2.5.8, 44 px aimed). */
 const BADGE_HEIGHT = 22
 const BADGE_TARGET = 44
-/** The step between two badges sharing a spot: a capsule's width (icon, « 23° », arrow) and a gap. */
+/** The room a capsule takes beside another — its width (icon, « 23° », arrow) and a gap — and above. */
 const BADGE_STEP = 72
+const BADGE_ROW = BADGE_HEIGHT + 4
 
 function CheckpointBadge({
   marker,
@@ -495,4 +493,56 @@ function useMapBearing(): number {
   }, [mapRef])
 
   return bearing
+}
+
+/** Equal shifts, so a zoom that moves nothing apart does not render the badges again. */
+function sameShifts(a: Map<number, [number, number]>, b: Map<number, [number, number]>) {
+  if (a.size !== b.size) return false
+  for (const [index, [dx, dy]] of b) {
+    const other = a.get(index)
+    if (!other || other[0] !== dx || other[1] !== dy) return false
+  }
+  return true
+}
+
+/**
+ * Each badge's shift in pixels (`spreadBadges`), by its checkpoint's index, measured on screen and
+ * again at the end of every zoom, rotation or resize: points far apart at one zoom close up at
+ * another. Nothing outside a map.
+ */
+function useBadgeShifts(markers: readonly MapCheckpoint[]): Map<number, [number, number]> {
+  const { current: mapRef } = useMap()
+  const [shifts, setShifts] = useState(() => new Map<number, [number, number]>())
+
+  useEffect(() => {
+    if (!mapRef) return
+    const map = mapRef.getMap()
+    const update = () => {
+      const spread = spreadBadges(
+        markers.map((marker) => map.project([marker.longitude, marker.latitude])),
+        BADGE_STEP,
+        BADGE_ROW
+      )
+      const next = new Map(
+        markers.map((marker, i): [number, [number, number]] => [
+          marker.checkpoint.index,
+          [Math.round(spread[i].dx), Math.round(spread[i].dy)],
+        ])
+      )
+      setShifts((previous) => (sameShifts(previous, next) ? previous : next))
+    }
+    update()
+    map.on('zoomend', update)
+    map.on('rotateend', update)
+    map.on('pitchend', update)
+    map.on('resize', update)
+    return () => {
+      map.off('zoomend', update)
+      map.off('rotateend', update)
+      map.off('pitchend', update)
+      map.off('resize', update)
+    }
+  }, [mapRef, markers])
+
+  return shifts
 }

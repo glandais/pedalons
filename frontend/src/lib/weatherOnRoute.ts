@@ -19,7 +19,6 @@ import type {
 import { RELATIVE_WIND_COLORS } from '@/lib/badgeColors.generated'
 import { hasForecast } from '@/components/weather/weatherDisplay'
 import { phaseAt, type WindPhase } from '@/components/weather/windPhases'
-import { distance } from '@/components/map/mapUtils'
 
 type Tracks = Pick<TrackDto, 'line'>[]
 
@@ -117,41 +116,51 @@ export function mapCheckpoints(
   return placed
 }
 
-/** Two badges closer than this share a spot: a loop's start and finish. */
-const SAME_SPOT_METERS = 100
-
 /**
- * Where each badge stands among those sharing its spot (`SAME_SPOT_METERS`), in the order of the
- * route: a loop's start and finish would otherwise lie one on the other, the finish hiding the
- * start. `count` is 1 for a badge alone.
+ * How far to move each badge, in screen pixels, so that none lies on another: badges whose boxes
+ * (`width` × `height`, centred on their point) touch — a loop's start and finish, or two points
+ * that close up when zooming out — form a group, laid out as one row centred on the group, from
+ * left to right as they stand on screen, the route's order breaking a tie (the start left of the
+ * finish of a loop). A badge alone stays put.
  */
-export function sameSpotRanks(
-  markers: readonly MapCheckpoint[]
-): { rank: number; count: number }[] {
-  const groups: number[][] = []
-  const groupOf: number[] = []
-  markers.forEach((marker, i) => {
-    const group = groups.findIndex((members) =>
-      members.some((j) => {
-        const other = markers[j]
-        return (
-          distance(marker.longitude, marker.latitude, other.longitude, other.latitude) <
-          SAME_SPOT_METERS
-        )
-      })
-    )
-    if (group >= 0) {
-      groupOf.push(group)
-      groups[group].push(i)
-    } else {
-      groupOf.push(groups.length)
-      groups.push([i])
+export function spreadBadges(
+  points: readonly { x: number; y: number }[],
+  width: number,
+  height: number
+): { dx: number; dy: number }[] {
+  const parent = points.map((_, i) => i)
+  const find = (i: number): number => (parent[i] === i ? i : (parent[i] = find(parent[i])))
+  for (let i = 0; i < points.length; i++) {
+    for (let j = i + 1; j < points.length; j++) {
+      if (
+        Math.abs(points[i].x - points[j].x) < width &&
+        Math.abs(points[i].y - points[j].y) < height
+      ) {
+        parent[find(j)] = find(i)
+      }
     }
+  }
+  const groups = new Map<number, number[]>()
+  points.forEach((_, i) => {
+    const root = find(i)
+    groups.set(root, [...(groups.get(root) ?? []), i])
   })
-  return markers.map((_, i) => {
-    const members = groups[groupOf[i]]
-    return { rank: members.indexOf(i), count: members.length }
-  })
+  const shifts = points.map(() => ({ dx: 0, dy: 0 }))
+  for (const members of groups.values()) {
+    if (members.length < 2) continue
+    const cx = members.reduce((sum, i) => sum + points[i].x, 0) / members.length
+    const cy = members.reduce((sum, i) => sum + points[i].y, 0) / members.length
+    const row = [...members].sort((a, b) =>
+      Math.abs(points[a].x - points[b].x) < 1 ? a - b : points[a].x - points[b].x
+    )
+    row.forEach((i, rank) => {
+      shifts[i] = {
+        dx: cx + (rank - (row.length - 1) / 2) * width - points[i].x,
+        dy: cy - points[i].y,
+      }
+    })
+  }
+  return shifts
 }
 
 /**

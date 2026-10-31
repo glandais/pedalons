@@ -9,8 +9,7 @@ import {
   checkpointPoint,
   hasWindForecast,
   mapCheckpoints,
-  sameSpotRanks,
-  type MapCheckpoint,
+  spreadBadges,
   mapWindRotation,
   pointWinds,
   relativeWindStrokeColors,
@@ -233,20 +232,55 @@ describe('mapWindRotation', () => {
   })
 })
 
-describe('sameSpotRanks', () => {
-  const at = (index: number, longitude: number, latitude: number) =>
-    ({ checkpoint: { index }, longitude, latitude }) as unknown as MapCheckpoint
-
-  it("ranks a loop's start and finish side by side, the others alone", () => {
-    const ranks = sameSpotRanks([
-      at(0, 5, 45),
-      at(1, 5.1, 45.1),
-      at(2, 5.0002, 45.0002), // ~30 m from the start
+describe('spreadBadges', () => {
+  it("lays a loop's start and finish side by side, the start on the left", () => {
+    const shifts = spreadBadges(
+      [
+        { x: 100, y: 100 },
+        { x: 400, y: 300 },
+        { x: 100, y: 100 },
+      ],
+      72,
+      26
+    )
+    expect(shifts).toEqual([
+      { dx: -36, dy: 0 },
+      { dx: 0, dy: 0 },
+      { dx: 36, dy: 0 },
     ])
-    expect(ranks).toEqual([
-      { rank: 0, count: 2 },
-      { rank: 0, count: 1 },
-      { rank: 1, count: 2 },
+  })
+
+  it('parts badges that close up on screen, in the order they stand', () => {
+    // The finish 20 px left of the start and 10 px lower: it goes left, the row on their middle
+    const shifts = spreadBadges(
+      [
+        { x: 120, y: 100 },
+        { x: 100, y: 110 },
+      ],
+      72,
+      26
+    )
+    expect(shifts).toEqual([
+      { dx: 110 + 36 - 120, dy: 5 },
+      { dx: 110 - 36 - 100, dy: -5 },
+    ])
+  })
+
+  it('leaves alone badges that do not touch', () => {
+    expect(
+      spreadBadges(
+        [
+          { x: 0, y: 0 },
+          { x: 80, y: 0 },
+          { x: 0, y: 30 },
+        ],
+        72,
+        26
+      )
+    ).toEqual([
+      { dx: 0, dy: 0 },
+      { dx: 0, dy: 0 },
+      { dx: 0, dy: 0 },
     ])
   })
 })
