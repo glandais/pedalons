@@ -938,7 +938,20 @@ Ce que les tests ne prouvent pas, parce qu'ils ne passent ni par Flyway ni par u
       plus, envisager de revenir à la limite par défaut. Reste ouvert aussi : le recalcul HD alloue
       beaucoup d'objets éphémères (l'old gen a touché 835 MiB en local pendant le recalcul de
       « Nantes – Houtkerque », pour 137 MiB vivants ensuite) ; à creuser seulement si un OOM revient.
-      Taille : S.
+      **Relevé du 1er novembre 2026** (tâche de 21 h, 10 imports GPX ou recalculs HD) : le heap vivant
+      plafonne à 355–381 MiB, l'histogramme (`~/heap-histo/` sur le serveur) met la hausse sur
+      182 MB de `double[]`. Mais `ContainerNearMemoryLimit` a sonné de 15 h 20 à 15 h 42 UTC : working
+      set à 1,86 GiB sur 2 GiB, pour un heap engagé de 822 MiB (des déchets en attente du full GC),
+      253 MiB de non-heap et **≈ 620 MiB de RSS hors de tout ce que la JVM compte** — un heap plein
+      (1,2 GiB à 60 %) aurait fini en kill du cgroup, sans dump. Fait le même jour :
+      `JAVA_MAX_MEM_RATIO=50` dans le `.env` de prod (heap max 1 GiB), et
+      `JAVA_TOOL_OPTIONS=-XX:NativeMemoryTracking=summary` dans celui du staging (le `.env` est lu par
+      bash et par Swarm : pas d'espace dans une valeur, d'où `JAVA_TOOL_OPTIONS` plutôt que
+      `JAVA_OPTS_APPEND`). **Reste** : lire `jcmd 1 VM.native_memory summary` sur le staging après
+      un import GPX, et le comparer au `VmRSS` du processus — l'écart est ce que ni le heap ni NMT ne
+      voient (runtime ONNX de Magika, arènes malloc) ; au démarrage, 424 MiB de RSS pour 359 MiB
+      suivis. Puis remettre le ratio commun dans `application.properties` et retirer les deux lignes
+      des `.env`. Taille : S.
 
 ---
 
