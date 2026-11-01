@@ -954,10 +954,11 @@ Ce que les tests ne prouvent pas, parce qu'ils ne passent ni par Flyway ni par u
       l'écart, ≈ 243 MiB, est dans 87 arènes malloc glibc (298 MiB de RSS ; hôte de 12 cœurs, jusqu'à
       96 arènes), où alloue aussi le runtime ONNX de Magika. Refait avec `MALLOC_ARENA_MAX=2` : 701 MiB
       de RSS pour 626 suivis, 2 arènes et 81 MiB, pic de 1 019 MiB contre 1 181. D'où
-      `MALLOC_ARENA_MAX=2` dans l'image (`application.properties`, commit `f7b21e5c`). **Reste** :
-      le déployer en prod, puis retirer `JAVA_TOOL_OPTIONS` et `MALLOC_ARENA_MAX` du `.env` du
-      staging, et `JAVA_MAX_MEM_RATIO=50` de celui de la prod une fois le ratio commun révisé dans
-      `application.properties` (60 laisse 820 MiB hors heap sur 2 GiB, ce qui suffit maintenant).
+      `MALLOC_ARENA_MAX=2` dans l'image (`application.properties`, commit `f7b21e5c`), déployée en
+      prod et en staging le 1er novembre ; le `.env` du staging est revenu à son état d'avant.
+      **Reste** : si `ContainerNearMemoryLimit` ne sonne plus pendant quelques jours, retirer
+      `JAVA_MAX_MEM_RATIO=50` du `.env` de la prod (le ratio commun de 60 laisse 820 MiB hors heap
+      sur 2 GiB, ce qui suffit maintenant).
       Taille : XS.
 
 ---
