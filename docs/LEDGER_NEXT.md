@@ -1104,6 +1104,11 @@ porte **aucun détail exploitable** (scénario, preuve, point d'entrée) tant qu
 ouvert, seulement sa sévérité et une phrase. Corrigé, il passe dans `LEDGER_DONE.md` sous son
 identifiant, avec son détail.
 
+L'audit de novembre 2026 ([`research/2026-11-01-audit-securite.md`](research/2026-11-01-audit-securite.md),
+révision `1780210c`, version expurgée ; détail hors du dépôt) suit la même règle : sa colonne
+« Audit » cite `Nov. Cn` pour un constat confirmé et `Nov. Vn` pour une piste à valider. Une piste
+n'a pas de sévérité tant que son test de validation n'a pas tourné.
+
 | ID | Priorité (audit) | Audit | Sévérité | Constat |
 |---|---|---|---|---|
 | `SEC-12` | — | L3, L10 | Faible | Voir la table des constats faibles de l'audit ; L1 et L5 à L9 sont livrés sous `SEC-20`, L12 et L13 sous `SEC-22`, L14 sous `SEC-23`, L4 sous `SEC-24` |
@@ -1111,6 +1116,16 @@ identifiant, avec son détail.
 | `SEC-14` | — | Info | — | Images externes dans le markdown ; le parseur XML et le paramètre non encodé sont livrés sous `SEC-21` |
 | `SEC-40` | — | Suite de `SEC-31` | Moyenne | La CSP complète du site n'est encore que rapportée (`Content-Security-Policy-Report-Only`) : lire les rapports `[csp-report]` de staging et de prod, puis passer `CSP_MODE=enforce` (procédure dans [`OPERATIONS.md`](OPERATIONS.md#content-security-policy)). Avant de basculer, vérifier dans un vrai navigateur sur staging, console ouverte et rapports lus : la carte (chaque fond, relief, mode sombre, tracé GPX), la visionneuse PDF d'une pièce jointe, un post markdown avec images externes, la PWA (installation, service worker, inscription au web push en prod), la connexion par passkey, la connexion et la synchronisation Strava, l'éditeur Tiptap. Durcir aussi la route de rapports (budget par client et dédoublonnage, le budget global de 120 lignes/min peut être épuisé par des rapports forgés) et le cache de dix minutes des hôtes raster (un changement de fournisseur de carte sans redémarrage du frontend reste bloqué jusque-là). Restera ensuite : les réponses non HTML (scripts, worker de carte) ne portent que les quatre directives de `SEC-30`. Taille : S |
 | `SEC-39` | — | Suite de `SEC-35` | Faible | Deux autres émissions de jetons par e-mail gardent le motif compter-puis-insérer que `SEC-35` a fermé pour les codes à usage unique ; même remède, en respectant l'ordre des verrous compte puis jeton |
+| `SEC-41` | 1 | Nov. C1 | Moyenne | Une demande en cours sur un attribut d'identité survit à la récupération du compte |
+| `SEC-42` | — | Nov. C2 | Faible | Un envoi de fichier refusé laisse sa copie temporaire sur le disque du backend |
+| `SEC-43` | — | Nov. C3 | Faible | Un ancien point d'API contourne la règle « personne ne rejoint une équipe sans un clic à soi » |
+| `SEC-44` | 2 | Nov. V1 | À valider | Une entrée pré-authentification n'est pas bornée en mémoire avant validation |
+| `SEC-45` | 3 | Nov. V2 | À valider | Une bibliothèque d'analyse de fichiers de trace n'est pas protégée contre l'expansion d'entités |
+| `SEC-46` | — | Nov. V3 | À valider | Un chemin d'envoi de trace échappe à la borne de taille posée par `SEC-6` |
+| `SEC-47` | — | Nov. V4 | À valider | Un retour de connexion à un service tiers n'est pas lié au navigateur qui l'a lancé |
+| `SEC-48` | — | Nov. V5 | À valider | Un appel facturé à un fournisseur n'a pas de quota par compte |
+| `SEC-49` | — | Nov. V6 | À valider | Un quota d'envoi suit le motif compter-puis-insérer (même famille que `SEC-35` et `SEC-39`) |
+| `SEC-50` | — | Nov. V7 | À valider | La désactivation d'un domaine ne s'applique pas à tous les chemins de résolution |
 
 ---
 
