@@ -43,7 +43,7 @@ services:
   # nomme (l'image tourne en 65532 et son /data lui appartient deja, un bind mount serait a root),
   # regenerable, hors sauvegarde. Image distroless : pas de healthcheck possible (ni shell ni curl).
   osm-surface:
-    image: ghcr.io/glandais/osm-surface:0.1.1
+    image: ghcr.io/glandais/osm-surface:0.1.2
     networks:
       - shared
     environment:
