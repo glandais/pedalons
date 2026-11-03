@@ -49,9 +49,15 @@ services:
     environment:
       CACHE_MAX_GB: "5"
       LOG_FORMAT: json
+      # Le cache de tuiles decodees sous-estime leur poids (seuls les points sont comptes) : a 256 Mo
+      # (defaut), le processus restait a ~715 Mo au repos, plaque contre la limite.
+      MEMORY_CACHE_MB: "128"
+      # glibc ouvre jusqu'a 8 arenes par coeur et ne les rend pas : meme cause que la memoire native
+      # du backend (docs/LEDGER_*.md OPS-56).
+      MALLOC_ARENA_MAX: "2"
     volumes:
       - osm-surface-data:/data
-    # MEMORY_CACHE_MB (256 par defaut) de tuiles decodees, plus les appariements en cours.
+    # MEMORY_CACHE_MB de tuiles decodees, plus les appariements en cours.
     deploy:
       resources:
         limits:

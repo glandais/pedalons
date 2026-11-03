@@ -119,7 +119,7 @@ limit is killed by the kernel (`OOMKilled` in `docker inspect`, `task: non-zero 
 | traefik | 256M | |
 | goatcounter | 128M | production only; 36 to 40 MiB at rest, the rest for CSV exports and the dashboard |
 | tileserver (shared) | 3G | ~1.8 GB resident |
-| osm-surface (shared) | 768M | 256 MB of decoded tiles (`MEMORY_CACHE_MB`) plus the matchings in flight; a few MB at rest |
+| osm-surface (shared) | 768M | `MEMORY_CACHE_MB=128` of decoded tiles (weighed by their points only, so more in fact) plus the matchings in flight, `MALLOC_ARENA_MAX=2`; at the default 256 it sat at ~715 MB after a full recompute (2026-11-03) |
 | monitoring stack | 2G in all | see [Monitoring](#monitoring); ~1 GB resident |
 
 **The backend has no `-Xmx`.** The image's entrypoint (`run-java.sh`, from the Jib base image
