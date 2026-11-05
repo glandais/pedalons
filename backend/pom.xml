@@ -42,6 +42,13 @@
 
     <dependencyManagement>
         <dependencies>
+            <!-- CVE-2026-102554, fixed in 33.7.2. Comes through magika -> error_prone_core, and no
+                 Quarkus release moves it yet: docs/LEDGER_*.md API-148 says when to drop this. -->
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>33.7.2-jre</version>
+            </dependency>
             <!-- Before quarkus-bom: the first imported BOM wins. -->
             <dependency>
                 <groupId>tools.jackson</groupId>

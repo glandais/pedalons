@@ -487,6 +487,18 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
 
 ## API — Contrat d'API et backend
 
+- [ ] `API-148` **Retirer les rustines de sécurité des dépendances une fois sur Quarkus 4 (S)** —
+      `guava` est forcé en 33.7.2-jre dans le `dependencyManagement` de `backend/pom.xml`
+      (CVE-2026-102554, désérialisation Java, non atteinte : aucun `ObjectInputStream` dans
+      `src/main`), car il arrive par `magika` → `error_prone_core`, hors du BOM applicatif Quarkus ;
+      un override oublié empêche les montées suivantes. `opentelemetry-api` 1.62.0
+      (CVE-2026-118259, `tracestate`) n'est **pas** forcé : `quarkus-scheduler` l'amène sans
+      `quarkus-opentelemetry` ni SDK, donc le propagateur n'est pas appelé, et le passer seul en
+      1.67 le décalerait de `opentelemetry-api-incubator` 1.62.0-alpha. Alerte Dependabot n° 232
+      classée « code vulnérable non utilisé » le 5 novembre 2026. La branche 4.0 de Quarkus embarque
+      le SDK 1.67.0 : à la montée, vérifier la version résolue des deux, retirer l'override si un
+      BOM couvre guava ou si `magika` en amène une version corrigée.
+
 - [ ] `API-139` **`GET /api/admin/teams` compte les membres ligne par ligne (S)** —
       `AdminTeamService.listTeams` appelle `userTeamRepository.count` pour chaque équipe de la page
       (`service/admin/AdminTeamService.java`, dans le `map` des lignes) : une requête par ligne, contre l'invariant des
