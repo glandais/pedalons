@@ -344,6 +344,21 @@ export function RoutesMapView({
     setHoveredPointIndex(-1)
   }, [highlightedRoute?.itemId])
 
+  // The lit trace goes above the others: traces that share a road would otherwise cover it. This is
+  // also what repaints it under the 3D terrain, where lines are cached in textures that only a change
+  // of tiles, zoom or layer order invalidates, never a paint property — the width and opacity alone
+  // leave the previous trace lit on the map while the profile beside it follows (docs/LEDGER_*.md
+  // WEB-130).
+  const highlightedItemIdOnMap = highlightedRoute?.itemId
+  useEffect(() => {
+    const map = mapRef.current?.getMap()
+    if (!map || !highlightedItemIdOnMap) return
+    for (const prefix of ['line', 'arrows', 'wind-arrows']) {
+      const layerId = `${prefix}-${highlightedItemIdOnMap}`
+      if (map.getLayer(layerId)) map.moveLayer(layerId)
+    }
+  }, [highlightedItemIdOnMap])
+
   // Map → profile: mirror the cursor as a crosshair + tooltip on the chart (profile → map goes the
   // other way, through the chart's own `onHover`).
   useEffect(() => {

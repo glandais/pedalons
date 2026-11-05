@@ -13,6 +13,7 @@ const state = vi.hoisted(() => ({
   markers: [] as Record<string, unknown>[],
   toggleTrace: undefined as ((itemId: string) => void) | undefined,
   toggleTracks: undefined as (() => void) | undefined,
+  moved: [] as string[],
 }))
 
 // The map and its layers as plain DOM: what matters is what each trace is handed.
@@ -32,11 +33,21 @@ vi.mock('../map/PedalonsMap', () => ({
   PedalonsMap: ({
     children,
     onTraceToggle,
+    ref,
   }: {
     children?: React.ReactNode
     onTraceToggle?: (itemId: string) => void
+    ref?: React.RefObject<unknown>
   }) => {
     state.toggleTrace = onTraceToggle
+    if (ref) {
+      ref.current = {
+        getMap: () => ({
+          getLayer: (id: string) => !id.startsWith('wind-arrows-'),
+          moveLayer: (id: string) => state.moved.push(id),
+        }),
+      }
+    }
     return <div>{children}</div>
   },
 }))
@@ -133,6 +144,7 @@ describe('RoutesMapView', () => {
   beforeEach(() => {
     state.sources = []
     state.layers = []
+    state.moved = []
     state.markers = []
   })
   afterEach(cleanup)
@@ -149,6 +161,25 @@ describe('RoutesMapView', () => {
     show()
     expect(state.sources.some((s) => String(s.id).startsWith('route-arrows-'))).toBe(false)
     expect(state.layers.some((l) => l.id === 'arrows-s1')).toBe(true)
+  })
+
+  // WEB-130: under the 3D terrain a paint change alone never reaches the screen
+  it('moves the lit trace above the others, which also repaints it under the terrain', () => {
+    const lit = (highlightedItemId: string) => (
+      <MantineProvider>
+        <RoutesMapView items={ITEMS} teamSlug="np" highlightedItemId={highlightedItemId} />
+      </MantineProvider>
+    )
+    const { rerender } = render(lit('s2'))
+    expect(state.moved).toEqual(['line-s2', 'arrows-s2'])
+
+    state.moved = []
+    rerender(lit('s3'))
+    expect(state.moved).toEqual(['line-s3', 'arrows-s3'])
+
+    state.moved = []
+    rerender(lit('s3'))
+    expect(state.moved).toEqual([])
   })
 
   describe('in the Météo mode (a trip overview, WEB-118)', () => {
