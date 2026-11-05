@@ -106,6 +106,8 @@ export interface RoutesMapViewProps {
   windAttribution?: WeatherAttributionDto
 }
 
+const NO_TRANSITION = { duration: 0 }
+
 export function RoutesMapView({
   items,
   teamSlug,
@@ -625,6 +627,10 @@ export function RoutesMapView({
                           'line-color': route.windLines ? ['get', 'color'] : route.color,
                           'line-width': isHighlighted ? 8 : 5,
                           'line-opacity': isHighlighted || route.windLines ? 0.9 : 0.5,
+                          // No fade: under the 3D terrain the texture would freeze it halfway
+                          // through, drawn only once when the lit trace moves above the others.
+                          'line-width-transition': NO_TRANSITION,
+                          'line-opacity-transition': NO_TRANSITION,
                         }}
                       />
                       {!route.windLines && arrows}

@@ -182,6 +182,15 @@ describe('RoutesMapView', () => {
     expect(state.moved).toEqual([])
   })
 
+  // WEB-130: the texture is drawn once, so a fade would stay frozen at its first frames
+  it('does not fade the highlight', () => {
+    show()
+    expect(linePaint('s1')).toMatchObject({
+      'line-width-transition': { duration: 0 },
+      'line-opacity-transition': { duration: 0 },
+    })
+  })
+
   describe('in the Météo mode (a trip overview, WEB-118)', () => {
     it('colours every stage by its own wind, a stage without a forecast in the default colour', () => {
       show(WINDS)
