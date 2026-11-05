@@ -87,8 +87,8 @@ export function RideDetailPage() {
   const { teamSlug, rideSlug } = useParams<{ teamSlug: string; rideSlug: string }>()
   const { isAuthenticated } = useAuth()
   // The hovered route, and the one chosen by a click on its trace — map item ids, one per distinct
-  // route (`rideMapRoutes`). The hover wins while it lasts; the choice stays lit on the map and on
-  // the cards of every group that rides it.
+  // route (`rideMapRoutes`). The choice stays lit on the map and on the cards of every group that
+  // rides it, until a card's hover replaces it: the map stays on the last route hovered.
   const [highlightedItemId, setHighlightedItemId] = useState<string | null>(null)
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
   const litItemId = highlightedItemId ?? selectedItemId
@@ -129,8 +129,11 @@ export function RideDetailPage() {
     colorByGroupId: trackColors,
   } = useMemo(() => rideMapRoutes(ride, mainRouteLabel), [ride, mainRouteLabel])
   // Hovering a group's card lights its whole route, so the cards of the groups that share it too.
-  const hoverGroup = (groupId: string | null) =>
-    setHighlightedItemId(groupId ? (itemIdByGroupId.get(groupId) ?? null) : null)
+  const hoverGroup = (groupId: string | null) => {
+    const itemId = groupId ? (itemIdByGroupId.get(groupId) ?? null) : null
+    setHighlightedItemId(itemId)
+    if (itemId) setSelectedItemId(null)
+  }
   const isGroupLit = (groupId: string) => !!litItemId && itemIdByGroupId.get(groupId) === litItemId
 
   useCanonicalPath(team && ride ? paths.ride(team.slug, ride.slug) : undefined)

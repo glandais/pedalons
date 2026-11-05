@@ -182,6 +182,40 @@ describe('RoutesMapView', () => {
     expect(state.moved).toEqual([])
   })
 
+  // WEB-130: the first trace is lit from the start, so hovering it changes nothing afterwards
+  it('mounts the lit trace last, so it starts above the others', () => {
+    show()
+    expect(state.layers.filter((l) => String(l.id).startsWith('line-')).map((l) => l.id)).toEqual([
+      'line-s2',
+      'line-s3',
+      'line-s1',
+    ])
+  })
+
+  it('stays on the last hovered trace once nothing is hovered', () => {
+    const lit = (highlightedItemId: string | null) => (
+      <MantineProvider>
+        <RoutesMapView items={ITEMS} teamSlug="np" highlightedItemId={highlightedItemId} />
+      </MantineProvider>
+    )
+    const { rerender } = render(lit('s2'))
+    rerender(lit(null))
+    expect(linePaint('s2')['line-width']).toBe(8)
+    expect(linePaint('s1')['line-width']).toBe(5)
+  })
+
+  it('goes back to the first trace when the last hovered one is unticked', () => {
+    const lit = (highlightedItemId: string | null) => (
+      <MantineProvider>
+        <RoutesMapView items={ITEMS} teamSlug="np" highlightedItemId={highlightedItemId} />
+      </MantineProvider>
+    )
+    const { rerender } = render(lit('s2'))
+    rerender(lit(null))
+    act(() => state.toggleTrace!('s2'))
+    expect(linePaint('s1')['line-width']).toBe(8)
+  })
+
   // WEB-130: the texture is drawn once, so a fade would stay frozen at its first frames
   it('does not fade the highlight', () => {
     show()

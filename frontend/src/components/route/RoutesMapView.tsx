@@ -250,15 +250,21 @@ export function RoutesMapView({
     [routesData, hiddenItemIds]
   )
 
-  // Derive highlighted route from props or selected state, among the traces on screen
+  // Once nothing is hovered the map stays on the last route that was, rather than jumping back to
+  // the first: crossing the gap between two cards must not light a third route.
+  const targetId = highlightedItemId ?? selectedRouteId
+  const [lastTargetId, setLastTargetId] = useState<string | null>(null)
+  if (targetId && targetId !== lastTargetId) setLastTargetId(targetId)
+  // Without a parent holding the choice, a hover elsewhere replaces the trace clicked here too.
+  if (highlightedItemId && ownSelectedRouteId && highlightedItemId !== ownSelectedRouteId) {
+    setSelectedRouteId(null)
+  }
+
+  // Derive highlighted route among the traces on screen. Priority: prop > selected > last > first
   const highlightedRoute = useMemo(() => {
-    // Priority: prop > selected > first route
-    const targetId = highlightedItemId ?? selectedRouteId
-    if (targetId) {
-      return visibleRoutes.find((r) => r.itemId === targetId) ?? visibleRoutes[0] ?? null
-    }
-    return visibleRoutes[0] ?? null
-  }, [highlightedItemId, selectedRouteId, visibleRoutes])
+    const id = targetId ?? lastTargetId
+    return visibleRoutes.find((r) => r.itemId === id) ?? visibleRoutes[0] ?? null
+  }, [targetId, lastTargetId, visibleRoutes])
 
   // One checkbox per trace in the basemap panel, once there is more than one to choose from
   const traceOptions = useMemo(
@@ -346,7 +352,9 @@ export function RoutesMapView({
     setHoveredPointIndex(-1)
   }, [highlightedRoute?.itemId])
 
-  // The lit trace goes above the others: traces that share a road would otherwise cover it. This is
+  // The lit trace goes above the others: traces that share a road would otherwise cover it (mounted
+  // last in the JSX for the layers still to create — the first ones, or after a basemap change —,
+  // moved here for those that exist). This is
   // also what repaints it under the 3D terrain, where lines are cached in textures that only a change
   // of tiles, zoom or layer order invalidates, never a paint property — the width and opacity alone
   // leave the previous trace lit on the map while the profile beside it follows (docs/LEDGER_*.md
@@ -384,6 +392,11 @@ export function RoutesMapView({
   // Create GeoJSON data for each route: its whole tracks (and its chevrons), plus, in the Météo
   // mode, its stretches of one wind colour
   const windColors = useMemo(() => relativeWindStrokeColors(theme), [theme])
+  const litItemId = highlightedRoute?.itemId
+  const litRank = useCallback(
+    (route: { itemId: string }) => (route.itemId === litItemId ? 1 : 0),
+    [litItemId]
+  )
   const routeGeoJSONs = useMemo(() => {
     return routesData.map((route) => ({
       itemId: route.itemId,
@@ -394,6 +407,10 @@ export function RoutesMapView({
         : undefined,
     }))
   }, [routesData, winds, windColors])
+  const routesLitLast = useMemo(
+    () => routeGeoJSONs.toSorted((a, b) => litRank(a) - litRank(b)),
+    [routeGeoJSONs, litRank]
+  )
   // The badge open among every trace's, one at a time (WEB-118)
   const [openBadge, setOpenBadge] = useState<OpenBadge | null>(null)
   // Its markers gone — the Météo mode left, its trace or every trace hidden, its forecast dropped —,
@@ -595,7 +612,7 @@ export function RoutesMapView({
           {tracksHidden ? null : (
             <>
               {/* Render all routes */}
-              {routeGeoJSONs.map((route) => {
+              {routesLitLast.map((route) => {
                 const isHighlighted = highlightedRoute?.itemId === route.itemId
                 const visibility = hiddenItemIds.has(route.itemId) ? 'none' : 'visible'
 
