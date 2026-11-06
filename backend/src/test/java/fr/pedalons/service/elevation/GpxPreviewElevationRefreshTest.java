@@ -464,7 +464,7 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
     GpxPreview created = previewService.create(EXAMPLE, "example.gpx");
     makeDue(created);
 
-    PreviewClaim claim = service.claimNextPreview(Instant.now()).orElseThrow();
+    PreviewClaim claim = service.claimNextPreview(Instant.now(), false).orElseThrow();
     ElevationRefreshService.PreviewRecomputed recomputed;
     try {
       recomputed = service.computePreview(claim);
@@ -647,7 +647,7 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
   void aTrackSavedDuringTheCompute_carriesNothing() {
     GpxPreview created = createWithState(PlannerStateFixtures.example());
     makeDue(created);
-    PreviewClaim claim = service.claimNextPreview(Instant.now()).orElseThrow();
+    PreviewClaim claim = service.claimNextPreview(Instant.now(), false).orElseThrow();
     ElevationRefreshService.PreviewRecomputed recomputed;
     try {
       recomputed = service.computePreview(claim);
@@ -784,7 +784,7 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
   void aPreviewRewrittenFlatDuringTheCompute_isHd_andItsRequestDropped() {
     GpxPreview created = previewService.create(EXAMPLE, "example.gpx");
     makeDue(created);
-    PreviewClaim claim = service.claimNextPreview(Instant.now()).orElseThrow();
+    PreviewClaim claim = service.claimNextPreview(Instant.now(), false).orElseThrow();
     ElevationRefreshService.PreviewRecomputed recomputed;
     try {
       recomputed = service.computePreview(claim);
@@ -863,7 +863,7 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
   void hdCatchUp_waypointsEditedDuringCompute_realigns_andWritesNothing() {
     GpxPreview created = previewService.create(WAYPOINTS, "waypoints.gpx");
     makeDue(created);
-    PreviewClaim claim = service.claimNextPreview(Instant.now()).orElseThrow();
+    PreviewClaim claim = service.claimNextPreview(Instant.now(), false).orElseThrow();
     ElevationRefreshService.PreviewRecomputed recomputed;
     try {
       recomputed = service.computePreview(claim);
@@ -1078,7 +1078,8 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
         List.of(RouteDetailsSection.ELEVATION, RouteDetailsSection.SUMMARY),
         fullCalls().getFirst().sections());
     assertNull(surfaces(after));
-    assertEquals(PIPELINE, after.getElevationPipeline());
+    assertNull(
+        after.getElevationPipeline(), "stays behind: recomputed once the surface is back on");
     assertEquals(
         after.getFilesRevision(),
         QuarkusTransaction.requiringNew()
@@ -1323,7 +1324,7 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
     surfaceService.setEnabledForTest(true);
     GpxPreview created = previewService.create(EXAMPLE, "example.gpx");
     makeDue(created);
-    PreviewClaim claim = service.claimNextPreview(Instant.now()).orElseThrow();
+    PreviewClaim claim = service.claimNextPreview(Instant.now(), false).orElseThrow();
     ElevationRefreshService.PreviewRecomputed recomputed = service.computePreview(claim);
 
     previewService.updatePreview(created.getPublicId().toString(), "Deux", TWO_TRACKS, null);
@@ -1344,7 +1345,7 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
     surfaceService.setEnabledForTest(true);
     GpxPreview created = previewService.create(EXAMPLE, "example.gpx");
     makeDue(created);
-    PreviewClaim claim = service.claimNextPreview(Instant.now()).orElseThrow();
+    PreviewClaim claim = service.claimNextPreview(Instant.now(), false).orElseThrow();
 
     previewService.updatePreview(created.getPublicId().toString(), "Un", EXAMPLE, null);
     service.writePreviewSurfaceOnly(claim, List.of(aDocument()));
@@ -1358,7 +1359,7 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
     GpxPreview created = previewService.create(EXAMPLE, "example.gpx");
     legacyRequest(created);
     makeDue(created);
-    PreviewClaim claim = service.claimNextPreview(Instant.now()).orElseThrow();
+    PreviewClaim claim = service.claimNextPreview(Instant.now(), false).orElseThrow();
 
     service.writePreviewSurfaceOnly(claim, List.of(aDocument(), aDocument()));
 

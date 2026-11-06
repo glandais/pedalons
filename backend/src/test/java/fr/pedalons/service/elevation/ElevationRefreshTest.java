@@ -539,7 +539,7 @@ class ElevationRefreshTest extends AbstractResourceTest {
     RouteDto created = createRoute(EXAMPLE);
     makeDue(created);
 
-    Claim claim = service.claimNext(Instant.now()).orElseThrow();
+    Claim claim = service.claimNext(Instant.now(), false).orElseThrow();
     ElevationRefreshService.Recomputed recomputed;
     try {
       recomputed = service.compute(claim);
@@ -890,7 +890,7 @@ class ElevationRefreshTest extends AbstractResourceTest {
   void hdCatchUp_waypointsEditedDuringCompute_realigns_andWritesNothing() {
     RouteDto created = createRoute(WAYPOINTS);
     makeDue(created);
-    Claim claim = service.claimNext(Instant.now()).orElseThrow();
+    Claim claim = service.claimNext(Instant.now(), false).orElseThrow();
     ElevationRefreshService.Recomputed recomputed;
     try {
       recomputed = service.compute(claim);
@@ -1244,7 +1244,7 @@ class ElevationRefreshTest extends AbstractResourceTest {
     assertEquals(NO_TYPOLOGY, fullCalls().getFirst().sections());
     assertEquals(ElevationState.HD, storedState(created));
     assertNoDocument(created);
-    assertEquals(PIPELINE, pipeline(created));
+    assertNull(pipeline(created), "stays behind: recomputed once the surface is back on");
     assertEquals(1, legacyRequests(), "the queue waits");
     assertNull(track(created).surfaceState());
   }
@@ -1472,7 +1472,7 @@ class ElevationRefreshTest extends AbstractResourceTest {
     surfaceService.setEnabledForTest(true);
     RouteDto created = createRoute(EXAMPLE);
     makeDue(created);
-    Claim claim = service.claimNext(Instant.now()).orElseThrow();
+    Claim claim = service.claimNext(Instant.now(), false).orElseThrow();
     ElevationRefreshService.Recomputed recomputed = service.compute(claim);
 
     updateRoute(created, "Boucle", TWO_TRACKS);
@@ -1492,7 +1492,7 @@ class ElevationRefreshTest extends AbstractResourceTest {
     surfaceService.setEnabledForTest(true);
     RouteDto created = createRoute(EXAMPLE);
     makeDue(created);
-    Claim claim = service.claimNext(Instant.now()).orElseThrow();
+    Claim claim = service.claimNext(Instant.now(), false).orElseThrow();
 
     updateRoute(created, "Boucle", EXAMPLE);
     service.writeSurfaceOnly(claim, List.of(aDocument()));
@@ -1506,7 +1506,7 @@ class ElevationRefreshTest extends AbstractResourceTest {
     RouteDto created = createRoute(EXAMPLE);
     legacyRequest(created);
     makeDue(created);
-    Claim claim = service.claimNext(Instant.now()).orElseThrow();
+    Claim claim = service.claimNext(Instant.now(), false).orElseThrow();
 
     service.writeSurfaceOnly(claim, List.of(aDocument(), aDocument()));
 

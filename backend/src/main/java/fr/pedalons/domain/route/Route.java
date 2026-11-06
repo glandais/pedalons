@@ -72,9 +72,10 @@ public class Route extends TeamEntity {
 
   /**
    * The version of {@code GpxPipeline} that computed the stored HD profile (docs/LEDGER_*.md
-   * API-150). Null: computed before the column, written by the previous release, a FAST save, or a
-   * synchronous HD save that had to fall back; to recompute. {@code Short} and not {@code Integer}:
-   * the column is a {@code smallint}, and production validates the schema.
+   * API-150). Null: computed before the column, written by the previous release, a FAST save, a
+   * synchronous HD save that had to fall back, or any HD write while the surface is off (it was not
+   * asked for); to recompute. {@code Short} and not {@code Integer}: the column is a {@code
+   * smallint}, and production validates the schema.
    */
   @Column(name = "elevation_pipeline")
   private @Nullable Short elevationPipeline;

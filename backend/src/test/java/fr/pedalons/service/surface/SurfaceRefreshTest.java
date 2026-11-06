@@ -4,6 +4,7 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -36,11 +37,13 @@ import fr.pedalons.enums.Visibility;
 import fr.pedalons.infrastructure.valhalla.TraceAttributesClient;
 import fr.pedalons.infrastructure.valhalla.TraceAttributesRequest;
 import fr.pedalons.repository.asset.AssetRepository;
+import fr.pedalons.repository.gpx.GpxPreviewRepository;
 import fr.pedalons.repository.route.ElevationRefreshRepository;
 import fr.pedalons.repository.route.GpxTrackRepository;
 import fr.pedalons.repository.route.RouteRepository;
 import fr.pedalons.repository.route.SurfaceRefreshRepository;
 import fr.pedalons.service.elevation.ElevationRefreshWorker;
+import fr.pedalons.service.gpx.GpxPreviewService;
 import fr.pedalons.service.route.RouteService;
 import fr.pedalons.service.route.planner.PlannerStateFixtures;
 import fr.pedalons.service.security.DomainResolver;
@@ -70,7 +73,7 @@ import org.mockito.ArgumentCaptor;
  * with the (faked) provider and stores the document, and the detail serves it. Since
  * docs/LEDGER_*.md API-150 (phase C) a save queues nothing: a track waits for its HD catch-up, which
  * writes the surface, so the tests of the worker seed the request ({@link #queue}), as the previous
- * release or {@code SurfaceBackfill} does. No test reaches osm-surface.
+ * release does. No test reaches osm-surface.
  */
 @QuarkusTest
 class SurfaceRefreshTest extends AbstractResourceTest {
@@ -81,6 +84,8 @@ class SurfaceRefreshTest extends AbstractResourceTest {
   @InjectMock @RestClient TraceAttributesClient client;
 
   @Inject RouteService routeService;
+  @Inject GpxPreviewService previewService;
+  @Inject GpxPreviewRepository previewRepository;
   @Inject SurfaceRefreshService service;
   @Inject SurfaceRefreshWorker worker;
   @Inject SurfaceRefreshRepository refreshRepository;
@@ -112,6 +117,7 @@ class SurfaceRefreshTest extends AbstractResourceTest {
     }
     when(client.traceAttributes(any()))
         .thenAnswer(inv -> TraceFixtures.answer(inv.getArgument(0), i -> "paved"));
+    dataService.setDomainEnableGpxPlanner(domain, true);
     service.setEnabledForTest(true);
   }
 
@@ -157,7 +163,7 @@ class SurfaceRefreshTest extends AbstractResourceTest {
         .call(() -> assetRepository.findCurrentFileId(id(route), AssetType.ROUTE_ORIGINAL_GPX));
   }
 
-  /** A request of the legacy queue: left by the previous release, or by SurfaceBackfill. */
+  /** A request of the legacy queue, as the previous release left it. */
   private void queue(RouteDto route) {
     long revision = originalFileId(route);
     QuarkusTransaction.requiringNew()
@@ -639,5 +645,91 @@ class SurfaceRefreshTest extends AbstractResourceTest {
     verify(client, atLeastOnce()).traceAttributes(any());
     assertNotNull(document(first));
     assertNotNull(document(second));
+  }
+
+  // ------------------------------------------------------------------ the rows the previous
+  // release
+  // left marked for its catch-up, which the worker still drains after the normal ones
+
+  private void leftAsBackfill(RouteDto route) {
+    queue(route);
+    QuarkusTransaction.requiringNew()
+        .run(() -> refreshRepository.update("backfill = true where route.id = ?1", id(route)));
+  }
+
+  /** A normal request for a preview, due with everything else. */
+  private Long normalPreview() {
+    Long previewId = previewService.create(EXAMPLE, "example.gpx").getId();
+    long revision =
+        QuarkusTransaction.requiringNew()
+            .call(() -> previewRepository.findById(previewId).getFilesRevision());
+    QuarkusTransaction.requiringNew().run(() -> service.requestPreview(previewId, revision));
+    return previewId;
+  }
+
+  private void allDue() {
+    QuarkusTransaction.requiringNew()
+        .run(() -> refreshRepository.update("dueAt = ?1", Instant.now().minusSeconds(5)));
+  }
+
+  @Test
+  void theWorker_servesNormalRequestsFirst() {
+    RouteDto route = createRoute();
+    leftAsBackfill(route);
+    Long previewId = normalPreview();
+    allDue();
+
+    Instant now = Instant.now();
+    assertTrue(service.claimNext(now, false).isEmpty());
+    var preview = service.claimNextPreview(now, false);
+    assertTrue(preview.isPresent());
+    assertEquals(previewId, preview.get().previewId());
+    assertTrue(service.claimNextPreview(now, true).isEmpty());
+    var claim = service.claimNext(now, true);
+    assertTrue(claim.isPresent());
+    assertEquals(id(route), claim.get().routeId());
+    assertEquals(SurfaceRefreshService.Outcome.REFRESHED, service.processPreview(preview.get()));
+    assertEquals(SurfaceRefreshService.Outcome.REFRESHED, service.process(claim.get()));
+    assertEquals(0, refreshCount());
+  }
+
+  @Test
+  void theWorker_processesBoth_normalFirst() {
+    RouteDto route = createRoute();
+    leftAsBackfill(route);
+    Long previewId = normalPreview();
+    allDue();
+
+    assertEquals(2, worker.processDue());
+
+    assertEquals(0, refreshCount());
+    Instant previewAt =
+        QuarkusTransaction.requiringNew()
+            .call(() -> previewRepository.findSurfaces(previewId).tracks().getFirst().computedAt());
+    assertFalse(
+        document(route).computedAt().isBefore(previewAt),
+        "the catch-up's route comes after the normal preview");
+  }
+
+  /** The save of the previous release, during a rolling deploy: no save of this one does this. */
+  @Test
+  void aNormalRequest_turnsABackfillRequestIntoANormalOne() {
+    RouteDto route = createRoute();
+    leftAsBackfill(route);
+    assertTrue(refresh(route).isBackfill());
+    long revision = refresh(route).getSourceRevision();
+
+    QuarkusTransaction.requiringNew()
+        .run(
+            () ->
+                refreshRepository.requestForRoute(
+                    id(route),
+                    revision + 1,
+                    Instant.now(),
+                    Duration.ofSeconds(90),
+                    Duration.ofMinutes(10)));
+
+    assertFalse(refresh(route).isBackfill());
+    assertEquals(revision + 1, refresh(route).getSourceRevision());
   }
 }

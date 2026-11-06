@@ -12,7 +12,7 @@ import org.jspecify.annotations.Nullable;
 /**
  * The catch-up of the raw line of the tracks saved before it existed (docs/LEDGER_*.md API-149,
  * phase D): its candidates and the routes it gave up on. Native queries, across the domains, like
- * the surface catch-up's ({@code SurfaceRefreshRepository}).
+ * the fleet's catch-up ({@code ElevationRefreshRepository}).
  */
 @ApplicationScoped
 public class RawTrackBackfillRepository
@@ -76,26 +76,6 @@ public class RawTrackBackfillRepository
             """)
         .setParameter("routeId", routeId)
         .setParameter("reason", reason.name())
-        .setParameter("now", Timestamp.from(now))
-        .executeUpdate();
-  }
-
-  /**
-   * Records that a route's surface is worth asking again, its raw line read from the original
-   * {@code sourceRevision}; a row already there follows the new revision.
-   */
-  public void wantResurface(Long routeId, long sourceRevision, Instant now) {
-    getEntityManager()
-        .createNativeQuery(
-            """
-            insert into raw_track_resurface (route_id, source_revision, wanted_at)
-            values (:routeId, :revision, :now)
-            on conflict (route_id) do update set
-              source_revision = excluded.source_revision,
-              wanted_at = excluded.wanted_at
-            """)
-        .setParameter("routeId", routeId)
-        .setParameter("revision", sourceRevision)
         .setParameter("now", Timestamp.from(now))
         .executeUpdate();
   }

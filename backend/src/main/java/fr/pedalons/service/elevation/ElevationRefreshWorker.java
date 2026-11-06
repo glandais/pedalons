@@ -23,7 +23,9 @@ import org.jboss.logging.Logger;
  * ElevationRefreshService}.
  *
  * <p>Keeps draining the queue when {@code pedalons.elevation.async-hd.enabled} is off: that switch
- * only stops new requests, and the routes already saved fast would otherwise stay so.
+ * only stops new requests, and the routes already saved fast would otherwise stay so. So it does
+ * when {@code pedalons.route-details.backfill.enabled} is off: {@link RouteDetailsBackfill} stops
+ * queueing, and what it queued gets served.
  *
  * <p>No {@code @Transactional}, as in {@code GpsRouteSyncWorker}. The worker runs without a request
  * domain; everything it reads or writes is keyed by the route id taken from the queue.
@@ -50,6 +52,21 @@ public class ElevationRefreshWorker {
     }
   }
 
+  /** Processes the next due route request, else preview request, of a kind; false when none. */
+  private boolean processNext(boolean backfill) {
+    Optional<Claim> claim = service.claimNext(Instant.now(), backfill);
+    if (claim.isPresent()) {
+      service.process(claim.get());
+      return true;
+    }
+    Optional<PreviewClaim> previewClaim = service.claimNextPreview(Instant.now(), backfill);
+    if (previewClaim.isEmpty()) {
+      return false;
+    }
+    service.processPreview(previewClaim.get());
+    return true;
+  }
+
   /**
    * Processes due requests until none is left or the tick's budget is spent. Public for the tests
    * (scheduler off, elevation provider faked).
@@ -60,18 +77,12 @@ public class ElevationRefreshWorker {
     Instant started = Instant.now();
     int processed = 0;
     while (Duration.between(started, Instant.now()).compareTo(TIME_BUDGET) <= 0) {
-      Optional<Claim> claim = service.claimNext(Instant.now());
-      if (claim.isPresent()) {
-        service.process(claim.get());
+      // Strict priority: normal requests (routes, then previews), then the fleet's catch-up
+      if (processNext(false) || processNext(true)) {
         processed++;
         continue;
       }
-      Optional<PreviewClaim> previewClaim = service.claimNextPreview(Instant.now());
-      if (previewClaim.isEmpty()) {
-        break;
-      }
-      service.processPreview(previewClaim.get());
-      processed++;
+      break;
     }
     return processed;
   }

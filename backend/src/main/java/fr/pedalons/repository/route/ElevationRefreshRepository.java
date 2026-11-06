@@ -2,6 +2,7 @@ package fr.pedalons.repository.route;
 
 import fr.pedalons.domain.route.ElevationRefresh;
 import fr.pedalons.dto.admin.ElevationRefreshKind;
+import fr.pedalons.service.route.GpxPipeline;
 import io.hypersistence.tsid.TSID;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -29,7 +30,8 @@ public class ElevationRefreshRepository implements PanacheRepository<ElevationRe
    * one. A new request forgets the failures of the previous one. The lease, if the worker holds
    * one, is kept: it ends by itself, or when the worker realigns the row. A row that is not in an open
    * window any more (failed, given up, or older than {@code maxWait}) starts a new one, so a
-   * long-forgotten {@code first_requested_at} never makes the request due at once.
+   * long-forgotten {@code first_requested_at} never makes the request due at once. A request of
+   * the fleet's catch-up becomes a normal one: the save's track must not wait behind the others.
    *
    * @param sourceRevision the {@code file_id} of the route's original GPX
    */
@@ -80,7 +82,8 @@ public class ElevationRefreshRepository implements PanacheRepository<ElevationRe
                                else elevation_refresh.first_requested_at end
                                + make_interval(secs => :maxWait)),
               attempts = 0,
-              last_error = null
+              last_error = null,
+              backfill = false
             """
                 .replace("{col}", column))
         .setParameter("id", TSID.Factory.getTsid().toLong())
@@ -98,9 +101,11 @@ public class ElevationRefreshRepository implements PanacheRepository<ElevationRe
   /**
    * Takes the next due route request and leases it, in the caller's transaction: {@code FOR UPDATE
    * SKIP LOCKED}, so the second backend of a rolling deploy takes another one. Requests that used
-   * up their attempts stay in the table for diagnosis and are not taken again.
+   * up their attempts stay in the table for diagnosis and are not taken again. {@code backfill}
+   * selects the kind: the requests of the fleet's catch-up or the normal ones.
    */
-  public Optional<Claim> claimNextRoute(Instant now, Instant lease, int maxAttempts) {
+  public Optional<Claim> claimNextRoute(
+      Instant now, Instant lease, int maxAttempts, boolean backfill) {
     @SuppressWarnings("unchecked")
     List<Object[]> rows =
         getEntityManager()
@@ -113,6 +118,7 @@ public class ElevationRefreshRepository implements PanacheRepository<ElevationRe
                   where e.route_id is not null
                     and t.deleted = false
                     and tm.deleted = false
+                    and e.backfill = :backfill
                     and e.attempts < :maxAttempts
                     and e.due_at <= :now
                     and (e.claimed_until is null or e.claimed_until < :now)
@@ -122,6 +128,7 @@ public class ElevationRefreshRepository implements PanacheRepository<ElevationRe
                 """)
             .setParameter("now", Timestamp.from(now))
             .setParameter("maxAttempts", maxAttempts)
+            .setParameter("backfill", backfill)
             .getResultList();
     if (rows.isEmpty()) {
       return Optional.empty();
@@ -142,7 +149,8 @@ public class ElevationRefreshRepository implements PanacheRepository<ElevationRe
    * As {@link #claimNextRoute}, for the next due GPX-tool preview request. A preview is hard
    * deleted, with its request, so there is no deleted flag to join on.
    */
-  public Optional<PreviewClaim> claimNextPreview(Instant now, Instant lease, int maxAttempts) {
+  public Optional<PreviewClaim> claimNextPreview(
+      Instant now, Instant lease, int maxAttempts, boolean backfill) {
     @SuppressWarnings("unchecked")
     List<Object[]> rows =
         getEntityManager()
@@ -152,6 +160,7 @@ public class ElevationRefreshRepository implements PanacheRepository<ElevationRe
                   from elevation_refresh e
                   join gpx_previews p on p.id = e.preview_id
                   where e.preview_id is not null
+                    and e.backfill = :backfill
                     and e.attempts < :maxAttempts
                     and e.due_at <= :now
                     and (e.claimed_until is null or e.claimed_until < :now)
@@ -161,6 +170,7 @@ public class ElevationRefreshRepository implements PanacheRepository<ElevationRe
                 """)
             .setParameter("now", Timestamp.from(now))
             .setParameter("maxAttempts", maxAttempts)
+            .setParameter("backfill", backfill)
             .getResultList();
     if (rows.isEmpty()) {
       return Optional.empty();
@@ -246,7 +256,8 @@ public class ElevationRefreshRepository implements PanacheRepository<ElevationRe
 
   /**
    * The abandoned requests of a domain, oldest first: routes through their team's domain (neither
-   * the route nor the team deleted), previews through their own domain.
+   * the route nor the team deleted), previews through their own domain. A target left FAST by a
+   * given-up save, or any state for a request of the fleet's catch-up, which keeps its target's.
    */
   public List<AbandonedRefresh> findAbandoned(
       Long domainId, int maxAttempts, int limit, @Nullable ElevationRefreshKind kind) {
@@ -284,9 +295,21 @@ public class ElevationRefreshRepository implements PanacheRepository<ElevationRe
         .toList();
   }
 
-  /** A timestamptz column read natively: Hibernate hands back an {@link Instant}, older drivers a {@link Timestamp}. */
+  /**
+   * A timestamptz read natively: a column comes back as an {@link Instant} or a {@link Timestamp},
+   * the result of an expression as whatever the driver maps it to.
+   */
   private static Instant toInstant(Object value) {
-    return value instanceof Timestamp ts ? ts.toInstant() : (Instant) value;
+    if (value instanceof Instant i) {
+      return i;
+    }
+    if (value instanceof java.time.OffsetDateTime o) {
+      return o.toInstant();
+    }
+    if (value instanceof java.time.LocalDateTime l) {
+      return l.atZone(java.time.ZoneId.systemDefault()).toInstant();
+    }
+    return ((java.util.Date) value).toInstant();
   }
 
   /** How many abandoned requests {@link #findAbandoned} would list without its limit. */
@@ -320,7 +343,7 @@ public class ElevationRefreshRepository implements PanacheRepository<ElevationRe
             and t.deleted = false
             and tm.deleted = false
             and tm.domain_id = :domainId
-            and t.elevation_state = 'FAST'
+            and (t.elevation_state = 'FAST' or e.backfill)
         union all
         select e.id, 'PREVIEW', e.preview_id, null, null, p.public_id,
                e.attempts, e.last_error, e.first_requested_at
@@ -329,7 +352,7 @@ public class ElevationRefreshRepository implements PanacheRepository<ElevationRe
           where e.preview_id is not null
             and e.attempts >= :maxAttempts
             and p.domain_id = :domainId
-            and p.elevation_state = 'FAST'
+            and (p.elevation_state = 'FAST' or e.backfill)
       )
       """;
 
@@ -337,7 +360,9 @@ public class ElevationRefreshRepository implements PanacheRepository<ElevationRe
    * Starts the given abandoned requests again, in one statement: attempts and error forgotten,
    * lease released, a new window opened at {@code now}, and the due times spread {@code spacing}
    * apart in the order of the oldest request. Idempotent — only requests still at {@code
-   * maxAttempts} are touched — and the targets go back to PENDING in the same transaction.
+   * maxAttempts} are touched — and FAST targets go back to PENDING in the same transaction. A
+   * request of the fleet's catch-up stays one: it waits behind the normal ones, counts in the
+   * budget of that catch-up, and its target (HD or null) reads as it did.
    *
    * @return the number of requests restarted
    */
@@ -384,5 +409,230 @@ public class ElevationRefreshRepository implements PanacheRepository<ElevationRe
         .setParameter("ids", ids)
         .executeUpdate();
     return reset;
+  }
+
+  // ------------------------------------------------------------------ the fleet's catch-up
+
+  /**
+   * The version inlined as a literal: the predicate of the partial index {@code
+   * team_entities_pipeline_behind} can only be proved against a constant, never a parameter.
+   */
+  private static String behindPipeline(String sql) {
+    return sql.replace("{version}", String.valueOf(GpxPipeline.VERSION));
+  }
+
+  /** Serialises the catch-up across backends: transaction-scoped, released at commit. */
+  public void lockBackfill() {
+    getEntityManager()
+        .createNativeQuery("select 1 from pg_advisory_xact_lock(hashtextextended(:key, 0))")
+        .setParameter("key", "route-details-backfill")
+        .getSingleResult();
+  }
+
+  /**
+   * What the catch-up has queued and not done: the service calls it still holds (a request weighs
+   * one call per slice of track), and the first free due time.
+   */
+  public record BackfillBudget(int pending, @Nullable Instant nextFree) {}
+
+  /**
+   * The catch-up requests still to come (not given up, target alive), weighted by their number of
+   * calls, and the first due time free after the ones not yet tried.
+   */
+  public BackfillBudget backfillBudget(double spacingSeconds, double sliceMetres, int maxAttempts) {
+    Object[] row =
+        (Object[])
+            getEntityManager()
+                .createNativeQuery(
+                    """
+                    select coalesce(sum(greatest(1, ceil(coalesce(t.distance, p.distance, 0) / :slice))), 0),
+                           max(e.due_at + make_interval(secs =>
+                                 :spacing * greatest(1, ceil(coalesce(t.distance, p.distance, 0) / :slice))))
+                             filter (where e.attempts = 0)
+                      from elevation_refresh e
+                      left join team_entities t on t.id = e.route_id
+                      left join teams tm on tm.id = t.team_id
+                      left join gpx_previews p on p.id = e.preview_id
+                     where e.backfill
+                       and e.attempts < :maxAttempts
+                       and (e.preview_id is not null or (t.deleted = false and tm.deleted = false))
+                    """)
+                .setParameter("spacing", spacingSeconds)
+                .setParameter("slice", sliceMetres)
+                .setParameter("maxAttempts", maxAttempts)
+                .getSingleResult();
+    Object next = row[1];
+    Instant nextFree = next == null ? null : toInstant(next);
+    return new BackfillBudget(((Number) row[0]).intValue(), nextFree);
+  }
+
+  /** A track the catch-up may queue: its id, its length (the weight), the revision to ask for. */
+  public record BackfillCandidate(Long id, double distance, long sourceRevision) {}
+
+  /**
+   * Routes behind the pipeline, with a track and an original, without any request, most recent
+   * first. Any row excludes a route: an open request brings its recompute, and one given up is not
+   * queued again. Neither domain nor query context: a system job across the domains, by id.
+   */
+  public List<BackfillCandidate> findBackfillRoutes(int limit) {
+    @SuppressWarnings("unchecked")
+    List<Object[]> rows =
+        getEntityManager()
+            .createNativeQuery(
+                behindPipeline(
+                    """
+                    with candidates as (
+                      select t.id, t.distance, t.created_at
+                        from team_entities t
+                        join teams tm on tm.id = t.team_id
+                       where t.entity_type = 2
+                         and t.deleted = false
+                         and (t.elevation_pipeline is null or t.elevation_pipeline < {version})
+                         and tm.deleted = false
+                         and not exists (select 1 from elevation_refresh e where e.route_id = t.id)
+                         and exists (select 1 from gpx_tracks g where g.route_id = t.id)
+                         and exists (select 1 from assets a
+                                      where a.team_entity_id = t.id
+                                        and a.type = 'ROUTE_ORIGINAL_GPX')
+                       order by t.created_at desc, t.id desc
+                       limit :limit)
+                    select c.id, c.distance,
+                           (select a.file_id from assets a
+                             where a.team_entity_id = c.id and a.type = 'ROUTE_ORIGINAL_GPX'
+                             order by a.id desc limit 1)
+                      from candidates c
+                     order by c.created_at desc, c.id desc
+                    """))
+            .setParameter("limit", limit)
+            .getResultList();
+    return candidates(rows);
+  }
+
+  /**
+   * Previews behind the pipeline, created after {@code createdAfter}, without any request, most
+   * recent first. A flat preview (no {@code files_revision}) has nothing to read a recompute from:
+   * its request would be dropped and it would come back at every pass.
+   */
+  public List<BackfillCandidate> findBackfillPreviews(int limit, Instant createdAfter) {
+    @SuppressWarnings("unchecked")
+    List<Object[]> rows =
+        getEntityManager()
+            .createNativeQuery(
+                behindPipeline(
+                    """
+                    select p.id, p.distance, p.files_revision
+                      from gpx_previews p
+                     where p.files_revision is not null
+                       and p.created_at > :createdAfter
+                       and (p.elevation_pipeline is null or p.elevation_pipeline < {version})
+                       and not exists (select 1 from elevation_refresh e where e.preview_id = p.id)
+                     order by p.created_at desc, p.id desc
+                     limit :limit
+                    """))
+            .setParameter("createdAfter", Timestamp.from(createdAfter))
+            .setParameter("limit", limit)
+            .getResultList();
+    return candidates(rows);
+  }
+
+  private static List<BackfillCandidate> candidates(List<Object[]> rows) {
+    return rows.stream()
+        .map(
+            r ->
+                new BackfillCandidate(
+                    ((Number) r[0]).longValue(),
+                    r[1] == null ? 0 : ((Number) r[1]).doubleValue(),
+                    ((Number) r[2]).longValue()))
+        .toList();
+  }
+
+  /** Queues a catch-up request, unless the route has one by now. @return whether it was inserted */
+  public boolean insertBackfillRoute(BackfillCandidate c, Instant now, Instant dueAt) {
+    return insertBackfill("route_id", c, now, dueAt);
+  }
+
+  /** As {@link #insertBackfillRoute}, for a preview. */
+  public boolean insertBackfillPreview(BackfillCandidate c, Instant now, Instant dueAt) {
+    return insertBackfill("preview_id", c, now, dueAt);
+  }
+
+  /** {@code column} is one of two constants of this class, never user input. */
+  private boolean insertBackfill(String column, BackfillCandidate c, Instant now, Instant dueAt) {
+    return getEntityManager()
+            .createNativeQuery(
+                """
+                insert into elevation_refresh
+                  (id, {col}, source_revision, first_requested_at, due_at, attempts, backfill)
+                values (:id, :targetId, :revision, :now, :due, 0, true)
+                on conflict ({col}) where {col} is not null do nothing
+                """
+                    .replace("{col}", column))
+            .setParameter("id", TSID.Factory.getTsid().toLong())
+            .setParameter("targetId", c.id())
+            .setParameter("revision", c.sourceRevision())
+            .setParameter("now", Timestamp.from(now))
+            .setParameter("due", Timestamp.from(dueAt))
+            .executeUpdate()
+        > 0;
+  }
+
+  /**
+   * What the catch-up still has to do, read every pass: the routes (and their metres) and previews
+   * behind the pipeline with a recompute of its own to come, and those given up, whichever queue
+   * gave them up. An open normal request is left out: that track is a save's, not the catch-up's.
+   */
+  public record BackfillRemaining(int routes, double routeMetres, int previews, int givenUp) {}
+
+  /** {@link BackfillRemaining}, on the same filters as the candidates. */
+  public BackfillRemaining backfillRemaining(Instant createdAfter, int maxAttempts) {
+    Object[] routes =
+        (Object[])
+            getEntityManager()
+                .createNativeQuery(
+                    behindPipeline(
+                        """
+                        select count(*) filter (where e.id is null
+                                                   or (e.backfill and e.attempts < :maxAttempts)),
+                               coalesce(sum(cast(t.distance as double precision))
+                                 filter (where e.id is null
+                                            or (e.backfill and e.attempts < :maxAttempts)), 0),
+                               count(*) filter (where e.attempts >= :maxAttempts)
+                          from team_entities t
+                          join teams tm on tm.id = t.team_id
+                          left join elevation_refresh e on e.route_id = t.id
+                         where t.entity_type = 2
+                           and t.deleted = false
+                           and tm.deleted = false
+                           and (t.elevation_pipeline is null or t.elevation_pipeline < {version})
+                           and exists (select 1 from gpx_tracks g where g.route_id = t.id)
+                           and exists (select 1 from assets a
+                                        where a.team_entity_id = t.id
+                                          and a.type = 'ROUTE_ORIGINAL_GPX')
+                        """))
+                .setParameter("maxAttempts", maxAttempts)
+                .getSingleResult();
+    Object[] previews =
+        (Object[])
+            getEntityManager()
+                .createNativeQuery(
+                    behindPipeline(
+                        """
+                        select count(*) filter (where e.id is null
+                                                   or (e.backfill and e.attempts < :maxAttempts)),
+                               count(*) filter (where e.attempts >= :maxAttempts)
+                          from gpx_previews p
+                          left join elevation_refresh e on e.preview_id = p.id
+                         where p.files_revision is not null
+                           and p.created_at > :createdAfter
+                           and (p.elevation_pipeline is null or p.elevation_pipeline < {version})
+                        """))
+                .setParameter("createdAfter", Timestamp.from(createdAfter))
+                .setParameter("maxAttempts", maxAttempts)
+                .getSingleResult();
+    return new BackfillRemaining(
+        ((Number) routes[0]).intValue(),
+        ((Number) routes[1]).doubleValue(),
+        ((Number) previews[0]).intValue(),
+        ((Number) routes[2]).intValue() + ((Number) previews[1]).intValue());
   }
 }

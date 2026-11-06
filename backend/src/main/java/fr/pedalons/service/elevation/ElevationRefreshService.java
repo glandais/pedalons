@@ -27,7 +27,6 @@ import fr.pedalons.service.asset.AssetService;
 import fr.pedalons.service.gpx.GpxPreviewService;
 import fr.pedalons.service.gpx.PreviewWaypoints;
 import fr.pedalons.service.publication.PublicationEndCalculator;
-import fr.pedalons.service.route.GpxPipeline;
 import fr.pedalons.service.route.GpxProcessingService;
 import fr.pedalons.service.route.GpxProcessingService.ComputedGpx;
 import fr.pedalons.service.route.GpxProcessingService.ElevationRecompute;
@@ -202,14 +201,18 @@ public class ElevationRefreshService {
 
   // ------------------------------------------------------------------ claim
 
-  /** Takes the next due request, in a transaction of its own. */
-  public Optional<Claim> claimNext(Instant now) {
-    return tx(() -> refreshRepository.claimNextRoute(now, now.plus(LEASE), MAX_ATTEMPTS));
+  /**
+   * Takes the next due request, in a transaction of its own. {@code backfill} picks the requests of
+   * the fleet's catch-up ({@link RouteDetailsBackfill}) or the normal ones.
+   */
+  public Optional<Claim> claimNext(Instant now, boolean backfill) {
+    return tx(() -> refreshRepository.claimNextRoute(now, now.plus(LEASE), MAX_ATTEMPTS, backfill));
   }
 
   /** Takes the next due preview request, in a transaction of its own. */
-  public Optional<PreviewClaim> claimNextPreview(Instant now) {
-    return tx(() -> refreshRepository.claimNextPreview(now, now.plus(LEASE), MAX_ATTEMPTS));
+  public Optional<PreviewClaim> claimNextPreview(Instant now, boolean backfill) {
+    return tx(
+        () -> refreshRepository.claimNextPreview(now, now.plus(LEASE), MAX_ATTEMPTS, backfill));
   }
 
   // ------------------------------------------------------------------ one request
@@ -471,8 +474,8 @@ public class ElevationRefreshService {
 
   /**
    * Records a failed attempt: one more, the next one after the backoff, the lease released. The
-   * route keeps its fast profile; after {@value #MAX_ATTEMPTS} attempts the request stays as it is
-   * for diagnosis and is logged once.
+   * route keeps its profile; after {@value #MAX_ATTEMPTS} attempts the request stays as it is for
+   * diagnosis and is logged once.
    */
   Outcome fail(Claim claim, Exception e) {
     return fail(
@@ -499,7 +502,8 @@ public class ElevationRefreshService {
 
   /**
    * The request gave up: the target keeps its fast profile for good and says so (FAST), unless it
-   * is no longer waiting for the catch-up. Runs in the transaction that recorded the failure.
+   * is no longer waiting for the catch-up: one the fleet's catch-up queued stays as it was, HD or
+   * null. Runs in the transaction that recorded the failure.
    */
   /**
    * Locks the target row before the request row is touched: saves lock the target first and then
@@ -553,7 +557,7 @@ public class ElevationRefreshService {
     if (attempts >= MAX_ATTEMPTS) {
       LOG.warnf(
           e,
-          "HD elevation of %s given up after %d attempts, it stays on the fast profile",
+          "HD elevation of %s given up after %d attempts, it keeps its profile",
           target,
           attempts);
     } else {
@@ -818,7 +822,7 @@ public class ElevationRefreshService {
           preview.setElevationLoss(metadata.elevationLoss());
           preview.setHilliness(metadata.hilliness());
           preview.setElevationState(ElevationState.HD);
-          preview.setElevationPipeline((short) GpxPipeline.VERSION);
+          preview.setElevationPipeline(gpxProcessingService.hdPipeline());
           gpxPreviewService.deleteTrackFilesAfterCommit(publicId, current);
           refreshRepository.deleteIfRevision(claim.id(), claim.sourceRevision());
           return Outcome.REFRESHED;

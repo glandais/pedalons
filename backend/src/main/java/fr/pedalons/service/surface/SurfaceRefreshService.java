@@ -46,8 +46,9 @@ import org.jspecify.annotations.Nullable;
  * <p>Since docs/LEDGER_*.md API-150 (phase C) a save queues nothing here: the HD catch-up writes the
  * surface with the profile, from the same answer of osm-route-details ({@code
  * ElevationRefreshService}), and a track waiting for it reads as pending through its {@code
- * elevation_state}. What this queue still receives comes from {@code SurfaceBackfill} and from the
- * previous release during a rolling deploy.
+ * elevation_state}. Nothing feeds this queue any more (phase D) but the previous release during a
+ * rolling deploy: the worker only drains what is left, then stays idle and osm-surface hears
+ * nothing. It goes, with the classes behind it, in phase E.
  *
  * <p>That queue is the three phases {@link SurfaceRefreshWorker} runs — <b>claim</b>,
  * <b>compute</b> (no transaction, the call to the provider) and <b>write</b> (a short transaction
@@ -176,16 +177,6 @@ public class SurfaceRefreshService {
   public void requestPreview(Long previewId, long filesRevision) {
     if (isEnabled()) {
       refreshRepository.requestForPreview(previewId, filesRevision, Instant.now(), quiet, maxWait);
-    }
-  }
-
-  /**
-   * Drops the normal request a bulk import (the biketeam migration) just made for a route, so that
-   * the capped catch-up takes it (C1c), in the caller's transaction. No-op when the feature is off.
-   */
-  public void leaveToBackfill(Long routeId) {
-    if (isEnabled()) {
-      refreshRepository.dropNormalRequest(routeId);
     }
   }
 

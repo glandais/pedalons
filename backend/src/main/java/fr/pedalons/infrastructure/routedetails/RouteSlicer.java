@@ -58,6 +58,11 @@ public final class RouteSlicer {
     }
   }
 
+  /** The length one request answers for, under {@code limits}: the weight of a call. */
+  public static double coreM(RouteDetailsCapabilities.Limits limits) {
+    return Bounds.of(limits).coreM();
+  }
+
   /**
    * One request: the sent points {@code from..to} (inclusive), of which it answers for the core
    * {@code coreFrom..coreTo}. Consecutive slices share their boundary point: {@code coreTo} of one

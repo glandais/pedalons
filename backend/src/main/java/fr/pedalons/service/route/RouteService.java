@@ -552,7 +552,7 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
     if (quality != ElevationQuality.FAST) {
       route.setElevationState(ElevationState.HD);
       route.setElevationPipeline(
-          result.fallbackAfterErrorKm() == 0 ? (short) GpxPipeline.VERSION : null);
+          result.fallbackAfterErrorKm() == 0 ? gpxProcessingService.hdPipeline() : null);
       if (result.surfaces() != null) {
         surfaceRefreshRepository.dropForRoute(route.getId());
       }

@@ -283,7 +283,7 @@ public class TraceSurfaceComputer {
    * would fill holds more than {@link #MAX_POINTS} at that spacing, so that a slice stays bounded
    * by its distance ({@link #CORE_M}) and not by its point count. A 1 Hz recording (about 7 m
    * between points at 25 km/h) is then sent in as many requests as its stored points, the number
-   * the catch-up weighs a track by ({@code SurfaceBackfill.weight}).
+   * the catch-up weighs a track by ({@code RouteDetailsBackfill.weight}).
    *
    * @param raw {@code [lng, lat]} pairs
    */
