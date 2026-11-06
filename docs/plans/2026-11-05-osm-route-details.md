@@ -1,6 +1,6 @@
 # Profil et revêtement par osm-route-details
 
-Écrit le 5 novembre 2026. **État : conception, rien d'implémenté.** Ledger `API-150` (backend),
+Écrit le 5 novembre 2026. **État : phases A et B faites (§10), le reste à venir.** Ledger `API-150` (backend),
 `OPS-58` (déploiement). Branche `feat/osm-route-details`, partie de `3d23f160` (`API-149`, trace
 brute). Numéros vérifiés libres le 5 novembre 2026 : `API-150`, `OPS-58`, migration `V83`, contrat
 `13.1.0` aujourd'hui.
@@ -118,7 +118,10 @@ Stadia) :
   ```
 
   Le timeout `full` dépasse le budget de 90 s du service, comme le contrat le demande au proxy. Un
-  appel `full` ne tourne **que** dans le worker (jamais dans une requête HTTP).
+  appel `full` ne tourne que dans le worker, sauf `pedalons.elevation.async-hd.enabled=false` : il
+  tourne alors dans la requête. Ces timeouts bornent **un appel**, donc une tranche : un appel `fast`
+  resté sans réponse suspend les suivants 30 s (`RouteDetailsGateway`), pour qu'une boucle sur des
+  lignes ou des traces ne cumule pas un timeout par élément.
 
 ### 3.1 Découpage (> 200 km, > 16 000 points)
 
@@ -149,22 +152,31 @@ Seul `processDense` change :
 
 | Étape | Aujourd'hui (vcyclist) | Demain |
 |---|---|---|
-| Terrain + ouvrages | `ElevationCorrectionJvm.fixAndCorrectBlocking` sur provider FAST/HD | un appel `RouteDetailsClient` (mode `fast` / `full`, `sections: [elevation, summary]` en FAST) |
-| Rééchantillonnage | pas ≤ 10 m (`GpxLimits.RESAMPLING_STEP_METERS`) | aucun : points d'entrée + points de rupture du service |
+| Terrain + ouvrages | `ElevationCorrectionJvm.fixAndCorrectBlocking` sur provider FAST/HD | un appel `RouteDetailsGateway.details` (mode `fast` / `full`, `sections: [elevation, summary]`, le `full` s'élargit à la phase C) ; `accept_partial` en `fast` seulement |
+| Rééchantillonnage | pas ≤ 10 m (`GpxLimits.RESAMPLING_STEP_METERS`) | densification à ≤ 50 m avant l'envoi (`GpxPipeline.SENT_MAX_GAP_M`), jamais de point source retiré ; la réponse rend ces points plus les points de rupture du service |
 | Lissage 150 m | `ElevationStepJvm.smoothElevation` | `ele_smoothed` du service (`smoothing_m = 150`) |
-| D+ | `ElevationGainJvm.annotate` (bande morte, avant DP) | `summary.gain_m` / `gain_cum_m` du service, reportés sur le `Path` |
+| D+ et D- | `ElevationGainJvm.annotate` (bande morte, avant DP) | `gain_cum_m` et `loss_cum_m` du service, reportés sur le `Path` : les cumuls plutôt que `summary`, que le contrat ne garantit qu'au centimètre, pour que le dernier point de `climb[]` égale exactement le D+ affiché |
 | Douglas-Peucker 3/3 | vcyclist | vcyclist, inchangé |
 | Montées | `ClimbDetectorJvm` | vcyclist, inchangé, sur le chemin simplifié |
-| `fallbackAfterErrorKm` | `TerrainProvenance` | somme des `quality.terrain[]` où `fallback_after_error`, plus les plages `elevation_missing` ; toute la longueur si l'appel échoue |
+| `fallbackAfterErrorKm` | `TerrainProvenance` | somme des `quality.terrain[]` où `fallback_after_error`, plus les plages `elevation_unavailable` (source en panne) ; toute la longueur si l'appel échoue. `elevation_missing` n'y entre pas : hors de l'emprise des données, l'absence est définitive, un nouvel essai n'y changerait rien (même règle que le `noDataKm` de vcyclist). Ces trous sont interpolés et journalisés |
 
 Le `Path` passé au DP est construit à partir des points de la réponse (`lat`/`lon` : ceux du client
 pour `origin: input` via `index`, ceux du service pour `inserted`), altitude `ele_smoothed`. Les
 points de rupture (sommets, extrémités d'ouvrage) entrent donc dans le DP, qui a toutes les chances
 de les garder.
 
-**Échec en FAST** (planificateur, enregistrement) : comportement actuel — altitudes d'origine,
-`elevationFallback = true`, le reste du pipeline tourne. Un service en panne ne bloque jamais un
-enregistrement.
+**Pourquoi densifier.** Le service ne rend que les points d'entrée et ses points de rupture (DP
+vertical de 2 m, 20 points insérés par km au plus) : une ligne droite de deux points n'aurait
+d'`ele_smoothed` qu'à ces endroits. 50 m, c'est `smoothing_m / 3`, plus fin que ce que garde le DP 3/3.
+Seuls les trous de plus de 50 m reçoivent des points, sur le segment en lat/lon : une trace déjà dense
+n'en consomme aucun. La passerelle reste seule à éclaircir (points à moins de 5 m).
+
+**Échec en FAST** (planificateur, enregistrement) : comportement actuel — altitudes d'origine, lissage
+et D+ par vcyclist sur ces altitudes, `elevationFallback = true`, le reste du pipeline tourne. Un
+service en panne ne bloque jamais un enregistrement. Une trace de moins de 2 points ou de moins de
+1 m ne part pas au service (il répondrait 400) : son altitude est lue au premier point, sur une ligne
+de 10 m envoyée à sa place, et appliquée à plat — une source du planificateur porte 0 m. Si l'appel
+échoue : altitudes d'origine, repli signalé.
 
 ### 4.2 Ce qui change dans les chiffres → `GpxPipeline.VERSION = 3`
 
@@ -182,10 +194,12 @@ pour l'annoncer dans les notes de version si besoin.
 ### 4.3 FAST et HD
 
 - `saveQuality()` inchangé : FAST quand `async-hd` est actif.
-- Le rattrapage HD (`ElevationRefreshWorker`) appelle le mode `full` avec **toutes les sections** :
-  la même réponse sert au profil (§4.1) et au revêtement (§5). Critère de réussite : `status:
-  complete` et aucune plage `fallback_after_error` (même règle qu'`API-131`) ; sinon
-  `ElevationUnavailableException` et backoff, profil FAST gardé. Le revêtement d'une réponse
+- Le rattrapage HD (`ElevationRefreshWorker`) appelle le mode `full` ; à partir de la phase C, avec
+  **toutes les sections** : la même réponse sert au profil (§4.1) et au revêtement (§5). Critère de
+  réussite : `fallbackAfterErrorKm` nul, donc aucune plage `fallback_after_error` (même règle
+  qu'`API-131`) ; sinon `ElevationUnavailableException` et backoff, profil FAST gardé. Sans
+  `accept_partial` en `full`, une source en panne arrive en 503 et réessaie ; une réponse `partial`
+  (données absentes, définitivement) est écrite, trous interpolés. Le revêtement d'une réponse
   `complete` avec repli Mapterhorn est quand même écrit (voir §5.2).
 
 ## 5. Revêtement
@@ -303,7 +317,8 @@ de `pedalons.api.version` et skill `contract-first-api`.
   clients REST, un `@Mock @RestClient` ne serait jamais utilisé et les tests ouvriraient de vraies
   connexions), remplace `FakeElevationProducer` : altitude plate
   100 m en `fast`, 200 m en `full` (les tests distinguent déjà les tiers ainsi), segments `paved`
-  sur toute la longueur ; interrupteurs `failFull`, `partial`, `fallbackAfterError`.
+  sur toute la longueur ; interrupteurs `failFast`, `failFull`, `partial`, `fallbackAfterError`,
+  `terrain` (relief donné par une fonction de `d_m`).
 - Tests purs : conversion réponse → `Path` (points insérés, indices), recollage des tranches,
   `gain_cum_m` → `climb[]`, projection `TrackSurface`, document v1 relu.
 - `ElevationRefreshTest` / `GpxPreviewElevationRefreshTest` : une seule passe écrit profil et
@@ -334,11 +349,11 @@ Prises avec l'utilisateur le 6 novembre 2026 :
 | Phase | Contenu | Livrable |
 |---|---|---|
 | A — **faite le 6 novembre 2026** | Client, DTO, erreurs, découpage, client factice, fixture ; service dans `docker-compose.shared.yml` et `.local.yml` | aucun comportement changé |
-| B | `GpxPipeline` sur le service (FAST et HD), `VERSION = 3` ; vcyclist n'est plus appelé pour le terrain | profil par osm-route-details |
+| B — **faite le 6 novembre 2026** | `GpxPipeline` sur le service (FAST et HD), `VERSION = 3` ; vcyclist n'est plus appelé pour le terrain, sauf lissage et D+ des altitudes d'origine quand l'appel échoue ; pile e2e dotée de son propre service | profil par osm-route-details |
 | C | Le worker HD écrit le revêtement (`TrackSurfaceDocument` v2, projection sur `surface.detail`) ; `surface_refresh` n'est plus alimentée, `V83` — api ≥ 1.6 | une seule file |
 | D | `RouteDetailsBackfill` : recalcul HD de tous les parcours et aperçus < `VERSION` | osm-surface plus appelé ; tout le parc en v3 |
-| E | Ménage : `ElevationTier`, providers de `VcyclistProducer`, `DemTileStore` (+ `OPS-55` : réglage `tile-cache-size` retiré), `TraceAttributesClient` et le reste d'osm-surface, service osm-surface de la pile partagée (`OPS-58`), crédit « Altitude : IGN LiDAR HD, Mapterhorn » complété d'OSM (attribution du service), `docs/OPERATIONS.md` | — |
-| F (version suivante) | `V84` : suppression de `surface_refresh` et `raw_track_resurface` | — |
+| E | Ménage : `ElevationTier`, providers de `VcyclistProducer`, `DemTileStore` (+ `OPS-55` : réglage `tile-cache-size` retiré), `TraceAttributesClient` et le reste d'osm-surface **côté backend**, crédit « Altitude : IGN LiDAR HD, Mapterhorn » complété d'OSM (attribution du service), `docs/OPERATIONS.md` | — |
+| F (version suivante, après la bascule de prod) | `V84` : suppression de `surface_refresh` et `raw_track_resurface` ; service osm-surface et son volume retirés de la pile partagée (`OPS-58`) | — |
 
 ## 11. Déploiement (`OPS-58`)
 
@@ -347,11 +362,22 @@ Prises avec l'utilisateur le 6 novembre 2026 :
   régénérable), limite mémoire à mesurer. VersaTiles en fichier local en production (contrat §7) :
   taille de l'extrait France à prévoir sur le disque du serveur.
 - `docker-compose.local.yml` : port `127.0.0.1:18003`.
-- `.env.example` : `OSM_ROUTE_DETAILS_URL`. La pile e2e : client factice côté tests, service absent
-  (les e2e ne doivent pas dépendre de l'IGN).
+- `.env.example` : `OSM_ROUTE_DETAILS_URL`.
+- Pile e2e : son propre service (`docker-compose.e2e.yml`), sur son seul réseau, sans port publié,
+  caches à 64 Mo. Il n'y a pas de client factice possible dans les images e2e, et sans service le
+  planificateur rendrait une ligne à 0 m. Pour ne pas dépendre de l'IGN, `.env.e2e` repousse le
+  rattrapage HD de 24 h : une exécution ne fait que des appels `fast`. Le CI dépend donc de
+  ghcr.io et des tuiles publiques lues par le service.
 - Le cache DEM du backend (`./data/cache/mapterhorn`, `ign…`) devient inutile après la phase E ; le
   cache carto des vignettes reste.
-- osm-surface retiré de la pile partagée seulement quand plus aucun backend ne l'appelle (phase D
-  déployée, `surface_refresh` vide).
+- **Staging d'abord, prod ensuite (décision du 6 novembre 2026).** La pile partagée sert les deux
+  environnements : pendant toute la période, elle doit faire tourner staging en nouvelle version et
+  prod en ancienne. Elle ne fait donc qu'**ajouter** osm-route-details ; osm-surface (appelé par la
+  prod) et le tileserver ne bougent pas, et le réseau `pedalons-shared` non plus. Ordre :
+  `scripts/deploy.sh --shared` depuis `~/shared` sur un commit qui contient le service, puis
+  staging, recette, puis prod. La suppression d'osm-surface de `docker-compose.shared.yml` est une
+  étape à part (phase F), jamais dans le commit qui bascule un environnement : seulement quand
+  prod tourne en nouvelle version et que plus aucun backend ne l'appelle (`surface_refresh` vide).
+  Rien côté bases : chaque environnement a la sienne.
 - Avant la phase D : estimer la durée du recalcul complet (nombre de parcours × longueur, plafond
   `per-hour`) et la charge IGN, et prévenir les équipes que les D+ vont bouger.

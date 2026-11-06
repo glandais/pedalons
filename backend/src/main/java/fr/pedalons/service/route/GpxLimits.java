@@ -12,9 +12,10 @@ import java.util.List;
  * Bounds on what the GPX pipeline accepts, so that a request cannot make it allocate without limit
  * (docs/LEDGER_*.md SEC-6, audit M3).
  *
- * <p>The pipeline resamples every track to one point every 5 to {@value #RESAMPLING_STEP_METERS} m
- * ({@link GpxPipeline}): the number of points it allocates follows the <em>distance</em> of the track, not
- * the size of the request. A handful of points far apart (or a GPX file of a few KB) would
+ * <p>The pipeline densifies every track to a point every 50 m at most before sending it to
+ * osm-route-details, and resamples it to one point every 5 to {@value #RESAMPLING_STEP_METERS} m
+ * when that call fails ({@link GpxPipeline}, docs/LEDGER_*.md API-150): either way the number of
+ * points it allocates follows the <em>distance</em> of the track, not the size of the request. A handful of points far apart (or a GPX file of a few KB) would
  * otherwise produce millions of interpolated points. Hence three bounds, each checked before the
  * resampling allocates:
  *
@@ -27,7 +28,8 @@ import java.util.List;
  *   <li>{@link #MAX_PLANNER_POINTS}: the planner points of a JSON request ({@code @Size} on the DTO
  *       lists), every one of them inside the WGS84 bounds ({@code GeoPoint});
  *   <li>{@link #MAX_TRACK_DISTANCE_METERS}: the summed length of all the tracks of a GPX, whatever
- *       its source, so 400 000 to 800 000 resampled points at 352 bytes each (vcyclist 6.5.0) —
+ *       its source, so at worst 400 000 to 800 000 resampled points at 352 bytes each (vcyclist 6.5.0) on
+ *       the fallback path, about 80 000 densified points sent otherwise —
  *       a few hundred MB at worst, transient.
  * </ul>
  *
@@ -40,8 +42,9 @@ import java.util.List;
 public final class GpxLimits {
 
   /**
-   * The widest gap the pipeline leaves between two points ({@link GpxPipeline}), the narrowest
-   * being half of it. Not above 10 m: past it, vcyclist warns, the ramps of a bridge deck or a
+   * The widest gap the pipeline leaves between two points when it falls back on the original
+   * elevations ({@link GpxPipeline}, the service call having failed), the narrowest being half of
+   * it. Not above 10 m: past it, vcyclist warns, the ramps of a bridge deck or a
    * tunnel fall between two points.
    */
   public static final double RESAMPLING_STEP_METERS = 10.0;

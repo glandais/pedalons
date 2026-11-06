@@ -16,8 +16,11 @@ rescheduled rather than left for a `restart:` policy.
 `docker-compose.shared.yml` holds what carries no application data: `tileserver`
 (server-side raster rendering, ~1.8 GB resident) and `osm-surface` (the surface along saved tracks,
 over a cache of OpenStreetMap tiles; see [Surface along saved tracks](#surface-along-saved-tracks-osm-surface)),
-plus `osm-route-details` (elevation profile and surface of routes, which will replace osm-surface): deployed
-but not called by any backend yet (ledger `API-150` phase A, `OPS-58`).
+plus `osm-route-details` (elevation profile and surface of routes, which will replace osm-surface): the
+backends read their elevations there, `fast` for a save or the planner, `full` for the HD catch-up
+(ledger `API-150` phase B, `OPS-58`). **Deploy it, and check that an environment's network reaches it,
+before a backend that calls it**: without it nothing fails visibly, but every save keeps the file's
+elevations (a planner route gets 0 m and no D+) and every HD catch-up gives up after five attempts.
 One instance of each serves every environment. It owns the `pedalons-shared` overlay network. Route computation is not hosted at all any more: it is
 bought from Stadia Maps, with a key per environment, and so is geocoding (see
 [Stadia Maps: routing and geocoding](#stadia-maps-routing-and-geocoding)).
@@ -25,7 +28,7 @@ bought from Stadia Maps, with a key per environment, and so is geocoding (see
 `docker-compose.yml` holds everything that must stay isolated per environment: traefik, backend,
 frontend, postgres, minio, imgproxy and varnish — and goatcounter, which runs in production only
 (see [Web analytics](#web-analytics-goatcounter)). Its `backend` also joins `pedalons-shared` to reach
-the shared services, by their service names `tileserver` and `osm-surface`.
+the shared services, by their service names `tileserver`, `osm-surface` and `osm-route-details`.
 
 Each environment's `.env` differs from a workstation's in five keys only — see
 [The `.env`, on a workstation and on a server](../README.md#the-env-on-a-workstation-and-on-a-server).
@@ -122,7 +125,7 @@ limit is killed by the kernel (`OOMKilled` in `docker inspect`, `task: non-zero 
 | goatcounter | 128M | production only; 36 to 40 MiB at rest, the rest for CSV exports and the dashboard |
 | tileserver (shared) | 3G | ~1.8 GB resident |
 | osm-surface (shared) | 768M | `MEMORY_CACHE_MB=128` of decoded tiles (weighed by their points only, so more in fact) plus the matchings in flight, `MALLOC_ARENA_MAX=2`; at the default 256 it sat at ~715 MB after a full recompute (2026-11-03) |
-| osm-route-details (shared) | 1G | not called yet (ledger `OPS-58`): its two tile caches at 256 MB each (512 by default) plus the requests in flight, `MALLOC_ARENA_MAX=2`; to be measured |
+| osm-route-details (shared) | 1G | ledger `OPS-58`: its two tile caches at 256 MB each (512 by default) plus the requests in flight, `MALLOC_ARENA_MAX=2`; to be measured |
 | monitoring stack | 2G in all | see [Monitoring](#monitoring); ~1 GB resident |
 
 **The backend has no `-Xmx`.** The image's entrypoint (`run-java.sh`, from the Jib base image
@@ -140,11 +143,11 @@ docker stats --no-stream        # usage against each limit
 
 **What stays in the heap once warm** (measured on 2026-10-31, ledger `OPS-55`): about 215 MB for
 the world time-zone index (timeshape, loaded at the first ride whose time zone it resolves; kept
-world-wide on purpose), and the decoded elevation tiles the GPX pipeline keeps per DEM tier,
-`pedalons.elevation.tile-cache-size` of them (20: about 50 MB for the four tiers at most; a
-Mapterhorn tile is 1 MiB decoded, an IGN one 256 KiB). A missed tile is re-read from the
-copy `DemTileStore` keeps under `data/cache`, never downloaded again. The old gen is two thirds of the heap: with a 2G limit,
-about 820 MB, of which a long HD elevation refresh needs a few hundred at its peak.
+world-wide on purpose). The decoded elevation tiles the GPX pipeline used to keep per DEM tier left
+the heap with ledger `API-150` phase B: it asks osm-route-details instead, and
+`pedalons.elevation.tile-cache-size` no longer has any effect on it (the setting and `DemTileStore`
+go in phase E). These figures have not been measured again since. The old gen is two thirds of the
+heap: with a 2G limit, about 820 MB.
 
 **A heap OutOfMemoryError leaves a dump** in the environment's `data/cache/java_pid1.hprof`
 (`-XX:+HeapDumpOnOutOfMemoryError`, `quarkus.jib.jvm-additional-arguments`), written before
@@ -228,7 +231,8 @@ Two services stay per-environment on purpose, even though they look shareable:
   cannot serve two MinIO backends. They become shareable if and when MinIO is shared.
 - **the vcyclist cache** (`DATA_CACHE_PATH`) — per environment by choice, not by necessity. Two
   backends can share it safely (two of the same environment already do during a start-first
-  update): map tiles (vcyclist ≥ 5.1.1) and elevation tiles (`DemTileFetcher`) are both written to a
+  update): map tiles (vcyclist ≥ 5.1.1) and, until ledger `API-150` phase E removes them, the elevation
+  tiles nothing reads any more (`DemTileFetcher`) are both written to a
   temp file then renamed into place, and only once they decode, so a reader never sees a partial
   file and an unreadable cached tile is fetched again (ledger `OPS-10`). Sharing it across
   environments would save the downloads; it is not done. The directory must stay on one filesystem

@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import fr.pedalons.api.AbstractResourceTest;
 import fr.pedalons.enums.Visibility;
-import fr.pedalons.infrastructure.gpx.FakeElevationProducer;
+import fr.pedalons.infrastructure.routedetails.FakeRouteDetailsClient;
 import fr.pedalons.service.route.GpxLimits;
 import fr.pedalons.service.route.planner.PolylineCodec;
 import io.quarkus.narayana.jta.QuarkusTransaction;
@@ -174,7 +174,7 @@ class RouterImportResourceTest extends AbstractResourceTest {
     double[] elevations = PolylineCodec.decode1(ele, coords.length);
     double[] climbs = PolylineCodec.decode1(climb, coords.length);
     for (double e : elevations) {
-      assertEquals(FakeElevationProducer.FAST_ELEVATION, e, 1.0);
+      assertEquals(FakeRouteDetailsClient.FAST_ELEVATION, e, 1.0);
     }
     assertEquals(0.0, climbs[0], 0.05);
     for (int i = 1; i < climbs.length; i++) {
@@ -182,6 +182,28 @@ class RouterImportResourceTest extends AbstractResourceTest {
     }
     assertTrue(((Number) t.get("dist")).doubleValue() > 1000);
     assertEquals(((Number) t.get("ascend")).doubleValue(), climbs[climbs.length - 1], 0.05);
+  }
+
+  /**
+   * docs/LEDGER_*.md API-150: osm-route-details down is no failure of the import — the file's own
+   * elevations (10 m rising to 39 m here) are kept, and the answer says so.
+   */
+  @Test
+  void importGpx_whenTheElevationServiceFails_keepsTheElevationsOfTheFile() throws IOException {
+    FakeRouteDetailsClient.failFast = true;
+
+    var response =
+        importFile(gpx("Sans service", track("A", 47.2, 30)))
+            .statusCode(200)
+            .body("elevationFallback", equalTo(true))
+            .extract();
+
+    List<java.util.Map<String, Object>> tracks = response.path("tracks");
+    var t = tracks.getFirst();
+    double[][] coords = PolylineCodec.decode2((String) t.get("line"), GpxLimits.MAX_PLANNER_POINTS);
+    for (double e : PolylineCodec.decode1((String) t.get("ele"), coords.length)) {
+      assertTrue(e >= 9.0 && e <= 40.0, "from the file: " + e);
+    }
   }
 
   /** docs/LEDGER_*.md API-149, phase C: each track comes with its raw, sanitized 2D track. */

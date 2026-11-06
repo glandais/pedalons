@@ -1,7 +1,7 @@
 # End-to-end tests
 
 Playwright, against the **real application**: the SSR frontend and the backend images behind
-traefik, with postgres, MinIO, imgproxy and mailpit — the deployment's `docker-compose.yml` plus the
+traefik, with postgres, MinIO, imgproxy, osm-route-details and mailpit — the deployment's `docker-compose.yml` plus the
 `docker-compose.e2e.yml` overlay. Nothing is mocked: logins read their OTP and verification links
 from mailpit, data is seeded through the REST API.
 
@@ -29,6 +29,10 @@ first drawing test, which reaches the real router (one request per Playwright pr
 simulates it otherwise (`E2E_NO_ROUTING`).
 The relief of straight lines (`POST /api/router/elevation`, nothing billed) is answered by `stubElevation` and
 counted apart from the router's; one test reaches the real endpoint.
+Elevations come from the stack's own `osm-route-details` (ledger `API-150`), which needs the network
+for its tiles on a cold cache: no published port, a named volume that `scripts/e2e.sh reset` empties.
+`.env.e2e` holds the HD catch-up back for 24 hours, so a run only makes `fast` calls and never reads
+the IGN. A route therefore stays on its FAST profile for the whole suite.
 
 From `frontend/`: `pnpm e2e` (same as `scripts/e2e.sh test`), `pnpm e2e:ui` (Playwright's UI mode),
 `pnpm e2e:typecheck`. After a failure: `pnpm exec playwright show-report e2e/.report`, or

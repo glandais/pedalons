@@ -17,16 +17,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.DoubleUnaryOperator;
+import org.jspecify.annotations.Nullable;
 
 /**
  * osm-route-details in memory, behind {@link FakeRouteDetailsGateway} (plan §8, docs/LEDGER_*.md
  * API-150): no backend test may reach the service, nor IGN or Mapterhorn behind it.
  *
  * <p>The terrain is <b>flat</b> and differs by profile — {@link #FAST_ELEVATION} in {@code fast},
- * {@link #FULL_ELEVATION} in {@code full}, the values {@code FakeElevationProducer} gives its two
- * tiers — so a test can tell which profile computed a profile; the gain is therefore zero. One
- * segment, paved asphalt on the ground, covers the whole route. Every input point comes back once
- * (consecutive duplicates dropped, as the service does), with its own index.
+ * {@link #FULL_ELEVATION} in {@code full} — so a test can tell which profile computed a profile;
+ * the gain is therefore zero, unless {@link #terrain} replaces it. One segment, paved asphalt on
+ * the ground, covers the whole route. Every input point comes back once (consecutive duplicates
+ * dropped, as the service does), with its own index; no breakpoint is inserted, which only {@code
+ * RouteDetailsTrackTest} and the recorded fixture cover.
  *
  * <p>The switches are static, as the gateway bean holds one instance; a test that sets one calls
  * {@link #reset()} afterwards.
@@ -38,6 +41,20 @@ public class FakeRouteDetailsClient implements RouteDetailsClient {
 
   /** While true a {@code full} call answers a 503 {@code data_unavailable}, as IGN down does. */
   public static volatile boolean failFull = false;
+
+  /**
+   * While true a {@code fast} call answers a 503 {@code overloaded}, as a saturated service does:
+   * the only way a {@code fast} call fails, Mapterhorn being read on its own.
+   */
+  public static volatile boolean failFast = false;
+
+  /**
+   * When set, the elevation at {@code d_m} on both profiles, in place of the flat ones: {@code ele}
+   * and {@code ele_smoothed} are its value, {@code gain_cum_m} and {@code loss_cum_m} the running
+   * sums of its deltas between the returned points. {@code d_m} starts again in each slice: a test
+   * that lowers {@link #limits} keeps the terrain flat.
+   */
+  public static volatile @Nullable DoubleUnaryOperator terrain = null;
 
   /**
    * While true the second half of the route has no elevation: {@code status: partial}, {@code ele}
@@ -64,6 +81,8 @@ public class FakeRouteDetailsClient implements RouteDetailsClient {
 
   public static void reset() {
     failFull = false;
+    failFast = false;
+    terrain = null;
     partial = false;
     fallbackAfterError = false;
     limits = RouteDetailsCapabilities.FALLBACK_LIMITS;
@@ -84,8 +103,19 @@ public class FakeRouteDetailsClient implements RouteDetailsClient {
                       + "\"code\":\"data_unavailable\",\"detail\":\"IGN down (test)\"}")
               .build());
     }
+    if (failFast && profile == RouteDetailsProfile.FAST) {
+      throw new WebApplicationException(
+          Response.status(503)
+              .header(HttpHeaders.RETRY_AFTER, "5")
+              .type("application/problem+json")
+              .entity(
+                  "{\"type\":\"about:blank\",\"title\":\"Overloaded\",\"status\":503,"
+                      + "\"code\":\"overloaded\",\"detail\":\"saturated (test)\"}")
+              .build());
+    }
     List<double[]> latLon = latLon(request);
-    double elevation = profile == RouteDetailsProfile.FAST ? FAST_ELEVATION : FULL_ELEVATION;
+    double flat = profile == RouteDetailsProfile.FAST ? FAST_ELEVATION : FULL_ELEVATION;
+    DoubleUnaryOperator relief = terrain;
     boolean smoothed =
         request.options() != null
             && request.options().elevation() != null
@@ -101,12 +131,27 @@ public class FakeRouteDetailsClient implements RouteDetailsClient {
     double half = length / 2;
 
     List<OutputPoint> points = new ArrayList<>(latLon.size());
+    double gain = 0;
+    double loss = 0;
+    double lowest = Double.POSITIVE_INFINITY;
+    double highest = Double.NEGATIVE_INFINITY;
+    Double previous = null;
     for (int i = 0; i < latLon.size(); i++) {
       if (i > 0 && d[i] == d[i - 1]) {
         continue;
       }
       boolean missing = partial && d[i] > half;
-      Double ele = missing ? null : elevation;
+      Double ele =
+          missing ? null : Double.valueOf(relief == null ? flat : relief.applyAsDouble(d[i]));
+      if (ele != null) {
+        if (previous != null) {
+          gain += Math.max(0, ele - previous);
+          loss += Math.max(0, previous - ele);
+        }
+        previous = ele;
+        lowest = Math.min(lowest, ele);
+        highest = Math.max(highest, ele);
+      }
       points.add(
           new OutputPoint(
               d[i],
@@ -118,8 +163,12 @@ public class FakeRouteDetailsClient implements RouteDetailsClient {
               ele,
               smoothed ? ele : null,
               missing ? "none" : "dem",
-              0,
-              0));
+              gain,
+              loss));
+    }
+    if (points.size() < 2) {
+      // Contract §5.2: fewer than two distinct points once rounded to polyline6
+      throw invalidInput();
     }
 
     String origin =
@@ -151,10 +200,10 @@ public class FakeRouteDetailsClient implements RouteDetailsClient {
     Summary summary =
         new Summary(
             length,
-            0,
-            0,
-            elevation,
-            elevation,
+            gain,
+            loss,
+            lowest,
+            highest,
             List.of(),
             partial ? Map.of(origin, half, "none", length - half) : Map.of(origin, length));
     return new RouteDetailsResponse(
@@ -193,12 +242,16 @@ public class FakeRouteDetailsClient implements RouteDetailsClient {
       }
     }
     if (out.size() < 2) {
-      throw new WebApplicationException(
-          Response.status(400)
-              .type("application/problem+json")
-              .entity("{\"status\":400,\"code\":\"invalid_input\"}")
-              .build());
+      throw invalidInput();
     }
     return out;
+  }
+
+  private static WebApplicationException invalidInput() {
+    return new WebApplicationException(
+        Response.status(400)
+            .type("application/problem+json")
+            .entity("{\"status\":400,\"code\":\"invalid_input\"}")
+            .build());
   }
 }

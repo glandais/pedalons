@@ -27,7 +27,8 @@ import java.util.List;
  * corrected, smoothed), so its ascent is comparable to theirs. Nothing is stored and the routing
  * provider is not called.
  *
- * <p>Not transactional: no connection is held while the pipeline waits for the elevation tiles.
+ * <p>Not transactional: no connection is held while the pipeline waits for osm-route-details
+ * (docs/LEDGER_*.md API-150).
  */
 @ApplicationScoped
 public class LineElevationService {

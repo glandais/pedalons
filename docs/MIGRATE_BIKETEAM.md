@@ -156,12 +156,19 @@ Re-running is safe and cheap. Already-migrated rows are matched through the bike
 mapping table (`biketeam_migration_map`, tagged with `biketeam_team_id`), so a replay repairs what a
 previous run left missing rather than duplicating it.
 
-Most of a run is the GPX pipeline: parse, SRTM elevation, Douglas-Peucker, FIT, two thumbnails, five
+Most of a run is the GPX pipeline: parse, the elevation profile (osm-route-details), Douglas-Peucker, FIT, two thumbnails, five
 S3 uploads. `biketeam_migration_map` therefore records the size and MD5 of the `.gpx` each route was
 built from — the snapshot announces both, and a downloaded file that does not match is rejected — and
 a replay whose file carries the same fingerprint skips the pipeline entirely, refreshing only the
 name, surface and visibility. The fingerprint is written *after* the pipeline succeeds, so a run
 killed mid-upload leaves none and the next one redoes the work.
+
+The fingerprint also carries the version of the pipeline that built the route, `@p<GpxPipeline.VERSION>`
+(ledger `API-107`): a route built by an earlier pipeline no longer matches and is rebuilt in place, once.
+`VERSION` is now 3 (ledger `API-150`), so the first replay of a team after that release downloads and
+rebuilds **every route of the team**: expect a run as long as the first one, and
+check that osm-route-details answers beforehand. A route computed while it is down still gets its
+fingerprint, on the file's elevations; only the HD catch-up repairs it, a replay will not.
 
 What remains is the ride and trip thumbnails, which `updateRide`/`updateTrip` regenerate
 unconditionally (ledger `MIG-4`). A route whose `.gpx` changed between two runs is reprocessed, as it should be.

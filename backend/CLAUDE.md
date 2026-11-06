@@ -35,7 +35,7 @@ Coverage instrumentation is opt-in (it slows every run by ~10-15%):
 | imgproxy | 38080 | Image optimization/transformation (WebP, AVIF, JXL) |
 | tileserver | 18080 | Internal map renderer for route thumbnails (never handed to clients) |
 | osm-surface | 18002 | Surface along saved tracks (`TraceAttributesClient`, configKey `osm-surface`, no key) — ledger `OPS-57` |
-| osm-route-details | 18003 | Elevation profile and surface of routes (`RouteDetailsGateway`, configKey `osm-route-details`, no key; not called yet) — ledger `API-150` / `OPS-58` |
+| osm-route-details | 18003 | Elevations of `GpxPipeline`: FAST → profile `fast`, HD → profile `full`; down → FAST keeps the file's elevations (`elevationFallback`), HD retries. The surface follows in phase C (`RouteDetailsGateway`, configKey `osm-route-details`, no key) — ledger `API-150` / `OPS-58` |
 | MinIO | 9000 (console 9001) | S3 storage for assets |
 | mailpit | 1025 (UI 8025) | SMTP sink — no mail leaves a workstation |
 
@@ -159,6 +159,10 @@ Custom exception hierarchy mapped to HTTP responses by `GlobalExceptionMapper`:
 - `setUp()` calls `dataCleaner.cleanAll()` first
 - `getAccessToken()` generates JWT for test requests
 - TestContainers: PostgreSQL + MinIO (via `MinioTestResource`)
+
+**osm-route-details**: no test reaches the service. `FakeRouteDetailsGateway` serves
+`FakeRouteDetailsClient`: flat 100 m in `fast`, 200 m in `full`, with static switches (`failFast`,
+`failFull`, `partial`, `fallbackAfterError`, `terrain`) that `reset()` clears.
 
 **Critical rules**:
 - Never `@Transactional` on test methods that use RestAssured (HTTP can't see uncommitted data)
