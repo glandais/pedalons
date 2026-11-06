@@ -10,24 +10,34 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import fr.pedalons.common.planner.PlannerState;
 import fr.pedalons.domain.gpx.GpxPreview;
+import fr.pedalons.domain.gpx.PreviewSurfacesDocument;
 import fr.pedalons.domain.platform.Domain;
 import fr.pedalons.domain.route.ElevationRefresh;
 import fr.pedalons.domain.route.GpxTrack;
 import fr.pedalons.domain.route.PlannerStateDocument;
+import fr.pedalons.domain.route.TrackSurfaceDocument;
 import fr.pedalons.domain.user.User;
 import fr.pedalons.dto.gpx.response.GpxPreviewDto;
+import fr.pedalons.dto.router.request.RouterProfile;
 import fr.pedalons.enums.ElevationState;
+import fr.pedalons.enums.TrackSurfaceState;
 import fr.pedalons.infrastructure.routedetails.FakeRouteDetailsClient;
+import fr.pedalons.infrastructure.routedetails.RouteDetailsOptions;
+import fr.pedalons.infrastructure.routedetails.RouteDetailsProfile;
+import fr.pedalons.infrastructure.routedetails.RouteDetailsSection;
 import fr.pedalons.infrastructure.storage.StorageService;
 import fr.pedalons.repository.gpx.GpxPreviewRepository;
 import fr.pedalons.repository.route.ElevationRefreshRepository;
 import fr.pedalons.repository.route.ElevationRefreshRepository.PreviewClaim;
+import fr.pedalons.repository.route.SurfaceRefreshRepository;
 import fr.pedalons.service.gpx.GpxPreviewService;
+import fr.pedalons.service.route.GpxPipeline;
 import fr.pedalons.service.route.GpxProcessingService;
 import fr.pedalons.service.route.planner.PlannerStateFixtures;
 import fr.pedalons.service.route.planner.PlannerStates;
 import fr.pedalons.service.security.DomainResolver;
 import fr.pedalons.service.security.PedalonsQueryContext;
+import fr.pedalons.service.surface.SurfaceRefreshService;
 import fr.pedalons.util.StoredObjects;
 import fr.pedalons.util.TestDataCleaner;
 import fr.pedalons.util.TestDataService;
@@ -92,6 +102,7 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
   @AfterEach
   void restoreSwitch() {
     service.setAsyncHdEnabledForTest(true);
+    surfaceService.setEnabledForTest(false);
   }
 
   // ------------------------------------------------------------------ helpers
@@ -861,5 +872,469 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
     assertEquals(1, after.readableWaypoints().size());
     assertFalse(storageService.exists(hdKey), "the revision computed meanwhile is gone");
     assertNotNull(refresh(created), "the request is kept");
+  }
+
+  // ==================== the surface, from the same answer (docs/LEDGER_*.md API-150)
+  // ====================
+
+  private static final Short PIPELINE = (short) GpxPipeline.VERSION;
+
+  @Inject SurfaceRefreshService surfaceService;
+  @Inject SurfaceRefreshRepository surfaceRefreshRepository;
+
+  private PreviewSurfacesDocument surfaces(GpxPreview preview) {
+    return QuarkusTransaction.requiringNew()
+        .call(() -> previewRepository.findSurfaces(preview.getId()));
+  }
+
+  /** From a fresh read: the request's session still holds the entity as this test first saw it. */
+  private GpxPreviewDto dto(GpxPreview preview) {
+    return previewService.toDto(reload(preview));
+  }
+
+  private void legacyRequest(GpxPreview preview) {
+    long revision = reload(preview).getFilesRevision();
+    QuarkusTransaction.requiringNew()
+        .run(
+            () ->
+                surfaceRefreshRepository.requestForPreview(
+                    preview.getId(),
+                    revision,
+                    Instant.now(),
+                    Duration.ofSeconds(90),
+                    Duration.ofMinutes(10)));
+  }
+
+  private long legacyRequests() {
+    return QuarkusTransaction.requiringNew().call(() -> surfaceRefreshRepository.count());
+  }
+
+  private static double length(GpxPreview.PreviewTrack track) {
+    return track.trackPoints().getLast().dist();
+  }
+
+  private static List<RouteDetailsOptions> fullCalls() {
+    return FakeRouteDetailsClient.REQUESTS.stream()
+        .map(fr.pedalons.infrastructure.routedetails.RouteDetailsRequest::options)
+        .filter(o -> o.effectiveProfile() == RouteDetailsProfile.FULL)
+        .toList();
+  }
+
+  @Test
+  void onePass_writesProfileSurfaceAndPipeline_underTheNewRevision() {
+    surfaceService.setEnabledForTest(true);
+    GpxPreview created = previewService.create(EXAMPLE, "example.gpx");
+    Long fastRevision = reload(created).getFilesRevision();
+    assertNull(surfaces(created));
+    assertNull(reload(created).getElevationPipeline());
+    assertEquals(0, legacyRequests(), "a save queues nothing for osm-surface");
+    assertEquals(TrackSurfaceState.PENDING, dto(created).tracks().getFirst().surfaceState());
+    legacyRequest(created);
+    makeDue(created);
+
+    assertEquals(1, worker.processDue());
+
+    GpxPreview after = reload(created);
+    assertEquals(1, fullCalls().size());
+    assertTrue(fullCalls().getFirst().sections().contains(RouteDetailsSection.TYPOLOGY));
+    assertEquals(ElevationState.HD, after.getElevationState());
+    assertFlat(after, FakeRouteDetailsClient.FULL_ELEVATION);
+    assertEquals(PIPELINE, after.getElevationPipeline());
+    assertNotEquals(fastRevision, after.getFilesRevision());
+
+    PreviewSurfacesDocument stored = surfaces(after);
+    assertEquals(after.getFilesRevision(), stored.trackRevision(), "on the revision it describes");
+    TrackSurfaceDocument doc = stored.tracks().getFirst();
+    assertEquals(TrackSurfaceDocument.VERSION_ROUTE_DETAILS, doc.version());
+    assertEquals(length(after.getTracks().getFirst()), doc.distance(), 1e-6);
+    assertEquals(FakeRouteDetailsClient.DATA_VERSIONS, doc.dataVersions());
+    assertEquals(0, legacyRequests());
+    var track = dto(after).tracks().getFirst();
+    assertEquals(TrackSurfaceState.READY, track.surfaceState());
+    assertEquals("PAVED", track.surfaces().getFirst().surface().name());
+  }
+
+  @Test
+  void aTerrainFallback_keepsTheRevision_andWritesTheSurfaceUnderIt() {
+    surfaceService.setEnabledForTest(true);
+    GpxPreview created = previewService.create(EXAMPLE, "example.gpx");
+    GpxPreview before = reload(created);
+    Set<String> bucketBefore = stored.previewKeys(created.getPublicId());
+    legacyRequest(created);
+    makeDue(created);
+
+    FakeRouteDetailsClient.fallbackAfterError = true;
+    assertEquals(1, worker.processDue());
+    FakeRouteDetailsClient.fallbackAfterError = false;
+
+    assertEquals(1, refresh(created).getAttempts());
+    GpxPreview after = reload(created);
+    assertEquals(ElevationState.PENDING, after.getElevationState());
+    assertEquals(before.getFilesRevision(), after.getFilesRevision());
+    assertFlat(after, FakeRouteDetailsClient.FAST_ELEVATION);
+    assertNull(after.getElevationPipeline());
+    assertEquals(bucketBefore, stored.previewKeys(created.getPublicId()), "no HD file kept");
+    assertEquals(before.getFilesRevision(), surfaces(after).trackRevision());
+    assertEquals(0, legacyRequests());
+    assertEquals(TrackSurfaceState.READY, dto(after).tracks().getFirst().surfaceState());
+
+    makeDue(created);
+    assertEquals(1, worker.processDue());
+
+    GpxPreview hd = reload(created);
+    assertEquals(ElevationState.HD, hd.getElevationState());
+    assertEquals(PIPELINE, hd.getElevationPipeline());
+    assertEquals(hd.getFilesRevision(), surfaces(hd).trackRevision());
+    assertEquals(TrackSurfaceState.READY, dto(hd).tracks().getFirst().surfaceState());
+  }
+
+  @Test
+  void aTerrainFallbackOnAPartialAnswer_writesNothing() {
+    surfaceService.setEnabledForTest(true);
+    GpxPreview created = previewService.create(EXAMPLE, "example.gpx");
+    legacyRequest(created);
+    makeDue(created);
+
+    FakeRouteDetailsClient.fallbackAfterError = true;
+    FakeRouteDetailsClient.partial = true;
+    assertEquals(1, worker.processDue());
+
+    assertEquals(1, refresh(created).getAttempts());
+    assertNull(surfaces(created));
+    assertNull(reload(created).getElevationPipeline());
+    assertEquals(1, legacyRequests());
+  }
+
+  @Test
+  void aRangeOutOfCoverage_writesProfileSurfaceAndPipeline() {
+    surfaceService.setEnabledForTest(true);
+    GpxPreview created = previewService.create(EXAMPLE, "example.gpx");
+    makeDue(created);
+
+    FakeRouteDetailsClient.partial = true;
+    assertEquals(1, worker.processDue());
+
+    GpxPreview after = reload(created);
+    assertEquals(ElevationState.HD, after.getElevationState());
+    assertEquals(PIPELINE, after.getElevationPipeline());
+    assertEquals(after.getFilesRevision(), surfaces(after).trackRevision());
+  }
+
+  @Test
+  void aFullCallThatFails_writesNothing() {
+    surfaceService.setEnabledForTest(true);
+    GpxPreview created = previewService.create(EXAMPLE, "example.gpx");
+    legacyRequest(created);
+    makeDue(created);
+
+    FakeRouteDetailsClient.failFull = true;
+    assertEquals(1, worker.processDue());
+
+    assertEquals(1, refresh(created).getAttempts());
+    assertNull(surfaces(created));
+    assertNull(reload(created).getElevationPipeline());
+    assertEquals(1, legacyRequests());
+    assertEquals(TrackSurfaceState.PENDING, dto(created).tracks().getFirst().surfaceState());
+  }
+
+  @Test
+  void withTheSurfaceOff_theCatchUpLeavesItOut_andARequestFollowsTheRevision() {
+    GpxPreview created = previewService.create(EXAMPLE, "example.gpx");
+    legacyRequest(created);
+    makeDue(created);
+
+    assertEquals(1, worker.processDue());
+
+    GpxPreview after = reload(created);
+    assertEquals(
+        List.of(RouteDetailsSection.ELEVATION, RouteDetailsSection.SUMMARY),
+        fullCalls().getFirst().sections());
+    assertNull(surfaces(after));
+    assertEquals(PIPELINE, after.getElevationPipeline());
+    assertEquals(
+        after.getFilesRevision(),
+        QuarkusTransaction.requiringNew()
+            .call(
+                () ->
+                    surfaceRefreshRepository
+                        .findByPreviewId(after.getId())
+                        .orElseThrow()
+                        .getSourceRevision()));
+  }
+
+  @Test
+  void aStraightPiece_isLaidOverTheAnswer() {
+    surfaceService.setEnabledForTest(true);
+    GpxPreview created = createWithState(straightEnd());
+    makeDue(created);
+
+    assertEquals(1, worker.processDue());
+
+    GpxPreview after = reload(created);
+    assertEquals(after.getFilesRevision(), storedState(after).trackRevision());
+    TrackSurfaceDocument doc = surfaces(after).tracks().getFirst();
+    assertEquals("off_network", doc.surfaces().getLast().code());
+    assertEquals("paved", doc.surfaces().getFirst().code());
+    assertEquals(doc.distance(), doc.surfaces().getLast().to(), 1.0);
+  }
+
+  private static PlannerState straightEnd() {
+    return new PlannerState(
+        1,
+        RouterProfile.BIKE,
+        List.of(),
+        List.of(
+            PlannerStateFixtures.control(4.8300, 45.7600),
+            PlannerStateFixtures.control(4.8340, 45.7620),
+            PlannerStateFixtures.control(4.8400, 45.7650)),
+        List.of(
+            PlannerStateFixtures.routed(new double[][] {{4.8320, 45.7610}}),
+            PlannerStateFixtures.direct()));
+  }
+
+  @Test
+  void twoTracks_getADocumentEach_onTheirOwnLength() {
+    surfaceService.setEnabledForTest(true);
+    GpxPreview created = previewService.create(TWO_TRACKS, "two.gpx");
+    makeDue(created);
+
+    assertEquals(1, worker.processDue());
+
+    GpxPreview after = reload(created);
+    List<TrackSurfaceDocument> docs = surfaces(after).tracks();
+    assertEquals(2, docs.size());
+    for (int i = 0; i < 2; i++) {
+      assertEquals(length(after.getTracks().get(i)), docs.get(i).distance(), 1e-6, "track " + i);
+    }
+    GpxPreviewDto dto = dto(after);
+    assertTrue(dto.tracks().stream().allMatch(t -> t.surfaceState() == TrackSurfaceState.READY));
+  }
+
+  @Test
+  void aSaveWithAsyncOff_writesTheSurfaceFromItsOwnAnswer_andQueuesNothing() {
+    surfaceService.setEnabledForTest(true);
+    service.setAsyncHdEnabledForTest(false);
+
+    GpxPreview created = previewService.create(EXAMPLE, "example.gpx");
+
+    GpxPreview preview = reload(created);
+    assertEquals(1, fullCalls().size());
+    assertEquals(PIPELINE, preview.getElevationPipeline());
+    assertEquals(preview.getFilesRevision(), surfaces(preview).trackRevision());
+    assertEquals(
+        TrackSurfaceDocument.VERSION_ROUTE_DETAILS,
+        surfaces(preview).tracks().getFirst().version());
+    assertEquals(0, legacyRequests());
+    assertEquals(0, refreshCount());
+    assertEquals(TrackSurfaceState.READY, dto(preview).tracks().getFirst().surfaceState());
+
+    GpxPreviewDto updated =
+        previewService.updatePreview(created.getPublicId().toString(), "Deux", TWO_TRACKS, null);
+
+    GpxPreview after = reload(created);
+    assertNotEquals(preview.getFilesRevision(), after.getFilesRevision());
+    assertEquals(after.getFilesRevision(), surfaces(after).trackRevision());
+    assertEquals(2, surfaces(after).tracks().size());
+    assertEquals(0, legacyRequests());
+    assertTrue(
+        updated.tracks().stream().allMatch(t -> t.surfaceState() == TrackSurfaceState.READY),
+        "the answer of the save says so");
+  }
+
+  @Test
+  void aMergeWithAsyncOff_answersItsSurface() {
+    surfaceService.setEnabledForTest(true);
+    service.setAsyncHdEnabledForTest(false);
+
+    GpxPreviewDto merged =
+        previewService.createMergedPreview(
+            List.of(
+                new File("src/test/resources/merge_part_a.gpx").toPath(),
+                new File("src/test/resources/merge_part_b.gpx").toPath()),
+            List.of("a.gpx", "b.gpx"));
+
+    assertTrue(merged.tracks().stream().allMatch(t -> t.surfaceState() == TrackSurfaceState.READY));
+  }
+
+  @Test
+  void aSaveWithAsyncOff_ofADrawnTrack_laysItsStraightPiecesOver() {
+    surfaceService.setEnabledForTest(true);
+    service.setAsyncHdEnabledForTest(false);
+
+    GpxPreview created = createWithState(straightEnd());
+
+    assertEquals("off_network", surfaces(created).tracks().getFirst().surfaces().getLast().code());
+  }
+
+  @Test
+  void anUpdateWithAsyncOff_ofADrawnTrack_laysItsStraightPiecesOver() {
+    surfaceService.setEnabledForTest(true);
+    service.setAsyncHdEnabledForTest(false);
+    dataService.setDomainEnableGpxPlanner(domain, true);
+    domainResolver.setDomainForTest(dataService.getOrCreateDefaultDomain());
+    GpxPreview created = previewService.create(EXAMPLE, "example.gpx");
+
+    previewService.updatePreview(
+        created.getPublicId().toString(), "Tracé", null, null, straightEnd());
+
+    assertEquals("off_network", surfaces(created).tracks().getFirst().surfaces().getLast().code());
+  }
+
+  @Test
+  void aSaveWithAsyncOff_dropsTheRequestOfTheLegacyQueue() {
+    surfaceService.setEnabledForTest(true);
+    service.setAsyncHdEnabledForTest(false);
+    GpxPreview created = previewService.create(EXAMPLE, "example.gpx");
+    legacyRequest(created);
+
+    previewService.updatePreview(created.getPublicId().toString(), "Un", EXAMPLE, null);
+
+    assertEquals(0, legacyRequests(), "the worker would replace this document with its own");
+    assertEquals(
+        TrackSurfaceDocument.VERSION_ROUTE_DETAILS,
+        surfaces(created).tracks().getFirst().version());
+  }
+
+  @Test
+  void aSaveWithAsyncOffWithoutAnAnswer_leavesTheRequestToTheLegacyQueue() {
+    surfaceService.setEnabledForTest(true);
+    service.setAsyncHdEnabledForTest(false);
+    GpxPreview created = previewService.create(EXAMPLE, "example.gpx");
+    legacyRequest(created);
+
+    FakeRouteDetailsClient.failFull = true;
+    previewService.updatePreview(created.getPublicId().toString(), "Un", EXAMPLE, null);
+
+    assertNull(surfaces(created));
+    assertEquals(1, legacyRequests());
+  }
+
+  @Test
+  void aSaveWithAsyncOffThatFallsBack_clearsThePipeline() {
+    surfaceService.setEnabledForTest(true);
+    service.setAsyncHdEnabledForTest(false);
+    GpxPreview created = previewService.create(EXAMPLE, "example.gpx");
+    assertEquals(PIPELINE, reload(created).getElevationPipeline());
+
+    FakeRouteDetailsClient.fallbackAfterError = true;
+    previewService.updatePreview(created.getPublicId().toString(), "Un", EXAMPLE, null);
+
+    assertNull(reload(created).getElevationPipeline());
+    assertNotNull(surfaces(created), "the surface of the answer is good");
+    FakeRouteDetailsClient.fallbackAfterError = false;
+
+    previewService.updatePreview(created.getPublicId().toString(), "Un", EXAMPLE, null);
+    assertEquals(PIPELINE, reload(created).getElevationPipeline());
+
+    FakeRouteDetailsClient.failFull = true;
+    previewService.updatePreview(created.getPublicId().toString(), "Deux", TWO_TRACKS, null);
+
+    assertNull(reload(created).getElevationPipeline());
+    assertNull(surfaces(created));
+    assertEquals(0, legacyRequests());
+    assertEquals(0, refreshCount());
+  }
+
+  @Test
+  void aFastSave_clearsThePipeline_andLeavesTheSurfaceToTheCatchUp() {
+    surfaceService.setEnabledForTest(true);
+    GpxPreview created = previewService.create(EXAMPLE, "example.gpx");
+    makeDue(created);
+    assertEquals(1, worker.processDue());
+
+    previewService.updatePreview(created.getPublicId().toString(), "Deux", TWO_TRACKS, null);
+
+    GpxPreview after = reload(created);
+    assertNull(after.getElevationPipeline(), "this profile is no pipeline's HD one");
+    assertEquals(ElevationState.PENDING, after.getElevationState());
+    assertNull(surfaces(after));
+    assertEquals(0, legacyRequests());
+    assertEquals(TrackSurfaceState.PENDING, dto(after).tracks().getFirst().surfaceState());
+
+    makeDue(created);
+    assertEquals(1, worker.processDue());
+    assertEquals(PIPELINE, reload(created).getElevationPipeline());
+  }
+
+  @Test
+  void aNewTrackWhoseCatchUpGivesUp_staysToRecompute() {
+    surfaceService.setEnabledForTest(true);
+    GpxPreview created = previewService.create(EXAMPLE, "example.gpx");
+    makeDue(created);
+    assertEquals(1, worker.processDue());
+    assertEquals(PIPELINE, reload(created).getElevationPipeline());
+
+    previewService.updatePreview(created.getPublicId().toString(), "Deux", TWO_TRACKS, null);
+    FakeRouteDetailsClient.failFull = true;
+    for (int attempt = 1; attempt <= ElevationRefreshService.MAX_ATTEMPTS; attempt++) {
+      makeDue(created);
+      assertEquals(1, worker.processDue());
+    }
+
+    GpxPreview after = reload(created);
+    assertEquals(ElevationState.FAST, after.getElevationState());
+    assertNull(after.getElevationPipeline());
+  }
+
+  @Test
+  void aRename_keepsTheSurfaceOnItsRevision() {
+    surfaceService.setEnabledForTest(true);
+    GpxPreview created = previewService.create(EXAMPLE, "example.gpx");
+    makeDue(created);
+    assertEquals(1, worker.processDue());
+    PreviewSurfacesDocument before = surfaces(created);
+
+    previewService.updatePreview(created.getPublicId().toString(), "Autre nom", null, null);
+
+    assertEquals(before, surfaces(created));
+    assertEquals(TrackSurfaceState.READY, dto(created).tracks().getFirst().surfaceState());
+  }
+
+  @Test
+  void aTrackSavedDuringTheCompute_getsNeitherTheSurfaceNorThePipeline() throws Exception {
+    surfaceService.setEnabledForTest(true);
+    GpxPreview created = previewService.create(EXAMPLE, "example.gpx");
+    makeDue(created);
+    PreviewClaim claim = service.claimNextPreview(Instant.now()).orElseThrow();
+    ElevationRefreshService.PreviewRecomputed recomputed = service.computePreview(claim);
+
+    previewService.updatePreview(created.getPublicId().toString(), "Deux", TWO_TRACKS, null);
+
+    assertEquals(
+        ElevationRefreshService.Outcome.REALIGNED, service.writePreview(claim, recomputed));
+    assertNull(surfaces(created));
+    assertNull(reload(created).getElevationPipeline());
+  }
+
+  private static TrackSurfaceDocument aDocument() {
+    return TrackSurfaceDocument.unavailable(
+        TrackSurfaceDocument.VERSION_ROUTE_DETAILS, "no-typology", 1000, "bicycle", Instant.now());
+  }
+
+  @Test
+  void aSurfaceAlone_isNotWritten_onAPreviewSavedMeanwhile() {
+    surfaceService.setEnabledForTest(true);
+    GpxPreview created = previewService.create(EXAMPLE, "example.gpx");
+    makeDue(created);
+    PreviewClaim claim = service.claimNextPreview(Instant.now()).orElseThrow();
+
+    previewService.updatePreview(created.getPublicId().toString(), "Un", EXAMPLE, null);
+    service.writePreviewSurfaceOnly(claim, List.of(aDocument()));
+
+    assertNull(surfaces(created));
+  }
+
+  @Test
+  void aSurfaceAlone_isNotWritten_onAnotherNumberOfTracks() {
+    surfaceService.setEnabledForTest(true);
+    GpxPreview created = previewService.create(EXAMPLE, "example.gpx");
+    legacyRequest(created);
+    makeDue(created);
+    PreviewClaim claim = service.claimNextPreview(Instant.now()).orElseThrow();
+
+    service.writePreviewSurfaceOnly(claim, List.of(aDocument(), aDocument()));
+
+    assertNull(surfaces(created));
+    assertEquals(1, legacyRequests());
   }
 }

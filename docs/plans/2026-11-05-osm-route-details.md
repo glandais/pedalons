@@ -1,6 +1,6 @@
 # Profil et revêtement par osm-route-details
 
-Écrit le 5 novembre 2026. **État : phases A et B faites (§10), le reste à venir.** Ledger `API-150` (backend),
+Écrit le 5 novembre 2026. **État : phases A, B et C faites (§10), le reste à venir.** Ledger `API-150` (backend),
 `OPS-58` (déploiement). Branche `feat/osm-route-details`, partie de `3d23f160` (`API-149`, trace
 brute). Numéros vérifiés libres le 5 novembre 2026 : `API-150`, `OPS-58`, migration `V83`, contrat
 `13.1.0` aujourd'hui.
@@ -152,7 +152,7 @@ Seul `processDense` change :
 
 | Étape | Aujourd'hui (vcyclist) | Demain |
 |---|---|---|
-| Terrain + ouvrages | `ElevationCorrectionJvm.fixAndCorrectBlocking` sur provider FAST/HD | un appel `RouteDetailsGateway.details` (mode `fast` / `full`, `sections: [elevation, summary]`, le `full` s'élargit à la phase C) ; `accept_partial` en `fast` seulement |
+| Terrain + ouvrages | `ElevationCorrectionJvm.fixAndCorrectBlocking` sur provider FAST/HD | un appel `RouteDetailsGateway.details` (mode `fast` / `full`, `sections: [elevation, summary]`, plus `typology` pour un calcul `full` qui écrit le revêtement, §5.1) ; `accept_partial` en `fast` seulement |
 | Rééchantillonnage | pas ≤ 10 m (`GpxLimits.RESAMPLING_STEP_METERS`) | densification à ≤ 50 m avant l'envoi (`GpxPipeline.SENT_MAX_GAP_M`), jamais de point source retiré ; la réponse rend ces points plus les points de rupture du service |
 | Lissage 150 m | `ElevationStepJvm.smoothElevation` | `ele_smoothed` du service (`smoothing_m = 150`) |
 | D+ et D- | `ElevationGainJvm.annotate` (bande morte, avant DP) | `gain_cum_m` et `loss_cum_m` du service, reportés sur le `Path` : les cumuls plutôt que `summary`, que le contrat ne garantit qu'au centimètre, pour que le dernier point de `climb[]` égale exactement le D+ affiché |
@@ -206,9 +206,22 @@ pour l'annoncer dans les notes de version si besoin.
 
 ### 5.1 Une seule file
 
-`surface_refresh` cesse d'être alimentée : chaque enregistrement qui demandait un revêtement demande
-déjà un rattrapage HD (`elevation_refresh`). Le worker HD écrit profil **et** revêtement dans la même
-transaction d'écriture (`applyRecompute` / écriture de l'aperçu), sur le même `source_revision`.
+Plus aucun enregistrement n'alimente `surface_refresh` : chaque enregistrement qui demandait un
+revêtement demande déjà un rattrapage HD (`elevation_refresh`). Le worker HD écrit profil **et**
+revêtement dans la même transaction d'écriture (`applyRecompute` / écriture de l'aperçu), sur le même
+`source_revision`, et retire la demande `surface_refresh` éventuelle de la cible.
+
+Jusqu'à la phase D, `SurfaceBackfill`, `SurfaceRefreshWorker` et `TraceSurfaceComputer` restent en
+place et traitent ce qui arrive encore dans `surface_refresh` : les demandes laissées par la version
+précédente, et celles de `SurfaceBackfill`, qui passe par osm-surface pour les traces sans revêtement.
+Deux retouches évitent qu'ils gênent le rattrapage HD :
+
+- `SurfaceBackfill` ne retient plus une cible dont le rattrapage HD reste à venir (demande
+  `elevation_refresh` à moins de 5 tentatives) : sinon chaque enregistrement frais partirait vers
+  osm-surface pendant sa période de calme ;
+- la demande `surface_refresh` est retirée sous le verrou de la cible avant l'écriture
+  (`deleteIfRevision`) : si le rattrapage HD est passé pendant le calcul, le document v1 n'est pas
+  écrit par-dessus le v2.
 
 Conséquences :
 
@@ -216,24 +229,56 @@ Conséquences :
   n'écrit pas de revêtement (e2e, comme aujourd'hui).
 - `async-hd.enabled=false` (HD synchrone à l'enregistrement, interrupteur de secours) : l'appel
   `full` a lieu dans la requête HTTP, et le revêtement de la même réponse est écrit à
-  l'enregistrement. Rien n'est mis en file.
-- Aperçu promu en parcours : les documents copiés comme aujourd'hui (`storeOrRequestSurfaces`).
+  l'enregistrement. Rien n'est mis en file : un appel en échec ne laisse ni document ni demande, et
+  `elevation_pipeline` reste nul (repris par `SurfaceBackfill`, puis par le backfill de la phase D).
+- Aperçu promu en parcours : les documents copiés comme aujourd'hui (`storeCopiedSurfaces`), seule
+  la demande de revêtement a disparu.
+- `surfaceState` reste `PENDING` tant que la cible est en `elevation_state = PENDING`, ou qu'il reste
+  une demande `surface_refresh` : sans requête de plus pour la colonne, donc sans effet sur les
+  comptages de `RouteQueryCountTest`. Rattrapage abandonné : pas de document, l'API ne dit rien, comme
+  après cinq échecs jusqu'ici.
 
 ### 5.2 Conversion vers `TrackSurfaceDocument`
 
-`TrackSurfaceDocument` version 2 : `surfaces` `[from, to, code]` où `code` est la valeur du service
-(`surface.detail` si présent, sinon `surface.class`), plus `way_kind`, `structure` et `matched` dans
-`ways` (au lieu de `use` / `cycle_lane` Valhalla). `osmChangeset` → `dataVersions` (`meta`).
+`TrackSurfaceDocument` version 2 (`VERSION_ROUTE_DETAILS`) :
+
+- `surfaces` `[from, to, code]` où `code` est la **classe projetée** en minuscules (table ci-dessous,
+  `TrackSurface.code()`), pas la valeur du service. La version précédente lit ces codes tels quels :
+  un document v2 reste juste pendant la minute du déploiement start-first et après un retour arrière,
+  alors que `asphalt`, `unpaved` ou `sett` y deviendraient `UNKNOWN`. Le chemin de lecture ne change
+  pas (v1 et v2 se lisent pareil), et l'absorption des morceaux de moins de 20 m travaille sur ce que
+  les clients dessinent.
+- `ways` `[from, to, way_kind, null, structure, matched, class, detail]` : les valeurs brutes du
+  service, en remplacement de `use` / `cycle_lane` Valhalla ; éléments de fin omis quand ils sont
+  nuls. Le lecteur précédent y voit `way_kind` à la place de `use`. Changer la table D6 revient donc à
+  reprojeter depuis `ways`, sans appel au service.
+- `osmChangeset` → `dataVersions` (`meta.data_versions`, celui de la première tranche sur un parcours
+  découpé) ; `costing` vaut toujours `bicycle` (§5.3).
+- Un document `unavailable` porte la raison `too-short` (trace trop courte) ou `no-typology` (rien
+  que du `UNKNOWN` après superposition du hors-réseau : une trace entièrement `DIRECT` reste donc
+  valable).
+
 Version 1 relue telle quelle : les parcours déjà traités par osm-surface ne sont pas recalculés pour
 ça.
 
-Plus de `TrackAxisMapping` sur ce chemin : les `d_m` de la réponse sont l'axe dont sont tirés les
-`track_points` HD (§4.1), donc les plages tombent déjà sur l'axe stocké (au facteur d'échelle près,
-`doc.distance`, comme aujourd'hui). Comme tout parcours est recalculé (§6), il n'existe pas
-d'écriture « revêtement seul » : `TrackAxisMapping` ne sert plus qu'à relire les documents v1 tant
-que le backfill ne les a pas remplacés, puis part au ménage (phase E).
+Plus de `TrackAxisMapping` sur ce chemin (il reste à `TraceSurfaceComputer`, et au planificateur par
+`RawShapes`), mais les `d_m` de la réponse ne sont pas l'axe stocké : `track_points.dist` est recalculé
+sur les seuls points gardés par le DP, plus court et inégalement (le bruit GPS et les arrêts
+disparaissent), et un simple facteur d'échelle décalerait chaque borne après un arrêt. Les bornes
+passent donc par des ancres : pour chaque point gardé, le couple (`d_m` du point, distance stockée),
+avec interpolation par morceaux, bornée aux extrémités. `doc.distance` vaut alors la longueur
+stockée.
 
-Hors réseau du planificateur (morceaux `DIRECT`) : `SurfaceRanges.overlay` inchangé.
+**Écriture « revêtement seul »**, une seule : la réponse `complete` avec repli (§4.3), où le profil
+reste en FAST et réessaie. Quand **toutes** les traces ont une réponse `complete`, le revêtement est
+écrit seul (`writeSurfaceOnly`, `writePreviewSurfaceOnly`) sur le `source_revision` lu, sans toucher
+à l'état d'altitude, à `elevation_pipeline`, aux fichiers ni aux points, puis la tentative compte
+comme un échec ; réécrit à chaque essai. Une réponse `partial` avec repli n'écrit rien. Les bornes
+sont sur l'axe HD et se recalent à la lecture sur la trace FAST, à quelques mètres près.
+
+Hors réseau du planificateur (morceaux `DIRECT`) : `SurfaceRanges.overlay` inchangé, avant la
+normalisation, comme `TraceSurfaceComputer`. Le rattrapage relit l'état du planificateur, s'il porte
+sur la révision calculée et sur une seule trace.
 
 Projection vers `TrackSurface` (le contrat d'API **ne change pas**, ni web ni mobile) :
 
@@ -264,7 +309,8 @@ osm-route-details v1 suppose un tracé vélo (pas de paramètre de mode). Les pr
 `auto` de `costingOf(profile)` sont appariés comme du vélo : une voie interdite au vélo reste
 `matched: false` avec la typologie de la voie (api 1.1, `bicycle_forbidden`), donc le revêtement
 reste juste ; seul l'appariement des rues piétonnes peut différer. Accepté (décision D3, §9) ; le paramètre
-de mode V2 du service le réglera.
+de mode V2 du service le réglera. `costingOf` ne sert plus sur ce chemin : un document v2 enregistre
+toujours `bicycle`.
 
 ## 6. Backfill : tout recalculer (décision D2)
 
@@ -298,14 +344,17 @@ l'original.
 ## 7. Base de données (`V83`, compatible avec la version précédente)
 
 - `team_entities.elevation_pipeline smallint` et `gpx_previews.elevation_pipeline smallint`,
-  nullables (nul = calculé avant cette version, donc à recalculer) ; index partiel des parcours à
-  rattraper.
+  nullables (nul = calculé avant cette version, ou profil FAST d'un enregistrement que le rattrapage
+  n'a pas remplacé, donc à recalculer) ; index partiel des parcours à rattraper. Un enregistrement
+  FAST remet la colonne à nul : un rattrapage abandonné ne laisse pas sur une trace neuve la version
+  de l'ancienne. Le backfill de la phase D saute donc les cibles qui ont une demande ouverte.
 - `elevation_refresh` : `backfill boolean not null default false`, index partiel du backfill comme
   `V77`.
 - `surface_refresh` : **gardée** dans cette version (le backend précédent la draine encore pendant
-  le déploiement start-first). Le nouveau backend ne l'alimente plus et ne la draine pas : ses cibles
-  sont toutes reprises par le backfill. Suppression de la table, et de `raw_track_resurface`, dans
-  une migration ultérieure (`V84+`, version suivante).
+  le déploiement start-first). Le nouveau backend ne l'alimente plus depuis un enregistrement, et
+  continue de la drainer tant que `SurfaceRefreshWorker` existe : jusqu'à la phase D, elle reçoit
+  encore les demandes de `SurfaceBackfill` (§5.1). Suppression de la table, et de
+  `raw_track_resurface`, dans une migration ultérieure (`V84+`, version suivante).
 
 Pas de changement de contrat d'API attendu ; s'il en faut un (nouvelle valeur d'enum, crédit), bump
 de `pedalons.api.version` et skill `contract-first-api`.
@@ -350,7 +399,7 @@ Prises avec l'utilisateur le 6 novembre 2026 :
 |---|---|---|
 | A — **faite le 6 novembre 2026** | Client, DTO, erreurs, découpage, client factice, fixture ; service dans `docker-compose.shared.yml` et `.local.yml` | aucun comportement changé |
 | B — **faite le 6 novembre 2026** | `GpxPipeline` sur le service (FAST et HD), `VERSION = 3` ; vcyclist n'est plus appelé pour le terrain, sauf lissage et D+ des altitudes d'origine quand l'appel échoue ; pile e2e dotée de son propre service | profil par osm-route-details |
-| C | Le worker HD écrit le revêtement (`TrackSurfaceDocument` v2, projection sur `surface.detail`) ; `surface_refresh` n'est plus alimentée, `V83` — api ≥ 1.6 | une seule file |
+| C — **faite le 6 novembre 2026** | Le worker HD écrit le revêtement (`TrackSurfaceDocument` v2, projection sur `surface.detail`) ; plus aucun enregistrement n'alimente `surface_refresh`, `V83` — api ≥ 1.6 | une seule file pour tout enregistrement ; `SurfaceBackfill` et osm-surface tournent encore jusqu'à la phase D |
 | D | `RouteDetailsBackfill` : recalcul HD de tous les parcours et aperçus < `VERSION` | osm-surface plus appelé ; tout le parc en v3 |
 | E | Ménage : `ElevationTier`, providers de `VcyclistProducer`, `DemTileStore` (+ `OPS-55` : réglage `tile-cache-size` retiré), `TraceAttributesClient` et le reste d'osm-surface **côté backend**, crédit « Altitude : IGN LiDAR HD, Mapterhorn » complété d'OSM (attribution du service), `docs/OPERATIONS.md` | — |
 | F (version suivante, après la bascule de prod) | `V84` : suppression de `surface_refresh` et `raw_track_resurface` ; service osm-surface et son volume retirés de la pile partagée (`OPS-58`) | — |

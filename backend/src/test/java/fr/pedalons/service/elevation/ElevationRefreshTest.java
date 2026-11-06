@@ -17,26 +17,37 @@ import fr.pedalons.common.planner.PlannerState;
 import fr.pedalons.domain.route.ElevationRefresh;
 import fr.pedalons.domain.route.GpxTrack;
 import fr.pedalons.domain.route.Route;
+import fr.pedalons.domain.route.TrackSurfaceDocument;
 import fr.pedalons.dto.common.asset.MediaDto;
+import fr.pedalons.dto.router.request.RouterProfile;
 import fr.pedalons.dto.routes.request.RouteRequest;
 import fr.pedalons.dto.routes.response.RouteDetailDto;
 import fr.pedalons.dto.routes.response.RouteDto;
+import fr.pedalons.dto.routes.response.TrackDto;
 import fr.pedalons.enums.AssetType;
 import fr.pedalons.enums.ElevationState;
 import fr.pedalons.enums.SurfaceType;
+import fr.pedalons.enums.TrackSurfaceState;
 import fr.pedalons.enums.Visibility;
 import fr.pedalons.infrastructure.routedetails.FakeRouteDetailsClient;
+import fr.pedalons.infrastructure.routedetails.RouteDetailsOptions;
+import fr.pedalons.infrastructure.routedetails.RouteDetailsProfile;
+import fr.pedalons.infrastructure.routedetails.RouteDetailsSection;
 import fr.pedalons.infrastructure.storage.StorageService;
 import fr.pedalons.repository.asset.AssetRepository;
 import fr.pedalons.repository.route.ElevationRefreshRepository;
 import fr.pedalons.repository.route.ElevationRefreshRepository.Claim;
+import fr.pedalons.repository.route.GpxTrackRepository;
 import fr.pedalons.repository.route.RouteRepository;
+import fr.pedalons.repository.route.SurfaceRefreshRepository;
 import fr.pedalons.service.asset.AssetService;
 import fr.pedalons.service.gps.sync.GpsSyncNames;
+import fr.pedalons.service.route.GpxPipeline;
 import fr.pedalons.service.route.RouteService;
 import fr.pedalons.service.route.planner.PlannerStateFixtures;
 import fr.pedalons.service.security.DomainResolver;
 import fr.pedalons.service.security.PedalonsQueryContext;
+import fr.pedalons.service.surface.SurfaceRefreshService;
 import fr.pedalons.service.thumbnail.MapThumbnailRenderer;
 import fr.pedalons.util.StoredObjects;
 import fr.pedalons.util.TestDataService;
@@ -115,6 +126,7 @@ class ElevationRefreshTest extends AbstractResourceTest {
   @AfterEach
   void restoreSwitch() {
     service.setAsyncHdEnabledForTest(true);
+    surfaceService.setEnabledForTest(false);
   }
 
   private static RouteRequest request(String name) {
@@ -920,5 +932,585 @@ class ElevationRefreshTest extends AbstractResourceTest {
     assertEquals(1, waypointSnaps(created).size());
     assertNotNull(refresh(created), "the request is kept, due at once");
     assertEquals(keysOf(afterEdit), stored.assetKeys(team1), "the HD files are gone");
+  }
+
+  // ==================== the surface, from the same answer (docs/LEDGER_*.md API-150)
+  // ====================
+
+  private static final Short PIPELINE = (short) GpxPipeline.VERSION;
+
+  @Inject SurfaceRefreshService surfaceService;
+  @Inject SurfaceRefreshRepository surfaceRefreshRepository;
+  @Inject GpxTrackRepository trackRepository;
+
+  /** The stored document of each track, in the order of the tracks; null for one without. */
+  private List<TrackSurfaceDocument> documents(RouteDto route) {
+    return QuarkusTransaction.requiringNew()
+        .call(
+            () -> {
+              Map<Long, TrackSurfaceDocument> found = trackRepository.findSurfaces(id(route));
+              return trackRepository.findPoints(id(route)).stream()
+                  .map(t -> found.get(t.trackId()))
+                  .toList();
+            });
+  }
+
+  private TrackSurfaceDocument document(RouteDto route) {
+    return documents(route).getFirst();
+  }
+
+  private void assertNoDocument(RouteDto route) {
+    assertTrue(documents(route).stream().allMatch(java.util.Objects::isNull));
+  }
+
+  /** The stored length of each track. */
+  private List<Double> lengths(RouteDto route) {
+    return QuarkusTransaction.requiringNew()
+        .call(
+            () ->
+                trackRepository.findPoints(id(route)).stream()
+                    .map(t -> t.points().getLast().dist())
+                    .toList());
+  }
+
+  private Short pipeline(RouteDto route) {
+    return QuarkusTransaction.requiringNew()
+        .call(() -> routeRepository.findById(id(route)).getElevationPipeline());
+  }
+
+  private TrackDto track(RouteDto route) {
+    return QuarkusTransaction.requiringNew()
+        .call(() -> routeService.getDto(team1Slug, route.slug()))
+        .tracks()
+        .getFirst();
+  }
+
+  /** A request of the legacy queue, as the previous release left it. */
+  private void legacyRequest(RouteDto route) {
+    long original = byType(snaps(route)).get(AssetType.ROUTE_ORIGINAL_GPX).fileId();
+    QuarkusTransaction.requiringNew()
+        .run(
+            () ->
+                surfaceRefreshRepository.requestForRoute(
+                    id(route),
+                    original,
+                    Instant.now(),
+                    Duration.ofSeconds(90),
+                    Duration.ofMinutes(10)));
+  }
+
+  private long legacyRequests() {
+    return QuarkusTransaction.requiringNew().call(() -> surfaceRefreshRepository.count());
+  }
+
+  private static List<RouteDetailsOptions> fullCalls() {
+    return FakeRouteDetailsClient.REQUESTS.stream()
+        .map(fr.pedalons.infrastructure.routedetails.RouteDetailsRequest::options)
+        .filter(o -> o.effectiveProfile() == RouteDetailsProfile.FULL)
+        .toList();
+  }
+
+  private static final List<RouteDetailsSection> ALL_SECTIONS =
+      List.of(
+          RouteDetailsSection.ELEVATION, RouteDetailsSection.TYPOLOGY, RouteDetailsSection.SUMMARY);
+
+  private static final List<RouteDetailsSection> NO_TYPOLOGY =
+      List.of(RouteDetailsSection.ELEVATION, RouteDetailsSection.SUMMARY);
+
+  /** Four stretches of a quarter each: asphalt, setts, fine gravel, an unpaved path. */
+  private static void fourSurfaces() {
+    FakeRouteDetailsClient.segmentsOf =
+        length ->
+            List.of(
+                FakeRouteDetailsClient.segment(0, length / 4, "paved", "asphalt", "minor_road"),
+                FakeRouteDetailsClient.segment(length / 4, length / 2, "paved", "sett", "street"),
+                FakeRouteDetailsClient.segment(
+                    length / 2, length * 3 / 4, "unpaved", "fine_gravel", "track"),
+                FakeRouteDetailsClient.segment(length * 3 / 4, length, "unpaved", null, "path"));
+  }
+
+  @Test
+  void onePass_writesProfileSurfaceAndPipeline_fromOneFullCall() {
+    surfaceService.setEnabledForTest(true);
+    RouteDto created = createRoute(EXAMPLE);
+    assertNoDocument(created);
+    assertNull(pipeline(created), "a fast save says nothing of the pipeline");
+    assertTrue(fullCalls().isEmpty(), "a save asks for fast only");
+    assertEquals(0, legacyRequests(), "and queues nothing for osm-surface");
+    legacyRequest(created);
+    makeDue(created);
+
+    assertEquals(1, worker.processDue());
+
+    assertEquals(1, fullCalls().size());
+    assertEquals(ALL_SECTIONS, fullCalls().getFirst().sections());
+    assertEquals(ElevationState.HD, storedState(created));
+    assertFlat(created, FakeRouteDetailsClient.FULL_ELEVATION);
+    assertEquals(PIPELINE, pipeline(created));
+    assertNull(refresh(created));
+
+    TrackSurfaceDocument doc = document(created);
+    assertEquals(TrackSurfaceDocument.VERSION_ROUTE_DETAILS, doc.version());
+    assertTrue(doc.ok());
+    assertEquals("bicycle", doc.costing());
+    assertEquals(lengths(created).getFirst(), doc.distance(), 1e-6);
+    assertEquals(FakeRouteDetailsClient.DATA_VERSIONS, doc.dataVersions());
+    assertEquals(1, doc.surfaces().size());
+    assertEquals("paved", doc.surfaces().getFirst().code());
+    assertEquals(doc.distance(), doc.surfaces().getFirst().to(), 0.06);
+    TrackSurfaceDocument.WayRange way = doc.ways().getFirst();
+    assertEquals("minor_road", way.use());
+    assertEquals("ground", way.structure());
+    assertEquals(Boolean.TRUE, way.matched());
+    assertEquals("paved", way.surfaceClass());
+    assertEquals("asphalt", way.detail());
+
+    assertEquals(0, legacyRequests(), "nothing left for osm-surface");
+    TrackDto track = track(created);
+    assertEquals(TrackSurfaceState.READY, track.surfaceState());
+    assertEquals("PAVED", track.surfaces().getFirst().surface().name());
+  }
+
+  @Test
+  void severalSurfaces_areProjected_onTheStoredAxis_andTheirRawValuesKept() {
+    surfaceService.setEnabledForTest(true);
+    RouteDto created = createRoute(EXAMPLE);
+    fourSurfaces();
+    makeDue(created);
+
+    assertEquals(1, worker.processDue());
+
+    TrackSurfaceDocument doc = document(created);
+    double length = lengths(created).getFirst();
+    assertEquals(
+        List.of("paved", "paved_rough", "gravel", "path"),
+        doc.surfaces().stream().map(TrackSurfaceDocument.SurfaceRange::code).toList());
+    assertEquals(0, doc.surfaces().getFirst().from());
+    assertEquals(length, doc.surfaces().getLast().to(), 0.06);
+    for (int i = 1; i < 4; i++) {
+      assertEquals(doc.surfaces().get(i - 1).to(), doc.surfaces().get(i).from(), "contiguous");
+      assertEquals(length * i / 4, doc.surfaces().get(i).from(), length * 0.02, "boundary " + i);
+    }
+    assertEquals(
+        java.util.Arrays.asList("asphalt", "sett", "fine_gravel", null),
+        doc.ways().stream().map(TrackSurfaceDocument.WayRange::detail).toList());
+    assertEquals(
+        List.of("minor_road", "street", "track", "path"),
+        doc.ways().stream().map(TrackSurfaceDocument.WayRange::use).toList());
+    assertEquals(
+        List.of("PAVED", "PAVED_ROUGH", "GRAVEL", "PATH"),
+        track(created).surfaces().stream().map(r -> r.surface().name()).toList());
+  }
+
+  @Test
+  void nothingKnownOfTheWholeTrack_isUnavailable_andTheProfileIsWritten() {
+    surfaceService.setEnabledForTest(true);
+    RouteDto created = createRoute(EXAMPLE);
+    FakeRouteDetailsClient.segmentsOf =
+        length -> List.of(FakeRouteDetailsClient.segment(0, length, "unknown", null, null));
+    makeDue(created);
+
+    assertEquals(1, worker.processDue());
+
+    TrackSurfaceDocument doc = document(created);
+    assertEquals(TrackSurfaceDocument.VERSION_ROUTE_DETAILS, doc.version());
+    assertFalse(doc.ok());
+    assertEquals(ElevationState.HD, storedState(created));
+    assertEquals(PIPELINE, pipeline(created));
+    assertEquals(TrackSurfaceState.UNAVAILABLE, track(created).surfaceState());
+  }
+
+  /** The surface is good, only the elevation needs the retry: plan §4.3. */
+  @Test
+  void aTerrainFallback_keepsTheFastProfile_writesTheSurfaceAlone_andTheRetryTheRest() {
+    surfaceService.setEnabledForTest(true);
+    RouteDto created = createRoute(EXAMPLE);
+    Set<String> bucketBefore = stored.assetKeys(team1);
+    List<Snap> before = snaps(created);
+    legacyRequest(created);
+    makeDue(created);
+
+    FakeRouteDetailsClient.fallbackAfterError = true;
+    assertEquals(1, worker.processDue());
+    FakeRouteDetailsClient.fallbackAfterError = false;
+
+    ElevationRefresh request = refresh(created);
+    assertEquals(1, request.getAttempts());
+    assertNotNull(request.getLastError());
+    assertEquals(ElevationState.PENDING, storedState(created));
+    assertFlat(created, FakeRouteDetailsClient.FAST_ELEVATION);
+    assertEquals(before, snaps(created));
+    assertEquals(bucketBefore, stored.assetKeys(team1), "no HD file kept");
+    assertNull(pipeline(created), "the profile is not what the version describes");
+
+    TrackSurfaceDocument first = document(created);
+    assertEquals(TrackSurfaceDocument.VERSION_ROUTE_DETAILS, first.version());
+    assertTrue(first.ok());
+    assertEquals(0, legacyRequests());
+    TrackDto track = track(created);
+    assertEquals(TrackSurfaceState.READY, track.surfaceState());
+    // The ranges are on the HD axis: they rescale on reading onto the fast track
+    assertEquals(lengths(created).getFirst(), track.surfaces().getLast().to(), 0.2);
+
+    makeDue(created);
+    assertEquals(1, worker.processDue());
+
+    assertEquals(ElevationState.HD, storedState(created));
+    assertFlat(created, FakeRouteDetailsClient.FULL_ELEVATION);
+    assertEquals(PIPELINE, pipeline(created));
+    assertNull(refresh(created));
+    assertTrue(document(created).ok());
+  }
+
+  @Test
+  void aFallbackGivenUp_keepsTheFastProfile_andItsSurface() {
+    surfaceService.setEnabledForTest(true);
+    RouteDto created = createRoute(EXAMPLE);
+    FakeRouteDetailsClient.fallbackAfterError = true;
+    for (int attempt = 1; attempt <= ElevationRefreshService.MAX_ATTEMPTS; attempt++) {
+      makeDue(created);
+      assertEquals(1, worker.processDue());
+    }
+
+    assertEquals(ElevationState.FAST, storedState(created));
+    assertNull(pipeline(created));
+    assertEquals(TrackSurfaceState.READY, track(created).surfaceState());
+  }
+
+  /** A partial answer may be missing the typology too: nothing to keep, the retry settles it. */
+  @Test
+  void aTerrainFallbackOnAPartialAnswer_writesNothing() {
+    surfaceService.setEnabledForTest(true);
+    RouteDto created = createRoute(EXAMPLE);
+    legacyRequest(created);
+    makeDue(created);
+
+    FakeRouteDetailsClient.fallbackAfterError = true;
+    FakeRouteDetailsClient.partial = true;
+    assertEquals(1, worker.processDue());
+
+    assertEquals(1, refresh(created).getAttempts());
+    assertEquals(ElevationState.PENDING, storedState(created));
+    assertNoDocument(created);
+    assertNull(pipeline(created));
+    assertEquals(1, legacyRequests(), "osm-surface may still answer");
+  }
+
+  /** {@code elevation_missing} is permanent: the profile is interpolated, all of it is written. */
+  @Test
+  void aRangeOutOfCoverage_writesProfileSurfaceAndPipeline() {
+    surfaceService.setEnabledForTest(true);
+    RouteDto created = createRoute(EXAMPLE);
+    legacyRequest(created);
+    makeDue(created);
+
+    FakeRouteDetailsClient.partial = true;
+    assertEquals(1, worker.processDue());
+
+    assertEquals(ElevationState.HD, storedState(created));
+    assertEquals(PIPELINE, pipeline(created));
+    assertTrue(document(created).ok());
+    assertEquals(0, legacyRequests());
+    assertNull(refresh(created));
+  }
+
+  @Test
+  void aFullCallThatFails_writesNothing() {
+    surfaceService.setEnabledForTest(true);
+    RouteDto created = createRoute(EXAMPLE);
+    legacyRequest(created);
+    makeDue(created);
+
+    FakeRouteDetailsClient.failFull = true;
+    assertEquals(1, worker.processDue());
+
+    assertEquals(1, refresh(created).getAttempts());
+    assertEquals(ElevationState.PENDING, storedState(created));
+    assertFlat(created, FakeRouteDetailsClient.FAST_ELEVATION);
+    assertNoDocument(created);
+    assertNull(pipeline(created));
+    assertEquals(1, legacyRequests());
+    assertEquals(TrackSurfaceState.PENDING, track(created).surfaceState());
+  }
+
+  @Test
+  void withTheSurfaceOff_theCatchUpLeavesItOut() {
+    RouteDto created = createRoute(EXAMPLE);
+    legacyRequest(created);
+    makeDue(created);
+
+    assertEquals(1, worker.processDue());
+
+    assertEquals(NO_TYPOLOGY, fullCalls().getFirst().sections());
+    assertEquals(ElevationState.HD, storedState(created));
+    assertNoDocument(created);
+    assertEquals(PIPELINE, pipeline(created));
+    assertEquals(1, legacyRequests(), "the queue waits");
+    assertNull(track(created).surfaceState());
+  }
+
+  /** A request carrying a track drawn with a straight end. */
+  private static RouteRequest drawnRequest() {
+    PlannerState state =
+        new PlannerState(
+            1,
+            RouterProfile.BIKE,
+            List.of(),
+            List.of(
+                PlannerStateFixtures.control(4.8300, 45.7600),
+                PlannerStateFixtures.control(4.8340, 45.7620),
+                PlannerStateFixtures.control(4.8400, 45.7650)),
+            List.of(
+                PlannerStateFixtures.routed(new double[][] {{4.8320, 45.7610}}),
+                PlannerStateFixtures.direct()));
+    return new RouteRequest(
+        "Tracé",
+        MediaDto.builder().build(),
+        SurfaceType.ROAD,
+        Visibility.PUBLIC,
+        null,
+        null,
+        state);
+  }
+
+  private RouteDto createDrawnRoute() {
+    dataService.setTeamEnableRoutePlanner(team1, true);
+    queryContext.setUserForTest(user1);
+    return routeService.createRoute(team1Slug, drawnRequest(), null);
+  }
+
+  private static List<String> codes(TrackSurfaceDocument document) {
+    return document.surfaces().stream().map(TrackSurfaceDocument.SurfaceRange::code).toList();
+  }
+
+  @Test
+  void aStraightPiece_isLaidOverTheAnswer() {
+    surfaceService.setEnabledForTest(true);
+    RouteDto created = createDrawnRoute();
+    makeDue(created);
+
+    assertEquals(1, worker.processDue());
+
+    TrackSurfaceDocument doc = document(created);
+    assertEquals(List.of("paved", "off_network"), codes(doc));
+    TrackSurfaceDocument.SurfaceRange off = doc.surfaces().getLast();
+    assertEquals(doc.distance(), off.to(), 1.0);
+    // The joint is at about 40 % of the line
+    double ratio = off.from() / doc.distance();
+    assertTrue(ratio > 0.25 && ratio < 0.6, "ratio " + ratio);
+    assertEquals("off_network", doc.ways().getLast().use());
+    assertEquals("OFF_NETWORK", track(created).surfaces().getLast().surface().name());
+  }
+
+  @Test
+  void twoTracks_getADocumentEach_onTheirOwnLength() {
+    surfaceService.setEnabledForTest(true);
+    RouteDto created = createRoute(TWO_TRACKS);
+    makeDue(created);
+
+    assertEquals(1, worker.processDue());
+
+    List<TrackSurfaceDocument> docs = documents(created);
+    List<Double> lengths = lengths(created);
+    assertEquals(2, docs.size());
+    assertTrue(lengths.get(0) > lengths.get(1) * 2, "their ranges would not fit each other");
+    for (int i = 0; i < 2; i++) {
+      assertTrue(docs.get(i).ok());
+      assertEquals(lengths.get(i), docs.get(i).distance(), 1e-6, "track " + i);
+      assertEquals(lengths.get(i), docs.get(i).surfaces().getLast().to(), 0.06, "track " + i);
+    }
+    assertEquals(PIPELINE, pipeline(created));
+  }
+
+  @Test
+  void aSaveWithAsyncOff_writesTheSurfaceFromItsOwnAnswer_andQueuesNothing() {
+    surfaceService.setEnabledForTest(true);
+    service.setAsyncHdEnabledForTest(false);
+
+    RouteDto created = createRoute(EXAMPLE);
+
+    assertEquals(1, fullCalls().size());
+    assertEquals(ALL_SECTIONS, fullCalls().getFirst().sections());
+    assertEquals(ElevationState.HD, storedState(created));
+    assertEquals(PIPELINE, pipeline(created));
+    assertEquals(TrackSurfaceDocument.VERSION_ROUTE_DETAILS, document(created).version());
+    assertEquals(lengths(created).getFirst(), document(created).distance(), 1e-6);
+    assertEquals(0, legacyRequests());
+    assertEquals(0, refreshCount());
+    assertEquals(TrackSurfaceState.READY, track(created).surfaceState());
+
+    updateRoute(created, "Boucle", TWO_TRACKS);
+
+    List<TrackSurfaceDocument> docs = documents(created);
+    assertEquals(2, docs.size());
+    assertTrue(docs.stream().allMatch(TrackSurfaceDocument::ok));
+    assertEquals(lengths(created).get(1), docs.get(1).distance(), 1e-6);
+    assertEquals(PIPELINE, pipeline(created));
+    assertEquals(0, legacyRequests());
+    assertEquals(0, refreshCount());
+  }
+
+  @Test
+  void aSaveWithAsyncOffThatFallsBack_clearsThePipeline() {
+    surfaceService.setEnabledForTest(true);
+    service.setAsyncHdEnabledForTest(false);
+    RouteDto created = createRoute(EXAMPLE);
+    assertEquals(PIPELINE, pipeline(created));
+
+    FakeRouteDetailsClient.fallbackAfterError = true;
+    updateRoute(created, "Boucle", EXAMPLE);
+
+    assertNull(pipeline(created), "its profile is to recompute");
+    assertTrue(document(created).ok(), "the surface of the answer is good");
+    FakeRouteDetailsClient.fallbackAfterError = false;
+
+    updateRoute(created, "Boucle", EXAMPLE);
+    assertEquals(PIPELINE, pipeline(created));
+
+    FakeRouteDetailsClient.failFull = true;
+    updateRoute(created, "Boucle", TWO_TRACKS);
+
+    assertNull(pipeline(created));
+    assertNoDocument(created);
+    assertEquals(0, legacyRequests(), "no answer, no request");
+    assertEquals(0, refreshCount());
+  }
+
+  @Test
+  void aSaveWithAsyncOff_ofADrawnTrack_laysItsStraightPiecesOver() {
+    surfaceService.setEnabledForTest(true);
+    service.setAsyncHdEnabledForTest(false);
+
+    RouteDto created = createDrawnRoute();
+
+    assertEquals(List.of("paved", "off_network"), codes(document(created)));
+  }
+
+  @Test
+  void anUpdateWithAsyncOff_ofADrawnTrack_laysItsStraightPiecesOver() {
+    surfaceService.setEnabledForTest(true);
+    service.setAsyncHdEnabledForTest(false);
+    dataService.setTeamEnableRoutePlanner(team1, true);
+    queryContext.setUserForTest(user1);
+    RouteDto created = createRoute(EXAMPLE);
+    assertEquals(List.of("paved"), codes(document(created)));
+
+    routeService.updateRoute(team1Slug, created.slug(), drawnRequest(), null);
+
+    assertEquals(List.of("paved", "off_network"), codes(document(created)));
+  }
+
+  @Test
+  void aSaveWithAsyncOff_dropsTheRequestOfTheLegacyQueue() {
+    surfaceService.setEnabledForTest(true);
+    service.setAsyncHdEnabledForTest(false);
+    RouteDto created = createRoute(EXAMPLE);
+    legacyRequest(created);
+
+    updateRoute(created, "Boucle", EXAMPLE);
+
+    assertEquals(0, legacyRequests(), "the worker would replace this document with its own");
+    assertEquals(TrackSurfaceDocument.VERSION_ROUTE_DETAILS, document(created).version());
+  }
+
+  @Test
+  void aSaveWithAsyncOffWithoutAnAnswer_leavesTheRequestToTheLegacyQueue() {
+    surfaceService.setEnabledForTest(true);
+    service.setAsyncHdEnabledForTest(false);
+    RouteDto created = createRoute(EXAMPLE);
+    legacyRequest(created);
+
+    FakeRouteDetailsClient.failFull = true;
+    updateRoute(created, "Boucle", EXAMPLE);
+
+    assertNoDocument(created);
+    assertEquals(1, legacyRequests());
+  }
+
+  @Test
+  void aFastSave_clearsThePipeline_andLeavesTheSurfaceToTheCatchUp() {
+    surfaceService.setEnabledForTest(true);
+    RouteDto created = createRoute(EXAMPLE);
+    makeDue(created);
+    assertEquals(1, worker.processDue());
+    assertEquals(PIPELINE, pipeline(created));
+
+    updateRoute(created, "Boucle", TWO_TRACKS);
+
+    assertNull(pipeline(created), "this profile is no pipeline's HD one");
+    assertEquals(ElevationState.PENDING, storedState(created));
+    assertNoDocument(created);
+    assertEquals(0, legacyRequests());
+    assertEquals(TrackSurfaceState.PENDING, track(created).surfaceState());
+
+    makeDue(created);
+    assertEquals(1, worker.processDue());
+    assertEquals(PIPELINE, pipeline(created));
+  }
+
+  @Test
+  void aNewTrackWhoseCatchUpGivesUp_staysToRecompute() {
+    surfaceService.setEnabledForTest(true);
+    RouteDto created = createRoute(EXAMPLE);
+    makeDue(created);
+    assertEquals(1, worker.processDue());
+    assertEquals(PIPELINE, pipeline(created));
+
+    updateRoute(created, "Boucle", TWO_TRACKS);
+    FakeRouteDetailsClient.failFull = true;
+    for (int attempt = 1; attempt <= ElevationRefreshService.MAX_ATTEMPTS; attempt++) {
+      makeDue(created);
+      assertEquals(1, worker.processDue());
+    }
+
+    assertEquals(ElevationState.FAST, storedState(created));
+    assertNull(pipeline(created));
+  }
+
+  @Test
+  void aTrackSavedDuringTheCompute_getsNeitherTheSurfaceNorThePipeline() throws Exception {
+    surfaceService.setEnabledForTest(true);
+    RouteDto created = createRoute(EXAMPLE);
+    makeDue(created);
+    Claim claim = service.claimNext(Instant.now()).orElseThrow();
+    ElevationRefreshService.Recomputed recomputed = service.compute(claim);
+
+    updateRoute(created, "Boucle", TWO_TRACKS);
+
+    assertEquals(ElevationRefreshService.Outcome.REALIGNED, service.write(claim, recomputed));
+    assertNoDocument(created);
+    assertNull(pipeline(created));
+  }
+
+  private TrackSurfaceDocument aDocument() {
+    return TrackSurfaceDocument.unavailable(
+        TrackSurfaceDocument.VERSION_ROUTE_DETAILS, "no-typology", 1000, "bicycle", Instant.now());
+  }
+
+  @Test
+  void aSurfaceAlone_isNotWritten_onATrackSavedMeanwhile() {
+    surfaceService.setEnabledForTest(true);
+    RouteDto created = createRoute(EXAMPLE);
+    makeDue(created);
+    Claim claim = service.claimNext(Instant.now()).orElseThrow();
+
+    updateRoute(created, "Boucle", EXAMPLE);
+    service.writeSurfaceOnly(claim, List.of(aDocument()));
+
+    assertNoDocument(created);
+  }
+
+  @Test
+  void aSurfaceAlone_isNotWritten_onAnotherNumberOfTracks() {
+    surfaceService.setEnabledForTest(true);
+    RouteDto created = createRoute(EXAMPLE);
+    legacyRequest(created);
+    makeDue(created);
+    Claim claim = service.claimNext(Instant.now()).orElseThrow();
+
+    service.writeSurfaceOnly(claim, List.of(aDocument(), aDocument()));
+
+    assertNoDocument(created);
+    assertEquals(1, legacyRequests());
   }
 }

@@ -1,8 +1,11 @@
 package fr.pedalons.service.route;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import fr.pedalons.common.GeoDistance;
 import fr.pedalons.infrastructure.routedetails.RouteDetailsResponse;
 import fr.pedalons.infrastructure.routedetails.RouteDetailsResponse.OutputPoint;
+import fr.pedalons.infrastructure.routedetails.RouteDetailsResponse.Segment;
+import fr.pedalons.service.surface.RouteSurfaceAnswer;
 import io.github.glandais.elevation.CoordinatesElevation;
 import io.github.glandais.elevation.LatLonElevation;
 import io.github.glandais.engine.path.Path;
@@ -10,6 +13,7 @@ import io.github.glandais.engine.path.PathJvm;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 
 /**
  * The two conversions between a vcyclist {@link Path} and an osm-route-details call, kept pure (no
@@ -164,8 +168,33 @@ final class RouteDetailsTrack {
    * @param climb the service's cumulative gain at each point of {@code path}, from 0
    * @param fallbackAfterErrorKm see {@link #fallbackKm}
    * @param interpolatedM the length of the ranges without elevation, filled by interpolation
+   * @param dM the service's {@code d_m} of each point of {@code path}
+   * @param segments the typology of the answer, null when it was not asked for
+   * @param dataVersions {@code meta.data_versions}
+   * @param complete whether the status of the answer is {@code complete}
    */
-  record Dense(Path path, double[] climb, double fallbackAfterErrorKm, double interpolatedM) {}
+  record Dense(
+      Path path,
+      double[] climb,
+      double fallbackAfterErrorKm,
+      double interpolatedM,
+      double[] dM,
+      @Nullable List<Segment> segments,
+      @Nullable JsonNode dataVersions,
+      boolean complete) {
+
+    /**
+     * The surface of this answer for the points Douglas-Peucker kept: each of them, of index {@code
+     * indices[k]} here and at {@code simplified.distance(k)} once stored, anchors the two axes.
+     */
+    RouteSurfaceAnswer surfaceAnswer(List<Segment> typology, int[] indices, Path simplified) {
+      double[] stored = new double[simplified.getSize()];
+      for (int k = 0; k < stored.length; k++) {
+        stored[k] = simplified.distance(k);
+      }
+      return new RouteSurfaceAnswer(typology, pick(dM, indices), stored, dataVersions, complete);
+    }
+  }
 
   /**
    * The path an answer describes: one point per answer point, in {@code d_m} order — the client's
@@ -252,7 +281,16 @@ final class RouteDetailsTrack {
     double loss = Math.max(0.0, points.get(n - 1).lossCumM() - points.get(0).lossCumM());
     // After fromCoordinates: computeDerivedData clears the reported figures
     reportAscent(path, gain, -loss);
-    return new Dense(path, climb, fallbackKm(response), interpolatedM);
+    RouteDetailsResponse.Meta meta = response.meta();
+    return new Dense(
+        path,
+        climb,
+        fallbackKm(response),
+        interpolatedM,
+        d,
+        response.segments(),
+        meta == null ? null : meta.dataVersions(),
+        RouteDetailsResponse.STATUS_COMPLETE.equals(response.status()));
   }
 
   /** {@code values} at each of {@code indices}: the climb of the points Douglas-Peucker kept. */

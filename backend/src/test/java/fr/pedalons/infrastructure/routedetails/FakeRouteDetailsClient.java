@@ -1,5 +1,7 @@
 package fr.pedalons.infrastructure.routedetails;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import fr.pedalons.common.GeoDistance;
 import fr.pedalons.infrastructure.routedetails.RouteDetailsResponse.Meta;
 import fr.pedalons.infrastructure.routedetails.RouteDetailsResponse.OutputPoint;
@@ -17,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.DoubleFunction;
 import java.util.function.DoubleUnaryOperator;
 import org.jspecify.annotations.Nullable;
 
@@ -27,9 +30,10 @@ import org.jspecify.annotations.Nullable;
  * <p>The terrain is <b>flat</b> and differs by profile — {@link #FAST_ELEVATION} in {@code fast},
  * {@link #FULL_ELEVATION} in {@code full} — so a test can tell which profile computed a profile;
  * the gain is therefore zero, unless {@link #terrain} replaces it. One segment, paved asphalt on
- * the ground, covers the whole route. Every input point comes back once (consecutive duplicates
- * dropped, as the service does), with its own index; no breakpoint is inserted, which only {@code
- * RouteDetailsTrackTest} and the recorded fixture cover.
+ * the ground, covers the whole route, unless {@link #segmentsOf} replaces it; like the service, the
+ * fake answers no {@code segments} when the {@code typology} section is left out. Every input point
+ * comes back once (consecutive duplicates dropped, as the service does), with its own index; no
+ * breakpoint is inserted, which only {@code RouteDetailsTrackTest} and the recorded fixture cover.
  *
  * <p>The switches are static, as the gateway bean holds one instance; a test that sets one calls
  * {@link #reset()} afterwards.
@@ -38,6 +42,10 @@ public class FakeRouteDetailsClient implements RouteDetailsClient {
 
   public static final double FAST_ELEVATION = 100.0;
   public static final double FULL_ELEVATION = 200.0;
+
+  /** {@code meta.data_versions} of every answer. */
+  public static final JsonNode DATA_VERSIONS =
+      JsonNodeFactory.instance.objectNode().put("osm", "2026-11-01");
 
   /** While true a {@code full} call answers a 503 {@code data_unavailable}, as IGN down does. */
   public static volatile boolean failFull = false;
@@ -69,6 +77,13 @@ public class FakeRouteDetailsClient implements RouteDetailsClient {
    */
   public static volatile boolean fallbackAfterError = false;
 
+  /**
+   * When set, the typology of a route of the given length, in place of the paved one; see {@link
+   * #segment}; null answers no {@code segments} at all. {@code from_m} and {@code to_m} start again
+   * in each slice: a test that lowers {@link #limits} keeps the default.
+   */
+  public static volatile @Nullable DoubleFunction<List<Segment>> segmentsOf = null;
+
   /** Every request received, in order. */
   public static final List<RouteDetailsRequest> REQUESTS = new CopyOnWriteArrayList<>();
 
@@ -79,12 +94,32 @@ public class FakeRouteDetailsClient implements RouteDetailsClient {
   public static volatile RouteDetailsCapabilities.Limits limits =
       RouteDetailsCapabilities.FALLBACK_LIMITS;
 
+  /** A stretch of {@link #segmentsOf}; a null {@code surfaceClass} has no surface at all. */
+  public static Segment segment(
+      double from,
+      double to,
+      @Nullable String surfaceClass,
+      @Nullable String detail,
+      @Nullable String wayKind) {
+    return new Segment(
+        from,
+        to,
+        0,
+        0,
+        "ground",
+        null,
+        surfaceClass == null ? null : new Surface(surfaceClass, detail, "tagged"),
+        wayKind,
+        true);
+  }
+
   public static void reset() {
     failFull = false;
     failFast = false;
     terrain = null;
     partial = false;
     fallbackAfterError = false;
+    segmentsOf = null;
     limits = RouteDetailsCapabilities.FALLBACK_LIMITS;
     REQUESTS.clear();
   }
@@ -186,17 +221,6 @@ public class FakeRouteDetailsClient implements RouteDetailsClient {
       warnings.add(new Warning("terrain_fallback", "IGN failed (test)", 0.0, length));
     }
 
-    Segment segment =
-        new Segment(
-            0,
-            length,
-            0,
-            latLon.size() - 1,
-            "ground",
-            null,
-            new Surface("paved", "asphalt", "tagged"),
-            "minor_road",
-            true);
     Summary summary =
         new Summary(
             length,
@@ -207,12 +231,63 @@ public class FakeRouteDetailsClient implements RouteDetailsClient {
             List.of(),
             partial ? Map.of(origin, half, "none", length - half) : Map.of(origin, length));
     return new RouteDetailsResponse(
-        new Meta("1.6", "test", profile.value(), null),
+        new Meta("1.6", "test", profile.value(), DATA_VERSIONS),
         partial ? RouteDetailsResponse.STATUS_PARTIAL : RouteDetailsResponse.STATUS_COMPLETE,
         points,
-        List.of(segment),
+        typology(request, d, length),
         summary,
         new Quality(terrain, warnings, null));
+  }
+
+  /** The {@code segments} of an answer, null when its section was not asked for. */
+  private static @Nullable List<Segment> typology(
+      RouteDetailsRequest request, double[] d, double length) {
+    List<RouteDetailsSection> sections =
+        request.options() == null ? null : request.options().sections();
+    if (sections != null && !sections.contains(RouteDetailsSection.TYPOLOGY)) {
+      return null;
+    }
+    DoubleFunction<List<Segment>> custom = segmentsOf;
+    if (custom == null) {
+      return List.of(
+          new Segment(
+              0,
+              length,
+              0,
+              d.length - 1,
+              "ground",
+              null,
+              new Surface("paved", "asphalt", "tagged"),
+              "minor_road",
+              true));
+    }
+    List<Segment> segments = custom.apply(length);
+    if (segments == null) {
+      return null;
+    }
+    return segments.stream()
+        .map(
+            s ->
+                new Segment(
+                    s.fromM(),
+                    s.toM(),
+                    indexAt(d, s.fromM()),
+                    indexAt(d, s.toM()),
+                    s.structure(),
+                    s.structureSource(),
+                    s.surface(),
+                    s.wayKind(),
+                    s.matched()))
+        .toList();
+  }
+
+  /** The last input point at or before {@code position}. */
+  private static int indexAt(double[] d, double position) {
+    int index = 0;
+    while (index + 1 < d.length && d[index + 1] <= position) {
+      index++;
+    }
+    return index;
   }
 
   @Override

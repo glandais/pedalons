@@ -6,10 +6,12 @@ import static org.geolatte.geom.crs.CoordinateReferenceSystems.WGS84;
 import fr.pedalons.common.GeoPoint;
 import fr.pedalons.common.exception.BusinessException;
 import fr.pedalons.common.exception.PedalonsException;
+import fr.pedalons.common.planner.PlannerState;
 import fr.pedalons.domain.asset.Asset;
 import fr.pedalons.domain.route.ClimbData;
 import fr.pedalons.domain.route.GpxTrack;
 import fr.pedalons.domain.route.Route;
+import fr.pedalons.domain.route.TrackSurfaceDocument;
 import fr.pedalons.domain.team.Team;
 import fr.pedalons.domain.user.User;
 import fr.pedalons.dto.error.ErrorCode;
@@ -22,6 +24,7 @@ import fr.pedalons.infrastructure.exception.NotFoundException;
 import fr.pedalons.infrastructure.gpx.CoursePoint;
 import fr.pedalons.infrastructure.gpx.FitExporter;
 import fr.pedalons.infrastructure.storage.StorageService;
+import fr.pedalons.repository.route.GpxTrackRepository;
 import fr.pedalons.service.asset.AssetService;
 import fr.pedalons.service.route.response.TrackMetadata;
 import fr.pedalons.service.route.waypoint.AnchoredWaypoint;
@@ -33,6 +36,9 @@ import fr.pedalons.service.route.waypoint.WaypointExports;
 import fr.pedalons.service.route.waypoint.WaypointPlan;
 import fr.pedalons.service.route.waypoint.WaypointRows;
 import fr.pedalons.service.security.PedalonsQueryContext;
+import fr.pedalons.service.surface.RouteDetailsSurfaces;
+import fr.pedalons.service.surface.RouteSurfaceAnswer;
+import fr.pedalons.service.surface.SurfaceRefreshService;
 import fr.pedalons.service.thumbnail.MapThumbnailRenderer;
 import fr.pedalons.service.thumbnail.ThumbnailService;
 import io.github.glandais.engine.gpx.GpxDocument;
@@ -54,6 +60,7 @@ import java.nio.charset.MalformedInputException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -91,6 +98,10 @@ public class GpxProcessingService {
   @Inject StorageService storageService;
 
   @Inject PedalonsQueryContext pedalonsContext;
+
+  @Inject SurfaceRefreshService surfaceRefreshService;
+
+  @Inject GpxTrackRepository gpxTrackRepository;
 
   /**
    * Parses a GPX file, refused with {@code GPX_TOO_LONG} when its tracks are longer than {@link
@@ -143,6 +154,8 @@ public class GpxProcessingService {
    * @param line the processed track (resampled, elevations fixed, simplified), 2D
    * @param raw the same track as its source produced it (docs/LEDGER_*.md API-149): the sanitized
    *     path, 2D, neither resampled nor simplified
+   * @param surface what the HD answer says of its surface (docs/LEDGER_*.md API-150), null for a
+   *     FAST track, with the surface switched off, or when the call failed
    */
   public record ComputedTrack(
       String name,
@@ -150,7 +163,8 @@ public class GpxProcessingService {
       LineString<G2D> raw,
       List<GpxTrack.TrackPoint> trackPoints,
       List<ClimbData> climbs,
-      TrackMetadata metadata) {}
+      TrackMetadata metadata,
+      @Nullable RouteSurfaceAnswer surface) {}
 
   /**
    * Outcome of {@link #computeGpx}: the two GPX serializations and the FIT export as temp files,
@@ -302,12 +316,16 @@ public class GpxProcessingService {
     try {
       original = writeToTempFile(GpxWriterJvm.write(raw, name, trackNames), ".gpx");
 
+      // The surface comes with the HD answer: one call, for the profile and the surface
+      boolean withSurface = quality == ElevationQuality.HD && surfaceRefreshService.isEnabled();
       List<Path> processed = new ArrayList<>(raw.size());
+      List<@Nullable RouteSurfaceAnswer> surfaces = new ArrayList<>(raw.size());
       double fallbackKm = 0.0;
       for (int i = 0; i < raw.size(); i++) {
         GpxPipeline.Processed result =
-            pipeline.processReported(raw.get(i), trackNames.get(i), quality);
+            pipeline.processReported(raw.get(i), trackNames.get(i), quality, withSurface);
         processed.add(result.path());
+        surfaces.add(result.surface());
         fallbackKm += result.fallbackAfterErrorKm();
       }
 
@@ -338,7 +356,8 @@ public class GpxProcessingService {
                 toLineString(raw.get(i)),
                 toTrackPoints(path),
                 pipeline.climbs(path),
-                metadata));
+                metadata,
+                surfaces.get(i)));
         tracksMetadata.add(metadata);
       }
 
@@ -372,6 +391,52 @@ public class GpxProcessingService {
       LOG.errorv("GPX computation failed for {0}", name, e);
       throw new BusinessException(ErrorCode.GPX_FAILURE, e);
     }
+  }
+
+  /**
+   * The surface documents of a computed GPX, one per track in computed order, a track without an
+   * answer being a null element; null when no track has one. A track on its own is overlaid with
+   * the straight pieces of {@code state}, which only describes a whole line.
+   *
+   * @param state the planner state of the track computed, null for a file
+   */
+  public @Nullable List<@Nullable TrackSurfaceDocument> surfaceDocuments(
+      ComputedGpx computed, @Nullable PlannerState state) {
+    List<ComputedTrack> tracks = computed.tracks();
+    if (tracks.stream().allMatch(t -> t.surface() == null)) {
+      return null;
+    }
+    PlannerState direct = tracks.size() == 1 ? state : null;
+    Instant now = Instant.now();
+    List<@Nullable TrackSurfaceDocument> documents = new ArrayList<>(tracks.size());
+    for (ComputedTrack track : tracks) {
+      RouteSurfaceAnswer answer = track.surface();
+      if (answer == null) {
+        documents.add(null);
+        continue;
+      }
+      List<double[]> offNetwork =
+          direct == null
+              ? List.of()
+              : surfaceRefreshService.offNetworkRuns(direct, answer.storedLength());
+      documents.add(RouteDetailsSurfaces.document(answer, offNetwork, now));
+    }
+    return documents;
+  }
+
+  /**
+   * The failure of an HD compute that fell back on part of a track. The profile is not kept, but
+   * the typology of an answer whose status is {@code complete} is sound: it comes with the
+   * exception, when every track has one, for the retries not to leave the surface empty.
+   */
+  public ElevationUnavailableException elevationUnavailable(
+      ComputedGpx computed, @Nullable PlannerState state) {
+    boolean complete =
+        computed.tracks().stream().allMatch(t -> t.surface() != null && t.surface().complete());
+    return new ElevationUnavailableException(
+        "HD elevation unavailable for %.2f km of the track"
+            .formatted(computed.fallbackAfterErrorKm()),
+        complete ? surfaceDocuments(computed, state) : null);
   }
 
   /**
@@ -447,11 +512,18 @@ public class GpxProcessingService {
   public record PreparedAsset(
       AssetType type, String fileName, long fileId, AssetService.UploadedFile stored) {}
 
+  /**
+   * @param fallbackAfterErrorKm see {@link ComputedGpx}
+   * @param surfaces the documents the save computed, already set on {@code tracks}: null for a FAST
+   *     save, whose surface comes with the HD catch-up
+   */
   record GpxProcessingResult(
       TrackMetadata metadata,
       List<GpxTrack> tracks,
       List<AnchoredWaypoint> waypoints,
-      List<PreparedAsset> uploadedAssets) {}
+      List<PreparedAsset> uploadedAssets,
+      double fallbackAfterErrorKm,
+      @Nullable List<@Nullable TrackSurfaceDocument> surfaces) {}
 
   /**
    * Phase 1: CPU and S3 work — runs with the caller's transaction SUSPENDED so the DB connection
@@ -482,6 +554,22 @@ public class GpxProcessingService {
   @Transactional(Transactional.TxType.NOT_SUPPORTED)
   public GpxProcessingResult processGpxData(
       Route route, GpxDocument gpx, ElevationQuality quality, WaypointPlan plan) {
+    return processGpxData(route, gpx, quality, plan, null);
+  }
+
+  /**
+   * As {@link #processGpxData(Route, GpxDocument, ElevationQuality, WaypointPlan)}, with the
+   * planner {@code state} of the track saved: an {@code HD} save writes the surface of its answer,
+   * the straight pieces of the state laid over (docs/LEDGER_*.md API-150). Nothing is queued for a
+   * call that failed.
+   */
+  @Transactional(Transactional.TxType.NOT_SUPPORTED)
+  public GpxProcessingResult processGpxData(
+      Route route,
+      GpxDocument gpx,
+      ElevationQuality quality,
+      WaypointPlan plan,
+      @Nullable PlannerState state) {
     User creator = pedalonsContext.getUser();
     Long routeId = route.getId();
     Team team = route.getTeam();
@@ -535,29 +623,36 @@ public class GpxProcessingService {
 
       LOG.infov("GPX processing complete for route {0}", routeId);
 
-      List<GpxTrack> tracks =
-          computed.tracks().stream()
-              .map(
-                  t -> {
-                    GpxTrack track =
-                        new GpxTrack(
-                            creator,
-                            t.name(),
-                            t.line(),
-                            t.trackPoints(),
-                            t.climbs(),
-                            t.metadata().distance(),
-                            t.metadata().elevationGain(),
-                            t.metadata().elevationLoss());
-                    // Every new track row carries its raw line: replacing the track is the only
-                    // way it changes (docs/LEDGER_*.md API-149)
-                    track.setRawGeometry(t.raw());
-                    return track;
-                  })
-              .toList();
+      List<@Nullable TrackSurfaceDocument> surfaces = surfaceDocuments(computed, state);
+      List<GpxTrack> tracks = new ArrayList<>(computed.tracks().size());
+      for (int i = 0; i < computed.tracks().size(); i++) {
+        ComputedTrack t = computed.tracks().get(i);
+        GpxTrack track =
+            new GpxTrack(
+                creator,
+                t.name(),
+                t.line(),
+                t.trackPoints(),
+                t.climbs(),
+                t.metadata().distance(),
+                t.metadata().elevationGain(),
+                t.metadata().elevationLoss());
+        // Every new track row carries its raw line: replacing the track is the only way it changes
+        // (docs/LEDGER_*.md API-149)
+        track.setRawGeometry(t.raw());
+        if (surfaces != null) {
+          track.setSurfaces(surfaces.get(i));
+        }
+        tracks.add(track);
+      }
 
       return new GpxProcessingResult(
-          computed.aggregated(), tracks, computed.waypoints(), uploadedAssets);
+          computed.aggregated(),
+          tracks,
+          computed.waypoints(),
+          uploadedAssets,
+          computed.fallbackAfterErrorKm(),
+          surfaces);
     } catch (PedalonsException e) {
       cleanupUploadedAssets(uploadedAssets, team);
       throw e;
@@ -660,8 +755,25 @@ public class GpxProcessingService {
 
   /** Raised when the HD source could not serve the whole track: the profile would not be HD. */
   public static class ElevationUnavailableException extends RuntimeException {
+
+    private final transient @Nullable List<@Nullable TrackSurfaceDocument> surfaces;
+
     public ElevationUnavailableException(String message) {
+      this(message, null);
+    }
+
+    public ElevationUnavailableException(
+        String message, @Nullable List<@Nullable TrackSurfaceDocument> surfaces) {
       super(message);
+      this.surfaces = surfaces;
+    }
+
+    /**
+     * The surface of the answer, one document per track, to be written anyway: only when every
+     * answer was {@code complete} (plan §4.3). Null otherwise.
+     */
+    public @Nullable List<@Nullable TrackSurfaceDocument> surfaces() {
+      return surfaces;
     }
   }
 
@@ -675,7 +787,8 @@ public class GpxProcessingService {
       PreparedAsset filtered,
       PreparedAsset fit,
       List<AnchoredWaypoint> waypoints,
-      List<WaypointDraft> used) {
+      List<WaypointDraft> used,
+      @Nullable List<@Nullable TrackSurfaceDocument> surfaces) {
 
     /** Without waypoints: the shape this record had before WEB-100 (C3c). */
     public ElevationRecompute(
@@ -685,12 +798,25 @@ public class GpxProcessingService {
         PreparedAsset fit) {
       this(metadata, tracks, filtered, fit, List.of(), List.of());
     }
+
+    /** Without a surface: the shape this record had before docs/LEDGER_*.md API-150. */
+    public ElevationRecompute(
+        TrackMetadata metadata,
+        List<ComputedTrack> tracks,
+        PreparedAsset filtered,
+        PreparedAsset fit,
+        List<AnchoredWaypoint> waypoints,
+        List<WaypointDraft> used) {
+      this(metadata, tracks, filtered, fit, waypoints, used, null);
+    }
   }
 
   /**
    * Phase 1 of the HD catch-up (docs/LEDGER_*.md API-131): recomputes {@code gpx} (the route's
    * stored original, plus its waypoints, which the original does not carry) with the HD source and
    * uploads the new filtered GPX and FIT. No transaction, no entity: like {@link #processGpxData}.
+   * With the surface switched on the same call answers the surface too, carried to {@link
+   * #applyRecompute} in {@link ElevationRecompute#surfaces()} (docs/LEDGER_*.md API-150).
    *
    * <p>The original and the thumbnails are not rewritten: the 2D track is the same. So is the raw
    * line of every track (docs/LEDGER_*.md API-149), which {@link #applyRecompute} leaves alone.
@@ -701,7 +827,7 @@ public class GpxProcessingService {
    */
   @Transactional(Transactional.TxType.NOT_SUPPORTED)
   public ElevationRecompute recomputeHd(Team team, GpxDocument gpx) {
-    return recomputeHd(team, gpx, WaypointPlan.FROM_DOCUMENT);
+    return recomputeHd(team, gpx, WaypointPlan.FROM_DOCUMENT, null);
   }
 
   /**
@@ -711,16 +837,25 @@ public class GpxProcessingService {
    */
   @Transactional(Transactional.TxType.NOT_SUPPORTED)
   public ElevationRecompute recomputeHd(Team team, GpxDocument gpx, List<WaypointDraft> drafts) {
-    return recomputeHd(team, gpx, new WaypointPlan(drafts, false));
+    return recomputeHd(team, gpx, new WaypointPlan(drafts, false), null);
   }
 
-  private ElevationRecompute recomputeHd(Team team, GpxDocument gpx, WaypointPlan plan) {
+  /**
+   * As {@link #recomputeHd(Team, GpxDocument, List)}, the surface overlaid with the straight pieces
+   * of {@code state}, the planner state of the revision computed when there is one.
+   */
+  @Transactional(Transactional.TxType.NOT_SUPPORTED)
+  public ElevationRecompute recomputeHd(
+      Team team, GpxDocument gpx, List<WaypointDraft> drafts, @Nullable PlannerState state) {
+    return recomputeHd(team, gpx, new WaypointPlan(drafts, false), state);
+  }
+
+  private ElevationRecompute recomputeHd(
+      Team team, GpxDocument gpx, WaypointPlan plan, @Nullable PlannerState state) {
     List<PreparedAsset> uploaded = new ArrayList<>(2);
     try (ComputedGpx computed = computeGpx(gpx, ElevationQuality.HD, plan)) {
       if (computed.fallbackAfterErrorKm() > 0) {
-        throw new ElevationUnavailableException(
-            "HD elevation unavailable for %.2f km of the track"
-                .formatted(computed.fallbackAfterErrorKm()));
+        throw elevationUnavailable(computed, state);
       }
       PreparedAsset filtered =
           prepareAndUpload(
@@ -739,7 +874,8 @@ public class GpxProcessingService {
           filtered,
           fit,
           computed.waypoints(),
-          plan.drafts());
+          plan.drafts(),
+          surfaceDocuments(computed, state));
     } catch (Exception e) {
       cleanupUploadedAssets(uploaded, team);
       throw e instanceof RuntimeException re ? re : new BusinessException(ErrorCode.GPX_FAILURE, e);
@@ -756,7 +892,8 @@ public class GpxProcessingService {
    * filtered GPX and FIT rows take the new files (same asset ids, so every URL is stable; new
    * content revision, so GPS sync pushes them again), the existing tracks are updated <b>in
    * place</b> — never a clear and refill of the orphan-removal collection, HHH90032003 — and the
-   * route takes the HD figures.
+   * route takes the HD figures, the version of the pipeline that computed them and the surface of
+   * the same answer, when there is one.
    *
    * @return whether the distance changed, in which case the caller refreshes the ends of the
    *     rides riding the route
@@ -808,6 +945,17 @@ public class GpxProcessingService {
     route.setHilliness(metadata.hilliness());
     route.setElevationLoss(metadata.elevationLoss());
     route.setElevationState(ElevationState.HD);
+    route.setElevationPipeline((short) GpxPipeline.VERSION);
+    List<@Nullable TrackSurfaceDocument> surfaces = recompute.surfaces();
+    if (surfaces != null) {
+      for (int i = 0; i < tracks.size(); i++) {
+        TrackSurfaceDocument document = surfaces.get(i);
+        if (document != null) {
+          // As the surface worker writes it: a lazy column that nothing here has read
+          gpxTrackRepository.updateSurfaces(tracks.get(i).getId(), document);
+        }
+      }
+    }
     return distanceChanged;
   }
 

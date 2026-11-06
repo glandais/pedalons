@@ -8,6 +8,7 @@ import fr.pedalons.domain.route.PlannerStateDocument;
 import fr.pedalons.domain.route.Route;
 import fr.pedalons.domain.route.TrackSurfaceDocument;
 import fr.pedalons.enums.AssetType;
+import fr.pedalons.enums.ElevationState;
 import fr.pedalons.infrastructure.valhalla.Polyline6Decoder;
 import fr.pedalons.repository.asset.AssetRepository;
 import fr.pedalons.repository.gpx.GpxPreviewRepository;
@@ -39,16 +40,26 @@ import org.jboss.logging.Logger;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The surface along the saved tracks (docs/LEDGER_*.md WEB-100, C1b): the request made in the saving
- * transaction, the three phases {@link SurfaceRefreshWorker} runs — <b>claim</b>, <b>compute</b>
- * (no transaction, the call to the provider) and <b>write</b> (a short transaction that checks the
- * track is still the one computed) — and the reads of the API. Modelled on {@code
- * ElevationRefreshService}, whose queue and phases it repeats.
+ * The surface along the saved tracks (docs/LEDGER_*.md WEB-100, C1b): the reads of the API, and the
+ * legacy queue through osm-surface.
+ *
+ * <p>Since docs/LEDGER_*.md API-150 (phase C) a save queues nothing here: the HD catch-up writes the
+ * surface with the profile, from the same answer of osm-route-details ({@code
+ * ElevationRefreshService}), and a track waiting for it reads as pending through its {@code
+ * elevation_state}. What this queue still receives comes from {@code SurfaceBackfill} and from the
+ * previous release during a rolling deploy.
+ *
+ * <p>That queue is the three phases {@link SurfaceRefreshWorker} runs — <b>claim</b>,
+ * <b>compute</b> (no transaction, the call to the provider) and <b>write</b> (a short transaction
+ * that checks the track is still the one computed). Modelled on {@code ElevationRefreshService},
+ * whose queue and phases it repeats.
  *
  * <p>The token of a request is the {@code file_id} of a route's original GPX, the {@code
  * files_revision} of a preview: a result computed for another one is never written, the request is
  * moved to the current one instead. A request that fails five times stays in its table for
- * diagnosis, and no document is written: the API then says nothing, neither pending nor ready.
+ * diagnosis, and no document is written: the API then says nothing, neither pending nor ready. An HD
+ * catch-up that wrote the surface drops the request, under the lock of the target, and the write
+ * here stops on that: an osm-surface document never replaces a newer one.
  *
  * <p>The phases are separate, package-visible methods so a test can change the track between
  * compute and write.
@@ -108,8 +119,8 @@ public class SurfaceRefreshService {
   record Computed(List<@Nullable Long> trackIds, List<TrackSurfaceDocument> documents) {}
 
   /**
-   * Whether a save queues a request and the worker sends it. Off, nothing is asked and nothing
-   * sent (the queue waits).
+   * Whether the surface is computed at all: off, the HD catch-up leaves it out, nothing is asked
+   * of osm-surface and nothing sent (the queue waits).
    */
   @ConfigProperty(name = "pedalons.surface.enabled", defaultValue = "true")
   boolean enabled;
@@ -143,8 +154,9 @@ public class SurfaceRefreshService {
   // ------------------------------------------------------------------ request
 
   /**
-   * Asks for the surface of a route's track, in the saving transaction (so the request exists
-   * exactly when the track does), or postpones the pending one. No-op when the feature is off.
+   * Asks for the surface of a route's track, in the saving transaction, or postpones the pending
+   * one. No-op when the feature is off. No save calls this any more (docs/LEDGER_*.md API-150): it
+   * goes with the legacy queue.
    *
    * @param originalFileId the {@code file_id} of the route's original GPX after the save
    */
@@ -179,10 +191,18 @@ public class SurfaceRefreshService {
 
   // ------------------------------------------------------------------ read
 
-  /** The surfaces of a route's tracks, for its detail: a projection and one existence query. */
-  public RouteSurfaces readRoute(Long routeId) {
-    Map<Long, TrackSurfaceDocument> documents = gpxTrackRepository.findSurfaces(routeId);
-    boolean pending = isEnabled() && refreshRepository.isPendingForRoute(routeId, MAX_ATTEMPTS);
+  /**
+   * The surfaces of a route's tracks, for its detail: a projection and one existence query. Pending
+   * while its HD catch-up, which writes the surface, is to come, or while a request of the legacy
+   * queue is: {@code elevation_state} is {@code PENDING} exactly as long as an HD request is open,
+   * and reading it from the entity costs no query.
+   */
+  public RouteSurfaces readRoute(Route route) {
+    Map<Long, TrackSurfaceDocument> documents = gpxTrackRepository.findSurfaces(route.getId());
+    boolean pending =
+        isEnabled()
+            && (route.getElevationState() == ElevationState.PENDING
+                || refreshRepository.isPendingForRoute(route.getId(), MAX_ATTEMPTS));
     return new RouteSurfaces(documents, pending);
   }
 
@@ -191,10 +211,11 @@ public class SurfaceRefreshService {
    * routes (the page rule). Every requested id has an entry; no pending query when the feature is
    * off.
    */
-  public Map<Long, RouteSurfaces> readRoutes(Collection<Long> routeIds) {
-    if (routeIds.isEmpty()) {
+  public Map<Long, RouteSurfaces> readRoutes(Collection<Route> routes) {
+    if (routes.isEmpty()) {
       return Map.of();
     }
+    List<Long> routeIds = routes.stream().map(Route::getId).toList();
     Map<Long, Map<Long, TrackSurfaceDocument>> documents =
         gpxTrackRepository.findSurfacesByRouteIds(routeIds);
     Set<Long> pending =
@@ -202,16 +223,20 @@ public class SurfaceRefreshService {
             ? refreshRepository.findPendingRouteIds(routeIds, MAX_ATTEMPTS)
             : Collections.emptySet();
     Map<Long, RouteSurfaces> out = new HashMap<>();
-    for (Long id : routeIds) {
-      out.put(id, new RouteSurfaces(documents.getOrDefault(id, Map.of()), pending.contains(id)));
+    for (Route route : routes) {
+      Long id = route.getId();
+      boolean awaited =
+          isEnabled() && route.getElevationState() == ElevationState.PENDING
+              || pending.contains(id);
+      out.put(id, new RouteSurfaces(documents.getOrDefault(id, Map.of()), awaited));
     }
     return out;
   }
 
   /**
    * The surface of each track of a preview, in order: its document when it still describes the
-   * current tracks (same revision, same number of tracks), else nothing, and pending while a
-   * request is queued.
+   * current tracks (same revision, same number of tracks), else nothing, and pending while its HD
+   * catch-up or a request of the legacy queue is to come, as for a route.
    */
   public List<TrackSurfaceReadout> readPreview(GpxPreview preview) {
     int tracks = preview.getTracks().size();
@@ -223,7 +248,9 @@ public class SurfaceRefreshService {
             && document.trackRevision() == revision
             && document.tracks().size() == tracks;
     boolean pending =
-        isEnabled() && refreshRepository.isPendingForPreview(preview.getId(), MAX_ATTEMPTS);
+        isEnabled()
+            && (preview.getElevationState() == ElevationState.PENDING
+                || refreshRepository.isPendingForPreview(preview.getId(), MAX_ATTEMPTS));
     List<TrackSurfaceReadout> out = new ArrayList<>(tracks);
     for (int i = 0; i < tracks; i++) {
       out.add(new TrackSurfaceReadout(readable ? document.tracks().get(i) : null, pending));
@@ -232,11 +259,22 @@ public class SurfaceRefreshService {
   }
 
   /**
-   * What a preview that was just saved shows: a computation to come for each track, none read
-   * (the entity is detached, and the request is made but not due yet).
+   * What a preview that was just saved shows, with no query: the document of a track when the save
+   * computed one, and a computation to come while its HD catch-up is.
+   *
+   * @param docs one per track, computed by the save; null when it computed none
+   * @param state the elevation state of the save
    */
-  public List<TrackSurfaceReadout> pendingReadouts(int tracks) {
-    return Collections.nCopies(tracks, new TrackSurfaceReadout(null, isEnabled()));
+  public List<TrackSurfaceReadout> savedReadouts(
+      @Nullable List<@Nullable TrackSurfaceDocument> docs,
+      int tracks,
+      @Nullable ElevationState state) {
+    boolean pending = isEnabled() && state == ElevationState.PENDING;
+    List<TrackSurfaceReadout> out = new ArrayList<>(tracks);
+    for (int i = 0; i < tracks; i++) {
+      out.add(new TrackSurfaceReadout(docs == null ? null : docs.get(i), pending));
+    }
+    return out;
   }
 
   // ------------------------------------------------------------------ claim
@@ -316,7 +354,8 @@ public class SurfaceRefreshService {
    * Phase 3, a short transaction: locks the route and checks its original is still the revision
    * that was computed, and its tracks the ones computed. If not (saved again during the compute,
    * or by the previous release) nothing is written and the request is moved to the current
-   * revision.
+   * revision. The request is deleted before anything is written: when it is gone, an HD catch-up
+   * took it under this same lock with a newer document, which this one must not replace.
    */
   Outcome writeRoute(Claim claim, Computed computed) {
     return tx(
@@ -340,10 +379,12 @@ public class SurfaceRefreshService {
             realign(claim.id(), current);
             return Outcome.REALIGNED;
           }
+          if (!refreshRepository.deleteIfRevision(claim.id(), claim.sourceRevision())) {
+            return Outcome.GONE;
+          }
           for (int i = 0; i < trackIds.size(); i++) {
             gpxTrackRepository.updateSurfaces(trackIds.get(i), computed.documents().get(i));
           }
-          refreshRepository.deleteIfRevision(claim.id(), claim.sourceRevision());
           return Outcome.REFRESHED;
         });
   }
@@ -445,10 +486,12 @@ public class SurfaceRefreshService {
             realign(claim.id(), current);
             return Outcome.REALIGNED;
           }
+          if (!refreshRepository.deleteIfRevision(claim.id(), claim.sourceRevision())) {
+            return Outcome.GONE;
+          }
           preview.setSurfaces(
               new PreviewSurfacesDocument(
                   claim.sourceRevision(), new ArrayList<>(computed.documents())));
-          refreshRepository.deleteIfRevision(claim.id(), claim.sourceRevision());
           return Outcome.REFRESHED;
         });
   }
@@ -467,8 +510,21 @@ public class SurfaceRefreshService {
     if (state == null) {
       return new TrackInput(trackId, points, raw, TraceSurfaceComputer.costingOf(null), List.of());
     }
-    DirectRuns direct = plannerStates.directRuns(state);
     double stored = points.isEmpty() ? 0 : points.getLast().dist();
+    return new TrackInput(
+        trackId,
+        points,
+        raw,
+        TraceSurfaceComputer.costingOf(state.profile()),
+        offNetworkRuns(state, stored));
+  }
+
+  /**
+   * The straight pieces of a planner state, {@code [from, to]} metres along a stored track of
+   * length {@code stored}.
+   */
+  public List<double[]> offNetworkRuns(PlannerState state, double stored) {
+    DirectRuns direct = plannerStates.directRuns(state);
     List<double[]> runs = new ArrayList<>(direct.runs().size());
     if (direct.length() > 0 && stored > 0) {
       // The pipeline resamples and simplifies the derived line: the lengths differ by a few
@@ -479,8 +535,7 @@ public class SurfaceRefreshService {
         runs.add(new double[] {run[0] * scale, run[1] * scale});
       }
     }
-    return new TrackInput(
-        trackId, points, raw, TraceSurfaceComputer.costingOf(state.profile()), runs);
+    return runs;
   }
 
   /** Phase 2, no transaction: the calls to the provider. */

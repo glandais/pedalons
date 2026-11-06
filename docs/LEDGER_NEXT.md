@@ -494,8 +494,9 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
       seul service, osm-route-details : mode `fast` pour le planificateur et l'enregistrement, un
       appel `full` qui rend profil HD **et** revêtement pour le rattrapage, une seule file ; tous les
       parcours existants recalculés en HD (décisions du 6 novembre 2026). Service en api 1.6
-      (`surface.detail`, image 1.6.0). Phases A et B livrées : `GpxPipeline` lit ses altitudes dans
-      le service (`VERSION = 3`) ; restent le revêtement, le recalcul du parc et le ménage. Plan :
+      (`surface.detail`, image 1.6.0). Phases A, B et C livrées : `GpxPipeline` lit ses altitudes
+      dans le service (`VERSION = 3`), le rattrapage HD écrit profil et revêtement ensemble
+      (`V83`) ; restent le recalcul du parc et le ménage. Plan :
       [2026-11-05-osm-route-details](plans/2026-11-05-osm-route-details.md).
 
 - [ ] `API-148` **Retirer les rustines de sécurité des dépendances une fois sur Quarkus 4 (S)** —

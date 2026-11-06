@@ -35,10 +35,12 @@ import fr.pedalons.infrastructure.gpx.CoursePoint;
 import fr.pedalons.infrastructure.imgproxy.ImgProxyService;
 import fr.pedalons.infrastructure.storage.StorageService;
 import fr.pedalons.repository.gpx.GpxPreviewRepository;
+import fr.pedalons.repository.route.SurfaceRefreshRepository;
 import fr.pedalons.service.asset.AssetService;
 import fr.pedalons.service.elevation.ElevationRefreshService;
 import fr.pedalons.service.gps.GpsService;
 import fr.pedalons.service.route.GpxLimits;
+import fr.pedalons.service.route.GpxPipeline;
 import fr.pedalons.service.route.GpxProcessingService;
 import fr.pedalons.service.route.GpxProcessingService.ComputedGpx;
 import fr.pedalons.service.route.RouteService;
@@ -155,6 +157,8 @@ public class GpxPreviewService {
 
   @Inject SurfaceRefreshService surfaceRefreshService;
 
+  @Inject SurfaceRefreshRepository surfaceRefreshRepository;
+
   /**
    * Parses and analyses an uploaded GPX file, stores it, and returns the persisted preview.
    *
@@ -212,6 +216,8 @@ public class GpxPreviewService {
     List<String> rawLines;
     List<PreviewWaypointDetail> waypoints;
     TrackMetadata metadata;
+    List<@Nullable TrackSurfaceDocument> surfaces;
+    double fallbackKm;
     try (ComputedGpx computed = gpxProcessingService.computeGpx(gpx, quality, plan)) {
       uploadTrackFiles(
           publicId, revision, computed.originalGpx(), computed.filteredGpx(), computed.fitFile());
@@ -220,6 +226,8 @@ public class GpxPreviewService {
       rawLines = toRawLines(computed);
       waypoints = PreviewWaypoints.toDetails(computed.waypoints());
       metadata = computed.aggregated();
+      surfaces = gpxProcessingService.surfaceDocuments(computed, state);
+      fallbackKm = computed.fallbackAfterErrorKm();
     } catch (IOException e) {
       deleteFiles(publicId, revision);
       throw new BusinessException(ErrorCode.GPX_FAILURE, e);
@@ -247,8 +255,12 @@ public class GpxPreviewService {
     preview.setDrawn(drawn);
     preview.setFilesRevision(revision);
     preview.setElevationState(stateOf(quality));
+    preview.setElevationPipeline(pipelineOf(quality, fallbackKm));
     if (state != null) {
       preview.setPlannerState(new PlannerStateDocument(revision, state));
+    }
+    if (surfaces != null) {
+      preview.setSurfaces(new PreviewSurfacesDocument(revision, surfaces));
     }
 
     try {
@@ -256,14 +268,11 @@ public class GpxPreviewService {
           .run(
               () -> {
                 gpxPreviewRepository.persist(preview);
-                if (quality == ElevationQuality.FAST || surfaceRefreshService.isEnabled()) {
-                  // The row first: the requests point at it
-                  gpxPreviewRepository.flush();
-                }
                 if (quality == ElevationQuality.FAST) {
+                  // The row first: the request points at it
+                  gpxPreviewRepository.flush();
                   elevationRefreshService.requestPreview(preview.getId(), revision);
                 }
-                surfaceRefreshService.requestPreview(preview.getId(), revision);
               });
     } catch (RuntimeException e) {
       deleteFiles(publicId, revision);
@@ -490,6 +499,8 @@ public class GpxPreviewService {
     List<String> rawLines;
     List<PreviewWaypointDetail> placed;
     TrackMetadata metadata;
+    List<@Nullable TrackSurfaceDocument> surfaces;
+    double fallbackKm;
     try (ComputedGpx computed = gpxProcessingService.computeGpx(gpx, quality, plan)) {
       uploadTrackFiles(
           pid, revision, computed.originalGpx(), computed.filteredGpx(), computed.fitFile());
@@ -497,6 +508,8 @@ public class GpxPreviewService {
       rawLines = toRawLines(computed);
       placed = PreviewWaypoints.toDetails(computed.waypoints());
       metadata = computed.aggregated();
+      surfaces = gpxProcessingService.surfaceDocuments(computed, newState);
+      fallbackKm = computed.fallbackAfterErrorKm();
     } catch (IOException e) {
       deleteTrackFiles(pid, revision);
       throw new BusinessException(ErrorCode.GPX_FAILURE, e);
@@ -508,6 +521,8 @@ public class GpxPreviewService {
     boolean hasThumbnail = renderAndUploadThumbnail(pid, tracks);
     boolean newDrawn = drawn;
     PlannerState stateToStore = newState;
+    List<@Nullable TrackSurfaceDocument> computedSurfaces = surfaces;
+    double computedFallbackKm = fallbackKm;
 
     return QuarkusTransaction.requiringNew()
         .call(
@@ -521,6 +536,7 @@ public class GpxPreviewService {
               managed.setName(truncateName(name));
               managed.setFilesRevision(revision);
               managed.setElevationState(stateOf(quality));
+              managed.setElevationPipeline(pipelineOf(quality, computedFallbackKm));
               managed.setDistance(metadata.distance());
               managed.setElevationGain(metadata.elevationGain());
               managed.setElevationLoss(metadata.elevationLoss());
@@ -535,17 +551,25 @@ public class GpxPreviewService {
               // Written or cleared with the track it describes, never left over a new one
               managed.setPlannerState(
                   stateToStore == null ? null : new PlannerStateDocument(revision, stateToStore));
-              // The surface of the old track left with it (WEB-100, C1b)
-              managed.setSurfaces(null);
-              if (quality == ElevationQuality.FAST || surfaceRefreshService.isEnabled()) {
-                gpxPreviewRepository.flush();
+              // The surface of the old track left with it (WEB-100, C1b); an HD save has its own,
+              // a fast one waits for the catch-up, which writes it (docs/LEDGER_*.md API-150)
+              managed.setSurfaces(
+                  computedSurfaces == null
+                      ? null
+                      : new PreviewSurfacesDocument(revision, computedSurfaces));
+              if (computedSurfaces != null) {
+                // Or the legacy worker would realign it on this track and replace this document
+                surfaceRefreshRepository.dropForPreview(previewId);
               }
               if (quality == ElevationQuality.FAST) {
+                gpxPreviewRepository.flush();
                 elevationRefreshService.requestPreview(previewId, revision);
               }
-              surfaceRefreshService.requestPreview(previewId, revision);
               deleteTrackFilesAfterCommit(pid, previous);
-              return toDto(managed, surfaceRefreshService.pendingReadouts(tracks.size()));
+              return toDto(
+                  managed,
+                  surfaceRefreshService.savedReadouts(
+                      computedSurfaces, tracks.size(), stateOf(quality)));
             });
   }
 
@@ -714,11 +738,21 @@ public class GpxPreviewService {
   }
 
   /**
-   * The DTO of a preview just saved, whose entity is detached: no read of its surface, which is
-   * queued and not computed yet (docs/LEDGER_*.md WEB-100, C1b).
+   * The DTO of a preview just saved, whose entity is detached, so its lazy surface stays unread: a
+   * fast save has none, it comes with the catch-up (docs/LEDGER_*.md API-150), and only an HD save
+   * has anything to read back, in a query of its own.
    */
   private GpxPreviewDto toDtoJustSaved(GpxPreview preview) {
-    return toDto(preview, surfaceRefreshService.pendingReadouts(preview.getTracks().size()));
+    ElevationState state = preview.getElevationState();
+    PreviewSurfacesDocument stored =
+        state == ElevationState.HD
+            ? QuarkusTransaction.requiringNew()
+                .call(() -> gpxPreviewRepository.findSurfaces(preview.getId()))
+            : null;
+    return toDto(
+        preview,
+        surfaceRefreshService.savedReadouts(
+            stored == null ? null : stored.tracks(), preview.getTracks().size(), state));
   }
 
   /** Sends a preview's filtered GPX to one of the current user's connected GPS services. */
@@ -1001,6 +1035,15 @@ public class GpxPreviewService {
         }
       }
     }
+  }
+
+  /**
+   * The pipeline a save records: none for a fast profile, which the catch-up stamps when it
+   * replaces it, nor for an HD one that fell back on part of the track; both stay to recompute
+   * (docs/LEDGER_*.md API-150).
+   */
+  private static @Nullable Short pipelineOf(ElevationQuality quality, double fallbackKm) {
+    return quality == ElevationQuality.HD && fallbackKm == 0 ? (short) GpxPipeline.VERSION : null;
   }
 
   /** The state a save computed with {@code quality} leaves the preview in. */

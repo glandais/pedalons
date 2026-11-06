@@ -116,6 +116,13 @@ public class GpxPreview {
   private @Nullable ElevationState elevationState;
 
   /**
+   * The version of {@code GpxPipeline} that computed the stored HD profile, as {@code
+   * Route#elevationPipeline} (docs/LEDGER_*.md API-150).
+   */
+  @Column(name = "elevation_pipeline")
+  private @Nullable Short elevationPipeline;
+
+  /**
    * Token of the track files ({@code gpx-previews/{publicId}/{filesRevision}/…}); null is the flat
    * layout of the existing previews. Every save of the track writes a new one; the HD catch-up (docs/LEDGER_*.md API-131) switches it.
    */
