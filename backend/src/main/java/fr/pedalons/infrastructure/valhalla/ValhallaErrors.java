@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 
-/** Reading the errors of the Valhalla protocol, as served by Stadia Maps and osm-surface. */
+/** Reading the errors of the Valhalla protocol, as served by Stadia Maps. */
 public final class ValhallaErrors {
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();

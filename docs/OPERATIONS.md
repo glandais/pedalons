@@ -14,12 +14,11 @@ reconciles: a `deploy` converges the running services onto the file, and a task 
 rescheduled rather than left for a `restart:` policy.
 
 `docker-compose.shared.yml` holds what carries no application data: `tileserver`
-(server-side raster rendering, ~1.8 GB resident) and `osm-surface` (the former source of the surface
-along saved tracks, kept for a release older than ledger `API-150` phase C and for what is left in
-its queue; see [Surface along saved tracks](#surface-along-saved-tracks-osm-surface)),
-plus `osm-route-details` (elevation profile and surface of routes): the
-backends read their elevations there, `fast` for a save or the planner, `full` for the HD catch-up,
-which also writes the surface (ledger `API-150` phases B to D, `OPS-58`). **Deploy it, and check that an environment's network reaches it,
+(server-side raster rendering, ~1.8 GB resident), `osm-route-details` (elevation profile and surface
+of routes: the backends read their elevations there, `fast` for a save or the planner, `full` for the
+HD catch-up, which also writes the surface; ledger `API-150`, `OPS-58`) and, until phase F of that
+ledger entry, `osm-surface`, which only a release older than phase E still calls (see
+[osm-surface, until phase F](#osm-surface-until-phase-f)). **Deploy it, and check that an environment's network reaches it,
 before a backend that calls it**: without it nothing fails visibly, but every save keeps the file's
 elevations (a planner route gets 0 m and no D+) and every HD catch-up gives up after five attempts,
 with no surface.
@@ -30,7 +29,8 @@ bought from Stadia Maps, with a key per environment, and so is geocoding (see
 `docker-compose.yml` holds everything that must stay isolated per environment: traefik, backend,
 frontend, postgres, minio, imgproxy and varnish — and goatcounter, which runs in production only
 (see [Web analytics](#web-analytics-goatcounter)). Its `backend` also joins `pedalons-shared` to reach
-the shared services, by their service names `tileserver`, `osm-surface` and `osm-route-details`.
+the shared services, by their service names `tileserver` and `osm-route-details` (and `osm-surface`,
+for a release older than ledger `API-150` phase E).
 
 Each environment's `.env` differs from a workstation's in five keys only — see
 [The `.env`, on a workstation and on a server](../README.md#the-env-on-a-workstation-and-on-a-server).
@@ -126,7 +126,7 @@ limit is killed by the kernel (`OOMKilled` in `docker inspect`, `task: non-zero 
 | traefik | 256M | |
 | goatcounter | 128M | production only; 36 to 40 MiB at rest, the rest for CSV exports and the dashboard |
 | tileserver (shared) | 3G | ~1.8 GB resident |
-| osm-surface (shared) | 768M | `MEMORY_CACHE_MB=128` of decoded tiles (weighed by their points only, so more in fact) plus the matchings in flight, `MALLOC_ARENA_MAX=2`; at the default 256 it sat at ~715 MB after a full recompute (2026-11-03) |
+| osm-surface (shared, until ledger `API-150` phase F) | 768M | `MEMORY_CACHE_MB=128` of decoded tiles (weighed by their points only, so more in fact) plus the matchings in flight, `MALLOC_ARENA_MAX=2`; at the default 256 it sat at ~715 MB after a full recompute (2026-11-03) |
 | osm-route-details (shared) | 1G | ledger `OPS-58`: its two tile caches at 256 MB each (512 by default) plus the requests in flight, `MALLOC_ARENA_MAX=2`; to be measured |
 | monitoring stack | 2G in all | see [Monitoring](#monitoring); ~1 GB resident |
 
@@ -146,9 +146,8 @@ docker stats --no-stream        # usage against each limit
 **What stays in the heap once warm** (measured on 2026-10-31, ledger `OPS-55`): about 215 MB for
 the world time-zone index (timeshape, loaded at the first ride whose time zone it resolves; kept
 world-wide on purpose). The decoded elevation tiles the GPX pipeline used to keep per DEM tier left
-the heap with ledger `API-150` phase B: it asks osm-route-details instead, and
-`pedalons.elevation.tile-cache-size` no longer has any effect on it (the setting and `DemTileStore`
-go in phase E). These figures have not been measured again since. The old gen is two thirds of the
+the heap with ledger `API-150` phase B: it asks osm-route-details instead, and phase E
+removed `pedalons.elevation.tile-cache-size` with the code behind it. These figures have not been measured again since. The old gen is two thirds of the
 heap: with a 2G limit, about 820 MB.
 
 **A heap OutOfMemoryError leaves a dump** in the environment's `data/cache/java_pid1.hprof`
@@ -163,8 +162,8 @@ resident memory once the cache fills; keep `VARNISH_MEMORY` about half as much a
 
 **What a host must hold**: these are ceilings, not usage — but a host should hold the sum of them.
 Per environment, 7.3 GB (7.4 GB in production, with goatcounter), plus 2 GB during a rolling update (a second backend and frontend run
-beside the old ones, see above); on top, the shared stack's tileserver (3 GB) and osm-surface
-(0.75 GB), and the monitoring stack (2 GB). Two environments with the defaults come to about 24 GB with the host's own share
+beside the old ones, see above); on top, the shared stack's tileserver (3 GB), osm-route-details
+(1 GB) and, until phase F, osm-surface (0.75 GB), and the monitoring stack (2 GB). Two environments with the defaults come to about 25 GB with the host's own share
 (Caddy, Docker, the OS): a 32 GB host holds them with room to spare — since 2026-10-17 no routing
 tiles compete for its page cache (`OPS-48`). A staging environment can take less through its own `.env` (`BACKEND_MEMORY=1G`,
 `VARNISH_SIZE=256M`, `VARNISH_MEMORY=512M`); prod, more `BACKEND_MEMORY` if `docker stats` shows the
@@ -233,8 +232,7 @@ Two services stay per-environment on purpose, even though they look shareable:
   cannot serve two MinIO backends. They become shareable if and when MinIO is shared.
 - **the vcyclist cache** (`DATA_CACHE_PATH`) — per environment by choice, not by necessity. Two
   backends can share it safely (two of the same environment already do during a start-first
-  update): map tiles (vcyclist ≥ 5.1.1) and, until ledger `API-150` phase E removes them, the elevation
-  tiles nothing reads any more (`DemTileFetcher`) are both written to a
+  update): map tiles (vcyclist ≥ 5.1.1) are written to a
   temp file then renamed into place, and only once they decode, so a reader never sees a partial
   file and an unreadable cached tile is fetched again (ledger `OPS-10`). Sharing it across
   environments would save the downloads; it is not done. The directory must stay on one filesystem
@@ -717,70 +715,32 @@ order, because step 2's old backend still talks to `valhalla` until it is replac
    from `~/shared/.env`, and delete the cold copy `OPS-9` had sent to the backup host
    (`pedalons-shared/` there).
 
-### Surface along saved tracks (osm-surface)
+### Elevation and surface along saved tracks
 
-**Since ledger `API-150` phase C a save no longer asks osm-surface for anything.** The surface comes
-from osm-route-details: the HD catch-up (`ElevationRefreshWorker`) makes one `full` call, with all
-its sections, and writes the profile and the surface in the same write, as a document of version 2 in
-`gpx_tracks.surfaces` / `gpx_previews.surfaces`, along with `elevation_pipeline` (unless the surface
-is off, see below). It drops any
-`surface_refresh` row of that target. With `pedalons.elevation.async-hd.enabled=false` the same call
-runs during the save and nothing is queued; if it fails, the track simply has no surface yet.
+Both come from **osm-route-details** (ledger `API-150`, `OPS-58`), the one source: the backend reads
+no DEM tile any more and has no second provider. It reaches the service at
+`http://osm-route-details:8080` over `pedalons-shared` (`OSM_ROUTE_DETAILS_URL` overrides it; `%dev`:
+`http://localhost:18003`, published by `docker-compose.local.yml`). A save or the planner makes a
+`fast` call, for the elevations; if it fails, the track keeps the elevations of its file
+(`elevationFallback`) and the save goes through.
 
-- **Waiting**: the API says `PENDING` while the target's `elevation_state` is `PENDING`, or while a
-  `surface_refresh` row is still to be served.
+The HD catch-up (`ElevationRefreshWorker`) makes one `full` call, with all its sections, and writes
+the profile and the surface in the same write, as a document of version 2 in `gpx_tracks.surfaces` /
+`gpx_previews.surfaces`, along with `elevation_pipeline` (unless the surface is off, see below). With
+`pedalons.elevation.async-hd.enabled=false` the same call runs during the save and nothing is queued;
+if it fails, the track simply has no surface yet. A document of version 1, computed before, is read
+exactly like a version 2 until the [catch-up of the fleet](#the-catch-up-of-the-fleet) replaces it.
+
+- **Waiting**: the API says `PENDING` while the target's `elevation_state` is `PENDING`, and for no
+  other reason.
 - **IGN down**: in `full` a source outage is a 503, so the surface waits with the profile, through
-  the five attempts of the catch-up; after those there is no document, and the API says nothing. That
-  dependency is new: osm-surface did not need the IGN.
+  the five attempts of the catch-up; after those there is no document, and the API says nothing.
 - **A `complete` answer with a Mapterhorn fallback** keeps the FAST profile and retries, but its
   surface is written anyway, on its own, at each attempt. A `partial` answer with a fallback writes
   nothing; a `partial` one without (data missing for good) is written, stretches without a typology as `UNKNOWN`.
 
-**Since phase D nothing queues `surface_refresh` any more: what still runs, until phase E, is a
-drain**, by the service described below. `SurfaceRefreshWorker` serves what a
-previous release left in the queue (a document of version 1, read exactly like a version 2; a later
-HD catch-up replaces it); with an empty queue it reads the table and calls nothing, and osm-surface
-receives nothing. During a rolling deploy the previous backend may still queue rows and claim
-elevation requests, whatever their `backfill` flag. A release older than phase C writes HD with no
-surface and leaves `elevation_pipeline` null: that target is a candidate of the
-[catch-up of the fleet](#the-catch-up-of-the-fleet). Keep osm-surface in the shared stack until no
-backend calls it: every environment on phase D or later, and no row left to serve (ledger `OPS-58`):
-```sql
-select count(*)
-  from surface_refresh e
-  left join team_entities t on t.id = e.route_id
-  left join teams tm on tm.id = t.team_id
- where e.attempts < 5
-   and (e.preview_id is not null or (not t.deleted and not tm.deleted));
-```
-The table itself never empties: given-up rows stay, and so do those of a deleted route or team, which
-the worker does not take and this count leaves out. A row still to serve when the service goes
-fails, ends up given up, and the API stops saying `PENDING` for it.
-
-The **service** (ledger `WEB-100`, C1b) is **osm-surface**
-(`ghcr.io/glandais/osm-surface`, source at github.com/glandais/osm-surface), a service of the
-**shared stack** since 2026-10-31 (ledger `OPS-57`; Stadia Maps' trace attributes before). It
-answers `POST /trace_attributes/v1` exactly as Stadia did — Valhalla's `map_snap` rebuilt on the
-VersaTiles OpenStreetMap vector tiles (`tiles.versatiles.org`, zoom 14), which it downloads on demand
-and caches in its volume (`pedalons-shared_osm-surface-data`, at most `CACHE_MAX_GB=5`; regenerable,
-not backed up). **No key, no credit**, and no track leaves our servers any more: only tile
-coordinates go to VersaTiles. Every backend reaches it at `http://osm-surface:8002` over
-`pedalons-shared` (`OSM_SURFACE_URL` overrides it; `%dev`: `http://localhost:18002`, published by
-`docker-compose.local.yml`). Its agreement with Stadia is 86 to 94 % per surface class, 98 to 99 %
-on paved / unpaved (its README, *Évaluation*); the surfaces Stadia already computed stay as they are.
-
-`SurfaceRefreshWorker` (every 30 s, never during an HTTP request) sends the stored track of a request
-in `surface_refresh` once it has been left alone for 90 s (never beyond 10 min), in `map_snap`
-mode, and stores the surface as ranges in `gpx_tracks.surfaces` / `gpx_previews.surfaces`. If an HD
-catch-up wrote the surface in the meantime, the request is gone and the result is dropped. 50 to
-100 ms a request with the tiles cached, a few seconds for a 190 km slice in a region never seen. The
-queue is `surface_refresh`; a request that failed five times (2 min, 10 min, 1 h, 6 h) stays in the
-table for diagnosis, untouched, and the API then says nothing for that track. osm-surface answers a
-**503** when it cannot load the tiles (VersaTiles unreachable, a 404, 11 s spent): a transient
-failure, retried.
-
-`SURFACE_ENABLED=false` stops the worker's calls, the queue waits; the HD catch-up then asks only
-`elevation` and `summary` and writes no surface, the documents already stored are still served, and
+`SURFACE_ENABLED=false`: the HD catch-up asks only `elevation` and `summary` and writes no surface,
+the documents already stored are still served, and
 nothing reads as pending. A track recomputed that way is **not stamped**: `elevation_pipeline` stays
 null, which means "to recompute", so it is picked up by the catch-up of the fleet once the switch is
 back on, under its cap and with no action on your part. The e2e stack has it off (`.env.e2e`):
@@ -795,6 +755,30 @@ update team_entities set elevation_pipeline = null
    and id in (select route_id from gpx_tracks where surfaces is null);
 ```
 
+**The DEM tiles left on disk.** Since phase E the backend reads none: `mapterhorn`,
+`ign-lidar-hd-mnt` and `ign-lidar-hd-mns` in each environment's `data/cache` (about 7 GB in
+production) serve nothing, and only a release older than phase B would read them. Regenerable, so
+remove them by hand once no rollback to such a release is planned, from a root context, in `~/prod`
+and `~/staging`. The map tiles of the thumbnails (`tileserver_8080/`, the rest of `data/cache`) stay.
+
+```bash
+docker run --rm -v "$PWD/data/cache:/d" alpine rm -rf /d/mapterhorn /d/ign-lidar-hd-mnt /d/ign-lidar-hd-mns
+```
+
+#### osm-surface, until phase F
+
+The backend has no client for **osm-surface** and no surface queue any more since ledger `API-150`
+phase E. **The service stays in the shared stack until prod has moved**: the shared stack serves
+every environment, a release older than phase E still calls it, and staging goes first. It leaves in
+phase F, as a step of its own (ledger `OPS-58`), once no environment runs such a release and no
+rollback to one is planned. How many rows `surface_refresh` holds no longer decides it: a backend on
+phase E ignores that table.
+
+`ghcr.io/glandais/osm-surface` (source at github.com/glandais/osm-surface) answers
+`POST /trace_attributes/v1` at `http://osm-surface:8002`, from the VersaTiles OpenStreetMap vector
+tiles it caches in its volume (`pedalons-shared_osm-surface-data`, at most `CACHE_MAX_GB=5`;
+regenerable, not backed up).
+
 ```bash
 # Is it up, and how old are its tiles? (distroless image: no shell, so from the backend container)
 docker exec "$(docker ps -qf name=${ENV_NAME}_backend)" curl -s http://osm-surface:8002/health
@@ -803,12 +787,38 @@ docker service logs pedalons-shared_osm-surface --since 1h
 
 **Upgrading it**: change the tag in `docker-compose.shared.yml`, then
 `cd ~/shared && git pull && scripts/deploy.sh --shared`. Requests in flight during the swap fail
-as unreachable and are retried two minutes later.
+as unreachable, and the release that sent them retries two minutes later.
 
-**Switching a host from Stadia** (once): deploy the shared stack **first**
-(`cd ~/shared && git pull && scripts/deploy.sh --shared`, which starts `osm-surface`), then the
-environments. A backend deployed before would fail its surface requests as unreachable until the
-service exists — retried, but five failures in about 7 h give a track up.
+**`surface_refresh` stays until phase F too**, with no migration, and what is left in it is inert:
+
+- A release older than phase E may still queue and claim rows during a rolling deploy, or again after
+  a rollback, whatever the state of the table: its indexes stay for it.
+- A backend on phase E never serves a row, never reads one as pending and never counts an attempt. It
+  only deletes the row of a target whose surface it writes, so that a previous release does not claim
+  it later and lay a version 1 document over the version 2. That cannot stop a compute already in
+  flight on such a release: the version 1 document then stays on a track stamped current, reads the
+  same, and nothing recomputes it on its own.
+- During a rolling deploy the previous backend may also claim elevation requests, whatever their
+  `backfill` flag. A release older than phase C writes HD with no surface and leaves
+  `elevation_pipeline` null: that target is a candidate of the
+  [catch-up of the fleet](#the-catch-up-of-the-fleet).
+- A row that no release serves any more leaves its track without a surface document, and the API says
+  nothing about it, until the catch-up of the fleet reaches it: its `elevation_pipeline` is null, so
+  it is a candidate. A target with a given-up `elevation_refresh` row is excluded from the catch-up,
+  and needs the admin retry. Deleting a preview removes its row by cascade; a deleted route or team
+  is only marked deleted, so its row stays in the table, inert and left out of the count below.
+
+This counts the tracks in that case (given-up rows, and those of a deleted route or team, are left
+out). While a release older than phase E runs, it is also what is left for that release to serve:
+
+```sql
+select count(*)
+  from surface_refresh e
+  left join team_entities t on t.id = e.route_id
+  left join teams tm on tm.id = t.team_id
+ where e.attempts < 5
+   and (e.preview_id is not null or (not t.deleted and not tm.deleted));
+```
 
 #### The catch-up of the fleet
 
@@ -817,7 +827,7 @@ C1c and `SurfaceBackfill`) recomputes every route and preview behind `GpxPipelin
 (`elevation_pipeline` null or below 3) from its stored `original.gpx`: profile, D+, climbs, filtered
 GPX, FIT, route figures, waypoint distances and surface, in one write. **It is off by default:
 deploying never starts it.** Until it is on, a track without a surface gets none (old tracks, a
-failed synchronous save) and displays as it does today. A route never recomputed keeps working: its
+failed synchronous save, a row left in `surface_refresh`) and displays as it does today. A route never recomputed keeps working: its
 profile is untouched and its version 1 surface document is still read.
 
 Every 5 minutes, under an advisory lock, it queues the routes, most recent first, then the GPX-tool

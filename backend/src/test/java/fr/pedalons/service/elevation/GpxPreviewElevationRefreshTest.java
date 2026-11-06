@@ -37,6 +37,7 @@ import fr.pedalons.service.route.planner.PlannerStateFixtures;
 import fr.pedalons.service.route.planner.PlannerStates;
 import fr.pedalons.service.security.DomainResolver;
 import fr.pedalons.service.security.PedalonsQueryContext;
+import fr.pedalons.service.surface.LegacySurfaceRequests;
 import fr.pedalons.service.surface.SurfaceRefreshService;
 import fr.pedalons.util.StoredObjects;
 import fr.pedalons.util.TestDataCleaner;
@@ -892,17 +893,10 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
     return previewService.toDto(reload(preview));
   }
 
+  /** A request of the former surface queue, as a previous release leaves it. */
   private void legacyRequest(GpxPreview preview) {
-    long revision = reload(preview).getFilesRevision();
-    QuarkusTransaction.requiringNew()
-        .run(
-            () ->
-                surfaceRefreshRepository.requestForPreview(
-                    preview.getId(),
-                    revision,
-                    Instant.now(),
-                    Duration.ofSeconds(90),
-                    Duration.ofMinutes(10)));
+    LegacySurfaceRequests.leaveForPreview(
+        surfaceRefreshRepository, preview.getId(), reload(preview).getFilesRevision());
   }
 
   private long legacyRequests() {
@@ -927,7 +921,7 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
     Long fastRevision = reload(created).getFilesRevision();
     assertNull(surfaces(created));
     assertNull(reload(created).getElevationPipeline());
-    assertEquals(0, legacyRequests(), "a save queues nothing for osm-surface");
+    assertEquals(0, legacyRequests(), "a save queues nothing in the former surface queue");
     assertEquals(TrackSurfaceState.PENDING, dto(created).tracks().getFirst().surfaceState());
     legacyRequest(created);
     makeDue(created);
@@ -1038,7 +1032,7 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
   }
 
   @Test
-  void withTheSurfaceOff_theCatchUpLeavesItOut_andARequestFollowsTheRevision() {
+  void withTheSurfaceOff_theCatchUpLeavesItOut() {
     GpxPreview created = previewService.create(EXAMPLE, "example.gpx");
     legacyRequest(created);
     makeDue(created);
@@ -1052,15 +1046,7 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
     assertNull(surfaces(after));
     assertNull(
         after.getElevationPipeline(), "stays behind: recomputed once the surface is back on");
-    assertEquals(
-        after.getFilesRevision(),
-        QuarkusTransaction.requiringNew()
-            .call(
-                () ->
-                    surfaceRefreshRepository
-                        .findByPreviewId(after.getId())
-                        .orElseThrow()
-                        .getSourceRevision()));
+    assertEquals(1, legacyRequests(), "no surface written: the row is not dropped");
   }
 
   @Test
@@ -1182,7 +1168,7 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
   }
 
   @Test
-  void aSaveWithAsyncOff_dropsTheRequestOfTheLegacyQueue() {
+  void aSaveWithAsyncOff_dropsTheRequestLeftByAPreviousRelease() {
     surfaceService.setEnabledForTest(true);
     service.setAsyncHdEnabledForTest(false);
     GpxPreview created = previewService.create(EXAMPLE, "example.gpx");
@@ -1190,14 +1176,15 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
 
     previewService.updatePreview(created.getPublicId().toString(), "Un", EXAMPLE, null);
 
-    assertEquals(0, legacyRequests(), "the worker would replace this document with its own");
+    assertEquals(
+        0, legacyRequests(), "a previous release would replace this document with its own");
     assertEquals(
         TrackSurfaceDocument.VERSION_ROUTE_DETAILS,
         surfaces(created).tracks().getFirst().version());
   }
 
   @Test
-  void aSaveWithAsyncOffWithoutAnAnswer_leavesTheRequestToTheLegacyQueue() {
+  void aSaveWithAsyncOffWithoutAnAnswer_leavesTheRequestAlone() {
     surfaceService.setEnabledForTest(true);
     service.setAsyncHdEnabledForTest(false);
     GpxPreview created = previewService.create(EXAMPLE, "example.gpx");

@@ -557,7 +557,7 @@ public class GpxPreviewService {
                       ? null
                       : new PreviewSurfacesDocument(revision, computedSurfaces));
               if (computedSurfaces != null) {
-                // Or the legacy worker would realign it on this track and replace this document
+                // Or a previous release would realign it on this track and replace this document
                 surfaceRefreshRepository.dropForPreview(previewId);
               }
               if (quality == ElevationQuality.FAST) {

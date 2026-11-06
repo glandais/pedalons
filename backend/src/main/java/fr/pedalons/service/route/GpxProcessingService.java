@@ -961,7 +961,7 @@ public class GpxProcessingService {
       for (int i = 0; i < tracks.size(); i++) {
         TrackSurfaceDocument document = surfaces.get(i);
         if (document != null) {
-          // As the surface worker writes it: a lazy column that nothing here has read
+          // By its own update: a lazy column that nothing here has read
           gpxTrackRepository.updateSurfaces(tracks.get(i).getId(), document);
         }
       }

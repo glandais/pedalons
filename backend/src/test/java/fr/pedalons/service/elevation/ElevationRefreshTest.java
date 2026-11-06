@@ -47,6 +47,7 @@ import fr.pedalons.service.route.RouteService;
 import fr.pedalons.service.route.planner.PlannerStateFixtures;
 import fr.pedalons.service.security.DomainResolver;
 import fr.pedalons.service.security.PedalonsQueryContext;
+import fr.pedalons.service.surface.LegacySurfaceRequests;
 import fr.pedalons.service.surface.SurfaceRefreshService;
 import fr.pedalons.service.thumbnail.MapThumbnailRenderer;
 import fr.pedalons.util.StoredObjects;
@@ -985,18 +986,12 @@ class ElevationRefreshTest extends AbstractResourceTest {
         .getFirst();
   }
 
-  /** A request of the legacy queue, as the previous release left it. */
+  /** A request of the former surface queue, as a previous release leaves it. */
   private void legacyRequest(RouteDto route) {
-    long original = byType(snaps(route)).get(AssetType.ROUTE_ORIGINAL_GPX).fileId();
-    QuarkusTransaction.requiringNew()
-        .run(
-            () ->
-                surfaceRefreshRepository.requestForRoute(
-                    id(route),
-                    original,
-                    Instant.now(),
-                    Duration.ofSeconds(90),
-                    Duration.ofMinutes(10)));
+    LegacySurfaceRequests.leaveForRoute(
+        surfaceRefreshRepository,
+        id(route),
+        byType(snaps(route)).get(AssetType.ROUTE_ORIGINAL_GPX).fileId());
   }
 
   private long legacyRequests() {
@@ -1036,7 +1031,7 @@ class ElevationRefreshTest extends AbstractResourceTest {
     assertNoDocument(created);
     assertNull(pipeline(created), "a fast save says nothing of the pipeline");
     assertTrue(fullCalls().isEmpty(), "a save asks for fast only");
-    assertEquals(0, legacyRequests(), "and queues nothing for osm-surface");
+    assertEquals(0, legacyRequests(), "and queues nothing in the former surface queue");
     legacyRequest(created);
     makeDue(created);
 
@@ -1065,7 +1060,7 @@ class ElevationRefreshTest extends AbstractResourceTest {
     assertEquals("paved", way.surfaceClass());
     assertEquals("asphalt", way.detail());
 
-    assertEquals(0, legacyRequests(), "nothing left for osm-surface");
+    assertEquals(0, legacyRequests(), "nothing left for a previous release");
     TrackDto track = track(created);
     assertEquals(TrackSurfaceState.READY, track.surfaceState());
     assertEquals("PAVED", track.surfaces().getFirst().surface().name());
@@ -1193,7 +1188,7 @@ class ElevationRefreshTest extends AbstractResourceTest {
     assertEquals(ElevationState.PENDING, storedState(created));
     assertNoDocument(created);
     assertNull(pipeline(created));
-    assertEquals(1, legacyRequests(), "osm-surface may still answer");
+    assertEquals(1, legacyRequests(), "no surface written: the row is not dropped");
   }
 
   /** {@code elevation_missing} is permanent: the profile is interpolated, all of it is written. */
@@ -1245,7 +1240,7 @@ class ElevationRefreshTest extends AbstractResourceTest {
     assertEquals(ElevationState.HD, storedState(created));
     assertNoDocument(created);
     assertNull(pipeline(created), "stays behind: recomputed once the surface is back on");
-    assertEquals(1, legacyRequests(), "the queue waits");
+    assertEquals(1, legacyRequests(), "no surface written: the row is not dropped");
     assertNull(track(created).surfaceState());
   }
 
@@ -1401,7 +1396,7 @@ class ElevationRefreshTest extends AbstractResourceTest {
   }
 
   @Test
-  void aSaveWithAsyncOff_dropsTheRequestOfTheLegacyQueue() {
+  void aSaveWithAsyncOff_dropsTheRequestLeftByAPreviousRelease() {
     surfaceService.setEnabledForTest(true);
     service.setAsyncHdEnabledForTest(false);
     RouteDto created = createRoute(EXAMPLE);
@@ -1409,12 +1404,13 @@ class ElevationRefreshTest extends AbstractResourceTest {
 
     updateRoute(created, "Boucle", EXAMPLE);
 
-    assertEquals(0, legacyRequests(), "the worker would replace this document with its own");
+    assertEquals(
+        0, legacyRequests(), "a previous release would replace this document with its own");
     assertEquals(TrackSurfaceDocument.VERSION_ROUTE_DETAILS, document(created).version());
   }
 
   @Test
-  void aSaveWithAsyncOffWithoutAnAnswer_leavesTheRequestToTheLegacyQueue() {
+  void aSaveWithAsyncOffWithoutAnAnswer_leavesTheRequestAlone() {
     surfaceService.setEnabledForTest(true);
     service.setAsyncHdEnabledForTest(false);
     RouteDto created = createRoute(EXAMPLE);

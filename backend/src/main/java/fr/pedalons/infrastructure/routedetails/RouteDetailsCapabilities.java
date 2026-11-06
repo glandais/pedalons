@@ -17,7 +17,7 @@ public record RouteDetailsCapabilities(
     @Nullable Enums enums,
     @Nullable Data data) {
 
-  /** The service's bounds as of api 1.6, used while it has not answered: those of osm-surface. */
+  /** The service's bounds as of api 1.6, used while it has not answered. */
   public static final Limits FALLBACK_LIMITS = new Limits(16_000, 200_000);
 
   /**

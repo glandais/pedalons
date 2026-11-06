@@ -31,7 +31,7 @@ class RouteSlicerTest {
   }
 
   @Test
-  void boundsOfThePublishedLimits_areThoseOfTraceSurfaceComputer() {
+  void boundsOfThePublishedLimits_keepTheMargins() {
     Bounds bounds = Bounds.of(RouteDetailsCapabilities.FALLBACK_LIMITS);
     assertEquals(190_000, bounds.maxRequestM(), 1e-6);
     assertEquals(15_000, bounds.maxPoints());

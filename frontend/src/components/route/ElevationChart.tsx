@@ -601,7 +601,9 @@ export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartPro
     // wheel, pinch and pan do nothing. The x-range lives in this component's state, so the remount
     // keeps it. The empty-track guard lives in the parent; rendering with 0 points is harmless.
     // docs/LEDGER_*.md LEGAL-18: the elevations come from IGN's LiDAR HD (Licence Ouverte Etalab
-    // 2.0, which requires naming the source) and Mapterhorn; the credit sits on the profile it covers.
+    // 2.0, which requires naming the source) and Mapterhorn with its sources, the structures and the
+    // surface from OpenStreetMap (ODbL), all through osm-route-details (API-150); the credit sits
+    // on the profile it covers.
     return (
       <Box pos="relative" h="100%" w="100%">
         <Line

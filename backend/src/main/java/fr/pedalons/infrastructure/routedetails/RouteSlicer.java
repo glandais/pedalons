@@ -9,14 +9,12 @@ import java.util.List;
  * the service answers a 413 beyond the bounds of {@code /v1/capabilities} (200 km, 16 000 points
  * as of api 1.6), and a longer route is the client's to slice. Pure: no call, no clock.
  *
- * <p>The rules are those of {@code TraceSurfaceComputer}, which slices for osm-surface under the
- * same bounds: the line is first thinned ({@link #MIN_SPACING_M}, more on a long line, {@link
- * #spacingFor}), then cut into cores of about 188 km, each sent with 500 m of overlap on both sides
- * so that a structure cut by a slice boundary is still corrected (contract §5.3). The copy there
- * stays until phase E removes osm-surface; this one is derived from the published bounds instead of
- * constants.
+ * <p>The line is first thinned ({@link #MIN_SPACING_M}, more on a long line, {@link #spacingFor}),
+ * then cut into cores of about 188 km, each sent with 500 m of overlap on both sides so that a
+ * structure cut by a slice boundary is still corrected (contract §5.3). All of it is derived from
+ * the published bounds.
  *
- * <p>One difference, for the stitching ({@link RouteDetailsStitcher}): a core starts and ends on a
+ * <p>For the stitching ({@link RouteDetailsStitcher}), a core starts and ends on a
  * <b>sent point</b>, not at an arbitrary distance. The point that closes a core is an input point of
  * both neighbouring slices, so both answers carry it ({@code input_with_breakpoints} keeps every
  * input point) and the next slice's distances and cumulated gain are anchored on it, without any
@@ -44,7 +42,7 @@ public final class RouteSlicer {
   /**
    * The bounds a request is kept under, from the published ones: 95 % of the length (190 km of
    * 200, haversine on both sides but on rounded coordinates there) and 15/16 of the points (15 000
-   * of 16 000, the margin {@code TraceSurfaceComputer} measured). The overlap and the spacing room
+   * of 16 000, the margin measured on osm-surface under the same bounds). The overlap and the spacing room
    * shrink on tiny bounds (tests) so that a core always has a length.
    */
   record Bounds(double maxRequestM, int maxPoints, double overlapM, double coreM) {
@@ -153,7 +151,7 @@ public final class RouteSlicer {
   /**
    * The spacing the line is thinned to: {@link #MIN_SPACING_M}, or more when a request would hold
    * more points than the bound at that spacing, so that a slice stays bounded by its length and not
-   * by its point count (the rule of {@code TraceSurfaceComputer.spacingFor}).
+   * by its point count.
    */
   static double spacingFor(double[] lat, double[] lon, Bounds bounds) {
     double length = 0;

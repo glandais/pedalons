@@ -7,7 +7,7 @@ import fr.pedalons.domain.route.TrackSurfaceDocument.WayRange;
 import fr.pedalons.enums.TrackSurface;
 import fr.pedalons.infrastructure.routedetails.RouteDetailsResponse.Segment;
 import fr.pedalons.infrastructure.routedetails.RouteDetailsResponse.Surface;
-import fr.pedalons.service.surface.TraceSurfaceProjection.Range;
+import fr.pedalons.service.surface.SurfaceRanges.Range;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -117,7 +117,7 @@ public final class RouteDetailsSurfaces {
         ways.add(new Range<>(from, to, wayOf(s)));
       }
     }
-    // The straight pieces first, as for osm-surface: a fully drawn track has a surface to show
+    // The straight pieces first: a fully drawn track has a surface to show
     List<Range<String>> surfaceCover =
         SurfaceRanges.normalize(
             SurfaceRanges.overlay(surfaces, offNetwork, TrackSurfaceDocument.OFF_NETWORK),

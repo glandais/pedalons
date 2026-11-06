@@ -6,7 +6,7 @@ import fr.pedalons.domain.route.TrackSurfaceDocument;
 import fr.pedalons.domain.route.TrackSurfaceDocument.SurfaceRange;
 import fr.pedalons.dto.routes.response.SurfaceSpanDto;
 import fr.pedalons.enums.TrackSurface;
-import fr.pedalons.service.surface.TraceSurfaceProjection.Range;
+import fr.pedalons.service.surface.SurfaceRanges.Range;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
