@@ -1,0 +1,19 @@
+{
+  "polyline": "wqn_yAnji}Aox@oj@}ToP}ToPcuAom@inAok@ow@xe@qw@ze@ceAxh@",
+  "polyline_precision": 6,
+  "options": {
+    "profile": "full",
+    "sections": [
+      "elevation",
+      "typology",
+      "summary"
+    ],
+    "sampling": {
+      "mode": "input_with_breakpoints"
+    },
+    "elevation": {
+      "smoothing_m": 150.0
+    },
+    "accept_partial": false
+  }
+}

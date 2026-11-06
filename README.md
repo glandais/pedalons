@@ -109,7 +109,7 @@ A workstation and a deployment differ in five keys, and only those:
   biketeam migration the local database holds thousands of real member addresses, and one OTP or
   team invitation is enough to reach them.
 - **`COMPOSE_FILE` adds the workstation overlay**, `docker-compose.local.yml`: mailpit, the
-  tileserver and osm-surface a host gets from its shared stack, the loopback ports dev mode talks to, and an
+  tileserver, osm-surface and osm-route-details a host gets from its shared stack, the loopback ports dev mode talks to, and an
   `app` profile on `backend`/`frontend`/`traefik` so that a plain `docker compose up -d` starts the
   backing services alone. A deployed `.env` has no `COMPOSE_FILE`, which is why the overlay is a
   separate file rather than a profile. Its header comment lists what it changes.

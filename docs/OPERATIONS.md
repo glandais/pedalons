@@ -15,7 +15,9 @@ rescheduled rather than left for a `restart:` policy.
 
 `docker-compose.shared.yml` holds what carries no application data: `tileserver`
 (server-side raster rendering, ~1.8 GB resident) and `osm-surface` (the surface along saved tracks,
-over a cache of OpenStreetMap tiles; see [Surface along saved tracks](#surface-along-saved-tracks-osm-surface)).
+over a cache of OpenStreetMap tiles; see [Surface along saved tracks](#surface-along-saved-tracks-osm-surface)),
+plus `osm-route-details` (elevation profile and surface of routes, which will replace osm-surface): deployed
+but not called by any backend yet (ledger `API-150` phase A, `OPS-58`).
 One instance of each serves every environment. It owns the `pedalons-shared` overlay network. Route computation is not hosted at all any more: it is
 bought from Stadia Maps, with a key per environment, and so is geocoding (see
 [Stadia Maps: routing and geocoding](#stadia-maps-routing-and-geocoding)).
@@ -120,6 +122,7 @@ limit is killed by the kernel (`OOMKilled` in `docker inspect`, `task: non-zero 
 | goatcounter | 128M | production only; 36 to 40 MiB at rest, the rest for CSV exports and the dashboard |
 | tileserver (shared) | 3G | ~1.8 GB resident |
 | osm-surface (shared) | 768M | `MEMORY_CACHE_MB=128` of decoded tiles (weighed by their points only, so more in fact) plus the matchings in flight, `MALLOC_ARENA_MAX=2`; at the default 256 it sat at ~715 MB after a full recompute (2026-11-03) |
+| osm-route-details (shared) | 1G | not called yet (ledger `OPS-58`): its two tile caches at 256 MB each (512 by default) plus the requests in flight, `MALLOC_ARENA_MAX=2`; to be measured |
 | monitoring stack | 2G in all | see [Monitoring](#monitoring); ~1 GB resident |
 
 **The backend has no `-Xmx`.** The image's entrypoint (`run-java.sh`, from the Jib base image
