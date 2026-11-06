@@ -20,7 +20,8 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * The way to osm-route-details for the rest of the backend, and what the tests mock (nothing here
- * may reach the network from a test). Nothing calls it yet: docs/LEDGER_*.md API-150, phase A.
+ * may reach the network from a test). {@code GpxPipeline} calls it for every elevation profile:
+ * docs/LEDGER_*.md API-150.
  *
  * <p><b>Two clients, one per profile.</b> A {@code fast} call answers in a few seconds, a {@code
  * full} one may take up to the service's 90 s budget: a single read timeout would either cut the
@@ -42,6 +43,13 @@ import org.jspecify.annotations.Nullable;
  * between {@link #limits()} answers the last bounds fetched, else the fallback ones. One fetch runs
  * at a time; the callers that arrive meanwhile do not wait for it. Never fetched at startup: the backend
  * starts whether or not the service is up.
+ *
+ * <p><b>A pause after no answer.</b> The read timeout bounds one call, and a caller with a user
+ * waiting makes one per line or per track: 50 straight lines on a stuck service would add up to 12
+ * minutes. So a call that gets no answer at all (refused, timed out) suspends the {@code fast} calls
+ * for {@link #FAST_PAUSE}: they fail at once as a transient failure, which every caller already
+ * survives with the file's elevations. An error status does not count, it came back quickly.
+ * {@code full} is left alone: its calls run one at a time in a worker, which has a retry of its own.
  */
 @ApplicationScoped
 public class RouteDetailsGateway {
@@ -50,6 +58,7 @@ public class RouteDetailsGateway {
 
   static final Duration CAPABILITIES_TTL = Duration.ofHours(1);
   static final Duration CAPABILITIES_RETRY = Duration.ofMinutes(1);
+  static final Duration FAST_PAUSE = Duration.ofSeconds(30);
 
   /** The api {@code surface.detail} came with, which the surface projection needs (plan §2.3). */
   static final int MIN_MAJOR = 1;
@@ -80,21 +89,33 @@ public class RouteDetailsGateway {
   private volatile @Nullable Instant capabilitiesFailedAt;
   private final ReentrantLock capabilitiesLock = new ReentrantLock();
 
+  /** Until when {@code fast} calls are skipped; package-private so that a test can end it. */
+  volatile @Nullable Instant fastPausedUntil;
+
   /**
    * The details of {@code request}, on the client of its profile ({@code full} when none is set).
-   * Blocking: a {@code full} call runs in a worker only, never during an HTTP request.
+   * Blocking: a {@code full} call runs in a worker, and within an HTTP request only when {@code
+   * pedalons.elevation.async-hd.enabled} is off.
    *
    * @throws RouteDetailsException on any failure, classified
    */
   public RouteDetailsResponse details(RouteDetailsRequest request) {
-    RouteDetailsClient client = client(request.effectiveProfile());
+    RouteDetailsProfile profile = request.effectiveProfile();
+    Instant pausedUntil = fastPausedUntil;
+    if (profile == RouteDetailsProfile.FAST
+        && pausedUntil != null
+        && Instant.now().isBefore(pausedUntil)) {
+      throw new RouteDetailsException(
+          Kind.TRANSIENT, 0, null, "fast calls paused after a call without answer", null, null);
+    }
+    RouteDetailsClient client = client(profile);
     RouteDetailsResponse response;
     try {
       response = client.routeDetails(request);
     } catch (WebApplicationException e) {
-      throw fromWebApplication(e);
+      throw paused(fromWebApplication(e), profile);
     } catch (ProcessingException e) {
-      throw RouteDetailsErrors.noAnswer(e);
+      throw paused(RouteDetailsErrors.noAnswer(e), profile);
     }
     if (response == null) {
       // A 200 with an empty body: the client reads it as null, the same answer would come back.
@@ -127,6 +148,20 @@ public class RouteDetailsGateway {
     }
     return RouteDetailsStitcher.reindex(
         RouteDetailsStitcher.stitch(plan.slices(), responses), plan.sent());
+  }
+
+  /** {@code failure}, having suspended the {@code fast} calls when it is a call without answer. */
+  private RouteDetailsException paused(RouteDetailsException failure, RouteDetailsProfile profile) {
+    if (profile == RouteDetailsProfile.FAST) {
+      pauseIfNoAnswer(failure);
+    }
+    return failure;
+  }
+
+  private void pauseIfNoAnswer(RouteDetailsException failure) {
+    if (failure.kind() == Kind.TRANSIENT && failure.status() == 0) {
+      fastPausedUntil = Instant.now().plus(FAST_PAUSE);
+    }
   }
 
   /** The options of a sliced call: the elevation section, and points anchored on the input. */
@@ -230,6 +265,8 @@ public class RouteDetailsGateway {
               : RouteDetailsErrors.noAnswer(e);
       LOG.warnf("osm-route-details capabilities unavailable, %s", failure.getMessage());
       capabilitiesFailedAt = Instant.now();
+      // Asked first, on the fast client: no answer here would otherwise cost a second timeout
+      pauseIfNoAnswer(failure);
       return capabilities;
     }
   }

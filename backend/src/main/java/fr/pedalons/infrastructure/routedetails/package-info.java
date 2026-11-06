@@ -6,7 +6,7 @@
  * fr.pedalons.infrastructure.routedetails.RouteSlicer}) and the stitching of its answers ({@link
  * fr.pedalons.infrastructure.routedetails.RouteDetailsStitcher}), and {@link
  * fr.pedalons.infrastructure.routedetails.RouteDetailsGateway}, which the rest of the backend and
- * the tests go through. Nothing calls it yet.
+ * the tests go through. {@code GpxPipeline} is its caller.
  */
 @NullMarked
 package fr.pedalons.infrastructure.routedetails;

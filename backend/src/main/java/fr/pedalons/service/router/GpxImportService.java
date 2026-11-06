@@ -34,7 +34,8 @@ import org.jspecify.annotations.Nullable;
  * point so a piece cut out of it keeps its ascent, and with its raw track (docs/LEDGER_*.md API-149,
  * phase C), which the saved route is derived from. Nothing is stored.
  *
- * <p>Not transactional: no connection is held while the pipeline waits for the elevation tiles.
+ * <p>Not transactional: no connection is held while the pipeline waits for osm-route-details
+ * (docs/LEDGER_*.md API-150).
  */
 @ApplicationScoped
 public class GpxImportService {

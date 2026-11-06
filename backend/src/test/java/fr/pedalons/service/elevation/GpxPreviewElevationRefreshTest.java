@@ -17,7 +17,7 @@ import fr.pedalons.domain.route.PlannerStateDocument;
 import fr.pedalons.domain.user.User;
 import fr.pedalons.dto.gpx.response.GpxPreviewDto;
 import fr.pedalons.enums.ElevationState;
-import fr.pedalons.infrastructure.gpx.FakeElevationProducer;
+import fr.pedalons.infrastructure.routedetails.FakeRouteDetailsClient;
 import fr.pedalons.infrastructure.storage.StorageService;
 import fr.pedalons.repository.gpx.GpxPreviewRepository;
 import fr.pedalons.repository.route.ElevationRefreshRepository;
@@ -92,7 +92,6 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
   @AfterEach
   void restoreSwitch() {
     service.setAsyncHdEnabledForTest(true);
-    FakeElevationProducer.failHd = false;
   }
 
   // ------------------------------------------------------------------ helpers
@@ -192,7 +191,7 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
     GpxPreview preview = reload(created);
     assertEquals(ElevationState.PENDING, preview.getElevationState());
     assertNotNull(preview.getFilesRevision());
-    assertFlat(preview, FakeElevationProducer.FAST_ELEVATION);
+    assertFlat(preview, FakeRouteDetailsClient.FAST_ELEVATION);
     assertEquals(
         ElevationState.PENDING, previewService.toDto(preview).elevationState(), "the DTO says so");
 
@@ -318,13 +317,13 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
 
     GpxPreview preview = reload(created);
     assertEquals(ElevationState.HD, preview.getElevationState());
-    assertFlat(preview, FakeElevationProducer.HD_ELEVATION);
+    assertFlat(preview, FakeRouteDetailsClient.FULL_ELEVATION);
     assertEquals(0, refreshCount());
     assertEquals(keysOf(preview), trackKeys(preview));
 
     previewService.updatePreview(created.getPublicId().toString(), "Deux", TWO_TRACKS, null);
     assertEquals(0, refreshCount());
-    assertFlat(reload(created), FakeElevationProducer.HD_ELEVATION);
+    assertFlat(reload(created), FakeRouteDetailsClient.FULL_ELEVATION);
   }
 
   @Test
@@ -363,7 +362,7 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
     GpxPreview after = reload(created);
     assertEquals(ElevationState.HD, after.getElevationState());
     assertNotEquals(before.getFilesRevision(), after.getFilesRevision());
-    assertFlat(after, FakeElevationProducer.HD_ELEVATION);
+    assertFlat(after, FakeRouteDetailsClient.FULL_ELEVATION);
     assertEquals(before.getName(), after.getName());
     assertEquals(before.getTracks().size(), after.getTracks().size());
     assertEquals(
@@ -415,7 +414,7 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
 
     GpxPreview after = reload(created);
     assertEquals(2, after.getTracks().size());
-    assertFlat(after, FakeElevationProducer.HD_ELEVATION);
+    assertFlat(after, FakeRouteDetailsClient.FULL_ELEVATION);
     assertEquals(ElevationState.HD, after.getElevationState());
     assertTrue(after.getDistance() > 0);
   }
@@ -447,7 +446,7 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
     GpxPreview after = reload(created);
     assertEquals(afterSave.getFilesRevision(), after.getFilesRevision(), "revision untouched");
     assertEquals(ElevationState.PENDING, after.getElevationState());
-    assertFlat(after, FakeElevationProducer.FAST_ELEVATION);
+    assertFlat(after, FakeRouteDetailsClient.FAST_ELEVATION);
     assertEquals(2, after.getTracks().size(), "the new track, not the abandoned one");
     assertFalse(storageService.exists(hdKey), "the revision computed for the old track is gone");
     assertEquals(keysOf(afterSave), trackKeys(afterSave));
@@ -488,7 +487,6 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
 
   @Test
   void aPartialHdResult_countsAsAFailure_andWritesNothing() throws Exception {
-    // Far from every other test's tiles: the HD provider caches what it already read
     Path southern = Files.createTempFile("southern-", ".gpx");
     try {
       Files.writeString(
@@ -508,11 +506,11 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
       Set<String> bucketBefore = stored.previewKeys(created.getPublicId());
       makeDue(created);
 
-      FakeElevationProducer.failHd = true;
+      FakeRouteDetailsClient.failFull = true;
       try {
         assertEquals(1, worker.processDue());
       } finally {
-        FakeElevationProducer.failHd = false;
+        FakeRouteDetailsClient.failFull = false;
       }
 
       ElevationRefresh request = refresh(created);

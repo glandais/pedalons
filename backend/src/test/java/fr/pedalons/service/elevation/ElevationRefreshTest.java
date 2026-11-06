@@ -25,7 +25,7 @@ import fr.pedalons.enums.AssetType;
 import fr.pedalons.enums.ElevationState;
 import fr.pedalons.enums.SurfaceType;
 import fr.pedalons.enums.Visibility;
-import fr.pedalons.infrastructure.gpx.FakeElevationProducer;
+import fr.pedalons.infrastructure.routedetails.FakeRouteDetailsClient;
 import fr.pedalons.infrastructure.storage.StorageService;
 import fr.pedalons.repository.asset.AssetRepository;
 import fr.pedalons.repository.route.ElevationRefreshRepository;
@@ -222,7 +222,7 @@ class ElevationRefreshTest extends AbstractResourceTest {
 
     assertEquals(ElevationState.PENDING, created.elevationState());
     assertEquals(ElevationState.PENDING, storedState(created));
-    assertFlat(created, FakeElevationProducer.FAST_ELEVATION);
+    assertFlat(created, FakeRouteDetailsClient.FAST_ELEVATION);
 
     ElevationRefresh request = refresh(created);
     assertNotNull(request);
@@ -335,12 +335,12 @@ class ElevationRefreshTest extends AbstractResourceTest {
 
     assertEquals(ElevationState.HD, created.elevationState());
     assertEquals(ElevationState.HD, storedState(created));
-    assertFlat(created, FakeElevationProducer.HD_ELEVATION);
+    assertFlat(created, FakeRouteDetailsClient.FULL_ELEVATION);
     assertEquals(0, refreshCount());
 
     updateRoute(created, "Boucle", TWO_TRACKS);
     assertEquals(0, refreshCount());
-    assertFlat(created, FakeElevationProducer.HD_ELEVATION);
+    assertFlat(created, FakeRouteDetailsClient.FULL_ELEVATION);
   }
 
   @Test
@@ -403,7 +403,7 @@ class ElevationRefreshTest extends AbstractResourceTest {
     assertNotEquals(contentKeyBefore, GpsSyncNames.contentKey(filtered.id(), filtered.revision()));
 
     assertEquals(ElevationState.HD, storedState(created));
-    assertFlat(created, FakeElevationProducer.HD_ELEVATION);
+    assertFlat(created, FakeRouteDetailsClient.FULL_ELEVATION);
     assertNull(refresh(created), "request removed");
     assertFalse(java.util.Arrays.equals(oldFiltered, read(filtered.fileId())));
 
@@ -452,7 +452,7 @@ class ElevationRefreshTest extends AbstractResourceTest {
     assertEquals(trackIds, after);
     // The catch-up changes the elevations, never the raw geometry
     assertEquals(raw, dataService.rawGeometries(id(created)));
-    assertFlat(created, FakeElevationProducer.HD_ELEVATION);
+    assertFlat(created, FakeRouteDetailsClient.FULL_ELEVATION);
     assertEquals(ElevationState.HD, storedState(created));
   }
 
@@ -546,7 +546,7 @@ class ElevationRefreshTest extends AbstractResourceTest {
     assertEquals(ElevationRefreshService.Outcome.REALIGNED, outcome);
     assertEquals(afterSave, snaps(created), "no asset touched");
     assertEquals(ElevationState.PENDING, storedState(created));
-    assertFlat(created, FakeElevationProducer.FAST_ELEVATION);
+    assertFlat(created, FakeRouteDetailsClient.FAST_ELEVATION);
     ElevationRefresh request = refresh(created);
     assertNotNull(request, "the request is kept, not deleted");
     assertEquals(newOriginal, request.getSourceRevision());
@@ -583,7 +583,7 @@ class ElevationRefreshTest extends AbstractResourceTest {
       assertNull(request.getClaimedUntil(), "lease released");
       assertWithin(request.getDueAt(), before.plus(expected[attempt - 1]), Duration.ofSeconds(30));
       assertEquals(ElevationState.PENDING, storedState(created));
-      assertFlat(created, FakeElevationProducer.FAST_ELEVATION);
+      assertFlat(created, FakeRouteDetailsClient.FAST_ELEVATION);
       // Not due again before the backoff
       assertEquals(0, worker.processDue());
     }
@@ -705,7 +705,6 @@ class ElevationRefreshTest extends AbstractResourceTest {
 
   @Test
   void aPartialHdResult_countsAsAFailure_andWritesNothing() throws Exception {
-    // Far from every other test's tiles: the HD provider caches what it already read
     Path southern = java.nio.file.Files.createTempFile("southern-", ".gpx");
     try {
       java.nio.file.Files.writeString(
@@ -725,11 +724,11 @@ class ElevationRefreshTest extends AbstractResourceTest {
       List<Snap> before = snaps(created);
       makeDue(created);
 
-      FakeElevationProducer.failHd = true;
+      FakeRouteDetailsClient.failFull = true;
       try {
         assertEquals(1, worker.processDue());
       } finally {
-        FakeElevationProducer.failHd = false;
+        FakeRouteDetailsClient.failFull = false;
       }
 
       ElevationRefresh request = refresh(created);
@@ -741,6 +740,47 @@ class ElevationRefreshTest extends AbstractResourceTest {
     } finally {
       java.nio.file.Files.deleteIfExists(southern);
     }
+  }
+
+  /** A 200 whose terrain fell back after an IGN error is no HD result: asked again, not kept. */
+  @Test
+  void aTerrainFallback_countsAsAFailure_andWritesNothing() {
+    RouteDto created = createRoute(EXAMPLE);
+    Set<String> bucketBefore = stored.assetKeys(team1);
+    List<Snap> before = snaps(created);
+    makeDue(created);
+
+    FakeRouteDetailsClient.fallbackAfterError = true;
+    try {
+      assertEquals(1, worker.processDue());
+    } finally {
+      FakeRouteDetailsClient.fallbackAfterError = false;
+    }
+
+    ElevationRefresh request = refresh(created);
+    assertEquals(1, request.getAttempts());
+    assertNotNull(request.getLastError());
+    assertEquals(ElevationState.PENDING, storedState(created));
+    assertEquals(before, snaps(created));
+    assertEquals(bucketBefore, stored.assetKeys(team1), "no HD file kept");
+  }
+
+  /** {@code elevation_missing} is out of coverage, permanent: retrying could never end better. */
+  @Test
+  void aRangeOutOfCoverage_isNoFailure_andTheHdProfileIsWritten() {
+    RouteDto created = createRoute(EXAMPLE);
+    makeDue(created);
+
+    FakeRouteDetailsClient.partial = true;
+    try {
+      assertEquals(1, worker.processDue());
+    } finally {
+      FakeRouteDetailsClient.partial = false;
+    }
+
+    assertEquals(ElevationState.HD, storedState(created));
+    assertEquals(0, refreshCount());
+    assertFlat(created, FakeRouteDetailsClient.FULL_ELEVATION);
   }
 
   @Test
@@ -876,7 +916,7 @@ class ElevationRefreshTest extends AbstractResourceTest {
     assertEquals(ElevationRefreshService.Outcome.REALIGNED, outcome);
     assertEquals(afterEdit, snaps(created), "no asset touched");
     assertEquals(ElevationState.PENDING, storedState(created));
-    assertFlat(created, FakeElevationProducer.FAST_ELEVATION);
+    assertFlat(created, FakeRouteDetailsClient.FAST_ELEVATION);
     assertEquals(1, waypointSnaps(created).size());
     assertNotNull(refresh(created), "the request is kept, due at once");
     assertEquals(keysOf(afterEdit), stored.assetKeys(team1), "the HD files are gone");

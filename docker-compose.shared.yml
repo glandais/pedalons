@@ -65,9 +65,9 @@ services:
           memory: 768M
 
   # Profil d'altitude et revetement des parcours (API 1.6, docs/LEDGER_*.md API-150 et OPS-58) :
-  # deploye, mais encore appele par aucun backend (phase A du plan
-  # docs/plans/2026-11-05-osm-route-details.md). Il remplacera osm-surface, qui ne sera retire que
-  # lorsque plus aucun backend ne l'appellera. Adresse :
+  # le GpxPipeline de chaque backend y lit ses altitudes (phase B du plan
+  # docs/plans/2026-11-05-osm-route-details.md), a deployer avant lui. Il remplacera osm-surface pour
+  # le revetement, qui ne sera retire que lorsque plus aucun backend ne l'appellera. Adresse :
   # http://osm-route-details:8080, sans cle ; le port 9090 (/metrics) reste interne au reseau.
   # Une seule instance : la cadence IGN (20 req/s) est locale au processus, deux replicas derriere la
   # meme IP la doubleraient. Son cache disque (tuiles IGN, Mapterhorn, VersaTiles) est le VOLUME de

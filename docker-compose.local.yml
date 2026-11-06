@@ -60,7 +60,7 @@ services:
     ports:
       - "127.0.0.1:18002:8002"
 
-  # Same again (docs/LEDGER_*.md OPS-58; nothing calls it yet, API-150). The port is for the %dev
+  # Same again (docs/LEDGER_*.md OPS-58): GpxPipeline reads its elevations there (API-150). The port is for the %dev
   # backend (OSM_ROUTE_DETAILS_URL defaults to localhost:18003 there); 9090, the metrics, stays unpublished.
   osm-route-details:
     extends:

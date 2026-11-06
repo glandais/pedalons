@@ -8,7 +8,9 @@ import fr.pedalons.common.GeoDistance;
 import fr.pedalons.infrastructure.routedetails.RouteDetailsResponse.OutputPoint;
 import fr.pedalons.infrastructure.valhalla.Polyline6Decoder;
 import fr.pedalons.infrastructure.valhalla.Polyline6Encoder;
+import jakarta.ws.rs.ProcessingException;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -106,6 +108,91 @@ class FakeRouteDetailsGatewayTest {
     assertEquals(503, e.status());
     assertEquals(RouteDetailsErrors.DATA_UNAVAILABLE, e.code());
     assertEquals(Duration.ofSeconds(30), e.retryAfter());
+  }
+
+  @Test
+  void aFastCallWhileSaturated_isTransient() {
+    FakeRouteDetailsClient.failFast = true;
+    double[][] line = RouteSlicerTest.meridian(10, 90);
+    RouteDetailsException e =
+        assertThrows(
+            RouteDetailsException.class,
+            () ->
+                gateway.details(
+                    line[0], line[1], RouteDetailsOptions.of(RouteDetailsProfile.FAST, true)));
+    assertTrue(e.isTransient());
+    assertEquals(RouteDetailsErrors.OVERLOADED, e.code());
+    assertEquals(Duration.ofSeconds(5), e.retryAfter());
+  }
+
+  /**
+   * A stuck service must cost a caller looping over lines one timeout, not one each; an error
+   * status comes back quickly and pauses nothing ({@code aFastCallWhileSaturated_isTransient}).
+   */
+  @Test
+  void aFastCallWithoutAnswer_pausesTheFastCalls_notTheFullOnes() {
+    int[] calls = {0};
+    FakeRouteDetailsClient stuck =
+        new FakeRouteDetailsClient() {
+          @Override
+          public RouteDetailsResponse routeDetails(RouteDetailsRequest request) {
+            calls[0]++;
+            if (request.effectiveProfile() == RouteDetailsProfile.FAST && calls[0] == 1) {
+              throw new ProcessingException("read timeout (test)");
+            }
+            return super.routeDetails(request);
+          }
+        };
+    RouteDetailsGateway paused =
+        new FakeRouteDetailsGateway() {
+          @Override
+          RouteDetailsClient client(RouteDetailsProfile profile) {
+            return stuck;
+          }
+        };
+    double[][] line = RouteSlicerTest.meridian(30, 90);
+    RouteDetailsOptions fast = RouteDetailsOptions.of(RouteDetailsProfile.FAST, false);
+
+    for (int i = 0; i < 3; i++) {
+      RouteDetailsException failure =
+          assertThrows(RouteDetailsException.class, () -> paused.details(line[0], line[1], fast));
+      assertEquals(RouteDetailsException.Kind.TRANSIENT, failure.kind());
+    }
+    assertEquals(1, calls[0], "only the first call reached the service");
+
+    paused.details(line[0], line[1], RouteDetailsOptions.of(RouteDetailsProfile.FULL, false));
+    assertEquals(2, calls[0], "a full call is not paused");
+
+    paused.fastPausedUntil = Instant.now().minusSeconds(1);
+    assertEquals("fast", paused.details(line[0], line[1], fast).meta().profile());
+    assertEquals(3, calls[0], "the pause ends");
+  }
+
+  @Test
+  void aTerrain_givesItsElevationsAndTheirCumulatives() {
+    FakeRouteDetailsClient.terrain = d -> d < 400 ? d / 10 : 40 - (d - 400) / 20;
+    double[][] line = RouteSlicerTest.meridian(10, 90);
+    RouteDetailsResponse r =
+        gateway.details(line[0], line[1], RouteDetailsOptions.of(RouteDetailsProfile.FAST, true));
+    OutputPoint last = r.points().getLast();
+    assertEquals(0.0, r.points().getFirst().ele(), 1e-9);
+    assertEquals(last.gainCumM(), r.summary().gainM());
+    assertEquals(last.lossCumM(), r.summary().lossM());
+    // The highest point returned is at 450 m (37.5), just past the top of the terrain
+    assertEquals(37.5, last.gainCumM(), 0.1);
+    assertEquals(37.5 - last.ele(), last.lossCumM(), 0.1);
+  }
+
+  @Test
+  void twoPointsThatRoundToOne_areRefused() {
+    double[] lat = {47.2, 47.2};
+    double[] lon = {-1.55, -1.55};
+    RouteDetailsException e =
+        assertThrows(
+            RouteDetailsException.class,
+            () ->
+                gateway.details(lat, lon, RouteDetailsOptions.of(RouteDetailsProfile.FAST, true)));
+    assertEquals(400, e.status());
   }
 
   @Test
