@@ -888,6 +888,16 @@ public class GpxProcessingService {
   }
 
   /**
+   * What an HD profile just computed records in {@code elevation_pipeline}: the current version,
+   * meaning the pipeline computed the profile and asked for the surface. Null with the surface off:
+   * the track was not given one, and is recomputed once it is back on (docs/LEDGER_*.md API-150).
+   * Not on whether a document came back: a track too short for one would be recomputed for ever.
+   */
+  public @Nullable Short hdPipeline() {
+    return surfaceRefreshService.isEnabled() ? (short) GpxPipeline.VERSION : null;
+  }
+
+  /**
    * Phase 2 of the HD catch-up, in the caller's transaction with the route locked: the existing
    * filtered GPX and FIT rows take the new files (same asset ids, so every URL is stable; new
    * content revision, so GPS sync pushes them again), the existing tracks are updated <b>in
@@ -945,7 +955,7 @@ public class GpxProcessingService {
     route.setHilliness(metadata.hilliness());
     route.setElevationLoss(metadata.elevationLoss());
     route.setElevationState(ElevationState.HD);
-    route.setElevationPipeline((short) GpxPipeline.VERSION);
+    route.setElevationPipeline(hdPipeline());
     List<@Nullable TrackSurfaceDocument> surfaces = recompute.surfaces();
     if (surfaces != null) {
       for (int i = 0; i < tracks.size(); i++) {

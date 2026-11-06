@@ -67,9 +67,9 @@ public class SurfaceRefresh {
   private @Nullable String lastError;
 
   /**
-   * Queued by the catch-up of old tracks ({@code SurfaceBackfill}), not by a save: taken only once
-   * no normal request is due, and spaced under the catch-up's hourly cap. A save of the track makes
-   * it a normal request again.
+   * Queued by the former catch-up of old tracks, gone with docs/LEDGER_*.md API-150 (phase D), not
+   * by a save: taken only once no normal request is due. A row may be left from the previous
+   * release; an upsert of the previous release makes it a normal request again.
    */
   @Column(name = "backfill", nullable = false)
   private boolean backfill;

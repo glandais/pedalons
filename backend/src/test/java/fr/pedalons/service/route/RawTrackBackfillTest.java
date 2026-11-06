@@ -1,7 +1,6 @@
 package fr.pedalons.service.route;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -14,7 +13,6 @@ import static org.mockito.Mockito.doThrow;
 import fr.pedalons.api.AbstractResourceTest;
 import fr.pedalons.common.TsidUtils;
 import fr.pedalons.domain.route.GpxTrack;
-import fr.pedalons.domain.route.SurfaceRefresh;
 import fr.pedalons.dto.common.asset.MediaDto;
 import fr.pedalons.dto.routes.request.RouteRequest;
 import fr.pedalons.enums.AssetType;
@@ -24,14 +22,12 @@ import fr.pedalons.infrastructure.storage.StorageService;
 import fr.pedalons.repository.asset.AssetRepository;
 import fr.pedalons.repository.route.GpxTrackRepository;
 import fr.pedalons.repository.route.RawTrackBackfillRepository.Candidate;
-import fr.pedalons.repository.route.SurfaceRefreshRepository;
 import fr.pedalons.service.asset.AssetService;
 import fr.pedalons.service.route.RawTrackBackfill.Outcome;
 import fr.pedalons.service.route.RawTrackBackfill.Read;
 import fr.pedalons.service.route.RawTrackBackfill.Report;
 import fr.pedalons.service.security.DomainResolver;
 import fr.pedalons.service.security.PedalonsQueryContext;
-import fr.pedalons.service.surface.SurfaceBackfill;
 import fr.pedalons.service.surface.SurfaceRefreshService;
 import fr.pedalons.service.thumbnail.MapThumbnailRenderer;
 import fr.pedalons.util.TestDataService.RawGeometry;
@@ -77,8 +73,6 @@ class RawTrackBackfillTest extends AbstractResourceTest {
   @Inject GpxProcessingService gpxProcessingService;
   @Inject RawTrackBackfill backfill;
   @Inject SurfaceRefreshService surfaceService;
-  @Inject SurfaceBackfill surfaceBackfill;
-  @Inject SurfaceRefreshRepository refreshRepository;
   @InjectSpy GpxTrackRepository trackRepository;
   @Inject AssetRepository assetRepository;
   @Inject AssetService assetService;
@@ -114,58 +108,12 @@ class RawTrackBackfillTest extends AbstractResourceTest {
   void restoreSwitches() {
     backfill.setForTest(false, 50);
     surfaceService.setEnabledForTest(false);
-    surfaceBackfill.setForTest(false, 300);
-    surfaceBackfill.setResurfaceForTest(false);
   }
 
   // ------------------------------------------------------------------ helpers
 
   private void on() {
     backfill.setForTest(true, 100);
-  }
-
-  /** The surface catch-up on, with the resurface switch as given. */
-  private void surfaceCatchUp(boolean resurface) {
-    surfaceService.setEnabledForTest(true);
-    surfaceBackfill.setForTest(true, 300);
-    surfaceBackfill.setResurfaceForTest(resurface);
-  }
-
-  /** As if its surface had been computed on its stored points: the surface catch-up skips it. */
-  private void withSurface(Long routeId) {
-    sql("update gpx_tracks set surfaces = '{}'::jsonb where route_id = ?1", routeId);
-  }
-
-  /** An old route recorded denser than what the pipeline kept, with a surface. */
-  private Long denseOldRoute() throws Exception {
-    Long base = oldRoute(EXAMPLE);
-    Path trace = traceOf(base, 3);
-    // Out of the way: only the dense one is a candidate
-    sql("update team_entities set deleted = true where id = ?1", base);
-    Long id = oldRoute(trace);
-    assertTrue(
-        rawPoints(trace) >= RawTrackBackfill.DENSER * storedPoints(id),
-        "a recording is denser than its stored points: "
-            + rawPoints(trace)
-            + " vs "
-            + storedPoints(id));
-    withSurface(id);
-    return id;
-  }
-
-  private boolean resurfaceWanted(Long routeId) {
-    return QuarkusTransaction.requiringNew()
-        .call(
-            () ->
-                ((Number)
-                            trackRepository
-                                .getEntityManager()
-                                .createNativeQuery(
-                                    "select count(*) from raw_track_resurface where route_id = ?1")
-                                .setParameter(1, routeId)
-                                .getSingleResult())
-                        .longValue()
-                    > 0);
   }
 
   /** A route saved before V81: its tracks lose their raw line. */
@@ -244,19 +192,6 @@ class RawTrackBackfillTest extends AbstractResourceTest {
                     .findFirst());
   }
 
-  private Optional<SurfaceRefresh> surfaceRequest(Long routeId) {
-    return QuarkusTransaction.requiringNew().call(() -> refreshRepository.findByRouteId(routeId));
-  }
-
-  private int storedPoints(Long routeId) {
-    return QuarkusTransaction.requiringNew()
-        .call(
-            () ->
-                trackRepository.findSizes(routeId).stream()
-                    .mapToInt(GpxTrackRepository.TrackSize::points)
-                    .sum());
-  }
-
   private Candidate candidate(Long routeId) {
     return backfill.candidates(100).stream()
         .filter(c -> c.routeId().equals(routeId))
@@ -311,15 +246,14 @@ class RawTrackBackfillTest extends AbstractResourceTest {
 
     Report first = backfill.runOnce(Instant.now());
 
-    // two_tracks.gpx is a dense recording, example.gpx a sparse one
-    assertEquals(new Report(2, 0, 1), first);
+    assertEquals(new Report(2, 0), first);
     assertRawOf(sourceSizes(EXAMPLE), single);
     assertRawOf(sourceSizes(TWO_TRACKS), two);
     List<RawGeometry> before = dataService.rawGeometries(single);
 
     Report second = backfill.runOnce(Instant.now());
 
-    assertEquals(new Report(0, 0, 0), second);
+    assertEquals(new Report(0, 0), second);
     assertEquals(before, dataService.rawGeometries(single), "nothing rewritten");
     assertTrue(skipReason(single).isEmpty());
   }
@@ -338,7 +272,7 @@ class RawTrackBackfillTest extends AbstractResourceTest {
             + " and type = 'ROUTE_ORIGINAL_GPX'",
         id);
 
-    assertEquals(Outcome.CHANGED, backfill.write(candidate, read.lines(), Instant.now()).outcome());
+    assertEquals(Outcome.CHANGED, backfill.write(candidate, read.lines(), Instant.now()));
     assertNoRaw(id);
     assertTrue(skipReason(id).isEmpty(), "not given up: the next pass reads the new original");
   }
@@ -355,11 +289,11 @@ class RawTrackBackfillTest extends AbstractResourceTest {
     sql("update team_entities set deleted = true where id = ?1", twoTracks);
     on();
 
-    assertEquals(new Report(0, 1, 0), backfill.runOnce(Instant.now()));
+    assertEquals(new Report(0, 1), backfill.runOnce(Instant.now()));
     assertEquals(Optional.of("TRACK_COUNT"), skipReason(id));
     assertNoRaw(id);
 
-    assertEquals(new Report(0, 0, 0), backfill.runOnce(Instant.now()), "never picked again");
+    assertEquals(new Report(0, 0), backfill.runOnce(Instant.now()), "never picked again");
   }
 
   @Test
@@ -373,11 +307,11 @@ class RawTrackBackfillTest extends AbstractResourceTest {
         garbage.length);
     on();
 
-    assertEquals(new Report(0, 1, 0), backfill.runOnce(Instant.now()));
+    assertEquals(new Report(0, 1), backfill.runOnce(Instant.now()));
     assertEquals(Optional.of("UNREADABLE"), skipReason(id));
     assertNoRaw(id);
 
-    assertEquals(new Report(0, 0, 0), backfill.runOnce(Instant.now()), "never picked again");
+    assertEquals(new Report(0, 0), backfill.runOnce(Instant.now()), "never picked again");
   }
 
   @Test
@@ -386,141 +320,39 @@ class RawTrackBackfillTest extends AbstractResourceTest {
     storageService.delete(assetService.getAssetKey(team1.getId(), originalFileId(id)));
     on();
 
-    assertEquals(new Report(0, 1, 0), backfill.runOnce(Instant.now()));
+    assertEquals(new Report(0, 1), backfill.runOnce(Instant.now()));
     assertEquals(Optional.of("MISSING_ORIGINAL"), skipReason(id));
   }
 
+  /**
+   * API-150: a recompute reads the original, so a line denser than the stored points asks for
+   * nothing: the legacy queue would write an osm-surface document over a newer one.
+   */
   @Test
-  void resurfaceOff_asksForNoSurface_untilItIsSwitchedOn() throws Exception {
-    Long id = denseOldRoute();
-    surfaceCatchUp(false);
-    on();
-
-    assertEquals(new Report(1, 0, 1), backfill.runOnce(Instant.now()));
-    assertTrue(resurfaceWanted(id), "the verdict is kept whatever the switch");
-
-    assertEquals(0, surfaceBackfill.enqueue(Instant.now()));
-    assertTrue(surfaceRequest(id).isEmpty(), "off by default: every request is billed");
-
-    // Switched on long after the raw lines were caught up: the wish is still there
-    surfaceBackfill.setResurfaceForTest(true);
-    assertEquals(1, surfaceBackfill.enqueue(Instant.now()));
-    SurfaceRefresh request = surfaceRequest(id).orElseThrow();
-    assertTrue(request.isBackfill(), "under the catch-up's cap, after the normal requests");
-    assertEquals(originalFileId(id), request.getSourceRevision());
-    assertFalse(resurfaceWanted(id), "met once queued");
-  }
-
-  @Test
-  void resurfaceOn_asksOnlyForADenserRawLine() throws Exception {
+  void aDenserLine_queuesNothing() throws Exception {
     Long base = oldRoute(EXAMPLE);
-    Long recorded = oldRoute(traceOf(base, 3));
-    Long drawn = oldRoute(traceOf(base, 0));
-    int recordedRaw = rawPoints(traceOf(base, 3));
-    int drawnRaw = rawPoints(traceOf(base, 0));
-    assertTrue(
-        recordedRaw >= RawTrackBackfill.DENSER * storedPoints(recorded),
-        "a recording is denser than its stored points: "
-            + recordedRaw
-            + " vs "
-            + storedPoints(recorded));
-    assertTrue(
-        drawnRaw < RawTrackBackfill.DENSER * storedPoints(drawn),
-        "a drawn route's raw line is its stored points again: "
-            + drawnRaw
-            + " vs "
-            + storedPoints(drawn));
-    List.of(base, recorded, drawn).forEach(this::withSurface);
-    surfaceCatchUp(true);
+    oldRoute(traceOf(base, 3));
+    sql("delete from elevation_refresh");
+    surfaceService.setEnabledForTest(true);
     on();
 
-    Report report = backfill.runOnce(Instant.now());
+    assertEquals(new Report(2, 0), backfill.runOnce(Instant.now()));
 
-    assertEquals(new Report(3, 0, 1), report);
-    assertEquals(1, surfaceBackfill.enqueue(Instant.now()));
-    assertTrue(surfaceRequest(recorded).isPresent());
-    assertTrue(surfaceRequest(drawn).isEmpty(), "a drawn route buys nothing from it");
-    // example.gpx itself is a sparse file: about as many points as the pipeline keeps
-    assertTrue(surfaceRequest(base).isEmpty());
+    assertEquals(0, tableSize("surface_refresh"));
+    assertEquals(0, tableSize("raw_track_resurface"));
+    assertEquals(0, tableSize("elevation_refresh"));
   }
 
-  private int rawPoints(Path gpx) {
-    return sourceSizes(gpx).stream().mapToInt(Integer::intValue).sum();
-  }
-
-  @Test
-  void resurfaceOn_asksNothingWhileTheSurfaceCatchUpIsOff() throws Exception {
-    Long id = denseOldRoute();
-    surfaceCatchUp(true);
-    on();
-    assertEquals(new Report(1, 0, 1), backfill.runOnce(Instant.now()));
-
-    surfaceBackfill.setForTest(false, 300);
-    assertEquals(0, surfaceBackfill.enqueue(Instant.now()));
-    assertTrue(surfaceRequest(id).isEmpty(), "the catch-up's switch stops it");
-
-    surfaceBackfill.setForTest(true, 300);
-    surfaceService.setEnabledForTest(false);
-    assertEquals(0, surfaceBackfill.enqueue(Instant.now()));
-    assertTrue(surfaceRequest(id).isEmpty(), "so does the surface's");
-    assertTrue(resurfaceWanted(id), "kept for when they are back on");
-  }
-
-  @Test
-  void aResurface_waitsForARequestAlreadyThere_thenIsAsked() throws Exception {
-    Long id = denseOldRoute();
-    surfaceCatchUp(true);
-    on();
-    // A request claimed before the raw line existed: it computes on the stored points
-    QuarkusTransaction.requiringNew()
-        .run(
+  private long tableSize(String table) {
+    return QuarkusTransaction.requiringNew()
+        .call(
             () ->
-                refreshRepository.insertBackfillRoute(
-                    new SurfaceRefreshRepository.BackfillCandidate(id, 0, originalFileId(id)),
-                    Instant.now(),
-                    Instant.now()));
-    assertEquals(new Report(1, 0, 1), backfill.runOnce(Instant.now()));
-
-    assertEquals(0, surfaceBackfill.enqueue(Instant.now()));
-    assertTrue(resurfaceWanted(id), "not lost to the request in flight");
-
-    // The worker is done with it
-    sql("delete from surface_refresh where route_id = ?1", id);
-    assertEquals(1, surfaceBackfill.enqueue(Instant.now()));
-    assertTrue(surfaceRequest(id).isPresent());
-    assertFalse(resurfaceWanted(id));
-  }
-
-  @Test
-  void resurfaces_stayWithinTheWindow() throws Exception {
-    Long first = denseOldRoute();
-    Long second = denseOldRoute();
-    // 6 calls an hour: ten minutes hold one
-    surfaceCatchUp(true);
-    surfaceBackfill.setForTest(true, 6);
-    on();
-    assertEquals(new Report(2, 0, 2), backfill.runOnce(Instant.now()));
-
-    assertEquals(1, surfaceBackfill.enqueue(Instant.now()));
-    assertEquals(0, surfaceBackfill.enqueue(Instant.now()), "the window is full");
-    assertTrue(resurfaceWanted(first) != resurfaceWanted(second), "one waits for its turn");
-  }
-
-  @Test
-  void aResurfaceOfAReplacedOriginal_isForgotten() throws Exception {
-    Long id = denseOldRoute();
-    surfaceCatchUp(true);
-    on();
-    assertEquals(new Report(1, 0, 1), backfill.runOnce(Instant.now()));
-
-    // A save of the previous release replaced the original meanwhile
-    sql(
-        "update assets set file_id = file_id + 1 where team_entity_id = ?1"
-            + " and type = 'ROUTE_ORIGINAL_GPX'",
-        id);
-
-    assertEquals(0, surfaceBackfill.enqueue(Instant.now()));
-    assertFalse(resurfaceWanted(id));
+                ((Number)
+                        trackRepository
+                            .getEntityManager()
+                            .createNativeQuery("select count(*) from " + table)
+                            .getSingleResult())
+                    .longValue());
   }
 
   @Test
@@ -529,15 +361,15 @@ class RawTrackBackfillTest extends AbstractResourceTest {
     on();
     doThrow(SdkClientException.create("bucket down")).when(storageService).retrieve(anyString());
     try {
-      assertEquals(new Report(0, 0, 0), backfill.runOnce(Instant.now()));
-      assertEquals(new Report(0, 0, 0), backfill.runOnce(Instant.now()));
+      assertEquals(new Report(0, 0), backfill.runOnce(Instant.now()));
+      assertEquals(new Report(0, 0), backfill.runOnce(Instant.now()));
     } finally {
       Mockito.reset(storageService);
     }
     assertTrue(skipReason(id).isEmpty(), "an outage costs passes, not routes");
     assertNoRaw(id);
 
-    assertEquals(new Report(1, 0, 0), backfill.runOnce(Instant.now()));
+    assertEquals(new Report(1, 0), backfill.runOnce(Instant.now()));
     assertRawOf(sourceSizes(EXAMPLE), id);
   }
 
@@ -550,10 +382,10 @@ class RawTrackBackfillTest extends AbstractResourceTest {
         .fillRawGeometry(any(), any());
     try {
       for (int i = 1; i < RawTrackBackfill.MAX_WRITE_FAILURES; i++) {
-        assertEquals(new Report(0, 0, 0), backfill.runOnce(Instant.now()), "pass " + i);
+        assertEquals(new Report(0, 0), backfill.runOnce(Instant.now()), "pass " + i);
         assertTrue(skipReason(id).isEmpty(), "retried, pass " + i);
       }
-      assertEquals(new Report(0, 1, 0), backfill.runOnce(Instant.now()));
+      assertEquals(new Report(0, 1), backfill.runOnce(Instant.now()));
     } finally {
       Mockito.reset(trackRepository);
     }
@@ -566,7 +398,7 @@ class RawTrackBackfillTest extends AbstractResourceTest {
     Long id = oldRoute(EXAMPLE);
     backfill.setForTest(false, 100);
 
-    assertEquals(new Report(0, 0, 0), backfill.runOnce(Instant.now()));
+    assertEquals(new Report(0, 0), backfill.runOnce(Instant.now()));
     assertNoRaw(id);
     assertTrue(skipReason(id).isEmpty());
   }
@@ -579,14 +411,14 @@ class RawTrackBackfillTest extends AbstractResourceTest {
         Statement statement = other.createStatement()) {
       statement.execute("select pg_advisory_lock(hashtextextended('raw-track-backfill', 0))");
       try {
-        assertEquals(new Report(0, 0, 0), backfill.runOnce(Instant.now()));
+        assertEquals(new Report(0, 0), backfill.runOnce(Instant.now()));
         assertNoRaw(id);
       } finally {
         statement.execute("select pg_advisory_unlock(hashtextextended('raw-track-backfill', 0))");
       }
     }
 
-    assertEquals(new Report(1, 0, 0), backfill.runOnce(Instant.now()));
+    assertEquals(new Report(1, 0), backfill.runOnce(Instant.now()));
     assertRawOf(sourceSizes(EXAMPLE), id);
   }
 }

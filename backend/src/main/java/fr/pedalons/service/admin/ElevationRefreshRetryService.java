@@ -22,7 +22,9 @@ import org.jspecify.annotations.Nullable;
 /**
  * Starts again the HD elevation recomputations the worker gave up on (docs/LEDGER_*.md API-131):
  * the requests that used up {@link ElevationRefreshService#MAX_ATTEMPTS} attempts, whose target
- * stays on the fast profile (state FAST). Nothing retries them by itself; this is the lever.
+ * stays on the fast profile (state FAST), or on the profile it had for a request of the fleet's
+ * catch-up (docs/LEDGER_*.md API-150): such a request stays one, its target keeps its state and
+ * nothing reads as pending. Nothing retries them by itself; this is the lever.
  */
 @ApplicationScoped
 public class ElevationRefreshRetryService {

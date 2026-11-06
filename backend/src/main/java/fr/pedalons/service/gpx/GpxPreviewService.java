@@ -40,7 +40,6 @@ import fr.pedalons.service.asset.AssetService;
 import fr.pedalons.service.elevation.ElevationRefreshService;
 import fr.pedalons.service.gps.GpsService;
 import fr.pedalons.service.route.GpxLimits;
-import fr.pedalons.service.route.GpxPipeline;
 import fr.pedalons.service.route.GpxProcessingService;
 import fr.pedalons.service.route.GpxProcessingService.ComputedGpx;
 import fr.pedalons.service.route.RouteService;
@@ -1039,11 +1038,13 @@ public class GpxPreviewService {
 
   /**
    * The pipeline a save records: none for a fast profile, which the catch-up stamps when it
-   * replaces it, nor for an HD one that fell back on part of the track; both stay to recompute
-   * (docs/LEDGER_*.md API-150).
+   * replaces it, nor for an HD one that fell back on part of the track, nor with the surface off;
+   * all stay to recompute (docs/LEDGER_*.md API-150).
    */
-  private static @Nullable Short pipelineOf(ElevationQuality quality, double fallbackKm) {
-    return quality == ElevationQuality.HD && fallbackKm == 0 ? (short) GpxPipeline.VERSION : null;
+  private @Nullable Short pipelineOf(ElevationQuality quality, double fallbackKm) {
+    return quality == ElevationQuality.HD && fallbackKm == 0
+        ? gpxProcessingService.hdPipeline()
+        : null;
   }
 
   /** The state a save computed with {@code quality} leaves the preview in. */

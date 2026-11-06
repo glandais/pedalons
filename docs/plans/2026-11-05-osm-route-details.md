@@ -1,6 +1,6 @@
 # Profil et revêtement par osm-route-details
 
-Écrit le 5 novembre 2026. **État : phases A, B et C faites (§10), le reste à venir.** Ledger `API-150` (backend),
+Écrit le 5 novembre 2026. **État : phases A, B, C et D faites (§10), le recalcul du parc reste à allumer par environnement, phases E et F à venir.** Ledger `API-150` (backend),
 `OPS-58` (déploiement). Branche `feat/osm-route-details`, partie de `3d23f160` (`API-149`, trace
 brute). Numéros vérifiés libres le 5 novembre 2026 : `API-150`, `OPS-58`, migration `V83`, contrat
 `13.1.0` aujourd'hui.
@@ -186,7 +186,7 @@ parcours une fois (empreinte `@p3`, `API-107`), comme lors du passage à la v2. 
 existants sont **tous recalculés** en HD par le backfill (§6, décision D2) : la décision D1
 d'`API-131` (« parcours v1 laissés en l'état ») est levée. Chaque parcours et aperçu porte désormais
 la version du pipeline qui a calculé son profil (`elevation_pipeline`, §7), écrite à chaque
-écriture HD.
+écriture HD revêtement allumé.
 
 Bancs à refaire avant la bascule (§8) : écart de D+ v2 → v3 sur un échantillon de parcours réels,
 pour l'annoncer dans les notes de version si besoin.
@@ -211,26 +211,25 @@ revêtement demande déjà un rattrapage HD (`elevation_refresh`). Le worker HD 
 revêtement dans la même transaction d'écriture (`applyRecompute` / écriture de l'aperçu), sur le même
 `source_revision`, et retire la demande `surface_refresh` éventuelle de la cible.
 
-Jusqu'à la phase D, `SurfaceBackfill`, `SurfaceRefreshWorker` et `TraceSurfaceComputer` restent en
-place et traitent ce qui arrive encore dans `surface_refresh` : les demandes laissées par la version
-précédente, et celles de `SurfaceBackfill`, qui passe par osm-surface pour les traces sans revêtement.
-Deux retouches évitent qu'ils gênent le rattrapage HD :
-
-- `SurfaceBackfill` ne retient plus une cible dont le rattrapage HD reste à venir (demande
-  `elevation_refresh` à moins de 5 tentatives) : sinon chaque enregistrement frais partirait vers
-  osm-surface pendant sa période de calme ;
-- la demande `surface_refresh` est retirée sous le verrou de la cible avant l'écriture
-  (`deleteIfRevision`) : si le rattrapage HD est passé pendant le calcul, le document v1 n'est pas
-  écrit par-dessus le v2.
+Depuis la phase D, plus rien n'alimente `surface_refresh` : `SurfaceBackfill` a disparu.
+`SurfaceRefreshWorker`, `SurfaceRefreshService`, `TraceSurfaceComputer` et `TraceAttributesClient`
+restent jusqu'à la phase E, sans autre rôle que drainer ce que la version précédente a laissé : une
+demande restante à moins de 5 tentatives fait lire `PENDING` à l'API, il faut donc la servir, et la
+version précédente peut encore en écrire pendant la minute du déploiement. File vide, le worker lit
+la table et n'appelle rien. La demande est retirée sous le verrou de la cible avant l'écriture
+(`deleteIfRevision`) : si le rattrapage HD est passé pendant le calcul, le document v1 n'est pas
+écrit par-dessus le v2.
 
 Conséquences :
 
 - `pedalons.surface.enabled=false` → le worker HD demande `sections: [elevation, summary]` et
-  n'écrit pas de revêtement (e2e, comme aujourd'hui).
+  n'écrit pas de revêtement (e2e, comme aujourd'hui). `elevation_pipeline` reste alors nul : le
+  tampon veut dire « profil calculé par ce pipeline, revêtement demandé », et un parcours recalculé
+  ainsi redevient candidat du backfill une fois l'interrupteur rallumé (§6).
 - `async-hd.enabled=false` (HD synchrone à l'enregistrement, interrupteur de secours) : l'appel
   `full` a lieu dans la requête HTTP, et le revêtement de la même réponse est écrit à
   l'enregistrement. Rien n'est mis en file : un appel en échec ne laisse ni document ni demande, et
-  `elevation_pipeline` reste nul (repris par `SurfaceBackfill`, puis par le backfill de la phase D).
+  `elevation_pipeline` reste nul (repris par le backfill de la phase D, une fois allumé).
 - Aperçu promu en parcours : les documents copiés comme aujourd'hui (`storeCopiedSurfaces`), seule
   la demande de revêtement a disparu.
 - `surfaceState` reste `PENDING` tant que la cible est en `elevation_state = PENDING`, ou qu'il reste
@@ -314,13 +313,37 @@ toujours `bicycle`.
 
 ## 6. Backfill : tout recalculer (décision D2)
 
-`SurfaceBackfill` devient `RouteDetailsBackfill`, le backfill de la file unique. Toutes les 5 min,
-sous verrou consultatif, il met en file (`backfill = true`) les parcours puis les aperçus dont
-`elevation_pipeline` est nul ou inférieur à `GpxPipeline.VERSION`, les plus récents d'abord, sous le
-plafond horaire et la fenêtre actuels (`per-hour`, une tranche de 188 km = un appel). Le worker les
-traite comme un rattrapage HD ordinaire (`recomputeHd`, depuis l'`original.gpx` stocké) : profil,
-D+, montées, GPX filtré, FIT, chiffres du parcours, distances des points de passage **et**
-revêtement, en une écriture. Priorité stricte : demandes normales, puis backfill.
+`SurfaceBackfill` devient `RouteDetailsBackfill` (`service/elevation/`), le backfill de la file
+unique. **Il est éteint par défaut** (`pedalons.route-details.backfill.enabled`,
+`ROUTE_DETAILS_BACKFILL_ENABLED`) : déployer ne lance jamais le recalcul du parc, on l'allume
+environnement par environnement, staging d'abord, une fois le déploiement stabilisé. Pas de repli
+sur `SURFACE_BACKFILL_*` : un hôte qui porte encore `SURFACE_BACKFILL_ENABLED=true` ne doit pas le
+démarrer. Tant qu'il est éteint, une trace sans revêtement n'en reçoit pas et s'affiche comme
+aujourd'hui.
+
+Allumé, toutes les 5 min, sous verrou consultatif, il met en file (`elevation_refresh`,
+`backfill = true`) les parcours puis les aperçus dont `elevation_pipeline` est nul ou inférieur à
+`GpxPipeline.VERSION`, les plus récents d'abord, sous le plafond horaire (`per-hour`,
+`ROUTE_DETAILS_BACKFILL_PER_HOUR`, 60 par défaut, une tranche de 188 km = un appel) et la fenêtre de
+10 min. Il journalise à chaque passe ce qui reste (parcours, km, aperçus, abandons) et ne touche pas
+à `elevation_state` : l'API continue de montrer le profil et le revêtement actuels, rien ne se lit
+comme en attente. Le worker les traite comme un rattrapage HD ordinaire (`recomputeHd`, depuis
+l'`original.gpx` stocké) : profil, D+, montées, GPX filtré, FIT, chiffres du parcours, distances des
+points de passage **et** revêtement, en une écriture. Priorité stricte : demandes normales, puis
+backfill ; un enregistrement qui rattrape une ligne de backfill la repasse en normale
+(`backfill = false`). Le worker vide la file quel que soit l'interrupteur : l'éteindre arrête de
+mettre en file, ce qui y est (10 min au plus) finit de passer.
+
+Revêtement éteint (`pedalons.surface.enabled=false`), le backfill ne met rien en file : un recalcul
+n'est pas tamponné (§5.1), une passe reprendrait sans fin les mêmes traces. Une seule ligne de
+journal le signale. Rallumé, ces traces sont des candidates ordinaires, sans branche de requête en
+plus.
+
+Un parcours jamais recalculé reste valable : profil intact, document v1 toujours lu. Les
+parcours sans trace ou sans original ne sont jamais candidats et restent tels quels. La migration
+biketeam ne passe pas par là : ses parcours passent par un enregistrement normal, donc par une
+demande normale du rattrapage HD (`leaveToBackfill` n'avait aucun appelant en production, il est
+retiré).
 
 Ce que ça implique, accepté avec D2 :
 
@@ -331,29 +354,38 @@ Ce que ça implique, accepté avec D2 :
 - les parcours envoyés aux GPS sont repoussés une fois (`API-120`, comme D4 d'`API-131`) ;
 - les parcours d'avant `API-104` (pipeline v1) sont recalculés aussi ;
 - débit : un appel `full` à froid sur l'IGN dure ~17 s pour 140 km, le worker en traite un à la
-  fois (budget de 60 s par tick de 30 s). `per-hour` borne la charge ; la durée totale du
-  rattrapage se calcule au déploiement (`OPS-58`) d'après le nombre de parcours et leur longueur.
-  Le service étant unique (D5), staging et prod se partagent son budget IGN : ne pas lancer le
-  backfill des deux en même temps (staging d'abord, `per-hour` bas, puis prod).
+  fois (budget de 60 s par tick de 30 s), soit environ 200 appels par heure au plus. `per-hour`
+  borne la charge (60 : un appel par minute, ce qui laisse de la place aux demandes normales) ; la
+  durée totale se calcule avant d'allumer, d'après le nombre de parcours et leur longueur
+  (requête dans `docs/OPERATIONS.md`, `OPS-58`). Le service étant unique (D5), staging et prod se
+  partagent son budget IGN : ne pas lancer le backfill des deux en même temps (staging d'abord,
+  `per-hour` bas, puis prod).
 
 Échec définitif (5 tentatives) : le parcours garde son profil et son revêtement d'avant, et sa
-version reste < 3 ; le retry admin existant (`POST /api/admin/elevation-refresh/retry`) le remet en
-file. `raw_track_resurface` (`API-149`) devient inutile : le recalcul part de la ligne brute de
-l'original.
+version reste < 3. Sa ligne reste dans `elevation_refresh` avec son erreur et **il n'est plus remis
+en file par le backfill** : toute ligne exclut sa cible, quelles que soient ses tentatives, sinon il
+tournerait en boucle. Les seuls chemins de retour sont un enregistrement et le retry admin existant
+(`POST /api/admin/elevation-refresh/retry`, à essayer d'abord en `dryRun`), qui voit désormais ces
+lignes malgré un état `HD` ou nul : la ligne reste `backfill`, derrière les demandes normales, et
+l'état de sa cible ne bouge pas. Il marche interrupteur éteint.
+
+`raw_track_resurface` (`API-149`) devient inutile : le recalcul part de la ligne brute de
+l'original. `pedalons.raw-backfill.resurface` est retiré et plus rien ne lit ni n'écrit la table,
+gardée jusqu'à la phase F : la clé ne peut donc plus poser un document v1 sur un v2.
 
 ## 7. Base de données (`V83`, compatible avec la version précédente)
 
 - `team_entities.elevation_pipeline smallint` et `gpx_previews.elevation_pipeline smallint`,
-  nullables (nul = calculé avant cette version, ou profil FAST d'un enregistrement que le rattrapage
-  n'a pas remplacé, donc à recalculer) ; index partiel des parcours à rattraper. Un enregistrement
+  nullables (nul = calculé avant cette version, profil FAST d'un enregistrement que le rattrapage
+  n'a pas remplacé, ou profil HD calculé revêtement éteint, donc à recalculer) ; index partiel des parcours à rattraper. Un enregistrement
   FAST remet la colonne à nul : un rattrapage abandonné ne laisse pas sur une trace neuve la version
-  de l'ancienne. Le backfill de la phase D saute donc les cibles qui ont une demande ouverte.
+  de l'ancienne. Le backfill de la phase D saute donc toute cible qui a une ligne dans
+  `elevation_refresh`, demande ouverte ou abandonnée.
 - `elevation_refresh` : `backfill boolean not null default false`, index partiel du backfill comme
   `V77`.
 - `surface_refresh` : **gardée** dans cette version (le backend précédent la draine encore pendant
-  le déploiement start-first). Le nouveau backend ne l'alimente plus depuis un enregistrement, et
-  continue de la drainer tant que `SurfaceRefreshWorker` existe : jusqu'à la phase D, elle reçoit
-  encore les demandes de `SurfaceBackfill` (§5.1). Suppression de la table, et de
+  le déploiement start-first). Le nouveau backend ne l'alimente plus depuis la phase D, et
+  continue de la drainer tant que `SurfaceRefreshWorker` existe (§5.1). Suppression de la table, et de
   `raw_track_resurface`, dans une migration ultérieure (`V84+`, version suivante).
 
 Pas de changement de contrat d'API attendu ; s'il en faut un (nouvelle valeur d'enum, crédit), bump
@@ -400,7 +432,7 @@ Prises avec l'utilisateur le 6 novembre 2026 :
 | A — **faite le 6 novembre 2026** | Client, DTO, erreurs, découpage, client factice, fixture ; service dans `docker-compose.shared.yml` et `.local.yml` | aucun comportement changé |
 | B — **faite le 6 novembre 2026** | `GpxPipeline` sur le service (FAST et HD), `VERSION = 3` ; vcyclist n'est plus appelé pour le terrain, sauf lissage et D+ des altitudes d'origine quand l'appel échoue ; pile e2e dotée de son propre service | profil par osm-route-details |
 | C — **faite le 6 novembre 2026** | Le worker HD écrit le revêtement (`TrackSurfaceDocument` v2, projection sur `surface.detail`) ; plus aucun enregistrement n'alimente `surface_refresh`, `V83` — api ≥ 1.6 | une seule file pour tout enregistrement ; `SurfaceBackfill` et osm-surface tournent encore jusqu'à la phase D |
-| D | `RouteDetailsBackfill` : recalcul HD de tous les parcours et aperçus < `VERSION` | osm-surface plus appelé ; tout le parc en v3 |
+| D — **faite le 6 novembre 2026** | `RouteDetailsBackfill` : recalcul HD de tous les parcours et aperçus < `VERSION`, éteint par défaut ; `surface_refresh` n'est plus que drainée ; `pedalons.raw-backfill.resurface` et `SURFACE_BACKFILL_*` retirés. Pas de migration | osm-surface plus appelé une fois `surface_refresh` vidée ; le parc passe en v3 quand le recalcul est allumé, environnement par environnement |
 | E | Ménage : `ElevationTier`, providers de `VcyclistProducer`, `DemTileStore` (+ `OPS-55` : réglage `tile-cache-size` retiré), `TraceAttributesClient` et le reste d'osm-surface **côté backend**, crédit « Altitude : IGN LiDAR HD, Mapterhorn » complété d'OSM (attribution du service), `docs/OPERATIONS.md` | — |
 | F (version suivante, après la bascule de prod) | `V84` : suppression de `surface_refresh` et `raw_track_resurface` ; service osm-surface et son volume retirés de la pile partagée (`OPS-58`) | — |
 
@@ -426,7 +458,10 @@ Prises avec l'utilisateur le 6 novembre 2026 :
   `scripts/deploy.sh --shared` depuis `~/shared` sur un commit qui contient le service, puis
   staging, recette, puis prod. La suppression d'osm-surface de `docker-compose.shared.yml` est une
   étape à part (phase F), jamais dans le commit qui bascule un environnement : seulement quand
-  prod tourne en nouvelle version et que plus aucun backend ne l'appelle (`surface_refresh` vide).
+  prod tourne en nouvelle version et que plus aucun backend ne l'appelle (plus aucune ligne de `surface_refresh` à servir : requête de `docs/OPERATIONS.md`, la table elle-même garde les demandes abandonnées).
   Rien côté bases : chaque environnement a la sienne.
-- Avant la phase D : estimer la durée du recalcul complet (nombre de parcours × longueur, plafond
-  `per-hour`) et la charge IGN, et prévenir les équipes que les D+ vont bouger.
+- Avant d'allumer `ROUTE_DETAILS_BACKFILL_ENABLED` (phase D, éteint par défaut) : estimer la durée
+  du recalcul complet et la charge IGN avec la requête de `docs/OPERATIONS.md`, attendre que le
+  déploiement soit stabilisé (la version précédente calcule sur vcyclist et laisse la version
+  nulle), et prévenir les équipes que les D+ vont bouger. Staging d'abord, prod ensuite, jamais les
+  deux en même temps.

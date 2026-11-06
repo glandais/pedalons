@@ -11,10 +11,9 @@ import org.hibernate.annotations.OnDeleteAction;
 
 /**
  * A route the catch-up of raw lines gave a line denser than its stored points (docs/LEDGER_*.md
- * API-149, phase D): its surface, computed on those points, is worth asking again. Written whatever
- * {@code pedalons.raw-backfill.resurface} says; the surface catch-up queues it while that switch is
- * on, under its cap, and deletes the row. One row per route; the foreign key cascades. Written only
- * by native statements ({@code RawTrackBackfillRepository}, {@code SurfaceRefreshRepository}).
+ * API-149, phase D). Nothing reads or writes it since docs/LEDGER_*.md API-150 (phase D): a
+ * recompute starts from the original GPX, which holds that line. Kept for the table, and for the
+ * schema of the tests, until its migration (phase F); the rows left are inert.
  */
 @Setter
 @Getter

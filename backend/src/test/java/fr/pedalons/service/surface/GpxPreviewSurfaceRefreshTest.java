@@ -59,8 +59,8 @@ import org.junit.jupiter.api.Test;
  * docs/LEDGER_*.md WEB-100 (C1b), previews of the GPX tools: the legacy request under the preview's
  * {@code files_revision}, the document of the HD catch-up, and the promotion to a route that takes
  * the surface along. Since docs/LEDGER_*.md API-150 (phase C) a save queues nothing: the tests of
- * the worker seed the request ({@link #queue}), as the previous release or {@code SurfaceBackfill}
- * does. No test reaches osm-surface.
+ * the worker seed the request ({@link #queue}), as the previous release does. No test reaches
+ * osm-surface.
  */
 @QuarkusTest
 class GpxPreviewSurfaceRefreshTest extends AbstractResourceTest {
@@ -110,7 +110,7 @@ class GpxPreviewSurfaceRefreshTest extends AbstractResourceTest {
         .call(() -> previewRepository.findSurfaces(preview.getId()));
   }
 
-  /** A request of the legacy queue: left by the previous release, or by SurfaceBackfill. */
+  /** A request of the legacy queue, as the previous release left it. */
   private void queue(GpxPreview preview) {
     long revision = reload(preview).getFilesRevision();
     QuarkusTransaction.requiringNew().run(() -> service.requestPreview(preview.getId(), revision));

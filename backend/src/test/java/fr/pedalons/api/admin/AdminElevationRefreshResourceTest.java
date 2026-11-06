@@ -219,6 +219,46 @@ class AdminElevationRefreshResourceTest extends AbstractResourceTest {
     assertEquals(ElevationState.FAST, state(route));
   }
 
+  /**
+   * API-150: the fleet's catch-up gave up on an HD route. The route is listed though it is not
+   * FAST, comes back in the queue as a catch-up request, and goes on reading as it did.
+   */
+  @Test
+  void retry_seesAnAbandonedBackfillRow_andBringsItBack_stateUntouched() {
+    Route route = abandonedRoute(team1, "Rattrapage", Instant.now().minusSeconds(3600));
+    QuarkusTransaction.requiringNew()
+        .run(
+            () -> {
+              refreshRepository.update("backfill = true where route.id = ?1", route.getId());
+              routeRepository.update(
+                  "elevationState = ?1 where id = ?2", ElevationState.HD, route.getId());
+            });
+
+    retry("", true, null, null).body("matched", equalTo(1));
+    retry("", false, null, null)
+        .body("matched", equalTo(1))
+        .body("items[0].targetId", equalTo(TsidUtils.toString(route.getId())));
+
+    ElevationRefresh after = request(route);
+    assertEquals(0, after.getAttempts());
+    assertNull(after.getLastError());
+    assertTrue(after.isBackfill(), "it stays behind the normal requests, in the catch-up's budget");
+    assertEquals(ElevationState.HD, state(route), "nothing reads as pending");
+  }
+
+  /** An HD route with a normal request given up has nothing to retry: as before. */
+  @Test
+  void retry_ignoresANormalRow_onAnHdRoute() {
+    Route route = abandonedRoute(team1, "Déjà HD", Instant.now().minusSeconds(3600));
+    QuarkusTransaction.requiringNew()
+        .run(
+            () ->
+                routeRepository.update(
+                    "elevationState = ?1 where id = ?2", ElevationState.HD, route.getId()));
+
+    retry("", true, null, null).body("matched", equalTo(0));
+  }
+
   @Test
   void retry_restartsTheRequest_reportsTheErrorItCleared_andIsIdempotent() {
     Route route = abandonedRoute(team1, "Abandonnée", Instant.now().minusSeconds(3600));
