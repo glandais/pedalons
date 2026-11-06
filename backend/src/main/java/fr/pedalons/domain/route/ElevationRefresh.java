@@ -66,4 +66,11 @@ public class ElevationRefresh {
 
   @Column(name = "last_error", columnDefinition = "text")
   private @Nullable String lastError;
+
+  /**
+   * Queued by the catch-up of the whole fleet (phase D of docs/LEDGER_*.md API-150), not by a save.
+   * No row has it yet: the claims do not read it until that catch-up exists.
+   */
+  @Column(name = "backfill", nullable = false)
+  private boolean backfill;
 }

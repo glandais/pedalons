@@ -70,6 +70,15 @@ public class Route extends TeamEntity {
   @Column(name = "elevation_state", length = 8)
   private @Nullable ElevationState elevationState;
 
+  /**
+   * The version of {@code GpxPipeline} that computed the stored HD profile (docs/LEDGER_*.md
+   * API-150). Null: computed before the column, written by the previous release, a FAST save, or a
+   * synchronous HD save that had to fall back; to recompute. {@code Short} and not {@code Integer}:
+   * the column is a {@code smallint}, and production validates the schema.
+   */
+  @Column(name = "elevation_pipeline")
+  private @Nullable Short elevationPipeline;
+
   // Ordered: the distances of the waypoints are cumulated over the tracks in this order
   // (docs/LEDGER_*.md WEB-100, C3c)
   @OneToMany(mappedBy = "route", cascade = CascadeType.ALL, orphanRemoval = true)

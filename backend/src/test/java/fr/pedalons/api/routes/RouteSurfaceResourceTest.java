@@ -14,12 +14,16 @@ import fr.pedalons.common.TsidUtils;
 import fr.pedalons.domain.route.GpxTrack;
 import fr.pedalons.domain.route.TrackSurfaceDocument;
 import fr.pedalons.domain.route.TrackSurfaceDocument.SurfaceRange;
+import fr.pedalons.domain.route.TrackSurfaceDocument.WayRange;
 import fr.pedalons.dto.common.asset.MediaDto;
 import fr.pedalons.dto.routes.request.RouteRequest;
 import fr.pedalons.dto.routes.response.RouteDto;
+import fr.pedalons.enums.ElevationState;
 import fr.pedalons.enums.SurfaceType;
 import fr.pedalons.enums.Visibility;
+import fr.pedalons.repository.route.ElevationRefreshRepository;
 import fr.pedalons.repository.route.GpxTrackRepository;
+import fr.pedalons.repository.route.RouteRepository;
 import fr.pedalons.service.route.RouteService;
 import fr.pedalons.service.security.DomainResolver;
 import fr.pedalons.service.security.PedalonsQueryContext;
@@ -46,6 +50,8 @@ class RouteSurfaceResourceTest extends AbstractResourceTest {
 
   @Inject RouteService routeService;
   @Inject GpxTrackRepository trackRepository;
+  @Inject RouteRepository routeRepository;
+  @Inject ElevationRefreshRepository elevationRefreshRepository;
   @Inject SurfaceRefreshService surfaceService;
   @Inject PedalonsQueryContext queryContext;
   @Inject DomainResolver domainResolver;
@@ -96,6 +102,17 @@ class RouteSurfaceResourceTest extends AbstractResourceTest {
                     .points()
                     .getLast()
                     .dist());
+  }
+
+  /** The HD catch-up given up after its five attempts, with its row kept for diagnosis. */
+  private void giveUpCatchUp(RouteDto route) {
+    Long id = TsidUtils.toLong(route.id());
+    QuarkusTransaction.requiringNew()
+        .run(
+            () -> {
+              elevationRefreshRepository.update("attempts = 5 where route.id = ?1", id);
+              routeRepository.update("elevationState = ?1 where id = ?2", ElevationState.FAST, id);
+            });
   }
 
   private void store(RouteDto route, TrackSurfaceDocument doc) {
@@ -186,6 +203,149 @@ class RouteSurfaceResourceTest extends AbstractResourceTest {
     detail(route)
         .body("tracks[0].surfaceState", equalTo("READY"))
         .body("tracks[0].surfaces[0].surface", equalTo("DIRT"));
+  }
+
+  // ------------------------------------------------------------------ pending (API-150)
+
+  @Test
+  void aTrackAwaitingItsHdCatchUp_isPending_inTheDetailAndTheBulk() {
+    RouteDto route = createRoute();
+    surfaceService.setEnabledForTest(true);
+
+    detail(route)
+        .body("elevationState", equalTo("PENDING"))
+        .body("tracks[0].surfaceState", equalTo("PENDING"))
+        .body("tracks[0].surfaces", nullValue());
+    bulk(route, true)
+        .body("routes[0].tracks[0].surfaceState", equalTo("PENDING"))
+        .body("routes[0].tracks[0].surfaces", nullValue());
+  }
+
+  @Test
+  void anAbandonedCatchUp_saysNothing() {
+    RouteDto route = createRoute();
+    surfaceService.setEnabledForTest(true);
+    giveUpCatchUp(route);
+
+    detail(route)
+        .body("elevationState", equalTo("FAST"))
+        .body("tracks[0].surfaceState", nullValue())
+        .body("tracks[0].surfaces", nullValue());
+    bulk(route, true).body("routes[0].tracks[0].surfaceState", nullValue());
+  }
+
+  @Test
+  void withTheSwitchOff_aPendingCatchUpSaysNothing_andADocumentIsStillServed() {
+    RouteDto route = createRoute();
+
+    detail(route)
+        .body("elevationState", equalTo("PENDING"))
+        .body("tracks[0].surfaceState", nullValue());
+    bulk(route, true).body("routes[0].tracks[0].surfaceState", nullValue());
+
+    double length = length(route);
+    store(route, ok(length, List.of(new SurfaceRange(0, length, "gravel"))));
+    detail(route).body("tracks[0].surfaceState", equalTo("READY"));
+  }
+
+  @Test
+  void aDocument_winsOverAPendingCatchUp() {
+    RouteDto route = createRoute();
+    double length = length(route);
+    store(route, ok(length, List.of(new SurfaceRange(0, length, "gravel"))));
+    surfaceService.setEnabledForTest(true);
+
+    detail(route)
+        .body("elevationState", equalTo("PENDING"))
+        .body("tracks[0].surfaceState", equalTo("READY"))
+        .body("tracks[0].surfaces[0].surface", equalTo("GRAVEL"));
+  }
+
+  // ------------------------------------------------------------------ versions of the document
+
+  /** Stored as the previous release wrote it: the raw JSON, four elements to a way. */
+  private void storeVersion1(RouteDto route, double length) {
+    QuarkusTransaction.requiringNew()
+        .run(
+            () ->
+                em.createNativeQuery(
+                        "update gpx_tracks set surfaces = cast(:json as jsonb) where id = :id")
+                    .setParameter(
+                        "json",
+                        ("{\"version\":1,\"status\":\"ok\",\"reason\":null,\"osmChangeset\":123,"
+                             + "\"computedAt\":\"2026-10-20T08:00:00Z\",\"costing\":\"pedestrian\","
+                             + "\"distance\":%1$s,"
+                             + "\"surfaces\":[[0,%2$s,\"paved_smooth\"],[%2$s,%1$s,\"compacted\"]],"
+                             + "\"ways\":[[0,%1$s,\"road\",\"none\"]]}")
+                            .formatted(length, length / 2))
+                    .setParameter("id", trackId(route))
+                    .executeUpdate());
+  }
+
+  @Test
+  void aVersion1Document_isStillServed_byClass() {
+    RouteDto route = createRoute();
+    double length = length(route);
+    storeVersion1(route, length);
+
+    detail(route)
+        .body("tracks[0].surfaceState", equalTo("READY"))
+        .body("tracks[0].surfaces", hasSize(2))
+        .body("tracks[0].surfaces[0].surface", equalTo("PAVED"))
+        .body("tracks[0].surfaces[1].surface", equalTo("GRAVEL"));
+    bulk(route, true)
+        .body("routes[0].tracks[0].surfaceState", equalTo("READY"))
+        .body("routes[0].tracks[0].surfaces[1].surface", equalTo("GRAVEL"));
+  }
+
+  @Test
+  void aVersion2Document_isServedLikeAnyOther() {
+    RouteDto route = createRoute();
+    double length = length(route);
+    store(
+        route,
+        new TrackSurfaceDocument(
+            TrackSurfaceDocument.VERSION_ROUTE_DETAILS,
+            "ok",
+            null,
+            null,
+            Instant.now(),
+            "bicycle",
+            length,
+            List.of(
+                new SurfaceRange(0, length * 0.25, "paved"),
+                new SurfaceRange(length * 0.25, length * 0.5, "paved_rough"),
+                new SurfaceRange(length * 0.5, length * 0.75, "gravel"),
+                new SurfaceRange(length * 0.75, length, "off_network")),
+            List.of(
+                new WayRange(
+                    0, length * 0.25, "minor_road", null, "ground", true, "paved", "asphalt"),
+                new WayRange(length * 0.25, length, "track", null, null, null, "unpaved", null))));
+
+    detail(route)
+        .body("tracks[0].surfaceState", equalTo("READY"))
+        .body("tracks[0].surfaces", hasSize(4))
+        .body("tracks[0].surfaces[0].surface", equalTo("PAVED"))
+        .body("tracks[0].surfaces[1].surface", equalTo("PAVED_ROUGH"))
+        .body("tracks[0].surfaces[2].surface", equalTo("GRAVEL"))
+        .body("tracks[0].surfaces[3].surface", equalTo("OFF_NETWORK"));
+  }
+
+  @Test
+  void aVersion2UnavailableDocument_isSaidWithoutSpans() {
+    RouteDto route = createRoute();
+    store(
+        route,
+        TrackSurfaceDocument.unavailable(
+            TrackSurfaceDocument.VERSION_ROUTE_DETAILS,
+            "no-typology",
+            length(route),
+            "bicycle",
+            Instant.now()));
+
+    detail(route)
+        .body("tracks[0].surfaceState", equalTo("UNAVAILABLE"))
+        .body("tracks[0].surfaces", nullValue());
   }
 
   private ValidatableResponse bulk(RouteDto route, boolean geometry) {

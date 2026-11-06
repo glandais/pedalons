@@ -51,8 +51,10 @@ import org.junit.jupiter.api.Test;
 
 /**
  * docs/LEDGER_*.md WEB-100 (C1c): the catch-up of the tracks saved before the surface existed. The
- * "old" tracks are created with the surface switched off (no request), then the catch-up is
- * switched on. No test reaches Stadia Maps.
+ * "old" tracks are saved now and lose their HD request, as a track whose catch-up was over before
+ * docs/LEDGER_*.md API-150 had no surface and nothing left to bring one; then the catch-up is
+ * switched on. A request a test needs in the queue is made by hand: no save makes one any more. No
+ * test reaches osm-surface.
  */
 @QuarkusTest
 class SurfaceBackfillTest extends AbstractResourceTest {
@@ -133,9 +135,10 @@ class SurfaceBackfillTest extends AbstractResourceTest {
         EXAMPLE);
   }
 
-  /** A route saved while the surface was off: no request. {@code ageDays} sets its created_at. */
+  /** A route with nothing to bring its surface. {@code ageDays} sets its created_at. */
   private Long oldRoute(int ageDays) {
     Long id = TsidUtils.toLong(createRoute("Ancien").id());
+    sql("delete from elevation_refresh where route_id = ?1", id);
     sql(
         "update team_entities set created_at = ?1 where id = ?2",
         Instant.now().minus(ageDays, ChronoUnit.DAYS),
@@ -222,8 +225,26 @@ class SurfaceBackfillTest extends AbstractResourceTest {
   }
 
   private Long oldPreview() {
-    GpxPreview preview = previewService.create(EXAMPLE, "example.gpx");
-    return preview.getId();
+    Long id = previewAwaitingItsCatchUp();
+    sql("delete from elevation_refresh where preview_id = ?1", id);
+    return id;
+  }
+
+  private Long previewAwaitingItsCatchUp() {
+    return previewService.create(EXAMPLE, "example.gpx").getId();
+  }
+
+  /** The normal request of a save of the previous release, on the current revision. */
+  private void normalRequest(Long previewId) {
+    QuarkusTransaction.requiringNew()
+        .run(
+            () ->
+                refreshRepository.requestForPreview(
+                    previewId,
+                    previewRepository.findById(previewId).getFilesRevision(),
+                    Instant.now(),
+                    Duration.ofSeconds(90),
+                    Duration.ofMinutes(10)));
   }
 
   private void assertClose(Instant expected, Instant actual) {
@@ -414,6 +435,26 @@ class SurfaceBackfillTest extends AbstractResourceTest {
     assertEquals(before, routeRows());
   }
 
+  /** Its catch-up writes the surface: asking osm-surface as well would be paying twice. */
+  @Test
+  void aTrackAwaitingItsHdCatchUp_isNoCandidate_untilThatCatchUpIsGivenUp() {
+    Long route = TsidUtils.toLong(createRoute("Neuf").id());
+    Long preview = previewAwaitingItsCatchUp();
+    on(300);
+
+    assertEquals(0, backfill.enqueue(Instant.now()));
+    assertEquals(0, refreshCount());
+
+    sql("update elevation_refresh set attempts = 4 where route_id = ?1", route);
+    sql("update elevation_refresh set attempts = 4 where preview_id = ?1", preview);
+    assertEquals(0, backfill.enqueue(Instant.now()), "a retry is still to come");
+
+    sql("update elevation_refresh set attempts = ?1", SurfaceRefreshService.MAX_ATTEMPTS);
+    assertEquals(2, backfill.enqueue(Instant.now()), "given up: the catch-up takes them");
+    assertEquals(List.of(route), routeRows().stream().map(Row::target).toList());
+    assertEquals(List.of(preview), rows("preview_id").stream().map(Row::target).toList());
+  }
+
   @Test
   void aDeletedTeam_isLeftAlone() {
     oldRoute(1);
@@ -524,14 +565,43 @@ class SurfaceBackfillTest extends AbstractResourceTest {
     assertEquals(rows.size(), rows.stream().map(Row::target).distinct().count());
   }
 
+  /** The save of the previous release, during a rolling deploy: no save of this one does this. */
   @Test
-  void aSave_turnsABackfillRequestIntoANormalOne() {
+  void aNormalRequest_turnsABackfillRequestIntoANormalOne() {
     RouteDto dto = createRoute("Ancien");
     Long id = TsidUtils.toLong(dto.id());
+    sql("delete from elevation_refresh where route_id = ?1", id);
     on(300);
     assertEquals(1, backfill.enqueue(now()));
     Row queued = routeRows().getFirst();
     assertTrue(queued.backfill());
+
+    QuarkusTransaction.requiringNew()
+        .run(
+            () ->
+                refreshRepository.requestForRoute(
+                    id,
+                    queued.revision() + 1,
+                    Instant.now(),
+                    Duration.ofSeconds(90),
+                    Duration.ofMinutes(10)));
+
+    Row saved = routeRows().getFirst();
+    assertEquals(id, saved.target());
+    assertFalse(saved.backfill());
+    assertNotEquals(queued.revision(), saved.revision());
+    assertClose(Instant.now().plusSeconds(90), saved.dueAt());
+  }
+
+  /** The catch-up that save requested drops the row, or the worker realigns it, first come. */
+  @Test
+  void aSave_leavesABackfillRequestAsItIs() {
+    RouteDto dto = createRoute("Ancien");
+    Long id = TsidUtils.toLong(dto.id());
+    sql("delete from elevation_refresh where route_id = ?1", id);
+    on(300);
+    assertEquals(1, backfill.enqueue(now()));
+    Row queued = routeRows().getFirst();
 
     queryContext.setUserForTest(user1);
     routeService.updateRoute(
@@ -547,19 +617,15 @@ class SurfaceBackfillTest extends AbstractResourceTest {
             null),
         EXAMPLE);
 
-    Row saved = routeRows().getFirst();
-    assertEquals(id, saved.target());
-    assertFalse(saved.backfill());
-    assertNotEquals(queued.revision(), saved.revision());
-    assertClose(Instant.now().plusSeconds(90), saved.dueAt());
+    assertEquals(List.of(queued), routeRows());
   }
 
   @Test
   void theWorker_servesNormalRequestsFirst() {
     Long routeId = oldRoute(1);
     on(300);
-    // A normal request for a preview, made by its save
     Long previewId = oldPreview();
+    normalRequest(previewId);
     assertEquals(1, backfill.enqueue(now()));
     Instant past = Instant.now().minusSeconds(5);
     sql("update surface_refresh set due_at = ?1", past);
@@ -583,6 +649,7 @@ class SurfaceBackfillTest extends AbstractResourceTest {
     Long routeId = oldRoute(1);
     on(300);
     Long previewId = oldPreview();
+    normalRequest(previewId);
     assertEquals(1, backfill.enqueue(now()));
     sql("update surface_refresh set due_at = ?1", Instant.now().minusSeconds(5));
 
@@ -603,7 +670,7 @@ class SurfaceBackfillTest extends AbstractResourceTest {
   @Test
   void leaveToBackfill_dropsOnlyTheNormalUntriedRequest() {
     on(300);
-    // Normal requests, made by saves (surface on)
+    // Normal requests, of the previous release
     Long untried = oldRouteWithRequest();
     Long retrying = oldRouteWithRequest();
     sql("update surface_refresh set attempts = 2 where route_id = ?1", retrying);
@@ -625,6 +692,12 @@ class SurfaceBackfillTest extends AbstractResourceTest {
   }
 
   private Long oldRouteWithRequest() {
-    return TsidUtils.toLong(createRoute("Neuf").id());
+    Long id = oldRoute(1);
+    QuarkusTransaction.requiringNew()
+        .run(
+            () ->
+                refreshRepository.requestForRoute(
+                    id, 1L, Instant.now(), Duration.ofSeconds(90), Duration.ofMinutes(10)));
+    return id;
   }
 }

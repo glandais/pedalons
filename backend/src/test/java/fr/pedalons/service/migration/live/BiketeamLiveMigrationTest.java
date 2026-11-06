@@ -230,9 +230,12 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
     assertEquals(1, status.counts().images().migrated(), "the logo");
   }
 
-  /** WEB-100 C1c: a bulk import spends nothing by itself, the capped catch-up takes its routes. */
+  /**
+   * WEB-100 C1c, API-150: a bulk import asks nothing for the surface. Its HD catch-up brings it, and
+   * the capped catch-up only takes the routes that one gave up on.
+   */
   @Test
-  void migratedRoutes_leaveTheirSurfaceToTheCatchUp() throws IOException {
+  void migratedRoutes_leaveTheirSurfaceToTheirHdCatchUp() throws IOException {
     surfaceService.setEnabledForTest(true);
     surfaceBackfill.setForTest(true, 300);
     try {
@@ -242,14 +245,27 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
           io.quarkus.narayana.jta.QuarkusTransaction.requiringNew()
               .call(() -> surfaceRefreshRepository.count());
       assertEquals(0, requests, "no normal request for an imported route");
+      assertEquals(
+          0, surfaceBackfill.enqueue(Instant.now()), "nor a capped one: the catch-up is to come");
+      assertEquals(
+          0L,
+          io.quarkus.narayana.jta.QuarkusTransaction.requiringNew()
+              .call(() -> surfaceRefreshRepository.count()));
 
+      io.quarkus.narayana.jta.QuarkusTransaction.requiringNew()
+          .run(
+              () ->
+                  surfaceRefreshRepository
+                      .getEntityManager()
+                      .createNativeQuery("update elevation_refresh set attempts = 5")
+                      .executeUpdate());
       assertTrue(surfaceBackfill.enqueue(Instant.now()) > 0);
       long backfill =
           io.quarkus.narayana.jta.QuarkusTransaction.requiringNew()
               .call(() -> surfaceRefreshRepository.count("backfill = true"));
       assertTrue(backfill > 0);
       assertEquals(
-          requests + backfill,
+          backfill,
           io.quarkus.narayana.jta.QuarkusTransaction.requiringNew()
               .call(() -> surfaceRefreshRepository.count()));
     } finally {

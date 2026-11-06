@@ -22,18 +22,23 @@ import static org.mockito.Mockito.when;
 import fr.pedalons.api.AbstractResourceTest;
 import fr.pedalons.common.TsidUtils;
 import fr.pedalons.common.planner.PlannerState;
+import fr.pedalons.domain.route.Route;
 import fr.pedalons.domain.route.SurfaceRefresh;
 import fr.pedalons.domain.route.TrackSurfaceDocument;
 import fr.pedalons.dto.common.asset.MediaDto;
 import fr.pedalons.dto.router.request.RouterProfile;
 import fr.pedalons.dto.routes.request.RouteRequest;
 import fr.pedalons.dto.routes.response.RouteDto;
+import fr.pedalons.enums.AssetType;
+import fr.pedalons.enums.ElevationState;
 import fr.pedalons.enums.SurfaceType;
 import fr.pedalons.enums.Visibility;
 import fr.pedalons.infrastructure.valhalla.TraceAttributesClient;
 import fr.pedalons.infrastructure.valhalla.TraceAttributesRequest;
+import fr.pedalons.repository.asset.AssetRepository;
 import fr.pedalons.repository.route.ElevationRefreshRepository;
 import fr.pedalons.repository.route.GpxTrackRepository;
+import fr.pedalons.repository.route.RouteRepository;
 import fr.pedalons.repository.route.SurfaceRefreshRepository;
 import fr.pedalons.service.elevation.ElevationRefreshWorker;
 import fr.pedalons.service.route.RouteService;
@@ -61,9 +66,11 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 /**
- * docs/LEDGER_*.md WEB-100 (C1b): a saved route queues a surface request in its own transaction,
- * the worker computes it with the (faked) provider and stores the document, and the detail serves
- * it. No test reaches Stadia Maps.
+ * docs/LEDGER_*.md WEB-100 (C1b): the legacy queue through osm-surface. The worker computes a request
+ * with the (faked) provider and stores the document, and the detail serves it. Since
+ * docs/LEDGER_*.md API-150 (phase C) a save queues nothing: a track waits for its HD catch-up, which
+ * writes the surface, so the tests of the worker seed the request ({@link #queue}), as the previous
+ * release or {@code SurfaceBackfill} does. No test reaches osm-surface.
  */
 @QuarkusTest
 class SurfaceRefreshTest extends AbstractResourceTest {
@@ -80,6 +87,8 @@ class SurfaceRefreshTest extends AbstractResourceTest {
   @Inject GpxTrackRepository trackRepository;
   @Inject ElevationRefreshWorker elevationWorker;
   @Inject ElevationRefreshRepository elevationRefreshRepository;
+  @Inject RouteRepository routeRepository;
+  @Inject AssetRepository assetRepository;
   @Inject PedalonsQueryContext queryContext;
   @Inject DomainResolver domainResolver;
 
@@ -143,6 +152,41 @@ class SurfaceRefreshTest extends AbstractResourceTest {
     return TsidUtils.toLong(route.id());
   }
 
+  private long originalFileId(RouteDto route) {
+    return QuarkusTransaction.requiringNew()
+        .call(() -> assetRepository.findCurrentFileId(id(route), AssetType.ROUTE_ORIGINAL_GPX));
+  }
+
+  /** A request of the legacy queue: left by the previous release, or by SurfaceBackfill. */
+  private void queue(RouteDto route) {
+    long revision = originalFileId(route);
+    QuarkusTransaction.requiringNew()
+        .run(
+            () ->
+                service.requestRoute(
+                    refreshRepository.getEntityManager().getReference(Route.class, id(route)),
+                    revision));
+  }
+
+  /** The HD catch-up given up: what is said of the surface no longer comes from it. */
+  private void catchUpGivenUp(RouteDto route) {
+    QuarkusTransaction.requiringNew()
+        .run(
+            () -> {
+              elevationRefreshRepository.delete("route.id", id(route));
+              routeRepository.update(
+                  "elevationState = ?1 where id = ?2", ElevationState.FAST, id(route));
+            });
+  }
+
+  private void makeElevationDue(RouteDto route) {
+    QuarkusTransaction.requiringNew()
+        .run(
+            () ->
+                elevationRefreshRepository.update(
+                    "dueAt = ?1 where route.id = ?2", Instant.now().minusSeconds(1), id(route)));
+  }
+
   private SurfaceRefresh refresh(RouteDto route) {
     return QuarkusTransaction.requiringNew()
         .call(() -> refreshRepository.findByRouteId(id(route)).orElse(null));
@@ -188,26 +232,20 @@ class SurfaceRefreshTest extends AbstractResourceTest {
   // ------------------------------------------------------------------ request
 
   @Test
-  void aSavedRoute_isQueuedInItsTransaction_andPending() {
-    Instant before = Instant.now();
+  void aSavedRoute_queuesNoSurfaceRequest_andIsPendingOnItsHdCatchUp() {
     RouteDto route = createRoute();
 
-    SurfaceRefresh request = refresh(route);
-    assertNotNull(request);
-    assertEquals(1, refreshCount());
-    assertEquals(0, request.getAttempts());
-    long originalFileId =
+    assertNull(refresh(route));
+    assertEquals(0, refreshCount());
+    assertEquals(
+        originalFileId(route),
         QuarkusTransaction.requiringNew()
             .call(
                 () ->
-                    routeService.findBySlug(team1, route.slug()).getAssets().stream()
-                        .filter(a -> a.getType() == fr.pedalons.enums.AssetType.ROUTE_ORIGINAL_GPX)
-                        .findFirst()
+                    elevationRefreshRepository
+                        .findByRouteId(id(route))
                         .orElseThrow()
-                        .getFileId());
-    assertEquals(originalFileId, request.getSourceRevision());
-    assertTrue(request.getDueAt().isAfter(before.plus(Duration.ofSeconds(80))));
-    assertTrue(request.getDueAt().isBefore(before.plus(Duration.ofSeconds(120))));
+                        .getSourceRevision()));
 
     detail(route)
         .body("tracks[0].surfaceState", equalTo("PENDING"))
@@ -216,8 +254,9 @@ class SurfaceRefreshTest extends AbstractResourceTest {
   }
 
   @Test
-  void withTheSwitchOff_nothingIsQueued_andNothingIsSent() {
+  void withTheSwitchOff_theQueueWaits_nothingIsSent_andNothingIsPending() {
     RouteDto route = createRoute();
+    queue(route);
     service.setEnabledForTest(false);
     makeDue(route);
 
@@ -233,6 +272,7 @@ class SurfaceRefreshTest extends AbstractResourceTest {
   @Test
   void aRename_makesNoRequest_andTheSurfaceStays() {
     RouteDto route = createRoute();
+    queue(route);
     makeDue(route);
     assertEquals(1, worker.processDue());
     assertEquals(0, refreshCount());
@@ -244,8 +284,9 @@ class SurfaceRefreshTest extends AbstractResourceTest {
   }
 
   @Test
-  void aNewTrack_dropsTheSurfaceOfTheOldOne_andAsksAgainUnderItsRevision() {
+  void aNewTrack_dropsTheSurfaceOfTheOldOne_andWaitsForItsHdCatchUp() {
     RouteDto route = createRoute();
+    queue(route);
     makeDue(route);
     assertEquals(1, worker.processDue());
     assertNotNull(document(route));
@@ -253,18 +294,16 @@ class SurfaceRefreshTest extends AbstractResourceTest {
     updateRoute(route, "Boucle", EXAMPLE);
 
     assertNull(document(route), "the old surface left with the old track");
-    SurfaceRefresh request = refresh(route);
-    assertNotNull(request);
-    long originalFileId =
+    assertNull(refresh(route), "nothing queued for osm-surface");
+    assertEquals(
+        originalFileId(route),
         QuarkusTransaction.requiringNew()
             .call(
                 () ->
-                    routeService.findBySlug(team1, route.slug()).getAssets().stream()
-                        .filter(a -> a.getType() == fr.pedalons.enums.AssetType.ROUTE_ORIGINAL_GPX)
-                        .findFirst()
+                    elevationRefreshRepository
+                        .findByRouteId(id(route))
                         .orElseThrow()
-                        .getFileId());
-    assertEquals(originalFileId, request.getSourceRevision());
+                        .getSourceRevision()));
     detail(route).body("tracks[0].surfaceState", equalTo("PENDING"));
   }
 
@@ -273,6 +312,7 @@ class SurfaceRefreshTest extends AbstractResourceTest {
   @Test
   void theWorker_writesTheDocument_removesTheRequest_andTheDetailIsReady() {
     RouteDto route = createRoute();
+    queue(route);
     makeDue(route);
 
     assertEquals(1, worker.processDue());
@@ -308,6 +348,7 @@ class SurfaceRefreshTest extends AbstractResourceTest {
       RouteDto route =
           createDrawn(
               PlannerStateFixtures.withProfile(PlannerStateFixtures.drawn(), (RouterProfile) c[0]));
+      queue(route);
       makeDue(route);
       worker.processDue();
       calls++;
@@ -317,6 +358,7 @@ class SurfaceRefreshTest extends AbstractResourceTest {
       assertEquals("map_snap", captor.getValue().shapeMatch());
     }
     RouteDto file = createRoute();
+    queue(file);
     makeDue(file);
     worker.processDue();
     verify(client, times(calls + 1)).traceAttributes(captor.capture());
@@ -338,6 +380,7 @@ class SurfaceRefreshTest extends AbstractResourceTest {
                 PlannerStateFixtures.routed(new double[][] {{4.8320, 45.7610}}),
                 PlannerStateFixtures.direct()));
     RouteDto route = createDrawn(state);
+    queue(route);
     makeDue(route);
 
     worker.processDue();
@@ -356,6 +399,7 @@ class SurfaceRefreshTest extends AbstractResourceTest {
   @Test
   void aTrackSavedAgainBeforeTheWrite_isNotWritten_andTheRequestIsRealigned() {
     RouteDto route = createRoute();
+    queue(route);
     makeDue(route);
     boolean[] replaced = {false};
     doAnswer(
@@ -383,6 +427,8 @@ class SurfaceRefreshTest extends AbstractResourceTest {
   void aRateLimit_failsTheAttempt_withABackoff_andFiveFailuresGiveUp() {
     doThrow(error(429, -1)).when(client).traceAttributes(any());
     RouteDto route = createRoute();
+    catchUpGivenUp(route);
+    queue(route);
     makeDue(route);
     Instant before = Instant.now();
 
@@ -414,6 +460,7 @@ class SurfaceRefreshTest extends AbstractResourceTest {
   void aTrackTheProviderCannotMatch_isUnavailable_forGood() {
     doThrow(error(400, 444)).when(client).traceAttributes(any());
     RouteDto route = createRoute();
+    queue(route);
     makeDue(route);
 
     assertEquals(1, worker.processDue());
@@ -428,17 +475,37 @@ class SurfaceRefreshTest extends AbstractResourceTest {
   }
 
   @Test
-  void theHdCatchUp_keepsTheDocument_andTheSpansFollowTheNewLength() {
+  void theHdCatchUp_replacesTheDocumentOfTheQueue_withTheOneOfItsAnswer() {
     RouteDto route = createRoute();
+    queue(route);
     makeDue(route);
     worker.processDue();
     TrackSurfaceDocument before = document(route);
+    assertEquals(TrackSurfaceDocument.VERSION, before.version());
 
-    QuarkusTransaction.requiringNew()
-        .run(
-            () ->
-                elevationRefreshRepository.update(
-                    "dueAt = ?1 where route.id = ?2", Instant.now().minusSeconds(1), id(route)));
+    makeElevationDue(route);
+    assertEquals(1, elevationWorker.processDue());
+
+    TrackSurfaceDocument after = document(route);
+    assertEquals(TrackSurfaceDocument.VERSION_ROUTE_DETAILS, after.version());
+    double length =
+        QuarkusTransaction.requiringNew()
+            .call(() -> trackRepository.findPoints(id(route)).getFirst().points().getLast().dist());
+    assertEquals(length, after.distance(), 0.01);
+    assertEquals(length, number(detail(route), "tracks[0].surfaces[-1].to"), 0.2);
+    verify(client, times(1)).traceAttributes(any());
+  }
+
+  @Test
+  void withTheSwitchOff_theHdCatchUp_keepsTheDocument_andTheSpansFollowTheNewLength() {
+    RouteDto route = createRoute();
+    queue(route);
+    makeDue(route);
+    worker.processDue();
+    TrackSurfaceDocument before = document(route);
+    service.setEnabledForTest(false);
+
+    makeElevationDue(route);
     assertEquals(1, elevationWorker.processDue());
 
     assertEquals(before, document(route));
@@ -446,6 +513,45 @@ class SurfaceRefreshTest extends AbstractResourceTest {
         QuarkusTransaction.requiringNew()
             .call(() -> trackRepository.findPoints(id(route)).getFirst().points().getLast().dist());
     assertEquals(length, number(detail(route), "tracks[0].surfaces[-1].to"), 0.2);
+  }
+
+  @Test
+  void theHdCatchUp_dropsTheRequestWaiting_soNothingReachesOsmSurface() {
+    RouteDto route = createRoute();
+    queue(route);
+    makeElevationDue(route);
+
+    assertEquals(1, elevationWorker.processDue());
+
+    assertEquals(0, refreshCount());
+    makeDue(route);
+    assertEquals(0, worker.processDue());
+    verify(client, never()).traceAttributes(any());
+    assertEquals(TrackSurfaceDocument.VERSION_ROUTE_DETAILS, document(route).version());
+  }
+
+  /** Under the lock of the route: the request gone, the worker writes nothing over the answer. */
+  @Test
+  void aWorkerMidCompute_neverReplacesTheDocumentOfTheHdCatchUp() {
+    RouteDto route = createRoute();
+    queue(route);
+    makeDue(route);
+    makeElevationDue(route);
+    doAnswer(
+            inv -> {
+              assertEquals(1, elevationWorker.processDue());
+              return TraceFixtures.answer(inv.getArgument(0), i -> "gravel");
+            })
+        .when(client)
+        .traceAttributes(any());
+
+    assertEquals(1, worker.processDue());
+
+    TrackSurfaceDocument doc = document(route);
+    assertEquals(TrackSurfaceDocument.VERSION_ROUTE_DETAILS, doc.version());
+    assertEquals("paved", doc.surfaces().getFirst().code());
+    assertEquals(0, refreshCount());
+    detail(route).body("tracks[0].surfaces[0].surface", equalTo("PAVED"));
   }
 
   // ------------------------------------------------------------------ raw line (API-149, B)
@@ -467,6 +573,7 @@ class SurfaceRefreshTest extends AbstractResourceTest {
   @Test
   void theRawLine_isSentThinned_andTheDocumentStaysOnTheStoredPoints() {
     RouteDto route = createRoute();
+    queue(route);
     makeDue(route);
     java.util.List<double[]> raw =
         QuarkusTransaction.requiringNew()
@@ -489,6 +596,7 @@ class SurfaceRefreshTest extends AbstractResourceTest {
   @Test
   void withoutARawLine_theStoredPointsAreSent() {
     RouteDto route = createRoute();
+    queue(route);
     makeDue(route);
     QuarkusTransaction.requiringNew()
         .run(
@@ -519,6 +627,8 @@ class SurfaceRefreshTest extends AbstractResourceTest {
     dataService.setTeamEnableRoutePlanner(otherTeam, true);
     queryContext.setUserForTest(otherUser);
     RouteDto second = routeService.createRoute("other-team", request("Autre", null), EXAMPLE);
+    queue(first);
+    queue(second);
     makeDue(first);
     makeDue(second);
     domainResolver.setDomainForTest(null);

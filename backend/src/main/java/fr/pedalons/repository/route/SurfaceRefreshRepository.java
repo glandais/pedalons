@@ -1,6 +1,7 @@
 package fr.pedalons.repository.route;
 
 import fr.pedalons.domain.route.SurfaceRefresh;
+import fr.pedalons.service.elevation.ElevationRefreshService;
 import io.hypersistence.tsid.TSID;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -251,6 +252,20 @@ public class SurfaceRefreshRepository implements PanacheRepository<SurfaceRefres
         "sourceRevision = ?1 where preview.id = ?2 and sourceRevision = ?3", to, previewId, from);
   }
 
+  /**
+   * Removes the request of a route, whatever its state: the HD catch-up or an HD save has just
+   * written the surface, in the caller's transaction, with the route locked (docs/LEDGER_*.md
+   * API-150).
+   */
+  public void dropForRoute(Long routeId) {
+    delete("route.id = ?1", routeId);
+  }
+
+  /** As {@link #dropForRoute}, for a preview. */
+  public void dropForPreview(Long previewId) {
+    delete("preview.id = ?1", previewId);
+  }
+
   /** Whether a computation is still to come for a route: queued and not given up. */
   public boolean isPendingForRoute(Long routeId, int maxAttempts) {
     return count("route.id = ?1 and attempts < ?2", routeId, maxAttempts) > 0;
@@ -343,7 +358,11 @@ public class SurfaceRefreshRepository implements PanacheRepository<SurfaceRefres
   /** A track the catch-up may queue: its id, its length (the weight), the revision to ask for. */
   public record BackfillCandidate(Long id, double distance, long sourceRevision) {}
 
-  /** Routes without a surface nor any request, most recent first. */
+  /**
+   * Routes without a surface nor any request, most recent first. A route with an HD catch-up still
+   * to come is no candidate: that catch-up writes its surface (docs/LEDGER_*.md API-150), and every
+   * save would otherwise reach osm-surface during its quiet period.
+   */
   public List<BackfillCandidate> findBackfillRoutes(int limit) {
     @SuppressWarnings("unchecked")
     List<Object[]> rows =
@@ -358,6 +377,8 @@ public class SurfaceRefreshRepository implements PanacheRepository<SurfaceRefres
                      and t.deleted = false
                      and tm.deleted = false
                      and not exists (select 1 from surface_refresh r where r.route_id = t.id)
+                     and not exists (select 1 from elevation_refresh e
+                                      where e.route_id = t.id and e.attempts < :maxAttempts)
                      and exists (select 1 from assets a
                                   where a.team_entity_id = t.id and a.type = 'ROUTE_ORIGINAL_GPX')
                    order by t.created_at desc, t.id desc
@@ -370,13 +391,14 @@ public class SurfaceRefreshRepository implements PanacheRepository<SurfaceRefres
                  order by c.created_at desc, c.id desc
                 """)
             .setParameter("limit", limit)
+            .setParameter("maxAttempts", ElevationRefreshService.MAX_ATTEMPTS)
             .getResultList();
     return candidates(rows);
   }
 
   /**
    * Previews without a current surface nor any request, created after {@code createdAfter}, most
-   * recent first.
+   * recent first. As for the routes, an HD catch-up still to come writes the surface.
    */
   public List<BackfillCandidate> findBackfillPreviews(int limit, Instant createdAfter) {
     @SuppressWarnings("unchecked")
@@ -391,11 +413,14 @@ public class SurfaceRefreshRepository implements PanacheRepository<SurfaceRefres
                    and (p.surfaces is null
                         or (p.surfaces ->> 'trackRevision')::bigint is distinct from p.files_revision)
                    and not exists (select 1 from surface_refresh r where r.preview_id = p.id)
+                   and not exists (select 1 from elevation_refresh e
+                                    where e.preview_id = p.id and e.attempts < :maxAttempts)
                  order by p.created_at desc, p.id desc
                  limit :limit
                 """)
             .setParameter("createdAfter", Timestamp.from(createdAfter))
             .setParameter("limit", limit)
+            .setParameter("maxAttempts", ElevationRefreshService.MAX_ATTEMPTS)
             .getResultList();
     return candidates(rows);
   }

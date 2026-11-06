@@ -32,3 +32,5 @@ CREATE INDEX gpx_tracks_surface_missing ON gpx_tracks (route_id) WHERE surfaces 
 -- Mirrors V82__raw_track_backfill.sql: the partial index of the raw line catch-up (Hibernate cannot
 -- express it). Its two tables are entities, cascade included.
 CREATE INDEX gpx_tracks_raw_missing ON gpx_tracks (route_id) WHERE raw_geometry IS NULL;
+-- Mirrors V83__route_details_pipeline.sql: the default the previous release and the upsert rely on.
+ALTER TABLE elevation_refresh ALTER COLUMN backfill SET DEFAULT false;

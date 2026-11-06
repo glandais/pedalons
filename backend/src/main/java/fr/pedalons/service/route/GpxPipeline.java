@@ -8,6 +8,7 @@ import fr.pedalons.infrastructure.routedetails.RouteDetailsOptions;
 import fr.pedalons.infrastructure.routedetails.RouteDetailsProfile;
 import fr.pedalons.infrastructure.routedetails.RouteDetailsResponse;
 import fr.pedalons.infrastructure.routedetails.RouteDetailsSection;
+import fr.pedalons.service.surface.RouteSurfaceAnswer;
 import io.github.glandais.engine.climb.ClimbDetectorJvm;
 import io.github.glandais.engine.path.ElevationGainJvm;
 import io.github.glandais.engine.path.ElevationStepJvm;
@@ -40,8 +41,10 @@ import org.jspecify.annotations.Nullable;
  *   <li><b>One service call</b> through {@link RouteDetailsGateway} (thinned, sliced and stitched
  *       there), profile {@code fast} for {@link ElevationQuality#FAST} (Mapterhorn only) and {@code
  *       full} for {@link ElevationQuality#HD} (IGN LiDAR HD, decks in the surface model), sections
- *       {@code elevation} and {@code summary}, {@code input_with_breakpoints} sampling, {@code
- *       smoothing_m = 150}. The 150 m smoothing is <b>not optional</b>: gpx2web smoothed over that
+ *       {@code elevation} and {@code summary} — plus {@code typology} when the caller wants the
+ *       surface of the same {@code full} call ({@link #processReported(Path, String,
+ *       ElevationQuality, boolean)}) — {@code input_with_breakpoints} sampling, {@code smoothing_m =
+ *       150}. The 150 m smoothing is <b>not optional</b>: gpx2web smoothed over that
  *       window, and every route since was measured that way — it is now the service's {@code
  *       ele_smoothed}.
  *   <li><b>The ascent</b> is the service's ({@code dem} preset), read from its cumulatives and set
@@ -137,15 +140,65 @@ public class GpxPipeline {
    *     fallback_after_error} plus its {@code elevation_unavailable} ranges (docs/LEDGER_*.md
    *     API-150); the whole length of the track when the call failed and the original elevations
    *     were kept. Zero means the requested quality was really obtained (docs/LEDGER_*.md API-131).
+   * @param surface what the answer says of the surface along {@code path}, when it was asked for
+   *     and the service answered; null otherwise
    */
-  public record Processed(Path path, double fallbackAfterErrorKm) {}
+  public record Processed(
+      Path path, double fallbackAfterErrorKm, @Nullable RouteSurfaceAnswer surface) {
+
+    public Processed(Path path, double fallbackAfterErrorKm) {
+      this(path, fallbackAfterErrorKm, null);
+    }
+  }
 
   /** {@link #process}, keeping the part of the elevation report the HD catch-up decides on. */
   public Processed processReported(Path source, String name, ElevationQuality quality) {
-    DenseResult dense = processDense(source, name, quality);
-    Path simplified = PathSimplifierJvm.simplify(dense.path(), 3.0, 3.0);
-    LOG.debugv("Simplified {0} to {1} points (Douglas-Peucker)", name, simplified.getSize());
-    return new Processed(simplified, dense.fallbackAfterErrorKm());
+    return processReported(source, name, quality, false);
+  }
+
+  /**
+   * {@link #processReported(Path, String, ElevationQuality)} that can also keep the surface, read
+   * from the same answer as the profile (docs/LEDGER_*.md API-150): one call, no second one.
+   *
+   * @param withSurface for an {@code HD} track, asks the {@code typology} section and fills {@link
+   *     Processed#surface()}; ignored for {@code FAST}, the surface coming with the HD profile
+   */
+  public Processed processReported(
+      Path source, String name, ElevationQuality quality, boolean withSurface) {
+    boolean surface = withSurface && quality == ElevationQuality.HD;
+    DenseResult dense = processDense(source, name, quality, surface);
+    if (!surface) {
+      Path simplified = PathSimplifierJvm.simplify(dense.path(), 3.0, 3.0);
+      LOG.debugv("Simplified {0} to {1} points (Douglas-Peucker)", name, simplified.getSize());
+      return new Processed(simplified, dense.fallbackAfterErrorKm());
+    }
+    // The same path as simplify, which delegates to it: the indices are what anchors the surface
+    PathSimplifier.Simplified simplified =
+        PathSimplifierJvm.simplifyWithIndices(dense.path(), 3.0, 3.0);
+    LOG.debugv(
+        "Simplified {0} to {1} points (Douglas-Peucker)", name, simplified.getPath().getSize());
+    return new Processed(
+        simplified.getPath(), dense.fallbackAfterErrorKm(), surfaceOf(dense, simplified, name));
+  }
+
+  /** What {@code dense} says of the surface of its simplified path, null when it says nothing. */
+  private static @Nullable RouteSurfaceAnswer surfaceOf(
+      DenseResult dense, PathSimplifier.Simplified simplified, String name) {
+    RouteDetailsTrack.Dense answer = dense.answer();
+    if (answer == null) {
+      return null;
+    }
+    Path path = simplified.getPath();
+    if (dense.probed()) {
+      return RouteSurfaceAnswer.degenerate(
+          path.getTotalDistance(), answer.dataVersions(), answer.complete());
+    }
+    List<RouteDetailsResponse.Segment> segments = answer.segments();
+    if (segments == null) {
+      LOG.warnf("osm-route-details answered no segments for %s, no surface", name);
+      return null;
+    }
+    return answer.surfaceAnswer(segments, simplified.getIndices(), path);
   }
 
   /**
@@ -164,7 +217,7 @@ public class GpxPipeline {
    * still know its ascent.
    */
   public ProcessedWithClimb processWithClimb(Path source, String name, ElevationQuality quality) {
-    DenseResult dense = processDense(source, name, quality);
+    DenseResult dense = processDense(source, name, quality, false);
     PathSimplifier.Simplified simplified =
         PathSimplifierJvm.simplifyWithIndices(dense.path(), 3.0, 3.0);
     double[] climb = RouteDetailsTrack.pick(dense.climb(), simplified.getIndices());
@@ -177,10 +230,26 @@ public class GpxPipeline {
   /**
    * The elevated, smoothed and measured path before the simplification, with the cumulative ascent
    * of each of its points.
+   *
+   * @param answer the answer {@code path} comes from, null when the original elevations were kept
+   * @param probed whether {@code answer} is that of a probe of the elevation, sent in place of a
+   *     degenerate track: its points are not those of {@code path}
    */
-  private record DenseResult(Path path, double[] climb, double fallbackAfterErrorKm) {}
+  private record DenseResult(
+      Path path,
+      double[] climb,
+      double fallbackAfterErrorKm,
+      RouteDetailsTrack.@Nullable Dense answer,
+      boolean probed) {
 
-  private DenseResult processDense(Path source, String name, ElevationQuality quality) {
+    /** The original elevations kept. */
+    DenseResult(Path path, double[] climb, double fallbackAfterErrorKm) {
+      this(path, climb, fallbackAfterErrorKm, null, false);
+    }
+  }
+
+  private DenseResult processDense(
+      Path source, String name, ElevationQuality quality, boolean withSurface) {
     if (source.getSize() == 0) {
       return fallback(source, 0.0, false);
     }
@@ -188,31 +257,32 @@ public class GpxPipeline {
         quality == ElevationQuality.FAST ? RouteDetailsProfile.FAST : RouteDetailsProfile.FULL;
     double wholeKm = Math.max(source.getTotalDistance() / 1000.0, Double.MIN_VALUE);
     if (source.getSize() < 2 || source.getTotalDistance() < MIN_LENGTH_M) {
-      RouteDetailsTrack.Dense probe = read(RouteDetailsTrack.probe(source, PROBE_M), name, profile);
+      RouteDetailsTrack.Dense probe =
+          read(RouteDetailsTrack.probe(source, PROBE_M), name, profile, false);
       if (probe == null) {
         return fallback(source, wholeKm, false);
       }
       Path flat = RouteDetailsTrack.flat(source, probe.path());
       ElevationGainJvm.annotate(flat);
       return new DenseResult(
-          flat, ElevationGainJvm.cumulativeGain(flat), probe.fallbackAfterErrorKm());
+          flat, ElevationGainJvm.cumulativeGain(flat), probe.fallbackAfterErrorKm(), probe, true);
     }
     RouteDetailsTrack.Dense dense =
-        read(RouteDetailsTrack.densify(source, SENT_MAX_GAP_M), name, profile);
+        read(RouteDetailsTrack.densify(source, SENT_MAX_GAP_M), name, profile, withSurface);
     if (dense == null) {
       return fallback(source, wholeKm, true);
     }
-    return new DenseResult(dense.path(), dense.climb(), dense.fallbackAfterErrorKm());
+    return new DenseResult(dense.path(), dense.climb(), dense.fallbackAfterErrorKm(), dense, false);
   }
 
   /**
    * The answer for {@code sent}, or null, logged, when the call failed or the answer is unusable.
    */
   private RouteDetailsTrack.@Nullable Dense read(
-      RouteDetailsTrack.Sent sent, String name, RouteDetailsProfile profile) {
+      RouteDetailsTrack.Sent sent, String name, RouteDetailsProfile profile, boolean withSurface) {
     try {
       RouteDetailsResponse response =
-          routeDetails.details(sent.lat(), sent.lon(), options(profile));
+          routeDetails.details(sent.lat(), sent.lon(), options(profile, withSurface));
       RouteDetailsTrack.Dense dense = RouteDetailsTrack.toDense(sent.lat(), sent.lon(), response);
       logAnswer(response, dense, name, sent.size());
       return dense;
@@ -240,14 +310,20 @@ public class GpxPipeline {
   }
 
   /**
-   * The request of {@code profile}. One place, so that the surface (phase C) widens the sections
-   * of the same {@code full} call rather than making a second one.
+   * The request of {@code profile}. One place, so that the surface widens the sections of the same
+   * {@code full} call rather than making a second one. {@code FAST} never asks for it: the HD
+   * catch-up that follows does.
+   *
+   * @param withSurface all three sections, the {@code typology} included
    */
-  private static RouteDetailsOptions options(RouteDetailsProfile profile) {
+  private static RouteDetailsOptions options(RouteDetailsProfile profile, boolean withSurface) {
     // accept_partial in fast only: Mapterhorn elevations rather than a 503 when the typology is
     // down; in full, an outage is a 503 and the catch-up retries it
-    return RouteDetailsOptions.of(profile, profile == RouteDetailsProfile.FAST)
-        .withSections(List.of(RouteDetailsSection.ELEVATION, RouteDetailsSection.SUMMARY));
+    RouteDetailsOptions options =
+        RouteDetailsOptions.of(profile, profile == RouteDetailsProfile.FAST);
+    return withSurface
+        ? options
+        : options.withSections(List.of(RouteDetailsSection.ELEVATION, RouteDetailsSection.SUMMARY));
   }
 
   /**

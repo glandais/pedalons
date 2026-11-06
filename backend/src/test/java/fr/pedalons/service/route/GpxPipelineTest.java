@@ -1,6 +1,8 @@
 package fr.pedalons.service.route;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import fr.pedalons.AbstractBaseTest;
@@ -13,6 +15,7 @@ import fr.pedalons.infrastructure.routedetails.RouteDetailsProfile;
 import fr.pedalons.infrastructure.routedetails.RouteDetailsRequest;
 import fr.pedalons.infrastructure.routedetails.RouteDetailsSection;
 import fr.pedalons.infrastructure.valhalla.Polyline6Decoder;
+import fr.pedalons.service.surface.RouteSurfaceAnswer;
 import io.github.glandais.elevation.CoordinatesElevation;
 import io.github.glandais.elevation.LatLonElevation;
 import io.github.glandais.engine.path.Path;
@@ -280,6 +283,174 @@ class GpxPipelineTest extends AbstractBaseTest {
 
     assertEquals(0.0, processed.fallbackAfterErrorKm());
     assertAllElevations(processed.path(), FakeRouteDetailsClient.FAST_ELEVATION);
+  }
+
+  // ------------------------------------------------------------------ the surface (API-150)
+
+  private static final List<RouteDetailsSection> ALL_SECTIONS =
+      List.of(
+          RouteDetailsSection.ELEVATION, RouteDetailsSection.TYPOLOGY, RouteDetailsSection.SUMMARY);
+
+  private static final List<RouteDetailsSection> NO_TYPOLOGY =
+      List.of(RouteDetailsSection.ELEVATION, RouteDetailsSection.SUMMARY);
+
+  @Test
+  void anHdCallWithoutTheSurface_asksNoTypology() {
+    GpxPipeline.Processed processed =
+        gpxPipeline.processReported(nantesLine(), "test", ElevationQuality.HD);
+
+    assertEquals(NO_TYPOLOGY, FakeRouteDetailsClient.REQUESTS.getLast().options().sections());
+    assertNull(processed.surface());
+  }
+
+  @Test
+  void anHdCallWithTheSurface_asksAllThreeSections_inOneCall() {
+    GpxPipeline.Processed processed =
+        gpxPipeline.processReported(nantesLine(), "test", ElevationQuality.HD, true);
+
+    assertEquals(1, FakeRouteDetailsClient.REQUESTS.size());
+    RouteDetailsOptions options = FakeRouteDetailsClient.REQUESTS.getLast().options();
+    assertEquals(ALL_SECTIONS, options.sections());
+    assertEquals(RouteDetailsProfile.FULL, options.profile());
+    assertEquals(Boolean.FALSE, options.acceptPartial(), "an outage must be a 503, retried");
+    assertAllElevations(processed.path(), FakeRouteDetailsClient.FULL_ELEVATION);
+
+    RouteSurfaceAnswer answer = processed.surface();
+    assertEquals(1, answer.segments().size());
+    assertTrue(answer.complete());
+    assertEquals(FakeRouteDetailsClient.DATA_VERSIONS, answer.dataVersions());
+  }
+
+  @Test
+  void aFastCall_neverAsksTheTypology() {
+    GpxPipeline.Processed processed =
+        gpxPipeline.processReported(nantesLine(), "test", ElevationQuality.FAST, true);
+
+    assertEquals(NO_TYPOLOGY, FakeRouteDetailsClient.REQUESTS.getLast().options().sections());
+    assertNull(processed.surface());
+  }
+
+  @Test
+  void theTwoArgumentsResult_hasNoSurface() {
+    assertNull(new GpxPipeline.Processed(nantesLine(), 0.0).surface());
+  }
+
+  @Test
+  void theAnchors_pairEachStoredPoint_withItsDistanceInTheAnswer() {
+    GpxPipeline.Processed processed =
+        gpxPipeline.processReported(nantesLine(), "test", ElevationQuality.HD, true);
+
+    Path path = processed.path();
+    RouteSurfaceAnswer answer = processed.surface();
+    assertEquals(path.getSize(), answer.answerM().length);
+    assertEquals(path.getSize(), answer.storedM().length);
+    assertEquals(0.0, answer.answerM()[0]);
+    assertEquals(0.0, answer.storedM()[0]);
+    for (int k = 0; k < path.getSize(); k++) {
+      assertEquals(path.distance(k), answer.storedM()[k], 1e-9);
+    }
+    assertEquals(path.distance(path.getSize() - 1), answer.storedLength(), 1e-9);
+  }
+
+  /** The jitter of a recording stays in {@code d_m} and leaves the stored distance: two axes. */
+  @Test
+  void theJitterOfARecording_stretchesTheAnswerOverTheStoredTrack() {
+    List<CoordinatesElevation> coordinates = new ArrayList<>();
+    for (int i = 0; i <= 200; i++) {
+      double jitter = i % 2 == 0 ? 0.00002 : -0.00002;
+      coordinates.add(new LatLonElevation(47.2184 + jitter, -1.5536 + i * 0.00006, 0.0));
+    }
+
+    RouteSurfaceAnswer answer =
+        gpxPipeline
+            .processReported(
+                PathJvm.fromCoordinates(coordinates), "test", ElevationQuality.HD, true)
+            .surface();
+
+    int last = answer.answerM().length - 1;
+    assertTrue(last < 200, "Douglas-Peucker took points away: " + last);
+    assertTrue(
+        answer.answerM()[last] > answer.storedM()[last] + 5,
+        answer.answerM()[last] + " along the answer, " + answer.storedM()[last] + " stored");
+  }
+
+  @Test
+  void aSlicedRoute_comesBackWithOneTypology_onTheWholeAxis() {
+    FakeRouteDetailsClient.limits = new RouteDetailsCapabilities.Limits(500, 1_000);
+    Path source = nantesLine();
+
+    RouteSurfaceAnswer answer =
+        gpxPipeline.processReported(source, "test", ElevationQuality.HD, true).surface();
+
+    assertTrue(FakeRouteDetailsClient.REQUESTS.size() > 1, "sliced");
+    assertTrue(
+        FakeRouteDetailsClient.REQUESTS.stream()
+            .allMatch(r -> r.options().sections().contains(RouteDetailsSection.TYPOLOGY)));
+    assertEquals(1, answer.segments().size(), "equal neighbours merged");
+    assertEquals(0.0, answer.segments().getFirst().fromM());
+    assertEquals(
+        answer.answerM()[answer.answerM().length - 1],
+        answer.segments().getFirst().toM(),
+        1e-3,
+        "the segments and the points share one axis");
+    assertEquals(source.getTotalDistance(), answer.storedLength(), 1.0);
+  }
+
+  @Test
+  void aFailedCall_hasNoSurface() {
+    FakeRouteDetailsClient.failFull = true;
+
+    GpxPipeline.Processed processed =
+        gpxPipeline.processReported(nantesLine(), "test", ElevationQuality.HD, true);
+
+    assertTrue(processed.fallbackAfterErrorKm() > 0.0);
+    assertNull(processed.surface());
+  }
+
+  @Test
+  void aTerrainFallback_keepsTheSurfaceOfItsAnswer() {
+    FakeRouteDetailsClient.fallbackAfterError = true;
+
+    GpxPipeline.Processed processed =
+        gpxPipeline.processReported(nantesLine(), "test", ElevationQuality.HD, true);
+
+    assertTrue(processed.fallbackAfterErrorKm() > 0.0);
+    assertTrue(processed.surface().complete());
+  }
+
+  @Test
+  void aPartialAnswer_isNotComplete() {
+    FakeRouteDetailsClient.partial = true;
+
+    GpxPipeline.Processed processed =
+        gpxPipeline.processReported(nantesLine(), "test", ElevationQuality.HD, true);
+
+    assertEquals(0.0, processed.fallbackAfterErrorKm());
+    assertFalse(processed.surface().complete());
+  }
+
+  /** The probe stands in for a degenerate track: its typology would describe the probe's line. */
+  @Test
+  void aLineWithoutLength_asksNoTypology_andHasNothingToProject() {
+    Path source = line(47.2184, -1.5536, 47.2184, -1.5536);
+
+    GpxPipeline.Processed processed =
+        gpxPipeline.processReported(source, "test", ElevationQuality.HD, true);
+
+    assertEquals(NO_TYPOLOGY, FakeRouteDetailsClient.REQUESTS.getLast().options().sections());
+    assertTrue(processed.surface().segments().isEmpty());
+  }
+
+  @Test
+  void anAnswerWithoutSegments_hasNoSurface_andKeepsItsProfile() {
+    FakeRouteDetailsClient.segmentsOf = length -> null;
+
+    GpxPipeline.Processed processed =
+        gpxPipeline.processReported(nantesLine(), "test", ElevationQuality.HD, true);
+
+    assertNull(processed.surface());
+    assertEquals(0.0, processed.fallbackAfterErrorKm());
+    assertAllElevations(processed.path(), FakeRouteDetailsClient.FULL_ELEVATION);
   }
 
   // ------------------------------------------------------------------ fixtures

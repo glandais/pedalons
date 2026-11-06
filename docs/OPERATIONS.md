@@ -17,10 +17,11 @@ rescheduled rather than left for a `restart:` policy.
 (server-side raster rendering, ~1.8 GB resident) and `osm-surface` (the surface along saved tracks,
 over a cache of OpenStreetMap tiles; see [Surface along saved tracks](#surface-along-saved-tracks-osm-surface)),
 plus `osm-route-details` (elevation profile and surface of routes, which will replace osm-surface): the
-backends read their elevations there, `fast` for a save or the planner, `full` for the HD catch-up
-(ledger `API-150` phase B, `OPS-58`). **Deploy it, and check that an environment's network reaches it,
+backends read their elevations there, `fast` for a save or the planner, `full` for the HD catch-up,
+which also writes the surface (ledger `API-150` phases B and C, `OPS-58`). **Deploy it, and check that an environment's network reaches it,
 before a backend that calls it**: without it nothing fails visibly, but every save keeps the file's
-elevations (a planner route gets 0 m and no D+) and every HD catch-up gives up after five attempts.
+elevations (a planner route gets 0 m and no D+) and every HD catch-up gives up after five attempts,
+with no surface.
 One instance of each serves every environment. It owns the `pedalons-shared` overlay network. Route computation is not hosted at all any more: it is
 bought from Stadia Maps, with a key per environment, and so is geocoding (see
 [Stadia Maps: routing and geocoding](#stadia-maps-routing-and-geocoding)).
@@ -717,7 +718,32 @@ order, because step 2's old backend still talks to `valhalla` until it is replac
 
 ### Surface along saved tracks (osm-surface)
 
-The **surface along saved tracks** (ledger `WEB-100`, C1b) is computed by **osm-surface**
+**Since ledger `API-150` phase C a save no longer asks osm-surface for anything.** The surface comes
+from osm-route-details: the HD catch-up (`ElevationRefreshWorker`) makes one `full` call, with all
+its sections, and writes the profile and the surface in the same write, as a document of version 2 in
+`gpx_tracks.surfaces` / `gpx_previews.surfaces`, along with `elevation_pipeline`. It drops any
+`surface_refresh` row of that target. With `pedalons.elevation.async-hd.enabled=false` the same call
+runs during the save and nothing is queued; if it fails, the track simply has no surface yet.
+
+- **Waiting**: the API says `PENDING` while the target's `elevation_state` is `PENDING`, or while a
+  `surface_refresh` row is still to be served.
+- **IGN down**: in `full` a source outage is a 503, so the surface waits with the profile, through
+  the five attempts of the catch-up; after those there is no document, and the API says nothing. That
+  dependency is new: osm-surface did not need the IGN.
+- **A `complete` answer with a Mapterhorn fallback** keeps the FAST profile and retries, but its
+  surface is written anyway, on its own, at each attempt. A `partial` answer with a fallback writes
+  nothing; a `partial` one without (data missing for good) is written, stretches without a typology as `UNKNOWN`.
+
+**What still runs until phase D**, and what the rest of this section describes: `SurfaceRefreshWorker`
+keeps draining `surface_refresh`, and `SurfaceBackfill` keeps feeding it, so osm-surface is still
+called for tracks without a surface that no HD catch-up is coming for (old tracks, a catch-up given
+up, a failed synchronous save). Those get a document of version 1, read exactly like a version 2; a
+later HD catch-up replaces it. During a rolling deploy the previous backend may also queue rows and
+claim elevation requests: it writes HD with no surface, `elevation_pipeline` stays null, and
+`SurfaceBackfill` then fetches the surface. Keep osm-surface in the shared stack until no backend
+calls it (ledger `OPS-58`).
+
+The **service** (ledger `WEB-100`, C1b) is **osm-surface**
 (`ghcr.io/glandais/osm-surface`, source at github.com/glandais/osm-surface), a service of the
 **shared stack** since 2026-10-31 (ledger `OPS-57`; Stadia Maps' trace attributes before). It
 answers `POST /trace_attributes/v1` exactly as Stadia did — Valhalla's `map_snap` rebuilt on the
@@ -729,15 +755,19 @@ coordinates go to VersaTiles. Every backend reaches it at `http://osm-surface:80
 `docker-compose.local.yml`). Its agreement with Stadia is 86 to 94 % per surface class, 98 to 99 %
 on paved / unpaved (its README, *Évaluation*); the surfaces Stadia already computed stay as they are.
 
-`SurfaceRefreshWorker` (every 30 s, never during an HTTP request) sends a saved route's or GPX-tool
-preview's stored track once it has been left alone for 90 s (never beyond 10 min), in `map_snap`
-mode, and stores the surface as ranges in `gpx_tracks.surfaces` / `gpx_previews.surfaces`. 50 to
+`SurfaceRefreshWorker` (every 30 s, never during an HTTP request) sends the stored track of a request
+in `surface_refresh` once it has been left alone for 90 s (never beyond 10 min), in `map_snap`
+mode, and stores the surface as ranges in `gpx_tracks.surfaces` / `gpx_previews.surfaces`. If an HD
+catch-up wrote the surface in the meantime, the request is gone and the result is dropped. 50 to
 100 ms a request with the tiles cached, a few seconds for a 190 km slice in a region never seen. The
 queue is `surface_refresh`; a request that failed five times (2 min, 10 min, 1 h, 6 h) stays in the
 table for diagnosis, untouched, and the API then says nothing for that track. osm-surface answers a
 **503** when it cannot load the tiles (VersaTiles unreachable, a 404, 11 s spent): a transient
 failure, retried. `SURFACE_ENABLED=false` stops new requests **and** the worker's calls, the queue
-waits. The e2e stack has it off (`.env.e2e`): nothing in the suite looks at the surface.
+waits; the HD catch-up then asks only `elevation` and `summary` and writes no surface, the documents
+already stored are still served, and nothing reads as pending. A track recomputed that way is
+stamped `elevation_pipeline` all the same, without a surface. The e2e stack has it off (`.env.e2e`):
+nothing in the suite looks at the surface.
 
 ```bash
 # Is it up, and how old are its tiles? (distroless image: no shell, so from the backend container)
@@ -756,7 +786,8 @@ service exists — retried, but five failures in about 7 h give a track up.
 
 The **catch-up of old tracks** (`WEB-100`, C1c; the routes saved before the surface existed,
 biketeam ones included): `SurfaceBackfill` (every 5 min) queues the routes without a surface nor
-any request, most recent first, then the GPX-tool previews younger than 29 days, as requests marked
+any request, an `elevation_refresh` request with fewer than five attempts counting as one (that
+catch-up writes the surface), most recent first, then the GPX-tool previews younger than 29 days, as requests marked
 `surface_refresh.backfill`. The worker serves them only once no normal request is due. The cap is
 global (carried by the requests' due times, spaced under a lock, so two backends of a rolling deploy
 do not double it): `SURFACE_BACKFILL_PER_HOUR` provider calls an hour (default 300; a 188 km slice
@@ -765,8 +796,8 @@ pauses by itself while osm-surface fails. The cap is on the due times: after the
 (a backlog of normal requests, `SURFACE_ENABLED` off a while, a restart) it sends what fell due at
 once, so an hour can see up to the cap plus those 10 minutes (350 calls at the default), retries of
 failed requests aside. It costs nothing but the tiles VersaTiles serves us, which the cache keeps;
-10,000 routes take about 34 h at the default cap. A biketeam migration leaves its routes to the
-catch-up instead of queuing them at once.
+10,000 routes take about 34 h at the default cap. A biketeam migration queues no surface: the HD
+catch-up its routes get writes it.
 
 - **Stop it**: `SURFACE_BACKFILL_ENABLED=false` (nothing more is queued; what is already queued, at
   most 10 minutes of cap, is still computed). `SURFACE_ENABLED=false` stops everything.
@@ -779,6 +810,7 @@ catch-up instead of queuing them at once.
    where t.id in (select g.route_id from gpx_tracks g where g.surfaces is null)
      and not t.deleted and not tm.deleted
      and not exists (select 1 from surface_refresh r where r.route_id = t.id)
+     and not exists (select 1 from elevation_refresh e where e.route_id = t.id and e.attempts < 5)
      and exists (select 1 from assets a
                   where a.team_entity_id = t.id and a.type = 'ROUTE_ORIGINAL_GPX');
   ```
@@ -792,8 +824,8 @@ catch-up instead of queuing them at once.
   `delete from surface_refresh where attempts >= 5;` — they become candidates of the catch-up again,
   under its cap.
 - A workstation stack runs its own osm-surface (`docker-compose.local.yml`) and needs no
-  `SURFACE_ENABLED=false` any more: the computation is free. Keep the catch-up's cap in mind after a
-  biketeam migration test, though — it downloads the tiles of every region its routes cross.
+  `SURFACE_ENABLED=false` any more: the computation is free. After a biketeam migration test the
+  surface of its routes comes with their HD catch-up, not through this cap.
 
 The **catch-up of raw lines** (ledger `API-149`, phase D; the tracks saved before
 `gpx_tracks.raw_geometry` existed, biketeam ones included): `RawTrackBackfill` (every 5 min) reads
@@ -813,7 +845,9 @@ database failure gives nothing up: the pass ends and the next one starts again f
   `SURFACE_BACKFILL_PER_HOUR` and its ten-minute window, after the normal requests; nothing while `SURFACE_ENABLED` or
   `SURFACE_BACKFILL_ENABLED` is off. It can be switched on at any time, after the raw lines are
   caught up too: the rows wait. A route drawn in the planner is never denser: it stored its
-  simplified line as its original. Waiting: `select count(*) from raw_track_resurface;`.
+  simplified line as its original. Waiting: `select count(*) from raw_track_resurface;`. **Leave it
+  off** on a release with ledger `API-150` phase C: it goes through osm-surface, so it can put a
+  version 1 document over the version 2 one of an HD catch-up.
 - **Follow it**: what is left, `select count(distinct route_id) from gpx_tracks where raw_geometry
   is null;`; given up, `select reason, count(*) from raw_track_backfill_skip group by reason;`. The
   log says `Raw line catch-up done` once nothing is left. To retry the ones given up on an error
