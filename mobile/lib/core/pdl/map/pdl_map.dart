@@ -579,7 +579,7 @@ class _PdlMapState extends State<PdlMap> {
           // (`allowInteraction`), les bornes, elles, laissent tout passer.
           // Hors des marqueurs, le pan va toujours à la carte. Reconstruite
           // à chaque mouvement de la caméra, comme `WidgetLayer` : les
-          // marqueurs qui se recouvriraient à l'écran s'y rangent côte à côte
+          // marqueurs qui se recouvriraient à l'écran s'y écartent
           // ([spreadMarkerBoxes]).
           Builder(
             builder: (BuildContext context) {

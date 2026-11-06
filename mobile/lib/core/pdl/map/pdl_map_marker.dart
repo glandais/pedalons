@@ -69,8 +69,7 @@ class PdlMapMarker {
   int get hashCode => Object.hash(id, lon, lat, size, alignment, semanticLabel);
 }
 
-/// L'écart laissé entre deux marqueurs que [spreadMarkerBoxes] range côte à
-/// côte.
+/// L'écart laissé entre deux marqueurs que [spreadMarkerBoxes] écarte.
 const double pdlMarkerGap = 4;
 
 /// La boîte **visuelle** de [marker] quand son point tombe en [at] à l'écran,
@@ -83,66 +82,57 @@ Rect pdlMarkerBox(PdlMapMarker marker, Offset at) => Rect.fromLTWH(
 );
 
 /// De combien déplacer chaque boîte, en pixels d'écran, pour qu'aucune n'en
-/// recouvre une autre (ledger `MOB-104`, le pendant de `WEB-128`).
+/// recouvre une autre (ledger `MOB-104`, `MOB-109`, le pendant de `WEB-128` et
+/// `WEB-131`).
 ///
-/// Les boîtes qui se recouvrent forment un groupe — bord à bord ne compte
-/// pas, [gap] ne sert qu'à la rangée : le départ
-/// et l'arrivée d'une boucle, ou deux points qui se rapprochent au dézoom.
-/// Un groupe se range en **une rangée** centrée sur lui, de gauche à droite
-/// comme ses boîtes sont à l'écran, l'ordre de la liste départageant les
-/// ex aequo (le départ d'une boucle à gauche de son arrivée). Une boîte seule
-/// ne bouge pas. Une goutte posée **sous** son point ne touche pas la
-/// pastille posée au-dessus : elles restent où elles sont.
+/// Chaque boîte recouverte glisse **à l'horizontale**, à sa hauteur, du
+/// minimum qui la dégage, dans l'ordre de la liste : la première d'un
+/// recouvrement reste sur son point, la suivante passe du côté où elle est
+/// déjà, à droite à égalité (le départ d'une boucle à gauche de son arrivée).
+/// Pas de rangée commune : sur un long parcours nord-sud dézoomé, chaque
+/// pastille touche la suivante, et une rangée les emporterait toutes hors de
+/// l'écran, loin de leur point ; elles se répartissent ainsi de part et
+/// d'autre du tracé.
+///
+/// Bord à bord ne compte pas, [gap] ne sert qu'à l'écart posé. Une boîte seule
+/// ne bouge pas, et aucune autre ne vient se poser sur elle. Une goutte posée
+/// **sous** son point ne touche pas la pastille posée au-dessus : elles restent
+/// où elles sont.
 List<Offset> spreadMarkerBoxes(List<Rect> boxes, {double gap = pdlMarkerGap}) {
-  final List<int> parent = List<int>.generate(boxes.length, (int i) => i);
-  int find(int i) {
-    while (parent[i] != i) {
-      parent[i] = parent[parent[i]];
-      i = parent[i];
+  final List<Rect> placed = <Rect>[];
+  final List<int> pending = <int>[];
+  for (int i = 0; i < boxes.length; i++) {
+    bool alone = true;
+    for (int j = 0; j < boxes.length && alone; j++) {
+      alone = j == i || !boxes[i].overlaps(boxes[j]);
     }
-    return i;
+    if (alone) {
+      placed.add(boxes[i]);
+    } else {
+      pending.add(i);
+    }
   }
 
-  for (int i = 0; i < boxes.length; i++) {
-    for (int j = i + 1; j < boxes.length; j++) {
-      if (boxes[i].overlaps(boxes[j])) {
-        parent[find(j)] = find(i);
-      }
+  /// Le déplacement minimal de [box] vers la droite, ou vers la gauche.
+  double clear(Rect box, {required bool right}) {
+    double dx = 0;
+    while (true) {
+      final Rect moved = box.shift(Offset(dx, 0));
+      final int hit = placed.indexWhere(moved.overlaps);
+      if (hit < 0) return dx;
+      dx = right
+          ? placed[hit].right + gap - box.left
+          : placed[hit].left - gap - box.right;
     }
-  }
-  final Map<int, List<int>> groups = <int, List<int>>{};
-  for (int i = 0; i < boxes.length; i++) {
-    groups.putIfAbsent(find(i), () => <int>[]).add(i);
   }
 
   final List<Offset> shifts = List<Offset>.filled(boxes.length, Offset.zero);
-  for (final List<int> members in groups.values) {
-    if (members.length < 2) continue;
-    final double cx =
-        members.fold<double>(
-          0,
-          (double sum, int i) => sum + boxes[i].center.dx,
-        ) /
-        members.length;
-    final double cy =
-        members.fold<double>(
-          0,
-          (double sum, int i) => sum + boxes[i].center.dy,
-        ) /
-        members.length;
-    final List<int> row = <int>[...members]
-      ..sort((int a, int b) {
-        final double dx = boxes[a].center.dx - boxes[b].center.dx;
-        return dx.abs() < 1 ? a.compareTo(b) : dx.sign.toInt();
-      });
-    final double width =
-        row.fold<double>(0, (double sum, int i) => sum + boxes[i].width) +
-        gap * (row.length - 1);
-    double left = cx - width / 2;
-    for (final int i in row) {
-      shifts[i] = Offset(left - boxes[i].left, cy - boxes[i].center.dy);
-      left += boxes[i].width + gap;
-    }
+  for (final int i in pending) {
+    final double toRight = clear(boxes[i], right: true);
+    final double toLeft = clear(boxes[i], right: false);
+    final double dx = toLeft.abs() < toRight.abs() ? toLeft : toRight;
+    shifts[i] = Offset(dx, 0);
+    placed.add(boxes[i].shift(shifts[i]));
   }
   return shifts;
 }

@@ -75,7 +75,7 @@ export function WeatherCheckpointMarkers({
     () => mapCheckpoints(tracks, leg.checkpoints, chained),
     [tracks, leg.checkpoints, chained]
   )
-  // Badges that would lie one on another at this zoom — a loop's start and finish — side by side
+  // Badges that would lie one on another at this zoom — a loop's start and finish — moved apart
   const shifts = useBadgeShifts(markers)
   const [ownOpenIndex, setOwnOpenIndex] = useState<number | null>(null)
   const controlled = controlledOpenIndex !== undefined

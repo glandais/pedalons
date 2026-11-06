@@ -108,32 +108,64 @@ void main() {
     // Une pastille 96 × 32 posée au-dessus de son point
     Rect pastille(double x, double y) => Rect.fromLTWH(x - 48, y - 32, 96, 32);
 
-    test('range côte à côte le départ et l\'arrivée d\'une boucle, le départ à '
-        'gauche', () {
-      final List<Offset> shifts = spreadMarkerBoxes(<Rect>[
-        pastille(100, 100),
-        pastille(400, 300),
-        pastille(100, 100),
-      ]);
-      expect(shifts, <Offset>[
-        const Offset(-50, 0),
-        Offset.zero,
-        const Offset(50, 0),
-      ]);
-    });
+    test(
+      'écarte le départ et l\'arrivée d\'une boucle, le départ à gauche',
+      () {
+        final List<Offset> shifts = spreadMarkerBoxes(<Rect>[
+          pastille(100, 100),
+          pastille(400, 300),
+          pastille(100, 100),
+        ]);
+        expect(shifts, <Offset>[
+          Offset.zero,
+          Offset.zero,
+          const Offset(100, 0),
+        ]);
+      },
+    );
 
-    test('écarte deux pastilles qui se rapprochent à l\'écran, dans l\'ordre '
-        'où elles sont', () {
-      // L'arrivée 20 px à gauche du départ et 10 px plus bas : elle passe à
-      // gauche, la rangée centrée sur leur milieu.
+    test('écarte deux pastilles qui se rapprochent à l\'écran, du côté où '
+        'elles sont et du minimum', () {
+      // L'arrivée 20 px à gauche du départ et 10 px plus bas : elle reste à
+      // gauche, à sa hauteur.
       final List<Offset> shifts = spreadMarkerBoxes(<Rect>[
         pastille(120, 100),
         pastille(100, 110),
       ]);
-      expect(shifts, <Offset>[
-        const Offset(110 + 2 - (120 - 48), 5),
-        const Offset(110 - 98 - (100 - 48), -5),
+      expect(shifts, <Offset>[Offset.zero, const Offset(-80, 0)]);
+    });
+
+    test('répartit une longue chaîne nord-sud de part et d\'autre du tracé, '
+        'sans l\'emporter hors de l\'écran', () {
+      // Douze pastilles, chacune touchant la suivante : une rangée ferait
+      // 1 196 px de large sur un téléphone de 428.
+      final List<Rect> boxes = <Rect>[
+        for (int i = 0; i < 12; i++) pastille(214, 100 + i * 25.0),
+      ];
+      final List<Offset> shifts = spreadMarkerBoxes(boxes);
+      final List<Rect> moved = <Rect>[
+        for (final (int i, Rect box) in boxes.indexed) box.shift(shifts[i]),
+      ];
+      for (int i = 0; i < moved.length; i++) {
+        expect(shifts[i].dy, 0);
+        expect(shifts[i].dx.abs(), lessThanOrEqualTo(100));
+        for (int j = i + 1; j < moved.length; j++) {
+          expect(moved[i].overlaps(moved[j]), isFalse, reason: '$i, $j');
+        }
+      }
+    });
+
+    test('ne pose rien sur une pastille seule', () {
+      // La deuxième, repoussée à droite de la première, tomberait sur la
+      // troisième, seule et qui ne doit pas bouger : elle passe à gauche.
+      final List<Offset> shifts = spreadMarkerBoxes(<Rect>[
+        pastille(100, 100),
+        pastille(100, 110),
+        pastille(200, 110 + 0.0),
       ]);
+      expect(shifts[0], Offset.zero);
+      expect(shifts[2], Offset.zero);
+      expect(shifts[1], const Offset(-100, 0));
     });
 
     test('laisse en place la goutte posée sous la pastille, et les boîtes '

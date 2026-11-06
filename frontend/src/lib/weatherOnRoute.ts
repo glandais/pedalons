@@ -117,50 +117,41 @@ export function mapCheckpoints(
 }
 
 /**
- * How far to move each badge, in screen pixels, so that none lies on another: badges whose boxes
- * (`width` × `height`, centred on their point) touch — a loop's start and finish, or two points
- * that close up when zooming out — form a group, laid out as one row centred on the group, from
- * left to right as they stand on screen, the route's order breaking a tie (the start left of the
- * finish of a loop). A badge alone stays put.
+ * How far to move each badge, in screen pixels, so that none lies on another (ledgers WEB-128,
+ * WEB-131). Badges whose boxes (`width` × `height`, centred on their point) touch — a loop's start
+ * and finish, or points that close up when zooming out — slide **sideways**, at their own height,
+ * by the least that clears them, in the route's order: the first of them stays on its point, the
+ * next goes to the side it already stands on, right on a tie (the start left of the finish of a
+ * loop). No shared row: on a long north-south route, zoomed out, each badge touches the next, and
+ * one row would carry them all off the map, far from their points; this way they fall on either
+ * side of the track. A badge alone stays put, and nothing lands on it.
  */
 export function spreadBadges(
   points: readonly { x: number; y: number }[],
   width: number,
   height: number
 ): { dx: number; dy: number }[] {
-  const parent = points.map((_, i) => i)
-  const find = (i: number): number => (parent[i] === i ? i : (parent[i] = find(parent[i])))
-  for (let i = 0; i < points.length; i++) {
-    for (let j = i + 1; j < points.length; j++) {
-      if (
-        Math.abs(points[i].x - points[j].x) < width &&
-        Math.abs(points[i].y - points[j].y) < height
-      ) {
-        parent[find(j)] = find(i)
-      }
+  // Projected points are fractional: without this margin, a badge placed exactly `width` away could
+  // still touch by a rounding error, and `clear` would land on the same spot for ever.
+  const touches = (a: { x: number; y: number }, b: { x: number; y: number }) =>
+    Math.abs(a.x - b.x) < width - 1e-6 && Math.abs(a.y - b.y) < height
+  const placed = points.filter((p, i) => !points.some((q, j) => j !== i && touches(p, q)))
+  const clear = (point: { x: number; y: number }, side: 1 | -1) => {
+    let dx = 0
+    for (;;) {
+      const hit = placed.find((other) => touches({ x: point.x + dx, y: point.y }, other))
+      if (!hit) return dx
+      dx = hit.x + side * width - point.x
     }
   }
-  const groups = new Map<number, number[]>()
-  points.forEach((_, i) => {
-    const root = find(i)
-    groups.set(root, [...(groups.get(root) ?? []), i])
+  return points.map((point) => {
+    if (placed.includes(point)) return { dx: 0, dy: 0 }
+    const right = clear(point, 1)
+    const left = clear(point, -1)
+    const dx = Math.abs(left) < Math.abs(right) ? left : right
+    placed.push({ x: point.x + dx, y: point.y })
+    return { dx, dy: 0 }
   })
-  const shifts = points.map(() => ({ dx: 0, dy: 0 }))
-  for (const members of groups.values()) {
-    if (members.length < 2) continue
-    const cx = members.reduce((sum, i) => sum + points[i].x, 0) / members.length
-    const cy = members.reduce((sum, i) => sum + points[i].y, 0) / members.length
-    const row = [...members].sort((a, b) =>
-      Math.abs(points[a].x - points[b].x) < 1 ? a - b : points[a].x - points[b].x
-    )
-    row.forEach((i, rank) => {
-      shifts[i] = {
-        dx: cx + (rank - (row.length - 1) / 2) * width - points[i].x,
-        dy: cy - points[i].y,
-      }
-    })
-  }
-  return shifts
 }
 
 /**

@@ -233,7 +233,7 @@ describe('mapWindRotation', () => {
 })
 
 describe('spreadBadges', () => {
-  it("lays a loop's start and finish side by side, the start on the left", () => {
+  it("parts a loop's start and finish, the start on the left", () => {
     const shifts = spreadBadges(
       [
         { x: 100, y: 100 },
@@ -244,14 +244,14 @@ describe('spreadBadges', () => {
       26
     )
     expect(shifts).toEqual([
-      { dx: -36, dy: 0 },
       { dx: 0, dy: 0 },
-      { dx: 36, dy: 0 },
+      { dx: 0, dy: 0 },
+      { dx: 72, dy: 0 },
     ])
   })
 
-  it('parts badges that close up on screen, in the order they stand', () => {
-    // The finish 20 px left of the start and 10 px lower: it goes left, the row on their middle
+  it('parts badges that close up on screen, on the side they stand, by the least', () => {
+    // The finish 20 px left of the start and 10 px lower: it stays left, at its height
     const shifts = spreadBadges(
       [
         { x: 120, y: 100 },
@@ -261,8 +261,49 @@ describe('spreadBadges', () => {
       26
     )
     expect(shifts).toEqual([
-      { dx: 110 + 36 - 120, dy: 5 },
-      { dx: 110 - 36 - 100, dy: -5 },
+      { dx: 0, dy: 0 },
+      { dx: -52, dy: 0 },
+    ])
+  })
+
+  it('spreads a long north-south chain on either side of the track, not off the map', () => {
+    // Twelve badges, each touching the next: one row would be 864 px wide
+    const points = Array.from({ length: 12 }, (_, i) => ({ x: 200, y: 100 + i * 20 }))
+    const moved = spreadBadges(points, 72, 26).map(({ dx, dy }, i) => {
+      expect(dy).toBe(0)
+      expect(Math.abs(dx)).toBeLessThanOrEqual(72)
+      return { x: points[i].x + dx, y: points[i].y }
+    })
+    moved.forEach((a, i) =>
+      moved.slice(i + 1).forEach((b) => {
+        expect(Math.abs(a.x - b.x) < 72 && Math.abs(a.y - b.y) < 26).toBe(false)
+      })
+    )
+  })
+
+  it('ends on fractional points, where a badge exactly a step away may round to touching', () => {
+    const points = Array.from({ length: 40 }, (_, i) => ({
+      x: 0.1 + i * 0.7000000000000001,
+      y: 33.3 + i * 3.3,
+    }))
+    expect(spreadBadges(points, 71.3, 26)).toHaveLength(40)
+  })
+
+  it('lands nothing on a badge alone', () => {
+    // The second, pushed right of the first, would land on the third: it goes left instead
+    const shifts = spreadBadges(
+      [
+        { x: 100, y: 100 },
+        { x: 100, y: 110 },
+        { x: 172, y: 110 },
+      ],
+      72,
+      26
+    )
+    expect(shifts).toEqual([
+      { dx: 0, dy: 0 },
+      { dx: -72, dy: 0 },
+      { dx: 0, dy: 0 },
     ])
   })
 
