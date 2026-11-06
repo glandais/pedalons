@@ -510,6 +510,15 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
       worker (`WeatherFetchWorker` sert le passage le plus proche d'abord, sans distinguer l'origine),
       et un cache d'échantillons à 1 000 entrées (`weather-preview-samples`) qui, au-delà, relit
       `tracks` à chaque passage. Dans `service/gpx/PreviewDepartures.checkQuota` et `WeatherPlanner`.
+- [ ] `API-150` **Profil et revêtement par osm-route-details (L)** — l'altitude est lue dans la
+      JVM par vcyclist (`GpxPipeline`, deux `ElevationProvider`, tuiles MNT dans le tas, `OPS-55`)
+      et le revêtement par un second service, osm-surface, dans une seconde file
+      (`surface_refresh`) ; les ponts et tunnels hors OSM restent mal corrigés. Remplacés par un
+      seul service, osm-route-details : mode `fast` pour le planificateur et l'enregistrement, un
+      appel `full` qui rend profil HD **et** revêtement pour le rattrapage, une seule file ; tous les
+      parcours existants recalculés en HD (décisions du 6 novembre 2026). Service en api 1.6
+      (`surface.detail`, image 1.6.0). Plan :
+      [2026-11-05-osm-route-details](plans/2026-11-05-osm-route-details.md).
 
 - [ ] `API-148` **Retirer les rustines de sécurité des dépendances une fois sur Quarkus 4 (S)** —
       `guava` est forcé en 33.7.2-jre dans le `dependencyManagement` de `backend/pom.xml`
@@ -891,6 +900,11 @@ Ce que les tests ne prouvent pas, parce qu'ils ne passent ni par Flyway ni par u
       `OPEN_METEO_API_KEY`.
 
 ### Exploitation
+
+- [ ] `OPS-58` **osm-route-details dans la pile partagée, osm-surface retiré** — volume de cache
+      (IGN, Mapterhorn, VersaTiles), extrait VersaTiles France en fichier local, limite mémoire à
+      mesurer ; osm-surface retiré une fois `surface_refresh` drainée. Plan :
+      [2026-11-05-osm-route-details](plans/2026-11-05-osm-route-details.md) §11 (ledger `API-150`).
 
 - [ ] `OPS-21` **Ce que le monitoring ne voit pas encore** — PostgreSQL (connexions, taille, bloat,
       requêtes lentes : un `postgres_exporter` par environnement, sur `pedalons-shared`), le
