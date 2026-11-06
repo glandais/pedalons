@@ -515,8 +515,7 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
       revêtements v1 tant que le recalcul n'est pas allumé, et deux tables mortes
       (`surface_refresh`, `raw_track_resurface`) restent en base avec une entité et un dépôt qui ne
       servent qu'à elles. Reste, dans l'ordre :
-      - **Avant la bascule** : suite backend complète (jamais lancée sur la phase E), e2e
-        (`scripts/e2e.sh`), banc manuel D+ v2 contre v3 sur 30 parcours réels (§8 du plan), dont
+      - **Avant la bascule** : e2e (`scripts/e2e.sh`, pas relancés depuis la phase B), banc manuel D+ v2 contre v3 sur 30 parcours réels (§8 du plan), dont
         l'écart va dans les notes de version. Regarder aussi le crédit web, deux fois plus long, en
         surimpression en haut à droite du profil (`ElevationChart`).
       - **À trancher** : D et E sont sur la même branche, donc les demandes `surface_refresh`
