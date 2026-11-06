@@ -33,7 +33,6 @@ import fr.pedalons.repository.route.ElevationRefreshRepository.BackfillBudget;
 import fr.pedalons.repository.route.ElevationRefreshRepository.BackfillRemaining;
 import fr.pedalons.repository.route.GpxTrackRepository;
 import fr.pedalons.repository.route.RouteRepository;
-import fr.pedalons.repository.route.SurfaceRefreshRepository;
 import fr.pedalons.service.gpx.GpxPreviewService;
 import fr.pedalons.service.route.GpxPipeline;
 import fr.pedalons.service.route.RouteService;
@@ -82,7 +81,6 @@ class RouteDetailsBackfillTest extends AbstractResourceTest {
   @Inject RouteRepository routeRepository;
   @Inject AssetRepository assetRepository;
   @Inject SurfaceRefreshService surfaceService;
-  @Inject SurfaceRefreshRepository surfaceRefreshRepository;
   @Inject ElevationRefreshService service;
   @Inject ElevationRefreshWorker worker;
   @Inject RouteDetailsBackfill backfill;

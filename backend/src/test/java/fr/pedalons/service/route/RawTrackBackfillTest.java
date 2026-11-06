@@ -326,7 +326,7 @@ class RawTrackBackfillTest extends AbstractResourceTest {
 
   /**
    * API-150: a recompute reads the original, so a line denser than the stored points asks for
-   * nothing: the legacy queue would write an osm-surface document over a newer one.
+   * nothing: a previous release would write its own document over a newer one.
    */
   @Test
   void aDenserLine_queuesNothing() throws Exception {

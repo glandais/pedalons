@@ -544,8 +544,8 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
    * fall back on part of the track: that profile is not what the version describes, and stays to
    * recompute (docs/LEDGER_*.md API-150). A fast one clears it, its profile being no pipeline's
    * HD one: the catch-up writes it, and one that gives up leaves the track to recompute. An HD save
-   * that computed the surface drops the request of the legacy queue, as the catch-up does: the
-   * worker would realign it on this track and replace the document with its own.
+   * that computed the surface drops the request a previous release may have left, as the catch-up
+   * does: that release would realign it on this track and replace the document with its own.
    */
   private void recordElevationQuality(
       Route route, ElevationQuality quality, GpxProcessingService.GpxProcessingResult result) {

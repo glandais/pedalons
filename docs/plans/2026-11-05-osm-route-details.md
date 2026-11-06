@@ -1,6 +1,6 @@
 # Profil et revêtement par osm-route-details
 
-Écrit le 5 novembre 2026. **État : phases A, B, C et D faites (§10), le recalcul du parc reste à allumer par environnement, phases E et F à venir.** Ledger `API-150` (backend),
+Écrit le 5 novembre 2026. **État : phases A à E faites (§10), le recalcul du parc reste à allumer par environnement, phase F à venir.** Ledger `API-150` (backend, livré), `API-151` (ce qui reste),
 `OPS-58` (déploiement). Branche `feat/osm-route-details`, partie de `3d23f160` (`API-149`, trace
 brute). Numéros vérifiés libres le 5 novembre 2026 : `API-150`, `OPS-58`, migration `V84`, contrat
 `13.2.0` aujourd'hui.
@@ -17,9 +17,9 @@ Mapterhorn, GLO-30 ailleurs ; ponts lus dans le MNS, tunnels, ouvrages hors OSM)
 (structure, revêtement, type de voie) le long d'une trace. Il reprend le moteur d'élévation de
 vcyclist 6.11 et la chaîne HMM d'osm-surface, en mieux sur les ouvrages.
 
-On remplace :
+Ce qui a été remplacé :
 
-| Aujourd'hui | Demain |
+| Avant | Depuis |
 |---|---|
 | `GpxPipeline` + `VcyclistProducer` (deux `ElevationProvider`, `DemTileStore`) — altitude FAST (Mapterhorn) et HD (IGN) **dans la JVM** | `RouteDetailsClient` : mode `fast` pour FAST, mode `full` pour HD |
 | osm-surface (`TraceAttributesClient`, `trace_attributes` Valhalla) + file `surface_refresh` | la typologie de **la même réponse `full`** que l'altitude HD |
@@ -125,10 +125,9 @@ Stadia) :
 
 ### 3.1 Découpage (> 200 km, > 16 000 points)
 
-Bornes lues dans `/v1/capabilities` au démarrage (repli : 200 km, 16 000 points). On reprend le
-découpage de `TraceSurfaceComputer` (cœur de 188 km, recouvrement de 500 m de chaque côté, amincissement
-à ≥ 5 m de la ligne brute), repris dans `infrastructure/routedetails/RouteSlicer` (phase A ;
-`TraceSurfaceComputer` garde sa copie jusqu'à la phase E), bornes dérivées de `/v1/capabilities`,
+Bornes lues dans `/v1/capabilities` au démarrage (repli : 200 km, 16 000 points). Le
+découpage de l'ancien `TraceSurfaceComputer` (cœur de 188 km, recouvrement de 500 m de chaque côté, amincissement
+à ≥ 5 m de la ligne brute) vit dans `infrastructure/routedetails/RouteSlicer` (phase A), bornes dérivées de `/v1/capabilities`,
 cœurs bornés sur un point envoyé, partagé par deux tranches voisines. Recollage
 (`RouteDetailsStitcher`, ancré sur ce point : `d_m` et cumuls de chaque tranche décalés de ce que
 les cœurs précédents ont ajouté) :
@@ -150,7 +149,7 @@ service).
 `climbs`) : aucun appelant ne change (planificateur, import, `computeGpx`, rattrapage, migration).
 Seul `processDense` change :
 
-| Étape | Aujourd'hui (vcyclist) | Demain |
+| Étape | Avant (vcyclist) | Depuis |
 |---|---|---|
 | Terrain + ouvrages | `ElevationCorrectionJvm.fixAndCorrectBlocking` sur provider FAST/HD | un appel `RouteDetailsGateway.details` (mode `fast` / `full`, `sections: [elevation, summary]`, plus `typology` pour un calcul `full` qui écrit le revêtement, §5.1) ; `accept_partial` en `fast` seulement |
 | Rééchantillonnage | pas ≤ 10 m (`GpxLimits.RESAMPLING_STEP_METERS`) | densification à ≤ 50 m avant l'envoi (`GpxPipeline.SENT_MAX_GAP_M`), jamais de point source retiré ; la réponse rend ces points plus les points de rupture du service |
@@ -211,14 +210,19 @@ revêtement demande déjà un rattrapage HD (`elevation_refresh`). Le worker HD 
 revêtement dans la même transaction d'écriture (`applyRecompute` / écriture de l'aperçu), sur le même
 `source_revision`, et retire la demande `surface_refresh` éventuelle de la cible.
 
-Depuis la phase D, plus rien n'alimente `surface_refresh` : `SurfaceBackfill` a disparu.
-`SurfaceRefreshWorker`, `SurfaceRefreshService`, `TraceSurfaceComputer` et `TraceAttributesClient`
-restent jusqu'à la phase E, sans autre rôle que drainer ce que la version précédente a laissé : une
-demande restante à moins de 5 tentatives fait lire `PENDING` à l'API, il faut donc la servir, et la
-version précédente peut encore en écrire pendant la minute du déploiement. File vide, le worker lit
-la table et n'appelle rien. La demande est retirée sous le verrou de la cible avant l'écriture
-(`deleteIfRevision`) : si le rattrapage HD est passé pendant le calcul, le document v1 n'est pas
-écrit par-dessus le v2.
+Depuis la phase D, plus rien n'alimente `surface_refresh` : `SurfaceBackfill` a disparu. Depuis la
+phase E, plus rien ne la lit non plus : `SurfaceRefreshWorker`, `TraceSurfaceComputer` et
+`TraceAttributesClient` ont disparu, et `SurfaceRefreshService` ne garde que l'interrupteur et les
+lectures de l'API. Une ligne laissée par une version précédente est inerte : ni servie, ni lue comme
+`PENDING`, sans quoi elle se lirait en attente pour toujours. Sa cible reste sans document, et l'API
+ne dit rien, jusqu'à ce que le recalcul du parc l'atteigne (§11).
+
+Les écritures de revêtement retirent quand même la ligne de leur cible (`dropForRoute`,
+`dropForPreview`), jusqu'à la phase F : une version précédente encore en service, pendant la minute
+du déploiement ou après un retour arrière, la réclamerait plus tard et poserait son document v1 sur
+le v2. Ce retrait ne touche pas un calcul déjà en cours sur cette version : elle écrit son document
+avant de retirer sa ligne, sans vérifier que celle-ci existe encore, et le v1 reste alors sur une
+trace tamponnée à jour. Il se lit comme le v2 et rien ne le recalcule tout seul.
 
 Conséquences :
 
@@ -232,10 +236,10 @@ Conséquences :
   `elevation_pipeline` reste nul (repris par le backfill de la phase D, une fois allumé).
 - Aperçu promu en parcours : les documents copiés comme aujourd'hui (`storeCopiedSurfaces`), seule
   la demande de revêtement a disparu.
-- `surfaceState` reste `PENDING` tant que la cible est en `elevation_state = PENDING`, ou qu'il reste
-  une demande `surface_refresh` : sans requête de plus pour la colonne, donc sans effet sur les
-  comptages de `RouteQueryCountTest`. Rattrapage abandonné : pas de document, l'API ne dit rien, comme
-  après cinq échecs jusqu'ici.
+- `surfaceState` vaut `PENDING` tant que la cible est en `elevation_state = PENDING`, et seulement
+  alors : lu sur l'entité, sans requête de plus, donc sans effet sur `RouteQueryCountTest` (la phase
+  E retire même une requête au détail et à la liste). Rattrapage abandonné : pas de document, l'API
+  ne dit rien.
 
 ### 5.2 Conversion vers `TrackSurfaceDocument`
 
@@ -260,7 +264,7 @@ Conséquences :
 Version 1 relue telle quelle : les parcours déjà traités par osm-surface ne sont pas recalculés pour
 ça.
 
-Plus de `TrackAxisMapping` sur ce chemin (il reste à `TraceSurfaceComputer`, et au planificateur par
+Plus de `TrackAxisMapping` sur ce chemin (il ne reste qu'au planificateur, par
 `RawShapes`), mais les `d_m` de la réponse ne sont pas l'axe stocké : `track_points.dist` est recalculé
 sur les seuls points gardés par le DP, plus court et inégalement (le bruit GPS et les arrêts
 disparaissent), et un simple facteur d'échelle décalerait chaque borne après un arrêt. Les bornes
@@ -276,7 +280,7 @@ comme un échec ; réécrit à chaque essai. Une réponse `partial` avec repli n
 sont sur l'axe HD et se recalent à la lecture sur la trace FAST, à quelques mètres près.
 
 Hors réseau du planificateur (morceaux `DIRECT`) : `SurfaceRanges.overlay` inchangé, avant la
-normalisation, comme `TraceSurfaceComputer`. Le rattrapage relit l'état du planificateur, s'il porte
+normalisation, comme le faisait `TraceSurfaceComputer`. Le rattrapage relit l'état du planificateur, s'il porte
 sur la révision calculée et sur une seule trace.
 
 Projection vers `TrackSurface` (le contrat d'API **ne change pas**, ni web ni mobile) :
@@ -305,11 +309,11 @@ comme revêtu bien que le service le classe `unpaved`. Table validée le 6 novem
 ### 5.3 Costing
 
 osm-route-details v1 suppose un tracé vélo (pas de paramètre de mode). Les profils `pedestrian` et
-`auto` de `costingOf(profile)` sont appariés comme du vélo : une voie interdite au vélo reste
+`auto` sont appariés comme du vélo : une voie interdite au vélo reste
 `matched: false` avec la typologie de la voie (api 1.1, `bicycle_forbidden`), donc le revêtement
 reste juste ; seul l'appariement des rues piétonnes peut différer. Accepté (décision D3, §9) ; le paramètre
-de mode V2 du service le réglera. `costingOf` ne sert plus sur ce chemin : un document v2 enregistre
-toujours `bicycle`.
+de mode V2 du service le réglera. `costingOf` est parti avec `TraceSurfaceComputer` (phase E) : un document v2
+enregistre toujours `bicycle`.
 
 ## 6. Backfill : tout recalculer (décision D2)
 
@@ -383,10 +387,14 @@ gardée jusqu'à la phase F : la clé ne peut donc plus poser un document v1 sur
   `elevation_refresh`, demande ouverte ou abandonnée.
 - `elevation_refresh` : `backfill boolean not null default false`, index partiel du backfill comme
   `V77`.
-- `surface_refresh` : **gardée** dans cette version (le backend précédent la draine encore pendant
-  le déploiement start-first). Le nouveau backend ne l'alimente plus depuis la phase D, et
-  continue de la drainer tant que `SurfaceRefreshWorker` existe (§5.1). Suppression de la table, et de
-  `raw_track_resurface`, dans une migration ultérieure (`V85+`, version suivante).
+- `surface_refresh` : **gardée** (une version antérieure à la phase E l'alimente et la draine encore
+  pendant un déploiement start-first ou après un retour arrière). Le nouveau backend ne l'alimente
+  plus depuis la phase D et ne la lit plus depuis la phase E : il n'y fait que retirer la ligne d'une
+  cible dont il écrit le revêtement (§5.1). L'entité `SurfaceRefresh` reste, comme
+  `RawTrackResurface` : c'est elle qui crée la table dans le schéma des tests, où Flyway ne tourne pas.
+  Suppression des deux tables dans une migration ultérieure (`V85`, phase F), une version après le
+  retrait des entités et des appels (§10) : une migration doit laisser le schéma utilisable par la
+  version précédente.
 
 Pas de changement de contrat d'API attendu ; s'il en faut un (nouvelle valeur d'enum, crédit), bump
 de `pedalons.api.version` et skill `contract-first-api`.
@@ -433,8 +441,8 @@ Prises avec l'utilisateur le 6 novembre 2026 :
 | B — **faite le 6 novembre 2026** | `GpxPipeline` sur le service (FAST et HD), `VERSION = 3` ; vcyclist n'est plus appelé pour le terrain, sauf lissage et D+ des altitudes d'origine quand l'appel échoue ; pile e2e dotée de son propre service | profil par osm-route-details |
 | C — **faite le 6 novembre 2026** | Le worker HD écrit le revêtement (`TrackSurfaceDocument` v2, projection sur `surface.detail`) ; plus aucun enregistrement n'alimente `surface_refresh`, `V84` — api ≥ 1.6 | une seule file pour tout enregistrement ; `SurfaceBackfill` et osm-surface tournent encore jusqu'à la phase D |
 | D — **faite le 6 novembre 2026** | `RouteDetailsBackfill` : recalcul HD de tous les parcours et aperçus < `VERSION`, éteint par défaut ; `surface_refresh` n'est plus que drainée ; `pedalons.raw-backfill.resurface` et `SURFACE_BACKFILL_*` retirés. Pas de migration | osm-surface plus appelé une fois `surface_refresh` vidée ; le parc passe en v3 quand le recalcul est allumé, environnement par environnement |
-| E | Ménage : `ElevationTier`, providers de `VcyclistProducer`, `DemTileStore` (+ `OPS-55` : réglage `tile-cache-size` retiré), `TraceAttributesClient` et le reste d'osm-surface **côté backend**, crédit « Altitude : IGN LiDAR HD, Mapterhorn » complété d'OSM (attribution du service), `docs/OPERATIONS.md` | — |
-| F (version suivante, après la bascule de prod) | `V85` : suppression de `surface_refresh` et `raw_track_resurface` ; service osm-surface et son volume retirés de la pile partagée (`OPS-58`) | — |
+| E — **faite le 6 novembre 2026** | Ménage : `ElevationTier`, providers de `VcyclistProducer` (`TileMapProducer` reste), `DemTileStore` (+ `OPS-55` : réglage `tile-cache-size` retiré), `TraceAttributesClient` et le reste d'osm-surface **côté backend** (`SurfaceRefreshWorker`, `TraceSurfaceComputer`, `TraceSurfaceProjection`, lectures de la file), `quarkus.rest-client.osm-surface.*` et `OSM_SURFACE_URL` ; crédit devenu « Données : IGN LiDAR HD, Mapterhorn et ses sources, © OpenStreetMap », web et mobile ; `docs/OPERATIONS.md`. Restent `TrackAxisMapping` (`RawShapes`), l'entité `SurfaceRefresh`, `dropForRoute` et `dropForPreview` (§5.1, §7). Pas de migration | le backend n'appelle plus osm-surface et ne lit plus aucune tuile MNT ; une ligne de `surface_refresh` est inerte |
+| F (après la bascule de prod, en deux versions successives) | D'abord, sans migration et déployé partout : `SurfaceRefreshRepository` et ses six appels, les entités `SurfaceRefresh` et `RawTrackResurface` et leurs lignes d'`import-test.sql`. Puis, dans la version suivante, `V85` seule : suppression de `surface_refresh` et `raw_track_resurface`, plus aucun retour arrière vers la phase E n'étant envisagé (`API-151`) : la phase E écrit dans cette table à chaque revêtement et valide son schéma au démarrage. Service osm-surface et son volume retirés de la pile partagée (`OPS-58`) | la migration ne casse pas la version qui tourne encore à côté d'elle |
 
 ## 11. Déploiement (`OPS-58`)
 
@@ -449,8 +457,9 @@ Prises avec l'utilisateur le 6 novembre 2026 :
   planificateur rendrait une ligne à 0 m. Pour ne pas dépendre de l'IGN, `.env.e2e` repousse le
   rattrapage HD de 24 h : une exécution ne fait que des appels `fast`. Le CI dépend donc de
   ghcr.io et des tuiles publiques lues par le service.
-- Le cache DEM du backend (`./data/cache/mapterhorn`, `ign…`) devient inutile après la phase E ; le
-  cache carto des vignettes reste.
+- Le cache DEM du backend (`./data/cache/mapterhorn`, `ign…`) n'est plus lu depuis la phase E : à
+  supprimer à la main, commande dans `docs/OPERATIONS.md`, quand plus aucun retour arrière vers une
+  version qui le lit n'est envisagé. Le cache carto des vignettes reste.
 - **Staging d'abord, prod ensuite (décision du 6 novembre 2026).** La pile partagée sert les deux
   environnements : pendant toute la période, elle doit faire tourner staging en nouvelle version et
   prod en ancienne. Elle ne fait donc qu'**ajouter** osm-route-details ; osm-surface (appelé par la
@@ -458,8 +467,17 @@ Prises avec l'utilisateur le 6 novembre 2026 :
   `scripts/deploy.sh --shared` depuis `~/shared` sur un commit qui contient le service, puis
   staging, recette, puis prod. La suppression d'osm-surface de `docker-compose.shared.yml` est une
   étape à part (phase F), jamais dans le commit qui bascule un environnement : seulement quand
-  prod tourne en nouvelle version et que plus aucun backend ne l'appelle (plus aucune ligne de `surface_refresh` à servir : requête de `docs/OPERATIONS.md`, la table elle-même garde les demandes abandonnées).
+  aucun environnement ne tourne plus sur une version antérieure à la phase E, et qu'aucun retour
+  arrière vers l'une d'elles n'est envisagé. Le compte de lignes de `surface_refresh` n'est plus un
+  critère : un backend en phase E ignore cette table, quoi qu'il y reste.
   Rien côté bases : chaque environnement a la sienne.
+- **D et E partent ensemble, sauf décision contraire (`API-151`).** Elles sont sur la même branche :
+  la prod peut passer de l'ancienne version à la phase E sans période de drainage. Les demandes de
+  `surface_refresh` qu'elle a laissées ne sont alors servies par personne : ces traces n'ont pas de
+  revêtement, et l'API n'en dit rien, jusqu'au recalcul du parc (leur `elevation_pipeline` est nul,
+  elles en sont candidates ; une cible dont une ligne `elevation_refresh` est abandonnée demande le
+  retry admin). Deux issues : déployer d'abord la phase D et attendre que le compte de
+  `docs/OPERATIONS.md` tombe à 0, ou accepter ce trou et allumer le recalcul.
 - Avant d'allumer `ROUTE_DETAILS_BACKFILL_ENABLED` (phase D, éteint par défaut) : estimer la durée
   du recalcul complet et la charge IGN avec la requête de `docs/OPERATIONS.md`, attendre que le
   déploiement soit stabilisé (la version précédente calcule sur vcyclist et laisse la version

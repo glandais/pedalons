@@ -3045,6 +3045,71 @@ relevés sont `WEB-111` à `WEB-114` et `MOB-87` à `MOB-90`. `MOB-88` et `MOB-8
 ## API — Contrat d'API et backend
 
 - [x] `API-153` **Un aperçu GPX peut recevoir une date de départ et une vitesse moyenne, et affiche la météo** (6 novembre 2026, contrat `13.1.0`, `V81`) — les traces des outils GPX (`GpxPreview`) n'avaient ni date ni météo. Trois colonnes nullables sur `gpx_previews` (`departure_at`, `departure_zone`, `average_speed`, purement additives : l'ancienne release les ignore, rolling sûr) et un index partiel sur `departure_at`. La date se saisit sans offset (`EventDateTime`, `Z` ou offset refusés en 400), à la création (envoi, fusion : champs de formulaire `departure` et `averageSpeed` ; `from-points` : JSON) comme au `PUT` (`GpxPreviewUpdateRequest`, avec `clearDeparture` et `clearAverageSpeed`). Les règles sont dans un seul bean, `PreviewDepartures` : le fuseau est celui du premier point de la première piste non vide (`EventTimezoneResolver.locate`, repli Paris). `GpxPreviewDto` expose `departureTime`, `departureTimezone` et `averageSpeed` ; `GpxPreviewSummaryDto` les deux premiers. Nouveau `GET /api/gpx-previews/{id}/weather` (`getPreviewWeather`, `@PermitAll` comme `getPreview` : le lien vaut accès, 404 `GPX_NOT_FOUND` sinon), qui réutilise `RideWeatherDto` : une seule étape sans `groupId`, `OUT_OF_RANGE` sans date ou date passée, ETag et 304 comme une sortie. Sans vitesse, 25 km/h et `speedIsDefault` vrai (`RideWeatherCalculator.speed(null)`) ; avec, `speedIsDefault` faux. Le planner (`WeatherPlanner`) demande les cellules des aperçus datés de la fenêtre de 7 jours dans un passage à part (500 aperçus au plus, le plus proche d'abord, une erreur n'enlève rien aux sorties), et une sauvegarde les demande tout de suite, après commit (`requestPreview`), pour ne pas attendre 5 minutes. Les échantillons viennent de `gpx_previews.tracks` via `RouteSampleLookup.previewSamples(id, révision)`, en cache. Export RGPD : `ContentExport.GpxPreviewEntry` gagne les trois champs. Couvert par `PreviewDeparturesTest`, `RouteSampleLookupPreviewTest`, `GpxPreviewDepartureResourceTest`, `GpxPreviewWeatherResourceTest`, `WeatherPlannerTest`, `WeatherCacheTest`, `GpxPreviewRepositoryTest`, `GpxPreviewElevationRefreshTest`, `UserExportBuilderTest`. À ne pas défaire : **l'heure locale est celle du point de départ et elle reste quand le tracé change de fuseau** (08:00 à Lyon devient 08:00 à Tokyo : l'instant suit, comme `TeamTimezoneChange`) ; **un `PUT` qui omet la date ou la vitesse les conserve** (l'effacement est un drapeau explicite, valeur et effacement ensemble = 400 avant tout travail) ; **la vitesse est bornée à 10–60 km/h** (`GpxLimits`, bornes choisies par le propriétaire le 7 novembre) et non seulement `@Positive` : à 10⁻⁹ km/h le passage tombe après l'an 294 276, `upsertDemand` lève et le passage du planner s'arrête pour toute la plateforme, sorties comprises ; **la clé de cache est `(id, révision des fichiers)` et `findTracks` lit révision et pistes dans une même requête**, sans quoi la géométrie d'une révision neuve se rangerait sous l'ancienne clé ; **`RideWeatherDto` est partagé**, pas de DTO de plus ni de nouveau statut (le mobile décode l'énumération) ; **la demande immédiate se fait hors de la transaction de sauvegarde**, sans verrou tenu, et n'échoue jamais ; **la vitesse n'est lue qu'à un endroit** (`RideWeatherPlans.plan`), donc le planner et la lecture calculent les mêmes passages ; **pas de météo dans la liste** (aucune requête par ligne). Limites posées pour la facture du fournisseur (`SEC-48`) : 20 aperçus datés à venir par compte (`GpxLimits.MAX_UPCOMING_DATED_PREVIEWS`, 400 au-delà) ; **pas de plafond de points de prévision par aperçu** (décidé le 7 novembre 2026 avec le propriétaire) : un aperçu a le même pas que les sorties, un point tous les `pedalons.weather.sample-step-km`.
+- [x] `API-150` **Le profil d'altitude et le revêtement viennent d'un seul service,
+  osm-route-details** (6 novembre 2026, contrat d'API inchangé, `13.2.0`, `V84`) — l'altitude était
+  lue dans la JVM par vcyclist (`GpxPipeline`, deux `ElevationProvider`, tuiles MNT dans le tas,
+  `OPS-55`) et le revêtement par un second service, osm-surface, dans une seconde file
+  (`surface_refresh`) ; les ponts et tunnels hors OSM restaient mal corrigés. Remplacés par
+  osm-route-details (`ghcr.io/glandais/osm-route-details:1.6.0`, api ≥ 1.6, pile partagée, `OPS-58`),
+  en cinq phases :
+  - **A** : `RouteDetailsGateway`, DTO, erreurs, `RouteSlicer` et `RouteDetailsStitcher` pour les
+    traces de plus de 200 km ou 16 000 points, faux service de test, fixture réelle.
+  - **B** : `GpxPipeline` lit ses altitudes dans le service, mode `fast` pour le planificateur et
+    l'enregistrement, `full` pour le rattrapage HD, `VERSION = 3` (rejoue une fois la migration
+    biketeam, `API-107`). Lève D1 d'`API-131` : les parcours existants sont tous à recalculer. Un
+    appel `fast` en échec garde les altitudes d'origine (`elevationFallback`). Pile e2e dotée de son
+    propre service.
+  - **C** : le rattrapage HD écrit profil et revêtement dans la même écriture, d'une seule réponse
+    `full` (`TrackSurfaceDocument` version 2, projection dans `RouteDetailsSurfaces`), et tamponne
+    `elevation_pipeline` (`V84`, avec `elevation_refresh.backfill`). Plus aucun enregistrement
+    n'alimente `surface_refresh`.
+  - **D** : `RouteDetailsBackfill` remplace `SurfaceBackfill` : remet parcours et aperçus sur le
+    pipeline courant, depuis leur `original.gpx`, en file `elevation_refresh` et derrière les demandes
+    normales (`pedalons.route-details.backfill.*`). `pedalons.raw-backfill.resurface` et
+    `SURFACE_BACKFILL_*` retirés, sans repli.
+  - **E** : le code mort part côté backend, sans migration : `ElevationTier`, les deux providers de
+    `VcyclistProducer` (`TileMapProducer` reste, les vignettes s'en servent), `DemTileStore` et
+    `pedalons.elevation.tile-cache-size`, `TraceAttributesClient` et ses types,
+    `TraceSurfaceComputer`, `TraceSurfaceProjection`, `SurfaceRefreshWorker`,
+    `quarkus.rest-client.osm-surface.*`, `pedalons.surface.quiet`, `pedalons.surface.max-wait` et
+    `OSM_SURFACE_URL`. `SurfaceRefreshService` ne garde que l'interrupteur et les lectures de l'API ;
+    `surfaceState` vaut `PENDING` si `elevation_state` l'est, et pour aucune autre raison, ce qui
+    retire une requête au détail et à la liste. Crédit du profil, web et mobile : « Données : IGN
+    LiDAR HD, Mapterhorn et ses sources, © OpenStreetMap ».
+
+  Couvert par `ElevationRefreshTest`, `GpxPreviewElevationRefreshTest`, `SurfaceRefreshTest`,
+  `GpxPreviewSurfaceRefreshTest` (dont `aRequestLeftByAPreviousRelease_readsAsNothing_andIsLeftAlone`),
+  `RouteDetailsBackfillTest`, `RouteDetailsSurfacesTest`, `TrackSurfaceDocumentTest`, `GpxPipelineTest`,
+  `RouteDetailsTrackTest`, `RouteSlicerTest`, `RouteDetailsStitcherTest`, `RouteDetailsFixtureTest`,
+  `FakeRouteDetailsGatewayTest`, `TrackAxisMappingTest`, `SurfaceRangesTest`, `RouteQueryCountTest`.
+  Les tests modifiés par la phase E compilent mais n'ont pas encore tourné ; suite backend, e2e, banc
+  D+ v2 contre v3, recalcul du parc et phase F (`V85`) sont suivis par `API-151`, le retrait
+  d'osm-surface par `OPS-58`.
+
+  À ne pas défaire :
+  - **Une seule source** : pas de vcyclist en repli si le service tombe. FAST en échec garde les
+    altitudes d'origine, HD réessaie. vcyclist reste pour le modèle GPX, le lissage et le D+ des
+    altitudes d'origine, Douglas-Peucker, les montées, le FIT, le vent et les vignettes.
+  - **La table `detail` → `TrackSurface`** (`RouteDetailsSurfaces`, décision D6 du plan) : non revêtu
+    sans détail hors sentiers → `GRAVEL`, `paving_stones` et `wood` → `PAVED`, `sett` et `cobblestone` →
+    `PAVED_ROUGH`, `sand` et `grass` → `DIRT`, `rock` → `PATH`. L'enum `TrackSurface` et le contrat ne
+    bougent pas, et `surfaces` porte la classe projetée, pas la valeur du service : un document v2
+    reste lisible par la version précédente. Les valeurs brutes sont dans `ways`, donc changer la
+    table revient à reprojeter, sans appel au service.
+  - **Le recalcul du parc reste éteint par défaut** : déployer ne le lance jamais. **Staging d'abord**,
+    prod ensuite, jamais les deux en même temps (un service partagé, un budget IGN).
+  - Le document version 1 reste lu : un parcours non recalculé doit rester valable.
+  - Un recalcul revêtement éteint ne tamponne pas `elevation_pipeline`, sinon le parc ne repasserait
+    pas une fois l'interrupteur rallumé.
+  - Toute ligne `elevation_refresh`, même abandonnée, exclut sa cible du recalcul, sinon elle tournerait
+    en boucle ; le retry admin est le chemin de retour.
+  - Jusqu'à la phase F, écrire un revêtement retire la ligne `surface_refresh` de la cible
+    (`dropForRoute`, `dropForPreview`) : sinon une version précédente la réclamerait et poserait un v1
+    sur le v2. Mais rien ne la lit : relire cette table referait lire `PENDING` pour toujours, plus
+    rien ne la drainant.
+  - `TrackAxisMapping` reste (`RawShapes`), l'entité `SurfaceRefresh` aussi (schéma des tests,
+    `import-test.sql`).
+
 - [x] `API-149` **Un parcours garde en base sa trace brute, de l'import au calcul des surfaces** (30
   octobre 2026, **API 13.2.0**, `V82`, `V83`) — `gpx_tracks` ne gardait que la trace
   rééchantillonnée puis simplifiée (Douglas-Peucker, ~1 point / 90 m), et pour un parcours dessiné

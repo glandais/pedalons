@@ -446,7 +446,7 @@ public class ElevationRefreshService {
             publicationEndCalculator.refreshUsersOf(route);
           }
           if (recomputed.recompute().surfaces() != null) {
-            // Nothing is left to osm-surface: a worker in flight stops on this, under the same lock
+            // Or a previous release, in a rolling deploy, would claim it and replace this document
             surfaceRefreshRepository.dropForRoute(claim.routeId());
           }
           refreshRepository.deleteIfRevision(claim.id(), claim.sourceRevision());
@@ -792,8 +792,8 @@ public class ElevationRefreshService {
             preview.setPlannerState(planner.withTrackRevision(recomputed.revision()));
           }
           if (recomputed.surfaces() != null) {
-            // Written with the profile (docs/LEDGER_*.md API-150). Nothing is left to osm-surface:
-            // a worker in flight stops on this, under the same lock
+            // Written with the profile (docs/LEDGER_*.md API-150). The request is dropped or a
+            // previous release, in a rolling deploy, would claim it and replace this document
             preview.setSurfaces(
                 new PreviewSurfacesDocument(
                     recomputed.revision(), new ArrayList<>(recomputed.surfaces())));
@@ -806,9 +806,6 @@ public class ElevationRefreshService {
             if (surfaces != null && surfaces.trackRevision() == claim.sourceRevision()) {
               preview.setSurfaces(surfaces.withTrackRevision(recomputed.revision()));
             }
-            // A request still waiting for the old revision follows it
-            surfaceRefreshRepository.forwardPreviewRevision(
-                claim.previewId(), claim.sourceRevision(), recomputed.revision());
           }
           // The raw lines follow the track onto its new revision, unchanged: the catch-up never
           // changes the source 2D track (docs/LEDGER_*.md API-149)

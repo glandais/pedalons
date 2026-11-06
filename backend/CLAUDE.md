@@ -34,7 +34,7 @@ Coverage instrumentation is opt-in (it slows every run by ~10-15%):
 |---------|------|---------|
 | imgproxy | 38080 | Image optimization/transformation (WebP, AVIF, JXL) |
 | tileserver | 18080 | Internal map renderer for route thumbnails (never handed to clients) |
-| osm-surface | 18002 | Legacy surface queue (`TraceAttributesClient`, configKey `osm-surface`, no key), drain only: nothing queues `surface_refresh` any more, `SurfaceRefreshWorker` serves what a previous release left there and calls nothing once it is empty; the code goes in ledger `API-150` phase E — ledger `OPS-57` |
+| osm-surface | 18002 | Nothing in this backend calls it (ledger `API-150` phase E): it runs for a release older than that, until phase F. `surface_refresh` is inert here: no read, no worker, only `dropForRoute` / `dropForPreview` when a surface is written — ledger `OPS-58` |
 | osm-route-details | 18003 | Elevations of `GpxPipeline`: FAST → profile `fast`, HD → profile `full`; down → FAST keeps the file's elevations (`elevationFallback`), HD retries. An HD write also stores the surface from the same answer (`TrackSurfaceDocument` v2, projection in `RouteDetailsSurfaces`), unless `pedalons.surface.enabled` is off, in which case `elevation_pipeline` stays null (`RouteDetailsGateway`, configKey `osm-route-details`, no key). `RouteDetailsBackfill` queues what is behind `GpxPipeline.VERSION`, off by default — ledger `API-150` / `OPS-58` |
 | MinIO | 9000 (console 9001) | S3 storage for assets |
 | mailpit | 1025 (UI 8025) | SMTP sink — no mail leaves a workstation |

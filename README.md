@@ -234,8 +234,8 @@ IDs are TSIDs (`bigint`), not sequences: generate one inline with
 
 ## Deployment and operations
 
-A host runs one shared stack (`docker-compose.shared.yml`: the tileserver and
-osm-surface, the surface along saved tracks, on the `pedalons-shared` network) plus one `docker-compose.yml` stack per environment, behind Caddy.
+A host runs one shared stack (`docker-compose.shared.yml`: the tileserver,
+osm-route-details for the elevation profile and surface of routes, and osm-surface for as long as a release still calls it, on the `pedalons-shared` network) plus one `docker-compose.yml` stack per environment, behind Caddy.
 Route computation and geocoding are bought from Stadia Maps, with a key per environment; the
 maps' search bar calls Stadia Maps from the browser, authenticated by the page's domain, so a new
 hostname has to be declared on their dashboard.

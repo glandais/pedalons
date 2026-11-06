@@ -13,7 +13,7 @@ import org.hibernate.annotations.OnDeleteAction;
  * A route the catch-up of raw lines gave a line denser than its stored points (docs/LEDGER_*.md
  * API-149, phase D). Nothing reads or writes it since docs/LEDGER_*.md API-150 (phase D): a
  * recompute starts from the original GPX, which holds that line. Kept for the table, and for the
- * schema of the tests, until its migration (phase F); the rows left are inert.
+ * schema of the tests, until phase F, one release before its migration; the rows left are inert.
  */
 @Setter
 @Getter

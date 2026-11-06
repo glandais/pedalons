@@ -1,6 +1,5 @@
 package fr.pedalons.service.surface;
 
-import fr.pedalons.service.surface.TraceSurfaceProjection.Range;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -19,6 +18,9 @@ final class SurfaceRanges {
   static final double MIN_SPAN_M = 20;
 
   private SurfaceRanges() {}
+
+  /** A stretch between two distances along a track, with the value there. */
+  record Range<V>(double from, double to, @Nullable V value) {}
 
   /**
    * @param length the length of the track: the cover goes from 0 to there

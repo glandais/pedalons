@@ -657,14 +657,15 @@ public class GpxPreviewService {
                           ? null
                           : new PlannerStateDocument(revision, stateToStore));
                   // The surface of the old track left with it (WEB-100, C1b); an HD save has its
-                  // own,
-                  // a fast one waits for the catch-up, which writes it (docs/LEDGER_*.md API-150)
+                  // own, a fast one waits for the catch-up, which writes it (docs/LEDGER_*.md
+                  // API-150)
                   managed.setSurfaces(
                       computedSurfaces == null
                           ? null
                           : new PreviewSurfacesDocument(revision, computedSurfaces));
                   if (computedSurfaces != null) {
-                    // Or the legacy worker would realign it on this track and replace this document
+                    // Or a previous release would realign it on this track and replace this
+                    // document
                     surfaceRefreshRepository.dropForPreview(previewId);
                   }
                   if (quality == ElevationQuality.FAST) {

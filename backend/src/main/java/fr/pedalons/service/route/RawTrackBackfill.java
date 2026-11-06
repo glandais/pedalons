@@ -47,7 +47,7 @@ import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
  * tracks under two points dropped), 2D — what a save writes since phase A. No elevation, no
  * pipeline, no file rewritten.
  *
- * <p>Per route, three phases like the surface worker: the candidates in a short transaction, the
+ * <p>Per route, three phases: the candidates in a short transaction, the
  * read and the parse outside any, the write in a short transaction that locks the route and writes
  * only if its original is still the one read and it has as many tracks as the file, and then only
  * the rows still without a line. A route that cannot be caught up (original missing or unreadable,
