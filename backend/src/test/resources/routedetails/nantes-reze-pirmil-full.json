@@ -1,0 +1,348 @@
+{
+  "meta": {
+    "api_version": "1.6",
+    "rules_version": "2026.11.13",
+    "data_versions": {
+      "typology": {
+        "source": "versatiles-shortbread",
+        "zoom": 14,
+        "role": "primary",
+        "indicative": true
+      },
+      "elevation": [
+        {
+          "source": "ign-lidar-hd",
+          "date": "2026-11-06",
+          "zoom": 15,
+          "products": [
+            "mnt",
+            "mns"
+          ],
+          "role": "primary",
+          "indicative": true
+        }
+      ]
+    },
+    "request_id": "01a1b0c6-fa3d-70f6-b897-52b849fe9c0b",
+    "duration_ms": 19,
+    "profile": "full"
+  },
+  "status": "complete",
+  "points": [
+    {
+      "d_m": 0.0,
+      "index": 0,
+      "origin": "input",
+      "ele": 7.01,
+      "ele_smoothed": 7.79,
+      "ele_method": "dem",
+      "gain_cum_m": 0.0,
+      "loss_cum_m": 0.0
+    },
+    {
+      "d_m": 115.03,
+      "index": 1,
+      "origin": "input",
+      "reasons": [
+        "structure_start"
+      ],
+      "ele": 8.47,
+      "ele_smoothed": 8.43,
+      "ele_method": "dsm_deck",
+      "gain_cum_m": 0.0,
+      "loss_cum_m": 0.0
+    },
+    {
+      "d_m": 159.42,
+      "index": 2,
+      "origin": "input",
+      "ele": 9.16,
+      "ele_smoothed": 8.57,
+      "ele_method": "dsm_deck",
+      "gain_cum_m": 0.0,
+      "loss_cum_m": 0.0
+    },
+    {
+      "d_m": 203.81,
+      "index": 3,
+      "origin": "input",
+      "reasons": [
+        "structure_end"
+      ],
+      "ele": 8.76,
+      "ele_smoothed": 8.45,
+      "ele_method": "dsm_deck",
+      "gain_cum_m": 0.0,
+      "loss_cum_m": 0.0
+    },
+    {
+      "d_m": 367.03,
+      "index": 4,
+      "origin": "input",
+      "ele": 7.08,
+      "ele_smoothed": 7.51,
+      "ele_method": "dem",
+      "gain_cum_m": 0.0,
+      "loss_cum_m": 0.14
+    },
+    {
+      "d_m": 385.0,
+      "index": 4,
+      "origin": "inserted",
+      "reasons": [
+        "local_min"
+      ],
+      "lat": 47.197051,
+      "lon": -1.543315,
+      "ele": 6.98,
+      "ele_smoothed": 7.6,
+      "ele_method": "dem",
+      "gain_cum_m": 0.0,
+      "loss_cum_m": 0.19
+    },
+    {
+      "d_m": 518.04,
+      "index": 5,
+      "origin": "input",
+      "reasons": [
+        "structure_start"
+      ],
+      "ele": 10.28,
+      "ele_smoothed": 10.04,
+      "ele_method": "dsm_deck",
+      "gain_cum_m": 3.18,
+      "loss_cum_m": 0.19
+    },
+    {
+      "d_m": 628.97,
+      "index": 6,
+      "origin": "input",
+      "reasons": [
+        "local_max"
+      ],
+      "ele": 12.35,
+      "ele_smoothed": 11.61,
+      "ele_method": "dsm_deck",
+      "gain_cum_m": 5.28,
+      "loss_cum_m": 0.19
+    },
+    {
+      "d_m": 740.03,
+      "index": 7,
+      "origin": "input",
+      "reasons": [
+        "structure_end"
+      ],
+      "ele": 10.31,
+      "ele_smoothed": 10.37,
+      "ele_method": "dsm_deck",
+      "gain_cum_m": 5.28,
+      "loss_cum_m": 2.25
+    },
+    {
+      "d_m": 874.64,
+      "index": 8,
+      "origin": "input",
+      "ele": 8.21,
+      "ele_smoothed": 8.8,
+      "ele_method": "dem",
+      "gain_cum_m": 5.28,
+      "loss_cum_m": 4.25
+    }
+  ],
+  "segments": [
+    {
+      "from_m": 0.0,
+      "to_m": 53.03,
+      "from_index": 0,
+      "to_index": 1,
+      "structure": "ground",
+      "surface": {
+        "class": "paved",
+        "detail": "asphalt",
+        "source": "tagged"
+      },
+      "way_kind": "footway",
+      "matched": true,
+      "ele_method": "dem",
+      "ele_start": 7.01,
+      "ele_end": 7.93,
+      "grade_pct": 1.74
+    },
+    {
+      "from_m": 53.03,
+      "to_m": 114.92,
+      "from_index": 0,
+      "to_index": 1,
+      "structure": "ground",
+      "surface": {
+        "class": "paved",
+        "detail": "asphalt",
+        "source": "tagged"
+      },
+      "way_kind": "path",
+      "matched": true,
+      "ele_method": "dem",
+      "ele_start": 7.93,
+      "ele_end": 8.47,
+      "grade_pct": 0.88
+    },
+    {
+      "from_m": 114.92,
+      "to_m": 203.98,
+      "from_index": 0,
+      "to_index": 4,
+      "structure": "bridge",
+      "structure_source": "osm_heuristic",
+      "surface": {
+        "class": "paved",
+        "detail": "asphalt",
+        "source": "tagged"
+      },
+      "way_kind": "major_road",
+      "matched": true,
+      "ele_method": "dsm_deck",
+      "ele_start": 8.47,
+      "ele_end": 8.75,
+      "grade_pct": 0.32
+    },
+    {
+      "from_m": 203.98,
+      "to_m": 518.1,
+      "from_index": 3,
+      "to_index": 6,
+      "structure": "ground",
+      "surface": {
+        "class": "paved",
+        "detail": "asphalt",
+        "source": "tagged"
+      },
+      "way_kind": "major_road",
+      "matched": true,
+      "ele_method": "dem",
+      "ele_start": 8.75,
+      "ele_end": 10.28,
+      "grade_pct": 0.49
+    },
+    {
+      "from_m": 518.1,
+      "to_m": 740.01,
+      "from_index": 5,
+      "to_index": 7,
+      "structure": "bridge",
+      "structure_source": "osm_heuristic",
+      "surface": {
+        "class": "paved",
+        "detail": "asphalt",
+        "source": "tagged"
+      },
+      "way_kind": "major_road",
+      "matched": true,
+      "ele_method": "dsm_deck",
+      "ele_start": 10.28,
+      "ele_end": 10.31,
+      "grade_pct": 0.01
+    },
+    {
+      "from_m": 740.01,
+      "to_m": 874.64,
+      "from_index": 6,
+      "to_index": 8,
+      "structure": "ground",
+      "surface": {
+        "class": "paved",
+        "detail": "asphalt",
+        "source": "tagged"
+      },
+      "way_kind": "major_road",
+      "matched": true,
+      "ele_method": "dem",
+      "ele_start": 10.31,
+      "ele_end": 8.21,
+      "grade_pct": -1.56
+    }
+  ],
+  "summary": {
+    "length_m": 874.64,
+    "gain_m": 5.28,
+    "loss_m": 4.25,
+    "gain_params": {
+      "preset": "dem",
+      "threshold_m": 3.0,
+      "smoothing_m": 30.0,
+      "adapted": [],
+      "partial": false
+    },
+    "ele_min_m": 6.81,
+    "ele_max_m": 12.35,
+    "terrain_m": {
+      "ign_lidar_hd": 874.64
+    },
+    "by_structure_m": {
+      "bridge": 310.97,
+      "ground": 563.67
+    },
+    "by_surface_class_m": {
+      "paved": 874.64
+    },
+    "by_surface_source_m": {
+      "tagged": 874.64
+    },
+    "by_surface_detail_m": {
+      "asphalt": 874.64
+    },
+    "by_way_kind_m": {
+      "footway": 53.03,
+      "major_road": 759.72,
+      "path": 61.89
+    },
+    "unknown_m": 0.0,
+    "structures": [
+      {
+        "kind": "bridge",
+        "from_m": 114.92,
+        "to_m": 203.98,
+        "length_m": 89.06,
+        "structure_source": "osm_heuristic",
+        "method": "dsm_deck"
+      },
+      {
+        "kind": "bridge",
+        "from_m": 518.1,
+        "to_m": 740.01,
+        "length_m": 221.91,
+        "structure_source": "osm_heuristic",
+        "method": "dsm_deck"
+      }
+    ]
+  },
+  "quality": {
+    "matched_ratio": 1.0,
+    "inferred_surface_ratio": 0.0,
+    "elevation_coverage": 1.0,
+    "structure_correction": {
+      "bridges": "applied",
+      "tunnels": "none_found",
+      "counts": {
+        "dsm_deck": 2
+      },
+      "counts_by_source": {
+        "osm_heuristic": 2
+      }
+    },
+    "terrain": [
+      {
+        "from_m": 0.0,
+        "to_m": 874.64,
+        "origin": "ign_lidar_hd",
+        "measured": true,
+        "fallback_after_error": false
+      }
+    ],
+    "warnings": []
+  },
+  "attribution": {
+    "text": "\u00a9 OpenStreetMap contributors \u00b7 \u00a9 ESA WorldCover project 2021 / Contains modified Copernicus Sentinel data (2021) processed by ESA WorldCover consortium \u00b7 \u00a9 IGN \u2014 LiDAR HD \u00b7 Mapterhorn and its sources",
+    "url": "/v1/attribution"
+  }
+}

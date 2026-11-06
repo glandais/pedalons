@@ -124,7 +124,11 @@ Stadia) :
 
 Bornes lues dans `/v1/capabilities` au démarrage (repli : 200 km, 16 000 points). On reprend le
 découpage de `TraceSurfaceComputer` (cœur de 188 km, recouvrement de 500 m de chaque côté, amincissement
-à ≥ 5 m de la ligne brute), extrait dans `infrastructure/routedetails/RouteSlicer`. Recollage :
+à ≥ 5 m de la ligne brute), repris dans `infrastructure/routedetails/RouteSlicer` (phase A ;
+`TraceSurfaceComputer` garde sa copie jusqu'à la phase E), bornes dérivées de `/v1/capabilities`,
+cœurs bornés sur un point envoyé, partagé par deux tranches voisines. Recollage
+(`RouteDetailsStitcher`, ancré sur ce point : `d_m` et cumuls de chaque tranche décalés de ce que
+les cœurs précédents ont ajouté) :
 
 - altitude et points : chaque tranche garde son cœur ; le recouvrement absorbe les effets de bord
   (un ouvrage coupé reste corrigé, contrat §5.3) ;
@@ -294,7 +298,10 @@ de `pedalons.api.version` et skill `contract-first-api`.
 
 ## 8. Tests (hors réseau, comme D7 d'`API-131`)
 
-- `FakeRouteDetailsClient` (`@Mock @RestClient`) remplace `FakeElevationProducer` : altitude plate
+- `FakeRouteDetailsClient`, servi par `FakeRouteDetailsGateway` (un `@Mock` qui sous-classe
+  `RouteDetailsGateway` et surcharge `client(profil)` : la passerelle construit elle-même ses deux
+  clients REST, un `@Mock @RestClient` ne serait jamais utilisé et les tests ouvriraient de vraies
+  connexions), remplace `FakeElevationProducer` : altitude plate
   100 m en `fast`, 200 m en `full` (les tests distinguent déjà les tiers ainsi), segments `paved`
   sur toute la longueur ; interrupteurs `failFull`, `partial`, `fallbackAfterError`.
 - Tests purs : conversion réponse → `Path` (points insérés, indices), recollage des tranches,
@@ -326,7 +333,7 @@ Prises avec l'utilisateur le 6 novembre 2026 :
 
 | Phase | Contenu | Livrable |
 |---|---|---|
-| A | Client, DTO, erreurs, découpage, client factice, fixture ; service dans `docker-compose.shared.yml` et `.local.yml` | aucun comportement changé |
+| A — **faite le 6 novembre 2026** | Client, DTO, erreurs, découpage, client factice, fixture ; service dans `docker-compose.shared.yml` et `.local.yml` | aucun comportement changé |
 | B | `GpxPipeline` sur le service (FAST et HD), `VERSION = 3` ; vcyclist n'est plus appelé pour le terrain | profil par osm-route-details |
 | C | Le worker HD écrit le revêtement (`TrackSurfaceDocument` v2, projection sur `surface.detail`) ; `surface_refresh` n'est plus alimentée, `V83` — api ≥ 1.6 | une seule file |
 | D | `RouteDetailsBackfill` : recalcul HD de tous les parcours et aperçus < `VERSION` | osm-surface plus appelé ; tout le parc en v3 |
