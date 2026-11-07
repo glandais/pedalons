@@ -16,4 +16,9 @@ export interface PlannerSource {
    * @maxLength 2000000
    */
   climb?: string
+  /**
+   * Polyline (precision 6, latitude then longitude) of the raw track of the file, as GpxImportTrack.shape gave it, never edited. An imported piece is cut out of it by projecting its junctions (from and to still index line); absent or inconsistent with line: line
+   * @maxLength 2000000
+   */
+  shape?: string
 }

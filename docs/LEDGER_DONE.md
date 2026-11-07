@@ -3043,6 +3043,45 @@ relevés sont `WEB-111` à `WEB-114` et `MOB-87` à `MOB-90`. `MOB-88` et `MOB-8
 
 ## API — Contrat d'API et backend
 
+- [x] `API-149` **Un parcours garde en base sa trace brute, de l'import au calcul des surfaces** (30
+  octobre 2026, **API 13.1.0**, `V81`, `V82`) — `gpx_tracks` ne gardait que la trace
+  rééchantillonnée puis simplifiée (Douglas-Peucker, ~1 point / 90 m), et pour un parcours dessiné
+  le brut était perdu dès `RouterService.getRoute` : le calcul des surfaces (Stadia `map_snap`) se
+  raccrochait à OSM sur des sommets espacés. Livré en quatre phases
+  ([plan archivé](plans/archive/2026-10-30-trace-brute.md)) :
+  **A** — `gpx_tracks.raw_geometry` (2D, nullable, lazy, groupe `raw`), écrite par
+  `GpxProcessingService.processGpxData` depuis `RawTracks.paths()` à chaque remplacement de la
+  trace, jamais par le rattrapage HD ; les aperçus de l'outil GPX dans `gpx_previews.raw_lines`,
+  document à part portant son `files_revision` (la version précédente lit `tracks` avec un lecteur
+  qui refuse les champs inconnus). **B** — le calcul des surfaces envoie le brut, aminci sur la
+  seule copie envoyée (`spacingFor` : 5 m au moins, assez pour qu'une tranche tienne sous
+  `MAX_POINTS`), et `TrackAxisMapping` ramène les plages sur la distance de `track_points` en
+  suivant le brut par pas de 20 m, recherche du segment le plus proche vers l'avant ; repli sur
+  `track_points` quand le brut est nul ou périmé. **D** — `RawTrackBackfill` relit l'`original.gpx`
+  courant des pistes sans brut (`pedalons.raw-backfill.enabled`, `…batch`), sous verrou
+  consultatif de session, abandons dans `raw_track_backfill_skip` ; une trace nettement plus dense
+  que ses `track_points` est notée dans `raw_track_resurface`, dont `SurfaceBackfill` redemande la
+  surface sous son plafond et sa fenêtre seulement avec `pedalons.raw-backfill.resurface`, **éteint
+  par défaut** (recalcul de surfaces existantes ; osm-surface depuis `OPS-57`). **C** — `shape` (polyline6 2D) sur `RouterResponse`,
+  `GpxImportTrack`, `PlannerPiece` (ROUTED) et `PlannerSource` ; `PlannerStates` dérive la trace
+  du brut quand il est cohérent avec `line` (`RawShapes` : extrémités à moins de 50 m, longueur à
+  20 % + 200 m près ; une pièce importée découpée dans le brut de sa source), sinon de `line` ;
+  le planificateur web porte `shape` sans le lire (`legShape`, effacé par tout geste qui n'appelle
+  pas le routeur, abandonné au-delà de `MAX_PLANNER_STATE_CHARS`). Le mobile n'a pas de
+  planificateur. Mesuré en prod avant livraison : ~70 Mo de plus pour 6 078 pistes ; les
+  originaux migrés de biketeam sont déjà quasi simplifiés, le gain vient des fichiers envoyés et
+  des parcours dessinés désormais. Couvert par `RouteTrackReplacementTest`, `ElevationRefreshTest`,
+  `GpxPreviewResourceTest`, `GpxPreviewElevationRefreshTest`, `TraceSurfaceComputerTest`,
+  `TraceSurfaceProjectionTest`, `SurfaceRefreshTest`, `GpxPreviewSurfaceRefreshTest`,
+  `RawTrackBackfillTest`, `PlannerStatesTest`, `RawShapesTest`, `RouterResourceTest`,
+  `RouterImportResourceTest`, `RoutePlannerStateResourceTest`,
+  `GpxPreviewPlannerStateResourceTest`, `plannerShape.test.ts`. À ne pas défaire : le brut ne
+  sert qu'au serveur (jamais dans un DTO de lecture) ; seul ce qui est **envoyé** à Stadia est
+  aminci, jamais ce qui est stocké ; aucune remise à l'échelle sur la longueur totale entre brut et
+  `track_points` (une borne saute sur l'autre jambe d'un aller-retour) ; `directRuns` reste mesuré
+  sur les `line` ; le serveur ne fait jamais confiance à `shape` sans la vérifier contre `line` ;
+  un client sans `shape` reste valide ; le recalcul des surfaces du rattrapage reste opt-in.
+
 - [x] `API-147` **Le compte des relecteurs des stores ne peut plus être supprimé** (31 octobre 2026, contrat d'API inchangé) — un relecteur des stores avait supprimé `marketplace-tester@pedalons.fr` : le compte était effacé, et le relecteur suivant n'avait plus rien pour se connecter. `UserService.deleteUser` ne supprime plus les adresses de `pedalons.account-deletion.protected-emails` (par défaut ce seul compte ; `PEDALONS_ACCOUNT_DELETION_PROTECTED_EMAILS` dans le `.env` remplace la liste). Pour ces comptes, il révoque les sessions et répond 204 comme pour une vraie suppression, sans rien effacer : le relecteur voit le parcours aller jusqu'au bout, puis se reconnecte avec les mêmes identifiants. Couvert par `UserResourceTest.deleteCurrentUser_protectedAccount_signsOutButErasesNothing`. À ne pas défaire : **pas d'erreur visible**, car App Review vérifie que la suppression de compte fonctionne (règle 5.1.1(v)), et un refus exposerait le compte de démo à un rejet.
 
 - [x] `API-146` **Une adresse e-mail saisie avec d'autres majuscules retrouve son compte** (27 octobre 2026, contrat d'API inchangé) — signalé depuis l'app iOS : « Mot de passe oublié » n'envoyait aucun e-mail. Le compte avait été créé avec une majuscule en tête d'adresse (clavier iPhone) ; toutes les recherches de compte et de jeton (`UserRepository.findByEmailAndDomain`, `AuthTokenRepository`) comparent l'adresse telle quelle, et la réponse, identique pour une adresse inconnue, ne disait rien. Le même défaut touchait login par mot de passe, code par e-mail et passkey. Désormais `EmailAddresses.normalize` (`strip` + `toLowerCase(Locale.ROOT)`) s'applique dans le constructeur de chaque DTO de requête qui porte une adresse (`RegisterRequest`, `LoginRequest`, `OtpRequest`, `VerifyOtpRequest`, `ForgotPasswordRequest`, `PasskeyAuthenticationRequest`, `EmailChangeRequest`) ; les invitations normalisaient déjà (`TeamInvitationService.normalize`). `V80__lowercase_emails.sql` passe en minuscules les adresses de `users` (sauf collision avec une adresse déjà prise sur le domaine : aucune au 27 octobre 2026) et d'`auth_tokens` ; le seul compte concerné en prod avait été corrigé à la main le même jour. Couvert par `AuthResourceTest` (`forgotPassword_ignoresTheCaseOfTheAddress`, `login_ignoresTheCaseOfTheAddress`, `register_storesTheAddressInLowerCase`). À ne pas défaire : l'adresse est normalisée à l'entrée, dans le DTO, et stockée en minuscules — toute nouvelle requête portant une adresse doit passer par `EmailAddresses.normalize`.
