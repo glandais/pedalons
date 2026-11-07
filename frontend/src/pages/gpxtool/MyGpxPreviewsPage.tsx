@@ -11,7 +11,7 @@ import {
   getListMyPreviewsQueryKey,
   useDeletePreview,
 } from '@/api/endpoints/gpx-previews/gpx-previews'
-import { Rendezvous } from '@/components/common/Rendezvous'
+import { DepartureLine } from '@/components/common/DepartureLine'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { Pagination } from '@/components/common/Pagination'
 import { paths } from '@/config/paths'
@@ -101,6 +101,15 @@ function PreviewRow({ preview }: PreviewRowProps) {
           <Text fw={500} truncate>
             {preview.name}
           </Text>
+          {/* The departure under the name, in 700 — never one dimmed stat among others (BRAND-8) */}
+          {preview.departureTime && (
+            <DepartureLine
+              date={preview.departureTime}
+              zone={preview.departureTimezone}
+              size="sm"
+              withDay
+            />
+          )}
           <Group gap="md" c="dimmed">
             <Text size="sm">{distance(preview.distance)}</Text>
             <Group gap={2}>
@@ -111,15 +120,6 @@ function PreviewRow({ preview }: PreviewRowProps) {
               <IconArrowDown size={14} />
               <Text size="sm">{elevation(preview.elevationLoss)}</Text>
             </Group>
-            {preview.departureTime && (
-              <Text size="sm">
-                <Rendezvous
-                  date={preview.departureTime}
-                  zone={preview.departureTimezone}
-                  template={(text) => t('gpxTools.departure.line', { date: text })}
-                />
-              </Text>
-            )}
             {/* "il y a 2 minutes" is read off the clock: server and client legitimately render
                 different text a few seconds apart. */}
             <Text size="sm" suppressHydrationWarning>

@@ -8,7 +8,6 @@ import {
   IconArrowUp,
   IconArrowDown,
   IconBolt,
-  IconClock,
   IconDeviceMobile,
   IconDownload,
   IconEdit,
@@ -37,7 +36,7 @@ import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { ShareButton } from '@/components/common/ShareButton'
 import { RouteMapView } from '@/components/route/RouteMapView'
 import { ColorModeControls } from '@/components/route/ColorModeControls'
-import { Rendezvous } from '@/components/common/Rendezvous'
+import { DepartureLine } from '@/components/common/DepartureLine'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { RouteWaypointList } from '@/components/route/RouteWaypointList'
 import { useWaypointSelection } from '@/hooks/useWaypointSelection'
@@ -192,17 +191,8 @@ export function GpxPreviewView({ preview }: GpxPreviewViewProps) {
 
       {preview.departureTime ? (
         <Group gap="lg" wrap="wrap">
-          <Group gap={4} wrap="nowrap">
-            <IconClock size={16} aria-hidden />
-            <Text>
-              <Rendezvous
-                date={preview.departureTime}
-                zone={preview.departureTimezone}
-                variant="detail"
-                template={(text) => t('gpxTools.departure.line', { date: text })}
-              />
-            </Text>
-          </Group>
+          {/* The departure in its one format, a primary piece of information (ledger BRAND-8) */}
+          <DepartureLine date={preview.departureTime} zone={preview.departureTimezone} withDay />
           {preview.averageSpeed !== undefined && (
             <Group gap={4} wrap="nowrap">
               <IconBolt size={16} aria-hidden />

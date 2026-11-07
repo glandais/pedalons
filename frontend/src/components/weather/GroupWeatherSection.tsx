@@ -11,6 +11,11 @@ import { hasForecast, showsDetailBlock } from './weatherDisplay'
 
 interface GroupWeatherSectionProps {
   ride: RideDto
+  /**
+   * This group's departure (`startFor(ride, group)`): the time « Au départ » gives on the group's
+   * page, never the ride's when the group leaves at a time of its own (ledger `BRAND-8`).
+   */
+  startAt: string
   /** `GET …/rides/{rideSlug}/weather`, the ride page's own read (shared cache). */
   weather: RideWeatherDto | undefined
   /** This group's leg (`leg.groupId === group.id`), undefined when the forecast has none. */
@@ -37,6 +42,7 @@ interface GroupWeatherSectionProps {
  */
 export function GroupWeatherSection({
   ride,
+  startAt,
   weather,
   leg,
   isLoading,
@@ -96,7 +102,7 @@ export function GroupWeatherSection({
             <Stack gap="md">
               <DepartureWeather
                 departure={weather.departure}
-                time={ride.dateTime}
+                time={startAt}
                 timezone={ride.timezone}
               />
               <Text size="sm" c="dimmed">

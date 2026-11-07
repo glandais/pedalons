@@ -8,6 +8,11 @@ interface MapFullscreenShellProps {
   leading: ReactNode
   /** A string is truncated in the toolbar; a node (a dialog title) is rendered as given. */
   title: ReactNode
+  /**
+   * One compact line under a string title — the departure of a ride, a group or a stage (ledger
+   * `BRAND-8`). The toolbar keeps its 48 px: title and subtitle share it.
+   */
+  subtitle?: ReactNode
   /** Distance and elevation readout, in metres. Gain and loss are hidden below `sm`. */
   stats?: { distance: number; gain?: number; loss?: number }
   /** Right of the toolbar, after the stats. */
@@ -25,6 +30,7 @@ interface MapFullscreenShellProps {
 export function MapFullscreenShell({
   leading,
   title,
+  subtitle,
   stats,
   actions,
   children,
@@ -47,7 +53,14 @@ export function MapFullscreenShell({
       >
         {leading}
 
-        {typeof title === 'string' ? (
+        {typeof title === 'string' && subtitle ? (
+          <Box style={{ flex: 1, minWidth: 0 }}>
+            <Text fw={600} lh={1.25} truncate>
+              {title}
+            </Text>
+            {subtitle}
+          </Box>
+        ) : typeof title === 'string' ? (
           <Text fw={600} truncate style={{ flex: 1, minWidth: 0 }}>
             {title}
           </Text>

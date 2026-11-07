@@ -1,14 +1,15 @@
-import { describe, it, expect, vi, afterEach } from 'vitest'
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { render, screen, cleanup } from '@testing-library/react'
 import { MantineProvider } from '@mantine/core'
 import type { TeamTimezoneChangePreviewDto } from '@/api/dto'
 
 // Keys and their values, not wording: an example is rendered inline as `key{json}`. The date
-// pattern is the French catalog's.
+// patterns are the French catalog's (the departure's one format, ledger BRAND-8).
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string, options?: Record<string, unknown>) => {
-      if (key === 'teams.settings.timezoneChange.datePattern') return 'EEEE d MMMM'
+      if (key === 'dateFormats.departureDay') return 'EEE d MMM'
+      if (key === 'dateFormats.departureDayWithYear') return 'EEE d MMM yyyy'
       return options === undefined ? key : `${key}${JSON.stringify(options)}`
     },
     i18n: { language: 'fr' },
@@ -38,7 +39,29 @@ function renderPreview(value: TeamTimezoneChangePreviewDto) {
 
 // docs/LEDGER_*.md API-60, plan §9.
 describe('TimezoneChangePreview', () => {
-  afterEach(cleanup)
+  // The year shows only outside the current one: the clock is held in 2026.
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-09-01T10:00:00Z'))
+  })
+  afterEach(() => {
+    cleanup()
+    vi.useRealTimers()
+  })
+
+  it('writes the year of an example outside the current one (BRAND-8)', () => {
+    renderPreview(
+      preview({
+        upcomingCount: 1,
+        upcoming: [
+          { type: 'RIDE', id: 'r1', slug: 'b', title: 'B', dateTime: '2027-04-10T07:00:00Z' },
+        ],
+      })
+    )
+    const text = screen.getByTestId('timezone-change-upcoming').textContent ?? ''
+    expect(text).toContain('\\"date\\":\\"sam. 10 avr. 2027\\"')
+    expect(text).toContain('\\"time\\":\\"09:00\\"')
+  })
 
   it('gives the count and the first upcoming rendezvous at its wall time in the old zone', () => {
     renderPreview(
@@ -61,7 +84,7 @@ describe('TimezoneChangePreview', () => {
     expect(text.startsWith('teams.settings.timezoneChange.upcoming{"count":3')).toBe(true)
     expect(text).toContain('teams.settings.timezoneChange.example.RIDE')
     expect(text).toContain('\\"title\\":\\"Boucle\\"')
-    expect(text).toContain('\\"date\\":\\"dimanche 11 octobre\\"')
+    expect(text).toContain('\\"date\\":\\"dim. 11 oct.\\"')
     expect(text).toContain('\\"time\\":\\"09:30\\"')
     expect(text).toContain('\\"ofCity\\":\\"de Montréal\\"')
   })

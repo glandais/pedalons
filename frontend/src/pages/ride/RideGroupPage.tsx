@@ -408,6 +408,7 @@ export function RideGroupPage() {
         <ErrorBoundary variant="inline">
           <GroupWeatherSection
             ride={ride}
+            startAt={startFor(ride, group)}
             weather={weather.data}
             leg={leg}
             isLoading={weather.isLoading}

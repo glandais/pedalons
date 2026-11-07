@@ -36,6 +36,8 @@ interface DepartureLineProps {
    * long day « samedi 12 avril » is then read before the time, and only read.
    */
   announceDay?: boolean
+  /** One line, cut with an ellipsis rather than wrapped — a fullscreen map's 48 px toolbar. */
+  truncate?: boolean
 }
 
 /**
@@ -54,6 +56,7 @@ export function DepartureLine({
   tone = 'primary',
   detail,
   announceDay = false,
+  truncate = false,
 }: DepartureLineProps) {
   const { t } = useTranslation()
   const rendezvous = useRendezvousFormat(zone)
@@ -80,7 +83,7 @@ export function DepartureLine({
         aria-hidden
         style={{ flex: '0 0 auto', marginTop: size === 'md' ? 3 : 2 }}
       />
-      <Text fz={size === 'md' ? 16 : 14} lh={1.4} style={{ minWidth: 0 }}>
+      <Text fz={size === 'md' ? 16 : 14} lh={1.4} truncate={truncate} style={{ minWidth: 0 }}>
         {announceDay && !withDay && !label && (
           <VisuallyHidden suppressHydrationWarning={rendezvous.isGuessedText}>
             {rendezvous.formatLongDay(date)}

@@ -129,6 +129,16 @@ describe('StageFullscreenMapPage — the Météo mode (WEB-118)', () => {
     expect(state.view.backTo).toBe(paths.stage('np', 'voyage', 'etape-1'))
   })
 
+  it("puts the stage's departure under the title, in the stage's zone (BRAND-8)", () => {
+    const base = trip()
+    state.trip = {
+      ...base,
+      stages: [{ ...base.stages![0], dateTime: '2026-10-12T07:30:00Z' }],
+    } as TripDto
+    renderPage()
+    expect(state.view.departure).toEqual({ date: '2026-10-12T07:30:00Z', zone: 'Europe/Lisbon' })
+  })
+
   it('arrives in the mode the URL names, and writes a new one in place', () => {
     renderPage('?color=wind')
     expect(state.view.colorBy).toBe('wind')

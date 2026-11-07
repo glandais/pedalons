@@ -12,6 +12,7 @@ import { useRouteWindColors } from '@/hooks/useRouteWindColors'
 import { useResolvedColorScheme } from '@/hooks/useResolvedColorScheme'
 import { useMapChartZoomSync } from '@/hooks/useMapChartZoomSync'
 import { MapFullscreenShell } from '@/components/map/MapFullscreenShell'
+import { DepartureLine } from '@/components/common/DepartureLine'
 import { hasSurfaces } from '@/lib/trackSurface'
 import type { PlannerColorBy } from '@/lib/plannerSurface'
 import type { WaypointSelection } from '@/lib/waypoints'
@@ -39,6 +40,12 @@ export interface RouteFullscreenViewProps {
   route: FullscreenRoute
   /** Title shown in the toolbar (the route/stage/track name). */
   title: string
+  /**
+   * The departure under the title, one compact line in the one format « sam. 12 avr. · 09:00 »
+   * (ledger `BRAND-8`): the ride's, the group's own (`startFor(ride, group)`) on a group's map, the
+   * stage's. Read in `zone`, the entity's.
+   */
+  departure?: { date: string; zone: string | null | undefined }
   /**
    * Locale-aware path to return to (built by the page via paths.xxx), the page that opens the map,
    * with the current mode (`?color=`). Reached from within the app, the back button goes back in
@@ -75,6 +82,7 @@ export interface RouteFullscreenViewProps {
 export function RouteFullscreenView({
   route,
   title,
+  departure,
   backTo,
   colorBy: controlledColorBy,
   onColorByChange,
@@ -167,6 +175,11 @@ export function RouteFullscreenView({
         </ActionIcon>
       }
       title={title}
+      subtitle={
+        departure && (
+          <DepartureLine date={departure.date} zone={departure.zone} size="sm" withDay truncate />
+        )
+      }
       stats={{
         distance: route.distance,
         gain: route.elevationGain,

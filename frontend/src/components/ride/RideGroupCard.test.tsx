@@ -31,13 +31,18 @@ const group = {
   full: false,
 } as unknown as RideGroupDto
 
-function renderCard(weather?: WeatherLegDto, trackColor?: string, canSeeParticipants = true) {
+function renderCard(
+  weather?: WeatherLegDto,
+  trackColor?: string,
+  canSeeParticipants = true,
+  overrides: Partial<RideGroupDto> = {}
+) {
   return render(
     <MantineProvider>
       <QueryClientProvider client={new QueryClient()}>
         <MemoryRouter>
           <RideGroupCard
-            group={group}
+            group={{ ...group, ...overrides }}
             rideTimezone="UTC"
             rideDateTime="2026-10-08T06:40:00Z"
             teamSlug="np"
@@ -105,5 +110,44 @@ describe('RideGroupCard (WEB-77)', () => {
   it('shows no colour bar for a group with no trace on the map', () => {
     renderCard(undefined)
     expect(screen.queryByTestId('group-track-color')).toBeNull()
+  })
+
+  describe("the group's own departure (BRAND-8)", () => {
+    afterEach(() => vi.useRealTimers())
+    const fixClock = () => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date('2026-09-01T10:00:00Z'))
+    }
+
+    it('shows no departure line for a group leaving with the ride', () => {
+      fixClock()
+      renderCard()
+      expect(screen.queryByTestId('departure-line')).toBeNull()
+    })
+
+    it('gives its own time in 700, out of the stats row, and « après la sortie »', () => {
+      fixClock()
+      renderCard(undefined, undefined, true, { startAt: '2026-10-08T07:10:00Z' })
+      const line = screen.getByTestId('departure-line')
+      expect(plain(line.textContent)).toBe('Départ 07:10 · après la sortie')
+      const time = screen.getByText('Départ 07:10')
+      expect(time.getAttribute('style') ?? '').toContain('font-weight: 700')
+    })
+
+    it('says « avant la sortie » for a group leaving first', () => {
+      fixClock()
+      renderCard(undefined, undefined, true, { startAt: '2026-10-08T06:00:00Z' })
+      expect(plain(screen.getByTestId('departure-line').textContent)).toBe(
+        'Départ 06:00 · avant la sortie'
+      )
+    })
+
+    it('names the day when the group leaves on another day than the ride', () => {
+      fixClock()
+      renderCard(undefined, undefined, true, { startAt: '2026-10-09T05:30:00Z' })
+      expect(plain(screen.getByTestId('departure-line').textContent)).toBe(
+        'ven. 9 oct. · 05:30 · après la sortie'
+      )
+    })
   })
 })

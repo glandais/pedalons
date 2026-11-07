@@ -135,6 +135,21 @@ describe('RideGroupFullscreenMapPage (WEB-117)', () => {
     expect(document.title).toBe('Sortie du samedi · Groupe Rapide — Pédalons')
   })
 
+  it("puts the group's own departure under the title, not the ride's (BRAND-8)", () => {
+    state.ride = ride({
+      dateTime: '2026-10-10T07:00:00Z',
+      groups: [{ ...group('g1', 'Rapide'), startAt: '2026-10-10T07:30:00Z' }, group('g2', 'Cool')],
+    })
+    renderPage()
+    expect(state.view.departure).toEqual({ date: '2026-10-10T07:30:00Z', zone: 'Europe/Paris' })
+  })
+
+  it("falls back on the ride's departure for a group without a time of its own", () => {
+    state.ride = ride({ dateTime: '2026-10-10T07:00:00Z' })
+    renderPage()
+    expect(state.view.departure).toEqual({ date: '2026-10-10T07:00:00Z', zone: 'Europe/Paris' })
+  })
+
   it('arrives on the grade without a mode in the URL, the Météo mode on offer', () => {
     renderPage()
     expect(state.view.colorBy).toBe('grade')

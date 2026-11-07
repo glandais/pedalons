@@ -64,6 +64,7 @@ export function RideFullscreenMapPage() {
     <MapColorFullscreenView
       route={route}
       title={title}
+      departure={{ date: ride.dateTime, zone: ride.timezone }}
       backTo={paths.ride(team.slug, ride.slug)}
       windLeg={windLeg}
       windAttribution={windLeg ? weather.data?.attribution : undefined}

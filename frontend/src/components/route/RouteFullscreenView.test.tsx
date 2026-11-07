@@ -71,14 +71,25 @@ function route(extra: Partial<TrackDto> = {}): FullscreenRoute {
   }
 }
 
-function renderView(shown: FullscreenRoute, history: string[] = ['/map']) {
+function renderView(
+  shown: FullscreenRoute,
+  history: string[] = ['/map'],
+  departure?: { date: string; zone: string }
+) {
   return render(
     <MemoryRouter initialEntries={history} initialIndex={history.length - 1}>
       <MantineProvider>
         <Routes>
           <Route
             path="/map"
-            element={<RouteFullscreenView route={shown} title="Boucle" backTo="/back" />}
+            element={
+              <RouteFullscreenView
+                route={shown}
+                title="Boucle"
+                backTo="/back"
+                departure={departure}
+              />
+            }
           />
           <Route path="*" element={<LocationProbe />} />
         </Routes>
@@ -94,6 +105,26 @@ function LocationProbe() {
 
 describe('RouteFullscreenView surface switch', () => {
   afterEach(cleanup)
+
+  it('puts the departure under the title, one line in the one format (BRAND-8)', () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-09-01T10:00:00Z'))
+    try {
+      renderView(route(), ['/map'], { date: '2026-10-10T07:00:00Z', zone: 'Europe/Paris' })
+      const line = screen.getByTestId('departure-line')
+      expect(plain(line.textContent)).toBe('sam. 10 oct. · 09:00')
+      expect(screen.getByText('sam. 10 oct. · 09:00').getAttribute('style') ?? '').toContain(
+        'font-weight: 700'
+      )
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('has no departure line without a departure', () => {
+    renderView(route())
+    expect(screen.queryByTestId('departure-line')).toBeNull()
+  })
 
   it('offers no switch while the route has no surface', () => {
     renderView(route({ surfaceState: TrackSurfaceState.PENDING }))

@@ -134,6 +134,15 @@ describe('RideFullscreenMapPage (WEB-118)', () => {
     expect(document.title).toBe('Sortie du samedi — Pédalons')
   })
 
+  it("puts the ride's departure under the title, in the ride's zone (BRAND-8)", () => {
+    state.ride = ride({ dateTime: '2026-10-10T13:00:00Z' })
+    renderPage()
+    expect(state.view.departure).toEqual({
+      date: '2026-10-10T13:00:00Z',
+      zone: 'America/Montreal',
+    })
+  })
+
   it("draws the group's own route when it has one", () => {
     state.ride = ride({ groups: [group('g1', 'Seul', 'autre')] })
     state.routes = new Map([

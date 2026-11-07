@@ -160,6 +160,13 @@ describe('GpxPreviewView', () => {
   })
 
   describe('departure', () => {
+    // The year shows only outside the current one: the clock is held in 2026.
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date('2026-09-01T10:00:00Z'))
+    })
+    afterEach(() => vi.useRealTimers())
+
     const dated: GpxPreviewDto = {
       ...preview,
       departureTime: '2026-10-18T06:30:00Z',
@@ -168,13 +175,18 @@ describe('GpxPreviewView', () => {
 
     it('says when the track leaves, in the zone of its start, with the speed if there is one', () => {
       renderView({ ...dated, averageSpeed: 27 })
-      expect(screen.getByText(/Départ : /).textContent).toContain('08:30')
+      // The one format, in 700 on its departure line (ledger BRAND-8)
+      const line = screen.getByTestId('departure-line')
+      expect(line.textContent).toMatch(/^dim\. 18 oct\. · 08:30/)
+      expect(screen.getByText(/^dim\. 18 oct\. · 08:30$/).getAttribute('style') ?? '').toContain(
+        'font-weight: 700'
+      )
       expect(screen.getByText(/Vitesse moyenne : 27/)).toBeTruthy()
     })
 
     it('shows no speed that was not given', () => {
       renderView(dated)
-      expect(screen.getByText(/Départ : /)).toBeTruthy()
+      expect(screen.getByTestId('departure-line')).toBeTruthy()
       expect(screen.queryByText(/Vitesse moyenne/)).toBeNull()
     })
 
@@ -184,7 +196,7 @@ describe('GpxPreviewView', () => {
       cleanup()
       renderView()
       expect(screen.queryByText('Ajouter une date de départ pour voir la météo')).toBeNull()
-      expect(screen.queryByText(/Départ : /)).toBeNull()
+      expect(screen.queryByTestId('departure-line')).toBeNull()
     })
 
     it('shows the weather of the track, and offers the wind colouring with a forecast', () => {

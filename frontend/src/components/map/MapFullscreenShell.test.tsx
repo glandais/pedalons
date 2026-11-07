@@ -67,4 +67,14 @@ describe('MapFullscreenShell', () => {
     renderShell()
     expect(screen.queryByTestId('strip')).toBeNull()
   })
+
+  it('stacks a subtitle under the title, in the same 48 px toolbar (BRAND-8)', () => {
+    renderShell({ subtitle: <span data-testid="subtitle">sam. 10 oct. · 09:00</span> })
+    const title = screen.getByText('Ma sortie')
+    const subtitle = screen.getByTestId('subtitle')
+    expect(title.parentElement).toBe(subtitle.parentElement)
+    expect(title.parentElement?.parentElement?.getAttribute('style') ?? '').toContain(
+      'height: calc(3rem'
+    )
+  })
 })

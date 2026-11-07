@@ -6,6 +6,7 @@ import { LoadingPage } from '@/components/common/LoadingSpinner'
 import { paths } from '@/config/paths'
 import { useAppName } from '@/hooks/useAppName'
 import { useCanonicalPath } from '@/hooks/useCanonicalPath'
+import { startFor } from '@/utils/groupStart'
 import { groupWindLeg, rideGroupMapLeavesTo, useRideGroupData } from './rideGroupData'
 
 /**
@@ -83,6 +84,7 @@ export function RideGroupFullscreenMapPage() {
     <MapColorFullscreenView
       route={route}
       title={title}
+      departure={{ date: startFor(ride, group), zone: ride.timezone }}
       backTo={paths.rideGroup(team.slug, ride.slug, group.id)}
       windLeg={windLeg}
       windAttribution={windLeg ? weather.data?.attribution : undefined}

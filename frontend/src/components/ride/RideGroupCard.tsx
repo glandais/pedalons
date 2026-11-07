@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next'
 import {
   IconBolt,
   IconUsers,
-  IconClock,
   IconArrowsMaximize,
   IconArrowUp,
   IconShieldCheck,
@@ -29,8 +28,9 @@ import { UserAvatar, UserAvatarGroup } from '../common/UserAvatar'
 import { ParticipantListModal } from './ParticipantListModal'
 import { RideGroupRouteActions } from './RideGroupRouteActions'
 import { useUnits } from '@/hooks/useUnits'
-import { Rendezvous } from '../common/Rendezvous'
-import { groupLeavesAtOwnTime } from '@/utils/groupStart'
+import { DepartureLine } from '../common/DepartureLine'
+import { useRendezvousFormat } from '@/hooks/useRendezvousFormat'
+import { groupLeavesAtOwnTime, groupStartRelation } from '@/utils/groupStart'
 import classes from './RideGroupCard.module.css'
 
 interface RideGroupCardProps {
@@ -96,6 +96,11 @@ export function RideGroupCard({
   const { t } = useTranslation()
   const { speed, distance, elevation } = useUnits()
   const [showParticipants, setShowParticipants] = useState(false)
+  const rendezvous = useRendezvousFormat(rideTimezone)
+  // The group leaves at its own time: `startAt` is not the ride's instant (never the deprecated
+  // `time`, docs/LEDGER_*.md API-60). Then, and only then, its departure line under the name.
+  const ownTime = groupLeavesAtOwnTime(group.startAt, rideDateTime)
+  const relation = groupStartRelation(group.startAt, rideDateTime)
   // `full` and `registered` are computed server-side (contract 1.3.0) — never recompute them here.
   const isFull = group.full
   const isJoined = group.registered
@@ -187,6 +192,20 @@ export function RideGroupCard({
         )}
       </Group>
 
+      {/* The group's own departure (docs/BRANDING.md §7.8, ledger BRAND-8): its time in 700, the
+          day when it is not the ride's, and how it sits against the ride — never a dimmed stat. */}
+      {ownTime && (
+        <Box mt={6}>
+          <DepartureLine
+            date={group.startAt}
+            zone={rideTimezone}
+            size="sm"
+            withDay={!rendezvous.samePeriod(group.startAt, rideDateTime)}
+            detail={relation === 'with' ? undefined : t(`rides.group.stats.${relation}`)}
+          />
+        </Box>
+      )}
+
       {/* Leader — rendered only when one is designated; no fallback on the ride's creator */}
       {group.leader && (
         <Group gap="xs" mt="xs" wrap="nowrap">
@@ -207,16 +226,6 @@ export function RideGroupCard({
 
       {/* Details row */}
       <Group mt="xs">
-        {/* The group leaves at its own time: `startAt` is not the ride's instant (never the
-            deprecated `time`, docs/LEDGER_*.md API-60). */}
-        {groupLeavesAtOwnTime(group.startAt, rideDateTime) && (
-          <Group gap={4}>
-            <IconClock size={16} />
-            <Text size="sm" c="dimmed">
-              <Rendezvous date={group.startAt} zone={rideTimezone} format="time" />
-            </Text>
-          </Group>
-        )}
         {group.averageSpeed && (
           <Group gap={4}>
             <IconBolt size={16} />

@@ -64,6 +64,7 @@ export function StageFullscreenMapPage() {
     <MapColorFullscreenView
       route={route}
       title={title}
+      departure={{ date: stage.dateTime, zone: stage.timezone }}
       backTo={paths.stage(team.slug, trip.slug, stageSlug!)}
       windLeg={windLeg}
       windAttribution={windLeg ? weather.data?.attribution : undefined}
