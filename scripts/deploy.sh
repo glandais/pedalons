@@ -124,7 +124,9 @@ if $SHARED; then
     set +a
   fi
   log "deploying stack pedalons-shared"
-  docker stack deploy -c docker-compose.shared.yml pedalons-shared
+  # --prune, like the other stacks: a service removed from the file leaves the stack (osm-surface,
+  # docs/LEDGER_*.md OPS-58), instead of running on unnoticed.
+  docker stack deploy --prune -c docker-compose.shared.yml pedalons-shared
   exit 0
 fi
 

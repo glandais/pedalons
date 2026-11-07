@@ -2,7 +2,7 @@
 #
 # tileserver ne porte aucune donnee applicative : jeu de donnees statique, acces en lecture seule,
 # sollicite uniquement par le backend. L'instancier une seule fois evite de payer deux fois ~1,8 Go
-# de RSS. osm-surface, de meme : un cache de tuiles OSM, rien qui soit propre a un environnement.
+# de RSS. osm-route-details, de meme : des caches de tuiles, rien qui soit propre a un environnement.
 # (Le routage ne tourne plus ici : le backend appelle l'API Stadia Maps avec STADIAMAPS_API_KEY,
 # lue dans le .env de chaque environnement -- docs/LEDGER_*.md OPS-48.)
 #
@@ -19,9 +19,9 @@
 # `extends` et redeclare le reseau en reseau de projet, pour n'avoir qu'une seule stack. C'est
 # aussi lui qui leur redonne un nom de conteneur et une politique de redemarrage.
 #
-# Les noms de service `tileserver`, `osm-surface` et `osm-route-details` sont les alias DNS sur ce
-# reseau : TILESERVER_URL des .env d'environnement reste inchange, et les URL d'osm-surface et
-# d'osm-route-details sont les valeurs par defaut du backend.
+# Les noms de service `tileserver` et `osm-route-details` sont les alias DNS sur ce reseau :
+# TILESERVER_URL des .env d'environnement reste inchange, et l'URL d'osm-route-details est la valeur
+# par defaut du backend.
 #
 # NE PAS y ajouter imgproxy/varnish tant que MinIO n'est pas mutualise : imgproxy n'expose qu'un
 # IMGPROXY_S3_ENDPOINT global et ne sait pas servir deux backends S3 distincts.
@@ -38,40 +38,13 @@ services:
         limits:
           memory: 3G
 
-  # Surface des traces enregistrees (trace_attributes au protocole Valhalla, docs/LEDGER_*.md OPS-57) :
-  # appelee par le SurfaceRefreshWorker de chaque backend a http://osm-surface:8002, sans cle.
-  # Ses seules donnees sont les tuiles VersaTiles qu'elle telecharge et met en cache : un volume
-  # nomme (l'image tourne en 65532 et son /data lui appartient deja, un bind mount serait a root),
-  # regenerable, hors sauvegarde. Image distroless : pas de healthcheck possible (ni shell ni curl).
-  osm-surface:
-    image: ghcr.io/glandais/osm-surface:0.1.2
-    networks:
-      - shared
-    environment:
-      CACHE_MAX_GB: "5"
-      LOG_FORMAT: json
-      # Le cache de tuiles decodees sous-estime leur poids (seuls les points sont comptes) : a 256 Mo
-      # (defaut), le processus restait a ~715 Mo au repos, plaque contre la limite.
-      MEMORY_CACHE_MB: "128"
-      # glibc ouvre jusqu'a 8 arenes par coeur et ne les rend pas : meme cause que la memoire native
-      # du backend (docs/LEDGER_*.md OPS-56).
-      MALLOC_ARENA_MAX: "2"
-    volumes:
-      - osm-surface-data:/data
-    # MEMORY_CACHE_MB de tuiles decodees, plus les appariements en cours.
-    deploy:
-      resources:
-        limits:
-          memory: 768M
-
   # Profil d'altitude et revetement des parcours (API 1.6, docs/LEDGER_*.md API-150 et OPS-58) :
   # le GpxPipeline de chaque backend y lit ses altitudes (phase B du plan
-  # docs/plans/2026-11-05-osm-route-details.md), a deployer avant lui. Il remplacera osm-surface pour
-  # le revetement, qui ne sera retire que lorsque plus aucun backend ne l'appellera. Adresse :
-  # http://osm-route-details:8080, sans cle ; le port 9090 (/metrics) reste interne au reseau.
+  # docs/plans/2026-11-05-osm-route-details.md), a deployer avant lui ; il a remplace osm-surface
+  # pour le revetement (retire en phase F). Adresse : http://osm-route-details:8080, sans cle ; le port 9090 (/metrics) reste interne au reseau.
   # Une seule instance : la cadence IGN (20 req/s) est locale au processus, deux replicas derriere la
   # meme IP la doubleraient. Son cache disque (tuiles IGN, Mapterhorn, VersaTiles) est le VOLUME de
-  # l'image, possede par 65532 comme pour osm-surface : volume nomme, regenerable, hors sauvegarde
+  # l'image, possede par 65532 : volume nomme, regenerable, hors sauvegarde
   # (IGN plafonne a 20 Go par defaut, ORD_CACHE__DISK_MAX_GB_IGN). Image distroless, mais le binaire
   # porte son propre healthcheck (HEALTHCHECK de l'image, `osm-route-details healthcheck`) : garde
   # tel quel. Journaux en JSON par defaut de l'image (ORD_LOG__FORMAT).
@@ -81,11 +54,11 @@ services:
       - shared
     environment:
       # Caches memoire de tuiles decodees : 512 Mo chacun par defaut (« a calibrer » dans la
-      # conception du service), soit deja 1 Go avant la moindre requete. Moities, comme pour
-      # osm-surface, en attendant une mesure.
+      # conception du service), soit deja 1 Go avant la moindre requete. Moities, en attendant
+      # une mesure.
       ORD_CACHE__MEMORY_ELEVATION_MB: "256"
       ORD_CACHE__MEMORY_STREETS_MB: "256"
-      # Meme glibc, meme cause que pour osm-surface et le backend (docs/LEDGER_*.md OPS-56).
+      # Meme glibc, meme cause que pour le backend (docs/LEDGER_*.md OPS-56).
       MALLOC_ARENA_MAX: "2"
     volumes:
       - osm-route-details-data:/var/cache/osm-route-details
@@ -99,7 +72,6 @@ services:
           memory: 1G
 
 volumes:
-  osm-surface-data:
   osm-route-details-data:
 
 networks:

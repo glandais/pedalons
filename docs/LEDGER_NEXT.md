@@ -547,7 +547,7 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
            écriture de revêtement y échouerait, et elle ne redémarrerait même pas
            (`schema-management.strategy=validate`).
 
-        À la même période que le retrait d'osm-surface (`OPS-58`), mais en étape à part. Plan :
+        Le retrait d'osm-surface est fait (`OPS-59`). Plan :
         [2026-11-05-osm-route-details](plans/2026-11-05-osm-route-details.md).
 
 - [ ] `API-148` **Retirer les rustines de sécurité des dépendances une fois sur Quarkus 4 (S)** —
@@ -931,16 +931,11 @@ Ce que les tests ne prouvent pas, parce qu'ils ne passent ni par Flyway ni par u
 
 ### Exploitation
 
-- [ ] `OPS-58` **osm-route-details dans la pile partagée, osm-surface retiré** — le backend
-      n'appelle plus osm-surface depuis la phase E d'`API-150`, mais un service et 768 Mo restent
-      réservés pour la version précédente. Reste : volume de cache (IGN, Mapterhorn, VersaTiles),
-      extrait VersaTiles France en fichier local, limite mémoire à mesurer ; retrait d'osm-surface et
-      de son volume de `docker-compose.shared.yml` et `docker-compose.local.yml`, avec leurs
-      commentaires qui le disent encore appelé, et de la somme « What a host must hold »
-      d'`OPERATIONS.md`, en étape à part (phase F, `API-151`), quand aucun
-      environnement ne tourne plus sur une version antérieure à la phase E et qu'aucun retour
-      arrière vers l'une d'elles n'est envisagé. Le compte de `surface_refresh` n'est plus un
-      critère. Plan : [2026-11-05-osm-route-details](plans/2026-11-05-osm-route-details.md) §11.
+- [ ] `OPS-58` **osm-route-details dans la pile partagée : à régler** — en service depuis le
+      7 novembre 2026 en staging et en prod (osm-surface retiré, `OPS-59`), avec des valeurs
+      prudentes. Reste : volume de cache (IGN, Mapterhorn, VersaTiles), extrait VersaTiles France en
+      fichier local, limite mémoire (1 Go) à mesurer. Plan :
+      [2026-11-05-osm-route-details](plans/2026-11-05-osm-route-details.md) §11.
 
 - [ ] `OPS-21` **Ce que le monitoring ne voit pas encore** — PostgreSQL (connexions, taille, bloat,
       requêtes lentes : un `postgres_exporter` par environnement, sur `pedalons-shared`), le

@@ -46,7 +46,7 @@ Everything else has a working default.
 ### 2. Start the backing services
 
 ```bash
-docker compose up -d   # postgres, MinIO, imgproxy, varnish, tileserver, osm-surface, mailpit
+docker compose up -d   # postgres, MinIO, imgproxy, varnish, tileserver, osm-route-details, mailpit
 ```
 
 Everything is up in seconds. Mail, whatever its recipient, lands in mailpit:
@@ -109,7 +109,7 @@ A workstation and a deployment differ in five keys, and only those:
   biketeam migration the local database holds thousands of real member addresses, and one OTP or
   team invitation is enough to reach them.
 - **`COMPOSE_FILE` adds the workstation overlay**, `docker-compose.local.yml`: mailpit, the
-  tileserver, osm-surface and osm-route-details a host gets from its shared stack, the loopback ports dev mode talks to, and an
+  tileserver and osm-route-details a host gets from its shared stack, the loopback ports dev mode talks to, and an
   `app` profile on `backend`/`frontend`/`traefik` so that a plain `docker compose up -d` starts the
   backing services alone. A deployed `.env` has no `COMPOSE_FILE`, which is why the overlay is a
   separate file rather than a profile. Its header comment lists what it changes.
@@ -234,8 +234,8 @@ IDs are TSIDs (`bigint`), not sequences: generate one inline with
 
 ## Deployment and operations
 
-A host runs one shared stack (`docker-compose.shared.yml`: the tileserver,
-osm-route-details for the elevation profile and surface of routes, and osm-surface for as long as a release still calls it, on the `pedalons-shared` network) plus one `docker-compose.yml` stack per environment, behind Caddy.
+A host runs one shared stack (`docker-compose.shared.yml`: the tileserver
+and osm-route-details for the elevation profile and surface of routes, on the `pedalons-shared` network) plus one `docker-compose.yml` stack per environment, behind Caddy.
 Route computation and geocoding are bought from Stadia Maps, with a key per environment; the
 maps' search bar calls Stadia Maps from the browser, authenticated by the page's domain, so a new
 hostname has to be declared on their dashboard.

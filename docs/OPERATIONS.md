@@ -16,9 +16,9 @@ rescheduled rather than left for a `restart:` policy.
 `docker-compose.shared.yml` holds what carries no application data: `tileserver`
 (server-side raster rendering, ~1.8 GB resident), `osm-route-details` (elevation profile and surface
 of routes: the backends read their elevations there, `fast` for a save or the planner, `full` for the
-HD catch-up, which also writes the surface; ledger `API-150`, `OPS-58`) and, until phase F of that
-ledger entry, `osm-surface`, which only a release older than phase E still calls (see
-[osm-surface, until phase F](#osm-surface-until-phase-f)). **Deploy it, and check that an environment's network reaches it,
+HD catch-up, which also writes the surface; ledger `API-150`, `OPS-58`). `osm-surface`, which only
+a release older than phase E called, left it on 2026-11-07 (see
+[surface_refresh, until phase F](#surface_refresh-until-phase-f)). **Deploy it, and check that an environment's network reaches it,
 before a backend that calls it**: without it nothing fails visibly, but every save keeps the file's
 elevations (a planner route gets 0 m and no D+) and every HD catch-up gives up after five attempts,
 with no surface.
@@ -29,8 +29,7 @@ bought from Stadia Maps, with a key per environment, and so is geocoding (see
 `docker-compose.yml` holds everything that must stay isolated per environment: traefik, backend,
 frontend, postgres, minio, imgproxy and varnish — and goatcounter, which runs in production only
 (see [Web analytics](#web-analytics-goatcounter)). Its `backend` also joins `pedalons-shared` to reach
-the shared services, by their service names `tileserver` and `osm-route-details` (and `osm-surface`,
-for a release older than ledger `API-150` phase E).
+the shared services, by their service names `tileserver` and `osm-route-details`.
 
 Each environment's `.env` differs from a workstation's in five keys only — see
 [The `.env`, on a workstation and on a server](../README.md#the-env-on-a-workstation-and-on-a-server).
@@ -126,7 +125,6 @@ limit is killed by the kernel (`OOMKilled` in `docker inspect`, `task: non-zero 
 | traefik | 256M | |
 | goatcounter | 128M | production only; 36 to 40 MiB at rest, the rest for CSV exports and the dashboard |
 | tileserver (shared) | 3G | ~1.8 GB resident |
-| osm-surface (shared, until ledger `API-150` phase F) | 768M | `MEMORY_CACHE_MB=128` of decoded tiles (weighed by their points only, so more in fact) plus the matchings in flight, `MALLOC_ARENA_MAX=2`; at the default 256 it sat at ~715 MB after a full recompute (2026-11-03) |
 | osm-route-details (shared) | 1G | ledger `OPS-58`: its two tile caches at 256 MB each (512 by default) plus the requests in flight, `MALLOC_ARENA_MAX=2`; to be measured |
 | monitoring stack | 2G in all | see [Monitoring](#monitoring); ~1 GB resident |
 
@@ -162,8 +160,8 @@ resident memory once the cache fills; keep `VARNISH_MEMORY` about half as much a
 
 **What a host must hold**: these are ceilings, not usage — but a host should hold the sum of them.
 Per environment, 7.3 GB (7.4 GB in production, with goatcounter), plus 2 GB during a rolling update (a second backend and frontend run
-beside the old ones, see above); on top, the shared stack's tileserver (3 GB), osm-route-details
-(1 GB) and, until phase F, osm-surface (0.75 GB), and the monitoring stack (2 GB). Two environments with the defaults come to about 25 GB with the host's own share
+beside the old ones, see above); on top, the shared stack's tileserver (3 GB) and osm-route-details
+(1 GB), and the monitoring stack (2 GB). Two environments with the defaults come to about 24 GB with the host's own share
 (Caddy, Docker, the OS): a 32 GB host holds them with room to spare — since 2026-10-17 no routing
 tiles compete for its page cache (`OPS-48`). A staging environment can take less through its own `.env` (`BACKEND_MEMORY=1G`,
 `VARNISH_SIZE=256M`, `VARNISH_MEMORY=512M`); prod, more `BACKEND_MEMORY` if `docker stats` shows the
@@ -765,31 +763,16 @@ and `~/staging`. The map tiles of the thumbnails (`tileserver_8080/`, the rest o
 docker run --rm -v "$PWD/data/cache:/d" alpine rm -rf /d/mapterhorn /d/ign-lidar-hd-mnt /d/ign-lidar-hd-mns
 ```
 
-#### osm-surface, until phase F
+#### surface_refresh, until phase F
 
-The backend has no client for **osm-surface** and no surface queue any more since ledger `API-150`
-phase E. **The service stays in the shared stack until prod has moved**: the shared stack serves
-every environment, a release older than phase E still calls it, and staging goes first. It leaves in
-phase F, as a step of its own (ledger `OPS-58`), once no environment runs such a release and no
-rollback to one is planned. How many rows `surface_refresh` holds no longer decides it: a backend on
-phase E ignores that table.
+**osm-surface left the shared stack on 2026-11-07** (ledger `OPS-58`), once prod and staging both ran
+phase E: the backend has had no client for it and no surface queue since ledger `API-150` phase E.
+**A rollback to a release older than phase E (`58efaf4a`) therefore gets no surface any
+more**: its surface requests fail as unreachable and are given up after their attempts. The profile
+is not concerned. Its tile cache volume, `pedalons-shared_osm-surface-data` (regenerable), is
+removed by hand once the service is gone: `docker volume rm pedalons-shared_osm-surface-data`.
 
-`ghcr.io/glandais/osm-surface` (source at github.com/glandais/osm-surface) answers
-`POST /trace_attributes/v1` at `http://osm-surface:8002`, from the VersaTiles OpenStreetMap vector
-tiles it caches in its volume (`pedalons-shared_osm-surface-data`, at most `CACHE_MAX_GB=5`;
-regenerable, not backed up).
-
-```bash
-# Is it up, and how old are its tiles? (distroless image: no shell, so from the backend container)
-docker exec "$(docker ps -qf name=${ENV_NAME}_backend)" curl -s http://osm-surface:8002/health
-docker service logs pedalons-shared_osm-surface --since 1h
-```
-
-**Upgrading it**: change the tag in `docker-compose.shared.yml`, then
-`cd ~/shared && git pull && scripts/deploy.sh --shared`. Requests in flight during the swap fail
-as unreachable, and the release that sent them retries two minutes later.
-
-**`surface_refresh` stays until phase F too**, with no migration, and what is left in it is inert:
+**`surface_refresh` stays until phase F**, with no migration, and what is left in it is inert:
 
 - A release older than phase E may still queue and claim rows during a rolling deploy, or again after
   a rollback, whatever the state of the table: its indexes stay for it.
