@@ -16,8 +16,11 @@ enum PdlDayBoxSize {
   compact,
 }
 
-/// La boîte du jour, **à plat** (BRANDING §7.8, ledger `BRAND-8`) : « sam. /
-/// 12 / avr. » sur le fond doux de son ton, rayon 8.
+/// La boîte du jour (BRANDING §7.8, ledger `BRAND-8`) : « sam. / 12 / avr. »,
+/// rayon 8 — **à plat** sur le fond doux de son ton (listes, agenda, bloc de
+/// départ), ou **posée** ([posed]) sur l'image d'une carte du fil : fond de
+/// surface, ombre `sm` ([PdlShadows.posed]), libellés au ton (ledger
+/// `MOB-115`).
 ///
 /// Ne formate rien : l'appelant passe les libellés déjà traduits, lus dans
 /// le fuseau de l'entité (`core/widgets/day_box.dart` les fabrique d'une
@@ -30,6 +33,7 @@ class PdlDayBox extends StatelessWidget {
     this.month,
     this.tone,
     this.size = PdlDayBoxSize.regular,
+    this.posed = false,
   });
 
   /// « sam. »
@@ -44,6 +48,9 @@ class PdlDayBox extends StatelessWidget {
   final PdlTone? tone;
   final PdlDayBoxSize size;
 
+  /// Posée sur une image : fond de surface et ombre, au lieu du fond doux.
+  final bool posed;
+
   @override
   Widget build(BuildContext context) {
     final PdlColors c = context.pdl;
@@ -57,7 +64,11 @@ class PdlDayBox extends StatelessWidget {
       padding: EdgeInsets.symmetric(
         vertical: compact ? 6 : PdlSpacing.badgeGap,
       ),
-      decoration: BoxDecoration(color: soft, borderRadius: PdlRadii.mdAll),
+      decoration: BoxDecoration(
+        color: posed ? c.surface : soft,
+        borderRadius: PdlRadii.mdAll,
+        boxShadow: posed ? PdlShadows.posed : null,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[

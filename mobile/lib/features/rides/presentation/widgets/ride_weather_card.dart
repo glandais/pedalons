@@ -102,6 +102,7 @@ class RideWeatherCard extends ConsumerWidget {
               RideDepartureWeatherCard(
                 weather: dto,
                 timezone: ride.timezone,
+                departureAt: ride.dateTime,
                 // Le leg d'une sortie sans groupe ou solo, seul porteur de sa
                 // météo le long du parcours.
                 ownLeg: rideOwnLeg(dto, ride),
@@ -148,6 +149,7 @@ class RideDepartureWeatherCard extends ConsumerWidget {
     required this.weather,
     required this.timezone,
     this.ownLeg,
+    this.departureAt,
   });
 
   final RideWeatherDto weather;
@@ -155,6 +157,10 @@ class RideDepartureWeatherCard extends ConsumerWidget {
   /// Le fuseau de la sortie : lever, coucher du soleil et alerte s'y lisent.
   final String? timezone;
   final WeatherLegDto? ownLeg;
+
+  /// Le départ que la prévision décrit (`RideDto.dateTime`) : le titre le
+  /// dit, « Météo au départ de 09:00 » (ledger `MOB-115`).
+  final String? departureAt;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -178,7 +184,10 @@ class RideDepartureWeatherCard extends ConsumerWidget {
           Row(
             children: <Widget>[
               Expanded(
-                child: Text('rides.weather.atDeparture'.tr(), style: t.xs),
+                child: Text(
+                  departureWeatherTitle(departureAt, timezone),
+                  style: t.xs,
+                ),
               ),
               if (stale)
                 PdlBadge(

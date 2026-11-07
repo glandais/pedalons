@@ -53,6 +53,28 @@ VoidCallback? calendarEventTap(BuildContext context, CalendarEventDto event) {
   }
 }
 
+/// L'en-tête d'un jour de l'agenda (ledger `MOB-115`) : « Aujourd'hui ·
+/// samedi 12 avril », « Demain · dimanche 13 avril », « lundi 14 avril » —
+/// le jour de semaine toujours, le relatif seulement pour aujourd'hui et
+/// demain (BRANDING §8.3).
+///
+/// [day] est un jour **du lecteur** — la grille et le regroupement le sont —,
+/// comparé à [now] (maintenant, dans le fuseau du lecteur, par défaut).
+String calendarDayLabel(DateTime day, {DateTime? now}) {
+  final DateTime today = now ?? AppFormatters.displayNow();
+  final int gap = DateTime.utc(
+    day.year,
+    day.month,
+    day.day,
+  ).difference(DateTime.utc(today.year, today.month, today.day)).inDays;
+  final String date = AppFormatters.formatFullDate(day);
+  return switch (gap) {
+    0 => '${AppFormatters.today} · $date',
+    1 => '${AppFormatters.tomorrow} · $date',
+    _ => date,
+  };
+}
+
 /// Une ligne d'agenda — la carte de ~92 px de l'écran 22.
 ///
 /// **Elle ne déclenche aucun appel.** Tout ce qu'elle rend — le lieu, la
@@ -84,12 +106,15 @@ class AgendaCard extends ConsumerWidget {
     final UnitSystem units = ref.watch(unitSystemProvider);
     final Color accent = calendarEventColor(c, event.type);
 
-    final List<String> meta = <String>[
+    // L'heure en tête et en gras (ledger `MOB-115`, BRANDING §7.8) : au
+    // milieu de « Équipe · 08:30 · Lieu », c'était elle que l'ellipse
+    // mangeait. Elle n'est plus jamais tronquée ; l'équipe et le lieu, si.
+    final String? time = event.allDay ? null : AppFormatters.formatTime(_start);
+    final String meta = <String>[
       event.teamName,
-      if (!event.allDay) AppFormatters.formatTime(_start),
       if (event.startPlaceName != null && event.startPlaceName!.isNotEmpty)
         event.startPlaceName!,
-    ];
+    ].join(' · ');
 
     final List<PdlStat> stats = <PdlStat>[
       if (event.distance != null)
@@ -146,11 +171,29 @@ class AgendaCard extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: 2),
-                    Text(
-                      meta.join(' · '),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: t.sub,
+                    Row(
+                      children: <Widget>[
+                        if (time != null) ...<Widget>[
+                          Text(
+                            time,
+                            maxLines: 1,
+                            softWrap: false,
+                            style: t.sub.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: c.text,
+                            ),
+                          ),
+                          if (meta.isNotEmpty) Text(' · ', style: t.sub),
+                        ],
+                        Expanded(
+                          child: Text(
+                            meta,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: t.sub,
+                          ),
+                        ),
+                      ],
                     ),
                     if (!event.allDay)
                       ?ZoneMentionLine.maybe(event.start, event.timezone),

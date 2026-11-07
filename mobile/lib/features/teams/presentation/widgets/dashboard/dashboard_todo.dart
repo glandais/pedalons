@@ -214,14 +214,13 @@ class DashboardTodo extends StatelessWidget {
   }
 
   static String _rideWithDate(PublicationDtoRide ride) {
-    // Le jour de la sortie dans son fuseau (docs/LEDGER_*.md API-60).
-    final DateTime? at = AppFormatters.tryParseZoneTime(
-      ride.dateTime,
-      ride.timezone,
-    );
+    // Le départ de la sortie dans son fuseau (docs/LEDGER_*.md API-60), au
+    // format unique (ledger `MOB-115`) : « Sortie du samedi, sam. 12 avr. ·
+    // 09:00 ».
+    final DateTime? at = DateTime.tryParse(ride.dateTime);
     return at == null
         ? ride.name
-        : '${ride.name}, ${AppFormatters.formatFullDate(at)}';
+        : '${ride.name}, ${AppFormatters.formatDeparture(at, ride.timezone)}';
   }
 
   /// Reprendre un brouillon : une sortie dans l'éditeur de l'app (ledger

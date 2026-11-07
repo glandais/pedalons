@@ -15,6 +15,7 @@ import 'package:pedalons/features/trips/data/trip_repository.dart';
 import 'package:pedalons/features/trips/presentation/pages/stage_detail_page.dart';
 import 'package:pedalons/features/trips/presentation/pages/trip_detail_page.dart';
 import 'package:pedalons/features/trips/presentation/widgets/stage_card.dart';
+import 'package:pedalons/keys.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../support/localization.dart';
@@ -240,6 +241,28 @@ void main() {
       expect(find.text('0 km'), findsNothing);
     });
 
+    testWidgets('la synthèse donne l\'heure de départ du voyage (MOB-114)', (
+      WidgetTester tester,
+    ) async {
+      // 07:00Z le 12 août 2036 : 09:00 à Paris (la base des fuseaux
+      // s'arrête en 2037).
+      await openTrip(
+        tester,
+        fixtureTrip(
+          dateTime: '2036-08-12T07:00:00Z',
+          endDate: '2036-08-18T07:00:00Z',
+        ),
+      );
+
+      expect(
+        find.descendant(
+          of: find.byKey(keys.trip.summaryDeparture),
+          matching: find.text('Départ 09:00'),
+        ),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('un voyage annulé porte son bandeau et aucune action', (
       WidgetTester tester,
     ) async {
@@ -403,6 +426,51 @@ void main() {
       expect(find.text('Aperçu'), findsOneWidget);
       // `PdlBadge` capitalise ses libellés.
       expect(find.text('ÉTAPE 1 SUR 2'), findsOneWidget);
+    });
+
+    testWidgets('le bloc de départ est sous le titre, sans « Départ groupé » '
+        '(MOB-114)', (WidgetTester tester) async {
+      // 06:30Z le mardi 12 août 2036 : 08:30 à Paris.
+      final TripDto trip = fixtureTrip(
+        stages: <TripStageDto>[
+          fixtureStage(
+            index: 1,
+            stageCount: 2,
+            dateTime: '2036-08-12T06:30:00Z',
+            startPlaceName: 'Clermont-Ferrand',
+          ),
+          fixtureStage(index: 2, stageCount: 2),
+        ],
+      );
+      await openStage(tester, trip, 'j1');
+
+      final Finder block = find.byKey(keys.trip.stageDepartureBlock);
+      expect(block, findsOneWidget);
+      expect(
+        find.descendant(of: block, matching: find.text('Départ 08:30')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: block, matching: find.byType(PdlDayBox)),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: block,
+          matching: find.textContaining('mar. 12 août 2036'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Départ groupé'), findsNothing);
+      // Sous le titre : au-dessus des lieux.
+      expect(
+        tester.getTopLeft(block).dy,
+        greaterThan(tester.getTopLeft(find.byKey(keys.trip.stageTitle)).dy),
+      );
+      expect(
+        tester.getTopLeft(block).dy,
+        lessThan(tester.getTopLeft(find.text('Clermont-Ferrand').last).dy),
+      );
     });
 
     testWidgets('l\'adresse s\'affiche sous le nom du lieu', (

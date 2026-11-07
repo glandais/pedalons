@@ -13,6 +13,7 @@ import '../../../../core/utils/formatters.dart';
 import '../../../rides/presentation/widgets/ride_weather_summary_line.dart';
 import '../../providers/trip_detail_provider.dart';
 import '../../../../core/widgets/zone_mention_line.dart';
+import '../../../../keys.dart';
 
 /// Une étape dans la liste du voyage.
 ///
@@ -56,6 +57,7 @@ class StageCard extends ConsumerWidget {
     final UnitSystem units = ref.watch(unitSystemProvider);
     final RouteDto? route = stage.route;
     final DateTime? start = stage.startsAt;
+    final DateTime? instant = DateTime.tryParse(stage.dateTime);
 
     return PdlCard(
       selected: selected,
@@ -96,14 +98,24 @@ class StageCard extends ConsumerWidget {
                     ),
                   ],
                 ),
-                if (start != null)
-                  Text(
-                    '${AppFormatters.formatLongDate(start)} · '
-                    '${AppFormatters.formatTime(start)}',
-                    style: t.xs,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                // « 09:00 » d'abord, en 700, puis « sam. 12 avr. » atténué
+                // (ledger `MOB-114`) : la ligne « date longue · heure » en
+                // `xs` tronquait l'heure la première.
+                if (start != null && instant != null) ...<Widget>[
+                  const SizedBox(height: 2),
+                  PdlDepartureLine(
+                    key: keys.trip.stageDeparture(stage.slug),
+                    headline: AppFormatters.formatTime(start),
+                    trailing: AppFormatters.formatDepartureDate(
+                      instant,
+                      stage.timezone,
+                    ),
+                    semanticLabel: AppFormatters.formatDeparture(
+                      instant,
+                      stage.timezone,
+                    ),
                   ),
+                ],
                 // L'étape dans son fuseau, et la mention en seconde ligne
                 // quand le lecteur est ailleurs (docs/LEDGER_*.md API-60).
                 ?ZoneMentionLine.maybe(stage.dateTime, stage.timezone),

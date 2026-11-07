@@ -29,32 +29,32 @@ bool isUnderWay({
 bool _sameDay(DateTime a, DateTime b) =>
     a.year == b.year && a.month == b.month && a.day == b.day;
 
-/// Le départ et le retour d'une sortie : « demain 08:30 → retour vers 14:10 ».
-/// « vers », la fin étant estimée sur la distance et l'allure des groupes ;
-/// un retour un autre jour nomme ce jour (« retour vers sam. 17 oct. 02:00 »).
+/// Le retour d'une sortie, la suite de « Départ 08:30 » sur la ligne de
+/// départ d'une carte (BRANDING §7.1, ledger `MOB-115`) : « retour vers
+/// 14:10 ». « vers », la fin étant estimée sur la distance et l'allure des
+/// groupes ; un retour un autre jour que le départ [dateTime] nomme ce jour
+/// (« retour vers sam. 17 oct. 02:00 »).
 ///
 /// Les deux bouts se lisent dans le fuseau de la sortie [timezone] — ce sont
-/// des rendez-vous (docs/LEDGER_*.md API-60, plan §7) ; « aujourd'hui » et
-/// « demain » restent relatifs au lecteur. La mention, une seule pour la plage,
-/// est à l'appelant : `AppFormatters.formatZoneMention` au départ.
+/// des rendez-vous (docs/LEDGER_*.md API-60, plan §7). Le jour du départ n'y
+/// est pas : c'est la boîte du jour et la pastille de la carte.
 ///
-/// `null` quand l'une des deux dates est illisible : l'appelant garde alors
-/// la date seule.
-String? rideTimeSpan(
+/// `null` quand l'une des deux dates est illisible : la ligne garde alors le
+/// départ seul.
+String? rideReturnLabel(
   String dateTime,
   String endDateTime, {
   required String timezone,
-  DateTime? now,
 }) {
-  final DateTime? instant = DateTime.tryParse(dateTime);
   final DateTime? start = AppFormatters.tryParseZoneTime(dateTime, timezone);
   final DateTime? end = AppFormatters.tryParseZoneTime(endDateTime, timezone);
-  if (instant == null || start == null || end == null) return null;
+  if (start == null || end == null) return null;
   final String back = _sameDay(start, end)
       ? AppFormatters.formatTime(end)
       : '${_shortDay(end, withMonth: true)} ${AppFormatters.formatTime(end)}';
-  return '${AppFormatters.formatRideDate(instant, now: now, zone: timezone)} → '
-      '${'teams.agenda.returnAround'.tr(namedArgs: <String, String>{'time': back})}';
+  return 'teams.agenda.returnAround'.tr(
+    namedArgs: <String, String>{'time': back},
+  );
 }
 
 /// Les jours d'un voyage : « ven. 16 → dim. 18 oct. », le mois une seule fois

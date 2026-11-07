@@ -126,8 +126,12 @@ void main() {
         'heure de Tokyo (01:00 chez vous)',
       );
       expect(
-        AppFormatters.formatRendezvous(tokyoDawn, 'Asia/Tokyo'),
-        'dimanche 11 octobre à 06:00 · heure de Tokyo (sam. 23:00 chez vous)',
+        AppFormatters.formatRendezvous(
+          tokyoDawn,
+          'Asia/Tokyo',
+          now: DateTime.utc(2026, 9),
+        ),
+        'dim. 11 oct. · 06:00 · heure de Tokyo (sam. 23:00 chez vous)',
       );
     });
 
@@ -138,8 +142,12 @@ void main() {
       expect(AppFormatters.sameOffsetAt(winter, 'Europe/Paris'), isTrue);
       expect(AppFormatters.formatZoneMention(summer, 'Europe/Paris'), isNull);
       expect(
-        AppFormatters.formatRendezvous(summer, 'Europe/Paris'),
-        'samedi 11 juillet à 08:00',
+        AppFormatters.formatRendezvous(
+          summer,
+          'Europe/Paris',
+          now: DateTime.utc(2026, 6),
+        ),
+        'sam. 11 juil. · 08:00',
       );
     });
 

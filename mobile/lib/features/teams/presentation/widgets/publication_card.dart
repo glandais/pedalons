@@ -13,7 +13,9 @@ import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../core/widgets/day_box.dart';
 import '../../../../core/widgets/deleted_badge.dart';
+import '../../../../core/widgets/zone_mention_line.dart';
 import '../../../posts/domain/post_neighbours.dart';
 import '../../../rides/domain/group_start.dart';
 import '../../../rides/presentation/widgets/ride_weather_summary_line.dart';
@@ -108,6 +110,10 @@ class _CardShell extends StatelessWidget {
     this.stats = const <PdlStat>[],
     this.tags = const <TagDto>[],
     this.footer,
+    this.dayBox,
+    this.relativeLabel,
+    this.relativeTone,
+    this.departure,
   });
 
   final VoidCallback onTap;
@@ -139,6 +145,18 @@ class _CardShell extends StatelessWidget {
   /// Une dernière ligne sous les statistiques — la météo d'une sortie.
   final Widget? footer;
 
+  /// La boîte du jour posée en haut à gauche de l'image (BRANDING §7.1,
+  /// §7.8 ; ledger `MOB-115`). Muette pour les lecteurs d'écran : la ligne de
+  /// départ ([departure]) dit le jour en toutes lettres.
+  final Widget? dayBox;
+
+  /// « Aujourd'hui » / « Demain », en haut à droite de l'image ; rien sinon.
+  final String? relativeLabel;
+  final PdlTone? relativeTone;
+
+  /// La ligne de départ et sa mention de fuseau, sous le titre.
+  final Widget? departure;
+
   @override
   Widget build(BuildContext context) {
     final PdlTypography t = context.pdlText;
@@ -155,6 +173,29 @@ class _CardShell extends StatelessWidget {
             imageUrl: imageUrl,
             height: PdlMediaHeights.feed,
             borderRadius: BorderRadius.zero,
+            overlay: dayBox == null && relativeLabel == null
+                ? null
+                : ExcludeSemantics(
+                    child: Stack(
+                      children: <Widget>[
+                        if (dayBox != null)
+                          Positioned(
+                            top: PdlSpacing.card,
+                            left: PdlSpacing.card,
+                            child: dayBox!,
+                          ),
+                        if (relativeLabel != null)
+                          Positioned(
+                            top: PdlSpacing.card,
+                            right: PdlSpacing.card,
+                            child: PdlDayPill(
+                              label: relativeLabel!,
+                              tone: relativeTone,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
           ),
           Padding(
             padding: const EdgeInsets.all(PdlSpacing.card),
@@ -183,6 +224,10 @@ class _CardShell extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
+                          if (departure != null) ...<Widget>[
+                            const SizedBox(height: 2),
+                            departure!,
+                          ],
                           if (excerpt != null &&
                               excerpt!.isNotEmpty) ...<Widget>[
                             const SizedBox(height: 2),
@@ -301,9 +346,6 @@ class _RideBody extends ConsumerWidget {
       registered ? ride.registeredGroup : null,
     );
     final DateTime? at = DateTime.tryParse(start);
-    final String? mention = at == null
-        ? null
-        : AppFormatters.formatZoneMention(at, ride.timezone);
     final bool isPast = ride.finished;
     // Partie et pas rentrée : « En cours » plutôt que « Terminée », que
     // `finished` (départ passé) aurait affiché (ledger `MOB-60`).
@@ -312,11 +354,18 @@ class _RideBody extends ConsumerWidget {
       endDateTime: ride.endDateTime,
       status: ride.status,
     );
-    final String? span = rideTimeSpan(
-      start,
-      ride.endDateTime,
-      timezone: ride.timezone,
-    );
+    final _Departure? departure = at == null
+        ? null
+        : _Departure.of(
+            at,
+            ride.timezone,
+            trailing: rideReturnLabel(
+              start,
+              ride.endDateTime,
+              timezone: ride.timezone,
+            ),
+            showRelative: !isPast && ride.status != 'CANCELLED',
+          );
 
     return _CardShell(
       onTap: () => context.push(Paths.ride(ride.team.slug, ride.slug)),
@@ -327,6 +376,9 @@ class _RideBody extends ConsumerWidget {
       teamSlug: ride.team.slug,
       teamLogoUrl: ride.team.logoUrl,
       title: ride.name,
+      dayBox: departure?.dayBox(),
+      relativeLabel: departure?.relative,
+      departure: departure?.line(),
       // **`excerpt`, pas `media.markdown`** : en vue compacte le corps n'est
       // même pas envoyé, et l'aplatir côté client rendait des liens bruts.
       excerpt: ride.excerpt,
@@ -380,15 +432,9 @@ class _RideBody extends ConsumerWidget {
               cancelled: ride.status == 'CANCELLED',
             )
           : null,
+      // La date n'est plus une statistique (BRANDING §7.1, ledger `BRAND-8`) :
+      // elle est la boîte du jour et la ligne de départ, en haut.
       stats: <PdlStat>[
-        if (at != null)
-          PdlStat(
-            value:
-                span ?? AppFormatters.formatRideDate(at, zone: ride.timezone),
-            icon: PdlIcons.date,
-          ),
-        if (mention != null)
-          PdlStat(value: mention, icon: PdlIcons.otherTimezone),
         PdlStat(
           value: 'rides.participants'.plural(
             ride.participantCount,
@@ -493,14 +539,24 @@ class _TripBody extends ConsumerWidget {
         trip.registered;
     // Un rendez-vous dans le fuseau du voyage ; une ligne de liste ne porte pas
     // les étapes, la fin se lit donc dans le même (docs/LEDGER_*.md API-60).
-    final DateTime? start = AppFormatters.tryParseZoneTime(
-      trip.dateTime,
-      trip.timezone,
-    );
     final DateTime? instant = DateTime.tryParse(trip.dateTime);
-    final String? mention = instant == null
+    final PdlTone tripTone = PublicationType.trip.tone(c);
+    // Le départ du voyage — sa première étape — et, à la suite, sa plage du
+    // départ à la fin stockée (`endDateTime`, ledger `API-85`) : « ven. 16 →
+    // dim. 18 oct. » (ledger `MOB-114`). La mention commente cette heure.
+    final _Departure? departure = instant == null
         ? null
-        : AppFormatters.formatZoneMention(instant, trip.timezone);
+        : _Departure.of(
+            instant,
+            trip.timezone,
+            trailing: tripDaySpan(
+              trip.dateTime,
+              trip.endDateTime,
+              timezone: trip.timezone,
+            ),
+            tone: tripTone,
+            showRelative: !trip.finished && trip.status != 'CANCELLED',
+          );
     final bool underWay = isUnderWay(
       dateTime: trip.dateTime,
       endDateTime: trip.endDateTime,
@@ -516,6 +572,10 @@ class _TripBody extends ConsumerWidget {
       teamSlug: trip.team.slug,
       teamLogoUrl: trip.team.logoUrl,
       title: trip.name,
+      dayBox: departure?.dayBox(),
+      relativeLabel: departure?.relative,
+      relativeTone: tripTone,
+      departure: departure?.line(),
       excerpt: trip.excerpt,
       tags: trip.tags,
       badges: <Widget>[
@@ -561,21 +621,6 @@ class _TripBody extends ConsumerWidget {
             )
           : null,
       stats: <PdlStat>[
-        if (start != null)
-          PdlStat(
-            // Du départ à la fin stockée (`endDateTime`, ledger `API-85`) :
-            // « ven. 16 → dim. 18 oct. ».
-            value:
-                tripDaySpan(
-                  trip.dateTime,
-                  trip.endDateTime,
-                  timezone: trip.timezone,
-                ) ??
-                AppFormatters.formatDayMonth(start),
-            icon: PdlIcons.date,
-          ),
-        if (mention != null)
-          PdlStat(value: mention, icon: PdlIcons.otherTimezone),
         if (trip.stageCount > 0)
           PdlStat(
             value: 'trips.stageCount'.plural(trip.stageCount),
@@ -595,6 +640,85 @@ class _TripBody extends ConsumerWidget {
             icon: PdlIcons.elevationUp,
             trend: PdlStatTrend.up,
           ),
+      ],
+    );
+  }
+}
+
+// ───────────────────────────────────────────────────────────────────── départ
+
+/// Le départ d'une carte de sortie ou de voyage (BRANDING §7.1, §7.8 ; ledgers
+/// `BRAND-8`, `MOB-114`, `MOB-115`) : la boîte du jour posée sur l'image, la
+/// pastille « Aujourd'hui » / « Demain », et sous le titre « Départ 09:00 »
+/// suivi de [trailing], la mention de fuseau dessous.
+///
+/// [instant] est la valeur du contrat — le départ **affiché**, celui du groupe
+/// de la personne quand elle en a un (ledger `MOB-112`) —, lue dans le fuseau
+/// [zone] de l'entité ; la mention se calcule sur lui.
+class _Departure {
+  _Departure._(
+    this.instant,
+    this.zone, {
+    required this.trailing,
+    required this.relative,
+    required this.tone,
+  });
+
+  factory _Departure.of(
+    DateTime instant,
+    String zone, {
+    String? trailing,
+    PdlTone? tone,
+    bool showRelative = true,
+  }) => _Departure._(
+    instant,
+    zone,
+    trailing: trailing,
+    tone: tone,
+    // Une sortie passée ou annulée n'a pas de « Aujourd'hui » à annoncer :
+    // son badge de statut le dit déjà.
+    relative: showRelative
+        ? AppFormatters.formatDepartureRelative(instant, zone)
+        : null,
+  );
+
+  final DateTime instant;
+  final String zone;
+  final String? trailing;
+  final String? relative;
+  final PdlTone? tone;
+
+  Widget dayBox() => dayBoxFor(
+    AppFormatters.toZoneTime(instant, zone),
+    tone: tone,
+    posed: true,
+  );
+
+  Widget line() {
+    final String headline = 'rides.departureBlock.departs'.tr(
+      namedArgs: <String, String>{
+        'time': AppFormatters.formatTime(
+          AppFormatters.toZoneTime(instant, zone),
+        ),
+      },
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        PdlDepartureLine(
+          headline: headline,
+          trailing: trailing,
+          // La boîte du jour et la pastille sont muettes : le jour se dit
+          // ici (« Départ 09:00, Demain, retour vers 14:10 »).
+          semanticLabel: <String>[
+            headline,
+            relative ?? AppFormatters.formatDepartureDate(instant, zone),
+            ?trailing,
+          ].join(', '),
+        ),
+        if (AppFormatters.formatZoneMention(instant, zone) != null)
+          ZoneMentionLine(instant: instant, zone: zone),
       ],
     );
   }

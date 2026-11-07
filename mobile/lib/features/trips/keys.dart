@@ -30,6 +30,17 @@ class TripDetailKeys {
   ValueKey<String> stageCard(String stageSlug) =>
       _TripKey('stageCard_$stageSlug');
 
+  /// La ligne de départ d'une carte d'étape : « 09:00 sam. 12 avr. »
+  /// (ledger `MOB-114`).
+  ValueKey<String> stageDeparture(String stageSlug) =>
+      _TripKey('stageDeparture_$stageSlug');
+
+  /// « Départ 09:00 » dans la synthèse d'un voyage (ledger `MOB-114`).
+  final summaryDeparture = const _TripKey('summaryDeparture');
+
+  /// Le bloc de départ du détail d'une étape (ledger `MOB-114`).
+  final stageDepartureBlock = const _TripKey('stageDepartureBlock');
+
   /// Le nom de l'étape, en tête de l'écran 25.
   final stageTitle = const _TripKey('stageTitle');
 

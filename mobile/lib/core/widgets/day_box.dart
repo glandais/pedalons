@@ -8,12 +8,14 @@ import '../utils/formatters.dart';
 /// l'entité (`toZoneTime`) : « sam. / 12 / avr. » dans la locale courante.
 ///
 /// La seule fabrique de `PdlDayBox` de l'app (BRANDING §7.8) : le tableau de
-/// bord, l'agenda de l'accueil et le bloc de départ en passent tous par là.
+/// bord, l'agenda de l'accueil, le bloc de départ et les cartes du fil en
+/// passent tous par là.
 PdlDayBox dayBoxFor(
   DateTime wall, {
   Key? key,
   PdlTone? tone,
   PdlDayBoxSize size = PdlDayBoxSize.regular,
+  bool posed = false,
 }) => PdlDayBox(
   key: key,
   weekday: AppFormatters.dayAbbrev(wall.weekday),
@@ -21,4 +23,5 @@ PdlDayBox dayBoxFor(
   month: AppFormatters.monthAbbrev(wall.month),
   tone: tone,
   size: size,
+  posed: posed,
 );

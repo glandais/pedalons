@@ -23,9 +23,13 @@ class DepartureWeatherSection extends ConsumerWidget {
     super.key,
     required this.departure,
     required this.timezone,
+    this.departureAt,
   });
 
   final DepartureWeatherDto departure;
+
+  /// Le départ que la prévision décrit — celui de la sortie (`RideDto.dateTime`).
+  final String? departureAt;
 
   /// Le fuseau de la sortie : lever et coucher du soleil s'y lisent.
   final String? timezone;
@@ -39,7 +43,7 @@ class DepartureWeatherSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        PdlSectionHeader(title: 'rides.weather.atDeparture'.tr()),
+        PdlSectionHeader(title: departureWeatherTitle(departureAt, timezone)),
         PdlCard(
           flat: true,
           child: now == null
@@ -55,6 +59,20 @@ class DepartureWeatherSection extends ConsumerWidget {
       ],
     );
   }
+}
+
+/// « Météo au départ de 09:00 » — l'heure du départ [departureAt] (un instant
+/// du contrat) lue dans le fuseau [timezone] de la sortie, sans mention : la
+/// page la porte déjà (ledger `MOB-115`). « Météo au départ » sans heure.
+String departureWeatherTitle(String? departureAt, String? timezone) {
+  if (departureAt == null || DateTime.tryParse(departureAt) == null) {
+    return 'rides.weather.atDeparture'.tr();
+  }
+  return 'rides.weather.atDepartureTime'.tr(
+    namedArgs: <String, String>{
+      'time': formatWeatherTime(departureAt, timezone),
+    },
+  );
 }
 
 /// Les conditions d'un départ : icône, température et ciel, puis ressenti,

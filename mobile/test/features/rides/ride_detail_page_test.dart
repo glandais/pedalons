@@ -466,7 +466,7 @@ void main() {
       );
 
       expect(find.byKey(keys.ride.weatherCard), findsOneWidget);
-      expect(find.text('Météo au départ'), findsOneWidget);
+      expect(find.textContaining('Météo au départ de '), findsOneWidget);
       expect(find.text('14\u00a0°C'), findsWidgets);
       expect(find.text('Partiellement nuageux'), findsWidgets);
       expect(find.textContaining('Ressenti'), findsOneWidget);
@@ -527,7 +527,7 @@ void main() {
       expect(find.byKey(keys.ride.weatherCard), findsOneWidget);
       // Un seul « Météo au départ » : le leg se déroule dessous, pas dans un
       // second bloc.
-      expect(find.text('Météo au départ'), findsOneWidget);
+      expect(find.textContaining('Météo au départ de '), findsOneWidget);
       expect(find.text('Météo du parcours'), findsOneWidget);
       expect(find.textContaining('Pluie probable (70\u00a0%)'), findsOneWidget);
       expect(find.text('Exposition au vent'), findsOneWidget);

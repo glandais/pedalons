@@ -567,17 +567,16 @@ class AppFormatters {
     );
   }
 
-  /// Le détail d'un rendez-vous en une ligne : « samedi 11 octobre à 08:00 »,
-  /// suivi de « · heure de Tokyo (ven. 01:00 chez vous) » quand le décalage
-  /// diffère de celui du lecteur.
-  static String formatRendezvous(DateTime instant, String? zone) {
-    final DateTime wall = toZoneTime(instant, zone);
-    final String at = 'dates.at'.tr(
-      namedArgs: <String, String>{
-        'date': formatFullDate(wall),
-        'time': formatTime(wall),
-      },
-    );
+  /// Le détail d'un rendez-vous en une ligne, au format unique du départ
+  /// ([formatDeparture], ledgers `BRAND-8`, `MOB-115`) : « sam. 11 oct. ·
+  /// 08:00 », suivi de « · heure de Tokyo (ven. 01:00 chez vous) » quand le
+  /// décalage diffère de celui du lecteur. [now] ne sert qu'aux tests.
+  static String formatRendezvous(
+    DateTime instant,
+    String? zone, {
+    DateTime? now,
+  }) {
+    final String at = formatDeparture(instant, zone, now: now);
     final String? mention = formatZoneMention(instant, zone);
     return mention == null ? at : '$at · $mention';
   }

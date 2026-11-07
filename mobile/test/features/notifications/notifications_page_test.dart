@@ -300,8 +300,10 @@ void main() {
   });
 
   group('la date du sujet, un rendez-vous (docs/LEDGER_*.md API-60)', () {
-    // 2026-10-11T23:00Z : lundi 12 octobre, 08:00 à Tokyo, 01:00 à Paris.
-    const String at = '2026-10-11T23:00:00Z';
+    // 2036-10-11T23:00Z (la base des fuseaux s'arrête en 2037) : dimanche 12
+    // octobre, 08:00 à Tokyo, 01:00 à Paris. Au format unique du départ
+    // (ledger `MOB-115`), l'année dite : ce n'est pas l'année en cours.
+    const String at = '2036-10-11T23:00:00Z';
 
     setUp(() => AppFormatters.setDisplayTimezone('Europe/Paris'));
     tearDown(() => AppFormatters.setDisplayTimezone(null));
@@ -313,7 +315,7 @@ void main() {
           subjectDateTime: at,
           subjectTimezone: 'Asia/Tokyo',
         ).subjectDateLine(),
-        'Départ : lundi 12 octobre à 08:00 · heure de Tokyo '
+        'Départ : dim. 12 oct. 2036 · 08:00 · heure de Tokyo '
         '(01:00 chez vous)',
       );
     });
@@ -325,7 +327,7 @@ void main() {
           subjectDateTime: at,
           subjectTimezone: 'Europe/Brussels',
         ).subjectDateLine(),
-        'Départ : lundi 12 octobre à 01:00',
+        'Départ : dim. 12 oct. 2036 · 01:00',
       );
     });
 
@@ -335,7 +337,7 @@ void main() {
           type: NotificationType.rideReminder,
           subjectDateTime: at,
         ).subjectDateLine(),
-        'Départ : lundi 12 octobre à 01:00',
+        'Départ : dim. 12 oct. 2036 · 01:00',
       );
     });
 
@@ -347,7 +349,7 @@ void main() {
           subjectDateTime: at,
           subjectTimezone: 'Asia/Tokyo',
         ).subjectDateLine(),
-        startsWith('Nouvelle date : lundi 12 octobre à 08:00 · '),
+        startsWith('Nouvelle date : dim. 12 oct. 2036 · 08:00 · '),
       );
       expect(
         _notification(

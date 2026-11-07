@@ -185,6 +185,14 @@ abstract final class PdlShadows {
     BoxShadow(color: Color(0x1F000000), offset: Offset(0, 1), blurRadius: 2),
   ];
 
+  /// Un élément **posé sur une image** — la boîte du jour d'une carte de fil
+  /// (BRANDING §7.8, ombre `sm`). Gardée dans les deux modes : sur une photo,
+  /// il n'y a pas de surface voisine contre laquelle poser une bordure.
+  static const List<BoxShadow> posed = <BoxShadow>[
+    BoxShadow(color: Color(0x1F000000), offset: Offset(0, 1), blurRadius: 3),
+    BoxShadow(color: Color(0x14000000), offset: Offset(0, 1), blurRadius: 2),
+  ];
+
   static const List<BoxShadow> sheet = <BoxShadow>[
     BoxShadow(color: Color(0x1A000000), offset: Offset(0, -2), blurRadius: 16),
   ];

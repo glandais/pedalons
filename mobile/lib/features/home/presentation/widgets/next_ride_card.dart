@@ -24,7 +24,9 @@ import '../../../teams/presentation/widgets/publication_card.dart';
 import '../../providers/next_ride_provider.dart';
 import '../../../../keys.dart';
 import '../../../../core/utils/push_location.dart';
+import '../../../../core/widgets/day_box.dart';
 import '../../../../core/widgets/zone_mention_line.dart';
+import '../../../teams/domain/publication_timing.dart';
 import '../../../rides/domain/group_start.dart';
 
 /// La vignette de « Ma prochaine sortie » : celle du **parcours du groupe**
@@ -133,6 +135,28 @@ class NextRideCard extends ConsumerWidget {
                 ),
                 height: PdlMediaHeights.hero,
                 borderRadius: BorderRadius.zero,
+                // La boîte du jour posée sur l'image (BRANDING §7.8, ledger
+                // `MOB-115`), au jour de l'heure affichée. Muette : la ligne
+                // de départ dit le jour aux lecteurs d'écran.
+                overlay: instant == null
+                    ? null
+                    : ExcludeSemantics(
+                        child: Stack(
+                          children: <Widget>[
+                            Positioned(
+                              top: PdlSpacing.card,
+                              left: PdlSpacing.card,
+                              child: dayBoxFor(
+                                AppFormatters.toZoneTime(
+                                  instant,
+                                  ride.timezone,
+                                ),
+                                posed: true,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
               ),
               Padding(
                 padding: const EdgeInsets.all(PdlSpacing.card),
@@ -213,7 +237,7 @@ class NextRideCard extends ConsumerWidget {
 
   /// « dans 2 jours », « dans 3 h » — compté depuis le lecteur, sur l'instant
   /// du contrat. `null` au-delà d'une semaine : `formatRelative` y rendrait la
-  /// date, que le fait « date » de la carte affiche déjà.
+  /// date, que la boîte du jour de la carte affiche déjà.
   static String? _relativeBadge(DateTime instant) {
     final RelativeTime relative = RelativeTime.between(
       AppFormatters.toDisplayTime(instant.toUtc()),
@@ -226,8 +250,8 @@ class NextRideCard extends ConsumerWidget {
   /// Date et heure de départ, groupe, lieu — les faits qui décident si l'on y
   /// va.
   ///
-  /// L'heure est celle de [start], le départ qui concerne la personne : le fait
-  /// « date » la porte, la mention de fuseau la commente, et le fait « groupe »
+  /// L'heure est celle de [start], le départ qui concerne la personne : la ligne
+  /// de départ la porte, la mention de fuseau la commente, et le fait « groupe »
   /// ne dit l'écart à la sortie que lorsqu'il y en a un (docs/LEDGER_*.md
   /// MOB-111).
   List<Widget> _facts(
@@ -238,13 +262,14 @@ class NextRideCard extends ConsumerWidget {
   ) {
     final RideGroupDto? g = group;
     return <Widget>[
+      // « Départ 22:30 » en 20/700 (BRANDING §7.8), puis le retour ; le jour
+      // est la boîte posée sur l'image et, en toutes lettres, l'étiquette
+      // lue par les lecteurs d'écran.
       if (instant != null)
-        _fact(
-          c,
-          t,
-          PdlIcons.date,
-          AppFormatters.formatRideDate(instant.toUtc(), zone: ride.timezone),
+        Padding(
           key: keys.home.nextRideStart,
+          padding: const EdgeInsets.only(bottom: 10),
+          child: _departureLine(start, instant),
         ),
       // « heure de Tokyo (ven. 01:00 chez vous) » quand le lecteur est
       // ailleurs, à l'heure affichée juste au-dessus (docs/LEDGER_*.md API-60).
@@ -273,6 +298,33 @@ class NextRideCard extends ConsumerWidget {
         ),
       ],
     ];
+  }
+
+  Widget _departureLine(String start, DateTime instant) {
+    final String zone = ride.timezone;
+    final String headline = 'rides.departureBlock.departs'.tr(
+      namedArgs: <String, String>{
+        'time': AppFormatters.formatTime(
+          AppFormatters.toZoneTime(instant, zone),
+        ),
+      },
+    );
+    final String? back = rideReturnLabel(
+      start,
+      ride.endDateTime,
+      timezone: zone,
+    );
+    return PdlDepartureLine(
+      headline: headline,
+      trailing: back,
+      size: PdlDepartureLineSize.large,
+      semanticLabel: <String>[
+        headline,
+        AppFormatters.formatDepartureRelative(instant, zone) ??
+            AppFormatters.formatDepartureDate(instant, zone),
+        ?back,
+      ].join(', '),
+    );
   }
 
   Widget _fact(

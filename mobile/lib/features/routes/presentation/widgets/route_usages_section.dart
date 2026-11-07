@@ -103,9 +103,13 @@ class _UsageCard extends StatelessWidget {
                           // Un voyage porte la date de sa dernière étape
                           // (`endDate`, API 5.9.0) : la plage, comme sur sa
                           // carte. Une sortie, ou un voyage sans étape,
-                          // garde sa date et son heure.
+                          // garde sa date et son heure, au format unique du
+                          // départ (ledger `MOB-115`).
                           end == null
-                              ? AppFormatters.formatLongDateTime(at)
+                              ? AppFormatters.formatDeparture(
+                                  DateTime.parse(usage.dateTime),
+                                  usage.timezone,
+                                )
                               : '${AppFormatters.formatDayMonth(at)} → '
                                     '${AppFormatters.formatDayMonth(end)}',
                           style: t.sub,

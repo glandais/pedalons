@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pedalons/api/generated/export.dart';
+import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
 import 'package:pedalons/core/theme/pdl_icons.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
@@ -40,9 +41,10 @@ Future<void> _pump(
   await tester.pump();
 }
 
+/// Le premier texte sous [key] : pour la ligne de départ, « Départ 21:30 ».
 String _textOf(WidgetTester tester, Key key) => tester
     .widget<Text>(
-      find.descendant(of: find.byKey(key), matching: find.byType(Text)),
+      find.descendant(of: find.byKey(key), matching: find.byType(Text)).first,
     )
     .data!;
 
@@ -61,6 +63,36 @@ void main() {
 
     expect(_textOf(tester, keys.home.nextRideStart), contains('21:30'));
     expect(find.byKey(keys.home.nextRideGroup), findsNothing);
+  });
+
+  testWidgets('BRANDING §7.8 : boîte du jour posée sur l’image, « Départ '
+      '21:30 » en 20/700, le jour dit au lecteur d’écran', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
+    // Fin par défaut de la fixture : trois heures plus tard, 00:30 le
+    // lendemain à Paris.
+    await _pump(tester, fixtureRide(dateTime: rideAt), null);
+
+    final PdlDayBox box = tester.widget<PdlDayBox>(find.byType(PdlDayBox));
+    expect(box.posed, isTrue);
+    expect(box.day, '29');
+    expect(
+      find.descendant(
+        of: find.byType(PdlCardMedia),
+        matching: find.byType(PdlDayBox),
+      ),
+      findsOneWidget,
+    );
+    final Text headline = tester.widget<Text>(find.text('Départ 21:30'));
+    expect(headline.style?.fontSize, 20);
+    expect(headline.style?.fontWeight, FontWeight.w700);
+    expect(find.text('retour vers mer. 30 juil. 00:30'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(RegExp(r'^Départ 21:30, mar\. 29 juil\.')),
+      findsOneWidget,
+    );
+    semantics.dispose();
   });
 
   testWidgets(

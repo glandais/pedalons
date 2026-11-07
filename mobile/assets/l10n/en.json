@@ -658,6 +658,7 @@
     "weather": {
       "title": "Weather",
       "atDeparture": "Weather at the start",
+      "atDepartureTime": "Weather at the {time} start",
       "routeTitle": "Route weather",
       "viewRoute": "See the route weather",
       "condition": {
@@ -1075,7 +1076,6 @@
       "viewRoute": "View route",
       "numberOf": "Stage {index} of {total}",
       "overview": "Overview",
-      "groupStart": "Group start at {time}",
       "notFoundMessage": "This stage does not exist or was removed from the trip.",
       "noRouteTitle": "No route",
       "noRouteMessage": "This stage has no route attached yet."

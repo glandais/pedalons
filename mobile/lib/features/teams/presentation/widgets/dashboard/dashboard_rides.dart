@@ -490,10 +490,12 @@ class DashboardRideCard extends ConsumerWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
+          // Le départ au format unique, en 700 à l'horloge (BRANDING §7.8,
+          // ledger `MOB-115`) — il était en `sub` atténué.
           if (at != null) ...<Widget>[
-            Text(
-              AppFormatters.formatRideDate(at, zone: ride.timezone),
-              style: t.sub,
+            const SizedBox(height: 2),
+            PdlDepartureLine(
+              headline: AppFormatters.formatDeparture(at, ride.timezone),
             ),
             ?ZoneMentionLine.maybe(start, ride.timezone),
           ],

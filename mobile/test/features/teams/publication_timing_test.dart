@@ -41,48 +41,37 @@ void main() {
     });
   });
 
-  group('rideTimeSpan', () {
+  group('rideReturnLabel', () {
     tearDown(() => AppFormatters.setDisplayTimezone(null));
 
-    test('les deux bouts se lisent dans le fuseau de la sortie', () {
-      // Lu de Paris le samedi 10, une sortie de Tokyo le dimanche 11 à 06:00
-      // — samedi 23:00 à Paris : 06:00 → 12:30, heure de Tokyo
-      // (docs/LEDGER_*.md API-60) ; ni « aujourd'hui » ni « demain », les deux
-      // jours ne coïncidant pas.
+    test('le retour se lit dans le fuseau de la sortie', () {
+      // Lu de Paris, une sortie de Tokyo du dimanche 11 de 06:00 à 12:30,
+      // heure de Tokyo (docs/LEDGER_*.md API-60).
       AppFormatters.setDisplayTimezone('Europe/Paris');
-      final String? span = rideTimeSpan(
-        '2026-10-10T21:00:00Z',
-        '2026-10-11T03:30:00Z',
-        timezone: 'Asia/Tokyo',
-        now: DateTime.utc(2026, 10, 10, 8),
-      );
-      expect(span, 'dimanche 11 octobre 06:00 → retour vers 12:30');
-    });
-
-    test('« demain » reste relatif au lecteur', () {
-      AppFormatters.setDisplayTimezone('Europe/Brussels');
-      final String? span = rideTimeSpan(
-        '2026-10-11T06:30:00Z',
-        '2026-10-11T12:10:00Z',
-        timezone: 'Europe/Paris',
-        now: DateTime.utc(2026, 10, 10, 8),
-      );
-      expect(span, 'Demain 08:30 → retour vers 14:10');
-    });
-
-    test('« départ → retour vers … »', () {
-      final String? span = rideTimeSpan(
-        '2026-10-11T08:30:00Z',
-        '2026-10-11T10:10:00Z',
-        timezone: 'Europe/Paris',
-        now: now,
-      );
-      expect(span, contains(' → retour vers '));
-    });
-
-    test('une date illisible : rien, l\'appelant garde la date seule', () {
       expect(
-        rideTimeSpan('?', '2026-10-11T10:10:00Z', timezone: 'UTC'),
+        rideReturnLabel(
+          '2026-10-10T21:00:00Z',
+          '2026-10-11T03:30:00Z',
+          timezone: 'Asia/Tokyo',
+        ),
+        'retour vers 12:30',
+      );
+    });
+
+    test('un retour le lendemain nomme son jour', () {
+      expect(
+        rideReturnLabel(
+          '2026-10-16T19:30:00Z',
+          '2026-10-17T00:00:00Z',
+          timezone: 'Europe/Paris',
+        ),
+        'retour vers sam. 17 oct. 02:00',
+      );
+    });
+
+    test('une date illisible : rien, la ligne garde le départ seul', () {
+      expect(
+        rideReturnLabel('?', '2026-10-11T10:10:00Z', timezone: 'UTC'),
         isNull,
       );
     });

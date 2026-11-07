@@ -538,14 +538,12 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
       AppFormatters.dayAbbrev(weekday, context: context),
   ];
 
-  String _dayLabel(DateTime day) => _sameDay(day, AppFormatters.displayNow())
-      ? AppFormatters.today
-      : AppFormatters.formatDayMonth(day);
+  String _dayLabel(DateTime day) => calendarDayLabel(day);
 
   String _daySemanticLabel(CalendarMonth month, DateTime day) {
     final List<CalendarEventDto> events =
         month.byDay[day] ?? const <CalendarEventDto>[];
-    final String date = AppFormatters.formatDayMonth(day);
+    final String date = AppFormatters.formatFullDate(day);
     if (events.isEmpty) return date;
     final String count = 'calendar.eventCount'.plural(events.length);
     final bool registered = events.any((CalendarEventDto e) => e.registered);

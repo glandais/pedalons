@@ -35,6 +35,7 @@ import '../../../routes/presentation/widgets/route_map.dart';
 import '../widgets/stage_weather_card.dart';
 import '../../../feedback/presentation/report_problem_button.dart';
 import '../../../../keys.dart';
+import '../../../../core/widgets/day_box.dart';
 import '../../../../core/widgets/zone_mention_line.dart';
 
 /// L'écran 25 — une étape de voyage.
@@ -146,10 +147,10 @@ class _StageDetailContent extends ConsumerWidget {
       // `PdlPinnedToolbar` : l'envelopper ici en imbriquerait deux slivers.
       toolbar: _rail(context),
       slivers: <Widget>[
-        SliverToBoxAdapter(child: _identity(context)),
         SliverToBoxAdapter(
-          child: _facts(context, ref.watch(unitSystemProvider)),
+          child: _identity(context, ref.watch(unitSystemProvider)),
         ),
+        SliverToBoxAdapter(child: _facts(context)),
         SliverToBoxAdapter(
           child: StageWeatherCard(tripKey: tripKey, trip: trip, stage: stage),
         ),
@@ -356,7 +357,7 @@ class _StageDetailContent extends ConsumerWidget {
   );
 
   // ── Identité ────────────────────────────────────────────────────────────
-  Widget _identity(BuildContext context) {
+  Widget _identity(BuildContext context, UnitSystem units) {
     final PdlColors c = context.pdl;
     final PdlTypography t = context.pdlText;
 
@@ -407,21 +408,67 @@ class _StageDetailContent extends ConsumerWidget {
                 ),
             ],
           ),
+          ?_departure(context, units),
         ],
       ),
     );
   }
 
-  // ── Date, vitesse et lieux ──────────────────────────────────────────────
-  Widget _facts(BuildContext context, UnitSystem units) {
-    final PdlTypography t = context.pdlText;
-    final DateTime? start = stage.startsAt;
+  /// Le bloc de départ de l'étape, sous le titre et les badges (BRANDING
+  /// §7.8, ledger `MOB-114`, à la manière du détail d'une sortie, `MOB-113`) :
+  /// boîte du jour turquoise, « Départ 08:30 », pastille « Demain », la date
+  /// et la vitesse de l'étape, la mention de fuseau sur cette heure. Il
+  /// remplace « Départ groupé à 08:30 », libellé de sortie étrange pour une
+  /// étape.
+  Widget? _departure(BuildContext context, UnitSystem units) {
+    final DateTime? instant = DateTime.tryParse(stage.dateTime);
+    if (instant == null) return null;
+    final String zone = stage.timezone;
+    final DateTime wall = AppFormatters.toZoneTime(instant, zone);
+
+    final String headline = 'rides.departureBlock.departs'.tr(
+      namedArgs: <String, String>{'time': AppFormatters.formatTime(wall)},
+    );
+    final String? relative = trip.isPast || trip.isCancelled
+        ? null
+        : AppFormatters.formatDepartureRelative(instant, zone);
+    final String details = <String>[
+      AppFormatters.formatDepartureDate(instant, zone),
+      if (stage.averageSpeed != null)
+        AppFormatters.formatSpeed(stage.averageSpeed!, units),
+    ].join(' · ');
+    final String? mention = AppFormatters.formatZoneMention(instant, zone);
+
+    return Padding(
+      padding: const EdgeInsets.only(top: PdlSpacing.cardTight),
+      child: PdlDepartureBlock(
+        key: keys.trip.stageDepartureBlock,
+        dayBox: dayBoxFor(wall, tone: PublicationType.trip.tone(context.pdl)),
+        headline: headline,
+        relativeLabel: relative,
+        details: <String>[details],
+        zoneMention: mention == null
+            ? null
+            : ZoneMentionLine(instant: instant, zone: zone),
+        semanticLabel: <String>[
+          headline,
+          ?relative,
+          details,
+          ?mention,
+        ].join(', '),
+      ),
+    );
+  }
+
+  // ── Lieux ───────────────────────────────────────────────────────────────
+  /// Les lieux de départ et d'arrivée. La date, l'heure et la vitesse sont
+  /// montées dans le bloc de départ, sous le titre ([_departure], ledger
+  /// `MOB-114`).
+  Widget _facts(BuildContext context) {
     final PlaceDetailDto? from = stage.startPlace;
     final PlaceDetailDto? to = stage.endPlace;
 
-    if (start == null && from == null && to == null) {
-      return const SizedBox.shrink();
-    }
+    if (from == null && to == null) return const SizedBox.shrink();
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -430,56 +477,17 @@ class _StageDetailContent extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            if (start != null)
-              Row(
-                children: <Widget>[
-                  PdlNumberPill(value: stage.stageIndex),
-                  const SizedBox(width: PdlSpacing.chipGap),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(
-                          AppFormatters.formatLongDate(start),
-                          style: t.bodyStrong,
-                        ),
-                        // La vitesse de l'étape, facultative, suit l'heure
-                        // de départ comme sur la carte d'un groupe de sortie.
-                        Text(
-                          <String>[
-                            'trips.stage.groupStart'.tr(
-                              namedArgs: <String, String>{
-                                'time': AppFormatters.formatTime(start),
-                              },
-                            ),
-                            if (stage.averageSpeed != null)
-                              AppFormatters.formatSpeed(
-                                stage.averageSpeed!,
-                                units,
-                              ),
-                          ].join(' · '),
-                          style: t.xs,
-                        ),
-                        // Le départ vu d'ailleurs (docs/LEDGER_*.md API-60).
-                        ?ZoneMentionLine.maybe(stage.dateTime, stage.timezone),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
             // `PlaceDetailDto.address` existe au contrat et n'était **jamais
             // lue** : « Place de Jaude » devient « Place de Jaude, 63000
             // Clermont-Ferrand ». Absente, la ligne se réduit d'elle-même.
-            if (from != null) ...<Widget>[
-              const SizedBox(height: PdlSpacing.cardTight),
+            if (from != null)
               PdlPlaceRow(
                 kind: PdlPlaceKind.start,
                 name: from.name,
                 address: from.address,
               ),
-            ],
             if (to != null) ...<Widget>[
-              const SizedBox(height: PdlSpacing.chipGap),
+              if (from != null) const SizedBox(height: PdlSpacing.chipGap),
               PdlPlaceRow(
                 kind: PdlPlaceKind.end,
                 name: to.name,

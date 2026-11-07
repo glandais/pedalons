@@ -222,6 +222,7 @@ class _RideGroupWeatherTabState extends ConsumerState<RideGroupWeatherTab> {
         DepartureWeatherSection(
           departure: dto.departure,
           timezone: ride.timezone,
+          departureAt: ride.dateTime,
         ),
       ),
       if (leg != null) ...<Widget>[

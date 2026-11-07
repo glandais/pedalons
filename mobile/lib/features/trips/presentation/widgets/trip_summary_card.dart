@@ -12,6 +12,7 @@ import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../providers/trip_detail_provider.dart';
 import '../../../../core/widgets/zone_mention_line.dart';
+import '../../../../keys.dart';
 
 /// Le bloc de synthèse d'un voyage : quatre chiffres et les participants.
 ///
@@ -77,6 +78,22 @@ class TripSummaryCard extends ConsumerWidget {
           label: 'trips.summary.dates'.tr(),
           value: _dates(),
           extra: <Widget>[
+            // L'heure de départ du voyage — celle de sa première étape —, que
+            // la mention de fuseau commente juste dessous (ledger `MOB-114`) :
+            // elle commentait jusque-là une heure que la carte n'affichait
+            // pas.
+            if (trip.startsAt case final DateTime start)
+              Padding(
+                key: keys.trip.summaryDeparture,
+                padding: const EdgeInsets.only(top: 2),
+                child: PdlDepartureLine(
+                  headline: 'rides.departureBlock.departs'.tr(
+                    namedArgs: <String, String>{
+                      'time': AppFormatters.formatTime(start),
+                    },
+                  ),
+                ),
+              ),
             if (duration != null) Text(duration, style: t.xs),
             // Le départ vu d'ailleurs : « heure de Tokyo (ven. 01:00 chez
             // vous) » (docs/LEDGER_*.md API-60).

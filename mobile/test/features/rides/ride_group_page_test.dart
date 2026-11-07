@@ -253,7 +253,7 @@ void main() {
       await open(tester, weather());
 
       expect(find.text('Groupe Rapide'), findsOneWidget);
-      expect(find.text('Météo au départ'), findsOneWidget);
+      expect(find.textContaining('Météo au départ de '), findsOneWidget);
       expect(find.text('14 °C'), findsWidgets);
       expect(find.textContaining('Pluie probable (70 %)'), findsOneWidget);
       expect(find.text('Exposition au vent'), findsOneWidget);
@@ -347,7 +347,7 @@ void main() {
         expect(find.byKey(keys.ride.weatherLegUnavailable), findsOneWidget);
         expect(find.byKey(keys.ride.weatherCheckpoint(0)), findsNothing);
         expect(find.byType(PdlSegmentBar), findsNothing);
-        expect(find.text('Météo au départ'), findsOneWidget);
+        expect(find.textContaining('Météo au départ de '), findsOneWidget);
         expect(tester.takeException(), isNull);
       });
     }
@@ -360,7 +360,7 @@ void main() {
         weather(legs: <WeatherLegDto>[fixtureLeg(groupId: 'g2')]),
       );
 
-      expect(find.text('Météo au départ'), findsOneWidget);
+      expect(find.textContaining('Météo au départ de '), findsOneWidget);
       expect(find.byKey(keys.ride.weatherCheckpoint(0)), findsNothing);
       expect(tester.takeException(), isNull);
     });

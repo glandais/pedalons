@@ -42,6 +42,9 @@ class PdlTypography extends ThemeExtension<PdlTypography> {
     required this.dayBoxWeekday,
     required this.dayBoxNumber,
     required this.dayBoxMonth,
+    required this.departureLine,
+    required this.departureLineLg,
+    required this.dayPill,
   });
 
   /// Titre d'écran — 22/700, `letterSpacing −0.2`, sur `textBright`.
@@ -127,6 +130,18 @@ class PdlTypography extends ThemeExtension<PdlTypography> {
 
   /// Mois abrégé de la boîte du jour — 12/500. La couleur vient du ton.
   final TextStyle dayBoxMonth;
+
+  /// « Départ 09:00 » de la ligne de départ d'une carte — 16/700 sur `text`
+  /// (BRANDING §7.1, §7.8).
+  final TextStyle departureLine;
+
+  /// « Départ 09:30 » de la carte « Ma prochaine sortie » — 20/700 sur
+  /// `text` (BRANDING §7.8).
+  final TextStyle departureLineLg;
+
+  /// Pastille « Aujourd'hui » / « Demain » posée sur l'image d'une carte —
+  /// 12/700. La couleur vient de la pastille.
+  final TextStyle dayPill;
 
   /// La famille déclarée dans `pubspec.yaml`.
   static const String family = 'Inter';
@@ -218,6 +233,9 @@ class PdlTypography extends ThemeExtension<PdlTypography> {
       dayBoxWeekday: inter(12, FontWeight.w600, height: 1.30),
       dayBoxNumber: inter(22, FontWeight.w700, color: c.text, height: 1.20),
       dayBoxMonth: inter(12, FontWeight.w500, height: 1.30),
+      departureLine: inter(16, FontWeight.w700, color: c.text, height: 1.35),
+      departureLineLg: inter(20, FontWeight.w700, color: c.text, height: 1.25),
+      dayPill: inter(12, FontWeight.w700, height: 1.30),
     );
   }
 
@@ -250,6 +268,9 @@ class PdlTypography extends ThemeExtension<PdlTypography> {
     TextStyle? dayBoxWeekday,
     TextStyle? dayBoxNumber,
     TextStyle? dayBoxMonth,
+    TextStyle? departureLine,
+    TextStyle? departureLineLg,
+    TextStyle? dayPill,
   }) {
     return PdlTypography(
       screenTitle: screenTitle ?? this.screenTitle,
@@ -279,6 +300,9 @@ class PdlTypography extends ThemeExtension<PdlTypography> {
       dayBoxWeekday: dayBoxWeekday ?? this.dayBoxWeekday,
       dayBoxNumber: dayBoxNumber ?? this.dayBoxNumber,
       dayBoxMonth: dayBoxMonth ?? this.dayBoxMonth,
+      departureLine: departureLine ?? this.departureLine,
+      departureLineLg: departureLineLg ?? this.departureLineLg,
+      dayPill: dayPill ?? this.dayPill,
     );
   }
 
@@ -314,6 +338,9 @@ class PdlTypography extends ThemeExtension<PdlTypography> {
       dayBoxWeekday: s(dayBoxWeekday, other.dayBoxWeekday),
       dayBoxNumber: s(dayBoxNumber, other.dayBoxNumber),
       dayBoxMonth: s(dayBoxMonth, other.dayBoxMonth),
+      departureLine: s(departureLine, other.departureLine),
+      departureLineLg: s(departureLineLg, other.departureLineLg),
+      dayPill: s(dayPill, other.dayPill),
     );
   }
 }

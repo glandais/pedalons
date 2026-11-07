@@ -658,6 +658,7 @@
     "weather": {
       "title": "Météo",
       "atDeparture": "Météo au départ",
+      "atDepartureTime": "Météo au départ de {time}",
       "routeTitle": "Météo du parcours",
       "viewRoute": "Voir la météo du parcours",
       "condition": {
@@ -1075,7 +1076,6 @@
       "viewRoute": "Voir le parcours",
       "numberOf": "Étape {index} sur {total}",
       "overview": "Aperçu",
-      "groupStart": "Départ groupé à {time}",
       "notFoundMessage": "Cette étape n'existe pas ou a été supprimée du voyage.",
       "noRouteTitle": "Aucun parcours",
       "noRouteMessage": "Cette étape n'a pas encore de parcours associé."
