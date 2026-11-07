@@ -39,7 +39,6 @@ import fr.pedalons.repository.route.ElevationRefreshRepository;
 import fr.pedalons.repository.route.ElevationRefreshRepository.Claim;
 import fr.pedalons.repository.route.GpxTrackRepository;
 import fr.pedalons.repository.route.RouteRepository;
-import fr.pedalons.repository.route.SurfaceRefreshRepository;
 import fr.pedalons.service.asset.AssetService;
 import fr.pedalons.service.gps.sync.GpsSyncNames;
 import fr.pedalons.service.route.GpxPipeline;
@@ -47,7 +46,6 @@ import fr.pedalons.service.route.RouteService;
 import fr.pedalons.service.route.planner.PlannerStateFixtures;
 import fr.pedalons.service.security.DomainResolver;
 import fr.pedalons.service.security.PedalonsQueryContext;
-import fr.pedalons.service.surface.LegacySurfaceRequests;
 import fr.pedalons.service.surface.SurfaceRefreshService;
 import fr.pedalons.service.thumbnail.MapThumbnailRenderer;
 import fr.pedalons.util.StoredObjects;
@@ -941,7 +939,6 @@ class ElevationRefreshTest extends AbstractResourceTest {
   private static final Short PIPELINE = (short) GpxPipeline.VERSION;
 
   @Inject SurfaceRefreshService surfaceService;
-  @Inject SurfaceRefreshRepository surfaceRefreshRepository;
   @Inject GpxTrackRepository trackRepository;
 
   /** The stored document of each track, in the order of the tracks; null for one without. */
@@ -986,18 +983,6 @@ class ElevationRefreshTest extends AbstractResourceTest {
         .getFirst();
   }
 
-  /** A request of the former surface queue, as a previous release leaves it. */
-  private void legacyRequest(RouteDto route) {
-    LegacySurfaceRequests.leaveForRoute(
-        surfaceRefreshRepository,
-        id(route),
-        byType(snaps(route)).get(AssetType.ROUTE_ORIGINAL_GPX).fileId());
-  }
-
-  private long legacyRequests() {
-    return QuarkusTransaction.requiringNew().call(() -> surfaceRefreshRepository.count());
-  }
-
   private static List<RouteDetailsOptions> fullCalls() {
     return FakeRouteDetailsClient.REQUESTS.stream()
         .map(fr.pedalons.infrastructure.routedetails.RouteDetailsRequest::options)
@@ -1031,8 +1016,6 @@ class ElevationRefreshTest extends AbstractResourceTest {
     assertNoDocument(created);
     assertNull(pipeline(created), "a fast save says nothing of the pipeline");
     assertTrue(fullCalls().isEmpty(), "a save asks for fast only");
-    assertEquals(0, legacyRequests(), "and queues nothing in the former surface queue");
-    legacyRequest(created);
     makeDue(created);
 
     assertEquals(1, worker.processDue());
@@ -1060,7 +1043,6 @@ class ElevationRefreshTest extends AbstractResourceTest {
     assertEquals("paved", way.surfaceClass());
     assertEquals("asphalt", way.detail());
 
-    assertEquals(0, legacyRequests(), "nothing left for a previous release");
     TrackDto track = track(created);
     assertEquals(TrackSurfaceState.READY, track.surfaceState());
     assertEquals("PAVED", track.surfaces().getFirst().surface().name());
@@ -1122,7 +1104,6 @@ class ElevationRefreshTest extends AbstractResourceTest {
     RouteDto created = createRoute(EXAMPLE);
     Set<String> bucketBefore = stored.assetKeys(team1);
     List<Snap> before = snaps(created);
-    legacyRequest(created);
     makeDue(created);
 
     FakeRouteDetailsClient.fallbackAfterError = true;
@@ -1141,7 +1122,6 @@ class ElevationRefreshTest extends AbstractResourceTest {
     TrackSurfaceDocument first = document(created);
     assertEquals(TrackSurfaceDocument.VERSION_ROUTE_DETAILS, first.version());
     assertTrue(first.ok());
-    assertEquals(0, legacyRequests());
     TrackDto track = track(created);
     assertEquals(TrackSurfaceState.READY, track.surfaceState());
     // The ranges are on the HD axis: they rescale on reading onto the fast track
@@ -1177,7 +1157,6 @@ class ElevationRefreshTest extends AbstractResourceTest {
   void aTerrainFallbackOnAPartialAnswer_writesNothing() {
     surfaceService.setEnabledForTest(true);
     RouteDto created = createRoute(EXAMPLE);
-    legacyRequest(created);
     makeDue(created);
 
     FakeRouteDetailsClient.fallbackAfterError = true;
@@ -1188,7 +1167,6 @@ class ElevationRefreshTest extends AbstractResourceTest {
     assertEquals(ElevationState.PENDING, storedState(created));
     assertNoDocument(created);
     assertNull(pipeline(created));
-    assertEquals(1, legacyRequests(), "no surface written: the row is not dropped");
   }
 
   /** {@code elevation_missing} is permanent: the profile is interpolated, all of it is written. */
@@ -1196,7 +1174,6 @@ class ElevationRefreshTest extends AbstractResourceTest {
   void aRangeOutOfCoverage_writesProfileSurfaceAndPipeline() {
     surfaceService.setEnabledForTest(true);
     RouteDto created = createRoute(EXAMPLE);
-    legacyRequest(created);
     makeDue(created);
 
     FakeRouteDetailsClient.partial = true;
@@ -1205,7 +1182,6 @@ class ElevationRefreshTest extends AbstractResourceTest {
     assertEquals(ElevationState.HD, storedState(created));
     assertEquals(PIPELINE, pipeline(created));
     assertTrue(document(created).ok());
-    assertEquals(0, legacyRequests());
     assertNull(refresh(created));
   }
 
@@ -1213,7 +1189,6 @@ class ElevationRefreshTest extends AbstractResourceTest {
   void aFullCallThatFails_writesNothing() {
     surfaceService.setEnabledForTest(true);
     RouteDto created = createRoute(EXAMPLE);
-    legacyRequest(created);
     makeDue(created);
 
     FakeRouteDetailsClient.failFull = true;
@@ -1224,14 +1199,12 @@ class ElevationRefreshTest extends AbstractResourceTest {
     assertFlat(created, FakeRouteDetailsClient.FAST_ELEVATION);
     assertNoDocument(created);
     assertNull(pipeline(created));
-    assertEquals(1, legacyRequests());
     assertEquals(TrackSurfaceState.PENDING, track(created).surfaceState());
   }
 
   @Test
   void withTheSurfaceOff_theCatchUpLeavesItOut() {
     RouteDto created = createRoute(EXAMPLE);
-    legacyRequest(created);
     makeDue(created);
 
     assertEquals(1, worker.processDue());
@@ -1240,7 +1213,6 @@ class ElevationRefreshTest extends AbstractResourceTest {
     assertEquals(ElevationState.HD, storedState(created));
     assertNoDocument(created);
     assertNull(pipeline(created), "stays behind: recomputed once the surface is back on");
-    assertEquals(1, legacyRequests(), "no surface written: the row is not dropped");
     assertNull(track(created).surfaceState());
   }
 
@@ -1330,7 +1302,6 @@ class ElevationRefreshTest extends AbstractResourceTest {
     assertEquals(PIPELINE, pipeline(created));
     assertEquals(TrackSurfaceDocument.VERSION_ROUTE_DETAILS, document(created).version());
     assertEquals(lengths(created).getFirst(), document(created).distance(), 1e-6);
-    assertEquals(0, legacyRequests());
     assertEquals(0, refreshCount());
     assertEquals(TrackSurfaceState.READY, track(created).surfaceState());
 
@@ -1341,7 +1312,6 @@ class ElevationRefreshTest extends AbstractResourceTest {
     assertTrue(docs.stream().allMatch(TrackSurfaceDocument::ok));
     assertEquals(lengths(created).get(1), docs.get(1).distance(), 1e-6);
     assertEquals(PIPELINE, pipeline(created));
-    assertEquals(0, legacyRequests());
     assertEquals(0, refreshCount());
   }
 
@@ -1367,7 +1337,6 @@ class ElevationRefreshTest extends AbstractResourceTest {
 
     assertNull(pipeline(created));
     assertNoDocument(created);
-    assertEquals(0, legacyRequests(), "no answer, no request");
     assertEquals(0, refreshCount());
   }
 
@@ -1396,34 +1365,6 @@ class ElevationRefreshTest extends AbstractResourceTest {
   }
 
   @Test
-  void aSaveWithAsyncOff_dropsTheRequestLeftByAPreviousRelease() {
-    surfaceService.setEnabledForTest(true);
-    service.setAsyncHdEnabledForTest(false);
-    RouteDto created = createRoute(EXAMPLE);
-    legacyRequest(created);
-
-    updateRoute(created, "Boucle", EXAMPLE);
-
-    assertEquals(
-        0, legacyRequests(), "a previous release would replace this document with its own");
-    assertEquals(TrackSurfaceDocument.VERSION_ROUTE_DETAILS, document(created).version());
-  }
-
-  @Test
-  void aSaveWithAsyncOffWithoutAnAnswer_leavesTheRequestAlone() {
-    surfaceService.setEnabledForTest(true);
-    service.setAsyncHdEnabledForTest(false);
-    RouteDto created = createRoute(EXAMPLE);
-    legacyRequest(created);
-
-    FakeRouteDetailsClient.failFull = true;
-    updateRoute(created, "Boucle", EXAMPLE);
-
-    assertNoDocument(created);
-    assertEquals(1, legacyRequests());
-  }
-
-  @Test
   void aFastSave_clearsThePipeline_andLeavesTheSurfaceToTheCatchUp() {
     surfaceService.setEnabledForTest(true);
     RouteDto created = createRoute(EXAMPLE);
@@ -1436,7 +1377,6 @@ class ElevationRefreshTest extends AbstractResourceTest {
     assertNull(pipeline(created), "this profile is no pipeline's HD one");
     assertEquals(ElevationState.PENDING, storedState(created));
     assertNoDocument(created);
-    assertEquals(0, legacyRequests());
     assertEquals(TrackSurfaceState.PENDING, track(created).surfaceState());
 
     makeDue(created);
@@ -1500,13 +1440,11 @@ class ElevationRefreshTest extends AbstractResourceTest {
   void aSurfaceAlone_isNotWritten_onAnotherNumberOfTracks() {
     surfaceService.setEnabledForTest(true);
     RouteDto created = createRoute(EXAMPLE);
-    legacyRequest(created);
     makeDue(created);
     Claim claim = service.claimNext(Instant.now(), false).orElseThrow();
 
     service.writeSurfaceOnly(claim, List.of(aDocument(), aDocument()));
 
     assertNoDocument(created);
-    assertEquals(1, legacyRequests());
   }
 }

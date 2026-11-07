@@ -519,9 +519,9 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
       `RouteDetailsTrack` (ledger `API-150`). Décision du 7 novembre 2026.
 - [ ] `API-151` **Finir le passage à osm-route-details : vérifications, recalcul du parc, phase F
       (M)** (scindé d'`API-150`) — le code est livré, mais le parc garde ses profils v2 et ses
-      revêtements v1 tant que le recalcul n'est pas allumé, et deux tables mortes
-      (`surface_refresh`, `raw_track_resurface`) restent en base avec une entité et un dépôt qui ne
-      servent qu'à elles. Reste, dans l'ordre :
+      revêtements v1 tant que le recalcul ne l'a pas atteint, et deux tables mortes
+      (`surface_refresh`, `raw_track_resurface`) restent en base, sans entité depuis `API-155`.
+      Reste, dans l'ordre :
       - **Avant la bascule** : e2e (`scripts/e2e.sh`, pas relancés depuis la phase B), banc manuel D+ v2 contre v3 sur 30 parcours réels (§8 du plan), dont
         l'écart va dans les notes de version. Regarder aussi le crédit web, deux fois plus long, en
         surimpression en haut à droite du profil (`ElevationChart`).
@@ -531,22 +531,15 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
         (leur pipeline est nul, il les reprend). Un calcul de l'ancienne version déjà en cours
         pendant la minute du déploiement peut aussi poser un document v1 sur un v2 : il se lit
         pareil, et rien ne le recalcule tout seul.
-      - **Recalcul du parc, par environnement** : `ROUTE_DETAILS_BACKFILL_ENABLED`, staging d'abord,
+      - **Recalcul du parc, par environnement** : `ROUTE_DETAILS_BACKFILL_ENABLED`, allumé en prod
+        le 7 novembre 2026 (6 213 parcours, environ 4 jours et demi à 60 par heure), staging ensuite,
         jamais les deux en même temps, équipes prévenues que les D+ vont bouger ; retry admin à la
         fin pour les abandons (`docs/OPERATIONS.md`).
-      - **Phase F, une fois la prod passée, en deux versions successives**, sinon la migration
-        casse la version précédente : la phase E écrit dans `surface_refresh` à chaque revêtement,
-        et le déploiement start-first la laisse servir une minute à côté de la nouvelle.
-        1. Sans migration : retirer les six appels, `SurfaceRefreshRepository`, les entités
-           `SurfaceRefresh` et `RawTrackResurface`, `LegacySurfaceRequests` et les lignes
-           d'`import-test.sql`, puis déployer partout. Les deux tables restent, inertes : la
-           validation du schéma ignore une table sans entité.
-        2. Dans la version suivante, seule : migration `V85` qui supprime `surface_refresh` et
-           `raw_track_resurface`. Condition : plus aucun retour arrière envisagé vers une version
-           qui appelle `dropForRoute` ou porte ces entités, donc plus vers la phase E : chaque
-           écriture de revêtement y échouerait, et elle ne redémarrerait même pas
-           (`schema-management.strategy=validate`).
-
+      - **Phase F, étape 2, seule dans la version qui suit `API-155`** : migration `V85` qui
+        supprime `surface_refresh` et `raw_track_resurface` (l'étape 1, le code, est `API-155`).
+        Condition : plus aucun retour arrière envisagé vers la phase E (`a8eda50d`) ou avant : elle
+        écrit dans `surface_refresh` à chaque revêtement, et ne redémarrerait même pas sans la table
+        (`schema-management.strategy=validate`).
         Le retrait d'osm-surface est fait (`OPS-59`). Plan :
         [2026-11-05-osm-route-details](plans/2026-11-05-osm-route-details.md).
 

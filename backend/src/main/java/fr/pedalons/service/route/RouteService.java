@@ -47,7 +47,6 @@ import fr.pedalons.repository.ride.RideRepository;
 import fr.pedalons.repository.route.GpxTrackRepository;
 import fr.pedalons.repository.route.RouteQuery;
 import fr.pedalons.repository.route.RouteRepository;
-import fr.pedalons.repository.route.SurfaceRefreshRepository;
 import fr.pedalons.repository.trip.TripRepository;
 import fr.pedalons.service.comment.CommentCountLookup;
 import fr.pedalons.service.common.MemberNamesVisibility;
@@ -119,8 +118,6 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
   @Inject ElevationRefreshService elevationRefreshService;
 
   @Inject SurfaceRefreshService surfaceRefreshService;
-
-  @Inject SurfaceRefreshRepository surfaceRefreshRepository;
 
   @Inject AssetRepository assetRepository;
 
@@ -543,9 +540,7 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
    * title does not (API-128). An HD save records the pipeline that computed it, unless it had to
    * fall back on part of the track: that profile is not what the version describes, and stays to
    * recompute (docs/LEDGER_*.md API-150). A fast one clears it, its profile being no pipeline's
-   * HD one: the catch-up writes it, and one that gives up leaves the track to recompute. An HD save
-   * that computed the surface drops the request a previous release may have left, as the catch-up
-   * does: that release would realign it on this track and replace the document with its own.
+   * HD one: the catch-up writes it, and one that gives up leaves the track to recompute.
    */
   private void recordElevationQuality(
       Route route, ElevationQuality quality, GpxProcessingService.GpxProcessingResult result) {
@@ -553,9 +548,6 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
       route.setElevationState(ElevationState.HD);
       route.setElevationPipeline(
           result.fallbackAfterErrorKm() == 0 ? gpxProcessingService.hdPipeline() : null);
-      if (result.surfaces() != null) {
-        surfaceRefreshRepository.dropForRoute(route.getId());
-      }
       return;
     }
     route.setElevationState(ElevationState.PENDING);

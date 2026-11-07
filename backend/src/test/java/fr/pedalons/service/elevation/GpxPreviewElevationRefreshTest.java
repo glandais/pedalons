@@ -29,7 +29,6 @@ import fr.pedalons.infrastructure.storage.StorageService;
 import fr.pedalons.repository.gpx.GpxPreviewRepository;
 import fr.pedalons.repository.route.ElevationRefreshRepository;
 import fr.pedalons.repository.route.ElevationRefreshRepository.PreviewClaim;
-import fr.pedalons.repository.route.SurfaceRefreshRepository;
 import fr.pedalons.service.gpx.GpxPreviewService;
 import fr.pedalons.service.route.GpxPipeline;
 import fr.pedalons.service.route.GpxProcessingService;
@@ -37,7 +36,6 @@ import fr.pedalons.service.route.planner.PlannerStateFixtures;
 import fr.pedalons.service.route.planner.PlannerStates;
 import fr.pedalons.service.security.DomainResolver;
 import fr.pedalons.service.security.PedalonsQueryContext;
-import fr.pedalons.service.surface.LegacySurfaceRequests;
 import fr.pedalons.service.surface.SurfaceRefreshService;
 import fr.pedalons.util.StoredObjects;
 import fr.pedalons.util.TestDataCleaner;
@@ -909,7 +907,6 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
   private static final Short PIPELINE = (short) GpxPipeline.VERSION;
 
   @Inject SurfaceRefreshService surfaceService;
-  @Inject SurfaceRefreshRepository surfaceRefreshRepository;
 
   private PreviewSurfacesDocument surfaces(GpxPreview preview) {
     return QuarkusTransaction.requiringNew()
@@ -919,16 +916,6 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
   /** From a fresh read: the request's session still holds the entity as this test first saw it. */
   private GpxPreviewDto dto(GpxPreview preview) {
     return previewService.toDto(reload(preview));
-  }
-
-  /** A request of the former surface queue, as a previous release leaves it. */
-  private void legacyRequest(GpxPreview preview) {
-    LegacySurfaceRequests.leaveForPreview(
-        surfaceRefreshRepository, preview.getId(), reload(preview).getFilesRevision());
-  }
-
-  private long legacyRequests() {
-    return QuarkusTransaction.requiringNew().call(() -> surfaceRefreshRepository.count());
   }
 
   private static double length(GpxPreview.PreviewTrack track) {
@@ -949,9 +936,7 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
     Long fastRevision = reload(created).getFilesRevision();
     assertNull(surfaces(created));
     assertNull(reload(created).getElevationPipeline());
-    assertEquals(0, legacyRequests(), "a save queues nothing in the former surface queue");
     assertEquals(TrackSurfaceState.PENDING, dto(created).tracks().getFirst().surfaceState());
-    legacyRequest(created);
     makeDue(created);
 
     assertEquals(1, worker.processDue());
@@ -970,7 +955,6 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
     assertEquals(TrackSurfaceDocument.VERSION_ROUTE_DETAILS, doc.version());
     assertEquals(length(after.getTracks().getFirst()), doc.distance(), 1e-6);
     assertEquals(FakeRouteDetailsClient.DATA_VERSIONS, doc.dataVersions());
-    assertEquals(0, legacyRequests());
     var track = dto(after).tracks().getFirst();
     assertEquals(TrackSurfaceState.READY, track.surfaceState());
     assertEquals("PAVED", track.surfaces().getFirst().surface().name());
@@ -982,7 +966,6 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
     GpxPreview created = previewService.create(EXAMPLE, "example.gpx");
     GpxPreview before = reload(created);
     Set<String> bucketBefore = stored.previewKeys(created.getPublicId());
-    legacyRequest(created);
     makeDue(created);
 
     FakeRouteDetailsClient.fallbackAfterError = true;
@@ -997,7 +980,6 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
     assertNull(after.getElevationPipeline());
     assertEquals(bucketBefore, stored.previewKeys(created.getPublicId()), "no HD file kept");
     assertEquals(before.getFilesRevision(), surfaces(after).trackRevision());
-    assertEquals(0, legacyRequests());
     assertEquals(TrackSurfaceState.READY, dto(after).tracks().getFirst().surfaceState());
 
     makeDue(created);
@@ -1014,7 +996,6 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
   void aTerrainFallbackOnAPartialAnswer_writesNothing() {
     surfaceService.setEnabledForTest(true);
     GpxPreview created = previewService.create(EXAMPLE, "example.gpx");
-    legacyRequest(created);
     makeDue(created);
 
     FakeRouteDetailsClient.fallbackAfterError = true;
@@ -1024,7 +1005,6 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
     assertEquals(1, refresh(created).getAttempts());
     assertNull(surfaces(created));
     assertNull(reload(created).getElevationPipeline());
-    assertEquals(1, legacyRequests());
   }
 
   @Test
@@ -1046,7 +1026,6 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
   void aFullCallThatFails_writesNothing() {
     surfaceService.setEnabledForTest(true);
     GpxPreview created = previewService.create(EXAMPLE, "example.gpx");
-    legacyRequest(created);
     makeDue(created);
 
     FakeRouteDetailsClient.failFull = true;
@@ -1055,14 +1034,12 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
     assertEquals(1, refresh(created).getAttempts());
     assertNull(surfaces(created));
     assertNull(reload(created).getElevationPipeline());
-    assertEquals(1, legacyRequests());
     assertEquals(TrackSurfaceState.PENDING, dto(created).tracks().getFirst().surfaceState());
   }
 
   @Test
   void withTheSurfaceOff_theCatchUpLeavesItOut() {
     GpxPreview created = previewService.create(EXAMPLE, "example.gpx");
-    legacyRequest(created);
     makeDue(created);
 
     assertEquals(1, worker.processDue());
@@ -1074,7 +1051,6 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
     assertNull(surfaces(after));
     assertNull(
         after.getElevationPipeline(), "stays behind: recomputed once the surface is back on");
-    assertEquals(1, legacyRequests(), "no surface written: the row is not dropped");
   }
 
   @Test
@@ -1139,7 +1115,6 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
     assertEquals(
         TrackSurfaceDocument.VERSION_ROUTE_DETAILS,
         surfaces(preview).tracks().getFirst().version());
-    assertEquals(0, legacyRequests());
     assertEquals(0, refreshCount());
     assertEquals(TrackSurfaceState.READY, dto(preview).tracks().getFirst().surfaceState());
 
@@ -1150,7 +1125,6 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
     assertNotEquals(preview.getFilesRevision(), after.getFilesRevision());
     assertEquals(after.getFilesRevision(), surfaces(after).trackRevision());
     assertEquals(2, surfaces(after).tracks().size());
-    assertEquals(0, legacyRequests());
     assertTrue(
         updated.tracks().stream().allMatch(t -> t.surfaceState() == TrackSurfaceState.READY),
         "the answer of the save says so");
@@ -1196,36 +1170,6 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
   }
 
   @Test
-  void aSaveWithAsyncOff_dropsTheRequestLeftByAPreviousRelease() {
-    surfaceService.setEnabledForTest(true);
-    service.setAsyncHdEnabledForTest(false);
-    GpxPreview created = previewService.create(EXAMPLE, "example.gpx");
-    legacyRequest(created);
-
-    previewService.updatePreview(created.getPublicId().toString(), "Un", EXAMPLE, null);
-
-    assertEquals(
-        0, legacyRequests(), "a previous release would replace this document with its own");
-    assertEquals(
-        TrackSurfaceDocument.VERSION_ROUTE_DETAILS,
-        surfaces(created).tracks().getFirst().version());
-  }
-
-  @Test
-  void aSaveWithAsyncOffWithoutAnAnswer_leavesTheRequestAlone() {
-    surfaceService.setEnabledForTest(true);
-    service.setAsyncHdEnabledForTest(false);
-    GpxPreview created = previewService.create(EXAMPLE, "example.gpx");
-    legacyRequest(created);
-
-    FakeRouteDetailsClient.failFull = true;
-    previewService.updatePreview(created.getPublicId().toString(), "Un", EXAMPLE, null);
-
-    assertNull(surfaces(created));
-    assertEquals(1, legacyRequests());
-  }
-
-  @Test
   void aSaveWithAsyncOffThatFallsBack_clearsThePipeline() {
     surfaceService.setEnabledForTest(true);
     service.setAsyncHdEnabledForTest(false);
@@ -1247,7 +1191,6 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
 
     assertNull(reload(created).getElevationPipeline());
     assertNull(surfaces(created));
-    assertEquals(0, legacyRequests());
     assertEquals(0, refreshCount());
   }
 
@@ -1264,7 +1207,6 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
     assertNull(after.getElevationPipeline(), "this profile is no pipeline's HD one");
     assertEquals(ElevationState.PENDING, after.getElevationState());
     assertNull(surfaces(after));
-    assertEquals(0, legacyRequests());
     assertEquals(TrackSurfaceState.PENDING, dto(after).tracks().getFirst().surfaceState());
 
     makeDue(created);
@@ -1344,13 +1286,11 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
   void aSurfaceAlone_isNotWritten_onAnotherNumberOfTracks() {
     surfaceService.setEnabledForTest(true);
     GpxPreview created = previewService.create(EXAMPLE, "example.gpx");
-    legacyRequest(created);
     makeDue(created);
     PreviewClaim claim = service.claimNextPreview(Instant.now(), false).orElseThrow();
 
     service.writePreviewSurfaceOnly(claim, List.of(aDocument(), aDocument()));
 
     assertNull(surfaces(created));
-    assertEquals(1, legacyRequests());
   }
 }

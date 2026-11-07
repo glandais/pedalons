@@ -772,36 +772,21 @@ more**: its surface requests fail as unreachable and are given up after their at
 is not concerned. Its tile cache volume, `pedalons-shared_osm-surface-data` (regenerable), is
 removed by hand once the service is gone: `docker volume rm pedalons-shared_osm-surface-data`.
 
-**`surface_refresh` stays until phase F**, with no migration, and what is left in it is inert:
+**`surface_refresh` and `raw_track_resurface` stay until the migration of phase F** (ledger
+`API-151`, step 2), inert. Since step 1 the backend has no entity for them and never touches them:
+the schema validation ignores a table without an entity, and their foreign keys cascade in the
+database. Their migration ships alone, in the release after step 1, once no rollback to phase E
+(`a8eda50d`) or earlier is planned: such a release writes to `surface_refresh` on every surface and
+would not even start without the table (`schema-management.strategy=validate`).
 
-- A release older than phase E may still queue and claim rows during a rolling deploy, or again after
-  a rollback, whatever the state of the table: its indexes stay for it.
-- A backend on phase E never serves a row, never reads one as pending and never counts an attempt. It
-  only deletes the row of a target whose surface it writes, so that a previous release does not claim
-  it later and lay a version 1 document over the version 2. That cannot stop a compute already in
-  flight on such a release: the version 1 document then stays on a track stamped current, reads the
-  same, and nothing recomputes it on its own.
-- During a rolling deploy the previous backend may also claim elevation requests, whatever their
+- During a rolling deploy the previous backend may claim elevation requests, whatever their
   `backfill` flag. A release older than phase C writes HD with no surface and leaves
   `elevation_pipeline` null: that target is a candidate of the
   [catch-up of the fleet](#the-catch-up-of-the-fleet).
-- A row that no release serves any more leaves its track without a surface document, and the API says
-  nothing about it, until the catch-up of the fleet reaches it: its `elevation_pipeline` is null, so
-  it is a candidate. A target with a given-up `elevation_refresh` row is excluded from the catch-up,
-  and needs the admin retry. Deleting a preview removes its row by cascade; a deleted route or team
-  is only marked deleted, so its row stays in the table, inert and left out of the count below.
-
-This counts the tracks in that case (given-up rows, and those of a deleted route or team, are left
-out). While a release older than phase E runs, it is also what is left for that release to serve:
-
-```sql
-select count(*)
-  from surface_refresh e
-  left join team_entities t on t.id = e.route_id
-  left join teams tm on tm.id = t.team_id
- where e.attempts < 5
-   and (e.preview_id is not null or (not t.deleted and not tm.deleted));
-```
+- A row left there by a release older than phase E is served by no one: its track has no surface
+  document, and the API says nothing about it, until the catch-up of the fleet reaches it (its
+  `elevation_pipeline` is null). A target with a given-up `elevation_refresh` row is excluded from
+  the catch-up, and needs the admin retry.
 
 #### The catch-up of the fleet
 

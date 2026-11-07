@@ -20,14 +20,8 @@ CREATE UNIQUE INDEX uk_gps_route_syncs_manual ON gps_route_syncs (connection_id,
 CREATE UNIQUE INDEX elevation_refresh_route ON elevation_refresh (route_id) WHERE route_id IS NOT NULL;
 CREATE UNIQUE INDEX elevation_refresh_preview ON elevation_refresh (preview_id) WHERE preview_id IS NOT NULL;
 ALTER TABLE elevation_refresh ADD CONSTRAINT ck_elevation_refresh_target CHECK ((route_id IS NULL) <> (preview_id IS NULL));
--- Mirrors V76__track_surfaces.sql: one request per target (Hibernate cannot express a partial index) and
--- exactly one target per row. The tests' upsert relies on the first index.
-CREATE UNIQUE INDEX surface_refresh_route ON surface_refresh (route_id) WHERE route_id IS NOT NULL;
-CREATE UNIQUE INDEX surface_refresh_preview ON surface_refresh (preview_id) WHERE preview_id IS NOT NULL;
-ALTER TABLE surface_refresh ADD CONSTRAINT ck_surface_refresh_target CHECK ((route_id IS NULL) <> (preview_id IS NULL));
--- Mirrors V77__surface_backfill.sql: the default the previous release relies on, and the partial
--- index of the catch-up (Hibernate cannot express either).
-ALTER TABLE surface_refresh ALTER COLUMN backfill SET DEFAULT false;
+-- Mirrors V77__surface_backfill.sql: the partial index of the catch-up (Hibernate cannot express it).
+-- Its queue, surface_refresh, has no entity any more (docs/LEDGER_*.md API-151, phase F).
 CREATE INDEX gpx_tracks_surface_missing ON gpx_tracks (route_id) WHERE surfaces IS NULL;
 -- Mirrors V82__raw_track_backfill.sql: the partial index of the raw line catch-up (Hibernate cannot
 -- express it). Its two tables are entities, cascade included.

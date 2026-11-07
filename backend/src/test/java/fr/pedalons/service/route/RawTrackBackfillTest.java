@@ -338,8 +338,6 @@ class RawTrackBackfillTest extends AbstractResourceTest {
 
     assertEquals(new Report(2, 0), backfill.runOnce(Instant.now()));
 
-    assertEquals(0, tableSize("surface_refresh"));
-    assertEquals(0, tableSize("raw_track_resurface"));
     assertEquals(0, tableSize("elevation_refresh"));
   }
 

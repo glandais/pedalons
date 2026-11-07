@@ -26,8 +26,7 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>The surface is written by the HD catch-up with the profile, from the same answer of
  * osm-route-details ({@code ElevationRefreshService}, docs/LEDGER_*.md API-150), and a track
- * waiting for it reads as pending through its {@code elevation_state}, and through nothing else: a
- * row left in {@code surface_refresh} by a previous release is never read here.
+ * waiting for it reads as pending through its {@code elevation_state}, and through nothing else.
  */
 @ApplicationScoped
 public class SurfaceRefreshService {

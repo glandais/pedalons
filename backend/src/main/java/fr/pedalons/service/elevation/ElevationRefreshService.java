@@ -22,7 +22,6 @@ import fr.pedalons.repository.route.ElevationRefreshRepository;
 import fr.pedalons.repository.route.ElevationRefreshRepository.Claim;
 import fr.pedalons.repository.route.ElevationRefreshRepository.PreviewClaim;
 import fr.pedalons.repository.route.GpxTrackRepository;
-import fr.pedalons.repository.route.SurfaceRefreshRepository;
 import fr.pedalons.service.asset.AssetService;
 import fr.pedalons.service.gpx.GpxPreviewService;
 import fr.pedalons.service.gpx.PreviewWaypoints;
@@ -148,7 +147,6 @@ public class ElevationRefreshService {
   Duration maxWait;
 
   @Inject ElevationRefreshRepository refreshRepository;
-  @Inject SurfaceRefreshRepository surfaceRefreshRepository;
   @Inject GpxTrackRepository gpxTrackRepository;
   @Inject GpxProcessingService gpxProcessingService;
   @Inject AssetService assetService;
@@ -367,7 +365,6 @@ public class ElevationRefreshService {
               gpxTrackRepository.updateSurfaces(trackIds.get(i), document);
             }
           }
-          surfaceRefreshRepository.dropForRoute(claim.routeId());
           return null;
         });
   }
@@ -444,10 +441,6 @@ public class ElevationRefreshService {
           if (distanceChanged) {
             // Another distance is another end time for every ride riding the route (API-85)
             publicationEndCalculator.refreshUsersOf(route);
-          }
-          if (recomputed.recompute().surfaces() != null) {
-            // Or a previous release, in a rolling deploy, would claim it and replace this document
-            surfaceRefreshRepository.dropForRoute(claim.routeId());
           }
           refreshRepository.deleteIfRevision(claim.id(), claim.sourceRevision());
           return Outcome.REFRESHED;
@@ -721,7 +714,6 @@ public class ElevationRefreshService {
           }
           preview.setSurfaces(
               new PreviewSurfacesDocument(claim.sourceRevision(), new ArrayList<>(surfaces)));
-          surfaceRefreshRepository.dropForPreview(claim.previewId());
           return null;
         });
   }
@@ -792,12 +784,10 @@ public class ElevationRefreshService {
             preview.setPlannerState(planner.withTrackRevision(recomputed.revision()));
           }
           if (recomputed.surfaces() != null) {
-            // Written with the profile (docs/LEDGER_*.md API-150). The request is dropped or a
-            // previous release, in a rolling deploy, would claim it and replace this document
+            // Written with the profile (docs/LEDGER_*.md API-150)
             preview.setSurfaces(
                 new PreviewSurfacesDocument(
                     recomputed.revision(), new ArrayList<>(recomputed.surfaces())));
-            surfaceRefreshRepository.dropForPreview(claim.previewId());
           } else {
             // The surface follows the track onto its new revision too (WEB-100, C1b): the catch-up
             // changes the elevations and the simplification, not the 2D track; the spans rescale on

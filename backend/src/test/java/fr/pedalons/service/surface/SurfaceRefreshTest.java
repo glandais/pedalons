@@ -15,7 +15,6 @@ import static org.mockito.Mockito.doAnswer;
 import fr.pedalons.api.AbstractResourceTest;
 import fr.pedalons.common.TsidUtils;
 import fr.pedalons.common.planner.PlannerState;
-import fr.pedalons.domain.route.SurfaceRefresh;
 import fr.pedalons.domain.route.TrackSurfaceDocument;
 import fr.pedalons.domain.route.TrackSurfaceDocument.SurfaceRange;
 import fr.pedalons.domain.route.TrackSurfaceDocument.WayRange;
@@ -30,7 +29,6 @@ import fr.pedalons.repository.asset.AssetRepository;
 import fr.pedalons.repository.route.ElevationRefreshRepository;
 import fr.pedalons.repository.route.GpxTrackRepository;
 import fr.pedalons.repository.route.RouteRepository;
-import fr.pedalons.repository.route.SurfaceRefreshRepository;
 import fr.pedalons.service.elevation.ElevationRefreshWorker;
 import fr.pedalons.service.route.RouteService;
 import fr.pedalons.service.security.DomainResolver;
@@ -55,8 +53,7 @@ import org.junit.jupiter.api.Test;
  * docs/LEDGER_*.md WEB-100 (C1b): what the API says of the surface of a route. Since docs/LEDGER_*.md
  * API-150 a track waits for its HD catch-up, which writes the surface. A version 1 document is
  * seeded ({@link #storeVersion1}): nothing writes one any more, but the routes that hold one stay
- * readable until they are recomputed. A row of {@code surface_refresh} is a previous release's
- * ({@link #queue}): nothing here reads it.
+ * readable until they are recomputed.
  */
 @QuarkusTest
 class SurfaceRefreshTest extends AbstractResourceTest {
@@ -67,7 +64,6 @@ class SurfaceRefreshTest extends AbstractResourceTest {
 
   @Inject RouteService routeService;
   @Inject SurfaceRefreshService service;
-  @Inject SurfaceRefreshRepository refreshRepository;
   @Inject GpxTrackRepository trackRepository;
   @Inject ElevationRefreshWorker elevationWorker;
   @Inject ElevationRefreshRepository elevationRefreshRepository;
@@ -135,11 +131,6 @@ class SurfaceRefreshTest extends AbstractResourceTest {
         .call(() -> assetRepository.findCurrentFileId(id(route), AssetType.ROUTE_ORIGINAL_GPX));
   }
 
-  /** A request of the former surface queue, as a previous release leaves it. */
-  private void queue(RouteDto route) {
-    LegacySurfaceRequests.leaveForRoute(refreshRepository, id(route), originalFileId(route));
-  }
-
   /** The document a route keeps from the former queue, on the length of its stored points. */
   private void storeVersion1(RouteDto route) {
     double length = length(route);
@@ -184,10 +175,6 @@ class SurfaceRefreshTest extends AbstractResourceTest {
                     "dueAt = ?1 where route.id = ?2", Instant.now().minusSeconds(1), id(route)));
   }
 
-  private long refreshCount() {
-    return QuarkusTransaction.requiringNew().call(() -> refreshRepository.count());
-  }
-
   private TrackSurfaceDocument document(RouteDto route) {
     Map<Long, TrackSurfaceDocument> found =
         QuarkusTransaction.requiringNew().call(() -> trackRepository.findSurfaces(id(route)));
@@ -226,7 +213,6 @@ class SurfaceRefreshTest extends AbstractResourceTest {
   void aSavedRoute_queuesNoSurfaceRequest_andIsPendingOnItsHdCatchUp() {
     RouteDto route = createRoute();
 
-    assertEquals(0, refreshCount());
     assertEquals(
         originalFileId(route),
         QuarkusTransaction.requiringNew()
@@ -248,7 +234,6 @@ class SurfaceRefreshTest extends AbstractResourceTest {
 
     RouteDto route = createRoute();
 
-    assertEquals(0, refreshCount());
     detail(route).body("tracks[0].surfaceState", nullValue());
   }
 
@@ -259,7 +244,6 @@ class SurfaceRefreshTest extends AbstractResourceTest {
 
     updateRoute(route, "Renommé", null);
 
-    assertEquals(0, refreshCount());
     assertNotNull(document(route));
   }
 
@@ -272,7 +256,6 @@ class SurfaceRefreshTest extends AbstractResourceTest {
     updateRoute(route, "Boucle", EXAMPLE);
 
     assertNull(document(route), "the old surface left with the old track");
-    assertEquals(0, refreshCount(), "nothing queued");
     assertEquals(
         originalFileId(route),
         QuarkusTransaction.requiringNew()
@@ -333,24 +316,11 @@ class SurfaceRefreshTest extends AbstractResourceTest {
     assertEquals(length(route), number(detail(route), "tracks[0].surfaces[-1].to"), 0.2);
   }
 
+  /** Without a document once the HD catch-up is over, the API says nothing, in the list too. */
   @Test
-  void theHdCatchUp_dropsTheRequestLeftByAPreviousRelease() {
-    RouteDto route = createRoute();
-    queue(route);
-    makeElevationDue(route);
-
-    assertEquals(1, elevationWorker.processDue());
-
-    assertEquals(0, refreshCount());
-    assertEquals(TrackSurfaceDocument.VERSION_ROUTE_DETAILS, document(route).version());
-  }
-
-  /** Nothing drains the row any more: read as pending, it would stay so for ever. */
-  @Test
-  void aRequestLeftByAPreviousRelease_readsAsNothing_andIsLeftAlone() {
+  void aTrackWithoutADocument_afterItsHdCatchUp_readsAsNothing() {
     RouteDto route = createRoute();
     catchUpDone(route);
-    queue(route);
 
     detail(route)
         .body("tracks[0].surfaceState", nullValue())
@@ -359,12 +329,5 @@ class SurfaceRefreshTest extends AbstractResourceTest {
         .body("routes[0].tracks[0].surfaceState", nullValue())
         .body("routes[0].tracks[0].surfaces", nullValue());
     assertEquals(0, elevationWorker.processDue());
-
-    SurfaceRefresh row =
-        QuarkusTransaction.requiringNew()
-            .call(() -> refreshRepository.find("route.id", id(route)).singleResult());
-    assertEquals(0, row.getAttempts());
-    assertNull(row.getClaimedUntil());
-    assertEquals(originalFileId(route), row.getSourceRevision());
   }
 }

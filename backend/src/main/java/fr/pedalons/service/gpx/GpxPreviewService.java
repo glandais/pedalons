@@ -44,7 +44,6 @@ import fr.pedalons.infrastructure.openmeteo.OpenMeteoGateway;
 import fr.pedalons.infrastructure.storage.StorageService;
 import fr.pedalons.repository.gpx.GpxPreviewRepository;
 import fr.pedalons.repository.gpx.PreviewWeatherRow;
-import fr.pedalons.repository.route.SurfaceRefreshRepository;
 import fr.pedalons.service.asset.AssetService;
 import fr.pedalons.service.elevation.ElevationRefreshService;
 import fr.pedalons.service.gps.GpsService;
@@ -175,7 +174,6 @@ public class GpxPreviewService {
   @Inject RideWeatherService rideWeatherService;
 
   @Inject ObjectMapper objectMapper;
-  @Inject SurfaceRefreshRepository surfaceRefreshRepository;
 
   /**
    * Parses and analyses an uploaded GPX file, stores it, and returns the persisted preview.
@@ -663,11 +661,6 @@ public class GpxPreviewService {
                       computedSurfaces == null
                           ? null
                           : new PreviewSurfacesDocument(revision, computedSurfaces));
-                  if (computedSurfaces != null) {
-                    // Or a previous release would realign it on this track and replace this
-                    // document
-                    surfaceRefreshRepository.dropForPreview(previewId);
-                  }
                   if (quality == ElevationQuality.FAST) {
                     gpxPreviewRepository.flush();
                     elevationRefreshService.requestPreview(previewId, revision);

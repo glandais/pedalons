@@ -66,7 +66,6 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
   @Inject fr.pedalons.service.surface.SurfaceRefreshService surfaceService;
   @Inject fr.pedalons.service.elevation.RouteDetailsBackfill routeDetailsBackfill;
   @Inject fr.pedalons.repository.route.ElevationRefreshRepository elevationRefreshRepository;
-  @Inject fr.pedalons.repository.route.SurfaceRefreshRepository surfaceRefreshRepository;
 
   /** Every path the fake export was asked for, in order. */
   final List<String> downloads = new ArrayList<>();
@@ -243,11 +242,6 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
     try {
       migrate(USER4, true, false);
 
-      assertEquals(
-          0L,
-          io.quarkus.narayana.jta.QuarkusTransaction.requiringNew()
-              .call(() -> surfaceRefreshRepository.count()),
-          "nothing for osm-surface");
       long requests =
           io.quarkus.narayana.jta.QuarkusTransaction.requiringNew()
               .call(() -> elevationRefreshRepository.count());
@@ -266,10 +260,6 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
                       .createNativeQuery("update elevation_refresh set attempts = 5")
                       .executeUpdate());
       assertEquals(0, routeDetailsBackfill.enqueue(Instant.now()), "given up stays given up");
-      assertEquals(
-          0L,
-          io.quarkus.narayana.jta.QuarkusTransaction.requiringNew()
-              .call(() -> surfaceRefreshRepository.count()));
     } finally {
       routeDetailsBackfill.setForTest(false, 300);
       surfaceService.setEnabledForTest(false);
