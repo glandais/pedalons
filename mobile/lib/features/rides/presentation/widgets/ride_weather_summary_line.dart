@@ -110,6 +110,10 @@ class RideWeatherSummaryLine extends ConsumerWidget {
     final String? windText = wind == null
         ? null
         : formatWind(wind, units, gusts: false);
+    // À l'écran, la flèche porte le point cardinal.
+    final String? windShown = wind == null
+        ? null
+        : formatWind(wind, units, gusts: false, compass: false);
     final WeatherRainAlertDto? alert = s.rainAlert;
     final String? rain = alert != null
         ? 'rides.weather.rainAlertShort'.tr(
@@ -151,13 +155,13 @@ class RideWeatherSummaryLine extends ConsumerWidget {
               iconColor: c.text,
               text: temperature ?? condition,
             ),
-            if (wind != null && windText != null)
+            if (wind != null && windShown != null)
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
                   PdlWindArrow(angle: windArrowAngle(wind.direction), size: 14),
                   const SizedBox(width: 2),
-                  Flexible(child: Text(windText, style: t.statValue)),
+                  Flexible(child: Text(windShown, style: t.statValue)),
                 ],
               ),
             if (rain != null)

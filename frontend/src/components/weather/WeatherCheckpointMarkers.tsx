@@ -17,6 +17,7 @@ import {
   type MapCheckpoint,
 } from '@/lib/weatherOnRoute'
 import { WeatherIcon } from './WeatherIcon'
+import { WindFromArrow } from './WindFromArrow'
 import { useCheckpointSummary } from './useCheckpointSummary'
 import { useRouteLabels } from './useRouteLabels'
 import { useWeatherLabels } from './useWeatherLabels'
@@ -428,26 +429,15 @@ function CheckpointDetail({
         <Text size="sm">{labels.condition(weather.condition)}</Text>
       </Group>
       {rain && <Text size="sm">{rain}</Text>}
-      <Group gap={6} wrap="nowrap" align="flex-start">
-        <IconArrowUp
-          size={16}
-          stroke={2.5}
-          aria-hidden
-          style={{
-            flexShrink: 0,
-            marginTop: 2,
-            transform: `rotate(${mapWindRotation(weather.wind.direction, bearing)}deg)`,
-          }}
-        />
-        <Text size="sm">
-          {relativeWind
-            ? t('rides.weather.map.windDetail', {
-                wind: labels.windWithGusts(weather.wind),
-                relativeWind,
-              })
-            : labels.windWithGusts(weather.wind)}
-        </Text>
-      </Group>
+      <Text size="sm">
+        <WindFromArrow wind={weather.wind} bearing={bearing} size={16} />{' '}
+        {relativeWind
+          ? t('rides.weather.map.windDetail', {
+              wind: labels.speedWithGusts(weather.wind),
+              relativeWind,
+            })
+          : labels.speedWithGusts(weather.wind)}
+      </Text>
     </Stack>
   )
 }

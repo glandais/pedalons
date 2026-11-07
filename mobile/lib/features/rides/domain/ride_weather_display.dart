@@ -145,13 +145,23 @@ String? compassLabel(String compass) {
 
 /// « Vent NO 18 km/h », ou « Vent 18 km/h » sans point cardinal connu. Les
 /// rafales suivent quand elles sont connues.
-String formatWind(WindDto wind, UnitSystem units, {bool gusts = true}) {
+///
+/// À l'écran, le point cardinal n'est jamais écrit : une `PdlWindArrow`
+/// orientée (nord en haut, [windArrowAngle]) le montre, comme sur les
+/// pastilles de la carte — le texte visible passe alors `compass: false`. Le
+/// libellé lu par le lecteur d'écran, lui, le garde.
+String formatWind(
+  WindDto wind,
+  UnitSystem units, {
+  bool gusts = true,
+  bool compass = true,
+}) {
   final String speed = AppFormatters.formatSpeed(wind.speed, units);
-  final String? compass = compassLabel(wind.compass);
-  final String base = compass == null
+  final String? from = compass ? compassLabel(wind.compass) : null;
+  final String base = from == null
       ? 'rides.weather.wind'.tr(namedArgs: <String, String>{'speed': speed})
       : 'rides.weather.windFrom'.tr(
-          namedArgs: <String, String>{'speed': speed, 'compass': compass},
+          namedArgs: <String, String>{'speed': speed, 'compass': from},
         );
   if (!gusts || wind.gusts == null) return base;
   final String g = 'rides.weather.gusts'.tr(

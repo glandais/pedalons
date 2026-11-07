@@ -67,7 +67,10 @@ export function useWeatherLabels() {
     [t]
   )
 
-  /** « SO 18 km/h » — the wind as a card states it. */
+  /**
+   * « SO 18 km/h » — the wind as it is spoken (an accessible name). On screen, a `WindFromArrow`
+   * replaces the compass point: see `speedWithGusts`.
+   */
   const wind = useCallback(
     (value: WindDto) => {
       const from = compass(value.compass)
@@ -87,5 +90,25 @@ export function useWeatherLabels() {
     [t, wind, speed]
   )
 
-  return { condition, relativeWind, relativeWindShort, compass, wind, windWithGusts }
+  /**
+   * « 18 km/h, rafales 35 km/h » — the wind without its compass point, for a line where a
+   * `WindFromArrow` shows where it comes from.
+   */
+  const speedWithGusts = useCallback(
+    (value: WindDto) =>
+      value.gusts !== undefined
+        ? t('rides.weather.wind.withGusts', { wind: speed(value.speed), gusts: speed(value.gusts) })
+        : speed(value.speed),
+    [t, speed]
+  )
+
+  return {
+    condition,
+    relativeWind,
+    relativeWindShort,
+    compass,
+    wind,
+    windWithGusts,
+    speedWithGusts,
+  }
 }

@@ -732,6 +732,7 @@
       },
       "checkpointNoWeather": "No forecast here yet",
       "prevailingWind": "Prevailing wind: {wind}",
+      "prevailingWindLabel": "Prevailing wind:",
       "attribution": "Forecast: {name}",
       "mapMode": "Weather",
       "mapModeSwitch": "Wind on the route",

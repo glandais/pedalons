@@ -381,13 +381,20 @@ class RideWeatherCheckpointDetails extends StatelessWidget {
                     },
                   ),
                 ),
-              _line(
-                context,
-                null,
-                formatWind(w.wind, units, gusts: false),
-                leading: PdlWindArrow(
-                  angle: windArrowAngle(w.wind.direction),
-                  size: 18,
+              // La flèche porte le point cardinal ; le lecteur d'écran l'entend
+              // dans le libellé complet.
+              Semantics(
+                label: formatWind(w.wind, units, gusts: false),
+                child: ExcludeSemantics(
+                  child: _line(
+                    context,
+                    null,
+                    formatWind(w.wind, units, gusts: false, compass: false),
+                    leading: PdlWindArrow(
+                      angle: windArrowAngle(w.wind.direction),
+                      size: 18,
+                    ),
+                  ),
                 ),
               ),
               if (gusts != null)

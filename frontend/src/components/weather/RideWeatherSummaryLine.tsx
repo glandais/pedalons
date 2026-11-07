@@ -9,6 +9,7 @@ import { useRendezvousFormat } from '@/hooks/useRendezvousFormat'
 import { formatTemperature, temperatureToDisplay } from '@/utils/unitFormat'
 import { WeatherIcon } from './WeatherIcon'
 import { useWeatherLabels } from './useWeatherLabels'
+import { WindFromArrow } from './WindFromArrow'
 import { rainAlertCondition, showsSummary, temperatureRange } from './weatherDisplay'
 
 interface RideWeatherSummaryLineProps {
@@ -34,7 +35,7 @@ interface RideWeatherSummaryLineProps {
  */
 export function RideWeatherSummaryLine({ summary, timezone }: RideWeatherSummaryLineProps) {
   const { t } = useTranslation()
-  const { temperature, unitSystem } = useUnits()
+  const { temperature, unitSystem, speed } = useUnits()
   const { formatDate, isGuessedTimezone } = useFormattedDate()
   const passage = useRendezvousFormat(summary?.timezone ?? timezone)
   const labels = useWeatherLabels()
@@ -90,7 +91,7 @@ export function RideWeatherSummaryLine({ summary, timezone }: RideWeatherSummary
         <Group gap={4} wrap="nowrap">
           <IconWind size={16} color="var(--mantine-color-dimmed)" aria-hidden />
           <Text size="sm" c="dimmed">
-            {labels.wind(summary.wind)}
+            <WindFromArrow wind={summary.wind} /> {speed(summary.wind.speed)}
           </Text>
         </Group>
       )}

@@ -732,6 +732,7 @@
       },
       "checkpointNoWeather": "Prévision pas encore disponible ici",
       "prevailingWind": "Vent dominant : {wind}",
+      "prevailingWindLabel": "Vent dominant :",
       "attribution": "Prévisions : {name}",
       "mapMode": "Météo",
       "mapModeSwitch": "Vent sur le tracé",

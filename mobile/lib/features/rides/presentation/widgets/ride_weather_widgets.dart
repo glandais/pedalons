@@ -177,7 +177,8 @@ String exposureSummary(WindExposureDto exposure, UnitSystem units) => <String>[
       ),
 ].join(', ');
 
-/// Le vent d'une heure : flèche absolue (nord en haut) et « Vent NO 18 km/h ».
+/// Le vent d'une heure : flèche absolue (nord en haut) et « Vent 18 km/h » —
+/// la flèche dit d'où il vient, le texte ne répète pas le point cardinal.
 class WeatherWindLine extends StatelessWidget {
   const WeatherWindLine({
     super.key,
@@ -199,7 +200,10 @@ class WeatherWindLine extends StatelessWidget {
         PdlWindArrow(angle: windArrowAngle(wind.direction), size: 14),
         const SizedBox(width: 2),
         Flexible(
-          child: Text(formatWind(wind, units, gusts: gusts), style: t.xs),
+          child: Text(
+            formatWind(wind, units, gusts: gusts, compass: false),
+            style: t.xs,
+          ),
         ),
       ],
     );

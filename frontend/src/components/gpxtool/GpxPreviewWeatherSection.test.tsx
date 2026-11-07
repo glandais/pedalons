@@ -7,7 +7,11 @@ import { okWeather, plain, routeWeather } from '@/test/weatherFixtures'
 
 vi.mock('react-i18next', async () => {
   const { frenchT } = await import('@/test/frenchT')
-  return { useTranslation: () => ({ t: frenchT, i18n: { language: 'fr' } }) }
+  const { FrenchTrans } = await import('@/test/frenchTrans')
+  return {
+    useTranslation: () => ({ t: frenchT, i18n: { language: 'fr' } }),
+    Trans: FrenchTrans,
+  }
 })
 
 import { GpxPreviewWeatherSection } from './GpxPreviewWeatherSection'

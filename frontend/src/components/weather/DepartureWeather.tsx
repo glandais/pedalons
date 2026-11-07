@@ -8,6 +8,7 @@ import { Stat } from '../card/common'
 import { FormattedTime } from '../common/FormattedDate'
 import { WeatherIcon } from './WeatherIcon'
 import { useWeatherLabels } from './useWeatherLabels'
+import { WindFromArrow } from './WindFromArrow'
 import { hasForecast } from './weatherDisplay'
 
 interface DepartureWeatherProps {
@@ -73,7 +74,9 @@ export function DepartureWeather({ departure, time, timezone }: DepartureWeather
                   })}
             </Stat>
           )}
-          <Stat icon={<IconWind size={16} aria-hidden />}>{labels.windWithGusts(wind)}</Stat>
+          <Stat icon={<IconWind size={16} aria-hidden />}>
+            <WindFromArrow wind={wind} /> {labels.speedWithGusts(wind)}
+          </Stat>
           {departure.sunrise && (
             <Stat
               icon={<IconSunrise size={16} role="img" aria-label={t('rides.weather.sunrise')} />}

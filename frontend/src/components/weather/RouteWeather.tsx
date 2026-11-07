@@ -1,5 +1,5 @@
 import { useCallback, useId, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
-import { useTranslation } from 'react-i18next'
+import { Trans, useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import {
   Box,
@@ -26,6 +26,7 @@ import { useRendezvousFormat } from '@/hooks/useRendezvousFormat'
 import { RouteVerdicts } from './RouteVerdicts'
 import { WeatherIcon } from './WeatherIcon'
 import { WindArrow } from './WindArrow'
+import { WindFromArrow } from './WindFromArrow'
 import { useCheckpointSummary } from './useCheckpointSummary'
 import { useRouteLabels } from './useRouteLabels'
 import { useWeatherLabels } from './useWeatherLabels'
@@ -719,16 +720,12 @@ function CheckpointDetail({
               </Group>
               {relativeWind && <Text size="sm">{labels.relativeWind(relativeWind)}</Text>}
               <Text size="sm">
-                {[
-                  weather.wind.gusts !== undefined &&
-                    t('rides.weather.route.detail.gusts', { gusts: speed(weather.wind.gusts) }),
-                  labels.compass(weather.wind.compass) &&
-                    t('rides.weather.route.detail.sector', {
-                      compass: labels.compass(weather.wind.compass),
-                    }),
-                ]
-                  .filter(Boolean)
-                  .join(' · ')}
+                {weather.wind.gusts !== undefined &&
+                  `${t('rides.weather.route.detail.gusts', { gusts: speed(weather.wind.gusts) })} · `}
+                <Trans
+                  i18nKey="rides.weather.route.detail.sector"
+                  components={{ arrow: <WindFromArrow wind={weather.wind} /> }}
+                />
               </Text>
             </DetailCell>
             <DetailCell label={t('rides.weather.route.detail.phase')}>

@@ -182,13 +182,33 @@ class WeatherLegHeader extends ConsumerWidget {
         ),
         if (prevailing != null) ...<Widget>[
           const SizedBox(height: 2),
-          Text(
-            'rides.weather.prevailingWind'.tr(
+          // La flèche, nord en haut, porte le point cardinal ; le lecteur
+          // d'écran l'entend dans le libellé complet.
+          Semantics(
+            label: 'rides.weather.prevailingWind'.tr(
               namedArgs: <String, String>{
                 'wind': formatWind(prevailing, units),
               },
             ),
-            style: t.xs,
+            child: ExcludeSemantics(
+              child: Row(
+                children: <Widget>[
+                  Text('rides.weather.prevailingWindLabel'.tr(), style: t.xs),
+                  const SizedBox(width: 2),
+                  PdlWindArrow(
+                    angle: windArrowAngle(prevailing.direction),
+                    size: 14,
+                  ),
+                  const SizedBox(width: 2),
+                  Flexible(
+                    child: Text(
+                      formatWind(prevailing, units, compass: false),
+                      style: t.xs,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ],
@@ -357,6 +377,7 @@ class _CheckpointRow extends ConsumerWidget {
       rain: rain,
       amount: amount,
       wind: wind,
+      units: units,
       dot: dot,
       endpoint: endpoint,
     );
@@ -416,6 +437,7 @@ class _CheckpointRow extends ConsumerWidget {
     required String? rain,
     required String? amount,
     required String? wind,
+    required UnitSystem units,
     required Color dot,
     required bool endpoint,
   }) {
@@ -512,7 +534,7 @@ class _CheckpointRow extends ConsumerWidget {
                             ],
                           ),
                         ],
-                        Text(wind!, style: t.xs),
+                        WeatherWindLine(wind: w.wind, units: units),
                         if (rain != null) Text(rain, style: t.xs),
                         if (amount != null) Text(amount, style: t.xs),
                       ],

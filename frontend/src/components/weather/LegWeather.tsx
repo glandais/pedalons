@@ -1,10 +1,11 @@
-import { useTranslation } from 'react-i18next'
+import { Trans, useTranslation } from 'react-i18next'
 import { Stack, Text } from '@mantine/core'
 import type { WeatherLegDto } from '@/api/dto'
 import { WeatherStatus } from '@/api/dto'
 import { useUnits } from '@/hooks/useUnits'
 import { useRendezvousFormat } from '@/hooks/useRendezvousFormat'
 import { useWeatherLabels } from './useWeatherLabels'
+import { WindFromArrow } from './WindFromArrow'
 import { WeatherCheckpointStrip } from './WeatherCheckpointStrip'
 import { WeatherRainBanner } from './WeatherRainBanner'
 import { WindExposureBar } from './WindExposureBar'
@@ -66,9 +67,11 @@ export function LegWeather({
         </Text>
         {leg.prevailingWind && (
           <Text size="xs" c="dimmed">
-            {t('rides.weather.leg.prevailingWind', {
-              wind: labels.windWithGusts(leg.prevailingWind),
-            })}
+            <Trans
+              i18nKey="rides.weather.leg.prevailingWind"
+              values={{ wind: labels.speedWithGusts(leg.prevailingWind) }}
+              components={{ arrow: <WindFromArrow wind={leg.prevailingWind} /> }}
+            />
           </Text>
         )}
       </Stack>

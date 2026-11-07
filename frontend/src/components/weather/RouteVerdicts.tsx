@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react'
-import { useTranslation } from 'react-i18next'
+import { Fragment, type ReactNode } from 'react'
+import { Trans, useTranslation } from 'react-i18next'
 import { Group, Paper, SimpleGrid, Stack, Text } from '@mantine/core'
 import {
   IconAlertTriangle,
@@ -12,6 +12,7 @@ import type { DepartureWeatherDto, WeatherLegDto } from '@/api/dto'
 import { useUnits } from '@/hooks/useUnits'
 import { useRendezvousFormat } from '@/hooks/useRendezvousFormat'
 import { useWeatherLabels } from './useWeatherLabels'
+import { WindFromArrow } from './WindFromArrow'
 import { useRouteLabels } from './useRouteLabels'
 import { rainAlertCondition } from './weatherDisplay'
 import {
@@ -150,9 +151,15 @@ export function RouteVerdicts({ leg, departure, phases, timezone }: RouteVerdict
             first: labels.relativeWindShort(first),
             second: t(`rides.weather.route.verdict.wind.lower.${second}`),
           })
-    const sentence: (string | undefined)[] = [
-      leg.prevailingWind &&
-        t('rides.weather.route.verdict.wind.prevailing', { wind: labels.wind(leg.prevailingWind) }),
+    const sentence: ReactNode[] = [
+      leg.prevailingWind && (
+        <Trans
+          key="prevailing"
+          i18nKey="rides.weather.route.verdict.wind.prevailing"
+          values={{ wind: speed(leg.prevailingWind.speed) }}
+          components={{ arrow: <WindFromArrow wind={leg.prevailingWind} /> }}
+        />
+      ),
     ]
     if (wind.sequential && wind.head && wind.tail) {
       sentence.push(
@@ -251,7 +258,7 @@ function VerdictTile({
   label: string
   answer: string
   /** Sentences, joined by a space; empty ones dropped. */
-  sentence: (string | false | undefined | null | '')[]
+  sentence: ReactNode[]
   /** Something to watch: a warning sign before the answer, whose words say why. The answer
    * itself keeps the text colour — the warning yellow is 1.8:1 on white. */
   warn?: boolean
@@ -275,7 +282,12 @@ function VerdictTile({
           </Text>
         </Group>
         <Text size="sm" suppressHydrationWarning={guessed}>
-          {sentence.filter(Boolean).join(' ')}
+          {sentence.filter(Boolean).map((part, i) => (
+            <Fragment key={i}>
+              {i > 0 && ' '}
+              {part}
+            </Fragment>
+          ))}
         </Text>
       </Stack>
     </Paper>

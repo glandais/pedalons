@@ -239,7 +239,7 @@ void main() {
       expect(find.text('À 15,0 km du départ'), findsOneWidget);
       expect(find.text('Pluie 60 %'), findsOneWidget);
       expect(find.text('1,2 mm de précipitations'), findsOneWidget);
-      expect(find.text('Vent NO 18 km/h'), findsOneWidget);
+      expect(find.text('Vent 18 km/h'), findsOneWidget);
       expect(find.text('Rafales 32 km/h'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
@@ -256,14 +256,14 @@ void main() {
       expect(find.textContaining('rafales'), findsNothing);
       expect(find.textContaining('précipitations'), findsNothing);
       expect(find.textContaining('%'), findsNothing);
-      expect(find.text('Vent NO 18 km/h'), findsOneWidget);
+      expect(find.text('Vent 18 km/h'), findsOneWidget);
     });
 
     testWidgets('en impérial : °F, mph, miles', (WidgetTester tester) async {
       await pumpDetails(tester, enRoute(), units: UnitSystem.imperial);
 
       expect(find.textContaining('58 °F'), findsOneWidget);
-      expect(find.text('Vent NO 11 mph'), findsOneWidget);
+      expect(find.text('Vent 11 mph'), findsOneWidget);
       expect(find.text('Rafales 20 mph'), findsOneWidget);
       expect(find.text('À 9,3 mi du départ'), findsOneWidget);
       expect(find.textContaining('km'), findsNothing);

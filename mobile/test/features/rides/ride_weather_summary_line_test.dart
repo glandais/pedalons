@@ -57,7 +57,7 @@ void main() {
 
     expect(find.byKey(keys.ride.weatherSummary), findsOneWidget);
     expect(find.text('12–18 °C'), findsOneWidget);
-    expect(find.text('Vent NO 18 km/h'), findsOneWidget);
+    expect(find.text('Vent 18 km/h'), findsOneWidget);
     expect(find.text('Pluie 20 %'), findsOneWidget);
   });
 
@@ -201,7 +201,7 @@ void main() {
         const RideWeatherSummaryLine(summary: ok, timezone: null),
       );
 
-      expect(find.text('Vent NO 18\u00a0km/h'), findsOneWidget);
+      expect(find.text('Vent 18\u00a0km/h'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
