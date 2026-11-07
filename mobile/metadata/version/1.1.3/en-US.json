@@ -3,5 +3,5 @@
   "keywords": "bike,club,ride,route,gpx,peloton,cyclist,weather,wind,calendar,road,gravel,pace,climb,bicycle",
   "marketingUrl": "https://www.pedalons.fr/",
   "supportUrl": "https://www.pedalons.fr/support",
-  "whatsNew": "• Wind direction is now shown by an arrow, north up, instead of a written compass point.\n• Stability fixes."
+  "whatsNew": "• The start time comes first: under the title of rides, trips and stages, with “Today” or “Tomorrow” when it applies, and at the head of each agenda line.\n• If your group starts at a different time from the ride, its time is the one shown on the home screen, the dashboard and the feed.\n• “My next ride” always gives the start time.\n• Wind direction is now shown by an arrow, north up, instead of a written compass point.\n• Stability fixes."
 }

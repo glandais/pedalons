@@ -3,5 +3,5 @@
   "keywords": "vélo,club,sortie,parcours,gpx,peloton,cycliste,météo,vent,calendrier,route,gravel,allure,col",
   "marketingUrl": "https://www.pedalons.fr/",
   "supportUrl": "https://www.pedalons.fr/support",
-  "whatsNew": "• La direction du vent s'affiche par une flèche orientée, nord en haut, au lieu d'un point cardinal écrit.\n• Corrections de stabilité."
+  "whatsNew": "• L'heure de départ passe au premier plan : sous le titre des sorties, des voyages et des étapes, avec « Aujourd'hui » ou « Demain » quand c'est le cas, et en tête de chaque ligne de l'agenda.\n• Si votre groupe part à une autre heure que la sortie, c'est son heure qui s'affiche sur l'accueil, le tableau de bord et le fil.\n• « Ma prochaine sortie » donne toujours l'heure de départ.\n• La direction du vent s'affiche par une flèche orientée, nord en haut, au lieu d'un point cardinal écrit.\n• Corrections de stabilité."
 }
