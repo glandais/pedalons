@@ -7,6 +7,8 @@ import { notifications } from '@mantine/notifications'
 import { plannerPayload } from '@/lib/plannerSubmit'
 import { RoutePlannerField, type RoutePlannerHandle } from '../planner/RoutePlannerField'
 import { isGpxPlannerEnabled } from '@/config/appConfig'
+import { DepartureFields } from './DepartureFields'
+import { departureChange, type DepartureChange, type DepartureValue } from './departure'
 
 type SourceMode = 'gpx' | 'planner'
 
@@ -22,6 +24,12 @@ interface GpxPreviewEditorProps {
   initialWaypoints?: WaypointDto[]
   /** Length (m) stored with the preview: the distances of `initialWaypoints` were measured on it. */
   initialDistance?: number
+  /** The departure saved with the preview (date as the clock at the track's start, speed in km/h). */
+  initialDeparture?: DepartureValue
+  /** The zone the server found for the track's start; unknown before the first save with a date. */
+  departureZone?: string
+  /** For the purge bound of the date picker; now at creation. */
+  createdAt?: string
   /** Create-from-scratch: planner on an empty map, no GPX upload, no source toggle. */
   create?: boolean
   /**
@@ -29,12 +37,14 @@ interface GpxPreviewEditorProps {
    * the bounds of the state. Absent for a rename, which leaves the track as it is.
    * `waypoints` is the complete list of the route points, present only when the user touched them
    * (alone, it leaves the track as it is).
+   * `departure` holds only what the person changed in the departure fields (see `departureChange`).
    */
   onSubmit: (
     name: string,
     track?: { points?: GeoPoint[]; plannerState?: PlannerState },
     gpxFile?: File,
-    waypoints?: WaypointRequest[]
+    waypoints?: WaypointRequest[],
+    departure?: DepartureChange
   ) => void | Promise<void>
   onCancel: () => void
   isPending: boolean
@@ -55,6 +65,9 @@ export function GpxPreviewEditor({
   initialPlannerState,
   initialWaypoints,
   initialDistance,
+  initialDeparture,
+  departureZone,
+  createdAt,
   create = false,
   onSubmit,
   onCancel,
@@ -73,6 +86,7 @@ export function GpxPreviewEditor({
   // A calculation in flight in the planner: saving now would drop it
   const [plannerBusy, setPlannerBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [departure, setDeparture] = useState<DepartureValue>(initialDeparture ?? {})
   const plannerRef = useRef<RoutePlannerHandle>(null)
   // Bumped by the « draw on the map » button: on a finger it opens the fullscreen editor.
   const [drawRequest, setDrawRequest] = useState(0)
@@ -114,7 +128,13 @@ export function GpxPreviewEditor({
       payload.plannerState || payload.points
         ? { points: payload.points, plannerState: payload.plannerState }
         : undefined
-    await onSubmit(name.trim(), track, file, payload.waypoints)
+    await onSubmit(
+      name.trim(),
+      track,
+      file,
+      payload.waypoints,
+      departureChange(initialDeparture ?? {}, departure)
+    )
     // Only once the save went through: a failed save did not drop anything
     if (payload.tooLarge) {
       notifications.show({ message: t('planner.state.tooLarge'), color: 'yellow' })
@@ -204,6 +224,13 @@ export function GpxPreviewEditor({
         value={name}
         onChange={(event) => setName(event.currentTarget.value)}
         error={name.length > 0 && !nameValid ? t('gpxTools.edit.nameTooShort') : undefined}
+      />
+
+      <DepartureFields
+        value={departure}
+        onChange={setDeparture}
+        zone={departureZone}
+        createdAt={createdAt}
       />
 
       <Group justify="flex-end" pt="md">

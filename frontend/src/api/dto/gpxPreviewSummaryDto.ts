@@ -18,4 +18,8 @@ export interface GpxPreviewSummaryDto {
   hilliness: number
   /** Creation timestamp */
   createdAt: Instant
+  /** Departure instant, when the person gave a date. The wall time at the start of the track is this instant in departureTimezone. Present together with departureTimezone */
+  departureTime?: Instant
+  /** IANA time zone of the first point of the track, the one the departure was entered in */
+  departureTimezone?: string
 }

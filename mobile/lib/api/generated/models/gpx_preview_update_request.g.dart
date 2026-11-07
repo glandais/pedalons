@@ -19,6 +19,10 @@ _GpxPreviewUpdateRequest _$GpxPreviewUpdateRequestFromJson(
   waypoints: (json['waypoints'] as List<dynamic>?)
       ?.map((e) => WaypointRequest.fromJson(e as Map<String, dynamic>))
       .toList(),
+  departure: json['departure'] as String?,
+  clearDeparture: json['clearDeparture'] as bool?,
+  averageSpeed: (json['averageSpeed'] as num?)?.toDouble(),
+  clearAverageSpeed: json['clearAverageSpeed'] as bool?,
 );
 
 Map<String, dynamic> _$GpxPreviewUpdateRequestToJson(
@@ -28,4 +32,8 @@ Map<String, dynamic> _$GpxPreviewUpdateRequestToJson(
   'points': instance.points?.map((e) => e.toJson()).toList(),
   'plannerState': instance.plannerState?.toJson(),
   'waypoints': instance.waypoints?.map((e) => e.toJson()).toList(),
+  'departure': instance.departure,
+  'clearDeparture': instance.clearDeparture,
+  'averageSpeed': instance.averageSpeed,
+  'clearAverageSpeed': instance.clearAverageSpeed,
 };

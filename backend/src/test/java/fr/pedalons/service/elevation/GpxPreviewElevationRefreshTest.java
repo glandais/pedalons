@@ -64,6 +64,7 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
   private static final String THUMBNAIL = "thumbnail-light.png";
 
   @Inject GpxPreviewService previewService;
+  @Inject fr.pedalons.service.route.GpxProcessingService gpxProcessing;
   @Inject GpxPreviewRepository previewRepository;
   @Inject ElevationRefreshService service;
   @Inject ElevationRefreshWorker worker;
@@ -392,6 +393,33 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
     }
 
     assertEquals(0, worker.processDue(), "nothing left to do");
+  }
+
+  /** docs/LEDGER_*.md API-153: the catch-up rewrites the track, never the date nor the speed. */
+  @Test
+  void worker_keepsTheDepartureDate_itsZone_andTheSpeed() {
+    GpxPreview created =
+        previewService.create(
+            gpxProcessing.parseGpx(EXAMPLE),
+            "example.gpx",
+            false,
+            null,
+            fr.pedalons.service.route.waypoint.WaypointPlan.FROM_DOCUMENT,
+            fr.pedalons.dto.gpx.request.PreviewDepartureEdit.of(
+                fr.pedalons.dto.common.EventDateTime.local(
+                    java.time.LocalDateTime.parse("2026-11-10T08:30:00")),
+                27.5f));
+    GpxPreview before = reload(created);
+    assertNotNull(before.getDepartureAt());
+    makeDue(created);
+
+    assertEquals(1, worker.processDue());
+
+    GpxPreview after = reload(created);
+    assertNotEquals(before.getFilesRevision(), after.getFilesRevision());
+    assertEquals(before.getDepartureAt(), after.getDepartureAt());
+    assertEquals(before.getDepartureZone(), after.getDepartureZone());
+    assertEquals(27.5f, after.getAverageSpeed());
   }
 
   @Test

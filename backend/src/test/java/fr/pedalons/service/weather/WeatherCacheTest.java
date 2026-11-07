@@ -4,6 +4,7 @@ import static org.geolatte.geom.builder.DSL.g;
 import static org.geolatte.geom.builder.DSL.point;
 import static org.geolatte.geom.crs.CoordinateReferenceSystems.WGS84;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -350,5 +351,103 @@ class WeatherCacheTest extends AbstractResourceTest {
 
     assertTrue(cells().isEmpty());
     assertEquals(0, QuarkusTransaction.requiringNew().call(() -> hourlyRepository.count()));
+  }
+
+  // ------------------------------------------------------------------ GPX previews (API-153)
+
+  @Inject fr.pedalons.repository.gpx.GpxPreviewRepository previewRepository;
+
+  private fr.pedalons.domain.gpx.GpxPreview preview(Instant departure, Float speed) {
+    return dataService.createGpxPreview(
+        domain,
+        user1,
+        java.util.UUID.randomUUID(),
+        northbound(30),
+        1L,
+        departure,
+        "Europe/Paris",
+        speed);
+  }
+
+  private RideWeather previewWeather(fr.pedalons.domain.gpx.GpxPreview preview) {
+    return QuarkusTransaction.requiringNew()
+        .call(
+            () ->
+                rideWeatherService.forPreview(
+                    previewRepository
+                        .findWeatherRow(domain.getId(), preview.getPublicId())
+                        .orElseThrow()));
+  }
+
+  @Test
+  void forPreview_afterPlanAndFetch_isOk_withAndWithoutASpeed() {
+    Instant departure = Instant.now().plus(1, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS);
+    var withSpeed = preview(departure, 30f);
+    var withoutSpeed = preview(departure.plus(1, ChronoUnit.HOURS), null);
+    planner.plan(Instant.now());
+    worker.fetchDue();
+
+    RideWeather fast = previewWeather(withSpeed);
+    RideWeather defaulted = previewWeather(withoutSpeed);
+
+    // The planner asked for everything the read looks at: no checkpoint is left without weather
+    for (RideWeather weather : List.of(fast, defaulted)) {
+      assertEquals(WeatherStatus.OK, weather.status());
+      assertEquals(1, weather.legs().size());
+      assertNull(weather.legs().getFirst().groupId());
+      assertEquals(3, weather.legs().getFirst().checkpoints().size());
+      assertTrue(
+          weather.legs().getFirst().checkpoints().stream().allMatch(c -> c.weather() != null));
+    }
+    assertEquals(30.0, fast.legs().getFirst().averageSpeed(), 1e-9);
+    assertFalse(fast.legs().getFirst().speedIsDefault());
+    assertEquals(25.0, defaulted.legs().getFirst().averageSpeed(), 1e-9);
+    assertTrue(defaulted.legs().getFirst().speedIsDefault());
+  }
+
+  @Test
+  void forPreview_aHotRead_costsThreeStatements_andNeverLoadsTheTracks() {
+    var preview = preview(Instant.now().plus(1, ChronoUnit.DAYS), null);
+    planner.plan(Instant.now());
+    worker.fetchDue();
+    previewWeather(preview); // warms the sample cache
+
+    long statements =
+        QuarkusTransaction.requiringNew()
+            .call(
+                () -> {
+                  return queryStats.measure(
+                      "preview weather [hot]",
+                      () ->
+                          rideWeatherService.forPreview(
+                              previewRepository
+                                  .findWeatherRow(domain.getId(), preview.getPublicId())
+                                  .orElseThrow()));
+                });
+
+    // the projection, the cells, their hours: nothing for the tracks
+    assertEquals(3, statements);
+  }
+
+  @Test
+  void plan_theNumberOfStatements_doesNotDependOnTheNumberOfPreviews() {
+    Instant departure = Instant.now().plus(1, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS);
+    var first = preview(departure, null);
+    previewWeather(first);
+    planner.plan(Instant.now());
+    long one = queryStats.counters().reads();
+    planner.plan(Instant.now());
+    long afterOne = queryStats.counters().reads() - one;
+
+    for (int i = 0; i < 4; i++) {
+      var more = preview(departure, 28f);
+      previewWeather(more);
+    }
+    long before = queryStats.counters().reads();
+    planner.plan(Instant.now());
+    long afterFive = queryStats.counters().reads() - before;
+
+    // The previews are one projection, then the cache: the same reads for five as for one
+    assertEquals(afterOne, afterFive);
   }
 }

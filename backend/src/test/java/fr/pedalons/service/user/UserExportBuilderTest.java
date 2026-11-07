@@ -236,6 +236,29 @@ class UserExportBuilderTest extends AbstractBaseTest {
   }
 
   @Test
+  void build_shouldIncludeTheDepartureAndSpeedOfAGpxPreview() throws IOException {
+    dataService.createGpxPreview(
+        domain,
+        user,
+        UUID.randomUUID(),
+        List.of(),
+        1L,
+        Instant.parse("2026-11-10T07:30:00Z"),
+        "Europe/Paris",
+        27.5f);
+
+    Path zip = builder.build(ctx);
+    try {
+      String previews = ZipReader.text(ZipReader.readAll(zip), "content/gpx-previews.json");
+      assertTrue(previews.contains("2026-11-10T07:30:00Z"), previews);
+      assertTrue(previews.contains("Europe/Paris"), previews);
+      assertTrue(previews.contains("27.5"), previews);
+    } finally {
+      Files.deleteIfExists(zip);
+    }
+  }
+
+  @Test
   void build_shouldIncludeAuthoredContentAndParticipations() throws IOException {
     Team team = dataService.createTeam(domain, user, "Team", "team", Visibility.PUBLIC);
     Ride ride = dataService.createRide(team, user, "Sortie du dimanche", "sortie", Instant.now());

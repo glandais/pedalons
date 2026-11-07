@@ -702,6 +702,42 @@ public class TestDataService {
   }
 
   /**
+   * A GPX preview with one track, and optionally a departure date and an average speed
+   * (docs/LEDGER_*.md API-153).
+   */
+  @Transactional
+  public GpxPreview createGpxPreview(
+      Domain domain,
+      User user,
+      java.util.UUID publicId,
+      List<fr.pedalons.domain.route.GpxTrack.TrackPoint> points,
+      Long filesRevision,
+      java.time.Instant departureAt,
+      String departureZone,
+      Float averageSpeed) {
+    float distance = points.isEmpty() ? 0f : (float) points.getLast().dist();
+    GpxPreview preview =
+        new GpxPreview(
+            publicId,
+            domain,
+            user,
+            "preview",
+            distance,
+            100f,
+            -100f,
+            100f,
+            List.of(new GpxPreview.PreviewTrack("track", points, List.of(), distance, 100f, -100f)),
+            List.of());
+    preview.setFilesRevision(filesRevision);
+    preview.setDepartureAt(departureAt);
+    preview.setDepartureZone(departureZone);
+    preview.setAverageSpeed(averageSpeed);
+    routeRepository.getEntityManager().persist(preview);
+    routeRepository.getEntityManager().flush();
+    return preview;
+  }
+
+  /**
    * Ages a GPX preview so the retention job picks it up. Native query because {@code createdAt} is
    * {@code @CreationTimestamp updatable = false}.
    */

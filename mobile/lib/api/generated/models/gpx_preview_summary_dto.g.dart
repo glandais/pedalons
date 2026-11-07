@@ -16,6 +16,8 @@ _GpxPreviewSummaryDto _$GpxPreviewSummaryDtoFromJson(
   elevationLoss: (json['elevationLoss'] as num).toDouble(),
   hilliness: (json['hilliness'] as num).toDouble(),
   createdAt: json['createdAt'] as String,
+  departureTime: json['departureTime'] as String?,
+  departureTimezone: json['departureTimezone'] as String?,
 );
 
 Map<String, dynamic> _$GpxPreviewSummaryDtoToJson(
@@ -28,4 +30,6 @@ Map<String, dynamic> _$GpxPreviewSummaryDtoToJson(
   'elevationLoss': instance.elevationLoss,
   'hilliness': instance.hilliness,
   'createdAt': instance.createdAt,
+  'departureTime': instance.departureTime,
+  'departureTimezone': instance.departureTimezone,
 };

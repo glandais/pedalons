@@ -1,7 +1,10 @@
 package fr.pedalons.service.weather;
 
+import fr.pedalons.domain.gpx.GpxPreview.PreviewTrack;
 import fr.pedalons.domain.route.GpxTrack;
 import fr.pedalons.domain.route.GpxTrack.TrackPoint;
+import fr.pedalons.repository.gpx.GpxPreviewRepository;
+import fr.pedalons.repository.gpx.GpxPreviewRepository.PreviewTracks;
 import fr.pedalons.repository.route.GpxTrackRepository;
 import io.quarkus.cache.CacheResult;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -22,6 +25,10 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>A miss reads the tracks' {@code track_points} JSON, the only heavy read of the weather, and
  * never writes anything.
+ *
+ * <p>A GPX preview has no track rows: {@link #previewSamples} samples the JSONB of its row, keyed
+ * by the preview and its files revision — every change of its track is a new revision
+ * (docs/LEDGER_*.md API-153).
  */
 @ApplicationScoped
 public class RouteSampleLookup {
@@ -33,6 +40,7 @@ public class RouteSampleLookup {
   double sampleStepKm;
 
   @Inject GpxTrackRepository gpxTrackRepository;
+  @Inject GpxPreviewRepository gpxPreviewRepository;
 
   /**
    * @param sortedTrackIds the route's track ids, ascending — the order they are chained in
@@ -47,6 +55,24 @@ public class RouteSampleLookup {
       tracks.add(track.getTrackPoints());
     }
     return sample(tracks, sampleStepKm * 1000);
+  }
+
+  /**
+   * The forecast points of a GPX preview, its tracks chained in the order of the list.
+   *
+   * @param revision its files revision, 0 for the flat layout. A key whose revision is not the
+   *     row's any more (a save raced the caller) is answered empty: it will not be asked again, and
+   *     the geometry of a newer revision is never stored under it, since revision and tracks are
+   *     read in one query.
+   */
+  @CacheResult(cacheName = "weather-preview-samples")
+  public RouteSamples previewSamples(long previewId, long revision) {
+    PreviewTracks stored = gpxPreviewRepository.findTracks(previewId);
+    if (stored == null || stored.revision() != revision) {
+      return RouteSamples.EMPTY;
+    }
+    return sample(
+        stored.tracks().stream().map(PreviewTrack::trackPoints).toList(), sampleStepKm * 1000);
   }
 
   /**

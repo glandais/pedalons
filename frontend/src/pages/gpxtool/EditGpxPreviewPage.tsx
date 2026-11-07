@@ -4,9 +4,15 @@ import { useQueryClient } from '@tanstack/react-query'
 import { Alert, Stack, Text, Title } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import type { GeoPoint, PlannerState, WaypointRequest } from '@/api/dto'
-import { getGetPreviewQueryKey, useUpdatePreview } from '@/api/endpoints/gpx-previews/gpx-previews'
+import {
+  getGetPreviewQueryKey,
+  getGetPreviewWeatherQueryKey,
+  useUpdatePreview,
+} from '@/api/endpoints/gpx-previews/gpx-previews'
 import { GpxPreviewEditor } from '@/components/gpxtool/GpxPreviewEditor'
 import { LoadingPage } from '@/components/common/LoadingSpinner'
+import type { DepartureChange } from '@/components/gpxtool/departure'
+import { optionalWallTime } from '@/utils/wallTime'
 import { paths } from '@/config/paths'
 import { isGpxPlannerEnabled } from '@/config/appConfig'
 import { useGpxPreviewFormData, useGpxPreviewPlannerState } from './gpxPreviewFormData'
@@ -44,19 +50,28 @@ export function EditGpxPreviewPage() {
     name: string,
     track?: { points?: GeoPoint[]; plannerState?: PlannerState },
     gpxFile?: File,
-    waypoints?: WaypointRequest[]
+    waypoints?: WaypointRequest[],
+    departure: DepartureChange = {}
   ) => {
     await updateMutation.mutateAsync(
       {
         previewId: preview.id,
         data: {
-          preview: { name, points: track?.points, plannerState: track?.plannerState, waypoints },
+          preview: {
+            name,
+            points: track?.points,
+            plannerState: track?.plannerState,
+            waypoints,
+            ...departure,
+          },
           gpxFile,
         },
       },
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetPreviewQueryKey(preview.id) })
+          // The date, the speed or the track moved: the forecast is another one
+          queryClient.invalidateQueries({ queryKey: getGetPreviewWeatherQueryKey(preview.id) })
           notifications.show({ message: t('gpxTools.edit.updated'), color: 'green' })
         },
       }
@@ -84,6 +99,14 @@ export function EditGpxPreviewPage() {
         initialPlannerState={plannerStateQuery.data?.state}
         initialWaypoints={preview.waypoints}
         initialDistance={preview.distance}
+        initialDeparture={{
+          departure: preview.departureTimezone
+            ? optionalWallTime(preview.departureTime, preview.departureTimezone)
+            : undefined,
+          averageSpeed: preview.averageSpeed,
+        }}
+        departureZone={preview.departureTimezone}
+        createdAt={preview.createdAt}
         onSubmit={handleSubmit}
         onCancel={() => navigate(paths.gpxToolsView(preview.id))}
         isPending={updateMutation.isPending}

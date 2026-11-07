@@ -144,6 +144,24 @@ public class GpxPreview {
   @Column(name = "surfaces", columnDefinition = "jsonb")
   private @Nullable PreviewSurfacesDocument surfaces;
 
+  /**
+   * When the track is ridden, the instant (docs/LEDGER_*.md API-153). Goes with {@link
+   * #departureZone}; null when the person gave none. Read by the weather planner.
+   */
+  @Column(name = "departure_at")
+  private @Nullable Instant departureAt;
+
+  /** The IANA zone of the start of the track, in which {@link #departureAt} was entered. */
+  @Column(name = "departure_zone", length = 64)
+  private @Nullable String departureZone;
+
+  /**
+   * Average speed in km/h the person rides at; null when not given. Independent of the date, and
+   * not of the track.
+   */
+  @Column(name = "average_speed")
+  private @Nullable Float averageSpeed;
+
   @CreationTimestamp
   @Column(name = "created_at", nullable = false, updatable = false)
   private Instant createdAt;

@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import fr.pedalons.api.AbstractResourceTest;
+import fr.pedalons.domain.gpx.GpxPreview;
 import fr.pedalons.domain.place.Place;
 import fr.pedalons.domain.platform.Domain;
 import fr.pedalons.domain.ride.Ride;
@@ -23,6 +24,7 @@ import fr.pedalons.domain.user.User;
 import fr.pedalons.domain.weather.WeatherCell;
 import fr.pedalons.enums.Status;
 import fr.pedalons.enums.Visibility;
+import fr.pedalons.repository.gpx.GpxPreviewRepository;
 import fr.pedalons.repository.place.PlaceRepository;
 import fr.pedalons.repository.ride.RideRepository;
 import fr.pedalons.repository.trip.TripStageRepository;
@@ -40,6 +42,7 @@ import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
+import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -60,6 +63,7 @@ class WeatherPlannerTest extends AbstractResourceTest {
   @Inject PlaceRepository placeRepository;
   @Inject DomainResolver domainResolver;
   @Inject TripStageRepository tripStageRepository;
+  @Inject GpxPreviewRepository previewRepository;
 
   /** A second tenant: its own domain, user and team. */
   private Domain otherDomain;
@@ -341,5 +345,144 @@ class WeatherPlannerTest extends AbstractResourceTest {
     WeatherCell finish = cell(samples.samples().getLast().cell());
     assertNotNull(finish);
     assertEquals(ten.plus(Duration.ofHours(1)), finish.getNearestNeedAt());
+  }
+
+  // ------------------------------------------------------------------ GPX previews (API-153)
+
+  private GpxPreview datedPreview(
+      Domain owner, User creator, double lat, @Nullable Instant departure, @Nullable Float speed) {
+    return dataService.createGpxPreview(
+        owner,
+        creator,
+        UUID.randomUUID(),
+        WeatherTestFixtures.northbound(lat, 4.0, 30, 170),
+        1L,
+        departure,
+        departure == null ? null : "Europe/Paris",
+        speed);
+  }
+
+  @Test
+  void plan_shouldPlanTheDatedPreviewsOfTheWindow_onEveryDomain() {
+    Instant now = Instant.now().truncatedTo(ChronoUnit.SECONDS);
+    Instant tomorrow = now.plus(Duration.ofDays(1));
+    datedPreview(domain, user1, 44.0, tomorrow, null);
+    datedPreview(otherDomain, otherUser, 45.0, tomorrow, null);
+    datedPreview(domain, user1, 46.0, null, 30f);
+    datedPreview(domain, user1, 47.0, now.minus(Duration.ofHours(2)), null);
+    datedPreview(domain, user1, 48.0, now.plus(Duration.ofDays(8)), null);
+
+    assertTrue(planner.plan(now) > 0);
+
+    assertTrue(plannedAround(44.0), "a preview of the first domain");
+    assertTrue(plannedAround(45.0), "a preview of another domain");
+    assertFalse(plannedAround(46.0), "no date");
+    assertFalse(plannedAround(47.0), "a date past");
+    assertFalse(plannedAround(48.0), "beyond the horizon");
+  }
+
+  @Test
+  void plan_aPreviewOfADeletedDomain_isLeftOut() {
+    Instant now = Instant.now().truncatedTo(ChronoUnit.SECONDS);
+    datedPreview(otherDomain, otherUser, 44.0, now.plus(Duration.ofDays(1)), null);
+    dataService.deleteDomain(otherDomain);
+
+    planner.plan(now);
+
+    assertFalse(plannedAround(44.0));
+  }
+
+  @Test
+  void plan_aPreviewTick_replayed_shouldWriteTheSameRows() {
+    Instant now = Instant.now().truncatedTo(ChronoUnit.SECONDS);
+    datedPreview(domain, user1, 44.0, now.plus(Duration.ofDays(1)), 28f);
+
+    int first = planner.plan(now);
+    List<WeatherCell> before = cells();
+    int second = planner.plan(now);
+    List<WeatherCell> after = cells();
+
+    assertEquals(first, second);
+    // The start (no band) and the 0, 15 and 30 km samples (with one)
+    assertEquals(4, first);
+    assertEquals(before.size(), after.size());
+    for (int i = 0; i < before.size(); i++) {
+      assertEquals(before.get(i).getId(), after.get(i).getId());
+      assertEquals(before.get(i).getNearestNeedAt(), after.get(i).getNearestNeedAt());
+    }
+  }
+
+  @Test
+  void plan_aPreview_shouldTimeItsSamplesWithItsSpeed_theDefaultOnlyWhenNoneIsGiven() {
+    Instant departure = Instant.now().plus(Duration.ofDays(1)).truncatedTo(ChronoUnit.SECONDS);
+    List<TrackPoint> points = WeatherTestFixtures.northbound(44.0, 4.0, 30, 170);
+    GpxPreview fast = datedPreview(domain, user1, 44.0, departure, 30f);
+    RouteSamples samples = RouteSampleLookup.sample(List.of(points), 15_000);
+    CellKey finishCell = samples.samples().getLast().cell();
+
+    planner.planPreview(fast.getId(), Instant.now());
+
+    // 30 km at 30 km/h
+    assertEquals(departure.plus(Duration.ofHours(1)), cell(finishCell).getNearestNeedAt());
+
+    GpxPreview defaulted = datedPreview(domain, user1, 44.0, departure, null);
+    QuarkusTransaction.requiringNew().run(() -> previewRepository.deleteById(fast.getId()));
+    planner.planPreview(defaulted.getId(), Instant.now());
+
+    // 30 km at the 25 km/h default: 72 minutes
+    assertEquals(departure.plus(Duration.ofMinutes(72)), cell(finishCell).getNearestNeedAt());
+  }
+
+  @Test
+  void planPreview_touchesOnlyThatPreview_andNothingOutsideTheWindow() {
+    Instant now = Instant.now().truncatedTo(ChronoUnit.SECONDS);
+    GpxPreview mine = datedPreview(domain, user1, 44.0, now.plus(Duration.ofDays(1)), null);
+    datedPreview(domain, user1, 45.0, now.plus(Duration.ofDays(1)), null);
+    GpxPreview far = datedPreview(domain, user1, 46.0, now.plus(Duration.ofDays(9)), null);
+
+    assertEquals(4, planner.planPreview(mine.getId(), now));
+
+    assertTrue(plannedAround(44.0));
+    assertFalse(plannedAround(45.0));
+    assertEquals(0, planner.planPreview(far.getId(), now));
+    assertFalse(plannedAround(46.0));
+  }
+
+  @Test
+  void requestPreview_withTheWeatherOff_doesNothing_andNeverFails() {
+    Instant now = Instant.now().plus(Duration.ofDays(1));
+    GpxPreview preview = datedPreview(domain, user1, 44.0, now, null);
+
+    planner.requestPreview(preview.getId());
+    planner.requestPreview(-1L);
+
+    assertTrue(cells().isEmpty());
+  }
+
+  @Test
+  void plan_aNewRevision_asksForTheCellsOfTheNewGeometry() {
+    Instant departure = Instant.now().plus(Duration.ofDays(1)).truncatedTo(ChronoUnit.SECONDS);
+    GpxPreview preview = datedPreview(domain, user1, 44.0, departure, null);
+    planner.plan(Instant.now());
+    assertTrue(plannedAround(44.0));
+
+    QuarkusTransaction.requiringNew()
+        .run(
+            () -> {
+              GpxPreview managed = previewRepository.findById(preview.getId());
+              managed.setTracks(
+                  List.of(
+                      new GpxPreview.PreviewTrack(
+                          "t",
+                          WeatherTestFixtures.northbound(49.0, 4.0, 30, 170),
+                          List.of(),
+                          30_000f,
+                          0f,
+                          0f)));
+              managed.setFilesRevision(2L);
+            });
+    planner.plan(Instant.now());
+
+    assertTrue(plannedAround(49.0), "the cells of the new geometry");
   }
 }

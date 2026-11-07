@@ -24,6 +24,7 @@ import type {
   ListMyPreviewsParams,
   MergePreviewsBody,
   PlannerStateResponse,
+  RideWeatherDto,
   RouteDto,
   RouteRequest,
   RouteUploadResponse,
@@ -202,6 +203,12 @@ export const createPreview = (
   const formData = new FormData()
   if (createPreviewBody.gpxFile !== undefined) {
     formData.append(`gpxFile`, createPreviewBody.gpxFile)
+  }
+  if (createPreviewBody.departure !== undefined) {
+    formData.append(`departure`, createPreviewBody.departure)
+  }
+  if (createPreviewBody.averageSpeed !== undefined) {
+    formData.append(`averageSpeed`, createPreviewBody.averageSpeed)
   }
 
   return axiosMutator<GpxPreviewDto>(
@@ -386,6 +393,12 @@ export const mergePreviews = (
   const formData = new FormData()
   if (mergePreviewsBody.gpxFiles !== undefined) {
     mergePreviewsBody.gpxFiles.forEach((value) => formData.append(`gpxFiles`, value))
+  }
+  if (mergePreviewsBody.departure !== undefined) {
+    formData.append(`departure`, mergePreviewsBody.departure)
+  }
+  if (mergePreviewsBody.averageSpeed !== undefined) {
+    formData.append(`averageSpeed`, mergePreviewsBody.averageSpeed)
   }
 
   return axiosMutator<GpxPreviewDto>(
@@ -1119,4 +1132,148 @@ export const useCreateRouteFromPreview = <TError = ErrorType<ErrorResponse>, TCo
   TContext
 > => {
   return useMutation(getCreateRouteFromPreviewMutationOptions(options), queryClient)
+}
+/**
+ * The forecast along the track when the preview has a departure date: at the start, then at each estimated passage (the average speed given, else 25 km/h). Anyone holding the link may read it. Read from the server's cache only — the forecast is refreshed in the background, never on request — and always 200: the state is in status (OUT_OF_RANGE without a date or once it is past). Cache-Control: private, no-cache with an ETag (revalidate with If-None-Match, 304 when unchanged); no-store when status is UNAVAILABLE.
+ * @summary Get the weather of an analysed GPX file
+ */
+export const getPreviewWeather = (
+  previewId: string,
+  options?: SecondParameter<typeof axiosMutator>,
+  signal?: AbortSignal
+) => {
+  return axiosMutator<RideWeatherDto>(
+    { url: `/api/gpx-previews/${previewId}/weather`, method: 'GET', signal },
+    options
+  )
+}
+
+export const getGetPreviewWeatherQueryKey = (previewId: string) => {
+  return [`/api/gpx-previews/${previewId}/weather`] as const
+}
+
+export const getGetPreviewWeatherQueryOptions = <
+  TData = Awaited<ReturnType<typeof getPreviewWeather>>,
+  TError = ErrorType<void | ErrorResponse>,
+>(
+  previewId: string,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getPreviewWeather>>, TError, TData>>
+    request?: SecondParameter<typeof axiosMutator>
+  }
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getGetPreviewWeatherQueryKey(previewId)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getPreviewWeather>>> = ({ signal }) =>
+    getPreviewWeather(previewId, requestOptions, signal)
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: previewId !== null && previewId !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getPreviewWeather>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+}
+
+export type GetPreviewWeatherQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getPreviewWeather>>
+>
+export type GetPreviewWeatherQueryError = ErrorType<void | ErrorResponse>
+
+export function useGetPreviewWeather<
+  TData = Awaited<ReturnType<typeof getPreviewWeather>>,
+  TError = ErrorType<void | ErrorResponse>,
+>(
+  previewId: string,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof getPreviewWeather>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getPreviewWeather>>,
+          TError,
+          Awaited<ReturnType<typeof getPreviewWeather>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof axiosMutator>
+  },
+  queryClient?: QueryClient
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetPreviewWeather<
+  TData = Awaited<ReturnType<typeof getPreviewWeather>>,
+  TError = ErrorType<void | ErrorResponse>,
+>(
+  previewId: string,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getPreviewWeather>>, TError, TData>> &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getPreviewWeather>>,
+          TError,
+          Awaited<ReturnType<typeof getPreviewWeather>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof axiosMutator>
+  },
+  queryClient?: QueryClient
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetPreviewWeather<
+  TData = Awaited<ReturnType<typeof getPreviewWeather>>,
+  TError = ErrorType<void | ErrorResponse>,
+>(
+  previewId: string,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getPreviewWeather>>, TError, TData>>
+    request?: SecondParameter<typeof axiosMutator>
+  },
+  queryClient?: QueryClient
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get the weather of an analysed GPX file
+ */
+
+export function useGetPreviewWeather<
+  TData = Awaited<ReturnType<typeof getPreviewWeather>>,
+  TError = ErrorType<void | ErrorResponse>,
+>(
+  previewId: string,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getPreviewWeather>>, TError, TData>>
+    request?: SecondParameter<typeof axiosMutator>
+  },
+  queryClient?: QueryClient
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getGetPreviewWeatherQueryOptions(previewId, options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+/**
+ * @summary Get the weather of an analysed GPX file
+ */
+export const prefetchGetPreviewWeatherQuery = async <
+  TData = Awaited<ReturnType<typeof getPreviewWeather>>,
+  TError = ErrorType<void | ErrorResponse>,
+>(
+  queryClient: QueryClient,
+  previewId: string,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getPreviewWeather>>, TError, TData>>
+    request?: SecondParameter<typeof axiosMutator>
+  }
+): Promise<QueryClient> => {
+  const queryOptions = getGetPreviewWeatherQueryOptions(previewId, options)
+
+  await queryClient.query(queryOptions).catch(() => {})
+
+  return queryClient
 }

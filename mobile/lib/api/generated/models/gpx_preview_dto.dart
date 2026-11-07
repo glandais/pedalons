@@ -60,6 +60,15 @@ abstract class GpxPreviewDto with _$GpxPreviewDto {
 
     /// Rendered map thumbnail template URL (with a {size} placeholder), used for link previews; null when no thumbnail was generated. Opaque URL: may carry a query string; substitute {size} only.
     String? thumbnailUrl,
+
+    /// Departure instant, when the person gave a date. The wall time at the start of the track is this instant in departureTimezone. Present together with departureTimezone
+    String? departureTime,
+
+    /// IANA time zone of the first point of the track, the one the departure was entered in
+    String? departureTimezone,
+
+    /// Average speed in km/h the person gave, null when none (the weather then assumes 25 km/h)
+    double? averageSpeed,
   }) = _GpxPreviewDto;
 
   factory GpxPreviewDto.fromJson(Map<String, Object?> json) =>

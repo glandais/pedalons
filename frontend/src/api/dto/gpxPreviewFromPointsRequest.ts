@@ -1,3 +1,4 @@
+import type { EventDateTime } from './eventDateTime.ts'
 import type { GeoPoint } from './geoPoint.ts'
 import type { PlannerState } from './plannerState.ts'
 import type { WaypointRequest } from './waypointRequest.ts'
@@ -25,4 +26,12 @@ export interface GpxPreviewFromPointsRequest {
    * @maxItems 500
    */
   waypoints?: WaypointRequest[]
+  /** Departure date and time, a wall time without offset, in the time zone of the first point of the track (not the device's). Present: the weather is computed when it falls within the next 7 days */
+  departure?: EventDateTime
+  /**
+   * Average speed in km/h, 1 to 100, to estimate the passage times of the weather. Without one, 25 km/h is assumed
+   * @minimum 10
+   * @maximum 60
+   */
+  averageSpeed?: number
 }
