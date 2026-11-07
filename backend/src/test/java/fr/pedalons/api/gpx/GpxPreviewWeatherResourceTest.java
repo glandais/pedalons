@@ -46,7 +46,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * {@code GET /api/gpx-previews/{id}/weather} (docs/LEDGER_*.md API-149): who may read it, the state
+ * {@code GET /api/gpx-previews/{id}/weather} (docs/LEDGER_*.md API-153): who may read it, the state
  * it answers in, the speed it assumes, and its caching headers. Like the ride's, the endpoint only
  * reads the cache; the cache-filling tests go through the planner and the worker, the provider
  * mocked.

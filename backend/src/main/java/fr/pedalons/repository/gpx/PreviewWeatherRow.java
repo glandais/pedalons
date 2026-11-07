@@ -5,7 +5,7 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * What the weather needs of a dated GPX preview, without loading the entity and its JSONB columns
- * (docs/LEDGER_*.md API-149).
+ * (docs/LEDGER_*.md API-153).
  *
  * @param filesRevision the track revision, null for the flat layout of the oldest previews
  * @param averageSpeed km/h, null when the person gave none

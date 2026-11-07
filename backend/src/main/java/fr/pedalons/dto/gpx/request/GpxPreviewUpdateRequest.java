@@ -66,7 +66,7 @@ public record GpxPreviewUpdateRequest(
         @Schema(description = "Remove the average speed. Not with averageSpeed (400 BAD_REQUEST)")
         Boolean clearAverageSpeed) {
 
-  /** Without departure date and speed: the shape this record had before API-149. */
+  /** Without departure date and speed: the shape this record had before API-153. */
   public GpxPreviewUpdateRequest(
       String name,
       @Nullable List<GeoPoint> points,

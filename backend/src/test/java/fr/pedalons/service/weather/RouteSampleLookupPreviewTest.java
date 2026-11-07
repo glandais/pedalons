@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Test;
 /**
  * {@link RouteSampleLookup#previewSamples}: the forecast points of a GPX preview are the ones the
  * static sampling gives for its tracks, cached by (preview, files revision) (docs/LEDGER_*.md
- * API-149).
+ * API-153).
  */
 @QuarkusTest
 class RouteSampleLookupPreviewTest extends AbstractResourceTest {

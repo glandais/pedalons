@@ -64,7 +64,7 @@ public record GpxPreviewFromPointsRequest(
         @Max(GpxLimits.MAX_AVERAGE_SPEED_KMH)
         Float averageSpeed) {
 
-  /** Without departure date and speed: the shape this record had before API-149. */
+  /** Without departure date and speed: the shape this record had before API-153. */
   public GpxPreviewFromPointsRequest(
       String name,
       @Nullable List<GeoPoint> points,

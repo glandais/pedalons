@@ -49,7 +49,7 @@ public class RideWeatherService {
   }
 
   /**
-   * The weather of a dated GPX preview (docs/LEDGER_*.md API-149): finished or undated is {@code
+   * The weather of a dated GPX preview (docs/LEDGER_*.md API-153): finished or undated is {@code
    * OUT_OF_RANGE}, otherwise as a ride without group.
    */
   public RideWeather forPreview(PreviewWeatherRow preview) {

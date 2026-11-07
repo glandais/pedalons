@@ -395,7 +395,7 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
     assertEquals(0, worker.processDue(), "nothing left to do");
   }
 
-  /** docs/LEDGER_*.md API-149: the catch-up rewrites the track, never the date nor the speed. */
+  /** docs/LEDGER_*.md API-153: the catch-up rewrites the track, never the date nor the speed. */
   @Test
   void worker_keepsTheDepartureDate_itsZone_andTheSpeed() {
     GpxPreview created =

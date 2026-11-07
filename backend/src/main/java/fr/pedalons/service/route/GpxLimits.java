@@ -132,7 +132,7 @@ public final class GpxLimits {
    * Slowest average speed (km/h) a GPX preview accepts. A real bound and not just {@code @Positive}:
    * the weather derives the passage times from it by dividing, and a speed near zero pushes them
    * past what PostgreSQL stores, which would stop the planner pass for every ride of the platform
-   * (docs/LEDGER_*.md API-149). 10 km/h is a slow ride, not a walk.
+   * (docs/LEDGER_*.md API-153). 10 km/h is a slow ride, not a walk.
    */
   public static final int MIN_AVERAGE_SPEED_KMH = 10;
 

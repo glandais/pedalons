@@ -18,7 +18,7 @@ import java.util.List;
 
 /**
  * The rules of the departure date and the average speed of a GPX preview (docs/LEDGER_*.md
- * API-149): the date is a wall time at the start of the track, resolved to an instant in that
+ * API-153): the date is a wall time at the start of the track, resolved to an instant in that
  * point's zone, and follows the track when it moves to another zone.
  */
 @ApplicationScoped

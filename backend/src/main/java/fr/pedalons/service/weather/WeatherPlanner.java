@@ -28,7 +28,7 @@ import org.jboss.logging.Logger;
  * the read side shows ({@code RideWeatherService#isOutOfRange}: a ride already gone is {@code
  * OUT_OF_RANGE}), so no cell is fetched for a forecast nobody can see:
  * their departure cell and the cell of each forecast point of each group, with the passage nearest
- * to now. The same for the dated GPX previews, as a ride without group (docs/LEDGER_*.md API-149). The same for the trip stages leaving in that window, and the trips without stages: the
+ * to now. The same for the dated GPX previews, as a ride without group (docs/LEDGER_*.md API-153). The same for the trip stages leaving in that window, and the trips without stages: the
  * cell of each forecast point of their leg ({@link TripWeatherPlans}). Each cell is upserted with that demand ({@code WeatherCellRepository#upsertDemand}); the
  * refresh interval follows from it ({@link WeatherRefreshPolicy}). Deterministic in the rides and
  * the clock, so a tick replayed — or run by both backends of a rolling deploy — writes the same
@@ -126,7 +126,7 @@ public class WeatherPlanner {
   }
 
   /**
-   * The cells of one GPX preview, now (docs/LEDGER_*.md API-149). Public for the tests, without the
+   * The cells of one GPX preview, now (docs/LEDGER_*.md API-153). Public for the tests, without the
    * guard of {@link #requestPreview}; 0 when the preview is not dated within the window.
    */
   public int planPreview(long previewId, Instant now) {
