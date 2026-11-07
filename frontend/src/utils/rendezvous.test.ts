@@ -128,6 +128,16 @@ describe('formatPublicationSpan', () => {
     expect(formatPublicationSpan(ride, 'time', 'fr', tFr)).toBe('08:30 → retour vers 14:10')
   })
 
+  it('starts a ride at the registered group’s departure (WEB-135)', () => {
+    const ride = dated({
+      dateTime: '2026-10-11T06:30:00Z',
+      endDateTime: '2026-10-11T12:10:00Z',
+      registeredGroupId: 'b',
+      registeredGroup: { id: 'b', startAt: '2026-10-11T07:00:00Z' },
+    })
+    expect(formatPublicationSpan(ride, 'time', 'fr', tFr)).toBe('09:00 → retour vers 14:10')
+  })
+
   it('falls back to the reader’s zone for a zone this runtime’s Intl does not know', () => {
     const ride = dated({
       timezone: 'Mars/Olympus_Mons',

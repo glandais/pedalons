@@ -67,7 +67,11 @@ class NextRideCard extends ConsumerWidget {
     final PdlColors c = context.pdl;
     final PdlTypography t = context.pdlText;
     final UnitSystem units = ref.watch(unitSystemProvider);
-    final DateTime? at = ride.startsAt;
+    // L'heure qui concerne la personne : celle de son groupe, qui vaut celle
+    // de la sortie quand il part avec elle (docs/LEDGER_*.md MOB-111).
+    final String start = myStartAt(ride.dateTime, group);
+    final DateTime? instant = DateTime.tryParse(start);
+    final String? relative = instant == null ? null : _relativeBadge(instant);
 
     final RideKey key = RideKey(teamSlug: ride.team.slug, rideSlug: ride.slug);
     // Pas `rideRegistrationProvider` : il chargerait le détail de la sortie,
@@ -82,16 +86,16 @@ class NextRideCard extends ConsumerWidget {
         Row(
           children: <Widget>[
             Expanded(child: Text('home.nextRide'.tr(), style: t.sectionTitle)),
-            if (at != null)
+            if (relative != null)
               PdlBadge(
-                // L'instant du contrat, pas l'heure murale de la sortie :
-                // « dans 2 jours » se compte depuis le lecteur.
-                label: AppFormatters.formatRelative(
-                  DateTime.parse(ride.dateTime),
-                ),
-                tone: PdlDerivedTones.registered(c),
+                key: keys.home.nextRideRelativeBadge,
+                label: relative,
+                // Neutre et à l'horloge : le ton et la coche « inscrit »
+                // appartiennent au badge « Inscrit » de la carte
+                // (docs/LEDGER_*.md MOB-110).
+                tone: PdlFamily.gray.soft(c),
                 size: PdlBadgeSize.lg,
-                icon: PdlIcons.check,
+                icon: PdlIcons.time,
               ),
           ],
         ),
@@ -149,7 +153,7 @@ class NextRideCard extends ConsumerWidget {
                       style: t.screenTitle.copyWith(fontSize: 20),
                     ),
                     const SizedBox(height: PdlSpacing.cardTight),
-                    ..._facts(context, c, t, at),
+                    ..._facts(c, t, start, instant),
                     const SizedBox(height: PdlSpacing.cardTight),
                     _stats(units),
                     if (RideWeatherSummaryLine.shows(
@@ -207,37 +211,59 @@ class NextRideCard extends ConsumerWidget {
     ],
   );
 
-  /// Date, groupe et heure de départ, lieu — les trois faits qui décident si
-  /// l'on y va.
+  /// « dans 2 jours », « dans 3 h » — compté depuis le lecteur, sur l'instant
+  /// du contrat. `null` au-delà d'une semaine : `formatRelative` y rendrait la
+  /// date, que le fait « date » de la carte affiche déjà.
+  static String? _relativeBadge(DateTime instant) {
+    final RelativeTime relative = RelativeTime.between(
+      AppFormatters.toDisplayTime(instant.toUtc()),
+      AppFormatters.displayNow(),
+    );
+    if (relative.unit == RelativeUnit.absolute) return null;
+    return AppFormatters.formatRelative(instant.toUtc());
+  }
+
+  /// Date et heure de départ, groupe, lieu — les faits qui décident si l'on y
+  /// va.
+  ///
+  /// L'heure est celle de [start], le départ qui concerne la personne : le fait
+  /// « date » la porte, la mention de fuseau la commente, et le fait « groupe »
+  /// ne dit l'écart à la sortie que lorsqu'il y en a un (docs/LEDGER_*.md
+  /// MOB-110).
   List<Widget> _facts(
-    BuildContext context,
     PdlColors c,
     PdlTypography t,
-    DateTime? at,
+    String start,
+    DateTime? instant,
   ) {
     final RideGroupDto? g = group;
     return <Widget>[
-      if (at != null)
-        _fact(c, t, PdlIcons.date, AppFormatters.formatLongDate(at)),
-      if (g != null)
+      if (instant != null)
         _fact(
           c,
           t,
-          PdlIcons.time,
-          !groupLeavesAtOwnTime(g.startAt, ride.dateTime)
-              ? g.name
-              : 'home.groupDeparture'.tr(
-                  namedArgs: <String, String>{
-                    'group': g.name,
-                    'time': formatGroupStart(g.startAt, ride.timezone),
-                  },
-                ),
+          PdlIcons.date,
+          AppFormatters.formatRideDate(instant.toUtc(), zone: ride.timezone),
+          key: keys.home.nextRideStart,
         ),
       // « heure de Tokyo (ven. 01:00 chez vous) » quand le lecteur est
-      // ailleurs, au départ qui le concerne (docs/LEDGER_*.md API-60).
-      if (ZoneMentionLine.maybe(g?.startAt ?? ride.dateTime, ride.timezone)
-          case final Widget mention)
+      // ailleurs, à l'heure affichée juste au-dessus (docs/LEDGER_*.md API-60).
+      if (ZoneMentionLine.maybe(start, ride.timezone) case final Widget mention)
         Padding(padding: const EdgeInsets.only(bottom: 10), child: mention),
+      if (g != null)
+        _fact(c, t, PdlIcons.people, switch (groupStartRelation(
+          g.startAt,
+          ride.dateTime,
+        )) {
+          GroupStartRelation.same => g.name,
+          final GroupStartRelation relation => 'home.groupOwnStart'.tr(
+            namedArgs: <String, String>{
+              'group': g.name,
+              'relation': relation.labelKey.tr(),
+              'rideTime': formatGroupStart(ride.dateTime, ride.timezone),
+            },
+          ),
+        }, key: keys.home.nextRideGroup),
       if (ride.startPlace != null) ...<Widget>[
         const SizedBox(height: 10),
         PdlPlaceRow(
@@ -249,24 +275,30 @@ class NextRideCard extends ConsumerWidget {
     ];
   }
 
-  Widget _fact(PdlColors c, PdlTypography t, IconData icon, String label) =>
-      Padding(
-        padding: const EdgeInsets.only(bottom: 10),
-        child: Row(
-          children: <Widget>[
-            Icon(icon, size: 16, color: c.textDimmed),
-            const SizedBox(width: 5),
-            Expanded(
-              child: Text(
-                label,
-                style: t.statValue,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
+  Widget _fact(
+    PdlColors c,
+    PdlTypography t,
+    IconData icon,
+    String label, {
+    Key? key,
+  }) => Padding(
+    key: key,
+    padding: const EdgeInsets.only(bottom: 10),
+    child: Row(
+      children: <Widget>[
+        Icon(icon, size: 16, color: c.textDimmed),
+        const SizedBox(width: 5),
+        Expanded(
+          child: Text(
+            label,
+            style: t.statValue,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
-      );
+      ],
+    ),
+  );
 
   /// Distance et dénivelé viennent du **groupe**, pas de la sortie : deux
   /// groupes d'une même sortie ne roulent pas le même parcours.

@@ -13,6 +13,12 @@ class HomeKeys {
   /// « Se désinscrire » sur la carte « Ma prochaine sortie ».
   final nextRideLeaveButton = const _HomeKey('nextRideLeave');
 
+  /// « Ma prochaine sortie » : le badge relatif de l'en-tête, le fait « date et
+  /// heure » et le fait « groupe » de la carte.
+  final nextRideRelativeBadge = const _HomeKey('nextRideRelative');
+  final nextRideStart = const _HomeKey('nextRideStart');
+  final nextRideGroup = const _HomeKey('nextRideGroup');
+
   /// La carte compacte qui remplace le bloc quand rien n'est à venir.
   final noNextRideCard = const _HomeKey('noNextRide');
 

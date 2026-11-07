@@ -214,7 +214,7 @@
     "nextRide": "Ma prochaine sortie",
     "viewRide": "Voir la sortie",
     "explore": "Explorer",
-    "groupDeparture": "{group} — départ {time}",
+    "groupOwnStart": "{group}, départ {relation} de {rideTime}",
     "latestPublications": "Dernières publications",
     "searchPlaceholder": "Rechercher par titre ou description...",
     "scopeAllTeams": "Toutes les équipes",
@@ -418,6 +418,7 @@
         "title": "Sorties à venir",
         "empty": "Aucune sortie n'est prévue pour le moment.",
         "noRoute": "Aucun parcours associé",
+        "groupStart": "départ {time}",
         "registeredCount": {
           "zero": "Aucune inscription",
           "one": "{} inscription",

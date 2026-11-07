@@ -36,7 +36,12 @@ import { useResolvedColorScheme } from '@/hooks/useResolvedColorScheme'
 import { useFormattedDate } from '@/utils/dateFormat'
 import { Rendezvous } from '../common/Rendezvous'
 import { useRendezvousFormat } from '@/hooks/useRendezvousFormat'
-import { groupLeavesAtOwnTime } from '@/utils/groupStart'
+import {
+  groupLeavesAtOwnTime,
+  groupStartRelation,
+  registeredGroupOf,
+  startFor,
+} from '@/utils/groupStart'
 import { RideWeatherSummaryLine } from '../weather/RideWeatherSummaryLine'
 
 interface NextRideCardProps {
@@ -68,8 +73,10 @@ export function NextRideCard({ ride, headingId }: NextRideCardProps) {
   const { connectedServices, uploadRoute, isUploading } = useGpsConnections()
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
 
-  const group =
-    ride.registeredGroup ?? ride.groups?.find((g) => g.id === ride.registeredGroupId) ?? undefined
+  const group = registeredGroupOf(ride)
+  // The departure that concerns the reader is their group's (docs/LEDGER_*.md WEB-135): the date,
+  // the time and the relative badge all read it.
+  const start = startFor(ride, group)
   const rideDistance = group?.distance
   const rideElevation = group?.elevationGain
   const routeSlug = group?.routeSlug ?? ride.routeSlug
@@ -132,7 +139,7 @@ export function NextRideCard({ ride, headingId }: NextRideCardProps) {
           <Group pos="absolute" top={12} left={12} gap={6}>
             <Badge color="gray" variant="white" leftSection={<IconCalendar size={12} />}>
               {/* Read off the clock: server and client may render it a few seconds apart. */}
-              <span suppressHydrationWarning>{formatRelative(ride.dateTime)}</span>
+              <span suppressHydrationWarning>{formatRelative(start)}</span>
             </Badge>
             <Badge color="primary" variant="filled" leftSection={<IconCheck size={12} />}>
               {t('publications.registered')}
@@ -156,17 +163,21 @@ export function NextRideCard({ ride, headingId }: NextRideCardProps) {
 
           <Stack gap={6}>
             <Stat icon={<IconCalendar size={16} />}>
-              <Rendezvous date={ride.dateTime} zone={ride.timezone} variant="detail" />
+              <Rendezvous date={start} zone={ride.timezone} variant="detail" />
             </Stat>
             {ride.startPlace && <Stat icon={<IconMapPin size={16} />}>{ride.startPlace.name}</Stat>}
             <RideWeatherSummaryLine summary={ride.weather} timezone={ride.timezone} />
             <Stat icon={<IconUsers size={16} />}>
               {group
                 ? t('home.nextRide.groupParticipants', {
+                    // The time is the line above; here, only that it is not the ride's.
                     group: groupLeavesAtOwnTime(group.startAt, ride.dateTime)
-                      ? t('home.nextRide.groupAndTime', {
+                      ? t('home.nextRide.groupOwnTime', {
                           group: group.name,
-                          time: departure.formatTime(group.startAt),
+                          relation: t(
+                            `rides.group.stats.${groupStartRelation(group.startAt, ride.dateTime)}`
+                          ),
+                          time: departure.formatTime(ride.dateTime),
                         })
                       : group.name,
                     participants,

@@ -18,7 +18,9 @@ import {
   Text,
   Title,
 } from '@mantine/core'
-import type { RideDto } from '@/api/dto'
+import type { RideDto, RideGroupDto } from '@/api/dto'
+import { ZoneMentionText } from '@/components/common/Rendezvous'
+import { startFor } from '@/utils/groupStart'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { QueryStateBoundary } from '@/components/common/QueryStateBoundary'
 import { DetailPageSkeleton } from '@/components/common/DetailPageSkeleton'
@@ -261,7 +263,7 @@ export function RideGroupPage() {
 
           <Group justify="space-between" wrap="wrap" align="flex-start">
             <Stack gap={4} style={{ minWidth: 0 }}>
-              <RideHeaderLine ride={ride} />
+              <RideHeaderLine ride={ride} group={group} />
               <Group gap="sm" wrap="wrap">
                 <Title order={1} size="h2">
                   {t('rides.group.title', { name: group.name })}
@@ -418,17 +420,26 @@ export function RideGroupPage() {
   )
 }
 
-/** « Sortie du samedi · samedi 10 octobre 2026, départ 08:00 », in the ride's zone. */
-function RideHeaderLine({ ride }: { ride: RideDto }) {
+/**
+ * « Sortie du samedi · samedi 10 octobre 2026, départ 08:30 », in the ride's zone, with its zone
+ * mention. The departure is the group's, which may differ from the ride's (docs/LEDGER_*.md
+ * WEB-134): the same as the « Départ » tile of `GroupStats`.
+ */
+function RideHeaderLine({ ride, group }: { ride: RideDto; group: RideGroupDto }) {
   const { t } = useTranslation()
   const rendezvous = useRendezvousFormat(ride.timezone)
+  const start = startFor(ride, group)
   return (
     <Text size="sm" c="dimmed" suppressHydrationWarning={rendezvous.isGuessedText}>
       {t('rides.group.header', {
         ride: ride.name,
-        date: rendezvous.formatDate(ride.dateTime),
-        time: rendezvous.formatTime(ride.dateTime),
+        date: rendezvous.formatDate(start),
+        time: rendezvous.formatTime(start),
       })}
+      <ZoneMentionText
+        mention={rendezvous.mention(start)}
+        isGuessed={rendezvous.isGuessedTimezone}
+      />
     </Text>
   )
 }

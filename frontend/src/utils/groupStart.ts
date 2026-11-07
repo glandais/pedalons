@@ -31,3 +31,36 @@ export function groupStartRelation(
   if (!groupLeavesAtOwnTime(startAt, rideDateTime)) return 'with'
   return Date.parse(startAt!) < Date.parse(rideDateTime!) ? 'before' : 'after'
 }
+
+interface RideStartSource {
+  dateTime: string
+  registeredGroup?: { startAt?: string | null } | null
+  registeredGroupId?: string | null
+  groups?: ReadonlyArray<{ id: string; startAt?: string | null }> | null
+}
+
+/**
+ * The group the caller joined: `registeredGroup`, which list rows carry although `groups` is empty
+ * there, else the matching entry of `groups`. Undefined when not registered.
+ */
+export function registeredGroupOf<R extends RideStartSource>(
+  ride: R
+): NonNullable<R['registeredGroup']> | NonNullable<R['groups']>[number] | undefined {
+  if (ride.registeredGroup) return ride.registeredGroup as NonNullable<R['registeredGroup']>
+  if (!ride.registeredGroupId) return undefined
+  return ride.groups?.find((g) => g.id === ride.registeredGroupId)
+}
+
+/**
+ * The departure that concerns the reader (docs/LEDGER_*.md WEB-135): their group's `startAt` when
+ * they joined one, else the ride's `dateTime` — read in the ride's zone. `group` defaults to the
+ * caller's registered group; pass `null` to ask for the ride's own departure. An unreadable
+ * `startAt` falls back on the ride. Mobile's `myStartAt` (group_start.dart) is the same rule.
+ */
+export function startFor(
+  ride: RideStartSource,
+  group: { startAt?: string | null } | null | undefined = registeredGroupOf(ride)
+): string {
+  const startAt = group?.startAt
+  return startAt && Number.isFinite(Date.parse(startAt)) ? startAt : ride.dateTime
+}

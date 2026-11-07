@@ -1,4 +1,17 @@
+import '../../../api/generated/export.dart';
 import '../../../core/utils/formatters.dart';
+
+/// L'instant de départ **qui concerne la personne** : celui du groupe qu'elle a
+/// rejoint [joined], sinon celui de la sortie [rideDateTime] — un instant du
+/// contrat, à lire dans le fuseau de la sortie.
+///
+/// La source unique de « mon heure » (docs/LEDGER_*.md MOB-111) : un écran qui
+/// prend `ride.dateTime` alors que le groupe rejoint est connu montre une autre
+/// heure que son voisin dès que ce groupe part plus tôt ou plus tard.
+/// `RideGroupDto.startAt` est toujours renseigné ; `time`, déprécié, n'est
+/// jamais lu.
+String myStartAt(String rideDateTime, RideGroupDto? joined) =>
+    joined?.startAt ?? rideDateTime;
 
 /// Vrai quand un groupe part à une autre heure que sa sortie.
 ///

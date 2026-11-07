@@ -17,6 +17,7 @@ import { useRendezvousFormat } from '@/hooks/useRendezvousFormat'
 import { ZoneMentionIcon } from '@/components/common/Rendezvous'
 import { formatPattern } from '@/utils/dateFormat'
 import { tripEndZone } from '@/utils/rendezvous'
+import { startFor } from '@/utils/groupStart'
 import { isTrip, publicationPath } from './dashboardHelpers'
 import { SendToDeviceMenu } from './SendToDeviceMenu'
 
@@ -51,17 +52,17 @@ function RegisteredBadge() {
 function RideRow({ ride }: { ride: RideDto }) {
   const { t } = useTranslation()
   const { speed } = useUnits()
-  // Rendezvous in the ride's zone, the day box included (docs/LEDGER_*.md API-60). The group's
-  // `startAt` is the ride's departure when it has no time of its own.
+  // Rendezvous in the ride's zone, the day box included (docs/LEDGER_*.md API-60). The departure
+  // is the registered group's, which may not be the ride's (WEB-135).
   const departure = useRendezvousFormat(ride.timezone)
   const group = ride.registeredGroup
   const routeSlug = group?.routeSlug ?? ride.routeSlug
-  const startAt = group?.startAt ?? ride.dateTime
+  const startAt = startFor(ride, group)
 
   return (
     <Paper withBorder radius="md" p="md">
       <Group wrap="wrap" gap="md" align="center">
-        <DayBox date={ride.dateTime} zone={ride.timezone} />
+        <DayBox date={startAt} zone={ride.timezone} />
         <Stack gap={4} style={{ flex: '1 1 220px', minWidth: 0 }}>
           <Group gap="xs" wrap="wrap">
             <Anchor component={PrefetchLink} to={publicationPath(ride)} fw={600} c="inherit">

@@ -14,6 +14,7 @@ import type { RideDto, RideGroupSummaryDto } from '@/api/dto'
 import { useUnits } from '@/hooks/useUnits'
 import { useRendezvousFormat } from '@/hooks/useRendezvousFormat'
 import { ZoneMentionIcon } from '@/components/common/Rendezvous'
+import { groupLeavesAtOwnTime, startFor } from '@/utils/groupStart'
 import { publicationEditPath, publicationPath, rideHasNoRoute } from './dashboardHelpers'
 
 interface UpcomingRideCardProps {
@@ -34,6 +35,9 @@ export function UpcomingRideCard({ ride, canManage }: UpcomingRideCardProps) {
   const departure = useRendezvousFormat(ride.timezone)
   const ridePath = publicationPath(ride)
   const groups = [...ride.groupSummaries].sort((a, b) => a.sortOrder - b.sortOrder)
+  // The departure that concerns the reader (docs/LEDGER_*.md WEB-135): their group's when they
+  // joined one, else the ride's. The group lines are read against it.
+  const start = startFor(ride)
 
   return (
     <Paper withBorder radius="md" p="md" data-testid="dashboard-ride-card">
@@ -58,10 +62,9 @@ export function UpcomingRideCard({ ride, canManage }: UpcomingRideCardProps) {
             {ride.name}
           </Anchor>
           <Text size="sm" c="dimmed" suppressHydrationWarning={departure.isGuessedText}>
-            {departure.formatPattern(ride.dateTime, 'EEE d MMM')} ·{' '}
-            {departure.formatTime(ride.dateTime)}
+            {departure.formatPattern(start, 'EEE d MMM')} · {departure.formatTime(start)}
             <ZoneMentionIcon
-              mention={departure.mention(ride.dateTime)}
+              mention={departure.mention(start)}
               isGuessed={departure.isGuessedTimezone}
             />
           </Text>
@@ -87,7 +90,13 @@ export function UpcomingRideCard({ ride, canManage }: UpcomingRideCardProps) {
         {groups.length > 0 && (
           <Stack gap={8}>
             {groups.map((group) => (
-              <GroupFill key={group.id} group={group} />
+              <GroupFill
+                key={group.id}
+                group={group}
+                timezone={ride.timezone}
+                headerStart={start}
+                mine={ride.registered && group.id === ride.registeredGroupId}
+              />
             ))}
           </Stack>
         )}
@@ -126,21 +135,54 @@ export function UpcomingRideCard({ ride, canManage }: UpcomingRideCardProps) {
   )
 }
 
-/** One group: name, pace, and how full it is — « Complet », « 11 / 16 », or a count when uncapped. */
-function GroupFill({ group }: { group: RideGroupSummaryDto }) {
+/**
+ * One group: a check on the reader's own, name, pace, its departure when it differs from the one
+ * in the card's header (WEB-135; the header carries the zone mention), and how full it is —
+ * « Complet », « 11 / 16 », or a count when uncapped.
+ */
+function GroupFill({
+  group,
+  timezone,
+  headerStart,
+  mine,
+}: {
+  group: RideGroupSummaryDto
+  timezone: string
+  /** The departure the card's header gives: the reader's group's, else the ride's. */
+  headerStart: string
+  /** Whether the reader joined this group. */
+  mine: boolean
+}) {
   const { t } = useTranslation()
   const { speed } = useUnits()
+  const departure = useRendezvousFormat(timezone)
   const max = group.maxParticipants
+  const ownTime = groupLeavesAtOwnTime(group.startAt, headerStart)
 
   return (
     <Stack gap={2}>
       <Group justify="space-between" gap="xs" wrap="nowrap">
         <Text size="sm" fw={500} truncate>
+          {mine ? (
+            <IconCheck
+              size={14}
+              aria-label={t('publications.registered')}
+              role="img"
+              color="var(--mantine-color-primary-filled)"
+              style={{ verticalAlign: 'middle', marginInlineEnd: 4 }}
+            />
+          ) : null}
           {group.name}
           {group.averageSpeed ? (
             <Text span size="sm" c="dimmed">
               {' '}
               {speed(group.averageSpeed)}
+            </Text>
+          ) : null}
+          {ownTime ? (
+            <Text span size="sm" c="dimmed" suppressHydrationWarning={departure.isGuessedText}>
+              {' · '}
+              {t('teams.dashboard.ride.groupStart', { time: departure.formatTime(group.startAt) })}
             </Text>
           ) : null}
         </Text>

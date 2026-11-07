@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { useEffectiveTimezone } from '@/utils/dateFormat'
-import { formatPublicationSpan, type DatedPublication } from '@/utils/publicationTiming'
+import { formatPublicationSpan, spanStart, type DatedPublication } from '@/utils/publicationTiming'
 import { rendezvousMention } from '@/utils/rendezvous'
 import { isSupportedZone } from '@/utils/zoneLabel'
 import { ZoneMentionIcon } from '@/components/common/Rendezvous'
@@ -15,7 +15,8 @@ interface PublicationTimeSpanProps {
 }
 
 /**
- * When a ride or a trip starts and ends, from `dateTime` and the stored `endDateTime` (API-85). A
+ * When a ride or a trip starts and ends, from `dateTime` — the registered group's departure for a ride (WEB-135) — and the stored
+ * `endDateTime` (API-85). A
  * ride reads « 08:30 → retour vers 14:10 » — « vers », the end being an estimate from its
  * groups' distance and pace; a trip, which spans days, « ven. 16 → dim. 18 oct. ». A ride back
  * on another day names that day.
@@ -28,7 +29,7 @@ export function PublicationTimeSpan({ publication, mode = 'full' }: PublicationT
   const { timezone: readerZone, isGuessed, isPlaceholder } = useEffectiveTimezone()
   const text = formatPublicationSpan(publication, mode, i18n.language, t, readerZone)
   const mention = rendezvousMention(
-    publication.dateTime,
+    spanStart(publication),
     publication.timezone,
     isPlaceholder ? null : readerZone,
     i18n.language,

@@ -232,6 +232,19 @@ describe('RideGroupPage (WEB-77)', () => {
     expect(plain(document.body.textContent)).toContain('après la sortie')
   })
 
+  it('gives the group’s departure in the header line, not the ride’s (WEB-134)', () => {
+    state.ride = ride({ groups: [group({ startAt: '2026-10-08T07:10:00Z' }), cool()] })
+    renderPage()
+    const text = plain(document.body.textContent)
+    expect(text).toContain('départ 07:10')
+    expect(text).not.toContain('départ 06:40')
+  })
+
+  it('gives the ride’s departure in the header line when the group leaves with it', () => {
+    renderPage()
+    expect(plain(document.body.textContent)).toContain('départ 06:40')
+  })
+
   it('renders no leader when the group has none — never the ride creator', () => {
     state.ride = ride({
       createdBy: { id: 'u9', displayName: 'Créatrice de la sortie' },

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { groupLeavesAtOwnTime, groupStartRelation } from './groupStart'
+import { groupLeavesAtOwnTime, groupStartRelation, startFor } from './groupStart'
 
 // docs/LEDGER_*.md API-60: instants, not strings nor the deprecated `time`.
 describe('groupLeavesAtOwnTime', () => {
@@ -27,5 +27,38 @@ describe('groupStartRelation', () => {
   it('reads an unreadable value as leaving with the ride', () => {
     expect(groupStartRelation(undefined, '2026-10-11T06:00:00Z')).toBe('with')
     expect(groupStartRelation('not a date', '2026-10-11T06:00:00Z')).toBe('with')
+  })
+})
+
+describe('startFor', () => {
+  const ride = { dateTime: '2026-10-11T06:00:00Z' }
+
+  it('is the ride’s departure when the group leaves with it', () => {
+    const group = { id: 'g', startAt: '2026-10-11T08:00:00+02:00' }
+    expect(Date.parse(startFor({ ...ride, registeredGroup: group }))).toBe(
+      Date.parse(ride.dateTime)
+    )
+  })
+
+  it('is the group’s departure when it leaves at its own time', () => {
+    const group = { id: 'g', startAt: '2026-10-11T06:30:00Z' }
+    expect(startFor({ ...ride, registeredGroup: group })).toBe('2026-10-11T06:30:00Z')
+    expect(startFor(ride, group)).toBe('2026-10-11T06:30:00Z')
+  })
+
+  it('finds the registered group among the groups when the row does not carry it', () => {
+    const groups = [
+      { id: 'a', startAt: '2026-10-11T06:00:00Z' },
+      { id: 'b', startAt: '2026-10-11T07:00:00Z' },
+    ]
+    expect(startFor({ ...ride, groups, registeredGroupId: 'b' })).toBe('2026-10-11T07:00:00Z')
+  })
+
+  it('is the ride’s departure without a group, or with an unreadable one', () => {
+    expect(startFor(ride)).toBe(ride.dateTime)
+    expect(startFor({ ...ride, registeredGroup: { startAt: '2026-10-11T07:00:00Z' } }, null)).toBe(
+      ride.dateTime
+    )
+    expect(startFor(ride, { startAt: 'not a date' })).toBe(ride.dateTime)
   })
 })

@@ -98,7 +98,14 @@ class _MyUpcomingRowState extends ConsumerState<_MyUpcomingRow> {
     final PublicationDto p = widget.publication;
     // Le jour d'un rendez-vous, dans le fuseau de son entité
     // (docs/LEDGER_*.md API-60).
-    final DateTime? at = AppFormatters.tryParseZoneTime(p.dateTime, p.timezone);
+    // Pour une sortie, le jour du départ qui concerne la personne : celui de
+    // son groupe (docs/LEDGER_*.md MOB-111).
+    final DateTime? at = AppFormatters.tryParseZoneTime(
+      p is PublicationDtoRide
+          ? myStartAt(p.dateTime, p.registeredGroup)
+          : p.dateTime,
+      p.timezone,
+    );
 
     final (
       String path,
@@ -242,7 +249,7 @@ class _MyUpcomingRowState extends ConsumerState<_MyUpcomingRow> {
     // Le départ du groupe rejoint — qui vaut celui de la sortie quand il n'a
     // pas d'heure propre —, dans le fuseau de la sortie (docs/LEDGER_*.md
     // API-60), et la mention quand le lecteur est ailleurs.
-    final String start = group?.startAt ?? ride.dateTime;
+    final String start = myStartAt(ride.dateTime, group);
     final DateTime? instant = DateTime.tryParse(start);
     final String? mention = instant == null
         ? null
@@ -471,7 +478,14 @@ class DashboardRideCard extends ConsumerWidget {
     final PdlTypography t = context.pdlText;
     final UnitSystem units = ref.watch(unitSystemProvider);
     final bool registered = _registered(ref, ride.id, ride.registered);
-    final DateTime? at = DateTime.tryParse(ride.dateTime);
+    // Le départ du groupe rejoint quand il est connu, sinon celui de la
+    // sortie (docs/LEDGER_*.md MOB-111). Une désinscription faite depuis le
+    // chargement l'emporte sur le groupe de la ligne.
+    final String start = myStartAt(
+      ride.dateTime,
+      registered ? ride.registeredGroup : null,
+    );
+    final DateTime? at = DateTime.tryParse(start);
     final List<RideGroupSummaryDto> groups =
         <RideGroupSummaryDto>[...ride.groupSummaries]..sort(
           (RideGroupSummaryDto a, RideGroupSummaryDto b) =>
@@ -518,7 +532,7 @@ class DashboardRideCard extends ConsumerWidget {
               AppFormatters.formatRideDate(at, zone: ride.timezone),
               style: t.sub,
             ),
-            ?ZoneMentionLine.maybe(ride.dateTime, ride.timezone),
+            ?ZoneMentionLine.maybe(start, ride.timezone),
           ],
           const SizedBox(height: PdlSpacing.chipGap),
           PdlStatRow(
@@ -551,7 +565,12 @@ class DashboardRideCard extends ConsumerWidget {
           if (groups.isNotEmpty) ...<Widget>[
             const SizedBox(height: PdlSpacing.chipGap),
             for (final RideGroupSummaryDto g in groups)
-              _GroupFill(group: g, units: units),
+              _GroupFill(
+                group: g,
+                units: units,
+                timezone: ride.timezone,
+                headerStart: start,
+              ),
           ],
           if (!routed) ...<Widget>[
             const SizedBox(height: PdlSpacing.badgeGap),
@@ -607,12 +626,24 @@ class DashboardRideCard extends ConsumerWidget {
   }
 }
 
-/// « Groupe B   26 km/h   ▬▬▬▬▬──   11 / 16 », ou « Complet ».
+/// « Groupe B · 26 km/h · départ 08:30   ▬▬▬▬▬──   11 / 16 », ou « Complet ».
+///
+/// L'heure du groupe n'est dite que lorsqu'elle diffère de celle de l'en-tête
+/// de la carte [headerStart] — le départ du groupe rejoint, sinon celui de la
+/// sortie —, qui porte seul la mention de fuseau (docs/LEDGER_*.md MOB-111,
+/// pendant web `WEB-135`).
 class _GroupFill extends StatelessWidget {
-  const _GroupFill({required this.group, required this.units});
+  const _GroupFill({
+    required this.group,
+    required this.units,
+    required this.timezone,
+    required this.headerStart,
+  });
 
   final RideGroupSummaryDto group;
   final UnitSystem units;
+  final String timezone;
+  final String headerStart;
 
   @override
   Widget build(BuildContext context) {
@@ -624,10 +655,17 @@ class _GroupFill extends StatelessWidget {
             group.countParticipants,
           )
         : '${group.countParticipants} / $max';
-    final String name = group.averageSpeed == null
-        ? group.name
-        : '${group.name} · '
-              '${AppFormatters.formatSpeed(group.averageSpeed!, units)}';
+    final String name = <String>[
+      group.name,
+      if (group.averageSpeed != null)
+        AppFormatters.formatSpeed(group.averageSpeed!, units),
+      if (groupLeavesAtOwnTime(group.startAt, headerStart))
+        'teams.dashboard.upcomingRides.groupStart'.tr(
+          namedArgs: <String, String>{
+            'time': formatGroupStart(group.startAt, timezone),
+          },
+        ),
+    ].join(' · ');
     // Une seule annonce pour la ligne : le groupe, son remplissage en toutes
     // lettres, et « Complet » le cas échéant — plutôt que la barre et le
     // texte « 11 / 16 » lus chacun pour soi, sans dire de quel groupe.

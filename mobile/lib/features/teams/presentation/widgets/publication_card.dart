@@ -15,6 +15,7 @@ import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/deleted_badge.dart';
 import '../../../posts/domain/post_neighbours.dart';
+import '../../../rides/domain/group_start.dart';
 import '../../../rides/presentation/widgets/ride_weather_summary_line.dart';
 import '../../../rides/providers/participation_changes.dart';
 import '../../../tags/presentation/content_tags.dart';
@@ -281,9 +282,25 @@ class _RideBody extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final PdlColors c = context.pdl;
-    // L'instant du contrat : la plage et la date se lisent dans le fuseau de
-    // la sortie, la mention se calcule au départ (docs/LEDGER_*.md API-60).
-    final DateTime? at = DateTime.tryParse(ride.dateTime);
+    // Une inscription faite dans l'app depuis le chargement du fil l'emporte
+    // sur la page chargée avant elle.
+    final bool registered =
+        ref.watch(
+          registrationOverridesProvider.select(
+            (Map<String, bool> m) => m[ride.id],
+          ),
+        ) ??
+        ride.registered;
+    // Le départ qui concerne la personne : celui de son groupe quand elle est
+    // inscrite et que la ligne le porte, sinon celui de la sortie
+    // (docs/LEDGER_*.md MOB-111). L'instant du contrat : la plage et la date
+    // se lisent dans le fuseau de la sortie, la mention se calcule au départ
+    // affiché (docs/LEDGER_*.md API-60).
+    final String start = myStartAt(
+      ride.dateTime,
+      registered ? ride.registeredGroup : null,
+    );
+    final DateTime? at = DateTime.tryParse(start);
     final String? mention = at == null
         ? null
         : AppFormatters.formatZoneMention(at, ride.timezone);
@@ -296,19 +313,10 @@ class _RideBody extends ConsumerWidget {
       status: ride.status,
     );
     final String? span = rideTimeSpan(
-      ride.dateTime,
+      start,
       ride.endDateTime,
       timezone: ride.timezone,
     );
-    // Une inscription faite dans l'app depuis le chargement du fil l'emporte
-    // sur la page chargée avant elle.
-    final bool registered =
-        ref.watch(
-          registrationOverridesProvider.select(
-            (Map<String, bool> m) => m[ride.id],
-          ),
-        ) ??
-        ride.registered;
 
     return _CardShell(
       onTap: () => context.push(Paths.ride(ride.team.slug, ride.slug)),

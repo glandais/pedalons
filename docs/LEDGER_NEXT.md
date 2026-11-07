@@ -95,19 +95,6 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
 Audit de la visibilité de la date et de l'heure de départ (sortie, groupe, voyage, étape) sur les
 trois clients ; la règle commune est `BRAND-8`, le pendant web `WEB-134` à `WEB-138`.
 
-- [ ] `MOB-110` **Accueil : « Ma prochaine sortie » n'affiche aucune heure dans le cas courant (S)** —
-      `features/home/presentation/widgets/next_ride_card.dart:215-236` : le fait « date » est
-      `formatLongDate` (sans heure) et le fait « horloge » n'est que le nom du groupe quand le
-      groupe part avec la sortie, rien quand il n'y a pas de groupe. La `ZoneMentionLine` peut alors
-      dire « (01:00 chez vous) » d'une heure jamais montrée. Le badge relatif en tête prend le ton et
-      l'icône « inscrit », et se confond avec le badge « Inscrit » juste en dessous (l.186) ; au-delà
-      de 7 jours il répète la date. Afficher l'heure qui concerne la personne (`MOB-111`).
-- [ ] `MOB-111` **« L'heure qui me concerne » n'a pas de source unique (S)** — seul le tableau de bord
-      (`dashboard_rides.dart`, « Mes prochaines ») prend `group?.startAt ?? ride.dateTime` ;
-      l'accueil et l'agenda du calendrier (`agenda_card.dart`) partent de `ride.dateTime`, si bien
-      qu'une personne inscrite dans un groupe qui part plus tard voit deux heures selon l'écran.
-      Centraliser le choix dans `features/rides/domain/group_start.dart` et l'appliquer partout. Même
-      règle côté web (`WEB-135`), notifications (`NOTIF-13`) et iCal (`API-155`).
 - [ ] `MOB-112` **Détail de sortie et page de groupe : l'heure est le texte le plus discret (M)** —
       `ride_detail_page.dart:517-548` : la date est en `statBigValue` (et passe sur deux lignes dans
       sa demi-colonne), l'heure en dessous en `t.xs` 12/400 atténué (l.545), sans relatif
@@ -504,17 +491,6 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
 
 Pendant web de `MOB-110` à `MOB-115` ; la règle commune est `BRAND-8`.
 
-- [ ] `WEB-134` **Page de groupe : l'en-tête donne l'heure de la sortie, pas celle du groupe (XS)** —
-      `pages/ride/RideGroupPage.tsx:401-412` (`RideHeaderLine`) formate `ride.dateTime` : quand le
-      groupe part à une autre heure, il contredit la tuile « Départ » de `GroupStats` plus bas. La
-      ligne est aussi en `sm dimmed`, sans icône ni mention de fuseau. Utiliser `group.startAt`.
-- [ ] `WEB-135` **« L'heure qui me concerne » n'a pas de source unique (S)** — seul
-      `MyUpcomingList.tsx:64` prend `group?.startAt ?? ride.dateTime`. `NextRideCard.tsx:158-173`
-      met en avant l'heure de la sortie et relègue celle du groupe dans la ligne des personnes ;
-      `UpcomingRideCard.tsx:130-160` (`GroupFill`) n'affiche aucune heure de groupe, alors que
-      `RideGroupSummaryDto.startAt` est là ; `RideGroupCard.tsx:210-218` ne la montre que si elle
-      diffère. Ajouter le helper à `utils/groupStart.ts` et l'appliquer. Même règle sur mobile
-      (`MOB-111`).
 - [ ] `WEB-136` **Détail de sortie et de voyage : la date vient après toute la description (S)** —
       `RideDetailPage.tsx` rend `<MediaDisplay>` (l.394, texte, images, pièces jointes) avant la
       ligne de date (l.400), en `sm dimmed` : sous la ligne de flottaison dès qu'il y a une
@@ -661,6 +637,12 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
       que `startPlaceName` est calculé. À trancher en même temps : les étapes sont en journée entière
       (l.418, `PublicationIcsService.java:81`, choix d'`API-90`), donc sans heure de départ dans
       l'agenda.
+      Même source pour le calendrier JSON : `CalendarEventDto` ne porte que `start`
+      (`CalendarService.toCalendarEvent`, l'heure de la sortie) et `groupName`, sans heure de groupe,
+      si bien que `WeekAgenda` et `CalendarView` (web), `agenda_card.dart` et « Cette semaine »
+      (mobile) montrent encore l'heure de la sortie à une personne inscrite dans un groupe qui part
+      plus tard — laissé ouvert par `WEB-135` et `MOB-111`. Mettre l'heure du groupe dans `start`
+      pour une personne inscrite, ou ajouter `groupStartAt`.
 - [ ] `API-156` **Contrat : `RideDto.dateTime` décrit comme « Publication date/time »** —
       `RideDto.java:77` ; c'est l'heure de départ (`publishAt` est la publication). Corriger la
       description, bump de patch. Taille : XS.

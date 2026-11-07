@@ -6,7 +6,7 @@ import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { DayBox } from '@/components/common/DayBox'
 import { Stat, StatusBadge, TypeBadge, VisibilityBadge } from '@/components/card/common'
 import { publicationPath } from '@/components/team/dashboard/dashboardHelpers'
-import { isUnderWay, type DatedPublication } from '@/utils/publicationTiming'
+import { isUnderWay, spanStart, type DatedPublication } from '@/utils/publicationTiming'
 import { InProgressBadge } from './InProgressBadge'
 import { PublicationTimeSpan } from './PublicationTimeSpan'
 
@@ -29,7 +29,7 @@ export function AgendaRow({ publication, actions }: AgendaRowProps) {
   return (
     <Paper withBorder radius="md" p="sm" data-testid="agenda-row">
       <Group wrap="nowrap" gap="md" align="center">
-        <DayBox date={publication.dateTime} zone={publication.timezone} />
+        <DayBox date={spanStart(publication)} zone={publication.timezone} />
         <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
           <Group gap="xs" wrap="wrap">
             <Anchor component={PrefetchLink} to={path} fw={600} c="inherit" lineClamp={1}>

@@ -1,11 +1,21 @@
 import type { PublicationDto, RideDto, TripDto } from '@/api/dto'
 import type { TFunction } from 'i18next'
 import { formatDateTime, formatPattern, formatTime } from './dateFormat'
+import { startFor } from './groupStart'
 import { tripEndZone } from './rendezvous'
 import { supportedZone } from './zoneLabel'
 
 /** A ride or a trip: the publications that have a start and an end (API-85). */
 export type DatedPublication = RideDto | TripDto
+
+/**
+ * Where a ride's or a trip's span starts for the reader: a ride's, at their registered group's
+ * departure when they joined one (docs/LEDGER_*.md WEB-135 — list rows carry `registeredGroup`),
+ * else the publication's `dateTime`.
+ */
+export function spanStart(publication: DatedPublication): string {
+  return publication.type === 'RIDE' ? startFor(publication) : publication.dateTime
+}
 
 export function isDated(publication: PublicationDto): publication is DatedPublication {
   return publication.type === 'RIDE' || publication.type === 'TRIP'
@@ -44,7 +54,7 @@ export function formatPublicationSpan(
 ): string {
   const startZone = supportedZone(publication.timezone) || fallbackZone
   const endZone = publication.type === 'TRIP' ? tripEndZone(publication) || fallbackZone : startZone
-  const start = publication.dateTime
+  const start = spanStart(publication)
   const end = publication.endDateTime
   const inStart = (pattern: string) => formatPattern(start, pattern, language, startZone)
   const inEnd = (pattern: string) => formatPattern(end, pattern, language, endZone)
