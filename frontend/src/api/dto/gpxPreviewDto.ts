@@ -37,4 +37,10 @@ export interface GpxPreviewDto {
   tracks: TrackDto[]
   /** Waypoints */
   waypoints: WaypointDto[]
+  /** Departure instant, when the person gave a date. The wall time at the start of the track is this instant in departureTimezone. Present together with departureTimezone */
+  departureTime?: Instant
+  /** IANA time zone of the first point of the track, the one the departure was entered in */
+  departureTimezone?: string
+  /** Average speed in km/h the person gave, null when none (the weather then assumes 25 km/h) */
+  averageSpeed?: number
 }

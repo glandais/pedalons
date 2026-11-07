@@ -14,6 +14,7 @@ import '../models/gpx_preview_from_points_request.dart';
 import '../models/gpx_preview_list_response.dart';
 import '../models/gpx_preview_update_request.dart';
 import '../models/planner_state_response.dart';
+import '../models/ride_weather_dto.dart';
 import '../models/route_dto.dart';
 import '../models/route_request.dart';
 import '../models/route_upload_response.dart';
@@ -42,10 +43,16 @@ abstract class GpxPreviewsClient {
   /// Uploads a GPX file, runs the elevation and climb pipeline, and stores the result under an unguessable identifier for 30 days.
   ///
   /// [gpxFile] - Name not received - field will be skipped.
+  ///
+  /// [departure] - Name not received - field will be skipped.
+  ///
+  /// [averageSpeed] - Name not received - field will be skipped.
   @MultiPart()
   @POST('/api/gpx-previews')
   Future<GpxPreviewDto> createPreview({
     @Part(name: 'gpxFile') MultipartFile? gpxFile,
+    @Part(name: 'departure') String? departure,
+    @Part(name: 'averageSpeed') String? averageSpeed,
   });
 
   /// Create an analysed GPX file from planner points.
@@ -63,10 +70,16 @@ abstract class GpxPreviewsClient {
   /// Uploads 2 to 10 GPX files (10 MB together at most) and merges all their tracks into a single track, choosing the order of the tracks and the direction each one is ridden in so that the summed straight-line gaps between them are as short as possible. The result then runs the same pipeline as a single upload and is stored the same way, for 30 days.
   ///
   /// [gpxFiles] - Name not received - field will be skipped.
+  ///
+  /// [departure] - Name not received - field will be skipped.
+  ///
+  /// [averageSpeed] - Name not received - field will be skipped.
   @MultiPart()
   @POST('/api/gpx-previews/merge')
   Future<GpxPreviewDto> mergePreviews({
     @Part(name: 'gpxFiles') List<MultipartFile>? gpxFiles,
+    @Part(name: 'departure') String? departure,
+    @Part(name: 'averageSpeed') String? averageSpeed,
   });
 
   /// Update an analysed GPX file.
@@ -143,5 +156,15 @@ abstract class GpxPreviewsClient {
     @Path('previewId') required String previewId,
     @Path('teamSlug') required String teamSlug,
     @Body() required RouteRequest body,
+  });
+
+  /// Get the weather of an analysed GPX file.
+  ///
+  /// The forecast along the track when the preview has a departure date: at the start, then at each estimated passage (the average speed given, else 25 km/h). Anyone holding the link may read it. Read from the server's cache only — the forecast is refreshed in the background, never on request — and always 200: the state is in status (OUT_OF_RANGE without a date or once it is past). Cache-Control: private, no-cache with an ETag (revalidate with If-None-Match, 304 when unchanged); no-store when status is UNAVAILABLE.
+  ///
+  /// [previewId] - Public preview identifier.
+  @GET('/api/gpx-previews/{previewId}/weather')
+  Future<RideWeatherDto> getPreviewWeather({
+    @Path('previewId') required String previewId,
   });
 }

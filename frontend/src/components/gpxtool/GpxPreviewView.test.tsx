@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { MantineProvider } from '@mantine/core'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { routeWeather } from '@/test/weatherFixtures'
 import { TrackSurface, TrackSurfaceState, type GpxPreviewDto, type TrackDto } from '@/api/dto'
 
 vi.mock('react-i18next', async (importOriginal) => {
@@ -14,6 +15,7 @@ vi.mock('react-i18next', async (importOriginal) => {
 })
 
 const state = vi.hoisted(() => ({ isAuthenticated: false }))
+const weatherState = vi.hoisted(() => ({ data: undefined as unknown }))
 const teamsState = vi.hoisted(() => ({
   teams: [] as { slug: string; name: string; enableRoutes: boolean; enableRoutePlanner: boolean }[],
 }))
@@ -34,6 +36,12 @@ vi.mock('@/api/endpoints/teams/teams', () => ({
 vi.mock('@/api/endpoints/gpx-previews/gpx-previews', () => ({
   createRouteFromPreview: vi.fn(),
   useDeletePreview: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useGetPreviewWeather: () => ({
+    data: weatherState.data,
+    isLoading: false,
+    isFetching: false,
+    refetch: vi.fn(),
+  }),
 }))
 vi.mock('@/components/route/RouteMapView', () => ({
   RouteMapView: () => <div data-testid="route-map" />,
@@ -74,6 +82,7 @@ describe('GpxPreviewView', () => {
   beforeEach(() => {
     state.isAuthenticated = false
     teamsState.teams = []
+    weatherState.data = undefined
   })
   afterEach(cleanup)
 
@@ -148,5 +157,47 @@ describe('GpxPreviewView', () => {
         .getByRole('option', { name: 'Équipe fermée', hidden: true })
         .hasAttribute('data-combobox-disabled')
     ).toBe(true)
+  })
+
+  describe('departure', () => {
+    const dated: GpxPreviewDto = {
+      ...preview,
+      departureTime: '2026-10-18T06:30:00Z',
+      departureTimezone: 'Europe/Paris',
+    }
+
+    it('says when the track leaves, in the zone of its start, with the speed if there is one', () => {
+      renderView({ ...dated, averageSpeed: 27 })
+      expect(screen.getByText(/Départ : /).textContent).toContain('08:30')
+      expect(screen.getByText(/Vitesse moyenne : 27/)).toBeTruthy()
+    })
+
+    it('shows no speed that was not given', () => {
+      renderView(dated)
+      expect(screen.getByText(/Départ : /)).toBeTruthy()
+      expect(screen.queryByText(/Vitesse moyenne/)).toBeNull()
+    })
+
+    it('offers the owner, and only them, to add a date', () => {
+      renderView({ ...preview, owned: true })
+      expect(screen.getByText('Ajouter une date de départ pour voir la météo')).toBeTruthy()
+      cleanup()
+      renderView()
+      expect(screen.queryByText('Ajouter une date de départ pour voir la météo')).toBeNull()
+      expect(screen.queryByText(/Départ : /)).toBeNull()
+    })
+
+    it('shows the weather of the track, and offers the wind colouring with a forecast', () => {
+      weatherState.data = { ...routeWeather, legs: routeWeather.legs.slice(0, 1) }
+      renderView(dated)
+      expect(screen.getByRole('heading', { name: 'Météo du parcours' })).toBeTruthy()
+      expect(screen.getByRole('radio', { name: /Météo/ })).toBeTruthy()
+    })
+
+    it('has no weather block and no wind mode without a date', () => {
+      renderView()
+      expect(screen.queryByRole('heading', { name: 'Météo du parcours' })).toBeNull()
+      expect(screen.queryByRole('radio', { name: /Météo/ })).toBeNull()
+    })
   })
 })

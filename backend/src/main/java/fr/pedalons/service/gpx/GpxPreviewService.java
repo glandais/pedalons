@@ -1,6 +1,8 @@
 package fr.pedalons.service.gpx;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.pedalons.common.GeoPoint;
+import fr.pedalons.common.exception.BadRequestException;
 import fr.pedalons.common.exception.BusinessException;
 import fr.pedalons.common.exception.ForbiddenException;
 import fr.pedalons.common.exception.NotFoundException;
@@ -17,6 +19,7 @@ import fr.pedalons.domain.user.User;
 import fr.pedalons.dto.common.PedalonsPage;
 import fr.pedalons.dto.error.ErrorCode;
 import fr.pedalons.dto.gps.response.RouteUploadResponse;
+import fr.pedalons.dto.gpx.request.PreviewDepartureEdit;
 import fr.pedalons.dto.gpx.response.GpxPreviewDto;
 import fr.pedalons.dto.gpx.response.GpxPreviewListResponse;
 import fr.pedalons.dto.gpx.response.GpxPreviewSummaryDto;
@@ -24,16 +27,22 @@ import fr.pedalons.dto.routes.request.RouteRequest;
 import fr.pedalons.dto.routes.request.WaypointRequest;
 import fr.pedalons.dto.routes.response.PlannerStateResponse;
 import fr.pedalons.dto.routes.response.RouteDto;
+import fr.pedalons.dto.weather.response.RideWeatherAnswer;
+import fr.pedalons.dto.weather.response.RideWeatherDto;
+import fr.pedalons.dto.weather.response.WeatherAttributionDto;
 import fr.pedalons.enums.ActionType;
 import fr.pedalons.enums.ElevationQuality;
 import fr.pedalons.enums.ElevationState;
 import fr.pedalons.enums.EntityType;
 import fr.pedalons.enums.GpsServiceType;
+import fr.pedalons.enums.WeatherStatus;
 import fr.pedalons.infrastructure.gps.RouteMeta;
 import fr.pedalons.infrastructure.gpx.CoursePoint;
 import fr.pedalons.infrastructure.imgproxy.ImgProxyService;
+import fr.pedalons.infrastructure.openmeteo.OpenMeteoGateway;
 import fr.pedalons.infrastructure.storage.StorageService;
 import fr.pedalons.repository.gpx.GpxPreviewRepository;
+import fr.pedalons.repository.gpx.PreviewWeatherRow;
 import fr.pedalons.service.asset.AssetService;
 import fr.pedalons.service.elevation.ElevationRefreshService;
 import fr.pedalons.service.gps.GpsService;
@@ -58,6 +67,9 @@ import fr.pedalons.service.surface.SurfaceRefreshService;
 import fr.pedalons.service.surface.TrackSurfaceReadout;
 import fr.pedalons.service.team.TeamService;
 import fr.pedalons.service.thumbnail.ThumbnailService;
+import fr.pedalons.service.weather.RideWeatherService;
+import fr.pedalons.service.weather.WeatherEtag;
+import fr.pedalons.service.weather.WeatherPlanner;
 import io.github.glandais.engine.gpx.GpxDocument;
 import io.hypersistence.tsid.TSID;
 import io.quarkus.narayana.jta.QuarkusTransaction;
@@ -151,6 +163,14 @@ public class GpxPreviewService {
 
   @Inject SurfaceRefreshService surfaceRefreshService;
 
+  @Inject PreviewDepartures previewDepartures;
+
+  @Inject WeatherPlanner weatherPlanner;
+
+  @Inject RideWeatherService rideWeatherService;
+
+  @Inject ObjectMapper objectMapper;
+
   /**
    * Parses and analyses an uploaded GPX file, stores it, and returns the persisted preview.
    *
@@ -198,6 +218,22 @@ public class GpxPreviewService {
       boolean drawn,
       @Nullable PlannerState state,
       WaypointPlan plan) {
+    return create(gpx, fallbackName, drawn, state, plan, PreviewDepartureEdit.KEEP);
+  }
+
+  /**
+   * As {@link #create(GpxDocument, String, boolean, PlannerState, WaypointPlan)}, also taking the
+   * departure date and average speed (docs/LEDGER_*.md API-149). Dated, the weather cells it needs
+   * are asked for once the row is committed, so the forecast does not wait for the next planner
+   * pass.
+   */
+  public GpxPreview create(
+      GpxDocument gpx,
+      String fallbackName,
+      boolean drawn,
+      @Nullable PlannerState state,
+      WaypointPlan plan,
+      PreviewDepartureEdit edit) {
     User creator = pedalonsContext.getUser();
     Domain domain = pedalonsContext.getDomain();
     UUID publicId = UUID.randomUUID();
@@ -240,6 +276,7 @@ public class GpxPreviewService {
     preview.setDrawn(drawn);
     preview.setFilesRevision(revision);
     preview.setElevationState(stateOf(quality));
+    previewDepartures.apply(preview, edit);
     if (state != null) {
       preview.setPlannerState(new PlannerStateDocument(revision, state));
     }
@@ -263,13 +300,30 @@ public class GpxPreviewService {
       throw e;
     }
     LOG.infov("Created GPX preview {0}", publicId);
+    if (preview.getDepartureAt() != null) {
+      weatherPlanner.requestPreview(preview.getId());
+    }
     return preview;
   }
 
   /** Analyses an uploaded GPX file. Entry point for the API layer. */
   @Logged
   public GpxPreviewDto createPreview(Path gpxPath, String fallbackName) {
-    return toDtoJustSaved(create(gpxPath, fallbackName));
+    return createPreview(gpxPath, fallbackName, PreviewDepartureEdit.KEEP);
+  }
+
+  /** As {@link #createPreview(Path, String)}, with a departure date and average speed. */
+  @Logged
+  public GpxPreviewDto createPreview(
+      Path gpxPath, String fallbackName, PreviewDepartureEdit departure) {
+    return toDtoJustSaved(
+        create(
+            gpxProcessingService.parseGpx(gpxPath),
+            fallbackName,
+            false,
+            null,
+            WaypointPlan.FROM_DOCUMENT,
+            departure));
   }
 
   /**
@@ -286,6 +340,13 @@ public class GpxPreviewService {
    */
   @Logged
   public GpxPreviewDto createMergedPreview(List<Path> gpxPaths, List<@Nullable String> fileNames) {
+    return createMergedPreview(gpxPaths, fileNames, PreviewDepartureEdit.KEEP);
+  }
+
+  /** As {@link #createMergedPreview(List, List)}, with a departure date and average speed. */
+  @Logged
+  public GpxPreviewDto createMergedPreview(
+      List<Path> gpxPaths, List<@Nullable String> fileNames, PreviewDepartureEdit departure) {
     if (gpxPaths.size() < GpxLimits.MIN_MERGE_FILES
         || gpxPaths.size() > GpxLimits.MAX_MERGE_FILES) {
       throw new BusinessException(ErrorCode.GPX_MERGE_FILE_COUNT);
@@ -300,7 +361,7 @@ public class GpxPreviewService {
     String name = truncateName(String.join(" + ", names));
     GpxDocument merged = GpxTrackMerger.merge(docs, name);
     GpxLimits.checkTracks(merged);
-    return toDtoJustSaved(create(merged, name));
+    return toDtoJustSaved(create(merged, name, false, null, WaypointPlan.FROM_DOCUMENT, departure));
   }
 
   /** A client-side file name without its {@code .gpx} extension, or "GPX" when there is none. */
@@ -344,6 +405,18 @@ public class GpxPreviewService {
       @Nullable List<GeoPoint> points,
       @Nullable PlannerState plannerState,
       @Nullable List<WaypointRequest> waypoints) {
+    return createPreviewFromPoints(
+        name, points, plannerState, waypoints, PreviewDepartureEdit.KEEP);
+  }
+
+  /** As above, with a departure date and average speed (docs/LEDGER_*.md API-149). */
+  @Logged
+  public GpxPreviewDto createPreviewFromPoints(
+      String name,
+      @Nullable List<GeoPoint> points,
+      @Nullable PlannerState plannerState,
+      @Nullable List<WaypointRequest> waypoints,
+      PreviewDepartureEdit departure) {
     boolean hasPoints = points != null && !points.isEmpty();
     if (hasPoints && plannerState != null) {
       throw new BusinessException(ErrorCode.PLANNER_STATE_INVALID);
@@ -358,11 +431,11 @@ public class GpxPreviewService {
             : new WaypointPlan(WaypointDrafts.fromRequest(waypoints, List.of(), null), false);
     if (plannerState == null) {
       return toDtoJustSaved(
-          create(gpxProcessingService.fromPoints(name, points), name, true, null, plan));
+          create(gpxProcessingService.fromPoints(name, points), name, true, null, plan, departure));
     }
     GpxDocument gpx =
         gpxProcessingService.fromPoints(name, plannerStates.validateAndDerive(plannerState));
-    return toDtoJustSaved(create(gpx, name, plannerState.drawn(), plannerState, plan));
+    return toDtoJustSaved(create(gpx, name, plannerState.drawn(), plannerState, plan, departure));
   }
 
   /**
@@ -429,9 +502,32 @@ public class GpxPreviewService {
       @Nullable List<GeoPoint> points,
       @Nullable PlannerState plannerState,
       @Nullable List<WaypointRequest> waypoints) {
+    return updatePreview(
+        publicId, name, gpxPath, points, plannerState, waypoints, PreviewDepartureEdit.KEEP);
+  }
+
+  /**
+   * As above, also taking what the save says of the departure date and the average speed
+   * (docs/LEDGER_*.md API-149). Each is kept when left out; a date follows the track when it moves
+   * to another zone, keeping its local time. A value together with its removal is a 400. Once
+   * saved, a dated preview asks for its weather cells right away, hence a speed change too: it
+   * moves the passages.
+   */
+  @Logged
+  public GpxPreviewDto updatePreview(
+      String publicId,
+      String name,
+      @Nullable Path gpxPath,
+      @Nullable List<GeoPoint> points,
+      @Nullable PlannerState plannerState,
+      @Nullable List<WaypointRequest> waypoints,
+      PreviewDepartureEdit edit) {
     GpxPreview preview = getByPublicId(publicId);
     if (!preview.getCreatedBy().getId().equals(pedalonsContext.getUserId())) {
       throw new ForbiddenException();
+    }
+    if (edit.isContradictory()) {
+      throw new BadRequestException(ErrorCode.BAD_REQUEST);
     }
     UUID pid = preview.getPublicId();
     boolean hasPoints = points != null && !points.isEmpty();
@@ -459,19 +555,23 @@ public class GpxPreviewService {
 
     Long previewId = preview.getId();
     if (gpx == null && waypoints != null) {
-      return replaceWaypointsOnly(publicId, previewId, name, waypoints);
+      return withForecastRequested(
+          previewId, replaceWaypointsOnly(publicId, previewId, name, waypoints, edit));
     }
     if (gpx == null) {
       // Rename only: nothing to recompute, no request, no new revision. The row is locked first,
       // or this flush of every column could undo the switch of a catch-up committing meanwhile.
-      return QuarkusTransaction.requiringNew()
-          .call(
-              () -> {
-                lockForUpdate(previewId);
-                GpxPreview managed = getByPublicId(publicId);
-                managed.setName(truncateName(name));
-                return toDto(managed, surfaceRefreshService.readPreview(managed));
-              });
+      return withForecastRequested(
+          previewId,
+          QuarkusTransaction.requiringNew()
+              .call(
+                  () -> {
+                    lockForUpdate(previewId);
+                    GpxPreview managed = getByPublicId(publicId);
+                    managed.setName(truncateName(name));
+                    previewDepartures.apply(managed, edit);
+                    return toDto(managed, surfaceRefreshService.readPreview(managed));
+                  }));
     }
 
     // Outside the heavy work: a malformed list is a 400 with nothing uploaded
@@ -500,42 +600,60 @@ public class GpxPreviewService {
     boolean newDrawn = drawn;
     PlannerState stateToStore = newState;
 
-    return QuarkusTransaction.requiringNew()
-        .call(
-            () -> {
-              // Whatever happens below, the new revision must not outlive a rollback
-              deleteTrackFilesUnlessCommitted(pid, revision);
-              lockForUpdate(previewId);
-              GpxPreview managed = getByPublicId(publicId);
-              // Read under the lock: a catch-up may have switched revisions since the load above
-              Long previous = managed.getFilesRevision();
-              managed.setName(truncateName(name));
-              managed.setFilesRevision(revision);
-              managed.setElevationState(stateOf(quality));
-              managed.setDistance(metadata.distance());
-              managed.setElevationGain(metadata.elevationGain());
-              managed.setElevationLoss(metadata.elevationLoss());
-              managed.setHilliness(metadata.hilliness());
-              managed.setTracks(tracks);
-              managed.setWaypoints(PreviewWaypoints.legacy(placed));
-              managed.setWaypointDetails(new PreviewWaypointsDocument(revision, placed));
-              managed.setHasThumbnail(hasThumbnail);
-              managed.setDrawn(newDrawn);
-              // Written or cleared with the track it describes, never left over a new one
-              managed.setPlannerState(
-                  stateToStore == null ? null : new PlannerStateDocument(revision, stateToStore));
-              // The surface of the old track left with it (WEB-100, C1b)
-              managed.setSurfaces(null);
-              if (quality == ElevationQuality.FAST || surfaceRefreshService.isEnabled()) {
-                gpxPreviewRepository.flush();
-              }
-              if (quality == ElevationQuality.FAST) {
-                elevationRefreshService.requestPreview(previewId, revision);
-              }
-              surfaceRefreshService.requestPreview(previewId, revision);
-              deleteTrackFilesAfterCommit(pid, previous);
-              return toDto(managed, surfaceRefreshService.pendingReadouts(tracks.size()));
-            });
+    return withForecastRequested(
+        previewId,
+        QuarkusTransaction.requiringNew()
+            .call(
+                () -> {
+                  // Whatever happens below, the new revision must not outlive a rollback
+                  deleteTrackFilesUnlessCommitted(pid, revision);
+                  lockForUpdate(previewId);
+                  GpxPreview managed = getByPublicId(publicId);
+                  // Read under the lock: a catch-up may have switched revisions since the load
+                  // above
+                  Long previous = managed.getFilesRevision();
+                  managed.setName(truncateName(name));
+                  managed.setFilesRevision(revision);
+                  managed.setElevationState(stateOf(quality));
+                  managed.setDistance(metadata.distance());
+                  managed.setElevationGain(metadata.elevationGain());
+                  managed.setElevationLoss(metadata.elevationLoss());
+                  managed.setHilliness(metadata.hilliness());
+                  managed.setTracks(tracks);
+                  // After the tracks: the zone of the date is the one of the new start
+                  previewDepartures.apply(managed, edit);
+                  managed.setWaypoints(PreviewWaypoints.legacy(placed));
+                  managed.setWaypointDetails(new PreviewWaypointsDocument(revision, placed));
+                  managed.setHasThumbnail(hasThumbnail);
+                  managed.setDrawn(newDrawn);
+                  // Written or cleared with the track it describes, never left over a new one
+                  managed.setPlannerState(
+                      stateToStore == null
+                          ? null
+                          : new PlannerStateDocument(revision, stateToStore));
+                  // The surface of the old track left with it (WEB-100, C1b)
+                  managed.setSurfaces(null);
+                  if (quality == ElevationQuality.FAST || surfaceRefreshService.isEnabled()) {
+                    gpxPreviewRepository.flush();
+                  }
+                  if (quality == ElevationQuality.FAST) {
+                    elevationRefreshService.requestPreview(previewId, revision);
+                  }
+                  surfaceRefreshService.requestPreview(previewId, revision);
+                  deleteTrackFilesAfterCommit(pid, previous);
+                  return toDto(managed, surfaceRefreshService.pendingReadouts(tracks.size()));
+                }));
+  }
+
+  /**
+   * Once a save has committed: a dated preview asks for its weather cells now. Runs after the
+   * transaction, no lock held; never fails.
+   */
+  private GpxPreviewDto withForecastRequested(Long previewId, GpxPreviewDto saved) {
+    if (saved.departureTime() != null) {
+      weatherPlanner.requestPreview(previewId);
+    }
+    return saved;
   }
 
   /**
@@ -565,13 +683,18 @@ public class GpxPreviewService {
    * commit fails the files are one save ahead of the row: harmless, the next save rewrites them.
    */
   private GpxPreviewDto replaceWaypointsOnly(
-      String publicId, Long previewId, String name, List<WaypointRequest> requested) {
+      String publicId,
+      Long previewId,
+      String name,
+      List<WaypointRequest> requested,
+      PreviewDepartureEdit edit) {
     return QuarkusTransaction.requiringNew()
         .call(
             () -> {
               lockForUpdate(previewId);
               GpxPreview managed = getByPublicId(publicId);
               managed.setName(truncateName(name));
+              previewDepartures.apply(managed, edit);
               List<PreviewWaypointDetail> current = managed.readableWaypoints();
               List<AnchoredWaypoint> anchored =
                   WaypointAnchoring.anchor(
@@ -617,6 +740,28 @@ public class GpxPreviewService {
   public GpxPreviewDto getPreview(String publicId) {
     GpxPreview preview = getByPublicId(publicId);
     return toDto(preview, surfaceRefreshService.readPreview(preview));
+  }
+
+  /**
+   * The weather of a dated preview, read from the cache only (docs/LEDGER_*.md API-149): never a
+   * call to the provider, never a write. Open to whoever holds the link, like {@link
+   * #getPreview}; an unknown or malformed identifier, or one of another domain, is a 404. Same
+   * answer as a ride's, with one leg and no group.
+   */
+  @Public
+  public RideWeatherAnswer getWeather(String publicId) {
+    PreviewWeatherRow row =
+        gpxPreviewRepository
+            .findWeatherRow(pedalonsContext.getDomainId(), parseUuid(publicId))
+            .orElseThrow(() -> new NotFoundException(ErrorCode.GPX_NOT_FOUND));
+    RideWeatherDto body =
+        RideWeatherDto.from(
+            rideWeatherService.forPreview(row),
+            new WeatherAttributionDto(
+                OpenMeteoGateway.ATTRIBUTION_NAME, OpenMeteoGateway.ATTRIBUTION_URL));
+    return new RideWeatherAnswer(
+        body,
+        body.status() == WeatherStatus.UNAVAILABLE ? null : WeatherEtag.of(objectMapper, body));
   }
 
   /**

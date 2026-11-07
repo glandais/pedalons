@@ -10,12 +10,13 @@ import { useWeatherLabels } from './useWeatherLabels'
 import { WeatherStaleBadge } from './WeatherStaleBadge'
 
 /** Who rides at the default speed, which only changes how that is said. */
-export type WindLegendSubject = 'group' | 'stage' | 'trip'
+export type WindLegendSubject = 'group' | 'stage' | 'trip' | 'track'
 
 const SPEED_DEFAULT_KEYS = {
   group: 'rides.weather.leg.speedDefault',
   stage: 'trips.weather.speedDefault',
   trip: 'trips.weather.map.speedDefault',
+  track: 'gpxTools.weather.mapSpeedDefault',
 } as const satisfies Record<WindLegendSubject, string>
 
 interface WindMapLegendProps {

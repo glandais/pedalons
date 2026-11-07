@@ -4,6 +4,7 @@ import fr.pedalons.domain.place.Place;
 import fr.pedalons.domain.ride.Ride;
 import fr.pedalons.domain.ride.RideGroup;
 import fr.pedalons.domain.route.Route;
+import fr.pedalons.repository.gpx.PreviewWeatherRow;
 import fr.pedalons.repository.route.GpxTrackRepository;
 import fr.pedalons.service.weather.RideWeatherCalculator.LegInput;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -15,6 +16,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import org.geolatte.geom.G2D;
 import org.geolatte.geom.Point;
@@ -73,6 +75,30 @@ public class RideWeatherPlans {
     public CellKey cell() {
       return CellKey.of(lat, lon);
     }
+  }
+
+  /**
+   * A dated GPX preview as a plan, the type the planner and the read already exploit: one leg
+   * without group, from its departure instant, at its average speed (else the default one). The
+   * only place the speed of a preview is read, so the planner and the read agree on every passage.
+   * {@code rideId} carries the preview id, which neither of them reads.
+   */
+  public RidePlan plan(PreviewWeatherRow preview) {
+    RouteSamples samples = routeSampleLookup.previewSamples(preview.id(), preview.revision());
+    RouteSamples usable = samples.isEmpty() ? null : samples;
+    Departure departure =
+        usable == null
+            ? null
+            : new Departure(usable.samples().getFirst().lat(), usable.samples().getFirst().lon());
+    Instant start = Objects.requireNonNull(preview.departureAt());
+    LegInput leg =
+        new LegInput(null, start, RideWeatherCalculator.speed(preview.averageSpeed()), usable);
+    return new RidePlan(preview.id(), start, departure, List.of(leg));
+  }
+
+  /** The plans of several dated previews. */
+  public List<RidePlan> previewPlans(Collection<PreviewWeatherRow> previews) {
+    return previews.stream().map(this::plan).toList();
   }
 
   public RidePlan plan(Ride ride) {

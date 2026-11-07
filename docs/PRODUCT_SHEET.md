@@ -48,6 +48,7 @@
 | Advanced filtering | By distance, elevation, terrain |
 | FIT export | Download for cycling computers |
 | Thumbnail generation | Auto-generated previews |
+| GPX track departure and weather | In the GPX tools, a departure date and time (local to the track's start point) and an optional average speed give the forecast along the track, up to 7 days ahead |
 
 ### Multi-Day Trips
 

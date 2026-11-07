@@ -23,7 +23,9 @@ mixin _$GpxPreviewSummaryDto {
  double get elevationGain;/// Total elevation loss in meters
  double get elevationLoss;/// Elevation gain per kilometer
  double get hilliness;/// Creation timestamp
- String get createdAt;
+ String get createdAt;/// Departure instant, when the person gave a date. The wall time at the start of the track is this instant in departureTimezone. Present together with departureTimezone
+ String? get departureTime;/// IANA time zone of the first point of the track, the one the departure was entered in
+ String? get departureTimezone;
 /// Create a copy of GpxPreviewSummaryDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -37,20 +39,20 @@ $GpxPreviewSummaryDtoCopyWith<GpxPreviewSummaryDto> get copyWith => _$GpxPreview
 @override
 bool operator ==(Object other) {
   final _this = this as GpxPreviewSummaryDto;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is GpxPreviewSummaryDto&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.distance, _this.distance) || other.distance == _this.distance)&&(identical(other.elevationGain, _this.elevationGain) || other.elevationGain == _this.elevationGain)&&(identical(other.elevationLoss, _this.elevationLoss) || other.elevationLoss == _this.elevationLoss)&&(identical(other.hilliness, _this.hilliness) || other.hilliness == _this.hilliness)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is GpxPreviewSummaryDto&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.distance, _this.distance) || other.distance == _this.distance)&&(identical(other.elevationGain, _this.elevationGain) || other.elevationGain == _this.elevationGain)&&(identical(other.elevationLoss, _this.elevationLoss) || other.elevationLoss == _this.elevationLoss)&&(identical(other.hilliness, _this.hilliness) || other.hilliness == _this.hilliness)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt)&&(identical(other.departureTime, _this.departureTime) || other.departureTime == _this.departureTime)&&(identical(other.departureTimezone, _this.departureTimezone) || other.departureTimezone == _this.departureTimezone));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as GpxPreviewSummaryDto;
-  return Object.hash(runtimeType,_this.id,_this.name,_this.distance,_this.elevationGain,_this.elevationLoss,_this.hilliness,_this.createdAt);
+  return Object.hash(runtimeType,_this.id,_this.name,_this.distance,_this.elevationGain,_this.elevationLoss,_this.hilliness,_this.createdAt,_this.departureTime,_this.departureTimezone);
 }
 
 @override
 String toString() {
   final _this = this as GpxPreviewSummaryDto;
-  return 'GpxPreviewSummaryDto(id: ${_this.id}, name: ${_this.name}, distance: ${_this.distance}, elevationGain: ${_this.elevationGain}, elevationLoss: ${_this.elevationLoss}, hilliness: ${_this.hilliness}, createdAt: ${_this.createdAt})';
+  return 'GpxPreviewSummaryDto(id: ${_this.id}, name: ${_this.name}, distance: ${_this.distance}, elevationGain: ${_this.elevationGain}, elevationLoss: ${_this.elevationLoss}, hilliness: ${_this.hilliness}, createdAt: ${_this.createdAt}, departureTime: ${_this.departureTime}, departureTimezone: ${_this.departureTimezone})';
 }
 
 
@@ -61,7 +63,7 @@ abstract mixin class $GpxPreviewSummaryDtoCopyWith<$Res>  {
   factory $GpxPreviewSummaryDtoCopyWith(GpxPreviewSummaryDto value, $Res Function(GpxPreviewSummaryDto) _then) = _$GpxPreviewSummaryDtoCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, double distance, double elevationGain, double elevationLoss, double hilliness, String createdAt
+ String id, String name, double distance, double elevationGain, double elevationLoss, double hilliness, String createdAt, String? departureTime, String? departureTimezone
 });
 
 
@@ -78,7 +80,7 @@ class _$GpxPreviewSummaryDtoCopyWithImpl<$Res>
 
 /// Create a copy of GpxPreviewSummaryDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? distance = null,Object? elevationGain = null,Object? elevationLoss = null,Object? hilliness = null,Object? createdAt = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? distance = null,Object? elevationGain = null,Object? elevationLoss = null,Object? hilliness = null,Object? createdAt = null,Object? departureTime = freezed,Object? departureTimezone = freezed,}) {
   return _then(GpxPreviewSummaryDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -87,7 +89,9 @@ as double,elevationGain: null == elevationGain ? _self.elevationGain : elevation
 as double,elevationLoss: null == elevationLoss ? _self.elevationLoss : elevationLoss // ignore: cast_nullable_to_non_nullable
 as double,hilliness: null == hilliness ? _self.hilliness : hilliness // ignore: cast_nullable_to_non_nullable
 as double,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
-as String,
+as String,departureTime: freezed == departureTime ? _self.departureTime : departureTime // ignore: cast_nullable_to_non_nullable
+as String?,departureTimezone: freezed == departureTimezone ? _self.departureTimezone : departureTimezone // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
@@ -172,10 +176,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  double distance,  double elevationGain,  double elevationLoss,  double hilliness,  String createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  double distance,  double elevationGain,  double elevationLoss,  double hilliness,  String createdAt,  String? departureTime,  String? departureTimezone)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _GpxPreviewSummaryDto() when $default != null:
-return $default(_that.id,_that.name,_that.distance,_that.elevationGain,_that.elevationLoss,_that.hilliness,_that.createdAt);case _:
+return $default(_that.id,_that.name,_that.distance,_that.elevationGain,_that.elevationLoss,_that.hilliness,_that.createdAt,_that.departureTime,_that.departureTimezone);case _:
   return orElse();
 
 }
@@ -193,10 +197,10 @@ return $default(_that.id,_that.name,_that.distance,_that.elevationGain,_that.ele
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  double distance,  double elevationGain,  double elevationLoss,  double hilliness,  String createdAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  double distance,  double elevationGain,  double elevationLoss,  double hilliness,  String createdAt,  String? departureTime,  String? departureTimezone)  $default,) {final _that = this;
 switch (_that) {
 case _GpxPreviewSummaryDto():
-return $default(_that.id,_that.name,_that.distance,_that.elevationGain,_that.elevationLoss,_that.hilliness,_that.createdAt);case _:
+return $default(_that.id,_that.name,_that.distance,_that.elevationGain,_that.elevationLoss,_that.hilliness,_that.createdAt,_that.departureTime,_that.departureTimezone);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -213,10 +217,10 @@ return $default(_that.id,_that.name,_that.distance,_that.elevationGain,_that.ele
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  double distance,  double elevationGain,  double elevationLoss,  double hilliness,  String createdAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  double distance,  double elevationGain,  double elevationLoss,  double hilliness,  String createdAt,  String? departureTime,  String? departureTimezone)?  $default,) {final _that = this;
 switch (_that) {
 case _GpxPreviewSummaryDto() when $default != null:
-return $default(_that.id,_that.name,_that.distance,_that.elevationGain,_that.elevationLoss,_that.hilliness,_that.createdAt);case _:
+return $default(_that.id,_that.name,_that.distance,_that.elevationGain,_that.elevationLoss,_that.hilliness,_that.createdAt,_that.departureTime,_that.departureTimezone);case _:
   return null;
 
 }
@@ -228,7 +232,7 @@ return $default(_that.id,_that.name,_that.distance,_that.elevationGain,_that.ele
 @JsonSerializable()
 
 class _GpxPreviewSummaryDto implements GpxPreviewSummaryDto {
-  const _GpxPreviewSummaryDto({required this.id, required this.name, required this.distance, required this.elevationGain, required this.elevationLoss, required this.hilliness, required this.createdAt});
+  const _GpxPreviewSummaryDto({required this.id, required this.name, required this.distance, required this.elevationGain, required this.elevationLoss, required this.hilliness, required this.createdAt, this.departureTime, this.departureTimezone});
   factory _GpxPreviewSummaryDto.fromJson(Map<String, dynamic> json) => _$GpxPreviewSummaryDtoFromJson(json);
 
 /// Public identifier used in URLs
@@ -245,6 +249,10 @@ class _GpxPreviewSummaryDto implements GpxPreviewSummaryDto {
 @override final  double hilliness;
 /// Creation timestamp
 @override final  String createdAt;
+/// Departure instant, when the person gave a date. The wall time at the start of the track is this instant in departureTimezone. Present together with departureTimezone
+@override final  String? departureTime;
+/// IANA time zone of the first point of the track, the one the departure was entered in
+@override final  String? departureTimezone;
 
 /// Create a copy of GpxPreviewSummaryDto
 /// with the given fields replaced by the non-null parameter values.
@@ -259,18 +267,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _GpxPreviewSummaryDto&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.distance, distance) || other.distance == distance)&&(identical(other.elevationGain, elevationGain) || other.elevationGain == elevationGain)&&(identical(other.elevationLoss, elevationLoss) || other.elevationLoss == elevationLoss)&&(identical(other.hilliness, hilliness) || other.hilliness == hilliness)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _GpxPreviewSummaryDto&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.distance, distance) || other.distance == distance)&&(identical(other.elevationGain, elevationGain) || other.elevationGain == elevationGain)&&(identical(other.elevationLoss, elevationLoss) || other.elevationLoss == elevationLoss)&&(identical(other.hilliness, hilliness) || other.hilliness == hilliness)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.departureTime, departureTime) || other.departureTime == departureTime)&&(identical(other.departureTimezone, departureTimezone) || other.departureTimezone == departureTimezone));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,id,name,distance,elevationGain,elevationLoss,hilliness,createdAt);
+    return Object.hash(runtimeType,id,name,distance,elevationGain,elevationLoss,hilliness,createdAt,departureTime,departureTimezone);
 }
 
 @override
 String toString() {
-    return 'GpxPreviewSummaryDto(id: $id, name: $name, distance: $distance, elevationGain: $elevationGain, elevationLoss: $elevationLoss, hilliness: $hilliness, createdAt: $createdAt)';
+    return 'GpxPreviewSummaryDto(id: $id, name: $name, distance: $distance, elevationGain: $elevationGain, elevationLoss: $elevationLoss, hilliness: $hilliness, createdAt: $createdAt, departureTime: $departureTime, departureTimezone: $departureTimezone)';
 }
 
 
@@ -281,7 +289,7 @@ abstract mixin class _$GpxPreviewSummaryDtoCopyWith<$Res> implements $GpxPreview
   factory _$GpxPreviewSummaryDtoCopyWith(_GpxPreviewSummaryDto value, $Res Function(_GpxPreviewSummaryDto) _then) = __$GpxPreviewSummaryDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, double distance, double elevationGain, double elevationLoss, double hilliness, String createdAt
+ String id, String name, double distance, double elevationGain, double elevationLoss, double hilliness, String createdAt, String? departureTime, String? departureTimezone
 });
 
 
@@ -298,7 +306,7 @@ class __$GpxPreviewSummaryDtoCopyWithImpl<$Res>
 
 /// Create a copy of GpxPreviewSummaryDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? distance = null,Object? elevationGain = null,Object? elevationLoss = null,Object? hilliness = null,Object? createdAt = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? distance = null,Object? elevationGain = null,Object? elevationLoss = null,Object? hilliness = null,Object? createdAt = null,Object? departureTime = freezed,Object? departureTimezone = freezed,}) {
   return _then(_GpxPreviewSummaryDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -307,7 +315,9 @@ as double,elevationGain: null == elevationGain ? _self.elevationGain : elevation
 as double,elevationLoss: null == elevationLoss ? _self.elevationLoss : elevationLoss // ignore: cast_nullable_to_non_nullable
 as double,hilliness: null == hilliness ? _self.hilliness : hilliness // ignore: cast_nullable_to_non_nullable
 as double,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
-as String,
+as String,departureTime: freezed == departureTime ? _self.departureTime : departureTime // ignore: cast_nullable_to_non_nullable
+as String?,departureTimezone: freezed == departureTimezone ? _self.departureTimezone : departureTimezone // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

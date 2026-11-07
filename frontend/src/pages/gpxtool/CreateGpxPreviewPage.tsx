@@ -11,6 +11,8 @@ import {
   useUpdatePreview,
 } from '@/api/endpoints/gpx-previews/gpx-previews'
 import { GpxPreviewEditor } from '@/components/gpxtool/GpxPreviewEditor'
+import { departureFormFields, departureJsonFields } from '@/components/gpxtool/departure'
+import type { DepartureChange } from '@/components/gpxtool/departure'
 import { paths } from '@/config/paths'
 import { isGpxPlannerEnabled } from '@/config/appConfig'
 
@@ -32,10 +34,14 @@ export function CreateGpxPreviewPage() {
     name: string,
     track?: { points?: GeoPoint[]; plannerState?: PlannerState },
     gpxFile?: File,
-    waypoints?: WaypointRequest[]
+    waypoints?: WaypointRequest[],
+    departure: DepartureChange = {}
   ) => {
     if (gpxFile) {
-      const created = await createFromFileMutation.mutateAsync({ data: { gpxFile } })
+      const created = await createFromFileMutation.mutateAsync({
+        data: { gpxFile, ...departureFormFields(departure) },
+      })
+      // The date and the speed ride the upload itself, not the rename that may follow.
       // The upload names the preview after the file: the name typed in the form wins
       // (the two calls are not atomic: if the rename fails the preview exists, so go to it
       // rather than leave the form open for a submit that would create a second one). The route
@@ -63,7 +69,15 @@ export function CreateGpxPreviewPage() {
     if (!track?.plannerState && (!track?.points || track.points.length < 2)) return
 
     const preview = await createMutation.mutateAsync(
-      { data: { name, points: track.points, plannerState: track.plannerState, waypoints } },
+      {
+        data: {
+          name,
+          points: track.points,
+          plannerState: track.plannerState,
+          waypoints,
+          ...departureJsonFields(departure),
+        },
+      },
       {
         onSuccess: () => {
           // Refresh "my files": the key prefix matches every paginated variant.

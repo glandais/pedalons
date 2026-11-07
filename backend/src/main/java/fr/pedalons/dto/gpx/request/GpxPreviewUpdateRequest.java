@@ -2,10 +2,13 @@ package fr.pedalons.dto.gpx.request;
 
 import fr.pedalons.common.GeoPoint;
 import fr.pedalons.common.planner.PlannerState;
+import fr.pedalons.dto.common.EventDateTime;
 import fr.pedalons.dto.routes.request.WaypointRequest;
 import fr.pedalons.dto.validation.ValidateSchema;
 import fr.pedalons.service.route.GpxLimits;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.util.List;
@@ -38,7 +41,39 @@ public record GpxPreviewUpdateRequest(
                 "The complete list of the waypoints, replacing them. Omitted: they stay as they"
                     + " are (placed again when the track changes)")
         @Size(max = GpxLimits.MAX_WAYPOINTS)
-        List<@Valid WaypointRequest> waypoints) {
+        List<@Valid WaypointRequest> waypoints,
+    @Nullable
+        @Schema(
+            description =
+                "Departure date and time, a wall time without offset, in the time zone of the first"
+                    + " point of the track (not the device's). Omitted: kept (it follows the track"
+                    + " if that moves to another zone). Present: the weather is computed when it"
+                    + " falls within the next 7 days")
+        EventDateTime departure,
+    @Nullable
+        @Schema(description = "Remove the departure date. Not with departure (400 BAD_REQUEST)")
+        Boolean clearDeparture,
+    @Nullable
+        @Schema(
+            description =
+                "Average speed in km/h, 1 to 100, to estimate the passage times of the weather."
+                    + " Omitted: kept. Without one, 25 km/h is assumed",
+            examples = "25")
+        @Min(GpxLimits.MIN_AVERAGE_SPEED_KMH)
+        @Max(GpxLimits.MAX_AVERAGE_SPEED_KMH)
+        Float averageSpeed,
+    @Nullable
+        @Schema(description = "Remove the average speed. Not with averageSpeed (400 BAD_REQUEST)")
+        Boolean clearAverageSpeed) {
+
+  /** Without departure date and speed: the shape this record had before API-149. */
+  public GpxPreviewUpdateRequest(
+      String name,
+      @Nullable List<GeoPoint> points,
+      @Nullable PlannerState plannerState,
+      @Nullable List<WaypointRequest> waypoints) {
+    this(name, points, plannerState, waypoints, null, null, null, null);
+  }
 
   /** Without waypoints: the shape this record had before WEB-100 (C3c). */
   public GpxPreviewUpdateRequest(

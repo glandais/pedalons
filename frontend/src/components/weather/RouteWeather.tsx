@@ -58,6 +58,8 @@ interface RouteWeatherProps {
   selection?: RouteWeatherSelection
   /** Every new selection — a column, a phase, the slider —, controlled or not. */
   onSelectionChange?: (selection: RouteWeatherSelection) => void
+  /** Whose speed the passages assume when it is the default: a group's (default) or a GPX track's. */
+  subject?: 'group' | 'track'
 }
 
 /** The colour variables of a relative wind's generated family (contracts/brand-colors.yaml). */
@@ -116,6 +118,7 @@ export function RouteWeather({
   timezone,
   selection: controlledSelection,
   onSelectionChange,
+  subject = 'group',
 }: RouteWeatherProps) {
   const { t } = useTranslation()
   const { speed } = useUnits()
@@ -149,7 +152,9 @@ export function RouteWeather({
   const spacing = checkpointSpacing(checkpoints)
 
   const speedLine = leg.speedIsDefault
-    ? t('rides.weather.route.timeline.speedDefault', { speed: speed(leg.averageSpeed) })
+    ? subject === 'track'
+      ? t('gpxTools.weather.timelineSpeedDefault', { speed: speed(leg.averageSpeed) })
+      : t('rides.weather.route.timeline.speedDefault', { speed: speed(leg.averageSpeed) })
     : t('rides.weather.route.timeline.speed', { speed: speed(leg.averageSpeed) })
 
   return (

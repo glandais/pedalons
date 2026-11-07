@@ -11,6 +11,7 @@ import {
   getListMyPreviewsQueryKey,
   useDeletePreview,
 } from '@/api/endpoints/gpx-previews/gpx-previews'
+import { Rendezvous } from '@/components/common/Rendezvous'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { Pagination } from '@/components/common/Pagination'
 import { paths } from '@/config/paths'
@@ -110,6 +111,15 @@ function PreviewRow({ preview }: PreviewRowProps) {
               <IconArrowDown size={14} />
               <Text size="sm">{elevation(preview.elevationLoss)}</Text>
             </Group>
+            {preview.departureTime && (
+              <Text size="sm">
+                <Rendezvous
+                  date={preview.departureTime}
+                  zone={preview.departureTimezone}
+                  template={(text) => t('gpxTools.departure.line', { date: text })}
+                />
+              </Text>
+            )}
             {/* "il y a 2 minutes" is read off the clock: server and client legitimately render
                 different text a few seconds apart. */}
             <Text size="sm" suppressHydrationWarning>
