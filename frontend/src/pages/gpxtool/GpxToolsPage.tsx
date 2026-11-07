@@ -16,12 +16,6 @@ import {
   getListMyPreviewsQueryKey,
   mergePreviews,
 } from '@/api/endpoints/gpx-previews/gpx-previews'
-import { DepartureFields } from '@/components/gpxtool/DepartureFields'
-import {
-  departureChange,
-  departureFormFields,
-  type DepartureValue,
-} from '@/components/gpxtool/departure'
 import { paths } from '@/config/paths'
 import { isGpxPlannerEnabled } from '@/config/appConfig'
 
@@ -34,6 +28,8 @@ import { isGpxPlannerEnabled } from '@/config/appConfig'
  * order and direction of the tracks (docs/LEDGER_*.md API-112), so there is nothing to arrange
  * here. The 2..10 bound is checked before upload; the server checks it again, and bounds the files'
  * summed size like one upload (FILE_TOO_LARGE).
+ *
+ * No departure date or average speed here: they are set afterwards, from the preview's edit page.
  */
 const MIN_MERGE_FILES = 2
 const MAX_MERGE_FILES = 10
@@ -46,9 +42,6 @@ export function GpxToolsPage() {
   const [isUploading, setIsUploading] = useState(false)
   const mergeInputRef = useRef<HTMLInputElement>(null)
   const [isMerging, setIsMerging] = useState(false)
-  // Taken into account by the upload and the merge, which send the file as soon as it is picked
-  const [departure, setDeparture] = useState<DepartureValue>({})
-  const departureFields = () => departureFormFields(departureChange({}, departure))
 
   const handleFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -58,7 +51,7 @@ export function GpxToolsPage() {
 
     setIsUploading(true)
     try {
-      const preview = await createPreview({ gpxFile: file, ...departureFields() })
+      const preview = await createPreview({ gpxFile: file })
       // Refresh "my files": the key prefix matches every paginated variant.
       queryClient.invalidateQueries({ queryKey: getListMyPreviewsQueryKey() })
       navigate(paths.gpxToolsView(preview.id))
@@ -85,7 +78,7 @@ export function GpxToolsPage() {
 
     setIsMerging(true)
     try {
-      const preview = await mergePreviews({ gpxFiles: files, ...departureFields() })
+      const preview = await mergePreviews({ gpxFiles: files })
       queryClient.invalidateQueries({ queryKey: getListMyPreviewsQueryKey() })
       navigate(paths.gpxToolsView(preview.id))
     } finally {
@@ -99,12 +92,6 @@ export function GpxToolsPage() {
         <Title order={1}>{t('gpxTools.title')}</Title>
         <Text c="dimmed">{t('gpxTools.subtitle')}</Text>
       </Stack>
-
-      <DepartureFields
-        value={departure}
-        onChange={setDeparture}
-        description={t('gpxTools.departure.hubHint')}
-      />
 
       <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }}>
         <Card withBorder padding="lg">

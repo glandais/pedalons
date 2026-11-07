@@ -958,7 +958,6 @@
   "gpxTools.createFromScratch.title": "Créer un parcours",
   "gpxTools.departure.add": "Ajouter une date de départ pour voir la météo",
   "gpxTools.departure.hint": "Facultatif. Heure locale au point de départ du tracé, pas celle de votre appareil. Si le tracé change de fuseau, l'heure saisie reste la même. Visible par toute personne qui a le lien.",
-  "gpxTools.departure.hubHint": "Facultatif, pris en compte à l'import ou à la fusion. Heure locale au point de départ du tracé, pas celle de votre appareil. Visible par toute personne qui a le lien.",
   "gpxTools.departure.label": "Date et heure de départ",
   "gpxTools.departure.line": "Départ : {{date}}",
   "gpxTools.departure.speedHint": "Facultative. Sert à estimer les heures de passage ; sans valeur, une vitesse par défaut s'applique. Visible par toute personne qui a le lien.",

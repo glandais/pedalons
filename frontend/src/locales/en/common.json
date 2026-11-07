@@ -945,7 +945,6 @@
   "gpxTools.createFromScratch.title": "Create a route",
   "gpxTools.departure.add": "Add a departure date to see the weather",
   "gpxTools.departure.hint": "Optional. Local time at the start of the track, not your device's. It stays the same if the track moves to another time zone. Visible to anyone with the link.",
-  "gpxTools.departure.hubHint": "Optional, used when you upload or merge files. Local time at the start of the track, not your device's. Visible to anyone with the link.",
   "gpxTools.departure.label": "Departure date and time",
   "gpxTools.departure.line": "Departure: {{date}}",
   "gpxTools.departure.speedHint": "Optional. Used to estimate passage times; without one, a default speed applies. Visible to anyone with the link.",

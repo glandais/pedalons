@@ -19,16 +19,6 @@ vi.mock('@/api/endpoints/gpx-previews/gpx-previews', () => ({
   mergePreviews: vi.fn(),
   getListMyPreviewsQueryKey: () => ['gpx-previews'],
 }))
-// The fields have their own test: a stand-in that fills the date and the speed on a click.
-vi.mock('@/components/gpxtool/DepartureFields', () => ({
-  DepartureFields: (props: {
-    onChange: (v: { departure?: string; averageSpeed?: number }) => void
-  }) => (
-    <button onClick={() => props.onChange({ departure: '2026-11-08 09:30', averageSpeed: 27.5 })}>
-      fill-departure
-    </button>
-  ),
-}))
 vi.mock('@mantine/notifications', () => ({ notifications: { show: vi.fn() } }))
 vi.mock('@/config/appConfig', () => ({ isGpxPlannerEnabled: () => false }))
 
@@ -117,24 +107,7 @@ describe('GpxToolsPage', () => {
     )
   })
 
-  it('sends the date and the speed typed on the hub with the merge', async () => {
-    vi.mocked(mergePreviews).mockResolvedValue({ id: 'abc123' } as Awaited<
-      ReturnType<typeof mergePreviews>
-    >)
-    renderHub()
-    fireEvent.click(screen.getByText('fill-departure'))
-    const files = gpxFiles(2)
-    pickForMerge(files)
-
-    expect(await screen.findByTestId('preview')).toBeTruthy()
-    expect(mergePreviews).toHaveBeenCalledWith({
-      gpxFiles: files,
-      departure: '2026-11-08T09:30:00',
-      averageSpeed: '27.5',
-    })
-  })
-
-  it('sends them with an upload too, and no key at all when they are empty', async () => {
+  it('uploads the picked file and opens its preview', async () => {
     vi.mocked(createPreview).mockResolvedValue({ id: 'abc123' } as Awaited<
       ReturnType<typeof createPreview>
     >)

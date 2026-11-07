@@ -443,7 +443,7 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
       (`scripts/e2e.sh`) coupe le fournisseur météo, donc rien de la prévision n'a été vu dans un
       navigateur ; seuls les tests Vitest et la compilation ont tourné, et `frontend/e2e/flow-gpx-tools.e2e.ts`
       n'a pas été étendu. À voir sur une pile avec le fournisseur (ou sur le dev) : déposer un fichier
-      depuis le hub avec une date et une vitesse, puis la page de l'aperçu (attente d'environ une
+      depuis le hub, lui donner une date et une vitesse par sa page de modification, puis la page de l'aperçu (attente d'environ une
       minute, puis la prévision, qui arrive par tours de worker sur un long tracé) ; la même page ouverte
       sans compte depuis le lien ; la mention « heure de Tokyo » sur un tracé hors du fuseau de la
       personne ; une vitesse en miles par heure ; l'édition (date effacée, vitesse effacée, tracé
