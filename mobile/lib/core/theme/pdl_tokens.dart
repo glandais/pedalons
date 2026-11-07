@@ -100,6 +100,10 @@ abstract final class PdlMetrics {
   /// Cible tactile minimale du brief §5. Aucune action n'y déroge.
   static const double tapTarget = 44;
 
+  /// Largeur de la boîte du jour (BRANDING §7.8 : 56–72 px). Sa variante
+  /// compacte, celle de l'agenda de l'accueil, prend [tapTarget].
+  static const double dayBox = 56;
+
   static const double media = 160;
   static const double media16x9 = 208;
   static const double media120 = 120;

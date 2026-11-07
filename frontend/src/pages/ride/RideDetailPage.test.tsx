@@ -346,3 +346,66 @@ describe('RideDetailPage — layout A: instructions beside a sticky map (WEB-134
     expect(screen.getByTestId('ride-groups')).toBeTruthy()
   })
 })
+
+// docs/BRANDING.md §7.8, docs/LEDGER_*.md WEB-137.
+describe('RideDetailPage — the departure block', () => {
+  const two = () => [
+    group(),
+    group({ id: 'g2', name: 'Cool', startAt: '2026-10-08T07:10:00Z', registered: true }),
+  ]
+  const block = () => screen.getByRole('region', { name: 'Date et heure de départ' })
+
+  beforeEach(() => {
+    state.team = member
+    state.weather = okWeather
+  })
+  afterEach(cleanup)
+
+  it('comes before the instructions, with the ride’s time and its return', () => {
+    state.ride = ride({
+      groups: two(),
+      endDateTime: '2026-10-08T11:00:00Z',
+      media: {
+        markdown: 'Rendez-vous au parking',
+        assets: { images: [], attachments: [] },
+      } as unknown as RideDto['media'],
+    })
+    renderPage()
+    const section = block()
+    expect(within(section).getByText('Départ 06:40')).toBeTruthy()
+    expect(section.textContent).toContain('retour vers 11:00')
+    const instructions = screen.getByTestId('ride-instructions')
+    expect(
+      section.compareDocumentPosition(instructions) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+  })
+
+  it('names the reader’s group beside it when that group leaves at its own time', () => {
+    state.ride = ride({ groups: two(), registered: true, registeredGroupId: 'g2' })
+    renderPage()
+    expect(within(block()).getByText('Départ 06:40')).toBeTruthy()
+    expect(within(block()).getByTestId('departure-group').textContent).toBe(
+      'Votre groupeCool · 07:10'
+    )
+  })
+
+  it('names no group for a group leaving with the ride, nor for a reader not registered', () => {
+    state.ride = ride({ groups: two(), registered: true, registeredGroupId: 'g1' })
+    renderPage()
+    expect(screen.queryByTestId('departure-group')).toBeNull()
+    cleanup()
+    state.ride = ride({ groups: two() })
+    renderPage()
+    expect(screen.queryByTestId('departure-group')).toBeNull()
+  })
+
+  it('carries the start place, written once on the page', () => {
+    state.ride = ride({
+      groups: two(),
+      startPlace: { id: 'p1', name: 'Parking de la gare', startPlace: true, endPlace: false },
+    } as Partial<RideDto>)
+    renderPage()
+    expect(within(block()).getByText('Parking de la gare')).toBeTruthy()
+    expect(screen.getAllByText('Parking de la gare')).toHaveLength(1)
+  })
+})

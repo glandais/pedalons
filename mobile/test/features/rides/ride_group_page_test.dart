@@ -466,7 +466,10 @@ void main() {
 
       expect(find.byKey(keys.rideGroup.leader), findsNothing);
       expect(find.text('CAPITAINE'), findsNothing);
-      expect(find.text('Départ'), findsOneWidget);
+      // Le départ est au bloc en tête de page, plus dans les chiffres
+      // (ledger `MOB-113`).
+      expect(find.byKey(keys.rideGroup.departureBlock), findsOneWidget);
+      expect(find.text('Départ'), findsNothing);
       expect(find.text('Allure moyenne'), findsOneWidget);
       expect(find.text('Dénivelé positif'), findsOneWidget);
       expect(tester.takeException(), isNull);
@@ -512,7 +515,43 @@ void main() {
       expect(find.byKey(keys.ride.weatherCheckpoint(0)), findsOneWidget);
     });
 
-    testWidgets('départ avec la sortie, arrivée estimée du leg', (
+    testWidgets('en tête : l\'heure du groupe, son arrivée estimée, sans '
+        'relation quand il part avec la sortie', (WidgetTester tester) async {
+      await open(
+        tester,
+        weather(),
+        tab: RideGroupTab.overview,
+        ride: fixtureRide(
+          dateTime: '2036-07-29T19:30:00Z',
+          groups: <RideGroupDto>[
+            fixtureGroup(id: 'g1', startAt: '2036-07-29T19:30:00Z'),
+            fixtureGroup(id: 'g2', name: 'Cool', sortOrder: 1),
+          ],
+        ),
+      );
+
+      final Finder block = find.byKey(keys.rideGroup.departureBlock);
+      expect(block, findsOneWidget);
+      expect(
+        find.descendant(of: block, matching: find.text('Départ 21:30')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: block,
+          matching: find.textContaining('Arrivée estimée'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('la sortie de'), findsNothing);
+      // La date, que la page n'affichait jamais : « mar. 29 juil. 2036 ».
+      expect(
+        find.descendant(of: block, matching: find.textContaining('29 juil.')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('un groupe à heure propre se situe par rapport à la sortie', (
       WidgetTester tester,
     ) async {
       await open(
@@ -520,16 +559,34 @@ void main() {
         weather(),
         tab: RideGroupTab.overview,
         ride: fixtureRide(
-          dateTime: '2099-07-29T19:30:00Z',
+          dateTime: '2036-07-29T19:30:00Z',
           groups: <RideGroupDto>[
-            fixtureGroup(id: 'g1', startAt: '2099-07-29T19:30:00Z'),
+            fixtureGroup(id: 'g1', startAt: '2036-07-29T20:00:00Z'),
             fixtureGroup(id: 'g2', name: 'Cool', sortOrder: 1),
           ],
         ),
       );
 
-      expect(find.text('avec la sortie'), findsOneWidget);
-      expect(find.textContaining('Arrivée estimée'), findsOneWidget);
+      final Finder block = find.byKey(keys.rideGroup.departureBlock);
+      expect(
+        find.descendant(of: block, matching: find.text('Départ 22:00')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: block,
+          matching: find.text('après la sortie de 21:30'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('les autres onglets n\'ont pas le bloc', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, weather(), tab: RideGroupTab.weather);
+
+      expect(find.byKey(keys.rideGroup.departureBlock), findsNothing);
     });
   });
 

@@ -28,7 +28,9 @@ import '../../providers/ride_scroll_target_provider.dart';
 import '../../providers/ride_weather_provider.dart';
 import '../widgets/registration_failure_banner.dart';
 import '../widgets/ride_group_action_bar.dart';
+import '../widgets/ride_departure_block.dart';
 import '../widgets/ride_group_overview_tab.dart';
+import '../widgets/ride_group_stats.dart';
 import '../widgets/ride_group_weather_tab.dart';
 import '../../domain/group_title.dart';
 
@@ -366,6 +368,26 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
               child: registrationFailureBanner(
                 registration.failure!,
                 controller,
+              ),
+            ),
+          ),
+        // L'heure du groupe, en tête de l'Aperçu, visible sans défiler
+        // (ledger `MOB-113`) : la page n'en disait rien avant la carte et le
+        // profil, et jamais la date.
+        if (_shownTab == RideGroupTab.overview)
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(
+              PdlSpacing.section,
+              PdlSpacing.section,
+              PdlSpacing.section,
+              0,
+            ),
+            sliver: SliverToBoxAdapter(
+              child: RideDepartureBlock(
+                key: keys.rideGroup.departureBlock,
+                ride: ride,
+                group: group,
+                arrival: groupLegArrival(leg, ride.timezone),
               ),
             ),
           ),

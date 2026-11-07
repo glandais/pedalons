@@ -1,0 +1,47 @@
+/* The departure block of a detail page (docs/BRANDING.md §7.8, ledger BRAND-8). A container, so
+   the group column drops below the rest whenever the block itself is narrower than 600 px —
+   whatever the viewport. */
+.root {
+  container-type: inline-size;
+}
+
+.surface {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-md);
+  padding: var(--mantine-spacing-md);
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-md);
+  background: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6));
+}
+
+.main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.group {
+  flex: 0 0 auto;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-inline-start: var(--mantine-spacing-md);
+  border-inline-start: 1px solid var(--mantine-color-default-border);
+  text-align: end;
+}
+
+@container (max-width: 600px) {
+  .surface {
+    flex-wrap: wrap;
+  }
+
+  .group {
+    flex-basis: 100%;
+    padding-inline-start: 0;
+    padding-top: var(--mantine-spacing-sm);
+    border-inline-start: none;
+    border-top: 1px solid var(--mantine-color-default-border);
+    text-align: start;
+  }
+}

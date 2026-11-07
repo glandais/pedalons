@@ -16,6 +16,7 @@ import '../../../../keys.dart';
 import '../../../calendar/presentation/widgets/agenda_card.dart';
 import '../../providers/next_ride_provider.dart';
 import '../../providers/week_events_provider.dart';
+import '../../../../core/widgets/day_box.dart';
 import '../../../../core/widgets/zone_mention_line.dart';
 
 /// Combien de lignes « Cette semaine » montre au plus ; le reste est au
@@ -179,7 +180,9 @@ class WeekAgendaRow extends StatelessWidget {
       onTap: calendarEventTap(context, event),
       child: Row(
         children: <Widget>[
-          _DayTile(date: start, tone: tone),
+          // Le jour en vignette compacte, dans la teinte de son type (sortie ou
+          // étape), la même que le calendrier.
+          dayBoxFor(start, tone: tone, size: PdlDayBoxSize.compact),
           const SizedBox(width: PdlSpacing.cardTight),
           Expanded(
             child: Column(
@@ -226,35 +229,6 @@ class WeekAgendaRow extends StatelessWidget {
             ),
           ),
           Icon(PdlIcons.chevronRight, size: 18, color: c.textDimmed),
-        ],
-      ),
-    );
-  }
-}
-
-/// Le jour de l'événement en vignette — « sam. / 11 » —, dans la teinte de
-/// son type (sortie ou étape), la même que le calendrier.
-class _DayTile extends StatelessWidget {
-  const _DayTile({required this.date, required this.tone});
-
-  final DateTime date;
-  final PdlTone tone;
-
-  @override
-  Widget build(BuildContext context) {
-    final PdlTypography t = context.pdlText;
-    return Container(
-      width: PdlMetrics.tapTarget,
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      decoration: BoxDecoration(color: tone.soft, borderRadius: PdlRadii.mdAll),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Text(
-            AppFormatters.dayAbbrev(date.weekday),
-            style: t.xs.copyWith(color: tone.onSoft),
-          ),
-          Text('${date.day}', style: t.cardTitle.copyWith(color: tone.onSoft)),
         ],
       ),
     );

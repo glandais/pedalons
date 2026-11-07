@@ -61,111 +61,52 @@ class TripSummaryCard extends ConsumerWidget {
 
   // ── Les quatre cellules ─────────────────────────────────────────────────
   Widget _cells(BuildContext context, UnitSystem units) {
-    final List<Widget> cells = <Widget>[
-      _cell(
-        context,
-        label: 'trips.summary.dates'.tr(),
-        value: _dates(),
-        extra: _duration(),
-        // Le départ vu d'ailleurs : « heure de Tokyo (ven. 01:00 chez
-        // vous) » (docs/LEDGER_*.md API-60).
-        note: ZoneMentionLine.maybe(trip.dateTime, trip.timezone),
-      ),
-      _cell(
-        context,
-        label: 'trips.stages'.tr(),
-        value: trip.stageCount == 0
-            ? _dash
-            : 'trips.stageCount'.plural(trip.stageCount),
-        extra: trip.stageCount == 0
-            ? null
-            : 'trips.summary.dayRange'.tr(
-                namedArgs: <String, String>{'last': '${trip.stageCount}'},
-              ),
-      ),
-      _cell(
-        context,
-        label: 'trips.summary.totalDistance'.tr(),
-        value: trip.totalDistance == null
-            ? _dash
-            : AppFormatters.formatDistance(trip.totalDistance!, units),
-        icon: PdlIcons.distance,
-      ),
-      _cell(
-        context,
-        label: 'trips.summary.totalElevation'.tr(),
-        value: trip.totalElevationGain == null
-            ? _dash
-            : AppFormatters.formatElevationGain(
-                trip.totalElevationGain!,
-                units,
-              ),
-        icon: PdlIcons.elevationUp,
-      ),
-    ];
-
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        // Même règle que le bloc méta de la sortie : deux colonnes tant qu'une
-        // colonne reste lisible, une seule au-delà — quatre cellules écrasées
-        // à `textScaleFactor` élevé ne se lisent plus.
-        final bool twoColumns =
-            constraints.maxWidth >= 320 &&
-            MediaQuery.textScalerOf(context).scale(14) <= 18;
-        if (!twoColumns) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              for (int i = 0; i < cells.length; i++) ...<Widget>[
-                if (i > 0) const SizedBox(height: PdlSpacing.meta2V),
-                cells[i],
-              ],
-            ],
-          );
-        }
-        return Wrap(
-          spacing: PdlSpacing.meta2H,
-          runSpacing: PdlSpacing.meta2V,
-          children: <Widget>[
-            for (final Widget cell in cells)
-              SizedBox(
-                width: (constraints.maxWidth - PdlSpacing.meta2H) / 2,
-                child: cell,
-              ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _cell(
-    BuildContext context, {
-    required String label,
-    required String value,
-    String? extra,
-    Widget? note,
-    IconData? icon,
-  }) {
-    final PdlColors c = context.pdl;
     final PdlTypography t = context.pdlText;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(label, style: t.xs),
-        const SizedBox(height: 2),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: <Widget>[
-            if (icon != null) ...<Widget>[
-              Icon(icon, size: 15, color: c.textDimmed),
-              const SizedBox(width: 5),
-            ],
-            Flexible(child: Text(value, style: t.statBigValue)),
+    final String? dayRange = trip.stageCount == 0
+        ? null
+        : 'trips.summary.dayRange'.tr(
+            namedArgs: <String, String>{'last': '${trip.stageCount}'},
+          );
+    final String? duration = _duration();
+    // Même règle que le bloc méta de la sortie : deux colonnes tant qu'une
+    // colonne reste lisible, une seule au-delà — quatre cellules écrasées à
+    // `textScaleFactor` élevé ne se lisent plus.
+    return PdlMetaGrid(
+      cells: <Widget>[
+        PdlMetaCell(
+          label: 'trips.summary.dates'.tr(),
+          value: _dates(),
+          extra: <Widget>[
+            if (duration != null) Text(duration, style: t.xs),
+            // Le départ vu d'ailleurs : « heure de Tokyo (ven. 01:00 chez
+            // vous) » (docs/LEDGER_*.md API-60).
+            ?ZoneMentionLine.maybe(trip.dateTime, trip.timezone),
           ],
         ),
-        if (extra != null) Text(extra, style: t.xs),
-        ?note,
+        PdlMetaCell(
+          label: 'trips.stages'.tr(),
+          value: trip.stageCount == 0
+              ? _dash
+              : 'trips.stageCount'.plural(trip.stageCount),
+          extra: <Widget>[if (dayRange != null) Text(dayRange, style: t.xs)],
+        ),
+        PdlMetaCell(
+          label: 'trips.summary.totalDistance'.tr(),
+          value: trip.totalDistance == null
+              ? _dash
+              : AppFormatters.formatDistance(trip.totalDistance!, units),
+          icon: PdlIcons.distance,
+        ),
+        PdlMetaCell(
+          label: 'trips.summary.totalElevation'.tr(),
+          value: trip.totalElevationGain == null
+              ? _dash
+              : AppFormatters.formatElevationGain(
+                  trip.totalElevationGain!,
+                  units,
+                ),
+          icon: PdlIcons.elevationUp,
+        ),
       ],
     );
   }

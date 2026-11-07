@@ -38,6 +38,10 @@ class PdlTypography extends ThemeExtension<PdlTypography> {
     required this.textButton,
     required this.chip,
     required this.chipActive,
+    required this.departureTime,
+    required this.dayBoxWeekday,
+    required this.dayBoxNumber,
+    required this.dayBoxMonth,
   });
 
   /// Titre d'écran — 22/700, `letterSpacing −0.2`, sur `textBright`.
@@ -109,6 +113,20 @@ class PdlTypography extends ThemeExtension<PdlTypography> {
 
   /// Chip active — 14/600 en `primaryOnSoft`.
   final TextStyle chipActive;
+
+  /// Heure de départ du bloc de départ — 22/700 sur `text` (BRANDING §7.8,
+  /// ledger `BRAND-8` : l'heure de départ est en 700).
+  final TextStyle departureTime;
+
+  /// Jour de semaine de la boîte du jour — 12/600. La couleur vient du ton
+  /// de la boîte.
+  final TextStyle dayBoxWeekday;
+
+  /// Chiffre du jour de la boîte du jour — 22/700 sur `text`.
+  final TextStyle dayBoxNumber;
+
+  /// Mois abrégé de la boîte du jour — 12/500. La couleur vient du ton.
+  final TextStyle dayBoxMonth;
 
   /// La famille déclarée dans `pubspec.yaml`.
   static const String family = 'Inter';
@@ -196,6 +214,10 @@ class PdlTypography extends ThemeExtension<PdlTypography> {
       textButton: inter(13, FontWeight.w500, color: c.link),
       chip: inter(14, FontWeight.w500, color: c.textDimmed),
       chipActive: inter(14, FontWeight.w600, color: c.primaryOnSoft),
+      departureTime: inter(22, FontWeight.w700, color: c.text, height: 1.25),
+      dayBoxWeekday: inter(12, FontWeight.w600, height: 1.30),
+      dayBoxNumber: inter(22, FontWeight.w700, color: c.text, height: 1.20),
+      dayBoxMonth: inter(12, FontWeight.w500, height: 1.30),
     );
   }
 
@@ -224,6 +246,10 @@ class PdlTypography extends ThemeExtension<PdlTypography> {
     TextStyle? textButton,
     TextStyle? chip,
     TextStyle? chipActive,
+    TextStyle? departureTime,
+    TextStyle? dayBoxWeekday,
+    TextStyle? dayBoxNumber,
+    TextStyle? dayBoxMonth,
   }) {
     return PdlTypography(
       screenTitle: screenTitle ?? this.screenTitle,
@@ -249,6 +275,10 @@ class PdlTypography extends ThemeExtension<PdlTypography> {
       textButton: textButton ?? this.textButton,
       chip: chip ?? this.chip,
       chipActive: chipActive ?? this.chipActive,
+      departureTime: departureTime ?? this.departureTime,
+      dayBoxWeekday: dayBoxWeekday ?? this.dayBoxWeekday,
+      dayBoxNumber: dayBoxNumber ?? this.dayBoxNumber,
+      dayBoxMonth: dayBoxMonth ?? this.dayBoxMonth,
     );
   }
 
@@ -280,6 +310,10 @@ class PdlTypography extends ThemeExtension<PdlTypography> {
       textButton: s(textButton, other.textButton),
       chip: s(chip, other.chip),
       chipActive: s(chipActive, other.chipActive),
+      departureTime: s(departureTime, other.departureTime),
+      dayBoxWeekday: s(dayBoxWeekday, other.dayBoxWeekday),
+      dayBoxNumber: s(dayBoxNumber, other.dayBoxNumber),
+      dayBoxMonth: s(dayBoxMonth, other.dayBoxMonth),
     );
   }
 }

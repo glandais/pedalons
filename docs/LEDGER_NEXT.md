@@ -95,14 +95,6 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
 Audit de la visibilité de la date et de l'heure de départ (sortie, groupe, voyage, étape) sur les
 trois clients ; la règle commune est `BRAND-8`, le pendant web `WEB-135` à `WEB-139`.
 
-- [ ] `MOB-113` **Détail de sortie et page de groupe : l'heure est le texte le plus discret (M)** —
-      `ride_detail_page.dart:517-548` : la date est en `statBigValue` (et passe sur deux lignes dans
-      sa demi-colonne), l'heure en dessous en `t.xs` 12/400 atténué (l.545), sans relatif
-      (aujourd'hui, demain). La page d'un groupe (`ride_group_page.dart:234-259`) n'affiche **jamais**
-      la date ; l'heure n'est que dans `RideGroupStats`, sous la carte et le profil, donc sous le pli.
-      Les cellules méta 2×2 de `ride_detail_page` (`cell()`), `RideGroupStats.cell` et
-      `TripSummaryCard._cell` sont trois copies du même schéma : une cellule partagée corrigerait les
-      trois.
 - [ ] `MOB-114` **Voyage et étapes : heure absente ou tronquée (S)** — `stage_card.dart:98-105` écrit
       « date longue · heure » en `xs`, une ligne avec ellipsis : l'heure, en fin de chaîne, est
       tronquée la première, sous une ligne « Départ → Arrivée » en `body` plus forte.
@@ -491,14 +483,6 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
 
 Pendant web de `MOB-111` à `MOB-116` ; la règle commune est `BRAND-8`.
 
-- [ ] `WEB-137` **Détail de sortie et de voyage : la date vient après toute la description (S)** —
-      `RideDetailPage.tsx` rend `<MediaDisplay>` (l.394, texte, images, pièces jointes) avant la
-      ligne de date (l.400), en `sm dimmed` : sous la ligne de flottaison dès qu'il y a une
-      description, moins visible que le lieu de départ (`fw=500`, en couleur). Même ordre dans
-      `TripDetailPage.tsx` (l.398 puis l.413), où le début et la fin sont en plus séparés par les
-      statistiques. L'heure de retour (`endDateTime`), affichée sur la carte et dans l'agenda,
-      manque aux deux détails. `Rendezvous.tsx` ne rend qu'un `<span>` sans style : une variante mise
-      en avant s'y propagerait à tous les écrans.
 - [ ] `WEB-138` **Cartes et formats : la date pèse autant qu'un compteur (M)** — suit la règle décidée par `BRAND-8` (BRANDING §7.8, option A).
       `components/card/common/Stat.tsx:19` fige tout en `sm dimmed`, sans prop d'emphase : la date a
       le poids de « 2 commentaires » sur `PublicationCard` (rangée en bas, `mt="auto"`, l.265),

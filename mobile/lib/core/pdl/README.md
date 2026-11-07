@@ -241,6 +241,9 @@ Exportés par `pdl.dart` comme le reste, et soumis au même contrat (jetons,
 | `PdlTag` · `PdlTagRow` · `PdlTagEntry` | `pdl_tag.dart` | Les tags d'équipe d'un contenu (ledger `MOB-39`) : contour neutre, pastille de la famille, libellé neutre — **jamais** la forme d'un badge, pour qu'un tag vert ne se lise pas « Publié ». Tronqué (« +n ») en carte, complet en fiche |
 | `PdlWindArrow` | `pdl_wind_arrow.dart` | La flèche de vent, dessinée vers le haut puis tournée de l'angle reçu — vent relatif au sens de marche ou absolu, au choix de l'appelant ; toujours doublée d'un libellé |
 | `PdlSegmentBar` · `PdlSegmentBarEntry` | `pdl_segment_bar.dart` | Une barre découpée en tronçons proportionnels — le vent le long d'un parcours, l'exposition au vent ; jamais seule, la couleur ne dit pas tout |
+| `PdlDayBox` · `PdlDayBoxSize` | `pdl_day_box.dart` | La boîte du jour à plat (BRANDING §7.8) : « sam. / 12 / avr. », 56 px, chiffre en 22/700 ; `compact` (44 px, sans mois) pour l'agenda de l'accueil. Libellés fournis par l'appelant — `core/widgets/day_box.dart` (`dayBoxFor`) les tire d'une heure murale, et c'est la seule fabrique |
+| `PdlDepartureBlock` | `pdl_departure_block.dart` | Le bloc de départ (ledgers `BRAND-8`, `MOB-113`) : surface alternée bordée, boîte du jour, « Départ 09:00 » en 22/700, pastille « Demain » / « Aujourd'hui », lignes atténuées, mention de fuseau, ligne du groupe en 600 ; lu d'un tenant par `semanticLabel`. `RideDepartureBlock` (`features/rides`) l'habille d'une sortie ou d'un groupe |
+| `PdlMetaCell` · `PdlMetaGrid` | `pdl_meta_grid.dart` | La cellule méta (libellé `xs`, valeur `statBigValue`, icône et compléments facultatifs) et sa grille 2 × 2 qui passe à une colonne quand le texte grossit — détail d'une sortie, chiffres d'un groupe, synthèse d'un voyage (ledger `MOB-113`) |
 
 **`map/` — la carte Pédalons**, sans DTO : l'écran traduit ses DTO en types
 `Pdl*` avant de les passer.

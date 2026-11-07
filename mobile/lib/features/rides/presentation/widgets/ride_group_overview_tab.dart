@@ -28,10 +28,11 @@ import 'ride_groups_map.dart';
 
 /// L'onglet Aperçu de la page d'un groupe (ledger `MOB-67`).
 ///
-/// La carte du seul parcours du groupe et son profil, les chiffres (départ et
-/// arrivée estimée, allure, distance, dénivelé positif), le meneur quand il
-/// y en a un, le résumé météo qui ouvre l'onglet Météo, les visages inscrits
-/// qui ouvrent l'onglet Participants, et l'export du parcours.
+/// La carte du seul parcours du groupe et son profil, les chiffres (allure,
+/// distance, dénivelé positif ; le départ et l'arrivée estimée sont au bloc de
+/// départ, en tête de page), le meneur quand il y en a un, le résumé météo
+/// qui ouvre l'onglet Météo, les visages inscrits qui ouvrent l'onglet
+/// Participants, et l'export du parcours.
 class RideGroupOverviewTab extends ConsumerStatefulWidget {
   const RideGroupOverviewTab({
     super.key,
@@ -150,7 +151,13 @@ class _RideGroupOverviewTabState extends ConsumerState<RideGroupOverviewTab>
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               ...exportBanners(),
-              RideGroupStats(ride: ride, group: group, leg: widget.leg),
+              // Le départ est dans le bloc en tête de page (ledger `MOB-113`).
+              RideGroupStats(
+                ride: ride,
+                group: group,
+                leg: widget.leg,
+                showDeparture: false,
+              ),
               if (RideGroupLeaderRow.shows(group)) ...<Widget>[
                 const SizedBox(height: PdlSpacing.section),
                 RideGroupLeaderRow(group: group),

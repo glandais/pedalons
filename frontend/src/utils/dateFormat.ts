@@ -4,6 +4,7 @@ import { formatInTimeZone } from 'date-fns-tz'
 import { fr } from 'date-fns/locale/fr'
 import { enUS } from 'date-fns/locale/en-US'
 import type { Locale } from 'date-fns'
+import type { TFunction } from 'i18next'
 import { useTranslation } from 'react-i18next'
 import i18n from '../i18n'
 import { useAuthStore, selectUser } from '../store/authStore'
@@ -162,6 +163,109 @@ export function isSameDay(
   )
 }
 
+/** The two days a departure is named relatively (docs/BRANDING.md §8.3, ledger `BRAND-8`). */
+export type RelativeDay = 'today' | 'tomorrow'
+
+/** `yyyy-MM-dd` of the calendar day after `day` (`yyyy-MM-dd`), whatever the zone. */
+function nextCalendarDay(day: string): string {
+  const [year, month, date] = day.split('-').map(Number)
+  return new Date(Date.UTC(year, month - 1, date + 1)).toISOString().slice(0, 10)
+}
+
+/**
+ * Whether `date` falls today or tomorrow on the wall clock of `timeZone` — the departure's zone,
+ * not the reader's: a Tokyo ride « demain » is tomorrow in Tokyo. `null` for any other day, past
+ * days included: only these two are ever said relatively (ledger `BRAND-8`).
+ */
+export function relativeDay(
+  date: Date | string | null | undefined,
+  timeZone: string = SERVER_FALLBACK_TIMEZONE,
+  now: Date = new Date()
+): RelativeDay | null {
+  const dateObj = toDate(date)
+  if (!dateObj) return null
+  const day = formatInTimeZone(dateObj, timeZone, 'yyyy-MM-dd')
+  const today = formatInTimeZone(now, timeZone, 'yyyy-MM-dd')
+  if (day === today) return 'today'
+  if (day === nextCalendarDay(today)) return 'tomorrow'
+  return null
+}
+
+/** « Aujourd'hui » / « Demain » (« Today » / « Tomorrow »), or `null` for any other day. */
+export function formatRelativeDay(
+  date: Date | string | null | undefined,
+  timeZone: string,
+  t: TFunction,
+  now: Date = new Date()
+): string | null {
+  const relative = relativeDay(date, timeZone, now)
+  if (relative === 'today') return t('dateFormats.today')
+  if (relative === 'tomorrow') return t('dateFormats.tomorrow')
+  return null
+}
+
+/** Whether `date` is in the current year on the wall clock of `timeZone`. */
+function isCurrentYear(dateObj: Date, timeZone: string, now: Date): boolean {
+  return formatInTimeZone(dateObj, timeZone, 'yyyy') === formatInTimeZone(now, timeZone, 'yyyy')
+}
+
+/**
+ * The departure, in its one format (docs/BRANDING.md §8.3, ledger `BRAND-8`): « sam. 12 avr. ·
+ * 09:00 », the year only outside the current one (« sam. 10 avr. 2027 · 09:00 »), « Aujourd'hui ·
+ * 09:00 » and « Demain · 09:00 » for those two days. English follows the same pattern its own way
+ * (« Sat, Apr 12 · 9:00 AM »). Today, tomorrow and the year are judged in `timeZone`, the
+ * departure's.
+ *
+ * `relative: false` keeps the absolute day even today or tomorrow — for a line already carrying
+ * the « Demain » pill.
+ */
+export function formatDeparture(
+  date: Date | string | null | undefined,
+  language: string,
+  timeZone: string,
+  t: TFunction,
+  { now = new Date(), relative = true }: { now?: Date; relative?: boolean } = {}
+): string {
+  const dateObj = toDate(date)
+  if (!dateObj) return ''
+  const locale = getLocale(language)
+  const time = formatInTimeZone(dateObj, timeZone, 'p', { locale })
+  const day =
+    (relative ? formatRelativeDay(dateObj, timeZone, t, now) : null) ??
+    formatInTimeZone(
+      dateObj,
+      timeZone,
+      isCurrentYear(dateObj, timeZone, now)
+        ? t('dateFormats.departureDay')
+        : t('dateFormats.departureDayWithYear'),
+      { locale }
+    )
+  return t('dateFormats.dayAndTime', { day, time })
+}
+
+/**
+ * The departure's day in full, without its time: « samedi 12 avril », the year only outside the
+ * current one (« samedi 10 avril 2027 ») — the second line of the departure block (§7.8).
+ */
+export function formatLongDay(
+  date: Date | string | null | undefined,
+  language: string,
+  timeZone: string,
+  t: TFunction,
+  now: Date = new Date()
+): string {
+  const dateObj = toDate(date)
+  if (!dateObj) return ''
+  return formatInTimeZone(
+    dateObj,
+    timeZone,
+    isCurrentYear(dateObj, timeZone, now)
+      ? t('dateFormats.longDay')
+      : t('dateFormats.longDayWithYear'),
+    { locale: getLocale(language) }
+  )
+}
+
 /**
  * Format relative: "il y a 2 heures" (fr) / "2 hours ago" (en)
  */
@@ -181,11 +285,15 @@ export function formatRelative(
  * visitor's effective timezone (see `useEffectiveTimezone`).
  */
 export function useFormattedDate() {
-  const { i18n } = useTranslation()
+  const { t, i18n } = useTranslation()
   const language = i18n.language
   const { timezone, isGuessed } = useEffectiveTimezone()
 
   return {
+    formatDeparture: (date: Date | string | null | undefined) =>
+      formatDeparture(date, language, timezone, t),
+    formatRelativeDay: (date: Date | string | null | undefined) =>
+      formatRelativeDay(date, timezone, t),
     formatDate: (date: Date | string | null | undefined) => formatDate(date, language, timezone),
     formatDateTime: (date: Date | string | null | undefined) =>
       formatDateTime(date, language, timezone),

@@ -144,6 +144,7 @@
     "today": "Aujourd'hui",
     "tomorrow": "Demain",
     "departure": "Départ: {time}",
+    "departureAt": "{date} · {time}",
     "at": "{date} à {time}",
     "zoneMention": "heure {ofCity}",
     "atYourPlace": "{time} chez vous",
@@ -630,7 +631,12 @@
     "groupsRoute": "Parcours des groupes",
     "mainRoute": "Parcours principal",
     "selectedGroupProfile": "Profil du groupe sélectionné",
-    "dateAndTime": "Date et heure",
+    "departureBlock": {
+      "departs": "Départ {time}",
+      "returnAround": "retour vers {time}",
+      "yourGroup": "Votre groupe : {group} · {time}",
+      "relativeToRide": "{relation} de {rideTime}"
+    },
     "viewParticipants": "Voir la liste",
     "startPlace": "Départ",
     "endPlace": "Arrivée",

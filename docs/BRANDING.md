@@ -787,7 +787,8 @@ aucune formule enthousiaste (« Génial ! », « C'est parti ! » sont hors marq
 - **Compteurs : toujours pluralisés** (`_one` / `_many` / `_other`).
   → « 1 groupe » / « 3 groupes », « 1 étape » / « 4 étapes », « 12 personnes ».
 - **Départ (format unique, ledger `BRAND-8`)** : heure avec deux-points (« 09:00 », jamais « 09h00 »),
-  sur 24 h sur le web, au réglage 12 h / 24 h du téléphone sur mobile ; jour de semaine et mois abrégés, séparés de l'heure par « · » :
+  sur 24 h sur le web en français (l'anglais suit sa langue : « 9:00 AM »), au réglage
+  12 h / 24 h du téléphone sur mobile ; jour de semaine et mois abrégés, séparés de l'heure par « · » :
   « sam. 12 avr. · 09:00 » ; **l'année seulement si elle n'est pas l'année en cours**
   (« sam. 10 avr. 2027 · 09:00 ») ; relatif seulement pour « Aujourd'hui · 09:00 » et
   « Demain · 09:00 » ; fin de plage « retour vers 14:10 » ; titre de push et objet d'e-mail

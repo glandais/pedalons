@@ -11,6 +11,9 @@ class RideDetailKeys {
   /// Le badge « Terminée » d'une sortie passée.
   final finishedBadge = const _RideDetailKey('finishedBadge');
 
+  /// Le bloc de départ sous l'identité (ledger `MOB-113`).
+  final departureBlock = const _RideDetailKey('departureBlock');
+
   /// La pastille de la carte des groupes, qui nomme le groupe sélectionné.
   final groupsMapPill = const _RideDetailKey('groupsMapPill');
 
@@ -146,6 +149,10 @@ class RideGroupPageKeys {
 
   /// Le retour de l'app bar, vers la sortie.
   final backButton = const _RideGroupKey('backButton');
+
+  /// Le bloc de départ en tête de l'Aperçu : l'heure du groupe (ledger
+  /// `MOB-113`).
+  final departureBlock = const _RideGroupKey('departureBlock');
 
   /// Les trois onglets : Aperçu · Météo · Participants.
   final tabOverview = const _RideGroupKey('tabOverview');

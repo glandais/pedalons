@@ -55,6 +55,8 @@ const RoutesMapView = lazy(() =>
   import('../../components/route/RoutesMapView').then((m) => ({ default: m.RoutesMapView }))
 )
 import { Rendezvous } from '../../components/common/Rendezvous'
+import { DepartureBlock } from '../../components/common/DepartureBlock'
+import { groupLeavesAtOwnTime, registeredGroupOf } from '@/utils/groupStart'
 import { MediaDisplay } from '../../components/common/MediaDisplay'
 import { EntityLogo } from '../../components/common/EntityLogo'
 import { ContentActionsMenu } from '../../components/moderation/ContentActionsMenu'
@@ -206,8 +208,12 @@ export function RideDetailPage() {
   // No map at all (no route): the left column takes the full width.
   const hasMap = !!soloRouteSlug || mapItems.length > 0
 
-  // A rendezvous, in the ride's zone (docs/LEDGER_*.md API-60).
-  const formattedDate = <Rendezvous date={ride.dateTime} zone={ride.timezone} variant="detail" />
+  // The reader's group, beside the ride's departure when it leaves at a time of its own (WEB-137).
+  const registeredGroup = registeredGroupOf(ride)
+  const ownTimeGroup =
+    registeredGroup && groupLeavesAtOwnTime(registeredGroup.startAt, ride.dateTime)
+      ? registeredGroup
+      : null
 
   // The ride, the feed it shows in, and its forecast (its own query key, not a prefix of the ride's).
   const invalidateRideQueries = () => {
@@ -411,6 +417,18 @@ export function RideDetailPage() {
           </Group>
         </Group>
 
+        {/* The departure, a primary piece of information: under the title, before everything the
+            organiser wrote (docs/BRANDING.md §7.8, docs/LEDGER_*.md WEB-137). The ride's own time,
+            its reader's group's beside it when that group leaves at another. */}
+        <Box mt="md">
+          <DepartureBlock
+            date={ride.dateTime}
+            zone={ride.timezone}
+            returnAt={ride.endDateTime}
+            place={ride.startPlace}
+            group={ownTimeGroup}
+          />
+        </Box>
         {ride.status === Status.DRAFT && ride.publishAt && (
           <Group mt="xs" gap="xs">
             <IconCalendar size={16} color="var(--mantine-color-yellow-text)" />
@@ -424,57 +442,28 @@ export function RideDetailPage() {
             </Text>
           </Group>
         )}
-        <Group mt="md">
-          <Group gap="xs">
-            <IconCalendar size={16} />
-            <Text size="sm" c="dimmed">
-              {formattedDate}
-            </Text>
-          </Group>
-          <Group gap="xs">
-            <IconUsers size={16} />
-            <Text size="sm" c="dimmed">
-              {t('participantCount', { count: ride.participantCount })}
-            </Text>
-          </Group>
+        <Group mt="md" gap="xs">
+          <IconUsers size={16} />
+          <Text size="sm" c="dimmed">
+            {t('participantCount', { count: ride.participantCount })}
+          </Text>
         </Group>
-        {/* Start and End Places */}
-        {(ride.startPlace || ride.endPlace) && (
-          <Group mt="sm" wrap="wrap">
-            {ride.startPlace && (
-              <Group gap="xs">
-                <IconMapPin size={16} color="var(--mantine-color-green-text)" />
-                <Text size="sm" fw={500} c="var(--mantine-color-green-text)">
-                  {t('startPlace')}:
+        {/* The start place is in the departure block; the end place, when there is one, here. */}
+        {ride.endPlace && (
+          <Group mt="sm" gap="xs">
+            <IconMapPin size={16} color="var(--mantine-color-red-text)" />
+            <Text size="sm" fw={500} c="var(--mantine-color-red-text)">
+              {t('endPlace')}:
+            </Text>
+            <Text size="sm">
+              {ride.endPlace.name}
+              {ride.endPlace.address && (
+                <Text span c="dimmed">
+                  {' '}
+                  ({ride.endPlace.address})
                 </Text>
-                <Text size="sm">
-                  {ride.startPlace.name}
-                  {ride.startPlace.address && (
-                    <Text span c="dimmed">
-                      {' '}
-                      ({ride.startPlace.address})
-                    </Text>
-                  )}
-                </Text>
-              </Group>
-            )}
-            {ride.endPlace && (
-              <Group gap="xs">
-                <IconMapPin size={16} color="var(--mantine-color-red-text)" />
-                <Text size="sm" fw={500} c="var(--mantine-color-red-text)">
-                  {t('endPlace')}:
-                </Text>
-                <Text size="sm">
-                  {ride.endPlace.name}
-                  {ride.endPlace.address && (
-                    <Text span c="dimmed">
-                      {' '}
-                      ({ride.endPlace.address})
-                    </Text>
-                  )}
-                </Text>
-              </Group>
-            )}
+              )}
+            </Text>
           </Group>
         )}
         {/* The team tags, every one of them (cards show the first three). */}

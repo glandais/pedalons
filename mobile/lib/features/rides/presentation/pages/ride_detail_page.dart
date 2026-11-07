@@ -13,7 +13,6 @@ import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/api_error_handler.dart';
-import '../../../../core/utils/formatters.dart';
 import '../../../../core/utils/share_link.dart';
 import '../../../../core/widgets/markdown_content.dart';
 import '../../../../core/widgets/media_attachments.dart';
@@ -38,6 +37,7 @@ import '../../domain/ride_weather_display.dart';
 import '../../domain/ride_weather_map.dart';
 import '../../domain/solo_group.dart';
 import '../../providers/ride_weather_provider.dart';
+import '../widgets/ride_departure_block.dart';
 import '../widgets/ride_elevation_section.dart';
 import '../widgets/ride_groups_map.dart';
 import '../widgets/ride_group_action_bar.dart';
@@ -47,7 +47,6 @@ import '../widgets/ride_weather_card.dart';
 import '../../../feedback/presentation/report_problem_button.dart';
 import '../../../../keys.dart';
 import '../../../../core/utils/push_location.dart';
-import '../../../../core/widgets/zone_mention_line.dart';
 import '../../../../screenshots/screenshot_mode.dart';
 
 /// L'écran 12 — détail d'une sortie et inscription à un groupe.
@@ -58,10 +57,11 @@ import '../../../../screenshots/screenshot_mode.dart';
 /// parcours de `participants[]`, ni le `SnackBar` que la barre d'onglets
 /// masquait.
 ///
-/// Sept sections, dans l'ordre : identité, bandeaux, méta, carte et profil,
-/// groupes, description, commentaires. **Pas de hero** : la vignette statique
-/// du tracé doublait la carte interactive qui la suit de deux blocs, et
-/// coûtait 210 px de haut avant la première information.
+/// Huit sections, dans l'ordre : identité, départ (ledger `MOB-113`),
+/// bandeaux, méta, carte et profil, groupes, description, commentaires.
+/// **Pas de hero** : la vignette statique du tracé doublait la carte
+/// interactive qui la suit de deux blocs, et coûtait 210 px de haut avant la
+/// première information.
 ///
 /// Une sortie **solo** — un seul groupe — n'a pas de page de groupe : ce
 /// détail l'est (ledger `MOB-69`). La section Groupes y cède la place à
@@ -327,6 +327,7 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
       ),
       slivers: <Widget>[
         SliverToBoxAdapter(child: _identity(context)),
+        SliverToBoxAdapter(child: _departure(context)),
         if (ride.deleted)
           SliverToBoxAdapter(
             child: PdlBanner(
@@ -514,60 +515,45 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
   };
 
   // ── 3 · Bloc méta ───────────────────────────────────────────────────────
+  /// Le départ (ledger `MOB-113`, BRANDING §7.8) : juste sous l'identité, en
+  /// information primaire. L'heure **de la sortie** — les cartes de groupe se
+  /// situent par rapport à elle —, et dessous celle du groupe de la personne
+  /// quand il part à son heure propre (décision `BRAND-8`).
+  Widget _departure(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+    child: RideDepartureBlock(key: keys.ride.departureBlock, ride: ride),
+  );
+
+  /// Personnes, lieu de départ, lieu d'arrivée — la date est passée au bloc
+  /// de départ.
   Widget _meta(BuildContext context) {
     final bool canSeeNames = ref.watch(
       canSeeMemberNamesProvider(ride.team.slug),
     );
-    final PdlTypography t = context.pdlText;
-    final DateTime? start = ride.startsAt;
-
-    Widget cell(String label, String value, {Widget? extra}) => Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(label, style: t.xs),
-        const SizedBox(height: 2),
-        Text(value, style: t.statBigValue),
-        ?extra,
-      ],
-    );
 
     final List<Widget> cells = <Widget>[
-      cell(
-        'rides.dateAndTime'.tr(),
-        start == null ? '—' : AppFormatters.formatLongDate(start),
-        // L'heure de la sortie, puis « heure de Tokyo (ven. 01:00 chez vous) »
-        // quand le lecteur est ailleurs (docs/LEDGER_*.md API-60).
-        extra: start == null
-            ? null
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(AppFormatters.formatTime(start), style: t.xs),
-                  ?ZoneMentionLine.maybe(ride.dateTime, ride.timezone),
-                ],
-              ),
-      ),
-      cell(
-        'participants.title'.tr(),
-        'rides.participants'.plural(
+      PdlMetaCell(
+        label: 'participants.title'.tr(),
+        value: 'rides.participants'.plural(
           ride.participantCount,
           namedArgs: <String, String>{'count': '${ride.participantCount}'},
         ),
         // Un `PdlButton(text)` et non un `Text` tappable : il porte la cible
         // de 44 px et la sémantique de bouton, que la maquette (un simple
         // lien bleu) ne donne pas.
-        extra: ride.groups.isEmpty || !canSeeNames
-            ? null
-            : Align(
-                alignment: Alignment.centerLeft,
-                child: PdlButton(
-                  key: keys.ride.participantsButton,
-                  label: 'rides.viewParticipants'.tr(),
-                  variant: PdlButtonVariant.text,
-                  size: PdlButtonSize.sm,
-                  onPressed: () => ParticipantsSheet.openRide(context, ride),
-                ),
+        extra: <Widget>[
+          if (ride.groups.isNotEmpty && canSeeNames)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: PdlButton(
+                key: keys.ride.participantsButton,
+                label: 'rides.viewParticipants'.tr(),
+                variant: PdlButtonVariant.text,
+                size: PdlButtonSize.sm,
+                onPressed: () => ParticipantsSheet.openRide(context, ride),
               ),
+            ),
+        ],
       ),
       if (ride.startPlace != null)
         PdlPlaceRow(
@@ -587,39 +573,7 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       child: PdlCard(
         flat: true,
-        child: LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints constraints) {
-            // Grille 2 × 2 tant qu'une colonne reste lisible ; une colonne
-            // au-delà, plutôt que quatre cellules écrasées.
-            final bool twoColumns =
-                constraints.maxWidth >= 320 &&
-                MediaQuery.textScalerOf(context).scale(14) <= 18;
-            if (!twoColumns) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  for (int i = 0; i < cells.length; i++) ...<Widget>[
-                    if (i > 0) const SizedBox(height: PdlSpacing.meta2V),
-                    cells[i],
-                  ],
-                ],
-              );
-            }
-            return Wrap(
-              spacing: PdlSpacing.meta2H,
-              runSpacing: PdlSpacing.meta2V,
-              children: <Widget>[
-                for (final Widget cell in cells)
-                  SizedBox(
-                    width:
-                        (constraints.maxWidth - PdlSpacing.meta2H) / 2 -
-                        PdlSpacing.card,
-                    child: cell,
-                  ),
-              ],
-            );
-          },
-        ),
+        child: PdlMetaGrid(cells: cells, columnInset: PdlSpacing.card),
       ),
     );
   }

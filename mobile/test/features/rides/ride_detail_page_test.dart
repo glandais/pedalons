@@ -21,6 +21,7 @@ import 'package:pedalons/features/participants/data/participant_repository.dart'
 import 'package:pedalons/features/participants/domain/participant_query.dart';
 import 'package:pedalons/features/participants/presentation/widgets/participants_sheet.dart';
 import 'package:pedalons/features/rides/presentation/widgets/ride_group_card.dart';
+import 'package:pedalons/features/rides/presentation/widgets/ride_group_stats.dart';
 import 'package:pedalons/features/rides/presentation/widgets/ride_solo_group_section.dart';
 import 'package:pedalons/features/teams/data/team_repository.dart';
 import 'package:pedalons/features/routes/data/route_repository.dart';
@@ -352,6 +353,54 @@ void main() {
     expect(find.byKey(keys.ride.groupJoinButton('g1')), findsOneWidget);
     expect(find.byKey(keys.ride.groupJoinButton('g2')), findsOneWidget);
   });
+
+  testWidgets(
+    'le départ est un bloc sous l\'identité : l\'heure de la sortie, puis '
+    'celle du groupe de la personne',
+    (WidgetTester tester) async {
+      await open(
+        tester,
+        fixtureRide(
+          dateTime: '2036-07-29T19:30:00Z',
+          registered: true,
+          registeredGroupId: 'g1',
+          groups: <RideGroupDto>[
+            fixtureGroup(
+              id: 'g1',
+              name: 'B',
+              registered: true,
+              startAt: '2036-07-29T20:00:00Z',
+            ),
+            fixtureGroup(id: 'g2', name: 'Cool', sortOrder: 1),
+          ],
+        ),
+      );
+
+      final Finder block = find.byKey(keys.ride.departureBlock);
+      expect(block, findsOneWidget);
+      // Sous le titre (ledger `MOB-113`) : au-dessus de la grille méta.
+      expect(
+        tester.getTopLeft(block).dy,
+        greaterThan(tester.getTopLeft(find.byKey(keys.ride.title)).dy),
+      );
+      expect(
+        tester.getTopLeft(block).dy,
+        lessThan(tester.getTopLeft(find.text('Personnes inscrites')).dy),
+      );
+      expect(
+        find.descendant(of: block, matching: find.text('Départ 21:30')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: block,
+          matching: find.text('Votre groupe : B · 22:00'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Date et heure'), findsNothing);
+    },
+  );
 
   testWidgets('une sortie sans groupe le dit, plutôt que de ne rien rendre', (
     WidgetTester tester,
@@ -688,6 +737,9 @@ void main() {
 
       expect(find.byKey(keys.ride.weatherUnavailable), findsOneWidget);
       final int before = repository.weatherCalls;
+      // Le bloc de départ (ledger `MOB-113`) pousse la carte météo plus bas.
+      await tester.ensureVisible(find.byKey(keys.ride.weatherRetryButton));
+      await tester.pump();
       await tester.tap(find.byKey(keys.ride.weatherRetryButton));
       await tester.pump();
       await tester.pump();
@@ -1066,7 +1118,14 @@ void main() {
       );
       await scrollToGroups(tester);
 
-      expect(find.text('Départ'), findsOneWidget);
+      // Dans les chiffres du groupe : la frise météo dit aussi « Départ ».
+      expect(
+        find.descendant(
+          of: find.byType(RideGroupStats),
+          matching: find.text('Départ'),
+        ),
+        findsOneWidget,
+      );
       expect(find.text('Allure moyenne'), findsOneWidget);
       expect(find.text('Dénivelé positif'), findsOneWidget);
       expect(find.textContaining('Arrivée estimée'), findsOneWidget);

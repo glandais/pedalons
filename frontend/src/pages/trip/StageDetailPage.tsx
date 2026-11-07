@@ -13,7 +13,7 @@ import {
   Box,
   Anchor,
 } from '@mantine/core'
-import { IconBolt, IconCalendar, IconMapPin, IconPencil } from '@tabler/icons-react'
+import { IconBolt, IconMapPin, IconPencil } from '@tabler/icons-react'
 import { useStageDetailData } from './stageDetailData'
 import { RouteDetailView } from '../../components/route/RouteDetailView'
 import { paths } from '../../config/paths'
@@ -24,7 +24,7 @@ import { DetailPageSkeleton } from '../../components/common/DetailPageSkeleton'
 import { TripLayout } from '../../components/trip/TripLayout'
 import { MediaDisplay } from '../../components/common/MediaDisplay'
 import { EntityLogo } from '../../components/common/EntityLogo'
-import { Rendezvous } from '../../components/common/Rendezvous'
+import { DepartureBlock } from '../../components/common/DepartureBlock'
 import { useCanonicalPath } from '../../hooks/useCanonicalPath'
 import { ShareButton } from '../../components/common/ShareButton'
 import { CommentSection } from '../../components/comment'
@@ -179,22 +179,26 @@ export function StageDetailPage() {
               </Badge>
               <Box>
                 <Title order={2}>{stage.name}</Title>
-                <Group gap="xs" mt="xs">
-                  <IconCalendar size={16} />
-                  <Text size="sm" c="dimmed">
-                    <Rendezvous date={stage.dateTime} zone={stage.timezone} variant="detail" />
-                  </Text>
-                  {stage.averageSpeed && (
-                    <>
-                      <IconBolt size={16} />
-                      <Text size="sm" c="dimmed">
-                        {speed(stage.averageSpeed)}
-                      </Text>
-                    </>
-                  )}
-                </Group>
+                {stage.averageSpeed && (
+                  <Group gap="xs" mt="xs">
+                    <IconBolt size={16} />
+                    <Text size="sm" c="dimmed">
+                      {speed(stage.averageSpeed)}
+                    </Text>
+                  </Group>
+                )}
               </Box>
             </Group>
+
+            {/* The departure, under the title, before the description (docs/BRANDING.md §7.8,
+                docs/LEDGER_*.md WEB-137). A stage carries no end of its own: no return. */}
+            <Box mb="md">
+              <DepartureBlock
+                date={stage.dateTime}
+                zone={stage.timezone}
+                place={stage.startPlace}
+              />
+            </Box>
 
             {/* Description */}
             {stage.media.markdown && (
@@ -203,32 +207,17 @@ export function StageDetailPage() {
               </Box>
             )}
 
-            {/* Places */}
-            {(stage.startPlace || stage.endPlace) && (
-              <Stack gap="sm">
-                {stage.startPlace && (
-                  <Group gap="sm">
-                    <IconMapPin size={20} color="var(--mantine-color-green-text)" />
-                    <Box>
-                      <Text size="xs" c="dimmed">
-                        {t('startPlace')}
-                      </Text>
-                      <Text fw={500}>{stage.startPlace.name}</Text>
-                    </Box>
-                  </Group>
-                )}
-                {stage.endPlace && (
-                  <Group gap="sm">
-                    <IconMapPin size={20} color="var(--mantine-color-red-text)" />
-                    <Box>
-                      <Text size="xs" c="dimmed">
-                        {t('endPlace')}
-                      </Text>
-                      <Text fw={500}>{stage.endPlace.name}</Text>
-                    </Box>
-                  </Group>
-                )}
-              </Stack>
+            {/* The start place is in the departure block; the end place, when there is one, here. */}
+            {stage.endPlace && (
+              <Group gap="sm">
+                <IconMapPin size={20} color="var(--mantine-color-red-text)" />
+                <Box>
+                  <Text size="xs" c="dimmed">
+                    {t('endPlace')}
+                  </Text>
+                  <Text fw={500}>{stage.endPlace.name}</Text>
+                </Box>
+              </Group>
             )}
           </Paper>
 

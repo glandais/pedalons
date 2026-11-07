@@ -72,6 +72,9 @@ export 'pdl_prev_next_nav.dart';
 export 'pdl_screen_scaffold.dart';
 export 'pdl_sheet.dart';
 export 'pdl_stage_rail.dart';
+export 'pdl_day_box.dart';
+export 'pdl_departure_block.dart';
+export 'pdl_meta_grid.dart';
 
 // ── Briques techniques ──────────────────────────────────────────────────────
 export 'elevation/elevation_area_painter.dart';

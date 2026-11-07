@@ -647,6 +647,107 @@ class AppFormatters {
     return '${formatFullDate(local)} $time';
   }
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // Départ — le format unique (docs/LEDGER_*.md BRAND-8, BRANDING §8.3)
+  //
+  // « sam. 12 avr. · 09:00 », l'année seulement hors de l'année en cours,
+  // « Aujourd'hui · 09:00 » et « Demain · 09:00 » — jamais d'autre relatif.
+  // L'heure suit le réglage 12 h / 24 h du téléphone ([formatTime]).
+  //
+  // Contrairement à [formatRideDate], « aujourd'hui », « demain » et l'année
+  // en cours s'apprécient dans le **fuseau de la sortie** : le relatif colle
+  // alors toujours au jour affiché, qui est celui de la sortie. Une personne
+  // lue d'ailleurs a sa mention de fuseau pour le reste.
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /// Le mois abrégé de la locale courante : « avr. », « Apr ».
+  static String monthAbbrev(int month) {
+    if (month < 1 || month > 12) return '?';
+    return DateFormat.MMM().format(DateTime(2026, month));
+  }
+
+  /// L'heure murale de [instant] et celle de [now] (maintenant par défaut),
+  /// toutes deux dans le fuseau [zone].
+  static (DateTime, DateTime) _departureWalls(
+    DateTime instant,
+    String? zone,
+    DateTime? now,
+  ) => (
+    toZoneTime(instant, zone),
+    toZoneTime((now ?? DateTime.now()).toUtc(), zone),
+  );
+
+  /// Écart en jours civils entre deux heures murales. Compté sur des dates
+  /// UTC : une différence de minuits locaux perd une heure au passage à
+  /// l'heure d'été de l'appareil, et `inDays` tomberait alors à zéro.
+  static int _civilDayGap(DateTime from, DateTime to) => DateTime.utc(
+    to.year,
+    to.month,
+    to.day,
+  ).difference(DateTime.utc(from.year, from.month, from.day)).inDays;
+
+  /// « Aujourd'hui » ou « Demain » quand le départ à [instant] (une valeur du
+  /// contrat) tombe ce jour-là dans le fuseau [zone] de la sortie ; `null`
+  /// sinon — y compris hier : aucun autre relatif n'existe (BRAND-8).
+  ///
+  /// [now] est un instant ; il ne sert qu'aux tests.
+  static String? formatDepartureRelative(
+    DateTime instant,
+    String? zone, {
+    DateTime? now,
+  }) {
+    final (DateTime wall, DateTime reference) = _departureWalls(
+      instant,
+      zone,
+      now,
+    );
+    return switch (_civilDayGap(reference, wall)) {
+      0 => today,
+      1 => tomorrow,
+      _ => null,
+    };
+  }
+
+  /// La date seule du départ, jamais relative : « sam. 12 avr. », ou
+  /// « sam. 10 avr. 2027 » quand l'année n'est pas l'année en cours du
+  /// fuseau [zone].
+  static String formatDepartureDate(
+    DateTime instant,
+    String? zone, {
+    DateTime? now,
+  }) {
+    final (DateTime wall, DateTime reference) = _departureWalls(
+      instant,
+      zone,
+      now,
+    );
+    final DateFormat format = wall.year == reference.year
+        ? DateFormat.MMMEd()
+        : DateFormat.yMMMEd();
+    return format.format(wall);
+  }
+
+  /// Le départ en une chaîne : « sam. 12 avr. · 09:00 »,
+  /// « sam. 10 avr. 2027 · 09:00 », « Aujourd'hui · 09:00 »,
+  /// « Demain · 09:00 ». [instant] est la valeur du contrat, lue dans le
+  /// fuseau [zone] de la sortie ; la mention de fuseau reste à l'appelant
+  /// ([formatZoneMention]).
+  static String formatDeparture(
+    DateTime instant,
+    String? zone, {
+    DateTime? now,
+  }) {
+    final String date =
+        formatDepartureRelative(instant, zone, now: now) ??
+        formatDepartureDate(instant, zone, now: now);
+    return 'dates.departureAt'.tr(
+      namedArgs: <String, String>{
+        'date': date,
+        'time': formatTime(toZoneTime(instant, zone)),
+      },
+    );
+  }
+
   /// « il y a 3 jours », « dans 2 h », « à l'instant ».
   ///
   /// Au-delà de [RelativeTime.absoluteThresholdDays] jours, le relatif n'aide

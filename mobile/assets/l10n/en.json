@@ -144,6 +144,7 @@
     "today": "Today",
     "tomorrow": "Tomorrow",
     "departure": "Departure: {time}",
+    "departureAt": "{date} · {time}",
     "at": "{date} at {time}",
     "zoneMention": "{city} time",
     "atYourPlace": "{time} your time",
@@ -630,7 +631,12 @@
     "groupsRoute": "Group routes",
     "mainRoute": "Main route",
     "selectedGroupProfile": "Selected group profile",
-    "dateAndTime": "Date and time",
+    "departureBlock": {
+      "departs": "Leaves at {time}",
+      "returnAround": "back around {time}",
+      "yourGroup": "Your group: {group} · {time}",
+      "relativeToRide": "{relation} ({rideTime})"
+    },
     "viewParticipants": "View list",
     "startPlace": "Start",
     "endPlace": "Finish",

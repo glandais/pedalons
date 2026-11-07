@@ -2,8 +2,12 @@ import { useTranslation } from 'react-i18next'
 import {
   formatDate,
   formatDateTime,
+  formatDeparture,
+  formatLongDay,
   formatPattern,
+  formatRelativeDay,
   formatTime,
+  relativeDay,
   useEffectiveTimezone,
 } from '@/utils/dateFormat'
 import { rendezvousMention, type RendezvousMention } from '@/utils/rendezvous'
@@ -39,6 +43,18 @@ export function useRendezvousFormat(zone: string | null | undefined) {
     formatTime: (date: DateInput) => formatTime(date, language, entityZone),
     formatPattern: (date: DateInput, pattern: string) =>
       formatPattern(date, pattern, language, entityZone),
+    /**
+     * The departure in its one format (ledger `BRAND-8`): « sam. 12 avr. · 09:00 », « Demain ·
+     * 09:00 » — today and tomorrow judged in the zone. `relative: false` keeps the absolute day.
+     */
+    formatDeparture: (date: DateInput, options?: { relative?: boolean }) =>
+      formatDeparture(date, language, entityZone, t, options),
+    /** « samedi 12 avril » (the year outside the current one), in the zone. */
+    formatLongDay: (date: DateInput) => formatLongDay(date, language, entityZone, t),
+    /** « Aujourd'hui » / « Demain » in the zone, else `null`. */
+    formatRelativeDay: (date: DateInput) => formatRelativeDay(date, entityZone, t),
+    /** `'today'` / `'tomorrow'` in the zone, else `null`. */
+    relativeDay: (date: DateInput) => relativeDay(date, entityZone),
     /** Whether two instants fall on the same calendar day (or month, with `'yyyy-MM'`) in the zone. */
     samePeriod: (a: DateInput, b: DateInput, pattern: string = 'yyyy-MM-dd') =>
       formatPattern(a, pattern, language, entityZone) ===

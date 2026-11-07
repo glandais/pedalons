@@ -16,7 +16,6 @@ import {
   IconStack2,
   IconArrowsMaximize,
   IconArrowUp,
-  IconCalendarCheck,
   IconChevronDown,
 } from '@tabler/icons-react'
 import {
@@ -59,6 +58,9 @@ import { ConfirmDialog } from '../../components/common/ConfirmDialog'
 import type { MapRouteItem } from '../../components/route/RoutesMapView'
 import { Rendezvous } from '../../components/common/Rendezvous'
 import { tripEndZone } from '../../utils/rendezvous'
+import { formatPublicationSpan } from '../../utils/publicationTiming'
+import { useEffectiveTimezone } from '../../utils/dateFormat'
+import { DepartureBlock } from '../../components/common/DepartureBlock'
 import { MediaDisplay } from '../../components/common/MediaDisplay'
 import { EntityLogo } from '../../components/common/EntityLogo'
 import { ContentActionsMenu } from '../../components/moderation/ContentActionsMenu'
@@ -72,7 +74,9 @@ import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
 import { teamAccess } from '@/lib/teamAccess'
 
 export function TripDetailPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  // The fallback zone of the span for a trip whose zone this browser lacks (API-60).
+  const { timezone: readerZone } = useEffectiveTimezone()
   const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
   const { teamSlug, tripSlug } = useParams<{ teamSlug: string; tripSlug: string }>()
   const { isAuthenticated, user } = useAuth()
@@ -155,10 +159,6 @@ export function TripDetailPage() {
   // Told by the server: `participants` is only a preview of the first few (ledger API-12).
   const hasJoined = !!user && trip.registered
   const canJoinTrip = isMember && trip.status === Status.PUBLISHED && !hasJoined
-
-  // Rendezvous (docs/LEDGER_*.md API-60): the start in the trip's zone (its first stage's), the end
-  // in its last stage's.
-  const formattedDate = <Rendezvous date={trip.dateTime} zone={trip.timezone} variant="detail" />
 
   const handlePublish = () => {
     updateMutation.mutate(
@@ -394,6 +394,19 @@ export function TripDetailPage() {
           </Group>
         </Group>
 
+        {/* The departure, under the title, before the description (docs/BRANDING.md §7.8,
+            docs/LEDGER_*.md WEB-137): the first stage's day and time, the trip's span, its end. */}
+        <Box mt="md">
+          <DepartureBlock
+            date={trip.dateTime}
+            zone={trip.timezone}
+            tone="teal"
+            dayLine={formatPublicationSpan(trip, 'full', i18n.language, t, readerZone)}
+            // The end is known once there are stages; without any it is only dateTime + 3 h.
+            returnAt={trip.endDate ? trip.endDateTime : undefined}
+            returnZone={tripEndZone(trip)}
+          />
+        </Box>
         <Box mt="md">
           <MediaDisplay media={trip.media} />
         </Box>
@@ -411,12 +424,6 @@ export function TripDetailPage() {
           </Group>
         )}
         <Group mt="md">
-          <Group gap="xs">
-            <IconCalendar size={16} />
-            <Text size="sm" c="dimmed">
-              {formattedDate}
-            </Text>
-          </Group>
           <Group gap="xs">
             <IconUsers size={16} />
             <Text size="sm" c="dimmed">
@@ -442,19 +449,6 @@ export function TripDetailPage() {
               <IconArrowUp size={16} />
               <Text size="sm" c="dimmed">
                 {elevation(trip.totalElevationGain)}
-              </Text>
-            </Group>
-          )}
-          {trip.endDate && (
-            <Group gap="xs">
-              <IconCalendarCheck size={16} />
-              <Text size="sm" c="dimmed">
-                <Rendezvous
-                  date={trip.endDate}
-                  zone={tripEndZone(trip)}
-                  variant="detail"
-                  template={(date) => t('trips.detail.endDate', { date })}
-                />
               </Text>
             </Group>
           )}

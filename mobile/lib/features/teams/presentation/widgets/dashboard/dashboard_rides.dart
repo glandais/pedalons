@@ -20,6 +20,7 @@ import '../../../../auth/providers/auth_provider.dart';
 import '../../../../rides/providers/participation_changes.dart';
 import '../../../../routes/presentation/route_export.dart';
 import 'dashboard_section.dart';
+import '../../../../../core/widgets/day_box.dart';
 import '../../../../../core/widgets/zone_mention_line.dart';
 import '../../../../rides/domain/group_start.dart';
 
@@ -149,7 +150,8 @@ class _MyUpcomingRowState extends ConsumerState<_MyUpcomingRow> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              if (at != null) _DateBlock(date: at),
+              // Le jour en boîte à plat, à gauche (BRANDING §7.8).
+              if (at != null) dayBoxFor(at),
               const SizedBox(width: PdlSpacing.cardTight),
               Expanded(
                 child: Column(
@@ -370,45 +372,6 @@ class _MetaLine extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// « Sam. / 10 / Oct. » : le jour, en bloc, à gauche de la ligne.
-class _DateBlock extends StatelessWidget {
-  const _DateBlock({required this.date});
-
-  /// Déjà ramenée à l'heure murale du fuseau de l'entité.
-  final DateTime date;
-
-  @override
-  Widget build(BuildContext context) {
-    final PdlColors c = context.pdl;
-    final PdlTypography t = context.pdlText;
-    return Container(
-      width: PdlMetrics.tapTarget + PdlSpacing.chipGap,
-      padding: const EdgeInsets.symmetric(vertical: PdlSpacing.badgeGap),
-      decoration: BoxDecoration(
-        color: c.primarySoft,
-        borderRadius: PdlRadii.mdAll,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Text(
-            AppFormatters.dayAbbrev(date.weekday),
-            style: t.xs.copyWith(color: c.primaryOnSoft),
-          ),
-          Text(
-            '${date.day}',
-            style: t.statBigValue.copyWith(color: c.primaryOnSoft),
-          ),
-          Text(
-            DateFormat.MMM().format(date),
-            style: t.xs.copyWith(color: c.primaryOnSoft),
           ),
         ],
       ),
