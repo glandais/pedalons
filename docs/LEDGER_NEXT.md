@@ -215,8 +215,9 @@ faite, et le 500 du contact vendeur (`MOB-47`). Depuis l'import de `n-peloton` e
       la 1.1.2 ; nouveautés complétées de `MOB-111` à `MOB-115`). Version 1.1.3 créée dans App Store
       Connect le 7 novembre 2026 (`MANUAL`, id `14f5c3e9-ceb2-42e5-9666-c5202da0134c`), nouveautés
       poussées par `asc metadata apply` ; description, mots-clés et détail de revue recopiés de la
-      1.1.2 par App Store Connect. Reste : `publish_beta.sh`, attacher le build (`fastlane release`),
-      `asc validate`, soumettre, puis publier à la main après l'approbation.
+      1.1.2 par App Store Connect. Build 97 attaché le même jour (`asc versions attach-build`) ;
+      `asc validate` : aucune erreur ni alerte. Reste : soumettre, puis publier à la main après
+      l'approbation.
 
 ### Couverture e2e Patrol — ce que les tests ne couvrent pas encore
 
