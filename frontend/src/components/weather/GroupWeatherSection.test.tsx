@@ -30,7 +30,6 @@ const ride = (overrides: Partial<RideDto> = {}) =>
 
 function renderSection(props: {
   ride?: RideDto
-  startAt?: string
   weather?: RideWeatherDto
   leg?: WeatherLegDto
   canEdit?: boolean
@@ -43,7 +42,6 @@ function renderSection(props: {
     <MantineProvider>
       <GroupWeatherSection
         ride={props.ride ?? ride()}
-        startAt={props.startAt ?? (props.ride ?? ride()).dateTime}
         weather={weather}
         leg={'leg' in props ? props.leg : weather?.legs.find((l) => l.groupId === 'g2')}
         isLoading={false}
@@ -307,7 +305,6 @@ describe('GroupWeatherSection', () => {
         <MantineProvider>
           <GroupWeatherSection
             ride={ride()}
-            startAt={ride().dateTime}
             weather={routeWeather}
             leg={routeWeather.legs.find((l) => l.groupId === 'g2')}
             isLoading={false}
@@ -360,15 +357,6 @@ describe('GroupWeatherSection', () => {
     expect(text()).toMatch(/Au départ\s*08:30/)
     expect(text()).toContain("Ce groupe n'a pas de parcours")
     expect(screen.queryByRole('group', { name: 'Prévisions à chaque passage' })).toBeNull()
-  })
-
-  it("gives the group's own departure time, not the ride's (BRAND-8)", () => {
-    renderSection({
-      startAt: '2026-10-18T07:15:00Z',
-      leg: weatherLeg('g2', { status: WeatherStatus.NO_LOCATION, checkpoints: [] }),
-    })
-    expect(text()).toMatch(/Au départ\s*09:15/)
-    expect(text()).not.toMatch(/Au départ\s*08:30/)
   })
 
   it('flags an old forecast', () => {

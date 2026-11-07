@@ -95,8 +95,6 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
 Audit de la visibilité de la date et de l'heure de départ (sortie, groupe, voyage, étape) sur les
 trois clients ; la règle commune est `BRAND-8`, le pendant web `WEB-135` à `WEB-139`.
 
-- [ ] `MOB-116` **Code mort : `features/rides/presentation/widgets/ride_card.dart`** — aucun usage dans
-      `lib/`, encore en Material. À supprimer. Taille : XS.
 
 ### Recette sur une application qui tourne
 

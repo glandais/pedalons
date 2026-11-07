@@ -721,6 +721,11 @@ le détail d'une sortie, qui donne l'heure de la sortie et, à côté, « Votre 
   gauche la boîte du jour à plat ; au centre « Départ 09:00 » en 24 px/700 (22 px sur mobile), la
   pastille « Demain », « samedi 12 avril · retour vers 14:10 » en 14 px atténué et le lieu de départ ;
   à droite (sous le reste sur mobile) « Votre groupe » et son heure en 700.
+- **Groupe à heure propre** (carte de groupe du détail d'une sortie) : sous le nom, un bandeau
+  indigo très doux (`primary-0` `#edf2ff` en clair, surface alternée en sombre — pas l'indigo
+  « light », sur lequel le gris atténué tombe sous 4,5:1), rayon 8 px, contenant la ligne de départ
+  « Départ 20:30 » en 16 px/700 et « après la sortie de 20:00 » atténué. Rien quand le groupe part
+  avec la sortie.
 
 ---
 
