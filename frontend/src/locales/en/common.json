@@ -1745,6 +1745,7 @@
   "rides.detail.groups.title": "Groups",
   "rides.detail.groups.viewAll": "View all",
   "rides.detail.groups.viewParticipants": "View all participants",
+  "rides.detail.instructions.title": "Instructions",
   "rides.detail.mainRoute": "Main Route",
   "rides.detail.nonMember.message": "Join this team to participate in rides.",
   "rides.detail.nonMember.viewTeam": "View team",

@@ -23,7 +23,6 @@ import {
   Button,
   Menu,
   Badge,
-  SimpleGrid,
   Box,
   Alert,
   Anchor,
@@ -41,7 +40,7 @@ import { getListPublicationsQueryKey } from '../../api/endpoints/publications/pu
 import { invalidateRideWeather, rideRouteSlugs, useRideDetailData } from './rideDetailData'
 import { groupAction, groupsRegisteredFirst, groupWindLeg } from './rideGroupData'
 import { rideStatusRequest } from './rideFormData'
-import { ReportTargetType, Status } from '@/api/dto'
+import { ReportTargetType, Status, type MediaDto } from '@/api/dto'
 import { useAuth } from '../../hooks/useAuth'
 import { EmptyState } from '../../components/common/EmptyState'
 import { QueryStateBoundary } from '../../components/common/QueryStateBoundary'
@@ -78,8 +77,26 @@ import { withMapColor } from '@/hooks/filters/mapColorFilters'
 import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
 import { teamAccess } from '@/lib/teamAccess'
 
+/** The routes map fills the visible height beside the column on md+ (`.detail-map--fill`, WEB-134);
+ *  its skeleton takes the same height so nothing shifts when the map bundle arrives. */
+const STICKY_MAP_HEIGHT = 'var(--detail-map-height, 500px)'
+
 /** The anchor of the weather block, as on a group's page: a former group link's `#meteo` lands here. */
 const WEATHER_ANCHOR = 'meteo'
+
+/**
+ * Whether the « Consignes » block would draw anything: a text or an attachment. Images do not count
+ * on their own — MediaDisplay only draws those the text references.
+ */
+function hasMediaContent(media: MediaDto): boolean {
+  return media.markdown.trim() !== '' || media.assets.attachments.length > 0
+}
+
+/** The instructions' column is at most 440 px on md+ (`.ride-detail-layout`): no 960 px picture. */
+const INSTRUCTIONS_IMAGE_SIZES = '(min-width: 64em) 440px, 100vw'
+
+/** Below md the map, its profile and the pictures load above `#meteo` after the first scroll. */
+const WEATHER_ANCHOR_SETTLE_MS = 4000
 
 export function RideDetailPage() {
   const { t } = useTranslation()
@@ -139,7 +156,9 @@ export function RideDetailPage() {
   useCanonicalPath(team && ride ? paths.ride(team.slug, ride.slug) : undefined)
 
   // `#meteo`: a solo ride's former group link (WEB-79), or a shared one.
-  useScrollToAnchor(WEATHER_ANCHOR, !!ride && !!team && !weather.isLoading)
+  useScrollToAnchor(WEATHER_ANCHOR, !!ride && !!team && !weather.isLoading, {
+    settleMs: WEATHER_ANCHOR_SETTLE_MS,
+  })
 
   if (isLoadingTeam || isLoadingRide || error || !ride || !team) {
     return (
@@ -184,6 +203,8 @@ export function RideDetailPage() {
   const soloRouteSlug = solo && routeSlugs.length === 1 ? routeSlugs[0] : undefined
   // Its group's Météo mode on that map, on the group page's own terms (WEB-118)
   const soloWindLeg = groupWindLeg(ride, soloLeg)
+  // No map at all (no route): the left column takes the full width.
+  const hasMap = !!soloRouteSlug || mapItems.length > 0
 
   // A rendezvous, in the ride's zone (docs/LEDGER_*.md API-60).
   const formattedDate = <Rendezvous date={ride.dateTime} zone={ride.timezone} variant="detail" />
@@ -390,9 +411,6 @@ export function RideDetailPage() {
           </Group>
         </Group>
 
-        <Box mt="md">
-          <MediaDisplay media={ride.media} />
-        </Box>
         {ride.status === Status.DRAFT && ride.publishAt && (
           <Group mt="xs" gap="xs">
             <IconCalendar size={16} color="var(--mantine-color-yellow-text)" />
@@ -463,49 +481,156 @@ export function RideDetailPage() {
         <TagList tags={ride.tags} mt="md" />
       </Paper>
 
-      {/* Weather at the meeting point; each group's route is on the group's own page (WEB-77),
-          except a solo ride's, whose page is its group's (WEB-79) */}
-      <Box id={WEATHER_ANCHOR} style={{ scrollMarginTop: 'var(--app-shell-header-height)' }}>
-        <ErrorBoundary variant="inline">
-          <RideWeatherSection
-            ride={ride}
-            weather={weather.data}
-            isLoading={weather.isLoading}
-            isFetching={weather.isFetching}
-            onRetry={() => void weather.refetch()}
-            canEdit={canEdit}
-          />
-        </ErrorBoundary>
-      </Box>
-
-      {/* Map and Groups */}
-      <SimpleGrid
-        cols={{ base: 1, md: 2, xl: 3 }}
-        spacing={{ base: 'md', sm: 'lg' }}
+      {/* Variant A (docs/LEDGER_*.md WEB-134): the map in a column of its own, sticky on md+, so the
+          organiser's free text, however long, never pushes it down. Stacked below md, map first. */}
+      <Box
+        className={hasMap ? 'ride-detail-layout' : 'ride-detail-layout ride-detail-layout--no-map'}
         mb={{ base: 'md', sm: 'lg' }}
       >
-        {/* Map - shown first on mobile, spans 2 cols on xl */}
-        <Box className="detail-map" style={{ order: 1 }}>
-          {soloRouteSlug ? (
-            // A solo ride on one route: the group page's map, its profile, its Météo mode, and the
-            // ride's own fullscreen map in the mode the line is in (WEB-118).
-            <GroupRouteMap
-              teamSlug={teamSlug!}
-              routeSlug={soloRouteSlug}
-              route={groupRoutesBySlug.get(soloRouteSlug)}
-              leg={soloWindLeg}
-              attribution={soloWindLeg ? weather.data?.attribution : undefined}
-              timezone={ride.timezone}
-              fullscreenPath={(colorBy) =>
-                withMapColor(paths.rideMap(team.slug, ride.slug), colorBy)
-              }
-              withActions={false}
-            />
-          ) : (
-            mapItems.length > 0 && (
+        <Stack className="ride-detail-side" gap="lg">
+          {/* The organiser's instructions, only when there are some */}
+          {hasMediaContent(ride.media) && (
+            <Paper
+              withBorder
+              p="lg"
+              component="section"
+              aria-labelledby="ride-instructions-title"
+              data-testid="ride-instructions"
+            >
+              <Title id="ride-instructions-title" order={3} size="h4" mb="md">
+                {t('rides.detail.instructions.title')}
+              </Title>
+              <MediaDisplay media={ride.media} imageSizes={INSTRUCTIONS_IMAGE_SIZES} />
+            </Paper>
+          )}
+
+          {/* Groups list — or, for a solo ride, its one group in full (WEB-79) */}
+          <Box data-testid="ride-groups">
+            {solo ? (
+              <Stack gap="md">
+                <RideSoloGroupPanel
+                  teamSlug={teamSlug!}
+                  ride={ride}
+                  group={solo}
+                  action={groupAction(ride, solo, isMember)}
+                  membership={membership}
+                  routesBySlug={groupRoutesBySlug}
+                  // On its single-route map (graded, not a coloured trace) the bar would match nothing.
+                  trackColor={soloRouteSlug ? undefined : trackColors.get(solo.id)}
+                  error={groupError?.groupId === solo.id ? groupError.message : undefined}
+                />
+                <GroupStats
+                  ride={ride}
+                  group={solo}
+                  arrival={soloLeg && hasForecast(soloLeg.status) ? soloLeg.arrivalTime : undefined}
+                />
+                <GroupParticipantsSection
+                  teamSlug={teamSlug!}
+                  ride={ride}
+                  group={solo}
+                  titleId="ride-participants-title"
+                  canSeeParticipants={canReadComments}
+                />
+              </Stack>
+            ) : (
+              <>
+                <Title order={3} size="h4" mb="md">
+                  {t('rides.detail.groups.title')}
+                </Title>
+                {ride.groups && ride.groups.length > 0 ? (
+                  <Stack gap="sm">
+                    {groupsRegisteredFirst(ride.groups, ride.registeredGroupId).map(
+                      (group, index) => {
+                        return (
+                          <Fragment key={group.id}>
+                            {index === 1 && isRegisteredInGroup && (
+                              <Divider
+                                label={t('rides.detail.groups.others')}
+                                labelPosition="left"
+                                mt="xs"
+                              />
+                            )}
+                            <RideGroupCard
+                              group={group}
+                              rideTimezone={ride.timezone}
+                              rideDateTime={ride.dateTime}
+                              teamSlug={teamSlug!}
+                              rideSlug={ride.slug}
+                              rideRouteSlug={ride.routeSlug}
+                              routesBySlug={groupRoutesBySlug}
+                              trackColor={trackColors.get(group.id)}
+                              weatherLeg={
+                                weather.data && hasForecast(weather.data.status)
+                                  ? weather.data.legs.find((leg) => leg.groupId === group.id)
+                                  : undefined
+                              }
+                              canJoin={canJoinRide}
+                              canSeeParticipants={canReadComments}
+                              onJoin={() => handleJoinGroup(group.id)}
+                              onLeave={() => handleLeaveGroup(group.id)}
+                              onHover={hoverGroup}
+                              isHighlighted={isGroupLit(group.id)}
+                              isLoading={membership.isPending}
+                              error={
+                                groupError?.groupId === group.id ? groupError.message : undefined
+                              }
+                            />
+                          </Fragment>
+                        )
+                      }
+                    )}
+                  </Stack>
+                ) : (
+                  <EmptyState
+                    icon={<IconUsersGroup size={48} />}
+                    title={t('rides.detail.groups.emptyTitle')}
+                    description={t('rides.detail.groups.empty')}
+                  />
+                )}
+              </>
+            )}
+          </Box>
+
+          {/* Weather at the meeting point; each group's route is on the group's own page (WEB-77),
+              except a solo ride's, whose page is its group's (WEB-79) */}
+          <Box id={WEATHER_ANCHOR} style={{ scrollMarginTop: 'var(--app-shell-header-height)' }}>
+            <ErrorBoundary variant="inline">
+              <RideWeatherSection
+                ride={ride}
+                weather={weather.data}
+                isLoading={weather.isLoading}
+                isFetching={weather.isFetching}
+                onRetry={() => void weather.refetch()}
+                canEdit={canEdit}
+              />
+            </ErrorBoundary>
+          </Box>
+        </Stack>
+
+        {/* Map: the right column, sticky (via .detail-map); after the column in the DOM so focus and
+            reading follow the visual order, moved first below md by the grid areas */}
+        {hasMap && (
+          <Box className={soloRouteSlug ? 'detail-map' : 'detail-map detail-map--fill'}>
+            {soloRouteSlug ? (
+              // A solo ride on one route: the group page's map, its profile, its Météo mode, and the
+              // ride's own fullscreen map in the mode the line is in (WEB-118).
+              <GroupRouteMap
+                teamSlug={teamSlug!}
+                routeSlug={soloRouteSlug}
+                route={groupRoutesBySlug.get(soloRouteSlug)}
+                leg={soloWindLeg}
+                attribution={soloWindLeg ? weather.data?.attribution : undefined}
+                timezone={ride.timezone}
+                fullscreenPath={(colorBy) =>
+                  withMapColor(paths.rideMap(team.slug, ride.slug), colorBy)
+                }
+                withActions={false}
+              />
+            ) : (
               <ErrorBoundary variant="inline">
-                <Suspense fallback={<Skeleton height={500} radius="md" />}>
+                <Suspense fallback={<Skeleton height={STICKY_MAP_HEIGHT} radius="md" />}>
                   <RoutesMapView
+                    variant="sticky"
                     items={mapItems}
                     teamSlug={teamSlug!}
                     highlightedItemId={litItemId}
@@ -515,97 +640,10 @@ export function RideDetailPage() {
                   />
                 </Suspense>
               </ErrorBoundary>
-            )
-          )}
-        </Box>
-
-        {/* Groups list — or, for a solo ride, its one group in full (WEB-79) */}
-        <Box style={{ order: 2 }} data-testid="ride-groups">
-          {solo ? (
-            <Stack gap="md">
-              <RideSoloGroupPanel
-                teamSlug={teamSlug!}
-                ride={ride}
-                group={solo}
-                action={groupAction(ride, solo, isMember)}
-                membership={membership}
-                routesBySlug={groupRoutesBySlug}
-                // On its single-route map (graded, not a coloured trace) the bar would match nothing.
-                trackColor={soloRouteSlug ? undefined : trackColors.get(solo.id)}
-                error={groupError?.groupId === solo.id ? groupError.message : undefined}
-              />
-              <GroupStats
-                ride={ride}
-                group={solo}
-                arrival={soloLeg && hasForecast(soloLeg.status) ? soloLeg.arrivalTime : undefined}
-              />
-              <GroupParticipantsSection
-                teamSlug={teamSlug!}
-                ride={ride}
-                group={solo}
-                titleId="ride-participants-title"
-                canSeeParticipants={canReadComments}
-              />
-            </Stack>
-          ) : (
-            <>
-              <Title order={3} size="h4" mb="md">
-                {t('rides.detail.groups.title')}
-              </Title>
-              {ride.groups && ride.groups.length > 0 ? (
-                <Stack gap="sm">
-                  {groupsRegisteredFirst(ride.groups, ride.registeredGroupId).map(
-                    (group, index) => {
-                      return (
-                        <Fragment key={group.id}>
-                          {index === 1 && isRegisteredInGroup && (
-                            <Divider
-                              label={t('rides.detail.groups.others')}
-                              labelPosition="left"
-                              mt="xs"
-                            />
-                          )}
-                          <RideGroupCard
-                            group={group}
-                            rideTimezone={ride.timezone}
-                            rideDateTime={ride.dateTime}
-                            teamSlug={teamSlug!}
-                            rideSlug={ride.slug}
-                            rideRouteSlug={ride.routeSlug}
-                            routesBySlug={groupRoutesBySlug}
-                            trackColor={trackColors.get(group.id)}
-                            weatherLeg={
-                              weather.data && hasForecast(weather.data.status)
-                                ? weather.data.legs.find((leg) => leg.groupId === group.id)
-                                : undefined
-                            }
-                            canJoin={canJoinRide}
-                            canSeeParticipants={canReadComments}
-                            onJoin={() => handleJoinGroup(group.id)}
-                            onLeave={() => handleLeaveGroup(group.id)}
-                            onHover={hoverGroup}
-                            isHighlighted={isGroupLit(group.id)}
-                            isLoading={membership.isPending}
-                            error={
-                              groupError?.groupId === group.id ? groupError.message : undefined
-                            }
-                          />
-                        </Fragment>
-                      )
-                    }
-                  )}
-                </Stack>
-              ) : (
-                <EmptyState
-                  icon={<IconUsersGroup size={48} />}
-                  title={t('rides.detail.groups.emptyTitle')}
-                  description={t('rides.detail.groups.empty')}
-                />
-              )}
-            </>
-          )}
-        </Box>
-      </SimpleGrid>
+            )}
+          </Box>
+        )}
+      </Box>
 
       {/* Info for non-members */}
       {!isMember && isAuthenticated && (

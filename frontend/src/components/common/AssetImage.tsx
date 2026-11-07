@@ -21,6 +21,8 @@ export interface AssetImageProps {
   images: AssetDto[]
   size?: ImageSize
   altText?: string
+  /** A `full` picture's `sizes`, when its column is narrower than the page's text column. */
+  sizes?: string
 }
 
 export function AssetImage({
@@ -28,6 +30,7 @@ export function AssetImage({
   images,
   size = DEFAULT_IMAGE_SIZE,
   altText = '',
+  sizes = FULL_SIZES,
 }: AssetImageProps) {
   const { t } = useTranslation()
   const [isLoading, setIsLoading] = useState(true)
@@ -114,7 +117,7 @@ export function AssetImage({
         ref={imgRef}
         src={url}
         srcSet={srcSet}
-        sizes={size === 'full' ? FULL_SIZES : undefined}
+        sizes={size === 'full' ? sizes : undefined}
         alt={altText}
         w={width}
         h={sizeStyle.h}

@@ -70,8 +70,11 @@ export const responsiveSpacing: Record<string, ResponsiveSpacing> = {
  * - `standard`  — maps sitting beside other content (e.g. ride detail, half-width)
  * - `full`      — the primary map of a detail page (route / GPX preview)
  * - `fullscreen`— dedicated map pages where the map *is* the content
+ * - `sticky`    — a sticky map column that fills the visible height (ride detail on md+,
+ *                 docs/LEDGER_*.md WEB-134): its container sets `--detail-map-height`, and the map is
+ *                 `full` wherever it doesn't (stacked below md)
  */
-export type MapHeightVariant = 'compact' | 'standard' | 'full' | 'fullscreen'
+export type MapHeightVariant = 'compact' | 'standard' | 'full' | 'fullscreen' | 'sticky'
 
 /**
  * Single source of truth for map heights.
@@ -90,6 +93,7 @@ const MAP_HEIGHT_CSS: Record<MapHeightVariant, string> = {
   standard: 'clamp(260px, 44svh, 460px)',
   full: 'clamp(300px, 52svh, 560px)',
   fullscreen: 'clamp(400px, 72svh, 820px)',
+  sticky: 'var(--detail-map-height, clamp(300px, 52svh, 560px))',
 }
 
 /**

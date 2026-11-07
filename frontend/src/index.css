@@ -255,6 +255,52 @@ body {
   }
 }
 
+/* Ride detail, variant A (docs/LEDGER_*.md WEB-134): one column below md, the map first; on md+ a
+   narrow column (instructions, groups, weather) beside the sticky map, so the organiser's free text
+   never pushes the map down. Without a map, the column takes the full width. */
+.ride-detail-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  /* The map comes after the column in the DOM (focus and reading order on md+), first on screen here */
+  grid-template-areas: 'map' 'side';
+  gap: var(--mantine-spacing-md);
+}
+
+.ride-detail-layout > .ride-detail-side {
+  grid-area: side;
+}
+
+/* Its grid area, not `.detail-map`'s xl span of two columns */
+.ride-detail-layout > .detail-map {
+  grid-area: map;
+}
+
+.ride-detail-layout--no-map {
+  grid-template-areas: 'side';
+}
+
+@media (min-width: 64em) {
+  .ride-detail-layout {
+    grid-template-columns: minmax(380px, 440px) minmax(0, 1fr);
+    grid-template-areas: 'side map';
+    gap: var(--mantine-spacing-lg);
+  }
+
+  .ride-detail-layout--no-map {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'side';
+  }
+
+  /* The routes map fills the visible height under the header (its 1px borders included), with a
+     floor for short windows. A solo ride's map keeps its height: controls and waypoints sit under it. */
+  .ride-detail-layout > .detail-map--fill {
+    --detail-map-height: max(
+      420px,
+      calc(100svh - var(--app-shell-header-height, 60px) - 2 * var(--mantine-spacing-md) - 2px)
+    );
+  }
+}
+
 /* MapLibre's fullscreen where the Fullscreen API is missing (iPhone Safari) is a `position: fixed`
    map at z-index 99999 — but only within its stacking context. The map's own box (`map-stack`,
    z-index 0 to keep its controls under the header) and the sticky `.detail-map` each open one, so

@@ -75,7 +75,9 @@ vi.mock('@/components/route/RouteMapView', () => ({
 vi.mock('@/components/comment', () => ({ CommentSection: () => null }))
 vi.mock('@/components/moderation/ContentActionsMenu', () => ({ ContentActionsMenu: () => null }))
 vi.mock('@/components/team/TeamContextBanner', () => ({ TeamContextBanner: () => null }))
-vi.mock('@/components/common/MediaDisplay', () => ({ MediaDisplay: () => null }))
+vi.mock('@/components/common/MediaDisplay', () => ({
+  MediaDisplay: () => <div data-testid="media-display" />,
+}))
 
 import { RideDetailPage } from './RideDetailPage'
 
@@ -107,7 +109,7 @@ const ride = (overrides: Partial<RideDto> = {}): RideDto =>
     timezone: 'UTC',
     routeSlug: 'boucle',
     participantCount: 11,
-    media: { markdown: '', assets: {} },
+    media: { markdown: '', assets: { images: [], attachments: [] } },
     team: { slug: 'np', name: 'N Peloton' },
     tags: [],
     createdBy: { id: 'u9', displayName: 'Créatrice de la sortie' },
@@ -281,5 +283,66 @@ describe('RideDetailPage — one trace per route, shared by the groups that ride
     expect(isLit('Col')).toBe(false)
     fireEvent.mouseLeave(card('Rapide'))
     expect(isLit('Cool')).toBe(false)
+  })
+})
+
+describe('RideDetailPage — layout A: instructions beside a sticky map (WEB-134)', () => {
+  beforeEach(() => {
+    state.team = member
+    state.weather = okWeather
+    state.ride = ride({ groups: [group(), group({ id: 'g2', name: 'Cool' })] })
+  })
+  afterEach(cleanup)
+
+  const asset = { id: 'a1', url: 'https://x/a.pdf', fileName: 'a.pdf' }
+  const media = (markdown: string, images: unknown[] = [], attachments: unknown[] = []) =>
+    ({ markdown, assets: { images, attachments } }) as unknown as RideDto['media']
+
+  it('leaves the instructions out when the organiser wrote and attached nothing', () => {
+    // An image no text references draws nothing either: MediaDisplay only shows referenced ones.
+    for (const empty of [media(''), media('  \n '), media('', [asset])]) {
+      state.ride = ride({ media: empty })
+      renderPage()
+      expect(screen.queryByTestId('ride-instructions')).toBeNull()
+      expect(screen.queryByTestId('media-display')).toBeNull()
+      cleanup()
+    }
+  })
+
+  it('shows the instructions, titled, as a section, for a text or an attachment', () => {
+    for (const full of [media('Rendez-vous au parking'), media('', [], [asset])]) {
+      state.ride = ride({ media: full })
+      renderPage()
+      const section = screen.getByTestId('ride-instructions')
+      expect(within(section).getByRole('heading', { name: 'Consignes' })).toBeTruthy()
+      expect(screen.getByRole('region', { name: 'Consignes' })).toBe(section)
+      expect(within(section).getByTestId('media-display')).toBeTruthy()
+      cleanup()
+    }
+  })
+
+  it('puts the map in its own sticky column, after the groups in the page order', async () => {
+    const { container } = renderPage()
+    await screen.findByTestId('routes-map')
+    const layout = container.querySelector('.ride-detail-layout')!
+    expect(layout.classList.contains('ride-detail-layout--no-map')).toBe(false)
+    const map = layout.querySelector(':scope > .detail-map')!
+    const side = layout.querySelector(':scope > .ride-detail-side')!
+    // Focus and reading order follow the md+ layout (column left, map right); CSS puts the map
+    // first below md.
+    expect(side.compareDocumentPosition(map) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(within(side as HTMLElement).getByTestId('ride-groups')).toBeTruthy()
+    expect(side.querySelector('#meteo')).toBeTruthy()
+  })
+
+  it('gives the column the full width when there is no map', () => {
+    state.ride = ride({
+      routeSlug: undefined,
+      groups: [group(), group({ id: 'g2', name: 'Cool' })],
+    })
+    const { container } = renderPage()
+    expect(container.querySelector('.ride-detail-layout--no-map')).toBeTruthy()
+    expect(container.querySelector('.detail-map')).toBeNull()
+    expect(screen.getByTestId('ride-groups')).toBeTruthy()
   })
 })

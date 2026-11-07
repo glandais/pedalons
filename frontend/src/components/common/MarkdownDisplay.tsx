@@ -24,6 +24,8 @@ export interface MarkdownDisplayProps {
   preview?: boolean
   maxLength?: number
   images?: AssetDto[]
+  /** Passed to each asset picture (`AssetImage`'s `sizes`). */
+  imageSizes?: string
 }
 
 export function MarkdownDisplay({
@@ -31,6 +33,7 @@ export function MarkdownDisplay({
   preview = false,
   maxLength = 150,
   images = [],
+  imageSizes,
 }: MarkdownDisplayProps) {
   if (!markdown) {
     return null
@@ -62,7 +65,13 @@ export function MarkdownDisplay({
             if (!id) return null
             return (
               <Box my="md">
-                <AssetImage assetId={id} images={images} size={size as ImageSize} altText={alt} />
+                <AssetImage
+                  assetId={id}
+                  images={images}
+                  size={size as ImageSize}
+                  altText={alt}
+                  sizes={imageSizes}
+                />
               </Box>
             )
           },

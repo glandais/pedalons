@@ -9,16 +9,23 @@ import { formatFileSize } from '@/utils/unitFormat'
 
 export interface MediaDisplayProps {
   media: MediaDto
+  /** The `sizes` of a full-width picture, where the text sits in a narrower column than the page's. */
+  imageSizes?: string
 }
 
-export const MediaDisplay = memo(function MediaDisplay({ media }: MediaDisplayProps) {
+export const MediaDisplay = memo(function MediaDisplay({ media, imageSizes }: MediaDisplayProps) {
   const { t, i18n } = useTranslation()
   const attachments = media.assets.attachments
   const images = media.assets.images
 
   return (
     <Stack>
-      <MarkdownDisplay markdown={media.markdown} preview={false} images={images} />
+      <MarkdownDisplay
+        markdown={media.markdown}
+        preview={false}
+        images={images}
+        imageSizes={imageSizes}
+      />
 
       {attachments.length > 0 && (
         <Paper withBorder p="sm" bg="var(--mantine-color-body)">

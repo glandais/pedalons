@@ -93,8 +93,9 @@ export interface RoutesMapViewProps {
   selectedItemId?: string | null
   /** A trace was clicked or tapped: it selects it (highlight and profile), it never navigates. */
   onItemSelect?: (itemId: string) => void
-  /** Map size variant: 'compact' for cards, 'standard' for detail pages, 'full' for full-screen */
-  variant?: 'compact' | 'standard' | 'full'
+  /** Map size variant: 'compact' for cards, 'standard' for detail pages, 'full' for full-screen,
+   *  'sticky' for a sticky column filling the visible height (see `useMapHeight`) */
+  variant?: 'compact' | 'standard' | 'full' | 'sticky'
   /**
    * The Météo mode, when set (a trip's overview, ledger WEB-118): each trace coloured by the wind of
    * its own leg (by item id) and every leg's badges, each read in its own zone; a trace without one

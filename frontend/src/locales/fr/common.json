@@ -1800,6 +1800,7 @@
   "rides.detail.groups.title": "Groupes",
   "rides.detail.groups.viewAll": "Voir tout",
   "rides.detail.groups.viewParticipants": "Voir toutes les personnes inscrites",
+  "rides.detail.instructions.title": "Consignes",
   "rides.detail.mainRoute": "Parcours principal",
   "rides.detail.nonMember.message": "Rejoignez cette équipe pour participer aux sorties.",
   "rides.detail.nonMember.viewTeam": "Voir l'équipe",
