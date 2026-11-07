@@ -21,14 +21,22 @@ vi.mock('@/hooks/useGpsConnections', () => ({
   useGpsConnections: () => ({ connectedServices: [], uploadRoute: vi.fn(), isUploading: false }),
 }))
 
-// Keys and their count, not wording.
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string, options?: { count?: number }) =>
-      options?.count !== undefined ? `${key}:${options.count}` : key,
-    i18n: { language: 'fr' },
-  }),
-}))
+// Keys and their count, not wording — except the date patterns, which date-fns must be able to
+// read (docs/LEDGER_*.md WEB-138: the departure's one format comes from the catalogue).
+vi.mock('react-i18next', async () => {
+  const { frenchT } = await import('@/test/frenchT')
+  return {
+    useTranslation: () => ({
+      t: (key: string, options?: { count?: number }) =>
+        key.startsWith('dateFormats.')
+          ? frenchT(key, options)
+          : options?.count !== undefined
+            ? `${key}:${options.count}`
+            : key,
+      i18n: { language: 'fr' },
+    }),
+  }
+})
 
 import { TeamDashboard } from './TeamDashboard'
 import { paths } from '@/config/paths'

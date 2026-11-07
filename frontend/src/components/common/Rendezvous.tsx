@@ -11,14 +11,18 @@ type DateInput = Date | string | null | undefined
  * does not have the reader's offset (docs/LEDGER_*.md API-60, plan §7). Timestamps keep
  * `FormattedDate`/`FormattedDateTime` (the reader's zone).
  *
- * - `detail`: the mention inline, « samedi 11 oct. à 08:00 · heure de Tokyo (ven. 01:00 chez vous) ».
+ * - `detail`: the mention inline, « sam. 11 oct. · 08:00 · heure de Tokyo (ven. 01:00 chez vous) ».
  * - `card`: the entity time and a discreet icon carrying the mention in a tooltip.
  */
 interface RendezvousProps {
   date: DateInput
   zone: string | null | undefined
-  /** What to print: the date and time (default), the date alone, or the time alone. */
-  format?: 'dateTime' | 'date' | 'time'
+  /**
+   * What to print, in the one format of docs/BRANDING.md §8.3: the date and time (default, « sam.
+   * 12 avr. · 09:00 »), the same with « Aujourd'hui » / « Demain » for those days (`departure`),
+   * the abbreviated day alone (`day`, « sam. 12 avr. »), the full date (`date`), or the time alone.
+   */
+  format?: 'dateTime' | 'departure' | 'day' | 'date' | 'time'
   variant?: 'detail' | 'card'
   /** Wraps the formatted text in a sentence (« Publication programmée pour le {{date}} »). */
   template?: (text: string) => string
@@ -32,12 +36,13 @@ export function Rendezvous({
   template,
 }: RendezvousProps) {
   const rendezvous = useRendezvousFormat(zone)
-  const text =
-    format === 'date'
-      ? rendezvous.formatDate(date)
-      : format === 'time'
-        ? rendezvous.formatTime(date)
-        : rendezvous.formatDateTime(date)
+  const text = {
+    dateTime: () => rendezvous.formatDateTime(date),
+    departure: () => rendezvous.formatDeparture(date),
+    day: () => rendezvous.formatDepartureDay(date),
+    date: () => rendezvous.formatDate(date),
+    time: () => rendezvous.formatTime(date),
+  }[format]()
   const mention = rendezvous.mention(date)
   return (
     <>

@@ -21,7 +21,7 @@ import {
 import { PrefetchLink } from '@/components/common/PrefetchLink'
 import type { ReportReason, ReportTargetType, TeamDashboardOrganizerDto, RideDto } from '@/api/dto'
 import { paths } from '@/config/paths'
-import { formatPattern, useFormattedDate } from '@/utils/dateFormat'
+import { formatDepartureDay, useFormattedDate } from '@/utils/dateFormat'
 import { isSupportedZone } from '@/utils/zoneLabel'
 import { publicationEditPath, publicationPath, ridesOf } from './dashboardHelpers'
 
@@ -49,12 +49,13 @@ export function TodoBand({ teamSlug, organizer }: TodoBandProps) {
   const firstFull = withFullGroup[0]
   const fullGroup = firstFull?.groupSummaries.find((g) => g.full)
 
-  // The ride's day, a rendezvous in its zone (docs/LEDGER_*.md API-60).
+  // The ride's day, a rendezvous in its zone (docs/LEDGER_*.md API-60), in the one format of
+  // docs/BRANDING.md §8.3: « sam. 12 avr. », the year only outside the current one.
   const rideLabel = (ride: RideDto) =>
     `${ride.name}, ${
       isSupportedZone(ride.timezone)
-        ? formatPattern(ride.dateTime, 'EEE d MMM', i18n.language, ride.timezone)
-        : reader.formatPattern(ride.dateTime, 'EEE d MMM')
+        ? formatDepartureDay(ride.dateTime, i18n.language, ride.timezone, t)
+        : reader.formatDepartureDay(ride.dateTime)
     }`
 
   const hasRidesWithoutRoute = !!ridesWithoutRoute && ridesWithoutRoute.total > 0

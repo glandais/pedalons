@@ -147,8 +147,12 @@ describe('NextRideCard: the departure that concerns the reader', () => {
     renderIn(
       <NextRideCard ride={ride({ registeredGroupId: 'g2', registeredGroup: joined(LATER) })} />
     )
-    expect(text()).toContain('à 07:15')
+    expect(text()).toContain('Départ 07:15')
     expect(text()).toContain('Groupe B, départ après la sortie de 06:30')
+    // The day of the group's departure, posed on the picture (docs/LEDGER_*.md WEB-138).
+    const box = screen.getByTestId('day-box')
+    expect(box.textContent).toBe('sam.10oct.')
+    expect(box.getAttribute('data-variant')).toBe('posed')
   })
 
   it('names the group alone when it leaves with the ride', () => {

@@ -133,16 +133,35 @@ export const clockText = (w: Pick<WallClock, 'hour' | 'minute'>) =>
 export const pickerText = (w: WallClock) =>
   `${pad(w.day)}/${pad(w.month)}/${w.year} ${pad(w.hour)}:${pad(w.minute)}`
 
-/** « mercredi 4 novembre 2026 à 09:30 » — how the trip page's stage cards show a date. */
+/**
+ * « mer. 4 nov. · 09:30 », the year only outside the current one (« mer. 4 nov. 2027 · 09:30 ») —
+ * the app's one date-and-time format (docs/BRANDING.md §8.3, docs/LEDGER_*.md WEB-138), never
+ * relative: a scheduled publication, a rendezvous line.
+ */
 export function frenchDateTime(w: WallClock): string {
+  const currentYear = parisWallClock(new Date()).year
   const date = new Intl.DateTimeFormat('fr-FR', {
     timeZone: 'UTC',
-    weekday: 'long',
+    weekday: 'short',
     day: 'numeric',
-    month: 'long',
-    year: 'numeric',
+    month: 'short',
+    year: w.year === currentYear ? undefined : 'numeric',
   }).format(new Date(Date.UTC(w.year, w.month - 1, w.day, 12)))
-  return `${date} à ${pad(w.hour)}:${pad(w.minute)}`
+  return `${date} · ${pad(w.hour)}:${pad(w.minute)}`
+}
+
+/**
+ * The same, « Aujourd'hui · 09:30 » and « Demain · 09:30 » for those two days — how a departure
+ * line without a day box beside it reads (a trip page's stage cards).
+ */
+export function frenchDeparture(w: WallClock): string {
+  const today = parisWallClock(new Date())
+  const tomorrow = shiftDays(today, 1, 0, 0)
+  const isDay = (d: WallClock) => d.year === w.year && d.month === w.month && d.day === w.day
+  const time = `${pad(w.hour)}:${pad(w.minute)}`
+  if (isDay(today)) return `Aujourd'hui · ${time}`
+  if (isDay(tomorrow)) return `Demain · ${time}`
+  return frenchDateTime(w)
 }
 
 /** The name of `month` (1–12) in `locale`: « septembre », « September ». */

@@ -17,24 +17,17 @@ import {
   Text,
   Title,
 } from '@mantine/core'
-import {
-  IconCalendar,
-  IconCheck,
-  IconDeviceWatch,
-  IconMapPin,
-  IconUsers,
-} from '@tabler/icons-react'
+import { IconCheck, IconDeviceWatch, IconMapPin, IconUsers } from '@tabler/icons-react'
 import type { GpsServiceType, RideDto } from '@/api/dto'
 import { useLeaveGroup } from '@/api/endpoints/rides/rides'
-import { CardImage, CardTeamLink, Stat } from '../card/common'
+import { CardDayOverlay, CardImage, CardTeamLink, Stat } from '../card/common'
 import { ConfirmDialog } from '../common/ConfirmDialog'
+import { DepartureLine } from '../common/DepartureLine'
 import { paths } from '@/config/paths'
 import { invalidateRideRegistration } from '@/lib/rideRegistration'
 import { useUnits } from '@/hooks/useUnits'
 import { useGpsConnections } from '@/hooks/useGpsConnections'
 import { useResolvedColorScheme } from '@/hooks/useResolvedColorScheme'
-import { useFormattedDate } from '@/utils/dateFormat'
-import { Rendezvous } from '../common/Rendezvous'
 import { useRendezvousFormat } from '@/hooks/useRendezvousFormat'
 import {
   groupLeavesAtOwnTime,
@@ -64,7 +57,6 @@ interface NextRideCardProps {
 export function NextRideCard({ ride, headingId }: NextRideCardProps) {
   const { t } = useTranslation()
   const { distance, elevation } = useUnits()
-  const { formatRelative } = useFormattedDate()
   // Departures are rendezvous, in the ride's zone (docs/LEDGER_*.md API-60).
   const departure = useRendezvousFormat(ride.timezone)
   const colorScheme = useResolvedColorScheme()
@@ -74,8 +66,8 @@ export function NextRideCard({ ride, headingId }: NextRideCardProps) {
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
 
   const group = registeredGroupOf(ride)
-  // The departure that concerns the reader is their group's (docs/LEDGER_*.md WEB-136): the date,
-  // the time and the relative badge all read it.
+  // The departure that concerns the reader is their group's (docs/LEDGER_*.md WEB-136): the day
+  // box, the « Demain » pill and the departure line all read it (WEB-138).
   const start = startFor(ride, group)
   const rideDistance = group?.distance
   const rideElevation = group?.elevationGain
@@ -136,15 +128,17 @@ export function NextRideCard({ ride, headingId }: NextRideCardProps) {
             sizes="(min-width: 48em) 260px, 100vw"
             priority
           />
-          <Group pos="absolute" top={12} left={12} gap={6}>
-            <Badge color="gray" variant="white" leftSection={<IconCalendar size={12} />}>
-              {/* Read off the clock: server and client may render it a few seconds apart. */}
-              <span suppressHydrationWarning>{formatRelative(start)}</span>
-            </Badge>
-            <Badge color="primary" variant="filled" leftSection={<IconCheck size={12} />}>
-              {t('publications.registered')}
-            </Badge>
-          </Group>
+          {/* The day box posed on the picture and, today or tomorrow only, the pill — no more
+              « dans 3 jours » (docs/BRANDING.md §7.1 and §8.3). */}
+          <CardDayOverlay
+            date={start}
+            zone={ride.timezone}
+            extra={
+              <Badge color="primary" variant="filled" leftSection={<IconCheck size={12} />}>
+                {t('publications.registered')}
+              </Badge>
+            }
+          />
         </Box>
 
         <Stack gap="sm" p="md" style={{ flex: 1, minWidth: 0 }}>
@@ -162,9 +156,14 @@ export function NextRideCard({ ride, headingId }: NextRideCardProps) {
           <CardTeamLink teamSlug={ride.team.slug} teamName={ride.team.name} />
 
           <Stack gap={6}>
-            <Stat icon={<IconCalendar size={16} />}>
-              <Rendezvous date={start} zone={ride.timezone} variant="detail" />
-            </Stat>
+            {/* The day box sits in the thumbnail, hidden from assistive tech: the line names the
+                day for them. */}
+            <DepartureLine
+              date={start}
+              zone={ride.timezone}
+              returnAt={ride.endDateTime}
+              announceDay
+            />
             {ride.startPlace && <Stat icon={<IconMapPin size={16} />}>{ride.startPlace.name}</Stat>}
             <RideWeatherSummaryLine summary={ride.weather} timezone={ride.timezone} />
             <Stat icon={<IconUsers size={16} />}>

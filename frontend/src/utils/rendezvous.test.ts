@@ -108,6 +108,9 @@ describe('tripEndZone', () => {
   })
 })
 
+/** « Now » for the spans: in 2026, the year of the fixtures, which is then not said. */
+const NOW = new Date('2026-10-01T10:00:00Z')
+
 function dated(overrides: Record<string, unknown>): DatedPublication {
   return {
     type: 'RIDE',
@@ -172,10 +175,51 @@ describe('formatPublicationSpan', () => {
         { dateTime: '2026-10-17T19:00:00Z', timezone: 'Asia/Tokyo' },
       ],
     })
-    expect(formatPublicationSpan(trip, 'full', 'fr', tFr)).toBe('ven. 16 → dim. 18 oct.')
+    expect(formatPublicationSpan(trip, 'full', 'fr', tFr, 'UTC', NOW)).toBe(
+      'ven. 16 → dim. 18 oct.'
+    )
     // A list row carries no stages: the trip's zone for both ends.
     expect(
-      formatPublicationSpan({ ...trip, stages: [] } as DatedPublication, 'full', 'fr', tFr)
+      formatPublicationSpan(
+        { ...trip, stages: [] } as DatedPublication,
+        'full',
+        'fr',
+        tFr,
+        'UTC',
+        NOW
+      )
     ).toBe('ven. 16 → sam. 17 oct.')
+  })
+
+  // docs/BRANDING.md §8.3, docs/LEDGER_*.md WEB-138: the departure's one format.
+  it('leads a ride with its day in full mode, and dates a return on another day', () => {
+    const ride = dated({
+      dateTime: '2026-10-10T18:00:00Z',
+      endDateTime: '2026-10-10T21:30:00Z',
+    })
+    expect(formatPublicationSpan(ride, 'full', 'fr', tFr, 'UTC', NOW)).toBe(
+      'sam. 10 oct. · 20:00 → retour vers 23:30'
+    )
+    const late = dated({ dateTime: '2026-10-10T18:00:00Z', endDateTime: '2026-10-10T23:30:00Z' })
+    expect(formatPublicationSpan(late, 'time', 'fr', tFr, 'UTC', NOW)).toBe(
+      '20:00 → retour vers dim. 11 oct. · 01:30'
+    )
+  })
+
+  it('names a trip of one day by that day, and says the year outside the current one', () => {
+    const oneDay = dated({
+      type: 'TRIP',
+      dateTime: '2026-10-16T06:00:00Z',
+      endDateTime: '2026-10-16T09:00:00Z',
+    })
+    expect(formatPublicationSpan(oneDay, 'full', 'fr', tFr, 'UTC', NOW)).toBe('ven. 16 oct.')
+    const acrossYears = dated({
+      type: 'TRIP',
+      dateTime: '2026-12-30T08:00:00Z',
+      endDateTime: '2027-01-02T16:00:00Z',
+    })
+    expect(formatPublicationSpan(acrossYears, 'full', 'fr', tFr, 'UTC', NOW)).toBe(
+      'mer. 30 déc. → sam. 2 janv. 2027'
+    )
   })
 })

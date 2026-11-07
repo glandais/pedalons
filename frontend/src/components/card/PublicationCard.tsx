@@ -17,18 +17,19 @@ import {
   Stat,
   StatGroup,
   CardSkeleton,
+  CardDayOverlay,
 } from './common'
 import { EntityLogo } from '../common/EntityLogo'
 import { UserAvatarGroup } from '../common/UserAvatar'
 import { Rendezvous } from '../common/Rendezvous'
+import { PublicationDepartureLine } from '../common/DepartureLine'
 import { paths } from '@/config/paths'
 import { PublicationCardProgress } from './PublicationCardProgress'
 import { RouteThumbnail } from '../route/RouteThumbnail'
 import { TagList } from '../tag/TagList'
 import { RideWeatherSummaryLine } from '../weather/RideWeatherSummaryLine'
 import { InProgressBadge } from '../agenda/InProgressBadge'
-import { PublicationTimeSpan } from '../agenda/PublicationTimeSpan'
-import { isUnderWay } from '@/utils/publicationTiming'
+import { isDated, isUnderWay, spanStart } from '@/utils/publicationTiming'
 import type { PublicationDto, RideDto, TripDto } from '@/api/dto'
 
 interface PublicationCardProps {
@@ -87,7 +88,9 @@ export function PublicationCard({
 
   const formattedDate = <Rendezvous date={publication.dateTime} zone={publication.timezone} />
 
-  // Render stats based on publication type
+  // Render stats based on publication type. A ride's or a trip's date is not one of them: it is the
+  // day box on the picture and the departure line under the title (docs/BRANDING.md §7.1, ledger
+  // `BRAND-8`) — it does not come back down here.
   const renderStats = () => {
     const calendarIcon = <IconCalendar size={16} />
     const participantsIcon = <IconUsers size={16} />
@@ -108,9 +111,6 @@ export function PublicationCard({
         const ride = publication as RideDto
         return (
           <StatGroup>
-            <Stat icon={calendarIcon}>
-              <PublicationTimeSpan publication={ride} />
-            </Stat>
             <Stat icon={participantsIcon}>
               {t('participantCount', { count: ride.participantCount })}
             </Stat>
@@ -123,9 +123,6 @@ export function PublicationCard({
         const trip = publication as TripDto
         return (
           <StatGroup>
-            <Stat icon={calendarIcon}>
-              <PublicationTimeSpan publication={trip} />
-            </Stat>
             <Stat icon={participantsIcon}>
               {t('participantCount', { count: trip.participantCount })}
             </Stat>
@@ -183,15 +180,25 @@ export function PublicationCard({
 
   return (
     <Card to={getPublicationPath()} actions={actions}>
-      {/* Featured image with fallback chain */}
-      <CardImage
-        media={publication.media}
-        thumbnailUrl={headerImageUrl}
-        alt={publication.name}
-        type={publication.type}
-        height={160}
-        priority={priority}
-      />
+      {/* Featured image with fallback chain; a ride's or a trip's day posed on it (§7.1). */}
+      <Box pos="relative">
+        <CardImage
+          media={publication.media}
+          thumbnailUrl={headerImageUrl}
+          alt={publication.name}
+          type={publication.type}
+          height={160}
+          priority={priority}
+        />
+        {isDated(publication) && (
+          <CardDayOverlay
+            date={spanStart(publication)}
+            zone={publication.timezone}
+            tone={publication.type === 'TRIP' ? 'teal' : 'primary'}
+            clearActions={!!actions}
+          />
+        )}
+      </Box>
 
       <CardContent>
         {showTeam && (
@@ -204,6 +211,11 @@ export function PublicationCard({
             <EntityLogo logo={publication.media.assets.logo} alt={publication.name} size="sm" />
             <Box style={{ flex: 1, minWidth: 0 }}>
               <CardTitle>{publication.name}</CardTitle>
+              {isDated(publication) && (
+                <Box mt={4} mb={6}>
+                  <PublicationDepartureLine publication={publication} />
+                </Box>
+              )}
               <CardDescription
                 excerpt={publication.excerpt}
                 markdown={true}

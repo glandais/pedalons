@@ -448,18 +448,18 @@ function CheckpointDetail({
  */
 function useInContext(context: string | undefined, timezone: string | undefined) {
   const { t } = useTranslation()
-  const { formatPattern } = useRendezvousFormat(timezone)
+  const { formatDepartureDay } = useRendezvousFormat(timezone)
   return useCallback(
     (text: string, time: string) =>
       context
         ? t('rides.weather.map.inContext', {
             // Not `context`: i18next reads it as the key's variant
             name: context,
-            day: formatPattern(time, 'EEE d MMM'),
+            day: formatDepartureDay(time),
             text,
           })
         : text,
-    [t, formatPattern, context]
+    [t, formatDepartureDay, context]
   )
 }
 

@@ -1,11 +1,11 @@
 import { useNavigate } from 'react-router-dom'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { useTranslation } from 'react-i18next'
-import { IconArrowsMaximize, IconArrowUp, IconCalendar, IconMapPin } from '@tabler/icons-react'
+import { IconArrowsMaximize, IconArrowUp, IconMapPin } from '@tabler/icons-react'
 import { Paper, Group, Text, UnstyledButton, Badge, Box } from '@mantine/core'
 import type { RideWeatherSummaryDto, TripStageDto } from '@/api/dto'
 import { RideWeatherSummaryLine } from '@/components/weather'
-import { Rendezvous } from '../common/Rendezvous'
+import { DepartureLine } from '../common/DepartureLine'
 import { useUnits } from '@/hooks/useUnits'
 import { MediaDisplay } from '../common/MediaDisplay'
 import { EntityLogo } from '../common/EntityLogo'
@@ -68,12 +68,10 @@ export function TripStageCard({
             {stage.name}
           </Text>
         </Group>
-        <Group gap={4} wrap="nowrap" style={{ flexShrink: 0 }}>
-          <IconCalendar size={16} color="var(--mantine-color-dimmed)" />
-          <Text size="sm" c="dimmed">
-            <Rendezvous date={stage.dateTime} zone={stage.timezone} />
-          </Text>
-        </Group>
+        {/* « sam. 12 avr. · 09:00 » in 700, short enough not to squeeze the name (WEB-138). */}
+        <Box style={{ flexShrink: 0 }}>
+          <DepartureLine date={stage.dateTime} zone={stage.timezone} size="sm" withDay />
+        </Box>
       </Group>
 
       {weather && (

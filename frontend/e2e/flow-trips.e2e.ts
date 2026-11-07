@@ -5,6 +5,7 @@ import { calendarEvent, openCalendar, teamEvents } from './support/calendar'
 import { addMember, markdownMedia, newTeam, newUser, roleSession, signIn } from './support/data'
 import {
   frenchDateTime,
+  frenchDeparture,
   openPicker,
   parisDaysAhead,
   parisInstant,
@@ -153,10 +154,10 @@ test('a team admin creates a trip and its two stages with the form; the calendar
   const cards = stageCards(main)
   await expect(cards).toHaveCount(2)
   await expect(cards.nth(0)).toHaveAccessibleName(startsWith(`1 ${first.name}`))
-  await expect(cards.nth(0)).toContainText(frenchDateTime(first.when))
+  await expect(cards.nth(0)).toContainText(frenchDeparture(first.when))
   await expect(cards.nth(0).getByRole('button', { name: 'Voir le parcours' })).toBeVisible()
   await expect(cards.nth(1)).toHaveAccessibleName(startsWith(`2 ${second.name}`))
-  await expect(cards.nth(1)).toContainText(frenchDateTime(second.when))
+  await expect(cards.nth(1)).toContainText(frenchDeparture(second.when))
   await expect(cards.nth(1).getByRole('button', { name: 'Voir le parcours' })).toHaveCount(0)
 
   const canvas = page.locator('canvas.maplibregl-canvas')
@@ -311,7 +312,7 @@ test('a team admin edits a stage, deletes the other one, then deletes the trip',
   const cards = stageCards(main)
   await expect(cards).toHaveCount(1)
   await expect(cards.first()).toHaveAccessibleName(startsWith(`1 ${renamed}`))
-  await expect(cards.first()).toContainText(frenchDateTime(rescheduled))
+  await expect(cards.first()).toContainText(frenchDeparture(rescheduled))
   await expect(main.getByText(dropped)).toHaveCount(0)
 
   // The same stage was edited in place, the other one is gone.

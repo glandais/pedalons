@@ -60,7 +60,7 @@ export function StageTabs({ trip, teamSlug, currentTab }: StageTabsProps) {
                   {stage.name}
                 </Text>
                 <Text size="xs" opacity={0.7}>
-                  <Rendezvous date={stage.dateTime} zone={stage.timezone} format="date" />
+                  <Rendezvous date={stage.dateTime} zone={stage.timezone} format="day" />
                 </Text>
               </Stack>
             </Tabs.Tab>

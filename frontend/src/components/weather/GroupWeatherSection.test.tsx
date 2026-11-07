@@ -354,7 +354,7 @@ describe('GroupWeatherSection', () => {
 
   it('keeps the departure for a group without a route', () => {
     renderSection({ leg: weatherLeg('g2', { status: WeatherStatus.NO_LOCATION, checkpoints: [] }) })
-    expect(text()).toMatch(/Au départ · 08:30/)
+    expect(text()).toMatch(/Au départ\s*08:30/)
     expect(text()).toContain("Ce groupe n'a pas de parcours")
     expect(screen.queryByRole('group', { name: 'Prévisions à chaque passage' })).toBeNull()
   })

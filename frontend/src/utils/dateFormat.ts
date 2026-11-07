@@ -101,19 +101,17 @@ export function formatDate(
 }
 
 /**
- * Format date + time: "15 juin 2025 à 09:00" (fr) / "June 15, 2025 at 9:00 AM" (en)
+ * Format date + time in the departure's one format, never relative: « sam. 12 avr. · 09:00 », the
+ * year only outside the current one (« sam. 10 avr. 2027 · 09:00 »), « Sat, Apr 12 · 9:00 AM » in
+ * English (docs/BRANDING.md §8.3, docs/LEDGER_*.md WEB-138). A timestamp (an expiry, a last
+ * report) reads like a rendezvous: the site has one long date-and-time format.
  */
 export function formatDateTime(
   date: Date | string | null | undefined,
   language: string = 'fr',
   timeZone: string = SERVER_FALLBACK_TIMEZONE
 ): string {
-  const dateObj = toDate(date)
-  if (!dateObj) return ''
-
-  const locale = getLocale(language)
-  const pattern = i18n.t('dateFormats.dateTime', { lng: language })
-  return formatInTimeZone(dateObj, timeZone, pattern, { locale })
+  return formatDeparture(date, language, timeZone, i18n.getFixedT(language), { relative: false })
 }
 
 /**
@@ -228,19 +226,35 @@ export function formatDeparture(
 ): string {
   const dateObj = toDate(date)
   if (!dateObj) return ''
-  const locale = getLocale(language)
-  const time = formatInTimeZone(dateObj, timeZone, 'p', { locale })
+  const time = formatInTimeZone(dateObj, timeZone, 'p', { locale: getLocale(language) })
   const day =
     (relative ? formatRelativeDay(dateObj, timeZone, t, now) : null) ??
-    formatInTimeZone(
-      dateObj,
-      timeZone,
-      isCurrentYear(dateObj, timeZone, now)
-        ? t('dateFormats.departureDay')
-        : t('dateFormats.departureDayWithYear'),
-      { locale }
-    )
+    formatDepartureDay(dateObj, language, timeZone, t, now)
   return t('dateFormats.dayAndTime', { day, time })
+}
+
+/**
+ * The departure's day alone, abbreviated: « sam. 12 avr. », the year only outside the current one
+ * (« sam. 10 avr. 2027 ») — a stage's tab, a to-do line, the ends of a trip's span. Judged in
+ * `timeZone`, the departure's.
+ */
+export function formatDepartureDay(
+  date: Date | string | null | undefined,
+  language: string,
+  timeZone: string,
+  t: TFunction,
+  now: Date = new Date()
+): string {
+  const dateObj = toDate(date)
+  if (!dateObj) return ''
+  return formatInTimeZone(
+    dateObj,
+    timeZone,
+    isCurrentYear(dateObj, timeZone, now)
+      ? t('dateFormats.departureDay')
+      : t('dateFormats.departureDayWithYear'),
+    { locale: getLocale(language) }
+  )
 }
 
 /**
@@ -292,6 +306,8 @@ export function useFormattedDate() {
   return {
     formatDeparture: (date: Date | string | null | undefined) =>
       formatDeparture(date, language, timezone, t),
+    formatDepartureDay: (date: Date | string | null | undefined) =>
+      formatDepartureDay(date, language, timezone, t),
     formatRelativeDay: (date: Date | string | null | undefined) =>
       formatRelativeDay(date, timezone, t),
     formatDate: (date: Date | string | null | undefined) => formatDate(date, language, timezone),

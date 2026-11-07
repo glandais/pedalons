@@ -1,9 +1,8 @@
 import { useTranslation } from 'react-i18next'
-import { IconCalendar } from '@tabler/icons-react'
 import { Box, Group, SimpleGrid, Skeleton, Stack, Text, Title } from '@mantine/core'
-import { Card, CardContent, CardTitle, TypeBadge, Stat } from '../card/common'
+import { Card, CardContent, CardTitle, TypeBadge } from '../card/common'
 import { useGetRouteUsages } from '@/api/endpoints/routes/routes'
-import { Rendezvous, ZoneMentionIcon } from '../common/Rendezvous'
+import { DepartureLine } from '../common/DepartureLine'
 import { useRendezvousFormat } from '@/hooks/useRendezvousFormat'
 import { paths } from '@/config/paths'
 import type { RouteUsageDto } from '@/api/dto'
@@ -76,14 +75,19 @@ export function RouteUsages({ teamSlug, routeSlug }: RouteUsagesProps) {
                   <TypeBadge type={usage.type}>{typeLabel(usage)}</TypeBadge>
                 </Group>
                 <Stack gap={4} mt="auto">
-                  <Stat icon={<IconCalendar size={16} />}>
-                    {/* A trip carries the date of its last stage: show the range, like its card. */}
-                    {usage.endDate ? (
-                      <UsageRange usage={usage} />
-                    ) : (
-                      <Rendezvous date={usage.dateTime} zone={usage.timezone} />
-                    )}
-                  </Stat>
+                  {/* The departure, in 700 and never a statistic (WEB-138). A trip carries the
+                      date of its last stage: show the range, like its card. */}
+                  {usage.endDate ? (
+                    <UsageRange usage={usage} />
+                  ) : (
+                    <DepartureLine
+                      date={usage.dateTime}
+                      zone={usage.timezone}
+                      size="sm"
+                      withDay
+                      tone={usage.type === 'TRIP' ? 'teal' : 'primary'}
+                    />
+                  )}
                   {hint && (
                     <Text size="sm" c="dimmed">
                       {hint}
@@ -106,16 +110,12 @@ export function RouteUsages({ teamSlug, routeSlug }: RouteUsagesProps) {
 function UsageRange({ usage }: { usage: RouteUsageDto }) {
   const rendezvous = useRendezvousFormat(usage.timezone)
   return (
-    <>
-      <span suppressHydrationWarning={rendezvous.isGuessedText}>
-        {rendezvous.formatDate(usage.dateTime)}
-        {' → '}
-        {rendezvous.formatDate(usage.endDate)}
-      </span>
-      <ZoneMentionIcon
-        mention={rendezvous.mention(usage.dateTime)}
-        isGuessed={rendezvous.isGuessedTimezone}
-      />
-    </>
+    <DepartureLine
+      date={usage.dateTime}
+      zone={usage.timezone}
+      size="sm"
+      tone="teal"
+      label={`${rendezvous.formatDepartureDay(usage.dateTime)} → ${rendezvous.formatDepartureDay(usage.endDate)}`}
+    />
   )
 }

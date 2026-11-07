@@ -1,7 +1,14 @@
-import { beforeAll, describe, expect, it } from 'vitest'
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { TFunction } from 'i18next'
 import { createServerI18n } from '@/i18n'
-import { formatDeparture, formatLongDay, formatRelativeDay, relativeDay } from './dateFormat'
+import {
+  formatDateTime,
+  formatDeparture,
+  formatDepartureDay,
+  formatLongDay,
+  formatRelativeDay,
+  relativeDay,
+} from './dateFormat'
 
 // The departure's one format (docs/BRANDING.md §8.3, ledger BRAND-8, docs/LEDGER_*.md WEB-137).
 // « Now » is Friday 10 April 2026, 12:00 in Paris.
@@ -98,5 +105,28 @@ describe('formatLongDay', () => {
     expect(formatLongDay('2026-04-25T07:00:00Z', 'fr', PARIS, fr, NOW)).toBe('samedi 25 avril')
     expect(formatLongDay('2027-04-10T07:00:00Z', 'fr', PARIS, fr, NOW)).toBe('samedi 10 avril 2027')
     expect(formatLongDay('2026-04-25T07:00:00Z', 'en', PARIS, en, NOW)).toBe('Saturday, April 25')
+  })
+})
+
+// docs/LEDGER_*.md WEB-138: the site has one abbreviated day and one date-and-time format.
+describe('formatDepartureDay', () => {
+  it('abbreviates the day, the year only outside the current one', () => {
+    expect(formatDepartureDay('2026-04-25T07:00:00Z', 'fr', PARIS, fr, NOW)).toBe('sam. 25 avr.')
+    expect(formatDepartureDay('2027-04-10T07:00:00Z', 'fr', PARIS, fr, NOW)).toBe(
+      'sam. 10 avr. 2027'
+    )
+    expect(formatDepartureDay('2026-04-25T07:00:00Z', 'en', PARIS, en, NOW)).toBe('Sat, Apr 25')
+  })
+})
+
+describe('formatDateTime', () => {
+  afterEach(() => vi.useRealTimers())
+
+  it('reads as the departure, never relative: no more « samedi 11 avril 2026 à 09:00 »', () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(NOW)
+    expect(formatDateTime('2026-04-11T07:00:00Z', 'fr', PARIS)).toBe('sam. 11 avr. · 09:00')
+    expect(formatDateTime('2027-04-10T07:00:00Z', 'fr', PARIS)).toBe('sam. 10 avr. 2027 · 09:00')
+    expect(formatDateTime('2026-04-11T07:00:00Z', 'en', PARIS)).toBe('Sat, Apr 11 · 9:00 AM')
   })
 })

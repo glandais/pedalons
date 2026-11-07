@@ -77,7 +77,7 @@ describe('RideWeatherSection', () => {
 
   it("titles the departure with the ride's own time, not the forecast's round hour", () => {
     renderSection({ weather: okWeather })
-    expect(plain(document.body.textContent)).toMatch(/Au départ · \d{1,2}:40/)
+    expect(plain(document.body.textContent)).toMatch(/Au départ\s*\d{1,2}:40/)
   })
 
   it('says the day of an update that was not today, and flags an old forecast', () => {

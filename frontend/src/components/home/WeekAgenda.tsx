@@ -1,8 +1,5 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { formatInTimeZone } from 'date-fns-tz'
-import { fr } from 'date-fns/locale/fr'
-import { enUS } from 'date-fns/locale/en-US'
 import {
   Anchor,
   Badge,
@@ -23,7 +20,8 @@ import { StatusBadge } from '@/components/card/common'
 import { paths } from '@/config/paths'
 import classes from './Home.module.css'
 import { eventPath } from './memberHomeHelpers'
-import { useEffectiveTimezone } from '@/utils/dateFormat'
+import { formatPattern, formatTime, useEffectiveTimezone } from '@/utils/dateFormat'
+import { DayBox } from '@/components/common/DayBox'
 import { supportedZone } from '@/utils/zoneLabel'
 import { rendezvousMention } from '@/utils/rendezvous'
 import { ZoneMentionIcon } from '@/components/common/Rendezvous'
@@ -54,18 +52,19 @@ interface WeekAgendaProps {
 export function WeekAgenda({ nowIso, events, isLoading, isError, nextRide }: WeekAgendaProps) {
   const { t, i18n } = useTranslation()
   const { timezone, isPlaceholder } = useEffectiveTimezone()
-  const locale = i18n.language === 'fr' ? fr : enUS
-  const dayKey = (date: Date | string) => formatInTimeZone(date, timezone, 'yyyy-MM-dd')
+  const inZone = (date: Date | string, pattern: string, zone: string) =>
+    formatPattern(date, pattern, i18n.language, zone)
+  const dayKey = (date: Date | string) => inZone(date, 'yyyy-MM-dd', timezone)
 
   // Calendar days, not 24-hour steps: the day the clocks change is 23 or 25 hours long, and
   // `now + i × 24 h` from late evening skipped or repeated one (docs/LEDGER_*.md WEB-71). Each day
   // is held as noon UTC of its date in the effective zone, where adding 24 hours is always the
   // next date; it is read back in UTC.
   const days = useMemo(() => {
-    const today = new Date(`${formatInTimeZone(nowIso, timezone, 'yyyy-MM-dd')}T12:00:00Z`)
+    const today = new Date(`${formatPattern(nowIso, 'yyyy-MM-dd', 'en', timezone)}T12:00:00Z`)
     return Array.from({ length: 7 }, (_, i) => new Date(today.getTime() + i * DAY_MS))
   }, [nowIso, timezone])
-  const calendarDayKey = (day: Date) => formatInTimeZone(day, 'UTC', 'yyyy-MM-dd')
+  const calendarDayKey = (day: Date) => inZone(day, 'yyyy-MM-dd', 'UTC')
 
   const dayKeys = new Set(days.map(calendarDayKey))
   const inWeek = (events ?? [])
@@ -111,10 +110,10 @@ export function WeekAgenda({ nowIso, events, isLoading, isError, nextRide }: Wee
               }}
             >
               <Text size="xs" c="dimmed" tt="uppercase">
-                {formatInTimeZone(day, 'UTC', 'EEEEE', { locale })}
+                {inZone(day, 'EEEEE', 'UTC')}
               </Text>
               <Text size="sm" fw={isToday ? 700 : 500} c={isToday ? 'primary' : undefined}>
-                {formatInTimeZone(day, 'UTC', 'd', { locale })}
+                {inZone(day, 'd', 'UTC')}
               </Text>
               <Box
                 w={6}
@@ -156,35 +155,10 @@ export function WeekAgenda({ nowIso, events, isLoading, isError, nextRide }: Wee
               className={classes.row}
             >
               <Group gap="sm" wrap="nowrap">
-                <Stack
-                  gap={0}
-                  align="center"
-                  w={44}
-                  py={4}
-                  style={{
-                    flexShrink: 0,
-                    borderRadius: 'var(--mantine-radius-md)',
-                    backgroundColor: 'var(--mantine-color-default-hover)',
-                  }}
-                >
-                  {/* The row's day and time are a rendezvous, in the event's zone (docs/LEDGER_*.md
-                      API-60); the strip, the dots and the grouping stay the reader's. */}
-                  <Text size="xs" c="dimmed">
-                    {formatInTimeZone(
-                      event.start,
-                      supportedZone(event.timezone) || timezone,
-                      'EEE',
-                      {
-                        locale,
-                      }
-                    )}
-                  </Text>
-                  <Text fw={700} lh={1.1}>
-                    {formatInTimeZone(event.start, supportedZone(event.timezone) || timezone, 'd', {
-                      locale,
-                    })}
-                  </Text>
-                </Stack>
+                {/* The row's day and time are a rendezvous, in the event's zone (docs/LEDGER_*.md
+                    API-60); the strip, the dots and the grouping stay the reader's. The day box
+                    is the one of every list (docs/BRANDING.md §7.8, WEB-138). */}
+                <DayBox date={event.start} zone={supportedZone(event.timezone) || timezone} />
                 <Box style={{ flex: 1, minWidth: 0 }}>
                   <Group gap={6} wrap="nowrap">
                     <Text size="sm" fw={600} truncate>
@@ -199,17 +173,17 @@ export function WeekAgenda({ nowIso, events, isLoading, isError, nextRide }: Wee
                       </Badge>
                     )}
                   </Group>
-                  <Text size="xs" c="dimmed" truncate>
+                  <Text size="sm" c="dimmed" truncate>
                     {!event.allDay && (
                       <>
-                        {formatInTimeZone(
-                          event.start,
-                          supportedZone(event.timezone) || timezone,
-                          'p',
-                          {
-                            locale,
-                          }
-                        )}
+                        {/* The departure in 700, not a dimmed aside (BRAND-8). */}
+                        <Text span inherit fw={700} c="var(--mantine-color-text)">
+                          {formatTime(
+                            event.start,
+                            i18n.language,
+                            supportedZone(event.timezone) || timezone
+                          )}
+                        </Text>
                         <ZoneMentionIcon
                           mention={rendezvousMention(
                             event.start,

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest'
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { render, screen, cleanup } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { MantineProvider } from '@mantine/core'
@@ -59,7 +59,16 @@ function details(dto: NotificationDto): string | null {
 
 // docs/LEDGER_*.md API-60, plan §7: the subject's date is a rendezvous, read in its own zone.
 describe('NotificationItem', () => {
-  afterEach(cleanup)
+  // « Now » in 2026: the year is said only outside the current one, « Demain » only tomorrow
+  // (docs/BRANDING.md §8.3, docs/LEDGER_*.md WEB-138).
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-10-01T10:00:00Z'))
+  })
+  afterEach(() => {
+    cleanup()
+    vi.useRealTimers()
+  })
 
   it('reads a reminder in the ride’s zone, with the mention when the reader’s offset differs', () => {
     // Sunday 11 October 2026, 06:00 in Tokyo = Saturday 23:00 in Paris.
@@ -67,7 +76,21 @@ describe('NotificationItem', () => {
       details(
         notification({ subjectDateTime: '2026-10-10T21:00:00Z', subjectTimezone: 'Asia/Tokyo' })
       )
-    ).toBe('Départ : dimanche 11 octobre 2026 à 06:00 · heure de Tokyo (sam. 23:00 chez vous)')
+    ).toBe('Départ : dim. 11 oct. · 06:00 · heure de Tokyo (sam. 23:00 chez vous)')
+  })
+
+  it('says « Demain » for tomorrow, the year outside the current one (WEB-138)', () => {
+    expect(
+      details(
+        notification({ subjectDateTime: '2026-10-02T07:00:00Z', subjectTimezone: 'Europe/Paris' })
+      )
+    ).toBe('Départ : Demain · 09:00')
+    cleanup()
+    expect(
+      details(
+        notification({ subjectDateTime: '2027-04-10T07:00:00Z', subjectTimezone: 'Europe/Paris' })
+      )
+    ).toBe('Départ : sam. 10 avr. 2027 · 09:00')
   })
 
   it('says nothing more when the ride’s zone has the reader’s offset', () => {
@@ -78,12 +101,12 @@ describe('NotificationItem', () => {
           subjectTimezone: 'Europe/Brussels',
         })
       )
-    ).toBe('Départ : dimanche 11 octobre 2026 à 08:00')
+    ).toBe('Départ : dim. 11 oct. · 08:00')
   })
 
   it('falls back to the reader’s zone, without mention, for a notification with no zone', () => {
     expect(details(notification({ subjectDateTime: '2026-10-10T21:00:00Z' }))).toBe(
-      'Départ : samedi 10 octobre 2026 à 23:00'
+      'Départ : sam. 10 oct. · 23:00'
     )
   })
 
@@ -98,7 +121,7 @@ describe('NotificationItem', () => {
         })
       )
     ).toBe(
-      `${fr['notifications.change.START_PLACE']} · Nouvelle date : dimanche 11 octobre 2026 à 06:00 · heure de Tokyo (sam. 23:00 chez vous)`
+      `${fr['notifications.change.START_PLACE']} · Nouvelle date : dim. 11 oct. · 06:00 · heure de Tokyo (sam. 23:00 chez vous)`
     )
   })
 

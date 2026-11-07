@@ -3,6 +3,7 @@ import {
   formatDate,
   formatDateTime,
   formatDeparture,
+  formatDepartureDay,
   formatLongDay,
   formatPattern,
   formatRelativeDay,
@@ -49,6 +50,8 @@ export function useRendezvousFormat(zone: string | null | undefined) {
      */
     formatDeparture: (date: DateInput, options?: { relative?: boolean }) =>
       formatDeparture(date, language, entityZone, t, options),
+    /** « sam. 12 avr. » (the year outside the current one), in the zone. */
+    formatDepartureDay: (date: DateInput) => formatDepartureDay(date, language, entityZone, t),
     /** « samedi 12 avril » (the year outside the current one), in the zone. */
     formatLongDay: (date: DateInput) => formatLongDay(date, language, entityZone, t),
     /** « Aujourd'hui » / « Demain » in the zone, else `null`. */

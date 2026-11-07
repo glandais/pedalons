@@ -1,6 +1,6 @@
 import type { PublicationDto, RideDto, TripDto } from '@/api/dto'
 import type { TFunction } from 'i18next'
-import { formatDateTime, formatPattern, formatTime } from './dateFormat'
+import { formatDeparture, formatDepartureDay, formatPattern, formatTime } from './dateFormat'
 import { startFor } from './groupStart'
 import { tripEndZone } from './rendezvous'
 import { supportedZone } from './zoneLabel'
@@ -36,13 +36,15 @@ export function isUnderWay(publication: PublicationDto, now: number = Date.now()
 }
 
 /**
- * The span of a ride or a trip, as `PublicationTimeSpan` prints it — a rendezvous, read in the
- * entity's zone (docs/LEDGER_*.md API-60, plan §7): a ride « 08:30 → retour vers 14:10 » in its
- * zone; a trip « ven. 16 → dim. 18 oct. », its first day in the trip's zone (its first stage's)
- * and its last in its last stage's when the stages are known (`tripEndZone`). Same day and same
- * month are judged on those wall clocks, not the reader's.
+ * The span of a ride or a trip — a rendezvous, read in the entity's zone (docs/LEDGER_*.md API-60,
+ * plan §7), in the one format of docs/BRANDING.md §8.3 (ledger `WEB-138`): a ride « 08:30 → retour
+ * vers 14:10 » in its zone; a trip « ven. 16 → dim. 18 oct. », its first day in the trip's zone
+ * (its first stage's) and its last in its last stage's when the stages are known (`tripEndZone`).
+ * Same day and same month are judged on those wall clocks, not the reader's; the year is said only
+ * outside the current one.
  *
- * `mode` `full` (a card) leads with the date, `time` (a row, whose day box says the day) does not.
+ * `mode` `full` leads a ride with its day (« sam. 11 oct. · 08:30 → … »), `time` (a line whose day
+ * box says the day) does not. A trip reads the same in both.
  */
 export function formatPublicationSpan(
   publication: DatedPublication,
@@ -50,7 +52,8 @@ export function formatPublicationSpan(
   language: string,
   t: TFunction,
   /** For a payload without `timezone` (fixtures) or in a zone `Intl` lacks: the reader's zone. */
-  fallbackZone: string = 'UTC'
+  fallbackZone: string = 'UTC',
+  now: Date = new Date()
 ): string {
   const startZone = supportedZone(publication.timezone) || fallbackZone
   const endZone = publication.type === 'TRIP' ? tripEndZone(publication) || fallbackZone : startZone
@@ -61,15 +64,19 @@ export function formatPublicationSpan(
   const sameDay = inStart('yyyy-MM-dd') === inEnd('yyyy-MM-dd')
 
   if (publication.type === 'TRIP') {
-    const sameMonth = inStart('yyyy-MM') === inEnd('yyyy-MM')
-    return sameDay
-      ? inStart('EEE d MMM')
-      : `${inStart(sameMonth ? 'EEE d' : 'EEE d MMM')} → ${inEnd('EEE d MMM')}`
+    if (sameDay) return formatDepartureDay(start, language, startZone, t, now)
+    const firstDay =
+      inStart('yyyy-MM') === inEnd('yyyy-MM')
+        ? inStart(t('dateFormats.weekdayDay'))
+        : formatDepartureDay(start, language, startZone, t, now)
+    return `${firstDay} → ${formatDepartureDay(end, language, endZone, t, now)}`
   }
   const from =
     mode === 'full'
-      ? formatDateTime(start, language, startZone)
+      ? formatDeparture(start, language, startZone, t, { now, relative: false })
       : formatTime(start, language, startZone)
-  const back = sameDay ? formatTime(end, language, endZone) : inEnd('EEE d MMM p')
+  const back = sameDay
+    ? formatTime(end, language, endZone)
+    : formatDeparture(end, language, endZone, t, { now, relative: false })
   return `${from} → ${t('agenda.returnAround', { time: back })}`
 }

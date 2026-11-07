@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest'
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { render, screen, cleanup } from '@testing-library/react'
 import { renderToString } from 'react-dom/server'
 import { MantineProvider } from '@mantine/core'
@@ -30,19 +30,27 @@ function renderIt(node: React.ReactNode) {
 
 // docs/LEDGER_*.md API-60, plan §7.
 describe('Rendezvous', () => {
-  afterEach(cleanup)
+  // « Now » in 2026: the year is said only outside the current one (docs/BRANDING.md §8.3).
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-10-01T10:00:00Z'))
+  })
+  afterEach(() => {
+    cleanup()
+    vi.useRealTimers()
+  })
 
   it('reads the entity’s zone, with the full mention on a detail line', () => {
     // Sunday 11 October 2026, 06:00 in Tokyo = Saturday 23:00 in Paris.
     renderIt(<Rendezvous date="2026-10-10T21:00:00Z" zone="Asia/Tokyo" variant="detail" />)
     expect(screen.getByTestId('host').textContent).toBe(
-      'dimanche 11 octobre 2026 à 06:00 · heure de Tokyo (sam. 23:00 chez vous)'
+      'dim. 11 oct. · 06:00 · heure de Tokyo (sam. 23:00 chez vous)'
     )
   })
 
   it('says nothing when the zone has the reader’s offset', () => {
     renderIt(<Rendezvous date="2026-10-11T06:00:00Z" zone="Europe/Brussels" variant="detail" />)
-    expect(screen.getByTestId('host').textContent).toBe('dimanche 11 octobre 2026 à 08:00')
+    expect(screen.getByTestId('host').textContent).toBe('dim. 11 oct. · 08:00')
     cleanup()
     renderIt(<Rendezvous date="2026-10-11T06:00:00Z" zone="Europe/Paris" />)
     expect(screen.queryByRole('img')).toBeNull()
@@ -63,7 +71,7 @@ describe('Rendezvous', () => {
 
   it('falls back to the reader’s zone, without mention, for a zone Intl does not know', () => {
     renderIt(<Rendezvous date="2026-10-11T06:00:00Z" zone="Mars/Olympus_Mons" variant="detail" />)
-    expect(screen.getByTestId('host').textContent).toBe('dimanche 11 octobre 2026 à 08:00')
+    expect(screen.getByTestId('host').textContent).toBe('dim. 11 oct. · 08:00')
     cleanup()
     renderIt(<Rendezvous date="2026-10-11T06:00:00Z" zone="Mars/Olympus_Mons" />)
     expect(screen.queryByRole('img')).toBeNull()
@@ -77,7 +85,7 @@ describe('Rendezvous', () => {
         <Rendezvous date="2026-10-11T06:00:00Z" zone="Europe/Paris" variant="detail" />
       </MantineProvider>
     )
-    expect(detail).toContain('dimanche 11 octobre 2026 à 08:00')
+    expect(detail).toContain('dim. 11 oct. · 08:00')
     expect(detail).not.toContain('heure de')
     const card = renderToString(
       <MantineProvider>

@@ -13,7 +13,7 @@ import { Stat, SurfaceBadge } from '@/components/card/common'
 import type { RideDto, RideGroupSummaryDto } from '@/api/dto'
 import { useUnits } from '@/hooks/useUnits'
 import { useRendezvousFormat } from '@/hooks/useRendezvousFormat'
-import { ZoneMentionIcon } from '@/components/common/Rendezvous'
+import { DepartureLine } from '@/components/common/DepartureLine'
 import { groupLeavesAtOwnTime, startFor } from '@/utils/groupStart'
 import { publicationEditPath, publicationPath, rideHasNoRoute } from './dashboardHelpers'
 
@@ -31,8 +31,6 @@ interface UpcomingRideCardProps {
 export function UpcomingRideCard({ ride, canManage }: UpcomingRideCardProps) {
   const { t } = useTranslation()
   const { distance, elevation } = useUnits()
-  // The departure, a rendezvous in the ride's zone (docs/LEDGER_*.md API-60).
-  const departure = useRendezvousFormat(ride.timezone)
   const ridePath = publicationPath(ride)
   const groups = [...ride.groupSummaries].sort((a, b) => a.sortOrder - b.sortOrder)
   // The departure that concerns the reader (docs/LEDGER_*.md WEB-136): their group's when they
@@ -61,13 +59,8 @@ export function UpcomingRideCard({ ride, canManage }: UpcomingRideCardProps) {
           <Anchor component={PrefetchLink} to={ridePath} fw={600} c="inherit" lineClamp={2}>
             {ride.name}
           </Anchor>
-          <Text size="sm" c="dimmed" suppressHydrationWarning={departure.isGuessedText}>
-            {departure.formatPattern(start, 'EEE d MMM')} · {departure.formatTime(start)}
-            <ZoneMentionIcon
-              mention={departure.mention(start)}
-              isGuessed={departure.isGuessedTimezone}
-            />
-          </Text>
+          {/* No day box here: the line names the day, « sam. 12 avr. · 09:00 » (WEB-138). */}
+          <DepartureLine date={start} zone={ride.timezone} size="sm" withDay />
         </div>
 
         <Group gap="md" wrap="wrap">

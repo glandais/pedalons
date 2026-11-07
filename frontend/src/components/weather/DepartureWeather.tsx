@@ -46,11 +46,16 @@ export function DepartureWeather({ departure, time, timezone }: DepartureWeather
       <WeatherIcon condition={conditions.condition} daylight={conditions.daylight} size={44} />
       <Stack gap={4} style={{ minWidth: 0 }}>
         <Text size="xs" c="dimmed" tt="uppercase" fw={600}>
-          <span suppressHydrationWarning={isGuessedText}>
-            {t('rides.weather.departure.title', { time: formatTime(time) })}
-          </span>
+          {t('rides.weather.departure.label')}
         </Text>
+        {/* The departure's time at the temperature's level, not a 12 px aside (WEB-138). */}
         <Group gap="xs" align="baseline" wrap="wrap">
+          <Text size="xl" fw={700} suppressHydrationWarning={isGuessedText}>
+            {formatTime(time)}
+          </Text>
+          <Text size="xl" fw={700} c="dimmed" aria-hidden>
+            ·
+          </Text>
           <Text size="xl" fw={700}>
             {temperature(conditions.temperature)}
           </Text>

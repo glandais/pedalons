@@ -50,7 +50,8 @@ export function NotificationItem({ notification, onOpen, compact = false }: Noti
   // already the new date. A reminder carries no change but reads better with its start time. The
   // dated clause goes last, so the zone mention that closes the line sits right after its date.
   const date = notification.subjectDateTime
-    ? rendezvous.formatDateTime(notification.subjectDateTime)
+    ? // The departure's one format, « Demain · 09:00 » included (docs/BRANDING.md §8.3, WEB-138).
+      rendezvous.formatDeparture(notification.subjectDateTime)
     : ''
   const clauses =
     notification.type === NotificationType.RIDE_REMINDER && notification.subjectDateTime
