@@ -510,6 +510,13 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
       worker (`WeatherFetchWorker` sert le passage le plus proche d'abord, sans distinguer l'origine),
       et un cache d'échantillons à 1 000 entrées (`weather-preview-samples`) qui, au-delà, relit
       `tracks` à chaque passage. Dans `service/gpx/PreviewDepartures.checkQuota` et `WeatherPlanner`.
+- [ ] `API-152` **D+ du service écrit dans le `Path` par une API publique de vcyclist (XS)** —
+      `RouteDetailsTrack` pose le D+ et le D- d'osm-route-details avec les setters Kotlin
+      `internal` de vcyclist, appelés depuis Java sous leur nom généré
+      (`setElevationGainFiltered$io_github_glandais_gpx`) : une montée de version de vcyclist peut
+      le casser à la compilation. Ajouter côté vcyclist une méthode publique (par exemple
+      `ElevationGainJvm.report(path, gainM, lossM)`), puis y passer dans le helper unique de
+      `RouteDetailsTrack` (ledger `API-150`). Décision du 7 novembre 2026.
 - [ ] `API-151` **Finir le passage à osm-route-details : vérifications, recalcul du parc, phase F
       (M)** (scindé d'`API-150`) — le code est livré, mais le parc garde ses profils v2 et ses
       revêtements v1 tant que le recalcul n'est pas allumé, et deux tables mortes
@@ -518,12 +525,12 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
       - **Avant la bascule** : e2e (`scripts/e2e.sh`, pas relancés depuis la phase B), banc manuel D+ v2 contre v3 sur 30 parcours réels (§8 du plan), dont
         l'écart va dans les notes de version. Regarder aussi le crédit web, deux fois plus long, en
         surimpression en haut à droite du profil (`ElevationChart`).
-      - **À trancher** : D et E sont sur la même branche, donc les demandes `surface_refresh`
-        laissées par l'ancienne version ne seraient servies par personne, et ces traces resteraient
-        sans revêtement jusqu'au recalcul. Déployer d'abord la phase D et attendre que le compte de
-        `docs/OPERATIONS.md` tombe à 0, ou accepter ce trou (§11 du plan). Un calcul de l'ancienne
-        version déjà en cours pendant la minute du déploiement peut aussi poser un document v1 sur
-        un v2 : il se lit pareil, et rien ne le recalcule tout seul.
+      - **Bascule tout d'un coup** (décision du 7 novembre 2026) : D et E partent ensemble, les
+        demandes `surface_refresh` laissées par l'ancienne version ne sont servies par personne, et
+        ces traces restent sans revêtement jusqu'au recalcul, à allumer juste après le déploiement
+        (leur pipeline est nul, il les reprend). Un calcul de l'ancienne version déjà en cours
+        pendant la minute du déploiement peut aussi poser un document v1 sur un v2 : il se lit
+        pareil, et rien ne le recalcule tout seul.
       - **Recalcul du parc, par environnement** : `ROUTE_DETAILS_BACKFILL_ENABLED`, staging d'abord,
         jamais les deux en même temps, équipes prévenues que les D+ vont bouger ; retry admin à la
         fin pour les abandons (`docs/OPERATIONS.md`).
@@ -1277,6 +1284,17 @@ l'app mobile, un changement n'y apparaît qu'avec la build suivante.
 
 La politique réécrite pour la mesure d'audience (`LEGAL-19`) est en ligne ; ce qui reste de la mise
 en service (précondition du §5.3 du plan, vérifications de l'étape 6) est sous `OPS-41`.
+
+- [ ] `LEGAL-26` **Revêtement des parcours : ODbL et mention de VersaTiles côté serveur (S)** —
+      deux points relevés par `API-150`, à instruire. (1) Le backend stocke par parcours des plages
+      typées tirées d'OSM (`TrackSurfaceDocument.ways` : structure, revêtement, type de voie) ; le
+      contrat d'osm-route-details (§4.7) rappelle qu'un client qui accumule ses réponses en base de
+      segments relève du partage à l'identique de l'ODbL (déjà vrai avec osm-surface depuis
+      `OPS-57`) : dire si c'est une base dérivée et ce que ça implique, ou réduire ce qui est gardé.
+      (2) La politique ne cite VersaTiles que comme fond de carte côté client, alors que le serveur
+      (osm-surface puis osm-route-details) lui demande des tuiles sur l'emprise des parcours ; sans
+      objet si la prod passe à un extrait VersaTiles local (`OPS-58`). Parité FR/EN. Décision du
+      7 novembre 2026 : noter, ne rien changer pour l'instant.
 
 - [ ] `LEGAL-22` **Renvois « depuis votre profil » rendus précis (XS)** — quatre
       phrases renvoient au profil sans dire où, alors que le profil a depuis octobre un sous-écran
