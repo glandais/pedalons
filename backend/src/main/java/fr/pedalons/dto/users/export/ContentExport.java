@@ -380,7 +380,10 @@ public final class ContentExport {
       float elevationLoss,
       float hilliness,
       boolean hasThumbnail,
-      Instant createdAt) {
+      Instant createdAt,
+      @Nullable Instant departureAt,
+      @Nullable String departureZone,
+      @Nullable Float averageSpeed) {
 
     public static GpxPreviewEntry from(GpxPreview p) {
       return new GpxPreviewEntry(
@@ -392,7 +395,10 @@ public final class ContentExport {
           p.getElevationLoss(),
           p.getHilliness(),
           p.isHasThumbnail(),
-          p.getCreatedAt());
+          p.getCreatedAt(),
+          p.getDepartureAt(),
+          p.getDepartureZone(),
+          p.getAverageSpeed());
     }
   }
 

@@ -34,6 +34,29 @@ vi.mock('../planner/RoutePlannerField', () => ({
   },
 }))
 
+// The departure fields have their own test: a stand-in with a button for each gesture.
+vi.mock('./DepartureFields', () => ({
+  DepartureFields: (props: {
+    value: { departure?: string; averageSpeed?: number }
+    onChange: (value: { departure?: string; averageSpeed?: number }) => void
+  }) => (
+    <div>
+      <button onClick={() => props.onChange({ ...props.value, departure: '2026-11-08T09:30:00' })}>
+        set-departure
+      </button>
+      <button onClick={() => props.onChange({ ...props.value, departure: undefined })}>
+        clear-departure
+      </button>
+      <button onClick={() => props.onChange({ ...props.value, averageSpeed: 27.5 })}>
+        set-speed
+      </button>
+      <button onClick={() => props.onChange({ ...props.value, averageSpeed: undefined })}>
+        clear-speed
+      </button>
+    </div>
+  ),
+}))
+
 import { GpxPreviewEditor } from './GpxPreviewEditor'
 
 const STATE = { version: 1, profile: 'GRAVEL', sources: [], junctions: [], pieces: [] } as never
@@ -73,7 +96,7 @@ describe('GpxPreviewEditor planner state (C4a)', () => {
     const onSubmit = renderEditor()
     save()
     await waitFor(() => expect(onSubmit).toHaveBeenCalled())
-    expect(onSubmit).toHaveBeenCalledWith('Ma sortie', undefined, undefined, undefined)
+    expect(onSubmit).toHaveBeenCalledWith('Ma sortie', undefined, undefined, undefined, {})
   })
 
   it('a changed track sends the state alone', async () => {
@@ -110,7 +133,7 @@ describe('GpxPreviewEditor planner state (C4a)', () => {
     const onSubmit = renderEditor()
     save()
     await waitFor(() => expect(onSubmit).toHaveBeenCalled())
-    expect(onSubmit).toHaveBeenCalledWith('Ma sortie', undefined, undefined, waypoints)
+    expect(onSubmit).toHaveBeenCalledWith('Ma sortie', undefined, undefined, waypoints, {})
   })
 
   it('the route points ride along a changed track and an untouched import', async () => {
@@ -134,7 +157,7 @@ describe('GpxPreviewEditor planner state (C4a)', () => {
     const second = renderEditor({ create: true, initialTrack: undefined })
     save()
     await waitFor(() => expect(second).toHaveBeenCalled())
-    expect(second).toHaveBeenCalledWith('Ma sortie', undefined, file, waypoints)
+    expect(second).toHaveBeenCalledWith('Ma sortie', undefined, file, waypoints, {})
   })
 
   it('hands the saved route points and their length to the planner', () => {
@@ -165,7 +188,7 @@ describe('GpxPreviewEditor import in the planner (C4b)', () => {
     const onSubmit = renderEditor({ create: true, initialTrack: undefined })
     save()
     await waitFor(() => expect(onSubmit).toHaveBeenCalled())
-    expect(onSubmit).toHaveBeenCalledWith('Ma sortie', undefined, file, undefined)
+    expect(onSubmit).toHaveBeenCalledWith('Ma sortie', undefined, file, undefined, {})
   })
 
   it('a modified import is submitted as the state', async () => {
@@ -187,5 +210,65 @@ describe('GpxPreviewEditor import in the planner (C4b)', () => {
     renderEditor({ initialName: '' })
     act(() => (fieldProps.last!.onImportName as (n: string) => void)('Du fichier'))
     expect(screen.getByDisplayValue('Du fichier')).toBeTruthy()
+  })
+})
+
+describe('GpxPreviewEditor departure', () => {
+  beforeEach(() => {
+    snapshotMock.mockReset()
+    snapshotMock.mockReturnValue({ dirty: false, plannerState: STATE, points: POINTS })
+  })
+  afterEach(cleanup)
+
+  const lastChange = (onSubmit: ReturnType<typeof vi.fn>) => onSubmit.mock.calls[0][4]
+
+  it('a creation sends the date and the speed that were typed', async () => {
+    snapshotMock.mockReturnValue({ dirty: false, plannerState: STATE, points: POINTS })
+    const onSubmit = renderEditor({ create: true, initialTrack: undefined })
+    fireEvent.click(screen.getByText('set-departure'))
+    fireEvent.click(screen.getByText('set-speed'))
+    save()
+    await waitFor(() => expect(onSubmit).toHaveBeenCalled())
+    expect(lastChange(onSubmit)).toEqual({
+      departure: '2026-11-08T09:30:00',
+      averageSpeed: 27.5,
+    })
+  })
+
+  it('leaves the change empty when the saved values are not touched', async () => {
+    const onSubmit = renderEditor({
+      initialDeparture: { departure: '2026-11-08T09:30:00', averageSpeed: 27.5 },
+    })
+    save()
+    await waitFor(() => expect(onSubmit).toHaveBeenCalled())
+    expect(lastChange(onSubmit)).toEqual({})
+  })
+
+  it('sends the new date alone when only the date moved', async () => {
+    const onSubmit = renderEditor({
+      initialDeparture: { departure: '2026-11-01T08:00:00', averageSpeed: 27.5 },
+    })
+    fireEvent.click(screen.getByText('set-departure'))
+    save()
+    await waitFor(() => expect(onSubmit).toHaveBeenCalled())
+    expect(lastChange(onSubmit)).toEqual({ departure: '2026-11-08T09:30:00' })
+  })
+
+  it('asks to clear what was emptied, each field on its own', async () => {
+    const onSubmit = renderEditor({
+      initialDeparture: { departure: '2026-11-08T09:30:00', averageSpeed: 20 },
+    })
+    fireEvent.click(screen.getByText('clear-speed'))
+    save()
+    await waitFor(() => expect(onSubmit).toHaveBeenCalled())
+    expect(lastChange(onSubmit)).toEqual({ clearAverageSpeed: true })
+    cleanup()
+    const second = renderEditor({
+      initialDeparture: { departure: '2026-11-08T09:30:00', averageSpeed: 20 },
+    })
+    fireEvent.click(screen.getByText('clear-departure'))
+    save()
+    await waitFor(() => expect(second).toHaveBeenCalled())
+    expect(lastChange(second)).toEqual({ clearDeparture: true })
   })
 })

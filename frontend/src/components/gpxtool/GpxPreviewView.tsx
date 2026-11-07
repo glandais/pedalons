@@ -1,23 +1,33 @@
 import { useState } from 'react'
-import { useUrlFilters } from '@/hooks/useUrlFilters'
-import {
-  mapColorFiltersAlias,
-  mapColorFiltersSchema,
-  withMapColor,
-} from '@/hooks/filters/mapColorFilters'
+import { withMapColor } from '@/hooks/filters/mapColorFilters'
+import { useWindColorMode } from '@/hooks/useWindColorMode'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   IconArrowUp,
   IconArrowDown,
+  IconBolt,
+  IconClock,
   IconDeviceMobile,
   IconDownload,
   IconEdit,
   IconRoute,
   IconTrash,
 } from '@tabler/icons-react'
-import { Box, Button, Group, Loader, Menu, Modal, Select, Stack, Text, Title } from '@mantine/core'
+import {
+  Anchor,
+  Box,
+  Button,
+  Group,
+  Loader,
+  Menu,
+  Modal,
+  Select,
+  Stack,
+  Text,
+  Title,
+} from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import type { GpsServiceType, GpxPreviewDto } from '@/api/dto'
 import { ElevationState, ErrorCode, SurfaceType } from '@/api/dto'
@@ -26,7 +36,9 @@ import { useListTeams } from '@/api/endpoints/teams/teams'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { ShareButton } from '@/components/common/ShareButton'
 import { RouteMapView } from '@/components/route/RouteMapView'
-import { RouteSurfaceSummary } from '@/components/route/RouteSurfaceSummary'
+import { ColorModeControls } from '@/components/route/ColorModeControls'
+import { Rendezvous } from '@/components/common/Rendezvous'
+import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { RouteWaypointList } from '@/components/route/RouteWaypointList'
 import { useWaypointSelection } from '@/hooks/useWaypointSelection'
 import { paths } from '@/config/paths'
@@ -36,7 +48,8 @@ import { useUnits } from '@/hooks/useUnits'
 import { apiErrorCode, ApiClientError } from '@/lib/apiError'
 import { defaultMedia } from '@/lib/apiUtils'
 import { invalidateRouteQueries } from '@/lib/routeCacheInvalidation'
-import type { PlannerColorBy } from '@/lib/plannerSurface'
+import { previewWindLeg, useGpxPreviewWeather } from '@/pages/gpxtool/gpxPreviewData'
+import { GpxPreviewWeatherSection } from './GpxPreviewWeatherSection'
 
 interface GpxPreviewViewProps {
   preview: GpxPreviewDto
@@ -51,7 +64,7 @@ export function GpxPreviewView({ preview }: GpxPreviewViewProps) {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const { distance, elevation } = useUnits()
+  const { distance, elevation, speed } = useUnits()
   const { isAuthenticated } = useAuth()
   const { connectedServices, uploadPreview, isUploadingPreview } = useGpsConnections()
 
@@ -59,13 +72,16 @@ export function GpxPreviewView({ preview }: GpxPreviewViewProps) {
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [deleteOpened, setDeleteOpened] = useState(false)
-  // In the URL, like a route sheet's (`?color=`): the fullscreen map opens in it, and comes back in its own
-  const {
-    filters: { colorBy: chosen },
-    setFilters,
-  } = useUrlFilters({ schema: mapColorFiltersSchema, alias: mapColorFiltersAlias })
-  const colorBy: PlannerColorBy = chosen === 'surface' ? 'surface' : 'grade'
-  const setColorBy = (next: PlannerColorBy) => setFilters({ colorBy: next })
+  // The forecast of the departure date, if the preview has one (read from the server's cache)
+  const { weather, polling, retry } = useGpxPreviewWeather(preview)
+  // What colours the line: the grade, the surface, or the wind of the forecast. In the URL, like a
+  // route sheet's (`?color=`): the fullscreen map opens in it, and comes back in its own.
+  const mode = useWindColorMode({
+    tracks: preview.tracks,
+    leg: previewWindLeg(weather.data),
+    attribution: weather.data?.attribution,
+    timezone: preview.departureTimezone,
+  })
 
   const { selection, setSelection, mapBoxRef, selectFromList } = useWaypointSelection()
 
@@ -146,15 +162,21 @@ export function GpxPreviewView({ preview }: GpxPreviewViewProps) {
       <Box ref={mapBoxRef}>
         <RouteMapView
           route={preview}
-          fullscreenPath={withMapColor(paths.gpxToolsMap(preview.id), colorBy)}
-          colorBy={colorBy}
+          fullscreenPath={withMapColor(paths.gpxToolsMap(preview.id), mode.colorBy)}
+          colorBy={mode.plannerColorBy}
+          {...mode.mapProps}
           waypointSelection={selection}
           onWaypointSelectionChange={setSelection}
         />
       </Box>
 
       {/* Under the map, like the route sheet: its switch colours the map and the profile above */}
-      <RouteSurfaceSummary tracks={preview.tracks} colorBy={colorBy} onColorByChange={setColorBy} />
+      <ColorModeControls
+        mode={mode}
+        tracks={preview.tracks}
+        attribution={weather.data?.attribution}
+        subject="track"
+      />
 
       <Group gap="lg">
         <Text>{distance(preview.distance)}</Text>
@@ -167,6 +189,45 @@ export function GpxPreviewView({ preview }: GpxPreviewViewProps) {
           <Text>{elevation(preview.elevationLoss)}</Text>
         </Group>
       </Group>
+
+      {preview.departureTime ? (
+        <Group gap="lg" wrap="wrap">
+          <Group gap={4} wrap="nowrap">
+            <IconClock size={16} aria-hidden />
+            <Text>
+              <Rendezvous
+                date={preview.departureTime}
+                zone={preview.departureTimezone}
+                variant="detail"
+                template={(text) => t('gpxTools.departure.line', { date: text })}
+              />
+            </Text>
+          </Group>
+          {preview.averageSpeed !== undefined && (
+            <Group gap={4} wrap="nowrap">
+              <IconBolt size={16} aria-hidden />
+              <Text>
+                {t('gpxTools.departure.speedLine', { speed: speed(preview.averageSpeed) })}
+              </Text>
+            </Group>
+          )}
+        </Group>
+      ) : (
+        preview.owned && (
+          <Anchor component={PrefetchLink} to={paths.gpxToolsEdit(preview.id)} size="sm">
+            {t('gpxTools.departure.add')}
+          </Anchor>
+        )
+      )}
+
+      <GpxPreviewWeatherSection
+        preview={preview}
+        weather={weather.data}
+        isLoading={weather.isLoading}
+        isFetching={weather.isFetching}
+        polling={polling}
+        onRetry={retry}
+      />
 
       <RouteWaypointList
         waypoints={preview.waypoints}

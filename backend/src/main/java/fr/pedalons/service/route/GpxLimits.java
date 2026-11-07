@@ -128,6 +128,27 @@ public final class GpxLimits {
    */
   public static final int MAX_MERGE_TRACKS = 16;
 
+  /**
+   * Slowest average speed (km/h) a GPX preview accepts. A real bound and not just {@code @Positive}:
+   * the weather derives the passage times from it by dividing, and a speed near zero pushes them
+   * past what PostgreSQL stores, which would stop the planner pass for every ride of the platform
+   * (docs/LEDGER_*.md API-149). 10 km/h is a slow ride, not a walk.
+   */
+  public static final int MIN_AVERAGE_SPEED_KMH = 10;
+
+  /** Fastest average speed (km/h) a GPX preview accepts; also rules out {@code Infinity}. */
+  public static final int MAX_AVERAGE_SPEED_KMH = 60;
+
+  /**
+   * Most dated previews to come one account may hold. Each asks the shared weather cache for one
+   * cell per forecast point of its track (one every {@code pedalons.weather.sample-step-km}, no cap),
+   * so this bounds what one account takes from the daily provider budget (docs/LEDGER_*.md SEC-48).
+   */
+  public static final int MAX_UPCOMING_DATED_PREVIEWS = 20;
+
+  /** Longest text the {@code averageSpeed} form field may be, before it is parsed as a number. */
+  public static final int MAX_AVERAGE_SPEED_CHARS = 16;
+
   private GpxLimits() {}
 
   /** {@link #checkTracks(List)} on every track (and route) of the document. */

@@ -2635,6 +2635,21 @@
               "$ref" : "#/components/schemas/WaypointDto"
             },
             "description" : "Waypoints"
+          },
+          "departureTime" : {
+            "description" : "Departure instant, when the person gave a date. The wall time at the start of the track is this instant in departureTimezone. Present together with departureTimezone",
+            "type" : "string",
+            "$ref" : "#/components/schemas/Instant"
+          },
+          "departureTimezone" : {
+            "type" : "string",
+            "description" : "IANA time zone of the first point of the track, the one the departure was entered in"
+          },
+          "averageSpeed" : {
+            "type" : "number",
+            "format" : "float",
+            "description" : "Average speed in km/h the person gave, null when none (the weather then assumes 25 km/h)",
+            "examples" : [ 25 ]
           }
         }
       },
@@ -2670,6 +2685,19 @@
             },
             "description" : "The complete list of the waypoints, replacing them. Omitted: they stay as they are (placed again when the track changes)",
             "maxItems" : 500
+          },
+          "departure" : {
+            "description" : "Departure date and time, a wall time without offset, in the time zone of the first point of the track (not the device's). Present: the weather is computed when it falls within the next 7 days",
+            "type" : "string",
+            "$ref" : "#/components/schemas/EventDateTime"
+          },
+          "averageSpeed" : {
+            "type" : "number",
+            "format" : "float",
+            "description" : "Average speed in km/h, 1 to 100, to estimate the passage times of the weather. Without one, 25 km/h is assumed",
+            "examples" : [ 25 ],
+            "maximum" : 60,
+            "minimum" : 10
           }
         }
       },
@@ -2739,6 +2767,15 @@
             "description" : "Creation timestamp",
             "type" : "string",
             "$ref" : "#/components/schemas/Instant"
+          },
+          "departureTime" : {
+            "description" : "Departure instant, when the person gave a date. The wall time at the start of the track is this instant in departureTimezone. Present together with departureTimezone",
+            "type" : "string",
+            "$ref" : "#/components/schemas/Instant"
+          },
+          "departureTimezone" : {
+            "type" : "string",
+            "description" : "IANA time zone of the first point of the track, the one the departure was entered in"
           }
         }
       },
@@ -2774,6 +2811,27 @@
             },
             "description" : "The complete list of the waypoints, replacing them. Omitted: they stay as they are (placed again when the track changes)",
             "maxItems" : 500
+          },
+          "departure" : {
+            "description" : "Departure date and time, a wall time without offset, in the time zone of the first point of the track (not the device's). Omitted: kept (it follows the track if that moves to another zone). Present: the weather is computed when it falls within the next 7 days",
+            "type" : "string",
+            "$ref" : "#/components/schemas/EventDateTime"
+          },
+          "clearDeparture" : {
+            "type" : "boolean",
+            "description" : "Remove the departure date. Not with departure (400 BAD_REQUEST)"
+          },
+          "averageSpeed" : {
+            "type" : "number",
+            "format" : "float",
+            "description" : "Average speed in km/h, 1 to 100, to estimate the passage times of the weather. Omitted: kept. Without one, 25 km/h is assumed",
+            "examples" : [ 25 ],
+            "maximum" : 60,
+            "minimum" : 10
+          },
+          "clearAverageSpeed" : {
+            "type" : "boolean",
+            "description" : "Remove the average speed. Not with averageSpeed (400 BAD_REQUEST)"
           }
         }
       },
@@ -12266,6 +12324,12 @@
                   "gpxFile" : {
                     "type" : "string",
                     "format" : "binary"
+                  },
+                  "departure" : {
+                    "type" : "string"
+                  },
+                  "averageSpeed" : {
+                    "type" : "string"
                   }
                 }
               }
@@ -12387,6 +12451,12 @@
                       "type" : "string",
                       "format" : "binary"
                     }
+                  },
+                  "departure" : {
+                    "type" : "string"
+                  },
+                  "averageSpeed" : {
+                    "type" : "string"
                   }
                 }
               }
@@ -12843,6 +12913,48 @@
         "security" : [ {
           "SecurityScheme" : [ "user" ]
         } ]
+      }
+    },
+    "/api/gpx-previews/{previewId}/weather" : {
+      "get" : {
+        "summary" : "Get the weather of an analysed GPX file",
+        "description" : "The forecast along the track when the preview has a departure date: at the start, then at each estimated passage (the average speed given, else 25 km/h). Anyone holding the link may read it. Read from the server's cache only — the forecast is refreshed in the background, never on request — and always 200: the state is in status (OUT_OF_RANGE without a date or once it is past). Cache-Control: private, no-cache with an ETag (revalidate with If-None-Match, 304 when unchanged); no-store when status is UNAVAILABLE.",
+        "operationId" : "getPreviewWeather",
+        "tags" : [ "GPX previews" ],
+        "parameters" : [ {
+          "description" : "Public preview identifier",
+          "name" : "previewId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Preview weather, in whatever state it is",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RideWeatherDto"
+                }
+              }
+            }
+          },
+          "304" : {
+            "description" : "Unchanged since the ETag sent"
+          },
+          "404" : {
+            "description" : "Preview not found or expired",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/invitations/accept" : {
@@ -24757,7 +24869,7 @@
   },
   "info" : {
     "title" : "Pedalons API",
-    "version" : "13.0.1",
+    "version" : "13.1.0",
     "description" : "API for Pedalons Cycling Team Management Platform"
   },
   "servers" : [ {

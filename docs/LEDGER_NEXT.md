@@ -444,6 +444,20 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
       suggestion de `surfaceType`, `V77`, pas de contrat ; affichage mobile `MOB-81`) : C1 est livré. C3 (points de parcours) est conçu le 20 octobre 2026
       dans [l'étude des points de parcours](research/2026-10-20-points-de-parcours.md) et découpé dans le plan (C3a à C3h) ; C3b (vcyclist 6.11), C3c (backend, contrat `11.16.0`, `V78`), C3d (web, consultation) et C3e (web, éditeur) sont faits le 20 octobre 2026. Reste de C3a : basculer `pedalons.gps.garmin.course-points.enabled` (désactivé) après un essai de la Courses API sur un Edge, et essayer Wahoo.
 
+- [ ] `WEB-133` **La météo des aperçus GPX : recette navigateur (S)** — `WEB-132`, `API-149`. La pile e2e
+      (`scripts/e2e.sh`) coupe le fournisseur météo, donc rien de la prévision n'a été vu dans un
+      navigateur ; seuls les tests Vitest et la compilation ont tourné, et `frontend/e2e/flow-gpx-tools.e2e.ts`
+      n'a pas été étendu. À voir sur une pile avec le fournisseur (ou sur le dev) : déposer un fichier
+      depuis le hub avec une date et une vitesse, puis la page de l'aperçu (attente d'environ une
+      minute, puis la prévision, qui arrive par tours de worker sur un long tracé) ; la même page ouverte
+      sans compte depuis le lien ; la mention « heure de Tokyo » sur un tracé hors du fuseau de la
+      personne ; une vitesse en miles par heure ; l'édition (date effacée, vitesse effacée, tracé
+      déplacé de fuseau) ; le mode Météo de la carte et son plein écran ; l'état « Ce départ est
+      passé » ; le message du refus au vingt et unième aperçu daté (aujourd'hui un 400 générique, sans texte
+      dédié). Non vu non plus : la bande d'altitude d'un aperçu après le rattrapage HD (elle reste
+      manquante jusqu'au passage suivant du planner, `STALE` quelques minutes) et le rendu mobile du
+      web. Pas d'écran mobile : l'app n'a pas d'aperçus GPX.
+
 ### Couverture e2e — ce que l'audit du 27 septembre laisse ouvert
 
 L'audit ([archivé](plans/archive/2026-09-27-e2e-coverage-audit.md), `WEB-26`) est exécuté : P0, P1
@@ -486,6 +500,16 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
 ---
 
 ## API — Contrat d'API et backend
+
+- [ ] `API-150` **Plafonds de la météo des aperçus GPX qui restent ouverts (S)** — suite d'`API-149`
+      (voir aussi `SEC-48`). Ce qui est posé : 20 aperçus datés à venir par compte, 500 aperçus
+      par passage du planner (le plus proche d'abord), vitesse de 10 à 60 km/h ; pas de plafond de
+      points de prévision par aperçu (choix du propriétaire), donc un long tracé demande une cellule
+      tous les 15 km. Ce qui manque : un plafond journalier sur les `PUT` qui changent le tracé d'un
+      aperçu daté (chacun redemande des cellules), une priorité des sorties sur les aperçus dans le
+      worker (`WeatherFetchWorker` sert le passage le plus proche d'abord, sans distinguer l'origine),
+      et un cache d'échantillons à 1 000 entrées (`weather-preview-samples`) qui, au-delà, relit
+      `tracks` à chaque passage. Dans `service/gpx/PreviewDepartures.checkQuota` et `WeatherPlanner`.
 
 - [ ] `API-148` **Retirer les rustines de sécurité des dépendances une fois sur Quarkus 4 (S)** —
       `guava` est forcé en 33.7.2-jre dans le `dependencyManagement` de `backend/pom.xml`
@@ -1156,7 +1180,7 @@ n'a pas de sévérité tant que son test de validation n'a pas tourné.
 | `SEC-45` | 3 | Nov. V2 | À valider | Une bibliothèque d'analyse de fichiers de trace n'est pas protégée contre l'expansion d'entités |
 | `SEC-46` | — | Nov. V3 | À valider | Un chemin d'envoi de trace échappe à la borne de taille posée par `SEC-6` |
 | `SEC-47` | — | Nov. V4 | À valider | Un retour de connexion à un service tiers n'est pas lié au navigateur qui l'a lancé |
-| `SEC-48` | — | Nov. V5 | À valider | Un appel facturé à un fournisseur n'a pas de quota par compte |
+| `SEC-48` | — | Nov. V5 | À valider | Un appel facturé à un fournisseur n'a pas de quota par compte. Aperçus GPX datés (API-149) : 20 à venir par compte, sans plafond de points de prévision par aperçu ; reste ouvert : pas de plafond journalier sur les PUT qui changent le tracé, ni de priorité des sorties |
 | `SEC-49` | — | Nov. V6 | À valider | Un quota d'envoi suit le motif compter-puis-insérer (même famille que `SEC-35` et `SEC-39`) |
 | `SEC-50` | — | Nov. V7 | À valider | La désactivation d'un domaine ne s'applique pas à tous les chemins de résolution |
 

@@ -6,7 +6,11 @@ import { LoadingPage } from '@/components/common/LoadingSpinner'
 import { paths } from '@/config/paths'
 import { useAppName } from '@/hooks/useAppName'
 import { useCanonicalPath } from '@/hooks/useCanonicalPath'
-import { useGpxPreviewData } from '@/pages/gpxtool/gpxPreviewData'
+import {
+  previewWindLeg,
+  useGpxPreviewData,
+  useGpxPreviewWeather,
+} from '@/pages/gpxtool/gpxPreviewData'
 
 /**
  * Fullscreen map for an analysed GPX preview (`.../map`). Bare layout (no AppShell), so it owns its
@@ -19,6 +23,7 @@ export function GpxPreviewFullscreenMapPage() {
   const appName = useAppName()
 
   const { data: preview, isLoading } = useGpxPreviewData(previewId)
+  const { weather } = useGpxPreviewWeather(preview)
 
   useCanonicalPath(preview ? paths.gpxToolsMap(preview.id) : undefined)
 
@@ -41,6 +46,10 @@ export function GpxPreviewFullscreenMapPage() {
       route={preview}
       title={preview.name}
       backTo={paths.gpxToolsView(preview.id)}
+      windLeg={previewWindLeg(weather.data)}
+      windAttribution={weather.data?.attribution}
+      windSubject="track"
+      timezone={preview.departureTimezone}
     />
   )
 }

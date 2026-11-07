@@ -1,16 +1,21 @@
 package fr.pedalons.api.gpx;
 
+import fr.pedalons.common.exception.BadRequestException;
 import fr.pedalons.common.exception.BusinessException;
+import fr.pedalons.dto.common.EventDateTime;
 import fr.pedalons.dto.error.ErrorCode;
 import fr.pedalons.dto.error.ErrorResponse;
 import fr.pedalons.dto.gps.response.RouteUploadResponse;
 import fr.pedalons.dto.gpx.request.GpxPreviewFromPointsRequest;
 import fr.pedalons.dto.gpx.request.GpxPreviewUpdateRequest;
+import fr.pedalons.dto.gpx.request.PreviewDepartureEdit;
 import fr.pedalons.dto.gpx.response.GpxPreviewDto;
 import fr.pedalons.dto.gpx.response.GpxPreviewListResponse;
 import fr.pedalons.dto.routes.request.RouteRequest;
 import fr.pedalons.dto.routes.response.PlannerStateResponse;
 import fr.pedalons.dto.routes.response.RouteDto;
+import fr.pedalons.dto.weather.response.RideWeatherAnswer;
+import fr.pedalons.dto.weather.response.RideWeatherDto;
 import fr.pedalons.enums.GpsServiceType;
 import fr.pedalons.service.gpx.GpxPreviewService;
 import fr.pedalons.service.route.GpxLimits;
@@ -20,9 +25,14 @@ import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.EntityTag;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Request;
 import jakarta.ws.rs.core.Response;
+import java.math.BigDecimal;
+import java.time.DateTimeException;
 import java.util.ArrayList;
 import java.util.List;
 import org.eclipse.microprofile.openapi.annotations.Operation;
@@ -71,12 +81,18 @@ public class GpxPreviewResource {
         content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
   })
   @RolesAllowed("user")
-  public Response createPreview(@RestForm("gpxFile") @Nullable FileUpload gpxFile) {
+  public Response createPreview(
+      @RestForm("gpxFile") @Nullable FileUpload gpxFile,
+      @RestForm("departure") @Nullable String departure,
+      @RestForm("averageSpeed") @Nullable String averageSpeed) {
     if (gpxFile == null) {
       throw new BusinessException(ErrorCode.FILE_REQUIRED);
     }
+    // The form fields are read before the file is touched: a bad one is a 400 with nothing done
+    PreviewDepartureEdit edit =
+        PreviewDepartureEdit.of(departure(departure), averageSpeed(averageSpeed));
     GpxPreviewDto preview =
-        gpxPreviewService.createPreview(GpxUploads.uploadedGpx(gpxFile), gpxFile.fileName());
+        gpxPreviewService.createPreview(GpxUploads.uploadedGpx(gpxFile), gpxFile.fileName(), edit);
     return Response.status(Response.Status.CREATED).entity(preview).build();
   }
 
@@ -111,7 +127,10 @@ public class GpxPreviewResource {
         content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
   })
   @RolesAllowed("user")
-  public Response mergePreviews(@RestForm("gpxFiles") @Nullable List<FileUpload> gpxFiles) {
+  public Response mergePreviews(
+      @RestForm("gpxFiles") @Nullable List<FileUpload> gpxFiles,
+      @RestForm("departure") @Nullable String departure,
+      @RestForm("averageSpeed") @Nullable String averageSpeed) {
     if (gpxFiles == null || gpxFiles.isEmpty()) {
       throw new BusinessException(ErrorCode.FILE_REQUIRED);
     }
@@ -127,13 +146,15 @@ public class GpxPreviewResource {
       // All the files together are bound like a single upload (SEC-6), before any of them is read.
       throw new BusinessException(ErrorCode.FILE_TOO_LARGE);
     }
+    PreviewDepartureEdit edit =
+        PreviewDepartureEdit.of(departure(departure), averageSpeed(averageSpeed));
     List<java.nio.file.Path> paths = new ArrayList<>();
     List<@Nullable String> fileNames = new ArrayList<>();
     for (FileUpload upload : gpxFiles) {
       paths.add(GpxUploads.uploadedGpx(upload));
       fileNames.add(upload.fileName());
     }
-    GpxPreviewDto preview = gpxPreviewService.createMergedPreview(paths, fileNames);
+    GpxPreviewDto preview = gpxPreviewService.createMergedPreview(paths, fileNames, edit);
     return Response.status(Response.Status.CREATED).entity(preview).build();
   }
 
@@ -163,7 +184,11 @@ public class GpxPreviewResource {
   public Response createPreviewFromPoints(@Valid @NotNull GpxPreviewFromPointsRequest request) {
     GpxPreviewDto preview =
         gpxPreviewService.createPreviewFromPoints(
-            request.name(), request.points(), request.plannerState(), request.waypoints());
+            request.name(),
+            request.points(),
+            request.plannerState(),
+            request.waypoints(),
+            PreviewDepartureEdit.of(request.departure(), request.averageSpeed()));
     return Response.status(Response.Status.CREATED).entity(preview).build();
   }
 
@@ -213,6 +238,48 @@ public class GpxPreviewResource {
       @Parameter(description = "Public preview identifier") @PathParam("previewId")
           String previewId) {
     return gpxPreviewService.getPreview(previewId);
+  }
+
+  @GET
+  @Path("/{previewId}/weather")
+  @Operation(
+      operationId = "getPreviewWeather",
+      summary = "Get the weather of an analysed GPX file",
+      description =
+          "The forecast along the track when the preview has a departure date: at the start, then"
+              + " at each estimated passage (the average speed given, else 25 km/h). Anyone holding"
+              + " the link may read it. Read from the server's cache only — the forecast is"
+              + " refreshed in the background, never on request — and always 200: the state is in"
+              + " status (OUT_OF_RANGE without a date or once it is past). Cache-Control: private,"
+              + " no-cache with an ETag (revalidate with If-None-Match, 304 when unchanged);"
+              + " no-store when status is UNAVAILABLE.")
+  @APIResponses({
+    @APIResponse(
+        responseCode = "200",
+        description = "Preview weather, in whatever state it is",
+        content = @Content(schema = @Schema(implementation = RideWeatherDto.class))),
+    @APIResponse(responseCode = "304", description = "Unchanged since the ETag sent"),
+    @APIResponse(
+        responseCode = "404",
+        description = "Preview not found or expired",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  @PermitAll
+  public Response getPreviewWeather(
+      @Parameter(description = "Public preview identifier") @PathParam("previewId")
+          String previewId,
+      @Context Request request) {
+    RideWeatherAnswer answer = gpxPreviewService.getWeather(previewId);
+    String etag = answer.etag();
+    if (etag == null) {
+      // UNAVAILABLE offers a retry: nothing may keep it, not even to revalidate.
+      return Response.ok(answer.body()).header(HttpHeaders.CACHE_CONTROL, "no-store").build();
+    }
+    EntityTag entityTag = new EntityTag(etag, true);
+    Response.ResponseBuilder notModified = request.evaluatePreconditions(entityTag);
+    Response.ResponseBuilder builder =
+        notModified != null ? notModified : Response.ok(answer.body());
+    return builder.tag(entityTag).header(HttpHeaders.CACHE_CONTROL, "private, no-cache").build();
   }
 
   @GET
@@ -349,7 +416,49 @@ public class GpxPreviewResource {
         GpxUploads.uploadedGpx(gpxFile),
         request.points(),
         request.plannerState(),
-        request.waypoints());
+        request.waypoints(),
+        new PreviewDepartureEdit(
+            request.departure(),
+            Boolean.TRUE.equals(request.clearDeparture()),
+            request.averageSpeed(),
+            Boolean.TRUE.equals(request.clearAverageSpeed())));
+  }
+
+  /** The {@code departure} form field: a wall time without offset, else a 400. */
+  private static @Nullable EventDateTime departure(@Nullable String text) {
+    if (text == null || text.isBlank()) {
+      return null;
+    }
+    try {
+      return EventDateTime.parse(text);
+    } catch (DateTimeException e) {
+      throw new BadRequestException(ErrorCode.BAD_REQUEST, e);
+    }
+  }
+
+  /**
+   * The {@code averageSpeed} form field, km/h within the bounds of {@link GpxLimits}, else a 400.
+   * {@link BigDecimal} and not {@code Float.valueOf}, which reads « NaN », « Infinity » and « 25f ».
+   */
+  private static @Nullable Float averageSpeed(@Nullable String text) {
+    if (text == null || text.isBlank()) {
+      return null;
+    }
+    String trimmed = text.trim();
+    // Before parsing: BigDecimal's cost is quadratic in the digits, and a form field may be huge.
+    if (trimmed.length() > GpxLimits.MAX_AVERAGE_SPEED_CHARS) {
+      throw new BadRequestException(ErrorCode.BAD_REQUEST);
+    }
+    float speed;
+    try {
+      speed = new BigDecimal(trimmed).floatValue();
+    } catch (NumberFormatException e) {
+      throw new BadRequestException(ErrorCode.BAD_REQUEST, e);
+    }
+    if (speed < GpxLimits.MIN_AVERAGE_SPEED_KMH || speed > GpxLimits.MAX_AVERAGE_SPEED_KMH) {
+      throw new BadRequestException(ErrorCode.BAD_REQUEST);
+    }
+    return speed;
   }
 
   @DELETE

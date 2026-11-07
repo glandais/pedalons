@@ -63,7 +63,24 @@ public record GpxPreviewDto(
             required = true)
         boolean drawn,
     @Schema(description = "Tracks", required = true) List<TrackDto> tracks,
-    @Schema(description = "Waypoints", required = true) List<WaypointDto> waypoints) {
+    @Schema(description = "Waypoints", required = true) List<WaypointDto> waypoints,
+    @Schema(
+            description =
+                "Departure instant, when the person gave a date. The wall time at the start of the"
+                    + " track is this instant in departureTimezone. Present together with"
+                    + " departureTimezone")
+        @Nullable Instant departureTime,
+    @Schema(
+            description =
+                "IANA time zone of the first point of the track, the one the departure was entered"
+                    + " in")
+        @Nullable String departureTimezone,
+    @Schema(
+            description =
+                "Average speed in km/h the person gave, null when none (the weather then assumes"
+                    + " 25 km/h)",
+            examples = "25")
+        @Nullable Float averageSpeed) {
 
   /**
    * @param surfaces the surface of each track, in order (docs/LEDGER_*.md WEB-100, C1b); empty
@@ -119,7 +136,10 @@ public record GpxPreviewDto(
                         w.description(),
                         w.distance(),
                         WaypointOrigin.parseOrImported(w.origin())))
-            .toList());
+            .toList(),
+        preview.getDepartureAt(),
+        preview.getDepartureZone(),
+        preview.getAverageSpeed());
   }
 
   /** By distance along the tracks, those off the track last. */

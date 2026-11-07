@@ -27,6 +27,9 @@ _GpxPreviewDto _$GpxPreviewDtoFromJson(Map<String, dynamic> json) =>
           .map((e) => WaypointDto.fromJson(e as Map<String, dynamic>))
           .toList(),
       thumbnailUrl: json['thumbnailUrl'] as String?,
+      departureTime: json['departureTime'] as String?,
+      departureTimezone: json['departureTimezone'] as String?,
+      averageSpeed: (json['averageSpeed'] as num?)?.toDouble(),
     );
 
 Map<String, dynamic> _$GpxPreviewDtoToJson(_GpxPreviewDto instance) =>
@@ -46,4 +49,7 @@ Map<String, dynamic> _$GpxPreviewDtoToJson(_GpxPreviewDto instance) =>
       'tracks': instance.tracks.map((e) => e.toJson()).toList(),
       'waypoints': instance.waypoints.map((e) => e.toJson()).toList(),
       'thumbnailUrl': instance.thumbnailUrl,
+      'departureTime': instance.departureTime,
+      'departureTimezone': instance.departureTimezone,
+      'averageSpeed': instance.averageSpeed,
     };

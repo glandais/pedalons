@@ -16,6 +16,12 @@ import {
   getListMyPreviewsQueryKey,
   mergePreviews,
 } from '@/api/endpoints/gpx-previews/gpx-previews'
+import { DepartureFields } from '@/components/gpxtool/DepartureFields'
+import {
+  departureChange,
+  departureFormFields,
+  type DepartureValue,
+} from '@/components/gpxtool/departure'
 import { paths } from '@/config/paths'
 import { isGpxPlannerEnabled } from '@/config/appConfig'
 
@@ -40,6 +46,9 @@ export function GpxToolsPage() {
   const [isUploading, setIsUploading] = useState(false)
   const mergeInputRef = useRef<HTMLInputElement>(null)
   const [isMerging, setIsMerging] = useState(false)
+  // Taken into account by the upload and the merge, which send the file as soon as it is picked
+  const [departure, setDeparture] = useState<DepartureValue>({})
+  const departureFields = () => departureFormFields(departureChange({}, departure))
 
   const handleFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -49,7 +58,7 @@ export function GpxToolsPage() {
 
     setIsUploading(true)
     try {
-      const preview = await createPreview({ gpxFile: file })
+      const preview = await createPreview({ gpxFile: file, ...departureFields() })
       // Refresh "my files": the key prefix matches every paginated variant.
       queryClient.invalidateQueries({ queryKey: getListMyPreviewsQueryKey() })
       navigate(paths.gpxToolsView(preview.id))
@@ -76,7 +85,7 @@ export function GpxToolsPage() {
 
     setIsMerging(true)
     try {
-      const preview = await mergePreviews({ gpxFiles: files })
+      const preview = await mergePreviews({ gpxFiles: files, ...departureFields() })
       queryClient.invalidateQueries({ queryKey: getListMyPreviewsQueryKey() })
       navigate(paths.gpxToolsView(preview.id))
     } finally {
@@ -90,6 +99,12 @@ export function GpxToolsPage() {
         <Title order={1}>{t('gpxTools.title')}</Title>
         <Text c="dimmed">{t('gpxTools.subtitle')}</Text>
       </Stack>
+
+      <DepartureFields
+        value={departure}
+        onChange={setDeparture}
+        description={t('gpxTools.departure.hubHint')}
+      />
 
       <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }}>
         <Card withBorder padding="lg">

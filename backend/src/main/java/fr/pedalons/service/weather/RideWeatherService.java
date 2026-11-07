@@ -3,6 +3,7 @@ package fr.pedalons.service.weather;
 import fr.pedalons.domain.ride.Ride;
 import fr.pedalons.enums.Status;
 import fr.pedalons.enums.WeatherStatus;
+import fr.pedalons.repository.gpx.PreviewWeatherRow;
 import fr.pedalons.service.weather.RideWeatherCalculator.CellSeries;
 import fr.pedalons.service.weather.RideWeatherCalculator.LegInput;
 import fr.pedalons.service.weather.RideWeatherPlans.RidePlan;
@@ -44,14 +45,34 @@ public class RideWeatherService {
     if (isOutOfRange(ride, now)) {
       return RideWeather.of(WeatherStatus.OUT_OF_RANGE);
     }
-    RidePlan plan = plans.plan(ride);
+    return forPlan(plans.plan(ride), now);
+  }
+
+  /**
+   * The weather of a dated GPX preview (docs/LEDGER_*.md API-149): finished or undated is {@code
+   * OUT_OF_RANGE}, otherwise as a ride without group.
+   */
+  public RideWeather forPreview(PreviewWeatherRow preview) {
+    return forPreview(preview, Instant.now());
+  }
+
+  RideWeather forPreview(PreviewWeatherRow preview, Instant now) {
+    Instant departure = preview.departureAt();
+    if (departure == null || departure.isBefore(now)) {
+      return RideWeather.of(WeatherStatus.OUT_OF_RANGE);
+    }
+    return forPlan(plans.plan(preview), now);
+  }
+
+  /** What follows the range check: no location, horizon, cells, calculation. */
+  RideWeather forPlan(RidePlan plan, Instant now) {
     if (plan.departure() == null) {
       return RideWeather.of(WeatherStatus.NO_LOCATION);
     }
-    if (RideWeatherCalculator.isBeyondHorizon(ride.getDateTime(), now)) {
+    if (RideWeatherCalculator.isBeyondHorizon(plan.departureTime(), now)) {
       return new RideWeather(
           WeatherStatus.NOT_YET_AVAILABLE,
-          RideWeatherCalculator.availableFrom(ride.getDateTime()),
+          RideWeatherCalculator.availableFrom(plan.departureTime()),
           null,
           DepartureWeather.of(WeatherStatus.NOT_YET_AVAILABLE),
           List.of());

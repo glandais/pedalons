@@ -33,6 +33,12 @@ abstract class GpxPreviewSummaryDto with _$GpxPreviewSummaryDto {
 
     /// Creation timestamp
     required String createdAt,
+
+    /// Departure instant, when the person gave a date. The wall time at the start of the track is this instant in departureTimezone. Present together with departureTimezone
+    String? departureTime,
+
+    /// IANA time zone of the first point of the track, the one the departure was entered in
+    String? departureTimezone,
   }) = _GpxPreviewSummaryDto;
 
   factory GpxPreviewSummaryDto.fromJson(Map<String, Object?> json) =>
