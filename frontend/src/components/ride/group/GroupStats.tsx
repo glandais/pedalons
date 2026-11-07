@@ -48,11 +48,17 @@ export function GroupStats({
   ride,
   group,
   arrival,
+  showDeparture = true,
 }: {
   ride: RideDto
   group: RideGroupDto
   /** The estimated arrival of the group's leg, when the forecast gives one. */
   arrival: string | undefined
+  /**
+   * The « Départ » tile — off on a group's page, whose departure block above already gives it
+   * (docs/BRANDING.md §7.8).
+   */
+  showDeparture?: boolean
 }) {
   const { t } = useTranslation()
   const { speed, distance, elevation } = useUnits()
@@ -64,7 +70,7 @@ export function GroupStats({
       {/* Container query: the tiles sit in a narrow side column on wide screens, so the viewport
           width says nothing about the room they have. */}
       <SimpleGrid type="container" cols={{ base: 2, '560px': 4 }} spacing="md">
-        {group.startAt && (
+        {showDeparture && group.startAt && (
           <StatTile
             icon={<IconClock size={14} aria-hidden />}
             label={t('rides.group.stats.departure')}

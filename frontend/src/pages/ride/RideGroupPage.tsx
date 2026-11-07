@@ -19,8 +19,8 @@ import {
   Title,
 } from '@mantine/core'
 import type { RideDto, RideGroupDto } from '@/api/dto'
-import { ZoneMentionText } from '@/components/common/Rendezvous'
-import { startFor } from '@/utils/groupStart'
+import { groupStartRelation, startFor } from '@/utils/groupStart'
+import { DepartureBlock } from '@/components/common/DepartureBlock'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { QueryStateBoundary } from '@/components/common/QueryStateBoundary'
 import { DetailPageSkeleton } from '@/components/common/DetailPageSkeleton'
@@ -263,7 +263,7 @@ export function RideGroupPage() {
 
           <Group justify="space-between" wrap="wrap" align="flex-start">
             <Stack gap={4} style={{ minWidth: 0 }}>
-              <RideHeaderLine ride={ride} group={group} />
+              <RideHeaderLine ride={ride} />
               <Group gap="sm" wrap="wrap">
                 <Title order={1} size="h2">
                   {t('rides.group.title', { name: group.name })}
@@ -286,6 +286,8 @@ export function RideGroupPage() {
             </Stack>
             <GroupJoinActions action={action} group={group} membership={membership} />
           </Group>
+
+          <GroupDepartureBlock ride={ride} group={group} />
 
           <GroupPlaces group={group} />
 
@@ -342,6 +344,7 @@ export function RideGroupPage() {
             ride={ride}
             group={group}
             arrival={leg && hasForecast(leg.status) ? leg.arrivalTime : undefined}
+            showDeparture={false}
           />
 
           {/* The leader — only when one is designated, never the ride's creator */}
@@ -421,25 +424,34 @@ export function RideGroupPage() {
 }
 
 /**
- * « Sortie du samedi · samedi 10 octobre 2026, départ 08:30 », in the ride's zone, with its zone
- * mention. The departure is the group's, which may differ from the ride's (docs/LEDGER_*.md
- * WEB-135): the same as the « Départ » tile of `GroupStats`.
+ * The ride's name above the group's title. The departure itself is the block under the title
+ * (docs/BRANDING.md §7.8): the group's time, its date, and how it sits against the ride's.
  */
-function RideHeaderLine({ ride, group }: { ride: RideDto; group: RideGroupDto }) {
+function RideHeaderLine({ ride }: { ride: RideDto }) {
+  return (
+    <Text size="sm" c="dimmed">
+      {ride.name}
+    </Text>
+  )
+}
+
+/** The group's departure block: its own time, and « après la sortie de 20:00 » when it differs. */
+function GroupDepartureBlock({ ride, group }: { ride: RideDto; group: RideGroupDto }) {
   const { t } = useTranslation()
   const rendezvous = useRendezvousFormat(ride.timezone)
-  const start = startFor(ride, group)
+  const relation = groupStartRelation(group.startAt, ride.dateTime)
   return (
-    <Text size="sm" c="dimmed" suppressHydrationWarning={rendezvous.isGuessedText}>
-      {t('rides.group.header', {
-        ride: ride.name,
-        date: rendezvous.formatDate(start),
-        time: rendezvous.formatTime(start),
-      })}
-      <ZoneMentionText
-        mention={rendezvous.mention(start)}
-        isGuessed={rendezvous.isGuessedTimezone}
-      />
-    </Text>
+    <DepartureBlock
+      date={startFor(ride, group)}
+      zone={ride.timezone}
+      note={
+        relation === 'with'
+          ? null
+          : t('rides.group.departureNote', {
+              relation: t(`rides.group.stats.${relation}`),
+              time: rendezvous.formatTime(ride.dateTime),
+            })
+      }
+    />
   )
 }

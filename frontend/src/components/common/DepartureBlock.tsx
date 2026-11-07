@@ -30,6 +30,8 @@ interface DepartureBlockProps {
    * « Votre groupe · Groupe B · 09:30 » on the right.
    */
   group?: { name: string; startAt: string } | null
+  /** One line under the day, before the place — a group's « après la sortie de 20:00 ». */
+  note?: string | null
 }
 
 /**
@@ -47,6 +49,7 @@ export function DepartureBlock({
   returnZone,
   place,
   group,
+  note,
 }: DepartureBlockProps) {
   const { t } = useTranslation()
   const start = useRendezvousFormat(zone)
@@ -89,6 +92,11 @@ export function DepartureBlock({
             </span>
             <ZoneMentionText mention={mention} isGuessed={start.isGuessedTimezone} />
           </Text>
+          {note && (
+            <Text size="sm" fw={500} mt={2} suppressHydrationWarning={start.isGuessedText}>
+              {note}
+            </Text>
+          )}
           {place && (
             <Group gap={6} mt={6} wrap="nowrap" align="flex-start">
               <IconMapPin

@@ -199,11 +199,10 @@ describe('RideGroupPage (WEB-77)', () => {
     renderPage()
     expect(screen.getByRole('heading', { level: 1, name: 'Groupe Rapide' })).toBeTruthy()
     const text = plain(document.body.textContent)
-    expect(text).toContain('Sortie du samedi · ')
+    expect(text).toContain('Sortie du samedi')
     expect(text).toContain('11/12 personnes')
     expect(text).toContain('1 place restante')
-    expect(text).toContain('Départ')
-    expect(text).toContain('avec la sortie')
+    expect(text).toContain('Départ 06:40')
     expect(text).toContain('Allure moyenne')
     expect(text).toContain('28 km/h')
     expect(text).toContain('Dénivelé positif')
@@ -232,17 +231,22 @@ describe('RideGroupPage (WEB-77)', () => {
     expect(plain(document.body.textContent)).toContain('après la sortie')
   })
 
-  it('gives the group’s departure in the header line, not the ride’s (WEB-135)', () => {
+  it('gives the group’s departure in its departure block, not the ride’s (WEB-135)', () => {
     state.ride = ride({ groups: [group({ startAt: '2026-10-08T07:10:00Z' }), cool()] })
     renderPage()
-    const text = plain(document.body.textContent)
-    expect(text).toContain('départ 07:10')
-    expect(text).not.toContain('départ 06:40')
+    const block = screen.getByRole('region', { name: 'Date et heure de départ' })
+    const text = plain(block.textContent)
+    expect(text).toContain('Départ 07:10')
+    expect(text).toContain('après la sortie de 06:40')
+    // The tile would repeat it.
+    expect(within(screen.getByTestId('group-stats')).queryByText('Départ')).toBeNull()
   })
 
-  it('gives the ride’s departure in the header line when the group leaves with it', () => {
+  it('gives the ride’s departure in the block when the group leaves with it', () => {
     renderPage()
-    expect(plain(document.body.textContent)).toContain('départ 06:40')
+    const text = plain(screen.getByRole('region', { name: 'Date et heure de départ' }).textContent)
+    expect(text).toContain('Départ 06:40')
+    expect(text).not.toContain('la sortie de')
   })
 
   it('renders no leader when the group has none — never the ride creator', () => {
