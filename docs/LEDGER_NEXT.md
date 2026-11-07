@@ -214,9 +214,11 @@ faite, et le 500 du contact vendeur (`MOB-47`). Depuis l'import de `n-peloton` e
 - [ ] `MOB-110` **Publier la 1.1.3 en bêta, puis sur l'App Store (XS)** — embarque la flèche
       orientée du vent à la place du point cardinal écrit, et Flutter 3.47.9. `pubspec.yaml` est en
       `1.1.3`, la fiche et les nouveautés dans `mobile/metadata/version/1.1.3/` (fiche recopiée de
-      la 1.1.2, nouveautés à compléter au fil des livraisons). Reste : `publish_beta.sh`, créer la
-      version 1.1.3 dans App Store Connect (`MANUAL`), pousser les nouveautés (`asc metadata
-      apply`), attacher le build (`fastlane release`), soumettre, publier à la main.
+      la 1.1.2 ; nouveautés complétées de `MOB-111` à `MOB-115`). Version 1.1.3 créée dans App Store
+      Connect le 7 novembre 2026 (`MANUAL`, id `14f5c3e9-ceb2-42e5-9666-c5202da0134c`), nouveautés
+      poussées par `asc metadata apply` ; description, mots-clés et détail de revue recopiés de la
+      1.1.2 par App Store Connect. Reste : `publish_beta.sh`, attacher le build (`fastlane release`),
+      `asc validate`, soumettre, puis publier à la main après l'approbation.
 
 ### Couverture e2e Patrol — ce que les tests ne couvrent pas encore
 
