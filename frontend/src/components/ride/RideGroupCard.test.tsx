@@ -125,20 +125,21 @@ describe('RideGroupCard (WEB-77)', () => {
       expect(screen.queryByTestId('departure-line')).toBeNull()
     })
 
-    it('gives its own time in 700, out of the stats row, and « après la sortie »', () => {
+    it('gives its own time in 700 on an indigo band, out of the stats row, against the ride’s', () => {
       fixClock()
       renderCard(undefined, undefined, true, { startAt: '2026-10-08T07:10:00Z' })
       const line = screen.getByTestId('departure-line')
-      expect(plain(line.textContent)).toBe('Départ 07:10 · après la sortie')
+      expect(plain(line.textContent)).toBe('Départ 07:10 · après la sortie de 06:40')
       const time = screen.getByText('Départ 07:10')
       expect(time.getAttribute('style') ?? '').toContain('font-weight: 700')
+      expect(screen.getByTestId('group-own-time').contains(line)).toBe(true)
     })
 
     it('says « avant la sortie » for a group leaving first', () => {
       fixClock()
       renderCard(undefined, undefined, true, { startAt: '2026-10-08T06:00:00Z' })
       expect(plain(screen.getByTestId('departure-line').textContent)).toBe(
-        'Départ 06:00 · avant la sortie'
+        'Départ 06:00 · avant la sortie de 06:40'
       )
     })
 
@@ -146,7 +147,7 @@ describe('RideGroupCard (WEB-77)', () => {
       fixClock()
       renderCard(undefined, undefined, true, { startAt: '2026-10-09T05:30:00Z' })
       expect(plain(screen.getByTestId('departure-line').textContent)).toBe(
-        'ven. 9 oct. · 05:30 · après la sortie'
+        'ven. 9 oct. · 05:30 · après la sortie de 06:40'
       )
     })
   })

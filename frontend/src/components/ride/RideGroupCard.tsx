@@ -195,13 +195,28 @@ export function RideGroupCard({
       {/* The group's own departure (docs/BRANDING.md §7.8, ledger BRAND-8): its time in 700, the
           day when it is not the ride's, and how it sits against the ride — never a dimmed stat. */}
       {ownTime && (
-        <Box mt={6}>
+        <Box
+          mt="xs"
+          px="sm"
+          py={6}
+          // Indigo 0, not the « light » variant: the dimmed detail keeps 4.5:1 on it (#666d75 on
+          // #edf2ff); dark-6 in dark mode, where the dimmed grey is drawn for it.
+          bg="light-dark(var(--mantine-color-primary-0), var(--mantine-color-dark-6))"
+          style={{ borderRadius: 'var(--mantine-radius-sm)' }}
+          data-testid="group-own-time"
+        >
           <DepartureLine
             date={group.startAt}
             zone={rideTimezone}
-            size="sm"
             withDay={!rendezvous.samePeriod(group.startAt, rideDateTime)}
-            detail={relation === 'with' ? undefined : t(`rides.group.stats.${relation}`)}
+            detail={
+              relation === 'with'
+                ? undefined
+                : t('rides.group.departureNote', {
+                    relation: t(`rides.group.stats.${relation}`),
+                    time: rendezvous.formatTime(rideDateTime),
+                  })
+            }
           />
         </Box>
       )}
