@@ -18,7 +18,7 @@ rescheduled rather than left for a `restart:` policy.
 of routes: the backends read their elevations there, `fast` for a save or the planner, `full` for the
 HD catch-up, which also writes the surface; ledger `API-150`, `OPS-58`). `osm-surface`, which only
 a release older than phase E called, left it on 2026-11-07 (see
-[surface_refresh, until phase F](#surface_refresh-until-phase-f)). **Deploy it, and check that an environment's network reaches it,
+[Phase F: osm-surface and its queue gone](#phase-f-osm-surface-and-its-queue-gone)). **Deploy it, and check that an environment's network reaches it,
 before a backend that calls it**: without it nothing fails visibly, but every save keeps the file's
 elevations (a planner route gets 0 m and no D+) and every HD catch-up gives up after five attempts,
 with no surface.
@@ -763,30 +763,21 @@ and `~/staging`. The map tiles of the thumbnails (`tileserver_8080/`, the rest o
 docker run --rm -v "$PWD/data/cache:/d" alpine rm -rf /d/mapterhorn /d/ign-lidar-hd-mnt /d/ign-lidar-hd-mns
 ```
 
-#### surface_refresh, until phase F
+#### Phase F: osm-surface and its queue gone
 
-**osm-surface left the shared stack on 2026-11-07** (ledger `OPS-58`), once prod and staging both ran
-phase E: the backend has had no client for it and no surface queue since ledger `API-150` phase E.
-**A rollback to a release older than phase E (`58efaf4a`) therefore gets no surface any
-more**: its surface requests fail as unreachable and are given up after their attempts. The profile
-is not concerned. Its tile cache volume, `pedalons-shared_osm-surface-data` (regenerable), is
-removed by hand once the service is gone: `docker volume rm pedalons-shared_osm-surface-data`.
+**osm-surface left the shared stack on 2026-11-07** (ledger `OPS-59`): the backend has had no
+client for it since ledger `API-150` phase E. Its tile cache volume was removed with it.
 
-**`surface_refresh` and `raw_track_resurface` stay until the migration of phase F** (ledger
-`API-151`, step 2), inert. Since step 1 the backend has no entity for them and never touches them:
-the schema validation ignores a table without an entity, and their foreign keys cascade in the
-database. Their migration ships alone, in the release after step 1, once no rollback to phase E
-(`a8eda50d`) or earlier is planned: such a release writes to `surface_refresh` on every surface and
-would not even start without the table (`schema-management.strategy=validate`).
+**`surface_refresh` and `raw_track_resurface` are dropped by `V85`** (ledger `API-151`), one release
+after their entities left (`API-155`, `8563c87c`), so the previous release of the rolling deploy
+never misses them. **No rollback below `8563c87c`**: a release up to phase E (`a8eda50d`) maps
+`surface_refresh` and does not start without it (`schema-management.strategy=validate`); `V85`
+cannot be undone by `--rev` either, Flyway only goes forward. Recreating the tables from `V76` and
+`V83` by hand would be the only way back.
 
-- During a rolling deploy the previous backend may claim elevation requests, whatever their
-  `backfill` flag. A release older than phase C writes HD with no surface and leaves
-  `elevation_pipeline` null: that target is a candidate of the
-  [catch-up of the fleet](#the-catch-up-of-the-fleet).
-- A row left there by a release older than phase E is served by no one: its track has no surface
-  document, and the API says nothing about it, until the catch-up of the fleet reaches it (its
-  `elevation_pipeline` is null). A target with a given-up `elevation_refresh` row is excluded from
-  the catch-up, and needs the admin retry.
+During a rolling deploy the previous backend may claim elevation requests, whatever their
+`backfill` flag; a target it leaves with `elevation_pipeline` null is a candidate of the
+[catch-up of the fleet](#the-catch-up-of-the-fleet).
 
 #### The catch-up of the fleet
 
@@ -795,7 +786,7 @@ C1c and `SurfaceBackfill`) recomputes every route and preview behind `GpxPipelin
 (`elevation_pipeline` null or below 3) from its stored `original.gpx`: profile, D+, climbs, filtered
 GPX, FIT, route figures, waypoint distances and surface, in one write. **It is off by default:
 deploying never starts it.** Until it is on, a track without a surface gets none (old tracks, a
-failed synchronous save, a row left in `surface_refresh`) and displays as it does today. A route never recomputed keeps working: its
+failed synchronous save) and displays as it does today. A route never recomputed keeps working: its
 profile is untouched and its version 1 surface document is still read.
 
 Every 5 minutes, under an advisory lock, it queues the routes, most recent first, then the GPX-tool
@@ -905,9 +896,7 @@ database failure gives nothing up: the pass ends and the next one starts again f
 
 - **Stop it**: `RAW_BACKFILL_ENABLED=false`.
 - **Surfaces**: a caught-up route keeps the surface computed on its stored points, until the
-  catch-up of the fleet recomputes it from its original. Nothing reads or writes
-  `raw_track_resurface` any more since ledger `API-150` phase D: its rows are inert and the table
-  goes in phase F.
+  catch-up of the fleet recomputes it from its original.
 - **Follow it**: what is left, `select count(distinct route_id) from gpx_tracks where raw_geometry
   is null;`; given up, `select reason, count(*) from raw_track_backfill_skip group by reason;`. The
   log says `Raw line catch-up done` once nothing is left. To retry the ones given up on an error

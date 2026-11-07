@@ -21,10 +21,9 @@ CREATE UNIQUE INDEX elevation_refresh_route ON elevation_refresh (route_id) WHER
 CREATE UNIQUE INDEX elevation_refresh_preview ON elevation_refresh (preview_id) WHERE preview_id IS NOT NULL;
 ALTER TABLE elevation_refresh ADD CONSTRAINT ck_elevation_refresh_target CHECK ((route_id IS NULL) <> (preview_id IS NULL));
 -- Mirrors V77__surface_backfill.sql: the partial index of the catch-up (Hibernate cannot express it).
--- Its queue, surface_refresh, has no entity any more (docs/LEDGER_*.md API-151, phase F).
 CREATE INDEX gpx_tracks_surface_missing ON gpx_tracks (route_id) WHERE surfaces IS NULL;
 -- Mirrors V82__raw_track_backfill.sql: the partial index of the raw line catch-up (Hibernate cannot
--- express it). Its two tables are entities, cascade included.
+-- express it). Its table, raw_track_backfill_skip, is an entity, cascade included.
 CREATE INDEX gpx_tracks_raw_missing ON gpx_tracks (route_id) WHERE raw_geometry IS NULL;
 -- Mirrors V83__route_details_pipeline.sql: the default the previous release and the upsert rely on.
 ALTER TABLE elevation_refresh ALTER COLUMN backfill SET DEFAULT false;
