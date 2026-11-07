@@ -29,6 +29,7 @@ import { GroupJoinActions } from '@/components/ride/group/GroupJoinActions'
 import { GroupLeader } from '@/components/ride/group/GroupLeader'
 import { GroupParticipantsSection } from '@/components/ride/group/GroupParticipantsSection'
 import { GroupPlaces } from '@/components/ride/group/GroupPlaces'
+import { RideGroupRouteActions } from '@/components/ride/RideGroupRouteActions'
 import { GroupRouteMap } from '@/components/ride/group/GroupRouteMap'
 import { GroupStats } from '@/components/ride/group/GroupStats'
 import { GroupWeatherSection, type RouteWeatherSelection } from '@/components/weather'
@@ -350,10 +351,28 @@ export function RideGroupPage() {
             group={group}
             canSeeParticipants={isMember || isPlatformAdmin}
           />
+
+          {/* What to do with the route, beside the map rather than under it: the map column fills
+              the visible height (docs/LEDGER_*.md WEB-134) */}
+          {routeSlug && (
+            <Paper withBorder p="md">
+              <Stack gap="xs">
+                <Title order={3} size="h5">
+                  {t('rides.group.routeTitle')}
+                </Title>
+                <RideGroupRouteActions
+                  teamSlug={team.slug}
+                  routeSlug={routeSlug}
+                  route={route}
+                  size="sm"
+                />
+              </Stack>
+            </Paper>
+          )}
         </Stack>
 
-        {/* The group's route: the map with its profile, then what to do with it */}
-        <Box className="detail-map">
+        {/* The group's route: the map with its profile, sticky and filling the visible height */}
+        <Box className="detail-map detail-map--fill detail-map--solo">
           {routeSlug && (
             <GroupRouteMap
               teamSlug={team.slug}
@@ -368,6 +387,8 @@ export function RideGroupPage() {
               fullscreenPath={(colorBy) =>
                 withMapColor(paths.rideGroupMap(team.slug, ride.slug, group.id), colorBy)
               }
+              withActions={false}
+              heightVariant="sticky"
             />
           )}
         </Box>

@@ -77,8 +77,8 @@ import { withMapColor } from '@/hooks/filters/mapColorFilters'
 import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
 import { teamAccess } from '@/lib/teamAccess'
 
-/** The routes map fills the visible height beside the column on md+ (`.detail-map--fill`, WEB-134);
- *  its skeleton takes the same height so nothing shifts when the map bundle arrives. */
+/** The map fills the visible height beside the column on md+ (`.detail-map--fill`, WEB-134); its
+ *  skeleton takes the same height so nothing shifts when the map bundle arrives. */
 const STICKY_MAP_HEIGHT = 'var(--detail-map-height, 500px)'
 
 /** The anchor of the weather block, as on a group's page: a former group link's `#meteo` lands here. */
@@ -610,7 +610,13 @@ export function RideDetailPage() {
         {/* Map: the right column, sticky (via .detail-map); after the column in the DOM so focus and
             reading follow the visual order, moved first below md by the grid areas */}
         {hasMap && (
-          <Box className={soloRouteSlug ? 'detail-map' : 'detail-map detail-map--fill'}>
+          <Box
+            className={
+              soloRouteSlug
+                ? 'detail-map detail-map--fill detail-map--solo'
+                : 'detail-map detail-map--fill'
+            }
+          >
             {soloRouteSlug ? (
               // A solo ride on one route: the group page's map, its profile, its Météo mode, and the
               // ride's own fullscreen map in the mode the line is in (WEB-118).
@@ -625,6 +631,7 @@ export function RideDetailPage() {
                   withMapColor(paths.rideMap(team.slug, ride.slug), colorBy)
                 }
                 withActions={false}
+                heightVariant="sticky"
               />
             ) : (
               <ErrorBoundary variant="inline">

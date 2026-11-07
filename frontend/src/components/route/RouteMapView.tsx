@@ -7,7 +7,7 @@ import type { WaypointSelection } from '@/lib/waypoints'
 import { MapControlButton, MapControlGroup } from '@/components/map/MapControl'
 import type { RouteDetailDto } from '@/api/dto'
 import type { PlannerColorBy } from '@/lib/plannerSurface'
-import { useMapHeight } from '@/hooks/useResponsive'
+import { useMapHeight, type MapHeightVariant } from '@/hooks/useResponsive'
 import { getOverlayBg } from '@/lib/colors'
 import { useResolvedColorScheme } from '@/hooks/useResolvedColorScheme'
 import { useRouteSurfaceColors } from '@/hooks/useRouteSurfaceColors'
@@ -62,6 +62,8 @@ interface RouteMapViewProps {
   onWaypointSelectionChange?: (selection: WaypointSelection | null) => void
   /** Where the profile sits (`below` by default). */
   profilePlacement?: ProfilePlacement
+  /** The map's height (`full` by default); `sticky` on a ride's sticky map column (WEB-134). */
+  heightVariant?: MapHeightVariant
 }
 
 export function RouteMapView({
@@ -76,10 +78,11 @@ export function RouteMapView({
   waypointSelection,
   onWaypointSelectionChange,
   profilePlacement = 'below',
+  heightVariant = 'full',
 }: RouteMapViewProps) {
   const { t } = useTranslation()
   const colorScheme = useResolvedColorScheme()
-  const mapHeight = useMapHeight('full')
+  const mapHeight = useMapHeight(heightVariant)
   const [hoveredPointIndex, setHoveredPointIndex] = useState<number>(-1)
   const overlay = profilePlacement === 'overlay'
   const fitPadding = overlay ? OVERLAY_FIT_PADDING : BELOW_FIT_PADDING

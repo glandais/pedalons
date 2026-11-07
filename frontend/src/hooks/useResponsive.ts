@@ -71,8 +71,9 @@ export const responsiveSpacing: Record<string, ResponsiveSpacing> = {
  * - `full`      — the primary map of a detail page (route / GPX preview)
  * - `fullscreen`— dedicated map pages where the map *is* the content
  * - `sticky`    — a sticky map column that fills the visible height (ride detail on md+,
- *                 docs/LEDGER_*.md WEB-134): its container sets `--detail-map-height`, and the map is
- *                 `full` wherever it doesn't (stacked below md)
+ *                 docs/LEDGER_*.md WEB-134): its container sets `--detail-map-height` (less, for a
+ *                 solo ride, the room of the controls under the map), and the map is `full`
+ *                 wherever it doesn't (stacked below md)
  */
 export type MapHeightVariant = 'compact' | 'standard' | 'full' | 'fullscreen' | 'sticky'
 

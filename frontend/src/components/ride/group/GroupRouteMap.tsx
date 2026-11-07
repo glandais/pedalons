@@ -6,6 +6,7 @@ import { ErrorBoundary } from '@/components/common/ErrorBoundary'
 import { RideGroupRouteActions } from '@/components/ride/RideGroupRouteActions'
 import { ColorModeControls } from '@/components/route/ColorModeControls'
 import { RouteWaypointList } from '@/components/route/RouteWaypointList'
+import { useMapHeight, type MapHeightVariant } from '@/hooks/useResponsive'
 import { useWaypointSelection } from '@/hooks/useWaypointSelection'
 import { useWindColorMode } from '@/hooks/useWindColorMode'
 import { paths } from '@/config/paths'
@@ -45,6 +46,7 @@ export function GroupRouteMap({
   onSelectCheckpoint,
   fullscreenPath,
   withActions = true,
+  heightVariant,
 }: {
   teamSlug: string
   routeSlug: string
@@ -69,6 +71,8 @@ export function GroupRouteMap({
   /** The fullscreen map, opened in the mode the line is in; the route's own map without it. */
   fullscreenPath?: (colorBy: GroupColorBy) => string
   withActions?: boolean
+  /** The map's height, `RouteMapView`'s (`full` when left out); `sticky` on a solo ride's page. */
+  heightVariant?: MapHeightVariant
 }) {
   const { t } = useTranslation()
   const mode = useWindColorMode({
@@ -80,12 +84,15 @@ export function GroupRouteMap({
     onOpenChange: onSelectCheckpoint,
   })
   const { selection, setSelection, mapBoxRef, selectFromList } = useWaypointSelection()
+  // The placeholder takes the map's height when the page sets one, its former 500 px otherwise
+  const variantHeight = useMapHeight(heightVariant ?? 'full')
+  const skeletonHeight = heightVariant ? variantHeight : 500
   return (
     <Stack gap="md">
       <ErrorBoundary variant="inline">
         {route ? (
           <>
-            <Suspense fallback={<Skeleton height={500} radius="md" />}>
+            <Suspense fallback={<Skeleton height={skeletonHeight} radius="md" />}>
               <Box ref={mapBoxRef}>
                 <RouteMapView
                   route={route}
@@ -100,6 +107,7 @@ export function GroupRouteMap({
                   onWaypointSelectionChange={setSelection}
                   // A ride's map keeps its profile laid over it, unlike a route's sheet
                   profilePlacement="overlay"
+                  heightVariant={heightVariant}
                 />
               </Box>
             </Suspense>
@@ -111,7 +119,7 @@ export function GroupRouteMap({
             />
           </>
         ) : (
-          <Skeleton height={500} radius="md" />
+          <Skeleton height={skeletonHeight} radius="md" />
         )}
       </ErrorBoundary>
       {withActions && (

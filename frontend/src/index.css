@@ -291,13 +291,22 @@ body {
     grid-template-areas: 'side';
   }
 
-  /* The routes map fills the visible height under the header (its 1px borders included), with a
-     floor for short windows. A solo ride's map keeps its height: controls and waypoints sit under it. */
-  .ride-detail-layout > .detail-map--fill {
-    --detail-map-height: max(
-      420px,
-      calc(100svh - var(--app-shell-header-height, 60px) - 2 * var(--mantine-spacing-md) - 2px)
+  /* The map fills the visible height under the header (its 1px borders included), with a floor
+     for short windows — a ride's map, and a group's (its page's `.detail-map`). */
+  .detail-map--fill {
+    --detail-map-visible: calc(
+      100svh - var(--app-shell-header-height, 60px) - 2 * var(--mantine-spacing-md)
     );
+    --detail-map-height: max(420px, calc(var(--detail-map-visible) - 2px));
+  }
+
+  /* A single route's map (a solo ride's, a group's) leaves room for the colour modes and their
+     legend under it; its waypoint list, of any length, scrolls within the column rather than below
+     the screen's reach while the column sticks. */
+  .detail-map--solo {
+    --detail-map-height: max(360px, calc(var(--detail-map-visible) - 2px - 130px));
+    max-height: var(--detail-map-visible);
+    overflow-y: auto;
   }
 }
 
