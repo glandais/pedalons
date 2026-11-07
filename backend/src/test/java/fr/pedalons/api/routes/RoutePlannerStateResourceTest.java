@@ -278,7 +278,7 @@ class RoutePlannerStateResourceTest extends AbstractResourceTest {
                   return t;
                 });
     List<GpxTrack.TrackPoint> points = track.getTrackPoints();
-    // The pipeline resamples, but the ends are the first and the last junction
+    // The pipeline densifies and simplifies, but the ends are the first and the last junction
     assertEquals(4.83, points.getFirst().lng(), 1e-4);
     assertEquals(45.76, points.getFirst().lat(), 1e-4);
     assertEquals(4.84, points.getLast().lng(), 1e-4);

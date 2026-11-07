@@ -47,7 +47,7 @@ import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
  * tracks under two points dropped), 2D — what a save writes since phase A. No elevation, no
  * pipeline, no file rewritten.
  *
- * <p>Per route, three phases like the surface worker: the candidates in a short transaction, the
+ * <p>Per route, three phases: the candidates in a short transaction, the
  * read and the parse outside any, the write in a short transaction that locks the route and writes
  * only if its original is still the one read and it has as many tracks as the file, and then only
  * the rows still without a line. A route that cannot be caught up (original missing or unreadable,
@@ -65,20 +65,13 @@ import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
  * backend that does not get it skips the pass), so the two backends of a rolling deploy never read
  * the same originals at once, while the reads stay outside any transaction.
  *
- * <p>The surface of a caught-up route was computed on its stored points. A route whose raw line is
- * {@link #DENSER} times denser than them is recorded in {@code raw_track_resurface}, in the same
- * transaction as its line, whatever the switch: {@code SurfaceBackfill} asks those surfaces again
- * under its cap and window once {@code pedalons.raw-backfill.resurface} is on (off by default: each
- * request recomputes, on osm-surface, a surface that exists). A route drawn in the planner stored its simplified line as its
- * original: its raw line is no denser, recomputing it would buy nothing.
+ * <p>It queues nothing: a recompute of a track reads its original again, so a line denser than the
+ * stored points needs no follow-up here ({@code RouteDetailsBackfill}, docs/LEDGER_*.md API-150).
  */
 @ApplicationScoped
 public class RawTrackBackfill {
 
   private static final Logger LOG = Logger.getLogger(RawTrackBackfill.class);
-
-  /** How much denser than the stored points a raw line must be for its surface to be recomputed. */
-  static final double DENSER = 1.5;
 
   /** Passes in a row whose write of the same route failed before it is given up. */
   static final int MAX_WRITE_FAILURES = 3;
@@ -112,11 +105,8 @@ public class RawTrackBackfill {
     this.writeFailures.clear();
   }
 
-  /**
-   * What one pass did: routes given their raw line, given up, and among the filled ones those whose
-   * line is denser enough for their surface to be worth asking again.
-   */
-  public record Report(int filled, int skipped, int denser) {}
+  /** What one pass did: routes given their raw line, and given up. */
+  public record Report(int filled, int skipped) {}
 
   /** What happened to one route. */
   public enum Outcome {
@@ -143,9 +133,6 @@ public class RawTrackBackfill {
     }
   }
 
-  /** The result of the write: the outcome, and whether the surface is worth asking again. */
-  public record Written(Outcome outcome, boolean denser) {}
-
   @Scheduled(every = "5m", delayed = "4m", concurrentExecution = Scheduled.ConcurrentExecution.SKIP)
   void run() {
     try {
@@ -162,12 +149,12 @@ public class RawTrackBackfill {
    */
   public Report runOnce(Instant now) {
     if (!enabled || batch <= 0) {
-      return new Report(0, 0, 0);
+      return new Report(0, 0);
     }
     try (Connection connection = dataSource.getConnection()) {
       if (!lock(connection, "pg_try_advisory_lock")) {
         LOG.debug("Raw line catch-up: another backend runs it");
-        return new Report(0, 0, 0);
+        return new Report(0, 0);
       }
       try {
         return pass(now);
@@ -194,20 +181,16 @@ public class RawTrackBackfill {
     List<Candidate> candidates = candidates(batch);
     int filled = 0;
     int skipped = 0;
-    int denser = 0;
     for (Candidate candidate : candidates) {
-      Written written = handle(candidate, now);
-      if (written == null) {
+      Outcome outcome = handle(candidate, now);
+      if (outcome == null) {
         // The bucket or the database failed: the next pass starts again from this route
         break;
       }
-      switch (written.outcome()) {
+      switch (outcome) {
         case FILLED -> filled++;
         case SKIPPED -> skipped++;
         default -> {}
-      }
-      if (written.denser()) {
-        denser++;
       }
     }
     boolean found = !candidates.isEmpty();
@@ -216,11 +199,9 @@ public class RawTrackBackfill {
     }
     foundLastTime = found;
     if (found) {
-      LOG.infof(
-          "Raw line catch-up: %d route(s) filled (%d denser than their stored points), %d given up",
-          filled, denser, skipped);
+      LOG.infof("Raw line catch-up: %d route(s) filled, %d given up", filled, skipped);
     }
-    return new Report(filled, skipped, denser);
+    return new Report(filled, skipped);
   }
 
   /** Phase 1, a short transaction. Public for the tests. */
@@ -232,7 +213,7 @@ public class RawTrackBackfill {
    * The three phases for one route. A cause the next read would meet again gives it up; a failure
    * of the bucket or the database returns null, nothing marked, and the pass ends.
    */
-  private @Nullable Written handle(Candidate candidate, Instant now) {
+  private @Nullable Outcome handle(Candidate candidate, Instant now) {
     String route = TsidUtils.toString(candidate.routeId());
     Read read;
     try {
@@ -244,12 +225,12 @@ public class RawTrackBackfill {
     }
     if (read.failure() != null) {
       skip(candidate.routeId(), read.failure(), now);
-      return new Written(Outcome.SKIPPED, false);
+      return Outcome.SKIPPED;
     }
     try {
-      Written written = write(candidate, read.lines(), now);
+      Outcome outcome = write(candidate, read.lines(), now);
       writeFailures.remove(candidate.routeId());
-      return written;
+      return outcome;
     } catch (Exception e) {
       int failures = writeFailures.merge(candidate.routeId(), 1, Integer::sum);
       if (failures < MAX_WRITE_FAILURES) {
@@ -259,7 +240,7 @@ public class RawTrackBackfill {
       LOG.errorf(e, "Raw line catch-up: writing route %s failed %d times", route, failures);
       writeFailures.remove(candidate.routeId());
       skip(candidate.routeId(), Reason.ERROR, now);
-      return new Written(Outcome.SKIPPED, false);
+      return Outcome.SKIPPED;
     }
   }
 
@@ -307,12 +288,10 @@ public class RawTrackBackfill {
   /**
    * Phase 3, a short transaction: locks the route, then writes only if its original is still the
    * one read and its tracks (in id order, as everywhere) are as many as the file's, and then only
-   * the rows still without a line. Another number of tracks gives the route up. A line written
-   * {@link #DENSER} times denser than the stored points records, in the same transaction, that the
-   * surface is worth asking again. Public for the tests.
+   * the rows still without a line. Another number of tracks gives the route up. Public for the
+   * tests.
    */
-  public Written write(Candidate candidate, List<LineString<G2D>> lines, Instant now) {
-    int raw = lines.stream().mapToInt(LineString::getNumPositions).sum();
+  public Outcome write(Candidate candidate, List<LineString<G2D>> lines, Instant now) {
     return QuarkusTransaction.requiringNew()
         .call(
             () -> {
@@ -320,13 +299,13 @@ public class RawTrackBackfill {
                   entityManager.find(
                       Route.class, candidate.routeId(), LockModeType.PESSIMISTIC_WRITE);
               if (route == null) {
-                return new Written(Outcome.GONE, false);
+                return Outcome.GONE;
               }
               Long current =
                   assetRepository.findCurrentFileId(
                       candidate.routeId(), AssetType.ROUTE_ORIGINAL_GPX);
               if (current == null || !current.equals(candidate.originalFileId())) {
-                return new Written(Outcome.CHANGED, false);
+                return Outcome.CHANGED;
               }
               List<TrackSize> tracks = gpxTrackRepository.findSizes(candidate.routeId());
               if (tracks.size() != lines.size()) {
@@ -334,20 +313,12 @@ public class RawTrackBackfill {
                     "Raw line catch-up: route %s has %d track(s), its original %d",
                     TsidUtils.toString(candidate.routeId()), tracks.size(), lines.size());
                 backfillRepository.skip(candidate.routeId(), Reason.TRACK_COUNT, now);
-                return new Written(Outcome.SKIPPED, false);
+                return Outcome.SKIPPED;
               }
-              int written = 0;
               for (int i = 0; i < tracks.size(); i++) {
-                if (gpxTrackRepository.fillRawGeometry(tracks.get(i).trackId(), lines.get(i))) {
-                  written++;
-                }
+                gpxTrackRepository.fillRawGeometry(tracks.get(i).trackId(), lines.get(i));
               }
-              int stored = tracks.stream().mapToInt(TrackSize::points).sum();
-              boolean denser = written > 0 && stored > 0 && raw >= DENSER * stored;
-              if (denser) {
-                backfillRepository.wantResurface(candidate.routeId(), current, now);
-              }
-              return new Written(Outcome.FILLED, denser);
+              return Outcome.FILLED;
             });
   }
 }

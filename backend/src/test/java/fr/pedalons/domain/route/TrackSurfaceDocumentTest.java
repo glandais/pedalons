@@ -1,14 +1,21 @@
 package fr.pedalons.domain.route;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import fr.pedalons.domain.gpx.PreviewSurfacesDocument;
 import fr.pedalons.domain.route.TrackSurfaceDocument.SurfaceRange;
 import fr.pedalons.domain.route.TrackSurfaceDocument.WayRange;
 import io.hypersistence.utils.hibernate.type.util.JsonConfiguration;
 import io.hypersistence.utils.hibernate.type.util.ObjectMapperWrapper;
+import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -57,15 +64,91 @@ class TrackSurfaceDocumentTest {
   void aDocumentOfALaterReleaseStillReads() {
     String json =
         """
-        {"version":2,"status":"ok","reason":null,"osmChangeset":null,"computedAt":"2026-10-20T08:00:00Z",
+        {"version":3,"status":"ok","reason":null,"osmChangeset":null,"computedAt":"2026-10-20T08:00:00Z",
          "costing":"bicycle","distance":100.0,"somethingNew":{"a":1},
          "surfaces":[[0,100,"paved","a fourth element",{"and":"a fifth"}]],
-         "ways":[[0,100,"road","none","more"]]}
+         "ways":[[0,100,"road","none",null,null,null,null,"more"]]}
         """;
     TrackSurfaceDocument read = MAPPER.fromString(json, TrackSurfaceDocument.class);
     assertEquals(new SurfaceRange(0, 100, "paved"), read.surfaces().getFirst());
     assertEquals(new WayRange(0, 100, "road", "none"), read.ways().getFirst());
     assertNull(read.osmChangeset());
+  }
+
+  private static TrackSurfaceDocument version2() {
+    return new TrackSurfaceDocument(
+        TrackSurfaceDocument.VERSION_ROUTE_DETAILS,
+        "ok",
+        null,
+        null,
+        Instant.parse("2026-11-06T08:00:00Z"),
+        "bicycle",
+        1000.0,
+        List.of(new SurfaceRange(0, 600, "gravel"), new SurfaceRange(600, 1000, "unknown")),
+        List.of(
+            new WayRange(0, 600, "track", null, "bridge", true, "unpaved", "fine_gravel"),
+            new WayRange(600, 900, "track", null, null, false, "unknown", null),
+            new WayRange(900, 1000, "path", null, "tunnel", null, null, null)),
+        MAPPER.toJsonNode("{\"versatiles\":\"2026-10-27\"}"));
+  }
+
+  @Test
+  void aVersion2Way_stopsAtItsLastKnownElement() {
+    JsonNode json = MAPPER.toJsonNode(MAPPER.toString(version2()));
+    assertEquals(
+        MAPPER.toJsonNode(
+            """
+            [[0.0,600.0,"track",null,"bridge",true,"unpaved","fine_gravel"],
+             [600.0,900.0,"track",null,null,false,"unknown"],
+             [900.0,1000.0,"path",null,"tunnel"]]
+            """),
+        json.get("ways"));
+    assertEquals("2026-10-27", json.get("dataVersions").get("versatiles").asText());
+  }
+
+  @Test
+  void aVersion2Document_readsBack() {
+    TrackSurfaceDocument read =
+        MAPPER.fromString(MAPPER.toString(version2()), TrackSurfaceDocument.class);
+    assertEquals(version2(), read);
+    assertEquals(new SurfaceRange(0, 600, "gravel"), read.surfaces().getFirst());
+  }
+
+  @Test
+  void aVersion1Document_doesNotChangeOnDisk() {
+    JsonNode json = MAPPER.toJsonNode(MAPPER.toString(document()));
+    assertFalse(json.has("dataVersions"));
+  }
+
+  /** The shape of this record before version 2, as the previous release reads a document. */
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  record PreviousRelease(int version, String status, List<PreviousWay> ways) {
+
+    @JsonDeserialize(using = PreviousWay.Reader.class)
+    record PreviousWay(String use, String cycleLane) {
+
+      static final class Reader extends StdDeserializer<PreviousWay> {
+        Reader() {
+          super(PreviousWay.class);
+        }
+
+        @Override
+        public PreviousWay deserialize(JsonParser p, DeserializationContext c) throws IOException {
+          JsonNode n = c.readTree(p);
+          return new PreviousWay(
+              n.path(2).isNull() ? null : n.path(2).asText(),
+              n.path(3).isNull() ? null : n.path(3).asText());
+        }
+      }
+    }
+  }
+
+  @Test
+  void theReaderOfThePreviousRelease_seesTheWayKindAsAUse() {
+    PreviousRelease read = MAPPER.fromString(MAPPER.toString(version2()), PreviousRelease.class);
+    assertEquals(2, read.version());
+    assertEquals("track", read.ways().getFirst().use());
+    assertNull(read.ways().getFirst().cycleLane());
   }
 
   @Test

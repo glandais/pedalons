@@ -1145,7 +1145,7 @@
   "logo.remove": "Remove",
   "logo.title": "Logo",
   "logo.upload": "Add logo",
-  "map.elevationCredit": "Elevation: IGN LiDAR HD, Mapterhorn",
+  "map.elevationCredit": "Data: IGN LiDAR HD, Mapterhorn and its sources, © OpenStreetMap",
   "map.fullscreen.enter": "Enter fullscreen",
   "map.fullscreen.exit": "Exit fullscreen",
   "map.fullscreen.open": "Fullscreen map",

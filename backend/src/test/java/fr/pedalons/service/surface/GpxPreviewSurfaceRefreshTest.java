@@ -6,12 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import fr.pedalons.api.AbstractResourceTest;
 import fr.pedalons.common.GeoPoint;
@@ -19,14 +13,16 @@ import fr.pedalons.domain.gpx.GpxPreview;
 import fr.pedalons.domain.gpx.PreviewSurfacesDocument;
 import fr.pedalons.domain.route.SurfaceRefresh;
 import fr.pedalons.domain.route.TrackSurfaceDocument;
+import fr.pedalons.domain.route.TrackSurfaceDocument.SurfaceRange;
+import fr.pedalons.domain.route.TrackSurfaceDocument.WayRange;
 import fr.pedalons.dto.common.asset.MediaDto;
 import fr.pedalons.dto.gpx.response.GpxPreviewDto;
 import fr.pedalons.dto.routes.request.RouteRequest;
 import fr.pedalons.dto.routes.response.RouteDto;
+import fr.pedalons.enums.ElevationState;
 import fr.pedalons.enums.SurfaceType;
 import fr.pedalons.enums.TrackSurfaceState;
 import fr.pedalons.enums.Visibility;
-import fr.pedalons.infrastructure.valhalla.TraceAttributesClient;
 import fr.pedalons.repository.gpx.GpxPreviewRepository;
 import fr.pedalons.repository.route.ElevationRefreshRepository;
 import fr.pedalons.repository.route.GpxTrackRepository;
@@ -38,36 +34,33 @@ import fr.pedalons.service.route.planner.PlannerStateFixtures;
 import fr.pedalons.service.security.DomainResolver;
 import fr.pedalons.service.security.PedalonsQueryContext;
 import io.quarkus.narayana.jta.QuarkusTransaction;
-import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import java.io.File;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.hibernate.Hibernate;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * docs/LEDGER_*.md WEB-100 (C1b), previews of the GPX tools: the request under the preview's
- * {@code files_revision}, the document that follows the HD catch-up, and the promotion to a route
- * that takes the surface along. No test reaches Stadia Maps.
+ * docs/LEDGER_*.md WEB-100 (C1b), previews of the GPX tools: the document under the preview's
+ * {@code files_revision}, the one of the HD catch-up, and the promotion to a route that takes the
+ * surface along. A version 1 document is seeded ({@link #storeVersion1}): nothing writes one any
+ * more (docs/LEDGER_*.md API-150), but the previews that hold one stay readable.
  */
 @QuarkusTest
 class GpxPreviewSurfaceRefreshTest extends AbstractResourceTest {
 
   private static final Path EXAMPLE = new File("src/test/resources/example.gpx").toPath();
 
-  @InjectMock @RestClient TraceAttributesClient client;
-
   @Inject GpxPreviewService previewService;
   @Inject GpxPreviewRepository previewRepository;
   @Inject SurfaceRefreshService service;
-  @Inject SurfaceRefreshWorker worker;
   @Inject SurfaceRefreshRepository refreshRepository;
   @Inject ElevationRefreshWorker elevationWorker;
   @Inject ElevationRefreshRepository elevationRefreshRepository;
@@ -83,8 +76,6 @@ class GpxPreviewSurfaceRefreshTest extends AbstractResourceTest {
     domainResolver.setDomainForTest(dataService.getOrCreateDefaultDomain());
     dataService.setTeamEnableRoutePlanner(team1, true);
     context.setUserForTest(user1);
-    when(client.traceAttributes(any()))
-        .thenAnswer(inv -> TraceFixtures.answer(inv.getArgument(0), i -> "paved"));
     service.setEnabledForTest(true);
   }
 
@@ -105,23 +96,63 @@ class GpxPreviewSurfaceRefreshTest extends AbstractResourceTest {
         .call(() -> previewRepository.findSurfaces(preview.getId()));
   }
 
-  private SurfaceRefresh refresh(GpxPreview preview) {
+  /** A request of the former surface queue, as a previous release leaves it. */
+  private void queue(GpxPreview preview) {
+    LegacySurfaceRequests.leaveForPreview(
+        refreshRepository, preview.getId(), reload(preview).getFilesRevision());
+  }
+
+  /** The document a preview keeps from the former queue, one per track, under its revision. */
+  private void storeVersion1(GpxPreview preview) {
+    QuarkusTransaction.requiringNew()
+        .run(
+            () -> {
+              GpxPreview managed = previewRepository.findById(preview.getId());
+              List<TrackSurfaceDocument> documents = new ArrayList<>();
+              for (GpxPreview.PreviewTrack track : managed.getTracks()) {
+                documents.add(version1(track.trackPoints().getLast().dist()));
+              }
+              managed.setSurfaces(
+                  new PreviewSurfacesDocument(managed.getFilesRevision(), documents));
+            });
+  }
+
+  private static TrackSurfaceDocument version1(double length) {
+    return new TrackSurfaceDocument(
+        TrackSurfaceDocument.VERSION,
+        TrackSurfaceDocument.STATUS_OK,
+        null,
+        123L,
+        Instant.parse("2026-10-20T08:00:00Z"),
+        "bicycle",
+        length,
+        List.of(new SurfaceRange(0, length, "paved")),
+        List.of(new WayRange(0, length, "road", "none")));
+  }
+
+  /** The HD catch-up given up: what is said of the surface no longer comes from it. */
+  private void catchUpGivenUp(GpxPreview preview) {
+    QuarkusTransaction.requiringNew()
+        .run(
+            () -> {
+              elevationRefreshRepository.delete("preview.id", preview.getId());
+              previewRepository.update(
+                  "elevationState = ?1 where id = ?2", ElevationState.FAST, preview.getId());
+            });
+  }
+
+  private long elevationRevision(GpxPreview preview) {
     return QuarkusTransaction.requiringNew()
-        .call(() -> refreshRepository.findByPreviewId(preview.getId()).orElse(null));
+        .call(
+            () ->
+                elevationRefreshRepository
+                    .findByPreviewId(preview.getId())
+                    .orElseThrow()
+                    .getSourceRevision());
   }
 
   private long refreshCount() {
     return QuarkusTransaction.requiringNew().call(() -> refreshRepository.count());
-  }
-
-  private void makeDue(GpxPreview preview) {
-    QuarkusTransaction.requiringNew()
-        .run(
-            () ->
-                refreshRepository.update(
-                    "dueAt = ?1 where preview.id = ?2",
-                    Instant.now().minusSeconds(1),
-                    preview.getId()));
   }
 
   private GpxPreviewDto dto(GpxPreview preview) {
@@ -140,7 +171,7 @@ class GpxPreviewSurfaceRefreshTest extends AbstractResourceTest {
   // ------------------------------------------------------------------ requests
 
   @Test
-  void everyWayOfCreatingAPreview_queuesARequestUnderItsRevision() {
+  void everyWayOfCreatingAPreview_queuesNoSurfaceRequest_andIsPendingOnItsHdCatchUp() {
     List<GpxPreview> previews =
         List.of(
             previewService.create(EXAMPLE, "example.gpx"),
@@ -156,12 +187,10 @@ class GpxPreviewSurfaceRefreshTest extends AbstractResourceTest {
             stateBased());
     for (GpxPreview created : previews) {
       GpxPreview preview = reload(created);
-      SurfaceRefresh request = refresh(preview);
-      assertNotNull(request, "a request for " + preview.getName());
-      assertEquals(preview.getFilesRevision(), request.getSourceRevision());
+      assertEquals(preview.getFilesRevision(), elevationRevision(preview));
       assertEquals(TrackSurfaceState.PENDING, dto(preview).tracks().getFirst().surfaceState());
     }
-    assertEquals(3, refreshCount());
+    assertEquals(0, refreshCount());
   }
 
   @Inject GpxProcessingService gpxProcessingService;
@@ -172,7 +201,7 @@ class GpxPreviewSurfaceRefreshTest extends AbstractResourceTest {
   }
 
   @Test
-  void aMergedPreview_isQueuedAndPendingToo() {
+  void aMergedPreview_isPendingToo_withoutASurfaceRequest() {
     GpxPreviewDto merged =
         previewService.createMergedPreview(
             List.of(
@@ -182,7 +211,8 @@ class GpxPreviewSurfaceRefreshTest extends AbstractResourceTest {
 
     GpxPreview preview =
         QuarkusTransaction.requiringNew().call(() -> previewService.getByPublicId(merged.id()));
-    assertEquals(preview.getFilesRevision(), refresh(preview).getSourceRevision());
+    assertEquals(0, refreshCount());
+    assertEquals(preview.getFilesRevision(), elevationRevision(preview));
     assertTrue(
         merged.tracks().stream().allMatch(t -> t.surfaceState() == TrackSurfaceState.PENDING));
   }
@@ -190,38 +220,18 @@ class GpxPreviewSurfaceRefreshTest extends AbstractResourceTest {
   @Test
   void deletingAPreview_takesItsRequestAlong() {
     GpxPreview created = previewService.create(EXAMPLE, "example.gpx");
+    queue(created);
     assertEquals(1, refreshCount());
 
     previewService.delete(created.getPublicId().toString());
 
     assertEquals(0, refreshCount());
-    makeDue(created);
-    assertEquals(0, worker.processDue());
-    verify(client, never()).traceAttributes(any());
-  }
-
-  @Test
-  void theWorker_storesTheDocumentUnderTheRevision_andTheDtoIsReady() {
-    GpxPreview created = previewService.create(EXAMPLE, "example.gpx");
-    makeDue(created);
-
-    assertEquals(1, worker.processDue());
-
-    GpxPreview preview = reload(created);
-    PreviewSurfacesDocument stored = surfaces(preview);
-    assertEquals(preview.getFilesRevision(), stored.trackRevision());
-    assertEquals(preview.getTracks().size(), stored.tracks().size());
-    assertEquals(0, refreshCount());
-    var track = dto(preview).tracks().getFirst();
-    assertEquals(TrackSurfaceState.READY, track.surfaceState());
-    assertEquals("PAVED", track.surfaces().getFirst().surface().name());
   }
 
   @Test
   void theSurfaceColumn_isLazy_apartFromThePlannerState() {
     GpxPreview created = stateBased();
-    makeDue(created);
-    worker.processDue();
+    storeVersion1(created);
 
     QuarkusTransaction.requiringNew()
         .run(
@@ -235,10 +245,9 @@ class GpxPreviewSurfaceRefreshTest extends AbstractResourceTest {
   }
 
   @Test
-  void aRename_keepsTheSurface_andAReplacedTrackClearsItAndAsksAgain() {
+  void aRename_keepsTheSurface_andAReplacedTrackClearsItAndWaitsForItsCatchUp() {
     GpxPreview created = previewService.create(EXAMPLE, "example.gpx");
-    makeDue(created);
-    worker.processDue();
+    storeVersion1(created);
 
     previewService.updatePreview(created.getPublicId().toString(), "Renommé", null, null);
     assertNotNull(surfaces(created));
@@ -250,15 +259,16 @@ class GpxPreviewSurfaceRefreshTest extends AbstractResourceTest {
     GpxPreview preview = reload(created);
     assertNull(surfaces(preview));
     assertNotEquals(revision, preview.getFilesRevision());
-    assertEquals(preview.getFilesRevision(), refresh(preview).getSourceRevision());
+    assertEquals(0, refreshCount(), "nothing queued");
+    assertEquals(preview.getFilesRevision(), elevationRevision(preview));
     assertEquals(TrackSurfaceState.PENDING, dto(preview).tracks().getFirst().surfaceState());
   }
 
   @Test
   void aDocumentOfAStaleRevision_isNotServed() {
     GpxPreview created = previewService.create(EXAMPLE, "example.gpx");
-    makeDue(created);
-    worker.processDue();
+    storeVersion1(created);
+    catchUpGivenUp(created);
     PreviewSurfacesDocument stored = surfaces(created);
     QuarkusTransaction.requiringNew()
         .run(
@@ -280,56 +290,6 @@ class GpxPreviewSurfaceRefreshTest extends AbstractResourceTest {
     assertNull(dto(created).tracks().getFirst().surfaceState(), "not the number of tracks");
   }
 
-  // ------------------------------------------------------------------ raw line (API-149, B)
-
-  private int sentPoints() {
-    org.mockito.ArgumentCaptor<fr.pedalons.infrastructure.valhalla.TraceAttributesRequest> captor =
-        org.mockito.ArgumentCaptor.forClass(
-            fr.pedalons.infrastructure.valhalla.TraceAttributesRequest.class);
-    verify(client, times(1)).traceAttributes(captor.capture());
-    return fr.pedalons.infrastructure.valhalla.Polyline6Decoder.decode(
-            captor.getValue().encodedPolyline())
-        .size();
-  }
-
-  @Test
-  void theRawLine_isSent_whileItDescribesTheTracks() {
-    GpxPreview created = previewService.create(EXAMPLE, "example.gpx");
-    makeDue(created);
-    List<String> lines =
-        QuarkusTransaction.requiringNew()
-            .call(() -> previewRepository.findById(created.getId()).readableRawLines());
-    assertNotNull(lines);
-
-    assertEquals(1, worker.processDue());
-
-    int expected =
-        TraceSurfaceComputer.decimate(
-                fr.pedalons.infrastructure.valhalla.Polyline6Decoder.decode(lines.getFirst()),
-                TraceSurfaceComputer.MIN_SPACING_M)
-            .size();
-    assertEquals(expected, sentPoints());
-    assertNotEquals(reload(created).getTracks().getFirst().trackPoints().size(), expected);
-  }
-
-  @Test
-  void rawLinesOfAStaleRevision_areNotSent_theTrackPointsAre() {
-    GpxPreview created = previewService.create(EXAMPLE, "example.gpx");
-    makeDue(created);
-    QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              GpxPreview preview = previewRepository.findById(created.getId());
-              preview.setRawLines(
-                  preview.getRawLines().withTrackRevision(preview.getFilesRevision() + 1));
-            });
-
-    assertEquals(1, worker.processDue());
-
-    assertEquals(reload(created).getTracks().getFirst().trackPoints().size(), sentPoints());
-    assertEquals(TrackSurfaceState.READY, dto(created).tracks().getFirst().surfaceState());
-  }
-
   // ------------------------------------------------------------------ HD catch-up
 
   private void makeElevationDue(GpxPreview preview) {
@@ -343,35 +303,76 @@ class GpxPreviewSurfaceRefreshTest extends AbstractResourceTest {
   }
 
   @Test
-  void theHdCatchUp_afterTheSurface_carriesTheDocumentOntoTheNewRevision() {
+  void theHdCatchUp_replacesAVersion1Document_onTheNewRevision() {
     GpxPreview created = previewService.create(EXAMPLE, "example.gpx");
-    makeDue(created);
-    worker.processDue();
+    storeVersion1(created);
     long before = reload(created).getFilesRevision();
+    assertEquals(TrackSurfaceDocument.VERSION, surfaces(created).tracks().getFirst().version());
 
     makeElevationDue(created);
     assertEquals(1, elevationWorker.processDue());
 
     GpxPreview preview = reload(created);
     assertNotEquals(before, preview.getFilesRevision());
-    assertEquals(preview.getFilesRevision(), surfaces(preview).trackRevision());
+    PreviewSurfacesDocument stored = surfaces(preview);
+    assertEquals(preview.getFilesRevision(), stored.trackRevision());
+    assertEquals(TrackSurfaceDocument.VERSION_ROUTE_DETAILS, stored.tracks().getFirst().version());
     assertEquals(TrackSurfaceState.READY, dto(preview).tracks().getFirst().surfaceState());
-    verify(client, times(1)).traceAttributes(any());
   }
 
   @Test
-  void theHdCatchUp_beforeTheSurface_movesThePendingRequest_soOneCallIsEnough() {
+  void withTheSwitchOff_theHdCatchUp_carriesTheDocumentOntoTheNewRevision() {
     GpxPreview created = previewService.create(EXAMPLE, "example.gpx");
+    storeVersion1(created);
+    PreviewSurfacesDocument before = surfaces(created);
+    service.setEnabledForTest(false);
+
     makeElevationDue(created);
     assertEquals(1, elevationWorker.processDue());
 
     GpxPreview preview = reload(created);
-    assertEquals(preview.getFilesRevision(), refresh(preview).getSourceRevision());
+    assertNotEquals(before.trackRevision(), preview.getFilesRevision());
+    assertEquals(before.withTrackRevision(preview.getFilesRevision()), surfaces(preview));
+    assertEquals(TrackSurfaceState.READY, dto(preview).tracks().getFirst().surfaceState());
+  }
 
-    makeDue(preview);
-    assertEquals(1, worker.processDue());
-    verify(client, times(1)).traceAttributes(any());
+  @Test
+  void theHdCatchUp_dropsTheRequestLeftByAPreviousRelease() {
+    GpxPreview created = previewService.create(EXAMPLE, "example.gpx");
+    queue(created);
+    makeElevationDue(created);
+
+    assertEquals(1, elevationWorker.processDue());
+
+    GpxPreview preview = reload(created);
+    assertEquals(0, refreshCount());
     assertEquals(preview.getFilesRevision(), surfaces(preview).trackRevision());
+  }
+
+  /** Nothing drains the row any more: read as pending, it would stay so for ever. */
+  @Test
+  void aRequestLeftByAPreviousRelease_readsAsNothing_andIsLeftAlone() {
+    GpxPreview created = previewService.create(EXAMPLE, "example.gpx");
+    QuarkusTransaction.requiringNew()
+        .run(
+            () -> {
+              elevationRefreshRepository.delete("preview.id", created.getId());
+              previewRepository.update(
+                  "elevationState = ?1 where id = ?2", ElevationState.HD, created.getId());
+            });
+    queue(created);
+
+    var track = dto(created).tracks().getFirst();
+    assertNull(track.surfaceState());
+    assertNull(track.surfaces());
+    assertEquals(0, elevationWorker.processDue());
+
+    SurfaceRefresh row =
+        QuarkusTransaction.requiringNew()
+            .call(() -> refreshRepository.find("preview.id", created.getId()).singleResult());
+    assertEquals(0, row.getAttempts());
+    assertNull(row.getClaimedUntil());
+    assertEquals(reload(created).getFilesRevision(), row.getSourceRevision());
   }
 
   // ------------------------------------------------------------------ promotion
@@ -379,9 +380,7 @@ class GpxPreviewSurfaceRefreshTest extends AbstractResourceTest {
   @Test
   void aPromotion_takesTheDocumentsAlong_forTheCreatorAndForAnotherMember_withoutACall() {
     GpxPreview created = previewService.create(EXAMPLE, "example.gpx");
-    makeDue(created);
-    worker.processDue();
-    reset(client);
+    storeVersion1(created);
 
     RouteDto byCreator =
         previewService.createRoute(created.getPublicId().toString(), team1Slug, routeRequest());
@@ -389,7 +388,6 @@ class GpxPreviewSurfaceRefreshTest extends AbstractResourceTest {
     RouteDto byOther =
         previewService.createRoute(created.getPublicId().toString(), team1Slug, routeRequest());
 
-    verify(client, never()).traceAttributes(any());
     assertEquals(0, refreshCount());
     for (RouteDto route : List.of(byCreator, byOther)) {
       var found =
@@ -405,17 +403,38 @@ class GpxPreviewSurfaceRefreshTest extends AbstractResourceTest {
   }
 
   @Test
-  void aPromotion_ofAPendingPreview_makesTheRoutesOwnRequest() {
+  void aPromotion_takesTheDocumentOfTheHdCatchUpAlong() {
+    GpxPreview created = previewService.create(EXAMPLE, "example.gpx");
+    makeElevationDue(created);
+    assertEquals(1, elevationWorker.processDue());
+
+    RouteDto route =
+        previewService.createRoute(created.getPublicId().toString(), team1Slug, routeRequest());
+
+    Long routeId = fr.pedalons.common.TsidUtils.toLong(route.id());
+    TrackSurfaceDocument doc =
+        QuarkusTransaction.requiringNew()
+            .call(() -> trackRepository.findSurfaces(routeId).values().iterator().next());
+    assertEquals(TrackSurfaceDocument.VERSION_ROUTE_DETAILS, doc.version());
+    assertEquals(0, refreshCount());
+  }
+
+  @Test
+  void aPromotion_ofAPendingPreview_waitsForTheCatchUpOfTheRoute() {
     GpxPreview created = previewService.create(EXAMPLE, "example.gpx");
 
     RouteDto route =
         previewService.createRoute(created.getPublicId().toString(), team1Slug, routeRequest());
 
-    assertEquals(2, refreshCount(), "the preview's, and the route's");
-    long routeRequests =
+    assertEquals(0, refreshCount());
+    Long routeId = fr.pedalons.common.TsidUtils.toLong(route.id());
+    assertTrue(
         QuarkusTransaction.requiringNew()
-            .call(() -> refreshRepository.count("route.id is not null"));
-    assertEquals(1, routeRequests);
-    assertNotNull(route);
+            .call(() -> elevationRefreshRepository.findByRouteId(routeId).isPresent()),
+        "the route has its own request");
+    assertTrue(
+        QuarkusTransaction.requiringNew()
+            .call(() -> elevationRefreshRepository.findByPreviewId(created.getId()).isPresent()),
+        "as the preview keeps its");
   }
 }

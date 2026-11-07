@@ -14,8 +14,14 @@ reconciles: a `deploy` converges the running services onto the file, and a task 
 rescheduled rather than left for a `restart:` policy.
 
 `docker-compose.shared.yml` holds what carries no application data: `tileserver`
-(server-side raster rendering, ~1.8 GB resident) and `osm-surface` (the surface along saved tracks,
-over a cache of OpenStreetMap tiles; see [Surface along saved tracks](#surface-along-saved-tracks-osm-surface)).
+(server-side raster rendering, ~1.8 GB resident), `osm-route-details` (elevation profile and surface
+of routes: the backends read their elevations there, `fast` for a save or the planner, `full` for the
+HD catch-up, which also writes the surface; ledger `API-150`, `OPS-58`) and, until phase F of that
+ledger entry, `osm-surface`, which only a release older than phase E still calls (see
+[osm-surface, until phase F](#osm-surface-until-phase-f)). **Deploy it, and check that an environment's network reaches it,
+before a backend that calls it**: without it nothing fails visibly, but every save keeps the file's
+elevations (a planner route gets 0 m and no D+) and every HD catch-up gives up after five attempts,
+with no surface.
 One instance of each serves every environment. It owns the `pedalons-shared` overlay network. Route computation is not hosted at all any more: it is
 bought from Stadia Maps, with a key per environment, and so is geocoding (see
 [Stadia Maps: routing and geocoding](#stadia-maps-routing-and-geocoding)).
@@ -23,7 +29,8 @@ bought from Stadia Maps, with a key per environment, and so is geocoding (see
 `docker-compose.yml` holds everything that must stay isolated per environment: traefik, backend,
 frontend, postgres, minio, imgproxy and varnish — and goatcounter, which runs in production only
 (see [Web analytics](#web-analytics-goatcounter)). Its `backend` also joins `pedalons-shared` to reach
-the shared services, by their service names `tileserver` and `osm-surface`.
+the shared services, by their service names `tileserver` and `osm-route-details` (and `osm-surface`,
+for a release older than ledger `API-150` phase E).
 
 Each environment's `.env` differs from a workstation's in five keys only — see
 [The `.env`, on a workstation and on a server](../README.md#the-env-on-a-workstation-and-on-a-server).
@@ -119,7 +126,8 @@ limit is killed by the kernel (`OOMKilled` in `docker inspect`, `task: non-zero 
 | traefik | 256M | |
 | goatcounter | 128M | production only; 36 to 40 MiB at rest, the rest for CSV exports and the dashboard |
 | tileserver (shared) | 3G | ~1.8 GB resident |
-| osm-surface (shared) | 768M | `MEMORY_CACHE_MB=128` of decoded tiles (weighed by their points only, so more in fact) plus the matchings in flight, `MALLOC_ARENA_MAX=2`; at the default 256 it sat at ~715 MB after a full recompute (2026-11-03) |
+| osm-surface (shared, until ledger `API-150` phase F) | 768M | `MEMORY_CACHE_MB=128` of decoded tiles (weighed by their points only, so more in fact) plus the matchings in flight, `MALLOC_ARENA_MAX=2`; at the default 256 it sat at ~715 MB after a full recompute (2026-11-03) |
+| osm-route-details (shared) | 1G | ledger `OPS-58`: its two tile caches at 256 MB each (512 by default) plus the requests in flight, `MALLOC_ARENA_MAX=2`; to be measured |
 | monitoring stack | 2G in all | see [Monitoring](#monitoring); ~1 GB resident |
 
 **The backend has no `-Xmx`.** The image's entrypoint (`run-java.sh`, from the Jib base image
@@ -137,11 +145,10 @@ docker stats --no-stream        # usage against each limit
 
 **What stays in the heap once warm** (measured on 2026-10-31, ledger `OPS-55`): about 215 MB for
 the world time-zone index (timeshape, loaded at the first ride whose time zone it resolves; kept
-world-wide on purpose), and the decoded elevation tiles the GPX pipeline keeps per DEM tier,
-`pedalons.elevation.tile-cache-size` of them (20: about 50 MB for the four tiers at most; a
-Mapterhorn tile is 1 MiB decoded, an IGN one 256 KiB). A missed tile is re-read from the
-copy `DemTileStore` keeps under `data/cache`, never downloaded again. The old gen is two thirds of the heap: with a 2G limit,
-about 820 MB, of which a long HD elevation refresh needs a few hundred at its peak.
+world-wide on purpose). The decoded elevation tiles the GPX pipeline used to keep per DEM tier left
+the heap with ledger `API-150` phase B: it asks osm-route-details instead, and phase E
+removed `pedalons.elevation.tile-cache-size` with the code behind it. These figures have not been measured again since. The old gen is two thirds of the
+heap: with a 2G limit, about 820 MB.
 
 **A heap OutOfMemoryError leaves a dump** in the environment's `data/cache/java_pid1.hprof`
 (`-XX:+HeapDumpOnOutOfMemoryError`, `quarkus.jib.jvm-additional-arguments`), written before
@@ -155,8 +162,8 @@ resident memory once the cache fills; keep `VARNISH_MEMORY` about half as much a
 
 **What a host must hold**: these are ceilings, not usage — but a host should hold the sum of them.
 Per environment, 7.3 GB (7.4 GB in production, with goatcounter), plus 2 GB during a rolling update (a second backend and frontend run
-beside the old ones, see above); on top, the shared stack's tileserver (3 GB) and osm-surface
-(0.75 GB), and the monitoring stack (2 GB). Two environments with the defaults come to about 24 GB with the host's own share
+beside the old ones, see above); on top, the shared stack's tileserver (3 GB), osm-route-details
+(1 GB) and, until phase F, osm-surface (0.75 GB), and the monitoring stack (2 GB). Two environments with the defaults come to about 25 GB with the host's own share
 (Caddy, Docker, the OS): a 32 GB host holds them with room to spare — since 2026-10-17 no routing
 tiles compete for its page cache (`OPS-48`). A staging environment can take less through its own `.env` (`BACKEND_MEMORY=1G`,
 `VARNISH_SIZE=256M`, `VARNISH_MEMORY=512M`); prod, more `BACKEND_MEMORY` if `docker stats` shows the
@@ -225,7 +232,7 @@ Two services stay per-environment on purpose, even though they look shareable:
   cannot serve two MinIO backends. They become shareable if and when MinIO is shared.
 - **the vcyclist cache** (`DATA_CACHE_PATH`) — per environment by choice, not by necessity. Two
   backends can share it safely (two of the same environment already do during a start-first
-  update): map tiles (vcyclist ≥ 5.1.1) and elevation tiles (`DemTileFetcher`) are both written to a
+  update): map tiles (vcyclist ≥ 5.1.1) are written to a
   temp file then renamed into place, and only once they decode, so a reader never sees a partial
   file and an unreadable cached tile is fetched again (ledger `OPS-10`). Sharing it across
   environments would save the downloads; it is not done. The directory must stay on one filesystem
@@ -708,29 +715,69 @@ order, because step 2's old backend still talks to `valhalla` until it is replac
    from `~/shared/.env`, and delete the cold copy `OPS-9` had sent to the backup host
    (`pedalons-shared/` there).
 
-### Surface along saved tracks (osm-surface)
+### Elevation and surface along saved tracks
 
-The **surface along saved tracks** (ledger `WEB-100`, C1b) is computed by **osm-surface**
-(`ghcr.io/glandais/osm-surface`, source at github.com/glandais/osm-surface), a service of the
-**shared stack** since 2026-10-31 (ledger `OPS-57`; Stadia Maps' trace attributes before). It
-answers `POST /trace_attributes/v1` exactly as Stadia did — Valhalla's `map_snap` rebuilt on the
-VersaTiles OpenStreetMap vector tiles (`tiles.versatiles.org`, zoom 14), which it downloads on demand
-and caches in its volume (`pedalons-shared_osm-surface-data`, at most `CACHE_MAX_GB=5`; regenerable,
-not backed up). **No key, no credit**, and no track leaves our servers any more: only tile
-coordinates go to VersaTiles. Every backend reaches it at `http://osm-surface:8002` over
-`pedalons-shared` (`OSM_SURFACE_URL` overrides it; `%dev`: `http://localhost:18002`, published by
-`docker-compose.local.yml`). Its agreement with Stadia is 86 to 94 % per surface class, 98 to 99 %
-on paved / unpaved (its README, *Évaluation*); the surfaces Stadia already computed stay as they are.
+Both come from **osm-route-details** (ledger `API-150`, `OPS-58`), the one source: the backend reads
+no DEM tile any more and has no second provider. It reaches the service at
+`http://osm-route-details:8080` over `pedalons-shared` (`OSM_ROUTE_DETAILS_URL` overrides it; `%dev`:
+`http://localhost:18003`, published by `docker-compose.local.yml`). A save or the planner makes a
+`fast` call, for the elevations; if it fails, the track keeps the elevations of its file
+(`elevationFallback`) and the save goes through.
 
-`SurfaceRefreshWorker` (every 30 s, never during an HTTP request) sends a saved route's or GPX-tool
-preview's stored track once it has been left alone for 90 s (never beyond 10 min), in `map_snap`
-mode, and stores the surface as ranges in `gpx_tracks.surfaces` / `gpx_previews.surfaces`. 50 to
-100 ms a request with the tiles cached, a few seconds for a 190 km slice in a region never seen. The
-queue is `surface_refresh`; a request that failed five times (2 min, 10 min, 1 h, 6 h) stays in the
-table for diagnosis, untouched, and the API then says nothing for that track. osm-surface answers a
-**503** when it cannot load the tiles (VersaTiles unreachable, a 404, 11 s spent): a transient
-failure, retried. `SURFACE_ENABLED=false` stops new requests **and** the worker's calls, the queue
-waits. The e2e stack has it off (`.env.e2e`): nothing in the suite looks at the surface.
+The HD catch-up (`ElevationRefreshWorker`) makes one `full` call, with all its sections, and writes
+the profile and the surface in the same write, as a document of version 2 in `gpx_tracks.surfaces` /
+`gpx_previews.surfaces`, along with `elevation_pipeline` (unless the surface is off, see below). With
+`pedalons.elevation.async-hd.enabled=false` the same call runs during the save and nothing is queued;
+if it fails, the track simply has no surface yet. A document of version 1, computed before, is read
+exactly like a version 2 until the [catch-up of the fleet](#the-catch-up-of-the-fleet) replaces it.
+
+- **Waiting**: the API says `PENDING` while the target's `elevation_state` is `PENDING`, and for no
+  other reason.
+- **IGN down**: in `full` a source outage is a 503, so the surface waits with the profile, through
+  the five attempts of the catch-up; after those there is no document, and the API says nothing.
+- **A `complete` answer with a Mapterhorn fallback** keeps the FAST profile and retries, but its
+  surface is written anyway, on its own, at each attempt. A `partial` answer with a fallback writes
+  nothing; a `partial` one without (data missing for good) is written, stretches without a typology as `UNKNOWN`.
+
+`SURFACE_ENABLED=false`: the HD catch-up asks only `elevation` and `summary` and writes no surface,
+the documents already stored are still served, and
+nothing reads as pending. A track recomputed that way is **not stamped**: `elevation_pipeline` stays
+null, which means "to recompute", so it is picked up by the catch-up of the fleet once the switch is
+back on, under its cap and with no action on your part. The e2e stack has it off (`.env.e2e`):
+nothing in the suite looks at the surface. An environment that ran phase C with the surface off
+stamped its tracks all the same; run this once, after a release with phase D, for them to be
+picked up (a track the service answers nothing for, too short for it, is recomputed once more and
+that is all):
+
+```sql
+update team_entities set elevation_pipeline = null
+ where entity_type = 2 and elevation_pipeline is not null
+   and id in (select route_id from gpx_tracks where surfaces is null);
+```
+
+**The DEM tiles left on disk.** Since phase E the backend reads none: `mapterhorn`,
+`ign-lidar-hd-mnt` and `ign-lidar-hd-mns` in each environment's `data/cache` (about 7 GB in
+production) serve nothing, and only a release older than phase B would read them. Regenerable, so
+remove them by hand once no rollback to such a release is planned, from a root context, in `~/prod`
+and `~/staging`. The map tiles of the thumbnails (`tileserver_8080/`, the rest of `data/cache`) stay.
+
+```bash
+docker run --rm -v "$PWD/data/cache:/d" alpine rm -rf /d/mapterhorn /d/ign-lidar-hd-mnt /d/ign-lidar-hd-mns
+```
+
+#### osm-surface, until phase F
+
+The backend has no client for **osm-surface** and no surface queue any more since ledger `API-150`
+phase E. **The service stays in the shared stack until prod has moved**: the shared stack serves
+every environment, a release older than phase E still calls it, and staging goes first. It leaves in
+phase F, as a step of its own (ledger `OPS-58`), once no environment runs such a release and no
+rollback to one is planned. How many rows `surface_refresh` holds no longer decides it: a backend on
+phase E ignores that table.
+
+`ghcr.io/glandais/osm-surface` (source at github.com/glandais/osm-surface) answers
+`POST /trace_attributes/v1` at `http://osm-surface:8002`, from the VersaTiles OpenStreetMap vector
+tiles it caches in its volume (`pedalons-shared_osm-surface-data`, at most `CACHE_MAX_GB=5`;
+regenerable, not backed up).
 
 ```bash
 # Is it up, and how old are its tiles? (distroless image: no shell, so from the backend container)
@@ -740,53 +787,143 @@ docker service logs pedalons-shared_osm-surface --since 1h
 
 **Upgrading it**: change the tag in `docker-compose.shared.yml`, then
 `cd ~/shared && git pull && scripts/deploy.sh --shared`. Requests in flight during the swap fail
-as unreachable and are retried two minutes later.
+as unreachable, and the release that sent them retries two minutes later.
 
-**Switching a host from Stadia** (once): deploy the shared stack **first**
-(`cd ~/shared && git pull && scripts/deploy.sh --shared`, which starts `osm-surface`), then the
-environments. A backend deployed before would fail its surface requests as unreachable until the
-service exists — retried, but five failures in about 7 h give a track up.
+**`surface_refresh` stays until phase F too**, with no migration, and what is left in it is inert:
 
-The **catch-up of old tracks** (`WEB-100`, C1c; the routes saved before the surface existed,
-biketeam ones included): `SurfaceBackfill` (every 5 min) queues the routes without a surface nor
-any request, most recent first, then the GPX-tool previews younger than 29 days, as requests marked
-`surface_refresh.backfill`. The worker serves them only once no normal request is due. The cap is
-global (carried by the requests' due times, spaced under a lock, so two backends of a rolling deploy
-do not double it): `SURFACE_BACKFILL_PER_HOUR` provider calls an hour (default 300; a 188 km slice
-is one call, a 400 km route three), and never more than 10 minutes of it waiting in the queue, so it
-pauses by itself while osm-surface fails. The cap is on the due times: after the worker was held up
-(a backlog of normal requests, `SURFACE_ENABLED` off a while, a restart) it sends what fell due at
-once, so an hour can see up to the cap plus those 10 minutes (350 calls at the default), retries of
-failed requests aside. It costs nothing but the tiles VersaTiles serves us, which the cache keeps;
-10,000 routes take about 34 h at the default cap. A biketeam migration leaves its routes to the
-catch-up instead of queuing them at once.
+- A release older than phase E may still queue and claim rows during a rolling deploy, or again after
+  a rollback, whatever the state of the table: its indexes stay for it.
+- A backend on phase E never serves a row, never reads one as pending and never counts an attempt. It
+  only deletes the row of a target whose surface it writes, so that a previous release does not claim
+  it later and lay a version 1 document over the version 2. That cannot stop a compute already in
+  flight on such a release: the version 1 document then stays on a track stamped current, reads the
+  same, and nothing recomputes it on its own.
+- During a rolling deploy the previous backend may also claim elevation requests, whatever their
+  `backfill` flag. A release older than phase C writes HD with no surface and leaves
+  `elevation_pipeline` null: that target is a candidate of the
+  [catch-up of the fleet](#the-catch-up-of-the-fleet).
+- A row that no release serves any more leaves its track without a surface document, and the API says
+  nothing about it, until the catch-up of the fleet reaches it: its `elevation_pipeline` is null, so
+  it is a candidate. A target with a given-up `elevation_refresh` row is excluded from the catch-up,
+  and needs the admin retry. Deleting a preview removes its row by cascade; a deleted route or team
+  is only marked deleted, so its row stays in the table, inert and left out of the count below.
 
-- **Stop it**: `SURFACE_BACKFILL_ENABLED=false` (nothing more is queued; what is already queued, at
-  most 10 minutes of cap, is still computed). `SURFACE_ENABLED=false` stops everything.
-- **Estimate it** (the routes the catch-up will take and its calls; the previews are a few days'
-  worth at most):
+This counts the tracks in that case (given-up rows, and those of a deleted route or team, are left
+out). While a release older than phase E runs, it is also what is left for that release to serve:
+
+```sql
+select count(*)
+  from surface_refresh e
+  left join team_entities t on t.id = e.route_id
+  left join teams tm on tm.id = t.team_id
+ where e.attempts < 5
+   and (e.preview_id is not null or (not t.deleted and not tm.deleted));
+```
+
+#### The catch-up of the fleet
+
+`RouteDetailsBackfill` (ledger `API-150` phase D, which replaces the surface catch-up of `WEB-100`
+C1c and `SurfaceBackfill`) recomputes every route and preview behind `GpxPipeline.VERSION`
+(`elevation_pipeline` null or below 3) from its stored `original.gpx`: profile, D+, climbs, filtered
+GPX, FIT, route figures, waypoint distances and surface, in one write. **It is off by default:
+deploying never starts it.** Until it is on, a track without a surface gets none (old tracks, a
+failed synchronous save, a row left in `surface_refresh`) and displays as it does today. A route never recomputed keeps working: its
+profile is untouched and its version 1 surface document is still read.
+
+Every 5 minutes, under an advisory lock, it queues the routes, most recent first, then the GPX-tool
+previews younger than 29 days that have stored files, as `elevation_refresh` rows marked `backfill`.
+The worker takes them as ordinary HD catch-ups, with strict priority: normal routes, normal
+previews, catch-up routes, catch-up previews. A save during the wait turns the row into a normal
+request. It does not touch `elevation_state`: the API keeps showing the current profile and surface,
+and nothing reads as pending. A route with no track or no original is never a candidate. **Any
+row excludes its target, whatever its attempts**: an open request brings its own recompute, and a
+given-up one is not queued again, or it would loop. A biketeam migration queues nothing here: its
+routes go through a normal save, so a normal HD catch-up.
+
+The cap is global (carried by the requests' due times, spaced under the lock, so two backends of a
+rolling deploy do not double it): `ROUTE_DETAILS_BACKFILL_PER_HOUR` calls an hour (default 60; a
+188 km slice is one call, a 400 km route three), and never more than 10 minutes of it waiting in the
+queue, so it slows down by itself while the service fails. After the worker was held up (a backlog
+of normal requests, a restart) it sends what fell due at once, so an hour can see the cap plus those
+10 minutes, retries of failed requests aside. A cold `full` call takes ~17 s for 140 km and the
+worker is serial, which tops out around 200 calls an hour: a higher cap gains nothing, and the
+`full` queue is shared with every environment.
+
+What a recompute changes, to announce before switching on: the D+ members see moves, every route
+synced to a GPS service is pushed once (ledger `API-120`), at the pace of the catch-up, `updated_at`
+changes on every route, and end times of rides are refreshed when the distance moves.
+
+- **Before switching it on**, in the environment concerned:
+  - the deploy has settled: a backend older than phase B still claims these requests during the
+    rolling minute, computes them on vcyclist and leaves the version null;
+  - the original of a route is read under the route's team, so this must return 0, anything else
+    would fail as missing files:
+    ```sql
+    select count(*) from assets a join team_entities t on t.id = a.team_entity_id
+     where a.type = 'ROUTE_ORIGINAL_GPX' and a.team_id <> t.team_id;
+    ```
+  - `select reason, count(*) from raw_track_backfill_skip group by reason;`: a route given up there
+    as `MISSING_ORIGINAL`, `TRACK_COUNT` or `UNREADABLE` fails here too. Each fails five times over
+    about 7 h and holds its slots meanwhile; several in a row slow the catch-up down without
+    stopping it.
+- **Estimate it** (the routes it will take, their length and its calls; the previews are a few days'
+  worth at most, and the query counts a route that has an open request):
   ```sql
   select count(*) as routes,
+         round(sum(coalesce(t.distance, 0)) / 1000) as km,
          sum(greatest(1, ceil(coalesce(t.distance, 0) / 188000.0))) as calls
     from team_entities t join teams tm on tm.id = t.team_id
-   where t.id in (select g.route_id from gpx_tracks g where g.surfaces is null)
-     and not t.deleted and not tm.deleted
-     and not exists (select 1 from surface_refresh r where r.route_id = t.id)
+   where t.entity_type = 2 and not t.deleted and not tm.deleted
+     and (t.elevation_pipeline is null or t.elevation_pipeline < 3)
+     and not exists (select 1 from elevation_refresh e where e.route_id = t.id and e.attempts >= 5)
+     and exists (select 1 from gpx_tracks g where g.route_id = t.id)
      and exists (select 1 from assets a
                   where a.team_entity_id = t.id and a.type = 'ROUTE_ORIGINAL_GPX');
   ```
-  `calls / SURFACE_BACKFILL_PER_HOUR` is the duration in hours.
-- **Follow it**: `select count(*) filter (where backfill), count(*) filter (where backfill and attempts >= 5) from surface_refresh;`
-  and what is left: `select count(distinct route_id) from gpx_tracks where surfaces is null;`. The log
-  says `Surface catch-up done` once nothing is left.
-- **A track the provider cannot match** gets an « unavailable » document and is never retried; one
-  that failed five times keeps its request row (normal or catch-up) and is not taken again either.
-  To retry the given-up ones (osm-surface or VersaTiles down for hours made a batch fail):
-  `delete from surface_refresh where attempts >= 5;` — they become candidates of the catch-up again,
-  under its cap.
-- A workstation stack runs its own osm-surface (`docker-compose.local.yml`) and needs no
-  `SURFACE_ENABLED=false` any more: the computation is free. Keep the catch-up's cap in mind after a
-  biketeam migration test, though — it downloads the tiles of every region its routes cross.
+  `calls / ROUTE_DETAILS_BACKFILL_PER_HOUR` is the duration in hours: at 60 calls an hour, 10,000
+  calls take about 7 days. The literal 3 is `GpxPipeline.VERSION`.
+- **Switch it on**, one environment at a time, staging first (one shared service, one IGN budget):
+  `ROUTE_DETAILS_BACKFILL_ENABLED=true` in the environment's `.env`, with
+  `ROUTE_DETAILS_BACKFILL_PER_HOUR` if the default does not suit, then `scripts/deploy.sh`. It has
+  **no effect while `SURFACE_ENABLED=false`**: such a recompute is not stamped, so a pass would
+  queue the same tracks for ever. It logs one warning, `Route details catch-up switched on, but
+  stopped while the surface is off`, and no pass line. The former `SURFACE_BACKFILL_*` and
+  `RAW_BACKFILL_RESURFACE` are ignored, with no fallback on purpose: a host carrying
+  `SURFACE_BACKFILL_ENABLED=true` must not start the recompute. They can go from `.env`.
+- **Watch it**: each pass that finds something logs
+  `Route details catch-up: N request(s) queued; left R route(s) (K km), P preview(s); given up G`,
+  then `Route details catch-up done: nothing behind the pipeline, G given up` once. In the database:
+  ```sql
+  -- How far the fleet is
+  select elevation_pipeline, count(*) from team_entities
+   where entity_type = 2 and not deleted group by 1;
+  -- Queued and given up
+  select count(*) filter (where backfill and attempts < 5) as queued,
+         count(*) filter (where backfill and attempts >= 5) as given_up
+    from elevation_refresh;
+  -- Why
+  select last_error, count(*) from elevation_refresh where attempts >= 5 group by 1 order by 2 desc;
+  ```
+  An IGN outage shows up in `last_error`: each window's targets give up after about 7 h, then the
+  next ones start, so at the default it costs about 10 routes given up, so about 50 calls (five
+  attempts each), per 7 h, and those routes wait for the admin retry below.
+- **Stop it**: `ROUTE_DETAILS_BACKFILL_ENABLED=false` and `scripts/deploy.sh`. Nothing more is
+  queued; what is queued, at most 10 minutes of the cap, is still computed, since the worker does
+  not read that switch.
+- **Given up**: after five failed attempts (2 min, 10 min, 1 h, 6 h) the target keeps its profile,
+  its surface and its version, and its row stays with its error. Nothing queues it again but a save
+  or the admin retry, which works with the switch off:
+  `POST /api/admin/elevation-refresh/retry` as a platform admin, body `{"dryRun": true}` first, then
+  `{"dryRun": false}`, per domain (`?domainId=`, the request's domain otherwise), 100 targets by
+  default (`limit`, 1,000 at most), so repeat until it finds nothing. A retried catch-up row stays
+  one, behind normal requests and within the window, and its target's state does not move, unlike
+  what the endpoint's description says of a save's request (FAST, back to PENDING). Run it once
+  after the fleet pass too: a request given up before phase D stays out of the catch-up for good,
+  and `SurfaceBackfill` no longer gives its track a version 1 surface.
+- A workstation stack is no exception: the switch is off there too, and a biketeam migration test
+  gets its surface from the HD catch-up of its routes, not through this cap.
+
+#### The catch-up of raw lines
 
 The **catch-up of raw lines** (ledger `API-149`, phase D; the tracks saved before
 `gpx_tracks.raw_geometry` existed, biketeam ones included): `RawTrackBackfill` (every 5 min) reads
@@ -799,14 +936,10 @@ database failure gives nothing up: the pass ends and the next one starts again f
 (a write that fails three passes in a row is given up as `ERROR`).
 
 - **Stop it**: `RAW_BACKFILL_ENABLED=false`.
-- **Surfaces**: a caught-up route keeps the surface computed on its stored points.
-  A route whose raw line has at least 1.5 times as many points as its stored ones is recorded in
-  `raw_track_resurface`, whatever the switch. `RAW_BACKFILL_RESURFACE=true` (**off by default**)
-  lets the surface catch-up queue them, last after its own routes and previews, under
-  `SURFACE_BACKFILL_PER_HOUR` and its ten-minute window, after the normal requests; nothing while `SURFACE_ENABLED` or
-  `SURFACE_BACKFILL_ENABLED` is off. It can be switched on at any time, after the raw lines are
-  caught up too: the rows wait. A route drawn in the planner is never denser: it stored its
-  simplified line as its original. Waiting: `select count(*) from raw_track_resurface;`.
+- **Surfaces**: a caught-up route keeps the surface computed on its stored points, until the
+  catch-up of the fleet recomputes it from its original. Nothing reads or writes
+  `raw_track_resurface` any more since ledger `API-150` phase D: its rows are inert and the table
+  goes in phase F.
 - **Follow it**: what is left, `select count(distinct route_id) from gpx_tracks where raw_geometry
   is null;`; given up, `select reason, count(*) from raw_track_backfill_skip group by reason;`. The
   log says `Raw line catch-up done` once nothing is left. To retry the ones given up on an error

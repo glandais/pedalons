@@ -12,14 +12,16 @@ import org.hibernate.annotations.OnDeleteAction;
 import org.jspecify.annotations.Nullable;
 
 /**
- * A request to compute the surface along a saved track (docs/LEDGER_*.md WEB-100, C1b): one row per
- * saved route or GPX-tool preview, claimed by {@code SurfaceRefreshWorker} once {@link #dueAt} has
- * passed. The same model as {@code ElevationRefresh}, which it is copied from.
+ * A request of the former surface queue (docs/LEDGER_*.md WEB-100, C1b): one row per saved route or
+ * GPX-tool preview. Nothing here claims it any more since docs/LEDGER_*.md API-150 (phase E): only
+ * a previous release does, during a rolling deploy or after a rollback, and a row it leaves is
+ * inert. The entity stays until phase F, one release before its table: it is what creates the
+ * table in the test schema ({@code drop-and-create}), which {@code import-test.sql} completes with its partial
+ * indexes, as for {@code RawTrackResurface}.
  *
  * <p>Exactly one of {@link #route} and {@link #preview} is set (a check constraint in the
- * migration), each with a foreign key that cascades, so deleting the target takes its request with
- * it. Written only by native upserts and conditional updates ({@code SurfaceRefreshRepository}),
- * hence no {@code @Version}.
+ * migration), each with a foreign key that cascades, so a request left here never holds back the
+ * deletion of its target.
  */
 @Setter
 @Getter
@@ -59,7 +61,7 @@ public class SurfaceRefresh {
   @Column(name = "attempts", nullable = false)
   private int attempts;
 
-  /** The worker's lease. */
+  /** The lease of a previous release's worker. */
   @Column(name = "claimed_until")
   private @Nullable Instant claimedUntil;
 
@@ -67,9 +69,9 @@ public class SurfaceRefresh {
   private @Nullable String lastError;
 
   /**
-   * Queued by the catch-up of old tracks ({@code SurfaceBackfill}), not by a save: taken only once
-   * no normal request is due, and spaced under the catch-up's hourly cap. A save of the track makes
-   * it a normal request again.
+   * Queued by the former catch-up of old tracks, gone with docs/LEDGER_*.md API-150 (phase D), not
+   * by a save: taken only once no normal request is due. A row may be left from the previous
+   * release; an upsert of the previous release makes it a normal request again.
    */
   @Column(name = "backfill", nullable = false)
   private boolean backfill;

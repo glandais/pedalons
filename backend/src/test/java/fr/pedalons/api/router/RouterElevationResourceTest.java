@@ -11,6 +11,8 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 import fr.pedalons.api.AbstractResourceTest;
 import fr.pedalons.enums.Visibility;
+import fr.pedalons.infrastructure.routedetails.FakeRouteDetailsClient;
+import fr.pedalons.infrastructure.routedetails.RouteDetailsProfile;
 import fr.pedalons.infrastructure.valhalla.StadiaMapsClient;
 import fr.pedalons.service.route.GpxLimits;
 import fr.pedalons.service.route.GpxPipeline;
@@ -132,6 +134,39 @@ class RouterElevationResourceTest extends AbstractResourceTest {
     assertTrue(coords.length >= 2);
     assertEquals(4.8, coords[0][0], 1e-5);
     assertEquals(4.8, coords[coords.length - 1][0], 1e-5);
+  }
+
+  /** docs/LEDGER_*.md API-150: the line is densified, so a relief can be drawn along it. */
+  @Test
+  void lineElevation_readsTheFastProfile_andKeepsItsRelief() {
+    FakeRouteDetailsClient.terrain = d -> d < 500 ? 0.1 * d : 50.0;
+
+    var tracks =
+        elevation(USER1, null, km())
+            .statusCode(200)
+            .body("elevationFallback", equalTo(false))
+            .extract()
+            .<List<Map<String, Object>>>path("lines");
+
+    var t = tracks.getFirst();
+    double[][] coords = PolylineCodec.decode2((String) t.get("line"), GpxLimits.MAX_PLANNER_POINTS);
+    assertEquals(
+        RouteDetailsProfile.FAST, FakeRouteDetailsClient.REQUESTS.getLast().options().profile());
+    assertTrue(coords.length > 2, "the kink of the terrain is kept: " + coords.length);
+    double[] ele = PolylineCodec.decode1((String) t.get("ele"), coords.length);
+    assertEquals(0.0, ele[0], 0.5);
+    assertEquals(50.0, ele[ele.length - 1], 0.5);
+    assertEquals(50.0, ((Number) t.get("ascend")).doubleValue(), 1.0);
+  }
+
+  @Test
+  void lineElevation_whenTheElevationServiceFails_answersWithAFallback() {
+    FakeRouteDetailsClient.failFast = true;
+
+    elevation(USER1, null, km())
+        .statusCode(200)
+        .body("lines.size()", equalTo(1))
+        .body("elevationFallback", equalTo(true));
   }
 
   // ------------------------------------------------------------------ validation and bounds

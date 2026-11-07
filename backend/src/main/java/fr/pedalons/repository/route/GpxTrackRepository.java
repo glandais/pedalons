@@ -86,38 +86,6 @@ public class GpxTrackRepository implements PanacheRepository<GpxTrack> {
         .toList();
   }
 
-  /**
-   * The raw line of each track of a route by track id, as {@code [lng, lat]} pairs, tracks whose
-   * line is not known (a row that predates the column) left out: a projection, so neither the
-   * points, the planner state nor the surfaces are read (docs/LEDGER_*.md API-149).
-   */
-  public Map<Long, List<double[]>> findRawLines(Long routeId) {
-    Map<Long, List<double[]>> out = new HashMap<>();
-    getEntityManager()
-        .createQuery(
-            "select t.id, t.rawGeometry from GpxTrack t where t.route.id = :routeId order by t.id",
-            Object[].class)
-        .setParameter("routeId", routeId)
-        .getResultList()
-        .forEach(
-            row -> {
-              if (row[1] instanceof LineString<?> line) {
-                out.put((Long) row[0], lngLat(line));
-              }
-            });
-    return out;
-  }
-
-  private static List<double[]> lngLat(LineString<?> line) {
-    List<double[]> out = new ArrayList<>(line.getNumPositions());
-    for (int i = 0; i < line.getNumPositions(); i++) {
-      if (line.getPositionN(i) instanceof G2D p) {
-        out.add(new double[] {p.getLon(), p.getLat()});
-      }
-    }
-    return out;
-  }
-
   @SuppressWarnings("unchecked")
   private static List<GpxTrack.TrackPoint> castPoints(Object points) {
     return (List<GpxTrack.TrackPoint>) points;

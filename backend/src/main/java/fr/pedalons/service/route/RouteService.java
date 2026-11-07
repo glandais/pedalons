@@ -47,6 +47,7 @@ import fr.pedalons.repository.ride.RideRepository;
 import fr.pedalons.repository.route.GpxTrackRepository;
 import fr.pedalons.repository.route.RouteQuery;
 import fr.pedalons.repository.route.RouteRepository;
+import fr.pedalons.repository.route.SurfaceRefreshRepository;
 import fr.pedalons.repository.trip.TripRepository;
 import fr.pedalons.service.comment.CommentCountLookup;
 import fr.pedalons.service.common.MemberNamesVisibility;
@@ -119,6 +120,8 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
 
   @Inject SurfaceRefreshService surfaceRefreshService;
 
+  @Inject SurfaceRefreshRepository surfaceRefreshRepository;
+
   @Inject AssetRepository assetRepository;
 
   @Inject GpxTrackRepository gpxTrackRepository;
@@ -148,7 +151,7 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
         commentCountLookup.forEntity(entity),
         tagsOf(entity),
         true,
-        surfaceRefreshService.readRoute(entity.getId()),
+        surfaceRefreshService.readRoute(entity),
         memberNamesVisibility.canSeeNames(entity.getTeam().getId()));
   }
 
@@ -221,9 +224,7 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
 
     // Surfaces only matter when tracks are drawn; read per page, two queries for the batch.
     Map<Long, RouteSurfaces> surfaces =
-        geometry
-            ? surfaceRefreshService.readRoutes(routes.stream().map(Route::getId).toList())
-            : Map.of();
+        geometry ? surfaceRefreshService.readRoutes(routes) : Map.of();
 
     // Once for the batch: every route belongs to this team (docs/LEDGER_*.md API-144).
     boolean withCreator = memberNamesVisibility.canSeeNames(team.getId());
@@ -334,8 +335,8 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
    * one derived from that state, so the two agree by construction.
    *
    * <p>{@code copiedSurfaces} are the surface documents of the preview, one per track, when they
-   * describe its current tracks (C1b): the new route has the same tracks, so it keeps them and
-   * asks for nothing.
+   * describe its current tracks (C1b): the new route has the same tracks, so it keeps them until
+   * its HD catch-up writes the surface again.
    */
   @Transactional
   @CheckAccess(entityType = EntityType.ROUTE, action = ActionType.CREATE)
@@ -417,8 +418,9 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
       }
       // Phase 1: CPU + S3 (transaction suspended, DB connection released)
       ElevationQuality quality = elevationRefreshService.saveQuality();
+      PlannerState savedState = requestedState != null ? requestedState : copiedState;
       GpxProcessingService.GpxProcessingResult gpxResult =
-          gpxProcessingService.processGpxData(route, gpx, quality, waypointPlan);
+          gpxProcessingService.processGpxData(route, gpx, quality, waypointPlan, savedState);
 
       // Phase 2: DB persist (transaction resumed, short burst)
       TrackMetadata metadata = gpxProcessingService.persistGpxData(route, gpxResult);
@@ -431,8 +433,8 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
       route.setEnd(metadata.end());
       route.setWindDirection(getWindDirection(metadata));
       recordElevationQuality(route, quality, gpxResult);
-      storePlannerState(route, requestedState != null ? requestedState : copiedState, gpxResult);
-      storeOrRequestSurfaces(route, copiedSurfaces, gpxResult);
+      storePlannerState(route, savedState, gpxResult);
+      storeCopiedSurfaces(route, copiedSurfaces, gpxResult);
 
       updateMedia(route, request.media());
       routeRepository.persist(route);
@@ -504,14 +506,18 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
   }
 
   /**
-   * The surface of the tracks just saved (docs/LEDGER_*.md WEB-100, C1b): the documents of the
-   * preview this route is promoted from when they cover every track, else a request for the
-   * background computation, in this transaction.
+   * The surface of the tracks just saved (docs/LEDGER_*.md WEB-100, C1b), when the save computed
+   * none (an HD save did): the documents of the preview this route is promoted from when they cover
+   * every track, until the HD catch-up replaces them. No request: the catch-up is the one that
+   * writes the surface (docs/LEDGER_*.md API-150).
    */
-  private void storeOrRequestSurfaces(
+  private void storeCopiedSurfaces(
       Route route,
       @Nullable List<@Nullable TrackSurfaceDocument> copied,
       GpxProcessingService.GpxProcessingResult result) {
+    if (result.surfaces() != null) {
+      return;
+    }
     List<GpxTrack> tracks = route.getTracks();
     if (copied != null
         && copied.size() == tracks.size()
@@ -519,9 +525,7 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
       for (int i = 0; i < tracks.size(); i++) {
         tracks.get(i).setSurfaces(Objects.requireNonNull(copied.get(i)));
       }
-      return;
     }
-    surfaceRefreshService.requestRoute(route, originalFileId(result));
   }
 
   private static long originalFileId(GpxProcessingService.GpxProcessingResult result) {
@@ -536,15 +540,26 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
    * Stamps the elevation state of a track just saved (PENDING or HD) and, for a fast one, asks for its HD
    * catch-up in the same transaction (docs/LEDGER_*.md API-131). The request carries the {@code
    * file_id} of the route's original GPX, which a later save of the track changes and a save of the
-   * title does not (API-128).
+   * title does not (API-128). An HD save records the pipeline that computed it, unless it had to
+   * fall back on part of the track: that profile is not what the version describes, and stays to
+   * recompute (docs/LEDGER_*.md API-150). A fast one clears it, its profile being no pipeline's
+   * HD one: the catch-up writes it, and one that gives up leaves the track to recompute. An HD save
+   * that computed the surface drops the request a previous release may have left, as the catch-up
+   * does: that release would realign it on this track and replace the document with its own.
    */
   private void recordElevationQuality(
       Route route, ElevationQuality quality, GpxProcessingService.GpxProcessingResult result) {
     if (quality != ElevationQuality.FAST) {
       route.setElevationState(ElevationState.HD);
+      route.setElevationPipeline(
+          result.fallbackAfterErrorKm() == 0 ? gpxProcessingService.hdPipeline() : null);
+      if (result.surfaces() != null) {
+        surfaceRefreshRepository.dropForRoute(route.getId());
+      }
       return;
     }
     route.setElevationState(ElevationState.PENDING);
+    route.setElevationPipeline(null);
     elevationRefreshService.requestRoute(route, originalFileId(result));
   }
 
@@ -621,7 +636,7 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
         ElevationQuality quality = elevationRefreshService.saveQuality();
         GpxProcessingService.GpxProcessingResult gpxResult =
             gpxProcessingService.processGpxData(
-                route, gpx, quality, Objects.requireNonNull(waypointPlan));
+                route, gpx, quality, Objects.requireNonNull(waypointPlan), requestedState);
 
         // Phase 2: DB persist (transaction resumed, short burst)
         TrackMetadata metadata = gpxProcessingService.persistGpxData(route, gpxResult);
@@ -637,8 +652,6 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
         // The new tracks carry no state of their own: the old state left with the old tracks
         // (WEB-100, C4a). A state is only written when this save was made of one.
         storePlannerState(route, requestedState, gpxResult);
-        // The new tracks have no surface: the old ones left with the old tracks (WEB-100, C1b)
-        surfaceRefreshService.requestRoute(route, originalFileId(gpxResult));
       }
     } catch (Exception e) {
       throw new BusinessException(ErrorCode.GPX_FAILURE, e);
@@ -684,7 +697,7 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
   /**
    * Replaces the waypoints of a route whose track did not change: the filtered GPX and the FIT are
    * written again from the stored track, nothing else is touched (no original, no thumbnail, no
-   * elevation or surface request). A list equal to the stored one writes nothing at all, so a save
+   * elevation request). A list equal to the stored one writes nothing at all, so a save
    * of the title alone sends no route to the GPS services again.
    */
   private void replaceWaypointsOnly(

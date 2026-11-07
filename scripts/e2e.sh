@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # End-to-end test stack: a full application (traefik + SSR frontend + backend + postgres + MinIO +
-# imgproxy + mailpit) on an empty database, next to — never instead of — the workstation stack.
+# imgproxy + mailpit + osm-route-details) on an empty database, next to — never instead of — the
+# workstation stack.
 #
 #   scripts/e2e.sh build [all|frontend|backend]   build the tribly-e2e images (build.sh + .env.e2e)
 #   scripts/e2e.sh up                             start the stack and wait until it answers
@@ -158,7 +159,7 @@ case "$cmd" in
     compose "$@"
     ;;
   *)
-    sed -n '2,14p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+    sed -n '2,15p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
     exit 1
     ;;
 esac

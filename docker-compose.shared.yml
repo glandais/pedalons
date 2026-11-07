@@ -19,8 +19,9 @@
 # `extends` et redeclare le reseau en reseau de projet, pour n'avoir qu'une seule stack. C'est
 # aussi lui qui leur redonne un nom de conteneur et une politique de redemarrage.
 #
-# Les noms de service `tileserver` et `osm-surface` sont les alias DNS sur ce reseau : TILESERVER_URL
-# des .env d'environnement reste inchange, et l'URL d'osm-surface est la valeur par defaut du backend.
+# Les noms de service `tileserver`, `osm-surface` et `osm-route-details` sont les alias DNS sur ce
+# reseau : TILESERVER_URL des .env d'environnement reste inchange, et les URL d'osm-surface et
+# d'osm-route-details sont les valeurs par defaut du backend.
 #
 # NE PAS y ajouter imgproxy/varnish tant que MinIO n'est pas mutualise : imgproxy n'expose qu'un
 # IMGPROXY_S3_ENDPOINT global et ne sait pas servir deux backends S3 distincts.
@@ -63,8 +64,43 @@ services:
         limits:
           memory: 768M
 
+  # Profil d'altitude et revetement des parcours (API 1.6, docs/LEDGER_*.md API-150 et OPS-58) :
+  # le GpxPipeline de chaque backend y lit ses altitudes (phase B du plan
+  # docs/plans/2026-11-05-osm-route-details.md), a deployer avant lui. Il remplacera osm-surface pour
+  # le revetement, qui ne sera retire que lorsque plus aucun backend ne l'appellera. Adresse :
+  # http://osm-route-details:8080, sans cle ; le port 9090 (/metrics) reste interne au reseau.
+  # Une seule instance : la cadence IGN (20 req/s) est locale au processus, deux replicas derriere la
+  # meme IP la doubleraient. Son cache disque (tuiles IGN, Mapterhorn, VersaTiles) est le VOLUME de
+  # l'image, possede par 65532 comme pour osm-surface : volume nomme, regenerable, hors sauvegarde
+  # (IGN plafonne a 20 Go par defaut, ORD_CACHE__DISK_MAX_GB_IGN). Image distroless, mais le binaire
+  # porte son propre healthcheck (HEALTHCHECK de l'image, `osm-route-details healthcheck`) : garde
+  # tel quel. Journaux en JSON par defaut de l'image (ORD_LOG__FORMAT).
+  osm-route-details:
+    image: ghcr.io/glandais/osm-route-details:1.6.0
+    networks:
+      - shared
+    environment:
+      # Caches memoire de tuiles decodees : 512 Mo chacun par defaut (« a calibrer » dans la
+      # conception du service), soit deja 1 Go avant la moindre requete. Moities, comme pour
+      # osm-surface, en attendant une mesure.
+      ORD_CACHE__MEMORY_ELEVATION_MB: "256"
+      ORD_CACHE__MEMORY_STREETS_MB: "256"
+      # Meme glibc, meme cause que pour osm-surface et le backend (docs/LEDGER_*.md OPS-56).
+      MALLOC_ARENA_MAX: "2"
+    volumes:
+      - osm-route-details-data:/var/cache/osm-route-details
+    # A l'arret, les requetes en vol sont attendues jusqu'a leur budget (90 s).
+    stop_grace_period: 100s
+    # Les deux caches memoire, plus le jeu de travail des requetes en cours (un parcours de 200 km a
+    # froid : ~100 Mo de MNT, jusqu'a ~270 Mo de rues). Valeur prudente, a mesurer (OPS-58).
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
 volumes:
   osm-surface-data:
+  osm-route-details-data:
 
 networks:
   shared:

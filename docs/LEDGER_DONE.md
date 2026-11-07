@@ -3041,6 +3041,71 @@ relevés sont `WEB-111` à `WEB-114` et `MOB-87` à `MOB-90`. `MOB-88` et `MOB-8
 
 ## API — Contrat d'API et backend
 
+- [x] `API-150` **Le profil d'altitude et le revêtement viennent d'un seul service,
+  osm-route-details** (6 novembre 2026, contrat d'API inchangé, `13.1.0`, `V83`) — l'altitude était
+  lue dans la JVM par vcyclist (`GpxPipeline`, deux `ElevationProvider`, tuiles MNT dans le tas,
+  `OPS-55`) et le revêtement par un second service, osm-surface, dans une seconde file
+  (`surface_refresh`) ; les ponts et tunnels hors OSM restaient mal corrigés. Remplacés par
+  osm-route-details (`ghcr.io/glandais/osm-route-details:1.6.0`, api ≥ 1.6, pile partagée, `OPS-58`),
+  en cinq phases :
+  - **A** : `RouteDetailsGateway`, DTO, erreurs, `RouteSlicer` et `RouteDetailsStitcher` pour les
+    traces de plus de 200 km ou 16 000 points, faux service de test, fixture réelle.
+  - **B** : `GpxPipeline` lit ses altitudes dans le service, mode `fast` pour le planificateur et
+    l'enregistrement, `full` pour le rattrapage HD, `VERSION = 3` (rejoue une fois la migration
+    biketeam, `API-107`). Lève D1 d'`API-131` : les parcours existants sont tous à recalculer. Un
+    appel `fast` en échec garde les altitudes d'origine (`elevationFallback`). Pile e2e dotée de son
+    propre service.
+  - **C** : le rattrapage HD écrit profil et revêtement dans la même écriture, d'une seule réponse
+    `full` (`TrackSurfaceDocument` version 2, projection dans `RouteDetailsSurfaces`), et tamponne
+    `elevation_pipeline` (`V83`, avec `elevation_refresh.backfill`). Plus aucun enregistrement
+    n'alimente `surface_refresh`.
+  - **D** : `RouteDetailsBackfill` remplace `SurfaceBackfill` : remet parcours et aperçus sur le
+    pipeline courant, depuis leur `original.gpx`, en file `elevation_refresh` et derrière les demandes
+    normales (`pedalons.route-details.backfill.*`). `pedalons.raw-backfill.resurface` et
+    `SURFACE_BACKFILL_*` retirés, sans repli.
+  - **E** : le code mort part côté backend, sans migration : `ElevationTier`, les deux providers de
+    `VcyclistProducer` (`TileMapProducer` reste, les vignettes s'en servent), `DemTileStore` et
+    `pedalons.elevation.tile-cache-size`, `TraceAttributesClient` et ses types,
+    `TraceSurfaceComputer`, `TraceSurfaceProjection`, `SurfaceRefreshWorker`,
+    `quarkus.rest-client.osm-surface.*`, `pedalons.surface.quiet`, `pedalons.surface.max-wait` et
+    `OSM_SURFACE_URL`. `SurfaceRefreshService` ne garde que l'interrupteur et les lectures de l'API ;
+    `surfaceState` vaut `PENDING` si `elevation_state` l'est, et pour aucune autre raison, ce qui
+    retire une requête au détail et à la liste. Crédit du profil, web et mobile : « Données : IGN
+    LiDAR HD, Mapterhorn et ses sources, © OpenStreetMap ».
+
+  Couvert par `ElevationRefreshTest`, `GpxPreviewElevationRefreshTest`, `SurfaceRefreshTest`,
+  `GpxPreviewSurfaceRefreshTest` (dont `aRequestLeftByAPreviousRelease_readsAsNothing_andIsLeftAlone`),
+  `RouteDetailsBackfillTest`, `RouteDetailsSurfacesTest`, `TrackSurfaceDocumentTest`, `GpxPipelineTest`,
+  `RouteDetailsTrackTest`, `RouteSlicerTest`, `RouteDetailsStitcherTest`, `RouteDetailsFixtureTest`,
+  `FakeRouteDetailsGatewayTest`, `TrackAxisMappingTest`, `SurfaceRangesTest`, `RouteQueryCountTest`.
+  Les tests modifiés par la phase E compilent mais n'ont pas encore tourné ; suite backend, e2e, banc
+  D+ v2 contre v3, recalcul du parc et phase F (`V84`) sont suivis par `API-151`, le retrait
+  d'osm-surface par `OPS-58`.
+
+  À ne pas défaire :
+  - **Une seule source** : pas de vcyclist en repli si le service tombe. FAST en échec garde les
+    altitudes d'origine, HD réessaie. vcyclist reste pour le modèle GPX, le lissage et le D+ des
+    altitudes d'origine, Douglas-Peucker, les montées, le FIT, le vent et les vignettes.
+  - **La table `detail` → `TrackSurface`** (`RouteDetailsSurfaces`, décision D6 du plan) : non revêtu
+    sans détail hors sentiers → `GRAVEL`, `paving_stones` et `wood` → `PAVED`, `sett` et `cobblestone` →
+    `PAVED_ROUGH`, `sand` et `grass` → `DIRT`, `rock` → `PATH`. L'enum `TrackSurface` et le contrat ne
+    bougent pas, et `surfaces` porte la classe projetée, pas la valeur du service : un document v2
+    reste lisible par la version précédente. Les valeurs brutes sont dans `ways`, donc changer la
+    table revient à reprojeter, sans appel au service.
+  - **Le recalcul du parc reste éteint par défaut** : déployer ne le lance jamais. **Staging d'abord**,
+    prod ensuite, jamais les deux en même temps (un service partagé, un budget IGN).
+  - Le document version 1 reste lu : un parcours non recalculé doit rester valable.
+  - Un recalcul revêtement éteint ne tamponne pas `elevation_pipeline`, sinon le parc ne repasserait
+    pas une fois l'interrupteur rallumé.
+  - Toute ligne `elevation_refresh`, même abandonnée, exclut sa cible du recalcul, sinon elle tournerait
+    en boucle ; le retry admin est le chemin de retour.
+  - Jusqu'à la phase F, écrire un revêtement retire la ligne `surface_refresh` de la cible
+    (`dropForRoute`, `dropForPreview`) : sinon une version précédente la réclamerait et poserait un v1
+    sur le v2. Mais rien ne la lit : relire cette table referait lire `PENDING` pour toujours, plus
+    rien ne la drainant.
+  - `TrackAxisMapping` reste (`RawShapes`), l'entité `SurfaceRefresh` aussi (schéma des tests,
+    `import-test.sql`).
+
 - [x] `API-149` **Un parcours garde en base sa trace brute, de l'import au calcul des surfaces** (30
   octobre 2026, **API 13.1.0**, `V81`, `V82`) — `gpx_tracks` ne gardait que la trace
   rééchantillonnée puis simplifiée (Douglas-Peucker, ~1 point / 90 m), et pour un parcours dessiné

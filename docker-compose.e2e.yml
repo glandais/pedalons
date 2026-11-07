@@ -17,6 +17,14 @@
 #      for Swarm: traefik's Docker provider and loopback port, postgres published on the loopback,
 #      a bridge network instead of an overlay. Not by layering docker-compose.local.yml, whose
 #      mailpit, tileserver and fixed dev ports would clash with the workstation stack.
+#   6. an osm-route-details of its own (docs/LEDGER_*.md API-150): every saved route, import and
+#      straight line reads its elevations there, so unlike tileserver it cannot be borrowed from a
+#      stack that may be down, and the CI has none to borrow. Only on `pedalons`: on `shared` the bare
+#      name is the workstation's container, hence the container name in OSM_ROUTE_DETAILS_URL. No
+#      published port (only the backend calls it, and 18003 stays the workstation's), a named volume
+#      rather than .e2e/cache (the image runs as 65532 and owns its VOLUME; a directory e2e.sh created
+#      would not be writable by it), emptied by `e2e.sh reset`. .env.e2e keeps the HD catch-up out of
+#      a run, so the suite only ever asks for `fast` and never reads the IGN.
 services:
   backend:
     env_file: !override
@@ -64,6 +72,25 @@ services:
       - pedalons
     ports:
       - "127.0.0.1:${E2E_MAILPIT_PORT:?set it in .env.e2e}:8025"
+
+  osm-route-details:
+    extends:
+      file: docker-compose.shared.yml
+      service: osm-route-details
+    container_name: ${ENV_NAME}-osm-route-details
+    restart: unless-stopped
+    # Nothing to wait for here: the shared stack's 100 s are for a `full` call in flight.
+    stop_grace_period: 10s
+    networks: !override
+      - pedalons
+    # A short suite on a workstation that also runs tribly-local: the shared stack's 256 MB would
+    # stay resident for a handful of tiles.
+    environment:
+      ORD_CACHE__MEMORY_ELEVATION_MB: "64"
+      ORD_CACHE__MEMORY_STREETS_MB: "64"
+
+volumes:
+  osm-route-details-data:
 
 networks:
   pedalons:

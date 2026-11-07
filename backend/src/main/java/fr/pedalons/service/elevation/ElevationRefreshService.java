@@ -1,5 +1,6 @@
 package fr.pedalons.service.elevation;
 
+import fr.pedalons.common.planner.PlannerState;
 import fr.pedalons.domain.asset.Asset;
 import fr.pedalons.domain.gpx.GpxPreview;
 import fr.pedalons.domain.gpx.GpxPreview.PreviewTrack;
@@ -10,6 +11,7 @@ import fr.pedalons.domain.gpx.PreviewWaypointsDocument;
 import fr.pedalons.domain.route.GpxWaypoint;
 import fr.pedalons.domain.route.PlannerStateDocument;
 import fr.pedalons.domain.route.Route;
+import fr.pedalons.domain.route.TrackSurfaceDocument;
 import fr.pedalons.domain.team.Team;
 import fr.pedalons.enums.AssetType;
 import fr.pedalons.enums.ElevationQuality;
@@ -19,6 +21,7 @@ import fr.pedalons.repository.asset.AssetRepository;
 import fr.pedalons.repository.route.ElevationRefreshRepository;
 import fr.pedalons.repository.route.ElevationRefreshRepository.Claim;
 import fr.pedalons.repository.route.ElevationRefreshRepository.PreviewClaim;
+import fr.pedalons.repository.route.GpxTrackRepository;
 import fr.pedalons.repository.route.SurfaceRefreshRepository;
 import fr.pedalons.service.asset.AssetService;
 import fr.pedalons.service.gpx.GpxPreviewService;
@@ -47,11 +50,13 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.function.Consumer;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 import org.jspecify.annotations.Nullable;
@@ -66,6 +71,11 @@ import org.jspecify.annotations.Nullable;
  * <p>The same three phases serve the GPX-tool previews (plan §4.6), with the preview's {@code
  * files_revision} as the token instead of the original's {@code file_id}, and {@link
  * GpxPreviewService} owning the layout of the files.
+ *
+ * <p>The surface comes with the profile (docs/LEDGER_*.md API-150): the {@code full} call of phase
+ * 2 answers both and phase 3 writes them together, on the same revision, with the version of the
+ * pipeline. A compute that fell back keeps the fast profile, and writes the surface alone when
+ * every answer was {@code complete}: only the elevation needs the retry.
  *
  * <p>The phases are separate, package-visible methods so a test can change the track between
  * compute and write.
@@ -113,11 +123,12 @@ public class ElevationRefreshService {
       List<PreviewTrack> tracks,
       TrackMetadata metadata,
       List<PreviewWaypointDetail> usedWaypoints,
-      List<PreviewWaypointDetail> placedWaypoints) {
+      List<PreviewWaypointDetail> placedWaypoints,
+      @Nullable List<@Nullable TrackSurfaceDocument> surfaces) {
 
     PreviewRecomputed(
         UUID publicId, long revision, List<PreviewTrack> tracks, TrackMetadata metadata) {
-      this(publicId, revision, tracks, metadata, List.of(), List.of());
+      this(publicId, revision, tracks, metadata, List.of(), List.of(), null);
     }
   }
 
@@ -138,6 +149,7 @@ public class ElevationRefreshService {
 
   @Inject ElevationRefreshRepository refreshRepository;
   @Inject SurfaceRefreshRepository surfaceRefreshRepository;
+  @Inject GpxTrackRepository gpxTrackRepository;
   @Inject GpxProcessingService gpxProcessingService;
   @Inject AssetService assetService;
   @Inject AssetRepository assetRepository;
@@ -189,14 +201,18 @@ public class ElevationRefreshService {
 
   // ------------------------------------------------------------------ claim
 
-  /** Takes the next due request, in a transaction of its own. */
-  public Optional<Claim> claimNext(Instant now) {
-    return tx(() -> refreshRepository.claimNextRoute(now, now.plus(LEASE), MAX_ATTEMPTS));
+  /**
+   * Takes the next due request, in a transaction of its own. {@code backfill} picks the requests of
+   * the fleet's catch-up ({@link RouteDetailsBackfill}) or the normal ones.
+   */
+  public Optional<Claim> claimNext(Instant now, boolean backfill) {
+    return tx(() -> refreshRepository.claimNextRoute(now, now.plus(LEASE), MAX_ATTEMPTS, backfill));
   }
 
   /** Takes the next due preview request, in a transaction of its own. */
-  public Optional<PreviewClaim> claimNextPreview(Instant now) {
-    return tx(() -> refreshRepository.claimNextPreview(now, now.plus(LEASE), MAX_ATTEMPTS));
+  public Optional<PreviewClaim> claimNextPreview(Instant now, boolean backfill) {
+    return tx(
+        () -> refreshRepository.claimNextPreview(now, now.plus(LEASE), MAX_ATTEMPTS, backfill));
   }
 
   // ------------------------------------------------------------------ one request
@@ -211,6 +227,7 @@ public class ElevationRefreshService {
       }
       recomputed = compute(claim);
     } catch (Exception e) {
+      keepSurface(e, surfaces -> writeSurfaceOnly(claim, surfaces));
       return fail(claim, e);
     }
     try {
@@ -267,10 +284,15 @@ public class ElevationRefreshService {
     // C3c), and are placed again on the HD track
     GpxDocument gpx = GpxModelJvm.document(original.getTracks(), original.getName(), List.of());
     return new Recomputed(
-        sources.team(), gpxProcessingService.recomputeHd(sources.team(), gpx, sources.drafts()));
+        sources.team(),
+        gpxProcessingService.recomputeHd(sources.team(), gpx, sources.drafts(), sources.state()));
   }
 
-  private record Sources(Team team, List<WaypointDraft> drafts) {}
+  /**
+   * @param state the planner state of the revision, for the straight pieces of the surface: it only
+   *     changes with a new original, which the write detects
+   */
+  private record Sources(Team team, List<WaypointDraft> drafts, @Nullable PlannerState state) {}
 
   private Sources sourcesOf(Claim claim) {
     Team team = entityManager.getReference(Team.class, claim.teamId());
@@ -287,7 +309,67 @@ public class ElevationRefreshService {
             .getResultStream()
             .findFirst()
             .orElse(null);
-    return new Sources(team, WaypointDrafts.fromRows(rows, distance, w -> true));
+    return new Sources(
+        team, WaypointDrafts.fromRows(rows, distance, w -> true), plannerStateOf(claim));
+  }
+
+  /** The planner state of a route of one track, when it describes the revision to compute. */
+  private @Nullable PlannerState plannerStateOf(Claim claim) {
+    List<@Nullable PlannerStateDocument> states =
+        gpxTrackRepository.findPlannerStates(claim.routeId());
+    PlannerStateDocument document = states.size() == 1 ? states.getFirst() : null;
+    return document != null && document.trackRevision() == claim.sourceRevision()
+        ? document.state()
+        : null;
+  }
+
+  /**
+   * Hands {@code writer} the surface a failed compute came back with, if any. Its failure is logged
+   * and goes no further: what counts is that the attempt gets recorded.
+   */
+  private static void keepSurface(
+      Exception failure, Consumer<List<@Nullable TrackSurfaceDocument>> writer) {
+    if (!(failure instanceof ElevationUnavailableException unavailable)
+        || unavailable.surfaces() == null) {
+      return;
+    }
+    try {
+      writer.accept(unavailable.surfaces());
+    } catch (RuntimeException e) {
+      LOG.warnf(e, "Surface of a fallen back HD elevation not written");
+    }
+  }
+
+  /**
+   * The surface alone, for a compute whose profile fell back (plan §4.3): a short transaction that
+   * locks the route, and leaves it if its track is not the one computed. Profile, state, files and
+   * version of the pipeline stay; each retry writes it again, the ranges being on the HD axis and
+   * rescaled on reading onto the fast track.
+   */
+  void writeSurfaceOnly(Claim claim, List<@Nullable TrackSurfaceDocument> surfaces) {
+    tx(
+        () -> {
+          Route route =
+              entityManager.find(Route.class, claim.routeId(), LockModeType.PESSIMISTIC_WRITE);
+          if (route == null || currentOriginalFileId(route) != claim.sourceRevision()) {
+            return null;
+          }
+          List<Long> trackIds =
+              gpxTrackRepository
+                  .findIdsByRouteIds(List.of(claim.routeId()))
+                  .getOrDefault(claim.routeId(), List.of());
+          if (trackIds.size() != surfaces.size()) {
+            return null;
+          }
+          for (int i = 0; i < trackIds.size(); i++) {
+            TrackSurfaceDocument document = surfaces.get(i);
+            if (document != null) {
+              gpxTrackRepository.updateSurfaces(trackIds.get(i), document);
+            }
+          }
+          surfaceRefreshRepository.dropForRoute(claim.routeId());
+          return null;
+        });
   }
 
   private GpxDocument load(String key) throws IOException {
@@ -363,6 +445,10 @@ public class ElevationRefreshService {
             // Another distance is another end time for every ride riding the route (API-85)
             publicationEndCalculator.refreshUsersOf(route);
           }
+          if (recomputed.recompute().surfaces() != null) {
+            // Or a previous release, in a rolling deploy, would claim it and replace this document
+            surfaceRefreshRepository.dropForRoute(claim.routeId());
+          }
           refreshRepository.deleteIfRevision(claim.id(), claim.sourceRevision());
           return Outcome.REFRESHED;
         });
@@ -388,8 +474,8 @@ public class ElevationRefreshService {
 
   /**
    * Records a failed attempt: one more, the next one after the backoff, the lease released. The
-   * route keeps its fast profile; after {@value #MAX_ATTEMPTS} attempts the request stays as it is
-   * for diagnosis and is logged once.
+   * route keeps its profile; after {@value #MAX_ATTEMPTS} attempts the request stays as it is for
+   * diagnosis and is logged once.
    */
   Outcome fail(Claim claim, Exception e) {
     return fail(
@@ -416,7 +502,8 @@ public class ElevationRefreshService {
 
   /**
    * The request gave up: the target keeps its fast profile for good and says so (FAST), unless it
-   * is no longer waiting for the catch-up. Runs in the transaction that recorded the failure.
+   * is no longer waiting for the catch-up: one the fleet's catch-up queued stays as it was, HD or
+   * null. Runs in the transaction that recorded the failure.
    */
   /**
    * Locks the target row before the request row is touched: saves lock the target first and then
@@ -470,7 +557,7 @@ public class ElevationRefreshService {
     if (attempts >= MAX_ATTEMPTS) {
       LOG.warnf(
           e,
-          "HD elevation of %s given up after %d attempts, it stays on the fast profile",
+          "HD elevation of %s given up after %d attempts, it keeps its profile",
           target,
           attempts);
     } else {
@@ -493,6 +580,7 @@ public class ElevationRefreshService {
       }
       recomputed = computePreview(claim);
     } catch (Exception e) {
+      keepSurface(e, surfaces -> writePreviewSurfaceOnly(claim, surfaces));
       return failPreview(claim, e);
     }
     try {
@@ -550,7 +638,11 @@ public class ElevationRefreshService {
    * revision of their own.
    */
   PreviewRecomputed computePreview(PreviewClaim claim) throws IOException {
-    record PreviewSources(UUID publicId, List<PreviewWaypointDetail> waypoints, Float distance) {}
+    record PreviewSources(
+        UUID publicId,
+        List<PreviewWaypointDetail> waypoints,
+        Float distance,
+        @Nullable PlannerState state) {}
     PreviewSources sources =
         tx(
             () -> {
@@ -558,7 +650,10 @@ public class ElevationRefreshService {
               return preview == null
                   ? null
                   : new PreviewSources(
-                      preview.getPublicId(), preview.readableWaypoints(), preview.getDistance());
+                      preview.getPublicId(),
+                      preview.readableWaypoints(),
+                      preview.getDistance(),
+                      plannerStateOf(preview, claim));
             });
     if (sources == null) {
       throw new IllegalStateException("Preview " + claim.previewId() + " is gone");
@@ -577,9 +672,7 @@ public class ElevationRefreshService {
               false);
       try (ComputedGpx computed = gpxProcessingService.computeGpx(gpx, ElevationQuality.HD, plan)) {
         if (computed.fallbackAfterErrorKm() > 0) {
-          throw new ElevationUnavailableException(
-              "HD elevation unavailable for %.2f km of the track"
-                  .formatted(computed.fallbackAfterErrorKm()));
+          throw gpxProcessingService.elevationUnavailable(computed, sources.state());
         }
         gpxPreviewService.uploadTrackFilesForRefresh(
             publicId, revision, originalFile.toFile(), computed.filteredGpx(), computed.fitFile());
@@ -589,7 +682,8 @@ public class ElevationRefreshService {
             GpxPreviewService.toPreviewTracks(computed),
             computed.aggregated(),
             sources.waypoints(),
-            PreviewWaypoints.toDetails(computed.waypoints()));
+            PreviewWaypoints.toDetails(computed.waypoints()),
+            gpxProcessingService.surfaceDocuments(computed, sources.state()));
       }
     } catch (Exception e) {
       gpxPreviewService.deleteTrackFiles(publicId, revision);
@@ -597,6 +691,39 @@ public class ElevationRefreshService {
     } finally {
       Files.deleteIfExists(originalFile);
     }
+  }
+
+  /** The planner state of a preview of one track, when it describes the revision to compute. */
+  private static @Nullable PlannerState plannerStateOf(GpxPreview preview, PreviewClaim claim) {
+    PlannerStateDocument document = preview.getPlannerState();
+    return preview.getTracks().size() == 1
+            && document != null
+            && document.trackRevision() == claim.sourceRevision()
+        ? document.state()
+        : null;
+  }
+
+  /** As {@link #writeSurfaceOnly}, for a preview, on the revision that was read. */
+  void writePreviewSurfaceOnly(PreviewClaim claim, List<@Nullable TrackSurfaceDocument> surfaces) {
+    tx(
+        () -> {
+          GpxPreview preview =
+              entityManager.find(
+                  GpxPreview.class, claim.previewId(), LockModeType.PESSIMISTIC_WRITE);
+          if (preview == null) {
+            return null;
+          }
+          Long current = preview.getFilesRevision();
+          if (current == null
+              || current != claim.sourceRevision()
+              || preview.getTracks().size() != surfaces.size()) {
+            return null;
+          }
+          preview.setSurfaces(
+              new PreviewSurfacesDocument(claim.sourceRevision(), new ArrayList<>(surfaces)));
+          surfaceRefreshRepository.dropForPreview(claim.previewId());
+          return null;
+        });
   }
 
   /**
@@ -664,12 +791,21 @@ public class ElevationRefreshService {
           if (planner != null && planner.trackRevision() == claim.sourceRevision()) {
             preview.setPlannerState(planner.withTrackRevision(recomputed.revision()));
           }
-          // The surface follows the track onto its new revision too (WEB-100, C1b): the catch-up
-          // changes the elevations and the simplification, not the 2D track; the spans rescale on
-          // read.
-          PreviewSurfacesDocument surfaces = preview.getSurfaces();
-          if (surfaces != null && surfaces.trackRevision() == claim.sourceRevision()) {
-            preview.setSurfaces(surfaces.withTrackRevision(recomputed.revision()));
+          if (recomputed.surfaces() != null) {
+            // Written with the profile (docs/LEDGER_*.md API-150). The request is dropped or a
+            // previous release, in a rolling deploy, would claim it and replace this document
+            preview.setSurfaces(
+                new PreviewSurfacesDocument(
+                    recomputed.revision(), new ArrayList<>(recomputed.surfaces())));
+            surfaceRefreshRepository.dropForPreview(claim.previewId());
+          } else {
+            // The surface follows the track onto its new revision too (WEB-100, C1b): the catch-up
+            // changes the elevations and the simplification, not the 2D track; the spans rescale on
+            // read.
+            PreviewSurfacesDocument surfaces = preview.getSurfaces();
+            if (surfaces != null && surfaces.trackRevision() == claim.sourceRevision()) {
+              preview.setSurfaces(surfaces.withTrackRevision(recomputed.revision()));
+            }
           }
           // The raw lines follow the track onto its new revision, unchanged: the catch-up never
           // changes the source 2D track (docs/LEDGER_*.md API-149)
@@ -677,15 +813,13 @@ public class ElevationRefreshService {
           if (rawLines != null && rawLines.trackRevision() == claim.sourceRevision()) {
             preview.setRawLines(rawLines.withTrackRevision(recomputed.revision()));
           }
-          // A request still waiting for the old revision follows it
-          surfaceRefreshRepository.forwardPreviewRevision(
-              claim.previewId(), claim.sourceRevision(), recomputed.revision());
           preview.setTracks(recomputed.tracks());
           preview.setDistance(metadata.distance());
           preview.setElevationGain(metadata.elevationGain());
           preview.setElevationLoss(metadata.elevationLoss());
           preview.setHilliness(metadata.hilliness());
           preview.setElevationState(ElevationState.HD);
+          preview.setElevationPipeline(gpxProcessingService.hdPipeline());
           gpxPreviewService.deleteTrackFilesAfterCommit(publicId, current);
           refreshRepository.deleteIfRevision(claim.id(), claim.sourceRevision());
           return Outcome.REFRESHED;

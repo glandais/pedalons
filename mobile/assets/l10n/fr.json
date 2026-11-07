@@ -1207,7 +1207,7 @@
       "desc": "Décroissant"
     },
     "exportFit": "FIT",
-    "elevationCredit": "Altitudes : IGN LiDAR HD, Mapterhorn",
+    "elevationCredit": "Données : IGN LiDAR HD, Mapterhorn et ses sources, © OpenStreetMap",
     "profileLoading": "Chargement du profil altimétrique...",
     "profileUnavailable": "Profil indisponible",
     "climbs": {

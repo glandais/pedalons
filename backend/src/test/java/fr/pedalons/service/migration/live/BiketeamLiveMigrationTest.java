@@ -64,7 +64,8 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
   @Inject BiketeamTestData biketeamData;
   @Inject ObjectMapper objectMapper;
   @Inject fr.pedalons.service.surface.SurfaceRefreshService surfaceService;
-  @Inject fr.pedalons.service.surface.SurfaceBackfill surfaceBackfill;
+  @Inject fr.pedalons.service.elevation.RouteDetailsBackfill routeDetailsBackfill;
+  @Inject fr.pedalons.repository.route.ElevationRefreshRepository elevationRefreshRepository;
   @Inject fr.pedalons.repository.route.SurfaceRefreshRepository surfaceRefreshRepository;
 
   /** Every path the fake export was asked for, in order. */
@@ -230,30 +231,47 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
     assertEquals(1, status.counts().images().migrated(), "the logo");
   }
 
-  /** WEB-100 C1c: a bulk import spends nothing by itself, the capped catch-up takes its routes. */
+  /**
+   * WEB-100 C1c, API-150: a bulk import asks nothing of osm-surface: each route has its own normal
+   * HD catch-up, which brings the surface. The fleet's catch-up leaves them alone, even once that
+   * one is given up: the admin retry is the way back, never a loop.
+   */
   @Test
-  void migratedRoutes_leaveTheirSurfaceToTheCatchUp() throws IOException {
+  void migratedRoutes_leaveTheirSurfaceToTheirHdCatchUp() throws IOException {
     surfaceService.setEnabledForTest(true);
-    surfaceBackfill.setForTest(true, 300);
+    routeDetailsBackfill.setForTest(true, 300);
     try {
       migrate(USER4, true, false);
 
+      assertEquals(
+          0L,
+          io.quarkus.narayana.jta.QuarkusTransaction.requiringNew()
+              .call(() -> surfaceRefreshRepository.count()),
+          "nothing for osm-surface");
       long requests =
           io.quarkus.narayana.jta.QuarkusTransaction.requiringNew()
-              .call(() -> surfaceRefreshRepository.count());
-      assertEquals(0, requests, "no normal request for an imported route");
-
-      assertTrue(surfaceBackfill.enqueue(Instant.now()) > 0);
-      long backfill =
-          io.quarkus.narayana.jta.QuarkusTransaction.requiringNew()
-              .call(() -> surfaceRefreshRepository.count("backfill = true"));
-      assertTrue(backfill > 0);
+              .call(() -> elevationRefreshRepository.count());
+      assertTrue(requests > 0, "every imported route has its catch-up");
       assertEquals(
-          requests + backfill,
+          requests,
+          io.quarkus.narayana.jta.QuarkusTransaction.requiringNew()
+              .call(() -> elevationRefreshRepository.count("backfill = false")));
+      assertEquals(0, routeDetailsBackfill.enqueue(Instant.now()), "nor a capped one");
+
+      io.quarkus.narayana.jta.QuarkusTransaction.requiringNew()
+          .run(
+              () ->
+                  elevationRefreshRepository
+                      .getEntityManager()
+                      .createNativeQuery("update elevation_refresh set attempts = 5")
+                      .executeUpdate());
+      assertEquals(0, routeDetailsBackfill.enqueue(Instant.now()), "given up stays given up");
+      assertEquals(
+          0L,
           io.quarkus.narayana.jta.QuarkusTransaction.requiringNew()
               .call(() -> surfaceRefreshRepository.count()));
     } finally {
-      surfaceBackfill.setForTest(false, 300);
+      routeDetailsBackfill.setForTest(false, 300);
       surfaceService.setEnabledForTest(false);
     }
   }

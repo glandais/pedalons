@@ -487,6 +487,46 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
 
 ## API — Contrat d'API et backend
 
+- [ ] `API-152` **D+ du service écrit dans le `Path` par une API publique de vcyclist (XS)** —
+      `RouteDetailsTrack` pose le D+ et le D- d'osm-route-details avec les setters Kotlin
+      `internal` de vcyclist, appelés depuis Java sous leur nom généré
+      (`setElevationGainFiltered$io_github_glandais_gpx`) : une montée de version de vcyclist peut
+      le casser à la compilation. Ajouter côté vcyclist une méthode publique (par exemple
+      `ElevationGainJvm.report(path, gainM, lossM)`), puis y passer dans le helper unique de
+      `RouteDetailsTrack` (ledger `API-150`). Décision du 7 novembre 2026.
+- [ ] `API-151` **Finir le passage à osm-route-details : vérifications, recalcul du parc, phase F
+      (M)** (scindé d'`API-150`) — le code est livré, mais le parc garde ses profils v2 et ses
+      revêtements v1 tant que le recalcul n'est pas allumé, et deux tables mortes
+      (`surface_refresh`, `raw_track_resurface`) restent en base avec une entité et un dépôt qui ne
+      servent qu'à elles. Reste, dans l'ordre :
+      - **Avant la bascule** : e2e (`scripts/e2e.sh`, pas relancés depuis la phase B), banc manuel D+ v2 contre v3 sur 30 parcours réels (§8 du plan), dont
+        l'écart va dans les notes de version. Regarder aussi le crédit web, deux fois plus long, en
+        surimpression en haut à droite du profil (`ElevationChart`).
+      - **Bascule tout d'un coup** (décision du 7 novembre 2026) : D et E partent ensemble, les
+        demandes `surface_refresh` laissées par l'ancienne version ne sont servies par personne, et
+        ces traces restent sans revêtement jusqu'au recalcul, à allumer juste après le déploiement
+        (leur pipeline est nul, il les reprend). Un calcul de l'ancienne version déjà en cours
+        pendant la minute du déploiement peut aussi poser un document v1 sur un v2 : il se lit
+        pareil, et rien ne le recalcule tout seul.
+      - **Recalcul du parc, par environnement** : `ROUTE_DETAILS_BACKFILL_ENABLED`, staging d'abord,
+        jamais les deux en même temps, équipes prévenues que les D+ vont bouger ; retry admin à la
+        fin pour les abandons (`docs/OPERATIONS.md`).
+      - **Phase F, une fois la prod passée, en deux versions successives**, sinon la migration
+        casse la version précédente : la phase E écrit dans `surface_refresh` à chaque revêtement,
+        et le déploiement start-first la laisse servir une minute à côté de la nouvelle.
+        1. Sans migration : retirer les six appels, `SurfaceRefreshRepository`, les entités
+           `SurfaceRefresh` et `RawTrackResurface`, `LegacySurfaceRequests` et les lignes
+           d'`import-test.sql`, puis déployer partout. Les deux tables restent, inertes : la
+           validation du schéma ignore une table sans entité.
+        2. Dans la version suivante, seule : migration `V84` qui supprime `surface_refresh` et
+           `raw_track_resurface`. Condition : plus aucun retour arrière envisagé vers une version
+           qui appelle `dropForRoute` ou porte ces entités, donc plus vers la phase E : chaque
+           écriture de revêtement y échouerait, et elle ne redémarrerait même pas
+           (`schema-management.strategy=validate`).
+
+        À la même période que le retrait d'osm-surface (`OPS-58`), mais en étape à part. Plan :
+        [2026-11-05-osm-route-details](plans/2026-11-05-osm-route-details.md).
+
 - [ ] `API-148` **Retirer les rustines de sécurité des dépendances une fois sur Quarkus 4 (S)** —
       `guava` est forcé en 33.7.2-jre dans le `dependencyManagement` de `backend/pom.xml`
       (CVE-2026-102554, désérialisation Java, non atteinte : aucun `ObjectInputStream` dans
@@ -868,6 +908,17 @@ Ce que les tests ne prouvent pas, parce qu'ils ne passent ni par Flyway ni par u
 
 ### Exploitation
 
+- [ ] `OPS-58` **osm-route-details dans la pile partagée, osm-surface retiré** — le backend
+      n'appelle plus osm-surface depuis la phase E d'`API-150`, mais un service et 768 Mo restent
+      réservés pour la version précédente. Reste : volume de cache (IGN, Mapterhorn, VersaTiles),
+      extrait VersaTiles France en fichier local, limite mémoire à mesurer ; retrait d'osm-surface et
+      de son volume de `docker-compose.shared.yml` et `docker-compose.local.yml`, avec leurs
+      commentaires qui le disent encore appelé, et de la somme « What a host must hold »
+      d'`OPERATIONS.md`, en étape à part (phase F, `API-151`), quand aucun
+      environnement ne tourne plus sur une version antérieure à la phase E et qu'aucun retour
+      arrière vers l'une d'elles n'est envisagé. Le compte de `surface_refresh` n'est plus un
+      critère. Plan : [2026-11-05-osm-route-details](plans/2026-11-05-osm-route-details.md) §11.
+
 - [ ] `OPS-21` **Ce que le monitoring ne voit pas encore** — PostgreSQL (connexions, taille, bloat,
       requêtes lentes : un `postgres_exporter` par environnement, sur `pedalons-shared`), le
       frontend SSR (ni métriques Node ni temps de rendu : seul Caddy le voit, par hôte), et les
@@ -885,7 +936,10 @@ Ce que les tests ne prouvent pas, parce qu'ils ne passent ni par Flyway ni par u
       6,8 Go le 16 octobre 2026, trois semaines après `API-104`, et n'a ni plafond ni éviction ; la
       veille manuelle d'`OPS-31` n'a rien trouvé d'alarmant (disque à 15 %), mais personne ne
       regardera la prochaine fois. Une alerte Prometheus sur la taille du répertoire (ou un plafond
-      dans le code du cache) remplacerait cette veille. Taille : XS à S.
+      dans le code du cache) remplacerait cette veille. Depuis la phase E d'`API-150`, le backend
+      ne lit ni n'écrit plus ce cache, et le cache IGN d'osm-route-details est plafonné à 20 Go : une
+      fois la prod passée et les répertoires supprimés (`docs/OPERATIONS.md`), cette entrée va dans
+      « Délibérément dehors ». Taille : XS à S.
 - [ ] `OPS-34` **Faire revalider la Search Console après `WEB-85`, `WEB-86` et `API-109`** — le
       rapport du 15 octobre 2026 sur pedalons.fr listait 122 URL non indexées. Les trois entrées
       sont en production, et les vérifications à la main sont faites le 16 octobre :
@@ -944,7 +998,8 @@ Ce que les tests ne prouvent pas, parce qu'ils ne passent ni par Flyway ni par u
       [`2026-10-25-public-registry.md`](plans/2026-10-25-public-registry.md). Taille : M (deux à
       trois jours).
 - [ ] `OPS-56` **Vérifier en prod le plateau du heap après `OPS-55`** (scindé d'`OPS-55`) — une fois
-      vcyclist 6.12.0 et `pedalons.elevation.tile-cache-size=20` déployés, relever
+      vcyclist 6.12.0 et `pedalons.elevation.tile-cache-size=20` déployés (réglage retiré depuis par
+      `API-150`, qui sort les tuiles MNT du heap : plateau à remesurer une fois la prod passée), relever
       `jvm_gc_live_data_size_bytes` après quelques recalculs HD : attendu autour de 400 MiB, contre
       570 MiB avant (old gen de 820 MiB avec `BACKEND_MEMORY=2G`). Si `BackendHeapFull` ne sonne
       plus, envisager de revenir à la limite par défaut. Reste ouvert aussi : le recalcul HD alloue
@@ -1207,6 +1262,17 @@ l'app mobile, un changement n'y apparaît qu'avec la build suivante.
 La politique réécrite pour la mesure d'audience (`LEGAL-19`) est en ligne ; ce qui reste de la mise
 en service (précondition du §5.3 du plan, vérifications de l'étape 6) est sous `OPS-41`.
 
+- [ ] `LEGAL-26` **Revêtement des parcours : ODbL et mention de VersaTiles côté serveur (S)** —
+      deux points relevés par `API-150`, à instruire. (1) Le backend stocke par parcours des plages
+      typées tirées d'OSM (`TrackSurfaceDocument.ways` : structure, revêtement, type de voie) ; le
+      contrat d'osm-route-details (§4.7) rappelle qu'un client qui accumule ses réponses en base de
+      segments relève du partage à l'identique de l'ODbL (déjà vrai avec osm-surface depuis
+      `OPS-57`) : dire si c'est une base dérivée et ce que ça implique, ou réduire ce qui est gardé.
+      (2) La politique ne cite VersaTiles que comme fond de carte côté client, alors que le serveur
+      (osm-surface puis osm-route-details) lui demande des tuiles sur l'emprise des parcours ; sans
+      objet si la prod passe à un extrait VersaTiles local (`OPS-58`). Parité FR/EN. Décision du
+      7 novembre 2026 : noter, ne rien changer pour l'instant.
+
 - [ ] `LEGAL-22` **Renvois « depuis votre profil » rendus précis (XS)** — quatre
       phrases renvoient au profil sans dire où, alors que le profil a depuis octobre un sous-écran
       par sujet (`contracts/routes.yaml`, mêmes libellés sur le site et dans l'app) : CGU l.64
@@ -1302,7 +1368,7 @@ redevient une entrée de sa section sous le même identifiant.
 | `API-116` | **Couper la mesure d'audience pour un club** (drapeau par `Domain`, comme `enableGpxPlanner`) | Non, pas avant qu'un club le demande (décidé le 15 octobre 2026, plan §7) | La mesure est exemptée de consentement et chaque visiteur peut s'y opposer (DNT, GPC, interrupteur) ; un drapeau par domaine ajouterait un champ, une migration et une case d'admin sans demande. À rouvrir sur la demande d'un club : le drapeau rejoindrait `analytics` dans `/api/config` (`API-117`), résolu par domaine |
 | `WEB-91` | **Statistiques d'audience pour les admins de club** | Non : tableau de bord pour le seul responsable du traitement, par tunnel SSH (décidé le 15 octobre 2026, plan §7) | La condition 1 de l'exemption CNIL limite la finalité à l'éditeur ; il n'y a qu'un site GoatCounter pour tous les hôtes, si bien qu'il faudrait soit un site par domaine, soit une page Pédalons qui lirait l'API de GoatCounter (aujourd'hui sans jeton) en filtrant par hôte et par slug ; et sur une petite équipe privée, un admin qui connaît ses membres pourrait rapprocher une page vue d'une personne. À rouvrir sur une demande réelle, après relecture de la condition 1 |
 | `WEB-103` | **Altitudes FAST d'un tracé rouvert sans état** (reste de B1b de `WEB-100`) | Non (décidé le 19 octobre 2026 avec le propriétaire) | Un appel à chaque ouverture et un échange de source délicat (le FAST simplifie avec d'autres sommets que `initialTrack`), pour un chiffre plus éloigné de celui de l'enregistrement : les portions non retouchées gardent un D+ HD recalé sur `elevationGain`, vers lequel le tracé enregistré converge. Les tracés importés (C4b) ont déjà leur source en FAST |
-| `WEB-104` | **Plafond de tuiles MNT et limite de débit propres à `POST /api/router/elevation`** (B1b de `WEB-100`) | Non, risque accepté comme celui d'`import-gpx` (C4b) | Les bornes plafonnent la distance (50 lignes, 200 km), pas les tuiles : 50 lignes de quelques mètres dans 50 tuiles z12 distinctes font 50 téléchargements à froid, écrits sans éviction dans `DemTileStore`. Seul `SEC-28` (proxy) limite le débit. À rouvrir sur une mesure réelle (plafond de tuiles distinctes par requête, limite par utilisateur, taille ou éviction de `DemTileStore`, qui couvrirait aussi `import-gpx`) |
+| `WEB-104` | **Plafond de tuiles MNT et limite de débit propres à `POST /api/router/elevation`** (B1b de `WEB-100`) | Non, risque accepté comme celui d'`import-gpx` (C4b) | Les bornes plafonnent la distance (50 lignes, 200 km), pas les tuiles : 50 lignes de quelques mètres dans 50 tuiles z12 distinctes font 50 téléchargements à froid, écrits dans le cache d'osm-route-details depuis `API-150`. Seul `SEC-28` (proxy) limite le débit. À rouvrir sur une mesure réelle (plafond de tuiles distinctes par requête, limite par utilisateur) |
 | `WEB-105` | **Surface dans les exports GPX et FIT, second passage de costing sur l'inconnu** (C1b de `WEB-100`) | Non (décidé le 19 octobre 2026 avec le propriétaire) | FIT n'a pas de champ standard pour la surface, une extension GPX serait ignorée des appareils, et les fichiers stockés seraient à réécrire après chaque calcul en arrière-plan. Un second passage (piéton ou auto) sur les plages inconnues coûterait 20 crédits de plus par tranche : « inconnu » est une réponse honnête |
 | `WEB-109` | **POI suggérés le long d'un parcours** (C3 de `WEB-100`, question W9) | Non (décidé le 20 octobre 2026 avec le propriétaire) | Les tuiles VersaTiles ne le permettent pas (couche `pois` au seul zoom 14, sans cols ni sommets) ; il faudrait Overpass en cache ou un extrait OSM (M à L, une dépendance). Détail dans le plan de `WEB-100`, §11. À rouvrir si un club le demande |
 | `BRAND-3` | **Test de concordance des tables de couleurs web et mobile** | Écarté au profit du générateur (`BRAND-2`) | Un test qui parse les deux fichiers et vérifie qu'ils concordent détecte sans unifier, et repose sur des expressions régulières sur du TypeScript et du Dart |
