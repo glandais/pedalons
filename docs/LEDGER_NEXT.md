@@ -90,6 +90,53 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
       reste aux membres (`buildTeamSections`), alors que le site l'ouvre à l'administrateur de la
       plateforme.
 
+### Heure de départ : audit du 7 novembre 2026
+
+Audit de la visibilité de la date et de l'heure de départ (sortie, groupe, voyage, étape) sur les
+trois clients ; la règle commune est `BRAND-8`, le pendant web `WEB-134` à `WEB-138`.
+
+- [ ] `MOB-110` **Accueil : « Ma prochaine sortie » n'affiche aucune heure dans le cas courant (S)** —
+      `features/home/presentation/widgets/next_ride_card.dart:215-236` : le fait « date » est
+      `formatLongDate` (sans heure) et le fait « horloge » n'est que le nom du groupe quand le
+      groupe part avec la sortie, rien quand il n'y a pas de groupe. La `ZoneMentionLine` peut alors
+      dire « (01:00 chez vous) » d'une heure jamais montrée. Le badge relatif en tête prend le ton et
+      l'icône « inscrit », et se confond avec le badge « Inscrit » juste en dessous (l.186) ; au-delà
+      de 7 jours il répète la date. Afficher l'heure qui concerne la personne (`MOB-111`).
+- [ ] `MOB-111` **« L'heure qui me concerne » n'a pas de source unique (S)** — seul le tableau de bord
+      (`dashboard_rides.dart`, « Mes prochaines ») prend `group?.startAt ?? ride.dateTime` ;
+      l'accueil et l'agenda du calendrier (`agenda_card.dart`) partent de `ride.dateTime`, si bien
+      qu'une personne inscrite dans un groupe qui part plus tard voit deux heures selon l'écran.
+      Centraliser le choix dans `features/rides/domain/group_start.dart` et l'appliquer partout. Même
+      règle côté web (`WEB-135`), notifications (`NOTIF-13`) et iCal (`API-155`).
+- [ ] `MOB-112` **Détail de sortie et page de groupe : l'heure est le texte le plus discret (M)** —
+      `ride_detail_page.dart:517-548` : la date est en `statBigValue` (et passe sur deux lignes dans
+      sa demi-colonne), l'heure en dessous en `t.xs` 12/400 atténué (l.545), sans relatif
+      (aujourd'hui, demain). La page d'un groupe (`ride_group_page.dart:234-259`) n'affiche **jamais**
+      la date ; l'heure n'est que dans `RideGroupStats`, sous la carte et le profil, donc sous le pli.
+      Les cellules méta 2×2 de `ride_detail_page` (`cell()`), `RideGroupStats.cell` et
+      `TripSummaryCard._cell` sont trois copies du même schéma : une cellule partagée corrigerait les
+      trois.
+- [ ] `MOB-113` **Voyage et étapes : heure absente ou tronquée (S)** — `stage_card.dart:98-105` écrit
+      « date longue · heure » en `xs`, une ligne avec ellipsis : l'heure, en fin de chaîne, est
+      tronquée la première, sous une ligne « Départ → Arrivée » en `body` plus forte.
+      `stage_detail_page.dart:446-457` met l'heure en `xs` (« Départ groupé à 08:30 », libellé
+      étrange pour une étape). `trip_summary_card.dart:74-80` et la carte de voyage du fil
+      (`publication_card.dart:557-570`) n'ont aucune heure de départ, alors que la
+      `ZoneMentionLine` du résumé commente une heure non affichée.
+- [ ] `MOB-114` **Cartes du fil, agenda, formats : la date pèse autant qu'un compteur (M)** — dépend de
+      `BRAND-8`. `publication_card.dart:376-381` : la date est un `PdlStat` `statValue` comme
+      Personnes ou Commentaires, en bas de carte, et « → retour vers … » dilue le départ. Agenda du
+      calendrier : l'heure est au milieu de « Équipe · 08:30 · Lieu » en `sub` avec ellipsis
+      (`agenda_card.dart:86-91`), l'en-tête de jour sans jour de semaine ni « Demain »
+      (`calendar_page.dart:541`). Six formats coexistent dans `core/utils/formatters.dart`
+      (`formatRideDate`, `formatLongDateTime`, `formatRendezvous`, la concaténation de `stage_card`…) :
+      un formateur « départ » unique, et un widget de départ partagé bâti sur `_DateBlock`
+      (`dashboard_rides.dart:371`) et `_DayTile` (`week_agenda_section.dart:231`), les deux meilleurs
+      traitements actuels. La météo « au départ » (`ride_weather_card.dart:178`,
+      `departure_weather_section.dart:43`) ne dit pas l'heure.
+- [ ] `MOB-115` **Code mort : `features/rides/presentation/widgets/ride_card.dart`** — aucun usage dans
+      `lib/`, encore en Material. À supprimer. Taille : XS.
+
 ### Recette sur une application qui tourne
 
 Rien de ce qui suit n'est couvert par les tests automatisés — soit parce que c'est du rendu, soit
@@ -453,6 +500,43 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
       manquante jusqu'au passage suivant du planner, `STALE` quelques minutes) et le rendu mobile du
       web. Pas d'écran mobile : l'app n'a pas d'aperçus GPX.
 
+### Heure de départ : audit du 7 novembre 2026
+
+Pendant web de `MOB-110` à `MOB-115` ; la règle commune est `BRAND-8`.
+
+- [ ] `WEB-134` **Page de groupe : l'en-tête donne l'heure de la sortie, pas celle du groupe (XS)** —
+      `pages/ride/RideGroupPage.tsx:401-412` (`RideHeaderLine`) formate `ride.dateTime` : quand le
+      groupe part à une autre heure, il contredit la tuile « Départ » de `GroupStats` plus bas. La
+      ligne est aussi en `sm dimmed`, sans icône ni mention de fuseau. Utiliser `group.startAt`.
+- [ ] `WEB-135` **« L'heure qui me concerne » n'a pas de source unique (S)** — seul
+      `MyUpcomingList.tsx:64` prend `group?.startAt ?? ride.dateTime`. `NextRideCard.tsx:158-173`
+      met en avant l'heure de la sortie et relègue celle du groupe dans la ligne des personnes ;
+      `UpcomingRideCard.tsx:130-160` (`GroupFill`) n'affiche aucune heure de groupe, alors que
+      `RideGroupSummaryDto.startAt` est là ; `RideGroupCard.tsx:210-218` ne la montre que si elle
+      diffère. Ajouter le helper à `utils/groupStart.ts` et l'appliquer. Même règle sur mobile
+      (`MOB-111`).
+- [ ] `WEB-136` **Détail de sortie et de voyage : la date vient après toute la description (S)** —
+      `RideDetailPage.tsx` rend `<MediaDisplay>` (l.394, texte, images, pièces jointes) avant la
+      ligne de date (l.400), en `sm dimmed` : sous la ligne de flottaison dès qu'il y a une
+      description, moins visible que le lieu de départ (`fw=500`, en couleur). Même ordre dans
+      `TripDetailPage.tsx` (l.398 puis l.413), où le début et la fin sont en plus séparés par les
+      statistiques. L'heure de retour (`endDateTime`), affichée sur la carte et dans l'agenda,
+      manque aux deux détails. `Rendezvous.tsx` ne rend qu'un `<span>` sans style : une variante mise
+      en avant s'y propagerait à tous les écrans.
+- [ ] `WEB-137` **Cartes et formats : la date pèse autant qu'un compteur (M)** — dépend de `BRAND-8`.
+      `components/card/common/Stat.tsx:19` fige tout en `sm dimmed`, sans prop d'emphase : la date a
+      le poids de « 2 commentaires » sur `PublicationCard` (rangée en bas, `mt="auto"`, l.265),
+      l'accueil, l'agenda et les usages de parcours. La clé `dateFormats.dateTime`
+      (`locales/fr/common.json:523`) donne « samedi 11 octobre 2026 à 08:00 », pas le « long
+      abrégé » de la charte, et tronque le nom sur `TripStageCard.tsx:71-76` ; cinq formats
+      coexistent, dont des `'EEE d MMM'` répétés à la main, et `WeekAgenda.tsx` formate hors de
+      `utils/dateFormat.ts`. L'heure de `DepartureWeather.tsx:46-50` est en `xs` à côté d'une
+      température en `xl`. `DayBox` est le modèle de date bien visible à réutiliser.
+- [ ] `WEB-138` **Aperçu de partage (OG/SSR) : la date disparaît dès qu'il y a une description (S)** —
+      `config/routeMeta.ts:297-310` ne met la date d'une sortie (sans heure) que si `media.markdown`
+      est vide, de même pour un voyage (l.390-396) ; une étape n'a aucune date (≈l.432), aucun titre
+      OG n'en porte, et le formatage passe par `Intl.DateTimeFormat` plutôt que `dateFormat.ts`.
+
 ### Couverture e2e — ce que l'audit du 27 septembre laisse ouvert
 
 L'audit ([archivé](plans/archive/2026-09-27-e2e-coverage-audit.md), `WEB-26`) est exécuté : P0, P1
@@ -568,6 +652,26 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
       pour les **pièces jointes**, qui n'ont pas de ligne `gpx_waypoints`. Lire leurs `course_point`
       avec type et distance (vcyclist 6.11) pour que les points d'une sortie enregistrée ne se
       perdent plus au nettoyage.
+
+### Heure de départ : audit du 7 novembre 2026
+
+- [ ] `API-155` **iCal : l'événement d'une sortie part à l'heure de la sortie, pas du groupe (S)** —
+      `CalendarService.java:385` met `ride.getDateTime()` en `DTSTART` alors que le groupe de la
+      personne inscrite est connu (`registeredGroupId`, l.379 et l.400). Pas de `LOCATION`, alors
+      que `startPlaceName` est calculé. À trancher en même temps : les étapes sont en journée entière
+      (l.418, `PublicationIcsService.java:81`, choix d'`API-90`), donc sans heure de départ dans
+      l'agenda.
+- [ ] `API-156` **Contrat : `RideDto.dateTime` décrit comme « Publication date/time »** —
+      `RideDto.java:77` ; c'est l'heure de départ (`publishAt` est la publication). Corriger la
+      description, bump de patch. Taille : XS.
+- [ ] `API-157` **Karoo et Garmin : date discrète, formats divergents (S)** — Karoo
+      (`karoo/…/MainActivity.kt`) : date en `bodySmall` gris partout, moins visible que distance et
+      dénivelé colorés, format « 07/11/2026 08:30 » (`formatDateTime`, l.1835-1853) sans jour de
+      semaine. Garmin : le menu des groupes d'une sortie (`RideListMenuDelegate.mc:50-58`) n'affiche
+      pas l'heure de chaque groupe (Karoo l'affiche), `RouteDetailView.mc:97-103` met la date en
+      `FONT_TINY`, `FormatUtils.mc:109-114` déduit DD/MM ou MM/DD du réglage 12/24 h (une montre
+      française en 12 h passe en MM/DD) et garde le zéro initial en 12 h. Aucun des deux écrans
+      d'accueil ne montre la prochaine sortie.
 
 ### `API-63` Onboarding d'un Karoo refait de bout en bout (M, backend + web + mobile + Karoo)
 
@@ -1059,8 +1163,8 @@ Ce que les tests ne prouvent pas, parce qu'ils ne passent ni par Flyway ni par u
 Les phases 1 à 5 de [`plans/archive/2026-09-18-notifications.md`](plans/archive/2026-09-18-notifications.md)
 sont en production, le Web Push aussi depuis le 29 septembre 2026 ; ce qui en est livré, et les
 pièges à ne pas rejouer, sont sous `NOTIF-9` (le ledger du chantier y a été rapatrié le
-29 septembre 2026). Restent deux points qui ne sont pas du code (`NOTIF-1`, `NOTIF-2`), et quatre
-qui le sont (`NOTIF-3`, `NOTIF-4`, `NOTIF-11`, `NOTIF-12`) :
+29 septembre 2026). Restent deux points qui ne sont pas du code (`NOTIF-1`, `NOTIF-2`), et six
+qui le sont (`NOTIF-3`, `NOTIF-4`, `NOTIF-11` à `NOTIF-14`) :
 
 - [ ] `NOTIF-1` **Recette du webhook d'équipe** contre un vrai Slack, un vrai Discord et un vrai
       Mattermost (bouton « Envoyer un test ») — vérifier au passage qu'un `@channel` dans un nom de
@@ -1089,6 +1193,21 @@ qui le sont (`NOTIF-3`, `NOTIF-4`, `NOTIF-11`, `NOTIF-12`) :
       n'envoie qu'à `message.token`. Migrer suppose que le backend sache cibler un FID (et accepte
       les deux pendant la transition, les installations existantes ayant enregistré un jeton), puis
       que le mobile bascule ; à faire avant que Firebase retire l'API. Taille : M, backend + mobile.
+- [ ] `NOTIF-13` **Les messages donnent l'heure de la sortie, pas celle du groupe (S)** —
+      `NotificationRecipientResolver.java:114` lit toujours `subject.getDateTime()` : le rappel,
+      `RIDE_JOINED` et `RIDE_GROUP_REMOVED` annoncent à une personne dont le groupe part plus tard
+      l'heure de la sortie (e-mail, push, digest et webhook passent tous par `NotificationTexts`).
+      À vérifier dans le même geste : un changement d'heure du seul groupe semble ne notifier
+      personne, `resolveUpdate` (l.188-193) ne comparant que `ride.getDateTime()` et le lieu de
+      départ (code de publication de l'événement non relu). Même règle sur les clients (`MOB-111`,
+      `WEB-135`) et l'iCal (`API-155`).
+- [ ] `NOTIF-14` **La date n'est ni dans l'objet, ni dans le titre, ni dans l'aperçu (S)** —
+      `notifications/texts_fr.properties` : aucun titre ne porte la date, rappel compris (« C'est
+      demain : X », « Rappel : sortie demain »), et `{date}` arrive en fin de phrase, après une
+      cinquantaine de caractères ; une notification repliée ou un écran verrouillé la coupent. Le
+      gabarit `templates/mail/notification.fr.html` met en gras un titre sans date et
+      `base.fr.html` n'a pas de *preheader*. Le digest (`NotificationDigestService.java:120-125`)
+      met en gras « Nouvelle sortie dans {team} », sans nom ni date.
 
 ---
 
@@ -1179,6 +1298,15 @@ Configurée en production des deux côtés ; des essais (`dryRun`) y ont réussi
 ## BRAND — Charte
 
 Le code couleur métier a une source unique depuis `BRAND-2`.
+
+- [ ] `BRAND-8` **La date et l'heure de départ sont rangées parmi les statistiques secondaires (S)** —
+      §7.1 place la date dans la barre du bas de `PublicationCard`, « icône 16 px + texte 14 px
+      atténué », et §4.4 réserve la graisse 600 à la distance, au dénivelé et aux places restantes.
+      C'est la cause commune de `WEB-137` et `MOB-114` (audit du 7 novembre 2026). Définir le
+      traitement du départ comme information primaire (position, taille, graisse, couleur), le
+      format unique (§8.3 « long abrégé » `sam. 12 avril, 09h00`, relatif « Aujourd'hui / Demain »
+      ou non, année ou non), et quelle heure afficher à une personne inscrite (celle de son groupe).
+      À trancher avant les deux chantiers clients.
 
 ---
 
