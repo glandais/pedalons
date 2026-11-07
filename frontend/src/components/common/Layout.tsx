@@ -135,115 +135,119 @@ export function Layout() {
         {t('nav.skipToContent')}
       </a>
       <AppShell.Header>
-        <Container size="lg" h="100%">
-          <Group h="100%" justify="space-between" wrap="nowrap">
-            <Anchor component={PrefetchLink} to="/" underline="never">
-              <Text size="xl" fw={700} c="primary">
-                {appName}
-              </Text>
-            </Anchor>
+        {/* Same box as the page below: AppShell's padding around a padding-free container, so the
+            site's name lines up with the breadcrumb and the page title at every width. */}
+        <Box px={{ base: 'xs', sm: 'md' }} h="100%">
+          <Container size="lg" px={0} h="100%">
+            <Group h="100%" justify="space-between" wrap="nowrap">
+              <Anchor component={PrefetchLink} to="/" underline="never">
+                <Text size="xl" fw={700} c="primary">
+                  {appName}
+                </Text>
+              </Anchor>
 
-            <HeaderMainNav />
+              <HeaderMainNav />
 
-            {/* Desktop controls */}
-            <Group gap="sm" visibleFrom="sm" wrap="nowrap">
-              <ColorSchemeSwitcher />
-              <LanguageSwitcher />
-              {isAuthenticated && <NotificationBell />}
-              {isAuthenticated ? (
-                <Menu shadow="md" width={200}>
-                  <Menu.Target>
-                    <UnstyledButton>
-                      <Group gap="xs">
-                        <Avatar
-                          src={user?.avatarUrl}
-                          alt={user?.displayName}
-                          radius="xl"
-                          size="sm"
-                          color="primary"
+              {/* Desktop controls */}
+              <Group gap="sm" visibleFrom="sm" wrap="nowrap">
+                <ColorSchemeSwitcher />
+                <LanguageSwitcher />
+                {isAuthenticated && <NotificationBell />}
+                {isAuthenticated ? (
+                  <Menu shadow="md" width={200}>
+                    <Menu.Target>
+                      <UnstyledButton>
+                        <Group gap="xs">
+                          <Avatar
+                            src={user?.avatarUrl}
+                            alt={user?.displayName}
+                            radius="xl"
+                            size="sm"
+                            color="primary"
+                          >
+                            {user?.displayName?.charAt(0).toUpperCase()}
+                          </Avatar>
+                          {/* Capped so a long name cannot push the main navigation out. */}
+                          <Text size="sm" visibleFrom="md" maw={160} truncate>
+                            {user?.displayName}
+                          </Text>
+                        </Group>
+                      </UnstyledButton>
+                    </Menu.Target>
+                    <Menu.Dropdown>
+                      <Menu.Item
+                        leftSection={<IconUser size={14} />}
+                        component={PrefetchLink}
+                        to={paths.profile()}
+                      >
+                        {t('nav.profile')}
+                      </Menu.Item>
+                      <Menu.Item
+                        leftSection={<IconBell size={14} />}
+                        component={PrefetchLink}
+                        to={paths.notifications()}
+                      >
+                        {t('notifications.title')}
+                      </Menu.Item>
+                      <Menu.Item
+                        leftSection={<IconMessageReport size={14} />}
+                        onClick={() => openFeedback()}
+                      >
+                        {t('feedback.menu')}
+                      </Menu.Item>
+                      {installOffer && (
+                        <Menu.Item
+                          leftSection={<IconDownload size={14} />}
+                          component={PrefetchLink}
+                          to={paths.apps()}
                         >
-                          {user?.displayName?.charAt(0).toUpperCase()}
-                        </Avatar>
-                        {/* Capped so a long name cannot push the main navigation out. */}
-                        <Text size="sm" visibleFrom="md" maw={160} truncate>
-                          {user?.displayName}
-                        </Text>
-                      </Group>
-                    </UnstyledButton>
-                  </Menu.Target>
-                  <Menu.Dropdown>
-                    <Menu.Item
-                      leftSection={<IconUser size={14} />}
-                      component={PrefetchLink}
-                      to={paths.profile()}
-                    >
-                      {t('nav.profile')}
-                    </Menu.Item>
-                    <Menu.Item
-                      leftSection={<IconBell size={14} />}
-                      component={PrefetchLink}
-                      to={paths.notifications()}
-                    >
-                      {t('notifications.title')}
-                    </Menu.Item>
-                    <Menu.Item
-                      leftSection={<IconMessageReport size={14} />}
-                      onClick={() => openFeedback()}
-                    >
-                      {t('feedback.menu')}
-                    </Menu.Item>
-                    {installOffer && (
+                          {t('install.menu')}
+                        </Menu.Item>
+                      )}
+                      {isPlatformAdmin && (
+                        <Menu.Item
+                          leftSection={<IconShield size={14} />}
+                          component={PrefetchLink}
+                          to={paths.admin()}
+                        >
+                          {t('nav.admin')}
+                        </Menu.Item>
+                      )}
+                      <Menu.Divider />
                       <Menu.Item
-                        leftSection={<IconDownload size={14} />}
-                        component={PrefetchLink}
-                        to={paths.apps()}
+                        leftSection={<IconLogout size={14} />}
+                        onClick={logout}
+                        color="danger"
                       >
-                        {t('install.menu')}
+                        {t('nav.signOut')}
                       </Menu.Item>
-                    )}
-                    {isPlatformAdmin && (
-                      <Menu.Item
-                        leftSection={<IconShield size={14} />}
-                        component={PrefetchLink}
-                        to={paths.admin()}
-                      >
-                        {t('nav.admin')}
-                      </Menu.Item>
-                    )}
-                    <Menu.Divider />
-                    <Menu.Item
-                      leftSection={<IconLogout size={14} />}
-                      onClick={logout}
-                      color="danger"
-                    >
-                      {t('nav.signOut')}
-                    </Menu.Item>
-                  </Menu.Dropdown>
-                </Menu>
-              ) : (
-                <Button component={PrefetchLink} to={paths.login()} state={{ from: location }}>
-                  {t('nav.signIn')}
-                </Button>
-              )}
-            </Group>
+                    </Menu.Dropdown>
+                  </Menu>
+                ) : (
+                  <Button component={PrefetchLink} to={paths.login()} state={{ from: location }}>
+                    {t('nav.signIn')}
+                  </Button>
+                )}
+              </Group>
 
-            {/* Mobile burger */}
-            <Indicator
-              hiddenFrom="sm"
-              disabled={opened || unreadCount === 0}
-              size={10}
-              color="danger"
-              offset={4}
-            >
-              <Burger
-                opened={opened}
-                onClick={toggle}
-                size="sm"
-                aria-label={opened ? t('nav.closeMenu') : t('nav.openMenu')}
-              />
-            </Indicator>
-          </Group>
-        </Container>
+              {/* Mobile burger */}
+              <Indicator
+                hiddenFrom="sm"
+                disabled={opened || unreadCount === 0}
+                size={10}
+                color="danger"
+                offset={4}
+              >
+                <Burger
+                  opened={opened}
+                  onClick={toggle}
+                  size="sm"
+                  aria-label={opened ? t('nav.closeMenu') : t('nav.openMenu')}
+                />
+              </Indicator>
+            </Group>
+          </Container>
+        </Box>
       </AppShell.Header>
 
       {/* Mobile Navigation */}
