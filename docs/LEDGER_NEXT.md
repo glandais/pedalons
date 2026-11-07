@@ -110,8 +110,8 @@ trois clients ; la règle commune est `BRAND-8`, le pendant web `WEB-135` à `WE
       étrange pour une étape). `trip_summary_card.dart:74-80` et la carte de voyage du fil
       (`publication_card.dart:557-570`) n'ont aucune heure de départ, alors que la
       `ZoneMentionLine` du résumé commente une heure non affichée.
-- [ ] `MOB-115` **Cartes du fil, agenda, formats : la date pèse autant qu'un compteur (M)** — dépend de
-      `BRAND-8`. `publication_card.dart:376-381` : la date est un `PdlStat` `statValue` comme
+- [ ] `MOB-115` **Cartes du fil, agenda, formats : la date pèse autant qu'un compteur (M)** — suit la règle de
+      `BRAND-8` (BRANDING §7.8, option A). `publication_card.dart:376-381` : la date est un `PdlStat` `statValue` comme
       Personnes ou Commentaires, en bas de carte, et « → retour vers … » dilue le départ. Agenda du
       calendrier : l'heure est au milieu de « Équipe · 08:30 · Lieu » en `sub` avec ellipsis
       (`agenda_card.dart:86-91`), l'en-tête de jour sans jour de semaine ni « Demain »
@@ -499,7 +499,7 @@ Pendant web de `MOB-111` à `MOB-116` ; la règle commune est `BRAND-8`.
       statistiques. L'heure de retour (`endDateTime`), affichée sur la carte et dans l'agenda,
       manque aux deux détails. `Rendezvous.tsx` ne rend qu'un `<span>` sans style : une variante mise
       en avant s'y propagerait à tous les écrans.
-- [ ] `WEB-138` **Cartes et formats : la date pèse autant qu'un compteur (M)** — dépend de `BRAND-8`.
+- [ ] `WEB-138` **Cartes et formats : la date pèse autant qu'un compteur (M)** — suit la règle décidée par `BRAND-8` (BRANDING §7.8, option A).
       `components/card/common/Stat.tsx:19` fige tout en `sm dimmed`, sans prop d'emphase : la date a
       le poids de « 2 commentaires » sur `PublicationCard` (rangée en bas, `mt="auto"`, l.265),
       l'accueil, l'agenda et les usages de parcours. La clé `dateFormats.dateTime`
@@ -1262,15 +1262,6 @@ Configurée en production des deux côtés ; des essais (`dryRun`) y ont réussi
 ## BRAND — Charte
 
 Le code couleur métier a une source unique depuis `BRAND-2`.
-
-- [ ] `BRAND-8` **La date et l'heure de départ sont rangées parmi les statistiques secondaires (S)** —
-      §7.1 place la date dans la barre du bas de `PublicationCard`, « icône 16 px + texte 14 px
-      atténué », et §4.4 réserve la graisse 600 à la distance, au dénivelé et aux places restantes.
-      C'est la cause commune de `WEB-138` et `MOB-115` (audit du 7 novembre 2026). Définir le
-      traitement du départ comme information primaire (position, taille, graisse, couleur), le
-      format unique (§8.3 « long abrégé » `sam. 12 avril, 09h00`, relatif « Aujourd'hui / Demain »
-      ou non, année ou non), et quelle heure afficher à une personne inscrite (celle de son groupe).
-      À trancher avant les deux chantiers clients.
 
 ---
 

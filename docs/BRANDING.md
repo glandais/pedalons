@@ -407,8 +407,8 @@ Les titres sont responsives via `clamp()`. Graisse **700** pour tous les niveaux
 |---|---|
 | 400 | Corps de texte, descriptions |
 | 500 | Libellés de formulaire, onglets, éléments de navigation |
-| 600 | Valeurs chiffrées mises en avant (distance, dénivelé, places restantes) |
-| 700 | Tous les titres h1–h4, nom du produit, texte des badges |
+| 600 | Valeurs chiffrées mises en avant (distance, dénivelé, places restantes), jour de semaine de la boîte du jour (§7.8) |
+| 700 | Tous les titres h1–h4, nom du produit, texte des badges, **heure de départ** et chiffre du jour (§7.8, ledger `BRAND-8`) |
 
 **Badges** : 10 px, graisse 700, `text-transform: uppercase`, interlettrage `0.25px`. C'est le
 seul endroit du produit où l'on écrit en capitales.
@@ -590,18 +590,24 @@ Structure de haut en bas, dans un `Paper withBorder radius="md"` entièrement cl
    Priorité 1 : première photo de la publication, recadrée en `cover`, chargement paresseux.
    Priorité 2 (le cas le plus fréquent) : dégradé 135° `#228be6 → #22b8cf` avec `IconBike` 48 px
    en blanc à 80 % d'opacité, centrée.
+   **Sur l'image, en haut à gauche à 16 px : la boîte du jour** (§7.8, variante posée : fond blanc,
+   ombre `sm`). En haut à droite, seulement aujourd'hui ou demain : une pastille blanche à 95 %
+   « Aujourd'hui » / « Demain », 12 px/700, texte `primary-light-color`.
 2. **Padding intérieur 16 px.**
 3. Lien d'équipe optionnel (petit, atténué) quand la carte apparaît hors du contexte d'une équipe.
 4. **Ligne titre** : logo carré de l'entité 32 px (rayon 8 px) à gauche s'il existe ; à droite,
-   `CardTitle` en h4/700 ; en dessous, aperçu Markdown de la description tronqué à 150 caractères,
-   14 px, atténué. Tout à droite, **pile verticale de badges alignés à droite, écart 4 px** :
+   `CardTitle` en h4/700 ; juste en dessous, **la ligne de départ** : `IconClock` 18 px indigo
+   (`primary`), « Départ 09:00 » en 16 px/700 couleur texte, puis « retour vers 14:10 » en 14 px
+   atténué ; un voyage y met sa plage « ven. 16 → dim. 18 mai ». En dessous, aperçu Markdown de la
+   description tronqué à 150 caractères, 14 px, atténué. Tout à droite, **pile verticale de badges alignés à droite, écart 4 px** :
    badge de type (Sortie, bleu), badge de statut (Publié / Brouillon / Annulé), badge de visibilité.
 5. **Ligne sociale** : groupe d'avatars circulaires des personnes inscrites (26 px, chevauchement, 5
    maximum puis pastille grise `+N`), une barre de progression des places, et à droite la
    **vignette du parcours en 160×160** (rayon 8 px, bordure 1 px `#ced4da` / `#424242`).
 6. **Barre de statistiques**, poussée en bas de la carte (`mt="auto"`), écart 16 px, chaque
    statistique = icône 16 px + texte 14 px atténué :
-   `📅 sam. 12 avril, 09h00` · `👥 12 personnes` · `🗂 3 groupes`.
+   `👥 12 personnes` · `🗂 3 groupes` · `💬 2 commentaires`. **La date n'y est plus** (ledger
+   `BRAND-8`, 7 novembre 2026) : elle est la boîte du jour et la ligne de départ, en haut.
 
 Au survol : ombre `md`, rien d'autre — aucun soulèvement, aucun agrandissement. Elle est portée
 par une classe CSS (`Card.module.css`, mixin `hover` de `postcss-preset-mantine`, donc sans effet
@@ -695,6 +701,27 @@ contour indigo sur le groupe, avec « Quitter » en bouton `outline`), **« Comp
 doux, sans bouton). C'est le principal appel à
 l'action du parcours membre : il doit être le seul élément plein et coloré de la zone.
 
+### 7.8 Départ : boîte du jour et bloc de départ
+
+Le départ est une information primaire, jamais une statistique parmi d'autres (ledger `BRAND-8`,
+décidé le 7 novembre 2026, maquette « BRAND-8 — date et heure de départ »). Pour une personne
+inscrite, **l'heure affichée est celle de son groupe** (`group.startAt ?? ride.dateTime`), sauf sur
+le détail d'une sortie, qui donne l'heure de la sortie et, à côté, « Votre groupe : B · 09:30 ».
+
+- **Boîte du jour** (`DayBox` sur le web, `_DateBlock` / `_DayTile` sur mobile) : 56–72 px de
+  large, rayon 8 px, trois lignes centrées — jour abrégé (« sam. », 12–13 px/600,
+  `primary-light-color`), chiffre (22–30 px/700, couleur texte), mois abrégé (« avr. », 12–13 px/500).
+  Variante **à plat** (listes, agenda, bloc de départ) : fond `primary` doux (`#dbe4ff`) ; un voyage
+  prend le turquoise doux. Variante **posée** (sur une image de carte) : fond blanc, ombre `sm`.
+- **Ligne de départ** (cartes) : `IconClock` indigo + « Départ 09:00 » en 16 px/700 (20 px/700 sur
+  la carte « Ma prochaine sortie » mobile), sous le titre ; l'heure de retour et l'écart du groupe
+  (« Groupe B, après la sortie de 09:00 ») suivent en 14 px atténué.
+- **Bloc de départ** (détail d'une sortie, web et mobile) : **juste sous le titre et les badges,
+  avant la description**. Surface alternée (`gray-0`) bordée, rayon 8 px (12 px sur mobile) ; à
+  gauche la boîte du jour à plat ; au centre « Départ 09:00 » en 24 px/700 (22 px sur mobile), la
+  pastille « Demain », « samedi 12 avril · retour vers 14:10 » en 14 px atténué et le lieu de départ ;
+  à droite (sous le reste sur mobile) « Votre groupe » et son heure en 700.
+
 ---
 
 ## 8. Ton éditorial des libellés français
@@ -759,6 +786,12 @@ aucune formule enthousiaste (« Génial ! », « C'est parti ! » sont hors marq
   → « Email ou mot de passe incorrect », « Échec de l'ajout du membre. Veuillez réessayer. »
 - **Compteurs : toujours pluralisés** (`_one` / `_many` / `_other`).
   → « 1 groupe » / « 3 groupes », « 1 étape » / « 4 étapes », « 12 personnes ».
+- **Départ (format unique, ledger `BRAND-8`)** : heure avec deux-points (« 09:00 », jamais « 09h00 »),
+  sur 24 h sur le web, au réglage 12 h / 24 h du téléphone sur mobile ; jour de semaine et mois abrégés, séparés de l'heure par « · » :
+  « sam. 12 avr. · 09:00 » ; **l'année seulement si elle n'est pas l'année en cours**
+  (« sam. 10 avr. 2027 · 09:00 ») ; relatif seulement pour « Aujourd'hui · 09:00 » et
+  « Demain · 09:00 » ; fin de plage « retour vers 14:10 » ; titre de push et objet d'e-mail
+  « Demain 09:00 : Boucle de la vallée ». §7.8 pour la mise en forme.
 - **Dates** : format français long abrégé, heure sur 24 h — sur le web, qui suit la langue ; le
   mobile suit le réglage 12 h / 24 h du téléphone (ledger `API-60`). Un rendez-vous lu d'un autre
   fuseau porte la mention « heure de Tokyo (ven. 01:00 chez vous) ». Le calendrier propose
