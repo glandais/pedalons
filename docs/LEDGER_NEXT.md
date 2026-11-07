@@ -95,24 +95,6 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
 Audit de la visibilité de la date et de l'heure de départ (sortie, groupe, voyage, étape) sur les
 trois clients ; la règle commune est `BRAND-8`, le pendant web `WEB-135` à `WEB-139`.
 
-- [ ] `MOB-114` **Voyage et étapes : heure absente ou tronquée (S)** — `stage_card.dart:98-105` écrit
-      « date longue · heure » en `xs`, une ligne avec ellipsis : l'heure, en fin de chaîne, est
-      tronquée la première, sous une ligne « Départ → Arrivée » en `body` plus forte.
-      `stage_detail_page.dart:446-457` met l'heure en `xs` (« Départ groupé à 08:30 », libellé
-      étrange pour une étape). `trip_summary_card.dart:74-80` et la carte de voyage du fil
-      (`publication_card.dart:557-570`) n'ont aucune heure de départ, alors que la
-      `ZoneMentionLine` du résumé commente une heure non affichée.
-- [ ] `MOB-115` **Cartes du fil, agenda, formats : la date pèse autant qu'un compteur (M)** — suit la règle de
-      `BRAND-8` (BRANDING §7.8, option A). `publication_card.dart:376-381` : la date est un `PdlStat` `statValue` comme
-      Personnes ou Commentaires, en bas de carte, et « → retour vers … » dilue le départ. Agenda du
-      calendrier : l'heure est au milieu de « Équipe · 08:30 · Lieu » en `sub` avec ellipsis
-      (`agenda_card.dart:86-91`), l'en-tête de jour sans jour de semaine ni « Demain »
-      (`calendar_page.dart:541`). Six formats coexistent dans `core/utils/formatters.dart`
-      (`formatRideDate`, `formatLongDateTime`, `formatRendezvous`, la concaténation de `stage_card`…) :
-      un formateur « départ » unique, et un widget de départ partagé bâti sur `_DateBlock`
-      (`dashboard_rides.dart:371`) et `_DayTile` (`week_agenda_section.dart:231`), les deux meilleurs
-      traitements actuels. La météo « au départ » (`ride_weather_card.dart:178`,
-      `departure_weather_section.dart:43`) ne dit pas l'heure.
 - [ ] `MOB-116` **Code mort : `features/rides/presentation/widgets/ride_card.dart`** — aucun usage dans
       `lib/`, encore en Material. À supprimer. Taille : XS.
 
@@ -483,15 +465,14 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
 
 Pendant web de `MOB-111` à `MOB-116` ; la règle commune est `BRAND-8`.
 
-- [ ] `WEB-138` **Cartes et formats : la date pèse autant qu'un compteur (M)** — suit la règle décidée par `BRAND-8` (BRANDING §7.8, option A).
-      `components/card/common/Stat.tsx:19` fige tout en `sm dimmed`, sans prop d'emphase : la date a
-      le poids de « 2 commentaires » sur `PublicationCard` (rangée en bas, `mt="auto"`, l.265),
-      l'accueil, l'agenda et les usages de parcours. La clé `dateFormats.dateTime`
-      (`locales/fr/common.json:523`) donne « samedi 11 octobre 2026 à 08:00 », pas le « long
-      abrégé » de la charte, et tronque le nom sur `TripStageCard.tsx:71-76` ; cinq formats
-      coexistent, dont des `'EEE d MMM'` répétés à la main, et `WeekAgenda.tsx` formate hors de
-      `utils/dateFormat.ts`. L'heure de `DepartureWeather.tsx:46-50` est en `xs` à côté d'une
-      température en `xl`. `DayBox` est le modèle de date bien visible à réutiliser.
+- [ ] `WEB-140` **Deux specs e2e lisent encore l'ancienne ligne de date du détail (S)** — `WEB-137`
+      a remplacé la ligne « samedi 11 octobre 2026 à 08:00 · heure de Paris (…) » du détail d'une
+      sortie par le bloc de départ, et `WEB-138` a passé `formatDateTime` au format unique.
+      `e2e/event-timezones.e2e.ts` (l.97, 105, 146, 171 : SSR, mention de fuseau, édition depuis
+      Tokyo, équipe de Tokyo) et `e2e/flow-account.e2e.ts` (l.1460, préférence de fuseau) cherchent
+      encore `frenchDateTime(...)` suivi de la mention sur cette page : à réécrire contre le bloc
+      (`section` « Date et heure de départ », « Départ 09:00 », mention de fuseau) et à faire tourner
+      sur la pile e2e. `e2e/support/dates.ts` a déjà `frenchDeparture` ; `flow-trips` est adapté.
 - [ ] `WEB-139` **Aperçu de partage (OG/SSR) : la date disparaît dès qu'il y a une description (S)** —
       `config/routeMeta.ts:297-310` ne met la date d'une sortie (sans heure) que si `media.markdown`
       est vide, de même pour un voyage (l.390-396) ; une étape n'a aucune date (≈l.432), aucun titre
@@ -1119,8 +1100,8 @@ Ce que les tests ne prouvent pas, parce qu'ils ne passent ni par Flyway ni par u
 Les phases 1 à 5 de [`plans/archive/2026-09-18-notifications.md`](plans/archive/2026-09-18-notifications.md)
 sont en production, le Web Push aussi depuis le 29 septembre 2026 ; ce qui en est livré, et les
 pièges à ne pas rejouer, sont sous `NOTIF-9` (le ledger du chantier y a été rapatrié le
-29 septembre 2026). Restent deux points qui ne sont pas du code (`NOTIF-1`, `NOTIF-2`), et cinq
-qui le sont (`NOTIF-3`, `NOTIF-4`, `NOTIF-11`, `NOTIF-12`, `NOTIF-14`) :
+29 septembre 2026). Restent deux points qui ne sont pas du code (`NOTIF-1`, `NOTIF-2`), et quatre
+qui le sont (`NOTIF-3`, `NOTIF-4`, `NOTIF-11`, `NOTIF-12`) :
 
 - [ ] `NOTIF-1` **Recette du webhook d'équipe** contre un vrai Slack, un vrai Discord et un vrai
       Mattermost (bouton « Envoyer un test ») — vérifier au passage qu'un `@channel` dans un nom de
@@ -1149,13 +1130,6 @@ qui le sont (`NOTIF-3`, `NOTIF-4`, `NOTIF-11`, `NOTIF-12`, `NOTIF-14`) :
       n'envoie qu'à `message.token`. Migrer suppose que le backend sache cibler un FID (et accepte
       les deux pendant la transition, les installations existantes ayant enregistré un jeton), puis
       que le mobile bascule ; à faire avant que Firebase retire l'API. Taille : M, backend + mobile.
-- [ ] `NOTIF-14` **La date n'est ni dans l'objet, ni dans le titre, ni dans l'aperçu (S)** —
-      `notifications/texts_fr.properties` : aucun titre ne porte la date, rappel compris (« C'est
-      demain : X », « Rappel : sortie demain »), et `{date}` arrive en fin de phrase, après une
-      cinquantaine de caractères ; une notification repliée ou un écran verrouillé la coupent. Le
-      gabarit `templates/mail/notification.fr.html` met en gras un titre sans date et
-      `base.fr.html` n'a pas de *preheader*. Le digest (`NotificationDigestService.java:120-125`)
-      met en gras « Nouvelle sortie dans {team} », sans nom ni date.
 
 ---
 
