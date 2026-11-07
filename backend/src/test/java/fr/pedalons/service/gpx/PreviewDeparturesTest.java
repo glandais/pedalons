@@ -28,7 +28,7 @@ import org.junit.jupiter.api.Test;
 
 /**
  * {@link PreviewDepartures}: the zone of the start of a track, the wall time read in it, and what a
- * save leaves of the date and of the speed (docs/LEDGER_*.md API-149). The resolver is mocked: its
+ * save leaves of the date and of the speed (docs/LEDGER_*.md API-153). The resolver is mocked: its
  * own answers are tested elsewhere.
  */
 class PreviewDeparturesTest {

@@ -1,4 +1,4 @@
--- Departure date, its zone and average speed of a GPX preview (docs/LEDGER_*.md API-149).
+-- Departure date, its zone and average speed of a GPX preview (docs/LEDGER_*.md API-153).
 -- Purely additive and nullable: the previous release neither maps nor writes these columns.
 alter table gpx_previews add column departure_at   timestamp(6) with time zone;
 alter table gpx_previews add column departure_zone varchar(64);

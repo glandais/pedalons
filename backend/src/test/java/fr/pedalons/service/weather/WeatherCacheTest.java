@@ -353,7 +353,7 @@ class WeatherCacheTest extends AbstractResourceTest {
     assertEquals(0, QuarkusTransaction.requiringNew().call(() -> hourlyRepository.count()));
   }
 
-  // ------------------------------------------------------------------ GPX previews (API-149)
+  // ------------------------------------------------------------------ GPX previews (API-153)
 
   @Inject fr.pedalons.repository.gpx.GpxPreviewRepository previewRepository;
 

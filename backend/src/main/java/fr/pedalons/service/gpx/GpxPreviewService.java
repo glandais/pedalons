@@ -223,7 +223,7 @@ public class GpxPreviewService {
 
   /**
    * As {@link #create(GpxDocument, String, boolean, PlannerState, WaypointPlan)}, also taking the
-   * departure date and average speed (docs/LEDGER_*.md API-149). Dated, the weather cells it needs
+   * departure date and average speed (docs/LEDGER_*.md API-153). Dated, the weather cells it needs
    * are asked for once the row is committed, so the forecast does not wait for the next planner
    * pass.
    */
@@ -409,7 +409,7 @@ public class GpxPreviewService {
         name, points, plannerState, waypoints, PreviewDepartureEdit.KEEP);
   }
 
-  /** As above, with a departure date and average speed (docs/LEDGER_*.md API-149). */
+  /** As above, with a departure date and average speed (docs/LEDGER_*.md API-153). */
   @Logged
   public GpxPreviewDto createPreviewFromPoints(
       String name,
@@ -508,7 +508,7 @@ public class GpxPreviewService {
 
   /**
    * As above, also taking what the save says of the departure date and the average speed
-   * (docs/LEDGER_*.md API-149). Each is kept when left out; a date follows the track when it moves
+   * (docs/LEDGER_*.md API-153). Each is kept when left out; a date follows the track when it moves
    * to another zone, keeping its local time. A value together with its removal is a 400. Once
    * saved, a dated preview asks for its weather cells right away, hence a speed change too: it
    * moves the passages.
@@ -743,7 +743,7 @@ public class GpxPreviewService {
   }
 
   /**
-   * The weather of a dated preview, read from the cache only (docs/LEDGER_*.md API-149): never a
+   * The weather of a dated preview, read from the cache only (docs/LEDGER_*.md API-153): never a
    * call to the provider, never a write. Open to whoever holds the link, like {@link
    * #getPreview}; an unknown or malformed identifier, or one of another domain, is a 404. Same
    * answer as a ride's, with one leg and no group.

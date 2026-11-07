@@ -28,7 +28,7 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>A GPX preview has no track rows: {@link #previewSamples} samples the JSONB of its row, keyed
  * by the preview and its files revision — every change of its track is a new revision
- * (docs/LEDGER_*.md API-149).
+ * (docs/LEDGER_*.md API-153).
  */
 @ApplicationScoped
 public class RouteSampleLookup {

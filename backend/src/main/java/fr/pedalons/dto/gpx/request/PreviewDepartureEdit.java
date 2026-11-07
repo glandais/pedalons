@@ -5,7 +5,7 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * What a save of a GPX preview says about its departure date and its average speed
- * (docs/LEDGER_*.md API-149). Each of the two is independent: left out, it stays; given, it is
+ * (docs/LEDGER_*.md API-153). Each of the two is independent: left out, it stays; given, it is
  * replaced; cleared, it is removed.
  *
  * @param departure the wall time at the start of the track, no offset

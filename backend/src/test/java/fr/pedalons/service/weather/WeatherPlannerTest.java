@@ -347,7 +347,7 @@ class WeatherPlannerTest extends AbstractResourceTest {
     assertEquals(ten.plus(Duration.ofHours(1)), finish.getNearestNeedAt());
   }
 
-  // ------------------------------------------------------------------ GPX previews (API-149)
+  // ------------------------------------------------------------------ GPX previews (API-153)
 
   private GpxPreview datedPreview(
       Domain owner, User creator, double lat, @Nullable Instant departure, @Nullable Float speed) {

@@ -145,7 +145,7 @@ public class GpxPreview {
   private @Nullable PreviewSurfacesDocument surfaces;
 
   /**
-   * When the track is ridden, the instant (docs/LEDGER_*.md API-149). Goes with {@link
+   * When the track is ridden, the instant (docs/LEDGER_*.md API-153). Goes with {@link
    * #departureZone}; null when the person gave none. Read by the weather planner.
    */
   @Column(name = "departure_at")

@@ -75,7 +75,7 @@ class GpxPreviewRepositoryTest extends AbstractBaseTest {
     assertEquals(fresh.getId(), expired.getFirst().getId());
   }
 
-  // ------------------------------------------------------------------ weather (API-149)
+  // ------------------------------------------------------------------ weather (API-153)
 
   private GpxPreview dated(Domain owner, Instant departure, Float speed) {
     return dataService.createGpxPreview(

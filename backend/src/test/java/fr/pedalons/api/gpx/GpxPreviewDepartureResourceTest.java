@@ -19,7 +19,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /**
- * The departure date and the average speed of a GPX preview (docs/LEDGER_*.md API-149): given by
+ * The departure date and the average speed of a GPX preview (docs/LEDGER_*.md API-153): given by
  * upload, merge, drawing and update, read back by whoever holds the link. The weather itself is in
  * {@code GpxPreviewWeatherResourceTest}.
  */
