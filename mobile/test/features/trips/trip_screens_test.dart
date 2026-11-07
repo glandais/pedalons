@@ -15,6 +15,7 @@ import 'package:pedalons/features/trips/data/trip_repository.dart';
 import 'package:pedalons/features/trips/presentation/pages/stage_detail_page.dart';
 import 'package:pedalons/features/trips/presentation/pages/trip_detail_page.dart';
 import 'package:pedalons/features/trips/presentation/widgets/stage_card.dart';
+import 'package:pedalons/features/trips/presentation/widgets/trip_summary_card.dart';
 import 'package:pedalons/keys.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -241,23 +242,79 @@ void main() {
       expect(find.text('0 km'), findsNothing);
     });
 
-    testWidgets('la synthèse donne l\'heure de départ du voyage (MOB-114)', (
+    for (final Brightness brightness in Brightness.values) {
+      testWidgets('BRAND-8 : le bloc de départ est sous le titre, avant la '
+          'synthèse, au format unique (${brightness.name})', (
+        WidgetTester tester,
+      ) async {
+        // 07:00Z le mardi 12 août 2036 : 09:00 à Paris ; dernière étape le
+        // lundi 18, fin à 12:00 (la base des fuseaux s'arrête en 2037).
+        await openTrip(
+          tester,
+          fixtureTrip(
+            dateTime: '2036-08-12T07:00:00Z',
+            endDate: '2036-08-18T07:00:00Z',
+          ),
+          brightness: brightness,
+        );
+        expect(tester.takeException(), isNull);
+
+        final Finder block = find.byKey(keys.trip.departureBlock);
+        expect(block, findsOneWidget);
+        Finder inBlock(String text) =>
+            find.descendant(of: block, matching: find.text(text));
+        expect(inBlock('Départ 09:00'), findsOneWidget);
+        expect(
+          inBlock('mar. 12 → lun. 18 août 2036 · retour vers 12:00'),
+          findsOneWidget,
+        );
+        // La boîte du jour, au turquoise d'un voyage.
+        final PdlDayBox box = tester.widget<PdlDayBox>(
+          find.descendant(of: block, matching: find.byType(PdlDayBox)),
+        );
+        expect(box.day, '12');
+        expect(box.tone, isNotNull);
+        // Sous le titre, au-dessus de la synthèse.
+        expect(
+          tester.getTopLeft(block).dy,
+          greaterThan(tester.getTopLeft(find.text('GTMC Bromance')).dy),
+        );
+        expect(
+          tester.getTopLeft(block).dy,
+          lessThan(tester.getTopLeft(find.byType(TripSummaryCard)).dy),
+        );
+        // La synthèse ne redit plus les dates : la durée seule.
+        final Finder duration = find.byKey(keys.trip.summaryDuration);
+        expect(
+          find.descendant(of: duration, matching: find.text('7 jours')),
+          findsOneWidget,
+        );
+        expect(
+          find.textContaining('août 2036', findRichText: true),
+          findsOneWidget,
+        );
+        expect(find.textContaining('mardi'), findsNothing);
+      });
+    }
+
+    testWidgets('BRAND-8 : sans dernière étape connue, pas de retour annoncé', (
       WidgetTester tester,
     ) async {
-      // 07:00Z le 12 août 2036 : 09:00 à Paris (la base des fuseaux
-      // s'arrête en 2037).
       await openTrip(
         tester,
-        fixtureTrip(
-          dateTime: '2036-08-12T07:00:00Z',
-          endDate: '2036-08-18T07:00:00Z',
-        ),
+        fixtureTrip(dateTime: '2036-08-12T07:00:00Z', endDate: null),
       );
 
+      final Finder block = find.byKey(keys.trip.departureBlock);
+      expect(
+        find.descendant(of: block, matching: find.text('mar. 12 août 2036')),
+        findsOneWidget,
+      );
+      expect(find.textContaining('retour vers'), findsNothing);
       expect(
         find.descendant(
-          of: find.byKey(keys.trip.summaryDeparture),
-          matching: find.text('Départ 09:00'),
+          of: find.byKey(keys.trip.summaryDuration),
+          matching: find.text('1 jour'),
         ),
         findsOneWidget,
       );
@@ -470,6 +527,36 @@ void main() {
       expect(
         tester.getTopLeft(block).dy,
         lessThan(tester.getTopLeft(find.text('Clermont-Ferrand').last).dy),
+      );
+    });
+
+    testWidgets('BRAND-8 : le rail date chaque étape au format unique, dans '
+        'son fuseau', (WidgetTester tester) async {
+      // 06:30Z le mardi 12 août 2036 à Paris ; 23:30Z le mercredi 13 août,
+      // jeudi 14 à Tokyo.
+      final TripDto trip = fixtureTrip(
+        stages: <TripStageDto>[
+          fixtureStage(
+            index: 1,
+            stageCount: 2,
+            dateTime: '2036-08-12T06:30:00Z',
+          ),
+          fixtureStage(
+            index: 2,
+            stageCount: 2,
+            dateTime: '2036-08-13T23:30:00Z',
+            timezone: 'Asia/Tokyo',
+          ),
+        ],
+      );
+      await openStage(tester, trip, 'j1');
+
+      final PdlStageRail rail = tester.widget<PdlStageRail>(
+        find.byType(PdlStageRail),
+      );
+      expect(
+        rail.items.map((PdlStageRailItem i) => i.sublabel).toList(),
+        <String?>[null, 'mar. 12 août 2036', 'jeu. 14 août 2036'],
       );
     });
 

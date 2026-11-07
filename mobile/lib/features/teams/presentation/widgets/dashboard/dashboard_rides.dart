@@ -23,6 +23,7 @@ import 'dashboard_section.dart';
 import '../../../../../core/widgets/day_box.dart';
 import '../../../../../core/widgets/zone_mention_line.dart';
 import '../../../../rides/domain/group_start.dart';
+import '../../../domain/publication_timing.dart';
 
 /// Une inscription faite dans l'app depuis le chargement du tableau de bord
 /// l'emporte sur la ligne chargée avant elle — même règle que le fil.
@@ -151,7 +152,14 @@ class _MyUpcomingRowState extends ConsumerState<_MyUpcomingRow> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               // Le jour en boîte à plat, à gauche (BRANDING §7.8).
-              if (at != null) dayBoxFor(at),
+              // Un voyage prend le turquoise doux.
+              if (at != null)
+                dayBoxFor(
+                  at,
+                  tone: p is PublicationDtoTrip
+                      ? PublicationType.trip.tone(c)
+                      : null,
+                ),
               const SizedBox(width: PdlSpacing.cardTight),
               Expanded(
                 child: Column(
@@ -181,6 +189,10 @@ class _MyUpcomingRowState extends ConsumerState<_MyUpcomingRow> {
                         ),
                       ],
                     ),
+                    // Le départ en information primaire, sous le titre
+                    // (BRANDING §7.8, ledger `BRAND-8`) : « Départ 09:30 »
+                    // en 700, jamais une statistique atténuée parmi d'autres.
+                    ?_departure(p),
                     if (stats.isNotEmpty) ...<Widget>[
                       const SizedBox(height: PdlSpacing.chipGap),
                       // Une ligne par fait, tronquée : un lieu de départ ou
@@ -244,26 +256,76 @@ class _MyUpcomingRowState extends ConsumerState<_MyUpcomingRow> {
     );
   }
 
-  /// Heure du groupe rejoint quand elle diffère de celle de la sortie, lieu de
-  /// départ, puis « Groupe B · 26 km/h ».
+  /// La ligne de départ de la ligne (BRANDING §7.8, ledger `BRAND-8`) :
+  ///
+  /// * une sortie — « Départ 09:30 », l'heure **du groupe rejoint** (qui vaut
+  ///   celle de la sortie quand il part avec elle, docs/LEDGER_*.md MOB-112),
+  ///   puis « retour vers 14:10 » ;
+  /// * un voyage — « Départ 09:00 », sa première étape, puis sa plage au
+  ///   format unique, « ven. 16 → dim. 18 oct. ».
+  ///
+  /// Tout se lit dans le fuseau de l'entité, la mention de fuseau commente
+  /// l'heure affichée (docs/LEDGER_*.md API-60). La boîte du jour, à gauche,
+  /// est muette : l'étiquette dit le jour aux lecteurs d'écran.
+  Widget? _departure(PublicationDto p) {
+    final String start = p is PublicationDtoRide
+        ? myStartAt(p.dateTime, p.registeredGroup)
+        : p.dateTime;
+    final String? trailing = switch (p) {
+      PublicationDtoRide ride => rideReturnLabel(
+        start,
+        ride.endDateTime,
+        timezone: ride.timezone,
+      ),
+      PublicationDtoTrip trip => tripDaySpan(
+        trip.dateTime,
+        trip.endDateTime,
+        timezone: trip.timezone,
+      ),
+      PublicationDtoPost() => null,
+    };
+    if (p is PublicationDtoPost) return null;
+    final DateTime? instant = DateTime.tryParse(start);
+    if (instant == null) return null;
+    final String zone = p.timezone;
+    final String headline = 'rides.departureBlock.departs'.tr(
+      namedArgs: <String, String>{
+        'time': AppFormatters.formatTime(
+          AppFormatters.toZoneTime(instant, zone),
+        ),
+      },
+    );
+    final String day =
+        AppFormatters.formatDepartureRelative(instant, zone) ??
+        AppFormatters.formatDepartureDate(instant, zone);
+    return Padding(
+      key: keys.teamDashboard.myUpcomingDeparture(p.slug),
+      padding: const EdgeInsets.only(top: PdlSpacing.chipGap),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          PdlDepartureLine(
+            headline: headline,
+            trailing: trailing,
+            semanticLabel: <String>[
+              headline,
+              // Un voyage : sa plage commence par le jour du départ.
+              if (p is! PublicationDtoTrip) day,
+              ?trailing,
+            ].join(', '),
+          ),
+          ?ZoneMentionLine.maybe(start, zone),
+        ],
+      ),
+    );
+  }
+
+  /// Lieu de départ, puis « Groupe B · 26 km/h ». L'heure est la ligne de
+  /// départ ([_departure]).
   List<PdlStat> _rideStats(PublicationDtoRide ride, UnitSystem units) {
     final RideGroupDto? group = ride.registeredGroup;
-    // Le départ du groupe rejoint — qui vaut celui de la sortie quand il n'a
-    // pas d'heure propre —, dans le fuseau de la sortie (docs/LEDGER_*.md
-    // API-60), et la mention quand le lecteur est ailleurs.
-    final String start = myStartAt(ride.dateTime, group);
-    final DateTime? instant = DateTime.tryParse(start);
-    final String? mention = instant == null
-        ? null
-        : AppFormatters.formatZoneMention(instant, ride.timezone);
     return <PdlStat>[
-      if (instant != null)
-        PdlStat(
-          value: formatGroupStart(start, ride.timezone),
-          icon: PdlIcons.time,
-        ),
-      if (mention != null)
-        PdlStat(value: mention, icon: PdlIcons.otherTimezone),
       if (ride.startPlace != null)
         PdlStat(value: ride.startPlace!.name, icon: PdlIcons.placeStart),
       if (group != null)
@@ -277,32 +339,10 @@ class _MyUpcomingRowState extends ConsumerState<_MyUpcomingRow> {
     ];
   }
 
+  /// Étapes et distance. La plage et l'heure sont la ligne de départ
+  /// ([_departure]).
   List<PdlStat> _tripStats(PublicationDtoTrip trip, UnitSystem units) {
-    // Une ligne de liste ne porte pas les étapes : `endDate` se lit dans le
-    // fuseau du voyage, comme le documente `TripDto` (docs/LEDGER_*.md API-60).
-    final DateTime? start = AppFormatters.tryParseZoneTime(
-      trip.dateTime,
-      trip.timezone,
-    );
-    final DateTime? end = AppFormatters.tryParseZoneTime(
-      trip.endDate,
-      trip.timezone,
-    );
-    final DateTime? instant = DateTime.tryParse(trip.dateTime);
-    final String? mention = instant == null
-        ? null
-        : AppFormatters.formatZoneMention(instant, trip.timezone);
     return <PdlStat>[
-      if (start != null)
-        PdlStat(
-          value: end == null
-              ? AppFormatters.formatDayMonth(start)
-              : '${AppFormatters.formatDayMonth(start)} → '
-                    '${AppFormatters.formatDayMonth(end)}',
-          icon: PdlIcons.date,
-        ),
-      if (mention != null)
-        PdlStat(value: mention, icon: PdlIcons.otherTimezone),
       if (trip.stageCount > 0)
         PdlStat(
           value: 'trips.stageCount'.plural(trip.stageCount),

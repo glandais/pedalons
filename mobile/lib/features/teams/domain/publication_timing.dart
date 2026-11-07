@@ -57,28 +57,41 @@ String? rideReturnLabel(
   );
 }
 
-/// Les jours d'un voyage : « ven. 16 → dim. 18 oct. », le mois une seule fois
-/// quand il ne change pas ; « ven. 16 oct. » sur un seul jour.
+/// Les jours d'un voyage, au format unique du départ (BRANDING §8.3, ledger
+/// `BRAND-8`) : « ven. 16 → dim. 18 oct. », le mois une seule fois quand il
+/// ne change pas ; « ven. 16 oct. » sur un seul jour ; l'année seulement hors
+/// de l'année en cours (« ven. 16 → dim. 18 oct. 2036 »), comme
+/// `formatPublicationSpan` au web.
 ///
 /// Le départ se lit dans le fuseau du voyage [timezone] (celui de sa première
 /// étape), la fin dans [endTimezone] (celui de sa dernière, quand on le
-/// connaît) — docs/LEDGER_*.md API-60, plan §7.
+/// connaît) — docs/LEDGER_*.md API-60, plan §7. [now] ne sert qu'aux tests.
 String? tripDaySpan(
   String dateTime,
   String endDateTime, {
   required String timezone,
   String? endTimezone,
+  DateTime? now,
 }) {
-  final DateTime? start = AppFormatters.tryParseZoneTime(dateTime, timezone);
-  final DateTime? end = AppFormatters.tryParseZoneTime(
-    endDateTime,
-    endTimezone ?? timezone,
+  final DateTime? startAt = DateTime.tryParse(dateTime);
+  final DateTime? endAt = DateTime.tryParse(endDateTime);
+  if (startAt == null || endAt == null) return null;
+  final String endZone = endTimezone ?? timezone;
+  final DateTime start = AppFormatters.toZoneTime(startAt, timezone);
+  final DateTime end = AppFormatters.toZoneTime(endAt, endZone);
+  final String first = AppFormatters.formatDepartureDate(
+    startAt,
+    timezone,
+    now: now,
   );
-  if (start == null || end == null) return null;
-  if (_sameDay(start, end)) return _shortDay(start, withMonth: true);
+  if (_sameDay(start, end)) return first;
   final bool sameMonth = start.year == end.year && start.month == end.month;
-  return '${_shortDay(start, withMonth: !sameMonth)} → '
-      '${_shortDay(end, withMonth: true)}';
+  final String last = AppFormatters.formatDepartureDate(
+    endAt,
+    endZone,
+    now: now,
+  );
+  return '${sameMonth ? _shortDay(start, withMonth: false) : first} → $last';
 }
 
 /// « ven. 16 » ou « ven. 16 oct. », d'une heure de cadran déjà convertie.

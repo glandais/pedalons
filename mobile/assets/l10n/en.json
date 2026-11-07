@@ -659,6 +659,7 @@
       "title": "Weather",
       "atDeparture": "Weather at the start",
       "atDepartureTime": "Weather at the {time} start",
+      "atRideDepartureTime": "Weather at the ride's {time} start",
       "routeTitle": "Route weather",
       "viewRoute": "See the route weather",
       "condition": {
@@ -1092,8 +1093,7 @@
     "noStageTitle": "No stage yet",
     "noStageMessage": "No stage has been defined for this trip yet.",
     "summary": {
-      "dates": "Dates",
-      "dateRange": "{start} → {end}",
+      "duration": "Duration",
       "dayRange": "Day 1 to day {last}",
       "days": {
         "one": "{} day",

@@ -17,7 +17,8 @@ import '../rides/ride_fixtures.dart';
 
 /// `docs/LEDGER_*.md MOB-111` : « Ma prochaine sortie » donne la date **et**
 /// l'heure qui concernent la personne, le groupe ne dit son écart que s'il en a
-/// un, et le badge relatif ne se confond plus avec « Inscrit ».
+/// un ; `BRAND-8` : le seul relatif est la pastille « Aujourd'hui » /
+/// « Demain » sur l'image.
 Future<void> _pump(
   WidgetTester tester,
   RideDto ride,
@@ -154,36 +155,58 @@ void main() {
     expect(tester.widget<Text>(mention).data, contains('16:30'));
   });
 
-  testWidgets('le badge relatif est neutre, sans la coche « inscrit »', (
+  testWidgets('BRAND-8 : plus de « dans 2 jours », ni pastille au-delà de '
+      'demain', (WidgetTester tester) async {
+    // Dans deux à trois jours civils, quelle que soit l'heure du test : ni
+    // aujourd'hui ni demain.
+    final DateTime soon = DateTime.now().toUtc().add(
+      const Duration(days: 2, hours: 1),
+    );
+    await _pump(tester, fixtureRide(dateTime: soon.toIso8601String()), null);
+
+    expect(find.textContaining('DANS'), findsNothing);
+    expect(find.textContaining('dans 2'), findsNothing);
+    expect(find.byType(PdlDayPill), findsNothing);
+    expect(find.byKey(keys.home.nextRideDayPill), findsNothing);
+  });
+
+  testWidgets('bientôt : la pastille « Aujourd’hui » / « Demain » posée sur '
+      'l’image, et aucun badge relatif dans l’en-tête', (
     WidgetTester tester,
   ) async {
-    final String soon = DateTime.now()
-        .toUtc()
-        .add(const Duration(days: 2, hours: 1))
-        .toIso8601String();
-    await _pump(tester, fixtureRide(dateTime: soon), null);
+    final DateTime soon = DateTime.now().toUtc().add(
+      const Duration(minutes: 5),
+    );
+    final RideDto ride = fixtureRide(dateTime: soon.toIso8601String());
+    await _pump(tester, ride, null);
 
-    final Finder badge = find.byKey(keys.home.nextRideRelativeBadge);
-    expect(badge, findsOneWidget);
+    // « Aujourd'hui », sauf si le test passe à minuit dans le fuseau de la
+    // sortie : « Demain ».
+    final String expected = AppFormatters.formatDepartureRelative(
+      soon,
+      ride.timezone,
+    )!;
+    final Finder pill = find.byKey(keys.home.nextRideDayPill);
+    expect(pill, findsOneWidget);
+    expect(tester.widget<PdlDayPill>(pill).label, expected);
     expect(
-      find.descendant(of: badge, matching: find.text('DANS 2 JOURS')),
+      find.descendant(of: find.byType(PdlCardMedia), matching: pill),
       findsOneWidget,
     );
+    // L'ancien badge relatif, neutre et à l'horloge, a disparu.
     expect(
-      find.descendant(of: badge, matching: find.byIcon(PdlIcons.check)),
-      findsNothing,
-    );
-    expect(
-      find.descendant(of: badge, matching: find.byIcon(PdlIcons.time)),
-      findsOneWidget,
+      tester
+          .widgetList<PdlBadge>(find.byType(PdlBadge))
+          .where((PdlBadge b) => b.icon == PdlIcons.time),
+      isEmpty,
     );
   });
 
-  testWidgets('au-delà d’une semaine, pas de badge qui répéterait la date', (
+  testWidgets('au-delà d’une semaine, pas de pastille', (
     WidgetTester tester,
   ) async {
     await _pump(tester, fixtureRide(dateTime: rideAt), null);
 
-    expect(find.byKey(keys.home.nextRideRelativeBadge), findsNothing);
+    expect(find.byKey(keys.home.nextRideDayPill), findsNothing);
   });
 }

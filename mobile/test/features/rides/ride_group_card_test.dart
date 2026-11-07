@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/core/pdl/pdl.dart';
+import 'package:pedalons/core/theme/pdl_colors.dart';
+import 'package:pedalons/core/theme/pdl_icons.dart';
 import 'package:pedalons/core/theme/pdl_tokens.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/core/utils/formatters.dart';
@@ -10,6 +12,7 @@ import 'package:pedalons/core/widgets/zone_mention_line.dart';
 import 'package:pedalons/features/rides/domain/group_start.dart';
 import 'package:pedalons/features/rides/domain/ride_group_action.dart';
 import 'package:pedalons/features/rides/presentation/widgets/ride_group_card.dart';
+import 'package:pedalons/keys.dart';
 
 import '../../support/localization.dart';
 import 'ride_fixtures.dart';
@@ -189,8 +192,108 @@ void main() {
         g: fixtureGroup(startAt: '2026-10-11T06:30:00Z'),
         action: RideGroupAction.join,
       );
-      expect(find.text('08:30'), findsOneWidget);
+      expect(find.text('Départ 08:30'), findsOneWidget);
       expect(find.textContaining(':00:'), findsNothing);
+    });
+
+    for (final Brightness brightness in Brightness.values) {
+      testWidgets('BRAND-8 : l\'heure propre quitte les statistiques pour un '
+          'bandeau indigo très doux sous le nom (${brightness.name})', (
+        WidgetTester tester,
+      ) async {
+        await pump(
+          tester,
+          g: fixtureGroup(startAt: '2026-10-11T06:30:00Z'),
+          action: RideGroupAction.join,
+          brightness: brightness,
+        );
+        expect(tester.takeException(), isNull);
+
+        final Finder band = find.descendant(
+          of: find.byKey(keys.ride.groupDeparture('g1')),
+          matching: find.byType(Container),
+        );
+        final BoxDecoration decoration =
+            tester.widget<Container>(band.first).decoration! as BoxDecoration;
+        final PdlColors c = PdlColors.of(brightness);
+        expect(decoration.color, c.primaryFaint);
+        expect(decoration.borderRadius, PdlRadii.mdAll);
+      });
+    }
+
+    testWidgets('BRAND-8 : « Départ 08:30 » en 16/700, puis « après la sortie '
+        'de 08:00 » en atténué', (WidgetTester tester) async {
+      await pump(
+        tester,
+        g: fixtureGroup(startAt: '2026-10-11T06:30:00Z'),
+        action: RideGroupAction.join,
+      );
+
+      final Finder line = find.byKey(keys.ride.groupDeparture('g1'));
+      expect(line, findsOneWidget);
+      final Text headline = tester.widget<Text>(
+        find.descendant(of: line, matching: find.text('Départ 08:30')),
+      );
+      expect(headline.style?.fontWeight, FontWeight.w700);
+      expect(headline.style?.fontSize, 16);
+      expect(
+        find.descendant(
+          of: line,
+          matching: find.text('après la sortie de 08:00'),
+        ),
+        findsOneWidget,
+      );
+      // Plus d'horloge dans la rangée de statistiques.
+      expect(
+        tester
+            .widgetList<PdlStat>(find.byType(PdlStat))
+            .where((PdlStat s) => s.icon == PdlIcons.time),
+        isEmpty,
+      );
+      // Sous le nom du groupe.
+      expect(
+        tester.getTopLeft(line).dy,
+        greaterThan(tester.getTopLeft(find.text('Chill Route Long')).dy),
+      );
+    });
+
+    testWidgets('BRAND-8 : avant la sortie, et le jour quand il diffère', (
+      WidgetTester tester,
+    ) async {
+      await pump(
+        tester,
+        g: fixtureGroup(startAt: '2026-10-11T05:30:00Z'),
+        action: RideGroupAction.join,
+      );
+      expect(find.text('avant la sortie de 08:00'), findsOneWidget);
+      expect(find.textContaining('dim. 11 oct.'), findsNothing);
+
+      // Le lendemain, 08:30 : le jour suit l'heure (« lun. 12 oct. »).
+      await pump(
+        tester,
+        g: fixtureGroup(startAt: '2026-10-12T06:30:00Z'),
+        action: RideGroupAction.join,
+      );
+      final Finder line = find.byKey(keys.ride.groupDeparture('g1'));
+      expect(
+        find.descendant(
+          of: line,
+          matching: find.textContaining(RegExp(r'^lun\. 12 oct\.')),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('après la sortie de 08:00'), findsOneWidget);
+    });
+
+    testWidgets('BRAND-8 : un groupe qui part avec la sortie n\'a pas de '
+        'ligne de départ', (WidgetTester tester) async {
+      await pump(
+        tester,
+        g: fixtureGroup(startAt: '2026-10-11T06:00:00Z'),
+        action: RideGroupAction.join,
+      );
+      expect(find.byKey(keys.ride.groupDeparture('g1')), findsNothing);
+      expect(find.byType(PdlDepartureLine), findsNothing);
     });
 
     testWidgets('un groupe qui part avec la sortie ne répète pas l\'heure', (
@@ -213,7 +316,7 @@ void main() {
         action: RideGroupAction.join,
         timezone: 'Asia/Tokyo',
       );
-      expect(find.text('15:30'), findsOneWidget);
+      expect(find.text('Départ 15:30'), findsOneWidget);
       expect(find.byType(ZoneMentionLine), findsOneWidget);
     });
 

@@ -12,6 +12,7 @@ import 'package:pedalons/core/preferences/user_preferences_provider.dart';
 import 'package:pedalons/core/pagination/pagination.dart';
 import 'package:pedalons/core/theme/enum_colors.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
+import 'package:pedalons/core/utils/formatters.dart';
 import 'package:pedalons/features/participants/data/participant_repository.dart';
 import 'package:pedalons/features/participants/domain/participant_query.dart';
 import 'package:pedalons/features/rides/data/ride_repository.dart';
@@ -266,6 +267,62 @@ void main() {
       expect(find.text('DOS'), findsOneWidget);
       expect(find.text('Prévisions : Open-Meteo.com'), findsOneWidget);
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('BRAND-8 : un groupe à heure propre — le titre du départ dit '
+        'qu\'il s\'agit de l\'heure de la sortie, celle de la prévision', (
+      WidgetTester tester,
+    ) async {
+      AppFormatters.setDisplayTimezone('Europe/Paris');
+      addTearDown(() => AppFormatters.setDisplayTimezone(null));
+      // Sortie à 21:30 à Paris, groupe g1 à 22:00 : la prévision du point de
+      // rendez-vous est calculée à l'heure de la sortie (`RideWeatherService`).
+      await open(
+        tester,
+        weather(),
+        ride: fixtureRide(
+          dateTime: '2036-07-29T19:30:00Z',
+          groups: <RideGroupDto>[
+            fixtureGroup(id: 'g1', startAt: '2036-07-29T20:00:00Z'),
+            fixtureGroup(id: 'g2', name: 'Cool', sortOrder: 1),
+          ],
+        ),
+      );
+
+      final Finder title = find.byKey(keys.rideGroup.departureWeatherTitle);
+      expect(
+        find.descendant(
+          of: title,
+          matching: find.text('Météo au départ de la sortie, 21:30'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Météo au départ de 22:00'), findsNothing);
+    });
+
+    testWidgets('BRAND-8 : un groupe qui part avec la sortie garde « Météo au '
+        'départ de 21:30 »', (WidgetTester tester) async {
+      AppFormatters.setDisplayTimezone('Europe/Paris');
+      addTearDown(() => AppFormatters.setDisplayTimezone(null));
+      await open(
+        tester,
+        weather(),
+        ride: fixtureRide(
+          dateTime: '2036-07-29T19:30:00Z',
+          groups: <RideGroupDto>[
+            fixtureGroup(id: 'g1', startAt: '2036-07-29T19:30:00Z'),
+            fixtureGroup(id: 'g2', name: 'Cool', sortOrder: 1),
+          ],
+        ),
+      );
+
+      expect(
+        find.descendant(
+          of: find.byKey(keys.rideGroup.departureWeatherTitle),
+          matching: find.text('Météo au départ de 21:30'),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('une pastille change de groupe, et le partage avec le détail', (

@@ -13,7 +13,11 @@ import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/api_error_handler.dart';
+import '../../../../core/utils/formatters.dart';
 import '../../../../core/utils/share_link.dart';
+import '../../../../core/widgets/day_box.dart';
+import '../../../../core/widgets/zone_mention_line.dart';
+import '../../../teams/domain/publication_timing.dart';
 import '../../../../core/widgets/markdown_content.dart';
 import '../../../../core/widgets/media_attachments.dart';
 import '../../../calendar/presentation/widgets/calendar_subscription_card.dart';
@@ -454,7 +458,71 @@ class _TripDetailContent extends ConsumerWidget {
             const SizedBox(height: PdlSpacing.chipGap),
             ContentTagRow(tags: trip.tags),
           ],
+          ?_departure(context),
         ],
+      ),
+    );
+  }
+
+  /// Le bloc de départ du voyage, sous le titre et les badges, avant tout le
+  /// reste (BRANDING §7.8, ledger `BRAND-8`, pendant du web `WEB-137`) : boîte
+  /// du jour turquoise, « Départ 09:00 » (la première étape), pastille
+  /// « Aujourd'hui » / « Demain », la plage du voyage au format unique, le
+  /// retour quand la fin est connue (`endDate`, la dernière étape) et la
+  /// mention de fuseau sur l'heure affichée.
+  Widget? _departure(BuildContext context) {
+    final DateTime? instant = DateTime.tryParse(trip.dateTime);
+    if (instant == null) return null;
+    final String zone = trip.timezone;
+    final String endZone = trip.endTimezone;
+    final DateTime wall = AppFormatters.toZoneTime(instant, zone);
+
+    final String headline = 'rides.departureBlock.departs'.tr(
+      namedArgs: <String, String>{'time': AppFormatters.formatTime(wall)},
+    );
+    final String? relative = trip.isPast || trip.isCancelled
+        ? null
+        : AppFormatters.formatDepartureRelative(instant, zone);
+    final String span =
+        tripDaySpan(
+          trip.dateTime,
+          trip.endDateTime,
+          timezone: zone,
+          endTimezone: endZone,
+        ) ??
+        AppFormatters.formatDepartureDate(instant, zone);
+    // Sans étape, `endDateTime` n'est qu'une estimation (le départ plus
+    // quelques heures) : pas de retour annoncé. La plage nomme déjà le
+    // dernier jour, le retour n'en dit donc que l'heure.
+    final DateTime? end = trip.endDate == null
+        ? null
+        : AppFormatters.tryParseZoneTime(trip.endDateTime, endZone);
+    final String details = <String>[
+      span,
+      if (end != null)
+        'rides.departureBlock.returnAround'.tr(
+          namedArgs: <String, String>{'time': AppFormatters.formatTime(end)},
+        ),
+    ].join(' · ');
+    final String? mention = AppFormatters.formatZoneMention(instant, zone);
+
+    return Padding(
+      padding: const EdgeInsets.only(top: PdlSpacing.cardTight),
+      child: PdlDepartureBlock(
+        key: keys.trip.departureBlock,
+        dayBox: dayBoxFor(wall, tone: PublicationType.trip.tone(context.pdl)),
+        headline: headline,
+        relativeLabel: relative,
+        details: <String>[details],
+        zoneMention: mention == null
+            ? null
+            : ZoneMentionLine(instant: instant, zone: zone),
+        semanticLabel: <String>[
+          headline,
+          ?relative,
+          details,
+          ?mention,
+        ].join(', '),
       ),
     );
   }

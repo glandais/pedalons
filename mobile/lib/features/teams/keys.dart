@@ -122,6 +122,11 @@ class TeamDashboardKeys {
   /// La ligne d'une de « Vos prochaines sorties », par son slug.
   ValueKey<String> myUpcomingRow(String slug) =>
       _TeamDashboardKey('myUpcoming_$slug');
+
+  /// La ligne de départ d'une de « Vos prochaines sorties », par son slug
+  /// (ledger `BRAND-8`).
+  ValueKey<String> myUpcomingDeparture(String slug) =>
+      _TeamDashboardKey('myUpcomingDeparture_$slug');
 }
 
 class _TeamAgendaKey extends ValueKey<String> {

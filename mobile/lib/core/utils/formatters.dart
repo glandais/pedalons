@@ -622,30 +622,6 @@ class AppFormatters {
 
   static String get tomorrow => tr('dates.tomorrow');
 
-  /// Date d'une sortie, relative au jour courant, avec l'heure.
-  ///
-  /// Avec [zone], [date] est l'instant du contrat (UTC) d'un rendez-vous : la
-  /// date et l'heure se lisent dans le fuseau de l'entité, « aujourd'hui » et
-  /// « demain » restent relatifs au lecteur (docs/LEDGER_*.md API-60, plan
-  /// §7). Quand le jour de l'entité n'est pas celui du lecteur, le relatif
-  /// mentirait à l'un des deux : la date s'écrit en entier.
-  static String formatRideDate(DateTime date, {DateTime? now, String? zone}) {
-    final DateTime reader = toDisplayTime(date);
-    final DateTime local = zone == null ? reader : toZoneTime(date, zone);
-    final DateTime reference = toDisplayTime(now ?? displayNow());
-    final int dayDiff = DateTime(reader.year, reader.month, reader.day)
-        .difference(DateTime(reference.year, reference.month, reference.day))
-        .inDays;
-    final bool sameDay =
-        local.year == reader.year &&
-        local.month == reader.month &&
-        local.day == reader.day;
-    final String time = formatTime(local);
-    if (sameDay && dayDiff == 0) return '$today $time';
-    if (sameDay && dayDiff == 1) return '$tomorrow $time';
-    return '${formatFullDate(local)} $time';
-  }
-
   // ─────────────────────────────────────────────────────────────────────────
   // Départ — le format unique (docs/LEDGER_*.md BRAND-8, BRANDING §8.3)
   //
@@ -653,7 +629,7 @@ class AppFormatters {
   // « Aujourd'hui · 09:00 » et « Demain · 09:00 » — jamais d'autre relatif.
   // L'heure suit le réglage 12 h / 24 h du téléphone ([formatTime]).
   //
-  // Contrairement à [formatRideDate], « aujourd'hui », « demain » et l'année
+  // « Aujourd'hui », « demain » et l'année
   // en cours s'apprécient dans le **fuseau de la sortie** : le relatif colle
   // alors toujours au jour affiché, qui est celui de la sortie. Une personne
   // lue d'ailleurs a sa mention de fuseau pour le reste.

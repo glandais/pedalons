@@ -15,6 +15,7 @@ import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../providers/route_detail_provider.dart';
 import '../../../../core/widgets/zone_mention_line.dart';
+import '../../../teams/domain/publication_timing.dart';
 
 /// « Utilisée dans » — les sorties, publications et voyages qui emploient ce
 /// parcours.
@@ -110,8 +111,15 @@ class _UsageCard extends StatelessWidget {
                                   DateTime.parse(usage.dateTime),
                                   usage.timezone,
                                 )
-                              : '${AppFormatters.formatDayMonth(at)} → '
-                                    '${AppFormatters.formatDayMonth(end)}',
+                              : tripDaySpan(
+                                      usage.dateTime,
+                                      usage.endDate!,
+                                      timezone: usage.timezone,
+                                    ) ??
+                                    AppFormatters.formatDepartureDate(
+                                      DateTime.parse(usage.dateTime),
+                                      usage.timezone,
+                                    ),
                           style: t.sub,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,

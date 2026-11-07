@@ -89,6 +89,7 @@ void main() {
             '2026-10-17T20:00:00Z',
             timezone: 'Europe/Paris',
             endTimezone: 'Asia/Tokyo',
+            now: now,
           ),
           'ven. 16 → dim. 18 oct.',
         );
@@ -97,11 +98,56 @@ void main() {
             '2026-10-16T20:00:00Z',
             '2026-10-17T20:00:00Z',
             timezone: 'Europe/Paris',
+            now: now,
           ),
           'ven. 16 → sam. 17 oct.',
         );
       },
     );
+
+    test('BRAND-8 : format unique, l\'année seulement hors de l\'année en '
+        'cours', () {
+      // Du samedi 9 au mardi 12 août 2036, vus de 2026.
+      expect(
+        tripDaySpan(
+          '2036-08-09T07:00:00Z',
+          '2036-08-12T16:00:00Z',
+          timezone: 'Europe/Paris',
+          now: now,
+        ),
+        'sam. 9 → mar. 12 août 2036',
+      );
+      // Vus de la même année : pas d'année.
+      expect(
+        tripDaySpan(
+          '2036-08-09T07:00:00Z',
+          '2036-08-12T16:00:00Z',
+          timezone: 'Europe/Paris',
+          now: DateTime.utc(2036, 1, 2),
+        ),
+        'sam. 9 → mar. 12 août',
+      );
+      // Deux mois : le premier jour nomme le sien.
+      expect(
+        tripDaySpan(
+          '2036-07-30T07:00:00Z',
+          '2036-08-02T16:00:00Z',
+          timezone: 'Europe/Paris',
+          now: DateTime.utc(2036, 1, 2),
+        ),
+        'mer. 30 juil. → sam. 2 août',
+      );
+      // Un seul jour : « sam. 9 août », sans flèche.
+      expect(
+        tripDaySpan(
+          '2036-08-09T07:00:00Z',
+          '2036-08-09T16:00:00Z',
+          timezone: 'Europe/Paris',
+          now: DateTime.utc(2036, 1, 2),
+        ),
+        'sam. 9 août',
+      );
+    });
 
     test('plusieurs jours : une flèche ; un seul : pas de flèche', () {
       expect(

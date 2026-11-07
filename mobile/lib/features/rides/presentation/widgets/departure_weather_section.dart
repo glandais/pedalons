@@ -10,6 +10,7 @@ import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../keys.dart';
 import '../../domain/ride_weather_display.dart';
 import 'ride_weather_widgets.dart';
 
@@ -24,12 +25,19 @@ class DepartureWeatherSection extends ConsumerWidget {
     required this.departure,
     required this.timezone,
     this.departureAt,
+    this.ofRide = false,
   });
 
   final DepartureWeatherDto departure;
 
-  /// Le départ que la prévision décrit — celui de la sortie (`RideDto.dateTime`).
+  /// Le départ que la prévision décrit — celui de la sortie (`RideDto.dateTime`) :
+  /// le serveur la calcule à cette heure-là, pas à celle d'un groupe.
   final String? departureAt;
+
+  /// Vrai sur la page d'un groupe qui part à son heure propre : le titre dit
+  /// alors « Météo au départ de la sortie, 21:30 », pour ne pas se confondre
+  /// avec l'heure du groupe que porte le bloc de départ (ledger `BRAND-8`).
+  final bool ofRide;
 
   /// Le fuseau de la sortie : lever et coucher du soleil s'y lisent.
   final String? timezone;
@@ -43,7 +51,10 @@ class DepartureWeatherSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        PdlSectionHeader(title: departureWeatherTitle(departureAt, timezone)),
+        PdlSectionHeader(
+          key: keys.rideGroup.departureWeatherTitle,
+          title: departureWeatherTitle(departureAt, timezone, ofRide: ofRide),
+        ),
         PdlCard(
           flat: true,
           child: now == null
@@ -64,15 +75,24 @@ class DepartureWeatherSection extends ConsumerWidget {
 /// « Météo au départ de 09:00 » — l'heure du départ [departureAt] (un instant
 /// du contrat) lue dans le fuseau [timezone] de la sortie, sans mention : la
 /// page la porte déjà (ledger `MOB-115`). « Météo au départ » sans heure.
-String departureWeatherTitle(String? departureAt, String? timezone) {
+/// [ofRide] : « Météo au départ de la sortie, 21:30 », pour la page d'un
+/// groupe qui part à une autre heure.
+String departureWeatherTitle(
+  String? departureAt,
+  String? timezone, {
+  bool ofRide = false,
+}) {
   if (departureAt == null || DateTime.tryParse(departureAt) == null) {
     return 'rides.weather.atDeparture'.tr();
   }
-  return 'rides.weather.atDepartureTime'.tr(
-    namedArgs: <String, String>{
-      'time': formatWeatherTime(departureAt, timezone),
-    },
-  );
+  return (ofRide
+          ? 'rides.weather.atRideDepartureTime'
+          : 'rides.weather.atDepartureTime')
+      .tr(
+        namedArgs: <String, String>{
+          'time': formatWeatherTime(departureAt, timezone),
+        },
+      );
 }
 
 /// Les conditions d'un départ : icône, température et ciel, puis ressenti,

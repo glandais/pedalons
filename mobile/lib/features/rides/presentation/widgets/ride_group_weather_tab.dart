@@ -7,6 +7,7 @@ import '../../../../core/pdl/pdl.dart';
 import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../keys.dart';
+import '../../domain/group_start.dart';
 import '../../domain/ride_weather_display.dart';
 import '../../domain/ride_weather_map.dart';
 import '../../providers/ride_detail_provider.dart';
@@ -219,10 +220,19 @@ class _RideGroupWeatherTabState extends ConsumerState<RideGroupWeatherTab> {
         ),
       if (stale) padded(WeatherStaleBanner(fetchedAt: fetchedAt)),
       padded(
+        // La prévision du point de rendez-vous est calculée à l'heure de la
+        // **sortie** (`RideWeatherService`, `plan.departureTime()`), pas à
+        // celle du groupe : le titre garde donc cette heure, et dit « de la
+        // sortie » quand le groupe part à une autre — le bloc de départ de
+        // l'Aperçu porte l'heure du groupe (ledger `BRAND-8`). Les conditions
+        // à l'heure du groupe sont le leg, juste dessous.
         DepartureWeatherSection(
           departure: dto.departure,
           timezone: ride.timezone,
           departureAt: ride.dateTime,
+          ofRide:
+              group != null &&
+              groupLeavesAtOwnTime(group.startAt, ride.dateTime),
         ),
       ),
       if (leg != null) ...<Widget>[

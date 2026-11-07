@@ -659,6 +659,7 @@
       "title": "Météo",
       "atDeparture": "Météo au départ",
       "atDepartureTime": "Météo au départ de {time}",
+      "atRideDepartureTime": "Météo au départ de la sortie, {time}",
       "routeTitle": "Météo du parcours",
       "viewRoute": "Voir la météo du parcours",
       "condition": {
@@ -1092,8 +1093,7 @@
     "noStageTitle": "Aucune étape",
     "noStageMessage": "Aucune étape n'a encore été définie pour ce voyage.",
     "summary": {
-      "dates": "Dates",
-      "dateRange": "{start} → {end}",
+      "duration": "Durée",
       "dayRange": "J1 à J{last}",
       "days": {
         "one": "{} jour",

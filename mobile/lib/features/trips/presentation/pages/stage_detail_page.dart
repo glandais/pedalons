@@ -330,9 +330,15 @@ class _StageDetailContent extends ConsumerWidget {
         for (final TripStageDto s in stages)
           PdlStageRailItem(
             label: s.name,
-            sublabel: s.startsAt == null
-                ? null
-                : AppFormatters.formatDayMonth(s.startsAt!),
+            // Le jour au format unique, dans le fuseau de l'étape : « mar.
+            // 12 août », l'année hors de l'année en cours (BRANDING §8.3).
+            sublabel: switch (DateTime.tryParse(s.dateTime)) {
+              final DateTime at => AppFormatters.formatDepartureDate(
+                at,
+                s.timezone,
+              ),
+              null => null,
+            },
           ),
       ],
       onSelected: (int index) {

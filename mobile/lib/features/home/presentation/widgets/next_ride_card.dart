@@ -73,7 +73,12 @@ class NextRideCard extends ConsumerWidget {
     // de la sortie quand il part avec elle (docs/LEDGER_*.md MOB-112).
     final String start = myStartAt(ride.dateTime, group);
     final DateTime? instant = DateTime.tryParse(start);
-    final String? relative = instant == null ? null : _relativeBadge(instant);
+    // « Aujourd'hui » / « Demain », seul relatif admis (BRANDING §8.3, ledger
+    // `BRAND-8`), en pastille sur l'image comme les cartes du fil — plus de
+    // « dans 2 jours » ni de « dans 3 h ». Rien pour une sortie annulée.
+    final String? relative = instant == null || ride.isCancelled
+        ? null
+        : AppFormatters.formatDepartureRelative(instant, ride.timezone);
 
     final RideKey key = RideKey(teamSlug: ride.team.slug, rideSlug: ride.slug);
     // Pas `rideRegistrationProvider` : il chargerait le détail de la sortie,
@@ -85,22 +90,7 @@ class NextRideCard extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        Row(
-          children: <Widget>[
-            Expanded(child: Text('home.nextRide'.tr(), style: t.sectionTitle)),
-            if (relative != null)
-              PdlBadge(
-                key: keys.home.nextRideRelativeBadge,
-                label: relative,
-                // Neutre et à l'horloge : le ton et la coche « inscrit »
-                // appartiennent au badge « Inscrit » de la carte
-                // (docs/LEDGER_*.md MOB-111).
-                tone: PdlFamily.gray.soft(c),
-                size: PdlBadgeSize.lg,
-                icon: PdlIcons.time,
-              ),
-          ],
-        ),
+        Text('home.nextRide'.tr(), style: t.sectionTitle),
         const SizedBox(height: PdlSpacing.cardTight),
         // Le bandeau d'échec de désinscription vit ici, au-dessus de la carte.
         if (registration.failure != null) ...<Widget>[
@@ -135,9 +125,11 @@ class NextRideCard extends ConsumerWidget {
                 ),
                 height: PdlMediaHeights.hero,
                 borderRadius: BorderRadius.zero,
-                // La boîte du jour posée sur l'image (BRANDING §7.8, ledger
-                // `MOB-115`), au jour de l'heure affichée. Muette : la ligne
-                // de départ dit le jour aux lecteurs d'écran.
+                // La boîte du jour posée sur l'image (BRANDING §7.1, §7.8,
+                // ledger `MOB-115`), au jour de l'heure affichée, et la
+                // pastille « Aujourd'hui » / « Demain » en haut à droite.
+                // Muettes : la ligne de départ dit le jour aux lecteurs
+                // d'écran.
                 overlay: instant == null
                     ? null
                     : ExcludeSemantics(
@@ -154,6 +146,15 @@ class NextRideCard extends ConsumerWidget {
                                 posed: true,
                               ),
                             ),
+                            if (relative != null)
+                              Positioned(
+                                top: PdlSpacing.card,
+                                right: PdlSpacing.card,
+                                child: PdlDayPill(
+                                  key: keys.home.nextRideDayPill,
+                                  label: relative,
+                                ),
+                              ),
                           ],
                         ),
                       ),
@@ -234,18 +235,6 @@ class NextRideCard extends ConsumerWidget {
         ),
     ],
   );
-
-  /// « dans 2 jours », « dans 3 h » — compté depuis le lecteur, sur l'instant
-  /// du contrat. `null` au-delà d'une semaine : `formatRelative` y rendrait la
-  /// date, que la boîte du jour de la carte affiche déjà.
-  static String? _relativeBadge(DateTime instant) {
-    final RelativeTime relative = RelativeTime.between(
-      AppFormatters.toDisplayTime(instant.toUtc()),
-      AppFormatters.displayNow(),
-    );
-    if (relative.unit == RelativeUnit.absolute) return null;
-    return AppFormatters.formatRelative(instant.toUtc());
-  }
 
   /// Date et heure de départ, groupe, lieu — les faits qui décident si l'on y
   /// va.

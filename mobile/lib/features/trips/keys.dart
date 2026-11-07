@@ -35,8 +35,12 @@ class TripDetailKeys {
   ValueKey<String> stageDeparture(String stageSlug) =>
       _TripKey('stageDeparture_$stageSlug');
 
-  /// « Départ 09:00 » dans la synthèse d'un voyage (ledger `MOB-114`).
-  final summaryDeparture = const _TripKey('summaryDeparture');
+  /// Le bloc de départ du détail d'un voyage, sous le titre (BRANDING §7.8,
+  /// ledger `BRAND-8`).
+  final departureBlock = const _TripKey('departureBlock');
+
+  /// La cellule « Durée » de la synthèse d'un voyage.
+  final summaryDuration = const _TripKey('summaryDuration');
 
   /// Le bloc de départ du détail d'une étape (ledger `MOB-114`).
   final stageDepartureBlock = const _TripKey('stageDepartureBlock');

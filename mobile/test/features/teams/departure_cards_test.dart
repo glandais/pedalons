@@ -264,7 +264,8 @@ void main() {
       expect(box.tone, isNotNull);
       expect(box.day, '17');
       expect(find.text('Départ 09:00'), findsOneWidget);
-      expect(find.text('ven. 17 → dim. 19 oct.'), findsOneWidget);
+      // 2036 n'est pas l'année en cours : la plage la dit (BRANDING §8.3).
+      expect(find.text('ven. 17 → dim. 19 oct. 2036'), findsOneWidget);
       expect(
         tester
             .widgetList<PdlStat>(find.byType(PdlStat))

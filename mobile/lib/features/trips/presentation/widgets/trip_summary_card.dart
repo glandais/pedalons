@@ -11,7 +11,6 @@ import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../providers/trip_detail_provider.dart';
-import '../../../../core/widgets/zone_mention_line.dart';
 import '../../../../keys.dart';
 
 /// Le bloc de synthèse d'un voyage : quatre chiffres et les participants.
@@ -68,37 +67,20 @@ class TripSummaryCard extends ConsumerWidget {
         : 'trips.summary.dayRange'.tr(
             namedArgs: <String, String>{'last': '${trip.stageCount}'},
           );
-    final String? duration = _duration();
     // Même règle que le bloc méta de la sortie : deux colonnes tant qu'une
     // colonne reste lisible, une seule au-delà — quatre cellules écrasées à
     // `textScaleFactor` élevé ne se lisent plus.
     return PdlMetaGrid(
       cells: <Widget>[
+        // La durée seule : les dates, l'heure de départ et la mention de
+        // fuseau sont montées dans le bloc de départ, sous le titre (BRANDING
+        // §7.8, ledger `BRAND-8`) — les redire ici, dans un autre format, les
+        // disait deux fois.
         PdlMetaCell(
-          label: 'trips.summary.dates'.tr(),
-          value: _dates(),
-          extra: <Widget>[
-            // L'heure de départ du voyage — celle de sa première étape —, que
-            // la mention de fuseau commente juste dessous (ledger `MOB-114`) :
-            // elle commentait jusque-là une heure que la carte n'affichait
-            // pas.
-            if (trip.startsAt case final DateTime start)
-              Padding(
-                key: keys.trip.summaryDeparture,
-                padding: const EdgeInsets.only(top: 2),
-                child: PdlDepartureLine(
-                  headline: 'rides.departureBlock.departs'.tr(
-                    namedArgs: <String, String>{
-                      'time': AppFormatters.formatTime(start),
-                    },
-                  ),
-                ),
-              ),
-            if (duration != null) Text(duration, style: t.xs),
-            // Le départ vu d'ailleurs : « heure de Tokyo (ven. 01:00 chez
-            // vous) » (docs/LEDGER_*.md API-60).
-            ?ZoneMentionLine.maybe(trip.dateTime, trip.timezone),
-          ],
+          key: keys.trip.summaryDuration,
+          label: 'trips.summary.duration'.tr(),
+          value: _duration() ?? _dash,
+          icon: PdlIcons.date,
         ),
         PdlMetaCell(
           label: 'trips.stages'.tr(),
@@ -128,42 +110,25 @@ class TripSummaryCard extends ConsumerWidget {
     );
   }
 
-  /// « 12 → 18 août 2026 », ou la seule date de départ quand le voyage tient
-  /// en un jour — `endDate` nul signifie exactement cela, par contrat. Le
-  /// départ se lit dans le fuseau de la première étape, la fin dans celui de
-  /// la dernière ([TripTiming.endsAt]) : la durée compte les jours vécus.
-  String _dates() {
-    final DateTime? start = trip.startsAt;
-    if (start == null) return _dash;
-    final DateTime? end = trip.endsAt;
-    if (end == null || _sameDay(start, end)) {
-      return AppFormatters.formatLongDate(start);
-    }
-    return 'trips.summary.dateRange'.tr(
-      namedArgs: <String, String>{
-        'start': AppFormatters.formatDayMonth(start),
-        'end': AppFormatters.formatLongDate(end),
-      },
-    );
-  }
-
+  /// « 7 jours », « 1 jour » — `endDate` nul signifie un voyage d'un jour, par
+  /// contrat. Le départ se lit dans le fuseau de la première étape, la fin
+  /// dans celui de la dernière ([TripTiming.endsAt]) : la durée compte les
+  /// jours vécus. `null` sans date de départ lisible.
   String? _duration() {
     final DateTime? start = trip.startsAt;
-    final DateTime? end = trip.endsAt;
-    if (start == null || end == null) return null;
+    if (start == null) return null;
+    final DateTime end = trip.endsAt ?? start;
+    // Comptés sur des dates UTC : un écart de minuits locaux perd une heure
+    // au passage à l'heure d'été, et `inDays` tomberait d'un jour.
     final int days =
-        DateTime(
+        DateTime.utc(
           end.year,
           end.month,
           end.day,
-        ).difference(DateTime(start.year, start.month, start.day)).inDays +
+        ).difference(DateTime.utc(start.year, start.month, start.day)).inDays +
         1;
-    if (days <= 1) return null;
-    return 'trips.summary.days'.plural(days);
+    return 'trips.summary.days'.plural(days < 1 ? 1 : days);
   }
-
-  bool _sameDay(DateTime a, DateTime b) =>
-      a.year == b.year && a.month == b.month && a.day == b.day;
 
   // ── La rangée participants ──────────────────────────────────────────────
   Widget _participants(BuildContext context) {

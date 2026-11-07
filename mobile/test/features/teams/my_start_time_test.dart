@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pedalons/api/generated/export.dart';
+import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
+import 'package:pedalons/core/theme/pdl_icons.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/core/utils/formatters.dart';
 import 'package:pedalons/core/widgets/zone_mention_line.dart';
@@ -285,6 +287,110 @@ void main() {
         ),
       );
       expect(inRow('21:30'), findsOneWidget);
+    });
+
+    testWidgets('BRAND-8 : l’heure sort des statistiques atténuées pour une '
+        'ligne de départ en 700', (WidgetTester tester) async {
+      await pump(
+        tester,
+        section(row(registered: true, registeredGroup: groupB)),
+      );
+
+      final Finder line = find.byKey(
+        keys.teamDashboard.myUpcomingDeparture('np-665'),
+      );
+      expect(line, findsOneWidget);
+      expect(
+        find.descendant(of: line, matching: find.byType(PdlDepartureLine)),
+        findsOneWidget,
+      );
+      final Text headline = tester.widget<Text>(
+        find.descendant(of: line, matching: find.text('Départ 22:30')),
+      );
+      expect(headline.style?.fontWeight, FontWeight.w700);
+      // La fin de la sortie, le lendemain à Paris.
+      expect(
+        find.descendant(
+          of: line,
+          matching: find.text('retour vers mer. 30 juil. 00:30'),
+        ),
+        findsOneWidget,
+      );
+      // Plus d'horloge atténuée parmi les faits.
+      expect(
+        find.descendant(
+          of: find.byKey(keys.teamDashboard.myUpcomingRow('np-665')),
+          matching: find.byIcon(PdlIcons.time),
+        ),
+        findsOneWidget, // celle de la ligne de départ
+      );
+      expect(inRow('Groupe B'), findsOneWidget);
+    });
+
+    testWidgets('BRAND-8 : un voyage montre son heure et sa plage au format '
+        'unique, dans une boîte turquoise', (WidgetTester tester) async {
+      // Du vendredi 17 octobre 2036, 09:00 à Paris, au dimanche 19.
+      const PublicationDtoTrip trip = PublicationDtoTrip(
+        team: TeamPublicationDto(
+          id: 't1',
+          slug: 'n-peloton',
+          name: 'N-Peloton',
+          visibility: 'PUBLIC',
+        ),
+        id: 'trip1',
+        slug: 'gtmc',
+        name: 'GTMC',
+        media: MediaDto(
+          markdown: '',
+          assets: AssetsDto(images: <AssetDto>[], attachments: <AssetDto>[]),
+        ),
+        dateTime: '2036-10-17T07:00:00Z',
+        timezone: 'Europe/Paris',
+        endDateTime: '2036-10-19T16:00:00Z',
+        endDate: '2036-10-19T07:00:00Z',
+        status: 'PUBLISHED',
+        finished: false,
+        visibility: 'PUBLIC',
+        participantCount: 3,
+        stageCount: 3,
+        stages: <TripStageDto>[],
+        participants: <PublicUserDto>[],
+        deleted: false,
+        registered: true,
+        tags: <TagDto>[],
+      );
+      await pump(
+        tester,
+        DashboardMyUpcoming(
+          list: const PublicationListResponse(
+            publications: <PublicationDto>[trip],
+            total: 1,
+            page: 0,
+            size: 3,
+          ),
+          onViewAll: () {},
+        ),
+      );
+
+      final Finder line = find.byKey(
+        keys.teamDashboard.myUpcomingDeparture('gtmc'),
+      );
+      expect(
+        find.descendant(of: line, matching: find.text('Départ 09:00')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: line,
+          matching: find.text('ven. 17 → dim. 19 oct. 2036'),
+        ),
+        findsOneWidget,
+      );
+      // Plus de « 17 octobre → 19 octobre » atténué.
+      expect(find.textContaining('octobre'), findsNothing);
+      final PdlDayBox box = tester.widget<PdlDayBox>(find.byType(PdlDayBox));
+      expect(box.day, '17');
+      expect(box.tone, isNotNull);
     });
   });
 }

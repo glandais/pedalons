@@ -111,6 +111,11 @@ class RideDetailKeys {
   ValueKey<String> groupWeatherLine(String groupId) =>
       _RideDetailKey('groupWeatherLine_$groupId');
 
+  /// La ligne de départ d'un groupe à heure propre, sous son nom (ledger
+  /// `BRAND-8`).
+  ValueKey<String> groupDeparture(String groupId) =>
+      _RideDetailKey('groupDeparture_$groupId');
+
   ValueKey<String> group(String groupId) => _RideDetailKey('group_$groupId');
 
   ValueKey<String> groupLeader(String groupId) =>
@@ -194,6 +199,9 @@ class RideGroupPageKeys {
   /// La carte encastrée en tête de l'onglet Météo, toujours en mode
   /// « Météo » (ledger `MOB-93`).
   final weatherTabMap = const _RideGroupKey('weatherTabMap');
+
+  /// Le titre « Météo au départ de … » de l'onglet Météo (ledger `BRAND-8`).
+  final departureWeatherTitle = const _RideGroupKey('departureWeatherTitle');
 
   /// La goutte de l'alerte pluie sur la carte, encastrée ou plein écran
   /// (ledgers `MOB-92`, `MOB-107`).

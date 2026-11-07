@@ -49,19 +49,25 @@ void main() {
     type: type,
     slug: slug,
     name: slug,
-    dateTime: '2026-08-01T12:00:00Z',
+    // Le vendredi 1er août 2036 (la base des fuseaux s'arrête en 2037).
+    dateTime: '2036-08-01T12:00:00Z',
     endDate: endDate,
     teamSlug: 'n-peloton',
     referencedDirectly: true,
     viaChildNames: const <String>[],
   );
 
-  testWidgets('un voyage rend sa plage de dates', (WidgetTester tester) async {
+  testWidgets('un voyage rend sa plage de dates, au format unique (BRAND-8)', (
+    WidgetTester tester,
+  ) async {
     await pump(tester, <RouteUsageDto>[
-      usage(type: 'TRIP', slug: 'alpes', endDate: '2026-08-04T12:00:00Z'),
+      usage(type: 'TRIP', slug: 'alpes', endDate: '2036-08-04T12:00:00Z'),
     ]);
 
-    expect(find.text('1 août → 4 août'), findsOneWidget);
+    // Jour de semaine abrégé, le mois une fois, l'année hors de l'année en
+    // cours — comme le web (`RouteUsages`).
+    expect(find.text('ven. 1 → lun. 4 août 2036'), findsOneWidget);
+    expect(find.text('1 août → 4 août'), findsNothing);
   });
 
   testWidgets('une sortie, ou un voyage sans étape, garde sa date seule', (

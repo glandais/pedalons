@@ -99,17 +99,9 @@ class RideGroupCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           _titleRow(context, c, t),
+          ?_departure(c, t),
           const SizedBox(height: PdlSpacing.cardTight),
           _statsRow(),
-          // L'heure propre du groupe est un rendez-vous : lue d'un autre
-          // décalage, sa mention « heure de Tokyo (…) » en seconde ligne,
-          // comme l'icône à info-bulle du web (docs/LEDGER_*.md API-60).
-          if (groupLeavesAtOwnTime(group.startAt, rideDateTime))
-            if (ZoneMentionLine.maybe(group.startAt, timezone)
-                case final Widget mention) ...<Widget>[
-              const SizedBox(height: 4),
-              mention,
-            ],
           if (RideGroupWeatherLine.shows(weatherLeg)) ...<Widget>[
             const SizedBox(height: PdlSpacing.cardTight),
             RideGroupWeatherLine(
@@ -199,18 +191,79 @@ class RideGroupCard extends StatelessWidget {
     ),
   };
 
+  // ──────────────────────────────────────────────────── ligne de départ
+  /// L'heure propre du groupe, en bandeau sous son nom (BRANDING §7.8, ledger
+  /// `BRAND-8`, comme la carte de groupe du web) : fond indigo très doux
+  /// ([PdlColors.primaryFaint]), rayon 8 ; « Départ 22:30 » en 16/700 à
+  /// l'horloge indigo, le jour quand il n'est pas celui de la sortie
+  /// (« mer. 30 juil. »), puis en atténué « après la sortie de 21:30 » /
+  /// « avant la sortie de 21:30 ». Rien pour un groupe qui part avec la
+  /// sortie : le bloc de départ du détail donne déjà cette heure.
+  ///
+  /// L'heure est un rendez-vous : lue d'un autre décalage, sa mention
+  /// « heure de Tokyo (…) » suit (docs/LEDGER_*.md API-60).
+  Widget? _departure(PdlColors c, PdlTypography t) {
+    if (!groupLeavesAtOwnTime(group.startAt, rideDateTime)) return null;
+    final DateTime? instant = DateTime.tryParse(group.startAt);
+    final DateTime? rideInstant = DateTime.tryParse(rideDateTime);
+    if (instant == null || rideInstant == null) return null;
+    final DateTime wall = AppFormatters.toZoneTime(instant, timezone);
+    final DateTime rideWall = AppFormatters.toZoneTime(rideInstant, timezone);
+    final bool sameDay =
+        wall.year == rideWall.year &&
+        wall.month == rideWall.month &&
+        wall.day == rideWall.day;
+    final String headline = 'rides.departureBlock.departs'.tr(
+      namedArgs: <String, String>{'time': AppFormatters.formatTime(wall)},
+    );
+    final String? day = sameDay
+        ? null
+        : AppFormatters.formatDepartureDate(instant, timezone);
+    final String relation = 'rides.departureBlock.relativeToRide'.tr(
+      namedArgs: <String, String>{
+        'relation': groupStartRelation(
+          group.startAt,
+          rideDateTime,
+        ).labelKey.tr(),
+        'rideTime': formatGroupStart(rideDateTime, timezone),
+      },
+    );
+
+    return Padding(
+      key: keys.ride.groupDeparture(group.id),
+      padding: const EdgeInsets.only(top: PdlSpacing.chipGap),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: c.primaryFaint,
+          borderRadius: PdlRadii.mdAll,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            PdlDepartureLine(
+              headline: headline,
+              trailing: day,
+              semanticLabel: <String>[headline, ?day, relation].join(', '),
+            ),
+            ExcludeSemantics(child: Text(relation, style: t.sub)),
+            ?ZoneMentionLine.maybe(group.startAt, timezone),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ───────────────────────────────────────────────────────────── ligne 2
-  /// Heure · vitesse · **distance** · **D+**.
+  /// Vitesse · **distance** · **D+**. L'heure propre du groupe est sa ligne
+  /// de départ ([_departure]).
   ///
   /// `distance` et `elevationGain` sont portés par `RideGroupDto` depuis la
   /// 1.3.0 : cette ligne ne coûte plus un `getRoute` par groupe.
   Widget _statsRow() {
     final List<PdlStat> stats = <PdlStat>[
-      if (groupLeavesAtOwnTime(group.startAt, rideDateTime))
-        PdlStat(
-          value: formatGroupStart(group.startAt, timezone),
-          icon: PdlIcons.time,
-        ),
       if (group.averageSpeed != null)
         PdlStat(
           value: AppFormatters.formatSpeed(group.averageSpeed!, units),

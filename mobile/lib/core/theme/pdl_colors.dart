@@ -44,6 +44,7 @@ class PdlColors extends ThemeExtension<PdlColors> {
     required this.primaryHover,
     required this.primarySoft,
     required this.primaryOnSoft,
+    required this.primaryFaint,
     required this.onPrimary,
     required this.success,
     required this.successSoft,
@@ -130,6 +131,12 @@ class PdlColors extends ThemeExtension<PdlColors> {
   final Color primaryHover;
   final Color primarySoft;
   final Color primaryOnSoft;
+
+  /// Fond indigo très doux d'un bandeau qui porte du texte atténué — le
+  /// départ d'un groupe à heure propre (ledger `BRAND-8`) : indigo-0
+  /// (`#edf2ff`) en clair, la surface alternée en sombre, où un indigo doux
+  /// ferait tomber le texte atténué sous 4,5:1.
+  final Color primaryFaint;
   final Color onPrimary;
   final Color success;
   final Color successSoft;
@@ -277,6 +284,7 @@ class PdlColors extends ThemeExtension<PdlColors> {
     primaryHover: Color(0xFF3B5BDB),
     primarySoft: Color(0xFFDBE4FF),
     primaryOnSoft: Color(0xFF364FC7),
+    primaryFaint: Color(0xFFEDF2FF),
     onPrimary: Color(0xFFFFFFFF),
     success: Color(0xFF40C057),
     successSoft: Color(0xFFD3F9D8),
@@ -345,6 +353,7 @@ class PdlColors extends ThemeExtension<PdlColors> {
     primaryHover: Color(0xFF364FC7),
     primarySoft: Color(0xFF1B2864),
     primaryOnSoft: Color(0xFFEDF2FF),
+    primaryFaint: Color(0xFF2E2E2E),
     onPrimary: Color(0xFFFFFFFF),
     success: Color(0xFF2F9E44),
     successSoft: Color(0xFF16451F),
@@ -417,6 +426,7 @@ class PdlColors extends ThemeExtension<PdlColors> {
     Color? primaryHover,
     Color? primarySoft,
     Color? primaryOnSoft,
+    Color? primaryFaint,
     Color? onPrimary,
     Color? success,
     Color? successSoft,
@@ -484,6 +494,7 @@ class PdlColors extends ThemeExtension<PdlColors> {
       primaryHover: primaryHover ?? this.primaryHover,
       primarySoft: primarySoft ?? this.primarySoft,
       primaryOnSoft: primaryOnSoft ?? this.primaryOnSoft,
+      primaryFaint: primaryFaint ?? this.primaryFaint,
       onPrimary: onPrimary ?? this.onPrimary,
       success: success ?? this.success,
       successSoft: successSoft ?? this.successSoft,
@@ -558,6 +569,7 @@ class PdlColors extends ThemeExtension<PdlColors> {
       primaryHover: c(primaryHover, other.primaryHover),
       primarySoft: c(primarySoft, other.primarySoft),
       primaryOnSoft: c(primaryOnSoft, other.primaryOnSoft),
+      primaryFaint: c(primaryFaint, other.primaryFaint),
       onPrimary: c(onPrimary, other.onPrimary),
       success: c(success, other.success),
       successSoft: c(successSoft, other.successSoft),
