@@ -14,7 +14,7 @@ import 'package:pedalons/keys.dart';
 import '../../support/localization.dart';
 import '../rides/ride_fixtures.dart';
 
-/// `docs/LEDGER_*.md MOB-110` : « Ma prochaine sortie » donne la date **et**
+/// `docs/LEDGER_*.md MOB-111` : « Ma prochaine sortie » donne la date **et**
 /// l'heure qui concernent la personne, le groupe ne dit son écart que s'il en a
 /// un, et le badge relatif ne se confond plus avec « Inscrit ».
 Future<void> _pump(

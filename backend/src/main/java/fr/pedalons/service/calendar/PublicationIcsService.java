@@ -5,6 +5,7 @@ import fr.pedalons.dto.calendar.response.CalendarEventDto;
 import fr.pedalons.dto.calendar.response.CalendarEventType;
 import fr.pedalons.dto.publications.response.TeamPublicationDto;
 import fr.pedalons.dto.rides.response.RideDto;
+import fr.pedalons.dto.rides.response.RideGroupDto;
 import fr.pedalons.dto.trips.response.TripDto;
 import fr.pedalons.enums.ActionType;
 import fr.pedalons.enums.EntityType;
@@ -39,20 +40,28 @@ public class PublicationIcsService {
   @Inject IcsGenerationService icsGenerationService;
   @Inject PublicationEndCalculator publicationEndCalculator;
 
+  /**
+   * The ride as one event. A registered caller's starts when their group leaves, as in the
+   * subscription feeds (docs/LEDGER_*.md API-157); anyone else's at the ride's start.
+   */
   @CheckAccess(entityType = EntityType.RIDE, action = ActionType.READ)
   public String rideIcs(String teamSlug, String rideSlug) {
     RideDto ride = rideService.getDto(teamSlug, rideSlug);
+    RideGroupDto joined = ride.getRegisteredGroup();
+    Instant start = joined != null ? joined.startAt() : ride.getDateTime();
+    Instant end = ride.getEndDateTime();
     CalendarEventDto event =
         event(
             ride.getTeam(),
             ride.getId(),
             ride.getName(),
-            ride.getDateTime(),
-            ride.getEndDateTime(),
+            start,
+            end != null ? CalendarService.endAfter(start, end) : null,
             false,
             CalendarEventType.RIDE,
             ride.getSlug(),
             null,
+            ride.getStartPlace() != null ? ride.getStartPlace().name() : null,
             ride.getStatus(),
             ride.getTimezone());
     // A single publication's calendar reads in its own zone (docs/LEDGER_*.md API-60).
@@ -82,6 +91,7 @@ public class PublicationIcsService {
                         CalendarEventType.TRIP_STAGE,
                         stage.slug(),
                         trip.getSlug(),
+                        stage.startPlace() != null ? stage.startPlace().name() : null,
                         trip.getStatus(),
                         stage.timezone()))
             .toList();
@@ -101,6 +111,7 @@ public class PublicationIcsService {
       CalendarEventType type,
       String entitySlug,
       @Nullable String tripSlug,
+      @Nullable String startPlaceName,
       Status status,
       String timezone) {
     return new CalendarEventDto(
@@ -114,7 +125,7 @@ public class PublicationIcsService {
         team.name(),
         entitySlug,
         tripSlug,
-        null,
+        startPlaceName,
         null,
         null,
         null,

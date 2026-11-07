@@ -22,6 +22,7 @@ import fr.pedalons.repository.moderation.ContentReportRepository;
 import fr.pedalons.repository.moderation.UserBlockRepository;
 import fr.pedalons.repository.post.PostRepository;
 import fr.pedalons.repository.ride.RideParticipationRepository;
+import fr.pedalons.repository.ride.RideParticipationRepository.RegisteredStart;
 import fr.pedalons.repository.ride.RideRepository;
 import fr.pedalons.repository.team.TeamInvitationRepository;
 import fr.pedalons.repository.team.UserTeamRepository;
@@ -47,8 +48,10 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -99,7 +102,64 @@ public class NotificationRecipientResolver {
       @Nullable String subjectTimezone,
       @Nullable String excerpt,
       List<NotificationChange> changes,
-      List<User> recipients) {
+      List<User> recipients,
+      /**
+       * Recipient id → the start that concerns them, where it is not {@code subjectDateTime}: a
+       * registered rider whose group leaves at its own time (docs/LEDGER_*.md NOTIF-13). Stored
+       * on their inbox row; everyone else reads the event's.
+       */
+      Map<Long, Instant> recipientDateTimes,
+      /**
+       * Whether the team's webhook hears of it, for a type relayed there at all. False for a
+       * change of a group's own time alone: the ride the team channel announced has not moved.
+       */
+      boolean relayedToTeam) {
+
+    Resolution(
+        Team team,
+        NotificationSubjectType subjectType,
+        String subjectSlug,
+        String subjectName,
+        @Nullable Instant subjectDateTime,
+        @Nullable String subjectTimezone,
+        @Nullable String excerpt,
+        List<NotificationChange> changes,
+        List<User> recipients) {
+      this(
+          team,
+          subjectType,
+          subjectSlug,
+          subjectName,
+          subjectDateTime,
+          subjectTimezone,
+          excerpt,
+          changes,
+          recipients,
+          Map.of(),
+          true);
+    }
+
+    /** The same, about another start: the one every recipient shares, a group's. */
+    Resolution withSubjectDateTime(Instant dateTime) {
+      return new Resolution(
+          team,
+          subjectType,
+          subjectSlug,
+          subjectName,
+          dateTime,
+          subjectTimezone,
+          excerpt,
+          changes,
+          recipients,
+          recipientDateTimes,
+          relayedToTeam);
+    }
+
+    /** The start each recipient reads: their own if they have one, else the subject's. */
+    public @Nullable Instant dateTimeFor(User recipient) {
+      Instant own = recipientDateTimes.get(recipient.getId());
+      return own != null ? own : subjectDateTime;
+    }
 
     static Resolution of(
         TeamEntity subject,
@@ -171,48 +231,109 @@ public class NotificationRecipientResolver {
         subject, type, null, userTeamRepository.findActiveMemberUsers(subject.getTeam().getId()));
   }
 
+  /**
+   * The ride's registered riders, each told the start of their own group: the reminder, the
+   * cancellation (docs/LEDGER_*.md NOTIF-13). The event keeps the ride's date — the team's webhook
+   * reads it, and so does a rider whose group leaves with the ride.
+   */
   private Resolution toRegistered(Ride ride) {
-    return Resolution.of(
-        ride,
-        NotificationSubjectType.RIDE,
-        null,
-        rideParticipationRepository.findRegisteredMemberUsers(ride.getId()));
+    return toRegistered(ride, rideParticipationRepository.findRegisteredMemberStarts(ride.getId()));
+  }
+
+  private static Resolution toRegistered(Ride ride, List<RegisteredStart> registered) {
+    Resolution base =
+        Resolution.of(
+            ride,
+            NotificationSubjectType.RIDE,
+            null,
+            registered.stream().map(RegisteredStart::user).toList());
+    return new Resolution(
+        base.team(),
+        base.subjectType(),
+        base.subjectSlug(),
+        base.subjectName(),
+        base.subjectDateTime(),
+        base.subjectTimezone(),
+        base.excerpt(),
+        base.changes(),
+        base.recipients(),
+        ownStarts(ride, registered),
+        true);
+  }
+
+  /** Rider id → their group's start, for those whose group does not leave with the ride. */
+  private static Map<Long, Instant> ownStarts(Ride ride, List<RegisteredStart> registered) {
+    Map<Long, Instant> starts = new HashMap<>();
+    for (RegisteredStart rider : registered) {
+      if (!rider.startAt().equals(ride.getDateTime())) {
+        starts.put(rider.user().getId(), rider.startAt());
+      }
+    }
+    return starts;
   }
 
   /**
    * The net effect of the edits since the event was queued. None — an edit undone, or a change of
    * name only — notifies nobody.
+   *
+   * <p>A new meeting point concerns every registered rider; a new time only those whose own group
+   * leaves at another time than before — the ride's date moved, a group with its own time stays
+   * put, and a group's time moved alone is news to its riders only (docs/LEDGER_*.md NOTIF-13).
+   * Each is told the new start of their group. An event queued without the groups' previous starts
+   * (an older release) compares the ride's date and tells every registered rider, as it used to.
+   *
+   * <p>The change list is the event's, shared by its recipients: when the meeting point and one
+   * group's time both moved, the riders of the other groups read both. The team's webhook hears of
+   * a change of the ride itself only — its date or its meeting point.
    */
   private Optional<Resolution> resolveUpdate(Ride ride, RideUpdated event) {
+    boolean rideMoved = !ride.getDateTime().equals(event.previousDateTime());
+    Long startPlaceId = ride.getStart() != null ? ride.getStart().getId() : null;
+    boolean placeMoved = !Objects.equals(startPlaceId, event.previousStartPlaceId());
+    List<RegisteredStart> registered =
+        rideParticipationRepository.findRegisteredMemberStarts(ride.getId());
+    Map<Long, Instant> previousGroupStarts = event.previousGroupStarts();
+    List<RegisteredStart> retimed =
+        previousGroupStarts == null
+            ? (rideMoved ? registered : List.of())
+            : registered.stream()
+                .filter(
+                    rider -> {
+                      // A group created since was joined at its current time: nothing moved.
+                      Instant previous = previousGroupStarts.get(rider.groupId());
+                      return previous != null && !previous.equals(rider.startAt());
+                    })
+                .toList();
     List<NotificationChange> changes = new ArrayList<>();
-    if (!ride.getDateTime().equals(event.previousDateTime())) {
+    if (rideMoved || !retimed.isEmpty()) {
       changes.add(NotificationChange.DATE_TIME);
     }
-    Long startPlaceId = ride.getStart() != null ? ride.getStart().getId() : null;
-    if (!Objects.equals(startPlaceId, event.previousStartPlaceId())) {
+    if (placeMoved) {
       changes.add(NotificationChange.START_PLACE);
     }
     if (changes.isEmpty()) {
       return Optional.empty();
     }
-    Resolution registered = toRegistered(ride);
+    Resolution base = toRegistered(ride, placeMoved ? registered : retimed);
     return Optional.of(
         new Resolution(
-            registered.team(),
-            registered.subjectType(),
-            registered.subjectSlug(),
-            registered.subjectName(),
-            registered.subjectDateTime(),
-            registered.subjectTimezone(),
+            base.team(),
+            base.subjectType(),
+            base.subjectSlug(),
+            base.subjectName(),
+            base.subjectDateTime(),
+            base.subjectTimezone(),
             null,
             List.copyOf(changes),
-            registered.recipients()));
+            base.recipients(),
+            base.recipientDateTimes(),
+            rideMoved || placeMoved));
   }
 
   /**
    * The riders the removed group had, still in the team. One who registered again to another group
    * of the ride since has already found out, and is left alone. The group's name travels as the
-   * excerpt — the group itself is gone.
+   * excerpt and its start as the date — the group itself is gone.
    */
   private Resolution resolveGroupRemoved(Ride ride, RideGroupRemoved event) {
     Set<Long> registeredAgain =
@@ -226,17 +347,20 @@ public class NotificationRecipientResolver {
             .filter(Objects::nonNull)
             .filter(user -> !user.isDeleted())
             .toList();
+    // The time they had registered for: the group's, the ride's for an event without it.
+    Instant groupStart = event.groupStartAt();
     return Resolution.of(
-        ride,
-        NotificationSubjectType.RIDE,
-        excerpt(event.groupName()),
-        stillMembers(removed, ride.getTeam()));
+            ride,
+            NotificationSubjectType.RIDE,
+            excerpt(event.groupName()),
+            stillMembers(removed, ride.getTeam()))
+        .withSubjectDateTime(groupStart != null ? groupStart : ride.getDateTime());
   }
 
   /**
    * The ride's creator and the leader of the group joined — the two people for whom a new rider
    * changes something. Registrations are hard-deleted: a rider who left before this tick is not
-   * found. The group's name travels as the excerpt.
+   * found. The group's name travels as the excerpt, its start as the date.
    */
   private Optional<Resolution> resolveJoin(@Nullable RideParticipation participation, Instant now) {
     if (participation == null) {
@@ -251,11 +375,13 @@ public class NotificationRecipientResolver {
               if (group.getLeader() != null) {
                 organisers.add(group.getLeader());
               }
+              // Who organises that group hears when it leaves (docs/LEDGER_*.md NOTIF-13).
               return Resolution.of(
-                  ride,
-                  NotificationSubjectType.RIDE,
-                  excerpt(group.getName()),
-                  stillMembers(organisers, ride.getTeam()));
+                      ride,
+                      NotificationSubjectType.RIDE,
+                      excerpt(group.getName()),
+                      stillMembers(organisers, ride.getTeam()))
+                  .withSubjectDateTime(group.getStartAt());
             });
   }
 

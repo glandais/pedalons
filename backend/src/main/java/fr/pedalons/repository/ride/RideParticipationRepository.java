@@ -12,6 +12,7 @@ import jakarta.persistence.TypedQuery;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -212,6 +213,36 @@ public class RideParticipationRepository implements BaseRepository<RideParticipa
             User.class)
         .setParameter("rideId", rideId)
         .getResultList();
+  }
+
+  /** A registered rider of a ride, with the group they joined and when it leaves. */
+  public record RegisteredStart(User user, Long groupId, Instant startAt) {}
+
+  /**
+   * {@link #findRegisteredMemberUsers}, each with the group joined and its start — in a single
+   * query, whatever the number of riders: what a notification needs to give each one the time of
+   * their own group (docs/LEDGER_*.md NOTIF-13). One row per user: joinGroup forbids a second group
+   * on the same ride, and a stale second row must not decide arbitrarily, so the first seen stays.
+   */
+  public List<RegisteredStart> findRegisteredMemberStarts(Long rideId) {
+    List<Object[]> rows =
+        getEntityManager()
+            .createQuery(
+                "select u, g.id, g.startAt from RideParticipation p join p.user u"
+                    + " join p.rideGroup g"
+                    + " where g.ride.id = :rideId and u.deleted = false"
+                    + " and exists (select 1 from UserTeam ut"
+                    + " where ut.user = u and ut.team = g.ride.team)"
+                    + " order by g.sortOrder, g.id, p.id",
+                Object[].class)
+            .setParameter("rideId", rideId)
+            .getResultList();
+    Map<Long, RegisteredStart> byUser = new LinkedHashMap<>();
+    for (Object[] row : rows) {
+      User user = (User) row[0];
+      byUser.putIfAbsent(user.getId(), new RegisteredStart(user, (Long) row[1], (Instant) row[2]));
+    }
+    return List.copyOf(byUser.values());
   }
 
   /**

@@ -3,7 +3,7 @@ import 'package:pedalons/features/rides/domain/group_start.dart';
 
 import 'ride_fixtures.dart';
 
-/// `docs/LEDGER_*.md MOB-111` : l'heure qui concerne la personne a une source
+/// `docs/LEDGER_*.md MOB-112` : l'heure qui concerne la personne a une source
 /// unique — son groupe s'il est connu, sinon la sortie.
 void main() {
   const String rideAt = '2026-10-11T06:00:00Z';

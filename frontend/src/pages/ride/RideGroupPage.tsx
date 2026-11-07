@@ -423,7 +423,7 @@ export function RideGroupPage() {
 /**
  * « Sortie du samedi · samedi 10 octobre 2026, départ 08:30 », in the ride's zone, with its zone
  * mention. The departure is the group's, which may differ from the ride's (docs/LEDGER_*.md
- * WEB-134): the same as the « Départ » tile of `GroupStats`.
+ * WEB-135): the same as the « Départ » tile of `GroupStats`.
  */
 function RideHeaderLine({ ride, group }: { ride: RideDto; group: RideGroupDto }) {
   const { t } = useTranslation()

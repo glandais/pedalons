@@ -344,7 +344,9 @@ public class RideResource {
       summary = "Download ride as a calendar file",
       description =
           "One VEVENT for the ride, to add it on its own to a calendar. Readable by whoever may"
-              + " read the ride; no calendar token.")
+              + " read the ride; no calendar token. It starts when the caller's group leaves when"
+              + " they are registered, at the ride's start otherwise; LOCATION is the start"
+              + " place's name, when the ride has one.")
   @APIResponses({
     @APIResponse(
         responseCode = "200",
@@ -361,8 +363,10 @@ public class RideResource {
       @Parameter(description = "Team URL slug") @PathParam("teamSlug") String teamSlug,
       @Parameter(description = "Ride URL slug") @PathParam("rideSlug") String slug) {
     String ics = publicationIcsService.rideIcs(teamSlug, slug);
+    // The start is the caller's group's when they are registered: not a shared-cache answer.
     return Response.ok(ics)
         .type("text/calendar; charset=utf-8")
+        .header(HttpHeaders.CACHE_CONTROL, "private, no-store")
         .header("Content-Disposition", "attachment; filename=\"" + slug + ".ics\"")
         .build();
   }

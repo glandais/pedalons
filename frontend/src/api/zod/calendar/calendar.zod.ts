@@ -17,12 +17,16 @@ export const GetEventsResponse = zod
           .object({
             id: zod.string().describe('Event ID (TSID)'),
             title: zod.string().describe('Event title'),
-            start: zod.iso.datetime({ offset: true }).describe('Event start date/time'),
+            start: zod.iso
+              .datetime({ offset: true })
+              .describe(
+                "Event start date/time. For a ride the caller is registered to, the start of their group (RideGroupDto.startAt), which may differ from the ride's own when the group leaves at its own time; the ride's start (RideDto.dateTime) otherwise. Same value as DTSTART in the iCalendar feeds."
+              ),
             end: zod.iso
               .datetime({ offset: true })
               .optional()
               .describe(
-                'Event end date/time: the end the server computes for a ride (its latest group at its pace, 3 hours when nothing tells) or for a trip stage (its route at its pace, likewise) — the same as RideDto.endDateTime. On an all-day stage it is still that instant: the stage occupies every day up to it.'
+                'Event end date/time: the end the server computes for a ride (its latest group at its pace, 3 hours when nothing tells) or for a trip stage (its route at its pace, likewise) — the same as RideDto.endDateTime. On an all-day stage it is still that instant: the stage occupies every day up to it. Always after start: 3 hours after it when the computed end is not.'
               ),
             allDay: zod.boolean().describe('Is all-day event'),
             type: zod.enum(['RIDE', 'TRIP_STAGE']).describe('Event type'),
@@ -34,7 +38,7 @@ export const GetEventsResponse = zod
               .string()
               .optional()
               .describe(
-                'Name of the meeting place, null when the ride or stage has no start place'
+                'Name of the meeting place, null when the ride or stage has no start place. The LOCATION of the iCalendar feeds.'
               ),
             distance: zod
               .number()
@@ -150,12 +154,16 @@ export const GetTeamEventsResponse = zod
           .object({
             id: zod.string().describe('Event ID (TSID)'),
             title: zod.string().describe('Event title'),
-            start: zod.iso.datetime({ offset: true }).describe('Event start date/time'),
+            start: zod.iso
+              .datetime({ offset: true })
+              .describe(
+                "Event start date/time. For a ride the caller is registered to, the start of their group (RideGroupDto.startAt), which may differ from the ride's own when the group leaves at its own time; the ride's start (RideDto.dateTime) otherwise. Same value as DTSTART in the iCalendar feeds."
+              ),
             end: zod.iso
               .datetime({ offset: true })
               .optional()
               .describe(
-                'Event end date/time: the end the server computes for a ride (its latest group at its pace, 3 hours when nothing tells) or for a trip stage (its route at its pace, likewise) — the same as RideDto.endDateTime. On an all-day stage it is still that instant: the stage occupies every day up to it.'
+                'Event end date/time: the end the server computes for a ride (its latest group at its pace, 3 hours when nothing tells) or for a trip stage (its route at its pace, likewise) — the same as RideDto.endDateTime. On an all-day stage it is still that instant: the stage occupies every day up to it. Always after start: 3 hours after it when the computed end is not.'
               ),
             allDay: zod.boolean().describe('Is all-day event'),
             type: zod.enum(['RIDE', 'TRIP_STAGE']).describe('Event type'),
@@ -167,7 +175,7 @@ export const GetTeamEventsResponse = zod
               .string()
               .optional()
               .describe(
-                'Name of the meeting place, null when the ride or stage has no start place'
+                'Name of the meeting place, null when the ride or stage has no start place. The LOCATION of the iCalendar feeds.'
               ),
             distance: zod
               .number()

@@ -141,7 +141,8 @@ public class NotificationDeliveryService {
         event.getSubjectType(),
         event.getSubjectSlug(),
         event.getSubjectName(),
-        event.getSubjectDateTime(),
+        // The recipient's own start, their group's (docs/LEDGER_*.md NOTIF-13).
+        notification.effectiveSubjectDateTime(),
         event.getSubjectTimezone(),
         event.getExcerpt(),
         event.getBaseUrl(),

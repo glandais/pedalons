@@ -232,7 +232,7 @@ describe('RideGroupPage (WEB-77)', () => {
     expect(plain(document.body.textContent)).toContain('après la sortie')
   })
 
-  it('gives the group’s departure in the header line, not the ride’s (WEB-134)', () => {
+  it('gives the group’s departure in the header line, not the ride’s (WEB-135)', () => {
     state.ride = ride({ groups: [group({ startAt: '2026-10-08T07:10:00Z' }), cool()] })
     renderPage()
     const text = plain(document.body.textContent)

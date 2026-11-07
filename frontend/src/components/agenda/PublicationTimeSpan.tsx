@@ -15,7 +15,7 @@ interface PublicationTimeSpanProps {
 }
 
 /**
- * When a ride or a trip starts and ends, from `dateTime` — the registered group's departure for a ride (WEB-135) — and the stored
+ * When a ride or a trip starts and ends, from `dateTime` — the registered group's departure for a ride (WEB-136) — and the stored
  * `endDateTime` (API-85). A
  * ride reads « 08:30 → retour vers 14:10 » — « vers », the end being an estimate from its
  * groups' distance and pace; a trip, which spans days, « ven. 16 → dim. 18 oct. ». A ride back

@@ -35,7 +35,7 @@ export function UpcomingRideCard({ ride, canManage }: UpcomingRideCardProps) {
   const departure = useRendezvousFormat(ride.timezone)
   const ridePath = publicationPath(ride)
   const groups = [...ride.groupSummaries].sort((a, b) => a.sortOrder - b.sortOrder)
-  // The departure that concerns the reader (docs/LEDGER_*.md WEB-135): their group's when they
+  // The departure that concerns the reader (docs/LEDGER_*.md WEB-136): their group's when they
   // joined one, else the ride's. The group lines are read against it.
   const start = startFor(ride)
 
@@ -137,7 +137,7 @@ export function UpcomingRideCard({ ride, canManage }: UpcomingRideCardProps) {
 
 /**
  * One group: a check on the reader's own, name, pace, its departure when it differs from the one
- * in the card's header (WEB-135; the header carries the zone mention), and how full it is —
+ * in the card's header (WEB-136; the header carries the zone mention), and how full it is —
  * « Complet », « 11 / 16 », or a count when uncapped.
  */
 function GroupFill({

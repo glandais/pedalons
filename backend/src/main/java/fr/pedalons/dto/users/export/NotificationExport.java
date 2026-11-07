@@ -48,7 +48,7 @@ public final class NotificationExport {
           e.getTeamName(),
           e.getSubjectType() == null ? null : e.getSubjectType().name(),
           e.getSubjectName(),
-          e.getSubjectDateTime(),
+          n.effectiveSubjectDateTime(),
           e.getSubjectTimezone(),
           e.getActorName(),
           e.getExcerpt(),

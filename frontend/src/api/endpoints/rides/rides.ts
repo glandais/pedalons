@@ -630,7 +630,7 @@ export const useLeaveGroup = <TError = ErrorType<ErrorResponse | void>, TContext
   return useMutation(getLeaveGroupMutationOptions(options), queryClient)
 }
 /**
- * One VEVENT for the ride, to add it on its own to a calendar. Readable by whoever may read the ride; no calendar token.
+ * One VEVENT for the ride, to add it on its own to a calendar. Readable by whoever may read the ride; no calendar token. It starts when the caller's group leaves when they are registered, at the ride's start otherwise; LOCATION is the start place's name, when the ride has one.
  * @summary Download ride as a calendar file
  */
 export const downloadRideIcs = (

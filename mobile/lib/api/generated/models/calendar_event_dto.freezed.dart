@@ -18,7 +18,7 @@ mixin _$CalendarEventDto {
 
 /// Event ID (TSID)
  String get id;/// Event title
- String get title;/// Event start date/time
+ String get title;/// Event start date/time. For a ride the caller is registered to, the start of their group (RideGroupDto.startAt), which may differ from the ride's own when the group leaves at its own time; the ride's start (RideDto.dateTime) otherwise. Same value as DTSTART in the iCalendar feeds.
  String get start;/// Is all-day event
  bool get allDay;/// Event type
  String get type;/// Team slug
@@ -28,9 +28,9 @@ mixin _$CalendarEventDto {
  bool get registered;/// Publication status of the ride or stage
  String get status;/// IANA zone of the ride or stage, as RideDto.timezone / TripStageDto.timezone: start and end are rendezvous in it. The calendar grid itself stays in the reader's zone.
  String get timezone;/// Whether the ride or stage is over, computed by the server when the response is built: its end (or its start, when it has no end) has passed. Independent of status.
- bool get finished;/// Event end date/time: the end the server computes for a ride (its latest group at its pace, 3 hours when nothing tells) or for a trip stage (its route at its pace, likewise) — the same as RideDto.endDateTime. On an all-day stage it is still that instant: the stage occupies every day up to it.
+ bool get finished;/// Event end date/time: the end the server computes for a ride (its latest group at its pace, 3 hours when nothing tells) or for a trip stage (its route at its pace, likewise) — the same as RideDto.endDateTime. On an all-day stage it is still that instant: the stage occupies every day up to it. Always after start: 3 hours after it when the computed end is not.
  String? get end;/// Parent trip slug (for stages only)
- String? get tripSlug;/// Name of the meeting place, null when the ride or stage has no start place
+ String? get tripSlug;/// Name of the meeting place, null when the ride or stage has no start place. The LOCATION of the iCalendar feeds.
  String? get startPlaceName;/// Distance in meters of the attached route, null when there is no route
  double? get distance;/// Total elevation gain in meters of the attached route, null when there is no route
  double? get elevationGain;/// Thumbnail image URL template (contains a {size} placeholder), light variant preferred. Falls back to the route's thumbnail when the ride or stage has none of its own. For a client that renders one picture and does not follow a colour scheme; prefer thumbnailLightUrl/thumbnailDarkUrl otherwise. Opaque URL: may carry a query string; substitute {size} only.
@@ -263,7 +263,7 @@ class _CalendarEventDto implements CalendarEventDto {
 @override final  String id;
 /// Event title
 @override final  String title;
-/// Event start date/time
+/// Event start date/time. For a ride the caller is registered to, the start of their group (RideGroupDto.startAt), which may differ from the ride's own when the group leaves at its own time; the ride's start (RideDto.dateTime) otherwise. Same value as DTSTART in the iCalendar feeds.
 @override final  String start;
 /// Is all-day event
 @override final  bool allDay;
@@ -283,11 +283,11 @@ class _CalendarEventDto implements CalendarEventDto {
 @override final  String timezone;
 /// Whether the ride or stage is over, computed by the server when the response is built: its end (or its start, when it has no end) has passed. Independent of status.
 @override final  bool finished;
-/// Event end date/time: the end the server computes for a ride (its latest group at its pace, 3 hours when nothing tells) or for a trip stage (its route at its pace, likewise) — the same as RideDto.endDateTime. On an all-day stage it is still that instant: the stage occupies every day up to it.
+/// Event end date/time: the end the server computes for a ride (its latest group at its pace, 3 hours when nothing tells) or for a trip stage (its route at its pace, likewise) — the same as RideDto.endDateTime. On an all-day stage it is still that instant: the stage occupies every day up to it. Always after start: 3 hours after it when the computed end is not.
 @override final  String? end;
 /// Parent trip slug (for stages only)
 @override final  String? tripSlug;
-/// Name of the meeting place, null when the ride or stage has no start place
+/// Name of the meeting place, null when the ride or stage has no start place. The LOCATION of the iCalendar feeds.
 @override final  String? startPlaceName;
 /// Distance in meters of the attached route, null when there is no route
 @override final  double? distance;

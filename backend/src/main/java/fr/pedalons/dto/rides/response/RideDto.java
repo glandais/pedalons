@@ -74,7 +74,12 @@ public class RideDto implements PublicationDto {
               + " parameter.")
   final String excerpt;
 
-  @Schema(description = "Publication date/time", required = true)
+  @Schema(
+      description =
+          "When the ride starts: its own departure, which a group without a time of its own"
+              + " leaves at (RideGroupDto.startAt holds each group's). Not the publication date —"
+              + " that is publishAt for a scheduled one.",
+      required = true)
   final Instant dateTime;
 
   @Schema(

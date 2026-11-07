@@ -25,6 +25,7 @@ import fr.pedalons.service.notification.event.TripCancelled;
 import fr.pedalons.service.notification.event.TripPublished;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -47,8 +48,9 @@ class NotificationEventTest {
       case POST_PUBLISHED -> new PostPublished(42);
       case COMMENT_REPLY -> new CommentReplied(42);
       case RIDE_REMINDER -> new RideReminder(42, DATE);
-      case RIDE_UPDATED -> new RideUpdated(42, DATE, 7L);
-      case RIDE_GROUP_REMOVED -> new RideGroupRemoved(7, 42, "Groupe A", List.of(3L, 4L));
+      case RIDE_UPDATED -> new RideUpdated(42, DATE, 7L, Map.of(5L, DATE.plusSeconds(3600)));
+      case RIDE_GROUP_REMOVED ->
+          new RideGroupRemoved(7, 42, "Groupe A", List.of(3L, 4L), DATE.plusSeconds(1800));
       case RIDE_JOINED -> new RideJoined(42);
       case COMMENT_ON_MY_PUBLICATION -> new CommentOnPublication(42);
       case TEAM_INVITATION -> new TeamInvited(42);
@@ -86,7 +88,37 @@ class NotificationEventTest {
 
   @Test
   void updateWithoutStartPlace_roundTrips() throws Exception {
-    RideUpdated event = new RideUpdated(42, DATE, null);
+    RideUpdated event = new RideUpdated(42, DATE, null, null);
+    assertEquals(
+        event, objectMapper.treeToValue(objectMapper.valueToTree(event), RideUpdated.class));
+  }
+
+  /**
+   * An event queued by the release before docs/LEDGER_*.md NOTIF-13 has neither the groups'
+   * previous starts nor the removed group's start: it still reads, with them null — the resolver
+   * then falls back on the ride's date.
+   */
+  @Test
+  void payloadsOfThePreviousRelease_readWithTheGroupStartsNull() throws Exception {
+    RideUpdated updated =
+        objectMapper.readValue(
+            "{\"rideId\":42,\"previousDateTime\":\"2026-09-27T07:00:00Z\","
+                + "\"previousStartPlaceId\":7}",
+            RideUpdated.class);
+    assertEquals(new RideUpdated(42, DATE, 7L, null), updated);
+
+    RideGroupRemoved removed =
+        objectMapper.readValue(
+            "{\"rideId\":7,\"groupId\":42,\"groupName\":\"Groupe A\",\"userIds\":[3,4]}",
+            RideGroupRemoved.class);
+    assertEquals(new RideGroupRemoved(7, 42, "Groupe A", List.of(3L, 4L), null), removed);
+  }
+
+  /** The groups' previous starts survive the payload column, keyed by group id. */
+  @Test
+  void updateWithGroupStarts_roundTrips() throws Exception {
+    RideUpdated event =
+        new RideUpdated(42, DATE, null, Map.of(5L, DATE, 6L, DATE.plusSeconds(5400)));
     assertEquals(
         event, objectMapper.treeToValue(objectMapper.valueToTree(event), RideUpdated.class));
   }

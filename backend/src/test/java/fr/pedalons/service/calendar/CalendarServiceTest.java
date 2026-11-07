@@ -7,11 +7,13 @@ import fr.pedalons.common.exception.ForbiddenException;
 import fr.pedalons.domain.calendar.CalendarToken;
 import fr.pedalons.domain.platform.Domain;
 import fr.pedalons.domain.ride.Ride;
+import fr.pedalons.domain.ride.RideGroup;
 import fr.pedalons.domain.team.Team;
 import fr.pedalons.domain.trip.Trip;
 import fr.pedalons.domain.trip.TripStage;
 import fr.pedalons.domain.user.User;
 import fr.pedalons.dto.calendar.request.AuthMode;
+import fr.pedalons.dto.calendar.response.CalendarEventDto;
 import fr.pedalons.dto.calendar.response.CalendarEventType;
 import fr.pedalons.dto.calendar.response.CalendarEventsResponse;
 import fr.pedalons.dto.calendar.response.CalendarTokenDto;
@@ -249,6 +251,58 @@ class CalendarServiceTest extends AbstractBaseTest {
     // The personal feed mixes teams: it announces no zone of its own (docs/LEDGER_*.md API-60).
     assertFalse(ics.contains("X-WR-TIMEZONE"), ics);
   }
+
+  /**
+   * A registered member's agenda — JSON and subscription feed alike — starts the ride when their
+   * group leaves (docs/LEDGER_*.md API-157); a member not registered reads the ride's start. The
+   * group leaves four hours after a ride whose end is the three-hour default: the end follows it.
+   */
+  @Test
+  void registeredInAGroupWithItsOwnTime_startsAtTheGroup_inTheAgendaAndTheFeed() {
+    Instant rideStart = now.plus(2, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS);
+    Instant groupStart = rideStart.plus(4, ChronoUnit.HOURS);
+    Ride ride = dataService.createRide(team1, user1, "Group Ride", "group-ride", rideStart);
+    dataService.createRideGroup(user1, ride, "With the ride", 0);
+    RideGroup late = dataService.createRideGroup(user1, ride, "Late", 1);
+    dataService.setRideGroupStart(late, groupStart);
+    dataService.createParticipation(late, user1);
+    dataService.addUserToTeam(user2, team1, TeamRole.MEMBER);
+    CalendarToken token = dataService.createCalendarToken(user1, "group-token-123");
+
+    queryContext.setUserForTest(user1);
+    CalendarEventDto mine =
+        calendarService.getEventsForUser(AuthMode.WEB, null, null).events().getFirst();
+    assertEquals(groupStart, mine.start());
+    assertEquals("Late", mine.groupName());
+    assertNotNull(mine.end());
+    assertTrue(mine.end().isAfter(mine.start()), mine.end() + " after " + mine.start());
+
+    String ics = calendarService.generateIcs(AuthMode.TOKEN, token.getToken());
+    assertTrue(ics.contains("DTSTART:" + ICS_UTC.format(groupStart) + "\r\n"), ics);
+    assertFalse(ics.contains("DTSTART:" + ICS_UTC.format(rideStart)), ics);
+
+    queryContext.setUserForTest(user2);
+    CalendarEventDto theirs =
+        calendarService.getEventsForTeam(AuthMode.WEB, "team-one", null, null).events().getFirst();
+    assertEquals(rideStart, theirs.start());
+    assertFalse(theirs.registered());
+  }
+
+  /** The feed names the meeting place of a ride that has one. */
+  @Test
+  void generateIcs_givesTheStartPlaceAsLocation() {
+    Ride ride = dataService.createRide(team1, user1, "Placed Ride", "placed-ride", now);
+    dataService.setRidePlaces(ride, dataService.createPlace(team1, user1, "Parking, gare"), null);
+    CalendarToken token = dataService.createCalendarToken(user1, "place-token-123");
+
+    queryContext.setUserForTest(user1);
+    String ics = calendarService.generateIcs(AuthMode.TOKEN, token.getToken());
+
+    assertTrue(ics.contains("LOCATION:Parking\\, gare\r\n"), ics);
+  }
+
+  private static final DateTimeFormatter ICS_UTC =
+      DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'").withZone(ZoneId.of("UTC"));
 
   @Test
   void generateIcs_shouldThrowForInvalidToken() {

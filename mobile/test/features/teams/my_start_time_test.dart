@@ -18,7 +18,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../support/localization.dart';
 
-/// `docs/LEDGER_*.md MOB-111` : la carte du fil, la carte « Sorties à venir »
+/// `docs/LEDGER_*.md MOB-112` : la carte du fil, la carte « Sorties à venir »
 /// et la ligne « Vos prochaines sorties » donnent le départ **qui concerne la
 /// personne** — celui de son groupe quand elle y est inscrite, celui de la
 /// sortie sinon, y compris après une désinscription faite dans l'app.

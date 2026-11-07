@@ -179,7 +179,7 @@ class RideUpdatedFoldIntoClaimedEventRaceTest extends AbstractResourceTest {
     ride.setDateTime(to);
     rideRepository.persist(ride);
     publisher.publish(
-        new RideUpdated(rideId, from, null),
+        new RideUpdated(rideId, from, null, null),
         ride.getTeam(),
         userRepository.findById(user1.getId()),
         Duration.ofMinutes(5));

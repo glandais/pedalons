@@ -12,6 +12,8 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 
 import fr.pedalons.api.AbstractResourceTest;
+import fr.pedalons.domain.ride.Ride;
+import fr.pedalons.domain.ride.RideGroup;
 import fr.pedalons.dto.ads.request.AdRequest;
 import fr.pedalons.dto.common.asset.MediaDto;
 import fr.pedalons.dto.common.request.StatusChangeRequest;
@@ -29,6 +31,8 @@ import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -207,6 +211,41 @@ class StatusAndIcsResourceTest extends AbstractResourceTest {
             .extract()
             .asString();
     assertThat(body.split("BEGIN:VEVENT", -1), arrayWithSize(2));
+  }
+
+  /**
+   * A registered member's file starts when their group leaves; an anonymous visitor's at the
+   * ride's start. Both name the meeting place (docs/LEDGER_*.md API-157).
+   */
+  @Test
+  void rideIcs_startsAtTheCallersGroup_andNamesTheStartPlace() {
+    Instant rideStart = Instant.now().plus(3, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS);
+    Instant groupStart = rideStart.plus(90, ChronoUnit.MINUTES);
+    Ride ride = dataService.createRide(team1, user1, "Grouped Ics", "grouped-ics", rideStart);
+    RideGroup group = dataService.createRideGroup(user1, ride, "Later");
+    dataService.setRideGroupStart(group, groupStart);
+    dataService.createParticipation(group, user3);
+    dataService.setRidePlaces(ride, dataService.createPlace(team1, user1, "Église; parvis"), null);
+    DateTimeFormatter utc =
+        DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'").withZone(ZoneOffset.UTC);
+
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER3))
+        .when()
+        .get("/api/teams/" + team1Slug + "/rides/grouped-ics/ics")
+        .then()
+        .statusCode(200)
+        .header("Cache-Control", containsString("private"))
+        .body(containsString("DTSTART:" + utc.format(groupStart) + "\r\n"))
+        .body(containsString("LOCATION:Église\\; parvis\r\n"));
+    given()
+        .when()
+        .get("/api/teams/" + team1Slug + "/rides/grouped-ics/ics")
+        .then()
+        .statusCode(200)
+        .body(containsString("DTSTART:" + utc.format(rideStart) + "\r\n"))
+        .body(containsString("LOCATION:Église\\; parvis\r\n"));
   }
 
   @Test

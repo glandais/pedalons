@@ -45,7 +45,7 @@ sealed class PublicationDto with _$PublicationDto {
     /// Publication media
     required MediaDto media,
 
-    /// Publication date/time
+    /// When the ride starts: its own departure, which a group without a time of its own leaves at (RideGroupDto.startAt holds each group's). Not the publication date — that is publishAt for a scheduled one.
     required String dateTime,
 
     /// IANA zone the ride's times were entered in and read in: its start place's, else its route's, else the team's. dateTime, publishAt, endDateTime and the groups' startAt are rendezvous in this zone.

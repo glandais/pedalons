@@ -74,7 +74,7 @@ export function NextRideCard({ ride, headingId }: NextRideCardProps) {
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
 
   const group = registeredGroupOf(ride)
-  // The departure that concerns the reader is their group's (docs/LEDGER_*.md WEB-135): the date,
+  // The departure that concerns the reader is their group's (docs/LEDGER_*.md WEB-136): the date,
   // the time and the relative badge all read it.
   const start = startFor(ride, group)
   const rideDistance = group?.distance

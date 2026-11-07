@@ -25,6 +25,7 @@ import fr.pedalons.repository.calendar.CalendarTokenRepository;
 import fr.pedalons.repository.common.AllPublicationRepository;
 import fr.pedalons.repository.common.PublicationQuery;
 import fr.pedalons.repository.ride.RideGroupRepository;
+import fr.pedalons.repository.ride.RideGroupRepository.NameAndStart;
 import fr.pedalons.repository.team.UserTeamRepository;
 import fr.pedalons.service.asset.ThumbnailLookup;
 import fr.pedalons.service.asset.ThumbnailLookup.ThemedThumbnail;
@@ -268,14 +269,15 @@ public class CalendarService {
 
     UserParticipations participations =
         participationLookup.forPublications(user.getId(), ids(rides), ids(trips));
-    Map<Long, String> groupNames =
-        rideGroupRepository.findNamesByIds(participations.registeredGroupIdByRideId().values());
+    Map<Long, NameAndStart> joinedGroups =
+        rideGroupRepository.findNamesAndStartsByIds(
+            participations.registeredGroupIdByRideId().values());
     Map<Long, ThemedThumbnail> thumbnails =
         thumbnailLookup.forTeamEntities(thumbnailIds(rides, stages));
 
     List<CalendarEventDto> events = new ArrayList<>(rides.size() + stages.size());
     for (Ride ride : rides) {
-      events.add(toCalendarEvent(ride, participations, groupNames, thumbnails));
+      events.add(toCalendarEvent(ride, participations, joinedGroups, thumbnails));
     }
     for (TripStage stage : stages) {
       events.add(toCalendarEvent(stage, participations, thumbnails));
@@ -369,21 +371,27 @@ public class CalendarService {
             .build());
   }
 
+  /**
+   * A ride as an agenda row. For a registered caller it starts when their group leaves, the ride's
+   * start otherwise (docs/LEDGER_*.md API-157) — what the web and the app show them elsewhere.
+   */
   private CalendarEventDto toCalendarEvent(
       Ride ride,
       UserParticipations participations,
-      Map<Long, String> groupNames,
+      Map<Long, NameAndStart> joinedGroups,
       Map<Long, ThemedThumbnail> thumbnails) {
     Team team = ride.getTeam();
     Route route = ride.getRoute();
     Place start = ride.getStart();
     Long registeredGroupId = participations.registeredGroupId(ride.getId());
+    NameAndStart joined = registeredGroupId != null ? joinedGroups.get(registeredGroupId) : null;
+    Instant startAt = joined != null ? joined.startAt() : ride.getDateTime();
     ThemedThumbnail rideThumbnails = thumbnails(thumbnails, ride.getId(), route);
     return new CalendarEventDto(
         TsidUtils.toString(ride.getId()),
         ride.getName(),
-        ride.getDateTime(),
-        PublicationEndCalculator.effectiveEnd(ride),
+        startAt,
+        endAfter(startAt, PublicationEndCalculator.effectiveEnd(ride)),
         false,
         CalendarEventType.RIDE,
         team.getSlug(),
@@ -397,7 +405,7 @@ public class CalendarService {
         rideThumbnails.light(),
         rideThumbnails.dark(),
         registeredGroupId != null,
-        registeredGroupId != null ? groupNames.get(registeredGroupId) : null,
+        joined != null ? joined.name() : null,
         ride.getStatus(),
         ride.zone().getId());
   }
@@ -433,6 +441,16 @@ public class CalendarService {
         null,
         stage.getStatus(),
         stage.zone().getId());
+  }
+
+  /**
+   * The ride's end, provided it comes after {@code start}; else {@code start} plus the default
+   * duration. The stored end is the latest group's, so it follows any group's start — but not a
+   * ride saved before ends were (its fallback is its own start plus three hours), whose group may
+   * leave later than that.
+   */
+  static Instant endAfter(Instant start, Instant end) {
+    return end.isAfter(start) ? end : start.plus(PublicationEndCalculator.DEFAULT_DURATION);
   }
 
   protected Instant getDefaultFrom() {

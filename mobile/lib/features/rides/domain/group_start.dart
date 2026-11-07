@@ -5,7 +5,7 @@ import '../../../core/utils/formatters.dart';
 /// rejoint [joined], sinon celui de la sortie [rideDateTime] — un instant du
 /// contrat, à lire dans le fuseau de la sortie.
 ///
-/// La source unique de « mon heure » (docs/LEDGER_*.md MOB-111) : un écran qui
+/// La source unique de « mon heure » (docs/LEDGER_*.md MOB-112) : un écran qui
 /// prend `ride.dateTime` alors que le groupe rejoint est connu montre une autre
 /// heure que son voisin dès que ce groupe part plus tôt ou plus tard.
 /// `RideGroupDto.startAt` est toujours renseigné ; `time`, déprécié, n'est

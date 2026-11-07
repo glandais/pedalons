@@ -452,6 +452,47 @@ class IcsGenerationServiceTest extends AbstractBaseTest {
     assertTrue(ics.contains("X-WR-TIMEZONE:Asia/Tokyo\r\n"), ics);
   }
 
+  /**
+   * The meeting place is the event's LOCATION, escaped as every text value (RFC 5545 §3.3.11);
+   * an event without one has no LOCATION line (docs/LEDGER_*.md API-157).
+   */
+  @Test
+  void generateIcs_writesTheStartPlaceAsAnEscapedLocation() {
+    CalendarEventDto placed =
+        new CalendarEventDto(
+            "placed",
+            "Ride",
+            Instant.parse("2024-06-15T08:00:00Z"),
+            null,
+            false,
+            CalendarEventType.RIDE,
+            "team",
+            "Team",
+            "ride",
+            null,
+            "Parking, gare; quai \\ nord\nentrée B",
+            null,
+            null,
+            null,
+            null,
+            null,
+            false,
+            null,
+            Status.PUBLISHED,
+            "Europe/Paris");
+    CalendarEventDto unplaced =
+        stage(
+            "unplaced",
+            Instant.parse("2024-06-16T08:00:00Z"),
+            Instant.parse("2024-06-16T17:00:00Z"),
+            "Europe/Paris");
+
+    String ics = icsGenerationService.generateIcs(List.of(placed, unplaced), "Cal", null);
+
+    assertTrue(ics.contains("LOCATION:Parking\\, gare\\; quai \\\\ nord\\nentrée B\r\n"), ics);
+    assertEquals(1, ics.split("LOCATION:", -1).length - 1, ics);
+  }
+
   private static final ZoneId UTC = ZoneId.of("UTC");
   private static final ZoneId PARIS = ZoneId.of("Europe/Paris");
 

@@ -13,8 +13,9 @@ import org.jspecify.annotations.Nullable;
 /**
  * One event, for one recipient: the inbox entry.
  *
- * <p>Carries no content of its own — what it says is the {@link NotificationEventEntry} snapshot,
- * shared by every recipient of the same event. On a 2 000-member team that is one row of text and
+ * <p>Carries almost no content of its own — what it says is the {@link NotificationEventEntry}
+ * snapshot, shared by every recipient of the same event, but for the start that concerns this
+ * recipient when it is not the event's (see {@link #subjectDateTime}). On a 2 000-member team that is one row of text and
  * 2 000 narrow rows, rather than 2 000 copies of a ride's name.
  *
  * <p>{@code type} and {@code domainId} are denormalised from the event so the inbox queries (list,
@@ -61,11 +62,25 @@ public class Notification {
   @Column(name = "read_at")
   private @Nullable Instant readAt;
 
+  /**
+   * The start that concerns this recipient, when it is not the event's {@code subjectDateTime}:
+   * the time of their own group, for a registered rider whose group leaves at its own time
+   * (docs/LEDGER_*.md NOTIF-13). Null for everyone else, and on every row fanned out before it
+   * existed — they read the event's. Read through {@link #effectiveSubjectDateTime()}.
+   */
+  @Column(name = "subject_date_time")
+  private @Nullable Instant subjectDateTime;
+
   public Notification(NotificationEventEntry event, User recipient, Instant createdAt) {
     this.event = event;
     this.recipient = recipient;
     this.domainId = event.getDomainId();
     this.type = event.getType();
     this.createdAt = createdAt;
+  }
+
+  /** The date this notification gives its recipient: their own, else the event's. */
+  public @Nullable Instant effectiveSubjectDateTime() {
+    return subjectDateTime != null ? subjectDateTime : event.getSubjectDateTime();
   }
 }

@@ -99,7 +99,7 @@ class _MyUpcomingRowState extends ConsumerState<_MyUpcomingRow> {
     // Le jour d'un rendez-vous, dans le fuseau de son entité
     // (docs/LEDGER_*.md API-60).
     // Pour une sortie, le jour du départ qui concerne la personne : celui de
-    // son groupe (docs/LEDGER_*.md MOB-111).
+    // son groupe (docs/LEDGER_*.md MOB-112).
     final DateTime? at = AppFormatters.tryParseZoneTime(
       p is PublicationDtoRide
           ? myStartAt(p.dateTime, p.registeredGroup)
@@ -479,7 +479,7 @@ class DashboardRideCard extends ConsumerWidget {
     final UnitSystem units = ref.watch(unitSystemProvider);
     final bool registered = _registered(ref, ride.id, ride.registered);
     // Le départ du groupe rejoint quand il est connu, sinon celui de la
-    // sortie (docs/LEDGER_*.md MOB-111). Une désinscription faite depuis le
+    // sortie (docs/LEDGER_*.md MOB-112). Une désinscription faite depuis le
     // chargement l'emporte sur le groupe de la ligne.
     final String start = myStartAt(
       ride.dateTime,
@@ -630,8 +630,8 @@ class DashboardRideCard extends ConsumerWidget {
 ///
 /// L'heure du groupe n'est dite que lorsqu'elle diffère de celle de l'en-tête
 /// de la carte [headerStart] — le départ du groupe rejoint, sinon celui de la
-/// sortie —, qui porte seul la mention de fuseau (docs/LEDGER_*.md MOB-111,
-/// pendant web `WEB-135`).
+/// sortie —, qui porte seul la mention de fuseau (docs/LEDGER_*.md MOB-112,
+/// pendant web `WEB-136`).
 class _GroupFill extends StatelessWidget {
   const _GroupFill({
     required this.group,

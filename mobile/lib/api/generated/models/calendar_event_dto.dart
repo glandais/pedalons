@@ -21,7 +21,7 @@ abstract class CalendarEventDto with _$CalendarEventDto {
     /// Event title
     required String title,
 
-    /// Event start date/time
+    /// Event start date/time. For a ride the caller is registered to, the start of their group (RideGroupDto.startAt), which may differ from the ride's own when the group leaves at its own time; the ride's start (RideDto.dateTime) otherwise. Same value as DTSTART in the iCalendar feeds.
     required String start,
 
     /// Is all-day event
@@ -51,13 +51,13 @@ abstract class CalendarEventDto with _$CalendarEventDto {
     /// Whether the ride or stage is over, computed by the server when the response is built: its end (or its start, when it has no end) has passed. Independent of status.
     required bool finished,
 
-    /// Event end date/time: the end the server computes for a ride (its latest group at its pace, 3 hours when nothing tells) or for a trip stage (its route at its pace, likewise) — the same as RideDto.endDateTime. On an all-day stage it is still that instant: the stage occupies every day up to it.
+    /// Event end date/time: the end the server computes for a ride (its latest group at its pace, 3 hours when nothing tells) or for a trip stage (its route at its pace, likewise) — the same as RideDto.endDateTime. On an all-day stage it is still that instant: the stage occupies every day up to it. Always after start: 3 hours after it when the computed end is not.
     String? end,
 
     /// Parent trip slug (for stages only)
     String? tripSlug,
 
-    /// Name of the meeting place, null when the ride or stage has no start place
+    /// Name of the meeting place, null when the ride or stage has no start place. The LOCATION of the iCalendar feeds.
     String? startPlaceName,
 
     /// Distance in meters of the attached route, null when there is no route

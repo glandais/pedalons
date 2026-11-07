@@ -293,7 +293,7 @@ class _RideBody extends ConsumerWidget {
         ride.registered;
     // Le départ qui concerne la personne : celui de son groupe quand elle est
     // inscrite et que la ligne le porte, sinon celui de la sortie
-    // (docs/LEDGER_*.md MOB-111). L'instant du contrat : la plage et la date
+    // (docs/LEDGER_*.md MOB-112). L'instant du contrat : la plage et la date
     // se lisent dans le fuseau de la sortie, la mention se calcule au départ
     // affiché (docs/LEDGER_*.md API-60).
     final String start = myStartAt(

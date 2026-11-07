@@ -24,7 +24,7 @@ import { MyUpcomingList } from './MyUpcomingList'
 import { UpcomingRideCard } from './UpcomingRideCard'
 import { NextRideCard } from '@/components/home/NextRideCard'
 
-// docs/LEDGER_*.md WEB-135: the departure that concerns a registered person is their group's.
+// docs/LEDGER_*.md WEB-136: the departure that concerns a registered person is their group's.
 const TEAM_REF = { id: 't1', name: 'VC Craponne', slug: 'vc-craponne', visibility: 'PUBLIC' }
 const MEDIA = { markdown: '', assets: { images: [], attachments: [] } }
 const RIDE_START = '2026-10-10T06:30:00Z'

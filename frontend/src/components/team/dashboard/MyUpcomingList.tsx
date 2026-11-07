@@ -53,7 +53,7 @@ function RideRow({ ride }: { ride: RideDto }) {
   const { t } = useTranslation()
   const { speed } = useUnits()
   // Rendezvous in the ride's zone, the day box included (docs/LEDGER_*.md API-60). The departure
-  // is the registered group's, which may not be the ride's (WEB-135).
+  // is the registered group's, which may not be the ride's (WEB-136).
   const departure = useRendezvousFormat(ride.timezone)
   const group = ride.registeredGroup
   const routeSlug = group?.routeSlug ?? ride.routeSlug

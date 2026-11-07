@@ -68,7 +68,7 @@ class NextRideCard extends ConsumerWidget {
     final PdlTypography t = context.pdlText;
     final UnitSystem units = ref.watch(unitSystemProvider);
     // L'heure qui concerne la personne : celle de son groupe, qui vaut celle
-    // de la sortie quand il part avec elle (docs/LEDGER_*.md MOB-111).
+    // de la sortie quand il part avec elle (docs/LEDGER_*.md MOB-112).
     final String start = myStartAt(ride.dateTime, group);
     final DateTime? instant = DateTime.tryParse(start);
     final String? relative = instant == null ? null : _relativeBadge(instant);
@@ -92,7 +92,7 @@ class NextRideCard extends ConsumerWidget {
                 label: relative,
                 // Neutre et à l'horloge : le ton et la coche « inscrit »
                 // appartiennent au badge « Inscrit » de la carte
-                // (docs/LEDGER_*.md MOB-110).
+                // (docs/LEDGER_*.md MOB-111).
                 tone: PdlFamily.gray.soft(c),
                 size: PdlBadgeSize.lg,
                 icon: PdlIcons.time,
@@ -229,7 +229,7 @@ class NextRideCard extends ConsumerWidget {
   /// L'heure est celle de [start], le départ qui concerne la personne : le fait
   /// « date » la porte, la mention de fuseau la commente, et le fait « groupe »
   /// ne dit l'écart à la sortie que lorsqu'il y en a un (docs/LEDGER_*.md
-  /// MOB-110).
+  /// MOB-111).
   List<Widget> _facts(
     PdlColors c,
     PdlTypography t,

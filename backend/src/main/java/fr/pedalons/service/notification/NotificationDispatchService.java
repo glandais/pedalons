@@ -193,6 +193,11 @@ public class NotificationDispatchService {
     List<Notification> notifications = new ArrayList<>(recipients.size());
     for (User recipient : recipients) {
       Notification notification = new Notification(entry, recipient, now);
+      // Their group's start, when it is not the event's (docs/LEDGER_*.md NOTIF-13).
+      Instant own = resolution.get().recipientDateTimes().get(recipient.getId());
+      if (own != null && !own.equals(entry.getSubjectDateTime())) {
+        notification.setSubjectDateTime(own);
+      }
       notificationRepository.persist(notification);
       notifications.add(notification);
     }
@@ -235,7 +240,7 @@ public class NotificationDispatchService {
    * members all muted it is still news in its chat.
    */
   private boolean queueWebhook(NotificationEventEntry entry, Resolution resolution, Instant now) {
-    if (!entry.getType().isRelayedToTeamWebhook()) {
+    if (!entry.getType().isRelayedToTeamWebhook() || !resolution.relayedToTeam()) {
       return false;
     }
     return webhookRepository

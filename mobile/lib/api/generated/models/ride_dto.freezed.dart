@@ -23,7 +23,7 @@ mixin _$RideDto {
  String get slug;/// Publication name
  String get name;/// Publication media
  MediaDto get media;/// Visibility level
- String get visibility;/// Publication date/time
+ String get visibility;/// When the ride starts: its own departure, which a group without a time of its own leaves at (RideGroupDto.startAt holds each group's). Not the publication date — that is publishAt for a scheduled one.
  String get dateTime;/// IANA zone the ride's times were entered in and read in: its start place's, else its route's, else the team's. dateTime, publishAt, endDateTime and the groups' startAt are rendezvous in this zone.
  String get timezone;/// When the ride is over, computed by the server: the latest of its groups, each one its departure plus its route's length at its average speed — or plus 3 hours when the group has no speed or no route, and for a ride with no group. What the upcoming and past lists (when=UPCOMING|PAST) and the calendar read.
  String get endDateTime;/// Publication status
@@ -380,7 +380,7 @@ class _RideDto implements RideDto {
 @override final  MediaDto media;
 /// Visibility level
 @override final  String visibility;
-/// Publication date/time
+/// When the ride starts: its own departure, which a group without a time of its own leaves at (RideGroupDto.startAt holds each group's). Not the publication date — that is publishAt for a scheduled one.
 @override final  String dateTime;
 /// IANA zone the ride's times were entered in and read in: its start place's, else its route's, else the team's. dateTime, publishAt, endDateTime and the groups' startAt are rendezvous in this zone.
 @override final  String timezone;

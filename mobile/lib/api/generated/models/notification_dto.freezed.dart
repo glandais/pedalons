@@ -27,7 +27,7 @@ mixin _$NotificationDto {
  String get subjectSlug;/// Name of the ride, trip, post or route — of the team, for TEAM
  String get subjectName;/// What changed, for RIDE_UPDATED; empty otherwise
  List<NotificationChange> get changes;/// Display name of whoever caused it, when someone did (a scheduled publication has no actor)
- String? get actorName;/// Date of the ride or trip, publication date of a post
+ String? get actorName;/// Date of the ride or trip, publication date of a post. For a ride, the start of the recipient's own group when it concerns them: the group they are registered to (reminder, cancellation, change), joined (RIDE_JOINED) or lost (RIDE_GROUP_REMOVED); the ride's otherwise
  String? get subjectDateTime;/// IANA zone subjectDateTime reads in — the subject's own, as RideDto.timezone: a rendezvous, shown in it with a mention when the reader's differs. Present when subjectDateTime is, except on notifications sent before 10.20.0, which read in the reader's zone
  String? get subjectTimezone;/// A short quote: the comment, for COMMENT_REPLY and COMMENT_ON_MY_PUBLICATION; the name of the group joined, for RIDE_JOINED
  String? get excerpt;
@@ -274,7 +274,7 @@ class _NotificationDto implements NotificationDto {
 
 /// Display name of whoever caused it, when someone did (a scheduled publication has no actor)
 @override final  String? actorName;
-/// Date of the ride or trip, publication date of a post
+/// Date of the ride or trip, publication date of a post. For a ride, the start of the recipient's own group when it concerns them: the group they are registered to (reminder, cancellation, change), joined (RIDE_JOINED) or lost (RIDE_GROUP_REMOVED); the ride's otherwise
 @override final  String? subjectDateTime;
 /// IANA zone subjectDateTime reads in — the subject's own, as RideDto.timezone: a rendezvous, shown in it with a mention when the reader's differs. Present when subjectDateTime is, except on notifications sent before 10.20.0, which read in the reader's zone
 @override final  String? subjectTimezone;

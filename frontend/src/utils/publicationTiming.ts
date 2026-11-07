@@ -10,7 +10,7 @@ export type DatedPublication = RideDto | TripDto
 
 /**
  * Where a ride's or a trip's span starts for the reader: a ride's, at their registered group's
- * departure when they joined one (docs/LEDGER_*.md WEB-135 — list rows carry `registeredGroup`),
+ * departure when they joined one (docs/LEDGER_*.md WEB-136 — list rows carry `registeredGroup`),
  * else the publication's `dateTime`.
  */
 export function spanStart(publication: DatedPublication): string {

@@ -376,6 +376,9 @@ public class RideService extends TeamEntityService<Ride, RideRepository, RideDto
     Instant previousDateTime = ride.getDateTime();
     ZoneId previousZone = ride.zone();
     Long previousStartPlaceId = ride.getStart() != null ? ride.getStart().getId() : null;
+    // Each group's start before the save: a rider is told of the time of their own group
+    // (docs/LEDGER_*.md NOTIF-13).
+    Map<Long, Instant> previousGroupStarts = groupStarts(ride);
     List<List<Long>> previousThumbnailInput = ThumbnailService.rideInput(ride);
 
     validateVisibility(team, request);
@@ -435,7 +438,8 @@ public class RideService extends TeamEntityService<Ride, RideRepository, RideDto
             removed.getParticipations().stream().map(p -> p.getUser().getId()).toList();
         if (!riders.isEmpty()) {
           notificationPublisher.publish(
-              new RideGroupRemoved(ride.getId(), removed.getId(), removed.getName(), riders),
+              new RideGroupRemoved(
+                  ride.getId(), removed.getId(), removed.getName(), riders, removed.getStartAt()),
               team,
               user);
         }
@@ -452,20 +456,44 @@ public class RideService extends TeamEntityService<Ride, RideRepository, RideDto
     thumbnailService.refreshRideThumbnails(ride, previousThumbnailInput);
     notificationPublisher.publicationStatusChanged(ride, previousStatus, user);
     // Only a ride that stays published has riders to warn; the resolver compares the state before
-    // with the state after the delay, so an edit undone in the meantime notifies nobody.
+    // with the state after the delay, so an edit undone in the meantime notifies nobody. A group's
+    // own time moved alone counts: its riders leave at another time (docs/LEDGER_*.md NOTIF-13).
     if (previousStatus == Status.PUBLISHED
         && ride.getStatus() == Status.PUBLISHED
         && (!previousDateTime.equals(ride.getDateTime())
-            || !Objects.equals(
-                previousStartPlaceId, startPlace != null ? startPlace.getId() : null))) {
+            || !Objects.equals(previousStartPlaceId, startPlace != null ? startPlace.getId() : null)
+            || groupStartMoved(ride, previousGroupStarts))) {
       notificationPublisher.publish(
-          new RideUpdated(ride.getId(), previousDateTime, previousStartPlaceId),
+          new RideUpdated(
+              ride.getId(), previousDateTime, previousStartPlaceId, previousGroupStarts),
           team,
           user,
           Duration.ofSeconds(updateDelaySeconds));
     }
 
     return toDto(ride);
+  }
+
+  /** Group id → start, for the groups the ride has — saved ones only. */
+  private static Map<Long, Instant> groupStarts(Ride ride) {
+    Map<Long, Instant> starts = new HashMap<>();
+    for (RideGroup group : ride.getGroups()) {
+      if (group.getId() != null) {
+        starts.put(group.getId(), group.getStartAt());
+      }
+    }
+    return starts;
+  }
+
+  /** Whether a group the ride already had leaves at another time than before the save. */
+  private static boolean groupStartMoved(Ride ride, Map<Long, Instant> previousGroupStarts) {
+    for (RideGroup group : ride.getGroups()) {
+      Instant previous = group.getId() != null ? previousGroupStarts.get(group.getId()) : null;
+      if (previous != null && !previous.equals(group.getStartAt())) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**

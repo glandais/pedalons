@@ -92,6 +92,12 @@ public class IcsGenerationService {
     // Description with team name
     ics.append("DESCRIPTION:").append(escapeIcs(event.teamName())).append("\r\n");
 
+    // The meeting place, by name, when the ride or stage has one (docs/LEDGER_*.md API-157)
+    String location = event.startPlaceName();
+    if (location != null && !location.isBlank()) {
+      ics.append("LOCATION:").append(escapeIcs(location.strip())).append("\r\n");
+    }
+
     // URL to the event
     String url = buildEventUrl(event);
     ics.append("URL:").append(url).append("\r\n");
@@ -144,7 +150,7 @@ public class IcsGenerationService {
    * Escape special characters in iCalendar text values per RFC 5545. Backslash, semicolon, and
    * comma must be escaped. Newlines must be escaped as \n.
    */
-  private String escapeIcs(String text) {
+  static String escapeIcs(@Nullable String text) {
     if (text == null) {
       return "";
     }

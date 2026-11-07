@@ -40,6 +40,7 @@ import fr.pedalons.enums.Status;
 import fr.pedalons.enums.Visibility;
 import fr.pedalons.infrastructure.webhook.WebhookHttpClient;
 import fr.pedalons.util.NotificationTestData;
+import fr.pedalons.util.WallTimes;
 import io.quarkus.mailer.Mail;
 import io.quarkus.mailer.MockMailbox;
 import io.quarkus.test.InjectMock;
@@ -47,6 +48,8 @@ import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import java.net.URI;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
@@ -342,6 +345,197 @@ class NotificationPhase5Test extends AbstractResourceTest {
     assertEquals(List.of(NotificationType.RIDE_JOINED), notifications.notificationTypesFor(user1));
     assertTrue(notifications.notificationTypesFor(user3).isEmpty(), "the rider themselves");
     assertEquals("Les rapides", notifications.eventEntries().getFirst().getExcerpt());
+  }
+
+  // ------------------------------------------------------------------ the rider's own start
+
+  /** 08:00 a week from now, in the zone of a team that has none — on a whole second. */
+  private static Instant atEight() {
+    return LocalDate.now(WallTimes.DEFAULT_ZONE)
+        .plusDays(7)
+        .atTime(8, 0)
+        .atZone(WallTimes.DEFAULT_ZONE)
+        .toInstant();
+  }
+
+  /** The wall time of {@code instant} in that zone, as a group request carries it. */
+  private static LocalTime timeOf(Instant instant) {
+    return instant.atZone(WallTimes.DEFAULT_ZONE).toLocalTime();
+  }
+
+  /**
+   * A published ride created by user1, at {@code when}: user3 in group A, which leaves with it,
+   * user2 in group B, which leaves at {@code groupB}.
+   */
+  private record TwoGroups(Ride ride, RideGroup a, RideGroup b) {}
+
+  private TwoGroups twoGroups(Instant when, Instant groupB) {
+    Ride ride = dataService.createRide(team1, user1, "Sortie", "sortie", when);
+    RideGroup a = dataService.createRideGroup(user1, ride, "A", 0);
+    RideGroup b = dataService.createRideGroup(user1, ride, "B", 1);
+    dataService.setRideGroupStart(b, groupB);
+    dataService.createParticipation(a, user3);
+    dataService.createParticipation(b, user2);
+    return new TwoGroups(ride, a, b);
+  }
+
+  /** The ride of {@code groups}, at {@code when}, group B at {@code groupB}. */
+  private static RideRequest twoGroupsRequest(
+      TwoGroups groups, Status status, Instant when, LocalTime groupB) {
+    return new RideRequest(
+        "Sortie",
+        MediaDto.builder().build(),
+        wall(when),
+        status,
+        Visibility.PUBLIC,
+        null,
+        null,
+        null,
+        null,
+        List.of(
+            new GroupRequest(TsidUtils.toString(groups.a().getId()), "A", null, null, null, null),
+            new GroupRequest(
+                TsidUtils.toString(groups.b().getId()), "B", groupB, null, null, null)),
+        null);
+  }
+
+  /** docs/LEDGER_*.md NOTIF-13: each rider is reminded of the time their own group leaves. */
+  @Test
+  void reminder_givesEachRiderTheStartOfTheirOwnGroup() {
+    Instant rideStart = Instant.now().plus(22, ChronoUnit.HOURS).truncatedTo(ChronoUnit.SECONDS);
+    Instant groupB = rideStart.plus(2, ChronoUnit.HOURS);
+    twoGroups(rideStart, groupB);
+
+    reminderScheduler.queueReminders(Instant.now());
+    drain();
+
+    assertEquals(
+        List.of(NotificationType.RIDE_REMINDER), notifications.notificationTypesFor(user2));
+    assertEquals(List.of(groupB), notifications.subjectDateTimesFor(user2));
+    assertEquals(List.of(rideStart), notifications.subjectDateTimesFor(user3));
+    // The event itself keeps the ride's date: what a rider of a group leaving with it reads.
+    assertEquals(rideStart, notifications.eventEntries().getFirst().getSubjectDateTime());
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER2))
+        .when()
+        .get("/api/notifications")
+        .then()
+        .statusCode(200)
+        .body("items[0].subjectDateTime", equalTo(groupB.toString()));
+  }
+
+  /** The cancellation e-mail gives each rider their group's time, not the ride's. */
+  @Test
+  void cancellation_emailsEachRiderTheStartOfTheirOwnGroup() {
+    Instant rideStart = atEight();
+    Instant groupB = rideStart.plus(150, ChronoUnit.MINUTES); // 10h30
+    TwoGroups groups = twoGroups(rideStart, groupB);
+
+    updateRide(
+        groups.ride().getSlug(),
+        twoGroupsRequest(groups, Status.CANCELLED, rideStart, timeOf(groupB)));
+    drain();
+    deliveryService.sendDue(NotificationChannel.EMAIL);
+
+    List<Mail> toB = mailbox.getMailsSentTo(EMAIL2);
+    assertEquals(1, toB.size());
+    assertTrue(toB.getFirst().getText().contains("10h30"), toB.getFirst().getText());
+    assertFalse(toB.getFirst().getText().contains("08h00"), toB.getFirst().getText());
+    List<Mail> toA = mailbox.getMailsSentTo(EMAIL3);
+    assertEquals(1, toA.size());
+    assertTrue(toA.getFirst().getText().contains("08h00"), toA.getFirst().getText());
+  }
+
+  /** The riders of a removed group are told the time that group was to leave. */
+  @Test
+  void removingAGroupWithItsOwnTime_givesItsRidersThatTime() {
+    RegisteredRide registered = registeredRide(nextWeek);
+    Instant groupStart = nextWeek.plus(90, ChronoUnit.MINUTES).truncatedTo(ChronoUnit.SECONDS);
+    dataService.setRideGroupStart(registered.group(), groupStart);
+    updateRide(registered.ride().getSlug(), withNewGroupOnly());
+
+    notifications.makeEventsDue();
+    drain();
+
+    assertEquals(
+        List.of(NotificationType.RIDE_GROUP_REMOVED), notifications.notificationTypesFor(user3));
+    assertEquals(List.of(groupStart), notifications.subjectDateTimesFor(user3));
+  }
+
+  /** Whoever organises the ride hears when the group joined leaves. */
+  @Test
+  void join_givesTheStartOfTheGroupJoined() {
+    Instant rideStart = nextWeek.truncatedTo(ChronoUnit.SECONDS);
+    Ride ride = dataService.createRide(team1, user1, "Sortie", "sortie", rideStart);
+    RideGroup group = dataService.createRideGroup(user1, ride, "Les tardifs");
+    Instant groupStart = rideStart.plus(1, ChronoUnit.HOURS);
+    dataService.setRideGroupStart(group, groupStart);
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER3))
+        .contentType("application/json")
+        .when()
+        .post(
+            "/api/teams/"
+                + team1Slug
+                + "/rides/sortie/groups/"
+                + TsidUtils.toString(group.getId())
+                + "/join")
+        .then()
+        .statusCode(201);
+    drain();
+
+    assertEquals(List.of(NotificationType.RIDE_JOINED), notifications.notificationTypesFor(user1));
+    assertEquals(List.of(groupStart), notifications.subjectDateTimesFor(user1));
+  }
+
+  /**
+   * A group's own time moved alone is a change for its riders — and for them only, with the new
+   * time; the ride the team's webhook announced has not moved.
+   */
+  @Test
+  void groupTimeMovedAlone_notifiesItsRidersOnly_withTheNewTime() throws Exception {
+    when(webhookHttp.post(any(), anyString())).thenReturn(200);
+    saveWebhook(USER1, "https://example.org/hook", 200);
+    Instant rideStart = atEight();
+    TwoGroups groups = twoGroups(rideStart, rideStart.plus(2, ChronoUnit.HOURS)); // B at 10h00
+    Instant newGroupB = rideStart.plus(3, ChronoUnit.HOURS); // B at 11h00
+
+    updateRide(
+        groups.ride().getSlug(),
+        twoGroupsRequest(groups, Status.PUBLISHED, rideStart, timeOf(newGroupB)));
+    notifications.makeEventsDue();
+    drain();
+
+    assertEquals(List.of(NotificationType.RIDE_UPDATED), notifications.notificationTypesFor(user2));
+    assertEquals(List.of(newGroupB), notifications.subjectDateTimesFor(user2));
+    assertTrue(notifications.notificationTypesFor(user3).isEmpty(), "group A did not move");
+    NotificationEventEntry entry = notifications.eventEntries().getFirst();
+    assertEquals(List.of(NotificationChange.DATE_TIME), entry.changeList());
+    assertTrue(notifications.webhookDeliveryStatuses().isEmpty(), "the ride itself did not move");
+  }
+
+  /**
+   * The ride moved: the group leaving with it moved, a group with its own time did not — only the
+   * first one's riders are told, with the ride's new time.
+   */
+  @Test
+  void rideMoved_doesNotNotifyAGroupThatKeepsItsOwnTime() {
+    Instant rideStart = atEight();
+    Instant groupB = rideStart.plus(2, ChronoUnit.HOURS);
+    TwoGroups groups = twoGroups(rideStart, groupB);
+    Instant newRideStart = rideStart.plus(30, ChronoUnit.MINUTES);
+
+    updateRide(
+        groups.ride().getSlug(),
+        twoGroupsRequest(groups, Status.PUBLISHED, newRideStart, timeOf(groupB)));
+    notifications.makeEventsDue();
+    drain();
+
+    assertEquals(List.of(NotificationType.RIDE_UPDATED), notifications.notificationTypesFor(user3));
+    assertEquals(List.of(newRideStart), notifications.subjectDateTimesFor(user3));
+    assertTrue(notifications.notificationTypesFor(user2).isEmpty(), "group B leaves at 10h00");
   }
 
   // ------------------------------------------------------------------ COMMENT_ON_MY_PUBLICATION

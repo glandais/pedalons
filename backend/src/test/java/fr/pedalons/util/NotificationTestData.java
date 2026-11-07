@@ -57,6 +57,19 @@ public class NotificationTestData {
         .toList();
   }
 
+  /**
+   * The date each of a user's notifications gives them, in creation order: their own when the
+   * inbox row has one, else the event's (docs/LEDGER_*.md NOTIF-13).
+   */
+  @Transactional
+  public List<Instant> subjectDateTimesFor(User user) {
+    return notificationRepository
+        .list("recipient.id = ?1 order by createdAt, id", user.getId())
+        .stream()
+        .map(Notification::effectiveSubjectDateTime)
+        .toList();
+  }
+
   @Transactional
   public long notificationCount() {
     return notificationRepository.count();

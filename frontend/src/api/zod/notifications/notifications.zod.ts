@@ -63,7 +63,9 @@ export const ListMyNotificationsResponse = zod
             subjectDateTime: zod.iso
               .datetime({ offset: true })
               .optional()
-              .describe('Date of the ride or trip, publication date of a post'),
+              .describe(
+                "Date of the ride or trip, publication date of a post. For a ride, the start of the recipient's own group when it concerns them: the group they are registered to (reminder, cancellation, change), joined (RIDE_JOINED) or lost (RIDE_GROUP_REMOVED); the ride's otherwise"
+              ),
             subjectTimezone: zod
               .string()
               .optional()

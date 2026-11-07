@@ -30,14 +30,22 @@ import org.jspecify.annotations.Nullable;
 public record CalendarEventDto(
     @Schema(description = "Event ID (TSID)", required = true) String id,
     @Schema(description = "Event title", required = true) String title,
-    @Schema(description = "Event start date/time", required = true) Instant start,
+    @Schema(
+            description =
+                "Event start date/time. For a ride the caller is registered to, the start of"
+                    + " their group (RideGroupDto.startAt), which may differ from the ride's own"
+                    + " when the group leaves at its own time; the ride's start (RideDto.dateTime)"
+                    + " otherwise. Same value as DTSTART in the iCalendar feeds.",
+            required = true)
+        Instant start,
     @Nullable
         @Schema(
             description =
                 "Event end date/time: the end the server computes for a ride (its latest group"
                     + " at its pace, 3 hours when nothing tells) or for a trip stage (its route at"
                     + " its pace, likewise) — the same as RideDto.endDateTime. On an all-day stage"
-                    + " it is still that instant: the stage occupies every day up to it.")
+                    + " it is still that instant: the stage occupies every day up to it. Always"
+                    + " after start: 3 hours after it when the computed end is not.")
         Instant end,
     @Schema(description = "Is all-day event", required = true) boolean allDay,
     @Schema(description = "Event type", required = true) CalendarEventType type,
@@ -48,7 +56,8 @@ public record CalendarEventDto(
     @Nullable
         @Schema(
             description =
-                "Name of the meeting place, null when the ride or stage has no start place")
+                "Name of the meeting place, null when the ride or stage has no start place. The"
+                    + " LOCATION of the iCalendar feeds.")
         String startPlaceName,
     @Nullable
         @Schema(

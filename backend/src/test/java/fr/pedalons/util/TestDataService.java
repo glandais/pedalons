@@ -492,6 +492,16 @@ public class TestDataService {
     managed.setLeader(leader != null ? userRepository.findById(leader.getId()) : null);
   }
 
+  /**
+   * Gives a group its own start, on the managed instance (same reason as {@link
+   * #setRideGroupLeader}): a group that leaves at another time than its ride.
+   */
+  @Transactional
+  public void setRideGroupStart(RideGroup group, Instant startAt) {
+    rideGroupRepository.findById(group.getId()).setStartAt(startAt);
+    group.setStartAt(startAt);
+  }
+
   @Transactional
   public void setTripRoute(Trip trip, Route route) {
     trip.setRoute(route);

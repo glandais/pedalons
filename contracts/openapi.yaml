@@ -1016,7 +1016,11 @@ components:
           type: string
           description: Event title
         start:
-          description: Event start date/time
+          description: "Event start date/time. For a ride the caller is registered\
+            \ to, the start of their group (RideGroupDto.startAt), which may differ\
+            \ from the ride's own when the group leaves at its own time; the ride's\
+            \ start (RideDto.dateTime) otherwise. Same value as DTSTART in the iCalendar\
+            \ feeds."
           type: string
           $ref: "#/components/schemas/Instant"
         end:
@@ -1024,7 +1028,8 @@ components:
             \ (its latest group at its pace, 3 hours when nothing tells) or for a\
             \ trip stage (its route at its pace, likewise) — the same as RideDto.endDateTime.\
             \ On an all-day stage it is still that instant: the stage occupies every\
-            \ day up to it."
+            \ day up to it. Always after start: 3 hours after it when the computed\
+            \ end is not."
           type: string
           $ref: "#/components/schemas/Instant"
         allDay:
@@ -1049,7 +1054,7 @@ components:
         startPlaceName:
           type: string
           description: "Name of the meeting place, null when the ride or stage has\
-            \ no start place"
+            \ no start place. The LOCATION of the iCalendar feeds."
         distance:
           type: number
           format: float
@@ -3547,7 +3552,10 @@ components:
           type: string
           description: "Name of the ride, trip, post or route — of the team, for TEAM"
         subjectDateTime:
-          description: "Date of the ride or trip, publication date of a post"
+          description: "Date of the ride or trip, publication date of a post. For\
+            \ a ride, the start of the recipient's own group when it concerns them:\
+            \ the group they are registered to (reminder, cancellation, change), joined\
+            \ (RIDE_JOINED) or lost (RIDE_GROUP_REMOVED); the ride's otherwise"
           type: string
           $ref: "#/components/schemas/Instant"
         subjectTimezone:
@@ -4728,7 +4736,9 @@ components:
             \ Null when the body holds no text. Lets a list row render its two lines\
             \ without the body being sent at all — see the 'view' parameter."
         dateTime:
-          description: Publication date/time
+          description: "When the ride starts: its own departure, which a group without\
+            \ a time of its own leaves at (RideGroupDto.startAt holds each group's).\
+            \ Not the publication date — that is publishAt for a scheduled one."
           type: string
           $ref: "#/components/schemas/Instant"
         timezone:
@@ -16789,7 +16799,9 @@ paths:
     get:
       summary: Download ride as a calendar file
       description: "One VEVENT for the ride, to add it on its own to a calendar. Readable\
-        \ by whoever may read the ride; no calendar token."
+        \ by whoever may read the ride; no calendar token. It starts when the caller's\
+        \ group leaves when they are registered, at the ride's start otherwise; LOCATION\
+        \ is the start place's name, when the ride has one."
       operationId: downloadRideIcs
       tags:
       - Rides
@@ -20386,7 +20398,7 @@ paths:
                 $ref: "#/components/schemas/VersionDto"
 info:
   title: Pedalons API
-  version: 13.2.0
+  version: 13.2.1
   description: API for Pedalons Cycling Team Management Platform
 servers:
 - url: http://localhost:8080

@@ -27,7 +27,7 @@ export interface NotificationDto {
   subjectSlug: string
   /** Name of the ride, trip, post or route — of the team, for TEAM */
   subjectName: string
-  /** Date of the ride or trip, publication date of a post */
+  /** Date of the ride or trip, publication date of a post. For a ride, the start of the recipient's own group when it concerns them: the group they are registered to (reminder, cancellation, change), joined (RIDE_JOINED) or lost (RIDE_GROUP_REMOVED); the ride's otherwise */
   subjectDateTime?: Instant
   /** IANA zone subjectDateTime reads in — the subject's own, as RideDto.timezone: a rendezvous, shown in it with a mention when the reader's differs. Present when subjectDateTime is, except on notifications sent before 10.20.0, which read in the reader's zone */
   subjectTimezone?: string

@@ -128,7 +128,7 @@ describe('formatPublicationSpan', () => {
     expect(formatPublicationSpan(ride, 'time', 'fr', tFr)).toBe('08:30 → retour vers 14:10')
   })
 
-  it('starts a ride at the registered group’s departure (WEB-135)', () => {
+  it('starts a ride at the registered group’s departure (WEB-136)', () => {
     const ride = dated({
       dateTime: '2026-10-11T06:30:00Z',
       endDateTime: '2026-10-11T12:10:00Z',

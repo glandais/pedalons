@@ -45,7 +45,12 @@ public record NotificationDto(
             description = "Name of the ride, trip, post or route — of the team, for TEAM",
             required = true)
         String subjectName,
-    @Schema(description = "Date of the ride or trip, publication date of a post")
+    @Schema(
+            description =
+                "Date of the ride or trip, publication date of a post. For a ride, the start of"
+                    + " the recipient's own group when it concerns them: the group they are"
+                    + " registered to (reminder, cancellation, change), joined (RIDE_JOINED) or"
+                    + " lost (RIDE_GROUP_REMOVED); the ride's otherwise")
         @Nullable Instant subjectDateTime,
     @Schema(
             description =
@@ -77,7 +82,7 @@ public record NotificationDto(
         Objects.requireNonNull(event.getSubjectType()),
         Objects.requireNonNull(event.getSubjectSlug()),
         Objects.requireNonNull(event.getSubjectName()),
-        event.getSubjectDateTime(),
+        notification.effectiveSubjectDateTime(),
         event.getSubjectTimezone(),
         event.getExcerpt(),
         event.changeList());

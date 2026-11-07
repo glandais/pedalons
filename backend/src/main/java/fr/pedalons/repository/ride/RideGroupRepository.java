@@ -21,34 +21,38 @@ public class RideGroupRepository implements BaseRepository<RideGroup> {
     return find("id = ?1 and ride.id = ?2", groupId, rideId).firstResultOptional();
   }
 
+  /** A group's name and start: what an agenda row says of the group the caller joined. */
+  public record NameAndStart(String name, Instant startAt) {}
+
   /**
-   * The names of a set of groups, in one query.
+   * The names and starts of a set of groups, in one query.
    *
    * <p>Naming the group a user joined would otherwise mean reaching for {@code ride.getGroups()},
    * which loads every group and — through {@code getCurrentParticipants} — every participation of
-   * every ride on the page. This projects the two scalars needed and hydrates nothing.
+   * every ride on the page. This projects the three scalars needed and hydrates nothing.
    *
    * <p>Group ids handed in here always come from the caller's own participations, themselves
    * restricted to rides a {@code PedalonsQuery} already returned, so this answers about nothing the
    * caller could not already see.
    *
-   * @return group id → name, only for the ids that exist
+   * @return group id → name and start, only for the ids that exist
    */
-  public Map<Long, String> findNamesByIds(Collection<Long> groupIds) {
+  public Map<Long, NameAndStart> findNamesAndStartsByIds(Collection<Long> groupIds) {
     if (groupIds.isEmpty()) {
       return Map.of();
     }
     List<Object[]> rows =
         getEntityManager()
             .createQuery(
-                "select g.id, g.name from RideGroup g where g.id in (:ids)", Object[].class)
+                "select g.id, g.name, g.startAt from RideGroup g where g.id in (:ids)",
+                Object[].class)
             .setParameter("ids", groupIds)
             .getResultList();
-    Map<Long, String> names = new HashMap<>(rows.size());
+    Map<Long, NameAndStart> groups = new HashMap<>(rows.size());
     for (Object[] row : rows) {
-      names.put((Long) row[0], (String) row[1]);
+      groups.put((Long) row[0], new NameAndStart((String) row[1], (Instant) row[2]));
     }
-    return names;
+    return groups;
   }
 
   /**

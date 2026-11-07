@@ -876,7 +876,11 @@ export const ListMyParticipationsResponse = zod
                   .describe(
                     "Plain-text opening of the markdown body, flattened (links become their label) and cut on a word boundary at about 200 characters. Null when the body holds no text. Lets a list row render its two lines without the body being sent at all — see the 'view' parameter."
                   ),
-                dateTime: zod.iso.datetime({ offset: true }).describe('Publication date/time'),
+                dateTime: zod.iso
+                  .datetime({ offset: true })
+                  .describe(
+                    "When the ride starts: its own departure, which a group without a time of its own leaves at (RideGroupDto.startAt holds each group's). Not the publication date — that is publishAt for a scheduled one."
+                  ),
                 timezone: zod
                   .string()
                   .describe(
@@ -3489,7 +3493,11 @@ export const GetMyProfileSummaryResponse = zod
                       .describe(
                         "Plain-text opening of the markdown body, flattened (links become their label) and cut on a word boundary at about 200 characters. Null when the body holds no text. Lets a list row render its two lines without the body being sent at all — see the 'view' parameter."
                       ),
-                    dateTime: zod.iso.datetime({ offset: true }).describe('Publication date/time'),
+                    dateTime: zod.iso
+                      .datetime({ offset: true })
+                      .describe(
+                        "When the ride starts: its own departure, which a group without a time of its own leaves at (RideGroupDto.startAt holds each group's). Not the publication date — that is publishAt for a scheduled one."
+                      ),
                     timezone: zod
                       .string()
                       .describe(
