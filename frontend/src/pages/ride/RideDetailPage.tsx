@@ -483,12 +483,9 @@ export function RideDetailPage() {
               withBorder
               p="lg"
               component="section"
-              aria-labelledby="ride-instructions-title"
+              aria-label={t('rides.detail.instructions.title')}
               data-testid="ride-instructions"
             >
-              <Title id="ride-instructions-title" order={3} size="h4" mb="md">
-                {t('rides.detail.instructions.title')}
-              </Title>
               <MediaDisplay media={ride.media} imageSizes={INSTRUCTIONS_IMAGE_SIZES} />
             </Paper>
           )}

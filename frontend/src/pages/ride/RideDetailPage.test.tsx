@@ -309,12 +309,12 @@ describe('RideDetailPage — layout A: instructions beside a sticky map (WEB-134
     }
   })
 
-  it('shows the instructions, titled, as a section, for a text or an attachment', () => {
+  it('shows the instructions, untitled but named, as a section, for a text or an attachment', () => {
     for (const full of [media('Rendez-vous au parking'), media('', [], [asset])]) {
       state.ride = ride({ media: full })
       renderPage()
       const section = screen.getByTestId('ride-instructions')
-      expect(within(section).getByRole('heading', { name: 'Consignes' })).toBeTruthy()
+      expect(within(section).queryByRole('heading', { name: 'Consignes' })).toBeNull()
       expect(screen.getByRole('region', { name: 'Consignes' })).toBe(section)
       expect(within(section).getByTestId('media-display')).toBeTruthy()
       cleanup()
