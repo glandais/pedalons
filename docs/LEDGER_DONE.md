@@ -183,6 +183,14 @@ fichier garde **ce qui est fait**, et ce qu'il ne faut pas défaire.
   détail de revue recopiés de la 1.1.0 par App Store Connect. Le 27 octobre : build 93 attaché
   (`fastlane release`), `asc validate` sans erreur, soumise ; approuvée puis publiée à la main.
   La version suivante est `MOB-103`.
+- [x] `MOB-103` **La 1.1.2 est publiée sur l'App Store** (constaté le 7 novembre 2026, contrat
+  inchangé) — embarque `MOB-102` (enregistrer un parcours ou une pièce jointe sur un téléphone
+  Android, types MIME GPX/FIT), `MOB-104` à `MOB-109` (tracé coloré comme sur le site, vent sous le
+  profil, pastilles météo sur la carte de la page, marqueurs qui ne se chevauchent plus). Le 31
+  octobre 2026 : `publish_beta.sh` (build 94), version créée dans App Store Connect (`MANUAL`, id
+  `e357b79e-8617-4196-ac4e-5a39bfce2235`), nouveautés de `mobile/metadata/version/1.1.2/` poussées
+  par `asc metadata apply`. Builds 95 et 96 ensuite ; c'est le **build 96** (tag
+  `mobile.1.1.2.96`) qui est attaché et en vente. La version suivante est `MOB-110`.
 - [x] `MOB-63` **Fiche App Store et captures refaites sur l'app d'octobre** (9 octobre 2026, contrat
   inchangé) — les captures du 25 septembre montraient un fil d'équipe remplacé depuis par le
   tableau de bord, l'Agenda et les Publications (`MOB-60`), et ni la description ni les captures ne

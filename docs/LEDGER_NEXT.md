@@ -203,17 +203,12 @@ faite, et le 500 du contact vendeur (`MOB-47`). Depuis l'import de `n-peloton` e
       Une fois l'accès obtenu : promouvoir la release `alpha` depuis la Console plutôt que
       `fastlane deploy`, qui renverrait le même versionCode. Fiche (textes 1.1.0) et captures
       refaites sur l'app du 25 octobre poussées par `fastlane listing` le 25 octobre 2026.
-- [ ] `MOB-103` **Publier la 1.1.2 en bêta, puis sur l'App Store (XS)** — embarque `MOB-102`
-      (enregistrer un parcours ou une pièce jointe sur un téléphone Android, types MIME GPX/FIT).
-      `pubspec.yaml` est en `1.1.2`, la fiche et les nouveautés dans
-      `mobile/metadata/version/1.1.2/` (fiche recopiée de la 1.1.1). Le 31 octobre 2026 :
-      `publish_beta.sh` (build 94, TestFlight externe et Play test fermé, tag `mobile.1.1.2.94`). Version 1.1.2
-      créée dans App Store Connect le même jour (`MANUAL`, id `e357b79e-8617-4196-ac4e-5a39bfce2235`),
-      nouveautés poussées par `asc metadata apply` ; description, mots-clés et détail de revue
-      recopiés de la 1.1.1 par App Store Connect. Build 94 attaché
-      (`fastlane release`), `asc validate` sans erreur ni avertissement. **Pas encore soumise à la
-      revue, à la demande** : soumettre, puis publier à la main après l'approbation (`asc versions
-      release --version-id e357b79e-8617-4196-ac4e-5a39bfce2235 --confirm`).
+- [ ] `MOB-110` **Publier la 1.1.3 en bêta, puis sur l'App Store (XS)** — embarque la flèche
+      orientée du vent à la place du point cardinal écrit, et Flutter 3.47.9. `pubspec.yaml` est en
+      `1.1.3`, la fiche et les nouveautés dans `mobile/metadata/version/1.1.3/` (fiche recopiée de
+      la 1.1.2, nouveautés à compléter au fil des livraisons). Reste : `publish_beta.sh`, créer la
+      version 1.1.3 dans App Store Connect (`MANUAL`), pousser les nouveautés (`asc metadata
+      apply`), attacher le build (`fastlane release`), soumettre, publier à la main.
 
 ### Couverture e2e Patrol — ce que les tests ne couvrent pas encore
 
