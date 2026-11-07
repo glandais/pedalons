@@ -53,6 +53,7 @@ import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -429,7 +430,7 @@ class NotificationPhase5Test extends AbstractResourceTest {
   @Test
   void cancellation_emailsEachRiderTheStartOfTheirOwnGroup() {
     Instant rideStart = atEight();
-    Instant groupB = rideStart.plus(150, ChronoUnit.MINUTES); // 10h30
+    Instant groupB = rideStart.plus(150, ChronoUnit.MINUTES); // 10:30
     TwoGroups groups = twoGroups(rideStart, groupB);
 
     updateRide(
@@ -440,11 +441,40 @@ class NotificationPhase5Test extends AbstractResourceTest {
 
     List<Mail> toB = mailbox.getMailsSentTo(EMAIL2);
     assertEquals(1, toB.size());
-    assertTrue(toB.getFirst().getText().contains("10h30"), toB.getFirst().getText());
-    assertFalse(toB.getFirst().getText().contains("08h00"), toB.getFirst().getText());
+    assertTrue(toB.getFirst().getText().contains("10:30"), toB.getFirst().getText());
+    assertFalse(toB.getFirst().getText().contains("08:00"), toB.getFirst().getText());
     List<Mail> toA = mailbox.getMailsSentTo(EMAIL3);
     assertEquals(1, toA.size());
-    assertTrue(toA.getFirst().getText().contains("08h00"), toA.getFirst().getText());
+    assertTrue(toA.getFirst().getText().contains("08:00"), toA.getFirst().getText());
+  }
+
+  /**
+   * docs/LEDGER_*.md NOTIF-14: the subject, the bold title and the preheader lead with the date —
+   * the rider's own group's — and the name; the time reads « 10:30 », never « 10h30 ».
+   */
+  @Test
+  void cancellationEmail_leadsWithTheDate_inSubjectTitleAndPreheader() {
+    Instant rideStart = atEight();
+    Instant groupB = rideStart.plus(150, ChronoUnit.MINUTES);
+    TwoGroups groups = twoGroups(rideStart, groupB);
+
+    updateRide(
+        groups.ride().getSlug(),
+        twoGroupsRequest(groups, Status.CANCELLED, rideStart, timeOf(groupB)));
+    drain();
+    deliveryService.sendDue(NotificationChannel.EMAIL);
+
+    String when = NotificationTexts.formatDateTime(groupB, "fr", "Europe/Paris");
+    assertTrue(when.endsWith(" · 10:30"), when);
+    Mail mail = mailbox.getMailsSentTo(EMAIL2).getFirst();
+    assertEquals("Annulée, " + when + " : Sortie", mail.getSubject());
+    assertTrue(
+        mail.getHtml().contains("<strong>Annulée, " + when + " : Sortie</strong>"), mail.getHtml());
+    assertTrue(
+        mail.getHtml().contains("display:none")
+            && mail.getHtml().contains(">" + when + " : Sortie — La sortie du "),
+        mail.getHtml());
+    assertFalse(mail.getHtml().contains("10h30"), mail.getHtml());
   }
 
   /** The riders of a removed group are told the time that group was to leave. */
@@ -757,6 +787,37 @@ class NotificationPhase5Test extends AbstractResourceTest {
     assertEquals(1, mailbox.getMailsSentTo(EMAIL3).size());
   }
 
+  /**
+   * docs/LEDGER_*.md NOTIF-14: each digest item is headed by the ride's date and name, not « Nouvelle
+   * sortie dans {team} », and the preview text lists them.
+   */
+  @Test
+  void digestItem_isHeadedByTheRidesDateAndName() {
+    putPreferences(
+        USER3,
+        new NotificationPreferencesRequest(
+            List.of(
+                new NotificationPreferenceUpdate(
+                    NotificationType.RIDE_PUBLISHED, NotificationChannel.EMAIL, true)),
+            null,
+            true));
+    createRide(USER1);
+    drain();
+    notifications.makeDeliveriesDue();
+    assertEquals(1, digestService.sendDue());
+
+    Instant start =
+        Objects.requireNonNull(notifications.eventEntries().getFirst().getSubjectDateTime());
+    String heading =
+        NotificationTexts.formatDateTime(start, "fr", "Europe/Paris") + " : Sortie du dimanche";
+    Mail mail = mailbox.getMailsSentTo(EMAIL3).getFirst();
+    assertTrue(mail.getHtml().contains("<strong>" + heading + "</strong>"), mail.getHtml());
+    assertFalse(mail.getHtml().contains("Nouvelle sortie dans"), mail.getHtml());
+    assertTrue(mail.getHtml().contains("display:none"), mail.getHtml());
+    assertTrue(mail.getHtml().contains(">" + heading + "</div>"), mail.getHtml());
+    assertTrue(mail.getText().contains(heading), mail.getText());
+  }
+
   // ------------------------------------------------------------------ team webhook
 
   private void saveWebhook(String token, @Nullable String url, int expectedStatus) {
@@ -795,7 +856,11 @@ class NotificationPhase5Test extends AbstractResourceTest {
     verify(webhookHttp)
         .post(
             argThat((URI url) -> url.getHost().equals("hooks.slack.com")),
-            argThat((String json) -> json.startsWith("{\"text\":\"*Nouvelle sortie")));
+            argThat(
+                (String json) ->
+                    json.startsWith("{\"text\":\"*")
+                        && json.contains(" : Sortie du dimanche*")
+                        && json.contains("Nouvelle sortie publiée par")));
   }
 
   /**

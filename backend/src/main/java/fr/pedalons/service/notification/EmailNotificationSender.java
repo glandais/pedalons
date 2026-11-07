@@ -45,6 +45,7 @@ public class EmailNotificationSender implements NotificationChannelSender {
             "recipientName", message.recipientName(),
             "subject", rendered.subject(),
             "title", rendered.title(),
+            "preheader", rendered.preheader(),
             "body", rendered.body(),
             "ctaLabel", rendered.cta(),
             "ctaUrl", message.subjectUrl(),

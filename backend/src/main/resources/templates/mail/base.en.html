@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <body style="font-family:sans-serif;max-width:600px;margin:auto;padding:24px;">
+{#if params.preheader??}<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;line-height:1px;opacity:0;">{params.preheader}</div>{/if}
 {#insert content /}
 <p>Best regards,<br>The {params.appName} team</p>
 </body>

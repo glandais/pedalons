@@ -116,10 +116,14 @@ public class NotificationDigestService {
   private void send(List<NotificationMessage> messages) {
     NotificationMessage first = messages.getFirst();
     List<Map<String, Object>> items = new ArrayList<>();
+    List<String> headings = new ArrayList<>();
     for (NotificationMessage message : messages) {
       NotificationTexts.Rendered rendered = texts.render(message);
       Map<String, Object> item = new HashMap<>();
-      item.put("title", rendered.title());
+      // The heading, not the title: a ride is named with its date, and a digest is read the next
+      // morning, so nothing in it may say « demain » (docs/LEDGER_*.md NOTIF-14).
+      item.put("title", rendered.heading());
+      headings.add(rendered.heading());
       item.put("body", rendered.body());
       item.put("ctaLabel", rendered.cta());
       item.put("ctaUrl", message.subjectUrl());
@@ -137,6 +141,9 @@ public class NotificationDigestService {
             "title", texts.digestText(language, "title", messages.size()),
             "intro", texts.digestText(language, "intro", messages.size()),
             "items", items,
+            // The preview a mail client shows beside the subject: what the digest holds, by date
+            // and name.
+            "preheader", String.join(" | ", headings),
             "preferencesUrl", first.preferencesUrl()));
   }
 }

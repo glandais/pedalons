@@ -9,10 +9,12 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
 import java.time.DateTimeException;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -38,28 +40,63 @@ public class NotificationTexts {
   static final ZoneId DEFAULT_ZONE = ZoneId.of("Europe/Paris");
   static final String[] KEYS = {"subject", "title", "body", "cta"};
 
-  private static final Map<String, DateTimeFormatter> DATE_FORMATS =
+  /**
+   * The day of a rendezvous (docs/BRANDING.md §8.3, ledger BRAND-8): weekday and month abbreviated,
+   * « sam. 12 avr. » / « Sat, Apr 12 » — with the year when it is not the current one.
+   */
+  private static final Map<String, DateTimeFormatter> DAY_FORMATS =
       Map.of(
-          "fr", DateTimeFormatter.ofPattern("EEEE d MMMM 'à' HH'h'mm", Locale.FRENCH),
-          "en", DateTimeFormatter.ofPattern("EEEE, MMMM d 'at' h:mm a", Locale.ENGLISH));
+          "fr", DateTimeFormatter.ofPattern("EEE d MMM", Locale.FRENCH),
+          "en", DateTimeFormatter.ofPattern("EEE, MMM d", Locale.ENGLISH));
 
-  /** The reader's equivalent of a rendezvous, when its day is the rendezvous' own. */
+  private static final Map<String, DateTimeFormatter> DAY_WITH_YEAR_FORMATS =
+      Map.of(
+          "fr", DateTimeFormatter.ofPattern("EEE d MMM yyyy", Locale.FRENCH),
+          "en", DateTimeFormatter.ofPattern("EEE, MMM d, yyyy", Locale.ENGLISH));
+
+  /** The time of a rendezvous: « 09:00 », never « 09h00 »; English reads « 9:00 AM ». */
   private static final Map<String, DateTimeFormatter> TIME_FORMATS =
       Map.of(
-          "fr", DateTimeFormatter.ofPattern("HH'h'mm", Locale.FRENCH),
+          "fr", DateTimeFormatter.ofPattern("HH:mm", Locale.FRENCH),
           "en", DateTimeFormatter.ofPattern("h:mm a", Locale.ENGLISH));
 
-  /** The reader's equivalent of a rendezvous, when it falls on another day (« ven. 01h00 »). */
+  /** The reader's equivalent of a rendezvous, when it falls on another day (« ven. 01:00 »). */
   private static final Map<String, DateTimeFormatter> DAY_TIME_FORMATS =
       Map.of(
-          "fr", DateTimeFormatter.ofPattern("EEE HH'h'mm", Locale.FRENCH),
+          "fr", DateTimeFormatter.ofPattern("EEE HH:mm", Locale.FRENCH),
           "en", DateTimeFormatter.ofPattern("EEE h:mm a", Locale.ENGLISH));
+
+  /** Between the day and the time of a rendezvous: « sam. 12 avr. · 09:00 ». */
+  private static final String DAY_TIME_SEPARATOR = " · ";
 
   private static final Pattern PLACEHOLDER = Pattern.compile("\\{(\\w+)}");
 
   private final Map<String, Properties> bundles = new ConcurrentHashMap<>();
 
-  public record Rendered(String subject, String title, String body, String cta) {}
+  /** What « now » is: whether a date needs its year, and what « demain » means. */
+  private final Clock clock;
+
+  public NotificationTexts() {
+    this(Clock.systemUTC());
+  }
+
+  /** For tests, which must not depend on the year they run in. */
+  NotificationTexts(Clock clock) {
+    this.clock = clock;
+  }
+
+  /**
+   * One notification, worded. {@code heading} is the absolute line a reader may meet later — the
+   * bold title of a digest item, the start of an e-mail's preheader: for a rendezvous its date and
+   * name (« sam. 12 avr. · 09:00 : Boucle »), never « demain », else the title.
+   */
+  public record Rendered(String subject, String title, String body, String cta, String heading) {
+
+    /** The hidden preview text of an e-mail: the date and the name first, then what happened. */
+    public String preheader() {
+      return heading + " — " + body;
+    }
+  }
 
   /**
    * The zones a rendezvous is written with (docs/LEDGER_*.md API-60, plan §7): it reads in {@code
@@ -122,12 +159,20 @@ public class NotificationTexts {
       List<NotificationChange> changes) {
     String language = language(languageTag);
     Properties texts = bundle(language);
-    String date = subjectDateTime == null ? "" : formatRendezvous(subjectDateTime, language, zones);
+    Instant now = clock.instant();
     Map<String, String> values = new HashMap<>();
     values.put("actor", actorName != null ? actorName : teamName);
     values.put("team", teamName);
     values.put("subject", subjectName);
-    values.put("date", date);
+    if (subjectDateTime == null) {
+      values.put("date", "");
+      values.put("when", "");
+      values.put("soon", "");
+    } else {
+      values.put("date", formatRendezvous(subjectDateTime, language, zones, now));
+      values.put("when", formatDeparture(subjectDateTime, language, zones.subject(), now));
+      values.put("soon", formatSoon(subjectDateTime, language, zones.subject(), now));
+    }
     values.put("excerpt", excerpt != null ? excerpt : "");
     values.put("site", siteName);
     // Each change is a clause of its own, filled with the same values, then the clauses joined.
@@ -137,11 +182,44 @@ public class NotificationTexts {
             texts.getProperty("change.separator", "; "),
             changes.stream().map(c -> fill(texts, "change." + c.name(), values)).toList()));
     String prefix = type.name() + ".";
+    // A new time is news enough to lead the title: RIDE_UPDATED.title.DATE_TIME over .title.
+    String variant = changes.contains(NotificationChange.DATE_TIME) ? ".DATE_TIME" : "";
+    String title = fill(texts, variantKey(texts, prefix + "title", variant), values);
     return new Rendered(
-        fill(texts, prefix + "subject", values),
-        fill(texts, prefix + "title", values),
+        fill(texts, variantKey(texts, prefix + "subject", variant), values),
+        title,
         fill(texts, prefix + "body", values),
-        fill(texts, prefix + "cta", values));
+        fill(texts, prefix + "cta", values),
+        isRendezvous(type) && subjectDateTime != null ? fill(texts, "heading", values) : title);
+  }
+
+  private static String variantKey(Properties texts, String key, String variant) {
+    return !variant.isEmpty() && texts.getProperty(key + variant) != null ? key + variant : key;
+  }
+
+  /**
+   * The types whose subject is a rendezvous — a ride or a trip, read for when it leaves: their
+   * {@link Rendered#heading()} is its date and name. A post's date is when it was published, a
+   * comment's or a report's is no one's appointment.
+   */
+  static boolean isRendezvous(NotificationType type) {
+    return switch (type) {
+      case RIDE_PUBLISHED,
+          RIDE_CANCELLED,
+          TRIP_PUBLISHED,
+          TRIP_CANCELLED,
+          RIDE_REMINDER,
+          RIDE_UPDATED,
+          RIDE_GROUP_REMOVED,
+          RIDE_JOINED ->
+          true;
+      case POST_PUBLISHED,
+          COMMENT_REPLY,
+          COMMENT_ON_MY_PUBLICATION,
+          TEAM_INVITATION,
+          CONTENT_REPORTED ->
+          false;
+    };
   }
 
   /** The test message of a team webhook: its {@code title} or {@code body}. */
@@ -160,23 +238,64 @@ public class NotificationTexts {
 
   /**
    * A date and time as every message to a person writes it — in their language, in their zone, the
-   * default ones when they have none (« samedi 11 octobre à 08h30 »).
+   * default ones when they have none (« dim. 11 oct. · 08:30 »).
    */
   public static String formatDateTime(
       Instant instant, @Nullable String languageTag, @Nullable String timezone) {
-    return DATE_FORMATS.get(language(languageTag)).withZone(zone(timezone)).format(instant);
+    return formatDateTime(instant, languageTag, timezone, Instant.now());
+  }
+
+  static String formatDateTime(
+      Instant instant, @Nullable String languageTag, @Nullable String timezone, Instant now) {
+    return formatDeparture(instant, language(languageTag), zone(timezone), now);
+  }
+
+  /**
+   * The single departure format (docs/BRANDING.md §8.3, ledger BRAND-8), in {@code zone}: « sam. 12
+   * avr. · 09:00 », « sam. 10 avr. 2027 · 09:00 » when the year is not {@code now}'s there.
+   */
+  static String formatDeparture(Instant instant, String language, ZoneId zone, Instant now) {
+    boolean thisYear = instant.atZone(zone).getYear() == now.atZone(zone).getYear();
+    return (thisYear ? DAY_FORMATS : DAY_WITH_YEAR_FORMATS)
+            .get(language)
+            .withZone(zone)
+            .format(instant)
+        + DAY_TIME_SEPARATOR
+        + TIME_FORMATS.get(language).withZone(zone).format(instant);
+  }
+
+  /**
+   * The departure relative to {@code now}, for the one message whose point is that it is near — the
+   * reminder: « Demain 09:00 », « Aujourd'hui 09:00 », else {@link #formatDeparture}. Judged in the
+   * rendezvous' zone, so it holds whenever the message leaves.
+   */
+  String formatSoon(Instant instant, String language, ZoneId zone, Instant now) {
+    long days =
+        ChronoUnit.DAYS.between(now.atZone(zone).toLocalDate(), instant.atZone(zone).toLocalDate());
+    String key = days == 0 ? "relative.today" : days == 1 ? "relative.tomorrow" : null;
+    if (key == null) {
+      return formatDeparture(instant, language, zone, now);
+    }
+    return fill(
+        bundle(language),
+        key,
+        Map.of("time", TIME_FORMATS.get(language).withZone(zone).format(instant)));
+  }
+
+  String formatRendezvous(Instant instant, @Nullable String languageTag, Zones zones) {
+    return formatRendezvous(instant, languageTag, zones, clock.instant());
   }
 
   /**
    * A rendezvous as every message writes it (docs/LEDGER_*.md API-60, plan §7): in its own zone,
    * that zone named when its offset differs from the reference's, and the reader's equivalent when
-   * they have a zone — with the day when it changes. « samedi 11 octobre à 08h00, heure de Tokyo
-   * (ven. 01h00 chez vous) »; « samedi 11 octobre à 08h00 » when the offsets agree.
+   * they have a zone — with the day when it changes. « sam. 11 oct. · 08:00, heure de Tokyo (ven.
+   * 01:00 chez vous) »; « sam. 11 oct. · 08:00 » when the offsets agree.
    */
-  String formatRendezvous(Instant instant, @Nullable String languageTag, Zones zones) {
+  String formatRendezvous(Instant instant, @Nullable String languageTag, Zones zones, Instant now) {
     String language = language(languageTag);
     ZoneId subject = zones.subject();
-    String date = DATE_FORMATS.get(language).withZone(subject).format(instant);
+    String date = formatDeparture(instant, language, subject, now);
     if (ZoneLabels.sameOffsetAt(instant, subject, zones.reference())) {
       return date;
     }
@@ -206,7 +325,7 @@ public class NotificationTexts {
       return DEFAULT_LANGUAGE;
     }
     String primary = tag.split("-")[0].toLowerCase(Locale.ROOT);
-    return DATE_FORMATS.containsKey(primary) ? primary : DEFAULT_LANGUAGE;
+    return DAY_FORMATS.containsKey(primary) ? primary : DEFAULT_LANGUAGE;
   }
 
   static ZoneId zone(@Nullable String timezone) {
@@ -262,7 +381,7 @@ public class NotificationTexts {
 
   /** Every language with a texts file — what {@code NotificationTextsTest} checks for completeness. */
   static Iterable<String> languages() {
-    return DATE_FORMATS.keySet();
+    return DAY_FORMATS.keySet();
   }
 
   /** The keys outside the per-type blocks: change clauses, zone mention, digest, webhook test. */
@@ -278,6 +397,9 @@ public class NotificationTexts {
           "zone.date",
           "zone.dateWithLocal",
           "zone.local",
+          "relative.today",
+          "relative.tomorrow",
+          "heading",
           "digest.subject",
           "digest.title",
           "digest.intro",

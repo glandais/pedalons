@@ -95,7 +95,7 @@ class NotificationPhase5UnitTest {
             null,
             "Pédalons",
             List.of(NotificationChange.DATE_TIME, NotificationChange.START_PLACE));
-    assertTrue(rendered.body().contains("8h30"), rendered.body());
+    assertTrue(rendered.body().contains("08:30"), rendered.body());
     assertTrue(rendered.body().contains("point de départ"), rendered.body());
   }
 
