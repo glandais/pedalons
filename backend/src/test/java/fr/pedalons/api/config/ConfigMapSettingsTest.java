@@ -54,16 +54,16 @@ class ConfigMapSettingsTest extends AbstractResourceTest {
   @Test
   void getConfig_shouldPointRasterBasemapsAtTheGeneratedStyleEndpoint() {
     // A raster provider serves tiles and no style.json — the server wraps it, and that is what
-    // lets a client which only knows how to take a style URL render a satellite or CyclOSM fond.
+    // lets a client which only knows how to take a style URL render a satellite or OSM fond.
     given()
         .when()
         .get("/api/config")
         .then()
         .statusCode(200)
-        .body("mapStyles.find { it.id == 'cyclosm' }.url", endsWith("/api/map/styles/cyclosm.json"))
-        .body("mapStyles.find { it.id == 'cyclosm' }.url", startsWith("http"))
+        .body("mapStyles.find { it.id == 'osm' }.url", endsWith("/api/map/styles/osm.json"))
+        .body("mapStyles.find { it.id == 'osm' }.url", startsWith("http"))
         // A raster basemap is an aerial or a printed map: it has no night rendering to switch to.
-        .body("mapStyles.find { it.id == 'cyclosm' }.darkVariant", is(nullValue()));
+        .body("mapStyles.find { it.id == 'osm' }.darkVariant", is(nullValue()));
   }
 
   @Test
@@ -81,19 +81,20 @@ class ConfigMapSettingsTest extends AbstractResourceTest {
         .then()
         .statusCode(200)
         .body("mapStyles.find { it.id == 'ign-vector' }.attribution", containsString("IGN"))
-        // VersaTiles puts "© OpenStreetMap contributors" on its own source; a second copy here
+        // The cycling style puts "© OpenStreetMap contributors" on its own source; a second copy
+        // here
         // would show twice, since deduplication would need a byte-for-byte match on a string a
         // third party owns.
-        .body("mapStyles.find { it.id == 'colorful' }.attribution", is(nullValue()))
+        .body("mapStyles.find { it.id == 'cycling' }.attribution", is(nullValue()))
         // Same for a raster basemap: its credit is on the source of the wrapper we generate.
-        .body("mapStyles.find { it.id == 'cyclosm' }.attribution", is(nullValue()));
+        .body("mapStyles.find { it.id == 'osm' }.attribution", is(nullValue()));
   }
 
   @Test
   void getStyle_shouldRenderAOneLayerRasterStyle() {
     given()
         .when()
-        .get("/api/map/styles/cyclosm.json")
+        .get("/api/map/styles/osm.json")
         .then()
         .statusCode(200)
         .body("version", equalTo(8))
@@ -101,11 +102,10 @@ class ConfigMapSettingsTest extends AbstractResourceTest {
         .body("layers[0].type", equalTo("raster"))
         .body("layers[0].source", equalTo("raster"))
         .body("sources.raster.type", equalTo("raster"))
-        // Three subdomains: MapLibre has no {s} token, so each is declared as its own template.
-        .body("sources.raster.tiles", hasSize(3))
+        .body("sources.raster.tiles", hasSize(1))
         .body("sources.raster.tiles[0]", containsString("{z}"))
-        .body("sources.raster.maxzoom", equalTo(17))
-        .body("sources.raster.attribution", containsString("CyclOSM"));
+        .body("sources.raster.maxzoom", equalTo(19))
+        .body("sources.raster.attribution", containsString("OpenStreetMap"));
   }
 
   @Test
@@ -122,8 +122,8 @@ class ConfigMapSettingsTest extends AbstractResourceTest {
 
   @Test
   void getStyle_forAHostedVectorStyle_shouldBe404() {
-    // `colorful` is served by VersaTiles, not generated here: the endpoint must not invent one.
-    given().when().get("/api/map/styles/colorful.json").then().statusCode(404);
+    // `cycling` is hosted elsewhere, not generated here: the endpoint must not invent one.
+    given().when().get("/api/map/styles/cycling.json").then().statusCode(404);
   }
 
   @Test

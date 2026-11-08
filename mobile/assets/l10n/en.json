@@ -1954,6 +1954,10 @@
     "hillshade": "Hillshading",
     "tracks": "Routes",
     "attribution": "Map credits",
+    "stylePinned": {
+      "dark": "{label} (dark)",
+      "light": "{label} (light)"
+    },
     "styleGroup": {
       "vector": "Maps",
       "satellite": "Satellite",

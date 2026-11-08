@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Last updated: October 25, 2026**
+**Last updated: November 8, 2026**
 
 This privacy policy describes how Pedalons ("we", "our", "us") collects, uses, and protects your personal data when you use our platform (website, mobile app, GPS device extensions).
 
@@ -274,8 +274,11 @@ Ride weather forecasts are requested from Open-Meteo by our server, in the backg
 Route calculation in the planner also goes through our server, which queries Stadia Maps on your behalf: Stadia Maps receives the coordinates of the points you place (and of those already calculated between them), the profile you chose (road bike, mountain bike, on foot…) and our server's IP address — never your identity, account or IP address. We keep nothing of that request beyond the answer; the resulting track is stored only if you save the route.
 
 - **VersaTiles (tiles.versatiles.org)**
-  - *Role*: Vector map background (default style), map fonts and sprites
+  - *Role*: Tiles of the "Vélo" and "Route" vector map backgrounds, map fonts and sprites
   - *Data Involved*: IP address, map area viewed
+- **GitHub Pages (glandais.github.io, United States)**
+  - *Role*: Styles and icons of the "Vélo" and "Route" map backgrounds
+  - *Data Involved*: IP address
 - **Mapterhorn (tiles.mapterhorn.com, served by Cloudflare, United States)**
   - *Role*: Terrain-elevation and hillshade tiles (3-D relief); also used by our server to correct the altitude of imported tracks
   - *Data Involved*: Your browser or app, only when you switch on relief shading or 3-D terrain (both off by default): IP address, map area viewed. Server-side: coordinates of coarse map tiles (~10 km squares) covered by a track and our server's IP address — never your identity, account or IP address
@@ -284,9 +287,6 @@ Route calculation in the planner also goes through our server, which queries Sta
   - *Data Involved*: Your browser or app: IP address, map area viewed. Server-side: coordinates of the map tiles (~1 km squares) covered by a track and our server's IP address — never your identity, account or IP address
 - **OpenStreetMap Foundation (tile.openstreetmap.org, United Kingdom)**
   - *Role*: OpenStreetMap map background
-  - *Data Involved*: IP address, map area viewed
-- **OpenStreetMap France (tile-cyclosm.openstreetmap.fr)**
-  - *Role*: CyclOSM map background
   - *Data Involved*: IP address, map area viewed
 - **Open-Meteo (api.open-meteo.com)**
   - *Role*: Ride weather forecasts, queried by our server

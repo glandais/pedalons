@@ -37,17 +37,54 @@ export function isKnownGroup(group: string): group is MapStyleGroup {
   return KNOWN_GROUPS.includes(group)
 }
 
+/** A rendering forced whatever the site's theme. */
+export type MapStylePin = 'light' | 'dark'
+
+/** A line of the switcher: a served basemap, either following the theme or pinned to one rendering. */
+export type MapStyleChoice = MapStyle & { pin: MapStylePin | null }
+
+const pinnedId = (id: MapStyleId, pin: MapStylePin): MapStyleId => `${id}:${pin}`
+
 /**
- * The style to render, given what the server serves and what the user picked.
+ * The switcher's lines: each basemap follows the theme, and one having a dark counterpart gets a
+ * second line for the rendering the theme would not pick.
+ */
+export function mapStyleChoices(styles: readonly MapStyle[], dark: boolean): MapStyleChoice[] {
+  const opposite: MapStylePin = dark ? 'light' : 'dark'
+  return styles.flatMap((style) => [
+    { ...style, pin: null },
+    ...(style.darkVariant ? [{ ...style, id: pinnedId(style.id, opposite), pin: opposite }] : []),
+  ])
+}
+
+/**
+ * The line to render, given what the server serves and what the user picked.
+ *
+ * A pin is remembered as a rendering rather than as "the opposite of the theme", so a map chosen dark
+ * stays dark when the theme changes. It then coincides with the line following the theme, which is
+ * the id returned: the switcher has no line for a pin equal to the theme.
  *
  * A remembered id that has since left the contract falls back to the first served basemap: better a
  * map than none.
  */
-export function resolveMapStyle(
+export function resolveMapChoice(
   styles: readonly MapStyle[],
-  selectedId: MapStyleId | null
-): MapStyle | undefined {
-  return styles.find((style) => style.id === selectedId) ?? styles[0]
+  selectedId: MapStyleId | null,
+  dark: boolean
+): MapStyleChoice | undefined {
+  const [baseId, savedPin] = selectedId?.split(':') ?? []
+  const style = styles.find((candidate) => candidate.id === baseId) ?? styles[0]
+  if (!style) return undefined
+  const wanted =
+    style.id === baseId && (savedPin === 'light' || savedPin === 'dark') ? savedPin : null
+  const pin = wanted && style.darkVariant ? wanted : null
+  const followsTheme = pin === null || (pin === 'dark') === dark
+  return { ...style, id: followsTheme ? style.id : pinnedId(style.id, pin), pin }
+}
+
+/** Whether a line renders its dark counterpart: its pin when it has one, otherwise the theme. */
+export function rendersDark(choice: MapStyleChoice | undefined, dark: boolean): boolean {
+  return choice?.pin ? choice.pin === 'dark' : dark
 }
 
 /**
@@ -78,7 +115,7 @@ export function isDarkBasemap(style: MapStyle | undefined, dark: boolean): boole
  * proxy, so the browser fetches the style straight from the API host and it is refused as
  * cross-origin — the style silently fails to load and the map keeps the previous basemap.
  *
- * Third-party style URLs (IGN, versatiles…) are left alone; they are meant to be cross-origin and
+ * Third-party style URLs (IGN, cycling-style…) are left alone; they are meant to be cross-origin and
  * serve the CORS headers for it.
  */
 function sameOriginIfApi(url: string): string {
@@ -91,8 +128,10 @@ function sameOriginIfApi(url: string): string {
 }
 
 /** The served basemaps grouped for the switcher, in served order — the server does the sorting. */
-export function groupStyles(styles: readonly MapStyle[]): { group: string; styles: MapStyle[] }[] {
-  const sections: { group: string; styles: MapStyle[] }[] = []
+export function groupStyles<T extends MapStyle>(
+  styles: readonly T[]
+): { group: string; styles: T[] }[] {
+  const sections: { group: string; styles: T[] }[] = []
   for (const style of styles) {
     const last = sections.at(-1)
     if (last && last.group === style.group) last.styles.push(style)

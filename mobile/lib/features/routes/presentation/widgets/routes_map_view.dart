@@ -178,11 +178,11 @@ class _RoutesMapViewState extends ConsumerState<RoutesMapView>
         backgroundSheetTitle: 'map.background'.tr(),
         hillshade: 'map.hillshade'.tr(),
       ),
-      styles: servedMapStyleOptions(ref),
+      styles: servedMapStyleOptions(ref, brightness),
       hillshadeEnabled: servedHillshadeEnabled(ref),
       onHillshadeChanged: (bool on) =>
           ref.read(hillshadeEnabledProvider.notifier).set(on),
-      selectedStyleId: resolved.style.id,
+      selectedStyleId: resolved.selectedId,
       onStyleSelected: (String id) =>
           ref.read(mapStyleIdProvider.notifier).select(id),
       pill: _pill(),

@@ -110,7 +110,7 @@ test.describe('ad detail', () => {
   })
 
   test.describe('location map', () => {
-    // The basemap is a third-party CDN (tiles.versatiles.org, see GET /api/config), not part of the
+    // The basemap is a third-party CDN (see GET /api/config), not part of the
     // stack: its tiles depend on the network and change under us. It is replaced by a plain
     // background so what is measured below is the ad's sector alone — the overlay is untouched.
     test.beforeEach(async ({ page }) => {

@@ -30,17 +30,18 @@ const directives = (policy) =>
 const config = {
   mapStyles: [
     {
-      id: 'colorful',
-      url: 'https://tiles.versatiles.org/assets/styles/colorful/style.json',
-      darkVariant: 'https://tiles.versatiles.org/assets/styles/eclipse/style.json',
+      id: 'cycling',
+      url: 'https://glandais.github.io/cycling-style/style.json',
+      darkVariant: 'https://glandais.github.io/cycling-style/style-dark.json',
     },
     {
       id: 'ign-vector',
       url: 'https://data.geopf.fr/annexes/ressources/vectorTiles/styles/PLAN.IGN/standard.json',
     },
     { id: 'osm', url: 'https://www.pedalons.fr/api/map/styles/osm.json' },
-    { id: 'cyclosm', url: 'https://www.pedalons.fr/api/map/styles/cyclosm.json' },
+    { id: 'esri', url: 'https://www.pedalons.fr/api/map/styles/esri.json' },
   ],
+  tileServerBaseUrl: 'https://tiles.versatiles.org',
   terrain: { url: 'https://tiles.mapterhorn.com/tilejson.json', maxZoom: 16 },
   webPush: { apiKey: 'k', appId: 'a', messagingSenderId: 's', vapidKey: 'v' },
 }
@@ -53,15 +54,12 @@ const generatedStyles = {
     },
     layers: [],
   },
-  '/api/map/styles/cyclosm.json': {
+  '/api/map/styles/esri.json': {
     version: 8,
     sources: {
       raster: {
         type: 'raster',
-        tiles: [
-          'https://a.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png',
-          'https://b.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png',
-        ],
+        tiles: ['https://server.arcgisonline.com/tile/{z}/{y}/{x}'],
       },
     },
     layers: [],
@@ -223,13 +221,13 @@ describe('createConfigOriginResolver', () => {
     const origins = await configOrigins(config)
     expect(new Set(origins)).toEqual(
       new Set([
+        'https://glandais.github.io',
         'https://tiles.versatiles.org',
         'https://data.geopf.fr',
         'https://tiles.mapterhorn.com',
         ...FCM_ORIGINS,
         'https://tile.openstreetmap.org',
-        'https://a.tile-cyclosm.openstreetmap.fr',
-        'https://b.tile-cyclosm.openstreetmap.fr',
+        'https://server.arcgisonline.com',
       ])
     )
     // A generated style is same-origin (mapStyles.ts sameOriginIfApi): its host is not listed.
@@ -253,7 +251,7 @@ describe('createConfigOriginResolver', () => {
     let clock = 0
     const { fetchStyle, configOrigins } = resolver({ ttlMs: 1000, now: () => clock })
     await Promise.all([configOrigins(config), configOrigins(config)])
-    expect(fetchStyle).toHaveBeenCalledTimes(2) // osm + cyclosm
+    expect(fetchStyle).toHaveBeenCalledTimes(2) // osm + esri
     clock = 999
     await configOrigins(config)
     expect(fetchStyle).toHaveBeenCalledTimes(2)

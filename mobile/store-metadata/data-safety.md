@@ -487,15 +487,15 @@ rather than this table when it changes.
 
 | Endpoint | Why | What it sees |
 |---|---|---|
-| `tiles.versatiles.org` | Default basemap (style, vector tiles, glyphs, sprites) | IP address; the map viewport being browsed |
+| `tiles.versatiles.org` | Default basemaps (vector tiles, glyphs, base sprites) | IP address; the map viewport being browsed |
+| `glandais.github.io` (GitHub Pages, US) | Style documents and icons of the « Vélo » and « Route » basemaps | IP address |
 | `tiles.mapterhorn.com` | Relief shading (raster-DEM), when on | Same |
 | `data.geopf.fr` (IGN Géoplateforme) | IGN, Satellite (IGN), SCAN 25 basemaps, when chosen | Same |
 | `server.arcgisonline.com` (Esri, US) | Satellite (ESRI) basemap, when chosen | Same |
 | `tile.openstreetmap.org` (OSMF, UK) | OpenStreetMap basemap, when chosen | Same |
-| `*.tile-cyclosm.openstreetmap.fr` | CyclOSM basemap, when chosen | Same |
 | Firebase Cloud Messaging (`*.googleapis.com`, APNs via Firebase) | Issues the registration token and routes every push (`lib/features/notifications/services/push_gateway.dart`) | IP address, the token it issued, the device and app version it registers, and **the content of each notification** — title and body are rendered server-side and travel through Google |
 
-**GitHub is not contacted by the app.** Problem and error reports go to our backend, which
+**GitHub is only contacted by the app through GitHub Pages, for the basemap styles above.** Problem and error reports go to our backend, which
 publishes them to a private GitHub repository: GitHub is a sub-processor of the *backend*, named in
 the privacy policy (§4 and the US transfer in §5), not a third party of the app binary.
 

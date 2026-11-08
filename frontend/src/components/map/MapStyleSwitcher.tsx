@@ -10,7 +10,7 @@ import {
   ColorSwatch,
   Divider,
 } from '@mantine/core'
-import { groupStyles, isKnownGroup, type MapStyle, type MapStyleId } from './mapStyles'
+import { groupStyles, isKnownGroup, type MapStyleChoice, type MapStyleId } from './mapStyles'
 import { MapPanel } from './MapPanel'
 
 /** A trace the visitor can show or hide on its own: a ride's group, a trip's stage. */
@@ -24,7 +24,7 @@ export interface MapTraceOption {
 
 export interface MapStyleSwitcherProps {
   /** The served basemaps, in served order. Empty while the config is in flight. */
-  styles: readonly MapStyle[]
+  styles: readonly MapStyleChoice[]
   currentStyleId: MapStyleId | undefined
   onStyleChange: (styleId: MapStyleId) => void
   terrain3d?: boolean
@@ -93,7 +93,9 @@ export function MapStyleSwitcher({
                         c={isSelected ? 'var(--mantine-primary-color-filled)' : undefined}
                         fw={isSelected ? 500 : 400}
                       >
-                        {style.label}
+                        {style.pin
+                          ? t(`map.styles.pinned.${style.pin}`, { label: style.label })
+                          : style.label}
                       </Text>
                     </UnstyledButton>
                   )

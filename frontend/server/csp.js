@@ -129,8 +129,10 @@ export function styleDocumentOrigins(style) {
  * The origins the browser reaches for the given config (GET /api/config, ConfigDto):
  *
  * - each basemap's style document and dark variant — a third-party style is assumed to keep its
- *   sprite, glyphs and tiles on its own host (true of VersaTiles and IGN today; CSP_CONNECT_SRC_EXTRA
- *   covers one that does not, and Report-Only shows it);
+ *   sprite, glyphs and tiles on its own host (true of IGN; CSP_CONNECT_SRC_EXTRA covers one that does
+ *   not, and Report-Only shows it);
+ * - the public tile host (`tileServerBaseUrl`): the cycling styles are published on GitHub Pages but
+ *   their tiles, glyphs and base sprites are on that host;
  * - the raster basemaps the backend wraps itself (`/api/map/styles/{id}.json`, loaded same-origin):
  *   their tile hosts are only in that document, so it is fetched, through `fetchStyle`, and kept
  *   for `ttlMs` — the styles are deployment configuration, the same for every tenant;
@@ -196,6 +198,8 @@ export function createConfigOriginResolver({
         }
       }
     }
+    const tileHost = originOf(config.tileServerBaseUrl)
+    if (tileHost) origins.push(tileHost)
     const terrain = originOf(config.terrain?.url)
     if (terrain) origins.push(terrain)
     if (config.webPush) origins.push(...FCM_ORIGINS)

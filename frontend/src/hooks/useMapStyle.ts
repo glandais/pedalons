@@ -2,7 +2,9 @@ import { useGetConfig } from '@/api/endpoints/configuration/configuration'
 import { useResolvedColorScheme } from '@/hooks/useResolvedColorScheme'
 import {
   isDarkBasemap,
-  resolveMapStyle,
+  mapStyleChoices,
+  rendersDark,
+  resolveMapChoice,
   styleUrlFor,
   type MapStyle,
   type MapStyleId,
@@ -21,12 +23,14 @@ const NO_STYLES: MapStyle[] = []
  * Dark mode no longer selects a *different entry* (it used to jump to `eclipse`, which the switcher
  * listed separately): the chosen basemap keeps its identity and loads its `darkVariant`. The user's
  * pick therefore survives a theme change, and the switcher shows one line per basemap rather than
- * one per basemap-and-scheme.
+ * one per basemap-and-scheme — plus, for a basemap with a dark counterpart, one line forcing the
+ * rendering the theme would not pick (`mapStyleChoices`).
  */
 export function useMapStyle() {
   const colorScheme = useResolvedColorScheme()
   const { data: config } = useGetConfig()
-  const styles = config?.mapStyles ?? NO_STYLES
+  const served = config?.mapStyles ?? NO_STYLES
+  const dark = colorScheme === 'dark'
   // Served like the basemaps, and undefined when the deployment configures no provider — the relief
   // switches then disappear rather than offering a control that can only fail.
   const terrainSource = config?.terrain
@@ -41,10 +45,12 @@ export function useMapStyle() {
     setHillshade,
   } = useMapStyleStore()
 
-  const currentStyle = resolveMapStyle(styles, savedStyleId)
+  const styles = mapStyleChoices(served, dark)
+  const currentStyle = resolveMapChoice(served, savedStyleId, dark)
   const styleId: MapStyleId | undefined = currentStyle?.id
-  const style = currentStyle ? styleUrlFor(currentStyle, colorScheme === 'dark') : undefined
-  const darkBasemap = isDarkBasemap(currentStyle, colorScheme === 'dark')
+  const renderDark = rendersDark(currentStyle, dark)
+  const style = currentStyle ? styleUrlFor(currentStyle, renderDark) : undefined
+  const darkBasemap = isDarkBasemap(currentStyle, renderDark)
 
   return {
     styleId,

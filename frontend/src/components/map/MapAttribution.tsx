@@ -16,7 +16,7 @@ interface MapAttributionProps {
  * ships *no* attribution for, IGN's `PLAN.IGN` being the case that exists — has to be passed as
  * `customAttribution`, and MapLibre only reads that when the control is constructed. Hence the
  * `key`: changing basemap rebuilds the control instead of leaving the previous provider credited.
- * Everything else (OpenStreetMap, CyclOSM, Esri, Géoportail, VersaTiles, the Mapterhorn DEM) comes
+ * Everything else (OpenStreetMap, Esri, Géoportail, VersaTiles, the Mapterhorn DEM) comes
  * from the style document itself and needs nothing from us.
  *
  * A map that renders third-party tiles renders this. It is not a detail of taste: ODbL, Esri's terms

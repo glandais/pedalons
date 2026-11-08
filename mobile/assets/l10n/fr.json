@@ -1954,6 +1954,10 @@
     "hillshade": "Ombrage du relief",
     "tracks": "Tracés",
     "attribution": "Crédits cartographiques",
+    "stylePinned": {
+      "dark": "{label} (sombre)",
+      "light": "{label} (clair)"
+    },
     "styleGroup": {
       "vector": "Plans",
       "satellite": "Satellite",

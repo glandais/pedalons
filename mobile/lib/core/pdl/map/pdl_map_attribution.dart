@@ -37,7 +37,7 @@ class PdlMapCredit {
 /// Deux sources se cumulent :
 ///
 /// * ce que le document de style déclare (`getAttributionsSync()`) — c'est de
-///   là que viennent OpenStreetMap, CyclOSM, ESRI, Géoportail, VersaTiles et le
+///   là que viennent OpenStreetMap, ESRI, Géoportail, VersaTiles et le
 ///   MNT Mapterhorn ;
 /// * [PdlMapCredit.extra], `MapStyleDto.attribution`, pour le fond dont le
 ///   fournisseur ne déclare rien du tout (le `PLAN.IGN` de l'IGN).

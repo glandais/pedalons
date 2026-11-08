@@ -19,6 +19,37 @@ void main() {
   );
   const List<MapStyleDto> styles = <MapStyleDto>[colorful, satellite];
 
+  group('rendu forcé', () {
+    test('tient malgré le thème, et allume la ligne qui le montre', () {
+      final ResolvedMapStyle clair = resolveMapStyle(
+        styles,
+        'colorful:dark',
+        Brightness.light,
+      )!;
+      expect(clair.url, colorful.darkVariant);
+      expect(clair.selectedId, 'colorful:dark');
+
+      // Sous un thème sombre, c'est ce que donne déjà la ligne du fond.
+      final ResolvedMapStyle sombre = resolveMapStyle(
+        styles,
+        'colorful:dark',
+        Brightness.dark,
+      )!;
+      expect(sombre.url, colorful.darkVariant);
+      expect(sombre.selectedId, 'colorful');
+    });
+
+    test('est ignoré sur un fond sans variante sombre', () {
+      final ResolvedMapStyle style = resolveMapStyle(
+        styles,
+        '${satellite.id}:dark',
+        Brightness.light,
+      )!;
+      expect(style.url, satellite.url);
+      expect(style.selectedId, satellite.id);
+    });
+  });
+
   group('resolveMapStyle', () {
     test('sert la variante sombre quand elle existe', () {
       expect(

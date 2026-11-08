@@ -302,7 +302,7 @@ class RideGroupsMap extends ConsumerWidget {
         hillshade: 'map.hillshade'.tr(),
         tracks: 'map.tracks'.tr(),
       ),
-      styles: servedMapStyleOptions(ref),
+      styles: servedMapStyleOptions(ref, brightness),
       hillshadeEnabled: servedHillshadeEnabled(ref),
       onHillshadeChanged: (bool on) =>
           ref.read(hillshadeEnabledProvider.notifier).set(on),
@@ -318,7 +318,7 @@ class RideGroupsMap extends ConsumerWidget {
               ),
             ]
           : const <PdlMapHeroSwitch>[],
-      selectedStyleId: style.value?.style.id,
+      selectedStyleId: style.value?.selectedId,
       onStyleSelected: (String id) =>
           ref.read(mapStyleIdProvider.notifier).select(id),
       // Une case par parcours, seulement quand il y en a plusieurs : masquer

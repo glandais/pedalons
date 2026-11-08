@@ -1,6 +1,6 @@
 # Politique de confidentialité
 
-**Dernière mise à jour : 25 octobre 2026**
+**Dernière mise à jour : 8 novembre 2026**
 
 La présente politique de confidentialité décrit la manière dont Pedalons (« nous », « notre », « nos ») collecte, utilise et protège vos données personnelles lorsque vous utilisez notre plateforme (site web, application mobile, extensions pour appareils GPS).
 
@@ -274,8 +274,11 @@ Les prévisions météo des sorties sont demandées à Open-Meteo par notre serv
 Le calcul d'itinéraires du planificateur passe aussi par notre serveur, qui interroge Stadia Maps en votre nom : Stadia Maps reçoit les coordonnées des points que vous placez (et de ceux déjà calculés entre eux), le profil choisi (vélo de route, VTT, à pied…) et l'adresse IP de notre serveur — jamais votre identité, votre compte ni votre adresse IP. Nous ne conservons rien de cette demande au-delà de la réponse ; le tracé obtenu n'est enregistré que si vous sauvegardez l'itinéraire.
 
 - **VersaTiles (tiles.versatiles.org)**
-  - *Rôle* : Fond de carte vectoriel (style par défaut), polices et sprites de carte
+  - *Rôle* : Tuiles des fonds de carte vectoriels « Vélo » et « Route », polices et sprites de carte
   - *Données concernées* : Adresse IP, zone de carte affichée
+- **GitHub Pages (glandais.github.io, États-Unis)**
+  - *Rôle* : Styles et pictogrammes des fonds « Vélo » et « Route »
+  - *Données concernées* : Adresse IP
 - **Mapterhorn (tiles.mapterhorn.com, servi par Cloudflare, États-Unis)**
   - *Rôle* : Tuiles d'altitude et d'ombrage (relief 3D) ; également utilisé par notre serveur pour corriger l'altitude des traces importées
   - *Données concernées* : Votre navigateur ou application, uniquement si vous activez l'ombrage du relief ou le relief 3D (tous deux désactivés par défaut) : adresse IP, zone de carte affichée. Côté serveur : coordonnées de tuiles grossières (~10 km de côté) couvertes par une trace et adresse IP de notre serveur — jamais votre identité, votre compte ni votre adresse IP
@@ -284,9 +287,6 @@ Le calcul d'itinéraires du planificateur passe aussi par notre serveur, qui int
   - *Données concernées* : Votre navigateur ou application : adresse IP, zone de carte affichée. Côté serveur : coordonnées des tuiles (~1 km de côté) couvertes par une trace et adresse IP de notre serveur — jamais votre identité, votre compte ni votre adresse IP
 - **OpenStreetMap Foundation (tile.openstreetmap.org, Royaume-Uni)**
   - *Rôle* : Fond OpenStreetMap
-  - *Données concernées* : Adresse IP, zone de carte affichée
-- **OpenStreetMap France (tile-cyclosm.openstreetmap.fr)**
-  - *Rôle* : Fond CyclOSM
   - *Données concernées* : Adresse IP, zone de carte affichée
 - **Open-Meteo (api.open-meteo.com)**
   - *Rôle* : Prévisions météo des sorties, interrogé par notre serveur

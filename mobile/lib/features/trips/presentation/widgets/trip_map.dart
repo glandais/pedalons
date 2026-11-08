@@ -131,11 +131,11 @@ class TripMap extends ConsumerWidget {
               backgroundSheetTitle: 'map.background'.tr(),
               hillshade: 'map.hillshade'.tr(),
             ),
-            styles: servedMapStyleOptions(ref),
+            styles: servedMapStyleOptions(ref, brightness),
             hillshadeEnabled: servedHillshadeEnabled(ref),
             onHillshadeChanged: (bool on) =>
                 ref.read(hillshadeEnabledProvider.notifier).set(on),
-            selectedStyleId: resolved.style.id,
+            selectedStyleId: resolved.selectedId,
             onStyleSelected: (String id) =>
                 ref.read(mapStyleIdProvider.notifier).select(id),
             // En plein écran, le même interrupteur que sous la carte

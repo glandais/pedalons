@@ -87,11 +87,25 @@ final mapTerrainProvider = Provider<MapTerrainDto?>(
 /// fond sans variante sombre reste utilisable, il n'est pas escamoté.
 @immutable
 class ResolvedMapStyle {
-  const ResolvedMapStyle({required this.style, required this.url});
+  const ResolvedMapStyle({
+    required this.style,
+    required this.url,
+    required this.selectedId,
+  });
 
   final MapStyleDto style;
   final String url;
+
+  /// La ligne du sélecteur qui correspond à ce rendu.
+  final String selectedId;
 }
+
+/// L'identifiant de la ligne qui force un rendu, quel que soit le thème.
+///
+/// Le rendu est mémorisé tel quel, pas comme « l'inverse du thème » : un fond
+/// choisi sombre le reste quand le thème change.
+String pinnedMapStyleId(String id, Brightness pin) =>
+    '$id:${pin == Brightness.dark ? 'dark' : 'light'}';
 
 ResolvedMapStyle? resolveMapStyle(
   List<MapStyleDto> styles,
@@ -99,9 +113,12 @@ ResolvedMapStyle? resolveMapStyle(
   Brightness brightness,
 ) {
   if (styles.isEmpty) return null;
+  final List<String>? parts = selectedId?.split(':');
+  final String? baseId = parts?.first;
+  final String? savedPin = parts != null && parts.length > 1 ? parts[1] : null;
   MapStyleDto? chosen;
   for (final MapStyleDto s in styles) {
-    if (s.id == selectedId) {
+    if (s.id == baseId) {
       chosen = s;
       break;
     }
@@ -110,11 +127,23 @@ ResolvedMapStyle? resolveMapStyle(
   // style servi : mieux vaut une carte que rien.
   chosen ??= styles.first;
   final String? dark = chosen.darkVariant;
+  final bool hasDark = dark != null && dark.isNotEmpty;
+  // Un rendu forcé ne vaut que pour le fond mémorisé, s'il a une variante sombre.
+  final Brightness? pin = !hasDark || chosen.id != baseId
+      ? null
+      : switch (savedPin) {
+          'dark' => Brightness.dark,
+          'light' => Brightness.light,
+          _ => null,
+        };
+  final Brightness rendered = pin ?? brightness;
   return ResolvedMapStyle(
     style: chosen,
-    url: brightness == Brightness.dark && dark != null && dark.isNotEmpty
-        ? dark
-        : chosen.url,
+    url: rendered == Brightness.dark && hasDark ? dark : chosen.url,
+    // Un rendu égal au thème n'a pas de ligne à lui : c'est celle du fond.
+    selectedId: pin == null || pin == brightness
+        ? chosen.id
+        : pinnedMapStyleId(chosen.id, pin),
   );
 }
 

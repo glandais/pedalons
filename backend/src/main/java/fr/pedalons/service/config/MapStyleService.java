@@ -18,7 +18,7 @@ import java.util.Map;
  * <p>A hosted vector style is handed over as its own URL. A raster basemap has no style document
  * anywhere — the providers serve tiles — so this service <em>generates</em> the one-layer MapLibre
  * wrapper and the clients load it from {@code /api/map/styles/{id}.json}. That is what lets a
- * satellite, an OSM or a CyclOSM fond reach a client that only knows how to take a style URL: the
+ * satellite or an OSM fond reach a client that only knows how to take a style URL: the
  * mobile app gained six basemaps without a release, and the web dropped the {@code rasterStyle()}
  * helper it used to hand-write.
  */

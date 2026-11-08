@@ -267,12 +267,12 @@ export function watchRouteReads(page: Page, teamSlug: string, routeSlug: string)
 
 /**
  * Replaces the basemap with a plain light-grey background. The basemaps are third-party CDNs
- * (tiles.versatiles.org, see GET /api/config — light and dark variants), not part of the stack:
+ * (GitHub Pages then tiles.versatiles.org, see GET /api/config — light and dark variants), not part of the stack:
  * their tiles depend on the network and change under us. With a flat background, the only
  * saturated pixels left on the map canvas are the trace's. Call it before `goto`.
  */
 export async function stubBasemap(page: Page) {
-  await page.route('https://tiles.versatiles.org/**/style.json', (route) =>
+  await page.route('https://glandais.github.io/cycling-style/style*.json', (route) =>
     route.fulfill({
       json: {
         version: 8,

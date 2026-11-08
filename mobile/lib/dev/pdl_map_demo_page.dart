@@ -80,11 +80,11 @@ class _PdlMapDemoPageState extends ConsumerState<PdlMapDemoPage> {
                 backgroundSheetTitle: 'Fond de carte',
                 hillshade: 'Ombrage du relief',
               ),
-              styles: servedMapStyleOptions(ref),
+              styles: servedMapStyleOptions(ref, brightness),
               hillshadeEnabled: servedHillshadeEnabled(ref),
               onHillshadeChanged: (bool on) =>
                   ref.read(hillshadeEnabledProvider.notifier).set(on),
-              selectedStyleId: style.style.id,
+              selectedStyleId: style.selectedId,
               onStyleSelected: (String id) =>
                   ref.read(mapStyleIdProvider.notifier).select(id),
               pill: PdlMapPill(

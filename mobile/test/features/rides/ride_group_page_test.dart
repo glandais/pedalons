@@ -669,6 +669,7 @@ void main() {
       mapStyleProvider.overrideWith(
         (Ref ref, Brightness b) => const AsyncValue<ResolvedMapStyle?>.data(
           ResolvedMapStyle(
+            selectedId: 's',
             style: MapStyleDto(
               id: 'plan',
               label: 'Plan',
@@ -818,6 +819,7 @@ void main() {
       mapStyleProvider.overrideWith(
         (Ref ref, Brightness b) => const AsyncValue<ResolvedMapStyle?>.data(
           ResolvedMapStyle(
+            selectedId: 's',
             style: MapStyleDto(
               id: 'plan',
               label: 'Plan',

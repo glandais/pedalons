@@ -255,11 +255,11 @@ class _RouteMapState extends ConsumerState<RouteMap> {
           : null,
       switches: layer?.switches ?? const <PdlMapHeroSwitch>[],
       foreground: layer?.foreground,
-      styles: servedMapStyleOptions(ref),
+      styles: servedMapStyleOptions(ref, brightness),
       hillshadeEnabled: servedHillshadeEnabled(ref),
       onHillshadeChanged: (bool on) =>
           ref.read(hillshadeEnabledProvider.notifier).set(on),
-      selectedStyleId: resolved.style.id,
+      selectedStyleId: resolved.selectedId,
       onStyleSelected: (String id) =>
           ref.read(mapStyleIdProvider.notifier).select(id),
       mapBuilder: (BuildContext context) => _selectionBuilder(

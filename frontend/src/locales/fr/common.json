@@ -1227,6 +1227,8 @@
   "map.styles.group.raster": "Scan / Raster",
   "map.styles.group.satellite": "Satellite",
   "map.styles.group.vector": "Vectoriel",
+  "map.styles.pinned.dark": "{{label}} (sombre)",
+  "map.styles.pinned.light": "{{label}} (clair)",
   "map.styles.switch": "Changer le style",
   "map.styles.title": "Style de carte",
   "map.terrain3d.label": "Terrain 3D",

@@ -13,17 +13,46 @@ import 'config_provider.dart';
 /// Un seul endroit pour les cinq cartes de l'app : la conversion était recopiée
 /// à l'identique dans chacune, et l'ajout des sections l'aurait été aussi.
 /// `core/pdl` ne traduit rien — l'intitulé de section est localisé ici.
+///
+/// Un fond qui a une variante sombre gagne une seconde ligne, pour le rendu que
+/// le thème ne choisirait pas.
 List<PdlMapStyleOption> servedMapStyleOptions(
   WidgetRef ref,
-) => <PdlMapStyleOption>[
-  for (final MapStyleDto style
-      in ref.watch(appConfigProvider).value?.mapStyles ?? const <MapStyleDto>[])
-    PdlMapStyleOption(
-      id: style.id,
-      label: style.label,
-      groupLabel: mapStyleGroupLabel(style.group),
-    ),
-];
+  Brightness brightness,
+) => mapStyleOptions(
+  ref.watch(appConfigProvider).value?.mapStyles ?? const <MapStyleDto>[],
+  brightness,
+);
+
+/// Les lignes du sélecteur, pour un thème donné.
+List<PdlMapStyleOption> mapStyleOptions(
+  List<MapStyleDto> styles,
+  Brightness brightness,
+) {
+  final Brightness opposite = brightness == Brightness.dark
+      ? Brightness.light
+      : Brightness.dark;
+  final String oppositeKey = opposite == Brightness.dark
+      ? 'map.stylePinned.dark'
+      : 'map.stylePinned.light';
+  return <PdlMapStyleOption>[
+    for (final MapStyleDto style in styles) ...<PdlMapStyleOption>[
+      PdlMapStyleOption(
+        id: style.id,
+        label: style.label,
+        groupLabel: mapStyleGroupLabel(style.group),
+      ),
+      if (style.darkVariant?.isNotEmpty ?? false)
+        PdlMapStyleOption(
+          id: pinnedMapStyleId(style.id, opposite),
+          label: oppositeKey.tr(
+            namedArgs: <String, String>{'label': style.label},
+          ),
+          groupLabel: mapStyleGroupLabel(style.group),
+        ),
+    ],
+  ];
+}
 
 /// Le crédit à passer à `PdlMap`, pour le fond résolu.
 ///
