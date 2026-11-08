@@ -164,6 +164,21 @@ export function frenchDeparture(w: WallClock): string {
   return frenchDateTime(w)
 }
 
+/**
+ * « mardi 10 novembre », the year only outside the current one — the day line of a detail page's
+ * departure block (docs/LEDGER_*.md WEB-137), under « Départ 20:30 ».
+ */
+export function frenchLongDay(w: WallClock): string {
+  const currentYear = parisWallClock(new Date()).year
+  return new Intl.DateTimeFormat('fr-FR', {
+    timeZone: 'UTC',
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: w.year === currentYear ? undefined : 'numeric',
+  }).format(new Date(Date.UTC(w.year, w.month - 1, w.day, 12)))
+}
+
 /** The name of `month` (1–12) in `locale`: « septembre », « September ». */
 export const monthName = (month: number, locale: string) =>
   new Intl.DateTimeFormat(locale, { month: 'long', timeZone: 'UTC' }).format(

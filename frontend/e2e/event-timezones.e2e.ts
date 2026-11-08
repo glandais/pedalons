@@ -2,7 +2,7 @@ import type { Page } from '@playwright/test'
 import {
   clockText,
   daysAheadIn,
-  frenchDateTime,
+  frenchLongDay,
   instantIn,
   pickDateTime,
   pickerText,
@@ -12,7 +12,7 @@ import {
 } from './support/dates'
 import { addMember, newTeam, newUser, roleSession, signIn } from './support/data'
 import { expect, test, unique } from './support/fixtures'
-import { groupCard, newRide, openRide, readRide, ridePath } from './support/rides'
+import { departureBlock, groupCard, newRide, openRide, readRide, ridePath } from './support/rides'
 import { rawDocument, sessionCookie, ssrOutlet } from './support/ssr'
 import { hydrated, watchHydration } from './support/ui'
 
@@ -94,28 +94,30 @@ test.describe('a Paris team read from Tokyo', () => {
     })
     expect(document.status).toBe(200)
     const markup = ssrOutlet(document.html)
-    expect(markup).toContain(frenchDateTime(departure))
+    expect(markup).toContain(`Départ ${clockText(departure)}`)
+    expect(markup).toContain(frenchLongDay(departure))
     expect(markup).not.toContain('chez vous')
 
     // The browser says it, once hydrated, without a mismatch on the way.
     const watch = await watchHydration(page)
     await signIn(page.context(), member)
     await openRide(page, team.slug, ride)
-    await expect(
-      main(page).getByText(`${frenchDateTime(departure)} · ${rideMention}`, { exact: true })
-    ).toBeVisible()
+    const block = departureBlock(page)
+    await expect(block.getByText(`Départ ${clockText(departure)}`, { exact: true })).toBeVisible()
+    await expect(block).toContainText(`${frenchLongDay(departure)}`)
+    await expect(block).toContainText(` · ${rideMention}`)
     expect(watch.hydrationErrors).toEqual([])
     expect(watch.pageErrors).toEqual([])
 
     // A group shows a time only when it leaves at its own, in the ride's zone, with its mention.
     const own = groupCard(page, ownTime)
-    await expect(own.getByText('21:15', { exact: true })).toBeVisible()
+    await expect(own.getByText('Départ 21:15', { exact: true })).toBeVisible()
     await expect(
       own.getByRole('img', { name: mention(groupStart, PARIS, 'Paris', TOKYO), exact: true })
     ).toBeVisible()
     const withTheRide = groupCard(page, withRide)
     await expect(withTheRide).toBeVisible()
-    await expect(withTheRide.getByText('20:30', { exact: true })).toHaveCount(0)
+    await expect(withTheRide.getByTestId('group-own-time')).toHaveCount(0)
     await expect(withTheRide.getByRole('img', { name: /chez vous/ })).toHaveCount(0)
   })
 
@@ -142,9 +144,10 @@ test.describe('a Paris team read from Tokyo', () => {
     await pickDateTime(page, field, moved)
     await main(page).getByRole('button', { name: 'Enregistrer' }).click()
     await expect(page).toHaveURL(new RegExp(`/sorties/${ride.slug}$`))
-    await expect(
-      main(page).getByText(new RegExp(`^${frenchDateTime(moved)} · heure de Paris`))
-    ).toBeVisible()
+    const block = departureBlock(page)
+    await expect(block.getByText(`Départ ${clockText(moved)}`, { exact: true })).toBeVisible()
+    await expect(block).toContainText(`${frenchLongDay(moved)}`)
+    await expect(block).toContainText(' · heure de Paris (')
 
     const saved = await readRide(organizer, team.slug, ride.slug)
     expect(iso(saved.dateTime)).toBe(instantIn(moved, PARIS))
@@ -166,16 +169,14 @@ test.describe('a Tokyo team read from Paris', () => {
 
     await signIn(page.context(), member)
     await openRide(page, team.slug, ride)
-    await expect(
-      main(page).getByText(
-        `${frenchDateTime(departure)} · ${mention(ride.dateTime, TOKYO, 'Tokyo', PARIS)}`,
-        { exact: true }
-      )
-    ).toBeVisible()
+    const block = departureBlock(page)
+    await expect(block.getByText(`Départ ${clockText(departure)}`, { exact: true })).toBeVisible()
+    await expect(block).toContainText(`${frenchLongDay(departure)}`)
+    await expect(block).toContainText(` · ${mention(ride.dateTime, TOKYO, 'Tokyo', PARIS)}`)
 
     const groupStart = instantIn({ ...departure, hour: 9, minute: 30 }, TOKYO)
     const own = groupCard(page, ownTime)
-    await expect(own.getByText('09:30', { exact: true })).toBeVisible()
+    await expect(own.getByText('Départ 09:30', { exact: true })).toBeVisible()
     await expect(
       own.getByRole('img', { name: mention(groupStart, TOKYO, 'Tokyo', PARIS), exact: true })
     ).toBeVisible()

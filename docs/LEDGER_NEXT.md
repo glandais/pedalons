@@ -466,14 +466,6 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
 
 Pendant web de `MOB-111` à `MOB-116` ; la règle commune est `BRAND-8`.
 
-- [ ] `WEB-140` **Deux specs e2e lisent encore l'ancienne ligne de date du détail (S)** — `WEB-137`
-      a remplacé la ligne « samedi 11 octobre 2026 à 08:00 · heure de Paris (…) » du détail d'une
-      sortie par le bloc de départ, et `WEB-138` a passé `formatDateTime` au format unique.
-      `e2e/event-timezones.e2e.ts` (l.97, 105, 146, 171 : SSR, mention de fuseau, édition depuis
-      Tokyo, équipe de Tokyo) et `e2e/flow-account.e2e.ts` (l.1460, préférence de fuseau) cherchent
-      encore `frenchDateTime(...)` suivi de la mention sur cette page : à réécrire contre le bloc
-      (`section` « Date et heure de départ », « Départ 09:00 », mention de fuseau) et à faire tourner
-      sur la pile e2e. `e2e/support/dates.ts` a déjà `frenchDeparture` ; `flow-trips` est adapté.
 - [ ] `WEB-139` **Aperçu de partage (OG/SSR) : la date disparaît dès qu'il y a une description (S)** —
       `config/routeMeta.ts:297-310` ne met la date d'une sortie (sans heure) que si `media.markdown`
       est vide, de même pour un voyage (l.390-396) ; une étape n'a aucune date (≈l.432), aucun titre

@@ -11,7 +11,7 @@ import {
   signIn,
 } from './support/data'
 import { expect, test, unique } from './support/fixtures'
-import { wallTimeOf, clockText, frenchDateTime } from './support/dates'
+import { wallTimeOf, clockText, frenchLongDay } from './support/dates'
 import { stack } from './support/stack'
 import {
   addPasskeyFromProfile,
@@ -34,7 +34,14 @@ import {
 } from './support/flow-account'
 import { mailbox, mailsTo, otpCodeIn, waitForNewMail } from './support/mailpit'
 import { solidPng } from './support/ads'
-import { joinGroup, newRide, openRide, postComments, ridePath } from './support/rides'
+import {
+  departureBlock,
+  joinGroup,
+  newRide,
+  openRide,
+  postComments,
+  ridePath,
+} from './support/rides'
 import { newTrip, tripPath } from './support/routes'
 import { rawDocument, sessionCookie as ssrCookie, ssrOutlet } from './support/ssr'
 import { escapeRegExp, hydrated, pageAs, watchToasts } from './support/ui'
@@ -1457,9 +1464,10 @@ test.describe('time zone', () => {
     const ride = await newRide(user, team.slug, unique('Sortie fuseau'), {
       dateTime: wallTimeOf(start),
     })
-    const inParis = frenchDateTime(wallClockIn(ride.dateTime, 'Europe/Paris'))
+    const paris = wallClockIn(ride.dateTime, 'Europe/Paris')
+    const inParis = `Départ ${clockText(paris)}`
     const tokyo = wallClockIn(ride.dateTime, ZONE)
-    const mention = `${inParis} · heure de Paris (${clockText(tokyo)} chez vous)`
+    const mention = ` · heure de Paris (${clockText(tokyo)} chez vous)`
     const path = ridePath(team.slug, ride.slug)
     await signIn(context, user)
 
@@ -1467,7 +1475,9 @@ test.describe('time zone', () => {
     expect((await meFromSession(user)).timezone ?? null).toBeNull()
     await openRide(page, team.slug, ride)
     const main = page.getByRole('main')
-    await expect(main.getByText(inParis, { exact: true }).first()).toBeVisible()
+    const block = departureBlock(page)
+    await expect(block.getByText(inParis, { exact: true })).toBeVisible()
+    await expect(block).toContainText(frenchLongDay(paris))
     await expect(main.getByText('chez vous')).toHaveCount(0)
 
     // Chosen from the profile: a partial PATCH of the preferences.
@@ -1490,7 +1500,8 @@ test.describe('time zone', () => {
     // The ride still reads in Paris time, now with its Tokyo equivalent, in a browser that is still
     // in Paris…
     await openRide(page, team.slug, ride)
-    await expect(main.getByText(mention, { exact: true })).toBeVisible()
+    await expect(block.getByText(inParis, { exact: true })).toBeVisible()
+    await expect(block).toContainText(mention)
     // …and already in the server's markup, before any JavaScript.
     const document = await rawDocument(path, { cookie: ssrCookie(user) })
     expect(document.status).toBe(200)
@@ -1498,6 +1509,7 @@ test.describe('time zone', () => {
     expect(markup).toContain(ride.name)
     // A chosen zone is no guess: the server states the mention too.
     expect(markup).toContain(inParis)
+    expect(markup).toContain(frenchLongDay(paris))
     expect(markup).toContain(`heure de Paris (${clockText(tokyo)} chez vous)`)
   })
 
