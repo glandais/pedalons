@@ -1661,7 +1661,8 @@ components:
           type: string
           description: User code from device display
     DepartureWeatherDto:
-      description: The weather at the meeting point when the ride leaves
+      description: "The weather at the departure point when the ride, or a trip stage,\
+        \ leaves"
       type: object
       required:
       - status
@@ -2159,6 +2160,7 @@ components:
       - USER_NOT_SYNCED
       - GROUP_FULL
       - RIDE_PAST
+      - TRIP_FINISHED
       - INVALID_VISIBILITY
       - PUBLIC_TRIP_PRIVATE_ROUTE
       - GPX_FAILURE
@@ -7652,8 +7654,16 @@ components:
             \ else 25 km/h)"
           type: object
           $ref: "#/components/schemas/WeatherLegDto"
+        departure:
+          description: "The weather when the stage leaves, at its first forecast point:\
+            \ conditions, sunrise and sunset, as RideWeatherDto.departure for a ride.\
+            \ OUT_OF_RANGE once the stage has left, NO_LOCATION without a route, NOT_YET_AVAILABLE\
+            \ beyond the horizon."
+          type: object
+          $ref: "#/components/schemas/DepartureWeatherDto"
       required:
       - leg
+      - departure
     TripWeatherDto:
       description: "A trip's weather, stage by stage: each stage's route at its estimated\
         \ passages. Read from the server's cache only — the forecast is refreshed\
@@ -20398,7 +20408,7 @@ paths:
                 $ref: "#/components/schemas/VersionDto"
 info:
   title: Pedalons API
-  version: 13.2.1
+  version: 13.3.0
   description: API for Pedalons Cycling Team Management Platform
 servers:
 - url: http://localhost:8080

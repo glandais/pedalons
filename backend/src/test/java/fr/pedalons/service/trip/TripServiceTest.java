@@ -26,6 +26,7 @@ import fr.pedalons.util.TestDataService;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -1100,14 +1101,61 @@ class TripServiceTest extends AbstractBaseTest {
 
   // ==================== Join Trip ====================
 
+  /** A trip joined in these tests must not be over yet: joining one is refused (TRIP_FINISHED). */
+  private static Instant tomorrow() {
+    return Instant.now().plus(1, ChronoUnit.DAYS);
+  }
+
   @Nested
   class JoinTrip {
+
+    @Test
+    void shouldRefuseATripThatIsOver() {
+      Trip trip =
+          dataService.createTrip(
+              team,
+              admin,
+              "Past Trip",
+              Instant.now().minus(3, ChronoUnit.DAYS),
+              Visibility.PUBLIC,
+              Status.PUBLISHED,
+              null);
+      dataService.createTripStage(admin, trip, "Last day", Instant.now().minus(2, ChronoUnit.DAYS));
+
+      userService.setUserForTest(member);
+      PedalonsException exception =
+          assertThrows(
+              PedalonsException.class, () -> tripService.joinTrip(team.getSlug(), trip.getSlug()));
+
+      assertEquals("TRIP_FINISHED", exception.getMessage());
+    }
+
+    /** Under way, its last stage still ahead: a trip stays open to join. */
+    @Test
+    void shouldAcceptATripUnderWay() {
+      Trip trip =
+          dataService.createTrip(
+              team,
+              admin,
+              "Ongoing Trip",
+              Instant.now().minus(1, ChronoUnit.DAYS),
+              Visibility.PUBLIC,
+              Status.PUBLISHED,
+              null);
+      dataService.createTripStage(admin, trip, "Day 1", Instant.now().minus(1, ChronoUnit.DAYS));
+      dataService.createTripStage(admin, trip, "Day 2", tomorrow());
+
+      userService.setUserForTest(member);
+      TripParticipationDto result = tripService.joinTrip(team.getSlug(), trip.getSlug());
+
+      assertNotNull(result);
+    }
 
     @Test
     void shouldCreateParticipation() {
       Trip trip =
           dataService.createTrip(
-              team, admin, "Test Trip", Instant.now(), Visibility.PUBLIC, Status.PUBLISHED, null);
+              team, admin, "Test Trip", tomorrow(), Visibility.PUBLIC, Status.PUBLISHED, null);
 
       userService.setUserForTest(member);
       TripParticipationDto result = tripService.joinTrip(team.getSlug(), trip.getSlug());
@@ -1150,7 +1198,7 @@ class TripServiceTest extends AbstractBaseTest {
     void shouldThrowWhenAlreadyJoined() {
       Trip trip =
           dataService.createTrip(
-              team, admin, "Test Trip", Instant.now(), Visibility.PUBLIC, Status.PUBLISHED, null);
+              team, admin, "Test Trip", tomorrow(), Visibility.PUBLIC, Status.PUBLISHED, null);
       dataService.createTripParticipation(trip, member);
 
       userService.setUserForTest(member);
@@ -1165,7 +1213,7 @@ class TripServiceTest extends AbstractBaseTest {
     void shouldRestoreSoftDeletedParticipation() {
       Trip trip =
           dataService.createTrip(
-              team, admin, "Test Trip", Instant.now(), Visibility.PUBLIC, Status.PUBLISHED, null);
+              team, admin, "Test Trip", tomorrow(), Visibility.PUBLIC, Status.PUBLISHED, null);
       userService.setUserForTest(member);
       tripService.joinTrip(team.getSlug(), trip.getSlug());
       tripService.leaveTrip(team.getSlug(), trip.getSlug());
@@ -1186,7 +1234,7 @@ class TripServiceTest extends AbstractBaseTest {
     void shouldRemoveParticipation() {
       Trip trip =
           dataService.createTrip(
-              team, admin, "Test Trip", Instant.now(), Visibility.PUBLIC, Status.PUBLISHED, null);
+              team, admin, "Test Trip", tomorrow(), Visibility.PUBLIC, Status.PUBLISHED, null);
       userService.setUserForTest(member);
       tripService.joinTrip(team.getSlug(), trip.getSlug());
 
@@ -1201,7 +1249,7 @@ class TripServiceTest extends AbstractBaseTest {
     void shouldThrowWhenNotJoined() {
       Trip trip =
           dataService.createTrip(
-              team, admin, "Test Trip", Instant.now(), Visibility.PUBLIC, Status.PUBLISHED, null);
+              team, admin, "Test Trip", tomorrow(), Visibility.PUBLIC, Status.PUBLISHED, null);
 
       userService.setUserForTest(member);
       assertThrows(
@@ -1301,7 +1349,7 @@ class TripServiceTest extends AbstractBaseTest {
       team = dataService.updateTeam(team);
       Trip trip =
           dataService.createTrip(
-              team, admin, "Test Trip", Instant.now(), Visibility.PUBLIC, Status.PUBLISHED, null);
+              team, admin, "Test Trip", tomorrow(), Visibility.PUBLIC, Status.PUBLISHED, null);
 
       // Disable trips
       team.setEnableTrips(false);
@@ -1322,7 +1370,7 @@ class TripServiceTest extends AbstractBaseTest {
       team = dataService.updateTeam(team);
       Trip trip =
           dataService.createTrip(
-              team, admin, "Test Trip", Instant.now(), Visibility.PUBLIC, Status.PUBLISHED, null);
+              team, admin, "Test Trip", tomorrow(), Visibility.PUBLIC, Status.PUBLISHED, null);
       userService.setUserForTest(member);
       tripService.joinTrip(team.getSlug(), trip.getSlug());
 

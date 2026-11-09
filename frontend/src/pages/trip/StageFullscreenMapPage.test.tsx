@@ -69,7 +69,7 @@ const trip = (overrides: Partial<TripDto> = {}): TripDto =>
 
 const tripWeather = (leg: WeatherLegDto): TripWeatherDto => ({
   status: WeatherStatus.OK,
-  stages: [{ stageId: 's1', leg }],
+  stages: [{ stageId: 's1', leg, departure: { status: leg.status } }],
   attribution: { name: 'Open-Meteo.com', url: 'https://open-meteo.com/' },
 })
 

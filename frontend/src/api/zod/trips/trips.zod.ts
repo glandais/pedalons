@@ -9021,6 +9021,104 @@ export const GetTripWeatherResponse = zod
                   .describe('The first checkpoint where rain becomes likely, if any'),
               })
               .describe("The stage's route, at its estimated passages (stage speed, else 25 km/h)"),
+            departure: zod
+              .object({
+                status: zod
+                  .enum([
+                    'OK',
+                    'STALE',
+                    'NOT_YET_AVAILABLE',
+                    'UNAVAILABLE',
+                    'NO_LOCATION',
+                    'OUT_OF_RANGE',
+                  ])
+                  .describe(
+                    'State of the departure forecast. conditions is present for OK and STALE only.'
+                  ),
+                conditions: zod
+                  .object({
+                    time: zod.iso
+                      .datetime({ offset: true })
+                      .describe('The forecast hour used: the one nearest the moment asked about'),
+                    weatherCode: zod
+                      .int()
+                      .describe(
+                        'WMO weather interpretation code, as the model gives it. condition is its folding; a client reads condition, this is for the curious.'
+                      ),
+                    condition: zod
+                      .enum([
+                        'CLEAR',
+                        'MOSTLY_CLEAR',
+                        'PARTLY_CLOUDY',
+                        'OVERCAST',
+                        'FOG',
+                        'DRIZZLE',
+                        'RAIN',
+                        'HEAVY_RAIN',
+                        'FREEZING_RAIN',
+                        'SHOWERS',
+                        'SNOW',
+                        'THUNDERSTORM',
+                      ])
+                      .describe(
+                        'weatherCode folded into what a rider decides on. WMO code → condition: 0 CLEAR; 1 MOSTLY_CLEAR; 2 PARTLY_CLOUDY; 3 OVERCAST; 45, 48 FOG; 51, 53, 55 DRIZZLE; 56, 57, 66, 67 FREEZING_RAIN; 61, 63 RAIN; 65 HEAVY_RAIN; 71, 73, 75, 77, 85, 86 SNOW; 80, 81, 82 SHOWERS; 95, 96, 99 THUNDERSTORM; any other OVERCAST. A client meeting a value it does not know shows a plain cloud.'
+                      ),
+                    daylight: zod
+                      .boolean()
+                      .describe(
+                        "Whether the moment asked about (the departure, the checkpoint's passage) falls between sunrise and sunset at that place — not time, the round model hour. Picks the day or night icon"
+                      ),
+                    temperature: zod.number().describe('Air temperature at 2 m, °C'),
+                    apparentTemperature: zod
+                      .number()
+                      .describe('Felt temperature (wind chill, humidity), °C'),
+                    precipitationProbability: zod
+                      .int()
+                      .optional()
+                      .describe(
+                        'Probability of precipitation, % (0–100). Absent when the model gives none.'
+                      ),
+                    precipitation: zod
+                      .number()
+                      .describe('Precipitation over the hour (rain, showers, snow), mm'),
+                    wind: zod
+                      .object({
+                        speed: zod.number().describe('Mean wind speed, km/h'),
+                        gusts: zod
+                          .number()
+                          .optional()
+                          .describe('Gusts, km/h. Absent when the model gives none.'),
+                        direction: zod
+                          .number()
+                          .describe(
+                            'Direction the wind comes FROM, degrees clockwise from north (0 = from the north, 90 = from the east)'
+                          ),
+                        compass: zod
+                          .enum(['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'])
+                          .describe(
+                            'direction on the eight-point rose, still the direction the wind comes FROM'
+                          ),
+                      })
+                      .describe('Wind of that hour'),
+                  })
+                  .optional()
+                  .describe('The forecast of the departure hour, for OK and STALE'),
+                sunrise: zod.iso
+                  .datetime({ offset: true })
+                  .optional()
+                  .describe("Sunrise at the meeting point, on the departure's local date"),
+                sunset: zod.iso
+                  .datetime({ offset: true })
+                  .optional()
+                  .describe("Sunset at the meeting point, on the departure's local date"),
+                fetchedAt: zod.iso
+                  .datetime({ offset: true })
+                  .optional()
+                  .describe('When the forecast of the meeting point was last fetched'),
+              })
+              .describe(
+                'The weather when the stage leaves, at its first forecast point: conditions, sunrise and sunset, as RideWeatherDto.departure for a ride. OUT_OF_RANGE once the stage has left, NO_LOCATION without a route, NOT_YET_AVAILABLE beyond the horizon.'
+              ),
           })
           .describe('One stage of a trip: its weather in one line, and along its route')
       )

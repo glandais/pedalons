@@ -75,9 +75,29 @@ public class TripWeatherService {
             RideWeatherCalculator.leg(leg, key -> cache.getOrDefault(key, CellSeries.EMPTY), now);
         upcoming.add(weather);
       }
-      stages.add(new TripWeather.StageLeg(plan.stageId(), weather));
+      stages.add(new TripWeather.StageLeg(plan.stageId(), weather, departure(leg, cache, now)));
     }
     return RideWeatherCalculator.trip(stages, upcoming);
+  }
+
+  /**
+   * The weather when the stage leaves, read at its first forecast point — the cell the stage's leg
+   * already reads, so no other cell is fetched for it (a ride reads its meeting point instead, with
+   * no elevation band). Gives the stage the same departure temperature and daylight as a ride group.
+   */
+  static DepartureWeather departure(LegInput leg, Map<CellKey, CellSeries> cache, Instant now) {
+    if (isGone(leg, now)) {
+      return DepartureWeather.of(WeatherStatus.OUT_OF_RANGE);
+    }
+    if (leg.samples() == null || leg.samples().samples().isEmpty()) {
+      return DepartureWeather.of(WeatherStatus.NO_LOCATION);
+    }
+    if (RideWeatherCalculator.isBeyondHorizon(leg.start(), now)) {
+      return DepartureWeather.of(WeatherStatus.NOT_YET_AVAILABLE);
+    }
+    CellKey first = leg.samples().samples().getFirst().cell();
+    return RideWeatherCalculator.departure(
+        cache.getOrDefault(first, CellSeries.EMPTY), leg.start(), now);
   }
 
   /** A stage that has left: its forecast is no longer shown, as for a ride gone. */

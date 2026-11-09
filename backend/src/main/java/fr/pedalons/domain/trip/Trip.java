@@ -9,6 +9,7 @@ import fr.pedalons.enums.Visibility;
 import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -59,6 +60,20 @@ public class Trip extends Publication {
 
   public int getStageCount() {
     return (int) stages.stream().filter(s -> !s.isDeleted()).count();
+  }
+
+  /**
+   * Whether the trip is over: its last live stage has left, or the trip itself without a stage —
+   * the rule behind {@code TripDto.finished} (docs/LEDGER_*.md API-16), here for the services.
+   */
+  public boolean isFinished(Instant now) {
+    Instant end =
+        stages.stream()
+            .filter(s -> !s.isDeleted())
+            .map(TripStage::getDateTime)
+            .max(Comparator.naturalOrder())
+            .orElse(getDateTime());
+    return end.isBefore(now);
   }
 
   @Override

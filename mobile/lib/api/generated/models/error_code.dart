@@ -44,6 +44,8 @@ enum ErrorCode {
   groupFull('GROUP_FULL'),
   @JsonValue('RIDE_PAST')
   ridePast('RIDE_PAST'),
+  @JsonValue('TRIP_FINISHED')
+  tripFinished('TRIP_FINISHED'),
   @JsonValue('INVALID_VISIBILITY')
   invalidVisibility('INVALID_VISIBILITY'),
   @JsonValue('PUBLIC_TRIP_PRIVATE_ROUTE')

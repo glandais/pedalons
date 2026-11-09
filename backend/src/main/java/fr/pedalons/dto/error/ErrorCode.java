@@ -30,6 +30,8 @@ public enum ErrorCode {
   USER_NOT_SYNCED,
   GROUP_FULL,
   RIDE_PAST,
+  /** Joining a trip whose last stage has left (docs/LEDGER_*.md API-161). */
+  TRIP_FINISHED,
   INVALID_VISIBILITY,
   PUBLIC_TRIP_PRIVATE_ROUTE,
   GPX_FAILURE,

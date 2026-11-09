@@ -56,6 +56,7 @@ import fr.pedalons.service.weather.WeatherEtag;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import java.time.Instant;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
@@ -505,6 +506,11 @@ public class TripService extends TeamEntityService<Trip, TripRepository, TripDto
 
     if (existingParticipation.isPresent()) {
       throw new ConflictException(ErrorCode.ALREADY_REGISTERED);
+    }
+    // The clients hide « Rejoindre » once the trip is over; the rule is here. A trip under way
+    // stays open (its later stages are still to ride), and leaving stays open, as for a ride.
+    if (trip.isFinished(Instant.now())) {
+      throw new ConflictException(ErrorCode.TRIP_FINISHED);
     }
 
     TripParticipation participation = new TripParticipation(trip, user);

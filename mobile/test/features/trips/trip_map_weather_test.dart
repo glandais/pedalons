@@ -172,8 +172,13 @@ void main() {
     status: 'OK',
     attribution: openMeteo,
     stages: <TripStageWeatherDto>[
-      TripStageWeatherDto(stageId: 's1', leg: fixtureLeg(groupId: null)),
       TripStageWeatherDto(
+        departure: DepartureWeatherDto(status: 'OK'),
+        stageId: 's1',
+        leg: fixtureLeg(groupId: null),
+      ),
+      TripStageWeatherDto(
+        departure: DepartureWeatherDto(status: 'OK'),
         stageId: 's2',
         leg: _legJ2(status: j2Status),
       ),
@@ -484,6 +489,7 @@ void main() {
         attribution: openMeteo,
         stages: <TripStageWeatherDto>[
           TripStageWeatherDto(
+            departure: DepartureWeatherDto(status: 'OK'),
             stageId: 's1',
             leg: fixtureLeg(groupId: null, status: 'NOT_YET_AVAILABLE'),
           ),

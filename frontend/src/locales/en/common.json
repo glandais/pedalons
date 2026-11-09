@@ -679,6 +679,7 @@
   "errors.api.TOKEN_INVALID": "The token is invalid",
   "errors.api.TOO_MANY_TAGS": "A content carries at most 10 tags.",
   "errors.api.TOO_MANY_TEAM_PAGES": "The maximum number of pages for this team has been reached",
+  "errors.api.TRIP_FINISHED": "This trip is over: registration is closed",
   "errors.api.UNAUTHORIZED": "You must be signed in to perform this action",
   "errors.api.unknown": "An unexpected error occurred",
   "errors.api.UNKNOWN": "An unexpected error occurred",

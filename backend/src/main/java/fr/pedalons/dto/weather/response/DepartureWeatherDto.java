@@ -7,7 +7,7 @@ import java.time.Instant;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.jspecify.annotations.Nullable;
 
-@Schema(description = "The weather at the meeting point when the ride leaves")
+@Schema(description = "The weather at the departure point when the ride, or a trip stage, leaves")
 @ValidateSchema
 public record DepartureWeatherDto(
     @Schema(

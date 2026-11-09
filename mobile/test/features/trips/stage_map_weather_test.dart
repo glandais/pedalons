@@ -145,6 +145,7 @@ void main() {
     ),
     stages: <TripStageWeatherDto>[
       TripStageWeatherDto(
+        departure: DepartureWeatherDto(status: 'OK'),
         stageId: 's1',
         leg: fixtureLeg(groupId: null, status: status),
       ),
@@ -437,10 +438,15 @@ void main() {
       attribution: weather().attribution,
       stages: <TripStageWeatherDto>[
         TripStageWeatherDto(
+          departure: DepartureWeatherDto(status: 'OK'),
           stageId: 's1',
           leg: fixtureLeg(groupId: null, status: 'OUT_OF_RANGE'),
         ),
-        TripStageWeatherDto(stageId: 's2', leg: fixtureLeg(groupId: null)),
+        TripStageWeatherDto(
+          departure: DepartureWeatherDto(status: 'OK'),
+          stageId: 's2',
+          leg: fixtureLeg(groupId: null),
+        ),
       ],
     );
     final (_, ProviderContainer container) = await pump(tester, dto: mixed());

@@ -326,6 +326,13 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
 (`WEB-13` à `WEB-22`, livrés, avec ce que l'automatisation ne voit pas) : voir
 `frontend/e2e/README.md`.
 
+- [ ] `WEB-155` **Uniformiser les pages web sortie / voyage et groupe / étape (L, en six lots)** — plan
+      [`2026-11-09-uniformisation-detail-web.md`](plans/2026-11-09-uniformisation-detail-web.md), design
+      dans le canevas « Uniformisation sortie / voyage (web) ». Un en-tête (`PublicationHeader`), une
+      grille (`.detail-layout`), une carte enfant (`ChildCard`) et une page enfant (`ChildDetailShell`,
+      `SiblingNav`, `RouteMapPanel`, `RouteWeatherSection`) pour les deux types ; l'étape quitte
+      `TripLayout`/`StageTabs`, `RouteDetailView` et `StageWeatherSection`. Le contrat est `API-161`.
+
 - [ ] `WEB-119` **La météo sur la carte : recette navigateur des paliers 1 à 3 (S)** — `WEB-115` à
       `WEB-118`, plan [`2026-10-24-weather-on-map.md`](plans/archive/2026-10-24-weather-on-map.md). Sur la pile e2e :
       `pnpm e2e routes-render -g 'rideMap /'` (la sortie solo `soloRide` ajoutée au jeu de données,
@@ -513,6 +520,13 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
 ---
 
 ## API — Contrat d'API et backend
+
+- [ ] `API-161` **Météo de départ d'une étape et inscription refusée à un voyage terminé (S, contrat
+      13.3.0)** — pour `WEB-155`. `TripStageWeatherDto.departure` (lu au premier point de prévision de
+      l'étape, `TripWeatherService.departure`) donne à l'étape l'encadré « Jour » et la température au
+      départ de la météo du groupe ; `TripService.joinTrip` lève `TRIP_FINISHED` (409) une fois la
+      dernière étape partie (`Trip.isFinished`, la règle de `TripDto.finished`), un voyage en cours reste
+      ouvert. Code fait ; reste à passer `TripServiceTest` et `TripWeatherResourceTest`.
 
 - [ ] `API-154` **Plafonds de la météo des aperçus GPX qui restent ouverts (S)** — suite d'`API-153`
       (voir aussi `SEC-48`). Ce qui est posé : 20 aperçus datés à venir par compte, 500 aperçus

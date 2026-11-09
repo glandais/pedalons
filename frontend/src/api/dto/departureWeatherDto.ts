@@ -3,7 +3,7 @@ import type { WeatherConditionsDto } from './weatherConditionsDto.ts'
 import type { WeatherStatus } from './weatherStatus.ts'
 
 /**
- * The weather at the meeting point when the ride leaves
+ * The weather at the departure point when the ride, or a trip stage, leaves
  */
 export interface DepartureWeatherDto {
   /** State of the departure forecast. conditions is present for OK and STALE only. */

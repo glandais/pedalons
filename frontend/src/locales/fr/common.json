@@ -689,6 +689,7 @@
   "errors.api.TOKEN_INVALID": "Le jeton est invalide",
   "errors.api.TOO_MANY_TAGS": "Un contenu porte au plus 10 tags.",
   "errors.api.TOO_MANY_TEAM_PAGES": "Le nombre maximum de pages pour cette équipe est atteint",
+  "errors.api.TRIP_FINISHED": "Ce voyage est terminé : on ne peut plus s'y inscrire",
   "errors.api.UNAUTHORIZED": "Connectez-vous pour effectuer cette action",
   "errors.api.unknown": "Une erreur inattendue s'est produite",
   "errors.api.UNKNOWN": "Une erreur inattendue s'est produite",

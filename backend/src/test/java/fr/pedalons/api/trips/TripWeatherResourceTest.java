@@ -185,6 +185,7 @@ class TripWeatherResourceTest extends AbstractResourceTest {
             .body("stages[0].stageId", equalTo(TsidUtils.toString(gone.getId())))
             .body("stages[0].leg.status", equalTo("OUT_OF_RANGE"))
             .body("stages[0]", not(hasKey("summary")))
+            .body("stages[0].departure.status", equalTo("OUT_OF_RANGE"))
             .body("stages[1].stageId", equalTo(TsidUtils.toString(soon.getId())))
             .body("stages[1].leg.status", equalTo("OK"))
             .body("stages[1].leg.speedIsDefault", equalTo(true))
@@ -192,11 +193,18 @@ class TripWeatherResourceTest extends AbstractResourceTest {
             .body("stages[1].leg.checkpoints", hasSize(3))
             .body("stages[1].summary.status", equalTo("OK"))
             .body("stages[1].summary.temperature", equalTo(15.0f))
+            // The departure is read at the stage's first forecast point, as a ride's at its
+            // meeting point: same conditions, sunrise and sunset (docs/LEDGER_*.md API-161).
+            .body("stages[1].departure.status", equalTo("OK"))
+            .body("stages[1].departure.conditions.temperature", equalTo(15.0f))
+            .body("stages[1].departure.fetchedAt", notNullValue())
             .body("stages[2].stageId", equalTo(TsidUtils.toString(unrouted.getId())))
             .body("stages[2].leg.status", equalTo("NO_LOCATION"))
+            .body("stages[2].departure.status", equalTo("NO_LOCATION"))
             .body("stages[3].stageId", equalTo(TsidUtils.toString(far.getId())))
             .body("stages[3].leg.status", equalTo("NOT_YET_AVAILABLE"))
             .body("stages[3].summary.status", equalTo("NOT_YET_AVAILABLE"))
+            .body("stages[3].departure.status", equalTo("NOT_YET_AVAILABLE"))
             .extract()
             .asString();
 

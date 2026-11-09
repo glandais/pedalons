@@ -48,12 +48,18 @@ const weather: TripWeatherDto = {
     {
       stageId: 's1',
       leg: weatherLeg(undefined, { windExposure: { head: 30_000, cross: 0, tail: 0 } }),
+      departure: { status: WeatherStatus.OK },
     },
     {
       stageId: 's2',
       leg: weatherLeg(undefined, { windExposure: { head: 0, cross: 4_000, tail: 16_000 } }),
+      departure: { status: WeatherStatus.OK },
     },
-    { stageId: 's3', leg: weatherLeg(undefined, { status: WeatherStatus.OUT_OF_RANGE }) },
+    {
+      stageId: 's3',
+      leg: weatherLeg(undefined, { status: WeatherStatus.OUT_OF_RANGE }),
+      departure: { status: WeatherStatus.OUT_OF_RANGE },
+    },
   ],
   attribution: { name: 'Open-Meteo.com', url: 'https://open-meteo.com/' },
 }

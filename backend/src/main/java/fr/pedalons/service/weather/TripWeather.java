@@ -22,8 +22,14 @@ public record TripWeather(
     @Nullable Instant fetchedAt,
     List<StageLeg> stages) {
 
-  /** A stage and its leg. */
-  public record StageLeg(@Nullable Long stageId, WeatherLeg leg) {}
+  /**
+   * A stage and its leg.
+   *
+   * @param departure the weather at the stage's first forecast point when it leaves: {@code
+   *     OUT_OF_RANGE} once gone, {@code NO_LOCATION} without a route, {@code NOT_YET_AVAILABLE}
+   *     beyond the horizon
+   */
+  public record StageLeg(@Nullable Long stageId, WeatherLeg leg, DepartureWeather departure) {}
 
   public static TripWeather of(WeatherStatus status) {
     return new TripWeather(status, null, null, List.of());

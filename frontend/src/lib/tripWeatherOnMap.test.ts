@@ -33,7 +33,7 @@ const weather = (
   status: WeatherStatus = WeatherStatus.OK
 ): TripWeatherDto => ({
   status,
-  stages,
+  stages: stages.map((s) => ({ ...s, departure: { status: s.leg.status } })),
   attribution: { name: 'Open-Meteo.com', url: 'https://open-meteo.com/' },
 })
 

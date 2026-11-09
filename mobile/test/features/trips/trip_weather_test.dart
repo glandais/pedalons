@@ -106,6 +106,7 @@ TripStageWeatherDto _stage(
   RideWeatherSummaryDto? summary,
   String? availableFrom,
 }) => TripStageWeatherDto(
+  departure: DepartureWeatherDto(status: 'OK'),
   stageId: stageId,
   summary: summary,
   leg: fixtureLeg(

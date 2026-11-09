@@ -469,7 +469,7 @@ class RideWeatherCalculatorTest {
   // --- trip ------------------------------------------------------------------------------------
 
   private static TripWeather.StageLeg stage(long id, WeatherLeg leg) {
-    return new TripWeather.StageLeg(id, leg);
+    return new TripWeather.StageLeg(id, leg, DepartureWeather.of(leg.status()));
   }
 
   @Test

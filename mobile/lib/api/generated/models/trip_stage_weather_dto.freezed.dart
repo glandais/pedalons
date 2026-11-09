@@ -17,7 +17,8 @@ T _$identity<T>(T value) => value;
 mixin _$TripStageWeatherDto {
 
 /// The stage's route, at its estimated passages (stage speed, else 25 km/h)
- WeatherLegDto get leg;/// The stage (TSID), as TripStageDto.id. Absent for the single leg of a trip without stages, which rides the trip's own route at its own time.
+ WeatherLegDto get leg;/// The weather when the stage leaves, at its first forecast point: conditions, sunrise and sunset, as RideWeatherDto.departure for a ride. OUT_OF_RANGE once the stage has left, NO_LOCATION without a route, NOT_YET_AVAILABLE beyond the horizon.
+ DepartureWeatherDto get departure;/// The stage (TSID), as TripStageDto.id. Absent for the single leg of a trip without stages, which rides the trip's own route at its own time.
  String? get stageId;/// The stage's weather in one line, for its card: the first checkpoint's hour, the extremes over the checkpoints, the rain alert. Present when leg.status is OK, STALE or NOT_YET_AVAILABLE (then status and availableFrom only).
  RideWeatherSummaryDto? get summary;
 /// Create a copy of TripStageWeatherDto
@@ -33,20 +34,20 @@ $TripStageWeatherDtoCopyWith<TripStageWeatherDto> get copyWith => _$TripStageWea
 @override
 bool operator ==(Object other) {
   final _this = this as TripStageWeatherDto;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TripStageWeatherDto&&(identical(other.leg, _this.leg) || other.leg == _this.leg)&&(identical(other.stageId, _this.stageId) || other.stageId == _this.stageId)&&(identical(other.summary, _this.summary) || other.summary == _this.summary));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TripStageWeatherDto&&(identical(other.leg, _this.leg) || other.leg == _this.leg)&&(identical(other.departure, _this.departure) || other.departure == _this.departure)&&(identical(other.stageId, _this.stageId) || other.stageId == _this.stageId)&&(identical(other.summary, _this.summary) || other.summary == _this.summary));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as TripStageWeatherDto;
-  return Object.hash(runtimeType,_this.leg,_this.stageId,_this.summary);
+  return Object.hash(runtimeType,_this.leg,_this.departure,_this.stageId,_this.summary);
 }
 
 @override
 String toString() {
   final _this = this as TripStageWeatherDto;
-  return 'TripStageWeatherDto(leg: ${_this.leg}, stageId: ${_this.stageId}, summary: ${_this.summary})';
+  return 'TripStageWeatherDto(leg: ${_this.leg}, departure: ${_this.departure}, stageId: ${_this.stageId}, summary: ${_this.summary})';
 }
 
 
@@ -57,11 +58,11 @@ abstract mixin class $TripStageWeatherDtoCopyWith<$Res>  {
   factory $TripStageWeatherDtoCopyWith(TripStageWeatherDto value, $Res Function(TripStageWeatherDto) _then) = _$TripStageWeatherDtoCopyWithImpl;
 @useResult
 $Res call({
- WeatherLegDto leg, String? stageId, RideWeatherSummaryDto? summary
+ WeatherLegDto leg, DepartureWeatherDto departure, String? stageId, RideWeatherSummaryDto? summary
 });
 
 
-$WeatherLegDtoCopyWith<$Res> get leg;$RideWeatherSummaryDtoCopyWith<$Res>? get summary;
+$WeatherLegDtoCopyWith<$Res> get leg;$DepartureWeatherDtoCopyWith<$Res> get departure;$RideWeatherSummaryDtoCopyWith<$Res>? get summary;
 
 }
 /// @nodoc
@@ -74,10 +75,11 @@ class _$TripStageWeatherDtoCopyWithImpl<$Res>
 
 /// Create a copy of TripStageWeatherDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? leg = null,Object? stageId = freezed,Object? summary = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? leg = null,Object? departure = null,Object? stageId = freezed,Object? summary = freezed,}) {
   return _then(TripStageWeatherDto(
 leg: null == leg ? _self.leg : leg // ignore: cast_nullable_to_non_nullable
-as WeatherLegDto,stageId: freezed == stageId ? _self.stageId : stageId // ignore: cast_nullable_to_non_nullable
+as WeatherLegDto,departure: null == departure ? _self.departure : departure // ignore: cast_nullable_to_non_nullable
+as DepartureWeatherDto,stageId: freezed == stageId ? _self.stageId : stageId // ignore: cast_nullable_to_non_nullable
 as String?,summary: freezed == summary ? _self.summary : summary // ignore: cast_nullable_to_non_nullable
 as RideWeatherSummaryDto?,
   ));
@@ -90,6 +92,15 @@ $WeatherLegDtoCopyWith<$Res> get leg {
   
   return $WeatherLegDtoCopyWith<$Res>(_self.leg, (value) {
     return _then(_self.copyWith(leg: value));
+  });
+}/// Create a copy of TripStageWeatherDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$DepartureWeatherDtoCopyWith<$Res> get departure {
+  
+  return $DepartureWeatherDtoCopyWith<$Res>(_self.departure, (value) {
+    return _then(_self.copyWith(departure: value));
   });
 }/// Create a copy of TripStageWeatherDto
 /// with the given fields replaced by the non-null parameter values.
@@ -185,10 +196,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( WeatherLegDto leg,  String? stageId,  RideWeatherSummaryDto? summary)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( WeatherLegDto leg,  DepartureWeatherDto departure,  String? stageId,  RideWeatherSummaryDto? summary)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _TripStageWeatherDto() when $default != null:
-return $default(_that.leg,_that.stageId,_that.summary);case _:
+return $default(_that.leg,_that.departure,_that.stageId,_that.summary);case _:
   return orElse();
 
 }
@@ -206,10 +217,10 @@ return $default(_that.leg,_that.stageId,_that.summary);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( WeatherLegDto leg,  String? stageId,  RideWeatherSummaryDto? summary)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( WeatherLegDto leg,  DepartureWeatherDto departure,  String? stageId,  RideWeatherSummaryDto? summary)  $default,) {final _that = this;
 switch (_that) {
 case _TripStageWeatherDto():
-return $default(_that.leg,_that.stageId,_that.summary);case _:
+return $default(_that.leg,_that.departure,_that.stageId,_that.summary);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -226,10 +237,10 @@ return $default(_that.leg,_that.stageId,_that.summary);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( WeatherLegDto leg,  String? stageId,  RideWeatherSummaryDto? summary)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( WeatherLegDto leg,  DepartureWeatherDto departure,  String? stageId,  RideWeatherSummaryDto? summary)?  $default,) {final _that = this;
 switch (_that) {
 case _TripStageWeatherDto() when $default != null:
-return $default(_that.leg,_that.stageId,_that.summary);case _:
+return $default(_that.leg,_that.departure,_that.stageId,_that.summary);case _:
   return null;
 
 }
@@ -241,11 +252,13 @@ return $default(_that.leg,_that.stageId,_that.summary);case _:
 @JsonSerializable()
 
 class _TripStageWeatherDto implements TripStageWeatherDto {
-  const _TripStageWeatherDto({required this.leg, this.stageId, this.summary});
+  const _TripStageWeatherDto({required this.leg, required this.departure, this.stageId, this.summary});
   factory _TripStageWeatherDto.fromJson(Map<String, dynamic> json) => _$TripStageWeatherDtoFromJson(json);
 
 /// The stage's route, at its estimated passages (stage speed, else 25 km/h)
 @override final  WeatherLegDto leg;
+/// The weather when the stage leaves, at its first forecast point: conditions, sunrise and sunset, as RideWeatherDto.departure for a ride. OUT_OF_RANGE once the stage has left, NO_LOCATION without a route, NOT_YET_AVAILABLE beyond the horizon.
+@override final  DepartureWeatherDto departure;
 /// The stage (TSID), as TripStageDto.id. Absent for the single leg of a trip without stages, which rides the trip's own route at its own time.
 @override final  String? stageId;
 /// The stage's weather in one line, for its card: the first checkpoint's hour, the extremes over the checkpoints, the rain alert. Present when leg.status is OK, STALE or NOT_YET_AVAILABLE (then status and availableFrom only).
@@ -264,18 +277,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TripStageWeatherDto&&(identical(other.leg, leg) || other.leg == leg)&&(identical(other.stageId, stageId) || other.stageId == stageId)&&(identical(other.summary, summary) || other.summary == summary));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TripStageWeatherDto&&(identical(other.leg, leg) || other.leg == leg)&&(identical(other.departure, departure) || other.departure == departure)&&(identical(other.stageId, stageId) || other.stageId == stageId)&&(identical(other.summary, summary) || other.summary == summary));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,leg,stageId,summary);
+    return Object.hash(runtimeType,leg,departure,stageId,summary);
 }
 
 @override
 String toString() {
-    return 'TripStageWeatherDto(leg: $leg, stageId: $stageId, summary: $summary)';
+    return 'TripStageWeatherDto(leg: $leg, departure: $departure, stageId: $stageId, summary: $summary)';
 }
 
 
@@ -286,11 +299,11 @@ abstract mixin class _$TripStageWeatherDtoCopyWith<$Res> implements $TripStageWe
   factory _$TripStageWeatherDtoCopyWith(_TripStageWeatherDto value, $Res Function(_TripStageWeatherDto) _then) = __$TripStageWeatherDtoCopyWithImpl;
 @override @useResult
 $Res call({
- WeatherLegDto leg, String? stageId, RideWeatherSummaryDto? summary
+ WeatherLegDto leg, DepartureWeatherDto departure, String? stageId, RideWeatherSummaryDto? summary
 });
 
 
-@override $WeatherLegDtoCopyWith<$Res> get leg;@override $RideWeatherSummaryDtoCopyWith<$Res>? get summary;
+@override $WeatherLegDtoCopyWith<$Res> get leg;@override $DepartureWeatherDtoCopyWith<$Res> get departure;@override $RideWeatherSummaryDtoCopyWith<$Res>? get summary;
 
 }
 /// @nodoc
@@ -303,10 +316,11 @@ class __$TripStageWeatherDtoCopyWithImpl<$Res>
 
 /// Create a copy of TripStageWeatherDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? leg = null,Object? stageId = freezed,Object? summary = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? leg = null,Object? departure = null,Object? stageId = freezed,Object? summary = freezed,}) {
   return _then(_TripStageWeatherDto(
 leg: null == leg ? _self.leg : leg // ignore: cast_nullable_to_non_nullable
-as WeatherLegDto,stageId: freezed == stageId ? _self.stageId : stageId // ignore: cast_nullable_to_non_nullable
+as WeatherLegDto,departure: null == departure ? _self.departure : departure // ignore: cast_nullable_to_non_nullable
+as DepartureWeatherDto,stageId: freezed == stageId ? _self.stageId : stageId // ignore: cast_nullable_to_non_nullable
 as String?,summary: freezed == summary ? _self.summary : summary // ignore: cast_nullable_to_non_nullable
 as RideWeatherSummaryDto?,
   ));
@@ -320,6 +334,15 @@ $WeatherLegDtoCopyWith<$Res> get leg {
   
   return $WeatherLegDtoCopyWith<$Res>(_self.leg, (value) {
     return _then(_self.copyWith(leg: value));
+  });
+}/// Create a copy of TripStageWeatherDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$DepartureWeatherDtoCopyWith<$Res> get departure {
+  
+  return $DepartureWeatherDtoCopyWith<$Res>(_self.departure, (value) {
+    return _then(_self.copyWith(departure: value));
   });
 }/// Create a copy of TripStageWeatherDto
 /// with the given fields replaced by the non-null parameter values.

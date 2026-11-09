@@ -11,7 +11,7 @@ import 'weather_status.dart';
 part 'departure_weather_dto.freezed.dart';
 part 'departure_weather_dto.g.dart';
 
-/// The weather at the meeting point when the ride leaves
+/// The weather at the departure point when the ride, or a trip stage, leaves
 @Freezed()
 abstract class DepartureWeatherDto with _$DepartureWeatherDto {
   const factory DepartureWeatherDto({

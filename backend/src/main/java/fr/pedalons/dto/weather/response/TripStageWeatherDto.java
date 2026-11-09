@@ -27,12 +27,21 @@ public record TripStageWeatherDto(
             description =
                 "The stage's route, at its estimated passages (stage speed, else 25 km/h)",
             required = true)
-        WeatherLegDto leg) {
+        WeatherLegDto leg,
+    @Schema(
+            description =
+                "The weather when the stage leaves, at its first forecast point: conditions,"
+                    + " sunrise and sunset, as RideWeatherDto.departure for a ride. OUT_OF_RANGE"
+                    + " once the stage has left, NO_LOCATION without a route, NOT_YET_AVAILABLE"
+                    + " beyond the horizon.",
+            required = true)
+        DepartureWeatherDto departure) {
 
   public static TripStageWeatherDto from(TripWeather.StageLeg stage) {
     return new TripStageWeatherDto(
         stage.stageId() != null ? TsidUtils.toString(stage.stageId()) : null,
         RideWeatherSummaryDto.fromNullable(RideWeatherCalculator.legSummary(stage.leg())),
-        WeatherLegDto.from(stage.leg()));
+        WeatherLegDto.from(stage.leg()),
+        DepartureWeatherDto.from(stage.departure()));
   }
 }
