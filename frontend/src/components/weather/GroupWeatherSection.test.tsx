@@ -215,8 +215,8 @@ describe('GroupWeatherSection', () => {
     expect(columns()[1].getAttribute('aria-pressed')).toBe('true')
     expect(detail()).toContain('km 15.0')
 
-    const list = screen.getByRole('heading', { name: 'Par tronçon' }).parentElement!
-    const items = within(list).getAllByRole('button')
+    const list = screen.getByRole('heading', { name: 'Par tronçon', hidden: true }).parentElement!
+    const items = within(list).getAllByRole('button', { hidden: true })
     expect(plain(items[3].textContent)).toContain('Dos · km 60–90')
     expect(plain(items[3].textContent)).toContain(
       '10:30–11:30 · 16–18 km/h, raf. 24 · pluie ≤ 13 %'
@@ -261,8 +261,8 @@ describe('GroupWeatherSection', () => {
     expect(columns()[1].getAttribute('aria-pressed')).toBe('true')
     expect(detail()).toContain('Travers du km 20 au km 22')
 
-    const list = screen.getByRole('heading', { name: 'Par tronçon' }).parentElement!
-    const item = within(list).getAllByRole('button')[1]
+    const list = screen.getByRole('heading', { name: 'Par tronçon', hidden: true }).parentElement!
+    const item = within(list).getAllByRole('button', { hidden: true })[1]
     expect(plain(item.textContent)).toContain('Travers · km 20–22')
     expect(plain(item.textContent)).not.toContain('pluie')
     fireEvent.click(item)
@@ -276,13 +276,18 @@ describe('GroupWeatherSection', () => {
     const live = () => plain(document.querySelector('[aria-live="polite"]')?.textContent)
     fireEvent.click(columns()[4])
     expect(live()).toBe('km 60.0, 10:30')
-    fireEvent.change(screen.getByRole('slider'), { target: { value: '2' } })
+    fireEvent.change(screen.getByRole('slider', { hidden: true }), { target: { value: '2' } })
     expect(live()).toBe('')
   })
 
+  // `hidden` on the slider and « Par tronçon »: the phone layout is display: none at jsdom's viewport
+  // width (it applies Mantine's media queries), yet in the markup.
   it('selects a point with the slider on a phone', () => {
     renderSection({})
-    const slider = screen.getByRole('slider', { name: 'Glisser pour choisir un passage' })
+    const slider = screen.getByRole('slider', {
+      name: 'Glisser pour choisir un passage',
+      hidden: true,
+    })
     fireEvent.change(slider, { target: { value: '2' } })
     expect(columns()[2].getAttribute('aria-pressed')).toBe('true')
     expect(slider.getAttribute('aria-valuetext')).toContain('09:30, km 30.0')
@@ -326,7 +331,7 @@ describe('GroupWeatherSection', () => {
       const bar = screen.getByRole('group', { name: 'Le vent, tronçon par tronçon' })
       fireEvent.click(within(bar).getAllByRole('button')[1])
       expect(onSelectionChange).toHaveBeenLastCalledWith({ position: 1, phase: 1 })
-      fireEvent.change(screen.getByRole('slider'), { target: { value: '2' } })
+      fireEvent.change(screen.getByRole('slider', { hidden: true }), { target: { value: '2' } })
       expect(onSelectionChange).toHaveBeenLastCalledWith({ position: 2, fromSlider: true })
     })
 

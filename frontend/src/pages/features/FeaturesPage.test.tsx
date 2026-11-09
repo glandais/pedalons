@@ -75,8 +75,10 @@ describe('FeaturesPage', () => {
 
   it('offers sign-up and sign-in to a visitor, sticky bar included', () => {
     renderPage()
-    expect(screen.getAllByRole('link', { name: 'features.cta.signUp' }).length).toBe(3)
-    expect(screen.getAllByRole('link', { name: 'features.cta.signIn' }).length).toBe(2)
+    // `hidden`: the sticky bar is hidden by CSS at jsdom's viewport width, yet in the markup.
+    const links = (name: string) => screen.getAllByRole('link', { name, hidden: true })
+    expect(links('features.cta.signUp').length).toBe(3)
+    expect(links('features.cta.signIn').length).toBe(2)
     expect(screen.queryByRole('link', { name: 'features.cta.backToFeed' })).toBeNull()
     expect(screen.getByRole('link', { name: 'features.cta.browseTeams' })).toBeInTheDocument()
   })

@@ -78,9 +78,11 @@ function renderOverview() {
 }
 
 /** The link of a shortcut carrying both its label and its state line. */
+// `hidden` here and below: jsdom applies Mantine's media queries, so at its viewport width the phone
+// layout is display: none, yet in the markup — which is what these tests are about.
 function shortcuts(label: string, status: string) {
   return screen
-    .getAllByRole('link')
+    .getAllByRole('link', { hidden: true })
     .filter((link) => link.textContent?.includes(label) && link.textContent.includes(status))
 }
 
@@ -98,7 +100,7 @@ describe('ProfileOverviewPage', () => {
     expect(screen.getByText('Camille Dupont')).toBeTruthy()
     expect(screen.getByText('camille@example.org')).toBeTruthy()
     const accountLinks = screen
-      .getAllByRole('link')
+      .getAllByRole('link', { hidden: true })
       .filter((link) => link.getAttribute('href') === paths.profileAccount())
     // The identity card's, the sidebar's, the desktop card's and the phone list's.
     expect(accountLinks).toHaveLength(4)
@@ -134,7 +136,7 @@ describe('ProfileOverviewPage', () => {
     const { container } = renderOverview()
 
     // Both layouts are in the markup: the server cannot know the viewport.
-    const signOuts = screen.getAllByRole('button', { name: 'nav.signOut' })
+    const signOuts = screen.getAllByRole('button', { name: 'nav.signOut', hidden: true })
     expect(signOuts).toHaveLength(2)
     const sidebar = screen.getByRole('navigation', { name: 'nav.profile' })
     expect(sidebar.closest('.mantine-visible-from-md')).not.toBeNull()
@@ -142,7 +144,7 @@ describe('ProfileOverviewPage', () => {
     const phoneOnly = container.querySelectorAll('.mantine-hidden-from-md')
     expect(
       [...phoneOnly].some((element) =>
-        within(element as HTMLElement).queryByRole('button', { name: 'nav.signOut' })
+        within(element as HTMLElement).queryByRole('button', { name: 'nav.signOut', hidden: true })
       )
     ).toBe(true)
     // The sidebar marks the overview as the current page.
