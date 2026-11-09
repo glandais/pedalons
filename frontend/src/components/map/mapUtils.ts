@@ -171,13 +171,20 @@ export function getKmMarkerInterval(distanceKm: number): number {
   return 10
 }
 
+// Which km markers hold out when they crowd each other (ledger WEB-144): the roundest distances
+// first, so that the ones left read 100, 50, 150… Depends on the distance alone, never on the zoom.
+export function kmMarkerRank(km: number): number {
+  const rank = [100, 50, 20, 10, 5, 2].findIndex((step) => km % step === 0)
+  return rank === -1 ? 6 : rank
+}
+
 // Compute km marker positions along coords.
 // coords is [lng, lat, ele?, cumDistM?][]. If cumDistM (4th element) is present it is used
 // directly; otherwise cumulative distance is computed using haversine.
 export function computeKmMarkers(
   coords: number[][],
   totalDistanceM: number
-): { lng: number; lat: number; label: string }[] {
+): { lng: number; lat: number; label: string; rank: number }[] {
   if (totalDistanceM <= 0 || coords.length < 2) return []
 
   const intervalM = getKmMarkerInterval(totalDistanceM / 1000) * 1000
@@ -196,7 +203,7 @@ export function computeKmMarkers(
     }
   }
 
-  const markers: { lng: number; lat: number; label: string }[] = []
+  const markers: { lng: number; lat: number; label: string; rank: number }[] = []
   let targetDist = intervalM
 
   while (targetDist < totalDistanceM) {
@@ -206,10 +213,12 @@ export function computeKmMarkers(
       const p1 = coords[idx]
       const span = cumDists[idx] - cumDists[idx - 1]
       const t = span === 0 ? 0 : (targetDist - cumDists[idx - 1]) / span
+      const km = Math.round(targetDist / 1000)
       markers.push({
         lng: p0[0] + t * (p1[0] - p0[0]),
         lat: p0[1] + t * (p1[1] - p0[1]),
-        label: String(Math.round(targetDist / 1000)),
+        label: String(km),
+        rank: kmMarkerRank(km),
       })
     }
     targetDist += intervalM

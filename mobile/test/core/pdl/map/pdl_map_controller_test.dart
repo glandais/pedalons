@@ -227,6 +227,13 @@ void main() {
       expect(markers.map((PdlKmMarker m) => m.label), <String>['1', '2', '3']);
     });
 
+    test('le rang met les distances rondes d\'abord (MOB-119)', () {
+      expect(
+        <int>[100, 50, 150, 20, 10, 5, 2, 1, 7].map(pdlKmMarkerRank),
+        <int>[0, 1, 1, 2, 3, 4, 5, 6, 6],
+      );
+    });
+
     test('un tracé vide ne produit aucune borne', () {
       expect(computePdlKmMarkers(const <List<List<double>>>[]), isEmpty);
     });

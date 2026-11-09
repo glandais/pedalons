@@ -331,10 +331,14 @@ class PdlKmMarker {
     required this.lon,
     required this.lat,
     required this.label,
+    this.rank = 0,
   });
 
   final double lon;
   final double lat;
+
+  /// Qui cède la place quand les bornes se toucheraient : voir [pdlKmMarkerRank].
+  final int rank;
 
   /// Le nombre de kilomètres, en clair. `core/pdl` ne formate pas d'unité :
   /// c'est l'appelant qui décide s'il écrit « 10 » ou « 6.2 ».
@@ -350,6 +354,15 @@ int pdlKmMarkerIntervalKm(double distanceKm) {
   if (distanceKm < 20) return 2;
   if (distanceKm < 50) return 5;
   return 10;
+}
+
+/// Quelles bornes résistent quand elles se touchent (ledger `MOB-119`, le
+/// pendant de `WEB-144`) : les distances les plus rondes d'abord, pour que
+/// celles qui restent se lisent 100, 50, 150… Ne dépend pas du zoom.
+int pdlKmMarkerRank(int km) {
+  const List<int> steps = <int>[100, 50, 20, 10, 5, 2];
+  final int rank = steps.indexWhere((int step) => km % step == 0);
+  return rank == -1 ? steps.length : rank;
 }
 
 /// Les bornes kilométriques d'un tracé, interpolées sur la polyligne.
@@ -378,8 +391,14 @@ List<PdlKmMarker> computePdlKmMarkers(
   for (double d = intervalM; d < total; d += intervalM) {
     final LngLat? p = index.positionAt(d);
     if (p == null) continue;
+    final int km = (d / 1000).round();
     markers.add(
-      PdlKmMarker(lon: p.lng, lat: p.lat, label: label((d / 1000).round())),
+      PdlKmMarker(
+        lon: p.lng,
+        lat: p.lat,
+        label: label(km),
+        rank: pdlKmMarkerRank(km),
+      ),
     );
   }
   return markers;

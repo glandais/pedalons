@@ -564,15 +564,22 @@ class _PdlMapState extends State<PdlMap> {
       onEvent: _onEvent,
       children: <Widget>[
         if (widget.kmMarkers.isNotEmpty)
-          WidgetLayer(
-            markers: <Marker>[
-              for (final PdlKmMarker m in widget.kmMarkers)
-                Marker(
-                  point: Geographic(lon: m.lon, lat: m.lat),
-                  size: const Size(30, 30),
-                  child: _KmBadge(label: m.label),
-                ),
-            ],
+          // Reconstruite à chaque mouvement de la caméra : les bornes qui se
+          // toucheraient à l'écran cèdent la place, sans quitter le tracé.
+          Builder(
+            builder: (BuildContext context) => WidgetLayer(
+              markers: <Marker>[
+                for (final PdlKmMarker m in _roomyKmMarkers(
+                  context,
+                  widget.kmMarkers,
+                ))
+                  Marker(
+                    point: Geographic(lon: m.lon, lat: m.lat),
+                    size: _kmBadgeSize,
+                    child: _KmBadge(label: m.label),
+                  ),
+              ],
+            ),
           ),
         if (widget.markers.isNotEmpty)
           // Une couche à part des bornes : celle-ci reçoit les touchers
@@ -622,6 +629,40 @@ class _PdlMapState extends State<PdlMap> {
       ],
     );
   }
+}
+
+const Size _kmBadgeSize = Size(30, 30);
+
+/// Les bornes qui ont la place à ce zoom. Toutes hors d'une carte prête.
+List<PdlKmMarker> _roomyKmMarkers(
+  BuildContext context,
+  List<PdlKmMarker> markers,
+) {
+  final MapController? controller = MapController.maybeOf(context);
+  // Lu pour se reconstruire à chaque mouvement de la caméra
+  final MapCamera? camera = MapCamera.maybeOf(context);
+  if (controller == null || camera == null || markers.length < 2) {
+    return markers;
+  }
+  final List<Offset> screen = controller.toScreenLocations(<Geographic>[
+    for (final PdlKmMarker m in markers) Geographic(lon: m.lon, lat: m.lat),
+  ]);
+  final List<Offset?> layout = layoutMarkerBoxes(
+    <Rect>[
+      for (final Offset at in screen)
+        Rect.fromCenter(
+          center: at,
+          width: _kmBadgeSize.width,
+          height: _kmBadgeSize.height,
+        ),
+    ],
+    <int?>[for (final PdlKmMarker m in markers) m.rank],
+    clearance: pdlMarkerGap,
+  );
+  return <PdlKmMarker>[
+    for (int i = 0; i < markers.length; i++)
+      if (layout[i] != null) markers[i],
+  ];
 }
 
 /// Borne kilométrique — pastille **opaque**, jamais du texte nu sur la tuile.

@@ -2,12 +2,20 @@ import { useEffect, useState } from 'react'
 import { useMap } from 'react-map-gl/maplibre'
 import { layoutBadges } from '@/lib/weatherOnRoute'
 
-/** The capsule's room beside another — its width (icon, « 23° », arrow) and a gap — and above. */
-const BADGE_STEP = 72
-const BADGE_ROW = 26
-/** How far apart the badges that may give way stay: below this, the map reads as saturated. */
-const BADGE_CLEAR_WIDTH = 88
-const BADGE_CLEAR_HEIGHT = 42
+export interface BadgeSpacing {
+  /** The room a badge takes beside another and above: those always shown are moved apart by it. */
+  width: number
+  height: number
+  /** How far apart the badges that may give way stay. */
+  clearWidth: number
+  clearHeight: number
+}
+
+/**
+ * A weather capsule: its width (icon, « 23° », arrow) and a gap, its height and a gap. Below the
+ * clearance, the map reads as saturated.
+ */
+const WEATHER_BADGE: BadgeSpacing = { width: 72, height: 26, clearWidth: 88, clearHeight: 42 }
 
 export interface BadgeItem<K> {
   key: K
@@ -35,7 +43,10 @@ function sameLayout<K>(a: BadgeLayout<K>, b: BadgeLayout<K>) {
  * again at the end of every zoom, rotation or resize — never during a gesture (ledgers WEB-128,
  * WEB-142). Undefined outside a map: nothing to measure, every badge stands.
  */
-export function useBadgeLayout<K>(items: readonly BadgeItem<K>[]): BadgeLayout<K> | undefined {
+export function useBadgeLayout<K>(
+  items: readonly BadgeItem<K>[],
+  spacing: BadgeSpacing = WEATHER_BADGE
+): BadgeLayout<K> | undefined {
   const { current: mapRef } = useMap()
   const [layout, setLayout] = useState<BadgeLayout<K>>(() => new Map())
 
@@ -48,10 +59,10 @@ export function useBadgeLayout<K>(items: readonly BadgeItem<K>[]): BadgeLayout<K
           ...map.project([item.longitude, item.latitude]),
           rank: item.rank,
         })),
-        BADGE_STEP,
-        BADGE_ROW,
-        BADGE_CLEAR_WIDTH,
-        BADGE_CLEAR_HEIGHT
+        spacing.width,
+        spacing.height,
+        spacing.clearWidth,
+        spacing.clearHeight
       )
       const next = new Map<K, readonly [number, number]>()
       items.forEach((item, i) => {
@@ -71,7 +82,7 @@ export function useBadgeLayout<K>(items: readonly BadgeItem<K>[]): BadgeLayout<K
       map.off('pitchend', update)
       map.off('resize', update)
     }
-  }, [mapRef, items])
+  }, [mapRef, items, spacing])
 
   return mapRef ? layout : undefined
 }

@@ -4,6 +4,16 @@ import { Box, Text } from '@mantine/core'
 import { getOverlayBg } from '@/lib/colors'
 import { computeKmMarkers } from './mapUtils'
 import { useResolvedColorScheme } from '@/hooks/useResolvedColorScheme'
+import { useBadgeLayout } from '@/components/weather/useBadgeLayout'
+
+/** The 22 px disc and a gap: closer than this, two km markers would touch (ledger WEB-144). */
+const KM_MARKER_ROOM = 26
+const KM_MARKER_SPACING = {
+  width: KM_MARKER_ROOM,
+  height: KM_MARKER_ROOM,
+  clearWidth: KM_MARKER_ROOM,
+  clearHeight: KM_MARKER_ROOM,
+}
 
 interface MarkerProps {
   longitude: number
@@ -116,9 +126,16 @@ export const KmMarkersLayer = memo(function KmMarkersLayer({
   totalDistanceM,
 }: KmMarkersLayerProps) {
   const markers = useMemo(() => computeKmMarkers(coords, totalDistanceM), [coords, totalDistanceM])
+  const items = useMemo(
+    () => markers.map((m) => ({ key: m.label, longitude: m.lng, latitude: m.lat, rank: m.rank })),
+    [markers]
+  )
+  // Those that fit at this zoom, each on its own point: a km marker never leaves the track
+  const layout = useBadgeLayout(items, KM_MARKER_SPACING)
+  const shown = layout ? markers.filter((m) => layout.has(m.label)) : markers
   return (
     <>
-      {markers.map((m) => (
+      {shown.map((m) => (
         <KmMarker key={m.label} longitude={m.lng} latitude={m.lat} label={m.label} />
       ))}
     </>
