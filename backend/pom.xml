@@ -32,7 +32,7 @@
         <webauthn4j-core.version>0.31.11.RELEASE</webauthn4j-core.version>
         <timeshape.version>2026b.29</timeshape.version>
         <s3mock-testcontainers.version>5.2.3</s3mock-testcontainers.version>
-        <google-java-format.version>1.36.1</google-java-format.version>
+        <google-java-format.version>2.0.0</google-java-format.version>
         <!-- Security overrides of versions quarkus-bom pins too low; drop each one once a Quarkus
              release aligns past it. jackson 3 (via webauthn4j): GHSA ranges [3.2.0,3.2.2).
              log4j-api (via log4j2-jboss-logmanager): [2.26.0,2.26.1). -->
