@@ -41,6 +41,6 @@ class HomeKeys {
   /// Une équipe de « Mes équipes », par son slug.
   ValueKey<String> teamRow(String teamSlug) => _HomeKey('teamRow_$teamSlug');
 
-  /// « Trouver une équipe », quand l'utilisateur n'est membre d'aucune.
+  /// « Trouver une équipe », en tête de section ou dans la carte sans équipe.
   final findTeamButton = const _HomeKey('findTeam');
 }

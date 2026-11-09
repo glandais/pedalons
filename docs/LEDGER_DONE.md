@@ -16,6 +16,8 @@ fichier garde **ce qui est fait**, et ce qu'il ne faut pas défaire.
 
 ## MOB — Application mobile
 
+- `MOB-125` **« Trouver une équipe » en tête de « Mes équipes » de l'accueil, comme « Calendrier »** (9 novembre 2026) — affiché dès qu'on a une équipe, sauf site mono-équipe. Il mène à `/equipes?role=all`, que `redirectTeamsDirectory` ouvre sur l'annuaire (`/equipes` ne montre ici que ses équipes), liens web compris ; « Voir toutes » passe sous la liste. Tests : `home_member_sections_test.dart`, `teams_directory_redirect_test.dart`.
+
 - `MOB-124` **Plus de « retour vers 14:10 »** (9 novembre 2026) — l'heure de retour estimée n'apportait rien : retirée de la carte « Prochaine sortie », des cartes de publication, de l'accueil d'équipe et des blocs de départ d'une sortie et d'un voyage. `rideReturnLabel` et les clés `returnAround` sont supprimés. `endDateTime` reste lu pour « En cours » et la plage d'un voyage. Tests : `departure_cards_test.dart`, `ride_departure_block_test.dart`.
 
 - `MOB-123` **Le fil d'accueil part sur « Membre », comme le web** (9 novembre 2026) — il partait sur
@@ -1169,6 +1171,8 @@ couvert » ; les tests ne tournent qu'en local (`MOB-37`).
   décisions à ne pas défaire que `WEB-111` (en-tête seulement, 20 équipes).
 
 ## WEB — Site web
+
+- `WEB-150` **« Trouver une équipe » de l'accueil mène à `/equipes?role=all`** (9 novembre 2026) — sans ce paramètre, la liste s'ouvrait sur ses propres équipes (`useMembershipDefault`). Test : `memberHome.test.tsx`.
 
 - `WEB-149` **« Mes équipes » retiré de l'aperçu du profil** (9 novembre 2026) — la carte `TeamsCard` de `/profil` (bureau seulement) doublonnait l'accueil et l'onglet Équipes ; ses clés `profile.nav.teams` et `profile.teams.empty` sont supprimées. Test : `ProfileOverviewPage.test.tsx`.
 

@@ -293,8 +293,8 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('1 voyage à venir'), findsOneWidget);
-      // Rien à « Trouver » quand on a déjà des équipes.
-      expect(find.byKey(keys.home.findTeamButton), findsNothing);
+      // « Trouver une équipe » en tête de section, comme « Calendrier ».
+      expect(find.byKey(keys.home.findTeamButton), findsOneWidget);
     });
 
     testWidgets('sans équipe, propose d\'en trouver une', (

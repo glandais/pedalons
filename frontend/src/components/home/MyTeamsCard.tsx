@@ -34,6 +34,8 @@ export function MyTeamsCard({ teams, total, isLoading, isError }: MyTeamsCardPro
   const { t } = useTranslation()
   const activity = useTeamActivity()
   const singleTeam = isSingleTeam()
+  // Spelled out: the list otherwise opens on the member's own teams (`useMembershipDefault`).
+  const findTeamHref = `${paths.teams()}?role=all`
 
   return (
     <Paper withBorder radius="md" p="md" component="section" aria-labelledby="home-teams-title">
@@ -42,7 +44,7 @@ export function MyTeamsCard({ teams, total, isLoading, isError }: MyTeamsCardPro
           {t('home.teams.title')}
         </Title>
         {!singleTeam && (teams?.length ?? 0) > 0 && (
-          <Anchor component={PrefetchLink} to={paths.teams()} size="sm">
+          <Anchor component={PrefetchLink} to={findTeamHref} size="sm">
             {t('home.teams.find')}
           </Anchor>
         )}
@@ -66,7 +68,7 @@ export function MyTeamsCard({ teams, total, isLoading, isError }: MyTeamsCardPro
           {!singleTeam && (
             <Button
               component={PrefetchLink}
-              to={paths.teams()}
+              to={findTeamHref}
               variant="light"
               size="xs"
               leftSection={<IconSearch size={14} />}

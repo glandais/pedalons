@@ -200,7 +200,9 @@ describe('MyTeamsCard', () => {
   it('no team: offers to find one', () => {
     renderIn(<MyTeamsCard teams={[]} total={0} isLoading={false} />)
     expect(screen.getByText('home.teams.empty')).toBeTruthy()
-    expect(screen.getByRole('link', { name: 'home.teams.find' })).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'home.teams.find' }).getAttribute('href')).toMatch(
+      /\?role=all$/
+    )
   })
 
   it('a single-team site has no team to find', () => {

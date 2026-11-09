@@ -853,6 +853,15 @@ List<GoRoute> _buildTeamTrees() {
   return trees;
 }
 
+/// `/equipes?role=all`, la liste complète du web : ici, `/equipes` ne montre
+/// que ses propres équipes, et l'annuaire a sa propre page.
+String? redirectTeamsDirectory(Uri uri) {
+  final bool isTeams = PathVariants.teams().containsValue(uri.path);
+  return isTeams && uri.queryParameters['role'] == 'all'
+      ? Paths.teamsDiscover()
+      : null;
+}
+
 /// Provider for the app router.
 ///
 /// The [GoRouter] is built **once**: watching auth state here would recreate it
@@ -890,7 +899,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         return Paths.home();
       }
 
-      return null;
+      return redirectTeamsDirectory(state.uri);
     },
     routes: [
       // Auth routes (outside shell)

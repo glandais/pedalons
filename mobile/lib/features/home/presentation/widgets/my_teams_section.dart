@@ -21,6 +21,10 @@ import '../../../../core/utils/push_location.dart';
 /// reste.
 const int kHomeTeamsLimit = 5;
 
+/// L'annuaire de toutes les équipes, à la même adresse que sur le web
+/// (`redirectTeamsDirectory` l'ouvre dans l'application).
+String _findTeamLocation() => '${Paths.teams()}?role=all';
+
 /// La ligne d'activité d'une équipe — « 2 sorties à venir · 1 nouvelle
 /// publication » —, ou `null` quand il n'y a rien à dire.
 ///
@@ -55,6 +59,8 @@ class MyTeamsSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AsyncValue<List<TeamDetailDto>> teams = ref.watch(myTeamsProvider);
+    final bool canBrowse =
+        ref.watch(appConfigProvider).value?.singleTeam == false;
 
     return teams.when(
       loading: () => _frame(
@@ -63,7 +69,6 @@ class MyTeamsSection extends ConsumerWidget {
           variant: PdlSkeletonCardVariant.person,
           count: 2,
         ),
-        showAll: false,
       ),
       error: (Object error, StackTrace stack) => const SizedBox.shrink(),
       data: (List<TeamDetailDto> all) {
@@ -78,15 +83,25 @@ class MyTeamsSection extends ConsumerWidget {
                 HomeTeamRow(key: keys.home.teamRow(team.slug), team: team),
                 const SizedBox(height: PdlSpacing.feedGap),
               ],
+              if (all.length > kHomeTeamsLimit)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: PdlButton(
+                    label: 'home.teams.all'.tr(),
+                    variant: PdlButtonVariant.text,
+                    size: PdlButtonSize.sm,
+                    onPressed: () => context.go(Paths.teams()),
+                  ),
+                ),
             ],
           ),
-          showAll: all.length > kHomeTeamsLimit,
+          showFind: canBrowse,
         );
       },
     );
   }
 
-  Widget _frame(BuildContext context, Widget body, {bool showAll = false}) =>
+  Widget _frame(BuildContext context, Widget body, {bool showFind = false}) =>
       Padding(
         key: keys.home.teamsSection,
         padding: const EdgeInsets.fromLTRB(
@@ -100,12 +115,13 @@ class MyTeamsSection extends ConsumerWidget {
           children: <Widget>[
             PdlSectionHeader(
               title: 'home.teams.title'.tr(),
-              action: showAll
+              action: showFind
                   ? PdlButton(
-                      label: 'home.teams.all'.tr(),
+                      key: keys.home.findTeamButton,
+                      label: 'home.teams.find'.tr(),
                       variant: PdlButtonVariant.text,
                       size: PdlButtonSize.sm,
-                      onPressed: () => context.go(Paths.teams()),
+                      onPressed: () => context.push(_findTeamLocation()),
                     )
                   : null,
             ),
@@ -141,7 +157,7 @@ class _NoTeam extends ConsumerWidget {
               label: 'home.teams.find'.tr(),
               variant: PdlButtonVariant.text,
               size: PdlButtonSize.sm,
-              onPressed: () => context.push(Paths.teamsDiscover()),
+              onPressed: () => context.push(_findTeamLocation()),
             ),
         ],
       ),
