@@ -1,5 +1,5 @@
 [versions]
-agp = "9.5.0"
+agp = "9.5.1"
 kotlin = "2.4.21"
 karoo-ext = "1.1.9"
 ktor = "3.6.1"
@@ -11,8 +11,8 @@ activity-compose = "1.13.0"
 datastore = "1.3.0"
 zxing = "4.3.0"
 kotlinx-serialization = "1.12.0"
-ben-manes-versions = "0.66.0"
-spotless = "8.10.4"
+ben-manes-versions = "0.67.0"
+spotless = "8.11.0"
 
 [libraries]
 karoo-ext = { module = "io.hammerhead:karoo-ext", version.ref = "karoo-ext" }
