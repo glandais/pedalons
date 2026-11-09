@@ -193,7 +193,7 @@ void main() {
     );
 
     testWidgets('inscrit dans un groupe à l’heure propre : son heure en tête, '
-        'et l’autre groupe dit la sienne', (WidgetTester tester) async {
+        'et chaque groupe dit la sienne', (WidgetTester tester) async {
       AppFormatters.setDisplayTimezone('America/New_York');
       await pump(
         tester,
@@ -203,7 +203,7 @@ void main() {
         ),
       );
       // L'en-tête : 22:30 à Paris, la mention à 16:30 à New York.
-      expect(inCard('22:30'), findsOneWidget);
+      expect(inCard('22:30'), findsNWidgets(2));
       expect(
         find.descendant(
           of: find.byType(ZoneMentionLine),
@@ -211,10 +211,9 @@ void main() {
         ),
         findsOneWidget,
       );
-      // Le groupe B part à l'heure de l'en-tête : rien à redire ; le groupe A,
-      // à celle de la sortie, la dit.
+      // Les groupes n'ont pas le même horaire : chacun dit le sien.
       expect(inCard('Groupe A · départ 21:30'), findsOneWidget);
-      expect(inCard('départ 22:30'), findsNothing);
+      expect(inCard('Groupe B · départ 22:30'), findsOneWidget);
     });
 
     testWidgets('désinscrit depuis le chargement : l’heure de la sortie', (
@@ -229,16 +228,14 @@ void main() {
         overrides: <String, bool>{'r1': false},
       );
       expect(inCard('Groupe B · départ 22:30'), findsOneWidget);
-      expect(inCard('départ 21:30'), findsNothing);
+      expect(inCard('Groupe A · départ 21:30'), findsOneWidget);
     });
 
-    testWidgets('sans inscription : l’heure de la sortie, et le groupe à '
-        'l’heure propre la dit, lecteur d’écran compris', (
-      WidgetTester tester,
-    ) async {
+    testWidgets('sans inscription : l’heure de la sortie, et chaque groupe '
+        'dit la sienne, lecteur d’écran compris', (WidgetTester tester) async {
       final SemanticsHandle semantics = tester.ensureSemantics();
       await pump(tester, DashboardRideCard(ride: row(), canEdit: false));
-      expect(inCard('Groupe A · départ'), findsNothing);
+      expect(inCard('Groupe A · départ 21:30'), findsOneWidget);
       expect(inCard('Groupe B · départ 22:30'), findsOneWidget);
       expect(
         find.bySemanticsLabel(RegExp('Groupe B · départ 22:30')),

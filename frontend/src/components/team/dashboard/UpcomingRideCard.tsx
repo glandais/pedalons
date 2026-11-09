@@ -14,7 +14,7 @@ import type { RideDto, RideGroupSummaryDto } from '@/api/dto'
 import { useUnits } from '@/hooks/useUnits'
 import { useRendezvousFormat } from '@/hooks/useRendezvousFormat'
 import { DepartureLine } from '@/components/common/DepartureLine'
-import { groupLeavesAtOwnTime, startFor } from '@/utils/groupStart'
+import { someGroupLeavesAtOwnTime, startFor } from '@/utils/groupStart'
 import { publicationEditPath, publicationPath, rideHasNoRoute } from './dashboardHelpers'
 
 interface UpcomingRideCardProps {
@@ -87,7 +87,7 @@ export function UpcomingRideCard({ ride, canManage }: UpcomingRideCardProps) {
                 key={group.id}
                 group={group}
                 timezone={ride.timezone}
-                headerStart={start}
+                showStartTime={someGroupLeavesAtOwnTime(groups, start)}
                 mine={ride.registered && group.id === ride.registeredGroupId}
               />
             ))}
@@ -129,20 +129,21 @@ export function UpcomingRideCard({ ride, canManage }: UpcomingRideCardProps) {
 }
 
 /**
- * One group: a check on the reader's own, name, pace, its departure when it differs from the one
- * in the card's header (WEB-136; the header carries the zone mention), and how full it is —
+ * One group: a check on the reader's own, name, pace, its departure when the ride's groups do not
+ * all leave at the header's time (WEB-136; the header carries the zone mention), and how full it is —
  * « Complet », « 11 / 16 », or a count when uncapped.
  */
 function GroupFill({
   group,
   timezone,
-  headerStart,
+  showStartTime,
   mine,
 }: {
   group: RideGroupSummaryDto
   timezone: string
   /** The departure the card's header gives: the reader's group's, else the ride's. */
-  headerStart: string
+  /** The ride's groups do not all leave at the time in the card's header. */
+  showStartTime: boolean
   /** Whether the reader joined this group. */
   mine: boolean
 }) {
@@ -150,7 +151,6 @@ function GroupFill({
   const { speed } = useUnits()
   const departure = useRendezvousFormat(timezone)
   const max = group.maxParticipants
-  const ownTime = groupLeavesAtOwnTime(group.startAt, headerStart)
 
   return (
     <Stack gap={2}>
@@ -172,7 +172,7 @@ function GroupFill({
               {speed(group.averageSpeed)}
             </Text>
           ) : null}
-          {ownTime ? (
+          {showStartTime ? (
             <Text span size="sm" c="dimmed" suppressHydrationWarning={departure.isGuessedText}>
               {' · '}
               {t('teams.dashboard.ride.groupStart', { time: departure.formatTime(group.startAt) })}

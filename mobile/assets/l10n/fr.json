@@ -215,7 +215,6 @@
     "nextRide": "Ma prochaine sortie",
     "viewRide": "Voir la sortie",
     "explore": "Explorer",
-    "groupOwnStart": "{group}, départ {relation} de {rideTime}",
     "latestPublications": "Dernières publications",
     "searchPlaceholder": "Rechercher par titre ou description...",
     "scopeAllTeams": "Toutes les équipes",
@@ -632,8 +631,7 @@
     "selectedGroupProfile": "Profil du groupe sélectionné",
     "departureBlock": {
       "departs": "Départ {time}",
-      "yourGroup": "Votre groupe : {group} · {time}",
-      "relativeToRide": "{relation} de {rideTime}"
+      "yourGroup": "Votre groupe : {group} · {time}"
     },
     "viewParticipants": "Voir la liste",
     "startPlace": "Départ",
@@ -776,9 +774,6 @@
       "viewMyGroup": "Voir mon groupe",
       "stats": {
         "departure": "Départ",
-        "before": "avant la sortie",
-        "same": "avec la sortie",
-        "after": "après la sortie",
         "pace": "Allure moyenne",
         "arrival": "Arrivée estimée {time}",
         "distance": "Distance",

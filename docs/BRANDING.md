@@ -714,18 +714,17 @@ le détail d'une sortie, qui donne l'heure de la sortie et, à côté, « Votre 
   Variante **à plat** (listes, agenda, bloc de départ) : fond `primary` doux (`#dbe4ff`) ; un voyage
   prend le turquoise doux. Variante **posée** (sur une image de carte) : fond blanc, ombre `sm`.
 - **Ligne de départ** (cartes) : `IconClock` indigo + « Départ 09:00 » en 16 px/700 (20 px/700 sur
-  la carte « Ma prochaine sortie » mobile), sous le titre ; l'heure de retour et l'écart du groupe
-  (« Groupe B, après la sortie de 09:00 ») suivent en 14 px atténué.
+  la carte « Ma prochaine sortie » mobile), sous le titre.
 - **Bloc de départ** (détail d'une sortie, web et mobile) : **juste sous le titre et les badges,
   avant la description**. Surface alternée (`gray-0`) bordée, rayon 8 px (12 px sur mobile) ; à
   gauche la boîte du jour à plat ; au centre « Départ 09:00 » en 24 px/700 (22 px sur mobile), la
   pastille « Demain », « samedi 12 avril » en 14 px atténué et le lieu de départ ;
   à droite (sous le reste sur mobile) « Votre groupe » et son heure en 700.
-- **Groupe à heure propre** (carte de groupe du détail d'une sortie) : sous le nom, un bandeau
+- **Horaires de groupes différents** (carte de groupe du détail d'une sortie) : sous le nom, un bandeau
   indigo très doux (`primary-0` `#edf2ff` en clair, surface alternée en sombre — pas l'indigo
   « light », sur lequel le gris atténué tombe sous 4,5:1), rayon 8 px, contenant la ligne de départ
-  « Départ 20:30 » en 16 px/700 et « après la sortie de 20:00 » atténué. Rien quand le groupe part
-  avec la sortie.
+  « Départ 20:30 » en 16 px/700. Dès qu'un groupe part à une autre heure que la sortie, **chaque**
+  groupe affiche la sienne ; rien quand tous partent avec la sortie.
 
 ---
 

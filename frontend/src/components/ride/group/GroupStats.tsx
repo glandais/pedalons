@@ -6,7 +6,6 @@ import type { RideDto, RideGroupDto } from '@/api/dto'
 import { Rendezvous } from '@/components/common/Rendezvous'
 import { useRendezvousFormat } from '@/hooks/useRendezvousFormat'
 import { useUnits } from '@/hooks/useUnits'
-import { groupStartRelation } from '@/utils/groupStart'
 
 /** One figure of the group: its label above, its value, an optional line below. */
 function StatTile({
@@ -63,7 +62,6 @@ export function GroupStats({
   const { t } = useTranslation()
   const { speed, distance, elevation } = useUnits()
   const rendezvous = useRendezvousFormat(ride.timezone)
-  const relation = groupStartRelation(group.startAt, ride.dateTime)
 
   return (
     <Paper withBorder p="lg" data-testid="group-stats">
@@ -74,7 +72,6 @@ export function GroupStats({
           <StatTile
             icon={<IconClock size={14} aria-hidden />}
             label={t('rides.group.stats.departure')}
-            hint={t(`rides.group.stats.${relation}`)}
           >
             <Rendezvous date={group.startAt} zone={ride.timezone} format="time" />
           </StatTile>

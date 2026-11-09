@@ -19,7 +19,7 @@ import {
   Title,
 } from '@mantine/core'
 import type { RideDto, RideGroupDto } from '@/api/dto'
-import { groupStartRelation, startFor } from '@/utils/groupStart'
+import { startFor } from '@/utils/groupStart'
 import { DepartureBlock } from '@/components/common/DepartureBlock'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { QueryStateBoundary } from '@/components/common/QueryStateBoundary'
@@ -40,7 +40,6 @@ import { paths } from '@/config/paths'
 import { withMapColor } from '@/hooks/filters/mapColorFilters'
 import { useAuth } from '@/hooks/useAuth'
 import { useCanonicalPath } from '@/hooks/useCanonicalPath'
-import { useRendezvousFormat } from '@/hooks/useRendezvousFormat'
 import { useRideGroupMembership } from '@/hooks/useRideGroupMembership'
 import { useScrollToAnchor } from '@/hooks/useScrollToAnchor'
 import { leavesGroupPage } from './rideDetailData'
@@ -435,23 +434,7 @@ function RideHeaderLine({ ride }: { ride: RideDto }) {
   )
 }
 
-/** The group's departure block: its own time, and « après la sortie de 20:00 » when it differs. */
+/** The group's departure block: its own time. */
 function GroupDepartureBlock({ ride, group }: { ride: RideDto; group: RideGroupDto }) {
-  const { t } = useTranslation()
-  const rendezvous = useRendezvousFormat(ride.timezone)
-  const relation = groupStartRelation(group.startAt, ride.dateTime)
-  return (
-    <DepartureBlock
-      date={startFor(ride, group)}
-      zone={ride.timezone}
-      note={
-        relation === 'with'
-          ? null
-          : t('rides.group.departureNote', {
-              relation: t(`rides.group.stats.${relation}`),
-              time: rendezvous.formatTime(ride.dateTime),
-            })
-      }
-    />
-  )
+  return <DepartureBlock date={startFor(ride, group)} zone={ride.timezone} />
 }

@@ -16,6 +16,8 @@ fichier garde **ce qui est fait**, et ce qu'il ne faut pas défaire.
 
 ## MOB — Application mobile
 
+- `MOB-126` **Plus de « après la sortie de 21:30 », et chaque groupe dit son heure quand les horaires diffèrent** (9 novembre 2026) — mention retirée de la carte de groupe, de la page d'un groupe, de ses statistiques et de « Prochaine sortie » ; `GroupStartRelation` et ses clés sont supprimés. `someGroupLeavesAtOwnTime` décide : dès qu'un groupe part à une autre heure que la référence (la sortie, ou l'en-tête de la carte du tableau de bord), **tous** affichent la leur. Tests : `ride_group_card_test.dart`.
+
 - `MOB-125` **« Trouver une équipe » en tête de « Mes équipes » de l'accueil, comme « Calendrier »** (9 novembre 2026) — affiché dès qu'on a une équipe, sauf site mono-équipe. Il mène à `/equipes?role=all`, que `redirectTeamsDirectory` ouvre sur l'annuaire (`/equipes` ne montre ici que ses équipes), liens web compris ; « Voir toutes » passe sous la liste. Tests : `home_member_sections_test.dart`, `teams_directory_redirect_test.dart`.
 
 - `MOB-124` **Plus de « retour vers 14:10 »** (9 novembre 2026) — l'heure de retour estimée n'apportait rien : retirée de la carte « Prochaine sortie », des cartes de publication, de l'accueil d'équipe et des blocs de départ d'une sortie et d'un voyage. `rideReturnLabel` et les clés `returnAround` sont supprimés. `endDateTime` reste lu pour « En cours » et la plage d'un voyage. Tests : `departure_cards_test.dart`, `ride_departure_block_test.dart`.
@@ -1171,6 +1173,8 @@ couvert » ; les tests ne tournent qu'en local (`MOB-37`).
   décisions à ne pas défaire que `WEB-111` (en-tête seulement, 20 équipes).
 
 ## WEB — Site web
+
+- `WEB-151` **Plus de « après la sortie de 06:40 », et chaque groupe dit son heure quand les horaires diffèrent** (9 novembre 2026) — retiré de `RideGroupCard`, de la page d'un groupe, de `GroupStats` et de `NextRideCard` ; `groupStartRelation`, la prop `note` de `DepartureBlock` et leurs clés sont supprimés. Même règle `someGroupLeavesAtOwnTime` sur la carte de groupe et `UpcomingRideCard`. Tests : `RideGroupCard.test.tsx`, `groupStartTimes.test.tsx`.
 
 - `WEB-150` **« Trouver une équipe » de l'accueil mène à `/equipes?role=all`** (9 novembre 2026) — sans ce paramètre, la liste s'ouvrait sur ses propres équipes (`useMembershipDefault`). Test : `memberHome.test.tsx`.
 

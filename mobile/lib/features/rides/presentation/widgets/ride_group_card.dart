@@ -10,7 +10,6 @@ import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/zone_mention_line.dart';
-import '../../domain/group_start.dart';
 import '../../domain/ride_group_action.dart';
 import 'ride_group_weather_line.dart';
 import '../../../../keys.dart';
@@ -30,6 +29,7 @@ class RideGroupCard extends StatelessWidget {
     required this.group,
     required this.rideDateTime,
     required this.timezone,
+    required this.showDeparture,
     required this.action,
     required this.trackColor,
     required this.units,
@@ -48,9 +48,13 @@ class RideGroupCard extends StatelessWidget {
 
   final RideGroupDto group;
 
-  /// Le départ de la sortie (instant du contrat) : le groupe n'affiche son
-  /// heure que s'il part à une autre (docs/LEDGER_*.md API-60).
+  /// Le départ de la sortie (instant du contrat) : le jour du groupe ne
+  /// s'affiche que s'il n'est pas le sien.
   final String rideDateTime;
+
+  /// Afficher le départ du groupe : les groupes de la sortie ne partent pas
+  /// tous à la même heure (`someGroupLeavesAtOwnTime`).
+  final bool showDeparture;
 
   /// Le fuseau de la sortie, où se lit l'heure du groupe.
   final String timezone;
@@ -192,18 +196,17 @@ class RideGroupCard extends StatelessWidget {
   };
 
   // ──────────────────────────────────────────────────── ligne de départ
-  /// L'heure propre du groupe, en bandeau sous son nom (BRANDING §7.8, ledger
+  /// L'heure du groupe, en bandeau sous son nom (BRANDING §7.8, ledger
   /// `BRAND-8`, comme la carte de groupe du web) : fond indigo très doux
   /// ([PdlColors.primaryFaint]), rayon 8 ; « Départ 22:30 » en 16/700 à
   /// l'horloge indigo, le jour quand il n'est pas celui de la sortie
-  /// (« mer. 30 juil. »), puis en atténué « après la sortie de 21:30 » /
-  /// « avant la sortie de 21:30 ». Rien pour un groupe qui part avec la
-  /// sortie : le bloc de départ du détail donne déjà cette heure.
+  /// (« mer. 30 juil. »). Rien quand tous les groupes partent à l'heure de la
+  /// sortie : le bloc de départ du détail la donne déjà.
   ///
   /// L'heure est un rendez-vous : lue d'un autre décalage, sa mention
   /// « heure de Tokyo (…) » suit (docs/LEDGER_*.md API-60).
   Widget? _departure(PdlColors c, PdlTypography t) {
-    if (!groupLeavesAtOwnTime(group.startAt, rideDateTime)) return null;
+    if (!showDeparture) return null;
     final DateTime? instant = DateTime.tryParse(group.startAt);
     final DateTime? rideInstant = DateTime.tryParse(rideDateTime);
     if (instant == null || rideInstant == null) return null;
@@ -219,15 +222,6 @@ class RideGroupCard extends StatelessWidget {
     final String? day = sameDay
         ? null
         : AppFormatters.formatDepartureDate(instant, timezone);
-    final String relation = 'rides.departureBlock.relativeToRide'.tr(
-      namedArgs: <String, String>{
-        'relation': groupStartRelation(
-          group.startAt,
-          rideDateTime,
-        ).labelKey.tr(),
-        'rideTime': formatGroupStart(rideDateTime, timezone),
-      },
-    );
 
     return Padding(
       key: keys.ride.groupDeparture(group.id),
@@ -246,9 +240,8 @@ class RideGroupCard extends StatelessWidget {
             PdlDepartureLine(
               headline: headline,
               trailing: day,
-              semanticLabel: <String>[headline, ?day, relation].join(', '),
+              semanticLabel: <String>[headline, ?day].join(', '),
             ),
-            ExcludeSemantics(child: Text(relation, style: t.sub)),
             ?ZoneMentionLine.maybe(group.startAt, timezone),
           ],
         ),

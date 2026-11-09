@@ -113,6 +113,7 @@ void main() {
                   ),
                   rideDateTime: '2026-10-11T06:00:00Z',
                   timezone: 'Europe/Paris',
+                  showDeparture: false,
                   action: RideGroupAction.join,
                   trackColor: multiTrackColor(0),
                   units: units,

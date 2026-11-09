@@ -52,6 +52,7 @@ void main() {
     Brightness brightness = Brightness.light,
     double textScale = 1.0,
     String timezone = 'Europe/Paris',
+    bool? showDeparture,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -64,6 +65,9 @@ void main() {
                 group: g,
                 rideDateTime: '2026-10-11T06:00:00Z',
                 timezone: timezone,
+                showDeparture:
+                    showDeparture ??
+                    groupLeavesAtOwnTime(g.startAt, '2026-10-11T06:00:00Z'),
                 action: action,
                 pending: pending,
                 trackColor: multiTrackColor(g.sortOrder),
@@ -221,8 +225,8 @@ void main() {
       });
     }
 
-    testWidgets('BRAND-8 : « Départ 08:30 » en 16/700, puis « après la sortie '
-        'de 08:00 » en atténué', (WidgetTester tester) async {
+    testWidgets('BRAND-8 : « Départ 08:30 » en 16/700, sans mention de la '
+        'sortie', (WidgetTester tester) async {
       await pump(
         tester,
         g: fixtureGroup(startAt: '2026-10-11T06:30:00Z'),
@@ -236,13 +240,7 @@ void main() {
       );
       expect(headline.style?.fontWeight, FontWeight.w700);
       expect(headline.style?.fontSize, 16);
-      expect(
-        find.descendant(
-          of: line,
-          matching: find.text('après la sortie de 08:00'),
-        ),
-        findsOneWidget,
-      );
+      expect(find.textContaining('la sortie de'), findsNothing);
       // Plus d'horloge dans la rangée de statistiques.
       expect(
         tester
@@ -257,7 +255,7 @@ void main() {
       );
     });
 
-    testWidgets('BRAND-8 : avant la sortie, et le jour quand il diffère', (
+    testWidgets('BRAND-8 : le jour quand il diffère', (
       WidgetTester tester,
     ) async {
       await pump(
@@ -265,7 +263,6 @@ void main() {
         g: fixtureGroup(startAt: '2026-10-11T05:30:00Z'),
         action: RideGroupAction.join,
       );
-      expect(find.text('avant la sortie de 08:00'), findsOneWidget);
       expect(find.textContaining('dim. 11 oct.'), findsNothing);
 
       // Le lendemain, 08:30 : le jour suit l'heure (« lun. 12 oct. »).
@@ -282,7 +279,17 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(find.text('après la sortie de 08:00'), findsOneWidget);
+    });
+
+    testWidgets('l\'heure de la sortie s\'affiche aussi quand un autre groupe '
+        'part à une autre heure', (WidgetTester tester) async {
+      await pump(
+        tester,
+        g: fixtureGroup(startAt: '2026-10-11T06:00:00Z'),
+        action: RideGroupAction.join,
+        showDeparture: true,
+      );
+      expect(find.text('Départ 08:00'), findsOneWidget);
     });
 
     testWidgets('BRAND-8 : un groupe qui part avec la sortie n\'a pas de '
@@ -330,6 +337,15 @@ void main() {
       );
       expect(find.byType(ZoneMentionLine), findsNothing);
     });
+  });
+
+  test('someGroupLeavesAtOwnTime : un seul horaire différent suffit', () {
+    const String ride = '2026-10-11T06:00:00Z';
+    expect(someGroupLeavesAtOwnTime(<String>[ride, ride], ride), isFalse);
+    expect(
+      someGroupLeavesAtOwnTime(<String>[ride, '2026-10-11T06:30:00Z'], ride),
+      isTrue,
+    );
   });
 
   test('groupLeavesAtOwnTime compare des instants, pas des chaînes', () {

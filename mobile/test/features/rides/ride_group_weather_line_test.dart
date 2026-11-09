@@ -37,6 +37,7 @@ void main() {
               group: g,
               rideDateTime: '2026-10-11T06:00:00Z',
               timezone: 'Europe/Paris',
+              showDeparture: false,
               action: RideGroupAction.join,
               trackColor: multiTrackColor(g.sortOrder),
               units: UnitSystem.metric,

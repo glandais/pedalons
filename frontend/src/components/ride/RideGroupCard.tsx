@@ -30,7 +30,6 @@ import { RideGroupRouteActions } from './RideGroupRouteActions'
 import { useUnits } from '@/hooks/useUnits'
 import { DepartureLine } from '../common/DepartureLine'
 import { useRendezvousFormat } from '@/hooks/useRendezvousFormat'
-import { groupLeavesAtOwnTime, groupStartRelation } from '@/utils/groupStart'
 import classes from './RideGroupCard.module.css'
 
 interface RideGroupCardProps {
@@ -58,6 +57,8 @@ interface RideGroupCardProps {
    * a link — the whole weather is on the group's page.
    */
   weatherLeg?: WeatherLegDto
+  /** Print the group's departure: its ride has groups leaving at different times. */
+  showStartTime: boolean
   canJoin?: boolean
   /**
    * Whether the reader may see who takes part (a member of the team, or a platform admin — the
@@ -84,6 +85,7 @@ export function RideGroupCard({
   routesBySlug,
   trackColor,
   weatherLeg,
+  showStartTime,
   canJoin,
   canSeeParticipants = true,
   onJoin,
@@ -97,10 +99,6 @@ export function RideGroupCard({
   const { speed, distance, elevation } = useUnits()
   const [showParticipants, setShowParticipants] = useState(false)
   const rendezvous = useRendezvousFormat(rideTimezone)
-  // The group leaves at its own time: `startAt` is not the ride's instant (never the deprecated
-  // `time`, docs/LEDGER_*.md API-60). Then, and only then, its departure line under the name.
-  const ownTime = groupLeavesAtOwnTime(group.startAt, rideDateTime)
-  const relation = groupStartRelation(group.startAt, rideDateTime)
   // `full` and `registered` are computed server-side (contract 1.3.0) — never recompute them here.
   const isFull = group.full
   const isJoined = group.registered
@@ -192,9 +190,9 @@ export function RideGroupCard({
         )}
       </Group>
 
-      {/* The group's own departure (docs/BRANDING.md §7.8, ledger BRAND-8): its time in 700, the
-          day when it is not the ride's, and how it sits against the ride — never a dimmed stat. */}
-      {ownTime && (
+      {/* The group's own departure (docs/BRANDING.md §7.8, ledger BRAND-8): its time in 700 and the
+          day when it is not the ride's — never a dimmed stat. */}
+      {showStartTime && (
         <Box
           mt="xs"
           px="sm"
@@ -209,14 +207,6 @@ export function RideGroupCard({
             date={group.startAt}
             zone={rideTimezone}
             withDay={!rendezvous.samePeriod(group.startAt, rideDateTime)}
-            detail={
-              relation === 'with'
-                ? undefined
-                : t('rides.group.departureNote', {
-                    relation: t(`rides.group.stats.${relation}`),
-                    time: rendezvous.formatTime(rideDateTime),
-                  })
-            }
           />
         </Box>
       )}

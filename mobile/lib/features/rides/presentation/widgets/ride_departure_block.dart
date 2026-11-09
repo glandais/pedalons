@@ -13,12 +13,9 @@ import '../../providers/ride_detail_provider.dart';
 /// ledgers `BRAND-8`, `MOB-113`), juste sous l'identité.
 ///
 /// * **Sortie** ([group] nul) — le détail d'une sortie donne l'heure **de la
-///   sortie** (décision `BRAND-8` ; ses cartes de groupe se situent par
-///   rapport à elle), « sam. 12 avr. » d'après
-///   `endDateTime`, et dessous « Votre groupe : B · 09:30 » quand la personne
+///   sortie** (décision `BRAND-8`), « sam. 12 avr. », et dessous « Votre groupe : B · 09:30 » quand la personne
 ///   est inscrite dans un groupe qui part à son heure propre.
-/// * **Groupe** — la page d'un groupe donne l'heure **du groupe**, sa relation
-///   à la sortie (« après la sortie de 09:00 ») quand elle en diffère, et
+/// * **Groupe** — la page d'un groupe donne l'heure **du groupe** et
 ///   l'arrivée estimée de son leg météo ([arrival]) quand il y en a une :
 ///   `endDateTime` est la fin de la sortie entière, pas celle du groupe.
 ///
@@ -81,19 +78,8 @@ class RideDepartureBlock extends StatelessWidget {
         );
       }
     } else {
-      final GroupStartRelation relation = groupStartRelation(
-        group.startAt,
-        ride.dateTime,
-      );
       details = <String>[
         <String>[date, ?arrival].join(' · '),
-        if (relation != GroupStartRelation.same)
-          'rides.departureBlock.relativeToRide'.tr(
-            namedArgs: <String, String>{
-              'relation': relation.labelKey.tr(),
-              'rideTime': formatGroupStart(ride.dateTime, zone),
-            },
-          ),
       ];
     }
 

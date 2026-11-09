@@ -225,19 +225,13 @@ describe('RideGroupPage (WEB-77)', () => {
     expect(screen.queryByTestId('group-places')).toBeNull()
   })
 
-  it('says when the group leaves before or after the ride', () => {
-    state.ride = ride({ groups: [group({ startAt: '2026-10-08T07:10:00Z' }), cool()] })
-    renderPage()
-    expect(plain(document.body.textContent)).toContain('après la sortie')
-  })
-
   it('gives the group’s departure in its departure block, not the ride’s (WEB-135)', () => {
     state.ride = ride({ groups: [group({ startAt: '2026-10-08T07:10:00Z' }), cool()] })
     renderPage()
     const block = screen.getByRole('region', { name: 'Date et heure de départ' })
     const text = plain(block.textContent)
     expect(text).toContain('Départ 07:10')
-    expect(text).toContain('après la sortie de 06:40')
+    expect(text).not.toContain('après la sortie')
     // The tile would repeat it.
     expect(within(screen.getByTestId('group-stats')).queryByText('Départ')).toBeNull()
   })

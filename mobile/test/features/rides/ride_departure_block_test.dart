@@ -166,7 +166,7 @@ void main() {
     );
 
     expect(find.text('Départ 09:30'), findsOneWidget);
-    expect(find.text('après la sortie de 09:00'), findsOneWidget);
+    expect(find.textContaining('la sortie de'), findsNothing);
     expect(find.text('sam. 12 avr. · Arrivée estimée 12:10'), findsOneWidget);
     expect(find.textContaining('Votre groupe'), findsNothing);
   });

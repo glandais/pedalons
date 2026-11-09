@@ -569,7 +569,10 @@ class DashboardRideCard extends ConsumerWidget {
                 group: g,
                 units: units,
                 timezone: ride.timezone,
-                headerStart: start,
+                showStartTime: someGroupLeavesAtOwnTime(
+                  groups.map((RideGroupSummaryDto g) => g.startAt),
+                  start,
+                ),
               ),
           ],
           if (!routed) ...<Widget>[
@@ -628,22 +631,22 @@ class DashboardRideCard extends ConsumerWidget {
 
 /// « Groupe B · 26 km/h · départ 08:30   ▬▬▬▬▬──   11 / 16 », ou « Complet ».
 ///
-/// L'heure du groupe n'est dite que lorsqu'elle diffère de celle de l'en-tête
-/// de la carte [headerStart] — le départ du groupe rejoint, sinon celui de la
-/// sortie —, qui porte seul la mention de fuseau (docs/LEDGER_*.md MOB-112,
+/// L'heure de chaque groupe est dite dès que les groupes ne partent pas tous à
+/// celle de l'en-tête de la carte — le départ du groupe rejoint, sinon celui de
+/// la sortie —, qui porte seul la mention de fuseau (docs/LEDGER_*.md MOB-112,
 /// pendant web `WEB-136`).
 class _GroupFill extends StatelessWidget {
   const _GroupFill({
     required this.group,
     required this.units,
     required this.timezone,
-    required this.headerStart,
+    required this.showStartTime,
   });
 
   final RideGroupSummaryDto group;
   final UnitSystem units;
   final String timezone;
-  final String headerStart;
+  final bool showStartTime;
 
   @override
   Widget build(BuildContext context) {
@@ -659,7 +662,7 @@ class _GroupFill extends StatelessWidget {
       group.name,
       if (group.averageSpeed != null)
         AppFormatters.formatSpeed(group.averageSpeed!, units),
-      if (groupLeavesAtOwnTime(group.startAt, headerStart))
+      if (showStartTime)
         'teams.dashboard.upcomingRides.groupStart'.tr(
           namedArgs: <String, String>{
             'time': formatGroupStart(group.startAt, timezone),

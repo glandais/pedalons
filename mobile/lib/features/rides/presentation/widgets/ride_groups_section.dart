@@ -21,6 +21,7 @@ import 'registration_failure_banner.dart';
 import 'ride_group_route_actions.dart';
 import 'ride_group_card.dart';
 import '../../../../keys.dart';
+import '../../domain/group_start.dart';
 
 /// Combien de groupes sont montrés avant le repli.
 ///
@@ -206,6 +207,10 @@ class _RideGroupsSectionState extends ConsumerState<RideGroupsSection>
       group: group,
       rideDateTime: ride.dateTime,
       timezone: ride.timezone,
+      showDeparture: someGroupLeavesAtOwnTime(
+        ride.groups.map((RideGroupDto g) => g.startAt),
+        ride.dateTime,
+      ),
       action: rideGroupAction(ride: ride, group: group, isMember: isMember),
       // La couleur de son parcours : les groupes qui le partagent portent la
       // même, celle de leur trace commune.

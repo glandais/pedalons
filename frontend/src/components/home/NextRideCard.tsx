@@ -28,13 +28,7 @@ import { invalidateRideRegistration } from '@/lib/rideRegistration'
 import { useUnits } from '@/hooks/useUnits'
 import { useGpsConnections } from '@/hooks/useGpsConnections'
 import { useResolvedColorScheme } from '@/hooks/useResolvedColorScheme'
-import { useRendezvousFormat } from '@/hooks/useRendezvousFormat'
-import {
-  groupLeavesAtOwnTime,
-  groupStartRelation,
-  registeredGroupOf,
-  startFor,
-} from '@/utils/groupStart'
+import { registeredGroupOf, startFor } from '@/utils/groupStart'
 import { RideWeatherSummaryLine } from '../weather/RideWeatherSummaryLine'
 
 interface NextRideCardProps {
@@ -58,7 +52,6 @@ export function NextRideCard({ ride, headingId }: NextRideCardProps) {
   const { t } = useTranslation()
   const { distance, elevation } = useUnits()
   // Departures are rendezvous, in the ride's zone (docs/LEDGER_*.md API-60).
-  const departure = useRendezvousFormat(ride.timezone)
   const colorScheme = useResolvedColorScheme()
   const queryClient = useQueryClient()
   const leaveMutation = useLeaveGroup()
@@ -164,16 +157,7 @@ export function NextRideCard({ ride, headingId }: NextRideCardProps) {
             <Stat icon={<IconUsers size={16} />}>
               {group
                 ? t('home.nextRide.groupParticipants', {
-                    // The time is the line above; here, only that it is not the ride's.
-                    group: groupLeavesAtOwnTime(group.startAt, ride.dateTime)
-                      ? t('home.nextRide.groupOwnTime', {
-                          group: group.name,
-                          relation: t(
-                            `rides.group.stats.${groupStartRelation(group.startAt, ride.dateTime)}`
-                          ),
-                          time: departure.formatTime(ride.dateTime),
-                        })
-                      : group.name,
+                    group: group.name,
                     participants,
                   })
                 : participants}

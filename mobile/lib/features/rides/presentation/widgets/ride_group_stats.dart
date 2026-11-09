@@ -58,17 +58,13 @@ class RideGroupStats extends ConsumerWidget {
     final String? arrival = groupLegArrival(leg, ride.timezone);
 
     final List<Widget> cells = <Widget>[
-      // L'heure du groupe se lit dans le fuseau de la sortie, et se situe
-      // par rapport à elle (docs/LEDGER_*.md API-60).
+      // L'heure du groupe se lit dans le fuseau de la sortie
+      // (docs/LEDGER_*.md API-60).
       if (showDeparture)
         PdlMetaCell(
           label: 'rides.groupPage.stats.departure'.tr(),
           value: formatGroupStart(group.startAt, ride.timezone),
           extra: <Widget>[
-            Text(
-              groupStartRelation(group.startAt, ride.dateTime).labelKey.tr(),
-              style: t.xs,
-            ),
             ?ZoneMentionLine.maybe(group.startAt, ride.timezone),
             if (arrival != null) Text(arrival, style: t.xs),
           ],

@@ -632,9 +632,9 @@ void main() {
       expect(
         find.descendant(
           of: block,
-          matching: find.text('après la sortie de 21:30'),
+          matching: find.textContaining('la sortie de'),
         ),
-        findsOneWidget,
+        findsNothing,
       );
     });
 

@@ -163,7 +163,6 @@ describe('RideDetailPage — a ride with one group is its group page (WEB-79)', 
     expect(plain(screen.getByTestId('group-places').textContent)).toContain('11/12 personnes')
     const stats = plain(screen.getByTestId('group-stats').textContent)
     expect(stats).toContain('28 km/h')
-    expect(stats).toContain('avec la sortie')
     expect(stats).toContain('Arrivée estimée')
     expect(screen.getByTestId('participant-list').textContent).toBe('g1')
     expect(await screen.findByTestId('route-map')).toBeTruthy()

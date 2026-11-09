@@ -264,19 +264,7 @@ class NextRideCard extends ConsumerWidget {
       if (ZoneMentionLine.maybe(start, ride.timezone) case final Widget mention)
         Padding(padding: const EdgeInsets.only(bottom: 10), child: mention),
       if (g != null)
-        _fact(c, t, PdlIcons.people, switch (groupStartRelation(
-          g.startAt,
-          ride.dateTime,
-        )) {
-          GroupStartRelation.same => g.name,
-          final GroupStartRelation relation => 'home.groupOwnStart'.tr(
-            namedArgs: <String, String>{
-              'group': g.name,
-              'relation': relation.labelKey.tr(),
-              'rideTime': formatGroupStart(ride.dateTime, ride.timezone),
-            },
-          ),
-        }, key: keys.home.nextRideGroup),
+        _fact(c, t, PdlIcons.people, g.name, key: keys.home.nextRideGroup),
       if (ride.startPlace != null) ...<Widget>[
         const SizedBox(height: 10),
         PdlPlaceRow(

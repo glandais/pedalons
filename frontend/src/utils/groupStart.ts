@@ -16,20 +16,16 @@ export function groupLeavesAtOwnTime(
   return Number.isFinite(start) && Number.isFinite(ride) && start !== ride
 }
 
-export type GroupStartRelation = 'before' | 'with' | 'after'
-
 /**
- * When a group leaves compared with its ride: before, with or after it — the mention next to a
- * group's departure on its page. Same comparison of instants as {@link groupLeavesAtOwnTime}; an
- * unreadable value reads as « with », which the page then words like a group without a time of
- * its own. Mobile's `groupStartRelation` is the same rule.
+ * Whether the groups of a ride print their departure: as soon as one leaves at another time than
+ * `reference` (the header's departure), every group does, so none reads as « no time ». Mobile's
+ * `someGroupLeavesAtOwnTime` is the same rule.
  */
-export function groupStartRelation(
-  startAt: string | null | undefined,
-  rideDateTime: string | null | undefined
-): GroupStartRelation {
-  if (!groupLeavesAtOwnTime(startAt, rideDateTime)) return 'with'
-  return Date.parse(startAt!) < Date.parse(rideDateTime!) ? 'before' : 'after'
+export function someGroupLeavesAtOwnTime(
+  groups: ReadonlyArray<{ startAt?: string | null }>,
+  reference: string | null | undefined
+): boolean {
+  return groups.some((group) => groupLeavesAtOwnTime(group.startAt, reference))
 }
 
 interface RideStartSource {

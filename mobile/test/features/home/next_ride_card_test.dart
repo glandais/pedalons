@@ -129,10 +129,7 @@ void main() {
       final String date = _textOf(tester, keys.home.nextRideStart);
       expect(date, contains('22:30'));
       expect(date, isNot(contains('21:30')));
-      expect(
-        _textOf(tester, keys.home.nextRideGroup),
-        'Chill Route Long, départ après la sortie de 21:30',
-      );
+      expect(_textOf(tester, keys.home.nextRideGroup), 'Chill Route Long');
     },
   );
 

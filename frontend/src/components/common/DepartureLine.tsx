@@ -27,7 +27,7 @@ interface DepartureLineProps {
   label?: string
   /** The clock's colour: indigo for a ride or a stage, turquoise for a trip. */
   tone?: DayBoxTone
-  /** What follows, dimmed (« Groupe B, après la sortie de 06:30 »). */
+  /** What follows, dimmed (« Groupe B »). */
   detail?: ReactNode
   /**
    * The day box beside it is hidden from assistive tech (inside an `aria-hidden` thumbnail): the

@@ -56,7 +56,11 @@ const RoutesMapView = lazy(() =>
 )
 import { Rendezvous } from '../../components/common/Rendezvous'
 import { DepartureBlock } from '../../components/common/DepartureBlock'
-import { groupLeavesAtOwnTime, registeredGroupOf } from '@/utils/groupStart'
+import {
+  groupLeavesAtOwnTime,
+  registeredGroupOf,
+  someGroupLeavesAtOwnTime,
+} from '@/utils/groupStart'
 import { MediaDisplay } from '../../components/common/MediaDisplay'
 import { EntityLogo } from '../../components/common/EntityLogo'
 import { ContentActionsMenu } from '../../components/moderation/ContentActionsMenu'
@@ -539,6 +543,7 @@ export function RideDetailPage() {
                               group={group}
                               rideTimezone={ride.timezone}
                               rideDateTime={ride.dateTime}
+                              showStartTime={someGroupLeavesAtOwnTime(ride.groups, ride.dateTime)}
                               teamSlug={teamSlug!}
                               rideSlug={ride.slug}
                               rideRouteSlug={ride.routeSlug}
