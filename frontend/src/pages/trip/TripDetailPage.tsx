@@ -18,6 +18,9 @@ import { DepartureBlock } from '../../components/common/DepartureBlock'
 import { CommentSection } from '../../components/comment'
 import { useCanonicalPath } from '../../hooks/useCanonicalPath'
 import { TripOverviewMap } from '@/components/trip/TripOverviewMap'
+import { ErrorBoundary } from '@/components/common/ErrorBoundary'
+import { RouteWeatherSection } from '@/components/weather/RouteWeatherSection'
+import { tripOffersWind } from '@/lib/tripWeatherOnMap'
 import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
 import { teamAccess } from '@/lib/teamAccess'
 import { useTripMembership } from '@/hooks/useTripMembership'
@@ -119,6 +122,13 @@ export function TripDetailPage() {
   const hasJoined = !!user && trip.registered
   // Not once it is over: the server refuses it (TRIP_FINISHED, docs/LEDGER_*.md API-161), as a ride
   // that has left (RIDE_PAST). Leaving stays open.
+  // One leg in all: the trip's only stage, or the trip's own route without stages.
+  const stageCount = trip.stages?.length ?? 0
+  const onlyStage = stageCount === 1 ? trip.stages[0] : undefined
+  const singleLeg =
+    stageCount <= 1 && weatherQuery.data?.stages.length === 1
+      ? weatherQuery.data.stages[0]
+      : undefined
   const canJoinTrip = isMember && trip.status === Status.PUBLISHED && !hasJoined && !trip.finished
 
   return (
@@ -222,6 +232,33 @@ export function TripDetailPage() {
           </Box>
         )}
       </Box>
+
+      {/* A trip of one stage — or of none, riding its own route — unrolls that leg's whole weather
+          here, full width before the comments, as a solo ride does its group's (WEB-155). Its
+          stage page keeps the same section. */}
+      {singleLeg && (
+        <Box id="meteo" mb="lg" style={{ scrollMarginTop: 'var(--app-shell-header-height)' }}>
+          <ErrorBoundary variant="inline">
+            <RouteWeatherSection
+              subject="stage"
+              offered={tripOffersWind(trip)}
+              status={singleLeg.leg.status}
+              availableFrom={singleLeg.leg.availableFrom}
+              attribution={weatherQuery.data?.attribution}
+              fetchedAt={singleLeg.leg.fetchedAt}
+              departure={singleLeg.departure}
+              departureTime={onlyStage?.dateTime ?? trip.dateTime}
+              leg={singleLeg.leg}
+              timezone={onlyStage?.timezone ?? trip.timezone}
+              isLoading={weatherQuery.isLoading}
+              isFetching={weatherQuery.isFetching}
+              onRetry={() => void weatherQuery.refetch()}
+              canEdit={canEdit}
+              titleId="trip-weather-title"
+            />
+          </ErrorBoundary>
+        </Box>
+      )}
 
       <Box mb="lg">
         <AccessAlerts
