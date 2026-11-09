@@ -106,15 +106,13 @@ describe('ProfileOverviewPage', () => {
     expect(accountLinks).toHaveLength(4)
   })
 
-  it('lists the teams with their role, and no longer the rides', () => {
+  it('lists neither the teams nor the rides', () => {
     renderOverview()
 
     // « Mes sorties » left the profile: the home page and the agenda already list them.
     expect(screen.queryByRole('link', { name: 'Sortie du dimanche' })).toBeNull()
     expect(screen.queryByText('profile.nav.rides')).toBeNull()
-    const team = screen.getByRole('link', { name: /Vélo Club/ })
-    expect(team).toHaveAttribute('href', paths.team('velo-club'))
-    expect(within(team).getByText('roles.ADMIN')).toBeTruthy()
+    expect(screen.queryByRole('link', { name: /Vélo Club/ })).toBeNull()
   })
 
   it('gives each subject its state line, on the desktop cards and on the phone list', () => {

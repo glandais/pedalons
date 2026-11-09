@@ -1,7 +1,5 @@
 import { useTranslation } from 'react-i18next'
 import {
-  Anchor,
-  Avatar,
   Box,
   Button,
   Center,
@@ -10,7 +8,6 @@ import {
   NavLink,
   Paper,
   SimpleGrid,
-  Skeleton,
   Stack,
   Text,
   ThemeIcon,
@@ -18,7 +15,6 @@ import {
 } from '@mantine/core'
 import { IconChevronRight } from '@tabler/icons-react'
 import { useGetMyProfileSummary } from '@/api/endpoints/users/users'
-import type { ProfileSummaryDto, TeamRole } from '@/api/dto'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { UserAvatar } from '@/components/common/UserAvatar'
 import {
@@ -33,7 +29,6 @@ import {
   type ProfileSection,
 } from '@/components/profile/profileNav'
 import { profileStatusLines } from '@/components/profile/profileStatus'
-import { getColorFromName, getInitials } from '@/components/team/teamInitials'
 import { paths } from '@/config/paths'
 import { useAuth } from '@/hooks/useAuth'
 
@@ -74,53 +69,6 @@ function IdentityCard() {
           {t('profile.nav.account')}
         </Button>
       </Group>
-    </Paper>
-  )
-}
-
-function TeamsCard({ summary }: { summary: ProfileSummaryDto | undefined }) {
-  const { t } = useTranslation()
-  return (
-    <Paper withBorder radius="md" p="lg">
-      <Stack gap="sm">
-        <Group justify="space-between" align="baseline">
-          <Title order={3} size="h5">
-            {t('profile.nav.teams')}
-          </Title>
-          <Anchor component={PrefetchLink} to={paths.teams()} size="sm" fw={600}>
-            {t('teams.title')}
-          </Anchor>
-        </Group>
-        {!summary ? (
-          <Skeleton height={64} radius="md" />
-        ) : summary.teams.length === 0 ? (
-          <Text size="sm" c="dimmed">
-            {t('profile.teams.empty')}
-          </Text>
-        ) : (
-          <Stack gap={4}>
-            {summary.teams.map((team) => (
-              <NavLink
-                key={team.slug}
-                component={PrefetchLink}
-                to={paths.team(team.slug)}
-                label={team.name}
-                leftSection={
-                  <Avatar size="md" radius="md" color={getColorFromName(team.name)}>
-                    {getInitials(team.name)}
-                  </Avatar>
-                }
-                rightSection={
-                  <Text size="xs" c="dimmed">
-                    {t(`roles.${team.role satisfies TeamRole}`)}
-                  </Text>
-                }
-                style={{ borderRadius: 'var(--mantine-radius-md)' }}
-              />
-            ))}
-          </Stack>
-        )}
-      </Stack>
     </Paper>
   )
 }
@@ -173,7 +121,7 @@ function StatusCard({ item, status }: { item: ProfileNavItem; status: string | u
 }
 
 /**
- * `/profil`: who is signed in, their teams (on a desktop), and one shortcut per subject with
+ * `/profil`: who is signed in, and one shortcut per subject with
  * its state line. Two calls in all — `/me`, which the server seeds, and the profile summary.
  *
  * A desktop has the sidebar (ProfileShell) and the subjects as cards; a phone has the grouped list,
@@ -198,10 +146,6 @@ export function ProfileOverviewPage() {
   return (
     <ProfileShell section="overview" title={t('profile.title')}>
       <IdentityCard />
-
-      <Box visibleFrom={PROFILE_SIDEBAR_FROM}>
-        <TeamsCard summary={summary} />
-      </Box>
 
       <Stack gap="sm" visibleFrom={PROFILE_SIDEBAR_FROM}>
         <Title order={3} size="h4">

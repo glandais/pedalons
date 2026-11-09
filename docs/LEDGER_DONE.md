@@ -1170,6 +1170,8 @@ couvert » ; les tests ne tournent qu'en local (`MOB-37`).
 
 ## WEB — Site web
 
+- `WEB-149` **« Mes équipes » retiré de l'aperçu du profil** (9 novembre 2026) — la carte `TeamsCard` de `/profil` (bureau seulement) doublonnait l'accueil et l'onglet Équipes ; ses clés `profile.nav.teams` et `profile.teams.empty` sont supprimées. Test : `ProfileOverviewPage.test.tsx`.
+
 - `WEB-148` **Plus de « retour vers 14:10 »** (9 novembre 2026) — retiré de `DepartureLine` (cartes, lignes d'agenda, prochaine sortie, tableau d'équipe) et de `DepartureBlock` (détail d'une sortie, d'un voyage) ; props `returnAt`/`returnZone`, clés `agenda.returnAround` et `departure.block.dayLine` supprimées. La plage d'un voyage reste. Tests : `DepartureLine.test.tsx`, `DepartureBlock.test.tsx`.
 
 - `WEB-147` **La carte « Envoyez vos parcours vers votre compteur » est retirée de l'accueil**

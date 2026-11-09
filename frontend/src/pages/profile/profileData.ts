@@ -27,7 +27,7 @@ function signedIn(): boolean {
   return useAuthStore.getState().isAuthenticated
 }
 
-/** The overview: `/me` plus the summary, its two calls (the state lines, the teams, the next ride). */
+/** The overview: `/me` plus the summary, its two calls (the state lines). */
 export async function prefetchProfileOverview(queryClient: QueryClient): Promise<void> {
   if (!signedIn()) return
   await prefetchGetMyProfileSummaryQuery(queryClient)
