@@ -137,6 +137,11 @@ describe('PublicationCard: the departure is primary', () => {
     expect(screen.getAllByText(/09:00/)).toHaveLength(1)
   })
 
+  it('gives no participant count to a ride without groups', () => {
+    renderCard(ride({ groupCount: 0, participantCount: 0 }))
+    expect(text()).not.toContain('personne')
+  })
+
   it('reads the registered group’s departure (WEB-136)', () => {
     renderCard(
       ride({

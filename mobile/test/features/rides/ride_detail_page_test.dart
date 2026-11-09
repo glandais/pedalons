@@ -412,6 +412,13 @@ void main() {
     expect(find.byType(RideGroupCard), findsNothing);
   });
 
+  testWidgets('une sortie sans groupe ne dit pas « Personnes inscrites »', (
+    WidgetTester tester,
+  ) async {
+    await open(tester, fixtureRide(groups: <RideGroupDto>[]));
+    expect(find.text('Personnes inscrites'), findsNothing);
+  });
+
   for (final Brightness brightness in Brightness.values) {
     final String mode = brightness == Brightness.light ? 'clair' : 'sombre';
     testWidgets('l\'écran se rend sans débordement — $mode', (

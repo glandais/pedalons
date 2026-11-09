@@ -59,6 +59,7 @@ void main() {
     String dateTime = '2036-07-29T19:30:00Z',
     String endDateTime = '2036-07-29T21:40:00Z',
     bool finished = false,
+    int groupCount = 2,
   }) => PublicationDtoRide(
     timezone: 'Europe/Paris',
     tags: const <TagDto>[],
@@ -73,7 +74,7 @@ void main() {
     status: 'PUBLISHED',
     visibility: 'TEAM',
     participantCount: 10,
-    groupCount: 2,
+    groupCount: groupCount,
     groups: const <RideGroupDto>[],
     topParticipants: const <PublicUserDto>[],
     deleted: false,
@@ -145,6 +146,15 @@ void main() {
   );
 
   group('carte de sortie du fil', () {
+    testWidgets('une sortie sans groupe n’a pas de compteur de personnes', (
+      WidgetTester tester,
+    ) async {
+      await pump(tester, PublicationCard(publication: ride(groupCount: 0)));
+      expect(find.textContaining('personne'), findsNothing);
+      await pump(tester, PublicationCard(publication: ride()));
+      expect(find.textContaining('10 personnes'), findsOneWidget);
+    });
+
     testWidgets('boîte du jour posée sur l’image, « Départ 21:30 » en 700 '
         'sous le titre, et plus de date dans les statistiques', (
       WidgetTester tester,

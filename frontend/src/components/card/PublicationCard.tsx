@@ -111,9 +111,12 @@ export function PublicationCard({
         const ride = publication as RideDto
         return (
           <StatGroup>
-            <Stat icon={participantsIcon}>
-              {t('participantCount', { count: ride.participantCount })}
-            </Stat>
+            {/* A ride without groups takes no registration: no count. */}
+            {ride.groupCount > 0 && (
+              <Stat icon={participantsIcon}>
+                {t('participantCount', { count: ride.participantCount })}
+              </Stat>
+            )}
             <Stat icon={groupsIcon}>{t('groups.groupCount', { count: ride.groupCount })}</Stat>
             {commentStat}
           </StatGroup>

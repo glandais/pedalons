@@ -525,36 +525,38 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
   );
 
   /// Personnes, lieu de départ, lieu d'arrivée — la date est passée au bloc
-  /// de départ.
+  /// de départ. Sans groupe, personne ne peut s'inscrire : pas de cellule
+  /// « Personnes inscrites », comme au web.
   Widget _meta(BuildContext context) {
     final bool canSeeNames = ref.watch(
       canSeeMemberNamesProvider(ride.team.slug),
     );
 
     final List<Widget> cells = <Widget>[
-      PdlMetaCell(
-        label: 'participants.title'.tr(),
-        value: 'rides.participants'.plural(
-          ride.participantCount,
-          namedArgs: <String, String>{'count': '${ride.participantCount}'},
-        ),
-        // Un `PdlButton(text)` et non un `Text` tappable : il porte la cible
-        // de 44 px et la sémantique de bouton, que la maquette (un simple
-        // lien bleu) ne donne pas.
-        extra: <Widget>[
-          if (ride.groups.isNotEmpty && canSeeNames)
-            Align(
-              alignment: Alignment.centerLeft,
-              child: PdlButton(
-                key: keys.ride.participantsButton,
-                label: 'rides.viewParticipants'.tr(),
-                variant: PdlButtonVariant.text,
-                size: PdlButtonSize.sm,
-                onPressed: () => ParticipantsSheet.openRide(context, ride),
+      if (ride.groups.isNotEmpty)
+        PdlMetaCell(
+          label: 'participants.title'.tr(),
+          value: 'rides.participants'.plural(
+            ride.participantCount,
+            namedArgs: <String, String>{'count': '${ride.participantCount}'},
+          ),
+          // Un `PdlButton(text)` et non un `Text` tappable : il porte la cible
+          // de 44 px et la sémantique de bouton, que la maquette (un simple
+          // lien bleu) ne donne pas.
+          extra: <Widget>[
+            if (canSeeNames)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: PdlButton(
+                  key: keys.ride.participantsButton,
+                  label: 'rides.viewParticipants'.tr(),
+                  variant: PdlButtonVariant.text,
+                  size: PdlButtonSize.sm,
+                  onPressed: () => ParticipantsSheet.openRide(context, ride),
+                ),
               ),
-            ),
-        ],
-      ),
+          ],
+        ),
       if (ride.startPlace != null)
         PdlPlaceRow(
           kind: PdlPlaceKind.start,
@@ -569,6 +571,7 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
         ),
     ];
 
+    if (cells.isEmpty) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       child: PdlCard(

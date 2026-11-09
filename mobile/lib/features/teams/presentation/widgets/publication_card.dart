@@ -430,13 +430,15 @@ class _RideBody extends ConsumerWidget {
       // La date n'est plus une statistique (BRANDING §7.1, ledger `BRAND-8`) :
       // elle est la boîte du jour et la ligne de départ, en haut.
       stats: <PdlStat>[
-        PdlStat(
-          value: 'rides.participants'.plural(
-            ride.participantCount,
-            namedArgs: <String, String>{'count': '${ride.participantCount}'},
+        // Sans groupe, personne ne peut s'inscrire : pas de compteur.
+        if (ride.groupCount > 0)
+          PdlStat(
+            value: 'rides.participants'.plural(
+              ride.participantCount,
+              namedArgs: <String, String>{'count': '${ride.participantCount}'},
+            ),
+            icon: PdlIcons.people,
           ),
-          icon: PdlIcons.people,
-        ),
         if (ride.groupCount > 0)
           PdlStat(
             value: 'rides.groupCount'.plural(ride.groupCount),

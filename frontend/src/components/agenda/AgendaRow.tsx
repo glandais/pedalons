@@ -72,9 +72,12 @@ export function AgendaRow({ publication, actions }: AgendaRowProps) {
                 ? t('trips.card.stageCount', { count: publication.stageCount })
                 : t('groups.groupCount', { count: publication.groupCount })}
             </Stat>
-            <Stat icon={<IconUsers size={16} />}>
-              {t('participantCount', { count: publication.participantCount })}
-            </Stat>
+            {/* A trip registers on itself; a ride through its groups — none, no count. */}
+            {(isTrip || publication.groupCount > 0) && (
+              <Stat icon={<IconUsers size={16} />}>
+                {t('participantCount', { count: publication.participantCount })}
+              </Stat>
+            )}
           </Group>
         </Stack>
         {actions}

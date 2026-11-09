@@ -16,6 +16,8 @@ fichier garde **ce qui est fait**, et ce qu'il ne faut pas défaire.
 
 ## MOB — Application mobile
 
+- `MOB-127` **Une sortie sans groupe ne dit plus « Personnes inscrites »** (9 novembre 2026) — sans groupe, personne ne peut s'inscrire : la cellule de la fiche (`ride_detail_page.dart`) et le compteur de la carte du fil (`publication_card.dart`) disparaissent. Tests : `ride_detail_page_test.dart`, `departure_cards_test.dart`.
+
 - `MOB-126` **Plus de « après la sortie de 21:30 », et chaque groupe dit son heure quand les horaires diffèrent** (9 novembre 2026) — mention retirée de la carte de groupe, de la page d'un groupe, de ses statistiques et de « Prochaine sortie » ; `GroupStartRelation` et ses clés sont supprimés. `someGroupLeavesAtOwnTime` décide : dès qu'un groupe part à une autre heure que la référence (la sortie, ou l'en-tête de la carte du tableau de bord), **tous** affichent la leur. Tests : `ride_group_card_test.dart`.
 
 - `MOB-125` **« Trouver une équipe » en tête de « Mes équipes » de l'accueil, comme « Calendrier »** (9 novembre 2026) — affiché dès qu'on a une équipe, sauf site mono-équipe. Il mène à `/equipes?role=all`, que `redirectTeamsDirectory` ouvre sur l'annuaire (`/equipes` ne montre ici que ses équipes), liens web compris ; « Voir toutes » passe sous la liste. Tests : `home_member_sections_test.dart`, `teams_directory_redirect_test.dart`.
@@ -1173,6 +1175,8 @@ couvert » ; les tests ne tournent qu'en local (`MOB-37`).
   décisions à ne pas défaire que `WEB-111` (en-tête seulement, 20 équipes).
 
 ## WEB — Site web
+
+- `WEB-153` **Pas de compteur de personnes sur la carte d'une sortie sans groupe** (9 novembre 2026) — `PublicationCard` et `AgendaRow` le taisent quand `groupCount` vaut 0 ; un voyage, qui s'inscrit sur lui-même, le garde. La page d'une sortie le faisait déjà (`WEB-152`). Test : `PublicationCard.test.tsx`.
 
 - `WEB-152` **« Personnes inscrites » pour toute la sortie, sous ses groupes** (9 novembre 2026) — le compteur « X personnes » sous le départ laisse place, sous la liste des groupes d'une sortie à plusieurs groupes, à la section d'une sortie à un seul groupe (`GroupParticipantsSection` sans `group` : compte, recherche et liste paginée de toute la sortie, noms réservés aux membres — `API-144`). Préchargée par `prefetchRideDetail` sous la clé `participantsPageParams`. Tests : `RideDetailPage.test.tsx`, `rideDetailData.test.ts`.
 
