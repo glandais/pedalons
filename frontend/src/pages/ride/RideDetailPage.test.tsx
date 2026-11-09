@@ -165,6 +165,8 @@ describe('RideDetailPage — a ride with one group is its group page (WEB-79)', 
     expect(stats).toContain('28 km/h')
     expect(stats).toContain('Arrivée estimée')
     expect(screen.getByTestId('participant-list').textContent).toBe('g1')
+    // One section only: the group's.
+    expect(screen.getAllByRole('region', { name: 'Personnes inscrites' })).toHaveLength(1)
     expect(await screen.findByTestId('route-map')).toBeTruthy()
   })
 
@@ -244,6 +246,10 @@ describe('RideDetailPage — a ride with one group is its group page (WEB-79)', 
     expect(screen.getByRole('link', { name: 'Rapide' })).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Cool' })).toBeTruthy()
     expect(screen.queryByTestId('group-stats')).toBeNull()
+    // Everyone on the ride, under the groups, in their column — the solo ride's section.
+    const section = screen.getByRole('region', { name: 'Personnes inscrites' })
+    expect(plain(section.textContent)).toContain('11 personnes')
+    expect(screen.getByTestId('ride-groups').contains(section)).toBe(true)
     expect(await screen.findByTestId('routes-map')).toBeTruthy()
   })
 })

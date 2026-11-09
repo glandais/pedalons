@@ -11,9 +11,11 @@ import {
 } from '@/hooks/filters/groupParticipantFilters'
 
 /**
- * Everyone riding with the group, searchable and paged, its search and page in the query string
+ * Everyone riding with the group — or, without `group`, with the whole ride (a ride page with
+ * several groups) —, searchable and paged, its search and page in the query string
  * (`?q=`/`?p=`, `groupParticipantFilters.ts`) — the key `prefetchRideGroup` and, for a solo ride,
- * `prefetchRideDetail` fill through `groupParticipantsParams`.
+ * `prefetchRideDetail` fill through `groupParticipantsParams` (`participantsPageParams` for the
+ * whole ride).
  */
 export function GroupParticipantsSection({
   teamSlug,
@@ -24,7 +26,8 @@ export function GroupParticipantsSection({
 }: {
   teamSlug: string
   ride: RideDto
-  group: RideGroupDto
+  /** Absent: the whole ride's participants. */
+  group?: RideGroupDto
   /** The heading's id, which names the section. */
   titleId?: string
   /** Members and platform admins only: the names are never sent to anyone else (API-144). */
@@ -50,7 +53,7 @@ export function GroupParticipantsSection({
           </Title>
           <Text size="sm" c="dimmed">
             {t('rides.detail.groups.participantsNoMax', {
-              count: group.countParticipants,
+              count: group ? group.countParticipants : ride.participantCount,
             })}
           </Text>
         </Group>
@@ -60,10 +63,10 @@ export function GroupParticipantsSection({
               kind: 'ride',
               teamSlug,
               rideSlug: ride.slug,
-              groupId: group.id,
+              groupId: group?.id,
             }}
-            count={group.countParticipants}
-            leaderId={group.leader?.id}
+            count={group ? group.countParticipants : ride.participantCount}
+            leaderId={group?.leader?.id}
             search={filters.search}
             page={filters.page}
             searchInput={searchInput}

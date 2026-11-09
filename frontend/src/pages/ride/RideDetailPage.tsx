@@ -7,7 +7,6 @@ import { useQueryClient } from '@tanstack/react-query'
 import { notifications } from '@mantine/notifications'
 import {
   IconCalendar,
-  IconUsers,
   IconPencil,
   IconMapPin,
   IconChevronDown,
@@ -445,12 +444,6 @@ export function RideDetailPage() {
             </Text>
           </Group>
         )}
-        <Group mt="md" gap="xs">
-          <IconUsers size={16} />
-          <Text size="sm" c="dimmed">
-            {t('participantCount', { count: ride.participantCount })}
-          </Text>
-        </Group>
         {/* The start place is in the departure block; the end place, when there is one, here. */}
         {ride.endPlace && (
           <Group mt="sm" gap="xs">
@@ -576,6 +569,17 @@ export function RideDetailPage() {
                     title={t('rides.detail.groups.emptyTitle')}
                     description={t('rides.detail.groups.empty')}
                   />
+                )}
+                {/* Everyone on the ride, under its groups — the solo ride's section, ride-wide. */}
+                {ride.groups && ride.groups.length > 0 && (
+                  <Box mt="lg">
+                    <GroupParticipantsSection
+                      teamSlug={teamSlug!}
+                      ride={ride}
+                      titleId="ride-participants-title"
+                      canSeeParticipants={canReadComments}
+                    />
+                  </Box>
                 )}
               </>
             )}

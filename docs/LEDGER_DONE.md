@@ -1174,6 +1174,8 @@ couvert » ; les tests ne tournent qu'en local (`MOB-37`).
 
 ## WEB — Site web
 
+- `WEB-152` **« Personnes inscrites » pour toute la sortie, sous ses groupes** (9 novembre 2026) — le compteur « X personnes » sous le départ laisse place, sous la liste des groupes d'une sortie à plusieurs groupes, à la section d'une sortie à un seul groupe (`GroupParticipantsSection` sans `group` : compte, recherche et liste paginée de toute la sortie, noms réservés aux membres — `API-144`). Préchargée par `prefetchRideDetail` sous la clé `participantsPageParams`. Tests : `RideDetailPage.test.tsx`, `rideDetailData.test.ts`.
+
 - `WEB-151` **Plus de « après la sortie de 06:40 », et chaque groupe dit son heure quand les horaires diffèrent** (9 novembre 2026) — retiré de `RideGroupCard`, de la page d'un groupe, de `GroupStats` et de `NextRideCard` ; `groupStartRelation`, la prop `note` de `DepartureBlock` et leurs clés sont supprimés. Même règle `someGroupLeavesAtOwnTime` sur la carte de groupe et `UpcomingRideCard`. Tests : `RideGroupCard.test.tsx`, `groupStartTimes.test.tsx`.
 
 - `WEB-150` **« Trouver une équipe » de l'accueil mène à `/equipes?role=all`** (9 novembre 2026) — sans ce paramètre, la liste s'ouvrait sur ses propres équipes (`useMembershipDefault`). Test : `memberHome.test.tsx`.

@@ -7,7 +7,10 @@ import {
   getGetRideWeatherQueryKey,
 } from '@/api/endpoints/rides/rides'
 import { getGetTeamQueryKey } from '@/api/endpoints/teams/teams'
-import { groupParticipantsParams } from '@/hooks/filters/groupParticipantFilters'
+import {
+  groupParticipantsParams,
+  participantsPageParams,
+} from '@/hooks/filters/groupParticipantFilters'
 import { okWeather, weatherLeg } from '@/test/weatherFixtures'
 
 // Every request the prefetch makes, answered from `responses` by URL.
@@ -109,15 +112,19 @@ describe('prefetchRideDetail', () => {
     expect(requests.urls.filter((u) => u.endsWith('/participants'))).toHaveLength(0)
   })
 
-  it('reads no participants for a ride with several groups', async () => {
+  it("prefetches the whole ride's participants for a ride with several groups", async () => {
     requests.responses['/api/teams/np/rides/sortie'] = ride([g('g1'), g('g2')])
+    requests.responses['/api/teams/np'] = { slug: 'np', role: 'MEMBER' }
+    const queryClient = new QueryClient()
     await prefetchRideDetail(
-      new QueryClient(),
+      queryClient,
       'np',
       'sortie',
-      new URL('https://pedalons.fr/equipes/np/sorties/sortie')
+      new URL('https://pedalons.fr/equipes/np/sorties/sortie?q=col')
     )
-    expect(requests.urls.filter((u) => u.endsWith('/participants'))).toHaveLength(0)
+    const key = getGetRideParticipantsQueryKey('np', 'sortie', participantsPageParams('col', 0))
+    expect(queryClient.getQueryState(key)?.status).toBe('success')
+    expect(requests.urls.filter((u) => u.endsWith('/participants'))).toHaveLength(1)
   })
 })
 

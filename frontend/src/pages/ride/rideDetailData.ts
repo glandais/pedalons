@@ -21,6 +21,7 @@ import {
   groupParticipantFiltersAlias,
   groupParticipantFiltersSchema,
   groupParticipantsParams,
+  participantsPageParams,
 } from '@/hooks/filters/groupParticipantFilters'
 import { ownLeg, soloGroup } from '@/utils/soloGroup'
 import { useRoutesBulk } from '@/hooks/useRoutesBulk'
@@ -176,12 +177,14 @@ export async function prefetchRideDetail(
     useAuthStore.getState().isAuthenticated
       ? prefetchGetAvailableServicesQuery(queryClient)
       : Promise.resolve(queryClient),
-    solo && readsMemberContent(queryClient, teamSlug)
+    (ride?.groups?.length ?? 0) > 0 && readsMemberContent(queryClient, teamSlug)
       ? prefetchGetRideParticipantsQuery(
           queryClient,
           teamSlug,
           rideSlug,
-          groupParticipantsParams(solo.id, filters)
+          solo
+            ? groupParticipantsParams(solo.id, filters)
+            : participantsPageParams(filters.search, filters.page)
         )
       : Promise.resolve(queryClient),
   ])
