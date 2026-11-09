@@ -160,7 +160,9 @@ class _PublicationFeedViewState extends ConsumerState<PublicationFeedView> {
   }
 
   void _setScope(MinRole? value) {
-    ref.read(publicationFeedScopeProvider(_scope).notifier).state = value;
+    ref.read(publicationFeedScopeProvider(_scope).notifier).state = (
+      minRole: value,
+    );
   }
 
   @override
@@ -198,9 +200,14 @@ class _PublicationFeedViewState extends ConsumerState<PublicationFeedView> {
     final search = ref.watch(publicationFeedSearchProvider(_scope));
     // La portée n'existe que sur le fil d'accueil : un fil d'équipe *est* déjà
     // une portée.
-    final minRole = widget.teamSlug == null
+    final PublicationFeedScopeChoice? scopeChoice = widget.teamSlug == null
         ? ref.watch(publicationFeedScopeProvider(_scope))
         : null;
+    final MinRole? minRole = widget.teamSlug != null
+        ? null
+        : scopeChoice != null
+        ? scopeChoice.minRole
+        : ref.watch(homeFeedDefaultScopeProvider);
     // Le filtre par tag n'existe que sur un fil d'équipe filtré par type —
     // la liste dédiée de ce type (D13) — et que si l'équipe a des tags pour
     // ce type : sans eux, pas de chip.
@@ -615,8 +622,8 @@ class _FilterChips extends StatelessWidget {
     _ => null,
   };
 
-  /// Le libellé de la chip de portée : « Toutes les équipes » par défaut, le
-  /// rôle minimum sinon.
+  /// Le libellé de la chip de portée : le rôle minimum, ou « Toutes les
+  /// équipes » sans rôle.
   String _scopeLabel(MinRole? scope) => switch (scope) {
     MinRole.member => 'roles.member'.tr(),
     MinRole.organizer => 'roles.organizer'.tr(),

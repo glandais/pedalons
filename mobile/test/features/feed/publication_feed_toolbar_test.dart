@@ -9,6 +9,7 @@ import 'package:pedalons/core/pagination/pagination.dart';
 import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/features/feed/presentation/widgets/publication_feed_view.dart';
 import 'package:pedalons/features/feed/providers/publication_feed_provider.dart';
+import 'package:pedalons/features/teams/providers/team_providers.dart';
 
 /// F-DE-4 — la rangée de filtres du fil épinglée.
 ///
@@ -31,6 +32,7 @@ void main() {
       publicationFeedProvider.overrideWith(
         (ref, key) => _FullFeedNotifier(key),
       ),
+      myTeamsProvider.overrideWith((ref) async => <TeamDetailDto>[]),
     ],
     child: const MaterialApp(
       home: Scaffold(

@@ -103,6 +103,7 @@ void main() {
           publicationFeedProvider.overrideWith(
             (ref, key) => _StuckFeedNotifier(key),
           ),
+          myTeamsProvider.overrideWith((ref) async => <TeamDetailDto>[]),
         ],
         child: iosApp(
           const Scaffold(

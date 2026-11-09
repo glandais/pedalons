@@ -12,7 +12,6 @@ import { NextRideCard } from '../../components/home/NextRideCard'
 import { WeekAgenda } from '../../components/home/WeekAgenda'
 import { MyTeamsCard } from '../../components/home/MyTeamsCard'
 import { QuickActions } from '../../components/home/QuickActions'
-import { FeaturesPromoCard } from '../../components/home/FeaturesPromoCard'
 import { useWeekSummary } from '../../components/home/memberHomeHelpers'
 import { paths } from '../../config/paths'
 import { useAuth } from '../../hooks/useAuth'
@@ -142,8 +141,6 @@ export function MemberHome() {
         </Grid>
 
         <HomeFeedSection feed={feed} title={t('home.feed.title')} />
-
-        <FeaturesPromoCard />
       </Stack>
     </Stack>
   )

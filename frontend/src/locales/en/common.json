@@ -1017,8 +1017,6 @@
   "home.member.dateFormat": "EEEE, MMMM d",
   "home.member.greeting": "Hello {{name}}",
   "home.member.greetingAnonymous": "Hello",
-  "home.member.promo.text": "Karoo, Garmin or Wahoo: connect your account or pair your bike computer from your profile, and your group's route lands on it.",
-  "home.member.promo.title": "Send your routes to your bike computer",
   "home.member.summary.none": "No ride planned in your teams in the next 7 days.",
   "home.member.summary.registered_one": "You are registered for one of them.",
   "home.member.summary.registered_other": "You are registered for {{count}} of them.",

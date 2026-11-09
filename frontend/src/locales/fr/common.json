@@ -1031,8 +1031,6 @@
   "home.member.dateFormat": "EEEE d MMMM",
   "home.member.greeting": "Bonjour {{name}}",
   "home.member.greetingAnonymous": "Bonjour",
-  "home.member.promo.text": "Karoo, Garmin ou Wahoo : connectez votre compte ou appairez votre compteur depuis votre profil, et le parcours de votre groupe y arrive.",
-  "home.member.promo.title": "Envoyez vos parcours vers votre compteur",
   "home.member.summary.none": "Aucune sortie prévue dans vos équipes ces 7 prochains jours.",
   "home.member.summary.registered_one": "Vous participez à l'une d'elles.",
   "home.member.summary.registered_many": "Vous participez à {{count}} d'entre elles.",

@@ -16,6 +16,12 @@ fichier garde **ce qui est fait**, et ce qu'il ne faut pas défaire.
 
 ## MOB — Application mobile
 
+- `MOB-123` **Le fil d'accueil part sur « Membre », comme le web** (9 novembre 2026) — il partait sur
+  « Toutes les équipes ». `homeFeedDefaultScopeProvider` reprend la règle de `useMembershipDefault` :
+  « Membre », sauf sans aucune équipe, optimiste pendant le chargement. La portée choisie
+  (`publicationFeedScopeProvider`) est désormais nullable à part : `null` = pas encore choisie, à ne
+  pas confondre avec le choix explicite de « toutes ». Test : `home_feed_default_scope_test.dart`.
+
 - [x] `MOB-122` **Les bornes kilométriques sur la carte d'ensemble d'un voyage** (9 novembre 2026, contrat inchangé, pendant de `WEB-146`) — `TripMap` passe à `PdlMap` les bornes de toutes les étapes dessinées, chacune comptée depuis son propre départ comme sur la page de l'étape, mémorisées par parcours. Sauf en mode « Météo ». Couvert par `trip_map_weather_test.dart`. À ne pas défaire : pas de kilométrage cumulé sur le voyage ; `PdlMap` arbitre les chevauchements entre étapes.
 - [x] `MOB-121` **Les bornes kilométriques sur la carte d'une sortie dont tous les groupes roulent le même parcours** (9 novembre 2026, contrat inchangé, pendant de `WEB-145`) — `rideMapShowsKmMarkers` : la page d'un groupe, ou une seule couche (`rideRouteLayers`), quel que soit le nombre de groupes. **Élargit** `MOB-120`. Couvert par `ride_groups_map_wind_test.dart`. À ne pas défaire : deux tracés (dont le parcours de la sortie que personne ne roule) n'ont pas de bornes.
 - [x] `MOB-120` **Les bornes kilométriques sur la carte d'un groupe** (9 novembre 2026, contrat inchangé) — `RideGroupsMap` n'en a jamais passé à `PdlMap`, à la différence du parcours, de l'étape et du site. La page d'un groupe et la sortie solo à un seul parcours (`rideMapColorsLikeRoute`) les affichent, sauf en mode Météo ; la carte d'une sortie à plusieurs groupes n'en a pas. Mémorisées par parcours (`_kmMemo`).
@@ -1161,6 +1167,10 @@ couvert » ; les tests ne tournent qu'en local (`MOB-37`).
   décisions à ne pas défaire que `WEB-111` (en-tête seulement, 20 équipes).
 
 ## WEB — Site web
+
+- `WEB-147` **La carte « Envoyez vos parcours vers votre compteur » est retirée de l'accueil**
+  (9 novembre 2026) — `FeaturesPromoCard` (`WEB-51`), ses clés `home.member.promo.*` et le
+  préchargement des appareils de l'accueil sont supprimés ; le mobile n'avait pas cette carte.
 
 - [x] `WEB-146` **Les bornes kilométriques sur la carte d'ensemble d'un voyage** (9 novembre 2026, contrat inchangé, pendant de `MOB-122`) — **revient sur** le « sans effet sur plusieurs tracés » de `WEB-145` : `RoutesMapView` pose avec `kmMarkers` les bornes de tous les tracés visibles, et c'est la page qui décide. `TripOverviewMap` l'active hors mode Météo ; chaque étape compte depuis son propre départ. `KmMarkersTracesLayer` (`MapMarkers.tsx`) mesure toutes les traces ensemble, pour que les bornes d'étapes voisines se cèdent la place. Couvert par `RoutesMapView.test.tsx` et `TripOverviewMap.test.tsx`. À ne pas défaire : pas de kilométrage cumulé sur le voyage ; toujours pas de bornes sur une sortie à plusieurs parcours.
 - [x] `WEB-145` **Les bornes kilométriques sur la carte d'une sortie dont tous les groupes roulent le même parcours** (9 novembre 2026, contrat inchangé, pendant de `MOB-121`) — `RoutesMapView` prend `kmMarkers`, sans effet sur plusieurs tracés ; `RideDetailPage` la passe quand `rideMapRoutes` ne donne qu'un seul tracé. Les cartes de voyage ne changent pas. Couvert par `RoutesMapView.test.tsx` et `RideDetailPage.test.tsx`. À ne pas défaire : deux tracés (dont le parcours de la sortie que personne ne roule) n'ont pas de bornes.
