@@ -8,7 +8,7 @@
 // (`RouteSampleLookup.chain`), while the 4th coordinate of a track restarts at 0 on each track.
 // `chainedDistances` rebuilds the API's measure; nothing here measures the jump between tracks.
 import type { MantineTheme } from '@mantine/core'
-import { RelativeWind } from '@/api/dto'
+import { RelativeWind, WeatherCheckpointKind } from '@/api/dto'
 import type {
   TrackDto,
   WeatherAttributionDto,
@@ -91,6 +91,8 @@ export interface MapCheckpoint {
   checkpoint: WeatherCheckpointDto & { weather: WeatherConditionsDto }
   longitude: number
   latitude: number
+  /** Who gives way when zoomed out (`checkpointRanks`): null never does, a lower rank goes first. */
+  rank: number | null
 }
 
 /**
@@ -102,7 +104,7 @@ export function mapCheckpoints(
   checkpoints: readonly WeatherCheckpointDto[],
   chained: number[][] = chainedDistances(tracks)
 ): MapCheckpoint[] {
-  const placed: MapCheckpoint[] = []
+  const placed: Omit<MapCheckpoint, 'rank'>[] = []
   for (const checkpoint of checkpoints) {
     if (!checkpoint.weather) continue
     const point = checkpointPoint(tracks, checkpoint.distance, chained)
@@ -113,7 +115,30 @@ export function mapCheckpoints(
       latitude: point[1],
     })
   }
-  return placed
+  const ranks = checkpointRanks(placed.map((marker) => marker.checkpoint))
+  return placed.map((marker, i) => ({ ...marker, rank: ranks[i] }))
+}
+
+/**
+ * Which points hold out longest when the map zooms out (ledger WEB-142): null for a leg's start and
+ * finish, always shown; for the points en route, their depth in a bisection of the route — the
+ * middle 0, the quarters 1, the eighths 2… — so that the badges left stay evenly spread. Depends on
+ * the leg alone, never on the zoom: the same point keeps its rank from one zoom to the next.
+ */
+export function checkpointRanks(checkpoints: readonly { kind: string }[]): (number | null)[] {
+  const ranks = checkpoints.map((): number | null => null)
+  const enRoute = checkpoints.flatMap((c, i) =>
+    c.kind === WeatherCheckpointKind.START || c.kind === WeatherCheckpointKind.FINISH ? [] : [i]
+  )
+  const bisect = (from: number, to: number, depth: number) => {
+    if (from > to) return
+    const middle = Math.floor((from + to) / 2)
+    ranks[enRoute[middle]] = depth
+    bisect(from, middle - 1, depth + 1)
+    bisect(middle + 1, to, depth + 1)
+  }
+  bisect(0, enRoute.length - 1, 0)
+  return ranks
 }
 
 /**
@@ -152,6 +177,44 @@ export function spreadBadges(
     placed.push({ x: point.x + dx, y: point.y })
     return { dx, dy: 0 }
   })
+}
+
+/**
+ * Which badges the map has room for at this zoom, and where (ledger WEB-142): null for a badge left
+ * out, else its shift in pixels. A point of rank null is always kept, moved apart from the others
+ * of its kind by `spreadBadges`; the others are tried by rank then in order, each kept only when no
+ * kept badge stands within `clearWidth` × `clearHeight` of it, and never moved.
+ */
+export function layoutBadges(
+  points: readonly { x: number; y: number; rank: number | null }[],
+  width: number,
+  height: number,
+  clearWidth: number,
+  clearHeight: number
+): ({ dx: number; dy: number } | null)[] {
+  const result = points.map((): { dx: number; dy: number } | null => null)
+  const indexes = points.map((_, i) => i)
+  const required = indexes.filter((i) => points[i].rank === null)
+  const spread = spreadBadges(
+    required.map((i) => points[i]),
+    width,
+    height
+  )
+  const kept = required.map((i, k) => {
+    result[i] = spread[k]
+    return { x: points[i].x + spread[k].dx, y: points[i].y + spread[k].dy }
+  })
+  const candidates = indexes
+    .filter((i) => points[i].rank !== null)
+    .sort((a, b) => (points[a].rank as number) - (points[b].rank as number))
+  for (const i of candidates) {
+    const { x, y } = points[i]
+    if (kept.some((o) => Math.abs(o.x - x) < clearWidth && Math.abs(o.y - y) < clearHeight))
+      continue
+    result[i] = { dx: 0, dy: 0 }
+    kept.push({ x, y })
+  }
+  return result
 }
 
 /**

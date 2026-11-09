@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/theme/pdl_tokens.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
+import 'package:pedalons/features/rides/domain/ride_weather_map.dart';
 
 /// Le marqueur générique de `PdlMap` (ledger `MOB-92`) : égalité de valeur
 /// sans le widget, cible de 44 px, bouton pour le lecteur d'écran.
@@ -102,6 +103,59 @@ void main() {
     await tester.pumpWidget(PdlMapBearing(bearing: 42, child: probe()));
     await tester.pumpWidget(PdlMapBearing(bearing: 90, child: probe()));
     expect(seen, <double>[0, 42, 90]);
+  });
+
+  group('layoutMarkerBoxes (MOB-117)', () {
+    Rect pastille(double y) => Rect.fromLTWH(52, y - 32, 96, 32);
+    List<int?> ranks(int count) => checkpointRanks(<String>[
+      'START',
+      for (int i = 0; i < count - 2; i++) 'EN_ROUTE',
+      'FINISH',
+    ]);
+    List<Rect> leg(int count, double gap) => <Rect>[
+      for (int i = 0; i < count; i++) pastille(i * gap),
+    ];
+
+    test(
+      'garde toujours le départ et l\'arrivée, écartés, même superposés',
+      () {
+        final List<Offset?> layout = layoutMarkerBoxes(leg(9, 0), ranks(9));
+        expect(layout.first, Offset.zero);
+        expect(layout.last, const Offset(100, 0));
+        expect(layout.sublist(1, 8), everyElement(isNull));
+      },
+    );
+
+    test('sans rang, rien ne change : tout reste, comme spreadMarkerBoxes', () {
+      final List<Rect> boxes = leg(5, 10);
+      expect(
+        layoutMarkerBoxes(boxes, List<int?>.filled(5, null)),
+        spreadMarkerBoxes(boxes),
+      );
+    });
+
+    test('en zoomant, des pastilles s\'ajoutent sans en remplacer', () {
+      Set<int> shownAt(double gap) {
+        final List<Offset?> layout = layoutMarkerBoxes(leg(17, gap), ranks(17));
+        return <int>{
+          for (int i = 0; i < layout.length; i++)
+            if (layout[i] != null) i,
+        };
+      }
+
+      final List<Set<int>> sets = <double>[5, 12, 30, 80].map(shownAt).toList();
+      expect(sets.map((Set<int> s) => s.length), <int>[2, 5, 9, 17]);
+      for (int i = 1; i < sets.length; i++) {
+        expect(sets[i].containsAll(sets[i - 1]), isTrue);
+      }
+    });
+
+    test('un point en route gardé ne bouge jamais', () {
+      final List<Offset?> layout = layoutMarkerBoxes(leg(17, 30), ranks(17));
+      for (int i = 1; i < 16; i++) {
+        expect(layout[i], anyOf(isNull, Offset.zero));
+      }
+    });
   });
 
   group('spreadMarkerBoxes', () {

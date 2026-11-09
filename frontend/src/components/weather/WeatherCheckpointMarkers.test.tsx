@@ -13,11 +13,13 @@ vi.mock('react-i18next', async () => {
 // The map's markers and popup as plain DOM: where each marker stands, and the popup's close button.
 // A marker renders through a portal into an element of its own, nested in the map's container, as
 // react-map-gl does: what a click on a badge lets through to the map depends on it.
+const mapHandle = vi.hoisted(() => ({ current: undefined as unknown }))
+
 vi.mock('react-map-gl/maplibre', async () => {
   const { useState } = await import('react')
   const { createPortal } = await import('react-dom')
   return {
-    useMap: () => ({ current: undefined }),
+    useMap: () => ({ current: mapHandle.current }),
     Marker: function Marker({
       longitude,
       latitude,
@@ -359,6 +361,48 @@ describe('WeatherCheckpointMarkers (WEB-116)', () => {
       expect(plain(badges()[2].getAttribute('aria-label'))).not.toContain('Étape')
       fireEvent.click(badges()[2])
       expect(screen.getByRole('dialog', { name: /^km\s30\.0\s·\s09:30$/ })).toBeTruthy()
+    })
+  })
+
+  describe('at a zoom too far out for them all (WEB-142)', () => {
+    /** A map where the whole leg fits in `height` pixels. */
+    const mapOf = (height: number) => {
+      const map = {
+        project: ([, latitude]: [number, number]) => ({ x: 0, y: (47 - latitude) * height }),
+        on: vi.fn(),
+        off: vi.fn(),
+        getBearing: () => 0,
+      }
+      return { ...map, getMap: () => map }
+    }
+    afterEach(() => {
+      mapHandle.current = undefined
+    })
+
+    it('keeps the start and the finish and lets the points en route give way', () => {
+      mapHandle.current = mapOf(1)
+      show()
+      // Their passages: the first and last of the fixture's leg
+      expect(badges().map((b) => b.getAttribute('aria-label')?.split(',')[0])).toEqual([
+        '08:30',
+        '11:30',
+      ])
+    })
+
+    it('keeps a badge whose popup is open, even one that would give way', () => {
+      mapHandle.current = mapOf(1)
+      render(
+        <MantineProvider>
+          <WeatherCheckpointMarkers
+            tracks={TRACKS}
+            leg={routeLeg()}
+            timezone="Europe/Paris"
+            openIndex={2}
+          />
+        </MantineProvider>
+      )
+      expect(badges()).toHaveLength(3)
+      expect(screen.getByTestId('popup')).toBeTruthy()
     })
   })
 

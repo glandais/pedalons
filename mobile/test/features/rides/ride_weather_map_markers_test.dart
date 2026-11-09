@@ -84,6 +84,11 @@ void main() {
       expect(m[2].alignment, Alignment.topCenter);
     });
 
+    test('départ, arrivée et goutte ne cèdent jamais leur place (MOB-117)', () {
+      // Départ, point en route, goutte : le fixture n'a pas de météo à l'arrivée.
+      expect(markers().map((PdlMapMarker m) => m.rank), <int?>[null, 0, null]);
+    });
+
     test('sans alerte pluie, pas de goutte ; sans distance non plus', () {
       expect(
         markers(of: fixtureLeg()).map((PdlMapMarker x) => x.id),

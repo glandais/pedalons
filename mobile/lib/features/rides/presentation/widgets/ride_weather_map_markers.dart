@@ -85,6 +85,9 @@ List<PdlMapMarker> rideWeatherMapMarkers({
   final double? rainDistance = leg.rainAlert?.distance;
   points ??= rideWeatherMarkerPoints(lines!, leg);
 
+  final List<int?> ranks = checkpointRanks(<String>[
+    for (final WeatherCheckpointDto c in withWeather) c.kind,
+  ]);
   final List<PdlMapMarker> markers = <PdlMapMarker>[];
   for (int i = 0; i < withWeather.length; i++) {
     final LngLat? at = points[i];
@@ -97,6 +100,7 @@ List<PdlMapMarker> rideWeatherMapMarkers({
         lat: at.lat,
         size: _pastilleSize,
         alignment: Alignment.bottomCenter,
+        rank: ranks[i],
         semanticLabel: weatherCheckpointSummary(c, units, timezone),
         child: RideWeatherPastille(
           key: keys.rideGroup.weatherMapPastille(c.indexField),

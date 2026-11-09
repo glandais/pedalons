@@ -9,6 +9,8 @@ import {
   checkpointPoint,
   hasWindForecast,
   mapCheckpoints,
+  checkpointRanks,
+  layoutBadges,
   spreadBadges,
   mapWindRotation,
   pointWinds,
@@ -323,5 +325,66 @@ describe('spreadBadges', () => {
       { dx: 0, dy: 0 },
       { dx: 0, dy: 0 },
     ])
+  })
+})
+
+describe('checkpointRanks (WEB-142)', () => {
+  const kinds = (...k: string[]) => k.map((kind) => ({ kind }))
+
+  it('never lets the start and finish give way, and bisects the points en route', () => {
+    expect(
+      checkpointRanks(kinds('START', 'EN_ROUTE', 'EN_ROUTE', 'EN_ROUTE', 'EN_ROUTE', 'FINISH'))
+    ).toEqual([null, 1, 0, 1, 2, null])
+  })
+
+  it('has nothing to rank on a leg with only its ends', () => {
+    expect(checkpointRanks(kinds('START', 'FINISH'))).toEqual([null, null])
+  })
+})
+
+describe('layoutBadges (WEB-142)', () => {
+  /** A northbound leg of `count` points `gap` px apart, ranked as the map ranks them. */
+  const leg = (count: number, gap: number) => {
+    const ranks = checkpointRanks(
+      Array.from({ length: count }, (_, i) => ({
+        kind: i === 0 ? 'START' : i === count - 1 ? 'FINISH' : 'EN_ROUTE',
+      }))
+    )
+    return ranks.map((rank, i) => ({ x: 100, y: i * gap, rank }))
+  }
+  const layout = (points: ReturnType<typeof leg>) => layoutBadges(points, 72, 26, 88, 42)
+  const shownAt = (gap: number) =>
+    layout(leg(17, gap)).flatMap((shift, i) => (shift === null ? [] : [i]))
+
+  it('keeps the start and the finish however close they stand, moved apart', () => {
+    expect(layout(leg(9, 0))).toEqual([
+      { dx: 0, dy: 0 },
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      { dx: 72, dy: 0 },
+    ])
+  })
+
+  it('shows more as the map zooms in, never swapping a point for another', () => {
+    const counts = [5, 12, 30, 60].map(shownAt)
+    expect(counts.map((c) => c.length)).toEqual([2, 5, 9, 17])
+    counts.slice(1).forEach((shown, i) => expect(shown).toEqual(expect.arrayContaining(counts[i])))
+  })
+
+  it('never moves a point en route, and leaves room between those it keeps', () => {
+    const points = leg(17, 30)
+    const placed = layout(points)
+    const kept = points.filter((_, i) => placed[i] !== null)
+    placed.forEach((shift, i) => {
+      if (shift && points[i].rank !== null) expect(shift).toEqual({ dx: 0, dy: 0 })
+    })
+    kept.forEach((a, i) =>
+      kept.slice(i + 1).forEach((b) => expect(Math.abs(a.y - b.y)).toBeGreaterThanOrEqual(42))
+    )
   })
 })

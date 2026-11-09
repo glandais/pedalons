@@ -28,6 +28,7 @@ class PdlMapMarker {
     required this.semanticLabel,
     required this.child,
     this.alignment = Alignment.center,
+    this.rank,
   });
 
   /// Identité stable, rendue au toucher.
@@ -42,6 +43,10 @@ class PdlMapMarker {
   /// Le point d'accroche du marqueur sur sa position : `center` le centre
   /// sur le point, `bottomCenter` le pose au-dessus, `topCenter` en dessous.
   final Alignment alignment;
+
+  /// Qui cède la place quand la carte manque de place ([layoutMarkerBoxes]) :
+  /// `null` reste toujours affiché, un rang bas passe avant un rang haut.
+  final int? rank;
 
   /// Ce que le lecteur d'écran annonce : le marqueur est un bouton.
   final String semanticLabel;
@@ -63,10 +68,12 @@ class PdlMapMarker {
       other.lat == lat &&
       other.size == size &&
       other.alignment == alignment &&
+      other.rank == rank &&
       other.semanticLabel == semanticLabel;
 
   @override
-  int get hashCode => Object.hash(id, lon, lat, size, alignment, semanticLabel);
+  int get hashCode =>
+      Object.hash(id, lon, lat, size, alignment, rank, semanticLabel);
 }
 
 /// L'écart laissé entre deux marqueurs que [spreadMarkerBoxes] écarte.
@@ -135,6 +142,52 @@ List<Offset> spreadMarkerBoxes(List<Rect> boxes, {double gap = pdlMarkerGap}) {
     placed.add(boxes[i].shift(shifts[i]));
   }
   return shifts;
+}
+
+/// L'écart minimal gardé autour d'un marqueur qui peut céder sa place.
+const double pdlMarkerClearance = 16;
+
+/// Ce que devient chaque boîte à ce zoom (ledger `MOB-117`, le pendant de
+/// `WEB-142`) : `null` si elle est masquée, sinon son déplacement.
+///
+/// Une boîte de rang `null` reste toujours, écartée des autres de sa sorte par
+/// [spreadMarkerBoxes]. Les autres sont essayées par rang, puis dans l'ordre
+/// de la liste : chacune n'est gardée que si rien de déjà posé ne se trouve à
+/// moins de [clearance], et elle ne bouge jamais.
+List<Offset?> layoutMarkerBoxes(
+  List<Rect> boxes,
+  List<int?> ranks, {
+  double clearance = pdlMarkerClearance,
+}) {
+  final List<int> required = <int>[
+    for (int i = 0; i < boxes.length; i++)
+      if (ranks[i] == null) i,
+  ];
+  final List<Offset> spread = spreadMarkerBoxes(<Rect>[
+    for (final int i in required) boxes[i],
+  ]);
+  final List<Offset?> result = List<Offset?>.filled(boxes.length, null);
+  final List<Rect> placed = <Rect>[];
+  for (int k = 0; k < required.length; k++) {
+    result[required[k]] = spread[k];
+    placed.add(boxes[required[k]].shift(spread[k]));
+  }
+  // `sort` n'étant pas stable, l'indice départage les rangs égaux.
+  final List<int> candidates =
+      <int>[
+        for (int i = 0; i < boxes.length; i++)
+          if (ranks[i] != null) i,
+      ]..sort((int a, int b) {
+        final int byRank = ranks[a]!.compareTo(ranks[b]!);
+        return byRank != 0 ? byRank : a.compareTo(b);
+      });
+  for (final int i in candidates) {
+    final Rect room = boxes[i].inflate(clearance);
+    if (placed.any(room.overlaps)) continue;
+    result[i] = Offset.zero;
+    placed.add(boxes[i]);
+  }
+  return result;
 }
 
 /// Le cap de la carte sous un [PdlMapMarker] : degrés, sens horaire, 0 =

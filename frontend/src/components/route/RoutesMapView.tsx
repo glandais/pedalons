@@ -23,7 +23,7 @@ import { useMapHeight } from '@/hooks/useResponsive'
 import { useRoutesBulk } from '@/hooks/useRoutesBulk'
 import { useResolvedColorScheme } from '@/hooks/useResolvedColorScheme'
 import type { RouteDetailDto, WeatherAttributionDto } from '@/api/dto'
-import { WeatherCheckpointMarkers } from '@/components/weather/WeatherCheckpointMarkers'
+import { WeatherLegsMarkers } from '@/components/weather/WeatherLegsMarkers'
 import type { MapItemWind } from '@/lib/tripWeatherOnMap'
 import { attributionHtml, relativeWindStrokeColors } from '@/lib/weatherOnRoute'
 import { windTraceLines } from './routesMapWind'
@@ -424,6 +424,27 @@ export function RoutesMapView({
     setOpenBadge(null)
   }
 
+  const weatherLegs = useMemo(
+    () =>
+      winds
+        ? visibleRoutes.flatMap((route) => {
+            const wind = winds.get(route.itemId)
+            return wind
+              ? [
+                  {
+                    id: route.itemId,
+                    name: route.itemName,
+                    tracks: route.route.tracks,
+                    leg: wind.leg,
+                    timezone: wind.timezone,
+                  },
+                ]
+              : []
+          })
+        : [],
+    [winds, visibleRoutes]
+  )
+
   // Interactive layer IDs for hover detection
   const interactiveLayerIds = useMemo(() => {
     return routesData.map((r) => `line-${r.itemId}`)
@@ -688,30 +709,21 @@ export function RoutesMapView({
               )}
 
               {/* Every shown trace's forecast points, each in its own zone (WEB-118) */}
-              {winds &&
-                visibleRoutes.map((route) => {
-                  const wind = winds.get(route.itemId)
-                  if (!wind) return null
-                  return (
-                    <WeatherCheckpointMarkers
-                      key={`weather-${route.itemId}`}
-                      tracks={route.route.tracks}
-                      leg={wind.leg}
-                      timezone={wind.timezone}
-                      context={route.itemName}
-                      openIndex={openBadge?.itemId === route.itemId ? openBadge.index : null}
-                      onOpenChange={(index) =>
-                        setOpenBadge((current) =>
-                          index !== null
-                            ? { itemId: route.itemId, index }
-                            : current?.itemId === route.itemId
-                              ? null
-                              : current
-                        )
-                      }
-                    />
-                  )
-                })}
+              {weatherLegs.length > 0 && (
+                <WeatherLegsMarkers
+                  legs={weatherLegs}
+                  open={openBadge && { id: openBadge.itemId, index: openBadge.index }}
+                  onOpenChange={(id, index) =>
+                    setOpenBadge((current) =>
+                      index !== null
+                        ? { itemId: id, index }
+                        : current?.itemId === id
+                          ? null
+                          : current
+                    )
+                  }
+                />
+              )}
             </>
           )}
         </PedalonsMap>

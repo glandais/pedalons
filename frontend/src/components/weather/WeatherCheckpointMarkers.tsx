@@ -13,9 +13,9 @@ import {
   checkpointPoint,
   mapCheckpoints,
   mapWindRotation,
-  spreadBadges,
   type MapCheckpoint,
 } from '@/lib/weatherOnRoute'
+import { useBadgeLayout, type BadgeLayout } from './useBadgeLayout'
 import { WeatherIcon } from './WeatherIcon'
 import { WindFromArrow } from './WindFromArrow'
 import { useCheckpointSummary } from './useCheckpointSummary'
@@ -44,6 +44,11 @@ interface WeatherCheckpointMarkersProps {
    * before.
    */
   context?: string
+  /**
+   * The room this leg got on a map that lays several (`WeatherLegsMarkers`, ledger WEB-142). Left
+   * out, the component measures its own badges against each other.
+   */
+  layout?: BadgeLayout<number>
 }
 
 /**
@@ -62,6 +67,7 @@ export function WeatherCheckpointMarkers({
   openIndex: controlledOpenIndex,
   onOpenChange,
   context,
+  layout: givenLayout,
 }: WeatherCheckpointMarkersProps) {
   const { t } = useTranslation()
   const labels = useWeatherLabels()
@@ -76,11 +82,32 @@ export function WeatherCheckpointMarkers({
     () => mapCheckpoints(tracks, leg.checkpoints, chained),
     [tracks, leg.checkpoints, chained]
   )
-  // Badges that would lie one on another at this zoom — a loop's start and finish — moved apart
-  const shifts = useBadgeShifts(markers)
   const [ownOpenIndex, setOwnOpenIndex] = useState<number | null>(null)
   const controlled = controlledOpenIndex !== undefined
   const openIndex = controlled ? controlledOpenIndex : ownOpenIndex
+  const badgeItems = useMemo(
+    () =>
+      givenLayout
+        ? []
+        : markers.map((marker) => ({
+            key: marker.checkpoint.index,
+            longitude: marker.longitude,
+            latitude: marker.latitude,
+            // The open badge stays, whatever the zoom makes of its neighbours
+            rank: marker.checkpoint.index === openIndex ? null : marker.rank,
+          })),
+    [givenLayout, markers, openIndex]
+  )
+  const ownLayout = useBadgeLayout(badgeItems)
+  // What fits at this zoom, moved apart where they would touch — a loop's start and finish. Not
+  // measured yet (a first render, a new forecast), only those that are shown whatever happens.
+  const layout = givenLayout ?? ownLayout
+  const shifts: BadgeLayout<number> = layout ?? NO_SHIFTS
+  const shown = layout
+    ? markers.filter(
+        (m) => layout.has(m.checkpoint.index) || m.rank === null || m.checkpoint.index === openIndex
+      )
+    : markers
   const setOpenIndex = useCallback(
     (next: number | null) => {
       if (!controlled) setOwnOpenIndex(next)
@@ -156,7 +183,7 @@ export function WeatherCheckpointMarkers({
 
   return (
     <>
-      {markers.map((marker) => (
+      {shown.map((marker) => (
         <Marker
           key={marker.checkpoint.index}
           longitude={marker.longitude}
@@ -247,9 +274,7 @@ export function WeatherCheckpointMarkers({
 /** The capsule drawn on the map, and the touch target around it (WCAG 2.5.8, 44 px aimed). */
 const BADGE_HEIGHT = 22
 const BADGE_TARGET = 44
-/** The room a capsule takes beside another — its width (icon, « 23° », arrow) and a gap — and above. */
-const BADGE_STEP = 72
-const BADGE_ROW = BADGE_HEIGHT + 4
+const NO_SHIFTS: BadgeLayout<number> = new Map()
 
 function CheckpointBadge({
   marker,
@@ -483,56 +508,4 @@ function useMapBearing(): number {
   }, [mapRef])
 
   return bearing
-}
-
-/** Equal shifts, so a zoom that moves nothing apart does not render the badges again. */
-function sameShifts(a: Map<number, [number, number]>, b: Map<number, [number, number]>) {
-  if (a.size !== b.size) return false
-  for (const [index, [dx, dy]] of b) {
-    const other = a.get(index)
-    if (!other || other[0] !== dx || other[1] !== dy) return false
-  }
-  return true
-}
-
-/**
- * Each badge's shift in pixels (`spreadBadges`), by its checkpoint's index, measured on screen and
- * again at the end of every zoom, rotation or resize: points far apart at one zoom close up at
- * another. Nothing outside a map.
- */
-function useBadgeShifts(markers: readonly MapCheckpoint[]): Map<number, [number, number]> {
-  const { current: mapRef } = useMap()
-  const [shifts, setShifts] = useState(() => new Map<number, [number, number]>())
-
-  useEffect(() => {
-    if (!mapRef) return
-    const map = mapRef.getMap()
-    const update = () => {
-      const spread = spreadBadges(
-        markers.map((marker) => map.project([marker.longitude, marker.latitude])),
-        BADGE_STEP,
-        BADGE_ROW
-      )
-      const next = new Map(
-        markers.map((marker, i): [number, [number, number]] => [
-          marker.checkpoint.index,
-          [Math.round(spread[i].dx), Math.round(spread[i].dy)],
-        ])
-      )
-      setShifts((previous) => (sameShifts(previous, next) ? previous : next))
-    }
-    update()
-    map.on('zoomend', update)
-    map.on('rotateend', update)
-    map.on('pitchend', update)
-    map.on('resize', update)
-    return () => {
-      map.off('zoomend', update)
-      map.off('rotateend', update)
-      map.off('pitchend', update)
-      map.off('resize', update)
-    }
-  }, [mapRef, markers])
-
-  return shifts
 }

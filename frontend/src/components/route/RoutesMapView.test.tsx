@@ -18,6 +18,7 @@ const state = vi.hoisted(() => ({
 
 // The map and its layers as plain DOM: what matters is what each trace is handed.
 vi.mock('react-map-gl/maplibre', () => ({
+  useMap: () => ({ current: undefined }),
   Source: (props: Record<string, unknown> & { children?: React.ReactNode }) => {
     state.sources.push(props)
     return <>{props.children}</>

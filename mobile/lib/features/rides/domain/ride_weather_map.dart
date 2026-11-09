@@ -17,6 +17,30 @@ import 'ride_weather_display.dart';
 /// compte ce saut à vol d'oiseau : le réutiliser décalerait les couleurs dès
 /// la deuxième trace. D'où [chainedMeasures], qui recopie la règle du serveur.
 
+/// Qui résiste le plus longtemps quand la carte se dézoome (ledger `MOB-117`,
+/// le pendant de `WEB-142`) : `null` pour le départ et l'arrivée, toujours
+/// affichés ; pour les points en route, leur profondeur dans une bissection du
+/// parcours — le milieu 0, les quarts 1, les huitièmes 2… —, pour que les
+/// pastilles restantes soient réparties. Le rang ne dépend que du leg, jamais
+/// du zoom.
+List<int?> checkpointRanks(List<String> kinds) {
+  final List<int?> ranks = List<int?>.filled(kinds.length, null);
+  final List<int> enRoute = <int>[
+    for (int i = 0; i < kinds.length; i++)
+      if (kinds[i] != 'START' && kinds[i] != 'FINISH') i,
+  ];
+  void bisect(int from, int to, int depth) {
+    if (from > to) return;
+    final int middle = (from + to) >> 1;
+    ranks[enRoute[middle]] = depth;
+    bisect(from, middle - 1, depth + 1);
+    bisect(middle + 1, to, depth + 1);
+  }
+
+  bisect(0, enRoute.length - 1, 0);
+  return ranks;
+}
+
 /// Le vent se montre-t-il sur la carte du groupe ?
 ///
 /// Seulement avec une prévision (`OK` ou `STALE`), au moins un point de
