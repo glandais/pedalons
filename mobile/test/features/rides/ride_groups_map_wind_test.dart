@@ -383,6 +383,21 @@ void main() {
     expect(find.byKey(keys.rideGroup.weatherMapSheet), findsOneWidget);
   });
 
+  testWidgets(
+    'hors mode « Météo », les bornes kilométriques du groupe (MOB-120)',
+    (WidgetTester tester) async {
+      await pump(tester, leg: fixtureLeg(), mode: RouteColorBy.grade);
+      expect(map(tester).kmMarkers, isNotEmpty);
+    },
+  );
+
+  testWidgets('en mode « Météo », pas de bornes kilométriques (MOB-120)', (
+    WidgetTester tester,
+  ) async {
+    await pump(tester, leg: fixtureLeg());
+    expect(map(tester).kmMarkers, isEmpty);
+  });
+
   testWidgets('encastrée hors mode « Météo » : aucune pastille', (
     WidgetTester tester,
   ) async {

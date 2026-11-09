@@ -447,6 +447,15 @@ class RideGroupsMap extends ConsumerWidget {
           )
         : const <PdlMapMarker>[];
 
+    // Les bornes kilométriques d'un tracé qui se lit comme un parcours (ledger
+    // `MOB-120`). Pas en mode « Météo », où les pastilles prennent la place.
+    final String? kmSlug =
+        selectedSlug ?? (tracks.isEmpty ? null : tracks.first.id);
+    final List<PdlKmMarker> kmMarkers =
+        windLeg == null && rideMapColorsLikeRoute(ride, onlyGroup)
+        ? _kmMarkers(geometries[kmSlug])
+        : const <PdlKmMarker>[];
+
     return ValueListenableBuilder<WaypointSelection?>(
       valueListenable: selection,
       builder: (BuildContext context, WaypointSelection? picked, _) => _native(
@@ -464,6 +473,7 @@ class RideGroupsMap extends ConsumerWidget {
               units: ref.read(unitSystemProvider),
             );
           },
+          kmMarkers: kmMarkers,
           markers: weatherMarkers,
           onMarkerTapped: weatherMarkers.isEmpty
               ? null
@@ -616,6 +626,20 @@ class RideGroupsMap extends ConsumerWidget {
     _cursorMemo[route] = _CursorPoint(distance, point);
     return point;
   }
+
+  /// Les bornes de [route], mémorisées : la carte se reconstruit à chaque
+  /// mouvement du réticule, et les calculer parcourt tout le tracé.
+  List<PdlKmMarker> _kmMarkers(RouteDetailDto? route) {
+    if (route == null) return const <PdlKmMarker>[];
+    return _kmMemo[route] ??= computePdlKmMarkers(
+      routeLinesOf(route),
+      totalMeters: route.distance,
+    );
+  }
+
+  static final Expando<List<PdlKmMarker>> _kmMemo = Expando<List<PdlKmMarker>>(
+    'rideMapKmMarkers',
+  );
 
   static final Expando<_CursorPoint> _cursorMemo = Expando<_CursorPoint>(
     'rideMapCursor',
