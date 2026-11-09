@@ -19,7 +19,7 @@ const POSED_TONE_COLOR: Record<DayBoxTone, string> = {
 /**
  * The day box (docs/BRANDING.md §7.8, ledger `BRAND-8`): « sam. / 10 / oct. » — the short day in
  * 600 and the tone's text colour, the day's number in 700 and the text colour, the short month in
- * 500. Flat (the tone's soft background) in a list, the agenda and the departure block of a detail
+ * 500, and outside the current year a fourth line, the year, styled as the month (« 2027 »). Flat (the tone's soft background) in a list, the agenda and the departure block of a detail
  * page (`size="lg"`); posed (white, `sm` shadow, the same in both schemes) on the picture of a card
  * (docs/LEDGER_*.md WEB-138).
  *
@@ -50,6 +50,11 @@ export function DayBox({
   const posed = variant === 'posed'
   const toneColor = posed ? POSED_TONE_COLOR[tone] : `var(--mantine-color-${tone}-light-color)`
   const numberColor = posed ? 'var(--mantine-color-gray-9)' : 'var(--mantine-color-text)'
+  // On a card the box is the only date: a ride next year must not read as this year's. Compared
+  // in the same zone as the box, so the year boundary is the entity's.
+  const year = formatPattern(date, 'yyyy')
+  const showYear = year !== formatPattern(new Date().toISOString(), 'yyyy')
+  const smallLine = { fz: size === 'lg' ? 13 : 12, fw: 500, c: toneColor, lh: 1.3 } as const
   return (
     <Box
       w={width}
@@ -70,9 +75,14 @@ export function DayBox({
       <Text fz={size === 'lg' ? 28 : 22} fw={700} lh={1.1} c={numberColor} suppressHydrationWarning>
         {formatPattern(date, 'd')}
       </Text>
-      <Text fz={size === 'lg' ? 13 : 12} fw={500} c={toneColor} lh={1.3} suppressHydrationWarning>
+      <Text {...smallLine} suppressHydrationWarning>
         {formatPattern(date, 'MMM')}
       </Text>
+      {showYear && (
+        <Text {...smallLine} suppressHydrationWarning>
+          {year}
+        </Text>
+      )}
     </Box>
   )
 }

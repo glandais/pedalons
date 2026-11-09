@@ -711,6 +711,10 @@ le détail d'une sortie, qui donne l'heure de la sortie et, à côté, « Votre 
 - **Boîte du jour** (`DayBox` sur le web, `_DateBlock` / `_DayTile` sur mobile) : 56–72 px de
   large, rayon 8 px, trois lignes centrées — jour abrégé (« sam. », 12–13 px/600,
   `primary-light-color`), chiffre (22–30 px/700, couleur texte), mois abrégé (« avr. », 12–13 px/500).
+  **Hors de l'année en cours, une quatrième ligne donne l'année** (« 2027 », au style du mois) : sur
+  une carte, la boîte est la seule date, et une sortie de l'an prochain ne doit pas se lire comme
+  celle de cette année. La boîte grandit alors en hauteur, jamais en largeur ; l'année en cours
+  garde trois lignes. La boîte compacte de « Cette semaine » (mobile, sans mois) n'en a pas.
   Variante **à plat** (listes, agenda, bloc de départ) : fond `primary` doux (`#dbe4ff`) ; un voyage
   prend le turquoise doux. Variante **posée** (sur une image de carte) : fond blanc, ombre `sm`.
 - **Ligne de départ** (cartes) : `IconClock` indigo + « Départ 09:00 » en 16 px/700 (20 px/700 sur
@@ -794,7 +798,7 @@ aucune formule enthousiaste (« Génial ! », « C'est parti ! » sont hors marq
   sur 24 h sur le web en français (l'anglais suit sa langue : « 9:00 AM »), au réglage
   12 h / 24 h du téléphone sur mobile ; jour de semaine et mois abrégés, séparés de l'heure par « · » :
   « sam. 12 avr. · 09:00 » ; **l'année seulement si elle n'est pas l'année en cours**
-  (« sam. 10 avr. 2027 · 09:00 ») ; relatif seulement pour « Aujourd'hui · 09:00 » et
+  (« sam. 10 avr. 2027 · 09:00 », et la quatrième ligne de la boîte du jour, §7.8) ; relatif seulement pour « Aujourd'hui · 09:00 » et
   « Demain · 09:00 » ; pas d'heure de retour ; titre de push et objet d'e-mail
   « Demain 09:00 : Boucle de la vallée ». §7.8 pour la mise en forme.
 - **Dates** : format français long abrégé, heure sur 24 h — sur le web, qui suit la langue ; le

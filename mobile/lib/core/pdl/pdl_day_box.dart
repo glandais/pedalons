@@ -17,6 +17,7 @@ enum PdlDayBoxSize {
 }
 
 /// La boîte du jour (BRANDING §7.8, ledger `BRAND-8`) : « sam. / 12 / avr. »,
+/// et « 2027 » en quatrième ligne hors de l'année en cours,
 /// rayon 8 — **à plat** sur le fond doux de son ton (listes, agenda, bloc de
 /// départ), ou **posée** ([posed]) sur l'image d'une carte du fil : fond de
 /// surface, ombre `sm` ([PdlShadows.posed]), libellés au ton (ledger
@@ -31,6 +32,7 @@ class PdlDayBox extends StatelessWidget {
     required this.weekday,
     required this.day,
     this.month,
+    this.year,
     this.tone,
     this.size = PdlDayBoxSize.regular,
     this.posed = false,
@@ -44,6 +46,10 @@ class PdlDayBox extends StatelessWidget {
 
   /// « avr. » ; ignoré en [PdlDayBoxSize.compact].
   final String? month;
+
+  /// « 2027 », hors de l'année en cours seulement : une quatrième ligne au
+  /// style du mois (BRANDING §7.8). Ignoré en [PdlDayBoxSize.compact].
+  final String? year;
 
   final PdlTone? tone;
   final PdlDayBoxSize size;
@@ -84,6 +90,8 @@ class PdlDayBox extends StatelessWidget {
           ),
           if (!compact && month != null)
             Text(month!, style: t.dayBoxMonth.copyWith(color: onSoft)),
+          if (!compact && year != null)
+            Text(year!, style: t.dayBoxMonth.copyWith(color: onSoft)),
         ],
       ),
     );
