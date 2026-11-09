@@ -12,10 +12,11 @@ interface RideGroupRouteActionsProps {
   /** The group's route, else the ride's: the one the group rides. */
   routeSlug: string
   /**
-   * That route, from the ride's single `/routes/bulk` read (`useRideDetailData.routesBySlug`) —
-   * only its GPX/FIT assets are read here. Undefined while it loads: the links wait for it.
+   * That route — from the ride's single `/routes/bulk` read (`useRideDetailData.routesBySlug`), or
+   * the `RouteDto` a trip's stage embeds — only its GPX/FIT assets are read here. Undefined while
+   * it loads: the links wait for it.
    */
-  route: RouteDetailDto | undefined
+  route: Pick<RouteDetailDto, 'media'> | undefined
   size?: 'xs' | 'sm'
   /** False on the ride page's group cards: the card itself opens the group, map and route included. */
   withViewLink?: boolean

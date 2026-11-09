@@ -1,16 +1,12 @@
-import { useNavigate } from 'react-router-dom'
-import { PrefetchLink } from '@/components/common/PrefetchLink'
-import { useTranslation } from 'react-i18next'
-import { IconArrowsMaximize, IconArrowUp, IconMapPin } from '@tabler/icons-react'
-import { Paper, Group, Text, UnstyledButton, Badge, Box } from '@mantine/core'
+import { Badge, Group, Text } from '@mantine/core'
+import { IconMapPin } from '@tabler/icons-react'
 import type { RideWeatherSummaryDto, TripStageDto } from '@/api/dto'
 import { RideWeatherSummaryLine } from '@/components/weather'
+import { RideGroupRouteActions } from '@/components/ride/RideGroupRouteActions'
+import { ChildCard, ChildFacts } from '@/components/publication/ChildCard'
 import { DepartureLine } from '../common/DepartureLine'
-import { useUnits } from '@/hooks/useUnits'
-import { MediaDisplay } from '../common/MediaDisplay'
 import { EntityLogo } from '../common/EntityLogo'
 import { paths } from '@/config/paths'
-import classes from './TripStageCard.module.css'
 
 interface TripStageCardProps {
   stage: TripStageDto
@@ -23,6 +19,12 @@ interface TripStageCardProps {
   weather?: RideWeatherSummaryDto
 }
 
+/**
+ * A stage in its trip's list: the shared `ChildCard` (docs/LEDGER_*.md WEB-155) — its number or
+ * logo, its name linking to its page over the whole card, its departure on the right, its places,
+ * pace, distance and climb, its weather line, its route's files and devices. Its description is
+ * its page's, not the card's.
+ */
 export function TripStageCard({
   stage,
   index,
@@ -32,111 +34,62 @@ export function TripStageCard({
   isHighlighted = false,
   weather,
 }: TripStageCardProps) {
-  const { t } = useTranslation()
-  const { distance, elevation } = useUnits()
-  const navigate = useNavigate()
-
+  const places = [stage.startPlace, stage.endPlace]
   return (
-    <Paper
-      component={PrefetchLink}
-      to={paths.stage(teamSlug, tripSlug, stage.slug)}
-      withBorder
-      p="md"
-      radius="md"
-      style={{
-        borderColor: isHighlighted ? 'var(--mantine-primary-color-filled)' : undefined,
-        backgroundColor: isHighlighted ? 'var(--mantine-primary-color-light)' : undefined,
-        boxShadow: isHighlighted ? 'var(--mantine-shadow-md)' : undefined,
-        transition: 'all 0.2s',
-        textDecoration: 'none',
-        color: 'inherit',
-        cursor: 'pointer',
-      }}
-      onMouseEnter={() => onHover?.(stage.id)}
-      onMouseLeave={() => onHover?.(null)}
+    <ChildCard
+      href={paths.stage(teamSlug, tripSlug, stage.slug)}
+      name={stage.name}
+      marker={
+        stage.media.assets.logo ? (
+          <EntityLogo logo={stage.media.assets.logo} alt={stage.name} size="md" />
+        ) : (
+          <Badge size="lg" variant="light" color="primary" circle style={{ flexShrink: 0 }}>
+            {index + 1}
+          </Badge>
+        )
+      }
+      // « sam. 12 avr. · 09:00 » in 700, short enough not to squeeze the name (WEB-138).
+      corner={<DepartureLine date={stage.dateTime} zone={stage.timezone} size="sm" withDay />}
+      highlighted={isHighlighted}
+      onHover={(hovering) => onHover?.(hovering ? stage.id : null)}
+      meta={
+        <ChildFacts
+          averageSpeed={stage.averageSpeed}
+          distance={stage.route?.distance}
+          elevationGain={stage.route?.elevationGain}
+        />
+      }
+      weather={weather && <RideWeatherSummaryLine summary={weather} timezone={stage.timezone} />}
+      routeActions={
+        stage.route && (
+          <RideGroupRouteActions
+            teamSlug={teamSlug}
+            routeSlug={stage.route.slug}
+            route={stage.route}
+            withViewLink={false}
+          />
+        )
+      }
     >
-      <Group justify="space-between" mb="sm" wrap="nowrap">
-        <Group gap="sm" wrap="nowrap" style={{ minWidth: 0 }}>
-          {stage.media.assets.logo ? (
-            <EntityLogo logo={stage.media.assets.logo} alt={stage.name} size="md" />
-          ) : (
-            <Badge size="lg" variant="light" color="primary" circle style={{ flexShrink: 0 }}>
-              {index + 1}
-            </Badge>
-          )}
-          <Text fw={600} truncate>
-            {stage.name}
-          </Text>
-        </Group>
-        {/* « sam. 12 avr. · 09:00 » in 700, short enough not to squeeze the name (WEB-138). */}
-        <Box style={{ flexShrink: 0 }}>
-          <DepartureLine date={stage.dateTime} zone={stage.timezone} size="sm" withDay />
-        </Box>
-      </Group>
-
-      {weather && (
-        <Box mb="sm">
-          <RideWeatherSummaryLine summary={weather} timezone={stage.timezone} />
-        </Box>
-      )}
-
-      {stage.media.markdown && (
-        <Box mb="sm">
-          <MediaDisplay media={stage.media} />
-        </Box>
-      )}
-
-      {(stage.startPlace || stage.endPlace) && (
-        <Group wrap="wrap">
-          {stage.startPlace && (
-            <Group gap={4} wrap="nowrap">
-              <IconMapPin size={16} color="var(--mantine-color-green-text)" />
-              <Text size="sm" c="var(--mantine-color-green-text)" fw={500}>
-                {t('startPlace')}:
-              </Text>
-              <Text size="sm">{stage.startPlace.name}</Text>
-            </Group>
-          )}
-          {stage.endPlace && (
-            <Group gap={4} wrap="nowrap">
-              <IconMapPin size={16} color="var(--mantine-color-red-text)" />
-              <Text size="sm" c="var(--mantine-color-red-text)" fw={500}>
-                {t('endPlace')}:
-              </Text>
-              <Text size="sm">{stage.endPlace.name}</Text>
-            </Group>
+      {places.some(Boolean) && (
+        <Group mt="xs" gap="md" wrap="wrap">
+          {places.map(
+            (place, i) =>
+              place && (
+                <Group key={i} gap={4} wrap="nowrap">
+                  <IconMapPin
+                    size={14}
+                    aria-hidden
+                    color={
+                      i === 0 ? 'var(--mantine-color-green-text)' : 'var(--mantine-color-red-text)'
+                    }
+                  />
+                  <Text size="sm">{place.name}</Text>
+                </Group>
+              )
           )}
         </Group>
       )}
-
-      {stage.route && (
-        <Group mt="sm" gap="md" wrap="wrap">
-          <UnstyledButton
-            onClick={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              navigate(paths.route(teamSlug, stage.route!.slug))
-            }}
-            className={classes.routeLink}
-          >
-            {t('trips.stage.viewRoute')}
-          </UnstyledButton>
-          <Group gap="md" wrap="nowrap">
-            <Group gap={4}>
-              <IconArrowsMaximize size={16} color="var(--mantine-color-dimmed)" />
-              <Text size="sm" c="dimmed">
-                {distance(stage.route.distance)}
-              </Text>
-            </Group>
-            <Group gap={4}>
-              <IconArrowUp size={16} color="var(--mantine-color-dimmed)" />
-              <Text size="sm" c="dimmed">
-                {elevation(stage.route.elevationGain)}
-              </Text>
-            </Group>
-          </Group>
-        </Group>
-      )}
-    </Paper>
+    </ChildCard>
   )
 }

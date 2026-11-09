@@ -1,36 +1,16 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  IconBolt,
-  IconUsers,
-  IconArrowsMaximize,
-  IconArrowUp,
-  IconShieldCheck,
-  IconAlertTriangle,
-  IconChevronRight,
-} from '@tabler/icons-react'
-import {
-  Alert,
-  Anchor,
-  Paper,
-  Group,
-  Text,
-  Button,
-  Badge,
-  UnstyledButton,
-  Box,
-} from '@mantine/core'
+import { IconShieldCheck, IconUsers } from '@tabler/icons-react'
+import { Badge, Box, Button, Group, Text, UnstyledButton } from '@mantine/core'
 import type { RideGroupDto, RouteDetailDto, WeatherLegDto } from '@/api/dto'
-import { PrefetchLink } from '@/components/common/PrefetchLink'
+import { DepartureLine } from '@/components/common/DepartureLine'
+import { UserAvatar, UserAvatarGroup } from '@/components/common/UserAvatar'
+import { AboveLink, ChildCard, ChildFacts } from '@/components/publication/ChildCard'
 import { GroupWeatherLine } from '@/components/weather'
 import { paths } from '@/config/paths'
-import { UserAvatar, UserAvatarGroup } from '../common/UserAvatar'
+import { useRendezvousFormat } from '@/hooks/useRendezvousFormat'
 import { ParticipantListModal } from './ParticipantListModal'
 import { RideGroupRouteActions } from './RideGroupRouteActions'
-import { useUnits } from '@/hooks/useUnits'
-import { DepartureLine } from '../common/DepartureLine'
-import { useRendezvousFormat } from '@/hooks/useRendezvousFormat'
-import classes from './RideGroupCard.module.css'
 
 interface RideGroupCardProps {
   group: RideGroupDto
@@ -96,100 +76,124 @@ export function RideGroupCard({
   error,
 }: RideGroupCardProps) {
   const { t } = useTranslation()
-  const { speed, distance, elevation } = useUnits()
   const [showParticipants, setShowParticipants] = useState(false)
   const rendezvous = useRendezvousFormat(rideTimezone)
   // `full` and `registered` are computed server-side (contract 1.3.0) — never recompute them here.
   const isFull = group.full
   const isJoined = group.registered
 
-  // Determine effective route slug (group route or ride route as fallback)
+  // The group's route, else the ride's. Distance and climb come from the group itself; the route
+  // only gives the GPX/FIT links, fetched once for every group by the parent (`routesBySlug`).
   const effectiveRouteSlug = group.routeSlug || rideRouteSlug
-
-  // Distance and elevation come from the group itself (RideGroupDto). The route is only
-  // needed to build the GPX/FIT links and the device upload; `routesBySlug` was fetched once
-  // for every group of the ride in a single bulk call by the parent.
   const route = effectiveRouteSlug ? routesBySlug.get(effectiveRouteSlug) : undefined
 
+  const participantsLabel = group.maxParticipants
+    ? t('rides.detail.groups.participants', {
+        current: group.countParticipants,
+        count: group.maxParticipants,
+      })
+    : t('rides.detail.groups.participantsNoMax', { count: group.countParticipants })
+
+  const corner = isJoined ? (
+    <Button variant="outline" size="xs" onClick={onLeave} disabled={isLoading}>
+      {t('rides.detail.groups.leave')}
+    </Button>
+  ) : canJoin && !isFull ? (
+    <Button size="xs" onClick={onJoin} disabled={isLoading}>
+      {t('rides.detail.groups.join')}
+    </Button>
+  ) : canJoin && isFull ? (
+    <Badge color="gray" variant="light">
+      {t('rides.detail.groups.full')}
+    </Badge>
+  ) : null
+
   return (
-    <Paper
-      shadow={isHighlighted ? 'md' : 'xs'}
-      p="md"
-      withBorder
-      className={classes.card}
-      style={{
-        borderColor: isHighlighted
-          ? 'var(--mantine-primary-color-filled)'
-          : isJoined
-            ? 'var(--mantine-primary-color-filled)'
-            : undefined,
-        backgroundColor: isHighlighted ? 'var(--mantine-primary-color-light)' : undefined,
-        boxShadow: isJoined ? '0 0 0 1px var(--mantine-primary-color-filled)' : undefined,
-        transition: 'all 150ms ease',
-      }}
-      onMouseEnter={() => onHover?.(group.id)}
-      onMouseLeave={() => onHover?.(null)}
-    >
-      {/* Header row: title + badge + button */}
-      <Group justify="space-between" wrap="nowrap">
-        <Group gap="sm" style={{ minWidth: 0 }}>
-          {trackColor && (
-            <Box
-              data-testid="group-track-color"
-              aria-hidden
-              w={4}
-              h={20}
-              style={{ flexShrink: 0, borderRadius: 2, backgroundColor: trackColor }}
-            />
-          )}
-          <Anchor
-            component={PrefetchLink}
-            to={paths.rideGroup(teamSlug, rideSlug, group.id)}
-            fw={500}
-            c="inherit"
-            underline="hover"
-            className={classes.stretchedLink}
-            style={{ minWidth: 0 }}
-          >
-            <Group gap={2} wrap="nowrap">
-              <Text fw={500} truncate inherit>
-                {group.name}
+    <ChildCard
+      href={paths.rideGroup(teamSlug, rideSlug, group.id)}
+      name={group.name}
+      marker={
+        trackColor && (
+          <Box
+            data-testid="group-track-color"
+            aria-hidden
+            w={4}
+            h={20}
+            style={{ flexShrink: 0, borderRadius: 2, backgroundColor: trackColor }}
+          />
+        )
+      }
+      badges={
+        isJoined && (
+          <Badge size="sm" color="primary" variant="light" style={{ flexShrink: 0 }}>
+            {t('rides.detail.groups.joined')}
+          </Badge>
+        )
+      }
+      corner={corner}
+      highlighted={isHighlighted}
+      emphasized={isJoined}
+      onHover={(hovering) => onHover?.(hovering ? group.id : null)}
+      error={error}
+      meta={
+        <>
+          <ChildFacts
+            averageSpeed={group.averageSpeed}
+            distance={group.distance}
+            elevationGain={group.distance !== undefined ? group.elevationGain : undefined}
+          />
+          {!canSeeParticipants ? (
+            <Group gap={4}>
+              <IconUsers size={16} aria-hidden />
+              <Text size="sm" c="dimmed">
+                {participantsLabel}
               </Text>
-              <IconChevronRight size={16} aria-hidden style={{ flexShrink: 0 }} />
             </Group>
-          </Anchor>
-          {isJoined && (
-            <Badge size="sm" color="primary" variant="light">
-              {t('rides.detail.groups.joined')}
-            </Badge>
-          )}
-        </Group>
-
-        {(canJoin || isJoined) && (
-          <>
-            {isJoined ? (
-              <Button
-                variant="outline"
-                size="xs"
-                onClick={onLeave}
-                disabled={isLoading}
-                className={classes.aboveLink}
+          ) : (
+            <AboveLink>
+              <UnstyledButton
+                onClick={() => setShowParticipants(true)}
+                aria-label={t('rides.detail.groups.viewParticipants')}
+                style={{ borderRadius: 'var(--mantine-radius-sm)' }}
               >
-                {t('rides.detail.groups.leave')}
-              </Button>
-            ) : canJoin && !isFull ? (
-              <Button size="xs" onClick={onJoin} disabled={isLoading} className={classes.aboveLink}>
-                {t('rides.detail.groups.join')}
-              </Button>
-            ) : isFull ? (
-              <Badge color="gray" variant="light">
-                {t('rides.detail.groups.full')}
-              </Badge>
-            ) : null}
-          </>
-        )}
-      </Group>
-
+                <Group gap="sm">
+                  {group.participants.length > 0 && (
+                    <UserAvatarGroup
+                      users={group.participants}
+                      total={group.countParticipants}
+                      max={5}
+                      size="sm"
+                    />
+                  )}
+                  <Group gap={4}>
+                    <IconUsers size={16} aria-hidden />
+                    <Text size="sm" c="dimmed">
+                      {participantsLabel}
+                    </Text>
+                  </Group>
+                  {group.countParticipants > 5 && (
+                    <Text size="xs" fw={500} c="var(--mantine-primary-color-filled)">
+                      {t('rides.detail.groups.viewAll')}
+                    </Text>
+                  )}
+                </Group>
+              </UnstyledButton>
+            </AboveLink>
+          )}
+        </>
+      }
+      weather={<GroupWeatherLine leg={weatherLeg} timezone={rideTimezone} />}
+      routeActions={
+        effectiveRouteSlug && (
+          <RideGroupRouteActions
+            teamSlug={teamSlug}
+            routeSlug={effectiveRouteSlug}
+            route={route}
+            withViewLink={false}
+          />
+        )
+      }
+    >
       {/* The group's own departure (docs/BRANDING.md §7.8, ledger BRAND-8): its time in 700 and the
           day when it is not the ride's — never a dimmed stat. */}
       {showStartTime && (
@@ -229,111 +233,6 @@ export function RideGroupCard({
         </Group>
       )}
 
-      {/* Details row */}
-      <Group mt="xs">
-        {group.averageSpeed && (
-          <Group gap={4}>
-            <IconBolt size={16} />
-            <Text size="sm" c="dimmed">
-              {speed(group.averageSpeed)}
-            </Text>
-          </Group>
-        )}
-        {group.distance !== undefined && (
-          <Group gap="md" wrap="nowrap">
-            <Group gap={4}>
-              <IconArrowsMaximize size={16} />
-              <Text size="sm" c="dimmed">
-                {distance(group.distance)}
-              </Text>
-            </Group>
-            {group.elevationGain !== undefined && (
-              <Group gap={4}>
-                <IconArrowUp size={16} />
-                <Text size="sm" c="dimmed">
-                  {elevation(group.elevationGain)}
-                </Text>
-              </Group>
-            )}
-          </Group>
-        )}
-        {!canSeeParticipants ? (
-          <Group gap={4}>
-            <IconUsers size={16} />
-            <Text size="sm" c="dimmed">
-              {group.maxParticipants
-                ? t('rides.detail.groups.participants', {
-                    current: group.countParticipants,
-                    count: group.maxParticipants,
-                  })
-                : t('rides.detail.groups.participantsNoMax', {
-                    count: group.countParticipants,
-                  })}
-            </Text>
-          </Group>
-        ) : (
-          <UnstyledButton
-            onClick={() => setShowParticipants(true)}
-            title={t('rides.detail.groups.viewParticipants')}
-            aria-label={t('rides.detail.groups.viewParticipants')}
-            className={classes.aboveLink}
-            style={{ borderRadius: 'var(--mantine-radius-sm)' }}
-          >
-            <Group gap="sm">
-              {group.participants.length > 0 && (
-                <UserAvatarGroup
-                  users={group.participants}
-                  total={group.countParticipants}
-                  max={5}
-                  size="sm"
-                />
-              )}
-              <Group gap={4}>
-                <IconUsers size={16} />
-                <Text size="sm" c="dimmed">
-                  {group.maxParticipants
-                    ? t('rides.detail.groups.participants', {
-                        current: group.countParticipants,
-                        count: group.maxParticipants,
-                      })
-                    : t('rides.detail.groups.participantsNoMax', {
-                        count: group.countParticipants,
-                      })}
-                </Text>
-              </Group>
-              {group.countParticipants > 5 && (
-                <Text size="xs" fw={500} c="var(--mantine-primary-color-filled)">
-                  {t('rides.detail.groups.viewAll')}
-                </Text>
-              )}
-            </Group>
-          </UnstyledButton>
-        )}
-      </Group>
-
-      <Box mt="xs">
-        <GroupWeatherLine leg={weatherLeg} timezone={rideTimezone} />
-      </Box>
-
-      {/* The whole card opens the group (its name's link, stretched); the route's files and device
-          menu sit above that link */}
-      {effectiveRouteSlug && (
-        <Box mt="sm" className={classes.aboveLink} w="fit-content">
-          <RideGroupRouteActions
-            teamSlug={teamSlug}
-            routeSlug={effectiveRouteSlug}
-            route={route}
-            withViewLink={false}
-          />
-        </Box>
-      )}
-
-      {error && (
-        <Alert color="red" variant="light" mt="sm" icon={<IconAlertTriangle size={16} />}>
-          {error}
-        </Alert>
-      )}
-
       {canSeeParticipants && (
         <ParticipantListModal
           isOpen={showParticipants}
@@ -344,6 +243,6 @@ export function RideGroupCard({
           leaderId={group.leader?.id}
         />
       )}
-    </Paper>
+    </ChildCard>
   )
 }
