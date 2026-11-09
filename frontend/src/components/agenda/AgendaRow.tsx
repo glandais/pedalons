@@ -18,7 +18,7 @@ interface AgendaRowProps {
 
 /**
  * A line of the agenda's « Lignes » view (plan 2026-10-06, ledger `WEB-69`): the day box, the
- * title and its badges, the departure line « Départ 08:30 · retour vers 14:10 » (a trip: its span),
+ * title and its badges, the departure line « Départ 08:30 » (a trip: its span),
  * then the groups or the stages and who is registered. Denser than a card: no picture, no excerpt.
  * The departure is the reader's group's (`spanStart`, WEB-136) and never one of the statistics
  * (docs/LEDGER_*.md WEB-138).

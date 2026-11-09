@@ -160,7 +160,7 @@ void main() {
       final Text headline = tester.widget<Text>(find.text('Départ 21:30'));
       expect(headline.style?.fontWeight, FontWeight.w700);
       expect(headline.style?.fontSize, 16);
-      expect(find.text('retour vers 23:40'), findsOneWidget);
+      expect(find.textContaining('retour vers'), findsNothing);
 
       // La date n'est plus une statistique (BRAND-8).
       expect(
@@ -228,9 +228,7 @@ void main() {
       await pump(tester, PublicationCard(publication: ride()));
 
       expect(
-        find.bySemanticsLabel(
-          'Départ 21:30, mar. 29 juil. 2036, retour vers 23:40',
-        ),
+        find.bySemanticsLabel('Départ 21:30, mar. 29 juil. 2036'),
         findsOneWidget,
       );
       semantics.dispose();

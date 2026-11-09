@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pedalons/core/utils/formatters.dart';
 import 'package:pedalons/features/teams/domain/publication_timing.dart';
 
 import '../../support/localization.dart';
@@ -38,42 +37,6 @@ void main() {
 
     test('une date illisible : pas en cours', () {
       expect(at('pas une date', '2026-10-11T14:10:00Z'), isFalse);
-    });
-  });
-
-  group('rideReturnLabel', () {
-    tearDown(() => AppFormatters.setDisplayTimezone(null));
-
-    test('le retour se lit dans le fuseau de la sortie', () {
-      // Lu de Paris, une sortie de Tokyo du dimanche 11 de 06:00 à 12:30,
-      // heure de Tokyo (docs/LEDGER_*.md API-60).
-      AppFormatters.setDisplayTimezone('Europe/Paris');
-      expect(
-        rideReturnLabel(
-          '2026-10-10T21:00:00Z',
-          '2026-10-11T03:30:00Z',
-          timezone: 'Asia/Tokyo',
-        ),
-        'retour vers 12:30',
-      );
-    });
-
-    test('un retour le lendemain nomme son jour', () {
-      expect(
-        rideReturnLabel(
-          '2026-10-16T19:30:00Z',
-          '2026-10-17T00:00:00Z',
-          timezone: 'Europe/Paris',
-        ),
-        'retour vers sam. 17 oct. 02:00',
-      );
-    });
-
-    test('une date illisible : rien, la ligne garde le départ seul', () {
-      expect(
-        rideReturnLabel('?', '2026-10-11T10:10:00Z', timezone: 'UTC'),
-        isNull,
-      );
     });
   });
 

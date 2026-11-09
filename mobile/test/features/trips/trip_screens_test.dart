@@ -264,10 +264,7 @@ void main() {
         Finder inBlock(String text) =>
             find.descendant(of: block, matching: find.text(text));
         expect(inBlock('Départ 09:00'), findsOneWidget);
-        expect(
-          inBlock('mar. 12 → lun. 18 août 2036 · retour vers 12:00'),
-          findsOneWidget,
-        );
+        expect(inBlock('mar. 12 → lun. 18 août 2036'), findsOneWidget);
         // La boîte du jour, au turquoise d'un voyage.
         final PdlDayBox box = tester.widget<PdlDayBox>(
           find.descendant(of: block, matching: find.byType(PdlDayBox)),

@@ -394,7 +394,7 @@ describe('RideDetailPage — the departure block', () => {
     renderPage()
     const section = block()
     expect(within(section).getByText('Départ 06:40')).toBeTruthy()
-    expect(section.textContent).toContain('retour vers 11:00')
+    expect(section.textContent).not.toContain('retour vers')
     const instructions = screen.getByTestId('ride-instructions')
     expect(
       section.compareDocumentPosition(instructions) & Node.DOCUMENT_POSITION_FOLLOWING

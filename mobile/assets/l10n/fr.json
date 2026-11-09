@@ -509,7 +509,6 @@
     },
     "agenda": {
       "underWay": "En cours",
-      "returnAround": "retour vers {time}",
       "searchPlaceholder": "Rechercher dans l'agenda…",
       "scope": {
         "upcoming": "À venir",
@@ -633,7 +632,6 @@
     "selectedGroupProfile": "Profil du groupe sélectionné",
     "departureBlock": {
       "departs": "Départ {time}",
-      "returnAround": "retour vers {time}",
       "yourGroup": "Votre groupe : {group} · {time}",
       "relativeToRide": "{relation} de {rideTime}"
     },

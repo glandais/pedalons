@@ -115,7 +115,7 @@ export function groupCard(page: Page, groupName: string): Locator {
 
 /**
  * The departure block of a ride's detail (docs/BRANDING.md §7.8, docs/LEDGER_*.md WEB-137):
- * « Départ 20:30 », then « mardi 10 novembre · retour vers 23:00 · heure de Paris (…) ».
+ * « Départ 20:30 », then « mardi 10 novembre · heure de Paris (…) ».
  */
 export const departureBlock = (page: Page): Locator =>
   page.getByRole('main').getByRole('region', { name: 'Date et heure de départ', exact: true })

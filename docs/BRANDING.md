@@ -597,8 +597,8 @@ Structure de haut en bas, dans un `Paper withBorder radius="md"` entièrement cl
 3. Lien d'équipe optionnel (petit, atténué) quand la carte apparaît hors du contexte d'une équipe.
 4. **Ligne titre** : logo carré de l'entité 32 px (rayon 8 px) à gauche s'il existe ; à droite,
    `CardTitle` en h4/700 ; juste en dessous, **la ligne de départ** : `IconClock` 18 px indigo
-   (`primary`), « Départ 09:00 » en 16 px/700 couleur texte, puis « retour vers 14:10 » en 14 px
-   atténué ; un voyage y met sa plage « ven. 16 → dim. 18 mai ». En dessous, aperçu Markdown de la
+   (`primary`), « Départ 09:00 » en 16 px/700 couleur texte ; un voyage y met sa plage, en 14 px
+   atténué, « ven. 16 → dim. 18 mai ». En dessous, aperçu Markdown de la
    description tronqué à 150 caractères, 14 px, atténué. Tout à droite, **pile verticale de badges alignés à droite, écart 4 px** :
    badge de type (Sortie, bleu), badge de statut (Publié / Brouillon / Annulé), badge de visibilité.
 5. **Ligne sociale** : groupe d'avatars circulaires des personnes inscrites (26 px, chevauchement, 5
@@ -719,7 +719,7 @@ le détail d'une sortie, qui donne l'heure de la sortie et, à côté, « Votre 
 - **Bloc de départ** (détail d'une sortie, web et mobile) : **juste sous le titre et les badges,
   avant la description**. Surface alternée (`gray-0`) bordée, rayon 8 px (12 px sur mobile) ; à
   gauche la boîte du jour à plat ; au centre « Départ 09:00 » en 24 px/700 (22 px sur mobile), la
-  pastille « Demain », « samedi 12 avril · retour vers 14:10 » en 14 px atténué et le lieu de départ ;
+  pastille « Demain », « samedi 12 avril » en 14 px atténué et le lieu de départ ;
   à droite (sous le reste sur mobile) « Votre groupe » et son heure en 700.
 - **Groupe à heure propre** (carte de groupe du détail d'une sortie) : sous le nom, un bandeau
   indigo très doux (`primary-0` `#edf2ff` en clair, surface alternée en sombre — pas l'indigo
@@ -796,7 +796,7 @@ aucune formule enthousiaste (« Génial ! », « C'est parti ! » sont hors marq
   12 h / 24 h du téléphone sur mobile ; jour de semaine et mois abrégés, séparés de l'heure par « · » :
   « sam. 12 avr. · 09:00 » ; **l'année seulement si elle n'est pas l'année en cours**
   (« sam. 10 avr. 2027 · 09:00 ») ; relatif seulement pour « Aujourd'hui · 09:00 » et
-  « Demain · 09:00 » ; fin de plage « retour vers 14:10 » ; titre de push et objet d'e-mail
+  « Demain · 09:00 » ; pas d'heure de retour ; titre de push et objet d'e-mail
   « Demain 09:00 : Boucle de la vallée ». §7.8 pour la mise en forme.
 - **Dates** : format français long abrégé, heure sur 24 h — sur le web, qui suit la langue ; le
   mobile suit le réglage 12 h / 24 h du téléphone (ledger `API-60`). Un rendez-vous lu d'un autre

@@ -88,7 +88,7 @@ void main() {
     final Text headline = tester.widget<Text>(find.text('Départ 21:30'));
     expect(headline.style?.fontSize, 20);
     expect(headline.style?.fontWeight, FontWeight.w700);
-    expect(find.text('retour vers mer. 30 juil. 00:30'), findsOneWidget);
+    expect(find.textContaining('retour vers'), findsNothing);
     expect(
       find.bySemanticsLabel(RegExp(r'^Départ 21:30, mar\. 29 juil\.')),
       findsOneWidget,

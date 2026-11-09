@@ -259,8 +259,7 @@ class _MyUpcomingRowState extends ConsumerState<_MyUpcomingRow> {
   /// La ligne de départ de la ligne (BRANDING §7.8, ledger `BRAND-8`) :
   ///
   /// * une sortie — « Départ 09:30 », l'heure **du groupe rejoint** (qui vaut
-  ///   celle de la sortie quand il part avec elle, docs/LEDGER_*.md MOB-112),
-  ///   puis « retour vers 14:10 » ;
+  ///   celle de la sortie quand il part avec elle, docs/LEDGER_*.md MOB-112) ;
   /// * un voyage — « Départ 09:00 », sa première étape, puis sa plage au
   ///   format unique, « ven. 16 → dim. 18 oct. ».
   ///
@@ -272,11 +271,7 @@ class _MyUpcomingRowState extends ConsumerState<_MyUpcomingRow> {
         ? myStartAt(p.dateTime, p.registeredGroup)
         : p.dateTime;
     final String? trailing = switch (p) {
-      PublicationDtoRide ride => rideReturnLabel(
-        start,
-        ride.endDateTime,
-        timezone: ride.timezone,
-      ),
+      PublicationDtoRide() => null,
       PublicationDtoTrip trip => tripDaySpan(
         trip.dateTime,
         trip.endDateTime,

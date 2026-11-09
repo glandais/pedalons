@@ -424,7 +424,6 @@ export function RideDetailPage() {
           <DepartureBlock
             date={ride.dateTime}
             zone={ride.timezone}
-            returnAt={ride.endDateTime}
             place={ride.startPlace}
             group={ownTimeGroup}
           />

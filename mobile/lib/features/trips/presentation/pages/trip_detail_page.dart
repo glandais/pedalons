@@ -491,19 +491,6 @@ class _TripDetailContent extends ConsumerWidget {
           endTimezone: endZone,
         ) ??
         AppFormatters.formatDepartureDate(instant, zone);
-    // Sans étape, `endDateTime` n'est qu'une estimation (le départ plus
-    // quelques heures) : pas de retour annoncé. La plage nomme déjà le
-    // dernier jour, le retour n'en dit donc que l'heure.
-    final DateTime? end = trip.endDate == null
-        ? null
-        : AppFormatters.tryParseZoneTime(trip.endDateTime, endZone);
-    final String details = <String>[
-      span,
-      if (end != null)
-        'rides.departureBlock.returnAround'.tr(
-          namedArgs: <String, String>{'time': AppFormatters.formatTime(end)},
-        ),
-    ].join(' · ');
     final String? mention = AppFormatters.formatZoneMention(instant, zone);
 
     return Padding(
@@ -513,16 +500,11 @@ class _TripDetailContent extends ConsumerWidget {
         dayBox: dayBoxFor(wall, tone: PublicationType.trip.tone(context.pdl)),
         headline: headline,
         relativeLabel: relative,
-        details: <String>[details],
+        details: <String>[span],
         zoneMention: mention == null
             ? null
             : ZoneMentionLine(instant: instant, zone: zone),
-        semanticLabel: <String>[
-          headline,
-          ?relative,
-          details,
-          ?mention,
-        ].join(', '),
+        semanticLabel: <String>[headline, ?relative, span, ?mention].join(', '),
       ),
     );
   }

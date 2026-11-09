@@ -34,12 +34,12 @@ describe('DepartureBlock', () => {
     vi.useRealTimers()
   })
 
-  it('is a named section: the day box, the time, the long day and the return', () => {
-    renderBlock({ returnAt: '2026-04-11T12:10:00Z' })
+  it('is a named section: the day box, the time, the long day', () => {
+    renderBlock()
     const section = block()
     expect(within(section).getByTestId('day-box').textContent).toBe('sam.11avr.')
     expect(within(section).getByText('Départ 09:00')).toBeTruthy()
-    expect(within(section).getByText('samedi 11 avril · retour vers 14:10')).toBeTruthy()
+    expect(within(section).getByText('samedi 11 avril')).toBeTruthy()
   })
 
   it('carries the « Demain » pill tomorrow, « Aujourd’hui » today, none on another day', () => {
@@ -54,20 +54,9 @@ describe('DepartureBlock', () => {
     expect(within(block()).queryByText("Aujourd'hui")).toBeNull()
   })
 
-  it('dates a return on another day', () => {
-    renderBlock({ returnAt: '2026-04-12T08:00:00Z' })
-    expect(
-      within(block()).getByText('samedi 11 avril · retour vers dim. 12 avr. · 10:00')
-    ).toBeTruthy()
-  })
-
-  it('takes a span in place of the long day, the return then by its time', () => {
-    renderBlock({
-      tone: 'teal',
-      dayLine: 'sam. 11 → lun. 13 avr.',
-      returnAt: '2026-04-13T15:00:00Z',
-    })
-    expect(within(block()).getByText('sam. 11 → lun. 13 avr. · retour vers 17:00')).toBeTruthy()
+  it('takes a span in place of the long day', () => {
+    renderBlock({ tone: 'teal', dayLine: 'sam. 11 → lun. 13 avr.' })
+    expect(within(block()).getByText('sam. 11 → lun. 13 avr.')).toBeTruthy()
   })
 
   it('adds the zone mention when the reader is elsewhere', () => {

@@ -128,7 +128,7 @@ describe('formatPublicationSpan', () => {
       dateTime: '2026-10-10T23:30:00Z',
       endDateTime: '2026-10-11T05:10:00Z',
     })
-    expect(formatPublicationSpan(ride, 'time', 'fr', tFr)).toBe('08:30 → retour vers 14:10')
+    expect(formatPublicationSpan(ride, 'time', 'fr', tFr)).toBe('08:30')
   })
 
   it('starts a ride at the registered group’s departure (WEB-136)', () => {
@@ -138,7 +138,7 @@ describe('formatPublicationSpan', () => {
       registeredGroupId: 'b',
       registeredGroup: { id: 'b', startAt: '2026-10-11T07:00:00Z' },
     })
-    expect(formatPublicationSpan(ride, 'time', 'fr', tFr)).toBe('09:00 → retour vers 14:10')
+    expect(formatPublicationSpan(ride, 'time', 'fr', tFr)).toBe('09:00')
   })
 
   it('falls back to the reader’s zone for a zone this runtime’s Intl does not know', () => {
@@ -147,20 +147,7 @@ describe('formatPublicationSpan', () => {
       dateTime: '2026-10-10T23:30:00Z',
       endDateTime: '2026-10-11T05:10:00Z',
     })
-    expect(formatPublicationSpan(ride, 'time', 'fr', tFr, 'Asia/Tokyo')).toBe(
-      '08:30 → retour vers 14:10'
-    )
-  })
-
-  it('judges « same day » on the entity’s wall clock', () => {
-    // 20:00 → 23:30 in Paris is one day there, two in UTC+9.
-    const ride = dated({
-      dateTime: '2026-10-11T18:00:00Z',
-      endDateTime: '2026-10-11T21:30:00Z',
-    })
-    expect(formatPublicationSpan(ride, 'time', 'fr', tFr, 'Asia/Tokyo')).toBe(
-      '20:00 → retour vers 23:30'
-    )
+    expect(formatPublicationSpan(ride, 'time', 'fr', tFr, 'Asia/Tokyo')).toBe('08:30')
   })
 
   it('reads a multi-zone trip’s first day in its zone and its last in the last stage’s', () => {
@@ -192,18 +179,12 @@ describe('formatPublicationSpan', () => {
   })
 
   // docs/BRANDING.md §8.3, docs/LEDGER_*.md WEB-138: the departure's one format.
-  it('leads a ride with its day in full mode, and dates a return on another day', () => {
+  it('leads a ride with its day in full mode', () => {
     const ride = dated({
       dateTime: '2026-10-10T18:00:00Z',
       endDateTime: '2026-10-10T21:30:00Z',
     })
-    expect(formatPublicationSpan(ride, 'full', 'fr', tFr, 'UTC', NOW)).toBe(
-      'sam. 10 oct. · 20:00 → retour vers 23:30'
-    )
-    const late = dated({ dateTime: '2026-10-10T18:00:00Z', endDateTime: '2026-10-10T23:30:00Z' })
-    expect(formatPublicationSpan(late, 'time', 'fr', tFr, 'UTC', NOW)).toBe(
-      '20:00 → retour vers dim. 11 oct. · 01:30'
-    )
+    expect(formatPublicationSpan(ride, 'full', 'fr', tFr, 'UTC', NOW)).toBe('sam. 10 oct. · 20:00')
   })
 
   it('names a trip of one day by that day, and says the year outside the current one', () => {

@@ -359,11 +359,6 @@ class _RideBody extends ConsumerWidget {
         : _Departure.of(
             at,
             ride.timezone,
-            trailing: rideReturnLabel(
-              start,
-              ride.endDateTime,
-              timezone: ride.timezone,
-            ),
             showRelative: !isPast && ride.status != 'CANCELLED',
           );
 
@@ -710,7 +705,7 @@ class _Departure {
           headline: headline,
           trailing: trailing,
           // La boîte du jour et la pastille sont muettes : le jour se dit
-          // ici (« Départ 09:00, Demain, retour vers 14:10 »).
+          // ici (« Départ 09:00, Demain »).
           semanticLabel: <String>[
             headline,
             relative ?? AppFormatters.formatDepartureDate(instant, zone),

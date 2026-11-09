@@ -308,14 +308,6 @@ void main() {
         find.descendant(of: line, matching: find.text('Départ 22:30')),
       );
       expect(headline.style?.fontWeight, FontWeight.w700);
-      // La fin de la sortie, le lendemain à Paris.
-      expect(
-        find.descendant(
-          of: line,
-          matching: find.text('retour vers mer. 30 juil. 00:30'),
-        ),
-        findsOneWidget,
-      );
       // Plus d'horloge atténuée parmi les faits.
       expect(
         find.descendant(

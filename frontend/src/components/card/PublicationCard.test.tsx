@@ -119,10 +119,10 @@ describe('PublicationCard: the departure is primary', () => {
     expect(screen.queryByTestId('day-pill')).toBeNull()
   })
 
-  it('gives the departure line under the title, in 700, with the return', () => {
+  it('gives the departure line under the title, in 700', () => {
     renderCard(ride())
     const line = screen.getByTestId('departure-line')
-    expect(plain(line.textContent)).toBe('Départ 09:00 · retour vers 14:10')
+    expect(plain(line.textContent)).toBe('Départ 09:00')
     expect(within(line).getByText('Départ 09:00').style.fontWeight).toBe('700')
   })
 

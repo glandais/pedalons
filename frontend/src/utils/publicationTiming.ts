@@ -37,13 +37,12 @@ export function isUnderWay(publication: PublicationDto, now: number = Date.now()
 
 /**
  * The span of a ride or a trip — a rendezvous, read in the entity's zone (docs/LEDGER_*.md API-60,
- * plan §7), in the one format of docs/BRANDING.md §8.3 (ledger `WEB-138`): a ride « 08:30 → retour
- * vers 14:10 » in its zone; a trip « ven. 16 → dim. 18 oct. », its first day in the trip's zone
+ * plan §7), in the one format of docs/BRANDING.md §8.3 (ledger `WEB-138`): a ride « 08:30 » in its zone; a trip « ven. 16 → dim. 18 oct. », its first day in the trip's zone
  * (its first stage's) and its last in its last stage's when the stages are known (`tripEndZone`).
  * Same day and same month are judged on those wall clocks, not the reader's; the year is said only
  * outside the current one.
  *
- * `mode` `full` leads a ride with its day (« sam. 11 oct. · 08:30 → … »), `time` (a line whose day
+ * `mode` `full` leads a ride with its day (« sam. 11 oct. · 08:30 »), `time` (a line whose day
  * box says the day) does not. A trip reads the same in both.
  */
 export function formatPublicationSpan(
@@ -71,12 +70,7 @@ export function formatPublicationSpan(
         : formatDepartureDay(start, language, startZone, t, now)
     return `${firstDay} → ${formatDepartureDay(end, language, endZone, t, now)}`
   }
-  const from =
-    mode === 'full'
-      ? formatDeparture(start, language, startZone, t, { now, relative: false })
-      : formatTime(start, language, startZone)
-  const back = sameDay
-    ? formatTime(end, language, endZone)
-    : formatDeparture(end, language, endZone, t, { now, relative: false })
-  return `${from} → ${t('agenda.returnAround', { time: back })}`
+  return mode === 'full'
+    ? formatDeparture(start, language, startZone, t, { now, relative: false })
+    : formatTime(start, language, startZone)
 }

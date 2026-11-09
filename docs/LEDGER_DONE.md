@@ -16,6 +16,8 @@ fichier garde **ce qui est fait**, et ce qu'il ne faut pas défaire.
 
 ## MOB — Application mobile
 
+- `MOB-124` **Plus de « retour vers 14:10 »** (9 novembre 2026) — l'heure de retour estimée n'apportait rien : retirée de la carte « Prochaine sortie », des cartes de publication, de l'accueil d'équipe et des blocs de départ d'une sortie et d'un voyage. `rideReturnLabel` et les clés `returnAround` sont supprimés. `endDateTime` reste lu pour « En cours » et la plage d'un voyage. Tests : `departure_cards_test.dart`, `ride_departure_block_test.dart`.
+
 - `MOB-123` **Le fil d'accueil part sur « Membre », comme le web** (9 novembre 2026) — il partait sur
   « Toutes les équipes ». `homeFeedDefaultScopeProvider` reprend la règle de `useMembershipDefault` :
   « Membre », sauf sans aucune équipe, optimiste pendant le chargement. La portée choisie
@@ -1167,6 +1169,8 @@ couvert » ; les tests ne tournent qu'en local (`MOB-37`).
   décisions à ne pas défaire que `WEB-111` (en-tête seulement, 20 équipes).
 
 ## WEB — Site web
+
+- `WEB-148` **Plus de « retour vers 14:10 »** (9 novembre 2026) — retiré de `DepartureLine` (cartes, lignes d'agenda, prochaine sortie, tableau d'équipe) et de `DepartureBlock` (détail d'une sortie, d'un voyage) ; props `returnAt`/`returnZone`, clés `agenda.returnAround` et `departure.block.dayLine` supprimées. La plage d'un voyage reste. Tests : `DepartureLine.test.tsx`, `DepartureBlock.test.tsx`.
 
 - `WEB-147` **La carte « Envoyez vos parcours vers votre compteur » est retirée de l'accueil**
   (9 novembre 2026) — `FeaturesPromoCard` (`WEB-51`), ses clés `home.member.promo.*` et le

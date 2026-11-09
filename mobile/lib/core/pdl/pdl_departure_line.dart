@@ -17,14 +17,14 @@ enum PdlDepartureLineSize {
 
 /// La ligne de départ d'une carte (BRANDING §7.1, §7.8, ledgers `BRAND-8`,
 /// `MOB-115`) : l'horloge indigo, [headline] (« Départ 09:00 ») en 700, puis
-/// [trailing] (« retour vers 14:10 », la plage d'un voyage, la date d'une
+/// [trailing] (la plage d'un voyage, la date d'une
 /// étape) en 14 atténué.
 ///
 /// **L'heure n'est jamais tronquée** : [headline] passe à la ligne s'il le faut, et
 /// [trailing] passe à la ligne, puis s'abrège, quand la place manque.
 ///
 /// Ne formate ni ne traduit rien. Lue d'un tenant par les lecteurs d'écran
-/// (« Départ 09:00, retour vers 14:10 », ou [semanticLabel]).
+/// (« Départ 09:00, ven. 16 → dim. 18 oct. », ou [semanticLabel]).
 class PdlDepartureLine extends StatelessWidget {
   const PdlDepartureLine({
     super.key,

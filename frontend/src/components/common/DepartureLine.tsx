@@ -25,11 +25,9 @@ interface DepartureLineProps {
   withDay?: boolean
   /** In place of the departure: a trip's span, « ven. 16 → dim. 18 mai ». */
   label?: string
-  /** The estimated return (`endDateTime`), « retour vers 14:10 », dated if on another day. */
-  returnAt?: string | null
   /** The clock's colour: indigo for a ride or a stage, turquoise for a trip. */
   tone?: DayBoxTone
-  /** What follows, in the same dimmed text as the return (« Groupe B, après la sortie de 06:30 »). */
+  /** What follows, dimmed (« Groupe B, après la sortie de 06:30 »). */
   detail?: ReactNode
   /**
    * The day box beside it is hidden from assistive tech (inside an `aria-hidden` thumbnail): the
@@ -42,7 +40,7 @@ interface DepartureLineProps {
 
 /**
  * The departure line of a card or a row (docs/BRANDING.md §7.8, ledger `BRAND-8`): the indigo
- * clock, « Départ 09:00 » in 700 and the text colour, then « retour vers 14:10 » dimmed — a
+ * clock and « Départ 09:00 » in 700 and the text colour — a
  * primary piece of information, never one statistic among others (docs/LEDGER_*.md WEB-138). The
  * zone indicator follows the time it describes.
  */
@@ -52,7 +50,6 @@ export function DepartureLine({
   size = 'md',
   withDay = false,
   label,
-  returnAt,
   tone = 'primary',
   detail,
   announceDay = false,
@@ -65,15 +62,6 @@ export function DepartureLine({
     (withDay
       ? rendezvous.formatDeparture(date)
       : t('departure.block.time', { time: rendezvous.formatTime(date) }))
-
-  const back = (() => {
-    if (!returnAt || Number.isNaN(Date.parse(returnAt))) return null
-    const time = rendezvous.samePeriod(date, returnAt)
-      ? rendezvous.formatTime(returnAt)
-      : rendezvous.formatDeparture(returnAt, { relative: false })
-    return t('agenda.returnAround', { time })
-  })()
-  const trailing = [back, detail].filter(Boolean)
 
   return (
     <Group gap={6} wrap="nowrap" align="flex-start" data-testid="departure-line">
@@ -97,25 +85,19 @@ export function DepartureLine({
           mention={rendezvous.mention(date)}
           isGuessed={rendezvous.isGuessedTimezone}
         />
-        {trailing.map((part, index) => (
-          <Text
-            key={index}
-            span
-            fz={14}
-            c="dimmed"
-            suppressHydrationWarning={rendezvous.isGuessedText}
-          >
+        {detail && (
+          <Text span fz={14} c="dimmed" suppressHydrationWarning={rendezvous.isGuessedText}>
             {' · '}
-            {part}
+            {detail}
           </Text>
-        ))}
+        )}
       </Text>
     </Group>
   )
 }
 
 /**
- * The departure line of a ride or a trip: a ride's « Départ 09:00 · retour vers 14:10 » from the
+ * The departure line of a ride or a trip: a ride's « Départ 09:00 » from the
  * reader's group's departure (`spanStart`, docs/LEDGER_*.md WEB-136), a trip's span on the
  * turquoise clock.
  */
@@ -150,7 +132,6 @@ export function PublicationDepartureLine({
       zone={publication.timezone}
       size={size}
       withDay={withDay}
-      returnAt={publication.endDateTime}
       detail={detail}
     />
   )

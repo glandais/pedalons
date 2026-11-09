@@ -14,7 +14,7 @@ import '../../providers/ride_detail_provider.dart';
 ///
 /// * **Sortie** ([group] nul) — le détail d'une sortie donne l'heure **de la
 ///   sortie** (décision `BRAND-8` ; ses cartes de groupe se situent par
-///   rapport à elle), « sam. 12 avr. · retour vers 14:10 » d'après
+///   rapport à elle), « sam. 12 avr. » d'après
 ///   `endDateTime`, et dessous « Votre groupe : B · 09:30 » quand la personne
 ///   est inscrite dans un groupe qui part à son heure propre.
 /// * **Groupe** — la page d'un groupe donne l'heure **du groupe**, sa relation
@@ -70,21 +70,7 @@ class RideDepartureBlock extends StatelessWidget {
     final List<String> details;
     String? groupLine;
     if (group == null) {
-      final DateTime? end = AppFormatters.tryParseZoneTime(
-        ride.endDateTime,
-        zone,
-      );
-      details = <String>[
-        <String>[
-          date,
-          if (end != null)
-            'rides.departureBlock.returnAround'.tr(
-              namedArgs: <String, String>{
-                'time': AppFormatters.formatTime(end),
-              },
-            ),
-        ].join(' · '),
-      ];
+      details = <String>[date];
       final RideGroupDto? mine = ride.joinedGroup;
       if (mine != null && groupLeavesAtOwnTime(mine.startAt, ride.dateTime)) {
         groupLine = 'rides.departureBlock.yourGroup'.tr(

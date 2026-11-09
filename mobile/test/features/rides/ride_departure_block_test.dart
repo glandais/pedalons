@@ -52,7 +52,7 @@ void main() {
     );
   }
 
-  testWidgets('demain : l’heure en 22/700, la pastille, le retour', (
+  testWidgets('demain : l’heure en 22/700, la pastille, le jour', (
     WidgetTester tester,
   ) async {
     await pump(tester, fixtureRide(dateTime: tomorrow));
@@ -61,7 +61,7 @@ void main() {
     expect(headline.style?.fontSize, 22);
     expect(headline.style?.fontWeight, FontWeight.w700);
     expect(find.text('DEMAIN'), findsOneWidget);
-    expect(find.text('sam. 12 avr. · retour vers 12:00'), findsOneWidget);
+    expect(find.text('sam. 12 avr.'), findsOneWidget);
     // La boîte du jour : « sam. / 12 / avr. ».
     expect(
       find.descendant(of: find.byType(PdlDayBox), matching: find.text('12')),
@@ -84,7 +84,7 @@ void main() {
 
     expect(find.text('DEMAIN'), findsNothing);
     expect(find.text("AUJOURD'HUI"), findsNothing);
-    expect(find.text('sam. 19 avr. · retour vers 12:00'), findsOneWidget);
+    expect(find.text('sam. 19 avr.'), findsOneWidget);
   });
 
   testWidgets('une autre année : l’année dans la date', (
@@ -96,7 +96,7 @@ void main() {
       at: DateTime.utc(2035, 12, 20, 10),
     );
 
-    expect(find.text('sam. 12 avr. 2036 · retour vers 12:00'), findsOneWidget);
+    expect(find.text('sam. 12 avr. 2036'), findsOneWidget);
     expect(find.text('DEMAIN'), findsNothing);
   });
 
@@ -201,9 +201,7 @@ void main() {
     await pump(tester, fixtureRide(dateTime: tomorrow));
 
     expect(
-      find.bySemanticsLabel(
-        'Départ 09:00, Demain, sam. 12 avr. · retour vers 12:00',
-      ),
+      find.bySemanticsLabel('Départ 09:00, Demain, sam. 12 avr.'),
       findsOneWidget,
     );
     handle.dispose();

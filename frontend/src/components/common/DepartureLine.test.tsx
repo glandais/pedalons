@@ -49,27 +49,10 @@ afterEach(() => {
 })
 
 describe('DepartureLine', () => {
-  it('says « Départ 09:00 » in 700, then the return, dimmed', () => {
-    renderIn(
-      <DepartureLine
-        date="2026-04-11T07:00:00Z"
-        zone="Europe/Paris"
-        returnAt="2026-04-11T12:10:00Z"
-      />
-    )
-    expect(line()).toBe('Départ 09:00 · retour vers 14:10')
+  it('says « Départ 09:00 » in 700', () => {
+    renderIn(<DepartureLine date="2026-04-11T07:00:00Z" zone="Europe/Paris" />)
+    expect(line()).toBe('Départ 09:00')
     expect(screen.getByText('Départ 09:00').style.fontWeight).toBe('700')
-  })
-
-  it('dates a return on another day', () => {
-    renderIn(
-      <DepartureLine
-        date="2026-04-11T19:00:00Z"
-        zone="Europe/Paris"
-        returnAt="2026-04-11T23:30:00Z"
-      />
-    )
-    expect(line()).toBe('Départ 21:00 · retour vers dim. 12 avr. · 01:30')
   })
 
   it('names the day without a day box beside it: relative for tomorrow, the year outside 2026', () => {
@@ -133,7 +116,7 @@ describe('the departure on the screens migrated by WEB-138', () => {
     } as unknown as RideDto
     renderIn(<AgendaRow publication={ride} />)
     expect(screen.getByTestId('day-box').textContent).toBe('sam.11avr.')
-    expect(line()).toBe('Départ 09:00 · retour vers 14:10')
+    expect(line()).toBe('Départ 09:00')
   })
 
   it('AgendaRow: a trip’s span, on a turquoise line', () => {

@@ -70,7 +70,7 @@ class PdlStat extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         if (icon != null) ...<Widget>[iconWidget, const SizedBox(width: 5)],
-        // Souple : une valeur longue — « demain 08:30 → retour vers 14:10 » —
+        // Souple : une valeur longue — « ven. 16 → dim. 18 oct. » —
         // passe à la ligne au lieu de déborder de la carte.
         Flexible(child: Text(value, style: valueStyle)),
         if (label != null) ...<Widget>[

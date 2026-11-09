@@ -158,12 +158,7 @@ export function NextRideCard({ ride, headingId }: NextRideCardProps) {
           <Stack gap={6}>
             {/* The day box sits in the thumbnail, hidden from assistive tech: the line names the
                 day for them. */}
-            <DepartureLine
-              date={start}
-              zone={ride.timezone}
-              returnAt={ride.endDateTime}
-              announceDay
-            />
+            <DepartureLine date={start} zone={ride.timezone} announceDay />
             {ride.startPlace && <Stat icon={<IconMapPin size={16} />}>{ride.startPlace.name}</Stat>}
             <RideWeatherSummaryLine summary={ride.weather} timezone={ride.timezone} />
             <Stat icon={<IconUsers size={16} />}>

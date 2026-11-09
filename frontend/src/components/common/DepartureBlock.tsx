@@ -15,14 +15,9 @@ interface DepartureBlockProps {
   tone?: DayBoxTone
   /**
    * The line under the time, in place of the long day « samedi 12 avril » — a trip's span
-   * « ven. 16 → dim. 18 mai », which already names the last day: the return then says its time
-   * alone.
+   * « ven. 16 → dim. 18 mai ».
    */
   dayLine?: string
-  /** The estimated return (`endDateTime`), « retour vers 14:10 ». */
-  returnAt?: string | null
-  /** The zone the return reads in, when not the departure's (a trip's last stage). */
-  returnZone?: string | null
   /** Where everyone meets. */
   place?: { name: string; address?: string } | null
   /**
@@ -37,7 +32,7 @@ interface DepartureBlockProps {
 /**
  * The departure block of a detail page (docs/BRANDING.md §7.8, ledger `BRAND-8`): just under the
  * title and the badges, before the description. The flat day box on the left; « Départ 09:00 »,
- * the « Demain » pill, « samedi 12 avril · retour vers 14:10 », the zone mention and the start
+ * the « Demain » pill, « samedi 12 avril », the zone mention and the start
  * place in the middle; the reader's group and its time on the right, below the rest under 600 px.
  */
 export function DepartureBlock({
@@ -45,29 +40,15 @@ export function DepartureBlock({
   zone,
   tone = 'primary',
   dayLine,
-  returnAt,
-  returnZone,
   place,
   group,
   note,
 }: DepartureBlockProps) {
   const { t } = useTranslation()
   const start = useRendezvousFormat(zone)
-  const back = useRendezvousFormat(returnZone ?? zone)
   const relative = start.formatRelativeDay(date)
   const mention = start.mention(date)
 
-  const returnText = (() => {
-    if (!returnAt || Number.isNaN(Date.parse(returnAt))) return null
-    // The same local day, or a span that already names the last one: its time is enough.
-    const sameDay =
-      start.formatPattern(date, 'yyyy-MM-dd') === back.formatPattern(returnAt, 'yyyy-MM-dd')
-    const time =
-      sameDay || dayLine
-        ? back.formatTime(returnAt)
-        : back.formatDeparture(returnAt, { relative: false })
-    return t('agenda.returnAround', { time })
-  })()
   const day = dayLine ?? start.formatLongDay(date)
 
   return (
@@ -87,9 +68,7 @@ export function DepartureBlock({
             )}
           </Group>
           <Text size="sm" c="dimmed" mt={4}>
-            <span suppressHydrationWarning={start.isGuessedText}>
-              {returnText ? t('departure.block.dayLine', { day, back: returnText }) : day}
-            </span>
+            <span suppressHydrationWarning={start.isGuessedText}>{day}</span>
             <ZoneMentionText mention={mention} isGuessed={start.isGuessedTimezone} />
           </Text>
           {note && (

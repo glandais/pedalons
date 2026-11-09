@@ -59,12 +59,7 @@ function RideRow({ ride }: { ride: RideDto }) {
             </Anchor>
             <RegisteredBadge />
           </Group>
-          <DepartureLine
-            date={startAt}
-            zone={ride.timezone}
-            size="sm"
-            returnAt={ride.endDateTime}
-          />
+          <DepartureLine date={startAt} zone={ride.timezone} size="sm" />
           <Group gap="md" wrap="wrap">
             {ride.startPlace && <Stat icon={<IconMapPin size={16} />}>{ride.startPlace.name}</Stat>}
             {group && (

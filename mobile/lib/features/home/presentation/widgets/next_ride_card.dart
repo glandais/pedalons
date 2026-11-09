@@ -26,7 +26,6 @@ import '../../../../keys.dart';
 import '../../../../core/utils/push_location.dart';
 import '../../../../core/widgets/day_box.dart';
 import '../../../../core/widgets/zone_mention_line.dart';
-import '../../../teams/domain/publication_timing.dart';
 import '../../../rides/domain/group_start.dart';
 
 /// La vignette de « Ma prochaine sortie » : celle du **parcours du groupe**
@@ -298,20 +297,13 @@ class NextRideCard extends ConsumerWidget {
         ),
       },
     );
-    final String? back = rideReturnLabel(
-      start,
-      ride.endDateTime,
-      timezone: zone,
-    );
     return PdlDepartureLine(
       headline: headline,
-      trailing: back,
       size: PdlDepartureLineSize.large,
       semanticLabel: <String>[
         headline,
         AppFormatters.formatDepartureRelative(instant, zone) ??
             AppFormatters.formatDepartureDate(instant, zone),
-        ?back,
       ].join(', '),
     );
   }

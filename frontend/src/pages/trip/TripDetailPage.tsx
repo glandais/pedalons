@@ -57,7 +57,6 @@ import { ConfirmDialog } from '../../components/common/ConfirmDialog'
 
 import type { MapRouteItem } from '../../components/route/RoutesMapView'
 import { Rendezvous } from '../../components/common/Rendezvous'
-import { tripEndZone } from '../../utils/rendezvous'
 import { formatPublicationSpan } from '../../utils/publicationTiming'
 import { useEffectiveTimezone } from '../../utils/dateFormat'
 import { DepartureBlock } from '../../components/common/DepartureBlock'
@@ -402,9 +401,6 @@ export function TripDetailPage() {
             zone={trip.timezone}
             tone="teal"
             dayLine={formatPublicationSpan(trip, 'full', i18n.language, t, readerZone)}
-            // The end is known once there are stages; without any it is only dateTime + 3 h.
-            returnAt={trip.endDate ? trip.endDateTime : undefined}
-            returnZone={tripEndZone(trip)}
           />
         </Box>
         <Box mt="md">
