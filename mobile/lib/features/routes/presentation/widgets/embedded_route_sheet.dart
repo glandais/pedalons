@@ -50,6 +50,7 @@ class EmbeddedRouteSheet extends ConsumerStatefulWidget {
     this.offersWind = false,
     this.windLeg,
     this.colorBySwitchKey,
+    this.beforeClimbs,
   });
 
   final RouteKey routeKey;
@@ -80,6 +81,10 @@ class EmbeddedRouteSheet extends ConsumerStatefulWidget {
 
   /// La clé de l'interrupteur Pente | Revêtement | Météo sous la carte.
   final Key? colorBySwitchKey;
+
+  /// Ce que l'écran hôte pose juste au-dessus des cols et montées : la météo
+  /// d'une étape, sous sa carte (ledger `MOB-118`). Porte son propre espacement.
+  final Widget? beforeClimbs;
 
   @override
   ConsumerState<EmbeddedRouteSheet> createState() => _EmbeddedRouteSheetState();
@@ -126,17 +131,26 @@ class _EmbeddedRouteSheetState extends ConsumerState<EmbeddedRouteSheet> {
     return detail.when(
       loading: () =>
           const PdlSkeletonCard(variant: PdlSkeletonCardVariant.media),
-      error: (Object error, StackTrace stack) => PdlEmptyState(
-        variant: PdlEmptyVariant.error,
-        title: 'routes.loadErrorTitle'.tr(),
-        message: 'errors.offline.message'.tr(),
-        actions: <Widget>[
-          PdlButton(
-            label: 'common.retry'.tr(),
-            variant: PdlButtonVariant.outline,
-            onPressed: () =>
-                ref.invalidate(routeDetailProvider(widget.routeKey)),
+      // Un parcours qu'on n'a pas pu lire n'emporte pas ce que l'écran pose
+      // dessous : la météo d'une étape ne dépend pas de lui.
+      error: (Object error, StackTrace stack) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          PdlEmptyState(
+            variant: PdlEmptyVariant.error,
+            title: 'routes.loadErrorTitle'.tr(),
+            message: 'errors.offline.message'.tr(),
+            actions: <Widget>[
+              PdlButton(
+                label: 'common.retry'.tr(),
+                variant: PdlButtonVariant.outline,
+                onPressed: () =>
+                    ref.invalidate(routeDetailProvider(widget.routeKey)),
+              ),
+            ],
           ),
+          ?widget.beforeClimbs,
         ],
       ),
       data: (RouteDetailDto route) => _body(route),
@@ -224,6 +238,7 @@ class _EmbeddedRouteSheetState extends ConsumerState<EmbeddedRouteSheet> {
           ),
         const SizedBox(height: PdlSpacing.section),
         RouteDownloadActions(route: route),
+        ?widget.beforeClimbs,
         if (route.allClimbs.isNotEmpty) ...<Widget>[
           const SizedBox(height: PdlSpacing.section),
           RouteClimbsSection(climbs: route.allClimbs),

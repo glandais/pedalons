@@ -15,6 +15,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../support/localization.dart';
 import '../rides/ride_fixtures.dart';
+
+import 'package:pedalons/features/routes/presentation/widgets/route_climbs_section.dart';
+
 import 'route_fixtures.dart';
 
 /// Le revêtement sur la fiche embarquée d'une étape (ledger `MOB-82`) : la même
@@ -54,6 +57,7 @@ void main() {
     List<WaypointDto> waypoints = const <WaypointDto>[],
     RouteColorBy? colorBy,
     WeatherLegDto? windLeg,
+    Widget? beforeClimbs,
   }) async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
     final SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -79,6 +83,7 @@ void main() {
                 onColorByChanged: colorBy == null ? null : (_) {},
                 offersWind: windLeg != null,
                 windLeg: windLeg,
+                beforeClimbs: beforeClimbs,
               ),
             ),
           ),
@@ -128,6 +133,39 @@ void main() {
     expect(find.byKey(keys.routeDetail.surfacePending), findsNothing);
     expect(find.byType(PdlElevationProfile), findsOneWidget);
   });
+
+  testWidgets(
+    'ce que l\'écran pose avant les cols : sous la carte, juste au-dessus d\'eux (MOB-118)',
+    (WidgetTester tester) async {
+      const Key forecast = Key('forecast');
+      await pump(
+        tester,
+        _track().copyWith(
+          climbs: const <ClimbDto>[
+            ClimbDto(
+              startDistance: 100,
+              endDistance: 900,
+              elevationGain: 50,
+              averageGradient: 6,
+              maxGradient: 9,
+              parts: <ClimbPartDto>[],
+            ),
+          ],
+        ),
+        beforeClimbs: const SizedBox(key: forecast, height: 40, width: 40),
+      );
+
+      final double slot = tester.getTopLeft(find.byKey(forecast)).dy;
+      expect(
+        slot,
+        greaterThan(tester.getTopLeft(find.byType(PdlElevationProfile)).dy),
+      );
+      expect(
+        tester.getTopLeft(find.byType(RouteClimbsSection)).dy,
+        greaterThan(slot),
+      );
+    },
+  );
 
   testWidgets('les points de parcours : la section et les repères du profil', (
     WidgetTester tester,

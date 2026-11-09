@@ -122,6 +122,21 @@ export function StageDetailPage() {
   // The stage's Météo mode on its map, and on its fullscreen map (WEB-118)
   const windLeg = stageWindLeg(trip, weather.data, stage.id)
 
+  // Weather along the stage's route, its own state (docs/LEDGER_*.md API-76), under the map (WEB-143)
+  const weatherSection = (
+    <ErrorBoundary variant="inline">
+      <StageWeatherSection
+        weather={weather.data}
+        stageId={stage.id}
+        isLoading={weather.isLoading}
+        isFetching={weather.isFetching}
+        onRetry={() => void weather.refetch()}
+        canEdit={canEdit}
+        timezone={stage.timezone}
+      />
+    </ErrorBoundary>
+  )
+
   return (
     <Container size="xl" py="xl">
       {/* Trip Header */}
@@ -221,19 +236,6 @@ export function StageDetailPage() {
             )}
           </Paper>
 
-          {/* Weather along the stage's route, its own state (docs/LEDGER_*.md API-76) */}
-          <ErrorBoundary variant="inline">
-            <StageWeatherSection
-              weather={weather.data}
-              stageId={stage.id}
-              isLoading={weather.isLoading}
-              isFetching={weather.isFetching}
-              onRetry={() => void weather.refetch()}
-              canEdit={canEdit}
-              timezone={stage.timezone}
-            />
-          </ErrorBoundary>
-
           {/* Route details */}
           {route && (
             <Box>
@@ -258,9 +260,13 @@ export function StageDetailPage() {
                 windLeg={windLeg}
                 windAttribution={windLeg ? weather.data?.attribution : undefined}
                 timezone={stage.timezone}
+                beforeClimbs={weatherSection}
               />
             </Box>
           )}
+
+          {/* Without a route, no map to stand under: the section still says why (NO_LOCATION…) */}
+          {!route && weatherSection}
 
           {/* The stage's own thread, apart from the trip's — members only, like every thread */}
           {canReadComments && team && (

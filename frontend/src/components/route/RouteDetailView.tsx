@@ -49,6 +49,8 @@ interface RouteDetailViewProps {
   windAttribution?: WeatherAttributionDto
   /** The stage's zone: the passages of the forecast's points read in it. */
   timezone?: string
+  /** What the page sets just above the climbs: a stage's forecast, under its map (WEB-143). */
+  beforeClimbs?: React.ReactNode
 }
 
 /**
@@ -64,6 +66,7 @@ export function RouteDetailView({
   windLeg,
   windAttribution,
   timezone,
+  beforeClimbs,
 }: RouteDetailViewProps) {
   const { t } = useTranslation()
   const { distance, elevation, formatDistance, config } = useUnits()
@@ -236,6 +239,8 @@ export function RouteDetailView({
         selected={selection?.waypoint ?? null}
         onSelect={selectFromList}
       />
+
+      {beforeClimbs}
 
       {/* Climbs Section - compact list */}
       {(() => {

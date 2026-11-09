@@ -151,9 +151,12 @@ class _StageDetailContent extends ConsumerWidget {
           child: _identity(context, ref.watch(unitSystemProvider)),
         ),
         SliverToBoxAdapter(child: _facts(context)),
-        SliverToBoxAdapter(
-          child: StageWeatherCard(tripKey: tripKey, trip: trip, stage: stage),
-        ),
+        // Sans parcours, pas de carte sous laquelle se poser : la carte météo
+        // reste ici, pour dire pourquoi il n'y a pas de prévision.
+        if (routeSlug == null)
+          SliverToBoxAdapter(
+            child: StageWeatherCard(tripKey: tripKey, trip: trip, stage: stage),
+          ),
         if (routeSlug != null)
           SliverToBoxAdapter(
             child: Padding(
@@ -178,6 +181,12 @@ class _StageDetailContent extends ConsumerWidget {
                 // `MOB-106`).
                 windLeg: windLeg,
                 colorBySwitchKey: keys.trip.stageMapColorBy,
+                beforeClimbs: StageWeatherCard(
+                  tripKey: tripKey,
+                  trip: trip,
+                  stage: stage,
+                  embedded: true,
+                ),
               ),
             ),
           )

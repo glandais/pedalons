@@ -30,11 +30,16 @@ class StageWeatherCard extends ConsumerWidget {
     required this.tripKey,
     required this.trip,
     required this.stage,
+    this.embedded = false,
   });
 
   final TripKey tripKey;
   final TripDto trip;
   final TripStageDto stage;
+
+  /// Posée dans le bloc du parcours (ledger `MOB-118`), qui a déjà ses marges :
+  /// seul l'écart au-dessus d'elle reste, et rien du tout sans prévision.
+  final bool embedded;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -49,12 +54,14 @@ class StageWeatherCard extends ConsumerWidget {
     );
 
     Widget padded(Widget child) => Padding(
-      padding: const EdgeInsets.fromLTRB(
-        PdlSpacing.section,
-        0,
-        PdlSpacing.section,
-        PdlSpacing.section,
-      ),
+      padding: embedded
+          ? const EdgeInsets.only(top: PdlSpacing.section)
+          : const EdgeInsets.fromLTRB(
+              PdlSpacing.section,
+              0,
+              PdlSpacing.section,
+              PdlSpacing.section,
+            ),
       child: child,
     );
 

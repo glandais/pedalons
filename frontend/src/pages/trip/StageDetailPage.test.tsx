@@ -125,6 +125,11 @@ describe('StageDetailPage — the Météo mode of its map (WEB-118)', () => {
     expect(state.view.timezone).toBe('Europe/Lisbon')
   })
 
+  it('hands its forecast to the route view, to stand under the map (WEB-143)', () => {
+    renderPage()
+    expect(state.view.beforeClimbs).toBeTruthy()
+  })
+
   it('opens the stage’s fullscreen map in the mode its line is in', () => {
     renderPage()
     expect(fullscreen('grade')).toBe(paths.stageMap('np', 'voyage', 'etape-1'))

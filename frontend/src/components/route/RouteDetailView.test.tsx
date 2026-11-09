@@ -67,6 +67,30 @@ function show(props: Partial<Parameters<typeof RouteDetailView>[0]> = {}) {
   )
 }
 
+describe('RouteDetailView — what a page sets above the climbs (WEB-143)', () => {
+  afterEach(cleanup)
+
+  it('stands under the map and just before the climbs', () => {
+    const climb = {
+      startDistance: 0,
+      endDistance: 1000,
+      elevationGain: 80,
+      averageGradient: 8,
+      maxGradient: 10,
+    }
+    show({
+      route: { ...ROUTE, tracks: [{ ...ROUTE.tracks[0], climbs: [climb] }] } as RouteDetailDto,
+      beforeClimbs: <div data-testid="forecast" />,
+    })
+    const forecast = screen.getByTestId('forecast')
+    const climbs = screen.getByRole('heading', { level: 4 })
+    const follows = (a: Element, b: Element) =>
+      !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING)
+    expect(follows(screen.getByTestId('route-map'), forecast)).toBe(true)
+    expect(follows(forecast, climbs)).toBe(true)
+  })
+})
+
 describe('RouteDetailView — a stage’s Météo mode (WEB-118)', () => {
   beforeEach(() => {
     state.map = {}
