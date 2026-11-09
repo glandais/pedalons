@@ -176,10 +176,9 @@ public class BiketeamTestData {
         .setParameter("s", slug)
         .getResultStream()
         .findFirst()
-        .map(
-            t ->
-                new TeamView(
-                    t.getId(), t.getName(), t.getSlug(), t.isDeleted(), t.getCreatedBy().getId()))
+        .map(t ->
+            new TeamView(
+                t.getId(), t.getName(), t.getSlug(), t.isDeleted(), t.getCreatedBy().getId()))
         .orElse(null);
   }
 
@@ -240,14 +239,12 @@ public class BiketeamTestData {
     List<GroupView> groups =
         ride.getGroups().stream()
             .sorted(Comparator.comparingInt(RideGroup::getSortOrder))
-            .map(
-                g ->
-                    new GroupView(
-                        g.getName(),
-                        g.getSortOrder(),
-                        EventTimezoneResolver.ownTime(
-                            ride.getDateTime(), g.getStartAt(), ride.zone()),
-                        g.getLeader() == null ? null : g.getLeader().getId()))
+            .map(g ->
+                new GroupView(
+                    g.getName(),
+                    g.getSortOrder(),
+                    EventTimezoneResolver.ownTime(ride.getDateTime(), g.getStartAt(), ride.zone()),
+                    g.getLeader() == null ? null : g.getLeader().getId()))
             .toList();
     return new RideView(ride.getName(), ride.getDateTime(), ride.getCreatedBy().getId(), groups);
   }

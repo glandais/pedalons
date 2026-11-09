@@ -104,12 +104,11 @@ public class GpxTrackRepository implements PanacheRepository<GpxTrack> {
             Object[].class)
         .setParameter("routeId", routeId)
         .getResultList()
-        .forEach(
-            row -> {
-              if (row[1] != null) {
-                out.put((Long) row[0], (TrackSurfaceDocument) row[1]);
-              }
-            });
+        .forEach(row -> {
+          if (row[1] != null) {
+            out.put((Long) row[0], (TrackSurfaceDocument) row[1]);
+          }
+        });
     return out;
   }
 
@@ -129,13 +128,12 @@ public class GpxTrackRepository implements PanacheRepository<GpxTrack> {
             Object[].class)
         .setParameter("routeIds", routeIds)
         .getResultList()
-        .forEach(
-            row -> {
-              if (row[2] != null) {
-                out.computeIfAbsent((Long) row[0], k -> new HashMap<>())
-                    .put((Long) row[1], (TrackSurfaceDocument) row[2]);
-              }
-            });
+        .forEach(row -> {
+          if (row[2] != null) {
+            out.computeIfAbsent((Long) row[0], k -> new HashMap<>())
+                .put((Long) row[1], (TrackSurfaceDocument) row[2]);
+          }
+        });
     return out;
   }
 

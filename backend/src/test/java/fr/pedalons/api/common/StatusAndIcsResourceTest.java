@@ -130,15 +130,14 @@ class StatusAndIcsResourceTest extends AbstractResourceTest {
     // The calendar and its feeds read a stage's own status, not its trip's.
     List<Status> stageStatuses =
         QuarkusTransaction.requiringNew()
-            .call(
-                () ->
-                    entityManager
-                        .createQuery(
-                            "select s.status from TripStage s"
-                                + " where s.trip.slug = :slug and s.deleted = false",
-                            Status.class)
-                        .setParameter("slug", slug)
-                        .getResultList());
+            .call(() ->
+                entityManager
+                    .createQuery(
+                        "select s.status from TripStage s"
+                            + " where s.trip.slug = :slug and s.deleted = false",
+                        Status.class)
+                    .setParameter("slug", slug)
+                    .getResultList());
     assertThat(stageStatuses, contains(Status.PUBLISHED, Status.PUBLISHED));
   }
 

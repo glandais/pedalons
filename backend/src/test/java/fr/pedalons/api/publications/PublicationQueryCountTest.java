@@ -100,29 +100,28 @@ class PublicationQueryCountTest extends AbstractQueryCountTest {
   private void locateWithForecast(List<Ride> rides) {
     Instant now = Instant.now();
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              Place place = new Place(user1, team1, "Bellecour", true, true);
-              place.setGeometry(
-                  point(WGS84, g(WeatherTestFixtures.LYON_LON, WeatherTestFixtures.LYON_LAT)));
-              placeRepository.persist(place);
-              for (Ride ride : rides) {
-                rideRepository.findById(ride.getId()).setStart(place);
-              }
-              Instant firstHour = now.truncatedTo(ChronoUnit.HOURS).minus(2, ChronoUnit.HOURS);
-              WeatherTestFixtures.seedCell(
-                  weatherCellRepository,
-                  weatherHourlyRepository,
-                  weatherDailyRepository,
-                  CellKey.of(WeatherTestFixtures.LYON_LAT, WeatherTestFixtures.LYON_LON),
-                  now,
-                  now,
-                  WeatherTestFixtures.hours(firstHour, firstHour.plus(72, ChronoUnit.HOURS)),
-                  14,
-                  WeatherTestFixtures.dates(
-                      LocalDate.now(ZoneOffset.UTC).minusDays(1),
-                      LocalDate.now(ZoneOffset.UTC).plusDays(3)));
-            });
+        .run(() -> {
+          Place place = new Place(user1, team1, "Bellecour", true, true);
+          place.setGeometry(
+              point(WGS84, g(WeatherTestFixtures.LYON_LON, WeatherTestFixtures.LYON_LAT)));
+          placeRepository.persist(place);
+          for (Ride ride : rides) {
+            rideRepository.findById(ride.getId()).setStart(place);
+          }
+          Instant firstHour = now.truncatedTo(ChronoUnit.HOURS).minus(2, ChronoUnit.HOURS);
+          WeatherTestFixtures.seedCell(
+              weatherCellRepository,
+              weatherHourlyRepository,
+              weatherDailyRepository,
+              CellKey.of(WeatherTestFixtures.LYON_LAT, WeatherTestFixtures.LYON_LON),
+              now,
+              now,
+              WeatherTestFixtures.hours(firstHour, firstHour.plus(72, ChronoUnit.HOURS)),
+              14,
+              WeatherTestFixtures.dates(
+                  LocalDate.now(ZoneOffset.UTC).minusDays(1),
+                  LocalDate.now(ZoneOffset.UTC).plusDays(3)));
+        });
   }
 
   /** Trips carry stages and participations, the {@code TripDto} equivalent of groups/participants. */
@@ -366,23 +365,22 @@ class PublicationQueryCountTest extends AbstractQueryCountTest {
       dataService.setTimezone(next.getId(), "Asia/Tokyo");
     }
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              Instant firstHour = now.truncatedTo(ChronoUnit.HOURS).minus(2, ChronoUnit.HOURS);
-              WeatherTestFixtures.seedCell(
-                  weatherCellRepository,
-                  weatherHourlyRepository,
-                  weatherDailyRepository,
-                  // The first track point, at 170 m: the 200 m band.
-                  CellKey.of(WeatherTestFixtures.LYON_LAT, WeatherTestFixtures.LYON_LON, 170.0),
-                  now,
-                  now,
-                  WeatherTestFixtures.hours(firstHour, firstHour.plus(72, ChronoUnit.HOURS)),
-                  14,
-                  WeatherTestFixtures.dates(
-                      LocalDate.now(ZoneOffset.UTC).minusDays(1),
-                      LocalDate.now(ZoneOffset.UTC).plusDays(3)));
-            });
+        .run(() -> {
+          Instant firstHour = now.truncatedTo(ChronoUnit.HOURS).minus(2, ChronoUnit.HOURS);
+          WeatherTestFixtures.seedCell(
+              weatherCellRepository,
+              weatherHourlyRepository,
+              weatherDailyRepository,
+              // The first track point, at 170 m: the 200 m band.
+              CellKey.of(WeatherTestFixtures.LYON_LAT, WeatherTestFixtures.LYON_LON, 170.0),
+              now,
+              now,
+              WeatherTestFixtures.hours(firstHour, firstHour.plus(72, ChronoUnit.HOURS)),
+              14,
+              WeatherTestFixtures.dates(
+                  LocalDate.now(ZoneOffset.UTC).minusDays(1),
+                  LocalDate.now(ZoneOffset.UTC).plusDays(3)));
+        });
     // Not vacuous: every card of the page carries its line, read from the cached cell.
     List<Map<String, Object>> weather =
         asUser1()

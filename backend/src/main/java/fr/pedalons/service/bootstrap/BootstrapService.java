@@ -63,30 +63,27 @@ public class BootstrapService {
     Domain domain =
         domainRepository
             .findByDomain(config.domain())
-            .orElseGet(
-                () -> {
-                  LOG.infof(
-                      "Creating bootstrap domain '%s' (name='%s', baseUrl='%s')",
-                      config.domain(), config.domainName(), config.baseUrl());
-                  Domain d = new Domain(config.domain(), config.domainName(), config.baseUrl());
-                  domainRepository.persistAndFlush(d);
-                  return d;
-                });
+            .orElseGet(() -> {
+              LOG.infof(
+                  "Creating bootstrap domain '%s' (name='%s', baseUrl='%s')",
+                  config.domain(), config.domainName(), config.baseUrl());
+              Domain d = new Domain(config.domain(), config.domainName(), config.baseUrl());
+              domainRepository.persistAndFlush(d);
+              return d;
+            });
 
     String email = config.adminEmail().toLowerCase(Locale.ROOT);
     User admin =
         userRepository
             .findByEmailAndDomain(domain.getId(), email)
-            .orElseGet(
-                () -> {
-                  LOG.infof(
-                      "Creating bootstrap admin '%s' on domain '%s'", email, domain.getDomain());
-                  User u = new User(domain, email, config.adminDisplayName());
-                  u.setEmailVerified(true);
-                  u.setEmailVerifiedAt(Instant.now());
-                  userRepository.persist(u);
-                  return u;
-                });
+            .orElseGet(() -> {
+              LOG.infof("Creating bootstrap admin '%s' on domain '%s'", email, domain.getDomain());
+              User u = new User(domain, email, config.adminDisplayName());
+              u.setEmailVerified(true);
+              u.setEmailVerifiedAt(Instant.now());
+              userRepository.persist(u);
+              return u;
+            });
 
     if (!admin.isPlatformAdmin()) {
       admin.setPlatformRole(PlatformRole.PLATFORM_ADMIN);

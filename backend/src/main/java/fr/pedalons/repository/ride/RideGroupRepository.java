@@ -85,25 +85,24 @@ public class RideGroupRepository implements BaseRepository<RideGroup> {
             .setParameter("ids", groupIds)
             .getResultList();
     return rows.stream()
-        .map(
-            row ->
-                new GroupRow(
-                    (Long) row[0],
-                    (Long) row[1],
-                    (String) row[2],
-                    EventTimezoneResolver.ownTime(
-                        (Instant) row[14], (Instant) row[3], ZoneId.of((String) row[15])),
-                    (Float) row[4],
-                    (Integer) row[5],
-                    (Integer) row[6],
-                    (Long) row[7],
-                    (String) row[8],
-                    (Float) row[9],
-                    (Float) row[10],
-                    (Long) row[11],
-                    (String) row[12],
-                    (String) row[13],
-                    (Instant) row[3]))
+        .map(row ->
+            new GroupRow(
+                (Long) row[0],
+                (Long) row[1],
+                (String) row[2],
+                EventTimezoneResolver.ownTime(
+                    (Instant) row[14], (Instant) row[3], ZoneId.of((String) row[15])),
+                (Float) row[4],
+                (Integer) row[5],
+                (Integer) row[6],
+                (Long) row[7],
+                (String) row[8],
+                (Float) row[9],
+                (Float) row[10],
+                (Long) row[11],
+                (String) row[12],
+                (String) row[13],
+                (Instant) row[3]))
         .toList();
   }
 

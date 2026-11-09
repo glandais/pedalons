@@ -115,10 +115,8 @@ class TeamSlugRedirectRepositoryTest extends AbstractBaseTest {
   @Test
   @Transactional
   void shouldNotThrowWhenDeletingNonExistentSlug() {
-    assertDoesNotThrow(
-        () ->
-            teamSlugRedirectRepository.deleteByOldSlugAndDomain(
-                domain.getId(), "non-existent-slug"));
+    assertDoesNotThrow(() ->
+        teamSlugRedirectRepository.deleteByOldSlugAndDomain(domain.getId(), "non-existent-slug"));
   }
 
   @Test

@@ -266,18 +266,17 @@ public class FakeRouteDetailsClient implements RouteDetailsClient {
       return null;
     }
     return segments.stream()
-        .map(
-            s ->
-                new Segment(
-                    s.fromM(),
-                    s.toM(),
-                    indexAt(d, s.fromM()),
-                    indexAt(d, s.toM()),
-                    s.structure(),
-                    s.structureSource(),
-                    s.surface(),
-                    s.wayKind(),
-                    s.matched()))
+        .map(s ->
+            new Segment(
+                s.fromM(),
+                s.toM(),
+                indexAt(d, s.fromM()),
+                indexAt(d, s.toM()),
+                s.structure(),
+                s.structureSource(),
+                s.surface(),
+                s.wayKind(),
+                s.matched()))
         .toList();
   }
 

@@ -137,13 +137,12 @@ public record RouteDetailDto(
   /** The route's waypoints, to name the climbs they mark (docs/LEDGER_*.md API-10). */
   private static List<NamedPoint> namedPoints(Route route) {
     return route.getWaypoints().stream()
-        .map(
-            w ->
-                new NamedPoint(
-                    w.getName(),
-                    w.getGeometry().getPosition().getLat(),
-                    w.getGeometry().getPosition().getLon(),
-                    w.typeOrInfo() == WaypointType.SUMMIT))
+        .map(w ->
+            new NamedPoint(
+                w.getName(),
+                w.getGeometry().getPosition().getLat(),
+                w.getGeometry().getPosition().getLon(),
+                w.typeOrInfo() == WaypointType.SUMMIT))
         .toList();
   }
 

@@ -284,22 +284,21 @@ public class GpxSanitizationBackfill {
   private List<FileSet> routeFileSets() {
     List<Object[]> rows =
         QuarkusTransaction.requiringNew()
-            .call(
-                () ->
-                    assetRepository
-                        .getEntityManager()
-                        .createQuery(
-                            "select te.id, a.team.id, a.fileId, a.fileName, a.contentType, a.type,"
-                                + " a.id from Asset a join a.teamEntity te where a.type in (:types)"
-                                + " order by te.id",
-                            Object[].class)
-                        .setParameter(
-                            "types",
-                            List.of(
-                                AssetType.ROUTE_ORIGINAL_GPX,
-                                AssetType.ROUTE_FILTERED_GPX,
-                                AssetType.ROUTE_FIT))
-                        .getResultList());
+            .call(() ->
+                assetRepository
+                    .getEntityManager()
+                    .createQuery(
+                        "select te.id, a.team.id, a.fileId, a.fileName, a.contentType, a.type,"
+                            + " a.id from Asset a join a.teamEntity te where a.type in (:types)"
+                            + " order by te.id",
+                        Object[].class)
+                    .setParameter(
+                        "types",
+                        List.of(
+                            AssetType.ROUTE_ORIGINAL_GPX,
+                            AssetType.ROUTE_FILTERED_GPX,
+                            AssetType.ROUTE_FIT))
+                    .getResultList());
 
     Map<Long, Map<AssetType, StoredFile>> byRoute = new LinkedHashMap<>();
     for (Object[] row : rows) {
@@ -325,14 +324,13 @@ public class GpxSanitizationBackfill {
     }
 
     List<FileSet> sets = new ArrayList<>(byRoute.size());
-    byRoute.forEach(
-        (routeId, files) ->
-            sets.add(
-                new FileSet(
-                    "route " + TsidUtils.toString(routeId),
-                    files.get(AssetType.ROUTE_ORIGINAL_GPX),
-                    files.get(AssetType.ROUTE_FILTERED_GPX),
-                    files.get(AssetType.ROUTE_FIT))));
+    byRoute.forEach((routeId, files) ->
+        sets.add(
+            new FileSet(
+                "route " + TsidUtils.toString(routeId),
+                files.get(AssetType.ROUTE_ORIGINAL_GPX),
+                files.get(AssetType.ROUTE_FILTERED_GPX),
+                files.get(AssetType.ROUTE_FIT))));
     return sets;
   }
 
@@ -343,22 +341,21 @@ public class GpxSanitizationBackfill {
   private List<StoredFile> attachmentFiles() {
     List<Object[]> rows =
         QuarkusTransaction.requiringNew()
-            .call(
-                () ->
-                    assetRepository
-                        .getEntityManager()
-                        .createQuery(
-                            "select a.team.id, a.fileId, a.fileName, a.contentType, a.id from Asset"
-                                + " a where a.type = :type and a.contentType in (:contentTypes)"
-                                + " order by a.id",
-                            Object[].class)
-                        .setParameter("type", AssetType.ATTACHMENT)
-                        .setParameter(
-                            "contentTypes",
-                            List.of(
-                                TrackAttachmentSanitizer.GPX_CONTENT_TYPE,
-                                TrackAttachmentSanitizer.FIT_CONTENT_TYPE))
-                        .getResultList());
+            .call(() ->
+                assetRepository
+                    .getEntityManager()
+                    .createQuery(
+                        "select a.team.id, a.fileId, a.fileName, a.contentType, a.id from Asset"
+                            + " a where a.type = :type and a.contentType in (:contentTypes)"
+                            + " order by a.id",
+                        Object[].class)
+                    .setParameter("type", AssetType.ATTACHMENT)
+                    .setParameter(
+                        "contentTypes",
+                        List.of(
+                            TrackAttachmentSanitizer.GPX_CONTENT_TYPE,
+                            TrackAttachmentSanitizer.FIT_CONTENT_TYPE))
+                    .getResultList());
     List<StoredFile> files = new ArrayList<>(rows.size());
     for (Object[] row : rows) {
       Long teamId = (Long) row[0];
@@ -382,21 +379,18 @@ public class GpxSanitizationBackfill {
   /** The three files of every preview still in the database, whatever its domain. */
   private List<FileSet> previewFileSets() {
     return QuarkusTransaction.requiringNew()
-        .call(
-            () ->
-                gpxPreviewRepository.listAll().stream()
-                    .map(
-                        preview -> {
-                          Map<String, String> keys = gpxPreviewService.exportKeys(preview);
-                          return new FileSet(
-                              "preview " + preview.getPublicId(),
-                              new StoredFile(
-                                  keys.get(ORIGINAL_GPX), GPX_CONTENT_TYPE, Map.of(), null, null),
-                              new StoredFile(
-                                  keys.get(FILTERED_GPX), GPX_CONTENT_TYPE, Map.of(), null, null),
-                              new StoredFile(
-                                  keys.get(FIT), FIT_CONTENT_TYPE, Map.of(), null, null));
-                        })
-                    .toList());
+        .call(() ->
+            gpxPreviewRepository.listAll().stream()
+                .map(preview -> {
+                  Map<String, String> keys = gpxPreviewService.exportKeys(preview);
+                  return new FileSet(
+                      "preview " + preview.getPublicId(),
+                      new StoredFile(
+                          keys.get(ORIGINAL_GPX), GPX_CONTENT_TYPE, Map.of(), null, null),
+                      new StoredFile(
+                          keys.get(FILTERED_GPX), GPX_CONTENT_TYPE, Map.of(), null, null),
+                      new StoredFile(keys.get(FIT), FIT_CONTENT_TYPE, Map.of(), null, null));
+                })
+                .toList());
   }
 }

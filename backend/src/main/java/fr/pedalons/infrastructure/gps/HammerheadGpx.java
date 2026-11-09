@@ -40,20 +40,19 @@ public final class HammerheadGpx {
       }
       List<GpxWaypoint> waypoints =
           doc.getWaypoints().stream()
-              .map(
-                  w -> {
-                    WaypointType type = WaypointFormats.fromGpx(w.getSymbol(), w.getType());
-                    String value = WaypointFormats.hammerhead(type);
-                    return new GpxWaypoint(
-                        w.getLatitudeDeg(),
-                        w.getLongitudeDeg(),
-                        w.getElevationM(),
-                        w.getName(),
-                        w.getDescription(),
-                        value,
-                        value,
-                        null);
-                  })
+              .map(w -> {
+                WaypointType type = WaypointFormats.fromGpx(w.getSymbol(), w.getType());
+                String value = WaypointFormats.hammerhead(type);
+                return new GpxWaypoint(
+                    w.getLatitudeDeg(),
+                    w.getLongitudeDeg(),
+                    w.getElevationM(),
+                    w.getName(),
+                    w.getDescription(),
+                    value,
+                    value,
+                    null);
+              })
               .toList();
       GpxDocument rewritten = GpxModelJvm.document(doc.getTracks(), doc.getName(), waypoints);
       return GpxWriterJvm.write(rewritten).getBytes(StandardCharsets.UTF_8);

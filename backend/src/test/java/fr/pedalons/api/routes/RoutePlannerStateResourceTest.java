@@ -117,11 +117,10 @@ class RoutePlannerStateResourceTest extends AbstractResourceTest {
 
   private Long routeId(String slug) {
     return QuarkusTransaction.requiringNew()
-        .call(
-            () ->
-                em.createQuery("select r.id from Route r where r.slug = :slug", Long.class)
-                    .setParameter("slug", slug)
-                    .getSingleResult());
+        .call(() ->
+            em.createQuery("select r.id from Route r where r.slug = :slug", Long.class)
+                .setParameter("slug", slug)
+                .getSingleResult());
   }
 
   // ==================== create and read ====================
@@ -211,16 +210,15 @@ class RoutePlannerStateResourceTest extends AbstractResourceTest {
     String slug = createWithState(state);
     Long id = routeId(slug);
     QuarkusTransaction.requiringNew()
-        .run(
-            () ->
-                em.createNativeQuery(
-                        """
-                        update gpx_tracks set planner_state =
-                          jsonb_set(planner_state, '{state,pieces,1,unpaved,0,later}', '1')
-                        where route_id = :id
-                        """)
-                    .setParameter("id", id)
-                    .executeUpdate());
+        .run(() ->
+            em.createNativeQuery(
+                    """
+                    update gpx_tracks set planner_state =
+                      jsonb_set(planner_state, '{state,pieces,1,unpaved,0,later}', '1')
+                    where route_id = :id
+                    """)
+                .setParameter("id", id)
+                .executeUpdate());
 
     readState(slug, USER1).statusCode(200).body("state.pieces[1].unpaved[0].from", equalTo(1));
   }
@@ -240,21 +238,20 @@ class RoutePlannerStateResourceTest extends AbstractResourceTest {
     String slug = createWithState(state);
     Long id = routeId(slug);
     QuarkusTransaction.requiringNew()
-        .run(
-            () ->
-                em.createNativeQuery(
-                        """
-                        update gpx_tracks set planner_state =
-                          jsonb_set(jsonb_set(jsonb_set(jsonb_set(
-                            planner_state || '{"later": 1}',
-                            '{state,later}', '1'),
-                            '{state,sources,0,later}', '1'),
-                            '{state,junctions,0,later}', '1'),
-                            '{state,pieces,0,later}', '1')
-                        where route_id = :id
-                        """)
-                    .setParameter("id", id)
-                    .executeUpdate());
+        .run(() ->
+            em.createNativeQuery(
+                    """
+                    update gpx_tracks set planner_state =
+                      jsonb_set(jsonb_set(jsonb_set(jsonb_set(
+                        planner_state || '{"later": 1}',
+                        '{state,later}', '1'),
+                        '{state,sources,0,later}', '1'),
+                        '{state,junctions,0,later}', '1'),
+                        '{state,pieces,0,later}', '1')
+                    where route_id = :id
+                    """)
+                .setParameter("id", id)
+                .executeUpdate());
 
     assertStateIs(slug, state);
   }
@@ -267,16 +264,14 @@ class RoutePlannerStateResourceTest extends AbstractResourceTest {
     Long id = routeId(slug);
     GpxTrack track =
         QuarkusTransaction.requiringNew()
-            .call(
-                () -> {
-                  GpxTrack t =
-                      em.createQuery(
-                              "select t from GpxTrack t where t.route.id = :id", GpxTrack.class)
-                          .setParameter("id", id)
-                          .getSingleResult();
-                  t.getTrackPoints().size();
-                  return t;
-                });
+            .call(() -> {
+              GpxTrack t =
+                  em.createQuery("select t from GpxTrack t where t.route.id = :id", GpxTrack.class)
+                      .setParameter("id", id)
+                      .getSingleResult();
+              t.getTrackPoints().size();
+              return t;
+            });
     List<GpxTrack.TrackPoint> points = track.getTrackPoints();
     // The pipeline densifies and simplifies, but the ends are the first and the last junction
     assertEquals(4.83, points.getFirst().lng(), 1e-4);
@@ -300,14 +295,12 @@ class RoutePlannerStateResourceTest extends AbstractResourceTest {
     assertEquals(2, raw.getFirst().dims());
     int trackPoints =
         QuarkusTransaction.requiringNew()
-            .call(
-                () ->
-                    em.createQuery(
-                            "select t from GpxTrack t where t.route.id = :id", GpxTrack.class)
-                        .setParameter("id", id)
-                        .getSingleResult()
-                        .getTrackPoints()
-                        .size());
+            .call(() ->
+                em.createQuery("select t from GpxTrack t where t.route.id = :id", GpxTrack.class)
+                    .setParameter("id", id)
+                    .getSingleResult()
+                    .getTrackPoints()
+                    .size());
     assertTrue(trackPoints < DRAWN_WITH_SHAPES_DERIVED);
 
     String plain = createWithState(drawn());
@@ -477,14 +470,13 @@ class RoutePlannerStateResourceTest extends AbstractResourceTest {
     String slug = createWithState(example());
     Long id = routeId(slug);
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              GpxTrack track =
-                  em.createQuery("select t from GpxTrack t where t.route.id = :id", GpxTrack.class)
-                      .setParameter("id", id)
-                      .getSingleResult();
-              track.setPlannerState(new PlannerStateDocument(12345L, example()));
-            });
+        .run(() -> {
+          GpxTrack track =
+              em.createQuery("select t from GpxTrack t where t.route.id = :id", GpxTrack.class)
+                  .setParameter("id", id)
+                  .getSingleResult();
+          track.setPlannerState(new PlannerStateDocument(12345L, example()));
+        });
     assertNoState(slug);
   }
 
@@ -559,16 +551,15 @@ class RoutePlannerStateResourceTest extends AbstractResourceTest {
     String slug = createWithState(example());
     Long id = routeId(slug);
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              Long trackId =
-                  em.createQuery("select t.id from GpxTrack t where t.route.id = :id", Long.class)
-                      .setParameter("id", id)
-                      .getSingleResult();
-              GpxTrack track = em.find(GpxTrack.class, trackId);
-              assertNotNull(track);
-              assertFalse(Hibernate.isPropertyInitialized(track, "plannerState"));
-              assertNotNull(track.getPlannerState());
-            });
+        .run(() -> {
+          Long trackId =
+              em.createQuery("select t.id from GpxTrack t where t.route.id = :id", Long.class)
+                  .setParameter("id", id)
+                  .getSingleResult();
+          GpxTrack track = em.find(GpxTrack.class, trackId);
+          assertNotNull(track);
+          assertFalse(Hibernate.isPropertyInitialized(track, "plannerState"));
+          assertNotNull(track.getPlannerState());
+        });
   }
 }

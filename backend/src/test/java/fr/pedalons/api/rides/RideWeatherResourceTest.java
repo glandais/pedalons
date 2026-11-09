@@ -87,13 +87,12 @@ class RideWeatherResourceTest extends AbstractResourceTest {
 
   private void answerWithTemperature(double temperature) {
     when(gateway.forecast(anyList()))
-        .thenAnswer(
-            invocation -> {
-              List<Location> locations = invocation.getArgument(0);
-              return locations.stream()
-                  .map(l -> WeatherTestFixtures.forecast(l, 48, temperature, 0))
-                  .toList();
-            });
+        .thenAnswer(invocation -> {
+          List<Location> locations = invocation.getArgument(0);
+          return locations.stream()
+              .map(l -> WeatherTestFixtures.forecast(l, 48, temperature, 0))
+              .toList();
+        });
   }
 
   /** A ride tomorrow from Bellecour along 30 km due north, its cache filled as the jobs would. */
@@ -109,11 +108,10 @@ class RideWeatherResourceTest extends AbstractResourceTest {
                 WeatherTestFixtures.northbound(
                     WeatherTestFixtures.LYON_LAT, WeatherTestFixtures.LYON_LON, 30, 170)));
     QuarkusTransaction.requiringNew()
-        .run(
-            () ->
-                rideRepository
-                    .findById(ride.getId())
-                    .setRoute(rideRepository.getEntityManager().find(Route.class, route.getId())));
+        .run(() ->
+            rideRepository
+                .findById(ride.getId())
+                .setRoute(rideRepository.getEntityManager().find(Route.class, route.getId())));
     planner.plan(Instant.now());
     worker.fetchDue();
     return ride;
@@ -123,11 +121,10 @@ class RideWeatherResourceTest extends AbstractResourceTest {
   private static void collectKeys(JsonNode node, String path, List<String> into) {
     if (node.isObject()) {
       node.properties()
-          .forEach(
-              e -> {
-                into.add(path + "." + e.getKey());
-                collectKeys(e.getValue(), path + "." + e.getKey(), into);
-              });
+          .forEach(e -> {
+            into.add(path + "." + e.getKey());
+            collectKeys(e.getValue(), path + "." + e.getKey(), into);
+          });
     } else if (node.isArray()) {
       for (int i = 0; i < node.size(); i++) {
         collectKeys(node.get(i), path + "[" + i + "]", into);
@@ -140,10 +137,9 @@ class RideWeatherResourceTest extends AbstractResourceTest {
     collectKeys(node, "$", keys);
     List<String> leaks =
         keys.stream()
-            .filter(
-                k ->
-                    COORDINATE_KEYS.contains(
-                        k.substring(k.lastIndexOf('.') + 1).toLowerCase(Locale.ROOT)))
+            .filter(k ->
+                COORDINATE_KEYS.contains(
+                    k.substring(k.lastIndexOf('.') + 1).toLowerCase(Locale.ROOT)))
             .toList();
     assertTrue(leaks.isEmpty(), what + " leaks coordinates: " + leaks);
   }
@@ -154,13 +150,12 @@ class RideWeatherResourceTest extends AbstractResourceTest {
             team1, user1, "Ride " + slug, slug, dateTime, visibility, Status.PUBLISHED);
     if (withPlace) {
       QuarkusTransaction.requiringNew()
-          .run(
-              () -> {
-                Place place = new Place(user1, team1, "Bellecour " + slug, true, true);
-                place.setGeometry(point(WGS84, g(4.8320, 45.7578)));
-                placeRepository.persist(place);
-                rideRepository.findById(ride.getId()).setStart(place);
-              });
+          .run(() -> {
+            Place place = new Place(user1, team1, "Bellecour " + slug, true, true);
+            place.setGeometry(point(WGS84, g(4.8320, 45.7578)));
+            placeRepository.persist(place);
+            rideRepository.findById(ride.getId()).setStart(place);
+          });
     }
     return ride;
   }
@@ -333,9 +328,8 @@ class RideWeatherResourceTest extends AbstractResourceTest {
             .header("ETag");
 
     QuarkusTransaction.requiringNew()
-        .run(
-            () ->
-                weatherCellRepository.update("nextRefreshAt = ?1", Instant.now().minusSeconds(1)));
+        .run(() ->
+            weatherCellRepository.update("nextRefreshAt = ?1", Instant.now().minusSeconds(1)));
     answerWithTemperature(22);
     worker.fetchDue();
 

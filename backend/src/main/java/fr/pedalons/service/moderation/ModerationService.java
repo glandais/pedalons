@@ -205,37 +205,35 @@ public class ModerationService {
       case COMMENT ->
           commentRepository
               .findByTeamIdAndId(team.getId(), targetId)
-              .ifPresent(
-                  comment -> {
-                    List<Long> removed = new ArrayList<>(commentService.removeComment(comment));
-                    removed.remove(targetId);
-                    // The replies went with it: their own reports are decided too.
-                    reportRepository.resolveOpen(
-                        team.getId(),
-                        ReportTargetType.COMMENT,
-                        removed,
-                        ReportStatus.REMOVED,
-                        moderator,
-                        now);
-                  });
+              .ifPresent(comment -> {
+                List<Long> removed = new ArrayList<>(commentService.removeComment(comment));
+                removed.remove(targetId);
+                // The replies went with it: their own reports are decided too.
+                reportRepository.resolveOpen(
+                    team.getId(),
+                    ReportTargetType.COMMENT,
+                    removed,
+                    ReportStatus.REMOVED,
+                    moderator,
+                    now);
+              });
       case POST, AD, RIDE, TRIP, ROUTE ->
           reportRepository
               .findTeamEntity(team.getId(), targetId)
-              .ifPresent(
-                  entity -> {
-                    entity.setDeleted(true);
-                    if (entity instanceof Route route) {
-                      // Its rides and stages lose its length (docs/LEDGER_*.md API-87).
-                      publicationEndCalculator.refreshUsersOf(route);
-                    }
-                    // Decided: the reports no longer hide it. Should a platform admin undelete it,
-                    // no open report is left to dismiss — it must not stay hidden for good.
-                    entity.setModerationHiddenAt(null);
-                    // Its comments went with it: their open reports are decided too, rather than
-                    // left in the queue pointing at a removed publication.
-                    reportRepository.resolveOpenCommentsOf(
-                        team.getId(), entity.getId(), ReportStatus.REMOVED, moderator, now);
-                  });
+              .ifPresent(entity -> {
+                entity.setDeleted(true);
+                if (entity instanceof Route route) {
+                  // Its rides and stages lose its length (docs/LEDGER_*.md API-87).
+                  publicationEndCalculator.refreshUsersOf(route);
+                }
+                // Decided: the reports no longer hide it. Should a platform admin undelete it,
+                // no open report is left to dismiss — it must not stay hidden for good.
+                entity.setModerationHiddenAt(null);
+                // Its comments went with it: their open reports are decided too, rather than
+                // left in the queue pointing at a removed publication.
+                reportRepository.resolveOpenCommentsOf(
+                    team.getId(), entity.getId(), ReportStatus.REMOVED, moderator, now);
+              });
     }
   }
 
@@ -304,9 +302,8 @@ public class ModerationService {
     }
 
     List<ModerationItemDto> items = new ArrayList<>(byTarget.size());
-    byTarget.forEach(
-        (key, targetReports) ->
-            items.add(toItem(key, targetReports, entities, comments, resolved, withReporters)));
+    byTarget.forEach((key, targetReports) ->
+        items.add(toItem(key, targetReports, entities, comments, resolved, withReporters)));
     return new ModerationQueueResponse(items, items.size());
   }
 

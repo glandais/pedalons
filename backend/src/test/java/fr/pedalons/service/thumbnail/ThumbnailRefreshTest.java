@@ -213,19 +213,18 @@ class ThumbnailRefreshTest extends AbstractResourceTest {
   /** Asset id → file id of the thumbnails the ride and trip rows of team1 have. */
   private Map<Long, Long> thumbnailFiles() {
     return QuarkusTransaction.requiringNew()
-        .call(
-            () ->
-                assetRepository
-                    .list(
-                        "team.id = ?1 and type in ?2",
-                        team1.getId(),
-                        List.of(
-                            AssetType.RIDE_THUMBNAIL_LIGHT,
-                            AssetType.RIDE_THUMBNAIL_DARK,
-                            AssetType.TRIP_THUMBNAIL_LIGHT,
-                            AssetType.TRIP_THUMBNAIL_DARK))
-                    .stream()
-                    .collect(Collectors.toMap(Asset::getId, Asset::getFileId)));
+        .call(() ->
+            assetRepository
+                .list(
+                    "team.id = ?1 and type in ?2",
+                    team1.getId(),
+                    List.of(
+                        AssetType.RIDE_THUMBNAIL_LIGHT,
+                        AssetType.RIDE_THUMBNAIL_DARK,
+                        AssetType.TRIP_THUMBNAIL_LIGHT,
+                        AssetType.TRIP_THUMBNAIL_DARK))
+                .stream()
+                .collect(Collectors.toMap(Asset::getId, Asset::getFileId)));
   }
 
   /**

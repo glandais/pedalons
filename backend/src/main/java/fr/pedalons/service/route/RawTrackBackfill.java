@@ -293,32 +293,29 @@ public class RawTrackBackfill {
    */
   public Outcome write(Candidate candidate, List<LineString<G2D>> lines, Instant now) {
     return QuarkusTransaction.requiringNew()
-        .call(
-            () -> {
-              Route route =
-                  entityManager.find(
-                      Route.class, candidate.routeId(), LockModeType.PESSIMISTIC_WRITE);
-              if (route == null) {
-                return Outcome.GONE;
-              }
-              Long current =
-                  assetRepository.findCurrentFileId(
-                      candidate.routeId(), AssetType.ROUTE_ORIGINAL_GPX);
-              if (current == null || !current.equals(candidate.originalFileId())) {
-                return Outcome.CHANGED;
-              }
-              List<TrackSize> tracks = gpxTrackRepository.findSizes(candidate.routeId());
-              if (tracks.size() != lines.size()) {
-                LOG.warnf(
-                    "Raw line catch-up: route %s has %d track(s), its original %d",
-                    TsidUtils.toString(candidate.routeId()), tracks.size(), lines.size());
-                backfillRepository.skip(candidate.routeId(), Reason.TRACK_COUNT, now);
-                return Outcome.SKIPPED;
-              }
-              for (int i = 0; i < tracks.size(); i++) {
-                gpxTrackRepository.fillRawGeometry(tracks.get(i).trackId(), lines.get(i));
-              }
-              return Outcome.FILLED;
-            });
+        .call(() -> {
+          Route route =
+              entityManager.find(Route.class, candidate.routeId(), LockModeType.PESSIMISTIC_WRITE);
+          if (route == null) {
+            return Outcome.GONE;
+          }
+          Long current =
+              assetRepository.findCurrentFileId(candidate.routeId(), AssetType.ROUTE_ORIGINAL_GPX);
+          if (current == null || !current.equals(candidate.originalFileId())) {
+            return Outcome.CHANGED;
+          }
+          List<TrackSize> tracks = gpxTrackRepository.findSizes(candidate.routeId());
+          if (tracks.size() != lines.size()) {
+            LOG.warnf(
+                "Raw line catch-up: route %s has %d track(s), its original %d",
+                TsidUtils.toString(candidate.routeId()), tracks.size(), lines.size());
+            backfillRepository.skip(candidate.routeId(), Reason.TRACK_COUNT, now);
+            return Outcome.SKIPPED;
+          }
+          for (int i = 0; i < tracks.size(); i++) {
+            gpxTrackRepository.fillRawGeometry(tracks.get(i).trackId(), lines.get(i));
+          }
+          return Outcome.FILLED;
+        });
   }
 }

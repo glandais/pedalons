@@ -140,10 +140,9 @@ public class GpsService {
         .findByUserAndService(userId, serviceType)
         .filter(existing -> existing.oauthVersion() == oauthVersion)
         .filter(existing -> existing.getSyncReconnectRequiredAt() == null)
-        .ifPresent(
-            existing -> {
-              throw new BusinessException(ErrorCode.GPS_SERVICE_ALREADY_CONNECTED);
-            });
+        .ifPresent(existing -> {
+          throw new BusinessException(ErrorCode.GPS_SERVICE_ALREADY_CONNECTED);
+        });
 
     Long domainId = pedalonsContext.getDomainId();
 
@@ -391,25 +390,23 @@ public class GpsService {
     Long domainId = pedalonsContext.getDomainId();
     Long connectionId =
         QuarkusTransaction.requiringNew()
-            .call(
-                () -> {
-                  GpsServiceConnection connection =
-                      connectionRepository
-                          .findByUserAndService(userId, serviceType)
-                          .orElseThrow(
-                              () -> new BusinessException(ErrorCode.GPS_SERVICE_NOT_CONNECTED));
-                  connection.setAutoSync(false);
-                  return connection.getId();
-                });
+            .call(() -> {
+              GpsServiceConnection connection =
+                  connectionRepository
+                      .findByUserAndService(userId, serviceType)
+                      .orElseThrow(
+                          () -> new BusinessException(ErrorCode.GPS_SERVICE_NOT_CONNECTED));
+              connection.setAutoSync(false);
+              return connection.getId();
+            });
 
     routeSyncService.removeAutoSyncedRoutes(domainId, connectionId);
 
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              routeSyncRepository.deleteByConnection(connectionId);
-              connectionRepository.deleteById(connectionId);
-            });
+        .run(() -> {
+          routeSyncRepository.deleteByConnection(connectionId);
+          connectionRepository.deleteById(connectionId);
+        });
     LOG.infof("User %d disconnected from %s", userId, serviceType);
   }
 
@@ -471,19 +468,18 @@ public class GpsService {
     record Resolved(Long routeId, @Nullable Long connectionId) {}
     Resolved resolved =
         QuarkusTransaction.requiringNew()
-            .call(
-                () -> {
-                  Route route = routeService.get(teamSlug, routeSlug);
-                  GpsServiceConnection connection =
-                      connectionRepository
-                          .findByUserAndService(userId, serviceType)
-                          .orElseThrow(
-                              () -> new BusinessException(ErrorCode.GPS_SERVICE_NOT_CONNECTED));
-                  if (dropIfStale(connection, userId, serviceType)) {
-                    return new Resolved(route.getId(), null);
-                  }
-                  return new Resolved(route.getId(), connection.getId());
-                });
+            .call(() -> {
+              Route route = routeService.get(teamSlug, routeSlug);
+              GpsServiceConnection connection =
+                  connectionRepository
+                      .findByUserAndService(userId, serviceType)
+                      .orElseThrow(
+                          () -> new BusinessException(ErrorCode.GPS_SERVICE_NOT_CONNECTED));
+              if (dropIfStale(connection, userId, serviceType)) {
+                return new Resolved(route.getId(), null);
+              }
+              return new Resolved(route.getId(), connection.getId());
+            });
     if (resolved.connectionId() == null) {
       return new RouteUploadResponse(false, "Reconnect " + serviceType.name(), null);
     }

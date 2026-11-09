@@ -297,18 +297,17 @@ public class GpsRouteSyncExecutor {
 
   private @Nullable GpsAuth refreshAfter401(Claim claim, Authorized authorized) {
     try {
-      return tx(
-          () -> {
-            GpsServiceConnection connection = connectionRepository.findById(claim.connectionId());
-            if (connection == null) {
-              return null;
-            }
-            Optional<DomainGpsCredential> credential =
-                credentialService.getCredentials(claim.domainId(), claim.serviceType());
-            return credential.isEmpty()
-                ? null
-                : tokens.forceRefresh(connection, credential.get(), authorized.usedToken());
-          });
+      return tx(() -> {
+        GpsServiceConnection connection = connectionRepository.findById(claim.connectionId());
+        if (connection == null) {
+          return null;
+        }
+        Optional<DomainGpsCredential> credential =
+            credentialService.getCredentials(claim.domainId(), claim.serviceType());
+        return credential.isEmpty()
+            ? null
+            : tokens.forceRefresh(connection, credential.get(), authorized.usedToken());
+      });
     } catch (RuntimeException e) {
       LOG.infof("Route sync %d: token refresh refused (%s)", claim.id(), e.getMessage());
       return null;
@@ -328,15 +327,9 @@ public class GpsRouteSyncExecutor {
           // Nothing to track it by: retrying would only stack copies at the service.
           LOG.errorf(
               "Route sync %d: %s answered no route id; given up", claim.id(), claim.serviceType());
-          tx(
-              () ->
-                  syncRepository.markFailed(
-                      claim.id(),
-                      claim.lease(),
-                      MAX_ATTEMPTS,
-                      null,
-                      GpsSyncError.SERVICE_ERROR,
-                      now));
+          tx(() ->
+              syncRepository.markFailed(
+                  claim.id(), claim.lease(), MAX_ATTEMPTS, null, GpsSyncError.SERVICE_ERROR, now));
           yield new Outcome(false, null, GpsSyncError.SERVICE_ERROR, false, calls);
         }
         String hash = nonNull(ready.hash());
@@ -362,12 +355,10 @@ public class GpsRouteSyncExecutor {
       case GpsCallResult.PermissionRevoked p ->
           reconnect(claim, GpsSyncError.PERMISSION_REVOKED, calls);
       case GpsCallResult.RateLimited rl -> {
-        tx(
-            () -> {
-              connectionRepository.pauseSync(claim.connectionId(), rl.retryAt());
-              return syncRepository.release(
-                  claim.id(), claim.lease(), GpsSyncError.RATE_LIMITED, now);
-            });
+        tx(() -> {
+          connectionRepository.pauseSync(claim.connectionId(), rl.retryAt());
+          return syncRepository.release(claim.id(), claim.lease(), GpsSyncError.RATE_LIMITED, now);
+        });
         LOG.infof(
             "Route sync paused for connection %d until %s (429)",
             claim.connectionId(), rl.retryAt());
@@ -390,11 +381,10 @@ public class GpsRouteSyncExecutor {
 
   private Outcome reconnect(Claim claim, GpsSyncError error, int calls) {
     Instant now = Instant.now();
-    tx(
-        () -> {
-          connectionRepository.markSyncReconnectRequired(claim.connectionId(), now);
-          return syncRepository.release(claim.id(), claim.lease(), error, now);
-        });
+    tx(() -> {
+      connectionRepository.markSyncReconnectRequired(claim.connectionId(), now);
+      return syncRepository.release(claim.id(), claim.lease(), error, now);
+    });
     LOG.infof(
         "Route sync stopped for connection %d: reconnection required (%s)",
         claim.connectionId(), error);

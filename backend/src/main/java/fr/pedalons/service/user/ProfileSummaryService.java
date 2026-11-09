@@ -56,12 +56,11 @@ public class ProfileSummaryService {
 
     List<ProfileTeamDto> teams =
         userTeamRepository.findByUserAndDomainWithTeam(userId, domainId).stream()
-            .map(
-                membership ->
-                    new ProfileTeamDto(
-                        membership.getTeam().getSlug(),
-                        membership.getTeam().getName(),
-                        membership.getRole()))
+            .map(membership ->
+                new ProfileTeamDto(
+                    membership.getTeam().getSlug(),
+                    membership.getTeam().getName(),
+                    membership.getRole()))
             .toList();
 
     return new ProfileSummaryDto(

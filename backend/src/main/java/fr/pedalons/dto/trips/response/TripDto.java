@@ -344,15 +344,9 @@ public class TripDto implements PublicationDto {
 
     List<TripStageDto> stageDtos =
         IntStream.range(0, liveStages.size())
-            .mapToObj(
-                i ->
-                    TripStageDto.from(
-                        liveStages.get(i),
-                        assetService,
-                        tags,
-                        commentCounts,
-                        i + 1,
-                        liveStages.size()))
+            .mapToObj(i ->
+                TripStageDto.from(
+                    liveStages.get(i), assetService, tags, commentCounts, i + 1, liveStages.size()))
             .toList();
     List<PublicUserDto> participantDtos = participants.users();
 

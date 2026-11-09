@@ -45,15 +45,12 @@ class RouteSampleLookupPreviewTest extends AbstractResourceTest {
 
   private void replaceTracks(GpxPreview preview, List<List<TrackPoint>> tracks, long revision) {
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              GpxPreview managed = previewRepository.findById(preview.getId());
-              managed.setTracks(
-                  tracks.stream()
-                      .map(p -> new PreviewTrack("t", p, List.of(), 0f, 0f, 0f))
-                      .toList());
-              managed.setFilesRevision(revision);
-            });
+        .run(() -> {
+          GpxPreview managed = previewRepository.findById(preview.getId());
+          managed.setTracks(
+              tracks.stream().map(p -> new PreviewTrack("t", p, List.of(), 0f, 0f, 0f)).toList());
+          managed.setFilesRevision(revision);
+        });
   }
 
   @Test

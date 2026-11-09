@@ -162,60 +162,57 @@ public final class SnapshotBiketeamSource implements BiketeamSource {
   @Override
   public List<BtPlace> places() {
     return snapshot.placesOrEmpty().stream()
-        .map(
-            p ->
-                new BtPlace(
-                    p.id(),
-                    team.id(),
-                    p.name(),
-                    p.address(),
-                    p.link(),
-                    p.lat(),
-                    p.lng(),
-                    p.startPlace(),
-                    p.endPlace()))
+        .map(p ->
+            new BtPlace(
+                p.id(),
+                team.id(),
+                p.name(),
+                p.address(),
+                p.link(),
+                p.lat(),
+                p.lng(),
+                p.startPlace(),
+                p.endPlace()))
         .toList();
   }
 
   @Override
   public List<BtMap> maps() {
     return snapshot.mapsOrEmpty().stream()
-        .map(
-            m ->
-                new BtMap(
-                    m.id(),
-                    team.id(),
-                    m.name(),
-                    m.permalink(),
-                    m.length(),
-                    m.type(),
-                    m.positiveElevation(),
-                    m.negativeElevation(),
-                    m.postedAt(),
-                    m.startPoint() == null ? null : m.startPoint().lat(),
-                    m.startPoint() == null ? null : m.startPoint().lng(),
-                    m.endPoint() == null ? null : m.endPoint().lat(),
-                    m.endPoint() == null ? null : m.endPoint().lng(),
-                    m.windDirection(),
-                    m.deleted(),
-                    m.tags() == null ? List.of() : m.tags()))
+        .map(m ->
+            new BtMap(
+                m.id(),
+                team.id(),
+                m.name(),
+                m.permalink(),
+                m.length(),
+                m.type(),
+                m.positiveElevation(),
+                m.negativeElevation(),
+                m.postedAt(),
+                m.startPoint() == null ? null : m.startPoint().lat(),
+                m.startPoint() == null ? null : m.startPoint().lng(),
+                m.endPoint() == null ? null : m.endPoint().lat(),
+                m.endPoint() == null ? null : m.endPoint().lng(),
+                m.windDirection(),
+                m.deleted(),
+                m.tags() == null ? List.of() : m.tags()))
         .toList();
   }
 
   @Override
   public List<BtRideTemplate> rideTemplates() {
     return snapshot.rideTemplatesOrEmpty().stream()
-        .map(
-            t ->
-                new BtRideTemplate(
-                    t.id(),
-                    team.id(),
-                    t.name(),
-                    t.description(),
-                    t.type(),
-                    t.increment(),
-                    t.startPlaceId(),
-                    t.endPlaceId()))
+        .map(t ->
+            new BtRideTemplate(
+                t.id(),
+                team.id(),
+                t.name(),
+                t.description(),
+                t.type(),
+                t.increment(),
+                t.startPlaceId(),
+                t.endPlaceId()))
         .toList();
   }
 
@@ -234,39 +231,37 @@ public final class SnapshotBiketeamSource implements BiketeamSource {
   @Override
   public List<BtPublication> publications() {
     return snapshot.publicationsOrEmpty().stream()
-        .map(
-            p ->
-                new BtPublication(
-                    p.id(),
-                    team.id(),
-                    p.publishedStatus(),
-                    p.title(),
-                    p.publishedAt(),
-                    p.content(),
-                    p.image() != null,
-                    p.deleted()))
+        .map(p ->
+            new BtPublication(
+                p.id(),
+                team.id(),
+                p.publishedStatus(),
+                p.title(),
+                p.publishedAt(),
+                p.content(),
+                p.image() != null,
+                p.deleted()))
         .toList();
   }
 
   @Override
   public List<BtRide> rides() {
     return snapshot.ridesOrEmpty().stream()
-        .map(
-            r ->
-                new BtRide(
-                    r.id(),
-                    team.id(),
-                    r.permalink(),
-                    r.date(),
-                    r.title(),
-                    r.description(),
-                    r.type(),
-                    r.publishedStatus(),
-                    r.publishedAt(),
-                    r.startPlaceId(),
-                    r.endPlaceId(),
-                    r.listedInFeed(),
-                    r.deleted()))
+        .map(r ->
+            new BtRide(
+                r.id(),
+                team.id(),
+                r.permalink(),
+                r.date(),
+                r.title(),
+                r.description(),
+                r.type(),
+                r.publishedStatus(),
+                r.publishedAt(),
+                r.startPlaceId(),
+                r.endPlaceId(),
+                r.listedInFeed(),
+                r.deleted()))
         .toList();
   }
 
@@ -286,25 +281,24 @@ public final class SnapshotBiketeamSource implements BiketeamSource {
   @Override
   public List<BtTrip> trips() {
     return snapshot.tripsOrEmpty().stream()
-        .map(
-            t ->
-                new BtTrip(
-                    t.id(),
-                    team.id(),
-                    t.permalink(),
-                    t.startDate(),
-                    t.endDate(),
-                    t.meetingTime(),
-                    t.type(),
-                    t.publishedStatus(),
-                    t.publishedAt(),
-                    t.title(),
-                    t.description(),
-                    t.startPlaceId(),
-                    t.endPlaceId(),
-                    t.markdownPage(),
-                    t.listedInFeed(),
-                    t.deleted()))
+        .map(t ->
+            new BtTrip(
+                t.id(),
+                team.id(),
+                t.permalink(),
+                t.startDate(),
+                t.endDate(),
+                t.meetingTime(),
+                t.type(),
+                t.publishedStatus(),
+                t.publishedAt(),
+                t.title(),
+                t.description(),
+                t.startPlaceId(),
+                t.endPlaceId(),
+                t.markdownPage(),
+                t.listedInFeed(),
+                t.deleted()))
         .toList();
   }
 

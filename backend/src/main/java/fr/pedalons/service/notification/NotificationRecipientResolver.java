@@ -193,13 +193,12 @@ public class NotificationRecipientResolver {
               .map(trip -> toTeam(trip, NotificationSubjectType.TRIP));
       case TripCancelled e ->
           live(tripRepository.findById(e.tripId()), Status.CANCELLED, now)
-              .map(
-                  trip ->
-                      Resolution.of(
-                          trip,
-                          NotificationSubjectType.TRIP,
-                          null,
-                          tripParticipationRepository.findRegisteredMemberUsers(trip.getId())));
+              .map(trip ->
+                  Resolution.of(
+                      trip,
+                      NotificationSubjectType.TRIP,
+                      null,
+                      tripParticipationRepository.findRegisteredMemberUsers(trip.getId())));
       // A post has no date to have passed: its dateTime is when it was published.
       case PostPublished e ->
           Optional.ofNullable(postRepository.findById(e.postId()))
@@ -297,12 +296,11 @@ public class NotificationRecipientResolver {
         previousGroupStarts == null
             ? (rideMoved ? registered : List.of())
             : registered.stream()
-                .filter(
-                    rider -> {
-                      // A group created since was joined at its current time: nothing moved.
-                      Instant previous = previousGroupStarts.get(rider.groupId());
-                      return previous != null && !previous.equals(rider.startAt());
-                    })
+                .filter(rider -> {
+                  // A group created since was joined at its current time: nothing moved.
+                  Instant previous = previousGroupStarts.get(rider.groupId());
+                  return previous != null && !previous.equals(rider.startAt());
+                })
                 .toList();
     List<NotificationChange> changes = new ArrayList<>();
     if (rideMoved || !retimed.isEmpty()) {
@@ -368,21 +366,20 @@ public class NotificationRecipientResolver {
     }
     RideGroup group = participation.getRideGroup();
     return live(group.getRide(), Status.PUBLISHED, now)
-        .map(
-            ride -> {
-              List<User> organisers = new ArrayList<>();
-              organisers.add(ride.getCreatedBy());
-              if (group.getLeader() != null) {
-                organisers.add(group.getLeader());
-              }
-              // Who organises that group hears when it leaves (docs/LEDGER_*.md NOTIF-13).
-              return Resolution.of(
-                      ride,
-                      NotificationSubjectType.RIDE,
-                      excerpt(group.getName()),
-                      stillMembers(organisers, ride.getTeam()))
-                  .withSubjectDateTime(group.getStartAt());
-            });
+        .map(ride -> {
+          List<User> organisers = new ArrayList<>();
+          organisers.add(ride.getCreatedBy());
+          if (group.getLeader() != null) {
+            organisers.add(group.getLeader());
+          }
+          // Who organises that group hears when it leaves (docs/LEDGER_*.md NOTIF-13).
+          return Resolution.of(
+                  ride,
+                  NotificationSubjectType.RIDE,
+                  excerpt(group.getName()),
+                  stillMembers(organisers, ride.getTeam()))
+              .withSubjectDateTime(group.getStartAt());
+        });
   }
 
   /**

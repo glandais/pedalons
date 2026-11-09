@@ -90,12 +90,8 @@ class AccountErasureServiceTest extends AbstractBaseTest {
 
   private long count(String hql, Object param) {
     return QuarkusTransaction.requiringNew()
-        .call(
-            () ->
-                em.createQuery(hql, Long.class)
-                    .setParameter("p", param)
-                    .getSingleResult()
-                    .longValue());
+        .call(() ->
+            em.createQuery(hql, Long.class).setParameter("p", param).getSingleResult().longValue());
   }
 
   private boolean commentExists(Comment comment) {

@@ -137,18 +137,15 @@ class GpxPreviewPlannerStateResourceTest extends AbstractResourceTest {
   private List<Integer> rawLinePoints(String id) {
     List<String> lines =
         QuarkusTransaction.requiringNew()
-            .call(
-                () ->
-                    gpxPreviewRepository
-                        .findByPublicId(domain.getId(), UUID.fromString(id))
-                        .orElseThrow()
-                        .readableRawLines());
+            .call(() ->
+                gpxPreviewRepository
+                    .findByPublicId(domain.getId(), UUID.fromString(id))
+                    .orElseThrow()
+                    .readableRawLines());
     org.junit.jupiter.api.Assertions.assertNotNull(lines);
     return lines.stream()
-        .map(
-            l ->
-                fr.pedalons.service.route.planner.PolylineCodec.decode2(l, Integer.MAX_VALUE)
-                    .length)
+        .map(l ->
+            fr.pedalons.service.route.planner.PolylineCodec.decode2(l, Integer.MAX_VALUE).length)
         .toList();
   }
 
@@ -394,15 +391,13 @@ class GpxPreviewPlannerStateResourceTest extends AbstractResourceTest {
   void promotionOfAStalePreviewState_carriesNothing() {
     String id = createWithState(example());
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              GpxPreview preview =
-                  em.createQuery(
-                          "select p from GpxPreview p where p.publicId = :id", GpxPreview.class)
-                      .setParameter("id", UUID.fromString(id))
-                      .getSingleResult();
-              preview.setPlannerState(new PlannerStateDocument(1L, example()));
-            });
+        .run(() -> {
+          GpxPreview preview =
+              em.createQuery("select p from GpxPreview p where p.publicId = :id", GpxPreview.class)
+                  .setParameter("id", UUID.fromString(id))
+                  .getSingleResult();
+          preview.setPlannerState(new PlannerStateDocument(1L, example()));
+        });
 
     String slug = promote(id, USER1).statusCode(201).extract().path("slug");
 

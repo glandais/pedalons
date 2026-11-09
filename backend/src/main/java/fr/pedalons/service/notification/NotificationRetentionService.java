@@ -39,18 +39,17 @@ public class NotificationRetentionService {
     while (true) {
       int deleted =
           QuarkusTransaction.requiringNew()
-              .call(
-                  () -> {
-                    List<Long> ids = eventRepository.findIdsCreatedBefore(cutoff, SLICE);
-                    if (ids.isEmpty()) {
-                      return 0;
-                    }
-                    deliveryRepository.deleteByEventIds(ids);
-                    webhookDeliveryRepository.deleteByEventIds(ids);
-                    notificationRepository.deleteByEventIds(ids);
-                    eventRepository.delete("id in ?1", ids);
-                    return ids.size();
-                  });
+              .call(() -> {
+                List<Long> ids = eventRepository.findIdsCreatedBefore(cutoff, SLICE);
+                if (ids.isEmpty()) {
+                  return 0;
+                }
+                deliveryRepository.deleteByEventIds(ids);
+                webhookDeliveryRepository.deleteByEventIds(ids);
+                notificationRepository.deleteByEventIds(ids);
+                eventRepository.delete("id in ?1", ids);
+                return ids.size();
+              });
       total += deleted;
       if (deleted < SLICE) {
         return total;

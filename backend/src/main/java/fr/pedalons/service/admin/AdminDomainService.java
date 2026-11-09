@@ -40,14 +40,13 @@ public class AdminDomainService {
 
     List<AdminDomainDto> items =
         domains.stream()
-            .map(
-                domain -> {
-                  long teamCount =
-                      teamRepository.count("domain.id = ?1 and deleted = false", domain.getId());
-                  long userCount =
-                      userRepository.count("domain.id = ?1 and deleted = false", domain.getId());
-                  return AdminDomainDto.from(domain, teamCount, userCount);
-                })
+            .map(domain -> {
+              long teamCount =
+                  teamRepository.count("domain.id = ?1 and deleted = false", domain.getId());
+              long userCount =
+                  userRepository.count("domain.id = ?1 and deleted = false", domain.getId());
+              return AdminDomainDto.from(domain, teamCount, userCount);
+            })
             .toList();
 
     return new PedalonsPage<>(items, total);

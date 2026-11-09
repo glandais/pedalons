@@ -125,39 +125,33 @@ class AdminElevationRefreshResourceTest extends AbstractResourceTest {
   private Route abandonedRoute(Team team, String name, Instant firstRequestedAt) {
     Route route = dataService.createRoute(team, user1, name);
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              refreshRepository.requestForRoute(
-                  route.getId(), 1L, Instant.now(), Duration.ofSeconds(90), Duration.ofMinutes(10));
-              refreshRepository.update(
-                  "attempts = ?1, lastError = 'boom', firstRequestedAt = ?2 where route.id = ?3",
-                  ElevationRefreshService.MAX_ATTEMPTS,
-                  firstRequestedAt,
-                  route.getId());
-              routeRepository.update(
-                  "elevationState = ?1 where id = ?2", ElevationState.FAST, route.getId());
-            });
+        .run(() -> {
+          refreshRepository.requestForRoute(
+              route.getId(), 1L, Instant.now(), Duration.ofSeconds(90), Duration.ofMinutes(10));
+          refreshRepository.update(
+              "attempts = ?1, lastError = 'boom', firstRequestedAt = ?2 where route.id = ?3",
+              ElevationRefreshService.MAX_ATTEMPTS,
+              firstRequestedAt,
+              route.getId());
+          routeRepository.update(
+              "elevationState = ?1 where id = ?2", ElevationState.FAST, route.getId());
+        });
     return route;
   }
 
   private GpxPreview abandonedPreview() {
     GpxPreview preview = dataService.createGpxPreview(domain, user1, UUID.randomUUID());
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              refreshRepository.requestForPreview(
-                  preview.getId(),
-                  1L,
-                  Instant.now(),
-                  Duration.ofSeconds(90),
-                  Duration.ofMinutes(10));
-              refreshRepository.update(
-                  "attempts = ?1, lastError = 'boom' where preview.id = ?2",
-                  ElevationRefreshService.MAX_ATTEMPTS,
-                  preview.getId());
-              previewRepository.update(
-                  "elevationState = ?1 where id = ?2", ElevationState.FAST, preview.getId());
-            });
+        .run(() -> {
+          refreshRepository.requestForPreview(
+              preview.getId(), 1L, Instant.now(), Duration.ofSeconds(90), Duration.ofMinutes(10));
+          refreshRepository.update(
+              "attempts = ?1, lastError = 'boom' where preview.id = ?2",
+              ElevationRefreshService.MAX_ATTEMPTS,
+              preview.getId());
+          previewRepository.update(
+              "elevationState = ?1 where id = ?2", ElevationState.FAST, preview.getId());
+        });
     return preview;
   }
 
@@ -192,14 +186,9 @@ class AdminElevationRefreshResourceTest extends AbstractResourceTest {
     // Not abandoned: still has attempts left
     Route fresh = dataService.createRoute(team1, user1, "En cours");
     QuarkusTransaction.requiringNew()
-        .run(
-            () ->
-                refreshRepository.requestForRoute(
-                    fresh.getId(),
-                    1L,
-                    Instant.now(),
-                    Duration.ofSeconds(90),
-                    Duration.ofMinutes(10)));
+        .run(() ->
+            refreshRepository.requestForRoute(
+                fresh.getId(), 1L, Instant.now(), Duration.ofSeconds(90), Duration.ofMinutes(10)));
     String id = TsidUtils.toString(route.getId());
 
     retry("", true, null, null)
@@ -227,12 +216,11 @@ class AdminElevationRefreshResourceTest extends AbstractResourceTest {
   void retry_seesAnAbandonedBackfillRow_andBringsItBack_stateUntouched() {
     Route route = abandonedRoute(team1, "Rattrapage", Instant.now().minusSeconds(3600));
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              refreshRepository.update("backfill = true where route.id = ?1", route.getId());
-              routeRepository.update(
-                  "elevationState = ?1 where id = ?2", ElevationState.HD, route.getId());
-            });
+        .run(() -> {
+          refreshRepository.update("backfill = true where route.id = ?1", route.getId());
+          routeRepository.update(
+              "elevationState = ?1 where id = ?2", ElevationState.HD, route.getId());
+        });
 
     retry("", true, null, null).body("matched", equalTo(1));
     retry("", false, null, null)
@@ -251,10 +239,9 @@ class AdminElevationRefreshResourceTest extends AbstractResourceTest {
   void retry_ignoresANormalRow_onAnHdRoute() {
     Route route = abandonedRoute(team1, "Déjà HD", Instant.now().minusSeconds(3600));
     QuarkusTransaction.requiringNew()
-        .run(
-            () ->
-                routeRepository.update(
-                    "elevationState = ?1 where id = ?2", ElevationState.HD, route.getId()));
+        .run(() ->
+            routeRepository.update(
+                "elevationState = ?1 where id = ?2", ElevationState.HD, route.getId()));
 
     retry("", true, null, null).body("matched", equalTo(0));
   }
@@ -286,10 +273,9 @@ class AdminElevationRefreshResourceTest extends AbstractResourceTest {
   void retry_leavesAnHdTargetAlone_evenWithAnAbandonedRowBesideIt() {
     Route route = abandonedRoute(team1, "Déjà HD", Instant.now().minusSeconds(3600));
     QuarkusTransaction.requiringNew()
-        .run(
-            () ->
-                routeRepository.update(
-                    "elevationState = ?1 where id = ?2", ElevationState.HD, route.getId()));
+        .run(() ->
+            routeRepository.update(
+                "elevationState = ?1 where id = ?2", ElevationState.HD, route.getId()));
 
     retry("", false, null, null).body("matched", equalTo(0)).body("items", empty());
 
@@ -403,23 +389,21 @@ class AdminElevationRefreshResourceTest extends AbstractResourceTest {
     Long id = TsidUtils.toLong(created.id());
     // The worker gave up on it
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              refreshRepository.update(
-                  "attempts = ?1, lastError = 'boom' where route.id = ?2",
-                  ElevationRefreshService.MAX_ATTEMPTS,
-                  id);
-              routeRepository.update("elevationState = ?1 where id = ?2", ElevationState.FAST, id);
-            });
+        .run(() -> {
+          refreshRepository.update(
+              "attempts = ?1, lastError = 'boom' where route.id = ?2",
+              ElevationRefreshService.MAX_ATTEMPTS,
+              id);
+          routeRepository.update("elevationState = ?1 where id = ?2", ElevationState.FAST, id);
+        });
     assertEquals(0, worker.processDue(), "an abandoned request is not taken");
 
     retry("", false, null, null).body("matched", equalTo(1));
 
     QuarkusTransaction.requiringNew()
-        .run(
-            () ->
-                refreshRepository.update(
-                    "dueAt = ?1 where route.id = ?2", Instant.now().minusSeconds(1), id));
+        .run(() ->
+            refreshRepository.update(
+                "dueAt = ?1 where route.id = ?2", Instant.now().minusSeconds(1), id));
     assertEquals(1, worker.processDue());
 
     assertEquals(

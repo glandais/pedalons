@@ -129,12 +129,11 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
 
   private void makeDue(GpxPreview preview) {
     QuarkusTransaction.requiringNew()
-        .run(
-            () ->
-                refreshRepository.update(
-                    "dueAt = ?1 where preview.id = ?2",
-                    Instant.now().minusSeconds(1),
-                    preview.getId()));
+        .run(() ->
+            refreshRepository.update(
+                "dueAt = ?1 where preview.id = ?2",
+                Instant.now().minusSeconds(1),
+                preview.getId()));
   }
 
   /** The keys of the three track files, in whatever layout, thumbnail left out. */
@@ -295,28 +294,24 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
     Duration quiet = Duration.ofSeconds(90);
     Duration maxWait = Duration.ofMinutes(10);
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              refreshRepository.delete("preview.id", previewId);
-              refreshRepository.requestForPreview(previewId, 1L, t0, quiet, maxWait);
-            });
+        .run(() -> {
+          refreshRepository.delete("preview.id", previewId);
+          refreshRepository.requestForPreview(previewId, 1L, t0, quiet, maxWait);
+        });
     assertEquals(t0.plus(quiet), refresh(created).getDueAt());
 
     QuarkusTransaction.requiringNew()
-        .run(
-            () ->
-                refreshRepository.requestForPreview(
-                    previewId, 2L, t0.plusSeconds(60), quiet, maxWait));
+        .run(() ->
+            refreshRepository.requestForPreview(previewId, 2L, t0.plusSeconds(60), quiet, maxWait));
     ElevationRefresh second = refresh(created);
     assertEquals(t0.plusSeconds(150), second.getDueAt());
     assertEquals(2L, second.getSourceRevision());
     assertEquals(t0, second.getFirstRequestedAt());
 
     QuarkusTransaction.requiringNew()
-        .run(
-            () ->
-                refreshRepository.requestForPreview(
-                    previewId, 3L, t0.plus(Duration.ofMinutes(9)), quiet, maxWait));
+        .run(() ->
+            refreshRepository.requestForPreview(
+                previewId, 3L, t0.plus(Duration.ofMinutes(9)), quiet, maxWait));
     assertEquals(t0.plus(maxWait), refresh(created).getDueAt());
   }
 

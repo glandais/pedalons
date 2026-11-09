@@ -709,39 +709,38 @@ public class BiketeamMigrationService {
       r.progress().beforeItem();
       try {
         QuarkusTransaction.requiringNew()
-            .run(
-                () -> {
-                  PlaceRequest req =
-                      new PlaceRequest(
-                          bt.name(),
-                          truncate(bt.address(), 200),
-                          null,
-                          bt.startPlace(),
-                          bt.endPlace(),
-                          toPoint(bt.pointLat(), bt.pointLng()));
-                  Long mapped = mapRepo.findTriblyId(T_PLACE, bt.id());
-                  Place place = null;
-                  if (mapped != null) {
-                    place = placeRepository.findByIdAndTeam(mapped, team.getId()).orElse(null);
-                  }
-                  if (place != null) {
-                    place.setName(req.name());
-                    place.setAddress(req.address());
-                    place.setLink(req.link());
-                    place.setStartPlace(req.startPlace());
-                    place.setEndPlace(req.endPlace());
-                    place.setGeometry(req.geometry());
-                    placeRepository.persist(place);
-                  } else {
-                    PlaceDetailDto created = placeService.createPlace(team.getSlug(), req);
-                    place =
-                        placeRepository
-                            .findByIdAndTeam(TsidUtils.toLong(created.id()), team.getId())
-                            .orElseThrow();
-                  }
-                  map(r, T_PLACE, bt.id(), place.getId());
-                  ids.put(bt.id(), place.getId());
-                });
+            .run(() -> {
+              PlaceRequest req =
+                  new PlaceRequest(
+                      bt.name(),
+                      truncate(bt.address(), 200),
+                      null,
+                      bt.startPlace(),
+                      bt.endPlace(),
+                      toPoint(bt.pointLat(), bt.pointLng()));
+              Long mapped = mapRepo.findTriblyId(T_PLACE, bt.id());
+              Place place = null;
+              if (mapped != null) {
+                place = placeRepository.findByIdAndTeam(mapped, team.getId()).orElse(null);
+              }
+              if (place != null) {
+                place.setName(req.name());
+                place.setAddress(req.address());
+                place.setLink(req.link());
+                place.setStartPlace(req.startPlace());
+                place.setEndPlace(req.endPlace());
+                place.setGeometry(req.geometry());
+                placeRepository.persist(place);
+              } else {
+                PlaceDetailDto created = placeService.createPlace(team.getSlug(), req);
+                place =
+                    placeRepository
+                        .findByIdAndTeam(TsidUtils.toLong(created.id()), team.getId())
+                        .orElseThrow();
+              }
+              map(r, T_PLACE, bt.id(), place.getId());
+              ids.put(bt.id(), place.getId());
+            });
         r.progress().count(Counter.PLACES, Outcome.MIGRATED);
       } catch (Exception e) {
         LOG.warnf(e, "Failed to migrate place biketeam.id=%s", bt.id());
@@ -799,14 +798,13 @@ public class BiketeamMigrationService {
     boolean upToDate =
         fingerprint != null
             && QuarkusTransaction.requiringNew()
-                .call(
-                    () -> {
-                      Long mapped = mapRepo.findTriblyId(T_ROUTE, bt.id());
-                      return mapped != null
-                          && owned(routeRepository.findByIdOptional(mapped).orElse(null), r.team())
-                              != null
-                          && fingerprint.equals(mapRepo.findFingerprint(T_ROUTE, bt.id()));
-                    });
+                .call(() -> {
+                  Long mapped = mapRepo.findTriblyId(T_ROUTE, bt.id());
+                  return mapped != null
+                      && owned(routeRepository.findByIdOptional(mapped).orElse(null), r.team())
+                          != null
+                      && fingerprint.equals(mapRepo.findFingerprint(T_ROUTE, bt.id()));
+                });
     return upToDate ? Fetched.NONE : Fetched.of(gpxFile);
   }
 
@@ -903,11 +901,8 @@ public class BiketeamMigrationService {
     Map<String, List<BtRideGroupTemplate>> groupsByTemplate = new HashMap<>();
     r.source()
         .rideGroupTemplates()
-        .forEach(
-            g ->
-                groupsByTemplate
-                    .computeIfAbsent(g.rideTemplateId(), k -> new ArrayList<>())
-                    .add(g));
+        .forEach(g ->
+            groupsByTemplate.computeIfAbsent(g.rideTemplateId(), k -> new ArrayList<>()).add(g));
 
     for (BtRideTemplate tpl : templates) {
       r.progress().beforeItem();
@@ -1098,15 +1093,14 @@ public class BiketeamMigrationService {
     // createdBy (the ride's creator, identical across all its groups).
     List<GroupRequest> groupRequests =
         groups.stream()
-            .map(
-                g ->
-                    GroupRequest.builder()
-                        .id(existingGroupId(g.id(), liveGroupIds))
-                        .name(g.name())
-                        .time(g.meetingTime())
-                        .averageSpeed(toFloat(g.averageSpeed()))
-                        .routeSlug(routeSlugFromBiketeamId(team, routeIds, g.mapId()))
-                        .build())
+            .map(g ->
+                GroupRequest.builder()
+                    .id(existingGroupId(g.id(), liveGroupIds))
+                    .name(g.name())
+                    .time(g.meetingTime())
+                    .averageSpeed(toFloat(g.averageSpeed()))
+                    .routeSlug(routeSlugFromBiketeamId(team, routeIds, g.mapId()))
+                    .build())
             .toList();
     RideRequest req =
         new RideRequest(
@@ -1398,11 +1392,10 @@ public class BiketeamMigrationService {
     String key = imageKey(kind, biketeamEntityId);
     boolean reusable =
         QuarkusTransaction.requiringNew()
-            .call(
-                () -> {
-                  Long entityId = mapRepo.findTriblyId(entityType(kind), biketeamEntityId);
-                  return entityId != null && reusableImage(r, key, entityId) != null;
-                });
+            .call(() -> {
+              Long entityId = mapRepo.findTriblyId(entityType(kind), biketeamEntityId);
+              return entityId != null && reusableImage(r, key, entityId) != null;
+            });
     return reusable ? Fetched.NONE : Fetched.of(image);
   }
 

@@ -62,14 +62,13 @@ public class TeamWebhookDeliveryService {
     Instant now = Instant.now();
     List<Long> ids =
         QuarkusTransaction.requiringNew()
-            .call(
-                () -> {
-                  List<Long> due = deliveryRepository.lockDue(now, batchSize);
-                  if (!due.isEmpty()) {
-                    deliveryRepository.markSending(due, now);
-                  }
-                  return due;
-                });
+            .call(() -> {
+              List<Long> due = deliveryRepository.lockDue(now, batchSize);
+              if (!due.isEmpty()) {
+                deliveryRepository.markSending(due, now);
+              }
+              return due;
+            });
     if (ids.isEmpty()) {
       return 0;
     }
@@ -134,35 +133,33 @@ public class TeamWebhookDeliveryService {
 
   void mark(long deliveryId, Outcome outcome) {
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              TeamWebhookDelivery delivery = deliveryRepository.findById(deliveryId);
-              if (delivery == null) {
-                return;
-              }
-              Instant now = Instant.now();
-              NotificationDeliveryStatus status;
-              if (outcome.success()) {
-                status = NotificationDeliveryStatus.SENT;
-                delivery.setSentAt(now);
-                delivery.setErrorMessage(null);
-              } else if (outcome.retry() && delivery.getAttempts() < maxAttempts) {
-                status = NotificationDeliveryStatus.PENDING;
-                delivery.setNextAttemptAt(
-                    now.plus(
-                        NotificationDispatchService.backoff(
-                            backoffSeconds, delivery.getAttempts())));
-                delivery.setErrorMessage(outcome.error());
-              } else {
-                status = NotificationDeliveryStatus.FAILED;
-                delivery.setErrorMessage(outcome.error());
-              }
-              delivery.setStatus(status);
-              TeamWebhook webhook = delivery.getWebhook();
-              webhook.setLastStatus(status);
-              webhook.setLastError(outcome.error());
-              webhook.setLastAttemptAt(now);
-            });
+        .run(() -> {
+          TeamWebhookDelivery delivery = deliveryRepository.findById(deliveryId);
+          if (delivery == null) {
+            return;
+          }
+          Instant now = Instant.now();
+          NotificationDeliveryStatus status;
+          if (outcome.success()) {
+            status = NotificationDeliveryStatus.SENT;
+            delivery.setSentAt(now);
+            delivery.setErrorMessage(null);
+          } else if (outcome.retry() && delivery.getAttempts() < maxAttempts) {
+            status = NotificationDeliveryStatus.PENDING;
+            delivery.setNextAttemptAt(
+                now.plus(
+                    NotificationDispatchService.backoff(backoffSeconds, delivery.getAttempts())));
+            delivery.setErrorMessage(outcome.error());
+          } else {
+            status = NotificationDeliveryStatus.FAILED;
+            delivery.setErrorMessage(outcome.error());
+          }
+          delivery.setStatus(status);
+          TeamWebhook webhook = delivery.getWebhook();
+          webhook.setLastStatus(status);
+          webhook.setLastError(outcome.error());
+          webhook.setLastAttemptAt(now);
+        });
   }
 
   @Transactional

@@ -101,16 +101,15 @@ public class GpxImportService {
    */
   private static List<WaypointDto> waypointsOf(GpxDocument sanitized) {
     return WaypointDrafts.fromDocument(sanitized).stream()
-        .map(
-            d ->
-                new WaypointDto(
-                    point(WGS84, g(d.lng(), d.lat())),
-                    d.name(),
-                    null,
-                    d.type(),
-                    null,
-                    null,
-                    WaypointOrigin.IMPORTED))
+        .map(d ->
+            new WaypointDto(
+                point(WGS84, g(d.lng(), d.lat())),
+                d.name(),
+                null,
+                d.type(),
+                null,
+                null,
+                WaypointOrigin.IMPORTED))
         .toList();
   }
 

@@ -687,21 +687,20 @@ public class PublicationService {
         thumbnailLookup.forTrips(itemsOfType(publications.items(), Trip.class));
     List<PublicationDto> dtos =
         publications.items().stream()
-            .map(
-                publication ->
-                    PublicationDto.from(
-                        publication,
-                        assetService,
-                        summaries,
-                        participations,
-                        commentCounts,
-                        postAuthors,
-                        tags,
-                        rideWeather,
-                        tripWeather,
-                        rideThumbnails,
-                        tripThumbnails,
-                        view))
+            .map(publication ->
+                PublicationDto.from(
+                    publication,
+                    assetService,
+                    summaries,
+                    participations,
+                    commentCounts,
+                    postAuthors,
+                    tags,
+                    rideWeather,
+                    tripWeather,
+                    rideThumbnails,
+                    tripThumbnails,
+                    view))
             .toList();
     return new PublicationListResponse(dtos, publications.total(), query.page(), query.size());
   }

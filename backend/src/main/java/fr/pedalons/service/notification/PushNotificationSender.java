@@ -50,11 +50,10 @@ public class PushNotificationSender implements NotificationChannelSender {
   public void send(NotificationMessage message) throws Exception {
     List<Target> targets =
         QuarkusTransaction.requiringNew()
-            .call(
-                () ->
-                    deviceRepository.findByUser(message.recipientUserId()).stream()
-                        .map(PushNotificationSender::target)
-                        .toList());
+            .call(() ->
+                deviceRepository.findByUser(message.recipientUserId()).stream()
+                    .map(PushNotificationSender::target)
+                    .toList());
     if (targets.isEmpty()) {
       // Not a failure: the member simply has no device registered, which is the normal state for
       // everyone on the web. Throwing here would retry until the delivery gave up as FAILED.

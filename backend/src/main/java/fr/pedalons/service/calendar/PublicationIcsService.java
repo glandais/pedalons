@@ -79,21 +79,20 @@ public class PublicationIcsService {
     Map<Long, Instant> ends = publicationEndCalculator.effectiveEnds(stageIds);
     List<CalendarEventDto> events =
         trip.getStages().stream()
-            .map(
-                stage ->
-                    event(
-                        trip.getTeam(),
-                        stage.id(),
-                        stage.name(),
-                        stage.dateTime(),
-                        ends.get(TsidUtils.toLong(stage.id())),
-                        true,
-                        CalendarEventType.TRIP_STAGE,
-                        stage.slug(),
-                        trip.getSlug(),
-                        stage.startPlace() != null ? stage.startPlace().name() : null,
-                        trip.getStatus(),
-                        stage.timezone()))
+            .map(stage ->
+                event(
+                    trip.getTeam(),
+                    stage.id(),
+                    stage.name(),
+                    stage.dateTime(),
+                    ends.get(TsidUtils.toLong(stage.id())),
+                    true,
+                    CalendarEventType.TRIP_STAGE,
+                    stage.slug(),
+                    trip.getSlug(),
+                    stage.startPlace() != null ? stage.startPlace().name() : null,
+                    trip.getStatus(),
+                    stage.timezone()))
             .toList();
     // Each stage's days are counted in its own zone, carried by the event; the calendar reads in
     // the trip's (docs/LEDGER_*.md API-60).

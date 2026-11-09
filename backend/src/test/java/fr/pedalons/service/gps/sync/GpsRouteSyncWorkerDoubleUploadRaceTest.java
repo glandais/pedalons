@@ -77,15 +77,14 @@ class GpsRouteSyncWorkerDoubleUploadRaceTest extends AbstractResourceTest {
 
     when(routeGpx.read(any())).thenReturn("<gpx/>".getBytes());
     when(hammerhead.createRoute(any(), any(), any()))
-        .thenAnswer(
-            i -> {
-              int n = calls.incrementAndGet();
-              if (n == 1) {
-                firstCallEntered.countDown();
-                releaseFirstCall.await(30, TimeUnit.SECONDS);
-              }
-              return new GpsCallResult.Ok("ext-" + n);
-            });
+        .thenAnswer(i -> {
+          int n = calls.incrementAndGet();
+          if (n == 1) {
+            firstCallEntered.countDown();
+            releaseFirstCall.await(30, TimeUnit.SECONDS);
+          }
+          return new GpsCallResult.Ok("ext-" + n);
+        });
   }
 
   @AfterEach

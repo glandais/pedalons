@@ -53,15 +53,14 @@ public class MapStyleService {
    */
   public List<MapStyleDto> styles(String baseUrl) {
     return mapConfig.styles().stream()
-        .map(
-            style ->
-                new MapStyleDto(
-                    style.id(),
-                    style.label(),
-                    style.group(),
-                    style.url().orElseGet(() -> generatedStyleUrl(baseUrl, style.id())),
-                    style.darkVariant().filter(url -> !url.isBlank()).orElse(null),
-                    style.attribution().filter(text -> !text.isBlank()).orElse(null)))
+        .map(style ->
+            new MapStyleDto(
+                style.id(),
+                style.label(),
+                style.group(),
+                style.url().orElseGet(() -> generatedStyleUrl(baseUrl, style.id())),
+                style.darkVariant().filter(url -> !url.isBlank()).orElse(null),
+                style.attribution().filter(text -> !text.isBlank()).orElse(null)))
         .toList();
   }
 

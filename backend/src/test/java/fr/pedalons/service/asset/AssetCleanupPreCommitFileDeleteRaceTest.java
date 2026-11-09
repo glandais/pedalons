@@ -126,12 +126,11 @@ class AssetCleanupPreCommitFileDeleteRaceTest extends AbstractBaseTest {
     // The attach committed: the asset row is there and belongs to the post.
     Long attachedTo =
         QuarkusTransaction.requiringNew()
-            .call(
-                () ->
-                    assetRepository
-                        .findByIdOptional(attached.getId())
-                        .map(a -> a.getTeamEntity() == null ? null : a.getTeamEntity().getId())
-                        .orElse(null));
+            .call(() ->
+                assetRepository
+                    .findByIdOptional(attached.getId())
+                    .map(a -> a.getTeamEntity() == null ? null : a.getTeamEntity().getId())
+                    .orElse(null));
     assertEquals(postId, attachedTo, "the save attached the image to the post");
 
     assertTrue(
@@ -153,18 +152,14 @@ class AssetCleanupPreCommitFileDeleteRaceTest extends AbstractBaseTest {
   /** What a post save does with its media: attach the uploaded image (AssetService.updateAssets). */
   private void attachToPost() {
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              Post post = postRepository.findById(postId);
-              String imageId = TsidUtils.toString(attached.getId());
-              AssetsDto assets =
-                  AssetsDto.builder()
-                      .images(List.of(AssetDto.builder().id(imageId).build()))
-                      .build();
-              assetService.updateAssets(
-                  post, new MediaDto("::asset{id=\"" + imageId + "\"}", assets));
-              postRepository.persist(post);
-            });
+        .run(() -> {
+          Post post = postRepository.findById(postId);
+          String imageId = TsidUtils.toString(attached.getId());
+          AssetsDto assets =
+              AssetsDto.builder().images(List.of(AssetDto.builder().id(imageId).build())).build();
+          assetService.updateAssets(post, new MediaDto("::asset{id=\"" + imageId + "\"}", assets));
+          postRepository.persist(post);
+        });
   }
 
   private String key(Asset asset) {

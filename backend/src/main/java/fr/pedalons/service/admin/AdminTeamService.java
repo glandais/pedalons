@@ -45,11 +45,10 @@ public class AdminTeamService {
 
     List<AdminTeamDto> items =
         teams.stream()
-            .map(
-                team -> {
-                  long memberCount = userTeamRepository.count("team.id = ?1", team.getId());
-                  return AdminTeamDto.from(team, memberCount);
-                })
+            .map(team -> {
+              long memberCount = userTeamRepository.count("team.id = ?1", team.getId());
+              return AdminTeamDto.from(team, memberCount);
+            })
             .toList();
 
     return new PedalonsPage<>(items, total);

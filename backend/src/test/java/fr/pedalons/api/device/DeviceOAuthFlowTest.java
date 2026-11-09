@@ -94,20 +94,18 @@ class DeviceOAuthFlowTest extends AbstractResourceTest {
   /** Moves the code's expiry into the past, as ten minutes of waiting would. */
   private void expire(String userCode) {
     QuarkusTransaction.requiringNew()
-        .run(
-            () ->
-                deviceCodeRepository.update(
-                    "expiresAt = ?1 where userCode = ?2",
-                    Instant.now().minus(Duration.ofMinutes(1)),
-                    userCode));
+        .run(() ->
+            deviceCodeRepository.update(
+                "expiresAt = ?1 where userCode = ?2",
+                Instant.now().minus(Duration.ofMinutes(1)),
+                userCode));
   }
 
   private long deviceSessionsOf(User user, String clientId) {
     return QuarkusTransaction.requiringNew()
-        .call(
-            () ->
-                authSessionRepository.count(
-                    "user.id = ?1 and userAgent = ?2", user.getId(), clientId + " Device"));
+        .call(() ->
+            authSessionRepository.count(
+                "user.id = ?1 and userAgent = ?2", user.getId(), clientId + " Device"));
   }
 
   // --- Starting the flow ---

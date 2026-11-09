@@ -88,12 +88,11 @@ public class TeamWebhookService {
     Team team = teamService.getTeam(teamSlug);
     webhookRepository
         .findByTeam(team.getId())
-        .ifPresent(
-            webhook -> {
-              // Explicitly, rather than by the migration's cascade: the test schema has none.
-              deliveryRepository.delete("webhook.id", webhook.getId());
-              webhookRepository.delete(webhook);
-            });
+        .ifPresent(webhook -> {
+          // Explicitly, rather than by the migration's cascade: the test schema has none.
+          deliveryRepository.delete("webhook.id", webhook.getId());
+          webhookRepository.delete(webhook);
+        });
   }
 
   /**
@@ -105,25 +104,23 @@ public class TeamWebhookService {
     record Target(URI url, String language, String teamName, String siteName) {}
     Target target =
         QuarkusTransaction.requiringNew()
-            .call(
-                () -> {
-                  Team team = teamService.getTeam(teamSlug);
-                  TeamWebhook webhook =
-                      webhookRepository
-                          .findByTeam(team.getId())
-                          .orElseThrow(
-                              () -> new BadRequestException(ErrorCode.WEBHOOK_URL_INVALID));
-                  URI url = TeamWebhookDeliveryService.parse(webhook.getUrl());
-                  if (url == null) {
-                    throw new BadRequestException(ErrorCode.WEBHOOK_URL_INVALID);
-                  }
-                  String siteName =
-                      domainAliasRepository
-                          .findActiveByPinnedTeam(team.getId())
-                          .map(alias -> alias.getName())
-                          .orElse(team.getDomain().getName());
-                  return new Target(url, webhook.getLanguage(), team.getName(), siteName);
-                });
+            .call(() -> {
+              Team team = teamService.getTeam(teamSlug);
+              TeamWebhook webhook =
+                  webhookRepository
+                      .findByTeam(team.getId())
+                      .orElseThrow(() -> new BadRequestException(ErrorCode.WEBHOOK_URL_INVALID));
+              URI url = TeamWebhookDeliveryService.parse(webhook.getUrl());
+              if (url == null) {
+                throw new BadRequestException(ErrorCode.WEBHOOK_URL_INVALID);
+              }
+              String siteName =
+                  domainAliasRepository
+                      .findActiveByPinnedTeam(team.getId())
+                      .map(alias -> alias.getName())
+                      .orElse(team.getDomain().getName());
+              return new Target(url, webhook.getLanguage(), team.getName(), siteName);
+            });
     TeamWebhookDeliveryService.Outcome outcome =
         deliveryService.post(
             target.url(),

@@ -156,10 +156,8 @@ public class BiketeamLiveMigrationWorker {
       }
     } catch (Exception e) {
       LOG.errorf(e, "Biketeam migration job %s failed", ctx.jobTsid());
-      safely(
-          () ->
-              jobService.retryOrFail(
-                  ctx, BiketeamMigrationJobService.INTERNAL_ERROR, e.toString()));
+      safely(() ->
+          jobService.retryOrFail(ctx, BiketeamMigrationJobService.INTERNAL_ERROR, e.toString()));
     }
   }
 
@@ -215,13 +213,12 @@ public class BiketeamLiveMigrationWorker {
       LiveJobContext ctx, BiketeamSource source, JobProgressTracker tracker) {
     Actors actors =
         QuarkusTransaction.requiringNew()
-            .call(
-                () ->
-                    new Actors(
-                        em.find(Domain.class, ctx.domainId()),
-                        userRepository
-                            .findActiveByIdAndDomain(ctx.domainId(), ctx.userId())
-                            .orElse(null)));
+            .call(() ->
+                new Actors(
+                    em.find(Domain.class, ctx.domainId()),
+                    userRepository
+                        .findActiveByIdAndDomain(ctx.domainId(), ctx.userId())
+                        .orElse(null)));
     User user = actors.user();
     if (user == null) {
       throw new BiketeamJobFailure(

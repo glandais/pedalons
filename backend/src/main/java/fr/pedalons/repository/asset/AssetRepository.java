@@ -71,10 +71,9 @@ public class AssetRepository implements PanacheRepository<Asset> {
         .setParameter("afterId", afterId)
         .setMaxResults(limit)
         .getResultStream()
-        .map(
-            r ->
-                new MetadataPendingRow(
-                    (Long) r[0], (Long) r[1], (Long) r[2], (String) r[3], (String) r[4]))
+        .map(r ->
+            new MetadataPendingRow(
+                (Long) r[0], (Long) r[1], (Long) r[2], (String) r[3], (String) r[4]))
         .toList();
   }
 

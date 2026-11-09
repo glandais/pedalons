@@ -96,16 +96,14 @@ class GpxPreviewSurfaceRefreshTest extends AbstractResourceTest {
   /** The document a preview keeps from the former queue, one per track, under its revision. */
   private void storeVersion1(GpxPreview preview) {
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              GpxPreview managed = previewRepository.findById(preview.getId());
-              List<TrackSurfaceDocument> documents = new ArrayList<>();
-              for (GpxPreview.PreviewTrack track : managed.getTracks()) {
-                documents.add(version1(track.trackPoints().getLast().dist()));
-              }
-              managed.setSurfaces(
-                  new PreviewSurfacesDocument(managed.getFilesRevision(), documents));
-            });
+        .run(() -> {
+          GpxPreview managed = previewRepository.findById(preview.getId());
+          List<TrackSurfaceDocument> documents = new ArrayList<>();
+          for (GpxPreview.PreviewTrack track : managed.getTracks()) {
+            documents.add(version1(track.trackPoints().getLast().dist()));
+          }
+          managed.setSurfaces(new PreviewSurfacesDocument(managed.getFilesRevision(), documents));
+        });
   }
 
   private static TrackSurfaceDocument version1(double length) {
@@ -124,22 +122,20 @@ class GpxPreviewSurfaceRefreshTest extends AbstractResourceTest {
   /** The HD catch-up given up: what is said of the surface no longer comes from it. */
   private void catchUpGivenUp(GpxPreview preview) {
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              elevationRefreshRepository.delete("preview.id", preview.getId());
-              previewRepository.update(
-                  "elevationState = ?1 where id = ?2", ElevationState.FAST, preview.getId());
-            });
+        .run(() -> {
+          elevationRefreshRepository.delete("preview.id", preview.getId());
+          previewRepository.update(
+              "elevationState = ?1 where id = ?2", ElevationState.FAST, preview.getId());
+        });
   }
 
   private long elevationRevision(GpxPreview preview) {
     return QuarkusTransaction.requiringNew()
-        .call(
-            () ->
-                elevationRefreshRepository
-                    .findByPreviewId(preview.getId())
-                    .orElseThrow()
-                    .getSourceRevision());
+        .call(() ->
+            elevationRefreshRepository
+                .findByPreviewId(preview.getId())
+                .orElseThrow()
+                .getSourceRevision());
   }
 
   private GpxPreviewDto dto(GpxPreview preview) {
@@ -208,14 +204,13 @@ class GpxPreviewSurfaceRefreshTest extends AbstractResourceTest {
     storeVersion1(created);
 
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              GpxPreview preview = previewRepository.findById(created.getId());
-              assertFalse(Hibernate.isPropertyInitialized(preview, "surfaces"));
-              assertNotNull(preview.getPlannerState());
-              assertFalse(Hibernate.isPropertyInitialized(preview, "surfaces"));
-              assertNotNull(preview.getSurfaces());
-            });
+        .run(() -> {
+          GpxPreview preview = previewRepository.findById(created.getId());
+          assertFalse(Hibernate.isPropertyInitialized(preview, "surfaces"));
+          assertNotNull(preview.getPlannerState());
+          assertFalse(Hibernate.isPropertyInitialized(preview, "surfaces"));
+          assertNotNull(preview.getSurfaces());
+        });
   }
 
   @Test
@@ -243,22 +238,20 @@ class GpxPreviewSurfaceRefreshTest extends AbstractResourceTest {
     catchUpGivenUp(created);
     PreviewSurfacesDocument stored = surfaces(created);
     QuarkusTransaction.requiringNew()
-        .run(
-            () ->
-                previewRepository
-                    .findById(created.getId())
-                    .setSurfaces(stored.withTrackRevision(stored.trackRevision() + 1)));
+        .run(() ->
+            previewRepository
+                .findById(created.getId())
+                .setSurfaces(stored.withTrackRevision(stored.trackRevision() + 1)));
 
     assertNull(dto(created).tracks().getFirst().surfaceState());
 
     QuarkusTransaction.requiringNew()
-        .run(
-            () ->
-                previewRepository
-                    .findById(created.getId())
-                    .setSurfaces(
-                        new PreviewSurfacesDocument(
-                            stored.trackRevision(), Arrays.asList(null, null))));
+        .run(() ->
+            previewRepository
+                .findById(created.getId())
+                .setSurfaces(
+                    new PreviewSurfacesDocument(
+                        stored.trackRevision(), Arrays.asList(null, null))));
     assertNull(dto(created).tracks().getFirst().surfaceState(), "not the number of tracks");
   }
 
@@ -266,12 +259,11 @@ class GpxPreviewSurfaceRefreshTest extends AbstractResourceTest {
 
   private void makeElevationDue(GpxPreview preview) {
     QuarkusTransaction.requiringNew()
-        .run(
-            () ->
-                elevationRefreshRepository.update(
-                    "dueAt = ?1 where preview.id = ?2",
-                    Instant.now().minusSeconds(1),
-                    preview.getId()));
+        .run(() ->
+            elevationRefreshRepository.update(
+                "dueAt = ?1 where preview.id = ?2",
+                Instant.now().minusSeconds(1),
+                preview.getId()));
   }
 
   @Test
@@ -313,12 +305,11 @@ class GpxPreviewSurfaceRefreshTest extends AbstractResourceTest {
   void aPreviewWithoutADocument_afterItsHdCatchUp_readsAsNothing() {
     GpxPreview created = previewService.create(EXAMPLE, "example.gpx");
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              elevationRefreshRepository.delete("preview.id", created.getId());
-              previewRepository.update(
-                  "elevationState = ?1 where id = ?2", ElevationState.HD, created.getId());
-            });
+        .run(() -> {
+          elevationRefreshRepository.delete("preview.id", created.getId());
+          previewRepository.update(
+              "elevationState = ?1 where id = ?2", ElevationState.HD, created.getId());
+        });
 
     var track = dto(created).tracks().getFirst();
     assertNull(track.surfaceState());
@@ -342,10 +333,8 @@ class GpxPreviewSurfaceRefreshTest extends AbstractResourceTest {
     for (RouteDto route : List.of(byCreator, byOther)) {
       var found =
           QuarkusTransaction.requiringNew()
-              .call(
-                  () ->
-                      trackRepository.findSurfaces(
-                          fr.pedalons.common.TsidUtils.toLong(route.id())));
+              .call(() ->
+                  trackRepository.findSurfaces(fr.pedalons.common.TsidUtils.toLong(route.id())));
       assertEquals(1, found.size());
       TrackSurfaceDocument doc = found.values().iterator().next();
       assertTrue(doc.ok());

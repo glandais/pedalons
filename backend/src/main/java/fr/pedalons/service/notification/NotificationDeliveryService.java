@@ -66,14 +66,13 @@ public class NotificationDeliveryService {
     Instant now = Instant.now();
     List<Long> ids =
         QuarkusTransaction.requiringNew()
-            .call(
-                () -> {
-                  List<Long> due = deliveryRepository.lockDue(channel, now, batchSize);
-                  if (!due.isEmpty()) {
-                    deliveryRepository.markSending(due, now);
-                  }
-                  return due;
-                });
+            .call(() -> {
+              List<Long> due = deliveryRepository.lockDue(channel, now, batchSize);
+              if (!due.isEmpty()) {
+                deliveryRepository.markSending(due, now);
+              }
+              return due;
+            });
     if (ids.isEmpty()) {
       return 0;
     }
@@ -156,33 +155,31 @@ public class NotificationDeliveryService {
    */
   void mark(long deliveryId, NotificationDeliveryStatus status, @Nullable Exception cause) {
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              NotificationDelivery delivery = deliveryRepository.findById(deliveryId);
-              if (delivery == null) {
-                return;
-              }
-              Instant now = Instant.now();
-              if (status == NotificationDeliveryStatus.PENDING) {
-                delivery.setErrorMessage(
-                    cause == null ? null : NotificationDispatchService.truncate(cause.toString()));
-                if (delivery.getAttempts() >= maxAttempts) {
-                  delivery.setStatus(NotificationDeliveryStatus.FAILED);
-                } else {
-                  delivery.setStatus(NotificationDeliveryStatus.PENDING);
-                  delivery.setNextAttemptAt(
-                      now.plus(
-                          NotificationDispatchService.backoff(
-                              backoffSeconds, delivery.getAttempts())));
-                }
-                return;
-              }
-              delivery.setStatus(status);
-              delivery.setErrorMessage(null);
-              if (status == NotificationDeliveryStatus.SENT) {
-                delivery.setSentAt(now);
-              }
-            });
+        .run(() -> {
+          NotificationDelivery delivery = deliveryRepository.findById(deliveryId);
+          if (delivery == null) {
+            return;
+          }
+          Instant now = Instant.now();
+          if (status == NotificationDeliveryStatus.PENDING) {
+            delivery.setErrorMessage(
+                cause == null ? null : NotificationDispatchService.truncate(cause.toString()));
+            if (delivery.getAttempts() >= maxAttempts) {
+              delivery.setStatus(NotificationDeliveryStatus.FAILED);
+            } else {
+              delivery.setStatus(NotificationDeliveryStatus.PENDING);
+              delivery.setNextAttemptAt(
+                  now.plus(
+                      NotificationDispatchService.backoff(backoffSeconds, delivery.getAttempts())));
+            }
+            return;
+          }
+          delivery.setStatus(status);
+          delivery.setErrorMessage(null);
+          if (status == NotificationDeliveryStatus.SENT) {
+            delivery.setSentAt(now);
+          }
+        });
   }
 
   /**

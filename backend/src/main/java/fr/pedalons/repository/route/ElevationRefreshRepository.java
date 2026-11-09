@@ -280,18 +280,17 @@ public class ElevationRefreshRepository implements PanacheRepository<ElevationRe
             .setParameter("limit", limit)
             .getResultList();
     return rows.stream()
-        .map(
-            r ->
-                new AbandonedRefresh(
-                    ((Number) r[0]).longValue(),
-                    ElevationRefreshKind.valueOf((String) r[1]),
-                    ((Number) r[2]).longValue(),
-                    (String) r[3],
-                    (String) r[4],
-                    r[5] == null ? null : r[5].toString(),
-                    ((Number) r[6]).intValue(),
-                    (String) r[7],
-                    toInstant(r[8])))
+        .map(r ->
+            new AbandonedRefresh(
+                ((Number) r[0]).longValue(),
+                ElevationRefreshKind.valueOf((String) r[1]),
+                ((Number) r[2]).longValue(),
+                (String) r[3],
+                (String) r[4],
+                r[5] == null ? null : r[5].toString(),
+                ((Number) r[6]).intValue(),
+                (String) r[7],
+                toInstant(r[8])))
         .toList();
   }
 
@@ -537,12 +536,11 @@ public class ElevationRefreshRepository implements PanacheRepository<ElevationRe
 
   private static List<BackfillCandidate> candidates(List<Object[]> rows) {
     return rows.stream()
-        .map(
-            r ->
-                new BackfillCandidate(
-                    ((Number) r[0]).longValue(),
-                    r[1] == null ? 0 : ((Number) r[1]).doubleValue(),
-                    ((Number) r[2]).longValue()))
+        .map(r ->
+            new BackfillCandidate(
+                ((Number) r[0]).longValue(),
+                r[1] == null ? 0 : ((Number) r[1]).doubleValue(),
+                ((Number) r[2]).longValue()))
         .toList();
   }
 

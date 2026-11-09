@@ -106,11 +106,10 @@ class RouteBulkResourceTest extends AbstractResourceTest {
 
   private List<GpxTrack.TrackPoint> wobblyTrack(int storedPoints) {
     return IntStream.range(0, storedPoints)
-        .mapToObj(
-            i -> {
-              double wobble = i % 2 == 0 ? 0 : 0.00001; // ~1.1 m
-              return new GpxTrack.TrackPoint(45.0 + wobble, 6.0 + i * 0.0001, 100 + i, i * 7.8);
-            })
+        .mapToObj(i -> {
+          double wobble = i % 2 == 0 ? 0 : 0.00001; // ~1.1 m
+          return new GpxTrack.TrackPoint(45.0 + wobble, 6.0 + i * 0.0001, 100 + i, i * 7.8);
+        })
         .toList();
   }
 

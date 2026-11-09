@@ -124,12 +124,11 @@ class RefreshLostResponseReplayRaceTest extends AbstractBaseTest {
 
   private Long sessionIdOf(String refreshToken) {
     return QuarkusTransaction.requiringNew()
-        .call(
-            () ->
-                authSessionRepository
-                    .find("refreshTokenHash = ?1", hashToken(refreshToken))
-                    .firstResult()
-                    .getId());
+        .call(() ->
+            authSessionRepository
+                .find("refreshTokenHash = ?1", hashToken(refreshToken))
+                .firstResult()
+                .getId());
   }
 
   private boolean isRevoked(Long sessionId) {
@@ -139,9 +138,8 @@ class RefreshLostResponseReplayRaceTest extends AbstractBaseTest {
 
   private void backdateRotation(Long sessionId, Duration by) {
     QuarkusTransaction.requiringNew()
-        .run(
-            () ->
-                authSessionRepository.update(
-                    "rotatedAt = ?1 where id = ?2", Instant.now().minus(by), sessionId));
+        .run(() ->
+            authSessionRepository.update(
+                "rotatedAt = ?1 where id = ?2", Instant.now().minus(by), sessionId));
   }
 }

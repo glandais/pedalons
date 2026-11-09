@@ -68,18 +68,16 @@ public abstract class TeamEntityService<
         getRepository()
             .findByTeamAndSlug(
                 domainId, team.getId(), userId, entitySlug, includeDeleted, platformAdmin);
-    return byTeamAndSlug.orElseGet(
-        () ->
-            slugService
-                .resolveEntityRedirect(team.getId(), getRepository().getEntityType(), entitySlug)
-                .map(TeamEntitySlugRedirect::getEntityId)
-                .flatMap(
-                    id ->
-                        getRepository()
-                            .findByTeamAndId(
-                                domainId, team.getId(), userId, id, includeDeleted, platformAdmin))
-                .orElseThrow(
-                    () -> new NotFoundException(getRepository().getAllEntityType(), entitySlug)));
+    return byTeamAndSlug.orElseGet(() ->
+        slugService
+            .resolveEntityRedirect(team.getId(), getRepository().getEntityType(), entitySlug)
+            .map(TeamEntitySlugRedirect::getEntityId)
+            .flatMap(id ->
+                getRepository()
+                    .findByTeamAndId(
+                        domainId, team.getId(), userId, id, includeDeleted, platformAdmin))
+            .orElseThrow(
+                () -> new NotFoundException(getRepository().getAllEntityType(), entitySlug)));
   }
 
   protected T findBySlugIncludeDeleted(Team team, String entitySlug) {
@@ -87,17 +85,14 @@ public abstract class TeamEntityService<
     Long userId = pedalonsContext.getUserIdNullable();
     Optional<T> byTeamAndSlug =
         getRepository().findByTeamAndSlug(domainId, team.getId(), userId, entitySlug, true, false);
-    return byTeamAndSlug.orElseGet(
-        () ->
-            slugService
-                .resolveEntityRedirect(team.getId(), getRepository().getEntityType(), entitySlug)
-                .map(TeamEntitySlugRedirect::getEntityId)
-                .flatMap(
-                    id ->
-                        getRepository()
-                            .findByTeamAndId(domainId, team.getId(), userId, id, true, false))
-                .orElseThrow(
-                    () -> new NotFoundException(getRepository().getAllEntityType(), entitySlug)));
+    return byTeamAndSlug.orElseGet(() ->
+        slugService
+            .resolveEntityRedirect(team.getId(), getRepository().getEntityType(), entitySlug)
+            .map(TeamEntitySlugRedirect::getEntityId)
+            .flatMap(id ->
+                getRepository().findByTeamAndId(domainId, team.getId(), userId, id, true, false))
+            .orElseThrow(
+                () -> new NotFoundException(getRepository().getAllEntityType(), entitySlug)));
   }
 
   /**

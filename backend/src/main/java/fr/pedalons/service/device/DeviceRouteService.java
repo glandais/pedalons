@@ -128,11 +128,10 @@ public class DeviceRouteService {
 
     // Sort rides by proximity to current time
     allRides.sort(
-        Comparator.comparingLong(
-            r ->
-                r.startDateTime() != null
-                    ? Math.abs(r.startDateTime().toEpochMilli() - now.toEpochMilli())
-                    : Long.MAX_VALUE));
+        Comparator.comparingLong(r ->
+            r.startDateTime() != null
+                ? Math.abs(r.startDateTime().toEpochMilli() - now.toEpochMilli())
+                : Long.MAX_VALUE));
 
     // Sort routes by distance from user
     allRoutes.sort(

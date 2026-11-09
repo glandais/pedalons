@@ -133,10 +133,9 @@ class RouterImportResourceTest extends AbstractResourceTest {
 
   private long count(String table) {
     return QuarkusTransaction.requiringNew()
-        .call(
-            () ->
-                ((Number) em.createNativeQuery("select count(*) from " + table).getSingleResult())
-                    .longValue());
+        .call(() ->
+            ((Number) em.createNativeQuery("select count(*) from " + table).getSingleResult())
+                .longValue());
   }
 
   private long storedObjects() {

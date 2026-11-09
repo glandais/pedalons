@@ -495,12 +495,11 @@ class GpxPreviewResourceTest extends AbstractResourceTest {
             .toList();
     java.util.List<String> rawLines =
         QuarkusTransaction.requiringNew()
-            .call(
-                () ->
-                    gpxPreviewRepository
-                        .findByPublicId(domain.getId(), publicId)
-                        .orElseThrow()
-                        .readableRawLines());
+            .call(() ->
+                gpxPreviewRepository
+                    .findByPublicId(domain.getId(), publicId)
+                    .orElseThrow()
+                    .readableRawLines());
     org.junit.jupiter.api.Assertions.assertNotNull(rawLines);
     org.junit.jupiter.api.Assertions.assertEquals(
         source,
@@ -881,12 +880,11 @@ class GpxPreviewResourceTest extends AbstractResourceTest {
     UUID publicId = UUID.fromString(previewId);
     Long revisionBefore =
         QuarkusTransaction.requiringNew()
-            .call(
-                () ->
-                    gpxPreviewRepository
-                        .findByPublicId(domain.getId(), publicId)
-                        .orElseThrow()
-                        .getFilesRevision());
+            .call(() ->
+                gpxPreviewRepository
+                    .findByPublicId(domain.getId(), publicId)
+                    .orElseThrow()
+                    .getFilesRevision());
     byte[] gpxBefore =
         given()
             .when()
@@ -915,12 +913,11 @@ class GpxPreviewResourceTest extends AbstractResourceTest {
 
     Long revisionAfter =
         QuarkusTransaction.requiringNew()
-            .call(
-                () ->
-                    gpxPreviewRepository
-                        .findByPublicId(domain.getId(), publicId)
-                        .orElseThrow()
-                        .getFilesRevision());
+            .call(() ->
+                gpxPreviewRepository
+                    .findByPublicId(domain.getId(), publicId)
+                    .orElseThrow()
+                    .getFilesRevision());
     org.junit.jupiter.api.Assertions.assertEquals(
         revisionBefore, revisionAfter, "the track did not change: no new revision");
     String gpxAfter =

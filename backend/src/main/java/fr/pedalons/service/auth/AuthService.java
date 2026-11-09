@@ -231,13 +231,12 @@ public class AuthService {
     // Re-check collision at verify time (another account may have claimed it meanwhile).
     userRepository
         .findByEmailAndDomain(domainId, newEmail)
-        .ifPresent(
-            existing -> {
-              if (!existing.getId().equals(user.getId())) {
-                throw new fr.pedalons.common.exception.ConflictException(
-                    ErrorCode.EMAIL_ALREADY_EXISTS);
-              }
-            });
+        .ifPresent(existing -> {
+          if (!existing.getId().equals(user.getId())) {
+            throw new fr.pedalons.common.exception.ConflictException(
+                ErrorCode.EMAIL_ALREADY_EXISTS);
+          }
+        });
 
     user.setEmail(newEmail);
     user.markEmailVerified();
@@ -285,13 +284,12 @@ public class AuthService {
     // Collision: reject if the address belongs to a different account (decision: no auto-merge).
     userRepository
         .findByEmailAndDomain(domainId, normalized)
-        .ifPresent(
-            existing -> {
-              if (!existing.getId().equals(user.getId())) {
-                throw new fr.pedalons.common.exception.ConflictException(
-                    ErrorCode.EMAIL_ALREADY_EXISTS);
-              }
-            });
+        .ifPresent(existing -> {
+          if (!existing.getId().equals(user.getId())) {
+            throw new fr.pedalons.common.exception.ConflictException(
+                ErrorCode.EMAIL_ALREADY_EXISTS);
+          }
+        });
 
     // Rate limit (mirrors OTP/password-reset). Silent to avoid probing which emails are taken.
     long recentCount =

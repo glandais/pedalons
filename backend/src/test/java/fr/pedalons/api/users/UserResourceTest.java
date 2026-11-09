@@ -115,10 +115,8 @@ class UserResourceTest extends AbstractResourceTest {
     assertEquals(
         0L,
         QuarkusTransaction.requiringNew()
-            .call(
-                () ->
-                    authSessionRepository.count(
-                        "user.id = ?1 and revoked = false", reviewer.getId())));
+            .call(() ->
+                authSessionRepository.count("user.id = ?1 and revoked = false", reviewer.getId())));
   }
 
   @Test

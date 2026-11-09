@@ -60,10 +60,9 @@ public final class FitExporter {
       }
       List<FitCoursePointSpec> specs =
           points.stream()
-              .map(
-                  p ->
-                      new FitCoursePointSpec(
-                          p.distanceM(), WaypointFormats.fitType(p.type()), p.name()))
+              .map(p ->
+                  new FitCoursePointSpec(
+                      p.distanceM(), WaypointFormats.fitType(p.type()), p.name()))
               .toList();
       return PathToFitJvm.toFitBytes(nonEmpty, name, startMillis, specs);
     } catch (Exception e) {

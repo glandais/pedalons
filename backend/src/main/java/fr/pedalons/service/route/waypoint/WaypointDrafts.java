@@ -49,18 +49,17 @@ public final class WaypointDrafts {
     }
     return source.stream()
         .limit(GpxLimits.MAX_WAYPOINTS)
-        .map(
-            w ->
-                new WaypointDraft(
-                    null,
-                    w.getLatitudeDeg(),
-                    w.getLongitudeDeg(),
-                    Objects.requireNonNullElse(w.getName(), ""),
-                    null,
-                    WaypointType.parseOrInfo(w.getType()),
-                    WaypointOrigin.IMPORTED,
-                    null,
-                    null))
+        .map(w ->
+            new WaypointDraft(
+                null,
+                w.getLatitudeDeg(),
+                w.getLongitudeDeg(),
+                Objects.requireNonNullElse(w.getName(), ""),
+                null,
+                WaypointType.parseOrInfo(w.getType()),
+                WaypointOrigin.IMPORTED,
+                null,
+                null))
         .toList();
   }
 

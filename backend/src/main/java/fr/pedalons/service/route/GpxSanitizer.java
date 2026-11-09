@@ -48,35 +48,32 @@ public final class GpxSanitizer {
   public static GpxDocument sanitize(GpxDocument doc) {
     List<GpxTrack> tracks =
         doc.getTracks().stream()
-            .map(
-                track ->
-                    new GpxTrack(
-                        track.getName(),
-                        null,
-                        track.getSegments().stream()
-                            .map(
-                                s ->
-                                    new GpxSegment(
-                                        s.getPoints().stream().map(GpxSanitizer::point).toList()))
-                            .toList(),
-                        track.getKind(),
-                        null,
-                        null))
+            .map(track ->
+                new GpxTrack(
+                    track.getName(),
+                    null,
+                    track.getSegments().stream()
+                        .map(s ->
+                            new GpxSegment(
+                                s.getPoints().stream().map(GpxSanitizer::point).toList()))
+                        .toList(),
+                    track.getKind(),
+                    null,
+                    null))
             .toList();
     List<GpxWaypoint> waypoints =
         doc.getWaypoints().stream()
-            .map(
-                w ->
-                    GpxModelJvm.waypoint(
-                        w.getLatitudeDeg(),
-                        w.getLongitudeDeg(),
-                        null,
-                        w.getName(),
-                        null,
-                        null,
-                        // The canonical type only: the raw sym and type never leave this funnel
-                        WaypointFormats.fromGpx(w.getSymbol(), w.getType()).name(),
-                        null))
+            .map(w ->
+                GpxModelJvm.waypoint(
+                    w.getLatitudeDeg(),
+                    w.getLongitudeDeg(),
+                    null,
+                    w.getName(),
+                    null,
+                    null,
+                    // The canonical type only: the raw sym and type never leave this funnel
+                    WaypointFormats.fromGpx(w.getSymbol(), w.getType()).name(),
+                    null))
             .toList();
     return GpxModelJvm.document(tracks, doc.getName(), waypoints);
   }

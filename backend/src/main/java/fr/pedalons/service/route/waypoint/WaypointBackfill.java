@@ -65,14 +65,13 @@ public class WaypointBackfill {
     }
     List<Long> routeIds =
         QuarkusTransaction.requiringNew()
-            .call(
-                () ->
-                    entityManager
-                        .createQuery(
-                            "select distinct w.route.id from GpxWaypoint w where w.type is null",
-                            Long.class)
-                        .setMaxResults(BATCH)
-                        .getResultList());
+            .call(() ->
+                entityManager
+                    .createQuery(
+                        "select distinct w.route.id from GpxWaypoint w where w.type is null",
+                        Long.class)
+                    .setMaxResults(BATCH)
+                    .getResultList());
     for (Long routeId : routeIds) {
       try {
         QuarkusTransaction.requiringNew().run(() -> backfill(routeId));

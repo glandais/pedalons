@@ -102,33 +102,29 @@ class RideUpdatedFoldIntoClaimedEventRaceTest extends AbstractResourceTest {
 
     // Edit B: moves the ride to t2 and publishes its RideUpdated, transaction kept open.
     Future<?> editB =
-        executor.submit(
-            () ->
-                inRequest(
-                    () ->
-                        QuarkusTransaction.requiringNew()
-                            .run(
-                                () -> {
-                                  applyEdit(rideId, t1, t2);
-                                  bPublished.countDown();
-                                  try {
-                                    // Unfixed, the fan-out never waits on B; a fix that makes it
-                                    // wait gets B's commit after the grace delay.
-                                    fanOutDone.await(3, TimeUnit.SECONDS);
-                                  } catch (InterruptedException e) {
-                                    Thread.currentThread().interrupt();
-                                  }
-                                })));
+        executor.submit(() ->
+            inRequest(() ->
+                QuarkusTransaction.requiringNew()
+                    .run(() -> {
+                      applyEdit(rideId, t1, t2);
+                      bPublished.countDown();
+                      try {
+                        // Unfixed, the fan-out never waits on B; a fix that makes it
+                        // wait gets B's commit after the grace delay.
+                        fanOutDone.await(3, TimeUnit.SECONDS);
+                      } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                      }
+                    })));
 
     // A fix that makes B's insert wait on the dispatcher must not hang the test either.
     bPublished.await(3, TimeUnit.SECONDS);
     try {
       QuarkusTransaction.requiringNew()
-          .call(
-              () -> {
-                dispatchService.fanOut(eventId);
-                return null;
-              });
+          .call(() -> {
+            dispatchService.fanOut(eventId);
+            return null;
+          });
     } finally {
       fanOutDone.countDown();
     }

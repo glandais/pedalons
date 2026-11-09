@@ -185,10 +185,9 @@ class TeamEntitySlugRedirectRepositoryTest extends AbstractBaseTest {
   @Test
   @Transactional
   void shouldNotThrowWhenDeletingNonExistent() {
-    assertDoesNotThrow(
-        () ->
-            repository.deleteByTeamAndEntityTypeAndOldSlug(
-                team.getId(), EntityType.RIDE.getStableOrdinal(), "non-existent-slug"));
+    assertDoesNotThrow(() ->
+        repository.deleteByTeamAndEntityTypeAndOldSlug(
+            team.getId(), EntityType.RIDE.getStableOrdinal(), "non-existent-slug"));
   }
 
   @Test

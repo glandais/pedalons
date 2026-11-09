@@ -175,20 +175,19 @@ public class FeedbackGithubWorker {
       return false;
     }
     Optional<Issue> issue =
-        tx(
-            () -> {
-              ErrorSignature signature = errorSignatureRepository.lock(id);
-              if (signature == null || signature.getGithubStatus() != GithubSyncStatus.PENDING) {
-                return Optional.empty();
-              }
-              Optional<ErrorOccurrence> latest = errorOccurrenceRepository.findLatest(id);
-              if (latest.isEmpty()) {
-                // Every occurrence purged before GitHub was ever configured: nothing to show.
-                signature.setGithubStatus(GithubSyncStatus.FAILED);
-                return Optional.empty();
-              }
-              return Optional.of(renderer.signature(signature, latest.get()));
-            });
+        tx(() -> {
+          ErrorSignature signature = errorSignatureRepository.lock(id);
+          if (signature == null || signature.getGithubStatus() != GithubSyncStatus.PENDING) {
+            return Optional.empty();
+          }
+          Optional<ErrorOccurrence> latest = errorOccurrenceRepository.findLatest(id);
+          if (latest.isEmpty()) {
+            // Every occurrence purged before GitHub was ever configured: nothing to show.
+            signature.setGithubStatus(GithubSyncStatus.FAILED);
+            return Optional.empty();
+          }
+          return Optional.of(renderer.signature(signature, latest.get()));
+        });
     if (issue.isEmpty()) {
       return true;
     }
@@ -196,27 +195,25 @@ public class FeedbackGithubWorker {
     try {
       int number =
           github.createIssue(issue.get().title(), issue.get().body(), issue.get().labels());
-      tx(
-          () -> {
-            ErrorSignature signature = errorSignatureRepository.lock(id);
-            signature.setGithubStatus(GithubSyncStatus.CREATED);
-            signature.setGithubIssueNumber(number);
-            signature.setGithubCreatedAt(now);
-            signature.setSummarizedUntil(now);
-            return null;
-          });
+      tx(() -> {
+        ErrorSignature signature = errorSignatureRepository.lock(id);
+        signature.setGithubStatus(GithubSyncStatus.CREATED);
+        signature.setGithubIssueNumber(number);
+        signature.setGithubCreatedAt(now);
+        signature.setSummarizedUntil(now);
+        return null;
+      });
       LOG.infof("Crash issue #%d opened for signature %d", number, id);
     } catch (GitHubException e) {
       LOG.warnf("Crash issue for signature %d not opened: %s", id, e.getMessage());
-      tx(
-          () -> {
-            ErrorSignature signature = errorSignatureRepository.lock(id);
-            signature.setGithubAttempts(signature.getGithubAttempts() + 1);
-            if (signature.getGithubAttempts() >= MAX_ATTEMPTS) {
-              signature.setGithubStatus(GithubSyncStatus.FAILED);
-            }
-            return null;
-          });
+      tx(() -> {
+        ErrorSignature signature = errorSignatureRepository.lock(id);
+        signature.setGithubAttempts(signature.getGithubAttempts() + 1);
+        if (signature.getGithubAttempts() >= MAX_ATTEMPTS) {
+          signature.setGithubStatus(GithubSyncStatus.FAILED);
+        }
+        return null;
+      });
     }
     return true;
   }
@@ -225,20 +222,19 @@ public class FeedbackGithubWorker {
 
   private void publishFeedback(Long id) {
     Optional<PreparedFeedback> prepared =
-        tx(
-            () -> {
-              FeedbackReport report = feedbackReportRepository.findById(id);
-              if (report == null || report.getGithubStatus() != GithubSyncStatus.PENDING) {
-                return Optional.empty();
-              }
-              ErrorSignature signature = report.getSignature();
-              Integer signatureIssue =
-                  signature != null && signature.getGithubStatus() == GithubSyncStatus.CREATED
-                      ? signature.getGithubIssueNumber()
-                      : null;
-              return Optional.of(
-                  new PreparedFeedback(renderer.feedback(report, signatureIssue), signatureIssue));
-            });
+        tx(() -> {
+          FeedbackReport report = feedbackReportRepository.findById(id);
+          if (report == null || report.getGithubStatus() != GithubSyncStatus.PENDING) {
+            return Optional.empty();
+          }
+          ErrorSignature signature = report.getSignature();
+          Integer signatureIssue =
+              signature != null && signature.getGithubStatus() == GithubSyncStatus.CREATED
+                  ? signature.getGithubIssueNumber()
+                  : null;
+          return Optional.of(
+              new PreparedFeedback(renderer.feedback(report, signatureIssue), signatureIssue));
+        });
     if (prepared.isEmpty()) {
       return;
     }
@@ -248,24 +244,22 @@ public class FeedbackGithubWorker {
       number = github.createIssue(issue.title(), issue.body(), issue.labels());
     } catch (GitHubException e) {
       LOG.warnf("Feedback issue for report %d not opened: %s", id, e.getMessage());
-      tx(
-          () -> {
-            FeedbackReport report = feedbackReportRepository.findById(id);
-            report.setGithubAttempts(report.getGithubAttempts() + 1);
-            if (report.getGithubAttempts() >= MAX_ATTEMPTS) {
-              report.setGithubStatus(GithubSyncStatus.FAILED);
-            }
-            return null;
-          });
+      tx(() -> {
+        FeedbackReport report = feedbackReportRepository.findById(id);
+        report.setGithubAttempts(report.getGithubAttempts() + 1);
+        if (report.getGithubAttempts() >= MAX_ATTEMPTS) {
+          report.setGithubStatus(GithubSyncStatus.FAILED);
+        }
+        return null;
+      });
       return;
     }
-    tx(
-        () -> {
-          FeedbackReport report = feedbackReportRepository.findById(id);
-          report.setGithubStatus(GithubSyncStatus.CREATED);
-          report.setGithubIssueNumber(number);
-          return null;
-        });
+    tx(() -> {
+      FeedbackReport report = feedbackReportRepository.findById(id);
+      report.setGithubStatus(GithubSyncStatus.CREATED);
+      report.setGithubIssueNumber(number);
+      return null;
+    });
     LOG.infof("Feedback issue #%d opened for report %d", number, id);
     Integer signatureIssue = prepared.get().signatureIssue();
     if (signatureIssue != null) {
@@ -282,17 +276,16 @@ public class FeedbackGithubWorker {
   private void reopen(Long id) {
     record Regression(int number, String comment) {}
     Optional<Regression> regression =
-        tx(
-            () -> {
-              ErrorSignature signature = errorSignatureRepository.findById(id);
-              if (signature == null
-                  || signature.getGithubIssueNumber() == null
-                  || signature.getRegressionVersion() == null) {
-                return Optional.empty();
-              }
-              return Optional.of(
-                  new Regression(signature.getGithubIssueNumber(), renderer.regression(signature)));
-            });
+        tx(() -> {
+          ErrorSignature signature = errorSignatureRepository.findById(id);
+          if (signature == null
+              || signature.getGithubIssueNumber() == null
+              || signature.getRegressionVersion() == null) {
+            return Optional.empty();
+          }
+          return Optional.of(
+              new Regression(signature.getGithubIssueNumber(), renderer.regression(signature)));
+        });
     if (regression.isEmpty()) {
       return;
     }
@@ -303,15 +296,14 @@ public class FeedbackGithubWorker {
       LOG.warnf("Issue #%d not reopened: %s", regression.get().number(), e.getMessage());
       return;
     }
-    tx(
-        () -> {
-          ErrorSignature signature = errorSignatureRepository.lock(id);
-          signature.setIssueClosed(false);
-          signature.setVersionsAtClose(new ArrayList<>());
-          signature.setRegressionVersion(null);
-          signature.setSummarizedUntil(Instant.now());
-          return null;
-        });
+    tx(() -> {
+      ErrorSignature signature = errorSignatureRepository.lock(id);
+      signature.setIssueClosed(false);
+      signature.setVersionsAtClose(new ArrayList<>());
+      signature.setRegressionVersion(null);
+      signature.setSummarizedUntil(Instant.now());
+      return null;
+    });
     LOG.infof("Issue #%d reopened: regression", regression.get().number());
   }
 
@@ -352,11 +344,10 @@ public class FeedbackGithubWorker {
       if (!snapshot.isIssueClosed()) {
         markClosed(id, status.closedAt() != null ? status.closedAt() : now, now);
       } else {
-        tx(
-            () -> {
-              errorSignatureRepository.lock(id).setSummarizedUntil(now);
-              return null;
-            });
+        tx(() -> {
+          errorSignatureRepository.lock(id).setSummarizedUntil(now);
+          return null;
+        });
       }
       return;
     }
@@ -366,15 +357,14 @@ public class FeedbackGithubWorker {
     if (summary.occurrences() > 0) {
       github.comment(number, renderer.summary(since, summary));
     }
-    tx(
-        () -> {
-          ErrorSignature signature = errorSignatureRepository.lock(id);
-          signature.setSummarizedUntil(now);
-          // Reopened by hand on GitHub: forget the closure.
-          signature.setIssueClosed(false);
-          signature.setVersionsAtClose(new ArrayList<>());
-          return null;
-        });
+    tx(() -> {
+      ErrorSignature signature = errorSignatureRepository.lock(id);
+      signature.setSummarizedUntil(now);
+      // Reopened by hand on GitHub: forget the closure.
+      signature.setIssueClosed(false);
+      signature.setVersionsAtClose(new ArrayList<>());
+      return null;
+    });
   }
 
   /**
@@ -386,26 +376,25 @@ public class FeedbackGithubWorker {
    * neither covered by the closure nor flagged as a regression (docs/LEDGER_*.md ISSUE-9).
    */
   private void markClosed(Long id, Instant closedAt, Instant now) {
-    tx(
-        () -> {
-          ErrorSignature signature = errorSignatureRepository.lock(id);
-          List<String> before = errorOccurrenceRepository.findVersions(id, closedAt, false);
-          List<String> newAfter = new ArrayList<>();
-          for (String v : errorOccurrenceRepository.findVersions(id, closedAt, true)) {
-            if (!before.contains(v)) {
-              newAfter.add(v);
-            }
-          }
-          List<String> atClose = new ArrayList<>(signature.getVersions());
-          atClose.removeAll(newAfter);
-          signature.setIssueClosed(true);
-          signature.setVersionsAtClose(atClose);
-          signature.setSummarizedUntil(now);
-          if (!newAfter.isEmpty()) {
-            signature.setRegressionVersion(newAfter.getFirst());
-          }
-          return null;
-        });
+    tx(() -> {
+      ErrorSignature signature = errorSignatureRepository.lock(id);
+      List<String> before = errorOccurrenceRepository.findVersions(id, closedAt, false);
+      List<String> newAfter = new ArrayList<>();
+      for (String v : errorOccurrenceRepository.findVersions(id, closedAt, true)) {
+        if (!before.contains(v)) {
+          newAfter.add(v);
+        }
+      }
+      List<String> atClose = new ArrayList<>(signature.getVersions());
+      atClose.removeAll(newAfter);
+      signature.setIssueClosed(true);
+      signature.setVersionsAtClose(atClose);
+      signature.setSummarizedUntil(now);
+      if (!newAfter.isEmpty()) {
+        signature.setRegressionVersion(newAfter.getFirst());
+      }
+      return null;
+    });
   }
 
   private static <T> T tx(Callable<T> work) {

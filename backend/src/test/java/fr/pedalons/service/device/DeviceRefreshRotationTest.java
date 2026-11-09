@@ -70,12 +70,11 @@ class DeviceRefreshRotationTest extends AbstractBaseTest {
     String first = dataService.createRefreshTokenForUser(user);
     String second = deviceAuthService.refreshToken(first, "karoo").refreshToken();
     QuarkusTransaction.requiringNew()
-        .run(
-            () ->
-                authSessionRepository.update(
-                    "rotatedAt = ?1 where previousRefreshTokenHash = ?2",
-                    Instant.now().minus(Duration.ofMinutes(5)),
-                    hashToken(first)));
+        .run(() ->
+            authSessionRepository.update(
+                "rotatedAt = ?1 where previousRefreshTokenHash = ?2",
+                Instant.now().minus(Duration.ofMinutes(5)),
+                hashToken(first)));
 
     // The response that carried the second token was lost (docs/LEDGER_*.md API-94): the device
     // stays paired, on a third token; the second is dead.

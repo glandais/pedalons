@@ -163,19 +163,18 @@ class RouteWaypointsResourceTest extends AbstractResourceTest {
   private Map<AssetType, AssetState> assets(String slug) {
     Long routeId = TsidUtils.toLong(get(slug).then().extract().path("id"));
     return QuarkusTransaction.requiringNew()
-        .call(
-            () -> {
-              Map<AssetType, AssetState> states = new HashMap<>();
-              for (Asset a : assetRepository.list("teamEntity.id = ?1", routeId)) {
-                states.put(
-                    a.getType(),
-                    new AssetState(
-                        a.getFileId(),
-                        // What the GPS sync fingerprint uses: coalesce(contentRevision, id)
-                        a.getContentRevision() != null ? a.getContentRevision() : a.getId()));
-              }
-              return states;
-            });
+        .call(() -> {
+          Map<AssetType, AssetState> states = new HashMap<>();
+          for (Asset a : assetRepository.list("teamEntity.id = ?1", routeId)) {
+            states.put(
+                a.getType(),
+                new AssetState(
+                    a.getFileId(),
+                    // What the GPS sync fingerprint uses: coalesce(contentRevision, id)
+                    a.getContentRevision() != null ? a.getContentRevision() : a.getId()));
+          }
+          return states;
+        });
   }
 
   private static Map<String, Object> named(List<Map<String, Object>> list, String name) {

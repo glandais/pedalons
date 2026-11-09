@@ -101,19 +101,16 @@ class PairedDevicesTest extends AbstractResourceTest {
   /** A session of the site or the app: no device client. */
   private Long webSessionOf(User user) {
     return QuarkusTransaction.requiringNew()
-        .call(
-            () -> {
-              AuthSession session =
-                  new AuthSession(
-                      authSessionRepository
-                          .getEntityManager()
-                          .getReference(User.class, user.getId()),
-                      "web-" + UUID.randomUUID(),
-                      Instant.now().plus(Duration.ofDays(30)));
-              session.setUserAgent("Mozilla/5.0");
-              authSessionRepository.persist(session);
-              return session.getId();
-            });
+        .call(() -> {
+          AuthSession session =
+              new AuthSession(
+                  authSessionRepository.getEntityManager().getReference(User.class, user.getId()),
+                  "web-" + UUID.randomUUID(),
+                  Instant.now().plus(Duration.ofDays(30)));
+          session.setUserAgent("Mozilla/5.0");
+          authSessionRepository.persist(session);
+          return session.getId();
+        });
   }
 
   @Test

@@ -86,28 +86,27 @@ class RideGroupCapacityRaceTest extends AbstractBaseTest {
 
     // Transaction A: join the last place, then hold the transaction open.
     CompletableFuture<Void> a =
-        CompletableFuture.runAsync(
-            () ->
-                inRequest(
-                    riderA,
-                    () -> {
-                      try {
-                        userTransaction.begin();
-                        try {
-                          rideService.joinGroup(team.getSlug(), "race", groupId);
-                          aJoinedUncommitted.countDown();
-                          assertTrue(releaseA.await(30, TimeUnit.SECONDS));
-                          userTransaction.commit();
-                        } catch (Throwable t) {
-                          userTransaction.rollback();
-                          throw t;
-                        }
-                      } catch (Throwable t) {
-                        throw new RuntimeException(t);
-                      } finally {
-                        aJoinedUncommitted.countDown();
-                      }
-                    }));
+        CompletableFuture.runAsync(() ->
+            inRequest(
+                riderA,
+                () -> {
+                  try {
+                    userTransaction.begin();
+                    try {
+                      rideService.joinGroup(team.getSlug(), "race", groupId);
+                      aJoinedUncommitted.countDown();
+                      assertTrue(releaseA.await(30, TimeUnit.SECONDS));
+                      userTransaction.commit();
+                    } catch (Throwable t) {
+                      userTransaction.rollback();
+                      throw t;
+                    }
+                  } catch (Throwable t) {
+                    throw new RuntimeException(t);
+                  } finally {
+                    aJoinedUncommitted.countDown();
+                  }
+                }));
 
     assertTrue(aJoinedUncommitted.await(30, TimeUnit.SECONDS), "A's join did not run");
     if (a.isDone()) {
@@ -116,18 +115,17 @@ class RideGroupCapacityRaceTest extends AbstractBaseTest {
 
     // Transaction B: a different user joins the same group while A is still uncommitted.
     CompletableFuture<Void> b =
-        CompletableFuture.runAsync(
-            () ->
-                inRequest(
-                    riderB,
-                    () -> {
-                      try {
-                        rideService.joinGroup(team.getSlug(), "race", groupId);
-                      } catch (PedalonsException e) {
-                        // GROUP_FULL is the correct outcome once joins are serialised.
-                        assertTrue(e.getMessage().contains("GROUP_FULL"), e.getMessage());
-                      }
-                    }));
+        CompletableFuture.runAsync(() ->
+            inRequest(
+                riderB,
+                () -> {
+                  try {
+                    rideService.joinGroup(team.getSlug(), "race", groupId);
+                  } catch (PedalonsException e) {
+                    // GROUP_FULL is the correct outcome once joins are serialised.
+                    assertTrue(e.getMessage().contains("GROUP_FULL"), e.getMessage());
+                  }
+                }));
 
     // Today B completes at once (no lock). With a lock B blocks on A: give it a moment, then let
     // A commit either way so B can finish.

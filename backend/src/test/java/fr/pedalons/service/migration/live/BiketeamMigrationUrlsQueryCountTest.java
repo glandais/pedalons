@@ -80,29 +80,26 @@ class BiketeamMigrationUrlsQueryCountTest extends AbstractResourceTest {
     when(source.maps())
         .thenReturn(
             ids(n, "map-")
-                .map(
-                    id ->
-                        new BtMap(
-                            id, BT_TEAM, "Route", null, 0, null, 0, 0, null, null, null, null, null,
-                            null, false, List.of()))
+                .map(id ->
+                    new BtMap(
+                        id, BT_TEAM, "Route", null, 0, null, 0, 0, null, null, null, null, null,
+                        null, false, List.of()))
                 .toList());
     when(source.rides())
         .thenReturn(
             ids(n, "ride-")
-                .map(
-                    id ->
-                        new BtRide(
-                            id, BT_TEAM, null, null, "Ride", null, null, null, null, null, null,
-                            true, false))
+                .map(id ->
+                    new BtRide(
+                        id, BT_TEAM, null, null, "Ride", null, null, null, null, null, null, true,
+                        false))
                 .toList());
     when(source.trips())
         .thenReturn(
             ids(n, "trip-")
-                .map(
-                    id ->
-                        new BtTrip(
-                            id, BT_TEAM, null, null, null, null, null, null, null, "Trip", null,
-                            null, null, null, true, false))
+                .map(id ->
+                    new BtTrip(
+                        id, BT_TEAM, null, null, null, null, null, null, null, "Trip", null, null,
+                        null, null, true, false))
                 .toList());
     when(source.tripStages())
         .thenReturn(

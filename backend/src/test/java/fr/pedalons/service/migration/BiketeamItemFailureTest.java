@@ -33,9 +33,8 @@ class BiketeamItemFailureTest {
 
   @Test
   void anyOtherFailure_isTheElementsOwn() {
-    assertDoesNotThrow(
-        () ->
-            BiketeamMigrationService.rethrowIfExportFailure(
-                new UncheckedIOException("gpx", new java.io.IOException("broken"))));
+    assertDoesNotThrow(() ->
+        BiketeamMigrationService.rethrowIfExportFailure(
+            new UncheckedIOException("gpx", new java.io.IOException("broken"))));
   }
 }

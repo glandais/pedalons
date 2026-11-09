@@ -76,10 +76,9 @@ public class GpsRouteSyncWorker {
     int calls = 0;
     int processed = 0;
     List<Long> domainIds =
-        tx(
-            () ->
-                syncRepository.findDomainsWithDueWork(
-                    Instant.now(), GpsRouteSyncExecutor.MAX_ATTEMPTS));
+        tx(() ->
+            syncRepository.findDomainsWithDueWork(
+                Instant.now(), GpsRouteSyncExecutor.MAX_ATTEMPTS));
     for (Long domainId : domainIds) {
       while (true) {
         if (spent(started, calls)) {
@@ -113,17 +112,16 @@ public class GpsRouteSyncWorker {
   }
 
   List<Claim> claim(Long domainId, Instant now, Instant lease) {
-    return tx(
-        () -> {
-          List<Long> ids =
-              syncRepository.findDueIdsSkipLocked(
-                  domainId, now, GpsRouteSyncExecutor.MAX_ATTEMPTS, BATCH);
-          if (ids.isEmpty()) {
-            return List.of();
-          }
-          syncRepository.lease(ids, lease);
-          return syncRepository.findClaims(ids, lease);
-        });
+    return tx(() -> {
+      List<Long> ids =
+          syncRepository.findDueIdsSkipLocked(
+              domainId, now, GpsRouteSyncExecutor.MAX_ATTEMPTS, BATCH);
+      if (ids.isEmpty()) {
+        return List.of();
+      }
+      syncRepository.lease(ids, lease);
+      return syncRepository.findClaims(ids, lease);
+    });
   }
 
   private static boolean spent(Instant started, int calls) {

@@ -135,20 +135,19 @@ class SurfaceRefreshTest extends AbstractResourceTest {
   private void storeVersion1(RouteDto route) {
     double length = length(route);
     QuarkusTransaction.requiringNew()
-        .run(
-            () ->
-                trackRepository.updateSurfaces(
-                    trackRepository.findIdsByRouteIds(List.of(id(route))).get(id(route)).getFirst(),
-                    new TrackSurfaceDocument(
-                        TrackSurfaceDocument.VERSION,
-                        TrackSurfaceDocument.STATUS_OK,
-                        null,
-                        123L,
-                        Instant.parse("2026-10-20T08:00:00Z"),
-                        "bicycle",
-                        length,
-                        List.of(new SurfaceRange(0, length, "paved")),
-                        List.of(new WayRange(0, length, "road", "none")))));
+        .run(() ->
+            trackRepository.updateSurfaces(
+                trackRepository.findIdsByRouteIds(List.of(id(route))).get(id(route)).getFirst(),
+                new TrackSurfaceDocument(
+                    TrackSurfaceDocument.VERSION,
+                    TrackSurfaceDocument.STATUS_OK,
+                    null,
+                    123L,
+                    Instant.parse("2026-10-20T08:00:00Z"),
+                    "bicycle",
+                    length,
+                    List.of(new SurfaceRange(0, length, "paved")),
+                    List.of(new WayRange(0, length, "road", "none")))));
   }
 
   private double length(RouteDto route) {
@@ -159,20 +158,17 @@ class SurfaceRefreshTest extends AbstractResourceTest {
   /** The HD catch-up over: no request, the state says nothing is to come. */
   private void catchUpDone(RouteDto route) {
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              elevationRefreshRepository.delete("route.id", id(route));
-              routeRepository.update(
-                  "elevationState = ?1 where id = ?2", ElevationState.HD, id(route));
-            });
+        .run(() -> {
+          elevationRefreshRepository.delete("route.id", id(route));
+          routeRepository.update("elevationState = ?1 where id = ?2", ElevationState.HD, id(route));
+        });
   }
 
   private void makeElevationDue(RouteDto route) {
     QuarkusTransaction.requiringNew()
-        .run(
-            () ->
-                elevationRefreshRepository.update(
-                    "dueAt = ?1 where route.id = ?2", Instant.now().minusSeconds(1), id(route)));
+        .run(() ->
+            elevationRefreshRepository.update(
+                "dueAt = ?1 where route.id = ?2", Instant.now().minusSeconds(1), id(route)));
   }
 
   private TrackSurfaceDocument document(RouteDto route) {
@@ -216,12 +212,11 @@ class SurfaceRefreshTest extends AbstractResourceTest {
     assertEquals(
         originalFileId(route),
         QuarkusTransaction.requiringNew()
-            .call(
-                () ->
-                    elevationRefreshRepository
-                        .findByRouteId(id(route))
-                        .orElseThrow()
-                        .getSourceRevision()));
+            .call(() ->
+                elevationRefreshRepository
+                    .findByRouteId(id(route))
+                    .orElseThrow()
+                    .getSourceRevision()));
 
     detail(route)
         .body("tracks[0].surfaceState", equalTo("PENDING"))
@@ -259,12 +254,11 @@ class SurfaceRefreshTest extends AbstractResourceTest {
     assertEquals(
         originalFileId(route),
         QuarkusTransaction.requiringNew()
-            .call(
-                () ->
-                    elevationRefreshRepository
-                        .findByRouteId(id(route))
-                        .orElseThrow()
-                        .getSourceRevision()));
+            .call(() ->
+                elevationRefreshRepository
+                    .findByRouteId(id(route))
+                    .orElseThrow()
+                    .getSourceRevision()));
     detail(route).body("tracks[0].surfaceState", equalTo("PENDING"));
   }
 

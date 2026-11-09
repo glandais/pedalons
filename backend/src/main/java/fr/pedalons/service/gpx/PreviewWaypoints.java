@@ -101,17 +101,16 @@ public final class PreviewWaypoints {
 
   public static List<AnchoredWaypoint> toAnchored(List<PreviewWaypointDetail> details) {
     return details.stream()
-        .map(
-            d ->
-                new AnchoredWaypoint(
-                    idOf(d),
-                    d.lat(),
-                    d.lng(),
-                    d.name(),
-                    d.description(),
-                    WaypointType.parseOrInfo(d.type()),
-                    WaypointOrigin.parseOrImported(d.origin()),
-                    d.distance()))
+        .map(d ->
+            new AnchoredWaypoint(
+                idOf(d),
+                d.lat(),
+                d.lng(),
+                d.name(),
+                d.description(),
+                WaypointType.parseOrInfo(d.type()),
+                WaypointOrigin.parseOrImported(d.origin()),
+                d.distance()))
         .toList();
   }
 
@@ -128,17 +127,9 @@ public final class PreviewWaypoints {
 
   private static List<PreviewWaypointDetail> strip(List<PreviewWaypointDetail> details) {
     return details.stream()
-        .map(
-            d ->
-                new PreviewWaypointDetail(
-                    d.id(),
-                    d.name(),
-                    d.lat(),
-                    d.lng(),
-                    d.type(),
-                    d.description(),
-                    null,
-                    d.origin()))
+        .map(d ->
+            new PreviewWaypointDetail(
+                d.id(), d.name(), d.lat(), d.lng(), d.type(), d.description(), null, d.origin()))
         .toList();
   }
 

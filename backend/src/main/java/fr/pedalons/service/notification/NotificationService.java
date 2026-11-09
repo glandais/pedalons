@@ -163,12 +163,11 @@ public class NotificationService {
       NotificationSettings settings =
           settingsRepository
               .findByUser(user.getId())
-              .orElseGet(
-                  () -> {
-                    NotificationSettings created = new NotificationSettings(user);
-                    settingsRepository.persist(created);
-                    return created;
-                  });
+              .orElseGet(() -> {
+                NotificationSettings created = new NotificationSettings(user);
+                settingsRepository.persist(created);
+                return created;
+              });
       settings.setEmailDigest(request.emailDigest());
     }
     return preferences(user.getId(), pedalonsContext.getDomainId());
@@ -191,13 +190,11 @@ public class NotificationService {
     }
     List<NotificationChannel> enabled =
         shown.stream()
-            .filter(
-                channel ->
-                    Arrays.stream(NotificationType.values())
-                        .anyMatch(
-                            type ->
-                                overrides.getOrDefault(
-                                    new Cell(type, channel), type.isEnabledByDefault(channel))))
+            .filter(channel ->
+                Arrays.stream(NotificationType.values())
+                    .anyMatch(type ->
+                        overrides.getOrDefault(
+                            new Cell(type, channel), type.isEnabledByDefault(channel))))
             .toList();
     boolean digest =
         available.contains(NotificationChannel.EMAIL)
@@ -246,10 +243,9 @@ public class NotificationService {
             .collect(Collectors.toSet());
     List<NotificationTeamPreferenceDto> teams =
         memberships(userId, domainId).values().stream()
-            .map(
-                team ->
-                    new NotificationTeamPreferenceDto(
-                        team.getSlug(), team.getName(), muted.contains(team.getId())))
+            .map(team ->
+                new NotificationTeamPreferenceDto(
+                    team.getSlug(), team.getName(), muted.contains(team.getId())))
             .toList();
     boolean digest =
         settingsRepository

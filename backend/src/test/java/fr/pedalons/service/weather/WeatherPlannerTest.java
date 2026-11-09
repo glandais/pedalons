@@ -94,39 +94,35 @@ class WeatherPlannerTest extends AbstractResourceTest {
   /** Puts the ride's meeting point at ({@code lat}, {@code lon}), and its route if given. */
   private void locate(Ride ride, double lat, double lon, @Nullable Route route) {
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              Ride managed = rideRepository.findById(ride.getId());
-              Place place = new Place(managed.getCreatedBy(), managed.getTeam(), "RDV", true, true);
-              place.setGeometry(point(WGS84, g(lon, lat)));
-              placeRepository.persist(place);
-              managed.setStart(place);
-              if (route != null) {
-                managed.setRoute(
-                    rideRepository.getEntityManager().find(Route.class, route.getId()));
-              }
-            });
+        .run(() -> {
+          Ride managed = rideRepository.findById(ride.getId());
+          Place place = new Place(managed.getCreatedBy(), managed.getTeam(), "RDV", true, true);
+          place.setGeometry(point(WGS84, g(lon, lat)));
+          placeRepository.persist(place);
+          managed.setStart(place);
+          if (route != null) {
+            managed.setRoute(rideRepository.getEntityManager().find(Route.class, route.getId()));
+          }
+        });
   }
 
   private void setGroup(RideGroup group, @Nullable LocalTime time, @Nullable Float averageSpeed) {
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              RideGroup managed =
-                  rideRepository.getEntityManager().find(RideGroup.class, group.getId());
-              Ride ride = managed.getRide();
-              EventTimezoneResolver.setStart(managed, ride.getDateTime(), time, ride.zone());
-              managed.setAverageSpeed(averageSpeed);
-            });
+        .run(() -> {
+          RideGroup managed =
+              rideRepository.getEntityManager().find(RideGroup.class, group.getId());
+          Ride ride = managed.getRide();
+          EventTimezoneResolver.setStart(managed, ride.getDateTime(), time, ride.zone());
+          managed.setAverageSpeed(averageSpeed);
+        });
   }
 
   private List<WeatherCell> cells() {
     return QuarkusTransaction.requiringNew()
-        .call(
-            () ->
-                cellRepository.listAll().stream()
-                    .sorted(Comparator.comparing(WeatherCell::getId))
-                    .toList());
+        .call(() ->
+            cellRepository.listAll().stream()
+                .sorted(Comparator.comparing(WeatherCell::getId))
+                .toList());
   }
 
   private @Nullable WeatherCell cell(CellKey key) {
@@ -467,20 +463,19 @@ class WeatherPlannerTest extends AbstractResourceTest {
     assertTrue(plannedAround(44.0));
 
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              GpxPreview managed = previewRepository.findById(preview.getId());
-              managed.setTracks(
-                  List.of(
-                      new GpxPreview.PreviewTrack(
-                          "t",
-                          WeatherTestFixtures.northbound(49.0, 4.0, 30, 170),
-                          List.of(),
-                          30_000f,
-                          0f,
-                          0f)));
-              managed.setFilesRevision(2L);
-            });
+        .run(() -> {
+          GpxPreview managed = previewRepository.findById(preview.getId());
+          managed.setTracks(
+              List.of(
+                  new GpxPreview.PreviewTrack(
+                      "t",
+                      WeatherTestFixtures.northbound(49.0, 4.0, 30, 170),
+                      List.of(),
+                      30_000f,
+                      0f,
+                      0f)));
+          managed.setFilesRevision(2L);
+        });
     planner.plan(Instant.now());
 
     assertTrue(plannedAround(49.0), "the cells of the new geometry");

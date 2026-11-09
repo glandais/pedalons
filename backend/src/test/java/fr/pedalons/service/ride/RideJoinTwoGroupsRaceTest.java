@@ -98,55 +98,49 @@ class RideJoinTwoGroupsRaceTest extends AbstractBaseTest {
 
     // Thread A: joins g1 and holds its transaction open until B has run.
     Future<?> a =
-        executor.submit(
-            () ->
-                inRequest(
-                    () ->
-                        QuarkusTransaction.requiringNew()
-                            .run(
-                                () -> {
-                                  rideService.joinGroup(team.getSlug(), "sunday", g1.getId());
-                                  aJoinedUncommitted.countDown();
-                                  try {
-                                    // Without a fix B finishes at once; with a lock B blocks, so
-                                    // A commits after the grace delay and releases it.
-                                    bDone.await(3, TimeUnit.SECONDS);
-                                  } catch (InterruptedException e) {
-                                    Thread.currentThread().interrupt();
-                                  }
-                                })));
+        executor.submit(() ->
+            inRequest(() ->
+                QuarkusTransaction.requiringNew()
+                    .run(() -> {
+                      rideService.joinGroup(team.getSlug(), "sunday", g1.getId());
+                      aJoinedUncommitted.countDown();
+                      try {
+                        // Without a fix B finishes at once; with a lock B blocks, so
+                        // A commits after the grace delay and releases it.
+                        bDone.await(3, TimeUnit.SECONDS);
+                      } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                      }
+                    })));
 
     // Thread B: joins g2 while A's registration is still uncommitted.
     Future<?> b =
-        executor.submit(
-            () -> {
+        executor.submit(() -> {
+          try {
+            assertTrue(aJoinedUncommitted.await(30, TimeUnit.SECONDS));
+            inRequest(() -> {
               try {
-                assertTrue(aJoinedUncommitted.await(30, TimeUnit.SECONDS));
-                inRequest(
-                    () -> {
-                      try {
-                        rideService.joinGroup(team.getSlug(), "sunday", g2.getId());
-                      } catch (PedalonsException expectedOnceFixed) {
-                        // ALREADY_REGISTERED is the correct outcome for the second join.
-                        bFailure.set(expectedOnceFixed);
-                      }
-                    });
-              } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-              } finally {
-                bDone.countDown();
+                rideService.joinGroup(team.getSlug(), "sunday", g2.getId());
+              } catch (PedalonsException expectedOnceFixed) {
+                // ALREADY_REGISTERED is the correct outcome for the second join.
+                bFailure.set(expectedOnceFixed);
               }
             });
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+          } finally {
+            bDone.countDown();
+          }
+        });
 
     a.get(60, TimeUnit.SECONDS);
     b.get(60, TimeUnit.SECONDS);
 
     long registrations =
         QuarkusTransaction.requiringNew()
-            .call(
-                () ->
-                    participationRepository.count(
-                        "user.id = ?1 and rideGroup.ride.id = ?2", member.getId(), ride.getId()));
+            .call(() ->
+                participationRepository.count(
+                    "user.id = ?1 and rideGroup.ride.id = ?2", member.getId(), ride.getId()));
 
     assertEquals(
         1, registrations, "the same user must not be registered in two groups of the same ride");

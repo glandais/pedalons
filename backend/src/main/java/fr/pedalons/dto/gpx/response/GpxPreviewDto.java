@@ -92,13 +92,12 @@ public record GpxPreviewDto(
     List<PreviewWaypointDetail> waypoints = sorted(preview.readableWaypoints());
     List<NamedPoint> namedPoints =
         waypoints.stream()
-            .map(
-                w ->
-                    new NamedPoint(
-                        w.name(),
-                        w.lat(),
-                        w.lng(),
-                        WaypointType.parseOrInfo(w.type()) == WaypointType.SUMMIT))
+            .map(w ->
+                new NamedPoint(
+                    w.name(),
+                    w.lat(),
+                    w.lng(),
+                    WaypointType.parseOrInfo(w.type()) == WaypointType.SUMMIT))
             .toList();
     return new GpxPreviewDto(
         publicId,
@@ -115,27 +114,25 @@ public record GpxPreviewDto(
         "/api/gpx-previews/" + publicId + "/fit",
         preview.isDrawn(),
         IntStream.range(0, preview.getTracks().size())
-            .mapToObj(
-                i -> {
-                  PreviewTrack t = preview.getTracks().get(i);
-                  return TrackDto.of(
-                      t.trackPoints(),
-                      t.climbs(),
-                      namedPoints,
-                      i < surfaces.size() ? surfaces.get(i) : TrackSurfaceReadout.NONE);
-                })
+            .mapToObj(i -> {
+              PreviewTrack t = preview.getTracks().get(i);
+              return TrackDto.of(
+                  t.trackPoints(),
+                  t.climbs(),
+                  namedPoints,
+                  i < surfaces.size() ? surfaces.get(i) : TrackSurfaceReadout.NONE);
+            })
             .toList(),
         waypoints.stream()
-            .map(
-                w ->
-                    new WaypointDto(
-                        point(WGS84, g(w.lng(), w.lat())),
-                        w.name(),
-                        w.id(),
-                        WaypointType.parseOrInfo(w.type()),
-                        w.description(),
-                        w.distance(),
-                        WaypointOrigin.parseOrImported(w.origin())))
+            .map(w ->
+                new WaypointDto(
+                    point(WGS84, g(w.lng(), w.lat())),
+                    w.name(),
+                    w.id(),
+                    WaypointType.parseOrInfo(w.type()),
+                    w.description(),
+                    w.distance(),
+                    WaypointOrigin.parseOrImported(w.origin())))
             .toList(),
         preview.getDepartureAt(),
         preview.getDepartureZone(),

@@ -318,14 +318,12 @@ public class UserExportService {
             .plus(expiryDays, ChronoUnit.DAYS);
     List<PendingEmail> pending =
         QuarkusTransaction.requiringNew()
-            .call(
-                () ->
-                    userExportRepository.findEmailRetryDue(expiresBefore).stream()
-                        .map(
-                            e ->
-                                new PendingEmail(
-                                    toContext(e), e.getFileSize() == null ? 0 : e.getFileSize()))
-                        .toList());
+            .call(() ->
+                userExportRepository.findEmailRetryDue(expiresBefore).stream()
+                    .map(e ->
+                        new PendingEmail(
+                            toContext(e), e.getFileSize() == null ? 0 : e.getFileSize()))
+                    .toList());
 
     for (PendingEmail item : pending) {
       ExportJobContext ctx = item.ctx();
@@ -336,10 +334,9 @@ public class UserExportService {
       try {
         boolean claimed =
             QuarkusTransaction.requiringNew()
-                .call(
-                    () ->
-                        userExportRepository.claimEmailRetry(
-                            ctx.exportId(), TokenUtils.hashToken(token), expiresAt, expiresBefore));
+                .call(() ->
+                    userExportRepository.claimEmailRetry(
+                        ctx.exportId(), TokenUtils.hashToken(token), expiresAt, expiresBefore));
         if (!claimed) {
           continue;
         }
@@ -357,16 +354,15 @@ public class UserExportService {
    */
   Optional<Long> claimNextPending() {
     return QuarkusTransaction.requiringNew()
-        .call(
-            () -> {
-              Long id = userExportRepository.findNextPendingIdSkipLocked();
-              if (id == null) {
-                return Optional.<Long>empty();
-              }
-              return userExportRepository.claim(id, Instant.now())
-                  ? Optional.of(id)
-                  : Optional.<Long>empty();
-            });
+        .call(() -> {
+          Long id = userExportRepository.findNextPendingIdSkipLocked();
+          if (id == null) {
+            return Optional.<Long>empty();
+          }
+          return userExportRepository.claim(id, Instant.now())
+              ? Optional.of(id)
+              : Optional.<Long>empty();
+        });
   }
 
   private ExportJobContext loadContext(long exportId) {
@@ -399,62 +395,58 @@ public class UserExportService {
 
   void markReady(long exportId, String storageKey, long size, String tokenHash, Instant expiresAt) {
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              UserExport export = userExportRepository.findById(exportId);
-              export.setStatus(UserExportStatus.READY);
-              export.setStorageKey(storageKey);
-              export.setFileSize(size);
-              export.setDownloadTokenHash(tokenHash);
-              export.setExpiresAt(expiresAt);
-              export.setCompletedAt(Instant.now());
-              export.setErrorMessage(null);
-            });
+        .run(() -> {
+          UserExport export = userExportRepository.findById(exportId);
+          export.setStatus(UserExportStatus.READY);
+          export.setStorageKey(storageKey);
+          export.setFileSize(size);
+          export.setDownloadTokenHash(tokenHash);
+          export.setExpiresAt(expiresAt);
+          export.setCompletedAt(Instant.now());
+          export.setErrorMessage(null);
+        });
   }
 
   void markEmailSent(long exportId) {
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              UserExport export = userExportRepository.findById(exportId);
-              if (export != null) {
-                export.setEmailSentAt(Instant.now());
-              }
-            });
+        .run(() -> {
+          UserExport export = userExportRepository.findById(exportId);
+          if (export != null) {
+            export.setEmailSentAt(Instant.now());
+          }
+        });
   }
 
   /** Records a failed ready-mail on a row still owed it, making it due for a retry right away. */
   void markEmailFailed(long exportId, Exception cause) {
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              UserExport export = userExportRepository.findById(exportId);
-              if (export != null
-                  && export.getStatus() == UserExportStatus.READY
-                  && export.getEmailSentAt() == null) {
-                export.setErrorMessage(truncate("Ready email failed: " + cause));
-              }
-            });
+        .run(() -> {
+          UserExport export = userExportRepository.findById(exportId);
+          if (export != null
+              && export.getStatus() == UserExportStatus.READY
+              && export.getEmailSentAt() == null) {
+            export.setErrorMessage(truncate("Ready email failed: " + cause));
+          }
+        });
   }
 
   void markFailed(long exportId, Exception cause) {
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              UserExport export = userExportRepository.findById(exportId);
-              // Only a job still being built can fail: a READY row holds a good archive and a live
-              // link, and must never be sent back to the queue (docs/LEDGER_*.md API-95).
-              if (export == null || export.getStatus() != UserExportStatus.PROCESSING) {
-                return;
-              }
-              export.setStorageKey(null);
-              export.setErrorMessage(truncate(cause.toString()));
-              // Below the attempt ceiling it goes back on the queue for the next tick.
-              export.setStatus(
-                  export.getAttempts() >= maxAttempts
-                      ? UserExportStatus.FAILED
-                      : UserExportStatus.PENDING);
-            });
+        .run(() -> {
+          UserExport export = userExportRepository.findById(exportId);
+          // Only a job still being built can fail: a READY row holds a good archive and a live
+          // link, and must never be sent back to the queue (docs/LEDGER_*.md API-95).
+          if (export == null || export.getStatus() != UserExportStatus.PROCESSING) {
+            return;
+          }
+          export.setStorageKey(null);
+          export.setErrorMessage(truncate(cause.toString()));
+          // Below the attempt ceiling it goes back on the queue for the next tick.
+          export.setStatus(
+              export.getAttempts() >= maxAttempts
+                  ? UserExportStatus.FAILED
+                  : UserExportStatus.PENDING);
+        });
   }
 
   // ------------------------------------------------------------------ cleanup

@@ -94,25 +94,23 @@ class RouteSurfaceResourceTest extends AbstractResourceTest {
 
   private double length(RouteDto route) {
     return QuarkusTransaction.requiringNew()
-        .call(
-            () ->
-                trackRepository
-                    .findPoints(TsidUtils.toLong(route.id()))
-                    .getFirst()
-                    .points()
-                    .getLast()
-                    .dist());
+        .call(() ->
+            trackRepository
+                .findPoints(TsidUtils.toLong(route.id()))
+                .getFirst()
+                .points()
+                .getLast()
+                .dist());
   }
 
   /** The HD catch-up given up after its five attempts, with its row kept for diagnosis. */
   private void giveUpCatchUp(RouteDto route) {
     Long id = TsidUtils.toLong(route.id());
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              elevationRefreshRepository.update("attempts = 5 where route.id = ?1", id);
-              routeRepository.update("elevationState = ?1 where id = ?2", ElevationState.FAST, id);
-            });
+        .run(() -> {
+          elevationRefreshRepository.update("attempts = 5 where route.id = ?1", id);
+          routeRepository.update("elevationState = ?1 where id = ?2", ElevationState.FAST, id);
+        });
   }
 
   private void store(RouteDto route, TrackSurfaceDocument doc) {
@@ -192,13 +190,12 @@ class RouteSurfaceResourceTest extends AbstractResourceTest {
     double length = length(route);
     store(route, ok(length, List.of(new SurfaceRange(0, length, "dirt"))));
     QuarkusTransaction.requiringNew()
-        .run(
-            () ->
-                em.createNativeQuery(
-                        "update gpx_tracks set surfaces = jsonb_set(jsonb_set(surfaces, '{future}',"
-                            + " '{\"a\":1}'), '{surfaces,0,3}', '\"extra\"') where id = :id")
-                    .setParameter("id", trackId(route))
-                    .executeUpdate());
+        .run(() ->
+            em.createNativeQuery(
+                    "update gpx_tracks set surfaces = jsonb_set(jsonb_set(surfaces, '{future}',"
+                        + " '{\"a\":1}'), '{surfaces,0,3}', '\"extra\"') where id = :id")
+                .setParameter("id", trackId(route))
+                .executeUpdate());
 
     detail(route)
         .body("tracks[0].surfaceState", equalTo("READY"))
@@ -266,20 +263,19 @@ class RouteSurfaceResourceTest extends AbstractResourceTest {
   /** Stored as the previous release wrote it: the raw JSON, four elements to a way. */
   private void storeVersion1(RouteDto route, double length) {
     QuarkusTransaction.requiringNew()
-        .run(
-            () ->
-                em.createNativeQuery(
-                        "update gpx_tracks set surfaces = cast(:json as jsonb) where id = :id")
-                    .setParameter(
-                        "json",
-                        ("{\"version\":1,\"status\":\"ok\",\"reason\":null,\"osmChangeset\":123,"
-                             + "\"computedAt\":\"2026-10-20T08:00:00Z\",\"costing\":\"pedestrian\","
-                             + "\"distance\":%1$s,"
-                             + "\"surfaces\":[[0,%2$s,\"paved_smooth\"],[%2$s,%1$s,\"compacted\"]],"
-                             + "\"ways\":[[0,%1$s,\"road\",\"none\"]]}")
-                            .formatted(length, length / 2))
-                    .setParameter("id", trackId(route))
-                    .executeUpdate());
+        .run(() ->
+            em.createNativeQuery(
+                    "update gpx_tracks set surfaces = cast(:json as jsonb) where id = :id")
+                .setParameter(
+                    "json",
+                    ("{\"version\":1,\"status\":\"ok\",\"reason\":null,\"osmChangeset\":123,"
+                            + "\"computedAt\":\"2026-10-20T08:00:00Z\",\"costing\":\"pedestrian\","
+                            + "\"distance\":%1$s,"
+                            + "\"surfaces\":[[0,%2$s,\"paved_smooth\"],[%2$s,%1$s,\"compacted\"]],"
+                            + "\"ways\":[[0,%1$s,\"road\",\"none\"]]}")
+                        .formatted(length, length / 2))
+                .setParameter("id", trackId(route))
+                .executeUpdate());
   }
 
   @Test
@@ -398,21 +394,19 @@ class RouteSurfaceResourceTest extends AbstractResourceTest {
     store(route, ok(length, List.of(new SurfaceRange(0, length, "paved"))));
     Long trackId = trackId(route);
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              GpxTrack track = em.find(GpxTrack.class, trackId);
-              assertFalse(Hibernate.isPropertyInitialized(track, "surfaces"));
-              // Reading the planner state (several MB) must not read the surface, nor the other way
-              track.getPlannerState();
-              assertFalse(Hibernate.isPropertyInitialized(track, "surfaces"));
-            });
+        .run(() -> {
+          GpxTrack track = em.find(GpxTrack.class, trackId);
+          assertFalse(Hibernate.isPropertyInitialized(track, "surfaces"));
+          // Reading the planner state (several MB) must not read the surface, nor the other way
+          track.getPlannerState();
+          assertFalse(Hibernate.isPropertyInitialized(track, "surfaces"));
+        });
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              GpxTrack track = em.find(GpxTrack.class, trackId);
-              assertNotNull(track.getSurfaces());
-              assertTrue(Hibernate.isPropertyInitialized(track, "surfaces"));
-              assertFalse(Hibernate.isPropertyInitialized(track, "plannerState"));
-            });
+        .run(() -> {
+          GpxTrack track = em.find(GpxTrack.class, trackId);
+          assertNotNull(track.getSurfaces());
+          assertTrue(Hibernate.isPropertyInitialized(track, "surfaces"));
+          assertFalse(Hibernate.isPropertyInitialized(track, "plannerState"));
+        });
   }
 }

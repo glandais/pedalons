@@ -40,11 +40,10 @@ public final class ParticipantPages {
     TypedQuery<User> pageQuery =
         em.createQuery("select u" + from + " order by p.registeredAt, p.id", User.class);
     TypedQuery<Long> countQuery = em.createQuery("select count(p)" + from, Long.class);
-    params.forEach(
-        (name, value) -> {
-          pageQuery.setParameter(name, value);
-          countQuery.setParameter(name, value);
-        });
+    params.forEach((name, value) -> {
+      pageQuery.setParameter(name, value);
+      countQuery.setParameter(name, value);
+    });
     java.util.List<User> users =
         pageQuery
             .setFirstResult(Math.max(page, 0) * pageSize)

@@ -473,10 +473,9 @@ class CalendarResourceTest extends AbstractResourceTest {
 
     long deleted =
         io.quarkus.narayana.jta.QuarkusTransaction.requiringNew()
-            .call(
-                () ->
-                    calendarTokenRepository.deleteInactiveSince(
-                        Instant.now().minus(90, ChronoUnit.DAYS)));
+            .call(() ->
+                calendarTokenRepository.deleteInactiveSince(
+                    Instant.now().minus(90, ChronoUnit.DAYS)));
 
     assertEquals(1, deleted);
     given()

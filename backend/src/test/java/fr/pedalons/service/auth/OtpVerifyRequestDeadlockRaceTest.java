@@ -73,16 +73,15 @@ class OtpVerifyRequestDeadlockRaceTest extends AbstractBaseTest {
     executor = Executors.newSingleThreadExecutor();
     User user = dataService.createVerifiedUser(EMAIL, "OTP Race");
     QuarkusTransaction.requiringNew()
-        .run(
-            () ->
-                authTokenRepository.persist(
-                    new AuthToken(
-                        user,
-                        EMAIL,
-                        TokenUtils.hashToken(RIGHT_CODE),
-                        AuthTokenType.OTP,
-                        Instant.now().plus(5, ChronoUnit.MINUTES),
-                        domain.getId())));
+        .run(() ->
+            authTokenRepository.persist(
+                new AuthToken(
+                    user,
+                    EMAIL,
+                    TokenUtils.hashToken(RIGHT_CODE),
+                    AuthTokenType.OTP,
+                    Instant.now().plus(5, ChronoUnit.MINUTES),
+                    domain.getId())));
   }
 
   @AfterEach
@@ -94,41 +93,36 @@ class OtpVerifyRequestDeadlockRaceTest extends AbstractBaseTest {
   void rightCode_racingARequestForANewCode_doesNotDeadlock() throws Exception {
     Future<Boolean> login =
         QuarkusTransaction.requiringNew()
-            .call(
-                () -> {
-                  // createOtp's first step: the account row, locked.
-                  assertTrue(
-                      userRepository
-                          .findByEmailAndDomainForUpdate(domain.getId(), EMAIL)
-                          .isPresent());
+            .call(() -> {
+              // createOtp's first step: the account row, locked.
+              assertTrue(
+                  userRepository.findByEmailAndDomainForUpdate(domain.getId(), EMAIL).isPresent());
 
-                  Future<Boolean> owner =
-                      executor.submit(
-                          () ->
-                              inRequest(
-                                  () -> {
-                                    try {
-                                      return authService
-                                              .verifyOtp(EMAIL, RIGHT_CODE, "Owner", "203.0.113.7")
-                                              .response()
-                                              .accessToken()
-                                          != null;
-                                    } catch (BadRequestException codeReplaced) {
-                                      return false;
-                                    }
-                                  }));
-                  try {
-                    // The login blocks on the account row (with the code already locked, unfixed).
-                    owner.get(3, TimeUnit.SECONDS);
-                  } catch (TimeoutException waitingOnTheAccount) {
-                    // expected
-                  }
-                  assertFalse(owner.isDone(), "the login did not wait on the locked account");
+              Future<Boolean> owner =
+                  executor.submit(() ->
+                      inRequest(() -> {
+                        try {
+                          return authService
+                                  .verifyOtp(EMAIL, RIGHT_CODE, "Owner", "203.0.113.7")
+                                  .response()
+                                  .accessToken()
+                              != null;
+                        } catch (BadRequestException codeReplaced) {
+                          return false;
+                        }
+                      }));
+              try {
+                // The login blocks on the account row (with the code already locked, unfixed).
+                owner.get(3, TimeUnit.SECONDS);
+              } catch (TimeoutException waitingOnTheAccount) {
+                // expected
+              }
+              assertFalse(owner.isDone(), "the login did not wait on the locked account");
 
-                  // The rest of createOtp, in this transaction: count, invalidate, insert.
-                  authService.requestOtp(new OtpRequest(EMAIL));
-                  return owner;
-                });
+              // The rest of createOtp, in this transaction: count, invalidate, insert.
+              authService.requestOtp(new OtpRequest(EMAIL));
+              return owner;
+            });
 
     // Whatever the login still had to do runs now; a deadlock abort surfaces here.
     Boolean loggedIn = login.get(60, TimeUnit.SECONDS);
@@ -136,13 +130,12 @@ class OtpVerifyRequestDeadlockRaceTest extends AbstractBaseTest {
 
     long live =
         QuarkusTransaction.requiringNew()
-            .call(
-                () ->
-                    authTokenRepository.count(
-                        "email = ?1 and tokenType = ?2 and domainId = ?3 and usedAt is null",
-                        EMAIL,
-                        AuthTokenType.OTP,
-                        domain.getId()));
+            .call(() ->
+                authTokenRepository.count(
+                    "email = ?1 and tokenType = ?2 and domainId = ?3 and usedAt is null",
+                    EMAIL,
+                    AuthTokenType.OTP,
+                    domain.getId()));
     assertEquals(1, live, "the request's new code is the only live one");
   }
 

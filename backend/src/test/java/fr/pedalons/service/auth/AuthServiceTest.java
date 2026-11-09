@@ -330,12 +330,11 @@ class AuthServiceTest extends AbstractBaseTest {
   /** Moves the rotation that made {@code previousToken} the previous one {@code by} into the past. */
   private void backdateRotation(String previousToken, Duration by) {
     QuarkusTransaction.requiringNew()
-        .run(
-            () ->
-                authSessionRepository.update(
-                    "rotatedAt = ?1 where previousRefreshTokenHash = ?2",
-                    Instant.now().minus(by),
-                    hashToken(previousToken)));
+        .run(() ->
+            authSessionRepository.update(
+                "rotatedAt = ?1 where previousRefreshTokenHash = ?2",
+                Instant.now().minus(by),
+                hashToken(previousToken)));
   }
 
   @Test
@@ -524,13 +523,12 @@ class AuthServiceTest extends AbstractBaseTest {
     createVerifiedUserWithPassword("stuffed@example.com", "Login User", "correctpass");
 
     List<String> lines =
-        failedLoginLines(
-            () ->
-                assertThrows(
-                    BadRequestException.class,
-                    () ->
-                        authService.loginWithPassword(
-                            "stuffed@example.com", "guessedpass", "Agent", "203.0.113.7")));
+        failedLoginLines(() ->
+            assertThrows(
+                BadRequestException.class,
+                () ->
+                    authService.loginWithPassword(
+                        "stuffed@example.com", "guessedpass", "Agent", "203.0.113.7")));
 
     assertEquals(1, lines.size());
     String line = lines.getFirst();
@@ -544,13 +542,12 @@ class AuthServiceTest extends AbstractBaseTest {
   @Test
   void loginWithPassword_unknownAccount_isLoggedToo() {
     List<String> lines =
-        failedLoginLines(
-            () ->
-                assertThrows(
-                    BadRequestException.class,
-                    () ->
-                        authService.loginWithPassword(
-                            "nobody@example.com", "anypass", "Agent", "203.0.113.7")));
+        failedLoginLines(() ->
+            assertThrows(
+                BadRequestException.class,
+                () ->
+                    authService.loginWithPassword(
+                        "nobody@example.com", "anypass", "Agent", "203.0.113.7")));
 
     assertEquals(1, lines.size());
     assertTrue(lines.getFirst().contains("reason=unknown_account"), lines.getFirst());
@@ -573,13 +570,12 @@ class AuthServiceTest extends AbstractBaseTest {
     createOtpToken(user, "123456");
 
     List<String> lines =
-        failedLoginLines(
-            () ->
-                assertThrows(
-                    BadRequestException.class,
-                    () ->
-                        authService.verifyOtp(
-                            "otp-log@example.com", "654321", "Agent", "203.0.113.7")));
+        failedLoginLines(() ->
+            assertThrows(
+                BadRequestException.class,
+                () ->
+                    authService.verifyOtp(
+                        "otp-log@example.com", "654321", "Agent", "203.0.113.7")));
 
     assertEquals(1, lines.size());
     String line = lines.getFirst();
@@ -602,11 +598,10 @@ class AuthServiceTest extends AbstractBaseTest {
                 "signature", "AAAA"));
 
     List<String> lines =
-        failedLoginLines(
-            () ->
-                assertThrows(
-                    NotFoundException.class,
-                    () -> authService.authenticateWithPasskey(response, "Agent", "203.0.113.7")));
+        failedLoginLines(() ->
+            assertThrows(
+                NotFoundException.class,
+                () -> authService.authenticateWithPasskey(response, "Agent", "203.0.113.7")));
 
     assertEquals(1, lines.size());
     assertTrue(lines.getFirst().contains("method=passkey"), lines.getFirst());

@@ -147,12 +147,11 @@ class GpxProcessingServiceTest extends AbstractBaseTest {
     List<GpxTrack.TrackPoint> trackPoints = track.getTrackPoints();
     assertFalse(trackPoints.isEmpty(), "Track points should not be empty");
 
-    trackPoints.forEach(
-        tp -> {
-          assertTrue(tp.lat() >= -90 && tp.lat() <= 90, "Latitude should be valid");
-          assertTrue(tp.lng() >= -180 && tp.lng() <= 180, "Longitude should be valid");
-          assertTrue(tp.dist() >= 0, "Distance should be non-negative");
-        });
+    trackPoints.forEach(tp -> {
+      assertTrue(tp.lat() >= -90 && tp.lat() <= 90, "Latitude should be valid");
+      assertTrue(tp.lng() >= -180 && tp.lng() <= 180, "Longitude should be valid");
+      assertTrue(tp.dist() >= 0, "Distance should be non-negative");
+    });
   }
 
   @Test
@@ -210,11 +209,10 @@ class GpxProcessingServiceTest extends AbstractBaseTest {
     assertEquals(
         3,
         route.getAssets().stream()
-            .filter(
-                a ->
-                    a.getType() == AssetType.ROUTE_ORIGINAL_GPX
-                        || a.getType() == AssetType.ROUTE_FILTERED_GPX
-                        || a.getType() == AssetType.ROUTE_FIT)
+            .filter(a ->
+                a.getType() == AssetType.ROUTE_ORIGINAL_GPX
+                    || a.getType() == AssetType.ROUTE_FILTERED_GPX
+                    || a.getType() == AssetType.ROUTE_FIT)
             .count(),
         "every stored GPX and FIT file must be checked");
     for (Asset asset : route.getAssets()) {

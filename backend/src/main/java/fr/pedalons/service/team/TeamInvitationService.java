@@ -135,16 +135,15 @@ public class TeamInvitationService {
 
     invitationRepository
         .findPendingByTeamAndEmail(team.getId(), email)
-        .ifPresent(
-            previous -> {
-              previous.markRevoked(inviter);
-              // The flush is load-bearing, and no test can prove it: Hibernate's action queue runs
-              // inserts before updates, so without it the new PENDING row hits
-              // uk_team_invitations_pending while the old one is still PENDING. Tests build the
-              // schema from the JPA mappings, which cannot express a partial index, so this would
-              // only ever fail in production.
-              invitationRepository.flush();
-            });
+        .ifPresent(previous -> {
+          previous.markRevoked(inviter);
+          // The flush is load-bearing, and no test can prove it: Hibernate's action queue runs
+          // inserts before updates, so without it the new PENDING row hits
+          // uk_team_invitations_pending while the old one is still PENDING. Tests build the
+          // schema from the JPA mappings, which cannot express a partial index, so this would
+          // only ever fail in production.
+          invitationRepository.flush();
+        });
 
     String token = TokenUtils.generateSecureToken();
     TeamInvitation invitation =
@@ -226,11 +225,8 @@ public class TeamInvitationService {
             .findPendingForEmail(user.getDomain().getId(), normalize(user.getEmail()))
             .stream()
             // An invitation to a team they already belong to is noise, not an offer.
-            .filter(
-                i ->
-                    userTeamRepository
-                        .findByUserAndTeam(user.getId(), i.getTeam().getId())
-                        .isEmpty())
+            .filter(i ->
+                userTeamRepository.findByUserAndTeam(user.getId(), i.getTeam().getId()).isEmpty())
             .map(MyInvitationDto::from)
             .toList();
     return new MyInvitationListResponse(invitations);

@@ -74,16 +74,15 @@ class OtpFailedAttemptLostUpdateRaceTest extends AbstractBaseTest {
     executor = Executors.newSingleThreadExecutor();
     User user = dataService.createVerifiedUser(EMAIL, "OTP Race");
     QuarkusTransaction.requiringNew()
-        .run(
-            () ->
-                authTokenRepository.persist(
-                    new AuthToken(
-                        user,
-                        EMAIL,
-                        TokenUtils.hashToken(RIGHT_CODE),
-                        AuthTokenType.OTP,
-                        Instant.now().plus(5, ChronoUnit.MINUTES),
-                        domain.getId())));
+        .run(() ->
+            authTokenRepository.persist(
+                new AuthToken(
+                    user,
+                    EMAIL,
+                    TokenUtils.hashToken(RIGHT_CODE),
+                    AuthTokenType.OTP,
+                    Instant.now().plus(5, ChronoUnit.MINUTES),
+                    domain.getId())));
   }
 
   @AfterEach
@@ -93,15 +92,14 @@ class OtpFailedAttemptLostUpdateRaceTest extends AbstractBaseTest {
 
   @Test
   void staleWrongGuess_committingAfterTheCodeWasBurnt_mustNotReviveIt() throws Exception {
-    runStaleWrongGuessAround(
-        () -> {
-          // Five other wrong guesses, each committed: the code is burnt.
-          for (int i = 0; i < 5; i++) {
-            assertThrows(
-                BadRequestException.class,
-                () -> authService.verifyOtp(EMAIL, "000000", "Agent", "198.51.100.1"));
-          }
-        });
+    runStaleWrongGuessAround(() -> {
+      // Five other wrong guesses, each committed: the code is burnt.
+      for (int i = 0; i < 5; i++) {
+        assertThrows(
+            BadRequestException.class,
+            () -> authService.verifyOtp(EMAIL, "000000", "Agent", "198.51.100.1"));
+      }
+    });
 
     Optional<AuthToken> token = findValidToken();
     assertTrue(
@@ -118,13 +116,12 @@ class OtpFailedAttemptLostUpdateRaceTest extends AbstractBaseTest {
 
   @Test
   void staleWrongGuess_committingAfterTheOwnerLoggedIn_mustNotReopenTheUsedCode() throws Exception {
-    runStaleWrongGuessAround(
-        () ->
-            assertNotNull(
-                authService
-                    .verifyOtp(EMAIL, RIGHT_CODE, "Owner", "203.0.113.7")
-                    .response()
-                    .accessToken()));
+    runStaleWrongGuessAround(() ->
+        assertNotNull(
+            authService
+                .verifyOtp(EMAIL, RIGHT_CODE, "Owner", "203.0.113.7")
+                .response()
+                .accessToken()));
 
     Optional<AuthToken> token = findValidToken();
     assertTrue(
@@ -145,25 +142,24 @@ class OtpFailedAttemptLostUpdateRaceTest extends AbstractBaseTest {
     AtomicReference<Future<?>> other = new AtomicReference<>();
     try {
       QuarkusTransaction.requiringNew()
-          .run(
-              () -> {
-                // verifyOtp joins this transaction: it reads {failed=0, used_at=NULL} and
-                // increments in memory; the flush waits for this transaction's commit.
-                assertThrows(
-                    BadRequestException.class,
-                    () -> authService.verifyOtp(EMAIL, "999999", "Agent", "198.51.100.1"));
+          .run(() -> {
+            // verifyOtp joins this transaction: it reads {failed=0, used_at=NULL} and
+            // increments in memory; the flush waits for this transaction's commit.
+            assertThrows(
+                BadRequestException.class,
+                () -> authService.verifyOtp(EMAIL, "999999", "Agent", "198.51.100.1"));
 
-                other.set(executor.submit(() -> inRequest(interleaved)));
-                try {
-                  // Unfixed, nothing blocks the other thread. A row lock makes it wait on us: we
-                  // then commit first and it runs after.
-                  other.get().get(5, TimeUnit.SECONDS);
-                } catch (TimeoutException lockedOut) {
-                  // fixed with a lock: fall through and commit
-                } catch (Exception e) {
-                  throw new IllegalStateException(e);
-                }
-              });
+            other.set(executor.submit(() -> inRequest(interleaved)));
+            try {
+              // Unfixed, nothing blocks the other thread. A row lock makes it wait on us: we
+              // then commit first and it runs after.
+              other.get().get(5, TimeUnit.SECONDS);
+            } catch (TimeoutException lockedOut) {
+              // fixed with a lock: fall through and commit
+            } catch (Exception e) {
+              throw new IllegalStateException(e);
+            }
+          });
     } catch (RuntimeException staleCommitRejected) {
       // A @Version fix rejects the stale write at commit: that is the fixed behaviour.
     }
@@ -175,10 +171,8 @@ class OtpFailedAttemptLostUpdateRaceTest extends AbstractBaseTest {
 
   private Optional<AuthToken> findValidToken() {
     return QuarkusTransaction.requiringNew()
-        .call(
-            () ->
-                authTokenRepository.findValidByEmailAndType(
-                    EMAIL, AuthTokenType.OTP, domain.getId()));
+        .call(() ->
+            authTokenRepository.findValidByEmailAndType(EMAIL, AuthTokenType.OTP, domain.getId()));
   }
 
   /** Runs the action in a fresh request context, on the default domain. */

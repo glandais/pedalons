@@ -138,12 +138,11 @@ public class TestDataService {
   public Domain getOrCreateDefaultDomain() {
     return domainRepository
         .findByDomain("localhost")
-        .orElseGet(
-            () -> {
-              Domain domain = new Domain("localhost", "Pedalons", "http://localhost:5173");
-              domainRepository.persistAndFlush(domain);
-              return domain;
-            });
+        .orElseGet(() -> {
+          Domain domain = new Domain("localhost", "Pedalons", "http://localhost:5173");
+          domainRepository.persistAndFlush(domain);
+          return domain;
+        });
   }
 
   @Transactional
@@ -1866,12 +1865,11 @@ public class TestDataService {
             .setParameter("id", routeId)
             .getResultList();
     return rows.stream()
-        .map(
-            r ->
-                new RawGeometry(
-                    r[0] == null ? null : ((Number) r[0]).intValue(),
-                    r[1] == null ? null : ((Number) r[1]).intValue(),
-                    (String) r[2]))
+        .map(r ->
+            new RawGeometry(
+                r[0] == null ? null : ((Number) r[0]).intValue(),
+                r[1] == null ? null : ((Number) r[1]).intValue(),
+                (String) r[2]))
         .toList();
   }
 }

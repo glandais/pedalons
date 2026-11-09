@@ -74,11 +74,8 @@ class UserExportMailFailureKeepsArchiveTest extends AbstractBaseTest {
 
   private List<Long> unsentEmailIds() {
     return QuarkusTransaction.requiringNew()
-        .call(
-            () ->
-                userExportRepository.findWithUnsentEmail().stream()
-                    .map(UserExport::getId)
-                    .toList());
+        .call(() ->
+            userExportRepository.findWithUnsentEmail().stream().map(UserExport::getId).toList());
   }
 
   @Test

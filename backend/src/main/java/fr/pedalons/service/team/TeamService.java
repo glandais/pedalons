@@ -99,11 +99,8 @@ public class TeamService {
     Team team =
         teamRepository
             .findBySlugAndDomain(domainId, teamSlug)
-            .or(
-                () ->
-                    slugService
-                        .resolveTeamRedirect(domainId, teamSlug)
-                        .map(TeamSlugRedirect::getTeam))
+            .or(() ->
+                slugService.resolveTeamRedirect(domainId, teamSlug).map(TeamSlugRedirect::getTeam))
             .orElseThrow(() -> new NotFoundException(EntityType.TEAM, teamSlug));
     // A pinned alias host serves only its team; every other team of the parent domain is invisible,
     // even after a slug redirect. Checked here so all team-scoped endpoints inherit it.
@@ -228,13 +225,12 @@ public class TeamService {
         loadStats(teams.items().stream().map(t -> t.team().getId()).toList(), false);
     List<TeamDetailDto> dtos =
         teams.items().stream()
-            .map(
-                teamAndRole ->
-                    TeamDetailDto.from(
-                        teamAndRole,
-                        assetService,
-                        false,
-                        stats.getOrDefault(teamAndRole.team().getId(), TeamStats.EMPTY)))
+            .map(teamAndRole ->
+                TeamDetailDto.from(
+                    teamAndRole,
+                    assetService,
+                    false,
+                    stats.getOrDefault(teamAndRole.team().getId(), TeamStats.EMPTY)))
             .toList();
     return new TeamListResponse(dtos, teams.total(), page, size);
   }

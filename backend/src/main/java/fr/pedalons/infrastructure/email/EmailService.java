@@ -180,12 +180,11 @@ public class EmailService {
     // inside @Transactional (an invitation) then sometimes committed while that thread was still
     // in the transaction — Narayana rolled it back (ARJUNA016053) and the request answered 500.
     // Subscribed from the event loop, the send captures no context of the caller.
-    context.runOnContext(
-        ignored ->
-            mailer
-                .send(mail)
-                .subscribe()
-                .with(done -> sending.complete(null), sending::completeExceptionally));
+    context.runOnContext(ignored ->
+        mailer
+            .send(mail)
+            .subscribe()
+            .with(done -> sending.complete(null), sending::completeExceptionally));
     try {
       sending.get(timeout.toMillis(), TimeUnit.MILLISECONDS);
     } catch (TimeoutException e) {

@@ -225,10 +225,9 @@ public class GpxPreview {
       return document.waypoints();
     }
     return waypoints.stream()
-        .map(
-            w ->
-                new PreviewWaypointDetail(
-                    null, w.name(), w.lat(), w.lng(), "INFO", null, null, "IMPORTED"))
+        .map(w ->
+            new PreviewWaypointDetail(
+                null, w.name(), w.lat(), w.lng(), "INFO", null, null, "IMPORTED"))
         .toList();
   }
 

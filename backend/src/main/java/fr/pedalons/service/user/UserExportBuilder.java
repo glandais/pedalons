@@ -349,10 +349,8 @@ public class UserExportBuilder {
                     d -> d.getNotification().getId(),
                     Collectors.mapping(NotificationExport.Delivery::from, Collectors.toList())));
     return notificationRepository.findAllByRecipient(ctx.userId(), ctx.domainId()).stream()
-        .map(
-            n ->
-                NotificationExport.InboxEntry.from(
-                    n, deliveries.getOrDefault(n.getId(), List.of())))
+        .map(n ->
+            NotificationExport.InboxEntry.from(n, deliveries.getOrDefault(n.getId(), List.of())))
         .toList();
   }
 

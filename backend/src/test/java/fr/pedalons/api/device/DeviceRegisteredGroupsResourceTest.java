@@ -399,17 +399,16 @@ class DeviceRegisteredGroupsResourceTest extends AbstractResourceTest {
     dataService.createParticipation(group(ride, "Groupe", null, null), user3);
     GpsServiceConnection hammerhead = sync.connect(user3, GpsServiceType.HAMMERHEAD, false);
     QuarkusTransaction.requiringNew()
-        .run(
-            () ->
-                syncRepository.upsertManual(
-                    domain.getId(),
-                    user3.getId(),
-                    hammerhead.getId(),
-                    rideRoute.getId(),
-                    "Boucle de la sortie",
-                    "hash",
-                    "ext-manual",
-                    Instant.now()));
+        .run(() ->
+            syncRepository.upsertManual(
+                domain.getId(),
+                user3.getId(),
+                hammerhead.getId(),
+                rideRoute.getId(),
+                "Boucle de la sortie",
+                "hash",
+                "ext-manual",
+                Instant.now()));
 
     assertEquals(List.of(status(GpsServiceType.HAMMERHEAD, "SENT")), syncStatuses(USER3, 0));
   }
@@ -422,17 +421,16 @@ class DeviceRegisteredGroupsResourceTest extends AbstractResourceTest {
     GpsServiceConnection hammerhead = sync.connect(user3, GpsServiceType.HAMMERHEAD, false);
     String name = "Boucle de la sortie";
     QuarkusTransaction.requiringNew()
-        .run(
-            () ->
-                syncRepository.upsertManual(
-                    domain.getId(),
-                    user3.getId(),
-                    hammerhead.getId(),
-                    rideRoute.getId(),
-                    name,
-                    GpsSyncNames.hash(sent.getId(), name),
-                    "ext-manual",
-                    Instant.now()));
+        .run(() ->
+            syncRepository.upsertManual(
+                domain.getId(),
+                user3.getId(),
+                hammerhead.getId(),
+                rideRoute.getId(),
+                name,
+                GpsSyncNames.hash(sent.getId(), name),
+                "ext-manual",
+                Instant.now()));
     assertEquals(List.of(status(GpsServiceType.HAMMERHEAD, "SENT")), syncStatuses(USER3, 0));
 
     // The organiser replaces the GPX: nothing updates a manual upload, the Karoo holds the old one.

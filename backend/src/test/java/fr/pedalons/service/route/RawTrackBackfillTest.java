@@ -141,14 +141,13 @@ class RawTrackBackfillTest extends AbstractResourceTest {
 
   private void sql(String statement, Object... params) {
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              var query = trackRepository.getEntityManager().createNativeQuery(statement);
-              for (int i = 0; i < params.length; i++) {
-                query.setParameter(i + 1, params[i]);
-              }
-              query.executeUpdate();
-            });
+        .run(() -> {
+          var query = trackRepository.getEntityManager().createNativeQuery(statement);
+          for (int i = 0; i < params.length; i++) {
+            query.setParameter(i + 1, params[i]);
+          }
+          query.executeUpdate();
+        });
   }
 
   /** The number of points of every sanitized source track, as a save stores its raw line. */
@@ -180,16 +179,14 @@ class RawTrackBackfillTest extends AbstractResourceTest {
 
   private Optional<String> skipReason(Long routeId) {
     return QuarkusTransaction.requiringNew()
-        .call(
-            () ->
-                trackRepository
-                    .getEntityManager()
-                    .createNativeQuery(
-                        "select reason from raw_track_backfill_skip where route_id = ?1",
-                        String.class)
-                    .setParameter(1, routeId)
-                    .getResultStream()
-                    .findFirst());
+        .call(() ->
+            trackRepository
+                .getEntityManager()
+                .createNativeQuery(
+                    "select reason from raw_track_backfill_skip where route_id = ?1", String.class)
+                .setParameter(1, routeId)
+                .getResultStream()
+                .findFirst());
   }
 
   private Candidate candidate(Long routeId) {
@@ -343,14 +340,13 @@ class RawTrackBackfillTest extends AbstractResourceTest {
 
   private long tableSize(String table) {
     return QuarkusTransaction.requiringNew()
-        .call(
-            () ->
-                ((Number)
-                        trackRepository
-                            .getEntityManager()
-                            .createNativeQuery("select count(*) from " + table)
-                            .getSingleResult())
-                    .longValue());
+        .call(() ->
+            ((Number)
+                    trackRepository
+                        .getEntityManager()
+                        .createNativeQuery("select count(*) from " + table)
+                        .getSingleResult())
+                .longValue());
   }
 
   @Test

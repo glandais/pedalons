@@ -79,11 +79,10 @@ class WeatherCacheTest extends AbstractResourceTest {
     when(breaker.isClosed(any())).thenReturn(true);
     when(breaker.remainingBudget(any())).thenReturn(1_000);
     when(gateway.forecast(anyList()))
-        .thenAnswer(
-            invocation -> {
-              List<Location> locations = invocation.getArgument(0);
-              return locations.stream().map(WeatherCacheTest::forecast).toList();
-            });
+        .thenAnswer(invocation -> {
+          List<Location> locations = invocation.getArgument(0);
+          return locations.stream().map(WeatherCacheTest::forecast).toList();
+        });
 
     // Tomorrow, 30 km due north from Lyon, meeting point at the start.
     Instant tomorrow = Instant.now().plus(1, ChronoUnit.DAYS).truncatedTo(ChronoUnit.HOURS);
@@ -92,15 +91,14 @@ class WeatherCacheTest extends AbstractResourceTest {
             team1, user1, "Vers le nord", Visibility.PUBLIC, List.of(northbound(30)));
     ride = dataService.createRide(team1, user1, "Sortie", "sortie", tomorrow);
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              Place place = new Place(user1, team1, "Bellecour", true, true);
-              place.setGeometry(point(WGS84, g(4.8320, 45.7578)));
-              placeRepository.persist(place);
-              Ride managed = rideRepository.findById(ride.getId());
-              managed.setStart(place);
-              managed.setRoute(rideRepository.getEntityManager().find(Route.class, route.getId()));
-            });
+        .run(() -> {
+          Place place = new Place(user1, team1, "Bellecour", true, true);
+          place.setGeometry(point(WGS84, g(4.8320, 45.7578)));
+          placeRepository.persist(place);
+          Ride managed = rideRepository.findById(ride.getId());
+          managed.setStart(place);
+          managed.setRoute(rideRepository.getEntityManager().find(Route.class, route.getId()));
+        });
   }
 
   private static List<TrackPoint> northbound(double km) {
@@ -184,11 +182,10 @@ class WeatherCacheTest extends AbstractResourceTest {
 
     RideWeatherSummaries summaries =
         QuarkusTransaction.requiringNew()
-            .call(
-                () -> {
-                  List<Ride> rides = List.of(rideRepository.findById(ride.getId()));
-                  return rideWeatherLookup.forRides(rides);
-                });
+            .call(() -> {
+              List<Ride> rides = List.of(rideRepository.findById(ride.getId()));
+              return rideWeatherLookup.forRides(rides);
+            });
     RideWeatherSummary summary = summaries.forRide(ride.getId());
     assertNotNull(summary);
     assertEquals(WeatherStatus.OK, summary.status());
@@ -202,12 +199,11 @@ class WeatherCacheTest extends AbstractResourceTest {
 
     long statements =
         QuarkusTransaction.requiringNew()
-            .call(
-                () -> {
-                  List<Ride> rides = List.of(rideRepository.findById(ride.getId()));
-                  return queryStats.measure(
-                      "weather summaries [1 ride]", () -> rideWeatherLookup.forRides(rides));
-                });
+            .call(() -> {
+              List<Ride> rides = List.of(rideRepository.findById(ride.getId()));
+              return queryStats.measure(
+                  "weather summaries [1 ride]", () -> rideWeatherLookup.forRides(rides));
+            });
 
     assertEquals(1, statements);
   }
@@ -223,16 +219,15 @@ class WeatherCacheTest extends AbstractResourceTest {
     Instant departure = ride.getDateTime();
     RideGroup group = dataService.createRideGroup(user1, ride, "Groupe");
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              Ride managed = rideRepository.findById(ride.getId());
-              managed.setTimezone(tokyo.getId());
-              // The list reads the route's stored length; the detail, its samples (30 km).
-              managed.getRoute().setDistance(30_000f);
-              RideGroup g = rideRepository.getEntityManager().find(RideGroup.class, group.getId());
-              // It leaves with the ride.
-              g.setAverageSpeed(30f);
-            });
+        .run(() -> {
+          Ride managed = rideRepository.findById(ride.getId());
+          managed.setTimezone(tokyo.getId());
+          // The list reads the route's stored length; the detail, its samples (30 km).
+          managed.getRoute().setDistance(30_000f);
+          RideGroup g = rideRepository.getEntityManager().find(RideGroup.class, group.getId());
+          // It leaves with the ride.
+          g.setAverageSpeed(30f);
+        });
     planner.plan(Instant.now());
     worker.fetchDue();
 
@@ -243,12 +238,11 @@ class WeatherCacheTest extends AbstractResourceTest {
     // Its own start, three hours later, in both.
     Instant stored = departure.plus(Duration.ofHours(3));
     QuarkusTransaction.requiringNew()
-        .run(
-            () ->
-                rideRepository
-                    .getEntityManager()
-                    .find(RideGroup.class, group.getId())
-                    .setStartAt(stored));
+        .run(() ->
+            rideRepository
+                .getEntityManager()
+                .find(RideGroup.class, group.getId())
+                .setStartAt(stored));
     assertEquals(stored.plus(Duration.ofHours(1)), listLastArrival());
     assertEquals(stored.plus(Duration.ofHours(1)), detailArrival(group.getId()));
   }
@@ -256,14 +250,13 @@ class WeatherCacheTest extends AbstractResourceTest {
   private Instant listLastArrival() {
     List<RideWindowHour> hours =
         QuarkusTransaction.requiringNew()
-            .call(
-                () ->
-                    hourlyRepository.findRideWindowHours(
-                        List.of(ride.getId()),
-                        CellKey.SQL_LAT_IDX,
-                        CellKey.SQL_LON_IDX,
-                        RideWeatherCalculator.DEFAULT_SPEED_KMH,
-                        RideWeatherLookup.SLACK));
+            .call(() ->
+                hourlyRepository.findRideWindowHours(
+                    List.of(ride.getId()),
+                    CellKey.SQL_LAT_IDX,
+                    CellKey.SQL_LON_IDX,
+                    RideWeatherCalculator.DEFAULT_SPEED_KMH,
+                    RideWeatherLookup.SLACK));
     assertTrue(!hours.isEmpty());
     return hours.getFirst().lastArrival();
   }
@@ -288,16 +281,15 @@ class WeatherCacheTest extends AbstractResourceTest {
     long[] statements = new long[1];
     RideWeatherSummaries summaries =
         QuarkusTransaction.requiringNew()
-            .call(
-                () -> {
-                  List<Ride> rides = List.of(rideRepository.findById(far.getId()));
-                  RideWeatherSummaries[] out = new RideWeatherSummaries[1];
-                  statements[0] =
-                      queryStats.measure(
-                          "weather summaries [far ride]",
-                          () -> out[0] = rideWeatherLookup.forRides(rides));
-                  return out[0];
-                });
+            .call(() -> {
+              List<Ride> rides = List.of(rideRepository.findById(far.getId()));
+              RideWeatherSummaries[] out = new RideWeatherSummaries[1];
+              statements[0] =
+                  queryStats.measure(
+                      "weather summaries [far ride]",
+                      () -> out[0] = rideWeatherLookup.forRides(rides));
+              return out[0];
+            });
 
     assertEquals(0, statements[0]);
     // No place, no route: nothing to promise either.
@@ -371,12 +363,11 @@ class WeatherCacheTest extends AbstractResourceTest {
 
   private RideWeather previewWeather(fr.pedalons.domain.gpx.GpxPreview preview) {
     return QuarkusTransaction.requiringNew()
-        .call(
-            () ->
-                rideWeatherService.forPreview(
-                    previewRepository
-                        .findWeatherRow(domain.getId(), preview.getPublicId())
-                        .orElseThrow()));
+        .call(() ->
+            rideWeatherService.forPreview(
+                previewRepository
+                    .findWeatherRow(domain.getId(), preview.getPublicId())
+                    .orElseThrow()));
   }
 
   @Test
@@ -414,16 +405,15 @@ class WeatherCacheTest extends AbstractResourceTest {
 
     long statements =
         QuarkusTransaction.requiringNew()
-            .call(
-                () -> {
-                  return queryStats.measure(
-                      "preview weather [hot]",
-                      () ->
-                          rideWeatherService.forPreview(
-                              previewRepository
-                                  .findWeatherRow(domain.getId(), preview.getPublicId())
-                                  .orElseThrow()));
-                });
+            .call(() -> {
+              return queryStats.measure(
+                  "preview weather [hot]",
+                  () ->
+                      rideWeatherService.forPreview(
+                          previewRepository
+                              .findWeatherRow(domain.getId(), preview.getPublicId())
+                              .orElseThrow()));
+            });
 
     // the projection, the cells, their hours: nothing for the tracks
     assertEquals(3, statements);

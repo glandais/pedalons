@@ -105,29 +105,27 @@ class OtpRequestRateLimitRaceTest extends AbstractBaseTest {
     CountDownLatch releaseA = new CountDownLatch(1);
 
     CompletableFuture<Void> a =
-        CompletableFuture.runAsync(
-            () ->
-                inRequest(
-                    () -> {
-                      try {
-                        userTransaction.begin();
-                        try {
-                          // requestOtp joins this transaction (QuarkusTransaction.joiningExisting).
-                          authService.requestOtp(new OtpRequest(EMAIL));
-                          authTokenRepository.flush(); // the insert reaches the database
-                          aIssuedUncommitted.countDown();
-                          assertTrue(releaseA.await(30, TimeUnit.SECONDS));
-                          userTransaction.commit();
-                        } catch (Throwable t) {
-                          userTransaction.rollback();
-                          throw t;
-                        }
-                      } catch (Throwable t) {
-                        throw new RuntimeException(t);
-                      } finally {
-                        aIssuedUncommitted.countDown();
-                      }
-                    }));
+        CompletableFuture.runAsync(() ->
+            inRequest(() -> {
+              try {
+                userTransaction.begin();
+                try {
+                  // requestOtp joins this transaction (QuarkusTransaction.joiningExisting).
+                  authService.requestOtp(new OtpRequest(EMAIL));
+                  authTokenRepository.flush(); // the insert reaches the database
+                  aIssuedUncommitted.countDown();
+                  assertTrue(releaseA.await(30, TimeUnit.SECONDS));
+                  userTransaction.commit();
+                } catch (Throwable t) {
+                  userTransaction.rollback();
+                  throw t;
+                }
+              } catch (Throwable t) {
+                throw new RuntimeException(t);
+              } finally {
+                aIssuedUncommitted.countDown();
+              }
+            }));
 
     assertTrue(aIssuedUncommitted.await(30, TimeUnit.SECONDS), "A's request did not run");
     if (a.isDone()) {
@@ -135,16 +133,14 @@ class OtpRequestRateLimitRaceTest extends AbstractBaseTest {
     }
 
     CompletableFuture<Void> b =
-        CompletableFuture.runAsync(
-            () ->
-                inRequest(
-                    () -> {
-                      try {
-                        authService.requestOtp(new OtpRequest(EMAIL));
-                      } catch (RuntimeException e) {
-                        // A unique-index fix may reject B outright: that is a correct outcome.
-                      }
-                    }));
+        CompletableFuture.runAsync(() ->
+            inRequest(() -> {
+              try {
+                authService.requestOtp(new OtpRequest(EMAIL));
+              } catch (RuntimeException e) {
+                // A unique-index fix may reject B outright: that is a correct outcome.
+              }
+            }));
 
     // Today B either completes at once or waits only on the row A invalidated. Once requests are
     // serialised, B waits on A's lock. Give it a moment, then let A commit either way.

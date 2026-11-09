@@ -94,18 +94,17 @@ public class AuthThrottle {
     Instant since = Instant.now().minus(window);
     boolean admitted =
         QuarkusTransaction.requiringNew()
-            .call(
-                () -> {
-                  lock(domainId, AuthFailureKind.PASSWORD, subject);
-                  if (authFailureRepository.countSince(
-                          domainId, AuthFailureKind.PASSWORD, subject, since)
-                      >= passwordMaxFailures) {
-                    return false;
-                  }
-                  authFailureRepository.persist(
-                      new AuthFailure(domainId, AuthFailureKind.PASSWORD, subject));
-                  return true;
-                });
+            .call(() -> {
+              lock(domainId, AuthFailureKind.PASSWORD, subject);
+              if (authFailureRepository.countSince(
+                      domainId, AuthFailureKind.PASSWORD, subject, since)
+                  >= passwordMaxFailures) {
+                return false;
+              }
+              authFailureRepository.persist(
+                  new AuthFailure(domainId, AuthFailureKind.PASSWORD, subject));
+              return true;
+            });
     if (!admitted) {
       Log.warnf("Password sign-in throttled domain=%d subject=%s", domainId, subject);
       throw new TooManyRequestsException(ErrorCode.LOGIN_RATE_LIMITED, window.toSeconds());
@@ -137,30 +136,28 @@ public class AuthThrottle {
     String subject = userId == null ? ANONYMOUS : userId.toString();
     Optional<Long> admitted =
         QuarkusTransaction.requiringNew()
-            .call(
-                () -> {
-                  lock(domainId, AuthFailureKind.DEVICE_CODE, "");
-                  boolean userOver =
-                      userId != null
-                          && authFailureRepository.countSince(
-                                  domainId, AuthFailureKind.DEVICE_CODE, subject, since)
-                              >= deviceCodeMaxFailuresPerUser;
-                  boolean domainOver =
-                      !userOver
-                          && authFailureRepository.countSince(
-                                  domainId, AuthFailureKind.DEVICE_CODE, since)
-                              >= deviceCodeMaxFailuresPerDomain;
-                  if (userOver || domainOver) {
-                    Log.warnf(
-                        "Device pairing throttled domain=%d user=%s scope=%s",
-                        domainId, userId, userOver ? "user" : "domain");
-                    return Optional.<Long>empty();
-                  }
-                  AuthFailure guess =
-                      new AuthFailure(domainId, AuthFailureKind.DEVICE_CODE, subject);
-                  authFailureRepository.persist(guess);
-                  return Optional.of(guess.getId());
-                });
+            .call(() -> {
+              lock(domainId, AuthFailureKind.DEVICE_CODE, "");
+              boolean userOver =
+                  userId != null
+                      && authFailureRepository.countSince(
+                              domainId, AuthFailureKind.DEVICE_CODE, subject, since)
+                          >= deviceCodeMaxFailuresPerUser;
+              boolean domainOver =
+                  !userOver
+                      && authFailureRepository.countSince(
+                              domainId, AuthFailureKind.DEVICE_CODE, since)
+                          >= deviceCodeMaxFailuresPerDomain;
+              if (userOver || domainOver) {
+                Log.warnf(
+                    "Device pairing throttled domain=%d user=%s scope=%s",
+                    domainId, userId, userOver ? "user" : "domain");
+                return Optional.<Long>empty();
+              }
+              AuthFailure guess = new AuthFailure(domainId, AuthFailureKind.DEVICE_CODE, subject);
+              authFailureRepository.persist(guess);
+              return Optional.of(guess.getId());
+            });
     return admitted.orElseThrow(
         () -> new TooManyRequestsException(ErrorCode.DEVICE_CODE_RATE_LIMITED, window.toSeconds()));
   }

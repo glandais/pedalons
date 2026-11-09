@@ -269,9 +269,8 @@ public class DeviceAuthService {
     if (deviceCode.isPresent()) {
       authThrottle.forgetDeviceCode(guessId);
     }
-    return deviceCode.map(
-        code ->
-            new PendingDeviceCode(code.isAuthorized(), code.getClientId(), code.getCreatedAt()));
+    return deviceCode.map(code ->
+        new PendingDeviceCode(code.isAuthorized(), code.getClientId(), code.getCreatedAt()));
   }
 
   /**

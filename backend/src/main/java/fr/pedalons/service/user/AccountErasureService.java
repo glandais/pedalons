@@ -124,17 +124,16 @@ public class AccountErasureService {
     try {
       targets =
           QuarkusTransaction.requiringNew()
-              .call(
-                  () -> {
-                    User user = userRepository.findById(userId);
-                    if (user == null || isErased(user)) {
-                      return List.<Target>of();
-                    }
-                    Long domainId = user.getDomain().getId();
-                    return gpsServiceConnectionRepository.findByUser(userId).stream()
-                        .map(c -> new Target(domainId, c.getId()))
-                        .toList();
-                  });
+              .call(() -> {
+                User user = userRepository.findById(userId);
+                if (user == null || isErased(user)) {
+                  return List.<Target>of();
+                }
+                Long domainId = user.getDomain().getId();
+                return gpsServiceConnectionRepository.findByUser(userId).stream()
+                    .map(c -> new Target(domainId, c.getId()))
+                    .toList();
+              });
     } catch (RuntimeException e) {
       LOG.warnf("Synced routes of user %d not removed before erasure: %s", userId, e.getMessage());
       return;

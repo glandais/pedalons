@@ -112,13 +112,12 @@ public record TrackDto(
       TrackSurfaceReadout surface) {
     G3DM[] geomPoints =
         trackPoints.stream()
-            .map(
-                p ->
-                    g(
-                        microdegree(p.lng()),
-                        microdegree(p.lat()),
-                        decimetre(p.ele()),
-                        decimetre(p.dist())))
+            .map(p ->
+                g(
+                    microdegree(p.lng()),
+                    microdegree(p.lat()),
+                    decimetre(p.ele()),
+                    decimetre(p.dist())))
             .toArray(G3DM[]::new);
     LineString<G3DM> line = linestring(WGS84_3DM, geomPoints);
     return new TrackDto(

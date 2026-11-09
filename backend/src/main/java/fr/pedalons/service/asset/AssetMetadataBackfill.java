@@ -142,10 +142,9 @@ public class AssetMetadataBackfill {
       Files.deleteIfExists(original);
     }
     QuarkusTransaction.requiringNew()
-        .run(
-            () ->
-                assetRepository.updateStoredFile(
-                    row.assetId(), fileName, format.storedMimeType(), size));
+        .run(() ->
+            assetRepository.updateStoredFile(
+                row.assetId(), fileName, format.storedMimeType(), size));
     return Outcome.REENCODED;
   }
 }

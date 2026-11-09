@@ -36,10 +36,8 @@ public final class WaypointExports {
                 .thenComparing(BY_DISTANCE))
         .limit(MAX_COURSE_POINTS)
         .sorted(BY_DISTANCE)
-        .map(
-            w ->
-                new CoursePoint(
-                    w.distance(), w.type(), WaypointFormats.fitName(w.name(), w.type())))
+        .map(w ->
+            new CoursePoint(w.distance(), w.type(), WaypointFormats.fitName(w.name(), w.type())))
         .toList();
   }
 
@@ -51,17 +49,16 @@ public final class WaypointExports {
       List<AnchoredWaypoint> waypoints) {
     return waypoints.stream()
         .sorted(BY_DISTANCE)
-        .map(
-            w ->
-                new io.github.glandais.engine.gpx.GpxWaypoint(
-                    w.lat(),
-                    w.lng(),
-                    null,
-                    w.name().isEmpty() ? null : w.name(),
-                    w.description(),
-                    WaypointFormats.garminSymbol(w.type()),
-                    WaypointFormats.gpxType(w.type()),
-                    null))
+        .map(w ->
+            new io.github.glandais.engine.gpx.GpxWaypoint(
+                w.lat(),
+                w.lng(),
+                null,
+                w.name().isEmpty() ? null : w.name(),
+                w.description(),
+                WaypointFormats.garminSymbol(w.type()),
+                WaypointFormats.gpxType(w.type()),
+                null))
         .toList();
   }
 }

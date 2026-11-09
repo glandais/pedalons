@@ -247,28 +247,27 @@ public class ElevationRefreshService {
    * @return the outcome when the request was settled here, else null
    */
   private @Nullable Outcome realignIfStale(Claim claim) {
-    return tx(
-        () -> {
-          Long original =
-              assetRepository.findCurrentFileId(claim.routeId(), AssetType.ROUTE_ORIGINAL_GPX);
-          if (original == null || original == claim.sourceRevision()) {
-            return null;
-          }
-          Route route = entityManager.find(Route.class, claim.routeId());
-          if (route != null && isHd(route.getElevationState())) {
-            refreshRepository.delete("id", claim.id());
-            return Outcome.GONE;
-          }
-          if (route != null) {
-            route.setElevationState(ElevationState.PENDING);
-          }
-          Instant now = Instant.now();
-          refreshRepository.realign(claim.id(), original, now, now.plus(quiet));
-          LOG.debugf(
-              "Route %d changed since its HD elevation was requested, request realigned",
-              claim.routeId());
-          return Outcome.REALIGNED;
-        });
+    return tx(() -> {
+      Long original =
+          assetRepository.findCurrentFileId(claim.routeId(), AssetType.ROUTE_ORIGINAL_GPX);
+      if (original == null || original == claim.sourceRevision()) {
+        return null;
+      }
+      Route route = entityManager.find(Route.class, claim.routeId());
+      if (route != null && isHd(route.getElevationState())) {
+        refreshRepository.delete("id", claim.id());
+        return Outcome.GONE;
+      }
+      if (route != null) {
+        route.setElevationState(ElevationState.PENDING);
+      }
+      Instant now = Instant.now();
+      refreshRepository.realign(claim.id(), original, now, now.plus(quiet));
+      LOG.debugf(
+          "Route %d changed since its HD elevation was requested, request realigned",
+          claim.routeId());
+      return Outcome.REALIGNED;
+    });
   }
 
   /**
@@ -345,28 +344,27 @@ public class ElevationRefreshService {
    * rescaled on reading onto the fast track.
    */
   void writeSurfaceOnly(Claim claim, List<@Nullable TrackSurfaceDocument> surfaces) {
-    tx(
-        () -> {
-          Route route =
-              entityManager.find(Route.class, claim.routeId(), LockModeType.PESSIMISTIC_WRITE);
-          if (route == null || currentOriginalFileId(route) != claim.sourceRevision()) {
-            return null;
-          }
-          List<Long> trackIds =
-              gpxTrackRepository
-                  .findIdsByRouteIds(List.of(claim.routeId()))
-                  .getOrDefault(claim.routeId(), List.of());
-          if (trackIds.size() != surfaces.size()) {
-            return null;
-          }
-          for (int i = 0; i < trackIds.size(); i++) {
-            TrackSurfaceDocument document = surfaces.get(i);
-            if (document != null) {
-              gpxTrackRepository.updateSurfaces(trackIds.get(i), document);
-            }
-          }
-          return null;
-        });
+    tx(() -> {
+      Route route =
+          entityManager.find(Route.class, claim.routeId(), LockModeType.PESSIMISTIC_WRITE);
+      if (route == null || currentOriginalFileId(route) != claim.sourceRevision()) {
+        return null;
+      }
+      List<Long> trackIds =
+          gpxTrackRepository
+              .findIdsByRouteIds(List.of(claim.routeId()))
+              .getOrDefault(claim.routeId(), List.of());
+      if (trackIds.size() != surfaces.size()) {
+        return null;
+      }
+      for (int i = 0; i < trackIds.size(); i++) {
+        TrackSurfaceDocument document = surfaces.get(i);
+        if (document != null) {
+          gpxTrackRepository.updateSurfaces(trackIds.get(i), document);
+        }
+      }
+      return null;
+    });
   }
 
   private GpxDocument load(String key) throws IOException {
@@ -397,54 +395,50 @@ public class ElevationRefreshService {
    * the new files are deleted and the request is realigned on the current revision.
    */
   Outcome write(Claim claim, Recomputed recomputed) {
-    return tx(
-        () -> {
-          // First, so that whatever happens below the new files do not outlive a rollback
-          for (var pa : List.of(recomputed.recompute().filtered(), recomputed.recompute().fit())) {
-            assetService.deleteUnlessCommitted(
-                assetService.getAssetKey(claim.teamId(), pa.fileId()));
-          }
-          Route route =
-              entityManager.find(Route.class, claim.routeId(), LockModeType.PESSIMISTIC_WRITE);
-          if (route == null) {
-            discard(claim, recomputed);
-            return Outcome.GONE;
-          }
-          long current = currentOriginalFileId(route);
-          if (current != claim.sourceRevision()) {
-            discard(claim, recomputed);
-            if (isHd(route.getElevationState())) {
-              refreshRepository.delete("id", claim.id());
-              return Outcome.GONE;
-            }
-            route.setElevationState(ElevationState.PENDING);
-            Instant now = Instant.now();
-            refreshRepository.realign(claim.id(), current, now, now.plus(quiet));
-            LOG.debugf(
-                "Route %d changed during its HD elevation compute, request realigned",
-                claim.routeId());
-            return Outcome.REALIGNED;
-          }
-          if (!WaypointRows.sameContent(
-              route.getWaypoints(), recomputed.recompute().waypoints(), false)) {
-            // The waypoints were edited during the compute: what was placed is stale
-            discard(claim, recomputed);
-            Instant now = Instant.now();
-            refreshRepository.realign(claim.id(), current, now, now);
-            LOG.debugf(
-                "Waypoints of route %d changed during its HD elevation compute, request realigned",
-                claim.routeId());
-            return Outcome.REALIGNED;
-          }
-          boolean distanceChanged =
-              gpxProcessingService.applyRecompute(route, recomputed.recompute());
-          if (distanceChanged) {
-            // Another distance is another end time for every ride riding the route (API-85)
-            publicationEndCalculator.refreshUsersOf(route);
-          }
-          refreshRepository.deleteIfRevision(claim.id(), claim.sourceRevision());
-          return Outcome.REFRESHED;
-        });
+    return tx(() -> {
+      // First, so that whatever happens below the new files do not outlive a rollback
+      for (var pa : List.of(recomputed.recompute().filtered(), recomputed.recompute().fit())) {
+        assetService.deleteUnlessCommitted(assetService.getAssetKey(claim.teamId(), pa.fileId()));
+      }
+      Route route =
+          entityManager.find(Route.class, claim.routeId(), LockModeType.PESSIMISTIC_WRITE);
+      if (route == null) {
+        discard(claim, recomputed);
+        return Outcome.GONE;
+      }
+      long current = currentOriginalFileId(route);
+      if (current != claim.sourceRevision()) {
+        discard(claim, recomputed);
+        if (isHd(route.getElevationState())) {
+          refreshRepository.delete("id", claim.id());
+          return Outcome.GONE;
+        }
+        route.setElevationState(ElevationState.PENDING);
+        Instant now = Instant.now();
+        refreshRepository.realign(claim.id(), current, now, now.plus(quiet));
+        LOG.debugf(
+            "Route %d changed during its HD elevation compute, request realigned", claim.routeId());
+        return Outcome.REALIGNED;
+      }
+      if (!WaypointRows.sameContent(
+          route.getWaypoints(), recomputed.recompute().waypoints(), false)) {
+        // The waypoints were edited during the compute: what was placed is stale
+        discard(claim, recomputed);
+        Instant now = Instant.now();
+        refreshRepository.realign(claim.id(), current, now, now);
+        LOG.debugf(
+            "Waypoints of route %d changed during its HD elevation compute, request realigned",
+            claim.routeId());
+        return Outcome.REALIGNED;
+      }
+      boolean distanceChanged = gpxProcessingService.applyRecompute(route, recomputed.recompute());
+      if (distanceChanged) {
+        // Another distance is another end time for every ride riding the route (API-85)
+        publicationEndCalculator.refreshUsersOf(route);
+      }
+      refreshRepository.deleteIfRevision(claim.id(), claim.sourceRevision());
+      return Outcome.REFRESHED;
+    });
   }
 
   /** Deletes the uploaded files whatever this transaction's outcome. */
@@ -534,19 +528,17 @@ public class ElevationRefreshService {
       error = error.substring(0, MAX_ERROR_LENGTH);
     }
     String recorded = error;
-    tx(
-        () -> {
-          if (attempts >= MAX_ATTEMPTS) {
-            lockTarget.run();
-          }
-          boolean recordedFailure =
-              refreshRepository.recordFailure(
-                  id, sourceRevision, Instant.now().plus(delay), recorded);
-          if (recordedFailure && attempts >= MAX_ATTEMPTS) {
-            abandon.run();
-          }
-          return null;
-        });
+    tx(() -> {
+      if (attempts >= MAX_ATTEMPTS) {
+        lockTarget.run();
+      }
+      boolean recordedFailure =
+          refreshRepository.recordFailure(id, sourceRevision, Instant.now().plus(delay), recorded);
+      if (recordedFailure && attempts >= MAX_ATTEMPTS) {
+        abandon.run();
+      }
+      return null;
+    });
     if (attempts >= MAX_ATTEMPTS) {
       LOG.warnf(
           e,
@@ -594,35 +586,34 @@ public class ElevationRefreshService {
    * @return the outcome when the request was settled here, else null
    */
   private @Nullable Outcome realignPreviewIfStale(PreviewClaim claim) {
-    return tx(
-        () -> {
-          GpxPreview preview = entityManager.find(GpxPreview.class, claim.previewId());
-          if (preview == null) {
-            return Outcome.GONE;
-          }
-          Long current = preview.getFilesRevision();
-          if (current != null && current == claim.sourceRevision()) {
-            return null;
-          }
-          if (current == null) {
-            // The previous release rewrote the preview flat, in HD: it must not stay FAST/PENDING
-            preview.setElevationState(ElevationState.HD);
-            refreshRepository.delete("id", claim.id());
-            return Outcome.GONE;
-          }
-          if (isHd(preview.getElevationState())) {
-            // Saved in HD since (the switch was off): nothing to catch up on
-            refreshRepository.delete("id", claim.id());
-            return Outcome.GONE;
-          }
-          preview.setElevationState(ElevationState.PENDING);
-          Instant now = Instant.now();
-          refreshRepository.realign(claim.id(), current, now, now.plus(quiet));
-          LOG.debugf(
-              "Preview %d changed since its HD elevation was requested, request realigned",
-              claim.previewId());
-          return Outcome.REALIGNED;
-        });
+    return tx(() -> {
+      GpxPreview preview = entityManager.find(GpxPreview.class, claim.previewId());
+      if (preview == null) {
+        return Outcome.GONE;
+      }
+      Long current = preview.getFilesRevision();
+      if (current != null && current == claim.sourceRevision()) {
+        return null;
+      }
+      if (current == null) {
+        // The previous release rewrote the preview flat, in HD: it must not stay FAST/PENDING
+        preview.setElevationState(ElevationState.HD);
+        refreshRepository.delete("id", claim.id());
+        return Outcome.GONE;
+      }
+      if (isHd(preview.getElevationState())) {
+        // Saved in HD since (the switch was off): nothing to catch up on
+        refreshRepository.delete("id", claim.id());
+        return Outcome.GONE;
+      }
+      preview.setElevationState(ElevationState.PENDING);
+      Instant now = Instant.now();
+      refreshRepository.realign(claim.id(), current, now, now.plus(quiet));
+      LOG.debugf(
+          "Preview %d changed since its HD elevation was requested, request realigned",
+          claim.previewId());
+      return Outcome.REALIGNED;
+    });
   }
 
   /**
@@ -637,17 +628,16 @@ public class ElevationRefreshService {
         Float distance,
         @Nullable PlannerState state) {}
     PreviewSources sources =
-        tx(
-            () -> {
-              GpxPreview preview = entityManager.find(GpxPreview.class, claim.previewId());
-              return preview == null
-                  ? null
-                  : new PreviewSources(
-                      preview.getPublicId(),
-                      preview.readableWaypoints(),
-                      preview.getDistance(),
-                      plannerStateOf(preview, claim));
-            });
+        tx(() -> {
+          GpxPreview preview = entityManager.find(GpxPreview.class, claim.previewId());
+          return preview == null
+              ? null
+              : new PreviewSources(
+                  preview.getPublicId(),
+                  preview.readableWaypoints(),
+                  preview.getDistance(),
+                  plannerStateOf(preview, claim));
+        });
     if (sources == null) {
       throw new IllegalStateException("Preview " + claim.previewId() + " is gone");
     }
@@ -698,24 +688,22 @@ public class ElevationRefreshService {
 
   /** As {@link #writeSurfaceOnly}, for a preview, on the revision that was read. */
   void writePreviewSurfaceOnly(PreviewClaim claim, List<@Nullable TrackSurfaceDocument> surfaces) {
-    tx(
-        () -> {
-          GpxPreview preview =
-              entityManager.find(
-                  GpxPreview.class, claim.previewId(), LockModeType.PESSIMISTIC_WRITE);
-          if (preview == null) {
-            return null;
-          }
-          Long current = preview.getFilesRevision();
-          if (current == null
-              || current != claim.sourceRevision()
-              || preview.getTracks().size() != surfaces.size()) {
-            return null;
-          }
-          preview.setSurfaces(
-              new PreviewSurfacesDocument(claim.sourceRevision(), new ArrayList<>(surfaces)));
-          return null;
-        });
+    tx(() -> {
+      GpxPreview preview =
+          entityManager.find(GpxPreview.class, claim.previewId(), LockModeType.PESSIMISTIC_WRITE);
+      if (preview == null) {
+        return null;
+      }
+      Long current = preview.getFilesRevision();
+      if (current == null
+          || current != claim.sourceRevision()
+          || preview.getTracks().size() != surfaces.size()) {
+        return null;
+      }
+      preview.setSurfaces(
+          new PreviewSurfacesDocument(claim.sourceRevision(), new ArrayList<>(surfaces)));
+      return null;
+    });
   }
 
   /**
@@ -725,95 +713,93 @@ public class ElevationRefreshService {
    * new files are deleted and the request is realigned on the current revision.
    */
   Outcome writePreview(PreviewClaim claim, PreviewRecomputed recomputed) {
-    return tx(
-        () -> {
-          UUID publicId = recomputed.publicId();
-          // First, so that whatever happens below the new files do not outlive a rollback
-          gpxPreviewService.deleteTrackFilesUnlessCommitted(publicId, recomputed.revision());
-          GpxPreview preview =
-              entityManager.find(
-                  GpxPreview.class, claim.previewId(), LockModeType.PESSIMISTIC_WRITE);
-          if (preview == null) {
-            gpxPreviewService.deleteTrackFilesAfterCommit(publicId, recomputed.revision());
-            return Outcome.GONE;
-          }
-          Long current = preview.getFilesRevision();
-          if (current == null) {
-            gpxPreviewService.deleteTrackFilesAfterCommit(publicId, recomputed.revision());
-            preview.setElevationState(ElevationState.HD);
-            refreshRepository.delete("id", claim.id());
-            return Outcome.GONE;
-          }
-          if (current != claim.sourceRevision()) {
-            gpxPreviewService.deleteTrackFilesAfterCommit(publicId, recomputed.revision());
-            if (isHd(preview.getElevationState())) {
-              refreshRepository.delete("id", claim.id());
-              return Outcome.GONE;
-            }
-            preview.setElevationState(ElevationState.PENDING);
-            Instant now = Instant.now();
-            refreshRepository.realign(claim.id(), current, now, now.plus(quiet));
-            LOG.debugf(
-                "Preview %d changed during its HD elevation compute, request realigned",
-                claim.previewId());
-            return Outcome.REALIGNED;
-          }
-          if (!PreviewWaypoints.sameIgnoringDistance(
-              preview.readableWaypoints(), recomputed.usedWaypoints())) {
-            // The waypoints were edited during the compute: what was placed is stale
-            gpxPreviewService.deleteTrackFilesAfterCommit(publicId, recomputed.revision());
-            Instant now = Instant.now();
-            refreshRepository.realign(claim.id(), current, now, now);
-            LOG.debugf(
-                "Waypoints of preview %d changed during its HD elevation compute, request"
-                    + " realigned",
-                claim.previewId());
-            return Outcome.REALIGNED;
-          }
-          TrackMetadata metadata = recomputed.metadata();
-          preview.setFilesRevision(recomputed.revision());
-          // The waypoints follow the track onto its new revision, with the distances of the HD one
-          // (WEB-100, C3c)
-          preview.setWaypointDetails(
-              new PreviewWaypointsDocument(recomputed.revision(), recomputed.placedWaypoints()));
-          preview.setWaypoints(PreviewWaypoints.legacy(recomputed.placedWaypoints()));
-          // The planner state follows the track it describes onto its new revision (WEB-100, C4a):
-          // the catch-up changes the elevations and the simplification, not the drawing.
-          PlannerStateDocument planner = preview.getPlannerState();
-          if (planner != null && planner.trackRevision() == claim.sourceRevision()) {
-            preview.setPlannerState(planner.withTrackRevision(recomputed.revision()));
-          }
-          if (recomputed.surfaces() != null) {
-            // Written with the profile (docs/LEDGER_*.md API-150)
-            preview.setSurfaces(
-                new PreviewSurfacesDocument(
-                    recomputed.revision(), new ArrayList<>(recomputed.surfaces())));
-          } else {
-            // The surface follows the track onto its new revision too (WEB-100, C1b): the catch-up
-            // changes the elevations and the simplification, not the 2D track; the spans rescale on
-            // read.
-            PreviewSurfacesDocument surfaces = preview.getSurfaces();
-            if (surfaces != null && surfaces.trackRevision() == claim.sourceRevision()) {
-              preview.setSurfaces(surfaces.withTrackRevision(recomputed.revision()));
-            }
-          }
-          // The raw lines follow the track onto its new revision, unchanged: the catch-up never
-          // changes the source 2D track (docs/LEDGER_*.md API-149)
-          PreviewRawLinesDocument rawLines = preview.getRawLines();
-          if (rawLines != null && rawLines.trackRevision() == claim.sourceRevision()) {
-            preview.setRawLines(rawLines.withTrackRevision(recomputed.revision()));
-          }
-          preview.setTracks(recomputed.tracks());
-          preview.setDistance(metadata.distance());
-          preview.setElevationGain(metadata.elevationGain());
-          preview.setElevationLoss(metadata.elevationLoss());
-          preview.setHilliness(metadata.hilliness());
-          preview.setElevationState(ElevationState.HD);
-          preview.setElevationPipeline(gpxProcessingService.hdPipeline());
-          gpxPreviewService.deleteTrackFilesAfterCommit(publicId, current);
-          refreshRepository.deleteIfRevision(claim.id(), claim.sourceRevision());
-          return Outcome.REFRESHED;
-        });
+    return tx(() -> {
+      UUID publicId = recomputed.publicId();
+      // First, so that whatever happens below the new files do not outlive a rollback
+      gpxPreviewService.deleteTrackFilesUnlessCommitted(publicId, recomputed.revision());
+      GpxPreview preview =
+          entityManager.find(GpxPreview.class, claim.previewId(), LockModeType.PESSIMISTIC_WRITE);
+      if (preview == null) {
+        gpxPreviewService.deleteTrackFilesAfterCommit(publicId, recomputed.revision());
+        return Outcome.GONE;
+      }
+      Long current = preview.getFilesRevision();
+      if (current == null) {
+        gpxPreviewService.deleteTrackFilesAfterCommit(publicId, recomputed.revision());
+        preview.setElevationState(ElevationState.HD);
+        refreshRepository.delete("id", claim.id());
+        return Outcome.GONE;
+      }
+      if (current != claim.sourceRevision()) {
+        gpxPreviewService.deleteTrackFilesAfterCommit(publicId, recomputed.revision());
+        if (isHd(preview.getElevationState())) {
+          refreshRepository.delete("id", claim.id());
+          return Outcome.GONE;
+        }
+        preview.setElevationState(ElevationState.PENDING);
+        Instant now = Instant.now();
+        refreshRepository.realign(claim.id(), current, now, now.plus(quiet));
+        LOG.debugf(
+            "Preview %d changed during its HD elevation compute, request realigned",
+            claim.previewId());
+        return Outcome.REALIGNED;
+      }
+      if (!PreviewWaypoints.sameIgnoringDistance(
+          preview.readableWaypoints(), recomputed.usedWaypoints())) {
+        // The waypoints were edited during the compute: what was placed is stale
+        gpxPreviewService.deleteTrackFilesAfterCommit(publicId, recomputed.revision());
+        Instant now = Instant.now();
+        refreshRepository.realign(claim.id(), current, now, now);
+        LOG.debugf(
+            "Waypoints of preview %d changed during its HD elevation compute, request"
+                + " realigned",
+            claim.previewId());
+        return Outcome.REALIGNED;
+      }
+      TrackMetadata metadata = recomputed.metadata();
+      preview.setFilesRevision(recomputed.revision());
+      // The waypoints follow the track onto its new revision, with the distances of the HD one
+      // (WEB-100, C3c)
+      preview.setWaypointDetails(
+          new PreviewWaypointsDocument(recomputed.revision(), recomputed.placedWaypoints()));
+      preview.setWaypoints(PreviewWaypoints.legacy(recomputed.placedWaypoints()));
+      // The planner state follows the track it describes onto its new revision (WEB-100, C4a):
+      // the catch-up changes the elevations and the simplification, not the drawing.
+      PlannerStateDocument planner = preview.getPlannerState();
+      if (planner != null && planner.trackRevision() == claim.sourceRevision()) {
+        preview.setPlannerState(planner.withTrackRevision(recomputed.revision()));
+      }
+      if (recomputed.surfaces() != null) {
+        // Written with the profile (docs/LEDGER_*.md API-150)
+        preview.setSurfaces(
+            new PreviewSurfacesDocument(
+                recomputed.revision(), new ArrayList<>(recomputed.surfaces())));
+      } else {
+        // The surface follows the track onto its new revision too (WEB-100, C1b): the catch-up
+        // changes the elevations and the simplification, not the 2D track; the spans rescale on
+        // read.
+        PreviewSurfacesDocument surfaces = preview.getSurfaces();
+        if (surfaces != null && surfaces.trackRevision() == claim.sourceRevision()) {
+          preview.setSurfaces(surfaces.withTrackRevision(recomputed.revision()));
+        }
+      }
+      // The raw lines follow the track onto its new revision, unchanged: the catch-up never
+      // changes the source 2D track (docs/LEDGER_*.md API-149)
+      PreviewRawLinesDocument rawLines = preview.getRawLines();
+      if (rawLines != null && rawLines.trackRevision() == claim.sourceRevision()) {
+        preview.setRawLines(rawLines.withTrackRevision(recomputed.revision()));
+      }
+      preview.setTracks(recomputed.tracks());
+      preview.setDistance(metadata.distance());
+      preview.setElevationGain(metadata.elevationGain());
+      preview.setElevationLoss(metadata.elevationLoss());
+      preview.setHilliness(metadata.hilliness());
+      preview.setElevationState(ElevationState.HD);
+      preview.setElevationPipeline(gpxProcessingService.hdPipeline());
+      gpxPreviewService.deleteTrackFilesAfterCommit(publicId, current);
+      refreshRepository.deleteIfRevision(claim.id(), claim.sourceRevision());
+      return Outcome.REFRESHED;
+    });
   }
 
   private static <T> T tx(Callable<T> work) {

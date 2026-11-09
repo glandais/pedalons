@@ -253,12 +253,11 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
       assertEquals(0, routeDetailsBackfill.enqueue(Instant.now()), "nor a capped one");
 
       io.quarkus.narayana.jta.QuarkusTransaction.requiringNew()
-          .run(
-              () ->
-                  elevationRefreshRepository
-                      .getEntityManager()
-                      .createNativeQuery("update elevation_refresh set attempts = 5")
-                      .executeUpdate());
+          .run(() ->
+              elevationRefreshRepository
+                  .getEntityManager()
+                  .createNativeQuery("update elevation_refresh set attempts = 5")
+                  .executeUpdate());
       assertEquals(0, routeDetailsBackfill.enqueue(Instant.now()), "given up stays given up");
     } finally {
       routeDetailsBackfill.setForTest(false, 300);
@@ -717,11 +716,10 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
     assertNotNull(team);
     assertTrue(
         biketeamData.mappingRows(snapshotTeamId).stream()
-            .anyMatch(
-                m ->
-                    m.getEntityType().equals("TEAM")
-                        && m.getBiketeamId().equals(snapshotTeamId)
-                        && m.getTriblyId() == team.id()));
+            .anyMatch(m ->
+                m.getEntityType().equals("TEAM")
+                    && m.getBiketeamId().equals(snapshotTeamId)
+                    && m.getTriblyId() == team.id()));
     assertEquals(
         domain.getBaseUrl() + "/equipes/live-team-x",
         status.urlMap().get("TEAM").get(snapshotTeamId));
@@ -820,11 +818,10 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
     assertEquals("SUCCEEDED", status.status(), () -> "error: " + status.error());
     assertTrue(
         status.warnings().stream()
-            .anyMatch(
-                w ->
-                    w.entityType().equals("ROUTE")
-                        && w.biketeamId().equals("map-1")
-                        && w.code().equals("FILE_DOWNLOAD_FAILED")),
+            .anyMatch(w ->
+                w.entityType().equals("ROUTE")
+                    && w.biketeamId().equals("map-1")
+                    && w.code().equals("FILE_DOWNLOAD_FAILED")),
         () -> "warnings: " + status.warnings());
   }
 
@@ -843,13 +840,12 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
     assertEquals(2, status.counts().tripStages().migrated());
     assertTrue(
         status.warnings().stream()
-            .anyMatch(
-                w ->
-                    w.entityType().equals("TRIP")
-                        && w.biketeamId().equals("trip-1")
-                        && w.code().equals("TRIP_STAGES_OUTSIDE_DATES")
-                        && w.message().contains("2025-07-01 to 2025-07-02")
-                        && w.message().contains("'Étape 2' (2025-07-05)")),
+            .anyMatch(w ->
+                w.entityType().equals("TRIP")
+                    && w.biketeamId().equals("trip-1")
+                    && w.code().equals("TRIP_STAGES_OUTSIDE_DATES")
+                    && w.message().contains("2025-07-01 to 2025-07-02")
+                    && w.message().contains("'Étape 2' (2025-07-05)")),
         () -> "warnings: " + status.warnings());
   }
 
@@ -952,16 +948,15 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
     assertFalse(onRoute.contains("T11"));
     assertTrue(
         status.warnings().stream()
-            .anyMatch(
-                w ->
-                    w.entityType().equals("ROUTE")
-                        && w.biketeamId().equals("map-1")
-                        && w.code().equals("TAGS_TRUNCATED")
-                        && w.message().contains(cut)
-                        && w.message().contains(emojiCut + "'")
-                        && w.message().contains("T9")
-                        && w.message().contains("T10")
-                        && w.message().contains("T11")),
+            .anyMatch(w ->
+                w.entityType().equals("ROUTE")
+                    && w.biketeamId().equals("map-1")
+                    && w.code().equals("TAGS_TRUNCATED")
+                    && w.message().contains(cut)
+                    && w.message().contains(emojiCut + "'")
+                    && w.message().contains("T9")
+                    && w.message().contains("T10")
+                    && w.message().contains("T11")),
         () -> "warnings: " + status.warnings());
   }
 

@@ -109,18 +109,17 @@ public class RideSummaryRepository {
     }
 
     Map<Long, RideListSummary> summaries = new HashMap<>();
-    counts.forEach(
-        (rideId, rideCounts) ->
-            summaries.put(
-                rideId,
-                new RideListSummary(
-                    rideCounts[0],
-                    rideCounts[1],
-                    full.getOrDefault(rideId, false),
-                    toMaxParticipants(capacity.get(rideId)),
-                    topParticipants.getOrDefault(rideId, List.of()),
-                    List.copyOf(groups.getOrDefault(rideId, List.of())),
-                    firstGroupRoute.get(rideId))));
+    counts.forEach((rideId, rideCounts) ->
+        summaries.put(
+            rideId,
+            new RideListSummary(
+                rideCounts[0],
+                rideCounts[1],
+                full.getOrDefault(rideId, false),
+                toMaxParticipants(capacity.get(rideId)),
+                topParticipants.getOrDefault(rideId, List.of()),
+                List.copyOf(groups.getOrDefault(rideId, List.of())),
+                firstGroupRoute.get(rideId))));
     return summaries;
   }
 

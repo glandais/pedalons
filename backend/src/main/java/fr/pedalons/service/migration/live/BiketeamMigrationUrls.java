@@ -98,18 +98,17 @@ public class BiketeamMigrationUrls {
 
     Slugs slugs =
         QuarkusTransaction.requiringNew()
-            .call(
-                () ->
-                    new Slugs(
-                        em.createQuery("select t.slug from Team t where t.id = :id", String.class)
-                            .setParameter("id", teamId)
-                            .getSingleResult(),
-                        slugs(T_TEAM_PAGE, TeamPage.class, List.of(faqKey), teamId),
-                        slugs(T_ROUTE, Route.class, routeIds, teamId),
-                        slugs(T_RIDE, Ride.class, rideIds, teamId),
-                        slugs(T_TRIP, Trip.class, List.copyOf(liveTrips), teamId),
-                        stageSlugs(stageIds, teamId),
-                        slugs(T_POST, Post.class, postIds, teamId)));
+            .call(() ->
+                new Slugs(
+                    em.createQuery("select t.slug from Team t where t.id = :id", String.class)
+                        .setParameter("id", teamId)
+                        .getSingleResult(),
+                    slugs(T_TEAM_PAGE, TeamPage.class, List.of(faqKey), teamId),
+                    slugs(T_ROUTE, Route.class, routeIds, teamId),
+                    slugs(T_RIDE, Ride.class, rideIds, teamId),
+                    slugs(T_TRIP, Trip.class, List.copyOf(liveTrips), teamId),
+                    stageSlugs(stageIds, teamId),
+                    slugs(T_POST, Post.class, postIds, teamId)));
 
     String base = UrlUtils.stripTrailingSlash(baseUrl);
     String team = base + teamPath(slugs.team());
@@ -126,15 +125,14 @@ public class BiketeamMigrationUrls {
     Map<String, String> stages = new LinkedHashMap<>();
     slugs
         .stages()
-        .forEach(
-            (id, path) ->
-                stages.put(
-                    id,
-                    team
-                        + "/voyages/"
-                        + segment(path.tripSlug())
-                        + "/etapes/"
-                        + segment(path.stageSlug())));
+        .forEach((id, path) ->
+            stages.put(
+                id,
+                team
+                    + "/voyages/"
+                    + segment(path.tripSlug())
+                    + "/etapes/"
+                    + segment(path.stageSlug())));
     urls.put(TRIP_STAGE, stages);
     urls.put(POST, urls(slugs.posts(), team + "/articles/"));
     return urls;

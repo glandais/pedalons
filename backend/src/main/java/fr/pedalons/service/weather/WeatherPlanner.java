@@ -111,17 +111,16 @@ public class WeatherPlanner {
       CellKey key = entry.getKey();
       Instant need = entry.getValue();
       QuarkusTransaction.requiringNew()
-          .run(
-              () ->
-                  cellRepository.upsertDemand(
-                      key.latIdx(),
-                      key.lonIdx(),
-                      key.eleBand(),
-                      key.centerLat(),
-                      key.centerLon(),
-                      need,
-                      WeatherRefreshPolicy.ttl(need, now),
-                      now));
+          .run(() ->
+              cellRepository.upsertDemand(
+                  key.latIdx(),
+                  key.lonIdx(),
+                  key.eleBand(),
+                  key.centerLat(),
+                  key.centerLon(),
+                  need,
+                  WeatherRefreshPolicy.ttl(need, now),
+                  now));
     }
   }
 

@@ -63,11 +63,10 @@ class GpsRouteCallsTest {
     when(response.body()).thenReturn(body);
     when(response.headers()).thenReturn(HttpHeaders.of(headers, (a, b) -> true));
     when(http.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
-        .thenAnswer(
-            i -> {
-              sent.set(i.getArgument(0));
-              return response;
-            });
+        .thenAnswer(i -> {
+          sent.set(i.getArgument(0));
+          return response;
+        });
   }
 
   private void answer(int status, String body) throws Exception {

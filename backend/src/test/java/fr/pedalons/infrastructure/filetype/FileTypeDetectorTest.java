@@ -270,10 +270,8 @@ class FileTypeDetectorTest extends AbstractBaseTest {
 
     @Test
     void emptyGpxAcceptedByLabelOrExtension() {
-      assertDoesNotThrow(
-          () ->
-              detector.detectAndValidate(
-                  emptyGpxFile(), "empty.gpx", AssetType.ROUTE_ORIGINAL_GPX));
+      assertDoesNotThrow(() ->
+          detector.detectAndValidate(emptyGpxFile(), "empty.gpx", AssetType.ROUTE_ORIGINAL_GPX));
     }
 
     @Test

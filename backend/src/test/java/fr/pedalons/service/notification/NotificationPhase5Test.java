@@ -856,11 +856,10 @@ class NotificationPhase5Test extends AbstractResourceTest {
     verify(webhookHttp)
         .post(
             argThat((URI url) -> url.getHost().equals("hooks.slack.com")),
-            argThat(
-                (String json) ->
-                    json.startsWith("{\"text\":\"*")
-                        && json.contains(" : Sortie du dimanche*")
-                        && json.contains("Nouvelle sortie publiée par")));
+            argThat((String json) ->
+                json.startsWith("{\"text\":\"*")
+                    && json.contains(" : Sortie du dimanche*")
+                    && json.contains("Nouvelle sortie publiée par")));
   }
 
   /**
@@ -889,11 +888,10 @@ class NotificationPhase5Test extends AbstractResourceTest {
     verify(webhookHttp)
         .post(
             any(),
-            argThat(
-                (String json) ->
-                    json.contains("\"timezone\":\"Asia/Tokyo\"")
-                        && json.contains(", heure de Tokyo")
-                        && !json.contains("chez vous")));
+            argThat((String json) ->
+                json.contains("\"timezone\":\"Asia/Tokyo\"")
+                    && json.contains(", heure de Tokyo")
+                    && !json.contains("chez vous")));
   }
 
   @Test

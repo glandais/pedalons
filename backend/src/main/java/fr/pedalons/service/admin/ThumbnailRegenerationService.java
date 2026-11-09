@@ -131,13 +131,12 @@ public class ThumbnailRegenerationService {
     try {
       List<ThumbnailFile> after =
           QuarkusTransaction.requiringNew()
-              .call(
-                  () -> {
-                    TeamEntity owner = em.find(TeamEntity.class, ownerId);
-                    redraw(owner);
-                    em.flush();
-                    return thumbnails(owner);
-                  });
+              .call(() -> {
+                TeamEntity owner = em.find(TeamEntity.class, ownerId);
+                redraw(owner);
+                em.flush();
+                return thumbnails(owner);
+              });
       ThumbnailRegenerationOutcome outcome =
           after.size() == 2 && after.stream().allMatch(f -> f.bytes() > 0)
               ? ThumbnailRegenerationOutcome.REGENERATED

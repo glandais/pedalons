@@ -179,15 +179,14 @@ class RouteDetailsBackfillTest extends AbstractResourceTest {
 
   private void sql(String statement, Object... params) {
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              var query = refreshRepository.getEntityManager().createNativeQuery(statement);
-              for (int i = 0; i < params.length; i++) {
-                Object p = params[i];
-                query.setParameter(i + 1, p instanceof Instant t ? java.sql.Timestamp.from(t) : p);
-              }
-              query.executeUpdate();
-            });
+        .run(() -> {
+          var query = refreshRepository.getEntityManager().createNativeQuery(statement);
+          for (int i = 0; i < params.length; i++) {
+            Object p = params[i];
+            query.setParameter(i + 1, p instanceof Instant t ? java.sql.Timestamp.from(t) : p);
+          }
+          query.executeUpdate();
+        });
   }
 
   private record Row(Long target, boolean backfill, int attempts, Instant dueAt, long revision) {}
@@ -195,26 +194,25 @@ class RouteDetailsBackfillTest extends AbstractResourceTest {
   /** Every request, by due time then id. */
   private List<Row> rows(String column) {
     return QuarkusTransaction.requiringNew()
-        .call(
-            () -> {
-              List<Row> out = new ArrayList<>();
-              for (ElevationRefresh r : refreshRepository.list("order by dueAt, id")) {
-                Long target =
-                    "route_id".equals(column)
-                        ? (r.getRoute() == null ? null : r.getRoute().getId())
-                        : (r.getPreview() == null ? null : r.getPreview().getId());
-                if (target != null) {
-                  out.add(
-                      new Row(
-                          target,
-                          r.isBackfill(),
-                          r.getAttempts(),
-                          r.getDueAt(),
-                          r.getSourceRevision()));
-                }
-              }
-              return out;
-            });
+        .call(() -> {
+          List<Row> out = new ArrayList<>();
+          for (ElevationRefresh r : refreshRepository.list("order by dueAt, id")) {
+            Long target =
+                "route_id".equals(column)
+                    ? (r.getRoute() == null ? null : r.getRoute().getId())
+                    : (r.getPreview() == null ? null : r.getPreview().getId());
+            if (target != null) {
+              out.add(
+                  new Row(
+                      target,
+                      r.isBackfill(),
+                      r.getAttempts(),
+                      r.getDueAt(),
+                      r.getSourceRevision()));
+            }
+          }
+          return out;
+        });
   }
 
   private List<Row> routeRows() {
@@ -264,18 +262,17 @@ class RouteDetailsBackfillTest extends AbstractResourceTest {
 
   private double[] elevationRange(Long id) {
     return QuarkusTransaction.requiringNew()
-        .call(
-            () -> {
-              double min = Double.MAX_VALUE;
-              double max = -Double.MAX_VALUE;
-              for (GpxTrack track : routeRepository.findById(id).getTracks()) {
-                for (GpxTrack.TrackPoint p : track.getTrackPoints()) {
-                  min = Math.min(min, p.ele());
-                  max = Math.max(max, p.ele());
-                }
-              }
-              return new double[] {min, max};
-            });
+        .call(() -> {
+          double min = Double.MAX_VALUE;
+          double max = -Double.MAX_VALUE;
+          for (GpxTrack track : routeRepository.findById(id).getTracks()) {
+            for (GpxTrack.TrackPoint p : track.getTrackPoints()) {
+              min = Math.min(min, p.ele());
+              max = Math.max(max, p.ele());
+            }
+          }
+          return new double[] {min, max};
+        });
   }
 
   /** A document of osm-surface, as a track recomputed before this pipeline carries it. */
@@ -292,15 +289,14 @@ class RouteDetailsBackfillTest extends AbstractResourceTest {
             List.of(new TrackSurfaceDocument.SurfaceRange(0, 1000, "asphalt")),
             List.of());
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              for (Long trackId :
-                  trackRepository
-                      .findIdsByRouteIds(List.of(routeId))
-                      .getOrDefault(routeId, List.of())) {
-                trackRepository.updateSurfaces(trackId, document);
-              }
-            });
+        .run(() -> {
+          for (Long trackId :
+              trackRepository
+                  .findIdsByRouteIds(List.of(routeId))
+                  .getOrDefault(routeId, List.of())) {
+            trackRepository.updateSurfaces(trackId, document);
+          }
+        });
   }
 
   private TrackSurfaceDocument document(Long routeId) {
@@ -314,10 +310,9 @@ class RouteDetailsBackfillTest extends AbstractResourceTest {
   private BudgetView budget() {
     BackfillBudget budget =
         QuarkusTransaction.requiringNew()
-            .call(
-                () ->
-                    refreshRepository.backfillBudget(
-                        60, RouteDetailsBackfill.CALL_M, ElevationRefreshService.MAX_ATTEMPTS));
+            .call(() ->
+                refreshRepository.backfillBudget(
+                    60, RouteDetailsBackfill.CALL_M, ElevationRefreshService.MAX_ATTEMPTS));
     return new BudgetView(budget.pending(), budget.nextFree());
   }
 
@@ -824,18 +819,15 @@ class RouteDetailsBackfillTest extends AbstractResourceTest {
     sql("update team_entities set distance = 1000 where id in (?1, ?2)", waiting, queued);
     on(60);
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              Instant now = Instant.now();
-              refreshRepository.insertBackfillRoute(
-                  new ElevationRefreshRepository.BackfillCandidate(queued, 1000, 1L), now, now);
-              refreshRepository.insertBackfillRoute(
-                  new ElevationRefreshRepository.BackfillCandidate(givenUp, 1000, 1L), now, now);
-              refreshRepository.insertBackfillPreview(
-                  new ElevationRefreshRepository.BackfillCandidate(givenUpPreview, 1000, 1L),
-                  now,
-                  now);
-            });
+        .run(() -> {
+          Instant now = Instant.now();
+          refreshRepository.insertBackfillRoute(
+              new ElevationRefreshRepository.BackfillCandidate(queued, 1000, 1L), now, now);
+          refreshRepository.insertBackfillRoute(
+              new ElevationRefreshRepository.BackfillCandidate(givenUp, 1000, 1L), now, now);
+          refreshRepository.insertBackfillPreview(
+              new ElevationRefreshRepository.BackfillCandidate(givenUpPreview, 1000, 1L), now, now);
+        });
     sql(
         "update elevation_refresh set attempts = ?1 where route_id = ?2 or preview_id = ?3",
         ElevationRefreshService.MAX_ATTEMPTS,
@@ -844,11 +836,10 @@ class RouteDetailsBackfillTest extends AbstractResourceTest {
 
     BackfillRemaining left =
         QuarkusTransaction.requiringNew()
-            .call(
-                () ->
-                    refreshRepository.backfillRemaining(
-                        Instant.now().minus(29, ChronoUnit.DAYS),
-                        ElevationRefreshService.MAX_ATTEMPTS));
+            .call(() ->
+                refreshRepository.backfillRemaining(
+                    Instant.now().minus(29, ChronoUnit.DAYS),
+                    ElevationRefreshService.MAX_ATTEMPTS));
 
     assertEquals(2, left.routes(), "the queued one still is to do, the saved one is not ours");
     assertEquals(2000, left.routeMetres(), 0.01);

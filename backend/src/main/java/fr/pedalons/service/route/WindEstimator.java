@@ -50,16 +50,15 @@ public final class WindEstimator {
   @Nullable
   public static WindDirection findDirectionFromVector(double x, double y) {
     return Stream.of(WindDirection.values())
-        .map(
-            wd -> {
-              double angle = Math.toRadians(90 - wd.getAngle());
-              double x1 = Math.cos(angle);
-              double y1 = Math.sin(angle) * -1;
-              double x2 = x;
-              double y2 = y;
-              double dotProduct = (x1 * x2) + (y1 * y2);
-              return new WindScore(wd, 0.5 + (0.5 * dotProduct));
-            })
+        .map(wd -> {
+          double angle = Math.toRadians(90 - wd.getAngle());
+          double x1 = Math.cos(angle);
+          double y1 = Math.sin(angle) * -1;
+          double x2 = x;
+          double y2 = y;
+          double dotProduct = (x1 * x2) + (y1 * y2);
+          return new WindScore(wd, 0.5 + (0.5 * dotProduct));
+        })
         .sorted(Comparator.comparing(WindScore::score))
         .map(WindScore::wd)
         .findFirst()

@@ -89,15 +89,14 @@ class FeedbackGithubWorkerDoublePublishRaceTest extends AbstractResourceTest {
     when(github.status(anyInt())).thenReturn(new IssueStatus(false, null));
     // The first createIssue (instance A) blocks, as a ~1 s GitHub call would; later ones return.
     when(github.createIssue(anyString(), anyString(), anyList()))
-        .thenAnswer(
-            i -> {
-              int n = calls.incrementAndGet();
-              if (n == 1) {
-                firstCallEntered.countDown();
-                releaseFirstCall.await(30, TimeUnit.SECONDS);
-              }
-              return 100 + n - 1;
-            });
+        .thenAnswer(i -> {
+          int n = calls.incrementAndGet();
+          if (n == 1) {
+            firstCallEntered.countDown();
+            releaseFirstCall.await(30, TimeUnit.SECONDS);
+          }
+          return 100 + n - 1;
+        });
   }
 
   @AfterEach

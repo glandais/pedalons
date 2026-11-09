@@ -146,53 +146,49 @@ class WeatherPlannerStoreDeadlockRaceTest extends AbstractResourceTest {
     assertEquals(4, planner.plan(Instant.now()));
     List<Demand> plannerOrder =
         QuarkusTransaction.requiringNew()
-            .call(
-                () ->
-                    cellRepository.listAll().stream()
-                        .sorted(Comparator.comparing(WeatherCell::getId))
-                        .map(
-                            c ->
-                                new Demand(
-                                    c.getLatIdx(),
-                                    c.getLonIdx(),
-                                    c.getEleBand(),
-                                    c.getLatitude(),
-                                    c.getLongitude(),
-                                    Objects.requireNonNull(c.getNearestNeedAt())))
-                        .toList());
+            .call(() ->
+                cellRepository.listAll().stream()
+                    .sorted(Comparator.comparing(WeatherCell::getId))
+                    .map(c ->
+                        new Demand(
+                            c.getLatIdx(),
+                            c.getLonIdx(),
+                            c.getEleBand(),
+                            c.getLatitude(),
+                            c.getLongitude(),
+                            Objects.requireNonNull(c.getNearestNeedAt())))
+                    .toList());
     assertEquals(4, plannerOrder.size());
     Demand first = plannerOrder.getFirst();
 
     // Recreate the cells in the reverse order: a worker's claim (no ORDER BY) returns them so.
     Instant seededAt = Instant.now().minusSeconds(60);
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              cellRepository.deleteAll();
-              for (Demand d : plannerOrder.reversed()) {
-                cellRepository.upsertDemand(
-                    d.latIdx(),
-                    d.lonIdx(),
-                    d.eleBand(),
-                    d.latitude(),
-                    d.longitude(),
-                    d.nearestNeedAt(),
-                    WeatherRefreshPolicy.ttl(d.nearestNeedAt(), seededAt),
-                    seededAt);
-              }
-            });
+        .run(() -> {
+          cellRepository.deleteAll();
+          for (Demand d : plannerOrder.reversed()) {
+            cellRepository.upsertDemand(
+                d.latIdx(),
+                d.lonIdx(),
+                d.eleBand(),
+                d.latitude(),
+                d.longitude(),
+                d.nearestNeedAt(),
+                WeatherRefreshPolicy.ttl(d.nearestNeedAt(), seededAt),
+                seededAt);
+          }
+        });
 
     List<Claimed> claimed = worker.claim(100, Instant.now());
     assertEquals(4, claimed.size(), "every planned cell is due");
     long gateCellId =
         QuarkusTransaction.requiringNew()
-            .call(
-                () ->
-                    cellRepository
-                        .find("latIdx = ?1 and lonIdx = ?2", first.latIdx(), first.lonIdx())
-                        .firstResultOptional()
-                        .orElseThrow()
-                        .getId());
+            .call(() ->
+                cellRepository
+                    .find("latIdx = ?1 and lonIdx = ?2", first.latIdx(), first.lonIdx())
+                    .firstResultOptional()
+                    .orElseThrow()
+                    .getId());
 
     // 2. The gate: an uncommitted forecast hour of the planner's first cell, an hour the
     //    provider's answer also carries.
@@ -200,28 +196,24 @@ class WeatherPlannerStoreDeadlockRaceTest extends AbstractResourceTest {
     CountDownLatch releaseGate = new CountDownLatch(1);
     Instant gateHour = Instant.now().truncatedTo(ChronoUnit.HOURS).plus(Duration.ofHours(10));
     CompletableFuture<Void> gate =
-        CompletableFuture.runAsync(
-            () ->
-                inRequest(
-                    () -> {
-                      try {
-                        QuarkusTransaction.requiringNew()
-                            .run(
-                                () -> {
-                                  hourlyRepository.upsert(
-                                      gateCellId, List.of(hour(gateCellId, gateHour)));
-                                  hourlyRepository.flush();
-                                  gateHeld.countDown();
-                                  await(releaseGate);
-                                  throw new GateRollback();
-                                });
-                      } catch (RuntimeException expected) {
-                        // GateRollback, possibly wrapped: rolled back, so the worker's upsert of
-                        // that hour goes through
-                      } finally {
-                        gateHeld.countDown();
-                      }
-                    }));
+        CompletableFuture.runAsync(() ->
+            inRequest(() -> {
+              try {
+                QuarkusTransaction.requiringNew()
+                    .run(() -> {
+                      hourlyRepository.upsert(gateCellId, List.of(hour(gateCellId, gateHour)));
+                      hourlyRepository.flush();
+                      gateHeld.countDown();
+                      await(releaseGate);
+                      throw new GateRollback();
+                    });
+              } catch (RuntimeException expected) {
+                // GateRollback, possibly wrapped: rolled back, so the worker's upsert of
+                // that hour goes through
+              } finally {
+                gateHeld.countDown();
+              }
+            }));
     assertTrue(gateHeld.await(30, TimeUnit.SECONDS), "gate not held");
 
     // The worker stores the batch and blocks at the gate cell's hourly upsert.
@@ -269,17 +261,16 @@ class WeatherPlannerStoreDeadlockRaceTest extends AbstractResourceTest {
       }
       long waiting =
           QuarkusTransaction.requiringNew()
-              .call(
-                  () ->
-                      ((Number)
-                              cellRepository
-                                  .getEntityManager()
-                                  .createNativeQuery(
-                                      "select count(*) from pg_stat_activity"
-                                          + " where datname = current_database()"
-                                          + " and wait_event_type = 'Lock'")
-                                  .getSingleResult())
-                          .longValue());
+              .call(() ->
+                  ((Number)
+                          cellRepository
+                              .getEntityManager()
+                              .createNativeQuery(
+                                  "select count(*) from pg_stat_activity"
+                                      + " where datname = current_database()"
+                                      + " and wait_event_type = 'Lock'")
+                              .getSingleResult())
+                      .longValue());
       if (waiting >= n) {
         return;
       }
@@ -290,14 +281,13 @@ class WeatherPlannerStoreDeadlockRaceTest extends AbstractResourceTest {
 
   private void locate(Ride ride, double lat, double lon) {
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              Ride managed = rideRepository.findById(ride.getId());
-              Place place = new Place(managed.getCreatedBy(), managed.getTeam(), "RDV", true, true);
-              place.setGeometry(point(WGS84, g(lon, lat)));
-              placeRepository.persist(place);
-              managed.setStart(place);
-            });
+        .run(() -> {
+          Ride managed = rideRepository.findById(ride.getId());
+          Place place = new Place(managed.getCreatedBy(), managed.getTeam(), "RDV", true, true);
+          place.setGeometry(point(WGS84, g(lon, lat)));
+          placeRepository.persist(place);
+          managed.setStart(place);
+        });
   }
 
   private static WeatherHourly hour(long cellId, Instant time) {
@@ -327,11 +317,10 @@ class WeatherPlannerStoreDeadlockRaceTest extends AbstractResourceTest {
   }
 
   private void inRequest(Runnable body) {
-    inRequest(
-        () -> {
-          body.run();
-          return null;
-        });
+    inRequest(() -> {
+      body.run();
+      return null;
+    });
   }
 
   private <T> T inRequest(Supplier<T> body) {

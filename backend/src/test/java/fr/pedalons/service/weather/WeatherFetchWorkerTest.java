@@ -103,17 +103,16 @@ class WeatherFetchWorkerTest extends AbstractBaseTest {
     CellKey key = elevation == null ? CellKey.of(lat, lon) : CellKey.of(lat, lon, elevation);
     Instant now = Instant.now().minusSeconds(60);
     QuarkusTransaction.requiringNew()
-        .run(
-            () ->
-                cellRepository.upsertDemand(
-                    key.latIdx(),
-                    key.lonIdx(),
-                    key.eleBand(),
-                    key.centerLat(),
-                    key.centerLon(),
-                    now.plus(need),
-                    WeatherRefreshPolicy.ttl(now.plus(need), now),
-                    now));
+        .run(() ->
+            cellRepository.upsertDemand(
+                key.latIdx(),
+                key.lonIdx(),
+                key.eleBand(),
+                key.centerLat(),
+                key.centerLon(),
+                now.plus(need),
+                WeatherRefreshPolicy.ttl(now.plus(need), now),
+                now));
     return key;
   }
 
@@ -190,17 +189,16 @@ class WeatherFetchWorkerTest extends AbstractBaseTest {
   private CellKey seedOrphan(double lat, double lon, Instant demandedAt, Instant need) {
     CellKey key = CellKey.of(lat, lon);
     QuarkusTransaction.requiringNew()
-        .run(
-            () ->
-                cellRepository.upsertDemand(
-                    key.latIdx(),
-                    key.lonIdx(),
-                    key.eleBand(),
-                    key.centerLat(),
-                    key.centerLon(),
-                    need,
-                    WeatherRefreshPolicy.ttl(need, demandedAt),
-                    demandedAt));
+        .run(() ->
+            cellRepository.upsertDemand(
+                key.latIdx(),
+                key.lonIdx(),
+                key.eleBand(),
+                key.centerLat(),
+                key.centerLon(),
+                need,
+                WeatherRefreshPolicy.ttl(need, demandedAt),
+                demandedAt));
     return key;
   }
 

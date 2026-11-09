@@ -86,15 +86,14 @@ public class PasskeyService {
     // Get existing credential IDs to exclude
     List<Map<String, Object>> excludeCredentials =
         passkeyRepository.findByUserId(user.getId()).stream()
-            .map(
-                p ->
-                    Map.<String, Object>of(
-                        "type",
-                        "public-key",
-                        "id",
-                        Base64.getUrlEncoder().withoutPadding().encodeToString(p.getCredentialId()),
-                        "transports",
-                        p.getTransports() != null ? p.getTransports() : List.of()))
+            .map(p ->
+                Map.<String, Object>of(
+                    "type",
+                    "public-key",
+                    "id",
+                    Base64.getUrlEncoder().withoutPadding().encodeToString(p.getCredentialId()),
+                    "transports",
+                    p.getTransports() != null ? p.getTransports() : List.of()))
             .toList();
 
     // Build registration options
@@ -254,17 +253,14 @@ public class PasskeyService {
       if (user != null) {
         allowCredentials =
             passkeyRepository.findByUserId(user.getId()).stream()
-                .map(
-                    p ->
-                        Map.<String, Object>of(
-                            "type",
-                            "public-key",
-                            "id",
-                            Base64.getUrlEncoder()
-                                .withoutPadding()
-                                .encodeToString(p.getCredentialId()),
-                            "transports",
-                            p.getTransports() != null ? p.getTransports() : List.of()))
+                .map(p ->
+                    Map.<String, Object>of(
+                        "type",
+                        "public-key",
+                        "id",
+                        Base64.getUrlEncoder().withoutPadding().encodeToString(p.getCredentialId()),
+                        "transports",
+                        p.getTransports() != null ? p.getTransports() : List.of()))
                 .toList();
       }
     }

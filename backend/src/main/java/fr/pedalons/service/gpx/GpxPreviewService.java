@@ -298,15 +298,14 @@ public class GpxPreviewService {
 
     try {
       QuarkusTransaction.requiringNew()
-          .run(
-              () -> {
-                gpxPreviewRepository.persist(preview);
-                if (quality == ElevationQuality.FAST) {
-                  // The row first: the request points at it
-                  gpxPreviewRepository.flush();
-                  elevationRefreshService.requestPreview(preview.getId(), revision);
-                }
-              });
+          .run(() -> {
+            gpxPreviewRepository.persist(preview);
+            if (quality == ElevationQuality.FAST) {
+              // The row first: the request points at it
+              gpxPreviewRepository.flush();
+              elevationRefreshService.requestPreview(preview.getId(), revision);
+            }
+          });
     } catch (RuntimeException e) {
       deleteFiles(publicId, revision);
       throw e;
@@ -576,14 +575,13 @@ public class GpxPreviewService {
       return withForecastRequested(
           previewId,
           QuarkusTransaction.requiringNew()
-              .call(
-                  () -> {
-                    lockForUpdate(previewId);
-                    GpxPreview managed = getByPublicId(publicId);
-                    managed.setName(truncateName(name));
-                    previewDepartures.apply(managed, edit);
-                    return toDto(managed, surfaceRefreshService.readPreview(managed));
-                  }));
+              .call(() -> {
+                lockForUpdate(previewId);
+                GpxPreview managed = getByPublicId(publicId);
+                managed.setName(truncateName(name));
+                previewDepartures.apply(managed, edit);
+                return toDto(managed, surfaceRefreshService.readPreview(managed));
+              }));
     }
 
     // Outside the heavy work: a malformed list is a 400 with nothing uploaded
@@ -623,54 +621,51 @@ public class GpxPreviewService {
     return withForecastRequested(
         previewId,
         QuarkusTransaction.requiringNew()
-            .call(
-                () -> {
-                  // Whatever happens below, the new revision must not outlive a rollback
-                  deleteTrackFilesUnlessCommitted(pid, revision);
-                  lockForUpdate(previewId);
-                  GpxPreview managed = getByPublicId(publicId);
-                  // Read under the lock: a catch-up may have switched revisions since the load
-                  // above
-                  Long previous = managed.getFilesRevision();
-                  managed.setName(truncateName(name));
-                  managed.setFilesRevision(revision);
-                  managed.setElevationState(stateOf(quality));
-                  managed.setElevationPipeline(pipelineOf(quality, computedFallbackKm));
-                  managed.setDistance(metadata.distance());
-                  managed.setElevationGain(metadata.elevationGain());
-                  managed.setElevationLoss(metadata.elevationLoss());
-                  managed.setHilliness(metadata.hilliness());
-                  managed.setTracks(tracks);
-                  // Written with the track it describes, never left over a new one (API-149)
-                  managed.setRawLines(new PreviewRawLinesDocument(revision, rawLines));
-                  // After the tracks: the zone of the date is the one of the new start
-                  previewDepartures.apply(managed, edit);
-                  managed.setWaypoints(PreviewWaypoints.legacy(placed));
-                  managed.setWaypointDetails(new PreviewWaypointsDocument(revision, placed));
-                  managed.setHasThumbnail(hasThumbnail);
-                  managed.setDrawn(newDrawn);
-                  // Written or cleared with the track it describes, never left over a new one
-                  managed.setPlannerState(
-                      stateToStore == null
-                          ? null
-                          : new PlannerStateDocument(revision, stateToStore));
-                  // The surface of the old track left with it (WEB-100, C1b); an HD save has its
-                  // own, a fast one waits for the catch-up, which writes it (docs/LEDGER_*.md
-                  // API-150)
-                  managed.setSurfaces(
-                      computedSurfaces == null
-                          ? null
-                          : new PreviewSurfacesDocument(revision, computedSurfaces));
-                  if (quality == ElevationQuality.FAST) {
-                    gpxPreviewRepository.flush();
-                    elevationRefreshService.requestPreview(previewId, revision);
-                  }
-                  deleteTrackFilesAfterCommit(pid, previous);
-                  return toDto(
-                      managed,
-                      surfaceRefreshService.savedReadouts(
-                          computedSurfaces, tracks.size(), stateOf(quality)));
-                }));
+            .call(() -> {
+              // Whatever happens below, the new revision must not outlive a rollback
+              deleteTrackFilesUnlessCommitted(pid, revision);
+              lockForUpdate(previewId);
+              GpxPreview managed = getByPublicId(publicId);
+              // Read under the lock: a catch-up may have switched revisions since the load
+              // above
+              Long previous = managed.getFilesRevision();
+              managed.setName(truncateName(name));
+              managed.setFilesRevision(revision);
+              managed.setElevationState(stateOf(quality));
+              managed.setElevationPipeline(pipelineOf(quality, computedFallbackKm));
+              managed.setDistance(metadata.distance());
+              managed.setElevationGain(metadata.elevationGain());
+              managed.setElevationLoss(metadata.elevationLoss());
+              managed.setHilliness(metadata.hilliness());
+              managed.setTracks(tracks);
+              // Written with the track it describes, never left over a new one (API-149)
+              managed.setRawLines(new PreviewRawLinesDocument(revision, rawLines));
+              // After the tracks: the zone of the date is the one of the new start
+              previewDepartures.apply(managed, edit);
+              managed.setWaypoints(PreviewWaypoints.legacy(placed));
+              managed.setWaypointDetails(new PreviewWaypointsDocument(revision, placed));
+              managed.setHasThumbnail(hasThumbnail);
+              managed.setDrawn(newDrawn);
+              // Written or cleared with the track it describes, never left over a new one
+              managed.setPlannerState(
+                  stateToStore == null ? null : new PlannerStateDocument(revision, stateToStore));
+              // The surface of the old track left with it (WEB-100, C1b); an HD save has its
+              // own, a fast one waits for the catch-up, which writes it (docs/LEDGER_*.md
+              // API-150)
+              managed.setSurfaces(
+                  computedSurfaces == null
+                      ? null
+                      : new PreviewSurfacesDocument(revision, computedSurfaces));
+              if (quality == ElevationQuality.FAST) {
+                gpxPreviewRepository.flush();
+                elevationRefreshService.requestPreview(previewId, revision);
+              }
+              deleteTrackFilesAfterCommit(pid, previous);
+              return toDto(
+                  managed,
+                  surfaceRefreshService.savedReadouts(
+                      computedSurfaces, tracks.size(), stateOf(quality)));
+            }));
   }
 
   /**
@@ -717,41 +712,38 @@ public class GpxPreviewService {
       List<WaypointRequest> requested,
       PreviewDepartureEdit edit) {
     return QuarkusTransaction.requiringNew()
-        .call(
-            () -> {
-              lockForUpdate(previewId);
-              GpxPreview managed = getByPublicId(publicId);
-              managed.setName(truncateName(name));
-              previewDepartures.apply(managed, edit);
-              List<PreviewWaypointDetail> current = managed.readableWaypoints();
-              List<AnchoredWaypoint> anchored =
-                  WaypointAnchoring.anchor(
-                      TrackAxis.ofPointLists(
-                          managed.getTracks().stream().map(PreviewTrack::trackPoints).toList()),
-                      WaypointDrafts.fromRequest(requested, PreviewWaypoints.known(current), null));
-              if (!PreviewWaypoints.same(current, anchored)) {
-                List<PreviewWaypointDetail> placed = PreviewWaypoints.toDetails(anchored);
-                List<AnchoredWaypoint> placedAnchored = PreviewWaypoints.toAnchored(placed);
-                GpxProcessingService.WaypointFileBytes content =
-                    GpxProcessingService.waypointFileBytes(
-                        managed.getName(),
-                        managed.getTracks().stream()
-                            .map(
-                                t ->
-                                    new GpxProcessingService.StoredTrack(t.name(), t.trackPoints()))
-                            .toList(),
-                        placedAnchored);
-                byte[] gpxBytes = content.filteredGpx().getBytes(StandardCharsets.UTF_8);
-                overwrite(trackKey(managed, FILTERED_GPX), gpxBytes, GPX_CONTENT_TYPE);
-                overwrite(trackKey(managed, FIT), content.fit(), FIT_CONTENT_TYPE);
-                managed.setWaypoints(PreviewWaypoints.legacy(placed));
-                // The revision of the files, which did not change
-                managed.setWaypointDetails(
-                    new PreviewWaypointsDocument(
-                        Objects.requireNonNullElse(managed.getFilesRevision(), 0L), placed));
-              }
-              return toDto(managed, surfaceRefreshService.readPreview(managed));
-            });
+        .call(() -> {
+          lockForUpdate(previewId);
+          GpxPreview managed = getByPublicId(publicId);
+          managed.setName(truncateName(name));
+          previewDepartures.apply(managed, edit);
+          List<PreviewWaypointDetail> current = managed.readableWaypoints();
+          List<AnchoredWaypoint> anchored =
+              WaypointAnchoring.anchor(
+                  TrackAxis.ofPointLists(
+                      managed.getTracks().stream().map(PreviewTrack::trackPoints).toList()),
+                  WaypointDrafts.fromRequest(requested, PreviewWaypoints.known(current), null));
+          if (!PreviewWaypoints.same(current, anchored)) {
+            List<PreviewWaypointDetail> placed = PreviewWaypoints.toDetails(anchored);
+            List<AnchoredWaypoint> placedAnchored = PreviewWaypoints.toAnchored(placed);
+            GpxProcessingService.WaypointFileBytes content =
+                GpxProcessingService.waypointFileBytes(
+                    managed.getName(),
+                    managed.getTracks().stream()
+                        .map(t -> new GpxProcessingService.StoredTrack(t.name(), t.trackPoints()))
+                        .toList(),
+                    placedAnchored);
+            byte[] gpxBytes = content.filteredGpx().getBytes(StandardCharsets.UTF_8);
+            overwrite(trackKey(managed, FILTERED_GPX), gpxBytes, GPX_CONTENT_TYPE);
+            overwrite(trackKey(managed, FIT), content.fit(), FIT_CONTENT_TYPE);
+            managed.setWaypoints(PreviewWaypoints.legacy(placed));
+            // The revision of the files, which did not change
+            managed.setWaypointDetails(
+                new PreviewWaypointsDocument(
+                    Objects.requireNonNullElse(managed.getFilesRevision(), 0L), placed));
+          }
+          return toDto(managed, surfaceRefreshService.readPreview(managed));
+        });
   }
 
   private void overwrite(String key, byte[] content, String contentType) {
@@ -942,11 +934,10 @@ public class GpxPreviewService {
     PlannerState copied =
         isCreator(preview)
             ? QuarkusTransaction.requiringNew()
-                .call(
-                    () -> {
-                      PlannerStateDocument document = readableState(getByPublicId(publicId));
-                      return document == null ? null : document.state();
-                    })
+                .call(() -> {
+                  PlannerStateDocument document = readableState(getByPublicId(publicId));
+                  return document == null ? null : document.state();
+                })
             : null;
     // The surface, on the other hand, is public on the page of the preview: any caller takes it
     // along, and the route then asks for no computation of its own (WEB-100, C1b)
@@ -956,12 +947,11 @@ public class GpxPreviewService {
     // along. original.gpx carries none, so without this a promoted route lost them (API-134).
     List<WaypointDraft> copiedWaypoints =
         QuarkusTransaction.requiringNew()
-            .call(
-                () -> {
-                  GpxPreview current = getByPublicId(publicId);
-                  return PreviewWaypoints.drafts(
-                      current.readableWaypoints(), current.getDistance(), false, d -> true);
-                });
+            .call(() -> {
+              GpxPreview current = getByPublicId(publicId);
+              return PreviewWaypoints.drafts(
+                  current.readableWaypoints(), current.getDistance(), false, d -> true);
+            });
     // The raw lines need no copy (docs/LEDGER_*.md API-149): original.gpx is the sanitized raw
     // tracks, and the route recomputes its own raw geometry from it, point for point.
     Path gpxPath = downloadOriginalGpx(preview);
@@ -1339,15 +1329,14 @@ public class GpxPreviewService {
 
   public static List<PreviewTrack> toPreviewTracks(ComputedGpx computed) {
     return computed.tracks().stream()
-        .map(
-            t ->
-                new PreviewTrack(
-                    t.name(),
-                    t.trackPoints(),
-                    t.climbs(),
-                    t.metadata().distance(),
-                    t.metadata().elevationGain(),
-                    t.metadata().elevationLoss()))
+        .map(t ->
+            new PreviewTrack(
+                t.name(),
+                t.trackPoints(),
+                t.climbs(),
+                t.metadata().distance(),
+                t.metadata().elevationGain(),
+                t.metadata().elevationLoss()))
         .toList();
   }
 
@@ -1357,16 +1346,15 @@ public class GpxPreviewService {
    */
   private static List<String> toRawLines(ComputedGpx computed) {
     return computed.tracks().stream()
-        .map(
-            t -> {
-              LineString<G2D> raw = t.raw();
-              double[][] lngLat = new double[raw.getNumPositions()][];
-              for (int i = 0; i < lngLat.length; i++) {
-                G2D p = raw.getPositionN(i);
-                lngLat[i] = new double[] {p.getLon(), p.getLat()};
-              }
-              return PolylineCodec.encode2(lngLat);
-            })
+        .map(t -> {
+          LineString<G2D> raw = t.raw();
+          double[][] lngLat = new double[raw.getNumPositions()][];
+          for (int i = 0; i < lngLat.length; i++) {
+            G2D p = raw.getPositionN(i);
+            lngLat[i] = new double[] {p.getLon(), p.getLat()};
+          }
+          return PolylineCodec.encode2(lngLat);
+        })
         .toList();
   }
 }

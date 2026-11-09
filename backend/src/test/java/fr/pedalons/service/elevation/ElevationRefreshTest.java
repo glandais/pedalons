@@ -167,13 +167,10 @@ class ElevationRefreshTest extends AbstractResourceTest {
 
   private List<Snap> snaps(RouteDto route) {
     return QuarkusTransaction.requiringNew()
-        .call(
-            () ->
-                assetRepository.list("teamEntity.id = ?1", id(route)).stream()
-                    .map(
-                        a ->
-                            new Snap(a.getId(), a.getType(), a.getFileId(), a.getContentRevision()))
-                    .toList());
+        .call(() ->
+            assetRepository.list("teamEntity.id = ?1", id(route)).stream()
+                .map(a -> new Snap(a.getId(), a.getType(), a.getFileId(), a.getContentRevision()))
+                .toList());
   }
 
   private static Map<AssetType, Snap> byType(List<Snap> snaps) {
@@ -189,19 +186,18 @@ class ElevationRefreshTest extends AbstractResourceTest {
   /** The elevation of every point of every track, min and max. */
   private double[] elevationRange(RouteDto route) {
     return QuarkusTransaction.requiringNew()
-        .call(
-            () -> {
-              Route r = routeRepository.findById(id(route));
-              double min = Double.MAX_VALUE;
-              double max = -Double.MAX_VALUE;
-              for (GpxTrack track : r.getTracks()) {
-                for (GpxTrack.TrackPoint p : track.getTrackPoints()) {
-                  min = Math.min(min, p.ele());
-                  max = Math.max(max, p.ele());
-                }
-              }
-              return new double[] {min, max};
-            });
+        .call(() -> {
+          Route r = routeRepository.findById(id(route));
+          double min = Double.MAX_VALUE;
+          double max = -Double.MAX_VALUE;
+          for (GpxTrack track : r.getTracks()) {
+            for (GpxTrack.TrackPoint p : track.getTrackPoints()) {
+              min = Math.min(min, p.ele());
+              max = Math.max(max, p.ele());
+            }
+          }
+          return new double[] {min, max};
+        });
   }
 
   private void assertFlat(RouteDto route, double expected) {
@@ -212,10 +208,9 @@ class ElevationRefreshTest extends AbstractResourceTest {
 
   private void makeDue(RouteDto route) {
     QuarkusTransaction.requiringNew()
-        .run(
-            () ->
-                refreshRepository.update(
-                    "dueAt = ?1 where route.id = ?2", Instant.now().minusSeconds(1), id(route)));
+        .run(() ->
+            refreshRepository.update(
+                "dueAt = ?1 where route.id = ?2", Instant.now().minusSeconds(1), id(route)));
   }
 
   private byte[] read(long fileId) throws Exception {
@@ -304,18 +299,16 @@ class ElevationRefreshTest extends AbstractResourceTest {
     Duration quiet = Duration.ofSeconds(90);
     Duration maxWait = Duration.ofMinutes(10);
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              refreshRepository.delete("route.id", routeId);
-              refreshRepository.requestForRoute(routeId, 1L, t0, quiet, maxWait);
-            });
+        .run(() -> {
+          refreshRepository.delete("route.id", routeId);
+          refreshRepository.requestForRoute(routeId, 1L, t0, quiet, maxWait);
+        });
     assertEquals(t0.plus(quiet), refresh(created).getDueAt());
 
     // Close together: each save pushes the due time back from the quiet period
     QuarkusTransaction.requiringNew()
-        .run(
-            () ->
-                refreshRepository.requestForRoute(routeId, 2L, t0.plusSeconds(60), quiet, maxWait));
+        .run(() ->
+            refreshRepository.requestForRoute(routeId, 2L, t0.plusSeconds(60), quiet, maxWait));
     ElevationRefresh second = refresh(created);
     assertEquals(t0.plusSeconds(150), second.getDueAt());
     assertEquals(2L, second.getSourceRevision());
@@ -323,10 +316,9 @@ class ElevationRefreshTest extends AbstractResourceTest {
 
     // Near the cap: the quiet period would go past first request + maxWait
     QuarkusTransaction.requiringNew()
-        .run(
-            () ->
-                refreshRepository.requestForRoute(
-                    routeId, 3L, t0.plus(Duration.ofMinutes(9)), quiet, maxWait));
+        .run(() ->
+            refreshRepository.requestForRoute(
+                routeId, 3L, t0.plus(Duration.ofMinutes(9)), quiet, maxWait));
     assertEquals(t0.plus(maxWait), refresh(created).getDueAt());
 
     // Once the window is over, a save opens a new one rather than inheriting a cap in the past
@@ -437,12 +429,11 @@ class ElevationRefreshTest extends AbstractResourceTest {
     RouteDto created = createRoute(TWO_TRACKS);
     List<Long> trackIds =
         QuarkusTransaction.requiringNew()
-            .call(
-                () ->
-                    routeRepository.findById(id(created)).getTracks().stream()
-                        .map(GpxTrack::getId)
-                        .sorted()
-                        .toList());
+            .call(() ->
+                routeRepository.findById(id(created)).getTracks().stream()
+                    .map(GpxTrack::getId)
+                    .sorted()
+                    .toList());
     assertEquals(2, trackIds.size());
     // The source 2D track, written by the save (docs/LEDGER_*.md API-149)
     List<TestDataService.RawGeometry> raw = dataService.rawGeometries(id(created));
@@ -454,12 +445,11 @@ class ElevationRefreshTest extends AbstractResourceTest {
 
     List<Long> after =
         QuarkusTransaction.requiringNew()
-            .call(
-                () ->
-                    routeRepository.findById(id(created)).getTracks().stream()
-                        .map(GpxTrack::getId)
-                        .sorted()
-                        .toList());
+            .call(() ->
+                routeRepository.findById(id(created)).getTracks().stream()
+                    .map(GpxTrack::getId)
+                    .sorted()
+                    .toList());
     assertEquals(trackIds, after);
     // The catch-up changes the elevations, never the raw geometry
     assertEquals(raw, dataService.rawGeometries(id(created)));
@@ -678,12 +668,11 @@ class ElevationRefreshTest extends AbstractResourceTest {
     Duration quiet = Duration.ofSeconds(90);
     Duration maxWait = Duration.ofMinutes(10);
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              refreshRepository.delete("route.id", routeId);
-              refreshRepository.requestForRoute(routeId, 1L, t0, quiet, maxWait);
-              refreshRepository.update("attempts = 5 where route.id = ?1", routeId);
-            });
+        .run(() -> {
+          refreshRepository.delete("route.id", routeId);
+          refreshRepository.requestForRoute(routeId, 1L, t0, quiet, maxWait);
+          refreshRepository.update("attempts = 5 where route.id = ?1", routeId);
+        });
 
     // Given up long ago: the next save is a first one
     Instant later = t0.plus(Duration.ofDays(2));
@@ -798,29 +787,23 @@ class ElevationRefreshTest extends AbstractResourceTest {
   void deletingTheRoute_removesItsRequest() {
     Route route = dataService.createRoute(team1, user1, "À supprimer", Visibility.PUBLIC);
     QuarkusTransaction.requiringNew()
-        .run(
-            () ->
-                refreshRepository.requestForRoute(
-                    route.getId(),
-                    1L,
-                    Instant.now(),
-                    Duration.ofSeconds(90),
-                    Duration.ofMinutes(10)));
+        .run(() ->
+            refreshRepository.requestForRoute(
+                route.getId(), 1L, Instant.now(), Duration.ofSeconds(90), Duration.ofMinutes(10)));
     assertEquals(1, refreshCount());
 
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              // What the foreign keys of the route's other children would refuse
-              entityManager
-                  .createNativeQuery("delete from gpx_tracks where route_id = :id")
-                  .setParameter("id", route.getId())
-                  .executeUpdate();
-              entityManager
-                  .createNativeQuery("delete from team_entities where id = :id")
-                  .setParameter("id", route.getId())
-                  .executeUpdate();
-            });
+        .run(() -> {
+          // What the foreign keys of the route's other children would refuse
+          entityManager
+              .createNativeQuery("delete from gpx_tracks where route_id = :id")
+              .setParameter("id", route.getId())
+              .executeUpdate();
+          entityManager
+              .createNativeQuery("delete from team_entities where id = :id")
+              .setParameter("id", route.getId())
+              .executeUpdate();
+        });
 
     assertEquals(0, refreshCount());
   }
@@ -841,21 +824,18 @@ class ElevationRefreshTest extends AbstractResourceTest {
 
   private List<WaypointSnap> waypointSnaps(RouteDto route) {
     return QuarkusTransaction.requiringNew()
-        .call(
-            () ->
-                entityManager
-                    .createQuery(
-                        "select w from fr.pedalons.domain.route.GpxWaypoint w where w.route.id ="
-                            + " :id order by w.id",
-                        fr.pedalons.domain.route.GpxWaypoint.class)
-                    .setParameter("id", id(route))
-                    .getResultList()
-                    .stream()
-                    .map(
-                        w ->
-                            new WaypointSnap(
-                                w.getId(), w.getName(), w.typeOrInfo(), w.getDistanceM()))
-                    .toList());
+        .call(() ->
+            entityManager
+                .createQuery(
+                    "select w from fr.pedalons.domain.route.GpxWaypoint w where w.route.id ="
+                        + " :id order by w.id",
+                    fr.pedalons.domain.route.GpxWaypoint.class)
+                .setParameter("id", id(route))
+                .getResultList()
+                .stream()
+                .map(
+                    w -> new WaypointSnap(w.getId(), w.getName(), w.typeOrInfo(), w.getDistanceM()))
+                .toList());
   }
 
   @Test
@@ -944,13 +924,12 @@ class ElevationRefreshTest extends AbstractResourceTest {
   /** The stored document of each track, in the order of the tracks; null for one without. */
   private List<TrackSurfaceDocument> documents(RouteDto route) {
     return QuarkusTransaction.requiringNew()
-        .call(
-            () -> {
-              Map<Long, TrackSurfaceDocument> found = trackRepository.findSurfaces(id(route));
-              return trackRepository.findPoints(id(route)).stream()
-                  .map(t -> found.get(t.trackId()))
-                  .toList();
-            });
+        .call(() -> {
+          Map<Long, TrackSurfaceDocument> found = trackRepository.findSurfaces(id(route));
+          return trackRepository.findPoints(id(route)).stream()
+              .map(t -> found.get(t.trackId()))
+              .toList();
+        });
   }
 
   private TrackSurfaceDocument document(RouteDto route) {
@@ -964,11 +943,10 @@ class ElevationRefreshTest extends AbstractResourceTest {
   /** The stored length of each track. */
   private List<Double> lengths(RouteDto route) {
     return QuarkusTransaction.requiringNew()
-        .call(
-            () ->
-                trackRepository.findPoints(id(route)).stream()
-                    .map(t -> t.points().getLast().dist())
-                    .toList());
+        .call(() ->
+            trackRepository.findPoints(id(route)).stream()
+                .map(t -> t.points().getLast().dist())
+                .toList());
   }
 
   private Short pipeline(RouteDto route) {

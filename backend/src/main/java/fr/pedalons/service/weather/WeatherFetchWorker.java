@@ -143,26 +143,25 @@ public class WeatherFetchWorker {
 
   List<Claimed> claim(int limit, Instant now) {
     return QuarkusTransaction.requiringNew()
-        .call(
-            () -> {
-              List<Long> ids =
-                  cellRepository.findDueIdsSkipLocked(now, now.minus(DEMAND_FRESHNESS), limit);
-              if (ids.isEmpty()) {
-                return List.<Claimed>of();
-              }
-              cellRepository.lease(ids, now.plus(LEASE));
-              List<Claimed> claimed = new ArrayList<>(ids.size());
-              for (WeatherCell cell : cellRepository.list("id in ?1", ids)) {
-                claimed.add(
-                    new Claimed(
-                        cell.getId(),
-                        cell.getLatitude(),
-                        cell.getLongitude(),
-                        cell.getEleBand(),
-                        cell.getNearestNeedAt()));
-              }
-              return claimed;
-            });
+        .call(() -> {
+          List<Long> ids =
+              cellRepository.findDueIdsSkipLocked(now, now.minus(DEMAND_FRESHNESS), limit);
+          if (ids.isEmpty()) {
+            return List.<Claimed>of();
+          }
+          cellRepository.lease(ids, now.plus(LEASE));
+          List<Claimed> claimed = new ArrayList<>(ids.size());
+          for (WeatherCell cell : cellRepository.list("id in ?1", ids)) {
+            claimed.add(
+                new Claimed(
+                    cell.getId(),
+                    cell.getLatitude(),
+                    cell.getLongitude(),
+                    cell.getEleBand(),
+                    cell.getNearestNeedAt()));
+          }
+          return claimed;
+        });
   }
 
   /** One request for {@code cells}, then their storage. Returns how many were stored. */
@@ -178,12 +177,11 @@ public class WeatherFetchWorker {
     }
     List<Location> locations =
         cells.stream()
-            .map(
-                c ->
-                    new Location(
-                        c.latitude(),
-                        c.longitude(),
-                        c.eleBand() == null ? null : c.eleBand().doubleValue()))
+            .map(c ->
+                new Location(
+                    c.latitude(),
+                    c.longitude(),
+                    c.eleBand() == null ? null : c.eleBand().doubleValue()))
             .toList();
     List<OpenMeteoForecast> forecasts;
     try {
@@ -203,26 +201,24 @@ public class WeatherFetchWorker {
     try {
       Instant fetchedAt = Instant.now();
       QuarkusTransaction.requiringNew()
-          .run(
-              () -> {
-                for (int i = 0; i < cells.size(); i++) {
-                  store(cells.get(i), forecasts.get(i), fetchedAt);
-                }
-              });
+          .run(() -> {
+            for (int i = 0; i < cells.size(); i++) {
+              store(cells.get(i), forecasts.get(i), fetchedAt);
+            }
+          });
       return cells.size();
     } catch (RuntimeException e) {
       // The provider answered; the database did not take it. Backed off like any failure, but the
       // breaker stays out of it: the provider is fine.
       LOG.errorf(e, "Weather: storing %d cell(s) failed", cells.size());
       QuarkusTransaction.requiringNew()
-          .run(
-              () ->
-                  cellRepository.markFailed(
-                      ids,
-                      truncate("store: " + e.getClass().getSimpleName()),
-                      WeatherRefreshPolicy.BACKOFF_BASE,
-                      WeatherRefreshPolicy.BACKOFF_MAX,
-                      Instant.now()));
+          .run(() ->
+              cellRepository.markFailed(
+                  ids,
+                  truncate("store: " + e.getClass().getSimpleName()),
+                  WeatherRefreshPolicy.BACKOFF_BASE,
+                  WeatherRefreshPolicy.BACKOFF_MAX,
+                  Instant.now()));
       return 0;
     }
   }
@@ -269,21 +265,19 @@ public class WeatherFetchWorker {
     if (rateLimited) {
       breaker.recordRateLimited(now);
       QuarkusTransaction.requiringNew()
-          .run(
-              () ->
-                  cellRepository.markRateLimited(
-                      ids, error, WeatherRefreshPolicy.retryAfterRateLimit(now), now));
+          .run(() ->
+              cellRepository.markRateLimited(
+                  ids, error, WeatherRefreshPolicy.retryAfterRateLimit(now), now));
     } else {
       breaker.recordFailure(now);
       QuarkusTransaction.requiringNew()
-          .run(
-              () ->
-                  cellRepository.markFailed(
-                      ids,
-                      error,
-                      WeatherRefreshPolicy.BACKOFF_BASE,
-                      WeatherRefreshPolicy.BACKOFF_MAX,
-                      now));
+          .run(() ->
+              cellRepository.markFailed(
+                  ids,
+                  error,
+                  WeatherRefreshPolicy.BACKOFF_BASE,
+                  WeatherRefreshPolicy.BACKOFF_MAX,
+                  now));
     }
   }
 

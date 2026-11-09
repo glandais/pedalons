@@ -1162,13 +1162,12 @@ class AssetServiceTest extends AbstractBaseTest {
     assertTrue(storageService.exists(s3Key), "S3 file should exist before delete");
 
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              assetRepository.delete(assetRepository.findById(asset.getId()));
-              assetRepository.flush();
-              // docs/LEDGER_*.md API-97: never before the commit
-              assertTrue(storageService.exists(s3Key), "S3 file must survive until the commit");
-            });
+        .run(() -> {
+          assetRepository.delete(assetRepository.findById(asset.getId()));
+          assetRepository.flush();
+          // docs/LEDGER_*.md API-97: never before the commit
+          assertTrue(storageService.exists(s3Key), "S3 file must survive until the commit");
+        });
 
     assertFalse(storageService.exists(s3Key), "S3 file should be deleted once the delete commits");
   }
@@ -1182,12 +1181,11 @@ class AssetServiceTest extends AbstractBaseTest {
         IllegalStateException.class,
         () ->
             QuarkusTransaction.requiringNew()
-                .run(
-                    () -> {
-                      assetRepository.delete(assetRepository.findById(asset.getId()));
-                      assetRepository.flush();
-                      throw new IllegalStateException("a later step fails, the delete rolls back");
-                    }));
+                .run(() -> {
+                  assetRepository.delete(assetRepository.findById(asset.getId()));
+                  assetRepository.flush();
+                  throw new IllegalStateException("a later step fails, the delete rolls back");
+                }));
 
     assertTrue(
         QuarkusTransaction.requiringNew()
@@ -1203,26 +1201,24 @@ class AssetServiceTest extends AbstractBaseTest {
     String s3Key = getAssetKey(team, image.getFileId());
 
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              Post managed = postRepository.findById(post.getId());
-              Asset managedImage = assetRepository.findById(image.getId());
-              managedImage.setTeamEntity(managed);
-              managed.getAssets().add(managedImage);
-            });
+        .run(() -> {
+          Post managed = postRepository.findById(post.getId());
+          Asset managedImage = assetRepository.findById(image.getId());
+          managedImage.setTeamEntity(managed);
+          managed.getAssets().add(managedImage);
+        });
 
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              Post managed = postRepository.findById(post.getId());
-              assertTrue(
-                  managed.getAssets().stream().anyMatch(a -> a.getId().equals(image.getId())),
-                  "Image should be in collection before removal");
+        .run(() -> {
+          Post managed = postRepository.findById(post.getId());
+          assertTrue(
+              managed.getAssets().stream().anyMatch(a -> a.getId().equals(image.getId())),
+              "Image should be in collection before removal");
 
-              // Remove from collection → orphanRemoval triggers @PreRemove
-              managed.getAssets().removeIf(a -> a.getId().equals(image.getId()));
-              postRepository.flush();
-            });
+          // Remove from collection → orphanRemoval triggers @PreRemove
+          managed.getAssets().removeIf(a -> a.getId().equals(image.getId()));
+          postRepository.flush();
+        });
 
     assertFalse(
         storageService.exists(s3Key), "S3 file should be deleted by orphanRemoval + @PreRemove");
@@ -1298,14 +1294,13 @@ class AssetServiceTest extends AbstractBaseTest {
       storeNew(newFileId);
 
       QuarkusTransaction.requiringNew()
-          .run(
-              () ->
-                  assetService.replaceStoredFile(
-                      assetRepository.findById(asset.getId()),
-                      newFileId,
-                      new AssetService.UploadedFile("text/plain", 3),
-                      "n.txt",
-                      true));
+          .run(() ->
+              assetService.replaceStoredFile(
+                  assetRepository.findById(asset.getId()),
+                  newFileId,
+                  new AssetService.UploadedFile("text/plain", 3),
+                  "n.txt",
+                  true));
 
       Asset reloaded =
           QuarkusTransaction.requiringNew().call(() -> assetRepository.findById(asset.getId()));
@@ -1324,14 +1319,13 @@ class AssetServiceTest extends AbstractBaseTest {
       storeNew(newFileId);
 
       QuarkusTransaction.requiringNew()
-          .run(
-              () ->
-                  assetService.replaceStoredFile(
-                      assetRepository.findById(asset.getId()),
-                      newFileId,
-                      new AssetService.UploadedFile("text/plain", 3),
-                      "n.txt",
-                      false));
+          .run(() ->
+              assetService.replaceStoredFile(
+                  assetRepository.findById(asset.getId()),
+                  newFileId,
+                  new AssetService.UploadedFile("text/plain", 3),
+                  "n.txt",
+                  false));
 
       Asset reloaded =
           QuarkusTransaction.requiringNew().call(() -> assetRepository.findById(asset.getId()));
@@ -1350,16 +1344,15 @@ class AssetServiceTest extends AbstractBaseTest {
           IllegalStateException.class,
           () ->
               QuarkusTransaction.requiringNew()
-                  .run(
-                      () -> {
-                        assetService.replaceStoredFile(
-                            assetRepository.findById(asset.getId()),
-                            newFileId,
-                            new AssetService.UploadedFile("text/plain", 3),
-                            "n.txt",
-                            true);
-                        throw new IllegalStateException("rolled back");
-                      }));
+                  .run(() -> {
+                    assetService.replaceStoredFile(
+                        assetRepository.findById(asset.getId()),
+                        newFileId,
+                        new AssetService.UploadedFile("text/plain", 3),
+                        "n.txt",
+                        true);
+                    throw new IllegalStateException("rolled back");
+                  }));
 
       Asset reloaded =
           QuarkusTransaction.requiringNew().call(() -> assetRepository.findById(asset.getId()));

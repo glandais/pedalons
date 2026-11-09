@@ -200,14 +200,13 @@ class GpsRouteSyncPlannerTest extends AbstractResourceTest {
 
   private fr.pedalons.domain.asset.Asset filteredGpx() {
     return QuarkusTransaction.requiringNew()
-        .call(
-            () ->
-                assetRepository
-                    .find(
-                        "teamEntity.id = ?1 and type = ?2",
-                        rideRoute.getId(),
-                        AssetType.ROUTE_FILTERED_GPX)
-                    .firstResult());
+        .call(() ->
+            assetRepository
+                .find(
+                    "teamEntity.id = ?1 and type = ?2",
+                    rideRoute.getId(),
+                    AssetType.ROUTE_FILTERED_GPX)
+                .firstResult());
   }
 
   /** The real update path: a track edit replaces the file of the existing asset row (API-128). */

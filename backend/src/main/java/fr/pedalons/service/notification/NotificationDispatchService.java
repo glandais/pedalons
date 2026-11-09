@@ -117,11 +117,10 @@ public class NotificationDispatchService {
     long eventId = claimed.get();
     try {
       QuarkusTransaction.requiringNew()
-          .call(
-              () -> {
-                fanOut(eventId);
-                return null;
-              });
+          .call(() -> {
+            fanOut(eventId);
+            return null;
+          });
     } catch (Exception e) {
       LOG.errorf(e, "Notification event %s failed", TsidUtils.toString(eventId));
       markFailed(eventId, e);
@@ -131,24 +130,23 @@ public class NotificationDispatchService {
 
   Optional<Long> claimNextPending() {
     return QuarkusTransaction.requiringNew()
-        .call(
-            () -> {
-              Long id = eventRepository.findNextDueIdSkipLocked(Instant.now());
-              if (id == null) {
-                return Optional.<Long>empty();
-              }
-              if (!eventRepository.claim(id, Instant.now())) {
-                return Optional.<Long>empty();
-              }
-              NotificationEventEntry entry = eventRepository.findById(id);
-              if (entry.getType().coalescesWhilePending()) {
-                // Done waiting as of now, not as of the fan-out's commit: the fan-out is about to
-                // read the subject, so an edit made from here on must queue an event of its own
-                // rather than fold into this one and go unannounced (docs/LEDGER_*.md NOTIF-10).
-                releaseDedupKey(entry);
-              }
-              return Optional.of(id);
-            });
+        .call(() -> {
+          Long id = eventRepository.findNextDueIdSkipLocked(Instant.now());
+          if (id == null) {
+            return Optional.<Long>empty();
+          }
+          if (!eventRepository.claim(id, Instant.now())) {
+            return Optional.<Long>empty();
+          }
+          NotificationEventEntry entry = eventRepository.findById(id);
+          if (entry.getType().coalescesWhilePending()) {
+            // Done waiting as of now, not as of the fan-out's commit: the fan-out is about to
+            // read the subject, so an edit made from here on must queue an event of its own
+            // rather than fold into this one and go unannounced (docs/LEDGER_*.md NOTIF-10).
+            releaseDedupKey(entry);
+          }
+          return Optional.of(id);
+        });
   }
 
   void fanOut(long eventId) throws Exception {
@@ -246,11 +244,10 @@ public class NotificationDispatchService {
     return webhookRepository
         .findByTeam(resolution.team().getId())
         .filter(webhook -> webhook.isEnabled())
-        .map(
-            webhook -> {
-              webhookDeliveryRepository.persist(new TeamWebhookDelivery(entry, webhook, now));
-              return true;
-            })
+        .map(webhook -> {
+          webhookDeliveryRepository.persist(new TeamWebhookDelivery(entry, webhook, now));
+          return true;
+        })
         .orElse(false);
   }
 
@@ -330,18 +327,16 @@ public class NotificationDispatchService {
 
   void markFailed(long eventId, Exception cause) {
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              NotificationEventEntry entry = eventRepository.findById(eventId);
-              if (entry == null) {
-                return;
-              }
-              entry.setErrorMessage(truncate(cause.toString()));
-              // Below the ceiling it goes back on the queue, after a backoff: retried within the
-              // same tick, a transient fault would burn every attempt in milliseconds.
-              requeueOrFail(
-                  entry, Instant.now().plus(backoff(backoffSeconds, entry.getAttempts())));
-            });
+        .run(() -> {
+          NotificationEventEntry entry = eventRepository.findById(eventId);
+          if (entry == null) {
+            return;
+          }
+          entry.setErrorMessage(truncate(cause.toString()));
+          // Below the ceiling it goes back on the queue, after a backoff: retried within the
+          // same tick, a transient fault would burn every attempt in milliseconds.
+          requeueOrFail(entry, Instant.now().plus(backoff(backoffSeconds, entry.getAttempts())));
+        });
   }
 
   /** Puts back on the queue the events a crash left in PROCESSING. */

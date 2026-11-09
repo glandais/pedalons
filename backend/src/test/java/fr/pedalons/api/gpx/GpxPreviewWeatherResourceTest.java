@@ -73,13 +73,10 @@ class GpxPreviewWeatherResourceTest extends AbstractResourceTest {
     when(breaker.isClosed(any())).thenReturn(true);
     when(breaker.remainingBudget(any())).thenReturn(1_000);
     when(gateway.forecast(anyList()))
-        .thenAnswer(
-            invocation -> {
-              List<Location> locations = invocation.getArgument(0);
-              return locations.stream()
-                  .map(l -> WeatherTestFixtures.forecast(l, 48, 15, 0))
-                  .toList();
-            });
+        .thenAnswer(invocation -> {
+          List<Location> locations = invocation.getArgument(0);
+          return locations.stream().map(l -> WeatherTestFixtures.forecast(l, 48, 15, 0)).toList();
+        });
   }
 
   // ------------------------------------------------------------------ helpers
@@ -122,11 +119,10 @@ class GpxPreviewWeatherResourceTest extends AbstractResourceTest {
   private static void collectKeys(JsonNode node, String path, List<String> into) {
     if (node.isObject()) {
       node.properties()
-          .forEach(
-              e -> {
-                into.add(path + "." + e.getKey());
-                collectKeys(e.getValue(), path + "." + e.getKey(), into);
-              });
+          .forEach(e -> {
+            into.add(path + "." + e.getKey());
+            collectKeys(e.getValue(), path + "." + e.getKey(), into);
+          });
     } else if (node.isArray()) {
       for (int i = 0; i < node.size(); i++) {
         collectKeys(node.get(i), path + "[" + i + "]", into);
@@ -238,10 +234,9 @@ class GpxPreviewWeatherResourceTest extends AbstractResourceTest {
     collectKeys(objectMapper.readTree(response.asString()), "$", keys);
     List<String> leaks =
         keys.stream()
-            .filter(
-                k ->
-                    COORDINATE_KEYS.contains(
-                        k.substring(k.lastIndexOf('.') + 1).toLowerCase(Locale.ROOT)))
+            .filter(k ->
+                COORDINATE_KEYS.contains(
+                    k.substring(k.lastIndexOf('.') + 1).toLowerCase(Locale.ROOT)))
             .toList();
     assertTrue(leaks.isEmpty(), "leaks coordinates: " + leaks);
   }

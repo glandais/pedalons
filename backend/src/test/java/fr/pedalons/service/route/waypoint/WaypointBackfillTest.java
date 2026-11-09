@@ -59,13 +59,12 @@ class WaypointBackfillTest extends AbstractResourceTest {
 
   private List<GpxWaypoint> rows(Long routeId) {
     return QuarkusTransaction.requiringNew()
-        .call(
-            () ->
-                entityManager
-                    .createQuery(
-                        "select w from GpxWaypoint w where w.route.id = :id", GpxWaypoint.class)
-                    .setParameter("id", routeId)
-                    .getResultList());
+        .call(() ->
+            entityManager
+                .createQuery(
+                    "select w from GpxWaypoint w where w.route.id = :id", GpxWaypoint.class)
+                .setParameter("id", routeId)
+                .getResultList());
   }
 
   @Test

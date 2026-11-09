@@ -196,19 +196,18 @@ public class UserService {
     QuarkusTransaction.requiringNew().run(() -> checkDeletable(userId, domainId));
     accountErasureService.removeSyncedRoutes(userId);
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              checkDeletable(userId, domainId);
-              // A team they administer alone would be left with no member at all: it goes with the
-              // account, through the same deletion as DELETE /teams/{slug}. The confirmation named
-              // these teams (GET /users/me/deletion-impact).
-              for (Team team : userTeamRepository.findTeamsAdministeredAlone(userId, domainId)) {
-                teamService.delete(team);
-              }
-              // Erased now, not flagged for later: nothing ever came back for a flagged account,
-              // and the policy, the app and the store listings all promise the data is gone.
-              accountErasureService.erase(userRepository.findById(userId));
-            });
+        .run(() -> {
+          checkDeletable(userId, domainId);
+          // A team they administer alone would be left with no member at all: it goes with the
+          // account, through the same deletion as DELETE /teams/{slug}. The confirmation named
+          // these teams (GET /users/me/deletion-impact).
+          for (Team team : userTeamRepository.findTeamsAdministeredAlone(userId, domainId)) {
+            teamService.delete(team);
+          }
+          // Erased now, not flagged for later: nothing ever came back for a flagged account,
+          // and the policy, the app and the store listings all promise the data is gone.
+          accountErasureService.erase(userRepository.findById(userId));
+        });
     // The request context memoizes the active user; it is no longer active.
     pedalonsContext.invalidateUser();
   }

@@ -87,14 +87,11 @@ class GpxSanitizationSyncHashTest extends AbstractResourceTest {
 
   private Asset filteredGpx() {
     return QuarkusTransaction.requiringNew()
-        .call(
-            () ->
-                assetRepository
-                    .find(
-                        "teamEntity.id = ?1 and type = ?2",
-                        route.getId(),
-                        AssetType.ROUTE_FILTERED_GPX)
-                    .firstResult());
+        .call(() ->
+            assetRepository
+                .find(
+                    "teamEntity.id = ?1 and type = ?2", route.getId(), AssetType.ROUTE_FILTERED_GPX)
+                .firstResult());
   }
 
   @Test

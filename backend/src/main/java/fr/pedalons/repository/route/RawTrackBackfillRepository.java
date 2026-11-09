@@ -56,12 +56,11 @@ public class RawTrackBackfillRepository
             .setParameter("limit", limit)
             .getResultList();
     return rows.stream()
-        .map(
-            r ->
-                new Candidate(
-                    ((Number) r[0]).longValue(),
-                    ((Number) r[1]).longValue(),
-                    r[2] == null ? null : ((Number) r[2]).longValue()))
+        .map(r ->
+            new Candidate(
+                ((Number) r[0]).longValue(),
+                ((Number) r[1]).longValue(),
+                r[2] == null ? null : ((Number) r[2]).longValue()))
         .toList();
   }
 

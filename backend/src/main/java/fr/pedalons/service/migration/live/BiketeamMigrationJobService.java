@@ -195,12 +195,11 @@ public class BiketeamMigrationJobService {
       return null;
     }
     return QuarkusTransaction.requiringNew()
-        .call(
-            () ->
-                jobRepository
-                    .findActiveByBiketeamTeamId(biketeamTeamId)
-                    .map(j -> TsidUtils.toString(j.getId()))
-                    .orElse(null));
+        .call(() ->
+            jobRepository
+                .findActiveByBiketeamTeamId(biketeamTeamId)
+                .map(j -> TsidUtils.toString(j.getId()))
+                .orElse(null));
   }
 
   /**
@@ -284,39 +283,37 @@ public class BiketeamMigrationJobService {
   /** Moves the head of the queue to RUNNING, in its own short transaction. */
   public Optional<Long> claimNext() {
     return QuarkusTransaction.requiringNew()
-        .call(
-            () -> {
-              Instant now = Instant.now();
-              Long id = jobRepository.findNextQueuedIdSkipLocked(now);
-              if (id == null) {
-                return Optional.<Long>empty();
-              }
-              return jobRepository.claim(id, now) ? Optional.of(id) : Optional.<Long>empty();
-            });
+        .call(() -> {
+          Instant now = Instant.now();
+          Long id = jobRepository.findNextQueuedIdSkipLocked(now);
+          if (id == null) {
+            return Optional.<Long>empty();
+          }
+          return jobRepository.claim(id, now) ? Optional.of(id) : Optional.<Long>empty();
+        });
   }
 
   /** The claimed job, as plain values. */
   public LiveJobContext loadContext(long jobId) {
     return QuarkusTransaction.requiringNew()
-        .call(
-            () -> {
-              BiketeamMigrationJob job = jobRepository.findById(jobId);
-              if (job == null) {
-                throw new IllegalStateException("Claimed job vanished: " + jobId);
-              }
-              return new LiveJobContext(
-                  job.getId(),
-                  TsidUtils.toString(job.getId()),
-                  job.getDomain().getId(),
-                  job.getUser().getId(),
-                  job.getBiketeamTeamId(),
-                  job.getRequestId(),
-                  job.isDryRun(),
-                  job.isReset(),
-                  job.getBaseUrl(),
-                  job.getAttempts(),
-                  job.getTargetTeamId());
-            });
+        .call(() -> {
+          BiketeamMigrationJob job = jobRepository.findById(jobId);
+          if (job == null) {
+            throw new IllegalStateException("Claimed job vanished: " + jobId);
+          }
+          return new LiveJobContext(
+              job.getId(),
+              TsidUtils.toString(job.getId()),
+              job.getDomain().getId(),
+              job.getUser().getId(),
+              job.getBiketeamTeamId(),
+              job.getRequestId(),
+              job.isDryRun(),
+              job.isReset(),
+              job.getBaseUrl(),
+              job.getAttempts(),
+              job.getTargetTeamId());
+        });
   }
 
   /**
@@ -325,13 +322,12 @@ public class BiketeamMigrationJobService {
    */
   public void recordProgress(LiveJobContext ctx, JsonNode progress, JsonNode result) {
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              BiketeamMigrationJob job = owned(ctx);
-              job.setProgress(progress);
-              job.setResult(result);
-              job.setHeartbeatAt(Instant.now());
-            });
+        .run(() -> {
+          BiketeamMigrationJob job = owned(ctx);
+          job.setProgress(progress);
+          job.setResult(result);
+          job.setHeartbeatAt(Instant.now());
+        });
   }
 
   public void setTargetTeam(LiveJobContext ctx, long teamId) {
@@ -340,28 +336,26 @@ public class BiketeamMigrationJobService {
 
   public void succeed(LiveJobContext ctx, JsonNode progress, JsonNode result) {
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              BiketeamMigrationJob job = owned(ctx);
-              Instant now = Instant.now();
-              job.setStatus(BiketeamMigrationStatus.SUCCEEDED);
-              job.setProgress(progress);
-              job.setResult(result);
-              job.setHeartbeatAt(now);
-              job.setFinishedAt(now);
-              job.setErrorCode(null);
-              job.setErrorMessage(null);
-            });
+        .run(() -> {
+          BiketeamMigrationJob job = owned(ctx);
+          Instant now = Instant.now();
+          job.setStatus(BiketeamMigrationStatus.SUCCEEDED);
+          job.setProgress(progress);
+          job.setResult(result);
+          job.setHeartbeatAt(now);
+          job.setFinishedAt(now);
+          job.setErrorCode(null);
+          job.setErrorMessage(null);
+        });
   }
 
   /** FAILED for good — a business failure, or the last attempt. */
   public void fail(LiveJobContext ctx, String code, String message) {
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              BiketeamMigrationJob job = owned(ctx);
-              markFailed(job, code, message);
-            });
+        .run(() -> {
+          BiketeamMigrationJob job = owned(ctx);
+          markFailed(job, code, message);
+        });
   }
 
   /**
@@ -372,22 +366,21 @@ public class BiketeamMigrationJobService {
    */
   public void retryOrFail(LiveJobContext ctx, String finalCode, String message) {
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              BiketeamMigrationJob job = owned(ctx);
-              if (job.getAttempts() >= config.maxAttempts()) {
-                markFailed(job, finalCode, message);
-                return;
-              }
-              job.setStatus(BiketeamMigrationStatus.QUEUED);
-              job.setNextAttemptAt(
-                  Instant.now().plus(Duration.ofMinutes(1L << Math.min(job.getAttempts(), 10))));
-              job.setErrorCode(truncateCode(finalCode));
-              job.setErrorMessage(truncate(message));
-              LOG.warnf(
-                  "Biketeam migration job %s: attempt %d failed (%s), retrying",
-                  ctx.jobTsid(), job.getAttempts(), message);
-            });
+        .run(() -> {
+          BiketeamMigrationJob job = owned(ctx);
+          if (job.getAttempts() >= config.maxAttempts()) {
+            markFailed(job, finalCode, message);
+            return;
+          }
+          job.setStatus(BiketeamMigrationStatus.QUEUED);
+          job.setNextAttemptAt(
+              Instant.now().plus(Duration.ofMinutes(1L << Math.min(job.getAttempts(), 10))));
+          job.setErrorCode(truncateCode(finalCode));
+          job.setErrorMessage(truncate(message));
+          LOG.warnf(
+              "Biketeam migration job %s: attempt %d failed (%s), retrying",
+              ctx.jobTsid(), job.getAttempts(), message);
+        });
   }
 
   private void markFailed(BiketeamMigrationJob job, String code, String message) {

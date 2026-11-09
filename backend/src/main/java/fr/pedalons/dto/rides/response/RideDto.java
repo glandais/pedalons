@@ -424,17 +424,14 @@ public class RideDto implements PublicationDto {
 
     List<RideGroupDto> groupDtos =
         groups.stream()
-            .map(
-                group ->
-                    RideGroupDto.from(
-                        group,
-                        rideZone,
-                        registeredGroupId,
-                        group.getRoute() != null
-                            ? routeThumbnails.get(group.getRoute().getId())
-                            : null,
-                        preview.apply(group),
-                        withNames))
+            .map(group ->
+                RideGroupDto.from(
+                    group,
+                    rideZone,
+                    registeredGroupId,
+                    group.getRoute() != null ? routeThumbnails.get(group.getRoute().getId()) : null,
+                    preview.apply(group),
+                    withNames))
             .toList();
 
     // The first 5 registrations of the ride. Each group's preview holds its own earliest ones, so
@@ -454,10 +451,9 @@ public class RideDto implements PublicationDto {
     boolean full =
         !groups.isEmpty()
             && groups.stream()
-                .allMatch(
-                    g ->
-                        g.getMaxParticipants() != null
-                            && preview.apply(g).count() >= g.getMaxParticipants());
+                .allMatch(g ->
+                    g.getMaxParticipants() != null
+                        && preview.apply(g).count() >= g.getMaxParticipants());
     int participantCount = groups.stream().mapToInt(g -> preview.apply(g).count()).sum();
     // Same rule as RideSummaryRepository on the list path: the sum of the capacities, null as soon
     // as one group is uncapped (or there is no group).

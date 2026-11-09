@@ -205,10 +205,9 @@ public class FeedbackService {
   private JsonNode logs(List<ClientLogEntryDto> entries) {
     return objectMapper.valueToTree(
         entries.stream()
-            .map(
-                e ->
-                    new ClientLogEntryDto(
-                        e.ts(), e.level(), e.source(), LogRedactor.redact(e.message())))
+            .map(e ->
+                new ClientLogEntryDto(
+                    e.ts(), e.level(), e.source(), LogRedactor.redact(e.message())))
             .toList());
   }
 

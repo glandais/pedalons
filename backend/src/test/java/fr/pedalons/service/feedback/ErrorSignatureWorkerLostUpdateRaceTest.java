@@ -97,30 +97,28 @@ class ErrorSignatureWorkerLostUpdateRaceTest extends AbstractBaseTest {
 
     // Transaction A: the worker's CREATED mark, paused between its read and its flush.
     CompletableFuture<Void> a =
-        CompletableFuture.runAsync(
-            () -> {
-              try {
-                QuarkusTransaction.requiringNew()
-                    .run(
-                        () -> {
-                          ErrorSignature signature = errorSignatureRepository.findById(id);
-                          assertEquals(1, signature.getOccurrenceCount());
-                          aRead.countDown();
-                          try {
-                            assertTrue(releaseA.await(30, TimeUnit.SECONDS));
-                          } catch (InterruptedException e) {
-                            throw new RuntimeException(e);
-                          }
-                          Instant now = Instant.now();
-                          signature.setGithubStatus(GithubSyncStatus.CREATED);
-                          signature.setGithubIssueNumber(100);
-                          signature.setGithubCreatedAt(now);
-                          signature.setSummarizedUntil(now);
-                        });
-              } finally {
-                aRead.countDown();
-              }
-            });
+        CompletableFuture.runAsync(() -> {
+          try {
+            QuarkusTransaction.requiringNew()
+                .run(() -> {
+                  ErrorSignature signature = errorSignatureRepository.findById(id);
+                  assertEquals(1, signature.getOccurrenceCount());
+                  aRead.countDown();
+                  try {
+                    assertTrue(releaseA.await(30, TimeUnit.SECONDS));
+                  } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                  }
+                  Instant now = Instant.now();
+                  signature.setGithubStatus(GithubSyncStatus.CREATED);
+                  signature.setGithubIssueNumber(100);
+                  signature.setGithubCreatedAt(now);
+                  signature.setSummarizedUntil(now);
+                });
+          } finally {
+            aRead.countDown();
+          }
+        });
 
     assertTrue(aRead.await(30, TimeUnit.SECONDS), "A's read did not run");
     if (a.isDone()) {

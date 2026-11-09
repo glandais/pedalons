@@ -98,13 +98,12 @@ class PasskeyChallengeDoubleUseRaceTest extends AbstractBaseTest {
 
     Long userId = user.getId();
     QuarkusTransaction.requiringNew()
-        .run(
-            () -> {
-              User ref = passkeyRepository.getEntityManager().getReference(User.class, userId);
-              Passkey passkey = new Passkey(ref, credentialId, publicKeyBytes);
-              passkey.setSignCount(0);
-              passkeyRepository.persist(passkey);
-            });
+        .run(() -> {
+          User ref = passkeyRepository.getEntityManager().getReference(User.class, userId);
+          Passkey passkey = new Passkey(ref, credentialId, publicKeyBytes);
+          passkey.setSignCount(0);
+          passkeyRepository.persist(passkey);
+        });
   }
 
   /** Control: the software authenticator produces an assertion the service accepts. */
@@ -134,12 +133,11 @@ class PasskeyChallengeDoubleUseRaceTest extends AbstractBaseTest {
               Optional<WebAuthnChallenge> found =
                   (Optional<WebAuthnChallenge>) invocation.callRealMethod();
               // The concurrent request (same assertion) consumes the challenge and commits.
-              found.ifPresent(
-                  c -> {
-                    Long id = c.getId();
-                    QuarkusTransaction.requiringNew()
-                        .run(() -> winnerDeleted.set(challengeRepository.delete("id", id) == 1));
-                  });
+              found.ifPresent(c -> {
+                Long id = c.getId();
+                QuarkusTransaction.requiringNew()
+                    .run(() -> winnerDeleted.set(challengeRepository.delete("id", id) == 1));
+              });
               return found;
             })
         .when(challengeRepository)

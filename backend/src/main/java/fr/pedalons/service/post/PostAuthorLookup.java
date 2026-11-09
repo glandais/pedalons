@@ -93,13 +93,12 @@ public class PostAuthorLookup {
       authors.put(user.getId(), PublicUserDto.from(user));
     }
     Map<Long, PublicUserDto> byPostId = new HashMap<>();
-    authorIdByPostId.forEach(
-        (postId, authorId) -> {
-          PublicUserDto author = authors.get(authorId);
-          if (author != null) {
-            byPostId.put(postId, author);
-          }
-        });
+    authorIdByPostId.forEach((postId, authorId) -> {
+      PublicUserDto author = authors.get(authorId);
+      if (author != null) {
+        byPostId.put(postId, author);
+      }
+    });
     return new PostAuthors(byPostId);
   }
 

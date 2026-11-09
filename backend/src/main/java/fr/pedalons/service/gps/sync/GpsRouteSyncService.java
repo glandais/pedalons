@@ -91,12 +91,11 @@ public class GpsRouteSyncService {
       Long domainId, List<GpsServiceConnection> connections) {
     Map<Long, ConnectionSummary> summaries = summaries(domainId, connections);
     return connections.stream()
-        .map(
-            c -> {
-              ConnectionSummary summary = summaries.get(c.getId());
-              return GpsServiceConnectionDto.from(
-                  c, state(c, summary), summary.routeCount(), summary.lastSyncedAt());
-            })
+        .map(c -> {
+          ConnectionSummary summary = summaries.get(c.getId());
+          return GpsServiceConnectionDto.from(
+              c, state(c, summary), summary.routeCount(), summary.lastSyncedAt());
+        })
         .toList();
   }
 
@@ -262,23 +261,19 @@ public class GpsRouteSyncService {
   public RouteUploadResponse uploadManually(
       Long domainId, Long userId, Long connectionId, Long routeId) {
     Optional<Long> automatic =
-        tx(
-            () ->
-                syncRepository
-                    .findAutoForRoute(domainId, connectionId, routeId)
-                    .map(s -> s.getId()));
+        tx(() ->
+            syncRepository.findAutoForRoute(domainId, connectionId, routeId).map(s -> s.getId()));
     RouteUploadResponse response =
         automatic.isPresent()
             ? syncAutomaticNow(automatic.get())
             : uploadTracked(domainId, userId, connectionId, routeId);
-    tx(
-        () -> {
-          GpsServiceConnection connection = connectionRepository.findById(connectionId);
-          if (connection != null) {
-            connection.markUsed();
-          }
-          return null;
-        });
+    tx(() -> {
+      GpsServiceConnection connection = connectionRepository.findById(connectionId);
+      if (connection != null) {
+        connection.markUsed();
+      }
+      return null;
+    });
     return response;
   }
 
@@ -290,11 +285,10 @@ public class GpsRouteSyncService {
         claimed ? tx(() -> syncRepository.findClaims(List.of(rowId), lease)) : List.of();
     if (claims.isEmpty()) {
       String externalId =
-          tx(
-              () ->
-                  Optional.ofNullable(syncRepository.findById(rowId))
-                      .map(s -> s.getExternalRouteId())
-                      .orElse(null));
+          tx(() ->
+              Optional.ofNullable(syncRepository.findById(rowId))
+                  .map(s -> s.getExternalRouteId())
+                  .orElse(null));
       return new RouteUploadResponse(true, "Automatic sync in progress", externalId);
     }
     Outcome outcome = executor.process(claims.getFirst());
@@ -329,19 +323,18 @@ public class GpsRouteSyncService {
     if (result instanceof GpsCallResult.Ok ok) {
       String sent = ok.externalId() != null ? ok.externalId() : externalId;
       if (sent != null) {
-        tx(
-            () -> {
-              syncRepository.upsertManual(
-                  domainId,
-                  userId,
-                  connectionId,
-                  routeId,
-                  manual.name(),
-                  manual.hash(),
-                  sent,
-                  Instant.now());
-              return null;
-            });
+        tx(() -> {
+          syncRepository.upsertManual(
+              domainId,
+              userId,
+              connectionId,
+              routeId,
+              manual.name(),
+              manual.hash(),
+              sent,
+              Instant.now());
+          return null;
+        });
       }
       return new RouteUploadResponse(true, null, sent);
     }

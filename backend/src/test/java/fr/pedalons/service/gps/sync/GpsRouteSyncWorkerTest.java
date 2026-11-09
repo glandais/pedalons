@@ -137,10 +137,9 @@ class GpsRouteSyncWorkerTest extends AbstractResourceTest {
     assertNull(row.getClaimedUntil());
     verify(hammerhead)
         .createRoute(
-            argThat(
-                auth ->
-                    auth instanceof GpsAuth.Bearer b
-                        && b.accessToken().equals(GpsSyncTestData.ACCESS_TOKEN)),
+            argThat(auth ->
+                auth instanceof GpsAuth.Bearer b
+                    && b.accessToken().equals(GpsSyncTestData.ACCESS_TOKEN)),
             eq(GPX),
             argThat((RouteMeta meta) -> meta.name().contains("Groupe A")));
   }
@@ -212,18 +211,17 @@ class GpsRouteSyncWorkerTest extends AbstractResourceTest {
                 .call(() -> routeService.getDto(team1Slug, created.slug()))
                 .waypoints()
                 .stream()
-                .map(
-                    w ->
-                        new WaypointRequest(
-                            w.id(),
-                            new GeoPoint(
-                                w.geometry().getPosition().getLon(),
-                                w.geometry().getPosition().getLat()),
-                            w.type(),
-                            w.name(),
-                            w.description(),
-                            w.distance(),
-                            null))
+                .map(w ->
+                    new WaypointRequest(
+                        w.id(),
+                        new GeoPoint(
+                            w.geometry().getPosition().getLon(),
+                            w.geometry().getPosition().getLat()),
+                        w.type(),
+                        w.name(),
+                        w.description(),
+                        w.distance(),
+                        null))
                 .toList());
     list.add(
         new WaypointRequest(
@@ -451,12 +449,11 @@ class GpsRouteSyncWorkerTest extends AbstractResourceTest {
     Long rowId = row().getId();
     AtomicReference<String> sentHash = new AtomicReference<>();
     when(hammerhead.createRoute(any(), any(), any()))
-        .thenAnswer(
-            i -> {
-              sentHash.set(row().getDesiredHash());
-              sync.setDesiredHash(rowId, "changed-meanwhile");
-              return new GpsCallResult.Ok("ext-1");
-            });
+        .thenAnswer(i -> {
+          sentHash.set(row().getDesiredHash());
+          sync.setDesiredHash(rowId, "changed-meanwhile");
+          return new GpsCallResult.Ok("ext-1");
+        });
 
     worker.processDue();
 

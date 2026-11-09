@@ -155,38 +155,36 @@ class RouteTrackReplacementTest extends AbstractResourceTest {
 
   private List<Snap> snaps(String routeId) {
     return QuarkusTransaction.requiringNew()
-        .call(
-            () -> {
-              Long id = TsidUtils.toLong(routeId);
-              // The URLs as the API publishes them
-              AssetsDto dto =
-                  assetService.getAssetsDto(
-                      assetRepository.getEntityManager().find(TeamEntity.class, id));
-              Map<String, String> urls = new HashMap<>();
-              for (AssetDto asset :
-                  Stream.of(
-                          dto.originalGpx(),
-                          dto.gpx(),
-                          dto.fit(),
-                          dto.thumbnailLight(),
-                          dto.thumbnailDark())
-                      .filter(Objects::nonNull)
-                      .toList()) {
-                urls.put(asset.id(), asset.url());
-              }
-              return assetRepository.list("teamEntity.id = ?1", id).stream()
-                  .map(
-                      a ->
-                          new Snap(
-                              a.getId(),
-                              a.getType(),
-                              a.getFileId(),
-                              a.getContentRevision(),
-                              assetService.getAssetKey(a.getTeam(), a.getFileId()),
-                              urls.getOrDefault(TsidUtils.toString(a.getId()), "")))
-                  .sorted(Comparator.comparing(Snap::type))
-                  .toList();
-            });
+        .call(() -> {
+          Long id = TsidUtils.toLong(routeId);
+          // The URLs as the API publishes them
+          AssetsDto dto =
+              assetService.getAssetsDto(
+                  assetRepository.getEntityManager().find(TeamEntity.class, id));
+          Map<String, String> urls = new HashMap<>();
+          for (AssetDto asset :
+              Stream.of(
+                      dto.originalGpx(),
+                      dto.gpx(),
+                      dto.fit(),
+                      dto.thumbnailLight(),
+                      dto.thumbnailDark())
+                  .filter(Objects::nonNull)
+                  .toList()) {
+            urls.put(asset.id(), asset.url());
+          }
+          return assetRepository.list("teamEntity.id = ?1", id).stream()
+              .map(a ->
+                  new Snap(
+                      a.getId(),
+                      a.getType(),
+                      a.getFileId(),
+                      a.getContentRevision(),
+                      assetService.getAssetKey(a.getTeam(), a.getFileId()),
+                      urls.getOrDefault(TsidUtils.toString(a.getId()), "")))
+              .sorted(Comparator.comparing(Snap::type))
+              .toList();
+        });
   }
 
   private static Map<AssetType, Snap> byType(List<Snap> snaps) {

@@ -61,14 +61,13 @@ public class NotificationDigestService {
   boolean sendOne(Long recipientId, Instant now) {
     List<Long> ids =
         QuarkusTransaction.requiringNew()
-            .call(
-                () -> {
-                  List<Long> due = deliveryRepository.lockDueDigest(recipientId, now);
-                  if (!due.isEmpty()) {
-                    deliveryRepository.markSending(due, now);
-                  }
-                  return due;
-                });
+            .call(() -> {
+              List<Long> due = deliveryRepository.lockDueDigest(recipientId, now);
+              if (!due.isEmpty()) {
+                deliveryRepository.markSending(due, now);
+              }
+              return due;
+            });
     if (ids.isEmpty()) {
       return false; // another worker took them
     }

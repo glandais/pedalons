@@ -32,14 +32,13 @@ class GpxLimitsTest {
   @Test
   void aRealisticTrack_isAccepted() {
     // Lyon to Paris and back, about 800 km.
-    assertDoesNotThrow(
-        () ->
-            GpxLimits.checkTracks(
-                List.of(
-                    path(
-                        new double[] {45.76, 4.84},
-                        new double[] {48.86, 2.35},
-                        new double[] {45.76, 4.84}))));
+    assertDoesNotThrow(() ->
+        GpxLimits.checkTracks(
+            List.of(
+                path(
+                    new double[] {45.76, 4.84},
+                    new double[] {48.86, 2.35},
+                    new double[] {45.76, 4.84}))));
   }
 
   @Test
