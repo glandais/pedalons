@@ -219,11 +219,6 @@ export default defineConfig(({ mode, isSsrBuild }) => {
                 test: fromPackages('firebase/', '@firebase/'),
                 priority: 10,
               },
-              {
-                name: 'ui-utils-vendor',
-                test: fromPackages('react-resizable-panels/'),
-                priority: 10,
-              },
 
               // === REMAINING VENDOR ===
               { name: 'vendor', test: fromPackages(''), priority: 0 },
