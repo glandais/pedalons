@@ -1,21 +1,11 @@
-import { useCallback } from 'react'
-import { useTranslation } from 'react-i18next'
-import { Group, Paper, Stack, Text, Title } from '@mantine/core'
 import type { RideDto, RideGroupDto } from '@/api/dto'
-import { ParticipantList } from '@/components/ride/ParticipantList'
-import { useDebouncedSearch } from '@/hooks/useDebouncedSearch'
-import { useUrlFilters } from '@/hooks/useUrlFilters'
-import {
-  groupParticipantFiltersAlias,
-  groupParticipantFiltersSchema,
-} from '@/hooks/filters/groupParticipantFilters'
+import { ParticipantsSection } from '@/components/publication/ParticipantsSection'
 
 /**
  * Everyone riding with the group — or, without `group`, with the whole ride (a ride page with
- * several groups) —, searchable and paged, its search and page in the query string
- * (`?q=`/`?p=`, `groupParticipantFilters.ts`) — the key `prefetchRideGroup` and, for a solo ride,
- * `prefetchRideDetail` fill through `groupParticipantsParams` (`participantsPageParams` for the
- * whole ride).
+ * several groups): the shared `ParticipantsSection` (docs/LEDGER_*.md WEB-155) on the ride's
+ * source, under the key `prefetchRideGroup` and, for a solo ride, `prefetchRideDetail` fill
+ * through `groupParticipantsParams` (`participantsPageParams` for the whole ride).
  */
 export function GroupParticipantsSection({
   teamSlug,
@@ -33,50 +23,13 @@ export function GroupParticipantsSection({
   /** Members and platform admins only: the names are never sent to anyone else (API-144). */
   canSeeParticipants?: boolean
 }) {
-  const { t } = useTranslation()
-  const { filters, setFilters } = useUrlFilters({
-    schema: groupParticipantFiltersSchema,
-    alias: groupParticipantFiltersAlias,
-  })
-  const commitSearch = useCallback(
-    (value: string) => setFilters({ search: value || undefined }),
-    [setFilters]
-  )
-  const [searchInput, setSearchInput] = useDebouncedSearch(filters.search ?? '', commitSearch)
-
   return (
-    <Paper withBorder p="lg" component="section" aria-labelledby={titleId}>
-      <Stack gap="md">
-        <Group justify="space-between" wrap="wrap" gap="xs">
-          <Title order={3} size="h4" id={titleId}>
-            {t('rides.group.participantsTitle')}
-          </Title>
-          <Text size="sm" c="dimmed">
-            {t('rides.detail.groups.participantsNoMax', {
-              count: group ? group.countParticipants : ride.participantCount,
-            })}
-          </Text>
-        </Group>
-        {canSeeParticipants && (
-          <ParticipantList
-            source={{
-              kind: 'ride',
-              teamSlug,
-              rideSlug: ride.slug,
-              groupId: group?.id,
-            }}
-            count={group ? group.countParticipants : ride.participantCount}
-            leaderId={group?.leader?.id}
-            search={filters.search}
-            page={filters.page}
-            searchInput={searchInput}
-            onSearchInputChange={setSearchInput}
-            onPageChange={(page) => setFilters({ page })}
-            searchPlaceholder={t('participants.searchByName')}
-            noMatch={t('participants.noMatchGeneric')}
-          />
-        )}
-      </Stack>
-    </Paper>
+    <ParticipantsSection
+      source={{ kind: 'ride', teamSlug, rideSlug: ride.slug, groupId: group?.id }}
+      count={group ? group.countParticipants : ride.participantCount}
+      leaderId={group?.leader?.id}
+      titleId={titleId}
+      canSeeParticipants={canSeeParticipants}
+    />
   )
 }

@@ -258,7 +258,7 @@ body {
 /* Ride detail, variant A (docs/LEDGER_*.md WEB-134): one column below md, the map first; on md+ a
    narrow column (instructions, groups, weather) beside the sticky map, so the organiser's free text
    never pushes the map down. Without a map, the column takes the full width. */
-.ride-detail-layout {
+.detail-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   /* The map comes after the column in the DOM (focus and reading order on md+), first on screen here */
@@ -266,27 +266,27 @@ body {
   gap: var(--mantine-spacing-md);
 }
 
-.ride-detail-layout > .ride-detail-side {
+.detail-layout > .detail-side {
   grid-area: side;
 }
 
 /* Its grid area, not `.detail-map`'s xl span of two columns */
-.ride-detail-layout > .detail-map {
+.detail-layout > .detail-map {
   grid-area: map;
 }
 
-.ride-detail-layout--no-map {
+.detail-layout--no-map {
   grid-template-areas: 'side';
 }
 
 @media (min-width: 64em) {
-  .ride-detail-layout {
+  .detail-layout {
     grid-template-columns: minmax(380px, 440px) minmax(0, 1fr);
     grid-template-areas: 'side map';
     gap: var(--mantine-spacing-lg);
   }
 
-  .ride-detail-layout--no-map {
+  .detail-layout--no-map {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas: 'side';
   }

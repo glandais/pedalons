@@ -7,12 +7,23 @@ import {
   useGetTripWeather,
   prefetchGetTripWeatherQuery,
   getGetTripWeatherQueryKey,
+  prefetchGetTripParticipantsQuery,
 } from '@/api/endpoints/trips/trips'
 import {
   listTripComments,
   getListTripCommentsQueryKey,
 } from '@/api/endpoints/trip-comments/trip-comments'
-import { prefetchMemberComments, prefetchRoutesBulkChunked } from '@/config/prefetchHelpers'
+import {
+  prefetchMemberComments,
+  prefetchRoutesBulkChunked,
+  readsMemberContent,
+} from '@/config/prefetchHelpers'
+import { readUrlFilters } from '@/hooks/useUrlFilters'
+import {
+  groupParticipantFiltersAlias,
+  groupParticipantFiltersSchema,
+  participantsPageParams,
+} from '@/hooks/filters/groupParticipantFilters'
 import type { TripDto } from '@/api/dto'
 
 /**
@@ -95,12 +106,14 @@ export function useTripDetailData(teamSlug?: string, tripSlug?: string) {
  * It covers more than the hook does, on purpose: comments are fetched by `CommentSection`, and the
  * map's routes by `RoutesMapView` — both children `TripDetailPage` mounts, not the page itself.
  * Comments are additionally conditional on membership (`prefetchMemberComments` reads the team's
- * `role` off the cache).
+ * `role` off the cache), and so are the participants `ParticipantsSection` lists, at the search and
+ * page the URL asks for (`?q=`/`?p=`) — the ride page's rule (docs/LEDGER_*.md WEB-155).
  */
 export async function prefetchTripDetail(
   queryClient: QueryClient,
   teamSlug: string,
-  tripSlug: string
+  tripSlug: string,
+  url: URL
 ): Promise<void> {
   await Promise.all([
     prefetchGetTeamQuery(queryClient, teamSlug),
@@ -110,6 +123,10 @@ export async function prefetchTripDetail(
   ])
 
   const trip = queryClient.getQueryData<TripDto>(getGetTripQueryKey(teamSlug, tripSlug))
+  const filters = readUrlFilters(url.searchParams, {
+    schema: groupParticipantFiltersSchema,
+    alias: groupParticipantFiltersAlias,
+  })
   await Promise.all([
     prefetchMemberComments(
       queryClient,
@@ -119,5 +136,13 @@ export async function prefetchTripDetail(
       getListTripCommentsQueryKey
     ),
     prefetchRoutesBulkChunked(queryClient, teamSlug, tripRouteSlugs(trip)),
+    (trip?.participantCount ?? 0) > 0 && readsMemberContent(queryClient, teamSlug)
+      ? prefetchGetTripParticipantsQuery(
+          queryClient,
+          teamSlug,
+          tripSlug,
+          participantsPageParams(filters.search, filters.page)
+        )
+      : Promise.resolve(queryClient),
   ])
 }

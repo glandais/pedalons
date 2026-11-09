@@ -2,34 +2,19 @@ import { useState, useMemo } from 'react'
 import { useParams, Navigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { paths } from '../../config/paths'
-import { UserAvatarGroup } from '../../components/common/UserAvatar'
-import { ParticipantListModal } from '../../components/ride/ParticipantListModal'
-import {
-  Box,
-  Button,
-  Container,
-  Paper,
-  Group,
-  SimpleGrid,
-  Stack,
-  Title,
-  Text,
-  UnstyledButton,
-} from '@mantine/core'
+import { Box, Button, Container, Stack, Title, Text } from '@mantine/core'
 import { useTripDetailData } from './tripDetailData'
 import { ReportTargetType, Status } from '@/api/dto'
 import { useAuth } from '../../hooks/useAuth'
 import { QueryStateBoundary } from '../../components/common/QueryStateBoundary'
 import { DetailPageSkeleton } from '../../components/common/DetailPageSkeleton'
 import { TripStageCard } from '../../components/trip/TripStageCard'
-import { TripLayout } from '../../components/trip/TripLayout'
 import { TeamContextBanner } from '../../components/team/TeamContextBanner'
 
 import type { MapRouteItem } from '../../components/route/RoutesMapView'
 import { formatPublicationSpan } from '../../utils/publicationTiming'
 import { useEffectiveTimezone } from '../../utils/dateFormat'
 import { DepartureBlock } from '../../components/common/DepartureBlock'
-import { MediaDisplay } from '../../components/common/MediaDisplay'
 import { CommentSection } from '../../components/comment'
 import { useCanonicalPath } from '../../hooks/useCanonicalPath'
 import { TripOverviewMap } from '@/components/trip/TripOverviewMap'
@@ -37,6 +22,8 @@ import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
 import { teamAccess } from '@/lib/teamAccess'
 import { useTripMembership } from '@/hooks/useTripMembership'
 import { AccessAlerts } from '@/components/publication/AccessAlerts'
+import { InstructionsBlock } from '@/components/publication/InstructionsBlock'
+import { ParticipantsSection } from '@/components/publication/ParticipantsSection'
 import { FactsStrip } from '@/components/publication/FactsStrip'
 import { PublicationHeader } from '@/components/publication/PublicationHeader'
 import { tripFacts } from '@/components/publication/publicationFacts'
@@ -49,8 +36,19 @@ export function TripDetailPage() {
   const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
   const { teamSlug, tripSlug } = useParams<{ teamSlug: string; tripSlug: string }>()
   const { isAuthenticated, user } = useAuth()
+  // The hovered stage, and the one chosen by a click on its trace — lit on the map and on its card
+  // until a card's hover replaces it, as on a ride (docs/LEDGER_*.md WEB-155).
   const [highlightedStageId, setHighlightedStageId] = useState<string | null>(null)
-  const [showParticipants, setShowParticipants] = useState(false)
+  const [selectedStageId, setSelectedStageId] = useState<string | null>(null)
+  const litStageId = highlightedStageId ?? selectedStageId
+  const chooseStage = (stageId: string) => {
+    setSelectedStageId(stageId)
+    setHighlightedStageId(null)
+  }
+  const hoverStage = (stageId: string | null) => {
+    setHighlightedStageId(stageId)
+    if (stageId) setSelectedStageId(null)
+  }
   const {
     team: teamQuery,
     trip: tripQuery,
@@ -161,122 +159,90 @@ export function TripDetailPage() {
           />
           <FactsStrip kind="trip" facts={tripFacts(trip)} />
         </Stack>
-        <Box mt="md">
-          <MediaDisplay media={trip.media} />
-        </Box>
       </PublicationHeader>
 
-      {/* Overview content — no stage-nav sidebar: the stage cards below are the single list */}
-      <TripLayout trip={trip} teamSlug={teamSlug!} currentTab="overview" showStageNav={false}>
-        <Stack>
-          {/* Map + stages, side-by-side on desktop with the map kept sticky while stages scroll */}
-          <SimpleGrid cols={{ base: 1, md: 2, xl: 3 }} spacing={{ base: 'md', sm: 'lg' }}>
-            {/* Map: global route if defined, otherwise all stage routes. Shown first on mobile,
-                spans 2 cols on xl, sticky on md+ (via .detail-map). */}
-            <Box className="detail-map" style={{ order: 1 }}>
-              {/* With a forecast, its Météo mode: every stage by its own wind (WEB-118) */}
-              {mapItems.length > 0 && (
-                <TripOverviewMap
-                  trip={trip}
-                  items={mapItems}
-                  teamSlug={teamSlug!}
-                  weather={weatherQuery.data}
-                  highlightedItemId={highlightedStageId}
-                  onItemHover={setHighlightedStageId}
-                />
-              )}
-            </Box>
+      {/* Variant A (docs/LEDGER_*.md WEB-134), the ride page's (WEB-155): the instructions, the
+          stages and who takes part in the side column, the map sticky beside it on md+, filling
+          the visible height; stacked below md, map first. */}
+      <Box
+        className={mapItems.length > 0 ? 'detail-layout' : 'detail-layout detail-layout--no-map'}
+        mb={{ base: 'md', sm: 'lg' }}
+      >
+        <Stack className="detail-side" gap="lg">
+          <InstructionsBlock media={trip.media} testId="trip-instructions" />
 
-            {/* Stages list */}
-            <Box style={{ order: 2 }}>
-              <Title order={3} mb="md">
-                {t('trips.detail.stages.title')}
-              </Title>
-              {trip.stages && trip.stages.length > 0 ? (
-                <Stack gap="sm">
-                  {trip.stages.map((stage, index) => (
-                    <TripStageCard
-                      key={stage.id}
-                      stage={stage}
-                      index={index}
-                      teamSlug={teamSlug!}
-                      tripSlug={trip.slug}
-                      onHover={setHighlightedStageId}
-                      isHighlighted={highlightedStageId === stage.id}
-                      weather={
-                        weatherQuery.data?.stages.find((w) => w.stageId === stage.id)?.summary
-                      }
-                    />
-                  ))}
-                </Stack>
-              ) : (
-                <Text c="dimmed">{t('trips.detail.stages.empty')}</Text>
-              )}
-            </Box>
-          </SimpleGrid>
+          <Box data-testid="trip-stages">
+            <Title order={3} size="h4" mb="md">
+              {t('trips.detail.stages.title')}
+            </Title>
+            {trip.stages && trip.stages.length > 0 ? (
+              <Stack gap="sm">
+                {trip.stages.map((stage, index) => (
+                  <TripStageCard
+                    key={stage.id}
+                    stage={stage}
+                    index={index}
+                    teamSlug={teamSlug!}
+                    tripSlug={trip.slug}
+                    onHover={hoverStage}
+                    isHighlighted={litStageId === stage.id}
+                    weather={weatherQuery.data?.stages.find((w) => w.stageId === stage.id)?.summary}
+                  />
+                ))}
+              </Stack>
+            ) : (
+              <Text c="dimmed">{t('trips.detail.stages.empty')}</Text>
+            )}
+          </Box>
 
-          {/* Participants section */}
           {trip.participantCount > 0 && (
-            <Paper withBorder p="lg">
-              <Title order={3} mb="md">
-                {t('trips.detail.participants.title')}
-              </Title>
-              {canReadComments ? (
-                <UnstyledButton
-                  onClick={() => setShowParticipants(true)}
-                  aria-label={t('trips.detail.participants.viewAll')}
-                >
-                  <Group gap="sm">
-                    <UserAvatarGroup
-                      users={trip.participants}
-                      total={trip.participantCount}
-                      max={8}
-                      size="md"
-                    />
-                    <Text size="sm" c="dimmed">
-                      {t('participantCount', { count: trip.participantCount })}
-                    </Text>
-                  </Group>
-                </UnstyledButton>
-              ) : (
-                <Text size="sm" c="dimmed">
-                  {t('participantCount', { count: trip.participantCount })}
-                </Text>
-              )}
-            </Paper>
-          )}
-
-          <AccessAlerts
-            kind="trip"
-            teamSlug={teamSlug!}
-            isAuthenticated={isAuthenticated}
-            isMember={isMember}
-          />
-
-          {/* Comments Section - only visible to team members */}
-          {canReadComments && team && (
-            <Box>
-              <CommentSection
-                teamSlug={teamSlug!}
-                teamName={team.name}
-                entityType="trips"
-                entitySlug={tripSlug!}
-                isOrganizer={canEdit}
-              />
-            </Box>
+            <ParticipantsSection
+              source={{ kind: 'trip', teamSlug: teamSlug!, tripSlug: trip.slug }}
+              count={trip.participantCount}
+              titleId="trip-participants-title"
+              canSeeParticipants={canReadComments}
+            />
           )}
         </Stack>
-      </TripLayout>
 
-      {/* Confirmation Dialogs */}
-      {canReadComments && (
-        <ParticipantListModal
-          isOpen={showParticipants}
-          onClose={() => setShowParticipants(false)}
-          source={{ kind: 'trip', teamSlug: teamSlug!, tripSlug: trip.slug }}
-          count={trip.participantCount}
-          groupName={trip.name}
+        {/* With a forecast, its Météo mode: every stage by its own wind (WEB-118). The map's
+            controls sit under it: the --solo height keeps room for them. */}
+        {mapItems.length > 0 && (
+          <Box className="detail-map detail-map--fill detail-map--solo">
+            <TripOverviewMap
+              trip={trip}
+              items={mapItems}
+              teamSlug={teamSlug!}
+              weather={weatherQuery.data}
+              highlightedItemId={litStageId}
+              onItemHover={setHighlightedStageId}
+              selectedItemId={selectedStageId}
+              onItemSelect={chooseStage}
+            />
+          </Box>
+        )}
+      </Box>
+
+      <Box mb="lg">
+        <AccessAlerts
+          kind="trip"
+          teamSlug={teamSlug!}
+          isAuthenticated={isAuthenticated}
+          isMember={isMember}
         />
+      </Box>
+
+      {/* Comments Section - only visible to team members */}
+      {canReadComments && team && (
+        <Box mt="lg">
+          <CommentSection
+            teamSlug={teamSlug!}
+            teamName={team.name}
+            entityType="trips"
+            entitySlug={tripSlug!}
+            isOrganizer={canEdit}
+          />
+        </Box>
       )}
 
       {statusActions.dialogs}

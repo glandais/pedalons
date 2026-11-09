@@ -34,6 +34,8 @@ export function TripOverviewMap({
   weather,
   highlightedItemId,
   onItemHover,
+  selectedItemId,
+  onItemSelect,
 }: {
   trip: TripDto
   /** One per trace, stable across hovers (the map would refetch and refit on a new array). */
@@ -43,6 +45,9 @@ export function TripOverviewMap({
   weather: TripWeatherDto | undefined
   highlightedItemId: string | null
   onItemHover: (itemId: string | null) => void
+  /** The stage chosen by a click on its trace, lit on its card too, as on a ride (WEB-155). */
+  selectedItemId?: string | null
+  onItemSelect?: (itemId: string) => void
 }) {
   const [chosenMode, setMode] = useState<TripMapMode>('stages')
   const winds = useMemo(() => tripMapWinds(trip, weather), [trip, weather])
@@ -52,12 +57,16 @@ export function TripOverviewMap({
   return (
     <Stack gap="xs">
       <ErrorBoundary variant="inline">
-        <Suspense fallback={<Skeleton height={500} radius="md" />}>
+        <Suspense fallback={<Skeleton height="var(--detail-map-height, 500px)" radius="md" />}>
           <RoutesMapView
+            // The page's sticky column filling the visible height (.detail-map--fill, WEB-134)
+            variant="sticky"
             items={items}
             teamSlug={teamSlug}
             highlightedItemId={highlightedItemId}
             onItemHover={onItemHover}
+            selectedItemId={selectedItemId}
+            onItemSelect={onItemSelect}
             winds={mode === 'wind' ? winds : undefined}
             windAttribution={mode === 'wind' ? weather?.attribution : undefined}
             // Each stage's, from its own start; the Météo mode's badges take their place (WEB-146)

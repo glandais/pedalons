@@ -866,8 +866,8 @@ export const routesConfig: RoutesConfig = [
     auth: 'public',
     parentId: 'team-agenda',
     breadcrumb: { type: 'dynamic', entity: 'trip' },
-    prefetch: (queryClient, params) =>
-      prefetchTripDetail(queryClient, params.teamSlug!, params.tripSlug!),
+    prefetch: (queryClient, params, url) =>
+      prefetchTripDetail(queryClient, params.teamSlug!, params.tripSlug!, url),
     meta: tripMeta,
   },
   {

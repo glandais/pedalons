@@ -2,10 +2,10 @@ import { Fragment, useState, useMemo, lazy, Suspense } from 'react'
 import { useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { IconUsersGroup } from '@tabler/icons-react'
-import { Container, Paper, Stack, Title, Box, Skeleton, Divider } from '@mantine/core'
+import { Container, Stack, Title, Box, Skeleton, Divider } from '@mantine/core'
 import { rideRouteSlugs, useRideDetailData } from './rideDetailData'
 import { groupAction, groupsRegisteredFirst, groupWindLeg } from './rideGroupData'
-import { ReportTargetType, Status, type MediaDto } from '@/api/dto'
+import { ReportTargetType, Status } from '@/api/dto'
 import { useAuth } from '../../hooks/useAuth'
 import { EmptyState } from '../../components/common/EmptyState'
 import { QueryStateBoundary } from '../../components/common/QueryStateBoundary'
@@ -24,7 +24,6 @@ import {
   registeredGroupOf,
   someGroupLeavesAtOwnTime,
 } from '@/utils/groupStart'
-import { MediaDisplay } from '../../components/common/MediaDisplay'
 import { CommentSection } from '../../components/comment'
 import { paths } from '@/config/paths'
 import { useRideGroupMembership } from '@/hooks/useRideGroupMembership'
@@ -41,6 +40,7 @@ import { withMapColor } from '@/hooks/filters/mapColorFilters'
 import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
 import { teamAccess } from '@/lib/teamAccess'
 import { AccessAlerts } from '@/components/publication/AccessAlerts'
+import { InstructionsBlock } from '@/components/publication/InstructionsBlock'
 import { FactsStrip } from '@/components/publication/FactsStrip'
 import { PlacesLine } from '@/components/publication/PlacesLine'
 import { PublicationHeader } from '@/components/publication/PublicationHeader'
@@ -53,17 +53,6 @@ const STICKY_MAP_HEIGHT = 'var(--detail-map-height, 500px)'
 
 /** The anchor of the weather block, as on a group's page: a former group link's `#meteo` lands here. */
 const WEATHER_ANCHOR = 'meteo'
-
-/**
- * Whether the « Consignes » block would draw anything: a text or an attachment. Images do not count
- * on their own — MediaDisplay only draws those the text references.
- */
-function hasMediaContent(media: MediaDto): boolean {
-  return media.markdown.trim() !== '' || media.assets.attachments.length > 0
-}
-
-/** The instructions' column is at most 440 px on md+ (`.ride-detail-layout`): no 960 px picture. */
-const INSTRUCTIONS_IMAGE_SIZES = '(min-width: 64em) 440px, 100vw'
 
 /** Below md the map, its profile and the pictures load above `#meteo` after the first scroll. */
 const WEATHER_ANCHOR_SETTLE_MS = 4000
@@ -212,22 +201,12 @@ export function RideDetailPage() {
       {/* Variant A (docs/LEDGER_*.md WEB-134): the map in a column of its own, sticky on md+, so the
           organiser's free text, however long, never pushes it down. Stacked below md, map first. */}
       <Box
-        className={hasMap ? 'ride-detail-layout' : 'ride-detail-layout ride-detail-layout--no-map'}
+        className={hasMap ? 'detail-layout' : 'detail-layout detail-layout--no-map'}
         mb={{ base: 'md', sm: 'lg' }}
       >
-        <Stack className="ride-detail-side" gap="lg">
+        <Stack className="detail-side" gap="lg">
           {/* The organiser's instructions, only when there are some */}
-          {hasMediaContent(ride.media) && (
-            <Paper
-              withBorder
-              p="lg"
-              component="section"
-              aria-label={t('rides.detail.instructions.title')}
-              data-testid="ride-instructions"
-            >
-              <MediaDisplay media={ride.media} imageSizes={INSTRUCTIONS_IMAGE_SIZES} />
-            </Paper>
-          )}
+          <InstructionsBlock media={ride.media} testId="ride-instructions" />
 
           {/* Groups list — or, for a solo ride, its one group in full (WEB-79) */}
           <Box data-testid="ride-groups">

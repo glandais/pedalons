@@ -350,10 +350,10 @@ describe('RideDetailPage — layout A: instructions beside a sticky map (WEB-134
   it('puts the map in its own sticky column, after the groups in the page order', async () => {
     const { container } = renderPage()
     await screen.findByTestId('routes-map')
-    const layout = container.querySelector('.ride-detail-layout')!
-    expect(layout.classList.contains('ride-detail-layout--no-map')).toBe(false)
+    const layout = container.querySelector('.detail-layout')!
+    expect(layout.classList.contains('detail-layout--no-map')).toBe(false)
     const map = layout.querySelector(':scope > .detail-map')!
-    const side = layout.querySelector(':scope > .ride-detail-side')!
+    const side = layout.querySelector(':scope > .detail-side')!
     // Focus and reading order follow the md+ layout (column left, map right); CSS puts the map
     // first below md.
     expect(side.compareDocumentPosition(map) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
@@ -367,7 +367,7 @@ describe('RideDetailPage — layout A: instructions beside a sticky map (WEB-134
       groups: [group(), group({ id: 'g2', name: 'Cool' })],
     })
     const { container } = renderPage()
-    expect(container.querySelector('.ride-detail-layout--no-map')).toBeTruthy()
+    expect(container.querySelector('.detail-layout--no-map')).toBeTruthy()
     expect(container.querySelector('.detail-map')).toBeNull()
     expect(screen.getByTestId('ride-groups')).toBeTruthy()
   })
