@@ -103,6 +103,14 @@ describe('TripOverviewMap (WEB-118)', () => {
     expect(state.map.windAttribution).toEqual(weather.attribution)
   })
 
+  it('asks for the km markers, except in the Météo mode (WEB-146)', async () => {
+    show()
+    await screen.findByTestId('routes-map')
+    expect(state.map.kmMarkers).toBe(true)
+    fireEvent.click(screen.getByLabelText('Météo'))
+    expect(state.map.kmMarkers).toBe(false)
+  })
+
   it("adds the stages' shares up in one legend, with the forecast's credit", async () => {
     show()
     await screen.findByTestId('routes-map')

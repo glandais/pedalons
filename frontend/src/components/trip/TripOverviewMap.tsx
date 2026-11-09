@@ -60,6 +60,8 @@ export function TripOverviewMap({
             onItemHover={onItemHover}
             winds={mode === 'wind' ? winds : undefined}
             windAttribution={mode === 'wind' ? weather?.attribution : undefined}
+            // Each stage's, from its own start; the Météo mode's badges take their place (WEB-146)
+            kmMarkers={mode !== 'wind'}
           />
         </Suspense>
       </ErrorBoundary>

@@ -455,6 +455,24 @@ void main() {
     expect(find.byKey(keys.trip.windMapLegend), findsNothing);
   });
 
+  testWidgets('les bornes de chaque étape (MOB-122)', (
+    WidgetTester tester,
+  ) async {
+    await pump(tester, trip: trip(), windMode: false);
+    // Chaque étape compte depuis son propre départ, à 45° et à 46° de latitude.
+    final List<PdlKmMarker> markers = map(tester).kmMarkers;
+    expect(markers.where((PdlKmMarker m) => m.lat < 45.5), isNotEmpty);
+    expect(markers.where((PdlKmMarker m) => m.lat >= 46), isNotEmpty);
+    expect(markers.where((PdlKmMarker m) => m.label == '5').length, 2);
+  });
+
+  testWidgets('en mode « Météo », pas de bornes (MOB-122)', (
+    WidgetTester tester,
+  ) async {
+    await pump(tester, trip: trip(), windMode: true);
+    expect(map(tester).kmMarkers, isEmpty);
+  });
+
   testWidgets('aucune étape avec prévision : ni interrupteur ni couleur', (
     WidgetTester tester,
   ) async {

@@ -103,6 +103,11 @@ class TripMap extends ConsumerWidget {
     final List<PdlMapMarker> weatherMarkers = fullscreen && windMode
         ? _weatherMarkers(stages, tracks, windLegs, units)
         : const <PdlMapMarker>[];
+    // Les bornes de chaque étape, comptées depuis son départ (ledger
+    // `MOB-122`). Pas en mode « Météo », où les pastilles prennent la place.
+    final List<PdlKmMarker> kmMarkers = windMode
+        ? const <PdlKmMarker>[]
+        : _kmMarkers(stages, tracks);
 
     // Pas de légende tant qu'aucune étape colorée n'est dessinée (géométries
     // encore en vol, ou en échec) : elle n'aurait aucune part à montrer.
@@ -163,6 +168,7 @@ class TripMap extends ConsumerWidget {
                   ),
             mapBuilder: (BuildContext context) => _native(
               PdlMap(
+                kmMarkers: kmMarkers,
                 markers: weatherMarkers,
                 onMarkerTapped: weatherMarkers.isEmpty
                     ? null
@@ -356,6 +362,26 @@ class TripMap extends ConsumerWidget {
     if (index >= 0) tracks.add(tracks.removeAt(index));
     return tracks;
   }
+
+  /// Les bornes de toutes les étapes dessinées. `PdlMap` masque celles qui
+  /// se toucheraient, y compris d'une étape à l'autre.
+  List<PdlKmMarker> _kmMarkers(
+    List<TripStageDto> stages,
+    TripTracksState state,
+  ) => <PdlKmMarker>[
+    for (final TripStageDto stage in stages)
+      if (state.geometries[stage.route?.slug] case final RouteDetailDto route)
+        ...(_kmMemo[route] ??= computePdlKmMarkers(
+          routeLinesOf(route),
+          totalMeters: route.distance,
+        )),
+  ];
+
+  /// Calculer des bornes parcourt tout le tracé : mémorisées par parcours,
+  /// pour ne pas recommencer à chaque changement d'étape sélectionnée.
+  static final Expando<List<PdlKmMarker>> _kmMemo = Expando<List<PdlKmMarker>>(
+    'tripMapKmMarkers',
+  );
 
   /// Le préfixe des marqueurs météo d'une étape : les pastilles de toutes
   /// les étapes partagent la carte, leurs ids doivent rester distincts.

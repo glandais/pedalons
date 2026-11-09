@@ -62,7 +62,9 @@ vi.mock('../map/MapMarkers', () => ({
   StartMarker: () => null,
   EndMarker: () => null,
   HoverMarker: () => null,
-  KmMarkersLayer: () => <span data-testid="km-markers" />,
+  KmMarkersTracesLayer: ({ traces }: { traces: { id: string }[] }) => (
+    <span data-testid="km-markers">{traces.map((trace) => trace.id).join(',')}</span>
+  ),
 }))
 vi.mock('@/components/weather/WeatherCheckpointMarkers', () => ({
   WeatherCheckpointMarkers: (props: Record<string, unknown>) => {
@@ -143,26 +145,28 @@ const linePaint = (id: string) =>
   state.layers.findLast((l) => l.id === `line-${id}`)?.paint as Record<string, unknown>
 
 describe('RoutesMapView', () => {
-  describe('km markers (WEB-145)', () => {
-    const shown = (items: typeof ITEMS, kmMarkers?: boolean) => {
+  describe('km markers (WEB-145, WEB-146)', () => {
+    const shown = (kmMarkers?: boolean) => {
       render(
         <MantineProvider>
-          <RoutesMapView items={items} teamSlug="np" kmMarkers={kmMarkers} />
+          <RoutesMapView items={ITEMS} teamSlug="np" kmMarkers={kmMarkers} />
         </MantineProvider>
       )
-      return screen.queryByTestId('km-markers') !== null
+      return screen.queryByTestId('km-markers')?.textContent ?? null
     }
 
-    it('shows them on a single trace when asked', () => {
-      expect(shown(ITEMS.slice(0, 1), true)).toBe(true)
-    })
-
-    it('never on several traces', () => {
-      expect(shown(ITEMS, true)).toBe(false)
+    it('shows those of every trace when asked', () => {
+      expect(shown(true)).toBe('s1,s2,s3')
     })
 
     it('not unless asked', () => {
-      expect(shown(ITEMS.slice(0, 1))).toBe(false)
+      expect(shown()).toBeNull()
+    })
+
+    it('drops the trace ticked off in the basemap panel', () => {
+      shown(true)
+      act(() => state.toggleTrace!('s2'))
+      expect(screen.getByTestId('km-markers').textContent).toBe('s1,s3')
     })
   })
 

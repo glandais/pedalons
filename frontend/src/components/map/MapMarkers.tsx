@@ -120,23 +120,47 @@ interface KmMarkersLayerProps {
   totalDistanceM: number
 }
 
-// Memoized: its map re-renders on every hover move, and a long route carries some 200 markers.
+/** One trace of a map, its km markers counted from its own start. */
+export interface KmMarkersTrace extends KmMarkersLayerProps {
+  id: string
+}
+
 export const KmMarkersLayer = memo(function KmMarkersLayer({
   coords,
   totalDistanceM,
 }: KmMarkersLayerProps) {
-  const markers = useMemo(() => computeKmMarkers(coords, totalDistanceM), [coords, totalDistanceM])
+  const traces = useMemo(() => [{ id: 'trace', coords, totalDistanceM }], [coords, totalDistanceM])
+  return <KmMarkersTracesLayer traces={traces} />
+})
+
+// Memoized: its map re-renders on every hover move, and a long route carries some 200 markers.
+// One layout for all the traces, so the markers of neighbouring stages give way to each other too.
+export const KmMarkersTracesLayer = memo(function KmMarkersTracesLayer({
+  traces,
+}: {
+  traces: readonly KmMarkersTrace[]
+}) {
+  const markers = useMemo(
+    () =>
+      traces.flatMap((trace) =>
+        computeKmMarkers(trace.coords, trace.totalDistanceM).map((m) => ({
+          ...m,
+          key: `${trace.id}/${m.label}`,
+        }))
+      ),
+    [traces]
+  )
   const items = useMemo(
-    () => markers.map((m) => ({ key: m.label, longitude: m.lng, latitude: m.lat, rank: m.rank })),
+    () => markers.map((m) => ({ key: m.key, longitude: m.lng, latitude: m.lat, rank: m.rank })),
     [markers]
   )
   // Those that fit at this zoom, each on its own point: a km marker never leaves the track
   const layout = useBadgeLayout(items, KM_MARKER_SPACING)
-  const shown = layout ? markers.filter((m) => layout.has(m.label)) : markers
+  const shown = layout ? markers.filter((m) => layout.has(m.key)) : markers
   return (
     <>
       {shown.map((m) => (
-        <KmMarker key={m.label} longitude={m.lng} latitude={m.lat} label={m.label} />
+        <KmMarker key={m.key} longitude={m.lng} latitude={m.lat} label={m.label} />
       ))}
     </>
   )

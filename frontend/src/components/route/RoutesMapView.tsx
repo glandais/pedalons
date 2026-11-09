@@ -27,7 +27,7 @@ import { WeatherLegsMarkers } from '@/components/weather/WeatherLegsMarkers'
 import type { MapItemWind } from '@/lib/tripWeatherOnMap'
 import { attributionHtml, relativeWindStrokeColors } from '@/lib/weatherOnRoute'
 import { windTraceLines } from './routesMapWind'
-import { StartMarker, EndMarker, HoverMarker, KmMarkersLayer } from '../map/MapMarkers'
+import { StartMarker, EndMarker, HoverMarker, KmMarkersTracesLayer } from '../map/MapMarkers'
 import {
   calculateBounds,
   distance as haversineDistance,
@@ -106,8 +106,8 @@ export interface RoutesMapViewProps {
   /** The forecast's credit, owed while the wind colours the traces. */
   windAttribution?: WeatherAttributionDto
   /**
-   * The km markers of the map's trace, when it has only one (a ride whose groups all ride the same
-   * route, ledger WEB-145). Ignored with several: markers of different routes would mean nothing.
+   * The km markers of every shown trace, each counted from its own start (ledgers WEB-145,
+   * WEB-146). The page decides: not on a ride's several routes, not in the Météo mode.
    */
   kmMarkers?: boolean
 }
@@ -418,6 +418,19 @@ export function RoutesMapView({
     () => routeGeoJSONs.toSorted((a, b) => litRank(a) - litRank(b)),
     [routeGeoJSONs, litRank]
   )
+  const kmTraces = useMemo(
+    () =>
+      kmMarkers
+        ? routesData
+            .filter((route) => !hiddenItemIds.has(route.itemId))
+            .map((route) => ({
+              id: route.itemId,
+              coords: route.trackPoints,
+              totalDistanceM: route.distance,
+            }))
+        : [],
+    [kmMarkers, routesData, hiddenItemIds]
+  )
   // The badge open among every trace's, one at a time (WEB-118)
   const [openBadge, setOpenBadge] = useState<OpenBadge | null>(null)
   // Its markers gone — the Météo mode left, its trace or every trace hidden, its forecast dropped —,
@@ -596,10 +609,6 @@ export function RoutesMapView({
   // Start and end markers: the first shown route's first point, the last shown route's last point
   const firstRoute = visibleRoutes[0]
   const lastRoute = visibleRoutes[visibleRoutes.length - 1]
-  const kmRoute =
-    kmMarkers && routesData.length === 1 && !hiddenItemIds.has(routesData[0].itemId)
-      ? routesData[0]
-      : undefined
   const startPoint = firstRoute?.trackPoints[0]
   const endPoint = lastRoute?.trackPoints[lastRoute.trackPoints.length - 1]
 
@@ -710,9 +719,7 @@ export function RoutesMapView({
                 </Source>
               )}
 
-              {kmRoute && (
-                <KmMarkersLayer coords={kmRoute.trackPoints} totalDistanceM={kmRoute.distance} />
-              )}
+              {kmTraces.length > 0 && <KmMarkersTracesLayer traces={kmTraces} />}
 
               {startPoint && <StartMarker longitude={startPoint[0]} latitude={startPoint[1]} />}
               {endPoint && <EndMarker longitude={endPoint[0]} latitude={endPoint[1]} />}
