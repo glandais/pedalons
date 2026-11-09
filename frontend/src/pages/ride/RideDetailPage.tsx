@@ -29,7 +29,8 @@ import { paths } from '@/config/paths'
 import { useRideGroupMembership } from '@/hooks/useRideGroupMembership'
 import { ErrorBoundary } from '../../components/common/ErrorBoundary'
 import { useCanonicalPath } from '../../hooks/useCanonicalPath'
-import { RideWeatherSection } from '@/components/weather'
+import { GroupWeatherSection, RideWeatherSection } from '@/components/weather'
+import { useWeatherFocus } from '@/components/publication/useWeatherFocus'
 import { hasForecast } from '@/components/weather/weatherDisplay'
 import { RideSoloGroupPanel } from '@/components/ride/RideSoloGroupPanel'
 import { GroupParticipantsSection } from '@/components/ride/group/GroupParticipantsSection'
@@ -88,6 +89,8 @@ export function RideDetailPage() {
     'ride',
     ride ? { kind: 'ride', dto: ride } : null
   )
+  // A solo ride's map and its « Heure par heure » share their point (WEB-117).
+  const weatherFocus = useWeatherFocus(solo?.id, soloLeg)
   const membership = useRideGroupMembership(teamSlug!, rideSlug!)
   const groupError = membership.error
 
@@ -307,20 +310,22 @@ export function RideDetailPage() {
             )}
           </Box>
 
-          {/* Weather at the meeting point; each group's route is on the group's own page (WEB-77),
-              except a solo ride's, whose page is its group's (WEB-79) */}
-          <Box id={WEATHER_ANCHOR} style={{ scrollMarginTop: 'var(--app-shell-header-height)' }}>
-            <ErrorBoundary variant="inline">
-              <RideWeatherSection
-                ride={ride}
-                weather={weather.data}
-                isLoading={weather.isLoading}
-                isFetching={weather.isFetching}
-                onRetry={() => void weather.refetch()}
-                canEdit={canEdit}
-              />
-            </ErrorBoundary>
-          </Box>
+          {/* Weather at the meeting point; each group's route is on the group's own page (WEB-77).
+              A solo ride has its group's « Météo du parcours » instead, full width below. */}
+          {!solo && (
+            <Box id={WEATHER_ANCHOR} style={{ scrollMarginTop: 'var(--app-shell-header-height)' }}>
+              <ErrorBoundary variant="inline">
+                <RideWeatherSection
+                  ride={ride}
+                  weather={weather.data}
+                  isLoading={weather.isLoading}
+                  isFetching={weather.isFetching}
+                  onRetry={() => void weather.refetch()}
+                  canEdit={canEdit}
+                />
+              </ErrorBoundary>
+            </Box>
+          )}
         </Stack>
 
         {/* Map: the right column, sticky (via .detail-map); after the column in the DOM so focus and
@@ -343,6 +348,9 @@ export function RideDetailPage() {
                 leg={soloWindLeg}
                 attribution={soloWindLeg ? weather.data?.attribution : undefined}
                 timezone={ride.timezone}
+                // The point shared with the « Heure par heure » below, as on a group's page (WEB-117)
+                selectedCheckpoint={weatherFocus.open}
+                onSelectCheckpoint={weatherFocus.selectFromMap}
                 fullscreenPath={(colorBy) =>
                   withMapColor(paths.rideMap(team.slug, ride.slug), colorBy)
                 }
@@ -368,6 +376,31 @@ export function RideDetailPage() {
           </Box>
         )}
       </Box>
+
+      {/* A solo ride's page is its group's (WEB-79): its whole route weather, full width under the
+          column and the map — its timeline needs the room —, before the comments. No « Météo au
+          départ » then: the verdicts already give the departure. */}
+      {solo && (
+        <Box
+          id={WEATHER_ANCHOR}
+          mb="lg"
+          style={{ scrollMarginTop: 'var(--app-shell-header-height)' }}
+        >
+          <ErrorBoundary variant="inline">
+            <GroupWeatherSection
+              ride={ride}
+              weather={weather.data}
+              leg={soloLeg}
+              isLoading={weather.isLoading}
+              isFetching={weather.isFetching}
+              onRetry={() => void weather.refetch()}
+              canEdit={canEdit}
+              selection={weatherFocus.selection}
+              onSelectionChange={weatherFocus.selectFromTable}
+            />
+          </ErrorBoundary>
+        </Box>
+      )}
 
       <Box mb="lg">
         <AccessAlerts

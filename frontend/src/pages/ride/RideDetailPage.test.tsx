@@ -198,11 +198,14 @@ describe('RideDetailPage — a ride with one group is its group page (WEB-79)', 
     expect(plain(screen.getByTestId('group-leader').textContent)).toContain('Léa Meneuse')
   })
 
-  it("unrolls the group's weather under #meteo", () => {
+  it("unrolls the group's route weather under #meteo, no « Météo au départ », before the comments", () => {
     const { container } = renderPage()
-    const weather = container.querySelector('#meteo')
-    expect(weather?.textContent).toContain('Météo au départ')
-    expect(weather?.textContent).toContain('Exposition au vent')
+    const weather = container.querySelectorAll('#meteo')
+    expect(weather).toHaveLength(1)
+    expect(weather[0].textContent).toContain('Météo du parcours')
+    expect(weather[0].textContent).not.toContain('Météo au départ')
+    // Full width, out of the side column, beside which the map stands
+    expect(weather[0].closest('.detail-side')).toBeNull()
   })
 
   it("offers the Météo mode on its map, its fullscreen map the ride's own in that mode (WEB-118)", async () => {
