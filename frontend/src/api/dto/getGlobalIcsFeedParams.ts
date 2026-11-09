@@ -1,6 +1,4 @@
 export type GetGlobalIcsFeedParams = {
-  /**
-   * Calendar access token
-   */
+  /** Calendar access token */
   token?: string
 }

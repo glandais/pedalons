@@ -8,76 +8,40 @@ import type { SurfaceType } from './surfaceType.ts'
 import type { WindDirection } from './windDirection.ts'
 
 export type ListAllRoutesParams = {
-  /**
-   * Hilliness preset (FLAT, HILLY, MOUNTAINOUS)
-   */
+  /** Hilliness preset (FLAT, HILLY, MOUNTAINOUS) */
   hilliness?: Hilliness
-  /**
-   * Maximum distance in meters
-   */
+  /** Maximum distance in meters */
   maxDistance?: number
-  /**
-   * Maximum elevation gain in meters
-   */
+  /** Maximum elevation gain in meters */
   maxElevationGain?: number
-  /**
-   * Minimum distance in meters
-   */
+  /** Minimum distance in meters */
   minDistance?: number
-  /**
-   * Minimum elevation gain in meters
-   */
+  /** Minimum elevation gain in meters */
   minElevationGain?: number
-  /**
-   * Only routes from teams where the user has at least this role. Yields nothing for an anonymous visitor.
-   */
+  /** Only routes from teams where the user has at least this role. Yields nothing for an anonymous visitor. */
   minRole?: MinRole
-  /**
-   * Latitude for proximity search
-   */
+  /** Latitude for proximity search */
   nearLat?: number
-  /**
-   * Longitude for proximity search
-   */
+  /** Longitude for proximity search */
   nearLon?: number
-  /**
-   * Search radius in meters (default: 25000)
-   */
+  /** Search radius in meters (default: 25000) */
   nearRadius?: number
-  /**
-   * Search near START, END, or START_OR_END (default)
-   */
+  /** Search near START, END, or START_OR_END (default) */
   nearType?: NearType
-  /**
-   * Page number (0-indexed)
-   */
+  /** Page number (0-indexed) */
   page?: number
-  /**
-   * Search by name/markdown
-   */
+  /** Search by name/markdown */
   search?: string
-  /**
-   * Page size
-   */
+  /** Page size */
   size?: number
-  /**
-   * Sort by field (DISTANCE, ELEVATION_GAIN, HILLINESS, DATE_TIME)
-   */
+  /** Sort by field (DISTANCE, ELEVATION_GAIN, HILLINESS, DATE_TIME) */
   sortBy?: RouteSortBy
-  /**
-   * Sort direction (ASC, DESC)
-   */
+  /** Sort direction (ASC, DESC) */
   sortDir?: SortDirection
-  /**
-   * Filter by surface type
-   */
+  /** Filter by surface type */
   surfaceType?: SurfaceType
-  /**
-   * How much of each row to send. COMPACT (case-insensitive) returns media.markdown empty and media.assets trimmed to the logo, the first image and the themed thumbnails — read 'excerpt' and 'thumbnailUrl' instead, both of which are present either way. The markdown body, the attachments, the GPX and FIT files and every image past the first are dropped. Omitted, or FULL, is the previous behaviour, byte for byte.
-   */
+  /** How much of each row to send. COMPACT (case-insensitive) returns media.markdown empty and media.assets trimmed to the logo, the first image and the themed thumbnails — read 'excerpt' and 'thumbnailUrl' instead, both of which are present either way. The markdown body, the attachments, the GPX and FIT files and every image past the first are dropped. Omitted, or FULL, is the previous behaviour, byte for byte. */
   view?: ListViewMode
-  /**
-   * Filter by wind direction
-   */
+  /** Filter by wind direction */
   windDirection?: WindDirection
 }

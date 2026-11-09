@@ -1,10 +1,6 @@
 export type ListMyPreviewsParams = {
-  /**
-   * Zero-based page number
-   */
+  /** Zero-based page number */
   page?: number
-  /**
-   * Page size
-   */
+  /** Page size */
   size?: number
 }

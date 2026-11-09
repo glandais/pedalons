@@ -1,6 +1,4 @@
 export type DownloadDataExportParams = {
-  /**
-   * Download token from the notification email
-   */
+  /** Download token from the notification email */
   token: string
 }

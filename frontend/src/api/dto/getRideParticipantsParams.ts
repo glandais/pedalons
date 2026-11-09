@@ -1,18 +1,10 @@
 export type GetRideParticipantsParams = {
-  /**
-   * Only this group of the ride (TSID); every group when absent
-   */
+  /** Only this group of the ride (TSID); every group when absent */
   groupId?: string
-  /**
-   * Page number (0-based)
-   */
+  /** Page number (0-based) */
   page?: number
-  /**
-   * Search by display name
-   */
+  /** Search by display name */
   search?: string
-  /**
-   * Page size
-   */
+  /** Page size */
   size?: number
 }

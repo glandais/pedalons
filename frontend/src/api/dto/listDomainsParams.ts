@@ -1,10 +1,6 @@
 export type ListDomainsParams = {
-  /**
-   * Page number (0-indexed)
-   */
+  /** Page number (0-indexed) */
   page?: number
-  /**
-   * Page size
-   */
+  /** Page size */
   size?: number
 }

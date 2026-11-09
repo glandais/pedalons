@@ -1,10 +1,6 @@
 export type GetEventsParams = {
-  /**
-   * Start date (ISO 8601)
-   */
+  /** Start date (ISO 8601) */
   from?: string
-  /**
-   * End date (ISO 8601)
-   */
+  /** End date (ISO 8601) */
   to?: string
 }

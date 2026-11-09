@@ -1,22 +1,12 @@
 export type ListUsersParams = {
-  /**
-   * Show only platform admins
-   */
+  /** Show only platform admins */
   adminOnly?: boolean
-  /**
-   * Filter by domain ID
-   */
+  /** Filter by domain ID */
   domainId?: string
-  /**
-   * Page number (0-indexed)
-   */
+  /** Page number (0-indexed) */
   page?: number
-  /**
-   * Search by email or name
-   */
+  /** Search by email or name */
   search?: string
-  /**
-   * Page size
-   */
+  /** Page size */
   size?: number
 }

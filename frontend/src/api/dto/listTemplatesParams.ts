@@ -1,14 +1,8 @@
 export type ListTemplatesParams = {
-  /**
-   * Page number
-   */
+  /** Page number */
   page?: number
-  /**
-   * Search by name
-   */
+  /** Search by name */
   search?: string
-  /**
-   * Page size
-   */
+  /** Page size */
   size?: number
 }
