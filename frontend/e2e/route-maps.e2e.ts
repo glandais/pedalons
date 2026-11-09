@@ -184,10 +184,8 @@ test('stage detail draws the complete trace', async ({ page }) => {
   const w = await sharedWorld()
   const watcher = watchRouteReads(page, w.team.slug, w.route.slug)
   await page.goto(stagePath(w.team.slug, w.trip.slug, w.trip.stageSlug))
-  // The title is in the sticky header too.
-  await expect(
-    page.getByRole('heading', { level: 2, name: w.trip.stageName }).first()
-  ).toBeVisible()
+  // One header, the stage its only h1 (docs/LEDGER_*.md WEB-155).
+  await expect(page.getByRole('heading', { level: 1, name: w.trip.stageName })).toBeVisible()
   await expect(page.getByRole('heading', { level: 3, name: w.route.name })).toBeVisible()
   await expectFullTrace(page, watcher, w, 'single')
 })

@@ -1,6 +1,5 @@
 export { RideWeatherSection } from './RideWeatherSection'
 export { RideWeatherSummaryLine } from './RideWeatherSummaryLine'
-export { StageWeatherSection } from './StageWeatherSection'
 export { GroupWeatherSection } from './GroupWeatherSection'
 export { GroupWeatherLine } from './GroupWeatherLine'
 export type { RouteWeatherSelection } from './RouteWeather'

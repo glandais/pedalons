@@ -206,8 +206,8 @@ test('a team admin creates a trip and its two stages with the form; the calendar
   // A stage event leads to its stage.
   await calendarEvent(page, first.name).click()
   await expect(page).toHaveURL(new RegExp(`/voyages/${tripSlug}/etapes/${trip!.stages[0].slug}$`))
-  // Its name heads both the page and the stage's own block.
-  await expect(main.getByRole('heading', { level: 2, name: first.name }).first()).toBeVisible()
+  // Its name heads the page, its one header (docs/LEDGER_*.md WEB-155).
+  await expect(main.getByRole('heading', { level: 1, name: first.name })).toBeVisible()
 })
 
 test.describe('registration', () => {
@@ -742,7 +742,7 @@ test('a member comments on a stage: its own thread, the trip author is told and 
   await signIn(page.context(), member)
   await page.goto(stagePath(team.slug, trip.slug, stage.slug))
   const main = page.getByRole('main')
-  await expect(main.getByRole('heading', { level: 2, name: stage.name }).first()).toBeVisible()
+  await expect(main.getByRole('heading', { level: 1, name: stage.name })).toBeVisible()
   await expect(main.getByRole('heading', { name: 'Commentaires (0)' })).toBeVisible()
   const commentBox = main.getByRole('textbox', { name: /Écrivez un commentaire/ })
   await hydrated(commentBox)

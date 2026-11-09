@@ -8,7 +8,7 @@ import { Status, WeatherStatus } from '@/api/dto'
 import { hasWindForecast } from './weatherOnRoute'
 
 /** Whether the trip's maps can offer the Météo mode at all: neither finished nor cancelled. */
-function tripOffersWind(trip: TripDto): boolean {
+export function tripOffersWind(trip: TripDto): boolean {
   return !trip.finished && trip.status !== Status.CANCELLED
 }
 

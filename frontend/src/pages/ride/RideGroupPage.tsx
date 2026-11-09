@@ -1,24 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { IconArrowLeft, IconUsersGroup } from '@tabler/icons-react'
-import {
-  Alert,
-  Anchor,
-  Badge,
-  Box,
-  Button,
-  Container,
-  Group,
-  Paper,
-  SegmentedControl,
-  Select,
-  SimpleGrid,
-  Stack,
-  Text,
-  Title,
-} from '@mantine/core'
-import type { RideDto, RideGroupDto } from '@/api/dto'
+import { IconPencil, IconUsersGroup } from '@tabler/icons-react'
+import { Alert, Anchor, Badge, Button, Container, Stack, Text } from '@mantine/core'
 import { startFor } from '@/utils/groupStart'
 import { DepartureBlock } from '@/components/common/DepartureBlock'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
@@ -27,14 +11,17 @@ import { DetailPageSkeleton } from '@/components/common/DetailPageSkeleton'
 import { EmptyState } from '@/components/common/EmptyState'
 import { ErrorBoundary } from '@/components/common/ErrorBoundary'
 import { ShareButton } from '@/components/common/ShareButton'
+import { ChildDetailShell } from '@/components/publication/ChildDetailShell'
+import { RouteCard } from '@/components/publication/RouteCard'
+import { PlacesLine } from '@/components/publication/PlacesLine'
+import { CHILD_WEATHER_ANCHOR, useWeatherFocus } from '@/components/publication/useWeatherFocus'
 import { GroupJoinActions } from '@/components/ride/group/GroupJoinActions'
 import { GroupLeader } from '@/components/ride/group/GroupLeader'
 import { GroupParticipantsSection } from '@/components/ride/group/GroupParticipantsSection'
 import { GroupPlaces } from '@/components/ride/group/GroupPlaces'
-import { RideGroupRouteActions } from '@/components/ride/RideGroupRouteActions'
 import { RouteMapPanel } from '@/components/route/RouteMapPanel'
 import { GroupStats } from '@/components/ride/group/GroupStats'
-import { GroupWeatherSection, type RouteWeatherSelection } from '@/components/weather'
+import { GroupWeatherSection } from '@/components/weather'
 import { hasForecast } from '@/components/weather/weatherDisplay'
 import { paths } from '@/config/paths'
 import { withMapColor } from '@/hooks/filters/mapColorFilters'
@@ -46,27 +33,6 @@ import { leavesGroupPage } from './rideDetailData'
 import { groupAction, groupWindLeg, useRideGroupData } from './rideGroupData'
 import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
 import { teamAccess } from '@/lib/teamAccess'
-
-/** Up to this many groups pick from a segmented control; beyond, a select keeps the row short. */
-const SEGMENTED_MAX_GROUPS = 4
-
-/** The anchor of the weather section: the ride's cards and the mobile app link to it. */
-const WEATHER_ANCHOR = 'meteo'
-
-/**
- * The forecast point the map and the « Heure par heure » table share (ledger WEB-117): the row
- * selected in the table, and the checkpoint (its `index`) whose badge is lit and popup open on the
- * map in the Météo mode — closing the popup leaves the row selected. Held for one group: another
- * group's page (the same component, its id changed) starts afresh.
- */
-interface WeatherFocus {
-  groupId?: string
-  selection: RouteWeatherSelection
-  open: number | null
-}
-
-/** The table starts on its first point, no popup open. */
-const NO_WEATHER_FOCUS: WeatherFocus = { selection: { position: 0 }, open: null }
 
 /**
  * One group of a ride, on a page of its own (ledger WEB-77): who leads it, when it leaves and at
@@ -103,30 +69,7 @@ export function RideGroupPage() {
     leg,
   } = useRideGroupData(teamSlug, rideSlug, groupId)
   const membership = useRideGroupMembership(teamSlug!, rideSlug!)
-  // The Select's input keeps the focus after a pick, and iOS Safari then offers to AutoFill it
-  // (« Remplir »): drop the focus once the choice is made.
-  const groupSelectRef = useRef<HTMLInputElement>(null)
-  const [heldFocus, setWeatherFocus] = useState<WeatherFocus>(NO_WEATHER_FOCUS)
-  const weatherFocus = heldFocus.groupId === groupId ? heldFocus : NO_WEATHER_FOCUS
-  // A row of the table (a column, a phase, the slider): its point lights up on the map. The camera
-  // stays where it is, and the mode does not switch to Météo by itself.
-  const selectFromTable = (selection: RouteWeatherSelection) =>
-    setWeatherFocus({
-      groupId,
-      selection,
-      open: leg?.checkpoints[selection.position]?.index ?? null,
-    })
-  // A badge of the map: its row is selected, the page does not scroll. Its popup closed: the row
-  // stays.
-  const selectFromMap = (index: number | null) => {
-    const position =
-      index === null ? -1 : (leg?.checkpoints.findIndex((c) => c.index === index) ?? -1)
-    setWeatherFocus({
-      groupId,
-      selection: position >= 0 ? { position, fromMap: true } : weatherFocus.selection,
-      open: index,
-    })
-  }
+  const weatherFocus = useWeatherFocus(groupId, leg)
 
   // A ride with at most one group: its page is the group's (WEB-79), the URL is replaced.
   // Not through `useCanonicalPath`, which checks once: a ride read with two groups then refetched
@@ -143,7 +86,7 @@ export function RideGroupPage() {
 
   // `#meteo` (a card's link, the app's « Météo » tab shared): the section only exists once the
   // ride is read, after the browser gave up looking for it.
-  useScrollToAnchor(WEATHER_ANCHOR, !!group && !leave && !weather.isLoading)
+  useScrollToAnchor(CHILD_WEATHER_ANCHOR, !!group && !leave && !weather.isLoading)
 
   if (isLoadingTeam || isLoadingRide || error || !ride || !team || leave) {
     return (
@@ -167,21 +110,6 @@ export function RideGroupPage() {
       </Container>
     )
   }
-
-  const backToRide = (
-    <Anchor
-      component={PrefetchLink}
-      to={paths.ride(team.slug, ride.slug)}
-      size="sm"
-      c="dimmed"
-      underline="hover"
-    >
-      <Group gap={4} wrap="nowrap">
-        <IconArrowLeft size={16} aria-hidden />
-        {t('rides.group.backToRide')}
-      </Group>
-    </Anchor>
-  )
 
   // A group the ride no longer has: an old link, after an edit dropped it (several groups left).
   if (!group) {
@@ -216,8 +144,9 @@ export function RideGroupPage() {
   const windLeg = groupWindLeg(ride, leg)
   const groupError = membership.error?.groupId === group.id ? membership.error.message : undefined
 
-  const groupOptions = groups.map((g) => ({
-    value: g.id,
+  const siblings = groups.map((g) => ({
+    id: g.id,
+    href: paths.rideGroup(team.slug, ride.slug, g.id),
     label: g.maxParticipants
       ? t('rides.group.option', {
           name: g.name,
@@ -226,70 +155,64 @@ export function RideGroupPage() {
         })
       : t('rides.group.optionNoMax', { name: g.name, current: g.countParticipants }),
   }))
-  const chooseGroup = (id: string | null) => {
-    groupSelectRef.current?.blur()
-    if (id && id !== group.id) navigate(paths.rideGroup(team.slug, ride.slug, id))
-  }
+  const title = t('rides.group.title', { name: group.name })
 
   return (
-    <Container size="xl" py="xl">
-      <Box mb="md">{backToRide}</Box>
-
-      {/* Header: the ride, the group, its places and what the reader can do */}
-      <Paper shadow="xs" p="lg" mb="lg" withBorder>
-        <Stack gap="md">
-          {groups.length > 1 &&
-            (groups.length <= SEGMENTED_MAX_GROUPS ? (
-              <SegmentedControl
-                data={groupOptions}
-                value={group.id}
-                onChange={chooseGroup}
-                aria-label={t('rides.group.selector')}
-                fullWidth
-              />
-            ) : (
-              <Select
-                ref={groupSelectRef}
-                data={groupOptions}
-                value={group.id}
-                onChange={chooseGroup}
-                label={t('rides.group.selector')}
-                allowDeselect={false}
-                maxDropdownHeight={400}
-                maw={360}
-              />
-            ))}
-
-          <Group justify="space-between" wrap="wrap" align="flex-start">
-            <Stack gap={4} style={{ minWidth: 0 }}>
-              <RideHeaderLine ride={ride} />
-              <Group gap="sm" wrap="wrap">
-                <Title order={1} size="h2">
-                  {t('rides.group.title', { name: group.name })}
-                </Title>
-                {group.registered ? (
-                  <Badge color="primary" variant="light">
-                    {t('rides.detail.groups.joined')}
-                  </Badge>
-                ) : (
-                  group.full && (
-                    <Badge color="gray" variant="light">
-                      {t('rides.detail.groups.full')}
-                    </Badge>
-                  )
-                )}
-                {/* Beside the title, not with the join actions: signed out there are none, and
-                    the button sat alone on its own line. */}
-                <ShareButton title={t('rides.group.title', { name: group.name })} />
-              </Group>
-            </Stack>
-            <GroupJoinActions action={action} group={group} membership={membership} />
-          </Group>
-
-          <GroupDepartureBlock ride={ride} group={group} />
-
+    <ChildDetailShell
+      backTo={paths.ride(team.slug, ride.slug)}
+      backLabel={t('rides.group.backToRide')}
+      parentName={ride.name}
+      siblings={siblings}
+      currentId={group.id}
+      siblingLabel={t('rides.group.selector')}
+      title={title}
+      badges={
+        <>
+          {group.registered ? (
+            <Badge color="primary" variant="light">
+              {t('rides.detail.groups.joined')}
+            </Badge>
+          ) : (
+            group.full && (
+              <Badge color="gray" variant="light">
+                {t('rides.detail.groups.full')}
+              </Badge>
+            )
+          )}
+          {/* Beside the title, not with the join actions: signed out there are none, and the
+              button sat alone on its own line. */}
+          <ShareButton title={title} />
+        </>
+      }
+      actions={
+        <>
+          <GroupJoinActions action={action} group={group} membership={membership} />
+          {canEdit && (
+            <Button
+              component={PrefetchLink}
+              to={paths.rideEdit(team.slug, ride.slug)}
+              variant="outline"
+              leftSection={<IconPencil size={16} />}
+            >
+              {t('actions.edit')}
+            </Button>
+          )}
+        </>
+      }
+      departure={
+        <Stack gap="sm">
+          {/* The group's own time, and where everyone meets (docs/BRANDING.md §7.8). */}
+          <DepartureBlock
+            date={startFor(ride, group)}
+            zone={ride.timezone}
+            place={ride.startPlace}
+          />
+          <PlacesLine end={ride.endPlace} />
           <GroupPlaces group={group} />
-
+        </Stack>
+      }
+      notices={
+        <>
           {otherGroup && (
             <Text size="sm" data-testid="registered-elsewhere">
               {t('rides.group.registeredElsewhere', { group: otherGroup.name })}{' '}
@@ -302,13 +225,6 @@ export function RideGroupPage() {
               </Anchor>
             </Text>
           )}
-
-          {groupError && (
-            <Alert color="red" variant="light">
-              {groupError}
-            </Alert>
-          )}
-
           {!isAuthenticated && (
             <Alert color="blue" variant="light">
               <Text size="sm">
@@ -334,11 +250,11 @@ export function RideGroupPage() {
               </Text>
             </Alert>
           )}
-        </Stack>
-      </Paper>
-
-      <SimpleGrid cols={{ base: 1, md: 2, xl: 3 }} spacing={{ base: 'md', sm: 'lg' }}>
-        <Stack gap="lg">
+        </>
+      }
+      error={groupError}
+      side={
+        <>
           <GroupStats
             ride={ride}
             group={group}
@@ -359,51 +275,36 @@ export function RideGroupPage() {
           {/* What to do with the route, beside the map rather than under it: the map column fills
               the visible height (docs/LEDGER_*.md WEB-134) */}
           {routeSlug && (
-            <Paper withBorder p="md">
-              <Stack gap="xs">
-                <Title order={3} size="h5">
-                  {t('rides.group.routeTitle')}
-                </Title>
-                <RideGroupRouteActions
-                  teamSlug={team.slug}
-                  routeSlug={routeSlug}
-                  route={route}
-                  size="sm"
-                />
-              </Stack>
-            </Paper>
-          )}
-        </Stack>
-
-        {/* The group's route: the map with its profile, sticky and filling the visible height */}
-        <Box className="detail-map detail-map--fill detail-map--solo">
-          {routeSlug && (
-            <RouteMapPanel
+            <RouteCard
+              title={route?.name ?? t('rides.group.routeTitle')}
               teamSlug={team.slug}
               routeSlug={routeSlug}
               route={route}
-              leg={windLeg}
-              attribution={windLeg ? weather.data?.attribution : undefined}
-              timezone={ride.timezone}
-              selectedCheckpoint={weatherFocus.open}
-              onSelectCheckpoint={selectFromMap}
-              // Its own fullscreen map, in the mode the line is in (WEB-117)
-              fullscreenPath={(colorBy) =>
-                withMapColor(paths.rideGroupMap(team.slug, ride.slug, group.id), colorBy)
-              }
-              withActions={false}
-              heightVariant="sticky"
             />
           )}
-        </Box>
-      </SimpleGrid>
-
-      {/* The group's weather, full width under the stats and the map: its timeline needs the room */}
-      <Box
-        id={WEATHER_ANCHOR}
-        mt={{ base: 'md', sm: 'lg' }}
-        style={{ scrollMarginTop: 'var(--app-shell-header-height)' }}
-      >
+        </>
+      }
+      map={
+        routeSlug ? (
+          <RouteMapPanel
+            teamSlug={team.slug}
+            routeSlug={routeSlug}
+            route={route}
+            leg={windLeg}
+            attribution={windLeg ? weather.data?.attribution : undefined}
+            timezone={ride.timezone}
+            selectedCheckpoint={weatherFocus.open}
+            onSelectCheckpoint={weatherFocus.selectFromMap}
+            // Its own fullscreen map, in the mode the line is in (WEB-117)
+            fullscreenPath={(colorBy) =>
+              withMapColor(paths.rideGroupMap(team.slug, ride.slug, group.id), colorBy)
+            }
+            withActions={false}
+            heightVariant="sticky"
+          />
+        ) : null
+      }
+      weather={
         <ErrorBoundary variant="inline">
           <GroupWeatherSection
             ride={ride}
@@ -414,27 +315,10 @@ export function RideGroupPage() {
             onRetry={() => void weather.refetch()}
             canEdit={canEdit}
             selection={weatherFocus.selection}
-            onSelectionChange={selectFromTable}
+            onSelectionChange={weatherFocus.selectFromTable}
           />
         </ErrorBoundary>
-      </Box>
-    </Container>
+      }
+    />
   )
-}
-
-/**
- * The ride's name above the group's title. The departure itself is the block under the title
- * (docs/BRANDING.md §7.8): the group's time, its date, and how it sits against the ride's.
- */
-function RideHeaderLine({ ride }: { ride: RideDto }) {
-  return (
-    <Text size="sm" c="dimmed">
-      {ride.name}
-    </Text>
-  )
-}
-
-/** The group's departure block: its own time. */
-function GroupDepartureBlock({ ride, group }: { ride: RideDto; group: RideGroupDto }) {
-  return <DepartureBlock date={startFor(ride, group)} zone={ride.timezone} />
 }

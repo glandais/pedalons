@@ -238,13 +238,6 @@ body {
 
 /* Responsive layout utilities */
 
-/* TripLayout: content spans 3 cols on md+ (64em = 1024px) */
-@media (min-width: 64em) {
-  .trip-layout-content {
-    grid-column: span 3;
-  }
-}
-
 /* Ride/Trip detail: keep the map in view while the (potentially long) groups/stages list
    scrolls. Only once the layout is side-by-side (md+, 64em); stacked mobile keeps normal flow. */
 @media (min-width: 64em) {

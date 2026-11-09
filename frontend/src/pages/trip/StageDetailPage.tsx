@@ -1,51 +1,53 @@
 import { useParams, Navigate } from 'react-router-dom'
-import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { useTranslation } from 'react-i18next'
-import {
-  Container,
-  Paper,
-  Group,
-  Stack,
-  Title,
-  Text,
-  Badge,
-  Button,
-  Box,
-  Anchor,
-} from '@mantine/core'
-import { IconBolt, IconMapPin, IconPencil } from '@tabler/icons-react'
+import { Badge, Box, Button, Container, Stack } from '@mantine/core'
+import { IconPencil } from '@tabler/icons-react'
 import { useStageDetailData } from './stageDetailData'
-import { RouteDetailView } from '../../components/route/RouteDetailView'
 import { paths } from '../../config/paths'
 import { useAuth } from '../../hooks/useAuth'
-import { useUnits } from '../../hooks/useUnits'
 import { QueryStateBoundary } from '../../components/common/QueryStateBoundary'
 import { DetailPageSkeleton } from '../../components/common/DetailPageSkeleton'
-import { TripLayout } from '../../components/trip/TripLayout'
-import { MediaDisplay } from '../../components/common/MediaDisplay'
-import { EntityLogo } from '../../components/common/EntityLogo'
 import { DepartureBlock } from '../../components/common/DepartureBlock'
+import { PrefetchLink } from '../../components/common/PrefetchLink'
 import { useCanonicalPath } from '../../hooks/useCanonicalPath'
+import { useScrollToAnchor } from '../../hooks/useScrollToAnchor'
 import { ShareButton } from '../../components/common/ShareButton'
 import { CommentSection } from '../../components/comment'
-import { STATUS_COLORS } from '@/lib/badgeColors.generated'
 import { ErrorBoundary } from '@/components/common/ErrorBoundary'
-import { StageWeatherSection } from '@/components/weather'
+import { AccessAlerts } from '@/components/publication/AccessAlerts'
+import { ChildDetailShell } from '@/components/publication/ChildDetailShell'
+import { InstructionsBlock } from '@/components/publication/InstructionsBlock'
+import { PlacesLine } from '@/components/publication/PlacesLine'
+import { RouteCard } from '@/components/publication/RouteCard'
+import { StatsCard } from '@/components/publication/StatsCard'
+import { CHILD_WEATHER_ANCHOR, useWeatherFocus } from '@/components/publication/useWeatherFocus'
+import { RouteMapPanel } from '@/components/route/RouteMapPanel'
+import { RouteWeatherSection } from '@/components/weather/RouteWeatherSection'
+import { hasForecast } from '@/components/weather/weatherDisplay'
 import { withMapColor } from '@/hooks/filters/mapColorFilters'
-import { stageWindLeg } from '@/lib/tripWeatherOnMap'
+import { stageWindLeg, tripOffersWind } from '@/lib/tripWeatherOnMap'
 import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
 import { teamAccess } from '@/lib/teamAccess'
 
+/**
+ * One stage of a trip, on the page every child of a publication shares with a ride's groups
+ * (docs/LEDGER_*.md WEB-155, `ChildDetailShell`): the way back to the trip, the other stages either
+ * side, its departure and places; its figures, its instructions and its route beside the sticky
+ * map; the route's weather full width, the map's badges and the table sharing their point
+ * (WEB-117); then its own comment thread, apart from the trip's.
+ *
+ * Its route is read on its own (`useStageDetailData`, polled while its elevation is refined), not in
+ * the trip's bulk read. Nothing of the people: one joins the trip, not a stage.
+ */
 export function StageDetailPage() {
   const { t } = useTranslation()
   const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
-  const { speed } = useUnits()
   const { teamSlug, tripSlug, stageSlug } = useParams<{
     teamSlug: string
     tripSlug: string
     stageSlug: string
   }>()
-  useAuth() // For authentication context
+  const { isAuthenticated } = useAuth()
 
   const {
     team: { data: team, isLoading: isLoadingTeam },
@@ -55,12 +57,17 @@ export function StageDetailPage() {
     weather,
   } = useStageDetailData(teamSlug, tripSlug, stageSlug)
 
-  // Find stage (derived from the trip already in cache)
+  // Found in the trip already in cache, before the early returns: the weather focus is a hook.
   const stage = trip?.stages?.find((s) => s.slug === stageSlug)
+  const stageWeather = stage ? weather.data?.stages.find((w) => w.stageId === stage.id) : undefined
+  const leg = stageWeather?.leg
+  const weatherFocus = useWeatherFocus(stage?.id, leg)
 
   useCanonicalPath(
     team && trip && stageSlug ? paths.stage(team.slug, trip.slug, stageSlug) : undefined
   )
+  // `#meteo` (the app's « Météo » tab shared): the section only exists once the trip is read.
+  useScrollToAnchor(CHILD_WEATHER_ANCHOR, !!stage && !weather.isLoading)
 
   const isLoading = isLoadingTeam || isLoadingTrip || !!(routeSlug && isLoadingRoute)
 
@@ -72,7 +79,7 @@ export function StageDetailPage() {
     return <Navigate to={paths.team(teamSlug!)} replace />
   }
 
-  if (isLoading || error || !trip) {
+  if (isLoading || error || !trip || !team) {
     return (
       <Container size="xl" py="xl">
         <QueryStateBoundary
@@ -114,174 +121,142 @@ export function StageDetailPage() {
     )
   }
 
-  const stageIndex = trip.stages?.findIndex((s) => s.slug === stageSlug) ?? 0
   // Registering and the join banner follow the real membership; editing and the comment thread
   // (moderation), the rights a platform admin holds in every team (docs/LEDGER_*.md API-137).
   const { isMember, isOrganizer: canEdit } = teamAccess(team, isPlatformAdmin)
   const canReadComments = isMember || isPlatformAdmin
+  const stages = trip.stages ?? []
+  const stageIndex = stages.findIndex((s) => s.id === stage.id)
   // The stage's Météo mode on its map, and on its fullscreen map (WEB-118)
   const windLeg = stageWindLeg(trip, weather.data, stage.id)
-
-  // Weather along the stage's route, its own state (docs/LEDGER_*.md API-76), under the map (WEB-143)
-  const weatherSection = (
-    <ErrorBoundary variant="inline">
-      <StageWeatherSection
-        weather={weather.data}
-        stageId={stage.id}
-        isLoading={weather.isLoading}
-        isFetching={weather.isFetching}
-        onRetry={() => void weather.refetch()}
-        canEdit={canEdit}
-        timezone={stage.timezone}
-      />
-    </ErrorBoundary>
-  )
+  const routeName = route?.name ?? stage.route?.name
 
   return (
-    <Container size="xl" py="xl">
-      {/* Trip Header */}
-      <Paper withBorder p="lg" mb="lg">
-        <Group justify="space-between" align="flex-start" wrap="wrap">
-          <Group style={{ minWidth: 0 }}>
-            <EntityLogo
-              logo={stage.media.assets.logo ?? trip.media.assets.logo}
-              alt={stage.name || trip.name}
-              size="lg"
-            />
-            <Box>
-              <Anchor
-                component={PrefetchLink}
-                to={paths.trip(teamSlug!, tripSlug!)}
-                c="dimmed"
-                size="sm"
-                underline="hover"
-              >
-                {trip.name}
-              </Anchor>
-              <Title order={2} lineClamp={1}>
-                {stage.name}
-              </Title>
-            </Box>
-            <Badge color={STATUS_COLORS[trip.status]}>
-              {t(`status.${trip.status satisfies 'DRAFT' | 'PUBLISHED' | 'CANCELLED'}`)}
+    <ChildDetailShell
+      backTo={paths.trip(team.slug, trip.slug)}
+      backLabel={t('trips.stage.backToTrip')}
+      parentName={t('trips.stage.parent', {
+        trip: trip.name,
+        index: stageIndex + 1,
+        total: stages.length,
+      })}
+      siblings={stages.map((s, i) => ({
+        id: s.id,
+        href: paths.stage(team.slug, trip.slug, s.slug),
+        label: t('trips.stage.option', { index: i + 1, name: s.name }),
+      }))}
+      currentId={stage.id}
+      siblingLabel={t('trips.stage.selector')}
+      title={stage.name}
+      badges={
+        <>
+          {trip.registered && (
+            <Badge color="primary" variant="light">
+              {t('rides.detail.groups.joined')}
             </Badge>
-          </Group>
-
-          <Group gap="xs" wrap="nowrap">
-            {canEdit && (
-              <Button
-                component={PrefetchLink}
-                to={paths.tripEdit(teamSlug!, tripSlug!)}
-                variant="outline"
-                leftSection={<IconPencil size={16} />}
-              >
-                {t('actions.edit')}
-              </Button>
-            )}
-            <ShareButton title={stage.name || trip.name} />
-          </Group>
-        </Group>
-      </Paper>
-
-      {/* Stage tabs + Stage content */}
-      <TripLayout trip={trip} teamSlug={teamSlug!} currentTab={stageSlug!}>
-        <Stack>
-          {/* Stage header */}
-          <Paper withBorder p="lg">
-            <Group mb="md">
-              <Badge size="xl" variant="light" color="primary" circle>
-                {stageIndex + 1}
-              </Badge>
-              <Box>
-                <Title order={2}>{stage.name}</Title>
-                {stage.averageSpeed && (
-                  <Group gap="xs" mt="xs">
-                    <IconBolt size={16} />
-                    <Text size="sm" c="dimmed">
-                      {speed(stage.averageSpeed)}
-                    </Text>
-                  </Group>
-                )}
-              </Box>
-            </Group>
-
-            {/* The departure, under the title, before the description (docs/BRANDING.md §7.8,
-                docs/LEDGER_*.md WEB-137). A stage carries no end of its own: no return. */}
-            <Box mb="md">
-              <DepartureBlock
-                date={stage.dateTime}
-                zone={stage.timezone}
-                place={stage.startPlace}
-              />
-            </Box>
-
-            {/* Description */}
-            {stage.media.markdown && (
-              <Box mb="md">
-                <MediaDisplay media={stage.media} />
-              </Box>
-            )}
-
-            {/* The start place is in the departure block; the end place, when there is one, here. */}
-            {stage.endPlace && (
-              <Group gap="sm">
-                <IconMapPin size={20} color="var(--mantine-color-red-text)" />
-                <Box>
-                  <Text size="xs" c="dimmed">
-                    {t('endPlace')}
-                  </Text>
-                  <Text fw={500}>{stage.endPlace.name}</Text>
-                </Box>
-              </Group>
-            )}
-          </Paper>
-
-          {/* Route details */}
-          {route && (
-            <Box>
-              <Group justify="space-between" mb="md">
-                <Title order={3}>{route.name}</Title>
-                <Button
-                  component={PrefetchLink}
-                  to={paths.route(teamSlug!, route.slug)}
-                  variant="subtle"
-                  size="sm"
-                >
-                  {t('trips.stage.viewRouteDetails')}
-                </Button>
-              </Group>
-              <RouteDetailView
-                route={route}
-                teamSlug={teamSlug}
-                showInfo={false}
-                fullscreenPath={(colorBy) =>
-                  withMapColor(paths.stageMap(teamSlug!, tripSlug!, stageSlug!), colorBy)
-                }
-                windLeg={windLeg}
-                windAttribution={windLeg ? weather.data?.attribution : undefined}
-                timezone={stage.timezone}
-                beforeClimbs={weatherSection}
-              />
-            </Box>
           )}
-
-          {/* Without a route, no map to stand under: the section still says why (NO_LOCATION…) */}
-          {!route && weatherSection}
-
-          {/* The stage's own thread, apart from the trip's — members only, like every thread */}
-          {canReadComments && team && (
-            <Box>
-              <CommentSection
-                teamSlug={teamSlug!}
-                teamName={team.name}
-                entityType="stages"
-                entitySlug={stageSlug!}
-                isOrganizer={canEdit}
-              />
-            </Box>
-          )}
+          <ShareButton title={stage.name} />
+        </>
+      }
+      actions={
+        canEdit && (
+          <Button
+            component={PrefetchLink}
+            to={paths.tripEdit(team.slug, trip.slug)}
+            variant="outline"
+            leftSection={<IconPencil size={16} />}
+          >
+            {t('actions.edit')}
+          </Button>
+        )
+      }
+      departure={
+        <Stack gap="sm">
+          <DepartureBlock date={stage.dateTime} zone={stage.timezone} place={stage.startPlace} />
+          <PlacesLine end={stage.endPlace} />
         </Stack>
-      </TripLayout>
-    </Container>
+      }
+      notices={
+        <AccessAlerts
+          kind="trip"
+          teamSlug={team.slug}
+          isAuthenticated={isAuthenticated}
+          isMember={isMember}
+        />
+      }
+      side={
+        <>
+          <StatsCard
+            timezone={stage.timezone}
+            averageSpeed={stage.averageSpeed}
+            distance={stage.route?.distance}
+            elevationGain={stage.route?.elevationGain}
+            arrival={leg && hasForecast(leg.status) ? leg.arrivalTime : undefined}
+            testId="stage-stats"
+          />
+          <InstructionsBlock media={stage.media} testId="stage-instructions" />
+          {routeSlug && routeName && (
+            <RouteCard title={routeName} teamSlug={team.slug} routeSlug={routeSlug} route={route} />
+          )}
+        </>
+      }
+      map={
+        routeSlug ? (
+          <RouteMapPanel
+            teamSlug={team.slug}
+            routeSlug={routeSlug}
+            route={route}
+            leg={windLeg}
+            attribution={windLeg ? weather.data?.attribution : undefined}
+            timezone={stage.timezone}
+            selectedCheckpoint={weatherFocus.open}
+            onSelectCheckpoint={weatherFocus.selectFromMap}
+            fullscreenPath={(colorBy) =>
+              withMapColor(paths.stageMap(team.slug, trip.slug, stage.slug), colorBy)
+            }
+            withActions={false}
+            heightVariant="sticky"
+            subject="stage"
+          />
+        ) : null
+      }
+      weather={
+        <ErrorBoundary variant="inline">
+          <RouteWeatherSection
+            subject="stage"
+            // A stage the forecast no longer lists draws nothing, as before (API-76)
+            offered={tripOffersWind(trip) && !(weather.data && !stageWeather)}
+            status={leg?.status}
+            availableFrom={leg?.availableFrom}
+            attribution={weather.data?.attribution}
+            fetchedAt={leg?.fetchedAt}
+            departure={stageWeather?.departure}
+            departureTime={stage.dateTime}
+            leg={leg}
+            timezone={stage.timezone}
+            isLoading={weather.isLoading}
+            isFetching={weather.isFetching}
+            onRetry={() => void weather.refetch()}
+            canEdit={canEdit}
+            selection={weatherFocus.selection}
+            onSelectionChange={weatherFocus.selectFromTable}
+            titleId="stage-weather-title"
+          />
+        </ErrorBoundary>
+      }
+    >
+      {/* The stage's own thread, apart from the trip's — members only, like every thread */}
+      {canReadComments && (
+        <Box>
+          <CommentSection
+            teamSlug={team.slug}
+            teamName={team.name}
+            entityType="stages"
+            entitySlug={stage.slug}
+            isOrganizer={canEdit}
+          />
+        </Box>
+      )}
+    </ChildDetailShell>
   )
 }
