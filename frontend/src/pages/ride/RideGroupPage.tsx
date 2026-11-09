@@ -32,7 +32,7 @@ import { GroupLeader } from '@/components/ride/group/GroupLeader'
 import { GroupParticipantsSection } from '@/components/ride/group/GroupParticipantsSection'
 import { GroupPlaces } from '@/components/ride/group/GroupPlaces'
 import { RideGroupRouteActions } from '@/components/ride/RideGroupRouteActions'
-import { GroupRouteMap } from '@/components/ride/group/GroupRouteMap'
+import { RouteMapPanel } from '@/components/route/RouteMapPanel'
 import { GroupStats } from '@/components/ride/group/GroupStats'
 import { GroupWeatherSection, type RouteWeatherSelection } from '@/components/weather'
 import { hasForecast } from '@/components/weather/weatherDisplay'
@@ -378,7 +378,7 @@ export function RideGroupPage() {
         {/* The group's route: the map with its profile, sticky and filling the visible height */}
         <Box className="detail-map detail-map--fill detail-map--solo">
           {routeSlug && (
-            <GroupRouteMap
+            <RouteMapPanel
               teamSlug={team.slug}
               routeSlug={routeSlug}
               route={route}

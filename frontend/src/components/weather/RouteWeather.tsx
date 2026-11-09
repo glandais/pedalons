@@ -59,9 +59,19 @@ interface RouteWeatherProps {
   selection?: RouteWeatherSelection
   /** Every new selection — a column, a phase, the slider —, controlled or not. */
   onSelectionChange?: (selection: RouteWeatherSelection) => void
-  /** Whose speed the passages assume when it is the default: a group's (default) or a GPX track's. */
-  subject?: 'group' | 'track'
+  /**
+   * Whose speed the passages assume when it is the default: a group's (default), a trip stage's
+   * (docs/LEDGER_*.md WEB-155) or a GPX track's.
+   */
+  subject?: 'group' | 'stage' | 'track'
 }
+
+/** « Passages estimés à 25 km/h, vitesse par défaut », said of whoever rides it. */
+const TIMELINE_SPEED_DEFAULT_KEYS = {
+  group: 'rides.weather.route.timeline.speedDefault',
+  stage: 'trips.weather.speedDefault',
+  track: 'gpxTools.weather.timelineSpeedDefault',
+} as const
 
 /** The colour variables of a relative wind's generated family (contracts/brand-colors.yaml). */
 function windStyle(relativeWind: string | undefined): CSSProperties {
@@ -153,9 +163,7 @@ export function RouteWeather({
   const spacing = checkpointSpacing(checkpoints)
 
   const speedLine = leg.speedIsDefault
-    ? subject === 'track'
-      ? t('gpxTools.weather.timelineSpeedDefault', { speed: speed(leg.averageSpeed) })
-      : t('rides.weather.route.timeline.speedDefault', { speed: speed(leg.averageSpeed) })
+    ? t(TIMELINE_SPEED_DEFAULT_KEYS[subject], { speed: speed(leg.averageSpeed) })
     : t('rides.weather.route.timeline.speed', { speed: speed(leg.averageSpeed) })
 
   return (

@@ -14,7 +14,7 @@ const RoutesMapView = lazy(() =>
 
 /**
  * What colours the overview map's traces: one colour per stage (the default), or the wind of each
- * stage (ledger WEB-118). The overview's own, as `GroupColorBy` is the group's.
+ * stage (ledger WEB-118). The overview's own, as `RouteMapColorBy` is the group's.
  */
 export type TripMapMode = 'stages' | 'wind'
 

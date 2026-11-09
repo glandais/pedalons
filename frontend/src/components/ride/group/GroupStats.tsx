@@ -1,47 +1,9 @@
-import type { ReactNode } from 'react'
-import { useTranslation } from 'react-i18next'
-import { IconArrowsMaximize, IconArrowUp, IconBolt, IconClock } from '@tabler/icons-react'
-import { Group, Paper, SimpleGrid, Stack, Text } from '@mantine/core'
 import type { RideDto, RideGroupDto } from '@/api/dto'
-import { Rendezvous } from '@/components/common/Rendezvous'
-import { useRendezvousFormat } from '@/hooks/useRendezvousFormat'
-import { useUnits } from '@/hooks/useUnits'
-
-/** One figure of the group: its label above, its value, an optional line below. */
-function StatTile({
-  icon,
-  label,
-  children,
-  hint,
-}: {
-  icon: ReactNode
-  label: string
-  children: ReactNode
-  hint?: ReactNode
-}) {
-  return (
-    <Stack gap={2}>
-      <Group gap={4} wrap="nowrap" c="dimmed">
-        {icon}
-        <Text size="xs" tt="uppercase" fw={600} c="dimmed">
-          {label}
-        </Text>
-      </Group>
-      <Text fw={700} size="lg" style={{ whiteSpace: 'nowrap' }}>
-        {children}
-      </Text>
-      {hint && (
-        <Text size="xs" c="dimmed">
-          {hint}
-        </Text>
-      )}
-    </Stack>
-  )
-}
+import { StatsCard } from '@/components/publication/StatsCard'
 
 /**
- * Departure, pace, distance and climb — each one only when the group has it. On a group's page
- * (WEB-77) and on a solo ride's (WEB-79).
+ * Departure, pace, distance and climb of a group — each one only when the group has it: the shared
+ * `StatsCard` (docs/LEDGER_*.md WEB-155). On a group's page (WEB-77) and on a solo ride's (WEB-79).
  */
 export function GroupStats({
   ride,
@@ -59,56 +21,15 @@ export function GroupStats({
    */
   showDeparture?: boolean
 }) {
-  const { t } = useTranslation()
-  const { speed, distance, elevation } = useUnits()
-  const rendezvous = useRendezvousFormat(ride.timezone)
-
   return (
-    <Paper withBorder p="lg" data-testid="group-stats">
-      {/* Container query: the tiles sit in a narrow side column on wide screens, so the viewport
-          width says nothing about the room they have. */}
-      <SimpleGrid type="container" cols={{ base: 2, '560px': 4 }} spacing="md">
-        {showDeparture && group.startAt && (
-          <StatTile
-            icon={<IconClock size={14} aria-hidden />}
-            label={t('rides.group.stats.departure')}
-          >
-            <Rendezvous date={group.startAt} zone={ride.timezone} format="time" />
-          </StatTile>
-        )}
-        {/* A 0 pace means none — and `0 && …` would render a bare « 0 ». */}
-        {!!group.averageSpeed && (
-          <StatTile
-            icon={<IconBolt size={14} aria-hidden />}
-            label={t('rides.group.stats.pace')}
-            hint={
-              arrival && (
-                <span suppressHydrationWarning={rendezvous.isGuessedText}>
-                  {t('rides.group.stats.arrival', { time: rendezvous.formatTime(arrival) })}
-                </span>
-              )
-            }
-          >
-            {speed(group.averageSpeed)}
-          </StatTile>
-        )}
-        {group.distance !== undefined && (
-          <StatTile
-            icon={<IconArrowsMaximize size={14} aria-hidden />}
-            label={t('rides.group.stats.distance')}
-          >
-            {distance(group.distance)}
-          </StatTile>
-        )}
-        {group.elevationGain !== undefined && (
-          <StatTile
-            icon={<IconArrowUp size={14} aria-hidden />}
-            label={t('rides.group.stats.elevation')}
-          >
-            {elevation(group.elevationGain)}
-          </StatTile>
-        )}
-      </SimpleGrid>
-    </Paper>
+    <StatsCard
+      timezone={ride.timezone}
+      departure={showDeparture ? group.startAt : undefined}
+      averageSpeed={group.averageSpeed}
+      distance={group.distance}
+      elevationGain={group.elevationGain}
+      arrival={arrival}
+      testId="group-stats"
+    />
   )
 }

@@ -33,7 +33,7 @@ import { RideWeatherSection } from '@/components/weather'
 import { hasForecast } from '@/components/weather/weatherDisplay'
 import { RideSoloGroupPanel } from '@/components/ride/RideSoloGroupPanel'
 import { GroupParticipantsSection } from '@/components/ride/group/GroupParticipantsSection'
-import { GroupRouteMap } from '@/components/ride/group/GroupRouteMap'
+import { RouteMapPanel } from '@/components/route/RouteMapPanel'
 import { GroupStats } from '@/components/ride/group/GroupStats'
 import { useScrollToAnchor } from '@/hooks/useScrollToAnchor'
 import { withMapColor } from '@/hooks/filters/mapColorFilters'
@@ -336,7 +336,7 @@ export function RideDetailPage() {
             {soloRouteSlug ? (
               // A solo ride on one route: the group page's map, its profile, its Météo mode, and the
               // ride's own fullscreen map in the mode the line is in (WEB-118).
-              <GroupRouteMap
+              <RouteMapPanel
                 teamSlug={teamSlug!}
                 routeSlug={soloRouteSlug}
                 route={groupRoutesBySlug.get(soloRouteSlug)}

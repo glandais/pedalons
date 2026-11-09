@@ -97,7 +97,7 @@ vi.mock('@/components/ride/RideGroupRouteActions', () => ({
   RideGroupRouteActions: () => null,
 }))
 
-import { GroupRouteMap } from './GroupRouteMap'
+import { RouteMapPanel } from './RouteMapPanel'
 
 function route(track: Partial<TrackDto>): RouteDetailDto {
   return {
@@ -115,13 +115,13 @@ const LINE = {
 function tree(
   r: RouteDetailDto | undefined,
   leg?: WeatherLegDto,
-  extra: Partial<React.ComponentProps<typeof GroupRouteMap>> = {}
+  extra: Partial<React.ComponentProps<typeof RouteMapPanel>> = {}
 ) {
   return (
     // The colour mode lives in the query string (`useWindColorMode`)
     <MemoryRouter>
       <MantineProvider>
-        <GroupRouteMap
+        <RouteMapPanel
           {...extra}
           teamSlug="t"
           routeSlug="r"
@@ -139,12 +139,12 @@ function tree(
 function show(
   r: RouteDetailDto | undefined,
   leg?: WeatherLegDto,
-  extra: Partial<React.ComponentProps<typeof GroupRouteMap>> = {}
+  extra: Partial<React.ComponentProps<typeof RouteMapPanel>> = {}
 ) {
   return render(tree(r, leg, extra))
 }
 
-describe('GroupRouteMap', () => {
+describe('RouteMapPanel', () => {
   afterEach(cleanup)
 
   it('offers the grade / surface switch when the track has a surface', async () => {

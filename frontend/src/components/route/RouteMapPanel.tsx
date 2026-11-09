@@ -1,11 +1,17 @@
 import { lazy, Suspense } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Box, Paper, Skeleton, Stack, Title } from '@mantine/core'
-import type { RouteDetailDto, WeatherAttributionDto, WeatherLegDto } from '@/api/dto'
+import { Box, Paper, Skeleton, Stack, Text, Title } from '@mantine/core'
+import {
+  ElevationState,
+  type RouteDetailDto,
+  type WeatherAttributionDto,
+  type WeatherLegDto,
+} from '@/api/dto'
 import { ErrorBoundary } from '@/components/common/ErrorBoundary'
 import { RideGroupRouteActions } from '@/components/ride/RideGroupRouteActions'
 import { ColorModeControls } from '@/components/route/ColorModeControls'
 import { RouteWaypointList } from '@/components/route/RouteWaypointList'
+import type { WindLegendSubject } from '@/components/weather/WindMapLegend'
 import { useMapHeight, type MapHeightVariant } from '@/hooks/useResponsive'
 import { useWaypointSelection } from '@/hooks/useWaypointSelection'
 import { useWindColorMode } from '@/hooks/useWindColorMode'
@@ -13,10 +19,10 @@ import { paths } from '@/config/paths'
 import type { PlannerColorBy } from '@/lib/plannerSurface'
 
 /**
- * What colours the group's line: the planner's modes, plus the wind of the group's leg (WEB-115).
- * The page's own type: `PlannerColorBy` serves the planner and every route view, which have no wind.
+ * What colours the line: the planner's modes, plus the wind of the leg (WEB-115). The panel's own
+ * type: `PlannerColorBy` serves the planner and every route view, which have no wind.
  */
-export type GroupColorBy = PlannerColorBy | 'wind'
+export type RouteMapColorBy = PlannerColorBy | 'wind'
 
 // Lazy: the map pulls in map-vendor (~1 MB) and the elevation chart chart-vendor.
 const RouteMapView = lazy(() =>
@@ -24,8 +30,9 @@ const RouteMapView = lazy(() =>
 )
 
 /**
- * A group's single route: the map with its profile and a way to full screen, then — unless
- * `withActions` is off — what to do with it (view, GPX, FIT, send to a device).
+ * The single route of a ride group or a trip stage (docs/LEDGER_*.md WEB-155): the map with its
+ * profile and a way to full screen, then — unless `withActions` is off — what to do with it (view,
+ * GPX, FIT, send to a device). While the route's elevation is still being refined, says so.
  *
  * With a `leg` that has a forecast, a « Météo » mode colours the line by the wind (ledger WEB-115,
  * plan 2026-10-24-weather-on-map.md): exclusive of the grade and the surface, never the default,
@@ -35,7 +42,7 @@ const RouteMapView = lazy(() =>
  * whose popup is open with the row selected in its « Heure par heure » (`selectedCheckpoint`,
  * ledger WEB-117), and opens its own fullscreen map in the current mode (`fullscreenPath`).
  */
-export function GroupRouteMap({
+export function RouteMapPanel({
   teamSlug,
   routeSlug,
   route,
@@ -47,6 +54,7 @@ export function GroupRouteMap({
   fullscreenPath,
   withActions = true,
   heightVariant,
+  subject = 'group',
 }: {
   teamSlug: string
   routeSlug: string
@@ -69,10 +77,12 @@ export function GroupRouteMap({
   /** A badge opened (its `index`) or its popup closed (`null`). */
   onSelectCheckpoint?: (index: number | null) => void
   /** The fullscreen map, opened in the mode the line is in; the route's own map without it. */
-  fullscreenPath?: (colorBy: GroupColorBy) => string
+  fullscreenPath?: (colorBy: RouteMapColorBy) => string
   withActions?: boolean
   /** The map's height, `RouteMapView`'s (`full` when left out); `sticky` on a solo ride's page. */
   heightVariant?: MapHeightVariant
+  /** Whose speed the wind legend says the passages assume by default: a group's or a stage's. */
+  subject?: Extract<WindLegendSubject, 'group' | 'stage'>
 }) {
   const { t } = useTranslation()
   const mode = useWindColorMode({
@@ -111,7 +121,17 @@ export function GroupRouteMap({
                 />
               </Box>
             </Suspense>
-            <ColorModeControls mode={mode} tracks={route.tracks} attribution={attribution} />
+            {route.elevationState === ElevationState.PENDING && (
+              <Text size="xs" c="dimmed">
+                {t('routes.detail.elevationRefining')}
+              </Text>
+            )}
+            <ColorModeControls
+              mode={mode}
+              tracks={route.tracks}
+              attribution={attribution}
+              subject={subject}
+            />
             <RouteWaypointList
               waypoints={route.waypoints}
               selected={selection?.waypoint ?? null}
