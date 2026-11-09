@@ -8,6 +8,7 @@ import '../../theme/pdl_typography.dart';
 import 'pdl_map_attribution.dart';
 import 'pdl_map_controller.dart';
 import 'pdl_map_marker.dart';
+import 'pdl_map_scale.dart';
 import 'pdl_waypoint_mark.dart';
 
 /// La carte Pédalons.
@@ -31,6 +32,7 @@ class PdlMap extends StatefulWidget {
     super.key,
     required this.styleUrl,
     required this.credit,
+    required this.scale,
     this.controller,
     this.tracks = const <PdlMapTrack>[],
     this.waypoints = const <PdlMapWaypoint>[],
@@ -67,6 +69,12 @@ class PdlMap extends StatefulWidget {
   /// écran à y penser. Un paramètre requis fait échouer la compilation d'une
   /// carte sans crédit, ce qu'aucune relecture ne garantit.
   final PdlMapCredit credit;
+
+  /// La barre d'échelle, dans les unités du lecteur (`servedMapScale`), ou
+  /// `null` pour aucune. **Requise, même nulle** : comme [credit], une carte
+  /// ne doit pas afficher des kilomètres à un lecteur en milles parce que
+  /// personne n'y a pensé.
+  final PdlMapScale? scale;
 
   /// Gabarit d'URL des tuiles vectorielles de masse, ou `null` pour n'en poser
   /// aucune. Une chaîne, jamais un DTO : voir
@@ -623,6 +631,8 @@ class _PdlMapState extends State<PdlMap> {
             },
           ),
         ...widget.overlays,
+        if (widget.scale case final PdlMapScale scale)
+          PdlMapScaleBar(scale: scale),
         // En dernier : le crédit se lit par-dessus les voiles et les commandes
         // que l'écran ajoute, jamais dessous.
         PdlMapAttribution(credit: widget.credit),

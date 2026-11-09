@@ -6,6 +6,7 @@ import * as maplibregl from 'maplibre-gl'
 import './setupMaplibreWorker'
 import { Terrain3D } from './Terrain3D'
 import { MapAttribution } from './MapAttribution'
+import { MapScale } from './MapScale'
 import { MapImages } from './MapImages'
 import { MapStyleSwitcher, type MapStyleSwitcherProps } from './MapStyleSwitcher'
 import { MapPanelContext, useMapPanelState } from './mapPanelState'
@@ -76,6 +77,7 @@ export const PedalonsMap = forwardRef<MapRef, PedalonsMapProps>(
           <NavigationControl position="top-left" />
           <RotationMarker />
           <MapAttribution />
+          <MapScale />
           <Terrain3D source={terrainSource} terrain={terrain3d} hillshade={hillshade} />
           {/* Every trace on the site shows its direction (`routeArrowLayout`): the image is ready on
           every map rather than registered by each page that draws one. */}

@@ -200,6 +200,7 @@ class _RoutesMapViewState extends ConsumerState<RoutesMapView>
         hillshade: servedHillshade(context, ref),
         styleUrl: resolved.url,
         credit: servedMapCredit(resolved),
+        scale: servedMapScale(ref),
         controller: _controller,
         massTileUrl: _tileUrl,
         massTileColor: c.mapTrack,

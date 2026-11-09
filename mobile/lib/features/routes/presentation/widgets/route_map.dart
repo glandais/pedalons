@@ -319,6 +319,7 @@ class _RouteMapState extends ConsumerState<RouteMap> {
         interactive: !widget.allowFullscreen || widget.fullscreen,
         styleUrl: resolved.url,
         credit: servedMapCredit(resolved),
+        scale: servedMapScale(ref),
         onMapTapped: widget.onMapTapped == null
             ? null
             : (double lon, double lat) =>

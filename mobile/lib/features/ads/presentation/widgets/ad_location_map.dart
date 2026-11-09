@@ -98,6 +98,7 @@ class AdLocationMap extends ConsumerWidget {
                           key: keys.ad.locationMap,
                           styleUrl: style.url,
                           credit: servedMapCredit(style),
+                          scale: servedMapScale(ref),
                           initialCenter: PdlMapPoint(lon: _lon, lat: _lat),
                           initialZoom: _zoom,
                           // La carte illustre, elle ne s'explore pas : la

@@ -4,7 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/generated/models/map_style_dto.dart';
 import '../../api/generated/models/map_terrain_dto.dart';
+import '../../api/generated/models/unit_system.dart';
 import '../pdl/pdl.dart';
+import '../preferences/user_preferences_provider.dart';
+import '../units/unit_system.dart';
+import '../utils/formatters.dart';
 import '../theme/pdl_colors.dart';
 import 'config_provider.dart';
 
@@ -64,6 +68,48 @@ PdlMapCredit servedMapCredit(ResolvedMapStyle? style) => PdlMapCredit(
   toggleLabel: 'map.attribution'.tr(),
   extra: style?.style.attribution,
 );
+
+/// La barre d'échelle à passer à `PdlMap`, dans les unités du lecteur
+/// (`UserDto.unitSystem`) : mètres puis kilomètres, ou pieds puis milles.
+PdlMapScale servedMapScale(WidgetRef ref) =>
+    mapScaleFor(ref.watch(unitSystemProvider));
+
+/// Les paliers 1-2-5 de la barre, pour un système d'unités donné.
+///
+/// Au-delà de 2 000 ft la barre passe au mille : 1 mi vaut 5 280 ft, et
+/// « 5000 ft » ne se lit pas d'un coup d'œil.
+PdlMapScale mapScaleFor(UnitSystem units) {
+  const List<double> mantissas = <double>[1, 2, 5];
+  PdlMapScaleStep step(double meters, num value, String symbol) =>
+      PdlMapScaleStep(
+        meters,
+        AppFormatters.withUnit(AppFormatters.formatNumber(value), symbol),
+      );
+  final List<PdlMapScaleStep> steps = <PdlMapScaleStep>[];
+  if (units.isImperial) {
+    for (final double ft in <double>[10, 20, 50, 100, 200, 500, 1000, 2000]) {
+      steps.add(step(ft * kMetersPerFoot, ft, UnitSymbols.foot));
+    }
+    for (double decade = 1; decade <= 1000; decade *= 10) {
+      for (final double m in mantissas) {
+        final double mi = m * decade;
+        steps.add(step(mi * kMetersPerMile, mi, UnitSymbols.mile));
+      }
+    }
+  } else {
+    for (double decade = 1; decade <= 1000000; decade *= 10) {
+      for (final double m in mantissas) {
+        final double meters = m * decade;
+        steps.add(
+          meters < 1000
+              ? step(meters, meters, UnitSymbols.meter)
+              : step(meters, meters / 1000, UnitSymbols.kilometer),
+        );
+      }
+    }
+  }
+  return PdlMapScale(steps);
+}
 
 /// L'ombrage du relief à passer à `PdlMap`, ou `null` — pas de source servie,
 /// ou interrupteur éteint.

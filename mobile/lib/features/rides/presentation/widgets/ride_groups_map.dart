@@ -489,6 +489,7 @@ class RideGroupsMap extends ConsumerWidget {
           cursor: cursor,
           styleUrl: styleUrl,
           credit: credit,
+          scale: servedMapScale(ref),
           hillshade: servedHillshade(context, ref),
           interactive: fullscreen,
           tracks: tracks,

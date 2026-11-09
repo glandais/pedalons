@@ -49,6 +49,19 @@
   border-radius: inherit;
 }
 
+/* The scale bar (`MapScale`) sits above the attribution whatever the mounting order: MapLibre stacks
+   a bottom corner by *prepending*, and `MapAttribution` is rebuilt — so re-prepended — on every
+   basemap change, which would otherwise swap the two. */
+.maplibregl-ctrl-bottom-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.maplibregl-ctrl-bottom-right > .maplibregl-ctrl-scale {
+  order: -1;
+}
+
 /* The place search box of the free-navigation maps (`MapSearchControl`, @stadiamaps/maplibre-search-box).
    The package ships light-only colours (#fefefe results, #dfdfdf hover, black links, a browser-default
    input). Restated against maplibre-theme's variables so the box follows the map's `.dark` scheme

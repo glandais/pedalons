@@ -177,6 +177,7 @@ class TripMap extends ConsumerWidget {
                 hillshade: servedHillshade(context, ref),
                 styleUrl: resolved.url,
                 credit: servedMapCredit(resolved),
+                scale: servedMapScale(ref),
                 // Encastrée dans la page qui défile : ni déplacement ni zoom hors
                 // plein écran. Le tap, qui choisit l'étape, reste actif.
                 interactive: fullscreen,

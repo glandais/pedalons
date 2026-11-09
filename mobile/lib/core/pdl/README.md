@@ -257,6 +257,7 @@ Exportés par `pdl.dart` comme le reste, et soumis au même contrat (jetons,
 | `PdlMapHero` · `PdlMapStyleOption` · `PdlMapHeroSwitch` · `PdlMapTapPassThrough` | `map/pdl_map_hero.dart` | La coquille d'une carte occupant une surface : voiles, plein écran, sélecteur de fond de carte et ses interrupteurs de mode ; `tapOpensFullscreen` fait d'une vignette inerte une porte vers le plein écran, sauf sur ce qu'enveloppe un `PdlMapTapPassThrough` (le crédit ⓘ) ; `PdlMapHero.openFullscreen(context)` y mène depuis ce que la carte rend elle-même (une pastille de la vignette) |
 | `PdlMapButton` · `PdlMapButtonColumn` · `PdlMapPill` · `PdlMapFloatingCard` | `map/pdl_map_buttons.dart` | Contrôles posés sur la carte, sur voile de lisibilité |
 | `PdlMapAttribution` · `PdlMapCredit` | `map/pdl_map_attribution.dart` | Crédit des fournisseurs de tuiles |
+| `PdlMapScaleBar` · `PdlMapScale` · `PdlMapScaleStep` | `map/pdl_map_scale.dart` | Barre d'échelle en bas à gauche, aux jetons de la carte ; les paliers et leurs libellés viennent de l'écran (`servedMapScale`, unités du lecteur) — `PdlMap.scale` est requis, même nul |
 | `PdlMapCamera` | `map/pdl_map_camera.dart` | Position de caméra et projection Web Mercator |
 | — | `map/pdl_mass_layer.dart` | La couche de masse : tuiles vectorielles de parcours du backend (`?t=` jeton de tuiles) ; l'en-tête du fichier explique pourquoi le repli GeoJSON a disparu |
 

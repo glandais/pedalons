@@ -120,6 +120,7 @@ class _PdlMapDemoPageState extends ConsumerState<PdlMapDemoPage> {
                 hillshade: servedHillshade(context, ref),
                 styleUrl: style.url,
                 credit: servedMapCredit(style),
+                scale: servedMapScale(ref),
                 tracks: _tracks,
                 selectedTrackId: _selected,
                 onTrackSelected: (String? id) => setState(() => _selected = id),
