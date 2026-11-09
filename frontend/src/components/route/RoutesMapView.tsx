@@ -27,7 +27,7 @@ import { WeatherLegsMarkers } from '@/components/weather/WeatherLegsMarkers'
 import type { MapItemWind } from '@/lib/tripWeatherOnMap'
 import { attributionHtml, relativeWindStrokeColors } from '@/lib/weatherOnRoute'
 import { windTraceLines } from './routesMapWind'
-import { StartMarker, EndMarker, HoverMarker } from '../map/MapMarkers'
+import { StartMarker, EndMarker, HoverMarker, KmMarkersLayer } from '../map/MapMarkers'
 import {
   calculateBounds,
   distance as haversineDistance,
@@ -105,6 +105,11 @@ export interface RoutesMapViewProps {
   winds?: ReadonlyMap<string, MapItemWind>
   /** The forecast's credit, owed while the wind colours the traces. */
   windAttribution?: WeatherAttributionDto
+  /**
+   * The km markers of the map's trace, when it has only one (a ride whose groups all ride the same
+   * route, ledger WEB-145). Ignored with several: markers of different routes would mean nothing.
+   */
+  kmMarkers?: boolean
 }
 
 const NO_TRANSITION = { duration: 0 }
@@ -119,6 +124,7 @@ export function RoutesMapView({
   variant = 'full',
   winds,
   windAttribution,
+  kmMarkers = false,
 }: RoutesMapViewProps) {
   const { t } = useTranslation()
   const mapHeight = useMapHeight(variant)
@@ -590,6 +596,10 @@ export function RoutesMapView({
   // Start and end markers: the first shown route's first point, the last shown route's last point
   const firstRoute = visibleRoutes[0]
   const lastRoute = visibleRoutes[visibleRoutes.length - 1]
+  const kmRoute =
+    kmMarkers && routesData.length === 1 && !hiddenItemIds.has(routesData[0].itemId)
+      ? routesData[0]
+      : undefined
   const startPoint = firstRoute?.trackPoints[0]
   const endPoint = lastRoute?.trackPoints[lastRoute.trackPoints.length - 1]
 
@@ -698,6 +708,10 @@ export function RoutesMapView({
                 >
                   <Layer id="routes-wind-credit" type="line" paint={{ 'line-opacity': 0 }} />
                 </Source>
+              )}
+
+              {kmRoute && (
+                <KmMarkersLayer coords={kmRoute.trackPoints} totalDistanceM={kmRoute.distance} />
               )}
 
               {startPoint && <StartMarker longitude={startPoint[0]} latitude={startPoint[1]} />}

@@ -64,7 +64,9 @@ vi.mock('@/components/ride/RideGroupRouteActions', () => ({
   RideGroupRouteActions: () => <div data-testid="route-actions" />,
 }))
 vi.mock('@/components/route/RoutesMapView', () => ({
-  RoutesMapView: () => <div data-testid="routes-map" />,
+  RoutesMapView: (props: { kmMarkers?: boolean }) => (
+    <div data-testid="routes-map" data-km-markers={String(!!props.kmMarkers)} />
+  ),
 }))
 vi.mock('@/components/route/RouteMapView', () => ({
   RouteMapView: (props: Record<string, unknown>) => {
@@ -283,6 +285,25 @@ describe('RideDetailPage — one trace per route, shared by the groups that ride
     expect(isLit('Col')).toBe(false)
     fireEvent.mouseLeave(card('Rapide'))
     expect(isLit('Cool')).toBe(false)
+  })
+})
+
+describe('RideDetailPage — km markers on a multi-group map (WEB-145)', () => {
+  const kmMarkers = async () =>
+    (await screen.findByTestId('routes-map')).getAttribute('data-km-markers')
+
+  it('shows them when every group rides the same route', async () => {
+    state.ride = ride({ groups: [group(), group({ id: 'g2', name: 'Cool' })] })
+    renderPage()
+    expect(await kmMarkers()).toBe('true')
+  })
+
+  it('not when the groups ride different routes', async () => {
+    state.ride = ride({
+      groups: [group(), group({ id: 'g2', name: 'Cool', routeSlug: 'col' })],
+    })
+    renderPage()
+    expect(await kmMarkers()).toBe('false')
   })
 })
 

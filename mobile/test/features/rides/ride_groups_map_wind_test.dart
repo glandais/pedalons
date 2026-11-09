@@ -398,6 +398,40 @@ void main() {
     expect(map(tester).kmMarkers, isEmpty);
   });
 
+  RideGroupDto g(String id, String? slug) =>
+      fixtureGroup(id: id, routeSlug: slug);
+
+  test('bornes (MOB-121), plusieurs groupes sur le même parcours : oui', () {
+    expect(
+      rideMapShowsKmMarkers(
+        fixtureRide(groups: <RideGroupDto>[g('a', 'court'), g('b', 'court')]),
+        null,
+      ),
+      isTrue,
+    );
+  });
+
+  test('bornes (MOB-121), des parcours différents : non', () {
+    expect(
+      rideMapShowsKmMarkers(
+        fixtureRide(groups: <RideGroupDto>[g('a', 'court'), g('b', 'long')]),
+        null,
+      ),
+      isFalse,
+    );
+  });
+
+  test('bornes (MOB-121), la page d\'un groupe : toujours', () {
+    final RideGroupDto only = g('a', 'court');
+    expect(
+      rideMapShowsKmMarkers(
+        fixtureRide(groups: <RideGroupDto>[only, g('b', 'long')]),
+        only,
+      ),
+      isTrue,
+    );
+  });
+
   testWidgets('encastrée hors mode « Météo » : aucune pastille', (
     WidgetTester tester,
   ) async {

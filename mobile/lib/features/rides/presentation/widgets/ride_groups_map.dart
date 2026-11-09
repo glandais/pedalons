@@ -447,12 +447,12 @@ class RideGroupsMap extends ConsumerWidget {
           )
         : const <PdlMapMarker>[];
 
-    // Les bornes kilométriques d'un tracé qui se lit comme un parcours (ledger
-    // `MOB-120`). Pas en mode « Météo », où les pastilles prennent la place.
+    // Les bornes kilométriques d'une carte à un seul tracé (ledgers `MOB-120`,
+    // `MOB-121`). Pas en mode « Météo », où les pastilles prennent la place.
     final String? kmSlug =
         selectedSlug ?? (tracks.isEmpty ? null : tracks.first.id);
     final List<PdlKmMarker> kmMarkers =
-        windLeg == null && rideMapColorsLikeRoute(ride, onlyGroup)
+        windLeg == null && rideMapShowsKmMarkers(ride, onlyGroup)
         ? _kmMarkers(geometries[kmSlug])
         : const <PdlKmMarker>[];
 
@@ -687,6 +687,13 @@ class RideGroupsMapProbe extends StatelessWidget {
 bool rideMapColorsLikeRoute(RideDto ride, RideGroupDto? onlyGroup) =>
     onlyGroup != null ||
     (soloGroupOf(ride) != null && rideRouteLayers(ride).length == 1);
+
+/// Vrai quand la carte porte des bornes kilométriques : la page d'un groupe,
+/// ou une sortie dont tous les groupes roulent le même parcours — un seul
+/// tracé, quel que soit le nombre de groupes (ledger `MOB-121`). Sur plusieurs
+/// tracés, des bornes de parcours différents ne voudraient rien dire.
+bool rideMapShowsKmMarkers(RideDto ride, RideGroupDto? onlyGroup) =>
+    onlyGroup != null || rideRouteLayers(ride).length == 1;
 
 /// Les modes que propose la carte d'une sortie (ledger `MOB-105`), pour son
 /// interrupteur et pour la carte elle-même, qui doivent dire la même chose.

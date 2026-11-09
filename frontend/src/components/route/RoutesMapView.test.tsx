@@ -62,6 +62,7 @@ vi.mock('../map/MapMarkers', () => ({
   StartMarker: () => null,
   EndMarker: () => null,
   HoverMarker: () => null,
+  KmMarkersLayer: () => <span data-testid="km-markers" />,
 }))
 vi.mock('@/components/weather/WeatherCheckpointMarkers', () => ({
   WeatherCheckpointMarkers: (props: Record<string, unknown>) => {
@@ -142,6 +143,29 @@ const linePaint = (id: string) =>
   state.layers.findLast((l) => l.id === `line-${id}`)?.paint as Record<string, unknown>
 
 describe('RoutesMapView', () => {
+  describe('km markers (WEB-145)', () => {
+    const shown = (items: typeof ITEMS, kmMarkers?: boolean) => {
+      render(
+        <MantineProvider>
+          <RoutesMapView items={items} teamSlug="np" kmMarkers={kmMarkers} />
+        </MantineProvider>
+      )
+      return screen.queryByTestId('km-markers') !== null
+    }
+
+    it('shows them on a single trace when asked', () => {
+      expect(shown(ITEMS.slice(0, 1), true)).toBe(true)
+    })
+
+    it('never on several traces', () => {
+      expect(shown(ITEMS, true)).toBe(false)
+    })
+
+    it('not unless asked', () => {
+      expect(shown(ITEMS.slice(0, 1))).toBe(false)
+    })
+  })
+
   beforeEach(() => {
     state.sources = []
     state.layers = []

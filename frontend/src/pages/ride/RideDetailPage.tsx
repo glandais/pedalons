@@ -630,6 +630,7 @@ export function RideDetailPage() {
                     onItemHover={setHighlightedItemId}
                     selectedItemId={selectedItemId}
                     onItemSelect={chooseItem}
+                    kmMarkers={mapItems.length === 1}
                   />
                 </Suspense>
               </ErrorBoundary>
