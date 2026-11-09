@@ -400,7 +400,7 @@ test.describe('changing group', () => {
 /**
  * Leaving a ride refreshes everything that shows the registration, wherever the member left from:
  * the home page's « Ma prochaine sortie », the « J'y vais » badge of the feed cards, the « Je
- * participe » scope and the calendars (lib/rideRegistration.ts invalidateRideRegistration).
+ * participe » scope and the calendars (lib/registration.ts invalidateRegistration).
  * Regression (11602d48): « Se désinscrire » on the home card only refreshed « Ma prochaine
  * sortie », « Quitter » on the ride page only the ride — the rest stayed as it was until a reload,
  * the cache holding them fresh for three to five minutes (lib/queryClient.ts:11,

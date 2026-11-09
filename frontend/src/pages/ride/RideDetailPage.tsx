@@ -1,44 +1,10 @@
 import { Fragment, useState, useMemo, lazy, Suspense } from 'react'
-import { getGetTeamDashboardQueryKey } from '@/api/endpoints/teams/teams'
-import { useLocation, useParams, useNavigate } from 'react-router-dom'
-import { PrefetchLink } from '@/components/common/PrefetchLink'
+import { useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { useQueryClient } from '@tanstack/react-query'
-import { notifications } from '@mantine/notifications'
-import {
-  IconCalendar,
-  IconPencil,
-  IconMapPin,
-  IconChevronDown,
-  IconUsersGroup,
-} from '@tabler/icons-react'
-import {
-  Container,
-  Paper,
-  Group,
-  Stack,
-  Title,
-  Text,
-  Button,
-  Menu,
-  Badge,
-  Box,
-  Alert,
-  Anchor,
-  Skeleton,
-  Loader,
-  Divider,
-} from '@mantine/core'
-import {
-  useUpdateRide,
-  useDeleteRide,
-  useUndeleteRide,
-  getGetRideQueryKey,
-} from '../../api/endpoints/rides/rides'
-import { getListPublicationsQueryKey } from '../../api/endpoints/publications/publications'
-import { invalidateRideWeather, rideRouteSlugs, useRideDetailData } from './rideDetailData'
+import { IconUsersGroup } from '@tabler/icons-react'
+import { Container, Paper, Stack, Title, Box, Skeleton, Divider } from '@mantine/core'
+import { rideRouteSlugs, useRideDetailData } from './rideDetailData'
 import { groupAction, groupsRegisteredFirst, groupWindLeg } from './rideGroupData'
-import { rideStatusRequest } from './rideFormData'
 import { ReportTargetType, Status, type MediaDto } from '@/api/dto'
 import { useAuth } from '../../hooks/useAuth'
 import { EmptyState } from '../../components/common/EmptyState'
@@ -47,13 +13,11 @@ import { DetailPageSkeleton } from '../../components/common/DetailPageSkeleton'
 import { RideGroupCard } from '../../components/ride/RideGroupCard'
 import { TeamContextBanner } from '../../components/team/TeamContextBanner'
 import { rideMapRoutes } from './rideMapRoutes'
-import { ConfirmDialog } from '../../components/common/ConfirmDialog'
 
 // Lazy load the map component (pulls in map-vendor ~1MB and chart-vendor ~150KB)
 const RoutesMapView = lazy(() =>
   import('../../components/route/RoutesMapView').then((m) => ({ default: m.RoutesMapView }))
 )
-import { Rendezvous } from '../../components/common/Rendezvous'
 import { DepartureBlock } from '../../components/common/DepartureBlock'
 import {
   groupLeavesAtOwnTime,
@@ -61,16 +25,11 @@ import {
   someGroupLeavesAtOwnTime,
 } from '@/utils/groupStart'
 import { MediaDisplay } from '../../components/common/MediaDisplay'
-import { EntityLogo } from '../../components/common/EntityLogo'
-import { ContentActionsMenu } from '../../components/moderation/ContentActionsMenu'
-import { ShareButton } from '../../components/common/ShareButton'
 import { CommentSection } from '../../components/comment'
 import { paths } from '@/config/paths'
 import { useRideGroupMembership } from '@/hooks/useRideGroupMembership'
 import { ErrorBoundary } from '../../components/common/ErrorBoundary'
 import { useCanonicalPath } from '../../hooks/useCanonicalPath'
-import { STATUS_COLORS } from '@/lib/badgeColors.generated'
-import { TagList } from '@/components/tag'
 import { RideWeatherSection } from '@/components/weather'
 import { hasForecast } from '@/components/weather/weatherDisplay'
 import { RideSoloGroupPanel } from '@/components/ride/RideSoloGroupPanel'
@@ -81,6 +40,12 @@ import { useScrollToAnchor } from '@/hooks/useScrollToAnchor'
 import { withMapColor } from '@/hooks/filters/mapColorFilters'
 import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
 import { teamAccess } from '@/lib/teamAccess'
+import { AccessAlerts } from '@/components/publication/AccessAlerts'
+import { FactsStrip } from '@/components/publication/FactsStrip'
+import { PlacesLine } from '@/components/publication/PlacesLine'
+import { PublicationHeader } from '@/components/publication/PublicationHeader'
+import { rideFacts } from '@/components/publication/publicationFacts'
+import { usePublicationStatusActions } from '@/components/publication/usePublicationStatusActions'
 
 /** The map fills the visible height beside the column on md+ (`.detail-map--fill`, WEB-134); its
  *  skeleton takes the same height so nothing shifts when the map bundle arrives. */
@@ -119,10 +84,6 @@ export function RideDetailPage() {
     setSelectedItemId(itemId)
     setHighlightedItemId(null)
   }
-  const [showUnpublishConfirm, setShowUnpublishConfirm] = useState(false)
-  const [showCancelConfirm, setShowCancelConfirm] = useState(false)
-  const [showUncancelConfirm, setShowUncancelConfirm] = useState(false)
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   const {
     team: { data: team, isLoading: isLoadingTeam },
@@ -133,12 +94,11 @@ export function RideDetailPage() {
     soloLeg,
   } = useRideDetailData(teamSlug, rideSlug)
 
-  const queryClient = useQueryClient()
-  const navigate = useNavigate()
-  const location = useLocation()
-  const updateMutation = useUpdateRide()
-  const deleteMutation = useDeleteRide()
-  const undeleteMutation = useUndeleteRide()
+  const statusActions = usePublicationStatusActions(
+    teamSlug!,
+    'ride',
+    ride ? { kind: 'ride', dto: ride } : null
+  )
   const membership = useRideGroupMembership(teamSlug!, rideSlug!)
   const groupError = membership.error
 
@@ -218,108 +178,6 @@ export function RideDetailPage() {
       ? registeredGroup
       : null
 
-  // The ride, the feed it shows in, and its forecast (its own query key, not a prefix of the ride's).
-  const invalidateRideQueries = () => {
-    queryClient.invalidateQueries({ queryKey: getGetRideQueryKey(teamSlug!, rideSlug!) })
-    queryClient.invalidateQueries({ queryKey: getListPublicationsQueryKey(teamSlug!) })
-    void invalidateRideWeather(queryClient, teamSlug!, rideSlug!)
-  }
-
-  const handlePublish = () => {
-    updateMutation.mutate(
-      {
-        teamSlug: teamSlug!,
-        rideSlug: rideSlug!,
-        data: rideStatusRequest(ride, Status.PUBLISHED),
-      },
-      {
-        onSuccess: () => {
-          invalidateRideQueries()
-          notifications.show({ message: t('rides.notifications.published'), color: 'green' })
-        },
-      }
-    )
-  }
-
-  const handleUnpublish = () => {
-    updateMutation.mutate(
-      {
-        teamSlug: teamSlug!,
-        rideSlug: rideSlug!,
-        data: rideStatusRequest(ride, Status.DRAFT),
-      },
-      {
-        onSuccess: () => {
-          invalidateRideQueries()
-          notifications.show({ message: t('rides.notifications.unpublished'), color: 'green' })
-        },
-      }
-    )
-    setShowUnpublishConfirm(false)
-  }
-
-  const handleCancel = () => {
-    updateMutation.mutate(
-      {
-        teamSlug: teamSlug!,
-        rideSlug: rideSlug!,
-        data: rideStatusRequest(ride, Status.CANCELLED),
-      },
-      {
-        onSuccess: () => {
-          invalidateRideQueries()
-          notifications.show({ message: t('rides.notifications.cancelled'), color: 'green' })
-        },
-      }
-    )
-    setShowCancelConfirm(false)
-  }
-
-  const handleUncancel = () => {
-    updateMutation.mutate(
-      {
-        teamSlug: teamSlug!,
-        rideSlug: rideSlug!,
-        data: rideStatusRequest(ride, Status.DRAFT),
-      },
-      {
-        onSuccess: () => {
-          invalidateRideQueries()
-          notifications.show({ message: t('rides.notifications.uncancelled'), color: 'green' })
-        },
-      }
-    )
-    setShowUncancelConfirm(false)
-  }
-
-  const handleDelete = () => {
-    deleteMutation.mutate(
-      { teamSlug: teamSlug!, rideSlug: rideSlug! },
-      {
-        onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: getListPublicationsQueryKey(teamSlug!) })
-          queryClient.invalidateQueries({ queryKey: getGetTeamDashboardQueryKey(teamSlug!) })
-          notifications.show({ message: t('rides.notifications.deleted'), color: 'green' })
-          // Back to the feed, not the dashboard: the reader was managing publications.
-          navigate(paths.teamAgenda(teamSlug!))
-        },
-      }
-    )
-    setShowDeleteConfirm(false)
-  }
-
-  const handleRestore = () => {
-    undeleteMutation.mutate(
-      { teamSlug: teamSlug!, rideSlug: rideSlug! },
-      {
-        onSuccess: () => {
-          invalidateRideQueries()
-          notifications.show({ message: t('rides.notifications.restored'), color: 'green' })
-        },
-      }
-    )
-  }
-
   const handleJoinGroup = membership.join
   const handleLeaveGroup = membership.leave
 
@@ -328,143 +186,28 @@ export function RideDetailPage() {
       {/* Way back to the team: this page is not mounted inside TeamLayout */}
       <TeamContextBanner team={team} />
 
-      {/* Header */}
-      <Paper shadow="xs" p="lg" mb="lg" withBorder>
-        <Group justify="space-between" wrap="wrap">
-          <Group gap="sm" style={{ minWidth: 0 }}>
-            <EntityLogo logo={ride.media.assets.logo} alt={ride.name} size="lg" />
-            <Title
-              order={2}
-              style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-            >
-              {ride.name}
-            </Title>
-            <Badge color={STATUS_COLORS[ride.status]} variant="light">
-              {t(`status.${ride.status satisfies 'DRAFT' | 'PUBLISHED' | 'CANCELLED'}`)}
-            </Badge>
-            {isPast && (
-              <Badge color="gray" variant="light">
-                {t('rides.detail.finished')}
-              </Badge>
-            )}
-          </Group>
-
-          <Group gap="xs" wrap="nowrap">
-            {canEdit && (
-              <Button.Group>
-                <Button
-                  component={PrefetchLink}
-                  to={paths.rideEdit(teamSlug!, rideSlug!)}
-                  variant="outline"
-                  leftSection={<IconPencil size={16} />}
-                >
-                  {t('actions.edit')}
-                </Button>
-                <Menu position="bottom-end">
-                  <Menu.Target>
-                    <Button variant="outline" px="xs" aria-label={t('aria.manageActions')}>
-                      <IconChevronDown size={16} />
-                    </Button>
-                  </Menu.Target>
-                  <Menu.Dropdown>
-                    {ride.status === Status.DRAFT && (
-                      <Menu.Item
-                        onClick={handlePublish}
-                        disabled={updateMutation.isPending}
-                        color="success"
-                      >
-                        {updateMutation.isPending && <Loader size="sm" />}
-                        {t('actions.publish')}
-                      </Menu.Item>
-                    )}
-                    {ride.status === Status.PUBLISHED && (
-                      <>
-                        <Menu.Item onClick={() => setShowUnpublishConfirm(true)} color="warning">
-                          {t('actions.unpublish')}
-                        </Menu.Item>
-                        <Menu.Item onClick={() => setShowCancelConfirm(true)} color="warning">
-                          {t('rides.detail.actions.cancel')}
-                        </Menu.Item>
-                      </>
-                    )}
-                    {ride.status === Status.CANCELLED && (
-                      <Menu.Item onClick={() => setShowUncancelConfirm(true)} color="green">
-                        {t('rides.detail.actions.uncancel')}
-                      </Menu.Item>
-                    )}
-                    {ride.deleted && (
-                      <Menu.Item
-                        onClick={handleRestore}
-                        color="green"
-                        disabled={undeleteMutation.isPending}
-                      >
-                        {t('actions.restore')}
-                      </Menu.Item>
-                    )}
-                    <Menu.Divider />
-                    <Menu.Item onClick={() => setShowDeleteConfirm(true)} color="danger">
-                      {t('actions.delete')}
-                    </Menu.Item>
-                  </Menu.Dropdown>
-                </Menu>
-              </Button.Group>
-            )}
-            <ShareButton title={ride.name} />
-            <ContentActionsMenu
-              teamSlug={ride.team.slug}
-              teamName={ride.team.name}
-              targetType={ReportTargetType.RIDE}
-              targetId={ride.id}
-              onReported={() => navigate(paths.team(ride.team.slug))}
-            />
-          </Group>
-        </Group>
-
+      <PublicationHeader
+        kind="ride"
+        publication={ride}
+        reportTargetType={ReportTargetType.RIDE}
+        statusActions={canEdit ? statusActions : null}
+        editPath={paths.rideEdit(teamSlug!, rideSlug!)}
+      >
         {/* The departure, a primary piece of information: under the title, before everything the
             organiser wrote (docs/BRANDING.md §7.8, docs/LEDGER_*.md WEB-137). The ride's own time,
             its reader's group's beside it when that group leaves at another. */}
-        <Box mt="md">
+        <Stack gap="sm">
           <DepartureBlock
             date={ride.dateTime}
             zone={ride.timezone}
             place={ride.startPlace}
             group={ownTimeGroup}
           />
-        </Box>
-        {ride.status === Status.DRAFT && ride.publishAt && (
-          <Group mt="xs" gap="xs">
-            <IconCalendar size={16} color="var(--mantine-color-yellow-text)" />
-            <Text size="sm" c="var(--mantine-color-yellow-text)">
-              <Rendezvous
-                date={ride.publishAt}
-                zone={ride.timezone}
-                variant="detail"
-                template={(date) => t('rides.detail.scheduledPublish', { date })}
-              />
-            </Text>
-          </Group>
-        )}
-        {/* The start place is in the departure block; the end place, when there is one, here. */}
-        {ride.endPlace && (
-          <Group mt="sm" gap="xs">
-            <IconMapPin size={16} color="var(--mantine-color-red-text)" />
-            <Text size="sm" fw={500} c="var(--mantine-color-red-text)">
-              {t('endPlace')}:
-            </Text>
-            <Text size="sm">
-              {ride.endPlace.name}
-              {ride.endPlace.address && (
-                <Text span c="dimmed">
-                  {' '}
-                  ({ride.endPlace.address})
-                </Text>
-              )}
-            </Text>
-          </Group>
-        )}
-        {/* The team tags, every one of them (cards show the first three). */}
-        <TagList tags={ride.tags} mt="md" />
-      </Paper>
+          {/* The start place is in the departure block; the end place, when there is one, here. */}
+          <PlacesLine end={ride.endPlace} />
+          <FactsStrip kind="ride" facts={rideFacts(ride)} />
+        </Stack>
+      </PublicationHeader>
 
       {/* Variant A (docs/LEDGER_*.md WEB-134): the map in a column of its own, sticky on md+, so the
           organiser's free text, however long, never pushes it down. Stacked below md, map first. */}
@@ -647,28 +390,14 @@ export function RideDetailPage() {
         )}
       </Box>
 
-      {/* Info for non-members */}
-      {!isMember && isAuthenticated && (
-        <Alert color="yellow" variant="light" mb="lg">
-          <Text>
-            {t('rides.detail.nonMember.message')}{' '}
-            <Anchor component={PrefetchLink} to={paths.team(teamSlug!)} fw={500}>
-              {t('rides.detail.nonMember.viewTeam')}
-            </Anchor>
-          </Text>
-        </Alert>
-      )}
-
-      {!isAuthenticated && (
-        <Alert color="blue" variant="light" mb="lg">
-          <Text>
-            {t('rides.detail.notAuthenticated.message')}{' '}
-            <Anchor component={PrefetchLink} to={paths.login()} state={{ from: location }} fw={500}>
-              {t('rides.detail.notAuthenticated.signIn')}
-            </Anchor>
-          </Text>
-        </Alert>
-      )}
+      <Box mb="lg">
+        <AccessAlerts
+          kind="ride"
+          teamSlug={teamSlug!}
+          isAuthenticated={isAuthenticated}
+          isMember={isMember}
+        />
+      </Box>
 
       {/* Comments Section - only visible to team members */}
       {canReadComments && (
@@ -683,47 +412,7 @@ export function RideDetailPage() {
         </Box>
       )}
 
-      {/* Confirmation Dialogs */}
-      <ConfirmDialog
-        isOpen={showUnpublishConfirm}
-        onClose={() => setShowUnpublishConfirm(false)}
-        onConfirm={handleUnpublish}
-        title={t('actions.unpublish')}
-        message={t('rides.detail.confirmations.unpublish')}
-        confirmText={t('actions.unpublish')}
-        variant="warning"
-        isLoading={updateMutation.isPending}
-      />
-      <ConfirmDialog
-        isOpen={showCancelConfirm}
-        onClose={() => setShowCancelConfirm(false)}
-        onConfirm={handleCancel}
-        title={t('rides.detail.actions.cancel')}
-        message={t('rides.detail.confirmations.cancel')}
-        confirmText={t('rides.detail.actions.cancel')}
-        variant="warning"
-        isLoading={updateMutation.isPending}
-      />
-      <ConfirmDialog
-        isOpen={showUncancelConfirm}
-        onClose={() => setShowUncancelConfirm(false)}
-        onConfirm={handleUncancel}
-        title={t('rides.detail.actions.uncancel')}
-        message={t('rides.detail.confirmations.uncancel')}
-        confirmText={t('rides.detail.actions.uncancel')}
-        variant="info"
-        isLoading={updateMutation.isPending}
-      />
-      <ConfirmDialog
-        isOpen={showDeleteConfirm}
-        onClose={() => setShowDeleteConfirm(false)}
-        onConfirm={handleDelete}
-        title={t('actions.delete')}
-        message={t('rides.detail.confirmations.delete')}
-        confirmText={t('actions.delete')}
-        variant="danger"
-        isLoading={deleteMutation.isPending}
-      />
+      {statusActions.dialogs}
     </Container>
   )
 }

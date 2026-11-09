@@ -10,7 +10,7 @@ import {
 } from '@/api/endpoints/rides/rides'
 import type { RideDto } from '@/api/dto'
 import { ApiClientError } from '@/lib/apiError'
-import { invalidateRideRegistration } from '@/lib/rideRegistration'
+import { invalidateRegistration } from '@/lib/registration'
 
 /** Why the last join/leave on one group failed. Persists until the next attempt. */
 export interface GroupMembershipError {
@@ -90,7 +90,7 @@ export function useRideGroupMembership(teamSlug: string, rideSlug: string) {
           void queryClient.invalidateQueries({
             queryKey: getGetRideParticipantsQueryKey(teamSlug, rideSlug),
           })
-          invalidateRideRegistration(queryClient, teamSlug)
+          invalidateRegistration(queryClient, teamSlug)
         },
       }
     )

@@ -24,7 +24,7 @@ import { CardDayOverlay, CardImage, CardTeamLink, Stat } from '../card/common'
 import { ConfirmDialog } from '../common/ConfirmDialog'
 import { DepartureLine } from '../common/DepartureLine'
 import { paths } from '@/config/paths'
-import { invalidateRideRegistration } from '@/lib/rideRegistration'
+import { invalidateRegistration } from '@/lib/registration'
 import { useUnits } from '@/hooks/useUnits'
 import { useGpsConnections } from '@/hooks/useGpsConnections'
 import { useResolvedColorScheme } from '@/hooks/useResolvedColorScheme'
@@ -81,7 +81,7 @@ export function NextRideCard({ ride, headingId }: NextRideCardProps) {
       { teamSlug: ride.team.slug, rideSlug: ride.slug, groupId: ride.registeredGroupId },
       {
         onSuccess: () => {
-          invalidateRideRegistration(queryClient, ride.team.slug)
+          invalidateRegistration(queryClient, ride.team.slug)
           notifications.show({ message: t('rides.notifications.left'), color: 'green' })
           setShowLeaveConfirm(false)
         },
