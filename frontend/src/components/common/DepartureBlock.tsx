@@ -13,10 +13,7 @@ interface DepartureBlockProps {
   zone: string | null | undefined
   /** The day box's tone: indigo for a ride or a stage, turquoise for a trip. */
   tone?: DayBoxTone
-  /**
-   * The line under the time, in place of the long day « samedi 12 avril » — a trip's span
-   * « ven. 16 → dim. 18 mai ».
-   */
+  /** The line under the time: a trip's span « ven. 16 → dim. 18 mai », which names its last day. */
   dayLine?: string
   /** Where everyone meets. */
   place?: { name: string; address?: string } | null
@@ -46,7 +43,8 @@ export function DepartureBlock({
   const relative = start.formatRelativeDay(date)
   const mention = start.mention(date)
 
-  const day = dayLine ?? start.formatLongDay(date)
+  // The day box already says the day: no « samedi 12 avril » beside it (docs/BRANDING.md §7.8).
+  // A trip's span stays, it names the last day too.
 
   return (
     <Box component="section" aria-label={t('departure.block.label')} className={classes.root}>
@@ -64,10 +62,19 @@ export function DepartureBlock({
               </Badge>
             )}
           </Group>
-          <Text size="sm" c="dimmed" mt={4}>
-            <span suppressHydrationWarning={start.isGuessedText}>{day}</span>
-            <ZoneMentionText mention={mention} isGuessed={start.isGuessedTimezone} />
-          </Text>
+          {(dayLine || mention) && (
+            <Text size="sm" c="dimmed" mt={4}>
+              {dayLine ? (
+                <>
+                  <span suppressHydrationWarning={start.isGuessedText}>{dayLine}</span>
+                  <ZoneMentionText mention={mention} isGuessed={start.isGuessedTimezone} />
+                </>
+              ) : (
+                // Alone on its line: no leading « · ».
+                <span suppressHydrationWarning={start.isGuessedTimezone}>{mention?.full}</span>
+              )}
+            </Text>
+          )}
           {place && (
             <Group gap={6} mt={6} wrap="nowrap" align="flex-start">
               <IconMapPin

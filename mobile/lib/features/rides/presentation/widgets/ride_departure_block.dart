@@ -64,10 +64,13 @@ class RideDepartureBlock extends StatelessWidget {
       now: now,
     );
 
+    // La boîte du jour dit déjà la date, l'année comprise hors de l'année en
+    // cours (BRANDING §7.8) : la ligne atténuée ne la répète pas. Le lecteur
+    // d'écran, lui, la lit, la boîte étant muette.
     final List<String> details;
     String? groupLine;
     if (group == null) {
-      details = <String>[date];
+      details = const <String>[];
       final RideGroupDto? mine = ride.joinedGroup;
       if (mine != null && groupLeavesAtOwnTime(mine.startAt, ride.dateTime)) {
         groupLine = 'rides.departureBlock.yourGroup'.tr(
@@ -78,22 +81,21 @@ class RideDepartureBlock extends StatelessWidget {
         );
       }
     } else {
-      details = <String>[
-        <String>[date, ?arrival].join(' · '),
-      ];
+      details = <String>[?arrival];
     }
 
     final String? mention = AppFormatters.formatZoneMention(instant, zone);
     final String semanticLabel = <String>[
       headline,
       ?relative,
+      date,
       ...details,
       ?mention,
       ?groupLine,
     ].join(', ');
 
     return PdlDepartureBlock(
-      dayBox: dayBoxFor(wall),
+      dayBox: dayBoxFor(wall, now: now),
       headline: headline,
       relativeLabel: relative,
       details: details,

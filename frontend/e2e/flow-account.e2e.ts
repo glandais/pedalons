@@ -1477,7 +1477,7 @@ test.describe('time zone', () => {
     const main = page.getByRole('main')
     const block = departureBlock(page)
     await expect(block.getByText(inParis, { exact: true })).toBeVisible()
-    await expect(block).toContainText(frenchLongDay(paris))
+    await expect(block).not.toContainText(frenchLongDay(paris))
     await expect(main.getByText('chez vous')).toHaveCount(0)
 
     // Chosen from the profile: a partial PATCH of the preferences.

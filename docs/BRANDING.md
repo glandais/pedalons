@@ -722,7 +722,9 @@ le détail d'une sortie, qui donne l'heure de la sortie et, à côté, « Votre 
 - **Bloc de départ** (détail d'une sortie, web et mobile) : **juste sous le titre et les badges,
   avant la description**. Surface alternée (`gray-0`) bordée, rayon 8 px (12 px sur mobile) ; à
   gauche la boîte du jour à plat ; au centre « Départ 09:00 » en 24 px/700 (22 px sur mobile), la
-  pastille « Demain », « samedi 12 avril » en 14 px atténué et le lieu de départ ;
+  pastille « Demain » et le lieu de départ — **la date n'est pas répétée en toutes lettres**, la
+  boîte du jour la dit (seule la plage d'un voyage, « ven. 16 → dim. 18 mai », s'y ajoute, puisqu'elle
+  nomme aussi le dernier jour) ;
   à droite (sous le reste sur mobile) « Votre groupe » et son heure en 700.
 - **Horaires de groupes différents** (carte de groupe du détail d'une sortie) : sous le nom, un bandeau
   indigo très doux (`primary-0` `#edf2ff` en clair, surface alternée en sombre — pas l'indigo

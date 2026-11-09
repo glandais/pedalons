@@ -104,8 +104,8 @@ test.describe('a Paris team read from Tokyo', () => {
     await openRide(page, team.slug, ride)
     const block = departureBlock(page)
     await expect(block.getByText(`Départ ${clockText(departure)}`, { exact: true })).toBeVisible()
-    await expect(block).toContainText(`${frenchLongDay(departure)}`)
-    await expect(block).toContainText(` · ${rideMention}`)
+    await expect(block).not.toContainText(`${frenchLongDay(departure)}`)
+    await expect(block).toContainText(`${rideMention}`)
     expect(watch.hydrationErrors).toEqual([])
     expect(watch.pageErrors).toEqual([])
 
@@ -146,8 +146,8 @@ test.describe('a Paris team read from Tokyo', () => {
     await expect(page).toHaveURL(new RegExp(`/sorties/${ride.slug}$`))
     const block = departureBlock(page)
     await expect(block.getByText(`Départ ${clockText(moved)}`, { exact: true })).toBeVisible()
-    await expect(block).toContainText(`${frenchLongDay(moved)}`)
-    await expect(block).toContainText(' · heure de Paris (')
+    await expect(block).not.toContainText(`${frenchLongDay(moved)}`)
+    await expect(block).toContainText('heure de Paris (')
 
     const saved = await readRide(organizer, team.slug, ride.slug)
     expect(iso(saved.dateTime)).toBe(instantIn(moved, PARIS))
@@ -171,8 +171,8 @@ test.describe('a Tokyo team read from Paris', () => {
     await openRide(page, team.slug, ride)
     const block = departureBlock(page)
     await expect(block.getByText(`Départ ${clockText(departure)}`, { exact: true })).toBeVisible()
-    await expect(block).toContainText(`${frenchLongDay(departure)}`)
-    await expect(block).toContainText(` · ${mention(ride.dateTime, TOKYO, 'Tokyo', PARIS)}`)
+    await expect(block).not.toContainText(`${frenchLongDay(departure)}`)
+    await expect(block).toContainText(`${mention(ride.dateTime, TOKYO, 'Tokyo', PARIS)}`)
 
     const groupStart = instantIn({ ...departure, hour: 9, minute: 30 }, TOKYO)
     const own = groupCard(page, ownTime)

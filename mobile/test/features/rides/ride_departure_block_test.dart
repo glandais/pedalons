@@ -61,7 +61,8 @@ void main() {
     expect(headline.style?.fontSize, 22);
     expect(headline.style?.fontWeight, FontWeight.w700);
     expect(find.text('DEMAIN'), findsOneWidget);
-    expect(find.text('sam. 12 avr.'), findsOneWidget);
+    // La date n'est dite qu'une fois : par la boîte du jour.
+    expect(find.text('sam. 12 avr.'), findsNothing);
     // La boîte du jour : « sam. / 12 / avr. ».
     expect(
       find.descendant(of: find.byType(PdlDayBox), matching: find.text('12')),
@@ -84,10 +85,10 @@ void main() {
 
     expect(find.text('DEMAIN'), findsNothing);
     expect(find.text("AUJOURD'HUI"), findsNothing);
-    expect(find.text('sam. 19 avr.'), findsOneWidget);
+    expect(find.text('sam. 19 avr.'), findsNothing);
   });
 
-  testWidgets('une autre année : l’année dans la date', (
+  testWidgets('une autre année : l’année dans la boîte du jour', (
     WidgetTester tester,
   ) async {
     await pump(
@@ -96,7 +97,11 @@ void main() {
       at: DateTime.utc(2035, 12, 20, 10),
     );
 
-    expect(find.text('sam. 12 avr. 2036'), findsOneWidget);
+    expect(
+      find.descendant(of: find.byType(PdlDayBox), matching: find.text('2036')),
+      findsOneWidget,
+    );
+    expect(find.text('sam. 12 avr. 2036'), findsNothing);
     expect(find.text('DEMAIN'), findsNothing);
   });
 
@@ -167,7 +172,7 @@ void main() {
 
     expect(find.text('Départ 09:30'), findsOneWidget);
     expect(find.textContaining('la sortie de'), findsNothing);
-    expect(find.text('sam. 12 avr. · Arrivée estimée 12:10'), findsOneWidget);
+    expect(find.text('Arrivée estimée 12:10'), findsOneWidget);
     expect(find.textContaining('Votre groupe'), findsNothing);
   });
 

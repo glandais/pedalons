@@ -14,7 +14,7 @@ import 'pdl_badge.dart';
 /// Surface alternée bordée, rayon 12 ; à gauche la boîte du jour ([dayBox],
 /// un `PdlDayBox`) ; au centre « Départ 09:00 » en 22/700 et la pastille
 /// « Demain » / « Aujourd'hui » ([relativeLabel], seulement ces deux cas),
-/// puis les [details] en 14 atténué (« sam. 12 avr. »),
+/// puis les [details] en 14 atténué (« Arrivée estimée 12:10 »),
 /// la mention de fuseau ([zoneMention]) et, en 600, la ligne du groupe de la
 /// personne ([groupLine]).
 ///

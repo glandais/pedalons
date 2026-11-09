@@ -601,10 +601,14 @@ void main() {
         findsOneWidget,
       );
       expect(find.textContaining('la sortie de'), findsNothing);
-      // La date, que la page n'affichait jamais : « mar. 29 juil. 2036 ».
+      // La date, dite une fois, par la boîte du jour (« mar. / 29 / juil. »).
+      expect(
+        find.descendant(of: block, matching: find.text('juil.')),
+        findsOneWidget,
+      );
       expect(
         find.descendant(of: block, matching: find.textContaining('29 juil.')),
-        findsOneWidget,
+        findsNothing,
       );
     });
 

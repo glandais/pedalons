@@ -16,6 +16,8 @@ fichier garde **ce qui est fait**, et ce qu'il ne faut pas défaire.
 
 ## MOB — Application mobile
 
+- `MOB-128` **Le bloc de départ ne répète plus la date** (9 novembre 2026) — sur la fiche d'une sortie et la page d'un groupe, « sam. 12 avr. » doublonnait la boîte du jour à sa gauche ; la ligne atténuée ne garde que l'arrivée estimée d'un groupe. Le lecteur d'écran lit toujours la date (la boîte est muette), et la boîte suit l'horloge de test (`dayBoxFor(now:)`). BRANDING §7.8. Test : `ride_departure_block_test.dart`.
+
 - `MOB-127` **Une sortie sans groupe ne dit plus « Personnes inscrites »** (9 novembre 2026) — sans groupe, personne ne peut s'inscrire : la cellule de la fiche (`ride_detail_page.dart`) et le compteur de la carte du fil (`publication_card.dart`) disparaissent. Tests : `ride_detail_page_test.dart`, `departure_cards_test.dart`.
 
 - `MOB-126` **Plus de « après la sortie de 21:30 », et chaque groupe dit son heure quand les horaires diffèrent** (9 novembre 2026) — mention retirée de la carte de groupe, de la page d'un groupe, de ses statistiques et de « Prochaine sortie » ; `GroupStartRelation` et ses clés sont supprimés. `someGroupLeavesAtOwnTime` décide : dès qu'un groupe part à une autre heure que la référence (la sortie, ou l'en-tête de la carte du tableau de bord), **tous** affichent la leur. Tests : `ride_group_card_test.dart`.
@@ -1175,6 +1177,8 @@ couvert » ; les tests ne tournent qu'en local (`MOB-37`).
   décisions à ne pas défaire que `WEB-111` (en-tête seulement, 20 équipes).
 
 ## WEB — Site web
+
+- `WEB-154` **Le bloc de départ ne répète plus la date** (9 novembre 2026) — « samedi 12 avril » doublonnait la boîte du jour à sa gauche (`DepartureBlock`, fiche d'une sortie, d'une étape, page d'un groupe). Reste, sous l'heure, la plage d'un voyage et, seule sur sa ligne et sans « · » en tête, la mention de fuseau. Pendant de `MOB-128`. BRANDING §7.8. Tests : `DepartureBlock.test.tsx` ; e2e `event-timezones`, `flow-account` (non relancés).
 
 - `WEB-153` **Pas de compteur de personnes sur la carte d'une sortie sans groupe** (9 novembre 2026) — `PublicationCard` et `AgendaRow` le taisent quand `groupCount` vaut 0 ; un voyage, qui s'inscrit sur lui-même, le garde. La page d'une sortie le faisait déjà (`WEB-152`). Test : `PublicationCard.test.tsx`.
 

@@ -34,12 +34,13 @@ describe('DepartureBlock', () => {
     vi.useRealTimers()
   })
 
-  it('is a named section: the day box, the time, the long day', () => {
+  it('is a named section: the day box and the time, the day said once', () => {
     renderBlock()
     const section = block()
     expect(within(section).getByTestId('day-box').textContent).toBe('sam.11avr.')
     expect(within(section).getByText('Départ 09:00')).toBeTruthy()
-    expect(within(section).getByText('samedi 11 avril')).toBeTruthy()
+    // The day box says the day: no « samedi 11 avril » beside it.
+    expect(within(section).queryByText(/samedi/)).toBeNull()
   })
 
   it('carries the « Demain » pill tomorrow, « Aujourd’hui » today, none on another day', () => {
@@ -64,6 +65,7 @@ describe('DepartureBlock', () => {
     renderBlock({ date: '2026-04-18T00:00:00Z', zone: 'Asia/Tokyo' })
     expect(within(block()).getByText('Départ 09:00')).toBeTruthy()
     expect(block().textContent).toContain('heure de Tokyo (02:00 chez vous)')
+    expect(block().textContent).not.toContain('· heure de Tokyo')
   })
 
   it('names the start place', () => {
