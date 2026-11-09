@@ -326,12 +326,13 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
 (`WEB-13` à `WEB-22`, livrés, avec ce que l'automatisation ne voit pas) : voir
 `frontend/e2e/README.md`.
 
-- [ ] `WEB-155` **Uniformiser les pages web sortie / voyage et groupe / étape (L, en six lots)** — plan
-      [`2026-11-09-uniformisation-detail-web.md`](plans/2026-11-09-uniformisation-detail-web.md), design
-      dans le canevas « Uniformisation sortie / voyage (web) ». Un en-tête (`PublicationHeader`), une
-      grille (`.detail-layout`), une carte enfant (`ChildCard`) et une page enfant (`ChildDetailShell`,
-      `SiblingNav`, `RouteMapPanel`, `RouteWeatherSection`) pour les deux types ; l'étape quitte
-      `TripLayout`/`StageTabs`, `RouteDetailView` et `StageWeatherSection`. Le contrat est `API-161`.
+- [ ] `WEB-156` **Recette de `WEB-155` : e2e et navigateur (S)** — scindé de `WEB-155`, livré sans
+      que la pile e2e ait tourné. Sur `tribly-e2e` : `route-maps` (l'étape : son nom en h1, le parcours
+      en h3, lecture `single`), `routes-render -g 'trip /'` (le prefetch des participants du voyage) et
+      `-g 'stage /'`, `flow-trips` (inscription, refus d'un voyage terminé, commentaires d'étape),
+      `rides` (pages sortie et groupe). À l'œil : voyage de plus de quatre étapes (`SiblingNav` en
+      liste), largeur téléphone (carte au-dessus, flèches sans débordement), mode sombre des cartes
+      enfant mises en évidence, étape sans parcours.
 
 - [ ] `WEB-119` **La météo sur la carte : recette navigateur des paliers 1 à 3 (S)** — `WEB-115` à
       `WEB-118`, plan [`2026-10-24-weather-on-map.md`](plans/archive/2026-10-24-weather-on-map.md). Sur la pile e2e :
@@ -432,8 +433,8 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
       ~0,7–3 s de TBT, avant même que la carte soit à l'écran. `WEB-95` a sorti le reste du
       chargement initial ; il reste à ne monter `PedalonsMap` que lorsque son conteneur devient
       visible (IntersectionObserver), place réservée, sur les pages sortie, groupe de sortie
-      (`GroupRouteMap`), parcours et voyage. Aujourd'hui `RideDetailPage`, `TripDetailPage` et
-      `GroupRouteMap` chargent la carte en `React.lazy` mais la montent dès le rendu.
+      (`RouteMapPanel`, ex-`GroupRouteMap`), étape, parcours et voyage. Aujourd'hui `RideDetailPage`, `TripDetailPage` et
+      `RouteMapPanel` chargent la carte en `React.lazy` mais la montent dès le rendu.
 
 - [ ] `WEB-100` **Éditeur de parcours web, desktop et web mobile (L, en quatre lots)** — le plan est
       [`plans/2026-10-17-editeur-parcours-web.md`](plans/2026-10-17-editeur-parcours-web.md), et
@@ -526,7 +527,8 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
       l'étape, `TripWeatherService.departure`) donne à l'étape l'encadré « Jour » et la température au
       départ de la météo du groupe ; `TripService.joinTrip` lève `TRIP_FINISHED` (409) une fois la
       dernière étape partie (`Trip.isFinished`, la règle de `TripDto.finished`), un voyage en cours reste
-      ouvert. Code fait ; reste à passer `TripServiceTest` et `TripWeatherResourceTest`.
+      ouvert. Code fait (commit `cc62f846a`) ; reste à passer `TripServiceTest`,
+      `TripWeatherResourceTest`, `RideWeatherCalculatorTest` et `TripResourceTest`.
 
 - [ ] `API-154` **Plafonds de la météo des aperçus GPX qui restent ouverts (S)** — suite d'`API-153`
       (voir aussi `SEC-48`). Ce qui est posé : 20 aperçus datés à venir par compte, 500 aperçus
