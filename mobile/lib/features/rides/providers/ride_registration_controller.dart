@@ -274,7 +274,7 @@ class RideRegistrationController extends StateNotifier<RideRegistrationState> {
   /// inline du bandeau d'exclusivité, et demain « Changer pour {groupe} ».
   ///
   /// **Un seul appel**, l'endpoint atomique `…/groups/{groupId}/switch`
-  /// (ledger `API-164`) : l'ancien « quitter puis rejoindre » laissait, sur
+  /// (ledger `API-171`) : l'ancien « quitter puis rejoindre » laissait, sur
   /// un groupe devenu complet entre les deux, la personne inscrite nulle part.
   /// Même séquence que [join] : bascule optimiste (l'ancien groupe perd une
   /// place, le nouveau en gagne une), puis rétablissement complet sur échec.

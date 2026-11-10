@@ -9,7 +9,7 @@ import '../theme/pdl_typography.dart';
 /// aller-retour du regard. L'action, elle, va à droite — c'est un
 /// [PdlButton(variant: text)] dans presque tous les cas.
 ///
-/// Les écrans de détail refondus (ledger `MOB-132`, KIT §8 : « titre à
+/// Les écrans de détail refondus (ledger `MOB-134`, KIT §8 : « titre à
 /// gauche, compte à droite en 12 px gris ») posent [countAtEnd] : le compte
 /// passe à droite, en `xs`, avant l'action. [subsection] descend le titre au
 /// rang de sous-titre (`cardTitle`, 16/700 : « Météo au départ de 09:00 »).

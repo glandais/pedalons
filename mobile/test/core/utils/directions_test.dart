@@ -12,7 +12,7 @@ import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/core/utils/directions.dart';
 import 'package:pedalons/core/utils/link_launcher.dart';
 
-/// L'itinéraire vers un lieu (ledger `MOB-132`) : un lien https de cartes,
+/// L'itinéraire vers un lieu (ledger `MOB-134`) : un lien https de cartes,
 /// les coordonnées d'abord, l'adresse sinon, rien sans l'une ni l'autre.
 void main() {
   setUpAll(() {

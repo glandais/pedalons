@@ -58,7 +58,7 @@ class RideDetailKeys {
   final weatherCard = const _RideDetailKey('weatherCard');
 
   /// Les lieux de départ et d'arrivée du bloc de départ, en liens
-  /// d'itinéraire (`ridePlaceLinks`, ledger `MOB-132`).
+  /// d'itinéraire (`ridePlaceLinks`, ledger `MOB-134`).
   final startPlaceLink = const _RideDetailKey('startPlaceLink');
   final endPlaceLink = const _RideDetailKey('endPlaceLink');
 
@@ -100,7 +100,7 @@ class RideDetailKeys {
   final weatherAttribution = const _RideDetailKey('weatherAttribution');
 
   /// La section Météo d'un écran de détail (`WeatherSection`, ledger
-  /// `MOB-132`) — son titre « Météo ».
+  /// `MOB-134`) — son titre « Météo ».
   final weatherSection = const _RideDetailKey('weatherSection');
 
   /// La carte « Exposition au vent » de la section Météo.
@@ -171,7 +171,7 @@ class _RideGroupKey extends ValueKey<String> {
   const _RideGroupKey(String value) : super('rideGroup_$value');
 }
 
-/// La page d'un groupe de sortie (ledgers `MOB-67`, `MOB-132`) : une page qui
+/// La page d'un groupe de sortie (ledgers `MOB-67`, `MOB-134`) : une page qui
 /// défile, sans onglets ni barre d'action.
 class RideGroupPageKeys {
   final page = const _RideGroupKey('page');
@@ -208,7 +208,7 @@ class RideGroupPageKeys {
   final fullBadge = const _RideGroupKey('fullBadge');
 
   /// « Votre inscription est dans le groupe X. » — barre d'action d'une
-  /// sortie solo seulement (retirée au lot 7 du ledger `MOB-132`).
+  /// sortie solo seulement (retirée au lot 7 du ledger `MOB-134`).
   final registeredElsewhere = const _RideGroupKey('registeredElsewhere');
 
   /// Le lien vers le groupe où l'on est inscrit, même barre.
@@ -269,7 +269,7 @@ class _RideRouteKey extends ValueKey<String> {
 }
 
 /// La section « Parcours » d'une sortie (`RideRouteSection`, ledger
-/// `MOB-132`) : la page d'un groupe aujourd'hui, la sortie solo et sans
+/// `MOB-134`) : la page d'un groupe aujourd'hui, la sortie solo et sans
 /// groupe ensuite.
 class RideRouteSectionKeys {
   /// Le bouton ⓘ de « Profil » et sa feuille (la source des altitudes).

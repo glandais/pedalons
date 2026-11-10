@@ -6,7 +6,7 @@ import '../theme/pdl_tokens.dart';
 import '../theme/pdl_typography.dart';
 import 'pdl_card.dart';
 
-/// Le bloc repliable des écrans de détail (ledger `MOB-132`) : « Points du
+/// Le bloc repliable des écrans de détail (ledger `MOB-134`) : « Points du
 /// parcours », « Cols et montées », « Météo le long du parcours ».
 ///
 /// Une carte bordée ([PdlCard]) dont l'en-tête — titre en `cardTitle`, une ou

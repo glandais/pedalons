@@ -106,7 +106,7 @@ public class RideWeatherService {
 
   /**
    * A group's departure block: the meeting point — the cell of the ride's own block, already read
-   * — at the group's start, sunrise and sunset included (docs/LEDGER_*.md API-162). The cell is in
+   * — at the group's start, sunrise and sunset included (docs/LEDGER_*.md API-169). The cell is in
    * the planner's demand with the ride's departure, and the series read spans every leg's start
    * ({@link RidePlan#earliest}), so it costs nothing more. {@code NOT_YET_AVAILABLE} for a group
    * leaving beyond the horizon, as its leg.
@@ -121,7 +121,7 @@ public class RideWeatherService {
   /**
    * Over — its stored end passed ({@link PublicationEndCalculator#effectiveEnd}, the last group
    * back) — or cancelled: no weather block. A draft has none either. A ride that has left but whose
-   * groups are still out, or still to leave, keeps its weather (docs/LEDGER_*.md API-163), unlike
+   * groups are still out, or still to leave, keeps its weather (docs/LEDGER_*.md API-170), unlike
    * {@code RideDto.finished}, which only says it has left.
    */
   static boolean isOutOfRange(Ride ride, Instant now) {

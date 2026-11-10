@@ -40,7 +40,7 @@ public class TripWeatherPlans {
    * @param stageId null for the leg of a trip without stages
    * @param end when the stage is over — its stored end ({@link
    *     PublicationEndCalculator#effectiveEnd}), the trip's for a trip without stages: its weather
-   *     is shown until then (docs/LEDGER_*.md API-163)
+   *     is shown until then (docs/LEDGER_*.md API-170)
    */
   public record StagePlan(@Nullable Long stageId, LegInput leg, Instant end) {}
 

@@ -28,7 +28,7 @@ import org.jboss.logging.Logger;
  *
  * <p>Every five minutes, the published rides leaving by seven days ahead and not over yet — the
  * window the read side shows ({@code RideWeatherService#isOutOfRange}: a ride over is {@code
- * OUT_OF_RANGE}, one under way is not, docs/LEDGER_*.md API-163), so no cell is fetched for a
+ * OUT_OF_RANGE}, one under way is not, docs/LEDGER_*.md API-170), so no cell is fetched for a
  * forecast nobody can see:
  * their departure cell and the cell of each forecast point of each group, with the passage nearest
  * to now. The same for the dated GPX previews, as a ride without group (docs/LEDGER_*.md API-153). The same for the trip stages in that window, and the trips without stages: the
@@ -177,7 +177,7 @@ public class WeatherPlanner {
    * has none ahead, and then as {@code now}: the worker fetches only cells needed ahead ({@code
    * WeatherCellRepository#findDueIdsSkipLocked}), so such a cell keeps what it holds. Taking the
    * minimum of every passage instead let the past one win, and a ride under way lost the forecast
-   * of the groups still to come over the same cells (docs/LEDGER_*.md API-163).
+   * of the groups still to come over the same cells (docs/LEDGER_*.md API-170).
    */
   static Map<CellKey, Instant> demand(List<RidePlan> plans, Instant now) {
     return demand(plans, List.of(), now);
@@ -190,7 +190,7 @@ public class WeatherPlanner {
     for (RidePlan plan : plans) {
       if (plan.departure() != null) {
         CellKey cell = plan.departure().cell();
-        // The meeting point is read at the ride's time and at each group's start (API-162).
+        // The meeting point is read at the ride's time and at each group's start (API-169).
         need(ahead, behind, cell, plan.departureTime(), now);
         for (LegInput leg : plan.legs()) {
           need(ahead, behind, cell, leg.start(), now);

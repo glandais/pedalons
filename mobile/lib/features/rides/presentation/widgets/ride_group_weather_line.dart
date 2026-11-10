@@ -4,7 +4,7 @@ import '../../../../api/generated/export.dart';
 import 'ride_weather_summary_line.dart';
 
 /// La ligne météo d'un groupe — **non cliquable** (ledger `MOB-67`) : la ligne
-/// météo d'une carte ([RideWeatherSummaryLine], KIT §8, ledger `MOB-132`) lue
+/// météo d'une carte ([RideWeatherSummaryLine], KIT §8, ledger `MOB-134`) lue
 /// sur le résumé du leg **du groupe** (`WeatherLegDto.summary`, API 13.4.0) —
 /// sa plage de températures, son vent au départ, sa pluie ou son alerte.
 /// Plus de ciel en toutes lettres ni de badges Face / Dos dans la carte : la

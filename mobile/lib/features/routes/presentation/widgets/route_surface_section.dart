@@ -104,7 +104,7 @@ class TrackSurfaceBarColors {
 ///
 /// Ne rend rien sans revêtement ; une ligne d'attente tant qu'il se calcule.
 ///
-/// Avec [sourceInfoKey] — les écrans de détail refondus (ledger `MOB-132`,
+/// Avec [sourceInfoKey] — les écrans de détail refondus (ledger `MOB-134`,
 /// maquette `groupe-mobile-cible`) —, l'attribution quitte le pied de la
 /// section pour un bouton ⓘ au bout de la légende, qui ouvre une feuille
 /// courte portant la même mention et son lien.

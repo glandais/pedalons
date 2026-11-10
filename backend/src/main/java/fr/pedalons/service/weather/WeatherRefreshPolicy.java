@@ -49,7 +49,7 @@ public final class WeatherRefreshPolicy {
    * <p>A passage already behind us is judged at the passage itself: the worker no longer refreshes
    * a cell needed only in the past, so what was fetched shortly before the passage is the best
    * there will be, and is not flagged — or the stretch a group under way has ridden would turn
-   * {@code STALE} two hours later (docs/LEDGER_*.md API-163). Was it already overdue when the group
+   * {@code STALE} two hours later (docs/LEDGER_*.md API-170). Was it already overdue when the group
    * rode by, it still is.
    */
   public static boolean isStale(Instant fetchedAt, Instant passage, Instant now) {

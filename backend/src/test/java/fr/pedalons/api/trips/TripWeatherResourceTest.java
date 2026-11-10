@@ -314,7 +314,7 @@ class TripWeatherResourceTest extends AbstractResourceTest {
   }
 
   /**
-   * docs/LEDGER_*.md API-163: a stage that left an hour ago and ends in two keeps its forecast;
+   * docs/LEDGER_*.md API-170: a stage that left an hour ago and ends in two keeps its forecast;
    * one whose end has passed is OUT_OF_RANGE, even if it left only four hours ago.
    */
   @Test

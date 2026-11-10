@@ -80,7 +80,7 @@ public class RideGroupRepository implements BaseRepository<RideGroup> {
                     // API-60): an implicit join of this one statement.
                     + " rd.dateTime, rd.timezone,"
                     // The route the group rides, for its estimated arrival (docs/LEDGER_*.md
-                    // API-165): its own unless deleted, else the ride's — two more columns of this
+                    // API-172): its own unless deleted, else the ride's — two more columns of this
                     // one statement, no query of their own.
                     + " r.deleted, rr.distance, rr.deleted"
                     + " from RideGroup g join g.ride rd left join g.route r left join g.leader l"

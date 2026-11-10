@@ -13,7 +13,7 @@ import 'package:pedalons/keys.dart';
 import '../../support/localization.dart';
 import 'ride_fixtures.dart';
 
-/// La section Météo des écrans de détail (ledger `MOB-132`, KIT §8) : l'ordre
+/// La section Météo des écrans de détail (ledger `MOB-134`, KIT §8) : l'ordre
 /// de ses blocs, l'heure de son départ, la frise repliée ou dépliée, la
 /// légende du vent, le bas de section, la variante « départ seul » et ses
 /// états.

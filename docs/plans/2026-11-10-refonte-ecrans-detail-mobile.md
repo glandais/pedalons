@@ -10,7 +10,7 @@ Ce plan les implémente dans l'app Flutter, par lots, chaque lot étant confié 
 Résultat attendu : cinq pages qui défilent, même ordre de blocs, mêmes formats, un bouton « GPS » unique,
 une inscription lisible, la météo en section.
 
-Plan validé le 2026-11-10. Entrée de ledger : `MOB-132`. Maquettes et règles : [maquettes/](2026-11-10-etat-des-lieux-affichage/maquettes/README.md), rendus PNG dans `maquettes/png/`.
+Plan validé le 2026-11-10. Entrée de ledger : `MOB-134`. Maquettes et règles : [maquettes/](2026-11-10-etat-des-lieux-affichage/maquettes/README.md), rendus PNG dans `maquettes/png/`.
 
 ## Décisions déjà prises (à ne pas rouvrir)
 
@@ -48,14 +48,14 @@ Pas de nouvelle coquille : `PdlScreenScaffold` avec `actionBar: null`. Chemins r
 | Phase | `PublicationPhase` (à venir, en cours, terminé) à côté d'`isUnderWay` | `features/teams/domain/publication_timing.dart` |
 | Formats | durée « 3 h 18 », « Prévision du … », date longue sans jour, 12 h/24 h par langue | `core/utils/formatters.dart` |
 
-## Modifications d'API (lot 1, contrat 13.3.0 → 13.4.0, champs ajoutés seulement)
+## Modifications d'API (lot 1, contrat 13.4.0 → 13.5.0, champs ajoutés seulement)
 
 | Entrée | Changement | Fichiers backend |
 |---|---|---|
-| `API-162` Météo par groupe | `WeatherLegDto` gagne `summary` (réutilise `RideWeatherCalculator.legSummary`, aujourd'hui réservé aux étapes) et `departure` (conditions au point de rendez-vous à `group.startAt`, avec lever et coucher) | `service/weather/RideWeatherPlans.java`, `RideWeatherService.java`, `RideWeatherCalculator.java`, `WeatherLegDto` |
-| `API-163` Jugé par groupe, jusqu'à la fin | météo servie jusqu'à la fin (`PublicationEndCalculator`), plus coupée à `ride.dateTime` ; `joinGroup` refuse `RIDE_PAST` sur `group.startAt` | `RideWeatherService.java:109`, `RideWeatherLookup.java`, `TripWeatherService.java`, `service/ride/RideService.java:567-575` |
-| `API-164` Changement de groupe | `POST …/rides/{rideSlug}/groups/{groupId}/switch` → `RideParticipationDto`, une transaction, mêmes contrôles et même verrou que `join` | `RideService.java`, `api/rides/RideResource.java` |
-| `API-165` Arrivée par groupe et par étape | `RideGroupDto` et `TripStageDto` gagnent `estimatedArrival` et `estimatedDurationMinutes` (distance / vitesse, absents sans distance ou sans vitesse), servis hors fenêtre de prévision | `PublicationEndCalculator.java`, DTO sortie et étape |
+| `API-169` Météo par groupe | `WeatherLegDto` gagne `summary` (réutilise `RideWeatherCalculator.legSummary`, aujourd'hui réservé aux étapes) et `departure` (conditions au point de rendez-vous à `group.startAt`, avec lever et coucher) | `service/weather/RideWeatherPlans.java`, `RideWeatherService.java`, `RideWeatherCalculator.java`, `WeatherLegDto` |
+| `API-170` Jugé par groupe, jusqu'à la fin | météo servie jusqu'à la fin (`PublicationEndCalculator`), plus coupée à `ride.dateTime` ; `joinGroup` refuse `RIDE_PAST` sur `group.startAt` | `RideWeatherService.java:109`, `RideWeatherLookup.java`, `TripWeatherService.java`, `service/ride/RideService.java:567-575` |
+| `API-171` Changement de groupe | `POST …/rides/{rideSlug}/groups/{groupId}/switch` → `RideParticipationDto`, une transaction, mêmes contrôles et même verrou que `join` | `RideService.java`, `api/rides/RideResource.java` |
+| `API-172` Arrivée par groupe et par étape | `RideGroupDto` et `TripStageDto` gagnent `estimatedArrival` et `estimatedDurationMinutes` (distance / vitesse, absents sans distance ou sans vitesse), servis hors fenêtre de prévision | `PublicationEndCalculator.java`, DTO sortie et étape |
 
 Tests backend à écrire dans le même lot (`RideWeatherResourceTest`, `RideWeatherCalculatorTest`, `TripWeatherResourceTest`,
 `RideServiceTest`, `RideResourceTest`, un cas de course près de `RideJoinTwoGroupsRaceTest`, `PublicationEndCalculatorTest`).
@@ -90,14 +90,14 @@ Risque transverse : `isPast` est lu une cinquantaine de fois ; chaque lot écran
 1. Je rédige le brief : maquette PNG et `.dc.html` de référence, règles du KIT concernées, fichiers, widgets à réutiliser, tests à écrire ou adapter, critères d'acceptation.
 2. Un sous-agent **Opus** implémente (`Agent`, `model: opus`), dans ce worktree.
 3. Je relis le diff, je lance `flutter analyze`, `flutter test`, `./format.sh mobile`.
-4. Capture sur simulateur comparée au PNG (voir Vérification), puis commit « … (MOB-132, lot n) » sur `feat/mobile-review`, sans pousser.
+4. Capture sur simulateur comparée au PNG (voir Vérification), puis commit « … (MOB-134, lot n) » sur `feat/mobile-review`, sans pousser.
 5. Je m'arrête et vous montre le résultat avant le lot suivant pour les lots 6, 8 et 10 (les plus risqués).
 
 ## Ledger
 
-- `MOB-132` : la refonte entière, un seul ID, lié au plan ; `MOB-133` : recette sur appareil.
-- `API-162` à `API-165` : ci-dessus.
-- `WEB-160` : « Vitesse moyenne » et client régénéré ; `WEB-161` : aligner le web sur KIT §8 (hors périmètre, noté pour ne pas le perdre).
+- `MOB-134` : la refonte entière, un seul ID, lié au plan ; `MOB-135` : recette sur appareil.
+- `API-169` à `API-172` : ci-dessus.
+- `WEB-164` : « Vitesse moyenne » et client régénéré ; `WEB-165` : aligner le web sur KIT §8 (hors périmètre, noté pour ne pas le perdre).
 - Numéros à revérifier au moment de les créer (`grep -ohE 'MOB-[0-9]+' docs/LEDGER_*.md | sort -t- -k2 -n | tail -1`).
 
 ## Vérification

@@ -19,7 +19,7 @@ import '../../providers/trip_weather_provider.dart';
 ///
 /// Comme celui d'une sortie, poussé par `Navigator.push` et absent de
 /// `contracts/routes.yaml` : il prolonge l'écran de l'étape, sans URL à lui.
-/// Il pose la section Météo (`WeatherSection`, ledger `MOB-132`) du seul leg
+/// Il pose la section Météo (`WeatherSection`, ledger `MOB-134`) du seul leg
 /// de l'étape, dépliée : rien ne la suit. Le lot 11 la déplace dans la page
 /// de l'étape et retire celle-ci.
 class StageWeatherPage extends ConsumerWidget {

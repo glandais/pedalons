@@ -19,7 +19,7 @@ import 'pdl_badge.dart';
 /// personne ([groupLine]).
 ///
 /// Trois emplacements facultatifs, pour les écrans de détail refondus
-/// (ledger `MOB-132`) : [trailing] à droite de l'en-tête (« Rejoindre », le
+/// (ledger `MOB-134`) : [trailing] à droite de l'en-tête (« Rejoindre », le
 /// badge « J'y vais »), [places] sous l'en-tête, sur toute la largeur (des
 /// `PdlPlaceRow.link`), et [footnote] en 14 atténué au pied du bloc
 /// (« Sortie sans groupe, inscription impossible »). Sans eux, le bloc est

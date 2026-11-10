@@ -527,7 +527,7 @@ class _GalleryBodyState extends State<_GalleryBody> {
               ),
             ),
             const PdlSectionHeader(title: 'Prochaines sorties'),
-            const _Caption('countAtEnd — écrans de détail (MOB-132)'),
+            const _Caption('countAtEnd — écrans de détail (MOB-134)'),
             const PdlSectionHeader(
               title: 'Groupes',
               count: '3 groupes',

@@ -843,7 +843,7 @@ class RideResourceTest extends AbstractResourceTest {
         .body("thumbnailUrl", containsString(TsidUtils.toString(longLight.getId())));
   }
 
-  // --- switch (docs/LEDGER_*.md API-164)
+  // --- switch (docs/LEDGER_*.md API-171)
   // ----------------------------------------------------------
 
   private String switchUrl(String rideSlug, RideGroup group) {
@@ -957,7 +957,7 @@ class RideResourceTest extends AbstractResourceTest {
         .body("registeredGroupId", equalTo(TsidUtils.toString(a.getId())));
   }
 
-  // --- estimated arrival (docs/LEDGER_*.md API-165)
+  // --- estimated arrival (docs/LEDGER_*.md API-172)
   // -------------------------------------------------
 
   @Test

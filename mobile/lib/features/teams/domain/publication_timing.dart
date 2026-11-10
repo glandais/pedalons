@@ -34,7 +34,7 @@ bool isUnderWay({
 ///
 /// Une notion **ajoutée** à côté de `isPast` (le `finished` du serveur, qui
 /// ne dit que « départ passé ») : chaque écran choisit, usage par usage,
-/// entre « parti » et « terminé » (plan `MOB-132`, risque transverse).
+/// entre « parti » et « terminé » (plan `MOB-134`, risque transverse).
 enum PublicationPhase {
   /// Le départ n'a pas eu lieu.
   upcoming,
@@ -90,7 +90,7 @@ PublicationPhase ridePhase(RideDto ride, {DateTime? now}) => publicationPhase(
 );
 
 /// La phase d'**un groupe** : de son départ (`startAt`) à son arrivée
-/// estimée (`estimatedArrival`, contrat 13.4.0, ledger `API-165`). Sans
+/// estimée (`estimatedArrival`, contrat 13.4.0, ledger `API-172`). Sans
 /// arrivée estimée (ni vitesse ni parcours), départ + 3 h — ce que le serveur
 /// compte pour ce groupe dans `RideDto.endDateTime`. Le statut est celui de
 /// la sortie.

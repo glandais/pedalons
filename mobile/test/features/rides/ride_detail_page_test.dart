@@ -1592,7 +1592,7 @@ void main() {
     );
   });
 
-  group('le bouton « GPS » (MOB-132, lot 4)', () {
+  group('le bouton « GPS » (MOB-134, lot 4)', () {
     void tall(WidgetTester tester) {
       tester.view.physicalSize = const Size(402 * 3, 4000 * 3);
       tester.view.devicePixelRatio = 3;

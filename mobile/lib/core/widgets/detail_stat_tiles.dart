@@ -15,7 +15,7 @@ class DetailStatTile {
   final String value;
 }
 
-/// Les tuiles de chiffres des écrans de détail (ledger `MOB-132`) : carte
+/// Les tuiles de chiffres des écrans de détail (ledger `MOB-134`) : carte
 /// bordée, grille de deux colonnes, libellé `xs` au-dessus de la valeur.
 ///
 /// L'ordre est **celui de l'appelant**, qui suit la règle du KIT §8 : ligne 1

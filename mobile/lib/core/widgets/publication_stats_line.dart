@@ -6,7 +6,7 @@ import '../theme/pdl_typography.dart';
 import '../../api/generated/models/unit_system.dart';
 import '../utils/formatters.dart';
 
-/// La ligne de chiffres d'une carte de groupe ou d'étape (ledger `MOB-132`,
+/// La ligne de chiffres d'une carte de groupe ou d'étape (ledger `MOB-134`,
 /// KIT §8) : « 78,0 km · 980 m D+ · 25 km/h », chaque valeur précédée de son
 /// icône de 14 px, le tout en 14 atténué. Une valeur absente disparaît ;
 /// sans aucune, rien n'est rendu. Passe à la ligne entre deux valeurs, jamais

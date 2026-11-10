@@ -20,7 +20,7 @@ import java.util.Set;
  * RideWeatherService}, under the same rules: <b>never calls the provider and never writes</b>, takes
  * a {@link Trip} the caller has already been allowed to read, returns no coordinate.
  *
- * <p>Each stage has its own state: a stage over (its stored end passed, docs/LEDGER_*.md API-163)
+ * <p>Each stage has its own state: a stage over (its stored end passed, docs/LEDGER_*.md API-170)
  * is {@code OUT_OF_RANGE}, one beyond the
  * seven-day horizon {@code NOT_YET_AVAILABLE}, one without a route {@code NO_LOCATION}. Its query
  * count does not depend on the number of stages: the track ids (one), the cells (one), their hours
@@ -104,7 +104,7 @@ public class TripWeatherService {
 
   /**
    * A stage that is over: its forecast is no longer shown, as for a ride over. One under way still
-   * shows it, to its end (docs/LEDGER_*.md API-163).
+   * shows it, to its end (docs/LEDGER_*.md API-170).
    */
   static boolean isGone(StagePlan plan, Instant now) {
     return plan.end().isBefore(now);

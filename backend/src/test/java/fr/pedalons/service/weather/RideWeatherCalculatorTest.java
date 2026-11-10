@@ -604,7 +604,7 @@ class RideWeatherCalculatorTest {
     assertEquals(NOW.plus(Duration.ofDays(1)), RideWeatherCalculator.availableFrom(far));
   }
 
-  // --- a group's departure (docs/LEDGER_*.md API-162) --------------------------------------------
+  // --- a group's departure (docs/LEDGER_*.md API-169) --------------------------------------------
 
   @Test
   void legDeparture_shouldReadTheMeetingPointAtTheGroupsStart_withDaylight() {

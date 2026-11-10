@@ -20,7 +20,7 @@ import 'ride_weather_widgets.dart';
 /// Les briques de la météo d'un leg — un groupe de sortie, une étape de
 /// voyage : bandeaux, exposition au vent, frise des passages, bas de section
 /// (« Prévision du … » et ⓘ). `WeatherSection` (`weather_section.dart`) les
-/// compose en section Météo d'un écran de détail (ledger `MOB-132`) ; le bloc
+/// compose en section Météo d'un écran de détail (ledger `MOB-134`) ; le bloc
 /// « départ » au point de rendez-vous vit dans `departure_weather_section.dart`.
 
 /// L'état « Météo indisponible » plein écran, avec « Réessayer ».
@@ -124,7 +124,7 @@ class WeatherLegNotice extends StatelessWidget {
 /// [selectedCheckpoint] se marque comme choisi.
 ///
 /// Ne sert plus qu'à la carte météo d'une sortie solo
-/// (`RideDepartureWeatherCard`), que le lot 7 du ledger `MOB-132` retire :
+/// (`RideDepartureWeatherCard`), que le lot 7 du ledger `MOB-134` retire :
 /// les écrans passent par `WeatherSection`, qui compose les mêmes briques.
 List<Widget> weatherLegBody(
   WeatherLegDto leg,
@@ -624,7 +624,7 @@ class _CheckpointRow extends ConsumerWidget {
 /// (horodatage, dans le fuseau du lecteur, [AppFormatters.formatTimestamp])
 /// et un bouton ⓘ qui ouvre la source des prévisions — le crédit que la
 /// licence demande (CC BY 4.0), derrière un bouton comme celui du profil
-/// (KIT §8, ledger `MOB-132`).
+/// (KIT §8, ledger `MOB-134`).
 class WeatherForecastFooter extends StatelessWidget {
   const WeatherForecastFooter({
     super.key,
@@ -710,7 +710,7 @@ Future<void> showWeatherSource(
 
 /// Le crédit que la licence des prévisions demande (CC BY 4.0), et l'heure
 /// de la prévision la plus ancienne lue — la carte météo d'une sortie solo
-/// (`RideDepartureWeatherCard`, retirée au lot 7 du ledger `MOB-132`) ; les
+/// (`RideDepartureWeatherCard`, retirée au lot 7 du ledger `MOB-134`) ; les
 /// sections Météo passent par [WeatherForecastFooter].
 class WeatherAttributionBlock extends StatelessWidget {
   const WeatherAttributionBlock({

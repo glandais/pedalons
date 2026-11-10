@@ -28,7 +28,7 @@ Pour republier : `python3 gen_canvas.py` depuis ce dossier, puis envoyer `projec
 
 ## Ce qui reste ouvert
 
-- Les décisions de `KIT.md` §8 ne sont pas encore dans le code : ledger `MOB-132`, plan [2026-11-10-refonte-ecrans-detail-mobile.md](../../2026-11-10-refonte-ecrans-detail-mobile.md).
+- Les décisions de `KIT.md` §8 ne sont pas encore dans le code : ledger `MOB-134`, plan [2026-11-10-refonte-ecrans-detail-mobile.md](../../2026-11-10-refonte-ecrans-detail-mobile.md).
 - Revêtement du parcours d'exemple : quatre catégories sur la fiche parcours, deux sur la sortie et le groupe.
 - États non dessinés : inscrit sur la sortie solo et sur l'étape ; feuille « GPS » sur iOS ; écrans sans description.
 - Relecture critique non traitée : météo basse sur la sortie solo, deux « km/h » voisins (vitesse et vent) dans les

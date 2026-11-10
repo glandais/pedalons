@@ -251,7 +251,7 @@ final class Ride extends Module {
     }
   }
 
-  /// Taps the card of [groupId], which opens the group's page (ledgers `MOB-67`, `MOB-132`): one
+  /// Taps the card of [groupId], which opens the group's page (ledgers `MOB-67`, `MOB-134`): one
   /// scrolling page, no tabs. A ride of two groups or more only: a single group has no card and no
   /// page (ledger `MOB-69`).
   Future<void> openGroup(String groupId) async {

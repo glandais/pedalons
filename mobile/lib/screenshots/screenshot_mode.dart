@@ -67,7 +67,7 @@ Future<void> screenshotSignIn(WidgetRef ref) async {
 /// The screen to push over [screenshotInitialPath] once it has loaded, for a
 /// page whose URL depends on data the plan does not know —
 /// `rideGroupWeather`, the selected group's page scrolled down to its Météo section, pushed
-/// from a ride's detail (ledgers `MOB-67`, `MOB-132`) — or, for a single-group ride, which has no group page,
+/// from a ride's detail (ledgers `MOB-67`, `MOB-134`) — or, for a single-group ride, which has no group page,
 /// a scroll of the detail down to its weather (ledger `MOB-69`) —, or
 /// `rideGroups`, a scroll of a ride's detail down to its group cards, which
 /// the weather at the start pushes below the map. True once for [name], so a rebuild of the page

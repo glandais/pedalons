@@ -13,7 +13,7 @@ import '../providers/ride_detail_provider.dart';
 /// et `leave` seulement), elles donnent les états visuels du bouton : rien,
 /// « Rejoindre », « Rejoindre » en chargement, « Quitter », « Quitter » en
 /// chargement, « Complet » désactivé — et, quand l'UI le branchera (plan
-/// `MOB-132`, lot 8), « Changer pour {groupe} ».
+/// `MOB-134`, lot 8), « Changer pour {groupe} ».
 enum RideGroupAction {
   /// Aucune action : sortie passée ou annulée, ou utilisateur non membre.
   none,
@@ -23,8 +23,8 @@ enum RideGroupAction {
 
   /// « Changer pour {groupe} » : l'utilisateur est inscrit dans un **autre**
   /// groupe de la sortie, et celui-ci est ouvert — ni complet, ni parti, jugé
-  /// sur **son** départ (`startAt`, ledger `API-163`). Un seul appel,
-  /// `RideRegistrationController.switchGroup` (ledger `API-164`).
+  /// sur **son** départ (`startAt`, ledger `API-170`). Un seul appel,
+  /// `RideRegistrationController.switchGroup` (ledger `API-171`).
   ///
   /// Pas encore rendu tel quel : les cartes d'aujourd'hui le montrent comme
   /// [join], qui pose le bandeau d'exclusivité.
@@ -63,7 +63,7 @@ RideGroupAction rideGroupAction({
 }
 
 /// Le groupe est-il parti ? Sur son propre départ : un groupe plus tardif
-/// reste ouvert quand le premier a quitté le rendez-vous (ledger `API-163`).
+/// reste ouvert quand le premier a quitté le rendez-vous (ledger `API-170`).
 bool _hasLeft(RideGroupDto group, DateTime? now) {
   final DateTime? start = DateTime.tryParse(group.startAt);
   if (start == null) return false;

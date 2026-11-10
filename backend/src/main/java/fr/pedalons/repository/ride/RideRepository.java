@@ -114,7 +114,7 @@ public class RideRepository implements TeamEntityRepository<Ride, TeamEntityQuer
    * weather cache is global (see {@code fr.pedalons.domain.weather}) and this feeds no response.
    *
    * <p>Not over by {@code from} rather than leaving after it: a ride under way keeps its forecast to
-   * its end (docs/LEDGER_*.md API-163), so its cells — a later group's included — stay fresh. The
+   * its end (docs/LEDGER_*.md API-170), so its cells — a later group's included — stay fresh. The
    * end is the stored one; a row an older backend left without it counts until its departure only.
    */
   public List<Ride> findForWeather(Instant from, Instant to) {

@@ -196,7 +196,7 @@ void main() {
       });
 
       test('un groupe parti ne propose pas de changer', () {
-        // Jugé sur le départ du groupe (API-163) ; la carte garde alors
+        // Jugé sur le départ du groupe (API-170) ; la carte garde alors
         // l'action d'avant ce lot.
         expect(
           rideGroupAction(

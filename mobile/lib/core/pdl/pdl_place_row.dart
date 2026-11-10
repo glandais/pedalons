@@ -25,7 +25,7 @@ class PdlPlaceRow extends StatelessWidget {
   }) : _link = false,
        semanticLabel = null;
 
-  /// La variante « lien d'itinéraire » des écrans de détail (ledger `MOB-132`,
+  /// La variante « lien d'itinéraire » des écrans de détail (ledger `MOB-134`,
   /// KIT §8 : « liens noirs soulignés qui ouvrent l'itinéraire ») : drapeau
   /// vert (départ) ou rouge (arrivée) de 16 px, [name] en 14 couleur de texte
   /// — pas la couleur de lien —, souligné discret (`textPlaceholder`).

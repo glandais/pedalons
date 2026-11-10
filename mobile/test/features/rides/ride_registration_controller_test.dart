@@ -249,7 +249,7 @@ void main() {
     repo.serve(twoGroups(registeredIn: 'g2'));
     await controller.switchGroup(failure.groupId);
 
-    // L'endpoint atomique (API-164), jamais « quitter puis rejoindre ».
+    // L'endpoint atomique (API-171), jamais « quitter puis rejoindre ».
     expect(repo.switched, <String>['g2']);
     expect(repo.left, isEmpty);
     expect(repo.joined, isEmpty);

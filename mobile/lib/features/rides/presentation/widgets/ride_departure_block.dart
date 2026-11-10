@@ -42,7 +42,7 @@ class RideDepartureBlock extends StatelessWidget {
   final String? arrival;
 
   /// À droite de l'heure : le contrôle d'inscription
-  /// (`RideRegistrationControl`, ledger `MOB-132`).
+  /// (`RideRegistrationControl`, ledger `MOB-134`).
   final Widget? trailing;
 
   /// Les lieux de départ et d'arrivée, sous l'heure ([ridePlaceLinks]).
@@ -122,7 +122,7 @@ class RideDepartureBlock extends StatelessWidget {
 }
 
 /// Les lieux de départ (drapeau vert) et d'arrivée (drapeau rouge, s'il y en
-/// a un) d'une sortie, en liens d'itinéraire (ledger `MOB-132`, KIT §8 :
+/// a un) d'une sortie, en liens d'itinéraire (ledger `MOB-134`, KIT §8 :
 /// « liens noirs soulignés qui ouvrent l'itinéraire »). Un lieu sans
 /// coordonnées ni adresse reste un texte simple.
 List<Widget> ridePlaceLinks(BuildContext context, RideDto ride) {

@@ -72,7 +72,7 @@ class WeatherRefreshPolicyTest {
         WeatherRefreshPolicy.retryAfterRateLimit(Instant.parse("2026-10-05T13:00:00Z")));
   }
 
-  /** docs/LEDGER_*.md API-163: a stretch already ridden is judged when it was ridden. */
+  /** docs/LEDGER_*.md API-170: a stretch already ridden is judged when it was ridden. */
   @Test
   void isStale_ofAPassageBehindUs_shouldBeJudgedAtThePassage() {
     Instant ridden = NOW.minus(Duration.ofHours(3));

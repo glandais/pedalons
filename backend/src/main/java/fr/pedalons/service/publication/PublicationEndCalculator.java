@@ -205,7 +205,7 @@ public class PublicationEndCalculator {
 
   /**
    * A leg's estimated arrival and duration, its route's length at its speed (docs/LEDGER_*.md
-   * API-165). Unlike {@link #legEnd}, no default: null when the distance or the speed is missing,
+   * API-172). Unlike {@link #legEnd}, no default: null when the distance or the speed is missing,
    * so a screen shows nothing rather than a guess.
    *
    * @param durationMinutes the whole minutes between the start and the arrival, rounded

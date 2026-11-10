@@ -43,7 +43,7 @@ import '../widgets/weather_section.dart';
 /// (`participants`, `overview`…) est ignorée.
 const String kRideGroupWeatherTab = 'weather';
 
-/// La page d'**un** groupe d'une sortie (ledgers `MOB-67`, `MOB-132`).
+/// La page d'**un** groupe d'une sortie (ledgers `MOB-67`, `MOB-134`).
 ///
 /// Seulement pour une sortie à **plusieurs** groupes : celle d'une sortie
 /// solo ou sans groupe cède la place au détail de la sortie dès qu'elle est
@@ -317,7 +317,7 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
 
   /// La météo se demande-t-elle ? Pas pour une sortie annulée, ni pour un
   /// groupe arrivé : l'API la sert jusqu'à la fin du groupe (ledger
-  /// `API-163`), et répondrait `OUT_OF_RANGE` au-delà.
+  /// `API-170`), et répondrait `OUT_OF_RANGE` au-delà.
   bool _asksWeather(RideDto ride, RideGroupDto group) =>
       !ride.isCancelled &&
       rideGroupPhase(ride, group, now: widget.now) != PublicationPhase.finished;
@@ -468,7 +468,7 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
   }
 
   /// « Arrivée estimée 12:18 » : l'arrivée du groupe (`estimatedArrival`,
-  /// ledger `API-165`), à défaut celle de son leg météo ; rien sinon.
+  /// ledger `API-172`), à défaut celle de son leg météo ; rien sinon.
   String? _arrival(RideDto ride, RideGroupDto group, WeatherLegDto? leg) {
     final String? at = group.estimatedArrival;
     if (at != null) {

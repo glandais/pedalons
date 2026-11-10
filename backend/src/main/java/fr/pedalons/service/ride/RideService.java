@@ -588,7 +588,7 @@ public class RideService extends TeamEntityService<Ride, RideRepository, RideDto
 
   /**
    * Moves the caller from their group of the ride to {@code groupId}, in one transaction
-   * (docs/LEDGER_*.md API-164): leaving then joining in two calls left them registered nowhere
+   * (docs/LEDGER_*.md API-171): leaving then joining in two calls left them registered nowhere
    * when the second failed. Under the same lock and the same checks as {@link #joinGroup} for the
    * group joined; any refusal — full, gone, another ride's group — rolls back, the registration
    * left as it was.
@@ -635,7 +635,7 @@ public class RideService extends TeamEntityService<Ride, RideRepository, RideDto
   /**
    * What a group must be for the caller to join it, once the ride is locked: not gone — the
    * group's own start, so a later group stays open once the ride's first one has left
-   * (docs/LEDGER_*.md API-163) — and not full.
+   * (docs/LEDGER_*.md API-170) — and not full.
    */
   private void checkJoinable(RideGroup group) {
     // The clients hide « Rejoindre » once the group has left; the rule is here. Leaving stays

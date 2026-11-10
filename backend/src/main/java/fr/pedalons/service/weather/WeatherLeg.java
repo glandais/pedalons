@@ -17,7 +17,7 @@ import org.jspecify.annotations.Nullable;
  * @param distance metres of the route
  * @param fetchedAt the oldest fetch among the cells read
  * @param departure for a ride's leg: the weather at the ride's meeting point when this leg leaves,
- *     sunrise and sunset included (docs/LEDGER_*.md API-162); null for a trip's stage, whose
+ *     sunrise and sunset included (docs/LEDGER_*.md API-169); null for a trip's stage, whose
  *     departure {@link TripWeather.StageLeg#departure} carries, and until {@link #withDeparture}
  */
 public record WeatherLeg(

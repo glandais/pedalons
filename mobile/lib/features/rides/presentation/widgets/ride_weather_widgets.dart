@@ -100,7 +100,7 @@ class WeatherWindSegments extends StatelessWidget {
 
 /// « Face 12,3 km · Travers 30,1 km · Dos 24,0 km », au dixième, chaque
 /// entrée précédée d'une pastille de la couleur de son tronçon dans la barre
-/// (KIT §8, ledger `MOB-132`). Une entrée nulle est omise.
+/// (KIT §8, ledger `MOB-134`). Une entrée nulle est omise.
 class WeatherExposureLegend extends StatelessWidget {
   const WeatherExposureLegend({
     super.key,

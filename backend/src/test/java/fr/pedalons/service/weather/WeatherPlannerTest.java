@@ -186,7 +186,7 @@ class WeatherPlannerTest extends AbstractResourceTest {
     Ride underway =
         ride(team1, user1, "underway", now.minus(Duration.ofHours(2)), Status.PUBLISHED);
     // Left two hours ago, back in one: still shown on the read side, so still planned
-    // (docs/LEDGER_*.md API-163).
+    // (docs/LEDGER_*.md API-170).
     endAt(underway, now.plus(Duration.ofHours(1)));
     Ride over = ride(team1, user1, "over", now.minus(Duration.ofHours(4)), Status.PUBLISHED);
     endAt(over, now.minus(Duration.ofHours(1)));
@@ -253,7 +253,7 @@ class WeatherPlannerTest extends AbstractResourceTest {
     routedStage(published, "Trip gone", 45.0, now.minus(Duration.ofHours(2)));
     routedStage(published, "Trip too far", 46.0, now.plus(Duration.ofDays(8)));
     routedStage(draft, "Draft tomorrow", 47.0, tomorrow);
-    // Left two hours ago, over in one: still shown, so still planned (docs/LEDGER_*.md API-163).
+    // Left two hours ago, over in one: still shown, so still planned (docs/LEDGER_*.md API-170).
     TripStage underway =
         routedStage(published, "Trip under way", 48.0, now.minus(Duration.ofHours(2)));
     QuarkusTransaction.requiringNew()
@@ -505,7 +505,7 @@ class WeatherPlannerTest extends AbstractResourceTest {
   }
 
   /**
-   * docs/LEDGER_*.md API-163: a cell a group under way has already passed, but a later group will
+   * docs/LEDGER_*.md API-170: a cell a group under way has already passed, but a later group will
    * pass, is needed at the later passage — not at {@code now}, which the worker never fetches. A
    * cell only behind us still counts as {@code now}.
    */
@@ -540,7 +540,7 @@ class WeatherPlannerTest extends AbstractResourceTest {
 
     assertEquals(now.plus(Duration.ofHours(2)), demand.get(shared));
     assertEquals(now, demand.get(pastOnly));
-    // The meeting point is read at the later group's start too (API-162).
+    // The meeting point is read at the later group's start too (API-169).
     assertEquals(now.plus(Duration.ofHours(2)), demand.get(CellKey.of(44.0, 5.0)));
   }
 }

@@ -1,6 +1,6 @@
 import 'common.dart';
 
-/// The group page (ledgers `MOB-67`, `MOB-132`): a ride's group card opens it, it names the
+/// The group page (ledgers `MOB-67`, `MOB-134`): a ride's group card opens it, it names the
 /// designated leader only — never the ride's creator —, joins from its departure block, shows the
 /// group's weather in its last section, and, registered in one group, offers « Changer pour » on
 /// another rather than « Rejoindre »: the server allows one group per ride.

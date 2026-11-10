@@ -159,7 +159,7 @@ class PublicationEndCalculatorTest {
     assertEquals(START.plus(Duration.ofHours(1)), PublicationEndCalculator.effectiveEnd(ride));
   }
 
-  // --- estimated arrival and duration (docs/LEDGER_*.md API-165) ---------------------------------
+  // --- estimated arrival and duration (docs/LEDGER_*.md API-172) ---------------------------------
 
   @Test
   void estimate_ofAGroup_isItsRouteAtItsSpeed_fromItsOwnStart() {

@@ -422,7 +422,7 @@ class RideWeatherResourceTest extends AbstractResourceTest {
   }
 
   /**
-   * docs/LEDGER_*.md API-163: left an hour ago, its second group still to leave — the forecast is
+   * docs/LEDGER_*.md API-170: left an hour ago, its second group still to leave — the forecast is
    * still served, the late group's leg with it.
    */
   @Test
@@ -478,7 +478,7 @@ class RideWeatherResourceTest extends AbstractResourceTest {
   }
 
   /**
-   * docs/LEDGER_*.md API-162: each leg carries its one-line summary and the meeting point's
+   * docs/LEDGER_*.md API-169: each leg carries its one-line summary and the meeting point's
    * weather at the group's own start, sunrise and sunset included.
    */
   @Test

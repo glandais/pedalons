@@ -7,7 +7,7 @@ import 'package:pedalons/core/theme/pdl_tokens.dart';
 import 'package:pedalons/core/theme/pdl_typography.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 
-/// Les composants Pdl des écrans de détail refondus (ledger `MOB-132`,
+/// Les composants Pdl des écrans de détail refondus (ledger `MOB-134`,
 /// lot 3) : le bloc repliable, la ligne de lieu cliquable, les emplacements
 /// du bloc de départ et le compte à droite du titre de section.
 void main() {

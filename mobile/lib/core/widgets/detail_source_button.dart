@@ -8,7 +8,7 @@ import '../theme/pdl_typography.dart';
 import '../utils/link_launcher.dart';
 
 /// Le bouton ⓘ d'une source de données sur un écran de détail (ledger
-/// `MOB-132`, maquettes `groupe-mobile-cible`) : « Profil ⓘ » (altitude),
+/// `MOB-134`, maquettes `groupe-mobile-cible`) : « Profil ⓘ » (altitude),
 /// la légende du revêtement ⓘ (OpenStreetMap). Le visuel de 18 px, centré
 /// dans la cible de 44 px, lu comme un bouton nommé [semanticLabel].
 ///

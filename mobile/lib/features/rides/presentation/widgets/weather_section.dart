@@ -28,7 +28,7 @@ enum WeatherDepartureOf {
   ride,
 }
 
-/// La section Météo d'un écran de détail (ledger `MOB-132`, KIT §8,
+/// La section Météo d'un écran de détail (ledger `MOB-134`, KIT §8,
 /// maquettes `groupe-mobile-cible`, `sortie-solo-mobile-cible`,
 /// `etape-mobile-cible`, `sortie-groupes-heures-differentes-mobile-cible`).
 ///

@@ -19,7 +19,7 @@ import '../../providers/ride_registration_controller.dart';
 import 'ride_group_leader_row.dart';
 import 'ride_registration_control.dart';
 
-/// La section « Personnes inscrites » d'un groupe (ledger `MOB-132`, KIT §8,
+/// La section « Personnes inscrites » d'un groupe (ledger `MOB-134`, KIT §8,
 /// maquettes `groupe-mobile-cible`, `groupe-inscrit-mobile-cible`) :
 ///
 /// 1. le titre et, à droite, le compte (« 8/12 », « 8 » sans plafond) ;

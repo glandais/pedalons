@@ -14,7 +14,7 @@ enum DetailSectionLevel {
   subsection,
 }
 
-/// Le rythme des sections des écrans de détail (ledger `MOB-132`, KIT §8) :
+/// Le rythme des sections des écrans de détail (ledger `MOB-134`, KIT §8) :
 /// l'espace au-dessus du titre, le titre ([PdlSectionHeader], compte à droite
 /// en 12 gris : « 3 groupes », « 2 commentaires », « 8/12 »), puis [child].
 ///

@@ -784,7 +784,7 @@ GoRoute _routeEditRoute(String locale) {
 }
 
 /// La page d'un groupe de sortie, sous le détail de la sortie (ledgers
-/// `MOB-67`, `MOB-132`). Elle n'a plus d'onglets : `?tab=weather`, hors
+/// `MOB-67`, `MOB-134`). Elle n'a plus d'onglets : `?tab=weather`, hors
 /// contrat, reste toléré et la fait défiler jusqu'à sa section Météo ; toute
 /// autre valeur de `?tab=` (`participants`, `overview`) est ignorée.
 GoRoute _rideGroupRoute(String locale) {

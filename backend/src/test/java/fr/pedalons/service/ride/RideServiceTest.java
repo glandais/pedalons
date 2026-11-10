@@ -1321,7 +1321,7 @@ class RideServiceTest extends AbstractBaseTest {
     assertTrue(exception.getMessage().contains("NOT_REGISTERED"));
   }
 
-  // ==================== Join, judged on the group (docs/LEDGER_*.md API-163) ====================
+  // ==================== Join, judged on the group (docs/LEDGER_*.md API-170) ====================
 
   @Test
   void joinGroup_aLaterGroup_shouldStayOpenOnceTheRideHasLeft() {
@@ -1365,7 +1365,7 @@ class RideServiceTest extends AbstractBaseTest {
     assertEquals("RIDE_PAST", exception.getMessage());
   }
 
-  // ==================== Switch Group (docs/LEDGER_*.md API-164) ====================
+  // ==================== Switch Group (docs/LEDGER_*.md API-171) ====================
 
   /** The group the member is registered in on {@code ride}, null when none. */
   private Long registeredGroupOf(User user, Ride ride) {

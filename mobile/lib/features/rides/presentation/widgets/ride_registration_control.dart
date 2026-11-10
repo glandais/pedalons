@@ -13,13 +13,13 @@ import '../../domain/ride_group_action.dart';
 import '../../providers/ride_detail_provider.dart';
 import '../../providers/ride_registration_controller.dart';
 
-/// Ce que le contrôle d'inscription montre pour [group] (ledger `MOB-132`,
+/// Ce que le contrôle d'inscription montre pour [group] (ledger `MOB-134`,
 /// KIT §8, maquettes `groupe-mobile-cible`, `groupe-inscrit-mobile-cible`).
 ///
 /// Sur [rideGroupAction], avec trois écarts que la page d'un groupe demande :
 ///
 /// * le groupe se juge sur **son** départ ([rideGroupPhase], ledger
-///   `API-163`), pas sur celui de la sortie (`RideDto.finished`) : un groupe
+///   `API-170`), pas sur celui de la sortie (`RideDto.finished`) : un groupe
 ///   parti — en cours ou terminé — n'offre plus rien, même à qui y est
 ///   inscrit ; un groupe plus tardif reste ouvert quand le premier est parti ;
 /// * l'appartenance **inconnue** ([isMember] `null`, « Mes équipes » pas encore
@@ -63,18 +63,18 @@ bool rideGroupCanLeave(RideDto ride, RideGroupDto group, {DateTime? now}) =>
     RideGroupAction.leave;
 
 /// Le contrôle d'inscription à droite de l'heure de départ (ledger
-/// `MOB-132`) — la page d'un groupe aujourd'hui, la sortie solo et les cartes
+/// `MOB-134`) — la page d'un groupe aujourd'hui, la sortie solo et les cartes
 /// de groupe ensuite (lots 7 et 8) :
 ///
 /// * « Rejoindre » — bouton plein ;
 /// * inscrit ici — badge « J'y vais » ;
 /// * complet — « Complet » désactivé ;
 /// * inscrit dans un autre groupe, celui-ci ouvert — « Changer pour A », un
-///   seul appel (`RideRegistrationController.switchGroup`, ledger `API-164`) ;
+///   seul appel (`RideRegistrationController.switchGroup`, ledger `API-171`) ;
 /// * parti, annulé, non-membre, appartenance inconnue — rien.
 ///
 /// **Aucune confirmation**, ni pour rejoindre ni pour changer (plan
-/// `MOB-132`). Un échec garde le bandeau de l'écran
+/// `MOB-134`). Un échec garde le bandeau de l'écran
 /// (`registrationFailureBanner`), que ce contrôle ne pose pas.
 ///
 /// [shows] dit à l'appelant s'il y a quelque chose à rendre, pour ne pas

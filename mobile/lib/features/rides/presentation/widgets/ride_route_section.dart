@@ -26,7 +26,7 @@ import 'ride_group_route_actions.dart';
 import 'ride_groups_map.dart';
 import 'weather_map_layer.dart';
 
-/// La section « Parcours » d'une sortie (ledger `MOB-132`, KIT §8, maquettes
+/// La section « Parcours » d'une sortie (ledger `MOB-134`, KIT §8, maquettes
 /// `groupe-mobile-cible`, `sortie-solo-mobile-cible`) :
 ///
 /// 1. le titre « Parcours », au-dessus de la carte ;

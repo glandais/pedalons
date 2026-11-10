@@ -35,7 +35,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * {@code RideService.switchGroup} (docs/LEDGER_*.md API-164) under the lock of {@code joinGroup},
+ * {@code RideService.switchGroup} (docs/LEDGER_*.md API-171) under the lock of {@code joinGroup},
  * driven as {@link RideJoinTwoGroupsRaceTest}: one thread holds its transaction open after its own
  * write, the other runs meanwhile; with the ride locked first, the second waits and then sees the
  * first one's row.

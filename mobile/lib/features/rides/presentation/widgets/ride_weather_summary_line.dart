@@ -14,7 +14,7 @@ import '../../../../core/utils/formatters.dart';
 import '../../../../keys.dart';
 import '../../domain/ride_weather_display.dart';
 
-/// La ligne météo d'une carte (KIT §8, ledger `MOB-132`) : « ☁ 10–13 °C ·
+/// La ligne météo d'une carte (KIT §8, ledger `MOB-134`) : « ☁ 10–13 °C ·
 /// → 18 km/h · Pluie 20 % », 14 px gris, icônes 14 px. **Un seul widget** pour
 /// toutes les cartes qui portent un `RideWeatherSummaryDto` : carte de sortie
 /// (fil, fil d'équipe, « Ma prochaine sortie » : `RideDto.weather` /

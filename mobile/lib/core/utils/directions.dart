@@ -4,7 +4,7 @@ import 'package:flutter/widgets.dart';
 import '../../api/generated/models/place_detail_dto.dart';
 import 'link_launcher.dart';
 
-// L'itinéraire vers un lieu (ledger `MOB-132`, KIT §8 : « lieux de départ et
+// L'itinéraire vers un lieu (ledger `MOB-134`, KIT §8 : « lieux de départ et
 // d'arrivée : liens qui ouvrent l'itinéraire »).
 //
 // Un lien **https** de cartes, jamais un schéma d'application (`maps:`,

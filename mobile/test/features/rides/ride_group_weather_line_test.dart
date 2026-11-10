@@ -14,7 +14,7 @@ import '../../support/localization.dart';
 import 'ride_fixtures.dart';
 
 /// La ligne météo, non cliquable, de la carte d'un groupe (ledgers `MOB-67`,
-/// `MOB-132`) : la ligne des cartes, lue sur le résumé du leg — plage, vent
+/// `MOB-134`) : la ligne des cartes, lue sur le résumé du leg — plage, vent
 /// fléché, pluie ou alerte — et rien sans résumé à montrer.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

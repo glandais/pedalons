@@ -57,7 +57,7 @@ class RideRepository {
 
   /// Passer dans [groupId] depuis le groupe où l'on est inscrit : **un**
   /// appel, une transaction côté serveur, sous le même verrou que `join`
-  /// (ledger `API-164`). 201 quand l'inscription a changé, 200 quand on y
+  /// (ledger `API-171`). 201 quand l'inscription a changé, 200 quand on y
   /// était déjà ; refusé (`NOT_REGISTERED`) sans inscription dans la sortie.
   Future<RideParticipationDto> switchGroup(
     String teamSlug,

@@ -74,7 +74,7 @@ class RideElevationSection extends ConsumerStatefulWidget {
   /// (ledger `MOB-106`). Ignoré hors mode Météo.
   final WeatherLegDto? windLeg;
 
-  /// La mise en page des écrans de détail refondus (ledger `MOB-132`,
+  /// La mise en page des écrans de détail refondus (ledger `MOB-134`,
   /// maquette `groupe-mobile-cible`, `RideRouteSection`) : l'en-tête
   /// « Profil » et son bouton ⓘ (la source des altitudes, à la place du
   /// crédit sous le profil, et sans le résumé distance · dénivelé que les

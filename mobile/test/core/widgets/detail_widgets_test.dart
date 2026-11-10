@@ -16,7 +16,7 @@ import 'package:pedalons/core/widgets/detail_section.dart';
 import 'package:pedalons/core/widgets/detail_stat_tiles.dart';
 import 'package:pedalons/core/widgets/publication_stats_line.dart';
 
-/// Les briques partagées des écrans de détail refondus (ledger `MOB-132`,
+/// Les briques partagées des écrans de détail refondus (ledger `MOB-134`,
 /// lot 3) : tuiles de chiffres, rythme des sections, ligne de chiffres d'une
 /// carte.
 void main() {

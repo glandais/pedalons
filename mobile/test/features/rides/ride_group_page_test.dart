@@ -35,7 +35,7 @@ import '../../support/localization.dart';
 import '../routes/route_fixtures.dart';
 import 'ride_fixtures.dart';
 
-/// La page d'un groupe de sortie (ledgers `MOB-67`, `MOB-132`) : une page qui
+/// La page d'un groupe de sortie (ledgers `MOB-67`, `MOB-134`) : une page qui
 /// défile, sans onglets ni barre d'action — bloc de départ et inscription,
 /// tuiles, « Parcours », « Personnes inscrites », « Météo » —, les pastilles
 /// qui partagent la sélection avec le détail, `?tab=weather` toléré, et le
@@ -347,7 +347,7 @@ void main() {
   // ─────────────────────────────────────────── l'ordre des maquettes
 
   /// Les ordonnées des sections, dans l'ordre des maquettes (ledger
-  /// `MOB-132`) : bloc de départ, tuiles, « Parcours », « Personnes
+  /// `MOB-134`) : bloc de départ, tuiles, « Parcours », « Personnes
   /// inscrites », « Météo ».
   void expectSectionOrder(WidgetTester tester) {
     final List<Key> order = <Key>[
@@ -499,7 +499,7 @@ void main() {
       );
 
       expect(inBlock(find.text('Départ 21:30')), findsOneWidget);
-      // L'arrivée du groupe (API-165), pas celle du leg météo.
+      // L'arrivée du groupe (API-172), pas celle du leg météo.
       expect(inBlock(find.text('Arrivée estimée 00:48')), findsOneWidget);
       expect(find.textContaining('la sortie de'), findsNothing);
       // La date, dite une fois, par la boîte du jour (« mar. / 29 / juil. »).
@@ -851,12 +851,12 @@ void main() {
       expect(find.byKey(keys.rideGroup.joinButton), findsNothing);
       expect(find.byKey(keys.rideGroup.leaveButton), findsNothing);
       // En cours (départ + 3 h, sans arrivée estimée) : l'API sert encore la
-      // météo (API-163).
+      // météo (API-170).
       expect(repository.weatherCalls, 1);
       expect(find.byKey(keys.ride.weatherSection), findsOneWidget);
     });
 
-    testWidgets('API-163 : la sortie partie, un groupe plus tardif reste '
+    testWidgets('API-170 : la sortie partie, un groupe plus tardif reste '
         'ouvert', (WidgetTester tester) async {
       await open(
         tester,
