@@ -41,29 +41,36 @@ _RouteDetailDto _$RouteDetailDtoFromJson(Map<String, dynamic> json) =>
           ? null
           : PublicUserDto.fromJson(json['createdBy'] as Map<String, dynamic>),
       commentCount: (json['commentCount'] as num?)?.toInt(),
+      gpsSyncStatuses: (json['gpsSyncStatuses'] as List<dynamic>?)
+          ?.map(
+            (e) => RouteGpsSyncStatusDto.fromJson(e as Map<String, dynamic>),
+          )
+          .toList(),
     );
 
-Map<String, dynamic> _$RouteDetailDtoToJson(_RouteDetailDto instance) =>
-    <String, dynamic>{
-      'id': instance.id,
-      'slug': instance.slug,
-      'team': instance.team.toJson(),
-      'name': instance.name,
-      'media': instance.media.toJson(),
-      'distance': instance.distance,
-      'elevationGain': instance.elevationGain,
-      'elevationLoss': instance.elevationLoss,
-      'elevationState': instance.elevationState,
-      'surfaceType': instance.surfaceType,
-      'visibility': instance.visibility,
-      'createdAt': instance.createdAt,
-      'updatedAt': instance.updatedAt,
-      'tracks': instance.tracks.map((e) => e.toJson()).toList(),
-      'waypoints': instance.waypoints.map((e) => e.toJson()).toList(),
-      'deleted': instance.deleted,
-      'tags': instance.tags.map((e) => e.toJson()).toList(),
-      'start': instance.start?.toJson(),
-      'end': instance.end?.toJson(),
-      'createdBy': instance.createdBy?.toJson(),
-      'commentCount': instance.commentCount,
-    };
+Map<String, dynamic> _$RouteDetailDtoToJson(
+  _RouteDetailDto instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'slug': instance.slug,
+  'team': instance.team.toJson(),
+  'name': instance.name,
+  'media': instance.media.toJson(),
+  'distance': instance.distance,
+  'elevationGain': instance.elevationGain,
+  'elevationLoss': instance.elevationLoss,
+  'elevationState': instance.elevationState,
+  'surfaceType': instance.surfaceType,
+  'visibility': instance.visibility,
+  'createdAt': instance.createdAt,
+  'updatedAt': instance.updatedAt,
+  'tracks': instance.tracks.map((e) => e.toJson()).toList(),
+  'waypoints': instance.waypoints.map((e) => e.toJson()).toList(),
+  'deleted': instance.deleted,
+  'tags': instance.tags.map((e) => e.toJson()).toList(),
+  'start': instance.start?.toJson(),
+  'end': instance.end?.toJson(),
+  'createdBy': instance.createdBy?.toJson(),
+  'commentCount': instance.commentCount,
+  'gpsSyncStatuses': instance.gpsSyncStatuses?.map((e) => e.toJson()).toList(),
+};

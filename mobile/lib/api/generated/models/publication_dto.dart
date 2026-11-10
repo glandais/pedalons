@@ -14,6 +14,7 @@ import 'ride_dto.dart';
 import 'ride_group_dto.dart';
 import 'ride_group_summary_dto.dart';
 import 'ride_weather_summary_dto.dart';
+import 'route_gps_sync_status_dto.dart';
 import 'status.dart';
 import 'surface_type.dart';
 import 'tag_dto.dart';
@@ -102,8 +103,8 @@ sealed class PublicationDto with _$PublicationDto {
     /// End place
     PlaceDetailDto? endPlace,
 
-    /// The weather line of a card: the meeting point, over the window from the departure to the estimated arrival of the last group. Absent when there is nothing to show — finished or cancelled ride, no place, forecast not in cache yet; present only with status OK, STALE or NOT_YET_AVAILABLE. The full forecast is getRideWeather.
-    RideWeatherSummaryDto? weather,
+    /// Where the ride's own route (the one of routeSlug) stands at each of the caller's GPS services whose automatic sync is on and which hold it, sorted by service — each group's route is on the group. Only ever about the caller's own connections. Absent when there is none: anonymous caller, no such service, no route.
+    List<RouteGpsSyncStatusDto>? gpsSyncStatuses,
 
     /// Thumbnail URL (light). Opaque URL: may carry a query string; substitute {size} only.
     String? thumbnailLightUrl,
@@ -137,6 +138,9 @@ sealed class PublicationDto with _$PublicationDto {
 
     /// Plain-text opening of the markdown body, flattened (links become their label) and cut on a word boundary at about 200 characters. Null when the body holds no text. Lets a list row render its two lines without the body being sent at all — see the 'view' parameter.
     String? excerpt,
+
+    /// The weather line of a card: the meeting point, over the window from the departure to the estimated arrival of the last group. Absent when there is nothing to show — finished or cancelled ride, no place, forecast not in cache yet; present only with status OK, STALE or NOT_YET_AVAILABLE. The full forecast is getRideWeather.
+    RideWeatherSummaryDto? weather,
 
     /// Publication timestamp
     String? publishAt,

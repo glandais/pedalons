@@ -765,6 +765,33 @@ export const CreateRideResponse = zod
               .describe(
                 "The one thumbnail of the group route to show when the client does not theme its cards: the light variant if there is one, else the dark one. Null when the group has no route or its route has no thumbnail — the ride's own thumbnail is then the one to fall back on. Opaque URL: may carry a query string; substitute {size} only."
               ),
+            gpsSyncStatuses: zod
+              .array(
+                zod
+                  .object({
+                    serviceType: zod
+                      .enum(['HAMMERHEAD', 'GARMIN', 'WAHOO'])
+                      .describe('GPS service'),
+                    state: zod
+                      .enum(['SENT', 'OUTDATED', 'PENDING', 'FAILING', 'RECONNECT_REQUIRED'])
+                      .describe(
+                        'SENT: at the service, up to date; OUTDATED: at the service in an older version that nothing will update, send it again; PENDING: to be sent or updated shortly; FAILING: the last attempt failed (a few retries, then it waits for the route to change); RECONNECT_REQUIRED: the connection must be renewed'
+                      ),
+                    syncedAt: zod.iso
+                      .datetime({ offset: true })
+                      .optional()
+                      .describe(
+                        'When the route was last sent to the service successfully. Absent while it never was.'
+                      ),
+                  })
+                  .describe(
+                    "Where the route stands at one of the caller's automatically synced services"
+                  )
+              )
+              .optional()
+              .describe(
+                "Where the group's route — its own, else the ride's — stands at each of the caller's GPS services whose automatic sync is on and which hold it, sorted by service. Only ever about the caller's own connections. Absent when there is none: anonymous caller, no such service, no route."
+              ),
           })
           .describe('Ride group information')
       )
@@ -985,6 +1012,31 @@ export const CreateRideResponse = zod
           .describe(
             "The one thumbnail of the group route to show when the client does not theme its cards: the light variant if there is one, else the dark one. Null when the group has no route or its route has no thumbnail — the ride's own thumbnail is then the one to fall back on. Opaque URL: may carry a query string; substitute {size} only."
           ),
+        gpsSyncStatuses: zod
+          .array(
+            zod
+              .object({
+                serviceType: zod.enum(['HAMMERHEAD', 'GARMIN', 'WAHOO']).describe('GPS service'),
+                state: zod
+                  .enum(['SENT', 'OUTDATED', 'PENDING', 'FAILING', 'RECONNECT_REQUIRED'])
+                  .describe(
+                    'SENT: at the service, up to date; OUTDATED: at the service in an older version that nothing will update, send it again; PENDING: to be sent or updated shortly; FAILING: the last attempt failed (a few retries, then it waits for the route to change); RECONNECT_REQUIRED: the connection must be renewed'
+                  ),
+                syncedAt: zod.iso
+                  .datetime({ offset: true })
+                  .optional()
+                  .describe(
+                    'When the route was last sent to the service successfully. Absent while it never was.'
+                  ),
+              })
+              .describe(
+                "Where the route stands at one of the caller's automatically synced services"
+              )
+          )
+          .optional()
+          .describe(
+            "Where the group's route — its own, else the ride's — stands at each of the caller's GPS services whose automatic sync is on and which hold it, sorted by service. Only ever about the caller's own connections. Absent when there is none: anonymous caller, no such service, no route."
+          ),
       })
       .optional()
       .describe(
@@ -1131,6 +1183,29 @@ export const CreateRideResponse = zod
       .optional()
       .describe(
         'The weather line of a card: the meeting point, over the window from the departure to the estimated arrival of the last group. Absent when there is nothing to show — finished or cancelled ride, no place, forecast not in cache yet; present only with status OK, STALE or NOT_YET_AVAILABLE. The full forecast is getRideWeather.'
+      ),
+    gpsSyncStatuses: zod
+      .array(
+        zod
+          .object({
+            serviceType: zod.enum(['HAMMERHEAD', 'GARMIN', 'WAHOO']).describe('GPS service'),
+            state: zod
+              .enum(['SENT', 'OUTDATED', 'PENDING', 'FAILING', 'RECONNECT_REQUIRED'])
+              .describe(
+                'SENT: at the service, up to date; OUTDATED: at the service in an older version that nothing will update, send it again; PENDING: to be sent or updated shortly; FAILING: the last attempt failed (a few retries, then it waits for the route to change); RECONNECT_REQUIRED: the connection must be renewed'
+              ),
+            syncedAt: zod.iso
+              .datetime({ offset: true })
+              .optional()
+              .describe(
+                'When the route was last sent to the service successfully. Absent while it never was.'
+              ),
+          })
+          .describe("Where the route stands at one of the caller's automatically synced services")
+      )
+      .optional()
+      .describe(
+        "Where the ride's own route (the one of routeSlug) stands at each of the caller's GPS services whose automatic sync is on and which hold it, sorted by service — each group's route is on the group. Only ever about the caller's own connections. Absent when there is none: anonymous caller, no such service, no route."
       ),
   })
   .describe('Ride summary data')
@@ -1901,6 +1976,33 @@ export const UpdateRideResponse = zod
               .describe(
                 "The one thumbnail of the group route to show when the client does not theme its cards: the light variant if there is one, else the dark one. Null when the group has no route or its route has no thumbnail — the ride's own thumbnail is then the one to fall back on. Opaque URL: may carry a query string; substitute {size} only."
               ),
+            gpsSyncStatuses: zod
+              .array(
+                zod
+                  .object({
+                    serviceType: zod
+                      .enum(['HAMMERHEAD', 'GARMIN', 'WAHOO'])
+                      .describe('GPS service'),
+                    state: zod
+                      .enum(['SENT', 'OUTDATED', 'PENDING', 'FAILING', 'RECONNECT_REQUIRED'])
+                      .describe(
+                        'SENT: at the service, up to date; OUTDATED: at the service in an older version that nothing will update, send it again; PENDING: to be sent or updated shortly; FAILING: the last attempt failed (a few retries, then it waits for the route to change); RECONNECT_REQUIRED: the connection must be renewed'
+                      ),
+                    syncedAt: zod.iso
+                      .datetime({ offset: true })
+                      .optional()
+                      .describe(
+                        'When the route was last sent to the service successfully. Absent while it never was.'
+                      ),
+                  })
+                  .describe(
+                    "Where the route stands at one of the caller's automatically synced services"
+                  )
+              )
+              .optional()
+              .describe(
+                "Where the group's route — its own, else the ride's — stands at each of the caller's GPS services whose automatic sync is on and which hold it, sorted by service. Only ever about the caller's own connections. Absent when there is none: anonymous caller, no such service, no route."
+              ),
           })
           .describe('Ride group information')
       )
@@ -2121,6 +2223,31 @@ export const UpdateRideResponse = zod
           .describe(
             "The one thumbnail of the group route to show when the client does not theme its cards: the light variant if there is one, else the dark one. Null when the group has no route or its route has no thumbnail — the ride's own thumbnail is then the one to fall back on. Opaque URL: may carry a query string; substitute {size} only."
           ),
+        gpsSyncStatuses: zod
+          .array(
+            zod
+              .object({
+                serviceType: zod.enum(['HAMMERHEAD', 'GARMIN', 'WAHOO']).describe('GPS service'),
+                state: zod
+                  .enum(['SENT', 'OUTDATED', 'PENDING', 'FAILING', 'RECONNECT_REQUIRED'])
+                  .describe(
+                    'SENT: at the service, up to date; OUTDATED: at the service in an older version that nothing will update, send it again; PENDING: to be sent or updated shortly; FAILING: the last attempt failed (a few retries, then it waits for the route to change); RECONNECT_REQUIRED: the connection must be renewed'
+                  ),
+                syncedAt: zod.iso
+                  .datetime({ offset: true })
+                  .optional()
+                  .describe(
+                    'When the route was last sent to the service successfully. Absent while it never was.'
+                  ),
+              })
+              .describe(
+                "Where the route stands at one of the caller's automatically synced services"
+              )
+          )
+          .optional()
+          .describe(
+            "Where the group's route — its own, else the ride's — stands at each of the caller's GPS services whose automatic sync is on and which hold it, sorted by service. Only ever about the caller's own connections. Absent when there is none: anonymous caller, no such service, no route."
+          ),
       })
       .optional()
       .describe(
@@ -2267,6 +2394,29 @@ export const UpdateRideResponse = zod
       .optional()
       .describe(
         'The weather line of a card: the meeting point, over the window from the departure to the estimated arrival of the last group. Absent when there is nothing to show — finished or cancelled ride, no place, forecast not in cache yet; present only with status OK, STALE or NOT_YET_AVAILABLE. The full forecast is getRideWeather.'
+      ),
+    gpsSyncStatuses: zod
+      .array(
+        zod
+          .object({
+            serviceType: zod.enum(['HAMMERHEAD', 'GARMIN', 'WAHOO']).describe('GPS service'),
+            state: zod
+              .enum(['SENT', 'OUTDATED', 'PENDING', 'FAILING', 'RECONNECT_REQUIRED'])
+              .describe(
+                'SENT: at the service, up to date; OUTDATED: at the service in an older version that nothing will update, send it again; PENDING: to be sent or updated shortly; FAILING: the last attempt failed (a few retries, then it waits for the route to change); RECONNECT_REQUIRED: the connection must be renewed'
+              ),
+            syncedAt: zod.iso
+              .datetime({ offset: true })
+              .optional()
+              .describe(
+                'When the route was last sent to the service successfully. Absent while it never was.'
+              ),
+          })
+          .describe("Where the route stands at one of the caller's automatically synced services")
+      )
+      .optional()
+      .describe(
+        "Where the ride's own route (the one of routeSlug) stands at each of the caller's GPS services whose automatic sync is on and which hold it, sorted by service — each group's route is on the group. Only ever about the caller's own connections. Absent when there is none: anonymous caller, no such service, no route."
       ),
   })
   .describe('Ride summary data')
@@ -2685,6 +2835,33 @@ export const GetRideResponse = zod
               .describe(
                 "The one thumbnail of the group route to show when the client does not theme its cards: the light variant if there is one, else the dark one. Null when the group has no route or its route has no thumbnail — the ride's own thumbnail is then the one to fall back on. Opaque URL: may carry a query string; substitute {size} only."
               ),
+            gpsSyncStatuses: zod
+              .array(
+                zod
+                  .object({
+                    serviceType: zod
+                      .enum(['HAMMERHEAD', 'GARMIN', 'WAHOO'])
+                      .describe('GPS service'),
+                    state: zod
+                      .enum(['SENT', 'OUTDATED', 'PENDING', 'FAILING', 'RECONNECT_REQUIRED'])
+                      .describe(
+                        'SENT: at the service, up to date; OUTDATED: at the service in an older version that nothing will update, send it again; PENDING: to be sent or updated shortly; FAILING: the last attempt failed (a few retries, then it waits for the route to change); RECONNECT_REQUIRED: the connection must be renewed'
+                      ),
+                    syncedAt: zod.iso
+                      .datetime({ offset: true })
+                      .optional()
+                      .describe(
+                        'When the route was last sent to the service successfully. Absent while it never was.'
+                      ),
+                  })
+                  .describe(
+                    "Where the route stands at one of the caller's automatically synced services"
+                  )
+              )
+              .optional()
+              .describe(
+                "Where the group's route — its own, else the ride's — stands at each of the caller's GPS services whose automatic sync is on and which hold it, sorted by service. Only ever about the caller's own connections. Absent when there is none: anonymous caller, no such service, no route."
+              ),
           })
           .describe('Ride group information')
       )
@@ -2905,6 +3082,31 @@ export const GetRideResponse = zod
           .describe(
             "The one thumbnail of the group route to show when the client does not theme its cards: the light variant if there is one, else the dark one. Null when the group has no route or its route has no thumbnail — the ride's own thumbnail is then the one to fall back on. Opaque URL: may carry a query string; substitute {size} only."
           ),
+        gpsSyncStatuses: zod
+          .array(
+            zod
+              .object({
+                serviceType: zod.enum(['HAMMERHEAD', 'GARMIN', 'WAHOO']).describe('GPS service'),
+                state: zod
+                  .enum(['SENT', 'OUTDATED', 'PENDING', 'FAILING', 'RECONNECT_REQUIRED'])
+                  .describe(
+                    'SENT: at the service, up to date; OUTDATED: at the service in an older version that nothing will update, send it again; PENDING: to be sent or updated shortly; FAILING: the last attempt failed (a few retries, then it waits for the route to change); RECONNECT_REQUIRED: the connection must be renewed'
+                  ),
+                syncedAt: zod.iso
+                  .datetime({ offset: true })
+                  .optional()
+                  .describe(
+                    'When the route was last sent to the service successfully. Absent while it never was.'
+                  ),
+              })
+              .describe(
+                "Where the route stands at one of the caller's automatically synced services"
+              )
+          )
+          .optional()
+          .describe(
+            "Where the group's route — its own, else the ride's — stands at each of the caller's GPS services whose automatic sync is on and which hold it, sorted by service. Only ever about the caller's own connections. Absent when there is none: anonymous caller, no such service, no route."
+          ),
       })
       .optional()
       .describe(
@@ -3051,6 +3253,29 @@ export const GetRideResponse = zod
       .optional()
       .describe(
         'The weather line of a card: the meeting point, over the window from the departure to the estimated arrival of the last group. Absent when there is nothing to show — finished or cancelled ride, no place, forecast not in cache yet; present only with status OK, STALE or NOT_YET_AVAILABLE. The full forecast is getRideWeather.'
+      ),
+    gpsSyncStatuses: zod
+      .array(
+        zod
+          .object({
+            serviceType: zod.enum(['HAMMERHEAD', 'GARMIN', 'WAHOO']).describe('GPS service'),
+            state: zod
+              .enum(['SENT', 'OUTDATED', 'PENDING', 'FAILING', 'RECONNECT_REQUIRED'])
+              .describe(
+                'SENT: at the service, up to date; OUTDATED: at the service in an older version that nothing will update, send it again; PENDING: to be sent or updated shortly; FAILING: the last attempt failed (a few retries, then it waits for the route to change); RECONNECT_REQUIRED: the connection must be renewed'
+              ),
+            syncedAt: zod.iso
+              .datetime({ offset: true })
+              .optional()
+              .describe(
+                'When the route was last sent to the service successfully. Absent while it never was.'
+              ),
+          })
+          .describe("Where the route stands at one of the caller's automatically synced services")
+      )
+      .optional()
+      .describe(
+        "Where the ride's own route (the one of routeSlug) stands at each of the caller's GPS services whose automatic sync is on and which hold it, sorted by service — each group's route is on the group. Only ever about the caller's own connections. Absent when there is none: anonymous caller, no such service, no route."
       ),
   })
   .describe('Ride summary data')
@@ -3580,6 +3805,33 @@ export const ChangeRideSlugResponse = zod
               .describe(
                 "The one thumbnail of the group route to show when the client does not theme its cards: the light variant if there is one, else the dark one. Null when the group has no route or its route has no thumbnail — the ride's own thumbnail is then the one to fall back on. Opaque URL: may carry a query string; substitute {size} only."
               ),
+            gpsSyncStatuses: zod
+              .array(
+                zod
+                  .object({
+                    serviceType: zod
+                      .enum(['HAMMERHEAD', 'GARMIN', 'WAHOO'])
+                      .describe('GPS service'),
+                    state: zod
+                      .enum(['SENT', 'OUTDATED', 'PENDING', 'FAILING', 'RECONNECT_REQUIRED'])
+                      .describe(
+                        'SENT: at the service, up to date; OUTDATED: at the service in an older version that nothing will update, send it again; PENDING: to be sent or updated shortly; FAILING: the last attempt failed (a few retries, then it waits for the route to change); RECONNECT_REQUIRED: the connection must be renewed'
+                      ),
+                    syncedAt: zod.iso
+                      .datetime({ offset: true })
+                      .optional()
+                      .describe(
+                        'When the route was last sent to the service successfully. Absent while it never was.'
+                      ),
+                  })
+                  .describe(
+                    "Where the route stands at one of the caller's automatically synced services"
+                  )
+              )
+              .optional()
+              .describe(
+                "Where the group's route — its own, else the ride's — stands at each of the caller's GPS services whose automatic sync is on and which hold it, sorted by service. Only ever about the caller's own connections. Absent when there is none: anonymous caller, no such service, no route."
+              ),
           })
           .describe('Ride group information')
       )
@@ -3800,6 +4052,31 @@ export const ChangeRideSlugResponse = zod
           .describe(
             "The one thumbnail of the group route to show when the client does not theme its cards: the light variant if there is one, else the dark one. Null when the group has no route or its route has no thumbnail — the ride's own thumbnail is then the one to fall back on. Opaque URL: may carry a query string; substitute {size} only."
           ),
+        gpsSyncStatuses: zod
+          .array(
+            zod
+              .object({
+                serviceType: zod.enum(['HAMMERHEAD', 'GARMIN', 'WAHOO']).describe('GPS service'),
+                state: zod
+                  .enum(['SENT', 'OUTDATED', 'PENDING', 'FAILING', 'RECONNECT_REQUIRED'])
+                  .describe(
+                    'SENT: at the service, up to date; OUTDATED: at the service in an older version that nothing will update, send it again; PENDING: to be sent or updated shortly; FAILING: the last attempt failed (a few retries, then it waits for the route to change); RECONNECT_REQUIRED: the connection must be renewed'
+                  ),
+                syncedAt: zod.iso
+                  .datetime({ offset: true })
+                  .optional()
+                  .describe(
+                    'When the route was last sent to the service successfully. Absent while it never was.'
+                  ),
+              })
+              .describe(
+                "Where the route stands at one of the caller's automatically synced services"
+              )
+          )
+          .optional()
+          .describe(
+            "Where the group's route — its own, else the ride's — stands at each of the caller's GPS services whose automatic sync is on and which hold it, sorted by service. Only ever about the caller's own connections. Absent when there is none: anonymous caller, no such service, no route."
+          ),
       })
       .optional()
       .describe(
@@ -3946,6 +4223,29 @@ export const ChangeRideSlugResponse = zod
       .optional()
       .describe(
         'The weather line of a card: the meeting point, over the window from the departure to the estimated arrival of the last group. Absent when there is nothing to show — finished or cancelled ride, no place, forecast not in cache yet; present only with status OK, STALE or NOT_YET_AVAILABLE. The full forecast is getRideWeather.'
+      ),
+    gpsSyncStatuses: zod
+      .array(
+        zod
+          .object({
+            serviceType: zod.enum(['HAMMERHEAD', 'GARMIN', 'WAHOO']).describe('GPS service'),
+            state: zod
+              .enum(['SENT', 'OUTDATED', 'PENDING', 'FAILING', 'RECONNECT_REQUIRED'])
+              .describe(
+                'SENT: at the service, up to date; OUTDATED: at the service in an older version that nothing will update, send it again; PENDING: to be sent or updated shortly; FAILING: the last attempt failed (a few retries, then it waits for the route to change); RECONNECT_REQUIRED: the connection must be renewed'
+              ),
+            syncedAt: zod.iso
+              .datetime({ offset: true })
+              .optional()
+              .describe(
+                'When the route was last sent to the service successfully. Absent while it never was.'
+              ),
+          })
+          .describe("Where the route stands at one of the caller's automatically synced services")
+      )
+      .optional()
+      .describe(
+        "Where the ride's own route (the one of routeSlug) stands at each of the caller's GPS services whose automatic sync is on and which hold it, sorted by service — each group's route is on the group. Only ever about the caller's own connections. Absent when there is none: anonymous caller, no such service, no route."
       ),
   })
   .describe('Ride summary data')
@@ -4370,6 +4670,33 @@ export const ChangeRideStatusResponse = zod
               .describe(
                 "The one thumbnail of the group route to show when the client does not theme its cards: the light variant if there is one, else the dark one. Null when the group has no route or its route has no thumbnail — the ride's own thumbnail is then the one to fall back on. Opaque URL: may carry a query string; substitute {size} only."
               ),
+            gpsSyncStatuses: zod
+              .array(
+                zod
+                  .object({
+                    serviceType: zod
+                      .enum(['HAMMERHEAD', 'GARMIN', 'WAHOO'])
+                      .describe('GPS service'),
+                    state: zod
+                      .enum(['SENT', 'OUTDATED', 'PENDING', 'FAILING', 'RECONNECT_REQUIRED'])
+                      .describe(
+                        'SENT: at the service, up to date; OUTDATED: at the service in an older version that nothing will update, send it again; PENDING: to be sent or updated shortly; FAILING: the last attempt failed (a few retries, then it waits for the route to change); RECONNECT_REQUIRED: the connection must be renewed'
+                      ),
+                    syncedAt: zod.iso
+                      .datetime({ offset: true })
+                      .optional()
+                      .describe(
+                        'When the route was last sent to the service successfully. Absent while it never was.'
+                      ),
+                  })
+                  .describe(
+                    "Where the route stands at one of the caller's automatically synced services"
+                  )
+              )
+              .optional()
+              .describe(
+                "Where the group's route — its own, else the ride's — stands at each of the caller's GPS services whose automatic sync is on and which hold it, sorted by service. Only ever about the caller's own connections. Absent when there is none: anonymous caller, no such service, no route."
+              ),
           })
           .describe('Ride group information')
       )
@@ -4590,6 +4917,31 @@ export const ChangeRideStatusResponse = zod
           .describe(
             "The one thumbnail of the group route to show when the client does not theme its cards: the light variant if there is one, else the dark one. Null when the group has no route or its route has no thumbnail — the ride's own thumbnail is then the one to fall back on. Opaque URL: may carry a query string; substitute {size} only."
           ),
+        gpsSyncStatuses: zod
+          .array(
+            zod
+              .object({
+                serviceType: zod.enum(['HAMMERHEAD', 'GARMIN', 'WAHOO']).describe('GPS service'),
+                state: zod
+                  .enum(['SENT', 'OUTDATED', 'PENDING', 'FAILING', 'RECONNECT_REQUIRED'])
+                  .describe(
+                    'SENT: at the service, up to date; OUTDATED: at the service in an older version that nothing will update, send it again; PENDING: to be sent or updated shortly; FAILING: the last attempt failed (a few retries, then it waits for the route to change); RECONNECT_REQUIRED: the connection must be renewed'
+                  ),
+                syncedAt: zod.iso
+                  .datetime({ offset: true })
+                  .optional()
+                  .describe(
+                    'When the route was last sent to the service successfully. Absent while it never was.'
+                  ),
+              })
+              .describe(
+                "Where the route stands at one of the caller's automatically synced services"
+              )
+          )
+          .optional()
+          .describe(
+            "Where the group's route — its own, else the ride's — stands at each of the caller's GPS services whose automatic sync is on and which hold it, sorted by service. Only ever about the caller's own connections. Absent when there is none: anonymous caller, no such service, no route."
+          ),
       })
       .optional()
       .describe(
@@ -4736,6 +5088,29 @@ export const ChangeRideStatusResponse = zod
       .optional()
       .describe(
         'The weather line of a card: the meeting point, over the window from the departure to the estimated arrival of the last group. Absent when there is nothing to show — finished or cancelled ride, no place, forecast not in cache yet; present only with status OK, STALE or NOT_YET_AVAILABLE. The full forecast is getRideWeather.'
+      ),
+    gpsSyncStatuses: zod
+      .array(
+        zod
+          .object({
+            serviceType: zod.enum(['HAMMERHEAD', 'GARMIN', 'WAHOO']).describe('GPS service'),
+            state: zod
+              .enum(['SENT', 'OUTDATED', 'PENDING', 'FAILING', 'RECONNECT_REQUIRED'])
+              .describe(
+                'SENT: at the service, up to date; OUTDATED: at the service in an older version that nothing will update, send it again; PENDING: to be sent or updated shortly; FAILING: the last attempt failed (a few retries, then it waits for the route to change); RECONNECT_REQUIRED: the connection must be renewed'
+              ),
+            syncedAt: zod.iso
+              .datetime({ offset: true })
+              .optional()
+              .describe(
+                'When the route was last sent to the service successfully. Absent while it never was.'
+              ),
+          })
+          .describe("Where the route stands at one of the caller's automatically synced services")
+      )
+      .optional()
+      .describe(
+        "Where the ride's own route (the one of routeSlug) stands at each of the caller's GPS services whose automatic sync is on and which hold it, sorted by service — each group's route is on the group. Only ever about the caller's own connections. Absent when there is none: anonymous caller, no such service, no route."
       ),
   })
   .describe('Ride summary data')
@@ -5154,6 +5529,33 @@ export const UndeleteRideResponse = zod
               .describe(
                 "The one thumbnail of the group route to show when the client does not theme its cards: the light variant if there is one, else the dark one. Null when the group has no route or its route has no thumbnail — the ride's own thumbnail is then the one to fall back on. Opaque URL: may carry a query string; substitute {size} only."
               ),
+            gpsSyncStatuses: zod
+              .array(
+                zod
+                  .object({
+                    serviceType: zod
+                      .enum(['HAMMERHEAD', 'GARMIN', 'WAHOO'])
+                      .describe('GPS service'),
+                    state: zod
+                      .enum(['SENT', 'OUTDATED', 'PENDING', 'FAILING', 'RECONNECT_REQUIRED'])
+                      .describe(
+                        'SENT: at the service, up to date; OUTDATED: at the service in an older version that nothing will update, send it again; PENDING: to be sent or updated shortly; FAILING: the last attempt failed (a few retries, then it waits for the route to change); RECONNECT_REQUIRED: the connection must be renewed'
+                      ),
+                    syncedAt: zod.iso
+                      .datetime({ offset: true })
+                      .optional()
+                      .describe(
+                        'When the route was last sent to the service successfully. Absent while it never was.'
+                      ),
+                  })
+                  .describe(
+                    "Where the route stands at one of the caller's automatically synced services"
+                  )
+              )
+              .optional()
+              .describe(
+                "Where the group's route — its own, else the ride's — stands at each of the caller's GPS services whose automatic sync is on and which hold it, sorted by service. Only ever about the caller's own connections. Absent when there is none: anonymous caller, no such service, no route."
+              ),
           })
           .describe('Ride group information')
       )
@@ -5374,6 +5776,31 @@ export const UndeleteRideResponse = zod
           .describe(
             "The one thumbnail of the group route to show when the client does not theme its cards: the light variant if there is one, else the dark one. Null when the group has no route or its route has no thumbnail — the ride's own thumbnail is then the one to fall back on. Opaque URL: may carry a query string; substitute {size} only."
           ),
+        gpsSyncStatuses: zod
+          .array(
+            zod
+              .object({
+                serviceType: zod.enum(['HAMMERHEAD', 'GARMIN', 'WAHOO']).describe('GPS service'),
+                state: zod
+                  .enum(['SENT', 'OUTDATED', 'PENDING', 'FAILING', 'RECONNECT_REQUIRED'])
+                  .describe(
+                    'SENT: at the service, up to date; OUTDATED: at the service in an older version that nothing will update, send it again; PENDING: to be sent or updated shortly; FAILING: the last attempt failed (a few retries, then it waits for the route to change); RECONNECT_REQUIRED: the connection must be renewed'
+                  ),
+                syncedAt: zod.iso
+                  .datetime({ offset: true })
+                  .optional()
+                  .describe(
+                    'When the route was last sent to the service successfully. Absent while it never was.'
+                  ),
+              })
+              .describe(
+                "Where the route stands at one of the caller's automatically synced services"
+              )
+          )
+          .optional()
+          .describe(
+            "Where the group's route — its own, else the ride's — stands at each of the caller's GPS services whose automatic sync is on and which hold it, sorted by service. Only ever about the caller's own connections. Absent when there is none: anonymous caller, no such service, no route."
+          ),
       })
       .optional()
       .describe(
@@ -5520,6 +5947,29 @@ export const UndeleteRideResponse = zod
       .optional()
       .describe(
         'The weather line of a card: the meeting point, over the window from the departure to the estimated arrival of the last group. Absent when there is nothing to show — finished or cancelled ride, no place, forecast not in cache yet; present only with status OK, STALE or NOT_YET_AVAILABLE. The full forecast is getRideWeather.'
+      ),
+    gpsSyncStatuses: zod
+      .array(
+        zod
+          .object({
+            serviceType: zod.enum(['HAMMERHEAD', 'GARMIN', 'WAHOO']).describe('GPS service'),
+            state: zod
+              .enum(['SENT', 'OUTDATED', 'PENDING', 'FAILING', 'RECONNECT_REQUIRED'])
+              .describe(
+                'SENT: at the service, up to date; OUTDATED: at the service in an older version that nothing will update, send it again; PENDING: to be sent or updated shortly; FAILING: the last attempt failed (a few retries, then it waits for the route to change); RECONNECT_REQUIRED: the connection must be renewed'
+              ),
+            syncedAt: zod.iso
+              .datetime({ offset: true })
+              .optional()
+              .describe(
+                'When the route was last sent to the service successfully. Absent while it never was.'
+              ),
+          })
+          .describe("Where the route stands at one of the caller's automatically synced services")
+      )
+      .optional()
+      .describe(
+        "Where the ride's own route (the one of routeSlug) stands at each of the caller's GPS services whose automatic sync is on and which hold it, sorted by service — each group's route is on the group. Only ever about the caller's own connections. Absent when there is none: anonymous caller, no such service, no route."
       ),
   })
   .describe('Ride summary data')

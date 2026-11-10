@@ -7,6 +7,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'instant.dart';
 import 'local_time.dart';
 import 'public_user_dto.dart';
+import 'route_gps_sync_status_dto.dart';
 
 part 'ride_group_dto.freezed.dart';
 part 'ride_group_dto.g.dart';
@@ -68,6 +69,9 @@ abstract class RideGroupDto with _$RideGroupDto {
 
     /// The one thumbnail of the group route to show when the client does not theme its cards: the light variant if there is one, else the dark one. Null when the group has no route or its route has no thumbnail — the ride's own thumbnail is then the one to fall back on. Opaque URL: may carry a query string; substitute {size} only.
     String? thumbnailUrl,
+
+    /// Where the group's route — its own, else the ride's — stands at each of the caller's GPS services whose automatic sync is on and which hold it, sorted by service. Only ever about the caller's own connections. Absent when there is none: anonymous caller, no such service, no route.
+    List<RouteGpsSyncStatusDto>? gpsSyncStatuses,
   }) = _RideGroupDto;
 
   factory RideGroupDto.fromJson(Map<String, Object?> json) =>

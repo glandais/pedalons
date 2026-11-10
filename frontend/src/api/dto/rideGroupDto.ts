@@ -1,6 +1,7 @@
 import type { Instant } from './instant.ts'
 import type { LocalTime } from './localTime.ts'
 import type { PublicUserDto } from './publicUserDto.ts'
+import type { RouteGpsSyncStatusDto } from './routeGpsSyncStatusDto.ts'
 
 /**
  * Ride group information
@@ -42,4 +43,6 @@ export interface RideGroupDto {
   thumbnailDarkUrl?: string
   /** The one thumbnail of the group route to show when the client does not theme its cards: the light variant if there is one, else the dark one. Null when the group has no route or its route has no thumbnail — the ride's own thumbnail is then the one to fall back on. Opaque URL: may carry a query string; substitute {size} only. */
   thumbnailUrl?: string
+  /** Where the group's route — its own, else the ride's — stands at each of the caller's GPS services whose automatic sync is on and which hold it, sorted by service. Only ever about the caller's own connections. Absent when there is none: anonymous caller, no such service, no route. */
+  gpsSyncStatuses?: RouteGpsSyncStatusDto[]
 }

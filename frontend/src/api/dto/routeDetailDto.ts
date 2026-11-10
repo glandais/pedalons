@@ -3,6 +3,7 @@ import type { GeoJsonPoint } from './geoJsonPoint.ts'
 import type { Instant } from './instant.ts'
 import type { MediaDto } from './mediaDto.ts'
 import type { PublicUserDto } from './publicUserDto.ts'
+import type { RouteGpsSyncStatusDto } from './routeGpsSyncStatusDto.ts'
 import type { SurfaceType } from './surfaceType.ts'
 import type { TagDto } from './tagDto.ts'
 import type { TeamPublicationDto } from './teamPublicationDto.ts'
@@ -54,4 +55,6 @@ export interface RouteDetailDto {
   commentCount?: number
   /** The team's ROUTE tags the route carries, sorted by label. Empty when it carries none. */
   tags: TagDto[]
+  /** Where this route stands at each of the caller's GPS services whose automatic sync is on and which hold it (sent for one of their rides or trip stages, or uploaded by hand), sorted by service. Only ever about the caller's own connections. Absent when there is none — anonymous caller, no such service, or a response that does not report it. */
+  gpsSyncStatuses?: RouteGpsSyncStatusDto[]
 }

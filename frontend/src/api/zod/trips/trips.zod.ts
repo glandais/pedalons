@@ -1320,6 +1320,33 @@ export const CreateTripResponse = zod
                   .describe(
                     "The team's ROUTE tags the route carries, sorted by label. Empty when it carries none."
                   ),
+                gpsSyncStatuses: zod
+                  .array(
+                    zod
+                      .object({
+                        serviceType: zod
+                          .enum(['HAMMERHEAD', 'GARMIN', 'WAHOO'])
+                          .describe('GPS service'),
+                        state: zod
+                          .enum(['SENT', 'OUTDATED', 'PENDING', 'FAILING', 'RECONNECT_REQUIRED'])
+                          .describe(
+                            'SENT: at the service, up to date; OUTDATED: at the service in an older version that nothing will update, send it again; PENDING: to be sent or updated shortly; FAILING: the last attempt failed (a few retries, then it waits for the route to change); RECONNECT_REQUIRED: the connection must be renewed'
+                          ),
+                        syncedAt: zod.iso
+                          .datetime({ offset: true })
+                          .optional()
+                          .describe(
+                            'When the route was last sent to the service successfully. Absent while it never was.'
+                          ),
+                      })
+                      .describe(
+                        "Where the route stands at one of the caller's automatically synced services"
+                      )
+                  )
+                  .optional()
+                  .describe(
+                    "Where this route stands at each of the caller's GPS services whose automatic sync is on and which hold it (sent for one of their rides or trip stages, or uploaded by hand), sorted by service. Only ever about the caller's own connections. Absent when there is none — anonymous caller, no such service, or a response that does not report it (create, update)."
+                  ),
               })
               .optional()
               .describe('Route'),
@@ -3142,6 +3169,33 @@ export const UpdateTripResponse = zod
                   .describe(
                     "The team's ROUTE tags the route carries, sorted by label. Empty when it carries none."
                   ),
+                gpsSyncStatuses: zod
+                  .array(
+                    zod
+                      .object({
+                        serviceType: zod
+                          .enum(['HAMMERHEAD', 'GARMIN', 'WAHOO'])
+                          .describe('GPS service'),
+                        state: zod
+                          .enum(['SENT', 'OUTDATED', 'PENDING', 'FAILING', 'RECONNECT_REQUIRED'])
+                          .describe(
+                            'SENT: at the service, up to date; OUTDATED: at the service in an older version that nothing will update, send it again; PENDING: to be sent or updated shortly; FAILING: the last attempt failed (a few retries, then it waits for the route to change); RECONNECT_REQUIRED: the connection must be renewed'
+                          ),
+                        syncedAt: zod.iso
+                          .datetime({ offset: true })
+                          .optional()
+                          .describe(
+                            'When the route was last sent to the service successfully. Absent while it never was.'
+                          ),
+                      })
+                      .describe(
+                        "Where the route stands at one of the caller's automatically synced services"
+                      )
+                  )
+                  .optional()
+                  .describe(
+                    "Where this route stands at each of the caller's GPS services whose automatic sync is on and which hold it (sent for one of their rides or trip stages, or uploaded by hand), sorted by service. Only ever about the caller's own connections. Absent when there is none — anonymous caller, no such service, or a response that does not report it (create, update)."
+                  ),
               })
               .optional()
               .describe('Route'),
@@ -4355,6 +4409,33 @@ export const GetTripResponse = zod
                   )
                   .describe(
                     "The team's ROUTE tags the route carries, sorted by label. Empty when it carries none."
+                  ),
+                gpsSyncStatuses: zod
+                  .array(
+                    zod
+                      .object({
+                        serviceType: zod
+                          .enum(['HAMMERHEAD', 'GARMIN', 'WAHOO'])
+                          .describe('GPS service'),
+                        state: zod
+                          .enum(['SENT', 'OUTDATED', 'PENDING', 'FAILING', 'RECONNECT_REQUIRED'])
+                          .describe(
+                            'SENT: at the service, up to date; OUTDATED: at the service in an older version that nothing will update, send it again; PENDING: to be sent or updated shortly; FAILING: the last attempt failed (a few retries, then it waits for the route to change); RECONNECT_REQUIRED: the connection must be renewed'
+                          ),
+                        syncedAt: zod.iso
+                          .datetime({ offset: true })
+                          .optional()
+                          .describe(
+                            'When the route was last sent to the service successfully. Absent while it never was.'
+                          ),
+                      })
+                      .describe(
+                        "Where the route stands at one of the caller's automatically synced services"
+                      )
+                  )
+                  .optional()
+                  .describe(
+                    "Where this route stands at each of the caller's GPS services whose automatic sync is on and which hold it (sent for one of their rides or trip stages, or uploaded by hand), sorted by service. Only ever about the caller's own connections. Absent when there is none — anonymous caller, no such service, or a response that does not report it (create, update)."
                   ),
               })
               .optional()
@@ -5675,6 +5756,33 @@ export const ChangeTripSlugResponse = zod
                   .describe(
                     "The team's ROUTE tags the route carries, sorted by label. Empty when it carries none."
                   ),
+                gpsSyncStatuses: zod
+                  .array(
+                    zod
+                      .object({
+                        serviceType: zod
+                          .enum(['HAMMERHEAD', 'GARMIN', 'WAHOO'])
+                          .describe('GPS service'),
+                        state: zod
+                          .enum(['SENT', 'OUTDATED', 'PENDING', 'FAILING', 'RECONNECT_REQUIRED'])
+                          .describe(
+                            'SENT: at the service, up to date; OUTDATED: at the service in an older version that nothing will update, send it again; PENDING: to be sent or updated shortly; FAILING: the last attempt failed (a few retries, then it waits for the route to change); RECONNECT_REQUIRED: the connection must be renewed'
+                          ),
+                        syncedAt: zod.iso
+                          .datetime({ offset: true })
+                          .optional()
+                          .describe(
+                            'When the route was last sent to the service successfully. Absent while it never was.'
+                          ),
+                      })
+                      .describe(
+                        "Where the route stands at one of the caller's automatically synced services"
+                      )
+                  )
+                  .optional()
+                  .describe(
+                    "Where this route stands at each of the caller's GPS services whose automatic sync is on and which hold it (sent for one of their rides or trip stages, or uploaded by hand), sorted by service. Only ever about the caller's own connections. Absent when there is none — anonymous caller, no such service, or a response that does not report it (create, update)."
+                  ),
               })
               .optional()
               .describe('Route'),
@@ -6895,6 +7003,33 @@ export const ChangeTripStatusResponse = zod
                   .describe(
                     "The team's ROUTE tags the route carries, sorted by label. Empty when it carries none."
                   ),
+                gpsSyncStatuses: zod
+                  .array(
+                    zod
+                      .object({
+                        serviceType: zod
+                          .enum(['HAMMERHEAD', 'GARMIN', 'WAHOO'])
+                          .describe('GPS service'),
+                        state: zod
+                          .enum(['SENT', 'OUTDATED', 'PENDING', 'FAILING', 'RECONNECT_REQUIRED'])
+                          .describe(
+                            'SENT: at the service, up to date; OUTDATED: at the service in an older version that nothing will update, send it again; PENDING: to be sent or updated shortly; FAILING: the last attempt failed (a few retries, then it waits for the route to change); RECONNECT_REQUIRED: the connection must be renewed'
+                          ),
+                        syncedAt: zod.iso
+                          .datetime({ offset: true })
+                          .optional()
+                          .describe(
+                            'When the route was last sent to the service successfully. Absent while it never was.'
+                          ),
+                      })
+                      .describe(
+                        "Where the route stands at one of the caller's automatically synced services"
+                      )
+                  )
+                  .optional()
+                  .describe(
+                    "Where this route stands at each of the caller's GPS services whose automatic sync is on and which hold it (sent for one of their rides or trip stages, or uploaded by hand), sorted by service. Only ever about the caller's own connections. Absent when there is none — anonymous caller, no such service, or a response that does not report it (create, update)."
+                  ),
               })
               .optional()
               .describe('Route'),
@@ -8108,6 +8243,33 @@ export const UndeleteTripResponse = zod
                   )
                   .describe(
                     "The team's ROUTE tags the route carries, sorted by label. Empty when it carries none."
+                  ),
+                gpsSyncStatuses: zod
+                  .array(
+                    zod
+                      .object({
+                        serviceType: zod
+                          .enum(['HAMMERHEAD', 'GARMIN', 'WAHOO'])
+                          .describe('GPS service'),
+                        state: zod
+                          .enum(['SENT', 'OUTDATED', 'PENDING', 'FAILING', 'RECONNECT_REQUIRED'])
+                          .describe(
+                            'SENT: at the service, up to date; OUTDATED: at the service in an older version that nothing will update, send it again; PENDING: to be sent or updated shortly; FAILING: the last attempt failed (a few retries, then it waits for the route to change); RECONNECT_REQUIRED: the connection must be renewed'
+                          ),
+                        syncedAt: zod.iso
+                          .datetime({ offset: true })
+                          .optional()
+                          .describe(
+                            'When the route was last sent to the service successfully. Absent while it never was.'
+                          ),
+                      })
+                      .describe(
+                        "Where the route stands at one of the caller's automatically synced services"
+                      )
+                  )
+                  .optional()
+                  .describe(
+                    "Where this route stands at each of the caller's GPS services whose automatic sync is on and which hold it (sent for one of their rides or trip stages, or uploaded by hand), sorted by service. Only ever about the caller's own connections. Absent when there is none — anonymous caller, no such service, or a response that does not report it (create, update)."
                   ),
               })
               .optional()

@@ -45,9 +45,9 @@ PublicationDtoRide _$PublicationDtoRideFromJson(
   endPlace: json['endPlace'] == null
       ? null
       : PlaceDetailDto.fromJson(json['endPlace'] as Map<String, dynamic>),
-  weather: json['weather'] == null
-      ? null
-      : RideWeatherSummaryDto.fromJson(json['weather'] as Map<String, dynamic>),
+  gpsSyncStatuses: (json['gpsSyncStatuses'] as List<dynamic>?)
+      ?.map((e) => RouteGpsSyncStatusDto.fromJson(e as Map<String, dynamic>))
+      .toList(),
   thumbnailLightUrl: json['thumbnailLightUrl'] as String?,
   thumbnailDarkUrl: json['thumbnailDarkUrl'] as String?,
   thumbnailUrl: json['thumbnailUrl'] as String?,
@@ -61,6 +61,9 @@ PublicationDtoRide _$PublicationDtoRideFromJson(
   maxParticipants: (json['maxParticipants'] as num?)?.toInt(),
   commentCount: (json['commentCount'] as num?)?.toInt(),
   excerpt: json['excerpt'] as String?,
+  weather: json['weather'] == null
+      ? null
+      : RideWeatherSummaryDto.fromJson(json['weather'] as Map<String, dynamic>),
   publishAt: json['publishAt'] as String?,
   $type: json['type'] as String?,
 );
@@ -92,7 +95,7 @@ Map<String, dynamic> _$PublicationDtoRideToJson(
   'surfaceType': instance.surfaceType,
   'startPlace': instance.startPlace?.toJson(),
   'endPlace': instance.endPlace?.toJson(),
-  'weather': instance.weather?.toJson(),
+  'gpsSyncStatuses': instance.gpsSyncStatuses?.map((e) => e.toJson()).toList(),
   'thumbnailLightUrl': instance.thumbnailLightUrl,
   'thumbnailDarkUrl': instance.thumbnailDarkUrl,
   'thumbnailUrl': instance.thumbnailUrl,
@@ -104,6 +107,7 @@ Map<String, dynamic> _$PublicationDtoRideToJson(
   'maxParticipants': instance.maxParticipants,
   'commentCount': instance.commentCount,
   'excerpt': instance.excerpt,
+  'weather': instance.weather?.toJson(),
   'publishAt': instance.publishAt,
   'type': instance.$type,
 };

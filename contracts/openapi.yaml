@@ -4901,6 +4901,15 @@ components:
             \ The full forecast is getRideWeather."
           type: object
           $ref: "#/components/schemas/RideWeatherSummaryDto"
+        gpsSyncStatuses:
+          type: array
+          items:
+            $ref: "#/components/schemas/RouteGpsSyncStatusDto"
+          description: "Where the ride's own route (the one of routeSlug) stands at\
+            \ each of the caller's GPS services whose automatic sync is on and which\
+            \ hold it, sorted by service — each group's route is on the group. Only\
+            \ ever about the caller's own connections. Absent when there is none:\
+            \ anonymous caller, no such service, no route."
     RideGroupDto:
       type: object
       description: Ride group information
@@ -4999,6 +5008,14 @@ components:
             \ dark one. Null when the group has no route or its route has no thumbnail\
             \ — the ride's own thumbnail is then the one to fall back on. Opaque URL:\
             \ may carry a query string; substitute {size} only."
+        gpsSyncStatuses:
+          type: array
+          items:
+            $ref: "#/components/schemas/RouteGpsSyncStatusDto"
+          description: "Where the group's route — its own, else the ride's — stands\
+            \ at each of the caller's GPS services whose automatic sync is on and\
+            \ which hold it, sorted by service. Only ever about the caller's own connections.\
+            \ Absent when there is none: anonymous caller, no such service, no route."
     RideGroupSummaryDto:
       type: object
       description: "One group of a ride, as a list row shows it: name, pace and fill.\
@@ -5600,6 +5617,16 @@ components:
             $ref: "#/components/schemas/TagDto"
           description: "The team's ROUTE tags the route carries, sorted by label.\
             \ Empty when it carries none."
+        gpsSyncStatuses:
+          type: array
+          items:
+            $ref: "#/components/schemas/RouteGpsSyncStatusDto"
+          description: "Where this route stands at each of the caller's GPS services\
+            \ whose automatic sync is on and which hold it (sent for one of their\
+            \ rides or trip stages, or uploaded by hand), sorted by service. Only\
+            \ ever about the caller's own connections. Absent when there is none —\
+            \ anonymous caller, no such service, or a response that does not report\
+            \ it."
     RouteDto:
       type: object
       description: Route summary data
@@ -5694,6 +5721,41 @@ components:
             $ref: "#/components/schemas/TagDto"
           description: "The team's ROUTE tags the route carries, sorted by label.\
             \ Empty when it carries none."
+        gpsSyncStatuses:
+          type: array
+          items:
+            $ref: "#/components/schemas/RouteGpsSyncStatusDto"
+          description: "Where this route stands at each of the caller's GPS services\
+            \ whose automatic sync is on and which hold it (sent for one of their\
+            \ rides or trip stages, or uploaded by hand), sorted by service. Only\
+            \ ever about the caller's own connections. Absent when there is none —\
+            \ anonymous caller, no such service, or a response that does not report\
+            \ it (create, update)."
+    RouteGpsSyncStatusDto:
+      type: object
+      description: Where the route stands at one of the caller's automatically synced
+        services
+      required:
+      - serviceType
+      - state
+      properties:
+        serviceType:
+          description: GPS service
+          type: string
+          $ref: "#/components/schemas/GpsServiceType"
+        state:
+          description: "SENT: at the service, up to date; OUTDATED: at the service\
+            \ in an older version that nothing will update, send it again; PENDING:\
+            \ to be sent or updated shortly; FAILING: the last attempt failed (a few\
+            \ retries, then it waits for the route to change); RECONNECT_REQUIRED:\
+            \ the connection must be renewed"
+          type: string
+          $ref: "#/components/schemas/GpsRouteSyncState"
+        syncedAt:
+          description: When the route was last sent to the service successfully. Absent
+            while it never was.
+          type: string
+          $ref: "#/components/schemas/Instant"
     RouteListResponse:
       type: object
       description: Paginated route list response
@@ -20408,7 +20470,7 @@ paths:
                 $ref: "#/components/schemas/VersionDto"
 info:
   title: Pedalons API
-  version: 13.3.0
+  version: 13.4.0
   description: API for Pedalons Cycling Team Management Platform
 servers:
 - url: http://localhost:8080

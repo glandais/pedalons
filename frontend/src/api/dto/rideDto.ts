@@ -6,6 +6,7 @@ import type { RideDtoType } from './rideDtoType.ts'
 import type { RideGroupDto } from './rideGroupDto.ts'
 import type { RideGroupSummaryDto } from './rideGroupSummaryDto.ts'
 import type { RideWeatherSummaryDto } from './rideWeatherSummaryDto.ts'
+import type { RouteGpsSyncStatusDto } from './routeGpsSyncStatusDto.ts'
 import type { Status } from './status.ts'
 import type { SurfaceType } from './surfaceType.ts'
 import type { TagDto } from './tagDto.ts'
@@ -91,4 +92,6 @@ export interface RideDto {
   tags: TagDto[]
   /** The weather line of a card: the meeting point, over the window from the departure to the estimated arrival of the last group. Absent when there is nothing to show — finished or cancelled ride, no place, forecast not in cache yet; present only with status OK, STALE or NOT_YET_AVAILABLE. The full forecast is getRideWeather. */
   weather?: RideWeatherSummaryDto
+  /** Where the ride's own route (the one of routeSlug) stands at each of the caller's GPS services whose automatic sync is on and which hold it, sorted by service — each group's route is on the group. Only ever about the caller's own connections. Absent when there is none: anonymous caller, no such service, no route. */
+  gpsSyncStatuses?: RouteGpsSyncStatusDto[]
 }

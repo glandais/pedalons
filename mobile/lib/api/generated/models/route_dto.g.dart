@@ -26,6 +26,9 @@ _RouteDto _$RouteDtoFromJson(Map<String, dynamic> json) => _RouteDto(
   excerpt: json['excerpt'] as String?,
   thumbnailUrl: json['thumbnailUrl'] as String?,
   commentCount: (json['commentCount'] as num?)?.toInt(),
+  gpsSyncStatuses: (json['gpsSyncStatuses'] as List<dynamic>?)
+      ?.map((e) => RouteGpsSyncStatusDto.fromJson(e as Map<String, dynamic>))
+      .toList(),
 );
 
 Map<String, dynamic> _$RouteDtoToJson(_RouteDto instance) => <String, dynamic>{
@@ -46,4 +49,5 @@ Map<String, dynamic> _$RouteDtoToJson(_RouteDto instance) => <String, dynamic>{
   'excerpt': instance.excerpt,
   'thumbnailUrl': instance.thumbnailUrl,
   'commentCount': instance.commentCount,
+  'gpsSyncStatuses': instance.gpsSyncStatuses?.map((e) => e.toJson()).toList(),
 };

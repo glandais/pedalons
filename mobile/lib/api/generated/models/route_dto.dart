@@ -7,6 +7,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'elevation_state.dart';
 import 'instant.dart';
 import 'media_dto.dart';
+import 'route_gps_sync_status_dto.dart';
 import 'surface_type.dart';
 import 'tag_dto.dart';
 import 'team_publication_dto.dart';
@@ -69,6 +70,9 @@ abstract class RouteDto with _$RouteDto {
 
     /// Number of comments, replies included. Absent when the caller may not read the comments of this route — comments are members-only, so an outsider is told nothing, not even zero.
     int? commentCount,
+
+    /// Where this route stands at each of the caller's GPS services whose automatic sync is on and which hold it (sent for one of their rides or trip stages, or uploaded by hand), sorted by service. Only ever about the caller's own connections. Absent when there is none — anonymous caller, no such service, or a response that does not report it (create, update).
+    List<RouteGpsSyncStatusDto>? gpsSyncStatuses,
   }) = _RouteDto;
 
   factory RouteDto.fromJson(Map<String, Object?> json) =>

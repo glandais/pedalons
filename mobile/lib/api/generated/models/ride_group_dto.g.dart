@@ -30,26 +30,33 @@ _RideGroupDto _$RideGroupDtoFromJson(Map<String, dynamic> json) =>
       thumbnailLightUrl: json['thumbnailLightUrl'] as String?,
       thumbnailDarkUrl: json['thumbnailDarkUrl'] as String?,
       thumbnailUrl: json['thumbnailUrl'] as String?,
+      gpsSyncStatuses: (json['gpsSyncStatuses'] as List<dynamic>?)
+          ?.map(
+            (e) => RouteGpsSyncStatusDto.fromJson(e as Map<String, dynamic>),
+          )
+          .toList(),
     );
 
-Map<String, dynamic> _$RideGroupDtoToJson(_RideGroupDto instance) =>
-    <String, dynamic>{
-      'id': instance.id,
-      'name': instance.name,
-      'startAt': instance.startAt,
-      'countParticipants': instance.countParticipants,
-      'participants': instance.participants.map((e) => e.toJson()).toList(),
-      'sortOrder': instance.sortOrder,
-      'registered': instance.registered,
-      'full': instance.full,
-      'time': instance.time,
-      'routeSlug': instance.routeSlug,
-      'averageSpeed': instance.averageSpeed,
-      'maxParticipants': instance.maxParticipants,
-      'distance': instance.distance,
-      'elevationGain': instance.elevationGain,
-      'leader': instance.leader?.toJson(),
-      'thumbnailLightUrl': instance.thumbnailLightUrl,
-      'thumbnailDarkUrl': instance.thumbnailDarkUrl,
-      'thumbnailUrl': instance.thumbnailUrl,
-    };
+Map<String, dynamic> _$RideGroupDtoToJson(
+  _RideGroupDto instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'name': instance.name,
+  'startAt': instance.startAt,
+  'countParticipants': instance.countParticipants,
+  'participants': instance.participants.map((e) => e.toJson()).toList(),
+  'sortOrder': instance.sortOrder,
+  'registered': instance.registered,
+  'full': instance.full,
+  'time': instance.time,
+  'routeSlug': instance.routeSlug,
+  'averageSpeed': instance.averageSpeed,
+  'maxParticipants': instance.maxParticipants,
+  'distance': instance.distance,
+  'elevationGain': instance.elevationGain,
+  'leader': instance.leader?.toJson(),
+  'thumbnailLightUrl': instance.thumbnailLightUrl,
+  'thumbnailDarkUrl': instance.thumbnailDarkUrl,
+  'thumbnailUrl': instance.thumbnailUrl,
+  'gpsSyncStatuses': instance.gpsSyncStatuses?.map((e) => e.toJson()).toList(),
+};
