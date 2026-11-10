@@ -5,6 +5,8 @@ import fr.pedalons.common.TsidUtils;
 import fr.pedalons.domain.route.Route;
 import fr.pedalons.dto.comments.response.CommentCounts;
 import fr.pedalons.dto.common.asset.MediaDto;
+import fr.pedalons.dto.gps.response.RouteGpsSyncStatusDto;
+import fr.pedalons.dto.gps.response.RouteGpsSyncStatuses;
 import fr.pedalons.dto.publications.response.TeamPublicationDto;
 import fr.pedalons.dto.tags.response.ContentTags;
 import fr.pedalons.dto.tags.response.TagDto;
@@ -72,15 +74,30 @@ public record RouteDto(
                 "The team's ROUTE tags the route carries, sorted by label. Empty when it carries"
                     + " none.",
             required = true)
-        List<TagDto> tags) {
+        List<TagDto> tags,
+    @Nullable
+        @Schema(
+            description =
+                "Where this route stands at each of the caller's GPS services whose automatic sync"
+                    + " is on and which hold it (sent for one of their rides or trip stages, or"
+                    + " uploaded by hand), sorted by service. Only ever about the caller's own"
+                    + " connections. Absent when there is none — anonymous caller, no such"
+                    + " service, or a response that does not report it (create, update).")
+        List<RouteGpsSyncStatusDto> gpsSyncStatuses) {
 
   public static RouteDto from(
-      Route route, AssetService assetService, CommentCounts commentCounts, ContentTags tags) {
-    return from(route, assetService, commentCounts, tags, ListViewMode.FULL);
+      Route route,
+      AssetService assetService,
+      CommentCounts commentCounts,
+      ContentTags tags,
+      RouteGpsSyncStatuses gpsSync) {
+    return from(route, assetService, commentCounts, tags, gpsSync, ListViewMode.FULL);
   }
 
   /**
    * @param tags the tags of this whole page, resolved in one query by {@code TagLookup}
+   * @param gpsSync the caller's sync statuses of this whole page, resolved at once by {@code
+   *     GpsSyncLookup} — never one lookup per row
    * @param view {@link ListViewMode#COMPACT} leaves the description and the asset inventory out of the
    *     row; {@code excerpt} and {@code thumbnailUrl} carry what it renders instead
    */
@@ -89,6 +106,7 @@ public record RouteDto(
       AssetService assetService,
       CommentCounts commentCounts,
       ContentTags tags,
+      RouteGpsSyncStatuses gpsSync,
       @Nullable ListViewMode view) {
     return new RouteDto(
         TsidUtils.toString(route.getId()),
@@ -107,7 +125,8 @@ public record RouteDto(
         route.getCreatedAt(),
         route.isDeleted(),
         commentCounts.forEntity(route.getId()),
-        tags.forContent(route.getId()));
+        tags.forContent(route.getId()),
+        gpsSync.fieldFor(route.getId()));
   }
 
   /** The route's own thumbnail, light preferred over dark — the map preview a card shows. */

@@ -3,6 +3,8 @@ package fr.pedalons.dto.rides.response;
 import fr.pedalons.common.TsidUtils;
 import fr.pedalons.domain.ride.RideGroup;
 import fr.pedalons.domain.route.Route;
+import fr.pedalons.dto.gps.response.RouteGpsSyncStatusDto;
+import fr.pedalons.dto.gps.response.RouteGpsSyncStatuses;
 import fr.pedalons.dto.users.response.PublicUserDto;
 import fr.pedalons.dto.validation.ValidateSchema;
 import fr.pedalons.repository.ride.RideGroupRepository.GroupRow;
@@ -93,7 +95,15 @@ public record RideGroupDto(
                     + " group has no route or its route has no thumbnail — the ride's own thumbnail"
                     + " is then the one to fall back on. Opaque URL: may carry a query string;"
                     + " substitute {size} only.")
-        String thumbnailUrl) {
+        String thumbnailUrl,
+    @Nullable
+        @Schema(
+            description =
+                "Where the group's route — its own, else the ride's — stands at each of the"
+                    + " caller's GPS services whose automatic sync is on and which hold it, sorted"
+                    + " by service. Only ever about the caller's own connections. Absent when there"
+                    + " is none: anonymous caller, no such service, no route.")
+        List<RouteGpsSyncStatusDto> gpsSyncStatuses) {
 
   /**
    * @param registeredGroupId the group of this ride the current user joined, or {@code null} — the
@@ -105,6 +115,8 @@ public record RideGroupDto(
    *     group.getParticipations()}, which hydrates the whole list
    * @param withNames {@code false} for a caller who is not a member of the team: no leader, the
    *     participants already stripped by the lookup (docs/LEDGER_*.md API-144)
+   * @param gpsSync the caller's sync statuses of the ride's routes and of every group's, resolved
+   *     at once by {@code GpsSyncLookup} — never one lookup per group
    */
   public static RideGroupDto from(
       RideGroup group,
@@ -112,7 +124,8 @@ public record RideGroupDto(
       @Nullable Long registeredGroupId,
       @Nullable ThemedThumbnail routeThumbnail,
       ParticipantPreview participants,
-      boolean withNames) {
+      boolean withNames,
+      RouteGpsSyncStatuses gpsSync) {
     // RideGroup.route is a to-one, already resolved (and batched across the ride's groups) by the
     // routeSlug read just below: the metrics cost no extra query.
     Route route = group.getRoute();
@@ -134,7 +147,19 @@ public record RideGroupDto(
         withNames && group.getLeader() != null ? PublicUserDto.from(group.getLeader()) : null,
         routeThumbnail != null ? routeThumbnail.light() : null,
         routeThumbnail != null ? routeThumbnail.dark() : null,
-        routeThumbnail != null ? routeThumbnail.collapsed() : null);
+        routeThumbnail != null ? routeThumbnail.collapsed() : null,
+        gpsSync.fieldFor(effectiveRouteId(route, group.getRide().getRoute())));
+  }
+
+  /**
+   * The route the group rides, its own else its ride's — the rule of the route sync ({@code
+   * GpsSyncTargetRow.effectiveRouteId}). {@code getId()} on a lazy proxy reads the key in hand.
+   */
+  private static @Nullable Long effectiveRouteId(@Nullable Route own, @Nullable Route ride) {
+    if (own != null) {
+      return own.getId();
+    }
+    return ride != null ? ride.getId() : null;
   }
 
   /**
@@ -149,12 +174,17 @@ public record RideGroupDto(
    * @param participants resolved for every such group of the page in two queries
    * @param withNames {@code false} for a caller who is not a member of the team: no leader
    *     (docs/LEDGER_*.md API-144)
+   * @param rideRouteId the route of the group's ride, the group's when it has none of its own
+   * @param gpsSync the caller's sync statuses of the page's routes, resolved at once by {@code
+   *     GpsSyncLookup}
    */
   public static RideGroupDto fromRow(
       GroupRow row,
       @Nullable ThemedThumbnail routeThumbnail,
       ParticipantPreview participants,
-      boolean withNames) {
+      boolean withNames,
+      @Nullable Long rideRouteId,
+      RouteGpsSyncStatuses gpsSync) {
     return new RideGroupDto(
         TsidUtils.toString(row.id()),
         row.name(),
@@ -176,6 +206,7 @@ public record RideGroupDto(
             : null,
         routeThumbnail != null ? routeThumbnail.light() : null,
         routeThumbnail != null ? routeThumbnail.dark() : null,
-        routeThumbnail != null ? routeThumbnail.collapsed() : null);
+        routeThumbnail != null ? routeThumbnail.collapsed() : null,
+        gpsSync.fieldFor(row.routeId() != null ? row.routeId() : rideRouteId));
   }
 }

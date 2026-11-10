@@ -43,6 +43,7 @@ import fr.pedalons.service.common.MemberNamesVisibility;
 import fr.pedalons.service.common.ParticipantPreviewLookup;
 import fr.pedalons.service.common.ParticipationLookup;
 import fr.pedalons.service.common.TeamEntityService;
+import fr.pedalons.service.gps.sync.GpsSyncLookup;
 import fr.pedalons.service.notification.NotificationPublisher;
 import fr.pedalons.service.publication.PublicationEndCalculator;
 import fr.pedalons.service.route.RouteService;
@@ -97,6 +98,8 @@ public class TripService extends TeamEntityService<Trip, TripRepository, TripDto
 
   @Inject TagLookup tagLookup;
 
+  @Inject GpsSyncLookup gpsSyncLookup;
+
   @Inject TripWeatherService tripWeatherService;
 
   @Inject ObjectMapper objectMapper;
@@ -112,11 +115,14 @@ public class TripService extends TeamEntityService<Trip, TripRepository, TripDto
   protected TripDto toDto(Trip entity) {
     // The trip's tags and those of its stages' routes, in one query: the stage cards show their
     // route's tags (docs/plans/archive/2026-10-01-tags.md D15).
+    List<Long> stageRouteIds =
+        entity.getStages().stream()
+            .filter(stage -> !stage.isDeleted() && stage.getRoute() != null)
+            .map(stage -> stage.getRoute().getId())
+            .toList();
     List<Long> taggedIds = new ArrayList<>();
     taggedIds.add(entity.getId());
-    entity.getStages().stream()
-        .filter(stage -> !stage.isDeleted() && stage.getRoute() != null)
-        .forEach(stage -> taggedIds.add(stage.getRoute().getId()));
+    taggedIds.addAll(stageRouteIds);
     List<TeamEntity> commented = new ArrayList<>();
     commented.add(entity);
     entity.getStages().stream().filter(stage -> !stage.isDeleted()).forEach(commented::add);
@@ -132,7 +138,10 @@ public class TripService extends TeamEntityService<Trip, TripRepository, TripDto
         // API-11).
         commentCountLookup.forEntities(commented),
         participantPreviewLookup.forTrip(entity.getId(), withNames),
-        tagLookup.forContents(taggedIds));
+        tagLookup.forContents(taggedIds),
+        // Where the stages' routes stand at the caller's synced services: at most two queries for
+        // every stage, none for a visitor (docs/LEDGER_*.md API-120).
+        gpsSyncLookup.forRoutes(stageRouteIds));
   }
 
   /**

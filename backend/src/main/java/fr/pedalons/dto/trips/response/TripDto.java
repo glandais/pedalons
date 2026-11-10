@@ -7,6 +7,7 @@ import fr.pedalons.domain.trip.Trip;
 import fr.pedalons.domain.trip.TripStage;
 import fr.pedalons.dto.comments.response.CommentCounts;
 import fr.pedalons.dto.common.asset.MediaDto;
+import fr.pedalons.dto.gps.response.RouteGpsSyncStatuses;
 import fr.pedalons.dto.publications.response.PublicationDto;
 import fr.pedalons.dto.publications.response.PublicationType;
 import fr.pedalons.dto.publications.response.TeamPublicationDto;
@@ -328,6 +329,8 @@ public class TripDto implements PublicationDto {
    * @param commentCounts the comment counts of the trip and of its live stages, resolved together
    * @param tags the tags of the trip and of its stages' routes, resolved together in one query by
    *     {@code TagLookup}
+   * @param gpsSync the caller's sync statuses of the stages' routes, resolved together by {@code
+   *     GpsSyncLookup}
    */
   public static TripDto from(
       Trip trip,
@@ -335,7 +338,8 @@ public class TripDto implements PublicationDto {
       UserParticipations participations,
       CommentCounts commentCounts,
       ParticipantPreview participants,
-      ContentTags tags) {
+      ContentTags tags,
+      RouteGpsSyncStatuses gpsSync) {
     List<TripStage> liveStages =
         trip.getStages().stream()
             .filter(s -> !s.isDeleted())
@@ -346,7 +350,13 @@ public class TripDto implements PublicationDto {
         IntStream.range(0, liveStages.size())
             .mapToObj(i ->
                 TripStageDto.from(
-                    liveStages.get(i), assetService, tags, commentCounts, i + 1, liveStages.size()))
+                    liveStages.get(i),
+                    assetService,
+                    tags,
+                    commentCounts,
+                    gpsSync,
+                    i + 1,
+                    liveStages.size()))
             .toList();
     List<PublicUserDto> participantDtos = participants.users();
 

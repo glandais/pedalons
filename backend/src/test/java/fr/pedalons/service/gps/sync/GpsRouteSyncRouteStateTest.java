@@ -40,7 +40,8 @@ class GpsRouteSyncRouteStateTest {
         syncedHash,
         syncedHash != null ? Instant.now() : null,
         attempts,
-        reconnect);
+        reconnect,
+        true);
   }
 
   @Test

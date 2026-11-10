@@ -6,6 +6,8 @@ import fr.pedalons.domain.route.Route;
 import fr.pedalons.dto.comments.response.CommentCounts;
 import fr.pedalons.dto.common.GeoJsonPoint;
 import fr.pedalons.dto.common.asset.MediaDto;
+import fr.pedalons.dto.gps.response.RouteGpsSyncStatusDto;
+import fr.pedalons.dto.gps.response.RouteGpsSyncStatuses;
 import fr.pedalons.dto.publications.response.TeamPublicationDto;
 import fr.pedalons.dto.tags.response.ContentTags;
 import fr.pedalons.dto.tags.response.TagDto;
@@ -81,7 +83,16 @@ public record RouteDetailDto(
                 "The team's ROUTE tags the route carries, sorted by label. Empty when it carries"
                     + " none.",
             required = true)
-        List<TagDto> tags) {
+        List<TagDto> tags,
+    @Nullable
+        @Schema(
+            description =
+                "Where this route stands at each of the caller's GPS services whose automatic sync"
+                    + " is on and which hold it (sent for one of their rides or trip stages, or"
+                    + " uploaded by hand), sorted by service. Only ever about the caller's own"
+                    + " connections. Absent when there is none — anonymous caller, no such"
+                    + " service, or a response that does not report it.")
+        List<RouteGpsSyncStatusDto> gpsSyncStatuses) {
 
   /**
    * The route detail.
@@ -97,6 +108,8 @@ public record RouteDetailDto(
    *     bulk path without geometry: no track is drawn)
    * @param withCreator {@code false} for a caller who is not a member of the team: {@code
    *     createdBy} is left out (docs/LEDGER_*.md API-144)
+   * @param gpsSync the caller's sync statuses of the route — of the whole batch on the bulk path —
+   *     from {@code GpsSyncLookup}
    */
   public static RouteDetailDto from(
       Route route,
@@ -105,7 +118,8 @@ public record RouteDetailDto(
       ContentTags tags,
       boolean withGeometry,
       RouteSurfaces surfaces,
-      boolean withCreator) {
+      boolean withCreator,
+      RouteGpsSyncStatuses gpsSync) {
     return new RouteDetailDto(
         TsidUtils.toString(route.getId()),
         route.getSlug(),
@@ -131,7 +145,8 @@ public record RouteDetailDto(
         sortedWaypoints(route),
         route.isDeleted(),
         commentCounts.forEntity(route.getId()),
-        tags.forContent(route.getId()));
+        tags.forContent(route.getId()),
+        gpsSync.fieldFor(route.getId()));
   }
 
   /** The route's waypoints, to name the climbs they mark (docs/LEDGER_*.md API-10). */

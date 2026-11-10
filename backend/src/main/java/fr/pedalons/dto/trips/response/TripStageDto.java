@@ -4,6 +4,7 @@ import fr.pedalons.common.TsidUtils;
 import fr.pedalons.domain.trip.TripStage;
 import fr.pedalons.dto.comments.response.CommentCounts;
 import fr.pedalons.dto.common.asset.MediaDto;
+import fr.pedalons.dto.gps.response.RouteGpsSyncStatuses;
 import fr.pedalons.dto.places.response.PlaceDetailDto;
 import fr.pedalons.dto.routes.response.RouteDto;
 import fr.pedalons.dto.tags.response.ContentTags;
@@ -59,12 +60,15 @@ public record TripStageDto(
    * @param stageCount how many live stages the trip has
    * @param commentCounts the stages' comment counts, resolved with the trip's own by {@code
    *     CommentCountLookup}
+   * @param gpsSync the caller's sync statuses of the stages' routes, resolved with the whole trip
+   *     by {@code GpsSyncLookup} — never one lookup per stage
    */
   public static TripStageDto from(
       TripStage stage,
       AssetService assetService,
       ContentTags routeTags,
       CommentCounts commentCounts,
+      RouteGpsSyncStatuses gpsSync,
       int stageIndex,
       int stageCount) {
     return new TripStageDto(
@@ -75,7 +79,7 @@ public record TripStageDto(
         stage.zone().getId(),
         stage.getAverageSpeed(),
         stage.getRoute() != null
-            ? RouteDto.from(stage.getRoute(), assetService, CommentCounts.NONE, routeTags)
+            ? RouteDto.from(stage.getRoute(), assetService, CommentCounts.NONE, routeTags, gpsSync)
             : null,
         stage.getStartPlace() != null ? PlaceDetailDto.from(stage.getStartPlace()) : null,
         stage.getEndPlace() != null ? PlaceDetailDto.from(stage.getEndPlace()) : null,

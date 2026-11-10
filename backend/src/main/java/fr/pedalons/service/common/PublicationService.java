@@ -43,6 +43,7 @@ import fr.pedalons.service.weather.TripWeatherLookup;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -700,6 +701,9 @@ public class PublicationService {
                     tripWeather,
                     rideThumbnails,
                     tripThumbnails,
+                    // Resolved with the participations: the joined groups' routes are only known
+                    // there, and the page makes one sync lookup (docs/LEDGER_*.md API-120).
+                    participations.gpsSync(),
                     view))
             .toList();
     return new PublicationListResponse(dtos, publications.total(), query.page(), query.size());
@@ -716,11 +720,18 @@ public class PublicationService {
   /**
    * Resolves the "me" fields ({@code registered}, {@code registeredGroupId}, {@code
    * registeredGroup}) for the whole page at once — a fixed number of queries, whatever the page
-   * size. Anonymous callers cost nothing.
+   * size, and with them the rows' {@code gpsSyncStatuses}. Anonymous callers cost nothing.
    */
   private UserParticipations loadParticipations(List<Publication> items, Set<Long> namedRideIds) {
+    // Ride.route is an eager to-one, loaded with the page: its id costs nothing.
+    Map<Long, Long> routeIdByRideId = new HashMap<>();
+    for (Ride ride : itemsOfType(items, Ride.class)) {
+      if (ride.getRoute() != null) {
+        routeIdByRideId.put(ride.getId(), ride.getRoute().getId());
+      }
+    }
     return participationLookup.forListPage(
-        idsOfType(items, Ride.class), idsOfType(items, Trip.class), namedRideIds);
+        idsOfType(items, Ride.class), idsOfType(items, Trip.class), namedRideIds, routeIdByRideId);
   }
 
   /**

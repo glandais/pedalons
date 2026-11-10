@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import fr.pedalons.api.AbstractQueryCountTest;
 import fr.pedalons.common.TsidUtils;
 import fr.pedalons.domain.asset.Asset;
+import fr.pedalons.domain.gps.GpsServiceConnection;
 import fr.pedalons.domain.place.Place;
 import fr.pedalons.domain.post.Post;
 import fr.pedalons.domain.ride.Ride;
@@ -19,6 +20,7 @@ import fr.pedalons.domain.trip.Trip;
 import fr.pedalons.domain.trip.TripStage;
 import fr.pedalons.domain.user.User;
 import fr.pedalons.enums.AssetType;
+import fr.pedalons.enums.GpsServiceType;
 import fr.pedalons.enums.Status;
 import fr.pedalons.enums.Visibility;
 import fr.pedalons.repository.place.PlaceRepository;
@@ -26,8 +28,10 @@ import fr.pedalons.repository.ride.RideRepository;
 import fr.pedalons.repository.weather.WeatherCellRepository;
 import fr.pedalons.repository.weather.WeatherDailyRepository;
 import fr.pedalons.repository.weather.WeatherHourlyRepository;
+import fr.pedalons.service.gps.sync.GpsRouteSyncPlanner;
 import fr.pedalons.service.weather.CellKey;
 import fr.pedalons.service.weather.WeatherTestFixtures;
+import fr.pedalons.util.GpsSyncTestData;
 import fr.pedalons.util.QueryStats;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.junit.QuarkusTest;
@@ -52,6 +56,8 @@ class PublicationQueryCountTest extends AbstractQueryCountTest {
   @Inject WeatherCellRepository weatherCellRepository;
   @Inject WeatherHourlyRepository weatherHourlyRepository;
   @Inject WeatherDailyRepository weatherDailyRepository;
+  @Inject GpsSyncTestData sync;
+  @Inject GpsRouteSyncPlanner planner;
 
   @Override
   @BeforeEach
@@ -563,6 +569,122 @@ class PublicationQueryCountTest extends AbstractQueryCountTest {
                 + ", budget +"
                 + MAX_STATEMENT_GROWTH
                 + ")");
+  }
+
+  /**
+   * docs/LEDGER_*.md API-120: every ride of the page on a route of its own, user1 registered in its
+   * first group — which rides the ride's route on even rows, a route of its own on odd ones — and
+   * synced at two services in automatic sync. Each row then carries the ride's {@code
+   * gpsSyncStatuses} and its joined group's, resolved in one lookup for the page.
+   */
+  @Test
+  void listTeamRides_gpsSyncStatuses_costAPageNotARow() {
+    Instant base = Instant.now().plus(2, ChronoUnit.DAYS);
+    for (int i = 0; i < LARGE_PAGE; i++) {
+      Ride ride =
+          dataService.createRide(
+              team1,
+              user1,
+              "Synced Ride " + i,
+              "synced-ride-" + i,
+              base.plusSeconds(i),
+              Visibility.PUBLIC,
+              Status.PUBLISHED);
+      dataService.setRideRoute(ride, sync.routeWithGpx(ride, user1, "Synced ride route " + i));
+      RideGroup group = dataService.createRideGroup(user1, ride, "Group 0", 0);
+      if (i % 2 == 1) {
+        sync.setGroupRoute(group, sync.routeWithGpx(ride, user1, "Synced group route " + i));
+      }
+      dataService.createParticipation(group, user1);
+    }
+    List<GpsServiceConnection> connections =
+        List.of(
+            sync.connect(user1, GpsServiceType.HAMMERHEAD, true),
+            sync.connect(user1, GpsServiceType.GARMIN, true));
+    planner.plan(Instant.now());
+    // Half of the rows sent, so the statuses differ from row to row.
+    for (GpsServiceConnection connection : connections) {
+      var rows = sync.rows(connection.getId());
+      assertEquals(LARGE_PAGE, rows.size());
+      for (int i = 0; i < rows.size(); i += 2) {
+        sync.markSynced(rows.get(i).getId(), "ext-" + connection.getId() + "-" + i);
+      }
+    }
+
+    String path = "/api/teams/" + team1Slug + "/publications?type=RIDE";
+    // Not vacuous: every joined group carries both services.
+    List<List<Object>> groupStatuses =
+        asUser1()
+            .get()
+            .when()
+            .get(path + "&size=" + LARGE_PAGE)
+            .then()
+            .statusCode(200)
+            .extract()
+            .path("publications.registeredGroup.gpsSyncStatuses");
+    assertEquals(LARGE_PAGE, groupStatuses.size());
+    groupStatuses.forEach(s -> assertEquals(2, s.size()));
+
+    assertFlatQueryCount(
+        "GET /api/teams/{teamSlug}/publications?type=RIDE (gps sync statuses)", asUser1(), path);
+  }
+
+  /**
+   * docs/LEDGER_*.md API-120: every group of the detail carries where its route stands at user1's
+   * synced services. Resolved with the ride's route in one lookup: six groups on six tracked
+   * routes cost what one does.
+   */
+  @Test
+  void rideDetail_gpsSyncStatuses_costDoesNotScaleWithGroupCount() {
+    Instant base = Instant.now().plus(7, ChronoUnit.DAYS);
+    GpsServiceConnection connection = sync.connect(user1, GpsServiceType.HAMMERHEAD, true);
+    Ride small = dataService.createRide(team1, user1, "Small", "small-synced-ride", base);
+    seedGroupOnTrackedRoute(small, 0, connection);
+    Ride large =
+        dataService.createRide(team1, user1, "Large", "large-synced-ride", base.plusSeconds(1));
+    for (int g = 0; g < 6; g++) {
+      seedGroupOnTrackedRoute(large, g, connection);
+    }
+
+    List<List<Object>> statuses =
+        asUser1()
+            .get()
+            .when()
+            .get("/api/teams/" + team1Slug + "/rides/large-synced-ride")
+            .then()
+            .statusCode(200)
+            .extract()
+            .path("groups.gpsSyncStatuses");
+    assertEquals(6, statuses.size());
+    statuses.forEach(s -> assertEquals(1, s.size()));
+
+    QueryStats.Counters smallCounters =
+        measureDetail(
+            "GET /api/teams/{teamSlug}/rides/{rideSlug} [1 tracked group]", "small-synced-ride");
+    QueryStats.Counters largeCounters =
+        measureDetail(
+            "GET /api/teams/{teamSlug}/rides/{rideSlug} [6 tracked groups]", "large-synced-ride");
+
+    long growth = largeCounters.statements() - smallCounters.statements();
+    assertTrue(
+        growth <= MAX_STATEMENT_GROWTH,
+        () ->
+            "N+1 on the group sync statuses: 1 group cost "
+                + smallCounters.statements()
+                + " SQL statements, 6 groups cost "
+                + largeCounters.statements()
+                + " (+"
+                + growth
+                + ", budget +"
+                + MAX_STATEMENT_GROWTH
+                + ")");
+  }
+
+  private void seedGroupOnTrackedRoute(Ride ride, int index, GpsServiceConnection connection) {
+    RideGroup group = dataService.createRideGroup(user1, ride, "Group " + index, index);
+    Route route = sync.routeWithGpx(ride, user1, ride.getName() + " tracked route " + index);
+    dataService.setRideGroupRoute(group, route);
+    sync.recordManualUpload(domain.getId(), connection, route, "ext-" + route.getId());
   }
 
   private void seedGroupOnThumbnailedRoute(Ride ride, int index) {

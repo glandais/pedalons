@@ -121,10 +121,13 @@ public class GpsRouteSyncService {
   /**
    * One route at one service.
    *
-   * @param automatic the route sync holds it (at least one of the user's rides uses it); false: a
-   *     tracked manual upload only
+   * @param automatic the route sync holds it (at least one of the user's rides or trip stages uses
+   *     it); false: a tracked manual upload only
+   * @param state where it stands, the worst of the merged rows
    * @param externalRouteId its id at the service, null while not sent yet
    * @param syncedAt the last successful send
+   * @param autoSync the user's connection to this service has the automatic sync switched on (any
+   *     of the merged rows says so — in practice the one connection of that service)
    */
   public record RouteSyncStatus(
       Long routeId,
@@ -132,16 +135,17 @@ public class GpsRouteSyncService {
       boolean automatic,
       GpsRouteSyncState state,
       @Nullable String externalRouteId,
-      @Nullable Instant syncedAt) {}
+      @Nullable Instant syncedAt,
+      boolean autoSync) {}
 
   /**
    * Where each of these routes stands at each of the user's services, in at most two queries
    * whatever the number of routes (the second, the routes' current GPX, only when a manual upload
-   * is among the rows or the sync is off) — for a list of rides or routes that shows it ({@code
-   * DeviceRegisteredGroupDto.syncStatuses}, docs/LEDGER_*.md API-121) without a query per row. A
-   * route that is nowhere is absent; several rows of the same route and service (two rides on the
-   * same route, a manual upload) merge into one status: automatic if any is, the worst state, the
-   * latest send. See {@link #routeState} for what each row says.
+   * is among the rows or the sync is off) — for a list of rides, trip stages or routes that shows it
+   * ({@code DeviceRegisteredGroupDto.syncStatuses}, docs/LEDGER_*.md API-121; {@code
+   * GpsSyncLookup}) without a query per row. A route that is nowhere is absent; several rows of the
+   * same route and service (two rides or stages on the same route, a manual upload) merge into one
+   * status: automatic if any is, the worst state, the latest send. See {@link #routeState} for what each row says.
    */
   public Map<Long, List<RouteSyncStatus>> findRouteStatuses(
       Long domainId, Long userId, Collection<Long> routeIds) {
@@ -169,7 +173,8 @@ public class GpsRouteSyncService {
               row.automatic(),
               state,
               row.externalRouteId(),
-              row.syncedAt());
+              row.syncedAt(),
+              row.autoSync());
       merged
           .computeIfAbsent(row.routeId(), k -> new EnumMap<>(GpsServiceType.class))
           .merge(row.serviceType(), status, GpsRouteSyncService::merge);
@@ -231,7 +236,13 @@ public class GpsRouteSyncService {
                 : b.syncedAt();
     String externalId = a.externalRouteId() != null ? a.externalRouteId() : b.externalRouteId();
     return new RouteSyncStatus(
-        a.routeId(), a.serviceType(), a.automatic() || b.automatic(), state, externalId, syncedAt);
+        a.routeId(),
+        a.serviceType(),
+        a.automatic() || b.automatic(),
+        state,
+        externalId,
+        syncedAt,
+        a.autoSync() || b.autoSync());
   }
 
   // ------------------------------------------------------------------ manual uploads
@@ -252,9 +263,9 @@ public class GpsRouteSyncService {
    *
    * <p>A recorded manual upload is never placed under automatic management by itself, whatever the
    * opt-in: Pédalons neither updates nor deletes it on its own. Only when the sync is on and a ride
-   * the member is registered in uses that route does its row take it over (the worker updates it
+   * or a trip stage the member is registered in uses that route does its row take it over (the worker updates it
    * rather than creating a copy, {@link GpsRouteSyncRepository#takeManual}); from then on it lives
-   * and goes with the ride, like any automatic route.
+   * and goes with the ride or the stage, like any automatic route.
    *
    * <p>No transaction around: the caller resolved the route (access checked) and the connection.
    */

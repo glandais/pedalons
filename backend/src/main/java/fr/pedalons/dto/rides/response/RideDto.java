@@ -8,6 +8,8 @@ import fr.pedalons.domain.ride.RideGroup;
 import fr.pedalons.domain.route.Route;
 import fr.pedalons.dto.comments.response.CommentCounts;
 import fr.pedalons.dto.common.asset.MediaDto;
+import fr.pedalons.dto.gps.response.RouteGpsSyncStatusDto;
+import fr.pedalons.dto.gps.response.RouteGpsSyncStatuses;
 import fr.pedalons.dto.places.response.PlaceDetailDto;
 import fr.pedalons.dto.publications.response.PublicationDto;
 import fr.pedalons.dto.publications.response.PublicationType;
@@ -263,6 +265,15 @@ public class RideDto implements PublicationDto {
               + " with status OK, STALE or NOT_YET_AVAILABLE. The full forecast is getRideWeather.")
   final RideWeatherSummaryDto weather;
 
+  @Nullable
+  @Schema(
+      description =
+          "Where the ride's own route (the one of routeSlug) stands at each of the caller's GPS"
+              + " services whose automatic sync is on and which hold it, sorted by service — each"
+              + " group's route is on the group. Only ever about the caller's own connections."
+              + " Absent when there is none: anonymous caller, no such service, no route.")
+  final List<RouteGpsSyncStatusDto> gpsSyncStatuses;
+
   public RideDto(
       TeamPublicationDto team,
       String id,
@@ -299,7 +310,8 @@ public class RideDto implements PublicationDto {
       @Nullable Integer maxParticipants,
       @Nullable Integer commentCount,
       List<TagDto> tags,
-      @Nullable RideWeatherSummaryDto weather) {
+      @Nullable RideWeatherSummaryDto weather,
+      @Nullable List<RouteGpsSyncStatusDto> gpsSyncStatuses) {
     super();
     this.team = team;
     this.id = id;
@@ -339,6 +351,7 @@ public class RideDto implements PublicationDto {
     this.commentCount = commentCount;
     this.tags = tags;
     this.weather = weather;
+    this.gpsSyncStatuses = gpsSyncStatuses;
   }
 
   /**
@@ -359,6 +372,8 @@ public class RideDto implements PublicationDto {
    * @param thumbnails ride id → thumbnail, the ride's own else its route's, for this whole page,
    *     resolved in one query by {@code ThumbnailLookup.forRides} — never {@code
    *     ride.getRoute().getAssets()} per row (docs/LEDGER_*.md API-80)
+   * @param gpsSync the caller's sync statuses of the page's ride routes, resolved with the joined
+   *     groups' by {@code ParticipationLookup.forListPage} in one {@code GpsSyncLookup} call
    * @param view {@link ListViewMode#COMPACT} leaves the markdown body and the asset inventory out of the
    *     row; {@code excerpt} and {@code thumbnailUrl} carry what it renders instead
    */
@@ -371,6 +386,7 @@ public class RideDto implements PublicationDto {
       ContentTags tags,
       RideWeatherSummaries weather,
       Map<Long, ThemedThumbnail> thumbnails,
+      RouteGpsSyncStatuses gpsSync,
       @Nullable ListViewMode view) {
     return build(
         ride,
@@ -389,6 +405,7 @@ public class RideDto implements PublicationDto {
         tags.forContent(ride.getId()),
         weather,
         thumbnails.get(ride.getId()),
+        gpsSync,
         view);
   }
 
@@ -403,6 +420,8 @@ public class RideDto implements PublicationDto {
    * @param weather the ride's weather line, from {@code RideWeatherLookup}
    * @param withNames {@code false} for a caller who is not a member of the team: no leader, no
    *     {@code topParticipants} — the counts stay (docs/LEDGER_*.md API-144)
+   * @param gpsSync the caller's sync statuses of the ride's route and of its groups', resolved at
+   *     once by {@code GpsSyncLookup}
    */
   public static RideDto from(
       Ride ride,
@@ -413,7 +432,8 @@ public class RideDto implements PublicationDto {
       Map<Long, ParticipantPreview> groupParticipants,
       List<TagDto> tags,
       RideWeatherSummaries weather,
-      boolean withNames) {
+      boolean withNames,
+      RouteGpsSyncStatuses gpsSync) {
     Long registeredGroupId = participations.registeredGroupId(ride.getId());
     List<RideGroup> groups =
         ride.getGroups().stream().sorted(Comparator.comparing(RideGroup::getSortOrder)).toList();
@@ -431,7 +451,8 @@ public class RideDto implements PublicationDto {
                     registeredGroupId,
                     group.getRoute() != null ? routeThumbnails.get(group.getRoute().getId()) : null,
                     preview.apply(group),
-                    withNames))
+                    withNames,
+                    gpsSync))
             .toList();
 
     // The first 5 registrations of the ride. Each group's preview holds its own earliest ones, so
@@ -491,6 +512,7 @@ public class RideDto implements PublicationDto {
         tags,
         weather,
         ownOrRouteThumbnail(ride, assetService),
+        gpsSync,
         ListViewMode.FULL);
   }
 
@@ -544,6 +566,7 @@ public class RideDto implements PublicationDto {
       List<TagDto> tags,
       RideWeatherSummaries weather,
       @Nullable ThemedThumbnail thumbnail,
+      RouteGpsSyncStatuses gpsSync,
       @Nullable ListViewMode view) {
     Place startPlace = ride.getStart();
     Place endPlace = ride.getEnd();
@@ -587,6 +610,7 @@ public class RideDto implements PublicationDto {
         maxParticipants,
         commentCount,
         tags,
-        RideWeatherSummaryDto.fromNullable(weather.forRide(ride.getId())));
+        RideWeatherSummaryDto.fromNullable(weather.forRide(ride.getId())),
+        gpsSync.fieldFor(ride.getRoute() != null ? ride.getRoute().getId() : null));
   }
 }

@@ -47,6 +47,7 @@ import fr.pedalons.service.common.MemberNamesVisibility;
 import fr.pedalons.service.common.ParticipantPreviewLookup;
 import fr.pedalons.service.common.ParticipationLookup;
 import fr.pedalons.service.common.TeamEntityService;
+import fr.pedalons.service.gps.sync.GpsSyncLookup;
 import fr.pedalons.service.notification.NotificationPublisher;
 import fr.pedalons.service.notification.event.RideGroupRemoved;
 import fr.pedalons.service.notification.event.RideJoined;
@@ -68,6 +69,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.ArrayList;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -108,6 +110,8 @@ public class RideService extends TeamEntityService<Ride, RideRepository, RideDto
 
   @Inject TagLookup tagLookup;
 
+  @Inject GpsSyncLookup gpsSyncLookup;
+
   @Inject RideWeatherLookup rideWeatherLookup;
 
   @Inject RideWeatherService rideWeatherService;
@@ -140,6 +144,12 @@ public class RideService extends TeamEntityService<Ride, RideRepository, RideDto
     // One query for a logged-in caller, none for the others: only a member of the team is told who
     // rides (docs/LEDGER_*.md API-144).
     boolean withNames = memberNamesVisibility.canSeeNames(entity.getTeam().getId());
+    // The ride's route and its groups', for where they stand at the caller's synced services: at
+    // most two queries for all of them, none for a visitor (docs/LEDGER_*.md API-120).
+    List<Long> syncedRouteIds = new ArrayList<>(groupRouteIds);
+    if (entity.getRoute() != null) {
+      syncedRouteIds.add(entity.getRoute().getId());
+    }
     return RideDto.from(
         entity,
         assetService,
@@ -152,7 +162,8 @@ public class RideService extends TeamEntityService<Ride, RideRepository, RideDto
         // The same card line as the lists, so a ride reads alike in both; none for a ride outside
         // the forecast window, at most one query otherwise.
         rideWeatherLookup.forRides(List.of(entity)),
-        withNames);
+        withNames,
+        gpsSyncLookup.forRoutes(syncedRouteIds));
   }
 
   /**

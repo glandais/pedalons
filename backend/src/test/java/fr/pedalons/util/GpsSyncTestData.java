@@ -15,6 +15,7 @@ import fr.pedalons.enums.AssetType;
 import fr.pedalons.enums.GpsServiceType;
 import fr.pedalons.enums.Status;
 import fr.pedalons.infrastructure.security.TokenEncryptionService;
+import fr.pedalons.repository.gps.GpsRouteSyncRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
@@ -39,6 +40,7 @@ public class GpsSyncTestData {
   @Inject EntityManager em;
   @Inject TokenEncryptionService encryptionService;
   @Inject TestDataService dataService;
+  @Inject GpsRouteSyncRepository syncRepository;
 
   /** A connection with real (decryptable) OAuth 2.0 tokens, valid for an hour. */
   @Transactional
@@ -213,6 +215,25 @@ public class GpsSyncTestData {
         .setParameter("hash", hash)
         .setParameter("id", rowId)
         .executeUpdate();
+  }
+
+  /**
+   * A tracked manual upload of the route to the connection, as {@code GpsService#uploadRoute}
+   * records it once the service accepted it — without calling any service.
+   */
+  @Transactional
+  public void recordManualUpload(
+      Long domainId, GpsServiceConnection connection, Route route, String externalId) {
+    GpsServiceConnection managed = em.find(GpsServiceConnection.class, connection.getId());
+    syncRepository.upsertManual(
+        domainId,
+        managed.getUser().getId(),
+        managed.getId(),
+        route.getId(),
+        route.getName(),
+        "manual-hash",
+        externalId,
+        Instant.now());
   }
 
   @Transactional

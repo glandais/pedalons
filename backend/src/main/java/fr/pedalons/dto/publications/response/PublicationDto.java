@@ -7,6 +7,7 @@ import fr.pedalons.domain.post.Post;
 import fr.pedalons.domain.ride.Ride;
 import fr.pedalons.domain.trip.Trip;
 import fr.pedalons.dto.comments.response.CommentCounts;
+import fr.pedalons.dto.gps.response.RouteGpsSyncStatuses;
 import fr.pedalons.dto.posts.response.PostAuthors;
 import fr.pedalons.dto.posts.response.PostDto;
 import fr.pedalons.dto.rides.response.RideDto;
@@ -77,6 +78,8 @@ public interface PublicationDto {
    *     loaded in one query by {@code ThumbnailLookup.forRides}
    * @param tripThumbnails the thumbnail of every trip of the page, its own else its route's,
    *     loaded in one query by {@code ThumbnailLookup.forTrips}
+   * @param gpsSync where the page's ride routes stand at the caller's synced GPS services, loaded
+   *     with the participations by {@code ParticipationLookup.forListPage}
    */
   static PublicationDto from(
       Publication publication,
@@ -90,6 +93,7 @@ public interface PublicationDto {
       RideWeatherSummaries tripWeather,
       Map<Long, ThemedThumbnail> rideThumbnails,
       Map<Long, ThemedThumbnail> tripThumbnails,
+      RouteGpsSyncStatuses gpsSync,
       @Nullable ListViewMode view) {
     return switch (publication) {
       case Post post -> PostDto.from(post, assetService, commentCounts, postAuthors, tags, view);
@@ -103,6 +107,7 @@ public interface PublicationDto {
               tags,
               rideWeather,
               rideThumbnails,
+              gpsSync,
               view);
       case Trip trip ->
           TripDto.fromListItem(

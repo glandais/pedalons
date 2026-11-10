@@ -1,5 +1,6 @@
 package fr.pedalons.dto.publications.response;
 
+import fr.pedalons.dto.gps.response.RouteGpsSyncStatuses;
 import fr.pedalons.dto.rides.response.RideGroupDto;
 import java.util.Map;
 import java.util.Set;
@@ -23,11 +24,16 @@ import org.jspecify.annotations.Nullable;
  * @param registeredGroupByRideId ride id → the joined group, rendered — filled only on the list
  *     path, where a row has no {@code groups} to find it in (docs/LEDGER_*.md API-4); empty
  *     elsewhere
+ * @param gpsSync the caller's sync statuses of the page's ride routes and of the joined groups'
+ *     routes (docs/LEDGER_*.md API-120) — the one {@code GpsSyncLookup} call of a list page, made
+ *     with the joined groups since their routes are only known then; {@link
+ *     RouteGpsSyncStatuses#NONE} elsewhere
  */
 public record UserParticipations(
     Map<Long, Long> registeredGroupIdByRideId,
     Set<Long> registeredTripIds,
-    Map<Long, RideGroupDto> registeredGroupByRideId) {
+    Map<Long, RideGroupDto> registeredGroupByRideId,
+    RouteGpsSyncStatuses gpsSync) {
 
   /** Nobody is registered to anything — what an anonymous caller sees. */
   public static final UserParticipations NONE = new UserParticipations(Map.of(), Set.of());
@@ -35,7 +41,7 @@ public record UserParticipations(
   /** The ids only, without the rendered groups — the detail and the calendar need no more. */
   public UserParticipations(
       Map<Long, Long> registeredGroupIdByRideId, Set<Long> registeredTripIds) {
-    this(registeredGroupIdByRideId, registeredTripIds, Map.of());
+    this(registeredGroupIdByRideId, registeredTripIds, Map.of(), RouteGpsSyncStatuses.NONE);
   }
 
   /** The group of this ride the user joined, rendered, or {@code null}. */

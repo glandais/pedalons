@@ -18,6 +18,7 @@ import fr.pedalons.dto.common.CountResponse;
 import fr.pedalons.dto.common.PedalonsPage;
 import fr.pedalons.dto.common.asset.MediaDto;
 import fr.pedalons.dto.error.ErrorCode;
+import fr.pedalons.dto.gps.response.RouteGpsSyncStatuses;
 import fr.pedalons.dto.routes.request.RouteRequest;
 import fr.pedalons.dto.routes.request.RouteSearchParams;
 import fr.pedalons.dto.routes.request.WaypointRequest;
@@ -52,6 +53,7 @@ import fr.pedalons.service.comment.CommentCountLookup;
 import fr.pedalons.service.common.MemberNamesVisibility;
 import fr.pedalons.service.common.TeamEntityService;
 import fr.pedalons.service.elevation.ElevationRefreshService;
+import fr.pedalons.service.gps.sync.GpsSyncLookup;
 import fr.pedalons.service.publication.PublicationEndCalculator;
 import fr.pedalons.service.route.planner.PlannerStates;
 import fr.pedalons.service.route.response.TrackMetadata;
@@ -133,6 +135,8 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
 
   @Inject TagLookup tagLookup;
 
+  @Inject GpsSyncLookup gpsSyncLookup;
+
   @Inject PublicationEndCalculator publicationEndCalculator;
 
   @Override
@@ -149,7 +153,10 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
         tagsOf(entity),
         true,
         surfaceRefreshService.readRoute(entity),
-        memberNamesVisibility.canSeeNames(entity.getTeam().getId()));
+        memberNamesVisibility.canSeeNames(entity.getTeam().getId()),
+        // Where it stands at the caller's synced services (docs/LEDGER_*.md API-120): at most two
+        // queries, none for a visitor.
+        gpsSyncLookup.forRoutes(List.of(entity.getId())));
   }
 
   @Override
@@ -218,6 +225,9 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
     // round-trip per row, same rule as any other page.
     CommentCounts commentCounts = commentCountLookup.forEntities(routes);
     ContentTags tags = tagLookup.forContents(routes.stream().map(Route::getId).toList());
+    // At most two more for the caller's sync statuses of the whole batch, none for a visitor.
+    RouteGpsSyncStatuses gpsSync =
+        gpsSyncLookup.forRoutes(routes.stream().map(Route::getId).toList());
 
     // Surfaces only matter when tracks are drawn; read per page, two queries for the batch.
     Map<Long, RouteSurfaces> surfaces =
@@ -236,7 +246,8 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
               tags,
               geometry,
               surfaces.getOrDefault(route.getId(), RouteSurfaces.NONE),
-              withCreator));
+              withCreator,
+              gpsSync));
     }
 
     List<RouteDetailDto> ordered =
@@ -435,7 +446,13 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
 
       updateMedia(route, request.media());
       routeRepository.persist(route);
-      return RouteDto.from(route, assetService, commentCountLookup.forEntity(route), tagsOf(route));
+      // A route just created: no sync row can hold it yet.
+      return RouteDto.from(
+          route,
+          assetService,
+          commentCountLookup.forEntity(route),
+          tagsOf(route),
+          RouteGpsSyncStatuses.NONE);
     } catch (Exception e) {
       gpxProcessingService.deleteRouteFiles(route);
       throw e;
@@ -658,7 +675,14 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
 
     updateMedia(route, request.media());
     routeRepository.persist(route);
-    return RouteDto.from(route, assetService, commentCountLookup.forEntity(route), tagsOf(route));
+    // Not reported: a new GPX is only planned again by the next sync pass, so the rows read now
+    // would still describe the old one (docs/LEDGER_*.md API-120). The detail tells.
+    return RouteDto.from(
+        route,
+        assetService,
+        commentCountLookup.forEntity(route),
+        tagsOf(route),
+        RouteGpsSyncStatuses.NONE);
   }
 
   /**
@@ -963,9 +987,14 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
     // One more for the tags of the whole page, cross-team lists included (plan D7: shown there,
     // just not filterable).
     ContentTags tags = tagLookup.forContents(routes.items().stream().map(Route::getId).toList());
+    // At most two more for where the page's routes stand at the caller's synced services
+    // (docs/LEDGER_*.md API-120), none for a visitor.
+    RouteGpsSyncStatuses gpsSync =
+        gpsSyncLookup.forRoutes(routes.items().stream().map(Route::getId).toList());
     List<RouteDto> dtos =
         routes.items().stream()
-            .map(route -> RouteDto.from(route, assetService, commentCounts, tags, params.view()))
+            .map(route ->
+                RouteDto.from(route, assetService, commentCounts, tags, gpsSync, params.view()))
             .toList();
     return new RouteListResponse(dtos, routes.total(), params.page(), params.size());
   }

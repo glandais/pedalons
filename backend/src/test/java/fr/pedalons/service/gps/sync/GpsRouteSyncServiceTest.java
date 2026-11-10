@@ -270,6 +270,8 @@ class GpsRouteSyncServiceTest extends AbstractResourceTest {
     assertFalse(status.automatic());
     assertEquals(GpsRouteSyncState.SENT, status.state());
     assertEquals("ext-1", status.externalRouteId());
+    // The connection's switch is off: what GpsSyncLookup filters on.
+    assertFalse(status.autoSync());
   }
 
   @Test

@@ -1,5 +1,6 @@
 package fr.pedalons.service.common;
 
+import fr.pedalons.dto.gps.response.RouteGpsSyncStatuses;
 import fr.pedalons.dto.publications.response.UserParticipations;
 import fr.pedalons.dto.rides.response.RideGroupDto;
 import fr.pedalons.repository.ride.RideGroupRepository;
@@ -9,9 +10,11 @@ import fr.pedalons.repository.trip.TripParticipationRepository;
 import fr.pedalons.service.asset.ThumbnailLookup;
 import fr.pedalons.service.asset.ThumbnailLookup.ThemedThumbnail;
 import fr.pedalons.service.common.ParticipantPreviewLookup.ParticipantPreview;
+import fr.pedalons.service.gps.sync.GpsSyncLookup;
 import fr.pedalons.service.security.PedalonsQueryContext;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -51,6 +54,8 @@ public class ParticipationLookup {
 
   @Inject ThumbnailLookup thumbnailLookup;
 
+  @Inject GpsSyncLookup gpsSyncLookup;
+
   /**
    * The participations of a page of a publication list, <b>with the joined groups rendered</b>
    * (docs/LEDGER_*.md API-4).
@@ -61,16 +66,30 @@ public class ParticipationLookup {
    * (no entity hydrated), the participant previews in two, the route thumbnails in one — and
    * nothing at all when the caller joined none of the page's rides.
    *
+   * <p>It also resolves where the page's routes stand at the caller's synced GPS services
+   * (docs/LEDGER_*.md API-120) — the rides' own and the joined groups', whose ids are only known
+   * once the group rows are read: one {@code GpsSyncLookup} call for the page, at most two
+   * queries, none for a visitor.
+   *
    * @param namedRideIds the rides of the page whose team's member names the caller may see
    *     (docs/LEDGER_*.md API-144): the joined group of any other ride carries neither leader nor
    *     participants, a former member's own registrations included
+   * @param routeIdByRideId the page's rides that have a route of their own → that route's id
    */
   public UserParticipations forListPage(
-      Collection<Long> rideIds, Collection<Long> tripIds, Set<Long> namedRideIds) {
+      Collection<Long> rideIds,
+      Collection<Long> tripIds,
+      Set<Long> namedRideIds,
+      Map<Long, Long> routeIdByRideId) {
     UserParticipations participations = forPublications(rideIds, tripIds);
     Map<Long, Long> groupIdByRide = participations.registeredGroupIdByRideId();
     if (groupIdByRide.isEmpty()) {
-      return participations;
+      // Still the rides' own routes; nothing at all for a visitor.
+      return new UserParticipations(
+          groupIdByRide,
+          participations.registeredTripIds(),
+          Map.of(),
+          gpsSyncLookup.forRoutes(routeIdByRideId.values()));
     }
     List<GroupRow> rows = rideGroupRepository.findGroupRows(groupIdByRide.values());
     // The counts for every group, the participants only for those of rides the caller may name.
@@ -84,6 +103,9 @@ public class ParticipationLookup {
     Map<Long, ThemedThumbnail> thumbnails =
         thumbnailLookup.forTeamEntities(
             rows.stream().map(GroupRow::routeId).filter(Objects::nonNull).distinct().toList());
+    List<Long> syncedRouteIds = new ArrayList<>(routeIdByRideId.values());
+    rows.stream().map(GroupRow::routeId).filter(Objects::nonNull).forEach(syncedRouteIds::add);
+    RouteGpsSyncStatuses gpsSync = gpsSyncLookup.forRoutes(syncedRouteIds);
     Map<Long, RideGroupDto> groupByRide = new HashMap<>();
     for (GroupRow row : rows) {
       groupByRide.put(
@@ -92,10 +114,12 @@ public class ParticipationLookup {
               row,
               row.routeId() != null ? thumbnails.get(row.routeId()) : null,
               previews.getOrDefault(row.id(), ParticipantPreview.EMPTY),
-              namedRideIds.contains(row.rideId())));
+              namedRideIds.contains(row.rideId()),
+              routeIdByRideId.get(row.rideId()),
+              gpsSync));
     }
     return new UserParticipations(
-        groupIdByRide, participations.registeredTripIds(), Map.copyOf(groupByRide));
+        groupIdByRide, participations.registeredTripIds(), Map.copyOf(groupByRide), gpsSync);
   }
 
   /** Participations of the current user among these rides and trips. Two queries at most. */

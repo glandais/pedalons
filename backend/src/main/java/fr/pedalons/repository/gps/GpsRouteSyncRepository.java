@@ -558,7 +558,12 @@ public class GpsRouteSyncRepository implements PanacheRepository<GpsRouteSync> {
 
   // ------------------------------------------------------------------ reads for the clients
 
-  /** One tracked row of a user, for the per-route state ({@code GpsRouteSyncService}). */
+  /**
+   * One tracked row of a user, for the per-route state ({@code GpsRouteSyncService}).
+   *
+   * @param autoSync the row's connection has the automatic sync switched on ({@code c.autoSync}),
+   *     whatever the row itself is (automatic or a tracked manual upload)
+   */
   public record RouteRow(
       Long routeId,
       GpsServiceType serviceType,
@@ -569,7 +574,8 @@ public class GpsRouteSyncRepository implements PanacheRepository<GpsRouteSync> {
       @Nullable String syncedHash,
       @Nullable Instant syncedAt,
       int attempts,
-      boolean reconnectRequired) {}
+      boolean reconnectRequired,
+      boolean autoSync) {}
 
   /**
    * The rows of a user's connections that hold one of {@code routeIds}, in one query whatever the
@@ -584,7 +590,7 @@ public class GpsRouteSyncRepository implements PanacheRepository<GpsRouteSync> {
             .createQuery(
                 "select s.desiredRouteId, c.serviceType, s.rideId, s.externalRouteId,"
                     + " s.desiredHash, s.desiredName, s.syncedHash, s.syncedAt, s.attempts,"
-                    + " c.syncReconnectRequiredAt"
+                    + " c.syncReconnectRequiredAt, c.autoSync"
                     + " from GpsRouteSync s join s.connection c"
                     + " where s.domainId = :domainId and s.user.id = :userId"
                     + " and s.desiredRouteId in (:routeIds)",
@@ -606,7 +612,8 @@ public class GpsRouteSyncRepository implements PanacheRepository<GpsRouteSync> {
               (String) r[6],
               (Instant) r[7],
               (Integer) r[8],
-              r[9] != null));
+              r[9] != null,
+              Boolean.TRUE.equals(r[10])));
     }
     return result;
   }

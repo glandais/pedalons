@@ -6,15 +6,21 @@ import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.notNullValue;
 
 import fr.pedalons.api.AbstractQueryCountTest;
+import fr.pedalons.domain.gps.GpsServiceConnection;
 import fr.pedalons.domain.ride.Ride;
 import fr.pedalons.domain.ride.RideGroup;
+import fr.pedalons.domain.route.Route;
 import fr.pedalons.domain.trip.Trip;
 import fr.pedalons.domain.user.User;
+import fr.pedalons.enums.GpsServiceType;
 import fr.pedalons.enums.Status;
 import fr.pedalons.enums.Visibility;
+import fr.pedalons.util.GpsSyncTestData;
 import io.quarkus.test.junit.QuarkusTest;
+import jakarta.inject.Inject;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,6 +36,8 @@ import org.junit.jupiter.api.Test;
 @QuarkusTest
 class ParticipationQueryCountTest extends AbstractQueryCountTest {
 
+  @Inject GpsSyncTestData sync;
+
   @Override
   @BeforeEach
   public void setUp() {
@@ -41,10 +49,26 @@ class ParticipationQueryCountTest extends AbstractQueryCountTest {
   }
 
   /**
+   * Same page, the joined groups' routes tracked at two of user1's services in automatic sync
+   * (docs/LEDGER_*.md API-120), so every row's joined group carries {@code gpsSyncStatuses}.
+   */
+  private void seedJoinedRidesOnTrackedRoutes(int count) {
+    List<Route> routes = seedJoinedRides(count, true);
+    GpsServiceConnection hammerhead = sync.connect(user1, GpsServiceType.HAMMERHEAD, true);
+    GpsServiceConnection garmin = sync.connect(user1, GpsServiceType.GARMIN, true);
+    for (Route route : routes) {
+      sync.recordManualUpload(domain.getId(), hammerhead, route, "hh-" + route.getId());
+      sync.recordManualUpload(domain.getId(), garmin, route, "gc-" + route.getId());
+    }
+  }
+
+  /**
    * @param joinedGroupHasRouteAndLeader give the group user1 joins its own route and a leader, so
    *     that rendering it on the row (docs/LEDGER_*.md API-4) has everything to resolve
+   * @return the joined groups' routes, empty without them
    */
-  private void seedJoinedRides(int count, boolean joinedGroupHasRouteAndLeader) {
+  private List<Route> seedJoinedRides(int count, boolean joinedGroupHasRouteAndLeader) {
+    List<Route> routes = new ArrayList<>();
     Instant base = Instant.now().plus(7, ChronoUnit.DAYS);
     List<User> participants = List.of(user1, user2, user3, user4, user5);
     for (int i = 0; i < count; i++) {
@@ -61,7 +85,9 @@ class ParticipationQueryCountTest extends AbstractQueryCountTest {
         RideGroup group = dataService.createRideGroup(user1, ride, "Group " + g, g);
         if (g == 0 && joinedGroupHasRouteAndLeader) {
           // Before any participation: merging the detached group would orphan them.
-          group.setRoute(dataService.createRoute(team1, user1, "Joined Route " + i));
+          Route route = dataService.createRoute(team1, user1, "Joined Route " + i);
+          routes.add(route);
+          group.setRoute(route);
           group.setLeader(user2);
           dataService.updateRideGroup(group);
         }
@@ -72,6 +98,7 @@ class ParticipationQueryCountTest extends AbstractQueryCountTest {
         }
       }
     }
+    return routes;
   }
 
   private void seedJoinedTrips(int count) {
@@ -132,6 +159,38 @@ class ParticipationQueryCountTest extends AbstractQueryCountTest {
         "GET /api/users/me/participations (registered groups)",
         asUser1(),
         "/api/users/me/participations");
+  }
+
+  /**
+   * docs/LEDGER_*.md API-120: the joined group of every row carries where its route stands at
+   * user1's synced services — one lookup for the page, whatever its size.
+   */
+  @Test
+  void listMyParticipations_gpsSyncStatuses_costAPageNotARow() {
+    seedJoinedRidesOnTrackedRoutes(LARGE_PAGE);
+
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .when()
+        .get("/api/users/me/participations?size=" + SMALL_PAGE)
+        .then()
+        .statusCode(200)
+        .body(
+            "publications.collect { it.registeredGroup.gpsSyncStatuses.size() }",
+            everyItem(equalTo(2)));
+
+    assertFlatQueryCount(
+        "GET /api/users/me/participations (gps sync statuses)",
+        asUser1(),
+        "/api/users/me/participations");
+  }
+
+  @Test
+  void listAllPublications_gpsSyncStatuses_costDoesNotScaleWithRowCount() {
+    seedJoinedRidesOnTrackedRoutes(LARGE_PAGE);
+    assertFlatQueryCount(
+        "GET /api/publications (gps sync statuses)", asUser1(), "/api/publications");
   }
 
   @Test
