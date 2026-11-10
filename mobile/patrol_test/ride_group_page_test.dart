@@ -1,9 +1,9 @@
 import 'common.dart';
 
-/// The group page (ledger `MOB-67`): a ride's group card opens it, it names the designated leader
-/// only — never the ride's creator —, joins from its action bar, shows the group's weather on its
-/// Weather tab, and, registered in one group, does not offer to join another: the server allows one
-/// group per ride.
+/// The group page (ledgers `MOB-67`, `MOB-132`): a ride's group card opens it, it names the
+/// designated leader only — never the ride's creator —, joins from its departure block, shows the
+/// group's weather in its last section, and, registered in one group, offers « Changer pour » on
+/// another rather than « Rejoindre »: the server allows one group per ride.
 void main() {
   testApp(
     'A group card opens its page, which names its leader, joins and shows its weather',
@@ -37,21 +37,26 @@ void main() {
       await modules.ride.waitUntilShown();
 
       await modules.ride.openGroup(ledId);
-      expect(modules.ride.groupPageShowsLeader(leader.displayName), isTrue);
-      expect(modules.ride.groupPageShowsLeader(owner.displayName), isFalse);
+      expect(
+        await modules.ride.groupPageShowsLeader(leader.displayName),
+        isTrue,
+      );
+      expect(
+        await modules.ride.groupPageShowsLeader(owner.displayName),
+        isFalse,
+      );
 
       await modules.ride.joinFromGroupPage();
       expect(await backend.registeredGroupIds(member, teamSlug, rideSlug), [
         ledId,
       ]);
 
-      // The other group: no leader, and no « Rejoindre » while registered here.
+      // The other group: no leader, and « Changer pour », not « Rejoindre », while registered here.
       await modules.ride.switchGroupPageTo(freeId);
-      expect(modules.ride.groupPageHasLeader, isFalse);
-      expect(modules.ride.groupPageSaysRegisteredElsewhere, isTrue);
-      expect(modules.ride.groupPageOffersJoin, isFalse);
+      expect(await modules.ride.groupPageHasLeader(), isFalse);
+      expect(await modules.ride.groupPageOffersSwitch(), isTrue);
+      expect(await modules.ride.groupPageOffersJoin(), isFalse);
 
-      await modules.ride.openGroupTab('weather');
       await modules.ride.waitUntilGroupWeatherIsShown();
 
       await modules.ride.closeGroup();

@@ -636,6 +636,11 @@
     "groupsRoute": "Group routes",
     "mainRoute": "Main route",
     "selectedGroupProfile": "Selected group profile",
+    "routeSection": {
+      "title": "Route",
+      "profile": "Profile",
+      "profileSourceTitle": "Elevation source"
+    },
     "departureBlock": {
       "departs": "Leaves at {time}",
       "yourGroup": "Your group: {group} · {time}",
@@ -767,11 +772,6 @@
       "title": "Group {name}",
       "share": "Share the group",
       "groups": "Ride groups",
-      "tabs": {
-        "overview": "Overview",
-        "weather": "Weather",
-        "participants": "Participants"
-      },
       "participantsCount": {
         "one": "{count}/{max} participant",
         "other": "{count}/{max} participants"
@@ -796,7 +796,6 @@
         "estimatedDuration": "Estimated duration"
       },
       "leader": "Leader",
-      "weatherSummary": "Weather at the group's start",
       "participantsTitle": "Participants",
       "viewAllParticipants": "View all participants",
       "routeTitle": "Group route",
@@ -1372,6 +1371,8 @@
     },
     "elevationRefining": "Provisional elevation profile",
     "surfaceDetail": {
+      "sourceTitle": "Surface source",
+      "sourceText": "The surface comes from OpenStreetMap data, under the ODbL licence.",
       "colorBy": "Colour the profile and the route by",
       "profileColorBy": "Colour the profile by",
       "grade": "Grade",

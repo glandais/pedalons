@@ -7,8 +7,8 @@ import 'ride_detail_provider.dart';
 /// La météo d'une sortie (`GET …/rides/{rideSlug}/weather`).
 ///
 /// Partagée par la carte « Météo au départ » du détail, la ligne météo de ses
-/// cartes de groupe et la page d'un groupe (son Aperçu et son onglet Météo),
-/// que le détail pousse par-dessus lui : ouvrir la page ne recharge rien
+/// cartes de groupe et la page d'un groupe (son bloc de départ, sa carte et
+/// sa section Météo), que le détail pousse par-dessus lui : ouvrir la page ne recharge rien
 /// (ledger `MOB-67`).
 ///
 /// `autoDispose` : une prévision vieillit, et rien d'autre que ces

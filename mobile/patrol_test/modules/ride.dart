@@ -251,37 +251,27 @@ final class Ride extends Module {
     }
   }
 
-  /// Taps the card of [groupId], which opens the group's page (ledger `MOB-67`) on its Overview
-  /// tab — or on [tab] (`weather`, `participants`) once it is shown. A ride of two groups or more
-  /// only: a single group has no card and no page (ledger `MOB-69`).
-  Future<void> openGroup(String groupId, {String? tab}) async {
+  /// Taps the card of [groupId], which opens the group's page (ledgers `MOB-67`, `MOB-132`): one
+  /// scrolling page, no tabs. A ride of two groups or more only: a single group has no card and no
+  /// page (ledger `MOB-69`).
+  Future<void> openGroup(String groupId) async {
     if (_solo) {
       throw TestFailure('a single-group ride has no group page to open');
     }
     await (await scrolledTo(keys.ride.group(groupId))).tap();
     await $(keys.rideGroup.page).waitUntilExists();
-    if (tab != null) await openGroupTab(tab);
   }
 
-  /// Switches the group's page to its `overview`, `weather` or `participants` tab.
-  Future<void> openGroupTab(String tab) async {
-    await $(switch (tab) {
-      'weather' => keys.rideGroup.tabWeather,
-      'participants' => keys.rideGroup.tabParticipants,
-      _ => keys.rideGroup.tabOverview,
-    }).tap();
-  }
-
-  /// Whether the group's page is open, on its Weather tab's sections or its empty state.
+  /// Scrolls the group's page down to its Météo section, its last block, and waits until the
+  /// forecast has loaded: the section then shows its timeline or one of its states — or nothing at
+  /// all (`OUT_OF_RANGE`, a member's `NO_LOCATION`), the page then ending on « Personnes
+  /// inscrites ».
   Future<void> waitUntilGroupWeatherIsShown() async {
     final deadline = DateTime.now().add(const Duration(seconds: 20));
-    while (!$(keys.ride.weatherCheckpoint(0)).exists &&
-        !$(keys.rideGroup.weatherEmpty).exists &&
-        !$(keys.ride.weatherLegUnavailable).exists &&
-        !$(keys.ride.weatherNotYetAvailable).exists &&
-        !$(keys.ride.weatherUnavailable).exists) {
+    await scrolledIntoView(keys.rideGroup.weatherSection);
+    while ($(keys.rideGroup.weatherLoading).exists) {
       if (DateTime.now().isAfter(deadline)) {
-        throw TestFailure('the group page shows no weather after 20s');
+        throw TestFailure('the group page still loads its weather after 20s');
       }
       await $.pump(const Duration(milliseconds: 200));
     }
@@ -298,23 +288,37 @@ final class Ride extends Module {
     await $(keys.ride.moreButton).waitUntilVisible();
   }
 
-  /// Whether the group's page names [name] as its leader.
-  bool groupPageShowsLeader(String name) => shows(keys.rideGroup.leader, name);
-
-  /// Whether the group's page has a leader row at all.
-  bool get groupPageHasLeader => isShown(keys.rideGroup.leader);
-
-  /// « Rejoindre » of the group page's action bar, then waits for « Quitter ».
-  Future<void> joinFromGroupPage() async {
-    await $(keys.rideGroup.joinButton).tap();
-    await $(keys.rideGroup.leaveButton).waitUntilVisible();
+  /// Whether the group's page names [name] as its leader, in « Personnes inscrites » — scrolled
+  /// to first: the section is below the route, out of the tree on a phone.
+  Future<bool> groupPageShowsLeader(String name) async {
+    await scrolledIntoView(keys.rideGroup.participantsSection);
+    return shows(keys.rideGroup.leader, name);
   }
 
-  /// Whether the group page says the member is registered in another group.
-  bool get groupPageSaysRegisteredElsewhere =>
-      isShown(keys.rideGroup.registeredElsewhere);
+  /// Whether the group's page has a leader row at all.
+  Future<bool> groupPageHasLeader() async {
+    await scrolledIntoView(keys.rideGroup.participantsSection);
+    return isShown(keys.rideGroup.leader);
+  }
 
-  bool get groupPageOffersJoin => isShown(keys.rideGroup.joinButton);
+  /// « Rejoindre » of the group page's departure block, then waits for its « J'y vais » badge.
+  Future<void> joinFromGroupPage() async {
+    await (await scrolledTo(keys.rideGroup.joinButton)).tap();
+    await $(keys.rideGroup.goingBadge).waitUntilVisible();
+  }
+
+  /// Whether the group page's departure block offers « Changer pour {group} »: registered in
+  /// another group of the ride, this one still open.
+  Future<bool> groupPageOffersSwitch() async {
+    await scrolledIntoView(keys.rideGroup.departureBlock);
+    return isShown(keys.rideGroup.switchButton);
+  }
+
+  /// Whether the group page's departure block offers « Rejoindre ».
+  Future<bool> groupPageOffersJoin() async {
+    await scrolledIntoView(keys.rideGroup.departureBlock);
+    return isShown(keys.rideGroup.joinButton);
+  }
 
   /// Taps the pill of [groupId] on the group's page.
   Future<void> switchGroupPageTo(String groupId) async {

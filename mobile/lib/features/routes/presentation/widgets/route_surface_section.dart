@@ -9,6 +9,7 @@ import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/utils/link_launcher.dart';
+import '../../../../core/widgets/detail_source_button.dart';
 import '../../../../keys.dart';
 import '../../domain/track_slope_colors.dart';
 import '../../domain/track_surfaces.dart';
@@ -102,10 +103,22 @@ class TrackSurfaceBarColors {
 /// `MOB-105`).
 ///
 /// Ne rend rien sans revêtement ; une ligne d'attente tant qu'il se calcule.
+///
+/// Avec [sourceInfoKey] — les écrans de détail refondus (ledger `MOB-132`,
+/// maquette `groupe-mobile-cible`) —, l'attribution quitte le pied de la
+/// section pour un bouton ⓘ au bout de la légende, qui ouvre une feuille
+/// courte portant la même mention et son lien.
 class RouteSurfaceSection extends StatelessWidget {
-  const RouteSurfaceSection({super.key, required this.tracks});
+  const RouteSurfaceSection({
+    super.key,
+    required this.tracks,
+    this.sourceInfoKey,
+  });
 
   final List<TrackDto> tracks;
+
+  /// La clé du bouton ⓘ ; `null` : l'attribution en lien sous la légende.
+  final Key? sourceInfoKey;
 
   static const String _copyright = 'https://www.openstreetmap.org/copyright';
 
@@ -129,6 +142,14 @@ class RouteSurfaceSection extends StatelessWidget {
         '${trackSurfaceLabel(s.surface)} ${trackSurfaceShareLabel(s.share)}',
     ];
 
+    final Widget legend = PdlLegendRow(
+      padding: EdgeInsets.zero,
+      entries: <PdlLegendEntry>[
+        for (int i = 0; i < shares.length; i++)
+          PdlLegendEntry(color: shares[i].surface.stroke(c), label: labels[i]),
+      ],
+    );
+
     return Column(
       key: keys.routeDetail.surfaceSection,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -149,35 +170,44 @@ class RouteSurfaceSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: PdlSpacing.chipGap),
-        PdlLegendRow(
-          padding: EdgeInsets.zero,
-          entries: <PdlLegendEntry>[
-            for (int i = 0; i < shares.length; i++)
-              PdlLegendEntry(
-                color: shares[i].surface.stroke(c),
-                label: labels[i],
-              ),
-          ],
-        ),
-        Semantics(
-          link: true,
-          child: InkWell(
-            key: keys.routeDetail.surfaceAttribution,
-            onTap: () => openLink(context, _copyright),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                minHeight: PdlMetrics.tapTarget,
-              ),
-              child: Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: Text(
-                  'routes.surfaceDetail.attribution'.tr(),
-                  style: t.xs.copyWith(color: c.textDimmed),
+        if (sourceInfoKey == null) ...<Widget>[
+          legend,
+          Semantics(
+            link: true,
+            child: InkWell(
+              key: keys.routeDetail.surfaceAttribution,
+              onTap: () => openLink(context, _copyright),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  minHeight: PdlMetrics.tapTarget,
+                ),
+                child: Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Text(
+                    'routes.surfaceDetail.attribution'.tr(),
+                    style: t.xs.copyWith(color: c.textDimmed),
+                  ),
                 ),
               ),
             ),
           ),
-        ),
+        ] else
+          Row(
+            children: <Widget>[
+              Expanded(child: legend),
+              DetailSourceButton(
+                key: sourceInfoKey,
+                semanticLabel: 'routes.surfaceDetail.sourceTitle'.tr(),
+                onPressed: () => showDetailSourceSheet(
+                  context,
+                  title: 'routes.surfaceDetail.sourceTitle'.tr(),
+                  text: 'routes.surfaceDetail.sourceText'.tr(),
+                  linkLabel: 'routes.surfaceDetail.attribution'.tr(),
+                  url: _copyright,
+                ),
+              ),
+            ],
+          ),
       ],
     );
   }

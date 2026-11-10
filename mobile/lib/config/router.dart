@@ -36,7 +36,6 @@ import '../features/posts/domain/post_neighbours.dart';
 import '../features/posts/presentation/pages/post_detail_page.dart';
 import '../features/rides/presentation/pages/ride_detail_page.dart';
 import '../features/rides/presentation/pages/ride_editor_page.dart';
-import '../features/rides/domain/ride_group_tab.dart';
 import '../features/rides/presentation/pages/ride_group_page.dart';
 import '../features/rides/presentation/pages/ride_template_editor_page.dart';
 import '../features/rides/presentation/pages/ride_template_list_page.dart';
@@ -745,10 +744,6 @@ GoRoute _rideTemplateEditRoute(String locale) {
   );
 }
 
-/// La page d'un groupe de sortie, sous le détail de la sortie (ledger
-/// `MOB-67`). L'onglet ouvert vient de `?tab=` (`overview`, `weather`,
-/// `participants`) : hors contrat, il ne sert qu'aux liens internes — « la
-/// météo de ce groupe » ouvre `?tab=weather`.
 /// L'éditeur d'une sortie, sous son détail : ouvert par un lien, la fiche se
 /// reconstruit dessous et l'enregistrement y revient (ledger `MOB-80`).
 GoRoute _rideEditRoute(String locale) {
@@ -788,6 +783,10 @@ GoRoute _routeEditRoute(String locale) {
   );
 }
 
+/// La page d'un groupe de sortie, sous le détail de la sortie (ledgers
+/// `MOB-67`, `MOB-132`). Elle n'a plus d'onglets : `?tab=weather`, hors
+/// contrat, reste toléré et la fait défiler jusqu'à sa section Météo ; toute
+/// autre valeur de `?tab=` (`participants`, `overview`) est ignorée.
 GoRoute _rideGroupRoute(String locale) {
   final rideBase = PathVariants.ride(':teamSlug', ':rideSlug')[locale]!;
   return GoRoute(
@@ -801,7 +800,7 @@ GoRoute _rideGroupRoute(String locale) {
       teamSlug: state.pathParameters['teamSlug']!,
       rideSlug: state.pathParameters['rideSlug']!,
       groupId: state.pathParameters['groupId']!,
-      initialTab: RideGroupTab.fromQuery(state.uri.queryParameters['tab']),
+      scrollToWeather: state.uri.queryParameters['tab'] == kRideGroupWeatherTab,
     ),
   );
 }

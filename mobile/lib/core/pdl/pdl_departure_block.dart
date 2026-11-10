@@ -166,9 +166,12 @@ class PdlDepartureBlock extends StatelessWidget {
           else
             Row(
               children: <Widget>[
+                // L'heure garde au moins la moitié de la largeur : un libellé
+                // long (« Changer pour Les Rapides ») s'abrège plutôt que de
+                // l'écraser.
                 Expanded(child: labelledHeader),
                 const SizedBox(width: PdlSpacing.chipGap),
-                trailing!,
+                Flexible(child: trailing!),
               ],
             ),
           if (places.isNotEmpty) ...<Widget>[

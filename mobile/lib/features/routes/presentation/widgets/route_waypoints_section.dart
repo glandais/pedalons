@@ -23,7 +23,12 @@ class RouteWaypointsSection extends ConsumerStatefulWidget {
     required this.waypoints,
     required this.selection,
     required this.onSelect,
+    this.showHeader = true,
   });
+
+  /// Le titre « Points du parcours » et son compte ; faux quand un bloc
+  /// repliable (`PdlDisclosure`) les porte déjà.
+  final bool showHeader;
 
   /// Les points **dans l'ordre d'origine** : les clés s'y calculent, avant tout
   /// tri, et sont celles de la carte et du profil.
@@ -60,10 +65,11 @@ class _RouteWaypointsSectionState extends ConsumerState<RouteWaypointsSection> {
       key: keys.routeWaypoints.section,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        PdlSectionHeader(
-          title: 'routes.waypoints.title'.tr(),
-          count: '${order.length}',
-        ),
+        if (widget.showHeader)
+          PdlSectionHeader(
+            title: 'routes.waypoints.title'.tr(),
+            count: '${order.length}',
+          ),
         ValueListenableBuilder<WaypointSelection?>(
           valueListenable: widget.selection,
           builder: (BuildContext context, WaypointSelection? selected, _) =>

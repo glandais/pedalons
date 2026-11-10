@@ -636,6 +636,11 @@
     "groupsRoute": "Parcours des groupes",
     "mainRoute": "Parcours principal",
     "selectedGroupProfile": "Profil du groupe sélectionné",
+    "routeSection": {
+      "title": "Parcours",
+      "profile": "Profil",
+      "profileSourceTitle": "Source des altitudes"
+    },
     "departureBlock": {
       "departs": "Départ {time}",
       "yourGroup": "Votre groupe : {group} · {time}",
@@ -767,11 +772,6 @@
       "title": "Groupe {name}",
       "share": "Partager le groupe",
       "groups": "Groupes de la sortie",
-      "tabs": {
-        "overview": "Aperçu",
-        "weather": "Météo",
-        "participants": "Inscriptions"
-      },
       "participantsCount": {
         "one": "{count}/{max} personne",
         "other": "{count}/{max} personnes"
@@ -796,7 +796,6 @@
         "estimatedDuration": "Durée estimée"
       },
       "leader": "Capitaine",
-      "weatherSummary": "Météo au départ du groupe",
       "participantsTitle": "Personnes inscrites",
       "viewAllParticipants": "Voir toutes les personnes inscrites",
       "routeTitle": "Parcours du groupe",
@@ -1372,6 +1371,8 @@
     },
     "elevationRefining": "Profil d'altitude provisoire",
     "surfaceDetail": {
+      "sourceTitle": "Source du revêtement",
+      "sourceText": "Le revêtement vient des données OpenStreetMap, sous licence ODbL.",
       "colorBy": "Colorer le profil et le tracé selon",
       "profileColorBy": "Colorer le profil selon",
       "grade": "Pente",

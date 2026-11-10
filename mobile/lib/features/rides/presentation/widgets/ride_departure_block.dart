@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 
 import '../../../../api/generated/export.dart';
 import '../../../../core/pdl/pdl.dart';
+import '../../../../core/utils/directions.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/day_box.dart';
 import '../../../../core/widgets/zone_mention_line.dart';
+import '../../../../keys.dart';
 import '../../domain/group_start.dart';
 import '../../providers/ride_detail_provider.dart';
 
@@ -26,6 +28,8 @@ class RideDepartureBlock extends StatelessWidget {
     required this.ride,
     this.group,
     this.arrival,
+    this.trailing,
+    this.places = const <Widget>[],
     this.now,
   });
 
@@ -36,6 +40,13 @@ class RideDepartureBlock extends StatelessWidget {
 
   /// « Arrivée estimée 13:10 », déjà formatée, pour un groupe.
   final String? arrival;
+
+  /// À droite de l'heure : le contrôle d'inscription
+  /// (`RideRegistrationControl`, ledger `MOB-132`).
+  final Widget? trailing;
+
+  /// Les lieux de départ et d'arrivée, sous l'heure ([ridePlaceLinks]).
+  final List<Widget> places;
 
   /// Un instant, pour les tests ; maintenant sinon.
   final DateTime? now;
@@ -104,6 +115,34 @@ class RideDepartureBlock extends StatelessWidget {
           : ZoneMentionLine(instant: instant, zone: zone),
       groupLine: groupLine,
       semanticLabel: semanticLabel,
+      trailing: trailing,
+      places: places,
     );
   }
+}
+
+/// Les lieux de départ (drapeau vert) et d'arrivée (drapeau rouge, s'il y en
+/// a un) d'une sortie, en liens d'itinéraire (ledger `MOB-132`, KIT §8 :
+/// « liens noirs soulignés qui ouvrent l'itinéraire »). Un lieu sans
+/// coordonnées ni adresse reste un texte simple.
+List<Widget> ridePlaceLinks(BuildContext context, RideDto ride) {
+  Widget row(PlaceDetailDto place, PdlPlaceKind kind, Key key) {
+    final bool opens = placeDirectionsUri(place) != null;
+    return PdlPlaceRow.link(
+      key: key,
+      kind: kind,
+      name: place.name,
+      semanticLabel: 'common.directionsTo'.tr(
+        namedArgs: <String, String>{'place': place.name},
+      ),
+      onTap: opens ? () => openPlaceDirections(context, place) : null,
+    );
+  }
+
+  return <Widget>[
+    if (ride.startPlace case final PlaceDetailDto start)
+      row(start, PdlPlaceKind.start, keys.ride.startPlaceLink),
+    if (ride.endPlace case final PlaceDetailDto end)
+      row(end, PdlPlaceKind.end, keys.ride.endPlaceLink),
+  ];
 }

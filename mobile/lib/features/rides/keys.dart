@@ -57,6 +57,11 @@ class RideDetailKeys {
   /// détail, ledger `MOB-69`).
   final weatherCard = const _RideDetailKey('weatherCard');
 
+  /// Les lieux de départ et d'arrivée du bloc de départ, en liens
+  /// d'itinéraire (`ridePlaceLinks`, ledger `MOB-132`).
+  final startPlaceLink = const _RideDetailKey('startPlaceLink');
+  final endPlaceLink = const _RideDetailKey('endPlaceLink');
+
   /// La section du groupe d'une sortie solo, à la place des cartes de groupe
   /// (ledger `MOB-69`). Sa présence dit que le détail **est** la page du
   /// groupe : l'inscription passe par la barre d'action (`keys.rideGroup.*`).
@@ -166,45 +171,61 @@ class _RideGroupKey extends ValueKey<String> {
   const _RideGroupKey(String value) : super('rideGroup_$value');
 }
 
-/// La page d'un groupe de sortie (ledger `MOB-67`).
+/// La page d'un groupe de sortie (ledgers `MOB-67`, `MOB-132`) : une page qui
+/// défile, sans onglets ni barre d'action.
 class RideGroupPageKeys {
   final page = const _RideGroupKey('page');
 
   /// Le retour de l'app bar, vers la sortie.
   final backButton = const _RideGroupKey('backButton');
 
-  /// Le bloc de départ en tête de l'Aperçu : l'heure du groupe (ledger
-  /// `MOB-113`).
+  /// Les sections de la page, dans leur ordre (maquettes
+  /// `groupe-mobile-cible`, `groupe-inscrit-mobile-cible`) : bloc de départ,
+  /// tuiles de chiffres, « Parcours », « Personnes inscrites », « Météo ».
   final departureBlock = const _RideGroupKey('departureBlock');
+  final statTiles = const _RideGroupKey('statTiles');
+  final routeSection = const _RideGroupKey('routeSection');
+  final participantsSection = const _RideGroupKey('participantsSection');
+  final weatherSection = const _RideGroupKey('weatherSection');
 
-  /// Les trois onglets : Aperçu · Météo · Participants.
-  final tabOverview = const _RideGroupKey('tabOverview');
-  final tabWeather = const _RideGroupKey('tabWeather');
-  final tabParticipants = const _RideGroupKey('tabParticipants');
+  /// L'attente de la section Météo, tant que la prévision se charge.
+  final weatherLoading = const _RideGroupKey('weatherLoading');
 
-  /// « Rejoindre » et « Quitter » de la barre d'action.
+  /// Le contrôle d'inscription du bloc de départ (`RideRegistrationControl`) :
+  /// « Rejoindre », le badge « J'y vais », « Complet » désactivé, « Changer
+  /// pour A ». Partagé avec la barre d'action d'une sortie solo
+  /// (`RideGroupActionBar`) pour « Rejoindre », « Quitter » et « Complet ».
   final joinButton = const _RideGroupKey('joinButton');
+  final goingBadge = const _RideGroupKey('goingBadge');
+  final switchButton = const _RideGroupKey('switchButton');
+
+  /// « Quitter le groupe », au pied de « Personnes inscrites » sur la page
+  /// d'un groupe ; « Quitter » de la barre d'action d'une sortie solo.
   final leaveButton = const _RideGroupKey('leaveButton');
 
-  /// Le badge « Complet » qui remplace le bouton d'un groupe plein.
+  /// « Complet » : bouton désactivé sur la page d'un groupe, badge dans la
+  /// barre d'action d'une sortie solo.
   final fullBadge = const _RideGroupKey('fullBadge');
 
-  /// « Vous êtes inscrit dans le groupe X. »
+  /// « Votre inscription est dans le groupe X. » — barre d'action d'une
+  /// sortie solo seulement (retirée au lot 7 du ledger `MOB-132`).
   final registeredElsewhere = const _RideGroupKey('registeredElsewhere');
 
-  /// Le lien vers le groupe où l'on est inscrit.
+  /// Le lien vers le groupe où l'on est inscrit, même barre.
   final viewMyGroup = const _RideGroupKey('viewMyGroup');
 
-  /// Le compteur de places de la barre d'action.
+  /// Les places : « 3/16 personnes » de la barre d'action d'une sortie
+  /// solo ; la barre de places et « 13 places restantes » de la page d'un
+  /// groupe.
   final participantsCount = const _RideGroupKey('participantsCount');
 
-  /// Le meneur désigné — absent quand `leader` est nul.
+  /// Le capitaine désigné — absent quand `leader` est nul.
   final leader = const _RideGroupKey('leader');
 
-  /// La carte résumé « Météo au départ du groupe » de l'aperçu.
-  final weatherSummaryCard = const _RideGroupKey('weatherSummaryCard');
+  /// La grappe d'avatars de « Personnes inscrites », sans le capitaine.
+  final participantsAvatars = const _RideGroupKey('participantsAvatars');
 
-  /// L'interrupteur Pente | Revêtement | Météo sous la carte de l'aperçu
+  /// L'interrupteur Pente | Revêtement | Météo sous la carte du groupe
   /// (ledger `MOB-105`), partagé par la carte, son plein écran et le profil.
   final mapColorBy = const _RideGroupKey('mapColorBy');
 
@@ -214,11 +235,7 @@ class RideGroupPageKeys {
   /// Le crédit des prévisions dans cette légende.
   final windMapCredit = const _RideGroupKey('windMapCredit');
 
-  /// La carte encastrée en tête de l'onglet Météo, toujours en mode
-  /// « Météo » (ledger `MOB-93`).
-  final weatherTabMap = const _RideGroupKey('weatherTabMap');
-
-  /// Le titre « Météo au départ de … » de l'onglet Météo (ledger `BRAND-8`).
+  /// Le titre « Météo au départ de … » de la section Météo (ledger `BRAND-8`).
   final departureWeatherTitle = const _RideGroupKey('departureWeatherTitle');
 
   /// La goutte de l'alerte pluie sur la carte, encastrée ou plein écran
@@ -232,15 +249,11 @@ class RideGroupPageKeys {
   ValueKey<String> weatherMapPastille(int index) =>
       _RideGroupKey('weatherMapPastille_$index');
 
-  /// « Voir toutes les personnes inscrites » de l'aperçu.
+  /// « Voir toutes les personnes inscrites », qui ouvre `ParticipantsSheet`.
   final viewAllParticipants = const _RideGroupKey('viewAllParticipants');
 
   /// Le bouton « GPS » du parcours du groupe (page d'un groupe, sortie solo).
   final gps = const _RideGroupKey('gps');
-
-  /// L'état neutre de l'onglet Météo quand il n'y a rien à montrer
-  /// (`OUT_OF_RANGE`, `NO_LOCATION` pour un membre, statut inconnu).
-  final weatherEmpty = const _RideGroupKey('weatherEmpty');
 
   /// Le groupe supprimé ou inconnu : un état vide et le retour à la sortie.
   final notFound = const _RideGroupKey('notFound');
@@ -249,6 +262,28 @@ class RideGroupPageKeys {
   /// La pastille d'un groupe dans le sélecteur de la page.
   ValueKey<String> groupChip(String groupId) =>
       _RideGroupKey('groupChip_$groupId');
+}
+
+class _RideRouteKey extends ValueKey<String> {
+  const _RideRouteKey(String value) : super('rideRoute_$value');
+}
+
+/// La section « Parcours » d'une sortie (`RideRouteSection`, ledger
+/// `MOB-132`) : la page d'un groupe aujourd'hui, la sortie solo et sans
+/// groupe ensuite.
+class RideRouteSectionKeys {
+  /// Le bouton ⓘ de « Profil » et sa feuille (la source des altitudes).
+  final profileSource = const _RideRouteKey('profileSource');
+  final profileSourceSheet = const _RideRouteKey('profileSourceSheet');
+
+  /// Le bouton ⓘ de la légende du revêtement (OpenStreetMap).
+  final surfaceSource = const _RideRouteKey('surfaceSource');
+
+  /// « Détails », qui pousse la fiche du parcours.
+  final details = const _RideRouteKey('details');
+
+  /// « Points du parcours », replié.
+  final waypoints = const _RideRouteKey('waypoints');
 }
 
 class _RideEditorKey extends ValueKey<String> {

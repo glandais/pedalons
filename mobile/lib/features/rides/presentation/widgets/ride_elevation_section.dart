@@ -10,6 +10,8 @@ import '../../../../core/theme/pdl_colors.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../core/widgets/detail_source_button.dart';
+import '../../../../keys.dart';
 import '../../../routes/domain/route_color_mode.dart';
 import '../../../routes/domain/track_slope_colors.dart';
 import '../../../routes/domain/track_surfaces.dart';
@@ -38,6 +40,7 @@ class RideElevationSection extends ConsumerStatefulWidget {
     this.colorBy = RouteColorBy.grade,
     this.profileColorByKey,
     this.windLeg,
+    this.detailLayout = false,
   });
 
   final String teamSlug;
@@ -70,6 +73,14 @@ class RideElevationSection extends ConsumerStatefulWidget {
   /// sous son aire la bande du vent et son info-bulle le vent du point
   /// (ledger `MOB-106`). Ignoré hors mode Météo.
   final WeatherLegDto? windLeg;
+
+  /// La mise en page des écrans de détail refondus (ledger `MOB-132`,
+  /// maquette `groupe-mobile-cible`, `RideRouteSection`) : l'en-tête
+  /// « Profil » et son bouton ⓘ (la source des altitudes, à la place du
+  /// crédit sous le profil, et sans le résumé distance · dénivelé que les
+  /// tuiles portent), le revêtement et sa source derrière ⓘ, et **pas** les
+  /// points du parcours — l'appelant les pose, repliés, sous ses actions.
+  final bool detailLayout;
 
   @override
   ConsumerState<RideElevationSection> createState() =>
@@ -146,22 +157,46 @@ class _RideElevationSectionState extends ConsumerState<RideElevationSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        Row(
-          children: <Widget>[
-            Expanded(
-              child: Text(
-                'rides.selectedGroupProfile'.tr(),
-                style: t.xs.copyWith(
-                  color: c.text,
-                  fontWeight: FontWeight.w600,
+        if (widget.detailLayout)
+          Row(
+            children: <Widget>[
+              Flexible(
+                child: Text(
+                  'rides.routeSection.profile'.tr(),
+                  style: t.bodyStrong,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
-            ),
-            if (_summary(units) != null) Text(_summary(units)!, style: t.xs),
-          ],
-        ),
+              DetailSourceButton(
+                key: keys.rideRoute.profileSource,
+                semanticLabel: 'rides.routeSection.profileSourceTitle'.tr(),
+                onPressed: () => showDetailSourceSheet(
+                  context,
+                  key: keys.rideRoute.profileSourceSheet,
+                  title: 'rides.routeSection.profileSourceTitle'.tr(),
+                  text: 'routes.elevationCredit'.tr(),
+                ),
+              ),
+            ],
+          )
+        else
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: Text(
+                  'rides.selectedGroupProfile'.tr(),
+                  style: t.xs.copyWith(
+                    color: c.text,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (_summary(units) != null) Text(_summary(units)!, style: t.xs),
+            ],
+          ),
         if (ownModes.length > 1) ...<Widget>[
           const SizedBox(height: PdlSpacing.chipGap),
           RouteColorModeSwitch(
@@ -206,7 +241,9 @@ class _RideElevationSectionState extends ConsumerState<RideElevationSection> {
                                   move: PdlWaypointMove.ifHidden,
                                 );
                               },
-                        credit: 'routes.elevationCredit'.tr(),
+                        credit: widget.detailLayout
+                            ? null
+                            : 'routes.elevationCredit'.tr(),
                         samples: data,
                         height: PdlMetrics.elevationMedium,
                         barColors: bars == null
@@ -252,9 +289,14 @@ class _RideElevationSectionState extends ConsumerState<RideElevationSection> {
         if (hasTrackSurfaces(tracks) ||
             trackSurfacesPending(tracks)) ...<Widget>[
           const SizedBox(height: PdlSpacing.section),
-          RouteSurfaceSection(tracks: tracks),
+          RouteSurfaceSection(
+            tracks: tracks,
+            sourceInfoKey: widget.detailLayout
+                ? keys.rideRoute.surfaceSource
+                : null,
+          ),
         ],
-        if (waypoints.isNotEmpty) ...<Widget>[
+        if (!widget.detailLayout && waypoints.isNotEmpty) ...<Widget>[
           const SizedBox(height: PdlSpacing.section),
           RouteWaypointsSection(
             waypoints: waypoints,

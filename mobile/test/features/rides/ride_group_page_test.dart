@@ -10,13 +10,14 @@ import 'package:pedalons/core/config/config_provider.dart';
 import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
 import 'package:pedalons/core/pagination/pagination.dart';
-import 'package:pedalons/core/theme/enum_colors.dart';
+import 'package:pedalons/core/theme/pdl_icons.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/core/utils/formatters.dart';
+import 'package:pedalons/features/comments/presentation/widgets/comment_thread.dart';
 import 'package:pedalons/features/participants/data/participant_repository.dart';
 import 'package:pedalons/features/participants/domain/participant_query.dart';
+import 'package:pedalons/features/participants/presentation/widgets/participants_sheet.dart';
 import 'package:pedalons/features/rides/data/ride_repository.dart';
-import 'package:pedalons/features/rides/domain/ride_group_tab.dart';
 import 'package:pedalons/features/rides/presentation/pages/ride_detail_page.dart';
 import 'package:pedalons/features/rides/presentation/pages/ride_group_page.dart';
 import 'package:pedalons/features/rides/presentation/widgets/ride_groups_map.dart';
@@ -31,12 +32,14 @@ import 'package:pedalons/keys.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../support/localization.dart';
+import '../routes/route_fixtures.dart';
 import 'ride_fixtures.dart';
 
-/// La page d'un groupe de sortie (ledger `MOB-67`) : l'onglet Météo — ce que
-/// montrait l'écran « Météo du parcours », pour ce groupe —, l'Aperçu et son
-/// meneur, la barre d'inscription, les pastilles qui partagent la sélection
-/// avec le détail, et le groupe disparu.
+/// La page d'un groupe de sortie (ledgers `MOB-67`, `MOB-132`) : une page qui
+/// défile, sans onglets ni barre d'action — bloc de départ et inscription,
+/// tuiles, « Parcours », « Personnes inscrites », « Météo » —, les pastilles
+/// qui partagent la sélection avec le détail, `?tab=weather` toléré, et le
+/// groupe disparu.
 class _Repository implements RideRepository {
   _Repository(this.ride, this.weather);
 
@@ -44,6 +47,7 @@ class _Repository implements RideRepository {
   RideWeatherDto weather;
   final List<String> joined = <String>[];
   final List<String> left = <String>[];
+  final List<String> switched = <String>[];
   int weatherCalls = 0;
 
   @override
@@ -62,13 +66,19 @@ class _Repository implements RideRepository {
   }
 
   @override
+  Future<RideParticipationDto> switchGroup(String t, String r, String g) async {
+    switched.add(g);
+    return const RideParticipationDto(id: 'p', userId: 'u');
+  }
+
+  @override
   Future<void> leaveGroup(String t, String r, String g) async => left.add(g);
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-/// Le serveur des participants : la liste que la barre d'inscription change.
+/// Le serveur des participants : la liste de la feuille « Voir toutes ».
 class _Participants implements ParticipantRepository {
   final List<PublicUserDto> people = <PublicUserDto>[
     const PublicUserDto(id: 'u2', displayName: 'Hélène Ebrard'),
@@ -89,47 +99,53 @@ class _Participants implements ParticipantRepository {
   }
 }
 
+/// « Mes équipes » : membre, non-membre, ou jamais répondu (appartenance
+/// inconnue).
 class _Teams implements TeamRepository {
-  _Teams({required this.member});
+  _Teams({required this.member, this.pending = false});
 
   final bool member;
+  final bool pending;
 
   @override
-  Future<List<TeamDetailDto>> getMyTeams() async => member
-      ? <TeamDetailDto>[
-          const TeamDetailDto(
-            timezone: 'Europe/Paris',
-            id: 't1',
-            slug: 'n-peloton',
-            name: 'N-Peloton',
-            about: MediaDto(
-              markdown: '',
-              assets: AssetsDto(
-                images: <AssetDto>[],
-                attachments: <AssetDto>[],
+  Future<List<TeamDetailDto>> getMyTeams() async {
+    if (pending) return Completer<List<TeamDetailDto>>().future;
+    return member
+        ? <TeamDetailDto>[
+            const TeamDetailDto(
+              timezone: 'Europe/Paris',
+              id: 't1',
+              slug: 'n-peloton',
+              name: 'N-Peloton',
+              about: MediaDto(
+                markdown: '',
+                assets: AssetsDto(
+                  images: <AssetDto>[],
+                  attachments: <AssetDto>[],
+                ),
               ),
+              visibility: 'PUBLIC',
+              enableTrips: true,
+              enableAds: true,
+              enablePosts: true,
+              enableRides: true,
+              enableRoutes: true,
+              visibilityEditable: true,
+              joinable: true,
+              addMemberAllowed: true,
+              enableMemberDirectory: false,
+              postsAsTeamByDefault: true,
+              enableRoutePlanner: false,
+              memberCount: 40,
+              upcomingRideCount: 3,
+              routeCount: 12,
+              upcomingTripCount: 0,
+              recentPostCount: 0,
+              createdAt: '2024-01-01T00:00:00Z',
             ),
-            visibility: 'PUBLIC',
-            enableTrips: true,
-            enableAds: true,
-            enablePosts: true,
-            enableRides: true,
-            enableRoutes: true,
-            visibilityEditable: true,
-            joinable: true,
-            addMemberAllowed: true,
-            enableMemberDirectory: false,
-            postsAsTeamByDefault: true,
-            enableRoutePlanner: false,
-            memberCount: 40,
-            upcomingRideCount: 3,
-            routeCount: 12,
-            upcomingTripCount: 0,
-            recentPostCount: 0,
-            createdAt: '2024-01-01T00:00:00Z',
-          ),
-        ]
-      : <TeamDetailDto>[];
+          ]
+        : <TeamDetailDto>[];
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -142,6 +158,10 @@ Future<void> settle(WidgetTester tester) async {
     await tester.pump(const Duration(milliseconds: 50));
   }
 }
+
+/// L'instant des tests : avant le départ des groupes des fixtures
+/// (`2026-10-11T06:00:00Z`).
+final DateTime _now = DateTime.utc(2026, 1, 1);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -192,12 +212,15 @@ void main() {
     RideWeatherDto dto, {
     RideDto? ride,
     String groupId = 'g1',
-    RideGroupTab tab = RideGroupTab.weather,
     UnitSystem units = UnitSystem.metric,
     bool member = true,
+    bool membershipPending = false,
+    bool scrollToWeather = false,
+    DateTime? now,
+    double height = 6000,
     List overrides = const [],
   }) async {
-    tester.view.physicalSize = const Size(402 * 3, 2400 * 3);
+    tester.view.physicalSize = Size(402 * 3, height * 3);
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);
 
@@ -210,7 +233,9 @@ void main() {
         unitSystemProvider.overrideWithValue(units),
         rideRepositoryProvider.overrideWithValue(repository),
         participantRepositoryProvider.overrideWithValue(participants),
-        teamRepositoryProvider.overrideWithValue(_Teams(member: member)),
+        teamRepositoryProvider.overrideWithValue(
+          _Teams(member: member, pending: membershipPending),
+        ),
         ...overrides,
       ],
     );
@@ -225,7 +250,8 @@ void main() {
             teamSlug: key.teamSlug,
             rideSlug: key.rideSlug,
             groupId: groupId,
-            initialTab: tab,
+            scrollToWeather: scrollToWeather,
+            now: now ?? _now,
           ),
         ),
       ),
@@ -235,19 +261,754 @@ void main() {
     }
   }
 
-  test('?tab= ouvre l\'onglet demandé, l\'Aperçu par défaut', () {
-    expect(RideGroupTab.fromQuery('weather'), RideGroupTab.weather);
-    expect(RideGroupTab.fromQuery('participants'), RideGroupTab.participants);
-    expect(RideGroupTab.fromQuery('overview'), RideGroupTab.overview);
-    expect(RideGroupTab.fromQuery(null), RideGroupTab.overview);
-    expect(RideGroupTab.fromQuery('nope'), RideGroupTab.overview);
+  Finder inBlock(Finder matching) => find.descendant(
+    of: find.byKey(keys.rideGroup.departureBlock),
+    matching: matching,
+  );
+
+  Finder inParticipants(Finder matching) => find.descendant(
+    of: find.byKey(keys.rideGroup.participantsSection),
+    matching: matching,
+  );
+
+  // ─────────────────────────────────────────────── la carte et son parcours
+
+  TrackDto trackOf(List<List<double>> coordinates) => TrackDto(
+    line: GeoJsonLineString(
+      type: GeoJsonLineStringTypeType.lineString,
+      coordinates: coordinates,
+    ),
+    climbs: const <ClimbDto>[],
+  );
+  final RideDto routed = fixtureRide(
+    groups: <RideGroupDto>[
+      fixtureGroup(id: 'g1', name: 'Rapide', routeSlug: 'court'),
+      fixtureGroup(id: 'g2', name: 'Cool', sortOrder: 1),
+    ],
+  );
+  // Deux traces : 10 km plein nord, un saut de ~8 km vers l'est, puis 20 km
+  // dont la distance repart de 0 — 30 km chaînés, saut nul.
+  RouteDetailDto route({List<WaypointDto> waypoints = const <WaypointDto>[]}) =>
+      RouteDetailDto(
+        elevationState: 'HD',
+        tags: const [],
+        id: 'r-court',
+        slug: 'court',
+        team: routed.team,
+        name: 'Court',
+        media: routed.media,
+        distance: 30000,
+        elevationGain: 0,
+        elevationLoss: 0,
+        surfaceType: 'ROAD',
+        visibility: 'PUBLIC',
+        createdBy: const PublicUserDto(id: 'u9', displayName: 'Créatrice'),
+        createdAt: '2026-01-01T00:00:00Z',
+        updatedAt: '2026-01-01T00:00:00Z',
+        tracks: <TrackDto>[
+          trackOf(<List<double>>[
+            for (int i = 0; i <= 10; i++)
+              <double>[5, 45 + i * 0.009, 300, i * 1000.0],
+          ]),
+          trackOf(<List<double>>[
+            for (int j = 0; j <= 20; j++)
+              <double>[5.1, 45 + (10 + j) * 0.009, 300, j * 1000.0],
+          ]),
+        ],
+        waypoints: waypoints,
+        deleted: false,
+      );
+  List mapOverrides({RouteDetailDto? geometry, bool loading = false}) => [
+    appConfigProvider.overrideWith((Ref ref) => Completer<ConfigDto>().future),
+    mapStyleProvider.overrideWith(
+      (Ref ref, Brightness b) => const AsyncValue<ResolvedMapStyle?>.data(
+        ResolvedMapStyle(
+          selectedId: 's',
+          style: MapStyleDto(
+            id: 'plan',
+            label: 'Plan',
+            group: 'vector',
+            url: 'https://tiles.example/plan.json',
+          ),
+          url: 'https://tiles.example/plan.json',
+        ),
+      ),
+    ),
+    rideRouteGeometryProvider.overrideWith(
+      (Ref ref, RouteRef r) => loading
+          ? const AsyncValue<RouteDetailDto>.loading()
+          : AsyncValue<RouteDetailDto>.data(geometry ?? route()),
+    ),
+  ];
+
+  PdlMap probe(WidgetTester tester) =>
+      tester.widget<RideGroupsMapProbe>(find.byType(RideGroupsMapProbe)).map;
+
+  // ─────────────────────────────────────────── l'ordre des maquettes
+
+  /// Les ordonnées des sections, dans l'ordre des maquettes (ledger
+  /// `MOB-132`) : bloc de départ, tuiles, « Parcours », « Personnes
+  /// inscrites », « Météo ».
+  void expectSectionOrder(WidgetTester tester) {
+    final List<Key> order = <Key>[
+      keys.rideGroup.departureBlock,
+      keys.rideGroup.statTiles,
+      keys.rideGroup.routeSection,
+      keys.rideGroup.participantsSection,
+      keys.rideGroup.weatherSection,
+    ];
+    final List<double> tops = <double>[
+      for (final Key k in order) tester.getTopLeft(find.byKey(k)).dy,
+    ];
+    for (int i = 1; i < tops.length; i++) {
+      expect(
+        tops[i],
+        greaterThan(tops[i - 1]),
+        reason: '${order[i]} doit suivre ${order[i - 1]}',
+      );
+    }
+    // Les pastilles, épinglées, au-dessus de tout.
+    expect(
+      tester.getTopLeft(find.byKey(keys.rideGroup.groupChip('g1'))).dy,
+      lessThan(tops.first),
+    );
+  }
+
+  group('l\'ordre des maquettes', () {
+    setUp(() => RideGroupsMap.debugSkipNativeMap = true);
+    tearDown(() => RideGroupsMap.debugSkipNativeMap = false);
+
+    testWidgets('groupe-mobile-cible : pas inscrit', (
+      WidgetTester tester,
+    ) async {
+      await open(
+        tester,
+        weather(),
+        ride: fixtureRide(
+          groups: <RideGroupDto>[
+            fixtureGroup(
+              id: 'g1',
+              name: 'A',
+              routeSlug: 'court',
+              leader: const PublicUserDto(id: 'u0', displayName: 'Léa Martin'),
+            ).copyWith(estimatedDurationMinutes: 198),
+            fixtureGroup(id: 'g2', name: 'B', sortOrder: 1),
+          ],
+        ),
+        overrides: mapOverrides(),
+      );
+
+      expectSectionOrder(tester);
+      // « Rejoindre » à droite de l'heure, ni badge ni « Quitter ».
+      expect(inBlock(find.byKey(keys.rideGroup.joinButton)), findsOneWidget);
+      expect(find.byKey(keys.rideGroup.goingBadge), findsNothing);
+      expect(find.byKey(keys.rideGroup.leaveButton), findsNothing);
+      // Plus d'onglets ni de barre d'action.
+      expect(find.byType(PdlSegmented<Object>), findsNothing);
+      expect(find.byType(PdlActionBar), findsNothing);
+      // Ni description ni commentaires sur la page d'un groupe.
+      expect(find.byType(CommentThread), findsNothing);
+      expect(find.text('Description'), findsNothing);
+      // Aucune pastille ne porte de coche : je ne suis inscrit nulle part.
+      for (final String id in <String>['g1', 'g2']) {
+        expect(
+          tester.widget<PdlChip>(find.byKey(keys.rideGroup.groupChip(id))).icon,
+          isNull,
+        );
+      }
+      await settle(tester);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('groupe-inscrit-mobile-cible : inscrit dans ce groupe', (
+      WidgetTester tester,
+    ) async {
+      await open(
+        tester,
+        weather(),
+        ride: fixtureRide(
+          registered: true,
+          registeredGroupId: 'g1',
+          groups: <RideGroupDto>[
+            fixtureGroup(
+              id: 'g1',
+              name: 'A',
+              routeSlug: 'court',
+              registered: true,
+              leader: const PublicUserDto(id: 'u0', displayName: 'Léa Martin'),
+            ).copyWith(estimatedDurationMinutes: 198),
+            fixtureGroup(id: 'g2', name: 'B', sortOrder: 1),
+          ],
+        ),
+        overrides: mapOverrides(),
+      );
+
+      expectSectionOrder(tester);
+      // « J'y vais » à la place de « Rejoindre ».
+      expect(inBlock(find.byKey(keys.rideGroup.goingBadge)), findsOneWidget);
+      expect(inBlock(find.text('J\'Y VAIS')), findsOneWidget);
+      expect(find.byKey(keys.rideGroup.joinButton), findsNothing);
+      // La coche sur la pastille de mon groupe, et sur elle seule.
+      expect(
+        tester.widget<PdlChip>(find.byKey(keys.rideGroup.groupChip('g1'))).icon,
+        PdlIcons.check,
+      );
+      expect(
+        tester.widget<PdlChip>(find.byKey(keys.rideGroup.groupChip('g2'))).icon,
+        isNull,
+      );
+      // « Quitter le groupe » en bas de « Personnes inscrites », avant la
+      // météo.
+      final Finder leave = find.byKey(keys.rideGroup.leaveButton);
+      expect(inParticipants(leave), findsOneWidget);
+      expect(
+        tester.getTopLeft(leave).dy,
+        greaterThan(
+          tester.getTopLeft(find.byKey(keys.rideGroup.viewAllParticipants)).dy,
+        ),
+      );
+      expect(
+        tester.getTopLeft(leave).dy,
+        lessThan(
+          tester.getTopLeft(find.byKey(keys.rideGroup.weatherSection)).dy,
+        ),
+      );
+      await settle(tester);
+      expect(tester.takeException(), isNull);
+    });
   });
 
-  // ─────────────────────────────────────────────────────────── onglet Météo
+  // ──────────────────────────────────────────────────── le bloc de départ
 
-  group('onglet Météo', () {
-    testWidgets('la section Météo, dépliée : départ, alerte, exposition, '
-        'frise, prévision', (WidgetTester tester) async {
+  group('le bloc de départ', () {
+    testWidgets('l\'heure du groupe et son arrivée estimée, sans relation '
+        'quand il part avec la sortie', (WidgetTester tester) async {
+      await open(
+        tester,
+        weather(),
+        ride: fixtureRide(
+          dateTime: '2036-07-29T19:30:00Z',
+          groups: <RideGroupDto>[
+            fixtureGroup(
+              id: 'g1',
+              startAt: '2036-07-29T19:30:00Z',
+            ).copyWith(estimatedArrival: '2036-07-29T22:48:00Z'),
+            fixtureGroup(id: 'g2', name: 'Cool', sortOrder: 1),
+          ],
+        ),
+      );
+
+      expect(inBlock(find.text('Départ 21:30')), findsOneWidget);
+      // L'arrivée du groupe (API-165), pas celle du leg météo.
+      expect(inBlock(find.text('Arrivée estimée 00:48')), findsOneWidget);
+      expect(find.textContaining('la sortie de'), findsNothing);
+      // La date, dite une fois, par la boîte du jour (« mar. / 29 / juil. »).
+      expect(inBlock(find.text('juil.')), findsOneWidget);
+      expect(inBlock(find.textContaining('29 juil.')), findsNothing);
+    });
+
+    testWidgets('sans arrivée du groupe : celle de son leg météo', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, weather());
+
+      expect(inBlock(find.textContaining('Arrivée estimée')), findsOneWidget);
+    });
+
+    testWidgets('ni arrivée du groupe ni leg prévu : pas d\'arrivée', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, weather(legs: <WeatherLegDto>[]));
+
+      expect(inBlock(find.textContaining('Arrivée estimée')), findsNothing);
+    });
+
+    testWidgets('un groupe à heure propre donne la sienne', (
+      WidgetTester tester,
+    ) async {
+      await open(
+        tester,
+        weather(),
+        ride: fixtureRide(
+          dateTime: '2036-07-29T19:30:00Z',
+          groups: <RideGroupDto>[
+            fixtureGroup(id: 'g1', startAt: '2036-07-29T20:00:00Z'),
+            fixtureGroup(id: 'g2', name: 'Cool', sortOrder: 1),
+          ],
+        ),
+      );
+
+      expect(inBlock(find.text('Départ 22:00')), findsOneWidget);
+      expect(inBlock(find.textContaining('la sortie de')), findsNothing);
+    });
+
+    testWidgets('les lieux de départ et d\'arrivée, en liens d\'itinéraire', (
+      WidgetTester tester,
+    ) async {
+      await open(
+        tester,
+        weather(),
+        ride: twoGroups.copyWith(
+          startPlace: const PlaceDetailDto(
+            id: 'p1',
+            name: 'Place de la Mairie, Huelgoat',
+            startPlace: true,
+            endPlace: false,
+            geometry: GeoJsonPoint(
+              type: GeoJsonPointTypeType.point,
+              coordinates: <double>[-3.74, 48.36],
+            ),
+          ),
+          endPlace: const PlaceDetailDto(
+            id: 'p2',
+            name: 'Café du Lac, Huelgoat',
+            startPlace: false,
+            endPlace: true,
+          ),
+        ),
+      );
+
+      final Finder start = inBlock(find.byKey(keys.ride.startPlaceLink));
+      expect(start, findsOneWidget);
+      expect(tester.widget<PdlPlaceRow>(start).onTap, isNotNull);
+      // Ni coordonnées ni adresse : un texte, pas un lien.
+      final Finder end = inBlock(find.byKey(keys.ride.endPlaceLink));
+      expect(end, findsOneWidget);
+      expect(tester.widget<PdlPlaceRow>(end).onTap, isNull);
+      expect(find.text('Café du Lac, Huelgoat'), findsOneWidget);
+    });
+
+    testWidgets('sans lieu d\'arrivée : le départ seul', (
+      WidgetTester tester,
+    ) async {
+      await open(
+        tester,
+        weather(),
+        ride: twoGroups.copyWith(
+          startPlace: const PlaceDetailDto(
+            id: 'p1',
+            name: 'Place de la Mairie',
+            startPlace: true,
+            endPlace: false,
+            address: '1 place de la Mairie, Huelgoat',
+          ),
+        ),
+      );
+
+      expect(find.byKey(keys.ride.startPlaceLink), findsOneWidget);
+      expect(find.byKey(keys.ride.endPlaceLink), findsNothing);
+    });
+  });
+
+  // ──────────────────────────────────────────────────────────── les tuiles
+
+  group('les tuiles', () {
+    testWidgets('Distance, Dénivelé positif, Durée estimée, Vitesse moyenne', (
+      WidgetTester tester,
+    ) async {
+      await open(
+        tester,
+        weather(),
+        ride: fixtureRide(
+          groups: <RideGroupDto>[
+            fixtureGroup(id: 'g1').copyWith(estimatedDurationMinutes: 198),
+            fixtureGroup(id: 'g2', name: 'Cool', sortOrder: 1),
+          ],
+        ),
+      );
+
+      Finder tile(String text) => find.descendant(
+        of: find.byKey(keys.rideGroup.statTiles),
+        matching: find.text(text),
+      );
+      expect(tile('Distance'), findsOneWidget);
+      expect(tile('Dénivelé positif'), findsOneWidget);
+      expect(tile('Durée estimée'), findsOneWidget);
+      expect(tile(AppFormatters.formatDurationMinutes(198)), findsOneWidget);
+      expect(tile('Vitesse moyenne'), findsOneWidget);
+      // L'ordre de la règle : Distance avant Durée, Dénivelé avant Vitesse.
+      expect(
+        tester.getTopLeft(tile('Distance')).dy,
+        lessThan(tester.getTopLeft(tile('Durée estimée')).dy),
+      );
+      // Le départ est dans le bloc en tête, plus dans les chiffres.
+      expect(tile('Départ'), findsNothing);
+    });
+
+    testWidgets('une tuile sans donnée disparaît', (WidgetTester tester) async {
+      await open(tester, weather());
+
+      expect(find.byKey(keys.rideGroup.statTiles), findsOneWidget);
+      expect(find.text('Durée estimée'), findsNothing);
+      expect(find.text('Vitesse moyenne'), findsOneWidget);
+    });
+  });
+
+  // ───────────────────────────────────────────── le contrôle d'inscription
+
+  group('le contrôle d\'inscription', () {
+    testWidgets('un membre rejoint le groupe, sans confirmation', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, weather());
+
+      expect(find.byKey(keys.rideGroup.leaveButton), findsNothing);
+      await tester.tap(find.byKey(keys.rideGroup.joinButton));
+      await tester.pump();
+      await tester.pump();
+
+      expect(repository.joined, <String>['g1']);
+      expect(find.byType(PdlSheet), findsNothing);
+      expect(find.byType(AlertDialog), findsNothing);
+    });
+
+    testWidgets('inscrit ici : « J\'y vais », et « Quitter le groupe » en bas '
+        'des personnes inscrites, sans confirmation', (
+      WidgetTester tester,
+    ) async {
+      await open(
+        tester,
+        weather(),
+        ride: fixtureRide(
+          registered: true,
+          registeredGroupId: 'g1',
+          groups: <RideGroupDto>[
+            fixtureGroup(id: 'g1', registered: true),
+            fixtureGroup(id: 'g2', name: 'Cool', sortOrder: 1),
+          ],
+        ),
+      );
+
+      expect(find.byKey(keys.rideGroup.goingBadge), findsOneWidget);
+      expect(find.byKey(keys.rideGroup.joinButton), findsNothing);
+      expect(find.text('Quitter le groupe'), findsOneWidget);
+      await tester.tap(find.byKey(keys.rideGroup.leaveButton));
+      await tester.pump();
+      await tester.pump();
+
+      expect(repository.left, <String>['g1']);
+      expect(find.byType(PdlSheet), findsNothing);
+      expect(find.byType(AlertDialog), findsNothing);
+    });
+
+    testWidgets('un groupe complet : « Complet » désactivé, aucun bouton', (
+      WidgetTester tester,
+    ) async {
+      await open(
+        tester,
+        weather(),
+        ride: fixtureRide(
+          groups: <RideGroupDto>[
+            fixtureGroup(
+              id: 'g1',
+              full: true,
+              countParticipants: 16,
+              maxParticipants: 16,
+            ),
+            fixtureGroup(id: 'g2', name: 'Cool', sortOrder: 1),
+          ],
+        ),
+      );
+
+      final Finder full = find.byKey(keys.rideGroup.fullBadge);
+      expect(inBlock(full), findsOneWidget);
+      expect(tester.widget<PdlButton>(full).enabled, isFalse);
+      expect(find.byKey(keys.rideGroup.joinButton), findsNothing);
+      expect(find.byKey(keys.rideGroup.leaveButton), findsNothing);
+      expect(inParticipants(find.text('16/16')), findsOneWidget);
+      // Plein, il ne reste rien à compter : la barre seule.
+      expect(find.textContaining('place'), findsNothing);
+    });
+
+    testWidgets('inscrit dans un autre groupe : « Changer pour Rapide », un '
+        'seul appel, sans confirmation', (WidgetTester tester) async {
+      await open(
+        tester,
+        weather(),
+        ride: fixtureRide(
+          registered: true,
+          registeredGroupId: 'g2',
+          groups: <RideGroupDto>[
+            fixtureGroup(id: 'g1', name: 'Rapide'),
+            fixtureGroup(
+              id: 'g2',
+              name: 'Cool',
+              sortOrder: 1,
+              registered: true,
+            ),
+          ],
+        ),
+      );
+
+      expect(find.byKey(keys.rideGroup.joinButton), findsNothing);
+      expect(find.byKey(keys.rideGroup.leaveButton), findsNothing);
+      // La coche est sur la pastille de mon groupe, pas sur celle affichée.
+      expect(
+        tester.widget<PdlChip>(find.byKey(keys.rideGroup.groupChip('g2'))).icon,
+        PdlIcons.check,
+      );
+      final Finder change = find.byKey(keys.rideGroup.switchButton);
+      expect(inBlock(change), findsOneWidget);
+      expect(find.text('Changer pour Rapide'), findsOneWidget);
+
+      await tester.tap(change);
+      await tester.pump();
+      await tester.pump();
+
+      expect(repository.switched, <String>['g1']);
+      expect(repository.joined, isEmpty);
+      expect(repository.left, isEmpty);
+      expect(find.byType(PdlSheet), findsNothing);
+    });
+
+    testWidgets('mon groupe ouvert depuis sa pastille : « J\'y vais » et '
+        '« Quitter le groupe »', (WidgetTester tester) async {
+      await open(
+        tester,
+        weather(),
+        ride: fixtureRide(
+          registered: true,
+          registeredGroupId: 'g2',
+          groups: <RideGroupDto>[
+            fixtureGroup(id: 'g1', name: 'Rapide'),
+            fixtureGroup(
+              id: 'g2',
+              name: 'Cool',
+              sortOrder: 1,
+              registered: true,
+            ),
+          ],
+        ),
+      );
+
+      await tester.tap(find.byKey(keys.rideGroup.groupChip('g2')));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('Groupe Cool'), findsOneWidget);
+      expect(find.byKey(keys.rideGroup.goingBadge), findsOneWidget);
+      expect(find.byKey(keys.rideGroup.leaveButton), findsOneWidget);
+      expect(container.read(selectedRideGroupProvider(key)), 'g2');
+    });
+
+    testWidgets('un non-membre : aucun contrôle, le compte reste', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, weather(), member: false);
+
+      expect(find.byKey(keys.rideGroup.joinButton), findsNothing);
+      expect(find.byKey(keys.rideGroup.goingBadge), findsNothing);
+      expect(find.byKey(keys.rideGroup.participantsCount), findsOneWidget);
+      expect(inParticipants(find.text('3/16')), findsOneWidget);
+    });
+
+    testWidgets('appartenance inconnue : pas de « Rejoindre » tant qu\'on ne '
+        'sait pas', (WidgetTester tester) async {
+      await open(tester, weather(), membershipPending: true);
+
+      expect(find.byKey(keys.rideGroup.departureBlock), findsOneWidget);
+      expect(find.byKey(keys.rideGroup.joinButton), findsNothing);
+      expect(find.byKey(keys.rideGroup.switchButton), findsNothing);
+    });
+
+    testWidgets('appartenance inconnue, inscrit ici : « J\'y vais » quand '
+        'même — le serveur le dit', (WidgetTester tester) async {
+      await open(
+        tester,
+        weather(),
+        membershipPending: true,
+        ride: fixtureRide(
+          registered: true,
+          registeredGroupId: 'g1',
+          groups: <RideGroupDto>[
+            fixtureGroup(id: 'g1', registered: true),
+            fixtureGroup(id: 'g2', name: 'Cool', sortOrder: 1),
+          ],
+        ),
+      );
+
+      expect(find.byKey(keys.rideGroup.goingBadge), findsOneWidget);
+    });
+
+    testWidgets('un groupe parti : plus d\'inscription, la météo reste', (
+      WidgetTester tester,
+    ) async {
+      await open(
+        tester,
+        weather(),
+        now: DateTime.utc(2026, 10, 11, 7),
+        ride: fixtureRide(
+          registered: true,
+          registeredGroupId: 'g1',
+          groups: <RideGroupDto>[
+            fixtureGroup(id: 'g1', registered: true),
+            fixtureGroup(id: 'g2', name: 'Cool', sortOrder: 1),
+          ],
+        ),
+      );
+
+      expect(find.byKey(keys.rideGroup.goingBadge), findsNothing);
+      expect(find.byKey(keys.rideGroup.joinButton), findsNothing);
+      expect(find.byKey(keys.rideGroup.leaveButton), findsNothing);
+      // En cours (départ + 3 h, sans arrivée estimée) : l'API sert encore la
+      // météo (API-163).
+      expect(repository.weatherCalls, 1);
+      expect(find.byKey(keys.ride.weatherSection), findsOneWidget);
+    });
+
+    testWidgets('API-163 : la sortie partie, un groupe plus tardif reste '
+        'ouvert', (WidgetTester tester) async {
+      await open(
+        tester,
+        weather(),
+        groupId: 'g2',
+        now: DateTime.utc(2036, 7, 29, 19, 45),
+        ride: fixtureRide(
+          dateTime: '2036-07-29T19:30:00Z',
+          groups: <RideGroupDto>[
+            fixtureGroup(id: 'g1', startAt: '2036-07-29T19:30:00Z'),
+            fixtureGroup(
+              id: 'g2',
+              name: 'Cool',
+              sortOrder: 1,
+              startAt: '2036-07-29T20:30:00Z',
+            ),
+          ],
+        ).copyWith(finished: true),
+      );
+
+      expect(find.byKey(keys.rideGroup.joinButton), findsOneWidget);
+    });
+
+    testWidgets('une sortie annulée : rien, pas même la météo', (
+      WidgetTester tester,
+    ) async {
+      await open(
+        tester,
+        weather(),
+        ride: fixtureRide(
+          status: 'CANCELLED',
+          registered: true,
+          registeredGroupId: 'g1',
+          groups: <RideGroupDto>[
+            fixtureGroup(id: 'g1', registered: true),
+            fixtureGroup(id: 'g2', name: 'Cool', sortOrder: 1),
+          ],
+        ),
+      );
+
+      expect(find.byKey(keys.rideGroup.goingBadge), findsNothing);
+      expect(find.byKey(keys.rideGroup.leaveButton), findsNothing);
+      expect(find.byKey(keys.rideGroup.weatherSection), findsNothing);
+      expect(repository.weatherCalls, 0);
+    });
+  });
+
+  // ──────────────────────────────────────────── « Personnes inscrites »
+
+  group('« Personnes inscrites »', () {
+    testWidgets('le compte, la barre de places, les places restantes', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, weather());
+
+      expect(inParticipants(find.text('Personnes inscrites')), findsOneWidget);
+      expect(inParticipants(find.text('3/16')), findsOneWidget);
+      expect(inParticipants(find.byType(PdlProgressBar)), findsOneWidget);
+      expect(find.text('13 places restantes'), findsOneWidget);
+    });
+
+    testWidgets('capitaine nul : rien, et jamais le créateur de la sortie', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, weather());
+
+      expect(find.byKey(keys.rideGroup.leader), findsNothing);
+      expect(find.text('CAPITAINE'), findsNothing);
+      // Tout le monde dans la grappe.
+      expect(
+        tester
+            .widget<PdlAvatarStack>(
+              find.byKey(keys.rideGroup.participantsAvatars),
+            )
+            .people
+            .length,
+        3,
+      );
+    });
+
+    testWidgets('une personne capitaine : son nom, son badge, et la grappe '
+        'sans elle', (WidgetTester tester) async {
+      await open(
+        tester,
+        weather(),
+        ride: fixtureRide(
+          groups: <RideGroupDto>[
+            fixtureGroup(
+              id: 'g1',
+              leader: const PublicUserDto(id: 'u0', displayName: 'Membre 0'),
+            ),
+            fixtureGroup(id: 'g2', name: 'Cool', sortOrder: 1),
+          ],
+        ),
+      );
+
+      expect(inParticipants(find.byKey(keys.rideGroup.leader)), findsOneWidget);
+      expect(find.text('Membre 0'), findsOneWidget);
+      expect(find.text('CAPITAINE'), findsOneWidget);
+      final PdlAvatarStack stack = tester.widget<PdlAvatarStack>(
+        find.byKey(keys.rideGroup.participantsAvatars),
+      );
+      expect(stack.people.map((PdlAvatarEntry e) => e.name), <String>[
+        'Membre 1',
+        'Membre 2',
+      ]);
+      expect(stack.total, 2);
+    });
+
+    testWidgets('« Voir toutes les personnes inscrites » ouvre la feuille', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, weather());
+
+      await tester.tap(find.byKey(keys.rideGroup.viewAllParticipants));
+      await settle(tester);
+
+      expect(find.byType(ParticipantsSheet), findsOneWidget);
+      expect(participants.calls, greaterThan(0));
+      expect(find.text('Hélène Ebrard'), findsOneWidget);
+    });
+
+    testWidgets('un non-membre ne reçoit que le nombre : ni capitaine, ni '
+        'visages, ni liste', (WidgetTester tester) async {
+      // Le serveur lui envoie `participants: []` et une capitaine nulle ; la
+      // page ne rend pas de nom même si elle en recevait un.
+      final RideDto stripped = fixtureRide(
+        groups: <RideGroupDto>[
+          fixtureGroup(
+            id: 'g1',
+            leader: const PublicUserDto(id: 'l1', displayName: 'Léa'),
+          ).copyWith(participants: const <PublicUserDto>[]),
+          fixtureGroup(id: 'g2', name: 'Cool', sortOrder: 1),
+        ],
+      );
+      await open(tester, weather(), ride: stripped, member: false);
+
+      expect(inParticipants(find.text('3/16')), findsOneWidget);
+      expect(find.byKey(keys.rideGroup.viewAllParticipants), findsNothing);
+      expect(find.byKey(keys.rideGroup.participantsAvatars), findsNothing);
+      expect(find.byKey(keys.rideGroup.leader), findsNothing);
+      expect(find.text('Léa'), findsNothing);
+      expect(participants.calls, 0);
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  // ──────────────────────────────────────────────────────── section Météo
+
+  group('section Météo', () {
+    testWidgets('dépliée, dernier bloc : départ, alerte, exposition, frise, '
+        'prévision', (WidgetTester tester) async {
       await open(tester, weather());
 
       expect(find.byKey(keys.ride.weatherSection), findsOneWidget);
@@ -255,18 +1016,20 @@ void main() {
       expect(find.text('14 °C'), findsWidgets);
       expect(find.textContaining('Pluie probable (70 %)'), findsOneWidget);
       expect(find.text('Exposition au vent'), findsOneWidget);
-      expect(find.byType(PdlSegmentBar), findsOneWidget);
-      // Rien ne suit la section dans l'onglet : la frise est dépliée, sous
-      // son sous-titre, sans bloc repliable.
+      // Rien ne suit la section : la frise est dépliée, sous son sous-titre.
       expect(find.text('Météo le long du parcours'), findsOneWidget);
-      expect(find.byType(PdlDisclosure), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byKey(keys.rideGroup.weatherSection),
+          matching: find.byType(PdlDisclosure),
+        ),
+        findsNothing,
+      );
       expect(find.byKey(keys.ride.weatherCheckpoint(0)), findsOneWidget);
-      expect(find.byKey(keys.ride.weatherCheckpoint(1)), findsOneWidget);
       expect(find.byKey(keys.ride.weatherCheckpoint(2)), findsOneWidget);
-      expect(find.text('Prévision pas encore disponible ici'), findsOneWidget);
       expect(find.text('FACE'), findsOneWidget);
       expect(find.text('DOS'), findsOneWidget);
-      // Le crédit est derrière ⓘ, plus en lien sous la section.
+      // Le crédit est derrière ⓘ.
       expect(find.byKey(keys.ride.weatherForecastOf), findsOneWidget);
       expect(find.byKey(keys.ride.weatherSourceButton), findsOneWidget);
       expect(find.text('Prévisions : Open-Meteo.com'), findsNothing);
@@ -316,8 +1079,6 @@ void main() {
     ) async {
       AppFormatters.setDisplayTimezone('Europe/Paris');
       addTearDown(() => AppFormatters.setDisplayTimezone(null));
-      // Sortie à 21:30 à Paris, groupe g1 à 22:00 : la prévision du point de
-      // rendez-vous est calculée à l'heure de la sortie (`RideWeatherService`).
       await open(
         tester,
         weather(),
@@ -373,8 +1134,6 @@ void main() {
 
       // La page pose son groupe dans la sélection partagée.
       expect(container.read(selectedRideGroupProvider(key)), 'g1');
-      expect(find.byKey(keys.rideGroup.groupChip('g1')), findsOneWidget);
-      expect(find.byKey(keys.rideGroup.groupChip('g2')), findsOneWidget);
       expect(find.textContaining('Pluie probable'), findsOneWidget);
       expect(find.textContaining('vitesse par défaut'), findsNothing);
 
@@ -398,7 +1157,7 @@ void main() {
       );
     });
 
-    testWidgets('un groupe sans parcours dit qu\'il n\'y a que le départ', (
+    testWidgets('un leg sans parcours dit qu\'il n\'y a que le départ', (
       WidgetTester tester,
     ) async {
       await open(
@@ -425,7 +1184,6 @@ void main() {
         find.textContaining('n\'a pas de parcours', findRichText: true),
         findsOneWidget,
       );
-      expect(find.byType(PdlSegmentBar), findsNothing);
       expect(tester.takeException(), isNull);
     });
 
@@ -444,7 +1202,6 @@ void main() {
 
         expect(find.byKey(keys.ride.weatherLegUnavailable), findsOneWidget);
         expect(find.byKey(keys.ride.weatherCheckpoint(0)), findsNothing);
-        expect(find.byType(PdlSegmentBar), findsNothing);
         expect(find.textContaining('Météo au départ de '), findsOneWidget);
         expect(tester.takeException(), isNull);
       });
@@ -509,18 +1266,18 @@ void main() {
       'NO_LOCATION',
       'SOMETHING_NEW',
     ]) {
-      testWidgets('$status : un état neutre, pas un onglet blanc', (
-        WidgetTester tester,
-      ) async {
+      testWidgets('$status : pas de section, la page finit sur les personnes '
+          'inscrites', (WidgetTester tester) async {
         await open(tester, fixtureWeather(status: status));
 
-        expect(find.byKey(keys.rideGroup.weatherEmpty), findsOneWidget);
+        expect(find.byKey(keys.ride.weatherSection), findsNothing);
         expect(find.byKey(keys.ride.weatherNoLocation), findsNothing);
+        expect(find.byKey(keys.rideGroup.participantsSection), findsOneWidget);
         expect(tester.takeException(), isNull);
       });
     }
 
-    testWidgets('une sortie terminée ne demande pas sa météo', (
+    testWidgets('un groupe arrivé ne demande pas sa météo', (
       WidgetTester tester,
     ) async {
       await open(
@@ -529,13 +1286,22 @@ void main() {
         ride: fixtureRide(
           dateTime: '2020-07-29T17:30:00Z',
           groups: <RideGroupDto>[
-            fixtureGroup(id: 'g1', name: 'Rapide'),
-            fixtureGroup(id: 'g2', name: 'Cool', sortOrder: 1),
+            fixtureGroup(
+              id: 'g1',
+              name: 'Rapide',
+              startAt: '2020-07-29T17:30:00Z',
+            ),
+            fixtureGroup(
+              id: 'g2',
+              name: 'Cool',
+              sortOrder: 1,
+              startAt: '2020-07-29T17:30:00Z',
+            ),
           ],
         ),
       );
 
-      expect(find.byKey(keys.rideGroup.weatherEmpty), findsOneWidget);
+      expect(find.byKey(keys.rideGroup.weatherSection), findsNothing);
       expect(repository.weatherCalls, 0);
     });
 
@@ -554,194 +1320,93 @@ void main() {
     });
   });
 
-  // ───────────────────────────────────────────────────────────────── Aperçu
+  // ─────────────────────────────────────────────────── section « Parcours »
 
-  group('Aperçu', () {
-    testWidgets('meneur nul : rien, et jamais le créateur de la sortie', (
-      WidgetTester tester,
-    ) async {
-      await open(tester, weather(), tab: RideGroupTab.overview);
-
-      expect(find.byKey(keys.rideGroup.leader), findsNothing);
-      expect(find.text('CAPITAINE'), findsNothing);
-      // Le départ est au bloc en tête de page, plus dans les chiffres
-      // (ledger `MOB-113`).
-      expect(find.byKey(keys.rideGroup.departureBlock), findsOneWidget);
-      expect(find.text('Départ'), findsNothing);
-      expect(find.text('Vitesse moyenne'), findsOneWidget);
-      expect(find.text('Dénivelé positif'), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('un meneur désigné : son nom et le badge « Capitaine »', (
-      WidgetTester tester,
-    ) async {
-      await open(
-        tester,
-        weather(),
-        tab: RideGroupTab.overview,
-        ride: fixtureRide(
-          groups: <RideGroupDto>[
-            fixtureGroup(
-              id: 'g1',
-              leader: const PublicUserDto(id: 'l1', displayName: 'Léa'),
-            ),
-            fixtureGroup(id: 'g2', name: 'Cool', sortOrder: 1),
-          ],
-        ),
-      );
-
-      expect(find.byKey(keys.rideGroup.leader), findsOneWidget);
-      expect(find.text('Léa'), findsOneWidget);
-      expect(find.text('CAPITAINE'), findsOneWidget);
-    });
-
-    testWidgets('le résumé météo du groupe ouvre l\'onglet Météo', (
-      WidgetTester tester,
-    ) async {
-      await open(tester, weather(), tab: RideGroupTab.overview);
-
-      expect(find.byKey(keys.rideGroup.weatherSummaryCard), findsOneWidget);
-      expect(find.byKey(keys.ride.weatherCheckpoint(0)), findsNothing);
-
-      await tester.ensureVisible(find.byKey(keys.rideGroup.weatherSummaryCard));
-      await tester.tap(find.byKey(keys.rideGroup.weatherSummaryCard));
-      for (int i = 0; i < 4; i++) {
-        await tester.pump(const Duration(milliseconds: 50));
-      }
-
-      expect(find.byKey(keys.ride.weatherCheckpoint(0)), findsOneWidget);
-    });
-
-    testWidgets('en tête : l\'heure du groupe, son arrivée estimée, sans '
-        'relation quand il part avec la sortie', (WidgetTester tester) async {
-      await open(
-        tester,
-        weather(),
-        tab: RideGroupTab.overview,
-        ride: fixtureRide(
-          dateTime: '2036-07-29T19:30:00Z',
-          groups: <RideGroupDto>[
-            fixtureGroup(id: 'g1', startAt: '2036-07-29T19:30:00Z'),
-            fixtureGroup(id: 'g2', name: 'Cool', sortOrder: 1),
-          ],
-        ),
-      );
-
-      final Finder block = find.byKey(keys.rideGroup.departureBlock);
-      expect(block, findsOneWidget);
-      expect(
-        find.descendant(of: block, matching: find.text('Départ 21:30')),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(
-          of: block,
-          matching: find.textContaining('Arrivée estimée'),
-        ),
-        findsOneWidget,
-      );
-      expect(find.textContaining('la sortie de'), findsNothing);
-      // La date, dite une fois, par la boîte du jour (« mar. / 29 / juil. »).
-      expect(
-        find.descendant(of: block, matching: find.text('juil.')),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(of: block, matching: find.textContaining('29 juil.')),
-        findsNothing,
-      );
-    });
-
-    testWidgets('un groupe à heure propre se situe par rapport à la sortie', (
-      WidgetTester tester,
-    ) async {
-      await open(
-        tester,
-        weather(),
-        tab: RideGroupTab.overview,
-        ride: fixtureRide(
-          dateTime: '2036-07-29T19:30:00Z',
-          groups: <RideGroupDto>[
-            fixtureGroup(id: 'g1', startAt: '2036-07-29T20:00:00Z'),
-            fixtureGroup(id: 'g2', name: 'Cool', sortOrder: 1),
-          ],
-        ),
-      );
-
-      final Finder block = find.byKey(keys.rideGroup.departureBlock);
-      expect(
-        find.descendant(of: block, matching: find.text('Départ 22:00')),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(
-          of: block,
-          matching: find.textContaining('la sortie de'),
-        ),
-        findsNothing,
-      );
-    });
-
-    testWidgets('les autres onglets n\'ont pas le bloc', (
-      WidgetTester tester,
-    ) async {
-      await open(tester, weather(), tab: RideGroupTab.weather);
-
-      expect(find.byKey(keys.rideGroup.departureBlock), findsNothing);
-    });
-  });
-
-  // ──────────────────────────────────────── la puce « Météo » de la carte
-
-  /// La puce sous la carte encastrée de l'Aperçu (ledger `MOB-91`, test resté
-  /// ouvert au ledger `MOB-92`). La carte native est remplacée par sa sonde, la
-  /// géométrie reste en vol : la puce n'en dépend pas.
-  group('puce « Météo » de la carte', () {
+  group('section « Parcours »', () {
     setUp(() => RideGroupsMap.debugSkipNativeMap = true);
     tearDown(() => RideGroupsMap.debugSkipNativeMap = false);
 
-    final RideDto routed = fixtureRide(
-      groups: <RideGroupDto>[
-        fixtureGroup(id: 'g1', routeSlug: 'court'),
-        fixtureGroup(id: 'g2', name: 'Cool', sortOrder: 1),
-      ],
-    );
-    final List mapOverrides = [
-      appConfigProvider.overrideWith(
-        (Ref ref) => Completer<ConfigDto>().future,
-      ),
-      mapStyleProvider.overrideWith(
-        (Ref ref, Brightness b) => const AsyncValue<ResolvedMapStyle?>.data(
-          ResolvedMapStyle(
-            selectedId: 's',
-            style: MapStyleDto(
-              id: 'plan',
-              label: 'Plan',
-              group: 'vector',
-              url: 'https://tiles.example/plan.json',
-            ),
-            url: 'https://tiles.example/plan.json',
+    testWidgets('le titre, une seule carte, « Profil » et sa source, '
+        '« Détails »', (WidgetTester tester) async {
+      await open(tester, weather(), ride: routed, overrides: mapOverrides());
+
+      final Finder section = find.byKey(keys.rideGroup.routeSection);
+      expect(
+        find.descendant(of: section, matching: find.text('Parcours')),
+        findsOneWidget,
+      );
+      expect(find.byType(RideGroupsMap), findsOneWidget);
+      expect(
+        tester.widget<RideGroupsMap>(find.byType(RideGroupsMap)).onlyGroup?.id,
+        'g1',
+      );
+      expect(find.text('Profil'), findsOneWidget);
+      expect(find.byKey(keys.rideRoute.details), findsOneWidget);
+      // La source des altitudes, derrière ⓘ, plus sous le profil.
+      expect(
+        find.text(
+          'Données : IGN LiDAR HD, Mapterhorn et ses sources, © OpenStreetMap',
+        ),
+        findsNothing,
+      );
+      await tester.tap(find.byKey(keys.rideRoute.profileSource));
+      await settle(tester);
+      expect(find.byKey(keys.rideRoute.profileSourceSheet), findsOneWidget);
+      expect(
+        find.text(
+          'Données : IGN LiDAR HD, Mapterhorn et ses sources, © OpenStreetMap',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('« Points du parcours », replié', (WidgetTester tester) async {
+      await open(
+        tester,
+        weather(),
+        ride: routed,
+        overrides: mapOverrides(
+          geometry: route(
+            waypoints: <WaypointDto>[
+              fixtureWaypoint(),
+              fixtureWaypoint(id: 'w2', name: 'Col du Roc', type: 'SUMMIT'),
+            ],
           ),
         ),
-      ),
-      rideRouteGeometryProvider.overrideWith(
-        (Ref ref, RouteRef r) => const AsyncValue<RouteDetailDto>.loading(),
-      ),
-    ];
+      );
 
-    Future<void> openOverview(WidgetTester tester, RideWeatherDto dto) => open(
-      tester,
-      dto,
-      ride: routed,
-      tab: RideGroupTab.overview,
-      overrides: mapOverrides,
-    );
+      final Finder waypoints = find.byKey(keys.rideRoute.waypoints);
+      expect(waypoints, findsOneWidget);
+      expect(
+        find.descendant(of: waypoints, matching: find.text('2 points')),
+        findsOneWidget,
+      );
+      // Replié : les lignes ne sont pas construites.
+      expect(find.text('Café du Port'), findsNothing);
+
+      await tester.tap(find.text('Points du parcours'));
+      await tester.pump();
+      expect(find.text('Café du Port'), findsOneWidget);
+    });
+
+    testWidgets('un groupe sans parcours : ni section ni carte, la frise ne '
+        'se touche pas', (WidgetTester tester) async {
+      await open(tester, weather(), overrides: mapOverrides());
+
+      expect(find.byKey(keys.rideGroup.routeSection), findsNothing);
+      expect(find.byType(RideGroupsMap), findsNothing);
+      expect(find.byKey(keys.ride.weatherCheckpoint(1)), findsOneWidget);
+    });
 
     testWidgets('sans prévision chargée (leg nul) : pas de Météo', (
       WidgetTester tester,
     ) async {
-      await openOverview(tester, fixtureWeather());
+      await open(
+        tester,
+        fixtureWeather(),
+        ride: routed,
+        overrides: mapOverrides(loading: true),
+      );
 
       expect(find.byType(RideGroupsMap), findsOneWidget);
       expect(find.byKey(keys.routeDetail.colorByMode('wind')), findsNothing);
@@ -750,12 +1415,14 @@ void main() {
     testWidgets('NOT_YET_AVAILABLE : pas de Météo', (
       WidgetTester tester,
     ) async {
-      await openOverview(
+      await open(
         tester,
         weather(
           status: 'NOT_YET_AVAILABLE',
           legs: <WeatherLegDto>[fixtureLeg(status: 'NOT_YET_AVAILABLE')],
         ),
+        ride: routed,
+        overrides: mapOverrides(loading: true),
       );
 
       expect(find.byType(RideGroupsMap), findsOneWidget);
@@ -766,23 +1433,20 @@ void main() {
       testWidgets(
         '$status : l\'interrupteur, sur la pente par défaut ; Météo au toucher',
         (WidgetTester tester) async {
-          await openOverview(
+          await open(
             tester,
             weather(
               status: status,
               legs: <WeatherLegDto>[fixtureLeg(status: status)],
             ),
+            ride: routed,
+            overrides: mapOverrides(loading: true),
           );
 
           final Finder toggle = find.byKey(keys.rideGroup.mapColorBy);
           expect(toggle, findsOneWidget);
-          // Aucun override du mode : son défaut, la pente.
           expect(
             tester.widget<RouteColorModeSwitch>(toggle).value,
-            RouteColorBy.grade,
-          );
-          expect(
-            container.read(rideMapColorModeProvider(key)),
             RouteColorBy.grade,
           );
 
@@ -802,186 +1466,12 @@ void main() {
         },
       );
     }
-  });
 
-  // ────────────────────────────────────── la carte de l'onglet Météo
-
-  /// La carte encastrée en tête de l'onglet Météo (ledger `MOB-93`) : en mode
-  /// « Météo » d'office, sans toucher au choix de l'Aperçu, et le réticule
-  /// d'un point de la frise.
-  group('carte de l\'onglet Météo', () {
-    setUp(() => RideGroupsMap.debugSkipNativeMap = true);
-    tearDown(() => RideGroupsMap.debugSkipNativeMap = false);
-
-    final RideDto routed = fixtureRide(
-      groups: <RideGroupDto>[
-        fixtureGroup(id: 'g1', name: 'Rapide', routeSlug: 'court'),
-        fixtureGroup(id: 'g2', name: 'Cool', sortOrder: 1),
-      ],
-    );
-    TrackDto trackOf(List<List<double>> coordinates) => TrackDto(
-      line: GeoJsonLineString(
-        type: GeoJsonLineStringTypeType.lineString,
-        coordinates: coordinates,
-      ),
-      climbs: const <ClimbDto>[],
-    );
-    // Deux traces : 10 km plein nord, un saut de ~8 km vers l'est, puis 20 km
-    // dont la distance repart de 0 — 30 km chaînés, saut nul.
-    final RouteDetailDto route = RouteDetailDto(
-      elevationState: 'HD',
-      tags: const [],
-      id: 'r-court',
-      slug: 'court',
-      team: routed.team,
-      name: 'Court',
-      media: routed.media,
-      distance: 30000,
-      elevationGain: 0,
-      elevationLoss: 0,
-      surfaceType: 'ROAD',
-      visibility: 'PUBLIC',
-      createdBy: const PublicUserDto(id: 'u9', displayName: 'Créatrice'),
-      createdAt: '2026-01-01T00:00:00Z',
-      updatedAt: '2026-01-01T00:00:00Z',
-      tracks: <TrackDto>[
-        trackOf(<List<double>>[
-          for (int i = 0; i <= 10; i++)
-            <double>[5, 45 + i * 0.009, 300, i * 1000.0],
-        ]),
-        trackOf(<List<double>>[
-          for (int j = 0; j <= 20; j++)
-            <double>[5.1, 45 + (10 + j) * 0.009, 300, j * 1000.0],
-        ]),
-      ],
-      waypoints: const <WaypointDto>[],
-      deleted: false,
-    );
-    final List mapOverrides = [
-      appConfigProvider.overrideWith(
-        (Ref ref) => Completer<ConfigDto>().future,
-      ),
-      mapStyleProvider.overrideWith(
-        (Ref ref, Brightness b) => const AsyncValue<ResolvedMapStyle?>.data(
-          ResolvedMapStyle(
-            selectedId: 's',
-            style: MapStyleDto(
-              id: 'plan',
-              label: 'Plan',
-              group: 'vector',
-              url: 'https://tiles.example/plan.json',
-            ),
-            url: 'https://tiles.example/plan.json',
-          ),
-        ),
-      ),
-      rideRouteGeometryProvider.overrideWith(
-        (Ref ref, RouteRef r) => AsyncValue<RouteDetailDto>.data(route),
-      ),
-    ];
-
-    Future<void> openWeather(
-      WidgetTester tester,
-      RideWeatherDto dto, {
-      RideGroupTab tab = RideGroupTab.weather,
-    }) => open(tester, dto, ride: routed, tab: tab, overrides: mapOverrides);
-
-    Finder tabMap() => find.byKey(keys.rideGroup.weatherTabMap);
-
-    PdlMap probe(WidgetTester tester) =>
-        tester.widget<RideGroupsMapProbe>(find.byType(RideGroupsMapProbe)).map;
-
-    /// Le tracé porte-t-il le vent ? Hors Météo il se colore par la pente
-    /// (ledger `MOB-105`), jamais plus `null`.
-    bool windy(WidgetTester tester) =>
-        probe(tester).tracks.single.segmentColors!
-            .contains(RelativeWind.tail.stroke);
-
-    for (final String status in <String>['OK', 'STALE']) {
-      testWidgets('$status : la carte en tête, tracé coloré d\'office, sans '
-          'interrupteur, pastilles comprises', (WidgetTester tester) async {
-        await openWeather(
-          tester,
-          weather(
-            status: status,
-            legs: <WeatherLegDto>[fixtureLeg(status: status)],
-          ),
-        );
-
-        expect(tabMap(), findsOneWidget);
-        // Une seule carte sur la page : l'Aperçu n'est pas monté.
-        expect(find.byType(RideGroupsMap), findsOneWidget);
-        expect(tester.widget<RideGroupsMap>(tabMap()).forceWeatherMode, isTrue);
-        expect(probe(tester).tracks.single.segmentColors, isNotNull);
-        // Ledger `MOB-107` : les pastilles, sur la vignette aussi.
-        expect(probe(tester).markers, isNotEmpty);
-        expect(find.byKey(keys.rideGroup.windMapLegend), findsOneWidget);
-        expect(find.byKey(keys.rideGroup.windMapCredit), findsOneWidget);
-        expect(find.byKey(keys.rideGroup.mapColorBy), findsNothing);
-        // Le choix de l'Aperçu n'a pas bougé.
-        expect(
-          container.read(rideMapColorModeProvider(key)),
-          RouteColorBy.grade,
-        );
-        expect(tester.takeException(), isNull);
-      });
-    }
-
-    for (final String legStatus in <String>[
-      'NOT_YET_AVAILABLE',
-      'UNAVAILABLE',
-      'NO_LOCATION',
-    ]) {
-      testWidgets('un leg $legStatus : pas de carte', (
-        WidgetTester tester,
-      ) async {
-        await openWeather(
-          tester,
-          weather(legs: <WeatherLegDto>[fixtureLeg(status: legStatus)]),
-        );
-
-        expect(tabMap(), findsNothing);
-        expect(find.byType(RideGroupsMap), findsNothing);
-      });
-    }
-
-    testWidgets('sans leg pour ce groupe : pas de carte', (
+    testWidgets('toucher un point de la frise pose le réticule sur la carte, '
+        'à sa distance chaînée ; le retoucher l\'ôte', (
       WidgetTester tester,
     ) async {
-      await openWeather(
-        tester,
-        weather(legs: <WeatherLegDto>[fixtureLeg(groupId: 'g2')]),
-      );
-
-      expect(tabMap(), findsNothing);
-    });
-
-    testWidgets('NOT_YET_AVAILABLE pour toute la sortie : pas de carte', (
-      WidgetTester tester,
-    ) async {
-      await openWeather(
-        tester,
-        fixtureWeather(
-          status: 'NOT_YET_AVAILABLE',
-          availableFrom: '2099-07-22T19:30:00Z',
-        ),
-      );
-
-      expect(tabMap(), findsNothing);
-    });
-
-    testWidgets('un groupe sans parcours : pas de carte', (
-      WidgetTester tester,
-    ) async {
-      await open(tester, weather(), ride: twoGroups, overrides: mapOverrides);
-
-      expect(tabMap(), findsNothing);
-      expect(find.byKey(keys.ride.weatherCheckpoint(1)), findsOneWidget);
-    });
-
-    testWidgets('toucher un point de la frise pose le réticule à sa distance '
-        'chaînée ; le retoucher l\'ôte', (WidgetTester tester) async {
-      await openWeather(tester, weather());
+      await open(tester, weather(), ride: routed, overrides: mapOverrides());
       expect(probe(tester).cursor, isNull);
 
       // 15 km chaînés : le 5ᵉ kilomètre de la seconde trace, saut ignoré.
@@ -989,275 +1479,91 @@ void main() {
       await tester.ensureVisible(enRoute);
       await tester.tap(enRoute);
       await tester.pump();
+      expect(
+        tester.widget<RideGroupsMap>(find.byType(RideGroupsMap)).cursorDistance,
+        15000,
+      );
       expect(probe(tester).cursor!.lon, 5.1);
       expect(probe(tester).cursor!.lat, closeTo(45 + 15 * 0.009, 1e-9));
-      // Le réticule cohabite avec les pastilles (ledger `MOB-107`) : elles
-      // restent, à leur place.
-      expect(probe(tester).markers, isNotEmpty);
       expect(
         tester.getSemantics(enRoute),
         isSemantics(isButton: true, isSelected: true, hasTapAction: true),
       );
 
-      // L'arrivée, au bout de la seconde trace.
       final Finder finish = find.byKey(keys.ride.weatherCheckpoint(2));
-      await tester.ensureVisible(finish);
       await tester.tap(finish);
       await tester.pump();
-      expect(probe(tester).cursor!.lon, 5.1);
       expect(probe(tester).cursor!.lat, closeTo(45 + 30 * 0.009, 1e-9));
 
       await tester.tap(finish);
       await tester.pump();
       expect(probe(tester).cursor, isNull);
+      // Le réticule ne touche pas au choix de la personne sous la carte.
       expect(container.read(rideMapColorModeProvider(key)), RouteColorBy.grade);
     });
 
-    testWidgets('un toucher sur la carte ouvre le plein écran en mode Météo, '
-        'réticule compris', (WidgetTester tester) async {
-      await openWeather(tester, weather());
-      final Finder start = find.byKey(keys.ride.weatherCheckpoint(0));
-      await tester.ensureVisible(start);
-      await tester.tap(start);
+    testWidgets('changer de groupe ôte le réticule', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, weather(), ride: routed, overrides: mapOverrides());
+      await tester.tap(find.byKey(keys.ride.weatherCheckpoint(1)));
       await tester.pump();
+      expect(probe(tester).cursor, isNotNull);
 
-      await tester.ensureVisible(tabMap());
-      await tester.tap(find.byKey(PdlMapHero.tapTargetKey));
-      for (int i = 0; i < 10; i++) {
-        await tester.pump(const Duration(milliseconds: 50));
-      }
-
-      final RideGroupsMap full = tester.widget<RideGroupsMap>(
-        find.byWidgetPredicate(
-          (Widget w) => w is RideGroupsMap && w.fullscreen,
-        ),
-      );
-      expect(full.forceWeatherMode, isTrue);
-      expect(full.cursorDistance, 0);
-      final PdlMap fullMap = tester
-          .widget<RideGroupsMapProbe>(find.byType(RideGroupsMapProbe).last)
-          .map;
-      expect(fullMap.markers, isNotEmpty);
-      expect(fullMap.cursor!.lat, closeTo(45, 1e-9));
-      expect(container.read(rideMapColorModeProvider(key)), RouteColorBy.grade);
-    });
-
-    testWidgets('l\'Aperçu reste tel quel : la pente, l\'interrupteur, pas de '
-        'toucher plein écran', (WidgetTester tester) async {
-      await openWeather(tester, weather(), tab: RideGroupTab.overview);
-
-      expect(tabMap(), findsNothing);
-      final RideGroupsMap overview = tester.widget<RideGroupsMap>(
-        find.byType(RideGroupsMap),
-      );
-      expect(overview.forceWeatherMode, isFalse);
-      expect(overview.cursorDistance, isNull);
-      expect(windy(tester), isFalse);
-      expect(find.byKey(keys.rideGroup.mapColorBy), findsOneWidget);
-      expect(find.byKey(PdlMapHero.tapTargetKey), findsNothing);
-
-      // La personne choisit « Météo » dans l'Aperçu…
-      final Finder chip = find.byKey(keys.routeDetail.colorByMode('wind'));
-      await tester.ensureVisible(chip);
-      await tester.tap(chip);
+      await tester.tap(find.byKey(keys.rideGroup.groupChip('g2')));
       await tester.pump();
-      expect(container.read(rideMapColorModeProvider(key)), RouteColorBy.wind);
-      expect(windy(tester), isTrue);
-
-      // … aller sur l'onglet Météo, où l'Aperçu est démonté et la carte
-      // impose le mode sans lire ce choix, puis revenir ne le perd pas.
-      await tester.tap(find.byKey(keys.rideGroup.tabWeather));
+      await tester.tap(find.byKey(keys.rideGroup.groupChip('g1')));
       await tester.pump();
-      expect(tabMap(), findsOneWidget);
-      expect(find.byType(RideGroupsMap), findsOneWidget);
-      await tester.tap(find.byKey(keys.rideGroup.tabOverview));
-      await tester.pump();
-      expect(container.read(rideMapColorModeProvider(key)), RouteColorBy.wind);
-      expect(
-        tester
-            .widget<RouteColorModeSwitch>(find.byKey(keys.rideGroup.mapColorBy))
-            .value,
-        RouteColorBy.wind,
-      );
-      expect(windy(tester), isTrue);
-      // Le profil remonté avec l'Aperçu finit ses cadres.
+      expect(probe(tester).cursor, isNull);
       await settle(tester);
     });
   });
 
-  // ──────────────────────────────────────────────────── barre d'inscription
+  // ───────────────────────────────────────────────────────── `?tab=weather`
 
-  group('barre d\'inscription', () {
-    testWidgets('un membre rejoint le groupe', (WidgetTester tester) async {
-      await open(tester, weather(), tab: RideGroupTab.overview);
-
-      expect(find.byKey(keys.rideGroup.participantsCount), findsOneWidget);
-      expect(find.text('3/16 personnes'), findsOneWidget);
-      expect(find.text('13 places restantes'), findsOneWidget);
-      expect(find.byKey(keys.rideGroup.leaveButton), findsNothing);
-
-      await tester.tap(find.byKey(keys.rideGroup.joinButton));
-      await tester.pump();
-      await tester.pump();
-
-      expect(repository.joined, <String>['g1']);
-    });
-
-    testWidgets('rejoindre depuis l\'onglet Participants recharge la liste', (
+  group('?tab=', () {
+    testWidgets('?tab=weather : la page défile jusqu\'à sa section Météo', (
       WidgetTester tester,
     ) async {
-      await open(tester, weather(), tab: RideGroupTab.participants);
+      await open(tester, weather(), height: 800, scrollToWeather: true);
+      await settle(tester);
 
-      expect(find.text('Hélène Ebrard'), findsOneWidget);
-      expect(find.text('Gaby Landais'), findsNothing);
-      final int before = participants.calls;
-
-      participants.people.add(
-        const PublicUserDto(id: 'u3', displayName: 'Gaby Landais'),
-      );
-      await tester.tap(find.byKey(keys.rideGroup.joinButton));
-      for (int i = 0; i < 6; i++) {
-        await tester.pump(const Duration(milliseconds: 10));
-      }
-
-      expect(repository.joined, <String>['g1']);
-      expect(participants.calls, greaterThan(before));
-      expect(find.text('Gaby Landais'), findsOneWidget);
-    });
-
-    testWidgets('inscrit dans ce groupe : « Quitter »', (
-      WidgetTester tester,
-    ) async {
-      await open(
-        tester,
-        weather(),
-        tab: RideGroupTab.overview,
-        ride: fixtureRide(
-          registered: true,
-          registeredGroupId: 'g1',
-          groups: <RideGroupDto>[
-            fixtureGroup(id: 'g1', registered: true),
-            fixtureGroup(id: 'g2', name: 'Cool', sortOrder: 1),
-          ],
+      final ScrollableState scroll = tester.state<ScrollableState>(
+        find.byWidgetPredicate(
+          (Widget w) =>
+              w is Scrollable && w.axisDirection == AxisDirection.down,
         ),
       );
-
-      expect(find.byKey(keys.rideGroup.joinButton), findsNothing);
-      await tester.tap(find.byKey(keys.rideGroup.leaveButton));
-      await tester.pump();
-      await tester.pump();
-
-      expect(repository.left, <String>['g1']);
-    });
-
-    testWidgets('un groupe complet : le badge, aucun bouton', (
-      WidgetTester tester,
-    ) async {
-      await open(
-        tester,
-        weather(),
-        tab: RideGroupTab.overview,
-        ride: fixtureRide(
-          groups: <RideGroupDto>[
-            fixtureGroup(
-              id: 'g1',
-              full: true,
-              countParticipants: 16,
-              maxParticipants: 16,
-            ),
-            fixtureGroup(id: 'g2', name: 'Cool', sortOrder: 1),
-          ],
+      expect(scroll.position.pixels, greaterThan(0));
+      final double top = tester
+          .getTopLeft(find.byKey(keys.rideGroup.weatherSection))
+          .dy;
+      // Calée sous les pastilles épinglées, dans l'écran.
+      expect(
+        top,
+        greaterThanOrEqualTo(
+          tester.getBottomLeft(find.byKey(keys.rideGroup.groupChip('g1'))).dy -
+              1,
         ),
       );
-
-      expect(find.byKey(keys.rideGroup.fullBadge), findsOneWidget);
-      expect(find.byKey(keys.rideGroup.joinButton), findsNothing);
-      expect(find.byKey(keys.rideGroup.leaveButton), findsNothing);
-      expect(find.text('16/16 personnes'), findsOneWidget);
-    });
-
-    testWidgets(
-      'inscrit dans un autre groupe : la mention, pas « Rejoindre »',
-      (WidgetTester tester) async {
-        await open(
-          tester,
-          weather(),
-          tab: RideGroupTab.overview,
-          ride: fixtureRide(
-            registered: true,
-            registeredGroupId: 'g2',
-            groups: <RideGroupDto>[
-              fixtureGroup(id: 'g1', name: 'Rapide'),
-              fixtureGroup(
-                id: 'g2',
-                name: 'Cool',
-                sortOrder: 1,
-                registered: true,
-              ),
-            ],
-          ),
-        );
-
-        expect(find.byKey(keys.rideGroup.registeredElsewhere), findsOneWidget);
-        expect(
-          find.text('Votre inscription est dans le groupe Cool.'),
-          findsOneWidget,
-        );
-        expect(find.byKey(keys.rideGroup.joinButton), findsNothing);
-
-        await tester.tap(find.byKey(keys.rideGroup.viewMyGroup));
-        await tester.pump();
-        await tester.pump();
-
-        expect(find.text('Groupe Cool'), findsOneWidget);
-        expect(find.byKey(keys.rideGroup.leaveButton), findsOneWidget);
-        expect(container.read(selectedRideGroupProvider(key)), 'g2');
-      },
-    );
-
-    testWidgets('un non-membre ne voit aucun bouton', (
-      WidgetTester tester,
-    ) async {
-      await open(tester, weather(), tab: RideGroupTab.overview, member: false);
-
-      expect(find.byKey(keys.rideGroup.joinButton), findsNothing);
-      expect(find.byKey(keys.rideGroup.participantsCount), findsOneWidget);
-    });
-
-    testWidgets('un non-membre ne reçoit que le nombre : ni onglet, ni liste, '
-        'ni « Voir tout »', (WidgetTester tester) async {
-      // Le serveur lui envoie `participants: []` et un meneur nul ; l'onglet
-      // demandé par lien (`?tab=participants`) retombe sur l'Aperçu.
-      final RideDto stripped = fixtureRide(
-        groups: <RideGroupDto>[
-          for (final RideGroupDto g in twoGroups.groups)
-            g.copyWith(participants: const <PublicUserDto>[], leader: null),
-        ],
-      );
-      await open(
-        tester,
-        weather(),
-        ride: stripped,
-        tab: RideGroupTab.participants,
-        member: false,
-      );
-
-      expect(find.byKey(keys.rideGroup.tabParticipants), findsNothing);
-      expect(find.byKey(keys.rideGroup.tabOverview), findsOneWidget);
-      expect(find.byKey(keys.rideGroup.viewAllParticipants), findsNothing);
-      expect(find.text('Hélène Ebrard'), findsNothing);
-      expect(participants.calls, 0);
-      expect(find.byKey(keys.rideGroup.leader), findsNothing);
+      expect(top, lessThan(800));
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('un membre garde l\'onglet Participants et « Voir tout »', (
+    testWidgets('sans ?tab= : la page s\'ouvre en haut', (
       WidgetTester tester,
     ) async {
-      await open(tester, weather(), tab: RideGroupTab.overview);
+      await open(tester, weather(), height: 800);
+      await settle(tester);
 
-      expect(find.byKey(keys.rideGroup.tabParticipants), findsOneWidget);
-      expect(find.byKey(keys.rideGroup.viewAllParticipants), findsOneWidget);
+      final ScrollableState scroll = tester.state<ScrollableState>(
+        find.byWidgetPredicate(
+          (Widget w) =>
+              w is Scrollable && w.axisDirection == AxisDirection.down,
+        ),
+      );
+      expect(scroll.position.pixels, 0);
+      expect(find.byKey(keys.rideGroup.departureBlock), findsOneWidget);
     });
   });
 
@@ -1272,9 +1578,9 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  // ─────────────────────────────── sortie solo ou sans groupe (ledger MOB-69)
+  // ─────────────────── par le routeur : `?tab=`, sortie solo ou sans groupe
 
-  group('une sortie à un groupe quitte la page pour son détail', () {
+  group('par le routeur', () {
     final RideDto solo = fixtureRide(
       groups: <RideGroupDto>[fixtureGroup(id: 'g1', name: 'Rapide')],
     );
@@ -1300,13 +1606,15 @@ void main() {
         ],
       );
       addTearDown(container.dispose);
+      // Comme `router.dart` : `?tab=weather` seul compte.
       GoRoute groupRoute(String path) => GoRoute(
         path: path,
         builder: (BuildContext _, GoRouterState state) => RideGroupPage(
           teamSlug: state.pathParameters['teamSlug']!,
           rideSlug: state.pathParameters['rideSlug']!,
           groupId: state.pathParameters['groupId']!,
-          initialTab: RideGroupTab.fromQuery(state.uri.queryParameters['tab']),
+          scrollToWeather:
+              state.uri.queryParameters['tab'] == kRideGroupWeatherTab,
         ),
       );
       router = GoRouter(
@@ -1366,32 +1674,58 @@ void main() {
     String groupPath(String id) =>
         Paths.rideGroup(key.teamSlug, key.rideSlug, id);
 
+    testWidgets('?tab=weather demande le défilement ; ?tab=participants est '
+        'ignoré', (WidgetTester tester) async {
+      await mount(tester, twoGroups);
+
+      unawaited(router.push('${groupPath('g1')}?tab=weather'));
+      await settle(tester);
+      expect(
+        tester
+            .widget<RideGroupPage>(find.byType(RideGroupPage))
+            .scrollToWeather,
+        isTrue,
+      );
+
+      router.pop();
+      await settle(tester);
+      unawaited(router.push('${groupPath('g1')}?tab=participants'));
+      await settle(tester);
+      expect(
+        tester
+            .widget<RideGroupPage>(find.byType(RideGroupPage))
+            .scrollToWeather,
+        isFalse,
+      );
+      expect(find.byType(ParticipantsSheet), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('sortie solo, poussée au-dessus du détail : elle s\'efface, le détail '
+        'reste', (WidgetTester tester) async {
+      await mount(tester, solo);
+      unawaited(router.push(ridePath));
+      await settle(tester);
+      expect(find.byType(RideDetailPage), findsOneWidget);
+
+      unawaited(router.push('${groupPath('g1')}?tab=weather'));
+      await settle(tester);
+
+      expect(find.byType(RideGroupPage), findsNothing);
+      expect(find.byType(RideDetailPage), findsOneWidget);
+      // `?tab=weather` devient un défilement du détail, consommé par lui.
+      expect(container.read(rideScrollToWeatherProvider(key)), isFalse);
+
+      // Un seul retour mène à l'écran d'avant le détail : pas d'entrée laissée.
+      router.pop();
+      await settle(tester);
+      expect(find.byKey(home), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets(
-      'poussée au-dessus du détail : elle s\'efface, le détail reste',
-      (WidgetTester tester) async {
-        await mount(tester, solo);
-        unawaited(router.push(ridePath));
-        await settle(tester);
-        expect(find.byType(RideDetailPage), findsOneWidget);
-
-        unawaited(router.push('${groupPath('g1')}?tab=weather'));
-        await settle(tester);
-
-        expect(find.byType(RideGroupPage), findsNothing);
-        expect(find.byType(RideDetailPage), findsOneWidget);
-        // L'onglet Météo devient un défilement du détail, consommé par lui.
-        expect(container.read(rideScrollToWeatherProvider(key)), isFalse);
-
-        // Un seul retour mène à l'écran d'avant le détail : pas d'entrée laissée.
-        router.pop();
-        await settle(tester);
-        expect(find.byKey(home), findsOneWidget);
-        expect(tester.takeException(), isNull);
-      },
-    );
-
-    testWidgets(
-      'poussée au-dessus d\'un autre écran : remplacée par le détail',
+      'sortie solo, poussée au-dessus d\'un autre écran : remplacée par le '
+      'détail',
       (WidgetTester tester) async {
         await mount(tester, solo);
         unawaited(router.push(groupPath('g1')));
@@ -1407,7 +1741,9 @@ void main() {
       },
     );
 
-    testWidgets('ouverte à froid : le détail', (WidgetTester tester) async {
+    testWidgets('sortie solo, ouverte à froid : le détail', (
+      WidgetTester tester,
+    ) async {
       await mount(tester, solo, initialLocation: groupPath('g1'));
 
       expect(find.byType(RideGroupPage), findsNothing);
@@ -1416,7 +1752,8 @@ void main() {
     });
 
     testWidgets(
-      'lien profond dans la hiérarchie de l\'app : retour au détail reconstruit dessous',
+      'sortie solo, lien profond dans la hiérarchie de l\'app : retour au '
+      'détail reconstruit dessous',
       (WidgetTester tester) async {
         await mount(
           tester,

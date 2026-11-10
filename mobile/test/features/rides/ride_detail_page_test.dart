@@ -14,7 +14,6 @@ import 'package:pedalons/core/theme/pdl_icons.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/core/utils/formatters.dart';
 import 'package:pedalons/features/rides/data/ride_repository.dart';
-import 'package:pedalons/features/rides/domain/ride_group_tab.dart';
 import 'package:pedalons/features/rides/presentation/pages/ride_detail_page.dart';
 import 'package:pedalons/features/rides/presentation/pages/ride_group_page.dart';
 import 'package:pedalons/core/pagination/pagination.dart';
@@ -685,9 +684,8 @@ void main() {
                 teamSlug: state.pathParameters['teamSlug']!,
                 rideSlug: state.pathParameters['rideSlug']!,
                 groupId: state.pathParameters['groupId']!,
-                initialTab: RideGroupTab.fromQuery(
-                  state.uri.queryParameters['tab'],
-                ),
+                scrollToWeather:
+                    state.uri.queryParameters['tab'] == kRideGroupWeatherTab,
               ),
             ),
         ],
@@ -725,7 +723,7 @@ void main() {
       }
 
       expect(find.byType(RideGroupPage), findsOneWidget);
-      expect(find.byKey(keys.rideGroup.tabOverview), findsOneWidget);
+      expect(find.byKey(keys.rideGroup.departureBlock), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 

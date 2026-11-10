@@ -37,6 +37,7 @@ import '../../domain/ride_weather_display.dart';
 import '../../domain/ride_weather_map.dart';
 import '../../domain/solo_group.dart';
 import '../../providers/ride_weather_provider.dart';
+import 'ride_group_page.dart' show kRideGroupWeatherTab;
 import '../widgets/ride_departure_block.dart';
 import '../widgets/ride_elevation_section.dart';
 import '../widgets/ride_groups_map.dart';
@@ -198,14 +199,15 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
 
     // Ouvre la page d'un groupe : il devient le groupe sélectionné, que le
     // détail montre encore au retour (ledger `MOB-67`).
-    void openGroup(RideGroupDto group, {String? tab}) {
+    void openGroup(RideGroupDto group, {bool toWeather = false}) {
       select(group.id);
       final String path = Paths.rideGroup(ride.team.slug, ride.slug, group.id);
-      context.push(tab == null ? path : '$path?tab=$tab');
+      context.push(toWeather ? '$path?tab=$kRideGroupWeatherTab' : path);
     }
 
     // Captures des stores seulement : la météo d'un groupe, poussée par-dessus
-    // le détail une fois celui-ci chargé — sur l'onglet Météo de sa page. Une
+    // le détail une fois celui-ci chargé — sa page défilée jusqu'à sa section
+    // Météo. Une
     // sortie solo n'a pas de page de groupe : le détail défile jusqu'à sa
     // météo, qui déroule le leg de son groupe.
     if (screenshotTakePush('rideGroupWeather')) {
@@ -219,7 +221,7 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
         });
       } else if (group != null) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (context.mounted) openGroup(group, tab: 'weather');
+          if (context.mounted) openGroup(group, toWeather: true);
         });
       }
     }

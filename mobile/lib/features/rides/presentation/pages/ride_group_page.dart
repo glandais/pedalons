@@ -1,50 +1,71 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../api/generated/export.dart';
 import '../../../../config/paths.dart';
 import '../../../../core/pdl/pdl.dart';
+import '../../../../core/preferences/user_preferences_provider.dart';
 import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/api_error_handler.dart';
+import '../../../../core/utils/formatters.dart';
 import '../../../../core/utils/share_link.dart';
+import '../../../../core/widgets/detail_stat_tiles.dart';
 import '../../../../keys.dart';
-import '../../../participants/domain/participant_query.dart';
-import '../../../participants/presentation/widgets/participant_list_view.dart';
 import '../../../participants/providers/participant_list_provider.dart';
-import '../../../teams/providers/team_providers.dart';
-import '../../domain/ride_group_tab.dart';
+import '../../../teams/domain/publication_timing.dart';
+import '../../domain/group_start.dart';
+import '../../domain/group_title.dart';
 import '../../domain/ride_weather_display.dart';
 import '../../domain/ride_weather_map.dart';
 import '../../domain/solo_group.dart';
 import '../../providers/ride_detail_provider.dart';
 import '../../providers/ride_group_selection_provider.dart';
-import '../../../routes/domain/track_surfaces.dart';
 import '../../providers/ride_registration_controller.dart';
 import '../../providers/ride_scroll_target_provider.dart';
 import '../../providers/ride_weather_provider.dart';
 import '../widgets/registration_failure_banner.dart';
-import '../widgets/ride_group_action_bar.dart';
 import '../widgets/ride_departure_block.dart';
-import '../widgets/ride_group_overview_tab.dart';
+import '../widgets/ride_group_participants_section.dart';
 import '../widgets/ride_group_stats.dart';
-import '../widgets/ride_group_weather_tab.dart';
-import '../../domain/group_title.dart';
+import '../widgets/ride_registration_control.dart';
+import '../widgets/ride_route_section.dart';
+import '../widgets/ride_weather_widgets.dart';
+import '../widgets/weather_section.dart';
 
-/// La page d'**un** groupe d'une sortie (ledger `MOB-67`).
+/// La valeur de `?tab=` qui ouvre la page d'un groupe sur sa météo — hors
+/// contrat, tolérée pour les liens et notifications déjà émis : la page n'a
+/// plus d'onglet, elle défile jusqu'à sa section Météo. Toute autre valeur
+/// (`participants`, `overview`…) est ignorée.
+const String kRideGroupWeatherTab = 'weather';
+
+/// La page d'**un** groupe d'une sortie (ledgers `MOB-67`, `MOB-132`).
 ///
 /// Seulement pour une sortie à **plusieurs** groupes : celle d'une sortie
 /// solo ou sans groupe cède la place au détail de la sortie dès qu'elle est
 /// chargée ([leavesGroupPage], ledger `MOB-69`) — la route reste valide, pour
 /// les liens déjà partagés et ceux d'une sortie qui regagnerait un groupe.
 ///
-/// Elle remplace l'écran « Météo du parcours », qui faisait doublon : la météo
-/// complète d'un groupe est son onglet Météo. En-tête « Groupe X » sur le nom
-/// de la sortie, pastilles des autres groupes, puis trois onglets — Aperçu,
-/// Météo, Participants — et la barre d'inscription collée en bas.
+/// Une page qui défile, sans onglets ni barre d'action (maquettes
+/// `groupe-mobile-cible`, `groupe-inscrit-mobile-cible`, KIT §8) :
+///
+/// 1. l'app bar « Groupe A » sur le nom de la sortie, et le partage ;
+/// 2. les pastilles des groupes, épinglées (« A · 8/12 », une coche sur celle
+///    de mon groupe) ;
+/// 3. le bloc de départ : la boîte du jour, « Départ 09:00 » à l'heure **du
+///    groupe**, « Arrivée estimée 12:18 », le contrôle d'inscription à droite
+///    ([RideRegistrationControl]), les lieux en liens d'itinéraire ;
+/// 4. les tuiles Distance | Dénivelé positif / Durée estimée | Vitesse
+///    moyenne ([DetailStatTiles]) ;
+/// 5. « Parcours » ([RideRouteSection]) ;
+/// 6. « Personnes inscrites » ([RideGroupParticipantsSection]) ;
+/// 7. « Météo » ([WeatherSection], dépliée : c'est le dernier bloc).
+///
+/// Ni description, ni commentaires : ils sont sur la sortie.
 ///
 /// Le groupe montré **est** le groupe sélectionné du détail
 /// (`selectedRideGroupProvider`) : la page le pose à l'ouverture et à chaque
@@ -57,13 +78,20 @@ class RideGroupPage extends ConsumerStatefulWidget {
     required this.teamSlug,
     required this.rideSlug,
     required this.groupId,
-    this.initialTab = RideGroupTab.overview,
+    this.scrollToWeather = false,
+    this.now,
   });
 
   final String teamSlug;
   final String rideSlug;
   final String groupId;
-  final RideGroupTab initialTab;
+
+  /// Défiler jusqu'à la section Météo une fois la page chargée — l'ancien
+  /// `?tab=weather` ([kRideGroupWeatherTab]).
+  final bool scrollToWeather;
+
+  /// Un instant, pour les tests ; maintenant sinon.
+  final DateTime? now;
 
   @override
   ConsumerState<RideGroupPage> createState() => _RideGroupPageState();
@@ -71,7 +99,20 @@ class RideGroupPage extends ConsumerStatefulWidget {
 
 class _RideGroupPageState extends ConsumerState<RideGroupPage> {
   late String _groupId = widget.groupId;
-  late RideGroupTab _tab = widget.initialTab;
+
+  final ScrollController _scroll = ScrollController();
+
+  /// L'ancre de la section Météo, et la barre épinglée qu'un défilement vers
+  /// elle doit laisser au-dessus.
+  final GlobalKey _weatherAnchor = GlobalKey();
+  final GlobalKey _toolbarKey = GlobalKey();
+
+  /// Le défilement vers la météo reste à faire (`?tab=weather`).
+  late bool _weatherScrollPending = widget.scrollToWeather;
+
+  /// Le point de la frise dont le réticule est sur la carte : son `index` et
+  /// sa distance. `null` : aucun.
+  ({int index, double distance})? _cursor;
 
   RideKey get _rideKey =>
       RideKey(teamSlug: widget.teamSlug, rideSlug: widget.rideSlug);
@@ -80,6 +121,12 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
   void initState() {
     super.initState();
     _shareSelection();
+  }
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
   }
 
   /// La sélection partagée avec le détail se pose **après** le cadre : pas
@@ -93,21 +140,21 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
 
   void _selectGroup(String id) {
     if (id == _groupId) return;
-    setState(() => _groupId = id);
+    // Un autre groupe : un autre parcours, un autre leg.
+    setState(() {
+      _groupId = id;
+      _cursor = null;
+    });
     _shareSelection();
   }
 
-  /// Qui n'est pas membre de l'équipe ne voit que des comptes : l'onglet
-  /// Participants (la liste nommée, refusée par l'API) ne lui est pas offert.
-  bool get _canSeeNames =>
-      ref.watch(canSeeMemberNamesProvider(widget.teamSlug));
-
-  RideGroupTab get _shownTab =>
-      !_canSeeNames && _tab == RideGroupTab.participants
-      ? RideGroupTab.overview
-      : _tab;
-
-  void _openTab(RideGroupTab tab) => setState(() => _tab = tab);
+  void _toggleCursor(WeatherCheckpointDto checkpoint) {
+    setState(() {
+      _cursor = _cursor?.index == checkpoint.indexField
+          ? null
+          : (index: checkpoint.indexField, distance: checkpoint.distance);
+    });
+  }
 
   void _backToRide() {
     if (context.canPop()) {
@@ -134,11 +181,12 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
   /// - autre chose dessous (lien interne d'un texte) : `pushReplacement` ;
   /// - rien dessous (ouverture à froid) : `go`.
   ///
-  /// `?tab=` est abandonné ; l'onglet Météo devient un défilement du détail
-  /// jusqu'à sa carte météo, qui déroule le leg du groupe.
+  /// Ouverte pour sa météo ([RideGroupPage.scrollToWeather]), elle passe la
+  /// consigne au détail : il défile jusqu'à sa carte météo, qui déroule le
+  /// leg du groupe.
   void _leaveForRide() {
     if (!mounted) return;
-    if (_tab == RideGroupTab.weather) {
+    if (widget.scrollToWeather) {
       ref.read(rideScrollToWeatherProvider(_rideKey).notifier).state = true;
     }
     final String ridePath = Paths.ride(widget.teamSlug, widget.rideSlug);
@@ -182,7 +230,8 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
   Future<void> _refresh() async {
     ref.invalidate(rideDetailProvider(_rideKey));
     ref.invalidate(rideWeatherProvider(_rideKey));
-    // L'onglet Participants se tire aussi : sa liste n'est pas dans le détail.
+    // La feuille des personnes inscrites relit sa liste à sa prochaine
+    // ouverture.
     ref.invalidate(participantListProvider);
     try {
       await ref.read(rideDetailProvider(_rideKey).future);
@@ -197,14 +246,6 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
     // Surveillé pour le garder vivant : `autoDispose`, il tomberait sinon
     // quand la page est ouverte sans le détail dessous.
     ref.watch(selectedRideGroupProvider(key));
-    // Écouté, sans reconstruire la page, pour la même raison : sur l'onglet
-    // Météo, l'Aperçu est démonté et la carte y impose le mode sans lire ce
-    // choix ; sans écouteur il serait libéré et l'Aperçu reviendrait sur
-    // « Pente » (ledgers `MOB-91`, `MOB-105`).
-    ref.listen(
-      rideMapColorModeProvider(key),
-      (RouteColorBy? _, RouteColorBy _) {},
-    );
     final RideRegistrationState registration = ref.watch(
       rideRegistrationProvider(key),
     );
@@ -274,6 +315,13 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
     );
   }
 
+  /// La météo se demande-t-elle ? Pas pour une sortie annulée, ni pour un
+  /// groupe arrivé : l'API la sert jusqu'à la fin du groupe (ledger
+  /// `API-163`), et répondrait `OUT_OF_RANGE` au-delà.
+  bool _asksWeather(RideDto ride, RideGroupDto group) =>
+      !ride.isCancelled &&
+      rideGroupPhase(ride, group, now: widget.now) != PublicationPhase.finished;
+
   Widget _content(
     RideDto ride,
     RideGroupDto group,
@@ -283,17 +331,18 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
     final RideRegistrationController controller = ref.read(
       rideRegistrationProvider(key).notifier,
     );
-    // Une sortie terminée ou annulée ne demande même pas sa météo.
-    final RideWeatherDto? weather = ride.isPast || ride.isCancelled
-        ? null
-        : ref.watch(rideWeatherProvider(key)).value;
+    final bool asksWeather = _asksWeather(ride, group);
+    final AsyncValue<RideWeatherDto>? weatherState = asksWeather
+        ? ref.watch(rideWeatherProvider(key))
+        : null;
+    final RideWeatherDto? weather = weatherState?.value;
     final WeatherLegDto? leg = weather == null
         ? null
         : weatherLegOfGroup(weather.legs, group.id);
     // Une prévision perdue au refetch ramène le mode « Météo » de la carte
     // sur la pente : revenue, elle ne recolore pas le tracé sans nouveau
     // choix (ledgers `MOB-91`, `MOB-105`, plan 2026-10-24-weather-on-map §4).
-    if (!ride.isPast && !ride.isCancelled) {
+    if (asksWeather) {
       ref.listen(rideWeatherProvider(key), (
         _,
         AsyncValue<RideWeatherDto> next,
@@ -305,65 +354,27 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
         if (!showsWindOnMap(nextLeg)) dropWindMode(ref, key);
       });
     }
+    _maybeScrollToWeather(weatherState);
 
-    final Widget body = switch (_shownTab) {
-      RideGroupTab.overview => SliverToBoxAdapter(
-        child: RideGroupOverviewTab(
-          rideKey: key,
-          ride: ride,
-          group: group,
-          leg: leg,
-          weatherAttribution: weather?.attribution,
-          onOpenTab: _openTab,
-        ),
-      ),
-      RideGroupTab.weather => RideGroupWeatherTab(
-        rideKey: key,
-        ride: ride,
-        groupId: group.id,
-      ),
-      RideGroupTab.participants => SliverToBoxAdapter(
-        child: Padding(
-          padding: const EdgeInsets.only(top: PdlSpacing.section),
-          child: ParticipantListView(
-            // Une liste par groupe : changer de pastille repart de zéro.
-            key: ValueKey<String>('participants_${group.id}'),
-            source: RideParticipantSource(
-              teamSlug: ride.team.slug,
-              rideSlug: ride.slug,
-              groupId: group.id,
-            ),
-            count: group.countParticipants,
-            organizerId: group.leader?.id,
-            team: ride.team,
-            alwaysSearchable: true,
-            searchHintKey: 'participants.searchByName',
-            noMatchMessageKey: 'participants.noMatchGeneric',
-          ),
-        ),
-      ),
-    };
+    // Le réticule ne vaut que sur une carte à dessiner et une frise prévue.
+    final bool cursorEnabled =
+        RideRouteSection.shows(ride, group) && showsWindOnMap(leg);
+
+    EdgeInsets block({double top = PdlSpacing.section}) =>
+        EdgeInsets.fromLTRB(PdlSpacing.section, top, PdlSpacing.section, 0);
 
     return PdlScreenScaffold(
       key: keys.rideGroup.page,
       appBar: _appBar(ride: ride, group: group),
       onRefresh: _refresh,
-      toolbar: _toolbar(ride, group),
-      actionBar: RideGroupActionBar(
-        rideKey: key,
-        ride: ride,
-        group: group,
-        onOpenGroup: _selectGroup,
-      ),
+      scrollController: _scroll,
+      toolbar: ride.groups.length > 1 ? _toolbar(ride, group) : null,
       slivers: <Widget>[
+        // Les échecs d'inscription, en haut du corps : persistants, ils
+        // nomment le groupe et portent l'action qui résout l'exclusivité.
         if (registration.failure != null)
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(
-              PdlSpacing.section,
-              PdlSpacing.section,
-              PdlSpacing.section,
-              0,
-            ),
+            padding: block(),
             sliver: SliverToBoxAdapter(
               child: registrationFailureBanner(
                 registration.failure!,
@@ -371,85 +382,247 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
               ),
             ),
           ),
-        // L'heure du groupe, en tête de l'Aperçu, visible sans défiler
-        // (ledger `MOB-113`) : la page n'en disait rien avant la carte et le
-        // profil, et jamais la date.
-        if (_shownTab == RideGroupTab.overview)
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(
-              PdlSpacing.section,
-              PdlSpacing.section,
-              PdlSpacing.section,
-              0,
+        SliverPadding(
+          padding: block(),
+          sliver: SliverToBoxAdapter(
+            child: RideDepartureBlock(
+              key: keys.rideGroup.departureBlock,
+              ride: ride,
+              group: group,
+              arrival: _arrival(ride, group, leg),
+              trailing:
+                  RideRegistrationControl.shows(
+                    ref,
+                    ride,
+                    group,
+                    now: widget.now,
+                  )
+                  ? RideRegistrationControl(
+                      rideKey: key,
+                      ride: ride,
+                      group: group,
+                      now: widget.now,
+                    )
+                  : null,
+              places: ridePlaceLinks(context, ride),
+              now: widget.now,
             ),
+          ),
+        ),
+        if (_tiles(group).isNotEmpty)
+          SliverPadding(
+            padding: block(top: PdlSpacing.chipGap),
             sliver: SliverToBoxAdapter(
-              child: RideDepartureBlock(
-                key: keys.rideGroup.departureBlock,
-                ride: ride,
-                group: group,
-                arrival: groupLegArrival(leg, ride.timezone),
+              child: DetailStatTiles(
+                key: keys.rideGroup.statTiles,
+                tiles: _tiles(group),
               ),
             ),
           ),
-        body,
+        if (RideRouteSection.shows(ride, group))
+          SliverToBoxAdapter(
+            child: KeyedSubtree(
+              key: keys.rideGroup.routeSection,
+              child: RideRouteSection(
+                // Un autre groupe, un autre parcours : l'export repart à neuf.
+                key: ValueKey<String>('route_${group.id}'),
+                rideKey: key,
+                ride: ride,
+                group: group,
+                weatherLeg: leg,
+                weatherAttribution: weather?.attribution,
+                cursorDistance: cursorEnabled ? _cursor?.distance : null,
+              ),
+            ),
+          ),
+        SliverToBoxAdapter(
+          child: KeyedSubtree(
+            key: keys.rideGroup.participantsSection,
+            child: RideGroupParticipantsSection(
+              rideKey: key,
+              ride: ride,
+              group: group,
+              now: widget.now,
+            ),
+          ),
+        ),
+        if (weatherState != null)
+          SliverToBoxAdapter(
+            child: KeyedSubtree(
+              key: keys.rideGroup.weatherSection,
+              child: KeyedSubtree(
+                key: _weatherAnchor,
+                child: _weather(
+                  ride,
+                  group,
+                  weatherState,
+                  leg,
+                  cursorEnabled: cursorEnabled,
+                ),
+              ),
+            ),
+          ),
         const SliverToBoxAdapter(child: SizedBox(height: PdlSpacing.section)),
       ],
     );
   }
 
-  /// Les pastilles des groupes, puis les trois onglets — épinglés : changer
-  /// d'onglet reste à portée au bas de la frise des points de passage.
-  Widget _toolbar(RideDto ride, RideGroupDto group) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        if (ride.groups.length > 1) ...<Widget>[
-          Semantics(
-            label: 'rides.groupPage.groups'.tr(),
-            container: true,
-            child: PdlChipRow(
-              children: <Widget>[
-                for (final RideGroupDto g in ride.groups)
-                  PdlChip(
-                    key: keys.rideGroup.groupChip(g.id),
-                    label: '${g.name} · ${_fill(g)}',
-                    selected: g.id == group.id,
-                    onTap: () => _selectGroup(g.id),
-                  ),
-              ],
-            ),
-          ),
-          const SizedBox(height: PdlSpacing.chipGap),
-        ],
-        // `PdlSegmented` exige une largeur bornée : la colonne de la barre
-        // d'outils la lui donne.
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: PdlSpacing.section),
-          child: PdlSegmented<RideGroupTab>(
-            value: _shownTab,
-            onChanged: _openTab,
-            segments: <PdlSegment<RideGroupTab>>[
-              PdlSegment<RideGroupTab>(
-                key: keys.rideGroup.tabOverview,
-                value: RideGroupTab.overview,
-                label: 'rides.groupPage.tabs.overview'.tr(),
-              ),
-              PdlSegment<RideGroupTab>(
-                key: keys.rideGroup.tabWeather,
-                value: RideGroupTab.weather,
-                label: 'rides.groupPage.tabs.weather'.tr(),
-              ),
-              if (_canSeeNames)
-                PdlSegment<RideGroupTab>(
-                  key: keys.rideGroup.tabParticipants,
-                  value: RideGroupTab.participants,
-                  label: 'rides.groupPage.tabs.participants'.tr(),
-                ),
-            ],
+  /// « Arrivée estimée 12:18 » : l'arrivée du groupe (`estimatedArrival`,
+  /// ledger `API-165`), à défaut celle de son leg météo ; rien sinon.
+  String? _arrival(RideDto ride, RideGroupDto group, WeatherLegDto? leg) {
+    final String? at = group.estimatedArrival;
+    if (at != null) {
+      return 'rides.groupPage.stats.arrival'.tr(
+        namedArgs: <String, String>{
+          'time': formatGroupStart(at, ride.timezone),
+        },
+      );
+    }
+    return groupLegArrival(leg, ride.timezone);
+  }
+
+  /// Distance | Dénivelé positif, puis Durée estimée | Vitesse moyenne
+  /// (KIT §8) ; une tuile sans donnée disparaît.
+  List<DetailStatTile> _tiles(RideGroupDto group) {
+    final UnitSystem units = ref.watch(unitSystemProvider);
+    return <DetailStatTile>[
+      if (group.distance != null)
+        DetailStatTile(
+          label: 'rides.groupPage.stats.distance'.tr(),
+          value: AppFormatters.formatDistance(group.distance!, units),
+        ),
+      if (group.elevationGain != null)
+        DetailStatTile(
+          label: 'rides.groupPage.stats.elevation'.tr(),
+          value: AppFormatters.formatElevation(group.elevationGain!, units),
+        ),
+      if (group.estimatedDurationMinutes != null)
+        DetailStatTile(
+          label: 'rides.groupPage.stats.estimatedDuration'.tr(),
+          value: AppFormatters.formatDurationMinutes(
+            group.estimatedDurationMinutes!,
           ),
         ),
-      ],
+      if (group.averageSpeed != null)
+        DetailStatTile(
+          label: 'rides.groupPage.stats.pace'.tr(),
+          value: AppFormatters.formatSpeed(group.averageSpeed!, units),
+        ),
+    ];
+  }
+
+  /// La section Météo, dépliée : c'est le dernier bloc de la page. Le départ
+  /// est celui du leg quand il le porte (le point de rendez-vous à l'heure du
+  /// groupe, API 13.4.0), sinon celui de la sortie — « de la sortie » quand le
+  /// groupe part à une autre heure (ledger `BRAND-8`).
+  Widget _weather(
+    RideDto ride,
+    RideGroupDto group,
+    AsyncValue<RideWeatherDto> state,
+    WeatherLegDto? leg, {
+    required bool cursorEnabled,
+  }) {
+    final RideKey key = _rideKey;
+    void retry() => ref.invalidate(rideWeatherProvider(key));
+    return state.when(
+      loading: () => Padding(
+        padding: const EdgeInsets.fromLTRB(
+          PdlSpacing.section,
+          PdlSpacing.detailSectionGap,
+          PdlSpacing.section,
+          0,
+        ),
+        child: PdlSkeleton(
+          key: keys.rideGroup.weatherLoading,
+          height: 120,
+          borderRadius: PdlRadii.cardAll,
+        ),
+      ),
+      error: (Object _, StackTrace _) => WeatherSection(
+        view: RideWeatherView.unavailable,
+        timezone: ride.timezone,
+        onRetry: retry,
+      ),
+      data: (RideWeatherDto dto) => WeatherSection(
+        // `OUT_OF_RANGE`, `NO_LOCATION` pour un membre, statut inconnu : la
+        // section ne rend rien, et la page s'arrête aux personnes inscrites.
+        view: rideWeatherViewOf(
+          dto.status,
+          canSeeNoLocation: watchCanSeeWeatherNoLocation(ref, key.teamSlug),
+        ),
+        timezone: ride.timezone,
+        departure: dto.departure,
+        departureAt: ride.dateTime,
+        groupStartAt: group.startAt,
+        leg: leg,
+        attribution: dto.attribution,
+        fetchedAt: dto.fetchedAt == null
+            ? null
+            : DateTime.tryParse(dto.fetchedAt!),
+        availableFrom: dto.availableFrom == null
+            ? null
+            : DateTime.tryParse(dto.availableFrom!),
+        onRetry: retry,
+        onCheckpointTap: cursorEnabled ? _toggleCursor : null,
+        selectedCheckpoint: cursorEnabled ? _cursor?.index : null,
+      ),
+    );
+  }
+
+  /// `?tab=weather` : une fois la météo réglée (chargée, en échec, ou pas
+  /// demandée), la page défile jusqu'à sa section — une fois.
+  void _maybeScrollToWeather(AsyncValue<RideWeatherDto>? weather) {
+    if (!_weatherScrollPending) return;
+    if (weather != null && weather.isLoading) return;
+    _weatherScrollPending = false;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _revealWeather());
+  }
+
+  /// La section Météo est le dernier bloc, longtemps sous l'écran : pas
+  /// encore construite, on saute d'abord au bas de la page pour qu'elle le
+  /// soit, puis on la cale sous la barre épinglée des pastilles.
+  Future<void> _revealWeather() async {
+    for (int attempt = 0; attempt < 3; attempt++) {
+      if (!mounted || !_scroll.hasClients) return;
+      final BuildContext? anchor = _weatherAnchor.currentContext;
+      final RenderObject? box = anchor?.findRenderObject();
+      if (box == null || !box.attached) {
+        _scroll.jumpTo(_scroll.position.maxScrollExtent);
+        await WidgetsBinding.instance.endOfFrame;
+        continue;
+      }
+      final double toolbar = _toolbarKey.currentContext?.size?.height ?? 0;
+      final double target =
+          RenderAbstractViewport.of(box).getOffsetToReveal(box, 0).offset -
+          toolbar;
+      final ScrollPosition position = _scroll.position;
+      _scroll.jumpTo(
+        target.clamp(position.minScrollExtent, position.maxScrollExtent),
+      );
+      return;
+    }
+  }
+
+  /// Les pastilles des groupes, épinglées : « A · 8/12 », et une coche sur
+  /// celle de mon groupe.
+  Widget _toolbar(RideDto ride, RideGroupDto group) {
+    final String? mine = ride.joinedGroup?.id;
+    return Semantics(
+      key: _toolbarKey,
+      label: 'rides.groupPage.groups'.tr(),
+      container: true,
+      child: PdlChipRow(
+        children: <Widget>[
+          for (final RideGroupDto g in ride.groups)
+            PdlChip(
+              key: keys.rideGroup.groupChip(g.id),
+              label: '${g.name} · ${_fill(g)}',
+              icon: g.id == mine ? PdlIcons.check : null,
+              selected: g.id == group.id,
+              onTap: () => _selectGroup(g.id),
+            ),
+        ],
+      ),
     );
   }
 
