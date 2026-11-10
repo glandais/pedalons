@@ -180,15 +180,23 @@ class PdlDepartureBlock extends StatelessWidget {
           if (trailing == null)
             labelledHeader
           else
-            Row(
-              children: <Widget>[
-                // L'heure garde au moins la moitié de la largeur : un libellé
-                // long (« Changer pour Les Rapides ») s'abrège plutôt que de
-                // l'écraser.
-                Expanded(child: labelledHeader),
-                const SizedBox(width: PdlSpacing.chipGap),
-                Flexible(child: trailing!),
-              ],
+            LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints constraints) => Row(
+                children: <Widget>[
+                  // L'heure garde au moins la moitié de la largeur : un libellé
+                  // long s'abrège plutôt que de l'écraser. Un libellé court
+                  // (« Rejoindre », « J'y vais ») ne prend que sa largeur :
+                  // l'heure tient alors sur une ligne.
+                  Expanded(child: labelledHeader),
+                  const SizedBox(width: PdlSpacing.chipGap),
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: constraints.maxWidth / 2,
+                    ),
+                    child: trailing,
+                  ),
+                ],
+              ),
             ),
           if (places.isNotEmpty) ...<Widget>[
             // Les lignes de lieu portent leur cible de 44 px : l'écart visible
