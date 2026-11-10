@@ -186,7 +186,9 @@ public final class AccountExport {
 
   /**
    * {@code account/gps-route-syncs.json} — the routes Pédalons sent to the member's GPS services
-   * and keeps track of (docs/LEDGER_*.md API-120): automatically for a ride, or a manual upload.
+   * and keeps track of (docs/LEDGER_*.md API-120): automatically for a ride or a trip stage, or a
+   * manual upload. {@code rideId} holds the ride's or the stage's id; {@code rideGroupId} is null
+   * for a stage.
    */
   public record GpsRouteSyncEntry(
       String id,

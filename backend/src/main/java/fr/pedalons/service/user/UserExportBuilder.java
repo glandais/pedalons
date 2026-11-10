@@ -578,7 +578,8 @@ public class UserExportBuilder {
       account/          Votre compte : profil, sessions, clés d'accès (passkeys),
                         connexions GPS et réseaux sociaux, parcours envoyés à vos
                         services GPS (automatiquement ou à la main) et leur identifiant
-                        chez ces services, jetons d'authentification,
+                        chez ces services — pour un envoi automatique, rideId désigne
+                        la sortie ou l'étape de voyage concernée —, jetons d'authentification,
                         choix de notifications (dont le résumé quotidien et les équipes
                         dont vous avez coupé les annonces), appareils inscrits aux
                         notifications push, membres que vous avez bloqués et

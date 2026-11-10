@@ -7,6 +7,9 @@ import fr.pedalons.domain.ride.Ride;
 import fr.pedalons.domain.ride.RideGroup;
 import fr.pedalons.domain.ride.RideParticipation;
 import fr.pedalons.domain.route.Route;
+import fr.pedalons.domain.team.Team;
+import fr.pedalons.domain.trip.Trip;
+import fr.pedalons.domain.trip.TripStage;
 import fr.pedalons.domain.user.User;
 import fr.pedalons.enums.AssetType;
 import fr.pedalons.enums.GpsServiceType;
@@ -78,9 +81,47 @@ public class GpsSyncTestData {
 
   /** A route with a GPX, in the ride's team. */
   public Route routeWithGpx(Ride ride, User user, String name) {
-    Route route = dataService.createRoute(ride.getTeam(), user, name);
+    return routeWithGpx(ride.getTeam(), user, name);
+  }
+
+  /** A route with a GPX, in the given team. */
+  public Route routeWithGpx(Team team, User user, String name) {
+    Route route = dataService.createRoute(team, user, name);
     attachGpx(route, user);
     return route;
+  }
+
+  /** Sets (or removes) a trip stage's route in place, without merging a stale instance. */
+  @Transactional
+  public void setStageRoute(TripStage stage, @Nullable Route route) {
+    em.find(TripStage.class, stage.getId())
+        .setRoute(route != null ? em.find(Route.class, route.getId()) : null);
+  }
+
+  @Transactional
+  public void setStageDateTime(TripStage stage, Instant dateTime) {
+    em.find(TripStage.class, stage.getId()).setDateTime(dateTime);
+  }
+
+  /** Sets a trip's own route in place (see {@link #deleteTrip} on why not a merge). */
+  @Transactional
+  public void setTripRoute(Trip trip, @Nullable Route route) {
+    em.find(Trip.class, trip.getId())
+        .setRoute(route != null ? em.find(Route.class, route.getId()) : null);
+  }
+
+  @Transactional
+  public void setTripStatus(Trip trip, Status status) {
+    em.find(Trip.class, trip.getId()).setStatus(status);
+  }
+
+  /**
+   * Deletes a trip logically, in place: merging the test's own instance — whose stage and
+   * registration lists are empty — would remove them all through orphanRemoval.
+   */
+  @Transactional
+  public void deleteTrip(Trip trip) {
+    em.find(Trip.class, trip.getId()).setDeleted(true);
   }
 
   @Transactional

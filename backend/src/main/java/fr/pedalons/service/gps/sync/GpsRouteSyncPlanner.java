@@ -4,6 +4,8 @@ import fr.pedalons.repository.gps.GpsRouteSyncRepository;
 import fr.pedalons.repository.gps.GpsRouteSyncRepository.AutoRow;
 import fr.pedalons.repository.ride.GpsSyncTargetRow;
 import fr.pedalons.repository.ride.RideParticipationRepository;
+import fr.pedalons.repository.trip.GpsSyncStageTargetRow;
+import fr.pedalons.repository.trip.TripParticipationRepository;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.scheduler.Scheduled;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -20,6 +22,7 @@ import java.util.Objects;
 import java.util.Set;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Decides which route each GPS service connection should hold, never calling a service
@@ -29,12 +32,20 @@ import org.jboss.logging.Logger;
  * leaves between {@code now − retention} and {@code now + horizon}, paired with the registered
  * member's connections that asked for the sync ({@link RideParticipationRepository
  * #findGpsSyncTargets}), give the desired state of each (connection, ride) — the group's effective
- * route, its GPX asset, the name to show. It is upserted on the tracking rows, desired columns only;
- * every other automatic row of the domain is told to disappear from its service. That one
- * reconciliation covers, without a single hook in the business code: registration, leaving a group
- * or switching to another, a ride cancelled or deleted, a group removed (orphanRemoval), a route
- * changed, deleted or given a new GPX, a ride passed, the switch turned off, the registrations an
- * account erasure forgets.
+ * route, its GPX asset, the name to show. The trip registrations do the same for each stage of the
+ * trip leaving within that window ({@link TripParticipationRepository#findGpsSyncStageTargets}):
+ * one row per (connection, stage), the stage's id in {@code ride_id} — a stage and a ride are both
+ * team entities with a TSID, so the ids never collide — no group, the stage's own route and never
+ * the trip's. Both lists fill <b>one</b> desired map before anything is cleared: planned apart,
+ * each pass would clear the other's rows on every tick.
+ *
+ * <p>The desired state is upserted on the tracking rows, desired columns only; every other automatic
+ * row of the domain is told to disappear from its service. That one reconciliation covers, without
+ * a single hook in the business code: registration, leaving a group or switching to another, a ride
+ * cancelled or deleted, a group removed (orphanRemoval), a route changed, deleted or given a new
+ * GPX, a ride passed, the switch turned off, the registrations an account erasure forgets — and for
+ * a trip: joining or leaving it, a stage added, moved, removed or given another route, the trip
+ * cancelled, unpublished or deleted.
  *
  * <p>A connection waiting for a reconnection is not planned at all: its rows stay as they are, or
  * they would swing to "delete" and back.
@@ -59,6 +70,7 @@ public class GpsRouteSyncPlanner {
   Duration retention;
 
   @Inject RideParticipationRepository participationRepository;
+  @Inject TripParticipationRepository tripParticipationRepository;
   @Inject GpsRouteSyncRepository syncRepository;
 
   public boolean isEnabled() {
@@ -101,23 +113,36 @@ public class GpsRouteSyncPlanner {
     return changed;
   }
 
+  /** A tracking row's identity: the connection and the ride — or the trip stage — it follows. */
   private record Key(Long connectionId, Long rideId) {}
 
+  /** {@code groupId} is null for a trip stage, which has no group. */
   private record Desired(
-      Long userId, Long groupId, Long routeId, String hash, String name, Instant groupStartAt) {}
+      Long userId,
+      @Nullable Long groupId,
+      Long routeId,
+      String hash,
+      String name,
+      Instant groupStartAt) {}
 
   /** One domain, in the caller's transaction. */
   int planDomain(Long domainId, Instant now) {
-    List<GpsSyncTargetRow> targets =
-        participationRepository.findGpsSyncTargets(
-            domainId, now.minus(retention), now.plus(horizon));
+    Instant from = now.minus(retention);
+    Instant to = now.plus(horizon);
+    List<GpsSyncTargetRow> targets = participationRepository.findGpsSyncTargets(domainId, from, to);
+    List<GpsSyncStageTargetRow> stageTargets =
+        tripParticipationRepository.findGpsSyncStageTargets(domainId, from, to);
 
+    // One lookup for the routes of both lists.
     Set<Long> routeIds = new HashSet<>();
     for (GpsSyncTargetRow target : targets) {
       Long routeId = target.effectiveRouteId();
       if (routeId != null) {
         routeIds.add(routeId);
       }
+    }
+    for (GpsSyncStageTargetRow target : stageTargets) {
+      routeIds.add(target.routeId());
     }
     Map<Long, Long> contentKeys = syncRepository.findGpxContentKeys(domainId, routeIds);
 
@@ -144,6 +169,28 @@ public class GpsRouteSyncPlanner {
               GpsSyncNames.hash(contentKey, name),
               name,
               target.groupStartAt()));
+    }
+    for (GpsSyncStageTargetRow target : stageTargets) {
+      Long contentKey = contentKeys.get(target.routeId());
+      if (contentKey == null) {
+        // The stage's route has no GPX: nothing to send. Not the trip's route instead.
+        continue;
+      }
+      String name =
+          GpsSyncNames.stageName(
+              target.stageStartAt(), target.timezone(), target.tripName(), target.stageName());
+      // The same map as the rides: the clearing below must see both, or it would remove one
+      // kind's rows on every tick. A trip registration is unique per user; putIfAbsent only keeps
+      // the order deterministic.
+      desired.putIfAbsent(
+          new Key(target.connectionId(), target.stageId()),
+          new Desired(
+              target.userId(),
+              null,
+              target.routeId(),
+              GpsSyncNames.hash(contentKey, name),
+              name,
+              target.stageStartAt()));
     }
 
     Map<Key, AutoRow> existing = new HashMap<>();

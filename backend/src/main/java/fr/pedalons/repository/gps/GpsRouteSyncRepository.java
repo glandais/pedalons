@@ -17,6 +17,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.hibernate.query.TypedParameterValue;
+import org.hibernate.type.StandardBasicTypes;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -135,13 +137,17 @@ public class GpsRouteSyncRepository implements PanacheRepository<GpsRouteSync> {
    * — never the synchronised ones nor the lease — and nothing at all when they are unchanged, so a
    * tick replayed, or run by both backends of a rolling deploy, writes the same thing once. A new
    * desired hash forgets the failures of the previous one.
+   *
+   * @param rideId the ride, or the trip stage, the row follows
+   * @param rideGroupId the member's group in that ride; null for a trip stage (the comparison below
+   *     is {@code is distinct from}, so a null group stays unchanged from tick to tick)
    */
   public void upsertDesired(
       Long domainId,
       Long userId,
       Long connectionId,
       Long rideId,
-      Long rideGroupId,
+      @Nullable Long rideGroupId,
       Long routeId,
       String hash,
       String name,
@@ -179,7 +185,9 @@ public class GpsRouteSyncRepository implements PanacheRepository<GpsRouteSync> {
         .setParameter("userId", userId)
         .setParameter("connectionId", connectionId)
         .setParameter("rideId", rideId)
-        .setParameter("groupId", rideGroupId)
+        // Typed: a bare null in a native query reaches PostgreSQL without a type (docs/LEDGER_*.md
+        // API-120, trip stages have no group).
+        .setParameter("groupId", new TypedParameterValue<>(StandardBasicTypes.LONG, rideGroupId))
         .setParameter("routeId", routeId)
         .setParameter("hash", hash)
         .setParameter("name", name)

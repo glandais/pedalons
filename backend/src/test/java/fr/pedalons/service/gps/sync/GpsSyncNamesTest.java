@@ -38,6 +38,52 @@ class GpsSyncNamesTest {
   }
 
   @Test
+  void stageName_isDateTripStage_withAnAsciiSeparator_inTheStageZone() {
+    assertEquals(
+        "2026-10-18 - Traversée des Alpes - Étape 1",
+        GpsSyncNames.stageName(LATE_EVENING, "Europe/Paris", "Traversée des Alpes", "Étape 1"));
+    // The same instant is still the 17th in New York: the stage's own zone decides.
+    assertEquals(
+        "2026-10-17 - Traversée des Alpes - Étape 1",
+        GpsSyncNames.stageName(LATE_EVENING, "America/New_York", "Traversée des Alpes", "Étape 1"));
+  }
+
+  @Test
+  void stageName_leavesABlankPartOut() {
+    assertEquals(
+        "2026-10-17 - Étape 1", GpsSyncNames.stageName(LATE_EVENING, "UTC", "  ", "Étape 1"));
+    assertEquals("2026-10-17 - Voyage", GpsSyncNames.stageName(LATE_EVENING, "UTC", "Voyage", ""));
+    assertEquals("2026-10-17", GpsSyncNames.stageName(LATE_EVENING, "UTC", "", " "));
+  }
+
+  @Test
+  void stageName_stripsItsParts() {
+    assertEquals(
+        "2026-10-17 - Voyage - Étape",
+        GpsSyncNames.stageName(LATE_EVENING, "UTC", " Voyage ", " Étape "));
+  }
+
+  @Test
+  void stageName_isTruncated() {
+    String name = GpsSyncNames.stageName(LATE_EVENING, "UTC", "Voyage", "x".repeat(200));
+    assertEquals(GpsSyncNames.MAX_NAME_LENGTH, name.length());
+    assertTrue(name.startsWith("2026-10-17 - Voyage - x"), name);
+    assertTrue(name.endsWith("…"));
+  }
+
+  @Test
+  void stageName_survivesAnUnknownZone() {
+    assertTrue(
+        GpsSyncNames.stageName(LATE_EVENING, "Not/AZone", "V", "E").startsWith("2026-10-18 - "));
+  }
+
+  @Test
+  void rideName_keepsItsSeparator() {
+    // Changing it would change the fingerprint of every ride row already sent (D4).
+    assertEquals("2026-10-17 · G · R", GpsSyncNames.autoName(LATE_EVENING, "UTC", "G", "R"));
+  }
+
+  @Test
   void hash_followsTheAssetAndTheName() {
     String base = GpsSyncNames.hash(1L, "a");
     assertEquals(base, GpsSyncNames.hash(1L, "a"));

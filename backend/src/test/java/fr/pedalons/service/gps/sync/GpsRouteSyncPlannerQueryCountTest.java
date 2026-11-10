@@ -8,6 +8,8 @@ import fr.pedalons.domain.gps.GpsServiceConnection;
 import fr.pedalons.domain.ride.Ride;
 import fr.pedalons.domain.ride.RideGroup;
 import fr.pedalons.domain.route.Route;
+import fr.pedalons.domain.trip.Trip;
+import fr.pedalons.domain.trip.TripStage;
 import fr.pedalons.enums.GpsServiceType;
 import fr.pedalons.util.GpsSyncTestData;
 import fr.pedalons.util.QueryStats;
@@ -21,7 +23,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * The planner reads a domain in a fixed number of queries, whatever the number of registrations —
+ * The planner reads a domain in a fixed number of queries, whatever the number of registrations
+ * or trip stages —
  * no query per registration, per route or per connection (docs/LEDGER_*.md API-120 §3.4, and the
  * per-page lookup rule of CLAUDE.md). Writes do grow with the rows that change, one upsert each,
  * and only on the first pass: a replay writes nothing. Same for the per-route state lookup.
@@ -104,6 +107,61 @@ class GpsRouteSyncPlannerQueryCountTest extends AbstractQueryCountTest {
                 + " statements for "
                 + (LARGE_PAGE - SMALL_PAGE)
                 + " new rows: more than one write each.\n"
+                + queryStats.queryBreakdown(15));
+  }
+
+  /**
+   * {@code count} more stages of {@code trip}, within the horizon, each with its own GPX route,
+   * numbered from {@code first}.
+   */
+  private void seedStages(Trip trip, int first, int count, Instant now) {
+    for (int i = first; i < first + count; i++) {
+      TripStage stage =
+          dataService.createTripStage(
+              user1, trip, "Étape " + i, i, now.plus(1, ChronoUnit.DAYS).plusSeconds(i));
+      sync.setStageRoute(stage, sync.routeWithGpx(team1, user1, "Route d'étape " + i));
+    }
+  }
+
+  @Test
+  void planningTripStages_readsInConstantQueries() {
+    Instant now = Instant.now();
+    GpsServiceConnection connection = sync.connect(user3, GpsServiceType.HAMMERHEAD, true);
+    Trip trip = dataService.createTrip(team1, user1, "Voyage", now.plus(1, ChronoUnit.DAYS));
+    dataService.createTripParticipation(trip, user3);
+    seedStages(trip, 0, SMALL_PAGE, now);
+    QueryStats.Counters smallFirst = measurePlan("stages first pass [" + SMALL_PAGE + "]", now);
+    QueryStats.Counters smallReplay = measurePlan("stages replay [" + SMALL_PAGE + "]", now);
+    assertEquals(SMALL_PAGE, sync.rows(connection.getId()).size());
+
+    seedStages(trip, SMALL_PAGE, LARGE_PAGE - SMALL_PAGE, now);
+    QueryStats.Counters largeFirst = measurePlan("stages first pass [" + LARGE_PAGE + "]", now);
+    QueryStats.Counters largeReplay = measurePlan("stages replay [" + LARGE_PAGE + "]", now);
+    assertEquals(LARGE_PAGE, sync.rows(connection.getId()).size());
+
+    long replayGrowth = largeReplay.statements() - smallReplay.statements();
+    assertTrue(
+        replayGrowth <= MAX_STATEMENT_GROWTH,
+        () ->
+            "The planner's replay cost "
+                + smallReplay.statements()
+                + " statements for "
+                + SMALL_PAGE
+                + " stages and "
+                + largeReplay.statements()
+                + " for "
+                + LARGE_PAGE
+                + ": something is read per stage.\n"
+                + queryStats.queryBreakdown(15));
+    long firstGrowth = largeFirst.statements() - smallFirst.statements();
+    assertTrue(
+        firstGrowth <= (LARGE_PAGE - SMALL_PAGE) + MAX_STATEMENT_GROWTH,
+        () ->
+            "The planner's first pass grew by "
+                + firstGrowth
+                + " statements for "
+                + (LARGE_PAGE - SMALL_PAGE)
+                + " new stage rows: more than one write each.\n"
                 + queryStats.queryBreakdown(15));
   }
 

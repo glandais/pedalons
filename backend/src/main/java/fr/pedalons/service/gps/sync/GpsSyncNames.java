@@ -21,6 +21,7 @@ public final class GpsSyncNames {
 
   private static final DateTimeFormatter DAY = DateTimeFormatter.ISO_LOCAL_DATE;
   private static final String SEPARATOR = " · ";
+  private static final String STAGE_SEPARATOR = " - ";
 
   private GpsSyncNames() {}
 
@@ -31,18 +32,43 @@ public final class GpsSyncNames {
    */
   public static String autoName(
       Instant groupStartAt, String timezone, String groupName, String routeName) {
+    StringBuilder name = new StringBuilder(localDay(groupStartAt, timezone));
+    if (!groupName.isBlank()) {
+      name.append(SEPARATOR).append(groupName.strip());
+    }
+    name.append(SEPARATOR).append(routeName.strip());
+    return truncate(name.toString());
+  }
+
+  /**
+   * {@code YYYY-MM-DD - trip - stage}, the date local to the stage (its own zone, not the trip's),
+   * with an ASCII separator. A blank trip or stage name is left out. No stage number: a stage
+   * reordered keeps its row, and must keep its name with it.
+   *
+   * <p>Not {@link #autoName}'s {@code ·}: that one is part of the fingerprint of every ride row
+   * already sent, and changing it would send them all again (D4).
+   */
+  public static String stageName(
+      Instant stageStartAt, String timezone, String tripName, String stageName) {
+    StringBuilder name = new StringBuilder(localDay(stageStartAt, timezone));
+    if (!tripName.isBlank()) {
+      name.append(STAGE_SEPARATOR).append(tripName.strip());
+    }
+    if (!stageName.isBlank()) {
+      name.append(STAGE_SEPARATOR).append(stageName.strip());
+    }
+    return truncate(name.toString());
+  }
+
+  /** The date of {@code at} in {@code timezone}, Europe/Paris for an unknown zone. */
+  private static String localDay(Instant at, String timezone) {
     ZoneId zone;
     try {
       zone = ZoneId.of(timezone);
     } catch (DateTimeException e) {
       zone = ZoneId.of("Europe/Paris");
     }
-    StringBuilder name = new StringBuilder(DAY.format(groupStartAt.atZone(zone)));
-    if (!groupName.isBlank()) {
-      name.append(SEPARATOR).append(groupName.strip());
-    }
-    name.append(SEPARATOR).append(routeName.strip());
-    return truncate(name.toString());
+    return DAY.format(at.atZone(zone));
   }
 
   static String truncate(String name) {
@@ -84,7 +110,10 @@ public final class GpsSyncNames {
     }
   }
 
-  /** Wahoo's {@code external_id} of a synchronised route: stable for the ride (D10). */
+  /**
+   * Wahoo's {@code external_id} of a synchronised route: stable for the ride, or the trip stage
+   * whose id the row holds in {@code rideId} (D10).
+   */
   public static String wahooExternalId(Long domainId, Long rideId) {
     return "pedalons-" + domainId + "-" + rideId;
   }

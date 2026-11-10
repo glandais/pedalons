@@ -1,11 +1,14 @@
 package fr.pedalons.repository.ride;
 
+import static fr.pedalons.repository.common.MemberRouteVisibility.routeVisible;
+
 import fr.pedalons.domain.ride.RideParticipation;
 import fr.pedalons.domain.user.User;
 import fr.pedalons.dto.common.PedalonsPage;
 import fr.pedalons.enums.Status;
 import fr.pedalons.enums.TeamRole;
 import fr.pedalons.repository.common.BaseRepository;
+import fr.pedalons.repository.common.MemberRouteVisibility;
 import fr.pedalons.repository.common.ParticipantPages;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.TypedQuery;
@@ -69,7 +72,7 @@ public class RideParticipationRepository implements BaseRepository<RideParticipa
    * the team's moderators — and only groups that have something to load: their own route or,
    * failing that, their ride's, as long as the user can download it. A route the device download
    * ({@code DeviceRouteService.findRouteBySlug}) would refuse — deleted, DRAFT for a plain member,
-   * hidden by moderation for a plain member — comes back as null (see {@link #routeVisible}), so
+   * hidden by moderation for a plain member — comes back as null (see {@link MemberRouteVisibility#routeVisible}), so
    * the caller only has to pick the first non-null one and never lists a slug that 404s.
    *
    * @param pinnedTeamId the team a pinned domain is restricted to; null for none
@@ -120,22 +123,6 @@ public class RideParticipationRepository implements BaseRepository<RideParticipa
     return query.getResultList();
   }
 
-  /**
-   * The left-join condition that keeps a route only when its team member {@code ut} can download
-   * it: the same rules as {@code TeamEntityRepository.getPedalonsQuery} for a team's own route —
-   * not deleted, and either PUBLISHED/CANCELLED and not hidden by moderation, or seen by a
-   * moderator (organizer/admin), who sees drafts and hidden content alike.
-   */
-  private static String routeVisible(String alias) {
-    return "("
-        + alias
-        + ".deleted = false and (ut.role in (:moderators) or ("
-        + alias
-        + ".status in (:memberStatuses) and "
-        + alias
-        + ".moderationHiddenAt is null)))";
-  }
-
   public Optional<RideParticipation> findByUserAndRide(Long userId, Long rideId) {
     return find("user.id = ?1 and rideGroup.ride.id = ?2", userId, rideId).firstResultOptional();
   }
@@ -151,10 +138,12 @@ public class RideParticipationRepository implements BaseRepository<RideParticipa
    * live teams the user is still a member of (leaving a team does not remove a registration),
    * published, non-deleted rides — hidden by moderation only for the team's moderators — and groups
    * that have a route the user can download of their own or, failing that, on their ride. Both
-   * share {@link #routeVisible}: a route deleted, DRAFT or hidden by moderation for a plain member
+   * share {@link MemberRouteVisibility#routeVisible}: a route deleted, DRAFT or hidden by moderation for a plain member
    * comes back as null, so it is never sent to that member's service — and one that becomes so is
    * removed from it. The caller takes the first non-null one ({@link
-   * GpsSyncTargetRow#effectiveRouteId}). A change to either selection goes to both.
+   * GpsSyncTargetRow#effectiveRouteId}). A change to either selection goes to both — and to the
+   * trip stages' counterpart, {@code TripParticipationRepository.findGpsSyncStageTargets}, which
+   * the planner reads beside this one.
    *
    * <p>No pinned team: a pin belongs to a host alias, and this runs outside any request.
    */

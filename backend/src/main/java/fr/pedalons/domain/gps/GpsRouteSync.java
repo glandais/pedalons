@@ -20,7 +20,8 @@ import org.jspecify.annotations.Nullable;
  *
  * <ul>
  *   <li><b>automatic</b> ({@link #rideId} set): one per connection and ride, the route of the
- *       member's group kept in sync. The planner writes the desired state ({@code desired_*},
+ *       member's group kept in sync — or one per connection and trip stage, the stage's route, for
+ *       the trips the member is registered for. The planner writes the desired state ({@code desired_*},
  *       {@code ride_group_id}, {@code group_start_at}), the worker the synchronised one ({@code
  *       external_route_id}, {@code synced_*}) under a lease ({@code claimed_until}); the work is
  *       their difference — to create, update, delete. No status column: the state is derived.
@@ -68,11 +69,15 @@ public class GpsRouteSync {
   @OnDelete(action = OnDeleteAction.CASCADE)
   private GpsServiceConnection connection;
 
-  /** The ride of an automatic row; null for a manual upload. */
+  /**
+   * The ride — or the trip stage — of an automatic row; null for a manual upload. A stage and a
+   * ride are both team entities with a TSID, so one column holds either without a collision (and
+   * without a foreign key, see above): nothing in the sync needs to know which it is.
+   */
   @Column(name = "ride_id")
   private @Nullable Long rideId;
 
-  /** The member's group in that ride, as last planned. */
+  /** The member's group in that ride, as last planned; null for a trip stage. */
   @Column(name = "ride_group_id")
   private @Nullable Long rideGroupId;
 

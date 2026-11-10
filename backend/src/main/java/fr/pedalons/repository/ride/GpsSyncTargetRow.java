@@ -9,7 +9,8 @@ import org.jspecify.annotations.Nullable;
  * connection, the ride, the group, and both candidate routes (the group's own, the ride's), each
  * null when absent or deleted. Selected in a single query per domain — see {@link
  * RideParticipationRepository#findGpsSyncTargets} — and used by the automatic route sync
- * (docs/LEDGER_*.md API-120).
+ * (docs/LEDGER_*.md API-120). The trip stages a member is registered for come apart, as {@code
+ * GpsSyncStageTargetRow}: a stage has no group and no fallback route.
  */
 public record GpsSyncTargetRow(
     Long connectionId,

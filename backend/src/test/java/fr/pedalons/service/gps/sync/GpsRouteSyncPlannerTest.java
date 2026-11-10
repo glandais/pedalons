@@ -15,6 +15,9 @@ import fr.pedalons.domain.ride.RideGroup;
 import fr.pedalons.domain.ride.RideParticipation;
 import fr.pedalons.domain.route.Route;
 import fr.pedalons.domain.team.Team;
+import fr.pedalons.domain.trip.Trip;
+import fr.pedalons.domain.trip.TripParticipation;
+import fr.pedalons.domain.trip.TripStage;
 import fr.pedalons.domain.user.User;
 import fr.pedalons.dto.common.asset.MediaDto;
 import fr.pedalons.dto.routes.request.RouteRequest;
@@ -443,5 +446,313 @@ class GpsRouteSyncPlannerTest extends AbstractResourceTest {
 
   private void hideByModeration(Ride target) {
     dataService.hideForModeration(target);
+  }
+
+  // ------------------------------------------------------------------ trip stages
+
+  private static final String TRIP_NAME = "Traversée des Alpes";
+
+  private Trip trip;
+  private TripStage stage1;
+  private TripStage stage2;
+  private Route stage1Route;
+  private Route stage2Route;
+  private TripParticipation tripRegistration;
+
+  /**
+   * A published trip of team1 with two stages leaving tomorrow and the day after, each with its own
+   * GPX route, user3 registered — beside the ride of {@link #setUp}, which every case keeps.
+   */
+  private void seedTrip() {
+    trip = dataService.createTrip(team1, user1, TRIP_NAME, now.plus(1, ChronoUnit.DAYS));
+    stage1 = dataService.createTripStage(user1, trip, "Étape 1", 0, now.plus(1, ChronoUnit.DAYS));
+    stage2 = dataService.createTripStage(user1, trip, "Étape 2", 1, now.plus(2, ChronoUnit.DAYS));
+    stage1Route = sync.routeWithGpx(team1, user1, "Col du Galibier");
+    stage2Route = sync.routeWithGpx(team1, user1, "Col de l'Iseran");
+    sync.setStageRoute(stage1, stage1Route);
+    sync.setStageRoute(stage2, stage2Route);
+    tripRegistration = dataService.createTripParticipation(trip, user3);
+  }
+
+  private GpsRouteSync stageRow(TripStage stage) {
+    return sync.row(connection.getId(), stage.getId()).orElseThrow();
+  }
+
+  @Test
+  void tripRegistration_givesOneRowPerStage_withTheStageId_noGroup_andTheStageName() {
+    seedTrip();
+
+    planner.plan(now);
+
+    GpsRouteSync row = stageRow(stage1);
+    assertEquals(domain.getId(), row.getDomainId());
+    assertEquals(stage1.getId(), row.getRideId());
+    assertNull(row.getRideGroupId());
+    assertEquals(stage1Route.getId(), row.getDesiredRouteId());
+    assertEquals(stage1.getDateTime(), row.getGroupStartAt());
+    assertNotNull(row.getDesiredHash());
+    assertEquals(
+        GpsSyncNames.stageName(stage1.getDateTime(), stage1.getTimezone(), TRIP_NAME, "Étape 1"),
+        row.getDesiredName());
+    assertTrue(
+        row.getDesiredName().matches("^\\d{4}-\\d{2}-\\d{2} - " + TRIP_NAME + " - Étape 1$"),
+        row.getDesiredName());
+    assertEquals(stage2Route.getId(), stageRow(stage2).getDesiredRouteId());
+    // The ride's row is still there: the stages do not replace it.
+    assertEquals(rideRoute.getId(), row().getDesiredRouteId());
+    assertEquals(3, sync.rows(connection.getId()).size());
+  }
+
+  @Test
+  void tripStages_replayingATick_writesNothing() {
+    seedTrip();
+    planner.plan(now);
+    GpsRouteSync before = stageRow(stage1);
+
+    assertEquals(0, planner.plan(now));
+    assertEquals(before.getUpdatedAt(), stageRow(stage1).getUpdatedAt());
+  }
+
+  @Test
+  void leavingTheTrip_neverSent_deletesTheRows_andKeepsTheRide() {
+    seedTrip();
+    planner.plan(now);
+    dataService.deleteTripParticipation(tripRegistration);
+
+    planner.plan(now);
+
+    assertTrue(sync.row(connection.getId(), stage1.getId()).isEmpty());
+    assertTrue(sync.row(connection.getId(), stage2.getId()).isEmpty());
+    assertNotNull(row().getDesiredHash());
+  }
+
+  @Test
+  void leavingTheTrip_alreadySent_asksForTheDeletion() {
+    seedTrip();
+    planner.plan(now);
+    sync.markSynced(stageRow(stage1).getId(), "ext-stage");
+    dataService.deleteTripParticipation(tripRegistration);
+
+    planner.plan(now);
+
+    GpsRouteSync row = stageRow(stage1);
+    assertNull(row.getDesiredHash());
+    assertNull(row.getDesiredRouteId());
+    assertEquals("ext-stage", row.getExternalRouteId());
+  }
+
+  @Test
+  void stageAdded_getsItsRow() {
+    seedTrip();
+    planner.plan(now);
+    TripStage stage3 =
+        dataService.createTripStage(user1, trip, "Étape 3", 2, now.plus(3, ChronoUnit.DAYS));
+    Route stage3Route = sync.routeWithGpx(team1, user1, "Col de la Madeleine");
+    sync.setStageRoute(stage3, stage3Route);
+
+    planner.plan(now);
+
+    assertEquals(stage3Route.getId(), stageRow(stage3).getDesiredRouteId());
+  }
+
+  @Test
+  void stageDeleted_asksForTheDeletion() {
+    seedTrip();
+    planner.plan(now);
+    sync.markSynced(stageRow(stage2).getId(), "ext-stage");
+    // What TripService.updateTrip does to a stage the organiser removes.
+    dataService.deleteTripStage(stage2);
+
+    planner.plan(now);
+
+    assertNull(stageRow(stage2).getDesiredHash());
+    assertEquals("ext-stage", stageRow(stage2).getExternalRouteId());
+    assertNotNull(stageRow(stage1).getDesiredHash());
+  }
+
+  @Test
+  void newStageRoute_changesTheRouteAndTheHashOnTheSameRow() {
+    seedTrip();
+    planner.plan(now);
+    sync.markSynced(stageRow(stage1).getId(), "ext-stage");
+    GpsRouteSync before = stageRow(stage1);
+    Route variant = sync.routeWithGpx(team1, user1, "Col du Télégraphe");
+    sync.setStageRoute(stage1, variant);
+
+    planner.plan(now);
+
+    GpsRouteSync after = stageRow(stage1);
+    assertEquals(before.getId(), after.getId());
+    assertEquals(variant.getId(), after.getDesiredRouteId());
+    assertNotEquals(before.getDesiredHash(), after.getDesiredHash());
+    // The route at the service is updated in place, not created anew.
+    assertEquals("ext-stage", after.getExternalRouteId());
+  }
+
+  @Test
+  void stageRouteRemoved_asksForTheDeletion() {
+    seedTrip();
+    planner.plan(now);
+    sync.markSynced(stageRow(stage1).getId(), "ext-stage");
+    sync.setStageRoute(stage1, null);
+
+    planner.plan(now);
+
+    assertNull(stageRow(stage1).getDesiredHash());
+    assertEquals("ext-stage", stageRow(stage1).getExternalRouteId());
+  }
+
+  @Test
+  void stageWithoutRoute_givesNothing_notTheTripRoute() {
+    seedTrip();
+    sync.setStageRoute(stage1, null);
+    sync.setTripRoute(trip, sync.routeWithGpx(team1, user1, "Tracé complet"));
+
+    planner.plan(now);
+
+    assertTrue(sync.row(connection.getId(), stage1.getId()).isEmpty());
+    assertEquals(stage2Route.getId(), stageRow(stage2).getDesiredRouteId());
+  }
+
+  @Test
+  void stageRouteWithoutGpx_givesNothing() {
+    seedTrip();
+    sync.setStageRoute(stage1, dataService.createRoute(team1, user1, "Sans trace"));
+
+    planner.plan(now);
+
+    assertTrue(sync.row(connection.getId(), stage1.getId()).isEmpty());
+  }
+
+  @Test
+  void draftStageRoute_isNotSentToAPlainMember() {
+    seedTrip();
+    sync.setRouteStatus(stage1Route, Status.DRAFT);
+
+    planner.plan(now);
+
+    assertTrue(sync.row(connection.getId(), stage1.getId()).isEmpty());
+  }
+
+  @Test
+  void stageMovedBeyondTheHorizon_asksForTheDeletion() {
+    seedTrip();
+    planner.plan(now);
+    sync.markSynced(stageRow(stage2).getId(), "ext-stage");
+    // The window is the stage's own departure, not the trip's.
+    sync.setStageDateTime(stage2, now.plus(8, ChronoUnit.DAYS));
+
+    planner.plan(now);
+
+    assertNull(stageRow(stage2).getDesiredHash());
+    assertNotNull(stageRow(stage1).getDesiredHash());
+  }
+
+  @Test
+  void stageBeyondTheHorizon_givesNothing_whileTheTripHasStarted() {
+    seedTrip();
+    sync.setStageDateTime(stage2, now.plus(9, ChronoUnit.DAYS));
+
+    planner.plan(now);
+
+    assertNotNull(stageRow(stage1).getDesiredHash());
+    assertTrue(sync.row(connection.getId(), stage2.getId()).isEmpty());
+  }
+
+  @Test
+  void cancelledTrip_asksForTheDeletion() {
+    seedTrip();
+    planner.plan(now);
+    sync.markSynced(stageRow(stage1).getId(), "ext-stage");
+    sync.setTripStatus(trip, Status.CANCELLED);
+
+    planner.plan(now);
+
+    assertNull(stageRow(stage1).getDesiredHash());
+    assertTrue(sync.row(connection.getId(), stage2.getId()).isEmpty());
+  }
+
+  @Test
+  void draftTrip_givesNothing() {
+    seedTrip();
+    sync.setTripStatus(trip, Status.DRAFT);
+
+    planner.plan(now);
+
+    assertTrue(sync.row(connection.getId(), stage1.getId()).isEmpty());
+    assertTrue(sync.row(connection.getId(), stage2.getId()).isEmpty());
+  }
+
+  @Test
+  void deletedTrip_asksForTheDeletion() {
+    seedTrip();
+    planner.plan(now);
+    sync.markSynced(stageRow(stage1).getId(), "ext-stage");
+    sync.deleteTrip(trip);
+
+    planner.plan(now);
+
+    assertNull(stageRow(stage1).getDesiredHash());
+    assertEquals("ext-stage", stageRow(stage1).getExternalRouteId());
+  }
+
+  @Test
+  void tripHiddenByModeration_givesNothingToAMember_butStaysWithAnOrganizer() {
+    seedTrip();
+    // user2 is an organizer of team1: a moderator sees hidden content.
+    dataService.createTripParticipation(trip, user2);
+    GpsServiceConnection organizer = sync.connect(user2, GpsServiceType.WAHOO, true);
+    dataService.hideForModeration(trip);
+
+    planner.plan(now);
+
+    assertTrue(sync.row(connection.getId(), stage1.getId()).isEmpty());
+    assertTrue(sync.row(organizer.getId(), stage1.getId()).isPresent());
+    assertTrue(sync.row(organizer.getId(), stage2.getId()).isPresent());
+  }
+
+  @Test
+  void rideAndStageOnTheSameRoute_getTwoRows_thatNeverClearEachOther() {
+    seedTrip();
+    sync.setStageRoute(stage1, rideRoute);
+
+    planner.plan(now);
+
+    GpsRouteSync rideRow = row();
+    GpsRouteSync stage = stageRow(stage1);
+    assertNotEquals(rideRow.getId(), stage.getId());
+    assertEquals(rideRoute.getId(), rideRow.getDesiredRouteId());
+    assertEquals(rideRoute.getId(), stage.getDesiredRouteId());
+    assertEquals(groupA.getId(), rideRow.getRideGroupId());
+    assertNull(stage.getRideGroupId());
+    assertNotEquals(rideRow.getDesiredName(), stage.getDesiredName());
+
+    // A second pass writes nothing: neither kind clears the other's row.
+    assertEquals(0, planner.plan(now));
+    assertEquals(rideRow.getDesiredHash(), row().getDesiredHash());
+    assertEquals(stage.getDesiredHash(), stageRow(stage1).getDesiredHash());
+  }
+
+  @Test
+  void otherDomain_tripStagesArePlannedApart() {
+    seedTrip();
+    Domain other = dataService.createDomain("other.example", "Other", "https://other.example");
+    User rider = dataService.createUser(other, "rider@other.example", "Rider");
+    Team team = dataService.createTeam(other, rider, "Other team", "other-team", Visibility.PUBLIC);
+    Trip otherTrip =
+        dataService.createTrip(team, rider, "Autre voyage", now.plus(1, ChronoUnit.DAYS));
+    TripStage otherStage =
+        dataService.createTripStage(rider, otherTrip, "Unique", 0, now.plus(1, ChronoUnit.DAYS));
+    sync.setStageRoute(otherStage, sync.routeWithGpx(team, rider, "Autre route"));
+    dataService.createTripParticipation(otherTrip, rider);
+    GpsServiceConnection otherConnection = sync.connect(rider, GpsServiceType.HAMMERHEAD, true);
+
+    planner.plan(now);
+
+    List<GpsRouteSync> rows = sync.rows(otherConnection.getId());
+    assertEquals(1, rows.size());
+    assertEquals(other.getId(), rows.getFirst().getDomainId());
+    assertEquals(otherStage.getId(), rows.getFirst().getRideId());
+    assertEquals(domain.getId(), stageRow(stage1).getDomainId());
   }
 }

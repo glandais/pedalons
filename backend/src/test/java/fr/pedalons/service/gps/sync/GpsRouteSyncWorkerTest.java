@@ -26,6 +26,8 @@ import fr.pedalons.domain.ride.Ride;
 import fr.pedalons.domain.ride.RideGroup;
 import fr.pedalons.domain.ride.RideParticipation;
 import fr.pedalons.domain.route.Route;
+import fr.pedalons.domain.trip.Trip;
+import fr.pedalons.domain.trip.TripStage;
 import fr.pedalons.dto.common.asset.MediaDto;
 import fr.pedalons.dto.error.ErrorCode;
 import fr.pedalons.dto.routes.request.RouteRequest;
@@ -461,6 +463,41 @@ class GpsRouteSyncWorkerTest extends AbstractResourceTest {
     assertEquals(sentHash.get(), row.getSyncedHash());
     assertNotEquals(row.getDesiredHash(), row.getSyncedHash());
     assertEquals("ext-1", row.getExternalRouteId());
+  }
+
+  @Test
+  void tripStage_isCreatedThenUpdatedAtTheService() {
+    // Only the stage: the ride's registration goes, so every call below is the stage's.
+    dataService.deleteParticipation(registration);
+    Trip trip = dataService.createTrip(team1, user1, "Voyage", now.plus(1, ChronoUnit.DAYS));
+    TripStage stage =
+        dataService.createTripStage(user1, trip, "Étape 1", 0, now.plus(1, ChronoUnit.DAYS));
+    sync.setStageRoute(stage, sync.routeWithGpx(team1, user1, "Col"));
+    dataService.createTripParticipation(trip, user3);
+
+    planAndProcess();
+
+    GpsRouteSync created = sync.row(connection.getId(), stage.getId()).orElseThrow();
+    assertNull(created.getRideGroupId());
+    assertEquals("ext-1", created.getExternalRouteId());
+    assertEquals(created.getDesiredHash(), created.getSyncedHash());
+    verify(hammerhead)
+        .createRoute(
+            any(),
+            eq(GPX),
+            argThat((RouteMeta meta) -> meta.name().endsWith(" - Voyage - Étape 1")));
+
+    Route other = sync.routeWithGpx(team1, user1, "Variante");
+    sync.setStageRoute(stage, other);
+    planAndProcess();
+
+    verify(hammerhead, times(1)).createRoute(any(), any(), any());
+    verify(hammerhead).updateRoute(any(), eq("ext-1"), eq(GPX), any());
+    GpsRouteSync updated = sync.row(connection.getId(), stage.getId()).orElseThrow();
+    assertEquals(created.getId(), updated.getId());
+    assertEquals(other.getId(), updated.getDesiredRouteId());
+    assertEquals(updated.getDesiredHash(), updated.getSyncedHash());
+    assertNull(updated.getRideGroupId());
   }
 
   @Test
