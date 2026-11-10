@@ -52,8 +52,23 @@ async function tripTeam(label: string) {
   return { teamAdmin, team }
 }
 
-/** The stage cards of the trip page, in page order (each is a link to its stage). */
-const stageCards = (main: Locator) => main.getByRole('link', { name: /^\d+ / })
+/**
+ * The stage cards of the trip page, in page order: the shared ChildCard (docs/LEDGER_*.md WEB-155),
+ * the stage's number, then its name as the link to its page, stretched over the card.
+ */
+const stageCards = (main: Locator) =>
+  main
+    .locator('a[href*="/etapes/"]')
+    .locator('xpath=ancestor::div[contains(concat(" ", @class, " "), " mantine-Paper-root ")][1]')
+
+/** The `index`-th stage's card (1-based) names that stage, after its number. */
+async function expectStageCard(card: Locator, index: number, name: string) {
+  await expect(card.getByText(String(index), { exact: true })).toBeVisible()
+  await expect(card.getByRole('link', { name, exact: true })).toBeVisible()
+}
+
+/** A stage with a route offers its files on its card — the card no longer links to the route. */
+const routeFiles = (card: Locator) => card.getByRole('link', { name: 'GPX', exact: true })
 
 /** A team of its own, with a member the platform admin added. */
 async function tripTeamWithMember(label: string) {
@@ -153,12 +168,12 @@ test('a team admin creates a trip and its two stages with the form; the calendar
   await expect(main.getByText('2 étapes', { exact: true })).toBeVisible()
   const cards = stageCards(main)
   await expect(cards).toHaveCount(2)
-  await expect(cards.nth(0)).toHaveAccessibleName(startsWith(`1 ${first.name}`))
+  await expectStageCard(cards.nth(0), 1, first.name)
   await expect(cards.nth(0)).toContainText(frenchDeparture(first.when))
-  await expect(cards.nth(0).getByRole('button', { name: 'Voir le parcours' })).toBeVisible()
-  await expect(cards.nth(1)).toHaveAccessibleName(startsWith(`2 ${second.name}`))
+  await expect(routeFiles(cards.nth(0))).toBeVisible()
+  await expectStageCard(cards.nth(1), 2, second.name)
   await expect(cards.nth(1)).toContainText(frenchDeparture(second.when))
-  await expect(cards.nth(1).getByRole('button', { name: 'Voir le parcours' })).toHaveCount(0)
+  await expect(routeFiles(cards.nth(1))).toHaveCount(0)
 
   const canvas = page.locator('canvas.maplibregl-canvas')
   await expect(canvas, 'one map on the trip page').toHaveCount(1)
@@ -311,7 +326,7 @@ test('a team admin edits a stage, deletes the other one, then deletes the trip',
   await expect(main.getByText('1 étape', { exact: true })).toBeVisible()
   const cards = stageCards(main)
   await expect(cards).toHaveCount(1)
-  await expect(cards.first()).toHaveAccessibleName(startsWith(`1 ${renamed}`))
+  await expectStageCard(cards.first(), 1, renamed)
   await expect(cards.first()).toContainText(frenchDeparture(rescheduled))
   await expect(main.getByText(dropped)).toHaveCount(0)
 
@@ -644,9 +659,7 @@ test.describe('regressions', () => {
     const main = await openTrip(page, team.slug, trip.slug, trip.name)
     // Preconditions: a draft whose stage has its route.
     await expect(main.getByText('Brouillon', { exact: true })).toBeVisible()
-    await expect(
-      stageCards(main).first().getByRole('button', { name: 'Voir le parcours' })
-    ).toBeVisible()
+    await expect(routeFiles(stageCards(main).first())).toBeVisible()
 
     const menu = await openActionsMenu(page)
     await menu.getByRole('menuitem', { name: 'Publier' }).click()
@@ -836,9 +849,7 @@ test.describe('restoring', () => {
       const memberMain = await openTrip(reader.page, team.slug, trip.slug, trip.name)
       await expect(memberMain.getByRole('heading', { level: 2, name: 'Programme' })).toBeVisible()
       await expect(memberMain.locator('strong', { hasText: 'à 8 h' })).toBeVisible()
-      await expect(
-        stageCards(memberMain).first().getByRole('button', { name: 'Voir le parcours' })
-      ).toBeVisible()
+      await expect(routeFiles(stageCards(memberMain).first())).toBeVisible()
     } finally {
       await reader.context.close()
     }

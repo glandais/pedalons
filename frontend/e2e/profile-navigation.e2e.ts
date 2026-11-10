@@ -85,11 +85,12 @@ test('the overview sums up each subject in its state line', async ({ page, conte
       shortcut(overview, 'Mon compte', 'Photo, nom affiché, adresse e-mail')
     ).toBeVisible()
   } else {
-    // The sidebar, the overview current; the teams in a card of their own, with the role.
+    // The sidebar, the overview current; no teams card — the home page and the Équipes tab
+    // already list them (docs/LEDGER_*.md WEB-149).
     await expect(
       sidebar(page).getByRole('link', { name: "Vue d'ensemble", exact: true })
     ).toHaveAttribute('aria-current', 'page')
-    await expect(shortcut(overview, team.name, 'Administrateur')).toBeVisible()
+    await expect(shortcut(overview, team.name, 'Administrateur')).toHaveCount(0)
   }
 
   // « Se déconnecter », once in the profile whatever the layout.

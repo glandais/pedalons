@@ -339,12 +339,9 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
 `frontend/e2e/README.md`.
 
 
-- [ ] `WEB-158` **Contrôles de carte : recette navigateur et e2e de `WEB-157` (S)** — livré sans
-      qu'un navigateur ni la pile e2e aient tourné, plan [`archive/2026-11-10-controles-carte.md`](plans/archive/2026-11-10-controles-carte.md). Sur `tribly-e2e` :
-      `gpx-planner` en entier, projets `desktop` et `mobile` (barre d'outils, bouton résumé, cibles de
-      44 px, 360 px, le `role="status"` et le message de quota désormais *dans* un bouton),
-      `route-maps`, `flow-routes` (clic au centre de `/parcours/carte`), `routes-render`. À l'œil,
-      clair et sombre : l'ordre des deux colonnes ; la liste de la recherche par-dessus le zoom ;
+- [ ] `WEB-161` **Contrôles de carte : recette à l'œil de `WEB-157` (S)** — scindé de `WEB-158`
+      (les e2e sont passés le 10 novembre 2026), plan [`archive/2026-11-10-controles-carte.md`](plans/archive/2026-11-10-controles-carte.md).
+      À l'œil, clair et sombre : l'ordre des deux colonnes ; la liste de la recherche par-dessus le zoom ;
       infobulles et panneaux du bon côté ; l'échelle et le crédit au-dessus du profil d'un groupe (aux
       bornes 110 et 200 px) et d'une sortie à plusieurs parcours, puis au ras du bas en plein écran ;
       la barre du planificateur sur une carte étroite, une erreur longue tronquée, la mini-carte
@@ -352,13 +349,10 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
       les consignes sous elle, le résumé sur deux lignes en erreur, l'état pressé du bouton résumé ;
       les cartes compactes avec des boutons de 36 px ; le bleu d'état actif de maplibre-theme en clair.
 
-- [ ] `WEB-156` **Recette de `WEB-155` : e2e et navigateur (S)** — scindé de `WEB-155`, livré sans
-      que la pile e2e ait tourné. Sur `tribly-e2e` : `route-maps` (l'étape : son nom en h1, le parcours
-      en h3, lecture `single`), `routes-render -g 'trip /'` (le prefetch des participants du voyage) et
-      `-g 'stage /'`, `flow-trips` (inscription, refus d'un voyage terminé, commentaires d'étape),
-      `rides` (pages sortie et groupe). À l'œil : voyage de plus de quatre étapes (`SiblingNav` en
-      liste), largeur téléphone (carte au-dessus, flèches sans débordement), mode sombre des cartes
-      enfant mises en évidence, étape sans parcours.
+- [ ] `WEB-160` **Recette à l'œil de `WEB-155` (S)** — scindé de `WEB-156` (les e2e sont passés le
+      10 novembre 2026). Voyage de plus de quatre étapes (`SiblingNav` en liste), largeur téléphone
+      (carte au-dessus, flèches sans débordement), mode sombre des cartes enfant mises en évidence,
+      étape sans parcours.
 
 - [ ] `WEB-119` **La météo sur la carte : recette navigateur des paliers 1 à 3 (S)** — `WEB-115` à
       `WEB-118`, plan [`2026-10-24-weather-on-map.md`](plans/archive/2026-10-24-weather-on-map.md). Sur la pile e2e :

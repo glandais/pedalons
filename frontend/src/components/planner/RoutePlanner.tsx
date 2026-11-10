@@ -69,6 +69,13 @@ const DEFAULT_ZOOM = 12
  */
 const PLANNER_TOOLBAR_OFFSET_PX = 10
 /**
+ * A 44 px control and its 10 px gap to the map's edge: the band the toolbar covers along the
+ * bottom, the finger's control column along the right and its place search along the top.
+ */
+const MAP_CONTROL_INSET_PX = 44 + PLANNER_TOOLBAR_OFFSET_PX
+/** Margin around a framed trace. */
+const FIT_PADDING_PX = 40
+/**
  * Top of the first-use instructions on a finger: under the search box, 10 px from the map's top
  * and 44 px high on a touch screen (index.css), plus a 10 px gap.
  */
@@ -281,13 +288,34 @@ export function RoutePlanner({
   useEffect(() => {
     waypointEnvRef.current = { route, cum }
   })
+  // Layout (mini-map, help text, sizes) follows the primary pointer. It says nothing about which
+  // device fires a given gesture: a hybrid laptop keeps both mouse and finger, so each gesture
+  // decides from its own event (see isTouchGesture).
+  const isCoarsePointer = useMediaMatch('(pointer: coarse)')
+
+  // A finger in the fullscreen editor: its tools are in the dialog's bottom bar, not on the map.
+  const touchFullscreen = layout === 'fullscreen' && isCoarsePointer
+  // Anywhere else (a mouse, inline or fullscreen): in the toolbar at the bottom of the map.
+  const withToolbar = !touchFullscreen
+  // A framed trace stays clear of what stands over the map: the toolbar along its bottom (mouse),
+  // the control column at the bottom-right and the place search across the top (finger,
+  // `mapZones.ts`). Under them, a point could be neither seen nor touched (docs/LEDGER_*.md WEB-158).
+  const fitPadding = useMemo(
+    () => ({
+      top: FIT_PADDING_PX + (isCoarsePointer ? MAP_CONTROL_INSET_PX : 0),
+      right: FIT_PADDING_PX + (isCoarsePointer ? MAP_CONTROL_INSET_PX : 0),
+      left: FIT_PADDING_PX,
+      bottom: FIT_PADDING_PX + (withToolbar ? MAP_CONTROL_INSET_PX : 0),
+    }),
+    [withToolbar, isCoarsePointer]
+  )
   const initialViewState = useMemo(() => {
     if (!initialTrack || initialTrack.length === 0) {
       const built = routeRef.current.points
       if (built.length > 1) {
         return {
           bounds: calculateBounds(built.map((p) => [p.lng, p.lat])),
-          fitBoundsOptions: { padding: 40, maxZoom: 15 },
+          fitBoundsOptions: { padding: fitPadding, maxZoom: 15 },
         }
       }
       if (teamLocation) {
@@ -301,9 +329,9 @@ export function RoutePlanner({
     // the ratio of the screen (a phone in portrait included) is respected.
     return {
       bounds: calculateBounds(initialTrack),
-      fitBoundsOptions: { padding: 40, maxZoom: 15 },
+      fitBoundsOptions: { padding: fitPadding, maxZoom: 15 },
     }
-  }, [initialTrack, teamLocation, defaultView])
+  }, [initialTrack, teamLocation, defaultView, fitPadding])
 
   // An import frames the whole route, whatever the map was showing
   useEffect(() => {
@@ -311,11 +339,11 @@ export function RoutePlanner({
     const points = routeRef.current.points
     if (points.length < 2) return
     mapRef.current?.fitBounds(calculateBounds(points.map((p) => [p.lng, p.lat])), {
-      padding: 40,
+      padding: fitPadding,
       maxZoom: 15,
       duration: 0,
     })
-  }, [fitRequest])
+  }, [fitRequest, fitPadding])
 
   // The map lives in a container that changes size when this view moves between the form and the
   // fullscreen dialog. MapLibre's own observer notices; this also covers the frame the container
@@ -440,11 +468,6 @@ export function RoutePlanner({
   const markerDragCancelledRef = useRef<{ origin: Point } | null>(null)
   // A mouse ghost drag abandoned by Escape: the click that may follow the release is not a point
   const gestureCancelledAt = useRef(0)
-
-  // Layout (mini-map, help text, sizes) follows the primary pointer. It says nothing about which
-  // device fires a given gesture: a hybrid laptop keeps both mouse and finger, so each gesture
-  // decides from its own event (see isTouchGesture).
-  const isCoarsePointer = useMediaMatch('(pointer: coarse)')
 
   // Long-press context menu state
   const [contextMenu, setContextMenu] = useState<PlannerMenu | null>(null)
@@ -1499,11 +1522,6 @@ export function RoutePlanner({
       focused.focus({ preventScroll: true })
     }
   }, [orderKey])
-
-  // A finger in the fullscreen editor: its tools are in the dialog's bottom bar, not on the map.
-  const touchFullscreen = layout === 'fullscreen' && isCoarsePointer
-  // Anywhere else (a mouse, inline or fullscreen): in the toolbar at the bottom of the map.
-  const withToolbar = !touchFullscreen
 
   const instructions = (
     <Box

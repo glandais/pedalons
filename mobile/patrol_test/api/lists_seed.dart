@@ -70,11 +70,18 @@ extension ListsSeed on BackendClient {
   }
 
   /// The slugs of the home feed's page [page] (every team of [who]).
+  /// The home feed as the app opens it: on « Membre » for whoever has a team (`MOB-123`), so
+  /// another team's public publications stay out.
   Future<List<String>> homeFeedSlugs(TestUser who, {int page = 0}) async {
     final list = await get(
       who,
       '/api/publications',
-      query: {'page': page, 'size': pageSize, 'view': 'COMPACT'},
+      query: {
+        'page': page,
+        'size': pageSize,
+        'view': 'COMPACT',
+        'minRole': 'MEMBER',
+      },
     );
     return _slugs(list['publications']);
   }

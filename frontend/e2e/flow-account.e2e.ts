@@ -1467,7 +1467,8 @@ test.describe('time zone', () => {
     const paris = wallClockIn(ride.dateTime, 'Europe/Paris')
     const inParis = `Départ ${clockText(paris)}`
     const tokyo = wallClockIn(ride.dateTime, ZONE)
-    const mention = ` · heure de Paris (${clockText(tokyo)} chez vous)`
+    // Alone on its line under « Départ » — the day box says the day: no leading « · ».
+    const mention = `heure de Paris (${clockText(tokyo)} chez vous)`
     const path = ridePath(team.slug, ride.slug)
     await signIn(context, user)
 
@@ -1509,8 +1510,8 @@ test.describe('time zone', () => {
     expect(markup).toContain(ride.name)
     // A chosen zone is no guess: the server states the mention too.
     expect(markup).toContain(inParis)
-    expect(markup).toContain(frenchLongDay(paris))
-    expect(markup).toContain(`heure de Paris (${clockText(tokyo)} chez vous)`)
+    expect(markup).not.toContain(frenchLongDay(paris))
+    expect(markup).toContain(mention)
   })
 
   // Regression (02bd4525): the time zone Select carries its `label`.

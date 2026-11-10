@@ -95,7 +95,8 @@ test.describe('a Paris team read from Tokyo', () => {
     expect(document.status).toBe(200)
     const markup = ssrOutlet(document.html)
     expect(markup).toContain(`Départ ${clockText(departure)}`)
-    expect(markup).toContain(frenchLongDay(departure))
+    // The day box says the day: the block no longer spells it out (docs/BRANDING.md §7.8).
+    expect(markup).not.toContain(frenchLongDay(departure))
     expect(markup).not.toContain('chez vous')
 
     // The browser says it, once hydrated, without a mismatch on the way.
@@ -109,16 +110,19 @@ test.describe('a Paris team read from Tokyo', () => {
     expect(watch.hydrationErrors).toEqual([])
     expect(watch.pageErrors).toEqual([])
 
-    // A group shows a time only when it leaves at its own, in the ride's zone, with its mention.
+    // One group leaving at its own time, every group says its time (docs/LEDGER_*.md WEB-151): in
+    // the ride's zone, each with its mention.
     const own = groupCard(page, ownTime)
     await expect(own.getByText('Départ 21:15', { exact: true })).toBeVisible()
     await expect(
       own.getByRole('img', { name: mention(groupStart, PARIS, 'Paris', TOKYO), exact: true })
     ).toBeVisible()
     const withTheRide = groupCard(page, withRide)
-    await expect(withTheRide).toBeVisible()
-    await expect(withTheRide.getByTestId('group-own-time')).toHaveCount(0)
-    await expect(withTheRide.getByRole('img', { name: /chez vous/ })).toHaveCount(0)
+    await expect(withTheRide.getByTestId('group-own-time')).toHaveCount(1)
+    await expect(
+      withTheRide.getByText(`Départ ${clockText(departure)}`, { exact: true })
+    ).toBeVisible()
+    await expect(withTheRide.getByRole('img', { name: rideMention, exact: true })).toBeVisible()
   })
 
   test('the editor types Paris wall times and gets them back as typed', async ({ page }) => {

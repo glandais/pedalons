@@ -25,6 +25,8 @@ import {
   participantsPageParams,
 } from '@/hooks/filters/groupParticipantFilters'
 import type { TripDto } from '@/api/dto'
+import { prefetchGetAvailableServicesQuery } from '@/api/endpoints/gps-services/gps-services'
+import { useAuthStore } from '@/store/authStore'
 
 /**
  * The one description of what the trip detail screen reads, consumed two ways: `TripDetailPage`
@@ -136,6 +138,11 @@ export async function prefetchTripDetail(
       getListTripCommentsQueryKey
     ),
     prefetchRoutesBulkChunked(queryClient, teamSlug, tripRouteSlugs(trip)),
+    // The stage cards' route actions (« Envoyer vers… ») read the services for a signed-in reader,
+    // as a ride's group cards do (docs/LEDGER_*.md WEB-155).
+    useAuthStore.getState().isAuthenticated
+      ? prefetchGetAvailableServicesQuery(queryClient)
+      : Promise.resolve(queryClient),
     (trip?.participantCount ?? 0) > 0 && readsMemberContent(queryClient, teamSlug)
       ? prefetchGetTripParticipantsQuery(
           queryClient,
