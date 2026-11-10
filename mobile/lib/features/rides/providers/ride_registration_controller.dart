@@ -143,7 +143,7 @@ final rideRegistrationProvider = StateNotifierProvider.autoDispose
 ///    l'API répondrait 400, et le bandeau d'exclusivité dit la même chose sans
 ///    aller-retour ni clignotement du bouton ;
 /// 2. mutation optimiste locale ;
-/// 3. `joinGroup` / `leaveGroup` — **un seul appel**, jamais une boucle sur
+/// 3. `joinGroup` / `leaveGroup` / `switchGroup` — **un seul appel**, jamais une boucle sur
 ///    tous les groupes ;
 /// 4. succès → invalidation du détail partagé, puis
 ///    [notifyParticipationChanged] pour l'accueil, le profil et le calendrier ;
@@ -270,15 +270,52 @@ class RideRegistrationController extends StateNotifier<RideRegistrationState> {
     }
   }
 
-  /// L'action inline du bandeau d'exclusivité : quitter le groupe qui bloque,
-  /// puis rejoindre celui qu'on visait. Deux appels enchaînés, une intention.
-  Future<void> switchGroup({
-    required String leaveGroupId,
-    required String joinGroupId,
-  }) async {
-    await leave(leaveGroupId);
-    if (state.failure != null) return;
-    await join(joinGroupId);
+  /// Passer dans [groupId] depuis le groupe où l'on est inscrit — l'action
+  /// inline du bandeau d'exclusivité, et demain « Changer pour {groupe} ».
+  ///
+  /// **Un seul appel**, l'endpoint atomique `…/groups/{groupId}/switch`
+  /// (ledger `API-164`) : l'ancien « quitter puis rejoindre » laissait, sur
+  /// un groupe devenu complet entre les deux, la personne inscrite nulle part.
+  /// Même séquence que [join] : bascule optimiste (l'ancien groupe perd une
+  /// place, le nouveau en gagne une), puis rétablissement complet sur échec.
+  /// Sans inscription dans la sortie, c'est un [join] ; dans ce groupe déjà,
+  /// rien à faire.
+  Future<void> switchGroup(String groupId) async {
+    final RideDto? ride = _ride;
+    if (ride == null || state.pendingGroupId != null) return;
+
+    final RideGroupDto? target = _groupById(ride, groupId);
+    if (target == null) return;
+    final RideGroupDto? current = ride.joinedGroup;
+    if (current == null) return join(groupId);
+    if (current.id == groupId) return;
+
+    state = state.copyWith(
+      ride: AsyncValue<RideDto>.data(_withRegistration(ride, groupId)),
+      pendingGroupId: groupId,
+      clearFailure: true,
+    );
+
+    final KeepAliveLink alive = _ref.keepAlive();
+    try {
+      await _repository.switchGroup(_key.teamSlug, _key.rideSlug, groupId);
+      state = state.copyWith(clearPending: true);
+      _ref.invalidate(rideDetailProvider(_key));
+      notifyParticipationChanged(
+        _ref,
+        publicationId: ride.id,
+        registered: true,
+      );
+    } catch (error, stackTrace) {
+      _fail(
+        previous: ride,
+        group: target,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    } finally {
+      alive.close();
+    }
   }
 
   void _fail({

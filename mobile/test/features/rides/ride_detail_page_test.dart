@@ -1133,7 +1133,7 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(find.text('Allure moyenne'), findsOneWidget);
+      expect(find.text('Vitesse moyenne'), findsOneWidget);
       expect(find.text('Dénivelé positif'), findsOneWidget);
       expect(find.textContaining('Arrivée estimée'), findsOneWidget);
     });

@@ -35,10 +35,7 @@ Widget registrationFailureBanner(
       variant: PdlButtonVariant.outline,
       size: PdlButtonSize.sm,
       onPressed: () {
-        controller.switchGroup(
-          leaveGroupId: failure.blockingGroupId!,
-          joinGroupId: failure.groupId,
-        );
+        controller.switchGroup(failure.groupId);
       },
     );
   } else if (failure.reason == RegistrationFailureReason.notMember &&

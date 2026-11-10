@@ -1793,7 +1793,7 @@
   "rides.group.stats.departure": "Departure",
   "rides.group.stats.distance": "Distance",
   "rides.group.stats.elevation": "Elevation gain",
-  "rides.group.stats.pace": "Average pace",
+  "rides.group.stats.pace": "Average speed",
   "rides.group.title": "Group {{name}}",
   "rides.group.view": "View group",
   "rides.group.weatherTitle": "Route weather",

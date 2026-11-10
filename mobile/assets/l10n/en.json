@@ -124,7 +124,9 @@
     "close": "Close",
     "clearSearch": "Clear search",
     "delete": "Delete",
-    "open": "Open"
+    "open": "Open",
+    "details": "Details",
+    "directionsTo": "Directions to {place}"
   },
   "placeholders": {
     "teamPage": {
@@ -175,6 +177,11 @@
         "one": "in {count} day",
         "other": "in {count} days"
       }
+    },
+    "duration": {
+      "minutes": "{minutes} min",
+      "hours": "{hours} h",
+      "hoursMinutes": "{hours} h {minutes} min"
     }
   },
   "roles": {
@@ -631,7 +638,10 @@
     "selectedGroupProfile": "Selected group profile",
     "departureBlock": {
       "departs": "Leaves at {time}",
-      "yourGroup": "Your group: {group} · {time}"
+      "yourGroup": "Your group: {group} · {time}",
+      "yourGroupTitle": "Your group: {group}",
+      "groupFirstDeparture": "Group {group} · first start {time}",
+      "noGroup": "No group on this ride, so no registration"
     },
     "viewParticipants": "View list",
     "startPlace": "Start",
@@ -746,7 +756,9 @@
       "mapFromStart": "{distance} from the start",
       "mapGusts": "Gusts {speed}",
       "mapRainTitle": "Rain likely",
-      "mapShowPoint": "Show on the map"
+      "mapShowPoint": "Show on the map",
+      "alongRouteTitle": "Weather along the route",
+      "forecastOf": "Forecast from {time}"
     },
     "groupPage": {
       "title": "Group {name}",
@@ -774,10 +786,11 @@
       "viewMyGroup": "View my group",
       "stats": {
         "departure": "Start",
-        "pace": "Average pace",
+        "pace": "Average speed",
         "arrival": "Estimated arrival {time}",
         "distance": "Distance",
-        "elevation": "Elevation gain"
+        "elevation": "Elevation gain",
+        "estimatedDuration": "Estimated duration"
       },
       "leader": "Leader",
       "weatherSummary": "Weather at the group's start",
@@ -786,7 +799,11 @@
       "routeTitle": "Group route",
       "notFoundTitle": "This group no longer exists",
       "notFoundMessage": "It may have been removed from the ride.",
-      "backToRide": "Back to the ride"
+      "backToRide": "Back to the ride",
+      "viewParticipantsCount": {
+        "one": "View the participant",
+        "other": "View the {} participants"
+      }
     },
     "editor": {
       "createTitle": "New ride",
@@ -966,7 +983,9 @@
       "deleteTitle": "Delete the ride?",
       "deleteMessage": "It will disappear from lists. A team administrator can restore it.",
       "deletedBanner": "This ride is deleted. Only team administrators can see it."
-    }
+    },
+    "groupSwitchTo": "Switch to {group}",
+    "groupLeaveLong": "Leave the group"
   },
   "posts": {
     "title": "Posts",
@@ -1093,7 +1112,8 @@
         "other": "{} days"
       },
       "totalDistance": "Total distance",
-      "totalElevation": "Total elevation gain"
+      "totalElevation": "Total elevation gain",
+      "stages": "Stages"
     },
     "cancelledTitle": "Trip cancelled.",
     "cancelledMessage": "This trip will not take place. No registration is possible.",
@@ -1267,6 +1287,10 @@
         "REAL_START": "Actual start",
         "SPLIT": "Group split",
         "INFO": "Information"
+      },
+      "count": {
+        "one": "{} point",
+        "other": "{} points"
       }
     },
     "view": {
@@ -1366,6 +1390,21 @@
         "unknown": "Unknown",
         "offNetwork": "Off the network"
       }
+    },
+    "climbsTitle": "Climbs",
+    "climbCount": {
+      "one": "{} climb",
+      "other": "{} climbs"
+    },
+    "gpsSheet": {
+      "button": "GPS",
+      "buttonSemantics": "Send the route to a GPS device or export it",
+      "title": "GPS",
+      "toDevice": "To a device",
+      "gpxFile": "GPX file",
+      "fitFile": "FIT file, for bike computers",
+      "connectDevice": "Connect a bike computer",
+      "connectDeviceHint": "Garmin, Karoo… to send the route without a file"
     }
   },
   "tags": {

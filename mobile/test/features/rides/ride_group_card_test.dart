@@ -158,6 +158,70 @@ void main() {
       );
     });
 
+    group('inscrit dans un autre groupe', () {
+      // Le groupe visé part le 11 octobre 2026 à 06:00Z.
+      final DateTime before = DateTime.utc(2026, 10, 10, 12);
+      final DateTime after = DateTime.utc(2026, 10, 11, 7);
+      RideDto inG1() => fixtureRide(
+        registered: true,
+        registeredGroupId: 'g1',
+        groups: <RideGroupDto>[
+          fixtureGroup(registered: true),
+          fixtureGroup(id: 'g2', name: 'G2', sortOrder: 1),
+        ],
+      );
+
+      test('un groupe ouvert propose « Changer pour »', () {
+        expect(
+          rideGroupAction(
+            ride: inG1(),
+            group: fixtureGroup(id: 'g2', name: 'G2'),
+            isMember: true,
+            now: before,
+          ),
+          RideGroupAction.switchTo,
+        );
+      });
+
+      test('un groupe complet reste « Complet »', () {
+        expect(
+          rideGroupAction(
+            ride: inG1(),
+            group: fixtureGroup(id: 'g2', full: true),
+            isMember: true,
+            now: before,
+          ),
+          RideGroupAction.full,
+        );
+      });
+
+      test('un groupe parti ne propose pas de changer', () {
+        // Jugé sur le départ du groupe (API-163) ; la carte garde alors
+        // l'action d'avant ce lot.
+        expect(
+          rideGroupAction(
+            ride: inG1(),
+            group: fixtureGroup(id: 'g2'),
+            isMember: true,
+            now: after,
+          ),
+          RideGroupAction.join,
+        );
+      });
+
+      test('mon propre groupe propose toujours « Quitter »', () {
+        expect(
+          rideGroupAction(
+            ride: inG1(),
+            group: fixtureGroup(registered: true),
+            isMember: true,
+            now: before,
+          ),
+          RideGroupAction.leave,
+        );
+      });
+    });
+
     test('la détection ne lit jamais participants[]', () {
       // Le cas exact du défaut : l'utilisateur est inscrit, mais la liste
       // renvoyée est vide (droit de lecture absent). `registered` suffit.

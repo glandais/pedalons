@@ -477,9 +477,14 @@ void main() {
         withLocale('fr', fr, () => AppFormatters.formatLongDateTime(date)),
         'jeudi 15 janvier 2026 à 08:30',
       );
+      // En anglais, l'heure passe en 12 h : la langue décide.
       expect(
-        withLocale('en', en, () => AppFormatters.formatLongDateTime(date)),
-        'Thursday 15 january 2026 at 08:30',
+        withLocale(
+          'en',
+          en,
+          () => AppFormatters.formatLongDateTime(date),
+        ).replaceAll('\u202F', ' '),
+        'Thursday 15 january 2026 at 8:30 AM',
       );
     });
 
@@ -489,6 +494,124 @@ void main() {
         withLocale('fr', fr, () => AppFormatters.formatTime(utc)),
         withLocale('fr', fr, () => AppFormatters.formatTime(utc.toLocal())),
       );
+    });
+  });
+
+  group('formatDurationMinutes', () {
+    String fmt(String locale, int minutes) => withLocale(
+      locale,
+      locale == 'fr' ? fr : en,
+      () => AppFormatters.formatDurationMinutes(minutes),
+    );
+
+    test('« 3 h 18 », « 3 h », « 45 min » en français', () {
+      expect(fmt('fr', 198), '3\u00A0h\u00A018');
+      expect(fmt('fr', 180), '3\u00A0h');
+      expect(fmt('fr', 45), '45\u00A0min');
+      expect(fmt('fr', 0), '0\u00A0min');
+    });
+
+    test('les minutes ont deux chiffres derrière les heures', () {
+      expect(fmt('fr', 65), '1\u00A0h\u00A005');
+    });
+
+    test('l’anglais nomme les minutes, comme le web', () {
+      expect(fmt('en', 198), '3\u00A0h\u00A018\u00A0min');
+      expect(fmt('en', 180), '3\u00A0h');
+      expect(fmt('en', 45), '45\u00A0min');
+    });
+
+    test('aucune espace sécable : la durée ne se coupe jamais', () {
+      expect(fmt('fr', 198).contains(' '), isFalse);
+      expect(fmt('en', 198).contains(' '), isFalse);
+    });
+  });
+
+  group('formatLongDateWithoutWeekday', () {
+    test('« 3 novembre 2026 », sans jour de la semaine', () {
+      final DateTime date = DateTime(2026, 11, 3, 10);
+      expect(
+        withLocale(
+          'fr',
+          fr,
+          () => AppFormatters.formatLongDateWithoutWeekday(date),
+        ),
+        '3 novembre 2026',
+      );
+      expect(
+        withLocale(
+          'en',
+          en,
+          () => AppFormatters.formatLongDateWithoutWeekday(date),
+        ),
+        'November 3, 2026',
+      );
+    });
+  });
+
+  group('formatTimestamp', () {
+    // Le jour même : un départ dirait « Aujourd'hui », un horodatage non.
+    final DateTime now = DateTime(2026, 11, 10, 9);
+    final DateTime issued = DateTime(2026, 11, 10, 8, 30);
+
+    test('« mar. 10 nov. · 08:30 », jamais relatif', () {
+      expect(
+        withLocale(
+          'fr',
+          fr,
+          () => AppFormatters.formatTimestamp(issued, now: now),
+        ),
+        'mar. 10 nov. · 08:30',
+      );
+    });
+
+    test('l’année hors de l’année en cours', () {
+      expect(
+        withLocale(
+          'fr',
+          fr,
+          () =>
+              AppFormatters.formatTimestamp(issued, now: DateTime(2027, 1, 2)),
+        ),
+        'mar. 10 nov. 2026 · 08:30',
+      );
+    });
+
+    test('en anglais, l’heure passe en 12 h', () {
+      expect(
+        withLocale(
+          'en',
+          en,
+          () => AppFormatters.formatTimestamp(issued, now: now),
+        ).replaceAll('\u202F', ' '),
+        'Tue, Nov 10 · 8:30 AM',
+      );
+    });
+  });
+
+  group('12 h / 24 h selon la langue', () {
+    final DateTime morning = DateTime(2026, 11, 10, 8, 30);
+    final DateTime evening = DateTime(2026, 11, 10, 20, 5);
+
+    test('français : 24 h, quel que soit le téléphone', () {
+      expect(
+        withLocale('fr', fr, () => AppFormatters.formatTime(morning)),
+        '08:30',
+      );
+      expect(
+        withLocale('fr', fr, () => AppFormatters.formatTime(evening)),
+        '20:05',
+      );
+    });
+
+    test('anglais : 12 h, quel que soit le téléphone', () {
+      String at(DateTime date) => withLocale(
+        'en',
+        en,
+        () => AppFormatters.formatTime(date),
+      ).replaceAll('\u202F', ' ');
+      expect(at(morning), '8:30 AM');
+      expect(at(evening), '8:05 PM');
     });
   });
 

@@ -1,7 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/features/teams/domain/publication_timing.dart';
 
 import '../../support/localization.dart';
+import '../rides/ride_fixtures.dart';
 
 /// Ledger `MOB-60` — « En cours » et la fin affichée, d'après la fin stockée
 /// (`endDateTime`, ledger `API-85`). Même règle que `isUnderWay` au web.
@@ -37,6 +39,87 @@ void main() {
 
     test('une date illisible : pas en cours', () {
       expect(at('pas une date', '2026-10-11T14:10:00Z'), isFalse);
+    });
+  });
+
+  group('publicationPhase', () {
+    PublicationPhase at(String start, String? end, {String? status}) =>
+        publicationPhase(start: start, end: end, status: status, now: now);
+
+    test('avant le départ, entre les deux, après l’arrivée', () {
+      expect(
+        at('2026-10-11T11:00:00Z', '2026-10-11T14:00:00Z'),
+        PublicationPhase.upcoming,
+      );
+      expect(
+        at('2026-10-11T08:30:00Z', '2026-10-11T14:00:00Z'),
+        PublicationPhase.underWay,
+      );
+      expect(
+        at('2026-10-11T06:00:00Z', '2026-10-11T09:00:00Z'),
+        PublicationPhase.finished,
+      );
+    });
+
+    test('au départ pile : en cours ; à l’arrivée pile : terminé', () {
+      expect(
+        at('2026-10-11T10:00:00Z', '2026-10-11T14:00:00Z'),
+        PublicationPhase.underWay,
+      );
+      expect(
+        at('2026-10-11T06:00:00Z', '2026-10-11T10:00:00Z'),
+        PublicationPhase.finished,
+      );
+    });
+
+    test('sans fin : départ + 3 h, la règle du serveur', () {
+      expect(at('2026-10-11T07:30:00Z', null), PublicationPhase.underWay);
+      expect(at('2026-10-11T07:00:00Z', null), PublicationPhase.finished);
+    });
+
+    test('annulée : jamais en cours, terminée dès son départ', () {
+      expect(
+        at('2026-10-11T08:30:00Z', '2026-10-11T14:00:00Z', status: 'CANCELLED'),
+        PublicationPhase.finished,
+      );
+      expect(
+        at('2026-10-11T11:00:00Z', '2026-10-11T14:00:00Z', status: 'CANCELLED'),
+        PublicationPhase.upcoming,
+      );
+    });
+
+    test('un départ illisible ne masque rien', () {
+      expect(at('pas une date', null), PublicationPhase.upcoming);
+      expect(PublicationPhase.upcoming.hasStarted, isFalse);
+      expect(PublicationPhase.underWay.hasStarted, isTrue);
+      expect(PublicationPhase.finished.hasStarted, isTrue);
+    });
+
+    test('un groupe se juge sur son départ et son arrivée estimée', () {
+      final RideDto ride = fixtureRide(dateTime: '2026-10-11T07:00:00Z')
+          .copyWith(endDateTime: '2026-10-11T15:00:00Z');
+      // Parti à 09:00Z, arrivée estimée 09:45Z : terminé à 10:00Z alors
+      // que la sortie, elle, roule encore.
+      final RideGroupDto early = fixtureGroup(startAt: '2026-10-11T09:00:00Z')
+          .copyWith(estimatedArrival: '2026-10-11T09:45:00Z');
+      // Part à 10:30Z : à venir, la sortie étant pourtant partie.
+      final RideGroupDto late = fixtureGroup(
+        id: 'g2',
+        startAt: '2026-10-11T10:30:00Z',
+      );
+      // Sans arrivée estimée : départ + 3 h.
+      final RideGroupDto noSpeed = fixtureGroup(
+        id: 'g3',
+        startAt: '2026-10-11T07:30:00Z',
+      );
+
+      expect(ridePhase(ride, now: now), PublicationPhase.underWay);
+      expect(rideGroupPhase(ride, early, now: now), PublicationPhase.finished);
+      expect(rideGroupPhase(ride, late, now: now), PublicationPhase.upcoming);
+      expect(
+        rideGroupPhase(ride, noSpeed, now: now),
+        PublicationPhase.underWay,
+      );
     });
   });
 

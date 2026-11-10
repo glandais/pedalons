@@ -19,7 +19,6 @@ void main() {
 
   tearDown(() {
     AppFormatters.setDisplayTimezone(null);
-    AppFormatters.setUse24HourFormat(true);
   });
 
   group('en français', () {
@@ -100,11 +99,10 @@ void main() {
       );
     });
 
-    test('l’heure suit le réglage 12 h du téléphone', () {
-      AppFormatters.setUse24HourFormat(false);
-      // Le motif `jm` du français reste sur 24 h ; l'anglais, plus bas, le
-      // montre en AM/PM. Le format ne change pas de forme pour autant.
-      expect(departure(DateTime.utc(2036, 4, 12, 7)), startsWith('Demain · '));
+    test('en français, l’heure reste sur 24 h', () {
+      // La langue décide (décision du 2026-11-10, SYNTHESE §6.7), pas le
+      // réglage du téléphone.
+      expect(departure(DateTime.utc(2036, 4, 12, 17)), 'Demain · 19:00');
     });
   });
 
@@ -116,21 +114,31 @@ void main() {
 
     tearDown(() => loadTestTranslations());
 
-    test('same shape, English words', () {
-      expect(departure(DateTime.utc(2036, 4, 19, 7)), 'Sat, Apr 19 · 09:00');
-      expect(departure(DateTime.utc(2036, 4, 12, 7)), 'Tomorrow · 09:00');
+    // Selon la version des données CLDR, l'espace avant « AM » est fine.
+    String plain(String text) => text.replaceAll('\u202F', ' ');
+
+    test('same shape, English words, 12-hour clock', () {
       expect(
-        departure(DateTime.utc(2036, 4, 12, 7), at: DateTime.utc(2035, 6, 1)),
-        'Sat, Apr 12, 2036 · 09:00',
+        plain(departure(DateTime.utc(2036, 4, 19, 7))),
+        'Sat, Apr 19 · 9:00 AM',
+      );
+      expect(
+        plain(departure(DateTime.utc(2036, 4, 12, 7))),
+        'Tomorrow · 9:00 AM',
+      );
+      expect(
+        plain(
+          departure(DateTime.utc(2036, 4, 12, 7), at: DateTime.utc(2035, 6, 1)),
+        ),
+        'Sat, Apr 12, 2036 · 9:00 AM',
       );
     });
 
-    test('12-hour clock when the phone asks for it', () {
-      AppFormatters.setUse24HourFormat(false);
-      final String text = departure(DateTime.utc(2036, 4, 12, 7));
-
-      expect(text, startsWith('Tomorrow · 9:00'));
-      expect(text, endsWith('AM'));
+    test('the language decides the clock, not the phone', () {
+      expect(
+        plain(departure(DateTime.utc(2036, 4, 12, 17))),
+        'Tomorrow · 7:00 PM',
+      );
     });
   });
 }

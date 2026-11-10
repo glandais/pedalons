@@ -185,7 +185,9 @@ class RideGroupCard extends StatelessWidget {
       variant: PdlButtonVariant.outline,
       enabled: false,
     ),
-    RideGroupAction.join => PdlButton(
+    // « Changer pour » n'est pas encore rendu (plan MOB-132, lot 8) : il
+    // garde le « Rejoindre » d'avant, qui pose le bandeau d'exclusivité.
+    RideGroupAction.join || RideGroupAction.switchTo => PdlButton(
       key: keys.ride.groupJoinButton(group.id),
       label: 'rides.groupJoin'.tr(),
       loadingLabel: 'rides.joining'.tr(),

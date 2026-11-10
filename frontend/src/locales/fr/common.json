@@ -1849,7 +1849,7 @@
   "rides.group.stats.departure": "Départ",
   "rides.group.stats.distance": "Distance",
   "rides.group.stats.elevation": "Dénivelé positif",
-  "rides.group.stats.pace": "Allure moyenne",
+  "rides.group.stats.pace": "Vitesse moyenne",
   "rides.group.title": "Groupe {{name}}",
   "rides.group.view": "Voir le groupe",
   "rides.group.weatherTitle": "Météo du parcours",

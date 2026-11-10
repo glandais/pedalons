@@ -55,6 +55,22 @@ class RideRepository {
     );
   }
 
+  /// Passer dans [groupId] depuis le groupe où l'on est inscrit : **un**
+  /// appel, une transaction côté serveur, sous le même verrou que `join`
+  /// (ledger `API-164`). 201 quand l'inscription a changé, 200 quand on y
+  /// était déjà ; refusé (`NOT_REGISTERED`) sans inscription dans la sortie.
+  Future<RideParticipationDto> switchGroup(
+    String teamSlug,
+    String rideSlug,
+    String groupId,
+  ) {
+    return _ridesClient.switchGroup(
+      teamSlug: teamSlug,
+      rideSlug: rideSlug,
+      groupId: groupId,
+    );
+  }
+
   // --- Organisateur (docs/LEDGER_*.md MOB-80) ---------------------------
   //
   // Les droits sont ceux du serveur (`RideAccessChecker`) : organisateur ou

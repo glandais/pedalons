@@ -27,8 +27,10 @@ class _FakeRideRepository implements RideRepository {
 
   final List<String> joined = <String>[];
   final List<String> left = <String>[];
+  final List<String> switched = <String>[];
   Object? joinError;
   Object? leaveError;
+  Object? switchError;
 
   /// Bloque l'appel jusqu'à ce que le test le libère, pour observer l'état
   /// pendant que la requête est en vol.
@@ -66,6 +68,18 @@ class _FakeRideRepository implements RideRepository {
     left.add(groupId);
     if (gate != null) await gate!.future;
     if (leaveError != null) throw leaveError!;
+  }
+
+  @override
+  Future<RideParticipationDto> switchGroup(
+    String teamSlug,
+    String rideSlug,
+    String groupId,
+  ) async {
+    switched.add(groupId);
+    if (gate != null) await gate!.future;
+    if (switchError != null) throw switchError!;
+    return const RideParticipationDto(id: 'p2', userId: 'u0');
   }
 
   // Les gestes d'organisateur (ledger `MOB-80`) ne sont pas exercés ici.
@@ -218,7 +232,7 @@ void main() {
     expect(repo.joined, isEmpty);
   });
 
-  test('l\'action inline enchaîne quitter puis rejoindre', () async {
+  test('l\'action inline change de groupe en un seul appel', () async {
     final (ProviderContainer container, _FakeRideRepository repo) = await boot(
       twoGroups(registeredIn: 'g1'),
     );
@@ -232,15 +246,91 @@ void main() {
         .read(rideRegistrationProvider(key))
         .failure!;
 
-    repo.serve(twoGroups());
-    await controller.switchGroup(
-      leaveGroupId: failure.blockingGroupId!,
-      joinGroupId: failure.groupId,
-    );
+    repo.serve(twoGroups(registeredIn: 'g2'));
+    await controller.switchGroup(failure.groupId);
 
-    expect(repo.left, <String>['g1']);
-    expect(repo.joined, <String>['g2']);
+    // L'endpoint atomique (API-164), jamais « quitter puis rejoindre ».
+    expect(repo.switched, <String>['g2']);
+    expect(repo.left, isEmpty);
+    expect(repo.joined, isEmpty);
+    expect(container.read(rideRegistrationProvider(key)).failure, isNull);
   });
+
+  test('changer de groupe bascule les deux groupes avant la réponse', () async {
+    final (ProviderContainer container, _FakeRideRepository repo) = await boot(
+      twoGroups(registeredIn: 'g1'),
+    );
+    repo.gate = Completer<void>();
+
+    final Future<void> pending = container
+        .read(rideRegistrationProvider(key).notifier)
+        .switchGroup('g2');
+
+    final RideRegistrationState optimistic = container.read(
+      rideRegistrationProvider(key),
+    );
+    final RideDto ride = optimistic.ride.value!;
+    expect(optimistic.pendingGroupId, 'g2');
+    expect(ride.registeredGroupId, 'g2');
+    expect(ride.groups[0].registered, isFalse);
+    expect(ride.groups[0].countParticipants, 9);
+    expect(ride.groups[1].registered, isTrue);
+    expect(ride.groups[1].countParticipants, 18);
+    expect(ride.groups[1].full, isTrue);
+
+    repo.serve(twoGroups(registeredIn: 'g2'));
+    repo.gate!.complete();
+    await pending;
+    expect(
+      container.read(rideRegistrationProvider(key)).pendingGroupId,
+      isNull,
+    );
+  });
+
+  test('un échec du changement rétablit l\'inscription d\'avant', () async {
+    final (ProviderContainer container, _FakeRideRepository repo) = await boot(
+      twoGroups(registeredIn: 'g1'),
+    );
+    repo.switchError = _apiError('GROUP_FULL', status: 409);
+
+    await container
+        .read(rideRegistrationProvider(key).notifier)
+        .switchGroup('g2');
+
+    final RideRegistrationState after = container.read(
+      rideRegistrationProvider(key),
+    );
+    expect(after.failure!.reason, RegistrationFailureReason.groupFull);
+    expect(after.failure!.groupName, 'G1');
+    expect(after.pendingGroupId, isNull);
+    final RideDto ride = after.ride.value!;
+    expect(ride.registeredGroupId, 'g1');
+    expect(ride.groups[0].registered, isTrue);
+    expect(ride.groups[0].countParticipants, 10);
+    expect(ride.groups[1].registered, isFalse);
+    expect(ride.groups[1].countParticipants, 17);
+  });
+
+  test(
+    'changer sans inscription rejoint, et vers son groupe ne fait rien',
+    () async {
+      final (ProviderContainer container, _FakeRideRepository repo) =
+          await boot(twoGroups());
+      final RideRegistrationController controller = container.read(
+        rideRegistrationProvider(key).notifier,
+      );
+
+      repo.serve(twoGroups(registeredIn: 'g1'));
+      await controller.switchGroup('g1');
+      expect(repo.joined, <String>['g1']);
+      expect(repo.switched, isEmpty);
+
+      await container.read(rideDetailProvider(key).future);
+      await controller.switchGroup('g1');
+      expect(repo.switched, isEmpty);
+      expect(repo.joined, <String>['g1']);
+    },
+  );
 
   test('le bandeau se ferme et ne revient pas tout seul', () async {
     final (ProviderContainer container, _) = await boot(

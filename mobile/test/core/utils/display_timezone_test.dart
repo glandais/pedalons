@@ -95,8 +95,6 @@ void main() {
 
     setUpAll(loadTestTranslations);
 
-    tearDown(() => AppFormatters.setUse24HourFormat(true));
-
     test('l\'heure murale est celle du fuseau de l\'entité', () {
       AppFormatters.setDisplayTimezone('Europe/Paris');
       final DateTime wall = AppFormatters.toZoneTime(tokyoDawn, 'Asia/Tokyo');
@@ -178,20 +176,17 @@ void main() {
       },
     );
 
-    test('12 h quand le téléphone le demande', () {
+    test('12 h en anglais, 24 h en français : la langue décide', () {
       AppFormatters.setDisplayTimezone('Asia/Tokyo');
-      AppFormatters.setUse24HourFormat(false);
       final String time = Intl.withLocale(
         'en',
         () => AppFormatters.formatTime(tokyoMorning),
       );
 
       // Selon la version des données CLDR, l'espace avant « AM » est fine.
-      expect(time.replaceAll(' ', ' '), '8:00 AM');
-
-      AppFormatters.setUse24HourFormat(true);
+      expect(time.replaceAll('\u202F', ' '), '8:00 AM');
       expect(
-        Intl.withLocale('en', () => AppFormatters.formatTime(tokyoMorning)),
+        Intl.withLocale('fr', () => AppFormatters.formatTime(tokyoMorning)),
         '08:00',
       );
     });

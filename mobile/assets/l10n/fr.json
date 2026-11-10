@@ -124,7 +124,9 @@
     "close": "Fermer",
     "clearSearch": "Effacer la recherche",
     "delete": "Supprimer",
-    "open": "Ouvrir"
+    "open": "Ouvrir",
+    "details": "Détails",
+    "directionsTo": "Itinéraire vers {place}"
   },
   "placeholders": {
     "teamPage": {
@@ -175,6 +177,11 @@
         "one": "dans {count} jour",
         "other": "dans {count} jours"
       }
+    },
+    "duration": {
+      "minutes": "{minutes} min",
+      "hours": "{hours} h",
+      "hoursMinutes": "{hours} h {minutes}"
     }
   },
   "roles": {
@@ -631,7 +638,10 @@
     "selectedGroupProfile": "Profil du groupe sélectionné",
     "departureBlock": {
       "departs": "Départ {time}",
-      "yourGroup": "Votre groupe : {group} · {time}"
+      "yourGroup": "Votre groupe : {group} · {time}",
+      "yourGroupTitle": "Votre groupe : {group}",
+      "groupFirstDeparture": "Groupe {group} · premier départ {time}",
+      "noGroup": "Sortie sans groupe, inscription impossible"
     },
     "viewParticipants": "Voir la liste",
     "startPlace": "Départ",
@@ -746,7 +756,9 @@
       "mapFromStart": "À {distance} du départ",
       "mapGusts": "Rafales {speed}",
       "mapRainTitle": "Pluie probable",
-      "mapShowPoint": "Montrer sur la carte"
+      "mapShowPoint": "Montrer sur la carte",
+      "alongRouteTitle": "Météo le long du parcours",
+      "forecastOf": "Prévision du {time}"
     },
     "groupPage": {
       "title": "Groupe {name}",
@@ -774,10 +786,11 @@
       "viewMyGroup": "Voir mon groupe",
       "stats": {
         "departure": "Départ",
-        "pace": "Allure moyenne",
+        "pace": "Vitesse moyenne",
         "arrival": "Arrivée estimée {time}",
         "distance": "Distance",
-        "elevation": "Dénivelé positif"
+        "elevation": "Dénivelé positif",
+        "estimatedDuration": "Durée estimée"
       },
       "leader": "Capitaine",
       "weatherSummary": "Météo au départ du groupe",
@@ -786,7 +799,11 @@
       "routeTitle": "Parcours du groupe",
       "notFoundTitle": "Ce groupe n'existe plus",
       "notFoundMessage": "Il a peut-être été retiré de la sortie.",
-      "backToRide": "Retour à la sortie"
+      "backToRide": "Retour à la sortie",
+      "viewParticipantsCount": {
+        "one": "Voir la personne inscrite",
+        "other": "Voir les {} personnes inscrites"
+      }
     },
     "editor": {
       "createTitle": "Nouvelle sortie",
@@ -966,7 +983,9 @@
       "deleteTitle": "Supprimer la sortie ?",
       "deleteMessage": "Elle disparaîtra des listes. Le rôle Administrateur de l'équipe pourra la restaurer.",
       "deletedBanner": "Cette sortie est supprimée. Seul le rôle Administrateur de l'équipe la voit."
-    }
+    },
+    "groupSwitchTo": "Changer pour {group}",
+    "groupLeaveLong": "Quitter le groupe"
   },
   "posts": {
     "title": "Publications",
@@ -1093,7 +1112,8 @@
         "other": "{} jours"
       },
       "totalDistance": "Distance totale",
-      "totalElevation": "Dénivelé cumulé"
+      "totalElevation": "Dénivelé cumulé",
+      "stages": "Étapes"
     },
     "cancelledTitle": "Voyage annulé.",
     "cancelledMessage": "Ce voyage n'aura pas lieu. Aucune inscription n'est possible.",
@@ -1267,6 +1287,10 @@
         "REAL_START": "Départ réel",
         "SPLIT": "Séparation des groupes",
         "INFO": "Information"
+      },
+      "count": {
+        "one": "{} point",
+        "other": "{} points"
       }
     },
     "view": {
@@ -1366,6 +1390,21 @@
         "unknown": "Inconnu",
         "offNetwork": "Hors réseau"
       }
+    },
+    "climbsTitle": "Cols et montées",
+    "climbCount": {
+      "one": "{} montée",
+      "other": "{} montées"
+    },
+    "gpsSheet": {
+      "button": "GPS",
+      "buttonSemantics": "Envoyer le parcours vers un GPS ou l'exporter",
+      "title": "GPS",
+      "toDevice": "Vers un appareil",
+      "gpxFile": "Fichier GPX",
+      "fitFile": "Fichier FIT, pour compteur",
+      "connectDevice": "Connecter un compteur",
+      "connectDeviceHint": "Garmin, Karoo… pour envoyer le parcours sans fichier"
     }
   },
   "tags": {

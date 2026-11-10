@@ -326,17 +326,6 @@ class AppFormatters {
   static final Map<String, tz.Location?> _entityZones =
       <String, tz.Location?>{};
 
-  /// 24 h par défaut : c'est ce que rendent les tests et l'app tant
-  /// qu'`app.dart` n'a pas lu le réglage du téléphone.
-  static bool _use24HourFormat = true;
-
-  /// Pose le format d'heure — `MediaQuery.alwaysUse24HourFormat`, que
-  /// `app.dart` lit à chaque reconstruction (docs/LEDGER_*.md API-60, plan §7 :
-  /// le mobile suit le réglage du téléphone, comme Karoo et Garmin ; le web suit
-  /// la langue). Global comme le fuseau d'affichage : un changement du réglage
-  /// ne se voit qu'à la reconstruction suivante des écrans.
-  static void setUse24HourFormat(bool value) => _use24HourFormat = value;
-
   /// Les noms IANA que l'app sait appliquer, triés — ceux que propose le
   /// sélecteur de fuseau du profil. Charge la base au premier appel.
   static List<String> timezoneNames() {
@@ -581,12 +570,12 @@ class AppFormatters {
     return mention == null ? at : '$at · $mention';
   }
 
-  /// Heure de la locale courante, en 24 h (« 08:30 ») ou en 12 h
-  /// (« 8:30 AM ») selon le réglage du téléphone ([setUse24HourFormat]).
+  /// Heure de la locale courante : 24 h en français (« 08:30 »), 12 h en
+  /// anglais (« 8:30 AM »). **La langue décide**, pas le réglage du téléphone
+  /// — décision du 2026-11-10 (état des lieux `SYNTHESE` §6.7), la règle du
+  /// web : le motif `jm` de chaque locale porte déjà la bonne horloge.
   static String formatTime(DateTime date) =>
-      (_use24HourFormat ? DateFormat.Hm() : DateFormat.jm()).format(
-        toDisplayTime(date),
-      );
+      DateFormat.jm().format(toDisplayTime(date));
 
   /// « 15 janvier ».
   static String formatDayMonth(DateTime date) {
@@ -610,6 +599,12 @@ class AppFormatters {
   static String formatLongDate(DateTime date) =>
       '${formatFullDate(date)} ${toDisplayTime(date).year}';
 
+  /// Date longue **sans jour de la semaine** : « 3 novembre 2026 »,
+  /// « November 3, 2026 » — le « Créé le » d'un parcours, comme le web
+  /// (`PPP`). Un horodatage : lu dans le fuseau d'affichage.
+  static String formatLongDateWithoutWeekday(DateTime date) =>
+      DateFormat.yMMMMd().format(toDisplayTime(date));
+
   /// « lundi 15 janvier 2026 à 08:30 ».
   static String formatLongDateTime(DateTime date) => 'dates.at'.tr(
     namedArgs: <String, String>{
@@ -627,7 +622,7 @@ class AppFormatters {
   //
   // « sam. 12 avr. · 09:00 », l'année seulement hors de l'année en cours,
   // « Aujourd'hui · 09:00 » et « Demain · 09:00 » — jamais d'autre relatif.
-  // L'heure suit le réglage 12 h / 24 h du téléphone ([formatTime]).
+  // L'heure suit la langue : 24 h en français, 12 h en anglais ([formatTime]).
   //
   // « Aujourd'hui », « demain » et l'année
   // en cours s'apprécient dans le **fuseau de la sortie** : le relatif colle
@@ -721,6 +716,51 @@ class AppFormatters {
         'time': formatTime(toZoneTime(instant, zone)),
       },
     );
+  }
+
+  /// L'heure d'émission d'une prévision : « mar. 10 nov. · 08:30 », pour
+  /// « Prévision du … » (KIT §8). C'est un **horodatage** — lu dans le fuseau
+  /// du lecteur ([toDisplayTime]) —, au format du départ mais **jamais
+  /// relatif** : « Prévision du Aujourd'hui » ne se dit pas. D'où
+  /// [formatDepartureDate] sans fuseau d'entité (il retombe alors sur le
+  /// fuseau d'affichage) plutôt que [formatDeparture], qui dirait
+  /// « Aujourd'hui · 08:30 ». [now] ne sert qu'aux tests.
+  static String formatTimestamp(DateTime instant, {DateTime? now}) =>
+      'dates.departureAt'.tr(
+        namedArgs: <String, String>{
+          'date': formatDepartureDate(instant, null, now: now),
+          'time': formatTime(instant),
+        },
+      );
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Durées
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /// Une durée en minutes : « 3 h 18 », « 3 h », « 45 min » ; en anglais
+  /// « 3 h 18 min », comme le web (`rides.weather.route.duration.*`). Les
+  /// minutes ont deux chiffres derrière les heures (« 1 h 05 »), et chaque
+  /// espace est insécable, comme entre une valeur et son unité ([withUnit]).
+  /// Une valeur négative se lit comme sa valeur absolue.
+  static String formatDurationMinutes(int totalMinutes) {
+    final int abs = totalMinutes.abs();
+    final int hours = abs ~/ 60;
+    final int minutes = abs % 60;
+    final String text = hours == 0
+        ? 'dates.duration.minutes'.tr(
+            namedArgs: <String, String>{'minutes': '$minutes'},
+          )
+        : minutes == 0
+        ? 'dates.duration.hours'.tr(
+            namedArgs: <String, String>{'hours': '$hours'},
+          )
+        : 'dates.duration.hoursMinutes'.tr(
+            namedArgs: <String, String>{
+              'hours': '$hours',
+              'minutes': minutes.toString().padLeft(2, '0'),
+            },
+          );
+    return text.replaceAll(' ', nbsp);
   }
 
   /// « il y a 3 jours », « dans 2 h », « à l'instant ».

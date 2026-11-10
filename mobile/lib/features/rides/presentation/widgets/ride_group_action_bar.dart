@@ -87,7 +87,8 @@ class RideGroupActionBar extends ConsumerWidget {
         : (max - group.countParticipants).clamp(0, max);
 
     final Widget? trailing = switch (action) {
-      RideGroupAction.none => null,
+      // Inscrit ailleurs, l'action vaut déjà `none` ci-dessus.
+      RideGroupAction.none || RideGroupAction.switchTo => null,
       RideGroupAction.join => PdlButton(
         key: keys.rideGroup.joinButton,
         label: 'rides.groupJoin'.tr(),

@@ -527,7 +527,7 @@ void main() {
       // (ledger `MOB-113`).
       expect(find.byKey(keys.rideGroup.departureBlock), findsOneWidget);
       expect(find.text('Départ'), findsNothing);
-      expect(find.text('Allure moyenne'), findsOneWidget);
+      expect(find.text('Vitesse moyenne'), findsOneWidget);
       expect(find.text('Dénivelé positif'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
