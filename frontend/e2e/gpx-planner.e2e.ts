@@ -220,6 +220,16 @@ async function startDrawing(page: Page, isMobile: boolean) {
 const markerName = (n: number) => new RegExp(`^(?:(?:Départ|Arrivée), p|P)oint ${n} sur \\d+$`)
 
 /**
+ * The routing profile's button: « Profil », « Profil (personnalisé) » once a knob is turned. Anchored,
+ * because on a finger the summary line of the bottom bar is named « Afficher / Masquer le profil
+ * altimétrique » (docs/LEDGER_*.md WEB-157).
+ */
+const ROUTER_PROFILE = { name: /^Profil/ } as const
+
+/** On a finger, line 1 of the bottom bar: the summary, which folds and unfolds the profile. */
+const SUMMARY = { name: /^(Afficher|Masquer) le profil altimétrique$/ } as const
+
+/**
  * The planner, opened straight on its page with the basemap and the router simulated. Gestures are
  * driven on the map's canvas; the markers are found by their accessible name (« Point 2 »), the
  * routed segments counted on `routerRequests`. On a finger the map lives in the fullscreen editor,
@@ -478,8 +488,8 @@ test.describe('the planner gestures, with a simulated router', () => {
     })
 
     await clickMap(-100, 90)
-    // In the toolbar at the bottom of the map on a mouse, in the chip above the bottom bar on a
-    // finger.
+    // In the toolbar at the bottom of the map on a mouse, in the summary line of the bottom bar
+    // on a finger (docs/LEDGER_*.md WEB-157).
     await expect(
       surface.getByText(
         "Le service d'itinéraires a atteint son quota mensuel. Réessayez plus tard."
@@ -918,11 +928,14 @@ test.describe('the fullscreen editor, over the form', () => {
       surface.getByRole('button', { name: 'Annuler' }),
       surface.getByRole('button', { name: 'Rétablir' }),
       surface.getByRole('button', { name: 'Ligne droite', exact: true }),
-      surface.getByRole('button', { name: 'Profil' }),
+      surface.getByRole('button', ROUTER_PROFILE),
       surface.getByRole('button', { name: 'Aide : gestes' }),
-      // In the toolbar above the map, out of the bar (no room left for it at 360 px)
+      // In the dialog's header, out of the bar, like « Importer »
       surface.getByRole('button', { name: 'Effacer' }),
+      surface.getByRole('button', { name: 'Importer un fichier GPX', exact: true }),
       surface.getByRole('button', { name: 'Terminer' }),
+      // Line 1 of the bar: 48 px high
+      surface.getByRole('button', SUMMARY),
     ]
     for (const target of targets) {
       const box = await target.boundingBox()
@@ -950,6 +963,22 @@ test.describe('the fullscreen bar on a narrow phone', () => {
     if (!done) throw new Error('« Terminer » has no box')
     expect(done.x).toBeGreaterThanOrEqual(0)
     expect(done.x + done.width).toBeLessThanOrEqual(360)
+    // Line 2: the five tools sit left of « Terminer », none pushed under it
+    for (const name of ['Annuler', 'Rétablir', 'Ligne droite', 'Aide : gestes']) {
+      const tool = await surface.getByRole('button', { name, exact: true }).boundingBox()
+      if (!tool) throw new Error(`« ${name} » has no box`)
+      expect(tool.x).toBeGreaterThanOrEqual(0)
+      expect(tool.x + tool.width, name).toBeLessThanOrEqual(done.x)
+    }
+    const profile = await surface.getByRole('button', ROUTER_PROFILE).boundingBox()
+    expect(profile!.x + profile!.width).toBeLessThanOrEqual(done.x)
+    // Line 1: across the width, above line 2
+    const summary = await surface.getByRole('button', SUMMARY).boundingBox()
+    if (!summary) throw new Error('the summary has no box')
+    expect(summary.x).toBeGreaterThanOrEqual(0)
+    expect(summary.x + summary.width).toBeLessThanOrEqual(360)
+    expect(summary.width).toBeGreaterThanOrEqual(340)
+    expect(summary.y + summary.height).toBeLessThanOrEqual(done.y)
   })
 })
 
@@ -1478,7 +1507,10 @@ test.describe('deleting an anchor of a loaded track', () => {
 test.describe('elevation profile while editing (B1)', () => {
   test.setTimeout(90_000)
 
-  /** The planner's D+, as the status shows it (the chip on a finger, the map's toolbar on a mouse). */
+  /**
+   * The planner's D+, as the status shows it (the summary line of the bottom bar on a finger, the
+   * map's toolbar on a mouse).
+   */
   const ascendOf = (page: Page, text: string) => page.getByText(text, { exact: true }).first()
   const strip = (page: Page) => page.getByTestId('planner-elevation-strip').first()
 
@@ -1681,7 +1713,7 @@ test.describe('elevation profile while editing (B1)', () => {
     await settled()
   })
 
-  test('on a finger the profile sits above the bar, folds and unfolds, and the map keeps its room', async ({
+  test('on a finger the profile sits above the bar, the summary folds and unfolds it, and the map keeps its room', async ({
     context,
     page,
     isMobile,
@@ -1696,27 +1728,43 @@ test.describe('elevation profile while editing (B1)', () => {
     await expect(points(2)).toBeVisible()
     await settled()
 
-    const fold = surface.getByRole('button', { name: "Replier le graphe d'altitude" })
+    // One button, line 1 of the bar: its name says what a tap does, aria-expanded the state
+    const summary = surface.getByRole('button', SUMMARY)
+    await expect(summary).toHaveAccessibleName('Masquer le profil altimétrique')
+    await expect(summary).toHaveAttribute('aria-expanded', 'true')
+    await expect(summary).toContainText('2 points')
     await expect(strip(page)).toBeVisible()
     const stripBox = await strip(page).boundingBox()
+    const summaryBox = await summary.boundingBox()
     const undo = await surface.getByRole('button', { name: 'Annuler' }).boundingBox()
-    if (!stripBox || !undo) throw new Error('missing box')
+    if (!stripBox || !summaryBox || !undo) throw new Error('missing box')
     expect(stripBox.y + stripBox.height, 'the profile is above the bar').toBeLessThanOrEqual(
+      summaryBox.y + 1
+    )
+    expect(summaryBox.y + summaryBox.height, 'the summary is above the tools').toBeLessThanOrEqual(
       undo.y + 1
     )
+    expect(summaryBox.height).toBeGreaterThanOrEqual(48)
     await expect(surface.getByRole('button', { name: 'Terminer' })).toBeVisible()
     const mapOpen = await canvas.boundingBox()
     expect(mapOpen!.height, 'the map keeps room with the profile open').toBeGreaterThanOrEqual(200)
+    // Nothing over the bottom of the map any more: the scale sits on its edge
+    const scale = await surface.locator('.maplibregl-ctrl-scale').first().boundingBox()
+    if (scale) {
+      expect(scale.y + scale.height).toBeGreaterThan(mapOpen!.y + mapOpen!.height - 20)
+    }
 
-    await fold.click()
-    const unfold = surface.getByRole('button', { name: "Déplier le graphe d'altitude" })
-    await expect(unfold).toBeVisible()
+    await summary.click()
+    await expect(summary).toHaveAccessibleName('Afficher le profil altimétrique')
+    await expect(summary).toHaveAttribute('aria-expanded', 'false')
+    await expect(page.getByTestId('planner-elevation-strip')).toHaveCount(0)
     // The canvas resizes on a later frame (map.resize from its ResizeObserver)
     await expect
       .poll(async () => (await canvas.boundingBox())!.height)
       .toBeGreaterThan(mapOpen!.height)
-    await unfold.click()
-    await expect(fold).toBeVisible()
+    await summary.click()
+    await expect(summary).toHaveAttribute('aria-expanded', 'true')
+    await expect(strip(page)).toBeVisible()
   })
 
   test('a reopened track starts at the stored D+, and deleting its corner counts the new leg', async ({
@@ -2184,7 +2232,7 @@ test.describe('avoiding hills and traffic (C2)', () => {
     await clickMap(-100, 0)
     await expect(points(1)).toBeVisible()
 
-    await surface.getByRole('button', { name: 'Profil' }).click()
+    await surface.getByRole('button', ROUTER_PROFILE).click()
     const hills = page.getByRole('slider', { name: 'Côtes' })
     await expect(hills).toBeVisible()
     await hills.focus()
@@ -2203,7 +2251,7 @@ test.describe('avoiding hills and traffic (C2)', () => {
 
     await page.reload()
     await startDrawing(page, isMobile)
-    await surface.getByRole('button', { name: 'Profil' }).click()
+    await surface.getByRole('button', ROUTER_PROFILE).click()
     await expect(page.getByRole('slider', { name: 'Côtes' })).toHaveAttribute('aria-valuenow', '0')
   })
 })

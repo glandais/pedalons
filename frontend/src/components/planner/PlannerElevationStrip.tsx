@@ -1,16 +1,13 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { IconChevronDown, IconChevronUp } from '@tabler/icons-react'
-import { ActionIcon, Box, Group, SegmentedControl, Text, useMantineTheme } from '@mantine/core'
+import { Box, Group, SegmentedControl, Text, useMantineTheme } from '@mantine/core'
 import { useResolvedColorScheme } from '@/hooks/useResolvedColorScheme'
-import { useUnits } from '@/hooks/useUnits'
 import type { WaypointDto } from '@/api/dto'
-import type { PlannerMappable, Route, SurfaceClass, SurfaceStats } from '@/lib/planner'
+import type { PlannerMappable, SurfaceClass, SurfaceStats } from '@/lib/planner'
 import { SURFACE_CLASSES, surfaceColors, type PlannerColorBy } from '@/lib/plannerSurface'
 import { ElevationChart } from '../route/ElevationChart'
 
 interface PlannerElevationStripProps {
-  route: Route
   /** The profile of `route` (lib/planner.ts plannerRouteToMappable); null when its elevations are unknown. */
   mappable: PlannerMappable | null
   /** Index in the profile of the entry hovered (on the map or on the profile); -1 for none. */
@@ -23,8 +20,6 @@ interface PlannerElevationStripProps {
   onColorByChange?: (colorBy: PlannerColorBy) => void
   /** Length of the route by surface class: the legend and the summary of the surface mode. */
   surfaceStats?: SurfaceStats
-  /** Finger layout: a 44 px header holding the 44 px fold button above the chart. */
-  collapsible?: { collapsed: boolean; onToggle: () => void }
   /** The route point whose form is open, highlighted on the profile (one of `mappable.waypoints`). */
   selectedWaypoint?: WaypointDto | null
   /** A click on a route point's marker of the profile: opens its form. */
@@ -36,15 +31,14 @@ interface PlannerElevationStripProps {
  * route's own points, elevations filled in along straight lines) and shares its hovered point with
  * the map: the chart reports an index of the profile, whose entries are the route's points and, under a
  * straight line whose relief was read, the samples between them; the map draws a marker at its
- * position.
+ * position. On a finger it is folded and unfolded by the summary button of the bottom bar under it
+ * (`PlannerBottomBar`, docs/LEDGER_*.md WEB-157): it has no handle of its own.
  */
 export function PlannerElevationStrip({
-  route,
   mappable,
   hoveredIndex,
   onHoverIndex,
   height,
-  collapsible,
   colorBy = 'grade',
   onColorByChange,
   surfaceStats,
@@ -52,7 +46,6 @@ export function PlannerElevationStrip({
   onSelectWaypoint,
 }: PlannerElevationStripProps) {
   const { t } = useTranslation()
-  const { elevation } = useUnits()
   const theme = useMantineTheme()
   const colorScheme = useResolvedColorScheme()
   const colors = useMemo(() => surfaceColors(theme, colorScheme), [theme, colorScheme])
@@ -64,7 +57,6 @@ export function PlannerElevationStrip({
   // The segment starting at entry i is dashed when it is (part of) a straight line
   const dashedSegment = useMemo(() => (i: number) => !!mappable?.dashed[i], [mappable])
 
-  const collapsed = !!collapsible?.collapsed
   const colorByControl = onColorByChange && (
     <SegmentedControl
       size="xs"
@@ -94,64 +86,30 @@ export function PlannerElevationStrip({
       onTouchEnd={() => onHoverIndex(-1)}
       onTouchCancel={() => onHoverIndex(-1)}
     >
-      {collapsible && (
-        <Group justify="space-between" wrap="nowrap" h={44} pl="sm" pr={0}>
-          <Group gap="xs" wrap="nowrap">
-            <Text size="sm" fw={500}>
-              {t('planner.elevation.title')}
-            </Text>
-            {mappable && (
-              <Text size="sm" c="green">
-                +{elevation(route.ascend)}
-              </Text>
-            )}
-          </Group>
-          <Group gap={0} wrap="nowrap">
-            {colorByControl}
-            <ActionIcon
-              variant="subtle"
-              color="gray"
-              size={44}
-              onClick={collapsible.onToggle}
-              aria-expanded={!collapsed}
-              aria-label={t(collapsed ? 'planner.elevation.expand' : 'planner.elevation.collapse')}
-            >
-              {collapsed ? <IconChevronUp size={20} /> : <IconChevronDown size={20} />}
-            </ActionIcon>
-          </Group>
-        </Group>
-      )}
-      {!collapsible && colorByControl && (
+      {colorByControl && (
         <Group justify="space-between" wrap="wrap" gap="xs" px="xs" pt={4}>
           {colorByControl}
           {surfaceLegend}
         </Group>
       )}
-      {collapsible && !collapsed && surfaceLegend && (
-        <Group px="xs" pb={2}>
-          {surfaceLegend}
-        </Group>
-      )}
-      {!collapsed && (
-        <Box h={height} px="xs" pb={4}>
-          {mappable ? (
-            <ElevationChart
-              route={mappable}
-              hoveredPointIndex={hoveredIndex}
-              onHoverPoint={onHoverIndex}
-              dashedSegment={dashedSegment}
-              colorBy={colorBy}
-              surfaceAt={surfaceAt}
-              selectedWaypoint={selectedWaypoint}
-              onSelectWaypoint={onSelectWaypoint}
-            />
-          ) : (
-            <Text size="sm" c="dimmed" ta="center" pt="md">
-              {t('planner.elevation.unknown')}
-            </Text>
-          )}
-        </Box>
-      )}
+      <Box h={height} px="xs" pb={4}>
+        {mappable ? (
+          <ElevationChart
+            route={mappable}
+            hoveredPointIndex={hoveredIndex}
+            onHoverPoint={onHoverIndex}
+            dashedSegment={dashedSegment}
+            colorBy={colorBy}
+            surfaceAt={surfaceAt}
+            selectedWaypoint={selectedWaypoint}
+            onSelectWaypoint={onSelectWaypoint}
+          />
+        ) : (
+          <Text size="sm" c="dimmed" ta="center" pt="md">
+            {t('planner.elevation.unknown')}
+          </Text>
+        )}
+      </Box>
     </Box>
   )
 }

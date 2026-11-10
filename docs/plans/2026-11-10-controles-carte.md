@@ -141,6 +141,16 @@ d'un contrôle est sûr.
 - e2e à adapter : 909-936 (cibles ≥ 44, + le bouton résumé), 942-951 (360 px), 1686-1718 (profil
   au-dessus de la barre).
 
+**Arbitrages pris à l'exécution (10 novembre 2026), font foi sur la liste ci-dessus :**
+
+| Sujet | Décision |
+|---|---|
+| Consignes « 0 point » au doigt | Sur la carte, **en haut**, sous la recherche : la ligne de résumé a une hauteur fixe (la carte ne change pas de taille au premier point) et le bas de la carte reste à l'échelle et au crédit |
+| Poignée de repli de la bande de profil | Supprimée : le bouton résumé est le seul contrôle de l'action. Repliée, la bande n'est plus rendue (son en-tête de 44 px restait) ; même clé `localStorage` |
+| Stats de l'en-tête du dialogue | Retirées au doigt (doublon du résumé) ; Importer et Effacer y restent |
+| Erreur dans le résumé | Deux lignes au plus, le mot « Profil » cède la place (le chevron reste) |
+| `PlannerStatusChip` | Supprimé, plus d'appelant |
+
 ## Mobile
 
 Contraintes établies : échelle et crédit sont des enfants de `MapLibreMap` (dans la vue de la carte),

@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useId,
   useImperativeHandle,
   useLayoutEffect,
   useMemo,
@@ -31,7 +32,6 @@ import { MapPanelContext, useMapPanelState } from '@/components/map/mapPanelStat
 import { PlannerBottomBar } from './PlannerBottomBar'
 import { PlannerElevationStrip } from './PlannerElevationStrip'
 import { PlannerWaypointForm, type WaypointFormFields } from './PlannerWaypointForm'
-import { PlannerStatusChip } from './PlannerStatus'
 import { RoutePlanner } from './RoutePlanner'
 import { RoutePlannerPreview } from './RoutePlannerPreview'
 
@@ -203,6 +203,9 @@ export function RoutePlannerField({
       reportMapHover(index < 0 ? -1 : (mappable?.profileIndexOfRoute[index] ?? -1)),
     [reportMapHover, mappable]
   )
+  // On a finger, folded by the summary button of the bottom bar (`PlannerBottomBar`), which
+  // controls the element holding the strip (docs/LEDGER_*.md WEB-157).
+  const stripId = useId()
   const [stripCollapsed, setStripCollapsed] = useState(readStripCollapsed)
   const toggleStrip = useCallback(() => {
     const next = !stripCollapsed
@@ -483,7 +486,6 @@ export function RoutePlannerField({
 
   const stats =
     route.points.length >= 2 ? { distance: route.dist, ascend: route.ascend } : undefined
-  const showStatusChip = controlPoints.length > 0 || isLoading || error !== null
 
   // Non-blocking: one long straight leg is a forgotten key or a crossing to check, short ones are
   // normal (a gap in the network, a square).
@@ -527,7 +529,6 @@ export function RoutePlannerField({
             <Box style={{ borderBottom: '1px solid var(--mantine-color-default-border)' }}>
               <PlannerElevationStrip
                 mappable={mappable}
-                route={route}
                 hoveredIndex={hoveredIndex}
                 colorBy={planner.colorBy}
                 onColorByChange={planner.setColorBy}
@@ -653,7 +654,9 @@ export function RoutePlannerField({
                 {title?.trim() || t('planner.fullscreen.title')}
               </Modal.Title>
             }
-            stats={{ distance: route.dist, gain: route.ascend }}
+            // On a finger the figures are in the summary line of the bottom bar: not twice
+            // (docs/LEDGER_*.md WEB-157).
+            stats={isCoarse ? undefined : { distance: route.dist, gain: route.ascend }}
             actions={
               isCoarse ? (
                 // Out of the bottom bar, which has no room left for it at 360 px; away from the
@@ -702,7 +705,6 @@ export function RoutePlannerField({
               !isCoarse ? (
                 <PlannerElevationStrip
                   mappable={mappable}
-                  route={route}
                   hoveredIndex={hoveredIndex}
                   colorBy={planner.colorBy}
                   onColorByChange={planner.setColorBy}
@@ -713,43 +715,31 @@ export function RoutePlannerField({
                   onSelectWaypoint={handleSelectWaypoint}
                 />
               ) : (
-                <Box pos="relative" style={{ flexShrink: 0 }}>
-                  {showStatusChip && (
-                    <Box
-                      pos="absolute"
-                      left={8}
-                      right={8}
-                      pb="xs"
-                      style={{
-                        bottom: '100%',
-                        display: 'flex',
-                        justifyContent: 'center',
-                        pointerEvents: 'none',
-                        zIndex: 5,
-                      }}
-                    >
-                      <PlannerStatusChip
-                        pointCount={controlPoints.length}
-                        isLoading={isLoading}
-                        error={error}
-                        stats={stats}
+                <Box style={{ flexShrink: 0 }}>
+                  {/* Kept in the DOM folded: the summary button's aria-controls points at it */}
+                  <Box id={stripId}>
+                    {!stripCollapsed && (
+                      <PlannerElevationStrip
+                        mappable={mappable}
+                        hoveredIndex={hoveredIndex}
+                        colorBy={planner.colorBy}
+                        onColorByChange={planner.setColorBy}
+                        surfaceStats={planner.surfaceStats}
+                        onHoverIndex={handleHoverIndex}
+                        height={STRIP_BODY_HEIGHT_TOUCH}
+                        selectedWaypoint={selectedWaypoint}
+                        onSelectWaypoint={handleSelectWaypoint}
                       />
-                    </Box>
-                  )}
-                  <PlannerElevationStrip
-                    mappable={mappable}
-                    route={route}
-                    hoveredIndex={hoveredIndex}
-                    colorBy={planner.colorBy}
-                    onColorByChange={planner.setColorBy}
-                    surfaceStats={planner.surfaceStats}
-                    onHoverIndex={handleHoverIndex}
-                    height={STRIP_BODY_HEIGHT_TOUCH}
-                    collapsible={{ collapsed: stripCollapsed, onToggle: toggleStrip }}
-                    selectedWaypoint={selectedWaypoint}
-                    onSelectWaypoint={handleSelectWaypoint}
-                  />
+                    )}
+                  </Box>
                   <PlannerBottomBar
+                    pointCount={controlPoints.length}
+                    isLoading={isLoading}
+                    error={error}
+                    stats={stats}
+                    profileOpen={!stripCollapsed}
+                    onProfileToggle={toggleStrip}
+                    profileId={stripId}
                     canUndo={planner.canUndo}
                     canRedo={planner.canRedo}
                     onUndo={planner.undo}

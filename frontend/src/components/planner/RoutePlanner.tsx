@@ -68,6 +68,11 @@ const DEFAULT_ZOOM = 12
  * 44 px it makes the 54 px of `.planner-map--toolbar` (index.css): change them together.
  */
 const PLANNER_TOOLBAR_OFFSET_PX = 10
+/**
+ * Top of the first-use instructions on a finger: under the search box, 10 px from the map's top
+ * and 44 px high on a touch screen (index.css), plus a 10 px gap.
+ */
+const TOUCH_INSTRUCTIONS_TOP_PX = 64
 /** The route line when it is not coloured by surface. */
 const ROUTE_COLOR = '#4F46E5'
 
@@ -1500,6 +1505,22 @@ export function RoutePlanner({
   // Anywhere else (a mouse, inline or fullscreen): in the toolbar at the bottom of the map.
   const withToolbar = !touchFullscreen
 
+  const instructions = (
+    <Box
+      px="md"
+      py="xs"
+      bg={getOverlayBg(colorScheme)}
+      style={{
+        borderRadius: 'var(--mantine-radius-md)',
+        boxShadow: 'var(--mantine-shadow-lg)',
+      }}
+    >
+      <Text size="sm" c="dimmed">
+        {isCoarsePointer ? t('planner.instructions.touch') : t('planner.instructions')}
+      </Text>
+    </Box>
+  )
+
   const routeStats = {
     distance: route.dist,
     ascend: route.ascend,
@@ -2089,56 +2110,56 @@ export function RoutePlanner({
           <RoutePlannerMiniMap center={cursorPosition} routeGeoJson={routeGeoJson} />
         )}
 
-        {/* Bottom centre: the first-use instructions, above the toolbar (mouse). The column lets
-            the gestures through around them; only the toolbar takes the pointer. */}
-        {(controlPoints.length === 0 || withToolbar) && (
+        {/* On a finger in the fullscreen editor: the first-use instructions at the top of the map,
+            under the search box (the control columns are bottom-right on a finger, `mapZones.ts`).
+            Not at the bottom, where they covered the scale and the attribution, nor in the summary
+            line of the bottom bar, whose fixed 48 px cannot hold them at 360 px. The search
+            results, in a map corner (z-index 2), open over them. docs/LEDGER_*.md WEB-157. */}
+        {touchFullscreen && controlPoints.length === 0 && (
+          <Box
+            pos="absolute"
+            top={TOUCH_INSTRUCTIONS_TOP_PX}
+            left={PLANNER_TOOLBAR_OFFSET_PX}
+            right={PLANNER_TOOLBAR_OFFSET_PX}
+            style={{ display: 'flex', justifyContent: 'center', pointerEvents: 'none' }}
+          >
+            {instructions}
+          </Box>
+        )}
+
+        {/* Bottom centre (mouse): the first-use instructions above the toolbar. The column lets the
+            gestures through around them; only the toolbar takes the pointer. */}
+        {withToolbar && (
           <Stack
             pos="absolute"
-            bottom={withToolbar ? PLANNER_TOOLBAR_OFFSET_PX : 16}
-            left={withToolbar ? PLANNER_TOOLBAR_OFFSET_PX : 16}
-            right={withToolbar ? PLANNER_TOOLBAR_OFFSET_PX : 16}
+            bottom={PLANNER_TOOLBAR_OFFSET_PX}
+            left={PLANNER_TOOLBAR_OFFSET_PX}
+            right={PLANNER_TOOLBAR_OFFSET_PX}
             gap="xs"
             align="center"
-            // Over the map's corners (z-index 2) with the toolbar; on a finger the column of the
-            // bottom-right corner stays above the instructions, as before.
-            style={{ pointerEvents: 'none', zIndex: withToolbar ? 3 : undefined }}
+            // Over the map's corners (z-index 2)
+            style={{ pointerEvents: 'none', zIndex: 3 }}
           >
-            {controlPoints.length === 0 && (
-              <Box
-                px="md"
-                py="xs"
-                bg={getOverlayBg(colorScheme)}
-                style={{
-                  borderRadius: 'var(--mantine-radius-md)',
-                  boxShadow: 'var(--mantine-shadow-lg)',
-                }}
-              >
-                <Text size="sm" c="dimmed">
-                  {isCoarsePointer ? t('planner.instructions.touch') : t('planner.instructions')}
-                </Text>
-              </Box>
-            )}
-            {withToolbar && (
-              <PlannerToolbar
-                pointCount={controlPoints.length}
-                isLoading={isLoading}
-                error={error}
-                stats={route.points.length >= 2 ? routeStats : undefined}
-                canUndo={canUndo}
-                canRedo={canRedo}
-                onUndo={undo}
-                onRedo={redo}
-                directMode={directMode}
-                onDirectModeChange={setDirectMode}
-                routerProfile={routerProfile}
-                onProfileChange={setRouterProfile}
-                routerTuning={routerTuning}
-                onTuningChange={setRouterTuning}
-                onTuningReset={resetRouterTuning}
-                onImport={onImport}
-                onClear={layout === 'inline' ? clearRoute : undefined}
-              />
-            )}
+            {controlPoints.length === 0 && instructions}
+            <PlannerToolbar
+              pointCount={controlPoints.length}
+              isLoading={isLoading}
+              error={error}
+              stats={route.points.length >= 2 ? routeStats : undefined}
+              canUndo={canUndo}
+              canRedo={canRedo}
+              onUndo={undo}
+              onRedo={redo}
+              directMode={directMode}
+              onDirectModeChange={setDirectMode}
+              routerProfile={routerProfile}
+              onProfileChange={setRouterProfile}
+              routerTuning={routerTuning}
+              onTuningChange={setRouterTuning}
+              onTuningReset={resetRouterTuning}
+              onImport={onImport}
+              onClear={layout === 'inline' ? clearRoute : undefined}
+            />
           </Stack>
         )}
       </Box>

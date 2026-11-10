@@ -1,6 +1,6 @@
 import { createRef, useEffect, useState } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MantineProvider } from '@mantine/core'
 
 const mounts = vi.fn()
@@ -128,24 +128,17 @@ vi.mock('./PlannerElevationStrip', () => ({
   PlannerElevationStrip: ({
     hoveredIndex,
     onHoverIndex,
-    collapsible,
     mappable,
     onSelectWaypoint,
   }: {
     hoveredIndex: number
     onHoverIndex: (index: number) => void
-    collapsible?: { collapsed: boolean; onToggle: () => void }
     mappable?: { waypoints: unknown[] } | null
     onSelectWaypoint?: (waypoint: unknown) => void
   }) => (
-    <div
-      data-testid="strip"
-      data-hovered={hoveredIndex}
-      data-collapsed={String(collapsible?.collapsed)}
-    >
+    <div data-testid="strip" data-hovered={hoveredIndex}>
       <button onClick={() => onHoverIndex(1)}>profile hover</button>
       <button onClick={() => onSelectWaypoint?.(mappable?.waypoints[0])}>profile waypoint</button>
-      {collapsible && <button onClick={collapsible.onToggle}>toggle strip</button>}
     </div>
   ),
 }))
@@ -489,8 +482,7 @@ describe('RoutePlannerField', () => {
       }
       plannerState.route = computeRoute([start, end]) as never
       renderField()
-      const strip = await screen.findByTestId('strip')
-      expect(strip.dataset.collapsed).toBe('undefined')
+      await screen.findByTestId('strip')
       expect(screen.getByTestId('planner').dataset.hoverPosition).toBe('')
 
       // The sample of the profile is between the two ends: the marker goes there
@@ -552,18 +544,63 @@ describe('RoutePlannerField', () => {
       expect(screen.getByRole('dialog', { name: 'Ma sortie' })).toBeTruthy()
     })
 
-    it('folds the strip above the bottom bar, and remembers the choice', async () => {
+    it('folds the strip with the summary button of the bottom bar, and remembers the choice', async () => {
       renderField()
       fireEvent.click(screen.getByRole('button', { name: 'planner.draw' }))
       await screen.findByRole('dialog')
-      expect(screen.getByTestId('strip').dataset.collapsed).toBe('false')
+      const hide = screen.getByRole('button', { name: 'planner.summary.hideProfile' })
+      expect(hide.getAttribute('aria-expanded')).toBe('true')
+      // It controls the element holding the strip, there folded or not
+      const holder = document.getElementById(hide.getAttribute('aria-controls')!)
+      expect(holder?.contains(screen.getByTestId('strip'))).toBe(true)
 
-      fireEvent.click(screen.getByText('toggle strip'))
-      expect(screen.getByTestId('strip').dataset.collapsed).toBe('true')
+      fireEvent.click(hide)
+      expect(screen.queryByTestId('strip')).toBeNull()
       expect(localStorage.setItem).toHaveBeenCalledWith('pedalons-planner-profile-collapsed', '1')
+      const show = screen.getByRole('button', { name: 'planner.summary.showProfile' })
+      expect(show.getAttribute('aria-expanded')).toBe('false')
+      expect(document.getElementById(show.getAttribute('aria-controls')!)).toBe(holder)
 
-      fireEvent.click(screen.getByText('toggle strip'))
-      expect(screen.getByTestId('strip').dataset.collapsed).toBe('false')
+      fireEvent.click(show)
+      expect(screen.getByTestId('strip')).toBeTruthy()
+      expect(localStorage.setItem).toHaveBeenLastCalledWith(
+        'pedalons-planner-profile-collapsed',
+        '0'
+      )
+    })
+
+    it('opens folded when the choice was remembered', async () => {
+      vi.mocked(localStorage.getItem).mockImplementation((key) =>
+        key === 'pedalons-planner-profile-collapsed' ? '1' : null
+      )
+      try {
+        renderField()
+        fireEvent.click(screen.getByRole('button', { name: 'planner.draw' }))
+        await screen.findByRole('dialog')
+        expect(screen.queryByTestId('strip')).toBeNull()
+        expect(screen.getByRole('button', { name: 'planner.summary.showProfile' })).toBeTruthy()
+      } finally {
+        vi.mocked(localStorage.getItem).mockReset()
+      }
+    })
+
+    it('shows the figures in the bottom bar only, not in the dialog header', async () => {
+      plannerState.route = { points: [{}, {}], dist: 12000, ascend: 340 } as never
+      plannerState.controlPoints = [{}, {}]
+      try {
+        renderField()
+        fireEvent.click(screen.getByRole('button', { name: 'planner.edit' }))
+        const dialog = await screen.findByRole('dialog')
+        expect(within(dialog).getAllByText('12 km')).toHaveLength(1)
+        const summary = screen.getByRole('button', { name: 'planner.summary.hideProfile' })
+        expect(summary.textContent).toContain('12 km')
+        expect(summary.textContent).toContain('+340 m')
+        // Import and Clear stay in the header
+        expect(screen.getByRole('button', { name: 'planner.import' })).toBeTruthy()
+        expect(screen.getByRole('button', { name: 'planner.clear' })).toBeTruthy()
+      } finally {
+        plannerState.controlPoints = []
+      }
     })
 
     it('keeps the planner mounted, off screen and inactive, after closing', async () => {

@@ -1,7 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { Box, Group, Loader, Text, Tooltip } from '@mantine/core'
-import { useResolvedColorScheme } from '@/hooks/useResolvedColorScheme'
-import { getOverlayBg } from '@/lib/colors'
+import { Group, Loader, Stack, Text, Tooltip } from '@mantine/core'
 import { useUnits } from '@/hooks/useUnits'
 
 interface PlannerStatusProps {
@@ -15,18 +13,20 @@ interface PlannerStatusProps {
   /**
    * `bar` (default): one line that never wraps, the toolbar holding it (`PlannerToolbar`, on a
    * mouse) keeps one height; the figures come first, then the point count, the calculation and
-   * the error. `chip`: the floating pill of the touch editor, which takes no layout space, so a
-   * long error wraps on its own line (3 lines at most) and is read in full: the pill is not
-   * interactive, a tooltip would never open.
+   * the error. `summary`: the summary line of the touch bottom bar (`PlannerBottomBar`), whose
+   * height is fixed at 48 px: the figures, the count and a spinner on a first line, the error under
+   * them on at most two lines (it is the only place a finger can read it: no tooltip on a touch
+   * screen, docs/LEDGER_*.md WEB-157).
    */
-  variant?: 'bar' | 'chip'
+  variant?: 'bar' | 'summary'
+  /** Given in the summary: the bottom bar's button points its description at it. */
+  id?: string
 }
 
 /**
  * What the planner has to say about the trace: distance and ascent, point count, a calculation in
- * progress, a routing error (in the chip: the count first, the figures last). In the bar, one line
- * that never wraps (a long error is truncated, its full text in a tooltip), so the toolbar holding
- * it keeps one height whatever it shows.
+ * progress, a routing error. In the bar, one line that never wraps (a long error is truncated, its
+ * full text in a tooltip), so the toolbar holding it keeps one height whatever it shows.
  */
 export function PlannerStatus({
   pointCount,
@@ -34,10 +34,10 @@ export function PlannerStatus({
   error,
   stats,
   variant = 'bar',
+  id,
 }: PlannerStatusProps) {
   const { t } = useTranslation()
   const { distance, elevation } = useUnits()
-  const wraps = variant === 'chip'
 
   const figures = stats && (
     <Group gap="xs" wrap="nowrap" style={{ flexShrink: 0 }}>
@@ -49,21 +49,38 @@ export function PlannerStatus({
       </Text>
     </Group>
   )
+  const count = pointCount > 0 && (
+    <Text size="sm" c="dimmed" style={{ flexShrink: 0 }}>
+      {t('planner.pointCount', { count: pointCount })}
+    </Text>
+  )
+
+  if (variant === 'summary') {
+    return (
+      <Stack id={id} gap={0} justify="center" style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+        <Group gap="sm" wrap="nowrap" style={{ minWidth: 0 }}>
+          {figures}
+          {count}
+          {isLoading && (
+            // The spinner alone: the map shows the calculation too, and the line has no room.
+            <Loader size="xs" role="status" aria-label={t('planner.calculating')} />
+          )}
+        </Group>
+        {error && (
+          <Text size="xs" lh={1.25} c="red" lineClamp={2}>
+            {error}
+          </Text>
+        )}
+      </Stack>
+    )
+  }
 
   return (
     // overflow hidden: whatever does not fit is clipped inside the group, it never pushes the
     // toolbar's buttons next to it out of the map.
-    <Group
-      gap="md"
-      wrap={wraps ? 'wrap' : 'nowrap'}
-      style={{ flex: 1, minWidth: 0, overflow: 'hidden', rowGap: wraps ? 4 : undefined }}
-    >
-      {!wraps && figures}
-      {pointCount > 0 && (
-        <Text size="sm" c="dimmed" style={{ flexShrink: 0 }}>
-          {t('planner.pointCount', { count: pointCount })}
-        </Text>
-      )}
+    <Group gap="md" wrap="nowrap" style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+      {figures}
+      {count}
       {isLoading && (
         <Group
           gap="xs"
@@ -80,49 +97,18 @@ export function PlannerStatus({
           </Text>
         </Group>
       )}
-      {error &&
-        (wraps ? (
-          <Text size="sm" c="red" lineClamp={3} style={{ flex: '1 1 100%', minWidth: 0 }}>
+      {error && (
+        <Tooltip
+          label={error}
+          multiline
+          maw={320}
+          events={{ hover: true, focus: true, touch: true }}
+        >
+          <Text size="sm" c="red" truncate title={error} style={{ minWidth: 0 }}>
             {error}
           </Text>
-        ) : (
-          <Tooltip
-            label={error}
-            multiline
-            maw={320}
-            events={{ hover: true, focus: true, touch: true }}
-          >
-            <Text size="sm" c="red" truncate title={error} style={{ minWidth: 0 }}>
-              {error}
-            </Text>
-          </Tooltip>
-        ))}
-      {wraps && figures}
+        </Tooltip>
+      )}
     </Group>
-  )
-}
-
-/**
- * {@link PlannerStatus} as a floating pill, above the bottom bar of the touch editor (on a mouse
- * the toolbar at the bottom of the map holds the status, docs/LEDGER_*.md WEB-157). It never takes
- * layout space, so the map is not resized when it appears.
- */
-export function PlannerStatusChip(props: PlannerStatusProps) {
-  const colorScheme = useResolvedColorScheme()
-  return (
-    <Box
-      px="md"
-      py={6}
-      bg={getOverlayBg(colorScheme)}
-      maw="100%"
-      style={{
-        borderRadius: 'var(--mantine-radius-xl)',
-        boxShadow: 'var(--mantine-shadow-lg)',
-        pointerEvents: 'none',
-        display: 'flex',
-      }}
-    >
-      <PlannerStatus {...props} variant="chip" />
-    </Box>
   )
 }

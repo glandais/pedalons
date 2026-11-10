@@ -8,9 +8,6 @@ vi.mock('react-i18next', () => ({
     i18n: { language: 'fr' },
   }),
 }))
-vi.mock('@/hooks/useUnits', () => ({
-  useUnits: () => ({ elevation: (m: number) => `${m} m` }),
-}))
 const chartProps = vi.hoisted(() => ({ last: null as null | Record<string, unknown> }))
 vi.mock('../route/ElevationChart', () => ({
   ElevationChart: (props: Record<string, unknown>) => {
@@ -20,9 +17,8 @@ vi.mock('../route/ElevationChart', () => ({
 }))
 
 import { PlannerElevationStrip } from './PlannerElevationStrip'
-import type { PlannerMappable, Route } from '@/lib/planner'
+import type { PlannerMappable } from '@/lib/planner'
 
-const route = { points: [], dist: 1000, ascend: 10 } as unknown as Route
 const mappable = {
   surface: ['unpaved', 'paved', 'paved'],
   dashed: [false, false, false],
@@ -33,7 +29,6 @@ function strip(extra: Partial<Parameters<typeof PlannerElevationStrip>[0]> = {})
   return render(
     <MantineProvider>
       <PlannerElevationStrip
-        route={route}
         mappable={mappable}
         hoveredIndex={-1}
         onHoverIndex={() => {}}
