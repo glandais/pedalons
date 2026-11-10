@@ -65,11 +65,13 @@ services:
     # A l'arret, les requetes en vol sont attendues jusqu'a leur budget (90 s).
     stop_grace_period: 100s
     # Les deux caches memoire, plus le jeu de travail des requetes en cours (un parcours de 200 km a
-    # froid : ~100 Mo de MNT, jusqu'a ~270 Mo de rues). Valeur prudente, a mesurer (OPS-58).
+    # froid : ~100 Mo de MNT, jusqu'a ~270 Mo de rues). 1G mesure trop juste le 10 novembre 2026 :
+    # ~1,4 Go en tout (977 Mo + 475 Mo de swap) sous le backfill, plus que 40 Mo de page cache,
+    # tuiles relues sans cesse, requetes de 20 a 45 s. 2G en attendant de voir si ca plafonne (OPS-58).
     deploy:
       resources:
         limits:
-          memory: 1G
+          memory: 2G
 
 volumes:
   osm-route-details-data:

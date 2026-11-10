@@ -44,6 +44,12 @@ scrape_configs:
     file_sd_configs:
       - files: [/etc/prometheus-targets/caddy.json]
 
+  # osm-route-details, shared by every environment (docs/LEDGER_*.md OPS-58): its own metrics on
+  # :9090, reached on `pedalons-shared` (not published, not routed by traefik).
+  - job_name: osm-route-details
+    static_configs:
+      - targets: [osm-route-details:9090]
+
   # Every environment's backend, one target per task: during a rolling update both the old and the
   # new one are scraped. Found through the Swarm API rather than by name, so that a new environment
   # needs no change here. Its address on `pedalons-shared`, the one network Prometheus shares with

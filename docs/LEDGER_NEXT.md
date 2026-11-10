@@ -1010,7 +1010,14 @@ Ce que les tests ne prouvent pas, parce qu'ils ne passent ni par Flyway ni par u
 - [ ] `OPS-58` **osm-route-details dans la pile partagée : à régler** — en service depuis le
       7 novembre 2026 en staging et en prod (osm-surface retiré, `OPS-59`), avec des valeurs
       prudentes. Reste : volume de cache (IGN, Mapterhorn, VersaTiles), extrait VersaTiles France en
-      fichier local, limite mémoire (1 Go) à mesurer. Plan :
+      fichier local, limite mémoire à confirmer. Mesure du 10 novembre 2026, après 2 jours et demi
+      sous `RouteDetailsBackfill` (~60 requêtes/h) : 977 Mo sur 1 Go et ~475 Mo de swap, monté sans
+      redescendre depuis le 7 (0 → 137 → 290 → 375 → 444 → 474 Mo), 514 000 dépassements de la
+      limite, ~40 Mo de page cache (112 Go lus, 63 Go écrits en 2 jours), requêtes de 20 à 45 s
+      contre ~100 ms d'habitude ; ni OOM ni redémarrage, 2 `503 data_unavailable` sur 3 832.
+      Limite passée à 2 Go et service ajouté aux cibles Prometheus (`:9090`) : s'il plafonne vers
+      1,4–1,5 Go la limite était trop basse, s'il monte encore c'est une fuite (ou de la
+      fragmentation, ou des caches qui dépassent leur budget) à remonter dans osm-route-details. Plan :
       [2026-11-05-osm-route-details](plans/2026-11-05-osm-route-details.md) §11.
 
 - [ ] `OPS-21` **Ce que le monitoring ne voit pas encore** — PostgreSQL (connexions, taille, bloat,

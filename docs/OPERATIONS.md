@@ -125,7 +125,7 @@ limit is killed by the kernel (`OOMKilled` in `docker inspect`, `task: non-zero 
 | traefik | 256M | |
 | goatcounter | 128M | production only; 36 to 40 MiB at rest, the rest for CSV exports and the dashboard |
 | tileserver (shared) | 3G | ~1.8 GB resident |
-| osm-route-details (shared) | 1G | ledger `OPS-58`: its two tile caches at 256 MB each (512 by default) plus the requests in flight, `MALLOC_ARENA_MAX=2`; to be measured |
+| osm-route-details (shared) | 2G | ledger `OPS-58`: its two tile caches at 256 MB each (512 by default) plus the requests in flight, `MALLOC_ARENA_MAX=2`; 1G was measured too tight on 2026-11-10 (~1.4 GB with swap under the backfill), still being watched |
 | monitoring stack | 2G in all | see [Monitoring](#monitoring); ~1 GB resident |
 
 **The backend has no `-Xmx`.** The image's entrypoint (`run-java.sh`, from the Jib base image
