@@ -64,7 +64,6 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
   @Inject BiketeamTestData biketeamData;
   @Inject ObjectMapper objectMapper;
   @Inject fr.pedalons.service.surface.SurfaceRefreshService surfaceService;
-  @Inject fr.pedalons.service.elevation.RouteDetailsBackfill routeDetailsBackfill;
   @Inject fr.pedalons.repository.route.ElevationRefreshRepository elevationRefreshRepository;
 
   /** Every path the fake export was asked for, in order. */
@@ -232,13 +231,11 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
 
   /**
    * WEB-100 C1c, API-150: a bulk import asks nothing of osm-surface: each route has its own normal
-   * HD catch-up, which brings the surface. The fleet's catch-up leaves them alone, even once that
-   * one is given up: the admin retry is the way back, never a loop.
+   * HD catch-up, which brings the surface.
    */
   @Test
   void migratedRoutes_leaveTheirSurfaceToTheirHdCatchUp() throws IOException {
     surfaceService.setEnabledForTest(true);
-    routeDetailsBackfill.setForTest(true, 300);
     try {
       migrate(USER4, true, false);
 
@@ -250,17 +247,7 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
           requests,
           io.quarkus.narayana.jta.QuarkusTransaction.requiringNew()
               .call(() -> elevationRefreshRepository.count("backfill = false")));
-      assertEquals(0, routeDetailsBackfill.enqueue(Instant.now()), "nor a capped one");
-
-      io.quarkus.narayana.jta.QuarkusTransaction.requiringNew()
-          .run(() ->
-              elevationRefreshRepository
-                  .getEntityManager()
-                  .createNativeQuery("update elevation_refresh set attempts = 5")
-                  .executeUpdate());
-      assertEquals(0, routeDetailsBackfill.enqueue(Instant.now()), "given up stays given up");
     } finally {
-      routeDetailsBackfill.setForTest(false, 300);
       surfaceService.setEnabledForTest(false);
     }
   }

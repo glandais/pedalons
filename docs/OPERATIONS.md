@@ -727,7 +727,8 @@ the profile and the surface in the same write, as a document of version 2 in `gp
 `gpx_previews.surfaces`, along with `elevation_pipeline` (unless the surface is off, see below). With
 `pedalons.elevation.async-hd.enabled=false` the same call runs during the save and nothing is queued;
 if it fails, the track simply has no surface yet. A document of version 1, computed before, is read
-exactly like a version 2 until the [catch-up of the fleet](#the-catch-up-of-the-fleet) replaces it.
+exactly like a version 2 until the track is recomputed (a save, or the admin retry when its
+request was given up; the [catch-up of the fleet](#the-catch-up-of-the-fleet) is done and removed).
 
 - **Waiting**: the API says `PENDING` while the target's `elevation_state` is `PENDING`, and for no
   other reason.
@@ -740,18 +741,9 @@ exactly like a version 2 until the [catch-up of the fleet](#the-catch-up-of-the-
 `SURFACE_ENABLED=false`: the HD catch-up asks only `elevation` and `summary` and writes no surface,
 the documents already stored are still served, and
 nothing reads as pending. A track recomputed that way is **not stamped**: `elevation_pipeline` stays
-null, which means "to recompute", so it is picked up by the catch-up of the fleet once the switch is
-back on, under its cap and with no action on your part. The e2e stack has it off (`.env.e2e`):
-nothing in the suite looks at the surface. An environment that ran phase C with the surface off
-stamped its tracks all the same; run this once, after a release with phase D, for them to be
-picked up (a track the service answers nothing for, too short for it, is recomputed once more and
-that is all):
-
-```sql
-update team_entities set elevation_pipeline = null
- where entity_type = 2 and elevation_pipeline is not null
-   and id in (select route_id from gpx_tracks where surfaces is null);
-```
+null, which means "to recompute". Nothing picks it up by itself any more (the catch-up of the fleet
+is gone): its next save does, so keep the surface on wherever the fleet must stay current. The e2e
+stack has it off (`.env.e2e`): nothing in the suite looks at the surface.
 
 **The DEM tiles left on disk.** Since phase E the backend reads none: `mapterhorn`,
 `ign-lidar-hd-mnt` and `ign-lidar-hd-mns` in each environment's `data/cache` (about 7 GB in
@@ -776,111 +768,27 @@ cannot be undone by `--rev` either, Flyway only goes forward. Recreating the tab
 `V83` by hand would be the only way back.
 
 During a rolling deploy the previous backend may claim elevation requests, whatever their
-`backfill` flag; a target it leaves with `elevation_pipeline` null is a candidate of the
-[catch-up of the fleet](#the-catch-up-of-the-fleet).
+`backfill` flag; a target it leaves with `elevation_pipeline` null waits for its next save.
 
 #### The catch-up of the fleet
 
-`RouteDetailsBackfill` (ledger `API-150` phase D, which replaces the surface catch-up of `WEB-100`
-C1c and `SurfaceBackfill`) recomputes every route and preview behind `GpxPipeline.VERSION`
-(`elevation_pipeline` null or below 3) from its stored `original.gpx`: profile, D+, climbs, filtered
-GPX, FIT, route figures, waypoint distances and surface, in one write. **It is off by default:
-deploying never starts it.** Until it is on, a track without a surface gets none (old tracks, a
-failed synchronous save) and displays as it does today. A route never recomputed keeps working: its
-profile is untouched and its version 1 surface document is still read.
+`RouteDetailsBackfill` (ledger `API-150` phase D) recomputed every route and preview behind
+`GpxPipeline.VERSION` from its stored `original.gpx`, behind the normal requests and under an hourly
+cap. It ran in production from 2026-11-07, then in staging, and **was removed once both were done**
+(ledger `API-151`), with `ROUTE_DETAILS_BACKFILL_ENABLED` and `ROUTE_DETAILS_BACKFILL_PER_HOUR`:
+those two are now ignored and can go from a host's `.env`. A route still behind the pipeline (given
+up, or left by a deploy) is recomputed at its next save.
 
-Every 5 minutes, under an advisory lock, it queues the routes, most recent first, then the GPX-tool
-previews younger than 29 days that have stored files, as `elevation_refresh` rows marked `backfill`.
-The worker takes them as ordinary HD catch-ups, with strict priority: normal routes, normal
-previews, catch-up routes, catch-up previews. A save during the wait turns the row into a normal
-request. It does not touch `elevation_state`: the API keeps showing the current profile and surface,
-and nothing reads as pending. A route with no track or no original is never a candidate. **Any
-row excludes its target, whatever its attempts**: an open request brings its own recompute, and a
-given-up one is not queued again, or it would loop. A biketeam migration queues nothing here: its
-routes go through a normal save, so a normal HD catch-up.
+Its rows (`elevation_refresh.backfill = true`) may remain, given up after five attempts: the worker
+still serves them after the normal requests. To retry them, `POST /api/admin/elevation-refresh/retry`
+as a platform admin, body `{"dryRun": true}` first, then `{"dryRun": false}`, per domain
+(`?domainId=`, the request's domain otherwise), 100 targets by default (`limit`, 1,000 at most),
+repeated until it finds nothing. To see them:
 
-The cap is global (carried by the requests' due times, spaced under the lock, so two backends of a
-rolling deploy do not double it): `ROUTE_DETAILS_BACKFILL_PER_HOUR` calls an hour (default 60; a
-188 km slice is one call, a 400 km route three), and never more than 10 minutes of it waiting in the
-queue, so it slows down by itself while the service fails. After the worker was held up (a backlog
-of normal requests, a restart) it sends what fell due at once, so an hour can see the cap plus those
-10 minutes, retries of failed requests aside. A cold `full` call takes ~17 s for 140 km and the
-worker is serial, which tops out around 200 calls an hour: a higher cap gains nothing, and the
-`full` queue is shared with every environment.
-
-What a recompute changes, to announce before switching on: the D+ members see moves, every route
-synced to a GPS service is pushed once (ledger `API-120`), at the pace of the catch-up, `updated_at`
-changes on every route, and end times of rides are refreshed when the distance moves.
-
-- **Before switching it on**, in the environment concerned:
-  - the deploy has settled: a backend older than phase B still claims these requests during the
-    rolling minute, computes them on vcyclist and leaves the version null;
-  - the original of a route is read under the route's team, so this must return 0, anything else
-    would fail as missing files:
-    ```sql
-    select count(*) from assets a join team_entities t on t.id = a.team_entity_id
-     where a.type = 'ROUTE_ORIGINAL_GPX' and a.team_id <> t.team_id;
-    ```
-  - `select reason, count(*) from raw_track_backfill_skip group by reason;`: a route given up there
-    as `MISSING_ORIGINAL`, `TRACK_COUNT` or `UNREADABLE` fails here too. Each fails five times over
-    about 7 h and holds its slots meanwhile; several in a row slow the catch-up down without
-    stopping it.
-- **Estimate it** (the routes it will take, their length and its calls; the previews are a few days'
-  worth at most, and the query counts a route that has an open request):
-  ```sql
-  select count(*) as routes,
-         round(sum(coalesce(t.distance, 0)) / 1000) as km,
-         sum(greatest(1, ceil(coalesce(t.distance, 0) / 188000.0))) as calls
-    from team_entities t join teams tm on tm.id = t.team_id
-   where t.entity_type = 2 and not t.deleted and not tm.deleted
-     and (t.elevation_pipeline is null or t.elevation_pipeline < 3)
-     and not exists (select 1 from elevation_refresh e where e.route_id = t.id and e.attempts >= 5)
-     and exists (select 1 from gpx_tracks g where g.route_id = t.id)
-     and exists (select 1 from assets a
-                  where a.team_entity_id = t.id and a.type = 'ROUTE_ORIGINAL_GPX');
-  ```
-  `calls / ROUTE_DETAILS_BACKFILL_PER_HOUR` is the duration in hours: at 60 calls an hour, 10,000
-  calls take about 7 days. The literal 3 is `GpxPipeline.VERSION`.
-- **Switch it on**, one environment at a time, staging first (one shared service, one IGN budget):
-  `ROUTE_DETAILS_BACKFILL_ENABLED=true` in the environment's `.env`, with
-  `ROUTE_DETAILS_BACKFILL_PER_HOUR` if the default does not suit, then `scripts/deploy.sh`. It has
-  **no effect while `SURFACE_ENABLED=false`**: such a recompute is not stamped, so a pass would
-  queue the same tracks for ever. It logs one warning, `Route details catch-up switched on, but
-  stopped while the surface is off`, and no pass line. The former `SURFACE_BACKFILL_*` and
-  `RAW_BACKFILL_RESURFACE` are ignored, with no fallback on purpose: a host carrying
-  `SURFACE_BACKFILL_ENABLED=true` must not start the recompute. They can go from `.env`.
-- **Watch it**: each pass that finds something logs
-  `Route details catch-up: N request(s) queued; left R route(s) (K km), P preview(s); given up G`,
-  then `Route details catch-up done: nothing behind the pipeline, G given up` once. In the database:
-  ```sql
-  -- How far the fleet is
-  select elevation_pipeline, count(*) from team_entities
-   where entity_type = 2 and not deleted group by 1;
-  -- Queued and given up
-  select count(*) filter (where backfill and attempts < 5) as queued,
-         count(*) filter (where backfill and attempts >= 5) as given_up
-    from elevation_refresh;
-  -- Why
-  select last_error, count(*) from elevation_refresh where attempts >= 5 group by 1 order by 2 desc;
-  ```
-  An IGN outage shows up in `last_error`: each window's targets give up after about 7 h, then the
-  next ones start, so at the default it costs about 10 routes given up, so about 50 calls (five
-  attempts each), per 7 h, and those routes wait for the admin retry below.
-- **Stop it**: `ROUTE_DETAILS_BACKFILL_ENABLED=false` and `scripts/deploy.sh`. Nothing more is
-  queued; what is queued, at most 10 minutes of the cap, is still computed, since the worker does
-  not read that switch.
-- **Given up**: after five failed attempts (2 min, 10 min, 1 h, 6 h) the target keeps its profile,
-  its surface and its version, and its row stays with its error. Nothing queues it again but a save
-  or the admin retry, which works with the switch off:
-  `POST /api/admin/elevation-refresh/retry` as a platform admin, body `{"dryRun": true}` first, then
-  `{"dryRun": false}`, per domain (`?domainId=`, the request's domain otherwise), 100 targets by
-  default (`limit`, 1,000 at most), so repeat until it finds nothing. A retried catch-up row stays
-  one, behind normal requests and within the window, and its target's state does not move, unlike
-  what the endpoint's description says of a save's request (FAST, back to PENDING). Run it once
-  after the fleet pass too: a request given up before phase D stays out of the catch-up for good,
-  and `SurfaceBackfill` no longer gives its track a version 1 surface.
-- A workstation stack is no exception: the switch is off there too, and a biketeam migration test
-  gets its surface from the HD catch-up of its routes, not through this cap.
+```sql
+select last_error, count(*) from elevation_refresh
+ where backfill and attempts >= 5 group by 1 order by 2 desc;
+```
 
 #### The catch-up of raw lines
 
@@ -895,8 +803,8 @@ database failure gives nothing up: the pass ends and the next one starts again f
 (a write that fails three passes in a row is given up as `ERROR`).
 
 - **Stop it**: `RAW_BACKFILL_ENABLED=false`.
-- **Surfaces**: a caught-up route keeps the surface computed on its stored points, until the
-  catch-up of the fleet recomputes it from its original.
+- **Surfaces**: a caught-up route keeps the surface computed on its stored points, until a
+  recompute (a save) reads its original again.
 - **Follow it**: what is left, `select count(distinct route_id) from gpx_tracks where raw_geometry
   is null;`; given up, `select reason, count(*) from raw_track_backfill_skip group by reason;`. The
   log says `Raw line catch-up done` once nothing is left. To retry the ones given up on an error

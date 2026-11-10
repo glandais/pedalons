@@ -200,8 +200,8 @@ public class ElevationRefreshService {
   // ------------------------------------------------------------------ claim
 
   /**
-   * Takes the next due request, in a transaction of its own. {@code backfill} picks the requests of
-   * the fleet's catch-up ({@link RouteDetailsBackfill}) or the normal ones.
+   * Takes the next due request, in a transaction of its own. {@code backfill} picks the requests
+   * left by the former catch-up of the fleet or the normal ones.
    */
   public Optional<Claim> claimNext(Instant now, boolean backfill) {
     return tx(() -> refreshRepository.claimNextRoute(now, now.plus(LEASE), MAX_ATTEMPTS, backfill));

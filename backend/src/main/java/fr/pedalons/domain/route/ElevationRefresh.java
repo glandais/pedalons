@@ -68,9 +68,10 @@ public class ElevationRefresh {
   private @Nullable String lastError;
 
   /**
-   * Queued by the catch-up of the whole fleet ({@code RouteDetailsBackfill}, docs/LEDGER_*.md
-   * API-150), not by a save: taken only once no normal request is due, and spaced under the
-   * catch-up's hourly cap. A save of the track makes it a normal request again.
+   * Queued by the former catch-up of the whole fleet (docs/LEDGER_*.md API-150, removed once the
+   * fleet was recomputed), not by a save: taken only once no normal request is due. Nothing sets it
+   * any more; the rows left (given up, or retried by the admin) are still served. A save of the
+   * track makes it a normal request again. Column and priority to drop: docs/LEDGER_*.md API-175.
    */
   @Column(name = "backfill", nullable = false)
   private boolean backfill;

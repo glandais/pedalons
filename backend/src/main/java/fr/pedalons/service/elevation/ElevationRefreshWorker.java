@@ -23,9 +23,10 @@ import org.jboss.logging.Logger;
  * ElevationRefreshService}.
  *
  * <p>Keeps draining the queue when {@code pedalons.elevation.async-hd.enabled} is off: that switch
- * only stops new requests, and the routes already saved fast would otherwise stay so. So it does
- * when {@code pedalons.route-details.backfill.enabled} is off: {@link RouteDetailsBackfill} stops
- * queueing, and what it queued gets served.
+ * only stops new requests, and the routes already saved fast would otherwise stay so.
+ *
+ * <p>The requests marked {@code backfill}, left by the former catch-up of the fleet (ledger
+ * API-150), are served after the normal ones.
  *
  * <p>No {@code @Transactional}, as in {@code GpsRouteSyncWorker}. The worker runs without a request
  * domain; everything it reads or writes is keyed by the route id taken from the queue.

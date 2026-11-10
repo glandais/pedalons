@@ -609,6 +609,17 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
       worker (`WeatherFetchWorker` sert le passage le plus proche d'abord, sans distinguer l'origine),
       et un cache d'échantillons à 1 000 entrées (`weather-preview-samples`) qui, au-delà, relit
       `tracks` à chaque passage. Dans `service/gpx/PreviewDepartures.checkQuota` et `WeatherPlanner`.
+- [ ] `API-175` **Retirer la colonne `elevation_refresh.backfill` et la priorité qui la lit (S)** —
+      plus rien n'écrit `backfill = true` depuis le retrait de `RouteDetailsBackfill` (`API-174`),
+      mais `ElevationRefreshWorker.processDue` sert encore deux classes de demandes,
+      `claimNextRoute` / `claimNextPreview` filtrent sur la colonne, le `upsert` la remet à faux et
+      la liste des abandons (`ABANDONED`) inclut une ligne `backfill` quelle que soit son état.
+      Deux versions, pour le déploiement progressif : d'abord le code (un seul passage, plus de
+      filtre, entité sans le champ ; la colonne a `default false` en base, `V84`, donc les
+      insertions sans elle passent), puis la migration qui supprime la colonne, son index
+      `elevation_refresh_backfill` et l'index partiel `team_entities_pipeline_behind`, qui ne
+      servait que les candidats du recalcul. Une fois les abandons du recalcul relancés ou
+      acceptés.
 - [ ] `API-152` **D+ du service écrit dans le `Path` par une API publique de vcyclist (XS)** —
       `RouteDetailsTrack` pose le D+ et le D- d'osm-route-details avec les setters Kotlin
       `internal` de vcyclist, appelés depuis Java sous leur nom généré
@@ -627,10 +638,9 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
         (leur pipeline est nul, il les reprend). Un calcul de l'ancienne version déjà en cours
         pendant la minute du déploiement peut aussi poser un document v1 sur un v2 : il se lit
         pareil, et rien ne le recalcule tout seul.
-      - **Recalcul du parc, par environnement** : `ROUTE_DETAILS_BACKFILL_ENABLED`, allumé en prod
-        le 7 novembre 2026 (6 213 parcours, environ 4 jours et demi à 60 par heure), staging ensuite,
-        jamais les deux en même temps, équipes prévenues que les D+ vont bouger ; retry admin à la
-        fin pour les abandons (`docs/OPERATIONS.md`).
+      - **Recalcul du parc** : fait en prod puis en staging, planificateur retiré (`API-174`).
+        Reste le retry admin des abandons (`POST /api/admin/elevation-refresh/retry`, par domaine,
+        `docs/OPERATIONS.md`).
       - **Phase F** : faite le 7 novembre 2026 (`OPS-59`, `API-155`, `API-156`).
 
         Plan : [2026-11-05-osm-route-details](plans/2026-11-05-osm-route-details.md).

@@ -21,7 +21,7 @@ import org.jboss.logging.Logger;
  * its distance along the track (the first passage: nothing says which one was meant). A row off
  * the track stays without a distance but is typed, so it is not picked again.
  *
- * <p>A system job across the domains, like {@code RouteDetailsBackfill}: it works by route id only.
+ * <p>A system job across the domains, like {@code RawTrackBackfill}: it works by route id only.
  * Deleted routes are included, or they would be selected at every pass. Idempotent (a deterministic
  * computation, filtered on {@code type is null}), and it rewrites <b>no file</b>: no mass write to
  * S3, no route sent again to the GPS services. The files of an old route get their types at its

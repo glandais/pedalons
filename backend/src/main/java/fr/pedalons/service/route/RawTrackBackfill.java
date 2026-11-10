@@ -66,7 +66,7 @@ import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
  * the same originals at once, while the reads stay outside any transaction.
  *
  * <p>It queues nothing: a recompute of a track reads its original again, so a line denser than the
- * stored points needs no follow-up here ({@code RouteDetailsBackfill}, docs/LEDGER_*.md API-150).
+ * stored points needs no follow-up here (docs/LEDGER_*.md API-150).
  */
 @ApplicationScoped
 public class RawTrackBackfill {
