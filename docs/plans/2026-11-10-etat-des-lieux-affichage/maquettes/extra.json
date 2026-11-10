@@ -231,6 +231,124 @@
      ]
     ]
    ]
+  ],
+  [
+   "cartes",
+   "Cartes",
+   [
+    [
+     [
+      "cartes-fil-mobile.dc.html",
+      390,
+      3000,
+      "Cartes · Fil de publications — app mobile"
+     ],
+     [
+      "cartes-fil-web.dc.html",
+      1280,
+      3000,
+      "Cartes · Fil de publications — site web"
+     ]
+    ],
+    [
+     [
+      "cartes-accueil-mobile.dc.html",
+      390,
+      3000,
+      "Cartes · Accueil — app mobile"
+     ],
+     [
+      "cartes-accueil-web.dc.html",
+      1280,
+      3000,
+      "Cartes · Accueil — site web"
+     ]
+    ],
+    [
+     [
+      "cartes-agenda-mobile.dc.html",
+      390,
+      3000,
+      "Cartes · Calendrier et agenda — app mobile"
+     ],
+     [
+      "cartes-agenda-web.dc.html",
+      1280,
+      3000,
+      "Cartes · Calendrier et agenda — site web"
+     ]
+    ],
+    [
+     [
+      "cartes-detail-mobile.dc.html",
+      390,
+      3000,
+      "Cartes · Pages de détail : groupes, étapes, « Utilisée dans » — app mobile"
+     ],
+     [
+      "cartes-detail-web.dc.html",
+      1280,
+      3000,
+      "Cartes · Pages de détail : groupes, étapes, « Utilisée dans » — site web"
+     ]
+    ],
+    [
+     [
+      "cartes-parcours-mobile.dc.html",
+      390,
+      3000,
+      "Cartes · Parcours — app mobile"
+     ],
+     [
+      "cartes-parcours-web.dc.html",
+      1280,
+      3000,
+      "Cartes · Parcours — site web"
+     ]
+    ],
+    [
+     [
+      "cartes-equipes-mobile.dc.html",
+      390,
+      3000,
+      "Cartes · Annonces, équipes, membres — app mobile"
+     ],
+     [
+      "cartes-equipes-web.dc.html",
+      1280,
+      3000,
+      "Cartes · Annonces, équipes, membres — site web"
+     ]
+    ],
+    [
+     [
+      "cartes-tableau-mobile.dc.html",
+      390,
+      3000,
+      "Cartes · Tableau de bord d'équipe — app mobile"
+     ],
+     [
+      "cartes-tableau-web.dc.html",
+      1280,
+      3000,
+      "Cartes · Tableau de bord d'équipe — site web"
+     ]
+    ],
+    [
+     [
+      "cartes-divers-mobile.dc.html",
+      390,
+      3000,
+      "Cartes · Notifications, modèles, appareils, lieux, commentaires — app mobile"
+     ],
+     [
+      "cartes-divers-web.dc.html",
+      1280,
+      3000,
+      "Cartes · Notifications, modèles, appareils, lieux, commentaires — site web"
+     ]
+    ]
+   ]
   ]
  ]
 }

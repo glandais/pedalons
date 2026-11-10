@@ -13,6 +13,7 @@ commentaires, descriptions, noms d'appareils) sont inventées.
 |---|---|
 | [KIT.md](KIT.md) | Jetons, composants et données d'exemple (§1-7, pour l'existant) ; **règles des cibles mobiles (§8)** : formats, blocs communs, décisions prises écran par écran |
 | `project/*-mobile-cible.dc.html` | Les 10 cibles mobiles : 4 sorties, groupe, groupe inscrit, 2 voyages, étape, parcours |
+| `project/cartes-*-{mobile,web}.dc.html` | Page « Cartes » : les cartes et lignes de liste telles qu'elles s'affichent dans l'app et sur le site (relevé du 11 novembre 2026, huit thèmes : fil, accueil, agenda, détail, parcours, équipes, tableau de bord, divers). Rendus vérifiés par leurs auteurs, non comparés à l'app ni au site en fonctionnement |
 | `project/feuille-gps*.dc.html` | La feuille ouverte par le bouton « GPS », avec et sans appareil connecté (variante Android) |
 | `project/*` (les autres) | L'existant, reproduit sans rien améliorer |
 | `png/*.png`, `render_png.sh` | Rendus des cibles mobiles et de la feuille « GPS » (Chrome sans fenêtre, échelle 2). Relancer : `./render_png.sh` |

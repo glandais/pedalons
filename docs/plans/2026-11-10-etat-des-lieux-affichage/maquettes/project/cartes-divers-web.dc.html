@@ -1,0 +1,563 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Cartes diverses — web desktop</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+body{margin:0}
+a{color:#3b5bdb}a:hover{color:#364fc7}
+</style>
+</helmet>
+<div style="width: 100%; min-height: 5240px; box-sizing: border-box; background: #ffffff; color: #000000; font-family: Inter, system-ui, sans-serif; font-size: 14px; line-height: 1.45; display: flex; flex-direction: column">
+<div style="width: 100%; max-width: 1280px; margin: 0 auto; padding: 24px 16px 32px; box-sizing: border-box; display: flex; flex-direction: column">
+
+  <!-- ===================== NOTIFICATIONS ===================== -->
+  <h2 style="margin: 0 0 8px; font-size: 16px; font-weight: 700">Notifications</h2>
+  <div style="display: flex; gap: 48px; align-items: flex-start">
+
+    <div style="width: 672px; flex-shrink: 0; display: flex; flex-direction: column; gap: 6px">
+      <span style="font-size: 11px; font-weight: 600; color: #868e96">NotificationItem — page /notifications (colonne de 672 px) · trois non lues (point de la couleur du type, titre en 600) puis quatre lues</span>
+      <div style="border: 1px solid #ced4da; border-radius: 8px; padding: 4px; display: flex; flex-direction: column">
+
+        <a href="#" style="padding: 12px; border-radius: 8px; display: flex; align-items: flex-start; gap: 12px; text-decoration: none; color: #000000">
+          <span style="width: 34px; height: 34px; border-radius: 1000px; background: #edf1fe; color: #4c6ef5; display: grid; place-items: center; flex-shrink: 0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="18" r="3"/><circle cx="19" cy="18" r="3"/><path d="M12 19v-4l-3-3l5-4l2 3h3"/><circle cx="17" cy="5" r="1"/></svg></span>
+          <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+            <span style="font-size: 14px; font-weight: 600">Léa Martin a publié une sortie</span>
+            <span style="font-size: 14px; color: #666d75">Boucle des Monts d'Arrée</span>
+            <span style="font-size: 12px; color: #666d75">Vélo Club des Monts · il y a environ 2 heures</span>
+          </span>
+          <span aria-label="Non lue" style="margin-top: 6px; width: 8px; height: 8px; border-radius: 1000px; background: #4263eb; flex-shrink: 0"></span>
+        </a>
+
+        <a href="#" style="padding: 12px; border-radius: 8px; display: flex; align-items: flex-start; gap: 12px; text-decoration: none; color: #000000">
+          <span style="width: 34px; height: 34px; border-radius: 1000px; background: #edf1fe; color: #4c6ef5; display: grid; place-items: center; flex-shrink: 0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 4a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3h-5l-5 3v-3H6a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3z"/><path d="M11 8l-3 3l3 3"/><path d="M16 11H8"/></svg></span>
+          <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+            <span style="font-size: 14px; font-weight: 600">Karim Benali a répondu à votre commentaire</span>
+            <span style="font-size: 14px; color: #666d75">Boucle des Monts d'Arrée</span>
+            <span style="font-size: 12px; color: #666d75; font-style: italic">Oui, on s'arrête à la boulangerie de Brasparts, vers le km 41.</span>
+            <span style="font-size: 12px; color: #666d75">Vélo Club des Monts · il y a environ 3 heures</span>
+          </span>
+          <span aria-label="Non lue" style="margin-top: 6px; width: 8px; height: 8px; border-radius: 1000px; background: #4263eb; flex-shrink: 0"></span>
+        </a>
+
+        <a href="#" style="padding: 12px; border-radius: 8px; display: flex; align-items: flex-start; gap: 12px; text-decoration: none; color: #000000">
+          <span style="width: 34px; height: 34px; border-radius: 1000px; background: #fff7e6; color: #fab005; display: grid; place-items: center; flex-shrink: 0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11.8 21H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4"/><path d="M16 3v4"/><path d="M8 3v4"/><path d="M4 11h10"/><circle cx="18" cy="18" r="4"/><path d="M18 16.5V18l.5.5"/></svg></span>
+          <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+            <span style="font-size: 14px; font-weight: 600">Une sortie à laquelle vous participez a changé</span>
+            <span style="font-size: 14px; color: #666d75">Boucle des Monts d'Arrée</span>
+            <span style="font-size: 12px; color: #666d75">Nouvelle date : sam. 14 nov. · 09:00</span>
+            <span style="font-size: 12px; color: #666d75">Vélo Club des Monts · il y a environ 5 heures</span>
+          </span>
+          <span aria-label="Non lue" style="margin-top: 6px; width: 8px; height: 8px; border-radius: 1000px; background: #fab005; flex-shrink: 0"></span>
+        </a>
+
+        <a href="#" style="padding: 12px; border-radius: 8px; display: flex; align-items: flex-start; gap: 12px; text-decoration: none; color: #000000">
+          <span style="width: 34px; height: 34px; border-radius: 1000px; background: #edf1fe; color: #4c6ef5; display: grid; place-items: center; flex-shrink: 0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="7"/><path d="M12 10v3h2"/><path d="M7 4L4.25 6"/><path d="M17 4l2.75 2"/></svg></span>
+          <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+            <span style="font-size: 14px; font-weight: 400">Rappel : votre sortie a lieu demain</span>
+            <span style="font-size: 14px; color: #666d75">Sortie du mercredi soir</span>
+            <span style="font-size: 12px; color: #666d75">Départ : Demain · 18:30</span>
+            <span style="font-size: 12px; color: #666d75">Vélo Club des Monts · il y a environ 6 heures</span>
+          </span>
+        </a>
+
+        <a href="#" style="padding: 12px; border-radius: 8px; display: flex; align-items: flex-start; gap: 12px; text-decoration: none; color: #000000">
+          <span style="width: 34px; height: 34px; border-radius: 1000px; background: #edf1fe; color: #4c6ef5; display: grid; place-items: center; flex-shrink: 0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 11h6"/><path d="M19 8v6"/></svg></span>
+          <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+            <span style="font-size: 14px; font-weight: 400">Noé Perrin a rejoint votre sortie</span>
+            <span style="font-size: 14px; color: #666d75">Boucle des Monts d'Arrée</span>
+            <span style="font-size: 12px; color: #666d75">Groupe : B</span>
+            <span style="font-size: 12px; color: #666d75">Vélo Club des Monts · il y a 1 jour</span>
+          </span>
+        </a>
+
+        <a href="#" style="padding: 12px; border-radius: 8px; display: flex; align-items: flex-start; gap: 12px; text-decoration: none; color: #000000">
+          <span style="width: 34px; height: 34px; border-radius: 1000px; background: #ffeeee; color: #fa5252; display: grid; place-items: center; flex-shrink: 0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.5 21H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v6"/><path d="M16 3v4"/><path d="M8 3v4"/><path d="M4 11h16"/><path d="M17 17l4 4"/><path d="M21 17l-4 4"/></svg></span>
+          <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+            <span style="font-size: 14px; font-weight: 400">Une sortie est annulée</span>
+            <span style="font-size: 14px; color: #666d75">Sortie gravel du Huelgoat</span>
+            <span style="font-size: 12px; color: #666d75">Vélo Club des Monts · il y a 3 jours</span>
+          </span>
+        </a>
+
+        <a href="#" style="padding: 12px; border-radius: 8px; display: flex; align-items: flex-start; gap: 12px; text-decoration: none; color: #000000">
+          <span style="width: 34px; height: 34px; border-radius: 1000px; background: #edf1fe; color: #4c6ef5; display: grid; place-items: center; flex-shrink: 0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4c.96 0 1.84.33 2.53.89"/><path d="M16 19h6"/><path d="M19 16v6"/></svg></span>
+          <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+            <span style="font-size: 14px; font-weight: 400">Inès Roche vous invite à rejoindre Vélo Club des Monts</span>
+            <span style="font-size: 14px; color: #666d75">Vélo Club des Monts</span>
+            <span style="font-size: 12px; color: #666d75">Vélo Club des Monts · il y a 8 jours</span>
+          </span>
+        </a>
+      </div>
+    </div>
+
+    <div style="width: 360px; flex-shrink: 0; display: flex; flex-direction: column; gap: 6px">
+      <span style="font-size: 11px; font-weight: 600; color: #868e96">NotificationItem compact — menu de la cloche (360 px) · deux non lues, une lue ; sujet sur une ligne</span>
+      <div style="border: 1px solid #dee2e6; border-radius: 8px; padding: 4px; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 10px 15px -5px rgba(0,0,0,0.05), 0 7px 7px -5px rgba(0,0,0,0.04); display: flex; flex-direction: column">
+        <div style="padding: 4px 10px; display: flex; justify-content: space-between; align-items: center">
+          <span style="font-size: 14px; font-weight: 600">Notifications</span>
+          <a href="#" style="display: inline-flex; align-items: center; gap: 4px; font-size: 12px; text-decoration: none"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 12l5 5l10-10"/><path d="M2 12l5 5m5-5l5-5"/></svg>Tout marquer lu</a>
+        </div>
+        <div style="height: 1px; background: #dee2e6"></div>
+        <div style="padding: 4px 0; display: flex; flex-direction: column">
+          <a href="#" style="padding: 10px; border-radius: 8px; display: flex; align-items: flex-start; gap: 12px; text-decoration: none; color: #000000">
+            <span style="width: 28px; height: 28px; border-radius: 1000px; background: #edf1fe; color: #4c6ef5; display: grid; place-items: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="18" r="3"/><circle cx="19" cy="18" r="3"/><path d="M12 19v-4l-3-3l5-4l2 3h3"/><circle cx="17" cy="5" r="1"/></svg></span>
+            <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+              <span style="font-size: 14px; font-weight: 600">Léa Martin a publié une sortie</span>
+              <span style="font-size: 14px; color: #666d75; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Boucle des Monts d'Arrée</span>
+              <span style="font-size: 12px; color: #666d75">Vélo Club des Monts · il y a environ 2 heures</span>
+            </span>
+            <span aria-label="Non lue" style="margin-top: 6px; width: 8px; height: 8px; border-radius: 1000px; background: #4263eb; flex-shrink: 0"></span>
+          </a>
+          <a href="#" style="padding: 10px; border-radius: 8px; display: flex; align-items: flex-start; gap: 12px; text-decoration: none; color: #000000">
+            <span style="width: 28px; height: 28px; border-radius: 1000px; background: #fff7e6; color: #fab005; display: grid; place-items: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11.8 21H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4"/><path d="M16 3v4"/><path d="M8 3v4"/><path d="M4 11h10"/><circle cx="18" cy="18" r="4"/><path d="M18 16.5V18l.5.5"/></svg></span>
+            <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+              <span style="font-size: 14px; font-weight: 600">Une sortie à laquelle vous participez a changé</span>
+              <span style="font-size: 14px; color: #666d75; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Boucle des Monts d'Arrée</span>
+              <span style="font-size: 12px; color: #666d75">Nouvelle date : sam. 14 nov. · 09:00</span>
+              <span style="font-size: 12px; color: #666d75">Vélo Club des Monts · il y a environ 5 heures</span>
+            </span>
+            <span aria-label="Non lue" style="margin-top: 6px; width: 8px; height: 8px; border-radius: 1000px; background: #fab005; flex-shrink: 0"></span>
+          </a>
+          <a href="#" style="padding: 10px; border-radius: 8px; display: flex; align-items: flex-start; gap: 12px; text-decoration: none; color: #000000">
+            <span style="width: 28px; height: 28px; border-radius: 1000px; background: #ffeeee; color: #fa5252; display: grid; place-items: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.5 21H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v6"/><path d="M16 3v4"/><path d="M8 3v4"/><path d="M4 11h16"/><path d="M17 17l4 4"/><path d="M21 17l-4 4"/></svg></span>
+            <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+              <span style="font-size: 14px; font-weight: 400">Une sortie est annulée</span>
+              <span style="font-size: 14px; color: #666d75; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Sortie gravel du Huelgoat</span>
+              <span style="font-size: 12px; color: #666d75">Vélo Club des Monts · il y a 3 jours</span>
+            </span>
+          </a>
+        </div>
+        <div style="height: 1px; background: #dee2e6"></div>
+        <a href="#" style="display: block; padding: 10px 0; text-align: center; font-size: 14px; text-decoration: none">Voir toutes les notifications</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== MODÈLES DE SORTIE ===================== -->
+  <h2 style="margin: 40px 0 8px; padding-top: 16px; border-top: 1px solid #dee2e6; font-size: 16px; font-weight: 700">Modèles de sortie</h2>
+  <span style="margin-bottom: 6px; font-size: 11px; font-weight: 600; color: #868e96">RideTemplateListPage — Gestion de l'équipe › Modèles de sortie (largeur 1108 px) · avec description, groupes et tag ; sans description. Ni statut ni numéro sur le site</span>
+  <div style="width: 1108px; display: flex; flex-direction: column; gap: 16px">
+    <div style="border: 1px solid #ced4da; border-radius: 8px; padding: 16px; display: flex; align-items: flex-start; gap: 16px">
+      <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px">
+        <span style="font-size: 18px; font-weight: 500; line-height: 1.6">Sortie du dimanche</span>
+        <span style="font-size: 16px; line-height: 1.55">Rendez-vous devant la mairie à 8 h 45, café offert au retour.</span>
+        <div style="display: flex; align-items: center; gap: 16px">
+          <span style="display: inline-flex; align-items: center; gap: 10px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a2 2 0 1 0 4 0a2 2 0 0 0-4 0"/><path d="M8 21v-1a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1"/><path d="M15 5a2 2 0 1 0 4 0a2 2 0 0 0-4 0"/><path d="M17 10h2a2 2 0 0 1 2 2v1"/><path d="M5 5a2 2 0 1 0 4 0a2 2 0 0 0-4 0"/><path d="M3 13v-1a2 2 0 0 1 2-2h2"/></svg><span style="font-size: 14px; color: #666d75">3 groupes</span></span>
+          <span style="display: inline-flex; align-items: center; height: 20px; padding: 0 10px; border-radius: 1000px; font-size: 11px; font-weight: 700; letter-spacing: 0.25px; text-transform: uppercase; background: #f3f4f5; color: #868e96">Équipe uniquement</span>
+        </div>
+        <div style="margin-top: 10px; display: flex; gap: 10px">
+          <span style="display: inline-flex; align-items: center; height: 18px; padding: 0 8px; border-radius: 1000px; font-size: 10px; font-weight: 700; letter-spacing: 0.25px; text-transform: uppercase; background: #edf1fe; color: #4c6ef5">A<span style="margin-left: 4px; color: #666d75">28 km/h</span></span>
+          <span style="display: inline-flex; align-items: center; height: 18px; padding: 0 8px; border-radius: 1000px; font-size: 10px; font-weight: 700; letter-spacing: 0.25px; text-transform: uppercase; background: #edf1fe; color: #4c6ef5">B<span style="margin-left: 4px; color: #666d75">25 km/h</span></span>
+          <span style="display: inline-flex; align-items: center; height: 18px; padding: 0 8px; border-radius: 1000px; font-size: 10px; font-weight: 700; letter-spacing: 0.25px; text-transform: uppercase; background: #edf1fe; color: #4c6ef5">C<span style="margin-left: 4px; color: #666d75">22 km/h</span></span>
+        </div>
+        <div style="margin-top: 10px; display: flex; gap: 6px">
+          <span style="display: inline-flex; align-items: center; gap: 6px; height: 18px; padding: 0 8px; border-radius: 1000px; border: 1px solid #ced4da; font-size: 10px; font-weight: 500; color: #000000"><span style="width: 6px; height: 6px; border-radius: 1000px; background: #40c057"></span>vallonné</span>
+        </div>
+      </div>
+      <div style="display: flex; gap: 10px">
+        <button type="button" aria-label="Modifier" style="width: 34px; height: 34px; border-radius: 8px; border: none; background: transparent; display: grid; place-items: center; padding: 0; color: #495057"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L18.5 9.5a2.8 2.8 0 0 0-4-4L4 16v4"/><path d="M13.5 6.5l4 4"/></svg></button>
+        <button type="button" aria-label="Supprimer" style="width: 34px; height: 34px; border-radius: 8px; border: none; background: transparent; display: grid; place-items: center; padding: 0; color: #fa5252"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12"/><path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/></svg></button>
+      </div>
+    </div>
+    <div style="border: 1px solid #ced4da; border-radius: 8px; padding: 16px; display: flex; align-items: flex-start; gap: 16px">
+      <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px">
+        <span style="font-size: 18px; font-weight: 500; line-height: 1.6">Gravel du mercredi</span>
+        <div style="display: flex; align-items: center; gap: 16px">
+          <span style="display: inline-flex; align-items: center; gap: 10px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a2 2 0 1 0 4 0a2 2 0 0 0-4 0"/><path d="M8 21v-1a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1"/><path d="M15 5a2 2 0 1 0 4 0a2 2 0 0 0-4 0"/><path d="M17 10h2a2 2 0 0 1 2 2v1"/><path d="M5 5a2 2 0 1 0 4 0a2 2 0 0 0-4 0"/><path d="M3 13v-1a2 2 0 0 1 2-2h2"/></svg><span style="font-size: 14px; color: #666d75">1 groupe</span></span>
+          <span style="display: inline-flex; align-items: center; height: 20px; padding: 0 10px; border-radius: 1000px; font-size: 11px; font-weight: 700; letter-spacing: 0.25px; text-transform: uppercase; background: #e9f3fc; color: #228be6">Public</span>
+        </div>
+        <div style="margin-top: 10px; display: flex; gap: 10px">
+          <span style="display: inline-flex; align-items: center; height: 18px; padding: 0 8px; border-radius: 1000px; font-size: 10px; font-weight: 700; letter-spacing: 0.25px; text-transform: uppercase; background: #edf1fe; color: #4c6ef5">A</span>
+        </div>
+      </div>
+      <div style="display: flex; gap: 10px">
+        <button type="button" aria-label="Modifier" style="width: 34px; height: 34px; border-radius: 8px; border: none; background: transparent; display: grid; place-items: center; padding: 0; color: #495057"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L18.5 9.5a2.8 2.8 0 0 0-4-4L4 16v4"/><path d="M13.5 6.5l4 4"/></svg></button>
+        <button type="button" aria-label="Supprimer" style="width: 34px; height: 34px; border-radius: 8px; border: none; background: transparent; display: grid; place-items: center; padding: 0; color: #fa5252"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12"/><path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/></svg></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== APPAREILS, SERVICES, CLÉS ===================== -->
+  <h2 style="margin: 40px 0 8px; padding-top: 16px; border-top: 1px solid #dee2e6; font-size: 16px; font-weight: 700">Appareils, services connectés, clés d'accès</h2>
+  <span style="margin-bottom: 6px; font-size: 11px; font-weight: 600; color: #868e96">ProfileCard du profil — colonne de 760 px, à droite de la barre latérale du profil (250 px, non dessinée)</span>
+  <div style="display: grid; grid-template-columns: 250px 760px; gap: 32px; align-items: start">
+    <div></div>
+    <div style="display: flex; flex-direction: column; gap: 20px">
+
+      <span style="font-size: 11px; font-weight: 600; color: #868e96">GpsConnectionsManager — Profil › Appareils et services · Hammerhead connecté avec envoi automatique, deux services à connecter</span>
+      <div style="border: 1px solid #ced4da; border-radius: 8px; padding: 20px; display: flex; flex-direction: column; gap: 16px">
+        <h3 style="margin: 0; font-size: 16px; font-weight: 700; line-height: 1.5">Services connectés</h3>
+        <span style="font-size: 14px; color: #666d75">Vos comptes Hammerhead, Garmin Connect ou Wahoo. « Envoyer vers l'appareil » y dépose un parcours ; l'envoi automatique y dépose ceux des sorties auxquelles vous participez et des étapes de vos voyages. Votre compteur les récupère à sa prochaine synchronisation.</span>
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <div style="border: 1px solid #ced4da; border-radius: 8px; padding: 12px; display: flex; flex-direction: column">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px">
+              <div style="display: flex; align-items: center; gap: 16px">
+                <span aria-hidden="true" style="width: 32px; height: 32px; border-radius: 4px; background: #212529; color: #ffffff; font-size: 13px; font-weight: 700; display: grid; place-items: center">H</span>
+                <div style="display: flex; flex-direction: column"><span style="font-size: 14px; font-weight: 500">Hammerhead</span><span style="font-size: 12px; color: #666d75">Connecté depuis le 12 octobre 2026</span></div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 10px">
+                <span style="display: inline-flex; align-items: center; height: 20px; padding: 0 10px; border-radius: 1000px; font-size: 11px; font-weight: 700; letter-spacing: 0.25px; text-transform: uppercase; background: #ecf9ee; color: #40c057">Connecté</span>
+                <button type="button" aria-label="Déconnecter" style="width: 34px; height: 34px; border-radius: 8px; border: none; background: transparent; display: grid; place-items: center; padding: 0; color: #fa5252"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 22v-2"/><path d="M9 15l6-6"/><path d="M11 6l.46-.54a5 5 0 0 1 7.07 7.07l-.53.47"/><path d="M13 18l-.4.53a5.1 5.1 0 0 1-7.1 0a4.9 4.9 0 0 1 0-7l.5-.53"/><path d="M20 17h2"/><path d="M2 7h2"/><path d="M7 2v2"/></svg></button>
+              </div>
+            </div>
+            <div style="margin-top: 12px; display: flex; flex-direction: column; gap: 6px">
+              <div style="display: flex; align-items: flex-start; gap: 12px">
+                <span aria-hidden="true" style="margin-top: 1px; width: 38px; height: 20px; border-radius: 1000px; background: #4263eb; position: relative; flex-shrink: 0"><span style="position: absolute; right: 3px; top: 3px; width: 14px; height: 14px; border-radius: 1000px; background: #ffffff"></span></span>
+                <div style="display: flex; flex-direction: column"><span style="font-size: 14px">Envoyer automatiquement les parcours de mes sorties et de mes voyages</span><span style="font-size: 12px; color: #666d75">Les parcours des sorties auxquelles vous participez et des étapes de vos voyages, dès 7 jours avant chaque départ, mis à jour s'ils changent. Pédalons les retire le lendemain du départ, si vous vous désinscrivez, ou quand vous désactivez l'envoi.</span></div>
+              </div>
+              <span style="font-size: 12px; color: #666d75">À jour · 2 parcours envoyés · dernier envoi le mar. 10 nov. · 07:15</span>
+            </div>
+          </div>
+          <div style="border: 1px solid #ced4da; border-radius: 8px; padding: 12px; display: flex; justify-content: space-between; align-items: center; gap: 16px">
+            <div style="display: flex; align-items: center; gap: 16px">
+              <span aria-hidden="true" style="width: 32px; height: 32px; border-radius: 4px; background: #1c7ed6; color: #ffffff; font-size: 13px; font-weight: 700; display: grid; place-items: center">G</span>
+              <span style="font-size: 14px; font-weight: 500">Garmin Connect</span>
+            </div>
+            <button type="button" style="min-height: 36px; padding: 0 14px; border-radius: 8px; border: none; background: #4263eb; color: #ffffff; font: 600 12px Inter, system-ui, sans-serif; display: inline-flex; align-items: center; gap: 6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 15l6-6"/><path d="M11 6l.46-.54a5 5 0 0 1 7.07 7.07l-.53.47"/><path d="M13 18l-.4.53a5.1 5.1 0 0 1-7.1 0a4.9 4.9 0 0 1 0-7l.5-.53"/></svg>Connecter</button>
+          </div>
+          <div style="border: 1px solid #ced4da; border-radius: 8px; padding: 12px; display: flex; justify-content: space-between; align-items: center; gap: 16px">
+            <div style="display: flex; align-items: center; gap: 16px">
+              <span aria-hidden="true" style="width: 32px; height: 32px; border-radius: 4px; background: #1971c2; color: #ffffff; font-size: 13px; font-weight: 700; display: grid; place-items: center">W</span>
+              <span style="font-size: 14px; font-weight: 500">Wahoo</span>
+            </div>
+            <button type="button" style="min-height: 36px; padding: 0 14px; border-radius: 8px; border: none; background: #4263eb; color: #ffffff; font: 600 12px Inter, system-ui, sans-serif; display: inline-flex; align-items: center; gap: 6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 15l6-6"/><path d="M11 6l.46-.54a5 5 0 0 1 7.07 7.07l-.53.47"/><path d="M13 18l-.4.53a5.1 5.1 0 0 1-7.1 0a4.9 4.9 0 0 1 0-7l.5-.53"/></svg>Connecter</button>
+          </div>
+        </div>
+      </div>
+
+      <span style="font-size: 11px; font-weight: 600; color: #868e96">PairedDevicesManager — Profil › Appareils et services · deux appareils</span>
+      <div style="border: 1px solid #ced4da; border-radius: 8px; padding: 20px; display: flex; flex-direction: column; gap: 16px">
+        <h3 style="margin: 0; font-size: 16px; font-weight: 700; line-height: 1.5">Appareils appairés</h3>
+        <span style="font-size: 14px; color: #666d75">Les Karoo et Garmin sur lesquels l'application Pédalons est installée et liée à votre compte par un code.</span>
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <div style="border: 1px solid #ced4da; border-radius: 8px; padding: 12px; display: flex; justify-content: space-between; align-items: center; gap: 16px">
+            <div style="display: flex; align-items: center; gap: 16px">
+              <span aria-hidden="true" style="width: 32px; height: 32px; border-radius: 4px; background: #212529; color: #ffffff; font-size: 13px; font-weight: 700; display: grid; place-items: center">H</span>
+              <div style="display: flex; flex-direction: column"><span style="font-size: 14px; font-weight: 500">Karoo</span><span style="font-size: 12px; color: #666d75">Appairé le 3 novembre 2026 · utilisé il y a environ 2 heures</span></div>
+            </div>
+            <button type="button" aria-label="Délier Karoo" style="width: 34px; height: 34px; border-radius: 8px; border: none; background: transparent; display: grid; place-items: center; padding: 0; color: #fa5252"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 22v-2"/><path d="M9 15l6-6"/><path d="M11 6l.46-.54a5 5 0 0 1 7.07 7.07l-.53.47"/><path d="M13 18l-.4.53a5.1 5.1 0 0 1-7.1 0a4.9 4.9 0 0 1 0-7l.5-.53"/><path d="M20 17h2"/><path d="M2 7h2"/><path d="M7 2v2"/></svg></button>
+          </div>
+          <div style="border: 1px solid #ced4da; border-radius: 8px; padding: 12px; display: flex; justify-content: space-between; align-items: center; gap: 16px">
+            <div style="display: flex; align-items: center; gap: 16px">
+              <span aria-hidden="true" style="width: 32px; height: 32px; border-radius: 4px; background: #1c7ed6; color: #ffffff; font-size: 13px; font-weight: 700; display: grid; place-items: center">G</span>
+              <div style="display: flex; flex-direction: column"><span style="font-size: 14px; font-weight: 500">Garmin</span><span style="font-size: 12px; color: #666d75">Appairé le 1 novembre 2026</span></div>
+            </div>
+            <button type="button" aria-label="Délier Garmin" style="width: 34px; height: 34px; border-radius: 8px; border: none; background: transparent; display: grid; place-items: center; padding: 0; color: #fa5252"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 22v-2"/><path d="M9 15l6-6"/><path d="M11 6l.46-.54a5 5 0 0 1 7.07 7.07l-.53.47"/><path d="M13 18l-.4.53a5.1 5.1 0 0 1-7.1 0a4.9 4.9 0 0 1 0-7l.5-.53"/><path d="M20 17h2"/><path d="M2 7h2"/><path d="M7 2v2"/></svg></button>
+          </div>
+        </div>
+      </div>
+      <span style="font-size: 11px; font-weight: 600; color: #868e96">PairedDevicesManager — même carte · aucun appareil (une phrase et un lien, pas de cadre)</span>
+      <div style="border: 1px solid #ced4da; border-radius: 8px; padding: 20px; display: flex; flex-direction: column; gap: 16px">
+        <h3 style="margin: 0; font-size: 16px; font-weight: 700; line-height: 1.5">Appareils appairés</h3>
+        <span style="font-size: 14px; color: #666d75">Les Karoo et Garmin sur lesquels l'application Pédalons est installée et liée à votre compte par un code.</span>
+        <span style="font-size: 14px; color: #666d75">Aucun Karoo ni Garmin n'est appairé à votre compte. <a href="#" style="text-decoration: none">Comment appairer un appareil</a></span>
+      </div>
+
+      <span style="font-size: 11px; font-weight: 600; color: #868e96">PasskeyManager — Profil › Sécurité · deux clés, dont une jamais utilisée</span>
+      <div style="border: 1px solid #ced4da; border-radius: 8px; padding: 20px; display: flex; flex-direction: column; gap: 16px">
+        <div style="display: flex; justify-content: space-between; align-items: center">
+          <h3 style="margin: 0; font-size: 16px; font-weight: 700; line-height: 1.5">Clés d'accès</h3>
+          <button type="button" style="min-height: 36px; padding: 0 14px; border-radius: 8px; border: none; background: #4263eb; color: #ffffff; font: 600 12px Inter, system-ui, sans-serif; display: inline-flex; align-items: center; gap: 6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>Ajouter une clé d'accès</button>
+        </div>
+        <span style="font-size: 14px; color: #666d75">Connectez-vous avec votre empreinte, votre visage ou le code de votre appareil, sans code par e-mail.</span>
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <div style="border: 1px solid #ced4da; border-radius: 8px; padding: 12px; display: flex; justify-content: space-between; align-items: center">
+            <div style="display: flex; align-items: center; gap: 16px">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.555 3.843l3.602 3.602a2.877 2.877 0 0 1 0 4.069l-2.643 2.643a2.877 2.877 0 0 1-4.069 0l-.301-.301l-6.558 6.558a2 2 0 0 1-1.239.578L5.172 21H4a1 1 0 0 1-.993-.883L3 20v-1.172a2 2 0 0 1 .467-1.284l.119-.13L4 17h2v-2h2v-2l2.144-2.144l-.301-.301a2.877 2.877 0 0 1 0-4.069l2.643-2.643a2.877 2.877 0 0 1 4.069 0z"/><path d="M15 9h.01"/></svg>
+              <div style="display: flex; flex-direction: column"><span style="font-size: 14px; font-weight: 500">MacBook Pro</span><span style="font-size: 12px; color: #666d75">Dernière utilisation : 9 novembre 2026</span></div>
+            </div>
+            <button type="button" aria-label="Supprimer cette clé d'accès" style="width: 34px; height: 34px; border-radius: 8px; border: none; background: transparent; display: grid; place-items: center; padding: 0; color: #fa5252"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12"/><path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/></svg></button>
+          </div>
+          <div style="border: 1px solid #ced4da; border-radius: 8px; padding: 12px; display: flex; justify-content: space-between; align-items: center">
+            <div style="display: flex; align-items: center; gap: 16px">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.555 3.843l3.602 3.602a2.877 2.877 0 0 1 0 4.069l-2.643 2.643a2.877 2.877 0 0 1-4.069 0l-.301-.301l-6.558 6.558a2 2 0 0 1-1.239.578L5.172 21H4a1 1 0 0 1-.993-.883L3 20v-1.172a2 2 0 0 1 .467-1.284l.119-.13L4 17h2v-2h2v-2l2.144-2.144l-.301-.301a2.877 2.877 0 0 1 0-4.069l2.643-2.643a2.877 2.877 0 0 1 4.069 0z"/><path d="M15 9h.01"/></svg>
+              <div style="display: flex; flex-direction: column"><span style="font-size: 14px; font-weight: 500">Appareil sans nom</span><span style="font-size: 12px; color: #666d75">Dernière utilisation : jamais</span></div>
+            </div>
+            <button type="button" aria-label="Supprimer cette clé d'accès" style="width: 34px; height: 34px; border-radius: 8px; border: none; background: transparent; display: grid; place-items: center; padding: 0; color: #fa5252"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12"/><path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/></svg></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== LIEUX ===================== -->
+  <h2 style="margin: 40px 0 8px; padding-top: 16px; border-top: 1px solid #dee2e6; font-size: 16px; font-weight: 700">Lieux</h2>
+  <span style="margin-bottom: 6px; font-size: 11px; font-weight: 600; color: #868e96">PlaceList — Gestion de l'équipe › Lieux (largeur 1108 px) · départ et arrivée avec lien, arrivée seule, départ seul sans lien</span>
+  <div style="width: 1108px; border: 1px solid #ced4da; border-radius: 8px; display: flex; flex-direction: column">
+    <div style="padding: 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ced4da">
+      <div style="display: flex; align-items: flex-start; gap: 12px">
+        <span style="margin-top: 2px; color: #666d75; display: grid"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="11" r="3"/><path d="M17.66 16.66L13.41 20.9a2 2 0 0 1-2.83 0l-4.24-4.24a8 8 0 1 1 11.32 0z"/></svg></span>
+        <div style="display: flex; flex-direction: column">
+          <span style="font-size: 14px; font-weight: 500">Place de la Mairie</span>
+          <span style="font-size: 14px; color: #666d75">Place Aristide Briand, 29690 Huelgoat</span>
+          <a href="#" style="font-size: 14px; text-decoration: none">Voir sur la carte</a>
+          <div style="margin-top: 10px; display: flex; gap: 10px">
+            <span style="display: inline-flex; align-items: center; height: 18px; padding: 0 8px; border-radius: 1000px; font-size: 10px; font-weight: 700; letter-spacing: 0.25px; text-transform: uppercase; background: #ecf9ee; color: #40c057">Départ</span>
+            <span style="display: inline-flex; align-items: center; height: 18px; padding: 0 8px; border-radius: 1000px; font-size: 10px; font-weight: 700; letter-spacing: 0.25px; text-transform: uppercase; background: #e9f3fc; color: #228be6">Arrivée</span>
+          </div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 10px">
+        <button type="button" aria-label="Modifier" style="width: 34px; height: 34px; border-radius: 8px; border: none; background: transparent; display: grid; place-items: center; padding: 0; color: #495057"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L18.5 9.5a2.8 2.8 0 0 0-4-4L4 16v4"/><path d="M13.5 6.5l4 4"/></svg></button>
+        <button type="button" aria-label="Supprimer le lieu" style="width: 34px; height: 34px; border-radius: 8px; border: none; background: transparent; display: grid; place-items: center; padding: 0; color: #fa5252"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12"/><path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/></svg></button>
+      </div>
+    </div>
+    <div style="padding: 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ced4da">
+      <div style="display: flex; align-items: flex-start; gap: 12px">
+        <span style="margin-top: 2px; color: #666d75; display: grid"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="11" r="3"/><path d="M17.66 16.66L13.41 20.9a2 2 0 0 1-2.83 0l-4.24-4.24a8 8 0 1 1 11.32 0z"/></svg></span>
+        <div style="display: flex; flex-direction: column">
+          <span style="font-size: 14px; font-weight: 500">Café du Lac</span>
+          <span style="font-size: 14px; color: #666d75">Rue du Lac, 29690 Huelgoat</span>
+          <a href="#" style="font-size: 14px; text-decoration: none">Voir sur la carte</a>
+          <div style="margin-top: 10px; display: flex; gap: 10px">
+            <span style="display: inline-flex; align-items: center; height: 18px; padding: 0 8px; border-radius: 1000px; font-size: 10px; font-weight: 700; letter-spacing: 0.25px; text-transform: uppercase; background: #e9f3fc; color: #228be6">Arrivée</span>
+          </div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 10px">
+        <button type="button" aria-label="Modifier" style="width: 34px; height: 34px; border-radius: 8px; border: none; background: transparent; display: grid; place-items: center; padding: 0; color: #495057"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L18.5 9.5a2.8 2.8 0 0 0-4-4L4 16v4"/><path d="M13.5 6.5l4 4"/></svg></button>
+        <button type="button" aria-label="Supprimer le lieu" style="width: 34px; height: 34px; border-radius: 8px; border: none; background: transparent; display: grid; place-items: center; padding: 0; color: #fa5252"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12"/><path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/></svg></button>
+      </div>
+    </div>
+    <div style="padding: 16px; display: flex; justify-content: space-between; align-items: center">
+      <div style="display: flex; align-items: flex-start; gap: 12px">
+        <span style="margin-top: 2px; color: #666d75; display: grid"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="11" r="3"/><path d="M17.66 16.66L13.41 20.9a2 2 0 0 1-2.83 0l-4.24-4.24a8 8 0 1 1 11.32 0z"/></svg></span>
+        <div style="display: flex; flex-direction: column">
+          <span style="font-size: 14px; font-weight: 500">Parking du Roc'h Trévezel</span>
+          <span style="font-size: 14px; color: #666d75">D785, 29410 Plounéour-Ménez</span>
+          <div style="margin-top: 10px; display: flex; gap: 10px">
+            <span style="display: inline-flex; align-items: center; height: 18px; padding: 0 8px; border-radius: 1000px; font-size: 10px; font-weight: 700; letter-spacing: 0.25px; text-transform: uppercase; background: #ecf9ee; color: #40c057">Départ</span>
+          </div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 10px">
+        <button type="button" aria-label="Modifier" style="width: 34px; height: 34px; border-radius: 8px; border: none; background: transparent; display: grid; place-items: center; padding: 0; color: #495057"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L18.5 9.5a2.8 2.8 0 0 0-4-4L4 16v4"/><path d="M13.5 6.5l4 4"/></svg></button>
+        <button type="button" aria-label="Supprimer le lieu" style="width: 34px; height: 34px; border-radius: 8px; border: none; background: transparent; display: grid; place-items: center; padding: 0; color: #fa5252"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12"/><path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/></svg></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== FICHIERS GPX ===================== -->
+  <h2 style="margin: 40px 0 8px; padding-top: 16px; border-top: 1px solid #dee2e6; font-size: 16px; font-weight: 700">Fichiers GPX</h2>
+  <span style="margin-bottom: 6px; font-size: 11px; font-weight: 600; color: #868e96">PreviewRow — Outils GPX › Lister mes fichiers (largeur 1140 px) · avec heure de départ ; sans</span>
+  <div style="width: 1140px; display: flex; flex-direction: column; gap: 16px">
+    <div style="border: 1px solid #ced4da; border-radius: 8px; padding: 16px; display: flex; justify-content: space-between; align-items: center; gap: 12px">
+      <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+        <span style="font-size: 16px; font-weight: 500">Boucle des Monts d'Arrée</span>
+        <span style="display: flex; align-items: flex-start; gap: 6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4263eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin-top: 2px"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg><span style="font-size: 14px; font-weight: 700; line-height: 1.4">sam. 14 nov. · 09:00</span></span>
+        <div style="display: flex; align-items: center; gap: 16px; font-size: 14px; color: #666d75">
+          <span>92 km</span>
+          <span style="display: inline-flex; align-items: center; gap: 2px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="M18 11l-6-6"/><path d="M6 11l6-6"/></svg>1 240 m</span>
+          <span style="display: inline-flex; align-items: center; gap: 2px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="M18 13l-6 6"/><path d="M6 13l6 6"/></svg>1 240 m</span>
+          <span>il y a 2 jours</span>
+        </div>
+      </div>
+      <div style="display: flex; gap: 10px">
+        <button type="button" style="min-height: 36px; padding: 0 18px; border-radius: 8px; border: 1px solid #ced4da; background: #ffffff; color: #000000; font: 600 14px Inter, system-ui, sans-serif; display: inline-flex; align-items: center; gap: 8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 18l-2-1l-6 3V7l6-3l6 3l6-3v7.5"/><path d="M9 4v13"/><path d="M15 7v5"/><circle cx="16.5" cy="17.5" r="2.5"/><path d="M18.5 19.5L21 22"/></svg>Voir</button>
+        <button type="button" style="min-height: 36px; padding: 0 18px; border-radius: 8px; border: 1px solid #ced4da; background: #ffffff; color: #000000; font: 600 14px Inter, system-ui, sans-serif; display: inline-flex; align-items: center; gap: 8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12"/><path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/></svg>Supprimer</button>
+      </div>
+    </div>
+    <div style="border: 1px solid #ced4da; border-radius: 8px; padding: 16px; display: flex; justify-content: space-between; align-items: center; gap: 12px">
+      <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+        <span style="font-size: 16px; font-weight: 500">traversee-morvan-etape-2.gpx</span>
+        <div style="display: flex; align-items: center; gap: 16px; font-size: 14px; color: #666d75">
+          <span>68 km</span>
+          <span style="display: inline-flex; align-items: center; gap: 2px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="M18 11l-6-6"/><path d="M6 11l6-6"/></svg>1 120 m</span>
+          <span style="display: inline-flex; align-items: center; gap: 2px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="M18 13l-6 6"/><path d="M6 13l6 6"/></svg>980 m</span>
+          <span>il y a 9 jours</span>
+        </div>
+      </div>
+      <div style="display: flex; gap: 10px">
+        <button type="button" style="min-height: 36px; padding: 0 18px; border-radius: 8px; border: 1px solid #ced4da; background: #ffffff; color: #000000; font: 600 14px Inter, system-ui, sans-serif; display: inline-flex; align-items: center; gap: 8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 18l-2-1l-6 3V7l6-3l6 3l6-3v7.5"/><path d="M9 4v13"/><path d="M15 7v5"/><circle cx="16.5" cy="17.5" r="2.5"/><path d="M18.5 19.5L21 22"/></svg>Voir</button>
+        <button type="button" style="min-height: 36px; padding: 0 18px; border-radius: 8px; border: 1px solid #ced4da; background: #ffffff; color: #000000; font: 600 14px Inter, system-ui, sans-serif; display: inline-flex; align-items: center; gap: 8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12"/><path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/></svg>Supprimer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== PAGES D'ÉQUIPE ===================== -->
+  <h2 style="margin: 40px 0 8px; padding-top: 16px; border-top: 1px solid #dee2e6; font-size: 16px; font-weight: 700">Pages d'équipe</h2>
+  <span style="margin-bottom: 6px; font-size: 11px; font-weight: 600; color: #868e96">TeamPagesAdminPage — Gestion de l'équipe › Pages (largeur 1108 px) · publique, équipe uniquement, supprimée (bouton Restaurer en plus, rien d'autre)</span>
+  <div style="width: 1108px; display: flex; flex-direction: column; gap: 10px">
+    <div style="border: 1px solid #ced4da; border-radius: 8px; padding: 16px; display: flex; justify-content: space-between; align-items: center">
+      <div style="display: flex; align-items: center; gap: 12px">
+        <span style="color: #666d75; display: grid"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/></svg></span>
+        <span style="display: flex; align-items: center; gap: 10px"><span style="font-size: 18px; font-weight: 500">Notre histoire</span><span style="display: inline-flex; align-items: center; gap: 4px; height: 18px; padding: 0 8px; border-radius: 1000px; font-size: 10px; font-weight: 700; letter-spacing: 0.25px; text-transform: uppercase; background: #e9f3fc; color: #228be6"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="2"/><path d="M22 12c-2.67 4.67-6 7-10 7s-7.33-2.33-10-7c2.67-4.67 6-7 10-7s7.33 2.33 10 7"/></svg>Public</span></span>
+      </div>
+      <div style="display: flex; gap: 10px">
+        <button type="button" aria-label="Modifier" style="width: 34px; height: 34px; border-radius: 8px; border: none; background: transparent; display: grid; place-items: center; padding: 0; color: #495057"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L18.5 9.5a2.8 2.8 0 0 0-4-4L4 16v4"/><path d="M13.5 6.5l4 4"/></svg></button>
+        <button type="button" aria-label="Supprimer" style="width: 34px; height: 34px; border-radius: 8px; border: none; background: transparent; display: grid; place-items: center; padding: 0; color: #fa5252"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12"/><path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/></svg></button>
+      </div>
+    </div>
+    <div style="border: 1px solid #ced4da; border-radius: 8px; padding: 16px; display: flex; justify-content: space-between; align-items: center">
+      <div style="display: flex; align-items: center; gap: 12px">
+        <span style="color: #666d75; display: grid"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/></svg></span>
+        <span style="display: flex; align-items: center; gap: 10px"><span style="font-size: 18px; font-weight: 500">Charte du club</span><span style="display: inline-flex; align-items: center; gap: 4px; height: 18px; padding: 0 8px; border-radius: 1000px; font-size: 10px; font-weight: 700; letter-spacing: 0.25px; text-transform: uppercase; background: #f3f4f5; color: #868e96"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0-3-3.85"/></svg>Équipe uniquement</span></span>
+      </div>
+      <div style="display: flex; gap: 10px">
+        <button type="button" aria-label="Modifier" style="width: 34px; height: 34px; border-radius: 8px; border: none; background: transparent; display: grid; place-items: center; padding: 0; color: #495057"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L18.5 9.5a2.8 2.8 0 0 0-4-4L4 16v4"/><path d="M13.5 6.5l4 4"/></svg></button>
+        <button type="button" aria-label="Supprimer" style="width: 34px; height: 34px; border-radius: 8px; border: none; background: transparent; display: grid; place-items: center; padding: 0; color: #fa5252"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12"/><path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/></svg></button>
+      </div>
+    </div>
+    <div style="border: 1px solid #ced4da; border-radius: 8px; padding: 16px; display: flex; justify-content: space-between; align-items: center">
+      <div style="display: flex; align-items: center; gap: 12px">
+        <span style="color: #666d75; display: grid"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/></svg></span>
+        <span style="display: flex; align-items: center; gap: 10px"><span style="font-size: 18px; font-weight: 500">Adhésion 2026</span><span style="display: inline-flex; align-items: center; gap: 4px; height: 18px; padding: 0 8px; border-radius: 1000px; font-size: 10px; font-weight: 700; letter-spacing: 0.25px; text-transform: uppercase; background: #e9f3fc; color: #228be6"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="2"/><path d="M22 12c-2.67 4.67-6 7-10 7s-7.33-2.33-10-7c2.67-4.67 6-7 10-7s7.33 2.33 10 7"/></svg>Public</span></span>
+      </div>
+      <div style="display: flex; gap: 10px">
+        <button type="button" aria-label="Modifier" style="width: 34px; height: 34px; border-radius: 8px; border: none; background: transparent; display: grid; place-items: center; padding: 0; color: #495057"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L18.5 9.5a2.8 2.8 0 0 0-4-4L4 16v4"/><path d="M13.5 6.5l4 4"/></svg></button>
+        <button type="button" aria-label="Restaurer" style="width: 34px; height: 34px; border-radius: 8px; border: none; background: transparent; display: grid; place-items: center; padding: 0; color: #40c057"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.06 13a9 9 0 1 0 .49-4.087"/><path d="M3 4.001v5h5"/><circle cx="12" cy="12" r="1"/></svg></button>
+        <button type="button" aria-label="Supprimer" style="width: 34px; height: 34px; border-radius: 8px; border: none; background: transparent; display: grid; place-items: center; padding: 0; color: #fa5252"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12"/><path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/></svg></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== SIGNALEMENT ===================== -->
+  <h2 style="margin: 40px 0 8px; padding-top: 16px; border-top: 1px solid #dee2e6; font-size: 16px; font-weight: 700">Signalements</h2>
+  <span style="margin-bottom: 6px; font-size: 11px; font-weight: 600; color: #868e96">ModerationItemCard (ModerationQueue) — Gestion de l'équipe › Signalements (largeur 1108 px) · commentaire à traiter, masqué ; article traité, rejeté (sans boutons)</span>
+  <div style="width: 1108px; display: flex; flex-direction: column; gap: 16px">
+    <div style="border: 1px solid #ced4da; border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px">
+        <div style="display: flex; gap: 10px">
+          <span style="display: inline-flex; align-items: center; height: 20px; padding: 0 10px; border-radius: 1000px; font-size: 11px; font-weight: 700; letter-spacing: 0.25px; text-transform: uppercase; background: #f3f4f5; color: #868e96">Commentaire</span>
+          <span style="display: inline-flex; align-items: center; gap: 4px; height: 20px; padding: 0 10px; border-radius: 1000px; font-size: 11px; font-weight: 700; letter-spacing: 0.25px; text-transform: uppercase; background: #ffeeee; color: #fa5252"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5a5 5 0 0 1 7 0a5 5 0 0 0 7 0v9a5 5 0 0 1-7 0a5 5 0 0 0-7 0V5z"/><path d="M5 21v-7"/></svg>2 signalements</span>
+          <span style="display: inline-flex; align-items: center; gap: 4px; height: 20px; padding: 0 10px; border-radius: 1000px; font-size: 11px; font-weight: 700; letter-spacing: 0.25px; text-transform: uppercase; background: #fff7e6; color: #fab005"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.585 10.587a2 2 0 0 0 2.829 2.828"/><path d="M16.681 16.673A8.717 8.717 0 0 1 12 18c-3.6 0-6.6-2-9-6c1.272-2.12 2.712-3.678 4.32-4.674m2.86-1.146A9.055 9.055 0 0 1 12 6c3.6 0 6.6 2 9 6c-.666 1.11-1.379 2.067-2.138 2.87"/><path d="M3 3l18 18"/></svg>Masqué aux membres</span>
+        </div>
+        <span style="font-size: 12px; color: #666d75">Dernier signalement : mar. 10 nov. · 08:42</span>
+      </div>
+      <a href="#" style="font-size: 16px; font-weight: 500; text-decoration: none">Commentaire sur « Boucle des Monts d'Arrée »</a>
+      <div style="display: flex; align-items: center; gap: 10px">
+        <span style="width: 26px; height: 26px; border-radius: 1000px; background: #edf1fe; color: #4c6ef5; font-size: 10px; font-weight: 700; display: grid; place-items: center">SM</span>
+        <span style="font-size: 14px">Par Sacha Morel</span>
+      </div>
+      <div style="padding: 12px; border-radius: 4px; border-left: 3px solid #868e96; background: #f7f7f8">
+        <span style="font-size: 14px">Vélo de course d'occasion à vendre, écrivez-moi sur mon site pour le prix !</span>
+      </div>
+      <div style="display: flex; gap: 6px">
+        <span style="display: inline-flex; align-items: center; height: 18px; padding: 0 8px; border-radius: 1000px; border: 1px solid #868e96; font-size: 10px; font-weight: 700; letter-spacing: 0.25px; text-transform: uppercase; color: #868e96">Spam ou publicité</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <span style="font-size: 14px; font-weight: 500">Précisions des signalements</span>
+        <span style="font-size: 14px; color: #666d75">Troisième message de ce genre cette semaine.</span>
+      </div>
+      <div style="display: flex; gap: 12px">
+        <button type="button" style="min-height: 36px; padding: 0 18px; border-radius: 8px; border: none; background: #ffeeee; color: #fa5252; font: 600 14px Inter, system-ui, sans-serif; display: inline-flex; align-items: center; gap: 8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12"/><path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/></svg>Supprimer le contenu</button>
+        <button type="button" style="min-height: 36px; padding: 0 18px; border-radius: 8px; border: 1px solid #ced4da; background: #ffffff; color: #000000; font: 600 14px Inter, system-ui, sans-serif; display: inline-flex; align-items: center; gap: 8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5l10-10"/></svg>Rejeter le signalement</button>
+      </div>
+    </div>
+    <div style="border: 1px solid #ced4da; border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px">
+        <div style="display: flex; gap: 10px">
+          <span style="display: inline-flex; align-items: center; height: 20px; padding: 0 10px; border-radius: 1000px; font-size: 11px; font-weight: 700; letter-spacing: 0.25px; text-transform: uppercase; background: #f3f4f5; color: #868e96">Post</span>
+          <span style="display: inline-flex; align-items: center; gap: 4px; height: 20px; padding: 0 10px; border-radius: 1000px; font-size: 11px; font-weight: 700; letter-spacing: 0.25px; text-transform: uppercase; background: #ffeeee; color: #fa5252"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5a5 5 0 0 1 7 0a5 5 0 0 0 7 0v9a5 5 0 0 1-7 0a5 5 0 0 0-7 0V5z"/><path d="M5 21v-7"/></svg>1 signalement</span>
+          <span style="display: inline-flex; align-items: center; height: 20px; padding: 0 10px; border-radius: 1000px; font-size: 11px; font-weight: 700; letter-spacing: 0.25px; text-transform: uppercase; background: #f3f4f5; color: #868e96">Rejeté</span>
+        </div>
+        <span style="font-size: 12px; color: #666d75">Dernier signalement : jeu. 5 nov. · 19:03</span>
+      </div>
+      <a href="#" style="font-size: 16px; font-weight: 500; text-decoration: none">Compte rendu de la Traversée du Morvan</a>
+      <div style="display: flex; align-items: center; gap: 10px">
+        <span style="width: 26px; height: 26px; border-radius: 1000px; background: #edf1fe; color: #4c6ef5; font-size: 10px; font-weight: 700; display: grid; place-items: center">KB</span>
+        <span style="font-size: 14px">Par Karim Benali</span>
+      </div>
+      <div style="display: flex; gap: 6px">
+        <span style="display: inline-flex; align-items: center; height: 18px; padding: 0 8px; border-radius: 1000px; border: 1px solid #868e96; font-size: 10px; font-weight: 700; letter-spacing: 0.25px; text-transform: uppercase; color: #868e96">Image inappropriée</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== COMMENTAIRES ===================== -->
+  <h2 style="margin: 40px 0 8px; padding-top: 16px; border-top: 1px solid #dee2e6; font-size: 16px; font-weight: 700">Commentaires</h2>
+  <span style="margin-bottom: 6px; font-size: 11px; font-weight: 600; color: #868e96">CommentSection / CommentItem — bas d'un article (colonne de 928 px) · commentaire avec « Voir les N réponses » et une réponse en retrait, commentaire supprimé gardé pour sa réponse, commentaire de la personne qui lit (Supprimer)</span>
+  <div style="width: 928px; box-sizing: border-box; border: 1px solid #ced4da; border-radius: 8px; padding: 32px; box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1); display: flex; flex-direction: column">
+    <h4 style="margin: 0 0 16px; font-size: 18px; font-weight: 700; line-height: 1.5">Commentaires (4)</h4>
+    <div style="display: flex; align-items: flex-start; gap: 10px">
+      <div style="flex: 1; min-height: 60px; box-sizing: border-box; padding: 8px 12px; border: 1px solid #ced4da; border-radius: 8px; font-size: 14px; color: #adb5bd">Écrivez un commentaire...</div>
+      <button type="button" aria-label="Envoyer le commentaire" style="width: 34px; height: 34px; border-radius: 8px; border: none; background: #4263eb; color: #ffffff; display: grid; place-items: center; padding: 0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14L21 3"/><path d="M21 3l-6.5 18a.55 .55 0 0 1-1 0L10 14l-7-3.5a.55 .55 0 0 1 0-1L21 3"/></svg></button>
+    </div>
+
+    <div style="margin-top: 32px; display: flex; flex-direction: column; gap: 16px">
+      <!-- fil 1 -->
+      <div style="display: flex; flex-direction: column">
+        <div style="display: flex; align-items: flex-start; gap: 12px">
+          <span style="width: 26px; height: 26px; border-radius: 1000px; background: #edf1fe; color: #4c6ef5; font-size: 10px; font-weight: 700; display: grid; place-items: center; flex-shrink: 0">KB</span>
+          <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px">
+              <span style="display: flex; align-items: center; gap: 10px"><span style="font-size: 16px; font-weight: 500">Karim Benali</span><span style="font-size: 12px; color: #666d75">il y a environ 2 heures</span></span>
+              <button type="button" aria-label="Plus d'actions" style="width: 22px; height: 22px; border-radius: 4px; border: none; background: transparent; display: grid; place-items: center; padding: 0; color: #495057"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></button>
+            </div>
+            <span style="font-size: 16px; line-height: 1.55">On prévoit un arrêt à la boulangerie de Brasparts ?</span>
+            <div style="margin-top: 4px; display: flex; gap: 16px">
+              <button type="button" style="min-height: 36px; padding: 0 14px; border-radius: 8px; border: none; background: transparent; color: #495057; font: 600 12px Inter, system-ui, sans-serif; display: inline-flex; align-items: center; gap: 6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 9h8"/><path d="M8 13h6"/><path d="M18 4a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3h-5l-5 3v-3H6a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3z"/></svg>Répondre</button>
+            </div>
+          </div>
+        </div>
+        <button type="button" style="margin: 10px 0 0 44px; align-self: flex-start; min-height: 36px; padding: 0 14px; border-radius: 8px; border: none; background: transparent; color: #495057; font: 600 12px Inter, system-ui, sans-serif">Voir les 3 réponses</button>
+        <div style="margin-top: 16px; display: flex; flex-direction: column; gap: 12px">
+          <div style="margin-left: 32px; padding-left: 16px; border-left: 2px solid #ced4da; display: flex; align-items: flex-start; gap: 12px">
+            <span style="width: 26px; height: 26px; border-radius: 1000px; background: #edf1fe; color: #4c6ef5; font-size: 10px; font-weight: 700; display: grid; place-items: center; flex-shrink: 0">LM</span>
+            <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+              <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px">
+                <span style="display: flex; align-items: center; gap: 10px"><span style="font-size: 16px; font-weight: 500">Léa Martin</span><span style="font-size: 12px; color: #666d75">il y a environ 1 heure</span></span>
+                <button type="button" aria-label="Plus d'actions" style="width: 22px; height: 22px; border-radius: 4px; border: none; background: transparent; display: grid; place-items: center; padding: 0; color: #495057"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></button>
+              </div>
+              <span style="font-size: 16px; line-height: 1.55">Oui, vers le km 41.</span>
+              <div style="margin-top: 4px; height: 0"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- fil 2 : supprimé -->
+      <div style="display: flex; flex-direction: column">
+        <span style="font-size: 14px; color: #666d75; font-style: italic">Commentaire supprimé</span>
+        <div style="margin-top: 16px; display: flex; flex-direction: column; gap: 12px">
+          <div style="margin-left: 32px; padding-left: 16px; border-left: 2px solid #ced4da; display: flex; align-items: flex-start; gap: 12px">
+            <span style="width: 26px; height: 26px; border-radius: 1000px; background: #edf1fe; color: #4c6ef5; font-size: 10px; font-weight: 700; display: grid; place-items: center; flex-shrink: 0">NP</span>
+            <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+              <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px">
+                <span style="display: flex; align-items: center; gap: 10px"><span style="font-size: 16px; font-weight: 500">Noé Perrin</span><span style="font-size: 12px; color: #666d75">il y a 3 jours</span></span>
+                <button type="button" aria-label="Plus d'actions" style="width: 22px; height: 22px; border-radius: 4px; border: none; background: transparent; display: grid; place-items: center; padding: 0; color: #495057"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></button>
+              </div>
+              <span style="font-size: 16px; line-height: 1.55">Je peux prêter une lampe à qui en a besoin.</span>
+              <div style="margin-top: 4px; height: 0"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- fil 3 : le mien -->
+      <div style="display: flex; align-items: flex-start; gap: 12px">
+        <span style="width: 26px; height: 26px; border-radius: 1000px; background: #edf1fe; color: #4c6ef5; font-size: 10px; font-weight: 700; display: grid; place-items: center; flex-shrink: 0">CD</span>
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px">
+            <span style="display: flex; align-items: center; gap: 10px"><span style="font-size: 16px; font-weight: 500">Camille Durand</span><span style="font-size: 12px; color: #666d75">il y a 3 jours</span></span>
+            <button type="button" aria-label="Plus d'actions" style="width: 22px; height: 22px; border-radius: 4px; border: none; background: transparent; display: grid; place-items: center; padding: 0; color: #495057"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></button>
+          </div>
+          <span style="font-size: 16px; line-height: 1.55">Pensez aux lumières, le Roc'h Trévezel est souvent dans la brume.</span>
+          <div style="margin-top: 4px; display: flex; gap: 16px">
+            <button type="button" style="min-height: 36px; padding: 0 14px; border-radius: 8px; border: none; background: transparent; color: #495057; font: 600 12px Inter, system-ui, sans-serif; display: inline-flex; align-items: center; gap: 6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 9h8"/><path d="M8 13h6"/><path d="M18 4a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3h-5l-5 3v-3H6a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3z"/></svg>Répondre</button>
+            <button type="button" style="min-height: 36px; padding: 0 14px; border-radius: 8px; border: none; background: transparent; color: #fa5252; font: 600 12px Inter, system-ui, sans-serif; display: inline-flex; align-items: center; gap: 6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12"/><path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/></svg>Supprimer</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":5240}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
