@@ -88,13 +88,6 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
       défile) ; à revoir `05-dashboard` (bouton « GPS » de « Mes prochaines sorties »). Le mode captures compile
       et pointe sur des écrans existants. Plan
       [`2026-11-10-refonte-ecrans-detail-mobile.md`](plans/2026-11-10-refonte-ecrans-detail-mobile.md), lot 12.
-- [ ] `MOB-136` **Lieux de départ et d'arrivée : l'adresse n'est plus affichée (S)** — depuis `MOB-134`, les lieux
-      des écrans de détail sont des liens d'itinéraire (`PdlPlaceRow.link`, `ridePlaceLinks` dans
-      `features/rides/presentation/widgets/ride_departure_block.dart`, `stage_detail_page.dart`,
-      `trip_detail_page.dart`) qui ne montrent que le nom : `PlaceDetailDto.address`, que la sortie et l'étape
-      affichaient sous le nom (« Place de Jaude, 63000 Clermont-Ferrand »), ne sert plus qu'à ouvrir l'itinéraire
-      faute de coordonnées. Les maquettes ne l'ont pas tranché (leur lieu d'exemple porte la ville dans son nom).
-      Remettre l'adresse en `xs` sous le lien, ou ranger l'écart dans « Délibérément dehors » avec sa raison.
 - [ ] `MOB-130` **Contrôles de carte : recette sur appareil de `MOB-129` (S)** — rien ne se voit sans
       carte native (l'échelle et le crédit n'existent pas en test de widget), plan
       [`archive/2026-11-10-controles-carte.md`](plans/archive/2026-11-10-controles-carte.md). À vérifier, iPhone SE compris et texte à 130 % : l'échelle et le ⓘ au-dessus
@@ -1491,6 +1484,7 @@ redevient une entrée de sa section sous le même identifiant.
 | `WEB-10` | **Minimum de 44 px sur les boutons web** | Règle **tactile** uniquement | Le web descend à 36 px au-dessus de 768 px. Ne pas prendre `pedalons.css` pour une spécification web |
 | `WEB-159` | **Interrupteur Pente · Revêtement · Météo dans l'en-tête du profil en surimpression (web)** | Non (décidé le 10 novembre 2026 avec le propriétaire, sur maquette — canevas « Contrôles des cartes ») | Ce profil ne fait que 110 px sur un petit écran : un en-tête le rognerait. L'interrupteur reste sous la carte (`ColorModeControls`), BRANDING §3.8. À rouvrir avec une hauteur minimale de profil relevée et le cadrage de la carte revu |
 | `MOB-131` | **« Me localiser » sur les cartes de l'app** | Non (maquetté puis retiré de `MOB-129`, 10 novembre 2026) | L'app ne déclare que la position approximative, demandée une fois pour « Autour de moi » (`AndroidManifest.xml`, `Info.plist`, `store-metadata/data-safety.md` : pas de puck MapLibre). L'ajouter rouvre ces trois déclarations et les fiches des stores |
+| `MOB-136` | **Adresse sous le nom des lieux de départ et d'arrivée** (« Place de Jaude, 63000 Clermont-Ferrand ») | Non (décidé le 10 novembre 2026 avec le propriétaire, après la refonte `MOB-134`) | Sur les écrans de détail, un lieu est un lien d'itinéraire qui ne montre que son nom (`PdlPlaceRow.link`, `ridePlaceLinks`, `stage_detail_page.dart`, `trip_detail_page.dart`) : le bloc de départ reste court, et le lien mène à l'adresse. `PlaceDetailDto.address` ne sert plus qu'à ouvrir l'itinéraire faute de coordonnées |
 | `WEB-11` | **Jetons `--pdl-*` au web** | Non introduits | Le site a déjà la charte en thème Mantine ; une seconde couche de variables créerait deux sources de vérité |
 | `WEB-12` | **Mode sombre dérivé au web** | Sans objet | Le tableau de parité est un livrable **pour Flutter**, parce qu'aucune maquette ne fournit le sombre. Mantine l'a déjà |
 | `MOB-22` | **Jeu d'icônes Tabler côté mobile** | Material outline conservé | L'écart ne porte que sur la graisse du trait des icônes de badge de 11 px. `PdlIcons` (`lib/core/theme/pdl_icons.dart`) devrait être le **seul** fichier à nommer `Icons.*` (17 autres fichiers le font encore au 16 octobre 2026) : une fois ce ménage fait, basculer ne touchera qu'un fichier |
