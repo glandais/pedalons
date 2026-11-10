@@ -3,6 +3,7 @@ package fr.pedalons.dto.weather.response;
 import fr.pedalons.common.TsidUtils;
 import fr.pedalons.dto.validation.ValidateSchema;
 import fr.pedalons.enums.WeatherStatus;
+import fr.pedalons.service.weather.RideWeatherCalculator;
 import fr.pedalons.service.weather.WeatherLeg;
 import java.time.Instant;
 import java.util.List;
@@ -27,8 +28,8 @@ public record WeatherLegDto(
                 "State of this leg's forecast. NO_LOCATION when the leg has no route to sample:"
                     + " then no checkpoint, no segment. NOT_YET_AVAILABLE when it leaves beyond the"
                     + " seven-day horizon: checkpoints and times without weather, and"
-                    + " availableFrom. OUT_OF_RANGE for a trip stage already gone: nothing to"
-                    + " show.",
+                    + " availableFrom. OUT_OF_RANGE for a trip stage already over (its estimated"
+                    + " end passed): nothing to show.",
             required = true)
         WeatherStatus status,
     @Nullable
@@ -64,7 +65,25 @@ public record WeatherLegDto(
                     + " gust")
         WindDto prevailingWind,
     @Nullable @Schema(description = "The first checkpoint where rain becomes likely, if any")
-        WeatherRainAlertDto rainAlert) {
+        WeatherRainAlertDto rainAlert,
+    @Nullable
+        @Schema(
+            description =
+                "The leg's weather in one line, for its card: the first checkpoint's hour, the"
+                    + " extremes over the checkpoints, the rain alert — as"
+                    + " TripStageWeatherDto.summary for a stage. Present when status is OK, STALE"
+                    + " or NOT_YET_AVAILABLE (then status and availableFrom only).")
+        RideWeatherSummaryDto summary,
+    @Nullable
+        @Schema(
+            description =
+                "For a ride's leg: the weather at the ride's meeting point when this group leaves"
+                    + " (startTime), sunrise and sunset included — RideWeatherDto.departure is the"
+                    + " same at the ride's own time. Same states: conditions for OK and STALE only,"
+                    + " UNAVAILABLE when the cache has no hour near the group's start,"
+                    + " NOT_YET_AVAILABLE when the group leaves beyond the horizon. Absent on a"
+                    + " trip's legs, whose departure TripStageWeatherDto.departure carries.")
+        DepartureWeatherDto departure) {
 
   public static WeatherLegDto from(WeatherLeg leg) {
     return new WeatherLegDto(
@@ -81,6 +100,8 @@ public record WeatherLegDto(
         leg.segments().stream().map(WindSegmentDto::from).toList(),
         WindExposureDto.from(leg.windExposure()),
         WindDto.fromNullable(leg.prevailingWind()),
-        WeatherRainAlertDto.fromNullable(leg.rainAlert()));
+        WeatherRainAlertDto.fromNullable(leg.rainAlert()),
+        RideWeatherSummaryDto.fromNullable(RideWeatherCalculator.legSummary(leg)),
+        leg.departure() != null ? DepartureWeatherDto.from(leg.departure()) : null);
   }
 }

@@ -10,6 +10,8 @@ import fr.pedalons.dto.validation.ValidateSchema;
 import fr.pedalons.repository.ride.RideGroupRepository.GroupRow;
 import fr.pedalons.service.asset.ThumbnailLookup.ThemedThumbnail;
 import fr.pedalons.service.common.ParticipantPreviewLookup.ParticipantPreview;
+import fr.pedalons.service.publication.PublicationEndCalculator;
+import fr.pedalons.service.publication.PublicationEndCalculator.LegEstimate;
 import fr.pedalons.service.timezone.EventTimezoneResolver;
 import java.time.Instant;
 import java.time.LocalTime;
@@ -103,7 +105,21 @@ public record RideGroupDto(
                     + " caller's GPS services whose automatic sync is on and which hold it, sorted"
                     + " by service. Only ever about the caller's own connections. Absent when there"
                     + " is none: anonymous caller, no such service, no route.")
-        List<RouteGpsSyncStatusDto> gpsSyncStatuses) {
+        List<RouteGpsSyncStatusDto> gpsSyncStatuses,
+    @Nullable
+        @Schema(
+            description =
+                "When the group is expected back: startAt plus the length of the route it rides"
+                    + " (its own, else the ride's) at its averageSpeed. Absent when it has no route"
+                    + " or no averageSpeed — no default speed here. Known whatever the forecast"
+                    + " window, unlike WeatherLegDto.arrivalTime.")
+        Instant estimatedArrival,
+    @Nullable
+        @Schema(
+            description =
+                "Minutes from startAt to estimatedArrival, rounded. Absent when"
+                    + " estimatedArrival is.")
+        Integer estimatedDurationMinutes) {
 
   /**
    * @param registeredGroupId the group of this ride the current user joined, or {@code null} — the
@@ -129,6 +145,7 @@ public record RideGroupDto(
     // RideGroup.route is a to-one, already resolved (and batched across the ride's groups) by the
     // routeSlug read just below: the metrics cost no extra query.
     Route route = group.getRoute();
+    LegEstimate estimate = PublicationEndCalculator.estimate(group);
     return new RideGroupDto(
         TsidUtils.toString(group.getId()),
         group.getName(),
@@ -148,7 +165,9 @@ public record RideGroupDto(
         routeThumbnail != null ? routeThumbnail.light() : null,
         routeThumbnail != null ? routeThumbnail.dark() : null,
         routeThumbnail != null ? routeThumbnail.collapsed() : null,
-        gpsSync.fieldFor(effectiveRouteId(route, group.getRide().getRoute())));
+        gpsSync.fieldFor(effectiveRouteId(route, group.getRide().getRoute())),
+        estimate != null ? estimate.arrival() : null,
+        estimate != null ? estimate.durationMinutes() : null);
   }
 
   /**
@@ -185,6 +204,8 @@ public record RideGroupDto(
       boolean withNames,
       @Nullable Long rideRouteId,
       RouteGpsSyncStatuses gpsSync) {
+    LegEstimate estimate =
+        PublicationEndCalculator.estimate(row.startAt(), row.riddenDistance(), row.averageSpeed());
     return new RideGroupDto(
         TsidUtils.toString(row.id()),
         row.name(),
@@ -207,6 +228,8 @@ public record RideGroupDto(
         routeThumbnail != null ? routeThumbnail.light() : null,
         routeThumbnail != null ? routeThumbnail.dark() : null,
         routeThumbnail != null ? routeThumbnail.collapsed() : null,
-        gpsSync.fieldFor(row.routeId() != null ? row.routeId() : rideRouteId));
+        gpsSync.fieldFor(row.routeId() != null ? row.routeId() : rideRouteId),
+        estimate != null ? estimate.arrival() : null,
+        estimate != null ? estimate.durationMinutes() : null);
   }
 }

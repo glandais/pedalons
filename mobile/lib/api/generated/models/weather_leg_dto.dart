@@ -4,7 +4,9 @@
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'departure_weather_dto.dart';
 import 'instant.dart';
+import 'ride_weather_summary_dto.dart';
 import 'weather_checkpoint_dto.dart';
 import 'weather_rain_alert_dto.dart';
 import 'weather_status.dart';
@@ -19,7 +21,7 @@ part 'weather_leg_dto.g.dart';
 @Freezed()
 abstract class WeatherLegDto with _$WeatherLegDto {
   const factory WeatherLegDto({
-    /// State of this leg's forecast. NO_LOCATION when the leg has no route to sample: then no checkpoint, no segment. NOT_YET_AVAILABLE when it leaves beyond the seven-day horizon: checkpoints and times without weather, and availableFrom. OUT_OF_RANGE for a trip stage already gone: nothing to show.
+    /// State of this leg's forecast. NO_LOCATION when the leg has no route to sample: then no checkpoint, no segment. NOT_YET_AVAILABLE when it leaves beyond the seven-day horizon: checkpoints and times without weather, and availableFrom. OUT_OF_RANGE for a trip stage already over (its estimated end passed): nothing to show.
     required String status,
 
     /// When the leg leaves
@@ -60,6 +62,12 @@ abstract class WeatherLegDto with _$WeatherLegDto {
 
     /// The first checkpoint where rain becomes likely, if any
     WeatherRainAlertDto? rainAlert,
+
+    /// The leg's weather in one line, for its card: the first checkpoint's hour, the extremes over the checkpoints, the rain alert — as TripStageWeatherDto.summary for a stage. Present when status is OK, STALE or NOT_YET_AVAILABLE (then status and availableFrom only).
+    RideWeatherSummaryDto? summary,
+
+    /// For a ride's leg: the weather at the ride's meeting point when this group leaves (startTime), sunrise and sunset included — RideWeatherDto.departure is the same at the ride's own time. Same states: conditions for OK and STALE only, UNAVAILABLE when the cache has no hour near the group's start, NOT_YET_AVAILABLE when the group leaves beyond the horizon. Absent on a trip's legs, whose departure TripStageWeatherDto.departure carries.
+    DepartureWeatherDto? departure,
   }) = _WeatherLegDto;
 
   factory WeatherLegDto.fromJson(Map<String, Object?> json) =>

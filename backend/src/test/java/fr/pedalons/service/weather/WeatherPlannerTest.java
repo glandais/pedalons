@@ -91,6 +91,12 @@ class WeatherPlannerTest extends AbstractResourceTest {
         team, user, "Ride " + slug, slug, dateTime, Visibility.PUBLIC, status);
   }
 
+  /** Stores the ride's end, as {@code PublicationEndCalculator} would on a save. */
+  private void endAt(Ride ride, Instant end) {
+    QuarkusTransaction.requiringNew()
+        .run(() -> rideRepository.findById(ride.getId()).setEndDateTime(end));
+  }
+
   /** Puts the ride's meeting point at ({@code lat}, {@code lon}), and its route if given. */
   private void locate(Ride ride, double lat, double lon, @Nullable Route route) {
     QuarkusTransaction.requiringNew()
@@ -179,6 +185,11 @@ class WeatherPlannerTest extends AbstractResourceTest {
         ride(team1, user1, "published", now.plus(Duration.ofDays(1)), Status.PUBLISHED);
     Ride underway =
         ride(team1, user1, "underway", now.minus(Duration.ofHours(2)), Status.PUBLISHED);
+    // Left two hours ago, back in one: still shown on the read side, so still planned
+    // (docs/LEDGER_*.md API-163).
+    endAt(underway, now.plus(Duration.ofHours(1)));
+    Ride over = ride(team1, user1, "over", now.minus(Duration.ofHours(4)), Status.PUBLISHED);
+    endAt(over, now.minus(Duration.ofHours(1)));
     Ride draft = ride(team1, user1, "draft", now.plus(Duration.ofDays(1)), Status.DRAFT);
     Ride cancelled =
         ride(team1, user1, "cancelled", now.plus(Duration.ofDays(1)), Status.CANCELLED);
@@ -188,18 +199,20 @@ class WeatherPlannerTest extends AbstractResourceTest {
     Ride deletedTeam =
         ride(otherTeam, otherUser, "deleted-team", now.plus(Duration.ofDays(1)), Status.PUBLISHED);
     List<Ride> rides =
-        List.of(published, underway, draft, cancelled, deleted, tooFar, tooOld, deletedTeam);
+        List.of(published, underway, draft, cancelled, deleted, tooFar, tooOld, deletedTeam, over);
     for (int i = 0; i < rides.size(); i++) {
       locate(rides.get(i), 44.0 + i * 0.1, 4.0, null);
     }
     dataService.deleteRide(deleted);
     dataService.softDeleteTeam(otherTeam);
 
-    assertEquals(1, planner.plan(now));
+    assertEquals(2, planner.plan(now));
 
     assertNotNull(cell(CellKey.of(44.0, 4.0)), "published");
-    // Already gone, even by two hours: OUT_OF_RANGE on the read side, so nothing to fetch for it.
-    for (int i = 1; i < rides.size(); i++) {
+    assertNotNull(cell(CellKey.of(44.1, 4.0)), "underway");
+    // Over — its end passed, or no end stored and its departure passed: OUT_OF_RANGE on the read
+    // side, so nothing to fetch for it.
+    for (int i = 2; i < rides.size(); i++) {
       assertNull(cell(CellKey.of(44.0 + i * 0.1, 4.0)), rides.get(i).getSlug());
     }
   }
@@ -240,8 +253,18 @@ class WeatherPlannerTest extends AbstractResourceTest {
     routedStage(published, "Trip gone", 45.0, now.minus(Duration.ofHours(2)));
     routedStage(published, "Trip too far", 46.0, now.plus(Duration.ofDays(8)));
     routedStage(draft, "Draft tomorrow", 47.0, tomorrow);
+    // Left two hours ago, over in one: still shown, so still planned (docs/LEDGER_*.md API-163).
+    TripStage underway =
+        routedStage(published, "Trip under way", 48.0, now.minus(Duration.ofHours(2)));
+    QuarkusTransaction.requiringNew()
+        .run(() ->
+            tripStageRepository
+                .findById(underway.getId())
+                .setEndDateTime(now.plus(Duration.ofHours(1))));
 
     assertTrue(planner.plan(now) > 0);
+
+    assertTrue(plannedAround(48.0), "a stage under way");
 
     assertTrue(plannedAround(44.0), "the published stage leaving tomorrow");
     assertFalse(plannedAround(45.0), "a stage already gone");

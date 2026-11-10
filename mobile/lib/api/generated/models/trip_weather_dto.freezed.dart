@@ -16,8 +16,8 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$TripWeatherDto {
 
-/// Overall state, over the stages yet to leave. OK and STALE (shown, flagged as old) carry a forecast for at least one stage; NOT_YET_AVAILABLE (every stage with a route is beyond the horizon) comes with availableFrom; UNAVAILABLE (nothing in cache yet, or the provider failing) offers to retry; NO_LOCATION (no stage yet to leave has a route) is worth a word to the organisers only; OUT_OF_RANGE (finished, cancelled, draft) shows nothing. Each stage also has its own, in its leg.
- String get status;/// One per live stage, in stage order (as TripDto.stages), stages already gone included with leg.status OUT_OF_RANGE; a single one without stageId for a trip without stages. Empty when the trip is not published.
+/// Overall state, over the stages not over yet. OK and STALE (shown, flagged as old) carry a forecast for at least one stage; NOT_YET_AVAILABLE (every stage with a route is beyond the horizon) comes with availableFrom; UNAVAILABLE (nothing in cache yet, or the provider failing) offers to retry; NO_LOCATION (no stage not over yet has a route) is worth a word to the organisers only; OUT_OF_RANGE (finished, cancelled, draft) shows nothing. Each stage also has its own, in its leg.
+ String get status;/// One per live stage, in stage order (as TripDto.stages), stages already over (their estimated end passed) included with leg.status OUT_OF_RANGE; a stage under way keeps its forecast; a single one without stageId for a trip without stages. Empty when the trip is not published.
  List<TripStageWeatherDto> get stages;/// The credit the forecast's licence asks for
  WeatherAttributionDto get attribution;/// For NOT_YET_AVAILABLE: when the first forecast opens, seven days before the first stage with a route leaves
  String? get availableFrom;/// The oldest fetch among the forecasts read
@@ -236,11 +236,11 @@ class _TripWeatherDto implements TripWeatherDto {
   const _TripWeatherDto({required this.status, required  List<TripStageWeatherDto> stages, required this.attribution, this.availableFrom, this.fetchedAt}): _stages = stages;
   factory _TripWeatherDto.fromJson(Map<String, dynamic> json) => _$TripWeatherDtoFromJson(json);
 
-/// Overall state, over the stages yet to leave. OK and STALE (shown, flagged as old) carry a forecast for at least one stage; NOT_YET_AVAILABLE (every stage with a route is beyond the horizon) comes with availableFrom; UNAVAILABLE (nothing in cache yet, or the provider failing) offers to retry; NO_LOCATION (no stage yet to leave has a route) is worth a word to the organisers only; OUT_OF_RANGE (finished, cancelled, draft) shows nothing. Each stage also has its own, in its leg.
+/// Overall state, over the stages not over yet. OK and STALE (shown, flagged as old) carry a forecast for at least one stage; NOT_YET_AVAILABLE (every stage with a route is beyond the horizon) comes with availableFrom; UNAVAILABLE (nothing in cache yet, or the provider failing) offers to retry; NO_LOCATION (no stage not over yet has a route) is worth a word to the organisers only; OUT_OF_RANGE (finished, cancelled, draft) shows nothing. Each stage also has its own, in its leg.
 @override final  String status;
-/// One per live stage, in stage order (as TripDto.stages), stages already gone included with leg.status OUT_OF_RANGE; a single one without stageId for a trip without stages. Empty when the trip is not published.
+/// One per live stage, in stage order (as TripDto.stages), stages already over (their estimated end passed) included with leg.status OUT_OF_RANGE; a stage under way keeps its forecast; a single one without stageId for a trip without stages. Empty when the trip is not published.
  final  List<TripStageWeatherDto> _stages;
-/// One per live stage, in stage order (as TripDto.stages), stages already gone included with leg.status OUT_OF_RANGE; a single one without stageId for a trip without stages. Empty when the trip is not published.
+/// One per live stage, in stage order (as TripDto.stages), stages already over (their estimated end passed) included with leg.status OUT_OF_RANGE; a stage under way keeps its forecast; a single one without stageId for a trip without stages. Empty when the trip is not published.
 @override List<TripStageWeatherDto> get stages {
   if (_stages is EqualUnmodifiableListView) return _stages;
   // ignore: implicit_dynamic_type

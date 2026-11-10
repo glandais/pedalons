@@ -78,8 +78,13 @@ public class RideGroupRepository implements BaseRepository<RideGroup> {
                     + " l.id, l.displayName, l.avatarUrl,"
                     // What reads the group's own time back from its start (docs/LEDGER_*.md
                     // API-60): an implicit join of this one statement.
-                    + " g.ride.dateTime, g.ride.timezone"
-                    + " from RideGroup g left join g.route r left join g.leader l"
+                    + " rd.dateTime, rd.timezone,"
+                    // The route the group rides, for its estimated arrival (docs/LEDGER_*.md
+                    // API-165): its own unless deleted, else the ride's — two more columns of this
+                    // one statement, no query of their own.
+                    + " r.deleted, rr.distance, rr.deleted"
+                    + " from RideGroup g join g.ride rd left join g.route r left join g.leader l"
+                    + " left join rd.route rr"
                     + " where g.id in (:ids)",
                 Object[].class)
             .setParameter("ids", groupIds)
@@ -102,13 +107,24 @@ public class RideGroupRepository implements BaseRepository<RideGroup> {
                 (Long) row[11],
                 (String) row[12],
                 (String) row[13],
-                (Instant) row[3]))
+                (Instant) row[3],
+                riddenDistance(row)))
         .toList();
+  }
+
+  /** The length of the route a group rides: its own when live, else its ride's when live. */
+  private static @Nullable Float riddenDistance(Object[] row) {
+    if (row[7] != null && !Boolean.TRUE.equals(row[16])) {
+      return (Float) row[9];
+    }
+    return Boolean.FALSE.equals(row[18]) ? (Float) row[17] : null;
   }
 
   /**
    * One group as {@link #findGroupRows} projects it; the route and leader parts may be null. {@code
-   * time} is the group's own wall time, read back from {@code startAt}.
+   * time} is the group's own wall time, read back from {@code startAt}. {@code riddenDistance} is
+   * the length of the route the group rides — its own, else the ride's, deleted ones skipped — for
+   * its estimated arrival; {@code distance} stays its own route's, as on the detail.
    */
   public record GroupRow(
       Long id,
@@ -125,7 +141,8 @@ public class RideGroupRepository implements BaseRepository<RideGroup> {
       @Nullable Long leaderId,
       @Nullable String leaderDisplayName,
       @Nullable String leaderAvatarUrl,
-      Instant startAt) {}
+      Instant startAt,
+      @Nullable Float riddenDistance) {}
 
   /** Ride groups a user created, for the GDPR data export. */
   public List<RideGroup> findByCreator(Long domainId, Long userId) {

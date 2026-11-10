@@ -158,4 +158,76 @@ class PublicationEndCalculatorTest {
     ride.setEndDateTime(START.plus(Duration.ofHours(1)));
     assertEquals(START.plus(Duration.ofHours(1)), PublicationEndCalculator.effectiveEnd(ride));
   }
+
+  // --- estimated arrival and duration (docs/LEDGER_*.md API-165) ---------------------------------
+
+  @Test
+  void estimate_ofAGroup_isItsRouteAtItsSpeed_fromItsOwnStart() {
+    Ride ride = ride();
+    RideGroup group = group(ride, LocalTime.of(9, 0), route(50_000), 25f);
+
+    PublicationEndCalculator.LegEstimate estimate = PublicationEndCalculator.estimate(group);
+
+    assertEquals(Instant.parse("2026-06-07T11:00:00Z"), estimate.arrival());
+    assertEquals(120, estimate.durationMinutes());
+  }
+
+  @Test
+  void estimate_ofAGroupWithoutRoute_ridesTheRidesRoute() {
+    Ride ride = ride();
+    ride.setRoute(route(100_000));
+    RideGroup group = group(ride, null, null, 20f);
+
+    PublicationEndCalculator.LegEstimate estimate = PublicationEndCalculator.estimate(group);
+
+    assertEquals(START.plus(Duration.ofHours(5)), estimate.arrival());
+    assertEquals(300, estimate.durationMinutes());
+  }
+
+  /** No default speed or duration here, unlike the end: a screen shows nothing rather than a guess. */
+  @Test
+  void estimate_withoutSpeedOrDistance_isAbsent() {
+    Ride ride = ride();
+    RideGroup noSpeed = group(ride, null, route(50_000), null);
+    RideGroup noRoute = group(ride, null, null, 25f);
+    Route deleted = route(50_000);
+    deleted.setDeleted(true);
+    RideGroup deletedRoute = group(ride, null, deleted, 25f);
+    RideGroup emptyRoute = group(ride, null, route(0), 25f);
+
+    assertNull(PublicationEndCalculator.estimate(noSpeed));
+    assertNull(PublicationEndCalculator.estimate(noRoute));
+    assertNull(PublicationEndCalculator.estimate(deletedRoute));
+    assertNull(PublicationEndCalculator.estimate(emptyRoute));
+    // The stored end still has its default for the same group.
+    assertEquals(START.plus(Duration.ofHours(3)), calculator.rideEnd(ride));
+  }
+
+  @Test
+  void estimate_ofAStage_isItsRouteAtItsSpeed_andAbsentWithoutEither() {
+    Trip trip = new Trip();
+    trip.setDateTime(START);
+    TripStage routed = new TripStage(null, trip, "J1", "j1");
+    routed.setDateTime(START);
+    routed.setRoute(route(80_000));
+    routed.setAverageSpeed(20f);
+    TripStage noSpeed = new TripStage(null, trip, "J2", "j2");
+    noSpeed.setDateTime(START);
+    noSpeed.setRoute(route(80_000));
+
+    PublicationEndCalculator.LegEstimate estimate = PublicationEndCalculator.estimate(routed);
+
+    assertEquals(START.plus(Duration.ofHours(4)), estimate.arrival());
+    assertEquals(240, estimate.durationMinutes());
+    assertNull(PublicationEndCalculator.estimate(noSpeed));
+  }
+
+  @Test
+  void estimate_roundsTheDurationToTheNearestMinute() {
+    // 10 km at 24 km/h: 25 min exactly; 10.1 km: 25 min 15 s → 25.
+    assertEquals(25, PublicationEndCalculator.estimate(START, 10_000f, 24f).durationMinutes());
+    assertEquals(25, PublicationEndCalculator.estimate(START, 10_100f, 24f).durationMinutes());
+    // 10.2 km: 25 min 30 s → 26.
+    assertEquals(26, PublicationEndCalculator.estimate(START, 10_200f, 24f).durationMinutes());
+  }
 }

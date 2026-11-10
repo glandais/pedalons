@@ -18,10 +18,13 @@ import fr.pedalons.dto.rides.response.*;
 import fr.pedalons.enums.Status;
 import fr.pedalons.enums.TeamRole;
 import fr.pedalons.enums.Visibility;
+import fr.pedalons.infrastructure.exception.NotFoundException;
+import fr.pedalons.repository.ride.RideParticipationRepository;
 import fr.pedalons.service.security.DomainResolver;
 import fr.pedalons.service.security.PedalonsQueryContext;
 import fr.pedalons.util.TestDataCleaner;
 import fr.pedalons.util.TestDataService;
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import java.time.Instant;
@@ -38,6 +41,7 @@ class RideServiceTest extends AbstractBaseTest {
   @Inject TestDataCleaner dataCleaner;
   @Inject PedalonsQueryContext userService;
   @Inject DomainResolver domainResolver;
+  @Inject RideParticipationRepository participationRepository;
 
   private Domain domain;
   private Team team;
@@ -1315,5 +1319,195 @@ class RideServiceTest extends AbstractBaseTest {
             () -> rideService.leaveGroup(team.getSlug(), "test", group.getId()));
 
     assertTrue(exception.getMessage().contains("NOT_REGISTERED"));
+  }
+
+  // ==================== Join, judged on the group (docs/LEDGER_*.md API-163) ====================
+
+  @Test
+  void joinGroup_aLaterGroup_shouldStayOpenOnceTheRideHasLeft() {
+    Ride ride =
+        dataService.createRide(
+            team,
+            admin,
+            "Two starts",
+            "two-starts",
+            Instant.now().minus(1, ChronoUnit.HOURS),
+            Status.PUBLISHED);
+    RideGroup later = dataService.createRideGroup(admin, ride, "Later");
+    dataService.setRideGroupStart(later, Instant.now().plus(1, ChronoUnit.HOURS));
+
+    userService.setUserForTest(member);
+    RideParticipationDto result =
+        rideService.joinGroup(team.getSlug(), "two-starts", later.getId());
+
+    assertEquals(member.getId(), TsidUtils.toLong(result.userId()));
+  }
+
+  @Test
+  void joinGroup_aGroupGone_shouldBeRefused_evenWhenTheRideIsAhead() {
+    Ride ride =
+        dataService.createRide(
+            team,
+            admin,
+            "Early group",
+            "early-group",
+            Instant.now().plus(1, ChronoUnit.HOURS),
+            Status.PUBLISHED);
+    RideGroup early = dataService.createRideGroup(admin, ride, "Early");
+    dataService.setRideGroupStart(early, Instant.now().minus(1, ChronoUnit.HOURS));
+
+    userService.setUserForTest(member);
+    PedalonsException exception =
+        assertThrows(
+            PedalonsException.class,
+            () -> rideService.joinGroup(team.getSlug(), "early-group", early.getId()));
+
+    assertEquals("RIDE_PAST", exception.getMessage());
+  }
+
+  // ==================== Switch Group (docs/LEDGER_*.md API-164) ====================
+
+  /** The group the member is registered in on {@code ride}, null when none. */
+  private Long registeredGroupOf(User user, Ride ride) {
+    return QuarkusTransaction.requiringNew()
+        .call(() ->
+            participationRepository
+                .findByUserAndRide(user.getId(), ride.getId())
+                .map(p -> p.getRideGroup().getId())
+                .orElse(null));
+  }
+
+  private Ride tomorrowRide(String slug) {
+    return dataService.createRide(
+        team, admin, "Ride " + slug, slug, Instant.now().plus(1, ChronoUnit.DAYS));
+  }
+
+  @Test
+  void switchGroup_shouldMoveTheRegistration() {
+    Ride ride = tomorrowRide("switch");
+    RideGroup a = dataService.createRideGroup(admin, ride, "A", 0);
+    RideGroup b = dataService.createRideGroup(admin, ride, "B", 1);
+    dataService.createParticipation(a, member);
+
+    userService.setUserForTest(member);
+    RideService.SwitchResult result = rideService.switchGroup(team.getSlug(), "switch", b.getId());
+
+    assertTrue(result.created());
+    assertEquals(member.getId(), TsidUtils.toLong(result.participation().userId()));
+    assertEquals(b.getId(), registeredGroupOf(member, ride));
+    assertEquals(
+        1,
+        (long)
+            QuarkusTransaction.requiringNew()
+                .call(() ->
+                    participationRepository.count(
+                        "user.id = ?1 and rideGroup.ride.id = ?2", member.getId(), ride.getId())));
+  }
+
+  @Test
+  void switchGroup_toTheGroupAlreadyJoined_shouldChangeNothing() {
+    Ride ride = tomorrowRide("switch-same");
+    RideGroup a = dataService.createRideGroup(admin, ride, "A", 0);
+    var participation = dataService.createParticipation(a, member);
+
+    userService.setUserForTest(member);
+    RideService.SwitchResult result =
+        rideService.switchGroup(team.getSlug(), "switch-same", a.getId());
+
+    assertFalse(result.created());
+    assertEquals(participation.getId(), TsidUtils.toLong(result.participation().id()));
+    assertEquals(a.getId(), registeredGroupOf(member, ride));
+  }
+
+  @Test
+  void switchGroup_toAFullGroup_shouldKeepTheRegistration() {
+    Ride ride = tomorrowRide("switch-full");
+    RideGroup a = dataService.createRideGroup(admin, ride, "A", 0);
+    RideGroup full = dataService.createRideGroupWithMaxParticipants(admin, ride, "Full", 1);
+    dataService.createParticipation(a, member);
+    dataService.createParticipation(full, organizer);
+
+    userService.setUserForTest(member);
+    PedalonsException exception =
+        assertThrows(
+            PedalonsException.class,
+            () -> rideService.switchGroup(team.getSlug(), "switch-full", full.getId()));
+
+    assertTrue(exception.getMessage().contains("GROUP_FULL"));
+    assertEquals(a.getId(), registeredGroupOf(member, ride));
+  }
+
+  @Test
+  void switchGroup_toAGroupGone_shouldKeepTheRegistration() {
+    Ride ride = tomorrowRide("switch-gone");
+    RideGroup a = dataService.createRideGroup(admin, ride, "A", 0);
+    RideGroup gone = dataService.createRideGroup(admin, ride, "Gone", 1);
+    dataService.setRideGroupStart(gone, Instant.now().minus(1, ChronoUnit.HOURS));
+    dataService.createParticipation(a, member);
+
+    userService.setUserForTest(member);
+    PedalonsException exception =
+        assertThrows(
+            PedalonsException.class,
+            () -> rideService.switchGroup(team.getSlug(), "switch-gone", gone.getId()));
+
+    assertEquals("RIDE_PAST", exception.getMessage());
+    assertEquals(a.getId(), registeredGroupOf(member, ride));
+  }
+
+  @Test
+  void switchGroup_withoutARegistration_shouldBeRefused() {
+    Ride ride = tomorrowRide("switch-none");
+    RideGroup a = dataService.createRideGroup(admin, ride, "A", 0);
+
+    userService.setUserForTest(member);
+    PedalonsException exception =
+        assertThrows(
+            PedalonsException.class,
+            () -> rideService.switchGroup(team.getSlug(), "switch-none", a.getId()));
+
+    assertTrue(exception.getMessage().contains("NOT_REGISTERED"));
+    assertNull(registeredGroupOf(member, ride));
+  }
+
+  @Test
+  void switchGroup_toAGroupOfAnotherRide_shouldBeNotFound() {
+    Ride ride = tomorrowRide("switch-here");
+    Ride other = tomorrowRide("switch-there");
+    RideGroup a = dataService.createRideGroup(admin, ride, "A", 0);
+    RideGroup elsewhere = dataService.createRideGroup(admin, other, "Elsewhere", 0);
+    dataService.createParticipation(a, member);
+
+    userService.setUserForTest(member);
+    assertThrows(
+        NotFoundException.class,
+        () -> rideService.switchGroup(team.getSlug(), "switch-here", elsewhere.getId()));
+
+    assertEquals(a.getId(), registeredGroupOf(member, ride));
+    assertNull(registeredGroupOf(member, other));
+  }
+
+  @Test
+  void switchGroup_ofACancelledRide_shouldBeRefused() {
+    Ride ride =
+        dataService.createRide(
+            team,
+            admin,
+            "Cancelled",
+            "switch-cancelled",
+            Instant.now().plus(1, ChronoUnit.DAYS),
+            Status.PUBLISHED);
+    RideGroup a = dataService.createRideGroup(admin, ride, "A", 0);
+    RideGroup b = dataService.createRideGroup(admin, ride, "B", 1);
+    dataService.createParticipation(a, member);
+    QuarkusTransaction.requiringNew()
+        .run(() -> dataService.getRide(ride.getId()).setStatus(Status.CANCELLED));
+
+    userService.setUserForTest(member);
+    assertThrows(
+        PedalonsException.class,
+        () -> rideService.switchGroup(team.getSlug(), "switch-cancelled", b.getId()));
+
+    assertEquals(a.getId(), registeredGroupOf(member, ride));
   }
 }

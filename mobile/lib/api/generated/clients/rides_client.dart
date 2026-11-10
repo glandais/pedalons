@@ -107,6 +107,22 @@ abstract class RidesClient {
     @Path('teamSlug') required String teamSlug,
   });
 
+  /// Switch ride group.
+  ///
+  /// Moves the caller from their group of the ride to this one, in one transaction: on any refusal the registration stays where it was. The same checks as join for the group joined (full, already left, ride cancelled or not readable). Switching to the group already joined changes nothing (200). The organisers are told of the new group as of a join.
+  ///
+  /// [groupId] - Group to move to (TSID).
+  ///
+  /// [rideSlug] - Ride URL slug.
+  ///
+  /// [teamSlug] - Team URL slug.
+  @POST('/api/teams/{teamSlug}/rides/{rideSlug}/groups/{groupId}/switch')
+  Future<RideParticipationDto> switchGroup({
+    @Path('groupId') required String groupId,
+    @Path('rideSlug') required String rideSlug,
+    @Path('teamSlug') required String teamSlug,
+  });
+
   /// Download ride as a calendar file.
   ///
   /// One VEVENT for the ride, to add it on its own to a calendar. Readable by whoever may read the ride; no calendar token. It starts when the caller's group leaves when they are registered, at the ride's start otherwise; LOCATION is the start place's name, when the ride has one.

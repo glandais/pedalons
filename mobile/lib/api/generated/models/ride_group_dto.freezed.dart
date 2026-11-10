@@ -35,7 +35,9 @@ mixin _$RideGroupDto {
  String? get thumbnailLightUrl;/// Thumbnail URL (dark) of the group route, if it has one. Opaque URL: may carry a query string; substitute {size} only.
  String? get thumbnailDarkUrl;/// The one thumbnail of the group route to show when the client does not theme its cards: the light variant if there is one, else the dark one. Null when the group has no route or its route has no thumbnail — the ride's own thumbnail is then the one to fall back on. Opaque URL: may carry a query string; substitute {size} only.
  String? get thumbnailUrl;/// Where the group's route — its own, else the ride's — stands at each of the caller's GPS services whose automatic sync is on and which hold it, sorted by service. Only ever about the caller's own connections. Absent when there is none: anonymous caller, no such service, no route.
- List<RouteGpsSyncStatusDto>? get gpsSyncStatuses;
+ List<RouteGpsSyncStatusDto>? get gpsSyncStatuses;/// When the group is expected back: startAt plus the length of the route it rides (its own, else the ride's) at its averageSpeed. Absent when it has no route or no averageSpeed — no default speed here. Known whatever the forecast window, unlike WeatherLegDto.arrivalTime.
+ String? get estimatedArrival;/// Minutes from startAt to estimatedArrival, rounded. Absent when estimatedArrival is.
+ int? get estimatedDurationMinutes;
 /// Create a copy of RideGroupDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -49,20 +51,20 @@ $RideGroupDtoCopyWith<RideGroupDto> get copyWith => _$RideGroupDtoCopyWithImpl<R
 @override
 bool operator ==(Object other) {
   final _this = this as RideGroupDto;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RideGroupDto&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.startAt, _this.startAt) || other.startAt == _this.startAt)&&(identical(other.countParticipants, _this.countParticipants) || other.countParticipants == _this.countParticipants)&&const DeepCollectionEquality().equals(other.participants, _this.participants)&&(identical(other.sortOrder, _this.sortOrder) || other.sortOrder == _this.sortOrder)&&(identical(other.registered, _this.registered) || other.registered == _this.registered)&&(identical(other.full, _this.full) || other.full == _this.full)&&(identical(other.time, _this.time) || other.time == _this.time)&&(identical(other.routeSlug, _this.routeSlug) || other.routeSlug == _this.routeSlug)&&(identical(other.averageSpeed, _this.averageSpeed) || other.averageSpeed == _this.averageSpeed)&&(identical(other.maxParticipants, _this.maxParticipants) || other.maxParticipants == _this.maxParticipants)&&(identical(other.distance, _this.distance) || other.distance == _this.distance)&&(identical(other.elevationGain, _this.elevationGain) || other.elevationGain == _this.elevationGain)&&(identical(other.leader, _this.leader) || other.leader == _this.leader)&&(identical(other.thumbnailLightUrl, _this.thumbnailLightUrl) || other.thumbnailLightUrl == _this.thumbnailLightUrl)&&(identical(other.thumbnailDarkUrl, _this.thumbnailDarkUrl) || other.thumbnailDarkUrl == _this.thumbnailDarkUrl)&&(identical(other.thumbnailUrl, _this.thumbnailUrl) || other.thumbnailUrl == _this.thumbnailUrl)&&const DeepCollectionEquality().equals(other.gpsSyncStatuses, _this.gpsSyncStatuses));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RideGroupDto&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.startAt, _this.startAt) || other.startAt == _this.startAt)&&(identical(other.countParticipants, _this.countParticipants) || other.countParticipants == _this.countParticipants)&&const DeepCollectionEquality().equals(other.participants, _this.participants)&&(identical(other.sortOrder, _this.sortOrder) || other.sortOrder == _this.sortOrder)&&(identical(other.registered, _this.registered) || other.registered == _this.registered)&&(identical(other.full, _this.full) || other.full == _this.full)&&(identical(other.time, _this.time) || other.time == _this.time)&&(identical(other.routeSlug, _this.routeSlug) || other.routeSlug == _this.routeSlug)&&(identical(other.averageSpeed, _this.averageSpeed) || other.averageSpeed == _this.averageSpeed)&&(identical(other.maxParticipants, _this.maxParticipants) || other.maxParticipants == _this.maxParticipants)&&(identical(other.distance, _this.distance) || other.distance == _this.distance)&&(identical(other.elevationGain, _this.elevationGain) || other.elevationGain == _this.elevationGain)&&(identical(other.leader, _this.leader) || other.leader == _this.leader)&&(identical(other.thumbnailLightUrl, _this.thumbnailLightUrl) || other.thumbnailLightUrl == _this.thumbnailLightUrl)&&(identical(other.thumbnailDarkUrl, _this.thumbnailDarkUrl) || other.thumbnailDarkUrl == _this.thumbnailDarkUrl)&&(identical(other.thumbnailUrl, _this.thumbnailUrl) || other.thumbnailUrl == _this.thumbnailUrl)&&const DeepCollectionEquality().equals(other.gpsSyncStatuses, _this.gpsSyncStatuses)&&(identical(other.estimatedArrival, _this.estimatedArrival) || other.estimatedArrival == _this.estimatedArrival)&&(identical(other.estimatedDurationMinutes, _this.estimatedDurationMinutes) || other.estimatedDurationMinutes == _this.estimatedDurationMinutes));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as RideGroupDto;
-  return Object.hashAll([runtimeType,_this.id,_this.name,_this.startAt,_this.countParticipants,const DeepCollectionEquality().hash(_this.participants),_this.sortOrder,_this.registered,_this.full,_this.time,_this.routeSlug,_this.averageSpeed,_this.maxParticipants,_this.distance,_this.elevationGain,_this.leader,_this.thumbnailLightUrl,_this.thumbnailDarkUrl,_this.thumbnailUrl,const DeepCollectionEquality().hash(_this.gpsSyncStatuses)]);
+  return Object.hashAll([runtimeType,_this.id,_this.name,_this.startAt,_this.countParticipants,const DeepCollectionEquality().hash(_this.participants),_this.sortOrder,_this.registered,_this.full,_this.time,_this.routeSlug,_this.averageSpeed,_this.maxParticipants,_this.distance,_this.elevationGain,_this.leader,_this.thumbnailLightUrl,_this.thumbnailDarkUrl,_this.thumbnailUrl,const DeepCollectionEquality().hash(_this.gpsSyncStatuses),_this.estimatedArrival,_this.estimatedDurationMinutes]);
 }
 
 @override
 String toString() {
   final _this = this as RideGroupDto;
-  return 'RideGroupDto(id: ${_this.id}, name: ${_this.name}, startAt: ${_this.startAt}, countParticipants: ${_this.countParticipants}, participants: ${_this.participants}, sortOrder: ${_this.sortOrder}, registered: ${_this.registered}, full: ${_this.full}, time: ${_this.time}, routeSlug: ${_this.routeSlug}, averageSpeed: ${_this.averageSpeed}, maxParticipants: ${_this.maxParticipants}, distance: ${_this.distance}, elevationGain: ${_this.elevationGain}, leader: ${_this.leader}, thumbnailLightUrl: ${_this.thumbnailLightUrl}, thumbnailDarkUrl: ${_this.thumbnailDarkUrl}, thumbnailUrl: ${_this.thumbnailUrl}, gpsSyncStatuses: ${_this.gpsSyncStatuses})';
+  return 'RideGroupDto(id: ${_this.id}, name: ${_this.name}, startAt: ${_this.startAt}, countParticipants: ${_this.countParticipants}, participants: ${_this.participants}, sortOrder: ${_this.sortOrder}, registered: ${_this.registered}, full: ${_this.full}, time: ${_this.time}, routeSlug: ${_this.routeSlug}, averageSpeed: ${_this.averageSpeed}, maxParticipants: ${_this.maxParticipants}, distance: ${_this.distance}, elevationGain: ${_this.elevationGain}, leader: ${_this.leader}, thumbnailLightUrl: ${_this.thumbnailLightUrl}, thumbnailDarkUrl: ${_this.thumbnailDarkUrl}, thumbnailUrl: ${_this.thumbnailUrl}, gpsSyncStatuses: ${_this.gpsSyncStatuses}, estimatedArrival: ${_this.estimatedArrival}, estimatedDurationMinutes: ${_this.estimatedDurationMinutes})';
 }
 
 
@@ -73,7 +75,7 @@ abstract mixin class $RideGroupDtoCopyWith<$Res>  {
   factory $RideGroupDtoCopyWith(RideGroupDto value, $Res Function(RideGroupDto) _then) = _$RideGroupDtoCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, String startAt, int countParticipants, List<PublicUserDto> participants, int sortOrder, bool registered, bool full, String? time, String? routeSlug, double? averageSpeed, int? maxParticipants, double? distance, double? elevationGain, PublicUserDto? leader, String? thumbnailLightUrl, String? thumbnailDarkUrl, String? thumbnailUrl, List<RouteGpsSyncStatusDto>? gpsSyncStatuses
+ String id, String name, String startAt, int countParticipants, List<PublicUserDto> participants, int sortOrder, bool registered, bool full, String? time, String? routeSlug, double? averageSpeed, int? maxParticipants, double? distance, double? elevationGain, PublicUserDto? leader, String? thumbnailLightUrl, String? thumbnailDarkUrl, String? thumbnailUrl, List<RouteGpsSyncStatusDto>? gpsSyncStatuses, String? estimatedArrival, int? estimatedDurationMinutes
 });
 
 
@@ -90,7 +92,7 @@ class _$RideGroupDtoCopyWithImpl<$Res>
 
 /// Create a copy of RideGroupDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? startAt = null,Object? countParticipants = null,Object? participants = null,Object? sortOrder = null,Object? registered = null,Object? full = null,Object? time = freezed,Object? routeSlug = freezed,Object? averageSpeed = freezed,Object? maxParticipants = freezed,Object? distance = freezed,Object? elevationGain = freezed,Object? leader = freezed,Object? thumbnailLightUrl = freezed,Object? thumbnailDarkUrl = freezed,Object? thumbnailUrl = freezed,Object? gpsSyncStatuses = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? startAt = null,Object? countParticipants = null,Object? participants = null,Object? sortOrder = null,Object? registered = null,Object? full = null,Object? time = freezed,Object? routeSlug = freezed,Object? averageSpeed = freezed,Object? maxParticipants = freezed,Object? distance = freezed,Object? elevationGain = freezed,Object? leader = freezed,Object? thumbnailLightUrl = freezed,Object? thumbnailDarkUrl = freezed,Object? thumbnailUrl = freezed,Object? gpsSyncStatuses = freezed,Object? estimatedArrival = freezed,Object? estimatedDurationMinutes = freezed,}) {
   return _then(RideGroupDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -111,7 +113,9 @@ as PublicUserDto?,thumbnailLightUrl: freezed == thumbnailLightUrl ? _self.thumbn
 as String?,thumbnailDarkUrl: freezed == thumbnailDarkUrl ? _self.thumbnailDarkUrl : thumbnailDarkUrl // ignore: cast_nullable_to_non_nullable
 as String?,thumbnailUrl: freezed == thumbnailUrl ? _self.thumbnailUrl : thumbnailUrl // ignore: cast_nullable_to_non_nullable
 as String?,gpsSyncStatuses: freezed == gpsSyncStatuses ? _self.gpsSyncStatuses : gpsSyncStatuses // ignore: cast_nullable_to_non_nullable
-as List<RouteGpsSyncStatusDto>?,
+as List<RouteGpsSyncStatusDto>?,estimatedArrival: freezed == estimatedArrival ? _self.estimatedArrival : estimatedArrival // ignore: cast_nullable_to_non_nullable
+as String?,estimatedDurationMinutes: freezed == estimatedDurationMinutes ? _self.estimatedDurationMinutes : estimatedDurationMinutes // ignore: cast_nullable_to_non_nullable
+as int?,
   ));
 }
 /// Create a copy of RideGroupDto
@@ -208,10 +212,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String startAt,  int countParticipants,  List<PublicUserDto> participants,  int sortOrder,  bool registered,  bool full,  String? time,  String? routeSlug,  double? averageSpeed,  int? maxParticipants,  double? distance,  double? elevationGain,  PublicUserDto? leader,  String? thumbnailLightUrl,  String? thumbnailDarkUrl,  String? thumbnailUrl,  List<RouteGpsSyncStatusDto>? gpsSyncStatuses)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String startAt,  int countParticipants,  List<PublicUserDto> participants,  int sortOrder,  bool registered,  bool full,  String? time,  String? routeSlug,  double? averageSpeed,  int? maxParticipants,  double? distance,  double? elevationGain,  PublicUserDto? leader,  String? thumbnailLightUrl,  String? thumbnailDarkUrl,  String? thumbnailUrl,  List<RouteGpsSyncStatusDto>? gpsSyncStatuses,  String? estimatedArrival,  int? estimatedDurationMinutes)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _RideGroupDto() when $default != null:
-return $default(_that.id,_that.name,_that.startAt,_that.countParticipants,_that.participants,_that.sortOrder,_that.registered,_that.full,_that.time,_that.routeSlug,_that.averageSpeed,_that.maxParticipants,_that.distance,_that.elevationGain,_that.leader,_that.thumbnailLightUrl,_that.thumbnailDarkUrl,_that.thumbnailUrl,_that.gpsSyncStatuses);case _:
+return $default(_that.id,_that.name,_that.startAt,_that.countParticipants,_that.participants,_that.sortOrder,_that.registered,_that.full,_that.time,_that.routeSlug,_that.averageSpeed,_that.maxParticipants,_that.distance,_that.elevationGain,_that.leader,_that.thumbnailLightUrl,_that.thumbnailDarkUrl,_that.thumbnailUrl,_that.gpsSyncStatuses,_that.estimatedArrival,_that.estimatedDurationMinutes);case _:
   return orElse();
 
 }
@@ -229,10 +233,10 @@ return $default(_that.id,_that.name,_that.startAt,_that.countParticipants,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String startAt,  int countParticipants,  List<PublicUserDto> participants,  int sortOrder,  bool registered,  bool full,  String? time,  String? routeSlug,  double? averageSpeed,  int? maxParticipants,  double? distance,  double? elevationGain,  PublicUserDto? leader,  String? thumbnailLightUrl,  String? thumbnailDarkUrl,  String? thumbnailUrl,  List<RouteGpsSyncStatusDto>? gpsSyncStatuses)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String startAt,  int countParticipants,  List<PublicUserDto> participants,  int sortOrder,  bool registered,  bool full,  String? time,  String? routeSlug,  double? averageSpeed,  int? maxParticipants,  double? distance,  double? elevationGain,  PublicUserDto? leader,  String? thumbnailLightUrl,  String? thumbnailDarkUrl,  String? thumbnailUrl,  List<RouteGpsSyncStatusDto>? gpsSyncStatuses,  String? estimatedArrival,  int? estimatedDurationMinutes)  $default,) {final _that = this;
 switch (_that) {
 case _RideGroupDto():
-return $default(_that.id,_that.name,_that.startAt,_that.countParticipants,_that.participants,_that.sortOrder,_that.registered,_that.full,_that.time,_that.routeSlug,_that.averageSpeed,_that.maxParticipants,_that.distance,_that.elevationGain,_that.leader,_that.thumbnailLightUrl,_that.thumbnailDarkUrl,_that.thumbnailUrl,_that.gpsSyncStatuses);case _:
+return $default(_that.id,_that.name,_that.startAt,_that.countParticipants,_that.participants,_that.sortOrder,_that.registered,_that.full,_that.time,_that.routeSlug,_that.averageSpeed,_that.maxParticipants,_that.distance,_that.elevationGain,_that.leader,_that.thumbnailLightUrl,_that.thumbnailDarkUrl,_that.thumbnailUrl,_that.gpsSyncStatuses,_that.estimatedArrival,_that.estimatedDurationMinutes);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -249,10 +253,10 @@ return $default(_that.id,_that.name,_that.startAt,_that.countParticipants,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String startAt,  int countParticipants,  List<PublicUserDto> participants,  int sortOrder,  bool registered,  bool full,  String? time,  String? routeSlug,  double? averageSpeed,  int? maxParticipants,  double? distance,  double? elevationGain,  PublicUserDto? leader,  String? thumbnailLightUrl,  String? thumbnailDarkUrl,  String? thumbnailUrl,  List<RouteGpsSyncStatusDto>? gpsSyncStatuses)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String startAt,  int countParticipants,  List<PublicUserDto> participants,  int sortOrder,  bool registered,  bool full,  String? time,  String? routeSlug,  double? averageSpeed,  int? maxParticipants,  double? distance,  double? elevationGain,  PublicUserDto? leader,  String? thumbnailLightUrl,  String? thumbnailDarkUrl,  String? thumbnailUrl,  List<RouteGpsSyncStatusDto>? gpsSyncStatuses,  String? estimatedArrival,  int? estimatedDurationMinutes)?  $default,) {final _that = this;
 switch (_that) {
 case _RideGroupDto() when $default != null:
-return $default(_that.id,_that.name,_that.startAt,_that.countParticipants,_that.participants,_that.sortOrder,_that.registered,_that.full,_that.time,_that.routeSlug,_that.averageSpeed,_that.maxParticipants,_that.distance,_that.elevationGain,_that.leader,_that.thumbnailLightUrl,_that.thumbnailDarkUrl,_that.thumbnailUrl,_that.gpsSyncStatuses);case _:
+return $default(_that.id,_that.name,_that.startAt,_that.countParticipants,_that.participants,_that.sortOrder,_that.registered,_that.full,_that.time,_that.routeSlug,_that.averageSpeed,_that.maxParticipants,_that.distance,_that.elevationGain,_that.leader,_that.thumbnailLightUrl,_that.thumbnailDarkUrl,_that.thumbnailUrl,_that.gpsSyncStatuses,_that.estimatedArrival,_that.estimatedDurationMinutes);case _:
   return null;
 
 }
@@ -264,7 +268,7 @@ return $default(_that.id,_that.name,_that.startAt,_that.countParticipants,_that.
 @JsonSerializable()
 
 class _RideGroupDto implements RideGroupDto {
-  const _RideGroupDto({required this.id, required this.name, required this.startAt, required this.countParticipants, required  List<PublicUserDto> participants, required this.sortOrder, required this.registered, required this.full, this.time, this.routeSlug, this.averageSpeed, this.maxParticipants, this.distance, this.elevationGain, this.leader, this.thumbnailLightUrl, this.thumbnailDarkUrl, this.thumbnailUrl,  List<RouteGpsSyncStatusDto>? gpsSyncStatuses}): _participants = participants,_gpsSyncStatuses = gpsSyncStatuses;
+  const _RideGroupDto({required this.id, required this.name, required this.startAt, required this.countParticipants, required  List<PublicUserDto> participants, required this.sortOrder, required this.registered, required this.full, this.time, this.routeSlug, this.averageSpeed, this.maxParticipants, this.distance, this.elevationGain, this.leader, this.thumbnailLightUrl, this.thumbnailDarkUrl, this.thumbnailUrl,  List<RouteGpsSyncStatusDto>? gpsSyncStatuses, this.estimatedArrival, this.estimatedDurationMinutes}): _participants = participants,_gpsSyncStatuses = gpsSyncStatuses;
   factory _RideGroupDto.fromJson(Map<String, dynamic> json) => _$RideGroupDtoFromJson(json);
 
 /// Group ID (TSID)
@@ -321,6 +325,10 @@ class _RideGroupDto implements RideGroupDto {
   return EqualUnmodifiableListView(value);
 }
 
+/// When the group is expected back: startAt plus the length of the route it rides (its own, else the ride's) at its averageSpeed. Absent when it has no route or no averageSpeed — no default speed here. Known whatever the forecast window, unlike WeatherLegDto.arrivalTime.
+@override final  String? estimatedArrival;
+/// Minutes from startAt to estimatedArrival, rounded. Absent when estimatedArrival is.
+@override final  int? estimatedDurationMinutes;
 
 /// Create a copy of RideGroupDto
 /// with the given fields replaced by the non-null parameter values.
@@ -335,18 +343,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _RideGroupDto&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.startAt, startAt) || other.startAt == startAt)&&(identical(other.countParticipants, countParticipants) || other.countParticipants == countParticipants)&&const DeepCollectionEquality().equals(other.participants, _participants)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder)&&(identical(other.registered, registered) || other.registered == registered)&&(identical(other.full, full) || other.full == full)&&(identical(other.time, time) || other.time == time)&&(identical(other.routeSlug, routeSlug) || other.routeSlug == routeSlug)&&(identical(other.averageSpeed, averageSpeed) || other.averageSpeed == averageSpeed)&&(identical(other.maxParticipants, maxParticipants) || other.maxParticipants == maxParticipants)&&(identical(other.distance, distance) || other.distance == distance)&&(identical(other.elevationGain, elevationGain) || other.elevationGain == elevationGain)&&(identical(other.leader, leader) || other.leader == leader)&&(identical(other.thumbnailLightUrl, thumbnailLightUrl) || other.thumbnailLightUrl == thumbnailLightUrl)&&(identical(other.thumbnailDarkUrl, thumbnailDarkUrl) || other.thumbnailDarkUrl == thumbnailDarkUrl)&&(identical(other.thumbnailUrl, thumbnailUrl) || other.thumbnailUrl == thumbnailUrl)&&const DeepCollectionEquality().equals(other.gpsSyncStatuses, _gpsSyncStatuses));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _RideGroupDto&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.startAt, startAt) || other.startAt == startAt)&&(identical(other.countParticipants, countParticipants) || other.countParticipants == countParticipants)&&const DeepCollectionEquality().equals(other.participants, _participants)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder)&&(identical(other.registered, registered) || other.registered == registered)&&(identical(other.full, full) || other.full == full)&&(identical(other.time, time) || other.time == time)&&(identical(other.routeSlug, routeSlug) || other.routeSlug == routeSlug)&&(identical(other.averageSpeed, averageSpeed) || other.averageSpeed == averageSpeed)&&(identical(other.maxParticipants, maxParticipants) || other.maxParticipants == maxParticipants)&&(identical(other.distance, distance) || other.distance == distance)&&(identical(other.elevationGain, elevationGain) || other.elevationGain == elevationGain)&&(identical(other.leader, leader) || other.leader == leader)&&(identical(other.thumbnailLightUrl, thumbnailLightUrl) || other.thumbnailLightUrl == thumbnailLightUrl)&&(identical(other.thumbnailDarkUrl, thumbnailDarkUrl) || other.thumbnailDarkUrl == thumbnailDarkUrl)&&(identical(other.thumbnailUrl, thumbnailUrl) || other.thumbnailUrl == thumbnailUrl)&&const DeepCollectionEquality().equals(other.gpsSyncStatuses, _gpsSyncStatuses)&&(identical(other.estimatedArrival, estimatedArrival) || other.estimatedArrival == estimatedArrival)&&(identical(other.estimatedDurationMinutes, estimatedDurationMinutes) || other.estimatedDurationMinutes == estimatedDurationMinutes));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hashAll([runtimeType,id,name,startAt,countParticipants,const DeepCollectionEquality().hash(_participants),sortOrder,registered,full,time,routeSlug,averageSpeed,maxParticipants,distance,elevationGain,leader,thumbnailLightUrl,thumbnailDarkUrl,thumbnailUrl,const DeepCollectionEquality().hash(_gpsSyncStatuses)]);
+    return Object.hashAll([runtimeType,id,name,startAt,countParticipants,const DeepCollectionEquality().hash(_participants),sortOrder,registered,full,time,routeSlug,averageSpeed,maxParticipants,distance,elevationGain,leader,thumbnailLightUrl,thumbnailDarkUrl,thumbnailUrl,const DeepCollectionEquality().hash(_gpsSyncStatuses),estimatedArrival,estimatedDurationMinutes]);
 }
 
 @override
 String toString() {
-    return 'RideGroupDto(id: $id, name: $name, startAt: $startAt, countParticipants: $countParticipants, participants: $participants, sortOrder: $sortOrder, registered: $registered, full: $full, time: $time, routeSlug: $routeSlug, averageSpeed: $averageSpeed, maxParticipants: $maxParticipants, distance: $distance, elevationGain: $elevationGain, leader: $leader, thumbnailLightUrl: $thumbnailLightUrl, thumbnailDarkUrl: $thumbnailDarkUrl, thumbnailUrl: $thumbnailUrl, gpsSyncStatuses: $gpsSyncStatuses)';
+    return 'RideGroupDto(id: $id, name: $name, startAt: $startAt, countParticipants: $countParticipants, participants: $participants, sortOrder: $sortOrder, registered: $registered, full: $full, time: $time, routeSlug: $routeSlug, averageSpeed: $averageSpeed, maxParticipants: $maxParticipants, distance: $distance, elevationGain: $elevationGain, leader: $leader, thumbnailLightUrl: $thumbnailLightUrl, thumbnailDarkUrl: $thumbnailDarkUrl, thumbnailUrl: $thumbnailUrl, gpsSyncStatuses: $gpsSyncStatuses, estimatedArrival: $estimatedArrival, estimatedDurationMinutes: $estimatedDurationMinutes)';
 }
 
 
@@ -357,7 +365,7 @@ abstract mixin class _$RideGroupDtoCopyWith<$Res> implements $RideGroupDtoCopyWi
   factory _$RideGroupDtoCopyWith(_RideGroupDto value, $Res Function(_RideGroupDto) _then) = __$RideGroupDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, String startAt, int countParticipants, List<PublicUserDto> participants, int sortOrder, bool registered, bool full, String? time, String? routeSlug, double? averageSpeed, int? maxParticipants, double? distance, double? elevationGain, PublicUserDto? leader, String? thumbnailLightUrl, String? thumbnailDarkUrl, String? thumbnailUrl, List<RouteGpsSyncStatusDto>? gpsSyncStatuses
+ String id, String name, String startAt, int countParticipants, List<PublicUserDto> participants, int sortOrder, bool registered, bool full, String? time, String? routeSlug, double? averageSpeed, int? maxParticipants, double? distance, double? elevationGain, PublicUserDto? leader, String? thumbnailLightUrl, String? thumbnailDarkUrl, String? thumbnailUrl, List<RouteGpsSyncStatusDto>? gpsSyncStatuses, String? estimatedArrival, int? estimatedDurationMinutes
 });
 
 
@@ -374,7 +382,7 @@ class __$RideGroupDtoCopyWithImpl<$Res>
 
 /// Create a copy of RideGroupDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? startAt = null,Object? countParticipants = null,Object? participants = null,Object? sortOrder = null,Object? registered = null,Object? full = null,Object? time = freezed,Object? routeSlug = freezed,Object? averageSpeed = freezed,Object? maxParticipants = freezed,Object? distance = freezed,Object? elevationGain = freezed,Object? leader = freezed,Object? thumbnailLightUrl = freezed,Object? thumbnailDarkUrl = freezed,Object? thumbnailUrl = freezed,Object? gpsSyncStatuses = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? startAt = null,Object? countParticipants = null,Object? participants = null,Object? sortOrder = null,Object? registered = null,Object? full = null,Object? time = freezed,Object? routeSlug = freezed,Object? averageSpeed = freezed,Object? maxParticipants = freezed,Object? distance = freezed,Object? elevationGain = freezed,Object? leader = freezed,Object? thumbnailLightUrl = freezed,Object? thumbnailDarkUrl = freezed,Object? thumbnailUrl = freezed,Object? gpsSyncStatuses = freezed,Object? estimatedArrival = freezed,Object? estimatedDurationMinutes = freezed,}) {
   return _then(_RideGroupDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -395,7 +403,9 @@ as PublicUserDto?,thumbnailLightUrl: freezed == thumbnailLightUrl ? _self.thumbn
 as String?,thumbnailDarkUrl: freezed == thumbnailDarkUrl ? _self.thumbnailDarkUrl : thumbnailDarkUrl // ignore: cast_nullable_to_non_nullable
 as String?,thumbnailUrl: freezed == thumbnailUrl ? _self.thumbnailUrl : thumbnailUrl // ignore: cast_nullable_to_non_nullable
 as String?,gpsSyncStatuses: freezed == gpsSyncStatuses ? _self._gpsSyncStatuses : gpsSyncStatuses // ignore: cast_nullable_to_non_nullable
-as List<RouteGpsSyncStatusDto>?,
+as List<RouteGpsSyncStatusDto>?,estimatedArrival: freezed == estimatedArrival ? _self.estimatedArrival : estimatedArrival // ignore: cast_nullable_to_non_nullable
+as String?,estimatedDurationMinutes: freezed == estimatedDurationMinutes ? _self.estimatedDurationMinutes : estimatedDurationMinutes // ignore: cast_nullable_to_non_nullable
+as int?,
   ));
 }
 

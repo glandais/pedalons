@@ -28,6 +28,9 @@ _TripStageDto _$TripStageDtoFromJson(Map<String, dynamic> json) =>
           ? null
           : PlaceDetailDto.fromJson(json['endPlace'] as Map<String, dynamic>),
       commentCount: (json['commentCount'] as num?)?.toInt(),
+      estimatedArrival: json['estimatedArrival'] as String?,
+      estimatedDurationMinutes: (json['estimatedDurationMinutes'] as num?)
+          ?.toInt(),
     );
 
 Map<String, dynamic> _$TripStageDtoToJson(_TripStageDto instance) =>
@@ -46,4 +49,6 @@ Map<String, dynamic> _$TripStageDtoToJson(_TripStageDto instance) =>
       'startPlace': instance.startPlace?.toJson(),
       'endPlace': instance.endPlace?.toJson(),
       'commentCount': instance.commentCount,
+      'estimatedArrival': instance.estimatedArrival,
+      'estimatedDurationMinutes': instance.estimatedDurationMinutes,
     };

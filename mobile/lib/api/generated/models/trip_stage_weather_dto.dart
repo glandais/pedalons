@@ -18,7 +18,7 @@ abstract class TripStageWeatherDto with _$TripStageWeatherDto {
     /// The stage's route, at its estimated passages (stage speed, else 25 km/h)
     required WeatherLegDto leg,
 
-    /// The weather when the stage leaves, at its first forecast point: conditions, sunrise and sunset, as RideWeatherDto.departure for a ride. OUT_OF_RANGE once the stage has left, NO_LOCATION without a route, NOT_YET_AVAILABLE beyond the horizon.
+    /// The weather when the stage leaves, at its first forecast point: conditions, sunrise and sunset, as RideWeatherDto.departure for a ride. OUT_OF_RANGE once the stage is over (its estimated end passed), NO_LOCATION without a route, NOT_YET_AVAILABLE beyond the horizon.
     required DepartureWeatherDto departure,
 
     /// The stage (TSID), as TripStageDto.id. Absent for the single leg of a trip without stages, which rides the trip's own route at its own time.

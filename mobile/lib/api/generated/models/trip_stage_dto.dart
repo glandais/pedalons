@@ -57,6 +57,12 @@ abstract class TripStageDto with _$TripStageDto {
 
     /// Number of comments on the stage's own thread. Absent when the caller cannot read comments (not a member of the team), like TripDto.commentCount.
     int? commentCount,
+
+    /// When the stage is expected to end: dateTime plus its route's length at its averageSpeed. Absent when it has no route or no averageSpeed — no default speed here. Known whatever the forecast window, unlike WeatherLegDto.arrivalTime.
+    String? estimatedArrival,
+
+    /// Minutes from dateTime to estimatedArrival, rounded. Absent when estimatedArrival is.
+    int? estimatedDurationMinutes,
   }) = _TripStageDto;
 
   factory TripStageDto.fromJson(Map<String, Object?> json) =>

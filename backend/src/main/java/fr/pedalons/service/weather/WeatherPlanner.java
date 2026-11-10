@@ -24,11 +24,12 @@ import org.jboss.logging.Logger;
 /**
  * Decides which cells the cache needs, never calling the provider.
  *
- * <p>Every five minutes, the published rides leaving between now and seven days ahead — the window
- * the read side shows ({@code RideWeatherService#isOutOfRange}: a ride already gone is {@code
- * OUT_OF_RANGE}), so no cell is fetched for a forecast nobody can see:
+ * <p>Every five minutes, the published rides leaving by seven days ahead and not over yet — the
+ * window the read side shows ({@code RideWeatherService#isOutOfRange}: a ride over is {@code
+ * OUT_OF_RANGE}, one under way is not, docs/LEDGER_*.md API-163), so no cell is fetched for a
+ * forecast nobody can see:
  * their departure cell and the cell of each forecast point of each group, with the passage nearest
- * to now. The same for the dated GPX previews, as a ride without group (docs/LEDGER_*.md API-153). The same for the trip stages leaving in that window, and the trips without stages: the
+ * to now. The same for the dated GPX previews, as a ride without group (docs/LEDGER_*.md API-153). The same for the trip stages in that window, and the trips without stages: the
  * cell of each forecast point of their leg ({@link TripWeatherPlans}). Each cell is upserted with that demand ({@code WeatherCellRepository#upsertDemand}); the
  * refresh interval follows from it ({@link WeatherRefreshPolicy}). Deterministic in the rides and
  * the clock, so a tick replayed — or run by both backends of a rolling deploy — writes the same

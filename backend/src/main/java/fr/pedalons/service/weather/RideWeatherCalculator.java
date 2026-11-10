@@ -326,6 +326,7 @@ public final class RideWeatherCalculator {
           List.of(),
           WindExposure.NONE,
           null,
+          null,
           null);
     }
     boolean beyondHorizon = start.isAfter(now.plus(HORIZON));
@@ -429,7 +430,8 @@ public final class RideWeatherCalculator {
         List.copyOf(segments),
         exposure(segments),
         prevailingWind(read),
-        rainAlert);
+        rainAlert,
+        null);
   }
 
   /**

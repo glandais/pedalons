@@ -581,22 +581,85 @@ public class RideService extends TeamEntityService<Ride, RideRepository, RideDto
     if (existingParticipation.isPresent()) {
       throw new ConflictException(ALREADY_REGISTERED);
     }
-    // The clients hide « Rejoindre » once the ride has started; the rule is here. Leaving stays
-    // open, to correct who actually came.
-    if (ride.getDateTime().isBefore(Instant.now())) {
-      throw new ConflictException(ErrorCode.RIDE_PAST);
+    checkJoinable(group);
+
+    return RideParticipationDto.from(register(group, team));
+  }
+
+  /**
+   * Moves the caller from their group of the ride to {@code groupId}, in one transaction
+   * (docs/LEDGER_*.md API-164): leaving then joining in two calls left them registered nowhere
+   * when the second failed. Under the same lock and the same checks as {@link #joinGroup} for the
+   * group joined; any refusal — full, gone, another ride's group — rolls back, the registration
+   * left as it was.
+   *
+   * <p>The old registration is deleted and a new one written, which is what leaving then joining
+   * did: the organisers get one « a rejoint le groupe … » naming the new group, and a
+   * notification of the old registration still queued resolves to nobody ({@link RideJoined} is
+   * keyed by the registration). Switching to the group already joined changes nothing and
+   * notifies nobody.
+   *
+   * @return the registration in {@code groupId}, and whether it is a new one
+   */
+  @Transactional
+  @CheckAccess(entityType = EntityType.RIDE, action = ActionType.JOIN)
+  public SwitchResult switchGroup(String teamSlug, String rideSlug, Long groupId) {
+    Team team = teamService.getTeam(teamSlug);
+    Ride ride = findBySlug(team, rideSlug);
+    // As joinGroup: concurrent joins and switches of this ride queue here, before any group is
+    // read (docs/LEDGER_*.md API-98, API-99).
+    rideRepository.lockForJoin(ride);
+    if (ride.getStatus() != Status.PUBLISHED) {
+      throw new ForbiddenException();
     }
 
+    RideGroup target =
+        rideGroupRepository
+            .findByIdAndRide(groupId, ride.getId())
+            .orElseThrow(() -> new NotFoundException(EntityType.RIDE_GROUP, groupId));
+    RideParticipation current =
+        participationRepository
+            .findByUserAndRide(pedalonsContext.getUserId(), ride.getId())
+            .orElseThrow(() -> new BusinessException(NOT_REGISTERED));
+    if (current.getRideGroup().getId().equals(target.getId())) {
+      return new SwitchResult(RideParticipationDto.from(current), false);
+    }
+    checkJoinable(target);
+
+    RideGroup origin = current.getRideGroup();
+    origin.getParticipations().remove(current);
+    participationRepository.delete(current);
+    return new SwitchResult(RideParticipationDto.from(register(target, team)), true);
+  }
+
+  /**
+   * The answer of {@link #switchGroup}.
+   *
+   * @param created false when the caller was already in that group: nothing was written
+   */
+  public record SwitchResult(RideParticipationDto participation, boolean created) {}
+
+  /**
+   * What a group must be for the caller to join it, once the ride is locked: not gone — the
+   * group's own start, so a later group stays open once the ride's first one has left
+   * (docs/LEDGER_*.md API-163) — and not full.
+   */
+  private void checkJoinable(RideGroup group) {
+    // The clients hide « Rejoindre » once the group has left; the rule is here. Leaving stays
+    // open, to correct who actually came.
+    if (group.getStartAt().isBefore(Instant.now())) {
+      throw new ConflictException(ErrorCode.RIDE_PAST);
+    }
     checkCapacity(group);
+  }
 
+  private RideParticipation register(RideGroup group, Team team) {
     RideParticipation participation = new RideParticipation(group, pedalonsContext.getUser());
-
     group.addParticipation(participation);
     participationRepository.persist(participation);
     notificationPublisher.publish(
         new RideJoined(participation.getId()), team, pedalonsContext.getUser());
-
-    return RideParticipationDto.from(participation);
+    return participation;
   }
 
   private void checkCapacity(RideGroup group) {

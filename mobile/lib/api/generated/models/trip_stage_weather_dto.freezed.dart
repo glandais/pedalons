@@ -17,7 +17,7 @@ T _$identity<T>(T value) => value;
 mixin _$TripStageWeatherDto {
 
 /// The stage's route, at its estimated passages (stage speed, else 25 km/h)
- WeatherLegDto get leg;/// The weather when the stage leaves, at its first forecast point: conditions, sunrise and sunset, as RideWeatherDto.departure for a ride. OUT_OF_RANGE once the stage has left, NO_LOCATION without a route, NOT_YET_AVAILABLE beyond the horizon.
+ WeatherLegDto get leg;/// The weather when the stage leaves, at its first forecast point: conditions, sunrise and sunset, as RideWeatherDto.departure for a ride. OUT_OF_RANGE once the stage is over (its estimated end passed), NO_LOCATION without a route, NOT_YET_AVAILABLE beyond the horizon.
  DepartureWeatherDto get departure;/// The stage (TSID), as TripStageDto.id. Absent for the single leg of a trip without stages, which rides the trip's own route at its own time.
  String? get stageId;/// The stage's weather in one line, for its card: the first checkpoint's hour, the extremes over the checkpoints, the rain alert. Present when leg.status is OK, STALE or NOT_YET_AVAILABLE (then status and availableFrom only).
  RideWeatherSummaryDto? get summary;
@@ -257,7 +257,7 @@ class _TripStageWeatherDto implements TripStageWeatherDto {
 
 /// The stage's route, at its estimated passages (stage speed, else 25 km/h)
 @override final  WeatherLegDto leg;
-/// The weather when the stage leaves, at its first forecast point: conditions, sunrise and sunset, as RideWeatherDto.departure for a ride. OUT_OF_RANGE once the stage has left, NO_LOCATION without a route, NOT_YET_AVAILABLE beyond the horizon.
+/// The weather when the stage leaves, at its first forecast point: conditions, sunrise and sunset, as RideWeatherDto.departure for a ride. OUT_OF_RANGE once the stage is over (its estimated end passed), NO_LOCATION without a route, NOT_YET_AVAILABLE beyond the horizon.
 @override final  DepartureWeatherDto departure;
 /// The stage (TSID), as TripStageDto.id. Absent for the single leg of a trip without stages, which rides the trip's own route at its own time.
 @override final  String? stageId;

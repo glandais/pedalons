@@ -603,4 +603,66 @@ class RideWeatherCalculatorTest {
     assertTrue(RideWeatherCalculator.isBeyondHorizon(far, NOW));
     assertEquals(NOW.plus(Duration.ofDays(1)), RideWeatherCalculator.availableFrom(far));
   }
+
+  // --- a group's departure (docs/LEDGER_*.md API-162) --------------------------------------------
+
+  @Test
+  void legDeparture_shouldReadTheMeetingPointAtTheGroupsStart_withDaylight() {
+    // A group leaving three hours after its ride: 10:00 UTC → 8 + 10 × 0.5 °C.
+    LegInput late =
+        new LegInput(
+            9L,
+            Instant.parse("2026-10-06T10:00:00Z"),
+            RideWeatherCalculator.speed(null),
+            northbound(30));
+
+    DepartureWeather departure = RideWeatherService.legDeparture(series(null, 10, 0), late, NOW);
+
+    assertEquals(WeatherStatus.OK, departure.status());
+    assertNotNull(departure.conditions());
+    assertEquals(Instant.parse("2026-10-06T10:00:00Z"), departure.conditions().time());
+    assertEquals(13.0, departure.conditions().temperature());
+    assertEquals(Instant.parse("2026-10-06T05:50:00Z"), departure.sunrise());
+    assertEquals(Instant.parse("2026-10-06T17:10:00Z"), departure.sunset());
+    // The ride's own block, at the ride's time, is the same reading at 07:00.
+    assertEquals(
+        11.5,
+        RideWeatherCalculator.departure(series(null, 10, 0), DEPARTURE, NOW)
+            .conditions()
+            .temperature());
+  }
+
+  @Test
+  void legDeparture_withNothingCached_shouldBeUnavailable_andBeyondTheHorizonNotYetAvailable() {
+    LegInput soon = new LegInput(9L, DEPARTURE, RideWeatherCalculator.speed(null), northbound(30));
+    LegInput far =
+        new LegInput(
+            9L, NOW.plus(Duration.ofDays(9)), RideWeatherCalculator.speed(null), northbound(30));
+
+    assertEquals(
+        WeatherStatus.UNAVAILABLE,
+        RideWeatherService.legDeparture(CellSeries.EMPTY, soon, NOW).status());
+    DepartureWeather notYet = RideWeatherService.legDeparture(series(null, 10, 0), far, NOW);
+    assertEquals(WeatherStatus.NOT_YET_AVAILABLE, notYet.status());
+    assertNull(notYet.conditions());
+  }
+
+  @Test
+  void withDeparture_shouldKeepEverythingElseOfTheLeg() {
+    WeatherLeg leg =
+        RideWeatherCalculator.leg(
+            new LegInput(9L, DEPARTURE, RideWeatherCalculator.speed(null), northbound(30)),
+            key -> series(null, 10, 0),
+            NOW);
+    assertNull(leg.departure(), "a leg has no departure until the ride's read gives it one");
+    DepartureWeather departure =
+        RideWeatherCalculator.departure(series(null, 10, 0), DEPARTURE, NOW);
+
+    WeatherLeg withIt = leg.withDeparture(departure);
+
+    assertEquals(departure, withIt.departure());
+    assertEquals(leg.checkpoints(), withIt.checkpoints());
+    assertEquals(leg.arrivalTime(), withIt.arrivalTime());
+    assertEquals(RideWeatherCalculator.legSummary(leg), RideWeatherCalculator.legSummary(withIt));
+  }
 }

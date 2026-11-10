@@ -110,13 +110,17 @@ public class RideRepository implements TeamEntityRepository<Ride, TeamEntityQuer
 
   /**
    * The rides the weather planner prepares a forecast for: published, not deleted, leaving within
-   * {@code [from, to]}. Across every domain on purpose — the weather cache is global (see {@code
-   * fr.pedalons.domain.weather}) and this feeds no response.
+   * {@code [from, to]}, or left but not over by {@code from}. Across every domain on purpose — the
+   * weather cache is global (see {@code fr.pedalons.domain.weather}) and this feeds no response.
+   *
+   * <p>Not over by {@code from} rather than leaving after it: a ride under way keeps its forecast to
+   * its end (docs/LEDGER_*.md API-163), so its cells — a later group's included — stay fresh. The
+   * end is the stored one; a row an older backend left without it counts until its departure only.
    */
   public List<Ride> findForWeather(Instant from, Instant to) {
     return list(
         "from Ride r where r.status = ?1 and r.deleted = false and r.team.deleted = false"
-            + " and r.dateTime >= ?2 and r.dateTime <= ?3",
+            + " and coalesce(r.endDateTime, r.dateTime) >= ?2 and r.dateTime <= ?3",
         Status.PUBLISHED,
         from,
         to);

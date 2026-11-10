@@ -4,9 +4,11 @@ import fr.pedalons.domain.route.Route;
 import fr.pedalons.domain.trip.Trip;
 import fr.pedalons.domain.trip.TripStage;
 import fr.pedalons.repository.route.GpxTrackRepository;
+import fr.pedalons.service.publication.PublicationEndCalculator;
 import fr.pedalons.service.weather.RideWeatherCalculator.LegInput;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -36,8 +38,11 @@ public class TripWeatherPlans {
    * A stage, located.
    *
    * @param stageId null for the leg of a trip without stages
+   * @param end when the stage is over — its stored end ({@link
+   *     PublicationEndCalculator#effectiveEnd}), the trip's for a trip without stages: its weather
+   *     is shown until then (docs/LEDGER_*.md API-163)
    */
-  public record StagePlan(@Nullable Long stageId, LegInput leg) {}
+  public record StagePlan(@Nullable Long stageId, LegInput leg, Instant end) {}
 
   /** The legs of a trip, one per live stage in stage order. */
   public List<StagePlan> plan(Trip trip) {
@@ -53,7 +58,8 @@ public class TripWeatherPlans {
                   null,
                   trip.getDateTime(),
                   RideWeatherCalculator.speed(null),
-                  ridePlans.samples(route, trackIds))));
+                  ridePlans.samples(route, trackIds)),
+              PublicationEndCalculator.effectiveEnd(trip)));
     }
     return stagePlans(stages);
   }
@@ -77,7 +83,8 @@ public class TripWeatherPlans {
                   null,
                   trip.getDateTime(),
                   RideWeatherCalculator.speed(null),
-                  ridePlans.samples(RideWeatherPlans.live(trip.getRoute()), trackIds))));
+                  ridePlans.samples(RideWeatherPlans.live(trip.getRoute()), trackIds)),
+              PublicationEndCalculator.effectiveEnd(trip)));
     }
     return plans;
   }
@@ -101,7 +108,8 @@ public class TripWeatherPlans {
                   null,
                   stage.getDateTime(),
                   RideWeatherCalculator.speed(stage.getAverageSpeed()),
-                  ridePlans.samples(RideWeatherPlans.live(stage.getRoute()), trackIds))));
+                  ridePlans.samples(RideWeatherPlans.live(stage.getRoute()), trackIds)),
+              PublicationEndCalculator.effectiveEnd(stage)));
     }
     return plans;
   }

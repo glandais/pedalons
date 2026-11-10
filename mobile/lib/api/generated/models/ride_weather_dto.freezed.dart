@@ -16,8 +16,8 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$RideWeatherDto {
 
-/// Overall state. OK and STALE (shown, flagged as old) carry the forecast; NOT_YET_AVAILABLE comes with availableFrom; UNAVAILABLE (nothing in cache yet, or the provider failing) offers to retry; NO_LOCATION is worth a word to the organisers only; OUT_OF_RANGE (finished, cancelled) shows nothing.
- String get status;/// The meeting point at departure
+/// Overall state. OK and STALE (shown, flagged as old) carry the forecast; NOT_YET_AVAILABLE comes with availableFrom; UNAVAILABLE (nothing in cache yet, or the provider failing) offers to retry; NO_LOCATION is worth a word to the organisers only; OUT_OF_RANGE (over — its last group back, the ride's estimated end —, cancelled) shows nothing. A ride that has left but whose groups are still out, or still to leave, keeps its forecast.
+ String get status;/// The meeting point when the ride leaves (its dateTime). Each leg carries its own, at the group's start.
  DepartureWeatherDto get departure;/// One per group, in group order; a single one without groupId for a ride without groups. Empty for OUT_OF_RANGE, NO_LOCATION and NOT_YET_AVAILABLE.
  List<WeatherLegDto> get legs;/// The credit the forecast's licence asks for
  WeatherAttributionDto get attribution;/// For NOT_YET_AVAILABLE: when the forecast opens, seven days before the departure
@@ -247,9 +247,9 @@ class _RideWeatherDto implements RideWeatherDto {
   const _RideWeatherDto({required this.status, required this.departure, required  List<WeatherLegDto> legs, required this.attribution, this.availableFrom, this.fetchedAt}): _legs = legs;
   factory _RideWeatherDto.fromJson(Map<String, dynamic> json) => _$RideWeatherDtoFromJson(json);
 
-/// Overall state. OK and STALE (shown, flagged as old) carry the forecast; NOT_YET_AVAILABLE comes with availableFrom; UNAVAILABLE (nothing in cache yet, or the provider failing) offers to retry; NO_LOCATION is worth a word to the organisers only; OUT_OF_RANGE (finished, cancelled) shows nothing.
+/// Overall state. OK and STALE (shown, flagged as old) carry the forecast; NOT_YET_AVAILABLE comes with availableFrom; UNAVAILABLE (nothing in cache yet, or the provider failing) offers to retry; NO_LOCATION is worth a word to the organisers only; OUT_OF_RANGE (over — its last group back, the ride's estimated end —, cancelled) shows nothing. A ride that has left but whose groups are still out, or still to leave, keeps its forecast.
 @override final  String status;
-/// The meeting point at departure
+/// The meeting point when the ride leaves (its dateTime). Each leg carries its own, at the group's start.
 @override final  DepartureWeatherDto departure;
 /// One per group, in group order; a single one without groupId for a ride without groups. Empty for OUT_OF_RANGE, NO_LOCATION and NOT_YET_AVAILABLE.
  final  List<WeatherLegDto> _legs;

@@ -32,8 +32,8 @@ public record TripStageWeatherDto(
             description =
                 "The weather when the stage leaves, at its first forecast point: conditions,"
                     + " sunrise and sunset, as RideWeatherDto.departure for a ride. OUT_OF_RANGE"
-                    + " once the stage has left, NO_LOCATION without a route, NOT_YET_AVAILABLE"
-                    + " beyond the horizon.",
+                    + " once the stage is over (its estimated end passed), NO_LOCATION without a"
+                    + " route, NOT_YET_AVAILABLE beyond the horizon.",
             required = true)
         DepartureWeatherDto departure) {
 

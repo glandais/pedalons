@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.pedalons.api.AbstractResourceTest;
 import fr.pedalons.domain.place.Place;
 import fr.pedalons.domain.ride.Ride;
+import fr.pedalons.domain.ride.RideGroup;
 import fr.pedalons.domain.route.Route;
 import fr.pedalons.enums.Status;
 import fr.pedalons.enums.Visibility;
@@ -39,8 +40,10 @@ import fr.pedalons.service.weather.WeatherTestFixtures;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
+import io.restassured.path.json.JsonPath;
 import io.restassured.response.Response;
 import jakarta.inject.Inject;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -385,6 +388,137 @@ class RideWeatherResourceTest extends AbstractResourceTest {
         .statusCode(200)
         .body("status", equalTo("OUT_OF_RANGE"))
         .body("legs", empty());
+  }
+
+  /**
+   * A ride from Bellecour along 30 km due north, leaving at {@code departure}, one group per
+   * {@code groupStarts}, its end stored at {@code end} as {@code PublicationEndCalculator} would,
+   * then its cache filled by the planner and the worker.
+   */
+  private Ride groupedRide(String slug, Instant departure, Instant end, Instant... groupStarts) {
+    Ride ride = rideAt(slug, departure, Visibility.PUBLIC, true);
+    Route route =
+        dataService.createRouteWithTracks(
+            team1,
+            user1,
+            "Nord " + slug,
+            Visibility.PUBLIC,
+            List.of(
+                WeatherTestFixtures.northbound(
+                    WeatherTestFixtures.LYON_LAT, WeatherTestFixtures.LYON_LON, 30, 170)));
+    QuarkusTransaction.requiringNew()
+        .run(() -> {
+          Ride managed = rideRepository.findById(ride.getId());
+          managed.setRoute(rideRepository.getEntityManager().find(Route.class, route.getId()));
+          managed.setEndDateTime(end);
+        });
+    for (int i = 0; i < groupStarts.length; i++) {
+      RideGroup group = dataService.createRideGroup(user1, ride, "G" + i, i);
+      dataService.setRideGroupStart(group, groupStarts[i]);
+    }
+    planner.plan(Instant.now());
+    worker.fetchDue();
+    return ride;
+  }
+
+  /**
+   * docs/LEDGER_*.md API-163: left an hour ago, its second group still to leave — the forecast is
+   * still served, the late group's leg with it.
+   */
+  @Test
+  void weather_ofARideUnderWay_isServedUntilItsEnd() {
+    Instant now = Instant.now().truncatedTo(ChronoUnit.SECONDS);
+    Instant later = now.plus(2, ChronoUnit.HOURS);
+    groupedRide(
+        "underway-ride",
+        now.minus(1, ChronoUnit.HOURS),
+        now.plus(4, ChronoUnit.HOURS),
+        now.minus(1, ChronoUnit.HOURS),
+        later);
+
+    String body =
+        given()
+            .when()
+            .get(weatherUrl("underway-ride"))
+            .then()
+            .statusCode(200)
+            .body("status", not(equalTo("OUT_OF_RANGE")))
+            .body("legs", hasSize(2))
+            .body("legs[1].status", equalTo("OK"))
+            .extract()
+            .asString();
+    assertEquals(later, Instant.parse(jsonPath(body, "legs[1].startTime")));
+
+    // The card line is not cut at the departure either.
+    given()
+        .when()
+        .get("/api/teams/" + team1Slug + "/rides/underway-ride")
+        .then()
+        .statusCode(200)
+        .body("weather", notNullValue());
+  }
+
+  /** Its end stored and passed: nothing to show, even if it left only five hours ago. */
+  @Test
+  void weather_ofARidePastItsEnd_isOutOfRange() {
+    Instant now = Instant.now().truncatedTo(ChronoUnit.SECONDS);
+    groupedRide(
+        "over-ride",
+        now.minus(5, ChronoUnit.HOURS),
+        now.minus(1, ChronoUnit.MINUTES),
+        now.minus(5, ChronoUnit.HOURS));
+
+    given()
+        .when()
+        .get(weatherUrl("over-ride"))
+        .then()
+        .statusCode(200)
+        .body("status", equalTo("OUT_OF_RANGE"))
+        .body("legs", empty());
+  }
+
+  /**
+   * docs/LEDGER_*.md API-162: each leg carries its one-line summary and the meeting point's
+   * weather at the group's own start, sunrise and sunset included.
+   */
+  @Test
+  void weather_eachLeg_carriesItsSummary_andItsDepartureAtTheGroupsStart() {
+    Instant departure = Instant.now().plus(3, ChronoUnit.HOURS).truncatedTo(ChronoUnit.SECONDS);
+    Instant later = departure.plus(5, ChronoUnit.HOURS);
+    groupedRide("two-starts", departure, later.plus(2, ChronoUnit.HOURS), departure, later);
+
+    String body =
+        given()
+            .when()
+            .get(weatherUrl("two-starts"))
+            .then()
+            .statusCode(200)
+            .body("status", equalTo("OK"))
+            .body("legs", hasSize(2))
+            .body("legs[0].summary.status", equalTo("OK"))
+            .body("legs[0].summary.temperature", equalTo(15.0f))
+            .body("legs[0].departure.status", equalTo("OK"))
+            .body("legs[1].summary.status", equalTo("OK"))
+            .body("legs[1].departure.status", equalTo("OK"))
+            .body("legs[1].departure.conditions.temperature", equalTo(15.0f))
+            .body("legs[1].departure.sunrise", notNullValue())
+            .body("legs[1].departure.sunset", notNullValue())
+            .extract()
+            .asString();
+
+    // The ride's block is at the ride's time, the late group's at its own.
+    Instant rideHour = Instant.parse(jsonPath(body, "departure.conditions.time"));
+    Instant lateHour = Instant.parse(jsonPath(body, "legs[1].departure.conditions.time"));
+    assertTrue(
+        Duration.between(rideHour, departure).abs().toMinutes() <= 30, "ride block at " + rideHour);
+    assertTrue(
+        Duration.between(lateHour, later).abs().toMinutes() <= 30,
+        "late group block at " + lateHour);
+    assertEquals(rideHour, Instant.parse(jsonPath(body, "legs[0].departure.conditions.time")));
+  }
+
+  private static String jsonPath(String body, String path) {
+    return JsonPath.from(body).getString(path);
   }
 
   @Test

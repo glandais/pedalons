@@ -10,6 +10,8 @@ import fr.pedalons.dto.routes.response.RouteDto;
 import fr.pedalons.dto.tags.response.ContentTags;
 import fr.pedalons.dto.validation.ValidateSchema;
 import fr.pedalons.service.asset.AssetService;
+import fr.pedalons.service.publication.PublicationEndCalculator;
+import fr.pedalons.service.publication.PublicationEndCalculator.LegEstimate;
 import java.time.Instant;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.jspecify.annotations.Nullable;
@@ -51,7 +53,21 @@ public record TripStageDto(
             description =
                 "Number of comments on the stage's own thread. Absent when the caller cannot read"
                     + " comments (not a member of the team), like TripDto.commentCount.")
-        Integer commentCount) {
+        Integer commentCount,
+    @Nullable
+        @Schema(
+            description =
+                "When the stage is expected to end: dateTime plus its route's length at its"
+                    + " averageSpeed. Absent when it has no route or no averageSpeed — no default"
+                    + " speed here. Known whatever the forecast window, unlike"
+                    + " WeatherLegDto.arrivalTime.")
+        Instant estimatedArrival,
+    @Nullable
+        @Schema(
+            description =
+                "Minutes from dateTime to estimatedArrival, rounded. Absent when"
+                    + " estimatedArrival is.")
+        Integer estimatedDurationMinutes) {
 
   /**
    * @param routeTags the tags of the stage's route, resolved with the trip's own by {@code
@@ -71,6 +87,7 @@ public record TripStageDto(
       RouteGpsSyncStatuses gpsSync,
       int stageIndex,
       int stageCount) {
+    LegEstimate estimate = PublicationEndCalculator.estimate(stage);
     return new TripStageDto(
         TsidUtils.toString(stage.getId()),
         stage.getSlug(),
@@ -87,6 +104,8 @@ public record TripStageDto(
         stage.getSortOrder(),
         stageIndex,
         stageCount,
-        commentCounts.forEntity(stage.getId()));
+        commentCounts.forEntity(stage.getId()),
+        estimate != null ? estimate.arrival() : null,
+        estimate != null ? estimate.durationMinutes() : null);
   }
 }

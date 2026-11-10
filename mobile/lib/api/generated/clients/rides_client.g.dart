@@ -190,6 +190,37 @@ class _RidesClient implements RidesClient {
   }
 
   @override
+  Future<RideParticipationDto> switchGroup({
+    required String groupId,
+    required String rideSlug,
+    required String teamSlug,
+  }) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{};
+    final _headers = <String, dynamic>{};
+    const Map<String, dynamic>? _data = null;
+    final _options = _setStreamType<RideParticipationDto>(
+      Options(method: 'POST', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            '/api/teams/${teamSlug}/rides/${rideSlug}/groups/${groupId}/switch',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch<Map<String, Object?>>(_options);
+    late RideParticipationDto _value;
+    try {
+      _value = RideParticipationDto.fromJson(_result.data!);
+    } on Object catch (e, s) {
+      errorLogger?.logError(e, s, _options, response: _result);
+      rethrow;
+    }
+    return _value;
+  }
+
+  @override
   Future<String> downloadRideIcs({
     required String rideSlug,
     required String teamSlug,

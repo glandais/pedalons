@@ -20,7 +20,9 @@ public record RideWeatherDto(
                 "Overall state. OK and STALE (shown, flagged as old) carry the forecast;"
                     + " NOT_YET_AVAILABLE comes with availableFrom; UNAVAILABLE (nothing in cache"
                     + " yet, or the provider failing) offers to retry; NO_LOCATION is worth a word"
-                    + " to the organisers only; OUT_OF_RANGE (finished, cancelled) shows nothing.",
+                    + " to the organisers only; OUT_OF_RANGE (over — its last group back, the"
+                    + " ride's estimated end —, cancelled) shows nothing. A ride that has left but"
+                    + " whose groups are still out, or still to leave, keeps its forecast.",
             required = true)
         WeatherStatus status,
     @Nullable
@@ -29,7 +31,11 @@ public record RideWeatherDto(
                 "For NOT_YET_AVAILABLE: when the forecast opens, seven days before the departure")
         Instant availableFrom,
     @Nullable @Schema(description = "The oldest fetch among the forecasts read") Instant fetchedAt,
-    @Schema(description = "The meeting point at departure", required = true)
+    @Schema(
+            description =
+                "The meeting point when the ride leaves (its dateTime). Each leg carries its own,"
+                    + " at the group's start.",
+            required = true)
         DepartureWeatherDto departure,
     @Schema(
             description =

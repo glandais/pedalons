@@ -306,4 +306,44 @@ class TripWeatherResourceTest extends AbstractResourceTest {
         .body("stages", hasSize(1))
         .body("stages[0].leg.status", equalTo("OUT_OF_RANGE"));
   }
+
+  /** Stores a stage's end, as {@code PublicationEndCalculator} would on a save. */
+  private void endAt(TripStage stage, Instant end) {
+    QuarkusTransaction.requiringNew()
+        .run(() -> tripStageRepository.findById(stage.getId()).setEndDateTime(end));
+  }
+
+  /**
+   * docs/LEDGER_*.md API-163: a stage that left an hour ago and ends in two keeps its forecast;
+   * one whose end has passed is OUT_OF_RANGE, even if it left only four hours ago.
+   */
+  @Test
+  void weather_ofAStageUnderWay_isServedUntilItsEnd() {
+    Instant now = Instant.now().truncatedTo(ChronoUnit.SECONDS);
+    Trip trip =
+        trip("Running trip", now.minus(4, ChronoUnit.HOURS), Visibility.PUBLIC, Status.PUBLISHED);
+    TripStage over = stage(trip, "Running day 1", 0, now.minus(4, ChronoUnit.HOURS), true);
+    endAt(over, now.minus(1, ChronoUnit.MINUTES));
+    TripStage underway = stage(trip, "Running day 2", 1, now.minus(1, ChronoUnit.HOURS), true);
+    endAt(underway, now.plus(2, ChronoUnit.HOURS));
+    planner.plan(Instant.now());
+    worker.fetchDue();
+
+    given()
+        .when()
+        .get(weatherUrl(trip.getSlug()))
+        .then()
+        .statusCode(200)
+        .body("status", not(equalTo("OUT_OF_RANGE")))
+        .body("stages", hasSize(2))
+        .body("stages[0].leg.status", equalTo("OUT_OF_RANGE"))
+        .body("stages[0].departure.status", equalTo("OUT_OF_RANGE"))
+        .body("stages[1].leg.status", not(equalTo("OUT_OF_RANGE")))
+        .body("stages[1].leg.checkpoints", hasSize(3))
+        .body("stages[1].departure.status", not(equalTo("OUT_OF_RANGE")))
+        .body("stages[1].summary", notNullValue())
+        // The leg carries the same summary; its departure stays on the stage.
+        .body("stages[1].leg.summary", notNullValue())
+        .body("stages[1].leg", not(hasKey("departure")));
+  }
 }

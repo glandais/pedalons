@@ -447,6 +447,60 @@ public class RideResource {
   }
 
   @POST
+  @Path("/{rideSlug}/groups/{groupId}/switch")
+  @Operation(
+      summary = "Switch ride group",
+      description =
+          "Moves the caller from their group of the ride to this one, in one transaction: on any"
+              + " refusal the registration stays where it was. The same checks as join for the"
+              + " group joined (full, already left, ride cancelled or not readable). Switching to"
+              + " the group already joined changes nothing (200). The organisers are told of the"
+              + " new group as of a join.")
+  @APIResponses({
+    @APIResponse(
+        responseCode = "201",
+        description = "Registered in this group, no longer in the previous one",
+        content = @Content(schema = @Schema(implementation = RideParticipationDto.class))),
+    @APIResponse(
+        responseCode = "200",
+        description = "Already registered in this group: nothing changed",
+        content = @Content(schema = @Schema(implementation = RideParticipationDto.class))),
+    @APIResponse(
+        responseCode = "400",
+        description = "NOT_REGISTERED: the caller is in no group of this ride — join instead",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+    @APIResponse(
+        responseCode = "401",
+        description = "Unauthorized",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+    @APIResponse(
+        responseCode = "403",
+        description = "Not allowed to join this ride (not a member, ride not published)",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+    @APIResponse(
+        responseCode = "404",
+        description = "Team, ride, or group not found — a group of another ride included",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+    @APIResponse(
+        responseCode = "409",
+        description = "GROUP_FULL or RIDE_PAST (the group has left): the registration is unchanged",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  @RolesAllowed("user")
+  public Response switchGroup(
+      @Parameter(description = "Team URL slug") @PathParam("teamSlug") String teamSlug,
+      @Parameter(description = "Ride URL slug") @PathParam("rideSlug") String rideSlug,
+      @Parameter(description = "Group to move to (TSID)") @PathParam("groupId") String groupId) {
+
+    RideService.SwitchResult result =
+        rideService.switchGroup(teamSlug, rideSlug, TsidUtils.toLong(groupId));
+
+    return Response.status(result.created() ? Response.Status.CREATED : Response.Status.OK)
+        .entity(result.participation())
+        .build();
+  }
+
+  @POST
   @Path("/{rideSlug}/groups/{groupId}/leave")
   @Operation(summary = "Leave ride group", description = "Leave a ride group")
   @APIResponses({

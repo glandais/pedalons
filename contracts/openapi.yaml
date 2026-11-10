@@ -5016,6 +5016,18 @@ components:
             \ at each of the caller's GPS services whose automatic sync is on and\
             \ which hold it, sorted by service. Only ever about the caller's own connections.\
             \ Absent when there is none: anonymous caller, no such service, no route."
+        estimatedArrival:
+          description: "When the group is expected back: startAt plus the length of\
+            \ the route it rides (its own, else the ride's) at its averageSpeed. Absent\
+            \ when it has no route or no averageSpeed — no default speed here. Known\
+            \ whatever the forecast window, unlike WeatherLegDto.arrivalTime."
+          type: string
+          $ref: "#/components/schemas/Instant"
+        estimatedDurationMinutes:
+          type: integer
+          format: int32
+          description: "Minutes from startAt to estimatedArrival, rounded. Absent\
+            \ when estimatedArrival is."
     RideGroupSummaryDto:
       type: object
       description: "One group of a ride, as a list row shows it: name, pace and fill.\
@@ -5407,8 +5419,10 @@ components:
           description: "Overall state. OK and STALE (shown, flagged as old) carry\
             \ the forecast; NOT_YET_AVAILABLE comes with availableFrom; UNAVAILABLE\
             \ (nothing in cache yet, or the provider failing) offers to retry; NO_LOCATION\
-            \ is worth a word to the organisers only; OUT_OF_RANGE (finished, cancelled)\
-            \ shows nothing."
+            \ is worth a word to the organisers only; OUT_OF_RANGE (over — its last\
+            \ group back, the ride's estimated end —, cancelled) shows nothing. A\
+            \ ride that has left but whose groups are still out, or still to leave,\
+            \ keeps its forecast."
           type: string
           $ref: "#/components/schemas/WeatherStatus"
         availableFrom:
@@ -5421,7 +5435,8 @@ components:
           type: string
           $ref: "#/components/schemas/Instant"
         departure:
-          description: The meeting point at departure
+          description: "The meeting point when the ride leaves (its dateTime). Each\
+            \ leg carries its own, at the group's start."
           type: object
           $ref: "#/components/schemas/DepartureWeatherDto"
         legs:
@@ -7695,6 +7710,18 @@ components:
           format: int32
           description: "Number of comments on the stage's own thread. Absent when\
             \ the caller cannot read comments (not a member of the team), like TripDto.commentCount."
+        estimatedArrival:
+          description: "When the stage is expected to end: dateTime plus its route's\
+            \ length at its averageSpeed. Absent when it has no route or no averageSpeed\
+            \ — no default speed here. Known whatever the forecast window, unlike\
+            \ WeatherLegDto.arrivalTime."
+          type: string
+          $ref: "#/components/schemas/Instant"
+        estimatedDurationMinutes:
+          type: integer
+          format: int32
+          description: "Minutes from dateTime to estimatedArrival, rounded. Absent\
+            \ when estimatedArrival is."
     TripStageWeatherDto:
       description: "One stage of a trip: its weather in one line, and along its route"
       type: object
@@ -7719,8 +7746,8 @@ components:
         departure:
           description: "The weather when the stage leaves, at its first forecast point:\
             \ conditions, sunrise and sunset, as RideWeatherDto.departure for a ride.\
-            \ OUT_OF_RANGE once the stage has left, NO_LOCATION without a route, NOT_YET_AVAILABLE\
-            \ beyond the horizon."
+            \ OUT_OF_RANGE once the stage is over (its estimated end passed), NO_LOCATION\
+            \ without a route, NOT_YET_AVAILABLE beyond the horizon."
           type: object
           $ref: "#/components/schemas/DepartureWeatherDto"
       required:
@@ -7737,11 +7764,11 @@ components:
       - attribution
       properties:
         status:
-          description: "Overall state, over the stages yet to leave. OK and STALE\
+          description: "Overall state, over the stages not over yet. OK and STALE\
             \ (shown, flagged as old) carry a forecast for at least one stage; NOT_YET_AVAILABLE\
             \ (every stage with a route is beyond the horizon) comes with availableFrom;\
             \ UNAVAILABLE (nothing in cache yet, or the provider failing) offers to\
-            \ retry; NO_LOCATION (no stage yet to leave has a route) is worth a word\
+            \ retry; NO_LOCATION (no stage not over yet has a route) is worth a word\
             \ to the organisers only; OUT_OF_RANGE (finished, cancelled, draft) shows\
             \ nothing. Each stage also has its own, in its leg."
           type: string
@@ -7760,8 +7787,9 @@ components:
           items:
             $ref: "#/components/schemas/TripStageWeatherDto"
           description: "One per live stage, in stage order (as TripDto.stages), stages\
-            \ already gone included with leg.status OUT_OF_RANGE; a single one without\
-            \ stageId for a trip without stages. Empty when the trip is not published."
+            \ already over (their estimated end passed) included with leg.status OUT_OF_RANGE;\
+            \ a stage under way keeps its forecast; a single one without stageId for\
+            \ a trip without stages. Empty when the trip is not published."
         attribution:
           description: The credit the forecast's licence asks for
           type: object
@@ -8391,8 +8419,8 @@ components:
           description: "State of this leg's forecast. NO_LOCATION when the leg has\
             \ no route to sample: then no checkpoint, no segment. NOT_YET_AVAILABLE\
             \ when it leaves beyond the seven-day horizon: checkpoints and times without\
-            \ weather, and availableFrom. OUT_OF_RANGE for a trip stage already gone:\
-            \ nothing to show."
+            \ weather, and availableFrom. OUT_OF_RANGE for a trip stage already over\
+            \ (its estimated end passed): nothing to show."
           type: string
           $ref: "#/components/schemas/WeatherStatus"
         availableFrom:
@@ -8447,6 +8475,22 @@ components:
           description: "The first checkpoint where rain becomes likely, if any"
           type: object
           $ref: "#/components/schemas/WeatherRainAlertDto"
+        summary:
+          description: "The leg's weather in one line, for its card: the first checkpoint's\
+            \ hour, the extremes over the checkpoints, the rain alert — as TripStageWeatherDto.summary\
+            \ for a stage. Present when status is OK, STALE or NOT_YET_AVAILABLE (then\
+            \ status and availableFrom only)."
+          type: object
+          $ref: "#/components/schemas/RideWeatherSummaryDto"
+        departure:
+          description: "For a ride's leg: the weather at the ride's meeting point\
+            \ when this group leaves (startTime), sunrise and sunset included — RideWeatherDto.departure\
+            \ is the same at the ride's own time. Same states: conditions for OK and\
+            \ STALE only, UNAVAILABLE when the cache has no hour near the group's\
+            \ start, NOT_YET_AVAILABLE when the group leaves beyond the horizon. Absent\
+            \ on a trip's legs, whose departure TripStageWeatherDto.departure carries."
+          type: object
+          $ref: "#/components/schemas/DepartureWeatherDto"
       required:
       - status
       - startTime
@@ -16867,6 +16911,84 @@ paths:
       security:
       - SecurityScheme:
         - user
+  /api/teams/{teamSlug}/rides/{rideSlug}/groups/{groupId}/switch:
+    post:
+      summary: Switch ride group
+      description: "Moves the caller from their group of the ride to this one, in\
+        \ one transaction: on any refusal the registration stays where it was. The\
+        \ same checks as join for the group joined (full, already left, ride cancelled\
+        \ or not readable). Switching to the group already joined changes nothing\
+        \ (200). The organisers are told of the new group as of a join."
+      operationId: switchGroup
+      tags:
+      - Rides
+      parameters:
+      - description: Group to move to (TSID)
+        name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+      - description: Ride URL slug
+        name: rideSlug
+        in: path
+        required: true
+        schema:
+          type: string
+      - description: Team URL slug
+        name: teamSlug
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "201":
+          description: "Registered in this group, no longer in the previous one"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RideParticipationDto"
+        "200":
+          description: "Already registered in this group: nothing changed"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RideParticipationDto"
+        "400":
+          description: "NOT_REGISTERED: the caller is in no group of this ride — join\
+            \ instead"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: "Not allowed to join this ride (not a member, ride not published)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Team, ride, or group not found — a group of another ride included"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: "GROUP_FULL or RIDE_PAST (the group has left): the registration\
+            \ is unchanged"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - SecurityScheme:
+        - user
   /api/teams/{teamSlug}/rides/{rideSlug}/ics:
     get:
       summary: Download ride as a calendar file
@@ -20470,7 +20592,7 @@ paths:
                 $ref: "#/components/schemas/VersionDto"
 info:
   title: Pedalons API
-  version: 13.4.0
+  version: 13.5.0
   description: API for Pedalons Cycling Team Management Platform
 servers:
 - url: http://localhost:8080

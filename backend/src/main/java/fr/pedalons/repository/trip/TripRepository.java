@@ -81,13 +81,14 @@ public class TripRepository implements TeamEntityRepository<Trip, TeamEntityQuer
 
   /**
    * The weather planner's trips without any live stage — each is one leg, its own route at its own
-   * time: published live trips leaving within {@code [from, to]}, across all domains (the weather
-   * cache is global).
+   * time: published live trips leaving within {@code [from, to]} or under way at {@code from},
+   * across all domains (the weather cache is global). Not over rather than leaving after, as
+   * {@code TripStageRepository#findForWeather} (docs/LEDGER_*.md API-163).
    */
   public List<Trip> findStagelessForWeather(Instant from, Instant to) {
     return list(
         "from Trip t where t.status = ?1 and t.deleted = false and t.team.deleted = false"
-            + " and t.dateTime >= ?2 and t.dateTime <= ?3"
+            + " and coalesce(t.endDateTime, t.dateTime) >= ?2 and t.dateTime <= ?3"
             + " and not exists (select 1 from TripStage s where s.trip = t and s.deleted = false)",
         Status.PUBLISHED,
         from,

@@ -4,6 +4,7 @@ import fr.pedalons.domain.ride.Ride;
 import fr.pedalons.enums.Status;
 import fr.pedalons.enums.WeatherStatus;
 import fr.pedalons.repository.gpx.PreviewWeatherRow;
+import fr.pedalons.service.publication.PublicationEndCalculator;
 import fr.pedalons.service.weather.RideWeatherCalculator.CellSeries;
 import fr.pedalons.service.weather.RideWeatherCalculator.LegInput;
 import fr.pedalons.service.weather.RideWeatherPlans.RidePlan;
@@ -91,22 +92,40 @@ public class RideWeatherService {
     }
     Map<CellKey, CellSeries> cache = seriesLoader.load(keys, plan.earliest(), plan.lastArrival());
 
+    CellSeries departureSeries = cache.getOrDefault(departureCell, CellSeries.EMPTY);
     DepartureWeather departure =
-        RideWeatherCalculator.departure(
-            cache.getOrDefault(departureCell, CellSeries.EMPTY), plan.departureTime(), now);
+        RideWeatherCalculator.departure(departureSeries, plan.departureTime(), now);
     List<WeatherLeg> legs = new ArrayList<>(plan.legs().size());
     for (LegInput leg : plan.legs()) {
       legs.add(
-          RideWeatherCalculator.leg(leg, key -> cache.getOrDefault(key, CellSeries.EMPTY), now));
+          RideWeatherCalculator.leg(leg, key -> cache.getOrDefault(key, CellSeries.EMPTY), now)
+              .withDeparture(legDeparture(departureSeries, leg, now)));
     }
     return RideWeatherCalculator.ride(departure, legs);
   }
 
   /**
-   * Finished — it has left, as {@code RideDto.finished} says — or cancelled: no weather block. A
-   * draft has none either.
+   * A group's departure block: the meeting point — the cell of the ride's own block, already read
+   * — at the group's start, sunrise and sunset included (docs/LEDGER_*.md API-162). The cell is in
+   * the planner's demand with the ride's departure, and the series read spans every leg's start
+   * ({@link RidePlan#earliest}), so it costs nothing more. {@code NOT_YET_AVAILABLE} for a group
+   * leaving beyond the horizon, as its leg.
+   */
+  static DepartureWeather legDeparture(CellSeries departureSeries, LegInput leg, Instant now) {
+    if (RideWeatherCalculator.isBeyondHorizon(leg.start(), now)) {
+      return DepartureWeather.of(WeatherStatus.NOT_YET_AVAILABLE);
+    }
+    return RideWeatherCalculator.departure(departureSeries, leg.start(), now);
+  }
+
+  /**
+   * Over — its stored end passed ({@link PublicationEndCalculator#effectiveEnd}, the last group
+   * back) — or cancelled: no weather block. A draft has none either. A ride that has left but whose
+   * groups are still out, or still to leave, keeps its weather (docs/LEDGER_*.md API-163), unlike
+   * {@code RideDto.finished}, which only says it has left.
    */
   static boolean isOutOfRange(Ride ride, Instant now) {
-    return ride.getStatus() != Status.PUBLISHED || ride.getDateTime().isBefore(now);
+    return ride.getStatus() != Status.PUBLISHED
+        || PublicationEndCalculator.effectiveEnd(ride).isBefore(now);
   }
 }

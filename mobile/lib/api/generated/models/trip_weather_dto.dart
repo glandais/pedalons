@@ -16,10 +16,10 @@ part 'trip_weather_dto.g.dart';
 @Freezed()
 abstract class TripWeatherDto with _$TripWeatherDto {
   const factory TripWeatherDto({
-    /// Overall state, over the stages yet to leave. OK and STALE (shown, flagged as old) carry a forecast for at least one stage; NOT_YET_AVAILABLE (every stage with a route is beyond the horizon) comes with availableFrom; UNAVAILABLE (nothing in cache yet, or the provider failing) offers to retry; NO_LOCATION (no stage yet to leave has a route) is worth a word to the organisers only; OUT_OF_RANGE (finished, cancelled, draft) shows nothing. Each stage also has its own, in its leg.
+    /// Overall state, over the stages not over yet. OK and STALE (shown, flagged as old) carry a forecast for at least one stage; NOT_YET_AVAILABLE (every stage with a route is beyond the horizon) comes with availableFrom; UNAVAILABLE (nothing in cache yet, or the provider failing) offers to retry; NO_LOCATION (no stage not over yet has a route) is worth a word to the organisers only; OUT_OF_RANGE (finished, cancelled, draft) shows nothing. Each stage also has its own, in its leg.
     required String status,
 
-    /// One per live stage, in stage order (as TripDto.stages), stages already gone included with leg.status OUT_OF_RANGE; a single one without stageId for a trip without stages. Empty when the trip is not published.
+    /// One per live stage, in stage order (as TripDto.stages), stages already over (their estimated end passed) included with leg.status OUT_OF_RANGE; a stage under way keeps its forecast; a single one without stageId for a trip without stages. Empty when the trip is not published.
     required List<TripStageWeatherDto> stages,
 
     /// The credit the forecast's licence asks for

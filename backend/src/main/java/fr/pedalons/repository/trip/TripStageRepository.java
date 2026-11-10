@@ -28,13 +28,18 @@ public class TripStageRepository implements BaseRepository<TripStage> {
 
   /**
    * The weather planner's stages: live stages of published live trips, leaving within {@code [from,
-   * to]}, across all domains (the weather cache is global), in trip then stage order.
+   * to]} or under way at {@code from}, across all domains (the weather cache is global), in trip
+   * then stage order.
+   *
+   * <p>Not over by {@code from} rather than leaving after it: a stage under way keeps its forecast to
+   * its end (docs/LEDGER_*.md API-163), so its cells — a later group's included — stay fresh. The
+   * end is the stored one; a row an older backend left without it counts until its departure only.
    */
   public List<TripStage> findForWeather(Instant from, Instant to) {
     return list(
         "from TripStage s where s.deleted = false and s.team.deleted = false"
             + " and s.trip.deleted = false and s.trip.status = ?1"
-            + " and s.dateTime >= ?2 and s.dateTime <= ?3"
+            + " and coalesce(s.endDateTime, s.dateTime) >= ?2 and s.dateTime <= ?3"
             + " order by s.trip.id, s.sortOrder, s.id",
         Status.PUBLISHED,
         from,

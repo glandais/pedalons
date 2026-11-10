@@ -199,11 +199,53 @@ public class PublicationEndCalculator {
    * #DEFAULT_DURATION} when either is missing.
    */
   static Instant legEnd(Instant start, @Nullable Route route, @Nullable Float averageSpeed) {
-    Float distance = route != null ? route.getDistance() : null;
+    LegEstimate estimate = estimate(start, route, averageSpeed);
+    return estimate != null ? estimate.arrival() : start.plus(DEFAULT_DURATION);
+  }
+
+  /**
+   * A leg's estimated arrival and duration, its route's length at its speed (docs/LEDGER_*.md
+   * API-165). Unlike {@link #legEnd}, no default: null when the distance or the speed is missing,
+   * so a screen shows nothing rather than a guess.
+   *
+   * @param durationMinutes the whole minutes between the start and the arrival, rounded
+   */
+  public record LegEstimate(Instant arrival, int durationMinutes) {}
+
+  /** {@link LegEstimate} of a start, a distance in metres and a speed in km/h. */
+  public static @Nullable LegEstimate estimate(
+      Instant start, @Nullable Float distance, @Nullable Float averageSpeed) {
     if (distance == null || distance <= 0 || averageSpeed == null || averageSpeed <= 0) {
-      return start.plus(DEFAULT_DURATION);
+      return null;
     }
-    return RideWeatherCalculator.passage(start, distance, averageSpeed);
+    Instant arrival = RideWeatherCalculator.passage(start, distance, averageSpeed);
+    long seconds = Duration.between(start, arrival).toSeconds();
+    return new LegEstimate(arrival, (int) Math.round(seconds / 60.0));
+  }
+
+  /** {@link LegEstimate} of a leg riding {@code route}, a deleted route counting as none. */
+  public static @Nullable LegEstimate estimate(
+      Instant start, @Nullable Route route, @Nullable Float averageSpeed) {
+    Route live = live(route);
+    return estimate(start, live != null ? live.getDistance() : null, averageSpeed);
+  }
+
+  /**
+   * A group's {@link LegEstimate}: from its stored {@code start_at}, along its route, else the
+   * ride's — the leg {@link #rideEnd} times. Reads only the group, its ride and their routes, all
+   * to-ones already in hand where a ride is mapped.
+   */
+  public static @Nullable LegEstimate estimate(RideGroup group) {
+    Route route = live(group.getRoute());
+    if (route == null) {
+      route = live(group.getRide().getRoute());
+    }
+    return estimate(group.getStartAt(), route, group.getAverageSpeed());
+  }
+
+  /** A stage's {@link LegEstimate}: from its {@code dateTime}, along its route. */
+  public static @Nullable LegEstimate estimate(TripStage stage) {
+    return estimate(stage.getDateTime(), stage.getRoute(), stage.getAverageSpeed());
   }
 
   private static @Nullable Route live(@Nullable Route route) {

@@ -7,6 +7,7 @@ import static org.hamcrest.Matchers.*;
 import fr.pedalons.api.AbstractResourceTest;
 import fr.pedalons.common.TsidUtils;
 import fr.pedalons.domain.ride.Ride;
+import fr.pedalons.domain.ride.RideGroup;
 import fr.pedalons.domain.route.Route;
 import fr.pedalons.dto.common.asset.MediaDto;
 import fr.pedalons.dto.common.request.SlugChangeRequest;
@@ -16,7 +17,10 @@ import fr.pedalons.dto.rides.response.RideDto;
 import fr.pedalons.enums.AssetType;
 import fr.pedalons.enums.Status;
 import fr.pedalons.enums.Visibility;
+import fr.pedalons.repository.ride.RideGroupRepository;
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.junit.QuarkusTest;
+import jakarta.inject.Inject;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -27,6 +31,8 @@ import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 class RideResourceTest extends AbstractResourceTest {
+
+  @Inject RideGroupRepository rideGroupRepository;
 
   @Override
   @BeforeEach
@@ -835,5 +841,139 @@ class RideResourceTest extends AbstractResourceTest {
         // No route, no thumbnail — never the ride's, which the client already holds.
         .body("groups[2]", not(hasKey("thumbnailUrl")))
         .body("thumbnailUrl", containsString(TsidUtils.toString(longLight.getId())));
+  }
+
+  // --- switch (docs/LEDGER_*.md API-164)
+  // ----------------------------------------------------------
+
+  private String switchUrl(String rideSlug, RideGroup group) {
+    return "/api/teams/"
+        + team1Slug
+        + "/rides/"
+        + rideSlug
+        + "/groups/"
+        + TsidUtils.toString(group.getId())
+        + "/switch";
+  }
+
+  @Test
+  void switchGroup_shouldMoveTheRegistration_in201() {
+    Ride ride =
+        dataService.createRide(
+            team1, user1, "Switch", "switch-http", Instant.now().plus(1, ChronoUnit.DAYS));
+    RideGroup a = dataService.createRideGroup(user1, ride, "A", 0);
+    RideGroup b = dataService.createRideGroup(user1, ride, "B", 1);
+    dataService.createParticipation(a, user2);
+
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER2))
+        .when()
+        .post(switchUrl("switch-http", b))
+        .then()
+        .statusCode(201)
+        .body("userId", equalTo(TsidUtils.toString(user2.getId())));
+
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER2))
+        .when()
+        .get("/api/teams/" + team1Slug + "/rides/switch-http")
+        .then()
+        .statusCode(200)
+        .body("registeredGroupId", equalTo(TsidUtils.toString(b.getId())))
+        .body("groups[0].countParticipants", equalTo(0))
+        .body("groups[1].countParticipants", equalTo(1));
+
+    // Already there: nothing to do, 200.
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER2))
+        .when()
+        .post(switchUrl("switch-http", b))
+        .then()
+        .statusCode(200);
+  }
+
+  @Test
+  void switchGroup_refusals_shouldLeaveTheRegistrationWhereItWas() {
+    Ride ride =
+        dataService.createRide(
+            team1, user1, "Switch", "switch-refused", Instant.now().plus(1, ChronoUnit.DAYS));
+    RideGroup a = dataService.createRideGroup(user1, ride, "A", 0);
+    RideGroup full = dataService.createRideGroupWithMaxParticipants(user1, ride, "Full", 1);
+    dataService.createParticipation(full, user1);
+    Ride other =
+        dataService.createRide(
+            team1, user1, "Other", "switch-other", Instant.now().plus(1, ChronoUnit.DAYS));
+    RideGroup elsewhere = dataService.createRideGroup(user1, other, "Elsewhere", 0);
+
+    // Not registered yet: join instead.
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER2))
+        .when()
+        .post(switchUrl("switch-refused", a))
+        .then()
+        .statusCode(400)
+        .body("code", equalTo("NOT_REGISTERED"));
+
+    dataService.createParticipation(a, user2);
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER2))
+        .when()
+        .post(switchUrl("switch-refused", full))
+        .then()
+        .statusCode(409)
+        .body("code", equalTo("GROUP_FULL"));
+    // A group of another ride, through this ride's URL.
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER2))
+        .when()
+        .post(switchUrl("switch-refused", elsewhere))
+        .then()
+        .statusCode(404);
+    given().when().post(switchUrl("switch-refused", full)).then().statusCode(401);
+
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER2))
+        .when()
+        .get("/api/teams/" + team1Slug + "/rides/switch-refused")
+        .then()
+        .statusCode(200)
+        .body("registeredGroupId", equalTo(TsidUtils.toString(a.getId())));
+  }
+
+  // --- estimated arrival (docs/LEDGER_*.md API-165)
+  // -------------------------------------------------
+
+  @Test
+  void getRide_groupsCarryTheirEstimatedArrival_onlyWithADistanceAndASpeed() {
+    Instant departure = Instant.now().plus(1, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS);
+    Ride ride = dataService.createRide(team1, user1, "Estimée", "estimee", departure);
+    Route route = dataService.createRoute(team1, user1, "Boucle 50");
+    dataService.setRouteMetrics(route, 50_000f, 300f);
+    dataService.setRideRoute(ride, route);
+    RideGroup timed = dataService.createRideGroup(user1, ride, "Allure", 0);
+    dataService.createRideGroup(user1, ride, "Sans allure", 1);
+    QuarkusTransaction.requiringNew()
+        .run(() -> rideGroupRepository.findById(timed.getId()).setAverageSpeed(25f));
+
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .when()
+        .get("/api/teams/" + team1Slug + "/rides/estimee")
+        .then()
+        .statusCode(200)
+        // No route of its own: it rides the ride's 50 km, at 25 km/h — two hours.
+        .body("groups[0].estimatedArrival", equalTo(departure.plus(2, ChronoUnit.HOURS).toString()))
+        .body("groups[0].estimatedDurationMinutes", equalTo(120))
+        // No speed: nothing, no 25 km/h default.
+        .body("groups[1]", not(hasKey("estimatedArrival")))
+        .body("groups[1]", not(hasKey("estimatedDurationMinutes")));
   }
 }
