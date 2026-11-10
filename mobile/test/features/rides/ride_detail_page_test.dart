@@ -573,7 +573,6 @@ void main() {
       // carte météo au-dessus de la carte, ni section du groupe.
       expect(inBlock(find.byKey(keys.rideGroup.joinButton)), findsOneWidget);
       expect(find.byType(PdlActionBar), findsNothing);
-      expect(find.byKey(keys.ride.weatherCard), findsNothing);
       expect(find.byType(RideGroupCard), findsNothing);
       // « Météo le long du parcours » replié : des commentaires suivent.
       expect(find.byKey(keys.ride.weatherAlongRoute), findsOneWidget);
@@ -820,7 +819,6 @@ void main() {
       expect(find.byKey(keys.rideRoute.waypoints), findsNothing);
       expect(find.byKey(keys.routeDetail.colorByMode('wind')), findsNothing);
       // Plus de carte météo au-dessus de la carte, ni de bloc méta.
-      expect(find.byKey(keys.ride.weatherCard), findsNothing);
       expect(find.text('Voir la liste'), findsNothing);
       // Les cartes : la mienne en tête, puis « Autres groupes », A, C.
       final double b = tester.getTopLeft(find.byKey(keys.ride.group('gB'))).dy;
@@ -1181,7 +1179,6 @@ void main() {
       );
 
       expect(find.byKey(keys.ride.weatherSection), findsOneWidget);
-      expect(find.byKey(keys.ride.weatherCard), findsNothing);
       expect(find.textContaining('Météo au départ de '), findsOneWidget);
       expect(find.textContaining('Ressenti'), findsOneWidget);
       // Ni le vent le long du parcours ni l'alerte pluie : ils vivent dans la
@@ -1211,7 +1208,6 @@ void main() {
       );
 
       expect(find.byKey(keys.ride.weatherSection), findsOneWidget);
-      expect(find.byKey(keys.ride.weatherCard), findsNothing);
       expect(find.byKey(keys.ride.weatherExposure), findsOneWidget);
       expect(
         find.textContaining('Pluie probable (70 %)', findRichText: true),
@@ -1231,7 +1227,6 @@ void main() {
       );
 
       expect(find.byKey(keys.ride.weatherSection), findsOneWidget);
-      expect(find.byKey(keys.ride.weatherCard), findsNothing);
       // Un seul « Météo au départ ».
       expect(find.textContaining('Météo au départ de '), findsOneWidget);
       expect(
@@ -1591,7 +1586,6 @@ void main() {
           findsOneWidget,
         );
         expect(find.byKey(keys.ride.weatherUnavailable), findsNothing);
-        expect(find.byKey(keys.ride.weatherCard), findsNothing);
         expect(tester.takeException(), isNull);
       });
     }

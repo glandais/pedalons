@@ -96,8 +96,7 @@ class TrackSurfaceBarColors {
   }
 }
 
-/// Le revêtement le long du parcours, sur la fiche et la fiche embarquée
-/// d'une étape (`MOB-81`, `MOB-82`) : la barre de répartition, sa légende et
+/// Le revêtement le long du parcours, sur la fiche et sur l'étape (`MOB-81`, `MOB-82`) : la barre de répartition, sa légende et
 /// l'attribution OpenStreetMap. La bascule Pente / Revêtement n'est plus ici :
 /// c'est l'interrupteur unique sous la carte (`RouteColorModeSwitch`, ledger
 /// `MOB-105`).

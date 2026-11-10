@@ -663,8 +663,6 @@
       "atDeparture": "Weather at the start",
       "atDepartureTime": "Weather at the {time} start",
       "atRideDepartureTime": "Weather at the ride's {time} start",
-      "routeTitle": "Route weather",
-      "viewRoute": "See the route weather",
       "condition": {
         "clear": "Clear sky",
         "mostlyClear": "Mostly clear",
@@ -1105,7 +1103,6 @@
     "profileGaps": "Incomplete profile: {stages} could not be loaded.",
     "weather": {
       "noLocation": "Add a route to this stage to show its weather. Only organisers see this message.",
-      "emptyTitle": "No weather for this stage",
       "emptyMessage": "There is no forecast to show for this stage.",
       "legSpeedDefault": "Passages estimated at {speed}, the default speed: the stage sets none",
       "mapSharesAll": "Shares added up over all {count} stages",
@@ -1235,7 +1232,6 @@
     "loadErrorTitle": "Could not load",
     "cursorHint": "The crosshair is synced both ways with the marker on the map.",
     "downloading": "Downloading...",
-    "openFullSheet": "View full route",
     "waypoints": {
       "title": "Route points",
       "fromStart": "{distance} from the start",
@@ -1947,7 +1943,6 @@
     "elevationGain": "elev. +",
     "elevationLoss": "elev. −",
     "elevationGainLong": "Elevation gain",
-    "elevationLossLong": "Elevation loss",
     "byte": "B",
     "kilobyte": "kB",
     "megabyte": "MB",

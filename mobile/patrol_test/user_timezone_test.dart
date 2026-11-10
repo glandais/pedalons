@@ -71,13 +71,14 @@ void main() {
       await openLink($, Paths.stage(teamSlug, tripSlug, stageSlug));
       await modules.trip.waitUntilStageIs(stageName);
 
-      // The stage's own clock, in Paris: « Départ 08:00 », then that day — the departure block's
-      // short date (docs/LEDGER_*.md MOB-114), followed by the speed when the stage has one.
+      // The stage's own clock, in Paris: « Départ 08:00 », and that day — in the departure block's
+      // day box, which the screen reader reads as the short date (docs/LEDGER_*.md MOB-114,
+      // MOB-134).
       final DateTime wall = DateTime(start.year, start.month, start.day, 8);
-      final String day = RegExp.escape(
-        AppFormatters.formatDepartureDate(start.toUtc(), teamZone),
+      expect(
+        modules.trip.stageDepartureLabel(),
+        contains(AppFormatters.formatDepartureDate(start.toUtc(), teamZone)),
       );
-      expect($(RegExp('^$day( · |\$)')).exists, isTrue);
       final String at = RegExp.escape(AppFormatters.formatTime(wall));
       expect($(RegExp('\\b$at\\b')).exists, isTrue);
       // The member's, in Auckland: the day only when it is not the stage's.

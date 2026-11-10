@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pedalons/core/pdl/pdl.dart';
 
 import 'module.dart';
 
@@ -96,13 +97,23 @@ final class Trip extends Module {
     await $.pumpAndTrySettle();
   }
 
-  /// Whether the stage page's badge reads « Étape [index] sur [total] » — its two numbers, in
-  /// that order, whatever the wording around them.
+  /// Whether the stage page's top bar reads « Étape [index] sur [total] » — its two numbers, in
+  /// that order, whatever the wording around them. The position is the bar's title since ledger
+  /// `MOB-134` (lot 11), no longer a badge in the body.
   bool stagePositionIs(int index, int total) {
     if (!$(keys.trip.stagePosition).exists) return false;
     final label = $(keys.trip.stagePosition).$(Text).text ?? '';
     return RegExp('\\b$index\\b.*\\b$total\\b').hasMatch(label);
   }
+
+  /// The stage's departure block as a screen reader reads it: « Départ 08:00 », its date, the
+  /// estimated arrival, the timezone mention. The date is in the day box, not written out
+  /// (ledger `MOB-134`, lot 11), so it is only found here.
+  String stageDepartureLabel() =>
+      $.tester
+          .widget<PdlDepartureBlock>(find.byKey(keys.trip.stageDepartureBlock))
+          .semanticLabel ??
+      '';
 
   /// Pulls the trip's page down to refresh it: its detail is read again from the API.
   ///

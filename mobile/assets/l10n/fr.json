@@ -663,8 +663,6 @@
       "atDeparture": "Météo au départ",
       "atDepartureTime": "Météo au départ de {time}",
       "atRideDepartureTime": "Météo au départ de la sortie, {time}",
-      "routeTitle": "Météo du parcours",
-      "viewRoute": "Voir la météo du parcours",
       "condition": {
         "clear": "Ciel dégagé",
         "mostlyClear": "Plutôt dégagé",
@@ -1105,7 +1103,6 @@
     "profileGaps": "Profil incomplet : {stages} n'a pas pu être chargée.",
     "weather": {
       "noLocation": "Ajoutez un parcours à cette étape pour afficher sa météo. Message visible du rôle Organisateur seulement.",
-      "emptyTitle": "Pas de météo pour cette étape",
       "emptyMessage": "Aucune prévision n'est à afficher pour cette étape.",
       "legSpeedDefault": "Passages estimés à {speed}, vitesse par défaut : l'étape n'en indique pas",
       "mapSharesAll": "Parts additionnées des {count} étapes",
@@ -1235,7 +1232,6 @@
     "loadErrorTitle": "Chargement impossible",
     "cursorHint": "Réticule synchronisé dans les deux sens avec le marqueur sur la carte.",
     "downloading": "Téléchargement...",
-    "openFullSheet": "Voir la fiche complète",
     "waypoints": {
       "title": "Points du parcours",
       "fromStart": "À {distance} du départ",
@@ -1947,7 +1943,6 @@
     "elevationGain": "D+",
     "elevationLoss": "D−",
     "elevationGainLong": "Dénivelé positif",
-    "elevationLossLong": "Dénivelé négatif",
     "byte": "o",
     "kilobyte": "ko",
     "megabyte": "Mo",

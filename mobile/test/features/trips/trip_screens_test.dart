@@ -3,13 +3,19 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
+import 'package:pedalons/core/utils/formatters.dart';
 import 'package:pedalons/features/comments/data/comment_repository.dart';
 import 'package:pedalons/features/comments/presentation/widgets/comment_thread.dart';
+import 'package:pedalons/core/config/config_provider.dart';
+import 'package:pedalons/features/routes/presentation/widgets/gps_button.dart';
+import 'package:pedalons/features/routes/presentation/widgets/route_map.dart';
+import 'package:pedalons/features/routes/providers/route_detail_provider.dart';
 import 'package:pedalons/features/teams/data/team_repository.dart';
 import 'package:pedalons/features/trips/data/trip_repository.dart';
 import 'package:pedalons/features/trips/presentation/pages/stage_detail_page.dart';
@@ -157,9 +163,11 @@ void main() {
     Brightness brightness = Brightness.light,
     _StubTripRepository? repository,
     _StubCommentRepository? comments,
+    List<Override> overrides = const <Override>[],
   }) {
     return ProviderScope(
       overrides: [
+        ...overrides,
         commentRepositoryProvider.overrideWithValue(
           comments ?? _StubCommentRepository(),
         ),
@@ -712,15 +720,30 @@ void main() {
           ],
         );
 
-    testWidgets('le rail est épinglé et porte « Aperçu » puis les étapes', (
+    testWidgets('le rail est épinglé et porte « Aperçu » puis les étapes ; '
+        '« Étape 1 sur 2 » est dans la barre du haut', (
       WidgetTester tester,
     ) async {
       await openStage(tester, tripWithPlaces(), 'j1');
 
       expect(find.byType(PdlStageRail), findsOneWidget);
       expect(find.text('Aperçu'), findsOneWidget);
-      // `PdlBadge` capitalise ses libellés.
-      expect(find.text('ÉTAPE 1 SUR 2'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(keys.trip.stagePosition),
+          matching: find.text('Étape 1 sur 2'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(PdlAppBar),
+          matching: find.text('GTMC Bromance'),
+        ),
+        findsOneWidget,
+      );
+      // Plus de badge « Étape 1 sur 2 » dans le corps.
+      expect(find.text('ÉTAPE 1 SUR 2'), findsNothing);
     });
 
     testWidgets('le bloc de départ est sous le titre, sans « Départ groupé » '
@@ -749,22 +772,20 @@ void main() {
         find.descendant(of: block, matching: find.byType(PdlDayBox)),
         findsOneWidget,
       );
-      expect(
-        find.descendant(
-          of: block,
-          matching: find.textContaining('mar. 12 août 2036'),
-        ),
-        findsOneWidget,
-      );
       expect(find.textContaining('Départ groupé'), findsNothing);
-      // Sous le titre : au-dessus des lieux.
+      // Sans `estimatedArrival` (une API plus ancienne), pas d'arrivée.
+      expect(find.textContaining('Arrivée estimée'), findsNothing);
       expect(
         tester.getTopLeft(block).dy,
         greaterThan(tester.getTopLeft(find.byKey(keys.trip.stageTitle)).dy),
       );
+      // Le lieu de départ, dans le bloc.
       expect(
-        tester.getTopLeft(block).dy,
-        lessThan(tester.getTopLeft(find.text('Clermont-Ferrand').last).dy),
+        find.descendant(
+          of: block,
+          matching: find.byKey(keys.trip.stageStartPlaceLink),
+        ),
+        findsOneWidget,
       );
     });
 
@@ -798,22 +819,54 @@ void main() {
       );
     });
 
-    testWidgets('l\'adresse s\'affiche sous le nom du lieu', (
+    testWidgets('les lieux sont des liens d\'itinéraire, le nom seul', (
       WidgetTester tester,
     ) async {
       await openStage(tester, tripWithPlaces(), 'j1');
 
-      expect(find.text('Clermont-Ferrand'), findsWidgets);
-      expect(find.text('Place de Jaude, 63000'), findsOneWidget);
+      final Finder block = find.byKey(keys.trip.stageDepartureBlock);
+      expect(
+        find.descendant(
+          of: block,
+          matching: find.byKey(keys.trip.stageStartPlaceLink),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: block,
+          matching: find.byKey(keys.trip.stageEndPlaceLink),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Clermont-Ferrand'), findsOneWidget);
+      expect(find.text('Issoire'), findsOneWidget);
+      // L'adresse sert l'itinéraire ; elle ne s'écrit plus (KIT §8).
+      expect(find.text('Place de Jaude, 63000'), findsNothing);
     });
 
-    testWidgets('sans adresse, la ligne se réduit sans espace vide', (
+    testWidgets('sans parcours : « Parcours » et un état vide', (
       WidgetTester tester,
     ) async {
-      await openStage(tester, tripWithPlaces(address: null), 'j1');
+      await openStage(
+        tester,
+        fixtureTrip(
+          stages: <TripStageDto>[
+            fixtureStage(index: 1, stageCount: 2),
+            fixtureStage(index: 2, stageCount: 2),
+          ],
+        ),
+        'j1',
+      );
 
-      expect(find.text('Clermont-Ferrand'), findsWidgets);
-      expect(find.text('Place de Jaude, 63000'), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byKey(keys.trip.stageRouteSection),
+          matching: find.text('Aucun parcours'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.byKey(keys.trip.stageStatTiles), findsNothing);
     });
 
     testWidgets(
@@ -868,6 +921,266 @@ void main() {
 
       expect(find.text('Étape introuvable'), findsOneWidget);
       expect(find.text('Retour au voyage'), findsWidgets);
+    });
+  });
+
+  group('écran de l\'étape — maquette cible', () {
+    setUp(() => RouteMap.debugSkipNativeMap = true);
+    tearDown(() => RouteMap.debugSkipNativeMap = false);
+
+    const AssetDto gpx = AssetDto(
+      id: 'a-gpx',
+      fileName: 'j2.gpx',
+      contentType: 'application/gpx+xml',
+      url: '/api/download/public/j2.gpx',
+    );
+
+    // 68,2 km plein nord, une montée, deux points.
+    final RouteDetailDto route = RouteDetailDto(
+      elevationState: 'HD',
+      tags: const [],
+      id: 'route-gtmc-j2',
+      slug: 'gtmc-j2',
+      team: kFixtureTeam,
+      name: 'GTMC J2',
+      media: kEmptyMedia.copyWith(
+        assets: kEmptyMedia.assets.copyWith(gpx: gpx),
+      ),
+      distance: 68200,
+      elevationGain: 1120,
+      elevationLoss: 1000,
+      surfaceType: 'ROAD',
+      visibility: 'PUBLIC',
+      createdAt: '2026-01-01T00:00:00Z',
+      updatedAt: '2026-01-01T00:00:00Z',
+      tracks: <TrackDto>[
+        TrackDto(
+          line: GeoJsonLineString(
+            type: GeoJsonLineStringTypeType.lineString,
+            coordinates: <List<double>>[
+              for (int i = 0; i <= 68; i++)
+                <double>[4, 47 + i * 0.009, 300 + (i % 10) * 20, i * 1000.0],
+            ],
+          ),
+          climbs: const <ClimbDto>[
+            ClimbDto(
+              startDistance: 20000,
+              endDistance: 24000,
+              elevationGain: 200,
+              averageGradient: 5,
+              maxGradient: 8,
+              parts: <ClimbPartDto>[],
+              name: 'Haut-Folin',
+            ),
+          ],
+        ),
+      ],
+      waypoints: <WaypointDto>[
+        for (final (String id, double km) in <(String, double)>[
+          ('w1', 10),
+          ('w2', 40),
+        ])
+          WaypointDto(
+            id: id,
+            geometry: GeoJsonPoint(
+              type: GeoJsonPointTypeType.point,
+              coordinates: <double>[4, 47 + km * 0.009],
+            ),
+            name: 'Point $id',
+            type: 'WATER',
+            distance: km * 1000,
+            origin: 'AUTHOR',
+          ),
+      ],
+      deleted: false,
+    );
+
+    TripDto morvan() => fixtureTrip(
+      stages: <TripStageDto>[
+        fixtureStage(index: 1, route: fixtureStageRoute()),
+        fixtureStage(
+          index: 2,
+          name: 'Château-Chinon → Saulieu',
+          // 08:00Z le sam. 21 nov. 2036 : 09:00 à Paris ; arrivée 10:50Z,
+          // 11:50.
+          dateTime: '2036-11-21T08:00:00Z',
+          route: fixtureStageRoute(
+            slug: 'gtmc-j2',
+            name: 'GTMC J2',
+            distance: 68200,
+          ),
+          startPlaceName: 'Place Notre-Dame, Château-Chinon',
+          endPlaceName: 'Basilique Saint-Andoche, Saulieu',
+          commentCount: 2,
+        ).copyWith(
+          averageSpeed: 24,
+          estimatedArrival: '2036-11-21T10:50:00Z',
+          estimatedDurationMinutes: 170,
+          media: kEmptyMedia.copyWith(
+            markdown: 'Étape de liaison par le lac des Settons.',
+          ),
+        ),
+        fixtureStage(index: 3),
+      ],
+    );
+
+    TripWeatherDto weather() => TripWeatherDto(
+      status: 'OK',
+      stages: <TripStageWeatherDto>[
+        TripStageWeatherDto(
+          departure: DepartureWeatherDto(
+            status: 'OK',
+            conditions: fixtureConditions(),
+          ),
+          stageId: 's2',
+          leg: fixtureLeg(groupId: null),
+        ),
+      ],
+      attribution: const WeatherAttributionDto(
+        name: 'Open-Meteo.com',
+        url: 'https://open-meteo.com/',
+      ),
+      fetchedAt: '2099-08-10T07:30:00Z',
+    );
+
+    testWidgets('etape-mobile-cible', (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(402 * 3, 6000 * 3);
+      tester.view.devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
+      final TripDto trip = morvan();
+      await tester.pumpWidget(
+        app(
+          trip,
+          repository: _StubTripRepository(trip, weather: weather()),
+          overrides: [
+            routeDetailProvider(
+              const RouteKey(teamSlug: 'n-peloton', routeSlug: 'gtmc-j2'),
+            ).overrideWith((Ref ref) async => route),
+            appConfigProvider.overrideWith(
+              (Ref ref) => Completer<ConfigDto>().future,
+            ),
+            mapStyleProvider.overrideWith(
+              (Ref ref, Brightness b) =>
+                  const AsyncValue<ResolvedMapStyle?>.data(null),
+            ),
+          ],
+          home: StageDetailPage(
+            teamSlug: trip.team.slug,
+            tripSlug: trip.slug,
+            stageSlug: 'j2',
+          ),
+        ),
+      );
+      for (int i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 10));
+      }
+
+      // L'ordre des sections, de haut en bas.
+      final List<Key> order = <Key>[
+        keys.trip.stageTitle,
+        keys.trip.stageDepartureBlock,
+        keys.trip.stageStatTiles,
+        keys.trip.stageRouteSection,
+        keys.trip.stageWaypoints,
+        keys.trip.stageClimbs,
+        keys.trip.stageDescriptionSection,
+        keys.trip.stageWeatherSection,
+        keys.trip.stageCommentsSection,
+      ];
+      final List<double> tops = <double>[
+        for (final Key k in order) tester.getTopLeft(find.byKey(k)).dy,
+      ];
+      for (int i = 1; i < tops.length; i++) {
+        expect(
+          tops[i],
+          greaterThan(tops[i - 1]),
+          reason: '${order[i]} doit suivre ${order[i - 1]}',
+        );
+      }
+
+      // La barre du haut : « Étape 2 sur 3 » sur le nom du voyage.
+      expect(
+        find.descendant(
+          of: find.byKey(keys.trip.stagePosition),
+          matching: find.text('Étape 2 sur 3'),
+        ),
+        findsOneWidget,
+      );
+      // Ni lien vers le voyage ni badges dans le corps.
+      expect(find.byType(PdlTeamLine), findsNothing);
+      expect(find.byType(PdlBadge), findsNothing);
+
+      // Le bloc de départ : l'heure, l'arrivée estimée, les deux lieux.
+      Finder inBlock(Finder f) => find.descendant(
+        of: find.byKey(keys.trip.stageDepartureBlock),
+        matching: f,
+      );
+      expect(inBlock(find.text('Départ 09:00')), findsOneWidget);
+      expect(inBlock(find.text('Arrivée estimée 11:50')), findsOneWidget);
+      expect(
+        inBlock(find.byKey(keys.trip.stageStartPlaceLink)),
+        findsOneWidget,
+      );
+      expect(inBlock(find.byKey(keys.trip.stageEndPlaceLink)), findsOneWidget);
+
+      // Les tuiles, dans l'ordre fixe.
+      Finder inTiles(String text) => find.descendant(
+        of: find.byKey(keys.trip.stageStatTiles),
+        matching: find.text(text),
+      );
+      for (final String text in <String>[
+        'Distance',
+        'Dénivelé positif',
+        'Durée estimée',
+        'Vitesse moyenne',
+        AppFormatters.formatDurationMinutes(170),
+      ]) {
+        expect(inTiles(text), findsOneWidget, reason: text);
+      }
+      expect(
+        tester.getTopLeft(inTiles('Durée estimée')).dy,
+        greaterThan(tester.getTopLeft(inTiles('Distance')).dy),
+      );
+
+      // Parcours : un seul bouton « GPS », et « Détails ».
+      expect(find.byType(GpsButton), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(keys.trip.stageRouteSection),
+          matching: find.byKey(keys.routeDetail.gps),
+        ),
+        findsOneWidget,
+      );
+      expect(find.byKey(keys.routeDetail.details), findsOneWidget);
+      // Points et montées repliés.
+      expect(find.text('2 points'), findsOneWidget);
+      expect(find.text('1 montée'), findsOneWidget);
+      expect(find.text('Point w1'), findsNothing);
+
+      // La météo en section, sur la page : le départ, la frise repliée
+      // (les commentaires suivent), la source.
+      Finder inWeather(Finder f) => find.descendant(
+        of: find.byKey(keys.trip.stageWeatherSection),
+        matching: f,
+      );
+      expect(inWeather(find.byKey(keys.ride.weatherSection)), findsOneWidget);
+      expect(
+        inWeather(find.byKey(keys.rideGroup.departureWeatherTitle)),
+        findsOneWidget,
+      );
+      expect(
+        inWeather(
+          find.byWidgetPredicate(
+            (Widget w) =>
+                w is PdlDisclosure && w.key == keys.ride.weatherAlongRoute,
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(find.byKey(keys.ride.weatherCheckpoint(0)), findsNothing);
+      expect(inWeather(find.textContaining('Prévision du')), findsOneWidget);
+      expect(find.text('Voir la fiche complète'), findsNothing);
+      expect(tester.takeException(), isNull);
     });
   });
 }

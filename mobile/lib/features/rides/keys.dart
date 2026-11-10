@@ -54,10 +54,6 @@ class RideDetailKeys {
   /// le motif.
   final registrationFailure = const _RideDetailKey('registrationFailure');
 
-  /// La carte météo d'une étape de voyage (`WeatherForecastCard`) ; les
-  /// sorties ont toutes leur section Météo (ledger `MOB-134`).
-  final weatherCard = const _RideDetailKey('weatherCard');
-
   /// Les sections du détail d'une sortie solo ou sans groupe, dans l'ordre
   /// des maquettes `sortie-solo-mobile-cible` et
   /// `sortie-sans-groupe-mobile-cible` (ledger `MOB-134`) : bloc de départ
@@ -90,11 +86,6 @@ class RideDetailKeys {
   /// d'itinéraire (`ridePlaceLinks`, ledger `MOB-134`).
   final startPlaceLink = const _RideDetailKey('startPlaceLink');
   final endPlaceLink = const _RideDetailKey('endPlaceLink');
-
-  /// « Voir la météo du parcours » de la carte météo d'une étape de voyage
-  /// (`WeatherForecastCard`) — la carte d'une sortie n'en a plus (ledger
-  /// `MOB-67`).
-  final weatherOpenButton = const _RideDetailKey('weatherOpenButton');
 
   /// « Météo indisponible » (statut `UNAVAILABLE`, ou échec de l'appel).
   final weatherUnavailable = const _RideDetailKey('weatherUnavailable');
@@ -152,7 +143,7 @@ class RideDetailKeys {
   /// La marque « Prévision ancienne » (`STALE`) de la ligne de résumé météo.
   final weatherSummaryStale = const _RideDetailKey('weatherSummaryStale');
 
-  /// Un point de passage de la frise de l'écran « Météo du parcours ».
+  /// Un point de passage de la frise « Météo le long du parcours ».
   ValueKey<String> weatherCheckpoint(int index) =>
       _RideDetailKey('weatherCheckpoint_$index');
 

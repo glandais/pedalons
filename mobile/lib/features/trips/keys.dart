@@ -79,8 +79,29 @@ class TripDetailKeys {
   /// Le nom de l'étape, en tête de l'écran 25.
   final stageTitle = const _TripKey('stageTitle');
 
-  /// Le badge « Étape n sur N » de l'écran 25.
+  /// « Étape n sur N », le titre de la barre du haut de l'écran 25 (ledger
+  /// `MOB-134`, lot 11).
   final stagePosition = const _TripKey('stagePosition');
+
+  /// Les sections du détail d'une étape, dans l'ordre de la maquette
+  /// `etape-mobile-cible` (ledger `MOB-134`, lot 11) : titre ([stageTitle]),
+  /// bloc de départ ([stageDepartureBlock]), tuiles, « Parcours »,
+  /// « Description », « Météo », « Commentaires ».
+  final stageStatTiles = const _TripKey('stageStatTiles');
+  final stageRouteSection = const _TripKey('stageRouteSection');
+  final stageDescriptionSection = const _TripKey('stageDescriptionSection');
+  final stageWeatherSection = const _TripKey('stageWeatherSection');
+  final stageCommentsSection = const _TripKey('stageCommentsSection');
+
+  /// « Points du parcours » et « Cols et montées », repliés sous la carte de
+  /// l'étape.
+  final stageWaypoints = const _TripKey('stageWaypoints');
+  final stageClimbs = const _TripKey('stageClimbs');
+
+  /// Les lieux de départ et d'arrivée du bloc de départ d'une étape, en liens
+  /// d'itinéraire.
+  final stageStartPlaceLink = const _TripKey('stageStartPlaceLink');
+  final stageEndPlaceLink = const _TripKey('stageEndPlaceLink');
 
   /// Le rail d'étapes épinglé de l'écran 25. Ses pastilles portent leur rang
   /// (`ValueKey<int>`, 0 pour « Aperçu ») : c'est `PdlStageRail` qui les pose.

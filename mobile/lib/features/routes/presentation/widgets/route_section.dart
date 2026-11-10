@@ -54,8 +54,8 @@ import 'waypoint_sheet.dart';
 /// ([selection]) et le réticule ([cursor]) se partagent donc avec l'écran
 /// hôte ; sans eux, la section tient les siens.
 ///
-/// Composée des sous-widgets d'`EmbeddedRouteSheet` (carte, interrupteur,
-/// profil, revêtement, bouton « GPS »), qu'elle remplacera sur l'étape.
+/// Elle a remplacé, sur l'étape, la fiche parcours embarquée
+/// (`EmbeddedRouteSheet`, retirée au lot 11 de `MOB-134`).
 class RouteSection extends ConsumerStatefulWidget {
   const RouteSection({
     super.key,

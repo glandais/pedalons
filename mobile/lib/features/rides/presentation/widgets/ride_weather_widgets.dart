@@ -14,8 +14,8 @@ import '../../../auth/providers/auth_provider.dart';
 import '../../../teams/providers/team_providers.dart';
 import '../../domain/ride_weather_display.dart';
 
-/// Les briques de la météo partagées par la carte compacte du détail et
-/// l'écran « Météo du parcours ». Elles vivent dans la *feature* et non dans
+/// Les briques de la météo partagées par la section Météo (`WeatherSection`)
+/// des écrans de détail. Elles vivent dans la *feature* et non dans
 /// `core/pdl` : elles lisent les DTO météo et traduisent.
 
 /// Peut-on voir le message `NO_LOCATION` de [teamSlug] ?
@@ -262,7 +262,7 @@ String notYetAvailableMessage(DateTime? availableFrom) => availableFrom == null
       );
 
 /// Le crédit que la licence des prévisions demande (CC BY 4.0) : « Prévisions :
-/// Open-Meteo.com », en légende. L'écran « Météo du parcours » le rend en lien.
+/// Open-Meteo.com », en légende. La feuille de la source le rend en lien.
 String weatherAttributionLabel(WeatherAttributionDto attribution) =>
     'rides.weather.attribution'.tr(
       namedArgs: <String, String>{'name': attribution.name},

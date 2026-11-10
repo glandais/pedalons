@@ -8,9 +8,8 @@ import 'trip_detail_provider.dart';
 /// (`GET …/trips/{tripSlug}/weather`).
 ///
 /// Une seule lecture pour tout le voyage, partagée par les lignes de résumé
-/// des cartes d'étape (écran 24), la carte météo de l'écran 25 et l'écran
-/// « Météo du parcours » d'une étape : passer d'une étape à l'autre ne
-/// recharge rien.
+/// des cartes d'étape (écran 24), la carte de l'étape et sa section Météo
+/// (écran 25) : passer d'une étape à l'autre ne recharge rien.
 ///
 /// `autoDispose`, comme `rideWeatherProvider` : une prévision vieillit, et la
 /// garder après ces écrans ne servirait qu'à en montrer une périmée au

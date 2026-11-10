@@ -20,7 +20,6 @@ import 'package:pedalons/features/rides/presentation/widgets/ride_group_card.dar
 import 'package:pedalons/features/routes/presentation/gps_export_runner.dart';
 import 'package:pedalons/features/routes/presentation/gps_sheet.dart';
 import 'package:pedalons/features/routes/presentation/widgets/gps_button.dart';
-import 'package:pedalons/features/routes/presentation/widgets/route_download_actions.dart';
 import 'package:pedalons/features/teams/presentation/widgets/dashboard/dashboard_rides.dart';
 import 'package:pedalons/keys.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -137,6 +136,46 @@ Future<void> onPlatform(
   }
 }
 
+/// Un hôte minimal du contrôleur d'export : le bouton « GPS » d'un parcours
+/// et ses bandeaux, comme `RouteSection` les pose — la rangée d'actions de la
+/// fiche embarquée qui jouait ce rôle est partie avec le lot 11 de
+/// `MOB-134`.
+class _RouteGps extends ConsumerStatefulWidget {
+  const _RouteGps({required this.route});
+
+  final RouteDetailDto route;
+
+  @override
+  ConsumerState<_RouteGps> createState() => _RouteGpsState();
+}
+
+class _RouteGpsState extends ConsumerState<_RouteGps>
+    with GpsExportRunner<_RouteGps> {
+  @override
+  Widget build(BuildContext context) {
+    final RouteDetailDto route = widget.route;
+    final GpsExportTarget target = GpsExportTarget(
+      subtitle: route.name,
+      teamSlug: route.team.slug,
+      routeSlug: route.slug,
+      gpx: route.media.assets.gpx,
+      fit: route.media.assets.fit,
+    );
+    if (!target.offered(watchGpsServices())) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        ...gpsExportBanners(gap: PdlSpacing.chipGap),
+        GpsButton(
+          key: keys.routeDetail.gps,
+          loading: gpsExporting,
+          onPressed: (BuildContext button) => openGpsSheet(target, button),
+        ),
+      ],
+    );
+  }
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(loadTestTranslations);
@@ -205,11 +244,7 @@ void main() {
       WidgetTester tester,
     ) async {
       await onPlatform(TargetPlatform.android, () async {
-        await pump(
-          tester,
-          RouteDownloadActions(route: route()),
-          services: _services,
-        );
+        await pump(tester, _RouteGps(route: route()), services: _services);
         await openFromRoute(tester);
 
         expect(inSheet('GPS'), findsOneWidget);
@@ -246,11 +281,7 @@ void main() {
       WidgetTester tester,
     ) async {
       await onPlatform(TargetPlatform.iOS, () async {
-        await pump(
-          tester,
-          RouteDownloadActions(route: route()),
-          services: _services,
-        );
+        await pump(tester, _RouteGps(route: route()), services: _services);
         await openFromRoute(tester);
 
         expect(find.byKey(keys.gpsSheet.service('GARMIN')), findsOneWidget);
@@ -265,7 +296,7 @@ void main() {
 
     testWidgets('sans service : pas de section appareil, « Connecter un '
         'compteur » tout en bas', (WidgetTester tester) async {
-      await pump(tester, RouteDownloadActions(route: route()));
+      await pump(tester, _RouteGps(route: route()));
       await openFromRoute(tester);
 
       expect(find.byKey(keys.gpsSheet.toDevice), findsNothing);
@@ -286,7 +317,7 @@ void main() {
     testWidgets('sans FIT : pas de section FIT', (WidgetTester tester) async {
       await pump(
         tester,
-        RouteDownloadActions(route: route(fit: null)),
+        _RouteGps(route: route(fit: null)),
         services: _services,
       );
       await openFromRoute(tester);
@@ -339,7 +370,7 @@ void main() {
         '« Fichier enregistré » sur l’écran, ancré au bouton', (
       WidgetTester tester,
     ) async {
-      final _Ops ops = await pump(tester, RouteDownloadActions(route: route()));
+      final _Ops ops = await pump(tester, _RouteGps(route: route()));
       await openFromRoute(tester);
       await tester.tap(find.byKey(keys.gpsSheet.gpxSave));
       await settle(tester);
@@ -357,7 +388,7 @@ void main() {
     testWidgets('partager : pas de bandeau de succès', (
       WidgetTester tester,
     ) async {
-      final _Ops ops = await pump(tester, RouteDownloadActions(route: route()));
+      final _Ops ops = await pump(tester, _RouteGps(route: route()));
       await openFromRoute(tester);
       await tester.tap(find.byKey(keys.gpsSheet.fitShare));
       await settle(tester);
@@ -371,7 +402,7 @@ void main() {
         'attend et n’ouvre pas de seconde feuille', (
       WidgetTester tester,
     ) async {
-      final _Ops ops = await pump(tester, RouteDownloadActions(route: route()));
+      final _Ops ops = await pump(tester, _RouteGps(route: route()));
       ops.pendingDelivery = Completer<bool>();
       await openFromRoute(tester);
       await tester.tap(find.byKey(keys.gpsSheet.gpxSave));
@@ -399,7 +430,7 @@ void main() {
         'puis le bandeau de succès', (WidgetTester tester) async {
       final _Ops ops = await pump(
         tester,
-        RouteDownloadActions(route: route()),
+        _RouteGps(route: route()),
         services: _services,
       );
       await openFromRoute(tester);
@@ -417,7 +448,7 @@ void main() {
     ) async {
       final _Ops ops = await pump(
         tester,
-        RouteDownloadActions(route: route()),
+        _RouteGps(route: route()),
         services: _services,
       );
       ops.uploadError = Exception('boom');
@@ -438,21 +469,18 @@ void main() {
         'pour un parcours sans fichier ni service', (
       WidgetTester tester,
     ) async {
-      await pump(tester, RouteDownloadActions(route: route()));
+      await pump(tester, _RouteGps(route: route()));
       expect(find.byKey(keys.routeDetail.gps), findsOneWidget);
       expect(find.text('GPS'), findsOneWidget);
 
-      await pump(
-        tester,
-        RouteDownloadActions(route: route(gpx: null, fit: null)),
-      );
+      await pump(tester, _RouteGps(route: route(gpx: null, fit: null)));
       expect(find.byKey(keys.routeDetail.gps), findsNothing);
     });
 
     testWidgets('le bouton se lit « Envoyer le parcours vers un GPS ou '
         'l’exporter »', (WidgetTester tester) async {
       final SemanticsHandle semantics = tester.ensureSemantics();
-      await pump(tester, RouteDownloadActions(route: route()));
+      await pump(tester, _RouteGps(route: route()));
       expect(
         find.bySemanticsLabel('Envoyer le parcours vers un GPS ou l\'exporter'),
         findsOneWidget,

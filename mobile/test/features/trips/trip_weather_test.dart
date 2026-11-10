@@ -8,7 +8,6 @@ import 'package:pedalons/features/comments/data/comment_repository.dart';
 import 'package:pedalons/features/teams/data/team_repository.dart';
 import 'package:pedalons/features/trips/data/trip_repository.dart';
 import 'package:pedalons/features/trips/presentation/pages/stage_detail_page.dart';
-import 'package:pedalons/features/trips/presentation/pages/stage_weather_page.dart';
 import 'package:pedalons/features/trips/presentation/pages/trip_detail_page.dart';
 import 'package:pedalons/keys.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -18,8 +17,8 @@ import '../rides/ride_fixtures.dart';
 import 'trip_fixtures.dart';
 
 /// La météo d'un voyage : la ligne de résumé des cartes d'étape (écran 24),
-/// la carte météo de l'écran 25 dans ses états, et l'écran « Météo du
-/// parcours » d'une étape.
+/// et la section Météo de l'écran 25 dans ses états (ledger `MOB-134`,
+/// lot 11 : plus de carte résumé ni d'écran « Météo du parcours »).
 class _Trips implements TripRepository {
   _Trips(this.trip, this.weather);
 
@@ -240,44 +239,45 @@ void main() {
     });
   });
 
-  group('écran 25 — la carte météo de l\'étape', () {
-    testWidgets(
-      'OK : la carte, et l\'écran « Météo du parcours » de l\'étape',
-      (WidgetTester tester) async {
-        await pump(
-          tester,
-          _weather(<TripStageWeatherDto>[
-            _stage('s1', summary: _okSummary),
-            _stage('s2'),
-          ]),
-          home: stagePage('j1'),
-        );
-
-        expect(find.byKey(keys.ride.weatherCard), findsOneWidget);
-        expect(find.text('Météo au départ'), findsOneWidget);
-
-        await tester.tap(find.byKey(keys.ride.weatherOpenButton));
-        await tester.pumpAndSettle();
-
-        expect(find.byType(StageWeatherPage), findsOneWidget);
-        expect(find.text('Météo du parcours'), findsOneWidget);
-        // La section Météo, dépliée : rien ne la suit sur cette page.
-        expect(find.byKey(keys.ride.weatherSection), findsOneWidget);
-        expect(find.text('Météo le long du parcours'), findsOneWidget);
-        expect(find.byKey(keys.ride.weatherCheckpoint(0)), findsOneWidget);
-        expect(find.byKey(keys.ride.weatherSourceButton), findsOneWidget);
-        // Sans carte, la ligne ne se touche pas : ni bouton ni état
-        // « sélectionné / non sélectionné » annoncé.
-        expect(
-          tester.getSemantics(find.byKey(keys.ride.weatherCheckpoint(0))),
-          isSemantics(
-            isButton: false,
-            hasSelectedState: false,
-            hasTapAction: false,
-          ),
-        );
-      },
+  group('écran 25 — la section Météo de l\'étape', () {
+    Finder inWeather(Finder f) => find.descendant(
+      of: find.byKey(keys.trip.stageWeatherSection),
+      matching: f,
     );
+
+    testWidgets('OK : la section, dans la page — plus de carte résumé ni '
+        'd\'écran « Météo du parcours »', (WidgetTester tester) async {
+      await pump(
+        tester,
+        _weather(<TripStageWeatherDto>[
+          _stage('s1', summary: _okSummary),
+          _stage('s2'),
+        ]),
+        home: stagePage('j1'),
+      );
+
+      expect(find.byKey(keys.trip.stageWeatherSection), findsOneWidget);
+      expect(inWeather(find.byKey(keys.ride.weatherSection)), findsOneWidget);
+      expect(
+        inWeather(find.byKey(keys.rideGroup.departureWeatherTitle)),
+        findsOneWidget,
+      );
+      // Rien ne suit la section (pas de fil) : la frise est dépliée.
+      expect(find.text('Météo le long du parcours'), findsOneWidget);
+      expect(find.byKey(keys.ride.weatherCheckpoint(0)), findsOneWidget);
+      expect(find.byKey(keys.ride.weatherSourceButton), findsOneWidget);
+      expect(find.text('Météo du parcours'), findsNothing);
+      // Sans carte chargée, la ligne ne se touche pas : ni bouton ni état
+      // « sélectionné / non sélectionné » annoncé.
+      expect(
+        tester.getSemantics(find.byKey(keys.ride.weatherCheckpoint(0))),
+        isSemantics(
+          isButton: false,
+          hasSelectedState: false,
+          hasTapAction: false,
+        ),
+      );
+    });
 
     testWidgets('NOT_YET_AVAILABLE : « Prévision disponible à partir du … »', (
       WidgetTester tester,
@@ -298,12 +298,15 @@ void main() {
         home: stagePage('j1'),
       );
 
-      expect(find.byKey(keys.ride.weatherNotYetAvailable), findsOneWidget);
+      expect(
+        inWeather(find.byKey(keys.ride.weatherNotYetAvailable)),
+        findsOneWidget,
+      );
       expect(
         find.textContaining('Prévision disponible à partir du'),
         findsOneWidget,
       );
-      expect(find.byKey(keys.ride.weatherCard), findsNothing);
+      expect(find.byKey(keys.ride.weatherAlongRoute), findsNothing);
     });
 
     testWidgets('UNAVAILABLE : « Réessayer » relit la météo', (
@@ -316,7 +319,10 @@ void main() {
         ], status: 'UNAVAILABLE'),
         home: stagePage('j1'),
       );
-      expect(find.byKey(keys.ride.weatherUnavailable), findsOneWidget);
+      expect(
+        inWeather(find.byKey(keys.ride.weatherUnavailable)),
+        findsOneWidget,
+      );
       final int before = trips.weatherReads;
 
       trips.weather = _weather(<TripStageWeatherDto>[_stage('s1')]);
@@ -326,10 +332,10 @@ void main() {
       }
 
       expect(trips.weatherReads, before + 1);
-      expect(find.byKey(keys.ride.weatherCard), findsOneWidget);
+      expect(find.byKey(keys.ride.weatherAlongRoute), findsOneWidget);
     });
 
-    testWidgets('une étape déjà partie ne montre rien', (
+    testWidgets('une étape déjà partie : le titre et une phrase', (
       WidgetTester tester,
     ) async {
       await pump(
@@ -341,12 +347,65 @@ void main() {
         home: stagePage('j1'),
       );
 
-      expect(find.byKey(keys.ride.weatherCard), findsNothing);
+      expect(inWeather(find.byKey(keys.ride.weatherSection)), findsOneWidget);
+      expect(inWeather(find.byKey(keys.ride.weatherEmpty)), findsOneWidget);
+      expect(
+        find.text('Aucune prévision n\'est à afficher pour cette étape.'),
+        findsOneWidget,
+      );
       expect(find.byKey(keys.ride.weatherUnavailable), findsNothing);
       expect(find.byKey(keys.ride.weatherNotYetAvailable), findsNothing);
     });
 
-    testWidgets('NO_LOCATION : dit à l\'organisateur, tu au membre', (
+    testWidgets('une étape arrivée n\'a plus de section Météo', (
+      WidgetTester tester,
+    ) async {
+      // Le voyage dure encore ; J1, elle, est arrivée.
+      final TripDto ongoing = fixtureTrip(
+        dateTime: '2026-01-01T07:00:00Z',
+        stages: <TripStageDto>[
+          fixtureStage(
+            index: 1,
+            stageCount: 2,
+            dateTime: '2026-01-01T07:00:00Z',
+          ).copyWith(estimatedArrival: '2026-01-01T10:00:00Z'),
+          fixtureStage(index: 2, stageCount: 2),
+        ],
+      );
+      tester.view.physicalSize = const Size(402 * 3, 2400 * 3);
+      tester.view.devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        ProviderScope(
+          retry: (int _, Object _) => null,
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            tripRepositoryProvider.overrideWithValue(
+              _Trips(ongoing, _weather(<TripStageWeatherDto>[_stage('s2')])),
+            ),
+            teamRepositoryProvider.overrideWithValue(_Teams(role: 'MEMBER')),
+            commentRepositoryProvider.overrideWithValue(_Comments()),
+          ],
+          child: MaterialApp(
+            theme: PedalonsTheme.build(Brightness.light),
+            home: StageDetailPage(
+              teamSlug: ongoing.team.slug,
+              tripSlug: ongoing.slug,
+              stageSlug: 'j1',
+              now: DateTime.utc(2026, 1, 2),
+            ),
+          ),
+        ),
+      );
+      for (int i = 0; i < 4; i++) {
+        await tester.pump(const Duration(milliseconds: 10));
+      }
+
+      expect(find.byKey(keys.trip.stageTitle), findsOneWidget);
+      expect(find.byKey(keys.trip.stageWeatherSection), findsNothing);
+    });
+
+    testWidgets('NO_LOCATION : dit à l\'organisateur, une phrase au membre', (
       WidgetTester tester,
     ) async {
       final TripWeatherDto weather = _weather(<TripStageWeatherDto>[
@@ -357,6 +416,7 @@ void main() {
 
       await pump(tester, weather, home: stagePage('j3'));
       expect(find.byKey(keys.ride.weatherNoLocation), findsNothing);
+      expect(inWeather(find.byKey(keys.ride.weatherEmpty)), findsOneWidget);
 
       await pump(tester, weather, home: stagePage('j3'), role: 'ORGANIZER');
       expect(find.byKey(keys.ride.weatherNoLocation), findsOneWidget);

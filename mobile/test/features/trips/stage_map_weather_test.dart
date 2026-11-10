@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -32,7 +31,7 @@ import '../rides/ride_fixtures.dart';
 import 'trip_fixtures.dart';
 
 /// La carte du détail d'une étape en mode « Météo » (ledger `MOB-94`) : la
-/// carte de son parcours (`EmbeddedRouteSheet` → `RouteMap`), comme
+/// carte de son parcours (`RouteSection` → `RouteMap`), comme
 /// l'Aperçu d'un groupe — l'interrupteur Pente | Revêtement | Météo sous la
 /// carte (ledger `MOB-105`), sur la pente par défaut, tracé
 /// coloré, légende et crédit ; pastilles et feuille en plein écran
@@ -157,17 +156,6 @@ void main() {
     TripDto? t,
     TripWeatherDto? dto,
   }) async {
-    // Les chiffres de l'en-tête de la fiche parcours débordent avec la police
-    // carrée des tests (« Ahem ») dans la colonne de 600 px de l'écran : ce
-    // fichier regarde la carte, pas cet en-tête, que d'autres tests couvrent.
-    final FlutterExceptionHandler? previous = FlutterError.onError;
-    FlutterError.onError = (FlutterErrorDetails details) {
-      if (details.exceptionAsString().contains('RenderFlex overflowed')) {
-        return;
-      }
-      previous?.call(details);
-    };
-    addTearDown(() => FlutterError.onError = previous);
     tester.view.physicalSize = const Size(402 * 3, 3000 * 3);
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);
