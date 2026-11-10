@@ -46,6 +46,7 @@ interrupteur coupé, déconnexion).
 ### Hors périmètre, explicitement
 
 - Les voyages (`TripParticipation`, étapes) : même mécanique possible plus tard, non demandée.
+  Depuis : livré pour les étapes, ledger `API-162`.
 - Les envois manuels faits avant cette version : on ne les retrouve pas, on ne les supprime pas.
 - Remonter les activités depuis les services (sens inverse) : sans rapport.
 
@@ -580,7 +581,8 @@ qualifiés), si bien qu'une fusion à trois voies avec le checkout principal pas
 
 - ~~Envois manuels~~ : finalement suivis, avec des lignes à `ride_id` nul que le planificateur ne
   voit pas (§3.6).
-- **Voyages et étapes** (`TripParticipation`).
+- **Voyages et étapes** (`TripParticipation`). Depuis : livré pour les étapes, ledger `API-162`
+  (l'état par route, ledger `API-163`).
 - **Déclenchement immédiat** (« nudge » dans la transaction métier) : la minute de latence du
   planificateur suffit pour des sorties à venir ; à rouvrir si la recette montre le contraire.
 - **Retrouver un parcours Wahoo par `external_id`** quand l'identifiant est perdu : exigerait

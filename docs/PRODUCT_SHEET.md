@@ -142,7 +142,7 @@ deleting their account.
 - **Mobile app** (Flutter, iOS/Android) — teams, rides, trips, routes, posts, ads, comments, calendar, notifications
 - **Garmin Connect IQ app** — ride and route browsing, FIT download on Edge devices
 - **Hammerhead Karoo extension** — ride and route browsing, sync
-- **GPS device sync** — upload routes to Garmin Connect, Karoo and Wahoo
+- **GPS device sync** — upload routes to Garmin Connect, Karoo and Wahoo, on demand or automatically for the rides and trip stages a member joined
 - **Calendar sync** — iCal feed export
 
 ## Roadmap Potential

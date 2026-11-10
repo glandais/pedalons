@@ -1498,13 +1498,13 @@
       "connectedOn": "Connected on {date}",
       "notConnected": "Not connected",
       "none": "No GPS service is offered at the moment.",
-      "hint": "Your Hammerhead, Garmin Connect or Wahoo accounts. “Send to device” drops a route there; automatic sending drops those of the rides you joined. Your bike computer picks them up at its next sync.",
+      "hint": "Your Hammerhead, Garmin Connect or Wahoo accounts. “Send to device” drops a route there; automatic sending drops those of the rides you joined and of your trips' stages. Your bike computer picks them up at its next sync.",
       "disconnectTitle": "Disconnect {service}?",
       "disconnectMessage": "You will no longer be able to send routes to this service until it is reconnected.",
       "autoSync": {
         "title": "Send routes automatically",
         "semantic": "Send routes automatically to {service}",
-        "off": "When on, it drops the routes of the rides you joined there from 7 days before the start, updates them when they change, and removes them the day after.",
+        "off": "When on, it drops there the routes of the rides you joined and of your trips' stages from 7 days before each start, updates them when they change, and removes them the day after.",
         "saving": "Saving…",
         "upToDateNone": "Up to date · no upcoming route",
         "upToDate": {

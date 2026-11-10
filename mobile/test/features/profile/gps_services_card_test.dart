@@ -184,7 +184,9 @@ void main() {
     expect(
       find.descendant(
         of: find.byKey(keys.profile.gpsAutoSyncRow(GpsServiceType.garmin)),
-        matching: find.textContaining('dès 7 jours avant le départ'),
+        matching: find.textContaining(
+          'des étapes de vos voyages dès 7 jours avant chaque départ',
+        ),
       ),
       findsOneWidget,
     );
@@ -350,7 +352,10 @@ void main() {
         );
 
     test('chaque état a sa phrase', () {
-      expect(status(false, 'OFF'), contains('dès 7 jours avant le départ'));
+      expect(
+        status(false, 'OFF'),
+        contains('des étapes de vos voyages dès 7 jours avant chaque départ'),
+      );
       expect(status(true, 'UP_TO_DATE'), 'À jour · aucun parcours à venir');
       expect(
         status(true, 'UP_TO_DATE', count: 1),

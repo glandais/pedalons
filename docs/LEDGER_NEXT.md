@@ -61,6 +61,15 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
 
 ## MOB — Application mobile
 
+- [ ] `MOB-133` **Afficher l'état `gpsSyncStatuses` près de l'action d'envoi (S)** — depuis `API-163`
+      (contrat `13.4.0`), `RouteDto`, `RouteDetailDto`, `RideDto` et `RideGroupDto` disent, pour
+      chacun des services de la personne en synchro automatique, si le parcours y est déjà (`state`,
+      `syncedAt`) ; l'app ne le lit pas, et « Envoyer vers l'appareil » ne dit pas que Pédalons s'en
+      charge déjà. Lieux : `features/routes/presentation/widgets/route_download_actions.dart`,
+      `features/rides/presentation/widgets/ride_group_route_actions.dart`, et la carte d'étape
+      (`features/trips/presentation/widgets/stage_card.dart`, via `TripStageDto.route`). Même
+      vocabulaire d'état que l'interrupteur (`profile.gps.autoSync.*`). Pendant web : `WEB-163`.
+
 - [ ] `MOB-130` **Contrôles de carte : recette sur appareil de `MOB-129` (S)** — rien ne se voit sans
       carte native (l'échelle et le crédit n'existent pas en test de widget), plan
       [`archive/2026-11-10-controles-carte.md`](plans/archive/2026-11-10-controles-carte.md). À vérifier, iPhone SE compris et texte à 130 % : l'échelle et le ⓘ au-dessus
@@ -339,6 +348,14 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
 `frontend/e2e/README.md`.
 
 
+- [ ] `WEB-163` **Afficher l'état `gpsSyncStatuses` près de l'action d'envoi (S)** — depuis `API-163`
+      (contrat `13.4.0`), `RouteDto`, `RouteDetailDto`, `RideDto` et `RideGroupDto` disent, pour
+      chacun des services de la personne en synchro automatique, si le parcours y est déjà (`state`,
+      `syncedAt`) ; le site ne le lit pas, et « Envoyer vers l'appareil » ne dit pas que Pédalons
+      s'en charge déjà. Lieux : `components/ride/RideGroupRouteActions.tsx`,
+      `components/route/RouteDetailView.tsx`, et la carte d'étape
+      (`components/trip/TripStageCard.tsx`, via `TripStageDto.route`). Même vocabulaire d'état que
+      l'interrupteur (`gps.autoSync.state.*`). Pendant mobile : `MOB-133`.
 - [ ] `WEB-161` **Contrôles de carte : recette à l'œil de `WEB-157` (S)** — scindé de `WEB-158`
       (les e2e sont passés le 10 novembre 2026), plan [`archive/2026-11-10-controles-carte.md`](plans/archive/2026-11-10-controles-carte.md).
       À l'œil, clair et sombre : l'ordre des deux colonnes ; la liste de la recherche par-dessus le zoom ;
@@ -837,6 +854,14 @@ appareil (`OPS-42`, étape 7 du plan
   réduit à un message « Upload failed: 401/412/429 », sans marquer la connexion ni retenir la pause.
   Le membre recommence sans savoir qu'il doit reconnecter le service. Vaut pour les trois services,
   OAuth 1.0a Garmin compris ; le reste de la conformité Garmin est `API-61`.
+- [ ] `API-164` **`RideGroupDto.gpsSyncStatuses` vide quand la route du groupe est supprimée ou
+  masquée (S)** — cas marginal laissé par `API-163`. `RideGroupDto.from` / `fromRow` interrogent
+  `GpsSyncLookup` sur la route propre du groupe dès qu'elle existe (`effectiveRouteId`), sans le
+  filtre de visibilité du planificateur (`routeVisible`, `GpsRouteSyncPlanner`) : quand la route du
+  groupe est supprimée ou masquée et que le planificateur envoie donc celle de la sortie, le champ
+  du groupe reste vide alors que le parcours est bien chez le service. Faire suivre au DTO la même
+  route effective que le planificateur, visibilité comprise, sans requête par groupe
+  (`…QueryCountTest`).
 - [ ] `API-122` **L'état « déjà chez le service GPS » de « Prochaines sorties » éprouvé sur un
   vrai Karoo et un vrai Edge (S)** — l'affichage livré par `API-121` (contrat `11.5.0`, embarqué
   dans `karoo.1.0.13` et `garmin.1.0.1`) n'a aucun test côté appareils. Même écran que `API-119` :
@@ -1403,6 +1428,10 @@ redevient une entrée de sa section sous le même identifiant.
 | `API-54` | **exiftool pour retirer les métadonnées des images** | Écarté le 29 septembre 2026, après mesure sur un corpus synthétique (métadonnées marquées, pixels comparés) | exiftool (micro-service ou WASM) retire ce qu'il connaît au lieu de ne garder que ce qui est autorisé : il a laissé passer un chunk PNG privé et les octets après le trailer GIF, et refusé un WebP valide. Il ne nettoie pas les PDF, il a des CVE répétées (dont CVE-2026-7580, qui touche la 13.50) et il ajoute un conteneur. En WASM (zeroperl sur Chicory), sa sortie est identique mais il prend 17 à 19 s par image. imgproxy, écarté le même jour parce qu'il n'a pas de mode sans perte, a finalement été retenu : la perte d'un réencodage a été acceptée pour un code plus simple, qui ne laisse rien passer par construction et lit aussi HEIC, AVIF, TIFF et JPEG XL (`API-43`) |
 | `API-52` | **Durcir `ImageMetadataStripper`** | Sans objet depuis le 29 septembre 2026 | Le nettoyeur maison sans perte a été supprimé : le stockage fait réencoder chaque image par imgproxy (`API-43`), qui n'écrit que les pixels. Ne pas le réintroduire pour gagner la qualité perdue : c'est lui dont les branches gardaient par défaut ce qu'elles ne connaissaient pas |
 | `API-67` | **« Mes équipes » d'un admin de plateforme** | Comportement actuel gardé (décidé le 4 octobre 2026 avec le propriétaire) | `GET /api/teams?minRole=MEMBER` renvoie à un admin de plateforme toutes les équipes du domaine, qu'il voit donc toutes dans « Mes équipes » à l'accueil (web et mobile, `WEB-42`, `MOB-42`). Ne pas restreindre la requête à ses adhésions réelles sans rouvrir ce point |
+| `API-165` | **Envoi automatique d'un voyage sans étape (sa route globale)** | Non (10 novembre 2026, livraison d'`API-162`) | Seule une étape a un départ daté qui borne la fenêtre (7 jours avant, retrait 24 h après) ; la route globale d'un voyage n'en a pas, et l'envoyer en plus des étapes doublerait le parcours chez le service. Une étape sans route, sans GPX ou dont la route n'est pas visible n'envoie rien, **sans repli sur la route du voyage** |
+| `API-166` | **Envoi groupé de toutes les étapes dès que la première entre dans la fenêtre** | Non (10 novembre 2026, `API-162`) | Chaque étape a sa propre fenêtre : un voyage de deux semaines déposerait d'un coup une quinzaine de parcours, dont la plupart resteraient des jours chez le service. À rouvrir si la recette montre qu'on veut tout le voyage sur le compteur avant de partir |
+| `API-167` | **Aligner le séparateur des sorties (` · `) sur celui des étapes (` - `)** | Non (10 novembre 2026, `API-162`) | Le nom envoyé fait partie de l'empreinte de chaque ligne (`asset_id` du GPX et nom envoyé, `API-120`) : changer le séparateur des sorties renverrait tous les parcours de toutes les connexions au tick suivant. Incohérence assumée ; à faire seulement avec un autre changement qui renvoie déjà tout |
+| `API-168` | **Les voyages dans `DeviceRouteService` (« Prochaines sorties » du Karoo et de l'app Garmin)** | Non (10 novembre 2026, `API-162`) | Hors périmètre de l'envoi automatique : la liste des appareils (`API-118`, état de synchro `API-121`) reste aux sorties. Y ajouter les étapes touche le contrat des appareils, le budget de taille de l'app Garmin et deux recettes sur appareil encore ouvertes (`API-119`, `API-122`) |
 | `WEB-44` | **Passkey en tête du formulaire de connexion** | Ordre actuel gardé (décidé le 4 octobre 2026 avec le propriétaire) | `LoginForm` (`WEB-42`) garde email et mot de passe en tête, puis « ou », puis la passkey et le code par e-mail. Le bouton passkey n'apparaît qu'après hydratation (`browserSupportsWebAuthn`) : en tête, il décalerait le haut de l'accueil rendu côté serveur |
 | `WEB-54` | **Calendrier rendu côté serveur dans le mauvais fuseau, sans préférence `timezone`** | Accepté tel quel (décidé le 4 octobre 2026, à la dissolution de `frontend/docs/SSR-BUGS.md`) | Sans préférence `timezone`, le serveur ne connaît pas le fuseau du visiteur et rend en UTC : une sortie à 00 h 30, heure de Paris, s'affiche dans la case de la **veille**, puis change de case au rendu qui suit l'hydratation, avec le vrai fuseau (`useEffectiveTimezone`, `getServerSnapshot` en UTC ; `CalendarView`). Ce n'est pas une erreur d'hydratation : le rendu d'hydratation lit UTC des deux côtés, et le mois de la grille est calé sur `hourAlignedNow()` dans le même fuseau. Régler une préférence `timezone` supprime l'effet. Seule autre issue : ne pas rendre la grille côté serveur quand le fuseau est deviné, ce qui perd tout l'intérêt de son préchargement |
 | `WEB-58` | **Redirection des anciennes adresses du profil** (`/profil#notifications`, `/profil#gps`, `/profil/participations`) | Non (4 octobre 2026, refonte du profil `WEB-55` / `MOB-48`) | Aucun lien extérieur publié ne cite ces adresses, et les e-mails envoyés avant la refonte visaient `/profil`, toujours servi. Les liens internes (e-mails `NotificationLinks.PREFERENCES_PATH`, `FeaturesPromoCard`, aide, politique) visent les nouvelles routes `/profil/<sujet>`. À rouvrir seulement si une de ces adresses a été publiée |
