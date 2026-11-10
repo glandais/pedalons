@@ -1080,14 +1080,12 @@
       "other": "{} étapes"
     },
     "finished": "Terminé",
-    "registered": "Je participe",
     "addToCalendar": "Ajouter à mon calendrier",
     "description": "Description",
     "noStageTitle": "Aucune étape",
     "noStageMessage": "Aucune étape n'a encore été définie pour ce voyage.",
     "summary": {
       "duration": "Durée",
-      "dayRange": "J1 à J{last}",
       "days": {
         "one": "{} jour",
         "other": "{} jours"
@@ -1102,8 +1100,6 @@
     "joining": "Inscription...",
     "leaving": "Désinscription...",
     "participationFailedTitle": "Participation impossible",
-    "tripTrack": "Tracé du voyage",
-    "globalProfile": "Profil altimétrique global",
     "partialTrack": "Tracé partiel : {shown} étapes sur {total} sont affichées.",
     "missingTracks": "{count} tracé(s) n'ont pas pu être chargés.",
     "profileGaps": "Profil incomplet : {stages} n'a pas pu être chargée.",

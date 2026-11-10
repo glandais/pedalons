@@ -10,16 +10,28 @@ import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../core/widgets/publication_stats_line.dart';
 import '../../../rides/presentation/widgets/ride_weather_summary_line.dart';
 import '../../providers/trip_detail_provider.dart';
 import '../../../../core/widgets/zone_mention_line.dart';
 import '../../../../keys.dart';
 
-/// Une étape dans la liste du voyage.
+/// Une étape dans la liste du voyage (ledger `MOB-134`, lot 9, KIT §8,
+/// maquettes `voyage-etapes-mobile-cible`, `voyage-une-etape-mobile-cible`) :
 ///
-/// La couleur du trait est celle du tracé sur la carte, indexée sur le **rang**
-/// de l'étape (`stageIndex`), pas sur sa géographie : c'est ce qui fait de la
-/// légende, de la carte et de cette liste trois vues du même objet.
+/// 1. le rang, le titre de l'étape et le repère de couleur de son tracé ;
+/// 2. le départ « ven. 20 nov. · 08:30 », horloge devant, dans le fuseau de
+///    l'étape, et la mention de fuseau quand le lecteur est ailleurs ;
+/// 3. la ligne de chiffres ([PublicationStatsLine]) : distance · D+ · vitesse ;
+/// 4. la ligne météo ([RideWeatherSummaryLine]), au format de la carte de
+///    groupe : plage de températures · vent (flèche) · « Pluie N % ».
+///
+/// **Ni nom de parcours ni vignette** (KIT §8) : le titre de l'étape dit déjà
+/// où elle va, et la carte du voyage, juste au-dessus, la dessine.
+///
+/// La couleur du repère est celle du tracé sur la carte, indexée sur le
+/// **rang** de l'étape (`stageIndex`), pas sur sa géographie : la carte n'a
+/// pas de légende, c'est ce repère qui la remplace (KIT §8).
 ///
 /// Au-delà de dix étapes la palette cycle. Ce n'est pas idéal — deux étapes
 /// portent alors la même couleur — mais la maquette ne dit rien de ce cas et
@@ -37,14 +49,14 @@ class StageCard extends ConsumerWidget {
   final TripStageDto stage;
 
   /// Le résumé météo de l'étape (`TripStageWeatherDto.summary`), apparié par
-  /// `stageId` par l'écran 24. Absent — ou sans rien à montrer —, la carte
-  /// ne réserve aucune place.
+  /// `stageId` par l'écran du voyage. Absent — ou sans rien à montrer —, la
+  /// carte ne réserve aucune place.
   final RideWeatherSummaryDto? weather;
 
-  /// Sélectionnée depuis la carte ou la légende : la carte s'entoure d'indigo.
+  /// Sélectionnée depuis la carte : la carte s'entoure d'indigo.
   final bool selected;
 
-  /// Ouvrir l'étape (écran 25).
+  /// Ouvrir l'étape.
   final VoidCallback onTap;
 
   /// Sélectionner sans naviguer — la moitié « liste » de la sélection croisée.
@@ -56,7 +68,6 @@ class StageCard extends ConsumerWidget {
     final PdlTypography t = context.pdlText;
     final UnitSystem units = ref.watch(unitSystemProvider);
     final RouteDto? route = stage.route;
-    final DateTime? start = stage.startsAt;
     final DateTime? instant = DateTime.tryParse(stage.dateTime);
 
     return PdlCard(
@@ -98,113 +109,57 @@ class StageCard extends ConsumerWidget {
                     ),
                   ],
                 ),
-                // « 09:00 » d'abord, en 700, puis « sam. 12 avr. » atténué
-                // (ledger `MOB-114`) : la ligne « date longue · heure » en
-                // `xs` tronquait l'heure la première.
-                if (start != null && instant != null) ...<Widget>[
+                if (instant != null) ...<Widget>[
                   const SizedBox(height: 2),
-                  PdlDepartureLine(
+                  Row(
                     key: keys.trip.stageDeparture(stage.slug),
-                    headline: AppFormatters.formatTime(start),
-                    trailing: AppFormatters.formatDepartureDate(
-                      instant,
-                      stage.timezone,
-                    ),
-                    semanticLabel: AppFormatters.formatDeparture(
-                      instant,
-                      stage.timezone,
-                    ),
+                    children: <Widget>[
+                      Icon(PdlIcons.time, size: 14, color: c.primary),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          AppFormatters.formatDeparture(
+                            instant,
+                            stage.timezone,
+                          ),
+                          style: t.statValue,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
                 // L'étape dans son fuseau, et la mention en seconde ligne
                 // quand le lecteur est ailleurs (docs/LEDGER_*.md API-60).
                 ?ZoneMentionLine.maybe(stage.dateTime, stage.timezone),
-                if (_journey() != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: Text(
-                      _journey()!,
-                      style: t.body,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
                 if (route != null || stage.averageSpeed != null)
                   Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Wrap(
-                      spacing: PdlSpacing.statsNowrap,
-                      runSpacing: PdlSpacing.statsWrapV,
-                      children: <Widget>[
-                        if (route != null) ...<Widget>[
-                          _stat(
-                            context,
-                            PdlIcons.distance,
-                            AppFormatters.formatDistance(route.distance, units),
-                          ),
-                          _stat(
-                            context,
-                            PdlIcons.elevationUp,
-                            AppFormatters.formatElevationGain(
-                              route.elevationGain,
-                              units,
-                            ),
-                          ),
-                        ],
-                        if (stage.averageSpeed != null)
-                          _stat(
-                            context,
-                            PdlIcons.speed,
-                            AppFormatters.formatSpeed(
-                              stage.averageSpeed!,
-                              units,
-                            ),
-                          ),
-                      ],
+                    padding: const EdgeInsets.only(top: 2),
+                    child: PublicationStatsLine(
+                      distanceMeters: route?.distance,
+                      elevationGainMeters: route?.elevationGain,
+                      speedKmh: stage.averageSpeed,
+                      units: units,
                     ),
                   ),
                 if (RideWeatherSummaryLine.shows(weather))
                   Padding(
-                    padding: const EdgeInsets.only(top: 4),
+                    padding: const EdgeInsets.only(top: 2),
                     child: RideWeatherSummaryLine(
                       summary: weather,
                       timezone: stage.timezone,
+                      units: units,
                     ),
                   ),
               ],
             ),
           ),
           const SizedBox(width: PdlSpacing.chipGap),
-          PdlThumb(
-            imageUrl: stage.route?.thumbnailUrl,
-            size: PdlMetrics.thumbLg,
-            fallbackIcon: PdlIcons.stage,
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Icon(PdlIcons.chevronRight, size: 20, color: c.textDimmed),
           ),
-          Icon(PdlIcons.chevronRight, size: 20, color: c.textDimmed),
         ],
       ),
-    );
-  }
-
-  /// « Clermont-Ferrand → Issoire », et rien du tout si l'un des deux lieux
-  /// manque : une flèche qui part de nulle part n'informe pas.
-  String? _journey() {
-    final String? from = stage.startPlace?.name;
-    final String? to = stage.endPlace?.name;
-    if (from == null || to == null) return from ?? to;
-    return '$from → $to';
-  }
-
-  Widget _stat(BuildContext context, IconData icon, String value) {
-    final PdlColors c = context.pdl;
-    final PdlTypography t = context.pdlText;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Icon(icon, size: 14, color: c.textDimmed),
-        const SizedBox(width: 4),
-        Text(value, style: t.statValue),
-      ],
     );
   }
 }

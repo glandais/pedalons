@@ -1080,14 +1080,12 @@
       "other": "{} stages"
     },
     "finished": "Finished",
-    "registered": "I'm going",
     "addToCalendar": "Add to my calendar",
     "description": "Description",
     "noStageTitle": "No stage yet",
     "noStageMessage": "No stage has been defined for this trip yet.",
     "summary": {
       "duration": "Duration",
-      "dayRange": "Day 1 to day {last}",
       "days": {
         "one": "{} day",
         "other": "{} days"
@@ -1102,8 +1100,6 @@
     "joining": "Joining...",
     "leaving": "Leaving...",
     "participationFailedTitle": "Could not update your participation",
-    "tripTrack": "Trip track",
-    "globalProfile": "Overall elevation profile",
     "partialTrack": "Partial track: {shown} of {total} stages are shown.",
     "missingTracks": "{count} track(s) could not be loaded.",
     "profileGaps": "Incomplete profile: {stages} could not be loaded.",

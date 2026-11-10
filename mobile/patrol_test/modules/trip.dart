@@ -3,7 +3,12 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'module.dart';
 
-/// A trip's page (screen 24) and its stages (screen 25).
+/// A trip's page and its stages.
+///
+/// The trip's page scrolls (ledger `MOB-134`, lot 9): the registration sits in the departure block
+/// at the top — « Rejoindre », or the « J'y vais » badge once registered —, « Se désinscrire » is a
+/// link at the foot of « Personnes inscrites », below the stages. The helpers scroll to whichever
+/// end they need.
 final class Trip extends Module {
   Trip(super.$);
 
@@ -17,17 +22,30 @@ final class Trip extends Module {
   /// Whether the « Voyage annulé » banner is shown.
   bool get saysCancelled => isShown(keys.trip.cancelledBanner);
 
-  bool get offersJoin => isShown(keys.trip.joinButton);
-
-  bool get offersLeave => isShown(keys.trip.leaveButton);
-
-  Future<void> join() async {
-    await $(keys.trip.joinButton).tap();
-    await $(keys.trip.leaveButton).waitUntilVisible();
+  /// Whether the departure block offers « Rejoindre ».
+  Future<bool> offersJoin() async {
+    await scrolledUpTo(keys.trip.departureBlock);
+    return isShown(keys.trip.joinButton);
   }
 
+  /// Whether « Personnes inscrites » ends with « Se désinscrire ».
+  Future<bool> offersLeave() async {
+    await scrolledIntoView(keys.trip.participants);
+    return isShown(keys.trip.leaveButton);
+  }
+
+  /// Taps « Rejoindre » and waits for the « J'y vais » badge that replaces it.
+  Future<void> join() async {
+    await scrolledUpTo(keys.trip.departureBlock);
+    await $(keys.trip.joinButton).tap();
+    await $(keys.trip.goingBadge).waitUntilVisible();
+  }
+
+  /// Taps « Se désinscrire » and waits for « Rejoindre » to come back in the departure block.
   Future<void> leave() async {
-    await $(keys.trip.leaveButton).tap();
+    await (await scrolledTo(keys.trip.leaveButton)).tap();
+    await waitUntilGone(keys.trip.leaveButton);
+    await scrolledUpTo(keys.trip.departureBlock);
     await $(keys.trip.joinButton).waitUntilVisible();
   }
 
@@ -35,14 +53,6 @@ final class Trip extends Module {
   Future<bool> listsStage(String stageSlug) async {
     await scrolledTo(keys.trip.stageCard(stageSlug));
     return isShown(keys.trip.stageCard(stageSlug));
-  }
-
-  /// Whether the participants section names [name]. The section only exists once someone takes
-  /// part, and fills from the refetch that follows a registration.
-  Future<bool> participantsName(String name) async {
-    await $.pumpAndTrySettle();
-    await scrolledIntoView(keys.trip.participants);
-    return shows(keys.trip.participants, name);
   }
 
   // ── Stages ──────────────────────────────────────────────────────────────

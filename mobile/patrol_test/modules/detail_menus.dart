@@ -1,3 +1,5 @@
+import 'package:flutter/widgets.dart';
+
 import 'module.dart';
 
 /// The `⋯` menus of the detail pages and of the people lists — what the [Moderation] module then
@@ -35,10 +37,19 @@ final class DetailMenus extends Module {
     await (await scrolledTo(keys.team.memberRow(userId))).tap();
   }
 
-  /// The ride's « Voir les N personnes inscrites » (under its group cards) → the participants
-  /// sheet → [userId]'s row, which opens its menu.
-  Future<void> openParticipantMenu(String userId) async {
-    await (await scrolledTo(keys.ride.participantsButton)).tap();
+  /// The ride's participants sheet → [userId]'s row, which opens its menu.
+  ///
+  /// The sheet opens from « Voir toutes les personnes inscrites » at the foot of a single-group
+  /// ride's « Personnes inscrites » section (ledger `MOB-134`, lot 7 — the group's own sheet), or,
+  /// with [severalGroups], from « Voir les N personnes inscrites » under the group cards.
+  Future<void> openParticipantMenu(
+    String userId, {
+    bool severalGroups = false,
+  }) async {
+    final Key button = severalGroups
+        ? keys.ride.participantsButton
+        : keys.rideGroup.viewAllParticipants;
+    await (await scrolledTo(button)).tap();
     await $(keys.participants.person(userId)).tap();
   }
 }

@@ -7,54 +7,78 @@ import 'package:go_router/go_router.dart';
 import '../../../../api/generated/export.dart';
 import '../../../../config/paths.dart';
 import '../../../../core/pdl/pdl.dart';
+import '../../../../core/preferences/user_preferences_provider.dart';
 import '../../../../core/theme/enum_colors.dart';
 import '../../../../core/theme/pdl_colors.dart';
 import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/api_error_handler.dart';
+import '../../../../core/utils/directions.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../core/utils/push_location.dart';
 import '../../../../core/utils/share_link.dart';
 import '../../../../core/widgets/day_box.dart';
-import '../../../../core/widgets/zone_mention_line.dart';
-import '../../../teams/domain/publication_timing.dart';
+import '../../../../core/widgets/detail_section.dart';
+import '../../../../core/widgets/detail_stat_tiles.dart';
 import '../../../../core/widgets/markdown_content.dart';
 import '../../../../core/widgets/media_attachments.dart';
+import '../../../../core/widgets/zone_mention_line.dart';
+import '../../../../keys.dart';
+import '../../../auth/domain/auth_state.dart';
+import '../../../auth/providers/auth_provider.dart';
 import '../../../calendar/presentation/widgets/calendar_subscription_card.dart';
 import '../../../comments/data/comment_repository.dart';
 import '../../../comments/presentation/widgets/comment_thread.dart';
+import '../../../feedback/presentation/report_problem_button.dart';
 import '../../../moderation/presentation/moderation_menu.dart';
 import '../../../participants/presentation/widgets/participants_sheet.dart';
-import '../../../teams/providers/team_providers.dart';
 import '../../../tags/presentation/content_tags.dart';
+import '../../../teams/domain/publication_timing.dart';
+import '../../../teams/providers/team_providers.dart';
+import '../../domain/trip_weather_map.dart';
 import '../../providers/trip_detail_provider.dart';
 import '../../providers/trip_participation_controller.dart';
 import '../../providers/trip_stage_selection_provider.dart';
-import '../../domain/trip_weather_map.dart';
 import '../../providers/trip_weather_provider.dart';
 import '../widgets/stage_card.dart';
 import '../widgets/trip_elevation.dart';
 import '../widgets/trip_map.dart';
-import '../widgets/trip_summary_card.dart';
-import '../../../feedback/presentation/report_problem_button.dart';
-import '../../../../keys.dart';
-import '../../../../core/utils/push_location.dart';
 
-/// L'écran 24 — le voyage.
+/// L'écran du voyage, **le même pour une ou plusieurs étapes** (ledger
+/// `MOB-134`, lot 9, KIT §8, maquettes `voyage-etapes-mobile-cible`,
+/// `voyage-une-etape-mobile-cible`) — une page qui défile, de haut en bas :
 ///
-/// De la v1 il reste la liste d'étapes et la description ; tout le reste est
-/// neuf. La v1 n'avait ni carte, ni distance totale, ni dénivelé cumulé, ni
-/// date de fin, ni profil, ni commentaires — un voyage de sept jours y était
-/// une date de départ suivie de sept lignes.
+/// 1. l'identité (équipe, titre, badges dont la phase, tags) ;
+/// 2. les bandeaux (annulé, non-membre) et l'échec d'inscription ;
+/// 3. le bloc de départ : dates du voyage, lieu de la première étape en lien
+///    d'itinéraire, et l'inscription à droite de l'heure — « Rejoindre », ou
+///    le badge « J'y vais » ;
+/// 4. les tuiles : Distance | Dénivelé (cumulés), Durée | Étapes ;
+/// 5. « Parcours » : la carte de toutes les étapes, sans légende — chaque
+///    carte d'étape porte sa couleur —, l'interrupteur Étapes | Météo et le
+///    profil ;
+/// 6. « Description » et ses pièces jointes ;
+/// 7. « Étapes » : une carte par étape ;
+/// 8. « Personnes inscrites » ;
+/// 9. les commentaires.
+///
+/// **Pas de section Météo**, même à une étape (décision du 2026-11-10) : la
+/// météo est sur les cartes d'étape et sur la page de chaque étape. Pas de
+/// barre d'action non plus : l'inscription est dans le bloc de départ.
 class TripDetailPage extends ConsumerWidget {
   const TripDetailPage({
     super.key,
     required this.teamSlug,
     required this.tripSlug,
+    this.now,
   });
 
   final String teamSlug;
   final String tripSlug;
+
+  /// Un instant, pour les tests ; maintenant sinon.
+  final DateTime? now;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -66,7 +90,8 @@ class TripDetailPage extends ConsumerWidget {
     );
 
     return participation.trip.when(
-      data: (TripDto trip) => _TripDetailContent(tripKey: key, trip: trip),
+      data: (TripDto trip) =>
+          _TripDetailContent(tripKey: key, trip: trip, now: now),
       loading: () => const _TripDetailSkeleton(),
       error: (Object error, StackTrace stack) =>
           _TripDetailError(tripKey: key, error: error),
@@ -74,22 +99,69 @@ class TripDetailPage extends ConsumerWidget {
   }
 }
 
+/// Les tuiles d'un voyage, dans l'ordre du KIT §8 : Distance | Dénivelé
+/// (cumulés), puis Durée | Étapes. Une valeur inconnue ôte sa tuile plutôt
+/// que d'écrire « 0 km » : un voyage dont aucune étape n'a de parcours n'a
+/// pas une distance nulle, il n'en a pas.
+List<DetailStatTile> tripStatTiles(TripDto trip, UnitSystem units) {
+  final String? duration = tripDurationLabel(trip);
+  return <DetailStatTile>[
+    if (trip.totalDistance != null)
+      DetailStatTile(
+        label: 'trips.summary.totalDistance'.tr(),
+        value: AppFormatters.formatDistance(trip.totalDistance!, units),
+      ),
+    if (trip.totalElevationGain != null)
+      DetailStatTile(
+        label: 'trips.summary.totalElevation'.tr(),
+        value: AppFormatters.formatElevation(trip.totalElevationGain!, units),
+      ),
+    if (duration != null)
+      DetailStatTile(label: 'trips.summary.duration'.tr(), value: duration),
+    if (trip.stageCount > 0)
+      DetailStatTile(label: 'trips.stages'.tr(), value: '${trip.stageCount}'),
+  ];
+}
+
+/// « 3 jours », « 1 jour » — `endDate` nul signifie un voyage d'un jour, par
+/// contrat. Le départ se lit dans le fuseau de la première étape, la fin dans
+/// celui de la dernière ([TripTiming.endsAt]) : la durée compte les jours
+/// vécus. `null` sans date de départ lisible.
+String? tripDurationLabel(TripDto trip) {
+  final DateTime? start = trip.startsAt;
+  if (start == null) return null;
+  final DateTime end = trip.endsAt ?? start;
+  // Comptés sur des dates UTC : un écart de minuits locaux perd une heure au
+  // passage à l'heure d'été, et `inDays` tomberait d'un jour.
+  final int days =
+      DateTime.utc(
+        end.year,
+        end.month,
+        end.day,
+      ).difference(DateTime.utc(start.year, start.month, start.day)).inDays +
+      1;
+  return 'trips.summary.days'.plural(days < 1 ? 1 : days);
+}
+
 // ─────────────────────────────────────────────────────────────── contenu
 
 class _TripDetailContent extends ConsumerWidget {
-  const _TripDetailContent({required this.tripKey, required this.trip});
+  const _TripDetailContent({
+    required this.tripKey,
+    required this.trip,
+    this.now,
+  });
 
   final TripKey tripKey;
   final TripDto trip;
+  final DateTime? now;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final bool? isMember = ref.watch(teamMembershipProvider(trip.team.slug));
-    final bool canSeeNames = ref.watch(
-      canSeeMemberNamesProvider(trip.team.slug),
-    );
     final List<TripStageDto> stages = trip.orderedStages;
     final String? selected = ref.watch(selectedStageProvider(tripKey));
+    final PublicationPhase phase = tripPhase(trip, now: now);
     // Le mode « Météo » de la carte d'ensemble (ledger `MOB-94`) : gardé en
     // vie tant que la page est montée, éteint quand plus aucune étape n'a de
     // prévision.
@@ -106,6 +178,16 @@ class _TripDetailContent extends ConsumerWidget {
     final TripParticipationState participation = ref.watch(
       tripParticipationProvider(tripKey),
     );
+    final List<DetailStatTile> tiles = tripStatTiles(
+      trip,
+      ref.watch(unitSystemProvider),
+    );
+    final bool hasDescription =
+        trip.media.markdown.trim().isNotEmpty ||
+        trip.media.assets.attachments.isNotEmpty;
+
+    EdgeInsets block({double top = PdlSpacing.section}) =>
+        EdgeInsets.fromLTRB(PdlSpacing.section, top, PdlSpacing.section, 0);
 
     return PdlScreenScaffold(
       // Le détail est relu ; le contrôleur de participation l'adopte, et la
@@ -158,7 +240,7 @@ class _TripDetailContent extends ConsumerWidget {
         ],
       ),
       slivers: <Widget>[
-        SliverToBoxAdapter(child: _identity(context)),
+        SliverToBoxAdapter(child: _identity(context, phase)),
         if (trip.isCancelled)
           SliverToBoxAdapter(
             child: PdlBanner(
@@ -187,124 +269,136 @@ class _TripDetailContent extends ConsumerWidget {
               ),
             ),
           ),
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: TripSummaryCard(
-              trip: trip,
-              onShowParticipants: canSeeNames
-                  ? () => ParticipantsSheet.openTrip(context, trip)
-                  : null,
-            ),
-          ),
-        ),
-        SliverToBoxAdapter(
-          child: TripMap(
-            tripKey: tripKey,
-            trip: trip,
-            selectedStageId: selected,
-            onSelect: select,
-          ),
-        ),
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.all(PdlSpacing.section),
-            child: TripElevationSection(tripKey: tripKey, trip: trip),
-          ),
-        ),
-        SliverToBoxAdapter(
-          child: _stages(
-            context,
-            stages,
-            selected,
-            select,
-            _stageSummaries(ref),
-          ),
-        ),
-        if (trip.media.markdown.trim().isNotEmpty)
-          SliverToBoxAdapter(child: _description(context)),
-        // Section à part, et non un appendice de la description : un voyage
-        // peut porter un road book sans une ligne de texte.
-        if (trip.media.assets.attachments.isNotEmpty)
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: MediaAttachments(
-                attachments: trip.media.assets.attachments,
-                spacingBefore: 0,
-              ),
-            ),
-          ),
-        if (canSeeNames && trip.participants.isNotEmpty)
-          SliverToBoxAdapter(child: _participants(context)),
+        // L'échec d'inscription, juste au-dessus du bouton qui le cause.
         if (participation.failure != null)
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          SliverPadding(
+            padding: block(top: 0).copyWith(bottom: PdlSpacing.section),
+            sliver: SliverToBoxAdapter(
               child: _failureBanner(context, ref, participation.failure!),
             ),
           ),
+        if (_departure(context, ref, participation, isMember, phase)
+            case final Widget departure)
+          SliverPadding(
+            padding: block(top: 0),
+            sliver: SliverToBoxAdapter(child: departure),
+          ),
+        if (tiles.isNotEmpty)
+          SliverPadding(
+            padding: block(top: PdlSpacing.chipGap),
+            sliver: SliverToBoxAdapter(
+              child: DetailStatTiles(key: keys.trip.statTiles, tiles: tiles),
+            ),
+          ),
+        if (TripMap.shows(trip))
+          SliverToBoxAdapter(
+            child: KeyedSubtree(
+              key: keys.trip.routeSection,
+              child: DetailSection(
+                title: 'rides.routeSection.title'.tr(),
+                bleed: true,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    TripMap(
+                      tripKey: tripKey,
+                      trip: trip,
+                      selectedStageId: selected,
+                      onSelect: select,
+                    ),
+                    Padding(
+                      padding: block(),
+                      child: TripElevationSection(tripKey: tripKey, trip: trip),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        if (hasDescription)
+          SliverToBoxAdapter(
+            child: KeyedSubtree(
+              key: keys.trip.descriptionSection,
+              child: _description(),
+            ),
+          ),
+        SliverToBoxAdapter(
+          child: KeyedSubtree(
+            key: keys.trip.stagesSection,
+            child: _stages(
+              context,
+              stages,
+              selected,
+              select,
+              _stageSummaries(ref, phase),
+            ),
+          ),
+        ),
+        SliverToBoxAdapter(
+          child: KeyedSubtree(
+            key: keys.trip.participants,
+            child: _participants(context, ref, participation),
+          ),
+        ),
         // `commentCount` absent signifie « vous n'avez pas le droit de lire les
         // commentaires » : le fil n'est pas monté du tout.
         if (trip.commentCount != null)
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(PdlSpacing.section),
-              child: CommentThread(
-                target: CommentTarget(
-                  entity: CommentEntity.trip,
-                  teamSlug: trip.team.slug,
-                  slug: trip.slug,
+          SliverPadding(
+            padding: block(top: PdlSpacing.detailSectionGap),
+            sliver: SliverToBoxAdapter(
+              child: KeyedSubtree(
+                key: keys.trip.commentsSection,
+                child: CommentThread(
+                  target: CommentTarget(
+                    entity: CommentEntity.trip,
+                    teamSlug: trip.team.slug,
+                    slug: trip.slug,
+                  ),
+                  canComment: isMember ?? false,
+                  countAtEnd: true,
                 ),
-                canComment: isMember ?? false,
               ),
             ),
           ),
         const SliverToBoxAdapter(child: SizedBox(height: PdlSpacing.section)),
       ],
-      actionBar: _actionBar(context, ref, participation, isMember),
     );
   }
 
-  // ── Barre d'action ──────────────────────────────────────────────────────
-  /// **Une seule action pleine et colorée par écran** (§1.0.4) : « Participer »
-  /// est en plein, « Ne plus participer » en contour. Un voyage annulé ou passé
-  /// n'en propose aucune — s'inscrire à ce qui a eu lieu n'a pas de sens, et un
-  /// bouton qui échouerait serait pire qu'un bouton absent.
-  Widget? _actionBar(
+  // ── Inscription ─────────────────────────────────────────────────────────
+  /// À droite de l'heure de départ : « Rejoindre » tant que le voyage n'est
+  /// pas terminé — un voyage en cours reste ouvert, ses étapes suivantes sont
+  /// à rouler (la règle du serveur, `TripService.joinTrip`) —, pour un membre
+  /// de l'équipe et un voyage maintenu ; inscrit, le badge « J'y vais », qui
+  /// reste sur un voyage annulé. Se désinscrire est le lien du pied de
+  /// « Personnes inscrites ». Rien sinon.
+  Widget? _registrationControl(
     BuildContext context,
     WidgetRef ref,
     TripParticipationState participation,
     bool? isMember,
+    PublicationPhase phase,
   ) {
-    if (trip.isCancelled || trip.isPast || isMember == false) return null;
-
-    final TripParticipationController controller = ref.read(
-      tripParticipationProvider(tripKey).notifier,
-    );
-
-    return PdlActionBar(
-      children: <Widget>[
-        if (trip.registered)
-          PdlButton(
-            key: keys.trip.leaveButton,
-            label: 'trips.leave'.tr(),
-            variant: PdlButtonVariant.outline,
-            fullWidth: true,
-            loading: participation.pending,
-            loadingLabel: 'trips.leaving'.tr(),
-            onPressed: controller.leave,
-          )
-        else
-          PdlButton(
-            key: keys.trip.joinButton,
-            label: 'trips.join'.tr(),
-            fullWidth: true,
-            loading: participation.pending,
-            loadingLabel: 'trips.joining'.tr(),
-            onPressed: controller.join,
-          ),
-      ],
+    if (trip.registered) {
+      return PdlBadge(
+        key: keys.trip.goingBadge,
+        label: 'rides.registered'.tr(),
+        tone: PdlDerivedTones.registered(context.pdl),
+        size: PdlBadgeSize.lg,
+      );
+    }
+    if (trip.isCancelled ||
+        phase == PublicationPhase.finished ||
+        isMember != true) {
+      return null;
+    }
+    return PdlButton(
+      key: keys.trip.joinButton,
+      label: 'trips.join'.tr(),
+      loading: participation.pending,
+      loadingLabel: 'trips.joining'.tr(),
+      onPressed: ref.read(tripParticipationProvider(tripKey).notifier).join,
     );
   }
 
@@ -361,55 +455,126 @@ class _TripDetailContent extends ConsumerWidget {
     );
   }
 
-  // ── Participants en pastilles ───────────────────────────────────────────
-  /// Les noms, pas seulement des avatars : sur un voyage à trois inscrits, la
-  /// question « qui vient ? » se lit sans ouvrir de feuille.
-  Widget _participants(BuildContext context) {
+  // ── Personnes inscrites ─────────────────────────────────────────────────
+  /// Le titre et le compte, la grappe d'avatars et « Voir toutes les
+  /// personnes inscrites », puis, inscrit, le lien « Se désinscrire ».
+  ///
+  /// **Aucun nom pour un non-membre** ([canSeeMemberNamesProvider], ledger
+  /// `API-144`) : le compte seul, ni visages ni liste.
+  Widget _participants(
+    BuildContext context,
+    WidgetRef ref,
+    TripParticipationState participation,
+  ) {
     final PdlColors c = context.pdl;
+    final PdlTypography t = context.pdlText;
+    final bool canSeeNames = ref.watch(
+      canSeeMemberNamesProvider(trip.team.slug),
+    );
+    final String? currentUserId = ref.watch(
+      authProvider.select((AuthState s) => s.user?.id),
+    );
+    final int count = trip.participantCount;
+    final bool canLeave = trip.registered && !trip.isCancelled;
 
-    return Padding(
-      key: keys.trip.participants,
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+    return DetailSection(
+      title: 'participants.title'.tr(),
+      count: '$count',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          PdlSectionHeader(
-            title: 'participants.title'.tr(),
-            count: '${trip.participantCount}',
-            action: PdlButton(
-              label: 'common.viewAll'.tr(),
-              variant: PdlButtonVariant.text,
-              size: PdlButtonSize.sm,
-              onPressed: () => ParticipantsSheet.openTrip(context, trip),
+          if (canSeeNames && trip.participants.isNotEmpty) ...<Widget>[
+            const SizedBox(height: PdlSpacing.chipGap),
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: PdlAvatarStack(
+                key: keys.trip.participantsAvatars,
+                people: <PdlAvatarEntry>[
+                  for (final PublicUserDto p in trip.participants)
+                    PdlAvatarEntry(
+                      name: p.displayName,
+                      imageUrl: p.avatarUrl,
+                      isCurrentUser: p.id == currentUserId,
+                    ),
+                ],
+                // `participants` n'est que l'aperçu des premiers inscrits
+                // (ledger `API-12`) : le « +N » compte le reste.
+                total: count,
+                onTap: () => ParticipantsSheet.openTrip(context, trip),
+                semanticLabel: 'trips.participants'.plural(
+                  count,
+                  namedArgs: <String, String>{'count': '$count'},
+                ),
+              ),
             ),
-          ),
-          Wrap(
-            spacing: PdlSpacing.badgeGap,
-            runSpacing: PdlSpacing.badgeGap,
-            children: <Widget>[
-              for (final PublicUserDto person in trip.participants)
-                PdlBadge(
-                  label: person.displayName,
-                  tone: PdlDerivedTones.registered(c),
-                  size: PdlBadgeSize.lg,
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: PdlButton(
+                key: keys.trip.viewAllParticipants,
+                label: 'rides.groupPage.viewAllParticipants'.tr(),
+                variant: PdlButtonVariant.text,
+                size: PdlButtonSize.sm,
+                icon: PdlIcons.chevronRight,
+                onPressed: () => ParticipantsSheet.openTrip(context, trip),
+              ),
+            ),
+          ] else if (count == 0) ...<Widget>[
+            const SizedBox(height: PdlSpacing.chipGap),
+            Text('participants.emptyTripMessage'.tr(), style: t.sub),
+          ],
+          // « Se désinscrire » : un lien discret en couleur de danger, sur
+          // 44 px de haut, comme « Quitter le groupe » d'une sortie — pas un
+          // bouton qui pèserait autant que « Rejoindre ». Sans confirmation.
+          if (canLeave)
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: Semantics(
+                button: true,
+                enabled: !participation.pending,
+                child: InkWell(
+                  key: keys.trip.leaveButton,
+                  onTap: participation.pending
+                      ? null
+                      : ref
+                            .read(tripParticipationProvider(tripKey).notifier)
+                            .leave,
+                  borderRadius: PdlRadii.mdAll,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      minHeight: PdlMetrics.tapTarget,
+                    ),
+                    child: Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      widthFactor: 1,
+                      child: Text(
+                        participation.pending
+                            ? 'trips.leaving'.tr()
+                            : 'trips.leave'.tr(),
+                        style: t.sub.copyWith(
+                          color: participation.pending
+                              ? c.textDimmed
+                              : c.danger,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
-              // `participants` n'est que l'aperçu des premiers inscrits
-              // (ledger `API-12`) : le reste est dans la feuille.
-              if (trip.participantCount > trip.participants.length)
-                PdlBadge(
-                  label: '+${trip.participantCount - trip.participants.length}',
-                  tone: PdlDerivedTones.registered(c),
-                  size: PdlBadgeSize.lg,
-                ),
-            ],
-          ),
+              ),
+            ),
         ],
       ),
     );
   }
 
-  // ── 2 · Identité ────────────────────────────────────────────────────────
-  Widget _identity(BuildContext context) {
+  // ── Identité ────────────────────────────────────────────────────────────
+  /// La ligne d'équipe, le titre, les badges, les tags. Les badges disent où
+  /// en est le voyage, par sa phase ([tripPhase]) : « Terminé » à la place du
+  /// statut une fois la dernière étape arrivée, « En cours » après la
+  /// visibilité entre le premier départ et la dernière arrivée. L'inscription
+  /// n'y est plus : le badge « J'y vais » du bloc de départ la dit.
+  Widget _identity(BuildContext context, PublicationPhase phase) {
     final PdlColors c = context.pdl;
     final PdlTypography t = context.pdlText;
 
@@ -430,7 +595,7 @@ class _TripDetailContent extends ConsumerWidget {
             spacing: PdlSpacing.badgeGap,
             runSpacing: PdlSpacing.badgeGap,
             children: <Widget>[
-              if (trip.isPast && !trip.isCancelled)
+              if (phase == PublicationPhase.finished && !trip.isCancelled)
                 PdlBadge(
                   key: keys.trip.finishedBadge,
                   label: 'trips.finished'.tr(),
@@ -446,11 +611,12 @@ class _TripDetailContent extends ConsumerWidget {
                 tone: Visibility.fromJson(trip.visibility).tone(c),
                 icon: _visibilityIcon(trip.visibility),
               ),
-              if (trip.registered)
+              if (phase == PublicationPhase.underWay)
                 PdlBadge(
-                  label: 'trips.registered'.tr(),
-                  tone: PdlDerivedTones.registered(c),
-                  icon: PdlIcons.check,
+                  key: keys.trip.underWayBadge,
+                  label: 'teams.agenda.underWay'.tr(),
+                  tone: PdlDerivedTones.underWay(c),
+                  dot: true,
                 ),
             ],
           ),
@@ -458,19 +624,24 @@ class _TripDetailContent extends ConsumerWidget {
             const SizedBox(height: PdlSpacing.chipGap),
             ContentTagRow(tags: trip.tags),
           ],
-          ?_departure(context),
         ],
       ),
     );
   }
 
-  /// Le bloc de départ du voyage, sous le titre et les badges, avant tout le
-  /// reste (BRANDING §7.8, ledger `BRAND-8`, pendant du web `WEB-137`) : boîte
-  /// du jour turquoise, « Départ 09:00 » (la première étape), pastille
-  /// « Aujourd'hui » / « Demain », la plage du voyage au format unique, le
-  /// retour quand la fin est connue (`endDate`, la dernière étape) et la
-  /// mention de fuseau sur l'heure affichée.
-  Widget? _departure(BuildContext context) {
+  /// Le bloc de départ du voyage, sous l'identité (BRANDING §7.8, ledgers
+  /// `BRAND-8`, `MOB-134`) : boîte du jour turquoise, « Départ 08:30 » (la
+  /// première étape), pastille « Aujourd'hui » / « Demain » avant le départ,
+  /// la plage du voyage au format unique, la mention de fuseau sur l'heure
+  /// affichée ; l'inscription à droite ; dessous, le lieu de départ de la
+  /// première étape, en lien d'itinéraire (KIT §8).
+  Widget? _departure(
+    BuildContext context,
+    WidgetRef ref,
+    TripParticipationState participation,
+    bool? isMember,
+    PublicationPhase phase,
+  ) {
     final DateTime? instant = DateTime.tryParse(trip.dateTime);
     if (instant == null) return null;
     final String zone = trip.timezone;
@@ -480,32 +651,62 @@ class _TripDetailContent extends ConsumerWidget {
     final String headline = 'rides.departureBlock.departs'.tr(
       namedArgs: <String, String>{'time': AppFormatters.formatTime(wall)},
     );
-    final String? relative = trip.isPast || trip.isCancelled
+    // « Aujourd'hui », « Demain » : seulement avant le départ — parti, le
+    // jour se lit dans la plage.
+    final String? relative =
+        phase != PublicationPhase.upcoming || trip.isCancelled
         ? null
-        : AppFormatters.formatDepartureRelative(instant, zone);
+        : AppFormatters.formatDepartureRelative(instant, zone, now: now);
     final String span =
         tripDaySpan(
           trip.dateTime,
           trip.endDateTime,
           timezone: zone,
           endTimezone: endZone,
+          now: now,
         ) ??
-        AppFormatters.formatDepartureDate(instant, zone);
+        AppFormatters.formatDepartureDate(instant, zone, now: now);
     final String? mention = AppFormatters.formatZoneMention(instant, zone);
+    final List<TripStageDto> stages = trip.orderedStages;
+    final PlaceDetailDto? start = stages.isEmpty
+        ? null
+        : stages.first.startPlace;
 
-    return Padding(
-      padding: const EdgeInsets.only(top: PdlSpacing.cardTight),
-      child: PdlDepartureBlock(
-        key: keys.trip.departureBlock,
-        dayBox: dayBoxFor(wall, tone: PublicationType.trip.tone(context.pdl)),
-        headline: headline,
-        relativeLabel: relative,
-        details: <String>[span],
-        zoneMention: mention == null
-            ? null
-            : ZoneMentionLine(instant: instant, zone: zone),
-        semanticLabel: <String>[headline, ?relative, span, ?mention].join(', '),
+    return PdlDepartureBlock(
+      key: keys.trip.departureBlock,
+      dayBox: dayBoxFor(
+        wall,
+        tone: PublicationType.trip.tone(context.pdl),
+        now: now,
       ),
+      headline: headline,
+      relativeLabel: relative,
+      details: <String>[span],
+      zoneMention: mention == null
+          ? null
+          : ZoneMentionLine(instant: instant, zone: zone),
+      semanticLabel: <String>[headline, ?relative, span, ?mention].join(', '),
+      trailing: _registrationControl(
+        context,
+        ref,
+        participation,
+        isMember,
+        phase,
+      ),
+      places: <Widget>[
+        if (start != null)
+          PdlPlaceRow.link(
+            key: keys.trip.startPlaceLink,
+            kind: PdlPlaceKind.start,
+            name: start.name,
+            semanticLabel: 'common.directionsTo'.tr(
+              namedArgs: <String, String>{'place': start.name},
+            ),
+            onTap: placeDirectionsUri(start) != null
+                ? () => openPlaceDirections(context, start)
+                : null,
+          ),
+      ],
     );
   }
 
@@ -515,13 +716,18 @@ class _TripDetailContent extends ConsumerWidget {
     _ => PdlIcons.visibilityTeam,
   };
 
-  // ── 3 · Étapes ──────────────────────────────────────────────────────────
+  // ── Étapes ──────────────────────────────────────────────────────────────
   /// Le résumé météo de chaque étape, par `stageId` — une seule lecture pour
   /// tout le voyage. Rien pour un voyage terminé ou annulé (sans même appeler
   /// l'API), ni tant que la météo n'est pas là ou qu'elle a échoué : la ligne
-  /// est un enrichissement de la carte, pas un état à part.
-  Map<String, RideWeatherSummaryDto> _stageSummaries(WidgetRef ref) {
-    if (trip.isPast || trip.isCancelled) {
+  /// est un enrichissement de la carte, pas un état à part. Une étape
+  /// arrivée ([tripStagePhase] terminée) n'a pas de ligne : une prévision
+  /// pour ce qui a eu lieu ne dit rien.
+  Map<String, RideWeatherSummaryDto> _stageSummaries(
+    WidgetRef ref,
+    PublicationPhase phase,
+  ) {
+    if (phase == PublicationPhase.finished || trip.isCancelled) {
       return const <String, RideWeatherSummaryDto>{};
     }
     final TripWeatherDto? weather = ref
@@ -530,9 +736,17 @@ class _TripDetailContent extends ConsumerWidget {
     if (weather == null || !tripWeatherShowsAnything(weather)) {
       return const <String, RideWeatherSummaryDto>{};
     }
+    final Set<String> arrived = <String>{
+      for (final TripStageDto s in trip.stages)
+        if (tripStagePhase(trip, s, now: now) == PublicationPhase.finished)
+          s.id,
+    };
     return <String, RideWeatherSummaryDto>{
       for (final TripStageWeatherDto s in weather.stages)
-        if (s.stageId != null && s.summary != null) s.stageId!: s.summary!,
+        if (s.stageId != null &&
+            s.summary != null &&
+            !arrived.contains(s.stageId))
+          s.stageId!: s.summary!,
     };
   }
 
@@ -543,15 +757,13 @@ class _TripDetailContent extends ConsumerWidget {
     ValueChanged<String> select,
     Map<String, RideWeatherSummaryDto> summaries,
   ) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+    return DetailSection(
+      title: 'trips.stages'.tr(),
+      count: stages.isEmpty ? null : 'trips.stageCount'.plural(stages.length),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          PdlSectionHeader(
-            title: 'trips.stages'.tr(),
-            count: stages.isEmpty ? null : '${stages.length}',
-          ),
           if (stages.isEmpty)
             PdlEmptyState(
               variant: PdlEmptyVariant.empty,
@@ -560,17 +772,17 @@ class _TripDetailContent extends ConsumerWidget {
               message: 'trips.noStageMessage'.tr(),
             )
           else
-            for (final TripStageDto stage in stages)
+            for (int i = 0; i < stages.length; i++)
               Padding(
-                padding: const EdgeInsets.only(bottom: PdlSpacing.feedGap),
+                padding: EdgeInsets.only(top: i == 0 ? 0 : PdlSpacing.chipGap),
                 child: StageCard(
-                  key: keys.trip.stageCard(stage.slug),
-                  stage: stage,
-                  weather: summaries[stage.id],
-                  selected: stage.id == selected,
-                  onSelect: () => select(stage.id),
+                  key: keys.trip.stageCard(stages[i].slug),
+                  stage: stages[i],
+                  weather: summaries[stages[i].id],
+                  selected: stages[i].id == selected,
+                  onSelect: () => select(stages[i].id),
                   onTap: () => context.push(
-                    Paths.stage(trip.team.slug, trip.slug, stage.slug),
+                    Paths.stage(trip.team.slug, trip.slug, stages[i].slug),
                   ),
                 ),
               ),
@@ -579,18 +791,22 @@ class _TripDetailContent extends ConsumerWidget {
     );
   }
 
-  // ── 4 · Description ─────────────────────────────────────────────────────
-  Widget _description(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+  // ── Description ─────────────────────────────────────────────────────────
+  /// « Description » : le texte (`media.markdown`) puis les pièces jointes —
+  /// un voyage peut porter un road book sans une ligne de texte.
+  Widget _description() {
+    return DetailSection(
+      title: 'trips.description'.tr(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          PdlSectionHeader(title: 'trips.description'.tr()),
-          MarkdownContent(
-            data: trip.media.markdown,
-            images: trip.media.assets.images,
-          ),
+          if (trip.media.markdown.trim().isNotEmpty)
+            MarkdownContent(
+              data: trip.media.markdown,
+              images: trip.media.assets.images,
+            ),
+          MediaAttachments(attachments: trip.media.assets.attachments),
         ],
       ),
     );

@@ -363,8 +363,8 @@ void main() {
       dateTime: '2036-08-12T06:30:00Z',
     );
 
-    testWidgets('« 08:30 » en 700 d’abord, la date ensuite : l’heure n’est '
-        'jamais tronquée, même étroit et en grand texte', (
+    testWidgets('« mar. 12 août 2036 · 08:30 » sur une ligne en 600, '
+        'l’heure jamais tronquée, même étroit et en grand texte', (
       WidgetTester tester,
     ) async {
       await pump(
@@ -376,19 +376,15 @@ void main() {
 
       final Finder line = find.byKey(keys.trip.stageDeparture('j1'));
       expect(line, findsOneWidget);
-      final Finder time = find.descendant(
+      final Finder text = find.descendant(
         of: line,
-        matching: find.text('08:30'),
+        matching: find.text('mar. 12 août 2036 · 08:30'),
       );
-      expect(time, findsOneWidget);
-      expect(tester.widget<Text>(time).style?.fontWeight, FontWeight.w700);
+      expect(text, findsOneWidget);
+      expect(tester.widget<Text>(text).style?.fontWeight, FontWeight.w600);
       expect(
-        tester.renderObject<RenderParagraph>(time).didExceedMaxLines,
+        tester.renderObject<RenderParagraph>(text).didExceedMaxLines,
         isFalse,
-      );
-      expect(
-        find.descendant(of: line, matching: find.text('mar. 12 août 2036')),
-        findsOneWidget,
       );
       expect(tester.takeException(), isNull);
     });

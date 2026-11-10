@@ -44,6 +44,19 @@ abstract class Module {
     await $.pump(const Duration(milliseconds: 300));
   }
 
+  /// Scrolls the screen's vertical list **back up** until the widget of [key] is visible — for a
+  /// block near the top of a long page ([scrolledTo] only scrolls down). Already visible, nothing
+  /// moves.
+  Future<void> scrolledUpTo(Key key) async {
+    await _waitForVerticalList(key);
+    await $.tester.scrollUntilVisible(
+      find.byKey(key),
+      -300,
+      scrollable: _verticalScrollable.first,
+    );
+    await $.pump(const Duration(milliseconds: 300));
+  }
+
   /// Whether a widget of [key] is currently on screen — for the absence checks, made once the
   /// screen is known to be loaded.
   bool isShown(Key key) => $(key).exists;

@@ -11,36 +11,67 @@ class TripDetailKeys {
   /// Le badge « Terminé » d'un voyage passé.
   final finishedBadge = const _TripKey('finishedBadge');
 
+  /// Le badge « En cours », entre le premier départ et la dernière arrivée.
+  final underWayBadge = const _TripKey('underWayBadge');
+
   /// Le bandeau « Voyage annulé ».
   final cancelledBanner = const _TripKey('cancelledBanner');
 
-  /// « Rejoindre » dans la barre d'action.
+  /// « Rejoindre », à droite de l'heure du bloc de départ.
   final joinButton = const _TripKey('join');
 
-  /// « Se désinscrire » dans la barre d'action.
+  /// Le badge « J'y vais », à droite de l'heure du bloc de départ.
+  final goingBadge = const _TripKey('goingBadge');
+
+  /// Le lien « Se désinscrire », au pied de « Personnes inscrites ».
   final leaveButton = const _TripKey('leave');
 
   /// Le `⋯` de l'app bar : signaler le voyage.
   final moreButton = const _TripKey('moreButton');
 
-  /// La section des participants, nommés en pastilles.
+  /// La section « Personnes inscrites ».
   final participants = const _TripKey('participants');
+
+  /// La grappe d'avatars de « Personnes inscrites ».
+  final participantsAvatars = const _TripKey('participantsAvatars');
+
+  /// « Voir toutes les personnes inscrites » : la feuille des inscriptions.
+  final viewAllParticipants = const _TripKey('viewAllParticipants');
+
+  /// Les tuiles de chiffres, sous le bloc de départ.
+  final statTiles = const _TripKey('statTiles');
+
+  /// La section « Parcours » : carte, interrupteur, profil.
+  final routeSection = const _TripKey('routeSection');
+
+  /// L'ⓘ du profil : la source des altitudes.
+  final profileSource = const _TripKey('profileSource');
+
+  /// La section « Description ».
+  final descriptionSection = const _TripKey('descriptionSection');
+
+  /// La section « Étapes ».
+  final stagesSection = const _TripKey('stagesSection');
+
+  /// Le fil de commentaires du voyage.
+  final commentsSection = const _TripKey('commentsSection');
+
+  /// Le lieu de départ de la première étape, dans le bloc de départ : un lien
+  /// d'itinéraire.
+  final startPlaceLink = const _TripKey('startPlaceLink');
 
   /// La carte d'une étape dans la liste du voyage.
   ValueKey<String> stageCard(String stageSlug) =>
       _TripKey('stageCard_$stageSlug');
 
-  /// La ligne de départ d'une carte d'étape : « 09:00 sam. 12 avr. »
-  /// (ledger `MOB-114`).
+  /// La ligne de départ d'une carte d'étape : « sam. 12 avr. · 09:00 »
+  /// (ledger `MOB-134`).
   ValueKey<String> stageDeparture(String stageSlug) =>
       _TripKey('stageDeparture_$stageSlug');
 
   /// Le bloc de départ du détail d'un voyage, sous le titre (BRANDING §7.8,
   /// ledger `BRAND-8`).
   final departureBlock = const _TripKey('departureBlock');
-
-  /// La cellule « Durée » de la synthèse d'un voyage.
-  final summaryDuration = const _TripKey('summaryDuration');
 
   /// Le bloc de départ du détail d'une étape (ledger `MOB-114`).
   final stageDepartureBlock = const _TripKey('stageDepartureBlock');

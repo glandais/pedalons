@@ -7,8 +7,8 @@ import 'common.dart';
 ///
 /// The trip started yesterday and ends the day after tomorrow: « passé » is judged on the end
 /// (`endDate`, the last stage — `trip_detail_provider.dart`, `isPast`), so it is still open to
-/// members. Once cancelled — behind the app, seen through pull-to-refresh — the action bar is
-/// gone altogether.
+/// members. Once cancelled — behind the app, seen through pull-to-refresh — neither « Rejoindre »
+/// nor « Se désinscrire » is offered.
 void main() {
   testApp(
     'A multi-day trip that has started stays open: join, leave, stages rail, then cancelled offers nothing',
@@ -56,7 +56,7 @@ void main() {
       for (final slug in stageSlugs) {
         expect(await modules.trip.listsStage(slug), isTrue);
       }
-      expect(modules.trip.offersJoin, isTrue);
+      expect(await modules.trip.offersJoin(), isTrue);
 
       await modules.trip.join();
       await eventually(
@@ -85,8 +85,8 @@ void main() {
       await backend.cancelTrip(owner, teamSlug, tripSlug);
       await modules.trip.pullToRefresh();
       await modules.trip.waitUntilCancelled();
-      expect(modules.trip.offersJoin, isFalse);
-      expect(modules.trip.offersLeave, isFalse);
+      expect(await modules.trip.offersJoin(), isFalse);
+      expect(await modules.trip.offersLeave(), isFalse);
     },
   );
 }

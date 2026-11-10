@@ -11,11 +11,16 @@ import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/units/unit_system.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../core/widgets/detail_source_button.dart';
+import '../../../../keys.dart';
 import '../../providers/trip_detail_provider.dart';
 import '../../providers/trip_elevation_provider.dart';
 import '../../providers/trip_tracks_provider.dart';
 
-/// Le profil altimétrique global du voyage.
+/// Le profil altimétrique global du voyage, sous la carte de la section
+/// « Parcours » (ledger `MOB-134`, lot 9) : « Profil » et son ⓘ (la source des
+/// altitudes, comme la sortie), le profil à `PdlMetrics.detailElevation`. Les
+/// totaux ne s'y répètent pas : les tuiles du voyage les donnent.
 ///
 /// **Sans réticule** : sur 600 km concaténés, un curseur au pixel désignerait
 /// une position à deux kilomètres près et ne dirait rien d'utile. Le profil de
@@ -52,19 +57,25 @@ class TripElevationSection extends ConsumerWidget {
       children: <Widget>[
         Row(
           children: <Widget>[
-            Expanded(
+            Flexible(
               child: Text(
-                'trips.globalProfile'.tr(),
-                style: t.xs.copyWith(
-                  color: c.text,
-                  fontWeight: FontWeight.w600,
-                ),
+                'rides.routeSection.profile'.tr(),
+                style: t.bodyStrong,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-            if (_summary(units) != null) Text(_summary(units)!, style: t.xs),
+            DetailSourceButton(
+              key: keys.trip.profileSource,
+              semanticLabel: 'rides.routeSection.profileSourceTitle'.tr(),
+              onPressed: () => showDetailSourceSheet(
+                context,
+                title: 'rides.routeSection.profileSourceTitle'.tr(),
+                text: 'routes.elevationCredit'.tr(),
+              ),
+            ),
           ],
         ),
-        const SizedBox(height: 6),
         profile.when(
           data: (TripElevation? data) => data == null
               ? const SizedBox.shrink()
@@ -72,9 +83,8 @@ class TripElevationSection extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
                     PdlElevationProfile(
-                      credit: 'routes.elevationCredit'.tr(),
                       samples: data.samples,
-                      height: PdlMetrics.elevationMedium,
+                      height: PdlMetrics.detailElevation,
                       // Le dernier repère porte l'unité, les autres le seul
                       // nombre (§1.3.1) ; l'axe se lit en quarts de la distance
                       // totale du voyage.
@@ -117,26 +127,16 @@ class TripElevationSection extends ConsumerWidget {
                 ),
           loading: () => PdlElevationProfile.loading(
             label: 'routes.profileLoading'.tr(),
-            height: PdlMetrics.elevationMedium,
+            height: PdlMetrics.detailElevation,
           ),
           error: (Object error, StackTrace stack) => PdlElevationProfile.failed(
             label: 'routes.profileUnavailable'.tr(),
             actionLabel: 'common.retry'.tr(),
-            height: PdlMetrics.elevationMedium,
+            height: PdlMetrics.detailElevation,
             onRetry: () => ref.invalidate(tripTracksProvider(tripKey)),
           ),
         ),
       ],
     );
-  }
-
-  String? _summary(UnitSystem units) {
-    final List<String> parts = <String>[
-      if (trip.totalDistance != null)
-        AppFormatters.formatDistance(trip.totalDistance!, units),
-      if (trip.totalElevationGain != null)
-        AppFormatters.formatElevationGain(trip.totalElevationGain!, units),
-    ];
-    return parts.isEmpty ? null : parts.join(' · ');
   }
 }

@@ -15,11 +15,12 @@ import 'package:pedalons/features/trips/data/trip_repository.dart';
 import 'package:pedalons/features/trips/presentation/pages/stage_detail_page.dart';
 import 'package:pedalons/features/trips/presentation/pages/trip_detail_page.dart';
 import 'package:pedalons/features/trips/presentation/widgets/stage_card.dart';
-import 'package:pedalons/features/trips/presentation/widgets/trip_summary_card.dart';
+import 'package:pedalons/features/rides/presentation/widgets/weather_section.dart';
 import 'package:pedalons/keys.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../support/localization.dart';
+import '../rides/ride_fixtures.dart';
 import 'trip_fixtures.dart';
 
 /// S24-1, S24-6, S25-2 et S25-4 — les deux écrans montés en entier.
@@ -30,12 +31,15 @@ import 'trip_fixtures.dart';
 /// une étape dont le lecteur ne peut pas lire les commentaires, et pas de ligne
 /// d'adresse vide quand `PlaceDetailDto.address` manque.
 class _StubTripRepository implements TripRepository {
-  _StubTripRepository(this.trip, {this.neverCompletes = false});
+  _StubTripRepository(this.trip, {this.neverCompletes = false, this.weather});
 
   /// Ce que le serveur rend **maintenant** : un test peut le changer entre
   /// deux lectures, comme un organisateur qui annule le voyage.
   TripDto trip;
   final bool neverCompletes;
+
+  /// La météo servie ; `OUT_OF_RANGE` sans rien à montrer par défaut.
+  final TripWeatherDto? weather;
   int reads = 0;
 
   @override
@@ -45,9 +49,11 @@ class _StubTripRepository implements TripRepository {
     return Future<TripDto>.value(trip);
   }
 
-  /// Pas de météo à montrer : `trip_weather_test.dart` couvre ses états.
+  /// Pas de météo à montrer par défaut : `trip_weather_test.dart` couvre ses
+  /// états.
   @override
   Future<TripWeatherDto> getTripWeather(String t, String s) async =>
+      weather ??
       const TripWeatherDto(
         status: 'OUT_OF_RANGE',
         stages: <TripStageWeatherDto>[],
@@ -174,12 +180,24 @@ void main() {
     TripDto trip, {
     bool member = true,
     Brightness brightness = Brightness.light,
+    TripWeatherDto? weather,
+    double? height,
   }) async {
+    // Une page assez haute pour que ce qui est sous le pli soit construit :
+    // un `CustomScrollView` ne livre pas aux `find` ce qu'il n'affiche pas.
+    if (height != null) {
+      tester.view.physicalSize = Size(402 * 3, height * 3);
+      tester.view.devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
+    }
     await tester.pumpWidget(
       app(
         trip,
         member: member,
         brightness: brightness,
+        repository: weather == null
+            ? null
+            : _StubTripRepository(trip, weather: weather),
         home: TripDetailPage(teamSlug: trip.team.slug, tripSlug: trip.slug),
       ),
     );
@@ -230,7 +248,7 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsNothing);
     });
 
-    testWidgets('la synthèse rend « — » et jamais « 0 » sans distance', (
+    testWidgets('sans distance, ni tuile Distance ni « 0 km »', (
       WidgetTester tester,
     ) async {
       await openTrip(
@@ -238,13 +256,19 @@ void main() {
         fixtureTrip(totalDistance: null, totalElevationGain: null),
       );
 
-      expect(find.text('—'), findsNWidgets(2));
+      final Finder tiles = find.byKey(keys.trip.statTiles);
+      expect(tiles, findsOneWidget);
+      expect(
+        find.descendant(of: tiles, matching: find.text('Distance totale')),
+        findsNothing,
+      );
       expect(find.text('0 km'), findsNothing);
+      expect(find.text('—'), findsNothing);
     });
 
     for (final Brightness brightness in Brightness.values) {
-      testWidgets('BRAND-8 : le bloc de départ est sous le titre, avant la '
-          'synthèse, au format unique (${brightness.name})', (
+      testWidgets('BRAND-8 : le bloc de départ est sous le titre, avant les '
+          'tuiles, au format unique (${brightness.name})', (
         WidgetTester tester,
       ) async {
         // 07:00Z le mardi 12 août 2036 : 09:00 à Paris ; dernière étape le
@@ -271,19 +295,19 @@ void main() {
         );
         expect(box.day, '12');
         expect(box.tone, isNotNull);
-        // Sous le titre, au-dessus de la synthèse.
+        // Sous le titre, au-dessus des tuiles.
         expect(
           tester.getTopLeft(block).dy,
           greaterThan(tester.getTopLeft(find.text('GTMC Bromance')).dy),
         );
         expect(
           tester.getTopLeft(block).dy,
-          lessThan(tester.getTopLeft(find.byType(TripSummaryCard)).dy),
+          lessThan(tester.getTopLeft(find.byKey(keys.trip.statTiles)).dy),
         );
-        // La synthèse ne redit plus les dates : la durée seule.
-        final Finder duration = find.byKey(keys.trip.summaryDuration);
+        // Les tuiles ne redisent pas les dates : la durée seule.
+        final Finder tiles = find.byKey(keys.trip.statTiles);
         expect(
-          find.descendant(of: duration, matching: find.text('7 jours')),
+          find.descendant(of: tiles, matching: find.text('7 jours')),
           findsOneWidget,
         );
         expect(
@@ -310,7 +334,7 @@ void main() {
       expect(find.textContaining('retour vers'), findsNothing);
       expect(
         find.descendant(
-          of: find.byKey(keys.trip.summaryDuration),
+          of: find.byKey(keys.trip.statTiles),
           matching: find.text('1 jour'),
         ),
         findsOneWidget,
@@ -328,7 +352,7 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Rejoindre'), findsNothing);
-      expect(find.byType(PdlActionBar), findsNothing);
+      expect(find.byKey(keys.trip.joinButton), findsNothing);
     });
 
     testWidgets(
@@ -346,7 +370,7 @@ void main() {
         for (int i = 0; i < 4; i++) {
           await tester.pump(const Duration(milliseconds: 10));
         }
-        expect(find.byType(PdlActionBar), findsOneWidget);
+        expect(find.byKey(keys.trip.joinButton), findsOneWidget);
         expect(repository.reads, 1);
         // La secousse de `PdlRefresh` passe par le canal de plate-forme : sans
         // réponse, le rafraîchissement l'attendrait indéfiniment.
@@ -374,7 +398,7 @@ void main() {
           find.textContaining('Voyage annulé.', findRichText: true),
           findsOneWidget,
         );
-        expect(find.byType(PdlActionBar), findsNothing);
+        expect(find.byKey(keys.trip.joinButton), findsNothing);
       },
     );
 
@@ -419,7 +443,7 @@ void main() {
         ),
       );
 
-      expect(find.byType(PdlActionBar), findsNothing);
+      expect(find.byKey(keys.trip.joinButton), findsNothing);
       expect(find.text('TERMINÉ'), findsOneWidget);
     });
 
@@ -432,7 +456,7 @@ void main() {
         find.textContaining('Rejoignez cette équipe', findRichText: true),
         findsOneWidget,
       );
-      expect(find.byType(PdlActionBar), findsNothing);
+      expect(find.byKey(keys.trip.joinButton), findsNothing);
     });
 
     testWidgets('les étapes se rendent en cartes, dans l\'ordre', (
@@ -452,6 +476,223 @@ void main() {
       }
 
       expect(find.byType(StageCard), findsWidgets);
+    });
+  });
+
+  /// Les deux maquettes cibles du voyage (ledger `MOB-134`, lot 9, KIT §8) :
+  /// le même écran pour une ou plusieurs étapes, dans le même ordre de blocs,
+  /// sans section Météo ni légende des étapes sous la carte.
+  group('écran du voyage — maquettes cibles', () {
+    const MediaDto described = MediaDto(
+      markdown: 'Trois jours à travers le Morvan.',
+      assets: AssetsDto(images: <AssetDto>[], attachments: <AssetDto>[]),
+    );
+    const RideWeatherSummaryDto summary = RideWeatherSummaryDto(
+      status: 'OK',
+      condition: 'CLOUDY',
+      daylight: true,
+      temperature: 8,
+      temperatureMin: 6,
+      temperatureMax: 11,
+      maxPrecipitationProbability: 20,
+      wind: WindDto(speed: 18, direction: 270, compass: 'W'),
+    );
+    TripWeatherDto weatherFor(List<String> stageIds) => TripWeatherDto(
+      status: 'OK',
+      stages: <TripStageWeatherDto>[
+        for (final String id in stageIds)
+          TripStageWeatherDto(
+            departure: const DepartureWeatherDto(status: 'OK'),
+            stageId: id,
+            summary: summary,
+            leg: fixtureLeg(groupId: null),
+          ),
+      ],
+      attribution: const WeatherAttributionDto(
+        name: 'Open-Meteo.com',
+        url: 'https://open-meteo.com/',
+      ),
+      fetchedAt: '2099-08-10T17:00:00Z',
+    );
+
+    void expectOrder(WidgetTester tester, List<Key> order) {
+      final List<double> tops = <double>[
+        for (final Key k in order) tester.getTopLeft(find.byKey(k)).dy,
+      ];
+      for (int i = 1; i < tops.length; i++) {
+        expect(
+          tops[i],
+          greaterThan(tops[i - 1]),
+          reason: '${order[i]} doit suivre ${order[i - 1]}',
+        );
+      }
+    }
+
+    final List<Key> order = <Key>[
+      keys.trip.title,
+      keys.trip.departureBlock,
+      keys.trip.statTiles,
+      keys.trip.routeSection,
+      keys.trip.descriptionSection,
+      keys.trip.stagesSection,
+      keys.trip.participants,
+      keys.trip.commentsSection,
+    ];
+
+    Finder inBlock(Finder f) =>
+        find.descendant(of: find.byKey(keys.trip.departureBlock), matching: f);
+    Finder inTiles(String text) => find.descendant(
+      of: find.byKey(keys.trip.statTiles),
+      matching: find.text(text),
+    );
+
+    void expectNoWeatherSectionNorLegend() {
+      expect(find.byType(WeatherSection), findsNothing);
+      expect(find.byKey(keys.ride.weatherBlock), findsNothing);
+      expect(find.byType(PdlLegendRow), findsNothing);
+      expect(find.byType(PdlActionBar), findsNothing);
+    }
+
+    testWidgets('voyage-etapes-mobile-cible', (WidgetTester tester) async {
+      final TripDto trip = fixtureTrip(
+        participantCount: 12,
+        participants: <PublicUserDto>[
+          for (int i = 0; i < 3; i++)
+            PublicUserDto(id: 'u$i', displayName: 'Membre $i'),
+        ],
+        stages: <TripStageDto>[
+          fixtureStage(
+            index: 1,
+            route: fixtureStageRoute(),
+            startPlaceName: 'Place du Champ-de-Mars, Autun',
+          ),
+          fixtureStage(
+            index: 2,
+            route: fixtureStageRoute(slug: 'gtmc-j2', name: 'GTMC J2'),
+          ),
+          fixtureStage(index: 3),
+        ],
+      ).copyWith(media: described);
+      await openTrip(
+        tester,
+        trip,
+        height: 6000,
+        weather: weatherFor(<String>['s1', 's2']),
+      );
+
+      expectOrder(tester, order);
+      expectNoWeatherSectionNorLegend();
+      // L'inscription et le lieu de la première étape, dans le bloc.
+      expect(inBlock(find.byKey(keys.trip.joinButton)), findsOneWidget);
+      expect(inBlock(find.byKey(keys.trip.startPlaceLink)), findsOneWidget);
+      // Les tuiles, dans l'ordre fixe ; « Étapes 3 », la valeur seule.
+      for (final String label in <String>[
+        'Distance totale',
+        'Dénivelé cumulé',
+        'Durée',
+        'Étapes',
+      ]) {
+        expect(inTiles(label), findsOneWidget);
+      }
+      expect(inTiles('3'), findsOneWidget);
+      expect(
+        tester.getTopLeft(inTiles('Durée')).dy,
+        greaterThan(tester.getTopLeft(inTiles('Distance totale')).dy),
+      );
+      expect(find.text('3 étapes'), findsOneWidget);
+      // Les cartes d'étape : la ligne météo, ni vignette ni nom de parcours.
+      expect(
+        find.descendant(
+          of: find.byKey(keys.trip.stageCard('j1')),
+          matching: find.byKey(keys.ride.weatherSummary),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(StageCard),
+          matching: find.byType(PdlThumb),
+        ),
+        findsNothing,
+      );
+      expect(find.text('GTMC J1'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('voyage-une-etape-mobile-cible', (WidgetTester tester) async {
+      final TripDto trip = fixtureTrip(
+        endDate: null,
+        totalDistance: 96000,
+        totalElevationGain: 1650,
+        stages: <TripStageDto>[
+          fixtureStage(
+            index: 1,
+            stageCount: 1,
+            route: fixtureStageRoute(),
+            startPlaceName: 'Place du Champ-de-Mars, Autun',
+          ),
+        ],
+      ).copyWith(media: described);
+      await openTrip(
+        tester,
+        trip,
+        height: 6000,
+        weather: weatherFor(<String>['s1']),
+      );
+
+      expectOrder(tester, order);
+      // Pas de disposition dédiée à une étape : ni section Météo, ni légende.
+      expectNoWeatherSectionNorLegend();
+      expect(inBlock(find.byKey(keys.trip.joinButton)), findsOneWidget);
+      expect(inBlock(find.byKey(keys.trip.startPlaceLink)), findsOneWidget);
+      expect(inTiles('1 jour'), findsOneWidget);
+      expect(inTiles('1'), findsOneWidget);
+      expect(find.text('1 étape'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(keys.trip.stageCard('j1')),
+          matching: find.byKey(keys.ride.weatherSummary),
+        ),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('inscrit : « J\'y vais » dans le bloc, « Se désinscrire » au '
+        'pied de « Personnes inscrites »', (WidgetTester tester) async {
+      await openTrip(tester, fixtureTrip(registered: true), height: 6000);
+
+      expect(inBlock(find.byKey(keys.trip.goingBadge)), findsOneWidget);
+      expect(find.byKey(keys.trip.joinButton), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byKey(keys.trip.participants),
+          matching: find.byKey(keys.trip.leaveButton),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('non-membre : le compte seul, ni visages ni liste (API-144)', (
+      WidgetTester tester,
+    ) async {
+      await openTrip(
+        tester,
+        fixtureTrip(
+          participantCount: 12,
+          participants: const <PublicUserDto>[],
+        ),
+        member: false,
+        height: 6000,
+      );
+
+      final Finder section = find.byKey(keys.trip.participants);
+      expect(
+        find.descendant(of: section, matching: find.text('12')),
+        findsOneWidget,
+      );
+      expect(find.byKey(keys.trip.participantsAvatars), findsNothing);
+      expect(find.byKey(keys.trip.viewAllParticipants), findsNothing);
     });
   });
 

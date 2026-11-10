@@ -20,10 +20,13 @@ import '../../domain/trip_weather_map.dart';
 import '../../providers/trip_detail_provider.dart';
 import '../../providers/trip_tracks_provider.dart';
 
-/// Hauteur de la carte interactive du voyage.
-const double _kTripMapHeight = 280;
-
 /// La carte multi-étapes, et la moitié cartographique de la sélection croisée.
+///
+/// Dans la section « Parcours » du voyage (ledger `MOB-134`, lot 9, KIT §8) :
+/// pleine largeur, à `PdlMetrics.detailMapHeight` comme les autres écrans de
+/// détail, l'interrupteur Étapes | Météo dessous, et **pas de légende des
+/// étapes** — chaque carte d'étape porte la couleur de son tracé. Le titre de
+/// section est posé par l'écran ([shows] lui dit s'il y a une carte).
 ///
 /// **Une couche par étape**, toutes adossées à la même source : `queryLayers`
 /// rend le `layerId` sans les propriétés de l'entité touchée, si bien que seul
@@ -67,6 +70,10 @@ class TripMap extends ConsumerWidget {
   /// `PdlMapHero.fullscreenBuilder`.
   final bool fullscreen;
 
+  /// Le voyage a-t-il une carte ? Pas sans aucune étape tracée.
+  static bool shows(TripDto trip) =>
+      trip.stages.any((TripStageDto s) => s.route != null);
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final PdlColors c = context.pdl;
@@ -80,9 +87,10 @@ class TripMap extends ConsumerWidget {
 
     // Un voyage sans tracé ne rend pas une carte vide : il ne rend pas de
     // carte. Le bloc entier disparaît (§4.1).
-    if (stages.every((TripStageDto s) => s.route == null)) {
-      return const SizedBox.shrink();
-    }
+    if (!shows(trip)) return const SizedBox.shrink();
+    final double mapHeight = PdlMetrics.detailMapHeight(
+      MediaQuery.sizeOf(context).height,
+    );
 
     final ResolvedMapStyle? resolved = style.value;
     // Le vent, étape par étape : une prévision, et le mode choisi.
@@ -118,7 +126,7 @@ class TripMap extends ConsumerWidget {
     final Widget? hero = resolved == null
         ? null
         : PdlMapHero(
-            height: fullscreen ? null : _kTripMapHeight,
+            height: fullscreen ? null : mapHeight,
             isFullscreen: fullscreen,
             // Encastrée, une vignette : « Agrandir » seul, les couches se
             // règlent en plein écran (ledger `docs/LEDGER_*.md MOB-129`).
@@ -202,26 +210,19 @@ class TripMap extends ConsumerWidget {
             ),
           );
 
-    // La page plein écran n'est que la carte : ni titre de section, ni
-    // légende, ni avertissement de troncature — la page qui l'a poussée les
+    // La page plein écran n'est que la carte : ni avertissement de
+    // troncature, ni interrupteur sous la carte — la page qui l'a poussée les
     // porte déjà.
     if (fullscreen) return hero ?? const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-          child: Text('trips.tripTrack'.tr(), style: t.sectionTitle),
-        ),
         SizedBox(
-          height: _kTripMapHeight,
+          height: mapHeight,
           child:
               hero ??
-              PdlSkeleton(
-                height: _kTripMapHeight,
-                borderRadius: PdlRadii.mdAll,
-              ),
+              PdlSkeleton(height: mapHeight, borderRadius: PdlRadii.mdAll),
         ),
         if (windLegs.isNotEmpty)
           Padding(
@@ -235,23 +236,6 @@ class TripMap extends ConsumerWidget {
               ref,
               windMode: windMode,
               key: keys.trip.mapColorBy,
-            ),
-          ),
-        if (stages.length > 1)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: PdlLegendRow(
-              entries: <PdlLegendEntry>[
-                for (final TripStageDto s in stages)
-                  PdlLegendEntry(
-                    color: multiTrackColor(s.paletteIndex),
-                    label: s.name,
-                    onTap: () => onSelect(s.id),
-                  ),
-              ],
-              activeIndex: stages.indexWhere(
-                (TripStageDto s) => s.id == selectedStageId,
-              ),
             ),
           ),
         if (tracks.truncated || tracks.failed.isNotEmpty)
