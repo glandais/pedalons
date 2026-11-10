@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Groupe A — mobile, Météo</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+body{margin:0}
+a{color:#3b5bdb}a:hover{color:#364fc7}
+</style>
+</helmet>
+<div style="width: 390px; height: 2000px; box-sizing: border-box; background: #ffffff; color: #000000; font-family: Inter, system-ui, sans-serif; font-size: 14px; line-height: 1.45; display: flex; flex-direction: column; overflow: hidden">
+
+  <!-- B0 app bar -->
+  <div style="height: 56px; display: flex; align-items: center; padding: 0 4px; gap: 4px; border-bottom: 1px solid #dee2e6; flex-shrink: 0">
+    <button type="button" aria-label="Retour" style="width: 44px; height: 44px; border: none; background: transparent; display: grid; place-items: center; color: #000000; padding: 0">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M5 12l6 6"/><path d="M5 12l6-6"/></svg>
+    </button>
+    <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.2">
+      <span style="font-size: 18px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Groupe A</span>
+      <span style="font-size: 12px; color: #666d75; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Boucle des Monts d'Arrée</span>
+    </div>
+    <button type="button" aria-label="Partager le groupe" style="width: 44px; height: 44px; border: none; background: transparent; display: grid; place-items: center; color: #000000; padding: 0">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="12" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M8.7 10.7l6.6-3.4"/><path d="M8.7 13.3l6.6 3.4"/></svg>
+    </button>
+  </div>
+
+  <!-- B1 barre d'outils épinglée -->
+  <div style="padding: 10px 16px 12px; display: flex; flex-direction: column; gap: 10px; border-bottom: 1px solid #dee2e6; flex-shrink: 0" aria-label="Groupes de la sortie">
+    <div style="display: flex; gap: 8px">
+      <button type="button" style="height: 36px; padding: 0 14px; border-radius: 1000px; border: 1px solid #4263eb; background: #dbe4ff; color: #364fc7; font: 600 14px Inter, system-ui, sans-serif">A · 8/12</button>
+      <button type="button" style="height: 36px; padding: 0 14px; border-radius: 1000px; border: 1px solid #ced4da; background: #ffffff; color: #000000; font: 500 14px Inter, system-ui, sans-serif">B · 11/12</button>
+      <button type="button" style="height: 36px; padding: 0 14px; border-radius: 1000px; border: 1px solid #ced4da; background: #ffffff; color: #000000; font: 500 14px Inter, system-ui, sans-serif">C · 12/12</button>
+    </div>
+    <div style="display: flex; padding: 3px; background: #f1f3f5; border-radius: 8px">
+      <button type="button" style="flex: 1; padding: 8px 12px; font: 400 14px Inter, system-ui, sans-serif; border: none; background: transparent; color: #495057">Aperçu</button>
+      <button type="button" style="flex: 1; padding: 8px 12px; font: 500 14px Inter, system-ui, sans-serif; border: none; background: #ffffff; border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); color: #000000">Météo</button>
+      <button type="button" style="flex: 1; padding: 8px 12px; font: 400 14px Inter, system-ui, sans-serif; border: none; background: transparent; color: #495057">Inscriptions</button>
+    </div>
+  </div>
+
+  <!-- W1 CARTE en tête, mode Météo imposé (pas de bloc de départ) -->
+  <div style="margin-top: 16px; height: 421px; position: relative; overflow: hidden; background: #e8f0e4; flex-shrink: 0">
+    <svg width="100%" height="100%" viewBox="0 0 390 421" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M0 40 C80 20 140 70 200 50 S330 10 390 30 L390 0 L0 0 Z" fill="#d5e5cc"/>
+      <path d="M250 260 C290 240 340 250 360 290 C370 320 330 350 290 340 C250 330 230 290 250 260 Z" fill="#cfe3f5"/>
+      <path d="M0 210 C100 190 220 230 390 200" stroke="#ffffff" stroke-width="5" fill="none"/>
+      <path d="M150 0 C160 120 140 260 170 421" stroke="#ffffff" stroke-width="4" fill="none"/>
+      <path d="M0 120 C120 140 260 100 390 140" stroke="#ffffff" stroke-width="3" fill="none"/>
+      <path d="M120 300 C80 250 70 180 110 130" stroke="#e03131" stroke-width="5" fill="none"/>
+      <path d="M110 130 C150 80 210 70 260 100" stroke="#fab005" stroke-width="5" fill="none"/>
+      <path d="M260 100 C310 130 320 190 290 240 C270 275 230 290 200 300 C170 310 140 320 120 300" stroke="#2f9e44" stroke-width="5" fill="none"/>
+      <circle cx="120" cy="300" r="6" fill="#2f9e44" stroke="#ffffff" stroke-width="2"/>
+      <circle cx="128" cy="292" r="6" fill="#e03131" stroke="#ffffff" stroke-width="2"/>
+    </svg>
+    <!-- pastilles météo : icône ciel, température, flèche de vent -->
+    <div style="position: absolute; left: 70px; top: 270px; display: flex; align-items: center; gap: 3px; height: 26px; padding: 0 8px; border-radius: 1000px; background: #ffffff; border: 1px solid #ced4da; font-size: 12px; font-weight: 600">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#495057" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.7 18C4.1 18 2 16 2 13.5S4.1 9 6.7 9c.4-1.8 1.8-3.2 3.7-3.8c1.9-.6 4-.2 5.4 1c1.5 1.2 2.2 3 1.8 4.8h1c1.9 0 3.5 1.6 3.5 3.5S20.5 18 18.5 18H6.7"/></svg>9°
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 18l6-6"/><path d="M13 6l6 6"/></svg>
+    </div>
+    <div style="position: absolute; left: 60px; top: 160px; display: flex; align-items: center; gap: 3px; height: 26px; padding: 0 8px; border-radius: 1000px; background: #ffffff; border: 1px solid #ced4da; font-size: 12px; font-weight: 600">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#495057" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.7 18C4.1 18 2 16 2 13.5S4.1 9 6.7 9c.4-1.8 1.8-3.2 3.7-3.8c1.9-.6 4-.2 5.4 1c1.5 1.2 2.2 3 1.8 4.8h1c1.9 0 3.5 1.6 3.5 3.5S20.5 18 18.5 18H6.7"/></svg>10°
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 18l6-6"/><path d="M13 6l6 6"/></svg>
+    </div>
+    <div style="position: absolute; left: 190px; top: 60px; display: flex; align-items: center; gap: 3px; height: 26px; padding: 0 8px; border-radius: 1000px; background: #ffffff; border: 1px solid #ced4da; font-size: 12px; font-weight: 600">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f08c00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M3 12h1m8-9v1m8 8h1m-9 8v1M5.6 5.6l.7.7m12.1-.7l-.7.7m0 11.4l.7.7m-12.1-.7l-.7.7"/></svg>12°
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 18l6-6"/><path d="M13 6l6 6"/></svg>
+    </div>
+    <div style="position: absolute; left: 268px; top: 200px; display: flex; align-items: center; gap: 3px; height: 26px; padding: 0 8px; border-radius: 1000px; background: #ffffff; border: 1px solid #ced4da; font-size: 12px; font-weight: 600">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f08c00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M3 12h1m8-9v1m8 8h1m-9 8v1M5.6 5.6l.7.7m12.1-.7l-.7.7m0 11.4l.7.7m-12.1-.7l-.7.7"/></svg>13°
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 18l6-6"/><path d="M13 6l6 6"/></svg>
+    </div>
+    <div style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 8px">
+      <button type="button" aria-label="Plein écran" style="width: 44px; height: 44px; border-radius: 8px; border: 1px solid #ced4da; background: #ffffff; display: grid; place-items: center; padding: 0; color: #000000">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 4h4v4"/><path d="M14 10l6-6"/><path d="M8 20H4v-4"/><path d="M4 20l6-6"/><path d="M16 20h4v-4"/><path d="M14 14l6 6"/><path d="M8 4H4v4"/><path d="M4 4l6 6"/></svg>
+      </button>
+      <button type="button" aria-label="Fond de carte" style="width: 44px; height: 44px; border-radius: 8px; border: 1px solid #ced4da; background: #ffffff; display: grid; place-items: center; padding: 0; color: #000000">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4L4 8l8 4l8-4l-8-4"/><path d="M4 12l8 4l8-4"/><path d="M4 16l8 4l8-4"/></svg>
+      </button>
+    </div>
+    <!-- légende du vent en bas à gauche -->
+    <div style="position: absolute; left: 8px; bottom: 40px; max-width: 250px; padding: 8px 10px; border-radius: 8px; background: rgba(255,255,255,0.92); border: 1px solid #dee2e6; display: flex; flex-direction: column; gap: 3px; font-size: 11px">
+      <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center">
+        <span style="display: inline-flex; align-items: center; gap: 4px"><span style="width: 14px; height: 4px; border-radius: 2px; background: #2f9e44"></span>Dos 34 km</span>
+        <span style="display: inline-flex; align-items: center; gap: 4px"><span style="width: 14px; height: 4px; border-radius: 2px; background: #fab005"></span>Travers 18 km</span>
+        <span style="display: inline-flex; align-items: center; gap: 4px"><span style="width: 14px; height: 4px; border-radius: 2px; background: #e03131"></span>Face 40 km</span>
+      </div>
+      <span style="color: #666d75">Heures estimées à 28 km/h</span>
+      <a href="#" style="font-size: 11px">Prévisions : Open-Meteo.com</a>
+    </div>
+    <div style="position: absolute; left: 8px; bottom: 8px; display: flex; flex-direction: column; gap: 2px">
+      <div style="width: 64px; height: 4px; border: 1px solid #000000; border-top: none; background: rgba(255,255,255,0.7)"></div>
+      <span style="font-size: 10px; font-weight: 600">2 km</span>
+    </div>
+    <button type="button" aria-label="Crédits de la carte" style="position: absolute; right: 8px; bottom: 8px; width: 24px; height: 24px; border-radius: 1000px; border: none; background: rgba(255,255,255,0.85); display: grid; place-items: center; padding: 0; color: #495057">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01"/><path d="M11 12h1v4h1"/></svg>
+    </button>
+  </div>
+
+  <div style="padding: 0 16px; display: flex; flex-direction: column">
+    <!-- W3 météo au départ (heure de la sortie ; le groupe A part avec elle) -->
+    <h3 style="margin: 20px 0 8px; font-size: 16px; font-weight: 700">Météo au départ de 09:00</h3>
+    <div style="border: 1px solid #ced4da; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+      <div style="display: flex; align-items: center; gap: 12px">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#495057" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.7 18C4.1 18 2 16 2 13.5S4.1 9 6.7 9c.4-1.8 1.8-3.2 3.7-3.8c1.9-.6 4-.2 5.4 1c1.5 1.2 2.2 3 1.8 4.8h1c1.9 0 3.5 1.6 3.5 3.5S20.5 18 18.5 18H6.7"/></svg>
+        <div style="display: flex; flex-direction: column; line-height: 1.2">
+          <span style="font-size: 26px; font-weight: 700">9 °C</span>
+          <span style="color: #495057">Nuageux</span>
+        </div>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 4px 16px; color: #495057">
+        <span>Ressenti 7 °C</span>
+        <span>Pluie 20 %</span>
+        <span style="display: inline-flex; align-items: center; gap: 4px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 18l6-6"/><path d="M13 6l6 6"/></svg>Vent O 18 km/h</span>
+      </div>
+      <div style="display: flex; gap: 16px; color: #495057">
+        <span>Lever du soleil 08:12</span>
+        <span>Coucher du soleil 17:31</span>
+      </div>
+    </div>
+
+    <!-- W4 en-tête du leg : nom brut du groupe -->
+    <div style="margin-top: 20px; display: flex; justify-content: space-between; align-items: baseline">
+      <h3 style="margin: 0; font-size: 16px; font-weight: 700">A</h3>
+      <span style="color: #666d75">92 km</span>
+    </div>
+    <div style="margin-top: 4px; display: flex; flex-direction: column; gap: 2px; color: #495057">
+      <span>Départ 09:00 · arrivée estimée 12:17</span>
+      <span>Passages estimés à 28 km/h</span>
+      <span style="display: inline-flex; align-items: center; gap: 4px">Vent dominant :
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 18l6-6"/><path d="M13 6l6 6"/></svg>18 km/h</span>
+    </div>
+
+    <!-- W5b exposition au vent -->
+    <h3 style="margin: 20px 0 8px; font-size: 16px; font-weight: 700">Exposition au vent</h3>
+    <div style="border: 1px solid #ced4da; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 8px">
+      <span style="font-weight: 600">Le vent le long du parcours</span>
+      <div style="display: flex; height: 10px; border-radius: 1000px; overflow: hidden">
+        <div style="width: 43%; background: #e03131"></div>
+        <div style="width: 20%; background: #fab005"></div>
+        <div style="width: 37%; background: #2f9e44"></div>
+      </div>
+      <span style="font-size: 12px; color: #495057">Face 40 km · Travers 18 km · Dos 34 km</span>
+    </div>
+
+    <!-- W5c points de passage -->
+    <h3 style="margin: 20px 0 8px; font-size: 16px; font-weight: 700">Points de passage</h3>
+    <div style="display: flex; flex-direction: column">
+
+      <div style="display: flex; gap: 10px; padding: 8px 0">
+        <div style="width: 64px; flex-shrink: 0; display: flex; flex-direction: column; line-height: 1.3"><span style="font-weight: 600">09:00</span><span style="font-size: 12px; color: #666d75">0 km</span></div>
+        <div style="width: 14px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center"><span style="width: 12px; height: 12px; border-radius: 1000px; background: #4263eb; margin-top: 4px"></span><span style="flex: 1; width: 2px; background: #dee2e6"></span></div>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 2px">
+          <span style="font-weight: 600">Départ</span>
+          <span style="display: inline-flex; align-items: center; gap: 6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#495057" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.7 18C4.1 18 2 16 2 13.5S4.1 9 6.7 9c.4-1.8 1.8-3.2 3.7-3.8c1.9-.6 4-.2 5.4 1c1.5 1.2 2.2 3 1.8 4.8h1c1.9 0 3.5 1.6 3.5 3.5S20.5 18 18.5 18H6.7"/></svg>9 °C Nuageux</span>
+          <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #495057"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="transform: rotate(180deg)"><path d="M5 12h14"/><path d="M13 18l6-6"/><path d="M13 6l6 6"/></svg><span style="display: inline-flex; align-items: center; height: 18px; padding: 0 8px; border-radius: 1000px; font-size: 10px; font-weight: 700; letter-spacing: 0.25px; text-transform: uppercase; background: #ffe3e3; color: #c92a2a">Face</span>Vent 18 km/h, rafales 32 km/h</span>
+          <span style="font-size: 12px; color: #495057">Pluie 20 %</span>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 10px; padding: 8px 0">
+        <div style="width: 64px; flex-shrink: 0; display: flex; flex-direction: column; line-height: 1.3"><span style="font-weight: 600">09:43</span><span style="font-size: 12px; color: #666d75">20 km</span></div>
+        <div style="width: 14px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center"><span style="width: 8px; height: 8px; border-radius: 1000px; background: #868e96; margin-top: 6px"></span><span style="flex: 1; width: 2px; background: #dee2e6"></span></div>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 2px">
+          <span style="font-weight: 600">En route</span>
+          <span style="display: inline-flex; align-items: center; gap: 6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#495057" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.7 18C4.1 18 2 16 2 13.5S4.1 9 6.7 9c.4-1.8 1.8-3.2 3.7-3.8c1.9-.6 4-.2 5.4 1c1.5 1.2 2.2 3 1.8 4.8h1c1.9 0 3.5 1.6 3.5 3.5S20.5 18 18.5 18H6.7"/></svg>10 °C Nuageux</span>
+          <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #495057"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="transform: rotate(180deg)"><path d="M5 12h14"/><path d="M13 18l6-6"/><path d="M13 6l6 6"/></svg><span style="display: inline-flex; align-items: center; height: 18px; padding: 0 8px; border-radius: 1000px; font-size: 10px; font-weight: 700; letter-spacing: 0.25px; text-transform: uppercase; background: #ffe3e3; color: #c92a2a">Face</span>Vent 19 km/h, rafales 34 km/h</span>
+          <span style="font-size: 12px; color: #495057">Pluie 20 %</span>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 10px; padding: 8px 0">
+        <div style="width: 64px; flex-shrink: 0; display: flex; flex-direction: column; line-height: 1.3"><span style="font-weight: 600">10:26</span><span style="font-size: 12px; color: #666d75">40 km</span></div>
+        <div style="width: 14px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center"><span style="width: 8px; height: 8px; border-radius: 1000px; background: #868e96; margin-top: 6px"></span><span style="flex: 1; width: 2px; background: #dee2e6"></span></div>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 2px">
+          <span style="font-weight: 600">En route</span>
+          <span style="display: inline-flex; align-items: center; gap: 6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f08c00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M3 12h1m8-9v1m8 8h1m-9 8v1M5.6 5.6l.7.7m12.1-.7l-.7.7m0 11.4l.7.7m-12.1-.7l-.7.7"/></svg>12 °C Éclaircies</span>
+          <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #495057"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="transform: rotate(90deg)"><path d="M5 12h14"/><path d="M13 18l6-6"/><path d="M13 6l6 6"/></svg><span style="display: inline-flex; align-items: center; height: 18px; padding: 0 8px; border-radius: 1000px; font-size: 10px; font-weight: 700; letter-spacing: 0.25px; text-transform: uppercase; background: #fff3bf; color: #7a4a00">Travers</span>Vent 18 km/h, rafales 31 km/h</span>
+          <span style="font-size: 12px; color: #495057">Pluie 10 %</span>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 10px; padding: 8px 0">
+        <div style="width: 64px; flex-shrink: 0; display: flex; flex-direction: column; line-height: 1.3"><span style="font-weight: 600">11:09</span><span style="font-size: 12px; color: #666d75">60 km</span></div>
+        <div style="width: 14px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center"><span style="width: 8px; height: 8px; border-radius: 1000px; background: #868e96; margin-top: 6px"></span><span style="flex: 1; width: 2px; background: #dee2e6"></span></div>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 2px">
+          <span style="font-weight: 600">En route</span>
+          <span style="display: inline-flex; align-items: center; gap: 6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f08c00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M3 12h1m8-9v1m8 8h1m-9 8v1M5.6 5.6l.7.7m12.1-.7l-.7.7m0 11.4l.7.7m-12.1-.7l-.7.7"/></svg>13 °C Éclaircies</span>
+          <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #495057"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 18l6-6"/><path d="M13 6l6 6"/></svg><span style="display: inline-flex; align-items: center; height: 18px; padding: 0 8px; border-radius: 1000px; font-size: 10px; font-weight: 700; letter-spacing: 0.25px; text-transform: uppercase; background: #d3f9d8; color: #2b8a3e">Dos</span>Vent 17 km/h, rafales 30 km/h</span>
+          <span style="font-size: 12px; color: #495057">Pluie 10 %</span>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 10px; padding: 8px 0">
+        <div style="width: 64px; flex-shrink: 0; display: flex; flex-direction: column; line-height: 1.3"><span style="font-weight: 600">11:51</span><span style="font-size: 12px; color: #666d75">80 km</span></div>
+        <div style="width: 14px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center"><span style="width: 8px; height: 8px; border-radius: 1000px; background: #868e96; margin-top: 6px"></span><span style="flex: 1; width: 2px; background: #dee2e6"></span></div>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 2px">
+          <span style="font-weight: 600">En route</span>
+          <span style="display: inline-flex; align-items: center; gap: 6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f08c00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M3 12h1m8-9v1m8 8h1m-9 8v1M5.6 5.6l.7.7m12.1-.7l-.7.7m0 11.4l.7.7m-12.1-.7l-.7.7"/></svg>13 °C Éclaircies</span>
+          <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #495057"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 18l6-6"/><path d="M13 6l6 6"/></svg><span style="display: inline-flex; align-items: center; height: 18px; padding: 0 8px; border-radius: 1000px; font-size: 10px; font-weight: 700; letter-spacing: 0.25px; text-transform: uppercase; background: #d3f9d8; color: #2b8a3e">Dos</span>Vent 16 km/h, rafales 28 km/h</span>
+          <span style="font-size: 12px; color: #495057">Pluie 10 %</span>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 10px; padding: 8px 0">
+        <div style="width: 64px; flex-shrink: 0; display: flex; flex-direction: column; line-height: 1.3"><span style="font-weight: 600">12:17</span><span style="font-size: 12px; color: #666d75">92 km</span></div>
+        <div style="width: 14px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center"><span style="width: 12px; height: 12px; border-radius: 1000px; background: #4263eb; margin-top: 4px"></span></div>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 2px">
+          <span style="font-weight: 600">Arrivée</span>
+          <span style="display: inline-flex; align-items: center; gap: 6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f08c00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M3 12h1m8-9v1m8 8h1m-9 8v1M5.6 5.6l.7.7m12.1-.7l-.7.7m0 11.4l.7.7m-12.1-.7l-.7.7"/></svg>13 °C Éclaircies</span>
+          <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #495057"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="transform: rotate(90deg)"><path d="M5 12h14"/><path d="M13 18l6-6"/><path d="M13 6l6 6"/></svg><span style="display: inline-flex; align-items: center; height: 18px; padding: 0 8px; border-radius: 1000px; font-size: 10px; font-weight: 700; letter-spacing: 0.25px; text-transform: uppercase; background: #fff3bf; color: #7a4a00">Travers</span>Vent 16 km/h, rafales 27 km/h</span>
+          <span style="font-size: 12px; color: #495057">Pluie 5 %</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- W6 attribution -->
+    <span style="margin-top: 16px; font-size: 12px; color: #666d75">Prévision de mardi 10 novembre 2026 à 08:30</span>
+    <a href="#" style="min-height: 44px; display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 500; text-decoration: none">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 7L7 17"/><path d="M8 7h9v9"/></svg>Prévisions : Open-Meteo.com</a>
+    <div style="height: 16px"></div>
+  </div>
+
+  <!-- B6 barre d'action fixe -->
+  <div style="margin-top: auto; padding: 12px 16px; border-top: 1px solid #dee2e6; background: #ffffff; display: flex; align-items: center; gap: 12px">
+    <div style="flex: 1; display: flex; flex-direction: column; line-height: 1.3">
+      <span style="font-weight: 600">8/12 personnes</span>
+      <span style="font-size: 12px; color: #666d75">4 places restantes</span>
+    </div>
+    <button type="button" style="min-height: 44px; padding: 0 16px; border-radius: 8px; border: none; background: #4263eb; color: #ffffff; font: 500 14px Inter, system-ui, sans-serif">Rejoindre</button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":2000}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

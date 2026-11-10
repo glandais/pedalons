@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Étape de voyage — site, étroit</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+body{margin:0}
+a{color:#3b5bdb}a:hover{color:#364fc7}
+</style>
+</helmet>
+<div style="width: 390px; height: 3440px; box-sizing: border-box; background: #ffffff; color: #000000; font-family: Inter, system-ui, sans-serif; font-size: 14px; line-height: 1.45; display: flex; flex-direction: column; overflow: hidden">
+
+  <!-- En-tête du site -->
+  <div style="height: 56px; flex-shrink: 0; border-bottom: 1px solid #dee2e6; display: flex; align-items: center; gap: 8px; padding: 0 8px 0 4px">
+    <button type="button" aria-label="Menu" style="width: 44px; height: 44px; border: none; background: transparent; display: grid; place-items: center; padding: 0; color: #000000"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6l16 0"></path><path d="M4 12l16 0"></path><path d="M4 18l16 0"></path></svg></button>
+    <span style="width: 28px; height: 28px; border-radius: 6px; background: #228be6"></span>
+    <span style="font-size: 20px; font-weight: 700">Pédalons</span>
+    <span style="flex: 1"></span>
+    <div style="width: 32px; height: 32px; border-radius: 1000px; background: #e64980; color: #ffffff; font-size: 12px; font-weight: 700; display: grid; place-items: center">CD</div>
+  </div>
+
+  <div style="padding: 12px 16px 32px; display: flex; flex-direction: column; gap: 16px">
+
+    <!-- 0 Fil d'Ariane réduit -->
+    <nav aria-label="Fil d'Ariane" style="display: flex; align-items: center; gap: 8px; font-size: 14px; flex-wrap: wrap">
+      <a href="#" style="text-decoration: none">Traversée du Morvan</a><span style="color: #adb5bd">›</span>
+      <span style="color: #666d75">Château-Chinon → Saulieu</span>
+    </nav>
+
+    <!-- 1 Lien retour -->
+    <a href="#" style="display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: #666d75; text-decoration: none; align-self: flex-start">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l14 0"></path><path d="M5 12l6 6"></path><path d="M5 12l6 -6"></path></svg>Retour au voyage
+    </a>
+
+    <!-- 2 En-tête (Paper) -->
+    <header style="border: 1px solid #ced4da; border-radius: 8px; padding: 20px; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 16px">
+      <!-- 2a SiblingNav : libellés serrés, tronqués -->
+      <div role="group" aria-label="Choisir une étape" style="display: flex; align-items: center; gap: 6px">
+        <button type="button" aria-label="Précédent : 1 · Autun → Château-Chinon" style="width: 36px; height: 36px; flex-shrink: 0; border-radius: 8px; border: 1px solid #ced4da; background: #ffffff; display: grid; place-items: center; padding: 0; color: #000000"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6l6 6"></path></svg></button>
+        <div style="flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 3px; background: #f1f3f5; border-radius: 8px">
+          <button type="button" style="padding: 6px 6px; font-size: 14px; border: none; background: transparent; font-family: Inter, system-ui, sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">1 · Autun → Château-Chinon</button>
+          <button type="button" style="padding: 6px 6px; font-size: 14px; border: none; background: #ffffff; border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); font-weight: 500; font-family: Inter, system-ui, sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">2 · Château-Chinon → Saulieu</button>
+          <button type="button" style="padding: 6px 6px; font-size: 14px; border: none; background: transparent; font-family: Inter, system-ui, sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">3 · Saulieu → Avallon</button>
+        </div>
+        <button type="button" aria-label="Suivant : 3 · Saulieu → Avallon" style="width: 36px; height: 36px; flex-shrink: 0; border-radius: 8px; border: 1px solid #ced4da; background: #ffffff; display: grid; place-items: center; padding: 0; color: #000000"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6l-6 6"></path></svg></button>
+      </div>
+
+      <!-- 2b Ligne titre -->
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <span style="font-size: 14px; color: #666d75">Traversée du Morvan · étape 2 sur 3</span>
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap">
+          <h1 style="margin: 0; font-size: 24px; font-weight: 700; line-height: 1.25">Château-Chinon → Saulieu</h1>
+          <span style="display: inline-flex; align-items: center; height: 18px; padding: 0 8px; border-radius: 1000px; font-size: 10px; font-weight: 700; letter-spacing: 0.25px; text-transform: uppercase; background: #dbe4ff; color: #364fc7">J'y vais</span>
+          <button type="button" aria-label="Partager" title="Partager" style="width: 30px; height: 30px; border-radius: 8px; border: 1px solid #ced4da; background: #ffffff; display: grid; place-items: center; padding: 0; color: #000000"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 9h-1a2 2 0 0 0 -2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-8a2 2 0 0 0 -2 -2h-1"></path><path d="M12 14v-11"></path><path d="M9 6l3 -3l3 3"></path></svg></button>
+        </div>
+      </div>
+
+      <!-- 2c DepartureBlock, boîte du jour indigo -->
+      <section aria-label="Date et heure de départ" style="display: flex; gap: 12px; align-items: center; padding: 12px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px">
+        <div style="width: 64px; flex-shrink: 0; padding: 8px 0; border-radius: 8px; background: #dbe4ff; display: flex; flex-direction: column; align-items: center; line-height: 1.15">
+          <span style="font-size: 13px; font-weight: 600; color: #364fc7">sam.</span>
+          <span style="font-size: 26px; font-weight: 700">21</span>
+          <span style="font-size: 13px; font-weight: 500">nov.</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0">
+          <span style="font-size: 24px; font-weight: 700; line-height: 1.2">Départ 09:00</span>
+          <span style="display: flex; align-items: flex-start; gap: 6px; font-size: 14px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2f9e44" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px"><path d="M9 11a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"></path><path d="M17.657 16.657l-4.243 4.243a2 2 0 0 1 -2.827 0l-4.244 -4.243a8 8 0 1 1 11.314 0z"></path></svg>
+            <span><span style="font-weight: 500">Place Notre-Dame</span> <span style="color: #666d75">(Place Notre-Dame, 58120 Château-Chinon)</span></span>
+          </span>
+        </div>
+      </section>
+
+      <!-- 2d PlacesLine -->
+      <div style="display: flex; align-items: flex-start; gap: 6px; font-size: 14px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e03131" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px"><path d="M9 11a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"></path><path d="M17.657 16.657l-4.243 4.243a2 2 0 0 1 -2.827 0l-4.244 -4.243a8 8 0 1 1 11.314 0z"></path></svg>
+        <span><span style="font-weight: 700">Arrivée :</span> Basilique Saint-Andoche <span style="color: #666d75">(Place du Docteur Roclore, 21210 Saulieu)</span></span>
+      </div>
+    </header>
+
+    <!-- 3d Carte, AVANT la colonne (grid-template-areas 'map' 'side'), non sticky, 52svh -->
+    <div style="height: 440px; flex-shrink: 0; border-radius: 8px; position: relative; overflow: hidden; background: #e8f0e4">
+      <svg width="100%" height="100%" viewBox="0 0 358 440" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M0 50 Q80 20 150 70 T270 60 L358 30 L358 0 L0 0 Z" fill="#d5e5cc"></path>
+        <path d="M30 440 Q100 300 180 340 T340 440 Z" fill="#d5e5cc"></path>
+        <ellipse cx="170" cy="200" rx="36" ry="24" fill="#cfe3f5"></ellipse>
+        <path d="M0 160 L358 130" stroke="#ffffff" stroke-width="4" fill="none"></path>
+        <path d="M100 0 L130 440" stroke="#ffffff" stroke-width="3" fill="none"></path>
+        <path d="M260 0 Q240 180 280 440" stroke="#ffffff" stroke-width="4" fill="none"></path>
+        <path d="M0 270 Q150 250 358 280" stroke="#ffffff" stroke-width="3" fill="none"></path>
+        <path d="M30 270 C70 240 80 180 120 172 S150 140 190 150 S220 220 250 180 S290 100 330 80" stroke="#228be6" stroke-width="4" fill="none"></path>
+        <path d="M120 172 C135 165 150 148 172 150" stroke="#fd7e14" stroke-width="4" fill="none"></path>
+        <path d="M250 180 C265 160 280 120 300 100" stroke="#e03131" stroke-width="4" fill="none"></path>
+        <circle cx="30" cy="270" r="6" fill="#2f9e44" stroke="#ffffff" stroke-width="2"></circle>
+        <circle cx="330" cy="80" r="6" fill="#e03131" stroke="#ffffff" stroke-width="2"></circle>
+      </svg>
+      <div style="position: absolute; top: 10px; right: 10px; display: flex; flex-direction: column; gap: 6px">
+        <div style="display: flex; flex-direction: column; border-radius: 8px; background: #ffffff; border: 1px solid #ced4da; overflow: hidden">
+          <button type="button" aria-label="Zoom avant" style="width: 36px; height: 36px; border: none; border-bottom: 1px solid #dee2e6; background: #ffffff; display: grid; place-items: center; padding: 0; color: #000000"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5l0 14"></path><path d="M5 12l14 0"></path></svg></button>
+          <button type="button" aria-label="Zoom arrière" style="width: 36px; height: 36px; border: none; background: #ffffff; display: grid; place-items: center; padding: 0; color: #000000"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l14 0"></path></svg></button>
+        </div>
+        <button type="button" aria-label="Fond de carte" style="width: 36px; height: 36px; border-radius: 8px; border: 1px solid #ced4da; background: #ffffff; display: grid; place-items: center; padding: 0; color: #000000"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4l-8 4l8 4l8 -4l-8 -4"></path><path d="M4 12l8 4l8 -4"></path><path d="M4 16l8 4l8 -4"></path></svg></button>
+        <button type="button" aria-label="Carte plein écran" style="width: 36px; height: 36px; border-radius: 8px; border: 1px solid #ced4da; background: #ffffff; display: grid; place-items: center; padding: 0; color: #000000"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 4l4 0l0 4"></path><path d="M14 10l6 -6"></path><path d="M8 20l-4 0l0 -4"></path><path d="M4 20l6 -6"></path><path d="M16 20l4 0l0 -4"></path><path d="M14 14l6 6"></path><path d="M8 4l-4 0l0 4"></path><path d="M4 4l6 6"></path></svg></button>
+      </div>
+      <!-- profil en overlay -->
+      <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 120px; background: rgba(255,255,255,0.88); border-top: 1px solid #dee2e6; padding: 8px 10px 4px; box-sizing: border-box; display: flex; flex-direction: column">
+        <div style="flex: 1; min-height: 0">
+          <svg width="100%" height="100%" viewBox="0 0 400 110" preserveAspectRatio="none" aria-hidden="true">
+            <path d="M0 110 L0 70 L60 62 L60 110 Z" fill="#40c057"></path>
+            <path d="M60 110 L60 62 L120 40 L120 110 Z" fill="#fab005"></path>
+            <path d="M120 110 L120 40 L180 55 L180 110 Z" fill="#40c057"></path>
+            <path d="M180 110 L180 55 L250 30 L250 110 Z" fill="#fd7e14"></path>
+            <path d="M250 110 L250 30 L300 18 L300 110 Z" fill="#e03131"></path>
+            <path d="M300 110 L300 18 L400 52 L400 110 Z" fill="#40c057"></path>
+            <path d="M0 70 L60 62 L120 40 L180 55 L250 30 L300 18 L400 52" stroke="#495057" stroke-width="1.5" fill="none"></path>
+          </svg>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 11px; color: #666d75"><span>0 km</span><span>34 km</span><span>68 km</span></div>
+      </div>
+      <div style="position: absolute; right: 10px; bottom: 130px; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-size: 10px; color: #495057">
+        <span style="width: 56px; height: 5px; border: 1px solid #495057; border-top: none; box-sizing: border-box; background: rgba(255,255,255,0.7)"></span>
+        <span>5 km</span>
+      </div>
+      <span style="position: absolute; left: 6px; bottom: 124px; font-size: 9px; color: #495057; background: rgba(255,255,255,0.7); padding: 0 4px; border-radius: 4px">© OpenStreetMap</span>
+    </div>
+
+    <!-- 3f ColorModeControls -->
+    <div style="display: flex; flex-direction: column; gap: 10px; margin-top: -4px">
+      <div style="display: inline-flex; padding: 3px; background: #f1f3f5; border-radius: 8px; align-self: flex-start">
+        <button type="button" style="padding: 6px 12px; font-size: 14px; border: none; background: #ffffff; border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); font-weight: 500; font-family: Inter, system-ui, sans-serif">Pente</button>
+        <button type="button" style="padding: 6px 12px; font-size: 14px; border: none; background: transparent; font-family: Inter, system-ui, sans-serif">Revêtement</button>
+        <button type="button" style="padding: 6px 12px; font-size: 14px; border: none; background: transparent; font-family: Inter, system-ui, sans-serif">Météo</button>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <div style="display: flex; height: 8px; border-radius: 1000px; overflow: hidden">
+          <span style="width: 88%; background: #495057"></span><span style="width: 9%; background: #fab005"></span><span style="width: 3%; background: #adb5bd"></span>
+        </div>
+        <span style="font-size: 12px; color: #666d75">Asphalte 88 % · Gravier 9 % · Inconnu 3 %</span>
+      </div>
+    </div>
+
+    <!-- 3g Points du parcours -->
+    <div style="display: flex; flex-direction: column; gap: 4px">
+      <h4 style="margin: 0 0 4px; font-size: 16px; font-weight: 700">Points du parcours (2)</h4>
+      <div style="display: flex; align-items: center; gap: 10px; min-height: 44px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1c7ed6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.5 19.4c2.6 2.1 6.4 2.1 9 0c2.6 -2.1 3.3 -5.7 1.6 -8.5l-4.9 -7.3c-.4 -.6 -1.3 -.8 -1.9 -.4a1.4 1.4 0 0 0 -.4 .4l-4.9 7.3c-1.7 2.8 -1 6.4 1.5 8.5z"></path></svg><span style="flex: 1">Fontaine du lac des Settons</span><span style="color: #666d75">km 21,6</span></div>
+      <div style="display: flex; align-items: center; gap: 10px; min-height: 44px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f08c00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18"></path><path d="M5 21v-12l7 -5l7 5v12"></path><path d="M10 21v-6h4v6"></path></svg><span style="flex: 1">Boulangerie de Montsauche</span><span style="display: inline-flex; align-items: center; height: 18px; padding: 0 8px; border-radius: 1000px; font-size: 10px; font-weight: 700; letter-spacing: 0.25px; text-transform: uppercase; background: #f1f3f5; color: #495057">Hors tracé</span><span style="color: #666d75">km 27,3</span></div>
+    </div>
+
+    <!-- 3a StatsCard, 2 colonnes -->
+    <div data-testid="stage-stats" style="border: 1px solid #ced4da; border-radius: 8px; padding: 20px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 16px">
+      <div style="display: flex; flex-direction: column; gap: 2px">
+        <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; text-transform: uppercase; color: #666d75"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 3l0 7l6 0l-8 11l0 -7l-6 0l8 -11"></path></svg>Allure moyenne</span>
+        <span style="font-size: 20px; font-weight: 600">24 km/h</span>
+        <span style="font-size: 12px; color: #666d75">Arrivée estimée 11:50</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 2px">
+        <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; text-transform: uppercase; color: #666d75"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 4l4 0l0 4"></path><path d="M14 10l6 -6"></path><path d="M8 20l-4 0l0 -4"></path><path d="M4 20l6 -6"></path><path d="M16 20l4 0l0 -4"></path><path d="M14 14l6 6"></path><path d="M8 4l-4 0l0 4"></path><path d="M4 4l6 6"></path></svg>Distance</span>
+        <span style="font-size: 20px; font-weight: 600">68 km</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 2px">
+        <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; text-transform: uppercase; color: #666d75"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5l0 14"></path><path d="M18 11l-6 -6"></path><path d="M6 11l6 -6"></path></svg>Dénivelé positif</span>
+        <span style="font-size: 20px; font-weight: 600">1 120 m</span>
+      </div>
+    </div>
+
+    <!-- 3b InstructionsBlock, sans titre, après la carte -->
+    <div data-testid="stage-instructions" aria-label="Consignes" style="border: 1px solid #ced4da; border-radius: 8px; padding: 20px; display: flex; flex-direction: column; gap: 10px; font-size: 16px">
+      <p style="margin: 0">Étape de liaison par le lac des Settons. Regroupement au sommet du Haut-Folin, pause déjeuner à Montsauche.</p>
+      <p style="margin: 0">Pensez aux vêtements de pluie : la descente vers Saulieu peut être fraîche.</p>
+    </div>
+
+    <!-- 3c RouteCard -->
+    <div style="border: 1px solid #ced4da; border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+      <h3 style="margin: 0; font-size: 16px; font-weight: 700">Château-Chinon – Saulieu par les Settons</h3>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap">
+        <a href="#" style="min-height: 44px; padding: 0 12px; border-radius: 8px; border: 1px solid #ced4da; color: #000000; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; font-weight: 500"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7l6 -3l6 3l6 -3v13l-6 3l-6 -3l-6 3v-13"></path><path d="M9 4v13"></path><path d="M15 7v13"></path></svg>Voir le parcours</a>
+        <button type="button" style="min-height: 44px; padding: 0 12px; border-radius: 8px; border: 1px solid #ced4da; background: #ffffff; color: #000000; font: 500 14px Inter, system-ui, sans-serif; display: inline-flex; align-items: center; gap: 6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"></path><path d="M7 11l5 5l5 -5"></path><path d="M12 4l0 12"></path></svg>GPX</button>
+        <button type="button" style="min-height: 44px; padding: 0 12px; border-radius: 8px; border: 1px solid #ced4da; background: #ffffff; color: #000000; font: 500 14px Inter, system-ui, sans-serif; display: inline-flex; align-items: center; gap: 6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"></path><path d="M7 11l5 5l5 -5"></path><path d="M12 4l0 12"></path></svg>FIT</button>
+        <button type="button" style="min-height: 44px; padding: 0 12px; border-radius: 8px; border: 1px solid #ced4da; background: #ffffff; color: #000000; font: 500 14px Inter, system-ui, sans-serif; display: inline-flex; align-items: center; gap: 6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="3" width="12" height="18" rx="2"></rect><path d="M11 4h2"></path><path d="M12 17v.01"></path></svg>Envoyer vers l'appareil</button>
+      </div>
+    </div>
+
+    <!-- 4 Météo du parcours -->
+    <section id="meteo" aria-labelledby="stage-weather-title" style="border: 1px solid #ced4da; border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 16px">
+      <div style="display: flex; align-items: center; gap: 4px 12px; flex-wrap: wrap">
+        <h3 id="stage-weather-title" style="margin: 0; font-size: 20px; font-weight: 700; flex: 1; white-space: nowrap">Météo du parcours</h3>
+        <span style="font-size: 12px; color: #666d75">Prévisions <a href="#" style="text-decoration: none">Open-Meteo</a> · Mise à jour à 10:42</span>
+      </div>
+
+      <!-- RouteVerdicts 2 x 2 -->
+      <div aria-label="L'essentiel du parcours" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+        <div style="border: 1px solid #dee2e6; border-radius: 8px; padding: 10px; background: #f8f9fa; display: flex; flex-direction: column; gap: 4px">
+          <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; text-transform: uppercase"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13.5a4 4 0 1 0 4 0v-8.5a2 2 0 0 0 -4 0v8.5"></path><path d="M10 9l4 0"></path></svg>Températures</span>
+          <span style="font-size: 16px; font-weight: 700; line-height: 1.2">9 °C → 12 °C</span>
+          <span style="font-size: 14px">9 °C au départ, ressenti 6 °C. Le plus chaud vers 11:30.</span>
+        </div>
+        <div style="border: 1px solid #dee2e6; border-radius: 8px; padding: 10px; background: #f8f9fa; display: flex; flex-direction: column; gap: 4px">
+          <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; text-transform: uppercase"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 0 1 16 0z"></path><path d="M12 12v6a2 2 0 0 0 4 0"></path></svg>Pluie</span>
+          <span style="font-size: 16px; font-weight: 700; line-height: 1.2">Sec</span>
+          <span style="font-size: 14px">20 % au plus, de 09:50 à 10:15 (km 20 à km 30).</span>
+        </div>
+        <div style="border: 1px solid #dee2e6; border-radius: 8px; padding: 10px; background: #f8f9fa; display: flex; flex-direction: column; gap: 4px">
+          <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; text-transform: uppercase"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h8.5a2.5 2.5 0 1 0 -2.34 -3.24"></path><path d="M3 12h15.5a2.5 2.5 0 1 1 -2.34 3.24"></path><path d="M4 16h5.5a2.5 2.5 0 1 1 -2.34 3.24"></path></svg>Vent</span>
+          <span style="font-size: 16px; font-weight: 700; line-height: 1.2">Surtout dans le dos</span>
+          <span style="font-size: 14px">Dans le dos sur 41 km. Vent dominant : → 18 km/h.</span>
+        </div>
+        <div style="border: 1px solid #dee2e6; border-radius: 8px; padding: 10px; background: #f8f9fa; display: flex; flex-direction: column; gap: 4px">
+          <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; text-transform: uppercase"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17h1m16 0h1m-15.4 -6.4l.7 .7m12.1 -.7l-.7 .7m-9.7 5.7a4 4 0 0 1 8 0"></path><path d="M3 21l18 0"></path><path d="M12 9v-6l3 3m-6 0l3 -3"></path></svg>Jour</span>
+          <span style="font-size: 16px; font-weight: 700; line-height: 1.2">5 h 41 de marge</span>
+          <span style="font-size: 14px">Lever 08:12, coucher 17:31. Arrivée estimée 11:50.</span>
+        </div>
+      </div>
+
+      <!-- Heure par heure -->
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <h4 style="margin: 0; font-size: 16px; font-weight: 700">Heure par heure, à votre passage</h4>
+        <span style="font-size: 14px; color: #666d75">Passages estimés à 24 km/h · un point tous les 10 km</span>
+      </div>
+
+      <!-- PhoneStrip : bande compacte, graduations, curseur -->
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <div style="display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); text-align: center; font-size: 12px; font-weight: 600">
+          <span>9°</span><span>9°</span><span style="color: #364fc7">10°</span><span>10°</span><span>11°</span><span>11°</span><span>12°</span><span>12°</span>
+        </div>
+        <div style="height: 28px">
+          <svg width="100%" height="100%" viewBox="0 0 320 28" preserveAspectRatio="none" aria-hidden="true">
+            <rect x="0" y="0" width="320" height="28" rx="6" fill="#f1f3f5"></rect>
+            <path d="M20 22 L60 22 L100 16 L140 16 L180 11 L220 11 L260 6 L300 6" stroke="#f08c00" stroke-width="2" fill="none"></path>
+          </svg>
+        </div>
+        <div style="display: flex; height: 6px; border-radius: 1000px; overflow: hidden">
+          <span style="width: 25%; background: #40c057"></span><span style="width: 12.5%; background: #e03131"></span><span style="width: 25%; background: #fab005"></span><span style="width: 37.5%; background: #40c057"></span>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 11px; color: #666d75"><span>09:00</span><span>10:15</span><span>11:50</span></div>
+        <div aria-label="Glisser pour choisir un passage" style="position: relative; height: 24px; display: flex; align-items: center">
+          <span style="position: absolute; left: 0; right: 0; height: 4px; border-radius: 1000px; background: #e9ecef"></span>
+          <span style="position: absolute; left: 0; width: 31%; height: 4px; border-radius: 1000px; background: #4263eb"></span>
+          <span style="position: absolute; left: calc(31% - 9px); width: 18px; height: 18px; border-radius: 1000px; background: #ffffff; border: 2px solid #4263eb; box-sizing: border-box"></span>
+        </div>
+        <span style="font-size: 12px; color: #666d75; text-align: center">Glisser pour choisir un passage</span>
+      </div>
+
+      <!-- CheckpointDetail -->
+      <div style="border: 1px solid #dee2e6; border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 10px">
+        <span style="font-size: 16px; font-weight: 700">km 20 <span style="font-weight: 500; color: #666d75">09:50</span></span>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+          <div style="display: flex; flex-direction: column"><span style="font-size: 12px; color: #666d75">Température</span><span style="font-weight: 600">10 °C · Nuageux</span></div>
+          <div style="display: flex; flex-direction: column"><span style="font-size: 12px; color: #666d75">Pluie</span><span style="font-weight: 600">20 % · 0,2 mm</span></div>
+          <div style="display: flex; flex-direction: column"><span style="font-size: 12px; color: #666d75">Vent</span><span style="font-weight: 600">20 km/h</span><span style="font-size: 12px; color: #666d75">rafales 35 km/h · secteur →</span></div>
+          <div style="display: flex; flex-direction: column"><span style="font-size: 12px; color: #666d75">Tronçon</span><span style="font-weight: 600">Face du km 18 au km 24</span></div>
+        </div>
+      </div>
+
+      <!-- PhaseList « Par tronçon » (< sm) -->
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <h4 style="margin: 0; font-size: 16px; font-weight: 700">Par tronçon</h4>
+        <div style="display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-left: 4px solid #40c057; background: #f8f9fa; border-radius: 0 8px 8px 0">
+          <span style="font-weight: 600">Dos · km 0–18</span>
+          <span style="font-size: 12px; color: #666d75">09:00–09:25 · Dos 18–19 km/h (raf. 32–33) · pluie ≤ 10 %</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-left: 4px solid #e03131; background: #f8f9fa; border-radius: 0 8px 8px 0">
+          <span style="font-weight: 600">Face · km 18–24</span>
+          <span style="font-size: 12px; color: #666d75">09:50 · Face 20 km/h (raf. 35) · pluie ≤ 20 %</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-left: 4px solid #fab005; background: #f8f9fa; border-radius: 0 8px 8px 0">
+          <span style="font-weight: 600">Travers · km 24–46</span>
+          <span style="font-size: 12px; color: #666d75">10:15–10:40 · Travers 18–19 km/h (raf. 31–34) · pluie ≤ 20 %</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-left: 4px solid #40c057; background: #f8f9fa; border-radius: 0 8px 8px 0">
+          <span style="font-weight: 600">Dos · km 46–68</span>
+          <span style="font-size: 12px; color: #666d75">11:05–11:50 · Dos 16–17 km/h (raf. 27–30) · pluie ≤ 5 %</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5 Commentaires -->
+    <section style="display: flex; flex-direction: column; gap: 14px">
+      <h4 style="margin: 0; font-size: 16px; font-weight: 700">Commentaires (2)</h4>
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <div style="min-height: 72px; box-sizing: border-box; border: 1px solid #ced4da; border-radius: 8px; padding: 10px 12px; color: #666d75; font-size: 16px">Écrivez un commentaire...</div>
+        <button type="button" style="align-self: flex-end; min-height: 44px; padding: 0 16px; border-radius: 8px; border: none; background: #4263eb; color: #ffffff; font: 500 14px Inter, system-ui, sans-serif">Envoyer le commentaire</button>
+      </div>
+      <div style="display: flex; gap: 12px">
+        <div style="width: 32px; height: 32px; flex-shrink: 0; border-radius: 1000px; background: #7048e8; color: #ffffff; font-size: 12px; font-weight: 700; display: grid; place-items: center">LM</div>
+        <div style="display: flex; flex-direction: column; gap: 4px">
+          <span><span style="font-weight: 600">Léa Martin</span> <span style="font-size: 12px; color: #666d75">il y a environ 2 heures</span></span>
+          <span style="font-size: 16px">Le gîte de Saulieu nous attend à partir de 16:00, pas la peine de traîner.</span>
+          <a href="#" style="font-size: 13px; text-decoration: none">Répondre</a>
+        </div>
+      </div>
+      <div style="display: flex; gap: 12px">
+        <div style="width: 32px; height: 32px; flex-shrink: 0; border-radius: 1000px; background: #1098ad; color: #ffffff; font-size: 12px; font-weight: 700; display: grid; place-items: center">KB</div>
+        <div style="display: flex; flex-direction: column; gap: 4px">
+          <span><span style="font-weight: 600">Karim Benali</span> <span style="font-size: 12px; color: #666d75">il y a 3 jours</span></span>
+          <span style="font-size: 16px">Quelqu'un a une pompe à prêter pour le Haut-Folin ?</span>
+          <a href="#" style="font-size: 13px; text-decoration: none">Répondre</a>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":3440}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

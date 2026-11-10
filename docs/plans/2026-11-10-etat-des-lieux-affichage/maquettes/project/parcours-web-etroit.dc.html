@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Parcours — site étroit</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+body{margin:0}
+a{color:#3b5bdb}a:hover{color:#364fc7}
+</style>
+</helmet>
+<div style="width: 390px; height: 2700px; box-sizing: border-box; background: #ffffff; color: #000000; font-family: Inter, system-ui, sans-serif; font-size: 16px; line-height: 1.45; display: flex; flex-direction: column; overflow: hidden">
+
+  <!-- En-tête du site -->
+  <header style="height: 56px; border-bottom: 1px solid #dee2e6; flex-shrink: 0">
+    <div style="max-width: 1280px; margin: 0 auto; padding: 0 16px; height: 56px; display: flex; align-items: center; justify-content: space-between">
+      <div style="display: flex; align-items: center; gap: 8px">
+      <button type="button" aria-label="Menu" style="width: 44px; height: 44px; margin-left: -10px; border: none; background: transparent; display: grid; place-items: center; padding: 0; color: #000000"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
+      <a href="#" style="display: flex; align-items: center; gap: 10px; color: #000000; text-decoration: none">
+        <span style="width: 28px; height: 28px; border-radius: 6px; background: #228be6"></span>
+        <span style="font-size: 20px; font-weight: 700">Pédalons</span>
+      </a>
+      </div>
+      <span style="width: 32px; height: 32px; border-radius: 1000px; background: #099268; color: #ffffff; font-size: 12px; font-weight: 700; display: grid; place-items: center">CD</span>
+    </div>
+  </header>
+
+  <!-- 0 Fil d'Ariane (layout) -->
+  <div style="max-width: 1280px; width: 100%; margin: 0 auto; padding: 12px 16px 0; box-sizing: border-box">
+    <nav aria-label="Fil d'Ariane" style="display: flex; align-items: center; gap: 8px; font-size: 14px">
+      <a href="#">Parcours</a><span style="color: #666d75">›</span>
+      <span style="color: #666d75">Boucle des Monts d'Arrée</span>
+    </nav>
+  </div>
+
+  <!-- Page : Box maw 1280, px md, py xl -->
+  <main style="max-width: 1280px; width: 100%; margin: 0 auto; padding: 32px 16px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px">
+
+    <!-- 1 Bandeau équipe -->
+    <a href="#" aria-label="Voir la page de l'équipe Vélo Club des Monts" style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #ced4da; border-radius: 8px; color: #000000; text-decoration: none">
+      <span style="width: 26px; height: 26px; border-radius: 1000px; background: #4263eb; color: #ffffff; font-size: 11px; font-weight: 700; display: grid; place-items: center">VC</span>
+      <span style="flex: 1; font-size: 14px; font-weight: 500">Vélo Club des Monts</span>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#666d75" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6l-6 6"></path></svg>
+    </a>
+
+    <!-- 2 + 4 En-tête : titre (pas de logo) + actions (membre simple : Partager, ⋯) -->
+    <div style="display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 0">
+      <h1 style="margin: 0; font-size: 34px; font-weight: 700; line-height: 1.3">Boucle des Monts d'Arrée</h1>
+      <div style="display: flex; align-items: center; gap: 8px; margin-top: 16px">
+        <button type="button" aria-label="Partager" style="width: 36px; height: 36px; border-radius: 8px; border: 1px solid #ced4da; background: #ffffff; color: #000000; display: grid; place-items: center; padding: 0">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="6" r="3"></circle><circle cx="18" cy="18" r="3"></circle><path d="M8.7 10.7l6.6-3.4M8.7 13.3l6.6 3.4"></path></svg>
+        </button>
+        <button type="button" aria-label="Plus d'actions" style="width: 36px; height: 36px; border-radius: 8px; border: 1px solid #ced4da; background: #ffffff; color: #000000; display: grid; place-items: center; padding: 0">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle></svg>
+        </button>
+      </div>
+    </div>
+    <!-- 3 Description : markdown vide, rien n'est rendu -->
+
+    <!-- 5 Carte + profil (profil SOUS la carte) -->
+    <div style="border: 1px solid #ced4da; border-radius: 8px; overflow: hidden">
+      <div style="position: relative; height: 440px; overflow: hidden; background: #e8f0e4">
+        <svg width="100%" height="100%" viewBox="0 0 358 440" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M0 0 L358 0 L358 70 C 290 90, 230 50, 170 80 C 120 105, 60 60, 0 90 Z" fill="#d5e5cc"></path>
+          <path d="M180 200 C 205 185, 235 190, 230 220 C 225 245, 195 245, 185 232 Z" fill="#cfe3f5"></path>
+          <path d="M0 360 C 90 340, 150 380, 230 360 C 290 345, 330 365, 358 355 L358 440 L0 440 Z" fill="#d5e5cc"></path>
+          <path d="M0 190 C 100 200, 250 180, 358 205" stroke="#ffffff" stroke-width="5" fill="none"></path>
+          <path d="M90 0 C 100 120, 120 250, 110 440" stroke="#ffffff" stroke-width="4" fill="none"></path>
+          <path d="M358 110 C 300 160, 290 260, 250 320 C 230 350, 245 400, 250 440" stroke="#ffffff" stroke-width="3" fill="none"></path>
+          <path d="M120 340 C 70 310, 60 210, 105 160 C 140 120, 210 105, 260 135 C 310 165, 325 245, 290 290 C 255 330, 190 345, 135 345" stroke="#40c057" stroke-width="8" stroke-opacity="0.8" fill="none"></path>
+          <path d="M105 160 C 130 132, 165 115, 200 110" stroke="#fab005" stroke-width="8" stroke-opacity="0.9" fill="none"></path>
+          <path d="M318 220 C 318 250, 310 272, 290 290" stroke="#fd7e14" stroke-width="8" stroke-opacity="0.9" fill="none"></path>
+          <path d="M66 255 l5 -7 l5 7" stroke="#ffffff" stroke-width="2" fill="none"></path>
+          <path d="M228 114 l7 3 l-7 4" stroke="#ffffff" stroke-width="2" fill="none"></path>
+          <circle cx="120" cy="340" r="6" fill="#2f9e44" stroke="#ffffff" stroke-width="2"></circle>
+          <circle cx="135" cy="345" r="6" fill="#e03131" stroke="#ffffff" stroke-width="2"></circle>
+          <rect x="44" y="214" width="22" height="14" rx="7" fill="#ffffff" stroke="#495057" stroke-width="1"></rect>
+          <text x="55" y="224" font-size="9" font-family="Inter, sans-serif" text-anchor="middle" fill="#000000">20</text>
+          <rect x="226" y="96" width="22" height="14" rx="7" fill="#ffffff" stroke="#495057" stroke-width="1"></rect>
+          <text x="237" y="106" font-size="9" font-family="Inter, sans-serif" text-anchor="middle" fill="#000000">40</text>
+          <rect x="322" y="240" width="22" height="14" rx="7" fill="#ffffff" stroke="#495057" stroke-width="1"></rect>
+          <text x="333" y="250" font-size="9" font-family="Inter, sans-serif" text-anchor="middle" fill="#000000">60</text>
+          <rect x="196" y="338" width="22" height="14" rx="7" fill="#ffffff" stroke="#495057" stroke-width="1"></rect>
+          <text x="207" y="348" font-size="9" font-family="Inter, sans-serif" text-anchor="middle" fill="#000000">80</text>
+          <circle cx="98" cy="326" r="9" fill="#228be6" stroke="#ffffff" stroke-width="2"></circle>
+          <circle cx="276" cy="142" r="9" fill="#fd7e14" stroke="#ffffff" stroke-width="2"></circle>
+        </svg>
+        <!-- Contrôles en colonne, en haut à gauche -->
+        <div style="position: absolute; left: 10px; top: 10px; display: flex; flex-direction: column; gap: 10px">
+          <div style="display: flex; flex-direction: column; background: #ffffff; border-radius: 4px; box-shadow: 0 0 0 2px rgba(0,0,0,0.1)">
+            <button type="button" aria-label="Zoom avant" style="width: 29px; height: 29px; border: none; border-bottom: 1px solid #dee2e6; background: transparent; display: grid; place-items: center; padding: 0; color: #000000"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button>
+            <button type="button" aria-label="Zoom arrière" style="width: 29px; height: 29px; border: none; border-bottom: 1px solid #dee2e6; background: transparent; display: grid; place-items: center; padding: 0; color: #000000"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path></svg></button>
+            <button type="button" aria-label="Réinitialiser l'orientation" style="width: 29px; height: 29px; border: none; background: transparent; display: grid; place-items: center; padding: 0; color: #000000"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 16l2 -6l6 -2l-2 6l-6 2"></path><circle cx="12" cy="12" r="9"></circle></svg></button>
+          </div>
+          <button type="button" aria-label="Fond de carte" style="width: 29px; height: 29px; border: none; border-radius: 4px; box-shadow: 0 0 0 2px rgba(0,0,0,0.1); background: #ffffff; display: grid; place-items: center; padding: 0; color: #000000"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4l-8 4l8 4l8 -4l-8 -4"></path><path d="M4 12l8 4l8 -4"></path><path d="M4 16l8 4l8 -4"></path></svg></button>
+          <button type="button" aria-label="Masquer le tracé (h)" style="width: 29px; height: 29px; border: none; border-radius: 4px; box-shadow: 0 0 0 2px rgba(0,0,0,0.1); background: #ffffff; display: grid; place-items: center; padding: 0; color: #000000"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.585 10.587a2 2 0 0 0 2.829 2.828"></path><path d="M16.681 16.673a8.717 8.717 0 0 1 -4.681 1.327c-3.6 0 -6.6 -2 -9 -6c1.272 -2.12 2.712 -3.678 4.32 -4.674m2.86 -1.146a9.055 9.055 0 0 1 1.82 -.18c3.6 0 6.6 2 9 6c-.666 1.11 -1.379 2.067 -2.138 2.87"></path><path d="M3 3l18 18"></path></svg></button>
+          <button type="button" aria-label="Carte plein écran" style="width: 29px; height: 29px; border: none; border-radius: 4px; box-shadow: 0 0 0 2px rgba(0,0,0,0.1); background: #ffffff; display: grid; place-items: center; padding: 0; color: #000000"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 4l4 0l0 4M14 10l6 -6M8 20l-4 0l0 -4M4 20l6 -6M16 20l4 0l0 -4M14 14l6 6M8 4l-4 0l0 4M4 4l6 6"></path></svg></button>
+        </div>
+        <!-- Échelle et attribution -->
+        <div style="position: absolute; left: 10px; bottom: 10px; padding: 0 5px; border: 2px solid #495057; border-top: none; background: rgba(255,255,255,0.75); font-size: 10px; width: 80px; box-sizing: border-box">2 km</div>
+        <div style="position: absolute; right: 0; bottom: 0; padding: 2px 6px; background: rgba(255,255,255,0.75); font-size: 11px; color: #000000">© OpenStreetMap</div>
+      </div>
+      <!-- Profil 160 px -->
+      <div style="height: 160px; position: relative; border-top: 1px solid #dee2e6; display: grid; grid-template-columns: 22px 34px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) 16px 18px; padding: 8px 12px 4px 4px; box-sizing: border-box; font-size: 11px; color: #666d75">
+        <span style="grid-row: 1; grid-column: 1; writing-mode: vertical-rl; transform: rotate(180deg); text-align: center; font-size: 11px">Elevation (m)</span>
+        <div style="grid-row: 1; grid-column: 2; display: flex; flex-direction: column; justify-content: space-between; align-items: flex-end; padding-right: 4px; font-size: 10px"><span>400</span><span>300</span><span>200</span><span>100</span></div>
+        <div style="grid-row: 1; grid-column: 3; position: relative; border-left: 1px solid #dee2e6; border-bottom: 1px solid #dee2e6">
+          <svg width="100%" height="100%" viewBox="0 0 400 110" preserveAspectRatio="none" aria-hidden="true">
+            <path d="M0 110 L0 70 L30 72 L60 60 L90 55 L120 50 L124 48 L124 110 Z" fill="#40c057" fill-opacity="0.75"></path>
+            <path d="M124 110 L124 48 L133 34 L142 22 L142 110 Z" fill="#fab005" fill-opacity="0.85"></path>
+            <path d="M142 110 L142 22 L160 35 L190 45 L205 42 L205 110 Z" fill="#40c057" fill-opacity="0.75"></path>
+            <path d="M205 110 L205 42 L211 30 L217 18 L217 110 Z" fill="#fd7e14" fill-opacity="0.85"></path>
+            <path d="M217 110 L217 18 L240 40 L270 55 L300 50 L330 62 L360 66 L400 70 L400 110 Z" fill="#40c057" fill-opacity="0.75"></path>
+            <path d="M0 70 L30 72 L60 60 L90 55 L120 50 L124 48 L133 34 L142 22 L160 35 L190 45 L205 42 L211 30 L217 18 L240 40 L270 55 L300 50 L330 62 L360 66 L400 70" stroke="#495057" stroke-width="1.5" fill="none" vector-effect="non-scaling-stroke"></path>
+          </svg>
+          <span style="position: absolute; left: 0.4%; top: 58%; width: 10px; height: 10px; border-radius: 1000px; background: #228be6; border: 2px solid #ffffff"></span>
+          <span style="position: absolute; left: 44%; top: 46%; width: 10px; height: 10px; border-radius: 1000px; background: #fd7e14; border: 2px solid #ffffff"></span>
+          <span style="position: absolute; right: 4px; top: 2px; left: 4px; text-align: right; font-size: 9px; line-height: 1.2; color: #666d75">Données : IGN LiDAR HD, Mapterhorn et ses sources, © OpenStreetMap</span>
+        </div>
+        <div style="grid-row: 2; grid-column: 3; display: flex; justify-content: space-between; font-size: 10px"><span>0</span><span>20</span><span>40</span><span>60</span><span>80</span></div>
+        <span style="grid-row: 3; grid-column: 3; text-align: center">Distance (km)</span>
+      </div>
+    </div>
+
+    <!-- 7 Couleur + revêtement -->
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <div style="display: inline-flex; align-self: flex-start; padding: 3px; background: #f1f3f5; border-radius: 8px" role="group" aria-label="Colorer le profil et le tracé selon">
+        <button type="button" style="padding: 4px 10px; font: 500 12px Inter, system-ui, sans-serif; border: none; background: #ffffff; border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); color: #000000">Pente</button>
+        <button type="button" style="padding: 4px 10px; font: 400 12px Inter, system-ui, sans-serif; border: none; background: transparent; color: #495057">Revêtement</button>
+      </div>
+      <div style="display: flex; height: 12px; border-radius: 1000px; overflow: hidden; background: #e9ecef">
+        <span title="Asphalte 86 %" style="width: 86%; background: #868e96"></span>
+        <span title="Revêtement dégradé 9 %" style="width: 9%; background: #fab005"></span>
+        <span title="Compacté, gravier 4 %" style="width: 4%; background: #fd7e14"></span>
+        <span title="Inconnu &lt; 1 %" style="width: 1%; background: #ced4da"></span>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 12px">
+        <span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 14px; height: 3px; background: #868e96"></span>Asphalte 86 %</span>
+        <span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 14px; height: 3px; background: #fab005"></span>Revêtement dégradé 9 %</span>
+        <span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 14px; height: 3px; background: #fd7e14"></span>Compacté, gravier 4 %</span>
+        <span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 14px; height: 3px; background: #ced4da"></span>Inconnu &lt; 1 %</span>
+      </div>
+      <a href="#" style="font-size: 12px">© contributeurs OpenStreetMap</a>
+    </div>
+
+    <!-- 8 Téléchargements (pas d'envoi vers l'appareil : aucun service GPS connecté) -->
+    <div style="display: flex; flex-wrap: wrap; gap: 8px">
+      <a href="#" style="min-height: 36px; padding: 0 14px; border-radius: 8px; border: 1px solid #ced4da; background: #ffffff; color: #000000; font-size: 14px; font-weight: 500; text-decoration: none; display: inline-flex; align-items: center; gap: 8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"></path><path d="M7 11l5 5l5 -5"></path><path d="M12 4l0 12"></path></svg>Télécharger GPX</a>
+      <a href="#" style="min-height: 36px; padding: 0 14px; border-radius: 8px; border: 1px solid #ced4da; background: #ffffff; color: #000000; font-size: 14px; font-weight: 500; text-decoration: none; display: inline-flex; align-items: center; gap: 8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"></path><path d="M7 11l5 5l5 -5"></path><path d="M12 4l0 12"></path></svg>Télécharger FIT</a>
+    </div>
+
+    <!-- 9 Statistiques (point décimal) -->
+    <div style="display: flex; flex-wrap: wrap; gap: 32px">
+      <div style="display: flex; align-items: center; gap: 10px">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4263eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7l6 -3l6 3l6 -3v13l-6 3l-6 -3l-6 3v-13"></path><path d="M9 4v13M15 7v13"></path></svg>
+        <div style="display: flex; flex-direction: column"><span style="font-size: 12px; color: #666d75">Distance</span><span style="font-size: 18px; font-weight: 700">92.4 km</span></div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2f9e44" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5l0 14M18 11l-6 -6M6 11l6 -6"></path></svg>
+        <div style="display: flex; flex-direction: column"><span style="font-size: 12px; color: #666d75">Dénivelé positif</span><span style="font-size: 18px; font-weight: 700">1240 m</span></div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#e03131" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5l0 14M18 13l-6 6M6 13l6 6"></path></svg>
+        <div style="display: flex; flex-direction: column"><span style="font-size: 12px; color: #666d75">Dénivelé négatif</span><span style="font-size: 18px; font-weight: 700">1240 m</span></div>
+      </div>
+    </div>
+
+    <!-- 10 Badges + date -->
+    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px">
+      <span style="display: inline-flex; align-items: center; height: 26px; padding: 0 12px; border-radius: 1000px; font-size: 12px; font-weight: 700; letter-spacing: 0.25px; text-transform: uppercase; background: #d3f9d8; color: #2b8a3e">Route</span>
+      <span style="display: inline-flex; align-items: center; height: 26px; padding: 0 12px; border-radius: 1000px; font-size: 12px; font-weight: 700; letter-spacing: 0.25px; text-transform: uppercase; background: #f1f3f5; color: #495057">Équipe uniquement</span>
+      <span style="font-size: 14px; color: #666d75">Créé le: 3 novembre 2026</span>
+    </div>
+
+    <!-- 11 Tags -->
+    <div style="display: flex; flex-wrap: wrap; gap: 8px">
+      <span style="display: inline-flex; align-items: center; gap: 6px; height: 20px; padding: 0 10px; border-radius: 1000px; border: 1px solid #dee2e6; font-size: 11px; font-weight: 700"><span style="width: 8px; height: 8px; border-radius: 1000px; background: #40c057"></span>vallonné</span>
+      <span style="display: inline-flex; align-items: center; gap: 6px; height: 20px; padding: 0 10px; border-radius: 1000px; border: 1px solid #dee2e6; font-size: 11px; font-weight: 700"><span style="width: 8px; height: 8px; border-radius: 1000px; background: #228be6"></span>Finistère</span>
+    </div>
+
+    <!-- 12 Points du parcours -->
+    <section style="display: flex; flex-direction: column; gap: 4px">
+      <h4 style="margin: 0 0 8px; font-size: 18px; font-weight: 700">Points du parcours (2)</h4>
+      <a href="#" style="display: flex; align-items: center; gap: 12px; padding: 6px 0; color: #000000; text-decoration: none">
+        <span style="width: 78px; flex-shrink: 0; font-size: 14px; font-variant-numeric: tabular-nums">0.4 km</span>
+        <span style="width: 28px; height: 28px; flex-shrink: 0; border-radius: 1000px; background: #228be6; color: #ffffff; display: grid; place-items: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.502 19.423c2.602 2.105 6.395 2.105 8.996 0c2.602 -2.105 3.262 -5.708 1.566 -8.546l-4.89 -7.26c-.42 -.625 -1.287 -.803 -1.936 -.397a1.376 1.376 0 0 0 -.41 .397l-4.893 7.26c-1.695 2.838 -1.035 6.441 1.567 8.546z"></path></svg></span>
+        <span style="display: flex; align-items: baseline; gap: 8px"><span style="font-size: 14px; font-weight: 500">Fontaine de Huelgoat</span><span style="font-size: 12px; color: #666d75">Point d'eau</span></span>
+      </a>
+      <a href="#" style="display: flex; align-items: center; gap: 12px; padding: 6px 0; color: #000000; text-decoration: none">
+        <span style="width: 78px; flex-shrink: 0; font-size: 14px; font-variant-numeric: tabular-nums">41.0 km</span>
+        <span style="width: 28px; height: 28px; flex-shrink: 0; border-radius: 1000px; background: #fd7e14; color: #ffffff; display: grid; place-items: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 3v12h-5c-.023 -3.681 .184 -7.406 5 -12zm0 12v6h-1v-3m-10 -14v17m-3 -17v3a3 3 0 1 0 6 0v-3"></path></svg></span>
+        <span style="display: flex; align-items: baseline; gap: 8px"><span style="font-size: 14px; font-weight: 500">Boulangerie de Brasparts</span><span style="font-size: 12px; color: #666d75">Ravitaillement</span></span>
+      </a>
+    </section>
+
+    <!-- 13 Cols et montées -->
+    <section style="display: flex; flex-direction: column">
+      <h4 style="margin: 0 0 10px; font-size: 18px; font-weight: 700">Cols et montées (2)</h4>
+      <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 1px solid #dee2e6; font-size: 14px">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+          <span style="display: inline-flex; align-items: center; height: 18px; padding: 0 8px; border-radius: 1000px; font-size: 10px; font-weight: 700; letter-spacing: 0.25px; text-transform: uppercase; background: #fab005; color: #000000">3ème Catégorie</span>
+          <span style="font-weight: 500">Roc'h Trévezel</span>
+          <span style="color: #666d75">De 28.6 km à 32.8 km</span>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 16px">
+          <span><span style="color: #666d75">Dénivelé:</span> <span style="font-weight: 500">214 m</span></span>
+          <span><span style="color: #666d75">Pente moyenne:</span> <span style="font-weight: 500">5.1%</span></span>
+          <span><span style="color: #666d75">Pente maximale:</span> <span style="font-weight: 500">8.4%</span></span>
+        </div>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 1px solid #dee2e6; font-size: 14px">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+          <span style="display: inline-flex; align-items: center; height: 18px; padding: 0 8px; border-radius: 1000px; font-size: 10px; font-weight: 700; letter-spacing: 0.25px; text-transform: uppercase; background: #2f9e44; color: #ffffff">4ème Catégorie</span>
+          <span style="font-weight: 500">Mont Saint-Michel de Brasparts</span>
+          <span style="color: #666d75">De 47.3 km à 50.1 km</span>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 16px">
+          <span><span style="color: #666d75">Dénivelé:</span> <span style="font-weight: 500">174 m</span></span>
+          <span><span style="color: #666d75">Pente moyenne:</span> <span style="font-weight: 500">6.2%</span></span>
+          <span><span style="color: #666d75">Pente maximale:</span> <span style="font-weight: 500">9.6%</span></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 14 Commentaires (membre) -->
+    <section style="display: flex; flex-direction: column; gap: 16px; margin-top: 16px">
+      <h4 style="margin: 0; font-size: 18px; font-weight: 700">Commentaires (2)</h4>
+      <div style="display: flex; align-items: flex-end; gap: 8px">
+        <div style="flex: 1; min-height: 64px; padding: 8px 12px; border: 1px solid #ced4da; border-radius: 8px; font-size: 14px; color: #adb5bd; box-sizing: border-box">Écrivez un commentaire...</div>
+        <button type="button" aria-label="Envoyer le commentaire" style="width: 36px; height: 36px; border-radius: 8px; border: none; background: #4263eb; color: #ffffff; display: grid; place-items: center; padding: 0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14l11 -11"></path><path d="M21 3l-6.5 18a.55 .55 0 0 1 -1 0l-3.5 -7l-7 -3.5a.55 .55 0 0 1 0 -1l18 -6.5"></path></svg></button>
+      </div>
+      <div style="display: flex; gap: 12px">
+        <span style="width: 32px; height: 32px; flex-shrink: 0; border-radius: 1000px; background: #ae3ec9; color: #ffffff; font-size: 12px; font-weight: 700; display: grid; place-items: center">NP</span>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 4px">
+          <div style="display: flex; align-items: center; gap: 8px"><span style="font-size: 14px; font-weight: 500">Noé Perrin</span><span style="font-size: 12px; color: #666d75">il y a 2 heures</span><button type="button" aria-label="Plus d'actions" style="margin-left: auto; width: 28px; height: 28px; border: none; background: transparent; display: grid; place-items: center; padding: 0; color: #666d75"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle></svg></button></div>
+          <p style="margin: 0; font-size: 14px">Fait dimanche dernier : le Roc'h Trévezel est très exposé au vent d'ouest.</p>
+          <button type="button" style="align-self: flex-start; border: none; background: transparent; padding: 0; font: 500 12px Inter, system-ui, sans-serif; color: #3b5bdb">Répondre</button>
+        </div>
+      </div>
+      <div style="display: flex; gap: 12px">
+        <span style="width: 32px; height: 32px; flex-shrink: 0; border-radius: 1000px; background: #f08c00; color: #ffffff; font-size: 12px; font-weight: 700; display: grid; place-items: center">IR</span>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 4px">
+          <div style="display: flex; align-items: center; gap: 8px"><span style="font-size: 14px; font-weight: 500">Inès Roche</span><span style="font-size: 12px; color: #666d75">il y a 3 jours</span><button type="button" aria-label="Plus d'actions" style="margin-left: auto; width: 28px; height: 28px; border: none; background: transparent; display: grid; place-items: center; padding: 0; color: #666d75"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle></svg></button></div>
+          <p style="margin: 0; font-size: 14px">La boulangerie de Brasparts ferme à 13 h le samedi, pensez-y.</p>
+          <button type="button" style="align-self: flex-start; border: none; background: transparent; padding: 0; font: 500 12px Inter, system-ui, sans-serif; color: #3b5bdb">Répondre</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 15 Utilisée dans (en dernier, après les commentaires) -->
+    <section style="display: flex; flex-direction: column; gap: 16px; margin-top: 16px">
+      <h2 style="margin: 0; font-size: 26px; font-weight: 700">Utilisée dans</h2>
+      <div style="display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px">
+        <a href="#" style="display: flex; flex-direction: column; gap: 8px; padding: 16px; border: 1px solid #ced4da; border-radius: 8px; color: #000000; text-decoration: none">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px"><span style="font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Boucle des Monts d'Arrée</span><span style="display: inline-flex; align-items: center; height: 18px; padding: 0 8px; border-radius: 1000px; font-size: 10px; font-weight: 700; letter-spacing: 0.25px; text-transform: uppercase; background: #dbe4ff; color: #364fc7">Sortie</span></div>
+          <span style="display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4263eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 3"></path></svg>sam. 14 nov. · 09:00</span>
+          <span style="font-size: 14px; color: #666d75">via les groupes : A</span>
+        </a>
+        <a href="#" style="display: flex; flex-direction: column; gap: 8px; padding: 16px; border: 1px solid #ced4da; border-radius: 8px; color: #000000; text-decoration: none">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px"><span style="font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Traversée du Morvan</span><span style="display: inline-flex; align-items: center; height: 18px; padding: 0 8px; border-radius: 1000px; font-size: 10px; font-weight: 700; letter-spacing: 0.25px; text-transform: uppercase; background: #c3fae8; color: #087f5b">Voyage</span></div>
+          <span style="display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#099268" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 3"></path></svg>ven. 20 nov. → dim. 22 nov.</span>
+          <span style="font-size: 14px; color: #666d75">via les étapes : Château-Chinon → Saulieu</span>
+        </a>
+      </div>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":2700}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

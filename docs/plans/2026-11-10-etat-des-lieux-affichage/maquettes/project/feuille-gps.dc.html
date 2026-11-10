@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Feuille GPS — appareil connecté</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+body{margin:0}
+a{color:#3b5bdb}a:hover{color:#364fc7}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #6b7075; color: #000000; font-family: Inter, system-ui, sans-serif; font-size: 14px; line-height: 1.45; display: flex; flex-direction: column; overflow: hidden">
+  <!-- écran appelant, assombri : la feuille s'ouvre depuis le bouton « GPS » -->
+  <div style="flex: 1; display: flex; align-items: flex-start; justify-content: center; padding-top: 24px; color: #dee2e6; font-size: 12px">Écran appelant, assombri</div>
+  <!-- feuille GPS (variante Android ; sur iOS, une seule ligne « Partager » par fichier) -->
+  <div role="dialog" aria-label="GPS" style="background: #ffffff; border-radius: 16px 16px 0 0; padding: 8px 16px 24px; display: flex; flex-direction: column">
+    <div style="align-self: center; width: 36px; height: 4px; border-radius: 1000px; background: #ced4da"></div>
+    <div style="margin-top: 12px; display: flex; flex-direction: column; line-height: 1.3">
+      <span style="font-size: 18px; font-weight: 700">GPS</span>
+      <span style="font-size: 12px; color: #666d75">Groupe A · 92,4 km</span>
+    </div>
+    <div style="display: flex; flex-direction: column">
+      <span style="margin-top: 16px; font-size: 12px; font-weight: 600; color: #666d75">Vers un appareil</span>
+      <button type="button" style="min-height: 56px; padding: 8px 0; border: none; border-bottom: 1px solid #dee2e6; background: transparent; display: flex; align-items: center; gap: 12px; text-align: left; color: #000000; font-family: Inter, system-ui, sans-serif">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#666d75" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M11 4h2"/><path d="M12 17v.01"/></svg>
+        <span style="flex: 1; display: flex; flex-direction: column; line-height: 1.3"><span style="font-size: 16px; font-weight: 500">Garmin Connect</span></span>
+      </button>
+      <button type="button" style="min-height: 56px; padding: 8px 0; border: none; background: transparent; display: flex; align-items: center; gap: 12px; text-align: left; color: #000000; font-family: Inter, system-ui, sans-serif">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#666d75" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M11 4h2"/><path d="M12 17v.01"/></svg>
+        <span style="flex: 1; display: flex; flex-direction: column; line-height: 1.3"><span style="font-size: 16px; font-weight: 500">Hammerhead Karoo</span></span>
+      </button>
+      <span style="margin-top: 16px; font-size: 12px; font-weight: 600; color: #666d75">Fichier GPX</span>
+      <button type="button" style="min-height: 56px; padding: 8px 0; border: none; border-bottom: 1px solid #dee2e6; background: transparent; display: flex; align-items: center; gap: 12px; text-align: left; color: #000000; font-family: Inter, system-ui, sans-serif">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#666d75" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/><path d="M7 11l5 5l5-5"/><path d="M12 4v12"/></svg>
+        <span style="flex: 1; display: flex; flex-direction: column; line-height: 1.3"><span style="font-size: 16px; font-weight: 500">Enregistrer sur le téléphone</span></span>
+      </button>
+      <button type="button" style="min-height: 56px; padding: 8px 0; border: none; background: transparent; display: flex; align-items: center; gap: 12px; text-align: left; color: #000000; font-family: Inter, system-ui, sans-serif">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#666d75" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><circle cx="6" cy="12" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M8.7 10.7l6.6-3.4"/><path d="M8.7 13.3l6.6 3.4"/></svg>
+        <span style="flex: 1; display: flex; flex-direction: column; line-height: 1.3"><span style="font-size: 16px; font-weight: 500">Envoyer vers une autre app</span></span>
+      </button>
+      <span style="margin-top: 16px; font-size: 12px; font-weight: 600; color: #666d75">Fichier FIT, pour compteur</span>
+      <button type="button" style="min-height: 56px; padding: 8px 0; border: none; border-bottom: 1px solid #dee2e6; background: transparent; display: flex; align-items: center; gap: 12px; text-align: left; color: #000000; font-family: Inter, system-ui, sans-serif">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#666d75" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/><path d="M7 11l5 5l5-5"/><path d="M12 4v12"/></svg>
+        <span style="flex: 1; display: flex; flex-direction: column; line-height: 1.3"><span style="font-size: 16px; font-weight: 500">Enregistrer sur le téléphone</span></span>
+      </button>
+      <button type="button" style="min-height: 56px; padding: 8px 0; border: none; background: transparent; display: flex; align-items: center; gap: 12px; text-align: left; color: #000000; font-family: Inter, system-ui, sans-serif">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#666d75" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><circle cx="6" cy="12" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M8.7 10.7l6.6-3.4"/><path d="M8.7 13.3l6.6 3.4"/></svg>
+        <span style="flex: 1; display: flex; flex-direction: column; line-height: 1.3"><span style="font-size: 16px; font-weight: 500">Envoyer vers une autre app</span></span>
+      </button>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

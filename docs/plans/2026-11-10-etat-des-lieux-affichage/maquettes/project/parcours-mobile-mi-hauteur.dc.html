@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Parcours — mobile, feuille à mi-hauteur</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+body{margin:0}
+a{color:#3b5bdb}a:hover{color:#364fc7}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #ffffff; color: #000000; font-family: Inter, system-ui, sans-serif; font-size: 14px; line-height: 1.45; display: flex; flex-direction: column; overflow: hidden; position: relative">
+
+  <!-- Couche 0 : carte plein écran (statut système compris) -->
+  <div style="position: absolute; left: 0; top: 0; width: 390px; height: 844px; overflow: hidden; background: #e8f0e4">
+    <svg width="100%" height="100%" viewBox="0 0 390 844" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M0 90 C 60 70, 120 110, 170 80 C 210 60, 260 40, 390 70 L390 0 L0 0 Z" fill="#d5e5cc"></path>
+      <path d="M200 230 C 230 210, 270 220, 260 255 C 250 285, 210 280, 200 260 Z" fill="#cfe3f5"></path>
+      <path d="M0 420 C 80 400, 150 450, 240 430 C 300 415, 350 440, 390 430 L390 600 L0 600 Z" fill="#d5e5cc"></path>
+      <path d="M20 250 C 40 230, 70 260, 90 240 C 100 280, 60 300, 30 290 Z" fill="#d5e5cc"></path>
+      <path d="M0 200 C 100 210, 250 190, 390 215" stroke="#ffffff" stroke-width="5" fill="none"></path>
+      <path d="M60 0 C 80 150, 140 300, 120 500 C 110 650, 160 760, 150 844" stroke="#ffffff" stroke-width="4" fill="none"></path>
+      <path d="M390 120 C 300 180, 320 320, 240 400 C 200 450, 230 600, 260 844" stroke="#ffffff" stroke-width="3" fill="none"></path>
+      <path d="M0 380 C 120 360, 260 390, 390 350" stroke="#ffffff" stroke-width="3" fill="none"></path>
+      <path d="M130 360 C 70 320, 60 230, 110 180 C 150 140, 230 120, 280 160 C 330 200, 345 280, 300 330 C 265 365, 200 375, 142 366" stroke="#228be6" stroke-width="4" fill="none"></path>
+      <path d="M110 180 C 140 150, 180 135, 215 132" stroke="#fab005" stroke-width="5" fill="none"></path>
+      <path d="M332 235 C 340 270, 330 305, 300 330" stroke="#fd7e14" stroke-width="5" fill="none"></path>
+      <circle cx="130" cy="360" r="6" fill="#2f9e44" stroke="#ffffff" stroke-width="2"></circle>
+      <circle cx="142" cy="366" r="6" fill="#e03131" stroke="#ffffff" stroke-width="2"></circle>
+      <rect x="62" y="252" width="22" height="14" rx="7" fill="#ffffff" stroke="#495057" stroke-width="1"></rect>
+      <text x="73" y="262" font-size="9" font-family="Inter, sans-serif" text-anchor="middle" fill="#000000">20</text>
+      <rect x="240" y="122" width="22" height="14" rx="7" fill="#ffffff" stroke="#495057" stroke-width="1"></rect>
+      <text x="251" y="132" font-size="9" font-family="Inter, sans-serif" text-anchor="middle" fill="#000000">40</text>
+      <rect x="326" y="270" width="22" height="14" rx="7" fill="#ffffff" stroke="#495057" stroke-width="1"></rect>
+      <text x="337" y="280" font-size="9" font-family="Inter, sans-serif" text-anchor="middle" fill="#000000">60</text>
+      <rect x="214" y="364" width="22" height="14" rx="7" fill="#ffffff" stroke="#495057" stroke-width="1"></rect>
+      <text x="225" y="374" font-size="9" font-family="Inter, sans-serif" text-anchor="middle" fill="#000000">80</text>
+      <circle cx="104" cy="346" r="9" fill="#15aabf" stroke="#ffffff" stroke-width="2"></circle>
+      <circle cx="292" cy="150" r="9" fill="#fd7e14" stroke="#ffffff" stroke-width="2"></circle>
+    </svg>
+  </div>
+
+  <!-- Couche 1 : barre flottante du haut (membre simple : retour, pastille, plus d'actions) -->
+  <div style="position: absolute; left: 12px; right: 12px; top: 53px; height: 44px; display: flex; align-items: center; gap: 8px">
+    <button type="button" aria-label="Retour" style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 12px; border: 1px solid #dee2e6; background: rgba(255,255,255,0.95); box-shadow: 0 1px 3px rgba(0,0,0,0.15); display: grid; place-items: center; color: #000000; padding: 0">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M5 12l6 6M5 12l6-6"></path></svg>
+    </button>
+    <div style="flex: 1; min-width: 0; height: 44px; border-radius: 1000px; border: 1px solid #dee2e6; background: rgba(255,255,255,0.95); box-shadow: 0 1px 3px rgba(0,0,0,0.15); display: flex; align-items: center; padding: 0 16px; box-sizing: border-box">
+      <span style="font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Boucle des Monts d'Arrée</span>
+    </div>
+    <button type="button" aria-label="Plus d'actions" style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 12px; border: 1px solid #dee2e6; background: rgba(255,255,255,0.95); box-shadow: 0 1px 3px rgba(0,0,0,0.15); display: grid; place-items: center; color: #000000; padding: 0">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle></svg>
+    </button>
+  </div>
+
+  <!-- Bouton « Choisir le fond de carte » : centré sur la hauteur de l'écran, donc à moitié sous la feuille -->
+  <button type="button" aria-label="Choisir le fond de carte" style="position: absolute; right: 12px; top: 400px; width: 44px; height: 44px; border-radius: 12px; border: 1px solid #dee2e6; background: rgba(255,255,255,0.95); box-shadow: 0 1px 3px rgba(0,0,0,0.15); display: grid; place-items: center; color: #000000; padding: 0">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4l-8 4l8 4l8 -4l-8 -4"></path><path d="M4 12l8 4l8 -4"></path><path d="M4 16l8 4l8 -4"></path></svg>
+  </button>
+  <!-- Barre d'échelle (bas gauche) et crédit (bas droite) : sous la feuille, jamais visibles -->
+
+  <!-- Couche 2 : feuille à crans, cran 0.5 (top = 422 px) -->
+  <div style="position: absolute; left: 0; right: 0; top: 422px; height: 422px; background: #ffffff; border-radius: 16px 16px 0 0; box-shadow: 0 -2px 12px rgba(0,0,0,0.12); overflow: hidden">
+    <!-- 2a poignée -->
+    <div style="height: 20px; display: flex; align-items: center; justify-content: center">
+      <div style="width: 36px; height: 4px; border-radius: 1000px; background: #ced4da"></div>
+    </div>
+    <!-- 2b en-tête complet -->
+    <div style="padding: 0 16px 12px; display: flex; flex-direction: column; gap: 8px">
+      <a href="#" style="display: flex; align-items: center; gap: 6px; color: #000000; text-decoration: none; font-size: 13px; font-weight: 500">
+        <span style="width: 16px; height: 16px; border-radius: 1000px; background: #4263eb; color: #ffffff; font-size: 8px; font-weight: 700; display: grid; place-items: center">VC</span>
+        <span>Vélo Club des Monts</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6l-6 6"></path></svg>
+      </a>
+      <div style="display: flex; align-items: flex-start; gap: 12px">
+        <h1 style="margin: 0; flex: 1; min-width: 0; font-size: 22px; font-weight: 700; line-height: 1.3; letter-spacing: -0.2px">Boucle des Monts d'Arrée</h1>
+        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px; padding-top: 4px">
+          <span style="display: inline-flex; align-items: center; height: 18px; padding: 0 8px; border-radius: 1000px; font-size: 10px; font-weight: 700; letter-spacing: 0.25px; text-transform: uppercase; background: #f1f3f5; color: #495057">Route</span>
+          <span style="display: inline-flex; align-items: center; gap: 4px; height: 18px; padding: 0 8px; border-radius: 1000px; font-size: 10px; font-weight: 700; letter-spacing: 0.25px; text-transform: uppercase; background: #f1f3f5; color: #495057"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="7" r="4"></circle><path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path><path d="M16 3.13a4 4 0 0 1 0 7.75M21 21v-2a4 4 0 0 0 -3 -3.85"></path></svg>Équipe</span>
+        </div>
+      </div>
+      <div style="display: flex; justify-content: space-between; padding-top: 4px">
+        <div style="display: flex; flex-direction: column; gap: 2px">
+          <div style="display: flex; align-items: center; gap: 6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#666d75" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="19" r="2"></circle><circle cx="18" cy="5" r="2"></circle><path d="M12 19h4.5a3.5 3.5 0 0 0 0 -7h-8a3.5 3.5 0 0 1 0 -7h3.5"></path></svg><span style="font-size: 17px; font-weight: 600">92,4 km</span></div>
+          <span style="font-size: 12px; color: #666d75">Distance</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 2px">
+          <div style="display: flex; align-items: center; gap: 6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2f9e44" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6 -6l4 4l8 -8"></path><path d="M14 7l7 0l0 7"></path></svg><span style="font-size: 17px; font-weight: 600">1&nbsp;240 m</span></div>
+          <span style="font-size: 12px; color: #666d75">Dénivelé positif</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 2px">
+          <div style="display: flex; align-items: center; gap: 6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e03131" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7l6 6l4 -4l8 8"></path><path d="M21 10l0 7l-7 0"></path></svg><span style="font-size: 17px; font-weight: 600">−1&nbsp;240 m</span></div>
+          <span style="font-size: 12px; color: #666d75">Dénivelé négatif</span>
+        </div>
+      </div>
+    </div>
+    <!-- 2c corps défilant (début) -->
+    <div style="border-top: 1px solid #dee2e6; padding: 16px 16px 0; display: flex; flex-direction: column; gap: 16px">
+      <div style="display: flex; gap: 6px; flex-wrap: wrap">
+        <span style="display: inline-flex; align-items: center; gap: 5px; min-height: 22px; padding: 0 8px; border-radius: 1000px; border: 1px solid #ced4da; font-size: 12px"><span style="width: 8px; height: 8px; border-radius: 1000px; background: #40c057"></span>vallonné</span>
+        <span style="display: inline-flex; align-items: center; gap: 5px; min-height: 22px; padding: 0 8px; border-radius: 1000px; border: 1px solid #ced4da; font-size: 12px"><span style="width: 8px; height: 8px; border-radius: 1000px; background: #228be6"></span>Finistère</span>
+      </div>
+      <div style="display: inline-flex; align-self: flex-start; padding: 3px; background: #f1f3f5; border-radius: 8px" role="group" aria-label="Colorer le profil et le tracé selon">
+        <button type="button" style="width: 120px; padding: 6px 12px; font: 500 14px Inter, system-ui, sans-serif; border: none; background: #ffffff; border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); color: #000000">Pente</button>
+        <button type="button" style="width: 120px; padding: 6px 12px; font: 400 14px Inter, system-ui, sans-serif; border: none; background: transparent; color: #495057">Revêtement</button>
+      </div>
+      <!-- Profil 140 px, recouvert par le pied fixe -->
+      <div style="position: relative; height: 140px">
+        <svg width="100%" height="140" viewBox="0 0 400 110" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M0 110 L0 70 L30 72 L60 60 L90 55 L120 50 L124 48 L124 110 Z" fill="#a5d8ff"></path>
+          <path d="M124 110 L124 48 L133 34 L142 22 L142 110 Z" fill="#fab005"></path>
+          <path d="M142 110 L142 22 L160 35 L190 45 L205 42 L205 110 Z" fill="#a5d8ff"></path>
+          <path d="M205 110 L205 42 L211 30 L217 18 L217 110 Z" fill="#fd7e14"></path>
+          <path d="M217 110 L217 18 L240 40 L270 55 L300 50 L330 62 L360 66 L400 70 L400 110 Z" fill="#a5d8ff"></path>
+          <path d="M0 70 L30 72 L60 60 L90 55 L120 50 L124 48 L133 34 L142 22 L160 35 L190 45 L205 42 L211 30 L217 18 L240 40 L270 55 L300 50 L330 62 L360 66 L400 70" stroke="#495057" stroke-width="1.5" fill="none" vector-effect="non-scaling-stroke"></path>
+        </svg>
+        <span style="position: absolute; left: 0; top: 2px; width: 12px; height: 12px; border-radius: 1000px; background: #15aabf; border: 2px solid #ffffff"></span>
+        <span style="position: absolute; left: 150px; top: 2px; width: 12px; height: 12px; border-radius: 1000px; background: #fd7e14; border: 2px solid #ffffff"></span>
+      </div>
+    </div>
+
+    <!-- 2d pied fixe : Positioned(bottom: 0), par-dessus le corps -->
+    <div style="position: absolute; left: 0; right: 0; bottom: 0; padding: 10px 16px 42px; background: #ffffff; border-top: 1px solid #dee2e6; display: flex; align-items: center; gap: 8px">
+      <button type="button" style="flex: 1; min-height: 44px; padding: 0 16px; border-radius: 8px; border: none; background: #4263eb; color: #ffffff; font: 600 15px Inter, system-ui, sans-serif; display: inline-flex; align-items: center; justify-content: center; gap: 8px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"></path><path d="M7 11l5 5l5 -5"></path><path d="M12 4l0 12"></path></svg>Télécharger GPX</button>
+      <button type="button" style="min-height: 44px; padding: 0 16px; border-radius: 8px; background: #ffffff; border: 1px solid #4263eb; color: #3b5bdb; font: 600 15px Inter, system-ui, sans-serif">FIT</button>
+      <button type="button" aria-label="Partager" style="width: 44px; height: 44px; border-radius: 8px; background: #ffffff; border: 1px solid #4263eb; color: #3b5bdb; display: grid; place-items: center; padding: 0">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 9h-1a2 2 0 0 0 -2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-8a2 2 0 0 0 -2 -2h-1"></path><path d="M12 14v-11"></path><path d="M9 6l3 -3l3 3"></path></svg>
+      </button>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

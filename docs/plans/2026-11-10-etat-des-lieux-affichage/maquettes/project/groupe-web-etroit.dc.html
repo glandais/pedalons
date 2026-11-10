@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Groupe A — site, étroit</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+body{margin:0}
+a{color:#3b5bdb}a:hover{color:#364fc7}
+</style>
+</helmet>
+<div style="width: 390px; height: 3560px; box-sizing: border-box; background: #ffffff; color: #000000; font-family: Inter, system-ui, sans-serif; font-size: 14px; line-height: 1.45; display: flex; flex-direction: column; overflow: hidden">
+
+  <!-- En-tête du site -->
+  <div style="height: 56px; border-bottom: 1px solid #dee2e6; display: flex; align-items: center; gap: 8px; padding: 0 8px; flex-shrink: 0">
+    <button type="button" aria-label="Menu" style="width: 44px; height: 44px; border: none; background: transparent; display: grid; place-items: center; padding: 0; color: #000000">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/></svg>
+    </button>
+    <div style="width: 28px; height: 28px; border-radius: 6px; background: #228be6"></div>
+    <span style="font-size: 20px; font-weight: 700; flex: 1">Pédalons</span>
+    <div style="width: 32px; height: 32px; border-radius: 1000px; background: #0c8599; color: #ffffff; font-size: 12px; font-weight: 700; display: grid; place-items: center; margin-right: 8px">CD</div>
+  </div>
+
+  <div style="padding: 16px; display: flex; flex-direction: column; gap: 16px">
+    <!-- Fil d'Ariane : 2 derniers niveaux sous sm -->
+    <nav aria-label="Fil d'Ariane" style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #666d75; flex-wrap: wrap">
+      <a href="#" style="text-decoration: none">Boucle des Monts d'Arrée</a>
+      <span aria-hidden="true">›</span>
+      <span style="color: #000000">Groupe A</span>
+    </nav>
+
+    <!-- B0 lien retour -->
+    <a href="#" style="display: inline-flex; align-items: center; gap: 6px; color: #666d75; text-decoration: none; font-size: 14px; min-height: 44px; margin: -12px 0 -8px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M5 12l6 6"/><path d="M5 12l6-6"/></svg>Retour à la sortie</a>
+
+    <!-- B1 en-tête -->
+    <header style="border: 1px solid #ced4da; border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.05)">
+      <!-- B1a SiblingNav -->
+      <div style="display: flex; align-items: center; gap: 6px" aria-label="Groupes de la sortie">
+        <button type="button" aria-label="Précédent" disabled style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 8px; border: 1px solid #dee2e6; background: #f8f9fa; color: #adb5bd; display: grid; place-items: center; padding: 0">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6l6 6"/></svg>
+        </button>
+        <div style="flex: 1; min-width: 0; display: flex; padding: 3px; background: #f1f3f5; border-radius: 8px">
+          <button type="button" style="flex: 1; min-width: 0; padding: 6px 4px; font: 500 12px Inter, system-ui, sans-serif; border: none; background: #ffffff; border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); color: #000000; white-space: nowrap">A · 8/12</button>
+          <button type="button" style="flex: 1; min-width: 0; padding: 6px 4px; font: 400 12px Inter, system-ui, sans-serif; border: none; background: transparent; color: #495057; white-space: nowrap">B · 11/12</button>
+          <button type="button" style="flex: 1; min-width: 0; padding: 6px 4px; font: 400 12px Inter, system-ui, sans-serif; border: none; background: transparent; color: #495057; white-space: nowrap">C · 12/12</button>
+        </div>
+        <button type="button" aria-label="Suivant : B · 11/12" style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 8px; border: 1px solid #ced4da; background: #ffffff; color: #000000; display: grid; place-items: center; padding: 0">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6l-6 6"/></svg>
+        </button>
+      </div>
+
+      <!-- B1b titre + partage, actions à la ligne -->
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <div style="display: flex; flex-direction: column">
+          <span style="font-size: 13px; color: #666d75">Boucle des Monts d'Arrée</span>
+          <div style="display: flex; align-items: center; gap: 8px">
+            <h1 style="margin: 0; font-size: 26px; font-weight: 700; line-height: 1.2">Groupe A</h1>
+            <button type="button" aria-label="Partager" title="Partager" style="width: 44px; height: 44px; border-radius: 8px; border: 1px solid #ced4da; background: #ffffff; color: #000000; display: grid; place-items: center; padding: 0">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="12" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M8.7 10.7l6.6-3.4"/><path d="M8.7 13.3l6.6 3.4"/></svg>
+            </button>
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px">
+          <button type="button" style="min-height: 44px; padding: 0 16px; border-radius: 8px; border: none; background: #4263eb; color: #ffffff; font: 500 14px Inter, system-ui, sans-serif">Rejoindre</button>
+        </div>
+      </div>
+
+      <!-- B1c bloc départ -->
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <div style="display: flex; gap: 12px; align-items: center; padding: 12px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px">
+          <div style="width: 64px; flex-shrink: 0; padding: 8px 0; border-radius: 8px; background: #dbe4ff; display: flex; flex-direction: column; align-items: center; line-height: 1.15">
+            <span style="font-size: 13px; font-weight: 600; color: #364fc7">sam.</span>
+            <span style="font-size: 26px; font-weight: 700">14</span>
+            <span style="font-size: 13px; font-weight: 500">nov.</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0">
+            <span style="font-size: 24px; font-weight: 700; line-height: 1.2">Départ 09:00</span>
+            <span style="display: flex; align-items: flex-start; gap: 4px; font-size: 14px">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2f9e44" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px"><circle cx="12" cy="11" r="3"/><path d="M17.66 16.66L13.41 20.9a2 2 0 0 1-2.83 0l-4.24-4.24a8 8 0 1 1 11.32 0z"/></svg>
+              <span><span style="font-weight: 600">Place de la Mairie</span> <span style="color: #666d75">(Huelgoat)</span></span>
+            </span>
+          </div>
+        </div>
+        <!-- GroupPlaces -->
+        <div style="display: flex; justify-content: space-between; align-items: baseline">
+          <span style="font-weight: 600">8/12 personnes</span>
+          <span style="color: #666d75">4 places restantes</span>
+        </div>
+        <div style="height: 6px; border-radius: 1000px; background: #e9ecef; overflow: hidden"><div style="width: 66.7%; height: 100%; background: #4263eb"></div></div>
+      </div>
+    </header>
+
+    <!-- B2e carte, AVANT la colonne en étroit -->
+    <div style="display: flex; flex-direction: column; gap: 12px">
+      <div style="border: 1px solid #ced4da; border-radius: 8px; overflow: hidden">
+        <div style="height: 440px; position: relative; overflow: hidden; background: #e8f0e4">
+          <svg width="100%" height="100%" viewBox="0 0 358 440" preserveAspectRatio="none" aria-hidden="true">
+            <path d="M0 30 C70 10 140 60 200 40 S310 0 358 20 L358 0 L0 0 Z" fill="#d5e5cc"/>
+            <path d="M230 200 C270 180 320 190 335 225 C345 255 305 275 270 268 C235 260 215 230 230 200 Z" fill="#cfe3f5"/>
+            <path d="M0 170 C100 150 220 190 358 160" stroke="#ffffff" stroke-width="5" fill="none"/>
+            <path d="M140 0 C150 100 130 200 160 440" stroke="#ffffff" stroke-width="4" fill="none"/>
+            <path d="M0 95 C120 115 240 80 358 110" stroke="#ffffff" stroke-width="3" fill="none"/>
+            <path d="M110 240 C70 200 60 140 100 100" stroke="#40c057" stroke-width="4" fill="none"/>
+            <path d="M100 100 C140 55 200 50 240 75" stroke="#fab005" stroke-width="4" fill="none"/>
+            <path d="M240 75 C290 105 295 160 265 195" stroke="#fd7e14" stroke-width="4" fill="none"/>
+            <path d="M265 195 C240 225 200 238 180 245 C150 255 130 258 110 240" stroke="#40c057" stroke-width="4" fill="none"/>
+            <circle cx="110" cy="240" r="6" fill="#2f9e44" stroke="#ffffff" stroke-width="2"/>
+            <circle cx="118" cy="232" r="6" fill="#e03131" stroke="#ffffff" stroke-width="2"/>
+            <circle cx="72" cy="160" r="9" fill="#ffffff" stroke="#495057" stroke-width="1"/>
+            <circle cx="210" cy="56" r="9" fill="#ffffff" stroke="#495057" stroke-width="1"/>
+            <circle cx="285" cy="150" r="9" fill="#ffffff" stroke="#495057" stroke-width="1"/>
+          </svg>
+          <span style="position: absolute; left: 65px; top: 153px; font-size: 9px; font-weight: 700">20</span>
+          <span style="position: absolute; left: 203px; top: 49px; font-size: 9px; font-weight: 700">40</span>
+          <span style="position: absolute; left: 278px; top: 143px; font-size: 9px; font-weight: 700">60</span>
+          <!-- contrôles -->
+          <div style="position: absolute; right: 10px; top: 10px; display: flex; flex-direction: column; gap: 8px">
+            <button type="button" aria-label="Carte plein écran" style="width: 44px; height: 44px; border-radius: 8px; border: 1px solid #ced4da; background: #ffffff; display: grid; place-items: center; padding: 0; color: #000000">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 4h4v4"/><path d="M14 10l6-6"/><path d="M8 20H4v-4"/><path d="M4 20l6-6"/><path d="M16 20h4v-4"/><path d="M14 14l6 6"/><path d="M8 4H4v4"/><path d="M4 4l6 6"/></svg>
+            </button>
+            <div style="display: flex; flex-direction: column; border-radius: 8px; border: 1px solid #ced4da; background: #ffffff; overflow: hidden">
+              <button type="button" aria-label="Zoomer" style="width: 44px; height: 44px; border: none; border-bottom: 1px solid #dee2e6; background: #ffffff; font: 600 18px Inter, system-ui, sans-serif; color: #000000">+</button>
+              <button type="button" aria-label="Dézoomer" style="width: 44px; height: 44px; border: none; background: #ffffff; font: 600 18px Inter, system-ui, sans-serif; color: #000000">−</button>
+            </div>
+          </div>
+          <div style="position: absolute; left: 10px; bottom: 176px; display: flex; flex-direction: column; gap: 2px">
+            <div style="width: 64px; height: 4px; border: 1px solid #000000; border-top: none; background: rgba(255,255,255,0.7)"></div>
+            <span style="font-size: 10px; font-weight: 600">2 km</span>
+          </div>
+          <span style="position: absolute; right: 6px; bottom: 170px; font-size: 10px; color: #495057; background: rgba(255,255,255,0.8); padding: 0 4px; border-radius: 4px">© OpenStreetMap</span>
+          <!-- profil posé sur le bas de la carte -->
+          <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 160px; background: rgba(255,255,255,0.88); border-top: 1px solid #dee2e6; padding: 8px 10px 4px; box-sizing: border-box; display: flex; flex-direction: column">
+            <svg width="100%" height="124" viewBox="0 0 400 110" preserveAspectRatio="none" aria-hidden="true">
+              <path d="M0 110 L0 80 L40 72 L80 60 L80 110 Z" fill="#40c057"/>
+              <path d="M80 110 L80 60 L120 38 L150 30 L150 110 Z" fill="#fd7e14"/>
+              <path d="M150 110 L150 30 L190 52 L230 66 L230 110 Z" fill="#40c057"/>
+              <path d="M230 110 L230 66 L260 40 L280 18 L280 110 Z" fill="#e03131"/>
+              <path d="M280 110 L280 18 L320 50 L360 70 L360 110 Z" fill="#fab005"/>
+              <path d="M360 110 L360 70 L400 82 L400 110 Z" fill="#40c057"/>
+              <path d="M0 80 L40 72 L80 60 L120 38 L150 30 L190 52 L230 66 L260 40 L280 18 L320 50 L360 70 L400 82" stroke="#495057" stroke-width="1.5" fill="none"/>
+            </svg>
+            <div style="display: flex; justify-content: space-between; font-size: 11px; color: #666d75"><span>0 km</span><span>46 km</span><span>92 km</span></div>
+          </div>
+        </div>
+      </div>
+      <!-- ColorModeControls -->
+      <div style="display: inline-flex; align-self: flex-start; padding: 3px; background: #f1f3f5; border-radius: 8px">
+        <button type="button" style="padding: 6px 12px; font: 500 14px Inter, system-ui, sans-serif; border: none; background: #ffffff; border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); color: #000000">Pente</button>
+        <button type="button" style="padding: 6px 12px; font: 400 14px Inter, system-ui, sans-serif; border: none; background: transparent; color: #495057">Revêtement</button>
+        <button type="button" style="padding: 6px 12px; font: 400 14px Inter, system-ui, sans-serif; border: none; background: transparent; color: #495057">Météo</button>
+      </div>
+      <!-- RouteSurfaceSummary -->
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <div style="display: flex; height: 8px; border-radius: 1000px; overflow: hidden"><div style="width: 82%; background: #495057"></div><div style="width: 18%; background: #c9a227"></div></div>
+        <div style="display: flex; gap: 12px; font-size: 12px; color: #495057"><span>Asphalte 82 %</span><span>Gravier 18 %</span></div>
+      </div>
+      <!-- RouteWaypointList -->
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <h4 style="margin: 0; font-size: 16px; font-weight: 700">Points du parcours (2)</h4>
+        <div style="display: flex; gap: 10px; align-items: flex-start">
+          <span style="width: 56px; flex-shrink: 0; font-size: 13px; font-weight: 600">0,4 km</span>
+          <span style="width: 24px; height: 24px; border-radius: 1000px; background: #228be6; flex-shrink: 0"></span>
+          <div style="display: flex; flex-direction: column; line-height: 1.3"><span style="font-weight: 600">Fontaine de Huelgoat</span><span style="font-size: 12px; color: #666d75">Eau</span></div>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: flex-start">
+          <span style="width: 56px; flex-shrink: 0; font-size: 13px; font-weight: 600">41 km</span>
+          <span style="width: 24px; height: 24px; border-radius: 1000px; background: #fd7e14; flex-shrink: 0"></span>
+          <div style="display: flex; flex-direction: column; line-height: 1.3"><span style="font-weight: 600">Boulangerie de Brasparts</span><span style="font-size: 12px; color: #666d75">Ravitaillement</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- B2a stats -->
+    <div style="border: 1px solid #ced4da; border-radius: 8px; padding: 16px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px">
+      <div style="display: flex; flex-direction: column; gap: 2px">
+        <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; letter-spacing: 0.3px; color: #666d75"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 3v7h6l-8 11v-7H5l8-11"/></svg>ALLURE MOYENNE</span>
+        <span style="font-size: 16px; font-weight: 600">28 km/h</span>
+        <span style="font-size: 12px; color: #666d75">Arrivée estimée 12:17</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 2px">
+        <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; letter-spacing: 0.3px; color: #666d75"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 4h4v4"/><path d="M14 10l6-6"/><path d="M8 20H4v-4"/><path d="M4 20l6-6"/></svg>DISTANCE</span>
+        <span style="font-size: 16px; font-weight: 600">92 km</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 2px">
+        <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; letter-spacing: 0.3px; color: #666d75"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="M18 11l-6-6"/><path d="M6 11l6-6"/></svg>DÉNIVELÉ POSITIF</span>
+        <span style="font-size: 16px; font-weight: 600">1 240 m</span>
+      </div>
+    </div>
+
+    <!-- B2b capitaine -->
+    <div style="border: 1px solid #ced4da; border-radius: 8px; padding: 16px; display: flex; align-items: center; gap: 12px">
+      <div style="width: 38px; height: 38px; border-radius: 1000px; background: #e8590c; color: #ffffff; font-size: 13px; font-weight: 700; display: grid; place-items: center">LM</div>
+      <span style="font-weight: 600">Léa Martin</span>
+      <span style="display: inline-flex; align-items: center; gap: 4px; height: 18px; padding: 0 8px; border-radius: 1000px; font-size: 10px; font-weight: 700; letter-spacing: 0.25px; text-transform: uppercase; background: #dbe4ff; color: #364fc7"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9c-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2l4-4"/></svg>Capitaine</span>
+    </div>
+
+    <!-- B2c personnes inscrites -->
+    <section style="border: 1px solid #ced4da; border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+      <div style="display: flex; justify-content: space-between; align-items: baseline">
+        <h3 style="margin: 0; font-size: 18px; font-weight: 700">Personnes inscrites</h3>
+        <span style="color: #666d75">8 personnes</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 12px; border: 1px solid #ced4da; border-radius: 8px; color: #868e96">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M21 21l-6-6"/></svg>
+        <span>Rechercher par nom…</span>
+      </div>
+      <div style="display: flex; flex-direction: column">
+        <div style="display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid #f1f3f5">
+          <div style="position: relative; width: 38px; height: 38px; flex-shrink: 0"><div style="width: 38px; height: 38px; border-radius: 1000px; background: #e8590c; color: #ffffff; font-size: 13px; font-weight: 700; display: grid; place-items: center">LM</div><span style="position: absolute; right: -3px; bottom: -3px; width: 18px; height: 18px; border-radius: 1000px; background: #4263eb; color: #ffffff; border: 2px solid #ffffff; display: grid; place-items: center"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9c-4.5-1-8-4-8-9V6z"/></svg></span></div>
+          <div style="flex: 1; display: flex; flex-direction: column; line-height: 1.3"><span style="font-weight: 600">Léa Martin</span><span style="font-size: 12px; color: #666d75">Capitaine</span></div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#adb5bd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6l-6 6"/></svg>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid #f1f3f5">
+          <div style="width: 38px; height: 38px; border-radius: 1000px; background: #1971c2; color: #ffffff; font-size: 13px; font-weight: 700; display: grid; place-items: center; flex-shrink: 0">KB</div>
+          <span style="flex: 1; font-weight: 600">Karim Benali</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#adb5bd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6l-6 6"/></svg>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid #f1f3f5">
+          <div style="width: 38px; height: 38px; border-radius: 1000px; background: #2f9e44; color: #ffffff; font-size: 13px; font-weight: 700; display: grid; place-items: center; flex-shrink: 0">NP</div>
+          <span style="flex: 1; font-weight: 600">Noé Perrin</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#adb5bd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6l-6 6"/></svg>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid #f1f3f5">
+          <div style="width: 38px; height: 38px; border-radius: 1000px; background: #ae3ec9; color: #ffffff; font-size: 13px; font-weight: 700; display: grid; place-items: center; flex-shrink: 0">IR</div>
+          <span style="flex: 1; font-weight: 600">Inès Roche</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#adb5bd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6l-6 6"/></svg>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid #f1f3f5">
+          <div style="width: 38px; height: 38px; border-radius: 1000px; background: #f08c00; color: #ffffff; font-size: 13px; font-weight: 700; display: grid; place-items: center; flex-shrink: 0">SM</div>
+          <span style="flex: 1; font-weight: 600">Sacha Morel</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#adb5bd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6l-6 6"/></svg>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid #f1f3f5">
+          <div style="width: 38px; height: 38px; border-radius: 1000px; background: #c2255c; color: #ffffff; font-size: 13px; font-weight: 700; display: grid; place-items: center; flex-shrink: 0">JC</div>
+          <span style="flex: 1; font-weight: 600">Jeanne Colin</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#adb5bd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6l-6 6"/></svg>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid #f1f3f5">
+          <div style="width: 38px; height: 38px; border-radius: 1000px; background: #5f3dc4; color: #ffffff; font-size: 13px; font-weight: 700; display: grid; place-items: center; flex-shrink: 0">MG</div>
+          <span style="flex: 1; font-weight: 600">Malo Guérin</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#adb5bd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6l-6 6"/></svg>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 8px 0">
+          <div style="width: 38px; height: 38px; border-radius: 1000px; background: #0c8599; color: #ffffff; font-size: 13px; font-weight: 700; display: grid; place-items: center; flex-shrink: 0">YL</div>
+          <span style="flex: 1; font-weight: 600">Yann Le Goff</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#adb5bd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6l-6 6"/></svg>
+        </div>
+      </div>
+      <span style="font-size: 13px; color: #666d75; text-align: center">1–8 sur 8</span>
+      <div style="display: flex; justify-content: center; gap: 6px">
+        <button type="button" aria-label="Page précédente" disabled style="width: 44px; height: 44px; border-radius: 8px; border: 1px solid #dee2e6; background: #f8f9fa; color: #adb5bd; padding: 0">‹</button>
+        <button type="button" style="width: 44px; height: 44px; border-radius: 8px; border: none; background: #4263eb; color: #ffffff; font: 600 14px Inter, system-ui, sans-serif">1</button>
+        <button type="button" aria-label="Page suivante" disabled style="width: 44px; height: 44px; border-radius: 8px; border: 1px solid #dee2e6; background: #f8f9fa; color: #adb5bd; padding: 0">›</button>
+      </div>
+    </section>
+
+    <!-- B2d RouteCard -->
+    <div style="border: 1px solid #ced4da; border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 10px">
+      <h3 style="margin: 0; font-size: 16px; font-weight: 700">Boucle des Monts d'Arrée</h3>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px">
+        <a href="#" style="min-height: 44px; padding: 0 12px; border-radius: 8px; border: 1px solid #ced4da; color: #000000; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; font-weight: 500"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7l6-3l6 3l6-3v13l-6 3l-6-3l-6 3V7"/><path d="M9 4v13"/><path d="M15 7v13"/></svg>Voir le parcours</a>
+        <a href="#" style="min-height: 44px; padding: 0 12px; border-radius: 8px; border: 1px solid #ced4da; color: #000000; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; font-weight: 500"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/><path d="M7 11l5 5l5-5"/><path d="M12 4v12"/></svg>GPX</a>
+        <a href="#" style="min-height: 44px; padding: 0 12px; border-radius: 8px; border: 1px solid #ced4da; color: #000000; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; font-weight: 500"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/><path d="M7 11l5 5l5-5"/><path d="M12 4v12"/></svg>FIT</a>
+        <button type="button" style="min-height: 44px; padding: 0 12px; border-radius: 8px; border: 1px solid #ced4da; background: #ffffff; color: #000000; display: inline-flex; align-items: center; gap: 6px; font: 500 14px Inter, system-ui, sans-serif"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M11 4h2"/><path d="M12 17v.01"/></svg>Envoyer vers l'appareil</button>
+      </div>
+    </div>
+
+    <!-- B3 Météo du parcours, #meteo -->
+    <section id="meteo" style="border: 1px solid #ced4da; border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 14px">
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <h3 style="margin: 0; font-size: 18px; font-weight: 700">Météo du parcours</h3>
+        <span style="font-size: 12px; color: #666d75"><a href="#">Prévisions Open-Meteo</a> · Mise à jour à 08:30</span>
+      </div>
+      <!-- verdicts 2×2 -->
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+        <div style="background: #f8f9fa; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 2px">
+          <span style="font-size: 12px; color: #666d75">Températures</span>
+          <span style="font-size: 16px; font-weight: 600">9° → 13°</span>
+          <span style="font-size: 12px; color: #495057">9° au départ, ressenti 7°. Le plus chaud vers 12:00.</span>
+        </div>
+        <div style="background: #f8f9fa; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 2px">
+          <span style="font-size: 12px; color: #666d75">Pluie</span>
+          <span style="font-size: 16px; font-weight: 600">Sec</span>
+        </div>
+        <div style="background: #f8f9fa; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 2px">
+          <span style="font-size: 12px; color: #666d75">Vent</span>
+          <span style="font-size: 16px; font-weight: 600">Surtout de face</span>
+          <span style="font-size: 12px; color: #495057">Dans le dos après le km 58.</span>
+        </div>
+        <div style="background: #f8f9fa; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 2px">
+          <span style="font-size: 12px; color: #666d75">Jour</span>
+          <span style="font-size: 16px; font-weight: 600">5 h 14 de marge</span>
+          <span style="font-size: 12px; color: #495057">Lever 08:12, coucher 17:31. Arrivée estimée 12:17.</span>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 2px">
+        <h4 style="margin: 0; font-size: 16px; font-weight: 700">Heure par heure, à votre passage</h4>
+        <span style="font-size: 13px; color: #666d75">Passages estimés à 28 km/h · un point tous les 10 km</span>
+      </div>
+      <!-- PhoneStrip -->
+      <div style="border: 1px solid #dee2e6; border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 4px">
+        <svg width="100%" height="60" viewBox="0 0 320 60" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M0 48 L35 44 L70 40 L105 34 L140 28 L175 22 L210 18 L245 16 L280 16 L320 17" stroke="#e8590c" stroke-width="2" fill="none"/>
+          <circle cx="0" cy="48" r="4" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+        </svg>
+        <svg width="100%" height="24" viewBox="0 0 320 24" preserveAspectRatio="none" aria-hidden="true">
+          <rect x="2" y="16" width="28" height="8" fill="#74c0fc"/><rect x="37" y="16" width="28" height="8" fill="#74c0fc"/><rect x="72" y="18" width="28" height="6" fill="#74c0fc"/><rect x="107" y="20" width="28" height="4" fill="#74c0fc"/><rect x="142" y="20" width="28" height="4" fill="#74c0fc"/><rect x="177" y="20" width="28" height="4" fill="#74c0fc"/><rect x="212" y="21" width="28" height="3" fill="#74c0fc"/><rect x="247" y="21" width="28" height="3" fill="#74c0fc"/><rect x="282" y="22" width="36" height="2" fill="#74c0fc"/>
+        </svg>
+        <div style="display: flex; height: 10px; border-radius: 4px; overflow: hidden"><div style="width: 43%; background: #e03131"></div><div style="width: 20%; background: #fab005"></div><div style="width: 37%; background: #2f9e44"></div></div>
+        <div style="display: flex; justify-content: space-between; font-size: 11px; color: #666d75"><span>09:00</span><span>10:26</span><span>11:09</span><span>12:17</span></div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <span style="font-size: 12px; color: #666d75">Glisser pour choisir un passage</span>
+        <div style="position: relative; height: 20px">
+          <div style="position: absolute; left: 0; right: 0; top: 8px; height: 4px; border-radius: 1000px; background: #e9ecef"></div>
+          <div style="position: absolute; left: 0; top: 2px; width: 16px; height: 16px; border-radius: 1000px; background: #4263eb; border: 2px solid #ffffff; box-sizing: border-box; box-shadow: 0 0 0 1px #4263eb"></div>
+        </div>
+      </div>
+      <!-- CheckpointDetail -->
+      <div style="border: 1px solid #dee2e6; border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 10px">
+        <div style="display: flex; justify-content: space-between"><span style="font-weight: 700">Départ</span><span style="font-weight: 600">09:00</span></div>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+          <div style="display: flex; flex-direction: column"><span style="font-size: 12px; color: #666d75">Température</span><span style="font-weight: 600">9°</span><span style="font-size: 12px; color: #495057">ressenti 7°</span></div>
+          <div style="display: flex; flex-direction: column"><span style="font-size: 12px; color: #666d75">Pluie</span><span style="font-weight: 600">20 %</span></div>
+          <div style="display: flex; flex-direction: column"><span style="font-size: 12px; color: #666d75">Vent</span><span style="font-weight: 600; display: inline-flex; align-items: center; gap: 4px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 18l6-6"/><path d="M13 6l6 6"/></svg>18 km/h</span><span style="font-size: 12px; color: #495057">rafales 32</span></div>
+          <div style="display: flex; flex-direction: column"><span style="font-size: 12px; color: #666d75">Tronçon</span><span style="font-weight: 600">Face du km 0 au km 40</span></div>
+        </div>
+      </div>
+      <!-- PhaseList, < sm uniquement -->
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <h4 style="margin: 0; font-size: 16px; font-weight: 700">Par tronçon</h4>
+        <span style="font-size: 13px; color: #666d75">Dos 34 km · Travers 18 km · Face 40 km</span>
+        <div style="display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-left: 4px solid #e03131; background: #f8f9fa; border-radius: 4px">
+          <div style="display: flex; justify-content: space-between"><span style="font-weight: 600">Face · km 0–40</span><span style="color: #495057">09:00–10:26</span></div>
+          <span style="font-size: 12px; color: #666d75">09:00 · 09:21 · 09:43 · 10:04 · 10:26</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-left: 4px solid #fab005; background: #f8f9fa; border-radius: 4px">
+          <div style="display: flex; justify-content: space-between"><span style="font-weight: 600">Travers · km 40–58</span><span style="color: #495057">10:26–11:05</span></div>
+          <span style="font-size: 12px; color: #666d75">10:47</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-left: 4px solid #2f9e44; background: #f8f9fa; border-radius: 4px">
+          <div style="display: flex; justify-content: space-between"><span style="font-weight: 600">Dos · km 58–92</span><span style="color: #495057">11:05–12:17</span></div>
+          <span style="font-size: 12px; color: #666d75">11:09 · 11:30 · 11:51 · 12:13 · 12:17</span>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":3560}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

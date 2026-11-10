@@ -167,3 +167,9 @@ Carte déjà « au plus tôt » sur mobile. Écart : commentaires.
 6. **Lever et coucher du soleil** : fuseau de la sortie partout.
 7. **12 h / 24 h** : la langue décide, sur le web comme sur le mobile (français 24 h, anglais 12 h).
 8. **Commentaires sur le parcours mobile** : à ajouter, comme sur le web.
+
+## 7. Maquettes
+
+L'existant et les cibles mobiles sont dans [maquettes/](maquettes/README.md). Les décisions prises en dessinant les cibles
+(formats, ordre des blocs, inscription, bouton « GPS ») sont consignées dans [maquettes/KIT.md](maquettes/KIT.md) §8 ;
+elles complètent la liste ci-dessus et, pour le voyage d'une étape, la remplacent (même écran que le voyage à étapes, sans météo).

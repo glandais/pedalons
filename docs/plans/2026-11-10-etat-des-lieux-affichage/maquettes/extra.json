@@ -1,0 +1,236 @@
+{
+ "sortie": [
+  [
+   [
+    "sortie-groupes-meme-heure-mobile.dc.html",
+    390,
+    2960,
+    "Sortie, groupes à la même heure — mobile"
+   ],
+   [
+    "sortie-groupes-meme-heure-mobile-cible.dc.html",
+    390,
+    2960,
+    "Sortie, groupes à la même heure — mobile, CIBLE"
+   ],
+   [
+    "sortie-groupes-meme-heure-web-etroit.dc.html",
+    390,
+    3200,
+    "Sortie, groupes à la même heure — web étroit"
+   ],
+   [
+    "sortie-groupes-meme-heure-web-desktop.dc.html",
+    1280,
+    2700,
+    "Sortie, groupes à la même heure — web desktop"
+   ]
+  ],
+  [
+   [
+    "sortie-groupes-heures-differentes-mobile.dc.html",
+    390,
+    3140,
+    "Sortie, heures différentes — mobile"
+   ],
+   [
+    "sortie-groupes-heures-differentes-mobile-cible.dc.html",
+    390,
+    3120,
+    "Sortie, heures différentes — mobile, CIBLE"
+   ],
+   [
+    "sortie-groupes-heures-differentes-web-etroit.dc.html",
+    390,
+    3400,
+    "Sortie, heures différentes — web étroit"
+   ],
+   [
+    "sortie-groupes-heures-differentes-web-desktop.dc.html",
+    1280,
+    2860,
+    "Sortie, heures différentes — web desktop"
+   ]
+  ]
+ ],
+ "_pages": [
+  [
+   "groupe",
+   "Groupe",
+   [
+    [
+     [
+      "groupe-mobile-apercu.dc.html",
+      390,
+      2060,
+      "Groupe — mobile, onglet Aperçu"
+     ],
+     [
+      "groupe-mobile-meteo.dc.html",
+      390,
+      2000,
+      "Groupe — mobile, onglet Météo"
+     ],
+     [
+      "groupe-mobile-cible.dc.html",
+      390,
+      3320,
+      "Groupe — mobile, CIBLE"
+     ],
+     [
+      "groupe-inscrit-mobile-cible.dc.html",
+      390,
+      3400,
+      "Groupe, inscrit — mobile, CIBLE"
+     ],
+     [
+      "groupe-web-etroit.dc.html",
+      390,
+      3560,
+      "Groupe — web étroit"
+     ],
+     [
+      "groupe-web-desktop.dc.html",
+      1280,
+      2440,
+      "Groupe — web desktop"
+     ]
+    ]
+   ]
+  ],
+  [
+   "voyage",
+   "Voyage",
+   [
+    [
+     [
+      "voyage-etapes-mobile.dc.html",
+      390,
+      2520,
+      "Voyage de 3 étapes — mobile"
+     ],
+     [
+      "voyage-etapes-mobile-cible.dc.html",
+      390,
+      2660,
+      "Voyage de 3 étapes — mobile, CIBLE"
+     ],
+     [
+      "voyage-etapes-web-etroit.dc.html",
+      390,
+      3300,
+      "Voyage de 3 étapes — web étroit"
+     ],
+     [
+      "voyage-etapes-web-desktop.dc.html",
+      1280,
+      2560,
+      "Voyage de 3 étapes — web desktop"
+     ]
+    ],
+    [
+     [
+      "voyage-une-etape-mobile.dc.html",
+      390,
+      2240,
+      "Voyage d'une étape — mobile"
+     ],
+     [
+      "voyage-une-etape-mobile-cible.dc.html",
+      390,
+      2760,
+      "Voyage d'une étape — mobile, CIBLE"
+     ],
+     [
+      "voyage-une-etape-web-etroit.dc.html",
+      390,
+      4300,
+      "Voyage d'une étape — web étroit"
+     ],
+     [
+      "voyage-une-etape-web-desktop.dc.html",
+      1280,
+      3000,
+      "Voyage d'une étape — web desktop"
+     ]
+    ]
+   ]
+  ],
+  [
+   "etape",
+   "Étape",
+   [
+    [
+     [
+      "etape-mobile.dc.html",
+      390,
+      2640,
+      "Étape — mobile, détail"
+     ],
+     [
+      "etape-mobile-meteo.dc.html",
+      390,
+      1560,
+      "Étape — mobile, page météo"
+     ],
+     [
+      "etape-mobile-cible.dc.html",
+      390,
+      2480,
+      "Étape — mobile, CIBLE"
+     ],
+     [
+      "etape-web-etroit.dc.html",
+      390,
+      3440,
+      "Étape — web étroit"
+     ],
+     [
+      "etape-web-desktop.dc.html",
+      1280,
+      2620,
+      "Étape — web desktop"
+     ]
+    ]
+   ]
+  ],
+  [
+   "parcours",
+   "Parcours",
+   [
+    [
+     [
+      "parcours-mobile-mi-hauteur.dc.html",
+      390,
+      844,
+      "Parcours — mobile, feuille à mi-hauteur"
+     ],
+     [
+      "parcours-mobile-deplie.dc.html",
+      390,
+      1680,
+      "Parcours — mobile, feuille dépliée"
+     ],
+     [
+      "parcours-mobile-cible.dc.html",
+      390,
+      2440,
+      "Parcours — mobile, CIBLE"
+     ],
+     [
+      "parcours-web-etroit.dc.html",
+      390,
+      2700,
+      "Parcours — web étroit"
+     ],
+     [
+      "parcours-web-desktop.dc.html",
+      1280,
+      2400,
+      "Parcours — web desktop"
+     ]
+    ]
+   ]
+  ]
+ ]
+}
