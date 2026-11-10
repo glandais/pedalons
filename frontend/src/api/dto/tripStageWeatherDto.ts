@@ -12,6 +12,6 @@ export interface TripStageWeatherDto {
   summary?: RideWeatherSummaryDto
   /** The stage's route, at its estimated passages (stage speed, else 25 km/h) */
   leg: WeatherLegDto
-  /** The weather when the stage leaves, at its first forecast point: conditions, sunrise and sunset, as RideWeatherDto.departure for a ride. OUT_OF_RANGE once the stage has left, NO_LOCATION without a route, NOT_YET_AVAILABLE beyond the horizon. */
+  /** The weather when the stage leaves, at its first forecast point: conditions, sunrise and sunset, as RideWeatherDto.departure for a ride. OUT_OF_RANGE once the stage is over (its estimated end passed), NO_LOCATION without a route, NOT_YET_AVAILABLE beyond the horizon. */
   departure: DepartureWeatherDto
 }

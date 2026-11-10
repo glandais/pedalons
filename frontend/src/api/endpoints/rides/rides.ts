@@ -630,6 +630,92 @@ export const useLeaveGroup = <TError = ErrorType<ErrorResponse | void>, TContext
   return useMutation(getLeaveGroupMutationOptions(options), queryClient)
 }
 /**
+ * Moves the caller from their group of the ride to this one, in one transaction: on any refusal the registration stays where it was. The same checks as join for the group joined (full, already left, ride cancelled or not readable). Switching to the group already joined changes nothing (200). The organisers are told of the new group as of a join.
+ * @summary Switch ride group
+ */
+export const switchGroup = (
+  teamSlug: string,
+  rideSlug: string,
+  groupId: string,
+  options?: SecondParameter<typeof axiosMutator>,
+  signal?: AbortSignal
+) => {
+  return axiosMutator<RideParticipationDto>(
+    {
+      url: `/api/teams/${teamSlug}/rides/${rideSlug}/groups/${groupId}/switch`,
+      method: 'POST',
+      signal,
+    },
+    options
+  )
+}
+
+export const getSwitchGroupMutationKey = () => ['switchGroup'] as const
+
+export const getSwitchGroupMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof switchGroup>>,
+    TError,
+    SwitchGroupMutationVariables,
+    TContext
+  >
+  request?: SecondParameter<typeof axiosMutator>
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof switchGroup>>,
+  TError,
+  SwitchGroupMutationVariables,
+  TContext
+> => {
+  const mutationKey = getSwitchGroupMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof switchGroup>>,
+    SwitchGroupMutationVariables
+  > = (props) => {
+    const { teamSlug, rideSlug, groupId } = props ?? {}
+
+    return switchGroup(teamSlug, rideSlug, groupId, requestOptions)
+  }
+
+  return { mutationFn, ...mutationOptions }
+}
+
+export type SwitchGroupMutationResult = NonNullable<Awaited<ReturnType<typeof switchGroup>>>
+
+export type SwitchGroupMutationError = ErrorType<ErrorResponse>
+export type SwitchGroupMutationVariables = { teamSlug: string; rideSlug: string; groupId: string }
+
+/**
+ * @summary Switch ride group
+ */
+export const useSwitchGroup = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof switchGroup>>,
+      TError,
+      SwitchGroupMutationVariables,
+      TContext
+    >
+    request?: SecondParameter<typeof axiosMutator>
+  },
+  queryClient?: QueryClient
+): UseMutationResult<
+  Awaited<ReturnType<typeof switchGroup>>,
+  TError,
+  SwitchGroupMutationVariables,
+  TContext
+> => {
+  return useMutation(getSwitchGroupMutationOptions(options), queryClient)
+}
+/**
  * One VEVENT for the ride, to add it on its own to a calendar. Readable by whoever may read the ride; no calendar token. It starts when the caller's group leaves when they are registered, at the ride's start otherwise; LOCATION is the start place's name, when the ride has one.
  * @summary Download ride as a calendar file
  */

@@ -45,4 +45,8 @@ export interface RideGroupDto {
   thumbnailUrl?: string
   /** Where the group's route — its own, else the ride's — stands at each of the caller's GPS services whose automatic sync is on and which hold it, sorted by service. Only ever about the caller's own connections. Absent when there is none: anonymous caller, no such service, no route. */
   gpsSyncStatuses?: RouteGpsSyncStatusDto[]
+  /** When the group is expected back: startAt plus the length of the route it rides (its own, else the ride's) at its averageSpeed. Absent when it has no route or no averageSpeed — no default speed here. Known whatever the forecast window, unlike WeatherLegDto.arrivalTime. */
+  estimatedArrival?: Instant
+  /** Minutes from startAt to estimatedArrival, rounded. Absent when estimatedArrival is. */
+  estimatedDurationMinutes?: number
 }

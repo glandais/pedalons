@@ -3161,6 +3161,18 @@ export const GetTeamDashboardResponse = zod
                               .describe(
                                 "Where the group's route — its own, else the ride's — stands at each of the caller's GPS services whose automatic sync is on and which hold it, sorted by service. Only ever about the caller's own connections. Absent when there is none: anonymous caller, no such service, no route."
                               ),
+                            estimatedArrival: zod.iso
+                              .datetime({ offset: true })
+                              .optional()
+                              .describe(
+                                "When the group is expected back: startAt plus the length of the route it rides (its own, else the ride's) at its averageSpeed. Absent when it has no route or no averageSpeed — no default speed here. Known whatever the forecast window, unlike WeatherLegDto.arrivalTime."
+                              ),
+                            estimatedDurationMinutes: zod
+                              .int()
+                              .optional()
+                              .describe(
+                                'Minutes from startAt to estimatedArrival, rounded. Absent when estimatedArrival is.'
+                              ),
                           })
                           .describe('Ride group information')
                       )
@@ -3428,6 +3440,18 @@ export const GetTeamDashboardResponse = zod
                           .optional()
                           .describe(
                             "Where the group's route — its own, else the ride's — stands at each of the caller's GPS services whose automatic sync is on and which hold it, sorted by service. Only ever about the caller's own connections. Absent when there is none: anonymous caller, no such service, no route."
+                          ),
+                        estimatedArrival: zod.iso
+                          .datetime({ offset: true })
+                          .optional()
+                          .describe(
+                            "When the group is expected back: startAt plus the length of the route it rides (its own, else the ride's) at its averageSpeed. Absent when it has no route or no averageSpeed — no default speed here. Known whatever the forecast window, unlike WeatherLegDto.arrivalTime."
+                          ),
+                        estimatedDurationMinutes: zod
+                          .int()
+                          .optional()
+                          .describe(
+                            'Minutes from startAt to estimatedArrival, rounded. Absent when estimatedArrival is.'
                           ),
                       })
                       .optional()
@@ -5111,6 +5135,18 @@ export const GetTeamDashboardResponse = zod
                               .describe(
                                 "Number of comments on the stage's own thread. Absent when the caller cannot read comments (not a member of the team), like TripDto.commentCount."
                               ),
+                            estimatedArrival: zod.iso
+                              .datetime({ offset: true })
+                              .optional()
+                              .describe(
+                                "When the stage is expected to end: dateTime plus its route's length at its averageSpeed. Absent when it has no route or no averageSpeed — no default speed here. Known whatever the forecast window, unlike WeatherLegDto.arrivalTime."
+                              ),
+                            estimatedDurationMinutes: zod
+                              .int()
+                              .optional()
+                              .describe(
+                                'Minutes from dateTime to estimatedArrival, rounded. Absent when estimatedArrival is.'
+                              ),
                           })
                           .describe('Trip stage information')
                       )
@@ -5794,6 +5830,18 @@ export const GetTeamDashboardResponse = zod
                               .describe(
                                 "Where the group's route — its own, else the ride's — stands at each of the caller's GPS services whose automatic sync is on and which hold it, sorted by service. Only ever about the caller's own connections. Absent when there is none: anonymous caller, no such service, no route."
                               ),
+                            estimatedArrival: zod.iso
+                              .datetime({ offset: true })
+                              .optional()
+                              .describe(
+                                "When the group is expected back: startAt plus the length of the route it rides (its own, else the ride's) at its averageSpeed. Absent when it has no route or no averageSpeed — no default speed here. Known whatever the forecast window, unlike WeatherLegDto.arrivalTime."
+                              ),
+                            estimatedDurationMinutes: zod
+                              .int()
+                              .optional()
+                              .describe(
+                                'Minutes from startAt to estimatedArrival, rounded. Absent when estimatedArrival is.'
+                              ),
                           })
                           .describe('Ride group information')
                       )
@@ -6061,6 +6109,18 @@ export const GetTeamDashboardResponse = zod
                           .optional()
                           .describe(
                             "Where the group's route — its own, else the ride's — stands at each of the caller's GPS services whose automatic sync is on and which hold it, sorted by service. Only ever about the caller's own connections. Absent when there is none: anonymous caller, no such service, no route."
+                          ),
+                        estimatedArrival: zod.iso
+                          .datetime({ offset: true })
+                          .optional()
+                          .describe(
+                            "When the group is expected back: startAt plus the length of the route it rides (its own, else the ride's) at its averageSpeed. Absent when it has no route or no averageSpeed — no default speed here. Known whatever the forecast window, unlike WeatherLegDto.arrivalTime."
+                          ),
+                        estimatedDurationMinutes: zod
+                          .int()
+                          .optional()
+                          .describe(
+                            'Minutes from startAt to estimatedArrival, rounded. Absent when estimatedArrival is.'
                           ),
                       })
                       .optional()
@@ -7744,6 +7804,18 @@ export const GetTeamDashboardResponse = zod
                               .describe(
                                 "Number of comments on the stage's own thread. Absent when the caller cannot read comments (not a member of the team), like TripDto.commentCount."
                               ),
+                            estimatedArrival: zod.iso
+                              .datetime({ offset: true })
+                              .optional()
+                              .describe(
+                                "When the stage is expected to end: dateTime plus its route's length at its averageSpeed. Absent when it has no route or no averageSpeed — no default speed here. Known whatever the forecast window, unlike WeatherLegDto.arrivalTime."
+                              ),
+                            estimatedDurationMinutes: zod
+                              .int()
+                              .optional()
+                              .describe(
+                                'Minutes from dateTime to estimatedArrival, rounded. Absent when estimatedArrival is.'
+                              ),
                           })
                           .describe('Trip stage information')
                       )
@@ -8427,6 +8499,18 @@ export const GetTeamDashboardResponse = zod
                               .describe(
                                 "Where the group's route — its own, else the ride's — stands at each of the caller's GPS services whose automatic sync is on and which hold it, sorted by service. Only ever about the caller's own connections. Absent when there is none: anonymous caller, no such service, no route."
                               ),
+                            estimatedArrival: zod.iso
+                              .datetime({ offset: true })
+                              .optional()
+                              .describe(
+                                "When the group is expected back: startAt plus the length of the route it rides (its own, else the ride's) at its averageSpeed. Absent when it has no route or no averageSpeed — no default speed here. Known whatever the forecast window, unlike WeatherLegDto.arrivalTime."
+                              ),
+                            estimatedDurationMinutes: zod
+                              .int()
+                              .optional()
+                              .describe(
+                                'Minutes from startAt to estimatedArrival, rounded. Absent when estimatedArrival is.'
+                              ),
                           })
                           .describe('Ride group information')
                       )
@@ -8694,6 +8778,18 @@ export const GetTeamDashboardResponse = zod
                           .optional()
                           .describe(
                             "Where the group's route — its own, else the ride's — stands at each of the caller's GPS services whose automatic sync is on and which hold it, sorted by service. Only ever about the caller's own connections. Absent when there is none: anonymous caller, no such service, no route."
+                          ),
+                        estimatedArrival: zod.iso
+                          .datetime({ offset: true })
+                          .optional()
+                          .describe(
+                            "When the group is expected back: startAt plus the length of the route it rides (its own, else the ride's) at its averageSpeed. Absent when it has no route or no averageSpeed — no default speed here. Known whatever the forecast window, unlike WeatherLegDto.arrivalTime."
+                          ),
+                        estimatedDurationMinutes: zod
+                          .int()
+                          .optional()
+                          .describe(
+                            'Minutes from startAt to estimatedArrival, rounded. Absent when estimatedArrival is.'
                           ),
                       })
                       .optional()
@@ -10377,6 +10473,18 @@ export const GetTeamDashboardResponse = zod
                               .describe(
                                 "Number of comments on the stage's own thread. Absent when the caller cannot read comments (not a member of the team), like TripDto.commentCount."
                               ),
+                            estimatedArrival: zod.iso
+                              .datetime({ offset: true })
+                              .optional()
+                              .describe(
+                                "When the stage is expected to end: dateTime plus its route's length at its averageSpeed. Absent when it has no route or no averageSpeed — no default speed here. Known whatever the forecast window, unlike WeatherLegDto.arrivalTime."
+                              ),
+                            estimatedDurationMinutes: zod
+                              .int()
+                              .optional()
+                              .describe(
+                                'Minutes from dateTime to estimatedArrival, rounded. Absent when estimatedArrival is.'
+                              ),
                           })
                           .describe('Trip stage information')
                       )
@@ -11846,6 +11954,18 @@ export const GetTeamDashboardResponse = zod
                                   .describe(
                                     "Where the group's route — its own, else the ride's — stands at each of the caller's GPS services whose automatic sync is on and which hold it, sorted by service. Only ever about the caller's own connections. Absent when there is none: anonymous caller, no such service, no route."
                                   ),
+                                estimatedArrival: zod.iso
+                                  .datetime({ offset: true })
+                                  .optional()
+                                  .describe(
+                                    "When the group is expected back: startAt plus the length of the route it rides (its own, else the ride's) at its averageSpeed. Absent when it has no route or no averageSpeed — no default speed here. Known whatever the forecast window, unlike WeatherLegDto.arrivalTime."
+                                  ),
+                                estimatedDurationMinutes: zod
+                                  .int()
+                                  .optional()
+                                  .describe(
+                                    'Minutes from startAt to estimatedArrival, rounded. Absent when estimatedArrival is.'
+                                  ),
                               })
                               .describe('Ride group information')
                           )
@@ -12122,6 +12242,18 @@ export const GetTeamDashboardResponse = zod
                               .optional()
                               .describe(
                                 "Where the group's route — its own, else the ride's — stands at each of the caller's GPS services whose automatic sync is on and which hold it, sorted by service. Only ever about the caller's own connections. Absent when there is none: anonymous caller, no such service, no route."
+                              ),
+                            estimatedArrival: zod.iso
+                              .datetime({ offset: true })
+                              .optional()
+                              .describe(
+                                "When the group is expected back: startAt plus the length of the route it rides (its own, else the ride's) at its averageSpeed. Absent when it has no route or no averageSpeed — no default speed here. Known whatever the forecast window, unlike WeatherLegDto.arrivalTime."
+                              ),
+                            estimatedDurationMinutes: zod
+                              .int()
+                              .optional()
+                              .describe(
+                                'Minutes from startAt to estimatedArrival, rounded. Absent when estimatedArrival is.'
                               ),
                           })
                           .optional()
@@ -13816,6 +13948,18 @@ export const GetTeamDashboardResponse = zod
                                   .describe(
                                     "Number of comments on the stage's own thread. Absent when the caller cannot read comments (not a member of the team), like TripDto.commentCount."
                                   ),
+                                estimatedArrival: zod.iso
+                                  .datetime({ offset: true })
+                                  .optional()
+                                  .describe(
+                                    "When the stage is expected to end: dateTime plus its route's length at its averageSpeed. Absent when it has no route or no averageSpeed — no default speed here. Known whatever the forecast window, unlike WeatherLegDto.arrivalTime."
+                                  ),
+                                estimatedDurationMinutes: zod
+                                  .int()
+                                  .optional()
+                                  .describe(
+                                    'Minutes from dateTime to estimatedArrival, rounded. Absent when estimatedArrival is.'
+                                  ),
                               })
                               .describe('Trip stage information')
                           )
@@ -14509,6 +14653,18 @@ export const GetTeamDashboardResponse = zod
                                   .describe(
                                     "Where the group's route — its own, else the ride's — stands at each of the caller's GPS services whose automatic sync is on and which hold it, sorted by service. Only ever about the caller's own connections. Absent when there is none: anonymous caller, no such service, no route."
                                   ),
+                                estimatedArrival: zod.iso
+                                  .datetime({ offset: true })
+                                  .optional()
+                                  .describe(
+                                    "When the group is expected back: startAt plus the length of the route it rides (its own, else the ride's) at its averageSpeed. Absent when it has no route or no averageSpeed — no default speed here. Known whatever the forecast window, unlike WeatherLegDto.arrivalTime."
+                                  ),
+                                estimatedDurationMinutes: zod
+                                  .int()
+                                  .optional()
+                                  .describe(
+                                    'Minutes from startAt to estimatedArrival, rounded. Absent when estimatedArrival is.'
+                                  ),
                               })
                               .describe('Ride group information')
                           )
@@ -14785,6 +14941,18 @@ export const GetTeamDashboardResponse = zod
                               .optional()
                               .describe(
                                 "Where the group's route — its own, else the ride's — stands at each of the caller's GPS services whose automatic sync is on and which hold it, sorted by service. Only ever about the caller's own connections. Absent when there is none: anonymous caller, no such service, no route."
+                              ),
+                            estimatedArrival: zod.iso
+                              .datetime({ offset: true })
+                              .optional()
+                              .describe(
+                                "When the group is expected back: startAt plus the length of the route it rides (its own, else the ride's) at its averageSpeed. Absent when it has no route or no averageSpeed — no default speed here. Known whatever the forecast window, unlike WeatherLegDto.arrivalTime."
+                              ),
+                            estimatedDurationMinutes: zod
+                              .int()
+                              .optional()
+                              .describe(
+                                'Minutes from startAt to estimatedArrival, rounded. Absent when estimatedArrival is.'
                               ),
                           })
                           .optional()
@@ -16479,6 +16647,18 @@ export const GetTeamDashboardResponse = zod
                                   .describe(
                                     "Number of comments on the stage's own thread. Absent when the caller cannot read comments (not a member of the team), like TripDto.commentCount."
                                   ),
+                                estimatedArrival: zod.iso
+                                  .datetime({ offset: true })
+                                  .optional()
+                                  .describe(
+                                    "When the stage is expected to end: dateTime plus its route's length at its averageSpeed. Absent when it has no route or no averageSpeed — no default speed here. Known whatever the forecast window, unlike WeatherLegDto.arrivalTime."
+                                  ),
+                                estimatedDurationMinutes: zod
+                                  .int()
+                                  .optional()
+                                  .describe(
+                                    'Minutes from dateTime to estimatedArrival, rounded. Absent when estimatedArrival is.'
+                                  ),
                               })
                               .describe('Trip stage information')
                           )
@@ -17173,6 +17353,18 @@ export const GetTeamDashboardResponse = zod
                                   .describe(
                                     "Where the group's route — its own, else the ride's — stands at each of the caller's GPS services whose automatic sync is on and which hold it, sorted by service. Only ever about the caller's own connections. Absent when there is none: anonymous caller, no such service, no route."
                                   ),
+                                estimatedArrival: zod.iso
+                                  .datetime({ offset: true })
+                                  .optional()
+                                  .describe(
+                                    "When the group is expected back: startAt plus the length of the route it rides (its own, else the ride's) at its averageSpeed. Absent when it has no route or no averageSpeed — no default speed here. Known whatever the forecast window, unlike WeatherLegDto.arrivalTime."
+                                  ),
+                                estimatedDurationMinutes: zod
+                                  .int()
+                                  .optional()
+                                  .describe(
+                                    'Minutes from startAt to estimatedArrival, rounded. Absent when estimatedArrival is.'
+                                  ),
                               })
                               .describe('Ride group information')
                           )
@@ -17449,6 +17641,18 @@ export const GetTeamDashboardResponse = zod
                               .optional()
                               .describe(
                                 "Where the group's route — its own, else the ride's — stands at each of the caller's GPS services whose automatic sync is on and which hold it, sorted by service. Only ever about the caller's own connections. Absent when there is none: anonymous caller, no such service, no route."
+                              ),
+                            estimatedArrival: zod.iso
+                              .datetime({ offset: true })
+                              .optional()
+                              .describe(
+                                "When the group is expected back: startAt plus the length of the route it rides (its own, else the ride's) at its averageSpeed. Absent when it has no route or no averageSpeed — no default speed here. Known whatever the forecast window, unlike WeatherLegDto.arrivalTime."
+                              ),
+                            estimatedDurationMinutes: zod
+                              .int()
+                              .optional()
+                              .describe(
+                                'Minutes from startAt to estimatedArrival, rounded. Absent when estimatedArrival is.'
                               ),
                           })
                           .optional()
@@ -19142,6 +19346,18 @@ export const GetTeamDashboardResponse = zod
                                   .optional()
                                   .describe(
                                     "Number of comments on the stage's own thread. Absent when the caller cannot read comments (not a member of the team), like TripDto.commentCount."
+                                  ),
+                                estimatedArrival: zod.iso
+                                  .datetime({ offset: true })
+                                  .optional()
+                                  .describe(
+                                    "When the stage is expected to end: dateTime plus its route's length at its averageSpeed. Absent when it has no route or no averageSpeed — no default speed here. Known whatever the forecast window, unlike WeatherLegDto.arrivalTime."
+                                  ),
+                                estimatedDurationMinutes: zod
+                                  .int()
+                                  .optional()
+                                  .describe(
+                                    'Minutes from dateTime to estimatedArrival, rounded. Absent when estimatedArrival is.'
                                   ),
                               })
                               .describe('Trip stage information')

@@ -35,4 +35,8 @@ export interface TripStageDto {
   stageCount: number
   /** Number of comments on the stage's own thread. Absent when the caller cannot read comments (not a member of the team), like TripDto.commentCount. */
   commentCount?: number
+  /** When the stage is expected to end: dateTime plus its route's length at its averageSpeed. Absent when it has no route or no averageSpeed — no default speed here. Known whatever the forecast window, unlike WeatherLegDto.arrivalTime. */
+  estimatedArrival?: Instant
+  /** Minutes from dateTime to estimatedArrival, rounded. Absent when estimatedArrival is. */
+  estimatedDurationMinutes?: number
 }
