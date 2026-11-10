@@ -70,6 +70,15 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
       (`features/trips/presentation/widgets/stage_card.dart`, via `TripStageDto.route`). Même
       vocabulaire d'état que l'interrupteur (`profile.gps.autoSync.*`). Pendant web : `WEB-163`.
 
+- [ ] `MOB-132` **Refonte des écrans de détail : sortie, groupe, voyage, étape, parcours (L, 13 lots)** — les cinq
+      écrans n'ont ni la même ossature ni les mêmes formats, et s'écartent du web (carte tardive sur la sortie et
+      l'étape, météo en onglet ou en page poussée, export en quatre présentations, heure du groupe en petit). Plan
+      [`2026-11-10-refonte-ecrans-detail-mobile.md`](plans/2026-11-10-refonte-ecrans-detail-mobile.md) ; règles dans
+      [`maquettes/KIT.md`](plans/2026-11-10-etat-des-lieux-affichage/maquettes/KIT.md) §8, rendus dans `maquettes/png/`.
+      Dépend de `API-162` à `API-165`.
+- [ ] `MOB-133` **Refonte des écrans de détail : recette sur appareil de `MOB-132` (S)** — petit écran, texte à
+      130 %, mode sombre, impérial, anglais en 12 h, fuseau différent ; feuille GPS Android (enregistrer, envoyer) et
+      iOS (partager) ; « Connecter un compteur » vers `/profil/appareils`.
 - [ ] `MOB-130` **Contrôles de carte : recette sur appareil de `MOB-129` (S)** — rien ne se voit sans
       carte native (l'échelle et le crédit n'existent pas en test de widget), plan
       [`archive/2026-11-10-controles-carte.md`](plans/archive/2026-11-10-controles-carte.md). À vérifier, iPhone SE compris et texte à 130 % : l'échelle et le ⓘ au-dessus
@@ -359,6 +368,17 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
 - [ ] `WEB-161` **Contrôles de carte : recette à l'œil de `WEB-157` (S)** — scindé de `WEB-158`
       (les e2e sont passés le 10 novembre 2026), plan [`archive/2026-11-10-controles-carte.md`](plans/archive/2026-11-10-controles-carte.md).
       À l'œil, clair et sombre : l'ordre des deux colonnes ; la liste de la recherche par-dessus le zoom ;
+- [ ] `WEB-160` **« Vitesse moyenne » à la place d'« Allure moyenne », client régénéré (S)** — conséquence de
+      `MOB-132` : le libellé est partagé, et le contrat 13.4.0 ajoute des champs.
+- [ ] `WEB-161` **Aligner le web sur les décisions des cibles mobiles (M, à cadrer)** — heure de son groupe en gros,
+      « Changer pour A », bouton « GPS » unique, tuiles dans le même ordre :
+      [`maquettes/KIT.md`](plans/2026-11-10-etat-des-lieux-affichage/maquettes/KIT.md) §8. Hors périmètre de `MOB-132`.
+- [ ] `WEB-158` **Contrôles de carte : recette navigateur et e2e de `WEB-157` (S)** — livré sans
+      qu'un navigateur ni la pile e2e aient tourné, plan [`archive/2026-11-10-controles-carte.md`](plans/archive/2026-11-10-controles-carte.md). Sur `tribly-e2e` :
+      `gpx-planner` en entier, projets `desktop` et `mobile` (barre d'outils, bouton résumé, cibles de
+      44 px, 360 px, le `role="status"` et le message de quota désormais *dans* un bouton),
+      `route-maps`, `flow-routes` (clic au centre de `/parcours/carte`), `routes-render`. À l'œil,
+      clair et sombre : l'ordre des deux colonnes ; la liste de la recherche par-dessus le zoom ;
       infobulles et panneaux du bon côté ; l'échelle et le crédit au-dessus du profil d'un groupe (aux
       bornes 110 et 200 px) et d'une sortie à plusieurs parcours, puis au ras du bas en plein écran ;
       la barre du planificateur sur une carte étroite, une erreur longue tronquée, la mini-carte
@@ -559,6 +579,19 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
 
 ## API — Contrat d'API et backend
 
+- [ ] `API-162` **Météo par groupe : résumé et conditions de départ à l'heure du groupe (S, contrat 13.4.0)** — pour
+      `MOB-132`. `WeatherLegDto` n'a ni résumé (`legSummary` est réservé aux étapes) ni lever et coucher du soleil :
+      une carte de groupe ne peut pas afficher sa plage de températures, et « Météo au départ » reste à l'heure de la
+      sortie pour un groupe qui part plus tard. `service/weather/RideWeatherPlans.java`, `RideWeatherCalculator.java`.
+- [ ] `API-163` **Météo et inscription jugées par groupe, jusqu'à la fin (S)** — pour `MOB-132`. Dès que
+      `ride.dateTime` est passé, toute la météo passe en `OUT_OF_RANGE` (`RideWeatherService.java:109`) et `join`
+      répond `RIDE_PAST` (`RideService.java:575`), même pour un groupe qui n'est pas encore parti.
+- [ ] `API-164` **Changement de groupe en un appel (S, contrat 13.4.0)** — pour `MOB-132`. Changer de groupe est
+      aujourd'hui quitter puis rejoindre, deux appels : si le second échoue, la personne n'est plus inscrite nulle
+      part. `POST …/rides/{rideSlug}/groups/{groupId}/switch`, une transaction (`RideService.java`).
+- [ ] `API-165` **Arrivée et durée estimées par groupe et par étape (S, contrat 13.4.0)** — pour `MOB-132`. L'arrivée
+      n'existe que dans la réponse météo (`WeatherLegDto.arrivalTime`) : hors fenêtre de prévision, l'écran n'a ni
+      arrivée ni durée. `RideGroupDto` et `TripStageDto`, `PublicationEndCalculator.java`.
 - [ ] `API-161` **Météo de départ d'une étape et inscription refusée à un voyage terminé (S, contrat
       13.3.0)** — pour `WEB-155`. `TripStageWeatherDto.departure` (lu au premier point de prévision de
       l'étape, `TripWeatherService.departure`) donne à l'étape l'encadré « Jour » et la température au

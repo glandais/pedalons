@@ -3,8 +3,8 @@
 Maquettes des écrans sortie, groupe, voyage, étape et parcours : l'existant (web desktop, web étroit, mobile),
 puis les **cibles mobiles** issues de l'état des lieux ([SYNTHESE.md](../SYNTHESE.md)).
 
-**Aucune de ces maquettes n'a été contrôlée à l'écran** : elles ont été écrites et relues en balisage seulement.
-Les hauteurs d'artboard sont estimées. Les valeurs que les rapports ne donnaient pas (météo, lieux, revêtements,
+Les cibles mobiles ont été rendues en PNG (`png/`) et leurs hauteurs ajustées au contenu ; deux d'entre elles ont été
+regardées en détail. Les maquettes de l'existant n'ont pas été rendues : leurs hauteurs restent estimées. Les valeurs que les rapports ne donnaient pas (météo, lieux, revêtements,
 commentaires, descriptions, noms d'appareils) sont inventées.
 
 ## Contenu
@@ -15,6 +15,7 @@ commentaires, descriptions, noms d'appareils) sont inventées.
 | `project/*-mobile-cible.dc.html` | Les 10 cibles mobiles : 4 sorties, groupe, groupe inscrit, 2 voyages, étape, parcours |
 | `project/feuille-gps*.dc.html` | La feuille ouverte par le bouton « GPS », avec et sans appareil connecté (variante Android) |
 | `project/*` (les autres) | L'existant, reproduit sans rien améliorer |
+| `png/*.png`, `render_png.sh` | Rendus des cibles mobiles et de la feuille « GPS » (Chrome sans fenêtre, échelle 2). Relancer : `./render_png.sh` |
 | `gen_canvas.py`, `extra.json` | Génèrent `project/canvas.json` (pages et disposition du canevas) et les copies `project/tous-*.dc.html` de la page « Cibles mobiles » |
 
 ## Format
@@ -27,7 +28,7 @@ Pour republier : `python3 gen_canvas.py` depuis ce dossier, puis envoyer `projec
 
 ## Ce qui reste ouvert
 
-- Les décisions de `KIT.md` §8 ne sont pas dans le code et n'ont pas d'entrée de ledger.
+- Les décisions de `KIT.md` §8 ne sont pas encore dans le code : ledger `MOB-132`, plan [2026-11-10-refonte-ecrans-detail-mobile.md](../../2026-11-10-refonte-ecrans-detail-mobile.md).
 - Revêtement du parcours d'exemple : quatre catégories sur la fiche parcours, deux sur la sortie et le groupe.
 - États non dessinés : inscrit sur la sortie solo et sur l'étape ; feuille « GPS » sur iOS ; écrans sans description.
 - Relecture critique non traitée : météo basse sur la sortie solo, deux « km/h » voisins (vitesse et vent) dans les
