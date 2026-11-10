@@ -61,6 +61,14 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
 
 ## MOB — Application mobile
 
+- [ ] `MOB-129` **Contrôles de carte : zones fixes et ligne du bas (M, deux lots)** — le plan est
+      [`plans/2026-11-10-controles-carte.md`](plans/2026-11-10-controles-carte.md), et le suivi fin s'y fait. Aujourd'hui l'interrupteur de mode et la légende du vent
+      (`routeMapBottomLayer`) comme la carte flottante de la carte des parcours recouvrent la barre
+      d'échelle et le crédit ⓘ, la colonne de boutons est centrée à droite, et « Quitter le plein
+      écran » est un bouton de cette colonne (`pdl_map_hero.dart`). Cible : échelle et crédit
+      au-dessus de ce qui occupe le bas, colonne en bas à droite, « Fermer » en haut à gauche, une
+      vignette qui ne garde qu'« Agrandir ».
+
 
 - [ ] `MOB-95` **La météo sur la carte : recette sur appareil des paliers 1 à 3 (S)** — rien ne se
       teste sans carte native (`MOB-91` à `MOB-94`, plan [`2026-10-24-weather-on-map.md`](plans/archive/2026-10-24-weather-on-map.md)) :
@@ -325,6 +333,15 @@ n'ont aucun appelant d'écran).
 La recette du web est automatisée par une suite Playwright depuis le 25 septembre 2026
 (`WEB-13` à `WEB-22`, livrés, avec ce que l'automatisation ne voit pas) : voir
 `frontend/e2e/README.md`.
+
+- [ ] `WEB-157` **Contrôles de carte : zones fixes, ligne du bas, barre d'outils du planificateur
+      (L, quatre lots)** — le plan est [`plans/2026-11-10-controles-carte.md`](plans/2026-11-10-controles-carte.md), et le suivi fin s'y fait. Aujourd'hui tous les
+      contrôles s'empilent dans une colonne en haut à gauche dont l'ordre dépend du montage
+      (`PedalonsMap.tsx`, `MapControl.tsx`) : 11 boîtes dans le planificateur, « plein écran » avant ou
+      après « me localiser » selon la carte, et le profil en surimpression (`RouteMapView`) recouvre
+      la barre d'échelle et le crédit. Cible : caméra en haut à gauche, affichage en haut à droite,
+      colonne sous le pouce au doigt, échelle et crédit au-dessus du profil, outils du planificateur
+      dans une barre.
 
 - [ ] `WEB-156` **Recette de `WEB-155` : e2e et navigateur (S)** — scindé de `WEB-155`, livré sans
       que la pile e2e ait tourné. Sur `tribly-e2e` : `route-maps` (l'étape : son nom en h1, le parcours
@@ -1229,6 +1246,10 @@ Configurée en production des deux côtés ; des essais (`dryRun`) y ont réussi
 ## BRAND — Charte
 
 Le code couleur métier a une source unique depuis `BRAND-2`.
+
+- [ ] `BRAND-10` **Charte : une section « Contrôles de carte » (S)** — `BRANDING.md` ne dit rien du
+      placement des contrôles posés sur une carte (zones, ordre, tailles, ligne du bas, vignette) ;
+      à écrire à la clôture de `WEB-157` et `MOB-129`, plan [`plans/2026-11-10-controles-carte.md`](plans/2026-11-10-controles-carte.md).
 
 ---
 
