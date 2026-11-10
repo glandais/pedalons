@@ -8,6 +8,11 @@ import '../theme/pdl_typography.dart';
 /// « Participants 40 » se lit d'un bloc, « Participants … 40 » demande un
 /// aller-retour du regard. L'action, elle, va à droite — c'est un
 /// [PdlButton(variant: text)] dans presque tous les cas.
+///
+/// Les écrans de détail refondus (ledger `MOB-132`, KIT §8 : « titre à
+/// gauche, compte à droite en 12 px gris ») posent [countAtEnd] : le compte
+/// passe à droite, en `xs`, avant l'action. [subsection] descend le titre au
+/// rang de sous-titre (`cardTitle`, 16/700 : « Météo au départ de 09:00 »).
 class PdlSectionHeader extends StatelessWidget {
   const PdlSectionHeader({
     super.key,
@@ -15,6 +20,8 @@ class PdlSectionHeader extends StatelessWidget {
     this.count,
     this.action,
     this.padding = const EdgeInsets.only(bottom: 8),
+    this.countAtEnd = false,
+    this.subsection = false,
   });
 
   final String title;
@@ -25,6 +32,12 @@ class PdlSectionHeader extends StatelessWidget {
 
   final Widget? action;
   final EdgeInsetsGeometry padding;
+
+  /// Compte aligné à droite, en `xs`, plutôt que collé au titre.
+  final bool countAtEnd;
+
+  /// Sous-titre de section : `cardTitle` au lieu de `sectionTitle`.
+  final bool subsection;
 
   @override
   Widget build(BuildContext context) {
@@ -46,16 +59,22 @@ class PdlSectionHeader extends StatelessWidget {
                     title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: t.sectionTitle,
+                    style: subsection ? t.cardTitle : t.sectionTitle,
                   ),
                 ),
-                if (count != null) ...<Widget>[
+                if (count != null && !countAtEnd) ...<Widget>[
                   const SizedBox(width: 8),
                   Text(count!, style: t.count),
                 ],
               ],
             ),
           ),
+          if (count != null && countAtEnd) ...<Widget>[
+            const SizedBox(width: 8),
+            Text(count!, style: t.xs),
+          ],
+          if (action != null && count != null && countAtEnd)
+            const SizedBox(width: 8),
           ?action,
         ],
       ),

@@ -44,6 +44,12 @@ abstract final class PdlSpacing {
 
   /// Largeur maximale d'une colonne de contenu bornée (tablette, écran 33).
   static const double contentMaxWidth = 600;
+
+  /// Rythme des écrans de détail (maquettes cibles, KIT §8) : 24 px au-dessus
+  /// d'un titre de section, 20 px au-dessus d'un sous-titre. Posés par
+  /// `DetailSection` (`core/widgets/detail_section.dart`), jamais à la main.
+  static const double detailSectionGap = 24;
+  static const double detailSubsectionGap = 20;
 }
 
 /// Rayons de la charte (§1.1.7).
@@ -116,6 +122,25 @@ abstract final class PdlMetrics {
   static const double elevationCompact = 72;
   static const double elevationMedium = 110;
   static const double elevationLarge = 140;
+
+  /// Hauteur du profil d'un écran de détail (sortie, groupe, voyage, étape,
+  /// parcours — KIT §8 : « profil 110 px sur tous les écrans mobiles »).
+  /// Alias de [elevationMedium] : c'est la règle, pas une quatrième hauteur.
+  static const double detailElevation = elevationMedium;
+
+  /// La carte d'un écran de détail : 44 % de la hauteur d'écran, bornée à
+  /// 260–460 px (421 px sur l'appareil des maquettes). Les maquettes la
+  /// figeaient à 300 px ; le brief la veut proportionnelle (§1.0.4) — 300 px
+  /// fixes mangent 40 % d'un iPhone SE, et laissent une bande vide sur un
+  /// grand écran.
+  static const double detailMapFraction = 0.44;
+  static const double detailMapMin = 260;
+  static const double detailMapMax = 460;
+
+  /// La hauteur de carte d'un écran de détail pour une hauteur d'écran donnée
+  /// (`MediaQuery.sizeOf(context).height`).
+  static double detailMapHeight(double screenHeight) =>
+      (screenHeight * detailMapFraction).clamp(detailMapMin, detailMapMax);
 
   /// La bande sous un profil (le vent en mode Météo, ledger `MOB-106`) et
   /// son écart au graphique — les 6 px et 2 px du site (`windBand.ts`).

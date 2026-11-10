@@ -132,6 +132,11 @@ abstract final class PdlIcons {
   static const IconData placeStart = Icons.trip_origin;
   static const IconData placeEnd = Icons.flag_outlined;
 
+  /// Le drapeau d'un lieu cliquable (`PdlPlaceRow.link`) : le même au départ
+  /// et à l'arrivée, seule sa couleur change (vert, rouge — celles des
+  /// marqueurs de la carte).
+  static const IconData placeFlag = Icons.flag_outlined;
+
   // ── Temps, agenda, personnes ───────────────────────────────────────────
   static const IconData time = Icons.schedule;
 

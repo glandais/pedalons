@@ -75,6 +75,7 @@ export 'pdl_stage_rail.dart';
 export 'pdl_day_box.dart';
 export 'pdl_departure_block.dart';
 export 'pdl_departure_line.dart';
+export 'pdl_disclosure.dart';
 export 'pdl_meta_grid.dart';
 
 // ── Briques techniques ──────────────────────────────────────────────────────

@@ -28,14 +28,6 @@ import 'ride_weather_map_markers.dart';
 import 'ride_wind_map_legend.dart';
 import 'weather_map_layer.dart';
 
-/// La hauteur de la carte de sortie.
-///
-/// La maquette la fige à 300 px ; le brief la veut proportionnelle, et c'est
-/// lui qui l'emporte (§1.0.4) : 300 px fixes mangent 40 % d'un iPhone SE, et
-/// laissent une bande vide sur un grand écran.
-double rideMapHeight(double screenHeight) =>
-    (screenHeight * 0.44).clamp(260.0, 460.0);
-
 /// La carte multi-tracés de l'écran 12, et la moitié cartographique de la
 /// sélection croisée.
 ///
@@ -139,7 +131,9 @@ class RideGroupsMap extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final double height = rideMapHeight(MediaQuery.sizeOf(context).height);
+    final double height = PdlMetrics.detailMapHeight(
+      MediaQuery.sizeOf(context).height,
+    );
     final Brightness brightness = Theme.of(context).brightness;
     final AsyncValue<ResolvedMapStyle?> style = ref.watch(
       mapStyleProvider(brightness),

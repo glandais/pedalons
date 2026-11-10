@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pedalons/api/generated/export.dart';
+import 'package:pedalons/core/theme/pdl_tokens.dart';
 import 'package:pedalons/features/rides/domain/ride_route_layers.dart';
-import 'package:pedalons/features/rides/presentation/widgets/ride_groups_map.dart';
 import 'package:pedalons/features/rides/providers/ride_group_selection_provider.dart';
 
 import 'ride_fixtures.dart';
@@ -107,10 +107,10 @@ void main() {
 
   test('la hauteur de carte est bornée, jamais figée à 300', () {
     // iPhone SE — 300 px fixes mangeraient 40 % de l'écran.
-    expect(rideMapHeight(667), 293.48);
+    expect(PdlMetrics.detailMapHeight(667), 293.48);
     // Petit écran : le plancher tient.
-    expect(rideMapHeight(500), 260);
+    expect(PdlMetrics.detailMapHeight(500), 260);
     // Grande tablette : le plafond tient.
-    expect(rideMapHeight(1366), 460);
+    expect(PdlMetrics.detailMapHeight(1366), 460);
   });
 }

@@ -144,4 +144,31 @@ void main() {
     expect(size.height, greaterThanOrEqualTo(PdlMetrics.tapTarget));
     expect(size.width, greaterThanOrEqualTo(PdlMetrics.tapTarget));
   });
+
+  testWidgets('PdlDisclosure : l’en-tête entier, 44 px au moins', (
+    WidgetTester tester,
+  ) async {
+    await pump(
+      tester,
+      const SizedBox(
+        width: 360,
+        child: PdlDisclosure(title: 'Points du parcours', child: SizedBox()),
+      ),
+    );
+    expectTallEnough(tester, find.byType(InkWell), 'PdlDisclosure');
+  });
+
+  testWidgets('PdlPlaceRow.link garde 44 px sous un texte de 14', (
+    WidgetTester tester,
+  ) async {
+    await pump(
+      tester,
+      PdlPlaceRow.link(
+        kind: PdlPlaceKind.start,
+        name: 'Place de la Mairie',
+        onTap: () {},
+      ),
+    );
+    expectTallEnough(tester, find.byType(InkWell), 'PdlPlaceRow.link');
+  });
 }

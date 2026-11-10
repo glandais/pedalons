@@ -527,6 +527,17 @@ class _GalleryBodyState extends State<_GalleryBody> {
               ),
             ),
             const PdlSectionHeader(title: 'Prochaines sorties'),
+            const _Caption('countAtEnd — écrans de détail (MOB-132)'),
+            const PdlSectionHeader(
+              title: 'Groupes',
+              count: '3 groupes',
+              countAtEnd: true,
+            ),
+            const _Caption('subsection'),
+            const PdlSectionHeader(
+              title: 'Météo au départ de 09:00',
+              subsection: true,
+            ),
           ],
         ),
 
@@ -790,6 +801,100 @@ class _GalleryBodyState extends State<_GalleryBody> {
               kind: PdlPlaceKind.end,
               name: 'Place du Bourg',
               address: 'Vertou',
+            ),
+          ],
+        ),
+
+        // ── PdlPlaceRow.link · PdlDepartureBlock · PdlDisclosure ───────────
+        _Block(
+          title: 'PdlPlaceRow.link — itinéraire',
+          children: <Widget>[
+            PdlPlaceRow.link(
+              kind: PdlPlaceKind.start,
+              name: 'Place de la Mairie, Huelgoat',
+              semanticLabel: 'Itinéraire vers Place de la Mairie, Huelgoat',
+              onTap: () {},
+            ),
+            PdlPlaceRow.link(
+              kind: PdlPlaceKind.end,
+              name: 'Café du Lac, Huelgoat',
+              semanticLabel: 'Itinéraire vers Café du Lac, Huelgoat',
+              onTap: () {},
+            ),
+            const _Caption('sans coordonnées ni adresse : texte simple'),
+            const PdlPlaceRow.link(
+              kind: PdlPlaceKind.start,
+              name: 'Parking du lac',
+            ),
+          ],
+        ),
+        _Block(
+          title: 'PdlDepartureBlock — trailing · places · footnote',
+          children: <Widget>[
+            PdlDepartureBlock(
+              dayBox: const PdlDayBox(
+                weekday: 'sam.',
+                day: '14',
+                month: 'nov.',
+              ),
+              headline: 'Départ 09:00',
+              details: const <String>['Arrivée estimée 12:18'],
+              semanticLabel:
+                  'Départ 09:00, sam. 14 nov., Arrivée estimée 12:18',
+              trailing: PdlButton(
+                label: 'Rejoindre',
+                size: PdlButtonSize.sm,
+                onPressed: () {},
+              ),
+              places: <Widget>[
+                PdlPlaceRow.link(
+                  kind: PdlPlaceKind.start,
+                  name: 'Place de la Mairie, Huelgoat',
+                  onTap: () {},
+                ),
+                PdlPlaceRow.link(
+                  kind: PdlPlaceKind.end,
+                  name: 'Café du Lac, Huelgoat',
+                  onTap: () {},
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            PdlDepartureBlock(
+              dayBox: const PdlDayBox(
+                weekday: 'sam.',
+                day: '14',
+                month: 'nov.',
+              ),
+              headline: 'Départ 09:00',
+              places: <Widget>[
+                PdlPlaceRow.link(
+                  kind: PdlPlaceKind.start,
+                  name: 'Place de la Mairie, Huelgoat',
+                  onTap: () {},
+                ),
+              ],
+              footnote: 'Sortie sans groupe, inscription impossible',
+            ),
+          ],
+        ),
+        _Block(
+          title: 'PdlDisclosure',
+          children: <Widget>[
+            const PdlDisclosure(
+              title: 'Points du parcours',
+              subtitles: <String>['2 points'],
+              child: Text('Fontaine de Huelgoat · Boulangerie de Brasparts'),
+            ),
+            const SizedBox(height: 12),
+            const PdlDisclosure(
+              title: 'Météo le long du parcours',
+              subtitles: <String>[
+                '11 points · de 09:00 à 12:42',
+                'Passages estimés à 25 km/h, vitesse par défaut',
+              ],
+              initiallyExpanded: true,
+              child: Text('09:00 · Départ · 9 °C'),
             ),
           ],
         ),
