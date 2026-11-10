@@ -23,7 +23,7 @@ Décisions du propriétaire (10 novembre 2026) :
 - **mobile : pas de bouton « Me localiser »** — il n'en existe aucun, et `AndroidManifest.xml`,
   `Info.plist` et `store-metadata/data-safety.md` excluent le puck MapLibre ;
 - **planificateur tactile : pas de « Masquer le tracé »** (décision L2-5 du plan
-  `2026-10-17-editeur-parcours-web.md`) et le bouton reste **« Terminer »** (`planner.done`) :
+  [`../2026-10-17-editeur-parcours-web.md`](../2026-10-17-editeur-parcours-web.md)) et le bouton reste **« Terminer »** (`planner.done`) :
   l'enregistrement est dans le formulaire (`RouteEditor.tsx:431`) ;
 - mode sombre et carte d'annonce : inchangés (l'annonce garde échelle + crédit).
 

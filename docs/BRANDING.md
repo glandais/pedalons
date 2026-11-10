@@ -361,6 +361,41 @@ parcours ; une carte qui montre plusieurs parcours (plusieurs groupes, une sorti
 parcours principal diffère de celui du groupe, les étapes d'un voyage) garde la palette
 multi-parcours.
 
+### 3.8 Contrôles de carte
+
+Une famille de contrôles, une zone, **la même sur toutes les cartes** — un contrôle qui change de
+place d'une page à l'autre est un contrôle qu'il faut chercher (ledgers `WEB-157`, `MOB-129`).
+
+| Famille | Contenu, dans cet ordre | Web à la souris | Web au doigt | App mobile |
+|---|---|---|---|---|
+| Recherche | champ de lieu | haut gauche, au-dessus de la caméra | haut, toute la largeur | — |
+| Caméra | zoom et nord, me localiser, plein écran | colonne haut gauche | colonne bas droite (sans zoom ; le nord seulement carte tournée) | « Agrandir » en bas à droite ; « Fermer » en haut à gauche du plein écran |
+| Affichage | fond de carte et traces, masquer le tracé | colonne haut droite | même colonne, sous la caméra | Calques, en bas à droite, sous « Agrandir » |
+| Outils de la tâche | planificateur : résumé, annuler, rétablir, ligne droite, profil de routage, importer, aide | barre en bas au centre de la carte | barre sous la carte, sur deux lignes (résumé, puis outils) | — |
+| Repères | échelle à gauche, crédit à droite | ligne du bas | ligne du bas (crédit sous la colonne) | ligne du bas |
+
+Règles :
+
+- **L'ordre est fixe** et ne dépend pas de l'ordre de montage : au web il est écrit une fois, dans
+  `index.css` (un `order` par contrôle), au mobile dans `PdlMapHero`.
+- **La ligne du bas flotte** : l'échelle et le crédit se posent *au-dessus* de ce qui occupe le bas
+  de la carte — profil en surimpression, barre d'outils, carte flottante, interrupteur de mode —,
+  jamais dessous. Web : `--map-inset-bottom-left` / `--map-inset-bottom-right` sur l'enveloppe de la
+  carte. Mobile : `PdlMapBottomInset`, que `PdlMapHero` alimente en mesurant son calque du bas.
+- **Tailles** : 36 px à la souris, 44 px au doigt (§5.4), rayon de 8 px. Un bouton enfoncé se lit
+  par un fond doux en plus de la couleur de son icône ; chaque icône a un nom accessible.
+- **Jamais plus de cinq boutons dans une colonne** : au-delà, les outils d'une tâche vont dans une
+  barre horizontale.
+- **Infobulles et panneaux s'ouvrent vers l'intérieur de la carte** : à droite d'une colonne de
+  gauche, à gauche d'une colonne de droite, vers le haut depuis une barre du bas.
+- **Mobile, vignette** (carte encastrée qui ne se manipule pas) : repères et « Agrandir », rien
+  d'autre ; le fond, l'ombrage, les traces et le mode Météo se règlent en plein écran.
+- **Mobile, calque du bas** : l'interrupteur Pente · Revêtement · Météo du plein écran et la
+  légende du vent vivent dans **une seule** carte, en bas ; sous une carte encastrée,
+  l'interrupteur reste sous la carte. Au web il reste sous la carte dans tous les cas.
+- **Pas de « Me localiser » sur les cartes de l'app** : elle ne demande qu'une position
+  approximative, une fois, pour « Autour de moi », et n'affiche jamais la position sur la carte.
+
 ---
 
 ## 4. Typographie

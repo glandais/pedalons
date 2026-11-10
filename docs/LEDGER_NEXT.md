@@ -61,13 +61,17 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
 
 ## MOB — Application mobile
 
-- [ ] `MOB-129` **Contrôles de carte : zones fixes et ligne du bas (M, deux lots)** — le plan est
-      [`plans/2026-11-10-controles-carte.md`](plans/2026-11-10-controles-carte.md), et le suivi fin s'y fait. Aujourd'hui l'interrupteur de mode et la légende du vent
-      (`routeMapBottomLayer`) comme la carte flottante de la carte des parcours recouvrent la barre
-      d'échelle et le crédit ⓘ, la colonne de boutons est centrée à droite, et « Quitter le plein
-      écran » est un bouton de cette colonne (`pdl_map_hero.dart`). Cible : échelle et crédit
-      au-dessus de ce qui occupe le bas, colonne en bas à droite, « Fermer » en haut à gauche, une
-      vignette qui ne garde qu'« Agrandir ».
+- [ ] `MOB-130` **Contrôles de carte : recette sur appareil de `MOB-129` (S)** — rien ne se voit sans
+      carte native (l'échelle et le crédit n'existent pas en test de widget), plan
+      [`archive/2026-11-10-controles-carte.md`](plans/archive/2026-11-10-controles-carte.md). À vérifier, iPhone SE compris et texte à 130 % : l'échelle et le ⓘ au-dessus
+      de la carte du bas (interrupteur + légende du vent) et de la carte flottante de l'onglet
+      Parcours ; la colonne juste au-dessus du ⓘ, zone sûre basse comprise (indicateur d'accueil,
+      barre de gestes Android) ; « Fermer » sous l'encoche, en portrait et en paysage, sans toucher la
+      pilule ; une vignette d'étape de 240 px en Météo (légende, échelle, crédit, « Agrandir » :
+      reste-t-il assez de carte ?) ; la fiche parcours aux trois crans de sa feuille (saut de
+      l'échelle et de Calques au franchissement, rien sous la barre du haut à 0,92) ; le crédit
+      déplié, qui s'étend vers le haut sur la colonne ; « Autour de moi » en échec, en paysage.
+
 
 
 - [ ] `MOB-95` **La météo sur la carte : recette sur appareil des paliers 1 à 3 (S)** — rien ne se
@@ -334,14 +338,19 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
 (`WEB-13` à `WEB-22`, livrés, avec ce que l'automatisation ne voit pas) : voir
 `frontend/e2e/README.md`.
 
-- [ ] `WEB-157` **Contrôles de carte : zones fixes, ligne du bas, barre d'outils du planificateur
-      (L, quatre lots)** — le plan est [`plans/2026-11-10-controles-carte.md`](plans/2026-11-10-controles-carte.md), et le suivi fin s'y fait. Aujourd'hui tous les
-      contrôles s'empilent dans une colonne en haut à gauche dont l'ordre dépend du montage
-      (`PedalonsMap.tsx`, `MapControl.tsx`) : 11 boîtes dans le planificateur, « plein écran » avant ou
-      après « me localiser » selon la carte, et le profil en surimpression (`RouteMapView`) recouvre
-      la barre d'échelle et le crédit. Cible : caméra en haut à gauche, affichage en haut à droite,
-      colonne sous le pouce au doigt, échelle et crédit au-dessus du profil, outils du planificateur
-      dans une barre.
+
+- [ ] `WEB-158` **Contrôles de carte : recette navigateur et e2e de `WEB-157` (S)** — livré sans
+      qu'un navigateur ni la pile e2e aient tourné, plan [`archive/2026-11-10-controles-carte.md`](plans/archive/2026-11-10-controles-carte.md). Sur `tribly-e2e` :
+      `gpx-planner` en entier, projets `desktop` et `mobile` (barre d'outils, bouton résumé, cibles de
+      44 px, 360 px, le `role="status"` et le message de quota désormais *dans* un bouton),
+      `route-maps`, `flow-routes` (clic au centre de `/parcours/carte`), `routes-render`. À l'œil,
+      clair et sombre : l'ordre des deux colonnes ; la liste de la recherche par-dessus le zoom ;
+      infobulles et panneaux du bon côté ; l'échelle et le crédit au-dessus du profil d'un groupe (aux
+      bornes 110 et 200 px) et d'une sortie à plusieurs parcours, puis au ras du bas en plein écran ;
+      la barre du planificateur sur une carte étroite, une erreur longue tronquée, la mini-carte
+      au-dessus du crédit ; au doigt, la colonne en bas à droite, la recherche sur toute la largeur,
+      les consignes sous elle, le résumé sur deux lignes en erreur, l'état pressé du bouton résumé ;
+      les cartes compactes avec des boutons de 36 px ; le bleu d'état actif de maplibre-theme en clair.
 
 - [ ] `WEB-156` **Recette de `WEB-155` : e2e et navigateur (S)** — scindé de `WEB-155`, livré sans
       que la pile e2e ait tourné. Sur `tribly-e2e` : `route-maps` (l'étape : son nom en h1, le parcours
@@ -1247,9 +1256,6 @@ Configurée en production des deux côtés ; des essais (`dryRun`) y ont réussi
 
 Le code couleur métier a une source unique depuis `BRAND-2`.
 
-- [ ] `BRAND-10` **Charte : une section « Contrôles de carte » (S)** — `BRANDING.md` ne dit rien du
-      placement des contrôles posés sur une carte (zones, ordre, tailles, ligne du bas, vignette) ;
-      à écrire à la clôture de `WEB-157` et `MOB-129`, plan [`plans/2026-11-10-controles-carte.md`](plans/2026-11-10-controles-carte.md).
 
 ---
 
@@ -1413,6 +1419,8 @@ redevient une entrée de sa section sous le même identifiant.
 | `WEB-8` | **Scroll infini côté web** | Non porté | Incompatible avec la règle structurante du frontend (filtres et pagination dans la query string, donc toute vue partageable). `usePaginatedQuery` précharge déjà la page suivante **et** la précédente |
 | `WEB-9` | **Gabarits tactiles portés au web** | Non portés | Feuilles à crans, barre d'onglets basse, app bar interpolée, chips en remplacement des `Select` : ils résolvent une contrainte que le desktop n'a pas, et produiraient des composants hors Mantine |
 | `WEB-10` | **Minimum de 44 px sur les boutons web** | Règle **tactile** uniquement | Le web descend à 36 px au-dessus de 768 px. Ne pas prendre `pedalons.css` pour une spécification web |
+| `WEB-159` | **Interrupteur Pente · Revêtement · Météo dans l'en-tête du profil en surimpression (web)** | Non (décidé le 10 novembre 2026 avec le propriétaire, sur maquette — canevas « Contrôles des cartes ») | Ce profil ne fait que 110 px sur un petit écran : un en-tête le rognerait. L'interrupteur reste sous la carte (`ColorModeControls`), BRANDING §3.8. À rouvrir avec une hauteur minimale de profil relevée et le cadrage de la carte revu |
+| `MOB-131` | **« Me localiser » sur les cartes de l'app** | Non (maquetté puis retiré de `MOB-129`, 10 novembre 2026) | L'app ne déclare que la position approximative, demandée une fois pour « Autour de moi » (`AndroidManifest.xml`, `Info.plist`, `store-metadata/data-safety.md` : pas de puck MapLibre). L'ajouter rouvre ces trois déclarations et les fiches des stores |
 | `WEB-11` | **Jetons `--pdl-*` au web** | Non introduits | Le site a déjà la charte en thème Mantine ; une seconde couche de variables créerait deux sources de vérité |
 | `WEB-12` | **Mode sombre dérivé au web** | Sans objet | Le tableau de parité est un livrable **pour Flutter**, parce qu'aucune maquette ne fournit le sombre. Mantine l'a déjà |
 | `MOB-22` | **Jeu d'icônes Tabler côté mobile** | Material outline conservé | L'écart ne porte que sur la graisse du trait des icônes de badge de 11 px. `PdlIcons` (`lib/core/theme/pdl_icons.dart`) devrait être le **seul** fichier à nommer `Icons.*` (17 autres fichiers le font encore au 16 octobre 2026) : une fois ce ménage fait, basculer ne touchera qu'un fichier |
